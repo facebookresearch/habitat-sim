@@ -4,9 +4,7 @@
 
 #include "esp/batched_sim/EpisodeSet.h"
 #include "esp/batched_sim/BatchedSimAssert.h"
-#include "esp/batched_sim/PlacementHelper.h"
 
-#include "esp/core/random.h"
 #include "esp/core/Check.h"
 #include "esp/io/json.h"
 
@@ -18,248 +16,64 @@ namespace Mn = Magnum;
 namespace esp {
 namespace batched_sim {
 
-namespace {
+void updateFromSerializeCollection(FreeObject& freeObject, const serialize::FreeObject& serFreeObject, const serialize::Collection& collection) {
 
-void addStageFixedObject(EpisodeSet& set, const std::string& name) {
+  freeObject.aabb_ = Mn::Range3D(serFreeObject.collisionBox.min, serFreeObject.collisionBox.max);
+  freeObject.heldRotationIndex_ = serFreeObject.heldRotationIndex;
+  ESP_CHECK(freeObject.heldRotationIndex_ >= 0 
+    && freeObject.heldRotationIndex_ < freeObject.startRotations_.size(),
+    "updateFromSerializeCollection: heldRotationIndex " << serFreeObject.heldRotationIndex 
+    << " is out-of-range for FreeObject "
+    << freeObject.name_ << " with startRotations.size() == " << freeObject.startRotations_.size());
 
-  FixedObject fixedObj;
-  fixedObj.name_ = name;
-  fixedObj.needsPostLoadFixup_ = true;
+  freeObject.collisionSpheres_.clear();
+  std::vector<serialize::Sphere> generatedSpheres;
+  const std::vector<serialize::Sphere>* serializeCollisionSpheres = nullptr;
 
-  set.fixedObjects_.push_back(std::move(fixedObj));
-}
+  if (!serFreeObject.generateCollisionSpheresTechnique.empty()) {
 
-// radius of sphere at origin that bounds this AABB
-float getOriginBoundingSphereRadiusSquaredForAABB(const Magnum::Range3D& aabb) {
-  auto absMin = Mn::Math::abs(aabb.min());
-  Mn::Vector3 maxCorner = Mn::Math::max(absMin, aabb.max());
-  return maxCorner.dot();
-}
+    auto& spheres = generatedSpheres;
+    serializeCollisionSpheres = &generatedSpheres;
 
-void addFreeObject(EpisodeSet& set, const std::string& name) {
+    float smallRadius = 0.015f;
+    float mediumRadius = 0.05f;
+    float largeRadius = 0.12f;
 
-  FreeObject freeObj;
-  freeObj.name_ = name;
-  freeObj.needsPostLoadFixup_ = true;
+    const auto& aabb = freeObject.aabb_;
+    Mn::Vector3 aabbCenter = aabb.center();
 
-  // all YCB objects needs this to be upright
-  const auto baseRot = Mn::Quaternion::rotation(Mn::Deg(-90), Mn::Vector3(1.f, 0.f, 0.f));
+    if (serFreeObject.generateCollisionSpheresTechnique == "box") {
 
-  constexpr int numRotationsAboutUpAxis = 32;
-  for (int i = 0; i < numRotationsAboutUpAxis; i++) {
-    const auto angle = Mn::Deg((float)i * 360.f / numRotationsAboutUpAxis);
-    const auto rotAboutUpAxis = Mn::Quaternion::rotation(angle, Mn::Vector3(0.f, 1.f, 0.f));
-    freeObj.startRotations_.push_back((rotAboutUpAxis * baseRot));
-  }
+      // small and medium spheres at each corner
+      // consolidate duplicates at the end
 
-  set.freeObjects_.emplace_back(std::move(freeObj));  
-}
+      // insert larger spheres first, so that de-duplication (later) leaves larger spheres
+      for (float r : {largeRadius, mediumRadius, smallRadius}) {
+        if (aabb.size().length() < r * 2.f) {
+          // object is too small for even one sphere of this radius
+          continue;
+        }
+        if (aabb.sizeZ() < r * 2.f) {
+          continue;
+        }
 
-void addEpisode(EpisodeSet& set, const serialize::Collection& collection, int stageFixedObjectIndex, core::Random& random) {
-  Episode episode;
-  episode.stageFixedObjIndex = stageFixedObjectIndex;
-  episode.firstFreeObjectSpawnIndex_ = set.freeObjectSpawns_.size();
+        if (r == largeRadius) {
 
-  // place robot agent
-  episode.agentStartPos_ = Mn::Vector2(2.59f, 0.f);
-  episode.agentStartYaw_ = random.uniform_float(-float(Mn::Rad(Mn::Deg(135.f))), -float(Mn::Rad(Mn::Deg(45.f))));
-
-  // keep object count close to 28 (from Hab 2.0 benchmark), but include variation
-  int targetNumSpawns = random.uniform_int(28, 33);
-  episode.numFreeObjectSpawns_ = 0;
-
-  // good for area around staircase and living room
-  Mn::Range3D spawnRange({-1.f, 0.15f, -0.5f}, {4.f, 2.f, 3.f});
-
-  // good for white bookshelf for stage 5
-  // Mn::Range3D spawnRange({0.33f, 0.15f, -0.4f}, {1.18f, 1.85f, -0.25f});
-
-  const auto robotStartPos = Mn::Vector3(2.59, 0.f, 0.f);
-  const auto pad = Mn::Vector3(0.9f, 2.f, 0.9);
-  const auto exclusionRange = Mn::Range3D(robotStartPos - pad, robotStartPos + pad);
-
-  const auto& stageFixedObject = safeVectorGet(set.fixedObjects_, episode.stageFixedObjIndex);
-  const auto& columnGrid = stageFixedObject.columnGridSet_.getColumnGrid(0);      
-  // perf todo: re-use this across entire set (have extents for set)
-  // todo: find extents for entire EpisodeSet, not just this specific columnGrid
-  constexpr int maxBytes = 1000 * 1024;
-  // this is tuned assuming a building-scale simulation with household-object-scale obstacles
-  constexpr float maxGridSpacing = 0.5f;
-  CollisionBroadphaseGrid colGrid = CollisionBroadphaseGrid(getMaxCollisionRadius(collection), 
-    columnGrid.minX, columnGrid.minZ,
-    columnGrid.getMaxX(), columnGrid.getMaxZ(),
-    maxBytes, maxGridSpacing);
-
-  constexpr int maxFailedPlacements = 3;
-  PlacementHelper placementHelper(stageFixedObject.columnGridSet_, 
-    colGrid, collection, random, maxFailedPlacements);
-
-  std::array<int, 6> selectedFreeObjectIndices = {1, 2, 3, 4, 5, 8};
-
-  episode.targetObjIndex_ = 0; // arbitrary
-  int numSpawnAttempts = 2000;
-  bool success = false;
-  for (int i = 0; i < numSpawnAttempts; i++) {
-
-    // After finding all object spawns, do a search for the target object's goal 
-    // position. This logic is mostly identical to finding an object spawn.
-    bool isGoalPositionAttempt = (episode.numFreeObjectSpawns_ == targetNumSpawns);
-
-    FreeObjectSpawn spawn;
-    // for the goal position, use the free object correspnding to targetObjIdx
-    spawn.freeObjIndex_ = isGoalPositionAttempt
-      ? set.freeObjectSpawns_[episode.targetObjIndex_].freeObjIndex_
-      : selectedFreeObjectIndices[random.uniform_int(0, selectedFreeObjectIndices.size())];
-    const auto& freeObject = safeVectorGet(set.freeObjects_, spawn.freeObjIndex_);
-    spawn.startRotationIndex_ = random.uniform_int(0, freeObject.startRotations_.size());
-
-    Mn::Vector3 randomPos;
-    int numAttempts = 0;
-    while (true) {
-      numAttempts++;
-      randomPos = Mn::Vector3(
-        random.uniform_float(spawnRange.min().x(), spawnRange.max().x()),
-        random.uniform_float(spawnRange.min().y(), spawnRange.max().y()),
-        random.uniform_float(spawnRange.min().z(), spawnRange.max().z()));
-
-      if (!exclusionRange.contains(randomPos)) {
-        break;
-      }
-      BATCHED_SIM_ASSERT(numAttempts < 1000);
-    }
-
-    const auto rotation = freeObject.startRotations_[spawn.startRotationIndex_];
-    Mn::Matrix4 mat = Mn::Matrix4::from(
-        rotation.toMatrix(), randomPos);
-
-    if (placementHelper.place(mat, freeObject)) {
-      if (!spawnRange.contains(mat.translation())) {
-        continue;
-      }
-      spawn.startPos_ = mat.translation();
-
-      if (isGoalPositionAttempt) {
-        episode.targetObjGoalPos_ = spawn.startPos_;
-        episode.targetObjGoalRotation_ = rotation;
-        success = true;
-        break;
-      } else {
-        set.freeObjectSpawns_.emplace_back(std::move(spawn));
-        episode.numFreeObjectSpawns_++;
-
-        // add to colGrid so future spawns don't intersect this one
-        colGrid.insertObstacle(spawn.startPos_, rotation, &freeObject.aabb_);
-      }
-    }
-  }
-  constexpr int numGoalPositions = 1;
-  ESP_CHECK(success, "episode-generation failed; couldn't find " 
-    << (targetNumSpawns + numGoalPositions) << " collision-free spawn locations");
-
-  set.maxFreeObjects_ = Mn::Math::max(set.maxFreeObjects_, (int32_t)episode.numFreeObjectSpawns_);
-
-  set.episodes_.emplace_back(std::move(episode));
-}
-
-}
-
-EpisodeSet generateBenchmarkEpisodeSet(int numEpisodes, 
-  const BpsSceneMapping& sceneMapping, 
-  const serialize::Collection& collection) {
-
-  // 5 is hand-picked for a demo
-  core::Random random(/*seed*/3);
-
-  EpisodeSet set;
-
-  std::vector<std::string> replicaCadBakedStages = {
-    "Baked_sc0_staging_00",
-    "Baked_sc0_staging_01",
-    "Baked_sc0_staging_02",
-    "Baked_sc0_staging_03",
-    "Baked_sc0_staging_04",
-    "Baked_sc0_staging_05",
-    "Baked_sc0_staging_06",
-    "Baked_sc0_staging_07",
-    "Baked_sc0_staging_08",
-    "Baked_sc0_staging_09",
-    "Baked_sc0_staging_10",
-    "Baked_sc0_staging_11",
-    // "Baked_sc0_staging_12",
-  };
-
-  for (const auto& stageName : replicaCadBakedStages) {
-    addStageFixedObject(set, stageName);
-  }
-
-  for (const auto& serFreeObject : collection.freeObjects) {
-    addFreeObject(set, serFreeObject.name);
-  }
-
-  // sloppy: call postLoadFixup before adding episodes; this means that
-  // set.maxFreeObjects_ gets computed incorrectly in here (but it will get computed
-  // correctly, incrementally, in addEpisode).
-  postLoadFixup(set, sceneMapping, collection);
-
-  // distribute stages across episodes
-  for (int i = 0; i < numEpisodes; i++) {
-    int stageIndex = i * set.fixedObjects_.size() / numEpisodes;
-    addEpisode(set, collection, stageIndex, random);
-  }
-  BATCHED_SIM_ASSERT(set.maxFreeObjects_ > 0);
-
-  return set;
-}
-
-
-void updateFromSerializeCollection(EpisodeSet& set, const serialize::Collection& collection) {
-
-  for (const auto& serFreeObject : collection.freeObjects) {
-
-    auto it = std::find_if(set.freeObjects_.begin(), set.freeObjects_.end(),
-      [&serFreeObject](const auto& item) { return item.name_ == serFreeObject.name; });
-    ESP_CHECK(it != set.freeObjects_.end(), "collection free object with name " <<
-      serFreeObject.name << " not found in EpisodeSet. If you hit this error during "
-      "hot-reloading, try restarting the simulator.");
-
-    auto& freeObject = *it;
-    freeObject.aabb_ = Mn::Range3D(serFreeObject.collisionBox.min, serFreeObject.collisionBox.max);
-    freeObject.heldRotationIndex_ = serFreeObject.heldRotationIndex;
-    ESP_CHECK(freeObject.heldRotationIndex_ >= 0 
-      && freeObject.heldRotationIndex_ < freeObject.startRotations_.size(),
-      "updateFromSerializeCollection: heldRotationIndex " << serFreeObject.heldRotationIndex 
-      << " is out-of-range for FreeObject "
-      << freeObject.name_ << " with startRotations.size() == " << freeObject.startRotations_.size());
-
-    freeObject.collisionSpheres_.clear();
-    std::vector<serialize::Sphere> generatedSpheres;
-    const std::vector<serialize::Sphere>* serializeCollisionSpheres = nullptr;
-
-    if (!serFreeObject.generateCollisionSpheresTechnique.empty()) {
-
-      auto& spheres = generatedSpheres;
-      serializeCollisionSpheres = &generatedSpheres;
-
-      float smallRadius = 0.015f;
-      float mediumRadius = 0.05f;
-
-      const auto& aabb = freeObject.aabb_;
-      Mn::Vector3 aabbCenter = aabb.center();
-
-      if (serFreeObject.generateCollisionSpheresTechnique == "box") {
-
-        // small and medium spheres at each corner
-        // consolidate duplicates at the end
-
-        // insert larger spheres first, so that de-duplication (later) leaves larger spheres
-        for (float r : {mediumRadius, smallRadius}) {
-          if (aabb.size().length() < r * 2.f) {
-            // object is too small for even one sphere of this radius
-            continue;
+          int numX = int(aabb.sizeX() / (largeRadius * 2.f)) + 1;
+          int numY = int(aabb.sizeY() / (largeRadius * 2.f)) + 1;
+          int numZ = int(aabb.sizeZ() / (largeRadius * 2.f)) + 1;
+          Mn::Vector3 origin;
+          for (int ix = 0; ix < numX; ix++) {
+            origin.x() = Mn::Math::lerp(aabb.min().x() + largeRadius, aabb.max().x() - largeRadius, float(ix) / (numX - 1));
+            for (int iy = 0; iy < numY; iy++) {
+              origin.y() = Mn::Math::lerp(aabb.min().y() + largeRadius, aabb.max().y() - largeRadius, float(iy) / (numY - 1));
+              for (int iz = 0; iz < numZ; iz++) {
+                origin.z() = Mn::Math::lerp(aabb.min().z() + largeRadius, aabb.max().z() - largeRadius, float(iz) / (numZ - 1));
+                spheres.push_back({origin, r});
+              }
+            }
           }
-          if (aabb.sizeZ() < r * 2.f) {
-            continue;
-          }
+        } else {
           spheres.push_back({aabb.backBottomLeft(), r});
           spheres.push_back({aabb.backBottomRight(), r});
           spheres.push_back({aabb.backTopLeft(), r});
@@ -269,77 +83,94 @@ void updateFromSerializeCollection(EpisodeSet& set, const serialize::Collection&
           spheres.push_back({aabb.frontTopLeft(), r});
           spheres.push_back({aabb.frontTopRight(), r});
         }
-
-      } else if (serFreeObject.generateCollisionSpheresTechnique == "uprightCylinder") {
-
-        // insert larger spheres first, so that de-duplication (later) leaves larger spheres
-        for (float r : {mediumRadius, smallRadius}) {
-          if (aabb.size().length() < r * 2.f) {
-            // object is too small for even one sphere of this radius
-            continue;
-          }
-
-          for (float z : {aabb.min().z(), aabb.max().z()}) {
-            for (int xyDim = 0; xyDim < 2; xyDim++) {
-              int otherXyDim = xyDim == 0 ? 1 : 0;
-              Mn::Vector3 pMin;
-              pMin[xyDim] = aabb.min()[xyDim];
-              pMin[otherXyDim] = aabb.center()[otherXyDim];
-              pMin.z() = z;
-
-              Mn::Vector3 pMax;
-              pMax[xyDim] = aabb.max()[xyDim];
-              pMax[otherXyDim] = aabb.center()[otherXyDim];
-              pMax.z() = z;
-
-              spheres.push_back({pMin, r});
-              spheres.push_back({pMax, r});
-            }
-          }
-        }
-
-      } else {
-        ESP_CHECK(false, "free object generateCollisionSpheresTechnique \"" 
-          << serFreeObject.generateCollisionSpheresTechnique << "\" not recognized. "
-          "Valid values are empty-string, \"box\", and \"uprightCylinder\"");
       }
 
-      // clamp to fit inside box extents, but don't move sphere center past center of box (to other side)
-      for (auto& sphere : spheres) {
-        Mn::Vector3 clampedOrigin;
-        for (int dim = 0; dim < 3; dim++) {
-          clampedOrigin[dim] = sphere.origin[dim] < aabbCenter[dim]
-            ? Mn::Math::clamp(sphere.origin[dim], 
-              Mn::Math::min(aabb.min()[dim] + sphere.radius, aabbCenter[dim]), aabbCenter[dim])
-            : Mn::Math::clamp(sphere.origin[dim], 
-              aabbCenter[dim], Mn::Math::max(aabb.max()[dim] - sphere.radius, aabbCenter[dim]));
-        }
-        sphere.origin = clampedOrigin;
-      }
+    } else if (serFreeObject.generateCollisionSpheresTechnique == "uprightCylinder") {
 
-      // remove duplicates
-      for (int i = spheres.size() - 1; i >= 0; i--) {
-        bool foundDup = false;
-        for (int j = 0; j < i; j++) {
-          if (spheres[i].origin == spheres[j].origin) {
-            auto it = spheres.begin() + i;
-            spheres.erase(spheres.begin() + i);
-            break;
+      // insert larger spheres first, so that de-duplication (later) leaves larger spheres
+      for (float r : {largeRadius, mediumRadius, smallRadius}) {
+        if (aabb.size().length() < r * 2.f) {
+          // object is too small for even one sphere of this radius
+          continue;
+        }
+
+        for (float z : {aabb.min().z(), aabb.max().z()}) {
+          for (int xyDim = 0; xyDim < 2; xyDim++) {
+            int otherXyDim = xyDim == 0 ? 1 : 0;
+            Mn::Vector3 pMin;
+            pMin[xyDim] = aabb.min()[xyDim];
+            pMin[otherXyDim] = aabb.center()[otherXyDim];
+            pMin.z() = z;
+
+            Mn::Vector3 pMax;
+            pMax[xyDim] = aabb.max()[xyDim];
+            pMax[otherXyDim] = aabb.center()[otherXyDim];
+            pMax.z() = z;
+
+            spheres.push_back({pMin, r});
+            spheres.push_back({pMax, r});
           }
         }
       }
 
-      BATCHED_SIM_ASSERT(!spheres.empty());
     } else {
-      ESP_CHECK(!serFreeObject.collisionSpheres.empty(), "no collision spheres for free object "
-        << serFreeObject.name << " and generateCollisionSpheresFromBox==false");
-      serializeCollisionSpheres = &serFreeObject.collisionSpheres;
+      ESP_CHECK(false, "free object generateCollisionSpheresTechnique \"" 
+        << serFreeObject.generateCollisionSpheresTechnique << "\" not recognized. "
+        "Valid values are empty-string, \"box\", and \"uprightCylinder\"");
     }
 
-    for (const auto& serSphere : *serializeCollisionSpheres) {
-      int radiusIdx = getCollisionRadiusIndex(collection, serSphere.radius);
-      freeObject.collisionSpheres_.push_back({serSphere.origin, radiusIdx});
+    // clamp to fit inside box extents, but don't move sphere center past center of box (to other side)
+    for (auto& sphere : spheres) {
+      Mn::Vector3 clampedOrigin;
+      for (int dim = 0; dim < 3; dim++) {
+        clampedOrigin[dim] = sphere.origin[dim] < aabbCenter[dim]
+          ? Mn::Math::clamp(sphere.origin[dim], 
+            Mn::Math::min(aabb.min()[dim] + sphere.radius, aabbCenter[dim]), aabbCenter[dim])
+          : Mn::Math::clamp(sphere.origin[dim], 
+            aabbCenter[dim], Mn::Math::max(aabb.max()[dim] - sphere.radius, aabbCenter[dim]));
+      }
+      sphere.origin = clampedOrigin;
     }
+
+    // remove duplicates
+    for (int i = spheres.size() - 1; i >= 0; i--) {
+      bool foundDup = false;
+      for (int j = 0; j < i; j++) {
+        if (spheres[i].origin == spheres[j].origin) {
+          auto it = spheres.begin() + i;
+          spheres.erase(spheres.begin() + i);
+          break;
+        }
+      }
+    }
+
+    BATCHED_SIM_ASSERT(!spheres.empty());
+  } else {
+    ESP_CHECK(!serFreeObject.collisionSpheres.empty(), "no collision spheres for free object "
+      << serFreeObject.name << " and generateCollisionSpheresFromBox==false");
+    serializeCollisionSpheres = &serFreeObject.collisionSpheres;
+  }
+
+  for (const auto& serSphere : *serializeCollisionSpheres) {
+    int radiusIdx = getCollisionRadiusIndex(collection, serSphere.radius);
+    freeObject.collisionSpheres_.push_back({serSphere.origin, radiusIdx});
+  }
+  
+}
+
+void updateFromSerializeCollection(EpisodeSet& set, const serialize::Collection& collection) {
+
+  for (const auto& serFreeObject : collection.freeObjects) {
+
+    auto it = std::find_if(set.freeObjects_.begin(), set.freeObjects_.end(),
+      [&serFreeObject](const auto& item) { return item.name_ == serFreeObject.name; });
+    if (it == set.freeObjects_.end()) {
+      // collection may have info for free objects not used in the current EpisodeSet
+      continue;
+    }
+
+    auto& freeObject = *it;
+    updateFromSerializeCollection(freeObject, serFreeObject, collection);
   }
 }
 

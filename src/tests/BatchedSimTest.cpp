@@ -205,19 +205,33 @@ TEST_F(BatchedSimulatorTest, basic) {
 
   const bool forceRandomActions = doFreeCam || doTuneRobotCam;
 
+  EpisodeGeneratorConfig generatorConfig{
+    .numEpisodes = 100,
+    .seed = 4,
+    .numStageVariations = 12,
+    .numObjectVariations = 6,
+    .minNontargetObjects = 27,
+    .maxNontargetObjects = 32,
+    .useFixedRobotStartPos = false,
+    .useFixedRobotStartYaw = false
+  };
+
+
   BatchedSimulatorConfig config{
-      .numEnvs = 2, .gpuId = 0, 
+      .numEnvs = 1, .gpuId = 0, 
       .includeDepth = includeDepth,
       .includeColor = includeColor,
       .sensor0 = {.width = 768, .height = 768},
       .numDebugEnvs = 1,
-      .debugSensor {.width = 512, .height = 512},
+      .debugSensor {.width = 768, .height = 768},
       .forceRandomActions = forceRandomActions,
       .doAsyncPhysicsStep = doOverlapPhysics,
       .numSubsteps = 1,
       .doProceduralEpisodeSet = true,
+      .episodeGeneratorConfig = generatorConfig,
       //.doProceduralEpisodeSet = false,
       //.episodeSetFilepath = "generated.episode_set.json",
+      .collectionFilepath = "../data/replicacad_composite.collection.json"
       };
   BatchedSimulator bsim(config);
 

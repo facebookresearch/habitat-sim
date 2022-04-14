@@ -27,6 +27,8 @@ Magnum::Vector3 getMagnumTranslation(const glm::mat4x3& glMat);
 
 Magnum::Vector3 inverseTransformPoint(const glm::mat4x3& glMat, const Magnum::Vector3& pos);
 
+Magnum::Vector3 getRangeCorner(const Magnum::Range3D& range, int cornerIdx);
+
 bool sphereBoxContactTest(const Magnum::Vector3& sphereOrigin, float sphereRadiusSq, const Magnum::Range3D& aabb);
 
 template<int maxTests, bool numTestsIsMaxTests>

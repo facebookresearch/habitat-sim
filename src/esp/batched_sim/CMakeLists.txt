@@ -14,6 +14,8 @@ add_library(
   CollisionBroadphaseGrid.h
   ColumnGridBuilder.cpp
   ColumnGridBuilder.h
+  EpisodeGenerator.cpp
+  EpisodeGenerator.h
   EpisodeSet.cpp
   EpisodeSet.h
   GlmUtils.cpp

@@ -2,8 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_BATCHEDSIM_EPISODE_H_
-#define ESP_BATCHEDSIM_EPISODE_H_
+#ifndef ESP_BATCHEDSIM_EPISODESET_H_
+#define ESP_BATCHEDSIM_EPISODESET_H_
 
 #include "esp/batched_sim/BatchedSimAssert.h"
 #include "esp/batched_sim/ColumnGrid.h"
@@ -102,9 +102,7 @@ class EpisodeInstanceSet {
 
 void updateFromSerializeCollection(EpisodeSet& set, const serialize::Collection& collection);
 
-// todo: move to separate file
-EpisodeSet generateBenchmarkEpisodeSet(int numEpisodes, 
-  const BpsSceneMapping& sceneMapping, const serialize::Collection& collection);
+void updateFromSerializeCollection(FreeObject& freeObject, const serialize::FreeObject& serFreeObject, const serialize::Collection& collection);
 
 void postLoadFixup(EpisodeSet& set, const BpsSceneMapping& sceneMapping, 
   const serialize::Collection& collection);

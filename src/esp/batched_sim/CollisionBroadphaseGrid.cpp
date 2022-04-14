@@ -73,13 +73,11 @@ std::pair<int, int> CollisionBroadphaseGrid::findSphereGridCellIndex(float x, fl
   // use the max corner of the sphere to do lookup
   const float halfCellFloatX = (x + maxSphereRadius_ - minX_) * invGridSpacing_ * 2.f;
   if (halfCellFloatX < 0.f || halfCellFloatX >= (float)(dimX_ * 2)) {
-    BATCHED_SIM_ASSERT(false);
     return std::make_pair(-1, -1);
   }
 
   const float halfCellFloatZ = (z + maxSphereRadius_ - minZ_) * invGridSpacing_ * 2.f;
   if (halfCellFloatZ < 0.f || halfCellFloatZ >= (float)(dimZ_ * 2)) {
-    BATCHED_SIM_ASSERT(false);
     return std::make_pair(-1, -1);
   }
 
@@ -319,8 +317,12 @@ int CollisionBroadphaseGrid::contactTest(const Magnum::Vector3& spherePos, float
 
   BATCHED_SIM_ASSERT(sphereRadius <= maxSphereRadius_);
 
+  const auto pair = findSphereGridCellIndex(spherePos.x(), spherePos.z());
+  if (pair.first == -1) {
+    return -1;
+  }
+  const auto& cell = getCell(pair);
   const float sphereRadiusSq = sphereRadius * sphereRadius;
-  const auto& cell = getCell(findSphereGridCellIndex(spherePos.x(), spherePos.z()));
 
   for (int i = 0; i < cell.numObstacles; i++) {
     int16_t obsIndex = cell.obstacles[i];

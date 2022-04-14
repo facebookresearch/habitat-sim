@@ -10,6 +10,7 @@
 #include "esp/batched_sim/ColumnGrid.h"
 #include "esp/batched_sim/BpsSceneMapping.h"
 #include "esp/batched_sim/EpisodeSet.h"
+#include "esp/batched_sim/EpisodeGenerator.h"
 #include "esp/batched_sim/SerializeCollection.h"
 #include "esp/core/random.h"
 
@@ -44,12 +45,13 @@ struct BatchedSimulatorConfig {
   bool forceRandomActions = false;
   bool doAsyncPhysicsStep = false;
   int numSubsteps = 1;
-  // if enabled, for every odd env, we don't render any visuals except debug stuff, 
-  // e.g. collision visualization. We should keep even and odd envs in sync (e.g. same actions).
+  bool enableRobotCollision = true;
+  bool enableHeldObjectCollision = true;
   bool doProceduralEpisodeSet = true;
-  int numProceduralEpisodes = 100;
+  EpisodeGeneratorConfig episodeGeneratorConfig;
   // only set this for doProceduralEpisodeSet==false (it is otherwise ignored)
   std::string episodeSetFilepath;
+  std::string collectionFilepath = "../data/replicacad_composite.collection.json";
   ESP_SMART_POINTERS(BatchedSimulatorConfig);
 };
 

@@ -37,6 +37,18 @@ void initBatchedSimBindings(py::module& m) {
       .def_readwrite("width", &CameraSensorConfig::width, R"(Todo)")
       .def_readwrite("height", &CameraSensorConfig::height, R"(Todo)");
 
+  py::class_<EpisodeGeneratorConfig, EpisodeGeneratorConfig::ptr>(
+      m, "EpisodeGeneratorConfig")  
+      .def(py::init(&EpisodeGeneratorConfig::create<>))
+      .def_readwrite("numEpisodes", &EpisodeGeneratorConfig::numEpisodes, R"(Todo)")
+      .def_readwrite("seed", &EpisodeGeneratorConfig::seed, R"(Todo)")
+      .def_readwrite("num_stage_variations", &EpisodeGeneratorConfig::numStageVariations, R"(Todo)")
+      .def_readwrite("num_object_variations", &EpisodeGeneratorConfig::numObjectVariations, R"(Todo)")
+      .def_readwrite("min_nontarget_objects", &EpisodeGeneratorConfig::minNontargetObjects, R"(Todo)")
+      .def_readwrite("max_nontarget_objects", &EpisodeGeneratorConfig::maxNontargetObjects, R"(Todo)")
+      .def_readwrite("used_fixed_robot_start_pos", &EpisodeGeneratorConfig::useFixedRobotStartPos, R"(Todo)")
+      .def_readwrite("use_fixed_robot_start_yaw", &EpisodeGeneratorConfig::useFixedRobotStartYaw, R"(Todo)");
+
   py::class_<BatchedSimulatorConfig, BatchedSimulatorConfig::ptr>(
       m, "BatchedSimulatorConfig")
       .def(py::init(&BatchedSimulatorConfig::create<>))
@@ -51,7 +63,7 @@ void initBatchedSimBindings(py::module& m) {
       .def_readwrite("do_async_physics_step", &BatchedSimulatorConfig::doAsyncPhysicsStep, R"(Todo)")
       .def_readwrite("num_physics_substeps", &BatchedSimulatorConfig::numSubsteps, R"(Todo)")
       .def_readwrite("do_procedural_episode_set", &BatchedSimulatorConfig::doProceduralEpisodeSet, R"(Todo)")
-      .def_readwrite("num_procedural_episodes", &BatchedSimulatorConfig::numProceduralEpisodes, R"(Todo)")
+      .def_readwrite("episode_generator_config", &BatchedSimulatorConfig::episodeGeneratorConfig, R"(Todo)")
       .def_readwrite("episode_set_filepath", &BatchedSimulatorConfig::episodeSetFilepath, R"(Todo)");
     
   py::class_<PythonEnvironmentState, PythonEnvironmentState::ptr>(

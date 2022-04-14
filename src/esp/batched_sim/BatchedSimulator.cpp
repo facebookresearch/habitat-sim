@@ -28,8 +28,6 @@ namespace batched_sim {
 
 namespace {
 
-static const char* serializeCollectionFilepath_ = "../data/replicacad_composite.collection.json";
-
 static Mn::Vector3 INVALID_VEC3 = Mn::Vector3(NAN, NAN, NAN);
 
 static constexpr glm::mat4x3 identityGlMat_ = glm::mat4x3(
@@ -1224,7 +1222,7 @@ BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
   sceneMapping_ = BpsSceneMapping::loadFromFile(
       "../data/bps_data/replicacad_composite/replicacad_composite.bps.mapping.json");
 
-  serializeCollection_ = serialize::Collection::loadFromFile(serializeCollectionFilepath_);
+  serializeCollection_ = serialize::Collection::loadFromFile(config_.collectionFilepath);
 
   bpsWrapper_ = std::make_unique<BpsWrapper>(config_.gpuId, config_.numEnvs, 
     config_.includeDepth, config_.includeColor, config_.sensor0);
@@ -1659,7 +1657,7 @@ void BatchedSimulator::initEpisodeSet() {
     ESP_CHECK(config_.episodeSetFilepath.empty(), 
       "For BatchedSimulatorConfig::doProceduralEpisodeSet==true, don't specify episodeSetFilepath");
 
-    episodeSet_ = generateBenchmarkEpisodeSet(config_.numProceduralEpisodes, sceneMapping_, serializeCollection_);
+    episodeSet_ = generateBenchmarkEpisodeSet(config_.episodeGeneratorConfig, sceneMapping_, serializeCollection_);
     episodeSet_.saveToFile("../data/generated.episode_set.json");
   } else {
     ESP_CHECK(!config_.episodeSetFilepath.empty(), 
@@ -2289,7 +2287,7 @@ void BatchedSimulator::reloadSerializeCollection() {
 
   int numEnvs = bpsWrapper_->envs_.size();
 
-  serializeCollection_ = serialize::Collection::loadFromFile(serializeCollectionFilepath_);
+  serializeCollection_ = serialize::Collection::loadFromFile(config_.collectionFilepath);
 
   robot_.updateFromSerializeCollection(serializeCollection_);
 

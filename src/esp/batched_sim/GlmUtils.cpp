@@ -77,6 +77,14 @@ Magnum::Vector3 inverseTransformPoint(const glm::mat4x3& glMat, const Magnum::Ve
   return result;
 }
 
+Magnum::Vector3 getRangeCorner(const Magnum::Range3D& range, int cornerIdx) {
+
+  return Mn::Vector3(
+    (cornerIdx % 2) ? range.min().x() : range.max().x(),
+    ((cornerIdx / 2) % 2) ? range.min().y() : range.max().y(),
+    ((cornerIdx / 4) % 2) ? range.min().z() : range.max().z()
+  );
+}
 
 bool sphereBoxContactTest(const Magnum::Vector3& sphereOrigin, float sphereRadiusSq, const Magnum::Range3D& aabb) {
 

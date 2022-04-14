@@ -111,7 +111,7 @@ bool fromJsonValue(const esp::io::JsonGenericValue& obj,
 
 Collection Collection::loadFromFile(const std::string& filepath) {
   Collection collection;
-  ESP_CHECK(Cr::Utility::Directory::exists(filepath), "couldn't find collection file " << filepath);
+  ESP_CHECK(Cr::Utility::Directory::exists(filepath), "couldn't find collection file {" << filepath << "}");
   auto newDoc = esp::io::parseJsonFile(filepath);
   esp::io::readMember(newDoc, "collection", collection);
   return collection;
