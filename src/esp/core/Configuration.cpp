@@ -142,10 +142,10 @@ void ConfigValue::moveValueFrom(ConfigValue&& otr) {
 }
 
 void ConfigValue::deleteCurrentValue() {
-  _type = ConfigStoredType::Unknown;
   if (isConfigStoredTypeNonTrivial(_type)) {
     nonTrivialConfigStoredTypeHandlerFor(_type).destructor(_data);
   }
+  _type = ConfigStoredType::Unknown;
 }
 
 ConfigValue& ConfigValue::operator=(const ConfigValue& otr) {
