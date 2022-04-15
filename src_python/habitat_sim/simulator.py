@@ -233,8 +233,20 @@ class Simulator(SimulatorBackend):
         needed_settings.agent_radius = default_agent_config.radius
         needed_settings.agent_height = default_agent_config.height
         if (
-            self.pathfinder.nav_mesh_settings != needed_settings
-            and config.sim_cfg.scene_id.lower() != "none"
+            # If we loaded a navmesh and we need one with different settings,
+            # always try and recompute
+            (
+                self.pathfinder.is_loaded
+                and self.pathfinder.nav_mesh_settings != needed_settings
+            )
+            # If we didn't load a navmesh, only try to recompute one if we can.
+            # This allows for use cases where we just want to view a single
+            # object or similar.
+            or (
+                not self.pathfinder.is_loaded
+                and config.sim_cfg.scene_id.lower() != "none"
+                and config.sim_cfg.create_renderer
+            )
         ):
             logger.info(
                 f"Recomputing navmesh for agent's height {default_agent_config.height} and radius"
@@ -246,7 +258,8 @@ class Simulator(SimulatorBackend):
 
         if not self.pathfinder.is_loaded:
             logger.warning(
-                "Could not find a navmesh, no collision checking will be done"
+                "Could not find a navmesh nor could one be computed, "
+                "no collision checking will be done"
             )
 
     def reconfigure(self, config: Configuration) -> None:

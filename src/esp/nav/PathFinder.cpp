@@ -848,6 +848,9 @@ bool PathFinder::Impl::loadNavMesh(const std::string& path) {
   navMeshSettings_ = {NavMeshSettings{}};
   if (header.version >= 2) {
     fread(&(*navMeshSettings_), sizeof(NavMeshSettings), 1, fp);
+  } else {
+    ESP_DEBUG()
+        << "NavMeshSettings aren't present, guessing that they are the default";
   }
 
   vec3f bmin, bmax;
