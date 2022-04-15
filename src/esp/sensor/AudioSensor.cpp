@@ -12,6 +12,14 @@
 namespace esp {
 namespace sensor {
 
+void CHECK_AUDIO_FLAG() {
+#ifndef ESP_BUILD_WITH_AUDIO
+  CORRADE_ASSERT_UNREACHABLE(
+      "Audio sensor is not enabled, cannot create Audio Sensor Spec. Build "
+      "with flag --audio", );
+#endif  // ESP_BUILD_WITH_AUDIO
+}
+
 AudioSensorSpec::AudioSensorSpec() : SensorSpec() {
   ESP_DEBUG() << logHeader_ << "AudioSensorSpec constructor";
   uuid = "audio";
@@ -20,6 +28,7 @@ AudioSensorSpec::AudioSensorSpec() : SensorSpec() {
 }
 
 void AudioSensorSpec::sanityCheck() const {
+  CHECK_AUDIO_FLAG();
   ESP_DEBUG() << logHeader_ << "SanityCheck the audio sensor spec";
   SensorSpec::sanityCheck();
 
@@ -33,6 +42,7 @@ void AudioSensorSpec::sanityCheck() const {
 
 AudioSensor::AudioSensor(scene::SceneNode& node, AudioSensorSpec::ptr spec)
     : Sensor{node, std::move(spec)} {
+#ifdef ESP_BUILD_WITH_AUDIO
   ESP_DEBUG() << logHeader_ << "AudioSensor constructor";
   audioSensorSpec_->sanityCheck();
   ESP_DEBUG() << logHeader_
@@ -49,14 +59,19 @@ AudioSensor::AudioSensor(scene::SceneNode& node, AudioSensorSpec::ptr spec)
   }
   ESP_DEBUG() << logHeader_
               << "OutputDirectory : " << audioSensorSpec_->outputDirectory_;
+#endif  // ESP_BUILD_WITH_AUDIO
 }
 
 AudioSensor::~AudioSensor() {
+  CHECK_AUDIO_FLAG();
+#ifdef ESP_BUILD_WITH_AUDIO
   ESP_DEBUG() << logHeader_ << "Destroying the audio sensor";
   audioSimulator_ = nullptr;
   impulseResponse_.clear();
+#endif  // ESP_BUILD_WITH_AUDIO
 }
 
+#ifdef ESP_BUILD_WITH_AUDIO
 void AudioSensor::reset() {
   audioSimulator_ = nullptr;
   impulseResponse_.clear();
@@ -161,8 +176,12 @@ const std::vector<std::vector<float>>& AudioSensor::getIR() {
 
   return impulseResponse_;
 }
+#endif  // ESP_BUILD_WITH_AUDIO
 
 bool AudioSensor::getObservation(sim::Simulator& sim, Observation& obs) {
+  CHECK_AUDIO_FLAG();
+
+#ifdef ESP_BUILD_WITH_AUDIO
   CORRADE_ASSERT(audioSimulator_,
                  "getObservation : audioSimulator_ should exist", false);
 
@@ -196,11 +215,14 @@ bool AudioSensor::getObservation(sim::Simulator& sim, Observation& obs) {
   if (audioSensorSpec_->acousticsConfig_.writeIrToFile) {
     writeIRFile(obs);
   }
-
+#endif  // ESP_BUILD_WITH_AUDIO
   return true;
 }
 
 bool AudioSensor::getObservationSpace(ObservationSpace& obsSpace) {
+  CHECK_AUDIO_FLAG();
+
+#ifdef ESP_BUILD_WITH_AUDIO
   CORRADE_ASSERT(audioSimulator_,
                  "getObservationSpace: audioSimulator_ should exist", false);
 
@@ -218,6 +240,7 @@ bool AudioSensor::getObservationSpace(ObservationSpace& obsSpace) {
               << "getObservationSpace -> [ChannelCount] : " << obsSpace.shape[0]
               << ", [SampleCount] : " << obsSpace.shape[1];
 
+#endif  // ESP_BUILD_WITH_AUDIO
   return true;
 }
 
@@ -229,6 +252,7 @@ bool AudioSensor::displayObservation(sim::Simulator& sim) {
   return false;
 }
 
+#ifdef ESP_BUILD_WITH_AUDIO
 void AudioSensor::createAudioSimulator() {
   ++currentSimCount_;
   ESP_DEBUG() << logHeader_
@@ -402,6 +426,8 @@ void AudioSensor::writeIRFile(const Observation& obs) {
     ESP_DEBUG() << logHeader_ << "File written : " << fileName;
   }
 }
+
+#endif  // ESP_BUILD_WITH_AUDIO
 
 }  // namespace sensor
 }  // namespace esp

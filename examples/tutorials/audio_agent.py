@@ -5,8 +5,8 @@
 from datetime import datetime
 
 import numpy as np
-import quaternion as qt
-from numpy import ndarray
+import quaternion  # noqa: F401
+from numpy import ndarray  # noqa: F401
 
 import habitat_sim
 import habitat_sim._ext.habitat_sim_bindings as hsim_bindings

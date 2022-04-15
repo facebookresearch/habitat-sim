@@ -421,7 +421,7 @@ jobs:
                   texlive-fonts-recommended
 
               # Rebuild with all options enabled
-              ./build.sh --with-cuda --with-bullet --vhacd --audio
+              ./build.sh --with-cuda --with-bullet --vhacd
               cd docs
               git submodule update --init
               ./build-public.sh

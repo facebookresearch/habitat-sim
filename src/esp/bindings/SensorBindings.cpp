@@ -26,9 +26,7 @@
 #include "esp/sensor/SensorFactory.h"
 #include "esp/sim/Simulator.h"
 
-#ifdef ESP_BUILD_WITH_AUDIO
 #include "esp/sensor/AudioSensor.h"
-#endif  // ESP_BUILD_WITH_AUDIO
 
 namespace py = pybind11;
 using py::literals::operator""_a;
@@ -360,6 +358,16 @@ void initSensorBindings(py::module& m) {
       .def_readwrite("channelCount",
                      &RLRAudioPropagation::ChannelLayout::channelCount);
 
+#else
+  py::class_<AudioEmptyStubConfigurationClass>(
+      m, "RLRAudioPropagationConfiguration")
+      .def(py::init<>());
+  py::class_<AudioEmptyStubChannelLayoutClass>(
+      m, "RLRAudioPropagationChannelLayout")
+      .def(py::init<>());
+#endif  // ESP_BUILD_WITH_AUDIO
+
+#ifdef ESP_BUILD_WITH_AUDIO
   // ==== AudioSensorSpec ====
   py::class_<AudioSensorSpec, AudioSensorSpec::ptr, SensorSpec>(
       m, "AudioSensorSpec", py::dynamic_attr())
@@ -367,7 +375,13 @@ void initSensorBindings(py::module& m) {
       .def_readwrite("outputDirectory", &AudioSensorSpec::outputDirectory_)
       .def_readwrite("acousticsConfig", &AudioSensorSpec::acousticsConfig_)
       .def_readwrite("channelLayout", &AudioSensorSpec::channelLayout_);
+#else
+  py::class_<AudioSensorSpec, AudioSensorSpec::ptr, SensorSpec>(
+      m, "AudioSensorSpec", py::dynamic_attr())
+      .def(py::init(&AudioSensorSpec::create<>));
+#endif  // ESP_BUILD_WITH_AUDIO
 
+#ifdef ESP_BUILD_WITH_AUDIO
   // ==== AudioSensor ====
   py::class_<AudioSensor, Magnum::SceneGraph::PyFeature<AudioSensor>, Sensor,
              Magnum::SceneGraph::PyFeatureHolder<AudioSensor>>(m, "AudioSensor")
@@ -378,6 +392,11 @@ void initSensorBindings(py::module& m) {
       .def("runSimulation", &AudioSensor::runSimulation)
       .def("getIR", &AudioSensor::getIR)
       .def("reset", &AudioSensor::reset);
+#else
+  py::class_<AudioSensor, Magnum::SceneGraph::PyFeature<AudioSensor>, Sensor,
+             Magnum::SceneGraph::PyFeatureHolder<AudioSensor>>(m, "AudioSensor")
+      .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
+                          const AudioSensorSpec::ptr&>());
 #endif  // ESP_BUILD_WITH_AUDIO
 }
 

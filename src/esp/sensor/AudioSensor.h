@@ -12,7 +12,11 @@
 #include "esp/scene/SemanticScene.h"
 #include "esp/sensor/Sensor.h"
 
+#ifdef ESP_BUILD_WITH_AUDIO
 #include "rlr-audio-propagation/RLRAudioPropagationPkg/headers/RLRAudioPropagation.h"
+#else
+#include "esp/sensor/AudioSensorStubs.h"
+#endif  // ESP_BUILD_WITH_AUDIO
 
 #ifndef ESP_SENSOR_AUDIOSENSOR_H_
 #define ESP_SENSOR_AUDIOSENSOR_H_
@@ -26,11 +30,13 @@ struct AudioSensorSpec : public SensorSpec {
   void sanityCheck() const override;
   bool isVisualSensorSpec() const override { return false; }
 
+#ifdef ESP_BUILD_WITH_AUDIO
  public:
   // Data
   RLRAudioPropagation::Configuration acousticsConfig_;
   RLRAudioPropagation::ChannelLayout channelLayout_;
   std::string outputDirectory_;
+#endif  // ESP_BUILD_WITH_AUDIO
 
  public:
   ESP_SMART_POINTERS(AudioSensorSpec)
@@ -53,6 +59,7 @@ class AudioSensor : public Sensor {
 
   // ------- functions to implement the audio sensor ------
 
+#ifdef ESP_BUILD_WITH_AUDIO
   /**
    * @brief Clear the audio simulator object
    * */
@@ -82,6 +89,7 @@ class AudioSensor : public Sensor {
    * @brief Return the last impulse response.
    * */
   const std::vector<std::vector<float>>& getIR();
+#endif  // ESP_BUILD_WITH_AUDIO
 
   // ------ Sensor class overrides ------
  public:
@@ -91,6 +99,7 @@ class AudioSensor : public Sensor {
  private:
   bool displayObservation(sim::Simulator& sim) override;
 
+#ifdef ESP_BUILD_WITH_AUDIO
  private:
   /**
    * @brief Create the audio simulator object
@@ -118,11 +127,16 @@ class AudioSensor : public Sensor {
    * @brief Dump the impulse response to a file
    * */
   void writeIRFile(const Observation& obs);
+#endif  // ESP_BUILD_WITH_AUDIO
 
  private:
   AudioSensorSpec::ptr audioSensorSpec_ =
       std::dynamic_pointer_cast<AudioSensorSpec>(spec_);
+
+#ifdef ESP_BUILD_WITH_AUDIO
   std::unique_ptr<RLRAudioPropagation::Simulator> audioSimulator_ = nullptr;
+#endif  // ESP_BUILD_WITH_AUDIO
+
   esp::assets::MeshData::ptr sceneMesh_;
 
   std::int32_t currentSimCount_ = -1;  // track the number of simulations

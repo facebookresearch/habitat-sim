@@ -10,9 +10,7 @@
 #include "esp/sensor/FisheyeSensor.h"
 #include "esp/sensor/Sensor.h"
 
-#ifdef ESP_BUILD_WITH_AUDIO
 #include "esp/sensor/AudioSensor.h"
-#endif  // ESP_BUILD_WITH_AUDIO
 
 namespace esp {
 namespace sensor {
@@ -50,12 +48,10 @@ SensorFactory::createSensors(scene::SceneNode& node,
       }
     } else if (!spec->isVisualSensorSpec()) {
       switch (spec->sensorType) {
-#ifdef ESP_BUILD_WITH_AUDIO
         case sensor::SensorType::Audio:
           sensorNode.addFeature<sensor::AudioSensor>(
               std::dynamic_pointer_cast<AudioSensorSpec>(spec));
           break;
-#endif  // ESP_BUILD_WITH_AUDIO
         default:
           ESP_ERROR() << "Unreachable code : Cannot add the specified "
                          "non-visual sensorType:"

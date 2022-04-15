@@ -14,6 +14,9 @@ set(
   FisheyeSensor.h
   EquirectangularSensor.cpp
   EquirectangularSensor.h
+  AudioSensor.cpp
+  AudioSensor.h
+  AudioSensorStubs.h
 )
 
 if(BUILD_WITH_CUDA)
@@ -22,7 +25,6 @@ endif()
 
 if(BUILD_WITH_AUDIO)
   set(ESP_BUILD_WITH_AUDIO ON)
-  list(APPEND sensor_SOURCES AudioSensor.cpp AudioSensor.h)
 endif()
 
 configure_file(
