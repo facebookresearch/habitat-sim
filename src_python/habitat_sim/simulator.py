@@ -234,7 +234,7 @@ class Simulator(SimulatorBackend):
         needed_settings.agent_height = default_agent_config.height
         if (
             self.pathfinder.nav_mesh_settings != needed_settings
-            and config.sim_cfg.scene_id != "NONE"
+            and config.sim_cfg.scene_id.lower() != "none"
         ):
             logger.info(
                 f"Recomputing navmesh for agent's height {default_agent_config.height} and radius"
