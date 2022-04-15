@@ -38,7 +38,7 @@ namespace esp {
 namespace nav {
 
 bool operator==(const NavMeshSettings& a, const NavMeshSettings& b) {
-#define CLOSE(name) ((a.name - b.name) < 1e-5)
+#define CLOSE(name) (std::abs(a.name - b.name) < 1e-5)
 #define EQ(name) (a.name == b.name)
 
   return CLOSE(cellSize) && CLOSE(cellHeight) && CLOSE(agentHeight) &&
