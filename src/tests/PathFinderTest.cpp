@@ -42,6 +42,8 @@ struct PathFinderTest : Cr::TestSuite::Tester {
   void benchmarkMultiGoal();
 
   void testCaching();
+
+  esp::logging::LoggingContext loggingContext;
 };
 
 PathFinderTest::PathFinderTest() {
