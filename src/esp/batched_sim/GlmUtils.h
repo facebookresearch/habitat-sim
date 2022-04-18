@@ -36,6 +36,7 @@ bool batchSphereOrientedBoxContactTest(const glm::mat4x3** orientedBoxTransforms
   const Magnum::Vector3** positions,
   float sphereRadiusSq, const Magnum::Range3D** boxRanges, int numTests);
 
+Magnum::Quaternion yawToRotation(float yawRadians);
 
 
 /*

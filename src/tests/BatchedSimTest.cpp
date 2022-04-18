@@ -207,13 +207,14 @@ TEST_F(BatchedSimulatorTest, basic) {
 
   EpisodeGeneratorConfig generatorConfig{
     .numEpisodes = 100,
-    .seed = 4,
+    .seed = 0,
     .numStageVariations = 12,
     .numObjectVariations = 6,
     .minNontargetObjects = 27,
     .maxNontargetObjects = 32,
     .useFixedRobotStartPos = false,
-    .useFixedRobotStartYaw = false
+    .useFixedRobotStartYaw = false,
+    .useFixedRobotJointStartPositions = false
   };
 
 
@@ -228,9 +229,8 @@ TEST_F(BatchedSimulatorTest, basic) {
       .doAsyncPhysicsStep = doOverlapPhysics,
       .numSubsteps = 1,
       .doProceduralEpisodeSet = true,
+      //.episodeSetFilepath = "../data/generated.episode_set.json",
       .episodeGeneratorConfig = generatorConfig,
-      //.doProceduralEpisodeSet = false,
-      //.episodeSetFilepath = "generated.episode_set.json",
       .collectionFilepath = "../data/replicacad_composite.collection.json"
       };
   BatchedSimulator bsim(config);

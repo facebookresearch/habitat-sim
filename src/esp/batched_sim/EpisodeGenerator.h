@@ -19,7 +19,7 @@ struct EpisodeGeneratorConfig {
   int maxNontargetObjects = 32;
   bool useFixedRobotStartPos = true;
   bool useFixedRobotStartYaw = false;
-  float maxRobotReachXZ = -1.f; // unused
+  bool useFixedRobotJointStartPositions = true;
   ESP_SMART_POINTERS(EpisodeGeneratorConfig);
 };
 

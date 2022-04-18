@@ -56,11 +56,6 @@ Mn::Matrix4 toMagnumMatrix4(const btTransform& btTrans) {
   return tmp2;
 }
 
-Mn::Quaternion yawToRotation(float yawRadians) {
-  constexpr Mn::Vector3 upAxis(0.f, 1.f, 0.f);
-  return Mn::Quaternion::rotation(Mn::Rad(yawRadians), upAxis);
-}
-
 Mn::Vector3 groundPositionToVector3(const Mn::Vector2& src) {
   constexpr float groundY = 0.f;
   return Mn::Vector3(src.x(), groundY, src.y());
@@ -957,6 +952,30 @@ void BatchedSimulator::updateRenderInstances(bool forceUpdate) {
     }
   }
   #endif
+
+  #if 0
+  // temp debug
+  if (config_.numDebugEnvs > 0) {
+
+    const float* yaws = &rollouts_.yaws_[currStorageStep_ * numEnvs];
+    const Mn::Vector2* positions = &rollouts_.positions_[currStorageStep_ * numEnvs];
+
+    const auto& collection = serializeCollection_;
+    auto it = std::find_if(collection.freeObjects.begin(), collection.freeObjects.end(),
+      [](const auto& item) { return item.name == "robotProxy"; });
+    BATCHED_SIM_ASSERT(it != collection.freeObjects.end());
+    const auto& proxyFreeObj = *it;
+    const auto& aabb = Magnum::Range3D(proxyFreeObj.collisionBox.min, proxyFreeObj.collisionBox.max);
+
+    for (int b = 0; b < config_.numDebugEnvs; b++) {
+
+      addBoxDebugInstance("cube_pink_wireframe", b, 
+        Mn::Vector3(positions[b].x(), 0.f, positions[b].y()),
+        yawToRotation(yaws[b]),
+        aabb);
+    }
+  }
+  #endif
 }
 
 
@@ -1429,9 +1448,21 @@ void BatchedSimulator::resetEpisodeInstance(int b) {
     positions[b] = episode.agentStartPos_;
     yaws[b] = episode.agentStartYaw_;
 
+    const auto& serRobot = safeVectorGet(serializeCollection_.robots, 0);
     for (int j = 0; j < robot_.numPosVars; j++) {
       auto& pos = jointPositions[b * robot_.numPosVars + j];
-      pos = serializeCollection_.robots[0].startJointPositions[j];
+      pos = serRobot.startJointPositions[j];
+    }
+
+    for (int i = 0; i < serRobot.actionMap.joints.size(); i++) {
+      const auto& pair = serRobot.actionMap.joints[i];
+      int j = pair.first;
+      auto& pos = jointPositions[b * robot_.numPosVars + j];
+      pos = safeVectorGet(episode.robotStartJointPositions_, i);
+    }
+
+    for (int j = 0; j < robot_.numPosVars; j++) {
+      auto& pos = jointPositions[b * robot_.numPosVars + j];
       pos = Mn::Math::clamp(pos, robot_.jointPositionLimits.first[j],
                             robot_.jointPositionLimits.second[j]);
     }

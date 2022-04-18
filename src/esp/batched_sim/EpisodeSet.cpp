@@ -337,9 +337,9 @@ bool fromJsonValue(const esp::io::JsonGenericValue& obj,
   esp::io::readMember(obj, "firstFreeObjectSpawnIndex", val.firstFreeObjectSpawnIndex_);
   esp::io::readMember(obj, "agentStartPos", val.agentStartPos_);
   esp::io::readMember(obj, "agentStartYaw", val.agentStartYaw_);
+  esp::io::readMember(obj, "robotStartJointPositions", val.robotStartJointPositions_);
   esp::io::readMember(obj, "targetObjGoalPos", val.targetObjGoalPos_);
   esp::io::readMember(obj, "targetObjGoalRotation", val.targetObjGoalRotation_);
-
   return true;
 }
 
@@ -352,6 +352,7 @@ esp::io::JsonGenericValue toJsonValue(const Episode& x,
   esp::io::addMember(obj, "firstFreeObjectSpawnIndex", x.firstFreeObjectSpawnIndex_, allocator);
   esp::io::addMember(obj, "agentStartPos", x.agentStartPos_, allocator);
   esp::io::addMember(obj, "agentStartYaw", x.agentStartYaw_, allocator);
+  esp::io::addMember(obj, "robotStartJointPositions", x.robotStartJointPositions_, allocator);
   esp::io::addMember(obj, "targetObjGoalPos", x.targetObjGoalPos_, allocator);
   esp::io::addMember(obj, "targetObjGoalRotation", x.targetObjGoalRotation_, allocator);
 

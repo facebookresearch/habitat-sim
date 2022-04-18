@@ -174,6 +174,11 @@ bool batchSphereOrientedBoxContactTest(const glm::mat4x3** orientedBoxTransforms
   return resultBits;
 }
 
+Mn::Quaternion yawToRotation(float yawRadians) {
+  constexpr Mn::Vector3 upAxis(0.f, 1.f, 0.f);
+  return Mn::Quaternion::rotation(Mn::Rad(yawRadians), upAxis);
+}
+
 template bool batchSphereOrientedBoxContactTest<64, true>(const glm::mat4x3** orientedBoxTransforms, 
   const Magnum::Vector3** positions,
   float sphereRadiusSq, const Magnum::Range3D** boxRanges, int numTests);

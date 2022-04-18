@@ -4,6 +4,7 @@
 
 #include "esp/batched_sim/EpisodeGenerator.h"
 #include "esp/batched_sim/PlacementHelper.h"
+#include "esp/batched_sim/GlmUtils.h"
 
 #include "esp/core/random.h"
 #include "esp/core/Check.h"
@@ -79,12 +80,89 @@ FreeObject createFreeObjectProxyForRobot(const serialize::Collection& collection
   return freeObject;
 }
 
+void setFetchJointStartPositions(const EpisodeGeneratorConfig& config, Episode& episode, const serialize::Collection& collection,
+  core::Random& random) {
+
+  const auto& serRobot = safeVectorGet(collection.robots, 0);
+  ESP_CHECK(serRobot.actionMap.joints.size() <= Episode::MAX_JOINT_POSITIONS,
+    "setJointStartPositions: collection.json robot actionMap.joints.size()=" << serRobot.actionMap.joints.size()
+    << " must be <= Episode::MAX_JOINT_POSITIONS=" << Episode::MAX_JOINT_POSITIONS);
+  if (config.useFixedRobotJointStartPositions) {
+
+    for (int i = 0; i < serRobot.actionMap.joints.size(); i++) {
+      const auto& pair = serRobot.actionMap.joints[i];
+      int jointIdx = pair.first;
+      const auto& setup = pair.second;
+      episode.robotStartJointPositions_[i] = serRobot.startJointPositions[jointIdx];
+    }
+
+  } else {
+
+    constexpr float refAngle = float(Mn::Rad(Mn::Deg(180.f)));
+    // for joints 6-12
+    constexpr std::array<float, 7> jointsRangeMin = {
+      -1.6056,
+      -1.22099996,
+      -refAngle,
+      -2.25099993,
+      -refAngle,
+      -2.16000009,
+      -refAngle
+    };
+
+    constexpr std::array<float, 7> jointsRangeMax = {
+      1.6056,
+      1.51800001,
+      refAngle,
+      2.25099993,
+      refAngle,
+      2.16000009,
+      refAngle
+    };
+
+    for (int i = 0; i < serRobot.actionMap.joints.size(); i++) {
+      const auto& pair = serRobot.actionMap.joints[i];
+      int jointIdx = pair.first;
+      const auto& setup = pair.second;
+      auto& pos = episode.robotStartJointPositions_[i];
+
+      // hacky logic to ensure EE doesn't extend too far from base (where it
+      // might be in collision with the environment).
+      if (jointIdx == 9 || jointIdx == 11) {
+        constexpr float refAngle = (float)Mn::Rad(Mn::Deg(90.f));
+        constexpr float pad = (float)Mn::Rad(Mn::Deg(20.f));
+
+        const float rangeMin = safeVectorGet(jointsRangeMin, i);
+        const float rangeMax = safeVectorGet(jointsRangeMax, i);
+        // near min or max
+        pos = (random.uniform_uint() % 2)
+          ? random.uniform_float(rangeMin, rangeMin + pad)
+          : random.uniform_float(rangeMax - pad, rangeMax);
+      } else {
+        // random angle over entire range
+        pos = random.uniform_float(safeVectorGet(jointsRangeMin, i), safeVectorGet(jointsRangeMax, i));
+      }
+    }
+
+
+  }
+
+  
+}
+
+
+
 void addEpisode(const EpisodeGeneratorConfig& config, EpisodeSet& set, 
   const serialize::Collection& collection, int stageFixedObjectIndex, 
-  core::Random& random, const FreeObject& robotProxy) {
+  core::Random& random, core::Random& random2, const FreeObject& robotProxy) {
   Episode episode;
   episode.stageFixedObjIndex = stageFixedObjectIndex;
   episode.firstFreeObjectSpawnIndex_ = set.freeObjectSpawns_.size();
+
+  // Use a separate rand generator for joint start positions. This is so that toggling
+  // random vs fixed joint start positions doesn't affect the rest of episode 
+  // generation.
+  setFetchJointStartPositions(config, episode, collection, random2);
 
   if (config.useFixedRobotStartPos) {
     episode.agentStartPos_ = Mn::Vector2(2.59f, 0.f);
@@ -104,8 +182,8 @@ void addEpisode(const EpisodeGeneratorConfig& config, EpisodeSet& set,
 
   // good for area around staircase and living room
   constexpr float allowedSnapDown = 0.05f;
-  Mn::Range3D objectSpawnRange({-1.f, 0.2f, -0.5f}, {4.f, 2.f, 3.f}); // above the floor
-  Mn::Range3D robotSpawnRange({0.f, 0.05f, 0.5f}, {3.f, 0.05f, 2.f}); // just above the floor
+  Mn::Range3D objectSpawnRange({-2.4f, 0.2f, -1.f}, {4.3f, 2.f, 4.f}); // above the floor
+  Mn::Range3D robotSpawnRange({1.f, 0.05f, -0.5f}, {3.3f, 0.05f, 7.0f}); // just above the floor
 
   // good for white bookshelf for stage 5
   // Mn::Range3D objectSpawnRange({0.33f, 0.15f, -0.4f}, {1.18f, 1.85f, -0.25f});
@@ -127,12 +205,12 @@ void addEpisode(const EpisodeGeneratorConfig& config, EpisodeSet& set,
     columnGrid.getMaxX(), columnGrid.getMaxZ(),
     maxBytes, maxGridSpacing);
 
-  constexpr int maxFailedPlacements = 3;
+  constexpr int maxFailedPlacements = 1;
   PlacementHelper placementHelper(stageFixedObject.columnGridSet_, 
     colGrid, collection, random, maxFailedPlacements);
 
   episode.targetObjIndex_ = 0; // arbitrary
-  int numSpawnAttempts = 2000;
+  int numSpawnAttempts = 4000;
   bool success = false;
   for (int i = 0; i < numSpawnAttempts; i++) {
 
@@ -150,9 +228,18 @@ void addEpisode(const EpisodeGeneratorConfig& config, EpisodeSet& set,
 
     FreeObjectSpawn spawn;
     const FreeObject* freeObjectPtr = nullptr;
+    Mn::Quaternion rotation;
+    float robotYaw = 0.f;
     if (isRobotPosAttempt) {
       spawn.freeObjIndex_ = -1;
       freeObjectPtr = &robotProxy;
+
+      robotYaw = config.useFixedRobotStartYaw
+        ? -float(Mn::Rad(Mn::Deg(90.f)))
+        : random.uniform_float(-float(Mn::Rad(Mn::Deg(180.f))), float(Mn::Rad(Mn::Deg(180.f))));
+
+      rotation = yawToRotation(robotYaw);
+
     } else {
       // for the goal position, use the free object correspnding to targetObjIdx
       spawn.freeObjIndex_ = isGoalPositionAttempt
@@ -160,10 +247,10 @@ void addEpisode(const EpisodeGeneratorConfig& config, EpisodeSet& set,
         : random.uniform_int(0, set.freeObjects_.size());
 
       freeObjectPtr = &safeVectorGet(set.freeObjects_, spawn.freeObjIndex_);
+      spawn.startRotationIndex_ = random.uniform_int(0, freeObjectPtr->startRotations_.size());
+      rotation = freeObjectPtr->startRotations_[spawn.startRotationIndex_];
     }
     const auto& freeObject = *freeObjectPtr;
-
-    spawn.startRotationIndex_ = random.uniform_int(0, freeObject.startRotations_.size());
 
     Mn::Vector3 randomPos;
     int numAttempts = 0;
@@ -180,7 +267,6 @@ void addEpisode(const EpisodeGeneratorConfig& config, EpisodeSet& set,
       BATCHED_SIM_ASSERT(numAttempts < 1000);
     }
 
-    const auto rotation = freeObject.startRotations_[spawn.startRotationIndex_];
     Mn::Matrix4 mat = Mn::Matrix4::from(
         rotation.toMatrix(), randomPos);
 
@@ -194,9 +280,7 @@ void addEpisode(const EpisodeGeneratorConfig& config, EpisodeSet& set,
 
       if (isRobotPosAttempt) {
         episode.agentStartPos_ = Mn::Vector2(spawn.startPos_.x(), spawn.startPos_.z());
-        episode.agentStartYaw_ = config.useFixedRobotStartYaw
-          ? -float(Mn::Rad(Mn::Deg(90.f)))
-          : random.uniform_float(-float(Mn::Rad(Mn::Deg(180.f))), float(Mn::Rad(Mn::Deg(180.f))));
+        episode.agentStartYaw_ = robotYaw;
       } else if (isGoalPositionAttempt) {
         episode.targetObjGoalPos_ = spawn.startPos_;
         episode.targetObjGoalRotation_ = rotation;
@@ -213,7 +297,8 @@ void addEpisode(const EpisodeGeneratorConfig& config, EpisodeSet& set,
   }
   constexpr int numGoalPositions = 1;
   ESP_CHECK(success, "episode-generation failed; couldn't find " 
-    << (numObjectSpawns + numGoalPositions) << " collision-free spawn locations");
+    << (numObjectSpawns + numGoalPositions) << " collision-free spawn locations with "
+    << "stageFixedObjectIndex=" << stageFixedObjectIndex);
 
   set.maxFreeObjects_ = Mn::Math::max(set.maxFreeObjects_, (int32_t)episode.numFreeObjectSpawns_);
 
@@ -229,6 +314,7 @@ EpisodeSet generateBenchmarkEpisodeSet(const EpisodeGeneratorConfig& config,
   int numEpisodes = config.numEpisodes;
 
   core::Random random(config.seed);
+  core::Random random2(config.seed);
 
   EpisodeSet set;
 
@@ -284,7 +370,7 @@ EpisodeSet generateBenchmarkEpisodeSet(const EpisodeGeneratorConfig& config,
   // distribute stages across episodes
   for (int i = 0; i < numEpisodes; i++) {
     int stageIndex = i * config.numStageVariations / numEpisodes;
-    addEpisode(config, set, collection, stageIndex, random, robotProxy);
+    addEpisode(config, set, collection, stageIndex, random, random2, robotProxy);
   }
   BATCHED_SIM_ASSERT(set.maxFreeObjects_ > 0);
 

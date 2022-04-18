@@ -62,6 +62,8 @@ class Episode {
   int32_t firstFreeObjectSpawnIndex_ = -1; // index into EpisodeSet::freeObjectSpawns_
   Magnum::Vector2 agentStartPos_ = Magnum::Vector2(Magnum::Math::ZeroInit);
   float agentStartYaw_ = 0.f; // radians
+  static constexpr int MAX_JOINT_POSITIONS = 7;
+  std::array<float, MAX_JOINT_POSITIONS> robotStartJointPositions_;
 
   // task-specific
   Magnum::Vector3 targetObjGoalPos_ = Magnum::Vector3(Magnum::Math::ZeroInit);
