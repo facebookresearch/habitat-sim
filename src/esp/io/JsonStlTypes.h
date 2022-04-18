@@ -98,6 +98,50 @@ bool readMember(const JsonGenericValue& value,
   return true;
 }
 
+// std::array works similarly to vector
+template <class T, std::size_t N>
+void addMember(JsonGenericValue& value,
+               rapidjson::GenericStringRef<char> name,
+               const std::array<T, N>& vec,
+               JsonAllocator& allocator) {
+  if (!vec.empty()) {
+    addMember(value, name, toJsonArrayHelper(vec.data(), vec.size(), allocator),
+              allocator);
+  }
+}
+
+template <class T, std::size_t N>
+bool readMember(const JsonGenericValue& value,
+                const char* tag,
+                std::array<T, N>& vec) {
+  JsonGenericValue::ConstMemberIterator itr = value.FindMember(tag);
+  if (itr != value.MemberEnd()) {
+    const JsonGenericValue& arr = itr->value;
+    if (!arr.IsArray()) {
+      ESP_ERROR() << "JSON tag" << tag << "is not an array";
+      return false;
+    }
+    if (arr.Size() != vec.size()) {
+      ESP_ERROR() << "wrong array in JSON tag"
+                  << tag;
+      return false;
+    }
+    for (size_t i = 0; i < arr.Size(); i++) {
+      const auto& itemObj = arr[i];
+      T item;
+      if (!fromJsonValue(itemObj, item)) {
+        ESP_ERROR() << "Failed to parse array element" << i << "in JSON tag"
+                    << tag;
+        return false;
+      }
+      vec[i] = std::move(item);
+    }
+    return true;
+  }
+  // fail on missing elem for std::array
+  return false;
+}
+
 /**
  * @brief Specialization to handle reading a JSON object into an
  * std::map<std::string, std::string>.  Check passed json doc for existence of
