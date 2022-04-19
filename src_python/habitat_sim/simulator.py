@@ -227,29 +227,39 @@ class Simulator(SimulatorBackend):
             self.pathfinder.load_nav_mesh(navmesh_filenname)
             logger.info(f"Loaded navmesh {navmesh_filenname}")
 
-        agent_legacy_config = AgentConfiguration()
+        # NOTE: this recomputed NavMesh does not include STATIC objects.
+        needed_settings = NavMeshSettings()
         default_agent_config = config.agents[config.sim_cfg.default_agent_id]
-        if not np.isclose(
-            agent_legacy_config.radius, default_agent_config.radius
-        ) or not np.isclose(agent_legacy_config.height, default_agent_config.height):
+        needed_settings.agent_radius = default_agent_config.radius
+        needed_settings.agent_height = default_agent_config.height
+        if (
+            # If we loaded a navmesh and we need one with different settings,
+            # always try and recompute
+            (
+                self.pathfinder.is_loaded
+                and self.pathfinder.nav_mesh_settings != needed_settings
+            )
+            # If we didn't load a navmesh, only try to recompute one if we can.
+            # This allows for use cases where we just want to view a single
+            # object or similar.
+            or (
+                not self.pathfinder.is_loaded
+                and config.sim_cfg.scene_id.lower() != "none"
+                and config.sim_cfg.create_renderer
+            )
+        ):
             logger.info(
                 f"Recomputing navmesh for agent's height {default_agent_config.height} and radius"
                 f" {default_agent_config.radius}."
             )
-            print(
-                f"Legacy radius={agent_legacy_config.radius}, height={agent_legacy_config.height} vs default_agent radius={default_agent_config.radius}, height={default_agent_config.height}"
-            )
-            navmesh_settings = NavMeshSettings()
-            navmesh_settings.set_defaults()
-            navmesh_settings.agent_radius = default_agent_config.radius
-            navmesh_settings.agent_height = default_agent_config.height
-            self.recompute_navmesh(self.pathfinder, navmesh_settings)
+            self.recompute_navmesh(self.pathfinder, needed_settings)
 
         self.pathfinder.seed(config.sim_cfg.random_seed)
 
         if not self.pathfinder.is_loaded:
             logger.warning(
-                "Could not find a navmesh, no collision checking will be done"
+                "Could not find a navmesh nor could one be computed, "
+                "no collision checking will be done"
             )
 
     def reconfigure(self, config: Configuration) -> None:

@@ -14,19 +14,21 @@ namespace esp {
 
 namespace sim {
 struct SimulatorConfiguration {
-  /**
-   * @brief Name of scene or stage config or asset to load
-   */
+  //! Name of scene or stage config or asset to load
   std::string activeSceneName;
+  //! The default agent id used during initialization and functionally whenever
+  //! alternative agent ids are not provided.
   int defaultAgentId = 0;
+  //! The system GPU device to use for rendering.
   int gpuDeviceId = 0;
+  //! The Simulator and Pathfinder random seed. Set during scene initialization.
   unsigned int randomSeed = 0;
-  std::string defaultCameraUuid = "rgba_camera";
-  bool compressTextures = false;
+  //! Optimisation for non-visual simulation. If false, no renderer will be
+  //! created and no materials or textures loaded.
   bool createRenderer = true;
-  // Whether or not the agent can slide on collisions
+  //! Whether or not the agent can slide on NavMesh collisions.
   bool allowSliding = true;
-  // enable or disable the frustum culling
+  //! Enable or disable the frustum culling optimisation
   bool frustumCulling = true;
   /**
    * @brief This flags specifies whether or not dynamics is supported by the
@@ -42,9 +44,9 @@ struct SimulatorConfiguration {
    */
   bool loadSemanticMesh = true;
   /**
-   * Force creation of a separate semantic scene graph, even when no semantic
-   * mesh is loaded for the stage. Required to support playback of any replay
-   * that includes a semantic-only render asset instance. Set to false
+   * @brief Force creation of a separate semantic scene graph, even when no
+   * semantic mesh is loaded for the stage. Required to support playback of any
+   * replay that includes a semantic-only render asset instance. Set to false
    * otherwise.
    */
   bool forceSeparateSemanticSceneGraph = false;
@@ -62,6 +64,7 @@ struct SimulatorConfiguration {
    */
   bool leaveContextWithBackgroundRenderer = false;
 
+  //! Path to the physics parameter config file.
   std::string physicsConfigFile = ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH;
 
   /**
@@ -70,7 +73,7 @@ struct SimulatorConfiguration {
   std::string sceneDatasetConfigFile = "default";
 
   /**
-   * @brief allows for overriding any scene lighting setup specified in a scene
+   * @brief Allows for overriding any scene lighting setup specified in a scene
    * instance file with the value specified below.
    */
   bool overrideSceneLightDefaults = false;
@@ -79,11 +82,11 @@ struct SimulatorConfiguration {
   std::string sceneLightSetupKey = esp::NO_LIGHT_KEY;
 
   /**
-   * @brief setup the image based lighting for pbr rendering
+   * @brief Setup the image based lighting for pbr rendering
    */
   bool pbrImageBasedLighting = false;
   /**
-   * @brief use texture-based semantics if the specified asset/dataset support
+   * @brief Use texture-based semantics if the specified asset/dataset support
    * them.
    */
   bool useSemanticTexturesIfFound = true;
