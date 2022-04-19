@@ -185,9 +185,10 @@ PhysicsTest::PhysicsTest() {
       Cr::Containers::arraySize(RendererEnabledData));
 
 #ifdef ESP_BUILD_WITH_BULLET
-  addInstancedTests(&PhysicsTest::testCollisionBoundingBox,
-                    &PhysicsTest::testDiscreteContactTest,
-                    &PhysicsTest::testBulletCompoundShapeMargins, )
+  addInstancedTests({&PhysicsTest::testCollisionBoundingBox,
+                     &PhysicsTest::testDiscreteContactTest,
+                     &PhysicsTest::testBulletCompoundShapeMargins},
+                    Cr::Containers::arraySize(RendererEnabledData));
 #endif
 }
 
