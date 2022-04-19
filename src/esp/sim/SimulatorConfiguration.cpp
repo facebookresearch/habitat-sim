@@ -11,8 +11,6 @@ bool operator==(const SimulatorConfiguration& a,
   return a.activeSceneName == b.activeSceneName &&
          a.defaultAgentId == b.defaultAgentId &&
          a.gpuDeviceId == b.gpuDeviceId && a.randomSeed == b.randomSeed &&
-         a.defaultCameraUuid == b.defaultCameraUuid &&
-         a.compressTextures == b.compressTextures &&
          a.createRenderer == b.createRenderer &&
          a.allowSliding == b.allowSliding &&
          a.frustumCulling == b.frustumCulling &&
