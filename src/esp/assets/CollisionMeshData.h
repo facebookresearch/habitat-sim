@@ -26,7 +26,7 @@ struct CollisionMeshData {
   /**
    * @brief Primitive type (has to be triangle for Bullet to work).
    *
-   * See @ref BulletRigidObject::constructConvexShapesFromMeshes.
+   * See @ref esp::physics::BulletRigidObject::constructConvexShapesFromMeshes.
    */
   Magnum::MeshPrimitive primitive{};
 

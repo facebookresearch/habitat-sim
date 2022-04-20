@@ -43,8 +43,9 @@ std::string getMeshTypeName(esp::assets::AssetType meshTypeEnum);
 
 /**
  * @brief Base class for all implemented attributes.  Inherits from @ref
- * esp::core::AbstractFileBasedManagedObject so the attributes can be managed by
- * a @ref esp::core::ManagedContainer.
+ * esp::core::managedContainers::AbstractFileBasedManagedObject so the
+ * attributes can be managed by a @ref
+ * esp::core::managedContainers::ManagedContainer.
  */
 class AbstractAttributes
     : public esp::core::managedContainers::AbstractFileBasedManagedObject,

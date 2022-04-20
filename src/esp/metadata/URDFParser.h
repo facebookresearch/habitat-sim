@@ -20,15 +20,15 @@
 
 /** @file
  * @brief Storage classes for articulated object metadata and URDF file parsing
- * functionality. Struct @ref metadata::URDF::MaterialColor, struct @ref
- * metadata::URDF::Material, enum @ref metadata::URDF::JointTypes, enum @ref
- * metadata::URDF::GeomTypes, struct @ref metadata::URDF::Geometry, struct @ref
- * metadata::URDF::Shape, struct @ref metadata::URDF::VisualShape, enum @ref
- * metadata::URDF::CollisionFlags, struct @ref metadata::URDF::CollisionShape,
- * struct @ref metadata::URDF::Inertia, struct @ref metadata::URDF::Joint, enum
- * @ref metadata::URDF::LinkContactFlags, struct @ref
- * metadata::URDF::LinkContactInfo, struct @ref metadata::URDF::Link, class @ref
- * metadata::URDF::Model, class @ref metadata::URDF::Parser.
+ * functionality. Struct @ref esp::metadata::URDF::MaterialColor, struct @ref
+ * esp::metadata::URDF::Material, enum @ref esp::metadata::URDF::JointTypes, enum @ref
+ * esp::metadata::URDF::GeomTypes, struct @ref esp::metadata::URDF::Geometry, struct @ref
+ * esp::metadata::URDF::Shape, struct @ref esp::metadata::URDF::VisualShape, enum @ref
+ * esp::metadata::URDF::CollisionFlags, struct @ref esp::metadata::URDF::CollisionShape,
+ * struct @ref esp::metadata::URDF::Inertia, struct @ref esp::metadata::URDF::Joint, enum
+ * @ref esp::metadata::URDF::LinkContactFlags, struct @ref
+ * esp::metadata::URDF::LinkContactInfo, struct @ref esp::metadata::URDF::Link, class @ref
+ * esp::metadata::URDF::Model, class @ref esp::metadata::URDF::Parser.
  */
 
 namespace tinyxml2 {

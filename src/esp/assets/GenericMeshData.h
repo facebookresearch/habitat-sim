@@ -22,7 +22,7 @@ namespace assets {
 
 /**
  * @brief Mesh data storage and loading for gltf format assets. See @ref
- * ResourceManager::loadGeneralMeshData.
+ * ResourceManager::loadMeshes.
  */
 class GenericMeshData : public BaseMesh {
  public:
@@ -36,7 +36,7 @@ class GenericMeshData : public BaseMesh {
     Magnum::GL::Mesh mesh;
   };
 
-  /** @brief Constructor. Sets @ref SupportedMeshType::GENERIC_MESH to identify
+  /** @brief Constructor. Sets @ref esp::assets::SupportedMeshType::GENERIC_MESH to identify
    * the asset type.*/
   explicit GenericMeshData(bool needsNormals = true)
       : BaseMesh(SupportedMeshType::GENERIC_MESH),
@@ -54,9 +54,9 @@ class GenericMeshData : public BaseMesh {
   void uploadBuffersToGPU(bool forceReload = false) override;
 
   /**
-   * @brief Set mesh data from external source, and sets the @ref collisionMesh_
+   * @brief Set mesh data from external source, and sets the @p collisionMesh_
    * references.  Can be used for meshDatas that are manually synthesized, such
-   * as NavMesh. Sets the @ref collisionMesh_ references.
+   * as NavMesh.
    * @param meshData the meshData to be assigned.
    */
   void setMeshData(Magnum::Trade::MeshData&& meshData);

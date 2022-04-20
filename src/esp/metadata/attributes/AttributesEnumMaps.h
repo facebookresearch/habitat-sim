@@ -24,23 +24,23 @@ namespace attributes {
 
 enum class ArticulatedObjectBaseType {
   /**
-   * Represents the user not specifying the type of base/root joint.
+   * @brief Represents the user not specifying the type of base/root joint.
    * Resorts to any previously known/set value.
    */
   Unspecified = ID_UNDEFINED,
   /**
-   * The Articulated Object is joined to the world with a free joint and
+   * @brief The Articulated Object is joined to the world with a free joint and
    * is free to move around in the world.
    */
   Free,
   /**
-   * The Articulated Object is connected to the world with a fixed joint
+   * @brief The Articulated Object is connected to the world with a fixed joint
    * at a specific location in the world and is unable to move within the world.
    */
   Fixed,
   /**
-   * End cap value - no Articulated Object base type enums should be defined
-   * at or past this enum.
+   * @brief End cap value - no Articulated Object base type enums should be
+   * defined at or past this enum.
    */
   EndAOBaseType,
 };
@@ -51,22 +51,22 @@ enum class ArticulatedObjectBaseType {
  */
 enum class ArticulatedObjectInertiaSource {
   /**
-   * Represents the user not specifying the source of the inertia values
+   * @brief Represents the user not specifying the source of the inertia values
    * to use. Resorts to any previously known/set value.
    */
   Unspecified = ID_UNDEFINED,
   /**
-   * Use inertia values computed from the collision shapes when the model
+   * @brief Use inertia values computed from the collision shapes when the model
    * is loaded. This is usually more stable and is the default value.
    */
   Computed,
   /**
-   * Use the interia values specified in the URDF file.
+   * @brief Use the interia values specified in the URDF file.
    */
   URDF,
   /**
-   * End cap value - no Articulated Object intertia source enums should be
-   * defined at or past this enum.
+   * @brief End cap value - no Articulated Object intertia source enums should
+   * be defined at or past this enum.
    */
   EndAOInertiaSource,
 };
@@ -77,20 +77,21 @@ enum class ArticulatedObjectInertiaSource {
  */
 enum class ArticulatedObjectLinkOrder {
   /**
-   * Represents the user not specifying which link ordering to use. Resorts
-   * to any previously known/set value
+   * @brief Represents the user not specifying which link ordering to use.
+   * Resorts to any previously known/set value
    */
   Unspecified = ID_UNDEFINED,
   /**
-   * Use the link order specified in the source URDF file.
+   * @brief Use the link order specified in the source URDF file.
    */
   URDFOrder,
   /**
-   * Use the link order derived from a tree traversal of the Articulated Object.
+   * @brief Use the link order derived from a tree traversal of the Articulated
+   * Object.
    */
   TreeTraversal,
   /**
-   * End cap value - no Articulated Object link order enums should be
+   * @brief End cap value - no Articulated Object link order enums should be
    * defined at or past this enum.
    */
   EndAOLinkOrder,
@@ -103,36 +104,36 @@ enum class ArticulatedObjectLinkOrder {
  */
 enum class ArticulatedObjectRenderMode {
   /**
-   * Represents the user not specifying which rendering mode to use. Resorts
-   * to any previously known/set value
+   * @brief Represents the user not specifying which rendering mode to use.
+   * Resorts to any previously known/set value
    */
   Unspecified = ID_UNDEFINED,
   /**
-   * Render the Articulated Object using its skin if it has one, otherwise
-   * render it using the urdf-defined link meshes/primitives.
+   * @brief Render the Articulated Object using its skin if it has one,
+   * otherwise render it using the urdf-defined link meshes/primitives.
    */
   Default,
   /**
-   * Render the Articulated Object using its skin.
+   * @brief Render the Articulated Object using its skin.
    */
   Skin,
   /**
-   * Render the Articulated Object using urdf-defined meshes/primitives to
-   * respresent each link.
+   * @brief Render the Articulated Object using urdf-defined meshes/primitives
+   * to respresent each link.
    */
   LinkVisuals,
   /**
-   *
+   * @brief Do not render the Articulated Object.
    */
   None,
   /**
-   * Render the Articulated Object using both the skin and the urdf-defined link
-   * meshes/primitives.
+   * @brief Render the Articulated Object using both the skin and the
+   * urdf-defined link meshes/primitives.
    */
   Both,
   /**
-   * End cap value - no Articulated Object render mode enums should be defined
-   * at or past this enum.
+   * @brief End cap value - no Articulated Object render mode enums should be
+   * defined at or past this enum.
    */
   EndAORenderMode,
 };
@@ -143,31 +144,32 @@ enum class ArticulatedObjectRenderMode {
  */
 enum class ObjectInstanceShaderType {
   /**
-   * Represents the user not specifying which shader type choice to use. Resort
-   * to defaults for object type.
+   * @brief Represents the user not specifying which shader type choice to use.
+   * Resort to defaults for object type.
    */
   Unspecified = ID_UNDEFINED,
   /**
-   * Override any config-specified or default shader-type values to use the
-   * material-specified shader.
+   * @brief Override any config-specified or default shader-type values to use
+   * the material-specified shader.
    */
   Material,
   /**
-   * Refers to flat shading, pure color and no lighting. This is often used for
-   * textured objects
+   * @brief Refers to flat shading, pure color and no lighting. This is often
+   * used for textured objects
    */
   Flat,
   /**
-   * Refers to phong shading with pure diffuse color.
+   * @brief Refers to phong shading with pure diffuse color.
    */
   Phong,
   /**
-   * Refers to using a shader built with physically-based rendering models.
+   * @brief Refers to using a shader built with physically-based rendering
+   * models.
    */
   PBR,
   /**
-   * End cap value - no shader type enums should be defined at or past this
-   * enum.
+   * @brief End cap value - no shader type enums should be defined at or past
+   * this enum.
    */
   EndShaderType,
 };
@@ -200,8 +202,8 @@ enum class SceneInstanceTranslationOrigin {
    */
   COM,
   /**
-   * End cap value - no instance translation origin type enums should be defined
-   * at or past this enum.
+   * @brief End cap value - no instance translation origin type enums should be
+   * defined at or past this enum.
    */
   EndTransOrigin,
 };

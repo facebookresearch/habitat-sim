@@ -26,9 +26,9 @@ namespace config {
 
 /**
  * @brief This enum lists every type of value that can be currently stored
- * directly in an @ref esp::core::Configuration.  All supported types should
- * have entries in this enum class.  All non-trivial types should have their
- * enums placed below @p _nonTrivialTypes tag.
+ * directly in an @ref esp::core::config::Configuration.  All supported types
+ * should have entries in this enum class.  All non-trivial types should have
+ * their enums placed below @p _nonTrivialTypes tag.
  */
 enum class ConfigStoredType {
   Unknown = ID_UNDEFINED,
@@ -505,7 +505,7 @@ class Configuration {
 
   /**
    * @brief Builds and returns @ref Cr::Utility::ConfigurationGroup
-   * holding the values in this esp::core::Configuration.
+   * holding the values in this esp::core::config::Configuration.
    *
    * @return a reference to a configuration group for this configuration
    * object.
@@ -542,10 +542,11 @@ class Configuration {
 
   /**
    * @brief Templated subconfig copy getter. Retrieves a shared pointer to a
-   * copy of the subConfig @ref esp::core::Configuration that has the passed @p
-   * name .
+   * copy of the subConfig @ref esp::core::config::Configuration that has the
+   * passed @p name .
    *
-   * @tparam Type to return. Must inherit from @ref esp::core::Configuration
+   * @tparam Type to return. Must inherit from @ref
+   * esp::core::config::Configuration
    * @param name The name of the configuration to retrieve.
    * @return A pointer to a copy of the configuration having the requested name,
    * cast to the appropriate type, or nullptr if not found.
@@ -580,14 +581,14 @@ class Configuration {
 
   /**
    * @brief Templated Version. Retrieves the stored shared pointer to the
-   * subConfig @ref esp::core::Configuration that has the passed @p name , cast
-   * to the specified type. This will create a shared pointer to a new
+   * subConfig @ref esp::core::config::Configuration that has the passed @p name
+   * , cast to the specified type. This will create a shared pointer to a new
    * sub-configuration if none exists and return it, cast to specified type.
    *
    * Use this function when you wish to modify this configuration's
    * subgroup, possibly creating it in the process.
-   * @tparam The type to cast the @ref esp::core::Configuration to.  Type is
-   * checked to verify that it inherits from Configuration.
+   * @tparam The type to cast the @ref esp::core::config::Configuration to. Type
+   * is checked to verify that it inherits from Configuration.
    * @param name The name of the configuration to edit.
    * @return The actual pointer to the configuration having the requested
    * name, cast to the specified type.
@@ -797,9 +798,9 @@ MAGNUM_EXPORT Mn::Debug& operator<<(Mn::Debug& debug,
 
 /**
  * @brief Retrieves a shared pointer to a copy of the subConfig @ref
- * esp::core::Configuration that has the passed @p name . This will create a
- * pointer to a new sub-configuration if none exists already with that name,
- * but will not add this configuration to this Configuration's internal
+ * esp::core::config::Configuration that has the passed @p name . This will
+ * create a pointer to a new sub-configuration if none exists already with that
+ * name, but will not add this configuration to this Configuration's internal
  * storage.
  *
  * @param name The name of the configuration to retrieve.

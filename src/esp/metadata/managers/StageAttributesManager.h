@@ -127,7 +127,7 @@ class StageAttributesManager
    * attributesManager-specific upon template removal, such as removing a
    * specific template handle from the list of file-based template handles in
    * ObjectAttributesManager.  This should only be called internally from @ref
-   * esp::core::ManagedContainerBase.
+   * esp::core::managedContainers::ManagedContainerBase.
    *
    * @param templateID the ID of the template to remove
    * @param templateHandle the string key of the attributes desired.

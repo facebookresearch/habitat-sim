@@ -6,9 +6,9 @@
 #define ESP_CORE_MANAGEDCONTAINERBASE_H_
 
 /** @file
- * @brief Abstract Class @ref esp::core::ManagedContainerBase : type-independent
- * container functionality consumed by @ref esp::core::ManagedContainer to cut
- * down on code bload.
+ * @brief Abstract Class @ref esp::core::managedContainers::ManagedContainerBase
+ * : type-independent container functionality consumed by @ref
+ * esp::core::managedContainers::ManagedContainer to cut down on code bload.
  */
 
 #include <deque>
