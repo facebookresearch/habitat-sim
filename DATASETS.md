@@ -154,9 +154,8 @@ The exported `*.glb` files can directly be used with habitat-sim versions >= 2.0
 
 Note: Depending on the configured radius and height of the agent, certain scans may have no navigable locations on the navmesh (~200). These scenes can be filtered out by checking if `sim.pathfinder.is_loaded` is False.
 
-# Consuming Datasets in Habitat-Sim
+# Previewing dataset assets using  Habitat-Sim's viewers
 
-## Previewing dataset assets using Habitat-sim's viewers
 
 For datasets with scene dataset configuration support (such as HM3D, ReplicaCAD, MP3D, Gibson, etc) you can preview the assets using one of Habitat's command-line driven viewers, either in c++ or python. When launching the viewer, you should specify not only the desired scene to load, but also the specifying the scene dataset configuration file, to guarantee the assets load and display correctly.  This has the added benefit of providing quick access to other scenes in the same dataset, without requiring a reload of the entire simulation environment from the command line.
 
