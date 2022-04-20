@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 # This script will copy Appen annotated files into an existing HM3D dataset,
 # along with making the necessary modifications to the semantic txt file to
