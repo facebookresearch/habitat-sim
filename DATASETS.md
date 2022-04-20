@@ -170,3 +170,5 @@ If you are using the c++ [viewer](/src/utils/viewer/viewer.cpp), the command lin
 # ./build/viewer if compiled locally
 habitat-viewer --dataset '<path to desired dataset config>/<desired dataset>.scene_dataset_config.json' '<scene to show>'
 ```
+
+To preview other scenes in the same scene dataset in either viewer, use `TAB`/`SHIFT-TAB` to cycle forward/backward through the list of scenes referenced by the loaded scene dataset config.
