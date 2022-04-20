@@ -29,7 +29,7 @@ python -m habitat_sim.utils.datasets_download --username <api-token-id> --passwo
 By default, downloading the data for train/val/example scenes also pulls in the semantic annotations and configs for [HM3D-Semantics v0.1](https://aihabitat.org/datasets/hm3d-semantics/). To download only the semantic files for these splits, use the uid `hm3d_semantics`.
 
 
-By default the download script will only download what is needed for habitat-sim.  You can add `_full` to the uid to download the raw glbs and the obj+mtl's in addition to what is needed for use with habitat-sim.
+By default the download script will only download what is needed for Habitat-Sim.  You can add `_full` to the uid to download the raw glbs and the obj+mtl's in addition to what is needed for use with Habitat-Sim.
 
 ### Loading semantics for HM3D
 
@@ -55,7 +55,7 @@ TEEsavR23oF.semantic.glb    TEEsavR23oF.semantic.txt
 ```
 Note that there may be more files in `<PATH TO HM3D>/minival/00800-TEEsavR23oF/` if the full HM3D dataset is downloaded. Most importantly, ensure that the `hm3d_annotated_*`, `*.semantic.glb`, and `*.semantic.txt` files are present.
 
-To load semantic annotations in habitat-sim:
+To load semantic annotations in Habitat-Sim:
 * Enable the semantic sensor
 * Set the `scene_dataset_config_file` configuration variable
 
@@ -78,7 +78,7 @@ sim_cfg = habitat_sim.Configuration(backend_cfg, [agent_cfg])
 sim = habitat_sim.Simulator(sim_cfg)
 ```
 
-To view the semantic annotations in the C++ viewer, install the latest `main` branch of habitat-sim and run the following command:
+To view the semantic annotations in the C++ viewer, install the latest `main` branch of Habitat-Sim and run the following command:
 ```
 # ./build/viewer if compiled locally
 habitat-viewer --dataset '<PATH TO HM3D>/hm3d_annotated_basis.scene_dataset_config.json' TEEsavR23oF
@@ -112,7 +112,7 @@ Note that this download script requires python 2.7 to run.
 
 You only need the habitat zip archive and not the entire Matterport3D dataset.
 
-Once you have the habitat zip archive, you should download [this SceneDatasetConfig file](http://dl.fbaipublicfiles.com/habitat/mp3d/config_v1/mp3d.scene_dataset_config.json) and place it in the root directory for the Matterport3D dataset (e.g. habitat-sim/data/scene_datasets/mp3d/).
+Once you have the habitat zip archive, you should download [this SceneDatasetConfig file](http://dl.fbaipublicfiles.com/habitat/mp3d/config_v1/mp3d.scene_dataset_config.json) and place it in the root directory for the Matterport3D dataset (e.g. Habitat-Sim/data/scene_datasets/mp3d/). This file should then be specified as [the scene dataset config in the SimulatorConfiguration structure](/examples/tutorials/nb_python/ReplicaCAD_quickstart.py#L145) like this example for the ReplicaCAD dataset.
 
 ## Gibson and 3DSceneGraph datasets
 
@@ -123,6 +123,8 @@ Once you have the habitat zip archive, you should download [this SceneDatasetCon
    tools/gen_gibson_semantics.sh /path/to/3DSceneGraph_medium/automated_graph /path/to/GibsonDataset /path/to/output
    ```
    To use semantics, you will need to enable the semantic sensor.
+
+   Once you have downloaded the Gibson dataset and converted the semantic data, you should download [this SceneDatasetConfig file](http://dl.fbaipublicfiles.com/habitat/gibson/config_v1/gibson_semantic.scene_dataset_config.json) and place it in the root directory for the Gibson dataset (e.g. Habitat-Sim/data/scene_datasets/gibson/). This file should then be specified as [the scene dataset config in the SimulatorConfiguration structure](/examples/tutorials/nb_python/ReplicaCAD_quickstart.py#L145) like this example for the ReplicaCAD dataset.
 
 ## Replica Dataset
 
@@ -142,12 +144,31 @@ Details and download instructions: [https://aihabitat.org/datasets/replica_cad/]
 
 ## ScanNet
 
-The official ScanNet data can be downloaded here: [http://www.scan-net.org/](http://www.scan-net.org/). To use ScanNet scans with habitat-sim, the `scene_*.ply` files need to be converted to glTF format (`*.glb`). For example, using [assimp](https://github.com/assimp/assimp):
+The official ScanNet data can be downloaded here: [http://www.scan-net.org/](http://www.scan-net.org/). To use ScanNet scans with Habitat-Sim, the `scene_*.ply` files need to be converted to glTF format (`*.glb`). For example, using [assimp](https://github.com/assimp/assimp):
 
 ```
 assimp export <PLY FILE> <GLB PATH>
 ```
 
-The exported `*.glb` files can directly be used with habitat-sim versions >= 2.0.
+The exported `*.glb` files can directly be used with Habitat-Sim versions >= 2.0.
 
 Note: Depending on the configured radius and height of the agent, certain scans may have no navigable locations on the navmesh (~200). These scenes can be filtered out by checking if `sim.pathfinder.is_loaded` is False.
+
+# Previewing dataset assets using  Habitat-Sim's viewers
+
+For datasets with scene dataset configuration support (such as HM3D, ReplicaCAD, MP3D, Gibson, etc) you can preview the assets using one of Habitat's command-line driven viewers, either in c++ or python. When launching the viewer, you should specify not only the desired scene to load, but also the specifying the scene dataset configuration file, to guarantee the assets load and display correctly.  This has the added benefit of providing quick access to other scenes in the same dataset, without requiring a reload of the entire simulation environment from the command line.
+
+If you are using the python [viewer](/examples/viewer.py), the command line parameters to load a scene dataset configuration and a scene file would be (run from the Habitat-Sim source directory):
+
+```
+python examples/viewer.py --dataset '<path to desired dataset config>/<desired dataset>.scene_dataset_config.json' --scene '<scene to show>'
+```
+
+If you are using the c++ [viewer](/src/utils/viewer/viewer.cpp), the command line parameters to load a scene dataset configuration and a scene file would be (run from the Habitat-Sim source directory):
+
+```
+# ./build/viewer if compiled locally
+habitat-viewer --dataset '<path to desired dataset config>/<desired dataset>.scene_dataset_config.json' '<scene to show>'
+```
+
+To preview other scenes in the same scene dataset in either viewer, use `TAB`/`SHIFT-TAB` to cycle forward/backward through the list of scenes referenced by the loaded scene dataset config.
