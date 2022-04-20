@@ -918,6 +918,41 @@ void BatchedSimulator::updateRenderInstances(bool forceUpdate) {
     }
   }
 
+  for (int b = 0; b < config_.numDebugEnvs; b++) {
+    if (isEnvResetting(b)) {
+      continue;
+    }
+    
+    const auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
+    const auto& episode = safeVectorGet(episodeSet_.episodes_, episodeInstance.episodeIndex_);
+    const int freeObjectIndex = episode.targetObjIndex_;
+    const auto& freeObjectSpawn = safeVectorGet(episodeSet_.freeObjectSpawns_, 
+      episode.firstFreeObjectSpawnIndex_ + freeObjectIndex);
+    const auto& freeObject = safeVectorGet(episodeSet_.freeObjects_, freeObjectSpawn.freeObjIndex_);
+    const auto& startRotation = safeVectorGet(freeObject.startRotations_, freeObjectSpawn.startRotationIndex_);
+
+    constexpr float pad = 0.05;
+    addBoxDebugInstance("cube_pink_wireframe", b, 
+      freeObjectSpawn.startPos_,
+      startRotation,
+      freeObject.aabb_, pad);
+
+    addSphereDebugInstance(
+        "sphere_pink_wireframe",
+        b, freeObjectSpawn.startPos_, /*radius*/0.05f);
+    
+    addBoxDebugInstance("cube_blue_wireframe", b, 
+      episode.targetObjGoalPos_,
+      episode.targetObjGoalRotation_,
+      freeObject.aabb_);
+
+    addSphereDebugInstance(
+        "sphere_blue_wireframe",
+        b, episode.targetObjGoalPos_, /*radius*/0.05f);
+    
+  }
+    
+
   // add debug ground lines
   #if 0
   BATCHED_SIM_ASSERT(!config_.doPairedDebugEnv);
