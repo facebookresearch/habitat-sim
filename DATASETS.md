@@ -112,7 +112,7 @@ Note that this download script requires python 2.7 to run.
 
 You only need the habitat zip archive and not the entire Matterport3D dataset.
 
-Once you have the habitat zip archive, you should download [this SceneDatasetConfig file](http://dl.fbaipublicfiles.com/habitat/mp3d/config_v1/mp3d.scene_dataset_config.json) and place it in the root directory for the Matterport3D dataset (e.g. habitat-sim/data/scene_datasets/mp3d/).
+Once you have the habitat zip archive, you should download [this SceneDatasetConfig file](http://dl.fbaipublicfiles.com/habitat/mp3d/config_v1/mp3d.scene_dataset_config.json) and place it in the root directory for the Matterport3D dataset (e.g. habitat-sim/data/scene_datasets/mp3d/). This file should then be specified as [the scene dataset config in the SimulatorConfiguration structure](/examples/tutorials/nb_python/ReplicaCAD_quickstart.py#L145) like this example for the ReplicaCAD dataset.
 
 ## Gibson and 3DSceneGraph datasets
 
@@ -123,6 +123,8 @@ Once you have the habitat zip archive, you should download [this SceneDatasetCon
    tools/gen_gibson_semantics.sh /path/to/3DSceneGraph_medium/automated_graph /path/to/GibsonDataset /path/to/output
    ```
    To use semantics, you will need to enable the semantic sensor.
+
+   Once you have downloaded the Gibson dataset and converted the semantic data, you should download [this SceneDatasetConfig file](http://dl.fbaipublicfiles.com/habitat/gibson/config_v1/gibson_semantic.scene_dataset_config.json) and place it in the root directory for the Gibson dataset (e.g. habitat-sim/data/scene_datasets/gibson/). This file should then be specified as [the scene dataset config in the SimulatorConfiguration structure](/examples/tutorials/nb_python/ReplicaCAD_quickstart.py#L145) like this example for the ReplicaCAD dataset.
 
 ## Replica Dataset
 
