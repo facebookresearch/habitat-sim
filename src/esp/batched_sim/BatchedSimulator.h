@@ -297,6 +297,8 @@ class BatchedSimulator {
 
   bool isPhysicsThreadActive() const;
 
+  void checkDisableRobotAndFreeObjectsCollision();
+
   BatchedSimulatorConfig config_;
   serialize::Collection serializeCollection_;
   bool enableDebugSensor_ = false;

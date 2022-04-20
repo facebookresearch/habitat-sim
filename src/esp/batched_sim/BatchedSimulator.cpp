@@ -1127,61 +1127,6 @@ void Robot::updateFromSerializeCollection(const serialize::Collection& serialize
       numCollisionSpheres++;
     }
   }
-#if 0
-  std::vector<std::string> armLinks = {
-    "shoulder_lift_link",
-    "shoulder_pan_link",
-    "upperarm_roll_link",
-    "elbow_flex_link",
-    "forearm_roll_link",
-    "wrist_flex_link",
-    "wrist_roll_link",
-    //"gripper_link"
-  };
-
-  constexpr int numArmLinkSpheres = 4;
-  constexpr float armLinkLength = 0.15f;
-
-  std::vector<std::string> bodyLinks = {
-    "torso_lift_link",
-    "base_link"
-  };
-
-  constexpr int numBodyLinkSpheres = 16;
-  constexpr float bodyRingRadius = 0.28f;
-  constexpr float bodyRingLocalHeight = 0.6f;
-  constexpr float bodyOffsetX = -0.2f;
-
-  for (int i = -1; i < numLinks; i++) {
-    const auto nodeIndex = i + 1;           // 0 is base
-    const auto& link = artObj->getLink(i);  // -1 gets base link
-
-    // temp hard-coded spheres
-    if (std::find(armLinks.begin(), armLinks.end(), link.linkName) != armLinks.end()) {
-      for (int j = 0; j < numArmLinkSpheres; j++) {
-        float offset = (float)j / numArmLinkSpheres * armLinkLength;
-        collisionSphereLocalOriginsByNode_[nodeIndex].push_back({offset, 0.f, 0.f});
-        numCollisionSpheres++;
-      }
-    }
-
-    else if (std::find(bodyLinks.begin(), bodyLinks.end(), link.linkName) != bodyLinks.end()) {
-      // add spheres in a circle
-      for (int j = 0; j < numBodyLinkSpheres; j++) {
-        Mn::Deg angle = (float)j / numBodyLinkSpheres * Mn::Deg(360);
-        collisionSphereLocalOriginsByNode_[nodeIndex].push_back(
-          Mn::Vector3(Mn::Math::sin(angle) + bodyOffsetX, bodyRingLocalHeight, Mn::Math::cos(angle)) * bodyRingRadius);
-        numCollisionSpheres++;
-      }
-    }
-
-    if (link.linkName == "gripper_link") {
-      gripperLink_ = i;
-      gripperQueryOffset_ = Mn::Vector3(0.3f, 0.f, 0.f);
-      gripperQueryRadius_ = 0.1f;
-    }
-  }
-#endif
 
   numCollisionSpheres_ = numCollisionSpheres;
 }
@@ -1267,6 +1212,8 @@ BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
   legacySim_ = esp::sim::Simulator::create_unique(simConfig);
 
   robot_ = Robot(serializeCollection_, legacySim_.get(), &sceneMapping_);
+
+  checkDisableRobotAndFreeObjectsCollision();
 
   int numLinks = robot_.artObj->getNumLinks();
   int numNodes = numLinks + 1;  // include base
@@ -2326,6 +2273,25 @@ void BatchedSimulator::reloadSerializeCollection() {
   robots_.collisionSphereQueryCaches_.resize(robot_.numCollisionSpheres_ * numEnvs, 0);
 
   updateFromSerializeCollection(episodeSet_, serializeCollection_);
+
+  checkDisableRobotAndFreeObjectsCollision();
+}
+
+void BatchedSimulator::checkDisableRobotAndFreeObjectsCollision() {
+
+  if (!config_.enableRobotCollision) {
+    for (auto& nodeSpheres : robot_.collisionSpheresByNode_) {
+      nodeSpheres.clear();
+    }
+    robot_.collisionSpheres_.clear();
+    robot_.numCollisionSpheres_ = 0;
+  }
+
+  if (!config_.enableHeldObjectCollision) {
+    for (auto& freeObject : episodeSet_.freeObjects_) {
+      freeObject.collisionSpheres_.clear();
+    }
+  }
 
 }
 

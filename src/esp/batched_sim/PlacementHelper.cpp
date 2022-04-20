@@ -29,8 +29,6 @@ PlacementHelper::PlacementHelper(const ColumnGridSet& columnGridSet,
 bool PlacementHelper::place(Magnum::Matrix4& heldObjMat, const FreeObject& freeObject, 
     const Mn::Vector3* fallbackPos) const {
 
-  BATCHED_SIM_ASSERT(freeObject.collisionSpheres_.size());
-
   int numFailedPlacements = 0;
   bool success = false;
   

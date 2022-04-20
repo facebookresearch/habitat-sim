@@ -212,9 +212,9 @@ TEST_F(BatchedSimulatorTest, basic) {
     .numObjectVariations = 6,
     .minNontargetObjects = 27,
     .maxNontargetObjects = 32,
-    .useFixedRobotStartPos = false,
-    .useFixedRobotStartYaw = false,
-    .useFixedRobotJointStartPositions = false
+    .useFixedRobotStartPos = true,
+    .useFixedRobotStartYaw = true,
+    .useFixedRobotJointStartPositions = true
   };
 
 
@@ -228,6 +228,8 @@ TEST_F(BatchedSimulatorTest, basic) {
       .forceRandomActions = forceRandomActions,
       .doAsyncPhysicsStep = doOverlapPhysics,
       .numSubsteps = 1,
+      .enableRobotCollision = true,
+      .enableHeldObjectCollision = true,
       .doProceduralEpisodeSet = true,
       //.episodeSetFilepath = "../data/generated.episode_set.json",
       .episodeGeneratorConfig = generatorConfig,

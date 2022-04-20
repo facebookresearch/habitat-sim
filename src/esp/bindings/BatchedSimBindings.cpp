@@ -63,6 +63,8 @@ void initBatchedSimBindings(py::module& m) {
       .def_readwrite("force_random_actions", &BatchedSimulatorConfig::forceRandomActions, R"(Todo)")
       .def_readwrite("do_async_physics_step", &BatchedSimulatorConfig::doAsyncPhysicsStep, R"(Todo)")
       .def_readwrite("num_physics_substeps", &BatchedSimulatorConfig::numSubsteps, R"(Todo)")
+      .def_readwrite("enable_robot_collision", &BatchedSimulatorConfig::enableRobotCollision, R"(Todo)")
+      .def_readwrite("enable_held_object_collision", &BatchedSimulatorConfig::enableHeldObjectCollision, R"(Todo)")
       .def_readwrite("do_procedural_episode_set", &BatchedSimulatorConfig::doProceduralEpisodeSet, R"(Todo)")
       .def_readwrite("episode_generator_config", &BatchedSimulatorConfig::episodeGeneratorConfig, R"(Todo)")
       .def_readwrite("episode_set_filepath", &BatchedSimulatorConfig::episodeSetFilepath, R"(Todo)");
