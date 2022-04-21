@@ -2034,6 +2034,8 @@ int ResourceManager::loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
       navMeshPrimitiveID != ID_UNDEFINED) {
     // create the drawable
     addPrimitiveToDrawables(navMeshPrimitiveID, *parent, drawables);
+    parent->setMeshBB(Mn::Math::minmax(positions));
+    parent->computeCumulativeBB();
   }
 
   return navMeshPrimitiveID;
