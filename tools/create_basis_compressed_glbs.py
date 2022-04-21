@@ -16,7 +16,7 @@ TOOL_PATH = osp.realpath(
     osp.join(
         osp.dirname(__file__),
         "..",
-        "src/deps/magnum-plugins/src/MagnumPlugins/TinyGltfImporter/Test",
+        "src/deps/magnum-plugins/src/MagnumPlugins/CgltfImporter/Test",
     )
 )
 
@@ -185,6 +185,12 @@ def finalize(output_folder: str, rename_basis: bool) -> None:
         for basis_mesh in glob.glob(
             osp.join(output_folder, "**", "*.basis.glb"), recursive=True
         ):
+
+            # skip false positives in the working directories which won't actually exist
+            if "hab_basis_tool/" in basis_mesh:
+                # print(f"...skipping {basis_mesh}")
+                continue
+
             mesh_name = osp.splitext(osp.splitext(basis_mesh)[0])[0] + ".glb"
 
             shutil.move(mesh_name, mesh_name + ".orig")
