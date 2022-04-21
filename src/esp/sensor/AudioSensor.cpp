@@ -178,8 +178,11 @@ const std::vector<std::vector<float>>& AudioSensor::getIR() {
 }
 #endif  // ESP_BUILD_WITH_AUDIO
 
-bool AudioSensor::getObservation(sim::Simulator& sim, Observation& obs) {
+bool AudioSensor::getObservation(sim::Simulator&, Observation& obs) {
   CHECK_AUDIO_FLAG();
+
+  // Note : Addressing clang-tidy error for unused param
+  obs.buffer = buffer_;
 
 #ifdef ESP_BUILD_WITH_AUDIO
   CORRADE_ASSERT(audioSimulator_,
@@ -222,11 +225,13 @@ bool AudioSensor::getObservation(sim::Simulator& sim, Observation& obs) {
 bool AudioSensor::getObservationSpace(ObservationSpace& obsSpace) {
   CHECK_AUDIO_FLAG();
 
+  // Update the spaceType
+  // Note : Called outside the #ifdef to address clang-tidy error
+  obsSpace.spaceType = ObservationSpaceType::Tensor;
+
 #ifdef ESP_BUILD_WITH_AUDIO
   CORRADE_ASSERT(audioSimulator_,
                  "getObservationSpace: audioSimulator_ should exist", false);
-
-  obsSpace.spaceType = ObservationSpaceType::Tensor;
 
   // shape is a 2 ints
   //    index 0 = channel count

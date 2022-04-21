@@ -50,7 +50,7 @@ class AudioSensor : public Sensor {
   // Constructor
   explicit AudioSensor(scene::SceneNode& node, AudioSensorSpec::ptr spec);
   // Destructor
-  virtual ~AudioSensor();
+  ~AudioSensor() override;
 
   /**
    * @brief Return that this is not a visual sensor
@@ -93,7 +93,7 @@ class AudioSensor : public Sensor {
 
   // ------ Sensor class overrides ------
  public:
-  bool getObservation(sim::Simulator& sim, Observation& obs) override;
+  bool getObservation(sim::Simulator&, Observation& obs) override;
   bool getObservationSpace(ObservationSpace& obsSpace) override;
 
  private:
