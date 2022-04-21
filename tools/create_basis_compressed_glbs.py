@@ -186,9 +186,9 @@ def finalize(output_folder: str, rename_basis: bool) -> None:
             osp.join(output_folder, "**", "*.basis.glb"), recursive=True
         ):
 
-            #skip false positives in the working directories which won't actually exist
+            # skip false positives in the working directories which won't actually exist
             if "hab_basis_tool/" in basis_mesh:
-                #print(f"...skipping {basis_mesh}")
+                # print(f"...skipping {basis_mesh}")
                 continue
 
             mesh_name = osp.splitext(osp.splitext(basis_mesh)[0])[0] + ".glb"
