@@ -233,14 +233,14 @@ std::vector<int> AttributesManager<T, Access>::loadAllFileBasedTemplates(
     bool saveAsDefaults) {
   std::vector<int> templateIndices(paths.size(), ID_UNDEFINED);
   if (paths.size() > 0) {
-    std::string dir = Cr::Utility::Directory::path(paths[0]);
+    std::string dir = Cr::Utility::Path::split(paths[0]).first();
     ESP_DEBUG() << "Loading" << paths.size() << "" << this->objectType_
                 << "templates found in" << dir;
     for (int i = 0; i < paths.size(); ++i) {
       auto attributesFilename = paths[i];
-      ESP_VERY_VERBOSE() << "Load" << this->objectType_ << "template:"
-                         << Cr::Utility::Directory::filename(
-                                attributesFilename);
+      ESP_VERY_VERBOSE()
+          << "Load" << this->objectType_ << "template:"
+          << Cr::Utility::Path::split(attributesFilename).second();
       auto tmplt = this->createObject(attributesFilename, true);
       // If failed to load, do not attempt to modify further
       if (tmplt == nullptr) {
@@ -265,7 +265,7 @@ std::vector<int> AttributesManager<T, Access>::loadAllTemplatesFromPathAndExt(
     const std::string& path,
     const std::string& extType,
     bool saveAsDefaults) {
-  namespace Dir = Cr::Utility::Directory;
+  namespace Dir = Cr::Utility::Path;
   std::vector<std::string> paths;
   std::vector<int> templateIndices;
 
@@ -275,7 +275,7 @@ std::vector<int> AttributesManager<T, Access>::loadAllTemplatesFromPathAndExt(
     ESP_DEBUG(Mn::Debug::Flag::NoSpace)
         << "Parsing " << this->objectType_
         << " library directory: " + path + " for \'" + extType + "\' files";
-    for (auto& file : Dir::list(path, Dir::Flag::SortAscending)) {
+    for (auto& file : *Dir::list(path, Dir::ListFlag::SortAscending)) {
       std::string absoluteSubfilePath = Dir::join(path, file);
       if (Cr::Utility::String::endsWith(absoluteSubfilePath, extType)) {
         paths.push_back(absoluteSubfilePath);
@@ -316,7 +316,7 @@ void AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad(
       continue;
     }
     std::string absolutePath =
-        Cr::Utility::Directory::join(configDir, filePaths[i].GetString());
+        Cr::Utility::Path::join(configDir, filePaths[i].GetString());
     std::vector<std::string> globPaths = io::globDirs(absolutePath);
     if (globPaths.size() > 0) {
       for (const auto& globPath : globPaths) {
@@ -348,7 +348,7 @@ auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
            : this->getFormattedJSONFileName(filename));
   // Check if this configuration file exists and if so use it to build
   // attributes
-  bool jsonFileExists = Cr::Utility::Directory::exists(jsonAttrFileName);
+  bool jsonFileExists = Cr::Utility::Path::exists(jsonAttrFileName);
   ESP_DEBUG(Mn::Debug::Flag::NoSpace)
       << "<" << this->objectType_
       << ">: Proposing JSON name : " << jsonAttrFileName
@@ -364,7 +364,7 @@ auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
     // default attributes.
     attrs = this->createDefaultObject(filename, registerObj);
     // check if original filename is an actual object
-    bool fileExists = Cr::Utility::Directory::exists(filename);
+    bool fileExists = Cr::Utility::Path::exists(filename);
     // if filename passed is name of some kind of asset, or if it was not
     // found
     if (fileExists) {

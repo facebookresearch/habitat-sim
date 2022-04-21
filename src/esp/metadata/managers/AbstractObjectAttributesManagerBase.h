@@ -383,8 +383,7 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
                                          meshTypeSetter);
     } else {
       // is not valid primitive, assume valid file name
-      assetName =
-          Cr::Utility::Directory::join(propertiesFileDirectory, assetName);
+      assetName = Cr::Utility::Path::join(propertiesFileDirectory, assetName);
       if ((typeVal == -1) && (oldFName != assetName)) {
         // if file name is different, and type val has not been specified,
         // perform name-specific mesh type config do not override orientation
@@ -415,15 +414,14 @@ bool AbstractObjectAttributesManager<T, Access>::setHandleFromDefaultTag(
     // not.
     tempStr.replace(loc, strlen(CONFIG_NAME_AS_ASSET_FILENAME),
                     attributes->getSimplifiedHandle());
-    if (Cr::Utility::Directory::exists(tempStr)) {
+    if (Cr::Utility::Path::exists(tempStr)) {
       // replace the component of the string containing the tag with the base
       // filename/handle, and verify it exists. Otherwise, clear it.
       filenameSetter(tempStr);
       return true;
     }
-    tempStr =
-        Cr::Utility::Directory::join(attributes->getFileDirectory(), tempStr);
-    if (Cr::Utility::Directory::exists(tempStr)) {
+    tempStr = Cr::Utility::Path::join(attributes->getFileDirectory(), tempStr);
+    if (Cr::Utility::Path::exists(tempStr)) {
       // replace the component of the string containing the tag with the base
       // filename/handle, and verify it exists. Otherwise, clear it.
       filenameSetter(tempStr);
@@ -434,7 +432,7 @@ bool AbstractObjectAttributesManager<T, Access>::setHandleFromDefaultTag(
     filenameSetter("");
   }
   // no tag found - check if existing non-empty field exists.
-  return Cr::Utility::Directory::exists(srcAssetFilename);
+  return Cr::Utility::Path::exists(srcAssetFilename);
 }  // AbstractObjectAttributesManager<T, Access>::setHandleFromDefaultTag
 
 }  // namespace managers

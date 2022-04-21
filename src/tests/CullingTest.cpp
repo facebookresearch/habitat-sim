@@ -5,7 +5,7 @@
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/TestSuite/Compare/Numeric.h>
 #include <Corrade/TestSuite/Tester.h>
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/Path.h>
 #include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/GL/SampleQuery.h>
 #include <Magnum/Math/Frustum.h>
@@ -75,7 +75,7 @@ int CullingTest::setupTests() {
   }
   auto stageAttributesMgr = MM->getStageAttributesManager();
   std::string stageFile =
-      Cr::Utility::Directory::join(TEST_ASSETS, "objects/5boxes.glb");
+      Cr::Utility::Path::join(TEST_ASSETS, "objects/5boxes.glb");
   // create scene attributes file
   auto stageAttributes = stageAttributesMgr->createObject(stageFile, true);
   int sceneID = sceneManager_->initSceneGraph();

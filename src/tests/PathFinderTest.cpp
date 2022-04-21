@@ -8,7 +8,7 @@
 
 #include <esp/nav/PathFinder.h>
 
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/Path.h>
 #include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Swizzle.h>
@@ -21,9 +21,9 @@ namespace Mn = Magnum;
 
 namespace {
 
-const std::string skokloster = Cr::Utility::Directory::join(
-    SCENE_DATASETS,
-    "habitat-test-scenes/skokloster-castle.navmesh");
+const std::string skokloster =
+    Cr::Utility::Path::join(SCENE_DATASETS,
+                            "habitat-test-scenes/skokloster-castle.navmesh");
 
 constexpr struct {
   const char* name;

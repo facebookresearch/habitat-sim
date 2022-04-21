@@ -51,12 +51,13 @@ PbrEquiRectangularToCubeMapShader::PbrEquiRectangularToCubeMapShader() {
   Mn::GL::Shader frag{glVersion, Mn::GL::Shader::Type::Fragment};
 
   // Add macros
-  vert.addSource("#define OUTPUT_UV\n").addSource(rs.get("bigTriangle.vert"));
+  vert.addSource("#define OUTPUT_UV\n")
+      .addSource(rs.getString("bigTriangle.vert"));
 
   frag
       .addSource(Cr::Utility::formatString(
           "#define OUTPUT_ATTRIBUTE_LOCATION_COLOR {}\n", ColorOutput))
-      .addSource(rs.get("equirectangularToCubeMap.frag"));
+      .addSource(rs.getString("equirectangularToCubeMap.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));
 

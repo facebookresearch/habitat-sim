@@ -5,7 +5,7 @@
 #ifndef ESP_METADATA_ATTRIBUTES_ATTRIBUTESBASE_H_
 #define ESP_METADATA_ATTRIBUTES_ATTRIBUTESBASE_H_
 
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/Path.h>
 #include <deque>
 #include "AttributesEnumMaps.h"
 #include "esp/core/Configuration.h"

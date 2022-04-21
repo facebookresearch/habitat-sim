@@ -38,8 +38,8 @@
 #include <Corrade/Utility/Assert.h>
 #include <Corrade/Utility/Debug.h>
 #include <Corrade/Utility/DebugStl.h>
-#include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/FormatStl.h>
+#include <Corrade/Utility/Path.h>
 #include <Corrade/Utility/String.h>
 #include <Magnum/DebugTools/FrameProfiler.h>
 #include <Magnum/DebugTools/Screenshot.h>
@@ -904,9 +904,10 @@ Viewer::Viewer(const Arguments& arguments)
   }
 
   // setup the PhysicsManager config file
-  std::string physicsConfig = Cr::Utility::Directory::join(
-      Corrade::Utility::Directory::current(), args.value("physics-config"));
-  if (Cr::Utility::Directory::exists(physicsConfig)) {
+  std::string physicsConfig =
+      Cr::Utility::Path::join(*Corrade::Utility::Path::currentDirectory(),
+                              args.value("physics-config"));
+  if (Cr::Utility::Path::exists(physicsConfig)) {
     ESP_DEBUG() << "Using PhysicsManager config:" << physicsConfig;
     simConfig_.physicsConfigFile = physicsConfig;
   }
@@ -1036,9 +1037,9 @@ void Viewer::initSimPostReconfigure() {
     simulator_->recomputeNavMesh(*simulator_->getPathFinder().get(),
                                  navMeshSettings, true);
   } else if (!navmeshFilename_.empty()) {
-    std::string navmeshFile = Cr::Utility::Directory::join(
-        Corrade::Utility::Directory::current(), navmeshFilename_);
-    if (Cr::Utility::Directory::exists(navmeshFile)) {
+    std::string navmeshFile = Cr::Utility::Path::join(
+        *Corrade::Utility::Path::currentDirectory(), navmeshFilename_);
+    if (Cr::Utility::Path::exists(navmeshFile)) {
       simulator_->getPathFinder()->loadNavMesh(navmeshFile);
     }
   }
@@ -1106,8 +1107,8 @@ void saveTransformToFile(const std::string& filename,
 }
 void Viewer::saveAgentAndSensorTransformToFile() {
   const char* saved_transformations_directory = "saved_transformations/";
-  if (!Cr::Utility::Directory::exists(saved_transformations_directory)) {
-    Cr::Utility::Directory::mkpath(saved_transformations_directory);
+  if (!Cr::Utility::Path::exists(saved_transformations_directory)) {
+    Cr::Utility::Path::make(saved_transformations_directory);
   }
 
   // update temporary save
@@ -1177,19 +1178,19 @@ bool Viewer::generateAndSaveVertColorMapReports() {
   if (results.empty()) {
     return false;
   }
-  const std::string fileDir = Cr::Utility::Directory::join(
-      {Cr::Utility::Directory::path(MM_->getActiveSceneDatasetName()),
-       "Vertex_Color_Reports"});
+  const std::string fileDir = Cr::Utility::Path::join(
+      Cr::Utility::Path::split(MM_->getActiveSceneDatasetName()).first(),
+      "Vertex_Color_Reports");
 
-  Cr::Utility::Directory::mkpath(fileDir);
+  Cr::Utility::Path::make(fileDir);
 
-  const std::string filename = Cr::Utility::Directory::join(
+  const std::string filename = Cr::Utility::Path::join(
       fileDir,
       Cr::Utility::formatString(
           "{}_vert_color_report.txt",
-          Cr::Utility::Directory::splitExtension(
-              Cr::Utility::Directory::filename(simConfig_.activeSceneName))
-              .first));
+          Cr::Utility::Path::splitExtension(
+              Cr::Utility::Path::split(simConfig_.activeSceneName).second())
+              .first()));
   ESP_DEBUG() << "Fully qualified destination file name :" << filename;
   std::ofstream file(filename);
   if (!file.good()) {
@@ -1224,19 +1225,19 @@ bool Viewer::generateAndSaveSemanticCCReport() {
   if (results.empty()) {
     return false;
   }
-  const std::string fileDir = Cr::Utility::Directory::join(
-      {Cr::Utility::Directory::path(MM_->getActiveSceneDatasetName()),
-       "Semantic_CC_Reports"});
+  const std::string fileDir = Cr::Utility::Path::join(
+      Cr::Utility::Path::split(MM_->getActiveSceneDatasetName()).first(),
+      "Semantic_CC_Reports");
 
-  Cr::Utility::Directory::mkpath(fileDir);
+  Cr::Utility::Path::make(fileDir);
 
-  const std::string filename = Cr::Utility::Directory::join(
+  const std::string filename = Cr::Utility::Path::join(
       fileDir,
       Cr::Utility::formatString(
           "{}_CC_report.csv",
-          Cr::Utility::Directory::splitExtension(
-              Cr::Utility::Directory::filename(simConfig_.activeSceneName))
-              .first));
+          Cr::Utility::Path::splitExtension(
+              Cr::Utility::Path::split(simConfig_.activeSceneName).second())
+              .first()));
   ESP_DEBUG() << "Fully qualified destination file name :" << filename;
   auto semanticScene = simulator_->getSemanticScene();
 
@@ -2394,7 +2395,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       } else if (!Cr::Utility::String::endsWith(urdfFilepath, ".urdf") &&
                  !Cr::Utility::String::endsWith(urdfFilepath, ".URDF")) {
         ESP_DEBUG() << "... input is not a URDF. Aborting.";
-      } else if (Cr::Utility::Directory::exists(urdfFilepath)) {
+      } else if (Cr::Utility::Path::exists(urdfFilepath)) {
         // cache the file for quick-reload with SHIFT-T
         cachedURDF_ = urdfFilepath;
         auto aom = simulator_->getArticulatedObjectManager();
@@ -2463,8 +2464,8 @@ int savedFrames = 0;
 void Viewer::screenshot() {
   std::string screenshot_directory =
       "screenshots/" + viewerStartTimeString + "/";
-  if (!Cr::Utility::Directory::exists(screenshot_directory)) {
-    Cr::Utility::Directory::mkpath(screenshot_directory);
+  if (!Cr::Utility::Path::exists(screenshot_directory)) {
+    Cr::Utility::Path::make(screenshot_directory);
   }
   Mn::DebugTools::screenshot(
       Mn::GL::defaultFramebuffer,

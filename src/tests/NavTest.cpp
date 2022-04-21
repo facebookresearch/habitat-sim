@@ -4,7 +4,7 @@
 
 #include <Corrade/TestSuite/Compare/Numeric.h>
 #include <Corrade/TestSuite/Tester.h>
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/Path.h>
 
 #include "esp/assets/MeshData.h"
 #include "esp/core/Esp.h"
@@ -45,7 +45,7 @@ NavTest::NavTest() {
 
 void NavTest::PathFinderLoadTest() {
   esp::nav::PathFinder pf;
-  pf.loadNavMesh(Cr::Utility::Directory::join(
+  pf.loadNavMesh(Cr::Utility::Path::join(
       SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
   for (int i = 0; i < 100000; ++i) {
     esp::nav::ShortestPath path;
@@ -103,7 +103,7 @@ void printRandomizedPathSet(esp::nav::PathFinder& pf) {
 
 void NavTest::PathFinderTestCases() {
   esp::nav::PathFinder pf;
-  pf.loadNavMesh(Cr::Utility::Directory::join(
+  pf.loadNavMesh(Cr::Utility::Path::join(
       SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
   esp::nav::ShortestPath testPath;
   testPath.requestedStart = esp::vec3f(-6.493, 0.072, -3.292);
@@ -128,7 +128,7 @@ void NavTest::PathFinderTestCases() {
 
 void NavTest::PathFinderTestNonNavigable() {
   esp::nav::PathFinder pf;
-  pf.loadNavMesh(Cr::Utility::Directory::join(
+  pf.loadNavMesh(Cr::Utility::Path::join(
       SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
 
   const esp::vec3f nonNavigablePoint{1e2, 1e2, 1e2};
@@ -141,7 +141,7 @@ void NavTest::PathFinderTestNonNavigable() {
 
 void NavTest::PathFinderTestSeed() {
   esp::nav::PathFinder pf;
-  pf.loadNavMesh(Cr::Utility::Directory::join(
+  pf.loadNavMesh(Cr::Utility::Path::join(
       SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
 
   // The same seed should produce the same point
@@ -169,7 +169,7 @@ void NavTest::PathFinderTestSeed() {
 
 void NavTest::PathFinderTestMeshData() {
   esp::nav::PathFinder pf;
-  pf.loadNavMesh(Cr::Utility::Directory::join(
+  pf.loadNavMesh(Cr::Utility::Path::join(
       SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
 
   esp::assets::MeshData::ptr meshData = pf.getNavMeshData();
@@ -178,7 +178,7 @@ void NavTest::PathFinderTestMeshData() {
   CORRADE_COMPARE(meshData->vbo.size(), 1155);
   CORRADE_COMPARE(meshData->ibo.size(), 1155);
 
-  pf.loadNavMesh(Cr::Utility::Directory::join(
+  pf.loadNavMesh(Cr::Utility::Path::join(
       SCENE_DATASETS, "habitat-test-scenes/van-gogh-room.navmesh"));
 
   meshData = pf.getNavMeshData();

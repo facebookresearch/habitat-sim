@@ -57,7 +57,8 @@ TextureVisualizerShader::TextureVisualizerShader(Flags flags) : flags_(flags) {
   Mn::GL::Shader vert{glVersion, Mn::GL::Shader::Type::Vertex};
   Mn::GL::Shader frag{glVersion, Mn::GL::Shader::Type::Fragment};
 
-  vert.addSource("#define OUTPUT_UV\n").addSource(rs.get("bigTriangle.vert"));
+  vert.addSource("#define OUTPUT_UV\n")
+      .addSource(rs.getString("bigTriangle.vert"));
 
   frag.addSource("#define EXPLICIT_ATTRIB_LOCATION\n")
       .addSource(Cr::Utility::formatString(
@@ -65,7 +66,7 @@ TextureVisualizerShader::TextureVisualizerShader(Flags flags) : flags_(flags) {
       .addSource(flags_ & Flag::DepthTexture ? "#define DEPTH_TEXTURE\n" : "")
       .addSource(flags_ & Flag::ObjectIdTexture ? "#define OBJECT_ID_TEXTURE\n"
                                                 : "")
-      .addSource(rs.get("textureVisualizer.frag"));
+      .addSource(rs.getString("textureVisualizer.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));
 

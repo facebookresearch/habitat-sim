@@ -4,8 +4,9 @@
 
 // Code adapted from Bullet3/examples/Importers/ImportURDFDemo ...
 
+#include <Corrade/Containers/Pair.h>
 #include <Corrade/Utility/DebugStl.h>
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/Path.h>
 #include <Corrade/Utility/String.h>
 #include <Magnum/Math/Quaternion.h>
 #include <iostream>
@@ -104,11 +105,11 @@ void Model::setMassScaling(float massScaling) {
 bool Model::loadJsonAttributes(const std::string& filename) {
   namespace CrUt = Corrade::Utility;
   const std::string jsonName = CrUt::formatString(
-      "{}.ao_config.json", CrUt::Directory::splitExtension(
-                               CrUt::Directory::splitExtension(filename).first)
-                               .first);
+      "{}.ao_config.json",
+      CrUt::Path::splitExtension(CrUt::Path::splitExtension(filename).first())
+          .first());
 
-  if (!CrUt::Directory::exists(jsonName)) {
+  if (!CrUt::Path::exists(jsonName)) {
     // file does not exists, so no Json configuration defined for this Model.
     return false;
   }
@@ -164,7 +165,7 @@ bool Parser::parseURDF(std::shared_ptr<Model>& urdfModel,
   sourceFilePath_ = filename;
   urdfModel->m_sourceFile = filename;
 
-  std::string xmlString = Corrade::Utility::Directory::readString(filename);
+  std::string xmlString = *Corrade::Utility::Path::readString(filename);
 
   XMLDocument xml_doc;
   xml_doc.Parse(xmlString.c_str());
@@ -881,11 +882,11 @@ bool Parser::validateMeshFile(std::string& meshFilename) {
       sourceFilePath_.substr(0, sourceFilePath_.find_last_of('/'));
 
   std::string meshFilePath =
-      Corrade::Utility::Directory::join(urdfDirectory, meshFilename);
+      Corrade::Utility::Path::join(urdfDirectory, meshFilename);
 
   bool meshSuccess = false;
   // defer asset loading to instancing time. Check asset file existence here.
-  meshSuccess = Corrade::Utility::Directory::exists(meshFilePath);
+  meshSuccess = Corrade::Utility::Path::exists(meshFilePath);
 
   if (meshSuccess) {
     // modify the meshFilename to full filepath to enable access into

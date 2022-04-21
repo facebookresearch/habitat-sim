@@ -5,7 +5,9 @@
 #ifndef ESP_CORE_ABSTRACTFILEBASEDMANAGEDOBJECT_H_
 #define ESP_CORE_ABSTRACTFILEBASEDMANAGEDOBJECT_H_
 
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Containers/Pair.h>
+#include <Corrade/Utility/Path.h>
+#include <string>
 #include "AbstractManagedObject.h"
 #include "esp/io/Json.h"
 
@@ -31,11 +33,11 @@ class AbstractFileBasedManagedObject : public AbstractManagedObject {
    */
   virtual std::string getSimplifiedHandle() const {
     // first parse for file name, and then get rid of extension(s).
-    return Corrade::Utility::Directory::splitExtension(
-               Corrade::Utility::Directory::splitExtension(
-                   Corrade::Utility::Directory::filename(getHandle()))
-                   .first)
-        .first;
+    return Corrade::Utility::Path::splitExtension(
+               Corrade::Utility::Path::splitExtension(
+                   Corrade::Utility::Path::split(getHandle()).second())
+                   .first())
+        .first();
   }
 
   /**

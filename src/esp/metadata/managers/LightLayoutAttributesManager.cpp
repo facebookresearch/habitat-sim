@@ -23,7 +23,7 @@ LightLayoutAttributes::ptr LightLayoutAttributesManager::createObject(
   bool doRegister = registerTemplate;
   // File based attributes are automatically registered.
   std::string jsonAttrFileName = getFormattedJSONFileName(lightConfigName);
-  bool jsonFileExists = (Cr::Utility::Directory::exists(jsonAttrFileName));
+  bool jsonFileExists = (Cr::Utility::Path::exists(jsonAttrFileName));
   if (jsonFileExists) {
     // if exists, force registration to be true.
     doRegister = true;
@@ -46,13 +46,13 @@ void LightLayoutAttributesManager::setValsFromJSONDoc(
   // this will parse jsonConfig for the description of each light, and build an
   // attributes for each.
   // set file directory here, based on layout name
-  std::string dirname = Cr::Utility::Directory::path(layoutNameAndPath);
-  std::string filenameExt = Cr::Utility::Directory::filename(layoutNameAndPath);
+  std::string filenameExt =
+      Cr::Utility::Path::split(layoutNameAndPath).second();
   // remove ".lighting_config.json" from name
   std::string layoutName =
-      Cr::Utility::Directory::splitExtension(
-          Cr::Utility::Directory::splitExtension(filenameExt).first)
-          .first;
+      Cr::Utility::Path::splitExtension(
+          Cr::Utility::Path::splitExtension(filenameExt).first())
+          .first();
   LightInstanceAttributes::ptr lightInstanceAttribs = nullptr;
 
   // check if positive scaling is set

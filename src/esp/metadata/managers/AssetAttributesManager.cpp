@@ -191,9 +191,9 @@ AbstractPrimitiveAttributes::ptr AssetAttributesManager::buildObjectFromJSONDoc(
     const io::JsonGenericValue& jsonDoc) {
   // find type of attributes - file name should contain handle
   const std::string primAttrHandle =
-      Cr::Utility::Directory::splitExtension(
-          Cr::Utility::Directory::filename(filename))
-          .first;
+      Cr::Utility::Path::splitExtension(
+          Cr::Utility::Path::split(filename).second())
+          .first();
 
   std::string primClassName =
       Cr::Utility::String::partition(primAttrHandle, '_')[0];

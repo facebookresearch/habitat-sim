@@ -9,7 +9,7 @@
 
 #include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/Containers/StridedArrayView.h>
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/Path.h>
 #include <Magnum/GL/PixelFormat.h>
 #include <Magnum/Image.h>
 #include <Magnum/Math/Color.h>

@@ -10,8 +10,8 @@
 
 #include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/Utility/Algorithms.h>
-#include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/FormatStl.h>
+#include <Corrade/Utility/Path.h>
 #include "esp/assets/GenericSemanticMeshData.h"
 #include "esp/core/Esp.h"
 #include "esp/geo/Geo.h"
@@ -39,7 +39,7 @@ SceneLoader::SceneLoader()
 
 MeshData SceneLoader::load(const AssetInfo& info) {
   MeshData mesh;
-  if (!Cr::Utility::Directory::exists(info.filepath)) {
+  if (!Cr::Utility::Path::exists(info.filepath)) {
     ESP_ERROR() << "Could not find file" << info.filepath;
     return mesh;
   }

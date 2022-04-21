@@ -3,7 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <Corrade/TestSuite/Tester.h>
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/Path.h>
 #include <Magnum/GL/Mesh.h>
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/Primitives/Cube.h>
@@ -57,7 +57,7 @@ DrawableTest::DrawableTest() {
   //clang-format on
   auto stageAttributesMgr = MM->getStageAttributesManager();
   std::string stageFile =
-      Cr::Utility::Directory::join(TEST_ASSETS, "objects/5boxes.glb");
+      Cr::Utility::Path::join(TEST_ASSETS, "objects/5boxes.glb");
   auto stageAttributes = stageAttributesMgr->createObject(stageFile, true);
 
   sceneID_ = sceneManager_.initSceneGraph();

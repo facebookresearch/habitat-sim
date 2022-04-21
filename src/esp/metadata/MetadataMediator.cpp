@@ -256,7 +256,7 @@ MetadataMediator::getSceneInstanceAttributesByName(
     const std::string sceneFilenameCandidate =
         dsSceneAttrMgr->getFormattedJSONFileName(sceneName);
 
-    if (Cr::Utility::Directory::exists(sceneFilenameCandidate)) {
+    if (Cr::Utility::Path::exists(sceneFilenameCandidate)) {
       // 2.  Existing, valid SceneInstanceAttributes file on disk, but not in
       // dataset.
       //    If this is the case, then the SceneInstanceAttributes should be

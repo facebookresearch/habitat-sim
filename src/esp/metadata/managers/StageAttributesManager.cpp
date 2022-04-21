@@ -65,7 +65,7 @@ int StageAttributesManager::registerObjectFinalize(
     // then setRenderAssetIsPrimitive to true and set map of IDs->Names to
     // physicsSynthObjTmpltLibByID_
     stageAttributes->setRenderAssetIsPrimitive(true);
-  } else if (Cr::Utility::Directory::exists(renderAssetHandle)) {
+  } else if (Cr::Utility::Path::exists(renderAssetHandle)) {
     // Check if renderAssetHandle is valid file name and is found in file
     // system
     // - if so then setRenderAssetIsPrimitive to false and set map of
@@ -96,7 +96,7 @@ int StageAttributesManager::registerObjectFinalize(
     // If collisionAssetHandle corresponds to valid/existing primitive
     // attributes then setCollisionAssetIsPrimitive to true
     stageAttributes->setCollisionAssetIsPrimitive(true);
-  } else if (Cr::Utility::Directory::exists(collisionAssetHandle)) {
+  } else if (Cr::Utility::Path::exists(collisionAssetHandle)) {
     // Check if collisionAssetHandle is valid file name and is found in file
     // system - if so then setCollisionAssetIsPrimitive to false
     stageAttributes->setCollisionAssetIsPrimitive(false);
@@ -255,13 +255,13 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
         if (ssdFileName.empty()) {
           if (attributesHandle.find("/replica_dataset") != std::string::npos) {
             // replica hack until dataset gets appropriate configuration support
-            ssdFileName = Cr::Utility::Directory::join(
+            ssdFileName = Cr::Utility::Path::join(
                 newAttributes->getFileDirectory(), "info_semantic.json");
           } else {
             // hack to support back-compat until configs are implemented for all
             // datasets
             ssdFileName =
-                Cr::Utility::Directory::splitExtension(attributesHandle).first +
+                Cr::Utility::Path::splitExtension(attributesHandle).first() +
                 ".scn";
           }
         }
@@ -429,9 +429,8 @@ void StageAttributesManager::setValsFromJSONDoc(
     // if "nav mesh" is specified in stage json set value (override default).
     // navmesh filename might already be fully qualified; if not, might just be
     // file name
-    if (!Corrade::Utility::Directory::exists(navmeshFName)) {
-      navmeshFName =
-          Cr::Utility::Directory::join(stageLocFileDir, navmeshFName);
+    if (!Corrade::Utility::Path::exists(navmeshFName)) {
+      navmeshFName = Cr::Utility::Path::join(stageLocFileDir, navmeshFName);
     }
     stageAttributes->setNavmeshAssetHandle(navmeshFName);
   }
@@ -442,9 +441,9 @@ void StageAttributesManager::setValsFromJSONDoc(
     // (override default).
     // semanticSceneDescriptor filename might already be fully qualified; if
     // not, might just be file name
-    if (!Corrade::Utility::Directory::exists(semanticSceneDescriptor)) {
-      semanticSceneDescriptor = Cr::Utility::Directory::join(
-          stageLocFileDir, semanticSceneDescriptor);
+    if (!Corrade::Utility::Path::exists(semanticSceneDescriptor)) {
+      semanticSceneDescriptor =
+          Cr::Utility::Path::join(stageLocFileDir, semanticSceneDescriptor);
     }
     stageAttributes->setSemanticDescriptorFilename(semanticSceneDescriptor);
   }

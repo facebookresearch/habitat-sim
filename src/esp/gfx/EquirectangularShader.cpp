@@ -51,7 +51,7 @@ EquirectangularShader::EquirectangularShader(Flags flags)
   Mn::GL::Shader frag{glVersion, Mn::GL::Shader::Type::Fragment};
 
   // Add macros
-  vert.addSource(rs.get("bigTriangle.vert"));
+  vert.addSource(rs.getString("bigTriangle.vert"));
 
   std::stringstream outputAttributeLocationsStream;
 
@@ -74,7 +74,7 @@ EquirectangularShader::EquirectangularShader(Flags flags)
       .addSource(flags_ & CubeMapShaderBase::Flag::ObjectIdTexture
                      ? "#define OBJECT_ID_TEXTURE\n"
                      : "")
-      .addSource(rs.get("equirectangular.frag"));
+      .addSource(rs.getString("equirectangular.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));
 

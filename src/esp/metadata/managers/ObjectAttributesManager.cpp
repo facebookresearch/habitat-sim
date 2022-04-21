@@ -231,7 +231,7 @@ int ObjectAttributesManager::registerObjectFinalize(
     // physicsSynthObjTmpltLibByID_
     objectTemplate->setRenderAssetIsPrimitive(true);
     mapToUse = &physicsSynthObjTmpltLibByID_;
-  } else if (Cr::Utility::Directory::exists(renderAssetHandle)) {
+  } else if (Cr::Utility::Path::exists(renderAssetHandle)) {
     // Check if renderAssetHandle is valid file name and is found in file system
     // - if so then setRenderAssetIsPrimitive to false and set map of IDs->Names
     // to physicsFileObjTmpltLibByID_ - verify file  exists
@@ -261,7 +261,7 @@ int ObjectAttributesManager::registerObjectFinalize(
     // If collisionAssetHandle corresponds to valid/existing primitive
     // attributes then setCollisionAssetIsPrimitive to true
     objectTemplate->setCollisionAssetIsPrimitive(true);
-  } else if (Cr::Utility::Directory::exists(collisionAssetHandle)) {
+  } else if (Cr::Utility::Path::exists(collisionAssetHandle)) {
     // Check if collisionAssetHandle is valid file name and is found in file
     // system - if so then setCollisionAssetIsPrimitive to false
     objectTemplate->setCollisionAssetIsPrimitive(false);

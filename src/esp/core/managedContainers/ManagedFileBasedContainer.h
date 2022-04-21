@@ -15,8 +15,9 @@
 #include "ManagedContainer.h"
 #include "esp/io/Json.h"
 
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Containers/StringStl.h>
 #include <Corrade/Utility/FormatStl.h>
+#include <Corrade/Utility/Path.h>
 #include <Corrade/Utility/String.h>
 #include <typeinfo>
 
@@ -201,9 +202,9 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
 
   bool saveManagedObjectToFile(const ManagedFileIOPtr& managedObject,
                                const std::string& fullFilename) const {
-    namespace FileUtil = Cr::Utility::Directory;
+    namespace FileUtil = Cr::Utility::Path;
     // get file directory from passed desired filename.
-    std::string fileDirectory = FileUtil::path(fullFilename);
+    std::string fileDirectory = FileUtil::split(fullFilename).first();
     // if no directory given then use object's local directory
     if (fileDirectory.empty()) {
       fileDirectory = managedObject->getFileDirectory();
@@ -212,8 +213,9 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
     // This will make sure written file will have appropriate extension
     const std::string fileName =
         FileUtil::splitExtension(
-            FileUtil::splitExtension(FileUtil::filename(fullFilename)).first)
-            .first +
+            FileUtil::splitExtension(FileUtil::split(fullFilename).second())
+                .first())
+            .first() +
         "." + this->JSONTypeExt_;
 
     if (!FileUtil::exists(fileDirectory)) {
@@ -396,7 +398,7 @@ std::string ManagedFileBasedContainer<T, Access>::findFilenameUsingCriteria(
     const std::string& srcFilename,
     const std::vector<std::string>& extensions) const {
   // check to see if passed filename already contains extension and exists
-  if (Corrade::Utility::Directory::exists(srcFilename)) {
+  if (Corrade::Utility::Path::exists(srcFilename)) {
     for (const std::string& ext : extensions) {
       if (srcFilename.find(ext) != std::string::npos) {
         return srcFilename;
@@ -406,23 +408,23 @@ std::string ManagedFileBasedContainer<T, Access>::findFilenameUsingCriteria(
   std::string resFilename;
   // split away first extension and 2nd extension (if exists)
   const std::string rootFilename =
-      Cr::Utility::Directory::splitExtension(srcFilename).first;
+      Cr::Utility::Path::splitExtension(srcFilename).first();
   for (const std::string& ext : extensions) {
     resFilename = rootFilename + ext;
-    if (Corrade::Utility::Directory::exists(resFilename)) {
+    if (Corrade::Utility::Path::exists(resFilename)) {
       return resFilename;
     }
   }
 
   const std::string rootFilename2 =
-      Cr::Utility::Directory::splitExtension(rootFilename).first;
+      Cr::Utility::Path::splitExtension(rootFilename).first();
   // check if the src filename has a 2nd extension
   bool hasTwoExtensions = (rootFilename != rootFilename2);
   if (hasTwoExtensions) {
     for (const std::string& ext : extensions) {
       // try removing second extension
       resFilename = rootFilename2 + ext;
-      if (Corrade::Utility::Directory::exists(resFilename)) {
+      if (Corrade::Utility::Path::exists(resFilename)) {
         return resFilename;
       }
     }
@@ -440,8 +442,8 @@ std::string ManagedFileBasedContainer<T, Access>::convertFilenameToPassedExt(
   // If filename does not already have extension of interest
   if (strHandle.find(Cr::Utility::String::lowercase(fileTypeExt)) ==
       std::string::npos) {
-    resHandle = Cr::Utility::Directory::splitExtension(filename).first + "." +
-                fileTypeExt;
+    resHandle =
+        Cr::Utility::Path::splitExtension(filename).first() + "." + fileTypeExt;
     ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
         << "<" << this->objectType_ << "> : Filename :" << filename
         << " changed to proposed " << fileTypeExt
@@ -458,7 +460,7 @@ template <class T, ManagedObjectAccess Access>
 bool ManagedFileBasedContainer<T, Access>::verifyLoadDocument(
     const std::string& filename,
     std::unique_ptr<io::JsonDocument>& jsonDoc) {
-  if (Cr::Utility::Directory::exists(filename)) {
+  if (Cr::Utility::Path::exists(filename)) {
     try {
       jsonDoc = std::make_unique<io::JsonDocument>(io::parseJsonFile(filename));
     } catch (...) {
@@ -484,22 +486,22 @@ bool ManagedFileBasedContainer<T, Access>::saveManagedObjectToFile(
   const std::string& objectHandle = managedObject->getHandle();
   // get file directory
   const std::string fileDirectory = managedObject->getFileDirectory();
-  namespace FileUtil = Cr::Utility::Directory;
+  namespace FileUtil = Cr::Utility::Path;
   // get candidate for file name
   // first strip object's file directory from objectHandle
   std::size_t pos = objectHandle.find(fileDirectory);
   std::string fileNameRaw;
   if ((fileDirectory.empty()) || (pos == std::string::npos)) {
     // directory not found, construct filename from simplified object handle
-    fileNameRaw = FileUtil::filename(objectHandle);
+    fileNameRaw = FileUtil::split(objectHandle).second();
   } else {
     // directory found, strip it out and leave remainder (including potential
     // subdirs within directory)
     fileNameRaw = objectHandle.substr(pos + fileDirectory.length() + 1);
   }
   std::string fileNameBase =
-      FileUtil::splitExtension(FileUtil::splitExtension(fileNameRaw).first)
-          .first;
+      FileUtil::splitExtension(FileUtil::splitExtension(fileNameRaw).first())
+          .first();
 
   std::string fileName = fileNameBase + "." + this->JSONTypeExt_;
   if (!overwrite) {

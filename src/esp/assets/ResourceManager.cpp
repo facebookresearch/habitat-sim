@@ -15,8 +15,8 @@
 #include <Corrade/Utility/ConfigurationGroup.h>
 #include <Corrade/Utility/Debug.h>
 #include <Corrade/Utility/DebugStl.h>
-#include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/FormatStl.h>
+#include <Corrade/Utility/Path.h>
 #include <Corrade/Utility/String.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/EigenIntegration/Integration.h>
@@ -282,14 +282,14 @@ std::vector<std::string> ResourceManager::buildVertexColorMapReport(
   }
 
   return infoSemanticMeshData_->getVertColorSSDReport(
-      Cr::Utility::Directory::filename(filename), semanticColorMapBeingUsed_,
+      Cr::Utility::Path::split(filename).second(), semanticColorMapBeingUsed_,
       semanticScene_);
 }  // ResourceManager::buildVertexColorMapReport
 
 bool ResourceManager::loadSemanticSceneDescriptor(
     const std::string& ssdFilename,
     const std::string& activeSceneName) {
-  namespace FileUtil = Cr::Utility::Directory;
+  namespace FileUtil = Cr::Utility::Path;
   semanticScene_ = nullptr;
   if (ssdFilename != "") {
     bool success = false;
@@ -321,8 +321,8 @@ bool ResourceManager::loadSemanticSceneDescriptor(
       // attempt to look for specified file failed, attempt to build new file
       // name by searching in path specified of specified file for
       // info_semantic.json file for replica dataset
-      const std::string constructedFilename =
-          FileUtil::join(FileUtil::path(ssdFilename), "info_semantic.json");
+      const std::string constructedFilename = FileUtil::join(
+          FileUtil::split(ssdFilename).first(), "info_semantic.json");
       fileExists = FileUtil::exists(constructedFilename);
       if (fileExists) {
         success = scene::SemanticScene::loadReplicaHouse(constructedFilename,
@@ -428,7 +428,7 @@ bool ResourceManager::loadStage(
     // check if file names exist
     AssetInfo semanticInfo = semanticInfoIter->second;
     auto semanticStageFilename = semanticInfo.filepath;
-    if (Cr::Utility::Directory::exists(semanticStageFilename)) {
+    if (Cr::Utility::Path::exists(semanticStageFilename)) {
       ESP_DEBUG() << "Loading Semantic Stage mesh :" << semanticStageFilename;
       activeSemanticSceneID = sceneManagerPtr->initSceneGraph();
 
@@ -974,7 +974,7 @@ bool ResourceManager::loadStageInternal(
   ESP_DEBUG() << "Attempting to load stage" << filename << "";
   bool meshSuccess = true;
   if (filename != EMPTY_SCENE) {
-    if (!Cr::Utility::Directory::exists(filename)) {
+    if (!Cr::Utility::Path::exists(filename)) {
       ESP_ERROR(Mn::Debug::Flag::NoSpace)
           << "Attempting to load stage but cannot find specified asset file : '"
           << filename << "'. Aborting.";
@@ -1306,8 +1306,8 @@ bool ResourceManager::loadRenderAssetPTex(const AssetInfo& info) {
   const std::string& filename = info.filepath;
   CORRADE_INTERNAL_ASSERT(resourceDict_.count(filename) == 0);
 
-  const auto atlasDir = Cr::Utility::Directory::join(
-      Cr::Utility::Directory::path(filename), "textures");
+  const auto atlasDir = Cr::Utility::Path::join(
+      Cr::Utility::Path::split(filename).first(), "textures");
 
   int index = nextMeshID_++;
   meshes_.emplace(index, std::make_unique<PTexMeshData>());
@@ -1496,7 +1496,7 @@ ResourceManager::flattenImportedMeshAndBuildSemantic(Importer& fileImporter,
 
   GenericSemanticMeshData::uptr semanticMeshData =
       GenericSemanticMeshData::buildSemanticMeshData(
-          *meshData, Cr::Utility::Directory::filename(filename),
+          *meshData, Cr::Utility::Path::split(filename).second(),
           semanticColorMapBeingUsed_,
           (filename.find(".ply") == std::string::npos), semanticScene_);
 
@@ -2083,7 +2083,7 @@ void ResourceManager::loadMaterials(Importer& importer,
 
   // name of asset, for debugging purposes
   const std::string assetName =
-      Cr::Utility::Directory::filename(loadedAssetData.assetInfo.filepath);
+      Cr::Utility::Path::split(loadedAssetData.assetInfo.filepath).second();
   int numMaterials = importer.materialCount();
   ESP_DEBUG(Mn::Debug::Flag::NoSpace)
       << "Building " << numMaterials << " materials for asset named '"
@@ -2213,7 +2213,7 @@ ObjectInstanceShaderType ResourceManager::getMaterialShaderType(
     infoSpecShaderType = ObjectInstanceShaderType::Material;
   }
   ESP_DEBUG() << "Shadertype being used for file :"
-              << Cr::Utility::Directory::filename(info.filepath)
+              << Cr::Utility::Path::split(info.filepath).second()
               << "| shadertype name :"
               << metadata::attributes::getShaderTypeName(infoSpecShaderType);
   return infoSpecShaderType;
@@ -2935,7 +2935,7 @@ bool ResourceManager::outputMeshMetaDataToObj(
     const std::string& MeshMetaDataFile,
     const std::string& new_filename,
     const std::string& filepath) const {
-  bool success = Cr::Utility::Directory::mkpath(filepath);
+  bool success = Cr::Utility::Path::make(filepath);
 
   const MeshMetaData& metaData = getMeshMetaData(MeshMetaDataFile);
   std::string out = "# chd Mesh group \n";
@@ -2974,7 +2974,8 @@ bool ResourceManager::outputMeshMetaDataToObj(
     numParts++;
     globalVertexNum += meshData.positions.size();
   }
-  Cr::Utility::Directory::writeString(filepath + "/" + new_filename, out);
+  Cr::Utility::Path::write(Cr::Utility::Path::join(filepath, new_filename),
+                           Cr::Containers::StringView{out});
 
   return success;
 }  // ResourceManager::outputMeshMetaDataToObj
@@ -3096,11 +3097,12 @@ void ResourceManager::createConvexHullDecomposition(
   auto insertedResourceDict =
       resourceDict_.emplace(chdFilename, std::move(loadedAssetData));
   if (saveChdToObj) {
-    std::string objDirectory = Cr::Utility::Directory::join(
-        Cr::Utility::Directory::current(), "data/VHACD_outputs");
+    std::string objDirectory = Cr::Utility::Path::join(
+        *Cr::Utility::Path::currentDirectory(), "data/VHACD_outputs");
     std::string new_filename =
-        Cr::Utility::Directory::filename(
-            Cr::Utility::Directory::splitExtension(chdFilename).first) +
+        Cr::Utility::Path::split(
+            Cr::Utility::Path::splitExtension(chdFilename).first())
+            .second() +
         ".obj";
     outputMeshMetaDataToObj(chdFilename, new_filename, objDirectory);
   }

@@ -7,7 +7,7 @@
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/TestSuite/Compare/Container.h>
 #include <Corrade/TestSuite/Tester.h>
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/Path.h>
 #include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/Math/Range.h>
 #include <string>
@@ -72,7 +72,7 @@ void ResourceManagerTest::createJoinedCollisionMesh() {
   SceneManager sceneManager_;
   auto stageAttributesMgr = MM->getStageAttributesManager();
   std::string boxFile =
-      Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
+      Cr::Utility::Path::join(TEST_ASSETS, "objects/transform_box.glb");
 
   // create stage attributes file
   auto stageAttributes = stageAttributesMgr->createObject(boxFile, true);
@@ -136,9 +136,9 @@ void ResourceManagerTest::VHACDUsageTest() {
   SceneManager sceneManager_;
   auto stageAttributesMgr = MM->getStageAttributesManager();
   std::string donutFile =
-      Cr::Utility::Directory::join(TEST_ASSETS, "objects/donut.glb");
+      Cr::Utility::Path::join(TEST_ASSETS, "objects/donut.glb");
   std::string CHdonutFile =
-      Cr::Utility::Directory::join(TEST_ASSETS, "objects/CHdonut.glb");
+      Cr::Utility::Path::join(TEST_ASSETS, "objects/CHdonut.glb");
 
   // create stage attributes file
   auto stageAttributes = stageAttributesMgr->createObject(donutFile, true);
@@ -178,7 +178,7 @@ void ResourceManagerTest::loadAndCreateRenderAssetInstance() {
   ResourceManager resourceManager(MM);
   SceneManager sceneManager_;
   std::string boxFile =
-      Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
+      Cr::Utility::Path::join(TEST_ASSETS, "objects/transform_box.glb");
 
   int sceneID = sceneManager_.initSceneGraph();
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
@@ -267,7 +267,7 @@ void ResourceManagerTest::testShaderTypeSpecification() {
   // must declare these in this order due to avoid deallocation errors
   auto MM = MetadataMediator::create();
   std::string boxFile =
-      Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
+      Cr::Utility::Path::join(TEST_ASSETS, "objects/transform_box.glb");
   // bogus test for corrade
   CORRADE_VERIFY(true);
 

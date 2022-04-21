@@ -42,7 +42,7 @@ void BaseMesh::convertMeshColors(
   } else {
     Mn::Math::packInto(
         Cr::Containers::arrayCast<2, float>(stridedArrayView(colors))
-            .except({0, 1}),
+            .exceptSuffix({0, 1}),
         Cr::Containers::arrayCast<2, Mn::UnsignedByte>(
             stridedArrayView(meshColors)));
   }
