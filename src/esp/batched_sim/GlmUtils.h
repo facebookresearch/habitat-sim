@@ -38,6 +38,8 @@ bool batchSphereOrientedBoxContactTest(const glm::mat4x3** orientedBoxTransforms
 
 Magnum::Quaternion yawToRotation(float yawRadians);
 
+Magnum::Vector3 getSphericalCoordinates(
+  const Magnum::Vector3& sourcePos, Magnum::Vector3& goalPos, const Magnum::Quaternion& sourceRotation);
 
 /*
 */

@@ -8,6 +8,7 @@
 #include <Magnum/SceneGraph/PythonBindings.h>
 
 #include "esp/batched_sim/BatchedSimulator.h"
+#include "esp/batched_sim/GlmUtils.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;
@@ -33,6 +34,9 @@ py::capsule getDepthMemory(BatchedSimulator& bsim, const uint32_t groupIdx)
 }  // namespace
 
 void initBatchedSimBindings(py::module& m) {
+
+  m.def("get_spherical_coordinates", &getSphericalCoordinates);
+
   py::class_<CameraSensorConfig>(m, "CameraSensorConfig")
       .def_readwrite("width", &CameraSensorConfig::width, R"(Todo)")
       .def_readwrite("height", &CameraSensorConfig::height, R"(Todo)");

@@ -179,6 +179,28 @@ Mn::Quaternion yawToRotation(float yawRadians) {
   return Mn::Quaternion::rotation(Mn::Rad(yawRadians), upAxis);
 }
 
+
+// see also batched_env.py _get_spherical_coordinates_ref
+Mn::Vector3 getSphericalCoordinates(
+  const Mn::Vector3& sourcePos, Mn::Vector3& goalPos, const Mn::Quaternion& sourceRotation) {
+
+  const auto directionVec = goalPos - sourcePos;
+  // todo: check if we need inverse of sourceRotation
+  const auto directionVecAgent = sourceRotation.inverted().transformVector(directionVec);
+
+  const auto phi = float(std::atan2(directionVecAgent.x(), -directionVecAgent.z()));
+  float length = directionVec.length();
+  float theta;
+  constexpr float eps = 1e-6;
+  if (length > eps) {
+    theta = float(Mn::Math::acos(directionVecAgent.y() / length));
+  } else {
+    theta = 0.f;
+  }
+  float rho = length;
+  return {rho, theta, phi};
+}
+
 template bool batchSphereOrientedBoxContactTest<64, true>(const glm::mat4x3** orientedBoxTransforms, 
   const Magnum::Vector3** positions,
   float sphereRadiusSq, const Magnum::Range3D** boxRanges, int numTests);
