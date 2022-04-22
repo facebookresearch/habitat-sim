@@ -673,7 +673,7 @@ class Sensor:
                 is not self._sim.get_active_semantic_scene_graph()
             ):
                 raise RuntimeError(
-                    "SemanticSensor observation requested but no SemanticScene is loaded"
+                    "Async drawing doesn't support semantic rendering when there are multiple scene graphs"
                 )
             # TODO: sync this path with renderer changes as above (render from sensor object)
 
