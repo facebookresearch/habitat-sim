@@ -41,9 +41,9 @@ The RLRAudioPropagationConfiguration() exposes various configuration options tha
 | transmission | bool | false | Enable transmission of rays |
 | meshSimplification | bool | false | Uses a series of mesh simplification operations to reduce the mesh complexity for ray tracing. Vertex welding is applied, followed by simplification using the edge collapse algorithm. |
 | temporalCoherence | bool | false | Turn on/off temporal smoothing of the impulse response. This uses the impulse response from the previous simulation time step as a starting point for the next time step. This reduces the number of rays required by about a factor of 10, resulting in faster simulations, but should not be used if the motion of sources/listeners is not continuous. |
-| dumpWaveFiles | bool | false | Write the wave files for different bands. Will be writted to the AudioSensorSpec's outputDirectory |
+| dumpWaveFiles | bool | false | Write the wave files for different bands. Will be writted to the AudioSensorSpec's [outputDirectory](#outputDirectory) |
 | enableMaterials | bool | true | Enable audio materials |
-| writeIrToFile | bool | false | Write the final impulse response to a file |
+| writeIrToFile | bool | false | Write the final impulse response to a file. Will be writted to the AudioSensorSpec's [outputDirectory](#outputDirectory) |
 
 
 
@@ -79,7 +79,7 @@ Ambisonics | Channel layout that encodes fully spherical spatial audio as a set 
 |Config name|Data Type|Default Value|Usage|
 |-----------|---------|-------------|-----|
 |uuid|string|""|unique identifier string to name and refer to this sensor object|
-| outputDirectory | string | "" | Output directory prefix for the simulation. Folders with outputDirectory + i should be created if you want to dump the wave files. (i = 0 indexed simulation iteration |
+| outputDirectory(#outputDirectory) | string | "" | Output directory prefix for the simulation. Folders with outputDirectory + i should be created if you want to dump the wave files. (i = 0 indexed simulation iteration |
 | acousticsConfig | [RLRAudioPropagationConfiguration()](#acoustics-configuration) |  Defined in the relevant section | Acoustic configuration struct that defines simulation parameters |
 | channelLayout | [RLRAudioPropagationChannelLayout()](#channel-layout) |  Defined in the relevant section | Channel layout for simulated output audio |
 

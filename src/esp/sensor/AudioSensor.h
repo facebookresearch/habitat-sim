@@ -139,10 +139,14 @@ class AudioSensor : public Sensor {
 
   esp::assets::MeshData::ptr sceneMesh_;
 
-  std::int32_t currentSimCount_ = -1;  // track the number of simulations
-  vec3f lastSourcePos_;                // track the source position
-  vec3f lastAgentPos_;                 // track the agent orientation
-  vec4f lastAgentRot_;                 // track the agent rotation
+  //! track the number of simulations
+  std::int32_t currentSimCount_ = -1;
+  //! track the source position
+  vec3f lastSourcePos_;
+  //! track the agent orientation
+  vec3f lastAgentPos_;
+  //! track the agent rotation
+  vec4f lastAgentRot_;
 
   bool newInitialization_ = false;
   bool newSource_ = false;
