@@ -2,7 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 #include <Corrade/TestSuite/Tester.h>
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/Path.h>
 #include <string>
 
 #include "esp/scene/SemanticScene.h"
@@ -20,7 +20,7 @@ namespace {
 // Scene dataset config directly references test scene locations, along with
 // providing default values for stage configuration, obviating the need for
 // per-scene/per-stage configs.
-const std::string HM3DTestConfigLoc = Cr::Utility::Directory::join(
+const std::string HM3DTestConfigLoc = Cr::Utility::Path::join(
     SCENE_DATASETS,
     "habitat-test-scenes/hm3d_habitat_annotated_testdata/"
     "hm3d_annotated_testdata.scene_dataset_config.json");
@@ -80,7 +80,7 @@ HM3DSceneTest::HM3DSceneTest() {
 
 void HM3DSceneTest::testHM3DScene() {
   // If scene dataset does not exist, skip test for now
-  if (!Cr::Utility::Directory::exists(HM3DTestConfigLoc)) {
+  if (!Cr::Utility::Path::exists(HM3DTestConfigLoc)) {
     CORRADE_SKIP("HM3D dataset not found.");
   }
   auto&& testData = TestHM3DScenes[testCaseInstanceId()];
@@ -91,7 +91,7 @@ void HM3DSceneTest::testHM3DScene() {
 
 void HM3DSceneTest::testHM3DSemanticScene() {
   // If scene dataset does not exist, skip test for now
-  if (!Cr::Utility::Directory::exists(HM3DTestConfigLoc)) {
+  if (!Cr::Utility::Path::exists(HM3DTestConfigLoc)) {
     CORRADE_SKIP("HM3D dataset not found.");
   }
   auto&& testData = TestHM3DScenes[testCaseInstanceId()];

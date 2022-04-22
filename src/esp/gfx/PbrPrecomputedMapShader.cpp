@@ -62,17 +62,17 @@ PbrPrecomputedMapShader::PbrPrecomputedMapShader(Flags flags) : flags_(flags) {
   vert
       .addSource(Cr::Utility::formatString(
           "#define ATTRIBUTE_LOCATION_POSITION {}\n", Position::Location))
-      .addSource(rs.get("pbrPrecomputedMap.vert"));
+      .addSource(rs.getString("pbrPrecomputedMap.vert"));
 
   frag
       .addSource(Cr::Utility::formatString(
           "#define OUTPUT_ATTRIBUTE_LOCATION_COLOR {}\n", ColorOutput))
-      .addSource(rs.get("pbrCommon.glsl") + "\n");
+      .addSource(rs.getString("pbrCommon.glsl") + "\n");
 
   if (flags & Flag::IrradianceMap) {
-    frag.addSource(rs.get("pbrIrradianceMap.frag"));
+    frag.addSource(rs.getString("pbrIrradianceMap.frag"));
   } else if (flags & Flag::PrefilteredMap) {
-    frag.addSource(rs.get("pbrPrefilteredMap.frag"));
+    frag.addSource(rs.getString("pbrPrefilteredMap.frag"));
   }
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));

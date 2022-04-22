@@ -76,7 +76,7 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
   // All of the below will be replaced by readDatasetJSONCell call
   const char* tag = "articulated_objects";
   if (jsonConfig.HasMember(tag)) {
-    namespace Dir = Cr::Utility::Directory;
+    namespace Dir = Cr::Utility::Path;
     if (!jsonConfig[tag].IsObject()) {
       ESP_WARNING()
           << "\"" << tag
@@ -138,7 +138,7 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
                              "Parsing articulated object library directory: " +
                                  globPath;
                       for (auto& file :
-                           Dir::list(globPath, Dir::Flag::SortAscending)) {
+                           *Dir::list(globPath, Dir::ListFlag::SortAscending)) {
                         std::string absoluteSubfilePath =
                             Dir::join(globPath, file);
                         if (Cr::Utility::String::endsWith(absoluteSubfilePath,
@@ -163,7 +163,7 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
                   // check if any exist, may be more than 1 since may have
                   // traversing a subdirectory
                   if (aoFilePaths.size() > 0) {
-                    std::string ao_dir = Dir::path(aoFilePaths[0]);
+                    std::string ao_dir = Dir::split(aoFilePaths[0]).first();
                     ESP_DEBUG() << "(Articulated Object) : Loading"
                                 << aoFilePaths.size() << "" << this->objectType_
                                 << "templates found in" << ao_dir;
@@ -175,12 +175,12 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
 
                       // set k-v pairs here.
                       auto key =
-                          Corrade::Utility::Directory::splitExtension(
-                              Corrade::Utility::Directory::splitExtension(
-                                  Corrade::Utility::Directory::filename(
-                                      aoModelFileName))
-                                  .first)
-                              .first;
+                          Corrade::Utility::Path::splitExtension(
+                              Corrade::Utility::Path::splitExtension(
+                                  Corrade::Utility::Path::split(aoModelFileName)
+                                      .second())
+                                  .first())
+                              .first();
 
                       dsAttribs->setArticulatedObjectModelFilename(
                           key, aoModelFileName);
@@ -255,9 +255,9 @@ void SceneDatasetAttributesManager::loadAndValidateMap(
   // dsDir-prepended entry
   for (std::pair<const std::string, std::string>& entry : map) {
     const std::string loc = entry.second;
-    if (!Cr::Utility::Directory::exists(loc)) {
-      std::string newLoc = Cr::Utility::Directory::join(dsDir, loc);
-      if (!Cr::Utility::Directory::exists(newLoc)) {
+    if (!Cr::Utility::Path::exists(loc)) {
+      std::string newLoc = Cr::Utility::Path::join(dsDir, loc);
+      if (!Cr::Utility::Path::exists(newLoc)) {
         ESP_WARNING() << jsonTag << "Value :" << loc
                       << "not found on disk as absolute path or relative to"
                       << dsDir;

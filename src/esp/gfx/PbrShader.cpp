@@ -96,7 +96,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
       .addSource(flags_ & Flag::TextureTransformation
                      ? "#define TEXTURE_TRANSFORMATION\n"
                      : "")
-      .addSource(rs.get("pbr.vert"));
+      .addSource(rs.getString("pbr.vert"));
 
   std::stringstream outputAttributeLocationsStream;
   outputAttributeLocationsStream << Cr::Utility::formatString(
@@ -131,10 +131,11 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
                                              : "")
       .addSource(
           Cr::Utility::formatString("#define LIGHT_COUNT {}\n", lightCount_))
-      .addSource(flags_ & Flag::ShadowsVSM ? rs.get("shadowsVSM.glsl") + "\n"
-                                           : "")
-      .addSource(rs.get("pbrCommon.glsl") + "\n")
-      .addSource(rs.get("pbr.frag"));
+      .addSource(flags_ & Flag::ShadowsVSM
+                     ? rs.getString("shadowsVSM.glsl") + "\n"
+                     : "")
+      .addSource(rs.getString("pbrCommon.glsl") + "\n")
+      .addSource(rs.getString("pbr.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));
 

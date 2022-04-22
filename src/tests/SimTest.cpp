@@ -5,7 +5,7 @@
 #include <Corrade/Containers/StridedArrayView.h>
 #include <Corrade/TestSuite/Compare/Numeric.h>
 #include <Corrade/TestSuite/Tester.h>
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/Path.h>
 #include <Magnum/DebugTools/CompareImage.h>
 #include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/ImageView.h>
@@ -47,17 +47,17 @@ namespace {
 using namespace Magnum::Math::Literals;
 
 const std::string vangogh =
-    Cr::Utility::Directory::join(SCENE_DATASETS,
-                                 "habitat-test-scenes/van-gogh-room.glb");
+    Cr::Utility::Path::join(SCENE_DATASETS,
+                            "habitat-test-scenes/van-gogh-room.glb");
 const std::string skokloster =
-    Cr::Utility::Directory::join(SCENE_DATASETS,
-                                 "habitat-test-scenes/skokloster-castle.glb");
+    Cr::Utility::Path::join(SCENE_DATASETS,
+                            "habitat-test-scenes/skokloster-castle.glb");
 const std::string planeStage =
-    Cr::Utility::Directory::join(TEST_ASSETS, "scenes/plane.glb");
+    Cr::Utility::Path::join(TEST_ASSETS, "scenes/plane.glb");
 const std::string physicsConfigFile =
-    Cr::Utility::Directory::join(TEST_ASSETS, "testing.physics_config.json");
+    Cr::Utility::Path::join(TEST_ASSETS, "testing.physics_config.json");
 const std::string screenshotDir =
-    Cr::Utility::Directory::join(TEST_ASSETS, "screenshots/");
+    Cr::Utility::Path::join(TEST_ASSETS, "screenshots/");
 
 struct SimTest : Cr::TestSuite::Tester {
   explicit SimTest();
@@ -77,7 +77,7 @@ struct SimTest : Cr::TestSuite::Tester {
     auto sim = Simulator::create_unique(simConfig);
     auto objAttrMgr = sim->getObjectAttributesManager();
     objAttrMgr->loadAllJSONConfigsFromPath(
-        Cr::Utility::Directory::join(TEST_ASSETS, "objects/nested_box"), true);
+        Cr::Utility::Path::join(TEST_ASSETS, "objects/nested_box"), true);
 
     sim->setLightSetup(self.lightSetup1, "custom_lighting_1");
     sim->setLightSetup(self.lightSetup2, "custom_lighting_2");
@@ -100,7 +100,7 @@ struct SimTest : Cr::TestSuite::Tester {
     auto sim = Simulator::create_unique(simConfig, MM);
     auto objAttrMgr = sim->getObjectAttributesManager();
     objAttrMgr->loadAllJSONConfigsFromPath(
-        Cr::Utility::Directory::join(TEST_ASSETS, "objects/nested_box"), true);
+        Cr::Utility::Path::join(TEST_ASSETS, "objects/nested_box"), true);
 
     sim->setLightSetup(self.lightSetup1, "custom_lighting_1");
     sim->setLightSetup(self.lightSetup2, "custom_lighting_2");
@@ -262,7 +262,7 @@ void SimTest::checkPinholeCameraRGBAObservation(
           Mn::PixelFormat::RGBA8Unorm,
           {pinholeCameraSpec->resolution[0], pinholeCameraSpec->resolution[1]},
           observation.buffer->data}),
-      Cr::Utility::Directory::join(screenshotDir, groundTruthImageFile),
+      Cr::Utility::Path::join(screenshotDir, groundTruthImageFile),
       (Mn::DebugTools::CompareImageToFile{maxThreshold, meanThreshold}));
 }
 
@@ -499,7 +499,7 @@ void SimTest::loadingObjectTemplates() {
   // test directory of templates
   std::vector<int> templateIndices =
       objectAttribsMgr->loadAllJSONConfigsFromPath(
-          Cr::Utility::Directory::join(TEST_ASSETS, "objects"));
+          Cr::Utility::Path::join(TEST_ASSETS, "objects"));
   CORRADE_VERIFY(!templateIndices.empty());
   for (auto index : templateIndices) {
     CORRADE_VERIFY(index != esp::ID_UNDEFINED);
@@ -508,7 +508,7 @@ void SimTest::loadingObjectTemplates() {
   // reload again and ensure that old loaded indices are returned
   std::vector<int> templateIndices2 =
       objectAttribsMgr->loadAllJSONConfigsFromPath(
-          Cr::Utility::Directory::join(TEST_ASSETS, "objects"));
+          Cr::Utility::Path::join(TEST_ASSETS, "objects"));
   CORRADE_COMPARE(templateIndices2, templateIndices);
 
   // test the loaded assets and accessing them by name
@@ -535,14 +535,14 @@ void SimTest::loadingObjectTemplates() {
   ObjectAttributes::ptr newTemplate =
       objectAttribsMgr->createObject("new template", false);
   std::string boxPath =
-      Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
+      Cr::Utility::Path::join(TEST_ASSETS, "objects/transform_box.glb");
   newTemplate->setRenderAssetHandle(boxPath);
   int templateIndex = objectAttribsMgr->registerObject(newTemplate, boxPath);
 
   CORRADE_VERIFY(templateIndex != esp::ID_UNDEFINED);
   // change render asset for object template named boxPath
   std::string chairPath =
-      Cr::Utility::Directory::join(TEST_ASSETS, "objects/chair.glb");
+      Cr::Utility::Path::join(TEST_ASSETS, "objects/chair.glb");
   newTemplate->setRenderAssetHandle(chairPath);
   int templateIndex2 = objectAttribsMgr->registerObject(newTemplate, boxPath);
 
@@ -718,7 +718,7 @@ void SimTest::addObjectByHandle() {
   CORRADE_COMPARE(obj, nullptr);
 
   // pass valid object_config.json filepath as handle to addObjectByHandle
-  const auto validHandle = Cr::Utility::Directory::join(
+  const auto validHandle = Cr::Utility::Path::join(
       TEST_ASSETS, "objects/nested_box.object_config.json");
   obj = rigidObjMgr->addObjectByHandle(validHandle);
   CORRADE_VERIFY(obj->isAlive());
@@ -783,7 +783,7 @@ void SimTest::addSensorToObject() {
       (Mn::ImageView2D{Mn::PixelFormat::RGBA8Unorm,
                        {defaultResolution[0], defaultResolution[1]},
                        observation.buffer->data}),
-      Cr::Utility::Directory::join(screenshotDir, "SimTestExpectedScene.png"),
+      Cr::Utility::Path::join(screenshotDir, "SimTestExpectedScene.png"),
       (Mn::DebugTools::CompareImageToFile{maxThreshold, 0.75f}));
 }
 
@@ -804,7 +804,7 @@ void SimTest::createMagnumRenderingOff() {
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
   auto rigidObjMgr = simulator->getRigidObjectManager();
   objectAttribsMgr->loadAllJSONConfigsFromPath(
-      Cr::Utility::Directory::join(TEST_ASSETS, "objects/nested_box"), true);
+      Cr::Utility::Path::join(TEST_ASSETS, "objects/nested_box"), true);
 
   // check that we can load a glb file
   auto objs = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");

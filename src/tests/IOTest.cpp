@@ -4,7 +4,7 @@
 
 #include <Corrade/TestSuite/Tester.h>
 #include <Corrade/Utility/DebugStl.h>
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/Path.h>
 
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/core/Esp.h"
@@ -22,8 +22,7 @@ using esp::metadata::attributes::AbstractObjectAttributes;
 using esp::metadata::attributes::ObjectAttributes;
 
 namespace {
-const std::string dataDir =
-    Corrade::Utility::Directory::join(SCENE_DATASETS, "../");
+const std::string dataDir = Corrade::Utility::Path::join(SCENE_DATASETS, "../");
 
 struct IOTest : Cr::TestSuite::Tester {
   explicit IOTest();
@@ -90,7 +89,7 @@ void IOTest::fileReplaceExtTest() {
 }
 
 void IOTest::parseURDF() {
-  const std::string iiwaURDF = Cr::Utility::Directory::join(
+  const std::string iiwaURDF = Cr::Utility::Path::join(
       TEST_ASSETS, "urdf/kuka_iiwa/model_free_base.urdf");
 
   esp::io::URDF::Parser parser;
@@ -156,11 +155,11 @@ void IOTest::testJson() {
 
   // test io
   auto testFilepath =
-      Corrade::Utility::Directory::join(dataDir, "../io_test_json.json");
+      Corrade::Utility::Path::join(dataDir, "../io_test_json.json");
   CORRADE_VERIFY(esp::io::writeJsonToFile(json, testFilepath));
   const auto& loadedJson = esp::io::parseJsonFile(testFilepath);
   CORRADE_COMPARE(esp::io::jsonToString(loadedJson), s);
-  Corrade::Utility::Directory::rm(testFilepath);
+  Corrade::Utility::Path::remove(testFilepath);
 
   // test basic attributes populating
 

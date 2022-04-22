@@ -199,11 +199,11 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
 
   // get a simplified name of the handle for the object
   std::string simpleArtObjHandle =
-      Corrade::Utility::Directory::splitExtension(
-          Corrade::Utility::Directory::splitExtension(
-              Corrade::Utility::Directory::filename(filepath))
-              .first)
-          .first;
+      Corrade::Utility::Path::splitExtension(
+          Corrade::Utility::Path::splitExtension(
+              Corrade::Utility::Path::split(filepath).second())
+              .first())
+          .first();
 
   std::string newArtObjectHandle =
       articulatedObjectManager_->getUniqueHandleFromCandidate(

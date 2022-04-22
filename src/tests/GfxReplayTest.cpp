@@ -7,7 +7,7 @@
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/TestSuite/Compare/Numeric.h>
 #include <Corrade/TestSuite/Tester.h>
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/Path.h>
 #include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/Math/Range.h>
 
@@ -86,7 +86,7 @@ void GfxReplayTest::testRecorder() {
   ResourceManager resourceManager(MM);
   SceneManager sceneManager_;
   std::string boxFile =
-      Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
+      Cr::Utility::Path::join(TEST_ASSETS, "objects/transform_box.glb");
 
   int sceneID = sceneManager_.initSceneGraph();
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
@@ -195,7 +195,7 @@ void GfxReplayTest::testPlayer() {
   ResourceManager resourceManager(MM);
   SceneManager sceneManager_;
   std::string boxFile =
-      Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
+      Cr::Utility::Path::join(TEST_ASSETS, "objects/transform_box.glb");
 
   int sceneID = sceneManager_.initSceneGraph();
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
@@ -355,7 +355,7 @@ void GfxReplayTest::testPlayerReadMissingFile() {
 void GfxReplayTest::testPlayerReadInvalidFile() {
   esp::logging::LoggingContext loggingContext;
   auto testFilepath =
-      Corrade::Utility::Directory::join(DATA_DIR, "./gfx_replay_test.json");
+      Corrade::Utility::Path::join(DATA_DIR, "./gfx_replay_test.json");
 
   std::ofstream out(testFilepath);
   out << "{invalid json";
@@ -372,7 +372,7 @@ void GfxReplayTest::testPlayerReadInvalidFile() {
   CORRADE_COMPARE(player.getNumKeyframes(), 0);
 
   // remove bogus file created for this test
-  bool success = Corrade::Utility::Directory::rm(testFilepath);
+  bool success = Corrade::Utility::Path::remove(testFilepath);
   if (!success) {
     ESP_WARNING() << "Unable to remove temporary test JSON file"
                   << testFilepath;
@@ -382,9 +382,9 @@ void GfxReplayTest::testPlayerReadInvalidFile() {
 // test recording and playback through the simulator interface
 void GfxReplayTest::testSimulatorIntegration() {
   std::string boxFile =
-      Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
+      Cr::Utility::Path::join(TEST_ASSETS, "objects/transform_box.glb");
   auto testFilepath =
-      Corrade::Utility::Directory::join(DATA_DIR, "./gfx_replay_test.json");
+      Corrade::Utility::Path::join(DATA_DIR, "./gfx_replay_test.json");
 
   SimulatorConfiguration simConfig{};
   simConfig.activeSceneName = boxFile;
@@ -394,7 +394,7 @@ void GfxReplayTest::testSimulatorIntegration() {
   auto sim = Simulator::create_unique(simConfig);
   auto objAttrMgr = sim->getObjectAttributesManager();
   objAttrMgr->loadAllJSONConfigsFromPath(
-      Cr::Utility::Directory::join(TEST_ASSETS, "objects/nested_box"), true);
+      Cr::Utility::Path::join(TEST_ASSETS, "objects/nested_box"), true);
 
   auto handles = objAttrMgr->getObjectHandlesBySubstring("nested_box");
   CORRADE_VERIFY(!handles.empty());
@@ -442,7 +442,7 @@ void GfxReplayTest::testSimulatorIntegration() {
                   prevNumberOfChildrenOfRoot);
 
   // remove file created for this test
-  bool success = Corrade::Utility::Directory::rm(testFilepath);
+  bool success = Corrade::Utility::Path::remove(testFilepath);
   if (!success) {
     ESP_WARNING() << "Unable to remove temporary test JSON file"
                   << testFilepath;

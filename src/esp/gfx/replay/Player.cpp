@@ -33,7 +33,7 @@ Player::Player(const LoadAndCreateRenderAssetInstanceCallback& callback)
 void Player::readKeyframesFromFile(const std::string& filepath) {
   close();
 
-  if (!Corrade::Utility::Directory::exists(filepath)) {
+  if (!Corrade::Utility::Path::exists(filepath)) {
     ESP_ERROR() << "File" << filepath << "not found.";
     return;
   }

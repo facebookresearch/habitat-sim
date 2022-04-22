@@ -2,7 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 #include <Corrade/TestSuite/Tester.h>
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/Path.h>
 #include <Magnum/Magnum.h>
 
 #include "esp/geo/VoxelUtils.h"
@@ -34,7 +34,7 @@ VoxelGridTest::VoxelGridTest() {
 void VoxelGridTest::testVoxelGridWithVHACD() {
   // configure and intialize Simulator
   auto simConfig = esp::sim::SimulatorConfiguration();
-  simConfig.activeSceneName = Cr::Utility::Directory::join(
+  simConfig.activeSceneName = Cr::Utility::Path::join(
       SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.glb");
   simConfig.enablePhysics = true;
   simConfig.frustumCulling = true;
@@ -115,7 +115,7 @@ void VoxelGridTest::testVoxelGridWithVHACD() {
 void VoxelGridTest::testVoxelUtilityFunctions() {
   // configure and intialize Simulator
   auto simConfig = esp::sim::SimulatorConfiguration();
-  simConfig.activeSceneName = Cr::Utility::Directory::join(
+  simConfig.activeSceneName = Cr::Utility::Path::join(
       SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.glb");
   simConfig.enablePhysics = true;
   simConfig.frustumCulling = true;

@@ -16,7 +16,7 @@
 #include <Corrade/Utility/Assert.h>
 #include <Corrade/Utility/Debug.h>
 #include <Corrade/Utility/DebugStl.h>
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/Path.h>
 #include <Magnum/GL/BufferTextureFormat.h>
 #include <Magnum/GL/TextureFormat.h>
 #include <Magnum/ImageView.h>
@@ -37,18 +37,18 @@ namespace assets {
 
 void PTexMeshData::load(const std::string& meshFile,
                         const std::string& atlasFolder) {
-  if (!Cr::Utility::Directory::exists(meshFile)) {
+  if (!Cr::Utility::Path::exists(meshFile)) {
     Cr::Utility::Fatal{-1} << "PTexMeshData::load: Mesh file" << meshFile
                            << "does not exist.";
   }
-  if (!Cr::Utility::Directory::exists(atlasFolder)) {
+  if (!Cr::Utility::Path::exists(atlasFolder)) {
     Cr::Utility::Fatal{-1} << "PTexMeshData::load: The atlasFolder"
                            << atlasFolder << "does not exist.";
   }
 
   // Parse parameters
   const auto& paramsFile = atlasFolder + "/parameters.json";
-  if (!Cr::Utility::Directory::exists(paramsFile)) {
+  if (!Cr::Utility::Path::exists(paramsFile)) {
     Cr::Utility::Fatal{-1} << "PTexMeshData::load: The parameter file"
                            << paramsFile << "does not exist.";
   }
@@ -490,7 +490,7 @@ void PTexMeshData::loadMeshData(const std::string& meshFile) {
     // splitMesh(...)
 
     // See detailed comments in front of the splitMesh(...)
-    std::string subMeshesFilename = Corrade::Utility::Directory::join(
+    std::string subMeshesFilename = Corrade::Utility::Path::join(
         atlasFolder_, "../habitat/sorted_faces.bin");
     submeshes_ = loadSubMeshes(originalMesh, subMeshesFilename);
 
@@ -756,10 +756,10 @@ void PTexMeshData::parsePLY(const std::string& filename,
 
   file.close();
 
-  Cr::Containers::Array<const char, Cr::Utility::Directory::MapDeleter>
-      mmappedData = Cr::Utility::Directory::mapRead(filename);
+  Cr::Containers::Array<const char, Cr::Utility::Path::MapDeleter> mmappedData =
+      *Cr::Utility::Path::mapRead(filename);
 
-  const size_t fileSize = *Cr::Utility::Directory::fileSize(filename);
+  const size_t fileSize = *Cr::Utility::Path::size(filename);
 
   // Parse each vertex packet and unpack
   const char* bytes = mmappedData + postHeader;
@@ -903,18 +903,18 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
   // load atlas data and upload them to GPU
   ESP_DEBUG() << "loading atlas textures:";
   for (size_t iMesh = 0; iMesh < renderingBuffers_.size(); ++iMesh) {
-    const std::string hdrFile = Cr::Utility::Directory::join(
+    const std::string hdrFile = Cr::Utility::Path::join(
         atlasFolder_, std::to_string(iMesh) + "-color-ptex.hdr");
 
-    CORRADE_ASSERT(Cr::Utility::Directory::exists(hdrFile),
+    CORRADE_ASSERT(Cr::Utility::Path::exists(hdrFile),
                    "PTexMeshData::uploadBuffersToGPU: Cannot find the .hdr file"
                        << hdrFile, );
 
     ESP_DEBUG() << "Loading atlas" << iMesh + 1 << "/"
                 << renderingBuffers_.size() << "from" << hdrFile << ".";
 
-    Cr::Containers::Array<const char, Cr::Utility::Directory::MapDeleter> data =
-        Cr::Utility::Directory::mapRead(hdrFile);
+    Cr::Containers::Array<const char, Cr::Utility::Path::MapDeleter> data =
+        *Cr::Utility::Path::mapRead(hdrFile);
     // divided by 6, since there are 3 channels, R, G, B, each of which takes
     // 1 half_float (2 bytes)
     const int dim = static_cast<int>(std::sqrt(data.size() / 6));  // square

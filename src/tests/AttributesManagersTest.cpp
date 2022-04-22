@@ -40,8 +40,8 @@ using Attrs::UVSpherePrimitiveAttributes;
 
 namespace {
 const std::string physicsConfigFile =
-    Cr::Utility::Directory::join(DATA_DIR,
-                                 "test_assets/testing.physics_config.json");
+    Cr::Utility::Path::join(DATA_DIR,
+                            "test_assets/testing.physics_config.json");
 
 /**
  * @brief Test attributesManagers' functionality via loading, creating, copying
@@ -567,8 +567,8 @@ void AttributesManagersTest::testPhysicsAttributesManagersCreate() {
 }  // AttributesManagersTest::PhysicsAttributesManagersCreate
 
 void AttributesManagersTest::testStageAttributesManagersCreate() {
-  std::string stageConfigFile = Cr::Utility::Directory::join(
-      DATA_DIR, "test_assets/scenes/simple_room.glb");
+  std::string stageConfigFile =
+      Cr::Utility::Path::join(DATA_DIR, "test_assets/scenes/simple_room.glb");
 
   CORRADE_INFO(
       "Start Test : Create, Edit, Remove Attributes for "
@@ -584,7 +584,7 @@ void AttributesManagersTest::testStageAttributesManagersCreate() {
 }  // AttributesManagersTest::StageAttributesManagersCreate
 
 void AttributesManagersTest::testObjectAttributesManagersCreate() {
-  std::string objectConfigFile = Cr::Utility::Directory::join(
+  std::string objectConfigFile = Cr::Utility::Path::join(
       DATA_DIR, "test_assets/objects/chair.object_config.json");
 
   CORRADE_INFO(
@@ -625,7 +625,7 @@ void AttributesManagersTest::testObjectAttributesManagersCreate() {
 }  // AttributesManagersTest::ObjectAttributesManagersCreate test
 
 void AttributesManagersTest::testLightLayoutAttributesManager() {
-  std::string lightConfigFile = Cr::Utility::Directory::join(
+  std::string lightConfigFile = Cr::Utility::Path::join(
       DATA_DIR, "test_assets/lights/test_lights.lighting_config.json");
 
   CORRADE_INFO(

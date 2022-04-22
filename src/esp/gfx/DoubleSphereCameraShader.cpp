@@ -46,7 +46,7 @@ DoubleSphereCameraShader::DoubleSphereCameraShader(
   Mn::GL::Shader frag{glVersion, Mn::GL::Shader::Type::Fragment};
 
   // Add macros
-  vert.addSource(rs.get("bigTriangle.vert"));
+  vert.addSource(rs.getString("bigTriangle.vert"));
 
   std::stringstream outputAttributeLocationsStream;
 
@@ -69,7 +69,7 @@ DoubleSphereCameraShader::DoubleSphereCameraShader(
       .addSource(flags_ & CubeMapShaderBase::Flag::ObjectIdTexture
                      ? "#define OBJECT_ID_TEXTURE\n"
                      : "")
-      .addSource(rs.get("doubleSphereCamera.frag"));
+      .addSource(rs.getString("doubleSphereCamera.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));
 

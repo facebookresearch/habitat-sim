@@ -8,7 +8,8 @@
 #include <string>
 #include <utility>
 
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Containers/Pair.h>
+#include <Corrade/Utility/Path.h>
 #include <Corrade/Utility/String.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/GL/Context.h>
@@ -237,7 +238,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   // Get name of navmesh and use to create pathfinder and load navmesh
   // create pathfinder and load navmesh if available
   pathfinder_ = nav::PathFinder::create();
-  if (Cr::Utility::Directory::exists(navmeshFileLoc)) {
+  if (Cr::Utility::Path::exists(navmeshFileLoc)) {
     ESP_DEBUG() << "Loading navmesh from" << navmeshFileLoc;
     bool pfSuccess = pathfinder_->loadNavMesh(navmeshFileLoc);
     ESP_DEBUG() << (pfSuccess ? "Navmesh Loaded." : "Navmesh load error.");
@@ -423,7 +424,7 @@ bool Simulator::instanceStageForSceneAttributes(
   // sending semantic colormap to shader for visualizations.
   // This map may have color mappings specified in supported semantic screen
   // descriptor text files with vertex mappings to ids on semantic scene mesh.
-  if (renderer_ && !colorMap.empty()) {
+  if (renderer_ && !colorMap.isEmpty()) {
     // send colormap to TextureVisualizeShader via renderer.
     renderer_->setSemanticVisualizerColormap(colorMap);
   }
@@ -988,7 +989,7 @@ std::string Simulator::convexHullDecomposition(
 
   // generate a unique filename
   std::string chdFilename =
-      Cr::Utility::Directory::splitExtension(filename).first + ".chd";
+      Cr::Utility::Path::splitExtension(filename).first() + ".chd";
   if (resourceManager_->isAssetDataRegistered(chdFilename)) {
     int nameAttempt = 1;
     chdFilename += "_";

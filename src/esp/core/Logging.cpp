@@ -10,12 +10,13 @@
 #include <cstdlib>
 
 #include <Corrade/Containers/Array.h>
+#include <Corrade/Containers/Pair.h>
 #include <Corrade/Containers/StaticArray.h>
 #include <Corrade/Containers/String.h>
 #include <Corrade/Containers/StringStl.h>
-#include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/Format.h>
 #include <Corrade/Utility/FormatStl.h>
+#include <Corrade/Utility/Path.h>
 
 namespace Cr = Corrade;
 using Cr::Containers::Literals::operator""_s;
@@ -132,7 +133,7 @@ Cr::Containers::String buildMessagePrefix(Subsystem subsystem,
                                           const std::string& filename,
                                           const std::string& function,
                                           int line) {
-  auto baseFileName = Cr::Utility::Directory::filename(filename);
+  auto baseFileName = Cr::Utility::Path::split(filename).second();
 
   const auto timePassed =
       std::chrono::high_resolution_clock::now().time_since_epoch();

@@ -6,7 +6,7 @@
 #include <iostream>
 
 #include <Corrade/Utility/DebugStl.h>
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/Path.h>
 #include <Magnum/BulletIntegration/Integration.h>
 #include "BulletCollision/CollisionShapes/btCompoundShape.h"
 #include "BulletCollisionHelper.h"

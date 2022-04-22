@@ -38,7 +38,7 @@ namespace {
 
 // base directory to save test attributes
 const std::string testAttrSaveDir =
-    Cr::Utility::Directory::join(DATA_DIR, "test_assets");
+    Cr::Utility::Path::join(DATA_DIR, "test_assets");
 
 /**
  * @brief Test attributes/configuration functionality via setting values from
@@ -325,7 +325,7 @@ void AttributesConfigsTest::testPhysicsJSONLoad() {
   ESP_DEBUG() << "Tested physMgrAttr";
 
   // delete file-based config
-  Cr::Utility::Directory::rm(newAttrName);
+  Cr::Utility::Path::remove(newAttrName);
 
 }  // AttributesManagers_PhysicsJSONLoadTest
 
@@ -463,7 +463,7 @@ void AttributesConfigsTest::testLightJSONLoad() {
   ESP_DEBUG() << "About to test lightLayoutAttr2";
 
   // delete file-based config
-  Cr::Utility::Directory::rm(newAttrName);
+  Cr::Utility::Path::remove(newAttrName);
 
 }  // AttributesManagers_LightJSONLoadTest
 
@@ -740,7 +740,7 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
   testSceneInstanceAttrVals(sceneAttr2);
   ESP_DEBUG() << "Tested saved sceneAttr2 :";
   // delete file-based config
-  Cr::Utility::Directory::rm(newAttrName);
+  Cr::Utility::Path::remove(newAttrName);
 
 }  // AttributesManagers_SceneInstanceJSONLoadTest
 
@@ -837,7 +837,7 @@ void AttributesConfigsTest::testStageJSONLoad() {
   // now need to change the render and collision assets to make sure they are
   // legal so test can proceed (needs to be actual existing file)
   const std::string stageAssetFile =
-      Cr::Utility::Directory::join(testAttrSaveDir, "scenes/plane.glb");
+      Cr::Utility::Path::join(testAttrSaveDir, "scenes/plane.glb");
 
   stageAttr->setRenderAssetHandle(stageAssetFile);
   stageAttr->setCollisionAssetHandle(stageAssetFile);
@@ -875,7 +875,7 @@ void AttributesConfigsTest::testStageJSONLoad() {
   ESP_DEBUG() << "Tested saved stageAttr2 :";
 
   // delete file-based config
-  Cr::Utility::Directory::rm(newAttrName);
+  Cr::Utility::Path::remove(newAttrName);
 
 }  // AttributesManagers_StageJSONLoadTest
 
@@ -955,7 +955,7 @@ void AttributesConfigsTest::testObjectJSONLoad() {
   // now need to change the render and collision assets to make sure they are
   // legal so test can proceed (needs to be actual existing file)
   const std::string objAssetFile =
-      Cr::Utility::Directory::join(testAttrSaveDir, "objects/donut.glb");
+      Cr::Utility::Path::join(testAttrSaveDir, "objects/donut.glb");
 
   objAttr->setRenderAssetHandle(objAssetFile);
   objAttr->setCollisionAssetHandle(objAssetFile);
@@ -992,7 +992,7 @@ void AttributesConfigsTest::testObjectJSONLoad() {
   ESP_DEBUG() << "Tested saved stageAttr2 :";
 
   // delete file-based config
-  Cr::Utility::Directory::rm(newAttrName);
+  Cr::Utility::Path::remove(newAttrName);
 }  // AttributesConfigsTest::testObjectJSONLoadTest
 
 }  // namespace

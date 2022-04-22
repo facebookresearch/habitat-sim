@@ -5,7 +5,7 @@
 #ifndef ESP_SCENE_SEMANTICSCENE_H_
 #define ESP_SCENE_SEMANTICSCENE_H_
 
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/Path.h>
 #include <map>
 #include <memory>
 #include <string>
@@ -284,7 +284,7 @@ class SemanticScene {
    */
   static bool checkFileExists(const std::string& filename,
                               const std::string& srcFunc) {
-    if (!Cr::Utility::Directory::exists(filename)) {
+    if (!Cr::Utility::Path::exists(filename)) {
       ESP_WARNING(Mn::Debug::Flag::NoSpace)
           << "::" << srcFunc << ": File" << filename
           << "does not exist.  Aborting load.";

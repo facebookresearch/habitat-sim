@@ -95,7 +95,7 @@ void DebugLineRender::flushLines(const Magnum::Matrix4& camMatrix,
                  "DebugLineRender::flushLines: no GL resources; see "
                  "also releaseGLResources", );
 
-  if (_verts.empty()) {
+  if (_verts.isEmpty()) {
     return;
   }
 

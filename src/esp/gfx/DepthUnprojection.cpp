@@ -51,8 +51,8 @@ DepthShader::DepthShader(Flags flags) : flags_{flags} {
   if (flags & Flag::NoFarPlanePatching)
     frag.addSource("#define NO_FAR_PLANE_PATCHING\n");
 
-  vert.addSource(rs.get("depth.vert"));
-  frag.addSource(rs.get("depth.frag"));
+  vert.addSource(rs.getString("depth.vert"));
+  frag.addSource(rs.getString("depth.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));
 

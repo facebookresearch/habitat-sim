@@ -4,7 +4,7 @@
 
 #include <Corrade/TestSuite/Compare/Numeric.h>
 #include <Corrade/TestSuite/Tester.h>
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/Path.h>
 #include <string>
 
 #include "esp/sim/Simulator.h"
@@ -32,10 +32,9 @@ using esp::metadata::attributes::ObjectAttributes;
 using esp::physics::PhysicsManager;
 using esp::scene::SceneManager;
 
-const std::string dataDir = Cr::Utility::Directory::join(SCENE_DATASETS, "../");
+const std::string dataDir = Cr::Utility::Path::join(SCENE_DATASETS, "../");
 const std::string physicsConfigFile =
-    Cr::Utility::Directory::join(SCENE_DATASETS,
-                                 "../default.physics_config.json");
+    Cr::Utility::Path::join(SCENE_DATASETS, "../default.physics_config.json");
 
 namespace {
 struct PhysicsTest : Cr::TestSuite::Tester {
@@ -187,10 +186,10 @@ PhysicsTest::PhysicsTest() {
 }
 
 void PhysicsTest::testJoinCompound() {
-  std::string stageFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/scenes/simple_room.glb");
-  std::string objectFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/objects/nested_box.glb");
+  std::string stageFile =
+      Cr::Utility::Path::join(dataDir, "test_assets/scenes/simple_room.glb");
+  std::string objectFile =
+      Cr::Utility::Path::join(dataDir, "test_assets/objects/nested_box.glb");
 
   resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
 
@@ -263,9 +262,9 @@ void PhysicsTest::testJoinCompound() {
 #ifdef ESP_BUILD_WITH_BULLET
 void PhysicsTest::testCollisionBoundingBox() {
   std::string stageFile =
-      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
+      Cr::Utility::Path::join(dataDir, "test_assets/scenes/plane.glb");
   std::string objectFile =
-      Cr::Utility::Directory::join(dataDir, "test_assets/objects/sphere.glb");
+      Cr::Utility::Path::join(dataDir, "test_assets/objects/sphere.glb");
 
   resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
 
@@ -342,9 +341,9 @@ void PhysicsTest::testCollisionBoundingBox() {
 
 void PhysicsTest::testDiscreteContactTest() {
   std::string stageFile =
-      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
-  std::string objectFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/objects/transform_box.glb");
+      Cr::Utility::Path::join(dataDir, "test_assets/scenes/plane.glb");
+  std::string objectFile =
+      Cr::Utility::Path::join(dataDir, "test_assets/objects/transform_box.glb");
 
   resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
   initStage(stageFile);
@@ -426,8 +425,8 @@ void PhysicsTest::testBulletCompoundShapeMargins() {
   // test that all different construction methods for a simple shape result in
   // the same Aabb for the given margin
 
-  std::string objectFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/objects/transform_box.glb");
+  std::string objectFile =
+      Cr::Utility::Path::join(dataDir, "test_assets/objects/transform_box.glb");
 
   resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
   initStage(objectFile);
@@ -495,10 +494,10 @@ void PhysicsTest::testConfigurableScaling() {
   resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
 
   std::string stageFile =
-      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
+      Cr::Utility::Path::join(dataDir, "test_assets/scenes/plane.glb");
 
-  std::string objectFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/objects/transform_box.glb");
+  std::string objectFile =
+      Cr::Utility::Path::join(dataDir, "test_assets/objects/transform_box.glb");
 
   initStage(stageFile);
 
@@ -563,11 +562,11 @@ void PhysicsTest::testVelocityControl() {
 
   resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
 
-  std::string objectFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/objects/transform_box.glb");
+  std::string objectFile =
+      Cr::Utility::Path::join(dataDir, "test_assets/objects/transform_box.glb");
 
   std::string stageFile =
-      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
+      Cr::Utility::Path::join(dataDir, "test_assets/scenes/plane.glb");
 
   initStage(stageFile);
 
@@ -711,11 +710,11 @@ void PhysicsTest::testSceneNodeAttachment() {
 
   resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
 
-  std::string objectFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/objects/transform_box.glb");
+  std::string objectFile =
+      Cr::Utility::Path::join(dataDir, "test_assets/objects/transform_box.glb");
 
   std::string stageFile =
-      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
+      Cr::Utility::Path::join(dataDir, "test_assets/scenes/plane.glb");
 
   initStage(stageFile);
 
@@ -769,11 +768,11 @@ void PhysicsTest::testMotionTypes() {
 
   resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
 
-  std::string objectFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/objects/transform_box.glb");
+  std::string objectFile =
+      Cr::Utility::Path::join(dataDir, "test_assets/objects/transform_box.glb");
 
   std::string stageFile =
-      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
+      Cr::Utility::Path::join(dataDir, "test_assets/scenes/plane.glb");
 
   initStage(stageFile);
 
@@ -887,8 +886,8 @@ void PhysicsTest::testMotionTypes() {
 void PhysicsTest::testNumActiveContactPoints() {
   resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
 
-  std::string stageFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/scenes/simple_room.glb");
+  std::string stageFile =
+      Cr::Utility::Path::join(dataDir, "test_assets/scenes/simple_room.glb");
 
   initStage(stageFile);
   auto& drawables = sceneManager_->getSceneGraph(sceneID_).getDrawables();

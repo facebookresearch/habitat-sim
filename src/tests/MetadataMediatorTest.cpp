@@ -20,19 +20,19 @@ using esp::metadata::MetadataMediator;
 namespace {
 
 const std::string physicsConfigFile =
-    Cr::Utility::Directory::join(DATA_DIR,
-                                 "test_assets/testing.physics_config.json");
+    Cr::Utility::Path::join(DATA_DIR,
+                            "test_assets/testing.physics_config.json");
 
 const std::string datasetTestDirs =
-    Cr::Utility::Directory::join(DATA_DIR, "test_assets/dataset_tests/");
+    Cr::Utility::Path::join(DATA_DIR, "test_assets/dataset_tests/");
 
-const std::string sceneDatasetConfigFile_0 = Cr::Utility::Directory::join(
+const std::string sceneDatasetConfigFile_0 = Cr::Utility::Path::join(
     datasetTestDirs,
     "dataset_0/test_dataset_0.scene_dataset_config.json");
 
 // test dataset contains glob wildcards in scene config, and articulated object
 // refs
-const std::string sceneDatasetConfigFile_1 = Cr::Utility::Directory::join(
+const std::string sceneDatasetConfigFile_1 = Cr::Utility::Path::join(
     datasetTestDirs,
     "dataset_1/test_dataset_1.scene_dataset_config.json");
 
@@ -488,7 +488,7 @@ void MetadataMediatorTest::testDataset1() {
 
   ESP_WARNING() << "Starting test LoadArticulatedObjects";
 
-  namespace Dir = Cr::Utility::Directory;
+  namespace Dir = Cr::Utility::Path;
   // verify # of urdf filepaths loaded - should be 6;
   const std::map<std::string, std::string>& urdfTestFilenames =
       MM_->getArticulatedObjectModelFilenames();
@@ -502,14 +502,14 @@ void MetadataMediatorTest::testDataset1() {
     // instances proper key synth methods.
     const std::string shortHandle =
         Dir::splitExtension(
-            Dir::splitExtension(Dir::filename(iter->second)).first)
-            .first;
+            Dir::splitExtension(Dir::split(iter->second).second()).first())
+            .first();
     // test that map key constructed as shortened handle.
     CORRADE_COMPARE(shortHandle, iter->first);
     // test that file name ends in ".urdf"
-    CORRADE_COMPARE(Dir::splitExtension(Dir::filename(iter->second))
-                        .second.compare(".urdf"),
-                    0);
+    CORRADE_COMPARE(
+        Dir::splitExtension(Dir::split(iter->second).second()).second(),
+        ".urdf");
     // test that file actually exists
     const std::string filename = iter->second;
     CORRADE_VERIFY(Dir::exists(filename));

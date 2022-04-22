@@ -7,7 +7,7 @@
 #include <iostream>
 
 #include <Corrade/Utility/DebugStl.h>
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/Path.h>
 #include "URDFImporter.h"
 
 namespace Mn = Magnum;
@@ -22,8 +22,8 @@ bool URDFImporter::loadURDF(const std::string& filename,
   auto modelCacheIter = modelCache_.find(filename);
   // if map not found or forcing reload
   if ((modelCacheIter == modelCache_.end()) || forceReload) {
-    if (!Corrade::Utility::Directory::exists(filename) ||
-        Corrade::Utility::Directory::isDirectory(filename)) {
+    if (!Corrade::Utility::Path::exists(filename) ||
+        Corrade::Utility::Path::isDirectory(filename)) {
       ESP_DEBUG() << "File does not exist:" << filename
                   << ". Aborting URDF parse/load.";
       return false;

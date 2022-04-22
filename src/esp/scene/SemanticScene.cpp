@@ -7,6 +7,7 @@
 #include "Mp3dSemanticScene.h"
 #include "ReplicaSemanticScene.h"
 
+#include <Corrade/Containers/Pair.h>
 #include <Corrade/Utility/FormatStl.h>
 
 #include <fstream>
@@ -74,11 +75,11 @@ bool SemanticScene::
     }
   }
   // should only reach here if not successfully loaded
-  namespace FileUtil = Cr::Utility::Directory;
+  namespace FileUtil = Cr::Utility::Path;
   // check if constructed replica file exists in directory of passed
   // ssdFileName
-  const std::string tmpFName =
-      FileUtil::join(FileUtil::path(ssdFileName), "info_semantic.json");
+  const std::string tmpFName = FileUtil::join(
+      FileUtil::split(ssdFileName).first(), "info_semantic.json");
   if (FileUtil::exists(tmpFName)) {
     success = scene::SemanticScene::loadReplicaHouse(tmpFName, scene);
   }
