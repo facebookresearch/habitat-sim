@@ -781,6 +781,9 @@ Key Commands:
     esc:        Exit the application.
     'h':        Display this help message.
     'm':        Cycle mouse interaction modes.
+    'TAB':      Cycle scenes within the SceneDataset
+                (+ALT) Reconfigure the Simulator without cycling scenes
+                (+SHIFT) Cycle through unloaded stage assets with no corresponding SceneInstance.
 
     Agent Controls:
     'wasd':     Move the agent's body forward/backward and left/right.
