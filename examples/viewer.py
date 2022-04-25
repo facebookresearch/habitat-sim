@@ -328,6 +328,7 @@ class HabitatSimInteractiveViewer(Application):
 
         elif key == pressed.TAB:
             # NOTE: (+ALT) - reconfigure without cycling scenes
+            # NOTE: (+SHIFT) - cycle through stages without corresponding scenes
             if not alt_pressed:
                 # cycle the active scene from the set available in MetadataMediator
                 inc = -1 if shift_pressed else 1
@@ -348,10 +349,30 @@ class HabitatSimInteractiveViewer(Application):
                 else:
                     cur_scene_index = scene_ids.index(self.sim_settings["scene"])
 
-                next_scene_index = min(
-                    max(cur_scene_index + inc, 0), len(scene_ids) - 1
-                )
-                self.sim_settings["scene"] = scene_ids[next_scene_index]
+                if shift_pressed:
+                    # add a new stage to the scene list
+                    found_new_stage = False
+                    stage_mgr = self.sim.metadata_mediator.stage_template_manager
+                    for stage_handle in stage_mgr.get_template_handles():
+                        is_new_stage = True
+                        for scene_handle in scene_ids:
+                            # scene handles derived from stages should be a substring of the stage handle
+                            if scene_handle in stage_handle:
+                                is_new_stage = False
+                                break
+                        if is_new_stage:
+                            # we didn't find a matching scene for the stage, so add it
+                            logger.info(f"{stage_handle} not in {scene_ids}")
+                            found_new_stage = True
+                            self.sim_settings["scene"] = stage_handle
+                            break
+                    if not found_new_stage:
+                        logger.warn("Didn't find any un-regsitered stages...")
+                else:
+                    next_scene_index = min(
+                        max(cur_scene_index + inc, 0), len(scene_ids) - 1
+                    )
+                    self.sim_settings["scene"] = scene_ids[next_scene_index]
             self.reconfigure_sim()
             logger.info(
                 f"Reconfigured simulator for scene: {self.sim_settings['scene']}"
