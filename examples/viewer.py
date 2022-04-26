@@ -37,6 +37,8 @@ class HabitatSimInteractiveViewer(Application):
         self.contact_debug_draw = False
         # cache most recently loaded URDF file for quick-reload
         self.cached_urdf = ""
+        # cache rigid objects added to the scene for removal
+        self.added_rigid_object_cache = []
 
         # set proper viewport size
         self.viewport_size: mn.Vector2i = mn.gl.default_framebuffer.viewport.size()
@@ -267,6 +269,8 @@ class HabitatSimInteractiveViewer(Application):
         self.render_camera = self.agent_body_node.node_sensor_suite.get("color_sensor")
         # set sim_settings scene name as actual loaded scene
         self.sim_settings["scene"] = self.sim.curr_scene_name
+        # reset cache of rigid objects
+        self.added_rigid_object_cache = []
 
         Timer.start()
         self.step = -1
@@ -389,6 +393,22 @@ class HabitatSimInteractiveViewer(Application):
                 self.sim.perform_discrete_collision_detection()
                 self.contact_debug_draw = True
                 # TODO: add a nice log message with concise contact pair naming.
+
+        elif key == pressed.O:
+            # add an object
+            self.added_rigid_object_cache.append(
+                self.add_object(apply_agent_transform=True)
+            )
+        elif key == pressed.U:
+            # remove most recently added object
+            while len(self.added_rigid_object_cache) > 0:
+                popped_obj = self.added_rigid_object_cache.pop()
+                # guard against already destroyed object references
+                if popped_obj.is_alive:
+                    self.sim.get_rigid_object_manager().remove_object_by_id(
+                        popped_obj.object_id
+                    )
+                    break
 
         elif key == pressed.T:
             # load URDF
@@ -715,6 +735,34 @@ class HabitatSimInteractiveViewer(Application):
             self.navmesh_settings,
             include_static_objects=True,
         )
+
+    def add_object(self, apply_agent_transform=True):
+        r"""Add a random object to the scene.
+
+        :param apply_agent_transform: Whether to place the object in front of the agent or leave it at the origin.
+        """
+        rotm = self.sim.get_object_template_manager()
+
+        # get a random file template if any are loaded. Otherwise add a prim.
+        object_template_handle = None
+        if rotm.get_num_file_templates() > 0:
+            object_template_handle = rotm.get_random_file_template_handle()
+        else:
+            object_template_handle = rotm.get_random_synth_template_handle()
+
+        # instance the object
+        rom = self.sim.get_rigid_object_manager()
+        new_obj = rom.add_object_by_template_handle(object_template_handle)
+
+        # optionally set the transform from agent
+        if apply_agent_transform:
+            object_transform = self.agent_body_node.transformation
+            object_transform.translation = object_transform.transform_point(
+                mn.Vector3(0, 1.0, -1.0)
+            )
+            new_obj.transformation = object_transform
+
+        return new_obj
 
     def exit_event(self, event: Application.ExitEvent):
         """
