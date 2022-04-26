@@ -500,6 +500,18 @@ jobs:
               pip install imageio imageio-ffmpeg
               git submodule update --init --recursive --jobs 8
               python -u setup.py install --build-type "Release" --lto --headless --vhacd --bullet
+      -  run:
+          name: Build, install habitat-sim with audio and run audio_agent script
+          no_output_timeout: 10m
+          command: |
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat;
+              cd habitat-sim
+              pip install -r requirements.txt --progress-bar off
+              pip install imageio imageio-ffmpeg
+              git submodule update --init --recursive --jobs 8
+              python -u setup.py install --build-type "Release" --lto --headless --vhacd --bullet --audio
+              python example/tutorials/audio_agent.py
       - run:
           name: Ccache stats
           when: always
