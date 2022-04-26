@@ -474,7 +474,7 @@ bool Simulator::instanceStageForSceneAttributes(
 bool Simulator::instanceObjectsForSceneAttributes(
     const metadata::attributes::SceneInstanceAttributes::cptr&
         curSceneInstanceAttributes_) {
-  // Load object instances as spceified by Scene Instance Attributes.
+  // Load object instances as specified by Scene Instance Attributes.
   // Get all instances of objects described in scene
   const std::vector<SceneObjectInstanceAttributes::cptr> objectInstances =
       curSceneInstanceAttributes_->getObjectInstances();
