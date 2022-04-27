@@ -310,11 +310,12 @@ void AudioSensor::loadSemanticMesh(sim::Simulator& sim) {
     //    get the object using the id
     //      get the category name from the object
     const std::string cat1 =
-        objects[objectIds[ibo[iboIdx]]]->category()->name();
+        objects[objectIds[ibo[iboIdx]]] ? objects[objectIds[ibo[iboIdx]]]->category()->name() : "default";
     const std::string cat2 =
-        objects[objectIds[ibo[iboIdx + 1]]]->category()->name();
+        objects[objectIds[ibo[iboIdx + 1]]] ? objects[objectIds[ibo[iboIdx + 1]]]->category()->name() : "default";
     const std::string cat3 =
-        objects[objectIds[ibo[iboIdx + 2]]]->category()->name();
+        objects[objectIds[ibo[iboIdx + 2]]] ? objects[objectIds[ibo[iboIdx + 2]]]->category()->name() : "default";
+
     std::string catToUse;
 
     if (cat1 == cat2 && cat1 == cat3) {

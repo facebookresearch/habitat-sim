@@ -42,7 +42,6 @@ def main():
     acoustics_config.dumpWaveFiles = True
     acoustics_config.enableMaterials = True
     acoustics_config.writeIrToFile = True
-    acoustics_config.sampleRate = 341030
 
     # create channel layout
     channel_layout = hsim_bindings.RLRAudioPropagationChannelLayout()
