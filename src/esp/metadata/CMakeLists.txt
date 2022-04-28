@@ -15,6 +15,8 @@ set(
   attributes/LightLayoutAttributes.h
   attributes/LightLayoutAttributes.cpp
   attributes/MarkerSets.h
+  attributes/MaterialAttributes.h
+  attributes/MaterialAttributes.cpp
   attributes/ObjectAttributes.h
   attributes/ObjectAttributes.cpp
   attributes/PhysicsManagerAttributes.h
