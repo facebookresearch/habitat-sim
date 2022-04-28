@@ -114,7 +114,7 @@ def validate_src_SSD(line):
         return f"Incorrect # of items : should be 4, is {len(lineItems)}"
     if not lineItems[0].strip().isdigit():
         return f"First entry (unique ID) is not positive integer : {lineItems[0]}"
-    if not re.compile("^[A-F0-9]{6}$").match(lineItems[1].strip()):
+    if not re.compile("^[a-fA-F0-9]{6}$").match(lineItems[1].strip()):
         return f"Second entry (color) is not 6 digit hex value : {lineItems[1]}"
     if len(lineItems[2].strip()) == 0:
         return "Third entry (category) cannot be an empty string"
