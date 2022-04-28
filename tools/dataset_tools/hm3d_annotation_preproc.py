@@ -52,9 +52,9 @@ HM3D_ANNOTATION_SRC_DIR = "/home/john/Datasets In Progress/HM3D_Semantic/Appen_S
 #     "/home/john/Datasets In Progress/HM3D_Semantic/Appen_Scenes_Challenge"
 # )
 
-# # Custom subset of scenes to check
+# Custom subset of scenes to check
 # HM3D_ANNOTATION_SRC_DIR = (
-#     "/home/john/Datasets In Progress/HM3D_Semantic/Appen_Redos_Mar_17"
+#     "/home/john/Datasets In Progress/HM3D_Semantic/Appen_19_scenes_redo_April25"
 # )
 #
 # Appen annotation source scene directory regex.
@@ -79,6 +79,8 @@ COUNT_SEMANTIC_COLORS_PER_SCENE = False
 # subset of scenes for testing without having to view all scenes.
 # Make this an empty string if building for entire dataset.
 CONFIG_PREFIX = ""
+# Put some stub here to identify the source material used
+# CONFIG_PREFIX = "April_25_redos"
 
 ##############################################################################
 ## You should not need to modify anything below here
