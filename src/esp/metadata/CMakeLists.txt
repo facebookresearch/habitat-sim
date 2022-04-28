@@ -14,6 +14,8 @@ set(
   attributes/ArticulatedObjectAttributes.cpp
   attributes/LightLayoutAttributes.h
   attributes/LightLayoutAttributes.cpp
+  attributes/MaterialAttributes.h
+  attributes/MaterialAttributes.cpp
   attributes/ObjectAttributes.h
   attributes/ObjectAttributes.cpp
   attributes/PhysicsManagerAttributes.h
