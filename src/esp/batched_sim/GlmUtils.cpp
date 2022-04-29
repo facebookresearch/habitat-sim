@@ -193,7 +193,7 @@ Mn::Vector3 getSphericalCoordinates(
   float theta;
   constexpr float eps = 1e-6;
   if (length > eps) {
-    theta = float(Mn::Math::acos(directionVecAgent.y() / length));
+    theta = float(Mn::Math::acos(Mn::Math::clamp(directionVecAgent.y() / length, -1.f, 1.f)));
   } else {
     theta = 0.f;
   }
