@@ -197,6 +197,12 @@ class AbstractManagedRigidBase
     return Magnum::Vector3();
   }  // getScale
 
+  void setScale(const Magnum::Vector3& scale) {
+    if (auto sp = this->getObjectReference()) {
+      sp->setScale(scale);
+    }
+  }  // setScale
+
   int getSemanticId() const {
     if (auto sp = this->getObjectReference()) {
       return sp->getSemanticId();

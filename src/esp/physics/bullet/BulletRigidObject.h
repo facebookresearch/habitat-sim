@@ -395,6 +395,42 @@ class BulletRigidObject : public BulletBase,
     bObjectRigidBody_->setDamping(getLinearDamping(), angularDamping);
   }
 
+  /** @brief Get the scale of the object.
+   * @return The scaling for the object relative to its initially loaded meshes.
+   */
+  Magnum::Vector3 getScale() const override {
+    return Mn::Vector3(bObjectShape_->getLocalScaling());
+  }
+
+  /** @brief Set the non-uniform scaling of the object. Requires removing and
+   * re-adding the Bullet object. Note: This function will recompute object
+   * inertia from collision shapes and new scale.
+   * @param scale The desired non-uniform scaling of the object.
+   */
+  void setScale(const Magnum::Vector3& scale) override {
+    if (objectMotionType_ != MotionType::STATIC) {
+      if (scalingNode_ != nullptr) {
+        scalingNode_->setScaling(scale);
+      }
+      // scale and re-add the Bullet object
+      bWorld_->removeRigidBody(bObjectRigidBody_.get());
+      bObjectShape_->setLocalScaling(btVector3(scale));
+      bObjectShape_->recalculateLocalAabb();
+      // Automatically recompute the intertia to match the collision object
+      // scale.
+      btVector3 bInertia = {0, 0, 0};
+      bObjectShape_->calculateLocalInertia(getMass(), bInertia);
+      bObjectRigidBody_->setMassProps(getMass(), bInertia);
+      // maintain the current collisionGroup
+      bWorld_->addRigidBody(bObjectRigidBody_.get(),
+                            int(configuredCollisionGroup_),
+                            uint32_t(CollisionGroupHelper::getMaskForGroup(
+                                configuredCollisionGroup_)));
+      setActive(true);
+      syncPose();
+    }
+  }
+
   /** @brief Set the scalar collision margin of an object. See @ref
    * btCompoundShape::setMargin.
    * @param margin The new scalar collision margin of the object.
@@ -495,6 +531,10 @@ class BulletRigidObject : public BulletBase,
   std::unique_ptr<btCompoundShape> bObjectShape_;
 
   std::unique_ptr<btCompoundShape> bEmptyShape_;
+
+  //! Cache the most recently configured collisionGroup because hard to query
+  //! consistently otherwise.
+  CollisionGroup configuredCollisionGroup_ = CollisionGroup::Dynamic;
 
   void setWorldTransform(const btTransform& worldTrans) override;
 

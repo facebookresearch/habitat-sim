@@ -224,6 +224,8 @@ int PhysicsManager::addObject(
     resourceManager_.addObjectToDrawables(obj->getInitializationAttributes(),
                                           obj->visualNode_, drawables,
                                           obj->visualNodes_, lightSetup);
+    // Set the scalingNode_ to the first child of the visualNode_
+    obj->scalingNode_ = obj->visualNodes_[1];
   }
 
   // finalize rigid object creation

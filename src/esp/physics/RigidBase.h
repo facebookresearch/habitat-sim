@@ -334,11 +334,27 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
   virtual void setRestitutionCoefficient(
       CORRADE_UNUSED const double restitutionCoefficient) {}
 
-  /** @brief Get the scale of the object set during initialization.
+  /** @brief Get the scale of the object.
    * @return The scaling for the object relative to its initially loaded meshes.
    */
   virtual Magnum::Vector3 getScale() const {
-    return initializationAttributes_->getScale();
+    if (scalingNode_ != nullptr) {
+      return scalingNode_->scaling();
+    } else {
+      return initializationAttributes_->getScale();
+    }
+  }
+
+  /** @brief Set the non-uniform scaling of the object.
+   * @param scale The desired non-uniform scaling of the object.
+   */
+  virtual void setScale(const Magnum::Vector3& scale) {
+    if (objectMotionType_ != MotionType::STATIC) {
+      if (scalingNode_ != nullptr) {
+        scalingNode_->setScaling(scale);
+        syncPose();
+      }
+    }
   }
 
   /**
@@ -412,6 +428,12 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
    * translation as scaling is applied to a child of this node.
    */
   scene::SceneNode* visualNode_ = nullptr;
+
+  /**
+   * @brief Child of visualNode_ containing the render object's top-level
+   * non-uniform scaling transformation.
+   */
+  scene::SceneNode* scalingNode_ = nullptr;
 
   /**
    * @brief all nodes created when this object's render asset was added to the

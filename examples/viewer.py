@@ -395,10 +395,13 @@ class HabitatSimInteractiveViewer(Application):
                 # TODO: add a nice log message with concise contact pair naming.
 
         elif key == pressed.O:
-            # add an object
-            self.added_rigid_object_cache.append(
-                self.add_object(apply_agent_transform=True)
-            )
+            if shift_pressed:
+                self.random_scale_last_obj()
+            else:
+                # add an object
+                self.added_rigid_object_cache.append(
+                    self.add_object(apply_agent_transform=True)
+                )
         elif key == pressed.U:
             # remove most recently added object
             while len(self.added_rigid_object_cache) > 0:
@@ -763,6 +766,12 @@ class HabitatSimInteractiveViewer(Application):
             new_obj.transformation = object_transform
 
         return new_obj
+
+    def random_scale_last_obj(self):
+        """
+        Testing: randomly scale the last object added to the world.
+        """
+        self.added_rigid_object_cache[-1].scale = np.random.random(3) * 2.0
 
     def exit_event(self, event: Application.ExitEvent):
         """

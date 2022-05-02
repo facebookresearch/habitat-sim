@@ -209,8 +209,9 @@ void declareRigidBaseWrapper(py::module& m,
 
       /* --- Geometry & Transformations --- */
 
-      .def_property_readonly("scale", &RigidBaseWrapper::getScale,
-                             ("Get the scale of the " + objType).c_str())
+      .def_property("scale", &RigidBaseWrapper::getScale,
+                    &RigidBaseWrapper::setScale,
+                    ("Get or set the scale of the " + objType).c_str())
 
       /* --- Physics Properties and Functions --- */
       .def("apply_force", &RigidBaseWrapper::applyForce, "force"_a,

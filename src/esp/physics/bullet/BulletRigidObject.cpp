@@ -389,23 +389,28 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
   // add the object to the world
   if (mt == MotionType::STATIC) {
     CORRADE_INTERNAL_ASSERT(bObjectRigidBody_->isStaticObject());
-    bWorld_->addRigidBody(bObjectRigidBody_.get(), int(CollisionGroup::Static),
-                          uint32_t(CollisionGroupHelper::getMaskForGroup(
-                              CollisionGroup::Static)));
+    configuredCollisionGroup_ = CollisionGroup::Static;
+    bWorld_->addRigidBody(
+        bObjectRigidBody_.get(), int(configuredCollisionGroup_),
+        uint32_t(
+            CollisionGroupHelper::getMaskForGroup(configuredCollisionGroup_)));
   } else if (mt == MotionType::KINEMATIC) {
     bObjectRigidBody_->setCollisionFlags(
         bObjectRigidBody_->getCollisionFlags() |
         btCollisionObject::CF_KINEMATIC_OBJECT);
+    configuredCollisionGroup_ = CollisionGroup::Kinematic;
     CORRADE_INTERNAL_ASSERT(bObjectRigidBody_->isKinematicObject());
     CORRADE_INTERNAL_ASSERT(bObjectRigidBody_->isStaticObject());
     bWorld_->addRigidBody(
-        bObjectRigidBody_.get(), int(CollisionGroup::Kinematic),
+        bObjectRigidBody_.get(), int(configuredCollisionGroup_),
         uint32_t(
-            CollisionGroupHelper::getMaskForGroup(CollisionGroup::Kinematic)));
+            CollisionGroupHelper::getMaskForGroup(configuredCollisionGroup_)));
   } else {
-    bWorld_->addRigidBody(bObjectRigidBody_.get(), int(CollisionGroup::Dynamic),
-                          uint32_t(CollisionGroupHelper::getMaskForGroup(
-                              CollisionGroup::Dynamic)));
+    configuredCollisionGroup_ = CollisionGroup::Dynamic;
+    bWorld_->addRigidBody(
+        bObjectRigidBody_.get(), int(configuredCollisionGroup_),
+        uint32_t(
+            CollisionGroupHelper::getMaskForGroup(configuredCollisionGroup_)));
     setActive(true);
     CORRADE_INTERNAL_ASSERT(!bObjectRigidBody_->isStaticObject());
     CORRADE_INTERNAL_ASSERT(!bObjectRigidBody_->isKinematicObject());
@@ -491,6 +496,7 @@ void BulletRigidObject::overrideCollisionGroup(CollisionGroup group) {
                    "the Bullet body hasn't yet been added to the Bullet world.";
   }
 
+  configuredCollisionGroup_ = group;
   bWorld_->removeRigidBody(bObjectRigidBody_.get());
   bWorld_->addRigidBody(bObjectRigidBody_.get(), int(group),
                         uint32_t(CollisionGroupHelper::getMaskForGroup(group)));
