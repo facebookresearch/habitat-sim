@@ -83,6 +83,16 @@ corrade_add_test(
 )
 target_include_directories(GfxReplayTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
+corrade_add_test(
+  ReplayBatchRendererTest
+  ReplayBatchRendererTest.cpp
+  LIBRARIES
+  assets
+  gfx
+  sim
+)
+target_include_directories(ReplayBatchRendererTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
 corrade_add_test(GibsonSceneTest GibsonSceneTest.cpp LIBRARIES scene sim)
 target_include_directories(GibsonSceneTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
