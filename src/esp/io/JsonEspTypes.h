@@ -111,32 +111,12 @@ inline bool fromJsonValue(const JsonGenericValue& obj,
   return true;
 }
 
-inline JsonGenericValue toJsonValue(
+JsonGenericValue toJsonValue(
     const metadata::attributes::ObjectInstanceShaderType& x,
-    JsonAllocator& allocator) {
-  return toJsonValue(metadata::attributes::getShaderTypeName(x), allocator);
-}
+    JsonAllocator& allocator);
 
-inline bool fromJsonValue(const JsonGenericValue& obj,
-                          metadata::attributes::ObjectInstanceShaderType& x) {
-  std::string shaderTypeToUseString;
-  // read as string
-  bool shaderTypeSucceess = fromJsonValue(obj, shaderTypeToUseString);
-  // convert to enum
-  if (shaderTypeSucceess) {
-    const std::string shaderTypeLC =
-        Cr::Utility::String::lowercase(shaderTypeToUseString);
-    auto mapIter = metadata::attributes::ShaderTypeNamesMap.find(shaderTypeLC);
-    ESP_CHECK(
-        mapIter != metadata::attributes::ShaderTypeNamesMap.end(),
-        "Illegal shader_type value"
-            << shaderTypeToUseString
-            << "specified in JSON to be used to set AssetInfo.shaderTypeToUse. "
-               "Aborting.");
-    x = mapIter->second;
-  }
-  return shaderTypeSucceess;
-}
+bool fromJsonValue(const JsonGenericValue& obj,
+                   metadata::attributes::ObjectInstanceShaderType& x);
 
 inline JsonGenericValue toJsonValue(
     const esp::assets::RenderAssetInstanceCreationInfo& x,
