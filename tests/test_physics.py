@@ -417,6 +417,8 @@ def test_rigid_object_scaling():
             object_template = obj_template_mgr.get_template_by_id(template_ids[0])
             # enforce unit scale to start test
             object_template.scale = np.ones(3)
+            # zero the margin for a simpler aabb test
+            object_template.margin = 0
             obj_template_mgr.register_template(object_template)
             obj_handle = obj_template_mgr.get_template_handle_by_id(template_ids[0])
             box_object_unit = rigid_obj_mgr.add_object_by_template_handle(obj_handle)
@@ -435,8 +437,12 @@ def test_rigid_object_scaling():
                 assert np.allclose(box_object.scale, object_scale)
                 # test getting AABB from Bullet is scaled
                 assert np.allclose(
-                    box_object.collision_shape_aabb,
-                    box_object_unit.collision_shape_aabb * object_scale,
+                    box_object.collision_shape_aabb.min,
+                    box_object_unit.collision_shape_aabb.min * object_scale,
+                )
+                assert np.allclose(
+                    box_object.collision_shape_aabb.max,
+                    box_object_unit.collision_shape_aabb.max * object_scale,
                 )
                 # test can't set scale with STATIC
                 box_object.motion_type = habitat_sim.physics.MotionType.STATIC

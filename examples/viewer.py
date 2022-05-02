@@ -772,7 +772,12 @@ class HabitatSimInteractiveViewer(Application):
         """
         Testing: randomly scale the last object added to the world.
         """
-        self.added_rigid_object_cache[-1].scale = np.random.random(3) * 2.0
+        self.added_rigid_object_cache[-1].scale = np.random.uniform(
+            np.ones(3) * 0.2, np.ones(3) * 2.0
+        )
+        logger.info(
+            f"Scaled '{self.added_rigid_object_cache[-1].handle}' object to {self.added_rigid_object_cache[-1].scale}."
+        )
 
     def exit_event(self, event: Application.ExitEvent):
         """
