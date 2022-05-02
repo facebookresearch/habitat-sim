@@ -85,7 +85,8 @@ inline bool fromJsonValue(const JsonGenericValue& obj,
 JsonGenericValue toJsonValue(const esp::assets::AssetInfo& x,
                              JsonAllocator& allocator);
 
-bool fromJsonValue(const JsonGenericValue& obj, esp::assets::AssetInfo& x);
+inline bool fromJsonValue(const JsonGenericValue& obj,
+                          esp::assets::AssetInfo& x);
 
 JsonGenericValue toJsonValue(
     const metadata::attributes::ObjectInstanceShaderType& x,

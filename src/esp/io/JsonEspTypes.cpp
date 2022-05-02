@@ -241,5 +241,32 @@ bool fromJsonValue(const JsonGenericValue& obj, esp::nav::NavMeshSettings& x) {
   return true;
 }
 
+JsonGenericValue toJsonValue(
+    const metadata::attributes::ObjectInstanceShaderType& x,
+    JsonAllocator& allocator) {
+  return toJsonValue(metadata::attributes::getShaderTypeName(x), allocator);
+}
+
+bool fromJsonValue(const JsonGenericValue& obj,
+                   metadata::attributes::ObjectInstanceShaderType& x) {
+  std::string shaderTypeToUseString;
+  // read as string
+  bool shaderTypeSucceess = fromJsonValue(obj, shaderTypeToUseString);
+  // convert to enum
+  if (shaderTypeSucceess) {
+    const std::string shaderTypeLC =
+        Cr::Utility::String::lowercase(shaderTypeToUseString);
+    auto mapIter = metadata::attributes::ShaderTypeNamesMap.find(shaderTypeLC);
+    ESP_CHECK(
+        mapIter != metadata::attributes::ShaderTypeNamesMap.end(),
+        "Illegal shader_type value"
+            << shaderTypeToUseString
+            << "specified in JSON to be used to set AssetInfo.shaderTypeToUse. "
+               "Aborting.");
+    x = mapIter->second;
+  }
+  return shaderTypeSucceess;
+}
+
 }  // namespace io
 }  // namespace esp
