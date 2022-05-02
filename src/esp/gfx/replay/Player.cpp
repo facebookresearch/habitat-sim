@@ -176,6 +176,13 @@ void Player::appendJSONKeyframe(const std::string& keyframe) {
   appendKeyframe(keyframeFromString(keyframe));
 }
 
+void Player::setSingleKeyframe(Keyframe&& keyframe) {
+  keyframes_.clear();
+  frameIndex_ = -1;
+  keyframes_.emplace_back(std::move(keyframe));
+  setKeyframeIndex(0);
+}
+
 void Player::setSemanticIdForSubtree(esp::scene::SceneNode* rootNode,
                                      int semanticId) {
   if (rootNode->getSemanticId() == semanticId) {

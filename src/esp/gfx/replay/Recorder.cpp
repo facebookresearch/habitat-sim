@@ -70,6 +70,13 @@ void Recorder::saveKeyframe() {
   advanceKeyframe();
 }
 
+Keyframe Recorder::extractKeyframe() {
+  updateInstanceStates();
+  const auto retVal = std::move(currKeyframe_);
+  currKeyframe_ = Keyframe{};
+  return retVal;
+}
+
 const Keyframe& Recorder::getLatestKeyframe() {
   CORRADE_ASSERT(!savedKeyframes_.empty(),
                  "Recorder::getLatestKeyframe() : Trying to access latest "
