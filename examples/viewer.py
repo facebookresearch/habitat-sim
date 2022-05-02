@@ -396,7 +396,8 @@ class HabitatSimInteractiveViewer(Application):
 
         elif key == pressed.O:
             if shift_pressed:
-                self.random_scale_last_obj()
+                if len(self.added_rigid_object_cache) > 0:
+                    self.random_scale_last_obj()
             else:
                 # add an object
                 self.added_rigid_object_cache.append(
@@ -839,6 +840,9 @@ Key Commands:
     't':        Load URDF from filepath
                 (+SHIFT) quick re-load the previously specified URDF
                 (+ALT) load the URDF with fixed base
+    'o':        Add a random object to the scene in front of the agent.
+                (+SHIFT) randomly re-scale the most recently added object [0,2]
+    'u':        Remove the most recently added object.
 =====================================================
 """
         )
