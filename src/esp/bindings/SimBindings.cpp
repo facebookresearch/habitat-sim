@@ -15,6 +15,7 @@
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/replay/ReplayManager.h"
 #include "esp/scene/SemanticScene.h"
+#include "esp/sim/ReplayBatchRenderer.h"
 #include "esp/sim/Simulator.h"
 #include "esp/sim/SimulatorConfiguration.h"
 
@@ -355,6 +356,50 @@ void initSimBindings(py::module& m) {
       .def("get_debug_line_render", &Simulator::getDebugLineRender,
            pybind11::return_value_policy::reference,
            R"(Get visualization helper for rendering lines.)");
+
+  // ==== ReplayBatchRendererConfiguration ====
+  py::class_<ReplayBatchRendererConfiguration,
+             ReplayBatchRendererConfiguration::ptr>(
+      m, "ReplayBatchRendererConfiguration")
+      .def(py::init(&ReplayBatchRendererConfiguration::create<>))
+      .def_readwrite("num_environments",
+                     &ReplayBatchRendererConfiguration::numEnvironments,
+                     R"(todo)")
+      .def_readwrite("sensor_specifications",
+                     &ReplayBatchRendererConfiguration::sensorSpecifications,
+                     R"(todo)")
+      .def_readwrite("gpu_device_id",
+                     &ReplayBatchRendererConfiguration::gpuDeviceId, R"(todo)")
+      .def_readwrite(
+          "force_separate_semantic_scene_graph",
+          &ReplayBatchRendererConfiguration::forceSeparateSemanticSceneGraph,
+          R"(todo)")
+      .def_readwrite(
+          "leave_context_with_background_renderer",
+          &ReplayBatchRendererConfiguration::leaveContextWithBackgroundRenderer,
+          R"(todo)");
+
+  // ==== ReplayBatchRenderer ====
+  py::class_<ReplayBatchRenderer, ReplayBatchRenderer::ptr>(
+      m, "ReplayBatchRenderer")
+      // modify constructor to pass MetadataMediator
+      .def(py::init<const ReplayBatchRendererConfiguration&>())
+      .def_property_readonly("renderer", &ReplayBatchRenderer::getRenderer)
+      .def("get_scene_graph", &ReplayBatchRenderer::getSceneGraph,
+           R"(PYTHON DOES NOT GET OWNERSHIP)",
+           py::return_value_policy::reference)
+      .def("get_semantic_scene_graph",
+           &ReplayBatchRenderer::getSemanticSceneGraph,
+           R"(PYTHON DOES NOT GET OWNERSHIP)",
+           py::return_value_policy::reference)
+      .def("get_environment_sensors",
+           &ReplayBatchRenderer::getEnvironmentSensors)
+      .def("set_sensor_transforms_from_keyframe",
+           &ReplayBatchRenderer::setSensorTransformsFromKeyframe)
+      .def("get_environment_sensor_parent_node",
+           &ReplayBatchRenderer::getEnvironmentSensorParentNode)
+      .def("set_environment_keyframe",
+           &ReplayBatchRenderer::setEnvironmentKeyframe);
 }
 
 }  // namespace sim

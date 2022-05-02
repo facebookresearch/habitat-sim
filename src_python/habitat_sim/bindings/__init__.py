@@ -24,6 +24,8 @@ from habitat_sim._ext.habitat_sim_bindings import (
     GreedyGeodesicFollowerImpl,
     MultiGoalShortestPath,
     PathFinder,
+    ReplayBatchRenderer,
+    ReplayBatchRendererConfiguration,
     RigidState,
     SceneGraph,
     SceneNode,
