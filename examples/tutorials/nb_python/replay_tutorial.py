@@ -256,6 +256,10 @@ chefcan_2.translation = [2.4, -0.64, 0.28]
 chefcan_3 = rigid_obj_mgr.add_object_by_template_handle(chefcan_template_handle)
 chefcan_3.translation = [2.4, -0.64, -0.28]
 
+# scale some objects
+# TODO: this doesn't work because replay is only tracking the MotionState, not the scaling SceneNode further in the tree. Needs a refactor.
+chefcan_3.scale = mn.Vector3(2.0)
+
 observations += simulate_with_moving_agent(
     sim,
     duration=2.0,

@@ -391,6 +391,70 @@ def test_dynamics():
             assert cheezit_box1.translation[0] > new_object_start[0]
 
 
+def test_rigid_object_scaling():
+    # configure some settings in case defaults change
+    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings["scene"] = "NONE"
+    cfg_settings["enable_physics"] = True
+
+    # loading the physical scene
+    hab_cfg = examples.settings.make_cfg(cfg_settings)
+
+    with habitat_sim.Simulator(hab_cfg) as sim:
+        # get the rigid object attributes manager, which manages
+        # templates used to create objects
+        obj_template_mgr = sim.get_object_template_manager()
+        # get the rigid object manager, which provides direct
+        # access to objects
+        rigid_obj_mgr = sim.get_rigid_object_manager()
+        if (
+            sim.get_physics_simulation_library()
+            != habitat_sim.physics.PhysicsSimulationLibrary.NoPhysics
+        ):
+            # test getting scale starting from a template
+            template_path = osp.abspath("data/test_assets/objects/nested_box")
+            template_ids = obj_template_mgr.load_configs(template_path)
+            object_template = obj_template_mgr.get_template_by_id(template_ids[0])
+            # enforce unit scale to start test
+            object_template.scale = np.ones(3)
+            obj_template_mgr.register_template(object_template)
+            obj_handle = obj_template_mgr.get_template_handle_by_id(template_ids[0])
+            box_object_unit = rigid_obj_mgr.add_object_by_template_handle(obj_handle)
+
+            # test non-uniform scale from template
+            object_scale = np.array([1.0, 2.0, 3.0])
+            object_template.scale = object_scale
+            obj_template_mgr.register_template(object_template)
+            box_object = rigid_obj_mgr.add_object_by_template_handle(obj_handle)
+            for test_case in range(1):
+                if test_case == 1:
+                    # test re-scaling programmatically
+                    object_scale = np.array([4.0, 2.0, 5.0])
+                    box_object.scale = object_scale
+                # test query validation
+                assert np.allclose(box_object.scale, object_scale)
+                # test getting AABB from Bullet is scaled
+                assert np.allclose(
+                    box_object.collision_shape_aabb,
+                    box_object_unit.collision_shape_aabb * object_scale,
+                )
+                # test can't set scale with STATIC
+                box_object.motion_type = habitat_sim.physics.MotionType.STATIC
+                box_object.scale = np.ones(3)
+                assert not np.allclose(box_object.scale, np.ones(3))
+                # test motion-type is preserved
+                box_object.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+                box_object.scale = np.ones(3)
+                assert (
+                    box_object.motion_type == habitat_sim.physics.MotionType.KINEMATIC
+                )
+                assert np.allclose(box_object.scale, np.ones(3))
+                box_object.motion_type = habitat_sim.physics.MotionType.DYNAMIC
+                box_object.scale = np.array([2.0, 2.0, 2.0])
+                assert box_object.motion_type == habitat_sim.physics.MotionType.DYNAMIC
+                # TODO: can't query this currently, but should check that collision group is preserved?
+
+
 def test_velocity_control():
     cfg_settings = examples.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "NONE"
