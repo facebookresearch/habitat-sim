@@ -59,6 +59,19 @@ void initGfxReplayBindings(py::module& m) {
           R"(Save a render keyframe; a render keyframe can be loaded later and used to draw observations.)")
 
       .def(
+          "extract_keyframe",
+          [](ReplayManager& self) {
+            if (!self.getRecorder()) {
+              throw std::runtime_error(
+                  "replay save not enabled. See "
+                  "SimulatorConfiguration.enable_gfx_replay_save.");
+            }
+            return esp::gfx::replay::Recorder::keyframeToString(
+                self.getRecorder()->extractKeyframe());
+          },
+          R"(Extract a render keyframe as a JSON-formatted string)")
+
+      .def(
           "add_user_transform_to_keyframe",
           [](ReplayManager& self, const std::string& name,
              const Magnum::Vector3& translation,

@@ -126,10 +126,9 @@ class Simulator {
    * --headless mode on linux
    */
   int gpuDevice() const {
-    CORRADE_ASSERT(config_.createRenderer,
-                   "Simulator::gpuDevice() : cannot get gpu device when "
-                   "createRenderer flag is false",
-                   0);
+    ESP_CHECK(config_.createRenderer,
+              "Simulator::gpuDevice() : cannot get gpu device when "
+              "createRenderer flag is false");
     if (context_ == nullptr) {
       return 0;
     }

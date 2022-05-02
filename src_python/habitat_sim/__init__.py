@@ -54,6 +54,8 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         pyrobot_noisy_controls,
     )
     from habitat_sim.bindings import (  # noqa: F401
+        ReplayBatchRenderer,
+        ReplayBatchRendererConfiguration,
         RigidState,
         SceneGraph,
         SceneNode,
