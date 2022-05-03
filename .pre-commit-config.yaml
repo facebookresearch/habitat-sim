@@ -42,7 +42,7 @@ repos:
         exclude: docs/
 
 -   repo: https://github.com/ambv/black
-    rev: 21.5b2
+    rev: 22.3.0
     hooks:
     - id: black
       exclude: ^examples/tutorials/(nb_python|colabs)

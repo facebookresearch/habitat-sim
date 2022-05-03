@@ -35,6 +35,20 @@ def hm3d_train_configs_post(extract_dir: str) -> List[str]:
     return [link_name]
 
 
+def hm3d_semantic_configs_post(extract_dir: str) -> List[str]:
+    all_scene_dataset_cfg = os.path.join(
+        extract_dir, "hm3d_annotated_basis.scene_dataset_config.json"
+    )
+    assert os.path.exists(all_scene_dataset_cfg)
+
+    dst_name = os.path.join(
+        extract_dir, "..", "hm3d_annotated_basis.scene_dataset_config.json"
+    )
+    os.replace(all_scene_dataset_cfg, dst_name)
+
+    return [dst_name]
+
+
 def initialize_test_data_sources(data_path):
     global data_sources
     global data_groups
@@ -75,10 +89,10 @@ def initialize_test_data_sources(data_path):
             "version": "0.2",
         },
         "mp3d_example_scene": {
-            "source": "http://dl.fbaipublicfiles.com/habitat/mp3d_example.zip",
-            "package_name": "mp3d_example.zip",
+            "source": "http://dl.fbaipublicfiles.com/habitat/mp3d/mp3d_example_v1.1.zip",
+            "package_name": "mp3d_example_v1.1.zip",
             "link": data_path + "scene_datasets/mp3d_example",
-            "version": "1.0",
+            "version": "1.1",
         },
         "coda_scene": {
             "source": "https://dl.fbaipublicfiles.com/habitat/coda_v1.0.zip",
@@ -95,22 +109,22 @@ def initialize_test_data_sources(data_path):
             "version": "1.0",
         },
         "replica_cad_dataset": {
-            "source": "https://dl.fbaipublicfiles.com/habitat/ReplicaCAD/ReplicaCAD_dataset_v1.1.zip",
-            "package_name": "ReplicaCAD_dataset_v1.1.zip",
+            "source": "https://dl.fbaipublicfiles.com/habitat/ReplicaCAD/ReplicaCAD_dataset_v1.5.zip",
+            "package_name": "ReplicaCAD_dataset_v1.5.zip",
             "link": data_path + "replica_cad",
-            "version": "1.1",
+            "version": "1.5",
         },
         "replica_cad_baked_lighting": {
-            "source": "https://dl.fbaipublicfiles.com/habitat/ReplicaCAD/ReplicaCAD_baked_lighting_v1.1.zip",
-            "package_name": "ReplicaCAD_baked_lighting_v1.1.zip",
+            "source": "https://dl.fbaipublicfiles.com/habitat/ReplicaCAD/ReplicaCAD_baked_lighting_v1.5.zip",
+            "package_name": "ReplicaCAD_baked_lighting_v1.5.zip",
             "link": data_path + "replica_cad_baked_lighting",
-            "version": "1.1",
+            "version": "1.5",
         },
         "ycb": {
-            "source": "https://dl.fbaipublicfiles.com/habitat/ycb/hab_ycb_v1.0.zip",
-            "package_name": "hab_ycb_v1.0.zip",
+            "source": "https://dl.fbaipublicfiles.com/habitat/ycb/hab_ycb_v1.1.zip",
+            "package_name": "hab_ycb_v1.1.zip",
             "link": data_path + "objects/ycb",
-            "version": "1.0",
+            "version": "1.1",
         },
         "hab_fetch": {
             "source": "http://dl.fbaipublicfiles.com/habitat/hab_fetch_v1.0.zip",
@@ -122,6 +136,18 @@ def initialize_test_data_sources(data_path):
             "source": "https://dl.fbaipublicfiles.com/habitat/data/datasets/rearrange_pick/replica_cad/v0/rearrange_pick_replica_cad_v0.zip",
             "package_name": "rearrange_pick_replica_cad_v0.zip",
             "link": data_path + "datasets/rearrange_pick/replica_cad/v0",
+            "version": "1.0",
+        },
+        "rearrange_dataset_v1": {
+            "source": "https://dl.fbaipublicfiles.com/habitat/data/datasets/replica_cad/v1.zip",
+            "package_name": "v1.zip",
+            "link": data_path + "datasets/replica_cad/rearrange",
+            "version": "1.0",
+        },
+        "hab2_bench_assets": {
+            "source": "https://dl.fbaipublicfiles.com/habitat/ReplicaCAD/hab2_bench_assets.zip",
+            "package_name": "hab2_bench_assets.zip",
+            "link": data_path + "hab2_bench_assets",
             "version": "1.0",
         },
     }
@@ -179,6 +205,59 @@ def initialize_test_data_sources(data_path):
         }
     )
 
+    data_sources.update(
+        {
+            f"hm3d_{split}_semantic_{data_format}_v0.1": {
+                "source": "https://api.matterport.com/resources/habitat/hm3d-{split}-semantic-{data_format}-v0.1.tar{ext}".format(
+                    ext=".gz" if data_format == "annots" else "",
+                    split=split,
+                    data_format=data_format,
+                ),
+                "download_pre_args": "--location",
+                "package_name": "hm3d-{split}-semantic-{data_format}-v0.1.tar{ext}".format(
+                    ext=".gz" if data_format == "annots" else "",
+                    split=split,
+                    data_format=data_format,
+                ),
+                "link": data_path + "scene_datasets/hm3d",
+                "version": "1.0",
+                "version_dir": "hm3d-{version}/hm3d",
+                "extract_postfix": f"{split}",
+                "downloaded_file_list": f"hm3d-{{version}}/{split}-semantic-{data_format}-files.json.gz",
+                "requires_auth": True,
+                "use_curl": True,
+                "post_extract_fn": hm3d_semantic_configs_post
+                if data_format == "configs"
+                else None,
+            }
+            for split, data_format in itertools.product(
+                ["minival", "train", "val"],
+                ["annots", "configs"],
+            )
+        }
+    )
+
+    data_sources.update(
+        {
+            f"hm3d_example_semantic_{data_format}_v0.1": {
+                "source": "https://github.com/matterport/habitat-matterport-3dresearch/raw/main/example/hm3d-example-semantic-{data_format}-v0.1.tar{ext}".format(
+                    ext=".gz" if data_format == "annots" else "",
+                    data_format=data_format,
+                ),
+                "package_name": "hm3d-example-semantic-{data_format}-v0.1.tar{ext}".format(
+                    ext=".gz" if data_format == "annots" else "",
+                    data_format=data_format,
+                ),
+                "link": data_path + "scene_datasets/hm3d",
+                "version": "1.0",
+                "version_dir": "hm3d-{version}/hm3d",
+                "extract_postfix": "example",
+                "downloaded_file_list": f"hm3d-{{version}}/example-semantic-{data_format}-files.json.gz",
+            }
+            for data_format in ["annots", "configs"]
+        }
+    )
+
     # data sources can be grouped for batch commands with a new uid
     data_groups = {
         "ci_test_assets": [
@@ -196,11 +275,42 @@ def initialize_test_data_sources(data_path):
             "hab_fetch",
             "ycb",
             "rearrange_pick_dataset_v0",
+            "rearrange_dataset_v1",
         ],
-        "hm3d_example": ["hm3d_example_habitat", "hm3d_example_configs"],
-        "hm3d_val": ["hm3d_val_habitat", "hm3d_val_configs"],
-        "hm3d_train": ["hm3d_train_habitat", "hm3d_train_configs"],
-        "hm3d_minival": ["hm3d_minival_habitat", "hm3d_minival_configs"],
+        "hm3d_example": [
+            "hm3d_example_habitat",
+            "hm3d_example_configs",
+            "hm3d_example_semantic_annots_v0.1",
+            "hm3d_example_semantic_configs_v0.1",
+        ],
+        "hm3d_val": [
+            "hm3d_val_habitat",
+            "hm3d_val_configs",
+            "hm3d_val_semantic_annots_v0.1",
+            "hm3d_val_semantic_configs_v0.1",
+        ],
+        "hm3d_train": [
+            "hm3d_train_habitat",
+            "hm3d_train_configs",
+            "hm3d_train_semantic_annots_v0.1",
+            "hm3d_train_semantic_configs_v0.1",
+        ],
+        "hm3d_minival": [
+            "hm3d_minival_habitat",
+            "hm3d_minival_configs",
+            "hm3d_minival_semantic_annots_v0.1",
+            "hm3d_minival_semantic_configs_v0.1",
+        ],
+        "hm3d_semantics": [
+            "hm3d_example_semantic_annots_v0.1",
+            "hm3d_example_semantic_configs_v0.1",
+            "hm3d_val_semantic_annots_v0.1",
+            "hm3d_val_semantic_configs_v0.1",
+            "hm3d_train_semantic_annots_v0.1",
+            "hm3d_train_semantic_configs_v0.1",
+            "hm3d_minival_semantic_annots_v0.1",
+            "hm3d_minival_semantic_configs_v0.1",
+        ],
         "hm3d_full": list(filter(lambda k: k.startswith("hm3d_"), data_sources.keys())),
     }
 
