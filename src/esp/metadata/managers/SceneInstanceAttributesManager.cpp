@@ -280,6 +280,14 @@ void SceneInstanceAttributesManager::loadAbstractObjectAttributesFromJson(
                              [instanceAttrs](double uniform_scale) {
                                instanceAttrs->setUniformScale(uniform_scale);
                              });
+
+  // non-uniform scaling for instance
+  io::jsonIntoConstSetter<Magnum::Vector3>(
+      jCell, "non_uniform_scale",
+      [instanceAttrs](const Magnum::Vector3& non_uniform_scale) {
+        instanceAttrs->setNonUniformScale(non_uniform_scale);
+      });
+
   // mass scaling for instance
   io::jsonIntoSetter<double>(jCell, "mass_scale",
                              [instanceAttrs](double mass_scale) {

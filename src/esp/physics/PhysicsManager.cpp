@@ -117,6 +117,17 @@ int PhysicsManager::addObjectInstance(
       metadata::attributes::ObjectInstanceShaderType::Unspecified) {
     objAttributes->setShaderType(getShaderTypeName(objShaderType));
   }
+
+  // set scaling values for this instance of stage attributes - first uniform
+  // scaling
+  objAttributes->setScale(objAttributes->getScale() *
+                          objInstAttributes->getUniformScale());
+  // set scaling values for this instance of stage attributes - next non-uniform
+  // scaling
+  objAttributes->setScale(objAttributes->getScale() *
+                          objInstAttributes->getNonUniformScale());
+
+  // adding object using provided object attributes
   int objID =
       addObjectQueryDrawables(objAttributes, attachmentNode, lightSetup);
 

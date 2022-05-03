@@ -161,14 +161,35 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief Get or set the uniform scaling of the instanced object.  Want this
+   * @brief Get the uniform scaling of the instanced object.  Want this
    * to be a float for consumption in instance creation
    */
   float getUniformScale() const {
     return static_cast<float>(get<double>("uniform_scale"));
   }
+
+  /**
+   * @brief Set the uniform scaling of the instanced object.  Want this
+   * to be a float for consumption in instance creation
+   */
   void setUniformScale(double uniform_scale) {
     set("uniform_scale", uniform_scale);
+  }
+
+  /**
+   * @brief Get the non-uniform scale vector of the described stage/object
+   * instance.
+   */
+  Magnum::Vector3 getNonUniformScale() const {
+    return get<Magnum::Vector3>("non_uniform_scale");
+  }
+
+  /**
+   * @brief Set the non-uniform scale vector of the described stage/object
+   * instance.
+   */
+  void setNonUniformScale(const Magnum::Vector3& non_uniform_scale) {
+    set("non_uniform_scale", non_uniform_scale);
   }
 
   /**
