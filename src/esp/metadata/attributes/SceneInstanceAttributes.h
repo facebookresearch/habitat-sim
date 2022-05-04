@@ -111,6 +111,7 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
     set("is_instance_visible", (isVisible ? 1 : 0));
   }
   int getIsInstanceVisible() const { return get<int>("is_instance_visible"); }
+  void clearIsInstanceVisible() { set("is_instance_visible", ID_UNDEFINED); }
 
   /**
    * @brief Set the motion type for the object.  Ignored for stage instances.
@@ -193,12 +194,9 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief Get or set the mass scaling of the instanced object.  Want this
-   * to be a float for consumption in instance creation
+   * @brief Get or set the mass scaling of the instanced object.
    */
-  float getMassScale() const {
-    return static_cast<float>(get<double>("mass_scale"));
-  }
+  double getMassScale() const { return get<double>("mass_scale"); }
   void setMassScale(double mass_scale) { set("mass_scale", mass_scale); }
 
   /**

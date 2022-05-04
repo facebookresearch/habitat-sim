@@ -23,8 +23,9 @@ SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
   // set to no rotation
   setRotation(Mn::Quaternion(Mn::Math::IdentityInit));
   setTranslation(Mn::Vector3());
-  // don't override attributes-specified visibility.
-  set("is_instance_visible", ID_UNDEFINED);
+  // don't override attributes-specified visibility. - sets int value to
+  // ID_UNDEFINED
+  clearIsInstanceVisible();
   // defaults to unknown so that obj instances use scene instance setting
   setTranslationOrigin(
       getTranslationOriginName(SceneInstanceTranslationOrigin::Unknown));
@@ -116,7 +117,7 @@ void SceneObjectInstanceAttributes::writeValuesToJson(
   if (getNonUniformScale() != Mn::Vector3(1.0, 1.0, 1.0)) {
     writeValueToJson("non_uniform_scale", jsonObj, allocator);
   }
-  if (getMassScale() != 1.0f) {
+  if (getMassScale() != 1.0) {
     writeValueToJson("mass_scale", jsonObj, allocator);
   }
 
