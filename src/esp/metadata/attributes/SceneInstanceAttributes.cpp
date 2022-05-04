@@ -28,12 +28,13 @@ SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
       getTranslationOriginName(SceneInstanceTranslationOrigin::Unknown));
   // set default multiplicative scaling values
   setUniformScale(1.0);
+  setNonUniformScale({1.0, 1.0, 1.0});
   setMassScale(1.0);
 }
 
 std::string SceneObjectInstanceAttributes::getObjectInfoHeaderInternal() const {
   return "Translation XYZ,Rotation W[XYZ],Motion Type,Shader Type,Uniform "
-         "Scale,Mass Scale,Translation Origin," +
+         "Scale,Non-Uniform Scale,Mass Scale,Translation Origin," +
          getSceneObjInstanceInfoHeaderInternal();
 }
 
@@ -42,7 +43,7 @@ std::string SceneObjectInstanceAttributes::getObjectInfoInternal() const {
       "{},{},{},{},{},{},{},{}", getAsString("translation"),
       getAsString("rotation"), getMotionTypeName(getMotionType()),
       getShaderTypeName(getShaderType()), getAsString("uniform_scale"),
-      getAsString("mass_scale"),
+      getAsString("non_uniform_scale"), getAsString("mass_scale"),
       getTranslationOriginName(getTranslationOrigin()),
       getSceneObjInstanceInfoInternal());
 }  // SceneObjectInstanceAttributes::getObjectInfoInternal()
@@ -85,11 +86,15 @@ void SceneObjectInstanceAttributes::writeValuesToJson(
     io::JsonAllocator& allocator) const {
   // map "handle" to "template_name" key in json
   writeValueToJson("handle", "template_name", jsonObj, allocator);
-  writeValueToJson("translation", jsonObj, allocator);
+  if (getTranslation() != Mn::Vector3()) {
+    writeValueToJson("translation", jsonObj, allocator);
+  }
   if (getTranslationOrigin() != SceneInstanceTranslationOrigin::Unknown) {
     writeValueToJson("translation_origin", jsonObj, allocator);
   }
-  writeValueToJson("rotation", jsonObj, allocator);
+  if (getRotation() != Mn::Quaternion(Mn::Math::IdentityInit)) {
+    writeValueToJson("rotation", jsonObj, allocator);
+  }
   // map "is_instance_visible" to boolean only if not -1, otherwise don't save
   int visSet = getIsInstanceVisible();
   if (visSet != ID_UNDEFINED) {
@@ -100,9 +105,18 @@ void SceneObjectInstanceAttributes::writeValuesToJson(
   if (getMotionType() != esp::physics::MotionType::UNDEFINED) {
     writeValueToJson("motion_type", jsonObj, allocator);
   }
-  writeValueToJson("shader_type", jsonObj, allocator);
-  writeValueToJson("uniform_scale", jsonObj, allocator);
-  writeValueToJson("mass_scale", jsonObj, allocator);
+  if (getShaderType() != ObjectInstanceShaderType::Unspecified) {
+    writeValueToJson("shader_type", jsonObj, allocator);
+  }
+  if (getUniformScale() != 1.0f) {
+    writeValueToJson("uniform_scale", jsonObj, allocator);
+  }
+  if (getNonUniformScale() != Mn::Vector3(1.0, 1.0, 1.0)) {
+    writeValueToJson("non_uniform_scale", jsonObj, allocator);
+  }
+  if (getMassScale() != 1.0f) {
+    writeValueToJson("mass_scale", jsonObj, allocator);
+  }
 
   // take care of child class valeus, if any exist
   writeValuesToJsonInternal(jsonObj, allocator);

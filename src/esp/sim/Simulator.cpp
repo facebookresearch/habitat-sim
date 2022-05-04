@@ -383,9 +383,15 @@ bool Simulator::instanceStageForSceneAttributes(
   stageAttributes->setLightSetupKey(config_.sceneLightSetupKey);
   // set frustum culling from simulator config
   stageAttributes->setFrustumCulling(frustumCulling_);
-  // set scaling values for this instance of stage attributes
+  // set scaling values for this instance of stage attributes - first uniform
+  // scaling
   stageAttributes->setScale(stageAttributes->getScale() *
                             stageInstanceAttributes->getUniformScale());
+  // set scaling values for this instance of stage attributes - next non-uniform
+  // scaling
+  stageAttributes->setScale(stageAttributes->getScale() *
+                            stageInstanceAttributes->getNonUniformScale());
+
   // this will only be true if semantic textures have been set to be available
   // from the dataset config
   stageAttributes->setUseSemanticTextures(config_.useSemanticTexturesIfFound);

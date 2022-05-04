@@ -498,6 +498,9 @@ void AttributesConfigsTest::testSceneInstanceAttrVals(
                   Magnum::Quaternion({0.3f, 0.4f, 0.5f}, 0.2f));
   CORRADE_COMPARE(static_cast<int>(objInstance->getMotionType()),
                   static_cast<int>(esp::physics::MotionType::KINEMATIC));
+  CORRADE_COMPARE(objInstance->getUniformScale(), 1.1f);
+  CORRADE_COMPARE(objInstance->getNonUniformScale(),
+                  Magnum::Vector3(1.1f, 2.2f, 3.3f));
 
   // test object 0 instance attributes-level user config vals
   testUserDefinedConfigVals(objInstance->getUserConfiguration(),
@@ -512,8 +515,11 @@ void AttributesConfigsTest::testSceneInstanceAttrVals(
                   Magnum::Quaternion({0.6f, 0.7f, 0.8f}, 0.5f));
   CORRADE_COMPARE(static_cast<int>(objInstance->getMotionType()),
                   static_cast<int>(esp::physics::MotionType::DYNAMIC));
+  CORRADE_COMPARE(objInstance->getUniformScale(), 2.1f);
+  CORRADE_COMPARE(objInstance->getNonUniformScale(),
+                  Magnum::Vector3(2.1f, 3.2f, 4.3f));
 
-  // test object 0 instance attributes-level user config vals
+  // test object 1 instance attributes-level user config vals
   testUserDefinedConfigVals(objInstance->getUserConfiguration(),
                             "obj1 instance defined string", false, 1, 1.1,
                             Magnum::Vector3(10.3, 30.5, -5.07),
@@ -591,6 +597,9 @@ void AttributesConfigsTest::testSceneInstanceAttrVals(
   // make sure that is not default value "flat"
   CORRADE_COMPARE(static_cast<int>(stageInstance->getShaderType()),
                   static_cast<int>(Attrs::ObjectInstanceShaderType::PBR));
+  CORRADE_COMPARE(stageInstance->getUniformScale(), 1.9f);
+  CORRADE_COMPARE(stageInstance->getNonUniformScale(),
+                  Magnum::Vector3(1.5f, 2.5f, 3.5f));
 
   // test stage instance attributes-level user config vals
   testUserDefinedConfigVals(stageInstance->getUserConfiguration(),
@@ -612,6 +621,8 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
       "translation": [1,2,3],
       "rotation": [0.1, 0.2, 0.3, 0.4],
       "shader_type" : "pbr",
+      "uniform_scale" : 1.9,
+      "non_uniform_scale" : [1.5,2.5,3.5],
       "user_defined" : {
           "user_string" : "stage instance defined string",
           "user_bool" : true,
@@ -628,6 +639,8 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
           "translation": [0,1,2],
           "rotation": [0.2, 0.3, 0.4, 0.5],
           "motion_type": "KINEMATIC",
+          "uniform_scale" : 1.1,
+          "non_uniform_scale" : [1.1,2.2,3.3],
           "user_defined" : {
               "user_string" : "obj0 instance defined string",
               "user_bool" : false,
@@ -642,6 +655,8 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
           "translation": [0,-1,-2],
           "rotation": [0.5, 0.6, 0.7, 0.8],
           "motion_type": "DYNAMIC",
+          "uniform_scale" : 2.1,
+          "non_uniform_scale" : [2.1,3.2,4.3],
           "user_defined" : {
               "user_string" : "obj1 instance defined string",
               "user_bool" : false,
