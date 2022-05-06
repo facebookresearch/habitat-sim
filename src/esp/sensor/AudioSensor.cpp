@@ -155,6 +155,12 @@ void AudioSensor::runSimulation(sim::Simulator& sim) {
   impulseResponse_.clear();
 }
 
+void AudioSensor::setAudioMaterialsJSON(const std::string& jsonPath) {
+  ESP_DEBUG() << "Set audio materials from json : " << jsonPath;
+
+  audioMaterialsJSON_ = jsonPath;
+}
+
 const std::vector<std::vector<float>>& AudioSensor::getIR() {
   if (impulseResponse_.size() == 0) {
     ObservationSpace obsSpace;
@@ -279,6 +285,12 @@ void AudioSensor::loadSemanticMesh(sim::Simulator& sim) {
 
   CORRADE_ASSERT(audioSimulator_,
                  "loadSemanticMesh: audioSimulator_ should exist", );
+
+  // Load the audio materials JSON if it was set
+  if (audioMaterialsJSON_.size() > 0) {
+    audioSimulator_->LoadAudioMaterialJSON(audioMaterialsJSON_);
+    audioMaterialsJSON_ = "";
+  }
 
   std::vector<std::uint16_t> objectIds;
 

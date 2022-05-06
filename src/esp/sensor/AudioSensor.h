@@ -86,6 +86,11 @@ class AudioSensor : public Sensor {
   void runSimulation(sim::Simulator& sim);
 
   /**
+   * @brief Set the audio materials database from a json file
+   * */
+  void setAudioMaterialsJSON(const std::string& jsonPath);
+
+  /**
    * @brief Return the last impulse response.
    * */
   const std::vector<std::vector<float>>& getIR();
@@ -147,6 +152,8 @@ class AudioSensor : public Sensor {
   vec3f lastAgentPos_;
   //! track the agent rotation
   vec4f lastAgentRot_;
+  //! audio materials json path
+  std::string audioMaterialsJSON_;
 
   bool newInitialization_ = false;
   bool newSource_ = false;

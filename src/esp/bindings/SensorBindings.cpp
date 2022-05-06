@@ -443,6 +443,7 @@ void initSensorBindings(py::module& m) {
       .def("setAudioSourceTransform", &AudioSensor::setAudioSourceTransform)
       .def("setAudioListenerTransform", &AudioSensor::setAudioListenerTransform)
       .def("runSimulation", &AudioSensor::runSimulation)
+      .def("setAudioMaterialsJSON", &AudioSensor::setAudioMaterialsJSON)
       .def("getIR", &AudioSensor::getIR)
       .def("reset", &AudioSensor::reset);
 #else

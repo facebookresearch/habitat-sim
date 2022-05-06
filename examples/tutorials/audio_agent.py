@@ -69,6 +69,9 @@ def main():
     # set audio source location, no need to set the agent location, will be set implicitly
     audio_sensor.setAudioSourceTransform(np.array([3.1035, 1.57245, -4.15972]))
 
+    # optionally, set the audio materials json
+    audio_sensor.setAudioMaterialsJSON("src/deps/rlr-audio-propagation/RLRAudioPropagationPkg/data/mp3d_material_config.json")
+
     # run the simulation, currently only 1 iteration is run
     for i in range(1):
         print(i)
