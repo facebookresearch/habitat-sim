@@ -36,6 +36,7 @@ const std::unordered_map<ConfigStoredType, std::string, ConfigStoredTypeHash>
                           {ConfigStoredType::Integer, "int"},
                           {ConfigStoredType::Double, "double"},
                           {ConfigStoredType::MagnumVec3, "Magnum::Vector3"},
+                          {ConfigStoredType::MagnumMat3, "Magnum::Matrix3"},
                           {ConfigStoredType::MagnumQuat, "Magnum::Quaternion"},
                           {ConfigStoredType::MagnumRad, "Magnum::Rad"},
                           {ConfigStoredType::String, "std::string"}};
@@ -86,7 +87,7 @@ constexpr NonTrivialTypeHandler nonTrivialTypeHandlers[]{
     NonTrivialTypeHandler::make<std::string>()};
 
 NonTrivialTypeHandler nonTrivialConfigStoredTypeHandlerFor(
-    ConfigStoredType type) {  // eugh, long name
+    ConfigStoredType type) {
   const std::size_t i = int(type) - int(ConfigStoredType::_nonTrivialTypes);
   CORRADE_INTERNAL_ASSERT(i <
                           Cr::Containers::arraySize(nonTrivialTypeHandlers));
@@ -183,6 +184,19 @@ std::string ConfigValue::getAsString() const {
       auto v = get<Mn::Vector3>();
       return Cr::Utility::formatString("[{} {} {}]", v.x(), v.y(), v.z());
     }
+    case ConfigStoredType::MagnumMat3: {
+      auto m = get<Mn::Matrix3>();
+      auto v = m.row(0);
+      std::string res =
+          Cr::Utility::formatString("[[{} {} {}]", v.x(), v.y(), v.z());
+      for (int i = 1; i < m.Size; ++i) {
+        v = m.row(i);
+        Cr::Utility::formatInto(res, res.length(), ", [{} {} {}]", v.x(), v.y(),
+                                v.z());
+      }
+      Cr::Utility::formatInto(res, res.length(), "]");
+      return res;
+    }
     case ConfigStoredType::MagnumQuat: {
       auto q = get<Mn::Quaternion>();
       auto qv = q.vector();
@@ -203,26 +217,29 @@ io::JsonGenericValue ConfigValue::writeToJsonObject(
     io::JsonAllocator& allocator) const {
   // unknown is checked before this function is called, so does not need support
   switch (getType()) {
-    case core::config::ConfigStoredType::Boolean: {
+    case ConfigStoredType::Boolean: {
       return io::toJsonValue(get<bool>(), allocator);
     }
-    case core::config::ConfigStoredType::Integer: {
+    case ConfigStoredType::Integer: {
       return io::toJsonValue(get<int>(), allocator);
     }
-    case core::config::ConfigStoredType::Double: {
+    case ConfigStoredType::Double: {
       return io::toJsonValue(get<double>(), allocator);
     }
-    case core::config::ConfigStoredType::MagnumVec3: {
+    case ConfigStoredType::MagnumVec3: {
       return io::toJsonValue(get<Magnum::Vector3>(), allocator);
     }
-    case core::config::ConfigStoredType::MagnumQuat: {
+    case ConfigStoredType::MagnumMat3: {
+      return io::toJsonValue(get<Magnum::Matrix3>(), allocator);
+    }
+    case ConfigStoredType::MagnumQuat: {
       return io::toJsonValue(get<Magnum::Quaternion>(), allocator);
     }
-    case core::config::ConfigStoredType::MagnumRad: {
+    case ConfigStoredType::MagnumRad: {
       auto r = get<Magnum::Rad>();
       return io::toJsonValue((r.operator float()), allocator);
     }
-    case core::config::ConfigStoredType::String: {
+    case ConfigStoredType::String: {
       return io::toJsonValue(get<std::string>(), allocator);
     }
     default:
@@ -247,6 +264,8 @@ bool ConfigValue::putValueInConfigGroup(
       return cfg.setValue(key, get<std::string>());
     case ConfigStoredType::MagnumVec3:
       return cfg.setValue(key, get<Mn::Vector3>());
+    case ConfigStoredType::MagnumMat3:
+      return cfg.setValue(key, get<Mn::Matrix3>());
     case ConfigStoredType::MagnumQuat:
       return cfg.setValue(key, get<Mn::Quaternion>());
     case ConfigStoredType::MagnumRad:
@@ -287,18 +306,35 @@ int Configuration::loadFromJson(const io::JsonGenericValue& jsonObj) {
       set(key, obj.GetString());
     } else if (obj.IsBool()) {
       set(key, obj.GetBool());
-    } else if (obj.IsArray() && obj.Size() > 0 && obj[0].IsNumber()) {
-      // numeric vector or quaternion
-      if (obj.Size() == 3) {
-        Magnum::Vector3 val{};
-        if (io::fromJsonValue(obj, val)) {
-          set(key, val);
+    } else if (obj.IsArray() && obj.Size() > 0) {
+      // non-empty array
+      if (obj[0].IsNumber()) {
+        // numeric vector or quaternion
+        if (obj.Size() == 3) {
+          Magnum::Vector3 val{};
+          if (io::fromJsonValue(obj, val)) {
+            set(key, val);
+          }
+        } else if (obj.Size() == 4) {
+          // assume is quaternion
+          Magnum::Quaternion val{};
+          if (io::fromJsonValue(obj, val)) {
+            set(key, val);
+          }
+        } else {
+          // decrement count for key:obj due to not being handled vector
+          --numConfigSettings;
+          // TODO support numeric array in JSON
+          ESP_WARNING()
+              << "Config cell in JSON document contains key" << key
+              << "referencing an unsupported numeric array of length :"
+              << obj.Size() << "so skipping.";
         }
-      } else if (obj.Size() == 4) {
-        // assume is quaternion
-        Magnum::Quaternion val{};
-        if (io::fromJsonValue(obj, val)) {
-          set(key, val);
+      } else if (obj.Size() == 3 && obj[0].IsArray() && obj[0][0].IsNumber()) {
+        // 3x3 matrix
+        Magnum::Matrix3 mat{};
+        if (io::fromJsonValue(obj, mat)) {
+          set(key, mat);
         }
       } else {
         // decrement count for key:obj due to not being handled vector
@@ -327,7 +363,7 @@ int Configuration::loadFromJson(const io::JsonGenericValue& jsonObj) {
     }
   }
   return numConfigSettings;
-}  // Configuration::loadFromJson
+}  // namespace config
 
 void Configuration::writeValueToJson(const char* key,
                                      const char* jsonName,
