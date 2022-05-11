@@ -333,11 +333,11 @@ EpisodeSet generateBenchmarkEpisodeSet(const EpisodeGeneratorConfig& config,
     "Baked_sc0_staging_11",
     // "Baked_sc0_staging_12",
   };
-  ESP_CHECK(config.numStageVariations <= selectedReplicaCadBakedStages.size(), 
-    "generateBenchmarkEpisodeSet: config.numStageVariations=" << config.numStageVariations
+  ESP_CHECK(config.maxStageNumber <= selectedReplicaCadBakedStages.size(), 
+    "generateBenchmarkEpisodeSet: config.maxStageNumber=" << config.maxStageNumber
     << " must be <= selectedReplicaCadBakedStages.size()=" << selectedReplicaCadBakedStages.size());
 
-  for (int i = 0; i < config.numStageVariations; i++) {
+  for (int i = config.minStageNumber; i <= config.maxStageNumber; i++) {
     addStageFixedObject(set, selectedReplicaCadBakedStages[i]);
   }
 
@@ -369,7 +369,7 @@ EpisodeSet generateBenchmarkEpisodeSet(const EpisodeGeneratorConfig& config,
 
   // distribute stages across episodes
   for (int i = 0; i < numEpisodes; i++) {
-    int stageIndex = i * config.numStageVariations / numEpisodes;
+    int stageIndex = i * (config.maxStageNumber - config.minStageNumber) / numEpisodes;
     addEpisode(config, set, collection, stageIndex, random, random2, robotProxy);
   }
   BATCHED_SIM_ASSERT(set.maxFreeObjects_ > 0);
