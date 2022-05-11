@@ -15,7 +15,7 @@ struct EpisodeGeneratorConfig {
   int seed = 3; // this is 3 for legacy reason
   // int numStageVariations = 12; // see selectedReplicaCadBakedStages
   int minStageNumber = 0;
-  int maxStageNumber = 12;
+  int maxStageNumber = 11;
   int numObjectVariations = 6; // see selectedYCBObjects
   int minNontargetObjects = 27;
   int maxNontargetObjects = 32;

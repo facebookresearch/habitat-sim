@@ -369,7 +369,7 @@ EpisodeSet generateBenchmarkEpisodeSet(const EpisodeGeneratorConfig& config,
 
   // distribute stages across episodes
   for (int i = 0; i < numEpisodes; i++) {
-    int stageIndex = i * (config.maxStageNumber - config.minStageNumber) / numEpisodes;
+    int stageIndex = i * (config.maxStageNumber - config.minStageNumber + 1) / numEpisodes;
     addEpisode(config, set, collection, stageIndex, random, random2, robotProxy);
   }
   BATCHED_SIM_ASSERT(set.maxFreeObjects_ > 0);
