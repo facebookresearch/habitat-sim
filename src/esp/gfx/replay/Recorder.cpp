@@ -54,7 +54,18 @@ void Recorder::onCreateRenderAssetInstance(
 
   RenderAssetInstanceKey instanceKey = getNewInstanceKey();
 
-  getKeyframe().creations.emplace_back(std::make_pair(instanceKey, creation));
+  auto adjustedCreation = creation;
+
+  // bake node scale into creation
+  auto nodeScale = node->absoluteTransformation().scaling();
+  if (nodeScale != Mn::Vector3(1.f, 1.f, 1.f)) {
+    adjustedCreation.scale = adjustedCreation.scale
+                                 ? *adjustedCreation.scale * nodeScale
+                                 : nodeScale;
+  }
+
+  getKeyframe().creations.emplace_back(
+      std::make_pair(instanceKey, adjustedCreation));
 
   // Constructing NodeDeletionHelper here is equivalent to calling
   // node->addFeature. We keep a pointer to deletionHelper so we can delete it
