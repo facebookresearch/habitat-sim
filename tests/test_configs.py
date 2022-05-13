@@ -41,6 +41,11 @@ def test_core_configuration():
     config.set("vec3", my_vec3)
     assert config.get("vec3") == my_vec3
 
+    # Magnum::Matrix3 (3x3)
+    my_mat3x3 = mn.Matrix3((1.1, 2.2, -3.3), (4.4, 5.0, -6.6), (7.7, 8.0, -9.9))
+    config.set("mat3x3", my_mat3x3)
+    assert config.get("mat3x3")
+
     # Magnum::Quaternion (float)
     my_quat = mn.Quaternion(((1.12345, 2.0, -3.0), 4.0))
     config.set("quat", my_quat)
