@@ -900,6 +900,7 @@ Viewer::Viewer(const Arguments& arguments)
   simConfig_.useSemanticTexturesIfFound = !args.isSet("no-semantic-textures");
   if (args.isSet("stage-requires-lighting")) {
     ESP_DEBUG() << "Stage using DEFAULT_LIGHTING_KEY";
+    simConfig_.overrideSceneLightDefaults = true;
     simConfig_.sceneLightSetupKey = esp::DEFAULT_LIGHTING_KEY;
   }
 
