@@ -307,7 +307,7 @@ int Configuration::loadFromJson(const io::JsonGenericValue& jsonObj) {
     } else if (obj.IsBool()) {
       set(key, obj.GetBool());
     } else if (obj.IsArray() && obj.Size() > 0) {
-      // non-empty array
+      // non-empty array of values
       if (obj[0].IsNumber()) {
         // numeric vector or quaternion
         if (obj.Size() == 3) {
@@ -330,18 +330,29 @@ int Configuration::loadFromJson(const io::JsonGenericValue& jsonObj) {
               << "referencing an unsupported numeric array of length :"
               << obj.Size() << "so skipping.";
         }
-      } else if (obj.Size() == 3 && obj[0].IsArray() && obj[0][0].IsNumber()) {
-        // 3x3 matrix
-        Magnum::Matrix3 mat{};
-        if (io::fromJsonValue(obj, mat)) {
-          set(key, mat);
+      } else if (obj[0].IsArray() && obj[0][0].IsNumber()) {
+        // obj is array of arrays of numbers
+        if (obj.Size() == 3 && obj[0].Size() == 3) {
+          // 3 x 3 matrix of numbers
+          Magnum::Matrix3 mat{};
+          if (io::fromJsonValue(obj, mat)) {
+            set(key, mat);
+          }
+          // check here to eventually support other matrix sizes
+        } else {
+          // decrement count for key:obj due to not being handled matrix
+          --numConfigSettings;
+          ESP_WARNING() << "Config cell in JSON document contains key" << key
+                        << "referencing an unsupported numeric matrix of size :"
+                        << obj.Size() << "," << obj[0].Size() << "so skipping.";
         }
       } else {
-        // decrement count for key:obj due to not being handled vector
+        // decrement count for key:obj due to not being handled vector or matrix
         --numConfigSettings;
         // TODO support numeric array in JSON
         ESP_WARNING() << "Config cell in JSON document contains key" << key
-                      << "referencing an unsupported numeric array of length :"
+                      << "referencing an unsupported array of non-numeric, "
+                         "non-array type of length :"
                       << obj.Size() << "so skipping.";
       }
     } else if (obj.IsObject()) {
