@@ -25,12 +25,15 @@ CoreTest::CoreTest() {
 void CoreTest::TestConfiguration() {
   Configuration cfg;
   cfg.set("myInt", 10);
+  cfg.set("myDouble", 1.2);
   cfg.set("myMat3", Mn::Matrix3(Mn::Math::IdentityInit));
   cfg.set("myString", "test");
   CORRADE_VERIFY(cfg.hasValue("myInt"));
+  CORRADE_VERIFY(cfg.hasValue("myDouble"));
   CORRADE_VERIFY(cfg.hasValue("myMat3"));
   CORRADE_VERIFY(cfg.hasValue("myString"));
   CORRADE_COMPARE(cfg.get<int>("myInt"), 10);
+  CORRADE_COMPARE(cfg.get<double>("myDouble"), 1.2);
   for (int i = 0; i < 3; ++i) {
     CORRADE_COMPARE(cfg.get<Mn::Matrix3>("myMat3").row(i)[i], 1);
   }
