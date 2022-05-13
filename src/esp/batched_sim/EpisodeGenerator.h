@@ -12,19 +12,20 @@ namespace batched_sim {
 
 struct EpisodeGeneratorConfig {
   int numEpisodes = 100;
-  int seed = 3; // this is 3 for legacy reason
-  int numStageVariations = 12; // see selectedReplicaCadBakedStages
-  int numObjectVariations = 6; // see selectedYCBObjects
+  int seed = 0;
+  int numStageVariations = 84;  // see selectedReplicaCadBakedStages
+  int numObjectVariations = 9;  // see selectedYCBObjects
   int minNontargetObjects = 27;
   int maxNontargetObjects = 32;
-  bool useFixedRobotStartPos = true;
+  bool useFixedRobotStartPos = false;
   bool useFixedRobotStartYaw = false;
-  bool useFixedRobotJointStartPositions = true;
+  bool useFixedRobotJointStartPositions = false;
   ESP_SMART_POINTERS(EpisodeGeneratorConfig);
 };
 
-EpisodeSet generateBenchmarkEpisodeSet(const EpisodeGeneratorConfig& config, 
-  const BpsSceneMapping& sceneMapping, const serialize::Collection& collection);
+EpisodeSet generateBenchmarkEpisodeSet(const EpisodeGeneratorConfig& config,
+                                       const BpsSceneMapping& sceneMapping,
+                                       const serialize::Collection& collection);
 
 }  // namespace batched_sim
 }  // namespace esp

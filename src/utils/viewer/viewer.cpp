@@ -24,6 +24,7 @@
 #include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/Shaders/Shaders.h>
 #include <Magnum/Timeline.h>
+#include "esp/core/Check.h"
 #include "esp/core/configure.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
@@ -55,12 +56,12 @@
 #include "esp/geo/VoxelUtils.h"
 #endif
 
+#include "esp/batched_sim/ColumnGridBuilder.h"
 #include "esp/physics/configure.h"
 #include "esp/sensor/CameraSensor.h"
 #include "esp/sensor/EquirectangularSensor.h"
 #include "esp/sensor/FisheyeSensor.h"
 #include "esp/sim/Simulator.h"
-#include "esp/batched_sim/ColumnGridBuilder.h"
 
 #include "ObjectPickingHelper.h"
 
@@ -73,8 +74,8 @@ constexpr float agentActionsPerSecond = 60.0f;
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 
-using esp::batched_sim::ColumnGridSource;
 using esp::batched_sim::ColumnGridBuilder;
+using esp::batched_sim::ColumnGridSource;
 
 namespace {
 
@@ -82,8 +83,8 @@ esp::physics::ManagedArticulatedObject::ptr g_ao;
 
 ColumnGridSource columnGrid_;
 
-void drawColumnGridSource(const ColumnGridSource& source, esp::gfx::DebugLineRender& lineRender) {
-
+void drawColumnGridSource(const ColumnGridSource& source,
+                          esp::gfx::DebugLineRender& lineRender) {
   for (int layerIdx = 0; layerIdx < source.layers.size(); layerIdx++) {
     for (int cellZ = 0; cellZ < source.dimZ; cellZ++) {
       for (int cellX = 0; cellX < source.dimX; cellX++) {
@@ -91,31 +92,27 @@ void drawColumnGridSource(const ColumnGridSource& source, esp::gfx::DebugLineRen
         if (col.freeMinY == source.INVALID_Y) {
           continue;
         }
-        Mn::Vector3 colBottom(
-          source.minX + cellX * source.gridSpacing,
-          col.freeMinY,
-          source.minZ + cellZ * source.gridSpacing);
-        Mn::Vector3 colTop(
-          colBottom.x(),
-          col.freeMaxY,
-          colBottom.z());
+        Mn::Vector3 colBottom(source.minX + cellX * source.gridSpacing,
+                              col.freeMinY,
+                              source.minZ + cellZ * source.gridSpacing);
+        Mn::Vector3 colTop(colBottom.x(), col.freeMaxY, colBottom.z());
 
-        #if 0
+#if 0
         constexpr int numSegments = 16;
         lineRender.drawSphere(colBottom, source.sphereRadius, Magnum::Color4::red(), numSegments);
         lineRender.drawSphere(colTop, source.sphereRadius, Magnum::Color4::green(), numSegments);
         lineRender.drawLine(colBottom, colTop, Magnum::Color4::red(), Magnum::Color4::green());
-        #else
+#else
         constexpr int numSegments = 4;
-        lineRender.drawCircle(colBottom, source.gridSpacing / 2, Magnum::Color4::red(), numSegments);
-        lineRender.drawCircle(colTop, source.gridSpacing / 2, Magnum::Color4::green(), numSegments);
-        #endif
+        lineRender.drawCircle(colBottom, source.gridSpacing / 2,
+                              Magnum::Color4::red(), numSegments);
+        lineRender.drawCircle(colTop, source.gridSpacing / 2,
+                              Magnum::Color4::green(), numSegments);
+#endif
       }
     }
   }
 };
-
-
 
 //! return current time as string in format
 //! "year_month_day_hour-minutes-seconds"
@@ -367,7 +364,9 @@ Key Commands:
   )";
 
   //! Print viewer help text to terminal output.
-  void printHelpText() { ESP_DEBUG() << helpText; };
+  void printHelpText() {
+    ESP_DEBUG() << helpText;
+  };
 
   // single inline for logging agent state msgs, so can be easily modified
   inline void showAgentStateMsg(bool showPos, bool showOrient) {
@@ -794,7 +793,8 @@ Viewer::Viewer(const Arguments& arguments)
   simConfig_.enablePhysics = args.isSet("enable-physics");
   simConfig_.frustumCulling = true;
   simConfig_.requiresTextures = true;
-  simConfig_.enableGfxReplaySave = !gfxReplayRecordFilepath_.empty();
+  simConfig_.enableGfxReplaySave =
+      true;  // temp force reply record !gfxReplayRecordFilepath_.empty();
   if (args.isSet("stage-requires-lighting")) {
     ESP_DEBUG() << "Stage using DEFAULT_LIGHTING_KEY";
     simConfig_.sceneLightSetup = esp::DEFAULT_LIGHTING_KEY;
@@ -881,8 +881,9 @@ Viewer::Viewer(const Arguments& arguments)
   // Per frame profiler will average measurements taken over previous 50 frames
   profiler_.setup(profilerValues, 50);
 
-  // load or build column grid on startup
-  { 
+// load or build column grid on startup
+#if 0
+  {
 
     const std::string baseName = Cr::Utility::Directory::splitExtension(
       Cr::Utility::Directory::splitExtension(
@@ -912,6 +913,25 @@ Viewer::Viewer(const Arguments& arguments)
         exit(0);
       }
     }
+  }
+#endif
+
+  // write keyframe
+  {
+    const auto recorder = simulator_->getGfxReplayManager()->getRecorder();
+    ESP_CHECK(recorder, "need replay recorder");
+
+    const std::string baseName =
+        Cr::Utility::Directory::splitExtension(
+            Cr::Utility::Directory::splitExtension(
+                Cr::Utility::Directory::filename(simConfig_.activeSceneName))
+                .first)
+            .first;
+
+    recorder->saveKeyframe();
+    const std::string filepath = "../data/replays/" + baseName + ".replay.json";
+
+    recorder->writeSavedKeyframesToFile(filepath);
   }
 
   printHelpText();
@@ -1336,7 +1356,8 @@ void Viewer::drawEvent() {
 
   {
     const auto extents = simulator_->getCollisionExtents();
-    simulator_->getDebugLineRender()->drawBox(extents.min(), extents.max(), Mn::Color4::yellow());
+    simulator_->getDebugLineRender()->drawBox(extents.min(), extents.max(),
+                                              Mn::Color4::yellow());
   }
 
   drawColumnGridSource(columnGrid_, *simulator_->getDebugLineRender().get());
@@ -1672,17 +1693,18 @@ void Viewer::mousePressEvent(MouseEvent& event) {
         esp::physics::RaycastResults raycastResults = simulator_->castRay(ray);
 
         if (raycastResults.hasHits()) {
-
           {
             const auto& gridCenter = raycastResults.hits[0].point;
             static const Mn::Vector3 gridHalfSize(1.0, 2.5f, 1.0);
             static float gridSpacing = 0.03f;
             static float sphereRadius = 0.03;
 
-            auto gridAabb = Mn::Range3D(gridCenter - gridHalfSize, gridCenter + gridHalfSize);
+            auto gridAabb = Mn::Range3D(gridCenter - gridHalfSize,
+                                        gridCenter + gridHalfSize);
 
             ColumnGridBuilder builder;
-            columnGrid_ = builder.build(*simulator_.get(), gridAabb, sphereRadius, gridSpacing);
+            columnGrid_ = builder.build(*simulator_.get(), gridAabb,
+                                        sphereRadius, gridSpacing);
             return;
           }
 

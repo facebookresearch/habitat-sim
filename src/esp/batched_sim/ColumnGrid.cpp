@@ -4,13 +4,13 @@
 
 #include "ColumnGrid.h"
 #include "esp/batched_sim/BatchedSimAssert.h"
-#include "esp/core/logging.h"
 #include "esp/core/Check.h"
+#include "esp/core/logging.h"
 
 #include <Corrade/Utility/Assert.h>
+#include <Corrade/Utility/Directory.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Vector3.h>
-#include <Corrade/Utility/Directory.h>
 
 #include <cstdio>
 
@@ -37,22 +37,23 @@ struct FileHeader {
   uint32_t numLayers = 0;
 };
 
-}
+}  // namespace
 
-bool ColumnGridSource::contactTest(const Mn::Vector3& pos,
-  ColumnGridSource::QueryCacheValue* queryCache) const {
-
+bool ColumnGridSource::contactTest(
+    const Mn::Vector3& pos,
+    ColumnGridSource::QueryCacheValue* queryCache) const {
   return castDownTest(pos, queryCache) < 0.f;
 }
 
-float ColumnGridSource::castDownTest(const Mn::Vector3& pos,
-  ColumnGridSource::QueryCacheValue* queryCache) const {
-
+float ColumnGridSource::castDownTest(
+    const Mn::Vector3& pos,
+    ColumnGridSource::QueryCacheValue* queryCache) const {
   // todo: think about this more (for objects vs interiors)
   constexpr float outsideVolumeRetVal = -INVALID_Y;
 
   const float cellFloatX = (pos.x() - minX) * invGridSpacing;
-  if (cellFloatX < 0.f || cellFloatX >= (float)dimX) { // perf todo: pre-cache float dimX
+  if (cellFloatX < 0.f ||
+      cellFloatX >= (float)dimX) {  // perf todo: pre-cache float dimX
     return outsideVolumeRetVal;
   }
 
@@ -65,10 +66,11 @@ float ColumnGridSource::castDownTest(const Mn::Vector3& pos,
 
   float queryY = pos.y();
 
-  // consider allowing a margin and then clamping, to account for numeric imprecision
+  // consider allowing a margin and then clamping, to account for numeric
+  // imprecision
   BATCHED_SIM_ASSERT(cellFloatX >= 0.f && cellFloatX < (float)dimX);
   BATCHED_SIM_ASSERT(cellFloatX < (float)MAX_INTEGER_MATH_COORD);
-  const int globalCellX = int(cellFloatX); // note truncation, not founding
+  const int globalCellX = int(cellFloatX);  // note truncation, not founding
   BATCHED_SIM_ASSERT(globalCellX >= 0 && globalCellX <= MAX_INTEGER_MATH_COORD);
 
   BATCHED_SIM_ASSERT(cellFloatZ >= 0.f && cellFloatZ < (float)dimZ);
@@ -84,8 +86,10 @@ float ColumnGridSource::castDownTest(const Mn::Vector3& pos,
     return outsideVolumeRetVal;
   }
 
-  const int localCellX = (globalCellX & globalToLocalCellMask) >> patch.localCellShift;
-  const int localCellZ = (globalCellZ & globalToLocalCellMask) >> patch.localCellShift;
+  const int localCellX =
+      (globalCellX & globalToLocalCellMask) >> patch.localCellShift;
+  const int localCellZ =
+      (globalCellZ & globalToLocalCellMask) >> patch.localCellShift;
 
   const int localCellIdx = getLocalCellIndex(localCellX, localCellZ);
 
@@ -107,7 +111,7 @@ float ColumnGridSource::castDownTest(const Mn::Vector3& pos,
       const auto& col = getColumn(patch, localCellIdx, layerIndex);
       if (queryY < col.freeMinY) {
         *queryCache = layerIndex;
-        return queryY - col.freeMinY; // in between two free columns
+        return queryY - col.freeMinY;  // in between two free columns
       }
       if (queryY <= col.freeMaxY) {
         *queryCache = layerIndex;
@@ -124,7 +128,7 @@ float ColumnGridSource::castDownTest(const Mn::Vector3& pos,
         return outsideVolumeRetVal;
       }
       const auto& col = getColumn(patch, localCellIdx, layerIndex);
-      if (queryY > col.freeMaxY) { // in between two free columns
+      if (queryY > col.freeMaxY) {  // in between two free columns
         *queryCache = layerIndex;
         BATCHED_SIM_ASSERT(queryY < prevColFreeMinY);
         return queryY - prevColFreeMinY;
@@ -136,11 +140,9 @@ float ColumnGridSource::castDownTest(const Mn::Vector3& pos,
       prevColFreeMinY = col.freeMinY;
     }
   }
-
 }
 
 void ColumnGridSource::load(const std::string& filepath) {
-
   FILE* fp = fopen(filepath.c_str(), "rb");
   if (!fp) {
     ESP_ERROR() << "unable to open file for loading at " << filepath;
@@ -156,8 +158,8 @@ void ColumnGridSource::load(const std::string& filepath) {
   }
   if (header.version != CURRENT_FILE_VERSION) {
     fclose(fp);
-    ESP_ERROR() << "on-disk version is " << header.version 
-      << " instead of current version " << CURRENT_FILE_VERSION;
+    ESP_ERROR() << "on-disk version is " << header.version
+                << " instead of current version " << CURRENT_FILE_VERSION;
     return;
   }
 
@@ -176,7 +178,8 @@ void ColumnGridSource::load(const std::string& filepath) {
   ensureLayer(header.numLayers - 1);
 
   for (int i = 0; i < layers.size(); i++) {
-    size_t readLen = fread(layers[i].columns.data(), sizeof(Column), dimX * dimZ, fp);
+    size_t readLen =
+        fread(layers[i].columns.data(), sizeof(Column), dimX * dimZ, fp);
     if (readLen != dimX * dimZ) {
       ESP_ERROR() << "file read error for " << filepath;
       return;
@@ -187,12 +190,8 @@ void ColumnGridSource::load(const std::string& filepath) {
 }
 
 void ColumnGridSource::save(const std::string& filepath) {
-
   FILE* fp = fopen(filepath.c_str(), "wb");
-  if (!fp) {
-    ESP_ERROR() << "unable to open file for saving at " << filepath;
-    return;
-  }
+  ESP_CHECK(fp, "unable to open file for saving at " << filepath);
 
   FileHeader header{};
   header.dimX = dimX;
@@ -213,11 +212,13 @@ void ColumnGridSource::save(const std::string& filepath) {
 }
 
 void ColumnGridSet::load(const std::string& filepathBase) {
-
   int columnGridFilepathNumber = 0;
   while (true) {
-    // hacky naming convention for ReplicaCAD baked scenes which just contain a stage
-    std::string columnGridFilepath = filepathBase + std::to_string(columnGridFilepathNumber++) + ".columngrid";
+    // hacky naming convention for ReplicaCAD baked scenes which just contain a
+    // stage
+    std::string columnGridFilepath =
+        filepathBase + "." + std::to_string(columnGridFilepathNumber++) +
+        ".columngrid";
     // sloppy: we should know what files we're loading ahead of time
     if (Cr::Utility::Directory::exists(columnGridFilepath)) {
       ColumnGridSource columnGrid;
@@ -225,10 +226,13 @@ void ColumnGridSet::load(const std::string& filepathBase) {
       sphereRadii_.push_back(columnGrid.sphereRadius);
       columnGrids_.push_back(std::move(columnGrid));
     } else {
+      if (columnGridFilepathNumber == 1) {
+        ESP_CHECK(!columnGrids_.empty(),
+                  "couldn't find " << columnGridFilepath);
+      }
       break;
     }
   }
-  ESP_CHECK(!columnGrids_.empty(), "no .columngrid files found for " << filepathBase);
 }
 
 const ColumnGridSource& ColumnGridSet::getColumnGrid(int radiusIdx) const {
@@ -236,20 +240,24 @@ const ColumnGridSource& ColumnGridSet::getColumnGrid(int radiusIdx) const {
   return source;
 }
 
-bool ColumnGridSet::contactTest(int radiusIdx, const Magnum::Vector3& pos,
-  ColumnGridSource::QueryCacheValue* queryCache) const {
+bool ColumnGridSet::contactTest(
+    int radiusIdx,
+    const Magnum::Vector3& pos,
+    ColumnGridSource::QueryCacheValue* queryCache) const {
   const auto& source = safeVectorGet(columnGrids_, radiusIdx);
   return source.contactTest(pos, queryCache);
 }
 
 // returns distance down to contact (or up to contact-free)
-// positive indicates contact-free; negative indicates distance up to be contact-free
-float ColumnGridSet::castDownTest(int radiusIdx, const Magnum::Vector3& pos,
-  ColumnGridSource::QueryCacheValue* queryCache) const {
+// positive indicates contact-free; negative indicates distance up to be
+// contact-free
+float ColumnGridSet::castDownTest(
+    int radiusIdx,
+    const Magnum::Vector3& pos,
+    ColumnGridSource::QueryCacheValue* queryCache) const {
   const auto& source = safeVectorGet(columnGrids_, radiusIdx);
   return source.castDownTest(pos, queryCache);
 }
-
 
 }  // namespace batched_sim
 }  // namespace esp

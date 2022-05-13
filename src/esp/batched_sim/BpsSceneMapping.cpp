@@ -4,20 +4,25 @@
 
 #include "BpsSceneMapping.h"
 
-#include "esp/io/json.h"
 #include "esp/core/Check.h"
+#include "esp/io/json.h"
+
+#include <Corrade/Utility/Directory.h>
 
 namespace esp {
 namespace batched_sim {
 
 BpsSceneMapping BpsSceneMapping::loadFromFile(const std::string& filepath) {
+  ESP_CHECK(Cr::Utility::Directory::exists(filepath),
+            "couldn't find BpsSceneMapping file " << filepath);
   BpsSceneMapping mapping;
   auto newDoc = esp::io::parseJsonFile(filepath);
   esp::io::readMember(newDoc, "mapping", mapping);
   return mapping;
 }
 
-bool fromJsonValue(const esp::io::JsonGenericValue& obj, BpsSceneMapping::MeshMapping& x) {
+bool fromJsonValue(const esp::io::JsonGenericValue& obj,
+                   BpsSceneMapping::MeshMapping& x) {
   esp::io::readMember(obj, "name", x.name);
   esp::io::readMember(obj, "meshIdx", x.meshIdx);
   esp::io::readMember(obj, "mtrlIdx", x.mtrlIdx);
@@ -31,8 +36,9 @@ bool fromJsonValue(const esp::io::JsonGenericValue& obj, BpsSceneMapping& x) {
 
 BpsSceneMapping::InstanceBlueprint BpsSceneMapping::findInstanceBlueprint(
     const std::string& nodeName) const {
-  
-  ESP_CHECK(!nodeName.empty(), "findInstanceBlueprint: empty input name. Check your episode data."); 
+  ESP_CHECK(
+      !nodeName.empty(),
+      "findInstanceBlueprint: empty input name. Check your episode data.");
 
   for (const auto& meshMapping : meshMappings) {
     if (meshMapping.name == nodeName) {
@@ -41,10 +47,12 @@ BpsSceneMapping::InstanceBlueprint BpsSceneMapping::findInstanceBlueprint(
     }
   }
 
-  ESP_CHECK(false, "findInstanceBlueprint: no mapping found for render asset "
-    << nodeName << ". For every free object and stage, we expect to find a "
-    << "corresponding render asset with the same name. See meshMappings names in your "
-    << ".bps.mapping.json file for valid render asset names.");
+  ESP_CHECK(
+      false,
+      "findInstanceBlueprint: no mapping found for render asset "
+          << nodeName
+          << " referenced in your episode set. See meshMappings names in your "
+          << ".bps.mapping.json file for valid render asset names.");
 
   CORRADE_INTERNAL_ASSERT_UNREACHABLE();
 }
