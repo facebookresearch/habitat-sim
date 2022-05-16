@@ -255,7 +255,7 @@ bool AudioSensor::getObservationSpace(ObservationSpace& obsSpace) {
   return true;
 }
 
-bool AudioSensor::displayObservation(sim::Simulator& sim) {
+bool AudioSensor::displayObservation(sim::Simulator&) {
   ESP_ERROR() << logHeader_
               << "Display observation for audio sensor is not used. This "
                  "function should be unreachable";

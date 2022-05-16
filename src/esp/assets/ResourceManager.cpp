@@ -2905,11 +2905,11 @@ void ResourceManager::joinHierarchy(
         meshes_.at(node.meshIDLocal + metaData.meshIndex.first)
             ->getCollisionMeshData();
     int lastIndex = mesh.vbo.size();
-    for (auto& pos : meshData.positions) {
+    for (const auto& pos : meshData.positions) {
       mesh.vbo.push_back(Mn::EigenIntegration::cast<vec3f>(
           transformFromLocalToWorld.transformPoint(pos)));
     }
-    for (auto& index : meshData.indices) {
+    for (const auto& index : meshData.indices) {
       mesh.ibo.push_back(index + lastIndex);
     }
   }
@@ -2952,13 +2952,13 @@ void ResourceManager::joinSemanticHierarchy(
     int lastIndex = mesh.vbo.size();
 
     // Save the vertices
-    for (auto& pos : vertices) {
+    for (const auto& pos : vertices) {
       mesh.vbo.push_back(Magnum::EigenIntegration::cast<vec3f>(
           transformFromLocalToWorld.transformPoint(pos)));
     }
 
     // Save the indices
-    for (auto& index : indices) {
+    for (const auto& index : indices) {
       mesh.ibo.push_back(index + lastIndex);
     }
 

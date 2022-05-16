@@ -102,7 +102,7 @@ class AudioSensor : public Sensor {
   bool getObservationSpace(ObservationSpace& obsSpace) override;
 
  private:
-  bool displayObservation(sim::Simulator& sim) override;
+  bool displayObservation(sim::Simulator&) override;
 
 #ifdef ESP_BUILD_WITH_AUDIO
  private:

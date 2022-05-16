@@ -22,11 +22,9 @@ def printTime():
 
 def main():
     backend_cfg = habitat_sim.SimulatorConfiguration()
-    backend_cfg.scene_id = (
-        "data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
-    )
+    backend_cfg.scene_id = "17DRP5sb8fy"
     backend_cfg.scene_dataset_config_file = (
-        "data/scene_datasets/mp3d_example/mp3d.scene_dataset_config.json"
+        "./data/scene_datasets/mp3d_example/mp3d.scene_dataset_config.json"
     )
     backend_cfg.load_semantic_mesh = True
     backend_cfg.enable_physics = False
@@ -81,10 +79,10 @@ def main():
         printTime()
         obs = sim.get_sensor_observations()["audio_sensor"]
 
-        # optionally print the audio observations or write them to the desired location
+        # optional - print the audio observations or write them to the desired location
         print(obs)
 
-        # write the observations to a file, make sure the folder path p (below) exists
+        # optional - write the observations to a file, make sure the folder path p (below) exists
         # p = audio_sensor_spec.outputDirectory + str(i) + "/ir"
 
         # for channelIndex in range(0, len(obs)):
