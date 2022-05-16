@@ -191,7 +191,7 @@ std::string ConfigValue::getAsString() const {
           Cr::Utility::formatString("[[{} {} {}]", v.x(), v.y(), v.z());
       for (int i = 1; i < m.Size; ++i) {
         v = m.row(i);
-        Cr::Utility::formatInto(res, res.length(), ", [{} {} {}]", v.x(), v.y(),
+        Cr::Utility::formatInto(res, res.length(), "[{} {} {}]", v.x(), v.y(),
                                 v.z());
       }
       Cr::Utility::formatInto(res, res.length(), "]");
