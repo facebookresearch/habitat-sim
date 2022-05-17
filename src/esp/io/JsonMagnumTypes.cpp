@@ -8,6 +8,27 @@
 namespace esp {
 namespace io {
 
+JsonGenericValue toJsonValue(const Magnum::Matrix3& mat,
+                             JsonAllocator& allocator) {
+  return toJsonArrayHelper(mat.data(), 9, allocator);
+}
+
+bool fromJsonValue(const JsonGenericValue& obj, Magnum::Matrix3& mat) {
+  if (obj.IsArray() && obj.Size() == 9) {
+    for (rapidjson::SizeType i = 0; i < 9; ++i) {
+      if (obj[i].IsNumber()) {
+        mat.data()[i] = obj[i].GetFloat();
+      } else {
+        ESP_ERROR()
+            << "Invalid numeric value specified in JSON Matrix3, index :" << i;
+        return false;
+      }
+    }
+    return true;
+  }
+  return false;
+}
+
 JsonGenericValue toJsonValue(const Magnum::Quaternion& quat,
                              JsonAllocator& allocator) {
   JsonGenericValue arr(rapidjson::kArrayType);

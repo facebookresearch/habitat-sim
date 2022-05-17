@@ -22,6 +22,19 @@
 namespace esp {
 namespace io {
 
+JsonGenericValue toJsonValue(const Magnum::Matrix3& mat,
+                             JsonAllocator& allocator);
+/**
+ * @brief Specialization to handle Magnum::Matrix3 values. Populate passed @p
+ * val with value. Returns whether successfully populated, or not. Logs an error
+ * if inappropriate type.
+ *
+ * @param obj json value to parse
+ * @param val destination value to be populated
+ * @return whether successful or not
+ */
+bool fromJsonValue(const JsonGenericValue& obj, Magnum::Matrix3& val);
+
 inline JsonGenericValue toJsonValue(const Magnum::Vector3& vec,
                                     JsonAllocator& allocator) {
   return toJsonArrayHelper(vec.data(), 3, allocator);

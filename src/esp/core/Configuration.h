@@ -36,6 +36,7 @@ enum class ConfigStoredType {
   Integer,
   Double,
   MagnumVec3,
+  MagnumMat3,
   MagnumQuat,
   MagnumRad,
 
@@ -92,6 +93,10 @@ constexpr ConfigStoredType configStoredTypeFor<Mn::Vector3>() {
   return ConfigStoredType::MagnumVec3;
 }
 template <>
+constexpr ConfigStoredType configStoredTypeFor<Mn::Matrix3>() {
+  return ConfigStoredType::MagnumMat3;
+}
+template <>
 constexpr ConfigStoredType configStoredTypeFor<Mn::Quaternion>() {
   return ConfigStoredType::MagnumQuat;
 }
@@ -118,10 +123,13 @@ class ConfigValue {
   ConfigStoredType _type{ConfigStoredType::Unknown};
 
   /**
-   * @brief The data this ConfigValue holds - four doubles at most (strings
-   * require 32 bytes), doubles and 64bit pointers need 8-byte alignment
+   * @brief The data this ConfigValue holds.
+   * Aligns to individual 8-byte bounds. The pair the Configuration map holds
+   * consists of a std::string key (sizeof:24 bytes) and a ConfigValue. The
+   * _type is 4 bytes, 4 bytes of padding (on 64 bit machines) and 48 bytes for
+   * data.
    */
-  alignas(sizeof(void*) * 2) char _data[4 * 8] = {0};
+  alignas(8) char _data[6 * 8] = {0};
 
   /**
    * @brief Copy the passed @p val into this ConfigValue.  If this @ref
@@ -164,25 +172,27 @@ class ConfigValue {
 
   template <class T>
   void set(const T& value) {
-    // this never fails
     deleteCurrentValue();
-    // this will blow up at compile time if given type is not supported
+    // This will blow up at compile time if given type is not supported
     _type = configStoredTypeFor<T>();
-    // these asserts are checking the integrity of the support for T's type, and
-    // will fire if...
+    // These asserts are checking the integrity of the support for T's type, and
+    // will fire if conditions are not met.
 
-    // ...we added a new type into @ref ConfigStoredType enum improperly
-    // (trivial type added after entry ConfigStoredType::_nonTrivialTypes, or
-    // vice-versa)
+    // This fails if we added a new type into @ref ConfigStoredType enum
+    // improperly (trivial type added after entry
+    // ConfigStoredType::_nonTrivialTypes, or vice-versa)
     static_assert(isConfigStoredTypeNonTrivial(configStoredTypeFor<T>()) !=
                       std::is_trivially_copyable<T>::value,
                   "Something's incorrect about enum placement for added type!");
-    // ...we added a new type that is too large for internal storage
-    static_assert(sizeof(T) <= sizeof(_data), "internal storage too small");
-    // ...we added a new type whose alignment does not match internal storage
-    // alignment
-    static_assert(alignof(T) <= alignof(ConfigValue),
-                  "internal storage too unaligned");
+    // This fails if a new type was added that is too large for internal storage
+    static_assert(
+        sizeof(T) <= sizeof(_data),
+        "ConfigValue's internal storage is too small for added type!");
+    // This fails if a new type was added whose alignment does not match
+    // internal storage alignment
+    static_assert(
+        alignof(T) <= alignof(ConfigValue),
+        "ConfigValue's internal storage improperly aligned for added type!");
 
     //_data should be destructed at this point, construct a new value
     new (_data) T{value};
