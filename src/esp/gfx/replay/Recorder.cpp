@@ -5,6 +5,7 @@
 #include "Recorder.h"
 
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
+#include "esp/core/Check.h"
 #include "esp/io/Json.h"
 #include "esp/io/JsonAllTypes.h"
 #include "esp/scene/SceneNode.h"
@@ -186,8 +187,9 @@ void Recorder::writeSavedKeyframesToFile(const std::string& filepath,
   auto document = writeKeyframesToJsonDocument();
   // replay::Keyframes use floats (not doubles) so this is plenty of precision
   const float maxDecimalPlaces = 7;
-  esp::io::writeJsonToFile(document, filepath, usePrettyWriter,
-                           maxDecimalPlaces);
+  auto ok = esp::io::writeJsonToFile(document, filepath, usePrettyWriter,
+                                     maxDecimalPlaces);
+  ESP_CHECK(ok, "writeSavedKeyframesToFile: unable to write to " << filepath);
 
   consolidateSavedKeyframes();
 }
