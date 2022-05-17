@@ -186,11 +186,9 @@ std::string ConfigValue::getAsString() const {
     }
     case ConfigStoredType::MagnumMat3: {
       auto m = get<Mn::Matrix3>();
-      auto v = m.row(0);
-      std::string res =
-          Cr::Utility::formatString("[[{} {} {}]", v.x(), v.y(), v.z());
-      for (int i = 1; i < m.Size; ++i) {
-        v = m.row(i);
+      std::string res = "[";
+      for (int i = 0; i < m.Size; ++i) {
+        auto v = m.row(i);
         Cr::Utility::formatInto(res, res.length(), "[{} {} {}]", v.x(), v.y(),
                                 v.z());
       }
