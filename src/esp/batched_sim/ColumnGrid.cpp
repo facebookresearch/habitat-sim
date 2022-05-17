@@ -228,7 +228,9 @@ void ColumnGridSet::load(const std::string& filepathBase) {
     } else {
       if (columnGridFilepathNumber == 1) {
         ESP_CHECK(!columnGrids_.empty(),
-                  "couldn't find " << columnGridFilepath);
+                  "couldn't find " << columnGridFilepath
+                                   << " . Did you remember to unzip the latest "
+                                      "data/columngrids.zip?");
       }
       break;
     }
