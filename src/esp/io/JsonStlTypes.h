@@ -15,12 +15,7 @@
 namespace esp {
 namespace io {
 
-inline JsonGenericValue toJsonValue(const std::string& str,
-                                    JsonAllocator& allocator) {
-  JsonGenericValue strObj;
-  strObj.SetString(str.c_str(), allocator);
-  return strObj;
-}
+JsonGenericValue toJsonValue(const std::string& str, JsonAllocator& allocator);
 
 /**
  * @brief Populate passed @p val with value. Returns whether successfully
@@ -30,14 +25,7 @@ inline JsonGenericValue toJsonValue(const std::string& str,
  * @param val destination value to be populated
  * @return whether successful or not
  */
-inline bool fromJsonValue(const JsonGenericValue& obj, std::string& val) {
-  if (obj.IsString()) {
-    val = obj.GetString();
-    return true;
-  }
-  ESP_ERROR() << "Invalid string value";
-  return false;
-}
+bool fromJsonValue(const JsonGenericValue& obj, std::string& val);
 
 // For std::vector, we use rapidjson::kArrayType. For an empty vector, we
 // omit the member altogether rather than add an empty array.
