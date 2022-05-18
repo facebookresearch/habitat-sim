@@ -39,7 +39,8 @@ void addMember(JsonGenericValue& value,
 template <typename T>
 bool readMember(const JsonGenericValue& value, const char* name, T& x);
 
-#if 0 // temp disable so we get compile errors
+#if 0  // reference code to produce runtime errors for missing implementations
+       // (instead of compile errors)
 /**
  * @brief Fallback implementation for fromJsonValue to produce a runtime error
  * for types that haven't implemented fromJsonValue.
