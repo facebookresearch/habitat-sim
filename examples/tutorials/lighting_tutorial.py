@@ -88,19 +88,21 @@ def main(show_imgs=True, save_imgs=False):
     sim.close()
     cfg = make_configuration()
     cfg.sim_cfg.scene_light_setup = habitat_sim.gfx.DEFAULT_LIGHTING_KEY
+    cfg.sim_cfg.override_scene_light_defaults = True
     sim = habitat_sim.Simulator(cfg)
     agent_transform = place_agent(sim)
     get_obs(sim, show_imgs, save_imgs)
 
     # create and register new light setup:
     my_scene_lighting_setup = [
-        LightInfo(vector=[0.0, 2.0, 0.6, 0.0], model=LightPositionModel.Global)
+        LightInfo(vector=[0.0, 2.0, 0.6, 1.0], model=LightPositionModel.Global)
     ]
     sim.set_light_setup(my_scene_lighting_setup, "my_scene_lighting")
 
     # reconfigure with custom key:
     new_cfg = make_configuration()
     new_cfg.sim_cfg.scene_light_setup = "my_scene_lighting"
+    new_cfg.sim_cfg.override_scene_light_defaults = True
     sim.reconfigure(new_cfg)
     agent_transform = place_agent(sim)
     get_obs(sim, show_imgs, save_imgs)
