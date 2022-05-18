@@ -16,14 +16,17 @@
 #include <Corrade/Containers/Optional.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Color.h>
-#include <Magnum/Math/Matrix4.h>
+#include <Magnum/Math/Matrix3.h>
 #include <Magnum/Math/Quaternion.h>
 
 namespace esp {
 namespace io {
 
-JsonGenericValue toJsonValue(const Magnum::Matrix3& mat,
-                             JsonAllocator& allocator);
+inline JsonGenericValue toJsonValue(const Magnum::Matrix3& mat,
+                                    JsonAllocator& allocator) {
+  return toJsonArrayHelper(mat.data(), (mat.Size * mat.Size), allocator);
+}
+
 /**
  * @brief Specialization to handle Magnum::Matrix3 values. Populate passed @p
  * val with value. Returns whether successfully populated, or not. Logs an error
@@ -37,7 +40,7 @@ bool fromJsonValue(const JsonGenericValue& obj, Magnum::Matrix3& val);
 
 inline JsonGenericValue toJsonValue(const Magnum::Vector3& vec,
                                     JsonAllocator& allocator) {
-  return toJsonArrayHelper(vec.data(), 3, allocator);
+  return toJsonArrayHelper(vec.data(), vec.Size, allocator);
 }
 
 /**
@@ -50,11 +53,9 @@ inline JsonGenericValue toJsonValue(const Magnum::Vector3& vec,
  * @return whether successful or not
  */
 inline bool fromJsonValue(const JsonGenericValue& obj, Magnum::Vector3& val) {
-  if (obj.IsArray() && obj.Size() == 3) {
-    for (rapidjson::SizeType i = 0; i < 3; ++i) {
-      if (obj[i].IsNumber()) {
-        val[i] = obj[i].GetDouble();
-      } else {
+  if (obj.IsArray() && obj.Size() == val.Size) {
+    for (rapidjson::SizeType i = 0; i < val.Size; ++i) {
+      if (!fromJsonValue(obj[i], val.data()[i])) {
         ESP_ERROR() << "Invalid numeric value specified in JSON Vec3, index :"
                     << i;
         return false;
@@ -79,13 +80,11 @@ inline JsonGenericValue toJsonValue(const Magnum::Vector4& vec,
  * @param val destination value to be populated
  * @return whether successful or not
  */
-inline bool fromJsonValue(const JsonGenericValue& obj, Magnum::Vector4& val) {
-  if (obj.IsArray() && obj.Size() == 4) {
-    for (rapidjson::SizeType i = 0; i < 4; ++i) {
-      if (obj[i].IsNumber()) {
-        val[i] = obj[i].GetDouble();
-      } else {
-        ESP_ERROR() << "Invalid numeric value specified in JSON Vec4, index :"
+inline bool fromJsonValue(const JsonGenericValue& obj, Magnum::Color4& val) {
+  if (obj.IsArray() && obj.Size() == val.Size) {
+    for (rapidjson::SizeType i = 0; i < val.Size; ++i) {
+      if (!fromJsonValue(obj[i], val.data()[i])) {
+        ESP_ERROR() << "Invalid numeric value specified in JSON Color4, index :"
                     << i;
         return false;
       }
