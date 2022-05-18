@@ -37,7 +37,8 @@ inline JsonGenericValue toJsonValue(const std::pair<T_first, T_second>& val,
 }
 
 template <typename T_first, typename T_second>
-inline bool fromJsonValue(const JsonGenericValue& obj, std::pair<T_first, T_second>& val) {
+inline bool fromJsonValue(const JsonGenericValue& obj,
+                          std::pair<T_first, T_second>& val) {
   bool success = true;
   success &= readMember(obj, "first", val.first);
   success &= readMember(obj, "second", val.second);
