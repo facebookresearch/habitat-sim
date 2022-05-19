@@ -430,9 +430,15 @@ esp::io::JsonGenericValue toJsonValue(const StaticScene& x,
 }
 
 bool fromJsonValue(const esp::io::JsonGenericValue& obj, FreeObjectSpawn& val) {
-  esp::io::readMember(obj, "freeObjIndex", val.freeObjIndex_);
-  esp::io::readMember(obj, "startRotationIndex", val.startRotationIndex_);
-  esp::io::readMember(obj, "startPos", val.startPos_);
+  bool ok = true;
+  ok &= esp::io::readMember(obj, "freeObjIndex", val.freeObjIndex_);
+#ifdef EPISODESET_DISCRETE_SPAWN_ROTATIONS
+  ok &= esp::io::readMember(obj, "startRotationIndex", val.startRotationIndex_);
+#else
+  ok &= esp::io::readMember(obj, "startRotation", val.startRotation_);
+#endif
+  ok &= esp::io::readMember(obj, "startPos", val.startPos_);
+  ESP_CHECK(ok, "fromJsonValue: failed to parse FreeObjectSpawn");
 
   return true;
 }
@@ -441,8 +447,12 @@ esp::io::JsonGenericValue toJsonValue(const FreeObjectSpawn& x,
                                       esp::io::JsonAllocator& allocator) {
   esp::io::JsonGenericValue obj(rapidjson::kObjectType);
   esp::io::addMember(obj, "freeObjIndex", x.freeObjIndex_, allocator);
+#ifdef EPISODESET_DISCRETE_SPAWN_ROTATIONS
   esp::io::addMember(obj, "startRotationIndex", x.startRotationIndex_,
                      allocator);
+#else
+  esp::io::addMember(obj, "startRotation", x.startRotation_, allocator);
+#endif
   esp::io::addMember(obj, "startPos", x.startPos_, allocator);
 
   return obj;

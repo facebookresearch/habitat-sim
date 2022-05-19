@@ -326,9 +326,18 @@ void addEpisode(const EpisodeGeneratorConfig& config,
               : random.uniform_int(0, set.freeObjects_.size());
 
       freeObjectPtr = &safeVectorGet(set.freeObjects_, spawn.freeObjIndex_);
+
+#ifdef EPISODESET_DISCRETE_SPAWN_ROTATIONS
       spawn.startRotationIndex_ =
           random.uniform_int(0, freeObjectPtr->startRotations_.size());
       rotation = freeObjectPtr->startRotations_[spawn.startRotationIndex_];
+#else
+      auto startRotationIndex =
+          random.uniform_int(0, freeObjectPtr->startRotations_.size());
+      rotation =
+          safeVectorGet(freeObjectPtr->startRotations_, startRotationIndex);
+      spawn.startRotation_ = rotation;
+#endif
     }
     const auto& freeObject = *freeObjectPtr;
 

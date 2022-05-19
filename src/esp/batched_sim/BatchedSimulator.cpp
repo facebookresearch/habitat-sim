@@ -999,8 +999,12 @@ void BatchedSimulator::updateRenderInstances(bool forceUpdate) {
                       episode.firstFreeObjectSpawnIndex_ + freeObjectIndex);
     const auto& freeObject =
         safeVectorGet(episodeSet_.freeObjects_, freeObjectSpawn.freeObjIndex_);
+#ifdef EPISODESET_DISCRETE_SPAWN_ROTATIONS
     const auto& startRotation = safeVectorGet(
         freeObject.startRotations_, freeObjectSpawn.startRotationIndex_);
+#else
+    const auto& startRotation = freeObjectSpawn.startRotation_;
+#endif
 
     constexpr float pad = 0.05;
     addBoxDebugInstance("cube_pink_wireframe", b, freeObjectSpawn.startPos_,
@@ -1607,8 +1611,13 @@ void BatchedSimulator::resetEpisodeInstance(int b) {
                       episode.firstFreeObjectSpawnIndex_ + freeObjectIndex);
     const auto& freeObject =
         safeVectorGet(episodeSet_.freeObjects_, freeObjectSpawn.freeObjIndex_);
+
+#ifdef EPISODESET_DISCRETE_SPAWN_ROTATIONS
     const auto& rotation = safeVectorGet(freeObject.startRotations_,
                                          freeObjectSpawn.startRotationIndex_);
+#else
+    const auto& rotation = freeObjectSpawn.startRotation_;
+#endif
 
     envState.target_obj_start_pos = freeObjectSpawn.startPos_;
     envState.target_obj_start_rotation = rotation;
@@ -1722,8 +1731,12 @@ void BatchedSimulator::spawnFreeObject(int b,
   const auto& renderAsset =
       safeVectorGet(episodeSet_.renderAssets_, freeObject.renderAssetIndex_);
   const auto& blueprint = renderAsset.instanceBlueprint_;
+#ifdef EPISODESET_DISCRETE_SPAWN_ROTATIONS
   const auto& rotation = safeVectorGet(freeObject.startRotations_,
                                        freeObjectSpawn.startRotationIndex_);
+#else
+  const auto& rotation = freeObjectSpawn.startRotation_;
+#endif
 
   // create bps instance
   if (!reinsert) {

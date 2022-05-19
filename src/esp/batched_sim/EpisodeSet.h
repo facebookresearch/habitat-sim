@@ -19,6 +19,8 @@
 #include <string>
 #include <vector>
 
+//#define EPISODESET_DISCRETE_SPAWN_ROTATIONS
+
 namespace esp {
 namespace batched_sim {
 
@@ -73,7 +75,11 @@ class StaticScene {
 class FreeObjectSpawn {
  public:
   int16_t freeObjIndex_;
+#ifdef EPISODESET_DISCRETE_SPAWN_ROTATIONS
   int16_t startRotationIndex_;
+#else
+  Magnum::Quaternion startRotation_;
+#endif
   Magnum::Vector3 startPos_;  // discretize?
 };
 
