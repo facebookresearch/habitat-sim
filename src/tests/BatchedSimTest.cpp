@@ -352,8 +352,11 @@ TEST_F(BatchedSimulatorTest, basic) {
               << std::endl;
   }
 
-  const auto& actionMap = bsim.getSerializeCollection().robots[0].actionMap;
-  const int actionDim = actionMap.numActions;
+  int actionDim = 0;
+  {
+    const auto& actionMap = bsim.getSerializeCollection().robots[0].actionMap;
+    actionDim = actionMap.numActions;
+  }
   std::vector<float> actions(actionDim * config.numEnvs, 0.f);
 
   int nextEpisode = 0;
@@ -500,6 +503,8 @@ TEST_F(BatchedSimulatorTest, basic) {
       } else if (key == 'r') {
         doReloadAll = true;
       }
+
+      const auto& actionMap = bsim.getSerializeCollection().robots[0].actionMap;
 
       for (int b = 0; b < config.numEnvs; b++) {
         float* actionsForEnv = &actions[b * actionDim];
