@@ -38,6 +38,9 @@ struct PhongMaterialColor {
   Magnum::Color4 specularColor{0.2};
 };
 
+bool operator==(const PhongMaterialColor& a, const PhongMaterialColor& b);
+bool operator!=(const PhongMaterialColor& a, const PhongMaterialColor& b);
+
 //! AssetInfo stores information necessary to identify and load an Asset
 struct AssetInfo {
   AssetType type = AssetType::UNKNOWN;

@@ -35,10 +35,21 @@ bool operator==(const AssetInfo& a, const AssetInfo& b) {
          a.shaderTypeToUse == b.shaderTypeToUse &&
          a.hasSemanticTextures == b.hasSemanticTextures &&
          a.virtualUnitToMeters == b.virtualUnitToMeters &&
+         a.splitInstanceMesh == b.splitInstanceMesh &&
+         a.overridePhongMaterial == b.overridePhongMaterial &&
          a.forceFlatShading == b.forceFlatShading;
 }
 
 bool operator!=(const AssetInfo& a, const AssetInfo& b) {
+  return !(a == b);
+}
+
+bool operator==(const PhongMaterialColor& a, const PhongMaterialColor& b) {
+  return a.ambientColor == b.ambientColor && a.diffuseColor == b.diffuseColor &&
+         a.specularColor == b.specularColor;
+}
+
+bool operator!=(const PhongMaterialColor& a, const PhongMaterialColor& b) {
   return !(a == b);
 }
 
