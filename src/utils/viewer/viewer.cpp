@@ -614,7 +614,7 @@ Key Commands:
 
   enum class VisualizeMode : uint8_t {
     RGBA = 0,
-    Depth,
+    // Depth,
     Semantic,
     VisualizeModeCount,
   };
@@ -1537,10 +1537,10 @@ void Viewer::setSensorVisID() {
       prefix = "rgba";
       break;
     }
-    case VisualizeMode::Depth: {
-      prefix = "depth";
-      break;
-    }
+    // case VisualizeMode::Depth: {
+    //   prefix = "depth";
+    //   break;
+    // }
     case VisualizeMode::Semantic: {
       prefix = "semantic";
       break;
@@ -1668,11 +1668,12 @@ void Viewer::drawEvent() {
                    "Error in Viewer::drawEvent: sensor's rendering target "
                    "cannot be nullptr.", );
 
-    if (visualizeMode_ == VisualizeMode::Depth) {
+    /*if (visualizeMode_ == VisualizeMode::Depth) {
       simulator_->visualizeObservation(defaultAgentId_, sensorVisID_,
                                        1.0f / 512.0f,  // colorMapOffset
                                        1.0f / 12.0f);  // colorMapScale
-    } else if (visualizeMode_ == VisualizeMode::Semantic) {
+    } else */
+    if (visualizeMode_ == VisualizeMode::Semantic) {
       Mn::GL::defaultFramebuffer.clear(Mn::GL::FramebufferClear::Color |
                                        Mn::GL::FramebufferClear::Depth);
       simulator_->visualizeObservation(defaultAgentId_, sensorVisID_);
@@ -1820,7 +1821,7 @@ void Viewer::bindRenderTarget() {
     if (it.second.get().isVisualSensor()) {
       esp::sensor::VisualSensor& visualSensor =
           static_cast<esp::sensor::VisualSensor&>(it.second.get());
-      if (visualizeMode_ == VisualizeMode::Depth ||
+      if (  // visualizeMode_ == VisualizeMode::Depth ||
           visualizeMode_ == VisualizeMode::Semantic) {
         simulator_->getRenderer()->bindRenderTarget(
             visualSensor, {esp::gfx::Renderer::Flag::VisualizeTexture});
