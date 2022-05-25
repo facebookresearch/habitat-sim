@@ -36,6 +36,8 @@ const std::unordered_map<ConfigStoredType, std::string, ConfigStoredTypeHash>
                           {ConfigStoredType::Integer, "int"},
                           {ConfigStoredType::Double, "double"},
                           {ConfigStoredType::MagnumVec3, "Mn::Vector3"},
+                          {ConfigStoredType::MagnumVec4, "Mn::Vector4"},
+                          {ConfigStoredType::MagnumColor4, "Mn::Color4"},
                           {ConfigStoredType::MagnumMat3, "Mn::Matrix3"},
                           {ConfigStoredType::MagnumQuat, "Mn::Quaternion"},
                           {ConfigStoredType::MagnumRad, "Mn::Rad"},
@@ -184,6 +186,16 @@ std::string ConfigValue::getAsString() const {
       auto v = get<Mn::Vector3>();
       return Cr::Utility::formatString("[{} {} {}]", v.x(), v.y(), v.z());
     }
+    case ConfigStoredType::MagnumVec4: {
+      auto v = get<Mn::Vector4>();
+      return Cr::Utility::formatString("[{} {} {} {}]", v.x(), v.y(), v.z(),
+                                       v.w());
+    }
+    case ConfigStoredType::MagnumColor4: {
+      auto c = get<Mn::Color4>();
+      return Cr::Utility::formatString("[r:{} g:{} b:{} a:{}]", c.r(), c.g(),
+                                       c.b(), c.a());
+    }
     case ConfigStoredType::MagnumMat3: {
       auto m = get<Mn::Matrix3>();
       std::string res = "[";
@@ -227,6 +239,12 @@ io::JsonGenericValue ConfigValue::writeToJsonObject(
     case ConfigStoredType::MagnumVec3: {
       return io::toJsonValue(get<Mn::Vector3>(), allocator);
     }
+    case ConfigStoredType::MagnumVec4: {
+      return io::toJsonValue(get<Mn::Vector4>(), allocator);
+    }
+    case ConfigStoredType::MagnumColor4: {
+      return io::toJsonValue(get<Mn::Color4>(), allocator);
+    }
     case ConfigStoredType::MagnumMat3: {
       return io::toJsonValue(get<Mn::Matrix3>(), allocator);
     }
@@ -262,6 +280,10 @@ bool ConfigValue::putValueInConfigGroup(
       return cfg.setValue(key, get<std::string>());
     case ConfigStoredType::MagnumVec3:
       return cfg.setValue(key, get<Mn::Vector3>());
+    case ConfigStoredType::MagnumVec4:
+      return cfg.setValue(key, get<Mn::Vector4>());
+    case ConfigStoredType::MagnumColor4:
+      return cfg.setValue(key, get<Mn::Color4>());
     case ConfigStoredType::MagnumMat3:
       return cfg.setValue(key, get<Mn::Matrix3>());
     case ConfigStoredType::MagnumQuat:
@@ -314,10 +336,32 @@ int Configuration::loadFromJson(const io::JsonGenericValue& jsonObj) {
             set(key, val);
           }
         } else if (obj.Size() == 4) {
-          // assume is quaternion
-          Mn::Quaternion val{};
-          if (io::fromJsonValue(obj, val)) {
-            set(key, val);
+          // JSON numeric array of size 4 can be either vector4, quaternion or
+          // color4, so must get type of object that exists with key
+          // NOTE : to properly make use of vector4 and color4 configValues
+          // loaded from JSON, the owning Configuration must be pre-initialized
+          // in its constructor with a default value at the target key.
+          // Otherwise for backwards compatibility, we default to reading a
+          // quaternion
+          ConfigValue valAtKey = get(key);
+          if (valAtKey.getType() == ConfigStoredType::MagnumColor4) {
+            // if object exists already @ key and its type is Color4
+            Mn::Color4 val{};
+            if (io::fromJsonValue(obj, val)) {
+              set(key, val);
+            }
+          } else if (valAtKey.getType() == ConfigStoredType::MagnumVec4) {
+            // if object exists already @ key and its type is Vector4
+            Mn::Vector4 val{};
+            if (io::fromJsonValue(obj, val)) {
+              set(key, val);
+            }
+          } else {
+            // if no object exists then default type is MagnumQuat
+            Mn::Quaternion val{};
+            if (io::fromJsonValue(obj, val)) {
+              set(key, val);
+            }
           }
         } else if (obj.Size() == 9) {
           // assume is 3x3 matrix
