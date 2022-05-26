@@ -400,7 +400,7 @@ class MobileManipulator(RobotInterface):
         arm_joints = self.params.arm_joints
         sim_obj_joint_pos = self.sim_obj.joint_positions
 
-        arm_pos_indices = [joint_pos_indices[x] for x in arm_joints]
+        arm_pos_indices = (joint_pos_indices[x] for x in arm_joints)
         return np.array(
             [sim_obj_joint_pos[i] for i in arm_pos_indices], dtype=np.float32
         )
@@ -445,7 +445,7 @@ class MobileManipulator(RobotInterface):
         arm_joints = self.params.arm_joints
         sim_obj_joint_vel = self.sim_obj.joint_velocities
 
-        arm_dof_indices = [joint_dof_indices[x] for x in arm_joints]
+        arm_dof_indices = (joint_dof_indices[x] for x in arm_joints)
         return np.array(
             [sim_obj_joint_vel[i] for i in arm_dof_indices],
             dtype=np.float32,
