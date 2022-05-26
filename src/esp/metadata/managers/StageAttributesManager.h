@@ -85,8 +85,7 @@ class StageAttributesManager
  protected:
   /**
    * @brief Create and save default primitive asset-based object templates,
-   * saving their handles as non-deletable default handles.  TODO : possibly
-   * extend this to actually build default stage templates for certain prims.
+   * saving their handles as non-deletable default handles.  Builds NONE stage.
    * See @ref ObjectAttributesManager::createDefaultPrimTemplatesForObjType() .
    */
   void createDefaultPrimTemplatesForObjType() override;

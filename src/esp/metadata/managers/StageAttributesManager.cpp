@@ -31,14 +31,14 @@ StageAttributesManager::StageAttributesManager(
                                       ManagedObjectAccess::Copy>::
           AbstractObjectAttributesManager("Stage",
                                           "stage_config.json",
-                                          assetAttributesMgr),
+                                          std::move(assetAttributesMgr)),
       physicsAttributesManager_(std::move(physicsAttributesManager)),
       cfgLightSetup_(NO_LIGHT_KEY) {
   // build this manager's copy constructor map
   this->copyConstructorMap_["StageAttributes"] =
       &StageAttributesManager::createObjectCopy<attributes::StageAttributes>;
   // call this to instantiate default prim object templates
-  this->createDefaultPrimTemplatesForObjType();
+  StageAttributesManager::createDefaultPrimTemplatesForObjType();
 
 }  // StageAttributesManager::ctor
 

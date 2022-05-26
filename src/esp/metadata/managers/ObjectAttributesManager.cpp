@@ -28,12 +28,12 @@ ObjectAttributesManager::ObjectAttributesManager(
                                       ManagedObjectAccess::Copy>::
           AbstractObjectAttributesManager("Object",
                                           "object_config.json",
-                                          assetAttributesMgr) {
+                                          std::move(assetAttributesMgr)) {
   // build this manager's copy constructor map
   this->copyConstructorMap_["ObjectAttributes"] =
       &ObjectAttributesManager::createObjectCopy<attributes::ObjectAttributes>;
   // call this to instantiate default prim object templates
-  this->createDefaultPrimTemplatesForObjType();
+  ObjectAttributesManager::createDefaultPrimTemplatesForObjType();
 }
 
 ObjectAttributes::ptr
