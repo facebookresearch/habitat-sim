@@ -70,16 +70,13 @@ void PBRMetallicRoughnessAttributes::writeValuesToJson(
     io::JsonGenericValue& jsonObj,
     io::JsonAllocator& allocator) const {
   if (hasSubconfig("baseColorTexture")) {
-    MaterialTextureAttributes::cptr bctSubConfig =
-        getSubconfigCopy<const MaterialTextureAttributes>("baseColorTexture");
+    MaterialTextureAttributes::cptr bctSubConfig = getBaseColorTexture();
     auto bctJsonObj = bctSubConfig->writeToJsonObject(allocator);
     jsonObj.AddMember("baseColorTexture", bctJsonObj, allocator);
   }
   writeValueToJson("baseColorFactor", jsonObj, allocator);
   if (hasSubconfig("metallicRoughnessTexture")) {
-    MaterialTextureAttributes::cptr mrSubConfig =
-        getSubconfigCopy<const MaterialTextureAttributes>(
-            "metallicRoughnessTexture");
+    MaterialTextureAttributes::cptr mrSubConfig = getMetallicRoughnessTexture();
     auto mrJsonObj = mrSubConfig->writeToJsonObject(allocator);
     jsonObj.AddMember("metallicRoughnessTexture", mrJsonObj, allocator);
   }
@@ -90,17 +87,14 @@ void PBRMetallicRoughnessAttributes::writeValuesToJson(
 std::string PBRMetallicRoughnessAttributes::getObjectInfoInternal() const {
   std::string res("");
   if (hasSubconfig("baseColorTexture")) {
-    MaterialTextureAttributes::cptr bctSubConfig =
-        getSubconfigCopy<const MaterialTextureAttributes>("baseColorTexture");
+    MaterialTextureAttributes::cptr bctSubConfig = getBaseColorTexture();
     Cr::Utility::formatInto(res, res.size(), "{},",
                             bctSubConfig->getObjectInfo());
   }
   Cr::Utility::formatInto(res, res.size(), "{},",
                           getAsString("baseColorFactor"));
   if (hasSubconfig("metallicRoughnessTexture")) {
-    MaterialTextureAttributes::cptr mrSubConfig =
-        getSubconfigCopy<const MaterialTextureAttributes>(
-            "metallicRoughnessTexture");
+    MaterialTextureAttributes::cptr mrSubConfig = getMetallicRoughnessTexture();
     Cr::Utility::formatInto(res, res.size(), "{},",
                             mrSubConfig->getObjectInfo());
   }
@@ -114,16 +108,13 @@ std::string PBRMetallicRoughnessAttributes::getObjectInfoHeaderInternal()
     const {
   std::string res("");
   if (hasSubconfig("baseColorTexture")) {
-    MaterialTextureAttributes::cptr bctSubConfig =
-        getSubconfigCopy<const MaterialTextureAttributes>("baseColorTexture");
+    MaterialTextureAttributes::cptr bctSubConfig = getBaseColorTexture();
     Cr::Utility::formatInto(res, res.size(), "{},",
                             bctSubConfig->getObjectInfoHeader());
   }
   Cr::Utility::formatInto(res, res.size(), "Base Color Factor,");
   if (hasSubconfig("metallicRoughnessTexture")) {
-    MaterialTextureAttributes::cptr mrSubConfig =
-        getSubconfigCopy<const MaterialTextureAttributes>(
-            "metallicRoughnessTexture");
+    MaterialTextureAttributes::cptr mrSubConfig = getMetallicRoughnessTexture();
     Cr::Utility::formatInto(res, res.size(), "{},",
                             mrSubConfig->getObjectInfoHeader());
   }

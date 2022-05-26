@@ -41,6 +41,8 @@ set(
   managers/AssetAttributesManager.cpp
   managers/LightLayoutAttributesManager.h
   managers/LightLayoutAttributesManager.cpp
+  managers/MaterialAttributesManager.h
+  managers/MaterialAttributesManager.cpp
   managers/ObjectAttributesManager.h
   managers/ObjectAttributesManager.cpp
   managers/PbrShaderAttributesManager.h
