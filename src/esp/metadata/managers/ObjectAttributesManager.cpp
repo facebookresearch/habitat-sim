@@ -22,6 +22,20 @@ using attributes::AbstractObjectAttributes;
 using attributes::ObjectAttributes;
 namespace managers {
 
+ObjectAttributesManager::ObjectAttributesManager(
+    AssetAttributesManager::cptr assetAttributesMgr)
+    : AbstractObjectAttributesManager<attributes::ObjectAttributes,
+                                      ManagedObjectAccess::Copy>::
+          AbstractObjectAttributesManager("Object",
+                                          "object_config.json",
+                                          assetAttributesMgr) {
+  // build this manager's copy constructor map
+  this->copyConstructorMap_["ObjectAttributes"] =
+      &ObjectAttributesManager::createObjectCopy<attributes::ObjectAttributes>;
+  // call this to instantiate default prim object templates
+  this->createDefaultPrimTemplatesForObjType();
+}
+
 ObjectAttributes::ptr
 ObjectAttributesManager::createPrimBasedAttributesTemplate(
     const std::string& primAttrTemplateHandle,
@@ -56,7 +70,7 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
   return this->postCreateRegister(primObjectAttributes, registerTemplate);
 }  // ObjectAttributesManager::createPrimBasedAttributesTemplate
 
-void ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates() {
+void ObjectAttributesManager::createDefaultPrimTemplatesForObjType() {
   this->undeletableObjectNames_.clear();
   // build default primtive object templates corresponding to given default
   // asset templates
@@ -68,7 +82,7 @@ void ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates() {
     std::string tmpltHandle = tmplt->getHandle();
     this->undeletableObjectNames_.insert(tmpltHandle);
   }
-}  // ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates
+}  // ObjectAttributesManager::createDefaultPrimTemplatesForObjType
 
 void ObjectAttributesManager::setValsFromJSONDoc(
     attributes::ObjectAttributes::ptr objAttributes,

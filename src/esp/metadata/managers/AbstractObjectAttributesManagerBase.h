@@ -12,8 +12,9 @@
 
 #include "esp/metadata/attributes/ObjectAttributes.h"
 
+#include "AssetAttributesManager.h"
+#include "AttributesManagerBase.h"
 #include "esp/metadata/MetadataUtils.h"
-#include "esp/metadata/managers/AttributesManagerBase.h"
 
 namespace Cr = Corrade;
 
@@ -37,11 +38,14 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
 
   typedef std::shared_ptr<T> AbsObjAttrPtr;
 
-  AbstractObjectAttributesManager(const std::string& attrType,
-                                  const std::string& JSONTypeExt)
+  AbstractObjectAttributesManager(
+      const std::string& attrType,
+      const std::string& JSONTypeExt,
+      AssetAttributesManager::cptr assetAttributesMgr)
       : AttributesManager<T, Access>::AttributesManager(
             (attrType + " Template"),
-            JSONTypeExt) {}
+            JSONTypeExt),
+        assetAttributesMgr_(std::move(assetAttributesMgr)) {}
   ~AbstractObjectAttributesManager() override = default;
 
   /**
@@ -86,6 +90,29 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
       bool registerTemplate = true) = 0;
 
  protected:
+  /**
+   * @brief Check if currently configured primitive asset template library has
+   * passed handle.
+   * @param handle String name of primitive asset attributes desired
+   * @return whether handle exists or not in asset attributes library
+   */
+  bool isValidPrimitiveAttributes(const std::string& handle) {
+    return assetAttributesMgr_->getObjectLibHasHandle(handle);
+  }
+
+  /**
+   * @brief Create and save default primitive asset-based object templates,
+   * saving their handles as non-deletable default handles.
+   * This needs to be called from the constructor of the specialization class.
+   */
+  virtual void createDefaultPrimTemplatesForObjType() = 0;
+
+  /**
+   * @brief Reference to AssetAttributesManager to give access to primitive
+   * attributes for object construction
+   */
+  AssetAttributesManager::cptr assetAttributesMgr_ = nullptr;
+
   //======== Common JSON import functions ========
 
   /**

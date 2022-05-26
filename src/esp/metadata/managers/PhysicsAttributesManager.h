@@ -67,16 +67,6 @@ class PhysicsAttributesManager
 
  protected:
   /**
-   * @brief Physics Manager Attributes has no reason to check this value
-   * @param handle String name of primitive asset attributes desired
-   * @return whether handle exists or not in asset attributes library
-   */
-  bool isValidPrimitiveAttributes(
-      CORRADE_UNUSED const std::string& handle) override {
-    return false;
-  }
-
-  /**
    * @brief Used Internally.  Create and configure newly-created attributes with
    * any default values, before any specific values are set.
    *

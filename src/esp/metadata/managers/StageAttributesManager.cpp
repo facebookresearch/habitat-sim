@@ -25,24 +25,31 @@ using attributes::StageAttributes;
 namespace managers {
 
 StageAttributesManager::StageAttributesManager(
-    ObjectAttributesManager::ptr objectAttributesMgr,
-    PhysicsAttributesManager::ptr physicsAttributesManager)
+    AssetAttributesManager::cptr assetAttributesMgr,
+    PhysicsAttributesManager::cptr physicsAttributesManager)
     : AbstractObjectAttributesManager<StageAttributes,
                                       ManagedObjectAccess::Copy>::
-          AbstractObjectAttributesManager("Stage", "stage_config.json"),
-      objectAttributesMgr_(std::move(objectAttributesMgr)),
+          AbstractObjectAttributesManager("Stage",
+                                          "stage_config.json",
+                                          assetAttributesMgr),
       physicsAttributesManager_(std::move(physicsAttributesManager)),
       cfgLightSetup_(NO_LIGHT_KEY) {
   // build this manager's copy constructor map
   this->copyConstructorMap_["StageAttributes"] =
       &StageAttributesManager::createObjectCopy<attributes::StageAttributes>;
+  // call this to instantiate default prim object templates
+  this->createDefaultPrimTemplatesForObjType();
+
+}  // StageAttributesManager::ctor
+
+void StageAttributesManager::createDefaultPrimTemplatesForObjType() {
   // create none-type stage attributes and set as undeletable
   // based on default
   auto tmplt = this->postCreateRegister(
       StageAttributesManager::initNewObjectInternal("NONE", false), true);
   std::string tmpltHandle = tmplt->getHandle();
   this->undeletableObjectNames_.insert(tmpltHandle);
-}  // StageAttributesManager::ctor
+}  // StageAttributesManager::createDefaultPrimTemplatesForObjType
 
 int StageAttributesManager::registerObjectFinalize(
     StageAttributes::ptr stageAttributes,

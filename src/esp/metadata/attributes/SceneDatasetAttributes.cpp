@@ -16,12 +16,12 @@ SceneDatasetAttributes::SceneDatasetAttributes(
   assetAttributesManager_ = managers::AssetAttributesManager::create();
   lightLayoutAttributesManager_ =
       managers::LightLayoutAttributesManager::create();
-  objectAttributesManager_ = managers::ObjectAttributesManager::create();
-  objectAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
+  objectAttributesManager_ =
+      managers::ObjectAttributesManager::create(assetAttributesManager_);
   sceneInstanceAttributesManager_ =
       managers::SceneInstanceAttributesManager::create();
   stageAttributesManager_ = managers::StageAttributesManager::create(
-      objectAttributesManager_, physAttrMgr);
+      assetAttributesManager_, physAttrMgr);
 }  // ctor
 
 bool SceneDatasetAttributes::addNewSceneInstanceToDataset(

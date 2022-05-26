@@ -6,8 +6,6 @@
 #define ESP_METADATA_MANAGERS_STAGEATTRIBUTEMANAGER_H_
 
 #include "AbstractObjectAttributesManagerBase.h"
-
-#include "ObjectAttributesManager.h"
 #include "PhysicsAttributesManager.h"
 
 namespace esp {
@@ -22,9 +20,9 @@ class StageAttributesManager
     : public AbstractObjectAttributesManager<attributes::StageAttributes,
                                              ManagedObjectAccess::Copy> {
  public:
-  StageAttributesManager(
-      ObjectAttributesManager::ptr objectAttributesMgr,
-      PhysicsAttributesManager::ptr physicsAttributesManager);
+  explicit StageAttributesManager(
+      AssetAttributesManager::cptr assetAttributesMgr,
+      PhysicsAttributesManager::cptr physicsAttributesManager);
 
   /**
    * @brief This will set the current physics manager attributes that is
@@ -86,14 +84,13 @@ class StageAttributesManager
 
  protected:
   /**
-   * @brief Check if currently configured primitive asset template library has
-   * passed handle.
-   * @param handle String name of primitive asset attributes desired
-   * @return whether handle exists or not in asset attributes library
+   * @brief Create and save default primitive asset-based object templates,
+   * saving their handles as non-deletable default handles.  TODO : possibly
+   * extend this to actually build default stage templates for certain prims.
+   * See @ref ObjectAttributesManager::createDefaultPrimTemplatesForObjType() .
    */
-  bool isValidPrimitiveAttributes(const std::string& handle) override {
-    return objectAttributesMgr_->getObjectLibHasHandle(handle);
-  }
+  void createDefaultPrimTemplatesForObjType() override;
+
   /**
    * @brief Perform file-name-based attributes initialization. This is to
    * take the place of the AssetInfo::fromPath functionality, and is only
@@ -170,17 +167,11 @@ class StageAttributesManager
   // instance vars
 
   /**
-   * @brief Reference to ObjectAttributesManager to give access to setting
-   * object template library using paths specified in
-   * esp::metadata::attributes::StageAttributes json
-   */
-  ObjectAttributesManager::ptr objectAttributesMgr_ = nullptr;
-  /**
    * @brief Reference to PhysicsAttributesManager to give access to default
    * physics manager attributes settings when
    * esp::metadata::attributes::StageAttributes are created.
    */
-  PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
+  PhysicsAttributesManager::cptr physicsAttributesManager_ = nullptr;
 
   /**
    * @brief Current lighting default value based on current @ref

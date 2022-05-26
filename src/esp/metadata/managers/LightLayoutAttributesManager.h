@@ -134,16 +134,6 @@ class LightLayoutAttributesManager
    */
   void resetFinalize() override {}
 
-  /**
-   * @brief Light Attributes has no reason to check this value
-   * @param handle String name of primitive asset attributes desired
-   * @return whether handle exists or not in asset attributes library
-   */
-  bool isValidPrimitiveAttributes(
-      CORRADE_UNUSED const std::string& handle) override {
-    return false;
-  }
-
  public:
   ESP_SMART_POINTERS(LightLayoutAttributesManager)
 

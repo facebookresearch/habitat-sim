@@ -10,7 +10,6 @@
 #include <utility>
 
 #include "AbstractObjectAttributesManagerBase.h"
-#include "AssetAttributesManager.h"
 
 namespace esp {
 namespace metadata {
@@ -25,23 +24,8 @@ class ObjectAttributesManager
     : public AbstractObjectAttributesManager<attributes::ObjectAttributes,
                                              ManagedObjectAccess::Copy> {
  public:
-  ObjectAttributesManager()
-      : AbstractObjectAttributesManager<attributes::ObjectAttributes,
-                                        ManagedObjectAccess::Copy>::
-            AbstractObjectAttributesManager("Object", "object_config.json") {
-    // build this manager's copy constructor map
-    this->copyConstructorMap_["ObjectAttributes"] =
-        &ObjectAttributesManager::createObjectCopy<
-            attributes::ObjectAttributes>;
-  }
-
-  void setAssetAttributesManager(
-      AssetAttributesManager::cptr assetAttributesMgr) {
-    assetAttributesMgr_ = std::move(assetAttributesMgr);
-    // Create default primitive-based object attributess
-    createDefaultPrimBasedAttributesTemplates();
-  }
-
+  explicit ObjectAttributesManager(
+      AssetAttributesManager::cptr assetAttributesMgr);
   /**
    * @brief Creates an instance of an object template described by passed
    * string, which should be a reference to an existing primitive asset template
@@ -67,16 +51,6 @@ class ObjectAttributesManager
    */
   void setValsFromJSONDoc(attributes::ObjectAttributes::ptr attribs,
                           const io::JsonGenericValue& jsonConfig) override;
-
-  /**
-   * @brief Check if currently configured primitive asset template library has
-   * passed handle.
-   * @param handle String name of primitive asset attributes desired
-   * @return whether handle exists or not in asset attributes library
-   */
-  bool isValidPrimitiveAttributes(const std::string& handle) override {
-    return assetAttributesMgr_->getObjectLibHasHandle(handle);
-  }
 
   // ======== File-based and primitive-based partition functions ========
 
@@ -171,7 +145,7 @@ class ObjectAttributesManager
    * @brief Create and save default primitive asset-based object templates,
    * saving their handles as non-deletable default handles.
    */
-  void createDefaultPrimBasedAttributesTemplates();
+  void createDefaultPrimTemplatesForObjType() override;
 
   /**
    * @brief Perform file-name-based attributes initialization. This is to
@@ -254,12 +228,6 @@ class ObjectAttributesManager
   }
 
   // ======== Typedefs and Instance Variables ========
-
-  /**
-   * @brief Reference to AssetAttributesManager to give access to primitive
-   * attributes for object construction
-   */
-  AssetAttributesManager::cptr assetAttributesMgr_ = nullptr;
 
   /**
    * @brief Maps loaded object template IDs to the appropriate template

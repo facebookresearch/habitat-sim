@@ -178,16 +178,6 @@ class SceneInstanceAttributesManager
       const std::string& sceneInstanceAttributesHandle,
       CORRADE_UNUSED bool forceRegistration) override;
 
-  /**
-   * @brief This function is meaningless for this manager's ManagedObjects.
-   * @param handle Ignored.
-   * @return false
-   */
-  bool isValidPrimitiveAttributes(
-      CORRADE_UNUSED const std::string& handle) override {
-    return false;
-  }
-
  public:
   ESP_SMART_POINTERS(SceneInstanceAttributesManager)
 

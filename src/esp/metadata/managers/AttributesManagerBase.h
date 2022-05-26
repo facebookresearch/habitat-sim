@@ -154,14 +154,6 @@ class AttributesManager : public ManagedFileBasedContainer<T, Access> {
                                         const io::JsonGenericValue& jsonPaths);
 
   /**
-   * @brief Check if currently configured primitive asset template library has
-   * passed handle.
-   * @param handle String name of primitive asset attributes desired
-   * @return whether handle exists or not in asset attributes library
-   */
-  virtual bool isValidPrimitiveAttributes(const std::string& handle) = 0;
-
-  /**
    * @brief Parse passed JSON Document for @ref
    * esp::metadata::attributes::AbstractAttributes. It always returns a
    * valid @ref esp::metadata::attributes::AbstractAttributes shared
