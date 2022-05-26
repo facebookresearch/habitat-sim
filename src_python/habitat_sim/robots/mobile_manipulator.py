@@ -277,14 +277,14 @@ class MobileManipulator(RobotInterface):
 
         # deref self vars to cut access in half
         joint_pos_indices = self.joint_pos_indices
-        joint_limits = self.joint_limits
+        lower_joints_limits, upper_joint_limits = self.joint_limits
         arm_joints = self.params.arm_joints
         arm_pos_indices = [joint_pos_indices[x] for x in arm_joints]
         lower_lims = np.array(
-            [joint_limits[0][i] for i in arm_pos_indices], dtype=np.float32
+            [lower_joints_limits[i] for i in arm_pos_indices], dtype=np.float32
         )
         upper_lims = np.array(
-            [joint_limits[1][i] for i in arm_pos_indices], dtype=np.float32
+            [upper_joint_limits[i] for i in arm_pos_indices], dtype=np.float32
         )
         return lower_lims, upper_lims
 
@@ -334,9 +334,7 @@ class MobileManipulator(RobotInterface):
         joint_pos_indices = self.joint_pos_indices
         gripper_joints = self.params.gripper_joints
         sim_obj_joint_pos = self.sim_obj.joint_positions
-        # gripper_pos_indices = map(
-        #     lambda x: self.joint_pos_indices[x], self.params.gripper_joints
-        # )
+
         gripper_pos_indices = (joint_pos_indices[x] for x in gripper_joints)
         return np.array(
             [sim_obj_joint_pos[i] for i in gripper_pos_indices],
@@ -396,9 +394,6 @@ class MobileManipulator(RobotInterface):
     @property
     def arm_joint_pos(self) -> np.ndarray:
         """Get the current arm joint positions."""
-        # arm_pos_indices = map(
-        #     lambda x: self.joint_pos_indices[x], self.params.arm_joints
-        # )
 
         # deref self vars to cut access in half
         joint_pos_indices = self.joint_pos_indices
@@ -449,10 +444,6 @@ class MobileManipulator(RobotInterface):
         joint_dof_indices = self.joint_dof_indices
         arm_joints = self.params.arm_joints
         sim_obj_joint_vel = self.sim_obj.joint_velocities
-
-        # arm_dof_indices = map(
-        #     lambda x: self.joint_dof_indices[x], self.params.arm_joints
-        # )
 
         arm_dof_indices = [joint_dof_indices[x] for x in arm_joints]
         return np.array(
