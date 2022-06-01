@@ -223,7 +223,6 @@ jobs:
       - run:
           name: run flake8
           command: |
-              # trigger testing
               flake8 --version
               flake8 src_python/habitat_sim/. examples/. tests/. setup.py
       - run:
