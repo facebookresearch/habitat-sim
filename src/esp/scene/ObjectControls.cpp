@@ -28,7 +28,9 @@ SceneNode& moveLeft(SceneNode& object, float distance) {
 
 SceneNode& moveUp(SceneNode& object, float distance) {
   // TODO: this assumes no scale is applied
-  object.translateLocal(object.transformation().up() * distance);
+  // Note: this is not a body action and is applied to the sensor rather than
+  // the Agent, so it will move the sensor in Agent's +Y (up) direction
+  object.translate(Magnum::Vector3(0, 1, 0) * distance);
   return object;
 }
 
