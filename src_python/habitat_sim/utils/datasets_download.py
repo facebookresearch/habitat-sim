@@ -121,10 +121,10 @@ def initialize_test_data_sources(data_path):
             "version": "1.5",
         },
         "ycb": {
-            "source": "https://dl.fbaipublicfiles.com/habitat/ycb/hab_ycb_v1.1.zip",
-            "package_name": "hab_ycb_v1.1.zip",
+            "source": "https://dl.fbaipublicfiles.com/habitat/ycb/hab_ycb_v1.2.zip",
+            "package_name": "hab_ycb_v1.2.zip",
             "link": data_path + "objects/ycb",
-            "version": "1.1",
+            "version": "1.2",
         },
         "hab_fetch": {
             "source": "http://dl.fbaipublicfiles.com/habitat/hab_fetch_v1.0.zip",
