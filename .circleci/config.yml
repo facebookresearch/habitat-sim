@@ -436,7 +436,7 @@ jobs:
               cd ..
               if [ ! -d ./habitat-lab ]
               then
-                git clone -q --depth 1 https://github.com/facebookresearch/habitat-lab.git
+                git clone -q https://github.com/facebookresearch/habitat-lab.git
               fi
               cd habitat-lab
               git fetch --all
