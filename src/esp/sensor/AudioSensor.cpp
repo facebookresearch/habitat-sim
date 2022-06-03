@@ -156,8 +156,17 @@ void AudioSensor::runSimulation(sim::Simulator& sim) {
 }
 
 void AudioSensor::setAudioMaterialsJSON(const std::string& jsonPath) {
-  ESP_DEBUG() << "Set audio materials from json : " << jsonPath;
+  if (audioMaterialsJsonSet_) {
+    // audioMaterialsJsonSet_ is set to true when in loadSemanticMesh.
+    // Once the mesh is loaded, we cannot change the materials database. Ignore
+    // any new material database files.
+    ESP_WARNING() << "[WARNING] Audio material database is already set. Will "
+                     "ignore the new file:"
+                  << jsonPath;
+    return;
+  }
 
+  ESP_DEBUG() << "Set audio materials database to json file : " << jsonPath;
   audioMaterialsJSON_ = jsonPath;
 }
 
@@ -287,9 +296,18 @@ void AudioSensor::loadSemanticMesh(sim::Simulator& sim) {
                  "loadSemanticMesh: audioSimulator_ should exist", );
 
   // Load the audio materials JSON if it was set
-  if (audioMaterialsJSON_.size() > 0) {
-    audioSimulator_->LoadAudioMaterialJSON(audioMaterialsJSON_);
-    audioMaterialsJSON_ = "";
+  if (!audioMaterialsJsonSet_ && audioMaterialsJSON_.size() > 0) {
+    auto errorCode =
+        audioSimulator_->LoadAudioMaterialJSON(audioMaterialsJSON_);
+    if (errorCode != RLRAudioPropagation::ErrorCodes::Success) {
+      ESP_ERROR() << "Audio material json could not be loaded. ErrorCode: "
+                  << static_cast<int>(errorCode)
+                  << ". Please check if the file exists and the format is "
+                     "correct. FilePath:"
+                  << audioMaterialsJSON_;
+      CORRADE_ASSERT(false, "", );
+    }
+    audioMaterialsJsonSet_ = true;
   }
 
   std::vector<std::uint16_t> objectIds;

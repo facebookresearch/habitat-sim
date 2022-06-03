@@ -22,9 +22,9 @@ def printTime():
 
 def main():
     backend_cfg = habitat_sim.SimulatorConfiguration()
-    backend_cfg.scene_id = "17DRP5sb8fy"
+    backend_cfg.scene_id = "17DRP5sb8fy.glb"
     backend_cfg.scene_dataset_config_file = (
-        "./data/scene_datasets/mp3d_example/mp3d.scene_dataset_config.json"
+        "data/scene_datasets/mp3d_example/mp3d.scene_dataset_config.json"
     )
     backend_cfg.load_semantic_mesh = True
     backend_cfg.enable_physics = False
@@ -37,9 +37,7 @@ def main():
 
     # create the acoustic configs
     acoustics_config = hsim_bindings.RLRAudioPropagationConfiguration()
-    acoustics_config.dumpWaveFiles = True
     acoustics_config.enableMaterials = True
-    acoustics_config.writeIrToFile = True
 
     # create channel layout
     channel_layout = hsim_bindings.RLRAudioPropagationChannelLayout()

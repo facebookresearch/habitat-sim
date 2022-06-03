@@ -155,6 +155,7 @@ class AudioSensor : public Sensor {
   //! audio materials json path
   std::string audioMaterialsJSON_;
 
+  bool audioMaterialsJsonSet_ = false;
   bool newInitialization_ = false;
   bool newSource_ = false;
 
