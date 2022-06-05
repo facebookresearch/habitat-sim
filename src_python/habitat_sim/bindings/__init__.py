@@ -7,6 +7,8 @@
 # TODO: this whole thing needs to get removed, kept just for compatibility
 #   with existing code
 
+from __future__ import annotations
+
 from habitat_sim._ext.habitat_sim_bindings import (
     CameraSensor,
     CameraSensorSpec,

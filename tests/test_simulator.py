@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import random
 from copy import copy
 from os import path as osp

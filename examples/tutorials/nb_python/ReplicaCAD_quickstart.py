@@ -39,6 +39,8 @@
 # @title Path Setup and Imports { display-mode: "form" }
 # @markdown (double click to show code).
 
+from __future__ import annotations
+
 # %cd /content/habitat-sim
 ## [setup]
 import os
@@ -192,7 +194,7 @@ def make_simulator_from_settings(sim_settings):
 # @markdown (double click to show code)
 def simulate(sim, dt=1.0, get_frames=True):
     # simulate dt seconds at 60Hz to the nearest fixed timestep
-    print("Simulating {:.3f} world seconds.".format(dt))
+    print(f"Simulating {dt:.3f} world seconds.")
     observations = []
     start_time = sim.get_world_time()
     while sim.get_world_time() < start_time + dt:

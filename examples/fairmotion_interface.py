@@ -2,6 +2,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from __future__ import annotations
+
 import json
 import math
 import os
@@ -257,7 +259,7 @@ class FairmotionInterface:
                 file = filename
                 break
 
-        with open(file, "r") as f:
+        with open(file) as f:
             data = json.load(f)
 
         # set data to what was fetched

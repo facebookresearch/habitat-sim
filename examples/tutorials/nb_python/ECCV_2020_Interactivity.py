@@ -43,6 +43,8 @@
 # @title Path Setup and Imports { display-mode: "form" }
 # @markdown (double click to show code).
 
+from __future__ import annotations
+
 # %cd /content/habitat-sim
 ## [setup]
 import math

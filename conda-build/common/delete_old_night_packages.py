@@ -4,6 +4,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from __future__ import annotations
+
 import argparse
 import re
 import subprocess
@@ -27,13 +29,11 @@ if not args.nightly:
 
 login_result = subprocess.run(
     ["anaconda", "login", "--username", args.username, "--password", args.password],
-    stderr=subprocess.PIPE,
-    stdout=subprocess.PIPE,
+    capture_output=True,
 )
 result = subprocess.run(
     ["anaconda", "show", "aihabitat-nightly/habitat-sim"],
-    stderr=subprocess.PIPE,
-    stdout=subprocess.PIPE,
+    capture_output=True,
 )
 versions = re.findall(
     r"\d\.\d\.\d\.\d{4}\.\d\d\.\d\d", str(result.stdout) + str(result.stderr)
@@ -49,6 +49,5 @@ result_remove = subprocess.run(
         "-f",
         *remove_versions_list,
     ],
-    stderr=subprocess.PIPE,
-    stdout=subprocess.PIPE,
+    capture_output=True,
 )

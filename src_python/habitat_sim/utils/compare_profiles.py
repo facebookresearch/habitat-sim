@@ -40,6 +40,8 @@ batch_obs                             1,915         1,915          -144         
 before_step (for optimize)            1,681         1,681           -62           -62
 backward (for surrogate loss)         1,463         1,463           -22           -22
 """
+from __future__ import annotations
+
 import argparse
 import glob
 import os

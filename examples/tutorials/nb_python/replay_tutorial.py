@@ -41,6 +41,8 @@
 # !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/main/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
 
 # %%
+from __future__ import annotations
+
 # %cd /content/habitat-sim
 import os
 import sys

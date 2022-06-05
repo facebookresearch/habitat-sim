@@ -4,6 +4,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from __future__ import annotations
+
 from os import path as osp
 from typing import Union
 
@@ -130,7 +132,7 @@ class RedwoodDepthNoiseModel(SensorNoiseModel):
     def is_valid_sensor_type(sensor_type: SensorType) -> bool:
         return sensor_type == SensorType.DEPTH
 
-    def simulate(self, gt_depth: Union[ndarray, "Tensor"]) -> Union[ndarray, "Tensor"]:
+    def simulate(self, gt_depth: Union[ndarray, Tensor]) -> Union[ndarray, Tensor]:
         if cuda_enabled:
             if isinstance(gt_depth, np.ndarray):
                 return self._impl.simulate_from_cpu(gt_depth)
@@ -144,6 +146,6 @@ class RedwoodDepthNoiseModel(SensorNoiseModel):
         else:
             return self._impl.simulate(gt_depth)
 
-    def apply(self, gt_depth: Union[ndarray, "Tensor"]) -> Union[ndarray, "Tensor"]:
+    def apply(self, gt_depth: Union[ndarray, Tensor]) -> Union[ndarray, Tensor]:
         r"""Alias of `simulate()` to conform to base-class and expected API"""
         return self.simulate(gt_depth)

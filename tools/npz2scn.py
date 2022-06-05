@@ -3,6 +3,8 @@
 # npz2scn - tool for extracting semantic scene information from 3dscenegraph
 #           dataset (https://3dscenegraph.stanford.edu/)
 
+from __future__ import annotations
+
 import argparse
 import json
 from typing import Any, Dict

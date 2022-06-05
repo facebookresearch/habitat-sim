@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import examples.settings
 import habitat_sim
 

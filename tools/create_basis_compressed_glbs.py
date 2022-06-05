@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import glob
 import itertools
@@ -117,7 +119,7 @@ def convert_image_to_basis(args: Tuple[str, str, int]) -> None:
 
 def _gltf2unlit(gltf_name: str):
     assert osp.exists(gltf_name)
-    with open(gltf_name, "r") as f:
+    with open(gltf_name) as f:
         json_data = json.load(f)
     # add references to the KHR_materials_unlit extension in
     # gltf root-level tags

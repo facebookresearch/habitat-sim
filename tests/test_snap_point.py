@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import math
 
 import hypothesis
@@ -35,4 +37,4 @@ def test_snap_point(nudge, test_data):
     proj_pt = pf.snap_point(pt)
     hypothesis.assume(not math.isnan(proj_pt[0]))
 
-    assert pf.is_navigable(proj_pt), "{} -> {} not navigable!".format(pt, proj_pt)
+    assert pf.is_navigable(proj_pt), f"{pt} -> {proj_pt} not navigable!"

@@ -5,6 +5,8 @@
 # LICENSE file in the root directory of this source tree.
 
 
+from __future__ import annotations
+
 import importlib
 import os
 from io import StringIO
@@ -121,7 +123,7 @@ def test_configure_and_on_start_step():
         profiling_utils.configure(capture_start_step=2, num_steps_to_capture=5)
         for step in range(8):
             profiling_utils.on_start_step()  # Mark start of train step
-            print("step {}".format(step))
+            print(f"step {step}")
 
         # Expect the capture range to span steps 2 through 6.
         expected_out = "step 0\nstep 1\nrange_push habitat_capture_range\nstep 2\nstep 3\nstep 4\nstep 5\nstep 6\nrange_pop\nstep 7\n"

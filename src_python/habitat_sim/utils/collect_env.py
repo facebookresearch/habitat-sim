@@ -10,7 +10,7 @@
 # Please, run this script and provide it's output when reporting a bug.
 #
 
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import annotations
 
 import locale
 import os

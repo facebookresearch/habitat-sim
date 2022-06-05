@@ -3,6 +3,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
+from __future__ import annotations
+
 import importlib.util
 import itertools
 import json
@@ -28,10 +30,10 @@ def _render_scene(sim, scene, sensor_type, gpu2gpu):
         osp.join(
             osp.dirname(__file__),
             "gt_data",
-            "{}-state.json".format(osp.basename(osp.splitext(scene)[0])),
+            f"{osp.basename(osp.splitext(scene)[0])}-state.json",
         )
     )
-    with open(gt_data_pose_file, "r") as f:
+    with open(gt_data_pose_file) as f:
         render_state = json.load(f)
         state = habitat_sim.AgentState()
         state.position = render_state["pos"]
@@ -69,7 +71,7 @@ def _render_and_load_gt(sim, scene, sensor_type, gpu2gpu):
         osp.join(
             osp.dirname(__file__),
             "gt_data",
-            "{}-{}.npy".format(osp.basename(osp.splitext(scene)[0]), sensor_type),
+            f"{osp.basename(osp.splitext(scene)[0])}-{sensor_type}.npy",
         )
     )
     # if not osp.exists(gt_obs_file):
@@ -182,7 +184,7 @@ def test_sensors(
 ):
     scene = scene_and_dataset[0]
     if not osp.exists(scene):
-        pytest.skip("Skipping {}".format(scene))
+        pytest.skip(f"Skipping {scene}")
     if gpu2gpu and (not habitat_sim.cuda_enabled or not _HAS_TORCH):
         pytest.skip("Skipping GPU->GPU test")
     scene_dataset_config = scene_and_dataset[1]
@@ -241,7 +243,7 @@ def test_reconfigure_render(
 ):
     scene = scene_and_dataset[0]
     if not osp.exists(scene):
-        pytest.skip("Skipping {}".format(scene))
+        pytest.skip(f"Skipping {scene}")
 
     for sens in all_base_sensor_types:
         make_cfg_settings[sens] = False
@@ -297,7 +299,7 @@ def test_smoke_no_sensors(make_cfg_settings):
 def test_smoke_redwood_noise(scene_and_dataset, gpu2gpu, make_cfg_settings):
     scene = scene_and_dataset[0]
     if not osp.exists(scene):
-        pytest.skip("Skipping {}".format(scene))
+        pytest.skip(f"Skipping {scene}")
     if gpu2gpu and (not habitat_sim.cuda_enabled or not _HAS_TORCH):
         pytest.skip("Skipping GPU->GPU test")
     scene_dataset_config = scene_and_dataset[1]
@@ -327,7 +329,7 @@ def test_smoke_redwood_noise(scene_and_dataset, gpu2gpu, make_cfg_settings):
 def test_initial_hfov(scene_and_dataset, sensor_type, make_cfg_settings):
     scene = scene_and_dataset[0]
     if not osp.exists(scene):
-        pytest.skip("Skipping {}".format(scene))
+        pytest.skip(f"Skipping {scene}")
     make_cfg_settings["hfov"] = 70
     with habitat_sim.Simulator(make_cfg(make_cfg_settings)) as sim:
         assert sim.agents[0]._sensors[sensor_type].hfov == mn.Deg(
@@ -349,7 +351,7 @@ def test_initial_hfov(scene_and_dataset, sensor_type, make_cfg_settings):
 def test_rgba_noise(scene_and_dataset, model_name, make_cfg_settings):
     scene = scene_and_dataset[0]
     if not osp.exists(scene):
-        pytest.skip("Skipping {}".format(scene))
+        pytest.skip(f"Skipping {scene}")
     scene_dataset_config = scene_and_dataset[1]
     make_cfg_settings["depth_sensor"] = False
     make_cfg_settings["color_sensor"] = True

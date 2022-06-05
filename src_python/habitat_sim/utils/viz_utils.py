@@ -2,8 +2,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from __future__ import annotations
+
 import base64
-import io
 import os
 import subprocess
 import sys
@@ -87,7 +88,8 @@ def display_video(video_file: str, height: int = 400):
         from IPython.display import HTML
 
         ext = os.path.splitext(video_file)[-1][1:]
-        video = io.open(video_file, "r+b").read()
+        with open(video_file, "r+b") as f:
+            video = f.read()
         ipythondisplay.display(
             HTML(
                 data="""<video alt="test" autoplay

@@ -12,6 +12,8 @@ https://github.com/facebookresearch/pyrobot
 Please cite PyRobot if you use this noise model
 """
 
+from __future__ import annotations
+
 from typing import Any, List, Optional, Sequence, Tuple
 
 import attr

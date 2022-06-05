@@ -8,6 +8,8 @@
 Adapted from: http://www.benjack.io/2017/06/12/python-cpp-tests.html
 """
 
+from __future__ import annotations
+
 import argparse
 import builtins
 import glob

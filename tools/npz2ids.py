@@ -3,6 +3,8 @@
 # npz2ids - tool for extracting object_ids from 3dscenegraph dataset
 #           (https://3dscenegraph.stanford.edu/)
 
+from __future__ import annotations
+
 import argparse
 
 import numpy as np

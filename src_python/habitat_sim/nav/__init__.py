@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from habitat_sim._ext.habitat_sim_bindings import (
     GreedyFollowerCodes,
     GreedyGeodesicFollowerImpl,

@@ -3,6 +3,8 @@ r"""A simple Google-style logging wrapper.
 Taken from https://github.com/benley/python-glog and adapted
 """
 
+from __future__ import annotations
+
 import logging
 from logging import LogRecord
 

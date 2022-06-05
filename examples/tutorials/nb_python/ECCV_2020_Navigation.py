@@ -44,6 +44,8 @@
 # @title Colab Setup and Imports { display-mode: "form" }
 # @markdown (double click to see the code)
 
+from __future__ import annotations
+
 import math
 import os
 import random

@@ -39,6 +39,8 @@
 # @title Path Setup and Imports { display-mode: "form" }
 # @markdown (double click to show code).
 
+from __future__ import annotations
+
 # %cd /content/habitat-sim
 ## [setup]
 import math
@@ -540,7 +542,7 @@ def set_template_properties_from_dict(template, template_dict):
 # This will display all the properties of an attributes template
 def show_template_properties(template):
     template_dict = build_dict_from_template(template)
-    print("Template {} has : ".format(template.handle))
+    print(f"Template {template.handle} has : ")
     for k, v in template_dict.items():
         print(
             "\tProperty {} has value {} of type {} that is editable : {}".format(
@@ -555,7 +557,7 @@ def show_template_properties(template):
 # @markdown - simulate
 def simulate(sim, dt=1.0, get_frames=True):
     # simulate dt seconds at 60Hz to the nearest fixed timestep
-    print("Simulating {:.3f} world seconds.".format(dt))
+    print(f"Simulating {dt:.3f} world seconds.")
     observations = []
     start_time = sim.get_world_time()
     while sim.get_world_time() < start_time + dt:

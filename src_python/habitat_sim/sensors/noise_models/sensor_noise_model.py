@@ -4,6 +4,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from __future__ import annotations
+
 import abc
 from typing import Optional, Union
 
@@ -43,7 +45,7 @@ class SensorNoiseModel(abc.ABC):
         """
 
     def __call__(
-        self, sensor_observation: Union[ndarray, "Tensor"]
-    ) -> Union[ndarray, "Tensor"]:
+        self, sensor_observation: Union[ndarray, Tensor]
+    ) -> Union[ndarray, Tensor]:
         r"""Alias of `apply()`"""
         return self.apply(sensor_observation)

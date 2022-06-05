@@ -1,6 +1,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from __future__ import annotations
+
 import numpy as np
 import pytest
 
@@ -19,7 +21,7 @@ from habitat_sim.utils.data.pose_extractor import TopdownView
 
 class TrivialNet(nn.Module):
     def __init__(self):
-        super(TrivialNet, self).__init__()
+        super().__init__()
 
     def forward(self, x):
         x = F.relu(x)

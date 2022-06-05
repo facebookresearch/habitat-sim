@@ -4,6 +4,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from __future__ import annotations
+
 import time
 from collections import OrderedDict
 from collections.abc import MutableMapping
@@ -74,7 +76,7 @@ class Simulator(SimulatorBackend):
     agents: List[Agent] = attr.ib(factory=list, init=False)
     _num_total_frames: int = attr.ib(default=0, init=False)
     _default_agent_id: int = attr.ib(default=0, init=False)
-    __sensors: List[Dict[str, "Sensor"]] = attr.ib(factory=list, init=False)
+    __sensors: List[Dict[str, Sensor]] = attr.ib(factory=list, init=False)
     _initialized: bool = attr.ib(default=False, init=False)
     _previous_step_time: float = attr.ib(
         default=0.0, init=False
@@ -151,7 +153,7 @@ class Simulator(SimulatorBackend):
 
         super().close(destroy)
 
-    def __enter__(self) -> "Simulator":
+    def __enter__(self) -> Simulator:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -382,8 +384,8 @@ class Simulator(SimulatorBackend):
     def get_sensor_observations_async_finish(
         self,
     ) -> Union[
-        Dict[str, Union[ndarray, "Tensor"]],
-        Dict[int, Dict[str, Union[ndarray, "Tensor"]]],
+        Dict[str, Union[ndarray, Tensor]],
+        Dict[int, Dict[str, Union[ndarray, Tensor]]],
     ]:
         if self._async_draw_agent_ids is None:
             raise RuntimeError(
@@ -400,9 +402,9 @@ class Simulator(SimulatorBackend):
 
         self.renderer.wait_draw_jobs()
         # As backport. All Dicts are ordered in Python >= 3.7
-        observations: Dict[int, Dict[str, Union[ndarray, "Tensor"]]] = OrderedDict()
+        observations: Dict[int, Dict[str, Union[ndarray, Tensor]]] = OrderedDict()
         for agent_id in agent_ids:
-            agent_observations: Dict[str, Union[ndarray, "Tensor"]] = {}
+            agent_observations: Dict[str, Union[ndarray, Tensor]] = {}
             for sensor_uuid, sensor in self.__sensors[agent_id].items():
                 agent_observations[sensor_uuid] = sensor._get_observation_async()
 
@@ -462,7 +464,7 @@ class Simulator(SimulatorBackend):
         self.__last_state[self._default_agent_id] = state
 
     @property
-    def _sensors(self) -> Dict[str, "Sensor"]:
+    def _sensors(self) -> Dict[str, Sensor]:
         # TODO Deprecate and remove
         return self.__sensors[self._default_agent_id]
 
@@ -586,7 +588,7 @@ class Sensor:
 
             resolution = self._spec.resolution
             if self._spec.sensor_type == SensorType.SEMANTIC:
-                self._buffer: Union[np.ndarray, "Tensor"] = torch.empty(
+                self._buffer: Union[np.ndarray, Tensor] = torch.empty(
                     resolution[0], resolution[1], dtype=torch.int32, device=device
                 )
             elif self._spec.sensor_type == SensorType.DEPTH:
@@ -707,7 +709,7 @@ class Sensor:
             self._sensor_object, scene, self.view, render_flags
         )
 
-    def get_observation(self) -> Union[ndarray, "Tensor"]:
+    def get_observation(self) -> Union[ndarray, Tensor]:
         assert self._sim.renderer is not None
         tgt = self._sensor_object.render_target
 
@@ -733,7 +735,7 @@ class Sensor:
 
         return self._noise_model(obs)
 
-    def _get_observation_async(self) -> Union[ndarray, "Tensor"]:
+    def _get_observation_async(self) -> Union[ndarray, Tensor]:
         if self._spec.gpu2gpu_transfer:
             obs = self._buffer.flip(0)  # type: ignore[union-attr]
         else:

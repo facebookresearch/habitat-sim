@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import collections
 import math
 import random
@@ -8,11 +10,11 @@ import torch
 
 def create_mask_filter(labels, extractor):
     instance_id_to_name = extractor.instance_id_to_name
-    labels_we_care_about = set(
+    labels_we_care_about = {
         instance_id
         for instance_id, name in instance_id_to_name.items()
         if name in labels
-    )
+    }
 
     # Function that filters out instance of objects we do not care about
     return np.vectorize(lambda x: x * int(x in labels_we_care_about))

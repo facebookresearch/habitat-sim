@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import itertools
 from os import path as osp
 

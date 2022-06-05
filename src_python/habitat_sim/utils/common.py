@@ -4,6 +4,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from __future__ import annotations
+
 import math
 from io import BytesIO
 from typing import List, Sequence, Tuple, Union
@@ -56,7 +58,7 @@ def quat_from_magnum(quat: mn.Quaternion) -> qt.quaternion:
     return a
 
 
-def quat_to_angle_axis(quat: qt.quaternion) -> Tuple[float, np.ndarray]:
+def quat_to_angle_axis(quat: qt.quaternion) -> Tuple[np.floating, np.ndarray]:
     r"""Converts a quaternion to angle axis format
 
     :param quat: The quaternion
@@ -71,7 +73,7 @@ def quat_to_angle_axis(quat: qt.quaternion) -> Tuple[float, np.ndarray]:
     theta = np.linalg.norm(rot_vec)
     if np.abs(theta) < 1e-5:
         w = np.array([1, 0, 0])
-        theta = 0.0
+        theta = 0.0  # type: ignore[assignment]
     else:
         w = rot_vec / theta
 

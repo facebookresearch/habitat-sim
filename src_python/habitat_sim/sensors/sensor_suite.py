@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Dict
 
 from habitat_sim import bindings as hsim

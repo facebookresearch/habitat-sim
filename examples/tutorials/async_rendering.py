@@ -32,6 +32,8 @@ Known limitations/issues:
     back to the main thread by calling sim.get_sensor_observations_async_finish() by default.
 """
 
+from __future__ import annotations
+
 import habitat_sim
 
 
