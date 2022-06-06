@@ -188,7 +188,7 @@ class GreedyGeodesicFollower:
         if len(path) == 0:
             raise errors.GreedyFollowerError()
 
-        path = list(map(lambda v: self.action_mapping[v], path))
+        path = [self.action_mapping[v] for v in path]
 
         return path
 
