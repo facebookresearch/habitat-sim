@@ -128,19 +128,7 @@ Once you have the habitat zip archive, you should download [this SceneDatasetCon
 
 ## Replica Dataset
 
-Details and download: [https://github.com/facebookresearch/Replica-Dataset](https://github.com/facebookresearch/Replica-Dataset).
-
-To work with the Replica dataset in Habitat, you will need a set of [additional configuration files](http://dl.fbaipublicfiles.com/habitat/Replica/replica_configs.zip). 
-
-Simply unzip and merge into your existing Replica folder structure such that each scene directory contains both a `sorted_faces.bin` and `replica_stage.stage_config.json` in its `habitat/` sub-directory. 
-
-For example, after merge you should see `/path/to/Replica/frl_apartment_0/habitat/sorted_faces.bin`. You should also see `/path/to/Replica/replica.scene_dataset_config.json` which you will use to import the dataset within Habitat-sim.
-
-For example, using the habitat viewer: 
-```
-# ./build/viewer if compiled locally
-habitat-viewer --dataset /path/to/Replica/replica.scene_dataset_config.json -- frl_apartment_0
-```
+Details and download isntructions: [https://github.com/facebookresearch/Replica-Dataset](https://github.com/facebookresearch/Replica-Dataset).
 
 ## ReplicaCAD
 
