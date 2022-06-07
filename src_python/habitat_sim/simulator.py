@@ -90,29 +90,25 @@ class Simulator(SimulatorBackend):
             )
 
         config.sim_cfg.create_renderer = any(
-            map(lambda cfg: len(cfg.sensor_specifications) > 0, config.agents)
+            (len(cfg.sensor_specifications) > 0 for cfg in config.agents)
         )
         config.sim_cfg.load_semantic_mesh = any(
-            map(
-                lambda cfg: any(
-                    map(
-                        lambda sens_spec: sens_spec.sensor_type == SensorType.SEMANTIC,
-                        cfg.sensor_specifications,
-                    )
-                ),
-                config.agents,
+            (
+                any(
+                    sens_spec.sensor_type == SensorType.SEMANTIC
+                    for sens_spec in cfg.sensor_specifications
+                )
+                for cfg in config.agents
             )
         )
 
         config.sim_cfg.requires_textures = any(
-            map(
-                lambda cfg: any(
-                    map(
-                        lambda sens_spec: sens_spec.sensor_type == SensorType.COLOR,
-                        cfg.sensor_specifications,
-                    )
-                ),
-                config.agents,
+            (
+                any(
+                    sens_spec.sensor_type == SensorType.COLOR
+                    for sens_spec in cfg.sensor_specifications
+                )
+                for cfg in config.agents
             )
         )
 
