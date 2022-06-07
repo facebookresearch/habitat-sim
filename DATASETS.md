@@ -154,6 +154,41 @@ The exported `*.glb` files can directly be used with Habitat-Sim versions >= 2.0
 
 Note: Depending on the configured radius and height of the agent, certain scans may have no navigable locations on the navmesh (~200). These scenes can be filtered out by checking if `sim.pathfinder.is_loaded` is False.
 
+## YCB Benchmarks - Object and Model Set
+Details: [https://www.ycbbenchmarks.com/](https://www.ycbbenchmarks.com/).
+
+> YCB Object and Model Set is designed for facilitating benchmarking in robotic manipulation... The set is associated with a [model database](http://www.ycbbenchmarks.com/object-models/) which provides mesh models and high-resolution RGB-D scans of the objects for easy incorporation into manipulation and planning software platforms.
+
+Pre-processed, [Habitat-ready assets](https://dl.fbaipublicfiles.com/habitat/ycb/hab_ycb_v1.2.zip).
+
+Quick-start with the dataset_downloader utility:
+
+```
+# with conda install
+python -m habitat_sim.utils.datasets_download --uids ycb --data-path /path/to/data/
+
+# with source
+python /path/to/habitat_sim/src_python/habitat_sim/utils/datasets_download.py --uids ycb --data-path /path/to/data/
+```
+
+Load the assets in python by setting [MetadataMediator.active_dataset](https://aihabitat.org/docs/habitat-sim/habitat_sim.metadata.MetadataMediator.html#active_dataset):
+```
+#load the full YCB dataset into the MetadataMediator
+sim.metadata_mediator.active_dataset = "/path/to/data/objects/ycb/ycb.scene_dataset_config.json"
+
+#then instance objects from the ObjectAttributesManager:
+chef_can_key = sim.get_object_template_manager().get_file_template_handles("002_master_chef_can")[0]
+chef_can_object = sim.get_rigid_object_manager().add_object_by_template_handle(chef_can_key)
+```
+For more information on using objects in habitat-sim, see the "Habitat-Sim for Interaction" and "Habitat-Sim Advanced Topics" sections of our [ECCV tutorial series](https://aihabitat.org/tutorial/2020/).
+
+To quickly test in the viewer application:
+```
+#from the habitat-sim directory
+./build/viewer --stage-requires-lighting --enable-physics --object-dir ""  --dataset data/objects/ycb/ycb.scene_dataset_config.json -- data/test_assets/scenes/simple_room.glb
+```
+Then press `'o'` key to add random objects from the dataset.
+
 # Previewing dataset assets using  Habitat-Sim's viewers
 
 For datasets with scene dataset configuration support (such as HM3D, ReplicaCAD, MP3D, Gibson, etc) you can preview the assets using one of Habitat's command-line driven viewers, either in c++ or python. When launching the viewer, you should specify not only the desired scene to load, but also the specifying the scene dataset configuration file, to guarantee the assets load and display correctly.  This has the added benefit of providing quick access to other scenes in the same dataset, without requiring a reload of the entire simulation environment from the command line.
