@@ -29,7 +29,7 @@ The RLRAudioPropagationConfiguration() exposes various configuration options tha
 | updateDt | float | 0.02f | Simulation time step |
 | irTime | float | 4.f | Maximum render time budget for the audio simulation |
 | unitScale | float | 1.f | Unit scale for the scene. Mesh and positions are multiplied by this factor |
-| globalVolume | float | 4.f | Total initial pressure value |
+| globalVolume | float | 0.25f | Total initial pressure value |
 | indirectRayCount | int | 5000 | Number of indirect rays that the ray tracer will use |
 | indirectRayDepth | int | 200 | Maximum depth of each indirect ray cast by the ray tracer |
 | sourceRayCount | int | 200 | Number of direct rays that the ray tracer will use |
