@@ -128,15 +128,7 @@ Once you have the habitat zip archive, you should download [this SceneDatasetCon
 
 ## Replica Dataset
 
-Details and download: [https://github.com/facebookresearch/Replica-Dataset](https://github.com/facebookresearch/Replica-Dataset).
-
-To work with the Replica dataset, you need a file called ```sorted_faces.bin``` for each model. Such files (1 file per model), along with a convenient setup script can be downloaded from here: [sorted_faces.zip](http://dl.fbaipublicfiles.com/habitat/sorted_faces.zip). You need:
-```
-  - Download the file from the above link;
-  - Unzip it;
-  - Use the script within to copy each data file to its corresponding folder (You will have to provide the path to the folder containing all replica models. For example, ~/models/replica/);
-```
-Note: To obtain the best rendering results, use the `<path to replica>/<scene_name>/mesh.ply` to load the PTex mesh.
+Details and download isntructions: [https://github.com/facebookresearch/Replica-Dataset](https://github.com/facebookresearch/Replica-Dataset).
 
 ## ReplicaCAD
 
