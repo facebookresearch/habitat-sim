@@ -1,4 +1,4 @@
-find_package(MagnumPlugins REQUIRED CgltfImporter StbImageImporter StbImageConverter)
+find_package(MagnumPlugins REQUIRED GltfImporter StbImageImporter StbImageConverter)
 
 set(ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH ./data/default.physics_config.json)
 set(ESP_DEFAULT_PHYSICS_CONFIG
@@ -46,7 +46,7 @@ target_link_libraries(
   PUBLIC core
          scene
          assets
-         MagnumPlugins::CgltfImporter
+         MagnumPlugins::GltfImporter
          MagnumPlugins::StbImageImporter
          MagnumPlugins::StbImageConverter
 )
