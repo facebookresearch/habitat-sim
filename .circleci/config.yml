@@ -436,9 +436,11 @@ jobs:
               cd ..
               if [ ! -d ./habitat-lab ]
               then
-                git clone -q --depth 1 https://github.com/facebookresearch/habitat-lab.git
+                git clone -q https://github.com/facebookresearch/habitat-lab.git
               fi
               cd habitat-lab
+              git fetch --all
+              git checkout --track origin/ycb-v1.2
               pip install -r requirements.txt --progress-bar off
               ln -s ../habitat-sim/data data
               touch ~/miniconda/pip_deps_installed
