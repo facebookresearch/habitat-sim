@@ -21,7 +21,7 @@
 #   This file is part of Magnum.
 #
 #   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019,
-#               2020 Vladimír Vondruš <mosra@centrum.cz>
+#               2020, 2021, 2022 Vladimír Vondruš <mosra@centrum.cz>
 #   Copyright © 2016 Jonathan Hale <squareys@googlemail.com>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -87,6 +87,8 @@ if(CORRADE_TARGET_WINDOWS)
             set(_GLFW_LIBRARY_PATH_SUFFIX lib-vc2017)
         elseif(MSVC_VERSION VERSION_LESS 1930)
             set(_GLFW_LIBRARY_PATH_SUFFIX lib-vc2019)
+        elseif(MSVC_VERSION VERSION_LESS 1940)
+            set(_GLFW_LIBRARY_PATH_SUFFIX lib-vc2022)
         else()
             message(FATAL_ERROR "Unsupported MSVC version")
         endif()

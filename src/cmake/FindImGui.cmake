@@ -36,7 +36,7 @@
 #   This file is part of Magnum.
 #
 #   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019,
-#               2020 Vladimír Vondruš <mosra@centrum.cz>
+#               2020, 2021, 2022 Vladimír Vondruš <mosra@centrum.cz>
 #   Copyright © 2018 Jonathan Hale <squareys@googlemail.com>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -59,11 +59,18 @@
 #
 
 # In 1.71 ImGui depends on the ApplicationServices framework for macOS
-# clipboard support. It's removed again in 1.72. TODO: remove once obsolete
+# clipboard support. Since 1.72 the dependency is optional and used only if
+# IMGUI_ENABLE_OSX_DEFAULT_CLIPBOARD_FUNCTIONS is enabled, but link to it
+# always to be nice to users.
 if(CORRADE_TARGET_APPLE)
     find_library(_IMGUI_ApplicationServices_LIBRARY ApplicationServices)
     mark_as_advanced(_IMGUI_ApplicationServices_LIBRARY)
     set(_IMGUI_EXTRA_LIBRARIES ${_IMGUI_ApplicationServices_LIBRARY})
+
+# Since 1.82, ImGui on MinGW needs the imm32 library. For MSVC the library
+# seems to be linked implicitly so this is not needed.
+elseif(CORRADE_TARGET_WINDOWS AND CORRADE_TARGET_MINGW)
+    set(_IMGUI_EXTRA_LIBRARIES imm32)
 endif()
 
 # Vcpkg distributes imgui as a library with a config file, so try that first --
@@ -75,7 +82,6 @@ endif()
 if(NOT IMGUI_DIR AND TARGET imgui::imgui)
     if(NOT TARGET ImGui::ImGui)
         add_library(ImGui::ImGui INTERFACE IMPORTED)
-        # TODO: remove once 1.71 is obsolete
         set_property(TARGET ImGui::ImGui APPEND PROPERTY
             INTERFACE_LINK_LIBRARIES imgui::imgui ${_IMGUI_EXTRA_LIBRARIES})
 
@@ -104,7 +110,6 @@ else()
         add_library(ImGui::ImGui INTERFACE IMPORTED)
         set_property(TARGET ImGui::ImGui APPEND PROPERTY
             INTERFACE_INCLUDE_DIRECTORIES ${ImGui_INCLUDE_DIR})
-        # TODO: remove once 1.71 is obsolete
         if(_IMGUI_EXTRA_LIBRARIES)
             set_property(TARGET ImGui::ImGui APPEND PROPERTY
                 INTERFACE_LINK_LIBRARIES ${_IMGUI_EXTRA_LIBRARIES})
@@ -129,13 +134,13 @@ macro(_imgui_setup_source_file source_var)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR (CMAKE_CXX_COMPILER_ID MATCHES "(Apple)?Clang"
         AND NOT CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC") OR CORRADE_TARGET_EMSCRIPTEN)
         set_property(SOURCE ${${source_var}} APPEND_STRING PROPERTY COMPILE_FLAGS
-            " -Wno-old-style-cast -Wno-zero-as-null-pointer-constant")
+            " -Wno-old-style-cast")
     endif()
 
     # GCC-specific flags
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         set_property(SOURCE ${${source_var}} APPEND_STRING PROPERTY COMPILE_FLAGS
-            " -Wno-double-promotion")
+            " -Wno-double-promotion -Wno-zero-as-null-pointer-constant")
     endif()
 
     mark_as_advanced(${source_var})
@@ -154,13 +159,32 @@ foreach(_component IN LISTS ImGui_FIND_COMPONENTS)
                 # toolchains.
                 find_file(ImGui_${_file}_SOURCE NAMES ${_file}.cpp
                     HINTS ${IMGUI_DIR} NO_CMAKE_FIND_ROOT_PATH)
-                list(APPEND ImGui_SOURCES ${ImGui_${_file}_SOURCE})
 
                 if(NOT ImGui_${_file}_SOURCE)
                     set(ImGui_Sources_FOUND FALSE)
                     break()
                 endif()
 
+                list(APPEND ImGui_SOURCES ${ImGui_${_file}_SOURCE})
+                _imgui_setup_source_file(ImGui_${_file}_SOURCE)
+            endforeach()
+
+            # Files not present in all ImGui versions, treat them as optional
+            # and do nothing if not found.
+            # - imgui_tables added in https://github.com/ocornut/imgui/commit/9874077fc0e364383ef997e3d4332172bfddc0b9
+            foreach(_file imgui_tables)
+                # Disable the find root path here, it overrides the
+                # CMAKE_FIND_ROOT_PATH_MODE_INCLUDE setting potentially set in
+                # toolchains.
+                find_file(ImGui_${_file}_SOURCE NAMES ${_file}.cpp
+                    HINTS ${IMGUI_DIR} NO_CMAKE_FIND_ROOT_PATH)
+
+                if(NOT ImGui_${_file}_SOURCE)
+                    mark_as_advanced(ImGui_${_file}_SOURCE)
+                    continue()
+                endif()
+
+                list(APPEND ImGui_SOURCES ${ImGui_${_file}_SOURCE})
                 _imgui_setup_source_file(ImGui_${_file}_SOURCE)
             endforeach()
 

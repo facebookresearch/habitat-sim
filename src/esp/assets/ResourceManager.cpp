@@ -130,7 +130,6 @@ ResourceManager::~ResourceManager() {
 
 void ResourceManager::buildImporters() {
   // Preferred plugins, Basis target GPU format
-  importerManager_.setPreferredPlugins("GltfImporter", {"CgltfImporter"});
 #ifdef ESP_BUILD_ASSIMP_SUPPORT
   importerManager_.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
   Cr::PluginManager::PluginMetadata* const assimpmetadata =
