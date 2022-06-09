@@ -171,7 +171,7 @@ void AudioSensor::setAudioMaterialsJSON(const std::string& jsonPath) {
 }
 
 const std::vector<std::vector<float>>& AudioSensor::getIR() {
-  if (impulseResponse_.size() == 0) {
+  if (impulseResponse_.empty()) {
     ObservationSpace obsSpace;
     getObservationSpace(obsSpace);
 
