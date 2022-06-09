@@ -6,6 +6,25 @@ conda install -c conda-forge doxygen==1.8.16
 conda install jinja2 pygments docutils
 ```
 
+To build the docs, you will also need to install the following
+packages on Linux :
+```
+sudo apt install --allow-change-held-packages \
+                  texlive-base \
+                  texlive-latex-extra \
+                  texlive-fonts-extra \
+                  texlive-fonts-recommended
+```
+or on OSX :
+```
+brew install --cask mactex
+```
+__Note__: You might also need to run the following command
+as suggested by [this page](https://mcss.mosra.cz/plugins/math-and-code/#math)
+```
+export PATH=$PATH:/Library/TeX/Distributions/.DefaultTeX/Contents/Programs/texbin
+```
+
 ### Building Docs:
 ```bash
 python setup.py install
