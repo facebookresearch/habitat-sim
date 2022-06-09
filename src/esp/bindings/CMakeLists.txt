@@ -36,6 +36,14 @@ target_link_libraries(
          sim
 )
 
+if(BUILD_WITH_AUDIO)
+  add_custom_command(
+    TARGET habitat_sim_bindings POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RLRAudioPropagation_LIBRARY}
+            $<TARGET_FILE_DIR:habitat_sim_bindings>
+  )
+endif()
+
 # target_include_directories(environment
 #   PUBLIC
 #     ${CMAKE_CURRENT_LIST_DIR}

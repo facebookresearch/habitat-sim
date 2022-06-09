@@ -163,6 +163,15 @@ Use "CMAKE_ARGS="..." pip install ." to set cmake args with pip""",
         help="Wether or not to build the basis compressor."
         "  Loading basis compressed meshes does NOT require this.",
     )
+
+    parser.add_argument(
+        "--audio",
+        action="store_true",
+        default=str2bool(os.environ.get("WITH_AUDIO", "False")),
+        dest="with_audio",
+        help="Build with audio features enabled.",
+    )
+
     return parser
 
 
@@ -336,6 +345,9 @@ class CMakeBuild(build_ext):
             "-DBUILD_BASIS_COMPRESSOR={}".format(
                 "ON" if args.build_basis_compressor else "OFF"
             )
+        ]
+        cmake_args += [
+            "-DBUILD_WITH_AUDIO={}".format("ON" if args.with_audio else "OFF")
         ]
 
         env = os.environ.copy()

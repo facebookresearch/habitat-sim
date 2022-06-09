@@ -8,6 +8,8 @@
 #   with existing code
 
 from habitat_sim._ext.habitat_sim_bindings import (
+    AudioSensor,
+    AudioSensorSpec,
     CameraSensor,
     CameraSensorSpec,
     ConfigStoredType,
@@ -25,6 +27,8 @@ from habitat_sim._ext.habitat_sim_bindings import (
     MultiGoalShortestPath,
     PathFinder,
     RigidState,
+    RLRAudioPropagationChannelLayout,
+    RLRAudioPropagationConfiguration,
     SceneGraph,
     SceneNode,
     SceneNodeType,
@@ -39,6 +43,7 @@ from habitat_sim._ext.habitat_sim_bindings import Simulator as SimulatorBackend
 from habitat_sim._ext.habitat_sim_bindings import (
     SimulatorConfiguration,
     VisualSensorSpec,
+    audio_enabled,
     built_with_bullet,
     cuda_enabled,
     vhacd_enabled,

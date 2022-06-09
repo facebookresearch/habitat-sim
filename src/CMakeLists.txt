@@ -67,6 +67,7 @@ option(
   "Wether or not to build the basis compressor.  Loading basis compressed meshes does NOT require this."
   OFF
 )
+option(BUILD_WITH_AUDIO "Build Habitat-Sim with Audio sensor" OFF)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)

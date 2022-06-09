@@ -90,6 +90,14 @@ if(BUILD_WITH_VHACD)
   add_subdirectory("${DEPS_DIR}/v-hacd/src/VHACD_Lib")
 endif()
 
+# audio
+if(BUILD_WITH_AUDIO)
+  find_library(
+    RLRAudioPropagation_LIBRARY RLRAudioPropagation
+    PATHS ${DEPS_DIR}/rlr-audio-propagation/RLRAudioPropagationPkg/libs/linux/x64
+  )
+endif()
+
 # recast
 set(RECASTNAVIGATION_DEMO OFF CACHE BOOL "RECASTNAVIGATION_DEMO" FORCE)
 set(RECASTNAVIGATION_TESTS OFF CACHE BOOL "RECASTNAVIGATION_TESTS" FORCE)
