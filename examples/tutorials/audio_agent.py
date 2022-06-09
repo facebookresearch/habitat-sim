@@ -33,70 +33,68 @@ def main():
 
     cfg = habitat_sim.Configuration(backend_cfg, [agent_config])
 
-    sim = habitat_sim.Simulator(cfg)
+    with habitat_sim.Simulator(cfg) as sim:
 
-    # create the acoustic configs
-    acoustics_config = hsim_bindings.RLRAudioPropagationConfiguration()
-    acoustics_config.enableMaterials = True
+        # create the acoustic configs
+        acoustics_config = hsim_bindings.RLRAudioPropagationConfiguration()
+        acoustics_config.enableMaterials = True
 
-    # create channel layout
-    channel_layout = hsim_bindings.RLRAudioPropagationChannelLayout()
-    channel_layout.channelType = (
-        hsim_bindings.RLRAudioPropagationChannelLayoutType.Binaural
-    )
-    channel_layout.channelCount = 2
+        # create channel layout
+        channel_layout = hsim_bindings.RLRAudioPropagationChannelLayout()
+        channel_layout.channelType = (
+            hsim_bindings.RLRAudioPropagationChannelLayoutType.Binaural
+        )
+        channel_layout.channelCount = 2
 
-    # create the Audio sensor specs, assign the acoustics_config and the channel_layout.
-    # note that the outputDirectory should already exist for each iteration step.
-    # for the example below, folders /home/AudioSimulation0, /home/AudioSimulation1 ... should
-    # exist based on the number of iterations
-    audio_sensor_spec = habitat_sim.AudioSensorSpec()
-    audio_sensor_spec.uuid = "audio_sensor"
-    audio_sensor_spec.outputDirectory = "/tmp/AudioSimulation"
-    audio_sensor_spec.acousticsConfig = acoustics_config
-    audio_sensor_spec.channelLayout = channel_layout
+        # create the Audio sensor specs, assign the acoustics_config and the channel_layout.
+        # note that the outputDirectory should already exist for each iteration step.
+        # for the example below, folders /home/AudioSimulation0, /home/AudioSimulation1 ... should
+        # exist based on the number of iterations
+        audio_sensor_spec = habitat_sim.AudioSensorSpec()
+        audio_sensor_spec.uuid = "audio_sensor"
+        audio_sensor_spec.outputDirectory = "/tmp/AudioSimulation"
+        audio_sensor_spec.acousticsConfig = acoustics_config
+        audio_sensor_spec.channelLayout = channel_layout
 
-    # add the audio sensor
-    sim.add_sensor(audio_sensor_spec)
+        # add the audio sensor
+        sim.add_sensor(audio_sensor_spec)
 
-    # Get the audio sensor object
-    audio_sensor = sim.get_agent(0)._sensors["audio_sensor"]
+        # Get the audio sensor object
+        audio_sensor = sim.get_agent(0)._sensors["audio_sensor"]
 
-    # set audio source location, no need to set the agent location, will be set implicitly
-    audio_sensor.setAudioSourceTransform(np.array([3.1035, 1.57245, -4.15972]))
+        # set audio source location, no need to set the agent location, will be set implicitly
+        audio_sensor.setAudioSourceTransform(np.array([3.1035, 1.57245, -4.15972]))
 
-    # optionally, set the audio materials json
-    audio_sensor.setAudioMaterialsJSON(
-        "src/deps/rlr-audio-propagation/RLRAudioPropagationPkg/data/mp3d_material_config.json"
-    )
+        # optionally, set the audio materials json
+        audio_sensor.setAudioMaterialsJSON(
+            "src/deps/rlr-audio-propagation/RLRAudioPropagationPkg/data/mp3d_material_config.json"
+        )
 
-    # run the simulation, currently only 1 iteration is run
-    for i in range(1):
-        print(i)
-        print("Start Time : ")
-        printTime()
-        obs = sim.get_sensor_observations()["audio_sensor"]
+        # run the simulation, currently only 1 iteration is run
+        for i in range(1):
+            print(i)
+            print("Start Time : ")
+            printTime()
+            obs = sim.get_sensor_observations()["audio_sensor"]
 
-        # optional - print the audio observations or write them to the desired location
-        print(obs)
+            # optional - print the audio observations or write them to the desired location
+            print(obs)
 
-        # optional - write the observations to a file, make sure the folder path p (below) exists
-        # p = audio_sensor_spec.outputDirectory + str(i) + "/ir"
+            # optional - write the observations to a file, make sure the folder path p (below) exists
+            # p = audio_sensor_spec.outputDirectory + str(i) + "/ir"
 
-        # for channelIndex in range(0, len(obs)):
-        #     filePath = p + str(channelIndex) + ".txt"
-        #     f = open(filePath, "w")
-        #     print("Writing file : ", filePath)
-        #     for sampleIndex in range(0, len(obs[channelIndex])):
-        #         f.write(
-        #             str(sampleIndex) + "\t" + str(obs[channelIndex][sampleIndex]) + "\n"
-        #         )
-        #     f.close()
+            # for channelIndex in range(0, len(obs)):
+            #     filePath = p + str(channelIndex) + ".txt"
+            #     f = open(filePath, "w")
+            #     print("Writing file : ", filePath)
+            #     for sampleIndex in range(0, len(obs[channelIndex])):
+            #         f.write(
+            #             str(sampleIndex) + "\t" + str(obs[channelIndex][sampleIndex]) + "\n"
+            #         )
+            #     f.close()
 
-        print("End Time : ")
-        printTime()
-
-    sim.close()
+            print("End Time : ")
+            printTime()
 
 
 if __name__ == "__main__":
