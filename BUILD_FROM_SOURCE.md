@@ -86,6 +86,13 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
    python setup.py install --bullet    # build habitat with bullet physics
    ```
 
+   With audio sensor via [rlr-audio-propagation](https://github.com/facebookresearch/rlr-audio-propagation/):
+   To use Audio sensors, enable the audio flag via:
+
+   ```bash
+   python setup.py install --audio    # build habitat with audio sensor
+   ```
+
    Note1: Build flags stack, *e.g.* to build in headless mode, with CUDA, and bullet, one would use `--headless --with-cuda --bullet`.
 
    Note2: some Linux distributions might require an additional `--user` flag to deal with permission issues.
