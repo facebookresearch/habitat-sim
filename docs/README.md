@@ -26,7 +26,7 @@ export PATH=$PATH:/Library/TeX/Distributions/.DefaultTeX/Contents/Programs/texbi
 ```
 
 ### Building Docs:
-You might need to add habitat-sim to your path before you can buil.
+You might need to add habitat-sim to your path before you can build.
 Run this command from the habitat-sim repository:
 ```
 export PYTHONPATH=$PWD/src_python:$PYTHONPATH
