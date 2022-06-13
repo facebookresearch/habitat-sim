@@ -4,6 +4,7 @@ The C++ Audio sensor class uses the [RLRAudioPropagation](https://github.com/fac
 
 The C++ implementation is exposed for python users via pybind11. This document explains the various python APIs, structs, and enums. Also see the relevant [Habitat-sim python API](https://aihabitat.org/docs/habitat-sim/classes.html) doc pages.
 
+Please refer to the [BUILD_FROM_SOURCE](https://github.com/facebookresearch/habitat-sim/blob/main/BUILD_FROM_SOURCE.md) doc for information on how to build habitat with the audio sensor. This feature was added as part of the following PR : https://github.com/facebookresearch/habitat-sim/pull/1646
 
 ## List of sections
 - [Acoustics configuration - RLRAudioPropagationConfiguration()](#acoustics-configuration)
