@@ -26,7 +26,6 @@ export PATH=$PATH:/Library/TeX/Distributions/.DefaultTeX/Contents/Programs/texbi
 ```
 
 ### Building Docs:
-
 ```bash
 python setup.py install
 cd docs
