@@ -423,7 +423,6 @@ jobs:
               # Rebuild with all options enabled
               ./build.sh --with-cuda --with-bullet --vhacd
               # Add habitat-sim to the python path
-              export PYTHONPATH=$PWD/src_python:$PYTHONPATH
               cd docs
               git submodule update --init
               ./build-public.sh
