@@ -422,7 +422,6 @@ jobs:
 
               # Rebuild with all options enabled
               ./build.sh --with-cuda --with-bullet --vhacd
-              # Add habitat-sim to the python path
               cd docs
               git submodule update --init
               ./build-public.sh
