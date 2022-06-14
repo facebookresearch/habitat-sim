@@ -1,0 +1,18 @@
+{
+    "render_asset": "primitive_half_torus_D.glb",
+    "up": [
+        0.0,
+        1.0,
+        0.0
+    ],
+    "front": [
+        0.0,
+        0.0,
+        -1.0
+    ],
+    "COM": [
+        0,
+        0,
+        0
+    ]
+}
