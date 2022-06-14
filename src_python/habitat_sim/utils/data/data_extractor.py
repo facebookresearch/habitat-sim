@@ -262,6 +262,7 @@ class ImageExtractor:
             "color_sensor": True,  # RGBA sensor
             "semantic_sensor": True,  # Semantic sensor
             "depth_sensor": True,  # Depth sensor
+            "audio_sensor": False,  # Audio sensor
             "silent": True,
         }
 
@@ -298,6 +299,13 @@ class ImageExtractor:
             semantic_sensor_spec.position = [0.0, settings["sensor_height"], 0.0]
             semantic_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
             sensor_specs.append(semantic_sensor_spec)
+
+        if settings["audio_sensor"]:
+            audio_sensor_spec = habitat_sim.AudioSensorSpec()
+            audio_sensor_spec.uuid = "audio_sensor"
+            audio_sensor_spec.sensor_type = habitat_sim.SensorType.AUDIO
+            audio_sensor_spec.position = [0.0, settings["sensor_height"], 0.0]
+            sensor_specs.append(audio_sensor_spec)
 
         # create agent specifications
         agent_cfg = AgentConfiguration()

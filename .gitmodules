@@ -49,3 +49,6 @@
 [submodule "src/deps/openexr"]
 	path = src/deps/openexr
 	url = https://github.com/AcademySoftwareFoundation/openexr
+[submodule "src/deps/rlr-audio-propagation"]
+	path = src/deps/rlr-audio-propagation
+	url = https://github.com/facebookresearch/rlr-audio-propagation

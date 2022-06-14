@@ -128,15 +128,7 @@ Once you have the habitat zip archive, you should download [this SceneDatasetCon
 
 ## Replica Dataset
 
-Details and download: [https://github.com/facebookresearch/Replica-Dataset](https://github.com/facebookresearch/Replica-Dataset).
-
-To work with the Replica dataset, you need a file called ```sorted_faces.bin``` for each model. Such files (1 file per model), along with a convenient setup script can be downloaded from here: [sorted_faces.zip](http://dl.fbaipublicfiles.com/habitat/sorted_faces.zip). You need:
-```
-  - Download the file from the above link;
-  - Unzip it;
-  - Use the script within to copy each data file to its corresponding folder (You will have to provide the path to the folder containing all replica models. For example, ~/models/replica/);
-```
-Note: To obtain the best rendering results, use the `<path to replica>/<scene_name>/mesh.ply` to load the PTex mesh.
+Details and download isntructions: [https://github.com/facebookresearch/Replica-Dataset](https://github.com/facebookresearch/Replica-Dataset).
 
 ## ReplicaCAD
 
@@ -153,6 +145,43 @@ assimp export <PLY FILE> <GLB PATH>
 The exported `*.glb` files can directly be used with Habitat-Sim versions >= 2.0.
 
 Note: Depending on the configured radius and height of the agent, certain scans may have no navigable locations on the navmesh (~200). These scenes can be filtered out by checking if `sim.pathfinder.is_loaded` is False.
+
+## YCB Benchmarks - Object and Model Set
+Details: [https://www.ycbbenchmarks.com/](https://www.ycbbenchmarks.com/).
+
+> YCB Object and Model Set is designed for facilitating benchmarking in robotic manipulation... The set is associated with a [model database](http://www.ycbbenchmarks.com/object-models/) which provides mesh models and high-resolution RGB-D scans of the objects for easy incorporation into manipulation and planning software platforms.
+
+Pre-processed, [Habitat-ready assets](https://dl.fbaipublicfiles.com/habitat/ycb/hab_ycb_v1.2.zip).
+
+Quick-start with the dataset_downloader utility:
+
+```
+# with conda install
+python -m habitat_sim.utils.datasets_download --uids ycb --data-path /path/to/data/
+
+# with source
+python /path/to/habitat_sim/src_python/habitat_sim/utils/datasets_download.py --uids ycb --data-path /path/to/data/
+```
+
+Load the assets in python by setting [MetadataMediator.active_dataset](https://aihabitat.org/docs/habitat-sim/habitat_sim.metadata.MetadataMediator.html#active_dataset):
+```
+#load the full YCB dataset into the MetadataMediator
+sim.metadata_mediator.active_dataset = "/path/to/data/objects/ycb/ycb.scene_dataset_config.json"
+
+#then instance objects from the ObjectAttributesManager:
+chef_can_key = sim.get_object_template_manager().get_file_template_handles("002_master_chef_can")[0]
+chef_can_object = sim.get_rigid_object_manager().add_object_by_template_handle(chef_can_key)
+```
+For more information on using objects in habitat-sim, see the "Habitat-Sim for Interaction" and "Habitat-Sim Advanced Topics" sections of our [ECCV tutorial series](https://aihabitat.org/tutorial/2020/).
+
+To quickly test in the viewer application:
+```
+#from the habitat-sim directory
+# C++
+# ./build/viewer if compiling locally
+habitat-viewer --stage-requires-lighting --enable-physics --object-dir ""  --dataset data/objects/ycb/ycb.scene_dataset_config.json -- data/test_assets/scenes/simple_room.glb
+```
+Then press `'o'` key to add random objects from the dataset.
 
 # Previewing dataset assets using  Habitat-Sim's viewers
 

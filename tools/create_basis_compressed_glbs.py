@@ -16,7 +16,7 @@ TOOL_PATH = osp.realpath(
     osp.join(
         osp.dirname(__file__),
         "..",
-        "src/deps/magnum-plugins/src/MagnumPlugins/CgltfImporter/Test",
+        "src/deps/magnum-plugins/src/MagnumPlugins/GltfImporter/Test",
     )
 )
 

@@ -1,6 +1,6 @@
 {
   "name": "habitat-sim",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "A high performance simulator for training embodied agents",
   "devDependencies": {
     "@babel/core": "^7.6.0",

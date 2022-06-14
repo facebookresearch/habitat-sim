@@ -327,7 +327,7 @@ jobs:
     machine:
       # Available images:
       # https://circleci.com/docs/2.0/configuration-reference/#available-linux-gpu-images
-      image: ubuntu-1604:202104-01
+      image: ubuntu-2004:202201-02
     resource_class: xlarge
     steps:
       - checkout:
@@ -340,7 +340,7 @@ jobs:
           name: Install clang-tidy
           command: |
               # Bellow is only needed for Ubuntu 20
-              # sudo apt-key adv --fetch-keys "https://apt.llvm.org/llvm-snapshot.gpg.key"
+              sudo apt-key adv --fetch-keys "https://apt.llvm.org/llvm-snapshot.gpg.key"
               sudo add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-12 main"
               sudo apt-get update -y || true
               sudo apt-get install -y clang-tidy-12
@@ -580,6 +580,18 @@ jobs:
               . ~/emsdk/emsdk_env.sh
               # Generate JS CodeConv
               npm run test_with_coverage
+      -  run:
+          name: Build, install habitat-sim with audio and run audio_agent script
+          no_output_timeout: 10m
+          command: |
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat;
+              cd habitat-sim
+              pip install -r requirements.txt --progress-bar off
+              pip install imageio imageio-ffmpeg
+              git submodule update --init --recursive --jobs 8
+              python -u setup.py install --build-type "Release" --lto --headless --audio
+              python examples/tutorials/audio_agent.py
       - save_cache:
           key: ccache-{{ arch }}-{{ .Branch }}-{{ .BuildNum }}
           background: true

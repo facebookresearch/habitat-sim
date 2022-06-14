@@ -6,7 +6,7 @@
 
 import builtins
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 
 if not getattr(builtins, "__HSIM_SETUP__", False):
     # TODO: kept only for compatibiliy with existing code. Please gradually remove
@@ -60,6 +60,7 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         SceneNode,
         SceneNodeType,
         SimulatorConfiguration,
+        audio_enabled,
         built_with_bullet,
         cuda_enabled,
         vhacd_enabled,
@@ -76,12 +77,16 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
     )
     from habitat_sim.registry import registry
     from habitat_sim.sensor import (
+        AudioSensor,
+        AudioSensorSpec,
         CameraSensorSpec,
         EquirectangularSensor,
         EquirectangularSensorSpec,
         FisheyeSensorDoubleSphereSpec,
         FisheyeSensorModelType,
         FisheyeSensorSpec,
+        RLRAudioPropagationChannelLayout,
+        RLRAudioPropagationConfiguration,
         Sensor,
         SensorFactory,
         SensorSpec,
