@@ -382,12 +382,12 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("physicsConfigFile", &SimulatorConfiguration::physicsConfigFile)
       .property("createRenderer", &SimulatorConfiguration::createRenderer)
       .property("enableGfxReplaySave",
-                &SimulatorConfiguration::enableGfxReplaySave);
+                &SimulatorConfiguration::enableGfxReplaySave)
       .property("sceneDatasetConfigFile",
                 &SimulatorConfiguration::sceneDatasetConfigFile)
       .property("overrideSceneLightDefaults",
                 &SimulatorConfiguration::overrideSceneLightDefaults)
-      .property("sceneLightSetup", &SimulatorConfiguration::sceneLightSetup)
+      .property("sceneLightSetup", &SimulatorConfiguration::sceneLightSetupKey)
       .property("allowPbrShader", &SimulatorConfiguration::allowPbrShader);
 
   em::class_<AgentState>("AgentState")

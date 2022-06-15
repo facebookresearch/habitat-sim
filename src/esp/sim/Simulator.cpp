@@ -117,11 +117,10 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
   // assign MM to RM on create or reconfigure
   if (!resourceManager_) {
-    assets::ResourceManager::Flags flags =
-        cfg.allowPbrShader ? assets::ResourceManager::Flags()
-                           : assets::ResourceManager::Flag::BuildPhongFromPbr;
+    assets::ResourceManager::Flags flags{};
     if (cfg.pbrImageBasedLighting) {
       flags |= assets::ResourceManager::Flag::PbrImageBasedLighting;
+    }
     resourceManager_ =
         std::make_unique<assets::ResourceManager>(metadataMediator_, flags);
     // needs to be called after ResourceManager exists but before any assets
