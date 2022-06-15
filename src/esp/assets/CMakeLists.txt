@@ -39,7 +39,7 @@ find_package(
   MagnumPlugins
   REQUIRED
   BasisImporter
-  CgltfImporter
+  GltfImporter
   PrimitiveImporter
   StanfordImporter
   StbImageImporter
@@ -73,7 +73,7 @@ target_link_libraries(
          Magnum::Trade
          Magnum::Primitives
          MagnumPlugins::BasisImporter
-         MagnumPlugins::CgltfImporter
+         MagnumPlugins::GltfImporter
          MagnumPlugins::PrimitiveImporter
          MagnumPlugins::StanfordImporter
          MagnumPlugins::StbImageImporter

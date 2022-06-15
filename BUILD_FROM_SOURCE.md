@@ -86,12 +86,20 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
    python setup.py install --bullet    # build habitat with bullet physics
    ```
 
+   With audio sensor via [rlr-audio-propagation](https://github.com/facebookresearch/rlr-audio-propagation/):
+   To use Audio sensors (Linux only), enable the audio flag via:
+
+   ```bash
+   python setup.py install --audio    # build habitat with audio sensor
+   ```
+
    Note1: Build flags stack, *e.g.* to build in headless mode, with CUDA, and bullet, one would use `--headless --with-cuda --bullet`.
 
    Note2: some Linux distributions might require an additional `--user` flag to deal with permission issues.
 
    Note3: for active development in Habitat, you might find `./build.sh` instead of `python setup.py install` more useful.
 
+   Note4: Audio sensor is only available on Linux.
 
 1. [Only if using `build.sh`] For use with [Habitat Lab](https://github.com/facebookresearch/habitat-lab) and your own python code, add habitat-sim to your `PYTHONPATH`. For example modify your `.bashrc` (or `.bash_profile` in Mac OS X) file by adding the line:
    ```bash

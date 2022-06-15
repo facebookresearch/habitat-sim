@@ -93,6 +93,13 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       false;
 #endif
 
+  m.attr("audio_enabled") =
+#ifdef ESP_BUILD_WITH_AUDIO
+      true;
+#else
+      false;
+#endif
+
   /* This function pointer is used by ESP_CHECK(). If it's null, it
      std::abort()s, if not, it calls it to cause a Python AssertionError */
   esp::core::throwInPython = [](const char* const message) {

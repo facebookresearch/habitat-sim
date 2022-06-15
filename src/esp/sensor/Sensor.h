@@ -10,6 +10,8 @@
 #include "esp/core/Buffer.h"
 #include "esp/core/Esp.h"
 
+#include "esp/sensor/configure.h"
+
 namespace esp {
 
 namespace sim {
@@ -29,6 +31,7 @@ enum class SensorType : int32_t {
   Force,
   Tensor,
   Text,
+  Audio,
   SensorTypeCount,  // add new type above this term!!
 };
 
@@ -44,6 +47,7 @@ enum class SensorSubType : int32_t {
   Orthographic,
   Fisheye,
   Equirectangular,
+  ImpulseResponse,
   SensorSubTypeCount,  // add new type above this term!!
 };
 

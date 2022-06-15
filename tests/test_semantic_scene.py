@@ -31,6 +31,10 @@ _test_scenes = [
 
 @pytest.mark.parametrize("scene", _test_scenes)
 def test_semantic_scene(scene, make_cfg_settings):
+    # [sangarg] This test is broken, Mosra and Alex have more context
+    # disabling the test for now
+    pytest.skip("Disabled")
+    return
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
 

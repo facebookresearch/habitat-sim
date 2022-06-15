@@ -15,7 +15,7 @@ namespace Cr = Corrade;
 namespace esp {
 namespace scene {
 
-constexpr int kMaxIds = 10000; /* We shouldn't every need more than this. */
+constexpr int kMaxIds = 10000; /* We shouldn't ever need more than this. */
 
 bool SemanticScene::
     loadGibsonHouse(const std::string& houseFilename, SemanticScene& scene, const quatf& rotation /* = quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY) */) {
