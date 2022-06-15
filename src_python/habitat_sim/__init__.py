@@ -21,7 +21,6 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         metadata,
         nav,
         physics,
-        robots,
         scene,
         sensor,
         sensors,
