@@ -1,0 +1,39 @@
+<!-- Copyright (c) Facebook, Inc. and its affiliates.
+This source code is licensed under the MIT license found in the
+LICENSE file in the root directory of this source tree.-->
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Habitat VR</title>
+</head>
+
+<body>
+
+  <!-- Our Habitat VR app will find these elements by id and utilize them. -->
+  <!-- optional FPS element, for perf debugging: <div id="fps">FPS: 0</div> -->
+  <div id="status">Initialization...</div>
+  <div id="status-description"></div>
+  <div><a href="#" id="enter-vr" style="visibility:hidden">Enter VR</a></div>
+
+  <!-- These form inputs will get submitted to Mephisto. -->
+  <div>Test input<br><input name="test_input" value="hello world!" /></div>
+  <div>Head poses<br><textarea id="head_poses_input" name="head_poses_input" style="width:550px;height:250px"></textarea> </div>
+  <!-- optional log element, for easier debugging on VR headset: <div id="log">[log]</div> -->
+
+  <!-- Javascript for our Habitat VR app -->
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/webxr-polyfill@latest/build/webxr-polyfill.js"></script>
+  <script>
+    const WebXRPolyfill = window.WebXRPolyfill;
+    window.webxrpolyfill = new WebXRPolyfill();
+  </script>
+  <script src="js/WindowlessEmscriptenApplication.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/vr_demo.js"></script>
+  <script src="js/habitat_main.js"></script>
+  <script src="lib/habitat-sim-js/hsim_bindings.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,20 @@
+#@package _global_
+defaults:
+  - /mephisto/blueprint: static_task
+  - /mephisto/architect: local
+  - /mephisto/provider: mock
+mephisto:
+  blueprint:
+    data_csv: ${task_dir}/data.csv
+    task_source: ${task_dir}/server_files/habitat_vr_task.html
+    preview_source: ${task_dir}/server_files/demo_preview.html
+    extra_source_dir: ${task_dir}/server_files/habitat_vr_app
+    units_per_assignment: 1
+  task:
+    task_name: hab-vr-task
+    task_title: "Hab VR task"
+    task_description: "Interact in Habitat VR"
+    task_reward: 0.3
+    task_tags: "habitat,vr"
+    # We expect to be able to handle 300 concurrent tasks without issue
+    max_num_concurrent_units: 300
