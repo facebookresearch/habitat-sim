@@ -86,6 +86,7 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         FisheyeSensorModelType,
         FisheyeSensorSpec,
         RLRAudioPropagationChannelLayout,
+        RLRAudioPropagationChannelLayoutType,
         RLRAudioPropagationConfiguration,
         Sensor,
         SensorFactory,

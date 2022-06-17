@@ -9,7 +9,6 @@ import quaternion  # noqa: F401
 from numpy import ndarray  # noqa: F401
 
 import habitat_sim
-import habitat_sim._ext.habitat_sim_bindings as hsim_bindings
 import habitat_sim.sensor
 import habitat_sim.sim
 
@@ -36,13 +35,13 @@ def main():
     with habitat_sim.Simulator(cfg) as sim:
 
         # create the acoustic configs
-        acoustics_config = hsim_bindings.RLRAudioPropagationConfiguration()
+        acoustics_config = habitat_sim.sensor.RLRAudioPropagationConfiguration()
         acoustics_config.enableMaterials = True
 
         # create channel layout
-        channel_layout = hsim_bindings.RLRAudioPropagationChannelLayout()
+        channel_layout = habitat_sim.sensor.RLRAudioPropagationChannelLayout()
         channel_layout.channelType = (
-            hsim_bindings.RLRAudioPropagationChannelLayoutType.Binaural
+            habitat_sim.sensor.RLRAudioPropagationChannelLayoutType.Binaural
         )
         channel_layout.channelCount = 2
 
