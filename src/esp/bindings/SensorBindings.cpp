@@ -412,6 +412,7 @@ void initSensorBindings(py::module& m) {
   py::class_<AudioEmptyStubChannelLayoutClass>(
       m, "RLRAudioPropagationChannelLayout")
       .def(py::init<>());
+  m.attr("RLRAudioPropagationChannelLayoutType") = py::none();
 #endif  // ESP_BUILD_WITH_AUDIO
 
 #ifdef ESP_BUILD_WITH_AUDIO
