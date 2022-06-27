@@ -17,6 +17,7 @@ from habitat_sim._ext.habitat_sim_bindings import (
     FisheyeSensorSpec,
     Observation,
     RLRAudioPropagationChannelLayout,
+    RLRAudioPropagationChannelLayoutType,
     RLRAudioPropagationConfiguration,
     Sensor,
     SensorFactory,
@@ -49,5 +50,6 @@ __all__ = [
     "AudioSensorSpec",
     "AudioSensor",
     "RLRAudioPropagationChannelLayout",
+    "RLRAudioPropagationChannelLayoutType",
     "RLRAudioPropagationConfiguration",
 ]

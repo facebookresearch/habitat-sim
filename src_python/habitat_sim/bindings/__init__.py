@@ -28,6 +28,7 @@ from habitat_sim._ext.habitat_sim_bindings import (
     PathFinder,
     RigidState,
     RLRAudioPropagationChannelLayout,
+    RLRAudioPropagationChannelLayoutType,
     RLRAudioPropagationConfiguration,
     SceneGraph,
     SceneNode,
