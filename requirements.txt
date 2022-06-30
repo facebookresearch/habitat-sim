@@ -4,7 +4,7 @@ imageio
 imageio-ffmpeg
 matplotlib
 numba
-numpy
+numpy<=1.22
 numpy-quaternion
 pillow
 scipy>=1.3.0
