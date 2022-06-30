@@ -43,6 +43,11 @@ corrade_add_test(
   MagnumPlugins::KtxImporter
 )
 target_include_directories(BatchRendererTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+if(BUILD_WITH_CUDA)
+  target_include_directories(
+    BatchRendererTest PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
+  )
+endif()
 
 corrade_add_test(CoreTest CoreTest.cpp LIBRARIES core io)
 

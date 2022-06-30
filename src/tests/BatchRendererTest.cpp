@@ -29,6 +29,10 @@
 
 #include "esp/gfx/BatchRendererStandalone.h"
 
+#ifdef ESP_BUILD_WITH_CUDA
+#include <cuda_gl_interop.h>
+#endif
+
 #include "configure.h"
 
 namespace {
@@ -51,7 +55,7 @@ struct BatchRendererTest : Cr::TestSuite::Tester {
   void multipleScenes();
   void clearScene();
 
-  // TODO test CUDA readout (how to detect if CUDA is a thing?)
+  void cudaInterop();
 };
 
 // clang-format off
@@ -83,7 +87,9 @@ BatchRendererTest::BatchRendererTest() {
   addTests({&BatchRendererTest::multipleMeshes,
 
             &BatchRendererTest::multipleScenes,
-            &BatchRendererTest::clearScene});
+            &BatchRendererTest::clearScene,
+
+            &BatchRendererTest::cudaInterop});
   // clang-format on
 }
 
@@ -620,6 +626,72 @@ void BatchRendererTest::clearScene() {
       Cr::Utility::Path::join(
           TEST_ASSETS, "screenshots/BatchRendererTestMultipleScenes.png"),
       Mn::DebugTools::CompareImageToFile);
+}
+
+void BatchRendererTest::cudaInterop() {
+#ifndef ESP_BUILD_WITH_CUDA
+  CORRADE_SKIP("ESP_BUILD_WITH_CUDA is not enabled");
+#else
+  {
+    int count;
+    cudaGetDeviceCount(&count);
+    if (!count)
+      CORRADE_SKIP("No CUDA devices found");
+  }
+
+  /* Implicitly use device 0 */
+  // clang-format off
+  esp::gfx::BatchRendererStandalone renderer{
+      esp::gfx::BatchRendererConfiguration{}
+          .setTileSizeCount({128, 96}, {1, 1}),
+      esp::gfx::BatchRendererStandaloneConfiguration{}
+          // TODO this fails if using a GLX application and the GL device
+          //  doesn't match the CUDA device, what to do?
+          .setCudaDevice(0)
+          .setFlags(esp::gfx::BatchRendererStandaloneFlag::QuietLog)
+  };
+  // clang-format on
+
+  /* Mostly the same as singleMesh() */
+  renderer.addFile(Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch.gltf"));
+  renderer.camera(0) =
+      Mn::Matrix4::orthographicProjection(2.0f * Mn::Vector2{4.0f / 3.0f, 1.0f},
+                                          0.1f, 10.0f) *
+      Mn::Matrix4::translation(Mn::Vector3::zAxis(1.0f)).inverted();
+  renderer.add(0, "square");
+  renderer.transformations(0)[0] = Mn::Matrix4::scaling(Mn::Vector3{0.8f});
+  renderer.draw();
+
+  /* Get CUDA image pointers */
+  const void* cudaColorBuffer = renderer.colorCudaBufferDevicePointer();
+  const void* cudaDepthBuffer = renderer.depthCudaBufferDevicePointer();
+  MAGNUM_VERIFY_NO_GL_ERROR();
+
+  /* Copy them from the GPU */
+  Mn::Image2D cudaColorImage{
+      renderer.colorFramebufferFormat(),
+      {128, 96},
+      Cr::Containers::Array<char>{Cr::NoInit, 128 * 96 * 4}};
+  Mn::Image2D cudaDepthImage{
+      renderer.depthFramebufferFormat(),
+      {128, 96},
+      Cr::Containers::Array<char>{Cr::NoInit, 128 * 96 * 4}};
+  cudaMemcpy(cudaColorImage.data(), cudaColorBuffer,
+             cudaColorImage.data().size(), cudaMemcpyDeviceToHost);
+  cudaMemcpy(cudaDepthImage.data(), cudaDepthBuffer,
+             cudaDepthImage.data().size(), cudaMemcpyDeviceToHost);
+
+  /* Should be the same as what singleMesh() rendered; depth should have *some*
+     data also */
+  CORRADE_COMPARE_AS(
+      cudaColorImage,
+      Cr::Utility::Path::join(TEST_ASSETS,
+                              "screenshots/BatchRendererTestSingleMesh.png"),
+      Mn::DebugTools::CompareImageToFile);
+  CORRADE_COMPARE(cudaDepthImage.pixels<Mn::Float>()[0][0], 1.0f);
+  CORRADE_COMPARE(cudaDepthImage.pixels<Mn::Float>()[95][127], 1.0f);
+  CORRADE_COMPARE(cudaDepthImage.pixels<Mn::Float>()[64][48], 0.0909091f);
+#endif
 }
 
 }  // namespace
