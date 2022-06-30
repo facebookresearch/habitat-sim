@@ -54,6 +54,7 @@ struct BatchRendererTest : Cr::TestSuite::Tester {
   // TODO test CUDA readout (how to detect if CUDA is a thing?)
 };
 
+// clang-format off
 const struct {
   const char* name;
   esp::gfx::BatchRendererFlags flags;
@@ -66,8 +67,10 @@ const struct {
     esp::gfx::BatchRendererFlag::NoTextures, 1.0f,
     "BatchRendererTestMeshHierarchyNoTextures.png"}
 };
+// clang-format on
 
 BatchRendererTest::BatchRendererTest() {
+  // clang-format off
   addTests({&BatchRendererTest::generateTestData,
 
             &BatchRendererTest::defaults,
@@ -81,6 +84,7 @@ BatchRendererTest::BatchRendererTest() {
 
             &BatchRendererTest::multipleScenes,
             &BatchRendererTest::clearScene});
+  // clang-format on
 }
 
 #ifdef HAS_MAGNUM_GLTFSCENECONVERTER
@@ -158,6 +162,7 @@ void BatchRendererTest::generateTestData() {
      layer is a cyan, magenta, yellow and black-ish square. Having each channel
      non-zero to make it possible to distinguish "rendering broken" from
      "texture coordinates broken". */
+  // clang-format off
   Mn::Color3ub image[4*4*2] {
     0x990000_rgb, 0xcccccc_rgb, 0x990000_rgb, 0xcccccc_rgb,
     0xcccccc_rgb, 0x990000_rgb, 0xcccccc_rgb, 0x990000_rgb,
@@ -169,6 +174,7 @@ void BatchRendererTest::generateTestData() {
     0xcccc33_rgb, 0xcccc33_rgb, 0x333333_rgb, 0x333333_rgb,
     0xcccc33_rgb, 0xcccc33_rgb, 0x333333_rgb, 0x333333_rgb
   };
+  // clang-format on
   CORRADE_VERIFY(converter->add(
       Mn::ImageView3D{Mn::PixelFormat::RGB8Unorm, {4, 4, 2}, image}));
 
@@ -180,6 +186,7 @@ void BatchRendererTest::generateTestData() {
       Mn::SamplerWrapping::Repeat, 0}));
 
   /* A (default, white) material spanning the whole first texture layer */
+  // clang-format off
   CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
     {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
     {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 0u}
@@ -288,6 +295,7 @@ void BatchRendererTest::generateTestData() {
       Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::object),
       Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::meshViewMaterial)},
   }}));
+  // clang-format on
 
   CORRADE_VERIFY(converter->endFile());
 
@@ -309,12 +317,14 @@ void BatchRendererTest::generateTestData() {
 }
 
 void BatchRendererTest::defaults() {
+  // clang-format off
   esp::gfx::BatchRendererStandalone renderer{
       esp::gfx::BatchRendererConfiguration{}
           .setTileSizeCount({48, 32}, {2, 3}),
       esp::gfx::BatchRendererStandaloneConfiguration{}
           /* No QuietLog, to verify at least once that the log *is* printed */
   };
+  // clang-format on
 
   CORRADE_COMPARE(renderer.tileSize(), (Mn::Vector2i{48, 32}));
   CORRADE_COMPARE(renderer.tileCount(), (Mn::Vector2i{2, 3}));
@@ -356,12 +366,14 @@ void BatchRendererTest::defaults() {
 }
 
 void BatchRendererTest::singleMesh() {
+  // clang-format off
   esp::gfx::BatchRendererStandalone renderer{
       esp::gfx::BatchRendererConfiguration{}
           .setTileSizeCount({128, 96}, {1, 1}),
       esp::gfx::BatchRendererStandaloneConfiguration{}
           .setFlags(esp::gfx::BatchRendererStandaloneFlag::QuietLog)
   };
+  // clang-format on
 
   renderer.addFile(Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch.gltf"));
 
@@ -399,6 +411,7 @@ void BatchRendererTest::meshHierarchy() {
   auto&& data = MeshHierarchyData[testCaseInstanceId()];
   setTestCaseDescription(data.name);
 
+  // clang-format off
   esp::gfx::BatchRendererStandalone renderer{
       esp::gfx::BatchRendererConfiguration{}
           .setTileSizeCount({128, 96}, {1, 1})
@@ -406,6 +419,7 @@ void BatchRendererTest::meshHierarchy() {
       esp::gfx::BatchRendererStandaloneConfiguration{}
           .setFlags(esp::gfx::BatchRendererStandaloneFlag::QuietLog)
   };
+  // clang-format on
 
   renderer.addFile(Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch.gltf"));
 
@@ -442,12 +456,14 @@ void BatchRendererTest::meshHierarchy() {
 }
 
 void BatchRendererTest::multipleMeshes() {
+  // clang-format off
   esp::gfx::BatchRendererStandalone renderer{
       esp::gfx::BatchRendererConfiguration{}
           .setTileSizeCount({128, 96}, {1, 1}),
       esp::gfx::BatchRendererStandaloneConfiguration{}
           .setFlags(esp::gfx::BatchRendererStandaloneFlag::QuietLog)
   };
+  // clang-format on
 
   renderer.addFile(Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch.gltf"));
   renderer.camera(0) =
@@ -488,12 +504,14 @@ void BatchRendererTest::multipleMeshes() {
 }
 
 void BatchRendererTest::multipleScenes() {
+  // clang-format off
   esp::gfx::BatchRendererStandalone renderer{
       esp::gfx::BatchRendererConfiguration{}
           .setTileSizeCount({64, 48}, {2, 2}),
       esp::gfx::BatchRendererStandaloneConfiguration{}
           .setFlags(esp::gfx::BatchRendererStandaloneFlag::QuietLog)
   };
+  // clang-format on
 
   renderer.addFile(Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch.gltf"));
   renderer.camera(0) =
@@ -540,12 +558,14 @@ void BatchRendererTest::multipleScenes() {
 }
 
 void BatchRendererTest::clearScene() {
+  // clang-format off
   esp::gfx::BatchRendererStandalone renderer{
       esp::gfx::BatchRendererConfiguration{}
           .setTileSizeCount({64, 48}, {2, 2}),
       esp::gfx::BatchRendererStandaloneConfiguration{}
           .setFlags(esp::gfx::BatchRendererStandaloneFlag::QuietLog)
   };
+  // clang-format on
 
   renderer.addFile(Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch.gltf"));
   renderer.camera(0) =
