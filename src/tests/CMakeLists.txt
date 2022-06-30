@@ -1,5 +1,14 @@
 find_package(Magnum REQUIRED DebugTools AnyImageConverter)
-find_package(MagnumPlugins REQUIRED StbImageImporter)
+find_package(
+  MagnumPlugins REQUIRED StbImageImporter KtxImporter
+  OPTIONAL_COMPONENTS GltfSceneConverter KtxImageConverter
+)
+
+# If the GltfSceneConverter is present, the new Magnum SceneConverter APIs are
+# as well. Which enables a data-generating test case in BatchRendererTest.
+if(MagnumPlugins_GltfSceneConverter_FOUND)
+  set(HAS_MAGNUM_GLTFSCENECONVERTER ON)
+endif()
 
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/configure.h
@@ -24,6 +33,16 @@ corrade_add_test(
   metadata
 )
 target_include_directories(AttributesManagersTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
+corrade_add_test(
+  BatchRendererTest
+  BatchRendererTest.cpp
+  LIBRARIES
+  gfx
+  Magnum::DebugTools
+  MagnumPlugins::KtxImporter
+)
+target_include_directories(BatchRendererTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(CoreTest CoreTest.cpp LIBRARIES core io)
 

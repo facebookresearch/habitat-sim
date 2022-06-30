@@ -1,5 +1,9 @@
 set(
   gfx_SOURCES
+  BatchRenderer.cpp
+  BatchRenderer.h
+  BatchRendererStandalone.cpp
+  BatchRendererStandalone.h
   CubeMap.cpp
   CubeMap.h
   DepthUnprojection.cpp
