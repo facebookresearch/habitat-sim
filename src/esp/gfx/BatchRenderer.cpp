@@ -130,6 +130,12 @@ struct TextureTransformation {
   Mn::Matrix3 transformation;
 };
 
+/* NVidia requires uniform buffer bindings to have an INSANE 256-byte
+   alignment, so we give in and pad our stuff */
+struct ProjectionPadded : Mn::Shaders::ProjectionUniform3D {
+  char padding[256 - sizeof(Mn::Shaders::ProjectionUniform3D)];
+};
+
 }  // namespace
 
 struct BatchRenderer::State {
@@ -155,7 +161,7 @@ struct BatchRenderer::State {
       meshViewRangeForName;
 
   /* Updated from camera() */
-  Cr::Containers::Array<Mn::Shaders::ProjectionUniform3D> projections;
+  Cr::Containers::Array<ProjectionPadded> projections;
   /* Updated every frame */
   Mn::GL::Buffer projectionUniform;
 
@@ -175,8 +181,7 @@ void BatchRenderer::create(
   state_->tileSize = configuration.tileSize;
   state_->tileCount = configuration.tileCount;
   const std::size_t sceneCount = configuration.tileCount.product();
-  state_->projections =
-      Cr::Containers::Array<Mn::Shaders::ProjectionUniform3D>{sceneCount};
+  state_->projections = Cr::Containers::Array<ProjectionPadded>{sceneCount};
   state_->scenes = Cr::Containers::Array<Scene>{sceneCount};
   /* Have one extra transformation slot in each scene for easier transform
      calculation in draw() */
@@ -339,7 +344,7 @@ void BatchRenderer::addFile(const Cr::Containers::StringView filename,
 
   /* Fill initial projection data for each view. Will be uploaded afresh every
      draw. */
-  state_->projections = Cr::Containers::Array<Mn::Shaders::ProjectionUniform3D>{
+  state_->projections = Cr::Containers::Array<ProjectionPadded>{
       Cr::DefaultInit, std::size_t(state_->tileCount.product())};
   // TODO (mutable) buffer storage
 
@@ -567,10 +572,9 @@ void BatchRenderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
       state_
           ->shader
           // TODO bind all buffers together with a multi API
-          .bindProjectionBuffer(
-              state_->projectionUniform,
-              scene * sizeof(Mn::Shaders::ProjectionUniform3D),
-              sizeof(Mn::Shaders::ProjectionUniform3D))
+          .bindProjectionBuffer(state_->projectionUniform,
+                                scene * sizeof(ProjectionPadded),
+                                sizeof(ProjectionPadded))
           .bindTransformationBuffer(state_->scenes[scene].transformationUniform)
           .bindDrawBuffer(state_->scenes[scene].drawUniform);
       if (!(state_->flags & BatchRendererFlag::NoTextures))
