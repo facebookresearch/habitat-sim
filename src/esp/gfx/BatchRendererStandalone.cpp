@@ -98,10 +98,14 @@ struct BatchRendererStandalone::State {
 #ifdef ESP_BUILD_WITH_CUDA
   ~State() {
     /* Should be unmapped before the GL object gets destroyed, I guess? */
-    if (cudaColorBuffer)
+    if (cudaColorBuffer) {
       checkCudaErrors(cudaGraphicsUnmapResources(1, &cudaColorBuffer, 0));
-    if (cudaDepthBuffer)
+      checkCudaErrors(cudaGraphicsUnregisterResource(cudaColorBuffer));
+    }
+    if (cudaDepthBuffer) {
       checkCudaErrors(cudaGraphicsUnmapResources(1, &cudaDepthBuffer, 0));
+      checkCudaErrors(cudaGraphicsUnregisterResource(cudaDepthBuffer));
+    }
   }
 #endif
 };
