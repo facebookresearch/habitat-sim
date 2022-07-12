@@ -91,7 +91,10 @@ class HabitatSimInteractiveViewer(Application):
         self.reconfigure_sim()
 
         # compute NavMesh if not already loaded by the scene.
-        if not self.sim.pathfinder.is_loaded and self.cfg.sim_cfg.scene_id != "NONE":
+        if (
+            not self.sim.pathfinder.is_loaded
+            and self.cfg.sim_cfg.scene_id.lower() != "none"
+        ):
             self.navmesh_config_and_recompute()
 
         self.time_since_last_simulation = 0.0
