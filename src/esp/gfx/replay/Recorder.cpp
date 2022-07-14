@@ -5,6 +5,7 @@
 #include "Recorder.h"
 
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
+#include "esp/core/Check.h"
 #include "esp/io/Json.h"
 #include "esp/io/JsonAllTypes.h"
 #include "esp/scene/SceneNode.h"
@@ -54,7 +55,18 @@ void Recorder::onCreateRenderAssetInstance(
 
   RenderAssetInstanceKey instanceKey = getNewInstanceKey();
 
-  getKeyframe().creations.emplace_back(std::make_pair(instanceKey, creation));
+  auto adjustedCreation = creation;
+
+  // bake node scale into creation
+  auto nodeScale = node->absoluteTransformation().scaling();
+  if (nodeScale != Mn::Vector3(1.f, 1.f, 1.f)) {
+    adjustedCreation.scale = adjustedCreation.scale
+                                 ? *adjustedCreation.scale * nodeScale
+                                 : nodeScale;
+  }
+
+  getKeyframe().creations.emplace_back(
+      std::make_pair(instanceKey, adjustedCreation));
 
   // Constructing NodeDeletionHelper here is equivalent to calling
   // node->addFeature. We keep a pointer to deletionHelper so we can delete it
@@ -175,8 +187,9 @@ void Recorder::writeSavedKeyframesToFile(const std::string& filepath,
   auto document = writeKeyframesToJsonDocument();
   // replay::Keyframes use floats (not doubles) so this is plenty of precision
   const float maxDecimalPlaces = 7;
-  esp::io::writeJsonToFile(document, filepath, usePrettyWriter,
-                           maxDecimalPlaces);
+  auto ok = esp::io::writeJsonToFile(document, filepath, usePrettyWriter,
+                                     maxDecimalPlaces);
+  ESP_CHECK(ok, "writeSavedKeyframesToFile: unable to write to " << filepath);
 
   consolidateSavedKeyframes();
 }
