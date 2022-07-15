@@ -307,7 +307,7 @@ jobs:
             conda init "$(basename "${SHELL}")"
       - run:
           name: Conda OSX build
-          no_output_timeout: 240m
+          no_output_timeout: 30m
           command: |
             export PATH=$HOME/miniconda/bin:$PATH
             source ~/.bash_profile
@@ -316,11 +316,12 @@ jobs:
             echo $(which -a python)
             pip install gitpython
             (yes || true) | anaconda login --username << parameters.AIHABITAT_CONDA_CHN >>  --password $<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >> --hostname "aihabitat-conda-ci-builder-macos"
-            conda config --set anaconda_upload yes
+            <<^ parameters.CI_TEST>>
+            conda config --set anaconda_upload yes <</ parameters.CI_TEST>>
             cd habitat-sim/conda-build
             git submodule update --init --recursive --jobs 8
             export PYTHONIOENCODING="utf-8"
-            python matrix_builder.py --conda_upload
+            python matrix_builder.py <<# parameters.CI_TEST>> --ci_test <</ parameters.CI_TEST>>  <<^ parameters.CI_TEST >> --conda_upload <<# parameters.nightly>> --nightly <</ parameters.nightly>> <</ parameters.CI_TEST >>
 
   clang_tidy:
     machine:
@@ -648,11 +649,14 @@ jobs:
               # . activate habitat;
 
               cd habitat-sim/conda-build
-
+              <<^ parameters.CI_TEST >>
               # Install anaconda to work with packages repo
               curl -O https://repo.anaconda.com/archive/Anaconda3-2020.11-Linux-x86_64.sh
               bash Anaconda3-2020.11-Linux-x86_64.sh -b -p $HOME/anaconda
               export PATH=$HOME/anaconda/bin:$PATH
+
+              # Delete old nightly builds
+              python common/delete_old_night_packages.py --username << parameters.AIHABITAT_CONDA_CHN >>  --password $<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >> << parameters.NIGHTLY_FLAG >> <</ parameters.CI_TEST >>
 
               # install Docker
               curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
@@ -662,11 +666,15 @@ jobs:
               sudo apt-get install -y docker-ce
 
               docker build -t hsim_condabuild_dcontainer -f Dockerfile .
-              docker run -it --ipc=host --rm -v $(pwd)/../:/remote hsim_condabuild_dcontainer \
-                /bin/bash -c "source ~/.bashrc && conda activate py37 \
-                              && cd /remote/habitat-sim/conda-build \
-                              yes | anaconda login --username << parameters.AIHABITAT_CONDA_CHN >> --password \${<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >>} --hostname "aihabitat-conda-ci-builder-linux" \
-                              && python matrix_builder.py --conda_upload"
+              docker run -it --ipc=host --rm -v $(pwd)/../../:/remote \
+                  <<^ parameters.CI_TEST >> --env << parameters.AIHABITAT_CONDA_CHN_PWD_VAR >> <</ parameters.CI_TEST >> \
+                  hsim_condabuild_dcontainer \
+                  /bin/bash -c "source ~/.bashrc && conda activate py37 \
+                                && cd /remote/habitat-sim/conda-build \
+                                <<^ parameters.CI_TEST >> && yes | anaconda login --username << parameters.AIHABITAT_CONDA_CHN >> --password \${<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >>} <</ parameters.CI_TEST >> --hostname "aihabitat-conda-ci-builder-linux" \
+                                && python matrix_builder.py \
+                                  <<# parameters.CI_TEST >> --ci_test <</ parameters.CI_TEST>> \
+                                  <<^ parameters.CI_TEST >> --conda_upload << parameters.NIGHTLY_FLAG >> <</ parameters.CI_TEST >>"
 
   update_docs:
     docker:
@@ -720,12 +728,12 @@ workflows:
       - js_lint
       - lab_build_habitat
       - build_conda_osx:
-         CI_TEST: true
+         CI_TEST: false
       - test_pip_build
       - install_and_test_ubuntu
       - pre-commit
       - build_conda_binaries:
-          CI_TEST: true
+          CI_TEST: false
       - clang_tidy
   nightly:
     triggers:
