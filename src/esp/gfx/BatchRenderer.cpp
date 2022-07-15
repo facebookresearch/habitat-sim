@@ -442,9 +442,10 @@ void BatchRenderer::addFile(const Cr::Containers::StringView filename,
     state_->shader.bindAmbientTexture(state_->texture);
 }
 
-std::size_t BatchRenderer::add(const Mn::UnsignedInt sceneId,
-                               const Cr::Containers::StringView name,
-                               const Mn::Matrix4& transformation) {
+std::size_t BatchRenderer::addMeshHierarchy(
+    const Mn::UnsignedInt sceneId,
+    const Cr::Containers::StringView name,
+    const Mn::Matrix4& transformation) {
   CORRADE_ASSERT(sceneId < state_->scenes.size(),
                  "BatchRenderer::add(): index" << sceneId << "out of range for"
                                                << state_->scenes.size()
@@ -502,9 +503,10 @@ std::size_t BatchRenderer::add(const Mn::UnsignedInt sceneId,
   return id;
 }
 
-std::size_t BatchRenderer::add(const Mn::UnsignedInt scene,
-                               const Cr::Containers::StringView name) {
-  return add(scene, name, Mn::Matrix4{});
+std::size_t BatchRenderer::addMeshHierarchy(
+    const Mn::UnsignedInt scene,
+    const Cr::Containers::StringView name) {
+  return addMeshHierarchy(scene, name, Mn::Matrix4{});
 }
 
 void BatchRenderer::clear(const Mn::UnsignedInt sceneId) {

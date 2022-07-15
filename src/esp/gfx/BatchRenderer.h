@@ -58,11 +58,11 @@ class BatchRenderer {
   //  scene name for the whole scene??
   // TODO document this may not return consecutive IDs in case the added name
   //  is multiple meshes together
-  std::size_t add(Magnum::UnsignedInt sceneId,
-                  Corrade::Containers::StringView name);
-  std::size_t add(Magnum::UnsignedInt sceneId,
-                  Corrade::Containers::StringView name,
-                  const Magnum::Matrix4& transformation);
+  std::size_t addMeshHierarchy(Magnum::UnsignedInt sceneId,
+                               Corrade::Containers::StringView name);
+  std::size_t addMeshHierarchy(Magnum::UnsignedInt sceneId,
+                               Corrade::Containers::StringView name,
+                               const Magnum::Matrix4& transformation);
   void clear(Magnum::UnsignedInt sceneId);
 
   Magnum::Matrix4& camera(Magnum::UnsignedInt sceneId);

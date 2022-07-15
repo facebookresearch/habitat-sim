@@ -389,7 +389,7 @@ void BatchRendererTest::singleMesh() {
                                           0.1f, 10.0f) *
       Mn::Matrix4::translation(Mn::Vector3::zAxis(1.0f)).inverted();
 
-  CORRADE_COMPARE(renderer.add(0, "square"), 0);
+  CORRADE_COMPARE(renderer.addMeshHierarchy(0, "square"), 0);
   /* It adds one transformation for the top-level object and then one nested
      for the mesh, corresponding to the layout inside the glTF file */
   CORRADE_COMPARE(renderer.transformations(0).size(), 2);
@@ -435,7 +435,7 @@ void BatchRendererTest::meshHierarchy() {
                                           0.1f, 10.0f) *
       Mn::Matrix4::translation(Mn::Vector3::zAxis(1.0f)).inverted();
 
-  CORRADE_COMPARE(renderer.add(0, "four squares"), 0);
+  CORRADE_COMPARE(renderer.addMeshHierarchy(0, "four squares"), 0);
   /* It adds one transformation for the top-level object and then four nested
      for each mesh, corresponding to the layout inside the glTF file */
   CORRADE_COMPARE(renderer.transformations(0).size(), 5);
@@ -477,17 +477,17 @@ void BatchRendererTest::multipleMeshes() {
                                           0.1f, 10.0f) *
       Mn::Matrix4::translation(Mn::Vector3::zAxis(1.0f)).inverted();
 
-  CORRADE_COMPARE(renderer.add(0, "square"), 0);
+  CORRADE_COMPARE(renderer.addMeshHierarchy(0, "square"), 0);
   renderer.transformations(0)[0] =
       Mn::Matrix4::translation({0.0f, 0.5f, 0.0f}) *
       Mn::Matrix4::scaling(Mn::Vector3{0.4f});
 
-  CORRADE_COMPARE(renderer.add(0, "circle"), 2);
+  CORRADE_COMPARE(renderer.addMeshHierarchy(0, "circle"), 2);
   renderer.transformations(0)[2] =
       Mn::Matrix4::translation({-0.5f, -0.5f, 0.0f}) *
       Mn::Matrix4::scaling(Mn::Vector3{0.4f});
 
-  CORRADE_COMPARE(renderer.add(0, "triangle"), 4);
+  CORRADE_COMPARE(renderer.addMeshHierarchy(0, "triangle"), 4);
   renderer.transformations(0)[4] =
       Mn::Matrix4::translation({0.5f, -0.5f, 0.0f}) *
       Mn::Matrix4::scaling(Mn::Vector3{0.4f});
@@ -527,10 +527,10 @@ void BatchRendererTest::multipleScenes() {
 
   /* Scene 0 has one multi-mesh, scene 1 has two single-meshes, scene 2 is
      unused and scene 3 has a single triangle */
-  CORRADE_COMPARE(renderer.add(0, "four squares"), 0);
-  CORRADE_COMPARE(renderer.add(1, "circle"), 0);
-  CORRADE_COMPARE(renderer.add(1, "square"), 2);
-  CORRADE_COMPARE(renderer.add(3, "triangle"), 0);
+  CORRADE_COMPARE(renderer.addMeshHierarchy(0, "four squares"), 0);
+  CORRADE_COMPARE(renderer.addMeshHierarchy(1, "circle"), 0);
+  CORRADE_COMPARE(renderer.addMeshHierarchy(1, "square"), 2);
+  CORRADE_COMPARE(renderer.addMeshHierarchy(3, "triangle"), 0);
 
   /* Each camera is shifted differently on Y, each added mesh is shifted
      differently on X to test the right transformation is used each time */
@@ -581,11 +581,11 @@ void BatchRendererTest::clearScene() {
 
   /* Like in multipleScenes(), except in different order, there's more stuff
      added to scene 1 and it isn't transformed in any way */
-  CORRADE_COMPARE(renderer.add(3, "triangle"), 0);
-  CORRADE_COMPARE(renderer.add(1, "square"), 0);
-  CORRADE_COMPARE(renderer.add(1, "circle"), 2);
-  CORRADE_COMPARE(renderer.add(1, "triangle"), 4);
-  CORRADE_COMPARE(renderer.add(0, "four squares"), 0);
+  CORRADE_COMPARE(renderer.addMeshHierarchy(3, "triangle"), 0);
+  CORRADE_COMPARE(renderer.addMeshHierarchy(1, "square"), 0);
+  CORRADE_COMPARE(renderer.addMeshHierarchy(1, "circle"), 2);
+  CORRADE_COMPARE(renderer.addMeshHierarchy(1, "triangle"), 4);
+  CORRADE_COMPARE(renderer.addMeshHierarchy(0, "four squares"), 0);
 
   renderer.camera(0) = Mn::Matrix4::translation({0.0f, 0.0f, 1.0f}).inverted();
   renderer.transformations(0)[0] = Mn::Matrix4::translation({0.0f, 0.0f, 0.0f});
@@ -610,8 +610,8 @@ void BatchRendererTest::clearScene() {
       Mn::DebugTools::CompareImageToFile);
 
   /* Add things to scene 1 again, transform them */
-  CORRADE_COMPARE(renderer.add(1, "circle"), 0);
-  CORRADE_COMPARE(renderer.add(1, "square"), 2);
+  CORRADE_COMPARE(renderer.addMeshHierarchy(1, "circle"), 0);
+  CORRADE_COMPARE(renderer.addMeshHierarchy(1, "square"), 2);
   renderer.transformations(1)[0] =
       Mn::Matrix4::translation({0.5f, 0.0f, 0.0f}) *
       Mn::Matrix4::scaling(Mn::Vector3{0.5f});
@@ -658,7 +658,7 @@ void BatchRendererTest::cudaInterop() {
       Mn::Matrix4::orthographicProjection(2.0f * Mn::Vector2{4.0f / 3.0f, 1.0f},
                                           0.1f, 10.0f) *
       Mn::Matrix4::translation(Mn::Vector3::zAxis(1.0f)).inverted();
-  renderer.add(0, "square");
+  renderer.addMeshHierarchy(0, "square");
   renderer.transformations(0)[0] = Mn::Matrix4::scaling(Mn::Vector3{0.8f});
   renderer.draw();
 
