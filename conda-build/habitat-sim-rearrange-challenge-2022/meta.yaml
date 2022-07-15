@@ -13,7 +13,7 @@
 
 
 package:
-  name: habitat-sim
+  name: habitat-sim-rearrange-challenge-2022
   version: "{{ environ.get('VERSION') }}"
 
 source:

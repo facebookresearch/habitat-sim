@@ -23,7 +23,7 @@ conda build \
   --no-test \
   {ANACONDA_UPLOAD_MODE} \
   --output-folder {OUTPUT_FOLDER} \
-  habitat-sim
+  habitat-sim-rearrange-challenge-2022
 """
 
 
