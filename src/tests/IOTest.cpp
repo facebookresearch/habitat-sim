@@ -258,6 +258,7 @@ void IOTest::testJsonBuiltinTypes() {
 // esp::io::addMember/esp::io::readMember and assert equality.
 void IOTest::testJsonStlTypes() {
   rapidjson::Document d(rapidjson::kObjectType);
+  rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
 
   std::string s{"hello world"};
   _testJsonReadWrite(s, "s", d);
