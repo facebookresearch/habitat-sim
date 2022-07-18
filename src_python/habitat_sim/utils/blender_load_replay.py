@@ -3,7 +3,7 @@ try:
 except ImportError:
     raise ImportError(
         "Failed to import Blender modules. This script can't run "
-        "standalone. Run `blender --python path/to/blender_load_replay.py ...`. Watch the terminal for "
+        "standalone. See https://github.com/facebookresearch/habitat-sim/pull/1759 for usage. Watch the terminal for "
         "debug/error output."
     )
 
@@ -21,12 +21,23 @@ class ImportItem:
 
 
 def import_scene_helper(raw_filepath):
+    """Import a 3D model into the current Blender scene.
+
+    This is similar to doing Menu > File > Import and importing with default options.
+    The appropriate importer is selected here based on file extensions.
+
+    This also does some commonly-needed filepath fixups, and returns the fixed-up path.
+    For example, the simulator uses basis-compressed assets whereas blender wants the
+    uncompressed versions. These fixups are heuristic and specific to Habitat datasets.
+    You're encouraged to add them as necessary. Alternately, you can directly fix up the
+    filepaths in your replay.json files.
+    """
+
     # these fixups will be tried one at a time, in order, until a matching, existing file is found
     model_filepath_fixups = [
         # use uncompressed versions when available
         ("/stages/", "/stages_uncompressed/"),
         ("/urdf/", "/urdf_uncompressed/"),
-        # ("./data/robots/hab_fetch/robots/../meshes/", "/home/eundersander/projects/blender/fetch_meshes_modified/")
         # for Fetch, avoid blender .dae import because it seems to be broken; fall back to collision STL
         (".dae", "_collision.STL"),
         # sometimes the collision STL doesn't have _collision in the name
@@ -68,6 +79,13 @@ def import_scene_helper(raw_filepath):
 
 
 def import_item(item):
+    """Import a 3D model and do various fixups.
+
+    The blender import operation doesn't return a list of the imported items, which is
+    inconvenient. So, I use a trick where I import a file, select all (which ignores
+    hidden objects), operate on the selected objects, then hide all, then import the
+    next item. At the end of all importing, I unhide all.
+    """
 
     adjusted_filepath = import_scene_helper(item.filepath)
 
@@ -125,6 +143,8 @@ def import_item(item):
 
 
 def import_gfx_replay(replay_filepath):
+    """Import a gfx-replay file, including (1) instantiating render assets and (2)
+    importing their state updates (keyframes) as animation keyframes."""
 
     with open(replay_filepath, "r") as f:
         json_root = json.load(f)
@@ -191,6 +211,7 @@ def import_gfx_replay(replay_filepath):
                     data_path="rotation_quaternion", frame=keyframe_index
                 )
 
+    # After using import_item to import several items, we must unhide all.
     for o in bpy.context.scene.objects:
         o.hide_set(False)
 
