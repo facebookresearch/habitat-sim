@@ -20,6 +20,10 @@ endif()
 
 target_link_libraries(
   gfx_batch
+  # Important: this library *deliberately* doesn't depend on any other Habitat
+  # libraries, and it should be kept as such. Only Magnum libraries are an
+  # allowed dependency. See the original PR for discussion:
+  # https://github.com/facebookresearch/habitat-sim/pull/1798#discussion_r911398937
   PUBLIC Magnum::GL Magnum::Magnum Magnum::Shaders Magnum::Trade
   # Not linking any plugins here, as the renderer itself doesn't directly rely
   # on any of them. That also makes the plugins implicitly registered in
