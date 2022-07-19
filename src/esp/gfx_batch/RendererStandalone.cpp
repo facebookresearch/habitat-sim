@@ -2,7 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "BatchRendererStandalone.h"
+#include "RendererStandalone.h"
 
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/Containers/StridedArrayView.h>
@@ -37,33 +37,31 @@ namespace Cr = Corrade;
 namespace Mn = Magnum;
 
 namespace esp {
-namespace gfx {
+namespace gfx_batch {
 
-struct BatchRendererStandaloneConfiguration::State {
+struct RendererStandaloneConfiguration::State {
   /* Not picking any CUDA device by default */
   Magnum::UnsignedInt cudaDevice = ~Magnum::UnsignedInt{};
-  BatchRendererStandaloneFlags flags;
+  RendererStandaloneFlags flags;
 };
 
-BatchRendererStandaloneConfiguration::BatchRendererStandaloneConfiguration()
+RendererStandaloneConfiguration::RendererStandaloneConfiguration()
     : state{Cr::InPlaceInit} {}
-BatchRendererStandaloneConfiguration::~BatchRendererStandaloneConfiguration() =
-    default;
+RendererStandaloneConfiguration::~RendererStandaloneConfiguration() = default;
 
-BatchRendererStandaloneConfiguration&
-BatchRendererStandaloneConfiguration::setCudaDevice(Magnum::UnsignedInt id) {
+RendererStandaloneConfiguration& RendererStandaloneConfiguration::setCudaDevice(
+    Magnum::UnsignedInt id) {
   state->cudaDevice = id;
   return *this;
 }
 
-BatchRendererStandaloneConfiguration&
-BatchRendererStandaloneConfiguration::setFlags(
-    BatchRendererStandaloneFlags flags) {
+RendererStandaloneConfiguration& RendererStandaloneConfiguration::setFlags(
+    RendererStandaloneFlags flags) {
   state->flags = flags;
   return *this;
 }
 
-struct BatchRendererStandalone::State {
+struct RendererStandalone::State {
   Mn::Platform::WindowlessGLContext context;
   Mn::Platform::GLContext magnumContext{Mn::NoCreate};
   Mn::GL::Renderbuffer color{Mn::NoCreate}, depth{Mn::NoCreate};
@@ -75,20 +73,20 @@ struct BatchRendererStandalone::State {
   cudaGraphicsResource* cudaDepthBuffer{};
 #endif
 
-  explicit State(const BatchRendererStandaloneConfiguration& configuration)
+  explicit State(const RendererStandaloneConfiguration& configuration)
       : context{Mn::Platform::WindowlessGLContext::Configuration{}
 #ifdef ESP_BUILD_EGL_SUPPORT
                     .setCudaDevice(configuration.state->cudaDevice)
 #endif
                     .addFlags(configuration.state->flags &
-                                      BatchRendererStandaloneFlag::QuietLog
+                                      RendererStandaloneFlag::QuietLog
                                   ? Mn::Platform::WindowlessGLContext::
                                         Configuration::Flag::QuietLog
                                   : Mn::Platform::WindowlessGLContext::
                                         Configuration::Flags{})} {
     context.makeCurrent();
     magnumContext.create(Mn::GL::Context::Configuration{}.addFlags(
-        configuration.state->flags & BatchRendererStandaloneFlag::QuietLog
+        configuration.state->flags & RendererStandaloneFlag::QuietLog
             ? Mn::GL::Context::Configuration::Flag::QuietLog
             : Mn::GL::Context::Configuration::Flags{}));
     color = Mn::GL::Renderbuffer{};
@@ -110,11 +108,10 @@ struct BatchRendererStandalone::State {
 #endif
 };
 
-BatchRendererStandalone::BatchRendererStandalone(
-    const BatchRendererConfiguration& configuration,
-    const BatchRendererStandaloneConfiguration& standaloneConfiguration)
-    : BatchRenderer{Mn::NoCreate},
-      state_{Cr::InPlaceInit, standaloneConfiguration} {
+RendererStandalone::RendererStandalone(
+    const RendererConfiguration& configuration,
+    const RendererStandaloneConfiguration& standaloneConfiguration)
+    : Renderer{Mn::NoCreate}, state_{Cr::InPlaceInit, standaloneConfiguration} {
   /* Create the renderer only once the GL context is ready */
   create(configuration);
 
@@ -133,34 +130,34 @@ BatchRendererStandalone::BatchRendererStandalone(
   state_->depthBuffer = Mn::GL::BufferImage2D{depthFramebufferFormat()};
 }
 
-BatchRendererStandalone::~BatchRendererStandalone() {
+RendererStandalone::~RendererStandalone() {
   /* Yup, shitty, but as we hold the GL context we can't let any GL resources
      to be destructed after our destructor. Better ideas? */
-  BatchRenderer::destroy();
+  Renderer::destroy();
 }
 
-Mn::PixelFormat BatchRendererStandalone::colorFramebufferFormat() const {
+Mn::PixelFormat RendererStandalone::colorFramebufferFormat() const {
   return Mn::PixelFormat::RGBA8Unorm;
 }
 
-Mn::PixelFormat BatchRendererStandalone::depthFramebufferFormat() const {
+Mn::PixelFormat RendererStandalone::depthFramebufferFormat() const {
   return Mn::PixelFormat::Depth32F;
 }
 
-void BatchRendererStandalone::draw() {
+void RendererStandalone::draw() {
   state_->framebuffer.clear(Mn::GL::FramebufferClear::Color |
                             Mn::GL::FramebufferClear::Depth);
-  BatchRenderer::draw(state_->framebuffer);
+  Renderer::draw(state_->framebuffer);
 }
 
-Mn::Image2D BatchRendererStandalone::colorImage() {
+Mn::Image2D RendererStandalone::colorImage() {
   /* Not using state_->framebuffer.viewport() as it's left pointing to whatever
      tile was rendered last */
   return state_->framebuffer.read({{}, tileCount() * tileSize()},
                                   colorFramebufferFormat());
 }
 
-Mn::Image2D BatchRendererStandalone::depthImage() {
+Mn::Image2D RendererStandalone::depthImage() {
   /* Not using state_->framebuffer.viewport() as it's left pointing to whatever
      tile was rendered last */
   return state_->framebuffer.read({{}, tileCount() * tileSize()},
@@ -168,7 +165,7 @@ Mn::Image2D BatchRendererStandalone::depthImage() {
 }
 
 #ifdef ESP_BUILD_WITH_CUDA
-const void* BatchRendererStandalone::colorCudaBufferDevicePointer() {
+const void* RendererStandalone::colorCudaBufferDevicePointer() {
   /* If the CUDA buffer exists already, it's mapped from the previous call.
      Unmap it first so we can read into it from GL. */
   if (state_->cudaColorBuffer)
@@ -198,7 +195,7 @@ const void* BatchRendererStandalone::colorCudaBufferDevicePointer() {
   return pointer;
 }
 
-const void* BatchRendererStandalone::depthCudaBufferDevicePointer() {
+const void* RendererStandalone::depthCudaBufferDevicePointer() {
   /* If the CUDA buffer exists already, it's mapped from the previous call.
      Unmap it first so we can read into it from GL. */
   if (state_->cudaDepthBuffer)
@@ -229,5 +226,5 @@ const void* BatchRendererStandalone::depthCudaBufferDevicePointer() {
 }
 #endif
 
-}  // namespace gfx
+}  // namespace gfx_batch
 }  // namespace esp

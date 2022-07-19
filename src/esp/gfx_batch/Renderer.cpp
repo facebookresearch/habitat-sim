@@ -2,7 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "BatchRenderer.h"
+#include "Renderer.h"
 
 #include <Corrade/Containers/Array.h>
 #include <Corrade/Containers/GrowableArray.h>
@@ -54,28 +54,26 @@ struct hash<Cr::Containers::String> {
 }  // namespace std
 
 namespace esp {
-namespace gfx {
+namespace gfx_batch {
 
 // clang-tidy you're NOT HELPING
 using namespace Cr::Containers::Literals;  // NOLINT
 
-struct BatchRendererConfiguration::State {
-  BatchRendererFlags flags;
+struct RendererConfiguration::State {
+  RendererFlags flags;
   Mn::Vector2i tileSize{128, 128};
   Mn::Vector2i tileCount{16, 12};
 };
 
-BatchRendererConfiguration::BatchRendererConfiguration()
-    : state{Cr::InPlaceInit} {}
-BatchRendererConfiguration::~BatchRendererConfiguration() = default;
+RendererConfiguration::RendererConfiguration() : state{Cr::InPlaceInit} {}
+RendererConfiguration::~RendererConfiguration() = default;
 
-BatchRendererConfiguration& BatchRendererConfiguration::setFlags(
-    BatchRendererFlags flags) {
+RendererConfiguration& RendererConfiguration::setFlags(RendererFlags flags) {
   state->flags = flags;
   return *this;
 }
 
-BatchRendererConfiguration& BatchRendererConfiguration::setTileSizeCount(
+RendererConfiguration& RendererConfiguration::setTileSizeCount(
     const Mn::Vector2i& tileSize,
     const Mn::Vector2i& tileCount) {
   state->tileSize = tileSize;
@@ -138,8 +136,8 @@ struct ProjectionPadded : Mn::Shaders::ProjectionUniform3D {
 
 }  // namespace
 
-struct BatchRenderer::State {
-  BatchRendererFlags flags;
+struct Renderer::State {
+  RendererFlags flags;
   Mn::Vector2i tileSize, tileCount;
   Mn::Shaders::PhongGL shader{Mn::NoCreate};
 
@@ -168,11 +166,10 @@ struct BatchRenderer::State {
   Cr::Containers::Array<Scene> scenes;
 };
 
-BatchRenderer::BatchRenderer(Mn::NoCreateT) {}
+Renderer::Renderer(Mn::NoCreateT) {}
 
-void BatchRenderer::create(
-    const BatchRendererConfiguration& configurationWrapper) {
-  const BatchRendererConfiguration::State& configuration =
+void Renderer::create(const RendererConfiguration& configurationWrapper) {
+  const RendererConfiguration::State& configuration =
       *configurationWrapper.state;
 
   CORRADE_INTERNAL_ASSERT(!state_);
@@ -193,32 +190,32 @@ void BatchRenderer::create(
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
 }
 
-void BatchRenderer::destroy() {
+void Renderer::destroy() {
   state_ = {};
 }
 
-BatchRenderer::~BatchRenderer() = default;
+Renderer::~Renderer() = default;
 
-Mn::Vector2i BatchRenderer::tileCount() const {
+Mn::Vector2i Renderer::tileCount() const {
   return state_->tileCount;
 }
 
-Mn::Vector2i BatchRenderer::tileSize() const {
+Mn::Vector2i Renderer::tileSize() const {
   return state_->tileSize;
 }
 
-std::size_t BatchRenderer::sceneCount() const {
+std::size_t Renderer::sceneCount() const {
   return state_->scenes.size();
 }
 
-void BatchRenderer::addFile(const Cr::Containers::StringView filename) {
+void Renderer::addFile(const Cr::Containers::StringView filename) {
   return addFile(filename, "AnySceneImporter");
 }
 
-void BatchRenderer::addFile(const Cr::Containers::StringView filename,
-                            const Cr::Containers::StringView importerPlugin) {
+void Renderer::addFile(const Cr::Containers::StringView filename,
+                       const Cr::Containers::StringView importerPlugin) {
   CORRADE_ASSERT(!state_->texture.id(),
-                 "BatchRenderer::addFile(): sorry, only one file is supported "
+                 "Renderer::addFile(): sorry, only one file is supported "
                  "at the moment", );
 
   Cr::PluginManager::Manager<Mn::Trade::AbstractImporter> manager;
@@ -258,9 +255,9 @@ void BatchRenderer::addFile(const Cr::Containers::StringView filename,
   CORRADE_INTERNAL_ASSERT_OUTPUT(importer->openFile(filename));
 
   /* One texture for the whole scene */
-  if (!(state_->flags & BatchRendererFlag::NoTextures)) {
+  if (!(state_->flags & RendererFlag::NoTextures)) {
     CORRADE_ASSERT(importer->textureCount() == 1,
-                   "BatchRenderer::addFile(): expected a file with exactly one "
+                   "Renderer::addFile(): expected a file with exactly one "
                    "texture, got"
                        << importer->textureCount(), );
     const Cr::Containers::Optional<Mn::Trade::TextureData> texture =
@@ -304,7 +301,7 @@ void BatchRenderer::addFile(const Cr::Containers::StringView filename,
   /* One mesh for the whole scene */
   CORRADE_ASSERT(
       importer->meshCount() == 1,
-      "BatchRenderer::addFile(): expected a file with exactly one mesh, got"
+      "Renderer::addFile(): expected a file with exactly one mesh, got"
           << importer->meshCount(), );
   state_->mesh = Mn::MeshTools::compile(
       *CORRADE_INTERNAL_ASSERT_EXPRESSION(importer->mesh(0)));
@@ -325,9 +322,9 @@ void BatchRenderer::addFile(const Cr::Containers::StringView filename,
 
       CORRADE_ASSERT(
           flatMaterial.hasTexture(),
-          "BatchRenderer::addFile(): material" << i << "is not textured", );
+          "Renderer::addFile(): material" << i << "is not textured", );
       CORRADE_ASSERT(flatMaterial.texture() == 0,
-                     "BatchRenderer::addFile(): expected material"
+                     "Renderer::addFile(): expected material"
                          << i << "to reference the only texture, got"
                          << flatMaterial.texture(), );
 
@@ -350,7 +347,7 @@ void BatchRenderer::addFile(const Cr::Containers::StringView filename,
 
   {
     CORRADE_ASSERT(importer->sceneCount() == 1,
-                   "BatchRenderer::addFile(): expected exactly one scene, got"
+                   "Renderer::addFile(): expected exactly one scene, got"
                        << importer->sceneCount(), );
     Cr::Containers::Optional<Mn::Trade::SceneData> scene = importer->scene(0);
     CORRADE_INTERNAL_ASSERT(scene);
@@ -359,18 +356,18 @@ void BatchRenderer::addFile(const Cr::Containers::StringView filename,
     const Cr::Containers::Optional<Mn::UnsignedInt> meshViewIndexOffsetFieldId =
         scene->findFieldId(importer->sceneFieldForName("meshViewIndexOffset"));
     CORRADE_ASSERT(meshViewIndexOffsetFieldId,
-                   "BatchRenderer::addFile(): no meshViewIndexOffset field in "
+                   "Renderer::addFile(): no meshViewIndexOffset field in "
                    "the scene", );
     const Cr::Containers::Optional<Mn::UnsignedInt> meshViewIndexCountFieldId =
         scene->findFieldId(importer->sceneFieldForName("meshViewIndexCount"));
     CORRADE_ASSERT(
         meshViewIndexCountFieldId,
-        "BatchRenderer::addFile(): no meshViewIndexCount field in the scene", );
+        "Renderer::addFile(): no meshViewIndexCount field in the scene", );
     const Cr::Containers::Optional<Mn::UnsignedInt> meshViewMaterialFieldId =
         scene->findFieldId(importer->sceneFieldForName("meshViewMaterial"));
     CORRADE_ASSERT(
         meshViewMaterialFieldId,
-        "BatchRenderer::addFile(): no meshViewMaterial field in the scene", );
+        "Renderer::addFile(): no meshViewMaterial field in the scene", );
     /* SceneData and copy() will assert if the types or sizes don't match, so
        we don't have to */
     state_->meshViews = Cr::Containers::Array<MeshView>{
@@ -414,8 +411,8 @@ void BatchRenderer::addFile(const Cr::Containers::StringView filename,
           scene->childrenFor(root);
 
       Cr::Containers::String name = importer->objectName(root);
-      CORRADE_ASSERT(
-          name, "BatchRenderer::addFile(): node" << root << "has no name", );
+      CORRADE_ASSERT(name,
+                     "Renderer::addFile(): node" << root << "has no name", );
       state_->meshViewRangeForName.insert(
           {name, {offset, offset + Mn::UnsignedInt(children.size())}});
       offset += children.size();
@@ -428,7 +425,7 @@ void BatchRenderer::addFile(const Cr::Containers::StringView filename,
   Mn::Shaders::PhongGL::Flags flags =
       Mn::Shaders::PhongGL::Flag::MultiDraw |
       Mn::Shaders::PhongGL::Flag::UniformBuffers;
-  if (!(state_->flags >= BatchRendererFlag::NoTextures))
+  if (!(state_->flags >= RendererFlag::NoTextures))
     flags |= Mn::Shaders::PhongGL::Flag::AmbientTexture |
              Mn::Shaders::PhongGL::Flag::TextureArrays |
              Mn::Shaders::PhongGL::Flag::TextureTransformation;
@@ -438,18 +435,16 @@ void BatchRenderer::addFile(const Cr::Containers::StringView filename,
   state_->shader =
       Mn::Shaders::PhongGL{flags, 0, importer->materialCount(), 1024};
   state_->shader.bindMaterialBuffer(state_->materialUniform);
-  if (!(state_->flags >= BatchRendererFlag::NoTextures))
+  if (!(state_->flags >= RendererFlag::NoTextures))
     state_->shader.bindAmbientTexture(state_->texture);
 }
 
-std::size_t BatchRenderer::addMeshHierarchy(
-    const Mn::UnsignedInt sceneId,
-    const Cr::Containers::StringView name,
-    const Mn::Matrix4& transformation) {
+std::size_t Renderer::addMeshHierarchy(const Mn::UnsignedInt sceneId,
+                                       const Cr::Containers::StringView name,
+                                       const Mn::Matrix4& transformation) {
   CORRADE_ASSERT(sceneId < state_->scenes.size(),
-                 "BatchRenderer::add(): index" << sceneId << "out of range for"
-                                               << state_->scenes.size()
-                                               << "scenes",
+                 "Renderer::add(): index" << sceneId << "out of range for"
+                                          << state_->scenes.size() << "scenes",
                  {});
 
   Scene& scene = state_->scenes[sceneId];
@@ -458,7 +453,7 @@ std::size_t BatchRenderer::addMeshHierarchy(
   const auto found = state_->meshViewRangeForName.find(
       Cr::Containers::String::nullTerminatedView(name));
   CORRADE_ASSERT(found != state_->meshViewRangeForName.end(),
-                 "BatchRenderer::add(): name" << name << "not found", {});
+                 "Renderer::add(): name" << name << "not found", {});
 
   /* Add a top-level object */
   const std::size_t id = scene.transformations.size();
@@ -503,17 +498,16 @@ std::size_t BatchRenderer::addMeshHierarchy(
   return id;
 }
 
-std::size_t BatchRenderer::addMeshHierarchy(
-    const Mn::UnsignedInt scene,
-    const Cr::Containers::StringView name) {
+std::size_t Renderer::addMeshHierarchy(const Mn::UnsignedInt scene,
+                                       const Cr::Containers::StringView name) {
   return addMeshHierarchy(scene, name, Mn::Matrix4{});
 }
 
-void BatchRenderer::clear(const Mn::UnsignedInt sceneId) {
+void Renderer::clear(const Mn::UnsignedInt sceneId) {
   CORRADE_ASSERT(sceneId < state_->scenes.size(),
-                 "BatchRenderer::clear(): index"
-                     << sceneId << "out of range for" << state_->scenes.size()
-                     << "scenes", );
+                 "Renderer::clear(): index" << sceneId << "out of range for"
+                                            << state_->scenes.size()
+                                            << "scenes", );
 
   Scene& scene = state_->scenes[sceneId];
   // TODO have arrayClear()
@@ -528,19 +522,18 @@ void BatchRenderer::clear(const Mn::UnsignedInt sceneId) {
   arrayResize(scene.drawCommands, 0);
 }
 
-Mn::Matrix4& BatchRenderer::camera(const Mn::UnsignedInt scene) {
+Mn::Matrix4& Renderer::camera(const Mn::UnsignedInt scene) {
   return state_->projections[scene].projectionMatrix;
 }
 
-Cr::Containers::StridedArrayView1D<Mn::Matrix4> BatchRenderer::transformations(
+Cr::Containers::StridedArrayView1D<Mn::Matrix4> Renderer::transformations(
     const Mn::UnsignedInt scene) {
   return state_->scenes[scene].transformations;
 }
 
-void BatchRenderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
+void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
   // TODO allow this (currently addFile() sets up shader limits)
-  CORRADE_ASSERT(state_->mesh.id(),
-                 "BatchRenderer::draw(): no file was added", );
+  CORRADE_ASSERT(state_->mesh.id(), "Renderer::draw(): no file was added", );
 
   /* Calculate absolute transformations */
   for (std::size_t sceneId = 0; sceneId != state_->scenes.size(); ++sceneId) {
@@ -579,7 +572,7 @@ void BatchRenderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
                                 sizeof(ProjectionPadded))
           .bindTransformationBuffer(state_->scenes[scene].transformationUniform)
           .bindDrawBuffer(state_->scenes[scene].drawUniform);
-      if (!(state_->flags & BatchRendererFlag::NoTextures))
+      if (!(state_->flags & RendererFlag::NoTextures))
         state_->shader.bindTextureTransformationBuffer(
             state_->scenes[scene].textureTransformationUniform);
       state_->shader.draw(state_->mesh,
@@ -592,5 +585,5 @@ void BatchRenderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
   }
 }
 
-}  // namespace gfx
+}  // namespace gfx_batch
 }  // namespace esp

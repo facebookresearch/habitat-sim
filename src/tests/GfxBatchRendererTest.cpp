@@ -27,7 +27,7 @@
 #include <Magnum/Trade/SceneData.h>
 #include <Magnum/Trade/TextureData.h>
 
-#include "esp/gfx/BatchRendererStandalone.h"
+#include "esp/gfx_batch/RendererStandalone.h"
 
 #ifdef ESP_BUILD_WITH_CUDA
 #include <cuda_gl_interop.h>
@@ -41,8 +41,8 @@ namespace Cr = Corrade;
 namespace Mn = Magnum;
 using namespace Mn::Math::Literals;
 
-struct BatchRendererTest : Cr::TestSuite::Tester {
-  explicit BatchRendererTest();
+struct GfxBatchRendererTest : Cr::TestSuite::Tester {
+  explicit GfxBatchRendererTest();
 
   void generateTestData();
 
@@ -61,35 +61,35 @@ struct BatchRendererTest : Cr::TestSuite::Tester {
 // clang-format off
 const struct {
   const char* name;
-  esp::gfx::BatchRendererFlags flags;
+  esp::gfx_batch::RendererFlags flags;
   Mn::Float textureMultiplier;
   const char* filename;
 } MeshHierarchyData[]{
   {"", {}, 0xcc/255.0f,
-    "BatchRendererTestMeshHierarchy.png"},
+    "GfxBatchRendererTestMeshHierarchy.png"},
   {"no textures",
-    esp::gfx::BatchRendererFlag::NoTextures, 1.0f,
-    "BatchRendererTestMeshHierarchyNoTextures.png"}
+    esp::gfx_batch::RendererFlag::NoTextures, 1.0f,
+    "GfxBatchRendererTestMeshHierarchyNoTextures.png"}
 };
 // clang-format on
 
-BatchRendererTest::BatchRendererTest() {
+GfxBatchRendererTest::GfxBatchRendererTest() {
   // clang-format off
-  addTests({&BatchRendererTest::generateTestData,
+  addTests({&GfxBatchRendererTest::generateTestData,
 
-            &BatchRendererTest::defaults,
+            &GfxBatchRendererTest::defaults,
 
-            &BatchRendererTest::singleMesh});
+            &GfxBatchRendererTest::singleMesh});
 
-  addInstancedTests({&BatchRendererTest::meshHierarchy},
+  addInstancedTests({&GfxBatchRendererTest::meshHierarchy},
                     Cr::Containers::arraySize(MeshHierarchyData));
 
-  addTests({&BatchRendererTest::multipleMeshes,
+  addTests({&GfxBatchRendererTest::multipleMeshes,
 
-            &BatchRendererTest::multipleScenes,
-            &BatchRendererTest::clearScene,
+            &GfxBatchRendererTest::multipleScenes,
+            &GfxBatchRendererTest::clearScene,
 
-            &BatchRendererTest::cudaInterop});
+            &GfxBatchRendererTest::cudaInterop});
   // clang-format on
 }
 
@@ -101,7 +101,7 @@ constexpr auto SceneFieldMeshViewIndexCount = Mn::Trade::sceneFieldCustom(774);
 constexpr auto SceneFieldMeshViewMaterial = Mn::Trade::sceneFieldCustom(23);
 #endif
 
-void BatchRendererTest::generateTestData() {
+void GfxBatchRendererTest::generateTestData() {
 #ifndef HAS_MAGNUM_GLTFSCENECONVERTER
   CORRADE_SKIP("GltfSceneConverter plugin not found");
 #else
@@ -322,12 +322,12 @@ void BatchRendererTest::generateTestData() {
 #endif
 }
 
-void BatchRendererTest::defaults() {
+void GfxBatchRendererTest::defaults() {
   // clang-format off
-  esp::gfx::BatchRendererStandalone renderer{
-      esp::gfx::BatchRendererConfiguration{}
+  esp::gfx_batch::RendererStandalone renderer{
+      esp::gfx_batch::RendererConfiguration{}
           .setTileSizeCount({48, 32}, {2, 3}),
-      esp::gfx::BatchRendererStandaloneConfiguration{}
+      esp::gfx_batch::RendererStandaloneConfiguration{}
           /* No QuietLog, to verify at least once that the log *is* printed */
   };
   // clang-format on
@@ -359,7 +359,7 @@ void BatchRendererTest::defaults() {
   CORRADE_COMPARE_AS(
       color,
       Cr::Utility::Path::join(TEST_ASSETS,
-                              "screenshots/BatchRendererTestDefaults.png"),
+                              "screenshots/GfxBatchRendererTestDefaults.png"),
       Mn::DebugTools::CompareImageToFile);
   CORRADE_COMPARE(color.size(), Mn::Vector2i{96});
   CORRADE_COMPARE(color.format(), Mn::PixelFormat::RGBA8Unorm);
@@ -371,13 +371,13 @@ void BatchRendererTest::defaults() {
   CORRADE_COMPARE(depth.pixels<Mn::Float>()[48][48], 1.0f);
 }
 
-void BatchRendererTest::singleMesh() {
+void GfxBatchRendererTest::singleMesh() {
   // clang-format off
-  esp::gfx::BatchRendererStandalone renderer{
-      esp::gfx::BatchRendererConfiguration{}
+  esp::gfx_batch::RendererStandalone renderer{
+      esp::gfx_batch::RendererConfiguration{}
           .setTileSizeCount({128, 96}, {1, 1}),
-      esp::gfx::BatchRendererStandaloneConfiguration{}
-          .setFlags(esp::gfx::BatchRendererStandaloneFlag::QuietLog)
+      esp::gfx_batch::RendererStandaloneConfiguration{}
+          .setFlags(esp::gfx_batch::RendererStandaloneFlag::QuietLog)
   };
   // clang-format on
 
@@ -405,7 +405,7 @@ void BatchRendererTest::singleMesh() {
   CORRADE_COMPARE_AS(
       renderer.colorImage(),
       Cr::Utility::Path::join(TEST_ASSETS,
-                              "screenshots/BatchRendererTestSingleMesh.png"),
+                              "screenshots/GfxBatchRendererTestSingleMesh.png"),
       Mn::DebugTools::CompareImageToFile);
   CORRADE_COMPARE(color.size(), (Mn::Vector2i{128, 96}));
   CORRADE_COMPARE(color.format(), Mn::PixelFormat::RGBA8Unorm);
@@ -413,17 +413,17 @@ void BatchRendererTest::singleMesh() {
   CORRADE_COMPARE(color.pixels<Mn::Color4ub>()[20][38], 0x990000_rgb);
 }
 
-void BatchRendererTest::meshHierarchy() {
+void GfxBatchRendererTest::meshHierarchy() {
   auto&& data = MeshHierarchyData[testCaseInstanceId()];
   setTestCaseDescription(data.name);
 
   // clang-format off
-  esp::gfx::BatchRendererStandalone renderer{
-      esp::gfx::BatchRendererConfiguration{}
+  esp::gfx_batch::RendererStandalone renderer{
+      esp::gfx_batch::RendererConfiguration{}
           .setTileSizeCount({128, 96}, {1, 1})
           .setFlags(data.flags),
-      esp::gfx::BatchRendererStandaloneConfiguration{}
-          .setFlags(esp::gfx::BatchRendererStandaloneFlag::QuietLog)
+      esp::gfx_batch::RendererStandaloneConfiguration{}
+          .setFlags(esp::gfx_batch::RendererStandaloneFlag::QuietLog)
   };
   // clang-format on
 
@@ -461,13 +461,13 @@ void BatchRendererTest::meshHierarchy() {
                   0xffff00_rgb * data.textureMultiplier);
 }
 
-void BatchRendererTest::multipleMeshes() {
+void GfxBatchRendererTest::multipleMeshes() {
   // clang-format off
-  esp::gfx::BatchRendererStandalone renderer{
-      esp::gfx::BatchRendererConfiguration{}
+  esp::gfx_batch::RendererStandalone renderer{
+      esp::gfx_batch::RendererConfiguration{}
           .setTileSizeCount({128, 96}, {1, 1}),
-      esp::gfx::BatchRendererStandaloneConfiguration{}
-          .setFlags(esp::gfx::BatchRendererStandaloneFlag::QuietLog)
+      esp::gfx_batch::RendererStandaloneConfiguration{}
+          .setFlags(esp::gfx_batch::RendererStandaloneFlag::QuietLog)
   };
   // clang-format on
 
@@ -501,7 +501,7 @@ void BatchRendererTest::multipleMeshes() {
   CORRADE_COMPARE_AS(
       renderer.colorImage(),
       Cr::Utility::Path::join(
-          TEST_ASSETS, "screenshots/BatchRendererTestMultipleMeshes.png"),
+          TEST_ASSETS, "screenshots/GfxBatchRendererTestMultipleMeshes.png"),
       Mn::DebugTools::CompareImageToFile);
   CORRADE_COMPARE(color.size(), (Mn::Vector2i{128, 96}));
   CORRADE_COMPARE(color.format(), Mn::PixelFormat::RGBA8Unorm);
@@ -509,13 +509,13 @@ void BatchRendererTest::multipleMeshes() {
   CORRADE_COMPARE(color.pixels<Mn::Color4ub>()[24][88], 0xcc00cc_rgb);
 }
 
-void BatchRendererTest::multipleScenes() {
+void GfxBatchRendererTest::multipleScenes() {
   // clang-format off
-  esp::gfx::BatchRendererStandalone renderer{
-      esp::gfx::BatchRendererConfiguration{}
+  esp::gfx_batch::RendererStandalone renderer{
+      esp::gfx_batch::RendererConfiguration{}
           .setTileSizeCount({64, 48}, {2, 2}),
-      esp::gfx::BatchRendererStandaloneConfiguration{}
-          .setFlags(esp::gfx::BatchRendererStandaloneFlag::QuietLog)
+      esp::gfx_batch::RendererStandaloneConfiguration{}
+          .setFlags(esp::gfx_batch::RendererStandaloneFlag::QuietLog)
   };
   // clang-format on
 
@@ -559,17 +559,17 @@ void BatchRendererTest::multipleScenes() {
   CORRADE_COMPARE_AS(
       renderer.colorImage(),
       Cr::Utility::Path::join(
-          TEST_ASSETS, "screenshots/BatchRendererTestMultipleScenes.png"),
+          TEST_ASSETS, "screenshots/GfxBatchRendererTestMultipleScenes.png"),
       Mn::DebugTools::CompareImageToFile);
 }
 
-void BatchRendererTest::clearScene() {
+void GfxBatchRendererTest::clearScene() {
   // clang-format off
-  esp::gfx::BatchRendererStandalone renderer{
-      esp::gfx::BatchRendererConfiguration{}
+  esp::gfx_batch::RendererStandalone renderer{
+      esp::gfx_batch::RendererConfiguration{}
           .setTileSizeCount({64, 48}, {2, 2}),
-      esp::gfx::BatchRendererStandaloneConfiguration{}
-          .setFlags(esp::gfx::BatchRendererStandaloneFlag::QuietLog)
+      esp::gfx_batch::RendererStandaloneConfiguration{}
+          .setFlags(esp::gfx_batch::RendererStandaloneFlag::QuietLog)
   };
   // clang-format on
 
@@ -606,7 +606,7 @@ void BatchRendererTest::clearScene() {
       renderer.colorImage(),
       Cr::Utility::Path::join(
           TEST_ASSETS,
-          "screenshots/BatchRendererTestMultipleScenesClearScene1.png"),
+          "screenshots/GfxBatchRendererTestMultipleScenesClearScene1.png"),
       Mn::DebugTools::CompareImageToFile);
 
   /* Add things to scene 1 again, transform them */
@@ -624,11 +624,11 @@ void BatchRendererTest::clearScene() {
   CORRADE_COMPARE_AS(
       renderer.colorImage(),
       Cr::Utility::Path::join(
-          TEST_ASSETS, "screenshots/BatchRendererTestMultipleScenes.png"),
+          TEST_ASSETS, "screenshots/GfxBatchRendererTestMultipleScenes.png"),
       Mn::DebugTools::CompareImageToFile);
 }
 
-void BatchRendererTest::cudaInterop() {
+void GfxBatchRendererTest::cudaInterop() {
 #ifndef ESP_BUILD_WITH_CUDA
   CORRADE_SKIP("ESP_BUILD_WITH_CUDA is not enabled");
 #else
@@ -641,14 +641,14 @@ void BatchRendererTest::cudaInterop() {
 
   /* Implicitly use device 0 */
   // clang-format off
-  esp::gfx::BatchRendererStandalone renderer{
-      esp::gfx::BatchRendererConfiguration{}
+  esp::gfx_batch::RendererStandalone renderer{
+      esp::gfx_batch::RendererConfiguration{}
           .setTileSizeCount({128, 96}, {1, 1}),
-      esp::gfx::BatchRendererStandaloneConfiguration{}
+      esp::gfx_batch::RendererStandaloneConfiguration{}
           // TODO this fails if using a GLX application and the GL device
           //  doesn't match the CUDA device, what to do?
           .setCudaDevice(0)
-          .setFlags(esp::gfx::BatchRendererStandaloneFlag::QuietLog)
+          .setFlags(esp::gfx_batch::RendererStandaloneFlag::QuietLog)
   };
   // clang-format on
 
@@ -686,7 +686,7 @@ void BatchRendererTest::cudaInterop() {
   CORRADE_COMPARE_AS(
       cudaColorImage,
       Cr::Utility::Path::join(TEST_ASSETS,
-                              "screenshots/BatchRendererTestSingleMesh.png"),
+                              "screenshots/GfxBatchRendererTestSingleMesh.png"),
       Mn::DebugTools::CompareImageToFile);
   CORRADE_COMPARE(cudaDepthImage.pixels<Mn::Float>()[0][0], 1.0f);
   CORRADE_COMPARE(cudaDepthImage.pixels<Mn::Float>()[95][127], 1.0f);
@@ -696,4 +696,4 @@ void BatchRendererTest::cudaInterop() {
 
 }  // namespace
 
-CORRADE_TEST_MAIN(BatchRendererTest)
+CORRADE_TEST_MAIN(GfxBatchRendererTest)

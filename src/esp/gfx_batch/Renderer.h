@@ -11,36 +11,35 @@
 #include <cstddef>
 
 namespace esp {
-namespace gfx {
+namespace gfx_batch {
 
-enum class BatchRendererFlag {
+enum class RendererFlag {
   NoTextures = 1 << 0
   // TODO memory-map
 };
-typedef Corrade::Containers::EnumSet<BatchRendererFlag> BatchRendererFlags;
-CORRADE_ENUMSET_OPERATORS(BatchRendererFlags)
+typedef Corrade::Containers::EnumSet<RendererFlag> RendererFlags;
+CORRADE_ENUMSET_OPERATORS(RendererFlags)
 
-struct BatchRendererConfiguration {
-  explicit BatchRendererConfiguration();
-  ~BatchRendererConfiguration();
+struct RendererConfiguration {
+  explicit RendererConfiguration();
+  ~RendererConfiguration();
 
-  BatchRendererConfiguration& setFlags(BatchRendererFlags flags);
-  BatchRendererConfiguration& setTileSizeCount(
-      const Magnum::Vector2i& tileSize,
-      const Magnum::Vector2i& tileCount);
+  RendererConfiguration& setFlags(RendererFlags flags);
+  RendererConfiguration& setTileSizeCount(const Magnum::Vector2i& tileSize,
+                                          const Magnum::Vector2i& tileCount);
 
   struct State;
   Corrade::Containers::Pointer<State> state;
 };
 
-class BatchRenderer {
+class Renderer {
  public:
-  explicit BatchRenderer(const BatchRendererConfiguration& configuration)
-      : BatchRenderer{Magnum::NoCreate} {
+  explicit Renderer(const RendererConfiguration& configuration)
+      : Renderer{Magnum::NoCreate} {
     create(configuration);
   }
 
-  ~BatchRenderer();
+  ~Renderer();
 
   Magnum::Vector2i tileSize() const;
   Magnum::Vector2i tileCount() const;
@@ -72,9 +71,9 @@ class BatchRenderer {
   void draw(Magnum::GL::AbstractFramebuffer& framebuffer);
 
  protected:
-  /* used by BatchRendererStandalone */
-  explicit BatchRenderer(Magnum::NoCreateT);
-  void create(const BatchRendererConfiguration& configuration);
+  /* used by RendererStandalone */
+  explicit Renderer(Magnum::NoCreateT);
+  void create(const RendererConfiguration& configuration);
   void destroy();
 
  private:
@@ -82,7 +81,7 @@ class BatchRenderer {
   Corrade::Containers::Pointer<State> state_;
 };
 
-}  // namespace gfx
+}  // namespace gfx_batch
 }  // namespace esp
 
 #endif
