@@ -633,7 +633,10 @@ void GfxBatchRendererTest::cudaInterop() {
   CORRADE_SKIP("ESP_BUILD_WITH_CUDA is not enabled");
 #else
   {
-    int count;
+    /* Initialize the count to 0, so it isn't left in a random state if the
+       command fails, leading to a false impression that CUDA works, and a
+       crash later */
+    int count = 0;
     cudaGetDeviceCount(&count);
     if (!count)
       CORRADE_SKIP("No CUDA devices found");
