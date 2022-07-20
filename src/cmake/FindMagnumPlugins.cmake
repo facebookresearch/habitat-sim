@@ -25,6 +25,7 @@
 #  FreeTypeFont                 - FreeType font
 #  GlslangShaderConverter       - Glslang shader converter
 #  GltfImporter                 - glTF importer
+#  GltfSceneConverter           - glTF converter
 #  HarfBuzzFont                 - HarfBuzz font
 #  IcoImporter                  - ICO importer
 #  JpegImageConverter           - JPEG image converter
@@ -160,8 +161,8 @@ set(_MAGNUMPLUGINS_PLUGIN_COMPONENTS
     AssimpImporter AstcImporter BasisImageConverter BasisImporter DdsImporter
     DevIlImageImporter DrFlacAudioImporter DrMp3AudioImporter
     DrWavAudioImporter Faad2AudioImporter FreeTypeFont GlslangShaderConverter
-    GltfImporter HarfBuzzFont IcoImporter JpegImageConverter JpegImporter
-    KtxImageConverter KtxImporter MeshOptimizerSceneConverter
+    GltfImporter GltfSceneConverter HarfBuzzFont IcoImporter JpegImageConverter
+    JpegImporter KtxImageConverter KtxImporter MeshOptimizerSceneConverter
     MiniExrImageConverter OpenExrImageConverter OpenExrImporter
     OpenGexImporter PngImageConverter PngImporter PrimitiveImporter
     SpirvToolsShaderConverter StanfordImporter StanfordSceneConverter
@@ -379,6 +380,7 @@ foreach(_component ${MagnumPlugins_FIND_COMPONENTS})
                 INTERFACE_LINK_LIBRARIES Glslang::Glslang)
 
         # GltfImporter has no dependencies
+        # GltfSceneConverter has no dependencies
 
         # HarfBuzzFont plugin dependencies
         elseif(_component STREQUAL HarfBuzzFont)
