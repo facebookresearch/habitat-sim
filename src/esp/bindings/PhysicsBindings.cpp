@@ -1,7 +1,6 @@
 #include "esp/bindings/Bindings.h"
+#include "esp/bindings/EnumOperators.h"
 #include "esp/physics/PhysicsManager.h"
-
-#include "python/corrade/EnumOperators.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;
@@ -207,7 +206,7 @@ void initPhysicsBindings(py::module& m) {
       .value("UserGroup8", CollisionGroup::UserGroup8)
       .value("UserGroup9", CollisionGroup::UserGroup9)
       .value("None", CollisionGroup{});
-  corrade::enumOperators(collisionGroups);
+  pybindEnumOperators(collisionGroups);
 
   // ==== class object CollisionGroupHelper ====
   py::class_<CollisionGroupHelper, std::shared_ptr<CollisionGroupHelper>>(
