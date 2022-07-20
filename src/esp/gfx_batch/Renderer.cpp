@@ -93,10 +93,6 @@ struct Scene {
   /* Appended to with add() */
   Cr::Containers::Array<Mn::Int> parents; /* parents[i] < i, always */
   Cr::Containers::Array<Mn::Matrix4> transformations;
-  // TODO have this temporary and just once for all scenes, doesn't need to
-  //  be stored
-  Cr::Containers::Array<Mn::Shaders::TransformationUniform3D>
-      absoluteTransformations;
   Cr::Containers::Array<Mn::Shaders::PhongDrawUniform> draws;
   Cr::Containers::Array<Mn::Shaders::TextureTransformationUniform>
       textureTransformations;
@@ -150,6 +146,11 @@ struct Renderer::State {
   Mn::GL::Buffer projectionUniform;
 
   Cr::Containers::Array<Scene> scenes;
+
+  /* Temporary per-frame state to avoid allocating inside each draw() */
+  // TODO might be useful to have some per-frame bump allocator instead, for
+  //  smaller peak memory use
+  Cr::Containers::Array<Mn::Shaders::TransformationUniform3D> absoluteTransformations;
 };
 
 Renderer::Renderer(Mn::NoCreateT) {}
@@ -166,10 +167,6 @@ void Renderer::create(const RendererConfiguration& configurationWrapper) {
   const std::size_t sceneCount = configuration.tileCount.product();
   state_->projections = Cr::Containers::Array<ProjectionPadded>{sceneCount};
   state_->scenes = Cr::Containers::Array<Scene>{sceneCount};
-  /* Have one extra transformation slot in each scene for easier transform
-     calculation in draw() */
-  for (Scene& scene : state_->scenes)
-    arrayAppend(scene.absoluteTransformations, Cr::InPlaceInit);
 
   // TODO move this outside
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
@@ -447,7 +444,6 @@ std::size_t Renderer::addMeshHierarchy(const Mn::UnsignedInt sceneId,
   //  transforms from draws)
   arrayAppend(scene.parents, -1);
   arrayAppend(scene.transformations, transformation);
-  arrayAppend(scene.absoluteTransformations, Cr::InPlaceInit);
   arrayAppend(scene.draws, Cr::InPlaceInit).setMaterialId(0);
   arrayAppend(scene.textureTransformations, Cr::InPlaceInit).setLayer(0);
   arrayAppend(scene.drawCommands, Cr::InPlaceInit, 0u, 0u);
@@ -460,10 +456,6 @@ std::size_t Renderer::addMeshHierarchy(const Mn::UnsignedInt sceneId,
        transformation */
     arrayAppend(scene.parents, id);
     arrayAppend(scene.transformations, meshView.transformation);
-
-    /* The actual absolute transformation will get filled each time draw() is
-       called */
-    arrayAppend(scene.absoluteTransformations, Cr::InPlaceInit);
 
     arrayAppend(scene.draws, Cr::InPlaceInit)
         .setMaterialId(meshView.materialId);
@@ -500,9 +492,6 @@ void Renderer::clear(const Mn::UnsignedInt sceneId) {
   /* Resizing instead of `= {}` to not discard the memory */
   arrayResize(scene.parents, 0);
   arrayResize(scene.transformations, 0);
-  /* Keep the root absolute transform here tho (same state as when initially
-     constructed) */
-  arrayResize(scene.absoluteTransformations, 1);
   arrayResize(scene.draws, 0);
   arrayResize(scene.textureTransformations, 0);
   arrayResize(scene.drawCommands, 0);
@@ -521,26 +510,35 @@ void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
   // TODO allow this (currently addFile() sets up shader limits)
   CORRADE_ASSERT(state_->mesh.id(), "Renderer::draw(): no file was added", );
 
+  /* Upload projection uniform, assuming it changes every frame. Do it early to
+     minimize stalls. */
+  state_->projectionUniform.setData(state_->projections);
+
   /* Calculate absolute transformations */
   for (std::size_t sceneId = 0; sceneId != state_->scenes.size(); ++sceneId) {
     Scene& scene = state_->scenes[sceneId];
 
+    /* The first slot holds the root transformation for easier dealing with
+       `parent == -1`. Resize if it's too small. */
+    if(state_->absoluteTransformations.size() < scene.transformations.size() + 1)
+      arrayResize(state_->absoluteTransformations, Cr::NoInit, scene.transformations.size() + 1);
+
     // TODO have a tool for this
-    scene.absoluteTransformations[0].setTransformationMatrix(Mn::Matrix4{});
+    state_->absoluteTransformations[0].setTransformationMatrix(Mn::Matrix4{});
     for (std::size_t i = 0; i != scene.transformations.size(); ++i)
-      scene.absoluteTransformations[i + 1].setTransformationMatrix(
-          scene.absoluteTransformations[scene.parents[i] + 1]
+      state_->absoluteTransformations[i + 1].setTransformationMatrix(
+          state_->absoluteTransformations[scene.parents[i] + 1]
               .transformationMatrix *
           scene.transformations[i]);
-  }
 
-  /* Upload projection and transformation uniforms, assuming they change every
-     frame. Do it before the draw loop to minimize stalls. */
-  state_->projectionUniform.setData(state_->projections);
-  for (std::size_t sceneId = 0; sceneId != state_->scenes.size(); ++sceneId)
-    // TODO have this somehow in a single buffer instead
-    state_->scenes[sceneId].transformationUniform.setData(
-        state_->scenes[sceneId].absoluteTransformations.exceptPrefix(1));
+    /* Upload the transformation uniforms, as they get overwritten in the
+       next loop. OTOH, interleaving it with the calculation could hide the
+       driver stalls. */
+    // TODO have this somehow in a single huge buffer instead so we can upload
+    // everything at once? ... but that would need the insane alignment
+    // requirements, not great either :(
+    scene.transformationUniform.setData(state_->absoluteTransformations.exceptPrefix(1));
+  }
 
   for (Mn::Int y = 0; y != state_->tileCount.y(); ++y) {
     for (Mn::Int x = 0; x != state_->tileCount.x(); ++x) {
