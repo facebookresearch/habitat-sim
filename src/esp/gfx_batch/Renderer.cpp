@@ -9,6 +9,7 @@
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/Containers/Pair.h>
 #include <Corrade/Containers/StringStl.h>
+#include <Corrade/Containers/StringStlHash.h>
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/PluginManager/PluginMetadata.h>
 #include <Corrade/Utility/Algorithms.h>
@@ -37,21 +38,6 @@
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
-
-/* std::hash specialization to be able to use Corrade::String in unordered_map
- */
-// TODO put directly into Corrade, it's duplicated ON SEVEN PLACES ALREADY!!!
-namespace std {
-template <>
-struct hash<Cr::Containers::String> {
-  std::size_t operator()(const Cr::Containers::String& key) const {
-    const Cr::Utility::MurmurHash2 hash;
-    const Cr::Utility::HashDigest<sizeof(std::size_t)> digest =
-        hash(key.data(), key.size());
-    return *reinterpret_cast<const std::size_t*>(digest.byteArray());
-  }
-};
-}  // namespace std
 
 namespace esp {
 namespace gfx_batch {
