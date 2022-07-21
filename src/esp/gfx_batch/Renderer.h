@@ -32,6 +32,8 @@ struct RendererConfiguration {
   Corrade::Containers::Pointer<State> state;
 };
 
+struct SceneStats;
+
 class Renderer {
  public:
   explicit Renderer(const RendererConfiguration& configuration)
@@ -70,6 +72,13 @@ class Renderer {
 
   void draw(Magnum::GL::AbstractFramebuffer& framebuffer);
 
+  /**
+   * @brief Scene stats
+   *
+   * Mainly for testing and introspection purposes.
+   */
+  SceneStats sceneStats(Magnum::UnsignedInt sceneId) const;
+
  protected:
   /* used by RendererStandalone */
   explicit Renderer(Magnum::NoCreateT);
@@ -79,6 +88,28 @@ class Renderer {
  private:
   struct State;
   Corrade::Containers::Pointer<State> state_;
+};
+
+/**
+@brief Statistics for a single renderer scene
+
+Returned by @ref Renderer::sceneStats().
+*/
+struct SceneStats {
+  /**
+   * @brief Count of transformable nodes
+   *
+   * Same as size of the array returned by @ref Renderer::transformations().
+   */
+  std::size_t nodeCount;
+
+  /**
+   * @brief Count of draws
+   *
+   * Never larger than @ref nodeCount. Usually much smaller, as certain nodes
+   * are only manipulators grouping a set of other actually renderable nodes.
+   */
+  std::size_t drawCount;
 };
 
 }  // namespace gfx_batch

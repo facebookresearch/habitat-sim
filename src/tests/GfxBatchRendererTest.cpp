@@ -342,6 +342,11 @@ void GfxBatchRendererTest::defaults() {
     /* Implicit camera transform, no object transforms in any scene */
     CORRADE_COMPARE(renderer.camera(i), Mn::Matrix4{});
     CORRADE_COMPARE(renderer.transformations(i).size(), 0);
+
+    /* Nothing in the stats */
+    esp::gfx_batch::SceneStats stats = renderer.sceneStats(i);
+    CORRADE_COMPARE(stats.nodeCount, 0);
+    CORRADE_COMPARE(stats.drawCount, 0);
   }
 
   /* Add a file, because that's currently required */
@@ -390,8 +395,14 @@ void GfxBatchRendererTest::singleMesh() {
       Mn::Matrix4::translation(Mn::Vector3::zAxis(1.0f)).inverted();
 
   CORRADE_COMPARE(renderer.addMeshHierarchy(0, "square"), 0);
-  /* It adds one transformation for the top-level object and then one nested
-     for the mesh, corresponding to the layout inside the glTF file */
+
+  /* Stats will show two nodes now -- it adds one transformation for the
+     top-level object and then one nested for the mesh, corresponding to the
+     layout inside the glTF file */
+  esp::gfx_batch::SceneStats stats = renderer.sceneStats(0);
+  CORRADE_COMPARE(stats.nodeCount, 2);
+  CORRADE_COMPARE(stats.drawCount, 1);
+
   CORRADE_COMPARE(renderer.transformations(0).size(), 2);
   renderer.transformations(0)[0] = Mn::Matrix4::scaling(Mn::Vector3{0.8f});
 
@@ -436,8 +447,14 @@ void GfxBatchRendererTest::meshHierarchy() {
       Mn::Matrix4::translation(Mn::Vector3::zAxis(1.0f)).inverted();
 
   CORRADE_COMPARE(renderer.addMeshHierarchy(0, "four squares"), 0);
-  /* It adds one transformation for the top-level object and then four nested
-     for each mesh, corresponding to the layout inside the glTF file */
+
+  /* Stats will show five nodes now -- it adds one transformation for the
+     top-level object and then four nested for each mesh, corresponding to the
+     layout inside the glTF file */
+  esp::gfx_batch::SceneStats stats = renderer.sceneStats(0);
+  CORRADE_COMPARE(stats.nodeCount, 5);
+  CORRADE_COMPARE(stats.drawCount, 4);
+
   CORRADE_COMPARE(renderer.transformations(0).size(), 5);
   renderer.transformations(0)[0] = Mn::Matrix4::scaling(Mn::Vector3{0.8f});
 
@@ -492,6 +509,10 @@ void GfxBatchRendererTest::multipleMeshes() {
       Mn::Matrix4::translation({0.5f, -0.5f, 0.0f}) *
       Mn::Matrix4::scaling(Mn::Vector3{0.4f});
 
+  esp::gfx_batch::SceneStats stats = renderer.sceneStats(0);
+  CORRADE_COMPARE(stats.nodeCount, 6);
+  CORRADE_COMPARE(stats.drawCount, 3);
+
   renderer.draw();
   Mn::Image2D color = renderer.colorImage();
   MAGNUM_VERIFY_NO_GL_ERROR();
@@ -531,6 +552,22 @@ void GfxBatchRendererTest::multipleScenes() {
   CORRADE_COMPARE(renderer.addMeshHierarchy(1, "circle"), 0);
   CORRADE_COMPARE(renderer.addMeshHierarchy(1, "square"), 2);
   CORRADE_COMPARE(renderer.addMeshHierarchy(3, "triangle"), 0);
+
+  esp::gfx_batch::SceneStats stats0 = renderer.sceneStats(0);
+  CORRADE_COMPARE(stats0.nodeCount, 5);
+  CORRADE_COMPARE(stats0.drawCount, 4);
+
+  esp::gfx_batch::SceneStats stats1 = renderer.sceneStats(1);
+  CORRADE_COMPARE(stats1.nodeCount, 4);
+  CORRADE_COMPARE(stats1.drawCount, 2);
+
+  esp::gfx_batch::SceneStats stats2 = renderer.sceneStats(2);
+  CORRADE_COMPARE(stats2.nodeCount, 0);
+  CORRADE_COMPARE(stats2.drawCount, 0);
+
+  esp::gfx_batch::SceneStats stats3 = renderer.sceneStats(3);
+  CORRADE_COMPARE(stats3.nodeCount, 2);
+  CORRADE_COMPARE(stats3.drawCount, 1);
 
   /* Each camera is shifted differently on Y, each added mesh is shifted
      differently on X to test the right transformation is used each time */
@@ -599,6 +636,10 @@ void GfxBatchRendererTest::clearScene() {
 
   /* Clearing scene 1 should have no effect on others */
   renderer.clear(1);
+  esp::gfx_batch::SceneStats stats1 = renderer.sceneStats(1);
+  CORRADE_COMPARE(stats1.nodeCount, 0);
+  CORRADE_COMPARE(stats1.drawCount, 0);
+
   renderer.draw();
   Mn::Image2D color = renderer.colorImage();
   MAGNUM_VERIFY_NO_GL_ERROR();

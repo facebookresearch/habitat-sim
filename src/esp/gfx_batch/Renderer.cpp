@@ -5,6 +5,8 @@
 #include "Renderer.h"
 
 #include <Corrade/Containers/Array.h>
+#include <Corrade/Containers/BitArray.h>
+#include <Corrade/Containers/BitArrayView.h>
 #include <Corrade/Containers/GrowableArray.h>
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/Containers/Pair.h>
@@ -90,9 +92,16 @@ struct DrawCommand {
 };
 
 struct Scene {
-  /* Appended to with add() */
+  /* Node parents and transformations. Appended to with add(). */
   Cr::Containers::Array<Mn::Int> parents; /* parents[i] < i, always */
   Cr::Containers::Array<Mn::Matrix4> transformations;
+
+  /* Which nodes contain a mesh to draw. Count of bits set is the size of the
+     following draws, textureTransformations and drawCommands arrays. */
+  // TODO hardcoded to 8K objects (1 kB), needs growable support!
+  Cr::Containers::BitArray drawMaskStorage{Cr::NoInit, 8*1024};
+  Cr::Containers::MutableBitArrayView drawMask;
+
   Cr::Containers::Array<Mn::Shaders::PhongDrawUniform> draws;
   Cr::Containers::Array<Mn::Shaders::TextureTransformationUniform>
       textureTransformations;
@@ -151,6 +160,7 @@ struct Renderer::State {
   // TODO might be useful to have some per-frame bump allocator instead, for
   //  smaller peak memory use
   Cr::Containers::Array<Mn::Shaders::TransformationUniform3D> absoluteTransformations;
+  Cr::Containers::Array<Mn::Shaders::TransformationUniform3D> absoluteTransformationsMasked;
 };
 
 Renderer::Renderer(Mn::NoCreateT) {}
@@ -438,17 +448,14 @@ std::size_t Renderer::addMeshHierarchy(const Mn::UnsignedInt sceneId,
   CORRADE_ASSERT(found != state_->meshViewRangeForName.end(),
                  "Renderer::add(): name" << name << "not found", {});
 
-  /* Add a top-level object */
+  /* Add a top-level object with no attached mesh */
   const std::size_t id = scene.transformations.size();
-  // TODO this adds an empty draw, which is useless; do better (separate
-  //  transforms from draws)
   arrayAppend(scene.parents, -1);
   arrayAppend(scene.transformations, transformation);
-  arrayAppend(scene.draws, Cr::InPlaceInit).setMaterialId(0);
-  arrayAppend(scene.textureTransformations, Cr::InPlaceInit).setLayer(0);
-  arrayAppend(scene.drawCommands, Cr::InPlaceInit, 0u, 0u);
 
-  /* Add the whole hierarchy under this name */
+  /* Add the whole hierarchy under this name, with a mesh for each */
+  // TODO the hierarchy can eventually also have meshless "grouping nodes" or
+  //  also more meshes per node, account for that
   for (std::size_t i = found->second.first(); i != found->second.second();
        ++i) {
     const MeshView& meshView = state_->meshViews[i];
@@ -466,6 +473,14 @@ std::size_t Renderer::addMeshHierarchy(const Mn::UnsignedInt sceneId,
     arrayAppend(scene.drawCommands, Cr::InPlaceInit,
                 meshView.indexOffsetInBytes, meshView.indexCount);
   }
+
+  /* Update the draw mask -- the top-level node isn't drawn, all nodes after
+     are */
+  // TODO use append once bit arrays are growable
+  scene.drawMask = scene.drawMaskStorage.prefix(scene.transformations.size());
+  scene.drawMask.reset(id);
+  for(std::size_t i = id + 1; i != scene.drawMask.size(); ++i)
+    scene.drawMask.set(i); // TODO have a way to set a bit range
 
   /* Assuming add() is called relatively infrequently compared to draw(),
      upload the changed draw and texture transform buffers. Transformation
@@ -492,6 +507,7 @@ void Renderer::clear(const Mn::UnsignedInt sceneId) {
   /* Resizing instead of `= {}` to not discard the memory */
   arrayResize(scene.parents, 0);
   arrayResize(scene.transformations, 0);
+  scene.drawMask = {}; // TODO arrayResize() / arrayClear(), once it exists
   arrayResize(scene.draws, 0);
   arrayResize(scene.textureTransformations, 0);
   arrayResize(scene.drawCommands, 0);
@@ -520,8 +536,10 @@ void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
 
     /* The first slot holds the root transformation for easier dealing with
        `parent == -1`. Resize if it's too small. */
-    if(state_->absoluteTransformations.size() < scene.transformations.size() + 1)
+    if(state_->absoluteTransformations.size() < scene.transformations.size() + 1) {
       arrayResize(state_->absoluteTransformations, Cr::NoInit, scene.transformations.size() + 1);
+      arrayResize(state_->absoluteTransformationsMasked, Cr::NoInit, scene.transformations.size() + 1);
+    }
 
     // TODO have a tool for this
     state_->absoluteTransformations[0].setTransformationMatrix(Mn::Matrix4{});
@@ -531,13 +549,21 @@ void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
               .transformationMatrix *
           scene.transformations[i]);
 
+    /* Copy only the transformations that are used for actual draws */
+    // TODO HAVE A TOOL FOR THIS
+    std::size_t offset = 0;
+    for(std::size_t i = 0; i != scene.transformations.size(); ++i)
+      if(scene.drawMask[i])
+        state_->absoluteTransformationsMasked[offset++] = state_->absoluteTransformations[i + 1];
+    CORRADE_INTERNAL_ASSERT(offset == scene.draws.size());
+
     /* Upload the transformation uniforms, as they get overwritten in the
        next loop. OTOH, interleaving it with the calculation could hide the
        driver stalls. */
     // TODO have this somehow in a single huge buffer instead so we can upload
     // everything at once? ... but that would need the insane alignment
     // requirements, not great either :(
-    scene.transformationUniform.setData(state_->absoluteTransformations.exceptPrefix(1));
+    scene.transformationUniform.setData(state_->absoluteTransformationsMasked);
   }
 
   for (Mn::Int y = 0; y != state_->tileCount.y(); ++y) {
@@ -567,6 +593,22 @@ void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
                               .slice(&DrawCommand::indexOffsetInBytes));
     }
   }
+}
+
+SceneStats Renderer::sceneStats(Mn::UnsignedInt sceneId) const {
+  CORRADE_ASSERT(sceneId < state_->scenes.size(),
+                 "Renderer::sceneStats(): index" << sceneId << "out of range for"
+                                          << state_->scenes.size() << "scenes",
+                 {});
+
+  const Scene& scene = state_->scenes[sceneId];
+
+  SceneStats out;
+  out.nodeCount = scene.transformations.size();
+  out.drawCount = 0;
+  for(std::size_t i = 0; i != scene.drawMask.size(); ++i)
+    if(scene.drawMask[i]) ++out.drawCount; // TODO builtin popcount()!
+  return out;
 }
 
 }  // namespace gfx_batch
