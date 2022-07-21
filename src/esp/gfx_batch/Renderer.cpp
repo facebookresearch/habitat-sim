@@ -110,6 +110,8 @@ struct Scene {
 
   /* Updated every frame */
   Mn::GL::Buffer transformationUniform;
+  /* Updated at most once a frame if dirty is true */
+  bool dirty = false;
   Mn::GL::Buffer drawUniform;
   Mn::GL::Buffer textureTransformationUniform;
 };
@@ -482,12 +484,8 @@ std::size_t Renderer::addMeshHierarchy(const Mn::UnsignedInt sceneId,
   for(std::size_t i = id + 1; i != scene.drawMask.size(); ++i)
     scene.drawMask.set(i); // TODO have a way to set a bit range
 
-  /* Assuming add() is called relatively infrequently compared to draw(),
-     upload the changed draw and texture transform buffers. Transformation
-     buffer will be updated in draw(). */
-  scene.drawUniform.setData(scene.draws);
-  scene.textureTransformationUniform.setData(scene.textureTransformations);
-
+  /* Schedule an update next time draw() is called */
+  scene.dirty = true;
   return id;
 }
 
@@ -525,6 +523,18 @@ Cr::Containers::StridedArrayView1D<Mn::Matrix4> Renderer::transformations(
 void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
   // TODO allow this (currently addFile() sets up shader limits)
   CORRADE_ASSERT(state_->mesh.id(), "Renderer::draw(): no file was added", );
+
+  /* Process scenes that are marked as dirty */
+  // TODO this could be a separate step to allow the user to control when it
+  //  runs
+  for (std::size_t sceneId = 0; sceneId != state_->scenes.size(); ++sceneId) {
+    Scene& scene = state_->scenes[sceneId];
+    if(!scene.dirty) continue;
+
+    scene.drawUniform.setData(scene.draws);
+    scene.textureTransformationUniform.setData(scene.textureTransformations);
+    scene.dirty = false;
+  }
 
   /* Upload projection uniform, assuming it changes every frame. Do it early to
      minimize stalls. */
