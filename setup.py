@@ -109,7 +109,7 @@ Use "CMAKE_ARGS="..." pip install ." to set cmake args with pip""",
         dest="build_temp",
         default="build",
         help="build directory (default is build)",
-    )    
+    )
     parser.add_argument(
         "--no-lto",
         dest="lto",
@@ -333,12 +333,16 @@ class CMakeBuild(build_ext):
             )
         ]
 
-        # temp
+        # for FAIR cluster (only if needed)
         # cmake_args += ["-DCUDA_TOOLKIT_ROOT_DIR=/public/apps/cuda/11.2"]
         # cmake_args += ["-DCMAKE_C_COMPILER=/public/apps/gcc/7.3.0/bin/gcc"]
         # cmake_args += ["-DCMAKE_CXX_COMPILER=/public/apps/gcc/7.3.0/bin/g++"]
         # cmake_args += ["-DCMAKE_CUDA_HOST_COMPILER=/public/apps/gcc/7.3.0/bin/g++"]
         # cmake_args += ["-DCMAKE_CUDA_COMPILER=/public/apps/cuda/11.2/bin/nvcc"]
+
+        # for fedora desktop (only if needed)
+        # get cuda-g++ from https://www.internalfb.com/intern/wiki/Users/davidriazati/Desktop_Setup/
+        # cmake_args += ["-DCMAKE_CUDA_HOST_COMPILER=/usr/bin/cuda-g++"]
 
         env = os.environ.copy()
         env["CXXFLAGS"] = '{} -DVERSION_INFO=\\"{}\\"'.format(
