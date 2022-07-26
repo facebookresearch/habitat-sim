@@ -55,6 +55,9 @@ struct BatchedSimulatorConfig {
       "../data/replicacad_composite.collection.json";
   std::string renderAssetCompositeFilepath =
       "../data/bps_data/composite/composite.bps";
+  bool enableSliding = false;
+  int slideMaxSteps = 5;
+  float slideStepSize = 0.05f;  // meters
   ESP_SMART_POINTERS(BatchedSimulatorConfig);
 };
 
@@ -294,6 +297,10 @@ class BatchedSimulator {
                             bool updateforPhysics,
                             bool updateForRender,
                             bool includeResettingEnvs);
+  void slideBaseAndLinkTransforms(int b,
+                                  int currRolloutSubstep,
+                                  const Mn::Vector2& slideOffset);
+
   void updateCollision();
   // for each robot, undo action if collision
   void postCollisionUpdate();
