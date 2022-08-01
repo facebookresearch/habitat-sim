@@ -30,12 +30,12 @@ namespace esp {
 namespace assets {
 
 SceneLoader::SceneLoader()
-    :
 #ifdef MAGNUM_BUILD_STATIC
-      // avoid using plugins that might depend on different library versions
+    :  // avoid using plugins that might depend on different library versions
       importerManager_("nonexistent")
 #endif
-          {};
+{
+}
 
 MeshData SceneLoader::load(const AssetInfo& info) {
   MeshData mesh;

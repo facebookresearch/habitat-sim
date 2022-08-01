@@ -1,6 +1,6 @@
 find_package(Magnum REQUIRED DebugTools AnyImageConverter AnySceneImporter)
 find_package(
-  MagnumPlugins REQUIRED StbImageImporter KtxImporter
+  MagnumPlugins REQUIRED GltfImporter StbImageImporter KtxImporter
   OPTIONAL_COMPONENTS GltfSceneConverter KtxImageConverter
 )
 

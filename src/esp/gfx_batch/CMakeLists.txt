@@ -1,3 +1,5 @@
+find_package(Magnum REQUIRED GL Shaders Trade)
+
 set(gfx_batch_SOURCES Renderer.cpp Renderer.h RendererStandalone.cpp
                       RendererStandalone.h
 )
