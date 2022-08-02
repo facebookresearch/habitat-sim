@@ -18,12 +18,15 @@ void (*throwInPython)(const char*) = nullptr;
 [[noreturn]] void throwIfInPythonOtherwiseAbort(const char* message) {
   /* The throwInPython function pointer gets filled during Python bindings
      startup. If it's nullptr, we're in plain C++ code. */
-  if (throwInPython) {
-    throwInPython(message);
-    /* I failed to apply the NORETURN attribute to the throwInPython function
-       pointer so at least this */
-    CORRADE_INTERNAL_ASSERT_UNREACHABLE();
-  }
+
+  // temp disable throwing Python exception because it's causing silent aborts.
+  //   if (throwInPython) {
+  //     throwInPython(message);
+  //     /* I failed to apply the NORETURN attribute to the throwInPython
+  //     function
+  //        pointer so at least this */
+  //     CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+  //   }
 
   /* If it isn't defined, do an abort the same way as CORRADE_ASSERT(). This
      could be in an `else` block but I like to play with fire, so it's not --
