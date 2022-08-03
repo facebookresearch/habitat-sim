@@ -5,6 +5,7 @@
 import ctypes
 import math
 import os
+import random
 import sys
 import time
 from enum import Enum
@@ -22,6 +23,123 @@ from examples.settings import default_sim_settings, make_cfg
 from habitat_sim import physics
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.common import quat_from_angle_axis
+
+
+class SampleVolume:
+    def __init__(
+        self,
+        volume: mn.Range3D,
+        translation: mn.Vector3,
+        rotation: mn.Quaternion,
+        name: str,
+    ) -> None:
+        self.volume = volume
+        self.translation = translation
+        self.rotation = rotation
+        self.name = name
+
+    def sample_uniform_local(self) -> mn.Vector3:
+        """
+        Sample a uniform random point within Receptacle in local space.
+        """
+        return mn.Vector3(np.random.uniform(self.volume.min, self.volume.max))
+
+    def sample_uniform_global(self) -> mn.Vector3:
+        """
+        Sample a uniform random point in the local Receptacle volume and then transform it into global space.
+        """
+        local_sample = self.sample_uniform_local()
+        global_sample = self.rotation.transform_vector(local_sample)
+        global_sample = self.translation + global_sample
+        return global_sample
+
+    def debug_draw(self, sim: habitat_sim.Simulator, color: mn.Color4 = None) -> None:
+        # draw the volume with a debug line render box
+        transform_matrix = mn.Matrix4.from_(self.rotation.to_matrix(), self.translation)
+        debug_line_renderer = sim.get_debug_line_render()
+        debug_line_renderer.push_transform(transform_matrix)
+        if color is None:
+            color = mn.Color4.magenta()
+        debug_line_renderer.draw_box(self.volume.min, self.volume.max, color)
+        debug_line_renderer.pop_transform()
+        debug_line_renderer.draw_circle(self.translation, 0.25, color)
+
+
+def read_sample_volume_metadata(metadata_file) -> Dict[str, Dict[str, SampleVolume]]:
+    # read the target and agent sampling metadata from json back into lists of SampleVolumes
+    import json
+
+    with open(metadata_file, "r") as infile:
+        metadata = json.load(infile)
+        sample_volumes = {"agent_spawns": {}, "target_volumes": {}}
+        for key in sample_volumes:
+            for item in metadata[key]:
+                sample_volumes[key][item["name"]] = SampleVolume(
+                    volume=mn.Range3D.from_center(
+                        mn.Vector3(), mn.Vector3(item["size"]) * 0.5
+                    ),
+                    translation=mn.Vector3(item["translation"]),
+                    rotation=mn.Quaternion(
+                        mn.Vector3(item["rotation"][1:]), item["rotation"][0]
+                    ),
+                    name=item["name"],
+                )
+
+        print(sample_volumes)
+        return sample_volumes
+
+
+def add_sphere_object(
+    sim: habitat_sim.Simulator, radius: float, pos: mn.Vector3
+) -> habitat_sim.physics.ManagedRigidObject:
+    """
+    Add a sphere to the world at a global position.
+    Returns the new object.
+    """
+    obj_attr_mgr = sim.get_object_template_manager()
+    sphere_template = obj_attr_mgr.get_template_by_handle(
+        obj_attr_mgr.get_template_handles("icosphereSolid")[0]
+    )
+    sphere_template.scale = mn.Vector3(radius)
+    obj_attr_mgr.register_template(sphere_template, "my_sphere")
+    new_object = sim.get_rigid_object_manager().add_object_by_template_handle(
+        "my_sphere"
+    )
+    new_object.motion_type = habitat_sim.physics.MotionType.DYNAMIC
+    new_object.translation = pos
+    return new_object
+
+
+def get_random_target_sample(
+    sim: habitat_sim.Simulator, sample_volumes: Dict[str, SampleVolume], radius=0.1
+) -> mn.Vector3:
+    # get a random spherical sample point with specified radius from a random SampleVolume which is NOT intersecting the scene geometry
+    sample_volume = list(sample_volumes.values())[
+        random.randint(0, len(sample_volumes) - 1)
+    ]
+    sample_sphere = add_sphere_object(
+        sim, radius, sample_volume.sample_uniform_global()
+    )
+    # rejection sampling
+    while sample_sphere.contact_test():
+        sample_sphere.translation = sample_volume.sample_uniform_global()
+    sample_position = sample_sphere.translation
+    sim.get_rigid_object_manager().remove_object_by_id(sample_sphere.object_id)
+    return sample_position
+
+
+def draw_debug_sphere(
+    sim: habitat_sim.Simulator, radius: float, position: mn.Vector3, color: mn.Color4
+):
+    debug_line_render = sim.get_debug_line_render()
+    rings = 5
+    for axis in [mn.Vector3(1, 0, 0), mn.Vector3(0, 0, 1)]:
+        for ring in range(rings):
+            matrix = mn.Matrix4.rotation(mn.Rad(math.pi * ring / rings), axis)
+            matrix.translation = position
+            debug_line_render.push_transform(matrix)
+            debug_line_render.draw_circle(mn.Vector3(), radius, color)
+            debug_line_render.pop_transform()
 
 
 class HabitatSimInteractiveViewer(Application):
@@ -101,6 +219,17 @@ class HabitatSimInteractiveViewer(Application):
         LoggingContext.reinitialize_from_env()
         logger.setLevel("INFO")
         self.print_help_text()
+        # construct the sample volumes
+        self.sample_volumes = read_sample_volume_metadata(
+            "/home/alexclegg/Documents/VR_mocap_resources/102815835.json"
+        )
+        self.sample_timer = {
+            "time_since_last_sample": 0.0,
+            "sample_frequency": 1.0,  # seconds
+        }
+        self.recent_sample = get_random_target_sample(
+            self.sim, self.sample_volumes["target_volumes"]
+        )
 
     def draw_contact_debug(self):
         """
@@ -147,6 +276,25 @@ class HabitatSimInteractiveViewer(Application):
         if self.contact_debug_draw:
             self.draw_contact_debug()
 
+        # draw the sample volumes
+        for agent_volume in self.sample_volumes["agent_spawns"].values():
+            # agent boxes in green
+            agent_volume.debug_draw(sim=self.sim, color=mn.Color4.green())
+        for target_volume in self.sample_volumes["target_volumes"].values():
+            # target boxes in magenta
+            target_volume.debug_draw(sim=self.sim, color=mn.Color4.magenta())
+        # draw the sample
+        draw_debug_sphere(self.sim, 0.1, self.recent_sample, mn.Color4.red())
+        # draw a ling from in front of the user to the sample
+        camera_transform = (
+            self.render_camera.render_camera.node.absolute_transformation()
+        )
+        self.sim.get_debug_line_render().draw_transformed_line(
+            self.recent_sample,
+            camera_transform.transform_point(mn.Vector3(0, 0, -0.5)),
+            mn.Color4.red(),
+        )
+
     def draw_event(
         self,
         simulation_call: Optional[Callable] = None,
@@ -167,6 +315,19 @@ class HabitatSimInteractiveViewer(Application):
         self.time_since_last_simulation += Timer.prev_frame_duration
         num_agent_actions: int = self.time_since_last_simulation * agent_acts_per_sec
         self.move_and_look(int(num_agent_actions))
+
+        # resampling logic for demo purposes
+        self.sample_timer["time_since_last_sample"] += Timer.prev_frame_duration
+        if (
+            self.sample_timer["time_since_last_sample"]
+            > self.sample_timer["sample_frequency"]
+        ):
+            self.recent_sample = get_random_target_sample(
+                self.sim, self.sample_volumes["target_volumes"]
+            )
+            self.sample_timer["time_since_last_sample"] = math.fmod(
+                self.time_since_last_simulation, self.sample_timer["sample_frequency"]
+            )
 
         # Occasionally a frame will pass quicker than 1/60 seconds
         if self.time_since_last_simulation >= 1.0 / self.fps:
