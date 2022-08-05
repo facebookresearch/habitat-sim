@@ -748,6 +748,7 @@ workflows:
       - update_docs:
           requires:
             - install_and_test_ubuntu
+            - lab_build_habitat
           filters:
             branches:
               only: main
