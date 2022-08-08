@@ -84,6 +84,7 @@ struct PythonEnvironmentState {
   Magnum::Quaternion ee_rotation;
   bool did_collide = false;
   int held_obj_idx = -1;
+  bool did_attempt_grasp = false;
   bool did_grasp = false;
   bool did_drop = false;
   float drop_height = NAN;

@@ -428,6 +428,7 @@ void BatchedSimulator::updatePythonEnvironmentState() {
     // envState.obj_positions // this is updated incrementally
     // envSTate.obj_rotations // this is updated incrementally
     envState.held_obj_idx = robotInstance.grippedFreeObjectIndex_;
+    // did_attempt_grasp updated incrementally
     // did_grasp updated incrementally
     // did_drop updated incrementally
   }
@@ -502,6 +503,7 @@ void BatchedSimulator::updateGripping() {
     // this is wrong for the case of multiple substeps
     envState.did_drop = false;
     envState.drop_height = NAN;
+    envState.did_attempt_grasp = false;
     envState.did_grasp = false;
 
     if (b < config_.numDebugEnvs) {
@@ -546,6 +548,8 @@ void BatchedSimulator::updateGripping() {
     }
 
     if (robotInstance.doAttemptGrip_) {
+      envState.did_attempt_grasp = true;
+
       BATCHED_SIM_ASSERT(robotInstance.grippedFreeObjectIndex_ == -1);
       const auto& gripperMat = robotInstance.cachedGripperLinkMat_;
       auto& episodeInstance =
@@ -610,6 +614,7 @@ void BatchedSimulator::updateGripping() {
 
         if (!hit) {
           recentStats_.numGrips_++;
+          BATCHED_SIM_ASSERT(envState.did_attempt_grasp);
           envState.did_grasp = true;
           robotInstance.grippedFreeObjectPreviousPos_ = obsCopy.pos;
         } else {
@@ -1721,6 +1726,7 @@ void BatchedSimulator::resetEpisodeInstance(int b) {
 
     envState.did_drop = false;
     envState.drop_height = NAN;
+    envState.did_attempt_grasp = false;
     envState.did_grasp = false;
   }
 

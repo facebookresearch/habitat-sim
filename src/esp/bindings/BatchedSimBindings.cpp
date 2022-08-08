@@ -133,6 +133,8 @@ void initBatchedSimBindings(py::module& m) {
                      R"(Todo)")
       .def_readwrite("held_obj_idx", &PythonEnvironmentState::held_obj_idx,
                      R"(Todo)")
+      .def_readwrite("did_attempt_grasp",
+                     &PythonEnvironmentState::did_attempt_grasp, R"(Todo)")
       .def_readwrite("did_grasp", &PythonEnvironmentState::did_grasp, R"(Todo)")
       .def_readwrite("did_drop", &PythonEnvironmentState::did_drop, R"(Todo)")
       .def_readwrite("drop_height", &PythonEnvironmentState::drop_height,
