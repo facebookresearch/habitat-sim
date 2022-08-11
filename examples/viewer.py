@@ -13,6 +13,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
+import habitat.datasets.rearrange.receptacle as recetpacle
 import magnum as mn
 import numpy as np
 from magnum.platform.glfw import Application
@@ -35,6 +36,8 @@ class HabitatSimInteractiveViewer(Application):
         self.debug_bullet_draw = False
         # draw active contact point debug line visualizations
         self.contact_debug_draw = False
+        # draw all receptacles in the scene with debug lines
+        self.draw_receptacles = False
         # cache most recently loaded URDF file for quick-reload
         self.cached_urdf = ""
 
@@ -79,7 +82,7 @@ class HabitatSimInteractiveViewer(Application):
         self.previous_mouse_point = None
 
         # toggle physics simulation on/off
-        self.simulating = True
+        self.simulating = False
 
         # toggle a single simulation step at the next opportunity if not
         # simulating continuously.
@@ -136,6 +139,23 @@ class HabitatSimInteractiveViewer(Application):
                 normal=camera_position - cp.position_on_b_in_ws,
             )
 
+    def debug_draw_receptacles(self):
+        """
+        This method is called to render a debug line overlay displaying receptacles in the scene.
+        """
+        dblr = self.sim.get_debug_line_render()
+        for receptacle in self.current_receptacles:
+            dblr.push_transform(receptacle.get_global_transform(self.sim))
+            dblr.draw_box(
+                receptacle.bounds.min, receptacle.bounds.max, mn.Color4.magenta()
+            )
+            dblr.draw_transformed_line(
+                receptacle.bounds.center(),
+                receptacle.bounds.center() + receptacle.up,
+                mn.Color4.blue(),
+            )
+            dblr.pop_transform()
+
     def debug_draw(self):
         """
         Additional draw commands to be called during draw_event.
@@ -146,6 +166,8 @@ class HabitatSimInteractiveViewer(Application):
             self.sim.physics_debug_draw(proj_mat)
         if self.contact_debug_draw:
             self.draw_contact_debug()
+        if self.draw_receptacles:
+            self.debug_draw_receptacles()
 
     def draw_event(
         self,
@@ -279,6 +301,9 @@ class HabitatSimInteractiveViewer(Application):
         Timer.start()
         self.step = -1
 
+        self.current_receptacles = recetpacle.find_receptacles(self.sim)
+        print(self.current_receptacles)
+
     def move_and_look(self, repetitions: int) -> None:
         """
         This method is called continuously with `self.draw_event` to monitor
@@ -398,6 +423,11 @@ class HabitatSimInteractiveViewer(Application):
                 self.contact_debug_draw = True
                 # TODO: add a nice log message with concise contact pair naming.
 
+        elif key == pressed.R:
+            # draw receptacles
+            self.draw_receptacles = not self.draw_receptacles
+            print(f"draw_receptacles = {self.draw_receptacles}")
+
         elif key == pressed.T:
             # load URDF
             fixed_base = alt_pressed
@@ -434,7 +464,7 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.N:
             # (default) - toggle navmesh visualization
             # NOTE: (+ALT) - re-sample the agent position on the NavMesh
-            # NOTE: (+SHIFT) - re-compute the NavMesh
+            # NOTE: (+SHIFT) - re-compute the NavMesh and save to out.navmesh in current directory
             if alt_pressed:
                 logger.info("Command: resample agent state from navmesh")
                 if self.sim.pathfinder.is_loaded:
@@ -454,6 +484,7 @@ class HabitatSimInteractiveViewer(Application):
             elif shift_pressed:
                 logger.info("Command: recompute navmesh")
                 self.navmesh_config_and_recompute()
+                self.sim.pathfinder.save_nav_mesh("out.navmesh")
             else:
                 if self.sim.pathfinder.is_loaded:
                     self.sim.navmesh_visualization = not self.sim.navmesh_visualization
