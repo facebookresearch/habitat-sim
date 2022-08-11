@@ -13,7 +13,6 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
-import habitat.datasets.rearrange.receptacle as recetpacle
 import magnum as mn
 import numpy as np
 from magnum.platform.glfw import Application
@@ -23,6 +22,7 @@ from examples.settings import default_sim_settings, make_cfg
 from habitat_sim import physics
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.common import quat_from_angle_axis
+import habitat.datasets.rearrange.receptacle as receptacle
 
 
 class HabitatSimInteractiveViewer(Application):
@@ -301,7 +301,7 @@ class HabitatSimInteractiveViewer(Application):
         Timer.start()
         self.step = -1
 
-        self.current_receptacles = recetpacle.find_receptacles(self.sim)
+        self.current_receptacles = receptacle.find_receptacles(self.sim)
         print(self.current_receptacles)
 
     def move_and_look(self, repetitions: int) -> None:
