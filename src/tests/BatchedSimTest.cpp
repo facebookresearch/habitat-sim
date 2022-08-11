@@ -286,10 +286,12 @@ TEST_F(BatchedSimulatorTest, basic) {
       .enableHeldObjectCollision = true,
       .doProceduralEpisodeSet = true,
       .episodeGeneratorConfig = generatorConfig,
-      //.episodeSetFilepath = "../data/generated.episode_set.json",
+      //.episodeSetFilepath =
+      //"/home/eundersander/Downloads/tidy_house_100ep.episode_set.json",
       .collectionFilepath = "../data/replicacad_composite.collection.json",
       .renderAssetCompositeFilepath =
           "../data/bps_data/composite/composite.bps",
+      .enableSliding = true,
   };
   BatchedSimulator bsim(config);
 
