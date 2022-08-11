@@ -170,9 +170,10 @@ class RobotInstance {
   Magnum::Matrix4
       cachedGripperLinkMat_;  // sloppy: also in newNodeTransforms at glMat
   int grippedFreeObjectIndex_ = -1;
-  Corrade::Containers::Optional<Mn::Vector3> grippedFreeObjectPreviousPos_;
+  Corrade::Containers::Optional<Magnum::Vector3> grippedFreeObjectPreviousPos_;
   // glm::mat4 cameraNewInvTransform_;
   Magnum::Matrix4 cameraAttachNodeTransform_;
+  Corrade::Containers::Optional<Magnum::Matrix4> linkToHeldObjectTransform_;
 };
 
 class RobotInstanceSet {
@@ -338,6 +339,8 @@ class BatchedSimulator {
 
   int getFreeObjectBpsInstanceId(int b, int freeObjectIndex) const;
   Magnum::Matrix4 getHeldObjectTransform(int b) const;
+  Magnum::Matrix4 calcLinkToHeldObjectTransform(int b,
+                                                const Mn::Matrix4& objToWorld);
 
   bool isPhysicsThreadActive() const;
 

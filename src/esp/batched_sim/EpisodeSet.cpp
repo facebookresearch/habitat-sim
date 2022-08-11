@@ -57,37 +57,40 @@ void updateFromSerializeCollection(FreeObject& freeObject,
 
       // insert larger spheres first, so that de-duplication (later) leaves
       // larger spheres
+      bool isFirstUsableSize = true;
       for (float r : {largeRadius, mediumRadius, smallRadius}) {
-        if (aabb.size().length() < r * 2.f) {
+        if (Mn::Math::min(Mn::Math::min(aabb.sizeX(), aabb.sizeY()),
+                          aabb.sizeZ()) < r * 2.f) {
           // object is too small for even one sphere of this radius
           continue;
         }
-        if (aabb.sizeZ() < r * 2.f) {
-          continue;
-        }
 
-        if (r == largeRadius) {
-          int numX = int(aabb.sizeX() / (largeRadius * 2.f)) + 1;
-          int numY = int(aabb.sizeY() / (largeRadius * 2.f)) + 1;
-          int numZ = int(aabb.sizeZ() / (largeRadius * 2.f)) + 1;
+        if (isFirstUsableSize) {
+          // 2 and 3 are heuristics for sphere density, with tradeoff between
+          // collision accuracy and speed
+          const float spacing = (r == largeRadius) ? r * 2.f : r * 3.f;
+          int numX = Mn::Math::max(int(aabb.sizeX() / spacing) + 1, 2);
+          int numY = Mn::Math::max(int(aabb.sizeY() / spacing) + 1, 2);
+          int numZ = Mn::Math::max(int(aabb.sizeZ() / spacing) + 1, 2);
           Mn::Vector3 origin;
           for (int ix = 0; ix < numX; ix++) {
-            origin.x() = Mn::Math::lerp(aabb.min().x() + largeRadius,
-                                        aabb.max().x() - largeRadius,
+            origin.x() = Mn::Math::lerp(aabb.min().x() + r, aabb.max().x() - r,
                                         float(ix) / (numX - 1));
             for (int iy = 0; iy < numY; iy++) {
-              origin.y() = Mn::Math::lerp(aabb.min().y() + largeRadius,
-                                          aabb.max().y() - largeRadius,
-                                          float(iy) / (numY - 1));
+              origin.y() =
+                  Mn::Math::lerp(aabb.min().y() + r, aabb.max().y() - r,
+                                 float(iy) / (numY - 1));
               for (int iz = 0; iz < numZ; iz++) {
-                origin.z() = Mn::Math::lerp(aabb.min().z() + largeRadius,
-                                            aabb.max().z() - largeRadius,
-                                            float(iz) / (numZ - 1));
+                origin.z() =
+                    Mn::Math::lerp(aabb.min().z() + r, aabb.max().z() - r,
+                                   float(iz) / (numZ - 1));
                 spheres.push_back({origin, r});
               }
             }
           }
+          isFirstUsableSize = false;
         } else {
+          // just fill in corners
           spheres.push_back({aabb.backBottomLeft(), r});
           spheres.push_back({aabb.backBottomRight(), r});
           spheres.push_back({aabb.backTopLeft(), r});
@@ -101,31 +104,51 @@ void updateFromSerializeCollection(FreeObject& freeObject,
 
     } else if (serFreeObject.generateCollisionSpheresTechnique ==
                "uprightCylinder") {
+      bool isFirstUsableSize = true;
+
       // insert larger spheres first, so that de-duplication (later) leaves
       // larger spheres
       for (float r : {largeRadius, mediumRadius, smallRadius}) {
-        if (aabb.size().length() < r * 2.f) {
+        if (Mn::Math::min(Mn::Math::min(aabb.sizeX(), aabb.sizeY()),
+                          aabb.sizeZ()) < r * 2.f) {
           // object is too small for even one sphere of this radius
           continue;
         }
 
-        for (float z : {aabb.min().z(), aabb.max().z()}) {
-          for (int xyDim = 0; xyDim < 2; xyDim++) {
-            int otherXyDim = xyDim == 0 ? 1 : 0;
-            Mn::Vector3 pMin;
-            pMin[xyDim] = aabb.min()[xyDim];
-            pMin[otherXyDim] = aabb.center()[otherXyDim];
-            pMin.z() = z;
+        // 2 and 3 are heuristics for sphere density, with tradeoff between
+        // collision accuracy and speed
+        const float spacing = (r == largeRadius) ? r * 2.f : r * 3.f;
+        int numX = Mn::Math::max(int(aabb.sizeX() / spacing) + 1, 2);
+        int numY = Mn::Math::max(int(aabb.sizeY() / spacing) + 1, 2);
+        int numZ = isFirstUsableSize
+                       ? Mn::Math::max(int(aabb.sizeZ() / spacing) + 1, 2)
+                       : 2;
+        int numAngles = numX + numY;  // heuristic based on XY dimension
+        Mn::Vector3 origin;
+        Mn::Vector3 aabbCenter = aabb.center();
+        // construct rings at various z heights
+        for (int iz = 0; iz < numX; iz++) {
+          origin.z() = Mn::Math::lerp(aabb.min().z() + r, aabb.max().z() - r,
+                                      float(iz) / (numZ - 1));
+          for (int angleIdx = 0; angleIdx < numAngles; angleIdx++) {
+            auto angle = Mn::Math::Deg(
+                Mn::Math::lerp(0.f, 360.f, float(angleIdx) / (numAngles)));
+            origin =
+                Mn::Vector3(Mn::Math::lerp(aabbCenter.x(), aabb.max().x() - r,
+                                           Mn::Math::cos(angle)),
+                            Mn::Math::lerp(aabbCenter.y(), aabb.max().y() - r,
+                                           Mn::Math::sin(angle)),
+                            origin.z());
+            spheres.push_back({origin, r});
+          }
 
-            Mn::Vector3 pMax;
-            pMax[xyDim] = aabb.max()[xyDim];
-            pMax[otherXyDim] = aabb.center()[otherXyDim];
-            pMax.z() = z;
-
-            spheres.push_back({pMin, r});
-            spheres.push_back({pMax, r});
+          if (isFirstUsableSize && numAngles > 4) {
+            // also insert sphere at XY center
+            origin = Mn::Vector3(aabbCenter.x(), aabbCenter.y(), origin.z());
+            spheres.push_back({origin, r});
           }
         }
+        isFirstUsableSize = false;
       }
 
     } else {

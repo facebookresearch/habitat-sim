@@ -564,6 +564,13 @@ void BatchedSimulator::updateGripping() {
         const auto obsCopy =
             episodeInstance.colGrid_.getObstacle(grippedFreeObjectIndex);
 
+        Mn::Matrix4 invTransform = Mn::Matrix4::from(
+            obsCopy.invRotation.toMatrix(),
+            obsCopy.invRotation.transformVector(-obsCopy.pos));
+
+        robotInstance.linkToHeldObjectTransform_ =
+            calcLinkToHeldObjectTransform(b, invTransform);
+
         // remove object before doing collision test
         // perf todo: only do this after we pass the columnGridSet collision
         // test below
@@ -571,8 +578,21 @@ void BatchedSimulator::updateGripping() {
         robotInstance.grippedFreeObjectIndex_ = grippedFreeObjectIndex;
         robotInstance.grippedFreeObjectPreviousPos_ = Cr::Containers::NullOpt;
 
-        // check if object will be collision-free in gripper
         bool hit = false;
+
+        // We skip this check now. In general, objects are already
+        // collision-free, and grasping one doesn't move the object. Note there
+        // are edge cases where this collision-free check would fail, because of
+        // differing collision representation for resting objects (oriented
+        // boxes) versus held objects (spheres). Or, because object start
+        // positions are interpenetrating in the episode dataset. However, on
+        // the next frame, as long as sliding is enabled, the robot is likely to
+        // find a collision-free pose while continuing to hold the object, so
+        // these edge cases usually resolve neatly. However, in the worst case,
+        // sliding doesn't help, and the robot will be unable to move
+        // unless/until it drops the held object.
+#if 0
+        // check if object will be collision-free in gripper
         {
           // sloppy: code copy-pasted from updateCollision()
 
@@ -611,6 +631,7 @@ void BatchedSimulator::updateGripping() {
             }
           }
         }
+#endif
 
         if (!hit) {
           recentStats_.numGrips_++;
@@ -1109,14 +1130,24 @@ void BatchedSimulator::updateRenderInstances(bool forceUpdate) {
 #endif
 
     constexpr float pad = 0.05;
+    constexpr auto identityRot = Mn::Quaternion(Mn::Math::IdentityInit);
+    constexpr auto verticalLineAabb = Mn::Range3D(
+        Mn::Vector3(-0.01f, -1.5f, -0.01f), Mn::Vector3(0.01f, 1.5f, 0.01f));
+
     addBoxDebugInstance("cube_pink_wireframe", b, freeObjectSpawn.startPos_,
                         startRotation, freeObject.aabb_, pad);
+
+    addBoxDebugInstance("cube_pink_wireframe", b, freeObjectSpawn.startPos_,
+                        identityRot, verticalLineAabb);
 
     addSphereDebugInstance("sphere_pink_wireframe", b,
                            freeObjectSpawn.startPos_, /*radius*/ 0.05f);
 
     addBoxDebugInstance("cube_blue_wireframe", b, episode.targetObjGoalPos_,
                         episode.targetObjGoalRotation_, freeObject.aabb_);
+
+    addBoxDebugInstance("cube_blue_wireframe", b, episode.targetObjGoalPos_,
+                        identityRot, verticalLineAabb);
 
     addSphereDebugInstance("sphere_blue_wireframe", b,
                            episode.targetObjGoalPos_, /*radius*/ 0.05f);
@@ -1182,10 +1213,28 @@ void BatchedSimulator::updateRenderInstances(bool forceUpdate) {
 #endif
 }
 
+Mn::Matrix4 BatchedSimulator::calcLinkToHeldObjectTransform(
+    int b,
+    const Mn::Matrix4& objToWorld) {
+  auto& robotInstance = robots_.robotInstances_[b];
+
+  auto worldToLink = robotInstance.cachedGripperLinkMat_;
+
+  auto mat = objToWorld * worldToLink;
+  return mat.inverted();
+}
+
 Mn::Matrix4 BatchedSimulator::getHeldObjectTransform(int b) const {
   auto& robotInstance = robots_.robotInstances_[b];
   BATCHED_SIM_ASSERT(robotInstance.grippedFreeObjectIndex_ != -1);
 
+  BATCHED_SIM_ASSERT(robotInstance.linkToHeldObjectTransform_);
+
+  auto mat = robotInstance.cachedGripperLinkMat_ *
+             *robotInstance.linkToHeldObjectTransform_;
+  return mat;
+
+#if 0
   auto& episodeInstance =
       safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
   const auto& episode =
@@ -1215,6 +1264,7 @@ Mn::Matrix4 BatchedSimulator::getHeldObjectTransform(int b) const {
   auto mat = robotInstance.cachedGripperLinkMat_ * linkToGripper *
              toOrientedObject * toObjectCenter;
   return mat;
+#endif
 }
 
 Robot::Robot(const serialize::Collection& serializeCollection,
