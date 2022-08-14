@@ -79,7 +79,7 @@ Habitat-Sim can be installed in 3 ways:
 Habitat is under active development, and we advise users to restrict themselves to [stable releases](https://github.com/facebookresearch/habitat-sim/releases). Starting with v0.1.4, we provide [conda packages for each release](https://anaconda.org/aihabitat).
 
 1. **Preparing conda env**
-   
+
    Assuming you have [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/) installed, let's prepare a conda env:
    ```bash
    # We require python>=3.7 and cmake>=3.10
@@ -253,7 +253,6 @@ To get you started, see the [Lighting Setup tutorial](https://aihabitat.org/docs
 * If you use the Redwood Depth Noise Model, please cite their [paper](http://redwood-data.org/indoor/)
 
     Specifically, the noise model defined in `src_python/habitat_sim/sensors/noise_models/redwood_depth_noise_model.py` and `src/esp/sensor/RedwoodNoiseModel.*`
-
 
 ## License
 
