@@ -254,6 +254,7 @@ To get you started, see the [Lighting Setup tutorial](https://aihabitat.org/docs
 
     Specifically, the noise model defined in `src_python/habitat_sim/sensors/noise_models/redwood_depth_noise_model.py` and `src/esp/sensor/RedwoodNoiseModel.*`
 
+
 ## License
 
 Habitat-Sim is MIT licensed. See the [LICENSE](LICENSE) for details.
