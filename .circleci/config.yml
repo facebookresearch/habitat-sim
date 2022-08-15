@@ -125,7 +125,7 @@ commands:
                 # it installs the 1.4 cpuonly version. Which is no good.
                 conda install -q -y pytorch torchvision cudatoolkit=11.3 -c pytorch
                 conda install -q -y -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis
-                pip install pytest-sugar pytest-xdist pytest-benchmark opencv-python
+                pip install pytest-sugar pytest-xdist pytest-benchmark opencv-python cython
               fi
       - run:
           name: Install emscripten
