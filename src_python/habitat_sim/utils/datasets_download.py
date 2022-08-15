@@ -152,37 +152,37 @@ def initialize_test_data_sources(data_path):
         },
     }
 
-    data_sources.update(
-        {
-            f"hm3d_{split}_{data_format}": {
-                "source": "https://api.matterport.com/resources/habitat/hm3d-{split}-{data_format}.tar{ext}".format(
-                    ext=".gz" if data_format == "obj+mtl" else "",
-                    split=split,
-                    data_format=data_format,
-                ),
-                "download_pre_args": "--location",
-                "package_name": "hm3d-{split}-{data_format}.tar{ext}".format(
-                    ext=".gz" if data_format == "obj+mtl" else "",
-                    split=split,
-                    data_format=data_format,
-                ),
-                "link": data_path + "scene_datasets/hm3d",
-                "version": "1.0",
-                "version_dir": "hm3d-{version}/hm3d",
-                "extract_postfix": f"{split}",
-                "downloaded_file_list": f"hm3d-{{version}}/{split}-{data_format}-files.json.gz",
-                "requires_auth": True,
-                "use_curl": True,
-                "post_extract_fn": hm3d_train_configs_post
-                if split == "train" and data_format == "configs"
-                else None,
+    for split, data_format in itertools.product(
+        ["minival", "train", "val"],
+        ["glb", "obj+mtl", "habitat", "configs"],
+    ):
+        data_sources.update(
+            {
+                f"hm3d_{split}_{data_format}": {
+                    "source": "https://api.matterport.com/resources/habitat/hm3d-{split}-{data_format}.tar{ext}".format(
+                        ext=".gz" if data_format == "obj+mtl" else "",
+                        split=split,
+                        data_format=data_format,
+                    ),
+                    "download_pre_args": "--location",
+                    "package_name": "hm3d-{split}-{data_format}.tar{ext}".format(
+                        ext=".gz" if data_format == "obj+mtl" else "",
+                        split=split,
+                        data_format=data_format,
+                    ),
+                    "link": data_path + "scene_datasets/hm3d",
+                    "version": "1.0",
+                    "version_dir": "hm3d-{version}/hm3d",
+                    "extract_postfix": f"{split}",
+                    "downloaded_file_list": f"hm3d-{{version}}/{split}-{data_format}-files.json.gz",
+                    "requires_auth": True,
+                    "use_curl": True,
+                    "post_extract_fn": hm3d_train_configs_post
+                    if split == "train" and data_format == "configs"
+                    else None,
+                }
             }
-            for split, data_format in itertools.product(
-                ["minival", "train", "val"],
-                ["glb", "obj+mtl", "habitat", "configs"],
-            )
-        }
-    )
+        )
 
     data_sources.update(
         {
@@ -205,37 +205,37 @@ def initialize_test_data_sources(data_path):
         }
     )
 
-    data_sources.update(
-        {
-            f"hm3d_{split}_semantic_{data_format}_v0.1": {
-                "source": "https://api.matterport.com/resources/habitat/hm3d-{split}-semantic-{data_format}-v0.1.tar{ext}".format(
-                    ext=".gz" if data_format == "annots" else "",
-                    split=split,
-                    data_format=data_format,
-                ),
-                "download_pre_args": "--location",
-                "package_name": "hm3d-{split}-semantic-{data_format}-v0.1.tar{ext}".format(
-                    ext=".gz" if data_format == "annots" else "",
-                    split=split,
-                    data_format=data_format,
-                ),
-                "link": data_path + "scene_datasets/hm3d",
-                "version": "1.0",
-                "version_dir": "hm3d-{version}/hm3d",
-                "extract_postfix": f"{split}",
-                "downloaded_file_list": f"hm3d-{{version}}/{split}-semantic-{data_format}-files.json.gz",
-                "requires_auth": True,
-                "use_curl": True,
-                "post_extract_fn": hm3d_semantic_configs_post
-                if data_format == "configs"
-                else None,
+    for split, data_format in itertools.product(
+        ["minival", "train", "val"],
+        ["annots", "configs"],
+    ):
+        data_sources.update(
+            {
+                f"hm3d_{split}_semantic_{data_format}_v0.1": {
+                    "source": "https://api.matterport.com/resources/habitat/hm3d-{split}-semantic-{data_format}-v0.1.tar{ext}".format(
+                        ext=".gz" if data_format == "annots" else "",
+                        split=split,
+                        data_format=data_format,
+                    ),
+                    "download_pre_args": "--location",
+                    "package_name": "hm3d-{split}-semantic-{data_format}-v0.1.tar{ext}".format(
+                        ext=".gz" if data_format == "annots" else "",
+                        split=split,
+                        data_format=data_format,
+                    ),
+                    "link": data_path + "scene_datasets/hm3d",
+                    "version": "1.0",
+                    "version_dir": "hm3d-{version}/hm3d",
+                    "extract_postfix": f"{split}",
+                    "downloaded_file_list": f"hm3d-{{version}}/{split}-semantic-{data_format}-files.json.gz",
+                    "requires_auth": True,
+                    "use_curl": True,
+                    "post_extract_fn": hm3d_semantic_configs_post
+                    if data_format == "configs"
+                    else None,
+                }
             }
-            for split, data_format in itertools.product(
-                ["minival", "train", "val"],
-                ["annots", "configs"],
-            )
-        }
-    )
+        )
 
     data_sources.update(
         {
@@ -314,14 +314,14 @@ def initialize_test_data_sources(data_path):
         "hm3d_full": list(filter(lambda k: k.startswith("hm3d_"), data_sources.keys())),
     }
 
-    data_groups.update(
-        {
-            f"hm3d_{split}_full": list(
-                filter(lambda k: k.startswith(f"hm3d_{split}"), data_sources.keys())
-            )
-            for split in ["train", "val", "minival", "example"]
-        }
-    )
+    for split in ["train", "val", "minival", "example"]:
+        data_groups.update(
+            {
+                f"hm3d_{split}_full": list(
+                    filter(lambda k: k.startswith(f"hm3d_{split}"), data_sources.keys())
+                )
+            }
+        )
 
     data_groups["hm3d"] = (
         data_groups["hm3d_val"]
