@@ -1571,12 +1571,12 @@ if __name__ == "__main__":
 
     # this interactive viewer was developed with these arguments,
     # so make them the default if none provided
-    if args.scene == None:
+    if args.scene == "NONE":
         scene_name = "./data/test_assets/scenes/simple_room.glb"
     else:
         scene_name = args.scene
 
-    if args.dataset == None:
+    if args.dataset == "default":
         dataset_name = "./data/objects/ycb/ycb.scene_dataset_config.json"
     else:
         dataset_name = args.dataset
