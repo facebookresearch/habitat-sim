@@ -49,7 +49,7 @@ def get_fast_video_writer(video_file: str, fps: int = 60):
             codec="h264_nvenc",
             mode="I",
             bitrate="1000k",
-            format="FFMPEG",
+            format="FFMPEG",  # type: ignore[arg-type]
             ffmpeg_log_level="info",
             output_params=["-minrate", "500k", "-maxrate", "5000k"],
         )

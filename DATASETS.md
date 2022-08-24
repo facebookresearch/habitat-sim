@@ -1,5 +1,19 @@
 # Datasets commonly used with Habitat-Sim
 
+## Habitat test scenes
+
+We provide 3 example scenes for performing unit tests in habitat-sim. These can be programmatically downloaded via Habitat's data download utility.
+
+```
+python -m habitat_sim.utils.datasets_download --uids habitat_test_scenes --data-path data/
+```
+
+We also provide PointNav episodes sampled from these scenes for performing unit tests in habitat-lab. These can also be downloaded using Habitat's data download utility.
+
+```
+python -m habitat_sim.utils.datasets_download --uids habitat_test_pointnav_dataset --data-path data/
+```
+
 ## Habitat-Matterport 3D Research Dataset (HM3D)
 
 Details: [https://aihabitat.org/datasets/hm3d/](https://aihabitat.org/datasets/hm3d/).

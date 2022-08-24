@@ -1,5 +1,20 @@
-find_package(Magnum REQUIRED DebugTools AnyImageConverter)
-find_package(MagnumPlugins REQUIRED StbImageImporter)
+find_package(Magnum REQUIRED DebugTools AnyImageConverter AnySceneImporter)
+find_package(
+  MagnumPlugins
+  REQUIRED
+  GltfImporter
+  StbImageImporter
+  KtxImporter
+  # Disabled for now as the OPTIONAL component with a CMake subproject causes a
+  # CMake error. TODO: fix in the Find module
+  #OPTIONAL_COMPONENTS GltfSceneConverter KtxImageConverter
+)
+
+# If the GltfSceneConverter is present, the new Magnum SceneConverter APIs are
+# as well. Which enables a data-generating test case in GfxBatchRendererTest.
+if(MagnumPlugins_GltfSceneConverter_FOUND)
+  set(HAS_MAGNUM_GLTFSCENECONVERTER ON)
+endif()
 
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/configure.h
@@ -24,6 +39,30 @@ corrade_add_test(
   metadata
 )
 target_include_directories(AttributesManagersTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
+corrade_add_test(
+  GfxBatchRendererTest
+  GfxBatchRendererTest.cpp
+  LIBRARIES
+  gfx_batch
+  Magnum::DebugTools
+  Magnum::AnySceneImporter
+  MagnumPlugins::GltfImporter
+  MagnumPlugins::KtxImporter
+  MagnumPlugins::StbImageImporter
+)
+target_include_directories(GfxBatchRendererTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+if(BUILD_WITH_CUDA)
+  target_include_directories(
+    GfxBatchRendererTest PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
+  )
+endif()
+if(MagnumPlugins_GltfSceneConverter_FOUND)
+  target_link_libraries(
+    GfxBatchRendererTest PRIVATE MagnumPlugins::GltfSceneConverter
+                                 MagnumPlugins::KtxImageConverter
+  )
+endif()
 
 corrade_add_test(CoreTest CoreTest.cpp LIBRARIES core io)
 

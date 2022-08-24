@@ -1,0 +1,273 @@
+{
+  "asset": {
+    "version": "2.0",
+    "generator": "Magnum GltfSceneConverter"
+  },
+  "extensionsUsed": [
+    "MAGNUMX_mesh_views",
+    "KHR_texture_ktx"
+  ],
+  "extensionsRequired": [
+    "MAGNUMX_mesh_views",
+    "KHR_texture_ktx"
+  ],
+  "buffers": [
+    {
+      "uri": "batch.bin",
+      "byteLength": 1820
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 444
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 444,
+      "byteLength": 1356,
+      "byteStride": 32
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 456,
+      "byteLength": 1356,
+      "byteStride": 32
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 468,
+      "byteLength": 1352,
+      "byteStride": 32
+    }
+  ],
+  "accessors": [
+    {
+      "bufferView": 0,
+      "componentType": 5125,
+      "count": 111,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 43,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "componentType": 5126,
+      "count": 43,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 3,
+      "componentType": 5126,
+      "count": 43,
+      "type": "VEC2"
+    }
+  ],
+  "images": [
+    {
+      "uri": "batch.0.ktx2"
+    }
+  ],
+  "samplers": [
+    {
+      "wrapS": 10497,
+      "wrapT": 10497,
+      "minFilter": 9984,
+      "magFilter": 9728
+    }
+  ],
+  "textures": [
+    {
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_ktx": {
+          "source": 0,
+          "layer": 0
+        }
+      }
+    },
+    {
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_ktx": {
+          "source": 0,
+          "layer": 1
+        }
+      }
+    }
+  ],
+  "materials": [
+    {
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 0
+        }
+      }
+    },
+    {
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [0, 1, 1, 1],
+        "baseColorTexture": {
+          "index": 1,
+          "extensions": {
+            "KHR_texture_transform": {
+              "scale": [0.5, 0.5],
+              "offset": [0, 0.5]
+            }
+          }
+        }
+      }
+    },
+    {
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [1, 0, 1, 1],
+        "baseColorTexture": {
+          "index": 1,
+          "extensions": {
+            "KHR_texture_transform": {
+              "scale": [0.5, 0.5],
+              "offset": [0.5, 0.5]
+            }
+          }
+        }
+      }
+    },
+    {
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [1, 1, 0, 1],
+        "baseColorTexture": {
+          "index": 1,
+          "extensions": {
+            "KHR_texture_transform": {
+              "scale": [0.5, 0.5],
+              "offset": [0, 0]
+            }
+          }
+        }
+      }
+    }
+  ],
+  "meshes": [
+    {
+      "primitives": [
+        {
+          "indices": 0,
+          "attributes": {
+            "POSITION": 1,
+            "NORMAL": 2,
+            "TEXCOORD_0": 3
+          }
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "children": [1],
+      "name": "square"
+    },
+    {
+      "mesh": 0,
+      "extras": {
+        "meshViewIndexOffset": 0,
+        "meshViewIndexCount": 6,
+        "meshViewMaterial": 0
+      }
+    },
+    {
+      "children": [3],
+      "name": "circle"
+    },
+    {
+      "mesh": 0,
+      "extras": {
+        "meshViewIndexOffset": 24,
+        "meshViewIndexCount": 96,
+        "meshViewMaterial": 1
+      }
+    },
+    {
+      "children": [5],
+      "name": "triangle"
+    },
+    {
+      "mesh": 0,
+      "extras": {
+        "meshViewIndexOffset": 408,
+        "meshViewIndexCount": 9,
+        "meshViewMaterial": 2
+      }
+    },
+    {
+      "children": [7, 8, 9, 10],
+      "name": "four squares"
+    },
+    {
+      "mesh": 0,
+      "matrix": [
+        0.4, 0, 0, 0,
+        0, 0.4, 0, 0,
+        0, 0, 0.4, 0,
+        -0.5, -0.5, 0, 1
+      ],
+      "extras": {
+        "meshViewIndexOffset": 0,
+        "meshViewIndexCount": 6,
+        "meshViewMaterial": 0
+      }
+    },
+    {
+      "mesh": 0,
+      "matrix": [
+        0.4, 0, 0, 0,
+        0, 0.4, 0, 0,
+        0, 0, 0.4, 0,
+        0.5, -0.5, 0, 1
+      ],
+      "extras": {
+        "meshViewIndexOffset": 0,
+        "meshViewIndexCount": 6,
+        "meshViewMaterial": 1
+      }
+    },
+    {
+      "mesh": 0,
+      "matrix": [
+        0.4, 0, 0, 0,
+        0, 0.4, 0, 0,
+        0, 0, 0.4, 0,
+        -0.5, 0.5, 0, 1
+      ],
+      "extras": {
+        "meshViewIndexOffset": 0,
+        "meshViewIndexCount": 6,
+        "meshViewMaterial": 2
+      }
+    },
+    {
+      "mesh": 0,
+      "matrix": [
+        0.4, 0, 0, 0,
+        0, 0.4, 0, 0,
+        0, 0, 0.4, 0,
+        0.5, 0.5, 0, 1
+      ],
+      "extras": {
+        "meshViewIndexOffset": 0,
+        "meshViewIndexCount": 6,
+        "meshViewMaterial": 3
+      }
+    }
+  ],
+  "scenes": [
+    {
+      "nodes": [0, 2, 4, 6]
+    }
+  ],
+  "scene": 0
+}

@@ -2427,8 +2427,8 @@ Mn::Image2D ResourceManager::convertRGBToSemanticId(
   Mn::Image2D resImage{
       Mn::PixelFormat::R16UI, size,
       Cr::Containers::Array<char>{
-          Mn::NoInit,
-          std::size_t(size.product() * pixelSize(Mn::PixelFormat::R16UI))}};
+          Mn::NoInit, std::size_t(size.product() *
+                                  pixelFormatSize(Mn::PixelFormat::R16UI))}};
 
   Cr::Containers::StridedArrayView2D<const Mn::Color3ub> input =
       srcImage.pixels<Mn::Color3ub>();

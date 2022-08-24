@@ -175,9 +175,12 @@ const struct {
 
 PhysicsTest::PhysicsTest() {
   addInstancedTests(
-      {&PhysicsTest::testJoinCompound, &PhysicsTest::testCollisionBoundingBox,
+      {&PhysicsTest::testJoinCompound,
+#ifdef ESP_BUILD_WITH_BULLET
+       &PhysicsTest::testCollisionBoundingBox,
        &PhysicsTest::testDiscreteContactTest,
        &PhysicsTest::testBulletCompoundShapeMargins,
+#endif
        &PhysicsTest::testConfigurableScaling, &PhysicsTest::testVelocityControl,
        &PhysicsTest::testSceneNodeAttachment, &PhysicsTest::testMotionTypes,
        &PhysicsTest::testNumActiveContactPoints,
