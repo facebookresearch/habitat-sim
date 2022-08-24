@@ -31,6 +31,7 @@ configure_file(
 )
 
 find_package(Corrade REQUIRED Utility)
+find_package(MagnumIntegration REQUIRED Eigen)
 
 add_library(
   core STATIC

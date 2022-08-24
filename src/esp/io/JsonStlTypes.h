@@ -15,12 +15,7 @@
 namespace esp {
 namespace io {
 
-inline JsonGenericValue toJsonValue(const std::string& str,
-                                    JsonAllocator& allocator) {
-  JsonGenericValue strObj;
-  strObj.SetString(str.c_str(), allocator);
-  return strObj;
-}
+JsonGenericValue toJsonValue(const std::string& str, JsonAllocator& allocator);
 
 /**
  * @brief Populate passed @p val with value. Returns whether successfully
@@ -30,13 +25,24 @@ inline JsonGenericValue toJsonValue(const std::string& str,
  * @param val destination value to be populated
  * @return whether successful or not
  */
-inline bool fromJsonValue(const JsonGenericValue& obj, std::string& val) {
-  if (obj.IsString()) {
-    val = obj.GetString();
-    return true;
-  }
-  ESP_ERROR() << "Invalid string value";
-  return false;
+bool fromJsonValue(const JsonGenericValue& obj, std::string& val);
+
+template <typename T_first, typename T_second>
+inline JsonGenericValue toJsonValue(const std::pair<T_first, T_second>& val,
+                                    JsonAllocator& allocator) {
+  esp::io::JsonGenericValue obj(rapidjson::kObjectType);
+  esp::io::addMember(obj, "first", val.first, allocator);
+  esp::io::addMember(obj, "second", val.second, allocator);
+  return obj;
+}
+
+template <typename T_first, typename T_second>
+inline bool fromJsonValue(const JsonGenericValue& obj,
+                          std::pair<T_first, T_second>& val) {
+  bool success = true;
+  success &= readMember(obj, "first", val.first);
+  success &= readMember(obj, "second", val.second);
+  return success;
 }
 
 // For std::vector, we use rapidjson::kArrayType. For an empty vector, we

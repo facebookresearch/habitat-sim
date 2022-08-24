@@ -44,7 +44,7 @@ https://user-images.githubusercontent.com/2941091/126080914-36dc8045-01d4-4a68-8
 
 
 ## Citing Habitat
-If you use the Habitat platform in your research, please cite the [Habitat](https://arxiv.org/abs/1904.01201) and [Habitat 2.0](https://arxiv.org/abs/2106.14405) papers:
+If you use the Habitat platform in your research, please cite the [Habitat 1.0](https://arxiv.org/abs/1904.01201) and [Habitat 2.0](https://arxiv.org/abs/2106.14405) papers:
 
 ```
 @inproceedings{szot2021habitat,
@@ -71,41 +71,43 @@ for a list of what was externally contributed and the corresponding work/citatio
 Habitat-Sim can be installed in 3 ways:
 1. Via Conda - Recommended method for most users. Stable release and nightly builds.
 1. [Experimental] Via PIP - `pip install .` to compile the latest headless build with Bullet. Read [build instructions and common build issues](BUILD_FROM_SOURCE.md).
-1. Via Docker - Updated approximately once per year for [Habitat Challenge](https://aihabitat.org/challenge/).  Read [habitat-docker-setup](https://github.com/facebookresearch/habitat-lab#docker-setup).
+1. Via Docker - Updated approximately once per year for the [Habitat Challenge](https://aihabitat.org/challenge/). Read [habitat-docker-setup](https://github.com/facebookresearch/habitat-lab#docker-setup).
 1. Via Source - For active development. Read [build instructions and common build issues](BUILD_FROM_SOURCE.md).
 
 ### [Recommended] Conda Packages
 
 Habitat is under active development, and we advise users to restrict themselves to [stable releases](https://github.com/facebookresearch/habitat-sim/releases). Starting with v0.1.4, we provide [conda packages for each release](https://anaconda.org/aihabitat).
 
-#### Preparing conda env
-Assuming you have [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/) installed, let's prepare a conda env:
-```bash
-# We require python>=3.7 and cmake>=3.10
-conda create -n habitat python=3.7 cmake=3.14.0
-conda activate habitat
-```
+1. **Preparing conda env**
 
-#### conda install habitat-sim
-Pick one of the options below depending on your system/needs:
-
-- To install on machines with an attached display:
+   Assuming you have [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/) installed, let's prepare a conda env:
    ```bash
-     conda install habitat-sim -c conda-forge -c aihabitat
-   ```
-- To install on headless machines (i.e. without an attached display, e.g. in a cluster) and machines with multiple GPUs (this parameter relies on EGL and thus does *not* work on MacOS):
-   ```
-   conda install habitat-sim headless -c conda-forge -c aihabitat
-   ```
-- [**Most common scenario**] To install habitat-sim with bullet physics
-   ```
-   conda install habitat-sim withbullet -c conda-forge -c aihabitat
+   # We require python>=3.7 and cmake>=3.10
+   conda create -n habitat python=3.7 cmake=3.14.0
+   conda activate habitat
    ```
 
-- Note: Build parameters can be chained together. For instance, to install habitat-sim with physics on headless machines:
-   ```
-   conda install habitat-sim withbullet headless -c conda-forge -c aihabitat
-   ```
+1. **conda install habitat-sim**
+
+   Pick one of the options below depending on your system/needs:
+
+   - To install on machines with an attached display:
+      ```bash
+      conda install habitat-sim -c conda-forge -c aihabitat
+      ```
+   - To install on headless machines (i.e. without an attached display, e.g. in a cluster) and machines with multiple GPUs (this parameter relies on EGL and thus does *not* work on MacOS):
+      ```
+      conda install habitat-sim headless -c conda-forge -c aihabitat
+      ```
+   - [**Most common scenario**] To install habitat-sim with bullet physics
+      ```
+      conda install habitat-sim withbullet -c conda-forge -c aihabitat
+      ```
+
+   - Note: Build parameters can be chained together. For instance, to install habitat-sim with physics on headless machines:
+      ```
+      conda install habitat-sim withbullet headless -c conda-forge -c aihabitat
+      ```
 
 Conda packages for older versions can installed by explicitly specifying the version, e.g. `conda install habitat-sim=0.1.6 -c conda-forge -c aihabitat`.
 

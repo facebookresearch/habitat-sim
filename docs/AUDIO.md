@@ -6,6 +6,17 @@ The C++ implementation is exposed for python users via pybind11. This document e
 
 Please refer to the [BUILD_FROM_SOURCE](https://github.com/facebookresearch/habitat-sim/blob/main/BUILD_FROM_SOURCE.md) doc for information on how to build habitat with the audio sensor. This feature was added as part of the following PR : https://github.com/facebookresearch/habitat-sim/pull/1646
 
+## Citation
+If you find this work useful in your research, please cite the following [paper](https://arxiv.org/pdf/2206.08312.pdf):
+```
+@article{chen22soundspaces2,
+  title     =     {SoundSpaces 2.0: A Simulation Platform for Visual-Acoustic Learning},
+  author    =     {Changan Chen and Carl Schissler and Sanchit Garg and Philip Kobernik and Alexander Clegg and Paul Calamia and Dhruv Batra and Philip W Robinson and Kristen Grauman},
+  journal   =     {arXiv},
+  year      =     {2022}
+}
+```
+
 ## List of sections
 - [Acoustics configuration - RLRAudioPropagationConfiguration()](#acoustics-configuration)
 - [Channel layout - RLRAudioPropagationChannelLayout()](#channel-layout)

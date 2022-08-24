@@ -91,7 +91,10 @@ class HabitatSimInteractiveViewer(Application):
         self.reconfigure_sim()
 
         # compute NavMesh if not already loaded by the scene.
-        if not self.sim.pathfinder.is_loaded and self.cfg.sim_cfg.scene_id != "NONE":
+        if (
+            not self.sim.pathfinder.is_loaded
+            and self.cfg.sim_cfg.scene_id.lower() != "none"
+        ):
             self.navmesh_config_and_recompute()
 
         self.time_since_last_simulation = 0.0
@@ -251,6 +254,11 @@ class HabitatSimInteractiveViewer(Application):
         self.cfg = make_cfg(self.sim_settings)
         self.agent_id: int = self.sim_settings["default_agent"]
         self.cfg.agents[self.agent_id] = self.default_agent_config()
+
+        if self.sim_settings["stage_requires_lighting"]:
+            logger.info("Setting synthetic lighting override for stage.")
+            self.cfg.sim_cfg.override_scene_light_defaults = True
+            self.cfg.sim_cfg.scene_light_setup = habitat_sim.gfx.DEFAULT_LIGHTING_KEY
 
         if self.sim is None:
             self.sim = habitat_sim.Simulator(self.cfg)
@@ -924,6 +932,11 @@ if __name__ == "__main__":
         action="store_true",
         help="disable physics simulation (default: False)",
     )
+    parser.add_argument(
+        "--stage_requires_lighting",
+        action="store_true",
+        help="Override configured lighting to use synthetic lighting for the stage.",
+    )
 
     args = parser.parse_args()
 
@@ -932,5 +945,6 @@ if __name__ == "__main__":
     sim_settings["scene"] = args.scene
     sim_settings["scene_dataset_config_file"] = args.dataset
     sim_settings["enable_physics"] = not args.disable_physics
+    sim_settings["stage_requires_lighting"] = args.stage_requires_lighting
 
     HabitatSimInteractiveViewer(sim_settings).exec()

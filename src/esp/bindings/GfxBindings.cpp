@@ -11,9 +11,8 @@
 #include <Magnum/PythonBindings.h>
 #include <Magnum/SceneGraph/PythonBindings.h>
 
-#include "python/corrade/EnumOperators.h"
-
 #include "esp/assets/ResourceManager.h"
+#include "esp/bindings/EnumOperators.h"
 #include "esp/gfx/DebugLineRender.h"
 #include "esp/gfx/LightSetup.h"
 #include "esp/gfx/RenderCamera.h"
@@ -55,7 +54,7 @@ void initGfxBindings(py::module& m) {
   flags.value("FRUSTUM_CULLING", RenderCamera::Flag::FrustumCulling)
       .value("OBJECTS_ONLY", RenderCamera::Flag::ObjectsOnly)
       .value("NONE", RenderCamera::Flag{});
-  corrade::enumOperators(flags);
+  pybindEnumOperators(flags);
 
   render_camera
       .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
@@ -87,7 +86,7 @@ void initGfxBindings(py::module& m) {
 
   rendererFlags.value("VISUALIZE_TEXTURE", Renderer::Flag::VisualizeTexture)
       .value("NONE", Renderer::Flag{});
-  corrade::enumOperators(rendererFlags);
+  pybindEnumOperators(rendererFlags);
 
   renderer.def(py::init(&Renderer::create<>))
       .def(
