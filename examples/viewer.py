@@ -3,12 +3,18 @@
 # LICENSE file in the root directory of this source tree.
 
 import ctypes
+import datetime
 import math
 import os
 import sys
+import threading
 import time
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Tuple
+
+import git
+import imageio
+from PIL import Image
 
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
@@ -23,9 +29,39 @@ from habitat_sim import physics
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.common import quat_from_angle_axis
 
+# Setting up paths and directories for mp4 outputs
+if "google.colab" in sys.modules:
+    os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
+
+repo = git.Repo(".", search_parent_directories=True)
+dir_path = repo.working_tree_dir
+# %cd $dir_path
+data_path = os.path.join(dir_path, "data")
+# fmt: off
+output_directory = "examples/viewer_output/"  # @param {type:"string"}
+# fmt: on
+output_path = os.path.join(dir_path, output_directory)
+if not os.path.exists(output_path):
+    os.mkdir(output_path)
+
 
 class HabitatSimInteractiveViewer(Application):
+
+    # Default transforms of agent and database object as static variables
+    DEFAULT_AGENT_POSITION = np.array([0.25, 0.34, 0.73])  # in front of table
+    DEFAULT_AGENT_ROTATION = mn.Quaternion.identity_init()
+    DEFAULT_OBJ_POSITION = np.array([0.25, 1.75, -0.23])  # above table
+    DEFAULT_OBJ_ROTATION = mn.Quaternion.identity_init()
+
+    # it is usually 1.5, but 1.0 is a little closer to table
+    DEFAULT_SENSOR_HEIGHT = 1.0
+
+    # constants to define how fast object spins when Kinematic
+    REVOLUTION_DURATION_SEC = 4.0
+    ROTATION_DEGREES_PER_SEC = 360.0 / REVOLUTION_DURATION_SEC
+
     def __init__(self, sim_settings: Dict[str, Any]) -> None:
+
         configuration = self.Configuration()
         configuration.title = "Habitat Sim Interactive Viewer"
         Application.__init__(self, configuration)
@@ -85,10 +121,38 @@ class HabitatSimInteractiveViewer(Application):
         # simulating continuously.
         self.simulate_single_step = False
 
+        # Make constants defining how long it takes for objects to make a full turn
+        # during kinematic mode, in seconds, and some rotation state management vars
+        self.curr_angle_rotated_degrees = 0.0
+        self.object_rotation_axis = ObjectRotationAxis.Y
+
+        # Make var to store if we are currently recording and a list for the video frames
+        self.recording = False
+        self.recording_still_saving = False
+        self.saving_video_is_threaded = True
+        self.saving_video_thread = None
+        self.video_writer = None
+        self.video_frames = []
+
         # configure our simulator
         self.cfg: Optional[habitat_sim.simulator.Configuration] = None
         self.sim: Optional[habitat_sim.simulator.Simulator] = None
         self.reconfigure_sim()
+
+        # Get object attribute manager for test objects from dataset,
+        # load the dataset, store all the object template handles in a list,
+        object_attribute_manager = self.sim.get_object_template_manager()
+        object_attribute_manager.load_configs(
+            self.sim_settings["scene_dataset_config_file"]
+        )
+        self.object_template_handles = (
+            object_attribute_manager.get_file_template_handles("")
+        )
+        print("number of ojects in dataset: " + str(len(self.object_template_handles)))
+
+        # Initialize vars that will store current object and its index in the dataset
+        self.object_template_handle_index = 0
+        self.curr_object = None
 
         # compute NavMesh if not already loaded by the scene.
         if not self.sim.pathfinder.is_loaded and self.cfg.sim_cfg.scene_id != "NONE":
@@ -154,6 +218,7 @@ class HabitatSimInteractiveViewer(Application):
         Calls continuously to re-render frames and swap the two frame buffers
         at a fixed rate.
         """
+
         agent_acts_per_sec = self.fps
 
         mn.gl.default_framebuffer.clear(
@@ -164,6 +229,10 @@ class HabitatSimInteractiveViewer(Application):
         self.time_since_last_simulation += Timer.prev_frame_duration
         num_agent_actions: int = self.time_since_last_simulation * agent_acts_per_sec
         self.move_and_look(int(num_agent_actions))
+
+        # If in Kinematic movement mode and there is an object, rotate it
+        if self.curr_object is not None and not self.simulating:
+            rotate_displayed_object(self)
 
         # Occasionally a frame will pass quicker than 1/60 seconds
         if self.time_since_last_simulation >= 1.0 / self.fps:
@@ -191,6 +260,28 @@ class HabitatSimInteractiveViewer(Application):
         self.debug_draw()
         self.render_camera.render_target.blit_rgba_to_default()
         mn.gl.default_framebuffer.bind()
+
+        # if recording and not saving prev recording, save the framebuffer as
+        # a frame into a list that we will compile into a video when done recording
+        if (
+            self.saving_video_is_threaded
+            and self.recording
+            and (self.saving_video_thread == None)
+        ):
+            framebuffer = mn.gl.default_framebuffer
+            save_frame_in_list(self, framebuffer)
+
+        # if we were recording, but the recording thread has terminated
+        # we know the recording is saved and we can record again
+        elif (
+            self.saving_video_is_threaded
+            and not self.recording
+            and (
+                self.saving_video_thread != None
+                and not self.saving_video_thread.is_alive()
+            )
+        ):
+            done_generating_recording(self)
 
         self.swap_buffers()
         Timer.next_frame()
@@ -260,13 +351,24 @@ class HabitatSimInteractiveViewer(Application):
                 # we need to force a reset, so change the internal config scene name
                 self.sim.config.sim_cfg.scene_id = "NONE"
             self.sim.reconfigure(self.cfg)
+
         # post reconfigure
         self.active_scene_graph = self.sim.get_active_scene_graph()
         self.default_agent = self.sim.get_agent(self.agent_id)
         self.agent_body_node = self.default_agent.scene_node
         self.render_camera = self.agent_body_node.node_sensor_suite.get("color_sensor")
+
         # set sim_settings scene name as actual loaded scene
         self.sim_settings["scene"] = self.sim.curr_scene_name
+
+        # Reset angent transform
+        logger.info("resetting agent transform matrix to default")
+        self.agent_body_node.translation = mn.Vector3(
+            HabitatSimInteractiveViewer.DEFAULT_AGENT_POSITION
+        )
+        self.agent_body_node.rotation = (
+            HabitatSimInteractiveViewer.DEFAULT_AGENT_ROTATION
+        )
 
         Timer.start()
         self.step = -1
@@ -359,14 +461,27 @@ class HabitatSimInteractiveViewer(Application):
 
         elif key == pressed.SPACE:
             if not self.sim.config.sim_cfg.enable_physics:
-                logger.warn("Warning: physics was not enabled during setup")
+                logger.warning("Warning: physics was not enabled during setup")
             else:
+                if self.simulating and self.curr_object is not None:
+                    # if setting to kinematic, reset object transform,
+                    # velocity, and angular velocity
+                    obj = self.curr_object
+                    obj.translation = HabitatSimInteractiveViewer.DEFAULT_OBJ_POSITION
+                    obj.rotation = HabitatSimInteractiveViewer.DEFAULT_OBJ_ROTATION
+                    obj.linear_velocity = mn.Vector3(0.0)
+                    obj.angular_velocity = mn.Vector3(0.0)
+
+                    # reset rotation angle for displaying object when kinematic
+                    self.curr_angle_rotated_degrees = 0.0
+                    self.object_rotation_axis = ObjectRotationAxis.Y
+
                 self.simulating = not self.simulating
-                logger.info(f"Command: physics simulating set to {self.simulating}")
+                logger.info(f"Command: physics simulating set to {self.simulating}\n")
 
         elif key == pressed.PERIOD:
             if self.simulating:
-                logger.warn("Warning: physic simulation already running")
+                logger.warning("Warning: physic simulation already running")
             else:
                 self.simulate_single_step = True
                 logger.info("Command: physics step taken")
@@ -400,20 +515,24 @@ class HabitatSimInteractiveViewer(Application):
                 urdf_file_path = input("Load URDF: provide a URDF filepath:").strip()
 
             if not urdf_file_path:
-                logger.warn("Load URDF: no input provided. Aborting.")
+                logger.warning("Load URDF: no input provided. Aborting.")
             elif not urdf_file_path.endswith((".URDF", ".urdf")):
-                logger.warn("Load URDF: input is not a URDF. Aborting.")
+                logger.warning("Load URDF: input is not a URDF. Aborting.")
             elif os.path.exists(urdf_file_path):
                 self.cached_urdf = urdf_file_path
-                aom = self.sim.get_articulated_object_manager()
-                ao = aom.add_articulated_object_from_urdf(
-                    urdf_file_path, fixed_base, 1.0, 1.0, True
+                articulated_object_manager = self.sim.get_articulated_object_manager()
+                articulated_object = (
+                    articulated_object_manager.add_articulated_object_from_urdf(
+                        urdf_file_path, fixed_base, 1.0, 1.0, True
+                    )
                 )
-                ao.translation = self.agent_body_node.transformation.transform_point(
-                    [0.0, 1.0, -1.5]
+                articulated_object.translation = (
+                    self.agent_body_node.transformation.transform_point(
+                        [0.0, 1.0, -1.5]
+                    )
                 )
             else:
-                logger.warn("Load URDF: input file not found. Aborting.")
+                logger.warning("Load URDF: input file not found. Aborting.")
 
         elif key == pressed.M:
             self.cycle_mouse_mode()
@@ -451,7 +570,150 @@ class HabitatSimInteractiveViewer(Application):
                     self.sim.navmesh_visualization = not self.sim.navmesh_visualization
                     logger.info("Command: toggle navmesh")
                 else:
-                    logger.warn("Warning: recompute navmesh first")
+                    logger.warning("Warning: recompute navmesh first")
+
+        elif key == pressed.I:
+            # decrement template handle index and add corresponding object
+            # to rigid object manager
+            self.object_template_handle_index -= 1
+            if self.object_template_handle_index < 0:
+                self.object_template_handle_index = (
+                    len(self.object_template_handles) - 1
+                )
+            add_new_object_from_database(
+                self,
+                self.object_template_handle_index,
+                HabitatSimInteractiveViewer.DEFAULT_OBJ_POSITION,
+            )
+
+        elif key == pressed.P:
+            # increment template handle index and add corresponding object
+            # to rigid object manager
+            self.object_template_handle_index += 1
+            if self.object_template_handle_index >= len(self.object_template_handles):
+                self.object_template_handle_index = 0
+            add_new_object_from_database(
+                self,
+                self.object_template_handle_index,
+                HabitatSimInteractiveViewer.DEFAULT_OBJ_POSITION,
+            )
+
+        elif key == pressed.O:
+            if self.curr_object:
+                # snap current object to the nearest surface in the direction of gravity
+                # with physics on to see if it doesn't topple over
+                self.simulating = True
+                logger.info(
+                    "Command: snapping dataset object to table and switching to Dynamic motion"
+                )
+                snap_down(self.sim, self.curr_object)
+            else:
+                logger.info("Can't snap NULL object to table")
+
+        elif key == pressed.L:
+            # press L to start recording, then L again to stop it
+
+            if self.saving_video_is_threaded:
+                if not self.recording and (
+                    self.saving_video_thread == None
+                    or not self.saving_video_thread.is_alive()
+                ):
+                    # if we are not recording and the thread doesn't exist or there is no active thread,
+                    # start recording
+                    self.recording = True
+                    logger.info(
+                        "Start recording ----------------------------------------------------\n"
+                    )
+
+                elif not self.recording and (
+                    self.saving_video_thread != None
+                    and self.saving_video_thread.is_alive()
+                ):
+                    # if we are not recording, but a thread exists and is still saving prev
+                    # frames to a video, we can't record any else yet
+                    logger.info(
+                        "can't record, still saving previous recording------------------------\n"
+                    )
+
+                elif self.recording and (
+                    self.saving_video_thread == None
+                    or not self.saving_video_thread.is_alive()
+                ):
+                    # if we are recording and not saving a previous recording,
+                    # save frames to video file
+                    self.recording = False
+
+                    # Current date and time so we can make unique video files for each recording
+                    date_and_time = datetime.datetime.now()
+                    # year-month-day
+                    date = date_and_time.strftime("%Y-%m-%d")
+                    # hour:min:sec - capital H is military time, %I is 0-12 hour time format
+                    time = date_and_time.strftime("%H:%M:%S")
+
+                    # construct file path and start thread to save consecutive frames as video file
+                    file_path = f"{output_path}viewer_recording_{date}_{time}.mp4"
+                    logger.info(
+                        f"End recording, saving frames to video file---------------------------:\n{file_path}\n"
+                    )
+                    self.saving_video_thread = threading.Thread(
+                        target=start_generating_recording, args=(self, file_path)
+                    )
+                    self.saving_video_thread.start()
+            else:
+                # save video unthreaded
+                print("non threaded video recording not yet supported")
+
+        elif key == pressed.ONE:
+            # Apply impulses to dataset object if it exists and it is Dynamic motion mode
+            if self.curr_object and self.simulating:
+                logger.info("Command: applying impulse to object.\n")
+                self.curr_object.apply_impulse(
+                    mn.Vector3(0, 1, 0), mn.Vector3(0, 0, -0.1)
+                )
+            elif self.curr_object is None:
+                logger.info("Command: can't apply impulse, no object exists.\n")
+            elif not self.simulating:
+                logger.info(
+                    "Command: can't apply impulse, turn on Dynamic motion mode.\n"
+                )
+
+        elif key == pressed.TWO:
+            # Apply force to dataset object if it exists and it is Dynamic motion mode
+            if self.curr_object and self.simulating:
+                logger.info("Command: applying force to object.\n")
+                self.curr_object.apply_force(
+                    mn.Vector3(0, 40, 0), mn.Vector3(0, 0, -0.1)
+                )
+            elif self.curr_object is None:
+                logger.info("Command: can't apply force, no object exists.\n")
+            elif not self.simulating:
+                logger.info(
+                    "Command: can't apply force, turn on Dynamic motion mode.\n"
+                )
+
+        elif key == pressed.THREE:
+            # Apply impulses torque to dataset object if it exists and it is Dynamic motion mode
+            if self.curr_object and self.simulating:
+                logger.info("Command: applying impulse torque to object.\n")
+                self.curr_object.apply_impulse_torque(mn.Vector3(0, 0.1, 0))
+            elif self.curr_object is None:
+                logger.info("Command: can't apply impulse torque, no object exists.\n")
+            elif not self.simulating:
+                logger.info(
+                    "Command: can't apply impulse torque, turn on Dynamic motion mode.\n"
+                )
+
+        elif key == pressed.FOUR:
+            # Apply torque to dataset object if it exists and it is Dynamic motion mode
+            if self.curr_object and self.simulating:
+                logger.info("Command: applying torque to object.\n")
+                self.curr_object.apply_torque(mn.Vector3(0, 10, 0))
+            elif self.curr_object is None:
+                logger.info("Command: can't apply torque, no object exists.\n")
+            elif not self.simulating:
+                logger.info(
+                    "Command: can't apply torque, turn on Dynamic motion mode.\n"
+                )
 
         # update map of moving/looking keys which are currently pressed
         if key in self.pressed:
@@ -524,44 +786,60 @@ class HabitatSimInteractiveViewer(Application):
 
                 if hit_info.object_id >= 0:
                     # we hit an non-staged collision object
-                    ro_mngr = self.sim.get_rigid_object_manager()
-                    ao_mngr = self.sim.get_articulated_object_manager()
-                    ao = ao_mngr.get_object_by_id(hit_info.object_id)
-                    ro = ro_mngr.get_object_by_id(hit_info.object_id)
+                    rigid_object_manager = self.sim.get_rigid_object_manager()
+                    articulated_object_manager = (
+                        self.sim.get_articulated_object_manager()
+                    )
+                    articulated_object = articulated_object_manager.get_object_by_id(
+                        hit_info.object_id
+                    )
+                    rigid_object = rigid_object_manager.get_object_by_id(
+                        hit_info.object_id
+                    )
 
-                    if ro:
+                    if rigid_object:
                         # if grabbed an object
                         hit_object = hit_info.object_id
-                        object_pivot = ro.transformation.inverted().transform_point(
-                            hit_info.point
+                        object_pivot = (
+                            rigid_object.transformation.inverted().transform_point(
+                                hit_info.point
+                            )
                         )
-                        object_frame = ro.rotation.inverted()
-                    elif ao:
+                        object_frame = rigid_object.rotation.inverted()
+                    elif articulated_object:
                         # if grabbed the base link
                         hit_object = hit_info.object_id
-                        object_pivot = ao.transformation.inverted().transform_point(
+                        object_pivot = articulated_object.transformation.inverted().transform_point(
                             hit_info.point
                         )
-                        object_frame = ao.rotation.inverted()
+                        object_frame = articulated_object.rotation.inverted()
                     else:
-                        for ao_handle in ao_mngr.get_objects_by_handle_substring():
-                            ao = ao_mngr.get_object_by_handle(ao_handle)
-                            link_to_obj_ids = ao.link_object_ids
+                        for (
+                            ao_handle
+                        ) in (
+                            articulated_object_manager.get_objects_by_handle_substring()
+                        ):
+                            articulated_object = (
+                                articulated_object_manager.get_object_by_handle(
+                                    ao_handle
+                                )
+                            )
+                            link_to_obj_ids = articulated_object.link_object_ids
 
                             if hit_info.object_id in link_to_obj_ids:
                                 # if we got a link
                                 ao_link = link_to_obj_ids[hit_info.object_id]
                                 object_pivot = (
-                                    ao.get_link_scene_node(ao_link)
+                                    articulated_object.get_link_scene_node(ao_link)
                                     .transformation.inverted()
                                     .transform_point(hit_info.point)
                                 )
-                                object_frame = ao.get_link_scene_node(
+                                object_frame = articulated_object.get_link_scene_node(
                                     ao_link
                                 ).rotation.inverted()
-                                hit_object = ao.object_id
+                                hit_object = articulated_object.object_id
                                 break
-                    # done checking for AO
+                    # done checking for articulated_object
 
                     if hit_object >= 0:
                         node = self.agent_body_node
@@ -592,7 +870,9 @@ class HabitatSimInteractiveViewer(Application):
                             self.sim,
                         )
                     else:
-                        logger.warn("Oops, couldn't find the hit object. That's odd.")
+                        logger.warning(
+                            "Oops, couldn't find the hit object. That's odd."
+                        )
                 # end if didn't hit the scene
             # end has raycast hit
         # end has physics enabled
@@ -651,6 +931,7 @@ class HabitatSimInteractiveViewer(Application):
                 # update location of grabbed object
                 self.mouse_grabber.grip_depth += scroll_delta
                 self.update_grab_position(self.get_mouse_position(event.position))
+
         self.redraw()
         event.accepted = True
 
@@ -741,6 +1022,7 @@ In LOOK mode (default):
         Click and drag to rotate the agent and look up/down.
     WHEEL:
         Modify orthographic camera zoom/perspective camera FOV (+SHIFT for fine grained control)
+    RIGHT: Rotate current object from dataset displayed (if any) if in kinematic mode
 
 In GRAB mode (with 'enable-physics'):
     LEFT:
@@ -779,18 +1061,34 @@ Key Commands:
     SPACE:      Toggle physics simulation on/off.
     '.':        Take a single simulation step if not simulating continuously.
     'v':        (physics) Invert gravity.
+    'i':        Go backward through dataset of objects and generate it above table.
+    'p':        Go forward through dataset of objects and generate it above table.
+    'o':        Turn on physics and snap current object onto the surface below it.
     't':        Load URDF from filepath
                 (+SHIFT) quick re-load the previously specified URDF
                 (+ALT) load the URDF with fixed base
+    '1':        Apply impulse to current object.
+    '2':        Apply force to current object.
+    '3':        Apply impulse torque to current object.
+    '4':        Apply torque to current object.
 =====================================================
 """
         )
+
+
+# class HabitatSimInteractiveViewer end
 
 
 class MouseMode(Enum):
     LOOK = 0
     GRAB = 1
     MOTION = 2
+
+
+class ObjectRotationAxis(Enum):
+    Y = 0
+    X = 1
+    Z = 2
 
 
 class MouseGrabber:
@@ -838,16 +1136,16 @@ class MouseGrabber:
     ) -> None:
         """rotate the object's local constraint frame with a global angle axis input."""
         object_transform = mn.Matrix4()
-        rom = self.simulator.get_rigid_object_manager()
-        aom = self.simulator.get_articulated_object_manager()
-        if rom.get_library_has_id(self.settings.object_id_a):
-            object_transform = rom.get_object_by_id(
+        rigid_object_manager = self.simulator.get_rigid_object_manager()
+        articulated_object_manager = self.simulator.get_articulated_object_manager()
+        if rigid_object_manager.get_library_has_id(self.settings.object_id_a):
+            object_transform = rigid_object_manager.get_object_by_id(
                 self.settings.object_id_a
             ).transformation
         else:
-            # must be an ao
+            # must be an articulated_object
             object_transform = (
-                aom.get_object_by_id(self.settings.object_id_a)
+                articulated_object_manager.get_object_by_id(self.settings.object_id_a)
                 .get_link_scene_node(self.settings.link_id_a)
                 .transformation
             )
@@ -855,6 +1153,9 @@ class MouseGrabber:
         R = mn.Matrix4.rotation(angle, local_axis.normalized())
         self.settings.frame_a = R.rotation().__matmul__(self.settings.frame_a)
         self.simulator.update_rigid_constraint(self.constraint_id, self.settings)
+
+
+# class MouseGrabber end
 
 
 class Timer:
@@ -900,6 +1201,314 @@ class Timer:
         Timer.prev_frame_time = time.time()
 
 
+# class Timer end
+
+
+def add_new_object_from_database(
+    self, index, position=HabitatSimInteractiveViewer.DEFAULT_OBJ_POSITION
+) -> None:
+    # Add to scene the object at given template handle index from dataset at given position
+
+    # make sure there are any objects from a dataset
+    if len(self.object_template_handles) == 0:
+        logger.info("Command: no objects in dataset to add to rigid object manager")
+        return
+
+    # get rigid object manager and clear it
+    rigid_object_manager = self.sim.get_rigid_object_manager()
+    rigid_object_manager.remove_all_objects()
+
+    # get object template handle at given index from dataset
+    object_template_handle = self.object_template_handles[index]
+
+    # Configure the initial object orientation via local Euler angle (degrees):
+    rotation_x_degrees = 0
+    rotation_y_degrees = 0
+    rotation_z_degrees = 0
+
+    # compose the rotations
+    rotation_x_quaternion = mn.Quaternion.rotation(
+        mn.Deg(rotation_x_degrees), mn.Vector3(1.0, 0, 0)
+    )
+    rotation_y_quaternion = mn.Quaternion.rotation(
+        mn.Deg(rotation_y_degrees), mn.Vector3(0, 1.0, 0)
+    )
+    rotation_z_quaternion = mn.Quaternion.rotation(
+        mn.Deg(rotation_z_degrees), mn.Vector3(0, 0, 1.0)
+    )
+    rotation_quaternion = (
+        rotation_z_quaternion * rotation_y_quaternion * rotation_x_quaternion
+    )
+
+    # Add object instantiated by desired template using template handle
+    self.curr_object = rigid_object_manager.add_object_by_template_handle(
+        object_template_handle
+    )
+
+    # @markdown Note: agent local coordinate system is Y up and -Z forward.
+    # Move object to be in front of the agent, then turn on kinematic mode
+    set_object_state(self, self.curr_object, position, rotation_quaternion)
+    self.simulating = False
+    self.curr_angle_rotated_degrees = 0.0
+    self.object_rotating_around_y = True
+
+    # print out object name and its index into the list of the objects
+    print(
+        f'\nCommand: placing object "{self.curr_object.handle}," from template handle index: {index}\n'
+    )
+
+
+def set_object_state(self, obj, position, rotation_quaternion) -> None:
+    # Set an object transform in world space
+    obj.translation = position
+    obj.rotation = rotation_quaternion
+
+
+def rotate_displayed_object(
+    self, degrees_per_sec=HabitatSimInteractiveViewer.ROTATION_DEGREES_PER_SEC
+) -> None:
+
+    # determine how much to rotate object this frame
+    delta_rotation_degrees = degrees_per_sec * Timer.prev_frame_duration
+
+    # check for a full 360 degree revolution
+    # and clamp to 360 degrees if we have passed it
+    reset_curr_rotation_angle = False
+    if self.curr_angle_rotated_degrees + delta_rotation_degrees >= 360.0:
+        reset_curr_rotation_angle = True
+        delta_rotation_degrees = 360.0 - self.curr_angle_rotated_degrees
+
+    if self.object_rotation_axis == ObjectRotationAxis.Y:
+        # rotate about object's local y axis (up vector)
+        y_rotation_in_degrees = mn.Deg(delta_rotation_degrees)
+        y_rotation_in_radians = mn.Rad(y_rotation_in_degrees)
+        self.curr_object.rotate_y_local(y_rotation_in_radians)
+    else:
+        # rotate about object's local x axis (horizontal vector)
+        x_rotation_in_degrees = mn.Deg(delta_rotation_degrees)
+        x_rotation_in_radians = mn.Rad(x_rotation_in_degrees)
+        self.curr_object.rotate_x_local(x_rotation_in_radians)
+
+    # update current rotation angle and reset it if it passed 360 degrees
+    self.curr_angle_rotated_degrees += delta_rotation_degrees
+    if reset_curr_rotation_angle:
+        reset_curr_rotation_angle = False
+        self.curr_angle_rotated_degrees = 0.0
+        # change axis of rotation
+        if self.object_rotation_axis == ObjectRotationAxis.Y:
+            self.object_rotation_axis = ObjectRotationAxis.X
+        else:
+            self.object_rotation_axis = ObjectRotationAxis.Y
+
+
+def save_frame_in_list(self, framebuffer) -> None:
+
+    # setup variables to hold image data
+    viewport_range = framebuffer.viewport
+    pixel_storage = mn.PixelStorage()
+    pixel_storage.image_height = viewport_range.size_y()
+    pixel_storage.row_length = viewport_range.size_x()
+    frame_image_2d = mn.Image2D(pixel_storage, mn.PixelFormat.RGBA8_UNORM)
+
+    # read framebuffer into frame_image_2d and create a PIL image from the raw bytes
+    framebuffer.read(viewport_range, frame_image_2d)
+    image_to_save = Image.frombytes(
+        "RGBA",
+        (frame_image_2d.size.x, frame_image_2d.size.y),
+        frame_image_2d.data.__bytes__(),
+        "raw",
+    )
+
+    # it is a mirror image for some reason, something to do with how the bytes are laid out
+    image_to_save = image_to_save.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
+    self.video_frames.append(image_to_save)
+
+
+def start_generating_recording(self, file_path) -> None:
+    self.video_writer = imageio.get_writer(
+        file_path, format="mp4", mode="I", fps=self.fps
+    )
+    for frame in self.video_frames:
+        self.video_writer.append_data(np.asarray(frame))
+
+
+def done_generating_recording(self) -> None:
+    logger.info(
+        "Recording is saved, you can record something else now **********************\n"
+    )
+
+    # indicates that we are done compiling existing frames into video
+    # and you can record something else now
+    self.saving_video_thread = None
+
+    self.video_writer.close()
+
+    # clear list for next recording
+    self.video_frames.clear()
+
+
+def get_bounding_box_corners(
+    obj: habitat_sim.physics.ManagedRigidObject,
+) -> List[mn.Vector3]:
+    """
+    Return a list of object bounding box corners in object local space.
+    """
+    bounding_box = obj.root_scene_node.cumulative_bb
+    return [
+        bounding_box.back_bottom_left,
+        bounding_box.back_bottom_right,
+        bounding_box.back_top_right,
+        bounding_box.back_top_left,
+        bounding_box.front_top_left,
+        bounding_box.front_top_right,
+        bounding_box.front_bottom_right,
+        bounding_box.front_bottom_left,
+    ]
+
+
+def bounding_box_ray_prescreen(
+    sim: habitat_sim.Simulator,
+    obj: habitat_sim.physics.ManagedRigidObject,
+    support_obj_ids: Optional[List[int]] = None,
+    check_all_corners: bool = False,
+) -> Dict[str, Any]:
+    """
+    Pre-screen a potential placement by casting rays in the gravity direction from the object center of mass (and optionally each corner of its bounding box) checking for interferring objects below.
+    :param sim: The Simulator instance.
+    :param obj: The RigidObject instance.
+    :param support_obj_ids: A list of object ids designated as valid support surfaces for object placement. Contact with other objects is a criteria for placement rejection.
+    :param check_all_corners: Optionally cast rays from all bounding box corners instead of only casting a ray from the center of mass.
+    """
+    if support_obj_ids is None:
+        # set default support surface to stage/ground mesh
+        support_obj_ids = [-1]
+    lowest_key_point: mn.Vector3 = None
+    lowest_key_point_height = None
+    highest_support_impact: mn.Vector3 = None
+    highest_support_impact_height = None
+    highest_support_impact_with_stage = False
+    raycast_results = []
+    gravity_dir = sim.get_gravity().normalized()
+    object_local_to_global = obj.transformation
+    bounding_box_corners = get_bounding_box_corners(obj)
+    key_points = [mn.Vector3(0)] + bounding_box_corners  # [COM, c0, c1 ...]
+    support_impacts: Dict[int, mn.Vector3] = {}  # indexed by keypoints
+    for ix, key_point in enumerate(key_points):
+        world_point = object_local_to_global.transform_point(key_point)
+        # NOTE: instead of explicit Y coordinate, we project onto any gravity vector
+        world_point_height = world_point.projected_onto_normalized(
+            -gravity_dir
+        ).length()
+        if lowest_key_point is None or lowest_key_point_height > world_point_height:
+            lowest_key_point = world_point
+            lowest_key_point_height = world_point_height
+        # cast a ray in gravity direction
+        if ix == 0 or check_all_corners:
+            ray = habitat_sim.geo.Ray(world_point, gravity_dir)
+            raycast_results.append(sim.cast_ray(ray))
+            # classify any obstructions before hitting the support surface
+            for hit in raycast_results[-1].hits:
+                if hit.object_id == obj.object_id:
+                    continue
+                elif hit.object_id in support_obj_ids:
+                    hit_point = ray.origin + ray.direction * hit.ray_distance
+                    support_impacts[ix] = hit_point
+                    support_impact_height = mn.math.dot(hit_point, -gravity_dir)
+
+                    if (
+                        highest_support_impact is None
+                        or highest_support_impact_height < support_impact_height
+                    ):
+                        highest_support_impact = hit_point
+                        highest_support_impact_height = support_impact_height
+                        highest_support_impact_with_stage = hit.object_id == -1
+
+                # terminates at the first non-self ray hit
+                break
+    # compute the relative base height of the object from its lowest bounding_box corner and COM
+    base_rel_height = (
+        lowest_key_point_height
+        - obj.translation.projected_onto_normalized(-gravity_dir).length()
+    )
+
+    # account for the affects of stage mesh margin
+    margin_offset = (
+        0
+        if not highest_support_impact_with_stage
+        else sim.get_stage_initialization_template().margin
+    )
+
+    surface_snap_point = (
+        None
+        if 0 not in support_impacts
+        else support_impacts[0] + gravity_dir * (base_rel_height - margin_offset)
+    )
+    # return list of obstructed and grounded rays, relative base height, distance to first surface impact, and ray results details
+    return {
+        "base_rel_height": base_rel_height,
+        "surface_snap_point": surface_snap_point,
+        "raycast_results": raycast_results,
+    }
+
+
+def snap_down(
+    sim: habitat_sim.Simulator,
+    obj: habitat_sim.physics.ManagedRigidObject,
+    support_obj_ids: Optional[List[int]] = None,
+) -> bool:
+    """
+    Attempt to project an object in the gravity direction onto the surface below it.
+    :param sim: The Simulator instance.
+    :param obj: The RigidObject instance.
+    :param support_obj_ids: A list of object ids designated as valid support surfaces for object placement. Contact with other objects is a criteria for placement rejection. If none provided, default support surface is the stage/ground mesh (-1).
+    :param vdb: Optionally provide a DebugVisualizer (vdb) to render debug images of each object's computed snap position before collision culling.
+    Reject invalid placements by checking for penetration with other existing objects.
+    Returns boolean success.
+    If placement is successful, the object state is updated to the snapped location.
+    If placement is rejected, object position is not modified and False is returned.
+    To use this utility, generate an initial placement for any object above any of the designated support surfaces and call this function to attempt to snap it onto the nearest surface in the gravity direction.
+    """
+    cached_position = obj.translation
+
+    if support_obj_ids is None:
+        # set default support surface to stage/ground mesh
+        support_obj_ids = [-1]
+
+    bounding_box_ray_prescreen_results = bounding_box_ray_prescreen(
+        sim, obj, support_obj_ids
+    )
+
+    if bounding_box_ray_prescreen_results["surface_snap_point"] is None:
+        # no support under this object, return failure
+        return False
+
+    # finish up
+    if bounding_box_ray_prescreen_results["surface_snap_point"] is not None:
+        # accept the final location if a valid location exists
+        obj.translation = bounding_box_ray_prescreen_results["surface_snap_point"]
+        sim.perform_discrete_collision_detection()
+        cps = sim.get_physics_contact_points()
+        for cp in cps:
+            if (
+                cp.object_id_a == obj.object_id or cp.object_id_b == obj.object_id
+            ) and (
+                (cp.contact_distance < -0.01)
+                or not (
+                    cp.object_id_a in support_obj_ids
+                    or cp.object_id_b in support_obj_ids
+                )
+            ):
+                obj.translation = cached_position
+                # print(f" Failure: contact in final position w/ distance = {cp.contact_distance}.")
+                # print(f" Failure: contact in final position with non support object {cp.object_id_a} or {cp.object_id_b}.")
+                return False
+        return True
+    else:
+        # no valid position found, reset and return failure
+        obj.translation = cached_position
+        return False
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -930,7 +1539,8 @@ if __name__ == "__main__":
     # Setting up sim_settings
     sim_settings: Dict[str, Any] = default_sim_settings
     sim_settings["scene"] = args.scene
-    sim_settings["scene_dataset_config_file"] = args.dataset
+    sim_settings["scene_dataset_config_file"] = args.dataset  # Set scene dataset
     sim_settings["enable_physics"] = not args.disable_physics
+    sim_settings["sensor_height"] = HabitatSimInteractiveViewer.DEFAULT_SENSOR_HEIGHT
 
     HabitatSimInteractiveViewer(sim_settings).exec()
