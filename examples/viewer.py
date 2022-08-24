@@ -46,7 +46,8 @@ if not os.path.exists(output_path):
 
 class HabitatSimInteractiveViewer(Application):
 
-    # Default transforms of agent and database object as static variables
+    # Default transforms of agent and dataset object as static variables
+    # to use when resetting the agent and dataset objects
     DEFAULT_AGENT_POSITION = np.array([0.25, 0.34, 0.73])  # in front of table
     DEFAULT_AGENT_ROTATION = mn.Quaternion.identity_init()
     DEFAULT_OBJ_POSITION = np.array([0.25, 1.75, -0.23])  # above table
@@ -55,7 +56,7 @@ class HabitatSimInteractiveViewer(Application):
     # it is usually 1.5, but 1.0 is a little closer to table
     DEFAULT_SENSOR_HEIGHT = 1.0
 
-    # constants to define how fast object spins when Kinematic
+    # constants to define how fast object spins when in Kinematic mode
     REVOLUTION_DURATION_SEC = 4.0
     ROTATION_DEGREES_PER_SEC = 360.0 / REVOLUTION_DURATION_SEC
 
@@ -120,21 +121,25 @@ class HabitatSimInteractiveViewer(Application):
         # simulating continuously.
         self.simulate_single_step = False
 
-        # Object rotates in kinematic mode. Defines how much it has rotated
-        # from [0, 360) degrees and around which axis it is rotating
+        # Object rotates in kinematic mode.
+        # -self.curr_angle_rotated_degrees: defines how much it has rotated
+        #   from [0, 360) degrees.
+        # -self.object_rotation_axis: defines around which axis it is rotating.
         self.curr_angle_rotated_degrees = 0.0
         self.object_rotation_axis = ObjectRotationAxis.Y
 
-        # Makes var to store if we are currently recording and if
-        # the recording is still saving
+        # -self.recording: If we are currently storing frames in a List to be
+        #   written to a file when done.
+        # -self.video_frames: list to store video frames as PIL Image objects.
+        # -self.curr_frame_written_index: if writing previous recording to file,
+        #   this is the index of last frame in self.video_frames that was written.
+        # -self.writing_video: if the previous recording is still being written
+        #   to a file. We don't want to record new frames in that case.
+        # -self.video_writer: class instance that writes the frames to a video file
         self.recording = False
-
-        # create list to store the video frames as images
         self.video_frames = []
-        self.curr_frame_saved_index = 0
+        self.curr_frame_written_index = 0
         self.writing_video = False
-
-        # create var to store class instance that writes the frames to a video file
         self.video_writer = None
 
         # configure our simulator
@@ -153,7 +158,9 @@ class HabitatSimInteractiveViewer(Application):
         )
         print(f"number of ojects in dataset: {len(self.object_template_handles)}")
 
-        # Initialize vars that will store current object and its index in the dataset
+        # -self.object_template_handle_index: stores current object's index in the
+        #   object dataset.
+        # -self.curr_object: stores the current ManagedBulletRigidObject from dataset
         self.object_template_handle_index = 0
         self.curr_object = None
 
@@ -233,9 +240,10 @@ class HabitatSimInteractiveViewer(Application):
         num_agent_actions: int = self.time_since_last_simulation * agent_acts_per_sec
         self.move_and_look(int(num_agent_actions))
 
-        # If in Kinematic movement mode and there is an object, rotate it
+        # If in Kinematic movement mode and there is a ManagedBulletRigidObject
+        # that is displayed from the dataset, rotate it
         if self.curr_object is not None and not self.simulating:
-            rotate_displayed_object(self)
+            rotate_displayed_object(self, self.curr_object)
 
         # Occasionally a frame will pass quicker than 1/60 seconds
         if self.time_since_last_simulation >= 1.0 / self.fps:
@@ -266,18 +274,18 @@ class HabitatSimInteractiveViewer(Application):
 
         if self.recording and not self.writing_video:
             # if we are recording and no recording is currently being written to file,
-            # save the framebuffer as a frame into a list that we will compile into
-            # a video when done recording
+            # save the framebuffer as a PIL Image into a list that we will write to
+            # a video file when done recording
             framebuffer = mn.gl.default_framebuffer
             save_frame_in_list(self, framebuffer)
         elif (
             not self.recording
             and self.writing_video
-            and self.curr_frame_saved_index >= len(self.video_frames)
+            and self.curr_frame_written_index >= len(self.video_frames)
         ):
-            # if we are supposedly writing frames to file, but we have iterated over
-            # every frame in the list, we know we are done writing
-            done_generating_recording(self)
+            # if we are supposedly writing the frames of the previous recording to a file,
+            # but we have iterated over every frame in the list, we know we are done writing
+            write_recording_to_file_done(self)
 
         self.swap_buffers()
         Timer.next_frame()
@@ -358,7 +366,6 @@ class HabitatSimInteractiveViewer(Application):
         self.sim_settings["scene"] = self.sim.curr_scene_name
 
         # Reset angent transform
-        logger.info("resetting agent transform matrix to default")
         self.agent_body_node.translation = mn.Vector3(
             HabitatSimInteractiveViewer.DEFAULT_AGENT_POSITION
         )
@@ -569,63 +576,65 @@ class HabitatSimInteractiveViewer(Application):
                     logger.warning("Warning: recompute navmesh first")
 
         elif key == pressed.I:
-            # decrement template handle index and add corresponding object
-            # to rigid object manager
+            # decrement template handle index and add corresponding
+            # ManagedBulletRigidObject to rigid object manager from dataset
             self.object_template_handle_index -= 1
             if self.object_template_handle_index < 0:
                 self.object_template_handle_index = (
                     len(self.object_template_handles) - 1
                 )
-            add_new_object_from_database(
+            add_new_object_from_dataset(
                 self,
                 self.object_template_handle_index,
                 HabitatSimInteractiveViewer.DEFAULT_OBJ_POSITION,
             )
-            self.object_rotation_axis = ObjectRotationAxis.Y
 
         elif key == pressed.P:
-            # increment template handle index and add corresponding object
-            # to rigid object manager
+            # increment template handle index and add corresponding
+            # ManagedBulletRigidObject to rigid object manager from dataset
             self.object_template_handle_index += 1
             if self.object_template_handle_index >= len(self.object_template_handles):
                 self.object_template_handle_index = 0
-            add_new_object_from_database(
+            add_new_object_from_dataset(
                 self,
                 self.object_template_handle_index,
                 HabitatSimInteractiveViewer.DEFAULT_OBJ_POSITION,
             )
-            self.object_rotation_axis = ObjectRotationAxis.Y
 
         elif key == pressed.O:
             if self.curr_object:
-                # snap current object to the nearest surface in the direction of gravity
-                # with physics on to see if it doesn't topple over
+                # snap current ManagedBulletRigidObject to the nearest surface in
+                # the direction of gravity with physics on to make sure it doesn't
+                # topple over
                 self.simulating = True
                 logger.info(
-                    "Command: snapping dataset object to table and switching to Dynamic motion"
+                    "Command: snapping dataset object to table and switching to Dynamic motion\n"
                 )
                 snap_down(self.sim, self.curr_object)
             else:
-                logger.info("Can't snap NULL object to table")
+                logger.info("Can't snap NULL object to table\n")
 
         elif key == pressed.L:
             # press L to start recording, then L again to stop it
 
             if not self.recording and not self.writing_video:
-                # if we are not recording and not writing prev recording to file
+                # if we are not recording and not writing prev recording to file,
+                # we can start a new recording
                 self.recording = True
                 logger.info(
-                    "Start recording ----------------------------------------------------\n"
+                    "------------------------------------------------------------------------"
                 )
+                print("Command: start recording\n")
             elif not self.recording and self.writing_video:
-                # if we are not recording but still writing prev recording to file
+                # if we are not recording but still writing prev recording to file,
+                # wait until the video file is written before recording again
                 logger.info(
-                    "can't record, still saving previous recording------------------------\n"
+                    "------------------------------------------------------------------------"
                 )
+                print("Command: can't record, still saving previous recording\n")
             elif self.recording and not self.writing_video:
-                # if we are recording but not writing prev recording to file
-                # if we are recording and not saving a previous recording,
-                # save frames to video file
+                # if we are recording but not writing prev recording to file, we need
+                # to stop recording and save the recorded frames to a video file
                 self.recording = False
                 self.writing_video = True
 
@@ -633,13 +642,19 @@ class HabitatSimInteractiveViewer(Application):
                 date_and_time = datetime.datetime.now()
                 # year-month-day
                 date = date_and_time.strftime("%Y-%m-%d")
-                # hour:min:sec - capital H is military time, %I is 0-12 hour time format
+                # hour:min:sec - capital H is military time, %I is standard time
+                # (0-12 hour time format)
                 time = date_and_time.strftime("%H:%M:%S")
 
-                # construct file path and start thread to save consecutive frames as video file
-                file_path = f"{output_path}viewer_recording_{date}_{time}.mp4"
+                # construct file path and write consecutive frames to new video file
+                file_path = (
+                    f"{output_path}viewer_py_recording__date_{date}__time_{time}.mp4"
+                )
                 logger.info(
-                    f"End recording, saving frames to video file---------------------------:\n{file_path}\n"
+                    "------------------------------------------------------------------------"
+                )
+                print(
+                    f"Command: End recording, saving frames to the video file below \n{file_path}\n"
                 )
                 self.video_writer = imageio.get_writer(
                     file_path, format="mp4", mode="I", fps=self.fps
@@ -647,7 +662,7 @@ class HabitatSimInteractiveViewer(Application):
                 write_video_file(self)
 
         elif key == pressed.ONE:
-            # Apply impulses to dataset object if it exists and it is Dynamic motion mode
+            # Apply impulse to dataset object if it exists and it is Dynamic motion mode
             if self.curr_object and self.simulating:
                 logger.info("Command: applying impulse to object.\n")
                 self.curr_object.apply_impulse(
@@ -675,7 +690,7 @@ class HabitatSimInteractiveViewer(Application):
                 )
 
         elif key == pressed.THREE:
-            # Apply impulses torque to dataset object if it exists and it is Dynamic motion mode
+            # Apply impulse torque to dataset object if it exists and it is Dynamic motion mode
             if self.curr_object and self.simulating:
                 logger.info("Command: applying impulse torque to object.\n")
                 self.curr_object.apply_impulse_torque(mn.Vector3(0, 0.1, 0))
@@ -1187,12 +1202,13 @@ class Timer:
 # class Timer end
 
 
-def add_new_object_from_database(
+def add_new_object_from_dataset(
     self, index, position=HabitatSimInteractiveViewer.DEFAULT_OBJ_POSITION
 ) -> None:
-    # Add to scene the object at given template handle index from dataset at given position
+    # Add to scene the ManagedBulletRigidObject at given template handle index
+    # from dataset at the provided position.
 
-    # make sure there are any objects from a dataset
+    # make sure there are any ManagedBulletRigidObjects from a dataset
     if len(self.object_template_handles) == 0:
         logger.info("Command: no objects in dataset to add to rigid object manager")
         return
@@ -1201,7 +1217,7 @@ def add_new_object_from_database(
     rigid_object_manager = self.sim.get_rigid_object_manager()
     rigid_object_manager.remove_all_objects()
 
-    # get object template handle at given index from dataset
+    # get ManagedBulletRigidObject template handle at given index from dataset
     object_template_handle = self.object_template_handles[index]
 
     # Configure the initial object orientation via local Euler angle (degrees):
@@ -1223,35 +1239,47 @@ def add_new_object_from_database(
         rotation_z_quaternion * rotation_y_quaternion * rotation_x_quaternion
     )
 
-    # Add object instantiated by desired template using template handle
+    # Add object instantiated by desired template to scene using template handle
     self.curr_object = rigid_object_manager.add_object_by_template_handle(
         object_template_handle
     )
 
-    # @markdown Note: agent local coordinate system is Y up and -Z forward.
-    # Move object to be in front of the agent, then turn on kinematic mode
+    # Agent local coordinate system is Y up and -Z forward.
+    # Move object above table surface, then turn on Kinematic mode
     set_object_state(self, self.curr_object, position, rotation_quaternion)
     self.simulating = False
     self.curr_angle_rotated_degrees = 0.0
-    self.object_rotating_around_y = True
+
+    # reset axis that the new object rotates around when being displayed
+    self.object_rotation_axis = ObjectRotationAxis.Y
+
+    # for some reason they all end in "_:0000" so remove that substring before print
+    obj_name = self.curr_object.handle.replace("_:0000", "")
 
     # print out object name and its index into the list of the objects
-    print(
-        f'\nCommand: placing object "{self.curr_object.handle}," from template handle index: {index}\n'
+    # in dataset.
+    print("")
+    logger.info(
+        f'Command: placing object "{obj_name}" from template handle index: {index}\n'
     )
 
 
-def set_object_state(self, obj, position, rotation_quaternion) -> None:
-    # Set an object transform in world space
+def set_object_state(
+    self,
+    obj,
+    position=HabitatSimInteractiveViewer.DEFAULT_OBJ_POSITION,
+    rotation=HabitatSimInteractiveViewer.DEFAULT_OBJ_ROTATION,
+) -> None:
+    # Set ManagedBulletRigidObject transform in world space
     obj.translation = position
-    obj.rotation = rotation_quaternion
+    obj.rotation = rotation
 
 
 def rotate_displayed_object(
-    self, degrees_per_sec=HabitatSimInteractiveViewer.ROTATION_DEGREES_PER_SEC
+    self, obj, degrees_per_sec=HabitatSimInteractiveViewer.ROTATION_DEGREES_PER_SEC
 ) -> None:
 
-    # determine how much to rotate object this frame
+    # How much to rotate current ManagedBulletRigidObject this frame
     delta_rotation_degrees = degrees_per_sec * Timer.prev_frame_duration
 
     # check for a full 360 degree revolution
@@ -1265,19 +1293,21 @@ def rotate_displayed_object(
         # rotate about object's local y axis (up vector)
         y_rotation_in_degrees = mn.Deg(delta_rotation_degrees)
         y_rotation_in_radians = mn.Rad(y_rotation_in_degrees)
-        self.curr_object.rotate_y_local(y_rotation_in_radians)
+        obj.rotate_y_local(y_rotation_in_radians)
     else:
         # rotate about object's local x axis (horizontal vector)
         x_rotation_in_degrees = mn.Deg(delta_rotation_degrees)
         x_rotation_in_radians = mn.Rad(x_rotation_in_degrees)
-        self.curr_object.rotate_x_local(x_rotation_in_radians)
+        obj.rotate_x_local(x_rotation_in_radians)
 
-    # update current rotation angle and reset it if it passed 360 degrees
+    # update current rotation angle
     self.curr_angle_rotated_degrees += delta_rotation_degrees
+
+    # reset current rotation angle if it passed 360 degrees
     if reset_curr_rotation_angle:
-        reset_curr_rotation_angle = False
         self.curr_angle_rotated_degrees = 0.0
-        # change axis of rotation
+
+        # change ManagedBulletRigidObject's axis of rotation
         if self.object_rotation_axis == ObjectRotationAxis.Y:
             self.object_rotation_axis = ObjectRotationAxis.X
         else:
@@ -1285,14 +1315,19 @@ def rotate_displayed_object(
 
 
 def write_video_file(self) -> None:
+    # write each PIL Image in self.video_frames to file one at a time
     for frame in self.video_frames:
         self.video_writer.append_data(np.asarray(frame))
-        self.curr_frame_saved_index += 1
+
+        # update index of written frames so "self" knows when finished
+        self.curr_frame_written_index += 1
 
 
 def save_frame_in_list(self, framebuffer) -> None:
 
-    # setup variables to hold image data
+    # -viewport_range: mn.Range2Di to store x and y size of viewport
+    # -pixel_storage: how the pixels are represented under the hood
+    # -frame_image_2d: mn.Image2D that stores all image data
     viewport_range = framebuffer.viewport
     pixel_storage = mn.PixelStorage()
     pixel_storage.image_height = viewport_range.size_y()
@@ -1308,25 +1343,25 @@ def save_frame_in_list(self, framebuffer) -> None:
         "raw",
     )
 
-    # it is a mirror image for some reason, something to do with how the bytes are laid out
+    # it is a mirror image for some reason, something to do with how the bytes
+    # are laid out, so we have to flip it upside down before storing
     image_to_save = image_to_save.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
     self.video_frames.append(image_to_save)
 
 
-def done_generating_recording(self) -> None:
-    # indicates that we are done compiling existing frames into video
-    # and you can record something else now
+def write_recording_to_file_done(self) -> None:
+    # indicates that we are done writing existing frames into video
+    # and we can record something else now
     logger.info(
-        "Recording is saved, you can record something else now **********************\n"
+        " * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * "
     )
+    print("Recording is saved, you can record something else now\n")
 
+    # reset all variables for next recording
     self.writing_video = False
-
     self.video_writer.close()
-
-    # clear list for next recording
     self.video_frames.clear()
-    self.curr_frame_saved_index = 0
+    self.curr_frame_written_index = 0
 
 
 def get_bounding_box_corners(
@@ -1520,8 +1555,21 @@ if __name__ == "__main__":
 
     # Setting up sim_settings
     sim_settings: Dict[str, Any] = default_sim_settings
-    sim_settings["scene"] = args.scene
-    sim_settings["scene_dataset_config_file"] = args.dataset  # Set scene dataset
+
+    # this interactive viewer was developed with these arguments,
+    # so make them the default if none provided
+    if args.scene == None:
+        scene_name = "./data/test_assets/scenes/simple_room.glb"
+    else:
+        scene_name = args.scene
+
+    if args.dataset == None:
+        dataset_name = "./data/objects/ycb/ycb.scene_dataset_config.json"
+    else:
+        dataset_name = args.dataset
+
+    sim_settings["scene"] = scene_name
+    sim_settings["scene_dataset_config_file"] = dataset_name
     sim_settings["enable_physics"] = not args.disable_physics
     sim_settings["sensor_height"] = HabitatSimInteractiveViewer.DEFAULT_SENSOR_HEIGHT
 
