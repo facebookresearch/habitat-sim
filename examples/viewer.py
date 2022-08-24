@@ -7,7 +7,6 @@ import datetime
 import math
 import os
 import sys
-import threading
 import time
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Tuple
@@ -121,18 +120,22 @@ class HabitatSimInteractiveViewer(Application):
         # simulating continuously.
         self.simulate_single_step = False
 
-        # Make constants defining how long it takes for objects to make a full turn
-        # during kinematic mode, in seconds, and some rotation state management vars
+        # Object rotates in kinematic mode. Defines how much it has rotated
+        # from [0, 360) degrees and around which axis it is rotating
         self.curr_angle_rotated_degrees = 0.0
         self.object_rotation_axis = ObjectRotationAxis.Y
 
-        # Make var to store if we are currently recording and a list for the video frames
+        # Makes var to store if we are currently recording and if
+        # the recording is still saving
         self.recording = False
-        self.recording_still_saving = False
-        self.saving_video_is_threaded = True
-        self.saving_video_thread = None
-        self.video_writer = None
+
+        # create list to store the video frames as images
         self.video_frames = []
+        self.curr_frame_saved_index = 0
+        self.writing_video = False
+
+        # create var to store class instance that writes the frames to a video file
+        self.video_writer = None
 
         # configure our simulator
         self.cfg: Optional[habitat_sim.simulator.Configuration] = None
@@ -148,7 +151,7 @@ class HabitatSimInteractiveViewer(Application):
         self.object_template_handles = (
             object_attribute_manager.get_file_template_handles("")
         )
-        print("number of ojects in dataset: " + str(len(self.object_template_handles)))
+        print(f"number of ojects in dataset: {len(self.object_template_handles)}")
 
         # Initialize vars that will store current object and its index in the dataset
         self.object_template_handle_index = 0
@@ -261,26 +264,19 @@ class HabitatSimInteractiveViewer(Application):
         self.render_camera.render_target.blit_rgba_to_default()
         mn.gl.default_framebuffer.bind()
 
-        # if recording and not saving prev recording, save the framebuffer as
-        # a frame into a list that we will compile into a video when done recording
-        if (
-            self.saving_video_is_threaded
-            and self.recording
-            and (self.saving_video_thread == None)
-        ):
+        if self.recording and not self.writing_video:
+            # if we are recording and no recording is currently being written to file,
+            # save the framebuffer as a frame into a list that we will compile into
+            # a video when done recording
             framebuffer = mn.gl.default_framebuffer
             save_frame_in_list(self, framebuffer)
-
-        # if we were recording, but the recording thread has terminated
-        # we know the recording is saved and we can record again
         elif (
-            self.saving_video_is_threaded
-            and not self.recording
-            and (
-                self.saving_video_thread != None
-                and not self.saving_video_thread.is_alive()
-            )
+            not self.recording
+            and self.writing_video
+            and self.curr_frame_saved_index >= len(self.video_frames)
         ):
+            # if we are supposedly writing frames to file, but we have iterated over
+            # every frame in the list, we know we are done writing
             done_generating_recording(self)
 
         self.swap_buffers()
@@ -585,6 +581,7 @@ class HabitatSimInteractiveViewer(Application):
                 self.object_template_handle_index,
                 HabitatSimInteractiveViewer.DEFAULT_OBJ_POSITION,
             )
+            self.object_rotation_axis = ObjectRotationAxis.Y
 
         elif key == pressed.P:
             # increment template handle index and add corresponding object
@@ -597,6 +594,7 @@ class HabitatSimInteractiveViewer(Application):
                 self.object_template_handle_index,
                 HabitatSimInteractiveViewer.DEFAULT_OBJ_POSITION,
             )
+            self.object_rotation_axis = ObjectRotationAxis.Y
 
         elif key == pressed.O:
             if self.curr_object:
@@ -613,55 +611,40 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.L:
             # press L to start recording, then L again to stop it
 
-            if self.saving_video_is_threaded:
-                if not self.recording and (
-                    self.saving_video_thread == None
-                    or not self.saving_video_thread.is_alive()
-                ):
-                    # if we are not recording and the thread doesn't exist or there is no active thread,
-                    # start recording
-                    self.recording = True
-                    logger.info(
-                        "Start recording ----------------------------------------------------\n"
-                    )
+            if not self.recording and not self.writing_video:
+                # if we are not recording and not writing prev recording to file
+                self.recording = True
+                logger.info(
+                    "Start recording ----------------------------------------------------\n"
+                )
+            elif not self.recording and self.writing_video:
+                # if we are not recording but still writing prev recording to file
+                logger.info(
+                    "can't record, still saving previous recording------------------------\n"
+                )
+            elif self.recording and not self.writing_video:
+                # if we are recording but not writing prev recording to file
+                # if we are recording and not saving a previous recording,
+                # save frames to video file
+                self.recording = False
+                self.writing_video = True
 
-                elif not self.recording and (
-                    self.saving_video_thread != None
-                    and self.saving_video_thread.is_alive()
-                ):
-                    # if we are not recording, but a thread exists and is still saving prev
-                    # frames to a video, we can't record any else yet
-                    logger.info(
-                        "can't record, still saving previous recording------------------------\n"
-                    )
+                # Current date and time so we can make unique video files for each recording
+                date_and_time = datetime.datetime.now()
+                # year-month-day
+                date = date_and_time.strftime("%Y-%m-%d")
+                # hour:min:sec - capital H is military time, %I is 0-12 hour time format
+                time = date_and_time.strftime("%H:%M:%S")
 
-                elif self.recording and (
-                    self.saving_video_thread == None
-                    or not self.saving_video_thread.is_alive()
-                ):
-                    # if we are recording and not saving a previous recording,
-                    # save frames to video file
-                    self.recording = False
-
-                    # Current date and time so we can make unique video files for each recording
-                    date_and_time = datetime.datetime.now()
-                    # year-month-day
-                    date = date_and_time.strftime("%Y-%m-%d")
-                    # hour:min:sec - capital H is military time, %I is 0-12 hour time format
-                    time = date_and_time.strftime("%H:%M:%S")
-
-                    # construct file path and start thread to save consecutive frames as video file
-                    file_path = f"{output_path}viewer_recording_{date}_{time}.mp4"
-                    logger.info(
-                        f"End recording, saving frames to video file---------------------------:\n{file_path}\n"
-                    )
-                    self.saving_video_thread = threading.Thread(
-                        target=start_generating_recording, args=(self, file_path)
-                    )
-                    self.saving_video_thread.start()
-            else:
-                # save video unthreaded
-                print("non threaded video recording not yet supported")
+                # construct file path and start thread to save consecutive frames as video file
+                file_path = f"{output_path}viewer_recording_{date}_{time}.mp4"
+                logger.info(
+                    f"End recording, saving frames to video file---------------------------:\n{file_path}\n"
+                )
+                self.video_writer = imageio.get_writer(
+                    file_path, format="mp4", mode="I", fps=self.fps
+                )
+                write_video_file(self)
 
         elif key == pressed.ONE:
             # Apply impulses to dataset object if it exists and it is Dynamic motion mode
@@ -1301,6 +1284,12 @@ def rotate_displayed_object(
             self.object_rotation_axis = ObjectRotationAxis.Y
 
 
+def write_video_file(self) -> None:
+    for frame in self.video_frames:
+        self.video_writer.append_data(np.asarray(frame))
+        self.curr_frame_saved_index += 1
+
+
 def save_frame_in_list(self, framebuffer) -> None:
 
     # setup variables to hold image data
@@ -1324,27 +1313,20 @@ def save_frame_in_list(self, framebuffer) -> None:
     self.video_frames.append(image_to_save)
 
 
-def start_generating_recording(self, file_path) -> None:
-    self.video_writer = imageio.get_writer(
-        file_path, format="mp4", mode="I", fps=self.fps
-    )
-    for frame in self.video_frames:
-        self.video_writer.append_data(np.asarray(frame))
-
-
 def done_generating_recording(self) -> None:
+    # indicates that we are done compiling existing frames into video
+    # and you can record something else now
     logger.info(
         "Recording is saved, you can record something else now **********************\n"
     )
 
-    # indicates that we are done compiling existing frames into video
-    # and you can record something else now
-    self.saving_video_thread = None
+    self.writing_video = False
 
     self.video_writer.close()
 
     # clear list for next recording
     self.video_frames.clear()
+    self.curr_frame_saved_index = 0
 
 
 def get_bounding_box_corners(
