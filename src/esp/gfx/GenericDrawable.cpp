@@ -93,8 +93,8 @@ void GenericDrawable::updateShaderLightingParameters(
 
   for (Mn::UnsignedInt i = 0; i < lightSetup_->size(); ++i) {
     const auto& lightInfo = (*lightSetup_)[i];
-    lightPositions.emplace_back(Mn::Vector4(getLightPositionRelativeToCamera(
-        lightInfo, transformationMatrix, cameraMatrix)));
+    lightPositions.emplace_back(getLightPositionRelativeToCamera(
+        lightInfo, transformationMatrix, cameraMatrix));
 
     const auto& lightColor = (*lightSetup_)[i].color;
     lightColors.emplace_back(lightColor);
