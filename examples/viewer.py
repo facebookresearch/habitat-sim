@@ -5,6 +5,7 @@
 import ctypes
 import math
 import os
+import random
 import sys
 import time
 from enum import Enum
@@ -22,6 +23,346 @@ from examples.settings import default_sim_settings, make_cfg
 from habitat_sim import physics
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.common import quat_from_angle_axis
+
+
+class SampleVolume:
+    def __init__(
+        self,
+        volume: mn.Range3D,
+        translation: mn.Vector3,
+        rotation: mn.Quaternion,
+        name: str,
+    ) -> None:
+        self.volume = volume
+        self.translation = translation
+        self.rotation = rotation
+        self.name = name
+        self.scalar_volume = volume.size_x() * volume.size_y() * volume.size_z()
+
+    def sample_uniform_local(self) -> mn.Vector3:
+        """
+        Sample a uniform random point within Receptacle in local space.
+        """
+        return mn.Vector3(np.random.uniform(self.volume.min, self.volume.max))
+
+    def sample_uniform_global(self) -> mn.Vector3:
+        """
+        Sample a uniform random point in the local Receptacle volume and then transform it into global space.
+        """
+        local_sample = self.sample_uniform_local()
+        global_sample = self.rotation.transform_vector(local_sample)
+        global_sample = self.translation + global_sample
+        return global_sample
+
+    def contains_point(self, point) -> bool:
+        """
+        Returns whether or not a point is contained in the volume
+        """
+        local_point = self.rotation.inverted().transform_vector(
+            point - self.translation
+        )
+        return self.volume.contains(local_point)
+
+    def debug_draw(self, sim: habitat_sim.Simulator, color: mn.Color4 = None) -> None:
+        # draw the volume with a debug line render box
+        transform_matrix = mn.Matrix4.from_(self.rotation.to_matrix(), self.translation)
+        debug_line_renderer = sim.get_debug_line_render()
+        debug_line_renderer.push_transform(transform_matrix)
+        if color is None:
+            color = mn.Color4.magenta()
+        debug_line_renderer.draw_box(self.volume.min, self.volume.max, color)
+        debug_line_renderer.pop_transform()
+        # debug_line_renderer.draw_circle(self.translation, 0.25, color)
+
+
+def match_volumes(
+    sample_volumes: Dict[str, Dict[str, SampleVolume]]
+) -> Dict[str, List[str]]:
+    # match single agent spawns to a list of target spawns
+    agents = sample_volumes["agent_spawns"]
+    targets = sample_volumes["target_volumes"]
+    matches = {}
+    for agent in agents:
+        matches[agent] = []
+    for target in targets:
+        obj = str(target)
+        first_underscore = obj.find("_") + 1
+        agent = obj[: obj.find("_", first_underscore)]
+        matches[agent].append(target)
+    return matches
+
+
+def get_region_volumes(
+    sample_volumes: Dict[str, Dict[str, SampleVolume]]
+) -> Dict[str, List[str]]:
+    # split spawns in to agent and target sets by room tag
+    region_splits = {}
+    for volume_type in sample_volumes.keys():
+        for volume_name, volume in sample_volumes[volume_type].items():
+            region_tag = volume_name.split("_")[0]
+            # print(f"tag = {volume_name} - region = {region_tag}")
+            if region_tag not in region_splits:
+                region_splits[region_tag] = {
+                    "agent_spawns": {},
+                    "target_volumes": {},
+                }
+            region_splits[region_tag][volume_type][volume_name] = volume
+    print(region_splits)
+    return region_splits
+
+
+def read_sample_volume_metadata(metadata_file) -> Dict[str, Dict[str, SampleVolume]]:
+    # read the target and agent sampling metadata from json back into lists of SampleVolumes
+    import json
+
+    with open(metadata_file, "r") as infile:
+        metadata = json.load(infile)
+        sample_volumes = {"agent_spawns": {}, "target_volumes": {}}
+        for key in sample_volumes:
+            for item in metadata[key]:
+                sample_volumes[key][item["name"]] = SampleVolume(
+                    volume=mn.Range3D.from_center(
+                        mn.Vector3(), mn.Vector3(item["size"]) * 0.5
+                    ),
+                    translation=mn.Vector3(item["translation"]),
+                    rotation=mn.Quaternion(
+                        mn.Vector3(item["rotation"][1:]), item["rotation"][0]
+                    ),
+                    name=item["name"],
+                )
+
+        print(sample_volumes)
+        return sample_volumes
+
+
+def add_sphere_object(
+    sim: habitat_sim.Simulator, radius: float, pos: mn.Vector3
+) -> habitat_sim.physics.ManagedRigidObject:
+    """
+    Add a sphere to the world at a global position.
+    Returns the new object.
+    """
+    obj_attr_mgr = sim.get_object_template_manager()
+    sphere_template = obj_attr_mgr.get_template_by_handle(
+        obj_attr_mgr.get_template_handles("icosphereSolid")[0]
+    )
+    sphere_template.scale = mn.Vector3(radius)
+    obj_attr_mgr.register_template(sphere_template, "my_sphere")
+    new_object = sim.get_rigid_object_manager().add_object_by_template_handle(
+        "my_sphere"
+    )
+    new_object.motion_type = habitat_sim.physics.MotionType.DYNAMIC
+    new_object.translation = pos
+    return new_object
+
+
+def get_volume_weighted_sample(sample_volumes: Dict[str, SampleVolume]) -> SampleVolume:
+    # pick a random SampleVolume weighted by volume
+    volume_cache = []
+    total_volume = 0
+    # print("Volume totals: ")
+    for v in sample_volumes.values():
+        total_volume += v.scalar_volume
+        volume_cache.append(total_volume)
+        # print(f"    {total_volume} - {v.name}")
+    rand_value = random.random() * total_volume
+    # print(f" rand = {rand_value}")
+    for ix, volume in enumerate(volume_cache):
+        if volume >= rand_value:
+            # print(f"  - result = {list(sample_volumes.values())[ix].name}")
+            return list(sample_volumes.values())[ix]
+    raise AssertionError
+
+
+def get_random_target_sample(
+    sim: habitat_sim.Simulator,
+    sample_volumes: Dict[str, SampleVolume],
+    radius=0.05,
+    max_attempts=1000,
+) -> Tuple[mn.Vector3, str]:
+    # get a random spherical sample point with specified radius from a random SampleVolume which is NOT intersecting the scene geometry
+
+    # NOTE: naive uniform sample
+    # sample_volume = list(sample_volumes.values())[
+    #    random.randint(0, len(sample_volumes) - 1)
+    # ]
+
+    sample_volume = get_volume_weighted_sample(sample_volumes)
+    sample_sphere = add_sphere_object(
+        sim, radius, sample_volume.sample_uniform_global()
+    )
+    # rejection sampling
+    attempts = 0
+    while sample_sphere.contact_test() and attempts < max_attempts:
+        sample_sphere.translation = sample_volume.sample_uniform_global()
+        attempts += 1
+    if attempts == max_attempts:
+        logger.warn(
+            f"Failed to sample a point in '{sample_volume.name}' in {max_attempts} tries."
+        )
+        return None
+    sample_position = sample_sphere.translation
+    sim.get_rigid_object_manager().remove_object_by_id(sample_sphere.object_id)
+    return (sample_position, sample_volume.name)
+
+
+def set_agent_state(
+    sim: habitat_sim.Simulator,
+    point: mn.Vector3,
+    face_target: Optional[mn.Vector3] = None,
+):
+    # set agent position
+    agent = sim.get_agent(0)
+    sampled_state = habitat_sim.agent.agent.AgentState()
+    sampled_state.position = sim.pathfinder.snap_point(point)
+
+    if face_target is not None:
+        # orient the agent toward the point
+        agent_to_obj = face_target - sampled_state.position
+        agent_local_forward = np.array([0, 0, -1.0])
+        flat_to_obj = np.array([agent_to_obj[0], 0.0, agent_to_obj[2]])
+        # unit y normal plane for rotation
+        det = (
+            flat_to_obj[0] * agent_local_forward[2]
+            - agent_local_forward[0] * flat_to_obj[2]
+        )
+        turn_angle = math.atan2(det, np.dot(agent_local_forward, flat_to_obj))
+        sampled_state.rotation = quat_from_angle_axis(turn_angle, np.array([0, 1.0, 0]))
+    else:
+        # set a random agent orientation
+        sampled_state.rotation = quat_from_angle_axis(
+            sim.random.uniform_float(0, 2.0 * np.pi), np.array([0, 1, 0])
+        )
+
+    # set the state to the agent
+    agent.set_state(sampled_state, is_initial=False)
+
+
+def get_random_agent_sample_from_volume(
+    sim: habitat_sim.Simulator,
+    sample_volumes: Dict[str, SampleVolume],
+    max_attempts=1000,
+) -> mn.Vector3:
+    # get a random agent spawn location from a random SampleVolume
+    sample_volume = get_volume_weighted_sample(sample_volumes)
+
+    attempts = 0
+    snap_point = None
+    found_sample = False
+    while not found_sample and attempts < max_attempts:
+        snap_point = sim.pathfinder.snap_point(sample_volume.sample_uniform_global())
+        if not np.isnan(snap_point).any() and sample_volume.contains_point(snap_point):
+            found_sample = True
+            break
+        attempts += 1
+    if attempts == max_attempts:
+        logger.warn(
+            f"Failed to sample agent point in '{sample_volume.name}' in {max_attempts} tries."
+        )
+        return None
+    return snap_point
+
+
+def draw_debug_sphere(
+    sim: habitat_sim.Simulator, radius: float, position: mn.Vector3, color: mn.Color4
+):
+    debug_line_render = sim.get_debug_line_render()
+    rings = 5
+    for axis in [mn.Vector3(1, 0, 0), mn.Vector3(0, 0, 1)]:
+        for ring in range(rings):
+            matrix = mn.Matrix4.rotation(mn.Rad(math.pi * ring / rings), axis)
+            matrix.translation = position
+            debug_line_render.push_transform(matrix)
+            debug_line_render.draw_circle(mn.Vector3(), radius, color)
+            debug_line_render.pop_transform()
+
+
+# YAML config writing utils
+def initialize_data():
+    data = {}
+    data["PATHS"] = {
+        "WEBAPP_FOLDER": "task/server_files/habitat_vr_app",
+        "WEBAPP_DATA": "{WEBAPP_FOLDER}/data",
+        "WEBAPP_CONFIG": "{WEBAPP_DATA}/config",
+        "TASK_CONFIG_PATH": "{WEBAPP_CONFIG}/taskData.json",
+        "INSTANCE_CONFIG_PATH": "{WEBAPP_CONFIG}/instanceData.json",
+        "DATA_CSV_PATH": "{WEBAPP_CONFIG}/data.csv",
+        "OUTPUT_FOLDER": "~/floorplanner-pilot-dataset",
+    }
+
+    data["TASK_1"] = {
+        "METADATA": {
+            "NAME": "object_reaching",
+            "DESCRIPTION": "Reach for the specified object",
+        },
+    }
+    return data
+
+
+def write_yaml(yaml_data, data_path="volume_data.tyaml"):
+    import yaml
+
+    with open(data_path, "w") as outfile:
+        yaml.safe_dump(
+            yaml_data,
+            outfile,
+            default_flow_style=False,
+            sort_keys=False,
+            allow_unicode=False,
+        )
+    print(f"Wrote volume sample dataset to {data_path}")
+
+
+def write_dataset_to_yaml(dataset, data_path="volume_data.tyaml"):
+    yaml_data = initialize_data()
+    for index, datapoint in enumerate(dataset):
+        yaml_data["TASK_1"][f"INSTANCE_{index}"] = {
+            "COMMENT": f"{datapoint['object_label']}_{datapoint['start_region']}",
+            "SUBJECT": 1,
+            "DATASET_NAME": "floorplanner_chunks",
+            "DATASET_PATH": "data/floorplanner_chunks/floorplanner.scene_dataset_config.json",
+            "SCENE": f"102815835-{datapoint['room']}",
+            "OBJECT_LABEL": datapoint["object_label"],
+            "OBJECT_BBOX": [1.0, 2.0, 3.0],
+            "START_POSITION": list(datapoint["start_position"]),
+            "GOAL_POSITION": list(datapoint["goal_position"]),
+            "START_REGION": datapoint["start_region"],
+        }
+    write_yaml(yaml_data, data_path)
+
+
+def generate_dataset_per_room(sim, region_volumes):
+    # generate a full dataset of point and agent starting locations
+    num_samples_per_region = 100
+    included_regions = [
+        "kitchen1",
+        "kitchen2",
+        "dining1",
+    ]
+    dataset = []
+    for region in included_regions:
+        # scrape all numbers from the region tag:
+        room_name = "".join(i for i in region if not i.isdigit())
+        for _sample in range(num_samples_per_region):
+            # generate an agent location
+            agent_start = get_random_agent_sample_from_volume(
+                sim, region_volumes[region]["agent_spawns"]
+            )
+            # generate goal
+            target_point, target_name = get_random_target_sample(
+                sim, region_volumes[region]["target_volumes"]
+            )
+            # cache the results
+            dataset.append(
+                {
+                    "room": room_name,
+                    "object_label": target_name,
+                    "goal_position": target_point,
+                    "start_position": agent_start,
+                    "start_region": region,
+                }
+            )
+    return dataset
 
 
 class HabitatSimInteractiveViewer(Application):
@@ -102,6 +443,23 @@ class HabitatSimInteractiveViewer(Application):
         logger.setLevel("INFO")
         self.print_help_text()
 
+        # construct the sample volumes
+        self.sample_volumes = read_sample_volume_metadata(
+            "/home/alexclegg/Documents/VR_mocap_resources/102815835.json"
+        )
+        # self.agent_target_matches = match_volumes(self.sample_volumes)
+        self.region_volumes = get_region_volumes(self.sample_volumes)
+        self.active_region = list(self.region_volumes.keys())[0]
+        self.sample_timer = {
+            "time_since_last_sample": 0.0,
+            "sample_frequency": 1.0,  # seconds
+        }
+        self.recent_sample = get_random_target_sample(
+            self.sim, self.sample_volumes["target_volumes"]
+        )[0]
+        self.sample_dataset = []
+        self.draw_dataset_sample = None
+
     def draw_contact_debug(self):
         """
         This method is called to render a debug line overlay displaying active contact points and normals.
@@ -147,6 +505,48 @@ class HabitatSimInteractiveViewer(Application):
         if self.contact_debug_draw:
             self.draw_contact_debug()
 
+        # draw the sample volumes
+        for agent_volume in self.sample_volumes["agent_spawns"].values():
+            # agent boxes in green
+            agent_volume.debug_draw(sim=self.sim, color=mn.Color4.green())
+        for target_volume in self.sample_volumes["target_volumes"].values():
+            # target boxes in magenta
+            target_volume.debug_draw(sim=self.sim, color=mn.Color4.magenta())
+        # draw the sample
+        if self.recent_sample is not None:
+            draw_debug_sphere(self.sim, 0.05, self.recent_sample, mn.Color4.red())
+            # draw a line from in front of the user to the sample
+            camera_transform = (
+                self.render_camera.render_camera.node.absolute_transformation()
+            )
+            self.sim.get_debug_line_render().draw_transformed_line(
+                self.recent_sample,
+                camera_transform.transform_point(mn.Vector3(0, 0, -0.5)),
+                mn.Color4.red(),
+            )
+
+        # draw the sample dataset:
+        camera_position = self.render_camera.render_camera.node.absolute_translation
+        for data_point in self.sample_dataset:
+            self.sim.get_debug_line_render().draw_circle(
+                translation=data_point["goal_position"],
+                radius=0.05,
+                color=mn.Color4.red(),
+                normal=camera_position - data_point["goal_position"],
+            )
+            self.sim.get_debug_line_render().draw_circle(
+                translation=data_point["start_position"],
+                radius=0.1,
+                color=mn.Color4.blue(),
+                normal=mn.Vector3(0, 1, 0),
+            )
+        if self.draw_dataset_sample is not None:
+            self.sim.get_debug_line_render().draw_transformed_line(
+                self.sample_dataset[self.draw_dataset_sample]["start_position"],
+                self.sample_dataset[self.draw_dataset_sample]["goal_position"],
+                mn.Color4.yellow(),
+            )
+
     def draw_event(
         self,
         simulation_call: Optional[Callable] = None,
@@ -167,6 +567,19 @@ class HabitatSimInteractiveViewer(Application):
         self.time_since_last_simulation += Timer.prev_frame_duration
         num_agent_actions: int = self.time_since_last_simulation * agent_acts_per_sec
         self.move_and_look(int(num_agent_actions))
+
+        # resampling logic for demo purposes
+        # self.sample_timer["time_since_last_sample"] += Timer.prev_frame_duration
+        # if (
+        #    self.sample_timer["time_since_last_sample"]
+        #    > self.sample_timer["sample_frequency"]
+        # ):
+        #    self.recent_sample = get_random_target_sample(
+        #        self.sim, self.sample_volumes["target_volumes"]
+        #    )[0]
+        #    self.sample_timer["time_since_last_sample"] = math.fmod(
+        #        self.time_since_last_simulation, self.sample_timer["sample_frequency"]
+        #    )
 
         # Occasionally a frame will pass quicker than 1/60 seconds
         if self.time_since_last_simulation >= 1.0 / self.fps:
@@ -461,6 +874,56 @@ class HabitatSimInteractiveViewer(Application):
                 else:
                     logger.warn("Warning: recompute navmesh first")
 
+        elif key == pressed.Q:
+
+            if alt_pressed:
+                # sample a new region
+                self.active_region = list(self.region_volumes.keys())[
+                    random.randint(0, len(self.region_volumes) - 1)
+                ]
+                print(f"Active sampling region = {self.active_region}")
+            if shift_pressed == alt_pressed:
+                # both or neither
+                target_volumes = self.sample_volumes["target_volumes"]
+                target_volumes = self.region_volumes[self.active_region][
+                    "target_volumes"
+                ]
+                # generate a new sample target point
+                self.recent_sample = get_random_target_sample(self.sim, target_volumes)[
+                    0
+                ]
+            if shift_pressed:
+                # generate a new agent state
+                agent_sample_volumes = self.sample_volumes["agent_spawns"]
+                agent_sample_volumes = self.region_volumes[self.active_region][
+                    "agent_spawns"
+                ]
+                set_agent_state(
+                    self.sim,
+                    get_random_agent_sample_from_volume(self.sim, agent_sample_volumes),
+                    face_target=self.recent_sample,
+                )
+
+        elif key == pressed.E:
+            if shift_pressed and alt_pressed:
+                write_dataset_to_yaml(self.sample_dataset)
+            elif shift_pressed:
+                self.draw_dataset_sample = (self.draw_dataset_sample + 1) % len(
+                    self.sample_dataset
+                )
+            elif alt_pressed:
+                self.draw_dataset_sample = (self.draw_dataset_sample - 1) % len(
+                    self.sample_dataset
+                )
+                if self.draw_dataset_sample < 0:
+                    self.draw_dataset_sample = len(self.sample_dataset) - 1
+            else:
+                self.recent_sample = None
+                self.sample_dataset = generate_dataset_per_room(
+                    self.sim, self.region_volumes
+                )
+                self.draw_dataset_sample = 0
+
         # update map of moving/looking keys which are currently pressed
         if key in self.pressed:
             self.pressed[key] = True
@@ -717,6 +1180,7 @@ class HabitatSimInteractiveViewer(Application):
         self.navmesh_settings.set_defaults()
         self.navmesh_settings.agent_height = self.cfg.agents[self.agent_id].height
         self.navmesh_settings.agent_radius = self.cfg.agents[self.agent_id].radius
+        self.navmesh_settings.regionMinSize = 1
 
         self.sim.recompute_navmesh(
             self.sim.pathfinder,
