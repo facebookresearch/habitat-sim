@@ -34,8 +34,6 @@ if "google.colab" in sys.modules:
 
 repo = git.Repo(".", search_parent_directories=True)
 dir_path = repo.working_tree_dir
-# %cd $dir_path
-data_path = os.path.join(dir_path, "data")
 # fmt: off
 output_directory = "examples/viewer_output/"  # @param {type:"string"}
 # fmt: on
@@ -288,7 +286,7 @@ class HabitatSimInteractiveViewer(Application):
         ):
             # if we are supposedly writing the frames of the previous recording to a file,
             # but we have iterated over every frame in the list, we know we are done writing
-            write_recording_to_file_done(self)
+            done_writing_video_file(self)
 
         self.swap_buffers()
         Timer.next_frame()
@@ -373,7 +371,7 @@ class HabitatSimInteractiveViewer(Application):
         # set sim_settings scene name as actual loaded scene
         self.sim_settings["scene"] = self.sim.curr_scene_name
 
-        # Reset angent transform
+        # Reset agent transform
         self.agent_body_node.translation = mn.Vector3(
             HabitatSimInteractiveViewer.DEFAULT_AGENT_POSITION
         )
@@ -629,16 +627,12 @@ class HabitatSimInteractiveViewer(Application):
                 # if we are not recording and not writing prev recording to file,
                 # we can start a new recording
                 self.recording = True
-                logger.info(
-                    "------------------------------------------------------------------------"
-                )
+                logger.info("-" * 72)
                 print("Command: start recording\n")
             elif not self.recording and self.writing_video:
                 # if we are not recording but still writing prev recording to file,
                 # wait until the video file is written before recording again
-                logger.info(
-                    "------------------------------------------------------------------------"
-                )
+                logger.info("-" * 72)
                 print("Command: can't record, still saving previous recording\n")
             elif self.recording and not self.writing_video:
                 # if we are recording but not writing prev recording to file, we need
@@ -658,9 +652,7 @@ class HabitatSimInteractiveViewer(Application):
                 file_path = (
                     f"{output_path}viewer_py_recording__date_{date}__time_{time}.mp4"
                 )
-                logger.info(
-                    "------------------------------------------------------------------------"
-                )
+                logger.info("-" * 72)
                 print(
                     f"Command: End recording, saving frames to the video file below \n{file_path}\n"
                 )
@@ -1067,9 +1059,10 @@ Key Commands:
     SPACE:      Toggle physics simulation on/off.
     '.':        Take a single simulation step if not simulating continuously.
     'v':        (physics) Invert gravity.
-    'i':        Go backward through dataset of objects and generate it above table.
-    'p':        Go forward through dataset of objects and generate it above table.
+    'i':        Go backward through dataset of objects and generate current object above table.
+    'p':        Go forward through dataset of objects and generate current object above table.
     'o':        Turn on physics and snap current object onto the surface below it.
+    'l':        Press 'L' to start recording, then 'L' again to stop recording
     't':        Load URDF from filepath
                 (+SHIFT) quick re-load the previously specified URDF
                 (+ALT) load the URDF with fixed base
@@ -1213,8 +1206,10 @@ class Timer:
 def add_new_object_from_dataset(
     self, index, position=HabitatSimInteractiveViewer.DEFAULT_OBJ_POSITION
 ) -> None:
-    # Add to scene the ManagedBulletRigidObject at given template handle index
-    # from dataset at the provided position.
+    """
+    Add to scene the ManagedBulletRigidObject at given template handle index
+    from dataset at the provided position.
+    """
 
     # make sure there are any ManagedBulletRigidObjects from a dataset
     if len(self.object_template_handles) == 0:
@@ -1278,7 +1273,9 @@ def set_object_state(
     position=HabitatSimInteractiveViewer.DEFAULT_OBJ_POSITION,
     rotation=HabitatSimInteractiveViewer.DEFAULT_OBJ_ROTATION,
 ) -> None:
-    # Set ManagedBulletRigidObject transform in world space
+    """
+    Set ManagedBulletRigidObject "obj" transform in world space
+    """
     obj.translation = position
     obj.rotation = rotation
 
@@ -1286,6 +1283,12 @@ def set_object_state(
 def rotate_displayed_object(
     self, obj, degrees_per_sec=HabitatSimInteractiveViewer.ROTATION_DEGREES_PER_SEC
 ) -> None:
+    """
+    When ManagedBulletRigidObject "obj" from dataset is in Kinematic mode, it is
+    displayed above the table in simple_room.glb and rotates so that the agent can
+    see all sides of it. This function rotates the object from the past frame to
+    this frame
+    """
 
     # How much to rotate current ManagedBulletRigidObject this frame
     delta_rotation_degrees = degrees_per_sec * Timer.prev_frame_duration
@@ -1323,7 +1326,10 @@ def rotate_displayed_object(
 
 
 def write_video_file(self) -> None:
-    # write each PIL Image in self.video_frames to file one at a time
+    """
+    write each PIL Image in self.video_frames to video file one at a time
+    """
+
     for frame in self.video_frames:
         self.video_writer.append_data(np.asarray(frame))
 
@@ -1332,6 +1338,10 @@ def write_video_file(self) -> None:
 
 
 def save_frame_in_list(self, framebuffer) -> None:
+    """
+    Save the framebuffer frame data as a mn.Image2D into a variable that is then
+    stored in a list of sequential frames to be later written to a video file
+    """
 
     # -viewport_range: mn.Range2Di to store x and y size of viewport
     # -pixel_storage: how the pixels are represented under the hood
@@ -1357,12 +1367,12 @@ def save_frame_in_list(self, framebuffer) -> None:
     self.video_frames.append(image_to_save)
 
 
-def write_recording_to_file_done(self) -> None:
-    # indicates that we are done writing existing frames into video
-    # and we can record something else now
-    logger.info(
-        " * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * "
-    )
+def done_writing_video_file(self) -> None:
+    """
+    indicates that we are done writing existing frames into video file
+    and we can record something else now
+    """
+    logger.info(" *" * 36)
     print("Recording is saved, you can record something else now\n")
 
     # reset all variables for next recording
