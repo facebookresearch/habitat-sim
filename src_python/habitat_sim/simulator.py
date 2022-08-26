@@ -26,14 +26,14 @@ try:
 except ImportError:
     _HAS_TORCH = False
 
-import habitat_sim.errors
+
 from habitat_sim.agent.agent import Agent, AgentConfiguration, AgentState
 from habitat_sim.bindings import cuda_enabled
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.metadata import MetadataMediator
-from habitat_sim.nav import GreedyGeodesicFollower, NavMeshSettings
-from habitat_sim.sensor import SensorSpec, SensorType
-from habitat_sim.sensors.noise_models import make_sensor_noise_model
+from habitat_sim.nav import GreedyGeodesicFollower, NavMeshSettings, PathFinder
+from habitat_sim.sensor import Sensor, SensorSpec, SensorType
+from habitat_sim.sensors.noise_models import SensorNoiseModel, make_sensor_noise_model
 from habitat_sim.sim import SimulatorBackend, SimulatorConfiguration
 from habitat_sim.utils.common import quat_from_angle_axis
 
@@ -74,7 +74,7 @@ class Simulator(SimulatorBackend):
     agents: List[Agent] = attr.ib(factory=list, init=False)
     _num_total_frames: int = attr.ib(default=0, init=False)
     _default_agent_id: int = attr.ib(default=0, init=False)
-    __sensors: List[Dict[str, "Sensor"]] = attr.ib(factory=list, init=False)
+    __noise_models: Dict[str, SensorNoiseModel] = attr.ib(factory=dict, init=False)
     _initialized: bool = attr.ib(default=False, init=False)
     _previous_step_time: float = attr.ib(
         default=0.0, init=False
@@ -117,6 +117,7 @@ class Simulator(SimulatorBackend):
         self._sanitize_config(self.config)
         self.__set_from_config(self.config)
 
+<<<<<<< HEAD:src_python/habitat_sim/simulator.py
     def close(self, destroy: bool = True) -> None:
         r"""Close the simulator instance.
 
@@ -140,6 +141,10 @@ class Simulator(SimulatorBackend):
                 del sensor
 
         self.__sensors = []
+=======
+    def close(self) -> None:
+        self.__noise_models.clear()
+>>>>>>> python-node-sensor-suite:habitat_sim/simulator.py
 
         for agent in self.agents:
             agent.close()
@@ -276,19 +281,30 @@ class Simulator(SimulatorBackend):
 
         self._default_agent_id = config.sim_cfg.default_agent_id
 
-        self.__sensors: List[Dict[str, Sensor]] = [
-            dict() for i in range(len(config.agents))
-        ]
+        self.__noise_models: Dict[str, SensorNoiseModel] = {}
         self.__last_state = dict()
-        for agent_id, agent_cfg in enumerate(config.agents):
-            for spec in agent_cfg.sensor_specifications:
-                self._update_simulator_sensors(spec.uuid, agent_id=agent_id)
+        for agent_id, _ in enumerate(config.agents):
             self.initialize_agent(agent_id)
 
-    def _update_simulator_sensors(self, uuid: str, agent_id: int) -> None:
-        self.__sensors[agent_id][uuid] = Sensor(
-            sim=self, agent=self.get_agent(agent_id), sensor_id=uuid
+    def make_noise_model(self, sensor_spec: SensorSpec):
+        noise_model_kwargs = sensor_spec.noise_model_kwargs
+        gpu_device = 0
+        if sensor_spec.gpu2gpu_transfer:
+            gpu_device = self.gpu_device
+        noise_model = make_sensor_noise_model(
+            sensor_spec.noise_model, {"gpu_device_id": gpu_device, **noise_model_kwargs}
         )
+        assert noise_model.is_valid_sensor_type(
+            sensor_spec.sensor_type
+        ), "Noise model '{}' is not valid for sensor '{}'".format(
+            sensor_spec.noise_model, sensor_spec.uuid
+        )
+        return noise_model
+
+    def get_noise_model(self, sensor_spec: SensorSpec):
+        if sensor_spec.uuid not in self.__noise_models:
+            self.__noise_models[sensor_spec.uuid] = self.make_noise_model(sensor_spec)
+        return self.__noise_models[sensor_spec.uuid]
 
     def add_sensor(
         self, sensor_spec: SensorSpec, agent_id: Optional[int] = None
@@ -317,7 +333,6 @@ class Simulator(SimulatorBackend):
             agent_id = self._default_agent_id
         agent = self.get_agent(agent_id=agent_id)
         agent._add_sensor(sensor_spec)
-        self._update_simulator_sensors(sensor_spec.uuid, agent_id=agent_id)
 
     def get_agent(self, agent_id: int) -> Agent:
         return self.agents[agent_id]
@@ -431,16 +446,23 @@ class Simulator(SimulatorBackend):
             return_single = False
 
         for agent_id in agent_ids:
-            agent_sensorsuite = self.__sensors[agent_id]
-            for _sensor_uuid, sensor in agent_sensorsuite.items():
-                sensor.draw_observation()
+            agent_sensors = self.get_agent(agent_id).scene_node.subtree_sensors
+            for _, sensor in agent_sensors.items():
+                sensor.draw_observation(self)
 
         # As backport. All Dicts are ordered in Python >= 3.7
         observations: Dict[int, ObservationDict] = OrderedDict()
         for agent_id in agent_ids:
+<<<<<<< HEAD:src_python/habitat_sim/simulator.py
             agent_observations: ObservationDict = {}
             for sensor_uuid, sensor in self.__sensors[agent_id].items():
                 agent_observations[sensor_uuid] = sensor.get_observation()
+=======
+            agent_sensors = self.get_agent(agent_id).scene_node.subtree_sensors
+            agent_observations: Dict[str, Union[ndarray, "Tensor"]] = {}
+            for sensor_uuid, sensor in agent_sensors.items():
+                agent_observations[sensor_uuid] = self.get_observation(sensor)
+>>>>>>> python-node-sensor-suite:habitat_sim/simulator.py
             observations[agent_id] = agent_observations
         if return_single:
             return next(iter(observations.values()))
@@ -460,11 +482,6 @@ class Simulator(SimulatorBackend):
     def _last_state(self, state: AgentState) -> None:
         # TODO Deprecate and remove
         self.__last_state[self._default_agent_id] = state
-
-    @property
-    def _sensors(self) -> Dict[str, "Sensor"]:
-        # TODO Deprecate and remove
-        return self.__sensors[self._default_agent_id]
 
     def last_state(self, agent_id: Optional[int] = None) -> AgentState:
         if agent_id is None:
@@ -557,7 +574,14 @@ class Simulator(SimulatorBackend):
     def step_physics(self, dt: float, scene_id: int = 0) -> None:
         self.step_world(dt)
 
+    def get_observation(self, sensor: Sensor) -> Union[ndarray, "Tensor"]:
+        if not sensor.has_render_target():
+            self.renderer.bind_render_target(sensor)
+        tgt = sensor.render_target
+        noise_model = self.get_noise_model(sensor.specification())
+        obs_buffer = sensor.buffer(self.gpu_device)
 
+<<<<<<< HEAD:src_python/habitat_sim/simulator.py
 class Sensor:
     r"""Wrapper around habitat_sim.Sensor
 
@@ -744,9 +768,49 @@ class Sensor:
                 tgt.read_frame_depth(self.view)
             else:
                 tgt.read_frame_rgba(self.view)
+=======
+        if sensor.specification().gpu2gpu_transfer:
+            with torch.cuda.device(self.gpu_device):  # type: ignore[attr-defined]
+                if sensor.specification().sensor_type == SensorType.SEMANTIC:
+                    tgt.read_frame_object_id_gpu(obs_buffer.data_ptr())  # type: ignore[attr-defined]
+                elif sensor.specification().sensor_type == SensorType.DEPTH:
+                    tgt.read_frame_depth_gpu(obs_buffer.data_ptr())  # type: ignore[attr-defined]
+                else:
+                    tgt.read_frame_rgba_gpu(obs_buffer.data_ptr())  # type: ignore[attr-defined]
 
-            obs = np.flip(self._buffer, axis=0)
+                obs = obs_buffer.flip(0)
+        else:
+            size = sensor.framebuffer_size
 
+            if sensor.specification().sensor_type == SensorType.SEMANTIC:
+                tgt.read_frame_object_id(
+                    mn.MutableImageView2D(
+                        mn.PixelFormat.R32UI,
+                        size,
+                        obs_buffer,
+                    )
+                )
+            elif sensor.specification().sensor_type == SensorType.DEPTH:
+                tgt.read_frame_depth(
+                    mn.MutableImageView2D(
+                        mn.PixelFormat.R32F,
+                        size,
+                        obs_buffer,
+                    )
+                )
+            else:
+                tgt.read_frame_rgba(
+                    mn.MutableImageView2D(
+                        mn.PixelFormat.RGBA8_UNORM,
+                        size,
+                        obs_buffer.reshape(sensor.specification().resolution[0], -1),
+                    )
+                )
+>>>>>>> python-node-sensor-suite:habitat_sim/simulator.py
+
+            obs = np.flip(obs_buffer, axis=0)
+
+<<<<<<< HEAD:src_python/habitat_sim/simulator.py
         return self._noise_model(obs)
 
     def _get_observation_async(self) -> Union[ndarray, "Tensor"]:
@@ -780,3 +844,6 @@ class Sensor:
         self._sim = None
         self._agent = None
         self._sensor_object = None
+=======
+        return noise_model(obs)
+>>>>>>> python-node-sensor-suite:habitat_sim/simulator.py

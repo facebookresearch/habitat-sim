@@ -14,7 +14,6 @@ import quaternion as qt
 import habitat_sim.errors
 from habitat_sim import bindings as hsim
 from habitat_sim._ext.habitat_sim_bindings import SceneNode
-from habitat_sim.sensors.sensor_suite import SensorSuite
 from habitat_sim.utils.common import (
     quat_from_coeffs,
     quat_from_magnum,
@@ -121,7 +120,6 @@ class Agent:
     """
 
     agent_config: AgentConfiguration
-    _sensors: SensorSuite
     controls: ObjectControls
     body: mn.scenegraph.AbstractFeature3D
 
@@ -129,11 +127,9 @@ class Agent:
         self,
         scene_node: hsim.SceneNode,
         agent_config: Optional[AgentConfiguration] = None,
-        _sensors: Optional[SensorSuite] = None,
         controls: Optional[ObjectControls] = None,
     ) -> None:
         self.agent_config = agent_config if agent_config else AgentConfiguration()
-        self._sensors = _sensors if _sensors else SensorSuite()
         self.controls = controls if controls else ObjectControls()
         self.body = mn.scenegraph.AbstractFeature3D(scene_node)
         scene_node.type = hsim.SceneNodeType.AGENT
@@ -154,7 +150,7 @@ class Agent:
         self.agent_config = agent_config
 
         if reconfigure_sensors:
-            self._sensors.clear()
+            self.scene_node.subtree_sensors.clear()
             for spec in self.agent_config.sensor_specifications:
                 self._add_sensor(spec, modify_agent_config=False)
 
@@ -162,13 +158,12 @@ class Agent:
         self, spec: hsim.SensorSpec, modify_agent_config: bool = True
     ) -> None:
         assert (
-            spec.uuid not in self._sensors
+            spec.uuid not in self.scene_node.subtree_sensors
         ), f"Error, {spec.uuid} already exists in the sensor suite"
         if modify_agent_config:
             assert spec not in self.agent_config.sensor_specifications
             self.agent_config.sensor_specifications.append(spec)
-        sensor_suite = hsim.SensorFactory.create_sensors(self.scene_node, [spec])
-        self._sensors.add(sensor_suite[spec.uuid])
+        hsim.SensorFactory.create_sensors(self.scene_node, [spec])
 
     def act(self, action_id: Any) -> bool:
         r"""Take the action specified by action_id
@@ -190,7 +185,7 @@ class Agent:
                 self.scene_node, action.name, action.actuation, apply_filter=True
             )
         else:
-            for _, v in self._sensors.items():
+            for _, v in self.scene_node.subtree_sensors.items():
                 habitat_sim.errors.assert_obj_valid(v)
                 self.controls.action(
                     v.object, action.name, action.actuation, apply_filter=False
@@ -205,7 +200,7 @@ class Agent:
             np.array(self.body.object.absolute_translation), self.body.object.rotation
         )
 
-        for k, v in self._sensors.items():
+        for k, v in self.scene_node.subtree_sensors.items():
             habitat_sim.errors.assert_obj_valid(v)
             state.sensor_states[k] = SixDOFPose(
                 np.array(v.node.absolute_translation),
@@ -255,16 +250,16 @@ class Agent:
         self.body.object.rotation = quat_to_magnum(state.rotation)
 
         if reset_sensors:
-            for _, v in self._sensors.items():
+            for _, v in self.scene_node.subtree_sensors.items():
                 v.set_transformation_from_spec()
 
         if not infer_sensor_states:
             for k, v in state.sensor_states.items():
-                assert k in self._sensors
+                assert k in self.scene_node.subtree_sensors
                 if isinstance(v.rotation, list):
                     v.rotation = quat_from_coeffs(v.rotation)
 
-                s = self._sensors[k]
+                s = self.scene_node.subtree_sensors[k]
 
                 s.node.reset_transformation()
                 s.node.translate(
