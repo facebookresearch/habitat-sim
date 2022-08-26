@@ -22,7 +22,7 @@ import habitat_sim
 from examples.settings import default_sim_settings, make_cfg
 from habitat_sim import physics
 from habitat_sim.logging import LoggingContext, logger
-from habitat_sim.utils.common import quat_from_angle_axis
+from habitat_sim.utils.common import quat_from_angle_axis, quat_to_coeffs
 
 
 class SampleVolume:
@@ -206,6 +206,22 @@ def get_random_target_sample(
     return (sample_position, sample_volume.name)
 
 
+def get_orientation_toward(start_point, target_point):
+    # compute an agent orientation quaternion to face a target point (Y rotation only)
+    # orient the agent toward the point
+    agent_to_obj = target_point - start_point
+    agent_local_forward = np.array([0, 0, -1.0])
+    flat_to_obj = np.array([agent_to_obj[0], 0.0, agent_to_obj[2]])
+    # unit y normal plane for rotation
+    det = (
+        flat_to_obj[0] * agent_local_forward[2]
+        - agent_local_forward[0] * flat_to_obj[2]
+    )
+    turn_angle = math.atan2(det, np.dot(agent_local_forward, flat_to_obj))
+    rotation = quat_from_angle_axis(turn_angle, np.array([0, 1.0, 0]))
+    return rotation
+
+
 def set_agent_state(
     sim: habitat_sim.Simulator,
     point: mn.Vector3,
@@ -218,16 +234,9 @@ def set_agent_state(
 
     if face_target is not None:
         # orient the agent toward the point
-        agent_to_obj = face_target - sampled_state.position
-        agent_local_forward = np.array([0, 0, -1.0])
-        flat_to_obj = np.array([agent_to_obj[0], 0.0, agent_to_obj[2]])
-        # unit y normal plane for rotation
-        det = (
-            flat_to_obj[0] * agent_local_forward[2]
-            - agent_local_forward[0] * flat_to_obj[2]
+        sampled_state.rotation = get_orientation_toward(
+            sampled_state.position, face_target
         )
-        turn_angle = math.atan2(det, np.dot(agent_local_forward, flat_to_obj))
-        sampled_state.rotation = quat_from_angle_axis(turn_angle, np.array([0, 1.0, 0]))
     else:
         # set a random agent orientation
         sampled_state.rotation = quat_from_angle_axis(
@@ -241,26 +250,44 @@ def set_agent_state(
 def get_random_agent_sample_from_volume(
     sim: habitat_sim.Simulator,
     sample_volumes: Dict[str, SampleVolume],
+    close_to: Optional[mn.Vector3] = None,
+    close_to_samples=10,
     max_attempts=1000,
 ) -> mn.Vector3:
     # get a random agent spawn location from a random SampleVolume
+    # if close_to is provided, pick the closest of 'close_to_samples' sample points
     sample_volume = get_volume_weighted_sample(sample_volumes)
 
     attempts = 0
     snap_point = None
     found_sample = False
+    valid_samples = []
     while not found_sample and attempts < max_attempts:
         snap_point = sim.pathfinder.snap_point(sample_volume.sample_uniform_global())
         if not np.isnan(snap_point).any() and sample_volume.contains_point(snap_point):
-            found_sample = True
-            break
+            valid_samples.append(snap_point)
+            found_sample = (
+                True if close_to is None else len(valid_samples) >= close_to_samples
+            )
         attempts += 1
-    if attempts == max_attempts:
+    if len(valid_samples) == 0:
         logger.warn(
             f"Failed to sample agent point in '{sample_volume.name}' in {max_attempts} tries."
         )
         return None
-    return snap_point
+
+    # pick the closest sample
+    if close_to is not None:
+        best_dist = 99999
+        best_point = None
+        for sample in valid_samples:
+            dist = (close_to - sample).length()
+            if dist < best_dist:
+                best_point = sample
+                best_dist = dist
+        return best_point
+
+    return valid_samples[0]
 
 
 def draw_debug_sphere(
@@ -313,11 +340,17 @@ def write_yaml(yaml_data, data_path="volume_data.tyaml"):
     print(f"Wrote volume sample dataset to {data_path}")
 
 
+def np_quaternion_as_yaml_list(quat):
+    # get a yaml compatible 4D list from a numpy quaternion
+    yaml_list = list(quat_to_coeffs(quat))
+    return [float(x) for x in yaml_list]
+
+
 def write_dataset_to_yaml(dataset, data_path="volume_data.tyaml"):
     yaml_data = initialize_data()
     for index, datapoint in enumerate(dataset):
         yaml_data["TASK_1"][f"INSTANCE_{index}"] = {
-            "COMMENT": f"{datapoint['object_label']}_{datapoint['start_region']}",
+            "COMMENT": f"{datapoint['object_label']}_{datapoint['start_region']}_{index}",
             "SUBJECT": 1,
             "DATASET_NAME": "floorplanner_chunks",
             "DATASET_PATH": "data/floorplanner_chunks/floorplanner.scene_dataset_config.json",
@@ -325,6 +358,10 @@ def write_dataset_to_yaml(dataset, data_path="volume_data.tyaml"):
             "OBJECT_LABEL": datapoint["object_label"],
             "OBJECT_BBOX": [1.0, 2.0, 3.0],
             "START_POSITION": list(datapoint["start_position"]),
+            # NOTE: orientation in [x,y,z,w] format
+            "START_ORIENTATION": np_quaternion_as_yaml_list(
+                datapoint["start_orientation"]
+            ),
             "GOAL_POSITION": list(datapoint["goal_position"]),
             "START_REGION": datapoint["start_region"],
         }
@@ -344,13 +381,16 @@ def generate_dataset_per_room(sim, region_volumes):
         # scrape all numbers from the region tag:
         room_name = "".join(i for i in region if not i.isdigit())
         for _sample in range(num_samples_per_region):
-            # generate an agent location
-            agent_start = get_random_agent_sample_from_volume(
-                sim, region_volumes[region]["agent_spawns"]
-            )
             # generate goal
             target_point, target_name = get_random_target_sample(
                 sim, region_volumes[region]["target_volumes"]
+            )
+            # generate an agent location
+            agent_start = get_random_agent_sample_from_volume(
+                sim, region_volumes[region]["agent_spawns"], close_to=target_point
+            )
+            agent_rotation = get_orientation_toward(
+                start_point=agent_start, target_point=target_point
             )
             # cache the results
             dataset.append(
@@ -359,6 +399,7 @@ def generate_dataset_per_room(sim, region_volumes):
                     "object_label": target_name,
                     "goal_position": target_point,
                     "start_position": agent_start,
+                    "start_orientation": agent_rotation,
                     "start_region": region,
                 }
             )
