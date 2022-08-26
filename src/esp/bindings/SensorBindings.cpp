@@ -289,120 +289,91 @@ void initSensorBindings(py::module& m) {
 #endif
 
 #ifdef ESP_BUILD_WITH_AUDIO
-  // ==== RLRAudioPropagation::Config ====
-  py::class_<RLRAudioPropagation::Configuration>(
+  // ==== RLRAudioPropagation Configuration ====
+  py::class_<RLRA_ContextConfiguration>(
       m, "RLRAudioPropagationConfiguration")
       .def(py::init<>())
-      .def_readwrite("sampleRate",
-                     &RLRAudioPropagation::Configuration::sampleRate,
-                     R"(int | 44100 | Sample rate for the simulated audio)")
       .def_readwrite(
-          "frequencyBands", &RLRAudioPropagation::Configuration::frequencyBands,
+          "sampleRate", &RLRA_ContextConfiguration::sampleRate,
+          R"(int | 44100 | Sample rate for the simulated audio)")
+      .def_readwrite(
+          "frequencyBands", &RLRA_ContextConfiguration::frequencyBands,
           R"(int | 4 | Number of frequency bands in the audio simulation)")
       .def_readwrite(
-          "directSHOrder", &RLRAudioPropagation::Configuration::directSHOrder,
+          "directSHOrder", &RLRA_ContextConfiguration::directSHOrder,
           R"(int | 3 | The spherical harmonic order used for calculating direct sound spatialization for non-point sources (those with non-zero radii). It is not recommended to go above order 9.)")
       .def_readwrite(
-          "indirectSHOrder",
-          &RLRAudioPropagation::Configuration::indirectSHOrder,
+          "indirectSHOrder", &RLRA_ContextConfiguration::indirectSHOrder,
           R"(int | 1 | The spherical harmonic order used for calculating the spatialization of indirect sound (reflections, reverb). It is not recommended to go above order 5. Increasing this value requires more rays to be traced for the results to converge properly, and uses substantially more memory (scales quadratically).)")
       .def_readwrite(
-          "threadCount", &RLRAudioPropagation::Configuration::threadCount,
+          "threadCount", &RLRA_ContextConfiguration::threadCount,
           R"(int | 1 | Number of CPU thread the simulation will use)")
-      .def_readwrite("updateDt", &RLRAudioPropagation::Configuration::updateDt,
-                     R"(float | 0.02f | Simulation time step)")
       .def_readwrite(
-          "irTime", &RLRAudioPropagation::Configuration::irTime,
-          R"(float | 4.f | Maximum render time budget for the audio simulation)")
+          "maxIRLength", &RLRA_ContextConfiguration::maxIRLength,
+          R"(float | 4.f | Maximum impulse response length for the audio simulation)")
       .def_readwrite(
-          "unitScale", &RLRAudioPropagation::Configuration::unitScale,
+          "unitScale", &RLRA_ContextConfiguration::unitScale,
           R"(float | 1.f | Unit scale for the scene. Mesh and positions are multiplied by this factor)")
-      .def_readwrite("globalVolume",
-                     &RLRAudioPropagation::Configuration::globalVolume,
-                     R"(float | 4.f | Total initial pressure value)")
       .def_readwrite(
-          "indirectRayCount",
-          &RLRAudioPropagation::Configuration::indirectRayCount,
+          "globalVolume", &RLRA_ContextConfiguration::globalVolume,
+          R"(float | 4.f | Total initial pressure value)")
+      .def_readwrite(
+          "indirectRayCount", &RLRA_ContextConfiguration::indirectRayCount,
           R"(int | 5000 | Number of indirect rays that the ray tracer will use)")
       .def_readwrite(
-          "indirectRayDepth",
-          &RLRAudioPropagation::Configuration::indirectRayDepth,
+          "indirectRayDepth", &RLRA_ContextConfiguration::indirectRayDepth,
           R"(int | 200 | Maximum depth of each indirect ray cast by the ray tracer)")
       .def_readwrite(
-          "sourceRayCount", &RLRAudioPropagation::Configuration::sourceRayCount,
+          "sourceRayCount", &RLRA_ContextConfiguration::sourceRayCount,
           R"(int | 200 | Number of direct rays that the ray tracer will use)")
       .def_readwrite(
-          "sourceRayDepth", &RLRAudioPropagation::Configuration::sourceRayDepth,
+          "sourceRayDepth", &RLRA_ContextConfiguration::sourceRayDepth,
           R"(int | 10 | Maximum depth of direct rays cast by the ray tracer)")
       .def_readwrite(
-          "maxDiffractionOrder",
-          &RLRAudioPropagation::Configuration::maxDiffractionOrder,
+          "maxDiffractionOrder", &RLRA_ContextConfiguration::maxDiffractionOrder,
           R"(int | 10 | The maximum number of edge diffraction events that can occur between a source and listener. This value cannot exceed 10 (compile-time limit))")
       .def_readwrite(
-          "direct", &RLRAudioPropagation::Configuration::direct,
+          "direct", &RLRA_ContextConfiguration::direct,
           R"(bool | true | Enable contribution from the direct rays)")
       .def_readwrite(
-          "indirect", &RLRAudioPropagation::Configuration::indirect,
+          "indirect", &RLRA_ContextConfiguration::indirect,
           R"(bool | true | Enable contribution from the indirect rays)")
-      .def_readwrite("diffraction",
-                     &RLRAudioPropagation::Configuration::diffraction,
-                     R"(bool | true | Enable diffraction for the simulation)")
-      .def_readwrite("transmission",
-                     &RLRAudioPropagation::Configuration::transmission,
-                     R"(bool | false | Enable transmission of rays)")
       .def_readwrite(
-          "meshSimplification",
-          &RLRAudioPropagation::Configuration::meshSimplification,
+          "diffraction", &RLRA_ContextConfiguration::diffraction,
+          R"(bool | true | Enable diffraction for the simulation)")
+      .def_readwrite(
+          "transmission", &RLRA_ContextConfiguration::transmission,
+          R"(bool | false | Enable transmission of rays)")
+      .def_readwrite(
+          "meshSimplification", &RLRA_ContextConfiguration::meshSimplification,
           R"(bool | false | Uses a series of mesh simplification operations to reduce the mesh complexity for ray tracing. Vertex welding is applied, followed by simplification using the edge collapse algorithm.)")
       .def_readwrite(
-          "temporalCoherence",
-          &RLRAudioPropagation::Configuration::temporalCoherence,
-          R"(bool | false | Turn on/off temporal smoothing of the impulse response. This uses the impulse response from the previous simulation time step as a starting point for the next time step. This reduces the number of rays required by about a factor of 10, resulting in faster simulations, but should not be used if the motion of sources/listeners is not continuous.)")
-      .def_readwrite(
-          "dumpWaveFiles", &RLRAudioPropagation::Configuration::dumpWaveFiles,
-          R"(bool | false | Write the wave files for different bands. Will be writted to the AudioSensorSpec's outputDirectory)")
-      .def_readwrite("enableMaterials",
-                     &RLRAudioPropagation::Configuration::enableMaterials,
-                     R"(bool | true | Enable audio materials)")
-      .def_readwrite(
-          "writeIrToFile", &RLRAudioPropagation::Configuration::writeIrToFile,
-          R"(bool | false | Write the final impulse response to a file)");
+          "temporalCoherence", &RLRA_ContextConfiguration::temporalCoherence,
+          R"(bool | false | Turn on/off temporal smoothing of the impulse response. This uses the impulse response from the previous simulation time step as a starting point for the next time step. This reduces the number of rays required by about a factor of 10, resulting in faster simulations, but should not be used if the motion of sources/listeners is not continuous.)");
 
-  py::enum_<RLRAudioPropagation::ChannelLayoutType>(
+  py::enum_<RLRA_ChannelLayoutType>(
       m, "RLRAudioPropagationChannelLayoutType")
-      .value("Unknown", RLRAudioPropagation::ChannelLayoutType::Unknown,
+      .value("Unknown", RLRA_ChannelLayoutType_Unknown,
              R"(Unknown channel layout type)")
       .value(
-          "Mono", RLRAudioPropagation::ChannelLayoutType::Mono,
-          R"(Monaural channel layout that does not have any spatial information. This layout usually has 1 channel)")
+          "Mono", RLRA_ChannelLayoutType_Mono,
+          R"(Monaural channel layout that does not have any spatial information. This layout has 1 channel)")
       .value(
-          "Stereo", RLRAudioPropagation::ChannelLayoutType::Stereo,
-          R"(Channel layout with 2 channels (e.g. speakers) that does not use any HRTF)")
-      .value(
-          "Binaural", RLRAudioPropagation::ChannelLayoutType::Binaural,
+          "Binaural", RLRA_ChannelLayoutType_Binaural,
           R"(Channel layout with 2 channels that spatializes audio using an HRTF)")
       .value(
-          "Quad", RLRAudioPropagation::ChannelLayoutType::Quad,
-          R"(Channel layout with 4 channels (speakers) arranged at +-30 and +-95 degrees in the horizontal plane)")
-      .value(
-          "Surround_5_1", RLRAudioPropagation::ChannelLayoutType::Surround_5_1,
-          R"(Channel layout with 6 channels (speakers) arranged at 0, +-30, and +-110 degrees in the horizontal plane, with unpositioned low frequency channel)")
-      .value(
-          "Surround_7_1", RLRAudioPropagation::ChannelLayoutType::Surround_7_1,
-          R"(Channel layout with 8 channels (speakers) arranged at 0, +-30, +-90, and +-135 degrees in the horizontal plane, with unpositioned low frequency channel)")
-      .value(
-          "Ambisonics", RLRAudioPropagation::ChannelLayoutType::Ambisonics,
+          "Ambisonics", RLRA_ChannelLayoutType_Ambisonics,
           R"(Channel layout that encodes fully spherical spatial audio as a set of spherical harmonic basis function coefficients)");
 
   // ==== RLRAudioPropagation::ChannelLayout ====
-  py::class_<RLRAudioPropagation::ChannelLayout>(
+  py::class_<RLRA_ChannelLayout>(
       m, "RLRAudioPropagationChannelLayout")
       .def(py::init<>())
       .def_readwrite(
-          "channelType", &RLRAudioPropagation::ChannelLayout::channelType,
-          R"(enum | RLRAudioPropagationChannelLayoutType.Binaural | Channel type for the simulated audio)")
+          "type", &RLRA_ChannelLayout::type,
+          R"(enum | RLRAudioPropagationChannelLayoutType.Binaural | Channel layout type for the simulated audio)")
       .def_readwrite(
-          "channelCount", &RLRAudioPropagation::ChannelLayout::channelCount,
+          "channelCount", &RLRA_ChannelLayout::channelCount,
           R"(int | 2 | Number of output channels in simulated audio)");
 
 #else
@@ -421,14 +392,14 @@ void initSensorBindings(py::module& m) {
       m, "AudioSensorSpec", py::dynamic_attr())
       .def(py::init(&AudioSensorSpec::create<>))
       .def_readwrite(
-          "outputDirectory", &AudioSensorSpec::outputDirectory_,
-          R"(string | empty | Output directory prefix for the simulation. Folders with outputDirectory + i should be created if you want to dump the wave files. (i = 0 indexed simulation iteration)")
-      .def_readwrite(
           "acousticsConfig", &AudioSensorSpec::acousticsConfig_,
           R"(RLRAudioPropagationConfiguration | Defined in the relevant section | Acoustic configuration struct that defines simulation parameters)")
       .def_readwrite(
           "channelLayout", &AudioSensorSpec::channelLayout_,
-          R"(RLRAudioPropagationChannelLayout | Defined in the relevant section | Channel layout for simulated output audio)");
+          R"(RLRAudioPropagationChannelLayout | Defined in the relevant section | Channel layout for simulated output audio)")
+      .def_readwrite(
+          "enableMaterials", &AudioSensorSpec::enableMaterials_,
+          R"(bool | true | Enable audio materials)");
 #else
   py::class_<AudioSensorSpec, AudioSensorSpec::ptr, SensorSpec>(
       m, "AudioSensorSpec", py::dynamic_attr())
@@ -445,7 +416,9 @@ void initSensorBindings(py::module& m) {
       .def("setAudioListenerTransform", &AudioSensor::setAudioListenerTransform)
       .def("runSimulation", &AudioSensor::runSimulation)
       .def("setAudioMaterialsJSON", &AudioSensor::setAudioMaterialsJSON)
+      .def("setListenerHRTF", &AudioSensor::setListenerHRTF)
       .def("getIR", &AudioSensor::getIR)
+      .def("getRayEfficiency", &AudioSensor::getRayEfficiency)
       .def("reset", &AudioSensor::reset);
 #else
   py::class_<AudioSensor, Magnum::SceneGraph::PyFeature<AudioSensor>, Sensor,

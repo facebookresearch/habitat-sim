@@ -793,17 +793,6 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig, bool isOrtho) {
     spec->uuid = uuid;
     spec->sensorType = sensorType;
     spec->sensorSubType = sensorSubType;
-
-    // Set the audio sensor configs
-    spec->acousticsConfig_.dumpWaveFiles = true;
-    spec->acousticsConfig_.enableMaterials = true;
-    spec->acousticsConfig_.writeIrToFile = true;
-    // Set the output directory
-    spec->outputDirectory_ = "/tmp/AudioSimulation";
-    // Set the output channel layout
-    spec->channelLayout_.channelCount = 2;
-    spec->channelLayout_.channelType =
-        RLRAudioPropagation::ChannelLayoutType::Binaural;
   };
   addAudioSensor("audio", esp::sensor::SensorType::Audio,
                  esp::sensor::SensorSubType::ImpulseResponse);
@@ -2567,12 +2556,13 @@ void Viewer::addAudioSource() {
 void Viewer::runAudioSimulation() {
   ESP_DEBUG() << "[Audio] Running audio simulation";
   // Run the audio simulation code to generate the impulse response
+  esp::sensor::AudioSensor& audioSensor = getAgentAudioSensor();
+  const esp::vec3f& sensorPos = audioSensor.specification()->position;
   Mn::Matrix4 T = agentBodyNode_->MagnumObject::transformationMatrix();
-  Mn::Vector3 pos = T.transformPoint({0.0f, 0.0f, 0.0f});
+  Mn::Vector3 pos = T.transformPoint({sensorPos[0], sensorPos[1], sensorPos[2]});
   auto rotScalar = agentBodyNode_->rotation().scalar();
   auto rotVec = agentBodyNode_->rotation().vector();
 
-  esp::sensor::AudioSensor& audioSensor = getAgentAudioSensor();
   audioSensor.setAudioListenerTransform(
       {pos[0], pos[1], pos[2]}, {rotScalar, rotVec[0], rotVec[1], rotVec[2]});
   audioSensor.runSimulation(*simulator_);

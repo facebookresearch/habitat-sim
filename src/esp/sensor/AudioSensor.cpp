@@ -25,6 +25,16 @@ AudioSensorSpec::AudioSensorSpec() : SensorSpec() {
   uuid = "audio";
   sensorType = SensorType::Audio;
   sensorSubType = SensorSubType::ImpulseResponse;
+
+#ifdef ESP_BUILD_WITH_AUDIO
+  // Initialize default configuration.
+  acousticsConfig_.thisSize = sizeof(RLRA_ContextConfiguration);
+  RLRA_ContextConfigurationDefault( &acousticsConfig_ );
+
+  channelLayout_.type = RLRA_ChannelLayoutType_Binaural;
+  channelLayout_.channelCount = 2;
+  enableMaterials_ = false;
+#endif // ESP_BUILD_WITH_AUDIO
 }
 
 void AudioSensorSpec::sanityCheck() const {
@@ -45,20 +55,6 @@ AudioSensor::AudioSensor(scene::SceneNode& node, AudioSensorSpec::ptr spec)
 #ifdef ESP_BUILD_WITH_AUDIO
   ESP_DEBUG() << logHeader_ << "AudioSensor constructor";
   audioSensorSpec_->sanityCheck();
-  ESP_DEBUG() << logHeader_
-              << "Acoustics Configs : " << audioSensorSpec_->acousticsConfig_;
-  ESP_DEBUG() << logHeader_
-              << "Channel Layout : " << audioSensorSpec_->channelLayout_;
-
-  // If the output directory is not defined, use /home/AudioSimulation
-  if (audioSensorSpec_->outputDirectory_.size() == 0) {
-    ESP_DEBUG()
-        << logHeader_
-        << "output directory not provided, will use /home/AudioSimulation";
-    audioSensorSpec_->outputDirectory_ = "/home/AudioSimulation";
-  }
-  ESP_DEBUG() << logHeader_
-              << "OutputDirectory : " << audioSensorSpec_->outputDirectory_;
 #endif  // ESP_BUILD_WITH_AUDIO
 }
 
@@ -66,23 +62,40 @@ AudioSensor::~AudioSensor() {
   CHECK_AUDIO_FLAG();
 #ifdef ESP_BUILD_WITH_AUDIO
   ESP_DEBUG() << logHeader_ << "Destroying the audio sensor";
-  audioSimulator_ = nullptr;
+  if ( context )
+  {
+    RLRA_DestroyContext( context );
+    context = nullptr;
+  }
   impulseResponse_.clear();
 #endif  // ESP_BUILD_WITH_AUDIO
 }
 
 #ifdef ESP_BUILD_WITH_AUDIO
 void AudioSensor::reset() {
-  audioSimulator_ = nullptr;
+  ESP_DEBUG() << logHeader_ << "Resetting the audio sensor";
+  if ( context )
+  {
+    RLRA_DestroyContext( context );
+    context = nullptr;
+  }
   impulseResponse_.clear();
 }
 
 void AudioSensor::setAudioSourceTransform(const vec3f& sourcePos) {
   ESP_DEBUG() << logHeader_
               << "Setting the audio source position : " << sourcePos << "]";
-  lastSourcePos_ = sourcePos;
-  // track if the source has changed
-  newSource_ = true;
+
+  // Make sure the context is created.
+  createAudioSimulator();
+  CORRADE_ASSERT(context, "setAudioSourceTransform : context should exist", );
+
+  const float pos[3] = { sourcePos[0], sourcePos[1], sourcePos[2] };
+  if ( RLRA_SetSourcePosition( context, 0, pos ) != RLRA_Success )
+  {
+    ESP_ERROR() << "Error setting audio source position";
+    return;
+  }
 }
 
 void AudioSensor::setAudioListenerTransform(const vec3f& agentPos,
@@ -90,39 +103,37 @@ void AudioSensor::setAudioListenerTransform(const vec3f& agentPos,
   ESP_DEBUG() << logHeader_ << "Setting the agent transform : position ["
               << agentPos << "], rotQuat[" << agentRotQuat << "]";
 
+  // Make sure the context is created.
   createAudioSimulator();
+  CORRADE_ASSERT(context, "setAudioListenerTransform : context should exist", );
 
-  CORRADE_ASSERT(audioSimulator_,
-                 "setAudioListenerTransform : audioSimulator_ should exist", );
+  const float pos[3] = { agentPos[0], agentPos[1], agentPos[2] };
+  if ( RLRA_SetListenerPosition(context, 0, pos) != RLRA_Success )
+  {
+    ESP_ERROR() << "Error setting agent position";
+    return;
+  }
 
-  // If its a new simulation object or the agent position or orientation
-  // changed,
-  //    add a listener
-  if (newInitialization_ || (lastAgentPos_ != agentPos) ||
-      !(lastAgentRot_.isApprox(agentRotQuat))) {
-    audioSimulator_->AddListener(
-        RLRAudioPropagation::Vector3f{agentPos(0), agentPos(1), agentPos(2)},
-        RLRAudioPropagation::Quaternion{agentRotQuat(0), agentRotQuat(1),
-                                        agentRotQuat(2), agentRotQuat(3)},
-        audioSensorSpec_->channelLayout_);
+  const float rot[4] = { agentRotQuat[0], agentRotQuat[1], agentRotQuat[2],
+      agentRotQuat[3] };
+  if ( RLRA_SetListenerOrientationQuaternion(context, 0, rot) != RLRA_Success )
+  {
+    ESP_ERROR() << "Error setting agent rotation";
+    return;
   }
 }
 
 void AudioSensor::runSimulation(sim::Simulator& sim) {
-  CORRADE_ASSERT(audioSimulator_,
-                 "runSimulation: audioSimulator_ should exist", );
+  CORRADE_ASSERT(context, "runSimulation: context should exist", );
   ESP_DEBUG() << logHeader_ << "Running the audio simulator";
 
   if (newInitialization_) {
     // If its a new initialization, upload the geometry
     newInitialization_ = false;
     ESP_DEBUG() << logHeader_
-                << "New initialization, will upload geometry and add the "
-                   "source at position : "
-                << lastSourcePos_;
+                << "New initialization, will upload geometry";
 
-    if (audioSensorSpec_->acousticsConfig_.enableMaterials &&
-        sim.semanticSceneExists()) {
+    if (audioSensorSpec_->enableMaterials_ && sim.semanticSceneExists()) {
       ESP_DEBUG() << logHeader_ << "Loading semantic scene";
       loadSemanticMesh(sim);
     } else {
@@ -134,22 +145,10 @@ void AudioSensor::runSimulation(sim::Simulator& sim) {
     }
   }
 
-  if (newSource_) {
-    // [NOTE] Currently, only one source is supported
-    // If its a new source, add/replace the audio source.
-    // A new initialization should always come with a new source
-    // Mark that the source has been added
-    newSource_ = false;
-    ESP_DEBUG() << logHeader_
-                << "Adding source at position : " << lastSourcePos_;
-    audioSimulator_->AddSource(RLRAudioPropagation::Vector3f{
-        lastSourcePos_(0), lastSourcePos_(1), lastSourcePos_(2)});
-  }
-
   // Run the audio simulation
-  const std::string simFolder = getSimulationFolder();
-  ESP_DEBUG() << "Running simulation, folder : " << simFolder;
-  audioSimulator_->RunSimulation(simFolder);
+  if ( RLRA_Simulate( context ) != RLRA_Success ) {
+    ESP_ERROR() << "Error while running audio simulation";
+  }
 
   // Each time simulation is run, clear the impulse response
   impulseResponse_.clear();
@@ -161,8 +160,7 @@ void AudioSensor::setAudioMaterialsJSON(const std::string& jsonPath) {
     // Once the mesh is loaded, we cannot change the materials database. Ignore
     // any new material database files.
     ESP_WARNING() << "[WARNING] Audio material database is already set. Will "
-                     "ignore the new file:"
-                  << jsonPath;
+                     "ignore the new file:" << jsonPath;
     return;
   }
 
@@ -170,7 +168,27 @@ void AudioSensor::setAudioMaterialsJSON(const std::string& jsonPath) {
   audioMaterialsJSON_ = jsonPath;
 }
 
+void AudioSensor::setListenerHRTF(const std::string& hrtfPath) {
+  // Make sure the context is created.
+  createAudioSimulator();
+  CORRADE_ASSERT(context, "setListenerHRTF: context should exist", );
+  ESP_DEBUG() << "Set listener HRTF to file : " << hrtfPath;
+
+  if ( RLRA_SetListenerHRTF( context, 0, hrtfPath.c_str() ) != RLRA_Success )
+  {
+    ESP_ERROR() << "Couldn't load custom audio listener HRTF";
+    return;
+  }
+}
+
+float AudioSensor::getRayEfficiency() const {
+  CORRADE_ASSERT(context, "getRayEfficiency: context should exist", 0.0f );
+  return RLRA_GetIndirectRayEfficiency( context );
+}
+
 const std::vector<std::vector<float>>& AudioSensor::getIR() {
+  CORRADE_ASSERT(context, "getIR: context should exist", impulseResponse_ );
+
   if (impulseResponse_.empty()) {
     ObservationSpace obsSpace;
     getObservationSpace(obsSpace);
@@ -180,8 +198,7 @@ const std::vector<std::vector<float>>& AudioSensor::getIR() {
 
     for (std::size_t channelIndex = 0; channelIndex < obsSpace.shape[0];
          ++channelIndex) {
-      const float* ir =
-          audioSimulator_->GetImpulseResponseForChannel(channelIndex);
+      const float* ir = RLRA_GetIRChannel(context, 0, 0, channelIndex);
       for (std::size_t sampleIndex = 0; sampleIndex < obsSpace.shape[1];
            ++sampleIndex) {
         impulseResponse_[channelIndex][sampleIndex] = ir[sampleIndex];
@@ -195,71 +212,53 @@ const std::vector<std::vector<float>>& AudioSensor::getIR() {
 
 bool AudioSensor::getObservation(sim::Simulator&, Observation& obs) {
   CHECK_AUDIO_FLAG();
-
-  // Note : Addressing clang-tidy error for unused param
-  obs.buffer = buffer_;
-
 #ifdef ESP_BUILD_WITH_AUDIO
-  CORRADE_ASSERT(audioSimulator_,
-                 "getObservation : audioSimulator_ should exist", false);
+  CORRADE_ASSERT(context, "getObservation : context should exist", false);
 
+  // Get observation dimensions.
   ObservationSpace obsSpace;
   getObservationSpace(obsSpace);
-
   if (obsSpace.shape[0] == 0 || obsSpace.shape[1] == 0) {
     ESP_ERROR() << "Channel count or sample count is 0, no IR to return.";
     return false;
   }
 
-  if (buffer_ == nullptr) {
-    buffer_ = core::Buffer::create(obsSpace.shape, obsSpace.dataType);
-  }
+  // Create new buffer to store observation.
+  obs.buffer = core::Buffer::create(obsSpace.shape, obsSpace.dataType);
 
-  obs.buffer = buffer_;
-
+  // Copy the IR samples to the observation buffer.
   std::uint64_t bufIndex = 0;
   const std::size_t sizeToCopy = sizeof(float) * obsSpace.shape[1];
-  // write the simulation output to the observation buffer
-  // IR samples are packed per channel
   for (std::size_t channelIndex = 0; channelIndex < obsSpace.shape[0];
        ++channelIndex) {
-    const float* ir =
-        audioSimulator_->GetImpulseResponseForChannel(channelIndex);
+    const float* ir = RLRA_GetIRChannel(context, 0, 0, channelIndex);
     // Copy the ir for the specific channel into the data buffer
     memcpy(obs.buffer->data + bufIndex, ir, sizeToCopy);
     bufIndex += sizeToCopy;
   }
 
-  if (audioSensorSpec_->acousticsConfig_.writeIrToFile) {
-    writeIRFile(obs);
-  }
-#endif  // ESP_BUILD_WITH_AUDIO
+#else // ESP_BUILD_WITH_AUDIO
+  // Note : Addressing clang-tidy error for unused param
+  (void)obs;
+#endif // ESP_BUILD_WITH_AUDIO
   return true;
 }
 
 bool AudioSensor::getObservationSpace(ObservationSpace& obsSpace) {
   CHECK_AUDIO_FLAG();
-
-  // Update the spaceType
-  // Note : Called outside the #ifdef to address clang-tidy error
-  obsSpace.spaceType = ObservationSpaceType::Tensor;
-
 #ifdef ESP_BUILD_WITH_AUDIO
-  CORRADE_ASSERT(audioSimulator_,
-                 "getObservationSpace: audioSimulator_ should exist", false);
+  CORRADE_ASSERT(context,"getObservationSpace: context should exist", false);
 
   // shape is a 2 ints
   //    index 0 = channel count
   //    index 1 = sample count
-  obsSpace.shape = {audioSimulator_->GetChannelCount(),
-                    audioSimulator_->GetSampleCount()};
-
+  obsSpace.shape = {RLRA_GetIRChannelCount(context, 0, 0),
+                    RLRA_GetIRSampleCount(context, 0, 0)};
   obsSpace.dataType = core::DataType::DT_FLOAT;
-
-  ESP_DEBUG() << logHeader_
-              << "getObservationSpace -> [ChannelCount] : " << obsSpace.shape[0]
-              << ", [SampleCount] : " << obsSpace.shape[1];
-
+  obsSpace.spaceType = ObservationSpaceType::Tensor;
+#else // ESP_BUILD_WITH_AUDIO
+  // Note : Addressing clang-tidy error for unused param
+  (void)obsSpace;
 #endif  // ESP_BUILD_WITH_AUDIO
   return true;
 }
@@ -274,66 +273,83 @@ bool AudioSensor::displayObservation(sim::Simulator&) {
 
 #ifdef ESP_BUILD_WITH_AUDIO
 void AudioSensor::createAudioSimulator() {
-  ++currentSimCount_;
-  ESP_DEBUG() << logHeader_
-              << "Create audio simulator iteration: " << currentSimCount_;
+  ESP_DEBUG() << logHeader_ << "Create audio simulator";
 
   // If the audio simulator already exists, no need to create it
-  if (audioSimulator_)
+  if (context)
     return;
 
   newInitialization_ = true;
-  audioSimulator_ = std::make_unique<RLRAudioPropagation::Simulator>();
-  lastAgentPos_ = {__FLT_MIN__, __FLT_MIN__, __FLT_MIN__};
 
-  audioSimulator_->Configure(audioSensorSpec_->acousticsConfig_);
+  // Create context.
+  if ( RLRA_CreateContext( &context, &audioSensorSpec_->acousticsConfig_ )
+        != RLRA_Success )
+  {
+    ESP_ERROR() << "Couldn't create audio context";
+    return;
+  }
+
+  // Create listener.
+  if ( RLRA_AddListener( context, &audioSensorSpec_->channelLayout_ )
+        != RLRA_Success )
+  {
+    RLRA_DestroyContext( context );
+    context = nullptr;
+    ESP_ERROR() << "Couldn't add audio listener";
+    return;
+  }
+
+  // Create source.
+  if ( RLRA_AddSource( context ) != RLRA_Success )
+  {
+    RLRA_DestroyContext( context );
+    context = nullptr;
+    ESP_ERROR() << "Couldn't add audio source";
+    return;
+  }
 }
 
 void AudioSensor::loadSemanticMesh(sim::Simulator& sim) {
-  ESP_DEBUG() << logHeader_ << "Loading semantic mesh";
+  ESP_DEBUG() << logHeader_ << "Loading semantic mesh" << sim.semanticSceneExists();
 
-  CORRADE_ASSERT(audioSimulator_,
-                 "loadSemanticMesh: audioSimulator_ should exist", );
+  CORRADE_ASSERT(context, "loadSemanticMesh: context should exist", );
 
   // Load the audio materials JSON if it was set
   if (!audioMaterialsJsonSet_ && audioMaterialsJSON_.size() > 0) {
-    auto errorCode =
-        audioSimulator_->LoadAudioMaterialJSON(audioMaterialsJSON_);
-    if (errorCode != RLRAudioPropagation::ErrorCodes::Success) {
+    RLRA_Error error = RLRA_SetMaterialDatabaseJSON(context,
+        audioMaterialsJSON_.c_str());
+    if (error != RLRA_Success) {
       ESP_ERROR() << "Audio material json could not be loaded. ErrorCode: "
-                  << static_cast<int>(errorCode)
+                  << static_cast<int>(error)
                   << ". Please check if the file exists and the format is "
-                     "correct. FilePath:"
-                  << audioMaterialsJSON_;
+                     "correct. FilePath:" << audioMaterialsJSON_;
       CORRADE_ASSERT(false, "", );
     }
     audioMaterialsJsonSet_ = true;
   }
 
   std::vector<std::uint16_t> objectIds;
-
-  sceneMesh_ = sim.getJoinedSemanticMesh(objectIds);
+  esp::assets::MeshData::ptr sceneMesh = sim.getJoinedSemanticMesh(objectIds);
 
   std::shared_ptr<scene::SemanticScene> semanticScene = sim.getSemanticScene();
-
   const std::vector<std::shared_ptr<scene::SemanticCategory>>& categories =
       semanticScene->categories();
   const std::vector<std::shared_ptr<scene::SemanticObject>>& objects =
       semanticScene->objects();
 
-  RLRAudioPropagation::VertexData vertices;
-
-  vertices.vertices = sceneMesh_->vbo.data();
-  vertices.byteOffset = 0;
-  vertices.vertexCount = sceneMesh_->vbo.size();
-  vertices.vertexStride = 0;
-
-  // Send the vertex data
-  audioSimulator_->LoadMeshVertices(vertices);
-
+  // Submit the vertex data
+  static_assert( sizeof(vec3f) == 3*sizeof(float) );
+  RLRA_Error error = RLRA_AddMeshVertices( context,
+      (const float*)sceneMesh->vbo.data(), sceneMesh->vbo.size() );
+  if ( error != RLRA_Success )
+  {
+    ESP_ERROR() << "Couldn't add vertices to audio mesh, error: "
+                << static_cast<int>(error);
+    return;
+  }
   std::unordered_map<std::string, std::vector<uint32_t>> categoryNameToIndices;
 
-  auto& ibo = sceneMesh_->ibo;
+  auto& ibo = sceneMesh->ibo;
   for (std::size_t iboIdx = 0; iboIdx < ibo.size(); iboIdx += 3) {
     // For each index in the ibo
     //  get the object id
@@ -367,12 +383,10 @@ void AudioSensor::loadSemanticMesh(sim::Simulator& sim) {
       // category
       catToUse = cat1;
     } else if (cat1 == cat2) {
-      // if we reach here, cat 1 == 2 but != 3
-      // use 3
+      // if we reach here, cat 1 == 2 but != 3, use 3
       catToUse = cat3;
     } else {
-      // else 1 == 3 but != 2
-      // use 2
+      // else 1 == 3 but != 2, use 2
       catToUse = cat2;
     }
 
@@ -381,91 +395,99 @@ void AudioSensor::loadSemanticMesh(sim::Simulator& sim) {
     categoryNameToIndices[catToUse].push_back(ibo[iboIdx + 2]);
   }
 
-  std::size_t indicesLoaded = 0;
   std::size_t totalIndicesLoaded = 0;
 
   // Send indices by category
   for (auto catToIndices : categoryNameToIndices) {
-    RLRAudioPropagation::IndexData indices;
+    ESP_DEBUG() << logHeader_ << " Index count: " << catToIndices.second.size()
+                << ", Material: " << catToIndices.first;
 
-    indices.indices = catToIndices.second.data();
-    indices.byteOffset = 0;
-    indices.indexCount = catToIndices.second.size();
+    // Submit all indices for this particular category
+    error = RLRA_AddMeshIndices( context,
+        catToIndices.second.data(), catToIndices.second.size(), 3,
+        catToIndices.first.c_str() );
+    if ( error != RLRA_Success )
+    {
+      ESP_ERROR() << "Couldn't submit audio mesh indices";
+      continue;
+    }
 
-    ++indicesLoaded;
-    const bool lastUpdate = (indicesLoaded == categoryNameToIndices.size());
-
-    ESP_DEBUG() << logHeader_ << "Vertex count : " << vertices.vertexCount
-                << ", Index count : " << indices.indexCount
-                << ", Material : " << catToIndices.first
-                << ", LastUpdate : " << lastUpdate;
-
-    // Send all indices for this particular category
-    audioSimulator_->LoadMeshIndices(indices, catToIndices.first);
-
-    totalIndicesLoaded += indices.indexCount;
+    totalIndicesLoaded += catToIndices.second.size();
   }
 
-  if (totalIndicesLoaded != sceneMesh_->ibo.size()) {
+  if (totalIndicesLoaded != sceneMesh->ibo.size()) {
     ESP_ERROR() << logHeader_
-                << "totalIndicesLoaded != sceneMesh_->ibo.size() : ("
-                << totalIndicesLoaded << " != " << sceneMesh_->ibo.size()
+                << "totalIndicesLoaded != sceneMesh->ibo.size() : ("
+                << totalIndicesLoaded << " != " << sceneMesh->ibo.size()
                 << ")";
-    CORRADE_ASSERT(false, "totalIndicesLoaded != sceneMesh_->ibo.size()", );
+    CORRADE_ASSERT(false, "totalIndicesLoaded != sceneMesh->ibo.size()", );
   }
 
-  audioSimulator_->UploadMesh();
+  // Add a new object for the mesh.
+  const size_t objectIndex = RLRA_GetObjectCount( context );
+  error = RLRA_AddObject( context );
+  if ( error != RLRA_Success )
+  {
+    ESP_ERROR() << "Couldn't add audio object for mesh, error: "
+                << static_cast<int>(error);
+    return;
+  }
+
+  // Upload mesh into object.
+  error = RLRA_FinalizeObjectMesh( context, objectIndex );
+  if ( error != RLRA_Success )
+  {
+    ESP_ERROR() << "Couldn't upload mesh into object, error: "
+                << static_cast<int>(error);
+    return;
+  }
 }
 
 void AudioSensor::loadMesh(sim::Simulator& sim) {
   ESP_DEBUG() << logHeader_ << "Loading non-semantic mesh";
-  CORRADE_ASSERT(audioSimulator_, "loadMesh: audioSimulator_ should exist", );
-  sceneMesh_ = sim.getJoinedMesh(true);
+  CORRADE_ASSERT(context, "loadMesh: context should exist", );
+  esp::assets::MeshData::ptr sceneMesh = sim.getJoinedMesh(true);
 
-  RLRAudioPropagation::VertexData vertices;
+  ESP_DEBUG() << "Vertex count : " << sceneMesh->vbo.size()
+              << ", Index count : " << sceneMesh->ibo.size();
 
-  vertices.vertices = sceneMesh_->vbo.data();
-  vertices.byteOffset = 0;
-  vertices.vertexCount = sceneMesh_->vbo.size();
-  vertices.vertexStride = 0;
+  // Submit the vertex data
+  static_assert( sizeof(vec3f) == 3*sizeof(float) );
+  RLRA_Error error = RLRA_AddMeshVertices( context,
+      (const float*)sceneMesh->vbo.data(), sceneMesh->vbo.size() );
+  if ( error != RLRA_Success )
+  {
+    ESP_ERROR() << "Couldn't add vertices to audio mesh, error: "
+                << static_cast<int>(error);
+    return;
+  }
 
-  RLRAudioPropagation::IndexData indices;
+  // Submit the index data with default material.
+  error = RLRA_AddMeshIndices( context,
+      sceneMesh->ibo.data(), sceneMesh->ibo.size(), 3,
+      nullptr );
+  if ( error != RLRA_Success )
+  {
+    ESP_ERROR() << "Couldn't submit audio mesh indices";
+  }
 
-  indices.indices = sceneMesh_->ibo.data();
-  indices.byteOffset = 0;
-  indices.indexCount = sceneMesh_->ibo.size();
+  // Add a new object for the mesh.
+  const size_t objectIndex = RLRA_GetObjectCount( context );
+  error = RLRA_AddObject( context );
+  if ( error != RLRA_Success )
+  {
+    ESP_ERROR() << "Couldn't add audio object for mesh, error: "
+                << static_cast<int>(error);
+    return;
+  }
 
-  ESP_DEBUG() << "Vertex count : " << vertices.vertexCount
-              << ", Index count : " << indices.indexCount;
-  audioSimulator_->LoadMeshData(vertices, indices);
-}
-
-std::string AudioSensor::getSimulationFolder() {
-  return audioSensorSpec_->outputDirectory_ + std::to_string(currentSimCount_);
-}
-
-void AudioSensor::writeIRFile(const Observation& obs) {
-  ESP_DEBUG() << logHeader_ << "Write IR samples to file";
-  CORRADE_ASSERT(audioSimulator_, "loadMesh: audioSimulator_ should exist", );
-
-  const std::string folderPath = getSimulationFolder();
-  std::size_t bufIndex = 0;
-  for (std::size_t channelIndex = 0; channelIndex < obs.buffer->shape[0];
-       ++channelIndex) {
-    std::ofstream file;
-    std::string fileName =
-        folderPath + "/ir" + std::to_string(channelIndex) + ".txt";
-    file.open(fileName);
-
-    for (std::size_t sampleIndex = 0; sampleIndex < obs.buffer->shape[1];
-         ++sampleIndex) {
-      file << sampleIndex << "\t" << *(float*)(obs.buffer->data + bufIndex)
-           << std::endl;
-      bufIndex += sizeof(float);
-    }
-
-    file.close();
-    ESP_DEBUG() << logHeader_ << "File written : " << fileName;
+  // Upload mesh into object.
+  error = RLRA_FinalizeObjectMesh( context, objectIndex );
+  if ( error != RLRA_Success )
+  {
+    ESP_ERROR() << "Couldn't upload mesh into object, error: "
+                << static_cast<int>(error);
+    return;
   }
 }
 

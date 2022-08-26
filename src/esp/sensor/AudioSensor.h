@@ -33,9 +33,9 @@ struct AudioSensorSpec : public SensorSpec {
 #ifdef ESP_BUILD_WITH_AUDIO
  public:
   // Data
-  RLRAudioPropagation::Configuration acousticsConfig_;
-  RLRAudioPropagation::ChannelLayout channelLayout_;
-  std::string outputDirectory_;
+  RLRA_ContextConfiguration acousticsConfig_;
+  RLRA_ChannelLayout channelLayout_;
+  bool enableMaterials_ = true;
 #endif  // ESP_BUILD_WITH_AUDIO
 
  public:
@@ -91,9 +91,20 @@ class AudioSensor : public Sensor {
   void setAudioMaterialsJSON(const std::string& jsonPath);
 
   /**
+   * @brief Set the HRTF used for the audio listener, in SOFA (.sofa) format.
+   * */
+  void setListenerHRTF(const std::string& hrtfPath);
+
+  /**
    * @brief Return the last impulse response.
    * */
   const std::vector<std::vector<float>>& getIR();
+
+  /**
+   * @brief Return a value in the range [0,1] indicating the
+   * fraction of rays that hit something on the previous simulation.
+   * */
+  float getRayEfficiency() const;
 #endif  // ESP_BUILD_WITH_AUDIO
 
   // ------ Sensor class overrides ------
@@ -120,18 +131,6 @@ class AudioSensor : public Sensor {
    * @brief Load the non-sematic mesh for the Simulator object
    * */
   void loadMesh(sim::Simulator& sim);
-
-  /**
-   * @brief Get the simulation folder path.
-   * This path is based on the AudioSensorSpec->outputDirectoryPrefix and the
-   * current simulation count
-   * */
-  std::string getSimulationFolder();
-
-  /**
-   * @brief Dump the impulse response to a file
-   * */
-  void writeIRFile(const Observation& obs);
 #endif  // ESP_BUILD_WITH_AUDIO
 
  private:
@@ -139,25 +138,14 @@ class AudioSensor : public Sensor {
       std::dynamic_pointer_cast<AudioSensorSpec>(spec_);
 
 #ifdef ESP_BUILD_WITH_AUDIO
-  std::unique_ptr<RLRAudioPropagation::Simulator> audioSimulator_ = nullptr;
+  RLRA_Context context = nullptr;
 #endif  // ESP_BUILD_WITH_AUDIO
 
-  esp::assets::MeshData::ptr sceneMesh_;
-
-  //! track the number of simulations
-  std::int32_t currentSimCount_ = -1;
-  //! track the source position
-  vec3f lastSourcePos_;
-  //! track the agent orientation
-  vec3f lastAgentPos_;
-  //! track the agent rotation
-  vec4f lastAgentRot_;
   //! audio materials json path
   std::string audioMaterialsJSON_;
 
   bool audioMaterialsJsonSet_ = false;
   bool newInitialization_ = false;
-  bool newSource_ = false;
 
   const std::string logHeader_ = "[Audio] ";
 
