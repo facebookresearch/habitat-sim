@@ -38,6 +38,7 @@ class SampleVolume:
         self.rotation = rotation
         self.name = name
         self.scalar_volume = volume.size_x() * volume.size_y() * volume.size_z()
+        assert self.scalar_volume > 0, "Negative volume. Check for a negative scale."
 
     def sample_uniform_local(self) -> mn.Vector3:
         """
@@ -194,6 +195,7 @@ def get_random_target_sample(
     # rejection sampling
     attempts = 0
     while sample_sphere.contact_test() and attempts < max_attempts:
+        # sample_volume = get_volume_weighted_sample(sample_volumes)
         sample_sphere.translation = sample_volume.sample_uniform_global()
         attempts += 1
     if attempts == max_attempts:
@@ -256,13 +258,13 @@ def get_random_agent_sample_from_volume(
 ) -> mn.Vector3:
     # get a random agent spawn location from a random SampleVolume
     # if close_to is provided, pick the closest of 'close_to_samples' sample points
-    sample_volume = get_volume_weighted_sample(sample_volumes)
 
     attempts = 0
     snap_point = None
     found_sample = False
     valid_samples = []
     while not found_sample and attempts < max_attempts:
+        sample_volume = get_volume_weighted_sample(sample_volumes)
         snap_point = sim.pathfinder.snap_point(sample_volume.sample_uniform_global())
         if not np.isnan(snap_point).any() and sample_volume.contains_point(snap_point):
             valid_samples.append(snap_point)
@@ -375,6 +377,15 @@ def generate_dataset_per_room(sim, region_volumes):
         "kitchen1",
         "kitchen2",
         "dining1",
+        "living1",
+        "bedroom1",
+        "closet1",
+        "bathroom1",
+        "mediaroom1",
+        "mediaroom2",
+        "mediaroom3",
+        "laundryroom1",
+        "laundryroom2",
     ]
     dataset = []
     for region in included_regions:
@@ -490,7 +501,8 @@ class HabitatSimInteractiveViewer(Application):
         )
         # self.agent_target_matches = match_volumes(self.sample_volumes)
         self.region_volumes = get_region_volumes(self.sample_volumes)
-        self.active_region = list(self.region_volumes.keys())[0]
+        # self.active_region = list(self.region_volumes.keys())[0]
+        self.active_region = "laundryroom2"
         self.sample_timer = {
             "time_since_last_sample": 0.0,
             "sample_frequency": 1.0,  # seconds
