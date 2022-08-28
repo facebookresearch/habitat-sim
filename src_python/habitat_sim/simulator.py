@@ -38,7 +38,12 @@ from habitat_sim.sim import SimulatorBackend, SimulatorConfiguration
 from habitat_sim.utils.common import quat_from_angle_axis
 
 # TODO maybe clean up types with TypeVars
-ObservationDict = Dict[str, Union[bool, np.ndarray, "Tensor"]]
+# TODO, so far, every function that uses or returns this Dict with a Union
+# only defines the Union as:
+# Union[ndarray, "Tensor"], and not:
+# Union[bool, np.ndarray, "Tensor"]
+#ObservationDict = Dict[str, Union[bool, np.ndarray, "Tensor"]]
+ObservationDict = Dict[str, Union[ndarray, "Tensor"]]
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -117,7 +122,6 @@ class Simulator(SimulatorBackend):
         self._sanitize_config(self.config)
         self.__set_from_config(self.config)
 
-<<<<<<< HEAD:src_python/habitat_sim/simulator.py
     def close(self, destroy: bool = True) -> None:
         r"""Close the simulator instance.
 
@@ -141,10 +145,7 @@ class Simulator(SimulatorBackend):
                 del sensor
 
         self.__sensors = []
-=======
-    def close(self) -> None:
         self.__noise_models.clear()
->>>>>>> python-node-sensor-suite:habitat_sim/simulator.py
 
         for agent in self.agents:
             agent.close()
@@ -437,8 +438,10 @@ class Simulator(SimulatorBackend):
         ...
 
     def get_sensor_observations(
-        self, agent_ids: Union[int, List[int]] = 0
+        self, 
+        agent_ids: Union[int, List[int]] = 0
     ) -> Union[ObservationDict, Dict[int, ObservationDict],]:
+
         if isinstance(agent_ids, int):
             agent_ids = [agent_ids]
             return_single = True
@@ -453,19 +456,21 @@ class Simulator(SimulatorBackend):
         # As backport. All Dicts are ordered in Python >= 3.7
         observations: Dict[int, ObservationDict] = OrderedDict()
         for agent_id in agent_ids:
-<<<<<<< HEAD:src_python/habitat_sim/simulator.py
+
+            # TODO ObservationDict was defined as:
+            # Dict[str, Union[bool, np.ndarray, "Tensor"]]
+            # but most of these functions work ObservationDict when its data type is:
+            # Dict[str, Union[ndarray, "Tensor"]]
+            # so I redefined ObservationDict as the latter for now
             agent_observations: ObservationDict = {}
             for sensor_uuid, sensor in self.__sensors[agent_id].items():
                 agent_observations[sensor_uuid] = sensor.get_observation()
-=======
-            agent_sensors = self.get_agent(agent_id).scene_node.subtree_sensors
-            agent_observations: Dict[str, Union[ndarray, "Tensor"]] = {}
-            for sensor_uuid, sensor in agent_sensors.items():
-                agent_observations[sensor_uuid] = self.get_observation(sensor)
->>>>>>> python-node-sensor-suite:habitat_sim/simulator.py
+
             observations[agent_id] = agent_observations
+
         if return_single:
             return next(iter(observations.values()))
+            
         return observations
 
     @property
@@ -581,7 +586,6 @@ class Simulator(SimulatorBackend):
         noise_model = self.get_noise_model(sensor.specification())
         obs_buffer = sensor.buffer(self.gpu_device)
 
-<<<<<<< HEAD:src_python/habitat_sim/simulator.py
 class Sensor:
     r"""Wrapper around habitat_sim.Sensor
 
@@ -768,49 +772,9 @@ class Sensor:
                 tgt.read_frame_depth(self.view)
             else:
                 tgt.read_frame_rgba(self.view)
-=======
-        if sensor.specification().gpu2gpu_transfer:
-            with torch.cuda.device(self.gpu_device):  # type: ignore[attr-defined]
-                if sensor.specification().sensor_type == SensorType.SEMANTIC:
-                    tgt.read_frame_object_id_gpu(obs_buffer.data_ptr())  # type: ignore[attr-defined]
-                elif sensor.specification().sensor_type == SensorType.DEPTH:
-                    tgt.read_frame_depth_gpu(obs_buffer.data_ptr())  # type: ignore[attr-defined]
-                else:
-                    tgt.read_frame_rgba_gpu(obs_buffer.data_ptr())  # type: ignore[attr-defined]
 
-                obs = obs_buffer.flip(0)
-        else:
-            size = sensor.framebuffer_size
+            obs = np.flip(self._buffer, axis=0)
 
-            if sensor.specification().sensor_type == SensorType.SEMANTIC:
-                tgt.read_frame_object_id(
-                    mn.MutableImageView2D(
-                        mn.PixelFormat.R32UI,
-                        size,
-                        obs_buffer,
-                    )
-                )
-            elif sensor.specification().sensor_type == SensorType.DEPTH:
-                tgt.read_frame_depth(
-                    mn.MutableImageView2D(
-                        mn.PixelFormat.R32F,
-                        size,
-                        obs_buffer,
-                    )
-                )
-            else:
-                tgt.read_frame_rgba(
-                    mn.MutableImageView2D(
-                        mn.PixelFormat.RGBA8_UNORM,
-                        size,
-                        obs_buffer.reshape(sensor.specification().resolution[0], -1),
-                    )
-                )
->>>>>>> python-node-sensor-suite:habitat_sim/simulator.py
-
-            obs = np.flip(obs_buffer, axis=0)
-
-<<<<<<< HEAD:src_python/habitat_sim/simulator.py
         return self._noise_model(obs)
 
     def _get_observation_async(self) -> Union[ndarray, "Tensor"]:
@@ -844,6 +808,3 @@ class Sensor:
         self._sim = None
         self._agent = None
         self._sensor_object = None
-=======
-        return noise_model(obs)
->>>>>>> python-node-sensor-suite:habitat_sim/simulator.py
