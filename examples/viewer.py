@@ -240,7 +240,7 @@ class HabitatSimInteractiveViewer(Application): # {
         """
         line_color = mn.Color4.from_xyz(mn.Vector3(1.0))
         bb_corners: List[mn.Vector3] = get_bounding_box_corners(self.curr_object)
-        self.sim.get_debug_line_render().set_line_width(1.0)
+        self.sim.get_debug_line_render().set_line_width(0.5)
         obj_transform = self.curr_object.transformation
 
         for i, corner in enumerate(bb_corners):
