@@ -269,6 +269,25 @@ class BulletRigidObject : public BulletBase,
     return static_cast<double>(bObjectRigidBody_->getFriction());
   }
 
+  /** @brief Get the scalar rolling friction coefficient of the object.
+   * See @ref btCollisionObject::getRollingFriction.
+   * @return The scalar rolling friction coefficient of the object. Damps
+   * angular velocity about axis orthogonal to the contact normal to prevent
+   * rounded shapes from rolling forever.
+   */
+  double getRollingFrictionCoefficient() const override {
+    return static_cast<double>(bObjectRigidBody_->getRollingFriction());
+  }
+
+  /** @brief Get the scalar spinning friction coefficient of the object.
+   * See @ref btCollisionObject::getSpinningFriction.
+   * @return The scalar spinning friction coefficient of the object. Damps
+   * angular velocity about the contact normal.
+   */
+  double getSpinningFrictionCoefficient() const override {
+    return static_cast<double>(bObjectRigidBody_->getSpinningFriction());
+  }
+
   /** @brief Get the scalar coefficient of restitution  of the object.
    * See @ref btCollisionObject::getRestitution.
    * @return The scalar coefficient of restitution  of the object.
@@ -366,6 +385,27 @@ class BulletRigidObject : public BulletBase,
    */
   void setFrictionCoefficient(const double frictionCoefficient) override {
     bObjectRigidBody_->setFriction(frictionCoefficient);
+  }
+
+  /** @brief Set the scalar rolling friction coefficient of the object.
+   * See @ref btCollisionObject::setRollingFriction.
+   * @param rollingFrictionCoefficient The new scalar rolling friction
+   * coefficient of the object. Damps angular velocity about axis orthogonal to
+   * the contact normal to prevent rounded shapes from rolling forever.
+   */
+  void setRollingFrictionCoefficient(
+      const double rollingFrictionCoefficient) override {
+    bObjectRigidBody_->setRollingFriction(rollingFrictionCoefficient);
+  }
+
+  /** @brief Set the scalar spinning friction coefficient of the object.
+   * See @ref btCollisionObject::setSpinningFriction.
+   * @param spinningFrictionCoefficient The new scalar spinning friction
+   * coefficient of the object. Damps angular velocity about the contact normal.
+   */
+  void setSpinningFrictionCoefficient(
+      const double spinningFrictionCoefficient) override {
+    bObjectRigidBody_->setSpinningFriction(spinningFrictionCoefficient);
   }
 
   /** @brief Set the scalar coefficient of restitution of the object.

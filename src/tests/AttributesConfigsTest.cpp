@@ -937,6 +937,8 @@ void AttributesConfigsTest::testObjectJSONLoad() {
   "scale":[2,3,4],
   "margin": 0.9,
   "friction_coefficient": 0.321,
+  "rolling_friction_coefficient": 0.654,
+  "spinning_friction_coefficient": 0.987,
   "restitution_coefficient": 0.456,
   "force_flat_shading": true,
   "units_to_meters": 1.1,

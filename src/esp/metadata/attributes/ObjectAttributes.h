@@ -91,6 +91,18 @@ class AbstractObjectAttributes : public AbstractAttributes {
   double getFrictionCoefficient() const {
     return get<double>("friction_coefficient");
   }
+  void setRollingFrictionCoefficient(double rollingFrictionCoefficient) {
+    set("rolling_friction_coefficient", rollingFrictionCoefficient);
+  }
+  double getRollingFrictionCoefficient() const {
+    return get<double>("rolling_friction_coefficient");
+  }
+  void setSpinningFrictionCoefficient(double spinningFrictionCoefficient) {
+    set("spinning_friction_coefficient", spinningFrictionCoefficient);
+  }
+  double getSpinningFrictionCoefficient() const {
+    return get<double>("spinning_friction_coefficient");
+  }
 
   void setRestitutionCoefficient(double restitutionCoefficient) {
     set("restitution_coefficient", restitutionCoefficient);
