@@ -733,7 +733,11 @@ workflows:
       - install_and_test_ubuntu
       - pre-commit
       - build_conda_binaries:
-          CI_TEST: true
+          AIHABITAT_CONDA_CHN: aihabitat-nightly
+          AIHABITAT_CONDA_CHN_PWD_VAR: AIHABITAT_NIGHTLY_CONDA_PWD
+          NIGHTLY_FLAG: "--nightly"
+          requires:
+            - install_and_test_ubuntu
       - clang_tidy
   nightly:
     triggers:
