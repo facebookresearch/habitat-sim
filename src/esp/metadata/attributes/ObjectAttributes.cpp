@@ -12,8 +12,8 @@ AbstractObjectAttributes::AbstractObjectAttributes(
     const std::string& handle)
     : AbstractAttributes(attributesClassKey, handle) {
   setFrictionCoefficient(0.5);
-  setRollingFrictionCoefficient(0.001);
-  setSpinningFrictionCoefficient(0.001);
+  setRollingFrictionCoefficient(0.0);
+  setSpinningFrictionCoefficient(0.0);
   setRestitutionCoefficient(0.1);
   setScale({1.0, 1.0, 1.0});
   setCollisionAssetSize({1.0, 1.0, 1.0});
