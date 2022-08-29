@@ -8,6 +8,12 @@ import math
 import os
 import sys
 import time
+
+import resource # TODO
+import psutil # TODO
+import nvidia_smi # TODO
+from pynvml import *
+
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
@@ -42,10 +48,10 @@ if not os.path.exists(output_path):
     os.mkdir(output_path)
 
 
-class HabitatSimInteractiveViewer(Application):
+class HabitatSimInteractiveViewer(Application): # {
 
     # Default transforms of agent and dataset object as static variables
-    # to use when resetting the agent and dataset objects
+    # to use when resetting the agent and dataset object transforms
     DEFAULT_AGENT_POSITION = np.array([0.25, 0.34, 0.73])  # in front of table
     DEFAULT_AGENT_ROTATION = mn.Quaternion.identity_init()
     DEFAULT_OBJ_POSITION = np.array([0.25, 1.75, -0.23])  # above table
@@ -54,11 +60,15 @@ class HabitatSimInteractiveViewer(Application):
     # it is usually 1.5, but 1.0 is a little closer to table
     DEFAULT_SENSOR_HEIGHT = 1.0
 
-    # constants to define how fast object spins when in Kinematic mode
+    # How fast displayed dataset object spins when in Kinematic mode
     REVOLUTION_DURATION_SEC = 4.0
     ROTATION_DEGREES_PER_SEC = 360.0 / REVOLUTION_DURATION_SEC
 
     def __init__(self, sim_settings: Dict[str, Any]) -> None:
+
+        # TODO testing
+        self.current_frame = 0
+        self.percent_memory_usage = 0
 
         configuration = self.Configuration()
         configuration.title = "Habitat Sim Interactive Viewer"
@@ -154,7 +164,10 @@ class HabitatSimInteractiveViewer(Application):
         self.object_template_handles = (
             object_attribute_manager.get_file_template_handles("")
         )
-        print(f"number of ojects in dataset: {len(self.object_template_handles)}")
+        print_in_color(
+            f"number of ojects in dataset: {len(self.object_template_handles)}",
+            PrintColors.BLUE
+        )
 
         # -self.object_template_handle_index: stores current object's index in the
         #   object dataset.
@@ -272,7 +285,7 @@ class HabitatSimInteractiveViewer(Application):
         self.debug_draw()
         self.render_camera.render_target.blit_rgba_to_default()
         mn.gl.default_framebuffer.bind()
-
+            
         if self.recording and not self.writing_video:
             # if we are recording and no recording is currently being written to file,
             # save the framebuffer as a PIL Image into a list that we will write to
@@ -288,6 +301,13 @@ class HabitatSimInteractiveViewer(Application):
             # but we have iterated over every frame in the list, we know we are done writing
             done_writing_video_file(self)
 
+        # print out memory usage of this process
+        # TODO
+        self.current_frame += 1
+        if self.current_frame % self.fps == 0:
+            print_gpu_info()
+            print_memory_usage(self)
+        
         self.swap_buffers()
         Timer.next_frame()
         self.redraw()
@@ -627,13 +647,16 @@ class HabitatSimInteractiveViewer(Application):
                 # if we are not recording and not writing prev recording to file,
                 # we can start a new recording
                 self.recording = True
-                logger.info("-" * 72)
-                print("Command: start recording\n")
+                print_in_color(" *" * 36, PrintColors.RED, logging=True)
+                print_in_color("Command: start recording\n", PrintColors.RED)
             elif not self.recording and self.writing_video:
                 # if we are not recording but still writing prev recording to file,
                 # wait until the video file is written before recording again
-                logger.info("-" * 72)
-                print("Command: can't record, still saving previous recording\n")
+                print_in_color("-" * 72, PrintColors.RED, logging=True)
+                print_in_color(
+                    "Command: can't record, still saving previous recording\n", 
+                    PrintColors.RED
+                )
             elif self.recording and not self.writing_video:
                 # if we are recording but not writing prev recording to file, we need
                 # to stop recording and save the recorded frames to a video file
@@ -652,9 +675,10 @@ class HabitatSimInteractiveViewer(Application):
                 file_path = (
                     f"{output_path}viewer_py_recording__date_{date}__time_{time}.mp4"
                 )
-                logger.info("-" * 72)
-                print(
-                    f"Command: End recording, saving frames to the video file below \n{file_path}\n"
+                print_in_color("-" * 72, PrintColors.RED, True)
+                print_in_color(
+                    f"Command: End recording, saving frames to the video file below \n{file_path}\n",
+                    PrintColors.RED,
                 )
                 self.video_writer = imageio.get_writer(
                     file_path, format="mp4", mode="I", fps=self.fps
@@ -664,53 +688,93 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.ONE:
             # Apply impulse to dataset object if it exists and it is Dynamic motion mode
             if self.curr_object and self.simulating:
-                logger.info("Command: applying impulse to object.\n")
+                print_in_color(
+                    "\nCommand: applying impulse to object.\n",
+                    PrintColors.YELLOW,
+                    logging=True
+                )
                 self.curr_object.apply_impulse(
                     mn.Vector3(0, 1, 0), mn.Vector3(0, 0, -0.1)
                 )
             elif self.curr_object is None:
-                logger.info("Command: can't apply impulse, no object exists.\n")
+                print_in_color(
+                    "\nCommand: can't apply impulse, no object exists.\n",
+                    PrintColors.YELLOW,
+                    logging=True
+                )
             elif not self.simulating:
-                logger.info(
-                    "Command: can't apply impulse, turn on Dynamic motion mode.\n"
+                print_in_color(
+                    "\nCommand: can't apply impulse, turn on Dynamic motion mode.\n",
+                    PrintColors.YELLOW,
+                    logging=True
                 )
 
         elif key == pressed.TWO:
             # Apply force to dataset object if it exists and it is Dynamic motion mode
             if self.curr_object and self.simulating:
-                logger.info("Command: applying force to object.\n")
+                print_in_color(
+                    "\nCommand: applying force to object.\n",
+                    PrintColors.YELLOW,
+                    logging=True
+                )
                 self.curr_object.apply_force(
                     mn.Vector3(0, 40, 0), mn.Vector3(0, 0, -0.1)
                 )
             elif self.curr_object is None:
-                logger.info("Command: can't apply force, no object exists.\n")
+                print_in_color(
+                    "\nCommand: can't apply force, no object exists.\n",
+                    PrintColors.YELLOW,
+                    logging=True
+                )
             elif not self.simulating:
-                logger.info(
-                    "Command: can't apply force, turn on Dynamic motion mode.\n"
+                print_in_color(
+                    "\nCommand: can't apply force, turn on Dynamic motion mode.\n",
+                    PrintColors.YELLOW,
+                    logging=True
                 )
 
         elif key == pressed.THREE:
             # Apply impulse torque to dataset object if it exists and it is Dynamic motion mode
             if self.curr_object and self.simulating:
-                logger.info("Command: applying impulse torque to object.\n")
+                print_in_color(
+                    "\nCommand: applying impulse torque to object.\n",
+                    PrintColors.YELLOW,
+                    logging=True
+                )
                 self.curr_object.apply_impulse_torque(mn.Vector3(0, 0.1, 0))
             elif self.curr_object is None:
-                logger.info("Command: can't apply impulse torque, no object exists.\n")
+                print_in_color(
+                    "\nCommand: can't apply impulse torque, no object exists.\n",
+                    PrintColors.YELLOW,
+                    logging=True
+                )
             elif not self.simulating:
-                logger.info(
-                    "Command: can't apply impulse torque, turn on Dynamic motion mode.\n"
+                print_in_color(
+                    "\nCommand: can't apply impulse torque, turn on Dynamic motion mode.\n",
+                    PrintColors.YELLOW,
+                    logging=True
                 )
 
         elif key == pressed.FOUR:
             # Apply torque to dataset object if it exists and it is Dynamic motion mode
             if self.curr_object and self.simulating:
-                logger.info("Command: applying torque to object.\n")
+                print_in_color(
+                    "\nCommand: applying torque to object.\n",
+                    PrintColors.YELLOW,
+                    logging=True
+                )
                 self.curr_object.apply_torque(mn.Vector3(0, 10, 0))
             elif self.curr_object is None:
-                logger.info("Command: can't apply torque, no object exists.\n")
+                print_in_color(
+                    "\nCommand: can't apply torque, no object exists.\n",
+                    PrintColors.YELLOW,
+                    logging=True
+                )
             elif not self.simulating:
-                logger.info(
-                    "Command: can't apply torque, turn on Dynamic motion mode.\n"
+                print_in_color(
+                    "\nCommand: can't apply torque, turn on Dynamic motion mode.\n",
+                    PrintColors.YELLOW,
+                    logging=True
                 )
 
         # update map of moving/looking keys which are currently pressed
@@ -1002,6 +1066,7 @@ class HabitatSimInteractiveViewer(Application):
         """
         self.sim.close(destroy=True)
         event.accepted = True
+        nvidia_smi.nvmlShutdown()
         exit(0)
 
     def print_help_text(self) -> None:
@@ -1074,23 +1139,19 @@ Key Commands:
 """
         )
 
-
-# class HabitatSimInteractiveViewer end
-
+# } class HabitatSimInteractiveViewer end
 
 class MouseMode(Enum):
     LOOK = 0
     GRAB = 1
     MOTION = 2
 
-
 class ObjectRotationAxis(Enum):
     Y = 0
     X = 1
     Z = 2
 
-
-class MouseGrabber:
+class MouseGrabber: # {
     """
     Create a MouseGrabber from RigidConstraintSettings to manipulate objects.
     """
@@ -1153,11 +1214,9 @@ class MouseGrabber:
         self.settings.frame_a = R.rotation().__matmul__(self.settings.frame_a)
         self.simulator.update_rigid_constraint(self.constraint_id, self.settings)
 
+# } class MouseGrabber end
 
-# class MouseGrabber end
-
-
-class Timer:
+class Timer: # {
     """
     Timer class used to keep track of time between buffer swaps
     and guide the display frame rate.
@@ -1199,9 +1258,40 @@ class Timer:
         Timer.prev_frame_duration = time.time() - Timer.prev_frame_time
         Timer.prev_frame_time = time.time()
 
+# } class Timer end
 
-# class Timer end
+class PrintColors: # {
+    """
+    Console printing ANSI color codes
+    """
+    HEADER = '\033[95m'
+    WHITE = '\u001b[37m'
+    RED = '\033[1;31m'
+    GREEN = '\033[92m'
+    BLUE = '\033[94m'
+    CYAN = '\033[96m'
+    MAGENTA = '\u001b[35m'
+    YELLOW = '\u001b[33m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
+# } class PrintColors end
+
+def print_in_color(
+    print_string = "",
+    color = PrintColors.WHITE,
+    logging = False
+) -> None:
+    """
+    Allows us to print to console in different colors
+    """
+    if logging:
+        logger.info(color + print_string + PrintColors.ENDC)
+    else: 
+        print(color + print_string + PrintColors.ENDC)
 
 def add_new_object_from_dataset(
     self, index, position=HabitatSimInteractiveViewer.DEFAULT_OBJ_POSITION
@@ -1213,7 +1303,11 @@ def add_new_object_from_dataset(
 
     # make sure there are any ManagedBulletRigidObjects from a dataset
     if len(self.object_template_handles) == 0:
-        logger.info("Command: no objects in dataset to add to rigid object manager")
+        print_in_color(
+            "\nCommand: no objects in dataset to add to rigid object manager",
+            PrintColors.BLUE,
+            logging=True
+        )
         return
 
     # get rigid object manager and clear it
@@ -1261,11 +1355,11 @@ def add_new_object_from_dataset(
 
     # print out object name and its index into the list of the objects
     # in dataset.
-    print("")
-    logger.info(
-        f'Command: placing object "{obj_name}" from template handle index: {index}\n'
+    print_in_color(
+        f"\nCommand: placing object \"{obj_name}\" from template handle index: {index}\n",
+        PrintColors.BLUE,
+        logging=True
     )
-
 
 def set_object_state(
     self,
@@ -1279,9 +1373,10 @@ def set_object_state(
     obj.translation = position
     obj.rotation = rotation
 
-
 def rotate_displayed_object(
-    self, obj, degrees_per_sec=HabitatSimInteractiveViewer.ROTATION_DEGREES_PER_SEC
+    self, 
+    obj, 
+    degrees_per_sec=HabitatSimInteractiveViewer.ROTATION_DEGREES_PER_SEC
 ) -> None:
     """
     When ManagedBulletRigidObject "obj" from dataset is in Kinematic mode, it is
@@ -1324,7 +1419,6 @@ def rotate_displayed_object(
         else:
             self.object_rotation_axis = ObjectRotationAxis.Y
 
-
 def write_video_file(self) -> None:
     """
     write each PIL Image in self.video_frames to video file one at a time
@@ -1335,7 +1429,6 @@ def write_video_file(self) -> None:
 
         # update index of written frames so "self" knows when finished
         self.curr_frame_written_index += 1
-
 
 def save_frame_in_list(self, framebuffer) -> None:
     """
@@ -1363,24 +1456,24 @@ def save_frame_in_list(self, framebuffer) -> None:
 
     # it is a mirror image for some reason, something to do with how the bytes
     # are laid out, so we have to flip it upside down before storing
-    image_to_save = image_to_save.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
+    image_to_save = image_to_save.transpose(Image.FLIP_TOP_BOTTOM)
     self.video_frames.append(image_to_save)
-
 
 def done_writing_video_file(self) -> None:
     """
     indicates that we are done writing existing frames into video file
     and we can record something else now
     """
-    logger.info(" *" * 36)
-    print("Recording is saved, you can record something else now\n")
+    print_in_color(" *" * 36, PrintColors.RED, logging=True)
+    print_in_color(
+        "Recording is saved, you can record something else now\n",
+        PrintColors.RED)
 
     # reset all variables for next recording
     self.writing_video = False
     self.video_writer.close()
     self.video_frames.clear()
     self.curr_frame_written_index = 0
-
 
 def get_bounding_box_corners(
     obj: habitat_sim.physics.ManagedRigidObject,
@@ -1399,7 +1492,6 @@ def get_bounding_box_corners(
         bounding_box.front_bottom_right,
         bounding_box.front_bottom_left,
     ]
-
 
 def bounding_box_ray_prescreen(
     sim: habitat_sim.Simulator,
@@ -1485,7 +1577,6 @@ def bounding_box_ray_prescreen(
         "raycast_results": raycast_results,
     }
 
-
 def snap_down(
     sim: habitat_sim.Simulator,
     obj: habitat_sim.physics.ManagedRigidObject,
@@ -1543,6 +1634,31 @@ def snap_down(
         obj.translation = cached_position
         return False
 
+def print_memory_usage(self) -> None:
+    memory_usage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    print_in_color(
+        f"memory usage for this process: {memory_usage} kilobytes",
+        PrintColors.GREEN
+    )
+
+def print_gpu_info() -> None:
+    if gpu_device_count > 0:
+        for i in range(gpu_device_count):
+            handle = nvidia_smi.nvmlDeviceGetHandleByIndex(i)
+            info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
+            print_in_color(
+                f"""
+=====================================================
+GPU Info
+=====================================================
+Device {i}: {nvidia_smi.nvmlDeviceGetName(handle)}
+Memory Info: {100 * info.free / info.total:.2f}% free
+{info.free:,} (free)
+{info.used:,} (used)
+{info.total:,} (total)
+                """,
+                PrintColors.CYAN
+            )
 
 if __name__ == "__main__":
     import argparse
@@ -1597,4 +1713,12 @@ if __name__ == "__main__":
     sim_settings["sensor_height"] = HabitatSimInteractiveViewer.DEFAULT_SENSOR_HEIGHT
     sim_settings["stage_requires_lighting"] = args.stage_requires_lighting
 
+    # get information about NVIDIA gpu devices to print usage info
+    nvidia_smi.nvmlInit()
+    try:
+        gpu_device_count = nvidia_smi.nvmlDeviceGetCount()
+    except nvidia_smi.NVMLError as error:
+        print_in_color(error, PrintColors.RED)
+
+    # start the application
     HabitatSimInteractiveViewer(sim_settings).exec()
