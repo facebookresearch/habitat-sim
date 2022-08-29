@@ -79,6 +79,8 @@ class HabitatSimInteractiveViewer(Application): # {
         self.debug_bullet_draw = False
         # draw active contact point debug line visualizations
         self.contact_debug_draw = False
+        # draw all bounding boxes
+        self.bounding_box_debug_draw = False
         # cache most recently loaded URDF file for quick-reload
         self.cached_urdf = ""
 
@@ -221,6 +223,48 @@ class HabitatSimInteractiveViewer(Application): # {
                 normal=camera_position - cp.position_on_b_in_ws,
             )
 
+    def draw_bounding_boxes_debug(self):
+        """
+        Draw the bounding box of the current object. The corners of the bounding
+        box are ordered like this:
+        [
+            bounding_box.back_bottom_left,
+            bounding_box.back_bottom_right,
+            bounding_box.back_top_right,
+            bounding_box.back_top_left,
+            bounding_box.front_top_left,
+            bounding_box.front_top_right,
+            bounding_box.front_bottom_right,
+            bounding_box.front_bottom_left,
+        ]
+        """
+        line_color = mn.Color4.from_xyz(mn.Vector3(1.0))
+        bb_corners: List[mn.Vector3] = get_bounding_box_corners(self.curr_object)
+        self.sim.get_debug_line_render().set_line_width(1.0)
+        obj_transform = self.curr_object.transformation
+
+        for i, corner in enumerate(bb_corners):
+            next_index = (i + 1) % 8
+            corner_world_pos = obj_transform.transform_point(corner)
+            next_corner_world_pos = obj_transform.transform_point(bb_corners[next_index])
+            self.sim.get_debug_line_render().draw_transformed_line(
+                corner_world_pos,
+                next_corner_world_pos,
+                line_color,
+            )
+
+            if i % 2 == 0:
+                next_index = (i + 3) % 8
+            else:
+                next_index = (i + 4) % 8
+
+            next_corner_world_pos = obj_transform.transform_point(bb_corners[next_index])
+            self.sim.get_debug_line_render().draw_transformed_line(
+                corner_world_pos,
+                next_corner_world_pos,
+                line_color,
+            )
+
     def debug_draw(self):
         """
         Additional draw commands to be called during draw_event.
@@ -231,6 +275,12 @@ class HabitatSimInteractiveViewer(Application): # {
             self.sim.physics_debug_draw(proj_mat)
         if self.contact_debug_draw:
             self.draw_contact_debug()
+        if self.bounding_box_debug_draw:
+            if self.curr_object is not None:
+                self.draw_bounding_boxes_debug()
+            else:
+                print("can't draw bounding box of NULL object")
+                self.bounding_box_debug_draw = False
 
     def draw_event(
         self,
@@ -301,12 +351,11 @@ class HabitatSimInteractiveViewer(Application): # {
             # but we have iterated over every frame in the list, we know we are done writing
             done_writing_video_file(self)
 
-        # print out memory usage of this process
+        # print out memory usage of this process every second
         # TODO
         self.current_frame += 1
         if self.current_frame % self.fps == 0:
-            print_gpu_info()
-            print_memory_usage(self)
+            print_memory_usage()
         
         self.swap_buffers()
         Timer.next_frame()
@@ -533,6 +582,9 @@ class HabitatSimInteractiveViewer(Application): # {
                 self.sim.perform_discrete_collision_detection()
                 self.contact_debug_draw = True
                 # TODO: add a nice log message with concise contact pair naming.
+
+        elif key == pressed.K:
+            self.bounding_box_debug_draw = not self.bounding_box_debug_draw
 
         elif key == pressed.T:
             # load URDF
@@ -1119,6 +1171,7 @@ Key Commands:
     ',':        Render a Bullet collision shape debug wireframe overlay (white=active, green=sleeping, blue=wants sleeping, red=can't sleep).
     'c':        Run a discrete collision detection pass and render a debug wireframe overlay showing active contact points and normals (yellow=fixed length normals, red=collision distances).
                 (+SHIFT) Toggle the contact point debug render overlay on/off.
+    'k':        Draw bounding boxes
 
     Object Interactions:
     SPACE:      Toggle physics simulation on/off.
@@ -1634,28 +1687,63 @@ def snap_down(
         obj.translation = cached_position
         return False
 
-def print_memory_usage(self) -> None:
-    memory_usage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+def print_memory_usage() -> None:
+    """
+    Print CPU and GPU memory usage
+    """
     print_in_color(
-        f"memory usage for this process: {memory_usage} kilobytes",
-        PrintColors.GREEN
+        """
+==================================================
+Memory Usage
+==================================================""",
+        PrintColors.GREEN,
+        True
+    )
+    print_cpu_usage()
+    print_gpu_usage()
+
+def print_cpu_usage() -> None:
+    cpu_percent = psutil.cpu_percent()
+    cpu_stats = psutil.cpu_stats()
+    cpu_freq = psutil.cpu_freq()
+    print_in_color(
+        f"""
+CPU Usage
+----------------------------------
+CPU Memory
+    CPU memory usage: {cpu_percent:.2f}%
+CPU Stats  
+    Context switches: {cpu_stats.ctx_switches:,}
+    Interrupts: {cpu_stats.interrupts:,}
+    Software interrupts: {cpu_stats.soft_interrupts:,}
+    System calls: {cpu_stats.syscalls:,}
+CPU Frequency
+    Current frequency: {cpu_freq.current:,.2f} MHz
+    Min frequency: {cpu_freq.min:,} MHz
+    Max frequency: {cpu_freq.max:,} MHz
+----------------------------------""",
+        PrintColors.CYAN
     )
 
-def print_gpu_info() -> None:
+def print_gpu_usage() -> None:
+    print_in_color(
+        """
+GPU Usage
+----------------------------------""",
+        PrintColors.CYAN
+    )
     if gpu_device_count > 0:
         for i in range(gpu_device_count):
             handle = nvidia_smi.nvmlDeviceGetHandleByIndex(i)
             info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
             print_in_color(
-                f"""
-=====================================================
-GPU Info
-=====================================================
-Device {i}: {nvidia_smi.nvmlDeviceGetName(handle)}
-Memory Info: {100 * info.free / info.total:.2f}% free
-{info.free:,} (free)
-{info.used:,} (used)
-{info.total:,} (total)
+f"""Device {i}: 
+    {nvidia_smi.nvmlDeviceGetName(handle)}
+    {100 * info.free / info.total:.2f}% free
+    {info.free:,} bytes (free)
+    {info.used:,} bytes (used)
+    {info.total:,} bytes (total)
+----------------------------------
                 """,
                 PrintColors.CYAN
             )
