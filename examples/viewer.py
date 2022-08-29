@@ -8,10 +8,9 @@ import math
 import os
 import sys
 import time
+import psutil
 
-import resource # TODO
-import psutil # TODO
-import nvidia_smi # TODO
+import nvidia_smi
 from pynvml import *
 
 from enum import Enum
@@ -64,11 +63,10 @@ class HabitatSimInteractiveViewer(Application): # {
     REVOLUTION_DURATION_SEC = 4.0
     ROTATION_DEGREES_PER_SEC = 360.0 / REVOLUTION_DURATION_SEC
 
-    def __init__(self, sim_settings: Dict[str, Any]) -> None:
+    # Default (r,g,b) components of bounding box color during debug draw
+    BOUNDING_BOX_RGB = mn.Vector3(1.0, 0.8, 1.0)
 
-        # TODO testing
-        self.current_frame = 0
-        self.percent_memory_usage = 0
+    def __init__(self, sim_settings: Dict[str, Any]) -> None:
 
         configuration = self.Configuration()
         configuration.title = "Habitat Sim Interactive Viewer"
@@ -228,40 +226,52 @@ class HabitatSimInteractiveViewer(Application): # {
         Draw the bounding box of the current object. The corners of the bounding
         box are ordered like this:
         [
-            bounding_box.back_bottom_left,
-            bounding_box.back_bottom_right,
-            bounding_box.back_top_right,
-            bounding_box.back_top_left,
-            bounding_box.front_top_left,
-            bounding_box.front_top_right,
-            bounding_box.front_bottom_right,
-            bounding_box.front_bottom_left,
+            bounding_box.back_bottom_left, 
+            bounding_box.back_bottom_right, 
+            bounding_box.back_top_right, 
+            bounding_box.back_top_left, 
+            bounding_box.front_top_left, 
+            bounding_box.front_top_right, 
+            bounding_box.front_bottom_right, 
+            bounding_box.front_bottom_left, 
         ]
         """
-        line_color = mn.Color4.from_xyz(mn.Vector3(1.0))
+        rgb = HabitatSimInteractiveViewer.BOUNDING_BOX_RGB
+        line_color = mn.Color4.from_xyz(rgb)
         bb_corners: List[mn.Vector3] = get_bounding_box_corners(self.curr_object)
-        self.sim.get_debug_line_render().set_line_width(0.5)
+        num_corners = len(bb_corners)
+        self.sim.get_debug_line_render().set_line_width(0.01)
         obj_transform = self.curr_object.transformation
 
-        for i, corner in enumerate(bb_corners):
-            next_index = (i + 1) % 8
-            corner_world_pos = obj_transform.transform_point(corner)
-            next_corner_world_pos = obj_transform.transform_point(bb_corners[next_index])
+        # only need to iterate over first 4 corners to draw whole thing
+        for i in range(int(num_corners / 2)):
+            # back of box
+            back_corner_local_pos = bb_corners[i]
+            back_corner_world_pos = obj_transform.transform_point(back_corner_local_pos)
+            next_back_index = (i + 1) % 4
+            next_back_corner_local_pos = bb_corners[next_back_index]
+            next_back_corner_world_pos = obj_transform.transform_point(next_back_corner_local_pos)
             self.sim.get_debug_line_render().draw_transformed_line(
-                corner_world_pos,
-                next_corner_world_pos,
+                back_corner_world_pos,
+                next_back_corner_world_pos,
                 line_color,
             )
-
-            if i % 2 == 0:
-                next_index = (i + 3) % 8
-            else:
-                next_index = (i + 4) % 8
-
-            next_corner_world_pos = obj_transform.transform_point(bb_corners[next_index])
+            # side edge that this corner is a part of
+            front_counterpart_index = num_corners - i - 1
+            front_counterpart_local_pos = bb_corners[front_counterpart_index]
+            front_counterpart_world_pos = obj_transform.transform_point(front_counterpart_local_pos)
             self.sim.get_debug_line_render().draw_transformed_line(
-                corner_world_pos,
-                next_corner_world_pos,
+                back_corner_world_pos,
+                front_counterpart_world_pos,
+                line_color,
+            )
+            # front of box
+            next_front_index = (front_counterpart_index - 4 - 1) % 4 + 4
+            next_front_corner_local_pos = bb_corners[next_front_index]
+            next_front_corner_world_pos = obj_transform.transform_point(next_front_corner_local_pos)
+            self.sim.get_debug_line_render().draw_transformed_line(
+                front_counterpart_world_pos,
+                next_front_corner_world_pos,
                 line_color,
             )
 
@@ -279,7 +289,10 @@ class HabitatSimInteractiveViewer(Application): # {
             if self.curr_object is not None:
                 self.draw_bounding_boxes_debug()
             else:
-                print("can't draw bounding box of NULL object")
+                print_in_color(
+                    "Command: can't draw bounding box of object: None\n", 
+                    PrintColors.RED
+                )
                 self.bounding_box_debug_draw = False
 
     def draw_event(
@@ -351,12 +364,6 @@ class HabitatSimInteractiveViewer(Application): # {
             # but we have iterated over every frame in the list, we know we are done writing
             done_writing_video_file(self)
 
-        # print out memory usage of this process every second
-        # TODO
-        self.current_frame += 1
-        if self.current_frame % self.fps == 0:
-            print_memory_usage()
-        
         self.swap_buffers()
         Timer.next_frame()
         self.redraw()
@@ -563,6 +570,9 @@ class HabitatSimInteractiveViewer(Application): # {
             else:
                 self.simulate_single_step = True
                 logger.info("Command: physics step taken")
+
+        elif key == pressed.SEMICOLON:
+            print_memory_usage()
 
         elif key == pressed.COMMA:
             self.debug_bullet_draw = not self.debug_bullet_draw
@@ -1168,6 +1178,7 @@ Key Commands:
     'n':        Show/hide NavMesh wireframe.
                 (+SHIFT) Recompute NavMesh with default settings.
                 (+ALT) Re-sample the agent(camera)'s position and orientation from the NavMesh.
+    ';'         Print to terminal the CPU and GPU memory usage for this process.
     ',':        Render a Bullet collision shape debug wireframe overlay (white=active, green=sleeping, blue=wants sleeping, red=can't sleep).
     'c':        Run a discrete collision detection pass and render a debug wireframe overlay showing active contact points and normals (yellow=fixed length normals, red=collision distances).
                 (+SHIFT) Toggle the contact point debug render overlay on/off.
