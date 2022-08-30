@@ -459,7 +459,7 @@ class Simulator(SimulatorBackend):
 
             # TODO ObservationDict was defined as:
             # Dict[str, Union[bool, np.ndarray, "Tensor"]]
-            # but most of these functions work ObservationDict when its data type is:
+            # but most of these functions use ObservationDict when its data type is:
             # Dict[str, Union[ndarray, "Tensor"]]
             # so I redefined ObservationDict as the latter for now
             agent_observations: ObservationDict = {}
