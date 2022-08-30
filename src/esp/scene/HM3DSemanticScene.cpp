@@ -134,9 +134,9 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
                               uint8_t(colorInt & 0xff)};
     // object category will possibly have commas
     const std::string objCategoryName = tokens[1];
-    // room/region is always last token - get rid of first comma
-    int regionID =
-        std::stoi(Cr::Utility::String::trim(tokens[tokens.size() - 1], " ,"));
+
+    // region id comes after instace category raw text
+    int regionID = std::stoi(Cr::Utility::String::trim(tokens[2], " ,"));
 
     buildInstanceRegionCategory(instanceID, colorInt, objCategoryName, regionID,
                                 objInstance, regions, categories);
