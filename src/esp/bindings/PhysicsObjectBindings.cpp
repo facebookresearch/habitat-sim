@@ -266,6 +266,25 @@ void declareRigidBaseWrapper(py::module& m,
                      "MotionType::DYNAMIC objects.")
                         .c_str())
       .def_property(
+          "rolling_friction_coefficient",
+          &RigidBaseWrapper::getRollingFrictionCoefficient,
+          &RigidBaseWrapper::setRollingFrictionCoefficient,
+          ("Get or set this " + objType +
+           "'s scalar rolling coefficient of friction. Damps angular velocity "
+           "about axis orthogonal to the contact normal to prevent rounded "
+           "shapes from rolling forever. Only applies to "
+           "MotionType::DYNAMIC objects.")
+              .c_str())
+      .def_property(
+          "spinning_friction_coefficient",
+          &RigidBaseWrapper::getSpinningFrictionCoefficient,
+          &RigidBaseWrapper::setSpinningFrictionCoefficient,
+          ("Get or set this " + objType +
+           "'s scalar spinning coefficient of friction. Damps angular velocity "
+           "about the contact normal. Only applies to "
+           "MotionType::DYNAMIC objects.")
+              .c_str())
+      .def_property(
           "intertia_diagonal", &RigidBaseWrapper::getInertiaVector,
           &RigidBaseWrapper::setInertiaVector,
           ("Get or set the inertia matrix's diagonal for this " + objType +

@@ -390,6 +390,18 @@ def test_dynamics():
             sim.step_physics(0.1)
             assert cheezit_box1.translation[0] > new_object_start[0]
 
+            # test gettings/setting friction
+            cheezit_box1.friction_coefficient = 0.123
+            assert np.allclose(cheezit_box1.friction_coefficient, 0.123, atol=1e-7)
+            cheezit_box1.rolling_friction_coefficient = 0.234
+            assert np.allclose(
+                cheezit_box1.rolling_friction_coefficient, 0.234, atol=1e-7
+            )
+            cheezit_box1.spinning_friction_coefficient = 0.345
+            assert np.allclose(
+                cheezit_box1.spinning_friction_coefficient, 0.345, atol=1e-7
+            )
+
 
 def test_velocity_control():
     cfg_settings = examples.settings.default_sim_settings.copy()

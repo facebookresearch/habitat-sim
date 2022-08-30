@@ -206,6 +206,38 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
   virtual void setFrictionCoefficient(
       CORRADE_UNUSED const double frictionCoefficient) {}
 
+  /** @brief Get the scalar rolling friction coefficient of the object. Only
+   * used for dervied dynamic implementations of @ref RigidObject.
+   * @return The scalar rolling friction coefficient of the object. Damps
+   * angular velocity about axis orthogonal to the contact normal to prevent
+   * rounded shapes from rolling forever.
+   */
+  virtual double getRollingFrictionCoefficient() const { return 0.0; }
+
+  /** @brief Set the scalar rolling friction coefficient of the object. Only
+   * used for dervied dynamic implementations of @ref RigidObject.
+   * @param rollingFrictionCoefficient The new scalar rolling friction
+   * coefficient of the object. Damps angular velocity about axis orthogonal to
+   * the contact normal to prevent rounded shapes from rolling forever.
+   */
+  virtual void setRollingFrictionCoefficient(
+      CORRADE_UNUSED const double rollingFrictionCoefficient) {}
+
+  /** @brief Get the scalar spinning friction coefficient of the object. Only
+   * used for dervied dynamic implementations of @ref RigidObject.
+   * @return The scalar spinning friction coefficient of the object. Damps
+   * angular velocity about the contact normal.
+   */
+  virtual double getSpinningFrictionCoefficient() const { return 0.0; }
+
+  /** @brief Set the scalar spinning friction coefficient of the object. Only
+   * used for dervied dynamic implementations of @ref RigidObject.
+   * @param spinningFrictionCoefficient The new scalar friction coefficient of
+   * the object. Damps angular velocity about the contact normal.
+   */
+  virtual void setSpinningFrictionCoefficient(
+      CORRADE_UNUSED const double spinningFrictionCoefficient) {}
+
   /** @brief Get the 3x3 inertia matrix for an object.
    * @return The object's 3x3 inertia matrix.
    * @todo provide a setter for the full 3x3 inertia matrix. Not all

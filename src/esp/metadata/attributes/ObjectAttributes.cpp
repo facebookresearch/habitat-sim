@@ -12,6 +12,8 @@ AbstractObjectAttributes::AbstractObjectAttributes(
     const std::string& handle)
     : AbstractAttributes(attributesClassKey, handle) {
   setFrictionCoefficient(0.5);
+  setRollingFrictionCoefficient(0.0);
+  setSpinningFrictionCoefficient(0.0);
   setRestitutionCoefficient(0.1);
   setScale({1.0, 1.0, 1.0});
   setCollisionAssetSize({1.0, 1.0, 1.0});
@@ -46,6 +48,8 @@ std::string AbstractObjectAttributes::getObjectInfoInternal() const {
       getCollisionAssetHandle(), getAsString("scale"), getAsString("margin"),
       getAsString("orient_up"), getAsString("orient_front"),
       getAsString("units_to_meters"), getAsString("friction_coefficient"),
+      getAsString("rolling_friction_coefficient"),
+      getAsString("spinning_friction_coefficient"),
       getAsString("restitution_coefficient"),
       getShaderTypeName(getShaderType()), getAbstractObjectInfoInternal());
 }  // AbstractObjectAttributes::getObjectInfoInternal
@@ -62,6 +66,8 @@ void AbstractObjectAttributes::writeValuesToJson(
   writeValueToJson("units_to_meters", jsonObj, allocator);
   writeValueToJson("is_visible", jsonObj, allocator);
   writeValueToJson("friction_coefficient", jsonObj, allocator);
+  writeValueToJson("rolling_friction_coefficient", jsonObj, allocator);
+  writeValueToJson("spinning_friction_coefficient", jsonObj, allocator);
   writeValueToJson("restitution_coefficient", jsonObj, allocator);
   writeValueToJson("render_asset", jsonObj, allocator);
   writeValueToJson("collision_asset", jsonObj, allocator);

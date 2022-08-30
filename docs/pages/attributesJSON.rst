@@ -180,6 +180,12 @@ Below are object-specific physical quantities.  These values will override simil
 "friction_coefficient"
     - double
     - The coefficient of friction.
+"rolling_friction_coefficient"
+    - double
+    - The coefficient of rolling friction. Damps angular velocity about axis orthogonal to the contact normal to prevent rounded shapes from rolling forever.
+"spinning_friction_coefficient"
+    - double
+    - The coefficient of spinning friction. Damps angular velocity about the contact normal.
 "restitution_coefficient"
     - double
     - The coefficient of restitution.

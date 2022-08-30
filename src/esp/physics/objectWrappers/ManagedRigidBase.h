@@ -118,6 +118,33 @@ class AbstractManagedRigidBase
     }
   }  // setFrictionCoefficient
 
+  double getRollingFrictionCoefficient() const {
+    if (auto sp = this->getObjectReference()) {
+      return sp->getRollingFrictionCoefficient();
+    }
+    return 0.0;
+  }  // getRollingFrictionCoefficient
+
+  void setRollingFrictionCoefficient(const double rollingFrictionCoefficient) {
+    if (auto sp = this->getObjectReference()) {
+      sp->setRollingFrictionCoefficient(rollingFrictionCoefficient);
+    }
+  }  // setRollingFrictionCoefficient
+
+  double getSpinningFrictionCoefficient() const {
+    if (auto sp = this->getObjectReference()) {
+      return sp->getSpinningFrictionCoefficient();
+    }
+    return 0.0;
+  }  // getSpinningFrictionCoefficient
+
+  void setSpinningFrictionCoefficient(
+      const double spinningFrictionCoefficient) {
+    if (auto sp = this->getObjectReference()) {
+      sp->setSpinningFrictionCoefficient(spinningFrictionCoefficient);
+    }
+  }  // setSpinningFrictionCoefficient
+
   Magnum::Matrix3 getInertiaMatrix() const {
     if (auto sp = this->getObjectReference()) {
       return sp->getInertiaMatrix();
@@ -220,7 +247,8 @@ class AbstractManagedRigidBase
 
   std::string getPhyObjInfoHeaderInternal() const override {
     return "Mass, COM XYZ, I XX YY ZZ, AngVel XYZ, Angular Damping, Velocity "
-           "XYZ, Linear Damping, Is Collidable?, Friction Coeff, Restitution "
+           "XYZ, Linear Damping, Is Collidable?, Friction Coeff, Rolling "
+           "Friction Coeff, Spinning Friction Coeff, Restitution "
            "Coeff, Scale XYZ, Semantic ID, " +
            getRigidBaseInfoHeaderInternal();
   }
