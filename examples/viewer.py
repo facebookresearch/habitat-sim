@@ -66,6 +66,10 @@ class HabitatSimInteractiveViewer(Application): # {
     # Default (r,g,b) components of bounding box color during debug draw
     BOUNDING_BOX_RGB = mn.Vector3(1.0, 0.8, 1.0)
 
+    # We don't always have an NVIDIA GPU, you can enable this to log
+    # GPU memory usage if you have one
+    USING_NVIDIA_GPU = False
+
     def __init__(self, sim_settings: Dict[str, Any]) -> None:
 
         configuration = self.Configuration()
@@ -286,15 +290,8 @@ class HabitatSimInteractiveViewer(Application): # {
         if self.contact_debug_draw:
             self.draw_contact_debug()
         if self.bounding_box_debug_draw:
-            if self.curr_object is not None:
-                self.draw_bounding_boxes_debug()
-            else:
-                print_in_color(
-                    "Command: can't draw bounding box of object: None\n", 
-                    PrintColors.RED
-                )
-                self.bounding_box_debug_draw = False
-
+            self.draw_bounding_boxes_debug()
+                
     def draw_event(
         self,
         simulation_call: Optional[Callable] = None,
@@ -572,7 +569,10 @@ class HabitatSimInteractiveViewer(Application): # {
                 logger.info("Command: physics step taken")
 
         elif key == pressed.SEMICOLON:
-            print_memory_usage()
+            if HabitatSimInteractiveViewer.USING_NVIDIA_GPU:
+                print_memory_usage()
+            else:
+                print_in_color("Command: No NVIDIA GPU\n", PrintColors.RED, True)
 
         elif key == pressed.COMMA:
             self.debug_bullet_draw = not self.debug_bullet_draw
@@ -594,8 +594,39 @@ class HabitatSimInteractiveViewer(Application): # {
                 # TODO: add a nice log message with concise contact pair naming.
 
         elif key == pressed.K:
+            """
+            Toggle the drawing of the current object's bounding box
+            (if the object is not None)
+            """
+            
             self.bounding_box_debug_draw = not self.bounding_box_debug_draw
-
+            
+            if self.curr_object is not None: 
+                # if object exists
+                obj_name = self.curr_object.handle.replace("_:0000", "")
+                if self.bounding_box_debug_draw:
+                    # if turned on bb drawing
+                    print_in_color(
+                        f"Draw bounding box for object: {obj_name}\n", 
+                        PrintColors.MAGENTA,
+                        True
+                    )
+                else:
+                    # if turned off bb drawing
+                    print_in_color(
+                        f"Don't draw bounding box for object: {obj_name}\n", 
+                        PrintColors.MAGENTA,
+                        True
+                    )
+            else:
+                # if NULL object
+                print_in_color(
+                    "Command: can't draw bounding box of object: None\n", 
+                    PrintColors.RED,
+                    True
+                )
+                self.bounding_box_debug_draw = False
+                
         elif key == pressed.T:
             # load URDF
             fixed_base = alt_pressed
@@ -1812,12 +1843,14 @@ if __name__ == "__main__":
     sim_settings["sensor_height"] = HabitatSimInteractiveViewer.DEFAULT_SENSOR_HEIGHT
     sim_settings["stage_requires_lighting"] = args.stage_requires_lighting
 
-    # get information about NVIDIA gpu devices to print usage info
-    nvidia_smi.nvmlInit()
-    try:
-        gpu_device_count = nvidia_smi.nvmlDeviceGetCount()
-    except nvidia_smi.NVMLError as error:
-        print_in_color(error, PrintColors.RED)
+    # get information about NVIDIA gpu devices (if applicable)
+    # to print usage info
+    if HabitatSimInteractiveViewer.USING_NVIDIA_GPU:
+        nvidia_smi.nvmlInit()
+        try:
+            gpu_device_count = nvidia_smi.nvmlDeviceGetCount()
+        except nvidia_smi.NVMLError as error:
+            print_in_color(error, PrintColors.RED)
 
     # start the application
     HabitatSimInteractiveViewer(sim_settings).exec()
