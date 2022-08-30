@@ -68,7 +68,7 @@ class HabitatSimInteractiveViewer(Application): # {
 
     # We don't always have an NVIDIA GPU, you can enable this to log
     # GPU memory usage if you have one
-    USING_NVIDIA_GPU = False
+    USING_NVIDIA_GPU = True
 
     def __init__(self, sim_settings: Dict[str, Any]) -> None:
 
@@ -81,7 +81,7 @@ class HabitatSimInteractiveViewer(Application): # {
         self.debug_bullet_draw = False
         # draw active contact point debug line visualizations
         self.contact_debug_draw = False
-        # draw all bounding boxes
+        # draw bounding box of currently displayed rigid body object from dataset
         self.bounding_box_debug_draw = False
         # cache most recently loaded URDF file for quick-reload
         self.cached_urdf = ""
@@ -569,10 +569,13 @@ class HabitatSimInteractiveViewer(Application): # {
                 logger.info("Command: physics step taken")
 
         elif key == pressed.SEMICOLON:
-            if HabitatSimInteractiveViewer.USING_NVIDIA_GPU:
-                print_memory_usage()
-            else:
-                print_in_color("Command: No NVIDIA GPU\n", PrintColors.RED, True)
+            """
+            Prints memory usage for CPU and GPU (although it assumes you have an
+            NVIDIA GPU as of now, so you have to set
+            HabitatSimInteractiveViewer.USING_NVIDIA_GPU to True if you want to print
+            GPU memory usage)
+            """
+            print_memory_usage()
 
         elif key == pressed.COMMA:
             self.debug_bullet_draw = not self.debug_bullet_draw
@@ -609,21 +612,21 @@ class HabitatSimInteractiveViewer(Application): # {
                     print_in_color(
                         f"Draw bounding box for object: {obj_name}\n", 
                         PrintColors.MAGENTA,
-                        True
+                        logging=True
                     )
                 else:
                     # if turned off bb drawing
                     print_in_color(
                         f"Don't draw bounding box for object: {obj_name}\n", 
                         PrintColors.MAGENTA,
-                        True
+                        logging=True
                     )
             else:
                 # if NULL object
                 print_in_color(
                     "Command: can't draw bounding box of object: None\n", 
                     PrintColors.RED,
-                    True
+                    logging=True
                 )
                 self.bounding_box_debug_draw = False
                 
@@ -768,7 +771,7 @@ class HabitatSimInteractiveViewer(Application): # {
                 file_path = (
                     f"{output_path}viewer_py_recording__date_{date}__time_{time}.mp4"
                 )
-                print_in_color("-" * 72, PrintColors.RED, True)
+                print_in_color("-" * 72, PrintColors.RED, logging=True)
                 print_in_color(
                     f"Command: End recording, saving frames to the video file below \n{file_path}\n",
                     PrintColors.RED,
@@ -1367,6 +1370,15 @@ class PrintColors: # {
     CYAN = '\033[96m'
     MAGENTA = '\u001b[35m'
     YELLOW = '\u001b[33m'
+    BROWN = "\033[0;33m"
+    LIGHT_RED = "\033[1;31m"
+    LIGHT_GREEN = "\033[1;32m"
+    LIGHT_BLUE = "\033[1;34m"
+    LIGHT_PURPLE = "\033[1;35m"
+    LIGHT_CYAN = "\033[1;36m"
+    LIGHT_WHITE = "\033[1;37m"
+    LIGHT_GRAY = "\033[0;37m"
+    TEST = '\u001a[35m'
     WARNING = '\033[93m'
     FAIL = '\033[91m'
     ENDC = '\033[0m'
@@ -1559,10 +1571,10 @@ def done_writing_video_file(self) -> None:
     indicates that we are done writing existing frames into video file
     and we can record something else now
     """
-    print_in_color(" *" * 36, PrintColors.RED, logging=True)
     print_in_color(
-        "Recording is saved, you can record something else now\n",
+        "Recording is saved, you can record something else now",
         PrintColors.RED)
+    print_in_color(" *" * 36 + "\n", PrintColors.RED, logging=True)
 
     # reset all variables for next recording
     self.writing_video = False
@@ -1737,11 +1749,13 @@ def print_memory_usage() -> None:
         """
 ==================================================
 Memory Usage
-==================================================""",
-        PrintColors.GREEN,
-        True
+==================================================
+        """,
+        PrintColors.LIGHT_GREEN,
+        logging=True
     )
     print_cpu_usage()
+    print_ram_usage()
     print_gpu_usage()
 
 def print_cpu_usage() -> None:
@@ -1749,8 +1763,7 @@ def print_cpu_usage() -> None:
     cpu_stats = psutil.cpu_stats()
     cpu_freq = psutil.cpu_freq()
     print_in_color(
-        f"""
-CPU Usage
+f"""CPU Usage
 ----------------------------------
 CPU Memory
     CPU memory usage: {cpu_percent:.2f}%
@@ -1763,15 +1776,31 @@ CPU Frequency
     Current frequency: {cpu_freq.current:,.2f} MHz
     Min frequency: {cpu_freq.min:,} MHz
     Max frequency: {cpu_freq.max:,} MHz
-----------------------------------""",
+----------------------------------
+        """,
+        PrintColors.CYAN
+    )
+
+def print_ram_usage() -> None:
+    """
+    Not implemented yet
+    """
+    print_in_color(
+f"""RAM Usage
+----------------------------------
+Not yet implemented
+----------------------------------
+        """,
         PrintColors.CYAN
     )
 
 def print_gpu_usage() -> None:
+    if not HabitatSimInteractiveViewer.USING_NVIDIA_GPU:
+        print_in_color("Command: No NVIDIA GPU\n", PrintColors.RED, logging=True)
+        return
+
     print_in_color(
-        """
-GPU Usage
-----------------------------------""",
+"""GPU Usage----------------------------------""",
         PrintColors.CYAN
     )
     if gpu_device_count > 0:
