@@ -127,8 +127,8 @@ def initialize_test_data_sources(data_path):
             "version": "1.2",
         },
         "franka_panda": {
-            "source": "https://dl.fbaipublicfiles.com/polymetis/franka_panda.zip",
-            "package_name": "franka_panda.zip",
+            "source": "https://dl.fbaipublicfiles.com/polymetis/franka_panda_no_dir.zip",
+            "package_name": "franka_panda_no_dir.zip",
             "link": data_path + "robots/franka_panda",
             "version": "1.0",
         },
