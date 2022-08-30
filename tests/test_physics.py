@@ -392,11 +392,15 @@ def test_dynamics():
 
             # test gettings/setting friction
             cheezit_box1.friction_coefficient = 0.123
-            assert cheezit_box1.friction_coefficient == 0.123
+            assert np.allclose(cheezit_box1.friction_coefficient, 0.123, atol=1e-7)
             cheezit_box1.rolling_friction_coefficient = 0.234
-            assert cheezit_box1.rolling_friction_coefficient == 0.234
+            assert np.allclose(
+                cheezit_box1.rolling_friction_coefficient, 0.234, atol=1e-7
+            )
             cheezit_box1.spinning_friction_coefficient = 0.345
-            assert cheezit_box1.spinning_friction_coefficient == 0.345
+            assert np.allclose(
+                cheezit_box1.spinning_friction_coefficient, 0.345, atol=1e-7
+            )
 
 
 def test_velocity_control():
