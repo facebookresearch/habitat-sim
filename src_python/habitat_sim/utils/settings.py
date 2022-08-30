@@ -6,6 +6,8 @@ import habitat_sim
 import habitat_sim.agent
 
 default_sim_settings = {
+    "scene_dataset_config_file": "default",
+    "scene": "NONE",
     "max_frames": 1000,
     "width": 640,
     "height": 480,
