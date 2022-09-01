@@ -742,6 +742,8 @@ sim.pathfinder.load_nav_mesh(
 #
 # When computing the NavMesh at runtime, configuration options are available to customize the result based on the intended use case.
 #
+# To learn more, visit [this blog](http://digestingduck.blogspot.com/2009/08/recast-settings-uncovered.html) by the author of Recast.
+#
 # These settings include (all quantities in world units):
 # - **Voxelization parameters**:
 #
