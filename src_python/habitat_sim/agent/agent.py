@@ -18,7 +18,7 @@ import habitat_sim.errors
 from habitat_sim import scene, sensor
 
 # TODO, can't find reference to habitat_sim_bindings anywhere
-# rom habitat_sim._ext.habitat_sim_bindings import SceneNode
+# from habitat_sim._ext.habitat_sim_bindings import SceneNode
 from habitat_sim.utils.common import (
     quat_from_coeffs,
     quat_from_magnum,
@@ -33,6 +33,9 @@ from habitat_sim.utils.validators import (
 )
 
 from .controls import ActuationSpec, ObjectControls
+
+# from habitat_sim.sensors.sensor_suite import SensorSuite
+
 
 __all__ = ["ActionSpec", "SixDOFPose", "AgentState", "AgentConfiguration", "Agent"]
 

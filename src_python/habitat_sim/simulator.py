@@ -26,7 +26,7 @@ try:
 except ImportError:
     _HAS_TORCH = False
 
-from habitat_sim import errors, gfx, simulator
+from habitat_sim import errors, gfx, scene, simulator
 from habitat_sim.agent.agent import Agent, AgentConfiguration, AgentState
 from habitat_sim.bindings import cuda_enabled
 from habitat_sim.logging import LoggingContext, logger
@@ -589,7 +589,7 @@ class Simulator(SimulatorBackend):
 
 
 class Sensor:
-    r"""Wrapper around habitat_sim.Sensor
+    r"""Wrapper around habitat_sim.sensor.Sensor
 
     TODO(MS) define entire Sensor class in python, reducing complexity
     """
@@ -601,7 +601,6 @@ class Sensor:
 
         # sensor is an attached object to the scene node
         # store such "attached object" in _sensor_object
-        # self._sensor_object = self._agent._sensors[sensor_id]
         self._sensor_object = self._agent.get_sensor(sensor_id)
 
         self._spec = self._sensor_object.specification()
@@ -674,6 +673,9 @@ class Sensor:
         ), "Noise model '{}' is not valid for sensor '{}'".format(
             self._spec.noise_model, self._spec.uuid
         )
+
+    def is_visual_sensor(self) -> bool:
+        return self._sensor_object.is_visual_sensor()
 
     def draw_observation(self) -> None:
         if self._spec.sensor_type == SensorType.AUDIO:
@@ -807,7 +809,17 @@ class Sensor:
         obs = audio_sensor.getIR()
         return obs
 
+    def set_transformation_from_spec(self) -> None:
+        self._sensor_object.set_transformation_from_spec()
+
+    def specification(self) -> SensorSpec:
+        return self._spec
+
     def close(self) -> None:
         self._sim = None
         self._agent = None
         self._sensor_object = None
+
+    @property
+    def node(self) -> scene.SceneNode:
+        return self._agent.scene_node
