@@ -275,104 +275,97 @@ void initSensorBindings(py::module& m) {
       m, "FisheyeSensor")
       .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
                           const FisheyeSensorSpec::ptr&>());
-
-          R"(The distance to the far clipping plane for this CameraSensor uses.)")
-      .def(
-          "buffer",
-          [](CameraSensor& self, int gpuDevice) {
-            py::handle handle = py::cast(self);
-            if (!py::hasattr(handle, "__buffer")) {
-              if (self.specification()->gpu2gpuTransfer) {
-                auto torch = py::module_::import("torch");
-                if (self.specification()->sensorType ==
-                    esp::sensor::SensorType::Semantic) {
-                  py::setattr(
-                      handle, "__buffer",
-                      torch.attr("empty")(
-                          (py::int_(self.specification()->resolution[0]),
-                           py::int_(self.specification()->resolution[1])),
-                          "dtype"_a = torch.attr("int32"),
-                          "device"_a = torch.attr("device")(
-                              py::str("cuda"), py::int_(gpuDevice))));
-                } else if (self.specification()->sensorType ==
-                           esp::sensor::SensorType::Depth) {
-                  py::setattr(
-                      handle, "__buffer",
-                      torch.attr("empty")(
-                          (py::int_(self.specification()->resolution[0]),
-                           py::int_(self.specification()->resolution[1])),
-                          "dtype"_a = torch.attr("float32"),
-                          "device"_a = torch.attr("device")(
-                              py::str("cuda"), py::int_(gpuDevice))));
-                } else {
-                  py::setattr(
-                      handle, "__buffer",
-                      torch.attr("empty")(
-                          (py::int_(self.specification()->resolution[0]),
-                           py::int_(self.specification()->resolution[1]),
-                           py::int_(self.specification()->channels)),
-                          "dtype"_a = torch.attr("uint32"),
-                          "device"_a = torch.attr("device")(
-                              py::str("cuda"), py::int_(gpuDevice))));
-                }
-              } else {
-                if (self.specification()->sensorType ==
-                    esp::sensor::SensorType::Semantic) {
-                  auto pyBuffer = py::array(py::buffer_info(
-                      nullptr, /* Pointer to data (nullptr -> ask NumPy to
-                                 allocate!) */
-                      sizeof(uint32_t), /* Size of one item */
-                      py::format_descriptor<uint32_t>::value, /* Buffer format
-                                                               */
-                      2, /* How many dimensions? */
-                      {self.specification()->resolution[0],
-                       self.specification()
-                           ->resolution[1]}, /* Number of elements for
-                                               each dimension */
-                      {sizeof(uint32_t) * self.specification()->resolution[1],
-                       sizeof(uint32_t)} /* Strides for each dimension */
-                      ));
-                  py::setattr(handle, "__buffer", pyBuffer);
-                } else if (self.specification()->sensorType ==
-                           esp::sensor::SensorType::Depth) {
-                  auto pyBuffer = py::array(py::buffer_info(
-                      nullptr,       /* Pointer to data (nullptr -> ask NumPy to
-                                        allocate!) */
-                      sizeof(float), /* Size of one item */
-                      py::format_descriptor<float>::value, /* Buffer format */
-                      2, /* How many dimensions? */
-                      {self.specification()->resolution[0],
-                       self.specification()
-                           ->resolution[1]}, /* Number of elements for
-                                               each dimension */
-                      {sizeof(float) * self.specification()->resolution[1],
-                       sizeof(float)} /* Strides for each dimension */
-                      ));
-                  py::setattr(handle, "__buffer", pyBuffer);
-                } else {
-                  auto pyBuffer = py::array(py::buffer_info(
-                      nullptr, /* Pointer to data (nullptr -> ask NumPy to
-                                  allocate!) */
-                      sizeof(uint8_t), /* Size of one item */
-                      py::format_descriptor<uint8_t>::value, /* Buffer format */
-                      3, /* How many dimensions? */
-                      {self.specification()->resolution[0],
-                       self.specification()->resolution[1],
-                       self.specification()->channels}, /* Number of elements
-                                                           for each dimension */
-                      {sizeof(uint8_t) * self.specification()->resolution[1] *
-                           self.specification()->channels,
-                       sizeof(uint8_t) * self.specification()->channels,
-                       sizeof(uint8_t)} /* Strides for each dimension */
-                      ));
-                  py::setattr(handle, "__buffer", pyBuffer);
-                }
-              }
+  .def(
+      "buffer",
+      [](CameraSensor& self, int gpuDevice) {
+        py::handle handle = py::cast(self);
+        if (!py::hasattr(handle, "__buffer")) {
+          if (self.specification()->gpu2gpuTransfer) {
+            auto torch = py::module_::import("torch");
+            if (self.specification()->sensorType ==
+                esp::sensor::SensorType::Semantic) {
+              py::setattr(handle, "__buffer",
+                          torch.attr("empty")(
+                              (py::int_(self.specification()->resolution[0]),
+                               py::int_(self.specification()->resolution[1])),
+                              "dtype"_a = torch.attr("int32"),
+                              "device"_a = torch.attr("device")(
+                                  py::str("cuda"), py::int_(gpuDevice))));
+            } else if (self.specification()->sensorType ==
+                       esp::sensor::SensorType::Depth) {
+              py::setattr(handle, "__buffer",
+                          torch.attr("empty")(
+                              (py::int_(self.specification()->resolution[0]),
+                               py::int_(self.specification()->resolution[1])),
+                              "dtype"_a = torch.attr("float32"),
+                              "device"_a = torch.attr("device")(
+                                  py::str("cuda"), py::int_(gpuDevice))));
+            } else {
+              py::setattr(handle, "__buffer",
+                          torch.attr("empty")(
+                              (py::int_(self.specification()->resolution[0]),
+                               py::int_(self.specification()->resolution[1]),
+                               py::int_(self.specification()->channels)),
+                              "dtype"_a = torch.attr("uint32"),
+                              "device"_a = torch.attr("device")(
+                                  py::str("cuda"), py::int_(gpuDevice))));
             }
-            return py::getattr(handle, "__buffer");
-          },
-          "Buffer attribute");
-          
+          } else {
+            if (self.specification()->sensorType ==
+                esp::sensor::SensorType::Semantic) {
+              auto pyBuffer = py::array(py::buffer_info(
+                  nullptr,          /* Pointer to data (nullptr -> ask NumPy to
+                                      allocate!) */
+                  sizeof(uint32_t), /* Size of one item */
+                  py::format_descriptor<uint32_t>::value, /* Buffer format
+                                                           */
+                  2, /* How many dimensions? */
+                  {self.specification()->resolution[0],
+                   self.specification()->resolution[1]}, /* Number of elements
+                                                           for each dimension */
+                  {sizeof(uint32_t) * self.specification()->resolution[1],
+                   sizeof(uint32_t)} /* Strides for each dimension */
+                  ));
+              py::setattr(handle, "__buffer", pyBuffer);
+            } else if (self.specification()->sensorType ==
+                       esp::sensor::SensorType::Depth) {
+              auto pyBuffer = py::array(py::buffer_info(
+                  nullptr,       /* Pointer to data (nullptr -> ask NumPy to
+                                    allocate!) */
+                  sizeof(float), /* Size of one item */
+                  py::format_descriptor<float>::value, /* Buffer format */
+                  2, /* How many dimensions? */
+                  {self.specification()->resolution[0],
+                   self.specification()->resolution[1]}, /* Number of elements
+                                                           for each dimension */
+                  {sizeof(float) * self.specification()->resolution[1],
+                   sizeof(float)} /* Strides for each dimension */
+                  ));
+              py::setattr(handle, "__buffer", pyBuffer);
+            } else {
+              auto pyBuffer = py::array(py::buffer_info(
+                  nullptr,         /* Pointer to data (nullptr -> ask NumPy to
+                                      allocate!) */
+                  sizeof(uint8_t), /* Size of one item */
+                  py::format_descriptor<uint8_t>::value, /* Buffer format */
+                  3, /* How many dimensions? */
+                  {self.specification()->resolution[0],
+                   self.specification()->resolution[1],
+                   self.specification()->channels}, /* Number of elements
+                                                       for each dimension */
+                  {sizeof(uint8_t) * self.specification()->resolution[1] *
+                       self.specification()->channels,
+                   sizeof(uint8_t) * self.specification()->channels,
+                   sizeof(uint8_t)} /* Strides for each dimension */
+                  ));
+              py::setattr(handle, "__buffer", pyBuffer);
+            }
+          }
+        }
+        return py::getattr(handle, "__buffer");
+      },
+      "Buffer attribute");
+
 #ifdef ESP_BUILD_WITH_CUDA
   py::class_<RedwoodNoiseModelGPUImpl, RedwoodNoiseModelGPUImpl::uptr>(
       m, "RedwoodNoiseModelGPUImpl")

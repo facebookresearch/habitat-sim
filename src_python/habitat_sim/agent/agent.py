@@ -13,11 +13,11 @@ import quaternion as qt
 
 import habitat_sim.errors
 
-# TODO, can't find reference to bindings anywhere
+# TODO, trying to figure out how bindings works
 # from habitat_sim import bindings as hsim
 from habitat_sim import scene, sensor
 
-# TODO, can't find reference to habitat_sim_bindings anywhere
+# TODO, still trying to figure out how habitat_sim._ext.habitat_sim_bindings works
 # from habitat_sim._ext.habitat_sim_bindings import SceneNode
 from habitat_sim.utils.common import (
     quat_from_coeffs,
