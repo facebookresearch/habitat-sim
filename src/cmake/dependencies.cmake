@@ -216,13 +216,10 @@ if(NOT USE_SYSTEM_MAGNUM)
   set(MAGNUM_WITH_GLFWAPPLICATION OFF CACHE BOOL "" FORCE)
   set(MAGNUM_WITH_EIGEN ON CACHE BOOL "" FORCE) # Eigen integration
   set(MAGNUM_WITH_IMGUI ON CACHE BOOL "" FORCE) # ImGui integration
-  # GltfSceneConverter and KtxImageConverter needed by BatchRendererTest,
-  # GltfSceneConverter is not in magnum-plugins master yet
+  # GltfSceneConverter and KtxImageConverter are needed only by
+  # BatchRendererTest and are optional
   #set(MAGNUM_WITH_GLTFSCENECONVERTER ON CACHE BOOL "" FORCE)
-  # Has to be enabled because otherwise
-  #  find_package(MagnumPlugins OPTIONAL KtxImageConverter)
-  # with a CMake subproject causes a CMake error. TODO: fix in the Find module
-  set(MAGNUM_WITH_KTXIMAGECONVERTER ON CACHE BOOL "" FORCE)
+  #set(MAGNUM_WITH_KTXIMAGECONVERTER ON CACHE BOOL "" FORCE)
   if(BUILD_PYTHON_BINDINGS)
     set(MAGNUM_WITH_PYTHON ON CACHE BOOL "" FORCE) # Python bindings
   endif()

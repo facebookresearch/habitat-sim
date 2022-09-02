@@ -204,6 +204,8 @@ void MetadataMediatorTest::testDataset0() {
   CORRADE_COMPARE(objAttr->getMargin(), 0.03);
   CORRADE_COMPARE(objAttr->getMass(), 0.038);
   CORRADE_COMPARE(objAttr->getFrictionCoefficient(), 0.5);
+  CORRADE_COMPARE(objAttr->getRollingFrictionCoefficient(), 0.6);
+  CORRADE_COMPARE(objAttr->getSpinningFrictionCoefficient(), 0.7);
   CORRADE_COMPARE(objAttr->getRestitutionCoefficient(), 0.2);
   CORRADE_COMPARE(objAttr->getOrientUp(), Magnum::Vector3(0, 1, 0));
   CORRADE_COMPARE(objAttr->getOrientFront(), Magnum::Vector3(0, 0, -1));
@@ -226,6 +228,8 @@ void MetadataMediatorTest::testDataset0() {
   CORRADE_COMPARE(objAttr->getMargin(), 0.03);
   CORRADE_COMPARE(objAttr->getMass(), 3.5);
   CORRADE_COMPARE(objAttr->getFrictionCoefficient(), 0.2);
+  CORRADE_COMPARE(objAttr->getRollingFrictionCoefficient(), 0.0002);
+  CORRADE_COMPARE(objAttr->getSpinningFrictionCoefficient(), 0.0003);
   CORRADE_COMPARE(objAttr->getRestitutionCoefficient(), 0.2);
   CORRADE_COMPARE(objAttr->getOrientUp(), Magnum::Vector3(0, 1, 0));
   CORRADE_COMPARE(objAttr->getOrientFront(), Magnum::Vector3(0, 0, -1));

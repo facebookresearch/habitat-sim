@@ -366,12 +366,16 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
     // set physical properties from possibly modified current rigidBody
     info.m_startWorldTransform = bObjectRigidBody_->getWorldTransform();
     info.m_friction = bObjectRigidBody_->getFriction();
+    info.m_rollingFriction = bObjectRigidBody_->getRollingFriction();
+    info.m_spinningFriction = bObjectRigidBody_->getSpinningFriction();
     info.m_restitution = bObjectRigidBody_->getRestitution();
     info.m_linearDamping = bObjectRigidBody_->getLinearDamping();
     info.m_angularDamping = bObjectRigidBody_->getAngularDamping();
   } else {
     // set properties from initialization template
     info.m_friction = tmpAttr->getFrictionCoefficient();
+    info.m_rollingFriction = tmpAttr->getRollingFrictionCoefficient();
+    info.m_spinningFriction = tmpAttr->getSpinningFrictionCoefficient();
     info.m_restitution = tmpAttr->getRestitutionCoefficient();
     info.m_linearDamping = tmpAttr->getLinearDamping();
     info.m_angularDamping = tmpAttr->getAngularDamping();

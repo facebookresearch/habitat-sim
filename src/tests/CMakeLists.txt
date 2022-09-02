@@ -1,7 +1,13 @@
 find_package(Magnum REQUIRED DebugTools AnyImageConverter AnySceneImporter)
 find_package(
-  MagnumPlugins REQUIRED GltfImporter StbImageImporter KtxImporter
-  OPTIONAL_COMPONENTS GltfSceneConverter KtxImageConverter
+  MagnumPlugins
+  REQUIRED
+  GltfImporter
+  StbImageImporter
+  KtxImporter
+  # Disabled for now as the OPTIONAL component with a CMake subproject causes a
+  # CMake error. TODO: fix in the Find module
+  #OPTIONAL_COMPONENTS GltfSceneConverter KtxImageConverter
 )
 
 # If the GltfSceneConverter is present, the new Magnum SceneConverter APIs are

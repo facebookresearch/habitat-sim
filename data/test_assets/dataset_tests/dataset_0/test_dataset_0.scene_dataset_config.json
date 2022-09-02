@@ -49,6 +49,8 @@
             "template_handle": "modified_test_object1_1_slick_heavy",
             "attributes": {
         "friction_coefficient": 0.2,
+        "rolling_friction_coefficient": 0.0002,
+        "spinning_friction_coefficient": 0.0003,
         "mass": 3.5
             }
         },

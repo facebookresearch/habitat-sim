@@ -1415,7 +1415,7 @@ void Viewer::buildTrajectoryVis() {
   int numClrs = (singleColorTrajectory_ ? 1 : rand() % 4 + 2);
   clrs.reserve(numClrs);
   for (int i = 0; i < numClrs; ++i) {
-    clrs.emplace_back(Mn::Color3{randomDirection()});
+    clrs.emplace_back(randomDirection());
   }
   // synthesize a name for asset based on color, radius, point count
   std::string trajObjName = Cr::Utility::formatString(

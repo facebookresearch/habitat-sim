@@ -222,6 +222,16 @@ void initAttributesBindings(py::module& m) {
           &AbstractObjectAttributes::setFrictionCoefficient,
           R"(Friction coefficient for constructions built from this template.)")
       .def_property(
+          "rolling_friction_coefficient",
+          &AbstractObjectAttributes::getRollingFrictionCoefficient,
+          &AbstractObjectAttributes::setRollingFrictionCoefficient,
+          R"(Rolling friction coefficient for constructions built from this template. Damps angular velocity about axis orthogonal to the contact normal to prevent rounded shapes from rolling forever.)")
+      .def_property(
+          "spinning_friction_coefficient",
+          &AbstractObjectAttributes::getSpinningFrictionCoefficient,
+          &AbstractObjectAttributes::setSpinningFrictionCoefficient,
+          R"(Spinning friction coefficient for constructions built from this template. Damps angular velocity about the contact normal.)")
+      .def_property(
           "restitution_coefficient",
           &AbstractObjectAttributes::getRestitutionCoefficient,
           &AbstractObjectAttributes::setRestitutionCoefficient,
