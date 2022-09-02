@@ -174,7 +174,7 @@ class Agent:
         """
         return sensor with provided uuid
         """
-        return self.scene_node.node_sensor_suite.get(sensor_id)
+        return self.scene_node.subtree_sensors.get(sensor_id)
 
     def act(self, action_id: Any) -> bool:
         r"""Take the action specified by action_id

@@ -602,7 +602,7 @@ class Sensor:
         # sensor is an attached object to the scene node
         # store such "attached object" in _sensor_object
         # self._sensor_object = self._agent._sensors[sensor_id]
-        self._sensor_object = self._agent.scene_node.node_sensor_suite[sensor_id]
+        self._sensor_object = self._agent.get_sensor(sensor_id)
 
         self._spec = self._sensor_object.specification()
 
@@ -793,7 +793,7 @@ class Sensor:
 
     def _get_audio_observation(self) -> Union[ndarray, "Tensor"]:
         assert self._spec.sensor_type == SensorType.AUDIO
-        audio_sensor = self._agent.scene_node.node_sensor_suite["audio_sensor"]
+        audio_sensor = self._agent.get_sensor("audio_sensor")
         # tell the audio sensor about the agent location
         rot = self._agent.state.rotation
 
