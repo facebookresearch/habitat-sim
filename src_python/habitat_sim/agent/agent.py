@@ -12,8 +12,13 @@ import numpy as np
 import quaternion as qt
 
 import habitat_sim.errors
-from habitat_sim import bindings as hsim
-from habitat_sim._ext.habitat_sim_bindings import SceneNode
+
+# TODO, can't find reference to bindings anywhere
+# from habitat_sim import bindings as hsim
+from habitat_sim import scene, sensor
+
+# TODO, can't find reference to habitat_sim_bindings anywhere
+# rom habitat_sim._ext.habitat_sim_bindings import SceneNode
 from habitat_sim.utils.common import (
     quat_from_coeffs,
     quat_from_magnum,
@@ -94,7 +99,7 @@ class AgentState:
 class AgentConfiguration:
     height: float = 1.5
     radius: float = 0.1
-    sensor_specifications: List[hsim.SensorSpec] = attr.Factory(list)
+    sensor_specifications: List[sensor.SensorSpec] = attr.Factory(list)
     action_space: Dict[Any, ActionSpec] = attr.Factory(_default_action_space)
     body_type: str = "cylinder"
 
@@ -125,14 +130,14 @@ class Agent:
 
     def __init__(
         self,
-        scene_node: hsim.SceneNode,
+        scene_node: scene.SceneNode,
         agent_config: Optional[AgentConfiguration] = None,
         controls: Optional[ObjectControls] = None,
     ) -> None:
         self.agent_config = agent_config if agent_config else AgentConfiguration()
         self.controls = controls if controls else ObjectControls()
         self.body = mn.scenegraph.AbstractFeature3D(scene_node)
-        scene_node.type = hsim.SceneNodeType.AGENT
+        scene_node.type = scene.SceneNodeType.AGENT
         self.reconfigure(self.agent_config)
         self.initial_state: Optional[AgentState] = None
 
@@ -155,7 +160,7 @@ class Agent:
                 self._add_sensor(spec, modify_agent_config=False)
 
     def _add_sensor(
-        self, spec: hsim.SensorSpec, modify_agent_config: bool = True
+        self, spec: sensor.SensorSpec, modify_agent_config: bool = True
     ) -> None:
         assert (
             spec.uuid not in self.scene_node.subtree_sensors
@@ -163,7 +168,13 @@ class Agent:
         if modify_agent_config:
             assert spec not in self.agent_config.sensor_specifications
             self.agent_config.sensor_specifications.append(spec)
-        hsim.SensorFactory.create_sensors(self.scene_node, [spec])
+        sensor.SensorFactory.create_sensors(self.scene_node, [spec])
+
+    def _get_sensor(self, sensor_id: sensor.SensorSpec.uuid) -> sensor.Sensor:
+        """
+        return
+        """
+        return self.scene_node.node_sensor_suite.get(sensor_id)
 
     def act(self, action_id: Any) -> bool:
         r"""Take the action specified by action_id
@@ -273,7 +284,7 @@ class Agent:
             self.initial_state = state
 
     @property
-    def scene_node(self) -> SceneNode:
+    def scene_node(self) -> scene.SceneNode:
         habitat_sim.errors.assert_obj_valid(self.body)
         return self.body.object
 

@@ -26,13 +26,16 @@ try:
 except ImportError:
     _HAS_TORCH = False
 
-
+from habitat_sim import errors, gfx, simulator
 from habitat_sim.agent.agent import Agent, AgentConfiguration, AgentState
 from habitat_sim.bindings import cuda_enabled
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.metadata import MetadataMediator
-from habitat_sim.nav import GreedyGeodesicFollower, NavMeshSettings, PathFinder
-from habitat_sim.sensor import Sensor, SensorSpec, SensorType
+from habitat_sim.nav import GreedyGeodesicFollower, NavMeshSettings
+from habitat_sim.sensor import (  # , Sensor # TODO rewriting Sensor class
+    SensorSpec,
+    SensorType,
+)
 from habitat_sim.sensors.noise_models import SensorNoiseModel, make_sensor_noise_model
 from habitat_sim.sim import SimulatorBackend, SimulatorConfiguration
 from habitat_sim.utils.common import quat_from_angle_axis
@@ -42,7 +45,7 @@ from habitat_sim.utils.common import quat_from_angle_axis
 # only defines the Union as:
 # Union[ndarray, "Tensor"], and not:
 # Union[bool, np.ndarray, "Tensor"]
-#ObservationDict = Dict[str, Union[bool, np.ndarray, "Tensor"]]
+# ObservationDict = Dict[str, Union[bool, np.ndarray, "Tensor"]]
 ObservationDict = Dict[str, Union[ndarray, "Tensor"]]
 
 
@@ -77,6 +80,9 @@ class Simulator(SimulatorBackend):
 
     config: Configuration
     agents: List[Agent] = attr.ib(factory=list, init=False)
+    # TODO
+    __sensors: List[Dict[SensorSpec, simulator.Sensor]] = None
+    # TODO
     _num_total_frames: int = attr.ib(default=0, init=False)
     _default_agent_id: int = attr.ib(default=0, init=False)
     __noise_models: Dict[str, SensorNoiseModel] = attr.ib(factory=dict, init=False)
@@ -438,8 +444,7 @@ class Simulator(SimulatorBackend):
         ...
 
     def get_sensor_observations(
-        self, 
-        agent_ids: Union[int, List[int]] = 0
+        self, agent_ids: Union[int, List[int]] = 0
     ) -> Union[ObservationDict, Dict[int, ObservationDict],]:
 
         if isinstance(agent_ids, int):
@@ -464,13 +469,16 @@ class Simulator(SimulatorBackend):
             # so I redefined ObservationDict as the latter for now
             agent_observations: ObservationDict = {}
             for sensor_uuid, sensor in self.__sensors[agent_id].items():
+                # TODO we are rewriting habitat_sim.simulator.Sensor in python, so temporarily
+                # we are making a python sensor wrapper class to start migrating everything
+                # into python files
                 agent_observations[sensor_uuid] = sensor.get_observation()
 
             observations[agent_id] = agent_observations
 
         if return_single:
             return next(iter(observations.values()))
-            
+
         return observations
 
     @property
@@ -579,12 +587,6 @@ class Simulator(SimulatorBackend):
     def step_physics(self, dt: float, scene_id: int = 0) -> None:
         self.step_world(dt)
 
-    def get_observation(self, sensor: Sensor) -> Union[ndarray, "Tensor"]:
-        if not sensor.has_render_target():
-            self.renderer.bind_render_target(sensor)
-        tgt = sensor.render_target
-        noise_model = self.get_noise_model(sensor.specification())
-        obs_buffer = sensor.buffer(self.gpu_device)
 
 class Sensor:
     r"""Wrapper around habitat_sim.Sensor
@@ -599,7 +601,8 @@ class Sensor:
 
         # sensor is an attached object to the scene node
         # store such "attached object" in _sensor_object
-        self._sensor_object = self._agent._sensors[sensor_id]
+        # self._sensor_object = self._agent._sensors[sensor_id]
+        self._sensor_object = self._agent.scene_node.node_sensor_suite[sensor_id]
 
         self._spec = self._sensor_object.specification()
 
@@ -682,7 +685,7 @@ class Sensor:
             # see if the sensor is attached to a scene graph, otherwise it is invalid,
             # and cannot make any observation
             if not self._sensor_object.object:
-                raise habitat_sim.errors.InvalidAttachedObject(
+                raise errors.InvalidAttachedObject(
                     "Sensor observation requested but sensor is invalid.\
                     (has it been detached from a scene node?)"
                 )
@@ -708,7 +711,7 @@ class Sensor:
             # see if the sensor is attached to a scene graph, otherwise it is invalid,
             # and cannot make any observation
             if not self._sensor_object.object:
-                raise habitat_sim.errors.InvalidAttachedObject(
+                raise errors.InvalidAttachedObject(
                     "Sensor observation requested but sensor is invalid.\
                     (has it been detached from a scene node?)"
                 )
@@ -739,10 +742,10 @@ class Sensor:
             else:  # SensorType is DEPTH or any other type
                 scene = self._sim.get_active_scene_graph()
 
-            render_flags = habitat_sim.gfx.Camera.Flags.NONE
+            render_flags = gfx.Camera.Flags.NONE
 
             if self._sim.frustum_culling:
-                render_flags |= habitat_sim.gfx.Camera.Flags.FRUSTUM_CULLING
+                render_flags |= gfx.Camera.Flags.FRUSTUM_CULLING
 
             self._sim.renderer.enqueue_async_draw_job(
                 self._sensor_object, scene, self.view, render_flags
@@ -790,7 +793,7 @@ class Sensor:
 
     def _get_audio_observation(self) -> Union[ndarray, "Tensor"]:
         assert self._spec.sensor_type == SensorType.AUDIO
-        audio_sensor = self._agent._sensors["audio_sensor"]
+        audio_sensor = self._agent.scene_node.node_sensor_suite["audio_sensor"]
         # tell the audio sensor about the agent location
         rot = self._agent.state.rotation
 
