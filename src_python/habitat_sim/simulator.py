@@ -41,12 +41,8 @@ from habitat_sim.sim import SimulatorBackend, SimulatorConfiguration
 from habitat_sim.utils.common import quat_from_angle_axis
 
 # TODO maybe clean up types with TypeVars
-# TODO, so far, every function that uses or returns this Dict with a Union
-# only defines the Union as:
-# Union[ndarray, "Tensor"], and not:
-# Union[bool, np.ndarray, "Tensor"]
-# ObservationDict = Dict[str, Union[bool, np.ndarray, "Tensor"]]
-ObservationDict = Dict[str, Union[ndarray, "Tensor"]]
+ObservationTypeVar = Union[bool, ndarray, "Tensor"]
+ObservationDict = Dict[str, ObservationTypeVar]
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -183,7 +179,7 @@ class Simulator(SimulatorBackend):
 
     def reset(
         self, agent_ids: Union[Optional[int], List[int]] = None
-    ) -> Union[ObservationDict, Dict[int, ObservationDict],]:
+    ) -> Union[ObservationDict, Dict[int, ObservationDict]]:
         super().reset()
         for i in range(len(self.agents)):
             self.reset_agent(i)
@@ -404,8 +400,8 @@ class Simulator(SimulatorBackend):
     def get_sensor_observations_async_finish(
         self,
     ) -> Union[
-        Dict[str, Union[ndarray, "Tensor"]],
-        Dict[int, Dict[str, Union[ndarray, "Tensor"]]],
+        Dict[str, ObservationTypeVar],
+        Dict[int, Dict[str, ObservationTypeVar]],
     ]:
         if self._async_draw_agent_ids is None:
             raise RuntimeError(
@@ -422,9 +418,9 @@ class Simulator(SimulatorBackend):
 
         self.renderer.wait_draw_jobs()
         # As backport. All Dicts are ordered in Python >= 3.7
-        observations: Dict[int, Dict[str, Union[ndarray, "Tensor"]]] = OrderedDict()
+        observations: Dict[int, Dict[str, ObservationTypeVar]] = OrderedDict()
         for agent_id in agent_ids:
-            agent_observations: Dict[str, Union[ndarray, "Tensor"]] = {}
+            agent_observations: Dict[str, ObservationTypeVar] = {}
             for sensor_uuid, sensor in self.__sensors[agent_id].items():
                 agent_observations[sensor_uuid] = sensor._get_observation_async()
 
@@ -445,7 +441,7 @@ class Simulator(SimulatorBackend):
 
     def get_sensor_observations(
         self, agent_ids: Union[int, List[int]] = 0
-    ) -> Union[ObservationDict, Dict[int, ObservationDict],]:
+    ) -> Union[ObservationDict, Dict[int, ObservationDict]]:
 
         if isinstance(agent_ids, int):
             agent_ids = [agent_ids]
@@ -465,7 +461,7 @@ class Simulator(SimulatorBackend):
             # TODO ObservationDict was defined as:
             # Dict[str, Union[bool, np.ndarray, "Tensor"]]
             # but most of these functions use ObservationDict when its data type is:
-            # Dict[str, Union[ndarray, "Tensor"]]
+            # Dict[str, ObservationTypeVar]
             # so I redefined ObservationDict as the latter for now
             agent_observations: ObservationDict = {}
             for sensor_uuid, sensor in self.__sensors[agent_id].items():
@@ -515,7 +511,7 @@ class Simulator(SimulatorBackend):
         self,
         action: Union[str, int, MutableMapping_T[int, Union[str, int]]],
         dt: float = 1.0 / 60.0,
-    ) -> Union[ObservationDict, Dict[int, ObservationDict],]:
+    ) -> Union[ObservationDict, Dict[int, ObservationDict]]:
         self._num_total_frames += 1
         if isinstance(action, MutableMapping):
             return_single = False
@@ -753,7 +749,7 @@ class Sensor:
                 self._sensor_object, scene, self.view, render_flags
             )
 
-    def get_observation(self) -> Union[ndarray, "Tensor"]:
+    def get_observation(self) -> ObservationTypeVar:
         if self._spec.sensor_type == SensorType.AUDIO:
             return self._get_audio_observation()
 
@@ -782,7 +778,7 @@ class Sensor:
 
         return self._noise_model(obs)
 
-    def _get_observation_async(self) -> Union[ndarray, "Tensor"]:
+    def _get_observation_async(self) -> ObservationTypeVar:
         if self._spec.sensor_type == SensorType.AUDIO:
             return self._get_audio_observation()
 
@@ -793,7 +789,7 @@ class Sensor:
 
         return self._noise_model(obs)
 
-    def _get_audio_observation(self) -> Union[ndarray, "Tensor"]:
+    def _get_audio_observation(self) -> ObservationTypeVar:
         assert self._spec.sensor_type == SensorType.AUDIO
         audio_sensor = self._agent.get_sensor("audio_sensor")
         # tell the audio sensor about the agent location
