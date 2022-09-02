@@ -22,7 +22,8 @@ from examples.settings import default_sim_settings, make_cfg
 from habitat_sim import physics
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.common import quat_from_angle_axis
-import habitat.datasets.rearrange.receptacle as receptacle
+
+import habitat.datasets.rearrange.samplers.receptacle as receptacle  # isort:skip
 
 
 class HabitatSimInteractiveViewer(Application):
@@ -144,14 +145,12 @@ class HabitatSimInteractiveViewer(Application):
         This method is called to render a debug line overlay displaying receptacles in the scene.
         """
         dblr = self.sim.get_debug_line_render()
-        for receptacle in self.current_receptacles:
-            dblr.push_transform(receptacle.get_global_transform(self.sim))
-            dblr.draw_box(
-                receptacle.bounds.min, receptacle.bounds.max, mn.Color4.magenta()
-            )
+        for recept in self.current_receptacles:
+            dblr.push_transform(recept.get_global_transform(self.sim))
+            dblr.draw_box(recept.bounds.min, recept.bounds.max, mn.Color4.magenta())
             dblr.draw_transformed_line(
-                receptacle.bounds.center(),
-                receptacle.bounds.center() + receptacle.up,
+                recept.bounds.center(),
+                recept.bounds.center() + recept.up,
                 mn.Color4.blue(),
             )
             dblr.pop_transform()
