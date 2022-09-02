@@ -170,9 +170,9 @@ class Agent:
             self.agent_config.sensor_specifications.append(spec)
         sensor.SensorFactory.create_sensors(self.scene_node, [spec])
 
-    def _get_sensor(self, sensor_id: sensor.SensorSpec.uuid) -> sensor.Sensor:
+    def get_sensor(self, sensor_id: sensor.SensorSpec.uuid) -> sensor.Sensor:
         """
-        return
+        return sensor with provided uuid
         """
         return self.scene_node.node_sensor_suite.get(sensor_id)
 

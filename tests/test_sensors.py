@@ -331,7 +331,7 @@ def test_initial_hfov(scene_and_dataset, sensor_type, make_cfg_settings):
     make_cfg_settings["hfov"] = 70
     with habitat_sim.Simulator(make_cfg(make_cfg_settings)) as sim:
         # assert sim.agents[0]._sensors[sensor_type].hfov == mn.Deg( # TODO
-        assert sim.agents[0]._get_sensor(sensor_type).hfov == mn.Deg(
+        assert sim.agents[0].get_sensor(sensor_type).hfov == mn.Deg(
             70
         ), "HFOV was not properly set"
 
