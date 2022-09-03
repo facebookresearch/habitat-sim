@@ -8,16 +8,13 @@ import math
 import os
 import sys
 import time
-import psutil
-
-import nvidia_smi
-from pynvml import *
-
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import git
 import imageio
+import nvidia_smi
+import psutil
 from PIL import Image
 
 flags = sys.getdlopenflags()
@@ -47,7 +44,7 @@ if not os.path.exists(output_path):
     os.mkdir(output_path)
 
 
-class HabitatSimInteractiveViewer(Application): # {
+class HabitatSimInteractiveViewer(Application):  # {
 
     # Default transforms of agent and dataset object as static variables
     # to use when resetting the agent and dataset object transforms
@@ -170,7 +167,7 @@ class HabitatSimInteractiveViewer(Application): # {
         )
         print_in_color(
             f"number of ojects in dataset: {len(self.object_template_handles)}",
-            PrintColors.BLUE
+            PrintColors.BLUE,
         )
 
         # -self.object_template_handle_index: stores current object's index in the
@@ -230,14 +227,14 @@ class HabitatSimInteractiveViewer(Application): # {
         Draw the bounding box of the current object. The corners of the bounding
         box are ordered like this:
         [
-            bounding_box.back_bottom_left, 
-            bounding_box.back_bottom_right, 
-            bounding_box.back_top_right, 
-            bounding_box.back_top_left, 
-            bounding_box.front_top_left, 
-            bounding_box.front_top_right, 
-            bounding_box.front_bottom_right, 
-            bounding_box.front_bottom_left, 
+            bounding_box.back_bottom_left,
+            bounding_box.back_bottom_right,
+            bounding_box.back_top_right,
+            bounding_box.back_top_left,
+            bounding_box.front_top_left,
+            bounding_box.front_top_right,
+            bounding_box.front_bottom_right,
+            bounding_box.front_bottom_left,
         ]
         """
         rgb = HabitatSimInteractiveViewer.BOUNDING_BOX_RGB
@@ -254,7 +251,9 @@ class HabitatSimInteractiveViewer(Application): # {
             back_corner_world_pos = obj_transform.transform_point(back_corner_local_pos)
             next_back_index = (i + 1) % 4
             next_back_corner_local_pos = bb_corners[next_back_index]
-            next_back_corner_world_pos = obj_transform.transform_point(next_back_corner_local_pos)
+            next_back_corner_world_pos = obj_transform.transform_point(
+                next_back_corner_local_pos
+            )
             self.sim.get_debug_line_render().draw_transformed_line(
                 back_corner_world_pos,
                 next_back_corner_world_pos,
@@ -263,7 +262,9 @@ class HabitatSimInteractiveViewer(Application): # {
             # side edge that this corner is a part of
             front_counterpart_index = num_corners - i - 1
             front_counterpart_local_pos = bb_corners[front_counterpart_index]
-            front_counterpart_world_pos = obj_transform.transform_point(front_counterpart_local_pos)
+            front_counterpart_world_pos = obj_transform.transform_point(
+                front_counterpart_local_pos
+            )
             self.sim.get_debug_line_render().draw_transformed_line(
                 back_corner_world_pos,
                 front_counterpart_world_pos,
@@ -272,7 +273,9 @@ class HabitatSimInteractiveViewer(Application): # {
             # front of box
             next_front_index = (front_counterpart_index - 4 - 1) % 4 + 4
             next_front_corner_local_pos = bb_corners[next_front_index]
-            next_front_corner_world_pos = obj_transform.transform_point(next_front_corner_local_pos)
+            next_front_corner_world_pos = obj_transform.transform_point(
+                next_front_corner_local_pos
+            )
             self.sim.get_debug_line_render().draw_transformed_line(
                 front_counterpart_world_pos,
                 next_front_corner_world_pos,
@@ -291,7 +294,7 @@ class HabitatSimInteractiveViewer(Application): # {
             self.draw_contact_debug()
         if self.bounding_box_debug_draw:
             self.draw_bounding_boxes_debug()
-                
+
     def draw_event(
         self,
         simulation_call: Optional[Callable] = None,
@@ -345,7 +348,7 @@ class HabitatSimInteractiveViewer(Application): # {
         self.debug_draw()
         self.render_camera.render_target.blit_rgba_to_default()
         mn.gl.default_framebuffer.bind()
-            
+
         if self.recording and not self.writing_video:
             # if we are recording and no recording is currently being written to file,
             # save the framebuffer as a PIL Image into a list that we will write to
@@ -601,35 +604,35 @@ class HabitatSimInteractiveViewer(Application): # {
             Toggle the drawing of the current object's bounding box
             (if the object is not None)
             """
-            
+
             self.bounding_box_debug_draw = not self.bounding_box_debug_draw
-            
-            if self.curr_object is not None: 
+
+            if self.curr_object is not None:
                 # if object exists
                 obj_name = self.curr_object.handle.replace("_:0000", "")
                 if self.bounding_box_debug_draw:
                     # if turned on bb drawing
                     print_in_color(
-                        f"Draw bounding box for object: {obj_name}\n", 
+                        f"Draw bounding box for object: {obj_name}\n",
                         PrintColors.MAGENTA,
-                        logging=True
+                        logging=True,
                     )
                 else:
                     # if turned off bb drawing
                     print_in_color(
-                        f"Don't draw bounding box for object: {obj_name}\n", 
+                        f"Don't draw bounding box for object: {obj_name}\n",
                         PrintColors.MAGENTA,
-                        logging=True
+                        logging=True,
                     )
             else:
                 # if NULL object
                 print_in_color(
-                    "Command: can't draw bounding box of object: None\n", 
+                    "Command: can't draw bounding box of object: None\n",
                     PrintColors.RED,
-                    logging=True
+                    logging=True,
                 )
                 self.bounding_box_debug_draw = False
-                
+
         elif key == pressed.T:
             # load URDF
             fixed_base = alt_pressed
@@ -750,8 +753,8 @@ class HabitatSimInteractiveViewer(Application): # {
                 # wait until the video file is written before recording again
                 print_in_color("-" * 72, PrintColors.RED, logging=True)
                 print_in_color(
-                    "Command: can't record, still saving previous recording\n", 
-                    PrintColors.RED
+                    "Command: can't record, still saving previous recording\n",
+                    PrintColors.RED,
                 )
             elif self.recording and not self.writing_video:
                 # if we are recording but not writing prev recording to file, we need
@@ -787,7 +790,7 @@ class HabitatSimInteractiveViewer(Application): # {
                 print_in_color(
                     "\nCommand: applying impulse to object.\n",
                     PrintColors.YELLOW,
-                    logging=True
+                    logging=True,
                 )
                 self.curr_object.apply_impulse(
                     mn.Vector3(0, 1, 0), mn.Vector3(0, 0, -0.1)
@@ -796,13 +799,13 @@ class HabitatSimInteractiveViewer(Application): # {
                 print_in_color(
                     "\nCommand: can't apply impulse, no object exists.\n",
                     PrintColors.YELLOW,
-                    logging=True
+                    logging=True,
                 )
             elif not self.simulating:
                 print_in_color(
                     "\nCommand: can't apply impulse, turn on Dynamic motion mode.\n",
                     PrintColors.YELLOW,
-                    logging=True
+                    logging=True,
                 )
 
         elif key == pressed.TWO:
@@ -811,7 +814,7 @@ class HabitatSimInteractiveViewer(Application): # {
                 print_in_color(
                     "\nCommand: applying force to object.\n",
                     PrintColors.YELLOW,
-                    logging=True
+                    logging=True,
                 )
                 self.curr_object.apply_force(
                     mn.Vector3(0, 40, 0), mn.Vector3(0, 0, -0.1)
@@ -820,13 +823,13 @@ class HabitatSimInteractiveViewer(Application): # {
                 print_in_color(
                     "\nCommand: can't apply force, no object exists.\n",
                     PrintColors.YELLOW,
-                    logging=True
+                    logging=True,
                 )
             elif not self.simulating:
                 print_in_color(
                     "\nCommand: can't apply force, turn on Dynamic motion mode.\n",
                     PrintColors.YELLOW,
-                    logging=True
+                    logging=True,
                 )
 
         elif key == pressed.THREE:
@@ -835,20 +838,20 @@ class HabitatSimInteractiveViewer(Application): # {
                 print_in_color(
                     "\nCommand: applying impulse torque to object.\n",
                     PrintColors.YELLOW,
-                    logging=True
+                    logging=True,
                 )
                 self.curr_object.apply_impulse_torque(mn.Vector3(0, 0.1, 0))
             elif self.curr_object is None:
                 print_in_color(
                     "\nCommand: can't apply impulse torque, no object exists.\n",
                     PrintColors.YELLOW,
-                    logging=True
+                    logging=True,
                 )
             elif not self.simulating:
                 print_in_color(
                     "\nCommand: can't apply impulse torque, turn on Dynamic motion mode.\n",
                     PrintColors.YELLOW,
-                    logging=True
+                    logging=True,
                 )
 
         elif key == pressed.FOUR:
@@ -857,20 +860,20 @@ class HabitatSimInteractiveViewer(Application): # {
                 print_in_color(
                     "\nCommand: applying torque to object.\n",
                     PrintColors.YELLOW,
-                    logging=True
+                    logging=True,
                 )
                 self.curr_object.apply_torque(mn.Vector3(0, 10, 0))
             elif self.curr_object is None:
                 print_in_color(
                     "\nCommand: can't apply torque, no object exists.\n",
                     PrintColors.YELLOW,
-                    logging=True
+                    logging=True,
                 )
             elif not self.simulating:
                 print_in_color(
                     "\nCommand: can't apply torque, turn on Dynamic motion mode.\n",
                     PrintColors.YELLOW,
-                    logging=True
+                    logging=True,
                 )
 
         # update map of moving/looking keys which are currently pressed
@@ -1237,19 +1240,23 @@ Key Commands:
 """
         )
 
+
 # } class HabitatSimInteractiveViewer end
+
 
 class MouseMode(Enum):
     LOOK = 0
     GRAB = 1
     MOTION = 2
 
+
 class ObjectRotationAxis(Enum):
     Y = 0
     X = 1
     Z = 2
 
-class MouseGrabber: # {
+
+class MouseGrabber:  # {
     """
     Create a MouseGrabber from RigidConstraintSettings to manipulate objects.
     """
@@ -1312,9 +1319,11 @@ class MouseGrabber: # {
         self.settings.frame_a = R.rotation().__matmul__(self.settings.frame_a)
         self.simulator.update_rigid_constraint(self.constraint_id, self.settings)
 
+
 # } class MouseGrabber end
 
-class Timer: # {
+
+class Timer:  # {
     """
     Timer class used to keep track of time between buffer swaps
     and guide the display frame rate.
@@ -1356,20 +1365,23 @@ class Timer: # {
         Timer.prev_frame_duration = time.time() - Timer.prev_frame_time
         Timer.prev_frame_time = time.time()
 
+
 # } class Timer end
 
-class PrintColors: # {
+
+class PrintColors:  # {
     """
     Console printing ANSI color codes
     """
-    HEADER = '\033[95m'
-    WHITE = '\u001b[37m'
-    RED = '\033[1;31m'
-    GREEN = '\033[92m'
-    BLUE = '\033[94m'
-    CYAN = '\033[96m'
-    MAGENTA = '\u001b[35m'
-    YELLOW = '\u001b[33m'
+
+    HEADER = "\033[95m"
+    WHITE = "\u001b[37m"
+    RED = "\033[1;31m"
+    GREEN = "\033[92m"
+    BLUE = "\033[94m"
+    CYAN = "\033[96m"
+    MAGENTA = "\u001b[35m"
+    YELLOW = "\u001b[33m"
     BROWN = "\033[0;33m"
     LIGHT_RED = "\033[1;31m"
     LIGHT_GREEN = "\033[1;32m"
@@ -1378,27 +1390,26 @@ class PrintColors: # {
     LIGHT_CYAN = "\033[1;36m"
     LIGHT_WHITE = "\033[1;37m"
     LIGHT_GRAY = "\033[0;37m"
-    TEST = '\u001a[35m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
+    TEST = "\u001a[35m"
+    WARNING = "\033[93m"
+    FAIL = "\033[91m"
+    ENDC = "\033[0m"
+    BOLD = "\033[1m"
+    UNDERLINE = "\033[4m"
+
 
 # } class PrintColors end
 
-def print_in_color(
-    print_string = "",
-    color = PrintColors.WHITE,
-    logging = False
-) -> None:
+
+def print_in_color(print_string="", color=PrintColors.WHITE, logging=False) -> None:
     """
     Allows us to print to console in different colors
     """
     if logging:
         logger.info(color + print_string + PrintColors.ENDC)
-    else: 
+    else:
         print(color + print_string + PrintColors.ENDC)
+
 
 def add_new_object_from_dataset(
     self, index, position=HabitatSimInteractiveViewer.DEFAULT_OBJ_POSITION
@@ -1413,7 +1424,7 @@ def add_new_object_from_dataset(
         print_in_color(
             "\nCommand: no objects in dataset to add to rigid object manager",
             PrintColors.BLUE,
-            logging=True
+            logging=True,
         )
         return
 
@@ -1463,10 +1474,11 @@ def add_new_object_from_dataset(
     # print out object name and its index into the list of the objects
     # in dataset.
     print_in_color(
-        f"\nCommand: placing object \"{obj_name}\" from template handle index: {index}\n",
+        f'\nCommand: placing object "{obj_name}" from template handle index: {index}\n',
         PrintColors.BLUE,
-        logging=True
+        logging=True,
     )
+
 
 def set_object_state(
     self,
@@ -1480,10 +1492,9 @@ def set_object_state(
     obj.translation = position
     obj.rotation = rotation
 
+
 def rotate_displayed_object(
-    self, 
-    obj, 
-    degrees_per_sec=HabitatSimInteractiveViewer.ROTATION_DEGREES_PER_SEC
+    self, obj, degrees_per_sec=HabitatSimInteractiveViewer.ROTATION_DEGREES_PER_SEC
 ) -> None:
     """
     When ManagedBulletRigidObject "obj" from dataset is in Kinematic mode, it is
@@ -1526,6 +1537,7 @@ def rotate_displayed_object(
         else:
             self.object_rotation_axis = ObjectRotationAxis.Y
 
+
 def write_video_file(self) -> None:
     """
     write each PIL Image in self.video_frames to video file one at a time
@@ -1536,6 +1548,7 @@ def write_video_file(self) -> None:
 
         # update index of written frames so "self" knows when finished
         self.curr_frame_written_index += 1
+
 
 def save_frame_in_list(self, framebuffer) -> None:
     """
@@ -1566,14 +1579,15 @@ def save_frame_in_list(self, framebuffer) -> None:
     image_to_save = image_to_save.transpose(Image.FLIP_TOP_BOTTOM)
     self.video_frames.append(image_to_save)
 
+
 def done_writing_video_file(self) -> None:
     """
     indicates that we are done writing existing frames into video file
     and we can record something else now
     """
     print_in_color(
-        "Recording is saved, you can record something else now",
-        PrintColors.RED)
+        "Recording is saved, you can record something else now", PrintColors.RED
+    )
     print_in_color(" *" * 36 + "\n", PrintColors.RED, logging=True)
 
     # reset all variables for next recording
@@ -1581,6 +1595,7 @@ def done_writing_video_file(self) -> None:
     self.video_writer.close()
     self.video_frames.clear()
     self.curr_frame_written_index = 0
+
 
 def get_bounding_box_corners(
     obj: habitat_sim.physics.ManagedRigidObject,
@@ -1599,6 +1614,7 @@ def get_bounding_box_corners(
         bounding_box.front_bottom_right,
         bounding_box.front_bottom_left,
     ]
+
 
 def bounding_box_ray_prescreen(
     sim: habitat_sim.Simulator,
@@ -1684,6 +1700,7 @@ def bounding_box_ray_prescreen(
         "raycast_results": raycast_results,
     }
 
+
 def snap_down(
     sim: habitat_sim.Simulator,
     obj: habitat_sim.physics.ManagedRigidObject,
@@ -1741,6 +1758,7 @@ def snap_down(
         obj.translation = cached_position
         return False
 
+
 def print_memory_usage() -> None:
     """
     Print CPU and GPU memory usage
@@ -1752,22 +1770,23 @@ Memory Usage
 ==================================================
         """,
         PrintColors.LIGHT_GREEN,
-        logging=True
+        logging=True,
     )
     print_cpu_usage()
     print_ram_usage()
     print_gpu_usage()
+
 
 def print_cpu_usage() -> None:
     cpu_percent = psutil.cpu_percent()
     cpu_stats = psutil.cpu_stats()
     cpu_freq = psutil.cpu_freq()
     print_in_color(
-f"""CPU Usage
+        f"""CPU Usage
 ----------------------------------
 CPU Memory
     CPU memory usage: {cpu_percent:.2f}%
-CPU Stats  
+CPU Stats
     Context switches: {cpu_stats.ctx_switches:,}
     Interrupts: {cpu_stats.interrupts:,}
     Software interrupts: {cpu_stats.soft_interrupts:,}
@@ -1778,37 +1797,36 @@ CPU Frequency
     Max frequency: {cpu_freq.max:,} MHz
 ----------------------------------
         """,
-        PrintColors.CYAN
+        PrintColors.CYAN,
     )
+
 
 def print_ram_usage() -> None:
     """
     Not implemented yet
     """
     print_in_color(
-f"""RAM Usage
+        """RAM Usage
 ----------------------------------
 Not yet implemented
 ----------------------------------
         """,
-        PrintColors.CYAN
+        PrintColors.CYAN,
     )
+
 
 def print_gpu_usage() -> None:
     if not HabitatSimInteractiveViewer.USING_NVIDIA_GPU:
         print_in_color("Command: No NVIDIA GPU\n", PrintColors.RED, logging=True)
         return
 
-    print_in_color(
-"""GPU Usage----------------------------------""",
-        PrintColors.CYAN
-    )
+    print_in_color("""GPU Usage----------------------------------""", PrintColors.CYAN)
     if gpu_device_count > 0:
         for i in range(gpu_device_count):
             handle = nvidia_smi.nvmlDeviceGetHandleByIndex(i)
             info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
             print_in_color(
-f"""Device {i}: 
+                f"""Device {i}:
     {nvidia_smi.nvmlDeviceGetName(handle)}
     {100 * info.free / info.total:.2f}% free
     {info.free:,} bytes (free)
@@ -1816,8 +1834,9 @@ f"""Device {i}:
     {info.total:,} bytes (total)
 ----------------------------------
                 """,
-                PrintColors.CYAN
+                PrintColors.CYAN,
             )
+
 
 if __name__ == "__main__":
     import argparse
