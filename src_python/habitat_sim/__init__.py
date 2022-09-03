@@ -94,7 +94,11 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         SensorType,
         VisualSensorSpec,
     )
-    from habitat_sim.simulator import Configuration, Simulator  # noqa: F401
+    from habitat_sim.simulator import (  # noqa: F401
+        Configuration,
+        SensorWrapper,
+        Simulator,
+    )
 
     __all__ = [
         "agent",

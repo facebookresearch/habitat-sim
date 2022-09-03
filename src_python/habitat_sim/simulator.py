@@ -45,6 +45,243 @@ ObservationTypeVar = Union[bool, ndarray, "Tensor"]
 ObservationDict = Dict[str, ObservationTypeVar]
 
 
+class SensorWrapper:
+    r"""Wrapper around habitat_sim.sensor.Sensor
+
+    TODO(MS) define entire Sensor class in python, reducing complexity
+    """
+    buffer = Union[np.ndarray, "Tensor"]
+
+    def __init__(self, sim, agent: Agent, sensor_id: str) -> None:
+        self._sim = sim
+        self._agent = agent
+
+        # sensor is an attached object to the scene node
+        # store such "attached object" in _sensor_object
+        self._sensor_object = self._agent.get_sensor(sensor_id)
+
+        self._spec = self._sensor_object.specification()
+
+        if self._spec.sensor_type == SensorType.AUDIO:
+            return
+
+        if self._sim.renderer is not None:
+            self._sim.renderer.bind_render_target(self._sensor_object)
+
+        if self._spec.gpu2gpu_transfer:
+            assert cuda_enabled, "Must build habitat sim with cuda for gpu2gpu-transfer"
+            assert _HAS_TORCH
+            device = torch.device("cuda", self._sim.gpu_device)  # type: ignore[attr-defined]
+            torch.cuda.set_device(device)
+
+            resolution = self._spec.resolution
+            if self._spec.sensor_type == SensorType.SEMANTIC:
+                self._buffer: Union[np.ndarray, "Tensor"] = torch.empty(
+                    resolution[0], resolution[1], dtype=torch.int32, device=device
+                )
+            elif self._spec.sensor_type == SensorType.DEPTH:
+                self._buffer = torch.empty(
+                    resolution[0], resolution[1], dtype=torch.float32, device=device
+                )
+            else:
+                self._buffer = torch.empty(
+                    resolution[0], resolution[1], 4, dtype=torch.uint8, device=device
+                )
+        else:
+            size = self._sensor_object.framebuffer_size
+            if self._spec.sensor_type == SensorType.SEMANTIC:
+                self._buffer = np.empty(
+                    (self._spec.resolution[0], self._spec.resolution[1]),
+                    dtype=np.uint32,
+                )
+                self.view = mn.MutableImageView2D(
+                    mn.PixelFormat.R32UI, size, self._buffer
+                )
+            elif self._spec.sensor_type == SensorType.DEPTH:
+                self._buffer = np.empty(
+                    (self._spec.resolution[0], self._spec.resolution[1]),
+                    dtype=np.float32,
+                )
+                self.view = mn.MutableImageView2D(
+                    mn.PixelFormat.R32F, size, self._buffer
+                )
+            else:
+                self._buffer = np.empty(
+                    (
+                        self._spec.resolution[0],
+                        self._spec.resolution[1],
+                        self._spec.channels,
+                    ),
+                    dtype=np.uint8,
+                )
+                self.view = mn.MutableImageView2D(
+                    mn.PixelFormat.RGBA8_UNORM,
+                    size,
+                    self._buffer.reshape(self._spec.resolution[0], -1),
+                )
+
+        noise_model_kwargs = self._spec.noise_model_kwargs
+        self._noise_model = make_sensor_noise_model(
+            self._spec.noise_model,
+            {"gpu_device_id": self._sim.gpu_device, **noise_model_kwargs},
+        )
+        assert self._noise_model.is_valid_sensor_type(
+            self._spec.sensor_type
+        ), "Noise model '{}' is not valid for sensor '{}'".format(
+            self._spec.noise_model, self._spec.uuid
+        )
+
+    def is_visual_sensor(self) -> bool:
+        return self._sensor_object.is_visual_sensor()
+
+    def draw_observation(self) -> None:
+        if self._spec.sensor_type == SensorType.AUDIO:
+            # do nothing in draw observation, get_observation will be called after this
+            # run the simulation there
+            return
+        else:
+            assert self._sim.renderer is not None
+            # see if the sensor is attached to a scene graph, otherwise it is invalid,
+            # and cannot make any observation
+            if not self._sensor_object.object:
+                raise errors.InvalidAttachedObject(
+                    "Sensor observation requested but sensor is invalid.\
+                    (has it been detached from a scene node?)"
+                )
+            self._sim.renderer.draw(self._sensor_object, self._sim)
+
+    def _draw_observation_async(self) -> None:
+        if self._spec.sensor_type == SensorType.AUDIO:
+            # do nothing in draw observation, get_observation will be called after this
+            # run the simulation there
+            return
+        else:
+            assert self._sim.renderer is not None
+            if (
+                self._spec.sensor_type == SensorType.SEMANTIC
+                and self._sim.get_active_scene_graph()
+                is not self._sim.get_active_semantic_scene_graph()
+            ):
+                raise RuntimeError(
+                    "Async drawing doesn't support semantic rendering when there are multiple scene graphs"
+                )
+            # TODO: sync this path with renderer changes as above (render from sensor object)
+
+            # see if the sensor is attached to a scene graph, otherwise it is invalid,
+            # and cannot make any observation
+            if not self._sensor_object.object:
+                raise errors.InvalidAttachedObject(
+                    "Sensor observation requested but sensor is invalid.\
+                    (has it been detached from a scene node?)"
+                )
+
+            # get the correct scene graph based on application
+            if self._spec.sensor_type == SensorType.SEMANTIC:
+                if self._sim.semantic_scene is None:
+                    raise RuntimeError(
+                        "SemanticSensor observation requested but no SemanticScene is loaded"
+                    )
+                scene = self._sim.get_active_semantic_scene_graph()
+            else:  # SensorType is DEPTH or any other type
+                scene = self._sim.get_active_scene_graph()
+
+            # now, connect the agent to the root node of the current scene graph
+
+            # sanity check is not needed on agent:
+            # because if a sensor is attached to a scene graph,
+            # it implies the agent is attached to the same scene graph
+            # (it assumes backend simulator will guarantee it.)
+
+            agent_node = self._agent.scene_node
+            agent_node.parent = scene.get_root_node()
+
+            # get the correct scene graph based on application
+            if self._spec.sensor_type == SensorType.SEMANTIC:
+                scene = self._sim.get_active_semantic_scene_graph()
+            else:  # SensorType is DEPTH or any other type
+                scene = self._sim.get_active_scene_graph()
+
+            render_flags = gfx.Camera.Flags.NONE
+
+            if self._sim.frustum_culling:
+                render_flags |= gfx.Camera.Flags.FRUSTUM_CULLING
+
+            self._sim.renderer.enqueue_async_draw_job(
+                self._sensor_object, scene, self.view, render_flags
+            )
+
+    def get_observation(self) -> ObservationTypeVar:
+        if self._spec.sensor_type == SensorType.AUDIO:
+            return self._get_audio_observation()
+
+        assert self._sim.renderer is not None
+        tgt = self._sensor_object.render_target
+
+        if self._spec.gpu2gpu_transfer:
+            with torch.cuda.device(self._buffer.device):  # type: ignore[attr-defined, union-attr]
+                if self._spec.sensor_type == SensorType.SEMANTIC:
+                    tgt.read_frame_object_id_gpu(self._buffer.data_ptr())  # type: ignore[attr-defined, union-attr]
+                elif self._spec.sensor_type == SensorType.DEPTH:
+                    tgt.read_frame_depth_gpu(self._buffer.data_ptr())  # type: ignore[attr-defined, union-attr]
+                else:
+                    tgt.read_frame_rgba_gpu(self._buffer.data_ptr())  # type: ignore[attr-defined, union-attr]
+
+                obs = self._buffer.flip(0)  # type: ignore[union-attr]
+        else:
+            if self._spec.sensor_type == SensorType.SEMANTIC:
+                tgt.read_frame_object_id(self.view)
+            elif self._spec.sensor_type == SensorType.DEPTH:
+                tgt.read_frame_depth(self.view)
+            else:
+                tgt.read_frame_rgba(self.view)
+
+            obs = np.flip(self._buffer, axis=0)
+
+        return self._noise_model(obs)
+
+    def _get_observation_async(self) -> ObservationTypeVar:
+        if self._spec.sensor_type == SensorType.AUDIO:
+            return self._get_audio_observation()
+
+        if self._spec.gpu2gpu_transfer:
+            obs = self._buffer.flip(0)  # type: ignore[union-attr]
+        else:
+            obs = np.flip(self._buffer, axis=0)
+
+        return self._noise_model(obs)
+
+    def _get_audio_observation(self) -> ObservationTypeVar:
+        assert self._spec.sensor_type == SensorType.AUDIO
+        audio_sensor = self._agent.get_sensor("audio_sensor")
+        # tell the audio sensor about the agent location
+        rot = self._agent.state.rotation
+
+        audio_sensor.setAudioListenerTransform(
+            audio_sensor.node.absolute_translation,  # set the listener position
+            np.array([rot.w, rot.x, rot.y, rot.z]),  # set the listener orientation
+        )
+
+        # run the simulation
+        audio_sensor.runSimulation(self._sim)
+        obs = audio_sensor.getIR()
+        return obs
+
+    def set_transformation_from_spec(self) -> None:
+        self._sensor_object.set_transformation_from_spec()
+
+    def specification(self) -> SensorSpec:
+        return self._spec
+
+    def close(self) -> None:
+        self._sim = None
+        self._agent = None
+        self._sensor_object = None
+
+    @property
+    def node(self) -> scene.SceneNode:
+        return self._agent.scene_node
+
+
 @attr.s(auto_attribs=True, slots=True)
 class Configuration:
     r"""Specifies how to configure the simulator.
@@ -77,7 +314,7 @@ class Simulator(SimulatorBackend):
     config: Configuration
     agents: List[Agent] = attr.ib(factory=list, init=False)
     # TODO
-    __sensors: List[Dict[SensorSpec, simulator.Sensor]] = None
+    __sensors: List[Dict[SensorSpec, simulator.SensorWrapper]] = None
     # TODO
     _num_total_frames: int = attr.ib(default=0, init=False)
     _default_agent_id: int = attr.ib(default=0, init=False)
@@ -457,17 +694,8 @@ class Simulator(SimulatorBackend):
         # As backport. All Dicts are ordered in Python >= 3.7
         observations: Dict[int, ObservationDict] = OrderedDict()
         for agent_id in agent_ids:
-
-            # TODO ObservationDict was defined as:
-            # Dict[str, Union[bool, np.ndarray, "Tensor"]]
-            # but most of these functions use ObservationDict when its data type is:
-            # Dict[str, ObservationTypeVar]
-            # so I redefined ObservationDict as the latter for now
             agent_observations: ObservationDict = {}
             for sensor_uuid, sensor in self.__sensors[agent_id].items():
-                # TODO we are rewriting habitat_sim.simulator.Sensor in python, so temporarily
-                # we are making a python sensor wrapper class to start migrating everything
-                # into python files
                 agent_observations[sensor_uuid] = sensor.get_observation()
 
             observations[agent_id] = agent_observations
@@ -583,239 +811,4 @@ class Simulator(SimulatorBackend):
     def step_physics(self, dt: float, scene_id: int = 0) -> None:
         self.step_world(dt)
 
-
-class Sensor:
-    r"""Wrapper around habitat_sim.sensor.Sensor
-
-    TODO(MS) define entire Sensor class in python, reducing complexity
-    """
-    buffer = Union[np.ndarray, "Tensor"]
-
-    def __init__(self, sim: Simulator, agent: Agent, sensor_id: str) -> None:
-        self._sim = sim
-        self._agent = agent
-
-        # sensor is an attached object to the scene node
-        # store such "attached object" in _sensor_object
-        self._sensor_object = self._agent.get_sensor(sensor_id)
-
-        self._spec = self._sensor_object.specification()
-
-        if self._spec.sensor_type == SensorType.AUDIO:
-            return
-
-        if self._sim.renderer is not None:
-            self._sim.renderer.bind_render_target(self._sensor_object)
-
-        if self._spec.gpu2gpu_transfer:
-            assert cuda_enabled, "Must build habitat sim with cuda for gpu2gpu-transfer"
-            assert _HAS_TORCH
-            device = torch.device("cuda", self._sim.gpu_device)  # type: ignore[attr-defined]
-            torch.cuda.set_device(device)
-
-            resolution = self._spec.resolution
-            if self._spec.sensor_type == SensorType.SEMANTIC:
-                self._buffer: Union[np.ndarray, "Tensor"] = torch.empty(
-                    resolution[0], resolution[1], dtype=torch.int32, device=device
-                )
-            elif self._spec.sensor_type == SensorType.DEPTH:
-                self._buffer = torch.empty(
-                    resolution[0], resolution[1], dtype=torch.float32, device=device
-                )
-            else:
-                self._buffer = torch.empty(
-                    resolution[0], resolution[1], 4, dtype=torch.uint8, device=device
-                )
-        else:
-            size = self._sensor_object.framebuffer_size
-            if self._spec.sensor_type == SensorType.SEMANTIC:
-                self._buffer = np.empty(
-                    (self._spec.resolution[0], self._spec.resolution[1]),
-                    dtype=np.uint32,
-                )
-                self.view = mn.MutableImageView2D(
-                    mn.PixelFormat.R32UI, size, self._buffer
-                )
-            elif self._spec.sensor_type == SensorType.DEPTH:
-                self._buffer = np.empty(
-                    (self._spec.resolution[0], self._spec.resolution[1]),
-                    dtype=np.float32,
-                )
-                self.view = mn.MutableImageView2D(
-                    mn.PixelFormat.R32F, size, self._buffer
-                )
-            else:
-                self._buffer = np.empty(
-                    (
-                        self._spec.resolution[0],
-                        self._spec.resolution[1],
-                        self._spec.channels,
-                    ),
-                    dtype=np.uint8,
-                )
-                self.view = mn.MutableImageView2D(
-                    mn.PixelFormat.RGBA8_UNORM,
-                    size,
-                    self._buffer.reshape(self._spec.resolution[0], -1),
-                )
-
-        noise_model_kwargs = self._spec.noise_model_kwargs
-        self._noise_model = make_sensor_noise_model(
-            self._spec.noise_model,
-            {"gpu_device_id": self._sim.gpu_device, **noise_model_kwargs},
-        )
-        assert self._noise_model.is_valid_sensor_type(
-            self._spec.sensor_type
-        ), "Noise model '{}' is not valid for sensor '{}'".format(
-            self._spec.noise_model, self._spec.uuid
-        )
-
-    def is_visual_sensor(self) -> bool:
-        return self._sensor_object.is_visual_sensor()
-
-    def draw_observation(self) -> None:
-        if self._spec.sensor_type == SensorType.AUDIO:
-            # do nothing in draw observation, get_observation will be called after this
-            # run the simulation there
-            return
-        else:
-            assert self._sim.renderer is not None
-            # see if the sensor is attached to a scene graph, otherwise it is invalid,
-            # and cannot make any observation
-            if not self._sensor_object.object:
-                raise errors.InvalidAttachedObject(
-                    "Sensor observation requested but sensor is invalid.\
-                    (has it been detached from a scene node?)"
-                )
-            self._sim.renderer.draw(self._sensor_object, self._sim)
-
-    def _draw_observation_async(self) -> None:
-        if self._spec.sensor_type == SensorType.AUDIO:
-            # do nothing in draw observation, get_observation will be called after this
-            # run the simulation there
-            return
-        else:
-            assert self._sim.renderer is not None
-            if (
-                self._spec.sensor_type == SensorType.SEMANTIC
-                and self._sim.get_active_scene_graph()
-                is not self._sim.get_active_semantic_scene_graph()
-            ):
-                raise RuntimeError(
-                    "Async drawing doesn't support semantic rendering when there are multiple scene graphs"
-                )
-            # TODO: sync this path with renderer changes as above (render from sensor object)
-
-            # see if the sensor is attached to a scene graph, otherwise it is invalid,
-            # and cannot make any observation
-            if not self._sensor_object.object:
-                raise errors.InvalidAttachedObject(
-                    "Sensor observation requested but sensor is invalid.\
-                    (has it been detached from a scene node?)"
-                )
-
-            # get the correct scene graph based on application
-            if self._spec.sensor_type == SensorType.SEMANTIC:
-                if self._sim.semantic_scene is None:
-                    raise RuntimeError(
-                        "SemanticSensor observation requested but no SemanticScene is loaded"
-                    )
-                scene = self._sim.get_active_semantic_scene_graph()
-            else:  # SensorType is DEPTH or any other type
-                scene = self._sim.get_active_scene_graph()
-
-            # now, connect the agent to the root node of the current scene graph
-
-            # sanity check is not needed on agent:
-            # because if a sensor is attached to a scene graph,
-            # it implies the agent is attached to the same scene graph
-            # (it assumes backend simulator will guarantee it.)
-
-            agent_node = self._agent.scene_node
-            agent_node.parent = scene.get_root_node()
-
-            # get the correct scene graph based on application
-            if self._spec.sensor_type == SensorType.SEMANTIC:
-                scene = self._sim.get_active_semantic_scene_graph()
-            else:  # SensorType is DEPTH or any other type
-                scene = self._sim.get_active_scene_graph()
-
-            render_flags = gfx.Camera.Flags.NONE
-
-            if self._sim.frustum_culling:
-                render_flags |= gfx.Camera.Flags.FRUSTUM_CULLING
-
-            self._sim.renderer.enqueue_async_draw_job(
-                self._sensor_object, scene, self.view, render_flags
-            )
-
-    def get_observation(self) -> ObservationTypeVar:
-        if self._spec.sensor_type == SensorType.AUDIO:
-            return self._get_audio_observation()
-
-        assert self._sim.renderer is not None
-        tgt = self._sensor_object.render_target
-
-        if self._spec.gpu2gpu_transfer:
-            with torch.cuda.device(self._buffer.device):  # type: ignore[attr-defined, union-attr]
-                if self._spec.sensor_type == SensorType.SEMANTIC:
-                    tgt.read_frame_object_id_gpu(self._buffer.data_ptr())  # type: ignore[attr-defined, union-attr]
-                elif self._spec.sensor_type == SensorType.DEPTH:
-                    tgt.read_frame_depth_gpu(self._buffer.data_ptr())  # type: ignore[attr-defined, union-attr]
-                else:
-                    tgt.read_frame_rgba_gpu(self._buffer.data_ptr())  # type: ignore[attr-defined, union-attr]
-
-                obs = self._buffer.flip(0)  # type: ignore[union-attr]
-        else:
-            if self._spec.sensor_type == SensorType.SEMANTIC:
-                tgt.read_frame_object_id(self.view)
-            elif self._spec.sensor_type == SensorType.DEPTH:
-                tgt.read_frame_depth(self.view)
-            else:
-                tgt.read_frame_rgba(self.view)
-
-            obs = np.flip(self._buffer, axis=0)
-
-        return self._noise_model(obs)
-
-    def _get_observation_async(self) -> ObservationTypeVar:
-        if self._spec.sensor_type == SensorType.AUDIO:
-            return self._get_audio_observation()
-
-        if self._spec.gpu2gpu_transfer:
-            obs = self._buffer.flip(0)  # type: ignore[union-attr]
-        else:
-            obs = np.flip(self._buffer, axis=0)
-
-        return self._noise_model(obs)
-
-    def _get_audio_observation(self) -> ObservationTypeVar:
-        assert self._spec.sensor_type == SensorType.AUDIO
-        audio_sensor = self._agent.get_sensor("audio_sensor")
-        # tell the audio sensor about the agent location
-        rot = self._agent.state.rotation
-
-        audio_sensor.setAudioListenerTransform(
-            audio_sensor.node.absolute_translation,  # set the listener position
-            np.array([rot.w, rot.x, rot.y, rot.z]),  # set the listener orientation
-        )
-
-        # run the simulation
-        audio_sensor.runSimulation(self._sim)
-        obs = audio_sensor.getIR()
-        return obs
-
-    def set_transformation_from_spec(self) -> None:
-        self._sensor_object.set_transformation_from_spec()
-
-    def specification(self) -> SensorSpec:
-        return self._spec
-
-    def close(self) -> None:
-        self._sim = None
-        self._agent = None
-        self._sensor_object = None
-
-    @property
-    def node(self) -> scene.SceneNode:
         return self._agent.scene_node
