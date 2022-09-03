@@ -32,7 +32,7 @@ from habitat_sim.bindings import cuda_enabled
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.metadata import MetadataMediator
 from habitat_sim.nav import GreedyGeodesicFollower, NavMeshSettings
-from habitat_sim.sensor import (  # , Sensor # TODO rewriting Sensor class
+from habitat_sim.sensor import (  # Sensor, # TODO refactoring Sensor class
     SensorSpec,
     SensorType,
 )
