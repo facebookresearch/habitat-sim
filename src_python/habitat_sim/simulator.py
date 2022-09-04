@@ -695,7 +695,7 @@ class Simulator(SimulatorBackend):
 
         # As backport. All Dicts are ordered in Python >= 3.7
         observations: Dict[int, ObservationDict] = OrderedDict()
-        if len(self.agents) > 0 and agent_id >= 0:
+        if agent_id >= 0 and agent_id < len(self.agents):
             for agent_id in agent_ids:
                 agent_observations: ObservationDict = {}
                 for sensor_uuid, sensor in self.__sensors[agent_id].items():
