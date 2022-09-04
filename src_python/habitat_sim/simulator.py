@@ -314,7 +314,7 @@ class Simulator(SimulatorBackend):
     config: Configuration
     agents: List[Agent] = attr.ib(factory=list, init=False)
     # TODO
-    __sensors: List[Dict[SensorSpec, simulator.SensorWrapper]] = None
+    __sensors: List[Dict[SensorSpec, simulator.SensorWrapper]] = []
     # TODO
     _num_total_frames: int = attr.ib(default=0, init=False)
     _default_agent_id: int = attr.ib(default=0, init=False)
