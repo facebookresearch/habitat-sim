@@ -575,6 +575,8 @@ class Simulator(SimulatorBackend):
         agent._add_sensor(sensor_spec)
 
     def get_agent(self, agent_id: int) -> Agent:
+        if len(self.agents) < 1:
+            return None
         return self.agents[agent_id]
 
     def initialize_agent(
@@ -693,12 +695,13 @@ class Simulator(SimulatorBackend):
 
         # As backport. All Dicts are ordered in Python >= 3.7
         observations: Dict[int, ObservationDict] = OrderedDict()
-        for agent_id in agent_ids:
-            agent_observations: ObservationDict = {}
-            for sensor_uuid, sensor in self.__sensors[agent_id].items():
-                agent_observations[sensor_uuid] = sensor.get_observation()
+        if len(self.agents) > 0 and agent_id >= 0:
+            for agent_id in agent_ids:
+                agent_observations: ObservationDict = {}
+                for sensor_uuid, sensor in self.__sensors[agent_id].items():
+                    agent_observations[sensor_uuid] = sensor.get_observation()
 
-            observations[agent_id] = agent_observations
+                observations[agent_id] = agent_observations
 
         if return_single:
             return next(iter(observations.values()))
