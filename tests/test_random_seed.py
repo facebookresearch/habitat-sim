@@ -5,6 +5,9 @@ import habitat_sim.utils.settings
 def test_random_seed():
     # reconfigure to ensure pathfinder exists
     cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
+    cfg_settings[
+        "scene"
+    ] = "data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"
     hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
     with habitat_sim.Simulator(hab_cfg) as sim:
         # Test that the same seed gives the same point

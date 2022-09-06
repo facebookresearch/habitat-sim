@@ -26,6 +26,7 @@ default_sim_settings = {
     "equirect_depth_sensor": False,
     "equirect_semantic_sensor": False,
     "seed": 1,
+    "physics_config_file": "data/default.physics_config.json",
 }
 
 # build SimulatorConfiguration
