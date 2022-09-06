@@ -424,6 +424,7 @@ void initSensorBindings(py::module& m) {
       .def("writeIRWave", &AudioSensor::writeIRWave)
       .def("getRayEfficiency", &AudioSensor::getRayEfficiency)
       .def("writeSceneMeshOBJ", &AudioSensor::writeSceneMeshOBJ)
+      .def("sourceIsVisible", &AudioSensor::sourceIsVisible)
       .def("reset", &AudioSensor::reset);
 #else
   py::class_<AudioSensor, Magnum::SceneGraph::PyFeature<AudioSensor>, Sensor,

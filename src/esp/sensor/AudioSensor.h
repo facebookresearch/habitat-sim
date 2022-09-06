@@ -116,6 +116,12 @@ class AudioSensor : public Sensor {
    * specified path, for debugging purposes.
    * */
   bool writeSceneMeshOBJ(const std::string& objPath);
+
+  /**
+   * @brief Return whether the source is currently visible to the listener.
+   * This shouldn't be called until after calling runSimulation() at least once.
+   * */
+  bool sourceIsVisible() const;
 #endif  // ESP_BUILD_WITH_AUDIO
 
   // ------ Sensor class overrides ------
@@ -150,7 +156,6 @@ class AudioSensor : public Sensor {
 
 #ifdef ESP_BUILD_WITH_AUDIO
   RLRA_Context context = nullptr;
-#endif  // ESP_BUILD_WITH_AUDIO
 
   //! audio materials json path
   std::string audioMaterialsJSON_;
@@ -161,6 +166,10 @@ class AudioSensor : public Sensor {
   const std::string logHeader_ = "[Audio] ";
 
   std::vector<std::vector<float>> impulseResponse_;
+
+  vec3f sourcePosition_;
+  vec3f listenerPosition_;
+#endif  // ESP_BUILD_WITH_AUDIO
 
  public:
   ESP_SMART_POINTERS(AudioSensor)

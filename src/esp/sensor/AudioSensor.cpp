@@ -90,6 +90,7 @@ void AudioSensor::setAudioSourceTransform(const vec3f& sourcePos) {
   createAudioSimulator();
   CORRADE_ASSERT(context, "setAudioSourceTransform : context should exist", );
 
+  sourcePosition_ = sourcePos;
   const float pos[3] = { sourcePos[0], sourcePos[1], sourcePos[2] };
   if ( RLRA_SetSourcePosition( context, 0, pos ) != RLRA_Success )
   {
@@ -107,6 +108,7 @@ void AudioSensor::setAudioListenerTransform(const vec3f& agentPos,
   createAudioSimulator();
   CORRADE_ASSERT(context, "setAudioListenerTransform : context should exist", );
 
+  listenerPosition_ = agentPos;
   const float pos[3] = { agentPos[0], agentPos[1], agentPos[2] };
   if ( RLRA_SetListenerPosition(context, 0, pos) != RLRA_Success )
   {
@@ -219,6 +221,37 @@ bool AudioSensor::writeIRWave(const std::string& wavePath)
 {
   CORRADE_ASSERT(context, "writeIRWave: context should exist", false );
   return RLRA_WriteIRWave(context, 0, 0, wavePath.c_str()) == RLRA_Success;
+}
+
+bool AudioSensor:: sourceIsVisible() const
+{
+  // Compute ray distance and unit-length direction.
+  vec3f direction = sourcePosition_ - listenerPosition_;
+  const float distance = direction.norm();
+  direction /= distance;
+
+  // Small bias to prevent self intersections.
+  const float epsilon = std::min( distance, 0.0001f );
+
+  // Initialize ray.
+  RLRA_Ray ray = {};
+  ray.origin[0] = sourcePosition_[0];
+  ray.origin[1] = sourcePosition_[1];
+  ray.origin[2] = sourcePosition_[2];
+  ray.direction[0] = direction[0];
+  ray.direction[1] = direction[1];
+  ray.direction[2] = direction[2];
+  ray.tMin = epsilon;
+  ray.tMax = distance - epsilon;
+  ray.primitive = ~uint32_t(0);
+
+  // Trace ray.
+  if ( RLRA_TraceRayAnyHit(context, &ray) != RLRA_Success ) {
+    return false;
+  }
+
+  // Source is visible if there is no intersection.
+  return ray.primitive == ~uint32_t(0);
 }
 
 #endif  // ESP_BUILD_WITH_AUDIO
