@@ -8,7 +8,6 @@ import habitat_sim.agent
 default_sim_settings = {
     "scene_dataset_config_file": "default",
     "scene": "NONE",
-    "max_frames": 1000,
     "width": 640,
     "height": 480,
     "default_agent": 0,
@@ -27,7 +26,6 @@ default_sim_settings = {
     "equirect_depth_sensor": False,
     "equirect_semantic_sensor": False,
     "seed": 1,
-    "silent": False,  # do not print log info (default: OFF)
 }
 
 # build SimulatorConfiguration
@@ -40,8 +38,6 @@ def make_cfg(settings):
         sim_cfg.enable_physics = settings["enable_physics"]
     if "physics_config_file" in settings:
         sim_cfg.physics_config_file = settings["physics_config_file"]
-    if not settings["silent"]:
-        print("sim_cfg.physics_config_file = " + sim_cfg.physics_config_file)
     if "scene_light_setup" in settings:
         sim_cfg.scene_light_setup = settings["scene_light_setup"]
     sim_cfg.gpu_device_id = 0
@@ -206,13 +202,5 @@ def make_cfg(settings):
             "turn_right", habitat_sim.agent.ActuationSpec(amount=10.0)
         ),
     }
-
-    # override action space to no-op to test physics
-    if sim_cfg.enable_physics:
-        agent_cfg.action_space = {
-            "move_forward": habitat_sim.agent.ActionSpec(
-                "move_forward", habitat_sim.agent.ActuationSpec(amount=0.0)
-            )
-        }
 
     return habitat_sim.Configuration(sim_cfg, [agent_cfg])

@@ -12,6 +12,7 @@ from enum import Enum
 
 import numpy as np
 from PIL import Image
+from settings import default_sim_settings, make_cfg
 
 import habitat_sim
 import habitat_sim.agent
@@ -19,7 +20,6 @@ import habitat_sim.utils.datasets_download as data_downloader
 from habitat_sim.nav import ShortestPath
 from habitat_sim.physics import MotionType
 from habitat_sim.utils.common import d3_40_colors_rgb, quat_from_angle_axis
-from habitat_sim.utils.settings import default_sim_settings, make_cfg
 
 _barrier = None
 
