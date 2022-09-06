@@ -96,15 +96,26 @@ class AudioSensor : public Sensor {
   void setListenerHRTF(const std::string& hrtfPath);
 
   /**
-   * @brief Return the last impulse response.
+   * @brief Return the impulse response from the most recent simulation.
    * */
   const std::vector<std::vector<float>>& getIR();
+
+  /**
+   * @brief Write the impulse response as a .wav file.
+   * */
+  bool writeIRWave(const std::string& wavPath);
 
   /**
    * @brief Return a value in the range [0,1] indicating the
    * fraction of rays that hit something on the previous simulation.
    * */
   float getRayEfficiency() const;
+
+  /**
+   * @brief Write the entire audio scene as an OBJ mesh at the
+   * specified path, for debugging purposes.
+   * */
+  bool writeSceneMeshOBJ(const std::string& objPath);
 #endif  // ESP_BUILD_WITH_AUDIO
 
   // ------ Sensor class overrides ------

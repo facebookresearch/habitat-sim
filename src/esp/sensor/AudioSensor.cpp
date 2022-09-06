@@ -186,6 +186,12 @@ float AudioSensor::getRayEfficiency() const {
   return RLRA_GetIndirectRayEfficiency( context );
 }
 
+bool AudioSensor::writeSceneMeshOBJ(const std::string& objPath)
+{
+  CORRADE_ASSERT(context, "writeSceneMeshOBJ: context should exist", false );
+  return RLRA_WriteSceneMeshOBJ(context, objPath.c_str()) == RLRA_Success;
+}
+
 const std::vector<std::vector<float>>& AudioSensor::getIR() {
   CORRADE_ASSERT(context, "getIR: context should exist", impulseResponse_ );
 
@@ -208,6 +214,13 @@ const std::vector<std::vector<float>>& AudioSensor::getIR() {
 
   return impulseResponse_;
 }
+
+bool AudioSensor::writeIRWave(const std::string& wavePath)
+{
+  CORRADE_ASSERT(context, "writeIRWave: context should exist", false );
+  return RLRA_WriteIRWave(context, 0, 0, wavePath.c_str()) == RLRA_Success;
+}
+
 #endif  // ESP_BUILD_WITH_AUDIO
 
 bool AudioSensor::getObservation(sim::Simulator&, Observation& obs) {
@@ -280,6 +293,9 @@ void AudioSensor::createAudioSimulator() {
     return;
 
   newInitialization_ = true;
+
+  // Make sure the config thisSize is initialized correctly.
+  audioSensorSpec_->acousticsConfig_.thisSize = sizeof(RLRA_ContextConfiguration);
 
   // Create context.
   if ( RLRA_CreateContext( &context, &audioSensorSpec_->acousticsConfig_ )

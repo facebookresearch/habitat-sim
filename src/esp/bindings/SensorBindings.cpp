@@ -301,34 +301,37 @@ void initSensorBindings(py::module& m) {
           R"(int | 4 | Number of frequency bands in the audio simulation)")
       .def_readwrite(
           "directSHOrder", &RLRA_ContextConfiguration::directSHOrder,
-          R"(int | 3 | The spherical harmonic order used for calculating direct sound spatialization for non-point sources (those with non-zero radii). It is not recommended to go above order 9.)")
+          R"(int | 3 | The spherical harmonic order used for calculating direct sound spatialization for area sources (those with non-zero radii). It is not recommended to go above order 5.)")
       .def_readwrite(
           "indirectSHOrder", &RLRA_ContextConfiguration::indirectSHOrder,
           R"(int | 1 | The spherical harmonic order used for calculating the spatialization of indirect sound (reflections, reverb). It is not recommended to go above order 5. Increasing this value requires more rays to be traced for the results to converge properly, and uses substantially more memory (scales quadratically).)")
       .def_readwrite(
           "threadCount", &RLRA_ContextConfiguration::threadCount,
-          R"(int | 1 | Number of CPU thread the simulation will use)")
+          R"(int | 1 | Number of CPU threads the simulation will use)")
       .def_readwrite(
           "maxIRLength", &RLRA_ContextConfiguration::maxIRLength,
           R"(float | 4.f | Maximum impulse response length for the audio simulation)")
       .def_readwrite(
           "unitScale", &RLRA_ContextConfiguration::unitScale,
-          R"(float | 1.f | Unit scale for the scene. Mesh and positions are multiplied by this factor)")
+          R"(float | 1.f | Unit scale for the scene. Mesh and positions are multiplied by this factor to convert to meters.)")
       .def_readwrite(
           "globalVolume", &RLRA_ContextConfiguration::globalVolume,
-          R"(float | 4.f | Total initial pressure value)")
+          R"(float | 1.f | A scale factor applied to all audio output)")
+      .def_readwrite(
+          "directRayCount", &RLRA_ContextConfiguration::directRayCount,
+          R"(int | 500 | Maximum number of rays used to compute direct sound for area sources)")
       .def_readwrite(
           "indirectRayCount", &RLRA_ContextConfiguration::indirectRayCount,
-          R"(int | 5000 | Number of indirect rays that the ray tracer will use)")
+          R"(int | 5000 | Number of indirect rays that the ray tracer will emit from the listener)")
       .def_readwrite(
           "indirectRayDepth", &RLRA_ContextConfiguration::indirectRayDepth,
-          R"(int | 200 | Maximum depth of each indirect ray cast by the ray tracer)")
+          R"(int | 200 | Maximum number of bounces of each indirect ray emitted by the ray tracer)")
       .def_readwrite(
           "sourceRayCount", &RLRA_ContextConfiguration::sourceRayCount,
-          R"(int | 200 | Number of direct rays that the ray tracer will use)")
+          R"(int | 200 | Number of indirect rays that the ray tracer will emit from the source)")
       .def_readwrite(
           "sourceRayDepth", &RLRA_ContextConfiguration::sourceRayDepth,
-          R"(int | 10 | Maximum depth of direct rays cast by the ray tracer)")
+          R"(int | 10 | Maximum number of bounces of each source ray emitted by the ray tracer)")
       .def_readwrite(
           "maxDiffractionOrder", &RLRA_ContextConfiguration::maxDiffractionOrder,
           R"(int | 10 | The maximum number of edge diffraction events that can occur between a source and listener. This value cannot exceed 10 (compile-time limit))")
@@ -418,7 +421,9 @@ void initSensorBindings(py::module& m) {
       .def("setAudioMaterialsJSON", &AudioSensor::setAudioMaterialsJSON)
       .def("setListenerHRTF", &AudioSensor::setListenerHRTF)
       .def("getIR", &AudioSensor::getIR)
+      .def("writeIRWave", &AudioSensor::writeIRWave)
       .def("getRayEfficiency", &AudioSensor::getRayEfficiency)
+      .def("writeSceneMeshOBJ", &AudioSensor::writeSceneMeshOBJ)
       .def("reset", &AudioSensor::reset);
 #else
   py::class_<AudioSensor, Magnum::SceneGraph::PyFeature<AudioSensor>, Sensor,
