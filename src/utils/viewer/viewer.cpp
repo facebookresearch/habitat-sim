@@ -888,13 +888,22 @@ Viewer::Viewer(const Arguments& arguments)
 
   /* Set up text rendering */
   {
+    /* Render the font in a size corresponding to actual pixels, taking DPI
+       scaling into account. Docs for reference:
+       https://doc.magnum.graphics/magnum/classMagnum_1_1Platform_1_1Sdl2Application.html#Platform-Sdl2Application-dpi
+     */
+    const Mn::Float fontSize =
+        13.0f * (Mn::Vector2{framebufferSize()} * dpiScaling() /
+                 Mn::Vector2{windowSize()})
+                    .x();
+
     Cr::Utility::Resource rs{"fonts"};
     font_ = fontManager_.loadAndInstantiate("TrueTypeFont");
-    if (!font_ || !font_->openData(rs.getRaw("ProggyClean.ttf"), 2 * 13.0f))
+    if (!font_ || !font_->openData(rs.getRaw("ProggyClean.ttf"), fontSize))
       Mn::Fatal{} << "Cannot open font file";
 
     fontGlyphCache_.emplace(Mn::Vector2i{256});
-    /* It's a bitmap font, don't destroy it with smooth scaling, heh */
+    /* Don't destroy the bitmap font with smooth scaling */
     fontGlyphCache_->texture().setMagnificationFilter(
         Mn::SamplerFilter::Nearest);
     font_->fillGlyphCache(*fontGlyphCache_,
@@ -902,7 +911,9 @@ Viewer::Viewer(const Arguments& arguments)
                           "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                           "0123456789:-_+,.! %µ");
 
-    fontText_.emplace(*font_, *fontGlyphCache_, 2 * 13.0f,
+    /* But as the text projection uses virtual window pixels, use just the
+       unscaled size for the actual text */
+    fontText_.emplace(*font_, *fontGlyphCache_, fontSize,
                       Mn::Text::Alignment::TopLeft);
     fontText_->reserve(1024, Mn::GL::BufferUsage::DynamicDraw,
                        Mn::GL::BufferUsage::StaticDraw);
