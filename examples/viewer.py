@@ -44,7 +44,7 @@ if not os.path.exists(output_path):
     os.mkdir(output_path)
 
 
-class HabitatSimInteractiveViewer(Application):  # {
+class HabitatSimInteractiveViewer(Application):
 
     # Default transforms of agent and dataset object as static variables
     # to use when resetting the agent and dataset object transforms
@@ -1241,9 +1241,6 @@ Key Commands:
         )
 
 
-# } class HabitatSimInteractiveViewer end
-
-
 class MouseMode(Enum):
     LOOK = 0
     GRAB = 1
@@ -1256,7 +1253,7 @@ class ObjectRotationAxis(Enum):
     Z = 2
 
 
-class MouseGrabber:  # {
+class MouseGrabber:
     """
     Create a MouseGrabber from RigidConstraintSettings to manipulate objects.
     """
@@ -1320,10 +1317,7 @@ class MouseGrabber:  # {
         self.simulator.update_rigid_constraint(self.constraint_id, self.settings)
 
 
-# } class MouseGrabber end
-
-
-class Timer:  # {
+class Timer:
     """
     Timer class used to keep track of time between buffer swaps
     and guide the display frame rate.
@@ -1366,10 +1360,7 @@ class Timer:  # {
         Timer.prev_frame_time = time.time()
 
 
-# } class Timer end
-
-
-class PrintColors:  # {
+class PrintColors:
     """
     Console printing ANSI color codes
     """
@@ -1396,9 +1387,6 @@ class PrintColors:  # {
     ENDC = "\033[0m"
     BOLD = "\033[1m"
     UNDERLINE = "\033[4m"
-
-
-# } class PrintColors end
 
 
 def print_in_color(print_string="", color=PrintColors.WHITE, logging=False) -> None:
