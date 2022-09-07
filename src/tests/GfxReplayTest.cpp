@@ -13,6 +13,7 @@
 
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/assets/ResourceManager.h"
+#include "esp/gfx/LightSetup.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/WindowlessContext.h"
 #include "esp/gfx/replay/Player.h"
@@ -28,6 +29,9 @@ namespace Cr = Corrade;
 namespace Mn = Magnum;
 
 using esp::assets::ResourceManager;
+using esp::gfx::LightInfo;
+using esp::gfx::LightPositionModel;
+using esp::gfx::LightSetup;
 using esp::metadata::MetadataMediator;
 using esp::scene::SceneManager;
 using esp::sim::Simulator;
@@ -46,6 +50,8 @@ struct GfxReplayTest : Cr::TestSuite::Tester {
   void testPlayerReadInvalidFile();
   void testSimulatorIntegration();
 
+  void testLightIntegration();
+
   esp::logging::LoggingContext loggingContext;
 
 };  // struct GfxReplayTest
@@ -63,7 +69,8 @@ GfxReplayTest::GfxReplayTest() {
   addTests({&GfxReplayTest::testRecorder, &GfxReplayTest::testPlayer,
             &GfxReplayTest::testPlayerReadMissingFile,
             &GfxReplayTest::testPlayerReadInvalidFile,
-            &GfxReplayTest::testSimulatorIntegration});
+            &GfxReplayTest::testSimulatorIntegration,
+            &GfxReplayTest::testLightIntegration});
 }  // ctor
 
 // Manipulate the scene and save some keyframes using replay::Recorder
@@ -455,6 +462,96 @@ void GfxReplayTest::testSimulatorIntegration() {
     // is deleted. The static stage object remains.
     player = nullptr;
     CORRADE_COMPARE(getNumberOfChildrenOfRoot(rootNode), 1);
+  }
+
+  // remove file created for this test
+  bool success = Corrade::Utility::Path::remove(testFilepath);
+  if (!success) {
+    ESP_WARNING() << "Unable to remove temporary test JSON file"
+                  << testFilepath;
+  }
+}
+
+// test lights data by recording and playback through the simulator interface
+void GfxReplayTest::testLightIntegration() {
+  const auto compareLights = [&](const LightInfo& a, const LightInfo& b) {
+    CORRADE_COMPARE(a.vector, b.vector);
+    CORRADE_COMPARE(static_cast<int>(a.model), static_cast<int>(b.model));
+    CORRADE_COMPARE(a.color, b.color);
+  };
+
+  const auto compareLightSetups = [&](const LightSetup& a,
+                                      const LightSetup& b) {
+    CORRADE_COMPARE(a.size(), b.size());
+    for (int i = 0; i < a.size(); ++i) {
+      compareLights(a[i], b[i]);
+    }
+  };
+
+  const auto testFilepath =
+      Corrade::Utility::Path::join(DATA_DIR, "./gfx_replay_test.json");
+  const LightInfo pointLight0{Magnum::Vector4{1.5f, 2.0f, 2.5f, 1.0f},
+                              {1.5, 2.0, 5.0},
+                              LightPositionModel::Global};
+  const LightInfo pointLight1{Magnum::Vector4{-10.0f, 4.25f, 10.0f, 1.0f},
+                              {5.0, 5.0, 0.0},
+                              LightPositionModel::Global};
+  const LightInfo pointLight2{Magnum::Vector4{0.0f, 1.2f, -4.0f, 1.0f},
+                              {4.0, 4.0, 4.0},
+                              LightPositionModel::Global};
+  const LightInfo pointLight3{Magnum::Vector4{0.1f, 0.2f, -0.3f, 1.0f},
+                              {0.0, 0.0, 1.0},
+                              LightPositionModel::Global};
+  const LightSetup lightSetup0{pointLight0, pointLight1};
+  const LightSetup lightSetup1{pointLight2};
+  const LightSetup lightSetup2{pointLight3};
+
+  // record a playback file
+  {
+    SimulatorConfiguration simConfig{};
+    simConfig.enableGfxReplaySave = true;
+    simConfig.createRenderer = false;
+    simConfig.enablePhysics = false;
+    auto sim = Simulator::create_unique(simConfig);
+    CORRADE_VERIFY(sim);
+
+    const auto recorder = sim->getGfxReplayManager()->getRecorder();
+    CORRADE_VERIFY(recorder);
+
+    sim->setLightSetup(lightSetup0);
+    recorder->saveKeyframe();
+    sim->setLightSetup(lightSetup1);
+    recorder->saveKeyframe();
+    sim->setLightSetup(lightSetup2);
+    recorder->saveKeyframe();
+
+    recorder->writeSavedKeyframesToFile(testFilepath);
+  }
+
+  // read the playback file
+  {
+    SimulatorConfiguration simConfig{};
+    simConfig.enableGfxReplaySave = false;
+    simConfig.createRenderer = false;
+    simConfig.enablePhysics = false;
+    auto sim = Simulator::create_unique(simConfig);
+    CORRADE_VERIFY(sim);
+
+    auto player =
+        sim->getGfxReplayManager()->readKeyframesFromFile(testFilepath);
+    CORRADE_VERIFY(player);
+    CORRADE_COMPARE(player->getNumKeyframes(), 3);
+
+    player->setKeyframeIndex(0);
+    compareLightSetups(sim->getLightSetup(), lightSetup0);
+    player->setKeyframeIndex(1);
+    compareLightSetups(sim->getLightSetup(), lightSetup1);
+    player->setKeyframeIndex(2);
+    compareLightSetups(sim->getLightSetup(), lightSetup2);
+
+    // light setups are unloaded upon deleting the player
+    player = nullptr;
+    CORRADE_COMPARE(sim->getLightSetup().size(), 0);
   }
 
   // remove file created for this test
