@@ -52,16 +52,9 @@ struct GfxReplayTest : Cr::TestSuite::Tester {
 
 // Helper function to get numberOfChildrenOfRoot
 int getNumberOfChildrenOfRoot(esp::scene::SceneNode& rootNode) {
-  int numberOfChildrenOfRoot = 1;
-  const auto* lastRootChild = rootNode.children().first();
-  if (!lastRootChild) {
-    return 0;
-  } else {
-    CORRADE_VERIFY(lastRootChild);
-    while (lastRootChild->nextSibling()) {
-      lastRootChild = lastRootChild->nextSibling();
-      ++numberOfChildrenOfRoot;
-    }
+  int numberOfChildrenOfRoot = 0;
+  for (const auto& child : rootNode.children()) {
+    ++numberOfChildrenOfRoot;
   }
   return numberOfChildrenOfRoot;
 }
@@ -399,6 +392,7 @@ void GfxReplayTest::testSimulatorIntegration() {
     simConfig.createRenderer = false;
     simConfig.enablePhysics = false;
     auto sim = Simulator::create_unique(simConfig);
+    CORRADE_VERIFY(sim);
 
     auto& sceneGraph = sim->getActiveSceneGraph();
     auto& rootNode = sceneGraph.getRootNode();
@@ -427,8 +421,9 @@ void GfxReplayTest::testSimulatorIntegration() {
     simConfig.enableGfxReplaySave = false;
     simConfig.createRenderer = false;
     simConfig.enablePhysics = false;
-
     auto sim = Simulator::create_unique(simConfig);
+    CORRADE_VERIFY(sim);
+
     auto& sceneGraph = sim->getActiveSceneGraph();
     auto& rootNode = sceneGraph.getRootNode();
 
