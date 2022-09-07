@@ -16,8 +16,8 @@ import quaternion  # noqa: F401
 
 import habitat_sim
 import habitat_sim.errors
-from examples.settings import make_cfg
 from habitat_sim.utils.common import quat_from_coeffs
+from habitat_sim.utils.settings import make_cfg
 
 torch_spec = importlib.util.find_spec("torch")
 _HAS_TORCH = torch_spec is not None

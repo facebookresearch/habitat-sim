@@ -21,8 +21,8 @@ import habitat_sim
 import habitat_sim.physics as phy
 from examples.fairmotion_interface import FairmotionInterface
 from examples.fairmotion_interface_utils import Activity
-from examples.settings import default_sim_settings, make_cfg
 from habitat_sim.logging import logger
+from habitat_sim.utils.settings import default_sim_settings, make_cfg
 
 
 class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):

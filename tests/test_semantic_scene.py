@@ -11,7 +11,7 @@ import quaternion  # noqa: F401
 
 import habitat_sim
 import habitat_sim.errors
-from examples.settings import make_cfg
+from habitat_sim.utils.settings import make_cfg
 
 _test_scenes = [
     osp.abspath(

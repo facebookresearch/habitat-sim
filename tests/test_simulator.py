@@ -6,8 +6,8 @@ import magnum as mn
 import numpy as np
 import pytest
 
-import examples.settings
 import habitat_sim
+import habitat_sim.utils.settings
 
 
 def is_same_state(initial_state, new_state) -> bool:
@@ -42,15 +42,15 @@ def test_no_navmesh_smoke():
 
 
 def test_empty_scene():
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
 
     # keyword "NONE" initializes a scene with no scene mesh
     cfg_settings["scene"] = "NONE"
     # test that depth sensor doesn't mind an empty scene
     cfg_settings["depth_sensor"] = True
 
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
-    hab_cfg_mm = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
+    hab_cfg_mm = habitat_sim.utils.settings.make_cfg(cfg_settings)
     mm = habitat_sim.metadata.MetadataMediator(hab_cfg.sim_cfg)
     hab_cfg_mm.metadata_mediator = mm
 
@@ -65,8 +65,8 @@ def test_empty_scene():
 
 
 def test_sim_reset(make_cfg_settings):
-    hab_cfg = examples.settings.make_cfg(make_cfg_settings)
-    hab_cfg_mm = examples.settings.make_cfg(make_cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(make_cfg_settings)
+    hab_cfg_mm = habitat_sim.utils.settings.make_cfg(make_cfg_settings)
     mm = habitat_sim.metadata.MetadataMediator(hab_cfg.sim_cfg)
     hab_cfg_mm.metadata_mediator = mm
 
@@ -91,7 +91,7 @@ def test_sim_reset(make_cfg_settings):
 
 
 def test_sim_multiagent_move_and_reset(make_cfg_settings, num_agents=10):
-    hab_cfg = examples.settings.make_cfg(make_cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(make_cfg_settings)
     for agent_id in range(1, num_agents):
         new_agent = copy(hab_cfg.agents[0])
         for sensor_spec in new_agent.sensor_specifications:
@@ -174,10 +174,10 @@ def test_multiple_construct_destroy():
 
 
 def test_scene_bounding_boxes():
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
-    hab_cfg_mm = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
+    hab_cfg_mm = habitat_sim.utils.settings.make_cfg(cfg_settings)
     mm = habitat_sim.metadata.MetadataMediator(hab_cfg.sim_cfg)
     hab_cfg_mm.metadata_mediator = mm
 
@@ -196,11 +196,11 @@ def test_scene_bounding_boxes():
 
 
 def test_object_template_editing():
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
     cfg_settings["enable_physics"] = True
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
-    hab_cfg_mm = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
+    hab_cfg_mm = habitat_sim.utils.settings.make_cfg(cfg_settings)
     mm = habitat_sim.metadata.MetadataMediator(hab_cfg.sim_cfg)
     hab_cfg_mm.metadata_mediator = mm
 

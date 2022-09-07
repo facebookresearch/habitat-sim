@@ -4,8 +4,8 @@ from os import path as osp
 import numpy as np
 import pytest
 
-import examples.settings
 import habitat_sim
+import habitat_sim.utils.settings
 
 EPS = 1e-5
 
@@ -36,9 +36,9 @@ def test_sample_near(test_scene):
     if not osp.exists(test_scene):
         pytest.skip(f"{test_scene} not found")
 
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
     cfg_settings["scene"] = test_scene
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
 
     with habitat_sim.Simulator(hab_cfg) as sim:
         distance = 5.0
@@ -61,9 +61,9 @@ def test_recompute_navmesh(test_scene):
     if not osp.exists(test_scene):
         pytest.skip(f"{test_scene} not found")
 
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
     cfg_settings["scene"] = test_scene
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
 
     with habitat_sim.Simulator(hab_cfg) as sim:
         sim.navmesh_visualization = True
@@ -86,7 +86,7 @@ def test_recompute_navmesh(test_scene):
         loaded_navmesh_path_results = get_shortest_path(sim, samples)
         assert len(sim.pathfinder.build_navmesh_vertices()) > 0
         assert len(sim.pathfinder.build_navmesh_vertex_indices()) > 0
-        hab_cfg = examples.settings.make_cfg(cfg_settings)
+        hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
         agent_config = hab_cfg.agents[hab_cfg.sim_cfg.default_agent_id]
         agent_config.radius *= 2.0
         sim.reconfigure(hab_cfg)
@@ -150,9 +150,9 @@ def test_navmesh_area(test_scene):
     if not osp.exists(test_scene):
         pytest.skip(f"{test_scene} not found")
 
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
     cfg_settings["scene"] = test_scene
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
     with habitat_sim.Simulator(hab_cfg) as sim:
         # get the initial navmesh area. This test assumes default navmesh assets.
         loadedNavMeshArea = sim.pathfinder.navigable_area
@@ -182,9 +182,9 @@ def test_save_navmesh_settings(agent_radius_mul, tmpdir):
     if not osp.exists(test_scene):
         pytest.skip(f"{test_scene} not found")
 
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
     cfg_settings["scene"] = test_scene
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
     agent_config = hab_cfg.agents[hab_cfg.sim_cfg.default_agent_id]
     agent_config.radius *= agent_radius_mul
 
