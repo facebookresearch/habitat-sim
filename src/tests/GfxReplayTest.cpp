@@ -97,7 +97,7 @@ void GfxReplayTest::testRecorder() {
       info, creation, &sceneManager_, tempIDs);
   CORRADE_VERIFY(node);
 
-  // cosntruct an AssetInfo with override color material
+  // construct an AssetInfo with override color material
   CORRADE_VERIFY(!info.overridePhongMaterial);
   esp::assets::AssetInfo info2(info);
   // change shadertype to make sure change is registered and retained through
