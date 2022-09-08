@@ -1817,7 +1817,7 @@ void Viewer::drawEvent() {
                             mouseModeNames.at(mouseInteractionMode));
 
     if (!semanticTag_.empty()) {
-      Cr::Utility::formatInto(text, text.size(), "Semantic %s\n", semanticTag_);
+      Cr::Utility::formatInto(text, text.size(), "Semantic {}\n", semanticTag_);
     }
 
     fontText_->render(text);
