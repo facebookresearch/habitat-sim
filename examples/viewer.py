@@ -158,12 +158,12 @@ class HabitatSimInteractiveViewer(Application):
 
         # Get object attribute manager for test objects from dataset,
         # load the dataset, store all the object template handles in a list,
-        object_attribute_manager = self.sim.get_object_template_manager()
-        object_attribute_manager.load_configs(
+        self.object_attributes_manager = self.sim.get_object_template_manager()
+        self.object_attributes_manager.load_configs(
             self.sim_settings["scene_dataset_config_file"]
         )
         self.object_template_handles = (
-            object_attribute_manager.get_file_template_handles("")
+            self.object_attributes_manager.get_file_template_handles("")
         )
         print_in_color(
             f"number of ojects in dataset: {len(self.object_template_handles)}",
@@ -584,6 +584,9 @@ class HabitatSimInteractiveViewer(Application):
             self.debug_bullet_draw = not self.debug_bullet_draw
             logger.info(f"Command: toggle Bullet debug draw: {self.debug_bullet_draw}")
 
+        elif key == pressed.SLASH:
+            logger.info("Command: drop object from multiple angles to test physics")
+
         elif key == pressed.C:
             if shift_pressed:
                 self.contact_debug_draw = not self.contact_debug_draw
@@ -598,6 +601,7 @@ class HabitatSimInteractiveViewer(Application):
                 self.sim.perform_discrete_collision_detection()
                 self.contact_debug_draw = True
                 # TODO: add a nice log message with concise contact pair naming.
+                ...
 
         elif key == pressed.K:
             """
@@ -1446,6 +1450,36 @@ def add_new_object_from_dataset(
     self.curr_object = rigid_object_manager.add_object_by_template_handle(
         object_template_handle
     )
+
+    # TODO: debugging the ability to swap the render and collision assets of this object
+    # object_attributes = self.curr_object.creation_attributes
+    # collision_asset_key = "collision_asset"
+    # render_asset_key = "render_asset"
+    # subconfig_key = "user_defined"
+    # collision_asset_handle = "./data/versioned_data/ycb_1.2/collison_meshes/002_master_chef_cv_decomp.glb"
+
+    # print_in_color("object attributes csv info --" , PrintColors.LIGHT_PURPLE)
+    # print_in_color(f"{object_attributes.csv_info}\n", PrintColors.LIGHT_CYAN)
+
+    # print_in_color("Subconfig keys -- " , PrintColors.LIGHT_PURPLE)
+    # print_in_color(f"{object_attributes.get_subconfig_keys()}\n", PrintColors.LIGHT_CYAN)
+
+    # subconfig = object_attributes.get_subconfig(subconfig_key)
+    # print_in_color("subconfig -- " , PrintColors.LIGHT_PURPLE)
+    # print_in_color(f"{subconfig}\n", PrintColors.LIGHT_CYAN)
+
+    # subconfig.set(render_asset_key, collision_asset_handle)
+    # object_attributes.save_subconfig(subconfig_key, subconfig)
+    # print_in_color("Render asset -- " , PrintColors.LIGHT_PURPLE)
+    # print_in_color(f"{subconfig.get_as_string(render_asset_key)}\n", PrintColors.LIGHT_CYAN)
+
+    # print_in_color("Object attributes types and keys -- " , PrintColors.LIGHT_PURPLE)
+    # print_in_color(f"{object_attributes.get_keys_and_types()}\n", PrintColors.LIGHT_CYAN)
+
+    # object_attributes.render_asset_handle = collision_asset_handle
+    # object_attributes.collision_asset_handle = collision_asset_handle
+    # print_in_color("object csv info --" , PrintColors.LIGHT_PURPLE)
+    # print_in_color(f"{self.curr_object.csv_info}\n", PrintColors.LIGHT_CYAN)
 
     # Agent local coordinate system is Y up and -Z forward.
     # Move object above table surface, then turn on Kinematic mode
