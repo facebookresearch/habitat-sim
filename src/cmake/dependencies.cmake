@@ -35,10 +35,6 @@ else()
   set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${DEPS_DIR}/eigen/cmake")
 endif()
 
-if(NOT IMGUI_DIR)
-  set(IMGUI_DIR "${DEPS_DIR}/imgui")
-endif()
-
 # tinyxml2
 include_directories("${DEPS_DIR}/tinyxml2")
 add_subdirectory("${DEPS_DIR}/tinyxml2")
@@ -194,10 +190,12 @@ if(NOT USE_SYSTEM_MAGNUM)
   set(MAGNUM_BUILD_STATIC ON CACHE BOOL "" FORCE)
   set(MAGNUM_BUILD_STATIC_PIC ON CACHE BOOL "" FORCE)
 
-  # These are enabled by default but we don't need them right now -- disabling
-  # for slightly faster builds. If you need any of these, simply delete a line.
+  # These are enabled by default but we don't need them if not building GUI
+  # viewers -- disabling for slightly faster builds. If you need any of these
+  # always, simply delete a line.
   set(MAGNUM_WITH_TEXT OFF CACHE BOOL "" FORCE)
   set(MAGNUM_WITH_TEXTURETOOLS OFF CACHE BOOL "" FORCE)
+  set(MAGNUM_WITH_STBTRUETYPEFONT OFF CACHE BOOL "" FORCE)
 
   # These are not enabled by default but we need them
   set(MAGNUM_WITH_ANYSCENEIMPORTER ON CACHE BOOL "" FORCE)
@@ -215,7 +213,6 @@ if(NOT USE_SYSTEM_MAGNUM)
   set(MAGNUM_WITH_EMSCRIPTENAPPLICATION OFF CACHE BOOL "" FORCE)
   set(MAGNUM_WITH_GLFWAPPLICATION OFF CACHE BOOL "" FORCE)
   set(MAGNUM_WITH_EIGEN ON CACHE BOOL "" FORCE) # Eigen integration
-  set(MAGNUM_WITH_IMGUI ON CACHE BOOL "" FORCE) # ImGui integration
   # GltfSceneConverter and KtxImageConverter are needed only by
   # BatchRendererTest and are optional
   #set(MAGNUM_WITH_GLTFSCENECONVERTER ON CACHE BOOL "" FORCE)
@@ -298,6 +295,9 @@ if(NOT USE_SYSTEM_MAGNUM)
   endif()
 
   if(BUILD_GUI_VIEWERS)
+    set(MAGNUM_WITH_TEXT ON CACHE BOOL "" FORCE)
+    set(MAGNUM_WITH_STBTRUETYPEFONT ON CACHE BOOL "" FORCE)
+
     if(CORRADE_TARGET_EMSCRIPTEN)
       set(MAGNUM_WITH_EMSCRIPTENAPPLICATION ON CACHE BOOL "" FORCE)
     else()

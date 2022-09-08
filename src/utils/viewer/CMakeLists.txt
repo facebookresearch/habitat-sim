@@ -1,11 +1,12 @@
-find_package(Magnum REQUIRED DebugTools)
-
-find_package(MagnumIntegration REQUIRED ImGui)
+find_package(Magnum REQUIRED DebugTools Text)
+find_package(MagnumPlugins REQUIRED StbTrueTypeFont)
 
 set(viewer_SOURCES viewer.cpp ObjectPickingHelper.cpp ObjectPickingHelper.h)
 
+corrade_add_resource(viewer_RESOURCES resources.conf)
+
 #set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
-add_executable(viewer ${viewer_SOURCES})
+add_executable(viewer ${viewer_SOURCES} ${viewer_RESOURCES})
 
 target_link_libraries(
   viewer
@@ -16,7 +17,8 @@ target_link_libraries(
           sim
           geo
           Magnum::DebugTools
-          MagnumIntegration::ImGui
+          Magnum::Text
+          MagnumPlugins::StbTrueTypeFont
 )
 
 # copy JS/HTML/CSS scaffolding for WebGL build
