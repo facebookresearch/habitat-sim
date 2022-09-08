@@ -82,15 +82,15 @@ void initSensorBindings(py::module& m) {
       .def_readwrite("noise_model", &SensorSpec::noiseModel)
       .def_property(
           "noise_model_kwargs",
-          [](SensorSpec& self) -> py::dict {
-            py::handle handle = py::cast(self);
-            if (!py::hasattr(handle, "__noise_model_kwargs")) {
-              py::setattr(handle, "__noise_model_kwargs", py::dict());
+          // Note: self remains a python object handle
+          [](py::handle self) -> py::dict {
+            if (!py::hasattr(self, "__noise_model_kwargs")) {
+              py::setattr(self, "__noise_model_kwargs", py::dict());
             }
-            return py::getattr(handle, "__noise_model_kwargs");
+            return py::getattr(self, "__noise_model_kwargs");
           },
-          [](SensorSpec& self, py::dict v) {
-            py::setattr(py::cast(self), "__noise_model_kwargs", std::move(v));
+          [](py::handle self, py::dict v) {
+            py::setattr(self, "__noise_model_kwargs", std::move(v));
           })
       .def("is_visual_sensor_spec", &SensorSpec::isVisualSensorSpec)
       .def("__eq__", &SensorSpec::operator==)
