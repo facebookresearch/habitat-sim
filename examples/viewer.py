@@ -124,7 +124,7 @@ class HabitatSimInteractiveViewer(Application):
         self.previous_mouse_point = None
 
         # toggle physics simulation on/off
-        self.simulating = True
+        self.simulating = False
 
         # toggle a single simulation step at the next opportunity if not
         # simulating continuously.
@@ -707,6 +707,7 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.I:
             # decrement template handle index and add corresponding
             # ManagedBulletRigidObject to rigid object manager from dataset
+            keep_simulating = self.simulating
             self.object_template_handle_index -= 1
             if self.object_template_handle_index < 0:
                 self.object_template_handle_index = (
@@ -717,10 +718,15 @@ class HabitatSimInteractiveViewer(Application):
                 self.object_template_handle_index,
                 HabitatSimInteractiveViewer.DEFAULT_OBJ_POSITION,
             )
+            if keep_simulating:
+                # make sure physics stays on, but place object upright in center of table
+                self.simulating = True
+                snap_down(self.sim, self.curr_object)
 
         elif key == pressed.P:
             # increment template handle index and add corresponding
             # ManagedBulletRigidObject to rigid object manager from dataset
+            keep_simulating = self.simulating
             self.object_template_handle_index += 1
             if self.object_template_handle_index >= len(self.object_template_handles):
                 self.object_template_handle_index = 0
@@ -729,6 +735,10 @@ class HabitatSimInteractiveViewer(Application):
                 self.object_template_handle_index,
                 HabitatSimInteractiveViewer.DEFAULT_OBJ_POSITION,
             )
+            if keep_simulating:
+                # make sure physics stays on, but place object upright in center of table
+                self.simulating = True
+                snap_down(self.sim, self.curr_object)
 
         elif key == pressed.O:
             if self.curr_object:
@@ -1451,38 +1461,9 @@ def add_new_object_from_dataset(
         object_template_handle
     )
 
-    # TODO: debugging the ability to swap the render and collision assets of this object
-    # object_attributes = self.curr_object.creation_attributes
-    # collision_asset_key = "collision_asset"
-    # render_asset_key = "render_asset"
-    # subconfig_key = "user_defined"
-    # collision_asset_handle = "./data/versioned_data/ycb_1.2/collison_meshes/002_master_chef_cv_decomp.glb"
-
-    # print_in_color("object attributes csv info --" , PrintColors.LIGHT_PURPLE)
-    # print_in_color(f"{object_attributes.csv_info}\n", PrintColors.LIGHT_CYAN)
-
-    # print_in_color("Subconfig keys -- " , PrintColors.LIGHT_PURPLE)
-    # print_in_color(f"{object_attributes.get_subconfig_keys()}\n", PrintColors.LIGHT_CYAN)
-
-    # subconfig = object_attributes.get_subconfig(subconfig_key)
-    # print_in_color("subconfig -- " , PrintColors.LIGHT_PURPLE)
-    # print_in_color(f"{subconfig}\n", PrintColors.LIGHT_CYAN)
-
-    # subconfig.set(render_asset_key, collision_asset_handle)
-    # object_attributes.save_subconfig(subconfig_key, subconfig)
-    # print_in_color("Render asset -- " , PrintColors.LIGHT_PURPLE)
-    # print_in_color(f"{subconfig.get_as_string(render_asset_key)}\n", PrintColors.LIGHT_CYAN)
-
-    # print_in_color("Object attributes types and keys -- " , PrintColors.LIGHT_PURPLE)
-    # print_in_color(f"{object_attributes.get_keys_and_types()}\n", PrintColors.LIGHT_CYAN)
-
-    # object_attributes.render_asset_handle = collision_asset_handle
-    # object_attributes.collision_asset_handle = collision_asset_handle
-    # print_in_color("object csv info --" , PrintColors.LIGHT_PURPLE)
-    # print_in_color(f"{self.curr_object.csv_info}\n", PrintColors.LIGHT_CYAN)
-
     # Agent local coordinate system is Y up and -Z forward.
     # Move object above table surface, then turn on Kinematic mode
+    # to easily reposition object in center of table
     set_object_state(self, self.curr_object, position, rotation_quaternion)
     self.simulating = False
     self.curr_angle_rotated_degrees = 0.0
