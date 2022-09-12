@@ -7,8 +7,6 @@
 
 #cmakedefine ESP_BUILD_ASSIMP_SUPPORT
 
-#cmakedefine ESP_BUILD_EGL_SUPPORT
-
 #cmakedefine ESP_BUILD_PTEX_SUPPORT
 
 #cmakedefine ESP_BUILD_WITH_CUDA
