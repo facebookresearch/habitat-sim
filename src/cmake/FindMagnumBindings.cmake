@@ -124,7 +124,7 @@ foreach(_component ${MagnumBindings_FIND_COMPONENTS})
             set_property(TARGET MagnumBindings::${_component} APPEND PROPERTY
                 INTERFACE_LINK_LIBRARIES Magnum::Magnum)
 
-            # Add bindings incldue dir
+            # Add bindings include dir
             set_property(TARGET MagnumBindings::${_component} APPEND PROPERTY
                 INTERFACE_INCLUDE_DIRECTORIES ${MAGNUMBINDINGS_INCLUDE_DIR})
         endif()
