@@ -75,7 +75,7 @@ struct RendererStandalone::State {
 
   explicit State(const RendererStandaloneConfiguration& configuration)
       : context{Mn::Platform::WindowlessGLContext::Configuration{}
-#ifdef MAGNUM_TARGET_EGL
+#if defined(MAGNUM_TARGET_EGL) && !defined(CORRADE_TARGET_EMSCRIPTEN)
                     .setCudaDevice(configuration.state->cudaDevice)
 #endif
                     .addFlags(configuration.state->flags &
