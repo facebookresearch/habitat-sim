@@ -338,9 +338,7 @@ if(NOT USE_SYSTEM_MAGNUM)
           CACHE STRING "" FORCE
       )
     else()
-      set(MAGNUM_PYTHON_BINDINGS_STATIC_PLUGINS ""
-          CACHE STRING "" FORCE
-      )
+      set(MAGNUM_PYTHON_BINDINGS_STATIC_PLUGINS "" CACHE STRING "" FORCE)
     endif()
     add_subdirectory("${DEPS_DIR}/magnum-bindings")
   endif()

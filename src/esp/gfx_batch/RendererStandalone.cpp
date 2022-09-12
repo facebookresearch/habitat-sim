@@ -74,16 +74,18 @@ struct RendererStandalone::State {
 #endif
 
   explicit State(const RendererStandaloneConfiguration& configuration)
-      : context{Mn::Platform::WindowlessGLContext::Configuration{}
+      : context {
+    Mn::Platform::WindowlessGLContext::Configuration {}
 #if defined(MAGNUM_TARGET_EGL) && !defined(CORRADE_TARGET_EMSCRIPTEN)
-                    .setCudaDevice(configuration.state->cudaDevice)
+    .setCudaDevice(configuration.state->cudaDevice)
 #endif
-                    .addFlags(configuration.state->flags &
-                                      RendererStandaloneFlag::QuietLog
-                                  ? Mn::Platform::WindowlessGLContext::
-                                        Configuration::Flag::QuietLog
-                                  : Mn::Platform::WindowlessGLContext::
-                                        Configuration::Flags{})} {
+        .addFlags(
+            configuration.state->flags & RendererStandaloneFlag::QuietLog
+                ? Mn::Platform::WindowlessGLContext::Configuration::Flag::
+                      QuietLog
+                : Mn::Platform::WindowlessGLContext::Configuration::Flags{})
+  }
+  {
     context.makeCurrent();
     magnumContext.create(Mn::GL::Context::Configuration{}.addFlags(
         configuration.state->flags & RendererStandaloneFlag::QuietLog
