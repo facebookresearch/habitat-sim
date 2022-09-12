@@ -333,7 +333,9 @@ if(NOT USE_SYSTEM_MAGNUM)
     # Make Magnum text rendering plugins (used by the native viewer) available
     # for Python as well
     if(BUILD_GUI_VIEWERS)
-      set(MAGNUM_PYTHON_BINDINGS_STATIC_PLUGINS MagnumPlugins::StbTrueTypeFont CACHE STRING "" FORCE)
+      set(MAGNUM_PYTHON_BINDINGS_STATIC_PLUGINS MagnumPlugins::StbTrueTypeFont
+          CACHE STRING "" FORCE
+      )
     endif()
     add_subdirectory("${DEPS_DIR}/magnum-bindings")
   endif()

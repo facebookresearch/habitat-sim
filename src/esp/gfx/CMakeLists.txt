@@ -184,4 +184,7 @@ elseif(CORRADE_TARGET_WINDOWS)
 else()
   message(FATAL_ERROR "Unsupported platform")
 endif()
-target_link_libraries(gfx PUBLIC Magnum::WindowlessApplication)
+target_link_libraries(
+  gfx
+  PUBLIC Magnum::WindowlessApplication
+)
