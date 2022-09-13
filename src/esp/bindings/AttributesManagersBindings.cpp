@@ -267,7 +267,9 @@ void initAttributesManagersBindings(py::module& m) {
   py::class_<
       AssetAttributesManager,
       AttributesManager<AbstractPrimitiveAttributes, ManagedObjectAccess::Copy>,
-      AssetAttributesManager::ptr>(m, "AssetAttributesManager")
+      AssetAttributesManager::ptr>(
+      m, "AssetAttributesManager",
+      R"(Manages PrimtiveAttributes objects which define parameters for constructing primitive mesh shapes such as cubes, capsules, cylinders, and cones.)")
       // AssetAttributesMangaer-specific bindings
       // return appropriately cast capsule templates
       .def("get_default_capsule_template",
@@ -360,7 +362,9 @@ void initAttributesManagersBindings(py::module& m) {
   // NOLINTNEXTLINE(bugprone-unused-raii)
   py::class_<ObjectAttributesManager,
              AttributesManager<ObjectAttributes, ManagedObjectAccess::Copy>,
-             ObjectAttributesManager::ptr>(m, "ObjectAttributesManager")
+             ObjectAttributesManager::ptr>(
+      m, "ObjectAttributesManager",
+      R"(Manages ObjectAttributes which define metadata for rigid objects pre-instantiation. Can import .object_config.json files.)")
 
       // ObjectAttributesManager-specific bindings
       .def("load_object_configs",
@@ -416,7 +420,9 @@ void initAttributesManagersBindings(py::module& m) {
   // NOLINTNEXTLINE(bugprone-unused-raii)
   py::class_<StageAttributesManager,
              AttributesManager<StageAttributes, ManagedObjectAccess::Copy>,
-             StageAttributesManager::ptr>(m, "StageAttributesManager");
+             StageAttributesManager::ptr>(
+      m, "StageAttributesManager",
+      R"(Manages StageAttributes which define metadata for stages (i.e. static background mesh such as architectural elements) pre-instantiation. Can import .stage_config.json files.)");
 
   // ==== Physics World/Manager Template manager ====
 
@@ -427,7 +433,9 @@ void initAttributesManagersBindings(py::module& m) {
   py::class_<
       PhysicsAttributesManager,
       AttributesManager<PhysicsManagerAttributes, ManagedObjectAccess::Copy>,
-      PhysicsAttributesManager::ptr>(m, "PhysicsAttributesManager");
+      PhysicsAttributesManager::ptr>(
+      m, "PhysicsAttributesManager",
+      R"(Manages PhysicsManagerAttributes which define global Simulation parameters such as timestep. Can import .physics_config.json files.)");
 
 }  // initAttributesManagersBindings
 }  // namespace managers
