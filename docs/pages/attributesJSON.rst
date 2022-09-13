@@ -22,7 +22,8 @@ A *SceneDataset* is a metadata configuration structure which defines system para
 
 All necessary configuration can be done as a pre-process via the JSON configuration files described on this documentation page.
 
-.. figure:: images/scenedataset_documentation_diagram.png
+.. figure:: images/scenedataset_documentation_diagram.svg
+    :width: 100em
 
     A *SceneDataset* system diagram illustrating the correspondance between JSON configs and programmatic structures. Note that the *Simulator* controls instatiation of objects by accessing data cached within its internal *MetadataMediator*.
 
