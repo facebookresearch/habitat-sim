@@ -1870,7 +1870,7 @@ if __name__ == "__main__":
         action="store_true",
         help="Override configured lighting to use synthetic lighting for the stage.",
     )
-
+    
     args = parser.parse_args()
 
     # Setting up sim_settings
