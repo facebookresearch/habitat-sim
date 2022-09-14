@@ -22,9 +22,8 @@ import habitat_sim
 from examples.settings import default_sim_settings, make_cfg
 from habitat_sim import physics
 from habitat_sim.logging import LoggingContext, logger
+from habitat_sim.sensor import SensorSubType
 from habitat_sim.utils.common import quat_from_angle_axis
-
-# from magnum.platform.sdl2 import Application
 
 
 class HabitatSimInteractiveViewer(Application):
@@ -96,16 +95,30 @@ class HabitatSimInteractiveViewer(Application):
 
         # text object that displays app performance data in the app window
         self._window_text = text.Renderer2D(
-            self._font, self._cache, 14.0, text.Alignment.TOP_LEFT
+            self._font, self._cache, 12.0, text.Alignment.TOP_LEFT
         )
-        self._window_text.reserve(256)
-        # self._window_text.render("Oprah was here")
+        self._window_text.reserve(512)
+        text_displacement_from_center = 0.49
+        self.num_frames_to_track = 60
         self._transformation_projection_window_text = mn.Matrix3.projection(
             mn.Vector2(self.viewport_size)
         ) @ mn.Matrix3.translation(
-            mn.Vector2(self.viewport_size[0] * -0.5, self.viewport_size[1] * 0.5)
+            mn.Vector2(
+                self.viewport_size[0] * -text_displacement_from_center,
+                self.viewport_size[1] * text_displacement_from_center,
+            )
         )
         self._shader = shaders.DistanceFieldVectorGL2D()
+
+        # make background of in-window text transparent
+        mn.gl.Renderer.enable(mn.gl.Renderer.Feature.BLENDING)
+        mn.gl.Renderer.set_blend_function(
+            mn.gl.Renderer.BlendFunction.ONE,
+            mn.gl.Renderer.BlendFunction.ONE_MINUS_SOURCE_ALPHA,
+        )
+        mn.gl.Renderer.set_blend_equation(
+            mn.gl.Renderer.BlendEquation.ADD, mn.gl.Renderer.BlendEquation.ADD
+        )
 
         # Cycle mouse utilities
         self.mouse_interaction = MouseMode.LOOK
@@ -229,7 +242,8 @@ class HabitatSimInteractiveViewer(Application):
         self.render_camera.render_target.blit_rgba_to_default()
         mn.gl.default_framebuffer.bind()
 
-        self.draw_text()
+        # draw CPU/GPU usage data and other info to the app window
+        self.draw_text(self.render_camera.specification().sensor_subtype)
 
         self.swap_buffers()
         Timer.next_frame()
@@ -769,29 +783,50 @@ class HabitatSimInteractiveViewer(Application):
         event.accepted = True
         exit(0)
 
-    def draw_text(self):
+    def draw_text(self, sensor_subtype):
         self._shader.bind_vector_texture(self._cache.texture)
         self._shader.transformation_projection_matrix = (
             self._transformation_projection_window_text
         )
-        self._shader.color = [0.8, 0.85, 0.9]
-        self._shader.outline_color = [0.8, 0.85, 0.9]
+        self._shader.color = [1.0, 1.0, 1.0]
+        self._shader.outline_color = [1.0, 1.0, 1.0]
         self._shader.outline_range = (0.45, 0.40)
+
+        sensor_subtype_string = self.get_sensor_subtype_string(sensor_subtype)
+        if self.mouse_interaction == MouseMode.LOOK:
+            mouse_mode_string = "LOOK"
+        elif self.mouse_interaction == MouseMode.GRAB:
+            mouse_mode_string = "GRAB"
         placeholder = "Oprah"
         self._window_text.render(
             f"""
-{placeholder} FPS
+{self.fps} FPS
 {placeholder} drawables, {placeholder} culled
-Last {placeholder} frames:
+{sensor_subtype_string}
+Last {self.num_frames_to_track} frames:
     Frame time: {placeholder} ms
     CPU duration: {placeholder} ms
     GPU duration: {placeholder} µs
     Vertex fetch ratio: {placeholder}
-    Primitives clipped: {placeholder}%
-Mouse Interaction Mode: {placeholder}
-        """
+    Primitives clipped: {placeholder} %
+Mouse Interaction Mode: {mouse_mode_string}
+            """
         )
         self._shader.draw(self._window_text.mesh)
+
+    def get_sensor_subtype_string(self, sensor_subtype):
+        if sensor_subtype == SensorSubType.PINHOLE:
+            return "Pinhole Camera Sensor"
+        elif sensor_subtype == SensorSubType.ORTHOGRAPHIC:
+            return "Orthographic Camera Sensor"
+        elif sensor_subtype == SensorSubType.FISHEYE:
+            return "Fisheye Camera Sensor"
+        elif sensor_subtype == SensorSubType.EQUIRECTANGULAR:
+            return "Equirectangular Sensor"
+        elif sensor_subtype == SensorSubType.IMPULSERESPONSE:
+            return "Impulse Response Sensor"
+        else:
+            return "None"
 
     def print_help_text(self) -> None:
         """
