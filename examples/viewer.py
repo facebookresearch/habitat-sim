@@ -15,8 +15,7 @@ sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
 import magnum as mn
 import numpy as np
-from magnum import *
-from magnum import gl, shaders, text
+from magnum import shaders, text
 from magnum.platform.glfw import Application
 
 import habitat_sim
@@ -24,6 +23,8 @@ from examples.settings import default_sim_settings, make_cfg
 from habitat_sim import physics
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.common import quat_from_angle_axis
+
+# from magnum.platform.sdl2 import Application
 
 
 class HabitatSimInteractiveViewer(Application):
@@ -33,6 +34,7 @@ class HabitatSimInteractiveViewer(Application):
         Application.__init__(self, configuration)
         self.sim_settings: Dict[str:Any] = sim_settings
         self.fps: float = 60.0
+
         # draw Bullet debug line visualizations (e.g. collision meshes)
         self.debug_bullet_draw = False
         # draw active contact point debug line visualizations
@@ -74,6 +76,39 @@ class HabitatSimInteractiveViewer(Application):
             key.X: "move_down",
             key.Z: "move_up",
         }
+
+        # Load a TrueTypeFont plugin and open the font
+        self._font = text.FontManager().load_and_instantiate("TrueTypeFont")
+        self._font.open_file(
+            os.path.join(os.path.dirname(__file__), "Cousine-Regular.ttf"), 180.0
+        )
+
+        # Glyphs we need to render everything
+        self.frame_count = 0
+        self.test = 2048
+        self.test2 = 512
+        self._cache = text.DistanceFieldGlyphCache(
+            mn.Vector2i(2048), mn.Vector2i(512), 22
+        )
+        self._font.fill_glyph_cache(
+            self._cache,
+            "abcdefghijklmnopqrstuvwxyz"
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            "0123456789:-+,.! ",
+        )
+
+        # text object that displays app performance data in the app window
+        self._window_text = text.Renderer2D(
+            self._font, self._cache, 14.0, text.Alignment.TOP_LEFT
+        )
+        self._window_text.reserve(128)
+        self._window_text.render("Oprah was here")
+        self._transformation_projection_window_text = mn.Matrix3.projection(
+            mn.Vector2(self.viewport_size)
+        ) @ mn.Matrix3.translation(
+            mn.Vector2(self.viewport_size[0] * -0.5, self.viewport_size[1] * 0.5)
+        )
+        self._shader = shaders.DistanceFieldVectorGL2D()
 
         # Cycle mouse utilities
         self.mouse_interaction = MouseMode.LOOK
@@ -196,6 +231,8 @@ class HabitatSimInteractiveViewer(Application):
         self.debug_draw()
         self.render_camera.render_target.blit_rgba_to_default()
         mn.gl.default_framebuffer.bind()
+
+        self.draw_text()
 
         self.swap_buffers()
         Timer.next_frame()
@@ -735,6 +772,16 @@ class HabitatSimInteractiveViewer(Application):
         event.accepted = True
         exit(0)
 
+    def draw_text(self):
+        self._shader.bind_vector_texture(self._cache.texture)
+        self._shader.transformation_projection_matrix = (
+            self._transformation_projection_window_text
+        )
+        self._shader.color = [0.8, 0.85, 0.9]
+        self._shader.outline_color = [0.8, 0.85, 0.9]
+        self._shader.outline_range = (0.45, 0.40)
+        self._shader.draw(self._window_text.mesh)
+
     def print_help_text(self) -> None:
         """
         Print the Key Command help text.
@@ -939,7 +986,7 @@ if __name__ == "__main__":
         action="store_true",
         help="Override configured lighting to use synthetic lighting for the stage.",
     )
-    
+
     args = parser.parse_args()
 
     # Setting up sim_settings
@@ -960,7 +1007,6 @@ if __name__ == "__main__":
     sim_settings["scene"] = scene_name
     sim_settings["scene_dataset_config_file"] = dataset_name
     sim_settings["enable_physics"] = not args.disable_physics
-    sim_settings["sensor_height"] = HabitatSimInteractiveViewer.DEFAULT_SENSOR_HEIGHT
     sim_settings["stage_requires_lighting"] = args.stage_requires_lighting
 
     # start the application
