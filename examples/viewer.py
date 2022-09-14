@@ -15,6 +15,8 @@ sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
 import magnum as mn
 import numpy as np
+from magnum import *
+from magnum import gl, shaders, text
 from magnum.platform.glfw import Application
 
 import habitat_sim
