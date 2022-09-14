@@ -84,9 +84,6 @@ class HabitatSimInteractiveViewer(Application):
         )
 
         # Glyphs we need to render everything
-        self.frame_count = 0
-        self.test = 2048
-        self.test2 = 512
         self._cache = text.DistanceFieldGlyphCache(
             mn.Vector2i(2048), mn.Vector2i(512), 22
         )
@@ -94,15 +91,15 @@ class HabitatSimInteractiveViewer(Application):
             self._cache,
             "abcdefghijklmnopqrstuvwxyz"
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-            "0123456789:-+,.! ",
+            "0123456789:-_+,.! %µ",
         )
 
         # text object that displays app performance data in the app window
         self._window_text = text.Renderer2D(
             self._font, self._cache, 14.0, text.Alignment.TOP_LEFT
         )
-        self._window_text.reserve(128)
-        self._window_text.render("Oprah was here")
+        self._window_text.reserve(256)
+        # self._window_text.render("Oprah was here")
         self._transformation_projection_window_text = mn.Matrix3.projection(
             mn.Vector2(self.viewport_size)
         ) @ mn.Matrix3.translation(
@@ -780,6 +777,20 @@ class HabitatSimInteractiveViewer(Application):
         self._shader.color = [0.8, 0.85, 0.9]
         self._shader.outline_color = [0.8, 0.85, 0.9]
         self._shader.outline_range = (0.45, 0.40)
+        placeholder = "Oprah"
+        self._window_text.render(
+            f"""
+{placeholder} FPS
+{placeholder} drawables, {placeholder} culled
+Last {placeholder} frames:
+    Frame time: {placeholder} ms
+    CPU duration: {placeholder} ms
+    GPU duration: {placeholder} µs
+    Vertex fetch ratio: {placeholder}
+    Primitives clipped: {placeholder}%
+Mouse Interaction Mode: {placeholder}
+        """
+        )
         self._shader.draw(self._window_text.mesh)
 
     def print_help_text(self) -> None:
