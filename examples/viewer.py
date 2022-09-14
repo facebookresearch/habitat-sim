@@ -965,16 +965,16 @@ if __name__ == "__main__":
     # optional arguments
     parser.add_argument(
         "--scene",
-        default="NONE",
+        default="./data/test_assets/scenes/simple_room.glb",
         type=str,
-        help='scene/stage file to load (default: "NONE")',
+        help='scene/stage file to load (default: "./data/test_assets/scenes/simple_room.glb")',
     )
     parser.add_argument(
         "--dataset",
-        default="default",
+        default="./data/objects/ycb/ycb.scene_dataset_config.json",
         type=str,
         metavar="DATASET",
-        help="dataset configuration file to use (default: default)",
+        help='dataset configuration file to use (default: "./data/objects/ycb/ycb.scene_dataset_config.json")',
     )
     parser.add_argument(
         "--disable_physics",
@@ -991,21 +991,8 @@ if __name__ == "__main__":
 
     # Setting up sim_settings
     sim_settings: Dict[str, Any] = default_sim_settings
-
-    # this interactive viewer was developed with these arguments,
-    # so make them the default if none provided
-    if args.scene == "NONE":
-        scene_name = "./data/test_assets/scenes/simple_room.glb"
-    else:
-        scene_name = args.scene
-
-    if args.dataset == "default":
-        dataset_name = "./data/objects/ycb/ycb.scene_dataset_config.json"
-    else:
-        dataset_name = args.dataset
-
-    sim_settings["scene"] = scene_name
-    sim_settings["scene_dataset_config_file"] = dataset_name
+    sim_settings["scene"] = args.scene
+    sim_settings["scene_dataset_config_file"] = args.dataset
     sim_settings["enable_physics"] = not args.disable_physics
     sim_settings["stage_requires_lighting"] = args.stage_requires_lighting
 
