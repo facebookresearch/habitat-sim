@@ -13,12 +13,12 @@ default_sim_settings = {
     "default_agent": 0,
     "sensor_height": 1.5,
     "hfov": 90,
-    "color_sensor": True,  # RGB sensor (default: ON)
-    "semantic_sensor": False,  # semantic sensor (default: OFF)
-    "depth_sensor": False,  # depth sensor (default: OFF)
-    "ortho_rgba_sensor": False,  # Orthographic RGB sensor (default: OFF)
-    "ortho_depth_sensor": False,  # Orthographic depth sensor (default: OFF)
-    "ortho_semantic_sensor": False,  # Orthographic semantic sensor (default: OFF)
+    "color_sensor": True,
+    "semantic_sensor": False,
+    "depth_sensor": False,
+    "ortho_rgba_sensor": False,
+    "ortho_depth_sensor": False,
+    "ortho_semantic_sensor": False,
     "fisheye_rgba_sensor": False,
     "fisheye_depth_sensor": False,
     "fisheye_semantic_sensor": False,
