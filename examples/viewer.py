@@ -939,14 +939,29 @@ if __name__ == "__main__":
         action="store_true",
         help="Override configured lighting to use synthetic lighting for the stage.",
     )
-
+    
     args = parser.parse_args()
 
     # Setting up sim_settings
     sim_settings: Dict[str, Any] = default_sim_settings
-    sim_settings["scene"] = args.scene
-    sim_settings["scene_dataset_config_file"] = args.dataset
+
+    # this interactive viewer was developed with these arguments,
+    # so make them the default if none provided
+    if args.scene == "NONE":
+        scene_name = "./data/test_assets/scenes/simple_room.glb"
+    else:
+        scene_name = args.scene
+
+    if args.dataset == "default":
+        dataset_name = "./data/objects/ycb/ycb.scene_dataset_config.json"
+    else:
+        dataset_name = args.dataset
+
+    sim_settings["scene"] = scene_name
+    sim_settings["scene_dataset_config_file"] = dataset_name
     sim_settings["enable_physics"] = not args.disable_physics
+    sim_settings["sensor_height"] = HabitatSimInteractiveViewer.DEFAULT_SENSOR_HEIGHT
     sim_settings["stage_requires_lighting"] = args.stage_requires_lighting
 
+    # start the application
     HabitatSimInteractiveViewer(sim_settings).exec()
