@@ -548,6 +548,8 @@ void BatchedSimulator::updateGripping() {
     }
 
     if (robotInstance.doAttemptGrip_) {
+      robotInstance.doAttemptGrip_ = false;
+      recentStats_.numGripAttempts_++;
       envState.did_attempt_grasp = true;
 
       BATCHED_SIM_ASSERT(robotInstance.grippedFreeObjectIndex_ == -1);
@@ -631,7 +633,6 @@ void BatchedSimulator::updateGripping() {
             }
           }
         }
-#endif
 
         if (!hit) {
           recentStats_.numGrips_++;
@@ -645,10 +646,12 @@ void BatchedSimulator::updateGripping() {
           robotInstance.grippedFreeObjectIndex_ = -1;  // undo assignment
         }
 
-        robotInstance.doAttemptGrip_ = false;
+#endif
+        recentStats_.numGrips_++;
+        BATCHED_SIM_ASSERT(envState.did_attempt_grasp);
+        envState.did_grasp = true;
+        robotInstance.grippedFreeObjectPreviousPos_ = obsCopy.pos;
       }
-
-      recentStats_.numGripAttempts_++;
     }
 
     if (robotInstance.doAttemptDrop_) {
@@ -794,9 +797,22 @@ void BatchedSimulator::updateCollision() {
       {
         bool hit = false;
 
-        // perf todo: if there was a hit last frame, cache that sphere and test
-        // it first here
-        for (int s = 0; s < robot_.numCollisionSpheres_; s++) {
+        // Alternate our traversal direction. In general, multiple collision
+        // spheres will be in collision, and we want to avoid bias (always
+        // sliding in a direction based on sphere #0 versus sphere #1).
+        int begin;
+        int end;
+        int inc;
+        if (numAttempts % 2) {
+          begin = robot_.numCollisionSpheres_ - 1;
+          end = -1;
+          inc = -1;
+        } else {
+          begin = 0;
+          end = robot_.numCollisionSpheres_;
+          inc = 1;
+        }
+        for (int s = begin; s != end; s += inc) {
           const int sphereIndex = baseSphereIndex + s;
           // perf todo: reconsider query cache usage; maybe one per link or one
           // per robot
