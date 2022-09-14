@@ -27,8 +27,10 @@ Keyframe Player::keyframeFromString(const std::string& keyframe) {
   return res;
 }
 
-Player::Player(const LoadAndCreateRenderAssetInstanceCallback& callback)
-    : loadAndCreateRenderAssetInstanceCallback(callback) {}
+Player::Player(const LoadAndCreateRenderAssetInstanceCallback& callback,
+               const SetLightsCallback& lightsCallback)
+    : loadAndCreateRenderAssetInstanceCallback(callback),
+      setLightsCallback(lightsCallback) {}
 
 void Player::readKeyframesFromFile(const std::string& filepath) {
   close();
@@ -166,6 +168,8 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     node->setRotation(state.absTransform.rotation);
     setSemanticIdForSubtree(node, state.semanticId);
   }
+
+  setLightsCallback(keyframe.lights);
 }
 
 void Player::appendKeyframe(Keyframe&& keyframe) {

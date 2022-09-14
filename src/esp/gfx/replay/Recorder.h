@@ -91,6 +91,18 @@ class Recorder {
                                   const Magnum::Quaternion& rotation);
 
   /**
+   * @brief Add a light to the current keyframe.
+   *
+   * @param lightInfo Parameters of the light to be added to the keyframe.
+   */
+  void addLightToKeyframe(const LightInfo& lightInfo);
+
+  /**
+   * @brief Delete all lights from the current keyframe.
+   */
+  void clearLightsFromKeyframe();
+
+  /**
    * @brief write saved keyframes to file.
    * @param filepath
    *

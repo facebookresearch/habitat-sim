@@ -633,6 +633,11 @@ void Simulator::reconfigureReplayManager(bool enableGfxReplaySave) {
           -> scene::SceneNode* {
         return loadAndCreateRenderAssetInstance(assetInfo, creation);
       });
+  // provide Player light creation callback
+  gfxReplayMgr_->setPlayerLightsCallback(
+      [this](const gfx::LightSetup& lights) -> void {
+        this->setLightSetup(lights);
+      });
 }
 
 void Simulator::updateShadowMapDrawableGroup() {

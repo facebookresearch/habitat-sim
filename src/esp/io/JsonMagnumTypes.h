@@ -65,6 +65,68 @@ inline bool fromJsonValue(const JsonGenericValue& obj, Magnum::Vector3& val) {
   return false;
 }
 
+inline JsonGenericValue toJsonValue(const Magnum::Vector4& vec,
+                                    JsonAllocator& allocator) {
+  return toJsonArrayHelper(vec.data(), 4, allocator);
+}
+
+/**
+ * @brief Specialization to handle Magnum::Vector4 values. Populate passed @p
+ * val with value. Returns whether successfully populated, or not. Logs an error
+ * if inappropriate type.
+ *
+ * @param obj json value to parse
+ * @param val destination value to be populated
+ * @return whether successful or not
+ */
+inline bool fromJsonValue(const JsonGenericValue& obj, Magnum::Vector4& val) {
+  if (obj.IsArray() && obj.Size() == 4) {
+    for (rapidjson::SizeType i = 0; i < 4; ++i) {
+      if (obj[i].IsNumber()) {
+        val[i] = obj[i].GetDouble();
+      } else {
+        ESP_ERROR() << "Invalid numeric value specified in JSON Vec4, index :"
+                    << i;
+        return false;
+      }
+    }
+    return true;
+  }
+  return false;
+}
+
+inline JsonGenericValue toJsonValue(const Magnum::Color3& color,
+                                    JsonAllocator& allocator) {
+  return toJsonArrayHelper(color.data(), 3, allocator);
+}
+
+/**
+ * @brief Specialization to handle Magnum::Color3 values. Populate passed @p
+ * val with value. Returns whether successfully populated, or not. Logs an error
+ * if inappropriate type.
+ *
+ * @param obj json value to parse
+ * @param val destination value to be populated
+ * @return whether successful or not
+ */
+inline bool fromJsonValue(const JsonGenericValue& obj, Magnum::Color3& val) {
+  if (obj.IsArray() && obj.Size() == 3) {
+    Magnum::Vector3 vec3;
+    for (rapidjson::SizeType i = 0; i < 3; ++i) {
+      if (obj[i].IsNumber()) {
+        vec3[i] = obj[i].GetDouble();
+      } else {
+        ESP_ERROR() << "Invalid numeric value specified in JSON Color3, index :"
+                    << i;
+        return false;
+      }
+    }
+    val = Magnum::Color3(vec3);
+    return true;
+  }
+  return false;
+}
+
 inline JsonGenericValue toJsonValue(const Magnum::Color4& color,
                                     JsonAllocator& allocator) {
   return toJsonArrayHelper(color.data(), 4, allocator);

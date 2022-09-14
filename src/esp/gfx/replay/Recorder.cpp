@@ -96,6 +96,14 @@ void Recorder::addUserTransformToKeyframe(const std::string& name,
   getKeyframe().userTransforms[name] = Transform{translation, rotation};
 }
 
+void Recorder::addLightToKeyframe(const LightInfo& lightInfo) {
+  getKeyframe().lights.emplace_back(lightInfo);
+}
+
+void Recorder::clearLightsFromKeyframe() {
+  getKeyframe().lights.clear();
+}
+
 void Recorder::addLoadsCreationsDeletions(KeyframeIterator begin,
                                           KeyframeIterator end,
                                           Keyframe* dest) {
@@ -180,6 +188,8 @@ void Recorder::updateInstanceStates() {
 void Recorder::advanceKeyframe() {
   savedKeyframes_.emplace_back(std::move(currKeyframe_));
   currKeyframe_ = Keyframe{};
+  // TODO: record light deltas rather than absolute states
+  currKeyframe_.lights = savedKeyframes_.back().lights;
 }
 
 void Recorder::writeSavedKeyframesToFile(const std::string& filepath,

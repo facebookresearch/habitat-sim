@@ -42,6 +42,14 @@ class ReplayManager {
   }
 
   /**
+   * @brief Set a Player light creation callback; this is needed to construct
+   * Player instances.
+   */
+  void setPlayerLightsCallback(const Player::SetLightsCallback& callback) {
+    playerLightsCallback_ = callback;
+  }
+
+  /**
    * @brief Read keyframes from a file and construct a Player. Returns nullptr
    * if no keyframes could be read.
    */
@@ -56,6 +64,7 @@ class ReplayManager {
  private:
   std::shared_ptr<Recorder> recorder_;
   Player::LoadAndCreateRenderAssetInstanceCallback playerCallback_;
+  Player::SetLightsCallback playerLightsCallback_;
 
   ESP_SMART_POINTERS(ReplayManager)
 };
