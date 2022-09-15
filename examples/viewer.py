@@ -96,9 +96,7 @@ class HabitatSimInteractiveViewer(Application):
         # Load a TrueTypeFont plugin and open the font file
         self.display_font = text.FontManager().load_and_instantiate("TrueTypeFont")
         self.display_font.open_file(
-            os.path.join(
-                os.path.dirname(__file__), sim_settings["display_textdisplay_font"]
-            ),
+            os.path.join(os.path.dirname(__file__), sim_settings["display_text_font"]),
             180.0,
         )
 
@@ -1037,7 +1035,7 @@ if __name__ == "__main__":
         help="Override configured lighting to use synthetic lighting for the stage.",
     )
     parser.add_argument(
-        "--display_textdisplay_font",
+        "--display_text_font",
         default="Cousine-Regular.ttf",
         type=str,
         help='display text font to load (default: "Cousine-Regular.ttf")',
@@ -1051,7 +1049,7 @@ if __name__ == "__main__":
     sim_settings["scene_dataset_config_file"] = args.dataset
     sim_settings["enable_physics"] = not args.disable_physics
     sim_settings["stage_requires_lighting"] = args.stage_requires_lighting
-    sim_settings["display_textdisplay_font"] = args.display_textdisplay_font
+    sim_settings["display_text_font"] = args.display_text_font
 
     # start the application
     HabitatSimInteractiveViewer(sim_settings).exec()
