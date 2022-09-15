@@ -119,6 +119,8 @@ class HabitatSimInteractiveViewer(Application):
             text.Alignment.TOP_LEFT,
         )
         self.window_text.reserve(HabitatSimInteractiveViewer.MAX_DISPLAY_TEXT_CHARS)
+
+        # text object transform in window space is Projection matrix times Translation Matrix
         self.window_text_transform = mn.Matrix3.projection(
             mn.Vector2(self.viewport_size)
         ) @ mn.Matrix3.translation(
@@ -131,7 +133,7 @@ class HabitatSimInteractiveViewer(Application):
         )
         self.shader = shaders.DistanceFieldVectorGL2D()
 
-        # make background of magnum in-window text transparent
+        # make magnum text background transparent
         mn.gl.Renderer.enable(mn.gl.Renderer.Feature.BLENDING)
         mn.gl.Renderer.set_blend_function(
             mn.gl.Renderer.BlendFunction.ONE,
