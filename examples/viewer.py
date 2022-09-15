@@ -26,6 +26,24 @@ from habitat_sim.utils.common import quat_from_angle_axis
 
 
 class HabitatSimInteractiveViewer(Application):
+
+    # the maximum number of chars displayable in the app window
+    # using the magnum text module. These chars are used to
+    # display the CPU/GPU usage data
+    MAX_DISPLAY_TEXT_CHARS = 512
+
+    # how much to displace window text relative to the center of the
+    # app window (e.g if you want the display text in the top left of
+    # the app window, you will displace the text
+    # window width * -TEXT_DELTA_FROM_CENTER in the x axis and
+    # widnow height * TEXT_DELTA_FROM_CENTER in the y axis, as the text
+    # position defaults to the middle of the app window)
+    TEXT_DELTA_FROM_CENTER = 0.49
+
+    # font size of the magnum in-window display text that displays
+    # CPU and GPU usage info
+    DISPLAY_FONT_SIZE = 16.0
+
     def __init__(self, sim_settings: Dict[str, Any]) -> None:
         configuration = self.Configuration()
         configuration.title = "Habitat Sim Interactive Viewer"
@@ -75,41 +93,47 @@ class HabitatSimInteractiveViewer(Application):
             key.Z: "move_up",
         }
 
-        # Load a TrueTypeFont plugin and open the font
-        self._font = text.FontManager().load_and_instantiate("TrueTypeFont")
-        self._font.open_file(
-            os.path.join(os.path.dirname(__file__), "Cousine-Regular.ttf"), 180.0
+        # Load a TrueTypeFont plugin and open the font file
+        self.display_font = text.FontManager().load_and_instantiate("TrueTypeFont")
+        self.display_font.open_file(
+            os.path.join(
+                os.path.dirname(__file__), sim_settings["display_textdisplay_font"]
+            ),
+            180.0,
         )
 
         # Glyphs we need to render everything
-        self._cache = text.DistanceFieldGlyphCache(
+        self.glyph_cache = text.DistanceFieldGlyphCache(
             mn.Vector2i(2048), mn.Vector2i(512), 22
         )
-        self._font.fill_glyph_cache(
-            self._cache,
+        self.display_font.fill_glyph_cache(
+            self.glyph_cache,
             "abcdefghijklmnopqrstuvwxyz"
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
             "0123456789:-_+,.! %µ",
         )
 
-        # text object that displays app performance data in the app window
-        self._window_text = text.Renderer2D(
-            self._font, self._cache, 12.0, text.Alignment.TOP_LEFT
+        # magnum text object that displays CPU/GPU usage data in the app window
+        self.window_text = text.Renderer2D(
+            self.display_font,
+            self.glyph_cache,
+            HabitatSimInteractiveViewer.DISPLAY_FONT_SIZE,
+            text.Alignment.TOP_LEFT,
         )
-        self._window_text.reserve(512)
-        text_displacement_from_center = 0.49
-        self.num_frames_to_track = 60
-        self._transformation_projection_window_text = mn.Matrix3.projection(
+        self.window_text.reserve(HabitatSimInteractiveViewer.MAX_DISPLAY_TEXT_CHARS)
+        self.window_text_transform = mn.Matrix3.projection(
             mn.Vector2(self.viewport_size)
         ) @ mn.Matrix3.translation(
             mn.Vector2(
-                self.viewport_size[0] * -text_displacement_from_center,
-                self.viewport_size[1] * text_displacement_from_center,
+                self.viewport_size[0]
+                * -HabitatSimInteractiveViewer.TEXT_DELTA_FROM_CENTER,
+                self.viewport_size[1]
+                * HabitatSimInteractiveViewer.TEXT_DELTA_FROM_CENTER,
             )
         )
-        self._shader = shaders.DistanceFieldVectorGL2D()
+        self.shader = shaders.DistanceFieldVectorGL2D()
 
-        # make background of in-window text transparent
+        # make background of magnum in-window text transparent
         mn.gl.Renderer.enable(mn.gl.Renderer.Feature.BLENDING)
         mn.gl.Renderer.set_blend_function(
             mn.gl.Renderer.BlendFunction.ONE,
@@ -118,6 +142,9 @@ class HabitatSimInteractiveViewer(Application):
         mn.gl.Renderer.set_blend_equation(
             mn.gl.Renderer.BlendEquation.ADD, mn.gl.Renderer.BlendEquation.ADD
         )
+
+        # variables that track app data and CPU/GPU usage
+        self.num_frames_to_track = 60
 
         # Cycle mouse utilities
         self.mouse_interaction = MouseMode.LOOK
@@ -783,29 +810,27 @@ class HabitatSimInteractiveViewer(Application):
         exit(0)
 
     def draw_text(self, sensor_spec):
-        self._shader.bind_vector_texture(self._cache.texture)
-        self._shader.transformation_projection_matrix = (
-            self._transformation_projection_window_text
-        )
-        self._shader.color = [1.0, 1.0, 1.0]
-        self._shader.outline_color = [1.0, 1.0, 1.0]
-        self._shader.outline_range = (0.45, 0.40)
+        self.shader.bind_vector_texture(self.glyph_cache.texture)
+        self.shader.transformation_projection_matrix = self.window_text_transform
+        self.shader.color = [1.0, 1.0, 1.0]
+        self.shader.outline_color = [1.0, 1.0, 1.0]
+        self.shader.outline_range = (0.45, 0.40)
 
-        sensor_type_string = str(sensor_spec.sensor_type)
-        sensor_subtype_string = str(sensor_spec.sensor_subtype)
+        sensor_type_string = str(sensor_spec.sensor_type.name)
+        sensor_subtype_string = str(sensor_spec.sensor_subtype.name)
         if self.mouse_interaction == MouseMode.LOOK:
             mouse_mode_string = "LOOK"
         elif self.mouse_interaction == MouseMode.GRAB:
             mouse_mode_string = "GRAB"
-        self._window_text.render(
+        self.window_text.render(
             f"""
 {self.fps} FPS
-{sensor_type_string}
-{sensor_subtype_string}
+Sensor Type: {sensor_type_string}
+Sensor Subtype: {sensor_subtype_string}
 Mouse Interaction Mode: {mouse_mode_string}
             """
         )
-        self._shader.draw(self._window_text.mesh)
+        self.shader.draw(self.window_text.mesh)
 
     def print_help_text(self) -> None:
         """
@@ -1011,6 +1036,12 @@ if __name__ == "__main__":
         action="store_true",
         help="Override configured lighting to use synthetic lighting for the stage.",
     )
+    parser.add_argument(
+        "--display_textdisplay_font",
+        default="Cousine-Regular.ttf",
+        type=str,
+        help='display text font to load (default: "Cousine-Regular.ttf")',
+    )
 
     args = parser.parse_args()
 
@@ -1020,6 +1051,7 @@ if __name__ == "__main__":
     sim_settings["scene_dataset_config_file"] = args.dataset
     sim_settings["enable_physics"] = not args.disable_physics
     sim_settings["stage_requires_lighting"] = args.stage_requires_lighting
+    sim_settings["display_textdisplay_font"] = args.display_textdisplay_font
 
     # start the application
     HabitatSimInteractiveViewer(sim_settings).exec()
