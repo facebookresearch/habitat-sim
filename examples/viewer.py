@@ -101,9 +101,7 @@ class HabitatSimInteractiveViewer(Application):
         )
 
         # Glyphs we need to render everything
-        self.glyph_cache = text.DistanceFieldGlyphCache(
-            mn.Vector2i(2048), mn.Vector2i(512), 22
-        )
+        self.glyph_cache = text.GlyphCache(mn.Vector2i(2048))
         self.display_font.fill_glyph_cache(
             self.glyph_cache,
             "abcdefghijklmnopqrstuvwxyz"
