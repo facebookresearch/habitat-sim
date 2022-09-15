@@ -17,16 +17,21 @@ namespace Cr = Corrade;
 namespace esp {
 namespace metadata {
 namespace managers {
+using core::managedContainers::ManagedFileBasedContainer;
+using core::managedContainers::ManagedObjectAccess;
+
 class PhysicsAttributesManager
     : public AttributesManager<attributes::PhysicsManagerAttributes,
-                               core::ManagedObjectAccess::Copy> {
+                               ManagedObjectAccess::Copy> {
  public:
   PhysicsAttributesManager()
       : AttributesManager<attributes::PhysicsManagerAttributes,
-                          core::ManagedObjectAccess::Copy>::
+                          ManagedObjectAccess::Copy>::
             AttributesManager("Physics Manager", "physics_config.json") {
-    buildCtorFuncPtrMaps();
-  }
+    this->copyConstructorMap_["PhysicsManagerAttributes"] =
+        &PhysicsAttributesManager::createObjectCopy<
+            attributes::PhysicsManagerAttributes>;
+  }  // ctor
 
   /**
    * @brief Creates an instance of a physics world template described by passed
@@ -98,12 +103,13 @@ class PhysicsAttributesManager
    * @brief This method will perform any necessary updating that is
    * attributesManager-specific upon template removal, such as removing a
    * specific template handle from the list of file-based template handles in
-   * ObjectAttributesManager.  This should only be called internally.
+   * ObjectAttributesManager.  This should only be called @ref
+   * esp::core::ManagedContainerBase.
    *
    * @param templateID the ID of the template to remove
    * @param templateHandle the string key of the attributes desired.
    */
-  void updateObjectHandleLists(
+  void deleteObjectInternalFinalize(
       CORRADE_UNUSED int templateID,
       CORRADE_UNUSED const std::string& templateHandle) override {}
 
@@ -137,17 +143,6 @@ class PhysicsAttributesManager
    * reset.
    */
   void resetFinalize() override {}
-
-  /**
-   * @brief This function will assign the appropriately configured function
-   * pointer for the copy constructor as required by
-   * AttributesManager<PhysicsSceneAttributes::ptr>
-   */
-  void buildCtorFuncPtrMaps() override {
-    this->copyConstructorMap_["PhysicsManagerAttributes"] =
-        &PhysicsAttributesManager::createObjectCopy<
-            attributes::PhysicsManagerAttributes>;
-  }  // PhysicsAttributesManager::buildCtorFuncPtrMaps
 
   // instance vars
 

@@ -15,22 +15,37 @@
 #include "esp/metadata/managers/AssetAttributesManager.h"
 #include "esp/metadata/managers/LightLayoutAttributesManager.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
-#include "esp/metadata/managers/SceneAttributesManager.h"
+#include "esp/metadata/managers/SceneInstanceAttributesManager.h"
 #include "esp/metadata/managers/StageAttributesManager.h"
 
 namespace esp {
 namespace metadata {
 namespace attributes {
+using esp::core::managedContainers::ManagedContainerBase;
+
 class SceneDatasetAttributes : public AbstractAttributes {
  public:
   SceneDatasetAttributes(
       const std::string& datasetName,
       const managers::PhysicsAttributesManager::ptr& physAttrMgr);
 
+  ~SceneDatasetAttributes() override {
+    // These are to clear any external refs persisting after this scene dataset
+    // is deleted.  Accessing these refs should result in errors instead of
+    // leaks/undefined behavior.
+    assetAttributesManager_ = nullptr;
+    lightLayoutAttributesManager_ = nullptr;
+    objectAttributesManager_ = nullptr;
+    sceneInstanceAttributesManager_ = nullptr;
+    stageAttributesManager_ = nullptr;
+    navmeshMap_.clear();
+    semanticSceneDescrMap_.clear();
+  }
+
   /**
    * @brief Return manager for construction and access to asset attributes.
    */
-  const managers::AssetAttributesManager::ptr getAssetAttributesManager()
+  const managers::AssetAttributesManager::ptr& getAssetAttributesManager()
       const {
     return assetAttributesManager_;
   }
@@ -38,7 +53,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
   /**
    * @brief Return manager for construction and access to object attributes.
    */
-  const managers::ObjectAttributesManager::ptr getObjectAttributesManager()
+  const managers::ObjectAttributesManager::ptr& getObjectAttributesManager()
       const {
     return objectAttributesManager_;
   }
@@ -46,7 +61,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
   /**
    * @brief Return manager for construction and access to light attributes.
    */
-  const managers::LightLayoutAttributesManager::ptr
+  const managers::LightLayoutAttributesManager::ptr&
   getLightLayoutAttributesManager() const {
     return lightLayoutAttributesManager_;
   }
@@ -54,15 +69,15 @@ class SceneDatasetAttributes : public AbstractAttributes {
   /**
    * @brief Return manager for construction and access to scene attributes.
    */
-  const managers::SceneAttributesManager::ptr getSceneAttributesManager()
-      const {
-    return sceneAttributesManager_;
+  const managers::SceneInstanceAttributesManager::ptr&
+  getSceneInstanceAttributesManager() const {
+    return sceneInstanceAttributesManager_;
   }
 
   /**
    * @brief Return manager for construction and access to stage attributes.
    */
-  const managers::StageAttributesManager::ptr getStageAttributesManager()
+  const managers::StageAttributesManager::ptr& getStageAttributesManager()
       const {
     return stageAttributesManager_;
   }
@@ -110,8 +125,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
       const std::string& key,
       const std::string& path,
       bool overwrite = false) {
-    return addNewValToMap(key, path, overwrite, navmeshMap_,
-                          "SceneDatasetAttributes::addNavmeshPathEntry");
+    return addNewValToMap(key, path, overwrite, navmeshMap_, "<navmesh>");
   }  // addNavmeshPathEntry
 
   /**
@@ -127,9 +141,8 @@ class SceneDatasetAttributes : public AbstractAttributes {
       const std::string& key,
       const std::string& path,
       bool overwrite = false) {
-    return addNewValToMap(
-        key, path, overwrite, semanticSceneDescrMap_,
-        "SceneDatasetAttributes::addSemanticSceneDescrPathEntry");
+    return addNewValToMap(key, path, overwrite, semanticSceneDescrMap_,
+                          "<semanticSceneDescriptor>");
   }  // addNavmeshPathEntry
 
   /**
@@ -150,12 +163,12 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * governs this Dataset
    */
   void setPhysicsManagerHandle(const std::string& physMgrAttrHandle) {
-    setString("physMgrAttrHandle", physMgrAttrHandle);
+    set("physMgrAttrHandle", physMgrAttrHandle);
     stageAttributesManager_->setCurrPhysicsManagerAttributesHandle(
         physMgrAttrHandle);
   }
   std::string getPhysicsManagerHandle() const {
-    return getString("physMgrAttrHandle");
+    return get<std::string>("physMgrAttrHandle");
   }
 
   /**
@@ -169,7 +182,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * @return whether this sceneInstance was successfully added to the dataset.
    */
   bool addNewSceneInstanceToDataset(
-      const attributes::SceneAttributes::ptr& sceneInstance);
+      const attributes::SceneInstanceAttributes::ptr& sceneInstance);
 
   /**
    * @brief Returns stage attributes corresponding to passed handle as
@@ -219,8 +232,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * @return name of stage attributes with handle containing @p stageAttrName ,
    * or empty string if none.
    */
-  inline const std::string getStageAttrFullHandle(
-      const std::string& stageAttrName) {
+  inline std::string getStageAttrFullHandle(const std::string& stageAttrName) {
     return getFullAttrNameFromStr(stageAttrName, stageAttributesManager_);
   }  // getStageAttrFullHandle
 
@@ -235,10 +247,59 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * @return name of object attributes with handle containing @p objAttrName or
    * empty string if none.
    */
-  inline const std::string getObjAttrFullHandle(
-      const std::string& objAttrName) {
+  inline std::string getObjAttrFullHandle(const std::string& objAttrName) {
     return getFullAttrNameFromStr(objAttrName, objectAttributesManager_);
   }  // getObjAttrFullHandle
+
+  /**
+   * @brief Returns articulated object model file handle in dataset
+   * corresponding to passed name as substring. Assumes articulated object model
+   * with @p artObjModelName as substring exists in this dataset.
+   * @param artObjModelName substring to handle of AO model that exists in this
+   * dataset. The actual model name will be found via substring search in the
+   * manager, so the name is expected to be sufficiently restrictive to have
+   * exactly 1 match in dataset.
+   * @return name of AO model with handle containing @p artObjModelName or
+   * empty string if none.
+   */
+  inline std::string getArticulatedObjModelFullHandle(
+      const std::string& artObjModelName) {
+    auto artObjPathIter = articulatedObjPaths.find(artObjModelName);
+    if (artObjPathIter == articulatedObjPaths.end()) {
+      ESP_ERROR() << "No Articulatd Model with name" << artObjModelName
+                  << "could be found.  Aborting.";
+      return "";
+    }
+    return artObjPathIter->second;
+    // std::map<std::string, std::string> articulatedObjPaths;
+  }
+
+  /**
+   * @brief TEMPORARY set discovered fully qualified file name along with
+   * simplified key for articulated object model file names. This will be
+   * removed when ArticulatedModelManager is complete.
+   * @param key Key in map built from simplified file name.
+   * @param value Filename of model
+   */
+  void setArticulatedObjectModelFilename(const std::string& key,
+                                         const std::string& val) {
+    auto artObjPathIter = articulatedObjPaths.find(key);
+    if (artObjPathIter == articulatedObjPaths.end()) {
+      ESP_WARNING() << "Articulated model filepath named" << key
+                    << "already exists (" << artObjPathIter->second
+                    << "), so this is being overwritten by" << val << ".";
+    }
+    articulatedObjPaths[key] = val;
+  }
+
+  /**
+   * @brief TEMPORARY get a constant reference to the articulated object model
+   * filenames (.urdf) that have been loaded.
+   */
+  const std::map<std::string, std::string>& getArticulatedObjectModelFilenames()
+      const {
+    return articulatedObjPaths;
+  }
 
   /**
    * @brief Returns the full name of the lightsetup attributes whose
@@ -249,19 +310,43 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * @return the full attributes name corresponding to @p lightSetupName , or
    * the empty string.
    */
-  inline const std::string getLightSetupFullHandle(
+  inline std::string getLightSetupFullHandle(
       const std::string& lightSetupName) {
-    if (lightSetupName.compare(DEFAULT_LIGHTING_KEY) == 0) {
+    if (lightSetupName == DEFAULT_LIGHTING_KEY) {
       return DEFAULT_LIGHTING_KEY;
     }
-    if (lightSetupName.compare(NO_LIGHT_KEY) == 0) {
+    if (lightSetupName == NO_LIGHT_KEY) {
       return NO_LIGHT_KEY;
     }
     return getFullAttrNameFromStr(lightSetupName,
                                   lightLayoutAttributesManager_);
   }  // getLightSetupFullHandle
 
+  /**
+   * @brief return a summary of this dataset
+   */
+  std::string getDatasetSummary() const;
+
+  /**
+   * @brief returns the header row of the summary string.
+   */
+  static std::string getDatasetSummaryHeader();
+
  protected:
+  /**
+   * @brief Retrieve a comma-separated string holding the header values for the
+   * info returned for this managed object, type-specific.  Individual
+   * components handle this.
+   */
+
+  std::string getObjectInfoHeaderInternal() const override { return ","; }
+
+  /**
+   * @brief Retrieve a comma-separated informational string about the contents
+   * of this managed object.
+   */
+  std::string getObjectInfoInternal() const override;
+
   /**
    * @brief Returns actual attributes handle containing @p attrName as a
    * substring, or the empty string if none exists, from passed @p attrMgr .
@@ -271,11 +356,11 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * @return actual name of attributes in attrMgr, or empty string if does not
    * exist.
    */
-  inline const std::string getFullAttrNameFromStr(
+  inline std::string getFullAttrNameFromStr(
       const std::string& attrName,
-      const esp::core::ManagedContainerBase::ptr& attrMgr) {
+      const ManagedContainerBase::ptr& attrMgr) {
     auto handleList = attrMgr->getObjectHandlesBySubstring(attrName);
-    if (handleList.size() > 0) {
+    if (!handleList.empty()) {
       return handleList[0];
     }
     return "";
@@ -325,10 +410,17 @@ class SceneDatasetAttributes : public AbstractAttributes {
   managers::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
 
   /**
+   * @brief A TEMPORARY map construct to hold articulated object path names,
+   * until the ArticulatedModelManager is built.
+   */
+  std::map<std::string, std::string> articulatedObjPaths;
+
+  /**
    * @brief Manages all construction and access to scene instance attributes
    * from this dataset.
    */
-  managers::SceneAttributesManager::ptr sceneAttributesManager_ = nullptr;
+  managers::SceneInstanceAttributesManager::ptr
+      sceneInstanceAttributesManager_ = nullptr;
 
   /**
    * @brief Manages all construction and access to stage attributes from this

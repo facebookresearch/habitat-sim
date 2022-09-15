@@ -18,8 +18,9 @@
 
 #include "BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h"
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
+#include "esp/physics/CollisionGroupHelper.h"
 #include "esp/physics/RigidObject.h"
 #include "esp/physics/bullet/BulletBase.h"
 
@@ -78,26 +79,6 @@ class BulletRigidObject : public BulletBase,
   std::unique_ptr<btCollisionShape> buildPrimitiveCollisionObject(
       int primTypeVal,
       double halfLength);
-  // const assets::AbstractPrimitiveAttributes& primAttributes);
-
-  /**
-   * @brief Recursively construct a @ref btCompoundShape for collision from
-   * loaded mesh assets. A @ref btConvexHullShape is constructed for each
-   * sub-component, transformed to object-local space and added to the compound
-   * in a flat manner for efficiency.
-   * @param transformFromParentToWorld The cumulative parent-to-world
-   * transformation matrix constructed by composition down the @ref
-   * MeshTransformNode tree to the current node.
-   * @param meshGroup Access structure for collision mesh data.
-   * @param node The current @ref MeshTransformNode in the recursion.
-   * @param join Whether or not to join sub-meshes into a single con convex
-   * shape, rather than creating individual convexes under the compound.
-   */
-  void constructBulletCompoundFromMeshes(
-      const Magnum::Matrix4& transformFromParentToWorld,
-      const std::vector<assets::CollisionMeshData>& meshGroup,
-      const assets::MeshTransformNode& node,
-      bool join);
 
   /**
    * @brief Construct the @ref bObjectShape_ for this object.
@@ -110,13 +91,28 @@ class BulletRigidObject : public BulletBase,
    * See @ref btCollisionObject::isActive.
    * @return true if active, false otherwise.
    */
-  bool isActive() override { return bObjectRigidBody_->isActive(); }
+  bool isActive() const override { return bObjectRigidBody_->isActive(); }
 
   /**
-   * @brief Set an object as being actively simulated rather than sleeping.
-   * See @ref btCollisionObject::activate.
+   * @brief Set the object to sleep or wake.
+   *
+   * @param active Whether to active or sleep the object
    */
-  void setActive() override { bObjectRigidBody_->activate(true); }
+  void setActive(bool active) override {
+    if (!active) {
+      if (bObjectRigidBody_->isActive()) {
+        bObjectRigidBody_->setActivationState(WANTS_DEACTIVATION);
+      }
+    } else {
+      bObjectRigidBody_->activate(true);
+    }
+  }
+
+  /** @brief Disable deferred updates if active and sets SceneNode states from
+   * internal object physics states.
+   * @param force If set, update sleeping objects as well.
+   */
+  void updateNodes(bool force = false) override;
 
   /**
    * @brief Set the @ref MotionType of the object. The object can be set to @ref
@@ -125,15 +121,14 @@ class BulletRigidObject : public BulletBase,
    * btCollisionObject::CF_STATIC_OBJECT,CF_KINEMATIC_OBJECT.
    *
    * @param mt The desirved @ref MotionType.
-   * @return true if successfully set, false otherwise.
    */
-  bool setMotionType(MotionType mt) override;
+  void setMotionType(MotionType mt) override;
 
   /**
    * Set the object to be collidable or not by selectively adding or remove the
    * @ref bObjectShape_ from the @ref bRigidObject_.
    */
-  bool setCollidable(bool collidable) override;
+  void setCollidable(bool collidable) override;
 
   /**
    * @brief Shift the object's local origin by translating all children of this
@@ -145,7 +140,7 @@ class BulletRigidObject : public BulletBase,
   /**
    * @brief Apply a force to an object.
    * Does nothing for @ref MotionType::STATIC and @ref
-   * MotionType::KINEMATIC objects. Calls @ref setActive().
+   * MotionType::KINEMATIC objects. Activates the object.
    * See @ref btRigidBody::applyForce.
    * @param force The desired linear force on the object in the global
    * coordinate system.
@@ -155,7 +150,7 @@ class BulletRigidObject : public BulletBase,
   void applyForce(const Magnum::Vector3& force,
                   const Magnum::Vector3& relPos) override {
     if (objectMotionType_ == MotionType::DYNAMIC) {
-      setActive();
+      setActive(true);
       bObjectRigidBody_->applyForce(btVector3(force), btVector3(relPos));
     }
   }
@@ -164,7 +159,7 @@ class BulletRigidObject : public BulletBase,
    * @brief Apply an impulse to an object.
    * Directly modifies the object's velocity without requiring
    * integration through simulation. Does nothing for @ref MotionType::STATIC
-   * and @ref MotionType::KINEMATIC objects. Calls @ref setActive().
+   * and @ref MotionType::KINEMATIC objects. Activates the object.
    * See @ref btRigidBody::applyImpulse.
    * @param impulse The desired impulse on the object in the global coordinate
    * system.
@@ -174,7 +169,7 @@ class BulletRigidObject : public BulletBase,
   void applyImpulse(const Magnum::Vector3& impulse,
                     const Magnum::Vector3& relPos) override {
     if (objectMotionType_ == MotionType::DYNAMIC) {
-      setActive();
+      setActive(true);
       bObjectRigidBody_->applyImpulse(btVector3(impulse), btVector3(relPos));
     }
   }
@@ -182,14 +177,14 @@ class BulletRigidObject : public BulletBase,
   /**
    * @brief Apply an internal torque to an object.
    * Does nothing for @ref MotionType::STATIC and @ref
-   * MotionType::KINEMATIC objects. Calls @ref setActive().
+   * MotionType::KINEMATIC objects. Activates the object.
    * See @ref btRigidBody::applyTorque.
    * @param torque The desired torque on the object in the local coordinate
    * system.
    */
   void applyTorque(const Magnum::Vector3& torque) override {
     if (objectMotionType_ == MotionType::DYNAMIC) {
-      setActive();
+      setActive(true);
       bObjectRigidBody_->applyTorque(btVector3(torque));
     }
   }
@@ -197,7 +192,7 @@ class BulletRigidObject : public BulletBase,
   /**
    * @brief Apply an internal impulse torque to an object.
    * Does nothing for @ref MotionType::STATIC and @ref
-   * MotionType::KINEMATIC objects. Calls @ref setActive().
+   * MotionType::KINEMATIC objects. Activates the object.
    * See @ref btRigidBody::applyTorqueImpulse.
    * @param impulse The desired impulse torque on the object in the local
    * coordinate system. Directly modifies the object's angular velocity without
@@ -205,7 +200,7 @@ class BulletRigidObject : public BulletBase,
    */
   void applyImpulseTorque(const Magnum::Vector3& impulse) override {
     if (objectMotionType_ == MotionType::DYNAMIC) {
-      setActive();
+      setActive(true);
       bObjectRigidBody_->applyTorqueImpulse(btVector3(impulse));
     }
   }
@@ -233,7 +228,7 @@ class BulletRigidObject : public BulletBase,
    * @return The mass of the object.
    */
   double getMass() const override {
-    return 1.0 / bObjectRigidBody_->getInvMass();
+    return static_cast<double>(1.0f / bObjectRigidBody_->getInvMass());
   }
 
   /** @brief Get the center of mass (COM) of the object. For Bullet, COM is
@@ -271,7 +266,26 @@ class BulletRigidObject : public BulletBase,
    * @return The scalar friction coefficient of the object.
    */
   double getFrictionCoefficient() const override {
-    return bObjectRigidBody_->getFriction();
+    return static_cast<double>(bObjectRigidBody_->getFriction());
+  }
+
+  /** @brief Get the scalar rolling friction coefficient of the object.
+   * See @ref btCollisionObject::getRollingFriction.
+   * @return The scalar rolling friction coefficient of the object. Damps
+   * angular velocity about axis orthogonal to the contact normal to prevent
+   * rounded shapes from rolling forever.
+   */
+  double getRollingFrictionCoefficient() const override {
+    return static_cast<double>(bObjectRigidBody_->getRollingFriction());
+  }
+
+  /** @brief Get the scalar spinning friction coefficient of the object.
+   * See @ref btCollisionObject::getSpinningFriction.
+   * @return The scalar spinning friction coefficient of the object. Damps
+   * angular velocity about the contact normal.
+   */
+  double getSpinningFrictionCoefficient() const override {
+    return static_cast<double>(bObjectRigidBody_->getSpinningFriction());
   }
 
   /** @brief Get the scalar coefficient of restitution  of the object.
@@ -279,7 +293,7 @@ class BulletRigidObject : public BulletBase,
    * @return The scalar coefficient of restitution  of the object.
    */
   double getRestitutionCoefficient() const override {
-    return bObjectRigidBody_->getRestitution();
+    return static_cast<double>(bObjectRigidBody_->getRestitution());
   }
 
   /** @brief Get the scalar linear damping coefficient of the object.
@@ -287,7 +301,7 @@ class BulletRigidObject : public BulletBase,
    * @return The scalar linear damping coefficient of the object.
    */
   double getLinearDamping() const override {
-    return bObjectRigidBody_->getLinearDamping();
+    return static_cast<double>(bObjectRigidBody_->getLinearDamping());
   }
 
   /** @brief Get the scalar angular damping coefficient of the object.
@@ -295,26 +309,28 @@ class BulletRigidObject : public BulletBase,
    * @return The scalar angular damping coefficient of the object.
    */
   double getAngularDamping() const override {
-    return bObjectRigidBody_->getAngularDamping();
+    return static_cast<double>(bObjectRigidBody_->getAngularDamping());
   }
 
   /** @brief Get the scalar collision margin of an object. See @ref
    * btCompoundShape::getMargin.
    * @return The scalar collision margin of the object.
    */
-  double getMargin() const override { return bObjectShape_->getMargin(); }
+  double getMargin() const override {
+    return static_cast<double>(bObjectShape_->getMargin());
+  }
 
   /**
    * @brief Linear velocity setter for an object.
    *
    * Does nothing for @ref MotionType::KINEMATIC or @ref MotionType::STATIC
    * objects. Sets internal @ref btRigidObject state. Treated as initial
-   * velocity during simulation simulation step.
+   * velocity during simulation simulation step. Activates the object.
    * @param linVel Linear velocity to set.
    */
   void setLinearVelocity(const Magnum::Vector3& linVel) override {
     if (objectMotionType_ != MotionType::STATIC) {
-      setActive();
+      setActive(true);
       bObjectRigidBody_->setLinearVelocity(btVector3(linVel));
     }
   }
@@ -324,13 +340,13 @@ class BulletRigidObject : public BulletBase,
    *
    * Does nothing for @ref MotionType::KINEMATIC or @ref MotionType::STATIC
    * objects. Sets internal @ref btRigidObject state. Treated as initial
-   * velocity during simulation simulation step.
+   * velocity during simulation simulation step. Activates the object.
    * @param angVel Angular velocity vector corresponding to world unit axis
    * angles.
    */
   void setAngularVelocity(const Magnum::Vector3& angVel) override {
     if (objectMotionType_ != MotionType::STATIC) {
-      setActive();
+      setActive(true);
       bObjectRigidBody_->setAngularVelocity(btVector3(angVel));
     }
   }
@@ -371,6 +387,27 @@ class BulletRigidObject : public BulletBase,
     bObjectRigidBody_->setFriction(frictionCoefficient);
   }
 
+  /** @brief Set the scalar rolling friction coefficient of the object.
+   * See @ref btCollisionObject::setRollingFriction.
+   * @param rollingFrictionCoefficient The new scalar rolling friction
+   * coefficient of the object. Damps angular velocity about axis orthogonal to
+   * the contact normal to prevent rounded shapes from rolling forever.
+   */
+  void setRollingFrictionCoefficient(
+      const double rollingFrictionCoefficient) override {
+    bObjectRigidBody_->setRollingFriction(rollingFrictionCoefficient);
+  }
+
+  /** @brief Set the scalar spinning friction coefficient of the object.
+   * See @ref btCollisionObject::setSpinningFriction.
+   * @param spinningFrictionCoefficient The new scalar spinning friction
+   * coefficient of the object. Damps angular velocity about the contact normal.
+   */
+  void setSpinningFrictionCoefficient(
+      const double spinningFrictionCoefficient) override {
+    bObjectRigidBody_->setSpinningFriction(spinningFrictionCoefficient);
+  }
+
   /** @brief Set the scalar coefficient of restitution of the object.
    * See @ref btCollisionObject::setRestitution.
    * @param restitutionCoefficient The new scalar coefficient of restitution of
@@ -403,7 +440,7 @@ class BulletRigidObject : public BulletBase,
    * @param margin The new scalar collision margin of the object.
    */
   void setMargin(const double margin) override {
-    for (std::size_t i = 0; i < bObjectConvexShapes_.size(); i++) {
+    for (std::size_t i = 0; i < bObjectConvexShapes_.size(); ++i) {
       bObjectConvexShapes_[i]->setMargin(margin);
     }
     bObjectShape_->setMargin(margin);
@@ -430,14 +467,25 @@ class BulletRigidObject : public BulletBase,
    * @return Whether or not the object is in contact with any other collision
    * enabled objects.
    */
-  bool contactTest();
+  bool contactTest() override;
+
+  /**
+   * @brief Manually set the collision group for an object.
+   * @param group The desired CollisionGroup for the object.
+   */
+  void overrideCollisionGroup(CollisionGroup group) override;
 
   /**
    * @brief Query the Aabb from bullet physics for the root compound shape of
    * the rigid body in its local space. See @ref btCompoundShape::getAabb.
    * @return The Aabb.
    */
-  const Magnum::Range3D getCollisionShapeAabb() const override;
+  Magnum::Range3D getCollisionShapeAabb() const override;
+
+  /** @brief Object data: All components of a @ref RigidObjectType::OBJECT are
+   * wrapped into one @ref btRigidBody.
+   */
+  std::unique_ptr<btRigidBody> bObjectRigidBody_;
 
  private:
   /**
@@ -483,22 +531,19 @@ class BulletRigidObject : public BulletBase,
   //! deffered construction of collision shape
   Mn::Vector3 originShift_;
 
-  //! Object data: Composite convex collision shape
-  std::vector<std::unique_ptr<btConvexHullShape>> bObjectConvexShapes_;
-
-  //! list of @ref btCollisionShape for storing arbitrary collision shapes
-  //! referenced within the @ref bObjectShape_.
-  std::vector<std::unique_ptr<btCollisionShape>> bGenericShapes_;
-
   //! Object data: All components of the collision shape
   std::unique_ptr<btCompoundShape> bObjectShape_;
 
   std::unique_ptr<btCompoundShape> bEmptyShape_;
 
-  /** @brief Object data: All components of a @ref RigidObjectType::OBJECT are
-   * wrapped into one @ref btRigidBody.
-   */
-  std::unique_ptr<btRigidBody> bObjectRigidBody_;
+  void setWorldTransform(const btTransform& worldTrans) override;
+
+  void getWorldTransform(btTransform& worldTrans) const override;
+
+  std::string getCollisionDebugName();
+
+  Corrade::Containers::Optional<btTransform> deferredUpdate_ =
+      Corrade::Containers::NullOpt;
 
   ESP_SMART_POINTERS(BulletRigidObject)
 };

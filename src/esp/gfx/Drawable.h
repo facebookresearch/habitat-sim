@@ -6,8 +6,9 @@
 #define ESP_GFX_DRAWABLE_H_
 
 #include <Corrade/Containers/EnumSet.h>
+#include <Corrade/Utility/Assert.h>
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "magnum.h"
 
 namespace esp {
@@ -17,6 +18,15 @@ class SceneNode;
 namespace gfx {
 
 class DrawableGroup;
+
+enum class DrawableType : uint8_t {
+  None = 0,
+  Generic = 1,
+  Pbr = 2,
+  PTexMesh = 3,
+  MeshVisualizer = 4,
+  VarianceShadowMap = 6,
+};
 
 /**
  * @brief Drawable for use with @ref DrawableGroup.
@@ -39,7 +49,13 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
     /**
      * indicates the mesh data has separate bi-tangent attribute
      */
-    HasSeparateBitangent = 1 << 1
+    HasSeparateBitangent = 1 << 1,
+
+    /**
+     * indicates whether the mesh is vertex colored
+     */
+    HasVertexColor = 1 << 2
+
   };
   /** @brief Flags */
   typedef Corrade::Containers::EnumSet<Flag> Flags;
@@ -49,10 +65,12 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
    *
    * @param node Node which will be made drawable.
    * @param mesh Mesh to draw when on render.
+   * @param type the type of this drawable
    * @param group Drawable group this drawable will be added to.
    */
   Drawable(scene::SceneNode& node,
-           Magnum::GL::Mesh& mesh,
+           Magnum::GL::Mesh* mesh,
+           DrawableType type,
            DrawableGroup* group = nullptr);
   ~Drawable() override;
 
@@ -69,12 +87,30 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
   /**
    * @brief Get the drawable id
    */
-  uint64_t getDrawableId() { return drawableId_; }
+  uint64_t getDrawableId() const { return drawableId_; }
 
+  /**
+   * @brief setup the lights.
+   * NOTE: sub-class should override this function
+   */
   virtual void setLightSetup(
       CORRADE_UNUSED const Magnum::ResourceKey& lightSetup){};
+  /**
+   * @brief the the scene node
+   */
+  virtual scene::SceneNode& getSceneNode() const { return node_; }
 
-  Magnum::GL::Mesh& getMesh() { return mesh_; }
+  /** @brief get the GL mesh */
+  Magnum::GL::Mesh& getMesh() const {
+    CORRADE_ASSERT(
+        mesh_ != nullptr,
+        "Drawable::getMesh() : Attempting to get the GL mesh when none exists",
+        *mesh_);
+    return *mesh_;
+  }
+
+  /** @brief get the drawable type */
+  DrawableType getDrawableType() const { return type_; }
 
   /**
    * @brief Get the Magnum GL mesh for visualization, highlighting (e.g., used
@@ -85,7 +121,10 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
    * NOTE: sub-class should override this function if the "visualizer mesh" is
    * different from mesh_ (check the example in the PTexMeshDrawable class)
    */
-  virtual Magnum::GL::Mesh& getVisualizerMesh() { return mesh_; }
+  virtual Magnum::GL::Mesh& getVisualizerMesh() {
+    CORRADE_INTERNAL_ASSERT(mesh_ != nullptr);
+    return *mesh_;
+  }
 
  protected:
   /**
@@ -97,14 +136,20 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
    * Each derived drawable class needs to implement this draw() function.
    * It's nothing more than drawing itself with its group's shader.
    */
-  void draw(const Magnum::Matrix4& transformationMatrix,
-            Magnum::SceneGraph::Camera3D& camera) override = 0;
+  void draw(CORRADE_UNUSED const Magnum::Matrix4& transformationMatrix,
+            CORRADE_UNUSED Magnum::SceneGraph::Camera3D& camera) override = 0;
+
+  DrawableType type_ = DrawableType::None;
+
+  scene::SceneNode& node_;
 
   static uint64_t drawableIdCounter;
   uint64_t drawableId_;
 
-  scene::SceneNode& node_;
-  Magnum::GL::Mesh& mesh_;
+  bool glMeshExists() const { return mesh_ != nullptr; }
+
+ private:
+  Magnum::GL::Mesh* mesh_ = nullptr;
 };
 
 CORRADE_ENUMSET_OPERATORS(Drawable::Flags)

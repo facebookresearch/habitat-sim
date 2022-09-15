@@ -13,8 +13,8 @@
 
 #include "PTexMeshShader.h"
 #include "esp/assets/PTexMeshData.h"
-#include "esp/core/esp.h"
-#include "esp/io/io.h"
+#include "esp/core/Esp.h"
+#include "esp/io/Io.h"
 
 // This is to import the "resources" at runtime. // When the resource is
 // compiled into static library, it must be explicitly initialized via this
@@ -51,12 +51,12 @@ PTexMeshShader::PTexMeshShader() {
   Mn::GL::Shader geom{Mn::GL::Version::GL410, Mn::GL::Shader::Type::Geometry};
   Mn::GL::Shader frag{Mn::GL::Version::GL410, Mn::GL::Shader::Type::Fragment};
 
-  vert.addSource(rs.get("ptex-default-gl410.vert"));
-  geom.addSource(rs.get("ptex-default-gl410.geom"));
+  vert.addSource(rs.getString("ptex-default-gl410.vert"));
+  geom.addSource(rs.getString("ptex-default-gl410.geom"));
 #ifdef CORRADE_TARGET_APPLE
   frag.addSource("#define CORRADE_TARGET_APPLE\n");
 #endif
-  frag.addSource(rs.get("ptex-default-gl410.frag"));
+  frag.addSource(rs.getString("ptex-default-gl410.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, geom, frag}));
 

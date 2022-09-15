@@ -11,10 +11,10 @@ from torch.nn import functional as F
 from torch.utils.data import DataLoader, Dataset
 
 import habitat_sim
-from examples.settings import make_cfg
 from habitat_sim.utils.data.data_extractor import ImageExtractor
 from habitat_sim.utils.data.data_structures import ExtractorLRUCache
 from habitat_sim.utils.data.pose_extractor import TopdownView
+from habitat_sim.utils.settings import make_cfg
 
 
 class TrivialNet(nn.Module):
@@ -70,7 +70,7 @@ def test_extractor_cache():
     cache.add(2, "two")
     cache.add(3, "three")
     assert cache[next(reversed(list(cache._order)))] == "three"
-    accessed_data = cache[2]  # noqa : F841
+    accessed_data = cache[2]  # noqa: F841
     assert cache[next(reversed(list(cache._order)))] == "two"
     cache.remove_from_back()
     assert 1 not in cache

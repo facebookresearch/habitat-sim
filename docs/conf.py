@@ -9,15 +9,15 @@ import sys
 
 # TODO make this less brittle
 sys.path = [
-    os.path.join(os.path.dirname(__file__), "../"),
+    os.path.join(os.path.dirname(__file__), "..", "src_python"),
     # os.path.join(os.path.dirname(__file__), '../build-bundledmagnum/src/deps/magnum-bindings/src/python/')
 ] + sys.path
 
 
-import habitat_sim  # NOQA
+import habitat_sim
 
 # TODO: remove once m.css handles class hierarchies better
-habitat_sim.logging.GlogFormatter.formatStack.__doc__ = ""
+habitat_sim.logging.HabitatSimFormatter.formatStack.__doc__ = ""
 # Monkey patch the registry to be the _Registry class instead of the singleton for docs
 habitat_sim.registry = type(habitat_sim.registry)
 # TODO: remove once utils/__init__.py is removed again
@@ -38,7 +38,9 @@ INPUT_PAGES = [
     "pages/stereo-agent.rst",
     "pages/lighting-setups.rst",
     "pages/image-extractor.rst",
-    "pages/rigid-object-tutorial.rst",
+    "pages/asset-viewer-tutorial.rst",
+    "pages/managed-rigid-object-tutorial.rst",
+    "pages/logging.rst",
 ]
 
 PLUGINS = [
@@ -78,7 +80,8 @@ LINKS_NAVBAR1 = [
             ("Stereo agent", "stereo-agent"),
             ("Lighting Setups", "lighting-setups"),
             ("Image extraction", "image-extractor"),
-            ("Rigid Object Tutorial", "rigid-object-tutorial"),
+            ("View Assets in Habitat-sim", "asset-viewer-tutorial"),
+            ("Managed Rigid Object Tutorial", "managed-rigid-object-tutorial"),
         ],
     ),
     ("Classes", "classes", []),
@@ -92,7 +95,8 @@ LINKS_NAVBAR2 = [
 ]
 
 FINE_PRINT = f"""
-| {PROJECT_TITLE} {PROJECT_SUBTITLE}. Copyright © 2020 Facebook AI Research.
+| {PROJECT_TITLE} {PROJECT_SUBTITLE}. Copyright © 2021 Facebook AI Research.
+| `Terms of Use </terms-of-use>`_ `Data Policy </data-policy>`_ `Cookie Policy </cookie-policy>`_
 | Created with `m.css Python doc generator <https://mcss.mosra.cz/documentation/python/>`_."""
 THEME_COLOR = "#478cc3"
 STYLESHEETS = [

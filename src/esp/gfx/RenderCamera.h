@@ -7,8 +7,8 @@
 
 #include "magnum.h"
 
-#include "esp/core/esp.h"
-#include "esp/geo/geo.h"
+#include "esp/core/Esp.h"
+#include "esp/geo/Geo.h"
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
@@ -38,22 +38,42 @@ class RenderCamera : public MagnumCamera {
      * object id" is not set)
      */
     UseDrawableIdAsObjectId = 1 << 2,
+
+    /**
+     * Clear depth, used in the sub-class CubeMapCamera
+     */
+    ClearDepth = 1 << 3,
+
+    /**
+     * Clear color, used in the sub-class CubeMapCamera
+     */
+    ClearColor = 1 << 4,
+
+    /**
+     * Clear object id, used in the sub-class CubeMapCamera
+     */
+    ClearObjectId = 1 << 5,
   };
 
   typedef Corrade::Containers::EnumSet<Flag> Flags;
   CORRADE_ENUMSET_FRIEND_OPERATORS(Flags)
 
+  typedef std::vector<
+      std::pair<std::reference_wrapper<Magnum::SceneGraph::Drawable3D>,
+                Magnum::Matrix4>>
+      DrawableTransforms;
+
   /**
    * @brief Constructor
-   * @param node, the scene node to which the camera is attached
+   * @param node the scene node to which the camera is attached
    */
   explicit RenderCamera(scene::SceneNode& node);
   /**
    * @brief Constructor
-   * @param node, the scene node to which the camera is attached
-   * @param eye, the eye position (in PARENT node space)
-   * @param target, the target position (in PARENT node space)
-   * @param up, the up direction (in PARENT node space)
+   * @param node the scene node to which the camera is attached
+   * @param eye the eye position (in PARENT node space)
+   * @param target the target position (in PARENT node space)
+   * @param up the up direction (in PARENT node space)
    * NOTE: it will override any relative transformation w.r.t its parent node
    */
   RenderCamera(scene::SceneNode& node,
@@ -62,10 +82,10 @@ class RenderCamera : public MagnumCamera {
                const vec3f& up);
   /**
    * @brief Constructor
-   * @param node, the scene node to which the camera is attached
-   * @param eye, the eye position (in PARENT node space)
-   * @param target, the target position (in PARENT node space)
-   * @param up, the up direction (in PARENT node space)
+   * @param node the scene node to which the camera is attached
+   * @param eye the eye position (in PARENT node space)
+   * @param target the target position (in PARENT node space)
+   * @param up the up direction (in PARENT node space)
    * NOTE: it will override any relative transformation w.r.t its parent node
    */
   RenderCamera(scene::SceneNode& node,
@@ -74,9 +94,9 @@ class RenderCamera : public MagnumCamera {
                const Magnum::Vector3& up);
   /**
    * @brief Reset the initial viewing parameters of the camera
-   * @param eye, the eye position (in PARENT node space)
-   * @param target, the target position (in PARENT node space)
-   * @param up, the up direction (in PARENT node space)
+   * @param eye the eye position (in PARENT node space)
+   * @param target the target position (in PARENT node space)
+   * @param up the up direction (in PARENT node space)
    * @return Reference to self (for method chaining)
    * NOTE: it will override any relative transformation w.r.t its parent node
    */
@@ -95,14 +115,22 @@ class RenderCamera : public MagnumCamera {
    */
   ~RenderCamera() override = default;
 
-  // Get the scene node being attached to.
+  /**
+   * @brief Get the scene node being attached to.
+   */
   scene::SceneNode& node() { return object(); }
+
+  /**
+   * @brief Get a const ref to the scene node being attached to.
+   */
   const scene::SceneNode& node() const { return object(); }
 
-  // Overloads to avoid confusion
+  /** @overload */
   scene::SceneNode& object() {
     return static_cast<scene::SceneNode&>(MagnumCamera::object());
   }
+
+  /** @overload */
   const scene::SceneNode& object() const {
     return static_cast<const scene::SceneNode&>(MagnumCamera::object());
   }
@@ -111,6 +139,7 @@ class RenderCamera : public MagnumCamera {
    * @brief Set precalculated projection matrix for this RenderCamera
    * @param width The width of the viewport
    * @param height The height of the viewport
+   * @param projMat The projection matrix to use.
    * @return A reference to this RenderCamera
    */
   RenderCamera& setProjectionMatrix(int width,
@@ -121,6 +150,15 @@ class RenderCamera : public MagnumCamera {
     return *this;
   }
 
+  /**
+   * @brief Set precalculated projection matrix for this RenderCamera
+   * @param width The width of the viewport
+   * @param height The height of the viewport
+   * @param znear The location of the near clipping plane
+   * @param zfar The location of the far clipping plane
+   * @param hfov The horizontal field of view.
+   * @return A reference to this RenderCamera
+   */
   RenderCamera& setProjectionMatrix(int width,
                                     int height,
                                     float znear,
@@ -144,15 +182,17 @@ class RenderCamera : public MagnumCamera {
 
   /**
    * @brief Overload function to render the drawables
-   * @param drawables, a drawable group containing all the drawables
-   * @param frustumCulling, whether do frustum culling or not, default: false
+   * @param drawables a drawable group containing all the drawables
+   * @param flags state flags to direct drawing
    * @return the number of drawables that are drawn
    */
   uint32_t draw(MagnumDrawableGroup& drawables, Flags flags = {});
 
+  uint32_t draw(DrawableTransforms& drawableTransforms, Flags flags = {});
+
   /**
    * @brief performs the frustum culling
-   * @param drawableTransforms, a vector of pairs of Drawable3D object and its
+   * @param drawableTransforms a vector of pairs of Drawable3D object and its
    * absolute transformation
    * @return the number of drawables that are not culled
    *
@@ -160,21 +200,19 @@ class RenderCamera : public MagnumCamera {
    * The preferred way is to enable the frustum culling by calling @ref
    * setFrustumCullingEnabled and then call @ref draw
    */
-  size_t cull(std::vector<
-              std::pair<std::reference_wrapper<Magnum::SceneGraph::Drawable3D>,
-                        Magnum::Matrix4>>& drawableTransforms);
+  size_t cull(DrawableTransforms& drawableTransforms);
 
   /**
    * @brief Cull Drawables for SceneNodes which are not OBJECT type.
    *
-   * @param drawableTransforms, a vector of pairs of Drawable3D object and its
+   * @param drawableTransforms a vector of pairs of Drawable3D object and its
    * absolute transformation
    * @return the number of drawables that are not culled
    */
-  size_t removeNonObjects(
-      std::vector<
-          std::pair<std::reference_wrapper<Magnum::SceneGraph::Drawable3D>,
-                    Magnum::Matrix4>>& drawableTransforms);
+  size_t removeNonObjects(DrawableTransforms& drawableTransforms);
+
+  size_t filterTransforms(DrawableTransforms& drawableTransforms,
+                          Flags flags = {});
 
   /**
    * @brief if the "immediate" following rendering pass is to use drawable ids
@@ -184,7 +222,7 @@ class RenderCamera : public MagnumCamera {
    * @return true, if it is to use drawable ids as the object ids in the
    * following rendering pass, otherwise false
    */
-  bool useDrawableIds() { return useDrawableIds_; }
+  bool useDrawableIds() const { return useDrawableIds_; }
   /**
    * @brief Unproject a 2D viewport point to a 3D ray with origin at camera
    * position.

@@ -3,6 +3,7 @@ from os import path as osp
 
 import pytest
 
+import habitat_sim
 from utils import run_main_subproc
 
 
@@ -26,7 +27,12 @@ def powerset(iterable):
         ("examples/tutorials/lighting_tutorial.py", "--no-show-images"),
         ("examples/tutorials/new_actions.py",),
         (
-            "examples/tutorials/nb_python/rigid_object_tutorial.py",
+            "examples/tutorials/nb_python/managed_rigid_object_tutorial.py",
+            "--no-show-video",
+            "--no-make-video",
+        ),
+        (
+            "examples/tutorials/nb_python/asset_viewer.py",
             "--no-show-video",
             "--no-make-video",
         ),
@@ -51,9 +57,40 @@ def powerset(iterable):
             "--no-make-video",
         ),
         ("examples/tutorials/semantic_id_tutorial.py", "--no-show-images"),
+        ("examples/tutorials/async_rendering.py",),
     ],
 )
 def test_example_modules(args):
+    run_main_subproc(args)
+
+
+@pytest.mark.skipif(
+    not habitat_sim.vhacd_enabled,
+    reason="Requires Habitat-sim to be built with VHACD (--vhacd)",
+)
+@pytest.mark.parametrize(
+    "args",
+    [("examples/tutorials/VHACD_tutorial.py", "--no-show-video", "--no-make-video")],
+)
+def test_vhacd_example(args):
+    run_main_subproc(args)
+
+
+@pytest.mark.skipif(
+    not osp.exists("data/replica_cad/"),
+    reason="Requires ReplicaCAD dataset.",
+)
+@pytest.mark.parametrize(
+    "args",
+    [
+        (
+            "examples/tutorials/nb_python/ReplicaCAD_quickstart.py",
+            "--no-show-video",
+            "--no-make-video",
+        )
+    ],
+)
+def test_replica_cad_quickstart(args):
     run_main_subproc(args)
 
 
@@ -78,6 +115,7 @@ def test_example_modules(args):
         )
         if not (("--compute_action_shortest_path" in p) and ("--enable_physics" in p))
     ],
+    ids=str,
 )
 def test_example_script(args):
     run_main_subproc(args)

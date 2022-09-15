@@ -1,0 +1,13 @@
+{
+	"render_asset": "dataset_test_stage.glb",
+	"up":[0,1,0],
+	"front":[0,0,-1],
+	"origin":[0,0,0],
+	"scale":[2,2,2],
+	"gravity":[0,-9.8,0],
+	"margin":0.03,
+	"friction_coefficient": 0.3,
+	"restitution_coefficient": 0.3,
+	"units_to_meters":1.0,
+	"force_flat_shading": false
+}

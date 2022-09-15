@@ -5,15 +5,16 @@
 #ifndef ESP_NAV_PATHFINDER_H_
 #define ESP_NAV_PATHFINDER_H_
 
+#include <Corrade/Containers/Optional.h>
 #include <string>
 #include <vector>
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 namespace esp {
 // forward declaration
 namespace assets {
-class MeshData;
+struct MeshData;
 }
 
 namespace nav {
@@ -97,41 +98,70 @@ struct MultiGoalShortestPath {
 
   friend class PathFinder;
 
-  ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(MultiGoalShortestPath);
+  ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(MultiGoalShortestPath)
 };
 
+//! Configuration structure for NavMesh generation with recast. See
+//! http://digestingduck.blogspot.com/2009/08/recast-settings-uncovered.html for
+//! more details on configuring these parameters for your use case.
 struct NavMeshSettings {
-  //! Cell size in world units
+  //! XZ-plane cell size in world units. Size of square voxel sides in XZ.
   float cellSize{};
-  //! Cell height in world units
+  //! Y-axis cell height in world units. Voxel height.
   float cellHeight{};
-  //! Agent height in world units
+  //! Minimum floor to 'ceiling' height that will still allow the floor area to
+  //! be considered unobstructed in world units. Will be rounded up to a
+  //! multiple of cellHeight.
   float agentHeight{};
-  //! Agent radius in world units
+  //! Agent radius in world units. The distance to erode/shrink the walkable
+  //! area of the heightfield away from obstructions. Will be rounded up to a
+  //! multiple of cellSize.
   float agentRadius{};
-  //! Agent max climb in world units
+  //! Maximum ledge height that is considered to be traversable in world units
+  //! (e.g. for stair steps). Will be truncated to a multiple of cellHeight.
   float agentMaxClimb{};
-  //! Agent max slope in degrees
+  //! The maximum slope that is considered walkable in degrees.
   float agentMaxSlope{};
-  //! Region minimum size in voxels. regionMinSize = sqrt(regionMinArea)
+  //! Region minimum size in voxels. regionMinSize = sqrt(regionMinArea) The
+  //! minimum number of cells allowed to form isolated island areas.
   float regionMinSize{};
-  //! Region merge size in voxels. regionMergeSize = sqrt(regionMergeArea)
+  //! Region merge size in voxels. regionMergeSize = sqrt(regionMergeArea) Any
+  //! 2-D regions with a smaller span (cell count) will, if possible, be merged
+  //! with larger regions.
   float regionMergeSize{};
-  //! Edge max length in world units
+  //! Edge max length in world units. The maximum allowed length for contour
+  //! edges along the border of the mesh. Extra vertices will be inserted as
+  //! needed to keep contour edges below this length. A value of zero
+  //! effectively disables this feature. A good value for edgeMaxLen is
+  //! something like agenRadius*8. Will be rounded to a multiple of cellSize.
   float edgeMaxLen{};
-  //! Edge max error in voxels
+  //! The maximum distance a simplfied contour's border edges should deviate the
+  //! original raw contour. Good values are between 1.1-1.5 (1.3 usually yield
+  //! good results). More results in jaggies, less cuts corners.
   float edgeMaxError{};
+  //! The maximum number of vertices allowed for polygons generated during the
+  //! contour to polygon conversion process. [Limit: >= 3]
   float vertsPerPoly{};
-  //! Detail sample distance in voxels
+  //! Detail sample distance in voxels. Sets the sampling distance to use when
+  //! generating the detail mesh. (For height detail only.) [Limits: 0 or >=
+  //! 0.9] [x cell_size]
   float detailSampleDist{};
-  //! Detail sample max error in voxel heights.
+  //! Detail sample max error in voxel heights. The maximum distance the detail
+  //! mesh surface should deviate from heightfield data. (For height detail
+  //! only.) [Limit: >=0] [x cell_height]
   float detailSampleMaxError{};
-  //! Bounds of the area to mesh
-  vec3f navMeshBMin;
-  vec3f navMeshBMax;
 
+  //! Marks navigable spans as non-navigable if the clearence above the span is
+  //! less than the specified height.
   bool filterLowHangingObstacles{};
+  //! Marks spans that are ledges as non-navigable. This filter reduces the
+  //! impact of the overestimation of conservative voxelization so the resulting
+  //! mesh will not have regions hanging in the air over ledges.
   bool filterLedgeSpans{};
+  //! Marks navigable spans as non-navigable if the clearence above the span is
+  //! less than the specified height. Allows the formation of navigable regions
+  //! that will flow over low lying objects such as curbs, and up structures
+  //! such as stairways.
   bool filterWalkableLowHeightSpans{};
 
   void setDefaults() {
@@ -158,6 +188,9 @@ struct NavMeshSettings {
   ESP_SMART_POINTERS(NavMeshSettings)
 };
 
+bool operator==(const NavMeshSettings& a, const NavMeshSettings& b);
+bool operator!=(const NavMeshSettings& a, const NavMeshSettings& b);
+
 /** Loads and/or builds a navigation mesh and then performs path
  * finding and collision queries on that navmesh
  *
@@ -172,9 +205,9 @@ class PathFinder {
 
   bool build(const NavMeshSettings& bs,
              const float* verts,
-             const int nverts,
+             int nverts,
              const int* tris,
-             const int ntris,
+             int ntris,
              const float* bmin,
              const float* bmax);
   bool build(const NavMeshSettings& bs, const esp::assets::MeshData& mesh);
@@ -182,7 +215,7 @@ class PathFinder {
   /**
    * @brief Returns a random navigable point
    *
-   * @param maxTries[in] The maximum number of tries sampling will be retried if
+   * @param[in] maxTries The maximum number of tries sampling will be retried if
    * it fails.
    *
    * @return A random navigable point.
@@ -192,6 +225,10 @@ class PathFinder {
    * isNavigable to check if the point is navigable.
    */
   vec3f getRandomNavigablePoint(int maxTries = 10);
+
+  vec3f getRandomNavigablePointAroundSphere(const vec3f& circleCenter,
+                                            float radius,
+                                            int maxTries = 10);
 
   /**
    * @brief Finds the shortest path between two points on the navigation mesh
@@ -302,15 +339,14 @@ class PathFinder {
    * maxSearchRadius if all locations within @ref maxSearchRadius are navigable
    */
   float distanceToClosestObstacle(const vec3f& pt,
-                                  const float maxSearchRadius = 2.0) const;
+                                  float maxSearchRadius = 2.0) const;
 
   /**
    * @brief Same as @ref distanceToClosestObstacle but returns additional
    * information.
    */
-  HitRecord closestObstacleSurfacePoint(
-      const vec3f& pt,
-      const float maxSearchRadius = 2.0) const;
+  HitRecord closestObstacleSurfacePoint(const vec3f& pt,
+                                        float maxSearchRadius = 2.0) const;
 
   /**
    * @brief Query whether or not a given location is navigable
@@ -325,7 +361,7 @@ class PathFinder {
    *
    * @return Whether or not @ref pt is navigable
    */
-  bool isNavigable(const vec3f& pt, const float maxYDelta = 0.5) const;
+  bool isNavigable(const vec3f& pt, float maxYDelta = 0.5) const;
 
   /**
    * Compute and return the total area of all NavMesh polygons
@@ -338,8 +374,8 @@ class PathFinder {
   std::pair<vec3f, vec3f> bounds() const;
 
   Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> getTopDownView(
-      const float metersPerPixel,
-      const float height);
+      float metersPerPixel,
+      float height);
 
   /**
    * @brief Returns a MeshData object containing triangulated NavMesh polys. The
@@ -349,9 +385,14 @@ class PathFinder {
    *
    * @return The object containing triangulated NavMesh polys.
    */
-  const std::shared_ptr<assets::MeshData> getNavMeshData();
+  std::shared_ptr<assets::MeshData> getNavMeshData();
 
-  ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(PathFinder);
+  /**
+   * @brief Return the settings for the current NavMesh.
+   */
+  Corrade::Containers::Optional<NavMeshSettings> getNavMeshSettings() const;
+
+  ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(PathFinder)
 };
 
 }  // namespace nav

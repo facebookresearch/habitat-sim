@@ -61,6 +61,12 @@ class Player {
   void readKeyframesFromFile(const std::string& filepath);
 
   /**
+   * @brief Given a JSON string encoding a keyframe, returns the keyframe
+   * itself.
+   */
+  Keyframe keyframeFromString(const std::string& keyframe);
+
+  /**
    * @brief Get the currently-set keyframe, or -1 if no keyframe is set.
    */
   int getKeyframeIndex() const;
@@ -96,10 +102,25 @@ class Player {
     keyframes_ = std::move(keyframes);
   }
 
+  /**
+   * @brief Reserved for unit-testing.
+   */
+  const std::vector<Keyframe>& debugGetKeyframes() const { return keyframes_; }
+
+  /**
+   * @brief Appends a Keyframe to the keyframe list.
+   */
+  void appendKeyframe(Keyframe&& keyframe);
+
+  /**
+   * @brief Appends a JSON keyframe to the keyframe list.
+   */
+  void appendJSONKeyframe(const std::string& keyframe);
+
  private:
+  void applyKeyframe(const Keyframe& keyframe);
   void readKeyframesFromJsonDocument(const rapidjson::Document& d);
   void clearFrame();
-  void applyKeyframe(const Keyframe& keyframe);
   static void setSemanticIdForSubtree(esp::scene::SceneNode* rootNode,
                                       int semanticId);
 

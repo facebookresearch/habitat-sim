@@ -16,9 +16,11 @@ enum class AssetType;
 }  // namespace assets
 namespace metadata {
 namespace managers {
+using esp::core::managedContainers::ManagedObjectAccess;
+
 class StageAttributesManager
     : public AbstractObjectAttributesManager<attributes::StageAttributes,
-                                             core::ManagedObjectAccess::Copy> {
+                                             ManagedObjectAccess::Copy> {
  public:
   StageAttributesManager(
       ObjectAttributesManager::ptr objectAttributesMgr,
@@ -110,7 +112,7 @@ class StageAttributesManager
       attributes::StageAttributes::ptr attributes,
       bool setFrame,
       const std::string& meshHandle,
-      std::function<void(int)> assetTypeSetter) override;
+      const std::function<void(int)>& assetTypeSetter) override;
   /**
    * @brief Used Internally.  Create and configure newly-created attributes with
    * any default values, before any specific values are set.
@@ -129,12 +131,13 @@ class StageAttributesManager
    * @brief This method will perform any necessary updating that is
    * attributesManager-specific upon template removal, such as removing a
    * specific template handle from the list of file-based template handles in
-   * ObjectAttributesManager.  This should only be called internally.
+   * ObjectAttributesManager.  This should only be called internally from @ref
+   * esp::core::ManagedContainerBase.
    *
    * @param templateID the ID of the template to remove
    * @param templateHandle the string key of the attributes desired.
    */
-  void updateObjectHandleLists(
+  void deleteObjectInternalFinalize(
       CORRADE_UNUSED int templateID,
       CORRADE_UNUSED const std::string& templateHandle) override {}
 
@@ -163,13 +166,6 @@ class StageAttributesManager
    * reset.
    */
   void resetFinalize() override {}
-
-  /**
-   * @brief This function will assign the appropriately configured function
-   * pointer for the copy constructor as required by
-   * AttributesManager<StageAttributes::ptr>
-   */
-  void buildCtorFuncPtrMaps() override;
 
   // instance vars
 

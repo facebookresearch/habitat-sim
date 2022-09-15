@@ -17,7 +17,7 @@ subclasses of the `habitat_sim.agent.SceneNodeControl` class and have a
 
 The scene_node is what the control function manipulates (or controls) and the
 actuation_spec contains any parameters needed by that control function.
-See ``habitat_sim/agent/controls/default_controls.py`` for more example
+See ``src_python/habitat_sim/agent/controls/default_controls.py`` for more example
 controls.
 
 Controls are registered using `habitat_sim.registry.register_move_fn()`.

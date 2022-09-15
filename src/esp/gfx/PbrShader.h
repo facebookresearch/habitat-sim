@@ -10,12 +10,12 @@
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/EnumSet.h>
 #include <Magnum/GL/AbstractShaderProgram.h>
-#include <Magnum/Shaders/Generic.h>
+#include <Magnum/GL/GL.h>  // header with all forward declarations for the Mn::GL namespace
+#include <Magnum/Shaders/GenericGL.h>
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 namespace esp {
-
 namespace gfx {
 
 class PbrShader : public Magnum::GL::AbstractShaderProgram {
@@ -24,12 +24,12 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   /**
    * @brief vertex positions
    */
-  typedef Magnum::Shaders::Generic3D::Position Position;
+  typedef Magnum::Shaders::GenericGL3D::Position Position;
 
   /**
    * @brief normal direction
    */
-  typedef Magnum::Shaders::Generic3D::Normal Normal;
+  typedef Magnum::Shaders::GenericGL3D::Normal Normal;
 
   /**
    * @brief 2D texture coordinates
@@ -38,7 +38,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    * @ref Flag::BaseColorTexture, @ref Flag::NormalTexture and
    * @ref Flag::RoughnessTexture @ref Flag::MetallicTexture is set.
    */
-  typedef Magnum::Shaders::Generic3D::TextureCoordinates TextureCoordinates;
+  typedef Magnum::Shaders::GenericGL3D::TextureCoordinates TextureCoordinates;
 
   /**
    * @brief Tangent direction with the fourth component indicating the handness.
@@ -50,7 +50,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    *
    * Used only if @ref Flag::NormalTexture is set.
    */
-  typedef Magnum::Shaders::Generic3D::Tangent4 Tangent4;
+  typedef Magnum::Shaders::GenericGL3D::Tangent4 Tangent4;
 
   enum : Magnum::UnsignedInt {
     /**
@@ -58,7 +58,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * present always. Expects three- or four-component floating-point
      * or normalized buffer attachment.
      */
-    ColorOutput = Magnum::Shaders::Generic3D::ColorOutput,
+    ColorOutput = Magnum::Shaders::GenericGL3D::ColorOutput,
 
     /**
      * Object ID shader output. @ref shaders-generic "Generic output",
@@ -66,7 +66,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * single-component unsigned integral attachment. Writes the value
      * set in @ref setObjectId() there.
      */
-    ObjectIdOutput = Magnum::Shaders::Generic3D::ObjectIdOutput,
+    ObjectIdOutput = Magnum::Shaders::GenericGL3D::ObjectIdOutput,
   };
 
   /**
@@ -74,7 +74,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    *
    * @see @ref Flags, @ref flags()
    */
-  enum class Flag : Magnum::UnsignedShort {
+  enum class Flag : Magnum::UnsignedInt {
     /**
      * Multiply base color with the baseColor texture.
      * @see @ref setBaseColor(), @ref bindBaseColorTexture()
@@ -160,8 +160,8 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
     /*
      * Precomputed tangent as the vertex attribute
-     * Otherwise, it will be computed in the fragement shader dynamically
-     * see PBR fragement shader code for more details
+     * Otherwise, it will be computed in the fragment shader dynamically
+     * see PBR fragment shader code for more details
      * Requires the @ref Tangent4 attribute to be present.
      */
     PrecomputedTangent = 1 << 10,
@@ -170,11 +170,29 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * Enable object ID output.
      */
     ObjectId = 1 << 11,
+
     /**
      * Enable double-sided rendering.
+     * (Temporarily STOP supporting this functionality. See comments in
+     * the PbrDrawable::draw() function)
      */
     DoubleSided = 1 << 12,
 
+    /**
+     * Enable image based lighting
+     */
+    ImageBasedLighting = 1 << 13,
+
+    /**
+     * render point light shadows using variance shadow map (VSM)
+     */
+    ShadowsVSM = 1 << 14,
+
+    /**
+     * Enable shader debug mode. Then developer can set the uniform
+     * PbrDebugDisplay in the fragment shader for debugging
+     */
+    DebugDisplay = 1 << 15,
     /*
      * TODO: alphaMask
      */
@@ -252,8 +270,42 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    */
   PbrShader& bindEmissiveTexture(Magnum::GL::Texture2D& texture);
 
-  PbrShader& setTextureMatrix(const Magnum::Matrix3& matrix);
+  /**
+   * @brief Bind the irradiance cubemap texture
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& bindIrradianceCubeMap(Magnum::GL::CubeMapTexture& texture);
+
+  /**
+   * @brief Bind the BRDF LUT texture
+   * NOTE: requires Flag::ImageBasedLighting is set
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& bindBrdfLUT(Magnum::GL::Texture2D& texture);
+
+  /**
+   * @brief Bind the prefiltered environment map (cubemap texture)
+   * NOTE: requires Flag::ImageBasedLighting is set
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& bindPrefilteredMap(Magnum::GL::CubeMapTexture& texture);
+
+  /**
+   * @brief Bind the point shadow map (cubemap texture)
+   * @param[in] idx, the index of the shadow map, can be 0, 1, or 2. (We allow
+   * at most 3 shadow maps.)
+   * NOTE: requires Flag::ShadowsPCF or Flag::ShadowsVSM is set
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& bindPointShadowMap(int idx, Magnum::GL::CubeMapTexture& texture);
+
   // ======== set uniforms ===========
+  /**
+   * @brief set the texture transformation matrix
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& setTextureMatrix(const Magnum::Matrix3& matrix);
+
   /**
    *  @brief Set "projection" matrix to the uniform on GPU
    *  @return Reference to self (for method chaining)
@@ -261,11 +313,16 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   PbrShader& setProjectionMatrix(const Magnum::Matrix4& matrix);
 
   /**
-   *  @brief Set modelview matrix to the uniform on GPU
-   *         modelview = view * model
+   *  @brief Set view matrix to the uniform on GPU
    *  @return Reference to self (for method chaining)
    */
-  PbrShader& setTransformationMatrix(const Magnum::Matrix4& matrix);
+  PbrShader& setViewMatrix(const Magnum::Matrix4& matrix);
+
+  /**
+   *  @brief Set model matrix to the uniform on GPU
+   *  @return Reference to self (for method chaining)
+   */
+  PbrShader& setModelMatrix(const Magnum::Matrix4& matrix);
 
   /**
    *  @brief Set normal matrix to the uniform on GPU
@@ -304,8 +361,21 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   PbrShader& setObjectId(unsigned int objectId);
 
   /**
+   *  @brief Set object id to the uniform on GPU
+   *  @return Reference to self (for method chaining)
+   */
+  PbrShader& setCameraWorldPosition(const Magnum::Vector3& cameraWorldPos);
+
+  /**
+   *  @brief Set total mipmap levels of the prefiltered environment map to the
+   * uniform on GPU
+   *  @return Reference to self (for method chaining)
+   */
+  PbrShader& setPrefilteredMapMipLevels(unsigned int mipLevels);
+
+  /**
    * @brief Set light positions or directions
-   * @param vectors, an array of the light vectors
+   * @param vectors an array of the light vectors
    * @return Reference to self (for method chaining)
    *
    * when vec.w == 0, it means vec.xyz is the light direction;
@@ -323,9 +393,9 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   /**
    *  @brief Set the position or direction of a specific light See @ref vec for
    *  details
-   *  @param lightIndex, the index of the light, MUST be smaller than
+   *  @param lightIndex the index of the light, MUST be smaller than
    *                     lightCount_
-   *  @param vec, the direction (or position) of the light in *camera* space;
+   *  @param vec the direction (or position) of the light in *camera* space;
    *              when vec.w == 0, it means vec.xyz is the light direction;
    *              when vec.w == 1, it means vec.xyz is the light position;
    *  @return Reference to self (for method chaining)
@@ -338,9 +408,9 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   /**
    *  @brief Set the position of a specific light.
-   *  @param lightIndex, the index of the light, MUST be smaller than
+   *  @param lightIndex the index of the light, MUST be smaller than
    * lightCount_
-   *  @param pos, the position of the light in *camera* space
+   *  @param pos the position of the light in *camera* space
    *  @return Reference to self (for method chaining)
    *  Note:
    *  If the light was a directional light, it will be overrided as a point
@@ -351,9 +421,9 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   /**
    *  @brief Set the direction of a specific light.
-   *  @param lightIndex, the index of the light, MUST be smaller than
+   *  @param lightIndex the index of the light, MUST be smaller than
    * lightCount_
-   *  @param dir, the direction of the light in *camera* space
+   *  @param dir the direction of the light in *camera* space
    *  @return Reference to self (for method chaining)
    *  NOTE:
    *  If the light was a point light, it will be overrided as a direction
@@ -364,19 +434,19 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   /**
    *  @brief Set the range of a specific light.
-   *  @param lightIndex, the index of the light, MUST be smaller than
+   *  @param lightIndex the index of the light, MUST be smaller than
    * lightCount_
-   *  @param range, the range of the light
+   *  @param range the range of the light
    *  @return Reference to self (for method chaining)
    */
   PbrShader& setLightRange(unsigned int lightIndex, float range);
 
   /**
    *  @brief Set the color of a specific light.
-   *  @param lightIndex, the index of the light, MUST be smaller than
+   *  @param lightIndex the index of the light, MUST be smaller than
    * lightCount_
-   *  @param color, the color of the light
-   *  @param intensity, the intensity of the light
+   *  @param color the color of the light
+   *  @param intensity the intensity of the light
    *  @return Reference to self (for method chaining)
    */
   PbrShader& setLightColor(unsigned int lightIndex,
@@ -385,7 +455,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   /**
    *  @brief Set the colors of the lights
-   *  @param color, the colors of the lights
+   *  @param colors the colors of the lights
    *  NOTE: the intensity MUST be included in the color
    *  @return Reference to self (for method chaining)
    */
@@ -399,7 +469,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   /**
    *  @brief Set the ranges of the lights
-   *  @param ranges, the ranges of the lights
+   *  @param ranges the ranges of the lights
    *  @return Reference to self (for method chaining)
    */
   PbrShader& setLightRanges(Corrade::Containers::ArrayView<const float> ranges);
@@ -409,7 +479,43 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    */
   PbrShader& setLightRanges(std::initializer_list<float> ranges);
 
+  /**
+   *  @brief Set the scale of the normal texture
+   *  @param scale
+   *  @return Reference to self (for method chaining)
+   */
   PbrShader& setNormalTextureScale(float scale);
+
+  /**
+   * Toggles that control contributions from different components
+   */
+  struct PbrEquationScales {
+    float directDiffuse = 1.0f;
+    float directSpecular = 1.0f;
+    float iblDiffuse = 1.0f;
+    float iblSpecular = 1.0f;
+  };
+
+  /**
+   *  @brief Set the scales for differenct components in the pbr equation
+   *  @param scales
+   *  @return Reference to self (for method chaining)
+   */
+  PbrShader& setPbrEquationScales(const PbrEquationScales& scales);
+
+  enum class PbrDebugDisplay : uint8_t {
+    None = 0,
+    DirectDiffuse = 1,
+    DirectSpecular = 2,
+    IblDiffuse = 3,
+    IblSpecular = 4,
+    Normal = 5,
+    Shadow0 = 6,
+  };
+  /**
+   *@brief debug display visualization
+   */
+  PbrShader& setDebugDisplay(PbrDebugDisplay index);
 
  protected:
   Flags flags_;
@@ -419,7 +525,8 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   // it hurts the performance to call glGetUniformLocation() every frame due
   // to string operations. therefore, cache the locations in the constructor
   // material uniforms
-  int modelviewMatrixUniform_ = ID_UNDEFINED;
+  int viewMatrixUniform_ = ID_UNDEFINED;
+  int modelMatrixUniform_ = ID_UNDEFINED;
   int normalMatrixUniform_ = ID_UNDEFINED;
   int projMatrixUniform_ = ID_UNDEFINED;
   int baseColorUniform_ = ID_UNDEFINED;  // diffuse color
@@ -432,10 +539,22 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   int lightColorsUniform_ = ID_UNDEFINED;
   int lightRangesUniform_ = ID_UNDEFINED;
-  // In the fragement shader, the "LightDirection" is a vec4.
+  // In the fragment shader, the "LightDirection" is a vec4.
   // when w == 0, it means .xyz is the light direction;
   // when w == 1, it means it is the light position, NOT the direction;
   int lightDirectionsUniform_ = ID_UNDEFINED;
+
+  int cameraWorldPosUniform_ = ID_UNDEFINED;
+  int prefilteredMapMipLevelsUniform_ = ID_UNDEFINED;
+
+  // scales
+  int componentScalesUniform_ = ID_UNDEFINED;
+
+  // pbr debug info
+  int pbrDebugDisplayUniform_ = ID_UNDEFINED;
+
+  /** @brief return true if direct lights or image based lighting is enabled. */
+  inline bool lightingIsEnabled() const;
 };
 
 CORRADE_ENUMSET_OPERATORS(PbrShader::Flags)

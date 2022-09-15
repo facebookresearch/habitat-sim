@@ -13,7 +13,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.6.0
+#       jupytext_version: 1.13.7
 #   kernelspec:
 #     display_name: Python 3
 #     name: python3
@@ -38,8 +38,7 @@
 # %%
 # @title Installation
 
-# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/master/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
-# !wget -c http://dl.fbaipublicfiles.com/habitat/mp3d_example.zip && unzip -o mp3d_example.zip -d /content/habitat-sim/data/scene_datasets/mp3d/
+# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/main/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
 
 # %%
 # @title Colab Setup and Imports { display-mode: "form" }
@@ -158,7 +157,7 @@ if display:
 # %%
 # This is the scene we are going to load.
 # we support a variety of mesh formats, such as .glb, .gltf, .obj, .ply
-test_scene = "./data/scene_datasets/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb"
+test_scene = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
 
 sim_settings = {
     "scene": test_scene,  # Scene path
@@ -282,7 +281,8 @@ navigateAndSee(action)
 # %%
 # @title Configure Sim Settings
 
-test_scene = "./data/scene_datasets/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb"
+test_scene = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
+mp3d_scene_dataset = "./data/scene_datasets/mp3d_example/mp3d.scene_dataset_config.json"
 
 rgb_sensor = True  # @param {type:"boolean"}
 depth_sensor = True  # @param {type:"boolean"}
@@ -292,6 +292,7 @@ sim_settings = {
     "width": 256,  # Spatial resolution of the observations
     "height": 256,
     "scene": test_scene,  # Scene path
+    "scene_dataset": mp3d_scene_dataset,  # the scene dataset configuration files
     "default_agent": 0,
     "sensor_height": 1.5,  # Height of sensors in meters
     "color_sensor": rgb_sensor,  # RGB sensor
@@ -307,6 +308,7 @@ def make_cfg(settings):
     sim_cfg = habitat_sim.SimulatorConfiguration()
     sim_cfg.gpu_device_id = 0
     sim_cfg.scene_id = settings["scene"]
+    sim_cfg.scene_dataset_config_file = settings["scene_dataset"]
     sim_cfg.enable_physics = settings["enable_physics"]
 
     # Note: all sensors must have the same resolution
@@ -316,7 +318,7 @@ def make_cfg(settings):
     color_sensor_spec.uuid = "color_sensor"
     color_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
     color_sensor_spec.resolution = [settings["height"], settings["width"]]
-    color_sensor_spec.postition = [0.0, settings["sensor_height"], 0.0]
+    color_sensor_spec.position = [0.0, settings["sensor_height"], 0.0]
     color_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
     sensor_specs.append(color_sensor_spec)
 
@@ -324,7 +326,7 @@ def make_cfg(settings):
     depth_sensor_spec.uuid = "depth_sensor"
     depth_sensor_spec.sensor_type = habitat_sim.SensorType.DEPTH
     depth_sensor_spec.resolution = [settings["height"], settings["width"]]
-    depth_sensor_spec.postition = [0.0, settings["sensor_height"], 0.0]
+    depth_sensor_spec.position = [0.0, settings["sensor_height"], 0.0]
     depth_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
     sensor_specs.append(depth_sensor_spec)
 
@@ -332,7 +334,7 @@ def make_cfg(settings):
     semantic_sensor_spec.uuid = "semantic_sensor"
     semantic_sensor_spec.sensor_type = habitat_sim.SensorType.SEMANTIC
     semantic_sensor_spec.resolution = [settings["height"], settings["width"]]
-    semantic_sensor_spec.postition = [0.0, settings["sensor_height"], 0.0]
+    semantic_sensor_spec.position = [0.0, settings["sensor_height"], 0.0]
     semantic_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
     sensor_specs.append(semantic_sensor_spec)
 
@@ -518,7 +520,7 @@ else:
     sim_topdown_map = sim.pathfinder.get_topdown_view(meters_per_pixel, height)
 
     if display:
-        # @markdown Alternatively, you can process the map using the Habitat-Lab [maps module](https://github.com/facebookresearch/habitat-api/blob/master/habitat/utils/visualizations/maps.py)
+        # @markdown Alternatively, you can process the map using the Habitat-Lab [maps module](https://github.com/facebookresearch/habitat-lab/blob/main/habitat/utils/visualizations/maps.py)
         hablab_topdown_map = maps.get_topdown_map(
             sim.pathfinder, height, meters_per_pixel=meters_per_pixel
         )
@@ -740,6 +742,8 @@ sim.pathfinder.load_nav_mesh(
 #
 # When computing the NavMesh at runtime, configuration options are available to customize the result based on the intended use case.
 #
+# To learn more, visit [this blog](http://digestingduck.blogspot.com/2009/08/recast-settings-uncovered.html) by the author of Recast.
+#
 # These settings include (all quantities in world units):
 # - **Voxelization parameters**:
 #
@@ -955,7 +959,9 @@ use_current_scene = False  # @param {type:"boolean"}
 sim_settings["seed"] = seed
 if not use_current_scene:
     # reload a default nav scene
-    sim_settings["scene"] = "./data/scene_datasets/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb"
+    sim_settings[
+        "scene"
+    ] = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
     cfg = make_cfg(sim_settings)
     try:  # make initialization Colab cell order proof
         sim.close()

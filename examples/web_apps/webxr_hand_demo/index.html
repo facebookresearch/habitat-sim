@@ -1,0 +1,45 @@
+<!-- Copyright (c) Facebook, Inc. and its affiliates.
+This source code is licensed under the MIT license found in the
+LICENSE file in the root directory of this source tree.-->
+<!DOCTYPE html>
+<html>
+
+<head>
+  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <title>Habitat VR</title>
+</head>
+
+<body>
+
+  <!-- Our Habitat VR app will find these elements by id and utilize them. -->
+  <!-- optional FPS element, for perf debugging: <div id="fps">FPS: 0</div> -->
+  <div id="status">Initialization...</div>
+  <div id="status-description"></div>
+  <div><a href="#" id="enter-vr" style="visibility:hidden">Enter VR</a></div>
+  <div id="fps">FPS: 0</div>
+
+  <!-- Javascript for our Habitat VR app -->
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/webxr-polyfill@latest/build/webxr-polyfill.js"></script>
+  <script>
+    const WebXRPolyfill = window.WebXRPolyfill;
+    window.webxrpolyfill = new WebXRPolyfill();
+  </script>
+  <!-- This needs to be included explicitly because it creates the Module
+  variable, which is used like a global variable in the other 2 scripts. Such
+  behavior cannot be replicated if using module imports/exports. -->
+  <script src="js/WindowlessEmscriptenApplication.js"></script>
+  <!-- The main source code of this webapp. This needs to be a module since it
+  uses JS imports/exports. -->
+  <script type="module" src="js/habitat_main.js"></script>
+  <!-- The Habitat-sim bindings. This also uses the Module.preRun and
+  Module.onRuntimeInitialized fields that were defined in habitat_main.js. So it
+  needs to execute AFTER habitat_main.js. The defer keyword is needed to enforce
+  this. This is because scripts with type="module" such as habitat_main.js are
+  implicitly given defer, which causes them to run last. So we need this to be
+  deferred as well. -->
+  <script defer src="js/hsim_bindings.js"></script>
+
+</body>
+
+</html>

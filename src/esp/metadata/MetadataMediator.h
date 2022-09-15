@@ -112,11 +112,8 @@ class MetadataMediator {
    * @return The current dataset's @ref managers::AssetAttributesManager::ptr,
    * or nullptr if no current dataset.
    */
-  const managers::AssetAttributesManager::ptr getAssetAttributesManager()
-      const {
-    attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
-    return (datasetAttr == nullptr) ? nullptr
-                                    : datasetAttr->getAssetAttributesManager();
+  const managers::AssetAttributesManager::ptr& getAssetAttributesManager() {
+    return getActiveDSAttribs()->getAssetAttributesManager();
   }
 
   /**
@@ -126,12 +123,9 @@ class MetadataMediator {
    * managers::LightLayoutAttributesManager::ptr, or nullptr if no current
    * dataset.
    */
-  const managers::LightLayoutAttributesManager::ptr
-  getLightLayoutAttributesManager() const {
-    attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
-    return (datasetAttr == nullptr)
-               ? nullptr
-               : datasetAttr->getLightLayoutAttributesManager();
+  const managers::LightLayoutAttributesManager::ptr&
+  getLightLayoutAttributesManager() {
+    return getActiveDSAttribs()->getLightLayoutAttributesManager();
   }
 
   /**
@@ -140,18 +134,15 @@ class MetadataMediator {
    * @return The current dataset's @ref managers::ObjectAttributesManager::ptr,
    * or nullptr if no current dataset.
    */
-  const managers::ObjectAttributesManager::ptr getObjectAttributesManager()
-      const {
-    attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
-    return (datasetAttr == nullptr) ? nullptr
-                                    : datasetAttr->getObjectAttributesManager();
+  const managers::ObjectAttributesManager::ptr& getObjectAttributesManager() {
+    return getActiveDSAttribs()->getObjectAttributesManager();
   }
 
   /**
    * @brief Return manager for construction and access to physics world
    * attributes.
    */
-  const managers::PhysicsAttributesManager::ptr getPhysicsAttributesManager()
+  const managers::PhysicsAttributesManager::ptr& getPhysicsAttributesManager()
       const {
     return physicsAttributesManager_;
   }  // getPhysicsAttributesManager
@@ -159,15 +150,14 @@ class MetadataMediator {
   /**
    * @brief Return manager for construction and access to scene instance
    * attributes for current dataset.
-   * @return The current dataset's @ref managers::SceneAttributesManager::ptr,
-   * or nullptr if no current dataset.
+   * @return The current dataset's @ref
+   * managers::SceneInstanceAttributesManager::ptr, or nullptr if no current
+   * dataset.
    */
-  const managers::SceneAttributesManager::ptr getSceneAttributesManager()
-      const {
-    attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
-    return (datasetAttr == nullptr) ? nullptr
-                                    : datasetAttr->getSceneAttributesManager();
-  }  // MetadataMediator::getSceneAttributesManager
+  const managers::SceneInstanceAttributesManager::ptr&
+  getSceneInstanceAttributesManager() {
+    return getActiveDSAttribs()->getSceneInstanceAttributesManager();
+  }  // MetadataMediator::getSceneInstanceAttributesManager
 
   /**
    * @brief Return manager for construction and access to stage attributes for
@@ -175,11 +165,8 @@ class MetadataMediator {
    * @return The current dataset's @ref managers::StageAttributesManager::ptr,
    * or nullptr if no current dataset.
    */
-  const managers::StageAttributesManager::ptr getStageAttributesManager()
-      const {
-    attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
-    return (datasetAttr == nullptr) ? nullptr
-                                    : datasetAttr->getStageAttributesManager();
+  const managers::StageAttributesManager::ptr& getStageAttributesManager() {
+    return getActiveDSAttribs()->getStageAttributesManager();
   }  // MetadataMediator::getStageAttributesManager
 
   /**
@@ -192,15 +179,32 @@ class MetadataMediator {
   }  // getCurrentPhysicsManagerAttributes
 
   /**
+   * @brief Get a list of all scene instances available in the currently active
+   * dataset
+   */
+  std::vector<std::string> getAllSceneInstanceHandles() {
+    return getActiveDSAttribs()
+        ->getSceneInstanceAttributesManager()
+        ->getObjectHandlesBySubstring();
+  }
+
+  /**
+   * @brief Get a list of all stage attributes available in the currently active
+   * dataset. This is useful if current dataset does not have scene instances
+   * defined, and instead builds them on the fly for each stage.
+   */
+  std::vector<std::string> getAllStageAttributesHandles() {
+    return getActiveDSAttribs()
+        ->getStageAttributesManager()
+        ->getObjectHandlesBySubstring();
+  }
+
+  /**
    * @brief Return copy of map of current active dataset's navmesh handles.
    */
-  const std::map<std::string, std::string> getActiveNavmeshMap() const {
-    attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
-
-    if (datasetAttr == nullptr) {
-      return std::map<std::string, std::string>();
-    }
-    return std::map<std::string, std::string>(datasetAttr->getNavmeshMap());
+  std::map<std::string, std::string> getActiveNavmeshMap() {
+    return std::map<std::string, std::string>(
+        getActiveDSAttribs()->getNavmeshMap());
   }  // getActiveNavmeshMap
 
   /**
@@ -209,17 +213,10 @@ class MetadataMediator {
    * @param navMeshHandle The dataset library handle of the navmesh
    * @return The file path of the navmesh.
    */
-  const std::string getNavmeshPathByHandle(const std::string& navMeshHandle) {
-    attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
-    if (datasetAttr == nullptr) {
-      LOG(ERROR)
-          << "MetadataMediator::getNavmeshPathByHandle : No active "
-             "dataset has been specified so unable to determine path for "
-          << navMeshHandle;
-      return "";
-    }
-    return getFilePathForHandle(navMeshHandle, datasetAttr->getNavmeshMap(),
-                                "MetadataMediator::getNavmeshPathByHandle");
+  std::string getNavmeshPathByHandle(const std::string& navMeshHandle) {
+    return getFilePathForHandle(navMeshHandle,
+                                getActiveDSAttribs()->getNavmeshMap(),
+                                "<getNavmeshPathByHandle>");
 
   }  // MetadataMediator::getNavmeshPathByHandle
 
@@ -227,15 +224,9 @@ class MetadataMediator {
    * @brief Return copy of map of current active dataset's semantic scene
    * descriptor handles.
    */
-  const std::map<std::string, std::string> getActiveSemanticSceneDescriptorMap()
-      const {
-    attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
-
-    if (datasetAttr == nullptr) {
-      return std::map<std::string, std::string>();
-    }
+  std::map<std::string, std::string> getActiveSemanticSceneDescriptorMap() {
     return std::map<std::string, std::string>(
-        datasetAttr->getSemanticSceneDescrMap());
+        getActiveDSAttribs()->getSemanticSceneDescrMap());
   }  // getActiveSemanticSceneDescriptorMap
 
   /**
@@ -245,20 +236,11 @@ class MetadataMediator {
    * descriptor
    * @return The file path of the semantic scene descriptor.
    */
-  const std::string getSemanticSceneDescriptorPathByHandle(
+  std::string getSemanticSceneDescriptorPathByHandle(
       const std::string& ssDescrHandle) {
-    attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
-    if (datasetAttr == nullptr) {
-      LOG(ERROR)
-          << "MetadataMediator::getSemanticSceneDescriptorPathByHandle : No "
-             "active dataset has been specified so unable to determine path "
-             "for "
-          << ssDescrHandle;
-      return "";
-    }
     return getFilePathForHandle(
-        ssDescrHandle, datasetAttr->getSemanticSceneDescrMap(),
-        "MetadataMediator::getSemanticSceneDescriptorPathByHandle");
+        ssDescrHandle, getActiveDSAttribs()->getSemanticSceneDescrMap(),
+        "<getSemanticSceneDescriptorPathByHandle>");
 
   }  // MetadataMediator::getNavMeshPathByHandle
 
@@ -274,7 +256,7 @@ class MetadataMediator {
    * @return A valid SceneInstanceAttributes - registered in current dataset,
    * with all references also registered in current dataset.
    */
-  attributes::SceneAttributes::ptr getSceneAttributesByName(
+  attributes::SceneInstanceAttributes::ptr getSceneInstanceAttributesByName(
       const std::string& sceneName);
 
   /**
@@ -289,15 +271,7 @@ class MetadataMediator {
    */
   attributes::StageAttributes::ptr getNamedStageAttributesCopy(
       const std::string& stageAttrName) {
-    attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
-    // this should never happen
-    if (datasetAttr == nullptr) {
-      LOG(ERROR) << "MetadataMediator::getNamedStageAttributesCopy : No "
-                    "current active dataset specified/exists named :"
-                 << activeSceneDataset_ << ".";
-      return nullptr;
-    }
-    return datasetAttr->getNamedStageAttributesCopy(stageAttrName);
+    return getActiveDSAttribs()->getNamedStageAttributesCopy(stageAttrName);
   }  // getNamedStageAttributesCopy
 
   /**
@@ -312,15 +286,7 @@ class MetadataMediator {
    */
   attributes::ObjectAttributes::ptr getNamedObjectAttributesCopy(
       const std::string& objAttrName) {
-    attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
-    // this should never happen
-    if (datasetAttr == nullptr) {
-      LOG(ERROR) << "MetadataMediator::getNamedObjectAttributesCopy : No "
-                    "current active dataset specified/exists named :"
-                 << activeSceneDataset_ << ".";
-      return nullptr;
-    }
-    return datasetAttr->getNamedObjectAttributesCopy(objAttrName);
+    return getActiveDSAttribs()->getNamedObjectAttributesCopy(objAttrName);
   }  // getNamedObjectAttributesCopy
 
   /**
@@ -333,15 +299,7 @@ class MetadataMediator {
    * @return the lightsetup corresponding to @p lightSetupName.
    */
   esp::gfx::LightSetup getNamedLightSetup(const std::string& lightSetupName) {
-    attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
-    // this should never happen
-    if (datasetAttr == nullptr) {
-      LOG(ERROR) << "MetadataMediator::getNamedLightSetup : No current active "
-                    "dataset specified/exists named :"
-                 << activeSceneDataset_ << ".";
-      return esp::gfx::LightSetup{};
-    }
-    return datasetAttr->getNamedLightSetup(lightSetupName);
+    return getActiveDSAttribs()->getNamedLightSetup(lightSetupName);
   }  // getNamedLightSetup
 
   /**
@@ -355,17 +313,8 @@ class MetadataMediator {
    * @return name of stage attributes with handle containing @p stageAttrName ,
    * or empty string if none.
    */
-  const std::string getStageAttrFullHandle(const std::string& stageAttrName) {
-    attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
-    // this should never happen
-    if (datasetAttr == nullptr) {
-      LOG(ERROR)
-          << "MetadataMediator::getStageAttrFullHandle : No current active "
-             "dataset specified/exists named :"
-          << activeSceneDataset_ << ".";
-      return "";
-    }
-    return datasetAttr->getStageAttrFullHandle(stageAttrName);
+  std::string getStageAttrFullHandle(const std::string& stageAttrName) {
+    return getActiveDSAttribs()->getStageAttrFullHandle(stageAttrName);
   }  // getStageAttrFullHandle
 
   /**
@@ -379,18 +328,36 @@ class MetadataMediator {
    * @return name of object attributes with handle containing @p objAttrName or
    * empty string if none.
    */
-  const std::string getObjAttrFullHandle(const std::string& objAttrName) {
-    attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
-    // this should never happen
-    if (datasetAttr == nullptr) {
-      LOG(ERROR)
-          << "MetadataMediator::getObjAttrFullHandle : No current active "
-             "dataset specified/exists named :"
-          << activeSceneDataset_ << ".";
-      return "";
-    }
-    return datasetAttr->getObjAttrFullHandle(objAttrName);
+  std::string getObjAttrFullHandle(const std::string& objAttrName) {
+    return getActiveDSAttribs()->getObjAttrFullHandle(objAttrName);
   }  // getObjAttrFullHandle
+
+  /**
+   * @brief Returns articulated object model handle in dataset corresponding to
+   * passed name as substring. Assumes articulated object model with @p
+   * artObjModelName as substring exists in this dataset.
+   * @param artObjModelName substring to handle of AO model that exists in this
+   * dataset. The actual model name will be found via substring search in the
+   * manager, so the name is expected to be sufficiently restrictive to have
+   * exactly 1 match in dataset.
+   * @return name of object attributes with handle containing @p artObjModelName
+   * or empty string if none.
+   */
+  std::string getArticulatedObjModelFullHandle(
+      const std::string& artObjModelName) {
+    return getActiveDSAttribs()->getArticulatedObjModelFullHandle(
+        artObjModelName);
+  }  // getArticulatedObjModelFullHandle
+
+  /**
+   * @brief TEMPORARY get a constant reference to the articulated object model
+   * filenames (.urdf) that have been loaded.  Once ArticulatedModelMangaer is
+   * built, this will be accomplished using Managed Container functionality.
+   */
+  const std::map<std::string, std::string>&
+  getArticulatedObjectModelFilenames() {
+    return getActiveDSAttribs()->getArticulatedObjectModelFilenames();
+  }
 
   /**
    * @brief Returns the full name of the lightsetup attributes whose
@@ -398,20 +365,11 @@ class MetadataMediator {
    * @param lightSetupName Name of the attributes desired.  The attributes will
    * be found via substring search, so the name is expected to be sufficiently
    * restrictive to have exactly 1 match in dataset.
-   * @return the full attributes name corresponding to @p lightSetupName , or
-   * the empty string.
+   * @return name of light setup with handle containing @p lightSetupName or
+   * empty string if none.
    */
-  const std::string getLightSetupFullHandle(const std::string& lightSetupName) {
-    attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
-    // this should never happen
-    if (datasetAttr == nullptr) {
-      LOG(ERROR)
-          << "MetadataMediator::getLightSetupFullHandle : No current active "
-             "dataset specified/exists named :"
-          << activeSceneDataset_ << ".";
-      return "";
-    }
-    return datasetAttr->getLightSetupFullHandle(lightSetupName);
+  std::string getLightSetupFullHandle(const std::string& lightSetupName) {
+    return getActiveDSAttribs()->getLightSetupFullHandle(lightSetupName);
   }  // getLightSetupFullHandle
 
   /**
@@ -425,6 +383,40 @@ class MetadataMediator {
    */
   bool removeSceneDataset(const std::string& sceneDatasetName);
 
+  /**
+   * @brief Checks if passed handle exists as scene dataset.
+   * @param sceneDatasetName The name of the SceneDatasetAttributes to remove.
+   * @return whether successful or not.
+   */
+  inline bool sceneDatasetExists(const std::string& sceneDatasetName) const {
+    return sceneDatasetAttributesManager_->getObjectLibHasHandle(
+        sceneDatasetName);
+  }
+
+  /**
+   * @brief Returns the createRenderer flag that was set in the associated
+   * SimulatorConfiguration.
+   * @return the boolean flag.
+   */
+  bool getCreateRenderer() const { return simConfig_.createRenderer; }
+
+  /**
+   * @brief This function returns a list of all the scene datasets currently
+   * loaded, along with some key statistics for each, formatted as a
+   * comma-separated string.
+   * @return a vector of strings holding scene dataset info.
+   */
+  std::string getDatasetsOverview() const;
+
+  /**
+   * @brief this function will create a report of the contents of the scene
+   * dataset with the passed name. If no name is provided, a report on the
+   * current active dataset will be returned.
+   * @param sceneDataset The name of the scene dataset to perform the report on.
+   * @return Comma-separated string of data describing the desired dataset.
+   */
+  std::string createDatasetReport(const std::string& sceneDataset = "") const;
+
  protected:
   /**
    * @brief Return the file path corresponding to the passed handle in the
@@ -435,40 +427,34 @@ class MetadataMediator {
    * consisting of who called this function.
    * @return The file path of the asset.
    */
-  const std::string getFilePathForHandle(
+  std::string getFilePathForHandle(
       const std::string& assetHandle,
       const std::map<std::string, std::string>& assetMapping,
-      const std::string& msgString) {
-    if (assetMapping.count(assetHandle) == 0) {
-      LOG(WARNING) << msgString << " (getAsset) : Unable to find file path for "
-                   << assetHandle << ".  Aborting.";
-      return "";
-    }
-    return assetMapping.at(assetHandle);
-  }  // getFilePathForHandle
+      const std::string& msgString);
 
   /**
-   * @brief This will create a new, empty @ref SceneAttributes with the passed
-   * name, and create a SceneObjectInstance for the stage also using the passed
-   * name. It is assuming that the dataset has the stage registered, and that
-   * the calling function will register the created SceneInstance with the
+   * @brief This will create a new, empty @ref SceneInstanceAttributes with the
+   * passed name, and create a SceneObjectInstance for the stage also using the
+   * passed name. It is assuming that the dataset has the stage registered, and
+   * that the calling function will register the created SceneInstance with the
    * dataset.  This method will also register navmesh and scene descriptor file
-   * paths that are synthesized for newly made SceneAttributes. TODO: get rid of
-   * these fields in stageAttributes.
+   * paths that are synthesized for newly made SceneInstanceAttributes. TODO:
+   * get rid of these fields in stageAttributes.
    *
    * @param datasetAttr The current dataset attributes
    * @param stageAttributes Readonly version of stage to use to synthesize scene
    * instance.
-   * @param dsSceneAttrMgr The current dataset's SceneAttributesManager
+   * @param dsSceneAttrMgr The current dataset's SceneInstanceAttributesManager
    * @param sceneName The name for the scene and also the stage within the
    * scene.
-   * @return The created SceneAttributes, with the stage's SceneInstanceObject
-   * to be intialized to reference the stage also named with @p sceneName .
+   * @return The created SceneInstanceAttributes, with the stage's
+   * SceneInstanceObject to be intialized to reference the stage also named with
+   * @p sceneName .
    */
-  attributes::SceneAttributes::ptr makeSceneAndReferenceStage(
+  attributes::SceneInstanceAttributes::ptr makeSceneAndReferenceStage(
       const attributes::SceneDatasetAttributes::ptr& datasetAttr,
       const attributes::StageAttributes::ptr& stageAttributes,
-      const managers::SceneAttributesManager::ptr& dsSceneAttrMgr,
+      const managers::SceneInstanceAttributesManager::ptr& dsSceneAttrMgr,
       const std::string& sceneName);
 
   /**
@@ -482,15 +468,20 @@ class MetadataMediator {
    * @brief Retrieve the current default dataset object.  Currently only for
    * internal use.
    */
-  attributes::SceneDatasetAttributes::ptr getActiveDSAttribs() const {
+  attributes::SceneDatasetAttributes::ptr getActiveDSAttribs() {
     // do not get copy of dataset attributes
     auto datasetAttr =
         sceneDatasetAttributesManager_->getObjectByHandle(activeSceneDataset_);
+    // this should never happen - there will always be a dataset with the name
+    // activeSceneDataset_
     if (datasetAttr == nullptr) {
-      LOG(ERROR) << "MetadataMediator::getActiveDSAttribs : Unable to set "
-                    "active dataset due to Unknown dataset named "
-                 << activeSceneDataset_ << ". Aborting";
-      return nullptr;
+      ESP_ERROR() << "Unable to set active dataset due to Unknown dataset named"
+                  << activeSceneDataset_
+                  << "so changing dataset to \"default\".";
+      activeSceneDataset_ = "default";
+
+      datasetAttr = sceneDatasetAttributesManager_->getObjectByHandle(
+          activeSceneDataset_);
     }
     return datasetAttr;
   }  // MetadataMediator::getActiveDSAttribs
@@ -501,7 +492,7 @@ class MetadataMediator {
    * @brief Current Simulator Configuration. A copy (not a ref) so that it can
    * exceed the lifespan of the source config from, for example, Simulator.
    */
-  sim::SimulatorConfiguration simConfig_;
+  sim::SimulatorConfiguration simConfig_{};
 
   /**
    * @brief String name of current, default dataset.
@@ -524,7 +515,7 @@ class MetadataMediator {
 
  public:
   ESP_SMART_POINTERS(MetadataMediator)
-};  // class MetadataMediator
+};  // namespace metadata
 
 }  // namespace metadata
 }  // namespace esp

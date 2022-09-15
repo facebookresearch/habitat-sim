@@ -6,11 +6,9 @@
 #include "SemanticScene.h"
 
 #include <map>
-#include <sophus/se3.hpp>
 #include <string>
 
-#include "esp/io/io.h"
-#include "esp/io/json.h"
+#include "esp/io/Json.h"
 
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/EigenIntegration/Integration.h>
@@ -29,16 +27,20 @@ bool SemanticScene::loadReplicaHouse(
   }
 
   // top-level scene
-  VLOG(1) << "loadReplicaHouse::Parsing " << houseFilename;
+  ESP_VERY_VERBOSE() << "Parsing" << houseFilename;
   const auto& json = io::parseJsonFile(houseFilename);
-  VLOG(1) << "loadReplicaHouse::Parsed.";
+  ESP_VERY_VERBOSE() << "Parsed.";
 
-  return buildReplicaHouse(json, scene, worldRotation);
+  // check if Replica or ReplicaCAD
+  bool hasObjects = (json.HasMember("objects") && json["objects"].IsArray());
+
+  return buildReplicaHouse(json, scene, hasObjects, worldRotation);
 
 }  // SemanticScene::loadReplicaHouse
 
 bool SemanticScene::buildReplicaHouse(const io::JsonDocument& jsonDoc,
                                       SemanticScene& scene,
+                                      bool objectsExist,
                                       const quatf& worldRotation) {
   scene.categories_.clear();
   scene.objects_.clear();
@@ -54,7 +56,7 @@ bool SemanticScene::buildReplicaHouse(const io::JsonDocument& jsonDoc,
      * indexing easy.
      */
     if (id > kMaxIds) {
-      LOG(ERROR) << "Exceeded max number of ids";
+      ESP_ERROR() << "Exceeded max number of ids";
       continue;
     }
     if (scene.categories_.size() < id + 1) {
@@ -64,9 +66,18 @@ bool SemanticScene::buildReplicaHouse(const io::JsonDocument& jsonDoc,
         id, category["name"].GetString());
   }
 
+  // if does not have objects, then this is ReplcaCAD semantic map which lacks
+  // object semantic mappings
+  if (!objectsExist) {
+    return true;
+  }
+
   // objects
   const auto& objects = jsonDoc["objects"].GetArray();
   scene.elementCounts_["objects"] = objects.Size();
+
+  // construct rotation matrix to be used to construct transform
+  const Eigen::Isometry3f worldRotationMat{worldRotation.normalized()};
   for (const auto& jsonObject : objects) {
     SemanticObject::ptr object = SemanticObject::create();
     int id = jsonObject["id"].GetInt();
@@ -76,7 +87,7 @@ bool SemanticScene::buildReplicaHouse(const io::JsonDocument& jsonDoc,
      * indexing easy.
      */
     if (id > kMaxIds) {
-      LOG(ERROR) << "Exceeded max number of ids";
+      ESP_ERROR() << "Exceeded max number of ids";
       continue;
     }
     if (scene.objects_.size() < id + 1) {
@@ -87,7 +98,7 @@ bool SemanticScene::buildReplicaHouse(const io::JsonDocument& jsonDoc,
       object->category_ = scene.categories_[categoryIndex];
     }
 
-    auto& obb = jsonObject["oriented_bbox"];
+    const auto& obb = jsonObject["oriented_bbox"];
     const vec3f aabbCenter = io::jsonToVec3f(obb["abb"]["center"]);
     const vec3f aabbSizes = io::jsonToVec3f(obb["abb"]["sizes"]);
 
@@ -99,15 +110,18 @@ bool SemanticScene::buildReplicaHouse(const io::JsonDocument& jsonDoc,
                       &rotationBoxToWorldCoeffs);
     const Eigen::Map<quatf> rotationBoxToWorld(rotationBoxToWorldCoeffs.data());
 
-    const auto transformBoxToWorld =
-        Sophus::SE3f{worldRotation, vec3f::Zero()} *
-        Sophus::SE3f{rotationBoxToWorld, translationBoxToWorld};
+    Eigen::Isometry3f transformBox{rotationBoxToWorld.normalized()};
+    transformBox *= Eigen::Translation3f(translationBoxToWorld);
+
+    const Eigen::Isometry3f transformBoxToWorld{worldRotationMat *
+                                                transformBox};
 
     object->obb_ = geo::OBB{transformBoxToWorld * aabbCenter, aabbSizes,
-                            transformBoxToWorld.so3().unit_quaternion()};
+                            quatf{transformBoxToWorld.linear()}.normalized()};
+
     scene.objects_[id] = std::move(object);
   }
-
+  scene.hasVertColors_ = true;
   return true;
 }
 

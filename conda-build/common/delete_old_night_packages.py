@@ -9,7 +9,7 @@ import re
 import subprocess
 import sys
 
-MAX_NUMBER_OF_PACKAGES = 30
+MAX_NUMBER_OF_VERSIONS = 1
 
 parser = argparse.ArgumentParser(
     "A tool for removing conda nightly builds in chronical order to reduce conda repo storage usage"
@@ -38,16 +38,16 @@ result = subprocess.run(
 versions = re.findall(
     r"\d\.\d\.\d\.\d{4}\.\d\d\.\d\d", str(result.stdout) + str(result.stderr)
 )
-remove_versions = versions[:-MAX_NUMBER_OF_PACKAGES]
-print(
-    f"anaconda remove {' '.join(list(map(lambda x: f'aihabitat-nightly/habitat-sim/{x}', remove_versions)))}"
-)
+# Using len(versions) - MAX_NUMBER_OF_VERSIONS to support MAX_NUMBER_OF_VERSIONS == 0
+remove_versions = versions[: len(versions) - MAX_NUMBER_OF_VERSIONS]
+remove_versions_list = [f"aihabitat-nightly/habitat-sim/{x}" for x in remove_versions]
+print(f"anaconda remove {' '.join(remove_versions_list)}")
 result_remove = subprocess.run(
     [
         "anaconda",
         "remove",
         "-f",
-        *list(map(lambda x: f"aihabitat-nightly/habitat-sim/{x}", remove_versions)),
+        *remove_versions_list,
     ],
     stderr=subprocess.PIPE,
     stdout=subprocess.PIPE,

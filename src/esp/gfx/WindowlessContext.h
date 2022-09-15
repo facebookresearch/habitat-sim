@@ -5,7 +5,7 @@
 #ifndef ESP_GFX_WINDOWLESSCONTEXT_H_
 #define ESP_GFX_WINDOWLESSCONTEXT_H_
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 namespace esp {
 namespace gfx {
@@ -14,9 +14,13 @@ class WindowlessContext {
  public:
   explicit WindowlessContext(int gpuDevice = 0);
 
-  ~WindowlessContext() { LOG(INFO) << "Deconstructing WindowlessContext"; }
+  ~WindowlessContext() { ESP_DEBUG() << "Deconstructing WindowlessContext"; }
 
   void makeCurrent();
+  void makeCurrentPlatform();
+
+  void release();
+  void releasePlatform();
 
   int gpuDevice() const;
 

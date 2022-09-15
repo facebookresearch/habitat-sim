@@ -3,11 +3,11 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <Corrade/TestSuite/Tester.h>
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/Path.h>
 #include <Magnum/GL/Mesh.h>
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/Primitives/Cube.h>
-#include <Magnum/Shaders/Flat.h>
+#include <Magnum/Shaders/FlatGL.h>
 #include <Magnum/Trade/MeshData.h>
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/GenericDrawable.h"
@@ -24,18 +24,9 @@ using esp::assets::ResourceManager;
 using esp::metadata::MetadataMediator;
 using esp::scene::SceneManager;
 
-namespace Test {
 // on GCC and Clang, the following namespace causes useful warnings to be
 // printed when you have accidentally unused variables or functions in the test
 namespace {
-
-class ResourceManagerExtended : public ResourceManager {
- public:
-  explicit ResourceManagerExtended(
-      esp::metadata::MetadataMediator::ptr& _metadataMediator)
-      : ResourceManager(_metadataMediator) {}
-  esp::gfx::ShaderManager& getShaderManager() { return shaderManager_; }
-};
 
 struct DrawableTest : Cr::TestSuite::Tester {
   explicit DrawableTest();
@@ -43,10 +34,11 @@ struct DrawableTest : Cr::TestSuite::Tester {
   void addRemoveDrawables();
 
  protected:
+  esp::logging::LoggingContext loggingContext_;
   esp::gfx::WindowlessContext::uptr context_ =
       esp::gfx::WindowlessContext::create_unique(0);
   // must declare these in this order due to avoid deallocation errors
-  std::unique_ptr<ResourceManagerExtended> resourceManager_ = nullptr;
+  std::unique_ptr<ResourceManager> resourceManager_ = nullptr;
   SceneManager sceneManager_;
   // must create a GL context which will be used in the resource manager
   int sceneID_ = -1;
@@ -55,14 +47,17 @@ struct DrawableTest : Cr::TestSuite::Tester {
 
 DrawableTest::DrawableTest() {
   auto cfg = esp::sim::SimulatorConfiguration{};
+  // setting values for stage load
+  cfg.loadSemanticMesh = false;
+  cfg.forceSeparateSemanticSceneGraph = false;
   auto MM = MetadataMediator::create(cfg);
-  resourceManager_ = std::make_unique<ResourceManagerExtended>(MM);
+  resourceManager_ = std::make_unique<ResourceManager>(MM);
   //clang-format off
   addTests({&DrawableTest::addRemoveDrawables});
-  // flang-format on
+  //clang-format on
   auto stageAttributesMgr = MM->getStageAttributesManager();
   std::string stageFile =
-      Cr::Utility::Directory::join(TEST_ASSETS, "objects/5boxes.glb");
+      Cr::Utility::Path::join(TEST_ASSETS, "objects/5boxes.glb");
   auto stageAttributes = stageAttributesMgr->createObject(stageFile, true);
 
   sceneID_ = sceneManager_.initSceneGraph();
@@ -70,13 +65,13 @@ DrawableTest::DrawableTest() {
   drawableGroup_ = &sceneGraph.getDrawables();
 
   std::vector<int> tempIDs{sceneID_, esp::ID_UNDEFINED};
-  bool result = resourceManager_->loadStage(stageAttributes, nullptr,
-                                            &sceneManager_, tempIDs, false);
+  bool result = resourceManager_->loadStage(stageAttributes, nullptr, nullptr,
+                                            &sceneManager_, tempIDs);
 }
 
 void DrawableTest::addRemoveDrawables() {
   Mn::GL::Mesh box;
-  Mn::Shaders::Flat3D shader;
+  Mn::Shaders::FlatGL3D shader;
 
   Mn::Trade::MeshData cube = Mn::Primitives::cubeSolidStrip();
   box = Mn::MeshTools::compile(cube);
@@ -89,7 +84,7 @@ void DrawableTest::addRemoveDrawables() {
 
   // add a toy box here!
   node.addFeature<esp::gfx::GenericDrawable>(
-      box, meshAttributeFlags, resourceManager_->getShaderManager(),
+      &box, meshAttributeFlags, resourceManager_->getShaderManager(),
       esp::NO_LIGHT_KEY, esp::PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
       drawableGroup_);
   // we already had 5 boxes in the scene, so the id for the above toy box must
@@ -99,7 +94,7 @@ void DrawableTest::addRemoveDrawables() {
   // step 1: basic tests
   esp::gfx::GenericDrawable* dr =
       new esp::gfx::GenericDrawable{node,
-                                    box,
+                                    &box,
                                     meshAttributeFlags,
                                     resourceManager_->getShaderManager(),
                                     esp::NO_LIGHT_KEY,
@@ -108,13 +103,13 @@ void DrawableTest::addRemoveDrawables() {
 
   // we already had 5 boxes in the scene, 1 toy box added before the current
   // one, so the id should be 6
-  CORRADE_VERIFY(dr->getDrawableId() == 6);
+  CORRADE_COMPARE(dr->getDrawableId(), 6);
   // verify this drawable has been added to drawable group
-  CORRADE_VERIFY(dr->drawables() == drawableGroup_);
+  CORRADE_COMPARE(dr->drawables(), drawableGroup_);
 
   // step 2: add a single drawable to a group
   dr = new esp::gfx::GenericDrawable{node,
-                                     box,
+                                     &box,
                                      meshAttributeFlags,
                                      resourceManager_->getShaderManager(),
                                      esp::NO_LIGHT_KEY,
@@ -140,7 +135,7 @@ void DrawableTest::addRemoveDrawables() {
 
   // step 5: remove a drawable, that is NOT in the group! should be fine!!
   dr = new esp::gfx::GenericDrawable{node,
-                                     box,
+                                     &box,
                                      meshAttributeFlags,
                                      resourceManager_->getShaderManager(),
                                      esp::NO_LIGHT_KEY,
@@ -151,6 +146,5 @@ void DrawableTest::addRemoveDrawables() {
 }
 
 }  // namespace
-}  // namespace Test
 
-CORRADE_TEST_MAIN(Test::DrawableTest)
+CORRADE_TEST_MAIN(DrawableTest)

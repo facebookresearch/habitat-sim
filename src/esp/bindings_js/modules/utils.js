@@ -1,8 +1,29 @@
-import { infoSemanticFileName } from "./defaults";
-
 // Copyright (c) Facebook, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
+
+/* global FS */
+
+/**
+ * Given a path to a file, load it into the file system for the page.
+ */
+export function preload(url) {
+  let file_parents_str = "/";
+  const splits = url.split("/");
+  let file = splits[splits.length - 1];
+  if (url.indexOf("http") === -1) {
+    let file_parents = splits.slice(0, splits.length - 1);
+    for (let i = 0; i < splits.length - 1; i += 1) {
+      file_parents_str += file_parents[i];
+      if (!FS.analyzePath(file_parents_str).exists) {
+        FS.mkdir(file_parents_str, 777);
+      }
+      file_parents_str += "/";
+    }
+  }
+  FS.createPreloadedFile(file_parents_str, file, url, true, false);
+  return file_parents_str + file;
+}
 
 /**
  *
@@ -81,7 +102,7 @@ export function checkWebgl2Support() {
   }
 }
 
-export function getInfoSemanticUrl(mainUrl) {
+export function getInfoSemanticUrl(mainUrl, infoSemanticFileName) {
   const splits = mainUrl.split("/");
   const moreThanOne = splits.length > 1;
   splits.pop();

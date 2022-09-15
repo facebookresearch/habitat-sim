@@ -17,50 +17,56 @@ namespace esp {
 namespace gfx {
 
 GenericDrawable::GenericDrawable(scene::SceneNode& node,
-                                 Mn::GL::Mesh& mesh,
+                                 Mn::GL::Mesh* mesh,
                                  Drawable::Flags& meshAttributeFlags,
                                  ShaderManager& shaderManager,
                                  const Mn::ResourceKey& lightSetupKey,
                                  const Mn::ResourceKey& materialDataKey,
                                  DrawableGroup* group /* = nullptr */)
-    : Drawable{node, mesh, group},
+    : Drawable{node, mesh, DrawableType::Generic, group},
       shaderManager_{shaderManager},
       lightSetup_{shaderManager.get<LightSetup>(lightSetupKey)},
       materialData_{
           shaderManager.get<MaterialData, PhongMaterialData>(materialDataKey)} {
-  flags_ = Mn::Shaders::Phong::Flag::ObjectId;
+  flags_ = Mn::Shaders::PhongGL::Flag::ObjectId;
   if (materialData_->textureMatrix != Mn::Matrix3{}) {
-    flags_ |= Mn::Shaders::Phong::Flag::TextureTransformation;
+    flags_ |= Mn::Shaders::PhongGL::Flag::TextureTransformation;
   }
   if (materialData_->ambientTexture) {
-    flags_ |= Mn::Shaders::Phong::Flag::AmbientTexture;
+    flags_ |= Mn::Shaders::PhongGL::Flag::AmbientTexture;
   }
   if (materialData_->diffuseTexture) {
-    flags_ |= Mn::Shaders::Phong::Flag::DiffuseTexture;
+    flags_ |= Mn::Shaders::PhongGL::Flag::DiffuseTexture;
   }
   if (materialData_->specularTexture) {
-    flags_ |= Mn::Shaders::Phong::Flag::SpecularTexture;
+    flags_ |= Mn::Shaders::PhongGL::Flag::SpecularTexture;
   }
+
   if (materialData_->normalTexture) {
     if (meshAttributeFlags & Drawable::Flag::HasTangent) {
-      flags_ |= Mn::Shaders::Phong::Flag::NormalTexture;
+      flags_ |= Mn::Shaders::PhongGL::Flag::NormalTexture;
       if (meshAttributeFlags & Drawable::Flag::HasSeparateBitangent) {
-        flags_ |= Mn::Shaders::Phong::Flag::Bitangent;
+        flags_ |= Mn::Shaders::PhongGL::Flag::Bitangent;
       }
     } else {
-      LOG(WARNING) << "Mesh does not have tangents and Magnum cannot generate "
-                      "them yet, ignoring a normal map";
+      ESP_WARNING() << "Mesh does not have tangents and Magnum cannot generate "
+                       "them yet, ignoring a normal map";
     }
   }
   if (materialData_->perVertexObjectId) {
-    flags_ |= Mn::Shaders::Phong::Flag::InstancedObjectId;
+    flags_ |= Mn::Shaders::PhongGL::Flag::InstancedObjectId;
   }
-  if (materialData_->vertexColored) {
-    flags_ |= Mn::Shaders::Phong::Flag::VertexColor;
+  if (materialData_->textureObjectId) {
+    flags_ |= Mn::Shaders::PhongGL::Flag::ObjectIdTexture;
+  }
+  if (meshAttributeFlags & Drawable::Flag::HasVertexColor) {
+    flags_ |= Mn::Shaders::PhongGL::Flag::VertexColor;
   }
 
   // update the shader early here to to avoid doing it during the render loop
-  updateShader();
+  if (glMeshExists()) {
+    updateShader();
+  }
 }
 
 void GenericDrawable::setLightSetup(const Mn::ResourceKey& resourceKey) {
@@ -87,8 +93,8 @@ void GenericDrawable::updateShaderLightingParameters(
 
   for (Mn::UnsignedInt i = 0; i < lightSetup_->size(); ++i) {
     const auto& lightInfo = (*lightSetup_)[i];
-    lightPositions.emplace_back(Mn::Vector4(getLightPositionRelativeToCamera(
-        lightInfo, transformationMatrix, cameraMatrix)));
+    lightPositions.emplace_back(getLightPositionRelativeToCamera(
+        lightInfo, transformationMatrix, cameraMatrix));
 
     const auto& lightColor = (*lightSetup_)[i].color;
     lightColors.emplace_back(lightColor);
@@ -113,6 +119,9 @@ void GenericDrawable::updateShaderLightingParameters(
 
 void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
                            Mn::SceneGraph::Camera3D& camera) {
+  CORRADE_ASSERT(glMeshExists(),
+                 "GenericDrawable::draw() : GL mesh doesn't exist", );
+
   updateShader();
 
   updateShaderLightingParameters(transformationMatrix, camera);
@@ -122,32 +131,36 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
       // uploaded to GPU so simply pass 0 to the uniform "objectId" in the
       // fragment shader
       .setObjectId(
-          static_cast<RenderCamera&>(camera).useDrawableIds()
-              ? drawableId_
-              : (materialData_->perVertexObjectId ? 0 : node_.getSemanticId()))
+          static_cast<RenderCamera&>(camera).useDrawableIds() ? drawableId_
+          : (materialData_->perVertexObjectId || materialData_->textureObjectId)
+              ? 0
+              : node_.getSemanticId())
       .setTransformationMatrix(transformationMatrix)
       .setProjectionMatrix(camera.projectionMatrix())
       .setNormalMatrix(transformationMatrix.normalMatrix());
 
-  if ((flags_ & Mn::Shaders::Phong::Flag::TextureTransformation) &&
+  if ((flags_ & Mn::Shaders::PhongGL::Flag::TextureTransformation) &&
       materialData_->textureMatrix != Mn::Matrix3{}) {
     shader_->setTextureMatrix(materialData_->textureMatrix);
   }
 
-  if (flags_ & Mn::Shaders::Phong::Flag::AmbientTexture) {
+  if (flags_ & Mn::Shaders::PhongGL::Flag::AmbientTexture) {
     shader_->bindAmbientTexture(*(materialData_->ambientTexture));
   }
-  if (flags_ & Mn::Shaders::Phong::Flag::DiffuseTexture) {
+  if (flags_ & Mn::Shaders::PhongGL::Flag::DiffuseTexture) {
     shader_->bindDiffuseTexture(*(materialData_->diffuseTexture));
   }
-  if (flags_ & Mn::Shaders::Phong::Flag::SpecularTexture) {
+  if (flags_ & Mn::Shaders::PhongGL::Flag::SpecularTexture) {
     shader_->bindSpecularTexture(*(materialData_->specularTexture));
   }
-  if (flags_ & Mn::Shaders::Phong::Flag::NormalTexture) {
+  if (flags_ & Mn::Shaders::PhongGL::Flag::NormalTexture) {
     shader_->bindNormalTexture(*(materialData_->normalTexture));
   }
+  if (flags_ >= Mn::Shaders::PhongGL::Flag::ObjectIdTexture) {
+    shader_->bindObjectIdTexture(*(materialData_->objectIdTexture));
+  }
 
-  shader_->draw(mesh_);
+  shader_->draw(getMesh());
 }
 
 void GenericDrawable::updateShader() {
@@ -158,13 +171,13 @@ void GenericDrawable::updateShader() {
     // if the number of lights or flags have changed, we need to fetch a
     // compatible shader
     shader_ =
-        shaderManager_.get<Mn::GL::AbstractShaderProgram, Mn::Shaders::Phong>(
+        shaderManager_.get<Mn::GL::AbstractShaderProgram, Mn::Shaders::PhongGL>(
             getShaderKey(lightCount, flags_));
 
     // if no shader with desired number of lights and flags exists, create one
     if (!shader_) {
       shaderManager_.set<Mn::GL::AbstractShaderProgram>(
-          shader_.key(), new Mn::Shaders::Phong{flags_, lightCount},
+          shader_.key(), new Mn::Shaders::PhongGL{flags_, lightCount},
           Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
     }
 
@@ -175,10 +188,10 @@ void GenericDrawable::updateShader() {
 
 Mn::ResourceKey GenericDrawable::getShaderKey(
     Mn::UnsignedInt lightCount,
-    Mn::Shaders::Phong::Flags flags) const {
+    Mn::Shaders::PhongGL::Flags flags) const {
   return Corrade::Utility::formatString(
       SHADER_KEY_TEMPLATE, lightCount,
-      static_cast<Mn::Shaders::Phong::Flags::UnderlyingType>(flags));
+      static_cast<Mn::Shaders::PhongGL::Flags::UnderlyingType>(flags));
 }
 
 }  // namespace gfx

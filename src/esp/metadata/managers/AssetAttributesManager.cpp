@@ -18,6 +18,7 @@ using attributes::CubePrimitiveAttributes;
 using attributes::CylinderPrimitiveAttributes;
 using attributes::IcospherePrimitiveAttributes;
 using attributes::UVSpherePrimitiveAttributes;
+using core::managedContainers::ManagedObjectAccess;
 namespace managers {
 
 const std::map<PrimObjTypes, const char*>
@@ -36,7 +37,11 @@ const std::map<PrimObjTypes, const char*>
         {PrimObjTypes::UVSPHERE_WF, "uvSphereWireframe"},
         {PrimObjTypes::END_PRIM_OBJ_TYPES, "NONE DEFINED"}};
 
-void AssetAttributesManager::buildCtorFuncPtrMaps() {
+AssetAttributesManager::AssetAttributesManager()
+    : AttributesManager<
+          attributes::AbstractPrimitiveAttributes,
+          ManagedObjectAccess::Copy>::AttributesManager("Primitive Asset",
+                                                        "prim_config.json") {
   // function pointers to asset attributes constructors
   primTypeConstructorMap_["capsule3DSolid"] =
       &AssetAttributesManager::createPrimAttributes<
@@ -96,16 +101,15 @@ void AssetAttributesManager::buildCtorFuncPtrMaps() {
     if (elem.first == PrimObjTypes::END_PRIM_OBJ_TYPES) {
       continue;
     }
-    auto tmplt = this->createObject(elem.second, true);
+    auto tmplt = AssetAttributesManager::createObject(elem.second, true);
     std::string tmpltHandle = tmplt->getHandle();
     defaultPrimAttributeHandles_[elem.second] = tmpltHandle;
     this->undeletableObjectNames_.insert(tmpltHandle);
   }
 
-  LOG(INFO) << "AssetAttributesManager::buildCtorFuncPtrMaps : Built default "
-               "primitive asset templates : "
-            << std::to_string(defaultPrimAttributeHandles_.size());
-}  // AssetAttributesManager::buildMapOfPrimTypeConstructors
+  ESP_DEBUG() << "Built default primitive asset templates :"
+              << std::to_string(defaultPrimAttributeHandles_.size());
+}  // AssetAttributesManager::ctor
 
 AbstractPrimitiveAttributes::ptr AssetAttributesManager::createObject(
     const std::string& primClassName,
@@ -114,12 +118,51 @@ AbstractPrimitiveAttributes::ptr AssetAttributesManager::createObject(
   if (nullptr == primAssetAttributes) {
     return primAssetAttributes;
   }
-  LOG(INFO) << "Asset attributes (" << primClassName << " : "
-            << primAssetAttributes->getHandle() << ") created"
-            << (registerTemplate ? " and registered." : ".");
+  ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+      << "Asset attributes (" << primClassName << ":"
+      << primAssetAttributes->getHandle() << ") created"
+      << (registerTemplate ? " and registered." : ".");
 
   return this->postCreateRegister(primAssetAttributes, registerTemplate);
 }  // AssetAttributesManager::createObject
+
+attributes::AbstractPrimitiveAttributes::ptr
+AssetAttributesManager::createTemplateFromHandle(
+    const std::string& templateHandle,
+    bool registerTemplate) {
+  // first determine what base type the attributes is - find first underscore.
+  std::size_t nameEndLoc = templateHandle.find('_');
+  if (nameEndLoc == std::string::npos) {
+    // handle is of incorrect format
+    ESP_ERROR() << "Given template handle :" << templateHandle
+                << "is not the correct format for a primitive.  Aborting.";
+    return nullptr;
+  }
+  std::string primClassName = templateHandle.substr(0, nameEndLoc);
+  if (primTypeConstructorMap_.count(primClassName) == 0) {
+    // handle does not have proper primitive tyep encoded
+    ESP_ERROR() << "Requested primitive type :" << primClassName
+                << "from given template handle :" << templateHandle
+                << "is not a valid Magnum::Primitives class.  Aborting.";
+    return nullptr;
+  }
+  // create but do not register template for this prim class, since it will be
+  // modified based on config string
+  auto primAssetAttributes = this->createObject(primClassName, false);
+  // certain prims such as cubes do not have config settings
+  if (templateHandle.length() > 0) {
+    bool success = primAssetAttributes->parseStringIntoConfig(templateHandle);
+    if (!success) {
+      ESP_WARNING() << "Prim Asset Attributes :" << primClassName
+                    << "failed parsing config string : `" << templateHandle
+                    << "`.  Providing" << primClassName
+                    << "template configured as closely as possible with "
+                       "requested values, named"
+                    << primAssetAttributes->getHandle() << ".";
+    }
+  }
+  return this->postCreateRegister(primAssetAttributes, registerTemplate);
+}  // AssetAttributesManager::createTemplateFromHandle
 
 int AssetAttributesManager::registerObjectFinalize(
     AbstractPrimitiveAttributes::ptr primAttributesTemplate,
@@ -128,12 +171,11 @@ int AssetAttributesManager::registerObjectFinalize(
   std::string primAttributesHandle = primAttributesTemplate->getHandle();
   // verify that attributes has been edited in a legal manner
   if (!primAttributesTemplate->isValidTemplate()) {
-    LOG(ERROR) << "AssetAttributesManager::registerObjectFinalize "
-                  ": Primitive asset attributes template named"
-               << primAttributesHandle
-               << "is not configured properly for specified prmitive"
-               << primAttributesTemplate->getPrimObjClassName()
-               << ". Aborting.";
+    ESP_ERROR() << "Primitive asset attributes template named"
+                << primAttributesHandle
+                << "is not configured properly for specified prmitive"
+                << primAttributesTemplate->getPrimObjClassName()
+                << ". Aborting.";
     return ID_UNDEFINED;
   }
 
@@ -149,19 +191,17 @@ AbstractPrimitiveAttributes::ptr AssetAttributesManager::buildObjectFromJSONDoc(
     const io::JsonGenericValue& jsonDoc) {
   // find type of attributes - file name should contain handle
   const std::string primAttrHandle =
-      Cr::Utility::Directory::splitExtension(
-          Cr::Utility::Directory::filename(filename))
-          .first;
+      Cr::Utility::Path::splitExtension(
+          Cr::Utility::Path::split(filename).second())
+          .first();
 
   std::string primClassName =
       Cr::Utility::String::partition(primAttrHandle, '_')[0];
-  // if not legal primitive asset attributes file name, have message and return
-  // default sphere attributes.
+  // if not legal primitive asset attributes file name, have message and
+  // return default sphere attributes.
   if (defaultPrimAttributeHandles_.count(primClassName) == 0) {
-    LOG(ERROR) << "AssetAttributesManager::buildObjectFromJSONDoc :Unknown "
-                  "primitive class type : "
-               << primClassName
-               << " so returning default attributes for solid uvSphere.";
+    ESP_ERROR() << "Unknown primitive class type :" << primClassName
+                << "so returning default attributes for solid uvSphere.";
     return this->getObjectCopyByHandle<attributes::UVSpherePrimitiveAttributes>(
         defaultPrimAttributeHandles_.at("uvSphereSolid"));
   }
@@ -169,11 +209,10 @@ AbstractPrimitiveAttributes::ptr AssetAttributesManager::buildObjectFromJSONDoc(
   // create attributes for the primitive described in the JSON file
   auto primAssetAttributes = this->initNewObjectInternal(primClassName, true);
   if (nullptr == primAssetAttributes) {
-    LOG(ERROR)
-        << "AssetAttributesManager::buildObjectFromJSONDoc : unable to "
-           "create default primitive asset attributes from primClassName "
-        << primClassName
-        << " so returning default attributes for solid uvSphere.";
+    ESP_ERROR() << "Unable to create default primitive asset attributes from "
+                   "primClassName"
+                << primClassName
+                << "so returning default attributes for solid uvSphere.";
     return this->getObjectCopyByHandle<attributes::UVSpherePrimitiveAttributes>(
         defaultPrimAttributeHandles_.at("uvSphereSolid"));
   }
@@ -185,8 +224,10 @@ void AssetAttributesManager::setValsFromJSONDoc(
     AttribsPtr attribs,
     const io::JsonGenericValue& jsonConfig) {
   // TODO support loading values from JSON docs
+  // check for user defined attributes
+  // this->parseUserDefinedJsonVals(attribs, jsonConfig);
 
-}  // AssetAttributesManager::buildObjectFromJSONDoc
+}  // AssetAttributesManager::setValsFromJSONDoc
 
 }  // namespace managers
 }  // namespace metadata

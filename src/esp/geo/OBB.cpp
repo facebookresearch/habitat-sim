@@ -4,9 +4,11 @@
 
 #include "OBB.h"
 
+#include <array>
 #include <vector>
 
-#include "esp/geo/geo.h"
+#include "esp/core/Check.h"
+#include "esp/geo/Geo.h"
 
 namespace esp {
 namespace geo {
@@ -15,7 +17,6 @@ OBB::OBB() {
   center_.setZero();
   halfExtents_.setZero();
   rotation_.setIdentity();
-  box3f box;
 }
 
 OBB::OBB(const vec3f& center, const vec3f& dimensions, const quatf& rotation)
@@ -32,7 +33,7 @@ static const vec3f kCorners[8] = {
 
 box3f OBB::toAABB() const {
   box3f bbox;
-  for (int i = 0; i < 8; i++) {
+  for (int i = 0; i < 8; ++i) {
     const vec3f worldPoint =
         center_ + (rotation_ * kCorners[i].cwiseProduct(halfExtents_));
     bbox.extend(worldPoint);
@@ -41,20 +42,24 @@ box3f OBB::toAABB() const {
 }
 
 void OBB::recomputeTransforms() {
-  ASSERT(center_.allFinite());
-  ASSERT(halfExtents_.allFinite());
-  ASSERT(rotation_.coeffs().allFinite());
+  ESP_CHECK(center_.allFinite(),
+            "Illegal center for OBB. Cannot recompute transformations.");
+  ESP_CHECK(halfExtents_.allFinite(),
+            "Illegal size values for OBB. Cannot recompute transformations.");
+  ESP_CHECK(
+      rotation_.coeffs().allFinite(),
+      "Illegal rotation quaternion for OBB. Cannot recompute transformations.");
 
   // TODO(MS): these can be composed more efficiently and directly
   const mat3f R = rotation_.matrix();
   // Local-to-world transform
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < 3; ++i) {
     localToWorld_.linear().col(i) = R.col(i) * halfExtents_[i];
   }
   localToWorld_.translation() = center_;
 
   // World-to-local transform. Points within OBB are in [0,1]^3
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < 3; ++i) {
     worldToLocal_.linear().row(i) = R.col(i) * (1.0f / halfExtents_[i]);
   }
   worldToLocal_.translation() = -worldToLocal_.linear() * center_;
@@ -63,7 +68,7 @@ void OBB::recomputeTransforms() {
 bool OBB::contains(const vec3f& p, float eps /* = 1e-6f */) const {
   const vec3f pLocal = worldToLocal() * p;
   const float bound = 1.0f + eps;
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < 3; ++i) {
     if (std::abs(pLocal[i]) > bound) {
       return false;
     }
@@ -83,7 +88,7 @@ vec3f OBB::closestPoint(const vec3f& p) const {
   const vec3f d = p - center_;
   vec3f closest = center_;
   const mat3f R = rotation_.matrix();
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < 3; ++i) {
     closest +=
         clamp(R.col(i).dot(d), -halfExtents_[i], halfExtents_[i]) * R.col(i);
   }
@@ -129,15 +134,17 @@ OBB computeGravityAlignedMOBB(const vec3f& gravity,
   };
 
   std::vector<vec2f> in_plane_points;
+  in_plane_points.reserve(points.size());
   for (const auto& pt : points) {
     vec3f aligned_pt = align_gravity * pt;
     in_plane_points.emplace_back(aligned_pt[0], aligned_pt[1]);
   }
 
   const auto hull = convexHull2D(in_plane_points);
-  ASSERT(hull.size() > 0);
+  CORRADE_INTERNAL_ASSERT(hull.size() > 0);
 
   std::vector<vec2f> edge_dirs;
+  edge_dirs.reserve(hull.size());
   for (size_t i = 0; i < hull.size(); ++i) {
     edge_dirs.emplace_back(
         (hull[(i + 1) % hull.size()] - hull[i]).normalized());
@@ -174,7 +181,7 @@ OBB computeGravityAlignedMOBB(const vec3f& gravity,
   float best_area = 1e10;
   vec2f best_bottom_dir = vec2f(NAN, NAN);
   for (size_t i = 0; i < hull.size(); ++i) {
-    const std::vector<float> angles(
+    const std::array<float, 4> angles(
         {std::acos(left_dir.dot(edge_dirs[left_idx])),
          std::acos(right_dir.dot(edge_dirs[right_idx])),
          std::acos(top_dir.dot(edge_dirs[top_idx])),
@@ -218,7 +225,7 @@ OBB computeGravityAlignedMOBB(const vec3f& gravity,
         bottom_idx = (bottom_idx + 1) % hull.size();
         break;
       default:
-        ASSERT(false);
+        CORRADE_INTERNAL_ASSERT(false);
     }
 
     const float area =
@@ -236,7 +243,7 @@ OBB computeGravityAlignedMOBB(const vec3f& gravity,
 
   box3f aabb;
   aabb.setEmpty();
-  for (auto& pt : points) {
+  for (const auto& pt : points) {
     aabb.extend(T_w2b * pt);
   }
 

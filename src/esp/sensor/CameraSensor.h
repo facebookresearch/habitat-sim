@@ -7,15 +7,16 @@
 
 #include <Magnum/Math/ConfigurationValue.h>
 #include "VisualSensor.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 namespace esp {
 namespace sensor {
 
 struct CameraSensorSpec : public VisualSensorSpec {
   float orthoScale = 0.1f;
+  Mn::Deg hfov = 90.0_degf;
   CameraSensorSpec();
-  void sanityCheck() override;
+  void sanityCheck() const override;
   bool operator==(const CameraSensorSpec& a) const;
   ESP_SMART_POINTERS(CameraSensorSpec)
 };
@@ -85,8 +86,8 @@ class CameraSensor : public VisualSensor {
   void setFOV(Mn::Deg FOV) {
     hfov_ = FOV;
     if (cameraSensorSpec_->sensorSubType != SensorSubType::Pinhole) {
-      LOG(INFO)
-          << "CameraSensor::setFOV : Only Perspective-base CameraSensors use "
+      ESP_DEBUG()
+          << "Only Perspective-base CameraSensors use "
              "FOV. Specified value saved but will not be consumed by this "
              "CameraSensor.";
     }
@@ -158,6 +159,11 @@ class CameraSensor : public VisualSensor {
     recomputeBaseProjectionMatrix();
   }
 
+  /**
+   * @brief Return a pointer to this camera sensor's SensorSpec
+   */
+  CameraSensorSpec::ptr specification() const { return cameraSensorSpec_; }
+
  protected:
   /**
    * @brief Recalculate the base projection matrix, based on camera type and
@@ -172,6 +178,13 @@ class CameraSensor : public VisualSensor {
    * change.
    */
   void recomputeProjectionMatrix();
+
+  /**
+   * @brief Draw the scene graph with the specified camera flag
+   * @param[in] sceneGraph scene graph to be drawn
+   * @param[in] flags flag for the render camera
+   */
+  void draw(scene::SceneGraph& sceneGraph, gfx::RenderCamera::Flags flags);
 
   /**
    * @brief This camera's projection matrix. Should be recomputeulated every

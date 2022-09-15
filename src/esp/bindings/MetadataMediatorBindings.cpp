@@ -3,7 +3,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "esp/bindings/bindings.h"
+#include "esp/bindings/Bindings.h"
 
 #include <Magnum/Magnum.h>
 #include <Magnum/PythonBindings.h>
@@ -16,7 +16,9 @@ namespace esp {
 namespace metadata {
 
 void initMetadataMediatorBindings(py::module& m) {
-  py::class_<MetadataMediator, MetadataMediator::ptr>(m, "MetadataMediator")
+  py::class_<MetadataMediator, MetadataMediator::ptr>(
+      m, "MetadataMediator",
+      R"(Aggregates all AttributesManagers and provides an API for swapping the active SceneDataset. It can exist independant of a :ref:`Simulator` object for programmatic metadata management and can be passed into the constructor via the :ref:`SimulatorConfiguration`.)")
       .def(py::init(&MetadataMediator::create<>))
       .def(py::init<const sim::SimulatorConfiguration&>())
       .def_property(
@@ -25,6 +27,15 @@ void initMetadataMediatorBindings(py::module& m) {
           R"(The currently active dataset being used.  Will attempt to load
             configuration files specified if does not already exist.)")
 
+      /* --- Methods --- */
+      .def(
+          "dataset_exists", &MetadataMediator::sceneDatasetExists,
+          R"(Returns whether the passed name references an existing scene dataset or not.)",
+          "dataset_name"_a)
+      .def(
+          "remove_dataset", &MetadataMediator::removeSceneDataset,
+          R"(Remove the given dataset from MetadataMediator.  If specified dataset is currently active, this will fail.)",
+          "dataset_name"_a)
       /* --- Template Manager accessors --- */
       .def_property_readonly(
           "asset_template_manager",
@@ -54,7 +65,22 @@ void initMetadataMediatorBindings(py::module& m) {
           &MetadataMediator::getStageAttributesManager,
           pybind11::return_value_policy::reference,
           R"(The current dataset's StageAttributesManager instance
-            for configuring simulation stage templates.)");
+            for configuring simulation stage templates.)")
+      .def_property_readonly(
+          "urdf_paths", &MetadataMediator::getArticulatedObjectModelFilenames,
+          pybind11::return_value_policy::reference,
+          R"(Access to the dictionary of URDF paths, keyed by shortened name, value being full path.)")
+      .def(
+          "get_scene_handles", &MetadataMediator::getAllSceneInstanceHandles,
+          R"(Returns a list the names of all the available scene instances in the currently active dataset.)")
+      .def_property_readonly(
+          "summary", &MetadataMediator::getDatasetsOverview,
+          R"(This provides a summary of the datasets currently loaded.)")
+      .def(
+          "dataset_report", &MetadataMediator::createDatasetReport,
+          R"(This provides an indepth report of the loaded templates for the specified dataset.
+          If no dataset_name is specified, returns a report on the currently active dataset)",
+          "dataset_name"_a = "");
 
 }  // initMetadataMediatorBindings
 

@@ -3,8 +3,9 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <Corrade/Containers/StridedArrayView.h>
+#include <Corrade/TestSuite/Compare/Numeric.h>
 #include <Corrade/TestSuite/Tester.h>
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/Path.h>
 #include <Magnum/DebugTools/CompareImage.h>
 #include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/ImageView.h>
@@ -43,26 +44,25 @@ using esp::sim::Simulator;
 using esp::sim::SimulatorConfiguration;
 
 namespace {
-
-// NOLINTNEXTLINE(google-build-using-namespace)
 using namespace Magnum::Math::Literals;
 
 const std::string vangogh =
-    Cr::Utility::Directory::join(SCENE_DATASETS,
-                                 "habitat-test-scenes/van-gogh-room.glb");
+    Cr::Utility::Path::join(SCENE_DATASETS,
+                            "habitat-test-scenes/van-gogh-room.glb");
 const std::string skokloster =
-    Cr::Utility::Directory::join(SCENE_DATASETS,
-                                 "habitat-test-scenes/skokloster-castle.glb");
+    Cr::Utility::Path::join(SCENE_DATASETS,
+                            "habitat-test-scenes/skokloster-castle.glb");
 const std::string planeStage =
-    Cr::Utility::Directory::join(TEST_ASSETS, "scenes/plane.glb");
+    Cr::Utility::Path::join(TEST_ASSETS, "scenes/plane.glb");
 const std::string physicsConfigFile =
-    Cr::Utility::Directory::join(TEST_ASSETS, "testing.physics_config.json");
+    Cr::Utility::Path::join(TEST_ASSETS, "testing.physics_config.json");
 const std::string screenshotDir =
-    Cr::Utility::Directory::join(TEST_ASSETS, "screenshots/");
+    Cr::Utility::Path::join(TEST_ASSETS, "screenshots/");
 
 struct SimTest : Cr::TestSuite::Tester {
   explicit SimTest();
 
+  //! build a simulator via a SimulatorConfiguration alone
   static Simulator::uptr getSimulator(
       SimTest& self,
       const std::string& scene,
@@ -72,12 +72,12 @@ struct SimTest : Cr::TestSuite::Tester {
     simConfig.enablePhysics = true;
     simConfig.physicsConfigFile = physicsConfigFile;
     simConfig.overrideSceneLightDefaults = true;
-    simConfig.sceneLightSetup = sceneLightingKey;
+    simConfig.sceneLightSetupKey = sceneLightingKey;
 
     auto sim = Simulator::create_unique(simConfig);
     auto objAttrMgr = sim->getObjectAttributesManager();
-    objAttrMgr->loadAllConfigsFromPath(
-        Cr::Utility::Directory::join(TEST_ASSETS, "objects/nested_box"), true);
+    objAttrMgr->loadAllJSONConfigsFromPath(
+        Cr::Utility::Path::join(TEST_ASSETS, "objects/nested_box"), true);
 
     sim->setLightSetup(self.lightSetup1, "custom_lighting_1");
     sim->setLightSetup(self.lightSetup2, "custom_lighting_2");
@@ -94,13 +94,13 @@ struct SimTest : Cr::TestSuite::Tester {
     simConfig.enablePhysics = true;
     simConfig.physicsConfigFile = physicsConfigFile;
     simConfig.overrideSceneLightDefaults = true;
-    simConfig.sceneLightSetup = sceneLightingKey;
+    simConfig.sceneLightSetupKey = sceneLightingKey;
 
     MetadataMediator::ptr MM = MetadataMediator::create(simConfig);
     auto sim = Simulator::create_unique(simConfig, MM);
     auto objAttrMgr = sim->getObjectAttributesManager();
-    objAttrMgr->loadAllConfigsFromPath(
-        Cr::Utility::Directory::join(TEST_ASSETS, "objects/nested_box"), true);
+    objAttrMgr->loadAllJSONConfigsFromPath(
+        Cr::Utility::Path::join(TEST_ASSETS, "objects/nested_box"), true);
 
     sim->setLightSetup(self.lightSetup1, "custom_lighting_1");
     sim->setLightSetup(self.lightSetup2, "custom_lighting_2");
@@ -125,18 +125,22 @@ struct SimTest : Cr::TestSuite::Tester {
   void recomputeNavmeshWithStaticObjects();
   void loadingObjectTemplates();
   void buildingPrimAssetObjectTemplates();
+  void addObjectByHandle();
   void addSensorToObject();
+  void createMagnumRenderingOff();
 
+  esp::logging::LoggingContext loggingContext_;
   // TODO: remove outlier pixels from image and lower maxThreshold
   const Magnum::Float maxThreshold = 255.f;
 
   LightSetup lightSetup1{{Magnum::Vector4{1.0f, 1.5f, 0.5f, 0.0f},
                           {5.0, 5.0, 0.0},
-                          LightPositionModel::CAMERA}};
+                          LightPositionModel::Camera}};
   LightSetup lightSetup2{{Magnum::Vector4{0.0f, 0.5f, 1.0f, 0.0f},
                           {0.0, 5.0, 5.0},
-                          LightPositionModel::CAMERA}};
-};
+                          LightPositionModel::Camera}};
+};  // struct SimTest
+
 struct {
   // display name for sim being tested
   const char* name;
@@ -149,11 +153,11 @@ struct {
                      {"built with MetadataMediator", &SimTest::getSimulatorMM}};
 SimTest::SimTest() {
   // clang-format off
-  addTests({&SimTest::basic,
-            &SimTest::reconfigure,
-            &SimTest::reset});
-            //test instances test both mechanisms for constructing simulator
+  //test instances test both mechanisms for constructing simulator
   addInstancedTests({
+            &SimTest::basic,
+            &SimTest::reconfigure,
+            &SimTest::reset,
             &SimTest::getSceneRGBAObservation,
             &SimTest::getSceneWithLightingRGBAObservation,
             &SimTest::getDefaultLightingRGBAObservation,
@@ -164,88 +168,59 @@ SimTest::SimTest() {
             &SimTest::recomputeNavmeshWithStaticObjects,
             &SimTest::loadingObjectTemplates,
             &SimTest::buildingPrimAssetObjectTemplates,
-            &SimTest::addSensorToObject}, Cr::Containers::arraySize(SimulatorBuilder) );
+            &SimTest::addObjectByHandle,
+            &SimTest::addSensorToObject,
+            &SimTest::createMagnumRenderingOff}, Cr::Containers::arraySize(SimulatorBuilder) );
   // clang-format on
 }
-
 void SimTest::basic() {
-  SimulatorConfiguration cfg;
-  cfg.activeSceneName = vangogh;
-  Simulator simulator(cfg);
-  PathFinder::ptr pathfinder = simulator.getPathFinder();
+  auto&& data = SimulatorBuilder[testCaseInstanceId()];
+  setTestCaseDescription(data.name);
+  auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
+  PathFinder::ptr pathfinder = simulator->getPathFinder();
   CORRADE_VERIFY(pathfinder);
-
-  // test for MM ctor
-  SimulatorConfiguration cfg_mm;
-  cfg_mm.activeSceneName = vangogh;
-  MetadataMediator::ptr MM = MetadataMediator::create(cfg_mm);
-  Simulator simulator_mm(cfg_mm, MM);
-  PathFinder::ptr pathfinder_mm = simulator_mm.getPathFinder();
-  CORRADE_VERIFY(pathfinder_mm);
 }
 
 void SimTest::reconfigure() {
-  SimulatorConfiguration cfg;
-  cfg.activeSceneName = vangogh;
-  Simulator simulator(cfg);
-  PathFinder::ptr pathfinder = simulator.getPathFinder();
-  simulator.reconfigure(cfg);
-  CORRADE_VERIFY(pathfinder == simulator.getPathFinder());
+  auto&& data = SimulatorBuilder[testCaseInstanceId()];
+  setTestCaseDescription(data.name);
+  auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
+  PathFinder::ptr pathfinder = simulator->getPathFinder();
+  SimulatorConfiguration cfg =
+      simulator->getMetadataMediator()->getSimulatorConfiguration();
+  simulator->reconfigure(cfg);
+  CORRADE_COMPARE(pathfinder, simulator->getPathFinder());
   SimulatorConfiguration cfg2;
   cfg2.activeSceneName = skokloster;
-  simulator.reconfigure(cfg2);
-  CORRADE_VERIFY(pathfinder != simulator.getPathFinder());
-
-  // test using MM ctor
-  SimulatorConfiguration cfg_mm;
-  cfg_mm.activeSceneName = vangogh;
-  MetadataMediator::ptr MM = MetadataMediator::create(cfg_mm);
-  Simulator simulator_mm(cfg_mm, MM);
-  PathFinder::ptr pathfinder_mm = simulator_mm.getPathFinder();
-  simulator_mm.reconfigure(cfg_mm);
-  CORRADE_VERIFY(pathfinder_mm == simulator_mm.getPathFinder());
-  SimulatorConfiguration cfg2_mm;
-  cfg2_mm.activeSceneName = skokloster;
-  simulator_mm.reconfigure(cfg2_mm);
-  CORRADE_VERIFY(pathfinder_mm != simulator_mm.getPathFinder());
+  simulator->reconfigure(cfg2);
+  CORRADE_VERIFY(pathfinder != simulator->getPathFinder());
 }
 
 void SimTest::reset() {
-  CORRADE_VERIFY(true);
-  auto testReset = [&](Simulator& simulator) {
-    PathFinder::ptr pathfinder = simulator.getPathFinder();
-    auto pinholeCameraSpec = CameraSensorSpec::create();
-    pinholeCameraSpec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
-    pinholeCameraSpec->sensorType = SensorType::Color;
-    pinholeCameraSpec->position = {0.0f, 1.5f, 5.0f};
-    pinholeCameraSpec->resolution = {100, 100};
-    AgentConfiguration agentConfig{};
-    agentConfig.sensorSpecifications = {pinholeCameraSpec};
-    auto agent = simulator.addAgent(agentConfig);
+  auto&& data = SimulatorBuilder[testCaseInstanceId()];
+  setTestCaseDescription(data.name);
+  auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
 
-    auto stateOrig = AgentState::create();
-    agent->getState(stateOrig);
+  PathFinder::ptr pathfinder = simulator->getPathFinder();
+  auto pinholeCameraSpec = CameraSensorSpec::create();
+  pinholeCameraSpec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
+  pinholeCameraSpec->sensorType = SensorType::Color;
+  pinholeCameraSpec->position = {0.0f, 1.5f, 5.0f};
+  pinholeCameraSpec->resolution = {100, 100};
+  AgentConfiguration agentConfig{};
+  agentConfig.sensorSpecifications = {pinholeCameraSpec};
+  auto agent = simulator->addAgent(agentConfig);
 
-    simulator.reset();
+  auto stateOrig = AgentState::create();
+  agent->getState(stateOrig);
 
-    auto stateFinal = AgentState::create();
-    agent->getState(stateFinal);
-    CORRADE_VERIFY(stateOrig->position == stateFinal->position);
-    CORRADE_VERIFY(stateOrig->rotation == stateFinal->rotation);
-    CORRADE_VERIFY(pathfinder == simulator.getPathFinder());
-  };
+  simulator->reset();
 
-  SimulatorConfiguration cfg;
-  cfg.activeSceneName = vangogh;
-  Simulator simulator(cfg);
-  testReset(simulator);
-  // build simulator with MM
-
-  SimulatorConfiguration cfg_mm;
-  cfg_mm.activeSceneName = vangogh;
-  MetadataMediator::ptr MM = MetadataMediator::create(cfg_mm);
-  Simulator simulator_mm(cfg_mm, MM);
-  testReset(simulator_mm);
+  auto stateFinal = AgentState::create();
+  agent->getState(stateFinal);
+  CORRADE_COMPARE(stateOrig->position, stateFinal->position);
+  CORRADE_COMPARE(stateOrig->rotation, stateFinal->rotation);
+  CORRADE_COMPARE(pathfinder, simulator->getPathFinder());
 }
 
 void SimTest::checkPinholeCameraRGBAObservation(
@@ -287,25 +262,24 @@ void SimTest::checkPinholeCameraRGBAObservation(
           Mn::PixelFormat::RGBA8Unorm,
           {pinholeCameraSpec->resolution[0], pinholeCameraSpec->resolution[1]},
           observation.buffer->data}),
-      Cr::Utility::Directory::join(screenshotDir, groundTruthImageFile),
+      Cr::Utility::Path::join(screenshotDir, groundTruthImageFile),
       (Mn::DebugTools::CompareImageToFile{maxThreshold, meanThreshold}));
 }
 
 void SimTest::getSceneRGBAObservation() {
-  Corrade::Utility::Debug() << "Starting Test : getSceneRGBAObservation ";
+  ESP_DEBUG() << "Starting Test : getSceneRGBAObservation";
   setTestCaseName(CORRADE_FUNCTION);
-  Corrade::Utility::Debug() << "About to build simulator";
+  ESP_DEBUG() << "About to build simulator";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
-  Corrade::Utility::Debug() << "Built simulator";
+  ESP_DEBUG() << "Built simulator";
   checkPinholeCameraRGBAObservation(*simulator, "SimTestExpectedScene.png",
                                     maxThreshold, 0.75f);
 }
 
 void SimTest::getSceneWithLightingRGBAObservation() {
-  Corrade::Utility::Debug()
-      << "Starting Test : getSceneWithLightingRGBAObservation ";
+  ESP_DEBUG() << "Starting Test : getSceneWithLightingRGBAObservation";
   setTestCaseName(CORRADE_FUNCTION);
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
@@ -315,53 +289,55 @@ void SimTest::getSceneWithLightingRGBAObservation() {
 }
 
 void SimTest::getDefaultLightingRGBAObservation() {
-  Corrade::Utility::Debug()
-      << "Starting Test : getDefaultLightingRGBAObservation ";
+  ESP_DEBUG() << "Starting Test : getDefaultLightingRGBAObservation";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
+  auto rigidObjMgr = simulator->getRigidObjectManager();
   auto objs = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
-  int objectID = simulator->addObjectByHandle(objs[0]);
-  CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
-  simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
-
+  auto obj = rigidObjMgr->addObjectByHandle(objs[0]);
+  CORRADE_VERIFY(obj->isAlive());
+  CORRADE_VERIFY(obj->getID() != esp::ID_UNDEFINED);
+  obj->setTranslation({1.0f, 0.5f, -0.5f});
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedDefaultLighting.png", maxThreshold, 0.71f);
 }
 
 void SimTest::getCustomLightingRGBAObservation() {
-  Corrade::Utility::Debug()
-      << "Starting Test : getCustomLightingRGBAObservation ";
+  ESP_DEBUG() << "Starting Test : getCustomLightingRGBAObservation";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
+  auto rigidObjMgr = simulator->getRigidObjectManager();
   auto objs = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
-  int objectID =
-      simulator->addObjectByHandle(objs[0], nullptr, "custom_lighting_1");
-  CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
-  simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
+  auto obj =
+      rigidObjMgr->addObjectByHandle(objs[0], nullptr, "custom_lighting_1");
+  CORRADE_VERIFY(obj->isAlive());
+  CORRADE_VERIFY(obj->getID() != esp::ID_UNDEFINED);
+  obj->setTranslation({1.0f, 0.5f, -0.5f});
 
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedCustomLighting.png", maxThreshold, 0.71f);
 }
 
 void SimTest::updateLightSetupRGBAObservation() {
-  Corrade::Utility::Debug()
-      << "Starting Test : updateLightSetupRGBAObservation ";
+  ESP_DEBUG() << "Starting Test : updateLightSetupRGBAObservation";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
+  auto rigidObjMgr = simulator->getRigidObjectManager();
   // update default lighting
   auto objs = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
-  int objectID = simulator->addObjectByHandle(objs[0]);
-  CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
-  simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
+  auto obj = rigidObjMgr->addObjectByHandle(objs[0]);
+  CORRADE_VERIFY(obj->isAlive());
+  CORRADE_VERIFY(obj->getID() != esp::ID_UNDEFINED);
+  obj->setTranslation({1.0f, 0.5f, -0.5f});
 
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedDefaultLighting.png", maxThreshold, 0.71f);
@@ -369,13 +345,13 @@ void SimTest::updateLightSetupRGBAObservation() {
   simulator->setLightSetup(lightSetup1);
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedCustomLighting.png", maxThreshold, 0.71f);
-  simulator->removeObject(objectID);
+  rigidObjMgr->removePhysObjectByHandle(obj->getHandle());
 
   // update custom lighting
-  objectID =
-      simulator->addObjectByHandle(objs[0], nullptr, "custom_lighting_1");
-  CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
-  simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
+  obj = rigidObjMgr->addObjectByHandle(objs[0], nullptr, "custom_lighting_1");
+  CORRADE_VERIFY(obj->isAlive());
+  CORRADE_VERIFY(obj->getID() != esp::ID_UNDEFINED);
+  obj->setTranslation({1.0f, 0.5f, -0.5f});
 
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedCustomLighting.png", maxThreshold, 0.71f);
@@ -386,50 +362,53 @@ void SimTest::updateLightSetupRGBAObservation() {
 }
 
 void SimTest::updateObjectLightSetupRGBAObservation() {
-  Corrade::Utility::Debug()
-      << "Starting Test : updateObjectLightSetupRGBAObservation ";
+  ESP_DEBUG() << "Starting Test : updateObjectLightSetupRGBAObservation";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
+  auto rigidObjMgr = simulator->getRigidObjectManager();
   auto objs = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
-  int objectID = simulator->addObjectByHandle(objs[0]);
-  CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
-  simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
+  auto obj = rigidObjMgr->addObjectByHandle(objs[0]);
+  CORRADE_VERIFY(obj->isAlive());
+  CORRADE_VERIFY(obj->getID() != esp::ID_UNDEFINED);
+  obj->setTranslation({1.0f, 0.5f, -0.5f});
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedDefaultLighting.png", maxThreshold, 0.71f);
 
   // change from default lighting to custom
-  simulator->setObjectLightSetup(objectID, "custom_lighting_1");
+  obj->setLightSetup("custom_lighting_1");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedCustomLighting.png", maxThreshold, 0.71f);
 
   // change from one custom lighting to another
-  simulator->setObjectLightSetup(objectID, "custom_lighting_2");
+  obj->setLightSetup("custom_lighting_2");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedCustomLighting2.png", maxThreshold, 0.71f);
 }
 
 void SimTest::multipleLightingSetupsRGBAObservation() {
-  Corrade::Utility::Debug()
-      << "Starting Test : multipleLightingSetupsRGBAObservation ";
+  ESP_DEBUG() << "Starting Test : multipleLightingSetupsRGBAObservation";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, planeStage, esp::NO_LIGHT_KEY);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
+  auto rigidObjMgr = simulator->getRigidObjectManager();
   // make sure updates apply to all objects using the light setup
   auto objs = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
-  int objectID =
-      simulator->addObjectByHandle(objs[0], nullptr, "custom_lighting_1");
-  CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
-  simulator->setTranslation({0.0f, 0.5f, -0.5f}, objectID);
+  auto obj =
+      rigidObjMgr->addObjectByHandle(objs[0], nullptr, "custom_lighting_1");
+  CORRADE_VERIFY(obj->isAlive());
+  CORRADE_VERIFY(obj->getID() != esp::ID_UNDEFINED);
+  obj->setTranslation({0.0f, 0.5f, -0.5f});
 
-  int otherObjectID =
-      simulator->addObjectByHandle(objs[0], nullptr, "custom_lighting_1");
-  CORRADE_VERIFY(otherObjectID != esp::ID_UNDEFINED);
-  simulator->setTranslation({2.0f, 0.5f, -0.5f}, otherObjectID);
+  auto otherObj =
+      rigidObjMgr->addObjectByHandle(objs[0], nullptr, "custom_lighting_1");
+  CORRADE_VERIFY(otherObj->isAlive());
+  CORRADE_VERIFY(otherObj->getID() != esp::ID_UNDEFINED);
+  otherObj->setTranslation({2.0f, 0.5f, -0.5f});
 
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedSameLighting.png", maxThreshold, 0.01f);
@@ -440,19 +419,19 @@ void SimTest::multipleLightingSetupsRGBAObservation() {
   simulator->setLightSetup(lightSetup1, "custom_lighting_1");
 
   // make sure we can move a single object to another group
-  simulator->setObjectLightSetup(objectID, "custom_lighting_2");
+  obj->setLightSetup("custom_lighting_2");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedDifferentLighting.png", maxThreshold, 0.01f);
 }
 
 void SimTest::recomputeNavmeshWithStaticObjects() {
-  Corrade::Utility::Debug()
-      << "Starting Test : recomputeNavmeshWithStaticObjects ";
+  ESP_DEBUG() << "Starting Test : recomputeNavmeshWithStaticObjects";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, skokloster, esp::NO_LIGHT_KEY);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
+  auto rigidObjMgr = simulator->getRigidObjectManager();
 
   // compute the initial navmesh
   esp::nav::NavMeshSettings navMeshSettings;
@@ -470,9 +449,9 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
 
   // add static object at a known navigable point
   auto objs = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
-  int objectID = simulator->addObjectByHandle(objs[0]);
-  simulator->setTranslation(Magnum::Vector3{randomNavPoint}, objectID);
-  simulator->setObjectMotionType(esp::physics::MotionType::STATIC, objectID);
+  auto obj = rigidObjMgr->addObjectByHandle(objs[0]);
+  obj->setTranslation(Magnum::Vector3{randomNavPoint});
+  obj->setMotionType(esp::physics::MotionType::STATIC);
   CORRADE_VERIFY(
       simulator->getPathFinder()->isNavigable({randomNavPoint}, 0.1));
 
@@ -486,19 +465,17 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
                               navMeshSettings, false);
   CORRADE_VERIFY(simulator->getPathFinder()->isNavigable(randomNavPoint, 0.1));
 
-  simulator->removeObject(objectID);
+  rigidObjMgr->removePhysObjectByHandle(obj->getHandle());
 
   // test scaling
   ObjectAttributes::ptr objectTemplate = objectAttribsMgr->getObjectCopyByID(0);
   objectTemplate->setScale({0.5, 0.5, 0.5});
   int tmplateID = objectAttribsMgr->registerObject(objectTemplate);
 
-  objectID = simulator->addObjectByHandle(objs[0]);
-  simulator->setTranslation(Magnum::Vector3{randomNavPoint}, objectID);
-  simulator->setTranslation(
-      simulator->getTranslation(objectID) + Magnum::Vector3{0, 0.5, 0},
-      objectID);
-  simulator->setObjectMotionType(esp::physics::MotionType::STATIC, objectID);
+  obj = rigidObjMgr->addObjectByHandle(objs[0]);
+  obj->setTranslation(Magnum::Vector3{randomNavPoint});
+  obj->setTranslation(obj->getTranslation() + Magnum::Vector3{0, 0.5, 0});
+  obj->setMotionType(esp::physics::MotionType::STATIC);
   esp::vec3f offset(0.75, 0, 0);
   CORRADE_VERIFY(simulator->getPathFinder()->isNavigable(randomNavPoint, 0.1));
   CORRADE_VERIFY(
@@ -512,7 +489,7 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
 }
 
 void SimTest::loadingObjectTemplates() {
-  Corrade::Utility::Debug() << "Starting Test : loadingObjectTemplates ";
+  ESP_DEBUG() << "Starting Test : loadingObjectTemplates";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, planeStage, esp::NO_LIGHT_KEY);
@@ -520,24 +497,26 @@ void SimTest::loadingObjectTemplates() {
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
 
   // test directory of templates
-  std::vector<int> templateIndices = objectAttribsMgr->loadAllConfigsFromPath(
-      Cr::Utility::Directory::join(TEST_ASSETS, "objects"));
+  std::vector<int> templateIndices =
+      objectAttribsMgr->loadAllJSONConfigsFromPath(
+          Cr::Utility::Path::join(TEST_ASSETS, "objects"));
   CORRADE_VERIFY(!templateIndices.empty());
   for (auto index : templateIndices) {
     CORRADE_VERIFY(index != esp::ID_UNDEFINED);
   }
 
   // reload again and ensure that old loaded indices are returned
-  std::vector<int> templateIndices2 = objectAttribsMgr->loadAllConfigsFromPath(
-      Cr::Utility::Directory::join(TEST_ASSETS, "objects"));
-  CORRADE_VERIFY(templateIndices2 == templateIndices);
+  std::vector<int> templateIndices2 =
+      objectAttribsMgr->loadAllJSONConfigsFromPath(
+          Cr::Utility::Path::join(TEST_ASSETS, "objects"));
+  CORRADE_COMPARE(templateIndices2, templateIndices);
 
   // test the loaded assets and accessing them by name
   // verify that getting the template handles with empty string returns all
   int numLoadedTemplates = templateIndices2.size();
   std::vector<std::string> templateHandles =
       objectAttribsMgr->getFileTemplateHandlesBySubstring();
-  CORRADE_VERIFY(numLoadedTemplates == templateHandles.size());
+  CORRADE_COMPARE(numLoadedTemplates, templateHandles.size());
 
   // verify that querying with sub string returns template handle corresponding
   // to that substring
@@ -550,33 +529,32 @@ void SimTest::loadingObjectTemplates() {
   // get all handles that match 2nd half of known handle
   std::vector<std::string> matchTmpltHandles =
       objectAttribsMgr->getObjectHandlesBySubstring(tmpHndl);
-  CORRADE_VERIFY(matchTmpltHandles[0] == fullTmpHndl);
+  CORRADE_COMPARE(matchTmpltHandles[0], fullTmpHndl);
 
   // test fresh template as smart pointer
   ObjectAttributes::ptr newTemplate =
       objectAttribsMgr->createObject("new template", false);
   std::string boxPath =
-      Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
+      Cr::Utility::Path::join(TEST_ASSETS, "objects/transform_box.glb");
   newTemplate->setRenderAssetHandle(boxPath);
   int templateIndex = objectAttribsMgr->registerObject(newTemplate, boxPath);
 
   CORRADE_VERIFY(templateIndex != esp::ID_UNDEFINED);
   // change render asset for object template named boxPath
   std::string chairPath =
-      Cr::Utility::Directory::join(TEST_ASSETS, "objects/chair.glb");
+      Cr::Utility::Path::join(TEST_ASSETS, "objects/chair.glb");
   newTemplate->setRenderAssetHandle(chairPath);
   int templateIndex2 = objectAttribsMgr->registerObject(newTemplate, boxPath);
 
   CORRADE_VERIFY(templateIndex2 != esp::ID_UNDEFINED);
-  CORRADE_VERIFY(templateIndex2 == templateIndex);
+  CORRADE_COMPARE(templateIndex2, templateIndex);
   ObjectAttributes::ptr newTemplate2 =
       objectAttribsMgr->getObjectCopyByHandle(boxPath);
-  CORRADE_VERIFY(newTemplate2->getRenderAssetHandle() == chairPath);
+  CORRADE_COMPARE(newTemplate2->getRenderAssetHandle(), chairPath);
 }
 
 void SimTest::buildingPrimAssetObjectTemplates() {
-  Corrade::Utility::Debug()
-      << "Starting Test : buildingPrimAssetObjectTemplates ";
+  ESP_DEBUG() << "Starting Test : buildingPrimAssetObjectTemplates";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, planeStage, esp::NO_LIGHT_KEY);
@@ -587,6 +565,7 @@ void SimTest::buildingPrimAssetObjectTemplates() {
   auto assetAttribsMgr = simulator->getAssetAttributesManager();
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
+  auto rigidObjMgr = simulator->getRigidObjectManager();
 
   // get all handles of templates for primitive-based render objects
   std::vector<std::string> primObjAssetHandles =
@@ -596,7 +575,7 @@ void SimTest::buildingPrimAssetObjectTemplates() {
   int numPrimsExpected =
       static_cast<int>(esp::metadata::PrimObjTypes::END_PRIM_OBJ_TYPES);
   // verify the number of primitive templates
-  CORRADE_VERIFY(numPrimsExpected == primObjAssetHandles.size());
+  CORRADE_COMPARE(numPrimsExpected, primObjAssetHandles.size());
 
   AbstractPrimitiveAttributes::ptr primAttr;
   {
@@ -604,17 +583,19 @@ void SimTest::buildingPrimAssetObjectTemplates() {
     // valid values to be used to construct magnum primitives
     for (int i = 0; i < numPrimsExpected; ++i) {
       std::string handle = primObjAssetHandles[i];
-      CORRADE_VERIFY(handle != "");
+      CORRADE_VERIFY(!handle.empty());
       primAttr = assetAttribsMgr->getObjectCopyByHandle(handle);
-      CORRADE_VERIFY(primAttr != nullptr);
+      CORRADE_VERIFY(primAttr);
       CORRADE_VERIFY(primAttr->isValidTemplate());
       // verify that the attributes contains the handle, and the handle contains
       // the expected class name
       std::string className =
           esp::metadata::managers::AssetAttributesManager::PrimitiveNames3DMap
-              .at(static_cast<esp::metadata::PrimObjTypes>(i));
-      CORRADE_VERIFY((primAttr->getHandle() == handle) &&
-                     (handle.find(className) != std::string::npos));
+              .at(static_cast<esp::metadata::PrimObjTypes>(
+                  primAttr->getPrimObjType()));
+
+      CORRADE_COMPARE(primAttr->getHandle(), handle);
+      CORRADE_VERIFY(handle.find(className) != std::string::npos);
     }
   }
   // empty vector of handles
@@ -625,9 +606,10 @@ void SimTest::buildingPrimAssetObjectTemplates() {
     primObjAssetHandles =
         objectAttribsMgr->getSynthTemplateHandlesBySubstring("CONESOLID");
     // should only be one handle in this vector
-    CORRADE_VERIFY(1 == primObjAssetHandles.size());
+    CORRADE_COMPARE(primObjAssetHandles.size(), 1);
     // handle should not be empty and be long enough to hold class name prefix
-    CORRADE_VERIFY(9 < primObjAssetHandles[0].length());
+    CORRADE_COMPARE_AS(primObjAssetHandles[0].length(), 9,
+                       Cr::TestSuite::Compare::Greater);
     // coneSolid should appear in handle
     std::string checkStr("coneSolid");
     CORRADE_VERIFY(primObjAssetHandles[0].find(checkStr) != std::string::npos);
@@ -639,9 +621,9 @@ void SimTest::buildingPrimAssetObjectTemplates() {
     primObjAssetHandles = objectAttribsMgr->getSynthTemplateHandlesBySubstring(
         "CONESOLID", false);
     // should be all handles but coneSolid handle here
-    CORRADE_VERIFY((numPrimsExpected - 1) == primObjAssetHandles.size());
+    CORRADE_COMPARE((numPrimsExpected - 1), primObjAssetHandles.size());
     for (auto primObjAssetHandle : primObjAssetHandles) {
-      CORRADE_VERIFY(primObjAssetHandle.find(checkStr) == std::string::npos);
+      CORRADE_COMPARE(primObjAssetHandle.find(checkStr), std::string::npos);
     }
   }
   // empty vector of handles
@@ -654,12 +636,12 @@ void SimTest::buildingPrimAssetObjectTemplates() {
     primObjAssetHandles = assetAttribsMgr->getTemplateHandlesByPrimType(
         esp::metadata::PrimObjTypes::CYLINDER_SOLID);
     // should only be one handle in this vector
-    CORRADE_VERIFY(1 == primObjAssetHandles.size());
+    CORRADE_COMPARE(primObjAssetHandles.size(), 1);
     // primitive render object uses primitive render asset as handle
     std::string origCylinderHandle = primObjAssetHandles[0];
     primAttr = assetAttribsMgr->getObjectCopyByHandle(origCylinderHandle);
     // verify that the origin handle matches what is expected
-    CORRADE_VERIFY(primAttr->getHandle() == origCylinderHandle);
+    CORRADE_COMPARE(primAttr->getHandle(), origCylinderHandle);
     // get original number of rings for this cylinder
     int origNumRings = primAttr->getNumRings();
     // modify attributes - this will change handle
@@ -667,25 +649,31 @@ void SimTest::buildingPrimAssetObjectTemplates() {
     // verify that internal name of attributes has changed due to essential
     // quantity being modified
     std::string newHandle = primAttr->getHandle();
-    CORRADE_VERIFY(newHandle != origCylinderHandle);
-    // set test label, to validate that copy is reggistered
-    primAttr->setString("test", "test0");
+
+    CORRADE_COMPARE_AS(newHandle, origCylinderHandle,
+                       Cr::TestSuite::Compare::NotEqual);
+    // set bogus file directory, to validate that copy is reggistered
+    primAttr->setFileDirectory("test0");
     // register new attributes
     int idx = assetAttribsMgr->registerObject(primAttr);
+
     CORRADE_VERIFY(idx != esp::ID_UNDEFINED);
     // set new test label, to validate against retrieved copy
-    primAttr->setString("test", "test1");
+    primAttr->setFileDirectory("test1");
     // retrieve registered attributes copy
     AbstractPrimitiveAttributes::ptr primAttr2 =
         assetAttribsMgr->getObjectCopyByHandle(newHandle);
     // verify pre-reg and post-reg are named the same
-    CORRADE_VERIFY(primAttr->getHandle() == primAttr2->getHandle());
+    CORRADE_COMPARE(primAttr->getHandle(), primAttr2->getHandle());
     // verify retrieved attributes is copy, not original
-    CORRADE_VERIFY(primAttr->getString("test") != primAttr2->getString("test"));
+
+    CORRADE_COMPARE_AS(primAttr->getFileDirectory(),
+                       primAttr2->getFileDirectory(),
+                       Cr::TestSuite::Compare::NotEqual);
     // remove modified attributes
     AbstractPrimitiveAttributes::ptr primAttr3 =
         assetAttribsMgr->removeObjectByHandle(newHandle);
-    CORRADE_VERIFY(nullptr != primAttr3);
+    CORRADE_VERIFY(primAttr3);
   }
   // empty vector of handles
   primObjAssetHandles.clear();
@@ -708,49 +696,70 @@ void SimTest::buildingPrimAssetObjectTemplates() {
     // create object template with modified primitive asset attributes, by
     // passing handle.  defaults to register object template
     auto newCylObjAttr = objectAttribsMgr->createObject(newHandle);
-    CORRADE_VERIFY(nullptr != newCylObjAttr);
+    CORRADE_VERIFY(newCylObjAttr);
     // create object with new attributes
-    int objectID = simulator->addObjectByHandle(newHandle);
-    CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
+    auto obj = rigidObjMgr->addObjectByHandle(newHandle);
+    CORRADE_VERIFY(obj->isAlive());
+    CORRADE_VERIFY(obj->getID() != esp::ID_UNDEFINED);
   }
   // empty vector of handles
   primObjAssetHandles.clear();
 
 }  // SimTest::buildingPrimAssetObjectTemplates
 
+void SimTest::addObjectByHandle() {
+  ESP_DEBUG() << "Starting Test : addObject";
+  auto&& data = SimulatorBuilder[testCaseInstanceId()];
+  setTestCaseDescription(data.name);
+  auto simulator = data.creator(*this, planeStage, esp::NO_LIGHT_KEY);
+  auto rigidObjMgr = simulator->getRigidObjectManager();
+
+  auto obj = rigidObjMgr->addObjectByHandle("invalid_handle");
+  CORRADE_COMPARE(obj, nullptr);
+
+  // pass valid object_config.json filepath as handle to addObjectByHandle
+  const auto validHandle = Cr::Utility::Path::join(
+      TEST_ASSETS, "objects/nested_box.object_config.json");
+  obj = rigidObjMgr->addObjectByHandle(validHandle);
+  CORRADE_VERIFY(obj->isAlive());
+  CORRADE_VERIFY(obj->getID() != esp::ID_UNDEFINED);
+}
+
 void SimTest::addSensorToObject() {
-  Corrade::Utility::Debug() << "Starting Test : addSensorToObject ";
+  ESP_DEBUG() << "Starting Test : addSensorToObject";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
+  auto rigidObjMgr = simulator->getRigidObjectManager();
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
-  auto objs = objectAttribsMgr->getObjectHandlesBySubstring("sphere");
-  int objectID = simulator->addObjectByHandle(objs[0]);
-  CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
-  esp::scene::SceneNode& objectNode = *simulator->getObjectSceneNode(objectID);
+  auto objs = objectAttribsMgr->getObjectHandlesBySubstring("icosphereSolid");
+  auto obj = rigidObjMgr->addObjectByHandle(objs[0]);
+  CORRADE_VERIFY(obj->isAlive());
+  CORRADE_VERIFY(obj->getID() != esp::ID_UNDEFINED);
+  esp::scene::SceneNode& objectNode = *obj->getSceneNode();
 
   // Add sensor to sphere object
   auto objectSensorSpec = esp::sensor::CameraSensorSpec::create();
-  objectSensorSpec->uuid = std::to_string(objectID);
+  objectSensorSpec->uuid = std::to_string(obj->getID());
   objectSensorSpec->position = {0, 0, 0};
   objectSensorSpec->orientation = {0, 0, 0};
   objectSensorSpec->resolution = {128, 128};
-  simulator->addSensorToObject(objectID, objectSensorSpec);
-  std::string expectedUUID = std::to_string(objectID);
+  simulator->addSensorToObject(obj->getID(), objectSensorSpec);
+  std::string expectedUUID = std::to_string(obj->getID());
   CameraSensor& cameraSensor = dynamic_cast<CameraSensor&>(
       objectNode.getNodeSensorSuite().get(expectedUUID));
   cameraSensor.setTransformationFromSpec();
 
-  simulator->setTranslation({1.0f, 1.5f, 1.0f},
-                            objectID);  // Move camera to same place as agent
+  obj->setTranslation(
+      {1.0f, 1.5f, 1.0f});  // Move camera to same place as agent
 
   auto objs2 = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
-  int objectID2 = simulator->addObjectByHandle(objs[0]);
-  CORRADE_VERIFY(objectID2 != esp::ID_UNDEFINED);
-  simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID2);
-  esp::scene::SceneNode& objectNode2 =
-      *simulator->getObjectSceneNode(objectID2);
+  auto obj2 = rigidObjMgr->addObjectByHandle(objs[0]);
+  CORRADE_VERIFY(obj2->isAlive());
+  CORRADE_VERIFY(obj2->getID() != esp::ID_UNDEFINED);
+  obj2->setTranslation({1.0f, 0.5f, -0.5f});
+  esp::scene::SceneNode& objectNode2 = *obj2->getSceneNode();
 
   Observation observation;
   ObservationSpace obsSpace;
@@ -774,9 +783,113 @@ void SimTest::addSensorToObject() {
       (Mn::ImageView2D{Mn::PixelFormat::RGBA8Unorm,
                        {defaultResolution[0], defaultResolution[1]},
                        observation.buffer->data}),
-      Cr::Utility::Directory::join(screenshotDir, "SimTestExpectedScene.png"),
+      Cr::Utility::Path::join(screenshotDir, "SimTestExpectedScene.png"),
       (Mn::DebugTools::CompareImageToFile{maxThreshold, 0.75f}));
 }
+
+void SimTest::createMagnumRenderingOff() {
+  ESP_DEBUG() << "Starting Test : createMagnumRenderingOff";
+
+  // create a simulator
+  SimulatorConfiguration simConfig{};
+  simConfig.activeSceneName = vangogh;
+  simConfig.enablePhysics = true;
+  simConfig.physicsConfigFile = physicsConfigFile;
+  simConfig.overrideSceneLightDefaults = true;
+  simConfig.createRenderer = false;
+  simConfig.sceneLightSetupKey = "custom_lighting_1";
+  auto simulator = Simulator::create_unique(simConfig);
+
+  // configure objectAttributesManager
+  auto objectAttribsMgr = simulator->getObjectAttributesManager();
+  auto rigidObjMgr = simulator->getRigidObjectManager();
+  objectAttribsMgr->loadAllJSONConfigsFromPath(
+      Cr::Utility::Path::join(TEST_ASSETS, "objects/nested_box"), true);
+
+  // check that we can load a glb file
+  auto objs = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
+  auto obj = rigidObjMgr->addObjectByHandle(objs[0]);
+  CORRADE_VERIFY(obj->isAlive());
+  CORRADE_VERIFY(obj->getID() != esp::ID_UNDEFINED);
+  obj->setTranslation({-10.0f, -10.0f, -10.0f});
+
+  // check that adding a primitive object works
+  obj = rigidObjMgr->addObjectByHandle("cubeSolid");
+  obj->setTranslation({10.0f, 10.0f, 10.0f});
+  CORRADE_VERIFY(obj->isAlive());
+  CORRADE_VERIFY(obj->getID() != esp::ID_UNDEFINED);
+  esp::scene::SceneNode* objectNode = obj->getSceneNode();
+
+  auto distanceBetween = [](Mn::Vector3 a, Mn::Vector3 b) {
+    Mn::Vector3 d = b - a;
+    return Mn::Math::pow(dot(d, d), 0.5f);
+  };
+
+  auto testRaycast = [&]() {
+    // cast a ray at the object to check that the object is actually there
+    auto raycastresults = simulator->castRay(
+        esp::geo::Ray({10.0, 9.0, 10.0}, {0.0, 1.0, 0.0}), 100.0, 0);
+    CORRADE_COMPARE(raycastresults.hits[0].objectId, obj->getID());
+    auto point = raycastresults.hits[0].point;
+    CORRADE_COMPARE_AS(distanceBetween(point, {10.0, 9.9, 10.0}), 0.001,
+                       Cr::TestSuite::Compare::Less);
+    raycastresults = simulator->castRay(
+        esp::geo::Ray({10.0, 11.0, 10.0}, {0.0, -1.0, 0.0}), 100.0, 0);
+    CORRADE_COMPARE(raycastresults.hits[0].objectId, obj->getID());
+    point = raycastresults.hits[0].point;
+    CORRADE_COMPARE_AS(distanceBetween(point, {10.0, 10.1, 10.0}), 0.001,
+                       Cr::TestSuite::Compare::Less);
+  };
+
+  auto testBoundingBox = [&]() {
+    // check that we can still compute bounding box of the object
+    Magnum::Range3D meshbb = objectNode->getCumulativeBB();
+    float eps = 0.001;
+    CORRADE_COMPARE_WITH(meshbb.left(), -0.1,
+                         Cr::TestSuite::Compare::around(eps));
+    CORRADE_COMPARE_WITH(meshbb.right(), 0.1,
+                         Cr::TestSuite::Compare::around(eps));
+    CORRADE_COMPARE_WITH(meshbb.bottom(), -0.1,
+                         Cr::TestSuite::Compare::around(eps));
+    CORRADE_COMPARE_WITH(meshbb.top(), 0.1,
+                         Cr::TestSuite::Compare::around(eps));
+    CORRADE_COMPARE_WITH(meshbb.back(), -0.1,
+                         Cr::TestSuite::Compare::around(eps));
+    CORRADE_COMPARE_WITH(meshbb.front(), 0.1,
+                         Cr::TestSuite::Compare::around(eps));
+  };
+  // test raycast and bounding box for cubeSolid
+  testRaycast();
+  testBoundingBox();
+
+  // test raycast and bounding box for cubeWireframe
+  rigidObjMgr->removePhysObjectByHandle(obj->getHandle());
+  obj = rigidObjMgr->addObjectByHandle("cubeWireframe");
+  CORRADE_VERIFY(obj->isAlive());
+  CORRADE_VERIFY(obj->getID() != esp::ID_UNDEFINED);
+  obj->setTranslation({10.0f, 10.0f, 10.0f});
+  objectNode = obj->getSceneNode();
+  testRaycast();
+  testBoundingBox();
+
+  // do some sensor stuff to check that nothing errors
+  auto objectSensorSpec = esp::sensor::CameraSensorSpec::create();
+  objectSensorSpec->uuid = std::to_string(obj->getID());
+  objectSensorSpec->position = {0, 0, 0};
+  objectSensorSpec->orientation = {0, 0, 0};
+  objectSensorSpec->resolution = {128, 128};
+  simulator->addSensorToObject(obj->getID(), objectSensorSpec);
+  std::string expectedUUID = std::to_string(obj->getID());
+  CameraSensor& cameraSensor = dynamic_cast<CameraSensor&>(
+      objectNode->getNodeSensorSuite().get(expectedUUID));
+  cameraSensor.setTransformationFromSpec();
+  Observation observation;
+
+  // check that there is no renderer
+  CORRADE_VERIFY(!simulator->getRenderer());
+  CORRADE_VERIFY(!cameraSensor.getObservation(*simulator, observation));
+}
+
 }  // namespace
 
 CORRADE_TEST_MAIN(SimTest)

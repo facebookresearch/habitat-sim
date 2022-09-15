@@ -27,17 +27,13 @@ class NodeDeletionHelper;
 /**
  * @brief Recording for "render replay".
  *
- * This class is work in progress (writeSavedKeyframesToFile isn't implemented
- * yet).
- *
  * This class saves and serializes render keyframes. A render keyframe is a
  * visual snapshot of a scene. It includes the visual parts of a scene, such
  * that observations can be reproduced (from the same camera perspective or a
  * different one). The render keyframe includes support for named "user
  * transforms" which can be used to store cameras, agents, or other
- * application-specific objects. See also @ref Player (coming soon). See
- * examples/replay_tutorial.py for usage of this class through bindings (coming
- * soon).
+ * application-specific objects. See also @ref Player. See
+ * examples/replay_tutorial.py for usage of this class through bindings.
  */
 class Recorder {
  public:
@@ -71,6 +67,11 @@ class Recorder {
   void saveKeyframe();
 
   /**
+   * @brief Returns the last saved keyframe.
+   */
+  const Keyframe& getLatestKeyframe();
+
+  /**
    * @brief Add a named "user transform" which can be used to store cameras,
    * agents, or other application-specific objects
    *
@@ -92,13 +93,22 @@ class Recorder {
   /**
    * @brief write saved keyframes to file.
    * @param filepath
+   *
+   * If you prefer more readable json, set usePrettyWriter to true, but beware
+   * larger filesize.
    */
-  void writeSavedKeyframesToFile(const std::string& filepath);
+  void writeSavedKeyframesToFile(const std::string& filepath,
+                                 bool usePrettyWriter = false);
 
   /**
    * @brief write saved keyframes to string.
    */
   std::string writeSavedKeyframesToString();
+
+  /**
+   * @brief returns JSONized version of given keyframe.
+   */
+  std::string keyframeToString(const Keyframe& keyframe);
 
   /**
    * @brief Reserved for unit-testing.
@@ -140,6 +150,8 @@ class Recorder {
   Keyframe currKeyframe_;
   std::vector<Keyframe> savedKeyframes_;
   RenderAssetInstanceKey nextInstanceKey_ = 0;
+
+  ESP_SMART_POINTERS(Recorder)
 };
 
 }  // namespace replay

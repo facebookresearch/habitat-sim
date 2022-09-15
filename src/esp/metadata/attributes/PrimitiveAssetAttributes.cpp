@@ -16,18 +16,37 @@ CapsulePrimitiveAttributes::CapsulePrimitiveAttributes(
                                   primObjType,
                                   primObjClassName,
                                   "CapsulePrimitiveAttributes") {
-  setCylinderRings(1);
+  set("cylinderRings", 1);
   if (!isWireframe) {  // solid
-    setHemisphereRings(4);
-    setNumSegments(12);
-    setHalfLength(0.75);
+    set("hemisphereRings", 4);
+    set("segments", 12);
+    set("halfLength", 0.75);
   } else {  // wireframe
-    setHemisphereRings(8);
-    setNumSegments(16);
-    setHalfLength(1.0);
+    set("hemisphereRings", 8);
+    set("segments", 16);
+    set("halfLength", 1.0);
   }
   buildHandle();  // build handle based on config
-}  // PhysicsCapsulePrimAttributes
+}  // CapsulePrimitiveAttributes
+
+bool CapsulePrimitiveAttributes::parseStringIntoConfigDetail(
+    const std::string& configString) {
+  bool hemiRingSet =
+      setIntFromConfigKey("_hemiRings_", configString,
+                          [this](int val) { setHemisphereRings(val); });
+  bool cylRingSet = setIntFromConfigKey(
+      "_cylRings_", configString, [this](int val) { setCylinderRings(val); });
+  bool segmentSet = setIntFromConfigKey(
+      "_segments_", configString, [this](int val) { setNumSegments(val); });
+  auto halflenSet = setDoubleFromConfigKey(
+      "_halfLen_", configString, [this](double val) { setHalfLength(val); });
+
+  if (!getIsWireframe()) {
+    setUseTextureCoords(getBoolForConfigKey("_useTexCoords_", configString));
+    setUseTangents(getBoolForConfigKey("_useTangents_", configString));
+  }
+  return hemiRingSet && cylRingSet && segmentSet && halflenSet;
+}  // CapsulePrimitiveAttributes::parseStringIntoConfigDetail(
 
 ConePrimitiveAttributes::ConePrimitiveAttributes(
     bool isWireframe,
@@ -37,17 +56,35 @@ ConePrimitiveAttributes::ConePrimitiveAttributes(
                                   primObjType,
                                   primObjClassName,
                                   "ConePrimitiveAttributes") {
-  setHalfLength(1.25);
+  set("halfLength", 1.25);
 
   if (!isWireframe) {  // solid
-    setNumRings(1);
-    setNumSegments(12);
-    setCapEnd(true);
+    set("rings", 1);
+    set("segments", 12);
+    set("capEnd", true);
   } else {  // wireframe
-    setNumSegments(32);
+    set("segments", 32);
   }
   buildHandle();  // build handle based on config
-}  // PhysicsConePrimAttributes
+}  // ConePrimitiveAttributes
+
+bool ConePrimitiveAttributes::parseStringIntoConfigDetail(
+    const std::string& configString) {
+  bool segmentSet = setIntFromConfigKey(
+      "_segments_", configString, [this](int val) { setNumSegments(val); });
+  auto halflenSet = setDoubleFromConfigKey(
+      "_halfLen_", configString, [this](double val) { setHalfLength(val); });
+  bool ringSet = true;
+  if (!getIsWireframe()) {
+    ringSet = setIntFromConfigKey("_rings_", configString,
+                                  [this](int val) { setNumRings(val); });
+    setUseTextureCoords(getBoolForConfigKey("_useTexCoords_", configString));
+    setUseTangents(getBoolForConfigKey("_useTangents_", configString));
+    setCapEnd(getBoolForConfigKey("_capEnd_", configString));
+  }
+  return segmentSet && halflenSet && ringSet;
+
+}  // ConePrimitiveAttributes::parseStringIntoConfigDetail(
 
 CylinderPrimitiveAttributes::CylinderPrimitiveAttributes(
     bool isWireframe,
@@ -57,17 +94,34 @@ CylinderPrimitiveAttributes::CylinderPrimitiveAttributes(
                                   primObjType,
                                   primObjClassName,
                                   "CylinderPrimitiveAttributes") {
-  setNumRings(1);
-  setHalfLength(1.0);
+  set("rings", 1);
+  set("halfLength", 1.0);
 
   if (!isWireframe) {  // solid
-    setNumSegments(12);
-    setCapEnds(true);
+    set("segments", 12);
+    set("capEnds", true);
   } else {  // wireframe
-    setNumSegments(32);
+    set("segments", 32);
   }
   buildHandle();  // build handle based on config
-}  // PhysicsCylinderPrimAttributes
+}  // CylinderPrimitiveAttributes
+
+bool CylinderPrimitiveAttributes::parseStringIntoConfigDetail(
+    const std::string& configString) {
+  bool ringSet = setIntFromConfigKey("_rings_", configString,
+                                     [this](int val) { setNumRings(val); });
+  bool segmentSet = setIntFromConfigKey(
+      "_segments_", configString, [this](int val) { setNumSegments(val); });
+  auto halflenSet = setDoubleFromConfigKey(
+      "_halfLen_", configString, [this](double val) { setHalfLength(val); });
+
+  if (!getIsWireframe()) {
+    setUseTextureCoords(getBoolForConfigKey("_useTexCoords_", configString));
+    setUseTangents(getBoolForConfigKey("_useTangents_", configString));
+    setCapEnds(getBoolForConfigKey("_capEnds_", configString));
+  }
+  return ringSet && halflenSet && segmentSet;
+}  // CylinderPrimitiveAttributes::parseStringIntoConfigDetail(
 
 UVSpherePrimitiveAttributes::UVSpherePrimitiveAttributes(
     bool isWireframe,
@@ -78,14 +132,29 @@ UVSpherePrimitiveAttributes::UVSpherePrimitiveAttributes(
                                   primObjClassName,
                                   "UVSpherePrimitiveAttributes") {
   if (!isWireframe) {  // solid
-    setNumRings(8);
-    setNumSegments(16);
+    set("rings", 8);
+    set("segments", 16);
   } else {  // wireframe
-    setNumRings(16);
-    setNumSegments(32);
+    set("rings", 16);
+    set("segments", 32);
   }
   buildHandle();  // build handle based on config
-}  // PhysicsUVSpherePrimAttributes
+}  // UVSpherePrimitiveAttributes
+
+bool UVSpherePrimitiveAttributes::parseStringIntoConfigDetail(
+    const std::string& configString) {
+  std::ostringstream oHndlStrm;
+
+  bool ringSet = setIntFromConfigKey("_rings_", configString,
+                                     [this](int val) { setNumRings(val); });
+  bool segmentSet = setIntFromConfigKey(
+      "_segments_", configString, [this](int val) { setNumSegments(val); });
+  if (!getIsWireframe()) {
+    setUseTextureCoords(getBoolForConfigKey("_useTexCoords_", configString));
+    setUseTangents(getBoolForConfigKey("_useTangents_", configString));
+  }
+  return ringSet && segmentSet;
+}  // UVSpherePrimitiveAttributes::parseStringIntoConfigDetail(
 
 }  // namespace attributes
 }  // namespace metadata

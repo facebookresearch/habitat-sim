@@ -1,3 +1,4 @@
+#!/bin/bash
 function install_92 {
     # Install MAGMA for CUDA 9.2
     pushd /tmp || exit
@@ -35,14 +36,14 @@ function install_101 {
 while test $# -gt 0
 do
     case "$1" in
-	9.2) install_92
-		;;
-	10.0) install_100
-		;;
-	10.1) install_101
-		;;
-	*) echo "bad argument $1"; exit 1
-	   ;;
+       9.2) install_92
+          ;;
+       10.0) install_100
+          ;;
+       10.1) install_101
+          ;;
+       *) echo "bad argument $1"; exit 1
+          ;;
     esac
     shift
 done

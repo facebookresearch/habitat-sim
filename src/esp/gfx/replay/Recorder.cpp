@@ -5,8 +5,9 @@
 #include "Recorder.h"
 
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
+#include "esp/core/Check.h"
+#include "esp/io/Json.h"
 #include "esp/io/JsonAllTypes.h"
-#include "esp/io/json.h"
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
@@ -49,12 +50,23 @@ void Recorder::onLoadRenderAsset(const esp::assets::AssetInfo& assetInfo) {
 void Recorder::onCreateRenderAssetInstance(
     scene::SceneNode* node,
     const esp::assets::RenderAssetInstanceCreationInfo& creation) {
-  ASSERT(node);
-  ASSERT(findInstance(node) == ID_UNDEFINED);
+  CORRADE_INTERNAL_ASSERT(node);
+  CORRADE_INTERNAL_ASSERT(findInstance(node) == ID_UNDEFINED);
 
   RenderAssetInstanceKey instanceKey = getNewInstanceKey();
 
-  getKeyframe().creations.emplace_back(std::make_pair(instanceKey, creation));
+  auto adjustedCreation = creation;
+
+  // bake node scale into creation
+  auto nodeScale = node->absoluteTransformation().scaling();
+  if (nodeScale != Mn::Vector3(1.f, 1.f, 1.f)) {
+    adjustedCreation.scale = adjustedCreation.scale
+                                 ? *adjustedCreation.scale * nodeScale
+                                 : nodeScale;
+  }
+
+  getKeyframe().creations.emplace_back(instanceKey,
+                                       std::move(adjustedCreation));
 
   // Constructing NodeDeletionHelper here is equivalent to calling
   // node->addFeature. We keep a pointer to deletionHelper so we can delete it
@@ -70,6 +82,14 @@ void Recorder::saveKeyframe() {
   advanceKeyframe();
 }
 
+const Keyframe& Recorder::getLatestKeyframe() {
+  CORRADE_ASSERT(!savedKeyframes_.empty(),
+                 "Recorder::getLatestKeyframe() : Trying to access latest "
+                 "keyframe when there are none",
+                 savedKeyframes_.back());
+  return savedKeyframes_.back();
+}
+
 void Recorder::addUserTransformToKeyframe(const std::string& name,
                                           const Magnum::Vector3& translation,
                                           const Magnum::Quaternion& rotation) {
@@ -79,8 +99,8 @@ void Recorder::addUserTransformToKeyframe(const std::string& name,
 void Recorder::addLoadsCreationsDeletions(KeyframeIterator begin,
                                           KeyframeIterator end,
                                           Keyframe* dest) {
-  ASSERT(dest);
-  for (KeyframeIterator curr = begin; curr != end; curr++) {
+  CORRADE_INTERNAL_ASSERT(dest);
+  for (KeyframeIterator curr = begin; curr != end; ++curr) {
     const auto& keyframe = *curr;
     dest->loads.insert(dest->loads.end(), keyframe.loads.begin(),
                        keyframe.loads.end());
@@ -109,7 +129,7 @@ void Recorder::checkAndAddDeletion(Keyframe* keyframe,
 
 void Recorder::onDeleteRenderAssetInstance(const scene::SceneNode* node) {
   int index = findInstance(node);
-  ASSERT(index != ID_UNDEFINED);
+  CORRADE_INTERNAL_ASSERT(index != ID_UNDEFINED);
 
   auto instanceKey = instanceRecords_[index].instanceKey;
 
@@ -150,8 +170,8 @@ void Recorder::updateInstanceStates() {
   for (auto& instanceRecord : instanceRecords_) {
     auto state = getInstanceState(instanceRecord.node);
     if (!instanceRecord.recentState || state != instanceRecord.recentState) {
-      getKeyframe().stateUpdates.push_back(
-          std::make_pair(instanceRecord.instanceKey, state));
+      getKeyframe().stateUpdates.emplace_back(instanceRecord.instanceKey,
+                                              state);
       instanceRecord.recentState = state;
     }
   }
@@ -162,9 +182,14 @@ void Recorder::advanceKeyframe() {
   currKeyframe_ = Keyframe{};
 }
 
-void Recorder::writeSavedKeyframesToFile(const std::string& filepath) {
+void Recorder::writeSavedKeyframesToFile(const std::string& filepath,
+                                         bool usePrettyWriter) {
   auto document = writeKeyframesToJsonDocument();
-  esp::io::writeJsonToFile(document, filepath);
+  // replay::Keyframes use floats (not doubles) so this is plenty of precision
+  const float maxDecimalPlaces = 7;
+  auto ok = esp::io::writeJsonToFile(document, filepath, usePrettyWriter,
+                                     maxDecimalPlaces);
+  ESP_CHECK(ok, "writeSavedKeyframesToFile: unable to write to " << filepath);
 
   consolidateSavedKeyframes();
 }
@@ -175,6 +200,13 @@ std::string Recorder::writeSavedKeyframesToString() {
   consolidateSavedKeyframes();
 
   return esp::io::jsonToString(document);
+}
+
+std::string Recorder::keyframeToString(const Keyframe& keyframe) {
+  rapidjson::Document d(rapidjson::kObjectType);
+  rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
+  esp::io::addMember(d, "keyframe", keyframe, allocator);
+  return esp::io::jsonToString(d);
 }
 
 void Recorder::consolidateSavedKeyframes() {
@@ -191,8 +223,7 @@ void Recorder::consolidateSavedKeyframes() {
 
 rapidjson::Document Recorder::writeKeyframesToJsonDocument() {
   if (savedKeyframes_.empty()) {
-    LOG(WARNING) << "Recorder::writeKeyframesToJsonDocument: no saved "
-                    "keyframes to write";
+    ESP_WARNING() << "No saved keyframes to write";
     return rapidjson::Document();
   }
 

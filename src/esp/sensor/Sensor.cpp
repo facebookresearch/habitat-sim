@@ -22,17 +22,19 @@ bool SensorSpec::operator!=(const SensorSpec& a) const {
   return !(*this == a);
 }
 
-void SensorSpec::sanityCheck() {
+void SensorSpec::sanityCheck() const {
   CORRADE_ASSERT(this, "SensorSpec::sanityCheck(): sensorSpec is illegal", );
-  // Check that all parameters are initalized to legal values
+  // Check that all parameters are initialized to legal values
   CORRADE_ASSERT(!uuid.empty(),
                  "SensorSpec::sanityCheck(): uuid cannot be an empty string", );
   CORRADE_ASSERT(
-      sensorType >= SensorType::None && sensorType <= SensorType::Text,
-      "SensorSpec::sanityCheck(): sensorType is illegal", );
-  CORRADE_ASSERT(sensorSubType >= SensorSubType::None &&
-                     sensorSubType <= SensorSubType::Orthographic,
-                 "SensorSpec::sanityCheck(): sensorSubType is illegal", );
+      sensorType > SensorType::None && sensorType < SensorType::SensorTypeCount,
+      "SensorSpec::sanityCheck(): sensorType" << int32_t(sensorType)
+                                              << "is illegal", );
+  CORRADE_ASSERT(sensorSubType > SensorSubType::None &&
+                     sensorSubType < SensorSubType::SensorSubTypeCount,
+                 "SensorSpec::sanityCheck(): sensorSubType"
+                     << int32_t(sensorType) << "is illegal", );
   CORRADE_ASSERT((abs(position.array()) >= 0).any(),
                  "SensorSpec::sanityCheck(): position is illegal", );
   CORRADE_ASSERT((abs(orientation.array()) >= 0).any(),
@@ -64,7 +66,7 @@ Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
 
 Sensor::~Sensor() {
   // Updating of info in SensorSuites will be handled by SceneNode
-  LOG(INFO) << "Deconstructing Sensor";
+  ESP_DEBUG() << "Deconstructing Sensor";
 }
 
 void Sensor::setTransformationFromSpec() {
@@ -96,10 +98,11 @@ void SensorSuite::remove(const std::string& uuid) {
 }
 
 sensor::Sensor& SensorSuite::get(const std::string& uuid) const {
+  auto sensorIter = sensors_.find(uuid);
   ESP_CHECK(
-      sensors_.count(uuid),
-      "SensorSuite::get(): SensorSuite does not contain key: " << uuid.c_str());
-  return sensors_.at(uuid).get();
+      sensorIter != sensors_.end(),
+      "SensorSuite::get(): SensorSuite does not contain key:" << uuid.c_str());
+  return sensorIter->second.get();
 }
 
 void SensorSuite::clear() {

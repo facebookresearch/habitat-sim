@@ -10,19 +10,20 @@ namespace physics {
 RigidObject::RigidObject(scene::SceneNode* rigidBodyNode,
                          int objectId,
                          const assets::ResourceManager& resMgr)
-    : RigidBase(rigidBodyNode, resMgr), velControl_(VelocityControl::create()) {
-  objectId_ = objectId;
-}
+    : RigidBase(rigidBodyNode, objectId, resMgr),
+      velControl_(VelocityControl::create()) {}
 
-bool RigidObject::initialize(const std::string& handle) {
+bool RigidObject::initialize(
+    metadata::attributes::AbstractObjectAttributes::ptr initAttributes) {
   if (initializationAttributes_ != nullptr) {
-    LOG(ERROR) << "Cannot initialize a RigidObject more than once";
+    ESP_ERROR() << "Cannot initialize a RigidObject more than once";
     return false;
   }
 
-  // save a copy of the template at initialization time
-  initializationAttributes_ =
-      resMgr_.getObjectAttributesManager()->getObjectCopyByHandle(handle);
+  // save the copy of the template used to create the object at initialization
+  // time
+  setUserAttributes(initAttributes->getUserConfiguration());
+  initializationAttributes_ = std::move(initAttributes);
 
   return initialization_LibSpecific();
 }  // RigidObject::initialize
@@ -59,14 +60,39 @@ bool RigidObject::initialization_LibSpecific() {
   return true;
 }  // RigidObject::initialization_LibSpecific
 
-bool RigidObject::setMotionType(MotionType mt) {
+void RigidObject::setMotionType(MotionType mt) {
   if (mt != MotionType::DYNAMIC) {
+    // can't set DYNAMIC without a dynamics engine.
     objectMotionType_ = mt;
-    return true;
-  } else {
-    return false;  // can't set DYNAMIC without a dynamics engine.
   }
 }
+
+void RigidObject::resetStateFromSceneInstanceAttr() {
+  auto sceneInstanceAttr = getInitObjectInstanceAttr();
+  if (!sceneInstanceAttr) {
+    return;
+  }
+  // set object's location and rotation based on translation and rotation
+  // params specified in instance attributes
+  auto translate = sceneInstanceAttr->getTranslation();
+  auto rotation = sceneInstanceAttr->getRotation();
+  // This was set when object was created, based on whether or not the object
+  // should be centered at COM or via Asset Local origin.
+  if (isCOMCorrected_) {
+    // if default COM correction is set and no object-based override, or if
+    // Object set to correct for COM.
+    translate -= rotation.transformVector(visualNode_->translation());
+  }
+  setTranslation(translate);
+  setRotation(rotation);
+
+  // set object's motion type if different than set value
+  const physics::MotionType attrObjMotionType =
+      static_cast<physics::MotionType>(sceneInstanceAttr->getMotionType());
+  if (attrObjMotionType != physics::MotionType::UNDEFINED) {
+    this->setMotionType(attrObjMotionType);
+  }
+}  // RigidObject::resetStateFromSceneInstanceAttr
 
 //////////////////
 // VelocityControl

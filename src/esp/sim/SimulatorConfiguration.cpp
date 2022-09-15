@@ -8,11 +8,9 @@ namespace esp {
 namespace sim {
 bool operator==(const SimulatorConfiguration& a,
                 const SimulatorConfiguration& b) {
-  return a.activeSceneName.compare(b.activeSceneName) == 0 &&
+  return a.activeSceneName == b.activeSceneName &&
          a.defaultAgentId == b.defaultAgentId &&
          a.gpuDeviceId == b.gpuDeviceId && a.randomSeed == b.randomSeed &&
-         a.defaultCameraUuid.compare(b.defaultCameraUuid) == 0 &&
-         a.compressTextures == b.compressTextures &&
          a.createRenderer == b.createRenderer &&
          a.allowSliding == b.allowSliding &&
          a.frustumCulling == b.frustumCulling &&
@@ -22,10 +20,13 @@ bool operator==(const SimulatorConfiguration& a,
          a.forceSeparateSemanticSceneGraph ==
              b.forceSeparateSemanticSceneGraph &&
          a.requiresTextures == b.requiresTextures &&
-         a.sceneDatasetConfigFile.compare(b.sceneDatasetConfigFile) == 0 &&
-         a.physicsConfigFile.compare(b.physicsConfigFile) == 0 &&
+         a.leaveContextWithBackgroundRenderer ==
+             b.leaveContextWithBackgroundRenderer &&
+         a.useSemanticTexturesIfFound == b.useSemanticTexturesIfFound &&
+         a.sceneDatasetConfigFile == b.sceneDatasetConfigFile &&
+         a.physicsConfigFile == b.physicsConfigFile &&
          a.overrideSceneLightDefaults == b.overrideSceneLightDefaults &&
-         a.sceneLightSetup.compare(b.sceneLightSetup) == 0;
+         a.sceneLightSetupKey == b.sceneLightSetupKey;
 }
 
 bool operator!=(const SimulatorConfiguration& a,

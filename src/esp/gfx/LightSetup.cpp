@@ -28,12 +28,34 @@ Magnum::Vector4 getLightPositionRelativeToCamera(
                         "w == 1 for a point light");
 
   switch (light.model) {
-    case LightPositionModel::OBJECT:
+    case LightPositionModel::Object:
       return transformationMatrix * light.vector;
-    case LightPositionModel::GLOBAL:
+    case LightPositionModel::Global:
       return cameraMatrix * light.vector;
-    case LightPositionModel::CAMERA:
+    case LightPositionModel::Camera:
       return light.vector;
+  }
+
+  CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+}
+
+Magnum::Vector4 getLightPositionRelativeToWorld(
+    const LightInfo& light,
+    const Magnum::Matrix4& transformationMatrix,
+    const Magnum::Matrix4& cameraMatrix) {
+  ESP_CHECK(
+      light.vector.w() == 1 || light.vector.w() == 0,
+      "Light vector" << light.vector
+                     << "is expected to have w == 0 for a directional light or "
+                        "w == 1 for a point light");
+
+  switch (light.model) {
+    case LightPositionModel::Object:
+      return cameraMatrix.inverted() * transformationMatrix * light.vector;
+    case LightPositionModel::Global:
+      return light.vector;
+    case LightPositionModel::Camera:
+      return cameraMatrix.inverted() * light.vector;
   }
 
   CORRADE_INTERNAL_ASSERT_UNREACHABLE();
@@ -56,12 +78,17 @@ LightSetup getLightsAtBoxCorners(const Magnum::Range3D& box,
 }
 
 LightSetup getDefaultLights() {
-  return LightSetup{{{1.0, 1.0, 0.0, 0.0}, {0.75, 0.75, 0.75}},
-                    {{-0.5, 0.0, 1.0, 0.0}, {0.4, 0.4, 0.4}}};
+  return LightSetup{
+      {{0.0, 0.5, 1.0, 0.0}, {2.4, 2.4, 2.4}},     // forward
+      {{0.0, 0.5, -1.0, 0.0}, {2.4, 2.4, 2.4}},    // backward
+      {{-1.0, 1.0, 0.0, 0.0}, {2.0, 2.0, 2.0}},    // top left
+      {{1.0, 1.0, 1.0, 0.0}, {2.0, 2.0, 2.0}},     // top right
+      {{0.0, -1.0, 0.0, 0.0}, {0.64, 0.64, 0.64}}  // bottom
+  };
 }
 
 Magnum::Color3 getAmbientLightColor(const LightSetup& lightSetup) {
-  if (lightSetup.size() == 0) {
+  if (lightSetup.empty()) {
     // We assume an empty light setup means the user wants "flat" shading,
     // meaning object ambient color should be copied directly to pixels as-is.
     // We can achieve this in the Phong shader using an ambient light color of

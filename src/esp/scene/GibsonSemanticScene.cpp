@@ -8,14 +8,14 @@
 #include <map>
 #include <string>
 
-#include "esp/io/json.h"
+#include "esp/io/Json.h"
 
 namespace Cr = Corrade;
 
 namespace esp {
 namespace scene {
 
-constexpr int kMaxIds = 10000; /* We shouldn't every need more than this. */
+constexpr int kMaxIds = 10000; /* We shouldn't ever need more than this. */
 
 bool SemanticScene::
     loadGibsonHouse(const std::string& houseFilename, SemanticScene& scene, const quatf& rotation /* = quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY) */) {
@@ -24,9 +24,9 @@ bool SemanticScene::
   }
 
   // top-level scene
-  VLOG(1) << "loadGibsonHouse::Parsing " << houseFilename;
+  ESP_VERY_VERBOSE() << "Parsing" << houseFilename;
   const io::JsonDocument& json = io::parseJsonFile(houseFilename);
-  VLOG(1) << "loadGibsonHouse::Parsed.";
+  ESP_VERY_VERBOSE() << "Parsed.";
 
   return buildGibsonHouse(json, scene, rotation);
 }  // SemanticScene::loadGibsonHouse
@@ -46,7 +46,7 @@ bool SemanticScene::buildGibsonHouse(const io::JsonDocument& jsonDoc,
     SemanticObject::ptr object = SemanticObject::create();
     int id = jsonObject["id"].GetInt();
     if (id > kMaxIds) {
-      LOG(ERROR) << "Exceeded max number of ids";
+      ESP_ERROR() << "Exceeded max number of ids";
       continue;
     }
     if (scene.objects_.size() < id + 1) {
@@ -62,7 +62,7 @@ bool SemanticScene::buildGibsonHouse(const io::JsonDocument& jsonDoc,
       int nextCategoryIndex = scene.categories_.size();
       categories[categoryName] = nextCategoryIndex;
       // NOTE(msb) vector is 0-indexed but categories index starts at 1
-      nextCategoryIndex++;
+      ++nextCategoryIndex;
       auto category = std::make_shared<GibsonObjectCategory>(nextCategoryIndex,
                                                              categoryName);
       scene.categories_.push_back(category);
@@ -78,13 +78,13 @@ bool SemanticScene::buildGibsonHouse(const io::JsonDocument& jsonDoc,
         // Rotating sizes
         size = (rotation * io::jsonToVec3f(jsonSize)).array().abs();
       } else {
-        LOG(WARNING) << "Object size from " << categoryName
-                     << " isn't provided.";
+        ESP_WARNING() << "Object size from" << categoryName
+                      << "isn't provided.";
       }
-      object->obb_ = geo::OBB(center, size, quatf::Identity());
+      object->setObb(center, size, quatf::Identity());
     } else {
-      LOG(WARNING) << "Object center coordinates from " << categoryName
-                   << " aren't provided.";
+      ESP_WARNING() << "Object center coordinates from" << categoryName
+                    << "aren't provided.";
     }
     scene.objects_[id] = std::move(object);
   }

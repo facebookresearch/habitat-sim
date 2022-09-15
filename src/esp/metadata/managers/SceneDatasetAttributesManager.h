@@ -15,19 +15,14 @@
 namespace esp {
 namespace metadata {
 namespace managers {
+using esp::core::managedContainers::ManagedObjectAccess;
+
 class SceneDatasetAttributesManager
     : public AttributesManager<attributes::SceneDatasetAttributes,
-                               core::ManagedObjectAccess::Share> {
+                               ManagedObjectAccess::Share> {
  public:
   explicit SceneDatasetAttributesManager(
-      PhysicsAttributesManager::ptr physicsAttributesMgr)
-      : AttributesManager<attributes::SceneDatasetAttributes,
-                          core::ManagedObjectAccess::Share>::
-            AttributesManager("Dataset", "scene_dataset_config.json"),
-        physicsAttributesManager_(std::move(physicsAttributesMgr)) {
-    buildCtorFuncPtrMaps();
-  }
-
+      PhysicsAttributesManager::ptr physicsAttributesMgr);
   /**
    * @brief Creates an instance of a dataset template described by passed
    * string. For dataset templates, this a file name.
@@ -96,7 +91,7 @@ class SceneDatasetAttributesManager
   /**
    * @brief Verify a particular subcell exists within the
    * dataset_config.JSON file, and if so, handle reading the possible JSON
-   * sub-cells it might hold. using the passed attributesManager for the
+   * sub-cells it might hold, using the passed attributesManager for the
    * dataset being processed.
    * @tparam the type of the attributes manager.
    * @param dsDir The root directory of the dataset attributes being built.
@@ -130,17 +125,6 @@ class SceneDatasetAttributesManager
                                   const U& attrMgr);
 
   /**
-   * @brief Internally used warning message if a cell in the dataset
-   * configuration is present but improperly configred.
-   * @param tag the name of the cell
-   */
-  void dispCellConfigError(const std::string& tag) {
-    LOG(WARNING)
-        << "SceneDatasetAttributesManager::readDatasetJSONCell : \"" << tag
-        << "\" cell in JSON config not appropriately configured. Skipping.";
-  }
-
-  /**
    * @brief Used Internally.  Create and configure newly-created dataset
    * attributes with any default values, before any specific values are set.
    *
@@ -159,13 +143,14 @@ class SceneDatasetAttributesManager
    * @brief This method will perform any necessary updating that is
    * attributesManager-specific upon template removal, such as removing a
    * specific template handle from the list of file-based template handles in
-   * ObjectAttributesManager.  This should only be called internally.
+   * ObjectAttributesManager.  This should only be called @ref
+   * esp::core::ManagedContainerBase.
    *
    * @param templateID the ID of the template to remove
    * @param templateHandle the string key of the attributes desired.
    */
 
-  void updateObjectHandleLists(
+  void deleteObjectInternalFinalize(
       CORRADE_UNUSED int templateID,
       CORRADE_UNUSED const std::string& templateHandle) override {}
 
@@ -192,17 +177,6 @@ class SceneDatasetAttributesManager
       attributes::SceneDatasetAttributes::ptr SceneDatasetAttributes,
       const std::string& SceneDatasetAttributesHandle,
       CORRADE_UNUSED bool forceRegistration) override;
-
-  /**
-   * @brief This function will assign the appropriately configured function
-   * pointer for the copy constructor as required by
-   * AttributesManager<PhysicsSceneAttributes::ptr>
-   */
-  void buildCtorFuncPtrMaps() override {
-    this->copyConstructorMap_["SceneDatasetAttributes"] =
-        &SceneDatasetAttributesManager::createObjectCopy<
-            attributes::SceneDatasetAttributes>;
-  }  // SceneDatasetAttributesManager::buildCtorFuncPtrMaps
 
   /**
    * @brief This function is meaningless for this manager's ManagedObjects.

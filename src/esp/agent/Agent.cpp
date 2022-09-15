@@ -27,7 +27,7 @@ Agent::Agent(scene::SceneNode& agentNode, const AgentConfiguration& cfg)
 }  // Agent::Agent
 
 Agent::~Agent() {
-  LOG(INFO) << "Deconstructing Agent";
+  ESP_DEBUG() << "Deconstructing Agent";
 }
 
 bool Agent::act(const std::string& actionName) {
@@ -50,7 +50,7 @@ bool Agent::act(const std::string& actionName) {
   }
 }
 
-bool Agent::hasAction(const std::string& actionName) {
+bool Agent::hasAction(const std::string& actionName) const {
   auto actionSpace = configuration_.actionSpace;
   return !(actionSpace.find(actionName) == actionSpace.end());
 }
@@ -71,9 +71,9 @@ void Agent::setState(const AgentState& state,
   node().setTranslation(Magnum::Vector3(state.position));
 
   const Eigen::Map<const quatf> rot(state.rotation.data());
-  CHECK_LT(std::abs(rot.norm() - 1.0),
-           2.0 * Magnum::Math::TypeTraits<float>::epsilon())
-      << state.rotation << " not a valid rotation";
+  CORRADE_ASSERT(std::abs(rot.norm() - 1.0) <
+                     2.0 * Magnum::Math::TypeTraits<float>::epsilon(),
+                 state.rotation << " not a valid rotation", );
   node().setRotation(Magnum::Quaternion(quatf(rot)).normalized());
 
   if (resetSensors) {
@@ -92,12 +92,7 @@ bool operator!=(const ActionSpec& a, const ActionSpec& b) {
 }
 
 bool operator==(const AgentConfiguration& a, const AgentConfiguration& b) {
-  return a.height == b.height && a.radius == b.radius && a.mass == b.mass &&
-         a.linearAcceleration == b.linearAcceleration &&
-         a.angularAcceleration == b.angularAcceleration &&
-         a.linearFriction == b.linearFriction &&
-         a.angularFriction == b.angularFriction &&
-         a.coefficientOfRestitution == b.coefficientOfRestitution &&
+  return a.height == b.height && a.radius == b.radius &&
          esp::equal(a.sensorSpecifications, b.sensorSpecifications) &&
          esp::equal(a.actionSpace, b.actionSpace) && a.bodyType == b.bodyType;
 }

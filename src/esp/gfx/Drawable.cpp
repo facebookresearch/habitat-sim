@@ -11,9 +11,11 @@ namespace esp {
 namespace gfx {
 uint64_t Drawable::drawableIdCounter = 0;
 Drawable::Drawable(scene::SceneNode& node,
-                   Magnum::GL::Mesh& mesh,
+                   Magnum::GL::Mesh* mesh,
+                   DrawableType type,
                    DrawableGroup* group /* = nullptr */)
     : Magnum::SceneGraph::Drawable3D{node, group},
+      type_(type),
       node_(node),
       mesh_(mesh),
       drawableId_(drawableIdCounter++) {

@@ -5,11 +5,11 @@ about: Submit a bug report to help us improve Habitat
 ---
 
 ## Habitat-Sim version
-vx.x.x or master?
+vx.x.x or main?
 
 Habitat is under active development, and we advise users to restrict themselves to stable releases. Are you using the latest [release version](https://github.com/facebookresearch/habitat-sim/releases) of Habitat-Sim? The bug you are about to report may already be fixed in the latest version.
 
-Master branch contains 'bleeding edge' code, but we do appreciate bug reports for it!
+Main branch contains 'bleeding edge' code, but we do appreciate bug reports for it!
 
 ## 🐛 Bug
 
@@ -40,13 +40,13 @@ Steps to reproduce the behavior:
 ## System Info
 
 Please copy and paste the output from the
-[environment collection script](https://github.com/facebookresearch/habitat-sim/tree/master/habitat_sim/utils/collect_env.py)
+[environment collection script](https://github.com/facebookresearch/habitat-sim/tree/main/habitat_sim/utils/collect_env.py)
 (or fill out the checklist below manually).
 
 You can run the script with:
 ```
 # For security purposes, please check the contents of collect_env.py before running it.
-python habitat_sim/utils/collect_env.py
+python src_python/habitat_sim/utils/collect_env.py
 ```
 
  - OS (e.g., Linux):

@@ -142,7 +142,7 @@ class NavigateTask {
     );
     this.semanticData = objectIds;
 
-    // TOOD(msb) implement a better colorization scheme
+    // TODO(msb) implement a better colorization scheme
     for (let i = 0; i < objectIds.length; i++) {
       const objectId = objectIds[i];
       if (objectId & 1) {

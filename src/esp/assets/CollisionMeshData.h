@@ -11,7 +11,7 @@
 
 #include <Corrade/Containers/ArrayView.h>
 #include <Magnum/Magnum.h>
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 namespace esp {
 namespace assets {
@@ -26,7 +26,7 @@ struct CollisionMeshData {
   /**
    * @brief Primitive type (has to be triangle for Bullet to work).
    *
-   * See @ref BulletRigidObject::constructBulletCompoundFromMeshes.
+   * See @ref BulletRigidObject::constructConvexShapesFromMeshes.
    */
   Magnum::MeshPrimitive primitive{};
 

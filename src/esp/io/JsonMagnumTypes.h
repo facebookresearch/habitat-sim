@@ -11,15 +11,29 @@
 
 #include "JsonBuiltinTypes.h"
 
-#include "esp/core/logging.h"
+#include "esp/core/Logging.h"
 
 #include <Corrade/Containers/Optional.h>
 #include <Magnum/Magnum.h>
+#include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix4.h>
 #include <Magnum/Math/Quaternion.h>
 
 namespace esp {
 namespace io {
+
+JsonGenericValue toJsonValue(const Magnum::Matrix3& mat,
+                             JsonAllocator& allocator);
+/**
+ * @brief Specialization to handle Magnum::Matrix3 values. Populate passed @p
+ * val with value. Returns whether successfully populated, or not. Logs an error
+ * if inappropriate type.
+ *
+ * @param obj json value to parse
+ * @param val destination value to be populated
+ * @return whether successful or not
+ */
+bool fromJsonValue(const JsonGenericValue& obj, Magnum::Matrix3& val);
 
 inline JsonGenericValue toJsonValue(const Magnum::Vector3& vec,
                                     JsonAllocator& allocator) {
@@ -41,8 +55,8 @@ inline bool fromJsonValue(const JsonGenericValue& obj, Magnum::Vector3& val) {
       if (obj[i].IsNumber()) {
         val[i] = obj[i].GetDouble();
       } else {
-        LOG(ERROR) << " Invalid numeric value specified in JSON Vec3, index :"
-                   << i;
+        ESP_ERROR() << "Invalid numeric value specified in JSON Vec3, index :"
+                    << i;
         return false;
       }
     }
@@ -51,15 +65,40 @@ inline bool fromJsonValue(const JsonGenericValue& obj, Magnum::Vector3& val) {
   return false;
 }
 
-inline JsonGenericValue toJsonValue(const Magnum::Quaternion& quat,
+inline JsonGenericValue toJsonValue(const Magnum::Color4& color,
                                     JsonAllocator& allocator) {
-  JsonGenericValue arr(rapidjson::kArrayType);
-  arr.PushBack(quat.scalar(), allocator);
-  for (int i = 0; i < 3; i++) {
-    arr.PushBack(quat.vector()[i], allocator);
-  }
-  return arr;
+  return toJsonArrayHelper(color.data(), 4, allocator);
 }
+
+/**
+ * @brief Specialization to handle Magnum::Color4 values. Populate passed @p
+ * val with value. Returns whether successfully populated, or not. Logs an error
+ * if inappropriate type.
+ *
+ * @param obj json value to parse
+ * @param val destination value to be populated
+ * @return whether successful or not
+ */
+inline bool fromJsonValue(const JsonGenericValue& obj, Magnum::Color4& val) {
+  if (obj.IsArray() && obj.Size() == 4) {
+    Magnum::Vector4 vec4;
+    for (rapidjson::SizeType i = 0; i < 4; ++i) {
+      if (obj[i].IsNumber()) {
+        vec4[i] = obj[i].GetDouble();
+      } else {
+        ESP_ERROR() << "Invalid numeric value specified in JSON Color4, index :"
+                    << i;
+        return false;
+      }
+    }
+    val = Magnum::Color4(vec4);
+    return true;
+  }
+  return false;
+}
+
+JsonGenericValue toJsonValue(const Magnum::Quaternion& quat,
+                             JsonAllocator& allocator);
 
 /**
  * @brief Specialization to handle Magnum::Quaternion values. Populate passed @p
@@ -70,27 +109,7 @@ inline JsonGenericValue toJsonValue(const Magnum::Quaternion& quat,
  * @param val destination value to be populated
  * @return whether successful or not
  */
-inline bool fromJsonValue(const JsonGenericValue& obj,
-                          Magnum::Quaternion& val) {
-  if (obj.IsArray() && obj.Size() == 4) {
-    for (rapidjson::SizeType i = 0; i < 4; ++i) {
-      if (obj[i].IsNumber()) {
-        if (i == 0) {
-          val.scalar() = obj[0].GetFloat();
-        } else {
-          val.vector()[i - 1] = obj[i].GetFloat();
-        }
-      } else {
-        LOG(ERROR)
-            << " Invalid numeric value specified in JSON Quaternion, index :"
-            << i;
-        return false;
-      }
-    }
-    return true;
-  }
-  return false;
-}
+bool fromJsonValue(const JsonGenericValue& obj, Magnum::Quaternion& val);
 
 // Containers::Optional is handled differently than ordinary structs. Instead of
 // offering toJsonValue/fromJsonValue, we offer addMember/readMember, which
@@ -132,7 +151,7 @@ inline bool fromJsonValue(const JsonGenericValue& obj, Magnum::Rad& val) {
     val = Magnum::Rad{obj.GetFloat()};
     return true;
   }
-  LOG(ERROR) << "Invalid double value";
+  ESP_ERROR() << "Invalid double value";
   return true;
 }
 

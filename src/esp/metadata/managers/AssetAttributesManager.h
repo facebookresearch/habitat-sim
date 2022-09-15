@@ -75,9 +75,12 @@ enum class PrimObjTypes : uint32_t {
   END_PRIM_OBJ_TYPES
 };
 namespace managers {
+using core::managedContainers::ManagedFileBasedContainer;
+using core::managedContainers::ManagedObjectAccess;
+
 class AssetAttributesManager
     : public AttributesManager<attributes::AbstractPrimitiveAttributes,
-                               core::ManagedObjectAccess::Copy> {
+                               ManagedObjectAccess::Copy> {
  public:
   /**
    * @brief Constant Map holding names of all Magnum 3D primitive classes
@@ -86,12 +89,7 @@ class AssetAttributesManager
    */
   static const std::map<PrimObjTypes, const char*> PrimitiveNames3DMap;
 
-  AssetAttributesManager()
-      : AttributesManager<attributes::AbstractPrimitiveAttributes,
-                          core::ManagedObjectAccess::Copy>::
-            AttributesManager("Primitive Asset", "prim_config.json") {
-    buildCtorFuncPtrMaps();
-  }  // AssetAttributesManager::ctor
+  AssetAttributesManager();
 
   /**
    * @brief Should only be called internally. Creates an instance of a primtive
@@ -140,6 +138,23 @@ class AssetAttributesManager
                           const io::JsonGenericValue& jsonConfig) override;
 
   /**
+   * @brief Creates a template based on the provided template handle. Since the
+   * primitive asset attributes templates encode their structure in their
+   * handles, and these handles are not user editable, a properly configured
+   * handle can be used to build a template.
+   * @param templateHandle The template handle to use to create the attributes.
+   * @param registerTemplate whether to add this template to the library.
+   * If the user is going to edit this template, this should be false - any
+   * subsequent editing will require re-registration. Defaults to true. If
+   * specified as true, then this function returns a copy of the registered
+   * template.
+   * @return The attributes that most closely matches the given handle.
+   */
+  attributes::AbstractPrimitiveAttributes::ptr createTemplateFromHandle(
+      const std::string& templateHandle,
+      bool registerTemplate = true);
+
+  /**
    * @brief Should only be called internally. Creates an instance of a
    * primtive asset attributes template described by passed enum value. For
    * primitive assets this mapes to the Magnum primitive class name
@@ -154,9 +169,9 @@ class AssetAttributesManager
       PrimObjTypes primObjType,
       bool registerTemplate = true) {
     if (primObjType == PrimObjTypes::END_PRIM_OBJ_TYPES) {
-      LOG(ERROR) << "AssetAttributesManager::createObject : Illegal "
-                    "primtitive type name PrimObjTypes::END_PRIM_OBJ_TYPES. "
-                    "Aborting.";
+      ESP_ERROR()
+          << "Illegal primtitive type name PrimObjTypes::END_PRIM_OBJ_TYPES. "
+             "Aborting.";
       return nullptr;
     }
     return this->createObject(PrimitiveNames3DMap.at(primObjType),
@@ -177,14 +192,13 @@ class AssetAttributesManager
       PrimObjTypes primType,
       bool contains = true) const {
     if (primType == PrimObjTypes::END_PRIM_OBJ_TYPES) {
-      LOG(ERROR) << "AssetAttributesManager::getTemplateHandlesByPrimType : "
-                    "Illegal primtitive type "
-                    "name PrimObjTypes::END_PRIM_OBJ_TYPES. Aborting.";
+      ESP_ERROR() << "Illegal primtitive type "
+                     "name PrimObjTypes::END_PRIM_OBJ_TYPES. Aborting.";
       return {};
     }
     std::string subStr = PrimitiveNames3DMap.at(primType);
     return this->getObjectHandlesBySubStringPerType(this->objectLibKeyByID_,
-                                                    subStr, contains);
+                                                    subStr, contains, true);
   }  // AssetAttributeManager::getTemplateHandlesByPrimType
 
   /**
@@ -390,16 +404,17 @@ class AssetAttributesManager
 
   /**
    * @brief Set the object to provide default values upon construction of @ref
-   * esp::core::AbstractManagedObject.  Override if object should not have
-   * defaults.  Currently not supported for AbstractPrimitiveAttributes.
+   * esp::core::managedContainers::AbstractManagedObject.  Override if object
+   * should not have defaults.  Currently not supported for
+   * AbstractPrimitiveAttributes.
    * @param _defaultObj the object to use for defaults;
    */
   void setDefaultObject(
       CORRADE_UNUSED attributes::AbstractPrimitiveAttributes::ptr& _defaultObj)
       override {
-    LOG(WARNING) << "AssetAttributesManager::setDefaultObject : Overriding "
-                    "defualt objects for PrimitiveAssetAttributes not "
-                    "currently supported.  Aborting.";
+    ESP_WARNING()
+        << "Overriding default objects for PrimitiveAssetAttributes not "
+           "currently supported.  Aborting.";
     this->defaultObj_ = nullptr;
   }  // AssetAttributesManager::setDefaultObject
 
@@ -418,12 +433,13 @@ class AssetAttributesManager
    * @brief This method will perform any necessary updating that is
    * attributesManager-specific upon template removal, such as removing a
    * specific template handle from the list of file-based template handles in
-   * ObjectAttributesManager.  This should only be called internally.
+   * ObjectAttributesManager.  This should only be called @ref
+   * esp::core::managedContainers::ManagedContainerBase.
    *
    * @param templateID the ID of the template to remove
    * @param templateHandle the string key of the attributes desired.
    */
-  void updateObjectHandleLists(
+  void deleteObjectInternalFinalize(
       CORRADE_UNUSED int templateID,
       CORRADE_UNUSED const std::string& templateHandle) override {}
 
@@ -439,9 +455,9 @@ class AssetAttributesManager
   bool verifyTemplateHandle(const std::string& templateHandle,
                             const std::string& attrType) {
     if (std::string::npos == templateHandle.find(attrType)) {
-      LOG(ERROR) << "AssetAttributesManager::verifyTemplateHandle : Handle : "
-                 << templateHandle << " is not of appropriate type for desired "
-                 << attrType << " primitives. Aborting.";
+      ESP_ERROR() << "Handle :" << templateHandle
+                  << "is not of appropriate type for desired" << attrType
+                  << "primitives. Aborting.";
       return false;
     }
     return true;
@@ -476,14 +492,14 @@ class AssetAttributesManager
   attributes::AbstractPrimitiveAttributes::ptr initNewObjectInternal(
       const std::string& primClassName,
       CORRADE_UNUSED bool builtFromConfig) override {
-    if (primTypeConstructorMap_.count(primClassName) == 0) {
-      LOG(ERROR) << "AssetAttributesManager::buildPrimAttributes : No "
-                    "primitive class"
-                 << primClassName << "exists in Magnum::Primitives. Aborting.";
+    auto primTypeCtorIter = primTypeConstructorMap_.find(primClassName);
+    if (primTypeCtorIter == primTypeConstructorMap_.end()) {
+      ESP_ERROR() << "No primitive class" << primClassName
+                  << "exists in Magnum::Primitives. Aborting.";
       return nullptr;
     }
     // these attributes ignore any default setttings.
-    auto newAttributes = (*this.*primTypeConstructorMap_[primClassName])();
+    auto newAttributes = (*this.*primTypeCtorIter->second)();
     return newAttributes;
   }
 
@@ -495,10 +511,9 @@ class AssetAttributesManager
   template <typename T, bool isWireFrame, PrimObjTypes primitiveType>
   attributes::AbstractPrimitiveAttributes::ptr createPrimAttributes() {
     if (primitiveType == PrimObjTypes::END_PRIM_OBJ_TYPES) {
-      LOG(ERROR)
-          << "AssetAttributeManager::createPrimAttributes : Cannot instantiate "
-             "attributes::AbstractPrimitiveAttributes object for "
-             "PrimObjTypes::END_PRIM_OBJ_TYPES. Aborting.";
+      ESP_ERROR() << "Cannot instantiate "
+                     "attributes::AbstractPrimitiveAttributes object for "
+                     "PrimObjTypes::END_PRIM_OBJ_TYPES. Aborting.";
       return nullptr;
     }
     int idx = static_cast<int>(primitiveType);
@@ -521,14 +536,6 @@ class AssetAttributesManager
     }
   }  // AssetAttributesManager::resetFinalize()
 
-  /**
-   * @brief This function will assign the appropriately configured function
-   * pointers for @ref createPrimAttributes calls for each type of
-   * supported primitive to the @ref primTypeConstructorMap_, keyed by type of
-   * primtive
-   */
-  void buildCtorFuncPtrMaps() override;
-
   // ======== Typedefs and Instance Variables ========
 
   /**
@@ -536,9 +543,9 @@ class AssetAttributesManager
    * createPrimAttributes() keyed by string names of classes being
    * instanced, as defined in @ref PrimitiveNames3DMap
    */
-  typedef std::map<std::string,
-                   attributes::AbstractPrimitiveAttributes::ptr (
-                       AssetAttributesManager::*)()>
+  typedef std::unordered_map<std::string,
+                             attributes::AbstractPrimitiveAttributes::ptr (
+                                 AssetAttributesManager::*)()>
       Map_Of_PrimTypeCtors;
 
   /**
@@ -553,7 +560,7 @@ class AssetAttributesManager
    * @brief Map relating primitive class name to default attributes template
    * handle. There should always be a template for each of these handles.
    */
-  std::map<std::string, std::string> defaultPrimAttributeHandles_;
+  std::unordered_map<std::string, std::string> defaultPrimAttributeHandles_;
 
  public:
   ESP_SMART_POINTERS(AssetAttributesManager)

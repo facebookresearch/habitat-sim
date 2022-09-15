@@ -5,8 +5,8 @@
 #ifndef ESP_NAV_GREEDYFOLLOWER_H_
 #define ESP_NAV_GREEDYFOLLOWER_H_
 
+#include "esp/core/Esp.h"
 #include "esp/core/RigidState.h"
-#include "esp/core/esp.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/scene/SceneGraph.h"
 #include "esp/scene/SceneNode.h"
@@ -34,7 +34,7 @@ class GreedyGeodesicFollowerImpl {
    * @brief Ouputs from the greedy follower.
    *
    * Used to specify which action to take next
-   * or that an error occured
+   * or that an error occurred
    */
   enum class CODES : int {
     ERROR = -2,
@@ -115,7 +115,7 @@ class GreedyGeodesicFollowerImpl {
   /**
    * @brief Reset the planner.
    *
-   * Should be called whenever a different goal is choosen or start state
+   * Should be called whenever a different goal is chosen or start state
    * differs by more than action from the last start state
    */
   void reset();
@@ -151,7 +151,7 @@ class GreedyGeodesicFollowerImpl {
 
   float computeReward(const scene::SceneNode& node,
                       const nav::ShortestPath& path,
-                      const size_t primLen);
+                      size_t primLen);
 
   bool isThrashing();
 

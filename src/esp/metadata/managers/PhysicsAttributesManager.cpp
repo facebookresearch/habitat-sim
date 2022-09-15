@@ -5,7 +5,7 @@
 #include "PhysicsAttributesManager.h"
 #include "AttributesManagerBase.h"
 
-#include "esp/io/json.h"
+#include "esp/io/Json.h"
 
 namespace Cr = Corrade;
 namespace esp {
@@ -23,8 +23,8 @@ PhysicsManagerAttributes::ptr PhysicsAttributesManager::createObject(
       physicsFilename, msg, registerTemplate);
 
   if (nullptr != attrs) {
-    LOG(INFO) << msg << " physics manager attributes created"
-              << (registerTemplate ? " and registered." : ".");
+    ESP_DEBUG() << msg << "physics manager attributes created"
+                << (registerTemplate ? "and registered." : ".");
   }
   return attrs;
 }  // PhysicsAttributesManager::createObject
@@ -73,6 +73,9 @@ void PhysicsAttributesManager::setValsFromJSONDoc(
       [physicsManagerAttributes](const Magnum::Vector3& gravity) {
         physicsManagerAttributes->setGravity(gravity);
       });
+
+  // check for user defined attributes
+  this->parseUserDefinedJsonVals(physicsManagerAttributes, jsonConfig);
 
 }  // PhysicsAttributesManager::createFileBasedAttributesTemplate
 

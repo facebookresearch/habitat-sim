@@ -17,11 +17,11 @@ namespace gfx {
 
 enum class LightPositionModel {
   /** @brief Light position is relative to the camera */
-  CAMERA = 0,
+  Camera = 0,
   /** @brief Light position is relative to scene */
-  GLOBAL = 1,
+  Global = 1,
   /** @brief Light position is relative to the object being rendered */
-  OBJECT = 2,
+  Object = 2,
 };
 
 enum class LightType {
@@ -40,7 +40,7 @@ struct LightInfo {
   // directional light with no distance attenuation.
   Magnum::Vector4 vector;
   Magnum::Color3 color{1};
-  LightPositionModel model = LightPositionModel::GLOBAL;
+  LightPositionModel model = LightPositionModel::Global;
 };
 
 bool operator==(const LightInfo& a, const LightInfo& b);
@@ -59,6 +59,20 @@ using LightSetup = std::vector<LightInfo>;
  * @return Magnum::Vector4 Light position relative to camera
  */
 Magnum::Vector4 getLightPositionRelativeToCamera(
+    const LightInfo& light,
+    const Magnum::Matrix4& transformationMatrix,
+    const Magnum::Matrix4& cameraMatrix);
+
+/**
+ * @brief Get light position in world space for a @ref LightInfo and a
+ * rendered object. light.position and the return value are Vector4, with
+ * w == 1 for positions and w == 0 for directions
+ *
+ * @param transformationMatrix Describes object position relative to camera
+ * @param cameraMatrix Describes world position relative
+ * @return Magnum::Vector4 Light position in world space
+ */
+Magnum::Vector4 getLightPositionRelativeToWorld(
     const LightInfo& light,
     const Magnum::Matrix4& transformationMatrix,
     const Magnum::Matrix4& cameraMatrix);

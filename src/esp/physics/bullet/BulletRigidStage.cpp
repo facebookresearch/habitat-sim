@@ -12,7 +12,9 @@
 #include "BulletCollision/CollisionShapes/btConvexTriangleMeshShape.h"
 #include "BulletCollision/Gimpact/btGImpactShape.h"
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
+#include "BulletCollisionHelper.h"
 #include "BulletRigidStage.h"
+#include "esp/physics/CollisionGroupHelper.h"
 
 namespace esp {
 namespace physics {
@@ -45,10 +47,10 @@ bool BulletRigidStage::initialization_LibSpecific() {
 
 }  // initialization_LibSpecific
 
-bool BulletRigidStage::setCollidable(bool collidable) {
+void BulletRigidStage::setCollidable(bool collidable) {
   if (collidable == isCollidable_) {
     // no work
-    return true;
+    return;
   }
 
   isCollidable_ = collidable;
@@ -60,8 +62,6 @@ bool BulletRigidStage::setCollidable(bool collidable) {
       bWorld_->removeCollisionObject(object.get());
     }
   }
-
-  return true;
 }
 
 void BulletRigidStage::constructAndAddCollisionObjects() {
@@ -88,10 +88,9 @@ void BulletRigidStage::constructAndAddCollisionObjects() {
 
   // add the objects to the world
   for (auto& object : bStaticCollisionObjects_) {
-    bWorld_->addRigidBody(
-        object.get(),
-        2,       // collisionFilterGroup (2 == StaticFilter)
-        1 + 2);  // collisionFilterMask (1 == DefaultFilter, 2==StaticFilter)
+    bWorld_->addRigidBody(object.get(), int(CollisionGroup::Static),
+                          uint32_t(CollisionGroupHelper::getMaskForGroup(
+                              CollisionGroup::Static)));
   }
 }
 
@@ -150,52 +149,56 @@ void BulletRigidStage::constructBulletSceneFromMeshes(
     std::unique_ptr<btRigidBody> sceneCollisionObject =
         std::make_unique<btRigidBody>(cInfo);
     CORRADE_INTERNAL_ASSERT(sceneCollisionObject->isStaticObject());
+    BulletCollisionHelper::get().mapCollisionObjectTo(
+        sceneCollisionObject.get(),
+        getCollisionDebugName(bStaticCollisionObjects_.size()));
     bStageArrays_.emplace_back(std::move(indexedVertexArray));
     bStageShapes_.emplace_back(std::move(meshShape));
     bStaticCollisionObjects_.emplace_back(std::move(sceneCollisionObject));
   }
 
-  for (auto& child : node.children) {
+  for (const auto& child : node.children) {
     constructBulletSceneFromMeshes(transformFromLocalToWorld, meshGroup, child);
   }
 }  // constructBulletSceneFromMeshes
 
 void BulletRigidStage::setFrictionCoefficient(
     const double frictionCoefficient) {
-  for (std::size_t i = 0; i < bStaticCollisionObjects_.size(); i++) {
+  for (std::size_t i = 0; i < bStaticCollisionObjects_.size(); ++i) {
     bStaticCollisionObjects_[i]->setFriction(frictionCoefficient);
   }
 }
 
 void BulletRigidStage::setRestitutionCoefficient(
     const double restitutionCoefficient) {
-  for (std::size_t i = 0; i < bStaticCollisionObjects_.size(); i++) {
+  for (std::size_t i = 0; i < bStaticCollisionObjects_.size(); ++i) {
     bStaticCollisionObjects_[i]->setRestitution(restitutionCoefficient);
   }
 }
 
 double BulletRigidStage::getFrictionCoefficient() const {
-  if (bStaticCollisionObjects_.size() == 0) {
+  if (bStaticCollisionObjects_.empty()) {
     return 0.0;
   } else {
     // Assume uniform friction in scene parts
-    return bStaticCollisionObjects_.back()->getFriction();
+    return static_cast<double>(bStaticCollisionObjects_.back()->getFriction());
   }
 }
 
 double BulletRigidStage::getRestitutionCoefficient() const {
   // Assume uniform restitution in scene parts
-  if (bStaticCollisionObjects_.size() == 0) {
+  if (bStaticCollisionObjects_.empty()) {
     return 0.0;
   } else {
-    return bStaticCollisionObjects_.back()->getRestitution();
+    return static_cast<double>(
+        bStaticCollisionObjects_.back()->getRestitution());
   }
 }
 
-const Magnum::Range3D BulletRigidStage::getCollisionShapeAabb() const {
+Magnum::Range3D BulletRigidStage::getCollisionShapeAabb() const {
   Magnum::Range3D combinedAABB;
   // concatenate all component AABBs
-  for (auto& object : bStaticCollisionObjects_) {
+  for (const auto& object : bStaticCollisionObjects_) {
     btVector3 localAabbMin, localAabbMax;
     object->getCollisionShape()->getAabb(object->getWorldTransform(),
                                          localAabbMin, localAabbMax);
@@ -211,6 +214,10 @@ const Magnum::Range3D BulletRigidStage::getCollisionShapeAabb() const {
   }
   return combinedAABB;
 }  // getCollisionShapeAabb
+
+std::string BulletRigidStage::getCollisionDebugName(int subpartId) {
+  return "Stage, subpart " + std::to_string(subpartId);
+}
 
 }  // namespace physics
 }  // namespace esp

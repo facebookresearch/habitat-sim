@@ -5,10 +5,13 @@
 #ifndef ESP_GFX_PBRDRAWABLE_H_
 #define ESP_GFX_PBRDRAWABLE_H_
 
+#include <Corrade/Containers/Optional.h>
+
 #include "esp/gfx/Drawable.h"
+#include "esp/gfx/PbrImageBasedLighting.h"
 #include "esp/gfx/PbrShader.h"
 #include "esp/gfx/ShaderManager.h"
-
+#include "esp/gfx/ShadowMapManager.h"
 namespace esp {
 namespace gfx {
 
@@ -20,19 +23,29 @@ class PbrDrawable : public Drawable {
    * and color for textured buffer and color shader output respectively
    */
   explicit PbrDrawable(scene::SceneNode& node,
-                       Magnum::GL::Mesh& mesh,
+                       Magnum::GL::Mesh* mesh,
                        gfx::Drawable::Flags& meshAttributeFlags,
                        ShaderManager& shaderManager,
                        const Magnum::ResourceKey& lightSetupKey,
                        const Magnum::ResourceKey& materialDataKey,
-                       DrawableGroup* group = nullptr);
+                       DrawableGroup* group = nullptr,
+                       PbrImageBasedLighting* pbrIbl = nullptr);
 
   /**
    *  @brief Set the light info
-   *  @param lightSetupKey, the key value for the light resource
-   *  @param color, the color of the light
+   *  @param lightSetupKey the key value for the light resource
    */
-  void setLightSetup(const Magnum::ResourceKey& lightSetupkey) override;
+  void setLightSetup(const Magnum::ResourceKey& lightSetupKey) override;
+
+  /**
+   * @brief Set the shadow map info
+   * @param[in] manager, stores the shadow maps
+   * @param[in] keys, keys to retrieve the shadow maps
+   * @param[in] shadowFlag, can only be either ShadowsPCF or ShadowsVSM
+   */
+  void setShadowData(ShadowMapManager& manager,
+                     ShadowMapKeys& keys,
+                     PbrShader::Flag shadowFlag);
 
   static constexpr const char* SHADER_KEY_TEMPLATE = "PBR-lights={}-flags={}";
 
@@ -40,9 +53,9 @@ class PbrDrawable : public Drawable {
   /**
    * @brief overload draw function, see here for more details:
    * https://doc.magnum.graphics/magnum/classMagnum_1_1SceneGraph_1_1Drawable.html#aca0d0a219aa4d7712316de55d67f2134
-   * @param transformationMatrix, the transformation of the object (to which the
-   *        drawable is attached) relative to camera
-   * @param camera, the camera that views and renders the world
+   * @param transformationMatrix the transformation of the object (to which
+   * the drawable is attached) relative to camera
+   * @param camera the camera that views and renders the world
    */
   void draw(const Magnum::Matrix4& transformationMatrix,
             Magnum::SceneGraph::Camera3D& camera) override;
@@ -63,9 +76,9 @@ class PbrDrawable : public Drawable {
   /**
    *  @brief Update light direction (or position) in *camera* space to the
    * shader
-   *  @param transformationMatrix, describes a tansformation from object (model)
-   *         space to camera space
-   *  @param camera, the camera, which views and renders the world
+   *  @param transformationMatrix describes a tansformation from object
+   * (model) space to camera space
+   *  @param camera the camera, which views and renders the world
    *  @return Reference to self (for method chaining)
    */
   PbrDrawable& updateShaderLightDirectionParameters(
@@ -74,8 +87,8 @@ class PbrDrawable : public Drawable {
 
   /**
    * @brief get the key for the shader
-   * @param lightCount, the number of the lights;
-   * @param flags, flags that defines the shader features
+   * @param lightCount the number of the lights;
+   * @param flags flags that defines the shader features
    */
   Magnum::ResourceKey getShaderKey(Magnum::UnsignedInt lightCount,
                                    PbrShader::Flags flags) const;
@@ -86,6 +99,9 @@ class PbrDrawable : public Drawable {
   Magnum::Resource<Magnum::GL::AbstractShaderProgram, PbrShader> shader_;
   Magnum::Resource<MaterialData, PbrMaterialData> materialData_;
   Magnum::Resource<LightSetup> lightSetup_;
+  PbrImageBasedLighting* pbrIbl_ = nullptr;
+  ShadowMapManager* shadowMapManger_ = nullptr;
+  ShadowMapKeys* shadowMapKeys_ = nullptr;
 };
 
 }  // namespace gfx

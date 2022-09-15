@@ -9,7 +9,7 @@
  * @brief See JsonAllTypes.h. Don't include this header directly in user code.
  */
 
-#include "esp/core/logging.h"
+#include "esp/core/Logging.h"
 
 #include <Corrade/Utility/Macros.h>
 
@@ -39,6 +39,8 @@ void addMember(JsonGenericValue& value,
 template <typename T>
 bool readMember(const JsonGenericValue& value, const char* name, T& x);
 
+#if 0  // reference code to produce runtime errors for missing implementations
+       // (instead of compile errors)
 /**
  * @brief Fallback implementation for fromJsonValue to produce a runtime error
  * for types that haven't implemented fromJsonValue.
@@ -49,9 +51,9 @@ bool fromJsonValue(CORRADE_UNUSED const JsonGenericValue& obj,
   // If you've already implemented fromJsonValue for your type and you're still
   // hitting this, the underlying issue might be the ordering among json helper
   // definitions.
-  LOG(ERROR) << "Unsupported type. Aborting. You need to implement "
-                "fromJsonValue for typeid(T).name() = "
-             << typeid(T).name() << ".";
+  ESP_ERROR() << "Unsupported type. Aborting. You need to implement "
+                 "fromJsonValue for typeid(T).name() ="
+              << typeid(T).name() << ".";
   return false;
 }
 
@@ -64,17 +66,19 @@ JsonGenericValue toJsonValue(const T&, JsonAllocator&) {
   // If you've already implemented toJsonValue for your type and you're still
   // hitting this, the underlying issue might be the ordering among json helper
   // definitions.
-  LOG(ERROR) << "Unsupported type. Aborting. You need to implement toJsonValue "
-                "for typeid(T).name() = "
-             << typeid(T).name() << ".";
+  ESP_ERROR()
+      << "Unsupported type. Aborting. You need to implement toJsonValue "
+         "for typeid(T).name() ="
+      << typeid(T).name() << ".";
   return JsonGenericValue(rapidjson::kObjectType);
 }
+#endif
 
 // toJsonValue wrappers for the 7 rapidjson builtin types. A JsonGenericValue
 // can be directly constructed from the builtin types.
 
 inline JsonGenericValue toJsonValue(bool x, JsonAllocator&) {
-  return JsonGenericValue(x);
+  return JsonGenericValue(x, nullptr);
 }
 
 inline JsonGenericValue toJsonValue(int x, JsonAllocator&) {
@@ -116,7 +120,7 @@ inline bool fromJsonValue(const JsonGenericValue& obj, bool& val) {
     val = obj.Get<bool>();
     return true;
   }
-  LOG(ERROR) << "Invalid boolean value";
+  ESP_ERROR() << "Invalid boolean value";
   return false;
 }
 
@@ -133,7 +137,7 @@ inline bool fromJsonValue(const JsonGenericValue& obj, int& val) {
     val = obj.Get<int>();
     return true;
   }
-  LOG(ERROR) << "Invalid int value";
+  ESP_ERROR() << "Invalid int value";
   return false;
 }
 
@@ -150,7 +154,7 @@ inline bool fromJsonValue(const JsonGenericValue& obj, unsigned& val) {
     val = obj.Get<unsigned>();
     return true;
   }
-  LOG(ERROR) << "Invalid unsigned int value";
+  ESP_ERROR() << "Invalid unsigned int value";
   return false;
 }
 
@@ -167,7 +171,7 @@ inline bool fromJsonValue(const JsonGenericValue& obj, int64_t& val) {
     val = obj.Get<int64_t>();
     return true;
   }
-  LOG(ERROR) << "Invalid int64_t value";
+  ESP_ERROR() << "Invalid int64_t value";
   return false;
 }
 
@@ -184,7 +188,7 @@ inline bool fromJsonValue(const JsonGenericValue& obj, uint64_t& val) {
     val = obj.Get<uint64_t>();
     return true;
   }
-  LOG(ERROR) << "Invalid uint64_t value";
+  ESP_ERROR() << "Invalid uint64_t value";
   return false;
 }
 
@@ -201,7 +205,7 @@ inline bool fromJsonValue(const JsonGenericValue& obj, double& val) {
     val = obj.GetDouble();
     return true;
   }
-  LOG(ERROR) << "Invalid double value";
+  ESP_ERROR() << "Invalid double value";
   return false;
 }
 
@@ -218,7 +222,7 @@ inline bool fromJsonValue(const JsonGenericValue& obj, float& val) {
     val = obj.Get<float>();
     return true;
   }
-  LOG(ERROR) << "Invalid float value";
+  ESP_ERROR() << "Invalid float value";
   return false;
 }
 

@@ -1,6 +1,3 @@
-[submodule "src/deps/googletest"]
-	path = src/deps/googletest
-	url = https://github.com/google/googletest
 [submodule "src/deps/rapidjson"]
 	path = src/deps/rapidjson
 	url = https://github.com/Tencent/rapidjson.git
@@ -13,9 +10,6 @@
 [submodule "src/deps/magnum-plugins"]
 	path = src/deps/magnum-plugins
 	url = https://github.com/mosra/magnum-plugins.git
-[submodule "src/deps/glog"]
-	path = src/deps/glog
-	url = https://github.com/google/glog.git
 [submodule "src/deps/pybind11"]
 	path = src/deps/pybind11
 	url = https://github.com/pybind/pybind11.git
@@ -28,9 +22,6 @@
 [submodule "src/deps/glfw"]
 	path = src/deps/glfw
 	url = https://github.com/glfw/glfw
-[submodule "src/deps/Sophus"]
-	path = src/deps/Sophus
-	url = https://github.com/strasdat/Sophus
 [submodule "src/deps/recastnavigation"]
 	path = src/deps/recastnavigation
 	url = https://github.com/erikwijmans/recastnavigation.git
@@ -43,9 +34,6 @@
 [submodule "docs/m.css"]
 	path = docs/m.css
 	url = https://github.com/mosra/m.css
-[submodule "src/deps/imgui"]
-	path = src/deps/imgui
-	url = https://github.com/ocornut/imgui.git
 [submodule "src/deps/tinyobjloader"]
 	path = src/deps/tinyobjloader
 	url = https://github.com/syoyo/tinyobjloader.git
@@ -55,3 +43,9 @@
 [submodule "src/deps/v-hacd"]
 	path = src/deps/v-hacd
 	url = https://github.com/ScottCSteinhauser/v-hacd.git
+[submodule "src/deps/openexr"]
+	path = src/deps/openexr
+	url = https://github.com/AcademySoftwareFoundation/openexr
+[submodule "src/deps/rlr-audio-propagation"]
+	path = src/deps/rlr-audio-propagation
+	url = https://github.com/facebookresearch/rlr-audio-propagation

@@ -27,7 +27,7 @@
 #   This file is part of Magnum.
 #
 #   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019,
-#               2020 Vladimír Vondruš <mosra@centrum.cz>
+#               2020, 2021, 2022 Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
 #   copy of this software and associated documentation files (the "Software"),
@@ -125,13 +125,25 @@ if(TARGET BulletCollision)
         get_filename_component(_BULLET_INTERFACE_INCLUDE_DIRECTORIES ${_BULLET_INTERFACE_INCLUDE_DIRECTORIES} DIRECTORY)
     endif()
 
-    # Why, Bullet, why?
+    # Compile definitions, which is basically just USE_DOUBLE_PRECISION. If
+    # Bullet was found externally, this is contained in the BULLET_DEFINITIONS
+    # variable (which might be empty). If the variable isn't defined, it means
+    # we have a Bullet subproject. OF COURSE this isn't propagated in
+    # INTERFACE_COMPILE_DEFINITIONS, we can't expect any modicum of usability
+    # there, so we have to fetch that from the CMake option instead.
+    if(NOT DEFINED BULLET_DEFINITIONS AND USE_DOUBLE_PRECISION)
+        set(BULLET_DEFINITIONS "-DBT_USE_DOUBLE_PRECISION")
+    endif()
+
+    # Why, Bullet, why this library has to have such a different name?
     if(NOT TARGET Bullet::LinearMath)
         # Aliases of (global) targets [..] CMake 3.11 [...], as above
         add_library(Bullet::LinearMath INTERFACE IMPORTED)
         set_target_properties(Bullet::LinearMath PROPERTIES
             INTERFACE_LINK_LIBRARIES LinearMath
-            INTERFACE_INCLUDE_DIRECTORIES ${_BULLET_INTERFACE_INCLUDE_DIRECTORIES})
+            INTERFACE_INCLUDE_DIRECTORIES ${_BULLET_INTERFACE_INCLUDE_DIRECTORIES}
+            # This might define BT_USE_DOUBLE_PRECISION, or not
+            INTERFACE_COMPILE_OPTIONS "${BULLET_DEFINITIONS}")
     endif()
 
     # Just to make FPHSA print some meaningful location, nothing else. Luckily
@@ -211,10 +223,18 @@ foreach(_library ${_BULLET_LIBRARIES})
                 IMPORTED_LOCATION_DEBUG ${Bullet_${_library}_LIBRARY_DEBUG})
         endif()
 
-        # Everything depends on LinearMath, so put the include dir there
+        # Everything depends on LinearMath, so put the include dir as well as
+        # compile definitions (such as BT_USE_DOUBLE_PRECISION) there
         if(_library STREQUAL LinearMath)
             set_property(TARGET Bullet::${_library} APPEND PROPERTY
                 INTERFACE_INCLUDE_DIRECTORIES ${Bullet_INCLUDE_DIR})
+            # BULLET_DEFINITIONS gets defined by BulletConfig from the
+            # find_package() we did at first. That's also the only useful
+            # thing from it, the rest we can find by hand as well.
+            if(BULLET_DEFINITIONS)
+                set_property(TARGET Bullet::${_library} APPEND PROPERTY
+                    INTERFACE_COMPILE_OPTIONS "${BULLET_DEFINITIONS}")
+            endif()
 
         # Collision depends on LinearMath
         elseif(_library STREQUAL Collision)

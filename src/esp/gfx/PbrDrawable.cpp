@@ -14,17 +14,19 @@ namespace esp {
 namespace gfx {
 
 PbrDrawable::PbrDrawable(scene::SceneNode& node,
-                         Mn::GL::Mesh& mesh,
+                         Mn::GL::Mesh* mesh,
                          gfx::Drawable::Flags& meshAttributeFlags,
                          ShaderManager& shaderManager,
                          const Mn::ResourceKey& lightSetupKey,
                          const Mn::ResourceKey& materialDataKey,
-                         DrawableGroup* group)
-    : Drawable{node, mesh, group},
+                         DrawableGroup* group,
+                         PbrImageBasedLighting* pbrIbl)
+    : Drawable{node, mesh, DrawableType::Pbr, group},
       shaderManager_{shaderManager},
       lightSetup_{shaderManager.get<LightSetup>(lightSetupKey)},
       materialData_{
-          shaderManager.get<MaterialData, PbrMaterialData>(materialDataKey)} {
+          shaderManager.get<MaterialData, PbrMaterialData>(materialDataKey)},
+      pbrIbl_(pbrIbl) {
   if (materialData_->metallicTexture && materialData_->roughnessTexture) {
     CORRADE_ASSERT(
         materialData_->metallicTexture == materialData_->roughnessTexture,
@@ -68,6 +70,10 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
     flags_ |= PbrShader::Flag::DoubleSided;
   }
 
+  if (pbrIbl_) {
+    flags_ |= PbrShader::Flag::ImageBasedLighting;
+  }
+
   // Defer the shader initialization because at this point, the lightSetup may
   // not be done in the Simulator. Simulator itself is currently under
   // construction in this case.
@@ -80,21 +86,33 @@ void PbrDrawable::setLightSetup(const Mn::ResourceKey& lightSetupKey) {
 
 void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
                        Mn::SceneGraph::Camera3D& camera) {
+  CORRADE_ASSERT(glMeshExists(),
+                 "PbrDrawable::draw() : GL mesh doesn't exist", );
+
   updateShader()
       .updateShaderLightParameters()
       .updateShaderLightDirectionParameters(transformationMatrix, camera);
 
-  // Assume that in a model, double-sided meshes are significantly less than
-  // single-sided meshes.
-  // To reduce the usage of glIsEnabled, once a double-sided mesh is
-  // encountered, the FaceCulling is disabled, and will not be enabled again at
-  // least in this function.
-  // TODO:
-  // it should have a global GL state tracker in Magnum to track it.
+  // ABOUT PbrShader::Flag::DoubleSided:
+  //
+  // "Specifies whether the material is double sided. When this value is false,
+  // back-face culling is enabled. When this value is true, back-face culling is
+  // disabled and double sided lighting is enabled. The back-face must have its
+  // normals reversed before the lighting equation is evaluated."
+  // See here:
+  // https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/schema/material.schema.json
 
+  // HOWEVER, WE CANNOT DISABLE BACK FACE CULLING (that is why the following
+  // code is commented out) since it causes lighting artifacts ("dashed lines")
+  // on hard edges. (maybe due to potential numerical issues? we do not know
+  // yet.)
+  /*
   if ((flags_ & PbrShader::Flag::DoubleSided) && glIsEnabled(GL_CULL_FACE)) {
     Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::FaceCulling);
   }
+  */
+  Mn::Matrix4 modelMatrix =
+      camera.cameraMatrix().inverted() * transformationMatrix;
 
   (*shader_)
       // e.g., semantic mesh has its own per vertex annotation, which has been
@@ -104,16 +122,24 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
           static_cast<RenderCamera&>(camera).useDrawableIds()
               ? drawableId_
               : (materialData_->perVertexObjectId ? 0 : node_.getSemanticId()))
-      .setTransformationMatrix(transformationMatrix)  // modelview matrix
       .setProjectionMatrix(camera.projectionMatrix())
-      .setNormalMatrix(transformationMatrix.normalMatrix())
+      .setViewMatrix(camera.cameraMatrix())
+      .setModelMatrix(modelMatrix)  // NOT modelview matrix!
+      .setNormalMatrix(modelMatrix.normalMatrix())
+      .setCameraWorldPosition(
+          camera.object().absoluteTransformationMatrix().translation())
       .setBaseColor(materialData_->baseColor)
       .setRoughness(materialData_->roughness)
       .setMetallic(materialData_->metallic)
       .setEmissiveColor(materialData_->emissiveColor);
 
+  // TODO:
+  // IN PbrShader class, we set the resonable defaults for the
+  // PbrShader::PbrEquationScales. Here we need a smart way to reset it
+  // just in case user would like to do so during the run-time.
+
   if ((flags_ & PbrShader::Flag::BaseColorTexture) &&
-      materialData_->baseColorTexture) {
+      (materialData_->baseColorTexture != nullptr)) {
     shader_->bindBaseColorTexture(*materialData_->baseColorTexture);
   }
 
@@ -131,12 +157,12 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   }
 
   if ((flags_ & PbrShader::Flag::NormalTexture) &&
-      materialData_->normalTexture) {
+      (materialData_->normalTexture != nullptr)) {
     shader_->bindNormalTexture(*materialData_->normalTexture);
   }
 
   if ((flags_ & PbrShader::Flag::EmissiveTexture) &&
-      materialData_->emissiveTexture) {
+      (materialData_->emissiveTexture != nullptr)) {
     shader_->bindEmissiveTexture(*materialData_->emissiveTexture);
   }
 
@@ -145,7 +171,47 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
     shader_->setTextureMatrix(materialData_->textureMatrix);
   }
 
-  shader_->draw(mesh_);
+  // setup image based lighting for the shader
+  if (flags_ & PbrShader::Flag::ImageBasedLighting) {
+    CORRADE_INTERNAL_ASSERT(pbrIbl_);
+    shader_->bindIrradianceCubeMap(  // TODO: HDR Color
+        pbrIbl_->getIrradianceMap().getTexture(CubeMap::TextureType::Color));
+    shader_->bindBrdfLUT(pbrIbl_->getBrdfLookupTable());
+    shader_->bindPrefilteredMap(
+        // TODO: HDR Color
+        pbrIbl_->getPrefilteredMap().getTexture(CubeMap::TextureType::Color));
+    shader_->setPrefilteredMapMipLevels(
+        pbrIbl_->getPrefilteredMap().getMipmapLevels());
+  }
+
+  if (flags_ & PbrShader::Flag::ShadowsVSM) {
+    CORRADE_INTERNAL_ASSERT(shadowMapManger_ && shadowMapKeys_);
+    CORRADE_ASSERT(shadowMapKeys_->size() <= 3,
+                   "PbrDrawable::draw: the number of shadow maps exceeds the "
+                   "maximum (current it is 3).", );
+    for (int iShadow = 0; iShadow < shadowMapKeys_->size(); ++iShadow) {
+      Mn::Resource<CubeMap> shadowMap =
+          (*shadowMapManger_).get<CubeMap>((*shadowMapKeys_)[iShadow]);
+
+      CORRADE_INTERNAL_ASSERT(shadowMap);
+
+      if (flags_ & PbrShader::Flag::ShadowsVSM) {
+        shader_->bindPointShadowMap(
+            iShadow,
+            shadowMap->getTexture(CubeMap::TextureType::VarianceShadowMap));
+      }
+    }
+  }
+
+  shader_->draw(getMesh());
+
+  // WE stopped supporting doubleSided material due to lighting artifacts on
+  // hard edges. See comments at the beginning of this function.
+  /*
+  if ((flags_ & PbrShader::Flag::DoubleSided) && !glIsEnabled(GL_CULL_FACE)) {
+    Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
+  }
+  */
 }
 
 Mn::ResourceKey PbrDrawable::getShaderKey(Mn::UnsignedInt lightCount,
@@ -194,7 +260,7 @@ PbrDrawable& PbrDrawable::updateShaderLightParameters() {
   return *this;
 }
 
-// update light direction (or position) in *camera* space to the shader
+// update light direction (or position) in *world* space to the shader
 PbrDrawable& PbrDrawable::updateShaderLightDirectionParameters(
     const Magnum::Matrix4& transformationMatrix,
     Magnum::SceneGraph::Camera3D& camera) {
@@ -204,13 +270,27 @@ PbrDrawable& PbrDrawable::updateShaderLightDirectionParameters(
   const Mn::Matrix4 cameraMatrix = camera.cameraMatrix();
   for (unsigned int iLight = 0; iLight < lightSetup_->size(); ++iLight) {
     const auto& lightInfo = (*lightSetup_)[iLight];
-    lightPositions.emplace_back(Mn::Vector4(getLightPositionRelativeToCamera(
-        lightInfo, transformationMatrix, cameraMatrix)));
+    Mn::Vector4 pos = getLightPositionRelativeToWorld(
+        lightInfo, transformationMatrix, cameraMatrix);
+    lightPositions.emplace_back(pos);
   }
 
   shader_->setLightVectors(lightPositions);
 
   return *this;
+}
+
+void PbrDrawable::setShadowData(ShadowMapManager& manager,
+                                ShadowMapKeys& keys,
+                                PbrShader::Flag shadowFlag) {
+  // sanity check first
+  CORRADE_ASSERT(shadowFlag == PbrShader::Flag::ShadowsVSM,
+                 "PbrDrawable::setShadowData(): the shadow flag can only be "
+                 "ShadowsVSM.", );
+
+  shadowMapManger_ = &manager;
+  shadowMapKeys_ = &keys;
+  flags_ |= shadowFlag;
 }
 
 }  // namespace gfx

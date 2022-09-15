@@ -41,7 +41,7 @@ inline JsonGenericValue toJsonArrayHelper(const T* objects,
                                           int count,
                                           JsonAllocator& allocator) {
   JsonGenericValue arr(rapidjson::kArrayType);
-  for (int i = 0; i < count; i++) {
+  for (int i = 0; i < count; ++i) {
     arr.PushBack(toJsonValue(objects[i], allocator), allocator);
   }
   return arr;
@@ -62,7 +62,7 @@ bool readMember(const rapidjson::Value& value, const char* tag, T& x) {
     return false;
   }
   if (!fromJsonValue(value[tag], x)) {
-    LOG(ERROR) << "Failed to parse JSON tag \"" << tag << "\"";
+    ESP_ERROR() << "Failed to parse JSON tag \"" << tag << "\"";
     return false;
   }
   return true;

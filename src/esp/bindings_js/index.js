@@ -2,44 +2,41 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-/* global FS, Module */
+/* global Module */
 
 import WebDemo from "./modules/web_demo";
-import VRDemo from "./modules/vr_demo";
 import ViewerDemo from "./modules/viewer_demo";
-import { defaultScene } from "./modules/defaults";
+import {
+  defaultScene,
+  defaultPhysicsConfigFilepath,
+  infoSemanticFileName
+} from "./modules/defaults";
 import "./bindings.css";
 import {
   checkWebAssemblySupport,
   checkWebgl2Support,
   getInfoSemanticUrl,
-  buildConfigFromURLParameters
+  buildConfigFromURLParameters,
+  preload
 } from "./modules/utils";
-
-function preload(url) {
-  let file_parents_str = "/";
-  const splits = url.split("/");
-  let file = splits[splits.length - 1];
-  if (url.indexOf("http") === -1) {
-    let file_parents = splits.slice(0, splits.length - 1);
-    for (let i = 0; i < splits.length - 1; i += 1) {
-      file_parents_str += file_parents[i] + "/";
-      if (!FS.analyzePath(file_parents_str).exists) {
-        FS.mkdir(file_parents_str, 777);
-      }
-    }
-  }
-  FS.createPreloadedFile(file_parents_str, file, url, true, false);
-  return file_parents_str + file;
-}
+import TestPage from "./modules/test_page";
 
 Module.preRun.push(() => {
+  if (window.isTestPage) {
+    Module.testPage = new TestPage();
+    Module.testPage.preRun(preload);
+    return;
+  }
+
   let config = {};
   config.scene = defaultScene;
   buildConfigFromURLParameters(config);
   window.config = config;
   const scene = config.scene;
   Module.scene = preload(scene);
+
+  Module.physicsConfigFile = preload(defaultPhysicsConfigFilepath);
+
   const fileNoExtension = scene.substr(0, scene.lastIndexOf("."));
 
   preload(fileNoExtension + ".navmesh");
@@ -47,28 +44,28 @@ Module.preRun.push(() => {
     preload(fileNoExtension + ".house");
     preload(fileNoExtension + "_semantic.ply");
   } else if (config.semantic === "replica") {
-    preload(getInfoSemanticUrl(config.scene));
+    preload(getInfoSemanticUrl(config.scene, infoSemanticFileName));
   }
 });
 
 Module.onRuntimeInitialized = async function() {
   console.log("hsim_bindings initialized");
-  let demo;
-  if (window.vrEnabled) {
-    const supported = await navigator.xr.isSessionSupported("immersive-vr");
-    if (supported) {
-      console.log("WebXR is supported");
-      demo = new VRDemo();
-    }
-  } else if (window.viewerEnabled) {
-    demo = new ViewerDemo();
+
+  if (window.isTestPage) {
+    Module.testPage.onRuntimeInitialized();
+    return;
   }
 
-  if (!demo) {
+  let demo;
+  if (window.viewerEnabled) {
+    demo = new ViewerDemo();
+  } else {
     demo = new WebDemo();
   }
 
-  demo.display();
+  if (demo) {
+    demo.display();
+  }
 };
 
 function checkSupport() {

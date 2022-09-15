@@ -5,13 +5,12 @@
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/TestSuite/Compare/Numeric.h>
 #include <Corrade/TestSuite/Tester.h>
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/Path.h>
 #include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/GL/SampleQuery.h>
 #include <Magnum/Math/Frustum.h>
 #include <Magnum/Math/Intersection.h>
 #include <Magnum/Math/Range.h>
-#include <gtest/gtest.h>
 #include <string>
 
 #include "esp/assets/ResourceManager.h"
@@ -30,7 +29,6 @@ using esp::metadata::MetadataMediator;
 using esp::scene::SceneManager;
 using Magnum::Math::Literals::operator""_degf;
 
-namespace Test {
 // on GCC and Clang, the following namespace causes useful warnings to be
 // printed when you have accidentally unused variables or functions in the test
 namespace {
@@ -45,6 +43,7 @@ struct CullingTest : Cr::TestSuite::Tester {
   void frustumCulling();
 
  protected:
+  esp::logging::LoggingContext loggingContext_;
   esp::gfx::WindowlessContext::uptr context_ = nullptr;
   std::unique_ptr<ResourceManager> resourceManager_ = nullptr;
   SceneManager::uptr sceneManager_ = nullptr;
@@ -60,6 +59,9 @@ CullingTest::CullingTest() {
 int CullingTest::setupTests() {
   // set up a default simulation config to initialize MM
   auto cfg = esp::sim::SimulatorConfiguration{};
+  // setting values for stage load
+  cfg.loadSemanticMesh = false;
+  cfg.forceSeparateSemanticSceneGraph = false;
   auto MM = MetadataMediator::create(cfg);
   // must declare these in this order due to avoid deallocation errors
   if (!resourceManager_) {
@@ -73,14 +75,14 @@ int CullingTest::setupTests() {
   }
   auto stageAttributesMgr = MM->getStageAttributesManager();
   std::string stageFile =
-      Cr::Utility::Directory::join(TEST_ASSETS, "objects/5boxes.glb");
+      Cr::Utility::Path::join(TEST_ASSETS, "objects/5boxes.glb");
   // create scene attributes file
   auto stageAttributes = stageAttributesMgr->createObject(stageFile, true);
   int sceneID = sceneManager_->initSceneGraph();
 
   std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
-  bool result = resourceManager_->loadStage(
-      stageAttributes, nullptr, sceneManager_.get(), tempIDs, false);
+  bool result = resourceManager_->loadStage(stageAttributes, nullptr, nullptr,
+                                            sceneManager_.get(), tempIDs);
   CORRADE_VERIFY(result);
   return sceneID;
 }
@@ -257,7 +259,7 @@ void CullingTest::frustumCulling() {
         CORRADE_VERIFY(q.result<bool>());
 
         if (q.result<bool>()) {
-          numVisibleObjectsGroundTruth++;
+          ++numVisibleObjectsGroundTruth;
         }
       };
   for_each(drawableTransforms.begin(), newEndIter, renderOneDrawable);
@@ -272,6 +274,5 @@ void CullingTest::frustumCulling() {
   CORRADE_COMPARE(numVisibleObjects, numVisibleObjectsGroundTruth);
 }
 }  // namespace
-}  // namespace Test
 
-CORRADE_TEST_MAIN(Test::CullingTest)
+CORRADE_TEST_MAIN(CullingTest)

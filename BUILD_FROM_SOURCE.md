@@ -1,6 +1,28 @@
+## [Experimental] PIP install
+
+- This is an automated way for building the necessary habitat binaries. For better support please skip to the Build from Source section.
+- The build files are not cached and therefore this build method is slow and not recommended for active development.
+
+```bash
+   git clone --branch stable https://github.com/facebookresearch/habitat-sim.git
+   cd habitat-sim
+   pip install . -v
+```
+
+- You can also allow pip to compile a specific version of Habitat. First clone the repo, then `pip install .` in the current git root directory
+  to start the compilation process. To quickly compile the latest main, run `pip install git+https://github.com/facebookresearch/habitat-sim`.
+
+- Since pip out of tree by default, this process will copy quite a lot of data to your TMPDIR. You can change this location by modifying the TMPDIR env variable.
+  It will also not cache previous builds effectively and therefore will be slow. For active develeopment, building using `python setup.py install...` is recommended.
+
+- Most compilation options can be accessed by either modifying the relevant ENV\_VARS (WITH\_BULLET, WITH\_CUDA, HEADLESS) etc or by passing the args through pip's `--global-option` and `--build-option` arguments.
+
+- By default, we build a headless version with bullet enabled.
+
+
 ## Build from Source
 
-We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/distribution/#download-section) environment (note: python>=3.6 is required). Once you have Anaconda installed, here are the instructions.
+We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/distribution/#download-section) environment (note: python>=3.7 is required). Once you have Anaconda installed, here are the instructions.
 
 
 1. Clone this github repository.
@@ -11,15 +33,15 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
    cd habitat-sim
    ```
 
-   List of stable releases is [available here](https://github.com/facebookresearch/habitat-sim/releases). Master branch contains 'bleeding edge' code and under active development.
+   List of stable releases is [available here](https://github.com/facebookresearch/habitat-sim/releases). Main branch contains 'bleeding edge' code and under active development.
 
 1. Install Dependencies
 
     Common
 
    ```bash
-   # We require python>=3.6 and cmake>=3.10
-   conda create -n habitat python=3.6 cmake=3.14.0
+   # We require python>=3.7 and cmake>=3.10
+   conda create -n habitat python=3.7 cmake=3.14.0
    conda activate habitat
    pip install -r requirements.txt
    ```
@@ -34,7 +56,7 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
         libjpeg-dev libglm-dev libgl1-mesa-glx libegl1-mesa-dev mesa-utils xorg-dev freeglut3-dev
    ```
 
-   See this [configuration for a full list of dependencies](https://github.com/facebookresearch/habitat-sim/blob/master/.circleci/config.yml#L64) that our CI installs on a clean Ubuntu VM. If you run into build errors later, this is a good place to check if all dependencies are installed.
+   See this [configuration for a full list of dependencies](https://github.com/facebookresearch/habitat-sim/blob/main/.circleci/config.yml#L64) that our CI installs on a clean Ubuntu VM. If you run into build errors later, this is a good place to check if all dependencies are installed.
 
 1. Build Habitat-Sim
 
@@ -64,12 +86,20 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
    python setup.py install --bullet    # build habitat with bullet physics
    ```
 
+   With audio sensor via [rlr-audio-propagation](https://github.com/facebookresearch/rlr-audio-propagation/):
+   To use Audio sensors (Linux only), enable the audio flag via:
+
+   ```bash
+   python setup.py install --audio    # build habitat with audio sensor
+   ```
+
    Note1: Build flags stack, *e.g.* to build in headless mode, with CUDA, and bullet, one would use `--headless --with-cuda --bullet`.
 
    Note2: some Linux distributions might require an additional `--user` flag to deal with permission issues.
 
    Note3: for active development in Habitat, you might find `./build.sh` instead of `python setup.py install` more useful.
 
+   Note4: Audio sensor is only available on Linux.
 
 1. [Only if using `build.sh`] For use with [Habitat Lab](https://github.com/facebookresearch/habitat-lab) and your own python code, add habitat-sim to your `PYTHONPATH`. For example modify your `.bashrc` (or `.bash_profile` in Mac OS X) file by adding the line:
    ```bash

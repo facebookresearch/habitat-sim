@@ -10,7 +10,7 @@
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix3.h>
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 namespace esp {
 namespace gfx {
@@ -32,23 +32,32 @@ struct MaterialData {
 
   bool perVertexObjectId = false;
 
+  // This denotes a material with texture-based annotations
+  bool textureObjectId = false;
+
+  // This references the texture of ObjectID values
+  Magnum::GL::Texture2D* objectIdTexture = nullptr;
+
   // construct it using the default constructor. NO initial values, such as
   // identity matrix
   Magnum::Matrix3 textureMatrix;
 
   bool doubleSided = false;
+
+  // Shader type specified for this material upon load/creation
+  int shaderTypeSpec = -1;
 };
 
 struct PhongMaterialData : public MaterialData {
   PhongMaterialData() : MaterialData(MaterialDataType::Phong){};
-
   Magnum::Float shininess = 80.f;
   Magnum::Color4 ambientColor{0.1};
-  Magnum::Color4 diffuseColor{0.7};
-  Magnum::Color4 specularColor{0.2};
+  // NOTE: This multiplication is a hack to roughly balance the Phong and PBR
+  // light intensity reactions.
+  Magnum::Color4 diffuseColor{0.7 * 0.175};
+  Magnum::Color4 specularColor{0.2 * 0.175};
   Magnum::GL::Texture2D *ambientTexture = nullptr, *diffuseTexture = nullptr,
                         *specularTexture = nullptr, *normalTexture = nullptr;
-  bool vertexColored = false;
 
   ESP_SMART_POINTERS(PhongMaterialData)
 };

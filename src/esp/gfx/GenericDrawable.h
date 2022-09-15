@@ -5,7 +5,7 @@
 #ifndef ESP_GFX_GENERICDRAWABLE_H_
 #define ESP_GFX_GENERICDRAWABLE_H_
 
-#include <Magnum/Shaders/Phong.h>
+#include <Magnum/Shaders/PhongGL.h>
 
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/ShaderManager.h"
@@ -19,7 +19,7 @@ class GenericDrawable : public Drawable {
   //! Adds drawable to given group and uses provided texture, and
   //! color for textured buffer and color shader output respectively
   explicit GenericDrawable(scene::SceneNode& node,
-                           Magnum::GL::Mesh& mesh,
+                           Magnum::GL::Mesh* mesh,
                            Drawable::Flags& meshAttributeFlags,
                            ShaderManager& shaderManager,
                            const Magnum::ResourceKey& lightSetupKey,
@@ -39,16 +39,16 @@ class GenericDrawable : public Drawable {
       Magnum::SceneGraph::Camera3D& camera);
 
   Magnum::ResourceKey getShaderKey(Magnum::UnsignedInt lightCount,
-                                   Magnum::Shaders::Phong::Flags flags) const;
+                                   Magnum::Shaders::PhongGL::Flags flags) const;
 
   // shader parameters
   ShaderManager& shaderManager_;
-  Magnum::Resource<Magnum::GL::AbstractShaderProgram, Magnum::Shaders::Phong>
+  Magnum::Resource<Magnum::GL::AbstractShaderProgram, Magnum::Shaders::PhongGL>
       shader_;
   Magnum::Resource<MaterialData, PhongMaterialData> materialData_;
   Magnum::Resource<LightSetup> lightSetup_;
 
-  Magnum::Shaders::Phong::Flags flags_;
+  Magnum::Shaders::PhongGL::Flags flags_;
 };
 
 }  // namespace gfx

@@ -13,7 +13,7 @@
 #include "JsonMagnumTypes.h"
 
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/gfx/replay/Keyframe.h"
 
 namespace esp {
@@ -30,14 +30,33 @@ inline bool fromJsonValue(const JsonGenericValue& obj, esp::vec3f& val) {
       if (obj[i].IsNumber()) {
         val[i] = obj[i].GetDouble();
       } else {
-        LOG(ERROR) << " Invalid numeric value specified in JSON vec3f, index :"
-                   << i;
+        ESP_ERROR() << "Invalid numeric value specified in JSON vec3f, index :"
+                    << i;
         return false;
       }
     }
     return true;
   }
   return false;
+}
+
+inline JsonGenericValue toJsonValue(
+    const esp::assets::PhongMaterialColor& material,
+    JsonAllocator& allocator) {
+  JsonGenericValue obj(rapidjson::kObjectType);
+  addMember(obj, "ambient", material.ambientColor, allocator);
+  addMember(obj, "diffuse", material.diffuseColor, allocator);
+  addMember(obj, "specular", material.specularColor, allocator);
+  return obj;
+}
+
+inline bool fromJsonValue(const JsonGenericValue& obj,
+                          esp::assets::PhongMaterialColor& material) {
+  bool success = true;
+  success &= readMember(obj, "ambient", material.ambientColor);
+  success &= readMember(obj, "diffuse", material.diffuseColor);
+  success &= readMember(obj, "specular", material.specularColor);
+  return success;
 }
 
 inline JsonGenericValue toJsonValue(const esp::geo::CoordinateFrame& frame,
@@ -62,28 +81,17 @@ inline bool fromJsonValue(const JsonGenericValue& obj,
   return success;
 }
 
-inline JsonGenericValue toJsonValue(const esp::assets::AssetInfo& x,
-                                    JsonAllocator& allocator) {
-  JsonGenericValue obj(rapidjson::kObjectType);
-  addMemberAsUint32(obj, "type", x.type, allocator);
-  addMember(obj, "filepath", x.filepath, allocator);
-  addMember(obj, "frame", x.frame, allocator);
-  addMember(obj, "virtualUnitToMeters", x.virtualUnitToMeters, allocator);
-  addMember(obj, "requiresLighting", x.requiresLighting, allocator);
-  addMember(obj, "splitInstanceMesh", x.splitInstanceMesh, allocator);
-  return obj;
-}
+JsonGenericValue toJsonValue(const esp::assets::AssetInfo& x,
+                             JsonAllocator& allocator);
 
-inline bool fromJsonValue(const JsonGenericValue& obj,
-                          esp::assets::AssetInfo& x) {
-  readMemberAsUint32(obj, "type", x.type);
-  readMember(obj, "filepath", x.filepath);
-  readMember(obj, "frame", x.frame);
-  readMember(obj, "virtualUnitToMeters", x.virtualUnitToMeters);
-  readMember(obj, "requiresLighting", x.requiresLighting);
-  readMember(obj, "splitInstanceMesh", x.splitInstanceMesh);
-  return true;
-}
+bool fromJsonValue(const JsonGenericValue& obj, esp::assets::AssetInfo& x);
+
+JsonGenericValue toJsonValue(
+    const metadata::attributes::ObjectInstanceShaderType& x,
+    JsonAllocator& allocator);
+
+bool fromJsonValue(const JsonGenericValue& obj,
+                   metadata::attributes::ObjectInstanceShaderType& x);
 
 inline JsonGenericValue toJsonValue(
     const esp::assets::RenderAssetInstanceCreationInfo& x,
@@ -94,6 +102,7 @@ inline JsonGenericValue toJsonValue(
   addMember(obj, "isStatic", x.isStatic(), allocator);
   addMember(obj, "isRGBD", x.isRGBD(), allocator);
   addMember(obj, "isSemantic", x.isSemantic(), allocator);
+  addMember(obj, "isTextureSemantic", x.isTextureBasedSemantic(), allocator);
   addMember(obj, "lightSetupKey", x.lightSetupKey, allocator);
   return obj;
 }
@@ -108,6 +117,8 @@ inline bool fromJsonValue(const JsonGenericValue& obj,
   readMember(obj, "isRGBD", isRGBD);
   bool isSemantic = false;
   readMember(obj, "isSemantic", isSemantic);
+  bool isTextureSemantic = false;
+  readMember(obj, "isTextureSemantic", isTextureSemantic);
   if (isStatic) {
     x.flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsStatic;
   }
@@ -117,6 +128,11 @@ inline bool fromJsonValue(const JsonGenericValue& obj,
   if (isSemantic) {
     x.flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsSemantic;
   }
+  if (isTextureSemantic) {
+    x.flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::
+        IsTextureBasedSemantic;
+  }
+
   readMember(obj, "lightSetupKey", x.lightSetupKey);
   return true;
 }

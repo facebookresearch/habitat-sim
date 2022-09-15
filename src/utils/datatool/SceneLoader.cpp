@@ -8,17 +8,20 @@
 #include <string>
 #include <vector>
 
-#include "esp/assets/GenericInstanceMeshData.h"
-#include "esp/core/esp.h"
-#include "esp/geo/geo.h"
-#include "esp/io/io.h"
-
-#include <sophus/so3.hpp>
+#include <Corrade/Containers/ArrayViewStl.h>
+#include <Corrade/Utility/Algorithms.h>
+#include <Corrade/Utility/FormatStl.h>
+#include <Corrade/Utility/Path.h>
+#include "esp/assets/GenericSemanticMeshData.h"
+#include "esp/core/Esp.h"
+#include "esp/geo/Geo.h"
 
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include <assimp/Importer.hpp>
 
+#include <Magnum/EigenIntegration/GeometryIntegration.h>
+#include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/Trade/AbstractImporter.h>
 
 namespace Cr = Corrade;
@@ -27,17 +30,17 @@ namespace esp {
 namespace assets {
 
 SceneLoader::SceneLoader()
-    :
 #ifdef MAGNUM_BUILD_STATIC
-      // avoid using plugins that might depend on different library versions
+    :  // avoid using plugins that might depend on different library versions
       importerManager_("nonexistent")
 #endif
-          {};
+{
+}
 
 MeshData SceneLoader::load(const AssetInfo& info) {
   MeshData mesh;
-  if (!esp::io::exists(info.filepath)) {
-    LOG(ERROR) << "Could not find file " << info.filepath;
+  if (!Cr::Utility::Path::exists(info.filepath)) {
+    ESP_ERROR() << "Could not find file" << info.filepath;
     return mesh;
   }
 
@@ -45,16 +48,30 @@ MeshData SceneLoader::load(const AssetInfo& info) {
     Cr::Containers::Pointer<Importer> importer;
     CORRADE_INTERNAL_ASSERT_OUTPUT(
         importer = importerManager_.loadAndInstantiate("StanfordImporter"));
-    GenericInstanceMeshData::ptr instanceMeshData =
-        GenericInstanceMeshData::fromPLY(*importer, info.filepath);
+    // dummy colormap
+    std::vector<Magnum::Vector3ub> dummyColormap;
+    Cr::Containers::Optional<Mn::Trade::MeshData> meshData;
+
+    ESP_CHECK(
+        (importer->openFile(info.filepath) && (meshData = importer->mesh(0))),
+        Cr::Utility::formatString(
+            "Error loading instance mesh data from file {}", info.filepath));
+
+    GenericSemanticMeshData::uptr instanceMeshData =
+        GenericSemanticMeshData::buildSemanticMeshData(*meshData, info.filepath,
+                                                       dummyColormap, false);
 
     const auto& vbo = instanceMeshData->getVertexBufferObjectCPU();
     const auto& cbo = instanceMeshData->getColorBufferObjectCPU();
     const auto& ibo = instanceMeshData->getIndexBufferObjectCPU();
-    mesh.vbo = vbo;
+
+    mesh.vbo.resize(vbo.size());
+    Cr::Utility::copy(vbo, Cr::Containers::arrayCast<Mn::Vector3>(
+                               Cr::Containers::arrayView(mesh.vbo)));
     mesh.ibo = ibo;
     for (const auto& c : cbo) {
-      mesh.cbo.emplace_back(c.cast<float>() / 255.0f);
+      auto clr = Mn::EigenIntegration::cast<esp::vec3uc>(c);
+      mesh.cbo.emplace_back(clr.cast<float>() / 255.0f);
     }
   } else {
     const aiScene* scene;
@@ -107,8 +124,8 @@ MeshData SceneLoader::load(const AssetInfo& info) {
     }  // meshes
   }
 
-  LOG(INFO) << "Loaded " << mesh.vbo.size() << " vertices, " << mesh.ibo.size()
-            << " indices";
+  ESP_DEBUG() << "Loaded" << mesh.vbo.size() << "vertices," << mesh.ibo.size()
+              << "indices";
 
   return mesh;
 };

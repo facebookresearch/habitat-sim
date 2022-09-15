@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "PathFinder.h"
+#include <cstddef>
 #include <numeric>
 #include <stack>
 #include <unordered_map>
@@ -22,7 +23,7 @@
 #include <limits>
 
 #include "esp/assets/MeshData.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 #include "DetourNavMesh.h"
 #include "DetourNavMeshBuilder.h"
@@ -36,6 +37,25 @@ namespace Cr = Corrade;
 namespace esp {
 namespace nav {
 
+bool operator==(const NavMeshSettings& a, const NavMeshSettings& b) {
+#define CLOSE(name) (std::abs(a.name - b.name) < 1e-5)
+#define EQ(name) (a.name == b.name)
+
+  return CLOSE(cellSize) && CLOSE(cellHeight) && CLOSE(agentHeight) &&
+         CLOSE(agentRadius) && CLOSE(agentMaxClimb) && CLOSE(agentMaxSlope) &&
+         CLOSE(regionMinSize) && CLOSE(regionMinSize) && CLOSE(edgeMaxLen) &&
+         CLOSE(edgeMaxError) && CLOSE(vertsPerPoly) &&
+         CLOSE(detailSampleDist) && CLOSE(detailSampleMaxError) &&
+         EQ(filterLowHangingObstacles) && EQ(filterLedgeSpans) &&
+         EQ(filterWalkableLowHeightSpans);
+
+#undef CLOSE
+#undef EQ
+}
+
+bool operator!=(const NavMeshSettings& a, const NavMeshSettings& b) {
+  return !(a == b);
+}
 struct MultiGoalShortestPath::Impl {
   std::vector<vec3f> requestedEnds;
 
@@ -184,8 +204,8 @@ class IslandSystem {
       navMesh->getTileAndPolyByRefUnsafe(ref, &tile, &poly);
 
       for (int iVert = 0; iVert < poly->vertCount; ++iVert) {
-        islandVerts.emplace_back(
-            Eigen::Map<vec3f>(&tile->verts[poly->verts[iVert] * 3]));
+        islandVerts.emplace_back(Eigen::Map<vec3f>(
+            &tile->verts[static_cast<size_t>(poly->verts[iVert]) * 3]));
       }
 
       // Iterate over all neighbours
@@ -219,14 +239,17 @@ struct PathFinder::Impl {
 
   bool build(const NavMeshSettings& bs,
              const float* verts,
-             const int nverts,
+             int nverts,
              const int* tris,
-             const int ntris,
+             int ntris,
              const float* bmin,
              const float* bmax);
   bool build(const NavMeshSettings& bs, const esp::assets::MeshData& mesh);
 
   vec3f getRandomNavigablePoint(int maxTries);
+  vec3f getRandomNavigablePointAroundSphere(const vec3f& circleCenter,
+                                            float radius,
+                                            int maxTries);
 
   bool findPath(ShortestPath& path);
   bool findPath(MultiGoalShortestPath& path);
@@ -250,20 +273,23 @@ struct PathFinder::Impl {
   float islandRadius(const vec3f& pt) const;
 
   float distanceToClosestObstacle(const vec3f& pt,
-                                  const float maxSearchRadius = 2.0) const;
-  HitRecord closestObstacleSurfacePoint(
-      const vec3f& pt,
-      const float maxSearchRadius = 2.0) const;
+                                  float maxSearchRadius = 2.0) const;
+  HitRecord closestObstacleSurfacePoint(const vec3f& pt,
+                                        float maxSearchRadius = 2.0) const;
 
-  bool isNavigable(const vec3f& pt, const float maxYDelta = 0.5) const;
+  bool isNavigable(const vec3f& pt, float maxYDelta = 0.5) const;
 
   std::pair<vec3f, vec3f> bounds() const { return bounds_; };
 
   Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> getTopDownView(
-      const float metersPerPixel,
-      const float height);
+      float metersPerPixel,
+      float height) const;
 
-  const assets::MeshData::ptr getNavMeshData();
+  assets::MeshData::ptr getNavMeshData();
+
+  Cr::Containers::Optional<NavMeshSettings> getNavMeshSettings() const {
+    return navMeshSettings_;
+  }
 
  private:
   struct NavMeshDeleter {
@@ -281,6 +307,7 @@ struct PathFinder::Impl {
   //! Holds triangulated geom/topo. Generated when queried. Reset with
   //! navQuery_.
   assets::MeshData::ptr meshData_ = nullptr;
+  Cr::Containers::Optional<NavMeshSettings> navMeshSettings_;
 
   //! Sum of all NavMesh polygons. Computed on NavMesh load/recompute. See
   //! removeZeroAreaPolys.
@@ -380,8 +407,8 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
   rcVcopy(cfg.bmin, bmin);
   rcVcopy(cfg.bmax, bmax);
   rcCalcGridSize(cfg.bmin, cfg.bmax, cfg.cs, &cfg.width, &cfg.height);
-  LOG(INFO) << "Building navmesh with " << cfg.width << "x" << cfg.height
-            << " cells";
+  ESP_DEBUG() << "Building navmesh with" << cfg.width << "x" << cfg.height
+              << "cells";
 
   //
   // Step 2. Rasterize input polygon soup.
@@ -390,12 +417,12 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
   // Allocate voxel heightfield where we rasterize our input data to.
   ws.solid = rcAllocHeightfield();
   if (!ws.solid) {
-    LOG(ERROR) << "Out of memory for heightfield allocation";
+    ESP_ERROR() << "Out of memory for heightfield allocation";
     return false;
   }
   if (!rcCreateHeightfield(&ctx, *ws.solid, cfg.width, cfg.height, cfg.bmin,
                            cfg.bmax, cfg.cs, cfg.ch)) {
-    LOG(ERROR) << "Could not create solid heightfield";
+    ESP_ERROR() << "Could not create solid heightfield";
     return false;
   }
 
@@ -404,7 +431,7 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
   // and array which can hold the max number of triangles you need to process.
   ws.triareas = new unsigned char[ntris];
   if (!ws.triareas) {
-    LOG(ERROR) << "Out of memory for triareas" << ntris;
+    ESP_ERROR() << "Out of memory for triareas" << ntris;
     return false;
   }
 
@@ -416,7 +443,7 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
                           ntris, ws.triareas);
   if (!rcRasterizeTriangles(&ctx, verts, nverts, tris, ws.triareas, ntris,
                             *ws.solid, cfg.walkableClimb)) {
-    LOG(ERROR) << "Could not rasterize triangles.";
+    ESP_ERROR() << "Could not rasterize triangles.";
     return false;
   }
 
@@ -443,18 +470,18 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
   // between walkable cells will be calculated.
   ws.chf = rcAllocCompactHeightfield();
   if (!ws.chf) {
-    LOG(ERROR) << "Out of memory for compact heightfield";
+    ESP_ERROR() << "Out of memory for compact heightfield";
     return false;
   }
   if (!rcBuildCompactHeightfield(&ctx, cfg.walkableHeight, cfg.walkableClimb,
                                  *ws.solid, *ws.chf)) {
-    LOG(ERROR) << "Could not build compact heightfield";
+    ESP_ERROR() << "Could not build compact heightfield";
     return false;
   }
 
   // Erode the walkable area by agent radius.
   if (!rcErodeWalkableArea(&ctx, cfg.walkableRadius, *ws.chf)) {
-    LOG(ERROR) << "Could not erode walkable area";
+    ESP_ERROR() << "Could not erode walkable area";
     return false;
   }
 
@@ -501,13 +528,13 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
   // Prepare for region partitioning, by calculating distance field along the
   // walkable surface.
   if (!rcBuildDistanceField(&ctx, *ws.chf)) {
-    LOG(ERROR) << "Could not build distance field";
+    ESP_ERROR() << "Could not build distance field";
     return false;
   }
   // Partition the walkable surface into simple regions without holes.
   if (!rcBuildRegions(&ctx, *ws.chf, 0, cfg.minRegionArea,
                       cfg.mergeRegionArea)) {
-    LOG(ERROR) << "Could not build watershed regions";
+    ESP_ERROR() << "Could not build watershed regions";
     return false;
   }
   // // Partition the walkable surface into simple regions without holes.
@@ -524,12 +551,12 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
   // Create contours.
   ws.cset = rcAllocContourSet();
   if (!ws.cset) {
-    LOG(ERROR) << "Out of memory for contour set";
+    ESP_ERROR() << "Out of memory for contour set";
     return false;
   }
   if (!rcBuildContours(&ctx, *ws.chf, cfg.maxSimplificationError,
                        cfg.maxEdgeLen, *ws.cset)) {
-    LOG(ERROR) << "Could not create contours";
+    ESP_ERROR() << "Could not create contours";
     return false;
   }
 
@@ -540,11 +567,11 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
   // Build polygon navmesh from the contours.
   ws.pmesh = rcAllocPolyMesh();
   if (!ws.pmesh) {
-    LOG(ERROR) << "Out of memory for polymesh";
+    ESP_ERROR() << "Out of memory for polymesh";
     return false;
   }
   if (!rcBuildPolyMesh(&ctx, *ws.cset, cfg.maxVertsPerPoly, *ws.pmesh)) {
-    LOG(ERROR) << "Could not triangulate contours";
+    ESP_ERROR() << "Could not triangulate contours";
     return false;
   }
 
@@ -555,13 +582,13 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
 
   ws.dmesh = rcAllocPolyMeshDetail();
   if (!ws.dmesh) {
-    LOG(ERROR) << "Out of memory for polymesh detail";
+    ESP_ERROR() << "Out of memory for polymesh detail";
     return false;
   }
 
   if (!rcBuildPolyMeshDetail(&ctx, *ws.pmesh, *ws.chf, cfg.detailSampleDist,
                              cfg.detailSampleMaxError, *ws.dmesh)) {
-    LOG(ERROR) << "Could not build detail mesh";
+    ESP_ERROR() << "Could not build detail mesh";
     return false;
   }
 
@@ -622,14 +649,14 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
     params.buildBvTree = true;
 
     if (!dtCreateNavMeshData(&params, &navData, &navDataSize)) {
-      LOG(ERROR) << "Could not build Detour navmesh";
+      ESP_ERROR() << "Could not build Detour navmesh";
       return false;
     }
 
     navMesh_.reset(dtAllocNavMesh());
     if (!navMesh_) {
       dtFree(navData);
-      LOG(ERROR) << "Could not allocate Detour navmesh";
+      ESP_ERROR() << "Could not allocate Detour navmesh";
       return false;
     }
 
@@ -637,19 +664,22 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
     status = navMesh_->init(navData, navDataSize, DT_TILE_FREE_DATA);
     if (dtStatusFailed(status)) {
       dtFree(navData);
-      LOG(ERROR) << "Could not init Detour navmesh";
+      ESP_ERROR() << "Could not init Detour navmesh";
       return false;
     }
     if (!initNavQuery()) {
       return false;
     }
+    navMeshSettings_ = {bs};
   }
+
+  bounds_ = std::make_pair(vec3f(bmin), vec3f(bmax));
 
   // Added as we also need to remove these on navmesh recomputation
   removeZeroAreaPolys();
 
-  LOG(INFO) << "Created navmesh with " << ws.pmesh->nverts << " vertices "
-            << ws.pmesh->npolys << " polygons";
+  ESP_DEBUG() << "Created navmesh with" << ws.pmesh->nverts << "vertices"
+              << ws.pmesh->npolys << "polygons";
 
   return true;
 }
@@ -661,7 +691,7 @@ bool PathFinder::Impl::initNavQuery() {
   navQuery_.reset(dtAllocNavMeshQuery());
   dtStatus status = navQuery_->init(navMesh_.get(), 2048);
   if (dtStatusFailed(status)) {
-    LOG(ERROR) << "Could not init Detour navmesh query";
+    ESP_ERROR() << "Could not init Detour navmesh query";
     return false;
   }
 
@@ -679,14 +709,14 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
   vec3f bmin(mf, mf, mf);
   vec3f bmax(-mf, -mf, -mf);
 
-  for (int i = 0; i < numVerts; i++) {
+  for (int i = 0; i < numVerts; ++i) {
     const vec3f& p = mesh.vbo[i];
     bmin = bmin.cwiseMin(p);
     bmax = bmax.cwiseMax(p);
   }
 
   int* indices = new int[numIndices];
-  for (int i = 0; i < numIndices; i++) {
+  for (int i = 0; i < numIndices; ++i) {
     indices[i] = static_cast<int>(mesh.ibo[i]);
   }
 
@@ -698,7 +728,7 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
 
 namespace {
 const int NAVMESHSET_MAGIC = 'M' << 24 | 'S' << 16 | 'E' << 8 | 'T';  //'MSET';
-const int NAVMESHSET_VERSION = 1;
+const int NAVMESHSET_VERSION = 2;
 
 struct NavMeshSetHeader {
   int magic;
@@ -726,15 +756,18 @@ std::vector<Triangle> getPolygonTriangles(const dtPoly* poly,
   std::vector<Triangle> triangles(pd->triCount);
 
   for (int j = 0; j < pd->triCount; ++j) {
-    const unsigned char* t = &tile->detailTris[(pd->triBase + j) * 4];
+    const unsigned char* t =
+        &tile->detailTris[static_cast<size_t>((pd->triBase + j)) * 4];
     const float* v[3];
     for (int k = 0; k < 3; ++k) {
       if (t[k] < poly->vertCount)
-        triangles[j].v[k] =
-            Eigen::Map<const vec3f>(&tile->verts[poly->verts[t[k]] * 3]);
+        triangles[j].v[k] = Eigen::Map<const vec3f>(
+            &tile->verts[static_cast<size_t>(poly->verts[t[k]]) * 3]);
       else
         triangles[j].v[k] = Eigen::Map<const vec3f>(
-            &tile->detailVerts[(pd->vertBase + (t[k] - poly->vertCount)) * 3]);
+            &tile->detailVerts[static_cast<size_t>(
+                                   (pd->vertBase + (t[k] - poly->vertCount))) *
+                               3]);
     }
   }
 
@@ -784,7 +817,7 @@ void PathFinder::Impl::removeZeroAreaPolys() {
       float polygonArea = polyArea(poly, tile);
       if (polygonArea < 1e-5) {
         navMesh_->setPolyFlags(polyRef, POLYFLAGS_DISABLED);
-      } else if (poly->flags & POLYFLAGS_WALK) {
+      } else if ((poly->flags & POLYFLAGS_WALK) != 0) {
         navMeshArea_ += polygonArea;
       }
     }
@@ -807,9 +840,17 @@ bool PathFinder::Impl::loadNavMesh(const std::string& path) {
     fclose(fp);
     return false;
   }
-  if (header.version != NAVMESHSET_VERSION) {
+  if (header.version < 1 || header.version > NAVMESHSET_VERSION) {
     fclose(fp);
     return false;
+  }
+
+  navMeshSettings_ = {NavMeshSettings{}};
+  if (header.version >= 2) {
+    fread(&(*navMeshSettings_), sizeof(NavMeshSettings), 1, fp);
+  } else {
+    ESP_DEBUG()
+        << "NavMeshSettings aren't present, guessing that they are the default";
   }
 
   vec3f bmin, bmax;
@@ -834,7 +875,7 @@ bool PathFinder::Impl::loadNavMesh(const std::string& path) {
       return false;
     }
 
-    if (!tileHeader.tileRef || !tileHeader.dataSize)
+    if ((tileHeader.tileRef == 0u) || (tileHeader.dataSize == 0))
       break;
 
     unsigned char* data = static_cast<unsigned char*>(
@@ -887,17 +928,23 @@ bool PathFinder::Impl::saveNavMesh(const std::string& path) {
   header.numTiles = 0;
   for (int i = 0; i < navMesh->getMaxTiles(); ++i) {
     const dtMeshTile* tile = navMesh->getTile(i);
-    if (!tile || !tile->header || !tile->dataSize)
+    if (!tile || !tile->header || (tile->dataSize == 0))
       continue;
-    header.numTiles++;
+    ++header.numTiles;
   }
   memcpy(&header.params, navMesh->getParams(), sizeof(dtNavMeshParams));
   fwrite(&header, sizeof(NavMeshSetHeader), 1, fp);
+  if (!navMeshSettings_) {
+    ESP_ERROR() << "NavMeshSettings weren't set. Either build or load a "
+                   "navmesh before saving";
+    return false;
+  }
+  fwrite(&(*navMeshSettings_), sizeof(NavMeshSettings), 1, fp);
 
   // Store tiles.
   for (int i = 0; i < navMesh->getMaxTiles(); ++i) {
     const dtMeshTile* tile = navMesh->getTile(i);
-    if (!tile || !tile->header || !tile->dataSize)
+    if (!tile || !tile->header || (tile->dataSize == 0))
       continue;
 
     NavMeshTileHeader tileHeader{};
@@ -942,12 +989,48 @@ vec3f PathFinder::Impl::getRandomNavigablePoint(const int maxTries /*= 10*/) {
   }
 
   if (i == maxTries) {
-    LOG(ERROR) << "Failed to getRandomNavigablePoint.  Try increasing max "
-                  "tries if the navmesh is fine but just hard to sample from";
+    ESP_ERROR() << "Failed to getRandomNavigablePoint.  Try increasing max "
+                   "tries if the navmesh is fine but just hard to sample from";
     return vec3f::Constant(Mn::Constants::nan());
-  } else {
-    return pt;
   }
+  return pt;
+}
+
+vec3f PathFinder::Impl::getRandomNavigablePointAroundSphere(
+    const vec3f& circleCenter,
+    const float radius,
+    const int maxTries) {
+  if (getNavigableArea() <= 0.0)
+    throw std::runtime_error(
+        "NavMesh has no navigable area, this indicates an issue with the "
+        "NavMesh");
+
+  vec3f pt = vec3f::Constant(Mn::Constants::nan());
+  dtPolyRef start_ref = 0;  // ID to start our search
+  dtStatus status = navQuery_->findNearestPoly(
+      circleCenter.data(), vec3f{radius, radius, radius}.data(), filter_.get(),
+      &start_ref, pt.data());
+  if (!dtStatusSucceed(status) || std::isnan(pt[0])) {
+    ESP_ERROR()
+        << "Failed to getRandomNavigablePoint. No polygon found within radius";
+    return vec3f::Constant(Mn::Constants::nan());
+  }
+  int i = 0;
+  for (; i < maxTries; ++i) {
+    dtPolyRef rand_ref = 0;
+    status = navQuery_->findRandomPointAroundCircle(
+        start_ref, circleCenter.data(), radius, filter_.get(), frand, &rand_ref,
+        pt.data());
+    if (dtStatusSucceed(status) && (pt - circleCenter).norm() <= radius) {
+      break;
+    }
+  }
+  if (i == maxTries) {
+    ESP_ERROR() << "Failed to getRandomNavigablePoint.  Try increasing max "
+                   "tries if the navmesh is fine but just hard to sample from";
+    return vec3f::Constant(Mn::Constants::nan());
+  }
+  return pt;
 }
 
 namespace {
@@ -1036,7 +1119,7 @@ bool PathFinder::Impl::findPathSetup(MultiGoalShortestPath& path,
     return false;
   }
 
-  if (path.pimpl_->endRefs.size() != 0)
+  if (!path.pimpl_->endRefs.empty())
     return true;
 
   for (const auto& rqEnd : path.getRequestedEnds()) {
@@ -1173,7 +1256,8 @@ T PathFinder::Impl::tryStep(const T& start, const T& end, bool allowSliding) {
     // Calculate the center of the polygon we want the points to be in
     vec3f polyCenter = vec3f::Zero();
     for (int iVert = 0; iVert < poly->vertCount; ++iVert) {
-      polyCenter += Eigen::Map<vec3f>(&tile->verts[poly->verts[iVert] * 3]);
+      polyCenter += Eigen::Map<vec3f>(
+          &tile->verts[static_cast<size_t>(poly->verts[iVert]) * 3]);
     }
     polyCenter /= poly->vertCount;
 
@@ -1195,9 +1279,8 @@ T PathFinder::Impl::snapPoint(const T& pt) {
 
   if (dtStatusSucceed(status)) {
     return T{projectedPt};
-  } else {
-    return {Mn::Constants::nan(), Mn::Constants::nan(), Mn::Constants::nan()};
   }
+  return {Mn::Constants::nan(), Mn::Constants::nan(), Mn::Constants::nan()};
 }
 
 float PathFinder::Impl::islandRadius(const vec3f& pt) const {
@@ -1207,9 +1290,8 @@ float PathFinder::Impl::islandRadius(const vec3f& pt) const {
       projectToPoly(pt, navQuery_.get(), filter_.get());
   if (status != DT_SUCCESS || ptRef == 0) {
     return 0.0;
-  } else {
-    return islandSystem_->islandRadius(ptRef);
   }
+  return islandSystem_->islandRadius(ptRef);
 }
 
 float PathFinder::Impl::distanceToClosestObstacle(
@@ -1229,14 +1311,13 @@ HitRecord PathFinder::Impl::closestObstacleSurfacePoint(
   if (status != DT_SUCCESS || ptRef == 0) {
     return {vec3f(0, 0, 0), vec3f(0, 0, 0),
             std::numeric_limits<float>::infinity()};
-  } else {
-    vec3f hitPos, hitNormal;
-    float hitDist = NAN;
-    navQuery_->findDistanceToWall(ptRef, polyPt.data(), maxSearchRadius,
-                                  filter_.get(), &hitDist, hitPos.data(),
-                                  hitNormal.data());
-    return {hitPos, hitNormal, hitDist};
   }
+  vec3f hitPos, hitNormal;
+  float hitDist = Mn::Constants::nan();
+  navQuery_->findDistanceToWall(ptRef, polyPt.data(), maxSearchRadius,
+                                filter_.get(), &hitDist, hitPos.data(),
+                                hitNormal.data());
+  return {hitPos, hitNormal, hitDist};
 }
 
 bool PathFinder::Impl::isNavigable(const vec3f& pt,
@@ -1262,7 +1343,7 @@ typedef Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> MatrixXb;
 
 Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic>
 PathFinder::Impl::getTopDownView(const float metersPerPixel,
-                                 const float height) {
+                                 const float height) const {
   std::pair<vec3f, vec3f> mapBounds = bounds();
   vec3f bound1 = mapBounds.first;
   vec3f bound2 = mapBounds.second;
@@ -1277,8 +1358,8 @@ PathFinder::Impl::getTopDownView(const float metersPerPixel,
 
   float curz = startz;
   float curx = startx;
-  for (int h = 0; h < zResolution; h++) {
-    for (int w = 0; w < xResolution; w++) {
+  for (int h = 0; h < zResolution; ++h) {
+    for (int w = 0; w < xResolution; ++w) {
       vec3f point = vec3f(curx, height, curz);
       topdownMap(h, w) = isNavigable(point, 0.5);
       curx = curx + metersPerPixel;
@@ -1290,7 +1371,7 @@ PathFinder::Impl::getTopDownView(const float metersPerPixel,
   return topdownMap;
 }
 
-const assets::MeshData::ptr PathFinder::Impl::getNavMeshData() {
+assets::MeshData::ptr PathFinder::Impl::getNavMeshData() {
   if (meshData_ == nullptr && isLoaded()) {
     meshData_ = assets::MeshData::create();
     std::vector<esp::vec3f>& vbo = meshData_->vbo;
@@ -1346,6 +1427,13 @@ bool PathFinder::build(const NavMeshSettings& bs,
 
 vec3f PathFinder::getRandomNavigablePoint(const int maxTries /*= 10*/) {
   return pimpl_->getRandomNavigablePoint(maxTries);
+}
+
+vec3f PathFinder::getRandomNavigablePointAroundSphere(const vec3f& circleCenter,
+                                                      const float radius,
+                                                      const int maxTries) {
+  return pimpl_->getRandomNavigablePointAroundSphere(circleCenter, radius,
+                                                     maxTries);
 }
 
 bool PathFinder::findPath(ShortestPath& path) {
@@ -1432,8 +1520,13 @@ Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> PathFinder::getTopDownView(
   return pimpl_->getTopDownView(metersPerPixel, height);
 }
 
-const assets::MeshData::ptr PathFinder::getNavMeshData() {
+assets::MeshData::ptr PathFinder::getNavMeshData() {
   return pimpl_->getNavMeshData();
+}
+
+Cr::Containers::Optional<NavMeshSettings> PathFinder::getNavMeshSettings()
+    const {
+  return pimpl_->getNavMeshSettings();
 }
 
 }  // namespace nav

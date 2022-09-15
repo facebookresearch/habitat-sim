@@ -8,7 +8,9 @@
 #include "esp/scene/SceneNode.h"
 
 #include "esp/core/Buffer.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
+
+#include "esp/sensor/configure.h"
 
 namespace esp {
 
@@ -18,17 +20,19 @@ class Simulator;
 
 namespace sensor {
 // Enumeration of types of sensors
-enum class SensorType {
+enum class SensorType : int32_t {
   None = 0,
-  Color = 1,
-  Depth = 2,
-  Normal = 3,
-  Semantic = 4,
-  Path = 5,
-  Goal = 6,
-  Force = 7,
-  Tensor = 8,
-  Text = 9,
+  Color,
+  Depth,
+  Normal,
+  Semantic,
+  Path,
+  Goal,
+  Force,
+  Tensor,
+  Text,
+  Audio,
+  SensorTypeCount,  // add new type above this term!!
 };
 
 enum class ObservationSpaceType {
@@ -37,10 +41,14 @@ enum class ObservationSpaceType {
   Text = 2,
 };
 
-enum class SensorSubType {
+enum class SensorSubType : int32_t {
   None = 0,
-  Pinhole = 1,
-  Orthographic = 2,
+  Pinhole,
+  Orthographic,
+  Fisheye,
+  Equirectangular,
+  ImpulseResponse,
+  SensorSubTypeCount,  // add new type above this term!!
 };
 
 // Specifies the configuration parameters of a sensor
@@ -55,7 +63,7 @@ struct SensorSpec {
   SensorSpec() = default;
   virtual ~SensorSpec() = default;
   virtual bool isVisualSensorSpec() const { return false; }
-  virtual void sanityCheck();
+  virtual void sanityCheck() const;
   bool operator==(const SensorSpec& a) const;
   bool operator!=(const SensorSpec& a) const;
   ESP_SMART_POINTERS(SensorSpec)
@@ -194,7 +202,6 @@ class SensorSuite : public Magnum::SceneGraph::AbstractFeature3D {
   /**
    * @brief Return reference to Sensor with key uuid in existing sensors_
    * @param[in] uuid of Sensor to be found in sensors_
-   * @param[out] reference to Sensor with key uuid
    */
   sensor::Sensor& get(const std::string& uuid) const;
 

@@ -15,20 +15,24 @@
 namespace esp {
 namespace metadata {
 namespace managers {
+using core::managedContainers::ManagedFileBasedContainer;
+using core::managedContainers::ManagedObjectAccess;
+
 /**
  * @brief single instance class managing templates describing physical objects
  */
 class ObjectAttributesManager
     : public AbstractObjectAttributesManager<attributes::ObjectAttributes,
-                                             core::ManagedObjectAccess::Copy> {
+                                             ManagedObjectAccess::Copy> {
  public:
   ObjectAttributesManager()
       : AbstractObjectAttributesManager<attributes::ObjectAttributes,
-                                        core::ManagedObjectAccess::Copy>::
-            AbstractObjectAttributesManager(
-                "Object",
-                "object_config.json") {  // was phys_properties.json
-    buildCtorFuncPtrMaps();
+                                        ManagedObjectAccess::Copy>::
+            AbstractObjectAttributesManager("Object", "object_config.json") {
+    // build this manager's copy constructor map
+    this->copyConstructorMap_["ObjectAttributes"] =
+        &ObjectAttributesManager::createObjectCopy<
+            attributes::ObjectAttributes>;
   }
 
   void setAssetAttributesManager(
@@ -106,14 +110,16 @@ class ObjectAttributesManager
    * templates
    * @param contains whether to search for keys containing, or not containing,
    * subStr
+   * @param sorted whether the return vector values are sorted
    * @return vector of 0 or more template handles containing the passed
    * substring
    */
   std::vector<std::string> getFileTemplateHandlesBySubstring(
       const std::string& subStr = "",
-      bool contains = true) const {
+      bool contains = true,
+      bool sorted = true) const {
     return this->getObjectHandlesBySubStringPerType(physicsFileObjTmpltLibByID_,
-                                                    subStr, contains);
+                                                    subStr, contains, sorted);
   }
 
   /**
@@ -146,14 +152,16 @@ class ObjectAttributesManager
    * templates
    * @param contains whether to search for keys containing, or not containing,
    * subStr
+   * @param sorted whether the return vector values are sorted
    * @return vector of 0 or more template handles containing the passed
    * substring
    */
   std::vector<std::string> getSynthTemplateHandlesBySubstring(
       const std::string& subStr = "",
-      bool contains = true) const {
+      bool contains = true,
+      bool sorted = true) const {
     return this->getObjectHandlesBySubStringPerType(
-        physicsSynthObjTmpltLibByID_, subStr, contains);
+        physicsSynthObjTmpltLibByID_, subStr, contains, sorted);
   }
 
   // ======== End File-based and primitive-based partition functions ========
@@ -183,17 +191,17 @@ class ObjectAttributesManager
       attributes::ObjectAttributes::ptr attributes,
       bool setFrame,
       const std::string& meshHandle,
-      std::function<void(int)> assetTypeSetter) override;
+      const std::function<void(int)>& assetTypeSetter) override;
 
   /**
-   * @brief Used Internally.  Create and configure newly-created attributes with
-   * any default values, before any specific values are set.
+   * @brief Used Internally.  Create and configure newly-created attributes
+   * with any default values, before any specific values are set.
    *
    * @param handleName handle name to be assigned to attributes
-   * @param builtFromConfig Whether this object attributes is being constructed
-   * from a config file or from some other source.
-   * @return Newly created but unregistered ObjectAttributes pointer, with only
-   * default values set.
+   * @param builtFromConfig Whether this object attributes is being
+   * constructed from a config file or from some other source.
+   * @return Newly created but unregistered ObjectAttributes pointer, with
+   * only default values set.
    */
   attributes::ObjectAttributes::ptr initNewObjectInternal(
       const std::string& handleName,
@@ -203,12 +211,13 @@ class ObjectAttributesManager
    * @brief This method will perform any necessary updating that is
    * attributesManager-specific upon template removal, such as removing a
    * specific template handle from the list of file-based template handles in
-   * ObjectAttributesManager.  This should only be called internally.
+   * ObjectAttributesManager.  This should only be called @ref
+   * esp::core::ManagedContainerBase.
    *
    * @param templateID the ID of the template to remove
    * @param templateHandle the string key of the attributes desired.
    */
-  void updateObjectHandleLists(
+  void deleteObjectInternalFinalize(
       int templateID,
       CORRADE_UNUSED const std::string& templateHandle) override {
     physicsFileObjTmpltLibByID_.erase(templateID);
@@ -222,7 +231,8 @@ class ObjectAttributesManager
    * be modified by the user.
    *
    * @param attributesTemplate The attributes template.
-   * @param attributesTemplateHandle The key for referencing the template in the
+   * @param attributesTemplateHandle The key for referencing the template in
+   * the
    * @ref objectLibrary_. Will be set as origin handle for template.
    * @param forceRegistration Will register object even if conditional
    * registration checks fail.
@@ -243,17 +253,6 @@ class ObjectAttributesManager
     physicsSynthObjTmpltLibByID_.clear();
   }
 
-  /**
-   * @brief This function will assign the appropriately configured function
-   * pointer for the copy constructor as defined in
-   * AttributesManager<ObjectAttributes::ptr>
-   */
-  void buildCtorFuncPtrMaps() override {
-    this->copyConstructorMap_["ObjectAttributes"] =
-        &ObjectAttributesManager::createObjectCopy<
-            attributes::ObjectAttributes>;
-  }  // ObjectAttributesManager::buildCtorFuncPtrMaps()
-
   // ======== Typedefs and Instance Variables ========
 
   /**
@@ -266,13 +265,13 @@ class ObjectAttributesManager
    * @brief Maps loaded object template IDs to the appropriate template
    * handles
    */
-  std::map<int, std::string> physicsFileObjTmpltLibByID_;
+  std::unordered_map<int, std::string> physicsFileObjTmpltLibByID_;
 
   /**
    * @brief Maps synthesized, primitive-based object template IDs to the
    * appropriate template handles
    */
-  std::map<int, std::string> physicsSynthObjTmpltLibByID_;
+  std::unordered_map<int, std::string> physicsSynthObjTmpltLibByID_;
 
  public:
   ESP_SMART_POINTERS(ObjectAttributesManager)

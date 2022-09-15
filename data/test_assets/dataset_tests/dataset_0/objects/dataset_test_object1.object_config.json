@@ -1,0 +1,18 @@
+{
+	"render_asset": "dataset_test_object1.glb",
+	"collision_asset": "dataset_test_object1.glb",
+	"up":[0.0,1.0,0.0],
+	"front":[0.0,0.0,-1.0],
+	"scale":[1.0,1.0,1.0],
+	"margin":0.03,
+	"friction_coefficient": 0.5,
+	"rolling_friction_coefficient": 0.6,
+	"spinning_friction_coefficient": 0.7,
+	"restitution_coefficient": 0.2,
+	"units_to_meters":1.0,
+	"force_flat_shading": false,
+	"mass": 0.038,
+	"COM" : [0.0,0.0,0.0],
+	"use_bounding_box_for_collision" : false,
+	"join_collision_meshes" : true
+}

@@ -12,12 +12,16 @@ std::shared_ptr<Player> ReplayManager::readKeyframesFromFile(
     const std::string& filepath) {
   auto player = std::make_shared<Player>(playerCallback_);
   player->readKeyframesFromFile(filepath);
-  if (!player->getNumKeyframes()) {
-    LOG(ERROR) << "ReplayManager::readKeyframesFromFile: failed to load any "
-                  "keyframes from ["
-               << filepath << "]";
+  if (player->getNumKeyframes() == 0) {
+    ESP_ERROR(Mn::Debug::Flag::NoSpace)
+        << "Failed to load any keyframes from [" << filepath << "]";
     return nullptr;
   }
+  return player;
+}
+
+std::shared_ptr<Player> ReplayManager::createEmptyPlayer() {
+  auto player = std::make_shared<Player>(playerCallback_);
   return player;
 }
 

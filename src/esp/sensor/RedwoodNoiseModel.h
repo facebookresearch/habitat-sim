@@ -6,8 +6,8 @@
 #ifndef ESP_SENSOR_REDWOODNOISEMODEL_H_
 #define ESP_SENSOR_REDWOODNOISEMODEL_H_
 
-#include "esp/core/esp.h"
-#include "esp/core/random.h"
+#include "esp/core/Esp.h"
+#include "esp/core/Random.h"
 
 #include "RedwoodNoiseModel.cuh"
 
@@ -77,7 +77,7 @@ struct RedwoodNoiseModelGPUImpl {
   ~RedwoodNoiseModelGPUImpl();
 
  private:
-  const int gpuDeviceId_;
+  const int gpuDeviceId_, maxThreadsPerBlock_, warpSize_;
   const float noiseMultiplier_;
   float* devModel_ = nullptr;
   impl::CurandStates* curandStates_ = nullptr;

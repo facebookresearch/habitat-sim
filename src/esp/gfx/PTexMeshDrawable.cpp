@@ -18,7 +18,8 @@ PTexMeshDrawable::PTexMeshDrawable(scene::SceneNode& node,
                                    int submeshID,
                                    ShaderManager& shaderManager,
                                    DrawableGroup* group /* = nullptr */)
-    : Drawable{node, ptexMeshData.getRenderingBuffer(submeshID)->mesh, group},
+    : Drawable{node, &ptexMeshData.getRenderingBuffer(submeshID)->mesh,
+               DrawableType::PTexMesh, group},
       atlasTexture_(ptexMeshData.getRenderingBuffer(submeshID)->atlasTexture),
 #ifndef CORRADE_TARGET_APPLE
       adjFacesBufferTexture_(
@@ -43,6 +44,9 @@ PTexMeshDrawable::PTexMeshDrawable(scene::SceneNode& node,
 
 void PTexMeshDrawable::draw(const Magnum::Matrix4& transformationMatrix,
                             Magnum::SceneGraph::Camera3D& camera) {
+  CORRADE_ASSERT(glMeshExists(),
+                 "PTexMeshDrawable::draw() : GL mesh doesn't exist", );
+
   (*shader_)
       .setExposure(exposure_)
       .setGamma(gamma_)
@@ -59,7 +63,7 @@ void PTexMeshDrawable::draw(const Magnum::Matrix4& transformationMatrix,
       .bindAdjFacesBufferTexture(adjFacesBufferTexture_)
 #endif
       .setMVPMatrix(camera.projectionMatrix() * transformationMatrix)
-      .draw(mesh_);
+      .draw(getMesh());
 }
 
 }  // namespace gfx

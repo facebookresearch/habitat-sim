@@ -11,12 +11,12 @@
 
 #cmakedefine ESP_BUILD_PTEX_SUPPORT
 
-#cmakedefine ESP_BUILD_GLOG_SHIM
-
 #cmakedefine ESP_BUILD_WITH_CUDA
 
 #cmakedefine ESP_BUILD_WITH_BULLET
 
 #cmakedefine ESP_BUILD_WITH_VHACD
+
+#cmakedefine ESP_BUILD_WITH_BACKGROUND_RENDERER
 
 #endif //  ESP_CORE_CONFIGURE_H_
