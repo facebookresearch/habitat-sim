@@ -28,11 +28,10 @@ except ImportError:
 
 import habitat_sim.errors
 from habitat_sim.agent.agent import Agent, AgentConfiguration, AgentState
-from habitat_sim.bindings import cuda_enabled
+from habitat_sim.bindings import SceneNode, Sensor, SensorSpec, SensorType, cuda_enabled
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.metadata import MetadataMediator
 from habitat_sim.nav import GreedyGeodesicFollower, NavMeshSettings
-from habitat_sim.sensor import Sensor, SensorSpec, SensorType
 from habitat_sim.sensors.noise_models import SensorNoiseModel, make_sensor_noise_model
 from habitat_sim.sim import SimulatorBackend, SimulatorConfiguration
 from habitat_sim.utils.common import quat_from_angle_axis
@@ -308,7 +307,10 @@ class Simulator(SimulatorBackend):
         return self.__noise_models[sensor_spec.uuid]
 
     def add_sensor(
-        self, sensor_spec: SensorSpec, agent_id: Optional[int] = None
+        self,
+        sensor_spec: SensorSpec,
+        scene_node: Optional[SceneNode] = None,
+        agent_id: Optional[int] = None,
     ) -> None:
         if (
             (
@@ -335,20 +337,19 @@ class Simulator(SimulatorBackend):
 
         agent = self.get_agent(agent_id=agent_id)
         agent._add_sensor(sensor_spec)
-        uuid: str = sensor_spec.uuid
-        sensor = agent.get_sensor_in_sensor_suite(uuid)
+        sensor = agent.get_sensor_in_sensor_suite(sensor_spec.uuid)
 
         # TODO: temporary, adapt as we refactor our sensor functionality
-        self.__sensors[uuid] = sensor
+        self.__sensors[sensor_spec.uuid] = sensor
         self.init_sensor_buffer_and_image_view(sensor_spec)
 
     # TODO there are two ways of getting sensors now bc we hope to make sensors
     # independent of agents eventually, so we will remove the first way soon
-    def get_sensor(self, uuid, agent_id: Optional[int] = None) -> Sensor:
+    def get_sensor(self, sensor_uuid, agent_id: Optional[int] = None) -> Sensor:
         if agent_id is not None:
-            return self.agents[agent_id].get_sensor_in_sensor_suite(uuid)
+            return self.agents[agent_id].get_sensor_in_sensor_suite(sensor_uuid)
         else:
-            return self.__sensors.get(uuid)
+            return self.__sensors.get(sensor_uuid)
 
     # TODO: temporary while we get rid of Simulator.Sensor wrapper class
     def init_sensor_buffer_and_image_view(self, sensor_spec: SensorSpec):

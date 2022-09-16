@@ -13,7 +13,7 @@ import quaternion as qt
 
 import habitat_sim.errors
 from habitat_sim import bindings as hsim
-from habitat_sim._ext.habitat_sim_bindings import SceneNode, Sensor
+from habitat_sim.bindings import SceneNode, Sensor
 from habitat_sim.utils.common import (
     quat_from_coeffs,
     quat_from_magnum,
