@@ -109,7 +109,7 @@ std::tuple<dtStatus, dtPolyRef, vec3f> projectToPoly(
 
 namespace impl {
 // some systems lack this typedef (e.g. emscripten build)
-typedef unsigned short int ushort;
+typedef unsigned short int ushort;  // NOLINT
 
 //! (flag & flag) operator wrapper for function pointers
 inline ushort andFlag(ushort curFlags, ushort flag) {
@@ -231,7 +231,7 @@ class IslandSystem {
    * specified one. Has no effect if islandIndex == ID_UNDEFINED.
    */
   inline void setPolyFlagForIsland(dtNavMesh* navMesh,
-                                   u_short flag,
+                                   ushort flag,
                                    int islandIndex = ID_UNDEFINED,
                                    bool setFlag = true,
                                    bool invert = false) {
