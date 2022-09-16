@@ -206,7 +206,7 @@ void GfxReplayTest::testPlayer() {
 
   // Construct Player. Hook up ResourceManager::loadAndCreateRenderAssetInstance
   // to Player via callback.
-  auto callback =
+  auto assetsCallback =
       [&](const esp::assets::AssetInfo& assetInfo,
           const esp::assets::RenderAssetInstanceCreationInfo& creation) {
         std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
@@ -214,7 +214,7 @@ void GfxReplayTest::testPlayer() {
             assetInfo, creation, &sceneManager_, tempIDs);
       };
   auto dummyLightsCallback = [&](const esp::gfx::LightSetup& lights) -> void {};
-  esp::gfx::replay::Player player(callback, dummyLightsCallback);
+  esp::gfx::replay::Player player(assetsCallback, dummyLightsCallback);
 
   std::vector<esp::gfx::replay::Keyframe> keyframes;
 
@@ -239,6 +239,7 @@ void GfxReplayTest::testPlayer() {
     std::vector<std::pair<RenderAssetInstanceKey, RenderAssetInstanceState>>
         stateUpdates;
     std::unordered_map<std::string, Transform> userTransforms;
+    Cr::Containers::Optional<std::vector<LightInfo>> lights;
   };
   */
 
@@ -342,13 +343,13 @@ void GfxReplayTest::testPlayer() {
 }
 
 void GfxReplayTest::testPlayerReadMissingFile() {
-  auto dummyCallback =
+  auto dummyAssetsCallback =
       [&](const esp::assets::AssetInfo& assetInfo,
           const esp::assets::RenderAssetInstanceCreationInfo& creation) {
         return nullptr;
       };
   auto dummyLightsCallback = [&](const esp::gfx::LightSetup& lights) -> void {};
-  esp::gfx::replay::Player player(dummyCallback, dummyLightsCallback);
+  esp::gfx::replay::Player player(dummyAssetsCallback, dummyLightsCallback);
 
   player.readKeyframesFromFile("file_that_does_not_exist.json");
   CORRADE_COMPARE(player.getNumKeyframes(), 0);
@@ -363,13 +364,13 @@ void GfxReplayTest::testPlayerReadInvalidFile() {
   out << "{invalid json";
   out.close();
 
-  auto dummyCallback =
+  auto dummyAssetsCallback =
       [&](const esp::assets::AssetInfo& assetInfo,
           const esp::assets::RenderAssetInstanceCreationInfo& creation) {
         return nullptr;
       };
   auto dummyLightsCallback = [&](const esp::gfx::LightSetup& lights) -> void {};
-  esp::gfx::replay::Player player(dummyCallback, dummyLightsCallback);
+  esp::gfx::replay::Player player(dummyAssetsCallback, dummyLightsCallback);
 
   player.readKeyframesFromFile(testFilepath);
   CORRADE_COMPARE(player.getNumKeyframes(), 0);
@@ -494,16 +495,16 @@ void GfxReplayTest::testLightIntegration() {
                               LightPositionModel::Global};
   const LightInfo pointLight1{Magnum::Vector4{-10.0f, 4.25f, 10.0f, 1.0f},
                               {5.0, 5.0, 0.0},
-                              LightPositionModel::Global};
+                              LightPositionModel::Camera};
   const LightInfo pointLight2{Magnum::Vector4{0.0f, 1.2f, -4.0f, 1.0f},
                               {4.0, 4.0, 4.0},
-                              LightPositionModel::Global};
-  const LightInfo pointLight3{Magnum::Vector4{0.1f, 0.2f, -0.3f, 1.0f},
-                              {0.0, 0.0, 1.0},
-                              LightPositionModel::Global};
+                              LightPositionModel::Object};
+  const LightInfo dirLight{Magnum::Vector4{0.1f, 0.2f, -0.3f, 0.0f},
+                           {0.0, 0.0, 1.0},
+                           LightPositionModel::Global};
   const LightSetup lightSetup0{pointLight0, pointLight1};
   const LightSetup lightSetup1{pointLight2};
-  const LightSetup lightSetup2{pointLight3};
+  const LightSetup lightSetup2{dirLight};
 
   // record a playback file
   {
@@ -521,8 +522,9 @@ void GfxReplayTest::testLightIntegration() {
     recorder->saveKeyframe();
     sim->setLightSetup(lightSetup1);
     recorder->saveKeyframe();
-    recorder->saveKeyframe();
-    sim->setLightSetup(lightSetup2);
+    recorder->saveKeyframe();  // no change
+    sim->setLightSetup(lightSetup0);
+    sim->setLightSetup(lightSetup2);  // overwrite previous light setup
     recorder->saveKeyframe();
 
     recorder->writeSavedKeyframesToFile(testFilepath);
@@ -541,23 +543,29 @@ void GfxReplayTest::testLightIntegration() {
         sim->getGfxReplayManager()->readKeyframesFromFile(testFilepath);
     CORRADE_VERIFY(player);
     CORRADE_COMPARE(player->getNumKeyframes(), 4);
+    const auto& keyframes = player->debugGetKeyframes();
+    CORRADE_COMPARE(keyframes.size(), player->getNumKeyframes());
 
     CORRADE_COMPARE(sim->getLightSetup().size(), 5);  // 5 default lights
 
     player->setKeyframeIndex(0);
     CORRADE_COMPARE(sim->getLightSetup().size(), lightSetup0.size());
+    CORRADE_COMPARE(keyframes[0].lights->size(), lightSetup0.size());
     compareLightSetups(sim->getLightSetup(), lightSetup0);
 
     player->setKeyframeIndex(1);
     CORRADE_COMPARE(sim->getLightSetup().size(), lightSetup1.size());
+    CORRADE_COMPARE(keyframes[1].lights->size(), lightSetup1.size());
     compareLightSetups(sim->getLightSetup(), lightSetup1);
 
     player->setKeyframeIndex(2);
     CORRADE_COMPARE(sim->getLightSetup().size(), lightSetup1.size());
+    CORRADE_VERIFY(!keyframes[2].lights);
     compareLightSetups(sim->getLightSetup(), lightSetup1);
 
     player->setKeyframeIndex(3);
     CORRADE_COMPARE(sim->getLightSetup().size(), lightSetup2.size());
+    CORRADE_COMPARE(keyframes[3].lights->size(), lightSetup2.size());
     compareLightSetups(sim->getLightSetup(), lightSetup2);
   }
 

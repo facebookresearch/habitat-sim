@@ -626,15 +626,13 @@ void Simulator::reconfigureReplayManager(bool enableGfxReplaySave) {
   CORRADE_INTERNAL_ASSERT(resourceManager_);
   resourceManager_->setRecorder(gfxReplayMgr_->getRecorder());
 
-  // provide Player callback to replay manager
-  gfxReplayMgr_->setPlayerCallback(
+  // provide Player callbacks to replay manager
+  gfxReplayMgr_->setPlayerCallbacks(
       [this](const assets::AssetInfo& assetInfo,
              const assets::RenderAssetInstanceCreationInfo& creation)
           -> scene::SceneNode* {
         return loadAndCreateRenderAssetInstance(assetInfo, creation);
-      });
-  // provide Player light creation callback
-  gfxReplayMgr_->setPlayerLightsCallback(
+      },
       [this](const gfx::LightSetup& lights) -> void {
         this->setLightSetup(lights);
       });

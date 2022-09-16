@@ -55,7 +55,7 @@ struct Keyframe {
   std::vector<std::pair<RenderAssetInstanceKey, RenderAssetInstanceState>>
       stateUpdates;
   std::unordered_map<std::string, Transform> userTransforms;
-  std::vector<LightInfo> lights;
+  Cr::Containers::Optional<std::vector<LightInfo>> lights;
 
   ESP_SMART_POINTERS(Keyframe)
 };

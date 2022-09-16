@@ -49,9 +49,9 @@ JsonGenericValue toJsonValue(const gfx::replay::Keyframe& keyframe,
     io::addMember(obj, "userTransforms", userTransformsArray, allocator);
   }
 
-  if (!keyframe.lights.empty()) {
+  if (keyframe.lights && !keyframe.lights->empty()) {
     JsonGenericValue lightsArray(rapidjson::kArrayType);
-    for (const auto& light : keyframe.lights) {
+    for (const auto& light : *keyframe.lights) {
       JsonGenericValue lightObj(rapidjson::kObjectType);
       io::addMember(lightObj, "light", light, allocator);
       lightsArray.PushBack(lightObj, allocator);
@@ -110,11 +110,12 @@ bool fromJsonValue(const JsonGenericValue& obj,
 
   itr = obj.FindMember("lights");
   if (itr != obj.MemberEnd()) {
+    keyframe.lights = std::vector<gfx::LightInfo>();
     const JsonGenericValue& lightsArray = itr->value;
     for (const auto& lightObj : lightsArray.GetArray()) {
       gfx::LightInfo light;
       io::readMember(lightObj, "light", light);
-      keyframe.lights.emplace_back(std::move(light));
+      keyframe.lights->emplace_back(light);
     }
   }
 

@@ -97,11 +97,15 @@ void Recorder::addUserTransformToKeyframe(const std::string& name,
 }
 
 void Recorder::addLightToKeyframe(const LightInfo& lightInfo) {
-  getKeyframe().lights.emplace_back(lightInfo);
+  auto& lights = getKeyframe().lights;
+  if (!lights) {
+    lights = std::vector<LightInfo>();
+  }
+  getKeyframe().lights->emplace_back(lightInfo);
 }
 
 void Recorder::clearLightsFromKeyframe() {
-  getKeyframe().lights.clear();
+  getKeyframe().lights = Cr::Containers::NullOpt;
 }
 
 void Recorder::addLoadsCreationsDeletions(KeyframeIterator begin,
@@ -188,8 +192,6 @@ void Recorder::updateInstanceStates() {
 void Recorder::advanceKeyframe() {
   savedKeyframes_.emplace_back(std::move(currKeyframe_));
   currKeyframe_ = Keyframe{};
-  // TODO: record light deltas rather than absolute states
-  currKeyframe_.lights = savedKeyframes_.back().lights;
 }
 
 void Recorder::writeSavedKeyframesToFile(const std::string& filepath,

@@ -44,14 +44,16 @@ class Player {
       std::function<esp::scene::SceneNode*(
           const esp::assets::AssetInfo&,
           const esp::assets::RenderAssetInstanceCreationInfo&)>;
-  using SetLightsCallback = std::function<void(const gfx::LightSetup& lights)>;
+  using ChangeLightSetupCallback =
+      std::function<void(const gfx::LightSetup& lights)>;
 
   /**
    * @brief Construct a Player.
    * @param callback A function to load and create a render asset instance.
    */
-  explicit Player(const LoadAndCreateRenderAssetInstanceCallback& callback,
-                  const SetLightsCallback& lightsCallback);
+  explicit Player(const LoadAndCreateRenderAssetInstanceCallback&
+                      loadAndCreateRenderAssetInstanceCallback,
+                  const ChangeLightSetupCallback& lightSetupCallback);
 
   ~Player();
 
@@ -128,7 +130,7 @@ class Player {
 
   LoadAndCreateRenderAssetInstanceCallback
       loadAndCreateRenderAssetInstanceCallback;
-  SetLightsCallback setLightsCallback;
+  ChangeLightSetupCallback changeLightSetupCallback;
 
   int frameIndex_ = -1;
   std::vector<Keyframe> keyframes_;
