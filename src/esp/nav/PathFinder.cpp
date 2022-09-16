@@ -108,6 +108,8 @@ std::tuple<dtStatus, dtPolyRef, vec3f> projectToPoly(
 }  // namespace
 
 namespace impl {
+// some systems lack this typedef (e.g. emscripten build)
+typedef unsigned short int ushort;
 
 //! (flag & flag) operator wrapper for function pointers
 inline ushort andFlag(ushort curFlags, ushort flag) {
