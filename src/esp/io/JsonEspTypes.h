@@ -185,15 +185,11 @@ inline bool fromJsonValue(const JsonGenericValue& obj, esp::gfx::LightInfo& x) {
   return true;
 }
 
-inline JsonGenericValue toJsonValue(const esp::gfx::LightPositionModel& x,
-                                    JsonAllocator& allocator) {
-  return toJsonValue(static_cast<int>(x), allocator);
-}
+JsonGenericValue toJsonValue(const esp::gfx::LightPositionModel& x,
+                             JsonAllocator& allocator);
 
-inline bool fromJsonValue(const JsonGenericValue& obj,
-                          esp::gfx::LightPositionModel& x) {
-  return fromJsonValue(obj, (int&)x);  // TODO: unsafe cast of external data.
-}
+bool fromJsonValue(const JsonGenericValue& obj,
+                   esp::gfx::LightPositionModel& x);
 
 JsonGenericValue toJsonValue(const esp::gfx::replay::Keyframe& x,
                              JsonAllocator& allocator);
