@@ -17,6 +17,7 @@ namespace assets {
 struct MeshData;
 }
 
+//! NavMesh namespace
 namespace nav {
 
 class PathFinder;
@@ -271,11 +272,40 @@ struct NavMeshSettings {
   ESP_SMART_POINTERS(NavMeshSettings)
 };
 
+/** @brief Check equivalency of @ref NavMeshSettings objects.
+ *
+ * Checks for equivalency of (or < eps 1e-5 distance between) each parameter.
+ */
 bool operator==(const NavMeshSettings& a, const NavMeshSettings& b);
+
+/** @brief Check non-equivalency of @ref NavMeshSettings objects with
+ * nav::operator==.
+ */
 bool operator!=(const NavMeshSettings& a, const NavMeshSettings& b);
 
-/** @brief Loads and/or builds a navigation mesh and then performs path
- * finding and collision queries on that navmesh.
+/** @brief Loads and/or builds a navigation mesh and then allows point sampling,
+ * path finding, collision, and island queries on that navmesh.
+ *
+ * Also allows export of the navmesh data.
+ *
+ * Powered by integration with [Recast Navigation |
+ * Detour](https://masagroup.github.io/recastdetour/).
+ *
+ * A navigation mesh (NavMesh) is a collection of two-dimensional convex
+ * polygons (i.e., a polygon mesh) that define which areas of an environment are
+ * traversable by an agent with a particular embodiement. In other words, an
+ * agent could freely navigate around within these areas unobstructed by
+ * objects, walls, gaps, overhangs, or other barriers that are part of the
+ * environment. Adjacent polygons are connected to each other in a graph
+ * enabling efficient pathfinding algorithms to chart routes between points on
+ * the NavMesh.
+ *
+ * Using a NavMesh approximation of navigability, an agent is embodied as a
+ * rigid cylinder aligned with the gravity direction. The NavMesh is then
+ * computed by voxelizing the static scene and generating polygons on the top
+ * surfaces of solid voxels where the cylinder would sit without intersection or
+ * overhanging and respecting configured constraints such as maximum climbable
+ * slope and step-height.
  */
 class PathFinder {
  public:
@@ -321,14 +351,14 @@ class PathFinder {
   bool build(const NavMeshSettings& bs, const esp::assets::MeshData& mesh);
 
   /**
-   * @brief Returns a random navigable point
+   * @brief Returns a random navigable point.
    *
    *  @param[in] maxTries The maximum number of tries sampling will be retried
    * if it fails.
    *  @param[in] islandIndex Optionally specify the island from which to sample
    * the point. Default -1 queries the full navmesh.
    *
-   * @return A random navigable point.
+   * @return A random navigable point or NAN if none found.
    *
    * @note This method can fail.  If it does,
    * the returned point will be `{NAN, NAN, NAN}`. Use @ref
@@ -337,6 +367,23 @@ class PathFinder {
   vec3f getRandomNavigablePoint(int maxTries = 10,
                                 int islandIndex = ID_UNDEFINED);
 
+  /**
+   * @brief Returns a random navigable point within a specified radius about a
+   * given point.
+   *
+   *  @param[in] circleCenter The center of the spherical sample region.
+   *  @param[in] radius The spherical sample radius.
+   *  @param[in] maxTries The maximum number of tries sampling will be retried
+   * if it fails.
+   *  @param[in] islandIndex Optionally specify the island from which to sample
+   * the point. Default -1 queries the full navmesh.
+   *
+   * @return A random navigable point or NAN if none found.
+   *
+   * @note This method can fail.  If it does,
+   * the returned point will be `{NAN, NAN, NAN}`. Use @ref
+   * isNavigable to check if the point is navigable.
+   */
   vec3f getRandomNavigablePointAroundSphere(const vec3f& circleCenter,
                                             float radius,
                                             int maxTries = 10,
@@ -345,18 +392,24 @@ class PathFinder {
   /**
    * @brief Finds the shortest path between two points on the navigation mesh
    *
+   * For this method to succeed, both end points must exist on the same navmesh
+   * island.
+   *
    * @param[inout] path The @ref ShortestPath structure contain the starting and
    * end point. This method will populate the @ref ShortestPath.points and @ref
    * ShortestPath.geodesicDistance fields.
    *
    * @return Whether or not a path exists between @ref
-   * ShortestPath.requestedStart and @ref ShortestPath.requestedEnd
+   * ShortestPath.requestedStart and @ref ShortestPath.requestedEnd.
    */
   bool findPath(ShortestPath& path);
 
   /**
    * @brief Finds the shortest path from a start point to the closest (by
    * geoddesic distance) end point.
+   *
+   * For this method to succeed, start point and one end point must exist on the
+   * same navmesh island.
    *
    * @param[inout] path The @ref MultiGoalShortestPath structure contain the
    * start point and list of possible end points. This method will populate the
@@ -365,7 +418,7 @@ class PathFinder {
    *
    * @return Whether or not a path exists between @ref
    * MultiGoalShortestPath.requestedStart and any @ref
-   * MultiGoalShortestPath.requestedEnds
+   * MultiGoalShortestPath.requestedEnds.
    */
   bool findPath(MultiGoalShortestPath& path);
 
@@ -377,7 +430,7 @@ class PathFinder {
    * @param[in] start The starting location
    * @param[out] end The desired end location
    *
-   * @return The found end location
+   * @return The found end location.
    */
   template <typename T>
   T tryStep(const T& start, const T& end);
@@ -389,7 +442,7 @@ class PathFinder {
   T tryStepNoSliding(const T& start, const T& end);
 
   /**
-   * @brief Snaps a point to the navigation mesh
+   * @brief Snaps a point to the navigation mesh.
    *
    * @param[in] pt The point to snap to the navigation mesh
    * @param[in] islandIndex Optionally specify the island from which to sample
@@ -404,8 +457,16 @@ class PathFinder {
   /**
    * @brief Identifies the island closest to a point.
    *
-   * @param[in] pt The point to check against the navigation mesh island system
-
+   * Snaps the point to the navmesh and then queries the island at the snap
+   * point.
+   *
+   * When the input point is not assumed to be on the NavMesh, it is possible
+   * that the snapped point is quite far from the query point. In this case,
+   * also consider checking @ref isNavigable or check distance to the snap point
+   * to validate.
+   *
+   * @param[in] pt The point to check against the navigation mesh island system.
+   *
    * @return The island for the point or ID_UNDEFINED (-1) if failed.
    */
   template <typename T>
@@ -413,6 +474,8 @@ class PathFinder {
 
   /**
    * @brief Loads a navigation meshed saved by @ref saveNavMesh
+   *
+   * Also imports serialized @ref NavMeshSettings if available.
    *
    * @param[in] path The saved navigation mesh file, generally has extension
    * ``.navmesh``
@@ -424,6 +487,8 @@ class PathFinder {
   /**
    * @brief Saves a navigation mesh to later be loaded by @ref loadNavMesh
    *
+   * Also serializes @ref NavMeshSettings into the file.
+   *
    * @param[in] path The name of the file, generally has extension ``.navmesh``
    *
    * @return Whether or not the navmesh was successfully saved
@@ -431,7 +496,7 @@ class PathFinder {
   bool saveNavMesh(const std::string& path);
 
   /**
-   * @return If a navigation mesh is current loaded or not
+   * @return If a valid navigation mesh is currently loaded or not.
    */
   bool isLoaded() const;
 
@@ -445,11 +510,16 @@ class PathFinder {
   void seed(uint32_t newSeed);
 
   /**
-   * @brief returns the size of the connected component @ ref pt belongs to.
+   * @brief returns a heuristic for the size of the connected component that
+   * @ref pt belongs to.
    *
-   * @param[in] pt The point to specify the connected component
+   * The point will be snapped to the NavMesh and the resulting island radius
+   * returned.
    *
-   * @return Size of the connected component
+   * @param[in] pt The point which specifies the connected component in
+   * question.
+   *
+   * @return Heuristic size of the connected component.
    */
   float islandRadius(const vec3f& pt) const;
 
@@ -506,6 +576,8 @@ class PathFinder {
   /**
    * Compute and return the total area of all NavMesh polygons.
    *
+   * Values are pre-computed and cached for constant time access.
+   *
    * @param[in] islandIndex Optionally limit results to a specific island.
    * Default -1 queries all islands.
    */
@@ -516,13 +588,31 @@ class PathFinder {
    */
   std::pair<vec3f, vec3f> bounds() const;
 
+  /**
+   * @brief Get a 2D grid marking navigable and non-navigable cells at a
+   * specified hieght and resolution.
+   *
+   * The size of the grid depends on the navmesh bounds and selected resolution.
+   *
+   * Can be further processed by Habitat-lab utilities. See
+   * examples/tutorials/colabs/ECCV_Navigation.py for details.
+   *
+   * @param metersPerPixel size of the discrete grid cells. Controls grid
+   * resolution.
+   * @param height The vertical height of the 2D slice. Allows 0.5 meter Y
+   * offsets from this value.
+   *
+   * @return The 2D grid marking cells as navigable or not.
+   */
   Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> getTopDownView(
       float metersPerPixel,
       float height);
 
   /**
-   * @brief Returns a MeshData object containing triangulated NavMesh polys. The
-   * object is generated and stored if this is the first query.
+   * @brief Returns a MeshData object containing triangulated NavMesh polys.
+   *
+   * Theobject is generated and stored if this is the first query for constant
+   * time access in subsequent calls.
    *
    * Does nothing if the PathFinder is not loaded.
    *
