@@ -30,7 +30,7 @@ class HabitatSimInteractiveViewer(Application):
     # the maximum number of chars displayable in the app window
     # using the magnum text module. These chars are used to
     # display the CPU/GPU usage data
-    MAX_DISPLAY_TEXT_CHARS = 512
+    MAX_DISPLAY_TEXT_CHARS = 256
 
     # how much to displace window text relative to the center of the
     # app window (e.g if you want the display text in the top left of
@@ -96,8 +96,8 @@ class HabitatSimInteractiveViewer(Application):
         # Load a TrueTypeFont plugin and open the font file
         self.display_font = text.FontManager().load_and_instantiate("TrueTypeFont")
         self.display_font.open_file(
-            os.path.join(os.path.dirname(__file__), sim_settings["display_text_font"]),
-            180.0,
+            os.path.join(os.path.dirname(__file__), "ProggyClean.ttf"),
+            180,
         )
 
         # Glyphs we need to render everything
@@ -109,11 +109,20 @@ class HabitatSimInteractiveViewer(Application):
             "0123456789:-_+,.! %µ",
         )
 
+        font_size = (
+            16.0 * (self.framebuffer_size * self.dpi_scaling / self.window_size).x
+        )
         # magnum text object that displays CPU/GPU usage data in the app window
+        # self.window_text = text.Renderer2D(
+        #     self.display_font,
+        #     self.glyph_cache,
+        #     HabitatSimInteractiveViewer.DISPLAY_FONT_SIZE,
+        #     text.Alignment.TOP_LEFT,
+        # )
         self.window_text = text.Renderer2D(
             self.display_font,
             self.glyph_cache,
-            HabitatSimInteractiveViewer.DISPLAY_FONT_SIZE,
+            font_size,
             text.Alignment.TOP_LEFT,
         )
         self.window_text.reserve(HabitatSimInteractiveViewer.MAX_DISPLAY_TEXT_CHARS)
@@ -1034,12 +1043,6 @@ if __name__ == "__main__":
         action="store_true",
         help="Override configured lighting to use synthetic lighting for the stage.",
     )
-    parser.add_argument(
-        "--display_text_font",
-        default="Cousine-Regular.ttf",
-        type=str,
-        help='display text font to load (default: "Cousine-Regular.ttf")',
-    )
 
     args = parser.parse_args()
 
@@ -1049,7 +1052,6 @@ if __name__ == "__main__":
     sim_settings["scene_dataset_config_file"] = args.dataset
     sim_settings["enable_physics"] = not args.disable_physics
     sim_settings["stage_requires_lighting"] = args.stage_requires_lighting
-    sim_settings["display_text_font"] = args.display_text_font
 
     # start the application
     HabitatSimInteractiveViewer(sim_settings).exec()
