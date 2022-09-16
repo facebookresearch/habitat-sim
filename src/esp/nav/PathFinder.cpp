@@ -195,7 +195,7 @@ class IslandSystem {
     return islandRadius_[islandIndex];
   }
 
-  inline float islandRadius(dtPolyRef ref) const {
+  inline float polyIslandRadius(dtPolyRef ref) const {
     auto itRef = polyToIsland_.find(ref);
     if (itRef == polyToIsland_.end())
       return 0.0;
@@ -255,7 +255,7 @@ class IslandSystem {
     }
 
     // Pull this check and adjustment logic outside of the main loop
-    ushort (*op)(ushort, ushort);
+    ushort (*op)(ushort, ushort) = nullptr;
     op = setFlag ? orFlag : andFlag;
     ushort modFlag = setFlag ? flag : ~flag;
 
@@ -264,7 +264,7 @@ class IslandSystem {
       // for each poly
       for (auto& polyRef : islandsToPolys_[island]) {
         // get current flags
-        unsigned short f = 0;
+        ushort f = 0;
         navMesh->getPolyFlags(polyRef, &f);
         // set the modified flags
         navMesh->setPolyFlags(polyRef, op(f, modFlag));
@@ -1142,7 +1142,7 @@ vec3f PathFinder::Impl::getRandomNavigablePoint(
     // reset the poly flag identifing polys off the target island
     islandSystem_->setPolyFlagForIsland(
         navMesh_.get(), PolyFlags::POLYFLAGS_OFF_ISLAND, islandIndex,
-        /*setFlag=*/false, /*inver=*/true);
+        /*setFlag=*/false, /*invert=*/true);
     filter_->setExcludeFlags(filter_->getExcludeFlags() &
                              ~PolyFlags::POLYFLAGS_OFF_ISLAND);
   }
@@ -1202,7 +1202,7 @@ vec3f PathFinder::Impl::getRandomNavigablePointAroundSphere(
     // reset the poly flag identifing polys off the target island
     islandSystem_->setPolyFlagForIsland(
         navMesh_.get(), PolyFlags::POLYFLAGS_OFF_ISLAND, islandIndex,
-        /*setFlag=*/false, /*inver=*/true);
+        /*setFlag=*/false, /*invert=*/true);
     filter_->setExcludeFlags(filter_->getExcludeFlags() &
                              ~PolyFlags::POLYFLAGS_OFF_ISLAND);
   }
@@ -1480,7 +1480,7 @@ T PathFinder::Impl::snapPoint(const T& pt, int islandIndex /*=ID_UNDEFINED*/) {
     // reset the poly flag identifing polys off the target island
     islandSystem_->setPolyFlagForIsland(
         navMesh_.get(), PolyFlags::POLYFLAGS_OFF_ISLAND, islandIndex,
-        /*setFlag=*/false, /*inver=*/true);
+        /*setFlag=*/false, /*invert=*/true);
     filter_->setExcludeFlags(filter_->getExcludeFlags() &
                              ~PolyFlags::POLYFLAGS_OFF_ISLAND);
   }
@@ -1495,14 +1495,14 @@ template <typename T>
 int PathFinder::Impl::getIsland(const T& pt) {
   dtStatus status = 0;
   vec3f projectedPt;
-  dtPolyRef polyRef;
+  dtPolyRef polyRef = 0;
   std::tie(status, polyRef, projectedPt) =
       projectToPoly(pt, navQuery_.get(), filter_.get());
 
   if (dtStatusSucceed(status)) {
     return islandSystem_->getPolyIsland(polyRef);
   }
-  return {ID_UNDEFINED};
+  return ID_UNDEFINED;
 }
 
 float PathFinder::Impl::islandRadius(int islandIndex) const {
@@ -1517,7 +1517,7 @@ float PathFinder::Impl::islandRadius(const vec3f& pt) const {
   if (status != DT_SUCCESS || ptRef == 0) {
     return 0.0;
   }
-  return islandSystem_->islandRadius(ptRef);
+  return islandSystem_->polyIslandRadius(ptRef);
 }
 
 float PathFinder::Impl::distanceToClosestObstacle(
