@@ -112,10 +112,10 @@ void initShortestPathBindings(py::module& m) {
            R"(Returns the topdown view of the PathFinder's navmesh.)",
            "meters_per_pixel"_a, "height"_a)
       .def("get_random_navigable_point", &PathFinder::getRandomNavigablePoint,
-           "max_tries"_a = 10)
+           "max_tries"_a = 10, "island_index"_a = ID_UNDEFINED)
       .def("get_random_navigable_point_near",
            &PathFinder::getRandomNavigablePointAroundSphere, "circle_center"_a,
-           "radius"_a, "max_tries"_a = 100)
+           "radius"_a, "max_tries"_a = 100, "island_index"_a = ID_UNDEFINED)
       .def("find_path", py::overload_cast<ShortestPath&>(&PathFinder::findPath),
            "path"_a)
       .def("find_path",
@@ -128,15 +128,43 @@ void initShortestPathBindings(py::module& m) {
            &PathFinder::tryStepNoSliding<Magnum::Vector3>, "start"_a, "end"_a)
       .def("try_step_no_sliding", &PathFinder::tryStepNoSliding<vec3f>,
            "start"_a, "end"_a)
-      .def("snap_point", &PathFinder::snapPoint<Magnum::Vector3>)
-      .def("snap_point", &PathFinder::snapPoint<vec3f>)
-      .def("island_radius", &PathFinder::islandRadius, "pt"_a)
+      .def("snap_point", &PathFinder::snapPoint<Magnum::Vector3>, "point"_a,
+           "island_index"_a = ID_UNDEFINED)
+      .def("snap_point", &PathFinder::snapPoint<vec3f>, "point"_a,
+           "island_index"_a = ID_UNDEFINED)
+      .def("get_island", &PathFinder::getIsland<Magnum::Vector3>, "point"_a)
+      .def("get_island", &PathFinder::getIsland<vec3f>, "point"_a)
+      .def(
+          "island_radius",
+          [](PathFinder& self, const vec3f& pt) {
+            return self.islandRadius(pt);
+          },
+          "pt"_a)
+      .def(
+          "island_radius",
+          [](PathFinder& self, int islandIndex) {
+            return self.islandRadius(islandIndex);
+          },
+          "island_index"_a)
+      .def_property_readonly("num_islands", &PathFinder::numIslands)
       .def_property_readonly("is_loaded", &PathFinder::isLoaded)
-      .def_property_readonly("navigable_area", &PathFinder::getNavigableArea)
-      .def("build_navmesh_vertices",
-           [](PathFinder& self) { return self.getNavMeshData()->vbo; })
-      .def("build_navmesh_vertex_indices",
-           [](PathFinder& self) { return self.getNavMeshData()->ibo; })
+      .def_property_readonly(
+          "navigable_area",
+          [](PathFinder& self) { return self.getNavigableArea(ID_UNDEFINED); })
+      .def("island_area", &PathFinder::getNavigableArea,
+           "island_index"_a = ID_UNDEFINED)
+      .def(
+          "build_navmesh_vertices",
+          [](PathFinder& self, int islandIndex) {
+            return self.getNavMeshData(islandIndex)->vbo;
+          },
+          "island_index"_a = ID_UNDEFINED)
+      .def(
+          "build_navmesh_vertex_indices",
+          [](PathFinder& self, int islandIndex) {
+            return self.getNavMeshData(islandIndex)->ibo;
+          },
+          "island_index"_a = ID_UNDEFINED)
       .def("load_nav_mesh", &PathFinder::loadNavMesh, "path"_a)
       .def("save_nav_mesh", &PathFinder::saveNavMesh, "path"_a)
       .def("distance_to_closest_obstacle",
@@ -153,7 +181,7 @@ void initShortestPathBindings(py::module& m) {
            "pt"_a, "max_y_delta"_a = 0.5)
       .def_property_readonly("nav_mesh_settings",
                              &PathFinder::getNavMeshSettings,
-                             R"(The settings for the current nav mesh)");
+                             R"(The  settings for the current nav mesh)");
 
   // this enum is used by GreedyGeodesicFollowerImpl so it needs to be defined
   // before it

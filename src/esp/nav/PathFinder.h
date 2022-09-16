@@ -21,9 +21,16 @@ namespace nav {
 
 class PathFinder;
 
+/**
+ * @brief Struct for recording closest obstacle information.
+ */
 struct HitRecord {
+  //! World position of the closest obstacle.
   vec3f hitPos;
+  //! Normal of the navmesh at the obstacle in xz plane.
   vec3f hitNormal;
+  //! Distance from query point to closest obstacle. Inf if no valid point was
+  //! found.
   float hitDist{};
 };
 
@@ -101,9 +108,14 @@ struct MultiGoalShortestPath {
   ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(MultiGoalShortestPath)
 };
 
-//! Configuration structure for NavMesh generation with recast. See
-//! http://digestingduck.blogspot.com/2009/08/recast-settings-uncovered.html for
-//! more details on configuring these parameters for your use case.
+//! Configuration structure for NavMesh generation with recast.
+/**
+ * @brief Configuration structure for NavMesh generation with recast.
+ *
+ * See examples/tutorials/colabs/ECCV_2020_Navigation.py and
+ * http://digestingduck.blogspot.com/2009/08/recast-settings-uncovered.html for
+ * more details on configuring these parameters for your use case.
+ */
 struct NavMeshSettings {
   //! XZ-plane cell size in world units. Size of square voxel sides in XZ.
   float cellSize{};
@@ -191,9 +203,8 @@ struct NavMeshSettings {
 bool operator==(const NavMeshSettings& a, const NavMeshSettings& b);
 bool operator!=(const NavMeshSettings& a, const NavMeshSettings& b);
 
-/** Loads and/or builds a navigation mesh and then performs path
- * finding and collision queries on that navmesh
- *
+/** @brief Loads and/or builds a navigation mesh and then performs path
+ * finding and collision queries on that navmesh.
  */
 class PathFinder {
  public:
@@ -203,6 +214,22 @@ class PathFinder {
   PathFinder();
   ~PathFinder() = default;
 
+  /**
+   * @brief Construct a NavMesh from @ref NavMeshSettings and mesh data
+   * pointers.
+   *
+   * @param bs Parameter settings for NavMesh construction.
+   * @param verts Vertex array of the mesh.
+   * @param nverts Number of verts in the array.
+   * @param tris Index array of the mesh triangles.
+   * @param ntris Number of triangle indices in the array.
+   * @param bmin Navigable region bounding box min corner. Could be mesh bb or
+   * user defined override for subset of the mesh.
+   * @param bmax Navigable region bounding box max corner. Could be mesh bb or
+   * user defined override for subset of the mesh.
+   *
+   * @return Whether or not construction was successful.
+   */
   bool build(const NavMeshSettings& bs,
              const float* verts,
              int nverts,
@@ -210,13 +237,25 @@ class PathFinder {
              int ntris,
              const float* bmin,
              const float* bmax);
+
+  /**
+   * @brief Construct a NavMesh from @ref NavMeshSettings and a @ref MeshData
+   * object.
+   *
+   * @param bs Parameter settings for NavMesh construction.
+   * @param mesh A joined mesh for which to compute a navmesh.
+   *
+   * @return Whether or not construction was successful.
+   */
   bool build(const NavMeshSettings& bs, const esp::assets::MeshData& mesh);
 
   /**
    * @brief Returns a random navigable point
    *
-   * @param[in] maxTries The maximum number of tries sampling will be retried if
-   * it fails.
+   *  @param[in] maxTries The maximum number of tries sampling will be retried
+   * if it fails.
+   *  @param[in] islandIndex Optionally specify the island from which to sample
+   * the point. Default -1 queries the full navmesh.
    *
    * @return A random navigable point.
    *
@@ -224,11 +263,13 @@ class PathFinder {
    * the returned point will be `{NAN, NAN, NAN}`. Use @ref
    * isNavigable to check if the point is navigable.
    */
-  vec3f getRandomNavigablePoint(int maxTries = 10);
+  vec3f getRandomNavigablePoint(int maxTries = 10,
+                                int islandIndex = ID_UNDEFINED);
 
   vec3f getRandomNavigablePointAroundSphere(const vec3f& circleCenter,
                                             float radius,
-                                            int maxTries = 10);
+                                            int maxTries = 10,
+                                            int islandIndex = ID_UNDEFINED);
 
   /**
    * @brief Finds the shortest path between two points on the navigation mesh
@@ -280,12 +321,24 @@ class PathFinder {
    * @brief Snaps a point to the navigation mesh
    *
    * @param[in] pt The point to snap to the navigation mesh
+   * @param[in] islandIndex Optionally specify the island from which to sample
+   * the point. Default -1 queries the full navmesh.
    *
    * @return The closest navigation point to @ref pt.  Will be `{NAN, NAN, NAN}`
    * if no navigable point was within a reasonable distance
    */
   template <typename T>
-  T snapPoint(const T& pt);
+  T snapPoint(const T& pt, int islandIndex = ID_UNDEFINED);
+
+  /**
+   * @brief Identifies the island closest to a point.
+   *
+   * @param[in] pt The point to check against the navigation mesh island system
+
+   * @return The island for the point or ID_UNDEFINED (-1) if failed.
+   */
+  template <typename T>
+  int getIsland(const T& pt);
 
   /**
    * @brief Loads a navigation meshed saved by @ref saveNavMesh
@@ -330,6 +383,22 @@ class PathFinder {
   float islandRadius(const vec3f& pt) const;
 
   /**
+   * @brief returns the size of the specified connected component.
+   *
+   * @param[in] islandIndex The index of the specified connected component
+   *
+   * @return Size of the connected component
+   */
+  float islandRadius(int islandIndex) const;
+
+  /**
+   * @brief returns the number of connected components making up the navmesh.
+   *
+   * @return Number of the connected components
+   */
+  int numIslands() const;
+
+  /**
    * @brief Finds the distance to the closest non-navigable location
    *
    * @param[in] pt The point to begin searching from
@@ -364,9 +433,12 @@ class PathFinder {
   bool isNavigable(const vec3f& pt, float maxYDelta = 0.5) const;
 
   /**
-   * Compute and return the total area of all NavMesh polygons
+   * Compute and return the total area of all NavMesh polygons.
+   *
+   * @param[in] islandIndex Optionally limit results to a specific island.
+   * Default -1 queries all islands.
    */
-  float getNavigableArea() const;
+  float getNavigableArea(int islandIndex = ID_UNDEFINED) const;
 
   /**
    * @return The axis aligned bounding box containing the navigation mesh.
@@ -383,9 +455,13 @@ class PathFinder {
    *
    * Does nothing if the PathFinder is not loaded.
    *
+   * @param[in] islandIndex Optionally limit results to a specific island.
+   * Default -1 queries all islands.
+   *
    * @return The object containing triangulated NavMesh polys.
    */
-  std::shared_ptr<assets::MeshData> getNavMeshData();
+  std::shared_ptr<assets::MeshData> getNavMeshData(
+      int islandIndex = ID_UNDEFINED);
 
   /**
    * @brief Return the settings for the current NavMesh.
