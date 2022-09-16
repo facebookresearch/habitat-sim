@@ -188,9 +188,13 @@ class HabitatSimInteractiveViewer(Application):
 
         keys = active_agent_id_and_sensor_name
 
-        self.sim._Simulator__sensors[keys[0]][keys[1]].draw_observation()
+        # TODO make sure we no longer call .draw_observation() on a sensor
+        # self.sim._Simulator__sensors[keys[0]][keys[1]].draw_observation()
         agent = self.sim.get_agent(keys[0])
-        self.render_camera = agent.scene_node.node_sensor_suite.get(keys[1])
+        # TODO see if we can make it easier to get sensors from agent and scene graph
+        # self.render_camera = agent.scene_node.node_sensor_suite.get(keys[1])
+        self.render_camera = agent.get_sensor_in_sensor_suite(keys[1])
+        self.sim.draw_observation(self.render_camera)
         self.debug_draw()
         self.render_camera.render_target.blit_rgba_to_default()
         mn.gl.default_framebuffer.bind()

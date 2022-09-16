@@ -13,7 +13,7 @@ import quaternion as qt
 
 import habitat_sim.errors
 from habitat_sim import bindings as hsim
-from habitat_sim._ext.habitat_sim_bindings import SceneNode
+from habitat_sim._ext.habitat_sim_bindings import SceneNode, Sensor
 from habitat_sim.utils.common import (
     quat_from_coeffs,
     quat_from_magnum,
@@ -164,6 +164,14 @@ class Agent:
             assert spec not in self.agent_config.sensor_specifications
             self.agent_config.sensor_specifications.append(spec)
         hsim.SensorFactory.create_sensors(self.scene_node, [spec])
+
+    def get_sensor_in_sensor_suite(self, uuid: str) -> Sensor:
+        habitat_sim.errors.assert_obj_valid(self.body)
+        return self.body.object.node_sensor_suite.get(uuid)
+
+    def get_sensor_in_subtree(self, uuid: str) -> Sensor:
+        habitat_sim.errors.assert_obj_valid(self.body)
+        return self.body.object.subtree_sensor_suite.get(uuid)
 
     def act(self, action_id: Any) -> bool:
         r"""Take the action specified by action_id

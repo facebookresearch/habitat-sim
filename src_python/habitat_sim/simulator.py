@@ -26,7 +26,7 @@ try:
 except ImportError:
     _HAS_TORCH = False
 
-
+import habitat_sim.errors
 from habitat_sim.agent.agent import Agent, AgentConfiguration, AgentState
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.metadata import MetadataMediator
@@ -36,8 +36,10 @@ from habitat_sim.sensors.noise_models import SensorNoiseModel, make_sensor_noise
 from habitat_sim.sim import SimulatorBackend, SimulatorConfiguration
 from habitat_sim.utils.common import quat_from_angle_axis
 
-# TODO maybe clean up types with TypeVars
-ObservationDict = Dict[str, Union[bool, np.ndarray, "Tensor"]]
+# A sensor observation
+SensorObservation = Union[bool, ndarray, "Tensor"]
+# A dictionary of sensor observations
+ObservationDict = Dict[str, SensorObservation]
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -165,7 +167,7 @@ class Simulator(SimulatorBackend):
 
     def reset(
         self, agent_ids: Union[Optional[int], List[int]] = None
-    ) -> Union[ObservationDict, Dict[int, ObservationDict],]:
+    ) -> Union[ObservationDict, Dict[int, ObservationDict]]:
         super().reset()
         for i in range(len(self.agents)):
             self.reset_agent(i)
@@ -342,28 +344,6 @@ class Simulator(SimulatorBackend):
         self.__last_state[agent_id] = agent.state
         return agent
 
-    def start_async_render_and_step_physics(
-        self, dt: float, agent_ids: Union[int, List[int]] = 0
-    ):
-        if self._async_draw_agent_ids is not None:
-            raise RuntimeError(
-                "start_async_render_and_step_physics was already called.  "
-                "Call get_sensor_observations_async_finish before calling this again.  "
-                "Use step_physics to step physics additional times."
-            )
-
-        self._async_draw_agent_ids = agent_ids
-        if isinstance(agent_ids, int):
-            agent_ids = [agent_ids]
-
-        for agent_id in agent_ids:
-            agent_sensorsuite = self.__sensors[agent_id]
-            for _sensor_uuid, sensor in agent_sensorsuite.items():
-                sensor._draw_observation_async()
-
-        self.renderer.start_draw_jobs()
-        self.step_physics(dt)
-
     def start_async_render(self, agent_ids: Union[int, List[int]] = 0):
         if self._async_draw_agent_ids is not None:
             raise RuntimeError(
@@ -377,18 +357,21 @@ class Simulator(SimulatorBackend):
             agent_ids = [agent_ids]
 
         for agent_id in agent_ids:
-            agent_sensorsuite = self.__sensors[agent_id]
+            agent_sensorsuite = self.get_agent(agent_id).scene_node.node_sensor_suite
             for _sensor_uuid, sensor in agent_sensorsuite.items():
                 sensor._draw_observation_async()
 
         self.renderer.start_draw_jobs()
 
+    def start_async_render_and_step_physics(
+        self, dt: float, agent_ids: Union[int, List[int]] = 0
+    ):
+        self.start_async_render(agent_ids)
+        self.step_physics(dt)
+
     def get_sensor_observations_async_finish(
         self,
-    ) -> Union[
-        Dict[str, Union[ndarray, "Tensor"]],
-        Dict[int, Dict[str, Union[ndarray, "Tensor"]]],
-    ]:
+    ) -> Union[ObservationDict, Dict[int, ObservationDict]]:
         if self._async_draw_agent_ids is None:
             raise RuntimeError(
                 "get_sensor_observations_async_finish was called before calling start_async_render_and_step_physics."
@@ -404,16 +387,20 @@ class Simulator(SimulatorBackend):
 
         self.renderer.wait_draw_jobs()
         # As backport. All Dicts are ordered in Python >= 3.7
-        observations: Dict[int, Dict[str, Union[ndarray, "Tensor"]]] = OrderedDict()
+        all_agents_observations: Dict[int, ObservationDict] = OrderedDict()
         for agent_id in agent_ids:
-            agent_observations: Dict[str, Union[ndarray, "Tensor"]] = {}
-            for sensor_uuid, sensor in self.__sensors[agent_id].items():
-                agent_observations[sensor_uuid] = sensor._get_observation_async()
+            agent_observations: ObservationDict = {}
+            for sensor_uuid, sensor in self.get_agent(
+                agent_id
+            ).scene_node.node_sensor_suite:
+                agent_observations[sensor_uuid] = self._get_observation_async(
+                    sensor, agent_id
+                )
 
-            observations[agent_id] = agent_observations
+            all_agents_observations[agent_id] = agent_observations
         if return_single:
-            return next(iter(observations.values()))
-        return observations
+            return next(iter(all_agents_observations.values()))
+        return all_agents_observations
 
     @overload
     def get_sensor_observations(self, agent_ids: int = 0) -> ObservationDict:
@@ -427,29 +414,25 @@ class Simulator(SimulatorBackend):
 
     def get_sensor_observations(
         self, agent_ids: Union[int, List[int]] = 0
-    ) -> Union[ObservationDict, Dict[int, ObservationDict],]:
+    ) -> Union[ObservationDict, Dict[int, ObservationDict]]:
         if isinstance(agent_ids, int):
             agent_ids = [agent_ids]
             return_single = True
         else:
             return_single = False
 
-        for agent_id in agent_ids:
-            agent_sensors = self.get_agent(agent_id).scene_node.subtree_sensors
-            for _, sensor in agent_sensors.items():
-                sensor.draw_observation(self)
-
         # As backport. All Dicts are ordered in Python >= 3.7
-        observations: Dict[int, ObservationDict] = OrderedDict()
+        all_agents_observations: Dict[int, ObservationDict] = OrderedDict()
         for agent_id in agent_ids:
-            agent_sensors = self.get_agent(agent_id).scene_node.subtree_sensors
+            agent_sensors = self.get_agent(agent_id).scene_node.node_sensor_suite
             agent_observations: ObservationDict = {}
             for sensor_uuid, sensor in agent_sensors.items():
                 agent_observations[sensor_uuid] = self.get_observation(sensor)
-            observations[agent_id] = agent_observations
+                self.draw_observation(sensor)
+            all_agents_observations[agent_id] = agent_observations
         if return_single:
-            return next(iter(observations.values()))
-        return observations
+            return next(iter(all_agents_observations.values()))
+        return all_agents_observations
 
     @property
     def _default_agent(self) -> Agent:
@@ -557,7 +540,10 @@ class Simulator(SimulatorBackend):
     def step_physics(self, dt: float, scene_id: int = 0) -> None:
         self.step_world(dt)
 
-    def get_observation(self, sensor: Sensor) -> Union[ndarray, "Tensor"]:
+    def get_observation(self, sensor: Sensor) -> SensorObservation:
+        if sensor.specification().sensor_type == SensorType.AUDIO:
+            return self._get_audio_observation(sensor)
+
         if not sensor.has_render_target():
             self.renderer.bind_render_target(sensor)
         tgt = sensor.render_target
@@ -570,7 +556,7 @@ class Simulator(SimulatorBackend):
                     tgt.read_frame_object_id_gpu(obs_buffer.data_ptr())  # type: ignore[attr-defined]
                 elif sensor.specification().sensor_type == SensorType.DEPTH:
                     tgt.read_frame_depth_gpu(obs_buffer.data_ptr())  # type: ignore[attr-defined]
-                else:
+                elif sensor.specification().sensor_type == SensorType.COLOR:
                     tgt.read_frame_rgba_gpu(obs_buffer.data_ptr())  # type: ignore[attr-defined]
 
                 obs = obs_buffer.flip(0)
@@ -593,7 +579,7 @@ class Simulator(SimulatorBackend):
                         obs_buffer,
                     )
                 )
-            else:
+            elif sensor.specification().sensor_type == SensorType.COLOR:
                 tgt.read_frame_rgba(
                     mn.MutableImageView2D(
                         mn.PixelFormat.RGBA8_UNORM,
@@ -606,9 +592,11 @@ class Simulator(SimulatorBackend):
 
         return noise_model(obs)
 
-    def _get_observation_async(self) -> Union[ndarray, "Tensor"]:
+    def _get_observation_async(
+        self, sensor: Sensor, agent_id: Optional[int] = None
+    ) -> SensorObservation:
         if self._spec.sensor_type == SensorType.AUDIO:
-            return self._get_audio_observation()
+            return self._get_audio_observation(sensor, agent_id)
 
         if self._spec.gpu2gpu_transfer:
             obs = self._buffer.flip(0)  # type: ignore[union-attr]
@@ -617,18 +605,94 @@ class Simulator(SimulatorBackend):
 
         return self._noise_model(obs)
 
-    def _get_audio_observation(self) -> Union[ndarray, "Tensor"]:
-        assert self._spec.sensor_type == SensorType.AUDIO
-        audio_sensor = self._agent._sensors["audio_sensor"]
-        # tell the audio sensor about the agent location
-        rot = self._agent.state.rotation
+    def _get_audio_observation(
+        self, sensor: Sensor, agent_id: Optional[int] = None
+    ) -> SensorObservation:
 
-        audio_sensor.setAudioListenerTransform(
-            audio_sensor.node.absolute_translation,  # set the listener position
+        assert sensor.specification().sensor_type == SensorType.AUDIO
+
+        # tell the audio sensor about the agent location (if any)
+        agent = self.get_agent(agent_id)
+        if agent is not None:
+            rot = agent.state.rotation
+        else:
+            rot = quat_from_angle_axis(0, np.array([1, 0, 0]))
+
+        sensor.setAudioListenerTransform(
+            sensor.node.absolute_translation,  # set the listener position
             np.array([rot.w, rot.x, rot.y, rot.z]),  # set the listener orientation
         )
 
         # run the simulation
-        audio_sensor.runSimulation(self._sim)
-        obs = audio_sensor.getIR()
+        sensor.runSimulation(self)
+        obs = sensor.getIR()
         return obs
+
+    def draw_observation(self, sensor: Sensor) -> None:
+        if sensor.specification().sensor_type == SensorType.AUDIO:
+            # do nothing in draw observation, get_observation will be called after this
+            # run the simulation there
+            return
+        else:
+            assert self.renderer is not None
+            # see if the sensor is attached to a scene graph, otherwise it is invalid,
+            # and cannot make any observation
+            if sensor.node is None:
+                raise habitat_sim.errors.InvalidAttachedObject(
+                    "Sensor observation requested but sensor is invalid.\
+                    (has it been detached from a scene node?)"
+                )
+            self.renderer.draw(sensor, self.get_active_scene_graph())
+
+    def _draw_observation_async(self, sensor: Sensor) -> None:
+        if sensor.specification().sensor_type == SensorType.AUDIO:
+            # do nothing in draw observation, get_observation will be called after this
+            # run the simulation there
+            return
+        else:
+            assert self.renderer is not None
+            if (
+                sensor.specification().sensor_type == SensorType.SEMANTIC
+                and self.get_active_scene_graph()
+                is not self.get_active_semantic_scene_graph()
+            ):
+                raise RuntimeError(
+                    "Async drawing doesn't support semantic rendering when there are multiple scene graphs"
+                )
+            # TODO: sync this path with renderer changes as above (render from sensor object)
+
+            # see if the sensor is attached to a scene graph, otherwise it is invalid,
+            # and cannot make any observation
+            if sensor.node is None:
+                raise habitat_sim.errors.InvalidAttachedObject(
+                    "Sensor observation requested but sensor is invalid.\
+                    (has it been detached from a scene node?)"
+                )
+
+            # get the correct scene graph based on application
+            if sensor.specification().sensor_type == SensorType.SEMANTIC:
+                if self.semantic_scene is None:
+                    raise RuntimeError(
+                        "SemanticSensor observation requested but no SemanticScene is loaded"
+                    )
+                pixel_format = mn.PixelFormat.R32UI
+                scene = self.get_active_semantic_scene_graph()
+            elif sensor.specification().sensor_type == SensorType.DEPTH:
+                pixel_format = mn.PixelFormat.R32F
+                scene = self.get_active_scene_graph()
+            else:  # assume sensor type is COLOR
+                pixel_format = mn.PixelFormat.R32UI
+                scene = self.get_active_scene_graph()
+
+            render_flags = habitat_sim.gfx.Camera.Flags.NONE
+
+            if self.frustum_culling:
+                render_flags |= habitat_sim.gfx.Camera.Flags.FRUSTUM_CULLING
+
+            view = mn.MutableImageView2D(
+                pixel_format,
+                sensor.framebuffer_size,
+                sensor.buffer(self.gpu_device),
+            )
+
+            self.renderer.enqueue_async_draw_job(sensor, scene, view, render_flags)

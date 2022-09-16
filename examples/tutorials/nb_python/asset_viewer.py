@@ -762,11 +762,6 @@ clip_short_name = object_to_view_path.split("/")[-1].split(".")[0]
 # check if desired object actually exists
 if os.path.exists(object_to_view_path) and os.path.isfile(object_to_view_path):
 
-    # Acquire the sensor being used
-    visual_sensor = sim._sensors["color_sensor_3rd_person"]
-    initial_sensor_position = np.array(visual_sensor._spec.position)
-    initial_sensor_orientation = np.array(visual_sensor._spec.orientation)
-
     # load an object template and instantiate an object to view
     object_template = obj_attr_mgr.create_new_template(str(object_to_view_path), False)
     # if using a stage and it displays sideways, you may need to reorient it via its attributes for it to display properly.
@@ -800,6 +795,11 @@ if os.path.exists(object_to_view_path) and os.path.isfile(object_to_view_path):
     agent_state = habitat_sim.AgentState()
     agent_state.position = np.array([0.0, 0.0, 0.0])  # in world space
     agent.set_state(agent_state)
+
+    # Acquire the sensor being used
+    visual_sensor = agent.scene_node.node_sensor_suite["color_sensor_3rd_person"]
+    initial_sensor_position = np.array(visual_sensor._spec.position)
+    initial_sensor_orientation = np.array(visual_sensor._spec.orientation)
 
     # set the sensor to be behind and above the agent's initial loc
     # distance is scaled by size of largest object dimension
