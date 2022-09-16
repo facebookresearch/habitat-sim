@@ -108,72 +108,143 @@ struct MultiGoalShortestPath {
   ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(MultiGoalShortestPath)
 };
 
-//! Configuration structure for NavMesh generation with recast.
 /**
  * @brief Configuration structure for NavMesh generation with recast.
+ *
+ * Passed to @ref PathFinder::build to construct the NavMesh.
+ *
+ * Serialized with saved .navmesh files for later equivalency checks upon
+ * re-load.
  *
  * See examples/tutorials/colabs/ECCV_2020_Navigation.py and
  * http://digestingduck.blogspot.com/2009/08/recast-settings-uncovered.html for
  * more details on configuring these parameters for your use case.
  */
 struct NavMeshSettings {
-  //! XZ-plane cell size in world units. Size of square voxel sides in XZ.
+  /**
+   * @brief XZ-plane cell size in world units. Size of square voxel sides in XZ.
+   */
   float cellSize{};
-  //! Y-axis cell height in world units. Voxel height.
+
+  /**
+   * @brief Y-axis cell height in world units. Voxel height.
+   */
   float cellHeight{};
-  //! Minimum floor to 'ceiling' height that will still allow the floor area to
-  //! be considered unobstructed in world units. Will be rounded up to a
-  //! multiple of cellHeight.
+
+  /**
+   * @brief Minimum floor to 'ceiling' height that will still allow the floor
+   * area to be considered unobstructed in world units.
+   *
+   * Will be rounded up to a multiple of cellHeight.
+   */
   float agentHeight{};
-  //! Agent radius in world units. The distance to erode/shrink the walkable
-  //! area of the heightfield away from obstructions. Will be rounded up to a
-  //! multiple of cellSize.
+
+  /**
+   * @brief Agent radius in world units.
+   *
+   * The distance to erode/shrink the walkable area of the heightfield away from
+   * obstructions. Will be rounded up to a multiple of cellSize.
+   */
   float agentRadius{};
-  //! Maximum ledge height that is considered to be traversable in world units
-  //! (e.g. for stair steps). Will be truncated to a multiple of cellHeight.
+
+  /**
+   * @brief Maximum ledge height that is considered to be traversable in world
+   * units.
+   *
+   * For example, this constrains the maximum step hieght for traversing
+   * stairways. Will be truncated to a multiple of cellHeight.
+   */
   float agentMaxClimb{};
-  //! The maximum slope that is considered walkable in degrees.
+
+  /** @brief The maximum slope that is considered walkable in degrees. */
   float agentMaxSlope{};
-  //! Region minimum size in voxels. regionMinSize = sqrt(regionMinArea) The
-  //! minimum number of cells allowed to form isolated island areas.
+
+  /**
+   * @brief Region minimum size in voxels.
+   *
+   * regionMinSize = sqrt(regionMinArea) The minimum number of cells allowed to
+   * form isolated island areas.
+   */
   float regionMinSize{};
-  //! Region merge size in voxels. regionMergeSize = sqrt(regionMergeArea) Any
-  //! 2-D regions with a smaller span (cell count) will, if possible, be merged
-  //! with larger regions.
+
+  /**
+   * @brief Region merge size in voxels.
+   *
+   * regionMergeSize = sqrt(regionMergeArea) Any 2-D regions with a smaller span
+   * (cell count) will, if possible, be merged with larger regions.
+   */
   float regionMergeSize{};
-  //! Edge max length in world units. The maximum allowed length for contour
-  //! edges along the border of the mesh. Extra vertices will be inserted as
-  //! needed to keep contour edges below this length. A value of zero
-  //! effectively disables this feature. A good value for edgeMaxLen is
-  //! something like agenRadius*8. Will be rounded to a multiple of cellSize.
+
+  /**
+   * @brief Edge max length in world units.
+   *
+   * The maximum allowed length for contour edges along the border of the mesh.
+   *
+   * Extra vertices will be inserted as needed to keep contour edges below this
+   * length. A value of zero effectively disables this feature.
+   *
+   * A good value for edgeMaxLen is something like agenRadius*8. Will be rounded
+   * to a multiple of cellSize.
+   */
   float edgeMaxLen{};
-  //! The maximum distance a simplfied contour's border edges should deviate the
-  //! original raw contour. Good values are between 1.1-1.5 (1.3 usually yield
-  //! good results). More results in jaggies, less cuts corners.
+
+  /**
+   * @brief The maximum distance a simplfied contour's border edges should
+   * deviate the original raw contour.
+   *
+   * Good values are between 1.1-1.5 (1.3 usually yield good results). More
+   * results in jaggies, less cuts corners.
+   */
   float edgeMaxError{};
-  //! The maximum number of vertices allowed for polygons generated during the
-  //! contour to polygon conversion process. [Limit: >= 3]
+
+  /**
+   * @brief The maximum number of vertices allowed for polygons generated during
+   * the contour to polygon conversion process. [Limit: >= 3]
+   */
   float vertsPerPoly{};
-  //! Detail sample distance in voxels. Sets the sampling distance to use when
-  //! generating the detail mesh. (For height detail only.) [Limits: 0 or >=
-  //! 0.9] [x cell_size]
+
+  /**
+   * @brief Detail sample distance in voxels.
+   *
+   * Sets the sampling distance to use when generating the detail mesh. (For
+   * height detail only.)
+   *
+   * [Limits: 0 or >= 0.9] [x cell_size]
+   */
   float detailSampleDist{};
-  //! Detail sample max error in voxel heights. The maximum distance the detail
-  //! mesh surface should deviate from heightfield data. (For height detail
-  //! only.) [Limit: >=0] [x cell_height]
+
+  /**
+   * @brief Detail sample max error in voxel heights.
+   *
+   * The maximum distance the detail mesh surface should deviate from
+   * heightfield data. (For height detail only.)
+   *
+   * [Limit: >=0] [x cell_height]
+   */
   float detailSampleMaxError{};
 
-  //! Marks navigable spans as non-navigable if the clearence above the span is
-  //! less than the specified height.
+  /**
+   * @brief Marks navigable spans as non-navigable if the clearence above the
+   * span is less than the specified height.
+   */
   bool filterLowHangingObstacles{};
-  //! Marks spans that are ledges as non-navigable. This filter reduces the
-  //! impact of the overestimation of conservative voxelization so the resulting
-  //! mesh will not have regions hanging in the air over ledges.
+
+  /**
+   * @brief Marks spans that are ledges as non-navigable.
+   *
+   * This filter reduces the impact of the overestimation of conservative
+   * voxelization so the resulting mesh will not have regions hanging in the air
+   * over ledges.
+   */
   bool filterLedgeSpans{};
-  //! Marks navigable spans as non-navigable if the clearence above the span is
-  //! less than the specified height. Allows the formation of navigable regions
-  //! that will flow over low lying objects such as curbs, and up structures
-  //! such as stairways.
+
+  /**
+   * @brief Marks navigable spans as non-navigable if the clearence above the
+   * span is less than the specified height.
+   *
+   * Allows the formation of navigable regions that will flow over low lying
+   * objects such as curbs, and up structures such as stairways.
+   */
   bool filterWalkableLowHeightSpans{};
 
   void setDefaults() {
