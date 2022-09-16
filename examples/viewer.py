@@ -109,20 +109,11 @@ class HabitatSimInteractiveViewer(Application):
             "0123456789:-_+,.! %µ",
         )
 
-        font_size = (
-            16.0 * (self.framebuffer_size * self.dpi_scaling / self.window_size).x
-        )
         # magnum text object that displays CPU/GPU usage data in the app window
-        # self.window_text = text.Renderer2D(
-        #     self.display_font,
-        #     self.glyph_cache,
-        #     HabitatSimInteractiveViewer.DISPLAY_FONT_SIZE,
-        #     text.Alignment.TOP_LEFT,
-        # )
         self.window_text = text.Renderer2D(
             self.display_font,
             self.glyph_cache,
-            font_size,
+            HabitatSimInteractiveViewer.DISPLAY_FONT_SIZE,
             text.Alignment.TOP_LEFT,
         )
         self.window_text.reserve(HabitatSimInteractiveViewer.MAX_DISPLAY_TEXT_CHARS)
