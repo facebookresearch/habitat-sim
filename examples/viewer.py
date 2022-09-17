@@ -111,7 +111,7 @@ class HabitatSimInteractiveViewer(Application):
         red = mn.Color4.red()
         cps = self.sim.get_physics_contact_points()
         self.sim.get_debug_line_render().set_line_width(1.5)
-        camera_position = self.render_camera.render_camera.node.absolute_translation
+        camera_position = self.render_camera.node.absolute_translation
         # only showing active contacts
         active_contacts = (x for x in cps if x.is_active)
         for cp in active_contacts:
@@ -141,7 +141,7 @@ class HabitatSimInteractiveViewer(Application):
         Additional draw commands to be called during draw_event.
         """
         if self.debug_bullet_draw:
-            render_cam = self.render_camera.render_camera
+            render_cam = self.render_camera
             proj_mat = render_cam.projection_matrix.__matmul__(render_cam.camera_matrix)
             self.sim.physics_debug_draw(proj_mat)
         if self.contact_debug_draw:
@@ -189,14 +189,18 @@ class HabitatSimInteractiveViewer(Application):
         keys = active_agent_id_and_sensor_name
 
         # TODO make sure we no longer call .draw_observation() on a sensor
+        # but rather on the simulator itself
         # self.sim._Simulator__sensors[keys[0]][keys[1]].draw_observation()
         agent = self.sim.get_agent(keys[0])
+
         # TODO see if we can make it easier to get sensors from agent and scene graph
-        self.render_camera = agent.scene_node.node_sensor_suite.get(keys[1])
+        self.camera_sensor = agent.scene_node.node_sensor_suite.get(keys[1])
+        self.render_camera = self.camera_sensor.render_camera
+
         # self.render_camera = agent.get_sensor_in_sensor_suite(keys[1])
-        self.sim.draw_observation(self.render_camera)
+        self.sim.draw_observation(self.camera_sensor)
         self.debug_draw()
-        self.render_camera.render_target.blit_rgba_to_default()
+        self.camera_sensor.render_target.blit_rgba_to_default()
         mn.gl.default_framebuffer.bind()
 
         self.swap_buffers()
@@ -276,7 +280,12 @@ class HabitatSimInteractiveViewer(Application):
         self.active_scene_graph = self.sim.get_active_scene_graph()
         self.default_agent = self.sim.get_agent(self.agent_id)
         self.agent_body_node = self.default_agent.scene_node
-        self.render_camera = self.agent_body_node.node_sensor_suite.get("color_sensor")
+        # breakpoint()
+        # self.render_camera = self.agent_body_node.node_sensor_suite.get("color_sensor")
+        self.camera_sensor = self.agent_body_node.node_sensors.get("color_sensor")
+        self.render_camera = self.camera_sensor.render_camera
+        if not self.camera_sensor.has_render_target():
+            self.sim.renderer.bind_render_target(self.camera_sensor)
         # set sim_settings scene name as actual loaded scene
         self.sim_settings["scene"] = self.sim.curr_scene_name
 
@@ -526,7 +535,7 @@ class HabitatSimInteractiveViewer(Application):
 
         # if interactive mode is True -> GRAB MODE
         if self.mouse_interaction == MouseMode.GRAB and physics_enabled:
-            render_camera = self.render_camera.render_camera
+            render_camera = self.render_camera
             ray = render_camera.unproject(self.get_mouse_position(event.position))
             raycast_results = self.sim.cast_ray(ray=ray)
 
@@ -683,7 +692,7 @@ class HabitatSimInteractiveViewer(Application):
         if not self.mouse_grabber:
             return
 
-        render_camera = self.render_camera.render_camera
+        render_camera = self.render_camera
         ray = render_camera.unproject(point)
 
         rotation: mn.Matrix3x3 = self.agent_body_node.rotation.to_matrix()

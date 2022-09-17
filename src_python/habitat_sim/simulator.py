@@ -132,6 +132,7 @@ class Simulator(SimulatorBackend):
 
     def __attrs_post_init__(self) -> None:
         LoggingContext.reinitialize_from_env()
+        print("In __attrs_post_init__ ++++++++++++++++++++++++++++++++++++++++++++++")
         self._sanitize_config(self.config)
         self.__set_from_config(self.config)
 
@@ -165,6 +166,7 @@ class Simulator(SimulatorBackend):
         super().close(destroy)
 
     def __enter__(self) -> "Simulator":
+        print("In __enter__ ++++++++++++++++++++++++++++++++++++++++++++++")
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -751,7 +753,8 @@ class Simulator(SimulatorBackend):
                 scene = self.get_active_semantic_scene_graph()
             else:
                 scene = self.get_active_scene_graph()
-            self.renderer.draw(sensor, scene)
+
+            self.renderer.draw(sensor.render_camera, scene)
 
     def _draw_observation_async(self, sensor: Sensor) -> None:
         sensor_spec = sensor.specification()
