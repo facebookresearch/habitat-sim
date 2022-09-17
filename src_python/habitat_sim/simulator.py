@@ -82,10 +82,11 @@ class Simulator(SimulatorBackend):
     agents: List[Agent] = attr.ib(factory=list, init=False)
     _num_total_frames: int = attr.ib(default=0, init=False)
     _default_agent_id: int = attr.ib(default=0, init=False)
+    __sensors: List[Dict[str, Sensor]] = attr.ib(factory=list, init=False)
 
     # TODO: use the following three vars to avoid needing a SensorWrapper class
     # and start decoupling sensors from agents
-    __sensors: Dict[str, Sensor] = attr.ib(factory=dict, init=False)
+    __sensors_dict: Dict[str, Sensor] = attr.ib(factory=dict, init=False)
     __sensor_buffers: MultiSensorObservations = attr.ib(factory=dict, init=False)
     __sensor_image_views: Dict[str, mn.MutableImageView2D] = attr.ib(
         factory=dict, init=False
@@ -347,7 +348,7 @@ class Simulator(SimulatorBackend):
         sensor = agent.get_sensor_in_sensor_suite(sensor_spec.uuid)
 
         # TODO: temporary, adapt as we refactor our sensor functionality
-        self.__sensors[sensor_spec.uuid] = sensor
+        self.__sensors_dict[sensor_spec.uuid] = sensor
         self.init_sensor_buffer_and_image_view(sensor_spec)
 
     # TODO there are two ways of getting sensors now bc we hope to make sensors
@@ -356,7 +357,7 @@ class Simulator(SimulatorBackend):
         if agent_id is not None:
             return self.agents[agent_id].get_sensor_in_sensor_suite(sensor_uuid)
         else:
-            return self.__sensors.get(sensor_uuid)
+            return self.__sensors_dict.get(sensor_uuid)
 
     # TODO: temporary while we get rid of Simulator.Sensor wrapper class
     def init_sensor_buffer_and_image_view(self, sensor_spec: SensorSpec):
@@ -459,7 +460,7 @@ class Simulator(SimulatorBackend):
             agent_ids = [agent_ids]
 
         for agent_id in agent_ids:
-            agent_sensorsuite = self.get_agent(agent_id).scene_node.node_sensor_suite
+            agent_sensorsuite = self.get_agent(agent_id).get_sensor_suite()
             for _, sensor in agent_sensorsuite.items():
                 sensor._draw_observation_async()
 

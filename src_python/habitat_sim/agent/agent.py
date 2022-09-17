@@ -166,14 +166,14 @@ class Agent:
 
     def get_sensor_suite(self) -> Dict[str, hsim.Sensor]:
         habitat_sim.errors.assert_obj_valid(self.body)
-        return self.body.object.node_sensor_suite
+        return self.body.object.node_sensor_suite.get_sensors()
 
     def get_sensor_in_sensor_suite(self, uuid: str) -> hsim.Sensor:
         return self.get_sensor_suite().get(uuid)
 
     def get_subtree_sensor_suite(self) -> Dict[str, hsim.Sensor]:
         habitat_sim.errors.assert_obj_valid(self.body)
-        return self.body.object.subtree_sensor_suite
+        return self.body.object.subtree_sensor_suite.get_sensors()
 
     def get_sensor_in_subtree(self, uuid: str) -> hsim.Sensor:
         return self.get_subtree_sensor_suite().get(uuid)
