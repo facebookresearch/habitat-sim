@@ -38,8 +38,15 @@ from habitat_sim.utils.common import quat_from_angle_axis
 
 # A sensor observation
 SensorObservation = Union[ndarray, "Tensor"]
-# A dictionary of sensor observations
-ObservationDict = Dict[str, SensorObservation]
+
+# A dictionary of all sensor uuids to their associated sensor observation
+MultiSensorObservations = Dict[str, SensorObservation]
+
+# a dictionary of agent_ids to their associated MultiSensorObservations.
+# if there is only one agent, it is the same as MultiSensorObservations.
+PerAgentSensorObservations = Union[
+    MultiSensorObservations, Dict[int, MultiSensorObservations]
+]
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -79,7 +86,7 @@ class Simulator(SimulatorBackend):
     # TODO: use the following three vars to avoid needing a SensorWrapper class
     # and start decoupling sensors from agents
     __sensors: Dict[str, Sensor] = attr.ib(factory=dict, init=False)
-    __sensor_buffers: Dict[str, SensorObservation] = attr.ib(factory=dict, init=False)
+    __sensor_buffers: MultiSensorObservations = attr.ib(factory=dict, init=False)
     __sensor_image_views: Dict[str, mn.MutableImageView2D] = attr.ib(
         factory=dict, init=False
     )
@@ -167,16 +174,16 @@ class Simulator(SimulatorBackend):
         self.pathfinder.seed(new_seed)
 
     @overload
-    def reset(self, agent_ids: List[int]) -> Dict[int, ObservationDict]:
+    def reset(self, agent_ids: List[int]) -> Dict[int, MultiSensorObservations]:
         ...
 
     @overload
-    def reset(self, agent_ids: Optional[int] = None) -> ObservationDict:
+    def reset(self, agent_ids: Optional[int] = None) -> MultiSensorObservations:
         ...
 
     def reset(
         self, agent_ids: Union[Optional[int], List[int]] = None
-    ) -> Union[ObservationDict, Dict[int, ObservationDict]]:
+    ) -> PerAgentSensorObservations:
         super().reset()
         for i in range(len(self.agents)):
             self.reset_agent(i)
@@ -187,10 +194,10 @@ class Simulator(SimulatorBackend):
         else:
             agent_ids = cast(List[int], agent_ids)
             return_single = False
-        observation = self.get_sensor_observations(agent_ids=agent_ids)
+        per_agent_observations = self.get_sensor_observations(agent_ids=agent_ids)
         if return_single:
-            return observation[agent_ids[0]]
-        return observation
+            return per_agent_observations[agent_ids[0]]
+        return per_agent_observations
 
     def reset_agent(self, agent_id: int) -> None:
         agent = self.get_agent(agent_id)
@@ -466,7 +473,7 @@ class Simulator(SimulatorBackend):
 
     def get_sensor_observations_async_finish(
         self,
-    ) -> Union[ObservationDict, Dict[int, ObservationDict]]:
+    ) -> PerAgentSensorObservations:
         if self._async_draw_agent_ids is None:
             raise RuntimeError(
                 "get_sensor_observations_async_finish was called before calling start_async_render_and_step_physics."
@@ -482,9 +489,9 @@ class Simulator(SimulatorBackend):
 
         self.renderer.wait_draw_jobs()
         # As backport. All Dicts are ordered in Python >= 3.7
-        all_agents_observations: Dict[int, ObservationDict] = OrderedDict()
+        per_agent_observations: Dict[int, MultiSensorObservations] = OrderedDict()
         for agent_id in agent_ids:
-            agent_observations: ObservationDict = {}
+            agent_observations: MultiSensorObservations = {}
             for sensor_uuid, sensor in self.get_agent(
                 agent_id
             ).scene_node.node_sensor_suite:
@@ -492,24 +499,24 @@ class Simulator(SimulatorBackend):
                     sensor, agent_id
                 )
 
-            all_agents_observations[agent_id] = agent_observations
+            per_agent_observations[agent_id] = agent_observations
         if return_single:
-            return next(iter(all_agents_observations.values()))
-        return all_agents_observations
+            return next(iter(per_agent_observations.values()))
+        return per_agent_observations
 
     @overload
-    def get_sensor_observations(self, agent_ids: int = 0) -> ObservationDict:
+    def get_sensor_observations(self, agent_ids: int = 0) -> MultiSensorObservations:
         ...
 
     @overload
     def get_sensor_observations(
         self, agent_ids: List[int]
-    ) -> Dict[int, ObservationDict]:
+    ) -> Dict[int, MultiSensorObservations]:
         ...
 
     def get_sensor_observations(
         self, agent_ids: Union[int, List[int]] = 0
-    ) -> Union[ObservationDict, Dict[int, ObservationDict]]:
+    ) -> PerAgentSensorObservations:
         if isinstance(agent_ids, int):
             agent_ids = [agent_ids]
             return_single = True
@@ -517,17 +524,18 @@ class Simulator(SimulatorBackend):
             return_single = False
 
         # As backport. All Dicts are ordered in Python >= 3.7
-        all_agents_observations: Dict[int, ObservationDict] = OrderedDict()
+        per_agent_observations: Dict[int, MultiSensorObservations] = OrderedDict()
         for agent_id in agent_ids:
-            agent_sensors = self.get_agent(agent_id).scene_node.node_sensor_suite
-            agent_observations: ObservationDict = {}
+            agent_sensors = self.get_agent(agent_id).get_sensor_suite()
+            agent_observations: MultiSensorObservations = {}
             for sensor_uuid, sensor in agent_sensors.items():
                 agent_observations[sensor_uuid] = self.get_observation(sensor)
                 self.draw_observation(sensor)
-            all_agents_observations[agent_id] = agent_observations
+            per_agent_observations[agent_id] = agent_observations
+
         if return_single:
-            return next(iter(all_agents_observations.values()))
-        return all_agents_observations
+            return next(iter(per_agent_observations.values()))
+        return per_agent_observations
 
     @property
     def _default_agent(self) -> Agent:
@@ -550,30 +558,32 @@ class Simulator(SimulatorBackend):
         return self.__last_state[agent_id]
 
     @overload
-    def step(self, action: Union[str, int], dt: float = 1.0 / 60.0) -> ObservationDict:
+    def step(
+        self, action: Union[str, int], dt: float = 1.0 / 60.0
+    ) -> MultiSensorObservations:
         ...
 
     @overload
     def step(
         self, action: MutableMapping_T[int, Union[str, int]], dt: float = 1.0 / 60.0
-    ) -> Dict[int, ObservationDict]:
+    ) -> Dict[int, MultiSensorObservations]:
         ...
 
     def step(
         self,
         action: Union[str, int, MutableMapping_T[int, Union[str, int]]],
         dt: float = 1.0 / 60.0,
-    ) -> Union[ObservationDict, Dict[int, ObservationDict],]:
+    ) -> PerAgentSensorObservations:
         self._num_total_frames += 1
         if isinstance(action, MutableMapping):
             return_single = False
         else:
             action = cast(Dict[int, Union[str, int]], {self._default_agent_id: action})
             return_single = True
-        collided_dict: Dict[int, bool] = {}
+        collided_dict: Dict[int, ndarray] = {}
         for agent_id, agent_act in action.items():
             agent = self.get_agent(agent_id)
-            collided_dict[agent_id] = agent.act(agent_act)
+            collided_dict[agent_id] = ndarray([agent.act(agent_act)])
             self.__last_state[agent_id] = agent.get_state()
 
         # step physics by dt
@@ -581,12 +591,19 @@ class Simulator(SimulatorBackend):
         super().step_world(dt)
         self._previous_step_time = time.time() - step_start_Time
 
-        multi_observations = self.get_sensor_observations(agent_ids=list(action.keys()))
-        for agent_id, agent_observation in multi_observations.items():
-            agent_observation["collided"] = collided_dict[agent_id]
+        agent_ids = list(action.keys())
+        per_agent_observations: Dict[int, MultiSensorObservations] = OrderedDict()
+        per_agent_observations = self.get_sensor_observations(agent_ids)
+
+        for agent_id, agent_observations in per_agent_observations.items():
+            # the value associated with this "collided" key is a boolean ndarray
+            # with one entry so that it will work with our SensorObservation type,
+            # which is: Union[ndarray, "Tensor"]
+            agent_observations["collided"] = collided_dict[agent_id]
+
         if return_single:
-            return multi_observations[self._default_agent_id]
-        return multi_observations
+            return per_agent_observations[self._default_agent_id]
+        return per_agent_observations
 
     def make_greedy_follower(
         self,

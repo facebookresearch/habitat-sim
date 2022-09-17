@@ -13,7 +13,6 @@ import quaternion as qt
 
 import habitat_sim.errors
 from habitat_sim import bindings as hsim
-from habitat_sim.bindings import SceneNode, Sensor
 from habitat_sim.utils.common import (
     quat_from_coeffs,
     quat_from_magnum,
@@ -165,13 +164,19 @@ class Agent:
             self.agent_config.sensor_specifications.append(spec)
         hsim.SensorFactory.create_sensors(self.scene_node, [spec])
 
-    def get_sensor_in_sensor_suite(self, uuid: str) -> Sensor:
+    def get_sensor_suite(self) -> Dict[str, hsim.Sensor]:
         habitat_sim.errors.assert_obj_valid(self.body)
-        return self.body.object.node_sensor_suite.get(uuid)
+        return self.body.object.node_sensor_suite
 
-    def get_sensor_in_subtree(self, uuid: str) -> Sensor:
+    def get_sensor_in_sensor_suite(self, uuid: str) -> hsim.Sensor:
+        return self.get_sensor_suite().get(uuid)
+
+    def get_subtree_sensor_suite(self) -> Dict[str, hsim.Sensor]:
         habitat_sim.errors.assert_obj_valid(self.body)
-        return self.body.object.subtree_sensor_suite.get(uuid)
+        return self.body.object.subtree_sensor_suite
+
+    def get_sensor_in_subtree(self, uuid: str) -> hsim.Sensor:
+        return self.get_subtree_sensor_suite().get(uuid)
 
     def act(self, action_id: Any) -> bool:
         r"""Take the action specified by action_id
@@ -281,7 +286,7 @@ class Agent:
             self.initial_state = state
 
     @property
-    def scene_node(self) -> SceneNode:
+    def scene_node(self) -> hsim.SceneNode:
         habitat_sim.errors.assert_obj_valid(self.body)
         return self.body.object
 

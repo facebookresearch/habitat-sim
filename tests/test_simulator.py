@@ -38,7 +38,7 @@ def test_no_navmesh_smoke():
             for _ in range(50):
                 obs = sim.step(random.choice(list(agent_config.action_space.keys())))
                 # Can't collide with no navmesh
-                assert not obs["collided"]
+                assert not obs["collided"][0]
 
 
 def test_empty_scene():
@@ -116,7 +116,7 @@ def test_sim_multiagent_move_and_reset(make_cfg_settings, num_agents=10):
         ):
             assert (
                 not is_same_state(initial_state, sim.get_agent(agent_id).state)
-                or agent_obs["collided"]
+                or agent_obs["collided"][0]
             )
         sim.reset()
         for agent_id, initial_state in enumerate(agent_initial_states):
@@ -134,7 +134,7 @@ def test_sim_multiagent_move_and_reset(make_cfg_settings, num_agents=10):
             assert 2 not in observations
             assert agent_id == 2 or (
                 not is_same_state(initial_state, sim.get_agent(agent_id).state)
-                or agent_obs["collided"]
+                or agent_obs["collided"][0]
             )
 
 
