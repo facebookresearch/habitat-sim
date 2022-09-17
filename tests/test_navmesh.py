@@ -170,7 +170,7 @@ def test_navmesh_area(test_scene):
         # get the re-computed navmesh area. This test assumes NavMeshSettings default values.
         recomputedNavMeshArea1 = sim.pathfinder.navigable_area
         if test_scene.endswith("skokloster-castle.glb"):
-            assert math.isclose(recomputedNavMeshArea1, 565.1781616210938)
+            assert math.isclose(recomputedNavMeshArea1, 565.177978515625)
         elif test_scene.endswith("van-gogh-room.glb"):
             assert math.isclose(recomputedNavMeshArea1, 9.17772102355957)
 
