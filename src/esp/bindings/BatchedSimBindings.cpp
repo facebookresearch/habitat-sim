@@ -36,6 +36,49 @@ py::capsule getDepthMemory(BatchedSimulator& bsim, const uint32_t groupIdx) {
 void initBatchedSimBindings(py::module& m) {
   m.def("get_spherical_coordinates", &getSphericalCoordinates);
 
+  py::class_<PythonBatchEnvironmentState>(m, "PythonBatchEnvironmentState")
+      // todo: finish implementing these members and then bind them
+      //.def_readwrite("episode_idx", &PythonBatchEnvironmentState::episode_idx,
+      // R"(Todo)") .def_readwrite("target_obj_idx",
+      //&PythonBatchEnvironmentState::target_obj_idx, R"(Todo)")
+      .def_readwrite("target_obj_start_pos",
+                     &PythonBatchEnvironmentState::target_obj_start_pos,
+                     R"(Todo)")
+      //.def_readwrite("target_obj_start_rotation",
+      //&PythonBatchEnvironmentState::target_obj_start_rotation, R"(Todo)")
+      .def_readwrite("robot_start_pos",
+                     &PythonBatchEnvironmentState::robot_start_pos, R"(Todo)")
+      .def_readwrite("robot_start_rotation",
+                     &PythonBatchEnvironmentState::robot_start_rotation,
+                     R"(Todo)")
+      .def_readwrite("goal_pos", &PythonBatchEnvironmentState::goal_pos,
+                     R"(Todo)")
+      .def_readwrite("robot_pos", &PythonBatchEnvironmentState::robot_pos,
+                     R"(Todo)")
+      .def_readwrite("robot_inv_rotation",
+                     &PythonBatchEnvironmentState::robot_inv_rotation,
+                     R"(Todo)")
+      //.def_readwrite("robot_joint_positions",
+      //&PythonBatchEnvironmentState::robot_joint_positions, R"(Todo)")
+      //.def_readwrite("robot_joint_positions_normalized",
+      //&PythonBatchEnvironmentState::robot_joint_positions_normalized,
+      // R"(Todo)")
+      .def_readwrite("ee_pos", &PythonBatchEnvironmentState::ee_pos, R"(Todo)")
+      .def_readwrite("ee_inv_rotation",
+                     &PythonBatchEnvironmentState::ee_inv_rotation, R"(Todo)")
+      //.def_readwrite("did_collide", &PythonBatchEnvironmentState::did_collide,
+      // R"(Todo)") .def_readwrite("held_obj_idx",
+      //&PythonBatchEnvironmentState::held_obj_idx, R"(Todo)")
+      //.def_readwrite("did_attempt_grasp",
+      //&PythonBatchEnvironmentState::did_attempt_grasp, R"(Todo)")
+      //.def_readwrite("did_grasp", &PythonBatchEnvironmentState::did_grasp,
+      // R"(Todo)") .def_readwrite("did_drop",
+      //&PythonBatchEnvironmentState::did_drop, R"(Todo)")
+      //.def_readwrite("drop_height", &PythonBatchEnvironmentState::drop_height,
+      // R"(Todo)") .def_readwrite("target_obj_pos",
+      //&PythonBatchEnvironmentState::target_obj_pos, R"(Todo)");
+      ;
+
   py::class_<CameraSensorConfig>(m, "CameraSensorConfig")
       .def_readwrite("width", &CameraSensorConfig::width, R"(Todo)")
       .def_readwrite("height", &CameraSensorConfig::height, R"(Todo)");
@@ -153,6 +196,9 @@ void initBatchedSimBindings(py::module& m) {
            R"(todo)")
       .def("reset", &BatchedSimulator::reset, R"(todo)")
       .def("get_environment_states", &BatchedSimulator::getEnvironmentStates,
+           R"(todo)")
+      .def("get_batch_environment_state",
+           &BatchedSimulator::getBatchEnvironmentState, "previous"_a = false,
            R"(todo)")
       .def("start_step_physics_or_reset",
            &BatchedSimulator::startStepPhysicsOrReset, R"(todo)")

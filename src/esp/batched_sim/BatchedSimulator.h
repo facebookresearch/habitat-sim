@@ -9,6 +9,7 @@
 #include "esp/batched_sim/ColumnGrid.h"
 #include "esp/batched_sim/EpisodeGenerator.h"
 #include "esp/batched_sim/EpisodeSet.h"
+#include "esp/batched_sim/PythonBatchEnvironmentState.h"
 #include "esp/batched_sim/SerializeCollection.h"
 #include "esp/core/random.h"
 #include "esp/physics/bullet/BulletArticulatedObject.h"
@@ -243,6 +244,9 @@ class BatchedSimulator {
   // todo: thread-safe access to PythonEnvironmentState
   void reset(std::vector<int>&& resets);
   const std::vector<PythonEnvironmentState>& getEnvironmentStates() const;
+  const PythonBatchEnvironmentState& getBatchEnvironmentState(
+      bool previous) const;
+
   void startStepPhysicsOrReset(std::vector<float>&& actions,
                                std::vector<int>&& resets);
   void waitStepPhysicsOrReset();
@@ -312,6 +316,7 @@ class BatchedSimulator {
   void updateGripping();
   void resetHelper();
   void updatePythonEnvironmentState();
+  void updatePythonBatchEnvironmentState();
   void updateBpsCameras(bool isDebug);
   void setBpsCameraHelper(bool isDebug,
                           int b,
@@ -366,6 +371,8 @@ class BatchedSimulator {
   std::vector<int> resets_;  // episode index, or -1 if not resetting
   int maxStorageSteps_ = -1;
   std::vector<PythonEnvironmentState> pythonEnvStates_;
+  PythonBatchEnvironmentStateWrapper pythonBatchEnvStateWrapper_;
+  int nextBatchIdx_ = 0;  // use with pythonBatchEnvStateWrapper_
   Camera mainCam_;
   Camera debugCam_;
 
@@ -385,6 +392,7 @@ class BatchedSimulator {
   bool signalKillPhysicsThread_ = false;
   bool isStepPhysicsOrResetFinished_ = true;
   bool areRenderInstancesUpdated_ = false;
+  bool didStepSinceLastWaitStepPhysics_ = false;
 
   ESP_SMART_POINTERS(BatchedSimulator)
 };

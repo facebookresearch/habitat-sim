@@ -243,9 +243,7 @@ float calcLerpFraction(float x, float src0, float src1) {
 
 }  // namespace
 
-class BatchedSimulatorTest : public ::testing::Test {};
-
-TEST_F(BatchedSimulatorTest, basic) {
+void CommandLineViewer() {
   esp::logging::LoggingContext loggingContext;
 
   constexpr bool doOverlapPhysics = false;
@@ -284,9 +282,9 @@ TEST_F(BatchedSimulatorTest, basic) {
       .numSubsteps = 1,
       .enableRobotCollision = true,
       .enableHeldObjectCollision = true,
-      .doProceduralEpisodeSet = true,
+      .doProceduralEpisodeSet = false,
       .episodeGeneratorConfig = generatorConfig,
-      //.episodeSetFilepath =
+      .episodeSetFilepath = "../data/tidy_house_100ep.episode_set.json",
       //"/home/eundersander/Downloads/tidy_house_100ep.episode_set.json",
       .collectionFilepath = "../data/replicacad_composite.collection.json",
       .renderAssetCompositeFilepath =
@@ -294,6 +292,8 @@ TEST_F(BatchedSimulatorTest, basic) {
       .enableSliding = true,
   };
   BatchedSimulator bsim(config);
+
+  constexpr int startingEpisode = 38;
 
   Mn::Vector3 camPos;
   Mn::Quaternion camRot;
@@ -361,7 +361,7 @@ TEST_F(BatchedSimulatorTest, basic) {
   }
   std::vector<float> actions(actionDim * config.numEnvs, 0.f);
 
-  int nextEpisode = 0;
+  int nextEpisode = startingEpisode;
   const int numEpisodes = bsim.getNumEpisodes();
   auto getNextEpisode = [&]() {
     auto retVal = nextEpisode;
@@ -691,3 +691,7 @@ TEST_F(BatchedSimulatorTest, basic) {
 
 }  // namespace batched_sim
 }  // namespace esp
+
+int main(int argc, char** argv) {
+  esp::batched_sim::CommandLineViewer();
+}

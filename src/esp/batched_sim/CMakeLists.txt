@@ -1,8 +1,8 @@
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED 17)
 
-add_library(
-  batched_sim STATIC
+set(
+  batched_sim_SRCS
   BatchedSimAssert.h
   BatchedSimulator.cpp
   BatchedSimulator.h
@@ -24,12 +24,33 @@ add_library(
   PlacementHelper.h
   ProfilingScope.cpp
   ProfilingScope.h
+  PythonBatchEnvironmentState.cpp
+  PythonBatchEnvironmentState.h
   SerializeCollection.cpp
   SerializeCollection.h
 )
 
+pybind11_add_module(batched_sim STATIC ${batched_sim_SRCS})
+
 target_link_libraries(
   batched_sim
+  PUBLIC core
+         sim
+         io
+         bps3D
+         bps3D_core
+         bps3D_vulkan
+         stb
+)
+
+add_library(
+  batched_sim_no_pybind STATIC
+  ${batched_sim_SRCS}
+)
+target_compile_definitions(batched_sim_no_pybind PUBLIC DISABLE_BATCHED_SIM_PYBIND=1)
+
+target_link_libraries(
+  batched_sim_no_pybind
   PUBLIC core
          sim
          io

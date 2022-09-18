@@ -23,6 +23,8 @@
 #define ENABLE_DEBUG_INSTANCES
 #endif
 
+constexpr int NUM_PYTHON_BATCH_ENV_STATES = 3;
+
 namespace esp {
 namespace batched_sim {
 
@@ -458,6 +460,64 @@ void BatchedSimulator::updatePythonEnvironmentState() {
   }
 #endif
 #endif
+}
+
+void BatchedSimulator::updatePythonBatchEnvironmentState() {
+  const int numEnvs = config_.numEnvs;
+  const int numPosVars = robot_.numPosVars;
+  const Mn::Vector2* positions =
+      &safeVectorGet(rollouts_.positions_, currStorageStep_ * numEnvs);
+  const float* yaws =
+      &safeVectorGet(rollouts_.yaws_, currStorageStep_ * numEnvs);
+  const float* jointPositions = &safeVectorGet(
+      rollouts_.jointPositions_, currStorageStep_ * numEnvs * numPosVars);
+
+  auto& batchEnvState = pythonBatchEnvStateWrapper_.getState(nextBatchIdx_);
+
+  for (int b = 0; b < config_.numEnvs; b++) {
+    const auto& robotInstance = safeVectorGet(robots_.robotInstances_, b);
+
+    auto& episodeInstance =
+        safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
+    const auto& episode =
+        safeVectorGet(episodeSet_.episodes_, episodeInstance.episodeIndex_);
+
+    const int freeObjectIndex = episode.targetObjIndex_;
+    const auto& freeObjectSpawn =
+        safeVectorGet(episodeSet_.freeObjectSpawns_,
+                      episode.firstFreeObjectSpawnIndex_ + freeObjectIndex);
+    const auto& freeObject =
+        safeVectorGet(episodeSet_.freeObjects_, freeObjectSpawn.freeObjIndex_);
+
+#ifndef DISABLE_BATCHED_SIM_PYBIND
+    safePyArraySet(batchEnvState.robot_pos, b,
+                   Mn::Vector3(positions[b].x(), 0.f, positions[b].y()));
+    safePyArraySet(batchEnvState.robot_inv_rotation, b,
+                   yawToRotation(yaws[b]).toMatrix().transposed());
+
+    // envState.episode_idx = episodeInstance.episodeIndex_;
+    // envState.episode_step_idx = 0;
+    // envState.target_obj_idx = episode.targetObjIndex_;
+    // envState.goal_pos = episode.targetObjGoalPos_;
+    safePyArraySet(batchEnvState.goal_pos, b, episode.targetObjGoalPos_);
+    // envState.goal_rotation = episode.targetObjGoalRotation_;
+    // envState.robot_start_pos =
+    // groundPositionToVector3(episode.agentStartPos_);
+    safePyArraySet(batchEnvState.robot_start_pos, b,
+                   groundPositionToVector3(episode.agentStartPos_));
+
+    // envState.robot_start_rotation = yawToRotation(episode.agentStartYaw_);
+
+    safePyArraySet(batchEnvState.target_obj_start_pos, b,
+                   freeObjectSpawn.startPos_);
+
+    safePyArraySet(batchEnvState.ee_pos, b,
+                   robotInstance.cachedGripperLinkMat_.translation());
+    safePyArraySet(
+        batchEnvState.ee_inv_rotation, b,
+        robotInstance.cachedGripperLinkMat_.rotationNormalized().transposed());
+#endif
+  }
 }
 
 void BatchedSimulator::addSphereDebugInstance(const std::string& name,
@@ -1503,7 +1563,6 @@ BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
   if (config_.numDebugEnvs > 0) {
     debugInstancesByEnv_.resize(config_.numDebugEnvs);
   }
-  pythonEnvStates_.resize(numEnvs);
 
   initEpisodeSet();
 
@@ -1520,8 +1579,14 @@ BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
 
   checkDisableRobotAndFreeObjectsCollision();
 
-  int numLinks = robot_.artObj->getNumLinks();
-  int numNodes = numLinks + 1;  // include base
+  const int numLinks = robot_.artObj->getNumLinks();
+  const int numNodes = numLinks + 1;  // include base
+
+  const int numPosVars = robot_.numPosVars;
+
+  pythonEnvStates_.resize(numEnvs);
+  pythonBatchEnvStateWrapper_ = PythonBatchEnvironmentStateWrapper(
+      NUM_PYTHON_BATCH_ENV_STATES, numEnvs, numPosVars);
 
   robots_ =
       RobotInstanceSet(&robot_, &config_, &bpsWrapper_->envs_, &rollouts_);
@@ -2119,6 +2184,7 @@ void BatchedSimulator::stepPhysics() {
   updateRenderInstances(/*forceUpdate*/ false);
 
   updatePythonEnvironmentState();
+  updatePythonBatchEnvironmentState();
 }
 
 void BatchedSimulator::substepPhysics() {
@@ -2513,6 +2579,7 @@ void BatchedSimulator::signalStepPhysics() {
   BATCHED_SIM_ASSERT(isStepPhysicsOrResetFinished_);
   BATCHED_SIM_ASSERT(!signalStepPhysics_);
   isStepPhysicsOrResetFinished_ = false;
+  didStepSinceLastWaitStepPhysics_ = true;
 
   std::lock_guard<std::mutex> lck(physicsSignalMutex_);
   signalStepPhysics_ = true;
@@ -2537,12 +2604,30 @@ BatchedSimulator::getEnvironmentStates() const {
   return pythonEnvStates_;
 }
 
+const PythonBatchEnvironmentState& BatchedSimulator::getBatchEnvironmentState(
+    bool previous) const {
+  // 1: the copy we update during the physics step, on the physics thread
+  // 2: the "current" copy we share with python on the main thread
+  // 3: the "previous" copy we share with python on the main thread
+  static_assert(NUM_PYTHON_BATCH_ENV_STATES == 3);
+  int batchIdx = previous ? (nextBatchIdx_ + 1) % NUM_PYTHON_BATCH_ENV_STATES
+                          : (nextBatchIdx_ + 2) % NUM_PYTHON_BATCH_ENV_STATES;
+  return pythonBatchEnvStateWrapper_.getState(batchIdx);
+}
+
 void BatchedSimulator::waitStepPhysicsOrReset() {
   // ProfilingScope scope("BSim waitStepPhysicsOrReset");
   if (config_.doAsyncPhysicsStep) {
     std::unique_lock<std::mutex> lck(physicsFinishMutex_);
     physicsCondVar_.wait(lck, [&] { return isStepPhysicsOrResetFinished_; });
   }
+
+  if (didStepSinceLastWaitStepPhysics_) {
+    // make the latest batch env state available on the main thread (see also
+    // getBatchEnvironmentState).
+    nextBatchIdx_ = (nextBatchIdx_ + 1) % NUM_PYTHON_BATCH_ENV_STATES;
+  }
+  didStepSinceLastWaitStepPhysics_ = false;
 }
 
 void BatchedSimulator::physicsThreadFunc(int startEnvIndex, int numEnvs) {
