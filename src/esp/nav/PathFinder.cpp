@@ -145,7 +145,9 @@ class IslandSystem {
         if (navMesh->isValidPolyRef(startRef) &&
             (polyToIsland_.find(startRef) == polyToIsland_.end())) {
           uint32_t newIslandId = islandRadius_.size();
-          islandsToPolys_[newIslandId] = std::vector<dtPolyRef>();
+          islandsToPolys_.emplace(std::piecewise_construct,
+                                  std::forward_as_tuple(newIslandId),
+                                  std::tuple<>());
           expandFrom(navMesh, filter, newIslandId, startRef, islandVerts);
 
           // The radius is calculated as the max deviation from the mean for all
@@ -1605,10 +1607,12 @@ PathFinder::Impl::getTopDownView(const float metersPerPixel,
 assets::MeshData::ptr PathFinder::Impl::getNavMeshData(
     int islandIndex /*= ID_UNDEFINED*/) {
   islandSystem_->assertValidIsland(islandIndex);
-  if (islandMeshData_[islandIndex] == nullptr && isLoaded()) {
-    islandMeshData_[islandIndex] = assets::MeshData::create();
-    std::vector<esp::vec3f>& vbo = islandMeshData_[islandIndex]->vbo;
-    std::vector<uint32_t>& ibo = islandMeshData_[islandIndex]->ibo;
+
+  if (islandMeshData_.find(islandIndex) == islandMeshData_.end() &&
+      isLoaded()) {
+    assets::MeshData::ptr curIslandMeshData = assets::MeshData::create();
+    std::vector<esp::vec3f>& vbo = curIslandMeshData->vbo;
+    std::vector<uint32_t>& ibo = curIslandMeshData->ibo;
 
     // Iterate over all tiles
     for (int iTile = 0; iTile < navMesh_->getMaxTiles(); ++iTile) {
@@ -1643,7 +1647,11 @@ assets::MeshData::ptr PathFinder::Impl::getNavMeshData(
         }
       }
     }
+    // return newly added meshdata
+    return islandMeshData_.emplace(islandIndex, curIslandMeshData)
+        .first->second;
   }
+  // meshdata already exists, so lookup and return
   return islandMeshData_[islandIndex];
 }
 
