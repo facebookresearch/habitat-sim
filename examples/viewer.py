@@ -104,9 +104,7 @@ class HabitatSimInteractiveViewer(Application):
         self.glyph_cache = text.GlyphCache(mn.Vector2i(2048))
         self.display_font.fill_glyph_cache(
             self.glyph_cache,
-            "abcdefghijklmnopqrstuvwxyz"
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-            "0123456789:-_+,.! %µ",
+string.ascii_lowercase + string.ascii_uppercase +  string.digits + ":-_+,.! %µ"
         )
 
         # magnum text object that displays CPU/GPU usage data in the app window
