@@ -924,6 +924,7 @@ float polyArea(const dtPoly* poly, const dtMeshTile* tile) {
 // Also compute the NavMesh areas for later query.
 void impl::IslandSystem::removeZeroAreaPolys(dtNavMesh* navMesh) {
   islandsToArea_ = std::unordered_map<uint32_t, float>();
+  islandsToArea_.reserve(islandsToPolys_.size());
   // initialize the area cache.
   for (auto& itr : islandsToPolys_) {
     islandsToArea_[itr.first] = 0.0;
