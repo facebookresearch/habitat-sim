@@ -490,18 +490,15 @@ void GfxReplayTest::testLightIntegration() {
 
   const auto testFilepath =
       Corrade::Utility::Path::join(DATA_DIR, "./gfx_replay_test.json");
-  const LightInfo pointLight0{Magnum::Vector4{1.5f, 2.0f, 2.5f, 1.0f},
-                              {1.5, 2.0, 5.0},
-                              LightPositionModel::Global};
-  const LightInfo pointLight1{Magnum::Vector4{-10.0f, 4.25f, 10.0f, 1.0f},
+  const LightInfo pointLight0{
+      {1.5f, 2.0f, 2.5f, 1.0f}, {1.5, 2.0, 5.0}, LightPositionModel::Global};
+  const LightInfo pointLight1{{-10.0f, 4.25f, 10.0f, 1.0f},
                               {5.0, 5.0, 0.0},
                               LightPositionModel::Camera};
-  const LightInfo pointLight2{Magnum::Vector4{0.0f, 1.2f, -4.0f, 1.0f},
-                              {4.0, 4.0, 4.0},
-                              LightPositionModel::Object};
-  const LightInfo dirLight{Magnum::Vector4{0.1f, 0.2f, -0.3f, 0.0f},
-                           {0.0, 0.0, 1.0},
-                           LightPositionModel::Global};
+  const LightInfo pointLight2{
+      {0.0f, 1.2f, -4.0f, 1.0f}, {4.0, 4.0, 4.0}, LightPositionModel::Object};
+  const LightInfo dirLight{
+      {0.1f, 0.2f, -0.3f, 0.0f}, {0.0, 0.0, 1.0}, LightPositionModel::Global};
   const LightSetup lightSetup0{pointLight0, pointLight1};
   const LightSetup lightSetup1{pointLight2};
   const LightSetup lightSetup2{dirLight};

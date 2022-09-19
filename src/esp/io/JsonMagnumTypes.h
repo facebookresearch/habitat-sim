@@ -95,11 +95,10 @@ inline bool fromJsonValue(const JsonGenericValue& obj, Magnum::Vector4& val) {
   return false;
 }
 
-inline JsonGenericValue toJsonValue(const Magnum::Color3& color,
+inline JsonGenericValue toJsonValue(const Magnum::Color3& val,
                                     JsonAllocator& allocator) {
-  return toJsonArrayHelper(color.data(), 3, allocator);
+  return toJsonValue(static_cast<const Magnum::Vector3&>(val), allocator);
 }
-
 /**
  * @brief Specialization to handle Magnum::Color3 values. Populate passed @p
  * val with value. Returns whether successfully populated, or not. Logs an error
@@ -110,26 +109,12 @@ inline JsonGenericValue toJsonValue(const Magnum::Color3& color,
  * @return whether successful or not
  */
 inline bool fromJsonValue(const JsonGenericValue& obj, Magnum::Color3& val) {
-  if (obj.IsArray() && obj.Size() == 3) {
-    Magnum::Vector3 vec3;
-    for (rapidjson::SizeType i = 0; i < 3; ++i) {
-      if (obj[i].IsNumber()) {
-        vec3[i] = obj[i].GetDouble();
-      } else {
-        ESP_ERROR() << "Invalid numeric value specified in JSON Color3, index :"
-                    << i;
-        return false;
-      }
-    }
-    val = Magnum::Color3(vec3);
-    return true;
-  }
-  return false;
+  return fromJsonValue(obj, static_cast<Magnum::Vector3&>(val));
 }
 
-inline JsonGenericValue toJsonValue(const Magnum::Color4& color,
+inline JsonGenericValue toJsonValue(const Magnum::Color4& val,
                                     JsonAllocator& allocator) {
-  return toJsonArrayHelper(color.data(), 4, allocator);
+  return toJsonValue(static_cast<const Magnum::Vector4&>(val), allocator);
 }
 
 /**
@@ -142,21 +127,7 @@ inline JsonGenericValue toJsonValue(const Magnum::Color4& color,
  * @return whether successful or not
  */
 inline bool fromJsonValue(const JsonGenericValue& obj, Magnum::Color4& val) {
-  if (obj.IsArray() && obj.Size() == 4) {
-    Magnum::Vector4 vec4;
-    for (rapidjson::SizeType i = 0; i < 4; ++i) {
-      if (obj[i].IsNumber()) {
-        vec4[i] = obj[i].GetDouble();
-      } else {
-        ESP_ERROR() << "Invalid numeric value specified in JSON Color4, index :"
-                    << i;
-        return false;
-      }
-    }
-    val = Magnum::Color4(vec4);
-    return true;
-  }
-  return false;
+  return fromJsonValue(obj, static_cast<Magnum::Vector4&>(val));
 }
 
 JsonGenericValue toJsonValue(const Magnum::Quaternion& quat,
