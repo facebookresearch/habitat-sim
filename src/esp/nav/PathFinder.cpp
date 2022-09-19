@@ -145,9 +145,6 @@ class IslandSystem {
         if (navMesh->isValidPolyRef(startRef) &&
             (polyToIsland_.find(startRef) == polyToIsland_.end())) {
           uint32_t newIslandId = islandRadius_.size();
-          islandsToPolys_.emplace(std::piecewise_construct,
-                                  std::forward_as_tuple(newIslandId),
-                                  std::tuple<>());
           expandFrom(navMesh, filter, newIslandId, startRef, islandVerts);
 
           // The radius is calculated as the max deviation from the mean for all
