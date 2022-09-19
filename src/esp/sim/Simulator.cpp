@@ -308,7 +308,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
           metadataMediator_->getLightLayoutAttributesManager()
               ->createLightSetupFromAttributes(lightSetupKey);
       // set lightsetup in resource manager
-      resourceManager_->setLightSetup(lightingSetup,
+      resourceManager_->setLightSetup(std::move(lightingSetup),
                                       Mn::ResourceKey{lightSetupKey});
     }
   }
