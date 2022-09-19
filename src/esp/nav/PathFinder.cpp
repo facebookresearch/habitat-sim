@@ -246,7 +246,8 @@ class IslandSystem {
         islands.push_back(itr.first);
       }
     } else if (invert) {
-      // all but a  single island
+      // all but a single island
+      islands.reserve(islandsToPolys_.size());
       for (auto& itr : islandsToPolys_) {
         if (itr.first != islandIndex) {
           islands.push_back(itr.first);
