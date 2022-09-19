@@ -241,6 +241,7 @@ class IslandSystem {
 
     if (islandIndex == ID_UNDEFINED) {
       // all islands
+      islands.reserve(islandsToPolys_.size());
       for (auto& itr : islandsToPolys_) {
         islands.push_back(itr.first);
       }
