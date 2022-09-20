@@ -509,7 +509,7 @@ class Simulator(SimulatorBackend):
             agent_ids = [agent_ids]
 
         for agent_id in agent_ids:
-            for _sensor_uuid, sensor in self.__sensors[agent_id].items():
+            for sensor in self.__sensors[agent_id].values():
                 self._draw_observation_async(sensor, agent_id)
 
         self.renderer.start_draw_jobs()
@@ -540,11 +540,10 @@ class Simulator(SimulatorBackend):
         # As backport. All Dicts are ordered in Python >= 3.7
         per_agent_observations: Dict[int, MultiSensorObservations] = OrderedDict()
         for agent_id in agent_ids:
-            agent_observations: MultiSensorObservations = {}
-            for sensor_uuid, sensor in self.__sensors[agent_id].items():
-                agent_observations[sensor_uuid] = self._get_observation_async(
-                    sensor, agent_id
-                )
+            agent_observations = {
+                uuid: self._get_observation_async(sensor, agent_id)
+                for (uuid, sensor) in self.__sensors[agent_id].items()
+            }
             per_agent_observations[agent_id] = agent_observations
 
         if return_single:
@@ -574,9 +573,10 @@ class Simulator(SimulatorBackend):
         # As backport. All Dicts are ordered in Python >= 3.7
         per_agent_observations: Dict[int, MultiSensorObservations] = OrderedDict()
         for agent_id in agent_ids:
-            agent_observations: MultiSensorObservations = {}
-            for sensor_uuid, sensor in self.__sensors[agent_id].items():
-                agent_observations[sensor_uuid] = self.get_observation(sensor, agent_id)
+            agent_observations: MultiSensorObservations = {
+                uuid: self.get_observation(sensor, agent_id)
+                for (uuid, sensor) in self.__sensors[agent_id].items()
+            }
             per_agent_observations[agent_id] = agent_observations
 
         if return_single:
