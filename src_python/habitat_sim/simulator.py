@@ -41,18 +41,6 @@ SensorObservation = Union[ndarray, "Tensor"]
 # A dictionary of sensor uuids to their associated sensor observation
 MultiSensorObservations = Dict[str, SensorObservation]
 
-# a list of the agents' associated sensors' observations.
-# if there is only one agent, it is the same as MultiSensorObservations.
-PerAgentSensorObservations = Union[
-    MultiSensorObservations,
-    Dict[int, MultiSensorObservations],
-]
-
-# TODO: use these types eventually, with sensors not coupled with anything
-SensorDict = Dict[str, Sensor]
-SensorObsBuffers = Dict[str, SensorObservation]
-SensorImageViews = Dict[str, mn.MutableImageView2D]
-
 
 @attr.s(auto_attribs=True, slots=True)
 class Configuration:
@@ -94,8 +82,8 @@ class Simulator(SimulatorBackend):
     )
 
     # # TODO: use the following three vars to start decoupling sensors from agents
-    # __sensors: PerNodeUuidToSensorDict = attr.ib(factory=list, init=False)
-    # __sensor_image_views: PerNodeUuidToSensorImageViews = attr.ib(
+    # __sensors: Dict[str, Sensor] = attr.ib(factory=dict, init=False)
+    # __sensor_image_views: Dict[str, mn.MutableImageView2D] = attr.ib(
     #     factory=dict, init=False
     # )
 
