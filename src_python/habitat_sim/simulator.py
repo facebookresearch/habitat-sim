@@ -715,19 +715,15 @@ class Simulator(SimulatorBackend):
         observation_buffer = self.__sensor_buffers[agent_id].get(sensor_spec.uuid)
 
         if sensor_spec.gpu2gpu_transfer:
-            with torch.cuda.device(observation_buffer.gpu_device):  # type: ignore[attr-defined]
-                # buffer_as_array = torch.asarray(observation_buffer)
+            with torch.cuda.device(self.gpu_device):  # type: ignore[attr-defined, union-attr]
                 if sensor_spec.sensor_type == SensorType.SEMANTIC:
-                    # type: ignore[attr-defined]
-                    tgt.read_frame_object_id_gpu(observation_buffer.data_ptr())
+                    tgt.read_frame_object_id_gpu(observation_buffer.data_ptr())  # type: ignore[attr-defined, union-attr]
                 elif sensor_spec.sensor_type == SensorType.DEPTH:
-                    # type: ignore[attr-defined]
-                    tgt.read_frame_depth_gpu(observation_buffer.data_ptr())
+                    tgt.read_frame_depth_gpu(observation_buffer.data_ptr())  # type: ignore[attr-defined, union-attr]
                 elif sensor_spec.sensor_type == SensorType.COLOR:
-                    # type: ignore[attr-defined]
-                    tgt.read_frame_rgba_gpu(observation_buffer.data_ptr())
+                    tgt.read_frame_rgba_gpu(observation_buffer.data_ptr())  # type: ignore[attr-defined, union-attr]
 
-                observation = observation_buffer.flip(0)
+                observation = observation_buffer.flip(0)  # type: ignore[union-attr]
         else:
             if sensor_spec.sensor_type == SensorType.SEMANTIC:
                 tgt.read_frame_object_id(
