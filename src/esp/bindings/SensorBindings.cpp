@@ -253,8 +253,8 @@ void initSensorBindings(py::module& m) {
           R"(The distance to the far clipping plane for this CameraSensor uses.)")
       .def(
           "buffer",
-          [](py::handle handle, int gpuDevice) {
-            auto self = handle.cast<CameraSensor>();
+          [](CameraSensor& self, int gpuDevice) {
+            py::handle handle = py::cast(self);
             if (!py::hasattr(handle, "__buffer")) {
               if (self.specification()->gpu2gpuTransfer) {
                 auto torch = py::module_::import("torch");
