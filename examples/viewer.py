@@ -194,12 +194,14 @@ class HabitatSimInteractiveViewer(Application):
         agent = self.sim.get_agent(keys[0])
 
         # TODO see if we can make it easier to get sensors from agent and scene graph
-        self.camera_sensor = agent.scene_node.node_sensor_suite.get(keys[1])
+        self.camera_sensor = agent.get_sensor(keys[1])
         self.render_camera = self.camera_sensor.render_camera
 
         # self.render_camera = agent.get_sensor_in_sensor_suite(keys[1])
         self.sim.draw_observation(self.camera_sensor)
         self.debug_draw()
+        if not self.camera_sensor.has_render_target():
+            self.sim.renderer.bind_render_target(self.camera_sensor)
         self.camera_sensor.render_target.blit_rgba_to_default()
         mn.gl.default_framebuffer.bind()
 
@@ -283,9 +285,9 @@ class HabitatSimInteractiveViewer(Application):
         # breakpoint()
         # self.render_camera = self.agent_body_node.node_sensor_suite.get("color_sensor")
         self.camera_sensor = self.agent_body_node.node_sensors.get("color_sensor")
-        self.render_camera = self.camera_sensor.render_camera
         if not self.camera_sensor.has_render_target():
             self.sim.renderer.bind_render_target(self.camera_sensor)
+        self.render_camera = self.camera_sensor.render_camera
         # set sim_settings scene name as actual loaded scene
         self.sim_settings["scene"] = self.sim.curr_scene_name
 

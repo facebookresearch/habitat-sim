@@ -132,6 +132,7 @@ class Agent:
         self.controls = controls if controls else ObjectControls()
         self.body = mn.scenegraph.AbstractFeature3D(scene_node)
         scene_node.type = hsim.SceneNodeType.AGENT
+        self.did_collide = False
         self.reconfigure(self.agent_config)
         self.initial_state: Optional[AgentState] = None
 
@@ -149,7 +150,7 @@ class Agent:
         self.agent_config = agent_config
 
         if reconfigure_sensors:
-            self.scene_node.subtree_sensors.clear()
+            self.scene_node.node_sensors.clear()
             for spec in self.agent_config.sensor_specifications:
                 self._add_sensor(spec, modify_agent_config=False)
 
@@ -157,7 +158,7 @@ class Agent:
         self, spec: hsim.SensorSpec, modify_agent_config: bool = True
     ) -> None:
         assert (
-            spec.uuid not in self.scene_node.subtree_sensors
+            spec.uuid not in self.scene_node.node_sensors
         ), f"Error, {spec.uuid} already exists in the sensor suite"
         if modify_agent_config:
             assert spec not in self.agent_config.sensor_specifications
@@ -178,19 +179,19 @@ class Agent:
         ), f"No action {action_id} in action space"
         action = self.agent_config.action_space[action_id]
 
-        did_collide = False
+        self.did_collide = False
         if self.controls.is_body_action(action.name):
-            did_collide = self.controls.action(
+            self.did_collide = self.controls.action(
                 self.scene_node, action.name, action.actuation, apply_filter=True
             )
         else:
-            for _, v in self.scene_node.subtree_sensors.items():
+            for _, v in self.scene_node.node_sensors.items():
                 habitat_sim.errors.assert_obj_valid(v)
                 self.controls.action(
                     v.object, action.name, action.actuation, apply_filter=False
                 )
 
-        return did_collide
+        return self.did_collide
 
     @NoAttrValidationContext()
     def get_state(self) -> AgentState:
@@ -199,7 +200,7 @@ class Agent:
             np.array(self.body.object.absolute_translation), self.body.object.rotation
         )
 
-        for k, v in self.scene_node.subtree_sensors.items():
+        for k, v in self.scene_node.node_sensors.items():
             habitat_sim.errors.assert_obj_valid(v)
             state.sensor_states[k] = SixDOFPose(
                 np.array(v.node.absolute_translation),
@@ -248,17 +249,19 @@ class Agent:
         self.body.object.translate(state.position)
         self.body.object.rotation = quat_to_magnum(state.rotation)
 
+        self.did_collide = False
+
         if reset_sensors:
-            for _, v in self.scene_node.subtree_sensors.items():
+            for _, v in self.scene_node.node_sensors.items():
                 v.set_transformation_from_spec()
 
         if not infer_sensor_states:
             for k, v in state.sensor_states.items():
-                assert k in self.scene_node.subtree_sensors
+                assert k in self.scene_node.node_sensors
                 if isinstance(v.rotation, list):
                     v.rotation = quat_from_coeffs(v.rotation)
 
-                s = self.scene_node.subtree_sensors[k]
+                s = self.scene_node.node_sensors[k]
 
                 s.node.reset_transformation()
                 s.node.translate(
@@ -270,6 +273,15 @@ class Agent:
 
         if is_initial:
             self.initial_state = state
+
+    @property
+    def did_collide(self):
+        return self.did_collide
+
+    @did_collide.setter
+    def did_collide(self, collision_occurred):
+        r"""Get/set whether or not the agent collided with something this timestep."""
+        self.did_collide = collision_occurred
 
     @property
     def scene_node(self) -> hsim.SceneNode:
@@ -293,19 +305,20 @@ class Agent:
             new_state, reset_sensors=True, infer_sensor_states=True, is_initial=False
         )
 
-    def close(self) -> None:
-        self._sensors = None
-
-    def get_sensor_suite(self) -> Dict[str, hsim.Sensor]:
+    def get_sensors(self) -> Dict[str, hsim.Sensor]:
+        # TODO: not sure if necessary
         habitat_sim.errors.assert_obj_valid(self.body)
-        return self.body.object.node_sensor_suite.get_sensors()
+        return self.body.object.node_sensors
 
-    def get_sensor_in_sensor_suite(self, uuid: str) -> hsim.Sensor:
-        return self.get_sensor_suite().get(uuid)
+    def get_sensor(self, uuid: str) -> hsim.Sensor:
+        # TODO: not sure if necessary
+        return self.get_sensors().get(uuid)
 
-    def get_subtree_sensor_suite(self) -> Dict[str, hsim.Sensor]:
+    def get_subtree_sensors(self) -> Dict[str, hsim.Sensor]:
+        # TODO: not sure if necessary
         habitat_sim.errors.assert_obj_valid(self.body)
-        return self.body.object.subtree_sensor_suite.get_sensors()
+        return self.body.object.subtree_sensors
 
-    def get_sensor_in_subtree(self, uuid: str) -> hsim.Sensor:
-        return self.get_subtree_sensor_suite().get(uuid)
+    def get_subtree_sensor(self, uuid: str) -> hsim.Sensor:
+        # TODO: not sure if necessary
+        return self.get_subtree_sensors().get(uuid)

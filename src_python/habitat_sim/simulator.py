@@ -5,7 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 
 import time
-from collections import OrderedDict
 from collections.abc import MutableMapping
 from os import path as osp
 from typing import Any, Dict, List
@@ -28,7 +27,7 @@ except ImportError:
 
 import habitat_sim.errors
 from habitat_sim.agent.agent import Agent, AgentConfiguration, AgentState
-from habitat_sim.bindings import SceneNode, Sensor, SensorSpec, SensorType, cuda_enabled
+from habitat_sim.bindings import Sensor, SensorSpec, SensorType, cuda_enabled
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.metadata import MetadataMediator
 from habitat_sim.nav import GreedyGeodesicFollower, NavMeshSettings
@@ -42,11 +41,20 @@ SensorObservation = Union[ndarray, "Tensor"]
 # A dictionary of all sensor uuids to their associated sensor observation
 MultiSensorObservations = Dict[str, SensorObservation]
 
-# a dictionary of agent_ids to their associated MultiSensorObservations.
+# a list of the agents' associated sensors' observations.
 # if there is only one agent, it is the same as MultiSensorObservations.
-PerAgentSensorObservations = Union[
-    MultiSensorObservations, Dict[int, MultiSensorObservations]
+# PerAgentSensorObservations = Union[
+#     MultiSensorObservations, List[MultiSensorObservations]
+# ]
+PerAgentSensorObservations = List[MultiSensorObservations]
+
+# TODO: use these type eventually, with sensors tied to scene nodes and not agents
+PerNodeSensorsObservations = Union[
+    MultiSensorObservations, Dict[str, MultiSensorObservations]
 ]
+SensorDict = Dict[str, Sensor]
+PerNodeSensorDict = List[SensorDict]
+PerNodeSensorImageViews = Dict[int, Dict[str, mn.MutableImageView2D]]
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -79,26 +87,32 @@ class Simulator(SimulatorBackend):
     """
 
     config: Configuration
+    _async_draw_agent_ids: Optional[Union[int, List[int]]] = None
     agents: List[Agent] = attr.ib(factory=list, init=False)
+    # TODO: remove these eventually in favor of sensors tied to scene nodes
+    __sensors: List[Dict[str, Sensor]] = attr.ib(factory=list, init=False)
+    __sensor_buffers: List[MultiSensorObservations] = attr.ib(factory=list, init=False)
+    __sensor_image_views: List[Dict[str, mn.MutableImageView2D]] = attr.ib(
+        factory=list, init=False
+    )
+    __noise_models: Dict[str, SensorNoiseModel] = attr.ib(factory=dict, init=False)
+    __last_state: Dict[int, AgentState] = attr.ib(factory=dict, init=False)
     _num_total_frames: int = attr.ib(default=0, init=False)
     _default_agent_id: int = attr.ib(default=0, init=False)
-    __sensors: List[Dict[str, Sensor]] = attr.ib(factory=list, init=False)
 
-    # TODO: use the following three vars to avoid needing a SensorWrapper class
-    # and start decoupling sensors from agents
-    __sensors_dict: Dict[str, Sensor] = attr.ib(factory=dict, init=False)
-    __sensor_buffers: MultiSensorObservations = attr.ib(factory=dict, init=False)
-    __sensor_image_views: Dict[str, mn.MutableImageView2D] = attr.ib(
-        factory=dict, init=False
-    )
+    # # TODO: use the following three vars to start decoupling sensors from agents
 
-    __noise_models: Dict[str, SensorNoiseModel] = attr.ib(factory=dict, init=False)
+    # __sensors: PerNodeUuidToSensorDict = attr.ib(factory=list, init=False)
+    # __sensor_buffers: PerNodeSensorsObservations = attr.ib(factory=dict, init=False)
+    # __sensor_image_views: PerNodeUuidToSensorImageViews = attr.ib(
+    #     factory=dict, init=False
+    # )
+
     _initialized: bool = attr.ib(default=False, init=False)
+
     _previous_step_time: float = attr.ib(
         default=0.0, init=False
     )  # track the compute time of each step
-    _async_draw_agent_ids: Optional[Union[int, List[int]]] = None
-    __last_state: Dict[int, AgentState] = attr.ib(factory=dict, init=False)
 
     @staticmethod
     def _sanitize_config(config: Configuration) -> None:
@@ -132,7 +146,6 @@ class Simulator(SimulatorBackend):
 
     def __attrs_post_init__(self) -> None:
         LoggingContext.reinitialize_from_env()
-        print("In __attrs_post_init__ ++++++++++++++++++++++++++++++++++++++++++++++")
         self._sanitize_config(self.config)
         self.__set_from_config(self.config)
 
@@ -153,12 +166,26 @@ class Simulator(SimulatorBackend):
         if self.renderer is not None:
             self.renderer.acquire_gl_context()
 
+        for agent_sensorsuite in self.__sensors:
+            for sensor in agent_sensorsuite.values():
+                sensor.close()
+                del sensor
+        self.__sensors = []
+
+        for sensor_buffers_dict in self.__sensor_buffers:
+            sensor_buffers_dict.clear()
+            # TODO do I need to delete anything?
+        self.__sensor_buffers = []
+
+        for sensor_views_dict in self.__sensor_image_views:
+            sensor_views_dict.clear()
+            # TODO do I need to delete anything?
+        self.__sensor_image_views = []
+
         self.__noise_models.clear()
 
         for agent in self.agents:
-            agent.close()
             del agent
-
         self.agents = []
 
         self.__last_state.clear()
@@ -177,29 +204,33 @@ class Simulator(SimulatorBackend):
         self.pathfinder.seed(new_seed)
 
     @overload
-    def reset(self, agent_ids: List[int]) -> Dict[int, MultiSensorObservations]:
-        ...
-
-    @overload
     def reset(self, agent_ids: Optional[int] = None) -> MultiSensorObservations:
         ...
 
+    @overload
+    def reset(self, agent_ids: List[int]) -> List[MultiSensorObservations]:
+        ...
+
+    # def reset(
+    #     self, agent_ids: Union[Optional[int], List[int]] = None
+    # ) -> PerAgentSensorObservations:
     def reset(
         self, agent_ids: Union[Optional[int], List[int]] = None
-    ) -> PerAgentSensorObservations:
+    ) -> Union[MultiSensorObservations, List[MultiSensorObservations]]:
+
         super().reset()
         for i in range(len(self.agents)):
             self.reset_agent(i)
 
         if agent_ids is None:
             agent_ids = [self._default_agent_id]
-            return_single = True
         else:
             agent_ids = cast(List[int], agent_ids)
-            return_single = False
-        per_agent_observations = self.get_sensor_observations(agent_ids=agent_ids)
-        if return_single:
-            return per_agent_observations[agent_ids[0]]
+
+        per_agent_observations: Union[
+            MultiSensorObservations, List[MultiSensorObservations]
+        ] = self.get_sensor_observations(agent_ids=agent_ids)
+
         return per_agent_observations
 
     def reset_agent(self, agent_id: int) -> None:
@@ -292,6 +323,9 @@ class Simulator(SimulatorBackend):
         self._default_agent_id = config.sim_cfg.default_agent_id
 
         self.__noise_models: Dict[str, SensorNoiseModel] = {}
+        self.__sensors: List[Dict[str, Sensor]] = []
+        self.__sensor_buffers: PerAgentSensorObservations = []
+        self.__sensor_image_views: List[Dict[str, mn.MutableImageView2D]] = []
         self.__last_state = dict()
         for agent_id, _ in enumerate(config.agents):
             self.initialize_agent(agent_id)
@@ -314,12 +348,11 @@ class Simulator(SimulatorBackend):
     def get_noise_model(self, sensor_spec: SensorSpec) -> SensorNoiseModel:
         if sensor_spec.uuid not in self.__noise_models:
             self.__noise_models[sensor_spec.uuid] = self.make_noise_model(sensor_spec)
-        return self.__noise_models[sensor_spec.uuid]
+        return self.__noise_models.get(sensor_spec.uuid)
 
     def add_sensor(
         self,
         sensor_spec: SensorSpec,
-        scene_node: Optional[SceneNode] = None,
         agent_id: Optional[int] = None,
     ) -> None:
         if (
@@ -342,27 +375,28 @@ class Simulator(SimulatorBackend):
                     Cannot dynamically add a {sensor_type} sensor unless one already exists.
                     """
             )
+        # TODO: change such that sensors don't need to be tied to agents
         if agent_id is None:
             agent_id = self._default_agent_id
 
         agent = self.get_agent(agent_id=agent_id)
         agent._add_sensor(sensor_spec)
-        sensor = agent.get_sensor_in_sensor_suite(sensor_spec.uuid)
 
         # TODO: temporary, adapt as we refactor our sensor functionality
-        self.__sensors_dict[sensor_spec.uuid] = sensor
-        self.init_sensor_buffer_and_image_view(sensor_spec)
+        self._init_sensor(sensor_spec, agent_id)
 
-    # TODO there are two ways of getting sensors now bc we hope to make sensors
-    # independent of agents eventually, so we will remove the first way soon
-    def get_sensor(self, sensor_uuid, agent_id: Optional[int] = None) -> Sensor:
-        if agent_id is not None:
-            return self.agents[agent_id].get_sensor_in_sensor_suite(sensor_uuid)
-        else:
-            return self.__sensors_dict.get(sensor_uuid)
+    def _init_sensor(self, sensor_spec: Sensor, agent_id: Optional[int] = None):
+        # TODO: temporary method while we get rid of Simulator.Sensor wrapper class
+        sensor = self.get_agent(agent_id).get_sensor(sensor_spec.uuid)
+        self.__sensors[agent_id][sensor_spec.uuid] = sensor
 
-    # TODO: temporary while we get rid of Simulator.Sensor wrapper class
-    def init_sensor_buffer_and_image_view(self, sensor_spec: SensorSpec):
+        if sensor_spec.sensor_type == SensorType.AUDIO:
+            return
+
+        if self.renderer is not None and not sensor.has_render_target():
+            print("In __init__ binding render target")
+            self.renderer.bind_render_target(sensor)
+
         if sensor_spec.gpu2gpu_transfer:
             assert cuda_enabled, "Must build habitat sim with cuda for gpu2gpu-transfer"
             assert _HAS_TORCH
@@ -370,65 +404,77 @@ class Simulator(SimulatorBackend):
             torch.cuda.set_device(device)
 
             if sensor_spec.sensor_type == SensorType.SEMANTIC:
-                self.__sensor_buffers[sensor_spec.uuid] = torch.empty(
+                self.__sensor_buffers[agent_id][sensor_spec.uuid] = torch.empty(
                     sensor_spec.resolution[0],
                     sensor_spec.resolution[1],
                     dtype=torch.int32,
                     device=device,
                 )
             elif sensor_spec.sensor_type == SensorType.DEPTH:
-                self.__sensor_buffers[sensor_spec.uuid] = torch.empty(
+                self.__sensor_buffers[agent_id][sensor_spec.uuid] = torch.empty(
                     sensor_spec.resolution[0],
                     sensor_spec.resolution[1],
                     dtype=torch.float32,
                     device=device,
                 )
             else:  # sensor type is likely SensorType.COLOR
-                self.__sensor_buffers[sensor_spec.uuid] = torch.empty(
+                self.__sensor_buffers[agent_id][sensor_spec.uuid] = torch.empty(
                     sensor_spec.resolution[0],
                     sensor_spec.resolution[1],
-                    4,
+                    sensor_spec.channels,  # for R, G, B, A
                     dtype=torch.uint8,
                     device=device,
                 )
         else:
+            view_size = sensor.framebuffer_size
             if sensor_spec.sensor_type == SensorType.SEMANTIC:
-                self.__sensor_buffers[sensor_spec.uuid] = np.empty(
+                self.__sensor_buffers[agent_id][sensor_spec.uuid] = np.empty(
                     (sensor_spec.resolution[0], sensor_spec.resolution[1]),
                     dtype=np.uint32,
                 )
-                sensor_buffer = self.__sensor_buffers.get(sensor_spec.uuid)
-                self.__sensor_image_views[sensor_spec.uuid] = mn.MutableImageView2D(
-                    mn.PixelFormat.R32UI,
-                    mn.Vector2i(sensor_spec.resolution[0], sensor_spec.resolution[1]),
-                    sensor_buffer,
+                sensor_buffer = self.__sensor_buffers[agent_id].get(sensor_spec.uuid)
+                self.__sensor_image_views[agent_id][
+                    sensor_spec.uuid
+                ] = mn.MutableImageView2D(
+                    mn.PixelFormat.R32UI, view_size, sensor_buffer
                 )
             elif sensor_spec.sensor_type == SensorType.DEPTH:
-                self.__sensor_buffers[sensor_spec.uuid] = np.empty(
+                self.__sensor_buffers[agent_id][sensor_spec.uuid] = np.empty(
                     (sensor_spec.resolution[0], sensor_spec.resolution[1]),
                     dtype=np.float32,
                 )
-                sensor_buffer = self.__sensor_buffers.get(sensor_spec.uuid)
-                self.__sensor_image_views[sensor_spec.uuid] = mn.MutableImageView2D(
+                sensor_buffer = self.__sensor_buffers[agent_id].get(sensor_spec.uuid)
+                self.__sensor_image_views[agent_id][
+                    sensor_spec.uuid
+                ] = mn.MutableImageView2D(
                     mn.PixelFormat.R32F,
-                    mn.Vector2i(sensor_spec.resolution[0], sensor_spec.resolution[1]),
+                    view_size,
                     sensor_buffer,
                 )
             else:  # sensor type is likely SensorType.COLOR
-                self.__sensor_buffers[sensor_spec.uuid] = np.empty(
+                self.__sensor_buffers[agent_id][sensor_spec.uuid] = np.empty(
                     (
                         sensor_spec.resolution[0],
                         sensor_spec.resolution[1],
-                        sensor_spec.channels,
+                        sensor_spec.channels,  # for R, G, B, A
                     ),
                     dtype=np.uint8,
                 )
-                sensor_buffer = self.__sensor_buffers.get(sensor_spec.uuid)
-                self.__sensor_image_views[sensor_spec.uuid] = mn.MutableImageView2D(
+                sensor_buffer = self.__sensor_buffers[agent_id].get(sensor_spec.uuid)
+                self.__sensor_image_views[agent_id][
+                    sensor_spec.uuid
+                ] = mn.MutableImageView2D(
                     mn.PixelFormat.RGBA8_UNORM,
-                    mn.Vector2i(sensor_spec.resolution[0], sensor_spec.resolution[1]),
+                    view_size,
                     sensor_buffer.reshape(sensor_spec.resolution[0], -1),
                 )
+
+    def get_sensor(self, sensor_uuid, agent_id: Optional[int] = None) -> Sensor:
+        if agent_id is not None:
+            return self.__sensors[agent_id].get(sensor_uuid)
+        else:
+            # TODO: use this eventually, so that sensors are independent of agents
+            return self.__sensors_dict.get(sensor_uuid)
 
     def get_agent(self, agent_id: int) -> Agent:
         return self.agents[agent_id]
@@ -447,6 +493,7 @@ class Simulator(SimulatorBackend):
 
         agent.set_state(initial_state, is_initial=True)
         self.__last_state[agent_id] = agent.state
+        agent.did_collide = False
         return agent
 
     def start_async_render(self, agent_ids: Union[int, List[int]] = 0):
@@ -462,9 +509,9 @@ class Simulator(SimulatorBackend):
             agent_ids = [agent_ids]
 
         for agent_id in agent_ids:
-            agent_sensorsuite = self.get_agent(agent_id).get_sensor_suite()
+            agent_sensorsuite = self.get_agent(agent_id).scene_node.node_sensor_suite
             for _, sensor in agent_sensorsuite.items():
-                sensor._draw_observation_async()
+                self._draw_observation_async(sensor, agent_id)
 
         self.renderer.start_draw_jobs()
 
@@ -476,7 +523,7 @@ class Simulator(SimulatorBackend):
 
     def get_sensor_observations_async_finish(
         self,
-    ) -> PerAgentSensorObservations:
+    ) -> Union[MultiSensorObservations, List[MultiSensorObservations]]:
         if self._async_draw_agent_ids is None:
             raise RuntimeError(
                 "get_sensor_observations_async_finish was called before calling start_async_render_and_step_physics."
@@ -492,7 +539,7 @@ class Simulator(SimulatorBackend):
 
         self.renderer.wait_draw_jobs()
         # As backport. All Dicts are ordered in Python >= 3.7
-        per_agent_observations: Dict[int, MultiSensorObservations] = OrderedDict()
+        per_agent_observations: List[MultiSensorObservations] = []
         for agent_id in agent_ids:
             agent_observations: MultiSensorObservations = {}
             for sensor_uuid, sensor in self.get_agent(
@@ -501,25 +548,32 @@ class Simulator(SimulatorBackend):
                 agent_observations[sensor_uuid] = self._get_observation_async(
                     sensor, agent_id
                 )
+            if return_single:
+                return agent_observations
+            else:
+                per_agent_observations[agent_id] = agent_observations
 
-            per_agent_observations[agent_id] = agent_observations
-        if return_single:
-            return next(iter(per_agent_observations.values()))
         return per_agent_observations
 
-    @overload
-    def get_sensor_observations(self, agent_ids: int = 0) -> MultiSensorObservations:
-        ...
+    # @overload
+    # def get_sensor_observations(self, agent_id: int = 0) -> MultiSensorObservations:
+    #     ...
 
-    @overload
-    def get_sensor_observations(
-        self, agent_ids: List[int]
-    ) -> Dict[int, MultiSensorObservations]:
-        ...
+    # TODO uncomment
+    # @overload
+    # def get_sensor_observations(
+    #     self, agent_ids: List[int]
+    # ) -> List[MultiSensorObservations]:
+    #     ...
 
+    # TODO uncomment
+    # def get_sensor_observations(
+    #     self, agent_ids: Union[int, List[int]] = 0
+    # ) -> PerAgentSensorObservations:
     def get_sensor_observations(
         self, agent_ids: Union[int, List[int]] = 0
-    ) -> PerAgentSensorObservations:
+    ) -> Union[MultiSensorObservations, List[MultiSensorObservations]]:
+
         if isinstance(agent_ids, int):
             agent_ids = [agent_ids]
             return_single = True
@@ -527,17 +581,18 @@ class Simulator(SimulatorBackend):
             return_single = False
 
         # As backport. All Dicts are ordered in Python >= 3.7
-        per_agent_observations: Dict[int, MultiSensorObservations] = OrderedDict()
+        per_agent_observations: List[MultiSensorObservations] = []
         for agent_id in agent_ids:
-            agent_sensors = self.get_agent(agent_id).get_sensor_suite()
+            agent_sensors = self.get_agent(agent_id).scene_node.node_sensor_suite
             agent_observations: MultiSensorObservations = {}
             for sensor_uuid, sensor in agent_sensors.items():
-                agent_observations[sensor_uuid] = self.get_observation(sensor)
+                agent_observations[sensor_uuid] = self.get_observation(sensor, agent_id)
                 self.draw_observation(sensor)
-            per_agent_observations[agent_id] = agent_observations
+            if return_single:
+                return agent_observations
+            else:
+                per_agent_observations[agent_id] = agent_observations
 
-        if return_single:
-            return next(iter(per_agent_observations.values()))
         return per_agent_observations
 
     @property
@@ -569,24 +624,22 @@ class Simulator(SimulatorBackend):
     @overload
     def step(
         self, action: MutableMapping_T[int, Union[str, int]], dt: float = 1.0 / 60.0
-    ) -> Dict[int, MultiSensorObservations]:
+    ) -> List[MultiSensorObservations]:
         ...
 
     def step(
         self,
         action: Union[str, int, MutableMapping_T[int, Union[str, int]]],
         dt: float = 1.0 / 60.0,
-    ) -> PerAgentSensorObservations:
+    ) -> Union[MultiSensorObservations, List[MultiSensorObservations]]:
+
         self._num_total_frames += 1
-        if isinstance(action, MutableMapping):
-            return_single = False
-        else:
+        if not isinstance(action, MutableMapping):
             action = cast(Dict[int, Union[str, int]], {self._default_agent_id: action})
-            return_single = True
-        collided_dict: Dict[int, ndarray] = {}
+
         for agent_id, agent_act in action.items():
             agent = self.get_agent(agent_id)
-            collided_dict[agent_id] = ndarray([agent.act(agent_act)])
+            self.agents[agent_id].did_collide = agent.act(agent_act)
             self.__last_state[agent_id] = agent.get_state()
 
         # step physics by dt
@@ -595,18 +648,14 @@ class Simulator(SimulatorBackend):
         self._previous_step_time = time.time() - step_start_Time
 
         agent_ids = list(action.keys())
-        per_agent_observations: Dict[int, MultiSensorObservations] = OrderedDict()
-        per_agent_observations = self.get_sensor_observations(agent_ids)
+        per_agent_observations: Union[
+            MultiSensorObservations, List[MultiSensorObservations]
+        ] = self.get_sensor_observations(agent_ids)
 
-        for agent_id, agent_observations in per_agent_observations.items():
-            # the value associated with this "collided" key is a boolean ndarray
-            # with one entry so that it will work with our SensorObservation type,
-            # which is: Union[ndarray, "Tensor"]
-            agent_observations["collided"] = collided_dict[agent_id]
-
-        if return_single:
-            return per_agent_observations[self._default_agent_id]
         return per_agent_observations
+
+    def agent_did_collide(self, agent_id) -> bool:
+        return self.agents[agent_id].did_collide
 
     def make_greedy_follower(
         self,
@@ -655,7 +704,12 @@ class Simulator(SimulatorBackend):
     def step_physics(self, dt: float, scene_id: int = 0) -> None:
         self.step_world(dt)
 
-    def get_observation(self, sensor: Sensor) -> SensorObservation:
+    def get_observation(
+        self,
+        sensor: Sensor,
+        agent_id: Optional[int] = 0,  # TODO: change default to None eventually
+    ) -> SensorObservation:
+
         sensor_spec = sensor.specification()
         if sensor_spec.sensor_type == SensorType.AUDIO:
             return self._get_audio_observation(sensor)
@@ -664,7 +718,7 @@ class Simulator(SimulatorBackend):
             self.renderer.bind_render_target(sensor)
         tgt = sensor.render_target
         noise_model = self.get_noise_model(sensor_spec)
-        observation_buffer = self.__sensor_buffers.get(sensor_spec.uuid)
+        observation_buffer = self.__sensor_buffers[agent_id].get(sensor_spec.uuid)
 
         if sensor_spec.gpu2gpu_transfer:
             with torch.cuda.device(self.gpu_device):  # type: ignore[attr-defined]
@@ -683,12 +737,16 @@ class Simulator(SimulatorBackend):
         else:
             if sensor_spec.sensor_type == SensorType.SEMANTIC:
                 tgt.read_frame_object_id(
-                    self.__sensor_image_views.get(sensor_spec.uuid)
+                    self.__sensor_image_views[agent_id].get(sensor_spec.uuid)
                 )
             elif sensor_spec.sensor_type == SensorType.DEPTH:
-                tgt.read_frame_depth(self.__sensor_image_views.get(sensor_spec.uuid))
+                tgt.read_frame_depth(
+                    self.__sensor_image_views[agent_id].get(sensor_spec.uuid)
+                )
             elif sensor_spec.sensor_type == SensorType.COLOR:
-                tgt.read_frame_rgba(self.__sensor_image_views.get(sensor_spec.uuid))
+                tgt.read_frame_rgba(
+                    self.__sensor_image_views[agent_id].get(sensor_spec.uuid)
+                )
 
             observation = np.flip(observation_buffer, axis=0)
 
@@ -696,13 +754,13 @@ class Simulator(SimulatorBackend):
 
     # TODO newer, try to make work until we improve the design structure
     def _get_observation_async(
-        self, sensor: Sensor, agent_id: Optional[int] = None
+        self, sensor: Sensor, agent_id: Optional[int] = 0  # TODO change default to None
     ) -> SensorObservation:
         sensor_spec = sensor.specification()
         if sensor_spec.sensor_type == SensorType.AUDIO:
             return self._get_audio_observation(sensor, agent_id)
 
-        observation_buffer = self.__sensor_buffers.get(sensor_spec.uuid)
+        observation_buffer = self.__sensor_buffers[agent_id].get(sensor_spec.uuid)
         if sensor_spec.gpu2gpu_transfer:
             observation = observation_buffer.flip(0)  # type: ignore[union-attr]
         else:
@@ -756,7 +814,11 @@ class Simulator(SimulatorBackend):
 
             self.renderer.draw(sensor.render_camera, scene)
 
-    def _draw_observation_async(self, sensor: Sensor) -> None:
+    def _draw_observation_async(
+        self,
+        sensor: Sensor,
+        agent_id: Optional[int] = 0,  # TODO change this to None eventually
+    ) -> None:
         sensor_spec = sensor.specification()
         if sensor_spec.sensor_type == SensorType.AUDIO:
             # do nothing in draw observation, get_observation will be called after this
@@ -799,7 +861,7 @@ class Simulator(SimulatorBackend):
             if self.frustum_culling:
                 render_flags |= habitat_sim.gfx.Camera.Flags.FRUSTUM_CULLING
 
-            image_view = self.__sensor_image_views.get(sensor_spec)
+            image_view = self.__sensor_image_views[agent_id].get(sensor_spec)
             self.renderer.enqueue_async_draw_job(
                 sensor, scene, image_view, render_flags
             )
