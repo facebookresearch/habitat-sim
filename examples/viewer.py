@@ -26,6 +26,7 @@ from habitat_sim.utils.settings import default_sim_settings, make_cfg
 
 class HabitatSimInteractiveViewer(Application):
     def __init__(self, sim_settings: Dict[str, Any]) -> None:
+
         configuration = self.Configuration()
         configuration.title = "Habitat Sim Interactive Viewer"
         Application.__init__(self, configuration)
@@ -187,22 +188,11 @@ class HabitatSimInteractiveViewer(Application):
             )
 
         keys = active_agent_id_and_sensor_name
-
-        # TODO make sure we no longer call .draw_observation() on a sensor
-        # but rather on the simulator itself
-        # self.sim._Simulator__sensors[keys[0]][keys[1]].draw_observation()
-        agent = self.sim.get_agent(keys[0])
-
-        # TODO see if we can make it easier to get sensors from agent and scene graph
-        self.camera_sensor = agent.get_sensor(keys[1])
-        self.render_camera = self.camera_sensor.render_camera
-
-        # self.render_camera = agent.get_sensor_in_sensor_suite(keys[1])
-        self.sim.draw_observation(self.camera_sensor)
+        sensor = self.sim.get_agent(keys[0]).get_sensor(keys[1])
+        self.sim.draw_observation(sensor)
         self.debug_draw()
-        if not self.camera_sensor.has_render_target():
-            self.sim.renderer.bind_render_target(self.camera_sensor)
-        self.camera_sensor.render_target.blit_rgba_to_default()
+
+        sensor.render_target.blit_rgba_to_default()
         mn.gl.default_framebuffer.bind()
 
         self.swap_buffers()
@@ -282,12 +272,7 @@ class HabitatSimInteractiveViewer(Application):
         self.active_scene_graph = self.sim.get_active_scene_graph()
         self.default_agent = self.sim.get_agent(self.agent_id)
         self.agent_body_node = self.default_agent.scene_node
-        # breakpoint()
-        # self.render_camera = self.agent_body_node.node_sensor_suite.get("color_sensor")
-        self.camera_sensor = self.agent_body_node.node_sensors.get("color_sensor")
-        if not self.camera_sensor.has_render_target():
-            self.sim.renderer.bind_render_target(self.camera_sensor)
-        self.render_camera = self.camera_sensor.render_camera
+
         # set sim_settings scene name as actual loaded scene
         self.sim_settings["scene"] = self.sim.curr_scene_name
 
@@ -931,7 +916,7 @@ if __name__ == "__main__":
     # optional arguments
     parser.add_argument(
         "--scene",
-        default="NONE",
+        default="./data/test_assets/scenes/simple_room.glb",
         type=str,
         help='scene/stage file to load (default: "NONE")',
     )

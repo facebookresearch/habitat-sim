@@ -121,6 +121,7 @@ class Agent:
     agent_config: AgentConfiguration
     controls: ObjectControls
     body: mn.scenegraph.AbstractFeature3D
+    did_collide: bool
 
     def __init__(
         self,
@@ -150,7 +151,6 @@ class Agent:
         self.agent_config = agent_config
 
         if reconfigure_sensors:
-            self.scene_node.node_sensors.clear()
             for spec in self.agent_config.sensor_specifications:
                 self._add_sensor(spec, modify_agent_config=False)
 
@@ -158,7 +158,7 @@ class Agent:
         self, spec: hsim.SensorSpec, modify_agent_config: bool = True
     ) -> None:
         assert (
-            spec.uuid not in self.scene_node.node_sensors
+            spec.uuid not in self.get_sensors()
         ), f"Error, {spec.uuid} already exists in the sensor suite"
         if modify_agent_config:
             assert spec not in self.agent_config.sensor_specifications
@@ -185,7 +185,7 @@ class Agent:
                 self.scene_node, action.name, action.actuation, apply_filter=True
             )
         else:
-            for _, v in self.scene_node.node_sensors.items():
+            for _, v in self.get_sensors().items():
                 habitat_sim.errors.assert_obj_valid(v)
                 self.controls.action(
                     v.object, action.name, action.actuation, apply_filter=False
@@ -200,7 +200,7 @@ class Agent:
             np.array(self.body.object.absolute_translation), self.body.object.rotation
         )
 
-        for k, v in self.scene_node.node_sensors.items():
+        for k, v in self.get_sensors().items():
             habitat_sim.errors.assert_obj_valid(v)
             state.sensor_states[k] = SixDOFPose(
                 np.array(v.node.absolute_translation),
@@ -221,10 +221,13 @@ class Agent:
         r"""Sets the agents state
 
         :param state: The state to set the agent to
+
         :param reset_sensors: Whether or not to reset the sensors to their
             default intrinsic/extrinsic parameters before setting their extrinsic state.
+
         :param infer_sensor_states: Whether or not to infer the location of sensors based on
             the new location of the agent base state.
+
         :param is_initial: Whether this state is the initial state of the
             agent in the scene. Used for resetting the agent at a later time
 
@@ -252,16 +255,16 @@ class Agent:
         self.did_collide = False
 
         if reset_sensors:
-            for _, v in self.scene_node.node_sensors.items():
+            for _, v in self.get_sensors().items():
                 v.set_transformation_from_spec()
 
         if not infer_sensor_states:
             for k, v in state.sensor_states.items():
-                assert k in self.scene_node.node_sensors
+                assert k in self.get_sensors()
                 if isinstance(v.rotation, list):
                     v.rotation = quat_from_coeffs(v.rotation)
 
-                s = self.scene_node.node_sensors[k]
+                s = self.get_sensor(k)
 
                 s.node.reset_transformation()
                 s.node.translate(
@@ -273,15 +276,6 @@ class Agent:
 
         if is_initial:
             self.initial_state = state
-
-    @property
-    def did_collide(self):
-        return self.did_collide
-
-    @did_collide.setter
-    def did_collide(self, collision_occurred):
-        r"""Get/set whether or not the agent collided with something this timestep."""
-        self.did_collide = collision_occurred
 
     @property
     def scene_node(self) -> hsim.SceneNode:
