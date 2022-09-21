@@ -55,14 +55,13 @@ def _render_scene(sim, scene, sensor_type, gpu2gpu):
 def _render_and_load_gt(sim, scene, sensor_type, gpu2gpu):
 
     obs = _render_scene(sim, scene, sensor_type, gpu2gpu)
-    print(f" sensor type {sensor_type} -----------------------------------")
     # now that sensors are constructed, test some getter/setters
-    if hasattr(sim.get_agent(0)._sensors[sensor_type], "fov"):
-        sim.get_agent(0)._sensors[sensor_type].fov = mn.Deg(80)
-        assert sim.get_agent(0)._sensors[sensor_type].fov == mn.Deg(
+    if hasattr(sim.get_agent(0).get_sensor(sensor_type), "fov"):
+        sim.get_agent(0).get_sensor(sensor_type).fov = mn.Deg(80)
+        assert sim.get_agent(0).get_sensor(sensor_type).fov == mn.Deg(
             80
         ), "fov not set correctly"
-        assert sim.get_agent(0)._sensors[sensor_type].hfov == mn.Deg(
+        assert sim.get_agent(0).get_sensor(sensor_type).hfov == mn.Deg(
             80
         ), "hfov not set correctly"
     gt_obs_file = osp.abspath(
@@ -330,13 +329,9 @@ def test_initial_hfov(scene_and_dataset, sensor_type, make_cfg_settings):
         pytest.skip("Skipping {}".format(scene))
     make_cfg_settings["hfov"] = 70
     with habitat_sim.Simulator(make_cfg(make_cfg_settings)) as sim:
-        assert sim.get_agent(0).scene_node.node_sensor_suite[
-            sensor_type
-        ].hfov == mn.Deg(70), "HFOV was not properly set"
-
-        # assert sim.agents[0]._sensors[sensor_type].hfov == mn.Deg(
-        #     70
-        # ), "HFOV was not properly set"
+        assert sim.get_agent(0).get_sensor(sensor_type).hfov == mn.Deg(
+            70
+        ), "HFOV was not properly set"
 
 
 @pytest.mark.gfxtest

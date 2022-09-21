@@ -300,19 +300,15 @@ class Agent:
         )
 
     def get_sensors(self) -> Dict[str, hsim.Sensor]:
-        # TODO: not sure if necessary
         habitat_sim.errors.assert_obj_valid(self.body)
         return self.body.object.node_sensors
 
     def get_sensor(self, uuid: str) -> hsim.Sensor:
-        # TODO: not sure if necessary
         return self.get_sensors().get(uuid)
 
     def get_subtree_sensors(self) -> Dict[str, hsim.Sensor]:
-        # TODO: not sure if necessary
         habitat_sim.errors.assert_obj_valid(self.body)
         return self.body.object.subtree_sensors
 
     def get_subtree_sensor(self, uuid: str) -> hsim.Sensor:
-        # TODO: not sure if necessary
         return self.get_subtree_sensors().get(uuid)
