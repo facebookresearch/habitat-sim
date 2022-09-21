@@ -697,15 +697,15 @@ class Simulator(SimulatorBackend):
             with torch.cuda.device(self.gpu_device):  # type: ignore[attr-defined, union-attr]
 
                 # write what is in render target into a "Tensor" buffer
-                buffer_data = obs_buffer.data_ptr()
+                buffer_data = obs_buffer.data_ptr()  # type: ignore[attr-defined, union-attr]
                 if sensor_spec.sensor_type == SensorType.SEMANTIC:
-                    tgt.read_frame_object_id_gpu(buffer_data)  # type: ignore[attr-defined, union-attr]
+                    tgt.read_frame_object_id_gpu(buffer_data)
 
                 elif sensor_spec.sensor_type == SensorType.DEPTH:
-                    tgt.read_frame_depth_gpu(buffer_data)  # type: ignore[attr-defined, union-attr]
+                    tgt.read_frame_depth_gpu(buffer_data)
 
                 elif sensor_spec.sensor_type == SensorType.COLOR:
-                    tgt.read_frame_rgba_gpu(buffer_data)  # type: ignore[attr-defined, union-attr]
+                    tgt.read_frame_rgba_gpu(buffer_data)
 
                 # flip "Tensor" buffer vertically (axis = 0)
                 observation = obs_buffer.flip(0)  # type: ignore[union-attr]
