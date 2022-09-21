@@ -55,7 +55,7 @@ def _render_scene(sim, scene, sensor_type, gpu2gpu):
 def _render_and_load_gt(sim, scene, sensor_type, gpu2gpu):
 
     obs = _render_scene(sim, scene, sensor_type, gpu2gpu)
-
+    print(f" sensor type {sensor_type} -----------------------------------")
     # now that sensors are constructed, test some getter/setters
     if hasattr(sim.get_agent(0)._sensors[sensor_type], "fov"):
         sim.get_agent(0)._sensors[sensor_type].fov = mn.Deg(80)

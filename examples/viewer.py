@@ -187,11 +187,11 @@ class HabitatSimInteractiveViewer(Application):
                 self.time_since_last_simulation, 1.0 / self.fps
             )
 
+        # get specified agent and its sensor, then render the sensor observation
         keys = active_agent_id_and_sensor_name
         sensor = self.sim.get_agent(keys[0]).get_sensor(keys[1])
         self.sim.draw_observation(sensor)
         self.debug_draw()
-
         sensor.render_target.blit_rgba_to_default()
         mn.gl.default_framebuffer.bind()
 
