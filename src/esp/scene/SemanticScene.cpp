@@ -182,7 +182,7 @@ SemanticScene::buildCCBasedSemanticObjs(
   std::unordered_map<uint32_t, uint32_t> mapColorIntsToSemanticObjIDXs;
   mapColorIntsToSemanticObjIDXs.reserve(semanticObjs.size());
   for (uint32_t i = 0; i < semanticObjs.size(); ++i) {
-    mapColorIntsToSemanticObjIDXs.insert({semanticObjs[i]->getColorAsInt(), i});
+    mapColorIntsToSemanticObjIDXs.emplace(semanticObjs[i]->getColorAsInt(), i);
   }
   // build map with key being semanticObject IDX in semantic Objects array
   std::unordered_map<uint32_t, std::vector<scene::CCSemanticObject::ptr>>
