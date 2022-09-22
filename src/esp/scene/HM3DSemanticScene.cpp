@@ -133,7 +133,7 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
                               uint8_t((colorInt >> 8) & 0xff),
                               uint8_t(colorInt & 0xff)};
     // object category will possibly have commas
-    const std::string objCategoryName = tokens[1];
+    const std::string& objCategoryName = tokens[1];
     // room/region is always last token - get rid of first comma
     int regionID =
         std::stoi(Cr::Utility::String::trim(tokens[tokens.size() - 1], " ,"));
@@ -173,7 +173,7 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
     for (TempHM3DObject* objItem : regionItem.second.objInstances) {
       objItem->region = regionPtr;
     }
-    scene.regions_.emplace_back(regionPtr);
+    scene.regions_.emplace_back(std::move(regionPtr));
   }
 
   // build all object instances
@@ -188,8 +188,8 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
     // set region
     objPtr->parentIndex_ = obj.region->index_;
     objPtr->region_ = obj.region;
-    objPtr->region_->objects_.push_back(objPtr);
-    scene.objects_.emplace_back(objPtr);
+    objPtr->region_->objects_.emplace_back(objPtr);
+    scene.objects_.emplace_back(std::move(objPtr));
   }
   scene.hasVertColors_ = true;
 
@@ -210,11 +210,10 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
       scene.semanticColorToIdAndRegion_.reserve(idx + 1);
     }
     scene.semanticColorMapBeingUsed_[idx] = objPtr->getColor();
-    scene.semanticColorToIdAndRegion_.emplace(
-        std::piecewise_construct,
-        std::forward_as_tuple(objPtr->getColorAsInt()),
-        std::forward_as_tuple(objPtr->semanticID(),
-                              objPtr->region()->getIndex()));
+    scene.semanticColorToIdAndRegion_.insert(
+        std::make_pair<uint32_t, std::pair<int, int>>(
+            objPtr->getColorAsInt(),
+            {objPtr->semanticID(), objPtr->region()->getIndex()}));
   }
   // we need to build the bbox on load for each semantic annotation
   // TODO: eventually BBoxes will be pre-generated and stored in semantic text
