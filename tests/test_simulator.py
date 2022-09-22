@@ -13,7 +13,8 @@ import habitat_sim.utils.settings
 def is_same_state(initial_state, new_state) -> bool:
     same_position = all(initial_state.position == new_state.position)
     same_rotation = np.isclose(initial_state.rotation, new_state.rotation, rtol=1e-4)
-    return bool(same_position and same_rotation)
+    same_collision_status = initial_state.collided == new_state.collided
+    return bool(same_position and same_rotation and same_collision_status)
 
 
 def test_no_navmesh_smoke():
@@ -111,12 +112,12 @@ def test_sim_multiagent_move_and_reset(make_cfg_settings, num_agents=10):
             agent_config = sim.config.agents[i]
             action = random.choice(list(agent_config.action_space.keys()))
             agent_actions[i] = action
+        observations = sim.step(agent_actions)
 
+        # TODO testing
         # Check all agents either moved or ran into something.
         for agent_id, initial_state in enumerate(agent_initial_states):
-            assert not is_same_state(
-                initial_state, sim.get_agent(agent_id).state
-            ) or sim.agent_did_collide(agent_id)
+            assert not is_same_state(initial_state, sim.get_agent(agent_id).state)
         sim.reset()
 
         # Check all the agents are in their proper position

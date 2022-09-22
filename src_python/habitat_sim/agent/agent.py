@@ -80,6 +80,7 @@ class AgentState:
     rotation: Union[qt.quaternion, List, np.ndarray] = attr.ib(
         factory=_default_quaternion, validator=is_unit_length
     )
+    collided: bool = False
     sensor_states: Dict[str, SixDOFPose] = attr.ib(
         factory=dict,
         validator=attr.validators.deep_mapping(
@@ -123,7 +124,7 @@ class Agent:
     __sensor_suite: SensorSuite
     controls: ObjectControls
     body: mn.scenegraph.AbstractFeature3D
-    did_collide: bool
+    collided: bool
 
     def __init__(
         self,
@@ -137,7 +138,7 @@ class Agent:
         self.controls = controls if controls else ObjectControls()
         self.body = mn.scenegraph.AbstractFeature3D(scene_node)
         scene_node.type = hsim.SceneNodeType.AGENT
-        self.did_collide = False
+        self.collided = False
         self.reconfigure(self.agent_config)
         self.initial_state: Optional[AgentState] = None
 
@@ -185,9 +186,9 @@ class Agent:
         ), f"No action {action_id} in action space"
         action = self.agent_config.action_space[action_id]
 
-        self.did_collide = False
+        self.collided = False
         if self.controls.is_body_action(action.name):
-            self.did_collide = self.controls.action(
+            self.collided = self.controls.action(
                 self.scene_node, action.name, action.actuation, apply_filter=True
             )
         else:
@@ -197,7 +198,7 @@ class Agent:
                     v.object, action.name, action.actuation, apply_filter=False
                 )
 
-        return self.did_collide
+        return self.collided
 
     @NoAttrValidationContext()
     def get_state(self) -> AgentState:
@@ -214,6 +215,7 @@ class Agent:
             )
 
         state.rotation = quat_from_magnum(state.rotation)
+        state.collided = self.collided
 
         return state
 
@@ -223,6 +225,7 @@ class Agent:
         reset_sensors: bool = True,
         infer_sensor_states: bool = True,
         is_initial: bool = False,
+        collided: bool = False,
     ) -> None:
         r"""Sets the agents state
 
@@ -258,7 +261,7 @@ class Agent:
         self.body.object.translate(state.position)
         self.body.object.rotation = quat_to_magnum(state.rotation)
 
-        self.did_collide = False
+        self.collided = collided
 
         if reset_sensors:
             for v in self.__sensor_suite.values():

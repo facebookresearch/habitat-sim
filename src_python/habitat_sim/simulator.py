@@ -475,7 +475,7 @@ class Simulator(SimulatorBackend):
 
         agent.set_state(initial_state, is_initial=True)
         self.__last_state[agent_id] = agent.state
-        agent.did_collide = False
+        agent.collided = False
         return agent
 
     def start_async_render(self, agent_ids: Union[int, List[int]] = 0):
@@ -612,7 +612,7 @@ class Simulator(SimulatorBackend):
 
         for agent_id, agent_act in action.items():
             agent = self.get_agent(agent_id)
-            self.agents[agent_id].did_collide = agent.act(agent_act)
+            agent.act(agent_act)
             self.__last_state[agent_id] = agent.get_state()
 
         # step physics by dt
@@ -620,15 +620,14 @@ class Simulator(SimulatorBackend):
         super().step_world(dt)
         self._previous_step_time = time.time() - step_start_Time
 
-        agent_ids = list(action.keys())
-        per_agent_observations = self.get_sensor_observations(agent_ids)
-
+        per_agent_observations = self.get_sensor_observations(list(action.keys()))
         if return_single:
+            # TODO allow user to specify which agent observations to return
             return per_agent_observations[self._default_agent_id]
         return per_agent_observations
 
     def agent_did_collide(self, agent_id) -> bool:
-        return self.agents[agent_id].did_collide
+        return self.agents[agent_id].collided
 
     def make_greedy_follower(
         self,
