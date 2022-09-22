@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3collided
 
 # Copyright (c) Facebook, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
@@ -37,6 +37,7 @@ from habitat_sim.utils.common import quat_from_angle_axis
 
 # A sensor observation type to simplify types
 SensorObservation = Union[ndarray, "Tensor"]
+ObservationDict = Dict[str, SensorObservation]
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -73,9 +74,7 @@ class Simulator(SimulatorBackend):
 
     # TODO: remove these eventually in favor of sensors tied to scene nodes
     __sensors: List[Dict[str, Sensor]] = attr.ib(factory=list, init=False)
-    __obs_buffers: List[Dict[str, SensorObservation]] = attr.ib(
-        factory=list, init=False
-    )
+    __obs_buffers: List[ObservationDict] = attr.ib(factory=list, init=False)
     __image_views: List[Dict[str, mn.MutableImageView2D]] = attr.ib(
         factory=list, init=False
     )
@@ -180,16 +179,16 @@ class Simulator(SimulatorBackend):
         self.pathfinder.seed(new_seed)
 
     @overload
-    def reset(self, agent_ids: Optional[int] = None) -> Dict[str, SensorObservation]:
+    def reset(self, agent_ids: Optional[int] = None) -> ObservationDict:
         ...
 
     @overload
-    def reset(self, agent_ids: List[int]) -> Dict[int, Dict[str, SensorObservation]]:
+    def reset(self, agent_ids: List[int]) -> Dict[int, ObservationDict]:
         ...
 
     def reset(
         self, agent_ids: Union[Optional[int], List[int]] = None
-    ) -> Union[Dict[str, SensorObservation], Dict[int, Dict[str, SensorObservation]],]:
+    ) -> Union[ObservationDict, Dict[int, ObservationDict],]:
         super().reset()
         for i in range(len(self.agents)):
             self.reset_agent(i)
@@ -300,7 +299,7 @@ class Simulator(SimulatorBackend):
         self.__sensors: List[Dict[str, Sensor]] = [
             dict() for i in range(len(config.agents))
         ]
-        self.__obs_buffers: List[Dict[str, SensorObservation]] = [
+        self.__obs_buffers: List[ObservationDict] = [
             dict() for i in range(len(config.agents))
         ]
         self.__image_views: List[Dict[str, mn.MutableImageView2D]] = [
@@ -504,7 +503,7 @@ class Simulator(SimulatorBackend):
 
     def get_sensor_observations_async_finish(
         self,
-    ) -> Union[Dict[str, SensorObservation], Dict[int, Dict[str, SensorObservation]],]:
+    ) -> Union[ObservationDict, Dict[int, ObservationDict],]:
         if self._async_draw_agent_ids is None:
             raise RuntimeError(
                 "get_sensor_observations_async_finish was called before calling start_async_render_and_step_physics."
@@ -520,7 +519,7 @@ class Simulator(SimulatorBackend):
 
         self.renderer.wait_draw_jobs()
         # As backport. All Dicts are ordered in Python >= 3.7
-        per_agent_observations: Dict[int, Dict[str, SensorObservation]] = OrderedDict()
+        per_agent_observations: Dict[int, ObservationDict] = OrderedDict()
         for agent_id in agent_ids:
             agent_observations = {
                 uuid: self._get_observation_async(sensor, agent_id)
@@ -533,28 +532,33 @@ class Simulator(SimulatorBackend):
         return per_agent_observations
 
     @overload
-    def get_sensor_observations(
-        self, agent_ids: int = 0
-    ) -> Dict[str, SensorObservation]:
+    def get_sensor_observations(self, agent_ids: int = 0) -> ObservationDict:
         ...
 
     @overload
     def get_sensor_observations(
         self, agent_ids: List[int]
-    ) -> Dict[int, Dict[str, SensorObservation]]:
+    ) -> Dict[int, ObservationDict]:
         ...
 
     def get_sensor_observations(
         self, agent_ids: Union[int, List[int]] = 0
-    ) -> Union[Dict[str, SensorObservation], Dict[int, Dict[str, SensorObservation]],]:
+    ) -> Union[ObservationDict, Dict[int, ObservationDict],]:
+
         if isinstance(agent_ids, int):
             agent_ids = [agent_ids]
             return_single = True
         else:
             return_single = False
 
+        # draw observation to render target
+        for agent_id in agent_ids:
+            agent_sensor_dict = self.__sensors[agent_id]
+            for sensor in agent_sensor_dict.values():
+                self.draw_observation(sensor)
+
         # As backport. All Dicts are ordered in Python >= 3.7
-        per_agent_observations: Dict[int, Dict[str, SensorObservation]] = OrderedDict()
+        per_agent_observations: Dict[int, ObservationDict] = OrderedDict()
         for agent_id in agent_ids:
             # dict comprehension to get observation from each sensor
             per_agent_observations[agent_id] = {
@@ -562,6 +566,8 @@ class Simulator(SimulatorBackend):
                 for (uuid, sensor) in self.__sensors[agent_id].items()
             }
 
+        # either return one agent's observations if "agent_ids" is just an int,
+        # or all agents' observations if it is a list of ints
         if return_single:
             return next(iter(per_agent_observations.values()))
         return per_agent_observations
@@ -587,22 +593,20 @@ class Simulator(SimulatorBackend):
         return self.__last_state[agent_id]
 
     @overload
-    def step(
-        self, action: Union[str, int], dt: float = 1.0 / 60.0
-    ) -> Dict[str, SensorObservation]:
+    def step(self, action: Union[str, int], dt: float = 1.0 / 60.0) -> ObservationDict:
         ...
 
     @overload
     def step(
         self, action: MutableMapping_T[int, Union[str, int]], dt: float = 1.0 / 60.0
-    ) -> Dict[int, Dict[str, SensorObservation]]:
+    ) -> Dict[int, ObservationDict]:
         ...
 
     def step(
         self,
         action: Union[str, int, MutableMapping_T[int, Union[str, int]]],
         dt: float = 1.0 / 60.0,
-    ) -> Union[Dict[str, SensorObservation], Dict[int, Dict[str, SensorObservation]],]:
+    ) -> Union[ObservationDict, Dict[int, ObservationDict],]:
         self._num_total_frames += 1
         if isinstance(action, MutableMapping):
             return_single = False
@@ -782,8 +786,10 @@ class Simulator(SimulatorBackend):
                     (has it been detached from a scene node?)"
                 )
             # TODO which draw_observation call to use?
-            # sensor.draw_observation(self)
-            self.renderer.draw(sensor, self)
+            # I believe "self.renderer.draw(sensor, self)" calls
+            # "sensor.draw_observation(self)" anyway
+            sensor.draw_observation(self)
+            # self.renderer.draw(sensor, self)
 
     def _draw_observation_async(
         self,
