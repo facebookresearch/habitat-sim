@@ -748,7 +748,7 @@ class Configuration {
    */
   std::shared_ptr<Configuration> addSubgroup(const std::string& name) {
     // Attempt to insert an empty pointer
-    auto result = configMap_.insert({name, std::shared_ptr<Configuration>{}});
+    auto result = configMap_.emplace(name, std::shared_ptr<Configuration>{});
     // If name not already present (insert succeeded) then add new
     // configuration
     if (result.second) {

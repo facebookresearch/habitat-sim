@@ -288,8 +288,8 @@ void VoxelGrid::generateMeshDataAndMeshGL(
   if (meshGLDict_.find(gridName) != meshGLDict_.end()) {
     meshGLDict_[gridName] = Mn::MeshTools::compile(*meshDataDict_[gridName]);
   } else {
-    meshGLDict_.insert(std::make_pair(
-        gridName, Mn::MeshTools::compile(*meshDataDict_[gridName])));
+    meshGLDict_.emplace(gridName,
+                        Mn::MeshTools::compile(*meshDataDict_[gridName]));
   }
 }
 
