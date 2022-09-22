@@ -76,15 +76,15 @@ void buildInstanceRegionCategory(
       instanceID, 0, objCategoryName,
       Cr::Utility::formatString("{}_{}", objCategoryName, instanceID),
       colorInt};
-  objInstance[instanceID] = obj;
+  objInstance[instanceID] = std::move(obj);
   // find category, build if dne
   TempHM3DCategory tmpCat{
       static_cast<int>(categories.size()), objCategoryName, {}};
-  auto categoryIter = categories.emplace(objCategoryName, tmpCat);
+  auto categoryIter = categories.emplace(objCategoryName, std::move(tmpCat));
   categoryIter.first->second.objInstances.push_back(&objInstance[instanceID]);
   // find region, build if dne
   TempHM3DRegion tmpRegion{regionID, {}};
-  auto regionIter = regions.emplace(regionID, tmpRegion);
+  auto regionIter = regions.emplace(regionID, std::move(tmpRegion));
   regionIter.first->second.objInstances.push_back(&objInstance[instanceID]);
 }  // buildInstanceRegionCategory
 
