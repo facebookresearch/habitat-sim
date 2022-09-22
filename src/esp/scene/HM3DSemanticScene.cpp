@@ -210,10 +210,11 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
       scene.semanticColorToIdAndRegion_.reserve(idx + 1);
     }
     scene.semanticColorMapBeingUsed_[idx] = objPtr->getColor();
-    scene.semanticColorToIdAndRegion_.insert(
-        std::make_pair<uint32_t, std::pair<int, int>>(
-            objPtr->getColorAsInt(),
-            {objPtr->semanticID(), objPtr->region()->getIndex()}));
+    scene.semanticColorToIdAndRegion_.emplace(
+        std::piecewise_construct,
+        std::forward_as_tuple(objPtr->getColorAsInt()),
+        std::forward_as_tuple(objPtr->semanticID(),
+                              objPtr->region()->getIndex()));
   }
   // we need to build the bbox on load for each semantic annotation
   // TODO: eventually BBoxes will be pre-generated and stored in semantic text
