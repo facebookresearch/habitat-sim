@@ -35,7 +35,7 @@ from habitat_sim.sensors.noise_models import SensorNoiseModel, make_sensor_noise
 from habitat_sim.sim import SimulatorBackend, SimulatorConfiguration
 from habitat_sim.utils.common import quat_from_angle_axis
 
-# A sensor observation
+# A sensor observation type to simplify types
 SensorObservation = Union[ndarray, "Tensor"]
 
 
@@ -782,10 +782,9 @@ class Simulator(SimulatorBackend):
                     "Sensor observation requested but sensor is invalid.\
                     (has it been detached from a scene node?)"
                 )
-            self.renderer.draw(sensor, self)
-
             # TODO which draw_observation call to use?
             # sensor.draw_observation(self)
+            self.renderer.draw(sensor, self)
 
     def _draw_observation_async(
         self,

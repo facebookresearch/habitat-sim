@@ -13,6 +13,7 @@ import quaternion as qt
 
 import habitat_sim.errors
 from habitat_sim import bindings as hsim
+from habitat_sim.sensors.sensor_suite import SensorSuite
 from habitat_sim.utils.common import (
     quat_from_coeffs,
     quat_from_magnum,
@@ -119,6 +120,7 @@ class Agent:
     """
 
     agent_config: AgentConfiguration
+    __sensor_suite: SensorSuite
     controls: ObjectControls
     body: mn.scenegraph.AbstractFeature3D
     did_collide: bool
@@ -127,9 +129,11 @@ class Agent:
         self,
         scene_node: hsim.SceneNode,
         agent_config: Optional[AgentConfiguration] = None,
+        __sensor_suite: Optional[SensorSuite] = None,
         controls: Optional[ObjectControls] = None,
     ) -> None:
         self.agent_config = agent_config if agent_config else AgentConfiguration()
+        self.__sensor_suite = __sensor_suite if __sensor_suite else SensorSuite()
         self.controls = controls if controls else ObjectControls()
         self.body = mn.scenegraph.AbstractFeature3D(scene_node)
         scene_node.type = hsim.SceneNodeType.AGENT
@@ -151,6 +155,7 @@ class Agent:
         self.agent_config = agent_config
 
         if reconfigure_sensors:
+            self.__sensor_suite.clear()
             for spec in self.agent_config.sensor_specifications:
                 self._add_sensor(spec, modify_agent_config=False)
 
@@ -158,12 +163,13 @@ class Agent:
         self, spec: hsim.SensorSpec, modify_agent_config: bool = True
     ) -> None:
         assert (
-            spec.uuid not in self.get_sensors()
+            spec.uuid not in self.__sensor_suite
         ), f"Error, {spec.uuid} already exists in the sensor suite"
         if modify_agent_config:
             assert spec not in self.agent_config.sensor_specifications
             self.agent_config.sensor_specifications.append(spec)
-        hsim.SensorFactory.create_sensors(self.scene_node, [spec])
+        sensor_suite = hsim.SensorFactory.create_sensors(self.scene_node, [spec])
+        self.__sensor_suite.add(sensor_suite[spec.uuid])
 
     def act(self, action_id: Any) -> bool:
         r"""Take the action specified by action_id
@@ -185,7 +191,7 @@ class Agent:
                 self.scene_node, action.name, action.actuation, apply_filter=True
             )
         else:
-            for v in self.get_sensors().values():
+            for v in self.__sensor_suite.values():
                 habitat_sim.errors.assert_obj_valid(v)
                 self.controls.action(
                     v.object, action.name, action.actuation, apply_filter=False
@@ -200,7 +206,7 @@ class Agent:
             np.array(self.body.object.absolute_translation), self.body.object.rotation
         )
 
-        for k, v in self.get_sensors().items():
+        for k, v in self.__sensor_suite.items():
             habitat_sim.errors.assert_obj_valid(v)
             state.sensor_states[k] = SixDOFPose(
                 np.array(v.node.absolute_translation),
@@ -255,16 +261,16 @@ class Agent:
         self.did_collide = False
 
         if reset_sensors:
-            for v in self.get_sensors().values():
+            for v in self.__sensor_suite.values():
                 v.set_transformation_from_spec()
 
         if not infer_sensor_states:
             for k, v in state.sensor_states.items():
-                assert k in self.get_sensors()
+                assert k in self.__sensor_suite
                 if isinstance(v.rotation, list):
                     v.rotation = quat_from_coeffs(v.rotation)
 
-                s = self.get_sensor(k)
+                s = self.__sensor_suite[k]
 
                 s.node.reset_transformation()
                 s.node.translate(
@@ -299,6 +305,9 @@ class Agent:
             new_state, reset_sensors=True, infer_sensor_states=True, is_initial=False
         )
 
+    def get_sensor_suite(self) -> SensorSuite:
+        return self.__sensor_suite
+
     def get_sensors(self) -> Dict[str, hsim.Sensor]:
         habitat_sim.errors.assert_obj_valid(self.body)
         return self.body.object.node_sensors
@@ -312,3 +321,7 @@ class Agent:
 
     def get_subtree_sensor(self, uuid: str) -> hsim.Sensor:
         return self.get_subtree_sensors().get(uuid)
+
+    def close(self) -> None:
+        self.__sensor_suite.clear()
+        self.__sensor_suite = None
