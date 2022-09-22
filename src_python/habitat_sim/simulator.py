@@ -834,7 +834,7 @@ class Simulator(SimulatorBackend):
             if self.frustum_culling:
                 render_flags |= habitat_sim.gfx.Camera.Flags.FRUSTUM_CULLING
 
-            image_view = self.__image_views[agent_id].get(sensor_spec)
+            image_view = self.__image_views[agent_id].get(sensor_spec.uuid)
             self.renderer.enqueue_async_draw_job(
                 sensor, scene, image_view, render_flags
             )

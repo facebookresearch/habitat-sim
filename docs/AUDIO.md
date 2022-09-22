@@ -128,7 +128,7 @@ To call APIs on the audio sensor, get access to the audio sensor object using th
 
 |APIs for audio_sensor|notes|
 |------|-----|
-|audio_sensor = sim.get_agent(0)._sensors["audio_sensor"]| get the audio sensor object from the habitat sim object|
+|audio_sensor = sim.get_agent(0).get_sensor("audio_sensor")| get the audio sensor object from the habitat sim object|
 | audio_sensor.setAudioSourceTransform(np.array([x, y, z])) | set the audio source location where x,y,z are floats|
 |audio_sensor.reset() | Reset the simulation object to restart from a fresh context. This is the same as deleting the audio sensor and re-creating it.|
 
