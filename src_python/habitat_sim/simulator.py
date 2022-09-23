@@ -72,7 +72,8 @@ class Simulator(SimulatorBackend):
     config: Configuration
     agents: List[Agent] = attr.ib(factory=list, init=False)
 
-    # TODO: remove these eventually in favor of sensors tied to scene nodes
+    # TODO: remove these eventually in favor of sensors that are not
+    # necessarily tied to scene nodes
     __sensors: List[Dict[str, Sensor]] = attr.ib(factory=list, init=False)
     __obs_buffers: List[ObservationDict] = attr.ib(factory=list, init=False)
     __image_views: List[Dict[str, mn.MutableImageView2D]] = attr.ib(
@@ -368,11 +369,11 @@ class Simulator(SimulatorBackend):
     def _init_sensor(self, sensor_spec: SensorSpec, agent_id: Optional[int] = None):
         # TODO: temporary method while we get rid of Simulator.Sensor wrapper class
 
+        sensor = self.get_agent(agent_id).get_sensor(sensor_spec.uuid)
+        self.__sensors[agent_id][sensor_spec.uuid] = sensor
         if sensor_spec.sensor_type == SensorType.AUDIO:
             return
 
-        sensor = self.get_agent(agent_id).get_sensor(sensor_spec.uuid)
-        self.__sensors[agent_id][sensor_spec.uuid] = sensor
         if self.renderer is not None:
             self.renderer.bind_render_target(sensor)
 
@@ -688,7 +689,7 @@ class Simulator(SimulatorBackend):
 
         sensor_spec = sensor.specification()
         if sensor_spec.sensor_type == SensorType.AUDIO:
-            return self._get_audio_observation(sensor)
+            return self._get_audio_observation(sensor, agent_id)
 
         assert self.renderer is not None
         if not sensor.has_render_target():
@@ -729,8 +730,11 @@ class Simulator(SimulatorBackend):
         return noise_model(observation)
 
     def _get_observation_async(
-        self, sensor: Sensor, agent_id: Optional[int] = 0  # TODO change default to None
+        self,
+        sensor: Sensor,
+        agent_id: Optional[int] = 0,  # TODO change default to None eventually
     ) -> SensorObservation:
+
         sensor_spec = sensor.specification()
         if sensor_spec.sensor_type == SensorType.AUDIO:
             return self._get_audio_observation(sensor, agent_id)
@@ -748,10 +752,12 @@ class Simulator(SimulatorBackend):
         return noise_model(observation)
 
     def _get_audio_observation(
-        self, sensor: Sensor, agent_id: Optional[int] = None
+        self,
+        audio_sensor: Sensor,
+        agent_id: Optional[int] = 0,  # TODO, change to None eventually
     ) -> SensorObservation:
 
-        assert sensor.specification().sensor_type == SensorType.AUDIO
+        assert audio_sensor.specification().sensor_type == SensorType.AUDIO
 
         # tell the audio sensor about the agent location (if any)
         agent = self.get_agent(agent_id)
@@ -761,14 +767,14 @@ class Simulator(SimulatorBackend):
             # no rotation
             rot = quat_from_angle_axis(0, np.array([1, 0, 0]))
 
-        sensor.setAudioListenerTransform(
-            sensor.node.absolute_translation,  # set the listener position
+        audio_sensor.setAudioListenerTransform(
+            audio_sensor.node.absolute_translation,  # set the listener position
             np.array([rot.w, rot.x, rot.y, rot.z]),  # set the listener orientation
         )
 
         # run the simulation
-        sensor.runSimulation(self)
-        observation = sensor.getIR()
+        audio_sensor.runSimulation(self)
+        observation = audio_sensor.getIR()
         return observation
 
     def draw_observation(self, sensor: Sensor) -> None:
