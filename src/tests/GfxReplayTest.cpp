@@ -502,6 +502,7 @@ void GfxReplayTest::testLightIntegration() {
   const LightSetup lightSetup0{pointLight0, pointLight1};
   const LightSetup lightSetup1{pointLight2};
   const LightSetup lightSetup2{dirLight};
+  const LightSetup lightSetup3{};
 
   // record a playback file
   {
@@ -523,6 +524,8 @@ void GfxReplayTest::testLightIntegration() {
     sim->setLightSetup(lightSetup0);
     sim->setLightSetup(lightSetup2);  // overwrite previous light setup
     recorder->saveKeyframe();
+    sim->setLightSetup(lightSetup3);  // no light
+    recorder->saveKeyframe();
 
     recorder->writeSavedKeyframesToFile(testFilepath);
   }
@@ -539,7 +542,7 @@ void GfxReplayTest::testLightIntegration() {
     auto player =
         sim->getGfxReplayManager()->readKeyframesFromFile(testFilepath);
     CORRADE_VERIFY(player);
-    CORRADE_COMPARE(player->getNumKeyframes(), 4);
+    CORRADE_COMPARE(player->getNumKeyframes(), 5);
     const auto& keyframes = player->debugGetKeyframes();
     CORRADE_COMPARE(keyframes.size(), player->getNumKeyframes());
 
@@ -547,23 +550,32 @@ void GfxReplayTest::testLightIntegration() {
 
     player->setKeyframeIndex(0);
     CORRADE_COMPARE(sim->getLightSetup().size(), lightSetup0.size());
-    CORRADE_COMPARE(keyframes[0].lights->size(), lightSetup0.size());
+    CORRADE_VERIFY(keyframes[0].lightsChanged);
+    CORRADE_COMPARE(keyframes[0].lights.size(), lightSetup0.size());
     compareLightSetups(sim->getLightSetup(), lightSetup0);
 
     player->setKeyframeIndex(1);
     CORRADE_COMPARE(sim->getLightSetup().size(), lightSetup1.size());
-    CORRADE_COMPARE(keyframes[1].lights->size(), lightSetup1.size());
+    CORRADE_VERIFY(keyframes[1].lightsChanged);
+    CORRADE_COMPARE(keyframes[1].lights.size(), lightSetup1.size());
     compareLightSetups(sim->getLightSetup(), lightSetup1);
 
     player->setKeyframeIndex(2);
     CORRADE_COMPARE(sim->getLightSetup().size(), lightSetup1.size());
-    CORRADE_VERIFY(!keyframes[2].lights);
+    CORRADE_VERIFY(!keyframes[2].lightsChanged);
     compareLightSetups(sim->getLightSetup(), lightSetup1);
 
     player->setKeyframeIndex(3);
     CORRADE_COMPARE(sim->getLightSetup().size(), lightSetup2.size());
-    CORRADE_COMPARE(keyframes[3].lights->size(), lightSetup2.size());
+    CORRADE_VERIFY(keyframes[3].lightsChanged);
+    CORRADE_COMPARE(keyframes[3].lights.size(), lightSetup2.size());
     compareLightSetups(sim->getLightSetup(), lightSetup2);
+
+    player->setKeyframeIndex(4);
+    CORRADE_COMPARE(sim->getLightSetup().size(), lightSetup3.size());
+    CORRADE_VERIFY(keyframes[4].lightsChanged);
+    CORRADE_COMPARE(keyframes[4].lights.size(), lightSetup3.size());
+    compareLightSetups(sim->getLightSetup(), lightSetup3);
   }
 
   // remove file created for this test

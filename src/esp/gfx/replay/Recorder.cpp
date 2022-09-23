@@ -97,15 +97,13 @@ void Recorder::addUserTransformToKeyframe(const std::string& name,
 }
 
 void Recorder::addLightToKeyframe(const LightInfo& lightInfo) {
-  auto& lights = getKeyframe().lights;
-  if (!lights) {
-    lights = std::vector<LightInfo>();
-  }
-  getKeyframe().lights->emplace_back(lightInfo);
+  getKeyframe().lightsChanged = true;
+  getKeyframe().lights.emplace_back(lightInfo);
 }
 
 void Recorder::clearLightsFromKeyframe() {
-  getKeyframe().lights = Cr::Containers::NullOpt;
+  getKeyframe().lightsChanged = true;
+  getKeyframe().lights.clear();
 }
 
 void Recorder::addLoadsCreationsDeletions(KeyframeIterator begin,

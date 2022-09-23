@@ -171,8 +171,8 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     setSemanticIdForSubtree(node, state.semanticId);
   }
 
-  if (keyframe.lights) {
-    changeLightSetupCallback(*keyframe.lights);
+  if (keyframe.lightsChanged) {
+    changeLightSetupCallback(keyframe.lights);
   }
 }
 

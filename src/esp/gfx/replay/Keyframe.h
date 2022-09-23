@@ -55,9 +55,8 @@ struct Keyframe {
   std::vector<std::pair<RenderAssetInstanceKey, RenderAssetInstanceState>>
       stateUpdates;
   std::unordered_map<std::string, Transform> userTransforms;
-  // Contains the full set of lights in the keyframe.
-  // When NullOpt, lights have not changed from the previous keyframe.
-  Cr::Containers::Optional<std::vector<LightInfo>> lights;
+  std::vector<LightInfo> lights;
+  bool lightsChanged = false;
 
   ESP_SMART_POINTERS(Keyframe)
 };
