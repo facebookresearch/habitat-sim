@@ -899,8 +899,10 @@ Viewer::Viewer(const Arguments& arguments)
 
     Cr::Utility::Resource rs{"fonts"};
     font_ = fontManager_.loadAndInstantiate("TrueTypeFont");
-    if (!font_ || !font_->openData(rs.getRaw("ProggyClean.ttf"), fontSize))
-      Mn::Fatal{} << "Cannot open font file";
+    std::string font_relative_path = "../../../data/fonts/ProggyClean.ttf";
+    if (!font_ || !font_->openData(rs.getRaw(font_relative_path), fontSize))
+      ;
+    Mn::Fatal{} << "Cannot open font file";
 
     fontGlyphCache_.emplace(Mn::Vector2i{256});
     /* Don't destroy the bitmap font with smooth scaling */

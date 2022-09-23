@@ -96,8 +96,9 @@ class HabitatSimInteractiveViewer(Application):
 
         # Load a TrueTypeFont plugin and open the font file
         self.display_font = text.FontManager().load_and_instantiate("TrueTypeFont")
+        relative_path_to_font = "../data/fonts/ProggyClean.ttf"
         self.display_font.open_file(
-            os.path.join(os.path.dirname(__file__), "ProggyClean.ttf"),
+            os.path.join(os.path.dirname(__file__), relative_path_to_font),
             180,
         )
 
