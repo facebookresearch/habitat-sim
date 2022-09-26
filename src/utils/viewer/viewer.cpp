@@ -899,8 +899,7 @@ Viewer::Viewer(const Arguments& arguments)
 
     Cr::Utility::Resource rs{"fonts"};
     font_ = fontManager_.loadAndInstantiate("TrueTypeFont");
-    std::string font_relative_path = "../../../data/fonts/ProggyClean.ttf";
-    if (!font_ || !font_->openData(rs.getRaw(font_relative_path), fontSize))
+    if (!font_ || !font_->openData(rs.getRaw("ProggyClean.ttf"), fontSize))
       Mn::Fatal{} << "Cannot open font file";
 
     fontGlyphCache_.emplace(Mn::Vector2i{256});
