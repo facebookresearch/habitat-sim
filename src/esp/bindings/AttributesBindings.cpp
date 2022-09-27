@@ -295,7 +295,8 @@ void initAttributesBindings(py::module& m) {
 
   // ==== ObjectAttributes ====
   py::class_<ObjectAttributes, AbstractObjectAttributes, ObjectAttributes::ptr>(
-      m, "ObjectAttributes")
+      m, "ObjectAttributes",
+      R"(A metadata template for rigid objects pre-instantiation. Defines asset paths, physical properties, scale, semantic ids, shader type overrides, and user defined metadata. ManagedRigidObjects are instantiated from these blueprints. Can be imported from .object_config.json files.)")
       .def(py::init(&ObjectAttributes::create<>))
       .def(py::init(&ObjectAttributes::create<const std::string&>))
       .def_property(
@@ -345,7 +346,8 @@ void initAttributesBindings(py::module& m) {
 
   // ==== StageAttributes ====
   py::class_<StageAttributes, AbstractObjectAttributes, StageAttributes::ptr>(
-      m, "StageAttributes")
+      m, "StageAttributes",
+      R"(A metadata template for stages pre-instantiation. Defines asset paths, collision properties, gravity direction, shader type overrides, semantic asset information, and user defined metadata. Consumed to instantiate the static background of a scene (e.g. the building architecture). Can be imported from .stage_config.json files.)")
       .def(py::init(&StageAttributes::create<>))
       .def(py::init(&StageAttributes::create<const std::string&>))
       .def_property(
@@ -391,7 +393,9 @@ void initAttributesBindings(py::module& m) {
 
   // ==== LightInstanceAttributes ====
   py::class_<LightInstanceAttributes, AbstractAttributes,
-             LightInstanceAttributes::ptr>(m, "LightInstanceAttributes")
+             LightInstanceAttributes::ptr>(
+      m, "LightInstanceAttributes",
+      R"(A metadata template for light configurations. Supports point and directional lights. Can be imported from .lighting_config.json files.)")
       .def(py::init(&LightInstanceAttributes::create<>))
       .def(py::init(&LightInstanceAttributes::create<const std::string&>))
       .def_property(
@@ -427,7 +431,9 @@ void initAttributesBindings(py::module& m) {
 
   // ==== PhysicsManagerAttributes ====
   py::class_<PhysicsManagerAttributes, AbstractAttributes,
-             PhysicsManagerAttributes::ptr>(m, "PhysicsManagerAttributes")
+             PhysicsManagerAttributes::ptr>(
+      m, "PhysicsManagerAttributes",
+      R"(A metadata template for Simulation parameters (e.g. timestep, simulation backend, default gravity direction) and defaults. Consumed to instace a Simualtor object. Can be imported from .physics_config.json files.)")
       .def(py::init(&PhysicsManagerAttributes::create<>))
       .def(py::init(&PhysicsManagerAttributes::create<const std::string&>))
       .def_property_readonly(
@@ -523,7 +529,9 @@ void initAttributesBindings(py::module& m) {
 
   // ==== CapsulePrimitiveAttributes ====
   py::class_<CapsulePrimitiveAttributes, AbstractPrimitiveAttributes,
-             CapsulePrimitiveAttributes::ptr>(m, "CapsulePrimitiveAttributes")
+             CapsulePrimitiveAttributes::ptr>(
+      m, "CapsulePrimitiveAttributes",
+      R"(Parameters for constructing a primitive capsule mesh shape.)")
       .def(py::init(
           &CapsulePrimitiveAttributes::create<bool, int, const std::string&>))
       .def_property(
@@ -539,7 +547,9 @@ void initAttributesBindings(py::module& m) {
 
   // ==== ConePrimitiveAttributes ====
   py::class_<ConePrimitiveAttributes, AbstractPrimitiveAttributes,
-             ConePrimitiveAttributes::ptr>(m, "ConePrimitiveAttributes")
+             ConePrimitiveAttributes::ptr>(
+      m, "ConePrimitiveAttributes",
+      R"(Parameters for constructing a primitive cone mesh shape.)")
       .def(py::init(
           &ConePrimitiveAttributes::create<bool, int, const std::string&>))
       .def_property(
@@ -549,13 +559,17 @@ void initAttributesBindings(py::module& m) {
 
   // ==== CubePrimitiveAttributes ====
   py::class_<CubePrimitiveAttributes, AbstractPrimitiveAttributes,
-             CubePrimitiveAttributes::ptr>(m, "CubePrimitiveAttributes")
+             CubePrimitiveAttributes::ptr>(
+      m, "CubePrimitiveAttributes",
+      R"(Parameters for constructing a primitive cube mesh shape.)")
       .def(py::init(
           &CubePrimitiveAttributes::create<bool, int, const std::string&>));
 
   // ==== CylinderPrimitiveAttributes ====
   py::class_<CylinderPrimitiveAttributes, AbstractPrimitiveAttributes,
-             CylinderPrimitiveAttributes::ptr>(m, "CylinderPrimitiveAttributes")
+             CylinderPrimitiveAttributes::ptr>(
+      m, "CylinderPrimitiveAttributes",
+      R"(Parameters for constructing a primitive capsule mesh shape.)")
       .def(py::init(
           &CylinderPrimitiveAttributes::create<bool, int, const std::string&>))
       .def_property(
@@ -565,8 +579,9 @@ void initAttributesBindings(py::module& m) {
 
   // ==== IcospherePrimitiveAttributes ====
   py::class_<IcospherePrimitiveAttributes, AbstractPrimitiveAttributes,
-             IcospherePrimitiveAttributes::ptr>(m,
-                                                "IcospherePrimitiveAttributes")
+             IcospherePrimitiveAttributes::ptr>(
+      m, "IcospherePrimitiveAttributes",
+      R"(Parameters for constructing a primitive icosphere mesh shape.)")
       .def(py::init(
           &IcospherePrimitiveAttributes::create<bool, int, const std::string&>))
       .def_property(
@@ -577,7 +592,9 @@ void initAttributesBindings(py::module& m) {
 
   // ==== UVSpherePrimitiveAttributes ====
   py::class_<UVSpherePrimitiveAttributes, AbstractPrimitiveAttributes,
-             UVSpherePrimitiveAttributes::ptr>(m, "UVSpherePrimitiveAttributes")
+             UVSpherePrimitiveAttributes::ptr>(
+      m, "UVSpherePrimitiveAttributes",
+      R"(Parameters for constructing a primitive uvsphere mesh shape.)")
       .def(py::init(
           &UVSpherePrimitiveAttributes::create<bool, int, const std::string&>));
 
