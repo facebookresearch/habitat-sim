@@ -90,6 +90,7 @@ build:
   number: {{ build_number }}
   binary_relocation: True
   detect_binary_files_with_prefix: False
+  preserve_egg_dir: True
   script_env:
     - HEADLESS
     - WITH_CUDA

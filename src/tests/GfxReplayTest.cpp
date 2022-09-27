@@ -52,16 +52,9 @@ struct GfxReplayTest : Cr::TestSuite::Tester {
 
 // Helper function to get numberOfChildrenOfRoot
 int getNumberOfChildrenOfRoot(esp::scene::SceneNode& rootNode) {
-  int numberOfChildrenOfRoot = 1;
-  const auto* lastRootChild = rootNode.children().first();
-  if (!lastRootChild) {
-    return 0;
-  } else {
-    CORRADE_VERIFY(lastRootChild);
-    while (lastRootChild->nextSibling()) {
-      lastRootChild = lastRootChild->nextSibling();
-      ++numberOfChildrenOfRoot;
-    }
+  int numberOfChildrenOfRoot = 0;
+  for (const auto& child : rootNode.children()) {
+    ++numberOfChildrenOfRoot;
   }
   return numberOfChildrenOfRoot;
 }
@@ -104,7 +97,7 @@ void GfxReplayTest::testRecorder() {
       info, creation, &sceneManager_, tempIDs);
   CORRADE_VERIFY(node);
 
-  // cosntruct an AssetInfo with override color material
+  // construct an AssetInfo with override color material
   CORRADE_VERIFY(!info.overridePhongMaterial);
   esp::assets::AssetInfo info2(info);
   // change shadertype to make sure change is registered and retained through
@@ -381,65 +374,88 @@ void GfxReplayTest::testPlayerReadInvalidFile() {
 
 // test recording and playback through the simulator interface
 void GfxReplayTest::testSimulatorIntegration() {
-  std::string boxFile =
+  const std::string boxFile =
       Cr::Utility::Path::join(TEST_ASSETS, "objects/transform_box.glb");
-  auto testFilepath =
+  const auto testFilepath =
       Corrade::Utility::Path::join(DATA_DIR, "./gfx_replay_test.json");
-
-  SimulatorConfiguration simConfig{};
-  simConfig.activeSceneName = boxFile;
-  simConfig.enableGfxReplaySave = true;
-  simConfig.createRenderer = false;
-
-  auto sim = Simulator::create_unique(simConfig);
-  auto objAttrMgr = sim->getObjectAttributesManager();
-  objAttrMgr->loadAllJSONConfigsFromPath(
-      Cr::Utility::Path::join(TEST_ASSETS, "objects/nested_box"), true);
-
-  auto handles = objAttrMgr->getObjectHandlesBySubstring("nested_box");
-  CORRADE_VERIFY(!handles.empty());
-  auto rigidObj =
-      sim->getRigidObjectManager()->addBulletObjectByHandle(handles[0]);
-  auto rigidObjTranslation = Mn::Vector3(1.f, 2.f, 3.f);
-  auto rigidObjRotation = Mn::Quaternion::rotation(
+  const auto rigidObjTranslation = Mn::Vector3(1.f, 2.f, 3.f);
+  const auto rigidObjRotation = Mn::Quaternion::rotation(
       Mn::Deg(45.f), Mn::Vector3(1.f, 1.f, 0.f).normalized());
-  rigidObj->setTranslation(rigidObjTranslation);
-  rigidObj->setRotation(rigidObjRotation);
 
-  auto& sceneGraph = sim->getActiveSceneGraph();
-  auto& rootNode = sceneGraph.getRootNode();
-  auto prevNumberOfChildrenOfRoot = getNumberOfChildrenOfRoot(rootNode);
+  int prevNumberOfChildrenOfRoot = 0;
 
-  const auto recorder = sim->getGfxReplayManager()->getRecorder();
-  CORRADE_VERIFY(recorder);
-  recorder->saveKeyframe();
-  recorder->writeSavedKeyframesToFile(testFilepath);
+  // record a playback file
+  {
+    SimulatorConfiguration simConfig{};
+    simConfig.activeSceneName = boxFile;
+    simConfig.enableGfxReplaySave = true;
+    simConfig.createRenderer = false;
+    simConfig.enablePhysics = false;
+    auto sim = Simulator::create_unique(simConfig);
+    CORRADE_VERIFY(sim);
 
-  auto player = sim->getGfxReplayManager()->readKeyframesFromFile(testFilepath);
-  CORRADE_VERIFY(player);
-  CORRADE_COMPARE(player->getNumKeyframes(), 1);
-  player->setKeyframeIndex(0);
-  // second copies of transform_box and nested_box were loaded
-  CORRADE_COMPARE(getNumberOfChildrenOfRoot(rootNode),
-                  prevNumberOfChildrenOfRoot + 2);
+    auto& sceneGraph = sim->getActiveSceneGraph();
+    auto& rootNode = sceneGraph.getRootNode();
 
-  const auto& keyframes = player->debugGetKeyframes();
-  // we expect state updates for the state and the object instance
-  CORRADE_COMPARE(keyframes[0].stateUpdates.size(), 2);
-  // check the pose for nested_box
-  const auto& stateUpdate = keyframes[0].stateUpdates[1];
-  const auto transform = stateUpdate.second.absTransform;
-  CORRADE_COMPARE_AS((transform.translation - rigidObjTranslation).length(),
-                     1.0e-5, Cr::TestSuite::Compare::LessOrEqual);
-  CORRADE_COMPARE_AS(
-      (transform.rotation.vector() - rigidObjRotation.vector()).length(),
-      1.0e-5, Cr::TestSuite::Compare::LessOrEqual);
+    auto objAttrMgr = sim->getObjectAttributesManager();
+    objAttrMgr->loadAllJSONConfigsFromPath(
+        Cr::Utility::Path::join(TEST_ASSETS, "objects/nested_box"), true);
+    prevNumberOfChildrenOfRoot = getNumberOfChildrenOfRoot(rootNode);
 
-  player = nullptr;
-  // second copies of transform_box and nested_box are removed when Player
-  // is deleted
-  CORRADE_COMPARE(getNumberOfChildrenOfRoot(rootNode),
-                  prevNumberOfChildrenOfRoot);
+    auto handles = objAttrMgr->getObjectHandlesBySubstring("nested_box");
+    CORRADE_VERIFY(!handles.empty());
+    auto rigidObj =
+        sim->getRigidObjectManager()->addBulletObjectByHandle(handles[0]);
+    rigidObj->setTranslation(rigidObjTranslation);
+    rigidObj->setRotation(rigidObjRotation);
+
+    const auto recorder = sim->getGfxReplayManager()->getRecorder();
+    CORRADE_VERIFY(recorder);
+    recorder->saveKeyframe();
+    recorder->writeSavedKeyframesToFile(testFilepath);
+  }
+
+  // read the playback file
+  {
+    SimulatorConfiguration simConfig{};
+    simConfig.enableGfxReplaySave = false;
+    simConfig.createRenderer = false;
+    simConfig.enablePhysics = false;
+    auto sim = Simulator::create_unique(simConfig);
+    CORRADE_VERIFY(sim);
+
+    auto& sceneGraph = sim->getActiveSceneGraph();
+    auto& rootNode = sceneGraph.getRootNode();
+
+    CORRADE_COMPARE(getNumberOfChildrenOfRoot(rootNode),
+                    1);  // static stage object
+
+    auto player =
+        sim->getGfxReplayManager()->readKeyframesFromFile(testFilepath);
+    CORRADE_VERIFY(player);
+    CORRADE_COMPARE(player->getNumKeyframes(), 1);
+    player->setKeyframeIndex(0);
+
+    CORRADE_COMPARE(getNumberOfChildrenOfRoot(rootNode),
+                    prevNumberOfChildrenOfRoot + 1);
+
+    const auto& keyframes = player->debugGetKeyframes();
+    // we expect state updates for the state and the object instance
+    CORRADE_COMPARE(keyframes[0].stateUpdates.size(), 2);
+    // check the pose for nested_box
+    const auto& stateUpdate = keyframes[0].stateUpdates[1];
+    const auto transform = stateUpdate.second.absTransform;
+    CORRADE_COMPARE_AS((transform.translation - rigidObjTranslation).length(),
+                       1.0e-5, Cr::TestSuite::Compare::LessOrEqual);
+    CORRADE_COMPARE_AS(
+        (transform.rotation.vector() - rigidObjRotation.vector()).length(),
+        1.0e-5, Cr::TestSuite::Compare::LessOrEqual);
+
+    // instances of transform_box and nested_box are removed when Player
+    // is deleted. The static stage object remains.
+    player = nullptr;
+    CORRADE_COMPARE(getNumberOfChildrenOfRoot(rootNode), 1);
+  }
 
   // remove file created for this test
   bool success = Corrade::Utility::Path::remove(testFilepath);

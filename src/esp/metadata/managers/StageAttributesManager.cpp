@@ -41,7 +41,7 @@ StageAttributesManager::StageAttributesManager(
   auto tmplt = this->postCreateRegister(
       StageAttributesManager::initNewObjectInternal("NONE", false), true);
   std::string tmpltHandle = tmplt->getHandle();
-  this->undeletableObjectNames_.insert(tmpltHandle);
+  this->undeletableObjectNames_.insert(std::move(tmpltHandle));
 }  // StageAttributesManager::ctor
 
 int StageAttributesManager::registerObjectFinalize(

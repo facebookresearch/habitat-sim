@@ -13,9 +13,9 @@ import numpy as np
 import pytest
 import quaternion
 
-import examples.settings
 import habitat_sim
 import habitat_sim.physics
+import habitat_sim.utils.settings
 from habitat_sim.utils.common import (
     quat_from_angle_axis,
     quat_from_magnum,
@@ -31,7 +31,7 @@ from utils import simulate
     reason="Requires the habitat-test-scenes and habitat test objects",
 )
 def test_kinematics():
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
 
     cfg_settings[
         "scene"
@@ -41,7 +41,7 @@ def test_kinematics():
     cfg_settings["depth_sensor"] = True
 
     # test loading the physical scene
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
     with habitat_sim.Simulator(hab_cfg) as sim:
         # get the rigid object attributes manager, which manages
         # templates used to create objects
@@ -145,7 +145,7 @@ def test_kinematics():
     reason="Requires the habitat-test-scenes and habitat test objects",
 )
 def test_kinematics_no_physics():
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
 
     cfg_settings[
         "scene"
@@ -155,7 +155,7 @@ def test_kinematics_no_physics():
     cfg_settings["depth_sensor"] = True
 
     # test loading the physical scene
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
     with habitat_sim.Simulator(hab_cfg) as sim:
         # get the rigid object attributes manager, which manages
         # templates used to create objects
@@ -262,7 +262,7 @@ def test_dynamics():
     # This test assumes that default.phys_scene_config.json contains "physics simulator": "bullet".
     # TODO: enable dynamic override of this setting in simulation config structure
 
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
 
     cfg_settings[
         "scene"
@@ -272,7 +272,7 @@ def test_dynamics():
     cfg_settings["depth_sensor"] = True
 
     # test loading the physical scene
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
     with habitat_sim.Simulator(hab_cfg) as sim:
         # get the rigid object attributes manager, which manages
         # templates used to create objects
@@ -390,12 +390,24 @@ def test_dynamics():
             sim.step_physics(0.1)
             assert cheezit_box1.translation[0] > new_object_start[0]
 
+            # test gettings/setting friction
+            cheezit_box1.friction_coefficient = 0.123
+            assert np.allclose(cheezit_box1.friction_coefficient, 0.123, atol=1e-7)
+            cheezit_box1.rolling_friction_coefficient = 0.234
+            assert np.allclose(
+                cheezit_box1.rolling_friction_coefficient, 0.234, atol=1e-7
+            )
+            cheezit_box1.spinning_friction_coefficient = 0.345
+            assert np.allclose(
+                cheezit_box1.spinning_friction_coefficient, 0.345, atol=1e-7
+            )
+
 
 def test_velocity_control():
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "NONE"
     cfg_settings["enable_physics"] = True
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
     with habitat_sim.Simulator(hab_cfg) as sim:
         sim.set_gravity(np.array([0.0, 0.0, 0.0]))
         # get the rigid object attributes manager, which manages
@@ -482,7 +494,7 @@ def test_velocity_control():
     reason="Requires the habitat-test-scenes",
 )
 def test_raycast():
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
 
     # configure some settings in case defaults change
     cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/apartment_1.glb"
@@ -491,7 +503,7 @@ def test_raycast():
     cfg_settings["enable_physics"] = True
 
     # loading the physical scene
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
     with habitat_sim.Simulator(hab_cfg) as sim:
         # get the rigid object attributes manager, which manages
         # templates used to create objects
@@ -563,7 +575,7 @@ def test_raycast():
     reason="Requires the habitat-test-scenes",
 )
 def test_collision_groups():
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
 
     # configure some settings in case defaults change
     cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/apartment_1.glb"
@@ -572,7 +584,7 @@ def test_collision_groups():
     cfg_settings["enable_physics"] = True
 
     # loading the physical scene
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
 
     with habitat_sim.Simulator(hab_cfg) as sim:
         # get the rigid object attributes manager, which manages
@@ -766,12 +778,12 @@ def getRandomPositions(articulated_object):
     reason="ArticulatedObject API requires Bullet physics.",
 )
 def test_articulated_object_add_remove():
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "NONE"
     cfg_settings["enable_physics"] = True
 
     # loading the physical scene
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
 
     with habitat_sim.Simulator(hab_cfg) as sim:
         art_obj_mgr = sim.get_articulated_object_manager()
@@ -818,12 +830,12 @@ def test_articulated_object_add_remove():
 )
 def test_articulated_object_maintain_link_order():
     # test that the maintain_link_order option for urdf import
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "NONE"
     cfg_settings["enable_physics"] = True
 
     # loading the physical scene
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
 
     with habitat_sim.Simulator(hab_cfg) as sim:
         art_obj_mgr = sim.get_articulated_object_manager()
@@ -878,12 +890,12 @@ def test_articulated_object_maintain_link_order():
     ],
 )
 def test_articulated_object_kinematics(test_asset):
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "NONE"
     cfg_settings["enable_physics"] = True
 
     # loading the physical scene
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
 
     with habitat_sim.Simulator(hab_cfg) as sim:
         art_obj_mgr = sim.get_articulated_object_manager()
@@ -1030,12 +1042,12 @@ def test_articulated_object_kinematics(test_asset):
     ],
 )
 def test_articulated_object_dynamics(test_asset):
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/apartment_1.glb"
     cfg_settings["enable_physics"] = True
 
     # loading the physical scene
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
 
     with habitat_sim.Simulator(hab_cfg) as sim:
         art_obj_mgr = sim.get_articulated_object_manager()
@@ -1141,12 +1153,12 @@ def test_articulated_object_dynamics(test_asset):
     reason="ArticulatedObject API requires Bullet physics.",
 )
 def test_articulated_object_fixed_base_proxy():
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "NONE"
     cfg_settings["enable_physics"] = True
 
     # loading the physical scene
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
 
     with habitat_sim.Simulator(hab_cfg) as sim:
         art_obj_mgr = sim.get_articulated_object_manager()
@@ -1192,10 +1204,10 @@ def test_articulated_object_fixed_base_proxy():
 def test_articulated_object_damping_joint_motors():
     # test automated creation of joint motors from URDF configured joint damping values
     robot_file = "data/test_assets/urdf/kuka_iiwa/model_free_base.urdf"
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "NONE"
     cfg_settings["enable_physics"] = True
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
     with habitat_sim.Simulator(hab_cfg) as sim:
         art_obj_mgr = sim.get_articulated_object_manager()
         # parse URDF and add an ArticulatedObject to the world
@@ -1261,12 +1273,12 @@ def check_joint_positions(robot, target, single_dof_eps=5.0e-3, quat_eps=0.2):
 def test_articulated_object_joint_motors(test_asset):
     # set this to output test results as video for easy investigation
     produce_debug_video = False
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "NONE"
     cfg_settings["enable_physics"] = True
 
     # loading the physical scene
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
 
     with habitat_sim.Simulator(hab_cfg) as sim:
         art_obj_mgr = sim.get_articulated_object_manager()
@@ -1450,12 +1462,12 @@ def test_rigid_constraints():
     # set this to output test results as video for easy investigation
     produce_debug_video = False
     observations = []
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "NONE"
     cfg_settings["enable_physics"] = True
 
     # loading the physical scene
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
 
     with habitat_sim.Simulator(hab_cfg) as sim:
         obj_template_mgr = sim.get_object_template_manager()
@@ -1879,12 +1891,12 @@ def test_rigid_constraints():
     reason="ArticulatedObject API requires Bullet physics.",
 )
 def test_bullet_collision_helper():
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/apartment_1.glb"
     cfg_settings["enable_physics"] = True
 
     # loading the physical scene
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
 
     with habitat_sim.Simulator(hab_cfg) as sim:
 

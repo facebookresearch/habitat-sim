@@ -22,11 +22,11 @@ import numpy as np
 from magnum.platform.glfw import Application
 
 import habitat_sim
-from examples.settings import default_sim_settings, make_cfg
 from habitat_sim import physics
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils import viz_utils as vut
 from habitat_sim.utils.common import quat_from_angle_axis
+from habitat_sim.utils.settings import default_sim_settings, make_cfg
 
 # Setting up paths and directories for mp4 outputs
 if "google.colab" in sys.modules:

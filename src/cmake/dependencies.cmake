@@ -35,10 +35,6 @@ else()
   set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${DEPS_DIR}/eigen/cmake")
 endif()
 
-if(NOT IMGUI_DIR)
-  set(IMGUI_DIR "${DEPS_DIR}/imgui")
-endif()
-
 # tinyxml2
 include_directories("${DEPS_DIR}/tinyxml2")
 add_subdirectory("${DEPS_DIR}/tinyxml2")
@@ -193,11 +189,18 @@ if(NOT USE_SYSTEM_MAGNUM)
   set(MAGNUM_BUILD_PLUGINS_STATIC ON CACHE BOOL "" FORCE)
   set(MAGNUM_BUILD_STATIC ON CACHE BOOL "" FORCE)
   set(MAGNUM_BUILD_STATIC_PIC ON CACHE BOOL "" FORCE)
+  # Always use EGL on platforms that support it. This means both windowless and
+  # windowed applications will
+  if(NOT CORRADE_TARGET_APPLE AND NOT CORRADE_TARGET_WINDOWS)
+    set(MAGNUM_TARGET_EGL ON CACHE BOOL "" FORCE)
+  endif()
 
-  # These are enabled by default but we don't need them right now -- disabling
-  # for slightly faster builds. If you need any of these, simply delete a line.
+  # These are enabled by default but we don't need them if not building GUI
+  # viewers -- disabling for slightly faster builds. If you need any of these
+  # always, simply delete a line.
   set(MAGNUM_WITH_TEXT OFF CACHE BOOL "" FORCE)
   set(MAGNUM_WITH_TEXTURETOOLS OFF CACHE BOOL "" FORCE)
+  set(MAGNUM_WITH_STBTRUETYPEFONT OFF CACHE BOOL "" FORCE)
 
   # These are not enabled by default but we need them
   set(MAGNUM_WITH_ANYSCENEIMPORTER ON CACHE BOOL "" FORCE)
@@ -215,7 +218,6 @@ if(NOT USE_SYSTEM_MAGNUM)
   set(MAGNUM_WITH_EMSCRIPTENAPPLICATION OFF CACHE BOOL "" FORCE)
   set(MAGNUM_WITH_GLFWAPPLICATION OFF CACHE BOOL "" FORCE)
   set(MAGNUM_WITH_EIGEN ON CACHE BOOL "" FORCE) # Eigen integration
-  set(MAGNUM_WITH_IMGUI ON CACHE BOOL "" FORCE) # ImGui integration
   # GltfSceneConverter and KtxImageConverter are needed only by
   # BatchRendererTest and are optional
   #set(MAGNUM_WITH_GLTFSCENECONVERTER ON CACHE BOOL "" FORCE)
@@ -298,6 +300,9 @@ if(NOT USE_SYSTEM_MAGNUM)
   endif()
 
   if(BUILD_GUI_VIEWERS)
+    set(MAGNUM_WITH_TEXT ON CACHE BOOL "" FORCE)
+    set(MAGNUM_WITH_STBTRUETYPEFONT ON CACHE BOOL "" FORCE)
+
     if(CORRADE_TARGET_EMSCRIPTEN)
       set(MAGNUM_WITH_EMSCRIPTENAPPLICATION ON CACHE BOOL "" FORCE)
     else()
@@ -311,25 +316,30 @@ if(NOT USE_SYSTEM_MAGNUM)
       set(MAGNUM_WITH_GLFWAPPLICATION ON CACHE BOOL "" FORCE)
     endif()
   endif()
-  if(APPLE)
+  if(MAGNUM_TARGET_EGL) # Includes also Emscripten
+    set(MAGNUM_WITH_WINDOWLESSEGLAPPLICATION ON CACHE BOOL "" FORCE)
+  elseif(CORRADE_TARGET_APPLE)
     set(MAGNUM_WITH_WINDOWLESSCGLAPPLICATION ON CACHE BOOL "" FORCE)
-  elseif(WIN32)
+  elseif(CORRADE_TARGET_WINDOWS)
     set(MAGNUM_WITH_WINDOWLESSWGLAPPLICATION ON CACHE BOOL "" FORCE)
-  elseif(CORRADE_TARGET_EMSCRIPTEN)
-    set(MAGNUM_WITH_WINDOWLESSEGLAPPLICATION ON CACHE INTERNAL "" FORCE)
-  elseif(UNIX)
-    if(BUILD_GUI_VIEWERS)
-      set(MAGNUM_WITH_WINDOWLESSGLXAPPLICATION ON CACHE INTERNAL "" FORCE)
-      set(MAGNUM_WITH_WINDOWLESSEGLAPPLICATION OFF CACHE INTERNAL "" FORCE)
-    else()
-      set(MAGNUM_WITH_WINDOWLESSGLXAPPLICATION OFF CACHE INTERNAL "" FORCE)
-      set(MAGNUM_WITH_WINDOWLESSEGLAPPLICATION ON CACHE INTERNAL "" FORCE)
-    endif()
+  else()
+    # WindowlessGlxApplication deliberately not used
+    message(FATAL_ERROR "Unsupported platform")
   endif()
   add_subdirectory("${DEPS_DIR}/magnum")
   add_subdirectory("${DEPS_DIR}/magnum-plugins")
   add_subdirectory("${DEPS_DIR}/magnum-integration")
   if(BUILD_PYTHON_BINDINGS)
+    # Make Magnum text rendering plugins (used by the native viewer) available
+    # for Python as well; and reset that back to strange build procedures that
+    # turn some features off again later can still work.
+    if(BUILD_GUI_VIEWERS)
+      set(MAGNUM_PYTHON_BINDINGS_STATIC_PLUGINS MagnumPlugins::StbTrueTypeFont
+          CACHE STRING "" FORCE
+      )
+    else()
+      set(MAGNUM_PYTHON_BINDINGS_STATIC_PLUGINS "" CACHE STRING "" FORCE)
+    endif()
     add_subdirectory("${DEPS_DIR}/magnum-bindings")
   endif()
 

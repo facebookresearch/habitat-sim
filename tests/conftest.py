@@ -18,9 +18,9 @@ _test_scene = osp.abspath(
 # Testing configurations
 @pytest.fixture(scope="function")
 def make_cfg_settings():
-    import examples.settings
+    import habitat_sim.utils.settings
 
-    cfg = examples.settings.default_sim_settings.copy()
+    cfg = habitat_sim.utils.settings.default_sim_settings.copy()
     cfg["height"] = 480
     cfg["width"] = 640
     cfg["sensor_height"] = 1.5

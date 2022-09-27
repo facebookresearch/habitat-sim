@@ -282,6 +282,7 @@ navigateAndSee(action)
 # @title Configure Sim Settings
 
 test_scene = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
+mp3d_scene_dataset = "./data/scene_datasets/mp3d_example/mp3d.scene_dataset_config.json"
 
 rgb_sensor = True  # @param {type:"boolean"}
 depth_sensor = True  # @param {type:"boolean"}
@@ -291,6 +292,7 @@ sim_settings = {
     "width": 256,  # Spatial resolution of the observations
     "height": 256,
     "scene": test_scene,  # Scene path
+    "scene_dataset": mp3d_scene_dataset,  # the scene dataset configuration files
     "default_agent": 0,
     "sensor_height": 1.5,  # Height of sensors in meters
     "color_sensor": rgb_sensor,  # RGB sensor
@@ -306,6 +308,7 @@ def make_cfg(settings):
     sim_cfg = habitat_sim.SimulatorConfiguration()
     sim_cfg.gpu_device_id = 0
     sim_cfg.scene_id = settings["scene"]
+    sim_cfg.scene_dataset_config_file = settings["scene_dataset"]
     sim_cfg.enable_physics = settings["enable_physics"]
 
     # Note: all sensors must have the same resolution
@@ -453,7 +456,7 @@ while total_frames < max_frames:
 # %% [markdown]
 # A navigation mesh (NavMesh) is a collection of two-dimensional convex polygons (i.e., a polygon mesh) that define which areas of an environment are traversable by an agent with a particular embodiement. In other words, an agent could freely navigate around within these areas unobstructed by objects, walls, gaps, overhangs, or other barriers that are part of the environment. Adjacent polygons are connected to each other in a graph enabling efficient pathfinding algorithms to chart routes between points on the NavMesh as visualized below.
 # <div>
-# <img src="https://masagroup.github.io/recastdetour/recast_intro.png" width="300"/>
+# <img src="http://1.bp.blogspot.com/_-u6ZJlBFOL0/SkPKYlDhciI/AAAAAAAAABg/7XJWpa7QIzU/s1600-h/Picture+16.png" width="300"/>
 # </div>
 #
 # Using a NavMesh approximation of navigability, an agent is embodied as a rigid cylinder aligned with the gravity direction. The NavMesh is then computed by voxelizing the static scene and generating polygons on the top surfaces of solid voxels where the cylinder would sit without intersection or overhanging and respecting configured constraints such as maximum climbable slope and step-height.
@@ -738,6 +741,8 @@ sim.pathfinder.load_nav_mesh(
 # ## Recompute the NavMesh at runtime
 #
 # When computing the NavMesh at runtime, configuration options are available to customize the result based on the intended use case.
+#
+# To learn more, visit [this blog](http://digestingduck.blogspot.com/2009/08/recast-settings-uncovered.html) by the author of Recast.
 #
 # These settings include (all quantities in world units):
 # - **Voxelization parameters**:

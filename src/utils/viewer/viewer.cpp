@@ -9,7 +9,6 @@
 #include <iostream>
 
 #include <Magnum/configure.h>
-#include <Magnum/ImGuiIntegration/Context.hpp>
 #ifdef MAGNUM_TARGET_WEBGL
 #include <Magnum/Platform/EmscriptenApplication.h>
 #else
@@ -35,18 +34,24 @@
 #include "esp/scene/SceneNode.h"
 #include "esp/sensor/configure.h"
 
+#include <Corrade/PluginManager/Manager.h>
 #include <Corrade/Utility/Arguments.h>
 #include <Corrade/Utility/Assert.h>
 #include <Corrade/Utility/Debug.h>
 #include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/Path.h>
+#include <Corrade/Utility/Resource.h>
 #include <Corrade/Utility/String.h>
 #include <Magnum/DebugTools/FrameProfiler.h>
 #include <Magnum/DebugTools/Screenshot.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Renderer.h>
+#include <Magnum/Shaders/VectorGL.h>
+#include <Magnum/Text/AbstractFont.h>
+#include <Magnum/Text/GlyphCache.h>
+#include <Magnum/Text/Renderer.h>
 #include "esp/core/Esp.h"
 #include "esp/core/Utility.h"
 #include "esp/gfx/Drawable.h"
@@ -621,7 +626,12 @@ Key Commands:
 
   Mn::Timeline timeline_;
 
-  Mn::ImGuiIntegration::Context imgui_{Mn::NoCreate};
+  /* Text rendering */
+  Cr::PluginManager::Manager<Mn::Text::AbstractFont> fontManager_;
+  Cr::Containers::Pointer<Mn::Text::AbstractFont> font_;
+  Cr::Containers::Optional<Mn::Text::GlyphCache> fontGlyphCache_;
+  Mn::Shaders::VectorGL2D fontShader_;
+  Cr::Containers::Optional<Mn::Text::Renderer2D> fontText_;
   bool showFPS_ = true;
 
   // NOTE: Mouse + shift is to select object on the screen!!
@@ -876,19 +886,38 @@ Viewer::Viewer(const Arguments& arguments)
 
   const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
 
-  imgui_ =
-      Mn::ImGuiIntegration::Context(Mn::Vector2{windowSize()} / dpiScaling(),
-                                    windowSize(), framebufferSize());
-  ImGui::GetIO().IniFilename = nullptr;
+  /* Set up text rendering */
+  {
+    /* Render the font in a size corresponding to actual pixels, taking DPI
+       scaling into account. Docs for reference:
+       https://doc.magnum.graphics/magnum/classMagnum_1_1Platform_1_1Sdl2Application.html#Platform-Sdl2Application-dpi
+     */
+    const Mn::Float fontSize =
+        13.0f * (Mn::Vector2{framebufferSize()} * dpiScaling() /
+                 Mn::Vector2{windowSize()})
+                    .x();
 
-  /* Set up proper blending to be used by ImGui. There's a great chance
-     you'll need this exact behavior for the rest of your scene. If not, set
-     this only for the drawFrame() call. */
-  Mn::GL::Renderer::setBlendEquation(Mn::GL::Renderer::BlendEquation::Add,
-                                     Mn::GL::Renderer::BlendEquation::Add);
-  Mn::GL::Renderer::setBlendFunction(
-      Mn::GL::Renderer::BlendFunction::SourceAlpha,
-      Mn::GL::Renderer::BlendFunction::OneMinusSourceAlpha);
+    Cr::Utility::Resource rs{"fonts"};
+    font_ = fontManager_.loadAndInstantiate("TrueTypeFont");
+    if (!font_ || !font_->openData(rs.getRaw("ProggyClean.ttf"), fontSize))
+      Mn::Fatal{} << "Cannot open font file";
+
+    fontGlyphCache_.emplace(Mn::Vector2i{256});
+    /* Don't destroy the bitmap font with smooth scaling */
+    fontGlyphCache_->texture().setMagnificationFilter(
+        Mn::SamplerFilter::Nearest);
+    font_->fillGlyphCache(*fontGlyphCache_,
+                          "abcdefghijklmnopqrstuvwxyz"
+                          "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                          "0123456789:-_+,.! %µ");
+
+    /* But as the text projection uses virtual window pixels, use just the
+       unscaled size for the actual text */
+    fontText_.emplace(*font_, *fontGlyphCache_, fontSize,
+                      Mn::Text::Alignment::TopLeft);
+    fontText_->reserve(1024, Mn::GL::BufferUsage::DynamicDraw,
+                       Mn::GL::BufferUsage::StaticDraw);
+  }
 
   // Setup renderer and shader defaults
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
@@ -1738,72 +1767,85 @@ void Viewer::drawEvent() {
     sensorRenderTarget->blitRgbaToDefault();
   }
 
-  // Immediately bind the main buffer back so that the "imgui" below can work
-  // properly
+  // Immediately bind the main buffer back
   Mn::GL::defaultFramebuffer.bind();
 
-  // Do not include ImGui content drawing in per frame profiler measurements
+  // Do not include text drawing in per frame profiler measurements
   profiler_.endFrame();
 
-  imgui_.newFrame();
-  ImGui::SetNextWindowPos(ImVec2(10, 10));
   if (showFPS_) {
-    ImGui::Begin("main", NULL,
-                 ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
-                     ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::SetWindowFontScale(1.5);
-    ImGui::Text("%.1f FPS", Mn::Double(ImGui::GetIO().Framerate));
+    std::string text;
     uint32_t total = activeSceneGraph_->getDrawables().size();
-    ImGui::Text("%u drawables", total);
+    Cr::Utility::formatInto(
+        text, text.size(),
+        "{:.1f} FPS\n"
+        "{} drawables",
+        profiler_.isMeasurementAvailable(
+            Mn::DebugTools::FrameProfilerGL::Value::FrameTime)
+            ? 1.0e9 / profiler_.frameTimeMean()
+            : 0.0,
+        total);
     if (sensorMode_ == VisualSensorMode::Camera) {
-      ImGui::Text("%u culled", total - visibles);
+      Cr::Utility::formatInto(text, text.size(), ", {} culled",
+                              total - visibles);
     }
-    auto& cam = getAgentCamera();
+    text += '\n';
 
     switch (sensorMode_) {
-      case VisualSensorMode::Camera:
+      case VisualSensorMode::Camera: {
+        auto& cam = getAgentCamera();
         if (cam.getCameraType() == esp::sensor::SensorSubType::Orthographic) {
-          ImGui::Text("Orthographic camera sensor");
+          text += "Orthographic camera sensor\n";
         } else if (cam.getCameraType() == esp::sensor::SensorSubType::Pinhole) {
-          ImGui::Text("Pinhole camera sensor");
+          text += "Pinhole camera sensor\n";
         };
-        break;
+      } break;
       case VisualSensorMode::Fisheye:
-        ImGui::Text("Fisheye sensor");
+        text += "Fisheye sensor\n";
         break;
       case VisualSensorMode::Equirectangular:
-        ImGui::Text("Equirectangular sensor");
+        text += "Equirectangular sensor\n";
         break;
 
       default:
         break;
     }
-    ImGui::Text("%s", profiler_.statistics().c_str());
-    std::string modeText =
-        "Mouse Interaction Mode: " + mouseModeNames.at(mouseInteractionMode);
-    ImGui::Text("%s", modeText.c_str());
+    Cr::Utility::formatInto(text, text.size(),
+                            "{}\n"
+                            "Mouse Interaction Mode: {}\n",
+                            profiler_.statistics(),
+                            mouseModeNames.at(mouseInteractionMode));
+
     if (!semanticTag_.empty()) {
-      ImGui::Text("Semantic %s", semanticTag_.c_str());
+      Cr::Utility::formatInto(text, text.size(), "Semantic {}\n", semanticTag_);
     }
-    ImGui::End();
+
+    fontText_->render(text);
+
+    /* Set up renderer state for text rendering, and then reset that back again
+      after */
+    Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::DepthTest);
+    Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::FaceCulling);
+    Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::Blending);
+    Mn::GL::Renderer::setBlendFunction(
+        Mn::GL::Renderer::BlendFunction::One,
+        Mn::GL::Renderer::BlendFunction::OneMinusSourceAlpha);
+    Mn::GL::Renderer::setBlendEquation(Mn::GL::Renderer::BlendEquation::Add,
+                                       Mn::GL::Renderer::BlendEquation::Add);
+
+    fontShader_
+        .setTransformationProjectionMatrix(
+            Mn::Matrix3::projection(Mn::Vector2{windowSize()}) *
+            Mn::Matrix3::translation(Mn::Vector2{windowSize()} *
+                                         Mn::Vector2{-0.5f, 0.5f} +
+                                     Mn::Vector2{32, -32}))
+        .bindVectorTexture(fontGlyphCache_->texture())
+        .draw(fontText_->mesh());
+
+    Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
+    Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
+    Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
   }
-
-  /* Set appropriate states. If you only draw ImGui, it is sufficient to
-     just enable blending and scissor test in the constructor. */
-  Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::Blending);
-  Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::ScissorTest);
-  Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::FaceCulling);
-  Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::DepthTest);
-
-  imgui_.drawFrame();
-
-  /* Reset state. Only needed if you want to draw something else with
-     different state after. */
-
-  Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
-  Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
-  Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::ScissorTest);
-  Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
 
   swapBuffers();
   timeline_.nextFrame();
@@ -1916,9 +1958,6 @@ void Viewer::viewportEvent(ViewportEvent& event) {
   }
   bindRenderTarget();
   Mn::GL::defaultFramebuffer.setViewport({{}, event.framebufferSize()});
-
-  imgui_.relayout(Mn::Vector2{event.windowSize()} / event.dpiScaling(),
-                  event.windowSize(), event.framebufferSize());
 
   objectPickingHelper_->handleViewportChange(event.framebufferSize());
 }

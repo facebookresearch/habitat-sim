@@ -21,6 +21,8 @@
 .. docs for bindings go here -- doing all the formatting in a C++ raw string is
     worse than a hangover
 
+.. docs NOTE: a detail string is required to generate the entry. Only populating params, return, and summary will be skipped...
+
 .. py:class:: habitat_sim.scene.SemanticCategory
     :summary: Base class for all semantic categories.
 
@@ -72,6 +74,8 @@
 .. py:function:: habitat_sim.nav.PathFinder.try_step
     :summary: Find a valid location for the agent to actually step to when it attempts to step between start and end
 
+    Attempts to move from start to end and returns the navigable point closest to end that is feasibly reachable from start.
+
     :param start: The starting location of the agent
     :param end: The desired end location
     :return: The actual ending location, if such a location exists, or ``{NAN, NAN, NAN}``
@@ -79,9 +83,10 @@
 .. py:function:: habitat_sim.nav.PathFinder.get_random_navigable_point
     :summary: Samples a navigable point uniformly at random from the navmesh
 
-    :param max_tries: The maximum number of times to retry sampling if it fails and the navmesh
-        seems fine. Setting this higher can sometimes be warranted, but needing to typically
-        indicates an error with the navmesh.
+    This method can fail.  If it does, the returned point will be `{NAN, NAN, NAN}`. Use is_navigable to check if the point is navigable.
+
+    :param max_tries: The maximum number of times to retry sampling if it fails and the navmesh seems fine. Setting this higher can sometimes be warranted, but needing to typically indicates an error with the navmesh.
+    :param island_index: Optionally specify the island from which to sample the point. Default -1 queries the full navmesh.
     :return: A navigable point or ``{NAN, NAN, NAN}`` if this fails
 
 .. py:function:: habitat_sim.nav.PathFinder.snap_point
@@ -90,7 +95,8 @@
     Will only search within a 4x8x4 cube centerred around the point.
     If there is no navigable location within that cube, no navigable point will be found.
 
-    :param pt: The starting location of the agent
+    :param point: The starting location of the agent
+    :param island_index: Optionally specify the island from which to sample the point. Default -1 queries the full navmesh.
     :return: The navigable point, if one exists, or ``{NAN, NAN, NAN}``
 
 .. dump of whatever else was in the other PR

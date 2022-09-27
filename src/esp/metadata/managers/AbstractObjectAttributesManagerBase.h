@@ -222,6 +222,21 @@ auto AbstractObjectAttributesManager<T, Access>::
         attributes->setFrictionCoefficient(friction_coefficient);
       });
 
+  // load the rolling friction coefficient
+  io::jsonIntoSetter<double>(
+      jsonDoc, "rolling_friction_coefficient",
+      [attributes](double rolling_friction_coefficient) {
+        attributes->setRollingFrictionCoefficient(rolling_friction_coefficient);
+      });
+
+  // load the spinning friction coefficient
+  io::jsonIntoSetter<double>(
+      jsonDoc, "spinning_friction_coefficient",
+      [attributes](double spinning_friction_coefficient) {
+        attributes->setSpinningFrictionCoefficient(
+            spinning_friction_coefficient);
+      });
+
   // load the restitution coefficient
   io::jsonIntoSetter<double>(
       jsonDoc, "restitution_coefficient",

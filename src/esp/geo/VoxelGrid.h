@@ -130,7 +130,7 @@ class VoxelGrid {
 
     new_grid.view = view;
     new_grid.type = type;
-    grids_.insert(std::make_pair(gridName, std::move(new_grid)));
+    grids_.emplace(gridName, std::move(new_grid));
   }
 
   /**

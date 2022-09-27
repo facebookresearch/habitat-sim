@@ -13,18 +13,18 @@
 #include <Magnum/Image.h>
 #include <Magnum/PixelFormat.h>
 
-#if defined(CORRADE_TARGET_APPLE)
+#ifdef MAGNUM_TARGET_EGL
+#include <Magnum/Platform/WindowlessEglApplication.h>
+#elif defined(CORRADE_TARGET_APPLE)
 #include <Magnum/Platform/WindowlessCglApplication.h>
-#elif defined(CORRADE_TARGET_EMSCRIPTEN)
-#include <Magnum/Platform/WindowlessEglApplication.h>
 #elif defined(CORRADE_TARGET_UNIX)
-#ifdef ESP_BUILD_EGL_SUPPORT
-#include <Magnum/Platform/WindowlessEglApplication.h>
-#else
+/* Mainly for builds with external Magnum that might not have TARGET_EGL
+   enabled. */
 #include <Magnum/Platform/WindowlessGlxApplication.h>
-#endif
 #elif defined(CORRADE_TARGET_WINDOWS)
 #include <Magnum/Platform/WindowlessWglApplication.h>
+#else
+#error unsupported platform
 #endif
 
 #ifdef ESP_BUILD_WITH_CUDA
@@ -74,16 +74,18 @@ struct RendererStandalone::State {
 #endif
 
   explicit State(const RendererStandaloneConfiguration& configuration)
-      : context{Mn::Platform::WindowlessGLContext::Configuration{}
-#ifdef ESP_BUILD_EGL_SUPPORT
-                    .setCudaDevice(configuration.state->cudaDevice)
+      : context {
+    Mn::Platform::WindowlessGLContext::Configuration {}
+#if defined(MAGNUM_TARGET_EGL) && !defined(CORRADE_TARGET_EMSCRIPTEN)
+    .setCudaDevice(configuration.state->cudaDevice)
 #endif
-                    .addFlags(configuration.state->flags &
-                                      RendererStandaloneFlag::QuietLog
-                                  ? Mn::Platform::WindowlessGLContext::
-                                        Configuration::Flag::QuietLog
-                                  : Mn::Platform::WindowlessGLContext::
-                                        Configuration::Flags{})} {
+        .addFlags(
+            configuration.state->flags & RendererStandaloneFlag::QuietLog
+                ? Mn::Platform::WindowlessGLContext::Configuration::Flag::
+                      QuietLog
+                : Mn::Platform::WindowlessGLContext::Configuration::Flags{})
+  }
+  {
     context.makeCurrent();
     magnumContext.create(Mn::GL::Context::Configuration{}.addFlags(
         configuration.state->flags & RendererStandaloneFlag::QuietLog

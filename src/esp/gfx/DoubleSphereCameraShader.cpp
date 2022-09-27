@@ -71,7 +71,7 @@ DoubleSphereCameraShader::DoubleSphereCameraShader(
                      : "")
       .addSource(rs.getString("doubleSphereCamera.frag"));
 
-  CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));
+  CORRADE_INTERNAL_ASSERT_OUTPUT(vert.compile() && frag.compile());
 
   attachShaders({vert, frag});
 

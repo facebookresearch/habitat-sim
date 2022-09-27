@@ -1,11 +1,11 @@
 import habitat_sim
-from examples.settings import make_cfg
 from habitat_sim.gfx import (
     DEFAULT_LIGHTING_KEY,
     NO_LIGHT_KEY,
     LightInfo,
     LightPositionModel,
 )
+from habitat_sim.utils.settings import make_cfg
 
 
 def test_get_no_light_setup(make_cfg_settings):

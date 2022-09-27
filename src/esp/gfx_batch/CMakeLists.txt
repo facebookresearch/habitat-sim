@@ -36,21 +36,21 @@ target_link_libraries(
 )
 
 # Link appropriate windowless library for the standalone renderer
-if(APPLE)
-  find_package(Magnum REQUIRED WindowlessCglApplication)
-  target_link_libraries(gfx_batch PUBLIC Magnum::WindowlessCglApplication)
-elseif(WIN32)
-  find_package(Magnum REQUIRED WindowlessWglApplication)
-  target_link_libraries(gfx_batch PUBLIC Magnum::WindowlessWglApplication)
-elseif(CORRADE_TARGET_EMSCRIPTEN)
+if(MAGNUM_TARGET_EGL)
+  # Includes also Emscripten
   find_package(Magnum REQUIRED WindowlessEglApplication)
-  target_link_libraries(gfx_batch PUBLIC Magnum::WindowlessEglApplication)
-elseif(UNIX)
-  if(BUILD_GUI_VIEWERS)
-    find_package(Magnum REQUIRED WindowlessGlxApplication)
-    target_link_libraries(gfx_batch PUBLIC Magnum::WindowlessGlxApplication)
-  else()
-    find_package(Magnum REQUIRED WindowlessEglApplication)
-    target_link_libraries(gfx_batch PUBLIC Magnum::WindowlessEglApplication)
-  endif()
+elseif(CORRADE_TARGET_APPLE)
+  find_package(Magnum REQUIRED WindowlessCglApplication)
+elseif(CORRADE_TARGET_UNIX)
+  # Mainly for builds with external Magnum that might not have TARGET_EGL
+  # enabled
+  find_package(Magnum REQUIRED WindowlessGlxApplication)
+elseif(CORRADE_TARGET_WINDOWS)
+  find_package(Magnum REQUIRED WindowlessWglApplication)
+else()
+  message(FATAL_ERROR "Unsupported platform")
 endif()
+target_link_libraries(
+  gfx_batch
+  PUBLIC Magnum::WindowlessApplication
+)

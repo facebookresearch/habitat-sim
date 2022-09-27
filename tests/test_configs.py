@@ -155,6 +155,10 @@ def test_physics_object_attributes():
     assert object_template.scale == my_test_vec
     object_template.friction_coefficient = 1.345
     assert object_template.friction_coefficient == 1.345
+    object_template.rolling_friction_coefficient = 1.456
+    assert object_template.rolling_friction_coefficient == 1.456
+    object_template.spinning_friction_coefficient = 1.567
+    assert object_template.spinning_friction_coefficient == 1.567
     object_template.restitution_coefficient = 1.456
     assert object_template.restitution_coefficient == 1.456
     object_template.linear_damping = 1.567
