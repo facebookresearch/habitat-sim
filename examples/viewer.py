@@ -99,11 +99,11 @@ class HabitatSimInteractiveViewer(Application):
         relative_path_to_font = "../data/fonts/ProggyClean.ttf"
         self.display_font.open_file(
             os.path.join(os.path.dirname(__file__), relative_path_to_font),
-            180,
+            13,
         )
 
         # Glyphs we need to render everything
-        self.glyph_cache = text.GlyphCache(mn.Vector2i(2048))
+        self.glyph_cache = text.GlyphCache(mn.Vector2i(256))
         self.display_font.fill_glyph_cache(
             self.glyph_cache,
             string.ascii_lowercase
@@ -132,7 +132,7 @@ class HabitatSimInteractiveViewer(Application):
                 * HabitatSimInteractiveViewer.TEXT_DELTA_FROM_CENTER,
             )
         )
-        self.shader = shaders.DistanceFieldVectorGL2D()
+        self.shader = shaders.VectorGL2D()
 
         # make magnum text background transparent
         mn.gl.Renderer.enable(mn.gl.Renderer.Feature.BLENDING)
@@ -814,8 +814,6 @@ class HabitatSimInteractiveViewer(Application):
         self.shader.bind_vector_texture(self.glyph_cache.texture)
         self.shader.transformation_projection_matrix = self.window_text_transform
         self.shader.color = [1.0, 1.0, 1.0]
-        self.shader.outline_color = [1.0, 1.0, 1.0]
-        self.shader.outline_range = (0.45, 0.40)
 
         sensor_type_string = str(sensor_spec.sensor_type.name)
         sensor_subtype_string = str(sensor_spec.sensor_subtype.name)
