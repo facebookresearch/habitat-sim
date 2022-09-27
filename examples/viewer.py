@@ -122,6 +122,7 @@ class HabitatSimInteractiveViewer(Application):
         self.window_text.reserve(HabitatSimInteractiveViewer.MAX_DISPLAY_TEXT_CHARS)
 
         # text object transform in window space is Projection matrix times Translation Matrix
+        # put text in top left of window
         self.window_text_transform = mn.Matrix3.projection(
             mn.Vector2(self.viewport_size)
         ) @ mn.Matrix3.translation(
