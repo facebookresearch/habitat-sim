@@ -5,6 +5,7 @@
 import ctypes
 import math
 import os
+import string
 import sys
 import time
 from enum import Enum
@@ -15,6 +16,7 @@ sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
 import magnum as mn
 import numpy as np
+from magnum import shaders, text
 from magnum.platform.glfw import Application
 
 import habitat_sim
@@ -25,12 +27,31 @@ from habitat_sim.utils.settings import default_sim_settings, make_cfg
 
 
 class HabitatSimInteractiveViewer(Application):
+
+    # the maximum number of chars displayable in the app window
+    # using the magnum text module. These chars are used to
+    # display the CPU/GPU usage data
+    MAX_DISPLAY_TEXT_CHARS = 256
+
+    # how much to displace window text relative to the center of the
+    # app window (e.g if you want the display text in the top left of
+    # the app window, you will displace the text
+    # window width * -TEXT_DELTA_FROM_CENTER in the x axis and
+    # widnow height * TEXT_DELTA_FROM_CENTER in the y axis, as the text
+    # position defaults to the middle of the app window)
+    TEXT_DELTA_FROM_CENTER = 0.49
+
+    # font size of the magnum in-window display text that displays
+    # CPU and GPU usage info
+    DISPLAY_FONT_SIZE = 16.0
+
     def __init__(self, sim_settings: Dict[str, Any]) -> None:
         configuration = self.Configuration()
         configuration.title = "Habitat Sim Interactive Viewer"
         Application.__init__(self, configuration)
         self.sim_settings: Dict[str:Any] = sim_settings
         self.fps: float = 60.0
+
         # draw Bullet debug line visualizations (e.g. collision meshes)
         self.debug_bullet_draw = False
         # draw active contact point debug line visualizations
@@ -72,6 +93,60 @@ class HabitatSimInteractiveViewer(Application):
             key.X: "move_down",
             key.Z: "move_up",
         }
+
+        # Load a TrueTypeFont plugin and open the font file
+        self.display_font = text.FontManager().load_and_instantiate("TrueTypeFont")
+        relative_path_to_font = "../data/fonts/ProggyClean.ttf"
+        self.display_font.open_file(
+            os.path.join(os.path.dirname(__file__), relative_path_to_font),
+            13,
+        )
+
+        # Glyphs we need to render everything
+        self.glyph_cache = text.GlyphCache(mn.Vector2i(256))
+        self.display_font.fill_glyph_cache(
+            self.glyph_cache,
+            string.ascii_lowercase
+            + string.ascii_uppercase
+            + string.digits
+            + ":-_+,.! %µ",
+        )
+
+        # magnum text object that displays CPU/GPU usage data in the app window
+        self.window_text = text.Renderer2D(
+            self.display_font,
+            self.glyph_cache,
+            HabitatSimInteractiveViewer.DISPLAY_FONT_SIZE,
+            text.Alignment.TOP_LEFT,
+        )
+        self.window_text.reserve(HabitatSimInteractiveViewer.MAX_DISPLAY_TEXT_CHARS)
+
+        # text object transform in window space is Projection matrix times Translation Matrix
+        # put text in top left of window
+        self.window_text_transform = mn.Matrix3.projection(
+            mn.Vector2(self.viewport_size)
+        ) @ mn.Matrix3.translation(
+            mn.Vector2(
+                self.viewport_size[0]
+                * -HabitatSimInteractiveViewer.TEXT_DELTA_FROM_CENTER,
+                self.viewport_size[1]
+                * HabitatSimInteractiveViewer.TEXT_DELTA_FROM_CENTER,
+            )
+        )
+        self.shader = shaders.VectorGL2D()
+
+        # make magnum text background transparent
+        mn.gl.Renderer.enable(mn.gl.Renderer.Feature.BLENDING)
+        mn.gl.Renderer.set_blend_function(
+            mn.gl.Renderer.BlendFunction.ONE,
+            mn.gl.Renderer.BlendFunction.ONE_MINUS_SOURCE_ALPHA,
+        )
+        mn.gl.Renderer.set_blend_equation(
+            mn.gl.Renderer.BlendEquation.ADD, mn.gl.Renderer.BlendEquation.ADD
+        )
+
+        # variables that track app data and CPU/GPU usage
+        self.num_frames_to_track = 60
 
         # Cycle mouse utilities
         self.mouse_interaction = MouseMode.LOOK
@@ -194,6 +269,9 @@ class HabitatSimInteractiveViewer(Application):
         self.debug_draw()
         self.render_camera.render_target.blit_rgba_to_default()
         mn.gl.default_framebuffer.bind()
+
+        # draw CPU/GPU usage data and other info to the app window
+        self.draw_text(self.render_camera.specification())
 
         self.swap_buffers()
         Timer.next_frame()
@@ -733,6 +811,27 @@ class HabitatSimInteractiveViewer(Application):
         event.accepted = True
         exit(0)
 
+    def draw_text(self, sensor_spec):
+        self.shader.bind_vector_texture(self.glyph_cache.texture)
+        self.shader.transformation_projection_matrix = self.window_text_transform
+        self.shader.color = [1.0, 1.0, 1.0]
+
+        sensor_type_string = str(sensor_spec.sensor_type.name)
+        sensor_subtype_string = str(sensor_spec.sensor_subtype.name)
+        if self.mouse_interaction == MouseMode.LOOK:
+            mouse_mode_string = "LOOK"
+        elif self.mouse_interaction == MouseMode.GRAB:
+            mouse_mode_string = "GRAB"
+        self.window_text.render(
+            f"""
+{self.fps} FPS
+Sensor Type: {sensor_type_string}
+Sensor Subtype: {sensor_subtype_string}
+Mouse Interaction Mode: {mouse_mode_string}
+            """
+        )
+        self.shader.draw(self.window_text.mesh)
+
     def print_help_text(self) -> None:
         """
         Print the Key Command help text.
@@ -916,16 +1015,16 @@ if __name__ == "__main__":
     # optional arguments
     parser.add_argument(
         "--scene",
-        default="NONE",
+        default="./data/test_assets/scenes/simple_room.glb",
         type=str,
-        help='scene/stage file to load (default: "NONE")',
+        help='scene/stage file to load (default: "./data/test_assets/scenes/simple_room.glb")',
     )
     parser.add_argument(
         "--dataset",
-        default="default",
+        default="./data/objects/ycb/ycb.scene_dataset_config.json",
         type=str,
         metavar="DATASET",
-        help="dataset configuration file to use (default: default)",
+        help='dataset configuration file to use (default: "./data/objects/ycb/ycb.scene_dataset_config.json")',
     )
     parser.add_argument(
         "--disable_physics",
@@ -947,4 +1046,5 @@ if __name__ == "__main__":
     sim_settings["enable_physics"] = not args.disable_physics
     sim_settings["stage_requires_lighting"] = args.stage_requires_lighting
 
+    # start the application
     HabitatSimInteractiveViewer(sim_settings).exec()
