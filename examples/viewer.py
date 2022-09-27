@@ -12,10 +12,7 @@ from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import git
-import imageio
-import nvidia_smi
 import psutil
-from PIL import Image
 
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
@@ -28,6 +25,7 @@ import habitat_sim
 from examples.settings import default_sim_settings, make_cfg
 from habitat_sim import physics
 from habitat_sim.logging import LoggingContext, logger
+from habitat_sim.utils import viz_utils as vut
 from habitat_sim.utils.common import quat_from_angle_axis
 
 # Setting up paths and directories for mp4 outputs
@@ -37,7 +35,7 @@ if "google.colab" in sys.modules:
 repo = git.Repo(".", search_parent_directories=True)
 dir_path = repo.working_tree_dir
 # fmt: off
-output_directory = "examples/viewer_output/"  # @param {type:"string"}
+output_directory = "examples/output_viewer/"  # @param {type:"string"}
 # fmt: on
 output_path = os.path.join(dir_path, output_directory)
 if not os.path.exists(output_path):
@@ -139,17 +137,12 @@ class HabitatSimInteractiveViewer(Application):
 
         # -self.recording: If we are currently storing frames in a List to be
         #   written to a file when done.
-        # -self.video_frames: list to store video frames as PIL Image objects.
-        # -self.curr_frame_written_index: if writing previous recording to file,
-        #   this is the index of last frame in self.video_frames that was written.
-        # -self.writing_video: if the previous recording is still being written
+        # -self.video_frames: list to store video frames as observations
+        # -self.saving_video: if the previous recording is still being written
         #   to a file. We don't want to record new frames in that case.
-        # -self.video_writer: class instance that writes the frames to a video file
         self.recording = False
         self.video_frames = []
-        self.curr_frame_written_index = 0
-        self.writing_video = False
-        self.video_writer = None
+        self.saving_video = False
 
         # configure our simulator
         self.cfg: Optional[habitat_sim.simulator.Configuration] = None
@@ -239,7 +232,7 @@ class HabitatSimInteractiveViewer(Application):
         """
         rgb = HabitatSimInteractiveViewer.BOUNDING_BOX_RGB
         line_color = mn.Color4.from_xyz(rgb)
-        bb_corners: List[mn.Vector3] = get_bounding_box_corners(self.curr_object)
+        bb_corners: List[mn.Vector3] = self.get_bounding_box_corners(self.curr_object)
         num_corners = len(bb_corners)
         self.sim.get_debug_line_render().set_line_width(0.01)
         obj_transform = self.curr_object.transformation
@@ -320,7 +313,7 @@ class HabitatSimInteractiveViewer(Application):
         # If in Kinematic movement mode and there is a ManagedBulletRigidObject
         # that is displayed from the dataset, rotate it
         if self.curr_object is not None and not self.simulating:
-            rotate_displayed_object(self, self.curr_object)
+            self.rotate_displayed_object(self.curr_object)
 
         # Occasionally a frame will pass quicker than 1/60 seconds
         if self.time_since_last_simulation >= 1.0 / self.fps:
@@ -341,28 +334,19 @@ class HabitatSimInteractiveViewer(Application):
             )
 
         keys = active_agent_id_and_sensor_name
-
-        self.sim._Simulator__sensors[keys[0]][keys[1]].draw_observation()
+        sensor = self.sim._Simulator__sensors[keys[0]][keys[1]]
+        self.sensor_name = sensor._spec.uuid
+        sensor.draw_observation()
         agent = self.sim.get_agent(keys[0])
         self.render_camera = agent.scene_node.node_sensor_suite.get(keys[1])
         self.debug_draw()
         self.render_camera.render_target.blit_rgba_to_default()
         mn.gl.default_framebuffer.bind()
 
-        if self.recording and not self.writing_video:
-            # if we are recording and no recording is currently being written to file,
-            # save the framebuffer as a PIL Image into a list that we will write to
-            # a video file when done recording
-            framebuffer = mn.gl.default_framebuffer
-            save_frame_in_list(self, framebuffer)
-        elif (
-            not self.recording
-            and self.writing_video
-            and self.curr_frame_written_index >= len(self.video_frames)
-        ):
-            # if we are supposedly writing the frames of the previous recording to a file,
-            # but we have iterated over every frame in the list, we know we are done writing
-            done_writing_video_file(self)
+        if self.recording and not self.saving_video:
+            # if we are recording and no recording is currently being saved to file,
+            # store the sensor observation as a frame in a list of observations
+            self.video_frames.append(self.sim.get_sensor_observations())
 
         self.swap_buffers()
         Timer.next_frame()
@@ -578,7 +562,7 @@ class HabitatSimInteractiveViewer(Application):
             HabitatSimInteractiveViewer.USING_NVIDIA_GPU to True if you want to print
             GPU memory usage)
             """
-            print_memory_usage()
+            self.print_memory_usage()
 
         elif key == pressed.COMMA:
             self.debug_bullet_draw = not self.debug_bullet_draw
@@ -713,15 +697,14 @@ class HabitatSimInteractiveViewer(Application):
                 self.object_template_handle_index = (
                     len(self.object_template_handles) - 1
                 )
-            add_new_object_from_dataset(
-                self,
+            self.add_new_object_from_dataset(
                 self.object_template_handle_index,
                 HabitatSimInteractiveViewer.DEFAULT_OBJ_POSITION,
             )
             if keep_simulating:
                 # make sure physics stays on, but place object upright in center of table
                 self.simulating = True
-                snap_down(self.sim, self.curr_object)
+                self.snap_down_object(self.curr_object)
 
         elif key == pressed.P:
             # increment template handle index and add corresponding
@@ -730,15 +713,14 @@ class HabitatSimInteractiveViewer(Application):
             self.object_template_handle_index += 1
             if self.object_template_handle_index >= len(self.object_template_handles):
                 self.object_template_handle_index = 0
-            add_new_object_from_dataset(
-                self,
+            self.add_new_object_from_dataset(
                 self.object_template_handle_index,
                 HabitatSimInteractiveViewer.DEFAULT_OBJ_POSITION,
             )
             if keep_simulating:
                 # make sure physics stays on, but place object upright in center of table
                 self.simulating = True
-                snap_down(self.sim, self.curr_object)
+                self.snap_down_object(self.curr_object)
 
         elif key == pressed.O:
             if self.curr_object:
@@ -749,20 +731,20 @@ class HabitatSimInteractiveViewer(Application):
                 logger.info(
                     "Command: snapping dataset object to table and switching to Dynamic motion\n"
                 )
-                snap_down(self.sim, self.curr_object)
+                self.snap_down_object(self.curr_object)
             else:
                 logger.info("Can't snap NULL object to table\n")
 
         elif key == pressed.L:
             # press L to start recording, then L again to stop it
 
-            if not self.recording and not self.writing_video:
+            if not self.recording and not self.saving_video:
                 # if we are not recording and not writing prev recording to file,
                 # we can start a new recording
                 self.recording = True
                 print_in_color(" *" * 36, PrintColors.RED, logging=True)
                 print_in_color("Command: start recording\n", PrintColors.RED)
-            elif not self.recording and self.writing_video:
+            elif not self.recording and self.saving_video:
                 # if we are not recording but still writing prev recording to file,
                 # wait until the video file is written before recording again
                 print_in_color("-" * 72, PrintColors.RED, logging=True)
@@ -770,33 +752,13 @@ class HabitatSimInteractiveViewer(Application):
                     "Command: can't record, still saving previous recording\n",
                     PrintColors.RED,
                 )
-            elif self.recording and not self.writing_video:
+            elif self.recording and not self.saving_video:
                 # if we are recording but not writing prev recording to file, we need
                 # to stop recording and save the recorded frames to a video file
                 self.recording = False
-                self.writing_video = True
+                self.saving_video = True
 
-                # Current date and time so we can make unique video files for each recording
-                date_and_time = datetime.datetime.now()
-                # year-month-day
-                date = date_and_time.strftime("%Y-%m-%d")
-                # hour:min:sec - capital H is military time, %I is standard time
-                # (0-12 hour time format)
-                time = date_and_time.strftime("%H:%M:%S")
-
-                # construct file path and write consecutive frames to new video file
-                file_path = (
-                    f"{output_path}viewer_py_recording__date_{date}__time_{time}.mp4"
-                )
-                print_in_color("-" * 72, PrintColors.RED, logging=True)
-                print_in_color(
-                    f"Command: End recording, saving frames to the video file below \n{file_path}\n",
-                    PrintColors.RED,
-                )
-                self.video_writer = imageio.get_writer(
-                    file_path, format="mp4", mode="I", fps=self.fps
-                )
-                write_video_file(self)
+                self.save_video_file()
 
         elif key == pressed.ONE:
             # Apply impulse to dataset object if it exists and it is Dynamic motion mode
@@ -1172,6 +1134,368 @@ class HabitatSimInteractiveViewer(Application):
             include_static_objects=True,
         )
 
+    def add_new_object_from_dataset(self, index, position=DEFAULT_OBJ_POSITION) -> None:
+        """
+        Add to scene the ManagedBulletRigidObject at given template handle index
+        from dataset at the provided position.
+        """
+
+        # make sure there are any ManagedBulletRigidObjects from a dataset
+        if len(self.object_template_handles) == 0:
+            print_in_color(
+                "\nCommand: no objects in dataset to add to rigid object manager",
+                PrintColors.BLUE,
+                logging=True,
+            )
+            return
+
+        # get rigid object manager and clear it
+        rigid_object_manager = self.sim.get_rigid_object_manager()
+        rigid_object_manager.remove_all_objects()
+
+        # get ManagedBulletRigidObject template handle at given index from dataset
+        object_template_handle = self.object_template_handles[index]
+
+        # Configure the initial object orientation via local Euler angle (degrees):
+        rotation_x_degrees = 0
+        rotation_y_degrees = 0
+        rotation_z_degrees = 0
+
+        # compose the rotations
+        rotation_x_quaternion = mn.Quaternion.rotation(
+            mn.Deg(rotation_x_degrees), mn.Vector3(1.0, 0, 0)
+        )
+        rotation_y_quaternion = mn.Quaternion.rotation(
+            mn.Deg(rotation_y_degrees), mn.Vector3(0, 1.0, 0)
+        )
+        rotation_z_quaternion = mn.Quaternion.rotation(
+            mn.Deg(rotation_z_degrees), mn.Vector3(0, 0, 1.0)
+        )
+        rotation_quaternion = (
+            rotation_z_quaternion * rotation_y_quaternion * rotation_x_quaternion
+        )
+
+        # Add object instantiated by desired template to scene using template handle
+        self.curr_object = rigid_object_manager.add_object_by_template_handle(
+            object_template_handle
+        )
+
+        # Agent local coordinate system is Y up and -Z forward.
+        # Move object above table surface, then turn on Kinematic mode
+        # to easily reposition object in center of table
+        self.curr_object.translation = position
+        self.curr_object.rotation = rotation_quaternion
+        self.simulating = False
+        self.curr_angle_rotated_degrees = 0.0
+
+        # reset axis that the new object rotates around when being displayed
+        self.object_rotation_axis = ObjectRotationAxis.Y
+
+        # for some reason they all end in "_:0000" so remove that substring before print
+        obj_name = self.curr_object.handle.replace("_:0000", "")
+
+        # print out object name and its index into the list of the objects
+        # in dataset.
+        print_in_color(
+            f'\nCommand: placing object "{obj_name}" from template handle index: {index}\n',
+            PrintColors.BLUE,
+            logging=True,
+        )
+
+    def snap_down_object(
+        self,
+        obj: habitat_sim.physics.ManagedRigidObject,
+        support_obj_ids: Optional[List[int]] = None,
+    ) -> bool:
+        """
+        Attempt to project an object in the gravity direction onto the surface below it.
+        :param sim: The Simulator instance.
+        :param obj: The RigidObject instance.
+        :param support_obj_ids: A list of object ids designated as valid support surfaces for object placement. Contact with other objects is a criteria for placement rejection. If none provided, default support surface is the stage/ground mesh (-1).
+        :param vdb: Optionally provide a DebugVisualizer (vdb) to render debug images of each object's computed snap position before collision culling.
+        Reject invalid placements by checking for penetration with other existing objects.
+        Returns boolean success.
+        If placement is successful, the object state is updated to the snapped location.
+        If placement is rejected, object position is not modified and False is returned.
+        To use this utility, generate an initial placement for any object above any of the designated support surfaces and call this function to attempt to snap it onto the nearest surface in the gravity direction.
+        """
+        cached_position = obj.translation
+
+        if support_obj_ids is None:
+            # set default support surface to stage/ground mesh
+            support_obj_ids = [-1]
+
+        bounding_box_ray_prescreen_results = self.bounding_box_ray_prescreen(
+            obj, support_obj_ids
+        )
+
+        if bounding_box_ray_prescreen_results["surface_snap_point"] is None:
+            # no support under this object, return failure
+            return False
+
+        # finish up
+        if bounding_box_ray_prescreen_results["surface_snap_point"] is not None:
+            # accept the final location if a valid location exists
+            obj.translation = bounding_box_ray_prescreen_results["surface_snap_point"]
+            self.sim.perform_discrete_collision_detection()
+            cps = self.sim.get_physics_contact_points()
+            for cp in cps:
+                if (
+                    cp.object_id_a == obj.object_id or cp.object_id_b == obj.object_id
+                ) and (
+                    (cp.contact_distance < -0.01)
+                    or not (
+                        cp.object_id_a in support_obj_ids
+                        or cp.object_id_b in support_obj_ids
+                    )
+                ):
+                    obj.translation = cached_position
+                    # print(f" Failure: contact in final position w/ distance = {cp.contact_distance}.")
+                    # print(f" Failure: contact in final position with non support object {cp.object_id_a} or {cp.object_id_b}.")
+                    return False
+            return True
+        else:
+            # no valid position found, reset and return failure
+            obj.translation = cached_position
+            return False
+
+    def rotate_displayed_object(
+        self, obj, degrees_per_sec=ROTATION_DEGREES_PER_SEC
+    ) -> None:
+        """
+        When ManagedBulletRigidObject "obj" from dataset is in Kinematic mode, it is
+        displayed above the table in simple_room.glb and rotates so that the agent can
+        see all sides of it. This function rotates the object from the past frame to
+        this frame
+        """
+
+        # How much to rotate current ManagedBulletRigidObject this frame
+        delta_rotation_degrees = degrees_per_sec * Timer.prev_frame_duration
+
+        # check for a full 360 degree revolution
+        # and clamp to 360 degrees if we have passed it
+        reset_curr_rotation_angle = False
+        if self.curr_angle_rotated_degrees + delta_rotation_degrees >= 360.0:
+            reset_curr_rotation_angle = True
+            delta_rotation_degrees = 360.0 - self.curr_angle_rotated_degrees
+
+        if self.object_rotation_axis == ObjectRotationAxis.Y:
+            # rotate about object's local y axis (up vector)
+            y_rotation_in_degrees = mn.Deg(delta_rotation_degrees)
+            y_rotation_in_radians = mn.Rad(y_rotation_in_degrees)
+            obj.rotate_y_local(y_rotation_in_radians)
+        else:
+            # rotate about object's local x axis (horizontal vector)
+            x_rotation_in_degrees = mn.Deg(delta_rotation_degrees)
+            x_rotation_in_radians = mn.Rad(x_rotation_in_degrees)
+            obj.rotate_x_local(x_rotation_in_radians)
+
+        # update current rotation angle
+        self.curr_angle_rotated_degrees += delta_rotation_degrees
+
+        # reset current rotation angle if it passed 360 degrees
+        if reset_curr_rotation_angle:
+            self.curr_angle_rotated_degrees = 0.0
+
+            # change ManagedBulletRigidObject's axis of rotation
+            if self.object_rotation_axis == ObjectRotationAxis.Y:
+                self.object_rotation_axis = ObjectRotationAxis.X
+            else:
+                self.object_rotation_axis = ObjectRotationAxis.Y
+
+    def save_video_file(self) -> None:
+        """
+        write each sensor observation in self.video_frames to video file
+        """
+        # Current date and time so we can make unique video files for each recording
+        date_and_time = datetime.datetime.now()
+        # year-month-day
+        date = date_and_time.strftime("%Y-%m-%d")
+        # hour:min:sec - capital H is military time, %I is standard time
+        # (0-12 hour time format)
+        time = date_and_time.strftime("%H:%M:%S")
+        # construct file path and write consecutive frames to new video file
+        file_path = f"{output_path}viewer_recording__date_{date}__time_{time}.mp4"
+        print_in_color("-" * 72, PrintColors.RED, logging=True)
+        print_in_color(
+            f"Command: End recording, saving frames to the video file below \n{file_path}\n",
+            PrintColors.RED,
+        )
+
+        # TODO testing, bug with h.264 encoder in imageio for some reason
+        vut.make_video(
+            observations=self.video_frames,
+            primary_obs="color_sensor",
+            primary_obs_type="color",
+            video_file=file_path,
+            fps=self.fps,
+            open_vid=False,
+        )
+        self.saving_video = False
+        self.video_frames.clear()
+
+        print_in_color(
+            "Recording is saved, you can record something else now", PrintColors.RED
+        )
+        print_in_color(" *" * 36 + "\n", PrintColors.RED, logging=True)
+
+    def get_bounding_box_corners(
+        self,
+        obj: habitat_sim.physics.ManagedRigidObject,
+    ) -> List[mn.Vector3]:
+        """
+        Return a list of object bounding box corners in object local space.
+        """
+        bounding_box = obj.root_scene_node.cumulative_bb
+        return [
+            bounding_box.back_bottom_left,
+            bounding_box.back_bottom_right,
+            bounding_box.back_top_right,
+            bounding_box.back_top_left,
+            bounding_box.front_top_left,
+            bounding_box.front_top_right,
+            bounding_box.front_bottom_right,
+            bounding_box.front_bottom_left,
+        ]
+
+    def bounding_box_ray_prescreen(
+        self,
+        obj: habitat_sim.physics.ManagedRigidObject,
+        support_obj_ids: Optional[List[int]] = None,
+        check_all_corners: bool = False,
+    ) -> Dict[str, Any]:
+        """
+        Pre-screen a potential placement by casting rays in the gravity direction from the object center of mass (and optionally each corner of its bounding box) checking for interferring objects below.
+        :param sim: The Simulator instance.
+        :param obj: The RigidObject instance.
+        :param support_obj_ids: A list of object ids designated as valid support surfaces for object placement. Contact with other objects is a criteria for placement rejection.
+        :param check_all_corners: Optionally cast rays from all bounding box corners instead of only casting a ray from the center of mass.
+        """
+        if support_obj_ids is None:
+            # set default support surface to stage/ground mesh
+            support_obj_ids = [-1]
+        lowest_key_point: mn.Vector3 = None
+        lowest_key_point_height = None
+        highest_support_impact: mn.Vector3 = None
+        highest_support_impact_height = None
+        highest_support_impact_with_stage = False
+        raycast_results = []
+        gravity_dir = self.sim.get_gravity().normalized()
+        object_local_to_global = obj.transformation
+        bounding_box_corners = self.get_bounding_box_corners(obj)
+        key_points = [mn.Vector3(0)] + bounding_box_corners  # [COM, c0, c1 ...]
+        support_impacts: Dict[int, mn.Vector3] = {}  # indexed by keypoints
+        for ix, key_point in enumerate(key_points):
+            world_point = object_local_to_global.transform_point(key_point)
+            # NOTE: instead of explicit Y coordinate, we project onto any gravity vector
+            world_point_height = world_point.projected_onto_normalized(
+                -gravity_dir
+            ).length()
+            if lowest_key_point is None or lowest_key_point_height > world_point_height:
+                lowest_key_point = world_point
+                lowest_key_point_height = world_point_height
+            # cast a ray in gravity direction
+            if ix == 0 or check_all_corners:
+                ray = habitat_sim.geo.Ray(world_point, gravity_dir)
+                raycast_results.append(self.sim.cast_ray(ray))
+                # classify any obstructions before hitting the support surface
+                for hit in raycast_results[-1].hits:
+                    if hit.object_id == obj.object_id:
+                        continue
+                    elif hit.object_id in support_obj_ids:
+                        hit_point = ray.origin + ray.direction * hit.ray_distance
+                        support_impacts[ix] = hit_point
+                        support_impact_height = mn.math.dot(hit_point, -gravity_dir)
+
+                        if (
+                            highest_support_impact is None
+                            or highest_support_impact_height < support_impact_height
+                        ):
+                            highest_support_impact = hit_point
+                            highest_support_impact_height = support_impact_height
+                            highest_support_impact_with_stage = hit.object_id == -1
+
+                    # terminates at the first non-self ray hit
+                    break
+        # compute the relative base height of the object from its lowest bounding_box corner and COM
+        base_rel_height = (
+            lowest_key_point_height
+            - obj.translation.projected_onto_normalized(-gravity_dir).length()
+        )
+
+        # account for the affects of stage mesh margin
+        margin_offset = (
+            0
+            if not highest_support_impact_with_stage
+            else self.sim.get_stage_initialization_template().margin
+        )
+
+        surface_snap_point = (
+            None
+            if 0 not in support_impacts
+            else support_impacts[0] + gravity_dir * (base_rel_height - margin_offset)
+        )
+        # return list of obstructed and grounded rays, relative base height, distance to first surface impact, and ray results details
+        return {
+            "base_rel_height": base_rel_height,
+            "surface_snap_point": surface_snap_point,
+            "raycast_results": raycast_results,
+        }
+
+    def print_memory_usage(self) -> None:
+        """
+        Print CPU and GPU memory usage
+        """
+        print_in_color(
+            """
+==================================================
+Memory Usage
+==================================================
+            """,
+            PrintColors.LIGHT_GREEN,
+            logging=True,
+        )
+        self.print_cpu_usage()
+        self.print_ram_usage()
+        # TODO print GPU usage
+        ...
+
+    def print_cpu_usage(self) -> None:
+        cpu_percent = psutil.cpu_percent()
+        cpu_stats = psutil.cpu_stats()
+        cpu_freq = psutil.cpu_freq()
+        print_in_color(
+            f"""CPU Usage
+----------------------------------
+CPU Memory
+    CPU memory usage: {cpu_percent:.2f}%
+CPU Stats
+    Context switches: {cpu_stats.ctx_switches:,}
+    Interrupts: {cpu_stats.interrupts:,}
+    Software interrupts: {cpu_stats.soft_interrupts:,}
+    System calls: {cpu_stats.syscalls:,}
+CPU Frequency
+    Current frequency: {cpu_freq.current:,.2f} MHz
+    Min frequency: {cpu_freq.min:,} MHz
+    Max frequency: {cpu_freq.max:,} MHz
+----------------------------------
+            """,
+            PrintColors.CYAN,
+        )
+
+    def print_ram_usage(self) -> None:
+        """
+        Not implemented yet
+        """
+        print_in_color(
+            """RAM Usage
+----------------------------------
+Not yet implemented
+----------------------------------
+            """,
+            PrintColors.CYAN,
+        )
+
     def exit_event(self, event: Application.ExitEvent):
         """
         Overrides exit_event to properly close the Simulator before exiting the
@@ -1179,7 +1503,6 @@ class HabitatSimInteractiveViewer(Application):
         """
         self.sim.close(destroy=True)
         event.accepted = True
-        nvidia_smi.nvmlShutdown()
         exit(0)
 
     def print_help_text(self) -> None:
@@ -1413,434 +1736,6 @@ def print_in_color(print_string="", color=PrintColors.WHITE, logging=False) -> N
         print(color + print_string + PrintColors.ENDC)
 
 
-def add_new_object_from_dataset(
-    self, index, position=HabitatSimInteractiveViewer.DEFAULT_OBJ_POSITION
-) -> None:
-    """
-    Add to scene the ManagedBulletRigidObject at given template handle index
-    from dataset at the provided position.
-    """
-
-    # make sure there are any ManagedBulletRigidObjects from a dataset
-    if len(self.object_template_handles) == 0:
-        print_in_color(
-            "\nCommand: no objects in dataset to add to rigid object manager",
-            PrintColors.BLUE,
-            logging=True,
-        )
-        return
-
-    # get rigid object manager and clear it
-    rigid_object_manager = self.sim.get_rigid_object_manager()
-    rigid_object_manager.remove_all_objects()
-
-    # get ManagedBulletRigidObject template handle at given index from dataset
-    object_template_handle = self.object_template_handles[index]
-
-    # Configure the initial object orientation via local Euler angle (degrees):
-    rotation_x_degrees = 0
-    rotation_y_degrees = 0
-    rotation_z_degrees = 0
-
-    # compose the rotations
-    rotation_x_quaternion = mn.Quaternion.rotation(
-        mn.Deg(rotation_x_degrees), mn.Vector3(1.0, 0, 0)
-    )
-    rotation_y_quaternion = mn.Quaternion.rotation(
-        mn.Deg(rotation_y_degrees), mn.Vector3(0, 1.0, 0)
-    )
-    rotation_z_quaternion = mn.Quaternion.rotation(
-        mn.Deg(rotation_z_degrees), mn.Vector3(0, 0, 1.0)
-    )
-    rotation_quaternion = (
-        rotation_z_quaternion * rotation_y_quaternion * rotation_x_quaternion
-    )
-
-    # Add object instantiated by desired template to scene using template handle
-    self.curr_object = rigid_object_manager.add_object_by_template_handle(
-        object_template_handle
-    )
-
-    # Agent local coordinate system is Y up and -Z forward.
-    # Move object above table surface, then turn on Kinematic mode
-    # to easily reposition object in center of table
-    set_object_state(self, self.curr_object, position, rotation_quaternion)
-    self.simulating = False
-    self.curr_angle_rotated_degrees = 0.0
-
-    # reset axis that the new object rotates around when being displayed
-    self.object_rotation_axis = ObjectRotationAxis.Y
-
-    # for some reason they all end in "_:0000" so remove that substring before print
-    obj_name = self.curr_object.handle.replace("_:0000", "")
-
-    # print out object name and its index into the list of the objects
-    # in dataset.
-    print_in_color(
-        f'\nCommand: placing object "{obj_name}" from template handle index: {index}\n',
-        PrintColors.BLUE,
-        logging=True,
-    )
-
-
-def set_object_state(
-    self,
-    obj,
-    position=HabitatSimInteractiveViewer.DEFAULT_OBJ_POSITION,
-    rotation=HabitatSimInteractiveViewer.DEFAULT_OBJ_ROTATION,
-) -> None:
-    """
-    Set ManagedBulletRigidObject "obj" transform in world space
-    """
-    obj.translation = position
-    obj.rotation = rotation
-
-
-def rotate_displayed_object(
-    self, obj, degrees_per_sec=HabitatSimInteractiveViewer.ROTATION_DEGREES_PER_SEC
-) -> None:
-    """
-    When ManagedBulletRigidObject "obj" from dataset is in Kinematic mode, it is
-    displayed above the table in simple_room.glb and rotates so that the agent can
-    see all sides of it. This function rotates the object from the past frame to
-    this frame
-    """
-
-    # How much to rotate current ManagedBulletRigidObject this frame
-    delta_rotation_degrees = degrees_per_sec * Timer.prev_frame_duration
-
-    # check for a full 360 degree revolution
-    # and clamp to 360 degrees if we have passed it
-    reset_curr_rotation_angle = False
-    if self.curr_angle_rotated_degrees + delta_rotation_degrees >= 360.0:
-        reset_curr_rotation_angle = True
-        delta_rotation_degrees = 360.0 - self.curr_angle_rotated_degrees
-
-    if self.object_rotation_axis == ObjectRotationAxis.Y:
-        # rotate about object's local y axis (up vector)
-        y_rotation_in_degrees = mn.Deg(delta_rotation_degrees)
-        y_rotation_in_radians = mn.Rad(y_rotation_in_degrees)
-        obj.rotate_y_local(y_rotation_in_radians)
-    else:
-        # rotate about object's local x axis (horizontal vector)
-        x_rotation_in_degrees = mn.Deg(delta_rotation_degrees)
-        x_rotation_in_radians = mn.Rad(x_rotation_in_degrees)
-        obj.rotate_x_local(x_rotation_in_radians)
-
-    # update current rotation angle
-    self.curr_angle_rotated_degrees += delta_rotation_degrees
-
-    # reset current rotation angle if it passed 360 degrees
-    if reset_curr_rotation_angle:
-        self.curr_angle_rotated_degrees = 0.0
-
-        # change ManagedBulletRigidObject's axis of rotation
-        if self.object_rotation_axis == ObjectRotationAxis.Y:
-            self.object_rotation_axis = ObjectRotationAxis.X
-        else:
-            self.object_rotation_axis = ObjectRotationAxis.Y
-
-
-def write_video_file(self) -> None:
-    """
-    write each PIL Image in self.video_frames to video file one at a time
-    """
-
-    for frame in self.video_frames:
-        self.video_writer.append_data(np.asarray(frame))
-
-        # update index of written frames so "self" knows when finished
-        self.curr_frame_written_index += 1
-
-
-def save_frame_in_list(self, framebuffer) -> None:
-    """
-    Save the framebuffer frame data as a mn.Image2D into a variable that is then
-    stored in a list of sequential frames to be later written to a video file
-    """
-
-    # -viewport_range: mn.Range2Di to store x and y size of viewport
-    # -pixel_storage: how the pixels are represented under the hood
-    # -frame_image_2d: mn.Image2D that stores all image data
-    viewport_range = framebuffer.viewport
-    pixel_storage = mn.PixelStorage()
-    pixel_storage.image_height = viewport_range.size_y()
-    pixel_storage.row_length = viewport_range.size_x()
-    frame_image_2d = mn.Image2D(pixel_storage, mn.PixelFormat.RGBA8_UNORM)
-
-    # read framebuffer into frame_image_2d and create a PIL image from the raw bytes
-    framebuffer.read(viewport_range, frame_image_2d)
-    image_to_save = Image.frombytes(
-        "RGBA",
-        (frame_image_2d.size.x, frame_image_2d.size.y),
-        frame_image_2d.data.__bytes__(),
-        "raw",
-    )
-
-    # it is a mirror image for some reason, something to do with how the bytes
-    # are laid out, so we have to flip it upside down before storing
-    image_to_save = image_to_save.transpose(Image.FLIP_TOP_BOTTOM)
-    self.video_frames.append(image_to_save)
-
-
-def done_writing_video_file(self) -> None:
-    """
-    indicates that we are done writing existing frames into video file
-    and we can record something else now
-    """
-    print_in_color(
-        "Recording is saved, you can record something else now", PrintColors.RED
-    )
-    print_in_color(" *" * 36 + "\n", PrintColors.RED, logging=True)
-
-    # reset all variables for next recording
-    self.writing_video = False
-    self.video_writer.close()
-    self.video_frames.clear()
-    self.curr_frame_written_index = 0
-
-
-def get_bounding_box_corners(
-    obj: habitat_sim.physics.ManagedRigidObject,
-) -> List[mn.Vector3]:
-    """
-    Return a list of object bounding box corners in object local space.
-    """
-    bounding_box = obj.root_scene_node.cumulative_bb
-    return [
-        bounding_box.back_bottom_left,
-        bounding_box.back_bottom_right,
-        bounding_box.back_top_right,
-        bounding_box.back_top_left,
-        bounding_box.front_top_left,
-        bounding_box.front_top_right,
-        bounding_box.front_bottom_right,
-        bounding_box.front_bottom_left,
-    ]
-
-
-def bounding_box_ray_prescreen(
-    sim: habitat_sim.Simulator,
-    obj: habitat_sim.physics.ManagedRigidObject,
-    support_obj_ids: Optional[List[int]] = None,
-    check_all_corners: bool = False,
-) -> Dict[str, Any]:
-    """
-    Pre-screen a potential placement by casting rays in the gravity direction from the object center of mass (and optionally each corner of its bounding box) checking for interferring objects below.
-    :param sim: The Simulator instance.
-    :param obj: The RigidObject instance.
-    :param support_obj_ids: A list of object ids designated as valid support surfaces for object placement. Contact with other objects is a criteria for placement rejection.
-    :param check_all_corners: Optionally cast rays from all bounding box corners instead of only casting a ray from the center of mass.
-    """
-    if support_obj_ids is None:
-        # set default support surface to stage/ground mesh
-        support_obj_ids = [-1]
-    lowest_key_point: mn.Vector3 = None
-    lowest_key_point_height = None
-    highest_support_impact: mn.Vector3 = None
-    highest_support_impact_height = None
-    highest_support_impact_with_stage = False
-    raycast_results = []
-    gravity_dir = sim.get_gravity().normalized()
-    object_local_to_global = obj.transformation
-    bounding_box_corners = get_bounding_box_corners(obj)
-    key_points = [mn.Vector3(0)] + bounding_box_corners  # [COM, c0, c1 ...]
-    support_impacts: Dict[int, mn.Vector3] = {}  # indexed by keypoints
-    for ix, key_point in enumerate(key_points):
-        world_point = object_local_to_global.transform_point(key_point)
-        # NOTE: instead of explicit Y coordinate, we project onto any gravity vector
-        world_point_height = world_point.projected_onto_normalized(
-            -gravity_dir
-        ).length()
-        if lowest_key_point is None or lowest_key_point_height > world_point_height:
-            lowest_key_point = world_point
-            lowest_key_point_height = world_point_height
-        # cast a ray in gravity direction
-        if ix == 0 or check_all_corners:
-            ray = habitat_sim.geo.Ray(world_point, gravity_dir)
-            raycast_results.append(sim.cast_ray(ray))
-            # classify any obstructions before hitting the support surface
-            for hit in raycast_results[-1].hits:
-                if hit.object_id == obj.object_id:
-                    continue
-                elif hit.object_id in support_obj_ids:
-                    hit_point = ray.origin + ray.direction * hit.ray_distance
-                    support_impacts[ix] = hit_point
-                    support_impact_height = mn.math.dot(hit_point, -gravity_dir)
-
-                    if (
-                        highest_support_impact is None
-                        or highest_support_impact_height < support_impact_height
-                    ):
-                        highest_support_impact = hit_point
-                        highest_support_impact_height = support_impact_height
-                        highest_support_impact_with_stage = hit.object_id == -1
-
-                # terminates at the first non-self ray hit
-                break
-    # compute the relative base height of the object from its lowest bounding_box corner and COM
-    base_rel_height = (
-        lowest_key_point_height
-        - obj.translation.projected_onto_normalized(-gravity_dir).length()
-    )
-
-    # account for the affects of stage mesh margin
-    margin_offset = (
-        0
-        if not highest_support_impact_with_stage
-        else sim.get_stage_initialization_template().margin
-    )
-
-    surface_snap_point = (
-        None
-        if 0 not in support_impacts
-        else support_impacts[0] + gravity_dir * (base_rel_height - margin_offset)
-    )
-    # return list of obstructed and grounded rays, relative base height, distance to first surface impact, and ray results details
-    return {
-        "base_rel_height": base_rel_height,
-        "surface_snap_point": surface_snap_point,
-        "raycast_results": raycast_results,
-    }
-
-
-def snap_down(
-    sim: habitat_sim.Simulator,
-    obj: habitat_sim.physics.ManagedRigidObject,
-    support_obj_ids: Optional[List[int]] = None,
-) -> bool:
-    """
-    Attempt to project an object in the gravity direction onto the surface below it.
-    :param sim: The Simulator instance.
-    :param obj: The RigidObject instance.
-    :param support_obj_ids: A list of object ids designated as valid support surfaces for object placement. Contact with other objects is a criteria for placement rejection. If none provided, default support surface is the stage/ground mesh (-1).
-    :param vdb: Optionally provide a DebugVisualizer (vdb) to render debug images of each object's computed snap position before collision culling.
-    Reject invalid placements by checking for penetration with other existing objects.
-    Returns boolean success.
-    If placement is successful, the object state is updated to the snapped location.
-    If placement is rejected, object position is not modified and False is returned.
-    To use this utility, generate an initial placement for any object above any of the designated support surfaces and call this function to attempt to snap it onto the nearest surface in the gravity direction.
-    """
-    cached_position = obj.translation
-
-    if support_obj_ids is None:
-        # set default support surface to stage/ground mesh
-        support_obj_ids = [-1]
-
-    bounding_box_ray_prescreen_results = bounding_box_ray_prescreen(
-        sim, obj, support_obj_ids
-    )
-
-    if bounding_box_ray_prescreen_results["surface_snap_point"] is None:
-        # no support under this object, return failure
-        return False
-
-    # finish up
-    if bounding_box_ray_prescreen_results["surface_snap_point"] is not None:
-        # accept the final location if a valid location exists
-        obj.translation = bounding_box_ray_prescreen_results["surface_snap_point"]
-        sim.perform_discrete_collision_detection()
-        cps = sim.get_physics_contact_points()
-        for cp in cps:
-            if (
-                cp.object_id_a == obj.object_id or cp.object_id_b == obj.object_id
-            ) and (
-                (cp.contact_distance < -0.01)
-                or not (
-                    cp.object_id_a in support_obj_ids
-                    or cp.object_id_b in support_obj_ids
-                )
-            ):
-                obj.translation = cached_position
-                # print(f" Failure: contact in final position w/ distance = {cp.contact_distance}.")
-                # print(f" Failure: contact in final position with non support object {cp.object_id_a} or {cp.object_id_b}.")
-                return False
-        return True
-    else:
-        # no valid position found, reset and return failure
-        obj.translation = cached_position
-        return False
-
-
-def print_memory_usage() -> None:
-    """
-    Print CPU and GPU memory usage
-    """
-    print_in_color(
-        """
-==================================================
-Memory Usage
-==================================================
-        """,
-        PrintColors.LIGHT_GREEN,
-        logging=True,
-    )
-    print_cpu_usage()
-    print_ram_usage()
-    print_gpu_usage()
-
-
-def print_cpu_usage() -> None:
-    cpu_percent = psutil.cpu_percent()
-    cpu_stats = psutil.cpu_stats()
-    cpu_freq = psutil.cpu_freq()
-    print_in_color(
-        f"""CPU Usage
-----------------------------------
-CPU Memory
-    CPU memory usage: {cpu_percent:.2f}%
-CPU Stats
-    Context switches: {cpu_stats.ctx_switches:,}
-    Interrupts: {cpu_stats.interrupts:,}
-    Software interrupts: {cpu_stats.soft_interrupts:,}
-    System calls: {cpu_stats.syscalls:,}
-CPU Frequency
-    Current frequency: {cpu_freq.current:,.2f} MHz
-    Min frequency: {cpu_freq.min:,} MHz
-    Max frequency: {cpu_freq.max:,} MHz
-----------------------------------
-        """,
-        PrintColors.CYAN,
-    )
-
-
-def print_ram_usage() -> None:
-    """
-    Not implemented yet
-    """
-    print_in_color(
-        """RAM Usage
-----------------------------------
-Not yet implemented
-----------------------------------
-        """,
-        PrintColors.CYAN,
-    )
-
-
-def print_gpu_usage() -> None:
-    if not HabitatSimInteractiveViewer.USING_NVIDIA_GPU:
-        print_in_color("Command: No NVIDIA GPU\n", PrintColors.RED, logging=True)
-        return
-
-    print_in_color("""GPU Usage----------------------------------""", PrintColors.CYAN)
-    if gpu_device_count > 0:
-        for i in range(gpu_device_count):
-            handle = nvidia_smi.nvmlDeviceGetHandleByIndex(i)
-            info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
-            print_in_color(
-                f"""Device {i}:
-    {nvidia_smi.nvmlDeviceGetName(handle)}
-    {100 * info.free / info.total:.2f}% free
-    {info.free:,} bytes (free)
-    {info.used:,} bytes (used)
-    {info.total:,} bytes (total)
-----------------------------------
-                """,
-                PrintColors.CYAN,
-            )
-
-
 if __name__ == "__main__":
     import argparse
 
@@ -1849,16 +1744,16 @@ if __name__ == "__main__":
     # optional arguments
     parser.add_argument(
         "--scene",
-        default="NONE",
+        default="./data/test_assets/scenes/simple_room.glb",
         type=str,
-        help='scene/stage file to load (default: "NONE")',
+        help='scene/stage file to load (default: "simple_room.glb")',
     )
     parser.add_argument(
         "--dataset",
-        default="default",
+        default="./data/objects/ycb/ycb.scene_dataset_config.json",
         type=str,
         metavar="DATASET",
-        help="dataset configuration file to use (default: default)",
+        help="dataset configuration file to use (default: ycb)",
     )
     parser.add_argument(
         "--disable_physics",
@@ -1875,33 +1770,11 @@ if __name__ == "__main__":
 
     # Setting up sim_settings
     sim_settings: Dict[str, Any] = default_sim_settings
-
-    # this interactive viewer was developed with these arguments,
-    # so make them the default if none provided
-    if args.scene == "NONE":
-        scene_name = "./data/test_assets/scenes/simple_room.glb"
-    else:
-        scene_name = args.scene
-
-    if args.dataset == "default":
-        dataset_name = "./data/objects/ycb/ycb.scene_dataset_config.json"
-    else:
-        dataset_name = args.dataset
-
-    sim_settings["scene"] = scene_name
-    sim_settings["scene_dataset_config_file"] = dataset_name
+    sim_settings["scene"] = args.scene
+    sim_settings["scene_dataset_config_file"] = args.dataset
     sim_settings["enable_physics"] = not args.disable_physics
     sim_settings["sensor_height"] = HabitatSimInteractiveViewer.DEFAULT_SENSOR_HEIGHT
     sim_settings["stage_requires_lighting"] = args.stage_requires_lighting
-
-    # get information about NVIDIA gpu devices (if applicable)
-    # to print usage info
-    if HabitatSimInteractiveViewer.USING_NVIDIA_GPU:
-        nvidia_smi.nvmlInit()
-        try:
-            gpu_device_count = nvidia_smi.nvmlDeviceGetCount()
-        except nvidia_smi.NVMLError as error:
-            print_in_color(error, PrintColors.RED)
 
     # start the application
     HabitatSimInteractiveViewer(sim_settings).exec()
