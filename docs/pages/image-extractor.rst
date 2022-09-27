@@ -68,7 +68,7 @@ The ImageExtractor uses an instance of habitat_sim.Simulator on the backend to e
 `Basic Usage`_
 --------------
 
-Once the user instantiates an ImageExtractor object, they can index into it like a normal python list, or use slicing. Indexing returns a dictionary containing the images specified by the 'output' argument to the ImageExtractor constructor.
+Once the user instantiates an ImageExtractor object, they can index into it like a normal python list, or use slicing. Indexing returns a dictionary containing the images specified by the 'output' argument to the ImageExtractor constructor. All datasets support the use of "rgba" and "depth" outputs. For semantic outputs, you should use a dataset that supports semantic annotation (e.g. the Matterport3D dataset).
 
 
 .. code:: py
@@ -80,29 +80,32 @@ Once the user instantiates an ImageExtractor object, they can index into it like
 
 
     # For viewing the extractor output
-    def display_sample(sample):
-        img = sample["rgba"]
-        depth = sample["depth"]
-        semantic = sample["semantic"]
+    def display_samples(samples):
+        fig, axs = plt.subplots(len(samples), 2)
+        fig.set_size_inches(8, 8)
+        for i, sample in enumerate(samples):
+            img = sample["rgba"]
+            depth = sample["depth"]
 
-        arr = [img, depth, semantic]
-        titles = ["rgba", "depth", "semantic"]
-        plt.figure(figsize=(12, 8))
-        for i, data in enumerate(arr):
-            ax = plt.subplot(1, 3, i + 1)
-            ax.axis("off")
-            ax.set_title(titles[i])
-            plt.imshow(data)
+            axs[i, 0].axis('off')
+            axs[i, 0].imshow(img)
+            axs[i, 1].axis('off')
+            axs[i, 1].imshow(depth)
+
+            if i == 0:
+                axs[i, 0].set_title('RGB')
+                axs[i, 1].set_title('Depth')
 
         plt.show()
 
 
+    # Replace this with the path to your scene
     scene_filepath = "data/scene_datasets/habitat-test-scenes/apartment_1.glb"
 
     extractor = ImageExtractor(
         scene_filepath,
         img_size=(512, 512),
-        output=["rgba", "depth", "semantic"],
+        output=["rgba", "depth"], # "semantic" can also be added for scenes that contain semantic annotations, e.g. Matterport3D dataset
     )
 
     # Use the list of train outputs instead of the default, which is the full list
@@ -110,12 +113,11 @@ Once the user instantiates an ImageExtractor object, they can index into it like
     extractor.set_mode('train')
 
     # Index in to the extractor like a normal python list
-    sample = extractor[0]
+    _ = extractor[0]
 
     # Or use slicing
-    samples = extractor[1:4]
-    for sample in samples:
-        display_sample(sample)
+    samples = extractor[:4]
+    display_samples(sample)
 
     # Close the extractor so we can instantiate another one later
     # (see close method for detailed explanation)
