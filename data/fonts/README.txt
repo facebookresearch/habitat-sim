@@ -34,6 +34,10 @@ viewport_size: mn.Vector2i = mn.gl.default_framebuffer.viewport.size()
 # app window
 TEXT_DELTA_FROM_CENTER = 0.5
 
+# the maximum number of chars displayable in the app window
+# using the magnum text module.
+MAX_DISPLAY_TEXT_CHARS = 256
+
 # Load a TrueTypeFont plugin and open the font file
 display_font = text.FontManager().load_and_instantiate("TrueTypeFont")
 relative_path_to_font = "../data/fonts/ProggyClean.ttf"
