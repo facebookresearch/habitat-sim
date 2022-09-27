@@ -117,7 +117,7 @@ Once the user instantiates an ImageExtractor object, they can index into it like
 
     # Or use slicing
     samples = extractor[:4]
-    display_samples(sample)
+    display_samples(samples)
 
     # Close the extractor so we can instantiate another one later
     # (see close method for detailed explanation)
