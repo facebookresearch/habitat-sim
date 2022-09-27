@@ -137,7 +137,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
       .addSource(rs.getString("pbrCommon.glsl") + "\n")
       .addSource(rs.getString("pbr.frag"));
 
-  CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));
+  CORRADE_INTERNAL_ASSERT_OUTPUT(vert.compile() && frag.compile());
 
   attachShaders({vert, frag});
 

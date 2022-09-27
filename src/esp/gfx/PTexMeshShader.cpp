@@ -58,7 +58,7 @@ PTexMeshShader::PTexMeshShader() {
 #endif
   frag.addSource(rs.getString("ptex-default-gl410.frag"));
 
-  CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, geom, frag}));
+  CORRADE_INTERNAL_ASSERT_OUTPUT(vert.compile() && frag.compile());
 
   attachShaders({vert, geom, frag});
 

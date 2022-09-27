@@ -54,7 +54,7 @@ DepthShader::DepthShader(Flags flags) : flags_{flags} {
   vert.addSource(rs.getString("depth.vert"));
   frag.addSource(rs.getString("depth.frag"));
 
-  CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));
+  CORRADE_INTERNAL_ASSERT_OUTPUT(vert.compile() && frag.compile());
 
   attachShaders({vert, frag});
 
