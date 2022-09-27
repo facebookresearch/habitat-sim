@@ -34,9 +34,6 @@
 [submodule "docs/m.css"]
 	path = docs/m.css
 	url = https://github.com/mosra/m.css
-[submodule "src/deps/imgui"]
-	path = src/deps/imgui
-	url = https://github.com/ocornut/imgui.git
 [submodule "src/deps/tinyobjloader"]
 	path = src/deps/tinyobjloader
 	url = https://github.com/syoyo/tinyobjloader.git
