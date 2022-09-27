@@ -36,13 +36,6 @@ target_link_libraries(
          sim
 )
 
-# Make Magnum text rendering (used by the native viewer) available for Python
-# as well
-if(BUILD_GUI_VIEWERS)
-  find_package(MagnumPlugins REQUIRED StbTrueTypeFont)
-  target_link_libraries(habitat_sim_bindings PRIVATE MagnumPlugins::StbTrueTypeFont)
-endif()
-
 if(BUILD_WITH_AUDIO)
   add_custom_command(
     TARGET habitat_sim_bindings POST_BUILD
