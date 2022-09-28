@@ -34,11 +34,16 @@ class ReplayManager {
   std::shared_ptr<Recorder> getRecorder() const { return recorder_; }
 
   /**
-   * @brief Set a Player callback; this is needed to construct Player instances.
+   * @brief Set callbacks that are invoked when simulation state changes upon
+   * playing a new keyframe. This is required to construct Player instances.
    */
-  void setPlayerCallback(
-      const Player::LoadAndCreateRenderAssetInstanceCallback& callback) {
-    playerCallback_ = callback;
+  void setPlayerCallbacks(
+      const Player::LoadAndCreateRenderAssetInstanceCallback&
+          loadAndCreateRenderAssetInstanceCallback,
+      const Player::ChangeLightSetupCallback& changeLightSetupCallback) {
+    loadAndCreateRenderAssetInstanceCallback_ =
+        loadAndCreateRenderAssetInstanceCallback;
+    changeLightSetupCallback_ = changeLightSetupCallback;
   }
 
   /**
@@ -55,7 +60,9 @@ class ReplayManager {
 
  private:
   std::shared_ptr<Recorder> recorder_;
-  Player::LoadAndCreateRenderAssetInstanceCallback playerCallback_;
+  Player::LoadAndCreateRenderAssetInstanceCallback
+      loadAndCreateRenderAssetInstanceCallback_;
+  Player::ChangeLightSetupCallback changeLightSetupCallback_;
 
   ESP_SMART_POINTERS(ReplayManager)
 };

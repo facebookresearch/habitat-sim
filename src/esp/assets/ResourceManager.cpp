@@ -2975,6 +2975,20 @@ void ResourceManager::joinSemanticHierarchy(
   }
 }
 
+void ResourceManager::setLightSetup(gfx::LightSetup setup,
+                                    const Mn::ResourceKey& key) {
+  // add lights to recorder keyframe
+  if (gfxReplayRecorder_) {
+    gfxReplayRecorder_->clearLightsFromKeyframe();
+    for (const auto& light : setup) {
+      gfxReplayRecorder_->addLightToKeyframe(light);
+    }
+  }
+
+  shaderManager_.set(key, std::move(setup), Mn::ResourceDataState::Mutable,
+                     Mn::ResourcePolicy::Manual);
+}
+
 std::unique_ptr<MeshData> ResourceManager::createJoinedCollisionMesh(
     const std::string& filename) const {
   std::unique_ptr<MeshData> mesh = std::make_unique<MeshData>();

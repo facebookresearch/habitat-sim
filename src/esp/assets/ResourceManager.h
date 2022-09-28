@@ -427,10 +427,7 @@ class ResourceManager {
    */
   void setLightSetup(gfx::LightSetup setup,
                      const Mn::ResourceKey& key = Mn::ResourceKey{
-                         DEFAULT_LIGHTING_KEY}) {
-    shaderManager_.set(key, std::move(setup), Mn::ResourceDataState::Mutable,
-                       Mn::ResourcePolicy::Manual);
-  }
+                         DEFAULT_LIGHTING_KEY});
 
   /**
    * @brief Construct a unified @ref MeshData from a loaded asset's collision
