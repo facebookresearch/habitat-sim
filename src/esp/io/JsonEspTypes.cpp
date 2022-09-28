@@ -11,9 +11,7 @@ JsonGenericValue toJsonValue(const gfx::replay::Keyframe& keyframe,
                              JsonAllocator& allocator) {
   JsonGenericValue obj(rapidjson::kObjectType);
 
-  if (!keyframe.loads.empty()) {
-    io::addMember(obj, "loads", keyframe.loads, allocator);
-  }
+  io::addMember(obj, "loads", keyframe.loads, allocator);
 
   if (!keyframe.creations.empty()) {
     JsonGenericValue creationsArray(rapidjson::kArrayType);
@@ -27,9 +25,7 @@ JsonGenericValue toJsonValue(const gfx::replay::Keyframe& keyframe,
     io::addMember(obj, "creations", creationsArray, allocator);
   }
 
-  if (!keyframe.deletions.empty()) {
-    io::addMember(obj, "deletions", keyframe.deletions, allocator);
-  }
+  io::addMember(obj, "deletions", keyframe.deletions, allocator);
 
   if (!keyframe.stateUpdates.empty()) {
     JsonGenericValue stateUpdatesArray(rapidjson::kArrayType);
@@ -54,6 +50,7 @@ JsonGenericValue toJsonValue(const gfx::replay::Keyframe& keyframe,
   }
 
   if (keyframe.lightsChanged) {
+    io::addMember(obj, "lightsChanged", true, allocator);
     io::addMember(obj, "lights", keyframe.lights, allocator);
   }
 
@@ -106,9 +103,8 @@ bool fromJsonValue(const JsonGenericValue& obj,
     }
   }
 
-  itr = obj.FindMember("lights");
-  if (itr != obj.MemberEnd()) {
-    keyframe.lightsChanged = true;
+  io::readMember(obj, "lightsChanged", keyframe.lightsChanged);
+  if (keyframe.lightsChanged) {
     io::readMember(obj, "lights", keyframe.lights);
   }
 

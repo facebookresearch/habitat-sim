@@ -53,8 +53,10 @@ void addMember(JsonGenericValue& value,
                rapidjson::GenericStringRef<char> name,
                const std::vector<T>& vec,
                JsonAllocator& allocator) {
-  addMember(value, name, toJsonArrayHelper(vec.data(), vec.size(), allocator),
-            allocator);
+  if (!vec.empty()) {
+    addMember(value, name, toJsonArrayHelper(vec.data(), vec.size(), allocator),
+              allocator);
+  }
 }
 
 template <typename T>
