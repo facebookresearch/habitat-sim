@@ -5,16 +5,18 @@
   },
   "extensionsUsed": [
     "MAGNUMX_mesh_views",
-    "KHR_texture_ktx"
+    "KHR_texture_ktx",
+    "KHR_texture_transform"
   ],
   "extensionsRequired": [
     "MAGNUMX_mesh_views",
-    "KHR_texture_ktx"
+    "KHR_texture_ktx",
+    "KHR_texture_transform"
   ],
   "buffers": [
     {
       "uri": "batch.bin",
-      "byteLength": 1820
+      "byteLength": 2168
     }
   ],
   "bufferViews": [
@@ -40,6 +42,11 @@
       "byteOffset": 468,
       "byteLength": 1352,
       "byteStride": 32
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 1820,
+      "byteLength": 348
     }
   ],
   "accessors": [
@@ -68,9 +75,68 @@
       "type": "VEC2"
     }
   ],
-  "images": [
+  "meshes": [
     {
-      "uri": "batch.0.ktx2"
+      "primitives": [
+        {
+          "indices": 0,
+          "attributes": {
+            "POSITION": 1,
+            "NORMAL": 2,
+            "TEXCOORD_0": 3
+          }
+        }
+      ]
+    }
+  ],
+  "materials": [
+    {
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 0
+        }
+      }
+    },
+    {
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [0, 1, 1, 1],
+        "baseColorTexture": {
+          "index": 1,
+          "extensions": {
+            "KHR_texture_transform": {
+              "offset": [0, 0.5],
+              "scale": [0.5, 0.5]
+            }
+          }
+        }
+      }
+    },
+    {
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [1, 0, 1, 1],
+        "baseColorTexture": {
+          "index": 1,
+          "extensions": {
+            "KHR_texture_transform": {
+              "offset": [0.5, 0.5],
+              "scale": [0.5, 0.5]
+            }
+          }
+        }
+      }
+    },
+    {
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [1, 1, 0, 1],
+        "baseColorTexture": {
+          "index": 1,
+          "extensions": {
+            "KHR_texture_transform": {
+              "scale": [0.5, 0.5]
+            }
+          }
+        }
+      }
     }
   ],
   "samplers": [
@@ -101,69 +167,10 @@
       }
     }
   ],
-  "materials": [
+  "images": [
     {
-      "pbrMetallicRoughness": {
-        "baseColorTexture": {
-          "index": 0
-        }
-      }
-    },
-    {
-      "pbrMetallicRoughness": {
-        "baseColorFactor": [0, 1, 1, 1],
-        "baseColorTexture": {
-          "index": 1,
-          "extensions": {
-            "KHR_texture_transform": {
-              "scale": [0.5, 0.5],
-              "offset": [0, 0.5]
-            }
-          }
-        }
-      }
-    },
-    {
-      "pbrMetallicRoughness": {
-        "baseColorFactor": [1, 0, 1, 1],
-        "baseColorTexture": {
-          "index": 1,
-          "extensions": {
-            "KHR_texture_transform": {
-              "scale": [0.5, 0.5],
-              "offset": [0.5, 0.5]
-            }
-          }
-        }
-      }
-    },
-    {
-      "pbrMetallicRoughness": {
-        "baseColorFactor": [1, 1, 0, 1],
-        "baseColorTexture": {
-          "index": 1,
-          "extensions": {
-            "KHR_texture_transform": {
-              "scale": [0.5, 0.5],
-              "offset": [0, 0]
-            }
-          }
-        }
-      }
-    }
-  ],
-  "meshes": [
-    {
-      "primitives": [
-        {
-          "indices": 0,
-          "attributes": {
-            "POSITION": 1,
-            "NORMAL": 2,
-            "TEXCOORD_0": 3
-          }
-        }
-      ]
+      "mimeType": "image/ktx2",
+      "bufferView": 4
     }
   ],
   "nodes": [
@@ -268,6 +275,5 @@
     {
       "nodes": [0, 2, 4, 6]
     }
-  ],
-  "scene": 0
+  ]
 }

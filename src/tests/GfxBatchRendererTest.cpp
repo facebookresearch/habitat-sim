@@ -119,8 +119,10 @@ void GfxBatchRendererTest::generateTestData() {
   if (!converter)
     CORRADE_SKIP("GltfSceneConverter plugin not found");
 
+  converter->configuration().setValue("experimentalKhrTextureKtx", true);
   converter->configuration().setValue("imageConverter", "KtxImageConverter");
-  converter->configuration().setValue("imageExtension", "ktx2");
+  /* Bundle images in the bin file to reduce the amount of test files */
+  converter->configuration().setValue("bundleImages", true);
   /* To prevent the file from being opened by unsuspecting libraries */
   converter->configuration().addValue("extensionUsed", "MAGNUMX_mesh_views");
   converter->configuration().addValue("extensionRequired",
@@ -155,14 +157,7 @@ void GfxBatchRendererTest::generateTestData() {
   Mn::UnsignedInt triangleIndexOffset =
       circleIndexOffset + 4 * circle.indexCount();
 
-  Mn::Trade::MeshData mesh =
-      Mn::MeshTools::concatenate({plane, circle, triangle});
-  for (Mn::Vector2& i : mesh.mutableAttribute<Mn::Vector2>(
-           Mn::Trade::MeshAttribute::TextureCoordinates)) {
-    // TODO remmove this once GltfSceneConverter does that itself
-    i.y() = 1.0f - i.y();
-  }
-  CORRADE_VERIFY(converter->add(mesh));
+  CORRADE_VERIFY(converter->add(Mn::MeshTools::concatenate({plane, circle, triangle})));
 
   /* Two-layer 4x4 texture. First layer is a grey/red checkerboard, second
      layer is a cyan, magenta, yellow and black-ish square. Having each channel
@@ -182,7 +177,7 @@ void GfxBatchRendererTest::generateTestData() {
   };
   // clang-format on
   CORRADE_VERIFY(converter->add(
-      Mn::ImageView3D{Mn::PixelFormat::RGB8Unorm, {4, 4, 2}, image}));
+      Mn::ImageView3D{Mn::PixelFormat::RGB8Unorm, {4, 4, 2}, image, Mn::ImageFlag3D::Array}));
 
   /* A texture referencing the only image. Nearest neighbor filtering to have
      less noise in the output images. */
@@ -286,11 +281,6 @@ void GfxBatchRendererTest::generateTestData() {
     Mn::Trade::SceneFieldData{Mn::Trade::SceneField::Mesh,
       Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::object),
       Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::mesh)},
-    Mn::Trade::SceneFieldData{Mn::Trade::SceneField::Transformation,
-      Cr::Containers::stridedArrayView(scene->transformations).slice(&Scene::Transformation::object),
-      Cr::Containers::stridedArrayView(scene->transformations).slice(&Scene::Transformation::trasformation)},
-    /* Extras currently have to be last to avoid other fields being mixed with
-       them */ // TODO fix properly!!!
     Mn::Trade::SceneFieldData{SceneFieldMeshViewIndexOffset,
       Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::object),
       Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::meshViewIndexOffset)},
@@ -300,6 +290,9 @@ void GfxBatchRendererTest::generateTestData() {
     Mn::Trade::SceneFieldData{SceneFieldMeshViewMaterial,
       Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::object),
       Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::meshViewMaterial)},
+    Mn::Trade::SceneFieldData{Mn::Trade::SceneField::Transformation,
+      Cr::Containers::stridedArrayView(scene->transformations).slice(&Scene::Transformation::object),
+      Cr::Containers::stridedArrayView(scene->transformations).slice(&Scene::Transformation::trasformation)},
   }}));
   // clang-format on
 
@@ -307,17 +300,14 @@ void GfxBatchRendererTest::generateTestData() {
 
   /* Test that the output matches. Mainly as a trigger to update the in-repo
      test data (pass `-S path/to/habitat_sim/data/test_scenes/` to the test
-     executable). */
+     executable). Using a *.gltf to make it easier to see what's the
+     batch-friendly glTF about. */
   CORRADE_COMPARE_AS(filename,
                      Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch.gltf"),
                      Cr::TestSuite::Compare::File);
   CORRADE_COMPARE_AS(
       Cr::Utility::Path::join(MAGNUMRENDERERTEST_OUTPUT_DIR, "batch.bin"),
       Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch.bin"),
-      Cr::TestSuite::Compare::File);
-  CORRADE_COMPARE_AS(
-      Cr::Utility::Path::join(MAGNUMRENDERERTEST_OUTPUT_DIR, "batch.0.ktx2"),
-      Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch.0.ktx2"),
       Cr::TestSuite::Compare::File);
 #endif
 }
