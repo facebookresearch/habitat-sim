@@ -186,13 +186,15 @@ void GfxBatchRendererTest::generateTestData() {
   CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
     {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
     {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 0u}
-  }}), 0);
+  }}, "checkerboard"), 0);
+  // clang-format on
 
   /* A cyan / magenta / yellow material spanning the bottom left / top left /
      bottom right quadrant of second texture layer. I.e., nothing should be
      using the black-ish portion of the texture. When combined with the
      texture color, the output should have the corresponding red / green / blue
      channels zeroed out. */
+  // clang-format off
   CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
     {Mn::Trade::MaterialAttribute::BaseColor, 0x00ffffff_rgbaf},
     {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
@@ -200,7 +202,7 @@ void GfxBatchRendererTest::generateTestData() {
     {Mn::Trade::MaterialAttribute::BaseColorTextureMatrix,
       Mn::Matrix3::translation({0.0f, 0.0f})*
       Mn::Matrix3::scaling(Mn::Vector2{0.5f})}
-  }}), 1);
+  }}, "cyan"), 1);
   CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
     {Mn::Trade::MaterialAttribute::BaseColor, 0xff00ffff_rgbaf},
     {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
@@ -208,7 +210,7 @@ void GfxBatchRendererTest::generateTestData() {
     {Mn::Trade::MaterialAttribute::BaseColorTextureMatrix,
       Mn::Matrix3::translation({0.5f, 0.0f})*
       Mn::Matrix3::scaling(Mn::Vector2{0.5f})}
-  }}), 2);
+  }}, "magenta"), 2);
   CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
     {Mn::Trade::MaterialAttribute::BaseColor, 0xffff00ff_rgbaf},
     {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
@@ -216,7 +218,9 @@ void GfxBatchRendererTest::generateTestData() {
     {Mn::Trade::MaterialAttribute::BaseColorTextureMatrix,
       Mn::Matrix3::translation({0.0f, 0.5f})*
       Mn::Matrix3::scaling(Mn::Vector2{0.5f})}
-  }}), 3);
+  }}, "yellow"), 3);
+  // clang-format on
+
   /* Scene with
       - a square using the checkerboard material
       - a circle using the cyan material
@@ -227,6 +231,7 @@ void GfxBatchRendererTest::generateTestData() {
     children, as that's currently what the renderer assumes. Similarly, the
     renderer only gets immediate children, not nested children.
   */
+  // clang-format off
   struct Scene {
     struct Parent {
       Mn::UnsignedInt object;

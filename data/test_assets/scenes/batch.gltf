@@ -95,7 +95,8 @@
         "baseColorTexture": {
           "index": 0
         }
-      }
+      },
+      "name": "checkerboard"
     },
     {
       "pbrMetallicRoughness": {
@@ -109,7 +110,8 @@
             }
           }
         }
-      }
+      },
+      "name": "cyan"
     },
     {
       "pbrMetallicRoughness": {
@@ -123,7 +125,8 @@
             }
           }
         }
-      }
+      },
+      "name": "magenta"
     },
     {
       "pbrMetallicRoughness": {
@@ -136,7 +139,8 @@
             }
           }
         }
-      }
+      },
+      "name": "yellow"
     }
   ],
   "samplers": [
