@@ -5,16 +5,8 @@ find_package(
   GltfImporter
   StbImageImporter
   KtxImporter
-  # Disabled for now as the OPTIONAL component with a CMake subproject causes a
-  # CMake error. TODO: fix in the Find module
-  #OPTIONAL_COMPONENTS GltfSceneConverter KtxImageConverter
+  OPTIONAL_COMPONENTS GltfSceneConverter KtxImageConverter
 )
-
-# If the GltfSceneConverter is present, the new Magnum SceneConverter APIs are
-# as well. Which enables a data-generating test case in GfxBatchRendererTest.
-if(MagnumPlugins_GltfSceneConverter_FOUND)
-  set(HAS_MAGNUM_GLTFSCENECONVERTER ON)
-endif()
 
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/configure.h
@@ -60,7 +52,11 @@ endif()
 if(MagnumPlugins_GltfSceneConverter_FOUND)
   target_link_libraries(
     GfxBatchRendererTest PRIVATE MagnumPlugins::GltfSceneConverter
-                                 MagnumPlugins::KtxImageConverter
+  )
+endif()
+if(MagnumPlugins_KtxImageConverter_FOUND)
+  target_link_libraries(
+    GfxBatchRendererTest PRIVATE MagnumPlugins::KtxImageConverter
   )
 endif()
 

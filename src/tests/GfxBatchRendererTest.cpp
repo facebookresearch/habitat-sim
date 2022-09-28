@@ -93,18 +93,13 @@ GfxBatchRendererTest::GfxBatchRendererTest() {
   // clang-format on
 }
 
-#ifdef HAS_MAGNUM_GLTFSCENECONVERTER
 /* These don't really need to have the same IDs as used by other code, only
    the name matters */
 constexpr auto SceneFieldMeshViewIndexOffset = Mn::Trade::sceneFieldCustom(56);
 constexpr auto SceneFieldMeshViewIndexCount = Mn::Trade::sceneFieldCustom(774);
 constexpr auto SceneFieldMeshViewMaterial = Mn::Trade::sceneFieldCustom(23);
-#endif
 
 void GfxBatchRendererTest::generateTestData() {
-#ifndef HAS_MAGNUM_GLTFSCENECONVERTER
-  CORRADE_SKIP("GltfSceneConverter plugin not found");
-#else
   Cr::PluginManager::Manager<Mn::Trade::AbstractImageConverter>
       imageConverterManager;
   if (imageConverterManager.loadState("KtxImageConverter") ==
@@ -309,7 +304,6 @@ void GfxBatchRendererTest::generateTestData() {
       Cr::Utility::Path::join(MAGNUMRENDERERTEST_OUTPUT_DIR, "batch.bin"),
       Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch.bin"),
       Cr::TestSuite::Compare::File);
-#endif
 }
 
 void GfxBatchRendererTest::defaults() {
