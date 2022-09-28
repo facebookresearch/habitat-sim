@@ -5,8 +5,6 @@
 #include "Renderer.h"
 
 #include <Corrade/Containers/Array.h>
-#include <Corrade/Containers/BitArray.h>
-#include <Corrade/Containers/BitArrayView.h>
 #include <Corrade/Containers/GrowableArray.h>
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/Containers/Pair.h>
@@ -27,6 +25,7 @@
 #include <Magnum/ImageView.h>
 #include <Magnum/Math/PackingBatch.h>
 #include <Magnum/MeshTools/Compile.h>
+#include <Magnum/MeshTools/Duplicate.h>
 #include <Magnum/Shaders/Generic.h>
 #include <Magnum/Shaders/Phong.h>
 #include <Magnum/Shaders/PhongGL.h>
@@ -72,12 +71,12 @@ RendererConfiguration& RendererConfiguration::setTileSizeCount(
 namespace {
 
 struct MeshView {
-  // TODO also mesh ID, once we have multiple meshes
+  Mn::UnsignedInt meshId;
   Mn::UnsignedInt indexOffsetInBytes;
   Mn::UnsignedInt indexCount;
   Mn::Int materialId; /* is never -1 tho */
   // TODO also parent, when we are able to fetch the whole hierarchy for a
-  //  particular root object name
+  //  particular root object name instead of having the hierarchy flattened
   Mn::Matrix4 transformation;
 };
 
@@ -91,22 +90,56 @@ struct DrawCommand {
   Mn::UnsignedInt indexCount;
 };
 
+struct DrawBatch {
+  Mn::UnsignedInt meshId;
+  Mn::UnsignedInt textureId;
+  /* Here will eventually also be shader ID and other things like mask etc */
+};
+
+/* Finds a draw batch corresponding to given mesh and texture ID or creates a
+   new one, returning its ID. Yes, it's a linear search. You're not supposed to
+   have too many meshes and textures, anyway. */
+Mn::UnsignedInt drawBatchId(Cr::Containers::Array<DrawBatch>& drawBatches, Mn::UnsignedInt meshId, Mn::UnsignedInt textureId) {
+  for(std::size_t i = 0; i != drawBatches.size(); ++i) {
+    if(drawBatches[i].meshId == meshId && drawBatches[i].textureId == textureId)
+      return i;
+  }
+
+  arrayAppend(drawBatches, Cr::InPlaceInit, meshId, textureId);
+  return drawBatches.size() - 1;
+}
+
 struct Scene {
-  /* Node parents and transformations. Appended to with add(). */
+  /* Node parents and transformations. Appended to with add(). Some of these
+     (but not all) are referenced from the transformationIds array below. */
   Cr::Containers::Array<Mn::Int> parents; /* parents[i] < i, always */
   Cr::Containers::Array<Mn::Matrix4> transformations;
 
-  /* Which nodes contain a mesh to draw. Count of bits set is the size of the
-     following draws, textureTransformations and drawCommands arrays. */
-  // TODO hardcoded to 8K objects (1 kB), needs growable support!
-  Cr::Containers::BitArray drawMaskStorage{Cr::NoInit, 8*1024};
-  Cr::Containers::MutableBitArrayView drawMask;
+  /* Draw batches, each being a unique combination of a mesh and a texture,
+     thus requiring a dedicated draw call. See also drawBatchId(). */
+  // TODO might make sense to order this (by shader,) by mesh, then by texture
+  Cr::Containers::Array<DrawBatch> drawBatches;
 
+  /* Data for all draws, kept in the same order as was appended to with add().
+     The transformationIds points to the transformations array from above,
+     uniform buffers and the draw command get the data sorted by
+     drawBatchIds. */
+  Cr::Containers::Array<Mn::UnsignedInt> drawBatchIds;
+  Cr::Containers::Array<Mn::UnsignedInt> transformationIds;
   Cr::Containers::Array<Mn::Shaders::PhongDrawUniform> draws;
   Cr::Containers::Array<Mn::Shaders::TextureTransformationUniform>
       textureTransformations;
-  // TODO make the layout match GL to avoid a copy in draw()
   Cr::Containers::Array<DrawCommand> drawCommands;
+
+  /* The transformationIds and drawCommands arrays sorted by meshIds. The
+     draws and textureTransformations arrays are uploaded to uniform buffers
+     after sorting and not used from the CPU again so they don't need to be
+     cached here. */
+  Cr::Containers::Array<Mn::UnsignedInt> transformationIdsSorted;
+  // TODO make the layout match GL (... deinterleave) to avoid a copy in draw()
+  //  or maybe not and just go with draw indirect directly
+  Cr::Containers::Array<Mn::UnsignedInt> drawBatchOffsets;
+  Cr::Containers::Array<DrawCommand> drawCommandsSorted;
 
   /* Updated every frame */
   Mn::GL::Buffer transformationUniform;
@@ -117,6 +150,7 @@ struct Scene {
 };
 
 struct TextureTransformation {
+  Mn::UnsignedInt textureId;
   Mn::UnsignedInt layer;
   Mn::Matrix3 transformation;
 };
@@ -135,14 +169,16 @@ struct Renderer::State {
   Mn::Shaders::PhongGL shader{Mn::NoCreate};
 
   /* Filled upon addFile() */
-  Mn::GL::Texture2DArray texture{Mn::NoCreate};
-  Mn::GL::Mesh mesh{Mn::NoCreate};
-  Mn::GL::Buffer materialUniform;
+  Cr::Containers::Array<Mn::GL::Texture2DArray> textures;
+  Cr::Containers::Array<Mn::GL::Mesh> meshes;
+  // TODO clear this array once/if the materialUniform is populated on first
+  //  draw() and adding more files is forbidden
+  Cr::Containers::Array<Mn::Shaders::PhongMaterialUniform> materials;
   /* Contains texture transform and layer for each material. Used by add() to
      populate the draw list. */
-  Cr::Containers::Array<TextureTransformation> textureTransformations;
+  Cr::Containers::Array<TextureTransformation> materialTextureTransformations;
 
-  /* Pairs of mesh views (index byte offset and count), material IDs and
+  /* Mesh views (mesh ID, index byte offset and count), material IDs and
      initial transformations for draws. Used by add() to populate the draw
      list. */
   Cr::Containers::Array<MeshView> meshViews;
@@ -151,9 +187,11 @@ struct Renderer::State {
                      Cr::Containers::Pair<Mn::UnsignedInt, Mn::UnsignedInt>>
       meshViewRangeForName;
 
+  /* Updated from addFile() */
+  Mn::GL::Buffer materialUniform;
   /* Updated from camera() */
   Cr::Containers::Array<ProjectionPadded> projections;
-  /* Updated every frame */
+  /* Updated from draw() every frame */
   Mn::GL::Buffer projectionUniform;
 
   Cr::Containers::Array<Scene> scenes;
@@ -162,7 +200,7 @@ struct Renderer::State {
   // TODO might be useful to have some per-frame bump allocator instead, for
   //  smaller peak memory use
   Cr::Containers::Array<Mn::Shaders::TransformationUniform3D> absoluteTransformations;
-  Cr::Containers::Array<Mn::Shaders::TransformationUniform3D> absoluteTransformationsMasked;
+  Cr::Containers::Array<Mn::Shaders::TransformationUniform3D> absoluteTransformationsSorted;
 };
 
 Renderer::Renderer(Mn::NoCreateT) {}
@@ -209,10 +247,6 @@ void Renderer::addFile(const Cr::Containers::StringView filename) {
 
 void Renderer::addFile(const Cr::Containers::StringView filename,
                        const Cr::Containers::StringView importerPlugin) {
-  CORRADE_ASSERT(!state_->texture.id(),
-                 "Renderer::addFile(): sorry, only one file is supported "
-                 "at the moment", );
-
   Cr::PluginManager::Manager<Mn::Trade::AbstractImporter> manager;
   Cr::Containers::Pointer<Mn::Trade::AbstractImporter> importer =
       manager.loadAndInstantiate(importerPlugin);
@@ -224,6 +258,8 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
   if (importerPlugin.contains("GltfImporter") ||
       (importerPlugin.contains("AnySceneImporter") &&
        (filename.contains(".gltf") || filename.contains(".glb")))) {
+    // TODO implement and use a singular ignoreRequiredExtension=MAGNUMX_mesh_views
+    //  that doesn't produce warnings
     importer->configuration().setValue("ignoreRequiredExtensions", true);
     importer->configuration().setValue("experimentalKhrTextureKtx", true);
 
@@ -249,89 +285,123 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
   //  for glb, bps and ply?)
   CORRADE_INTERNAL_ASSERT_OUTPUT(importer->openFile(filename));
 
-  /* One texture for the whole scene */
-  if (!(state_->flags & RendererFlag::NoTextures)) {
-    CORRADE_ASSERT(importer->textureCount() == 1,
-                   "Renderer::addFile(): expected a file with exactly one "
-                   "texture, got"
-                       << importer->textureCount(), );
-    const Cr::Containers::Optional<Mn::Trade::TextureData> texture =
-        importer->texture(0);
-    CORRADE_INTERNAL_ASSERT(
-        texture && texture->type() == Mn::Trade::TextureType::Texture2DArray);
+  /* Remember the count of data already present to offset the references with
+     them */
+  const Mn::UnsignedInt textureOffset = state_->textures.size();
+  const Mn::UnsignedInt meshOffset = state_->meshes.size();
+  const Mn::UnsignedInt meshViewOffset = state_->meshViews.size();
+  const Mn::UnsignedInt materialOffset = state_->materials.size();
 
-    const Mn::UnsignedInt levelCount =
-        importer->image3DLevelCount(texture->image());
-    Cr::Containers::Optional<Mn::Trade::ImageData3D> image =
-        importer->image3D(texture->image());
-    CORRADE_INTERNAL_ASSERT(image);
-    state_->texture = Mn::GL::Texture2DArray{};
-    state_->texture
-        .setMinificationFilter(texture->minificationFilter(),
-                               texture->mipmapFilter())
-        .setMagnificationFilter(texture->magnificationFilter())
-        .setWrapping(texture->wrapping().xy());
-    if (image->isCompressed()) {
-      state_->texture
-          .setStorage(levelCount,
-                      Mn::GL::textureFormat(image->compressedFormat()),
-                      image->size())
-          .setCompressedSubImage(0, {}, *image);
-      for (Mn::UnsignedInt level = 1; level != levelCount; ++level) {
-        Cr::Containers::Optional<Mn::Trade::ImageData3D> levelImage =
-            importer->image3D(texture->image(), level);
-        CORRADE_INTERNAL_ASSERT(levelImage && levelImage->isCompressed() &&
-                                levelImage->compressedFormat() ==
-                                    image->compressedFormat());
-        state_->texture.setCompressedSubImage(level, {}, *levelImage);
-      }
-    } else {
-      state_->texture
-          .setStorage(levelCount, Mn::GL::textureFormat(image->format()),
-                      image->size())
-          .setSubImage(0, {}, *image);
+  /* Import all textures */
+  if (!(state_->flags & RendererFlag::NoTextures)) {
+    for(Mn::UnsignedInt i = 0, iMax = importer->textureCount(); i != iMax; ++i) {
+      const Cr::Containers::Optional<Mn::Trade::TextureData> textureData =
+        importer->texture(i);
+      CORRADE_INTERNAL_ASSERT(textureData);
+
+      /* 2D textures are imported as single-layer 2D array textures */
+      Mn::GL::Texture2DArray texture;
+      if(textureData->type() == Mn::Trade::TextureType::Texture2DArray) {
+        const Mn::UnsignedInt levelCount =
+            importer->image3DLevelCount(textureData->image());
+        Cr::Containers::Optional<Mn::Trade::ImageData3D> image =
+            importer->image3D(textureData->image());
+        CORRADE_INTERNAL_ASSERT(image);
+        texture
+            .setMinificationFilter(textureData->minificationFilter(),
+                                  textureData->mipmapFilter())
+            .setMagnificationFilter(textureData->magnificationFilter())
+            .setWrapping(textureData->wrapping().xy());
+        if (image->isCompressed()) {
+          texture
+              .setStorage(levelCount,
+                          Mn::GL::textureFormat(image->compressedFormat()),
+                          image->size())
+              .setCompressedSubImage(0, {}, *image);
+          for (Mn::UnsignedInt level = 1; level != levelCount; ++level) {
+            Cr::Containers::Optional<Mn::Trade::ImageData3D> levelImage =
+                importer->image3D(textureData->image(), level);
+            CORRADE_INTERNAL_ASSERT(levelImage && levelImage->isCompressed() &&
+                                    levelImage->compressedFormat() ==
+                                        image->compressedFormat());
+            texture.setCompressedSubImage(level, {}, *levelImage);
+          }
+        } else {
+          texture
+              .setStorage(levelCount, Mn::GL::textureFormat(image->format()),
+                          image->size())
+              .setSubImage(0, {}, *image);
+        }
+      } else if(textureData->type() == Mn::Trade::TextureType::Texture2D) {
+        const Mn::UnsignedInt levelCount =
+            importer->image2DLevelCount(textureData->image());
+        Cr::Containers::Optional<Mn::Trade::ImageData2D> image =
+            importer->image2D(textureData->image());
+        CORRADE_INTERNAL_ASSERT(image);
+        texture
+            .setMinificationFilter(textureData->minificationFilter(),
+                                  textureData->mipmapFilter())
+            .setMagnificationFilter(textureData->magnificationFilter())
+            .setWrapping(textureData->wrapping().xy());
+        if (image->isCompressed()) {
+          texture
+              .setStorage(levelCount,
+                          Mn::GL::textureFormat(image->compressedFormat()),
+                          {image->size(), 1})
+              .setCompressedSubImage(0, {}, Mn::CompressedImageView2D{*image});
+          for (Mn::UnsignedInt level = 1; level != levelCount; ++level) {
+            Cr::Containers::Optional<Mn::Trade::ImageData2D> levelImage =
+                importer->image2D(textureData->image(), level);
+            CORRADE_INTERNAL_ASSERT(levelImage && levelImage->isCompressed() &&
+                                    levelImage->compressedFormat() ==
+                                        image->compressedFormat());
+            texture.setCompressedSubImage(level, {}, Mn::CompressedImageView2D{*levelImage});
+          }
+        } else {
+          texture
+              .setStorage(levelCount, Mn::GL::textureFormat(image->format()),
+                          {image->size(), 1})
+              .setSubImage(0, {}, Mn::ImageView2D{*image});
+        }
+      } else CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+
+      arrayAppend(state_->textures, std::move(texture));
     }
   }
 
-  /* One mesh for the whole scene */
-  CORRADE_ASSERT(
-      importer->meshCount() == 1,
-      "Renderer::addFile(): expected a file with exactly one mesh, got"
-          << importer->meshCount(), );
-  state_->mesh = Mn::MeshTools::compile(
-      *CORRADE_INTERNAL_ASSERT_EXPRESSION(importer->mesh(0)));
+  /* Import all meshes */
+  for(Mn::UnsignedInt i = 0, iMax = importer->meshCount(); i != iMax; ++i)
+    arrayAppend(state_->meshes, Mn::MeshTools::compile(
+      *CORRADE_INTERNAL_ASSERT_EXPRESSION(importer->mesh(i))));
 
-  /* Immutable material data. Save texture transformations and layers to a
+  /* Immutable material data. Save texture IDs, transformations and layers to a
      temporary array to apply them to draws instead */
-  state_->textureTransformations = Cr::Containers::Array<TextureTransformation>{
-      Cr::DefaultInit, importer->materialCount()};
   {
-    Cr::Containers::Array<Mn::Shaders::PhongMaterialUniform> materialData{
-        Cr::DefaultInit, importer->materialCount()};
-    for (std::size_t i = 0; i != materialData.size(); ++i) {
+    CORRADE_INTERNAL_ASSERT(state_->materials.size() == state_->materialTextureTransformations.size());
+    Cr::Containers::ArrayView<Mn::Shaders::PhongMaterialUniform> materials = arrayAppend(state_->materials, Cr::NoInit, importer->materialCount());
+    Cr::Containers::ArrayView<TextureTransformation> materialTextureTransformations = arrayAppend(state_->materialTextureTransformations, Cr::NoInit, importer->materialCount());
+    for (std::size_t i = 0; i != importer->materialCount(); ++i) {
       const Cr::Containers::Optional<Mn::Trade::MaterialData> material =
           importer->material(i);
       CORRADE_INTERNAL_ASSERT(material);
       const auto& flatMaterial = material->as<Mn::Trade::FlatMaterialData>();
-      materialData[i].setAmbientColor(flatMaterial.color());
+      materials[i] = Mn::Shaders::PhongMaterialUniform{}
+        .setAmbientColor(flatMaterial.color());
 
+      // TODO drop this requirement also and use some implicitly-added 1x1
+      //  texture? that's still a separate draw tho :(
       CORRADE_ASSERT(
           flatMaterial.hasTexture(),
           "Renderer::addFile(): material" << i << "is not textured", );
-      CORRADE_ASSERT(flatMaterial.texture() == 0,
-                     "Renderer::addFile(): expected material"
-                         << i << "to reference the only texture, got"
-                         << flatMaterial.texture(), );
-
-      state_->textureTransformations[i] = {
-          flatMaterial.attribute<Mn::UnsignedInt>(
-              Mn::Trade::MaterialAttribute::BaseColorTextureLayer),
-          flatMaterial.hasTextureTransformation() ? flatMaterial.textureMatrix()
-                                                  : Mn::Matrix3{}};
+      materialTextureTransformations[i] = {
+          flatMaterial.texture() + textureOffset,
+          flatMaterial.textureLayer(),
+          flatMaterial.textureMatrix()};
     }
 
-    // TODO immutable buffer storage
-    state_->materialUniform.setData(materialData);
+    // TODO immutable buffer storage how? or populate on first draw() and then
+    //  FORBID adding more files?
+    state_->materialUniform.setData(state_->materials);
   }
 
   /* Fill initial projection data for each view. Will be uploaded afresh every
@@ -347,36 +417,60 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
     Cr::Containers::Optional<Mn::Trade::SceneData> scene = importer->scene(0);
     CORRADE_INTERNAL_ASSERT(scene);
 
-    /* Populate the mesh and material list */
-    const Cr::Containers::Optional<Mn::UnsignedInt> meshViewIndexOffsetFieldId =
-        scene->findFieldId(importer->sceneFieldForName("meshViewIndexOffset"));
-    CORRADE_ASSERT(meshViewIndexOffsetFieldId,
-                   "Renderer::addFile(): no meshViewIndexOffset field in "
-                   "the scene", );
-    const Cr::Containers::Optional<Mn::UnsignedInt> meshViewIndexCountFieldId =
-        scene->findFieldId(importer->sceneFieldForName("meshViewIndexCount"));
-    CORRADE_ASSERT(
-        meshViewIndexCountFieldId,
-        "Renderer::addFile(): no meshViewIndexCount field in the scene", );
-    const Cr::Containers::Optional<Mn::UnsignedInt> meshViewMaterialFieldId =
-        scene->findFieldId(importer->sceneFieldForName("meshViewMaterial"));
-    CORRADE_ASSERT(
-        meshViewMaterialFieldId,
-        "Renderer::addFile(): no meshViewMaterial field in the scene", );
-    /* SceneData and copy() will assert if the types or sizes don't match, so
-       we don't have to */
-    state_->meshViews = Cr::Containers::Array<MeshView>{
-        Cr::NoInit, scene->fieldSize(*meshViewIndexCountFieldId)};
+    /* Populate the mesh and material list. SceneData and copy() will assert if
+       the types or sizes don't match, so we don't have to */
+    Cr::Containers::StridedArrayView1D<MeshView> meshViews = arrayAppend(state_->meshViews, Cr::NoInit, scene->fieldSize(Mn::Trade::SceneField::Mesh));
     Cr::Utility::copy(
-        scene->field<Mn::UnsignedInt>(*meshViewIndexOffsetFieldId),
-        stridedArrayView(state_->meshViews)
-            .slice(&MeshView::indexOffsetInBytes));
-    Cr::Utility::copy(
-        scene->field<Mn::UnsignedInt>(*meshViewIndexCountFieldId),
-        stridedArrayView(state_->meshViews).slice(&MeshView::indexCount));
-    Cr::Utility::copy(
-        scene->field<Mn::Int>(*meshViewMaterialFieldId),
-        stridedArrayView(state_->meshViews).slice(&MeshView::materialId));
+        scene->field<Mn::UnsignedInt>(Mn::Trade::SceneField::Mesh),
+        meshViews.slice(&MeshView::meshId));
+
+    /* Add mesh offset to all mesh IDs */
+    for(Mn::UnsignedInt& meshId: meshViews.slice(&MeshView::meshId))
+      meshId += meshOffset;
+
+    /* If there are mesh view fields, it's a batch-friendly file */
+    if(const Cr::Containers::Optional<Mn::UnsignedInt> meshViewIndexOffsetFieldId =
+        scene->findFieldId(importer->sceneFieldForName("meshViewIndexOffset"))) {
+      const Cr::Containers::Optional<Mn::UnsignedInt> meshViewIndexCountFieldId =
+          scene->findFieldId(importer->sceneFieldForName("meshViewIndexCount"));
+      CORRADE_ASSERT(
+          meshViewIndexCountFieldId,
+          "Renderer::addFile(): no meshViewIndexCount field in the scene", );
+      const Cr::Containers::Optional<Mn::UnsignedInt> meshViewMaterialFieldId =
+          scene->findFieldId(importer->sceneFieldForName("meshViewMaterial"));
+      CORRADE_ASSERT(
+          meshViewMaterialFieldId,
+          "Renderer::addFile(): no meshViewMaterial field in the scene", );
+      Cr::Utility::copy(
+          scene->field<Mn::UnsignedInt>(*meshViewIndexOffsetFieldId),
+          meshViews.slice(&MeshView::indexOffsetInBytes));
+      Cr::Utility::copy(
+          scene->field<Mn::UnsignedInt>(*meshViewIndexCountFieldId),
+          meshViews.slice(&MeshView::indexCount));
+      Cr::Utility::copy(
+          scene->field<Mn::Int>(*meshViewMaterialFieldId),
+          meshViews.slice(&MeshView::materialId));
+
+    /* If not, offsets are always zero, counts go directly from meshes and
+       materials from the builtin attribute */
+    } else {
+      for(MeshView& view: meshViews) {
+        view.indexOffsetInBytes = 0;
+        view.indexCount = state_->meshes[view.meshId + meshOffset].count();
+      }
+      const Cr::Containers::Optional<Mn::UnsignedInt> meshMaterialFieldId =
+          scene->findFieldId(Mn::Trade::SceneField::MeshMaterial);
+      CORRADE_ASSERT(meshMaterialFieldId,
+        "Renderer::addFile(): no" << Mn::Trade::SceneField::MeshMaterial << "field in the scene", );
+      Cr::Utility::copy(
+          scene->field<Mn::Int>(*meshMaterialFieldId),
+          meshViews.slice(&MeshView::materialId));
+    }
+
+    /* Add material offset to all material IDs */
+    for(Mn::Int& materialId: meshViews.slice(&MeshView::materialId))
+      materialId += materialOffset;
+
     /* Transformations of all objects in the scene. Objects that don't have
        this field default to an indentity transform. */
     Cr::Containers::Array<Mn::Matrix4> transformations{
@@ -390,9 +484,9 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
        the same mapping. */
     const Cr::Containers::StridedArrayView1D<const Mn::UnsignedInt>
         meshViewMapping =
-            scene->mapping<Mn::UnsignedInt>(*meshViewIndexCountFieldId);
+            scene->mapping<Mn::UnsignedInt>(Mn::Trade::SceneField::Mesh);
     for (std::size_t i = 0; i != meshViewMapping.size(); ++i) {
-      state_->meshViews[i].transformation = transformations[meshViewMapping[i]];
+      meshViews[i].transformation = transformations[meshViewMapping[i]];
     }
 
     /* Templates are the root objects with their names. Their immediate
@@ -400,7 +494,7 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
        the custom fields. */
     // TODO hacky and brittle! doesn't handle nested children properly, doesn't
     //  account for a different order of the field vs the child lists
-    Mn::UnsignedInt offset = 0;
+    Mn::UnsignedInt offset = meshViewOffset;
     for (Mn::UnsignedLong root : scene->childrenFor(-1)) {
       Cr::Containers::Array<Mn::UnsignedLong> children =
           scene->childrenFor(root);
@@ -408,11 +502,12 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
       Cr::Containers::String name = importer->objectName(root);
       CORRADE_ASSERT(name,
                      "Renderer::addFile(): node" << root << "has no name", );
-      state_->meshViewRangeForName.insert(
-          {name, {offset, offset + Mn::UnsignedInt(children.size())}});
+      CORRADE_ASSERT_OUTPUT(state_->meshViewRangeForName.insert(
+          {name, {offset, offset + Mn::UnsignedInt(children.size())}}).second,
+          "Renderer::addFile(): node name" << name << "already exists", );
       offset += children.size();
     }
-    CORRADE_INTERNAL_ASSERT(offset = state_->meshViews.size());
+    CORRADE_INTERNAL_ASSERT(offset == state_->meshViews.size());
   }
 
   /* Setup a zero-light (flat) shader, bind buffers that don't change
@@ -427,11 +522,11 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
   // TODO 1024 is 64K divided by 64 bytes needed for one draw uniform, have
   //  that fetched from actual GL limits instead once I get to actually
   //  splitting draws by this limit
+  // TODO don't do this after adding each and every file, it's wasteful ...
+  //  do lazily on first draw() and then FORBID adding more files?
   state_->shader =
-      Mn::Shaders::PhongGL{flags, 0, importer->materialCount(), 1024};
+      Mn::Shaders::PhongGL{flags, 0, Mn::UnsignedInt(state_->materials.size()), 1024};
   state_->shader.bindMaterialBuffer(state_->materialUniform);
-  if (!(state_->flags >= RendererFlag::NoTextures))
-    state_->shader.bindAmbientTexture(state_->texture);
 }
 
 std::size_t Renderer::addMeshHierarchy(const Mn::UnsignedInt sceneId,
@@ -450,8 +545,19 @@ std::size_t Renderer::addMeshHierarchy(const Mn::UnsignedInt sceneId,
   CORRADE_ASSERT(found != state_->meshViewRangeForName.end(),
                  "Renderer::add(): name" << name << "not found", {});
 
+  /* The parent and transformation arrays should have the same size */
+  CORRADE_INTERNAL_ASSERT(scene.transformations.size() == scene.parents.size());
+
+  /* The per-draw arrays should have the same size */
+  CORRADE_INTERNAL_ASSERT(scene.transformationIds.size() == scene.drawBatchIds.size());
+  CORRADE_INTERNAL_ASSERT(scene.draws.size() == scene.drawBatchIds.size());
+  CORRADE_INTERNAL_ASSERT(scene.textureTransformations.size() == scene.drawBatchIds.size());
+  CORRADE_INTERNAL_ASSERT(scene.drawCommands.size() == scene.drawBatchIds.size());
+  CORRADE_INTERNAL_ASSERT(scene.transformationIdsSorted.size() == scene.drawBatchIds.size());
+  CORRADE_INTERNAL_ASSERT(scene.drawCommandsSorted.size() == scene.drawBatchIds.size());
+
   /* Add a top-level object with no attached mesh */
-  const std::size_t id = scene.transformations.size();
+  const std::size_t topLevelId = scene.transformations.size();
   arrayAppend(scene.parents, -1);
   arrayAppend(scene.transformations, transformation);
 
@@ -463,30 +569,32 @@ std::size_t Renderer::addMeshHierarchy(const Mn::UnsignedInt sceneId,
     const MeshView& meshView = state_->meshViews[i];
     /* The following meshes are children of the first one, inheriting its
        transformation */
-    arrayAppend(scene.parents, id);
+    const std::size_t id = scene.transformations.size();
+    arrayAppend(scene.parents, topLevelId);
     arrayAppend(scene.transformations, meshView.transformation);
 
+    /* Get a batch ID for given mesh/texture combination */
+    const Mn::UnsignedInt batchId = drawBatchId(scene.drawBatches, meshView.meshId, state_->materialTextureTransformations[meshView.materialId].textureId);
+
+    arrayAppend(scene.drawBatchIds, batchId);
+    arrayAppend(scene.transformationIds, id);
     arrayAppend(scene.draws, Cr::InPlaceInit)
         .setMaterialId(meshView.materialId);
     arrayAppend(scene.textureTransformations, Cr::InPlaceInit)
         .setTextureMatrix(
-            state_->textureTransformations[meshView.materialId].transformation)
-        .setLayer(state_->textureTransformations[meshView.materialId].layer);
+            state_->materialTextureTransformations[meshView.materialId].transformation)
+        .setLayer(state_->materialTextureTransformations[meshView.materialId].layer);
     arrayAppend(scene.drawCommands, Cr::InPlaceInit,
                 meshView.indexOffsetInBytes, meshView.indexCount);
+    /* Just to have them with the right size, they get filled in a next dirty
+       state update in draw() */
+    arrayAppend(scene.transformationIdsSorted, Cr::NoInit, 1);
+    arrayAppend(scene.drawCommandsSorted, Cr::NoInit, 1);
   }
-
-  /* Update the draw mask -- the top-level node isn't drawn, all nodes after
-     are */
-  // TODO use append once bit arrays are growable
-  scene.drawMask = scene.drawMaskStorage.prefix(scene.transformations.size());
-  scene.drawMask.reset(id);
-  for(std::size_t i = id + 1; i != scene.drawMask.size(); ++i)
-    scene.drawMask.set(i); // TODO have a way to set a bit range
 
   /* Schedule an update next time draw() is called */
   scene.dirty = true;
-  return id;
+  return topLevelId;
 }
 
 std::size_t Renderer::addMeshHierarchy(const Mn::UnsignedInt scene,
@@ -505,10 +613,17 @@ void Renderer::clear(const Mn::UnsignedInt sceneId) {
   /* Resizing instead of `= {}` to not discard the memory */
   arrayResize(scene.parents, 0);
   arrayResize(scene.transformations, 0);
-  scene.drawMask = {}; // TODO arrayResize() / arrayClear(), once it exists
+  arrayResize(scene.drawBatchIds, 0);
+  arrayResize(scene.transformationIds, 0);
+  arrayResize(scene.drawBatches, 0);
   arrayResize(scene.draws, 0);
   arrayResize(scene.textureTransformations, 0);
   arrayResize(scene.drawCommands, 0);
+  arrayResize(scene.transformationIdsSorted, 0);
+  arrayResize(scene.drawCommandsSorted, 0);
+
+  /* There's nothing in the scene, so there's no dirty state to process */
+  scene.dirty = false;
 }
 
 Mn::Matrix4& Renderer::camera(const Mn::UnsignedInt scene) {
@@ -522,18 +637,70 @@ Cr::Containers::StridedArrayView1D<Mn::Matrix4> Renderer::transformations(
 
 void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
   // TODO allow this (currently addFile() sets up shader limits)
-  CORRADE_ASSERT(state_->mesh.id(), "Renderer::draw(): no file was added", );
+  CORRADE_ASSERT(!state_->meshes.isEmpty(), "Renderer::draw(): no file was added", );
 
   /* Process scenes that are marked as dirty */
   // TODO this could be a separate step to allow the user to control when it
   //  runs
-  for (std::size_t sceneId = 0; sceneId != state_->scenes.size(); ++sceneId) {
-    Scene& scene = state_->scenes[sceneId];
-    if(!scene.dirty) continue;
+  {
+    // TODO have a dedicated bump allocator for this to avoid allocating on
+    //  every dirty processing
+    Cr::Containers::Array<Mn::Shaders::PhongDrawUniform> drawsSorted;
+    Cr::Containers::Array<Mn::Shaders::TextureTransformationUniform> textureTransformationsSorted;
+    for (std::size_t sceneId = 0; sceneId != state_->scenes.size(); ++sceneId) {
+      Scene& scene = state_->scenes[sceneId];
+      if(!scene.dirty) continue;
 
-    scene.drawUniform.setData(scene.draws);
-    scene.textureTransformationUniform.setData(scene.textureTransformations);
-    scene.dirty = false;
+      /* Resize temp arrays if too small */
+      // TODO make this unconditional to catch OOB access?
+      if(drawsSorted.size() < scene.draws.size()) {
+        arrayResize(drawsSorted, Cr::NoInit, scene.draws.size());
+        arrayResize(textureTransformationsSorted, Cr::NoInit, scene.draws.size());
+      }
+
+      /* Draw batch offsets with two implicit 0s at the begin. Reset all values
+         to 0 in case the array wasn't empty before. */
+      // TODO Utility::fill() instead
+      arrayResize(scene.drawBatchOffsets, Cr::NoInit, 0);
+      arrayResize(scene.drawBatchOffsets, Cr::ValueInit, scene.drawBatches.size() + 2);
+
+      // TODO make a counting sort utility in corrade? i'm reusing the temp
+      //  offset array here in a quite specific way tho
+      /* Count how many uses of each mesh are there; meshOffsets[0] and [1]
+         stays 0 */
+      for(Mn::UnsignedInt i: scene.drawBatchIds)
+        ++scene.drawBatchOffsets[i + 2];
+
+      /* Convert that to an offset array, again meshOffsets[0] and [1] stays
+         0 */
+      std::size_t offset = 0;
+      for(Mn::UnsignedInt& i: scene.drawBatchOffsets) {
+        const std::size_t count = i;
+        i += offset;
+        offset += count;
+      }
+      CORRADE_INTERNAL_ASSERT(scene.drawBatchOffsets.front() == 0);
+      CORRADE_INTERNAL_ASSERT(scene.drawBatchOffsets.back() == scene.draws.size());
+
+      /* Reorder the draw and texture transformation arrays based on mesh IDs,
+         now just meshOffsets[0] stays 0 */
+      for(std::size_t i = 0; i != scene.draws.size(); ++i) {
+        Mn::UnsignedInt& offset = scene.drawBatchOffsets[scene.drawBatchIds[i] + 1];
+
+        drawsSorted[offset] = scene.draws[i];
+        textureTransformationsSorted[offset] = scene.textureTransformations[i];
+        scene.transformationIdsSorted[offset] = scene.transformationIds[i];
+        scene.drawCommandsSorted[offset] = scene.drawCommands[i];
+        ++offset;
+      }
+      CORRADE_INTERNAL_ASSERT(scene.drawBatchOffsets.front() == 0);
+      CORRADE_INTERNAL_ASSERT(scene.drawBatchOffsets.back() == scene.draws.size());
+
+      /* Upload the (temporary) sorted data to uniforms */
+      scene.drawUniform.setData(drawsSorted);
+      scene.textureTransformationUniform.setData(textureTransformationsSorted);
+      scene.dirty = false;
+    }
   }
 
   /* Upload projection uniform, assuming it changes every frame. Do it early to
@@ -546,12 +713,10 @@ void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
 
     /* The first slot holds the root transformation for easier dealing with
        `parent == -1`. Resize if it's too small. */
-    if(state_->absoluteTransformations.size() < scene.transformations.size() + 1) {
+    if(state_->absoluteTransformations.size() < scene.transformations.size() + 1)
       arrayResize(state_->absoluteTransformations, Cr::NoInit, scene.transformations.size() + 1);
-      arrayResize(state_->absoluteTransformationsMasked, Cr::NoInit, scene.transformations.size() + 1);
-    }
 
-    // TODO have a tool for this
+    // TODO have a tool for this! AVX512!!
     state_->absoluteTransformations[0].setTransformationMatrix(Mn::Matrix4{});
     for (std::size_t i = 0; i != scene.transformations.size(); ++i)
       state_->absoluteTransformations[i + 1].setTransformationMatrix(
@@ -559,13 +724,15 @@ void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
               .transformationMatrix *
           scene.transformations[i]);
 
-    /* Copy only the transformations that are used for actual draws */
-    // TODO HAVE A TOOL FOR THIS
-    std::size_t offset = 0;
-    for(std::size_t i = 0; i != scene.transformations.size(); ++i)
-      if(scene.drawMask[i])
-        state_->absoluteTransformationsMasked[offset++] = state_->absoluteTransformations[i + 1];
-    CORRADE_INTERNAL_ASSERT(offset == scene.draws.size());
+    /* Copy transformations referenced by actual draws. Resize if destination
+       is too small. */
+    if(state_->absoluteTransformationsSorted.size() < scene.transformationIdsSorted.size())
+      arrayResize(state_->absoluteTransformationsSorted, Cr::NoInit, scene.transformationIdsSorted.size());
+    // TODO the casting situation is GETTING OUT OF HAND
+    Mn::MeshTools::duplicateInto(
+      Cr::Containers::StridedArrayView1D<const Mn::UnsignedInt>{scene.transformationIdsSorted},
+      Cr::Containers::StridedArrayView1D<const Mn::Shaders::TransformationUniform3D>{state_->absoluteTransformations.exceptPrefix(1)},
+      stridedArrayView(state_->absoluteTransformationsSorted.prefix(scene.transformationIdsSorted.size())));
 
     /* Upload the transformation uniforms, as they get overwritten in the
        next loop. OTOH, interleaving it with the calculation could hide the
@@ -573,7 +740,7 @@ void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
     // TODO have this somehow in a single huge buffer instead so we can upload
     // everything at once? ... but that would need the insane alignment
     // requirements, not great either :(
-    scene.transformationUniform.setData(state_->absoluteTransformationsMasked);
+    scene.transformationUniform.setData(state_->absoluteTransformationsSorted.prefix(scene.transformationIdsSorted.size()));
   }
 
   for (Mn::Int y = 0; y != state_->tileCount.y(); ++y) {
@@ -581,26 +748,42 @@ void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
       framebuffer.setViewport(Mn::Range2Di::fromSize(
           Mn::Vector2i{x, y} * state_->tileSize, state_->tileSize));
 
-      const std::size_t scene = y * state_->tileCount.x() + x;
+      const std::size_t sceneId = y * state_->tileCount.x() + x;
+      Scene& scene = state_->scenes[sceneId];
 
-      // TODO split by draw count limit
-      state_
-          ->shader
+      /* Bind buffers */
+      // TODO split by draw count limit? hard to do with those batches now, heh
+      //  also hard to do due to the insane alignment rules
+      state_->shader
           // TODO bind all buffers together with a multi API
           .bindProjectionBuffer(state_->projectionUniform,
-                                scene * sizeof(ProjectionPadded),
+                                sceneId * sizeof(ProjectionPadded),
                                 sizeof(ProjectionPadded))
-          .bindTransformationBuffer(state_->scenes[scene].transformationUniform)
-          .bindDrawBuffer(state_->scenes[scene].drawUniform);
+          .bindTransformationBuffer(scene.transformationUniform)
+          .bindDrawBuffer(scene.drawUniform);
       if (!(state_->flags & RendererFlag::NoTextures))
         state_->shader.bindTextureTransformationBuffer(
-            state_->scenes[scene].textureTransformationUniform);
-      state_->shader.draw(state_->mesh,
-                          stridedArrayView(state_->scenes[scene].drawCommands)
-                              .slice(&DrawCommand::indexCount),
-                          nullptr,
-                          stridedArrayView(state_->scenes[scene].drawCommands)
-                              .slice(&DrawCommand::indexOffsetInBytes));
+            scene.textureTransformationUniform);
+
+      /* Submit all draw batches */
+      for(std::size_t i = 0; i != scene.drawBatches.size(); ++i) {
+        const DrawBatch& drawBatch = scene.drawBatches[i];
+
+        if (!(state_->flags >= RendererFlag::NoTextures))
+          state_->shader.bindAmbientTexture(state_->textures[drawBatch.textureId]);
+
+        const Mn::UnsignedInt drawBatchOffset = scene.drawBatchOffsets[i];
+        const Mn::UnsignedInt nextDrawBatchOffset = scene.drawBatchOffsets[i + 1];
+        const Cr::Containers::StridedArrayView1D<DrawCommand> drawBatchCommands
+          = scene.drawCommands.slice(drawBatchOffset, nextDrawBatchOffset);
+
+        state_->shader
+            .setDrawOffset(drawBatchOffset)
+            .draw(state_->meshes[drawBatch.meshId],
+                drawBatchCommands.slice(&DrawCommand::indexCount),
+                nullptr,
+                drawBatchCommands.slice(&DrawCommand::indexOffsetInBytes));
+      }
     }
   }
 }
@@ -615,9 +798,8 @@ SceneStats Renderer::sceneStats(Mn::UnsignedInt sceneId) const {
 
   SceneStats out;
   out.nodeCount = scene.transformations.size();
-  out.drawCount = 0;
-  for(std::size_t i = 0; i != scene.drawMask.size(); ++i)
-    if(scene.drawMask[i]) ++out.drawCount; // TODO builtin popcount()!
+  out.drawCount = scene.draws.size();
+  out.drawBatchCount = scene.drawBatches.size();
   return out;
 }
 

@@ -1,0 +1,230 @@
+{
+  "asset": {
+    "version": "2.0",
+    "generator": "Magnum GltfSceneConverter"
+  },
+  "extensionsUsed": [
+    "KHR_texture_ktx",
+    "KHR_texture_transform"
+  ],
+  "extensionsRequired": [
+    "KHR_texture_ktx",
+    "KHR_texture_transform"
+  ],
+  "buffers": [
+    {
+      "uri": "batch-circle-triangle.bin",
+      "byteLength": 1944
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 384
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 384,
+      "byteLength": 1068,
+      "byteStride": 32
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 396,
+      "byteLength": 1068,
+      "byteStride": 32
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 408,
+      "byteLength": 1064,
+      "byteStride": 32
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 1472,
+      "byteLength": 36
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 1508,
+      "byteLength": 140,
+      "byteStride": 32
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 1520,
+      "byteLength": 140,
+      "byteStride": 32
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 1532,
+      "byteLength": 136,
+      "byteStride": 32
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 1668,
+      "byteLength": 276
+    }
+  ],
+  "accessors": [
+    {
+      "bufferView": 0,
+      "componentType": 5125,
+      "count": 96,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 34,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "componentType": 5126,
+      "count": 34,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 3,
+      "componentType": 5126,
+      "count": 34,
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 4,
+      "componentType": 5125,
+      "count": 9,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 5,
+      "componentType": 5126,
+      "count": 5,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 6,
+      "componentType": 5126,
+      "count": 5,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 7,
+      "componentType": 5126,
+      "count": 5,
+      "type": "VEC2"
+    }
+  ],
+  "meshes": [
+    {
+      "primitives": [
+        {
+          "indices": 0,
+          "attributes": {
+            "POSITION": 1,
+            "NORMAL": 2,
+            "TEXCOORD_0": 3
+          },
+          "material": 0
+        }
+      ],
+      "name": "circle"
+    },
+    {
+      "primitives": [
+        {
+          "indices": 4,
+          "attributes": {
+            "POSITION": 5,
+            "NORMAL": 6,
+            "TEXCOORD_0": 7
+          },
+          "material": 1
+        }
+      ],
+      "name": "triangle"
+    }
+  ],
+  "materials": [
+    {
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [0, 1, 1, 1],
+        "baseColorTexture": {
+          "index": 0,
+          "extensions": {
+            "KHR_texture_transform": {
+              "scale": [0.5, 1]
+            }
+          }
+        }
+      },
+      "name": "cyan"
+    },
+    {
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [1, 0, 1, 1],
+        "baseColorTexture": {
+          "index": 0,
+          "extensions": {
+            "KHR_texture_transform": {
+              "offset": [0.5, 0],
+              "scale": [0.5, 1]
+            }
+          }
+        }
+      },
+      "name": "magenta"
+    }
+  ],
+  "samplers": [
+    {
+      "wrapS": 10497,
+      "wrapT": 10497,
+      "minFilter": 9984,
+      "magFilter": 9728
+    }
+  ],
+  "textures": [
+    {
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_ktx": {
+          "source": 0,
+          "layer": 0
+        }
+      }
+    }
+  ],
+  "images": [
+    {
+      "mimeType": "image/ktx2",
+      "bufferView": 8
+    }
+  ],
+  "nodes": [
+    {
+      "children": [1],
+      "name": "circle"
+    },
+    {
+      "mesh": 0
+    },
+    {
+      "children": [3],
+      "name": "triangle"
+    },
+    {
+      "mesh": 1
+    }
+  ],
+  "scenes": [
+    {
+      "nodes": [0, 2]
+    }
+  ]
+}

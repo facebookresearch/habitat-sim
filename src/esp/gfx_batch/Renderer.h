@@ -104,12 +104,21 @@ struct SceneStats {
   std::size_t nodeCount;
 
   /**
-   * @brief Count of draws
+   * @brief Count of draws across all draw batches
    *
    * Never larger than @ref nodeCount. Usually much smaller, as certain nodes
    * are only manipulators grouping a set of other actually renderable nodes.
    */
   std::size_t drawCount;
+
+  /**
+   * @brief Count of draw batches
+   *
+   * Ideal case is just one, but if there's more files or more textures, then
+   * each such combination needs a dedicated draw batch. Never larger than
+   * @ref drawCount.
+   */
+  std::size_t drawBatchCount;
 };
 
 }  // namespace gfx_batch
