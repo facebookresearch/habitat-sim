@@ -10,7 +10,7 @@ import string
 import sys
 import time
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import git
 import psutil
@@ -87,6 +87,7 @@ class HabitatSimInteractiveViewer(Application):
         Application.__init__(self, configuration)
         self.sim_settings: Dict[str:Any] = sim_settings
         self.fps: float = 60.0
+        self.physics_step_duration: float = 1.0 / self.fps
 
         # draw Bullet debug line visualizations (e.g. collision meshes)
         self.debug_bullet_draw = False
@@ -140,14 +141,14 @@ class HabitatSimInteractiveViewer(Application):
             13,
         )
 
-        # Glyphs we need to render everything
+        # Glyphs we need to render text to screen
         self.glyph_cache = text.GlyphCache(mn.Vector2i(256))
         self.display_font.fill_glyph_cache(
             self.glyph_cache,
             string.ascii_lowercase
             + string.ascii_uppercase
             + string.digits
-            + ":-_+,.! %µ",
+            + ":-_+,./! %µ",
         )
 
         # magnum text object that displays CPU/GPU usage data in the app window
@@ -183,8 +184,26 @@ class HabitatSimInteractiveViewer(Application):
             mn.gl.Renderer.BlendEquation.ADD, mn.gl.Renderer.BlendEquation.ADD
         )
 
-        # variables that track app data and CPU/GPU usage
-        self.num_frames_to_track = 60
+        # variables that track sim time, render time, and CPU/GPU usage
+        self.total_frame_count: int = 0  # TODO debugging, remove
+
+        self.render_frames_to_track: int = 30
+
+        self.prev_frame_duration: float = 0.0
+        self.frame_duration_sum: float = 0.0
+        self.average_fps: float = self.fps
+
+        self.prev_sim_duration: float = 0.0
+        self.sim_duration_sum: float = 0.0
+        self.avg_sim_duration: float = 0.0
+        self.sim_steps_tracked: int = 0
+
+        self.prev_render_duration: float = 0.0
+        self.render_duration_sum: float = 0.0
+        self.avg_render_duration: float = 0.0
+        self.render_frames_tracked: int = 0
+
+        self.decimal_points = 4
 
         # Cycle mouse utilities
         self.mouse_interaction = MouseMode.LOOK
@@ -205,13 +224,13 @@ class HabitatSimInteractiveViewer(Application):
         self.curr_angle_rotated_degrees = 0.0
         self.object_rotation_axis = ObjectRotationAxis.Y
 
+        # -self.video_frames: list to store video frames as observations
         # -self.recording: If we are currently storing frames in a List to be
         #   written to a file when done.
-        # -self.video_frames: list to store video frames as observations
         # -self.saving_video: if the previous recording is still being written
         #   to a file. We don't want to record new frames in that case.
-        self.recording = False
         self.video_frames = []
+        self.recording = False
         self.saving_video = False
 
         # configure our simulator
@@ -376,50 +395,70 @@ class HabitatSimInteractiveViewer(Application):
         )
 
         # Agent actions should occur at a fixed rate per second
+        self.prev_frame_duration = Timer.prev_frame_duration
         self.time_since_last_simulation += Timer.prev_frame_duration
         num_agent_actions: int = self.time_since_last_simulation * agent_acts_per_sec
         self.move_and_look(int(num_agent_actions))
+
+        # Occasionally a frame will pass quicker than 1 / fps seconds
+        if self.time_since_last_simulation >= self.physics_step_duration:
+            if self.simulating or self.simulate_single_step:
+                # step physics at a fixed rate
+                # In the interest of frame rate, only a single step is taken,
+                # even if time_since_last_simulation is quite large
+                sim_start_time = time.time()
+                self.sim.step_world(self.physics_step_duration)
+                sim_end_time = time.time()
+                self.prev_sim_duration = sim_end_time - sim_start_time
+                self.sim_steps_tracked += 1
+
+                self.simulate_single_step = False
+                if simulation_call is not None:
+                    simulation_call()
+            else:
+                self.sim_steps_tracked = 0  # TODO debugging, remove
+                self.prev_sim_duration = 0.0
+                self.sim_duration_sum = 0.0
+                self.avg_sim_duration = 0.0
+
+            if global_call is not None:
+                global_call()
+
+            # reset time_since_last_simulation, accounting for potential overflow
+            self.time_since_last_simulation = math.fmod(
+                self.time_since_last_simulation, self.physics_step_duration
+            )
 
         # If in Kinematic movement mode and there is a ManagedBulletRigidObject
         # that is displayed from the dataset, rotate it
         if self.curr_object is not None and not self.simulating:
             self.rotate_displayed_object(self.curr_object)
 
-        # Occasionally a frame will pass quicker than 1/60 seconds
-        if self.time_since_last_simulation >= 1.0 / self.fps:
-            if self.simulating or self.simulate_single_step:
-                # step physics at a fixed rate
-                # In the interest of frame rate, only a single step is taken,
-                # even if time_since_last_simulation is quite large
-                self.sim.step_world(1.0 / self.fps)
-                self.simulate_single_step = False
-                if simulation_call is not None:
-                    simulation_call()
-            if global_call is not None:
-                global_call()
-
-            # reset time_since_last_simulation, accounting for potential overflow
-            self.time_since_last_simulation = math.fmod(
-                self.time_since_last_simulation, 1.0 / self.fps
-            )
-
+        # Get agent id, agent, and sensor uuid
         keys = active_agent_id_and_sensor_name
-        self.sensor_name = keys[1]
-        sensor = self.sim._Simulator__sensors[keys[0]][keys[1]]
-        sensor.draw_observation()
-        agent = self.sim.get_agent(keys[0])
-        self.render_camera = agent.scene_node.node_sensor_suite.get(keys[1])
+        agent_id = keys[0]
+        agent = self.sim.get_agent(agent_id)
+        self.sensor_uuid = keys[1]
+
+        # gather and render sensor observation while timing it
+        render_start_time = time.time()
+        observations = self.sim.get_sensor_observations(agent_id)
+        render_end_time = time.time()
+        self.prev_render_duration = render_end_time - render_start_time
+
+        # TODO write a good comment here, not sure what "blit" is
+        self.render_camera = agent.scene_node.node_sensor_suite.get(self.sensor_uuid)
         self.debug_draw()
         self.render_camera.render_target.blit_rgba_to_default()
         mn.gl.default_framebuffer.bind()
 
-        # draw CPU/GPU usage data and other info to the app window
+        # TODO draw CPU/GPU usage data and other info to the app window
         self.draw_text(self.render_camera.specification())
 
+        # if we are recording and no recording is currently being saved to file,
+        # store the sensor observation as a frame in a list of observations
         if self.recording and not self.saving_video:
-            # if we are recording and no recording is currently being saved to file,
-            # store the sensor observation as a frame in a list of observations
-            self.video_frames.append(self.sim.get_sensor_observations())
+            self.video_frames.append(observations)
 
         self.swap_buffers()
         Timer.next_frame()
@@ -1402,7 +1441,7 @@ class HabitatSimInteractiveViewer(Application):
 
         vut.make_video(
             observations=self.video_frames,
-            primary_obs=self.sensor_name,
+            primary_obs=self.sensor_uuid,
             primary_obs_type="color",
             video_file=file_path,
             fps=self.fps,
@@ -1584,23 +1623,73 @@ Not yet implemented
         event.accepted = True
         exit(0)
 
+    def calc_logging_stats(self):
+        self.render_frames_tracked += 1
+        self.total_frame_count += 1  # TODO for debugging, remove
+
+        self.frame_duration_sum += self.prev_frame_duration
+        self.prev_frame_duration = 0.0
+
+        self.sim_duration_sum += self.prev_sim_duration
+        self.prev_sim_duration = 0.0
+
+        self.render_duration_sum += self.prev_render_duration
+        self.prev_render_duration = 0.0
+
+        if self.render_frames_tracked % self.render_frames_to_track == 0:
+            # # TODO debug logging, remove
+            # print(f"frame count: {self.render_frames_tracked} --- {self.total_frame_count}")
+            # print(
+            #     f"sim step count: {self.sim_steps_tracked} --- {self.total_frame_count}\n"
+            # )
+
+            # calculate average frame rate
+            frame_duration_avg = self.frame_duration_sum / self.render_frames_to_track
+            self.average_fps = round(1.0 / frame_duration_avg, self.decimal_points)
+            self.frame_duration_sum = 0.0
+
+            # calculate average simulation time if simulating
+            if self.simulating and self.sim_steps_tracked != 0:
+                self.avg_sim_duration = self.sim_duration_sum / self.sim_steps_tracked
+                self.avg_sim_duration = round(
+                    self.avg_sim_duration / self.physics_step_duration,
+                    self.decimal_points,
+                )
+                self.sim_duration_sum = 0.0
+
+            # calculate average render time
+            self.avg_render_duration = (
+                self.render_duration_sum / self.render_frames_to_track
+            )
+            self.avg_render_duration = round(
+                self.avg_render_duration / self.physics_step_duration,
+                self.decimal_points,
+            )
+            self.render_duration_sum = 0.0
+
+            # reset render frame and sim step tracking counts
+            self.render_frames_tracked = 0
+            self.sim_steps_tracked = 0
+
     def draw_text(self, sensor_spec):
+        self.calc_logging_stats()
+
         self.shader.bind_vector_texture(self.glyph_cache.texture)
         self.shader.transformation_projection_matrix = self.window_text_transform
         self.shader.color = [1.0, 1.0, 1.0]
+        if self.simulating:
+            sim_info: Union[float, str] = self.avg_sim_duration
+        else:
+            sim_info: Union[float, str] = "N/A"
 
-        sensor_type_string = str(sensor_spec.sensor_type.name)
-        sensor_subtype_string = str(sensor_spec.sensor_subtype.name)
-        if self.mouse_interaction == MouseMode.LOOK:
-            mouse_mode_string = "LOOK"
-        elif self.mouse_interaction == MouseMode.GRAB:
-            mouse_mode_string = "GRAB"
         self.window_text.render(
             f"""
-{self.fps} FPS
-Sensor Type: {sensor_type_string}
-Sensor Subtype: {sensor_subtype_string}
-Mouse Interaction Mode: {mouse_mode_string}
+Avg fps: {self.average_fps}
+Avg sim/real time ratio: {sim_info}
+Avg render/real time ratio: {self.avg_render_duration}
+Sensor type: {str(sensor_spec.sensor_type.name)}
+Sensor subtype: {str(sensor_spec.sensor_subtype.name)}
+{str(self.mouse_interaction)}
             """
         )
         self.shader.draw(self.window_text.mesh)
