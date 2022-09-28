@@ -134,17 +134,17 @@ void GfxBatchRendererTest::generateTestData() {
                                "meshViewIndexCount");
   converter->setSceneFieldName(SceneFieldMeshViewMaterial, "meshViewMaterial");
 
-  /* (Flat) plane, circle and triangle mesh. All made indexed and joined
+  /* (Flat) square, circle and triangle mesh. All made indexed and joined
      together. Important: offsets are in bytes. */
-  Mn::Trade::MeshData plane =
+  Mn::Trade::MeshData square =
       Mn::MeshTools::generateIndices(Mn::Primitives::planeSolid(
           Mn::Primitives::PlaneFlag::TextureCoordinates));
-  Mn::UnsignedInt planeIndexOffset = 0;
+  Mn::UnsignedInt squareIndexOffset = 0;
 
   Mn::Trade::MeshData circle =
       Mn::MeshTools::generateIndices(Mn::Primitives::circle3DSolid(
           32, Mn::Primitives::Circle3DFlag::TextureCoordinates));
-  Mn::UnsignedInt circleIndexOffset = planeIndexOffset + 4 * plane.indexCount();
+  Mn::UnsignedInt circleIndexOffset = squareIndexOffset + 4 * square.indexCount();
 
   Mn::Trade::MeshData triangle =
       Mn::MeshTools::generateIndices(Mn::Primitives::circle3DSolid(
@@ -152,7 +152,7 @@ void GfxBatchRendererTest::generateTestData() {
   Mn::UnsignedInt triangleIndexOffset =
       circleIndexOffset + 4 * circle.indexCount();
 
-  CORRADE_VERIFY(converter->add(Mn::MeshTools::concatenate({plane, circle, triangle})));
+  CORRADE_VERIFY(converter->add(Mn::MeshTools::concatenate({square, circle, triangle})));
 
   /* Two-layer 4x4 texture. First layer is a grey/red checkerboard, second
      layer is a cyan, magenta, yellow and black-ish square. Having each channel
@@ -249,13 +249,13 @@ void GfxBatchRendererTest::generateTestData() {
      {4, -1}, {5, 4}, /* triangle and its child mesh */
      {6, -1}, {7, 6}, {8, 6}, /* four squares */
               {9, 6}, {10, 6}},
-    {{ 1, 0, planeIndexOffset, plane.indexCount(), 0},
+    {{ 1, 0, squareIndexOffset, square.indexCount(), 0},
      { 3, 0, circleIndexOffset, circle.indexCount(), 1},
      { 5, 0, triangleIndexOffset, triangle.indexCount(), 2},
-     { 7, 0, planeIndexOffset, plane.indexCount(), 0},
-     { 8, 0, planeIndexOffset, plane.indexCount(), 1},
-     { 9, 0, planeIndexOffset, plane.indexCount(), 2},
-     {10, 0, planeIndexOffset, plane.indexCount(), 3}},
+     { 7, 0, squareIndexOffset, square.indexCount(), 0},
+     { 8, 0, squareIndexOffset, square.indexCount(), 1},
+     { 9, 0, squareIndexOffset, square.indexCount(), 2},
+     {10, 0, squareIndexOffset, square.indexCount(), 3}},
     {{ 7, Mn::Matrix4::translation({-0.5f, -0.5f, 0.0f})*
           Mn::Matrix4::scaling(Mn::Vector3{0.4f})},
      { 8, Mn::Matrix4::translation({+0.5f, -0.5f, 0.0f})*
