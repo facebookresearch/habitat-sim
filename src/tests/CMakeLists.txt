@@ -1,10 +1,6 @@
 find_package(Magnum REQUIRED DebugTools AnyImageConverter AnySceneImporter)
 find_package(
-  MagnumPlugins
-  REQUIRED
-  GltfImporter
-  StbImageImporter
-  KtxImporter
+  MagnumPlugins REQUIRED GltfImporter StbImageImporter KtxImporter
   OPTIONAL_COMPONENTS GltfSceneConverter KtxImageConverter
 )
 
@@ -50,14 +46,10 @@ if(BUILD_WITH_CUDA)
   )
 endif()
 if(MagnumPlugins_GltfSceneConverter_FOUND)
-  target_link_libraries(
-    GfxBatchRendererTest PRIVATE MagnumPlugins::GltfSceneConverter
-  )
+  target_link_libraries(GfxBatchRendererTest PRIVATE MagnumPlugins::GltfSceneConverter)
 endif()
 if(MagnumPlugins_KtxImageConverter_FOUND)
-  target_link_libraries(
-    GfxBatchRendererTest PRIVATE MagnumPlugins::KtxImageConverter
-  )
+  target_link_libraries(GfxBatchRendererTest PRIVATE MagnumPlugins::KtxImageConverter)
 endif()
 
 corrade_add_test(CoreTest CoreTest.cpp LIBRARIES core io)

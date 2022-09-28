@@ -196,7 +196,8 @@ void GfxBatchRendererTest::generateTestData() {
   Mn::Trade::MeshData circle =
       Mn::MeshTools::generateIndices(Mn::Primitives::circle3DSolid(
           32, Mn::Primitives::Circle3DFlag::TextureCoordinates));
-  Mn::UnsignedInt circleIndexOffset = squareIndexOffset + 4 * square.indexCount();
+  Mn::UnsignedInt circleIndexOffset =
+      squareIndexOffset + 4 * square.indexCount();
 
   Mn::Trade::MeshData triangle =
       Mn::MeshTools::generateIndices(Mn::Primitives::circle3DSolid(
@@ -204,7 +205,8 @@ void GfxBatchRendererTest::generateTestData() {
   Mn::UnsignedInt triangleIndexOffset =
       circleIndexOffset + 4 * circle.indexCount();
 
-  CORRADE_VERIFY(converter->add(Mn::MeshTools::concatenate({square, circle, triangle})));
+  CORRADE_VERIFY(
+      converter->add(Mn::MeshTools::concatenate({square, circle, triangle})));
 
   /* Two-layer 4x4 texture. First layer is a grey/red checkerboard, second
      layer is a cyan, magenta, yellow and black-ish square. Having each channel
@@ -223,8 +225,8 @@ void GfxBatchRendererTest::generateTestData() {
     0xcccc33_rgb, 0xcccc33_rgb, 0x333333_rgb, 0x333333_rgb
   };
   // clang-format on
-  CORRADE_VERIFY(converter->add(
-      Mn::ImageView3D{Mn::PixelFormat::RGB8Unorm, {4, 4, 2}, image, Mn::ImageFlag3D::Array}));
+  CORRADE_VERIFY(converter->add(Mn::ImageView3D{
+      Mn::PixelFormat::RGB8Unorm, {4, 4, 2}, image, Mn::ImageFlag3D::Array}));
 
   /* A texture referencing the only image. Nearest neighbor filtering to have
      less noise in the output images. */
@@ -383,22 +385,30 @@ void GfxBatchRendererTest::generateTestDataMultipleMeshes() {
   /* Bundle images in the bin file to reduce the amount of test files */
   converter->configuration().setValue("bundleImages", true);
 
-  const Cr::Containers::String filename =
-      Cr::Utility::Path::join(MAGNUMRENDERERTEST_OUTPUT_DIR, "batch-multiple-meshes.gltf");
+  const Cr::Containers::String filename = Cr::Utility::Path::join(
+      MAGNUMRENDERERTEST_OUTPUT_DIR, "batch-multiple-meshes.gltf");
 
   /* Begin file conversion. No custom scene fields used in this case. */
   converter->beginFile(filename);
 
   /* Separate square, circle and triangle mesh */
-  CORRADE_COMPARE(converter->add(
-      Mn::MeshTools::generateIndices(Mn::Primitives::planeSolid(
-          Mn::Primitives::PlaneFlag::TextureCoordinates)), "square"), 0);
-  CORRADE_COMPARE(converter->add(
-      Mn::MeshTools::generateIndices(Mn::Primitives::circle3DSolid(
-          32, Mn::Primitives::Circle3DFlag::TextureCoordinates)), "circle"), 1);
-  CORRADE_COMPARE(converter->add(
-      Mn::MeshTools::generateIndices(Mn::Primitives::circle3DSolid(
-          3, Mn::Primitives::Circle3DFlag::TextureCoordinates)), "triangle"), 2);
+  CORRADE_COMPARE(
+      converter->add(Mn::MeshTools::generateIndices(Mn::Primitives::planeSolid(
+                         Mn::Primitives::PlaneFlag::TextureCoordinates)),
+                     "square"),
+      0);
+  CORRADE_COMPARE(
+      converter->add(
+          Mn::MeshTools::generateIndices(Mn::Primitives::circle3DSolid(
+              32, Mn::Primitives::Circle3DFlag::TextureCoordinates)),
+          "circle"),
+      1);
+  CORRADE_COMPARE(
+      converter->add(
+          Mn::MeshTools::generateIndices(Mn::Primitives::circle3DSolid(
+              3, Mn::Primitives::Circle3DFlag::TextureCoordinates)),
+          "triangle"),
+      2);
 
   /* Two-layer 4x4 texture, same as in generateTestData() */
   // clang-format off
@@ -414,8 +424,8 @@ void GfxBatchRendererTest::generateTestDataMultipleMeshes() {
     0xcccc33_rgb, 0xcccc33_rgb, 0x333333_rgb, 0x333333_rgb
   };
   // clang-format on
-  CORRADE_VERIFY(converter->add(
-      Mn::ImageView3D{Mn::PixelFormat::RGB8Unorm, {4, 4, 2}, image, Mn::ImageFlag3D::Array}));
+  CORRADE_VERIFY(converter->add(Mn::ImageView3D{
+      Mn::PixelFormat::RGB8Unorm, {4, 4, 2}, image, Mn::ImageFlag3D::Array}));
 
   /* A texture referencing the only image, same as in generateTestData() */
   CORRADE_VERIFY(converter->add(Mn::Trade::TextureData{
@@ -526,11 +536,13 @@ void GfxBatchRendererTest::generateTestDataMultipleMeshes() {
   /* Test that the output matches. Mainly as a trigger to update the in-repo
      test data (pass `-S path/to/habitat_sim/data/test_scenes/` to the test
      executable) */
-  CORRADE_COMPARE_AS(filename,
-                     Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch-multiple-meshes.gltf"),
-                     Cr::TestSuite::Compare::File);
   CORRADE_COMPARE_AS(
-      Cr::Utility::Path::join(MAGNUMRENDERERTEST_OUTPUT_DIR, "batch-multiple-meshes.bin"),
+      filename,
+      Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch-multiple-meshes.gltf"),
+      Cr::TestSuite::Compare::File);
+  CORRADE_COMPARE_AS(
+      Cr::Utility::Path::join(MAGNUMRENDERERTEST_OUTPUT_DIR,
+                              "batch-multiple-meshes.bin"),
       Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch-multiple-meshes.bin"),
       Cr::TestSuite::Compare::File);
 }
@@ -559,8 +571,8 @@ void GfxBatchRendererTest::generateTestDataMultipleTextures() {
   converter->configuration().addValue("extensionRequired",
                                       "MAGNUMX_mesh_views");
 
-  const Cr::Containers::String filename =
-      Cr::Utility::Path::join(MAGNUMRENDERERTEST_OUTPUT_DIR, "batch-multiple-textures.gltf");
+  const Cr::Containers::String filename = Cr::Utility::Path::join(
+      MAGNUMRENDERERTEST_OUTPUT_DIR, "batch-multiple-textures.gltf");
 
   /* Begin file conversion */
   converter->beginFile(filename);
@@ -580,7 +592,8 @@ void GfxBatchRendererTest::generateTestDataMultipleTextures() {
   Mn::Trade::MeshData circle =
       Mn::MeshTools::generateIndices(Mn::Primitives::circle3DSolid(
           32, Mn::Primitives::Circle3DFlag::TextureCoordinates));
-  Mn::UnsignedInt circleIndexOffset = squareIndexOffset + 4 * square.indexCount();
+  Mn::UnsignedInt circleIndexOffset =
+      squareIndexOffset + 4 * square.indexCount();
 
   Mn::Trade::MeshData triangle =
       Mn::MeshTools::generateIndices(Mn::Primitives::circle3DSolid(
@@ -588,7 +601,8 @@ void GfxBatchRendererTest::generateTestDataMultipleTextures() {
   Mn::UnsignedInt triangleIndexOffset =
       circleIndexOffset + 4 * circle.indexCount();
 
-  CORRADE_VERIFY(converter->add(Mn::MeshTools::concatenate({square, circle, triangle})));
+  CORRADE_VERIFY(
+      converter->add(Mn::MeshTools::concatenate({square, circle, triangle})));
 
   /* Two-layer 4x4 image from the above tests, but compared to
      generateTestData() split into individual slices, each with its
@@ -615,34 +629,67 @@ void GfxBatchRendererTest::generateTestDataMultipleTextures() {
   };
   // clang-format on
 
-  CORRADE_COMPARE(converter->add(
-      Mn::ImageView2D{Mn::PixelFormat::RGB8Unorm, {4, 4}, checkerboard},
-      "checkerboard"), 0);
-  CORRADE_COMPARE(converter->add(Mn::Trade::TextureData{
-      Mn::Trade::TextureType::Texture2D, Mn::SamplerFilter::Nearest,
-      Mn::SamplerFilter::Nearest, Mn::SamplerMipmap::Nearest,
-      Mn::SamplerWrapping::Repeat, 0}, "checkerboard"), 0);
+  CORRADE_COMPARE(
+      converter->add(
+          Mn::ImageView2D{Mn::PixelFormat::RGB8Unorm, {4, 4}, checkerboard},
+          "checkerboard"),
+      0);
+  CORRADE_COMPARE(
+      converter->add(Mn::Trade::TextureData{Mn::Trade::TextureType::Texture2D,
+                                            Mn::SamplerFilter::Nearest,
+                                            Mn::SamplerFilter::Nearest,
+                                            Mn::SamplerMipmap::Nearest,
+                                            Mn::SamplerWrapping::Repeat, 0},
+                     "checkerboard"),
+      0);
 
-  CORRADE_COMPARE(converter->add(
-      Mn::ImageView2D{Mn::PixelStorage{}.setAlignment(1), Mn::PixelFormat::RGB8Unorm, {2, 2}, cyan}, "cyan"), 1);
-  CORRADE_COMPARE(converter->add(Mn::Trade::TextureData{
-      Mn::Trade::TextureType::Texture2D, Mn::SamplerFilter::Nearest,
-      Mn::SamplerFilter::Nearest, Mn::SamplerMipmap::Nearest,
-      Mn::SamplerWrapping::Repeat, 1}, "cyan"), 1);
+  CORRADE_COMPARE(
+      converter->add(Mn::ImageView2D{Mn::PixelStorage{}.setAlignment(1),
+                                     Mn::PixelFormat::RGB8Unorm,
+                                     {2, 2},
+                                     cyan},
+                     "cyan"),
+      1);
+  CORRADE_COMPARE(
+      converter->add(Mn::Trade::TextureData{Mn::Trade::TextureType::Texture2D,
+                                            Mn::SamplerFilter::Nearest,
+                                            Mn::SamplerFilter::Nearest,
+                                            Mn::SamplerMipmap::Nearest,
+                                            Mn::SamplerWrapping::Repeat, 1},
+                     "cyan"),
+      1);
 
-  CORRADE_COMPARE(converter->add(
-      Mn::ImageView2D{Mn::PixelStorage{}.setAlignment(1), Mn::PixelFormat::RGB8Unorm, {2, 2}, magenta}, "magenta"), 2);
-  CORRADE_COMPARE(converter->add(Mn::Trade::TextureData{
-      Mn::Trade::TextureType::Texture2D, Mn::SamplerFilter::Nearest,
-      Mn::SamplerFilter::Nearest, Mn::SamplerMipmap::Nearest,
-      Mn::SamplerWrapping::Repeat, 2}, "magenta"), 2);
+  CORRADE_COMPARE(
+      converter->add(Mn::ImageView2D{Mn::PixelStorage{}.setAlignment(1),
+                                     Mn::PixelFormat::RGB8Unorm,
+                                     {2, 2},
+                                     magenta},
+                     "magenta"),
+      2);
+  CORRADE_COMPARE(
+      converter->add(Mn::Trade::TextureData{Mn::Trade::TextureType::Texture2D,
+                                            Mn::SamplerFilter::Nearest,
+                                            Mn::SamplerFilter::Nearest,
+                                            Mn::SamplerMipmap::Nearest,
+                                            Mn::SamplerWrapping::Repeat, 2},
+                     "magenta"),
+      2);
 
-  CORRADE_COMPARE(converter->add(
-      Mn::ImageView2D{Mn::PixelStorage{}.setAlignment(1), Mn::PixelFormat::RGB8Unorm, {2, 2}, yellow}, "yellow"), 3);
-  CORRADE_COMPARE(converter->add(Mn::Trade::TextureData{
-      Mn::Trade::TextureType::Texture2D, Mn::SamplerFilter::Nearest,
-      Mn::SamplerFilter::Nearest, Mn::SamplerMipmap::Nearest,
-      Mn::SamplerWrapping::Repeat, 3}, "yellow"), 3);
+  CORRADE_COMPARE(
+      converter->add(Mn::ImageView2D{Mn::PixelStorage{}.setAlignment(1),
+                                     Mn::PixelFormat::RGB8Unorm,
+                                     {2, 2},
+                                     yellow},
+                     "yellow"),
+      3);
+  CORRADE_COMPARE(
+      converter->add(Mn::Trade::TextureData{Mn::Trade::TextureType::Texture2D,
+                                            Mn::SamplerFilter::Nearest,
+                                            Mn::SamplerFilter::Nearest,
+                                            Mn::SamplerMipmap::Nearest,
+                                            Mn::SamplerWrapping::Repeat, 3},
+                     "yellow"),
+      3);
 
   /* A (default, white) material with the checkerboard texture; cyan / magenta
      / yellow materials referencing the other three textures */
@@ -742,12 +789,14 @@ void GfxBatchRendererTest::generateTestDataMultipleTextures() {
      test data (pass `-S path/to/habitat_sim/data/test_scenes/` to the test
      executable). */
   CORRADE_COMPARE_AS(filename,
-                     Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch-multiple-textures.gltf"),
+                     Cr::Utility::Path::join(
+                         TEST_ASSETS, "scenes/batch-multiple-textures.gltf"),
                      Cr::TestSuite::Compare::File);
-  CORRADE_COMPARE_AS(
-      Cr::Utility::Path::join(MAGNUMRENDERERTEST_OUTPUT_DIR, "batch-multiple-textures.bin"),
-      Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch-multiple-textures.bin"),
-      Cr::TestSuite::Compare::File);
+  CORRADE_COMPARE_AS(Cr::Utility::Path::join(MAGNUMRENDERERTEST_OUTPUT_DIR,
+                                             "batch-multiple-textures.bin"),
+                     Cr::Utility::Path::join(
+                         TEST_ASSETS, "scenes/batch-multiple-textures.bin"),
+                     Cr::TestSuite::Compare::File);
 }
 
 void GfxBatchRendererTest::generateTestDataMultipleFiles() {
@@ -771,25 +820,31 @@ void GfxBatchRendererTest::generateTestDataMultipleFiles() {
      texture */
   {
     Cr::Containers::Pointer<Mn::Trade::AbstractSceneConverter> converter =
-      converterManager.loadAndInstantiate("GltfSceneConverter");
+        converterManager.loadAndInstantiate("GltfSceneConverter");
     converter->configuration().setValue("experimentalKhrTextureKtx", true);
     converter->configuration().setValue("imageConverter", "KtxImageConverter");
     /* Bundle images in the bin file to reduce the amount of test files */
     converter->configuration().setValue("bundleImages", true);
 
-    const Cr::Containers::String filename =
-        Cr::Utility::Path::join(MAGNUMRENDERERTEST_OUTPUT_DIR, "batch-circle-triangle.gltf");
+    const Cr::Containers::String filename = Cr::Utility::Path::join(
+        MAGNUMRENDERERTEST_OUTPUT_DIR, "batch-circle-triangle.gltf");
 
     /* Begin file conversion. No custom scene fields used in this case. */
     converter->beginFile(filename);
 
     /* Separate circle and triangle mesh */
-    CORRADE_COMPARE(converter->add(
-        Mn::MeshTools::generateIndices(Mn::Primitives::circle3DSolid(
-            32, Mn::Primitives::Circle3DFlag::TextureCoordinates)), "circle"), 0);
-    CORRADE_COMPARE(converter->add(
-        Mn::MeshTools::generateIndices(Mn::Primitives::circle3DSolid(
-            3, Mn::Primitives::Circle3DFlag::TextureCoordinates)), "triangle"), 1);
+    CORRADE_COMPARE(
+        converter->add(
+            Mn::MeshTools::generateIndices(Mn::Primitives::circle3DSolid(
+                32, Mn::Primitives::Circle3DFlag::TextureCoordinates)),
+            "circle"),
+        0);
+    CORRADE_COMPARE(
+        converter->add(
+            Mn::MeshTools::generateIndices(Mn::Primitives::circle3DSolid(
+                3, Mn::Primitives::Circle3DFlag::TextureCoordinates)),
+            "triangle"),
+        1);
 
     /* Bottom row of the second layer of the 4x4x2 texture from
        generateTestData(), with cyan and magenta square. Even though it's just
@@ -800,8 +855,8 @@ void GfxBatchRendererTest::generateTestDataMultipleFiles() {
       0x33cccc_rgb, 0x33cccc_rgb, 0xcc33cc_rgb, 0xcc33cc_rgb
     };
     // clang-format on
-    CORRADE_VERIFY(converter->add(
-        Mn::ImageView3D{Mn::PixelFormat::RGB8Unorm, {4, 2, 1}, image, Mn::ImageFlag3D::Array}));
+    CORRADE_VERIFY(converter->add(Mn::ImageView3D{
+        Mn::PixelFormat::RGB8Unorm, {4, 2, 1}, image, Mn::ImageFlag3D::Array}));
 
     /* A texture referencing the image. Even though it's single-layer it's
        still marked as 2D array. */
@@ -879,12 +934,14 @@ void GfxBatchRendererTest::generateTestDataMultipleFiles() {
        test data (pass `-S path/to/habitat_sim/data/test_scenes/` to the test
        executable) */
     CORRADE_COMPARE_AS(filename,
-                       Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch-circle-triangle.gltf"),
+                       Cr::Utility::Path::join(
+                           TEST_ASSETS, "scenes/batch-circle-triangle.gltf"),
                        Cr::TestSuite::Compare::File);
-    CORRADE_COMPARE_AS(
-        Cr::Utility::Path::join(MAGNUMRENDERERTEST_OUTPUT_DIR, "batch-circle-triangle.bin"),
-        Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch-circle-triangle.bin"),
-        Cr::TestSuite::Compare::File);
+    CORRADE_COMPARE_AS(Cr::Utility::Path::join(MAGNUMRENDERERTEST_OUTPUT_DIR,
+                                               "batch-circle-triangle.bin"),
+                       Cr::Utility::Path::join(
+                           TEST_ASSETS, "scenes/batch-circle-triangle.bin"),
+                       Cr::TestSuite::Compare::File);
   }
 
   /* Second file contains the square mesh with two different materials,
@@ -894,7 +951,7 @@ void GfxBatchRendererTest::generateTestDataMultipleFiles() {
        accidentally carried over from the first file. If I wouldn't need to
        ensure this, using a single converter would be less wasteful, ofc. */
     Cr::Containers::Pointer<Mn::Trade::AbstractSceneConverter> converter =
-      converterManager.loadAndInstantiate("GltfSceneConverter");
+        converterManager.loadAndInstantiate("GltfSceneConverter");
     /* Using just plain PNGs, no need for KTX in this case */
     converter->configuration().setValue("imageConverter", "PngImageConverter");
     /* Bundle images in the bin file to reduce the amount of test files */
@@ -904,16 +961,17 @@ void GfxBatchRendererTest::generateTestDataMultipleFiles() {
     converter->configuration().addValue("extensionRequired",
                                         "MAGNUMX_mesh_views");
 
-    const Cr::Containers::String filename =
-        Cr::Utility::Path::join(MAGNUMRENDERERTEST_OUTPUT_DIR, "batch-squares.gltf");
+    const Cr::Containers::String filename = Cr::Utility::Path::join(
+        MAGNUMRENDERERTEST_OUTPUT_DIR, "batch-squares.gltf");
 
     /* Begin file conversion */
     converter->beginFile(filename);
     converter->setSceneFieldName(SceneFieldMeshViewIndexOffset,
-                                "meshViewIndexOffset");
+                                 "meshViewIndexOffset");
     converter->setSceneFieldName(SceneFieldMeshViewIndexCount,
-                                "meshViewIndexCount");
-    converter->setSceneFieldName(SceneFieldMeshViewMaterial, "meshViewMaterial");
+                                 "meshViewIndexCount");
+    converter->setSceneFieldName(SceneFieldMeshViewMaterial,
+                                 "meshViewMaterial");
 
     /* (Flat) square mesh. There's just one but we're using views so remember
        it to query its index count later. */
@@ -946,34 +1004,67 @@ void GfxBatchRendererTest::generateTestDataMultipleFiles() {
     };
     // clang-format on
 
-    CORRADE_COMPARE(converter->add(
-        Mn::ImageView2D{Mn::PixelFormat::RGB8Unorm, {4, 4}, checkerboard},
-        "checkerboard"), 0);
-    CORRADE_COMPARE(converter->add(Mn::Trade::TextureData{
-        Mn::Trade::TextureType::Texture2D, Mn::SamplerFilter::Nearest,
-        Mn::SamplerFilter::Nearest, Mn::SamplerMipmap::Nearest,
-        Mn::SamplerWrapping::Repeat, 0}, "checkerboard"), 0);
+    CORRADE_COMPARE(
+        converter->add(
+            Mn::ImageView2D{Mn::PixelFormat::RGB8Unorm, {4, 4}, checkerboard},
+            "checkerboard"),
+        0);
+    CORRADE_COMPARE(
+        converter->add(Mn::Trade::TextureData{Mn::Trade::TextureType::Texture2D,
+                                              Mn::SamplerFilter::Nearest,
+                                              Mn::SamplerFilter::Nearest,
+                                              Mn::SamplerMipmap::Nearest,
+                                              Mn::SamplerWrapping::Repeat, 0},
+                       "checkerboard"),
+        0);
 
-    CORRADE_COMPARE(converter->add(
-        Mn::ImageView2D{Mn::PixelStorage{}.setAlignment(1), Mn::PixelFormat::RGB8Unorm, {2, 2}, cyan}, "cyan"), 1);
-    CORRADE_COMPARE(converter->add(Mn::Trade::TextureData{
-        Mn::Trade::TextureType::Texture2D, Mn::SamplerFilter::Nearest,
-        Mn::SamplerFilter::Nearest, Mn::SamplerMipmap::Nearest,
-        Mn::SamplerWrapping::Repeat, 1}, "cyan"), 1);
+    CORRADE_COMPARE(
+        converter->add(Mn::ImageView2D{Mn::PixelStorage{}.setAlignment(1),
+                                       Mn::PixelFormat::RGB8Unorm,
+                                       {2, 2},
+                                       cyan},
+                       "cyan"),
+        1);
+    CORRADE_COMPARE(
+        converter->add(Mn::Trade::TextureData{Mn::Trade::TextureType::Texture2D,
+                                              Mn::SamplerFilter::Nearest,
+                                              Mn::SamplerFilter::Nearest,
+                                              Mn::SamplerMipmap::Nearest,
+                                              Mn::SamplerWrapping::Repeat, 1},
+                       "cyan"),
+        1);
 
-    CORRADE_COMPARE(converter->add(
-        Mn::ImageView2D{Mn::PixelStorage{}.setAlignment(1), Mn::PixelFormat::RGB8Unorm, {2, 2}, magenta}, "magenta"), 2);
-    CORRADE_COMPARE(converter->add(Mn::Trade::TextureData{
-        Mn::Trade::TextureType::Texture2D, Mn::SamplerFilter::Nearest,
-        Mn::SamplerFilter::Nearest, Mn::SamplerMipmap::Nearest,
-        Mn::SamplerWrapping::Repeat, 2}, "magenta"), 2);
+    CORRADE_COMPARE(
+        converter->add(Mn::ImageView2D{Mn::PixelStorage{}.setAlignment(1),
+                                       Mn::PixelFormat::RGB8Unorm,
+                                       {2, 2},
+                                       magenta},
+                       "magenta"),
+        2);
+    CORRADE_COMPARE(
+        converter->add(Mn::Trade::TextureData{Mn::Trade::TextureType::Texture2D,
+                                              Mn::SamplerFilter::Nearest,
+                                              Mn::SamplerFilter::Nearest,
+                                              Mn::SamplerMipmap::Nearest,
+                                              Mn::SamplerWrapping::Repeat, 2},
+                       "magenta"),
+        2);
 
-    CORRADE_COMPARE(converter->add(
-        Mn::ImageView2D{Mn::PixelStorage{}.setAlignment(1), Mn::PixelFormat::RGB8Unorm, {2, 2}, yellow}, "yellow"), 3);
-    CORRADE_COMPARE(converter->add(Mn::Trade::TextureData{
-        Mn::Trade::TextureType::Texture2D, Mn::SamplerFilter::Nearest,
-        Mn::SamplerFilter::Nearest, Mn::SamplerMipmap::Nearest,
-        Mn::SamplerWrapping::Repeat, 3}, "yellow"), 3);
+    CORRADE_COMPARE(
+        converter->add(Mn::ImageView2D{Mn::PixelStorage{}.setAlignment(1),
+                                       Mn::PixelFormat::RGB8Unorm,
+                                       {2, 2},
+                                       yellow},
+                       "yellow"),
+        3);
+    CORRADE_COMPARE(
+        converter->add(Mn::Trade::TextureData{Mn::Trade::TextureType::Texture2D,
+                                              Mn::SamplerFilter::Nearest,
+                                              Mn::SamplerFilter::Nearest,
+                                              Mn::SamplerMipmap::Nearest,
+                                              Mn::SamplerWrapping::Repeat, 3},
+                       "yellow"),
+        3);
 
     /* Corresponding materials, again same as in
        generateTestDataMultipleTextures(). */
@@ -1065,14 +1156,16 @@ void GfxBatchRendererTest::generateTestDataMultipleFiles() {
     /* Test that the output matches. Mainly as a trigger to update the in-repo
        test data (pass `-S path/to/habitat_sim/data/test_scenes/` to the test
        executable). */
-    CORRADE_COMPARE_AS(filename,
-                       Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch-squares.gltf"),
-                       Cr::TestSuite::Compare::File);
     CORRADE_COMPARE_AS(
-        Cr::Utility::Path::join(MAGNUMRENDERERTEST_OUTPUT_DIR, "batch-squares.bin"),
+        filename,
+        Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch-squares.gltf"),
+        Cr::TestSuite::Compare::File);
+    CORRADE_COMPARE_AS(
+        Cr::Utility::Path::join(MAGNUMRENDERERTEST_OUTPUT_DIR,
+                                "batch-squares.bin"),
         Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch-squares.bin"),
         Cr::TestSuite::Compare::File);
-    }
+  }
 }
 
 void GfxBatchRendererTest::defaults() {
@@ -1110,7 +1203,7 @@ void GfxBatchRendererTest::defaults() {
 
   /* Add a file, because that's currently required */
   // TODO make it non-required (instantiate some empty shader if nothing)
-  for(const char* file: data.gltfFilenames)
+  for (const char* file : data.gltfFilenames)
     renderer.addFile(Cr::Utility::Path::join({TEST_ASSETS, "scenes", file}));
 
   /* Nothing should be drawn, just the clear color */
@@ -1149,7 +1242,7 @@ void GfxBatchRendererTest::singleMesh() {
   };
   // clang-format on
 
-  for(const char* file: data.gltfFilenames)
+  for (const char* file : data.gltfFilenames)
     renderer.addFile(Cr::Utility::Path::join({TEST_ASSETS, "scenes", file}));
 
   /* Undo the aspect ratio, move camera back */
@@ -1203,7 +1296,7 @@ void GfxBatchRendererTest::meshHierarchy() {
   };
   // clang-format on
 
-  for(const char* file: data.gltfFilenames)
+  for (const char* file : data.gltfFilenames)
     renderer.addFile(Cr::Utility::Path::join({TEST_ASSETS, "scenes", file}));
 
   /* Undo the aspect ratio, move camera back */
@@ -1259,7 +1352,7 @@ void GfxBatchRendererTest::multipleMeshes() {
   };
   // clang-format on
 
-  for(const char* file: data.gltfFilenames)
+  for (const char* file : data.gltfFilenames)
     renderer.addFile(Cr::Utility::Path::join({TEST_ASSETS, "scenes", file}));
 
   renderer.camera(0) =
@@ -1317,7 +1410,7 @@ void GfxBatchRendererTest::multipleScenes() {
   };
   // clang-format on
 
-  for(const char* file: data.gltfFilenames)
+  for (const char* file : data.gltfFilenames)
     renderer.addFile(Cr::Utility::Path::join({TEST_ASSETS, "scenes", file}));
 
   renderer.camera(0) =
@@ -1396,7 +1489,7 @@ void GfxBatchRendererTest::clearScene() {
   };
   // clang-format on
 
-  for(const char* file: data.gltfFilenames)
+  for (const char* file : data.gltfFilenames)
     renderer.addFile(Cr::Utility::Path::join({TEST_ASSETS, "scenes", file}));
 
   renderer.camera(0) =
