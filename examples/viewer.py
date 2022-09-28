@@ -28,14 +28,10 @@ from habitat_sim.utils import viz_utils as vut
 from habitat_sim.utils.common import quat_from_angle_axis
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
 
-# Setting up paths and directories for mp4 outputs
-if "google.colab" in sys.modules:
-    os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
-
 repo = git.Repo(".", search_parent_directories=True)
 dir_path = repo.working_tree_dir
 # fmt: off
-output_directory = "examples/output_viewer/"  # @param {type:"string"}
+output_directory = "examples/video_output/"  # @param {type:"string"}
 # fmt: on
 output_path = os.path.join(dir_path, output_directory)
 if not os.path.exists(output_path):
@@ -334,8 +330,8 @@ class HabitatSimInteractiveViewer(Application):
             )
 
         keys = active_agent_id_and_sensor_name
+        self.sensor_name = keys[1]
         sensor = self.sim._Simulator__sensors[keys[0]][keys[1]]
-        self.sensor_name = sensor._spec.uuid
         sensor.draw_observation()
         agent = self.sim.get_agent(keys[0])
         self.render_camera = agent.scene_node.node_sensor_suite.get(keys[1])
@@ -742,16 +738,17 @@ class HabitatSimInteractiveViewer(Application):
                 # if we are not recording and not writing prev recording to file,
                 # we can start a new recording
                 self.recording = True
-                print_in_color(" *" * 36, PrintColors.RED, logging=True)
+                print_in_color("* " * 39, PrintColors.RED)
                 print_in_color("Command: start recording\n", PrintColors.RED)
             elif not self.recording and self.saving_video:
                 # if we are not recording but still writing prev recording to file,
                 # wait until the video file is written before recording again
-                print_in_color("-" * 72, PrintColors.RED, logging=True)
+                print_in_color("-" * 78, PrintColors.RED)
                 print_in_color(
                     "Command: can't record, still saving previous recording\n",
                     PrintColors.RED,
                 )
+                print_in_color("-" * 78 + "\n", PrintColors.RED)
             elif self.recording and not self.saving_video:
                 # if we are recording but not writing prev recording to file, we need
                 # to stop recording and save the recorded frames to a video file
@@ -1305,39 +1302,43 @@ class HabitatSimInteractiveViewer(Application):
 
     def save_video_file(self) -> None:
         """
-        write each sensor observation in self.video_frames to video file
+        write each sensor observation for "color_sensor" in self.video_frames to video file
         """
-        # Current date and time so we can make unique video files for each recording
+        # Current date and time so we can make unique video file names for each recording
         date_and_time = datetime.datetime.now()
+
         # year-month-day
         date = date_and_time.strftime("%Y-%m-%d")
+
         # hour:min:sec - capital H is military time, %I is standard time
         # (0-12 hour time format)
         time = date_and_time.strftime("%H:%M:%S")
+
         # construct file path and write consecutive frames to new video file
         file_path = f"{output_path}viewer_recording__date_{date}__time_{time}.mp4"
-        print_in_color("-" * 72, PrintColors.RED, logging=True)
+        print_in_color("-" * 78, PrintColors.RED)
         print_in_color(
-            f"Command: End recording, saving frames to the video file below \n{file_path}\n",
+            f"Command: End recording, saving frames to the video file below \n{file_path}",
             PrintColors.RED,
         )
+        print_in_color("-" * 78 + "\n", PrintColors.RED)
 
-        # TODO testing, bug with h.264 encoder in imageio for some reason
         vut.make_video(
             observations=self.video_frames,
-            primary_obs="color_sensor",
+            primary_obs=self.sensor_name,
             primary_obs_type="color",
             video_file=file_path,
             fps=self.fps,
             open_vid=False,
         )
-        self.saving_video = False
-        self.video_frames.clear()
 
         print_in_color(
             "Recording is saved, you can record something else now", PrintColors.RED
         )
-        print_in_color(" *" * 36 + "\n", PrintColors.RED, logging=True)
+        print_in_color("* " * 39 + "\n", PrintColors.RED)
+
+        self.saving_video = False
+        self.video_frames.clear()
 
     def get_bounding_box_corners(
         self,
@@ -1484,6 +1485,7 @@ CPU Frequency
         )
 
     def print_ram_usage(self) -> None:
+        # TODO implement
         """
         Not implemented yet
         """
