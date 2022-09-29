@@ -1597,9 +1597,6 @@ Memory Usage
             logging=True,
         )
         self.print_cpu_usage()
-        self.print_ram_usage()
-        # TODO print GPU usage
-        ...
 
     def print_cpu_usage(self) -> None:
         cpu_percent = psutil.cpu_percent()
@@ -1619,20 +1616,6 @@ CPU Frequency
     Current frequency: {cpu_freq.current:,.2f} MHz
     Min frequency: {cpu_freq.min:,} MHz
     Max frequency: {cpu_freq.max:,} MHz
-----------------------------------
-            """,
-            PrintColors.CYAN,
-        )
-
-    def print_ram_usage(self) -> None:
-        # TODO implement
-        """
-        Not implemented yet
-        """
-        print_in_color(
-            """RAM Usage
-----------------------------------
-Not yet implemented
 ----------------------------------
             """,
             PrintColors.CYAN,
@@ -1693,7 +1676,7 @@ Not yet implemented
             self.sim_duration_sum = 0.0
             self.sim_steps_tracked = 0
 
-    def get_ram_usage_string(self, unit_type=UnitMapper.MEGABYTES) -> str:
+    def get_ram_usage_string(self, unit_type: int = UnitMapper.MEGABYTES) -> str:
         unit_conversion: int = UnitMapper.UNIT_CONVERSIONS[unit_type]
         unit_str: str = UnitMapper.UNIT_STRS[unit_type]
         ram_memory_used = round(
