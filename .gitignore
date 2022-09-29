@@ -45,7 +45,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-build/
+build*/
 develop-eggs/
 dist/
 downloads/
@@ -172,8 +172,6 @@ tests/17DRP5sb8fy
 *.zip
 *.mp4
 src_python/habitat_sim/_ext
-build_js/
-build_corrade-rc/
 
 .setuppy_args_cache.json
 
