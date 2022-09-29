@@ -38,9 +38,9 @@ def test_no_navmesh_smoke():
 
             random.seed(0)
             for _ in range(50):
-                sim.step(random.choice(list(agent_config.action_space.keys())))
+                obs = sim.step(random.choice(list(agent_config.action_space.keys())))
                 # Can't collide with no navmesh
-                assert not sim.agent_did_collide(agent_id)
+                assert not obs["collided"]
 
 
 def test_empty_scene():
@@ -116,8 +116,13 @@ def test_sim_multiagent_move_and_reset(make_cfg_settings, num_agents=10):
 
         # TODO testing
         # Check all agents either moved or ran into something.
-        for agent_id, initial_state in enumerate(agent_initial_states):
-            assert not is_same_state(initial_state, sim.get_agent(agent_id).state)
+        for initial_state, (agent_id, agent_obs) in zip(
+            agent_initial_states, observations.items()
+        ):
+            assert (
+                not is_same_state(initial_state, sim.get_agent(agent_id).state)
+                or agent_obs["collided"]
+            )
         sim.reset()
 
         # Check all the agents are in their proper position
@@ -130,11 +135,14 @@ def test_sim_multiagent_move_and_reset(make_cfg_settings, num_agents=10):
         assert is_same_state(
             agent_initial_states[2], sim.get_agent(2).state
         ), "Agent 2 did not move"
-        for agent_id, initial_state in enumerate(agent_initial_states):
+
+        for initial_state, (agent_id, agent_obs) in zip(
+            agent_initial_states, observations.items()
+        ):
             assert 2 not in observations
             assert agent_id == 2 or (
                 not is_same_state(initial_state, sim.get_agent(agent_id).state)
-                or sim.agent_did_collide(agent_id)
+                or agent_obs["collided"]
             )
 
 

@@ -35,8 +35,8 @@ from habitat_sim.sensors.noise_models import SensorNoiseModel, make_sensor_noise
 from habitat_sim.sim import SimulatorBackend, SimulatorConfiguration
 from habitat_sim.utils.common import quat_from_angle_axis
 
-# A sensor observation type to simplify types
-SensorObservation = Union[ndarray, "Tensor"]
+# Types to simplify sensor observation variables
+SensorObservation = Union[bool, ndarray, "Tensor"]
 ObservationDict = Dict[str, SensorObservation]
 
 
@@ -73,7 +73,7 @@ class Simulator(SimulatorBackend):
     agents: List[Agent] = attr.ib(factory=list, init=False)
 
     # TODO: remove these eventually in favor of sensors that are not
-    # necessarily tied to scene nodes
+    # necessarily tied to agents
     __sensors: List[Dict[str, Sensor]] = attr.ib(factory=list, init=False)
     __obs_buffers: List[ObservationDict] = attr.ib(factory=list, init=False)
     __image_views: List[Dict[str, mn.MutableImageView2D]] = attr.ib(
@@ -448,7 +448,7 @@ class Simulator(SimulatorBackend):
                 self.__image_views[agent_id][sensor_spec.uuid] = mn.MutableImageView2D(
                     mn.PixelFormat.RGBA8_UNORM,
                     view_size,
-                    obs_buffer.reshape(sensor_spec.resolution[0], -1),
+                    obs_buffer.reshape(sensor_spec.resolution[0], -1),  # type: ignore[union-attr]
                 )
 
     def get_sensor(self, sensor_uuid, agent_id: Optional[int] = None) -> Sensor:
@@ -614,10 +614,10 @@ class Simulator(SimulatorBackend):
         else:
             action = cast(Dict[int, Union[str, int]], {self._default_agent_id: action})
             return_single = True
-
+        collided_dict: Dict[int, bool] = {}
         for agent_id, agent_act in action.items():
             agent = self.get_agent(agent_id)
-            agent.act(agent_act)
+            collided_dict[agent_id] = agent.act(agent_act)
             self.__last_state[agent_id] = agent.get_state()
 
         # step physics by dt
@@ -626,6 +626,8 @@ class Simulator(SimulatorBackend):
         self._previous_step_time = time.time() - step_start_Time
 
         per_agent_observations = self.get_sensor_observations(list(action.keys()))
+        for agent_id, agent_observation in per_agent_observations.items():
+            agent_observation["collided"] = collided_dict[agent_id]
         if return_single:
             # TODO allow user to specify which agent observations to return
             return per_agent_observations[self._default_agent_id]

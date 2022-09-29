@@ -187,10 +187,14 @@ class HabitatSimInteractiveViewer(Application):
                 self.time_since_last_simulation, 1.0 / self.fps
             )
 
-        # get specified agent and its sensor, then render the sensor observation
+        # Get agent id and sensor uuid
         keys = active_agent_id_and_sensor_name
-        sensor = self.sim.get_agent(keys[0]).get_sensor(keys[1])
-        self.sim.draw_observation(sensor)
+        agent_id = keys[0]
+        sensor_uuid = keys[1]
+
+        # get specified sensor, then render the sensor observation
+        sensor = self.sim.get_agent(agent_id).get_sensor(sensor_uuid)
+        self.sim.get_sensor_observations(agent_id)
         self.debug_draw()
         sensor.render_target.blit_rgba_to_default()
         mn.gl.default_framebuffer.bind()
@@ -922,7 +926,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--dataset",
-        default="default",
+        default="./data/objects/ycb/ycb.scene_dataset_config.json",
         type=str,
         metavar="DATASET",
         help="dataset configuration file to use (default: default)",
