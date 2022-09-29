@@ -20,6 +20,14 @@ struct EpisodeGeneratorConfig {
   bool useFixedRobotStartPos = false;
   bool useFixedRobotStartYaw = false;
   bool useFixedRobotJointStartPositions = false;
+  // for referenceEpisodeSetFilepath==true, you must set
+  //    numStageVariations, numObjectVariations, minNontargetObjects,
+  //    and maxNontargetObjects = -1
+  //    useFixedRobotStartPos = false
+  //    useFixedRobotStartYaw = false
+  //    useFixedRobotJointStartPositions = true (will copy from ref episode)
+  std::string referenceEpisodeSetFilepath;
+  std::string saveFilepath;  // if empty, generated set is not saved
   ESP_SMART_POINTERS(EpisodeGeneratorConfig);
 };
 

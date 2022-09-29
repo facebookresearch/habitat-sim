@@ -80,8 +80,9 @@ void addStaticScene(EpisodeSet& set, const std::string& name) {
     const auto& creationInfo = creationPair.second;
     const auto& update = updatePair.second;
 
-    ESP_CHECK(creationInfo.isRGBD(),
-              "addStaticScene: unexpected RenderAssetInstanceCreation isRGBD");
+    ESP_CHECK(
+        creationInfo.isRGBD(),
+        "addStaticScene: unexpected RenderAssetInstanceCreation isRGBD==false");
     int renderAssetIndex =
         findOrInsertRenderAsset(set.renderAssets_, creationInfo.filepath);
 
@@ -98,7 +99,7 @@ void addStaticScene(EpisodeSet& set, const std::string& name) {
 
   staticScene.needsPostLoadFixup_ = true;
 
-  set.staticScenes_.push_back(std::move(staticScene));
+  set.staticScenes_.emplace_back(std::move(staticScene));
 }
 
 void addFreeObject(EpisodeSet& set, const std::string& name) {
@@ -218,6 +219,160 @@ void setFetchJointStartPositions(const EpisodeGeneratorConfig& config,
   }
 }
 
+CollisionBroadphaseGrid createCollisionGrid(
+    const StaticScene& staticScene,
+    const serialize::Collection& collection) {
+  const auto& columnGrid = staticScene.columnGridSet_.getColumnGrid(0);
+
+  // perf todo: re-use this across entire set (have extents for set)
+  // todo: find extents for entire EpisodeSet, not just this specific columnGrid
+  constexpr int maxBytes = 1000 * 1024;
+  // this is tuned assuming a building-scale simulation with
+  // household-object-scale obstacles
+  constexpr float maxGridSpacing = 0.5f;
+  return CollisionBroadphaseGrid(
+      getMaxCollisionRadius(collection), columnGrid.minX, columnGrid.minZ,
+      columnGrid.getMaxX(), columnGrid.getMaxZ(), maxBytes, maxGridSpacing);
+}
+
+void addModifiedEpisode(const EpisodeGeneratorConfig& config,
+                        EpisodeSet& set,
+                        const serialize::Collection& collection,
+                        core::Random& random,
+                        const FreeObject& robotProxy,
+                        const Episode& refEpisode,
+                        const EpisodeSet& refSet) {
+  Episode episode;
+  episode.staticSceneIndex_ = refEpisode.staticSceneIndex_;
+  episode.firstFreeObjectSpawnIndex_ = set.freeObjectSpawns_.size();
+
+  ESP_CHECK(config.useFixedRobotJointStartPositions,
+            "addModifiedEpisode: config.useFixedRobotJointStartPositions must "
+            "be true");
+  episode.robotStartJointPositions_ = refEpisode.robotStartJointPositions_;
+
+  ESP_CHECK(!config.useFixedRobotStartPos,
+            "addModifiedEpisode: config.useFixedRobotStartPos must be false");
+  // set to NAN for now and we'll find a robot start pos later in here
+  episode.agentStartPos_ = Mn::Vector2(NAN, NAN);
+  // we copy objects from the ref episode, so don't let the config specify
+  // object counts
+  ESP_CHECK(config.minNontargetObjects == -1,
+            "addModifiedEpisode: config.minNontargetObjects must be -1");
+  ESP_CHECK(config.maxNontargetObjects == -1,
+            "addModifiedEpisode: config.maxNontargetObjects must be -1");
+  episode.numFreeObjectSpawns_ = 0;
+
+  const auto& staticScene =
+      safeVectorGet(set.staticScenes_, episode.staticSceneIndex_);
+  auto collGrid = createCollisionGrid(staticScene, collection);
+
+  for (int i = 0; i < refEpisode.numFreeObjectSpawns_; i++) {
+    const auto& spawn = safeVectorGet(
+        refSet.freeObjectSpawns_, refEpisode.firstFreeObjectSpawnIndex_ + i);
+    const auto& rotation = spawn.startRotation_;
+    // get freeObject from set, not refSet (refSet doesn't have postLoadFixup)
+    const auto& freeObject =
+        safeVectorGet(set.freeObjects_, spawn.freeObjIndex_);
+    BATCHED_SIM_ASSERT(!freeObject.needsPostLoadFixup_);
+
+    set.freeObjectSpawns_.emplace_back(std::move(spawn));
+    episode.numFreeObjectSpawns_++;
+
+    // add to collGrid so future spawns don't intersect this one
+    collGrid.insertObstacle(spawn.startPos_, rotation, &freeObject.aabb_);
+  }
+
+  // allow for slight variation in floor height
+  // beware extra "basement" plane at y=-0.08; we don't want to allow snapping
+  // down to that
+  constexpr float allowedSnapDown = 0.05f;
+  const auto& columnGrid = staticScene.columnGridSet_.getColumnGrid(0);
+  Mn::Range3D robotSpawnRange({columnGrid.minX, 0.04f, columnGrid.minZ},
+                              {columnGrid.getMaxX(), 0.04f,
+                               columnGrid.getMaxZ()});  // just above the floor
+
+  // sloppy: manually exclude the closet in ReplicaCAD stages
+  const auto exclusionRange =
+      Mn::Range3D({-0.2f, -1.f, -2.9f}, {1.8f, 1.f, -0.9f});
+
+  constexpr int maxFailedPlacements = 1;
+  PlacementHelper placementHelper(staticScene.columnGridSet_, collGrid,
+                                  collection, random, maxFailedPlacements);
+
+  episode.targetObjIndex_ = refEpisode.targetObjIndex_;
+  int numSpawnAttempts = 4000;
+  bool success = false;
+  for (int i = 0; i < numSpawnAttempts; i++) {
+    // find a robot spawn
+    BATCHED_SIM_ASSERT(std::isnan(episode.agentStartPos_.x()));
+    bool isRobotPosAttempt = true;
+
+    const bool useExclusionRange = true;
+
+    const auto& spawnRange = robotSpawnRange;
+
+    FreeObjectSpawn spawn;
+    const FreeObject* freeObjectPtr = &robotProxy;
+    Mn::Quaternion rotation;
+    float robotYaw = 0.f;
+    BATCHED_SIM_ASSERT(isRobotPosAttempt);
+    spawn.freeObjIndex_ = -1;
+
+    ESP_CHECK(!config.useFixedRobotStartYaw,
+              "addModifiedEpisode: config.useFixedRobotStartYaw must be false");
+    robotYaw = random.uniform_float(-float(Mn::Rad(Mn::Deg(180.f))),
+                                    float(Mn::Rad(Mn::Deg(180.f))));
+
+    rotation = yawToRotation(robotYaw);
+
+    const auto& freeObject = *freeObjectPtr;
+
+    Mn::Vector3 randomPos;
+    int numAttempts = 0;
+    while (true) {
+      numAttempts++;
+      randomPos = Mn::Vector3(
+          random.uniform_float(spawnRange.min().x(), spawnRange.max().x()),
+          random.uniform_float(spawnRange.min().y(), spawnRange.max().y()),
+          random.uniform_float(spawnRange.min().z(), spawnRange.max().z()));
+
+      if (!useExclusionRange || !exclusionRange.contains(randomPos)) {
+        break;
+      }
+      BATCHED_SIM_ASSERT(numAttempts < 1000);
+    }
+
+    Mn::Matrix4 mat = Mn::Matrix4::from(rotation.toMatrix(), randomPos);
+
+    if (placementHelper.place(mat, freeObject)) {
+      auto adjustedSpawnRange = spawnRange;
+      adjustedSpawnRange.min().y() -= allowedSnapDown;
+      if (!adjustedSpawnRange.contains(mat.translation())) {
+        continue;
+      }
+      spawn.startPos_ = mat.translation();
+
+      BATCHED_SIM_ASSERT(isRobotPosAttempt);
+      episode.agentStartPos_ =
+          Mn::Vector2(spawn.startPos_.x(), spawn.startPos_.z());
+      episode.agentStartYaw_ = robotYaw;
+
+      success = true;
+      break;
+    }
+  }
+
+  ESP_CHECK(success,
+            "addModifiedEpisode: episode-generation failed; couldn't find "
+                << "a collision-free spawn location with "
+                << "staticSceneIndex_=" << episode.staticSceneIndex_);
+  set.maxFreeObjects_ =
+      Mn::Math::max(set.maxFreeObjects_, (int32_t)episode.numFreeObjectSpawns_);
+
+  set.episodes_.emplace_back(std::move(episode));
+}
+
 void addEpisode(const EpisodeGeneratorConfig& config,
                 EpisodeSet& set,
                 const serialize::Collection& collection,
@@ -268,19 +423,10 @@ void addEpisode(const EpisodeGeneratorConfig& config,
 
   const auto& staticScene =
       safeVectorGet(set.staticScenes_, episode.staticSceneIndex_);
-  const auto& columnGrid = staticScene.columnGridSet_.getColumnGrid(0);
-  // perf todo: re-use this across entire set (have extents for set)
-  // todo: find extents for entire EpisodeSet, not just this specific columnGrid
-  constexpr int maxBytes = 1000 * 1024;
-  // this is tuned assuming a building-scale simulation with
-  // household-object-scale obstacles
-  constexpr float maxGridSpacing = 0.5f;
-  CollisionBroadphaseGrid colGrid = CollisionBroadphaseGrid(
-      getMaxCollisionRadius(collection), columnGrid.minX, columnGrid.minZ,
-      columnGrid.getMaxX(), columnGrid.getMaxZ(), maxBytes, maxGridSpacing);
+  auto collGrid = createCollisionGrid(staticScene, collection);
 
   constexpr int maxFailedPlacements = 1;
-  PlacementHelper placementHelper(staticScene.columnGridSet_, colGrid,
+  PlacementHelper placementHelper(staticScene.columnGridSet_, collGrid,
                                   collection, random, maxFailedPlacements);
 
   episode.targetObjIndex_ = 0;  // arbitrary
@@ -379,8 +525,8 @@ void addEpisode(const EpisodeGeneratorConfig& config,
         set.freeObjectSpawns_.emplace_back(std::move(spawn));
         episode.numFreeObjectSpawns_++;
 
-        // add to colGrid so future spawns don't intersect this one
-        colGrid.insertObstacle(spawn.startPos_, rotation, &freeObject.aabb_);
+        // add to collGrid so future spawns don't intersect this one
+        collGrid.insertObstacle(spawn.startPos_, rotation, &freeObject.aabb_);
       }
     }
   }
@@ -398,78 +544,29 @@ void addEpisode(const EpisodeGeneratorConfig& config,
 
 }  // namespace
 
-EpisodeSet generateBenchmarkEpisodeSet(
+EpisodeSet generateVariationsFromReferenceEpisodeSet(
     const EpisodeGeneratorConfig& config,
     const BpsSceneMapping& sceneMapping,
-    const serialize::Collection& collection) {
+    const serialize::Collection& collection,
+    const EpisodeSet& refSet) {
   int numEpisodes = config.numEpisodes;
 
   core::Random random(config.seed);
-  core::Random random2(config.seed);
 
   EpisodeSet set;
 
-  std::vector<std::string> selectedReplicaCadBakedScenes = {
-      "Baked_sc0_staging_00", "Baked_sc0_staging_01", "Baked_sc0_staging_02",
-      "Baked_sc0_staging_03", "Baked_sc0_staging_04", "Baked_sc0_staging_05",
-      "Baked_sc0_staging_06", "Baked_sc0_staging_07", "Baked_sc0_staging_08",
-      "Baked_sc0_staging_09", "Baked_sc0_staging_10", "Baked_sc0_staging_11",
-      "Baked_sc0_staging_12", "Baked_sc0_staging_13", "Baked_sc0_staging_14",
-      "Baked_sc0_staging_15", "Baked_sc0_staging_16", "Baked_sc0_staging_17",
-      "Baked_sc0_staging_18", "Baked_sc0_staging_19", "Baked_sc0_staging_20",
-      "Baked_sc1_staging_00", "Baked_sc1_staging_01", "Baked_sc1_staging_02",
-      "Baked_sc1_staging_03", "Baked_sc1_staging_04", "Baked_sc1_staging_05",
-      "Baked_sc1_staging_06", "Baked_sc1_staging_07", "Baked_sc1_staging_08",
-      "Baked_sc1_staging_09", "Baked_sc1_staging_10", "Baked_sc1_staging_11",
-      "Baked_sc1_staging_12", "Baked_sc1_staging_13", "Baked_sc1_staging_14",
-      "Baked_sc1_staging_15", "Baked_sc1_staging_16", "Baked_sc1_staging_17",
-      "Baked_sc1_staging_18", "Baked_sc1_staging_19", "Baked_sc1_staging_20",
-      "Baked_sc2_staging_00", "Baked_sc2_staging_01", "Baked_sc2_staging_02",
-      "Baked_sc2_staging_03", "Baked_sc2_staging_04", "Baked_sc2_staging_05",
-      "Baked_sc2_staging_06", "Baked_sc2_staging_07", "Baked_sc2_staging_08",
-      "Baked_sc2_staging_09", "Baked_sc2_staging_10", "Baked_sc2_staging_11",
-      "Baked_sc2_staging_12", "Baked_sc2_staging_13", "Baked_sc2_staging_14",
-      "Baked_sc2_staging_15", "Baked_sc2_staging_16", "Baked_sc2_staging_17",
-      "Baked_sc2_staging_18", "Baked_sc2_staging_19", "Baked_sc2_staging_20",
-      "Baked_sc3_staging_00", "Baked_sc3_staging_01", "Baked_sc3_staging_02",
-      "Baked_sc3_staging_03", "Baked_sc3_staging_04", "Baked_sc3_staging_05",
-      "Baked_sc3_staging_06", "Baked_sc3_staging_07", "Baked_sc3_staging_08",
-      "Baked_sc3_staging_09", "Baked_sc3_staging_10", "Baked_sc3_staging_11",
-      "Baked_sc3_staging_12", "Baked_sc3_staging_13", "Baked_sc3_staging_14",
-      "Baked_sc3_staging_15", "Baked_sc3_staging_16", "Baked_sc3_staging_17",
-      "Baked_sc3_staging_18", "Baked_sc3_staging_19", "Baked_sc3_staging_20",
-
-  };
-  ESP_CHECK(config.numStageVariations <= selectedReplicaCadBakedScenes.size(),
-            "generateBenchmarkEpisodeSet: config.numStageVariations="
-                << config.numStageVariations
-                << " must be <= selectedReplicaCadBakedScenes.size()="
-                << selectedReplicaCadBakedScenes.size());
-
-  for (int i = 0; i < config.numStageVariations; i++) {
-    addStaticScene(set, selectedReplicaCadBakedScenes[i]);
+  for (const auto& refStaticScene : refSet.staticScenes_) {
+    // sloppy: we can't copy-construct StaticScenes, so we manually create a
+    // copy and set needsPostLoadFixup_ to true.
+    StaticScene staticScene;
+    staticScene.columnGridSetName_ = refStaticScene.columnGridSetName_;
+    staticScene.name_ = refStaticScene.name_;
+    staticScene.renderAssetInstances_ = refStaticScene.renderAssetInstances_;
+    staticScene.needsPostLoadFixup_ = true;
+    set.staticScenes_.emplace_back(std::move(staticScene));
   }
-
-  std::vector<std::string> selectedYCBObjects = {
-      "024_bowl",
-      "003_cracker_box",
-      "010_potted_meat_can",
-      "002_master_chef_can",
-      "004_sugar_box",
-      "005_tomato_soup_can",
-      "009_gelatin_box",
-      "008_pudding_box",
-      "007_tuna_fish_can",
-  };
-  ESP_CHECK(config.numObjectVariations <= selectedYCBObjects.size(),
-            "generateBenchmarkEpisodeSet: config.numObjectVariations="
-                << config.numObjectVariations
-                << " must be <= selectedYCBObjects.size()="
-                << selectedYCBObjects.size());
-
-  for (int i = 0; i < config.numObjectVariations; i++) {
-    addFreeObject(set, selectedYCBObjects[i]);
-  }
+  set.renderAssets_ = refSet.renderAssets_;
+  set.freeObjects_ = refSet.freeObjects_;
 
   // sloppy: call postLoadFixup before adding episodes; this means that
   // set.maxFreeObjects_ gets computed incorrectly in here (but it will get
@@ -478,13 +575,131 @@ EpisodeSet generateBenchmarkEpisodeSet(
 
   const auto robotProxy = createFreeObjectProxyForRobot(collection);
 
-  // distribute scenes across episodes
+  // distribute ref episodes across episodes
+  ESP_DEBUG()
+      << "generateVariationsFromReferenceEpisodeSet: generating episodes...";
+  const int numRefEpisodes = refSet.episodes_.size();
+  set.episodes_.reserve(numEpisodes);
+  // sloppy: reserve *approximately* the correct number of free object spawns
+  set.freeObjectSpawns_.reserve(refSet.freeObjectSpawns_.size() * numEpisodes /
+                                numRefEpisodes);
+
   for (int i = 0; i < numEpisodes; i++) {
-    int sceneIndex = i * config.numStageVariations / numEpisodes;
-    addEpisode(config, set, collection, sceneIndex, random, random2,
-               robotProxy);
+    int refEpisodeIdx = i * numRefEpisodes / numEpisodes;
+    const auto& refEpisode = safeVectorGet(refSet.episodes_, refEpisodeIdx);
+    addModifiedEpisode(config, set, collection, random, robotProxy, refEpisode,
+                       refSet);
+
+    constexpr int printPeriod = 500000;
+    if (i > 0 && i % printPeriod == 0) {
+      ESP_DEBUG() << i << "/" << numEpisodes << "(" << (i * 100 / numEpisodes)
+                  << "%)";
+    }
   }
+  ESP_DEBUG() << "generateVariationsFromReferenceEpisodeSet: Done.";
   BATCHED_SIM_ASSERT(set.maxFreeObjects_ > 0);
+
+  return set;
+}
+
+EpisodeSet generateBenchmarkEpisodeSet(
+    const EpisodeGeneratorConfig& config,
+    const BpsSceneMapping& sceneMapping,
+    const serialize::Collection& collection) {
+  EpisodeSet set;
+
+  if (!config.referenceEpisodeSetFilepath.empty()) {
+    const auto refSet =
+        EpisodeSet::loadFromFile(config.referenceEpisodeSetFilepath);
+    set = generateVariationsFromReferenceEpisodeSet(config, sceneMapping,
+                                                    collection, refSet);
+  } else {
+    int numEpisodes = config.numEpisodes;
+
+    core::Random random(config.seed);
+    core::Random random2(config.seed);
+
+    std::vector<std::string> selectedReplicaCadBakedScenes = {
+        "Baked_sc0_staging_00", "Baked_sc0_staging_01", "Baked_sc0_staging_02",
+        "Baked_sc0_staging_03", "Baked_sc0_staging_04", "Baked_sc0_staging_05",
+        "Baked_sc0_staging_06", "Baked_sc0_staging_07", "Baked_sc0_staging_08",
+        "Baked_sc0_staging_09", "Baked_sc0_staging_10", "Baked_sc0_staging_11",
+        "Baked_sc0_staging_12", "Baked_sc0_staging_13", "Baked_sc0_staging_14",
+        "Baked_sc0_staging_15", "Baked_sc0_staging_16", "Baked_sc0_staging_17",
+        "Baked_sc0_staging_18", "Baked_sc0_staging_19", "Baked_sc0_staging_20",
+        "Baked_sc1_staging_00", "Baked_sc1_staging_01", "Baked_sc1_staging_02",
+        "Baked_sc1_staging_03", "Baked_sc1_staging_04", "Baked_sc1_staging_05",
+        "Baked_sc1_staging_06", "Baked_sc1_staging_07", "Baked_sc1_staging_08",
+        "Baked_sc1_staging_09", "Baked_sc1_staging_10", "Baked_sc1_staging_11",
+        "Baked_sc1_staging_12", "Baked_sc1_staging_13", "Baked_sc1_staging_14",
+        "Baked_sc1_staging_15", "Baked_sc1_staging_16", "Baked_sc1_staging_17",
+        "Baked_sc1_staging_18", "Baked_sc1_staging_19", "Baked_sc1_staging_20",
+        "Baked_sc2_staging_00", "Baked_sc2_staging_01", "Baked_sc2_staging_02",
+        "Baked_sc2_staging_03", "Baked_sc2_staging_04", "Baked_sc2_staging_05",
+        "Baked_sc2_staging_06", "Baked_sc2_staging_07", "Baked_sc2_staging_08",
+        "Baked_sc2_staging_09", "Baked_sc2_staging_10", "Baked_sc2_staging_11",
+        "Baked_sc2_staging_12", "Baked_sc2_staging_13", "Baked_sc2_staging_14",
+        "Baked_sc2_staging_15", "Baked_sc2_staging_16", "Baked_sc2_staging_17",
+        "Baked_sc2_staging_18", "Baked_sc2_staging_19", "Baked_sc2_staging_20",
+        "Baked_sc3_staging_00", "Baked_sc3_staging_01", "Baked_sc3_staging_02",
+        "Baked_sc3_staging_03", "Baked_sc3_staging_04", "Baked_sc3_staging_05",
+        "Baked_sc3_staging_06", "Baked_sc3_staging_07", "Baked_sc3_staging_08",
+        "Baked_sc3_staging_09", "Baked_sc3_staging_10", "Baked_sc3_staging_11",
+        "Baked_sc3_staging_12", "Baked_sc3_staging_13", "Baked_sc3_staging_14",
+        "Baked_sc3_staging_15", "Baked_sc3_staging_16", "Baked_sc3_staging_17",
+        "Baked_sc3_staging_18", "Baked_sc3_staging_19", "Baked_sc3_staging_20",
+
+    };
+    ESP_CHECK(config.numStageVariations <= selectedReplicaCadBakedScenes.size(),
+              "generateBenchmarkEpisodeSet: config.numStageVariations="
+                  << config.numStageVariations
+                  << " must be <= selectedReplicaCadBakedScenes.size()="
+                  << selectedReplicaCadBakedScenes.size());
+
+    for (int i = 0; i < config.numStageVariations; i++) {
+      addStaticScene(set, selectedReplicaCadBakedScenes[i]);
+    }
+
+    std::vector<std::string> selectedYCBObjects = {
+        "024_bowl",
+        "003_cracker_box",
+        "010_potted_meat_can",
+        "002_master_chef_can",
+        "004_sugar_box",
+        "005_tomato_soup_can",
+        "009_gelatin_box",
+        "008_pudding_box",
+        "007_tuna_fish_can",
+    };
+    ESP_CHECK(config.numObjectVariations <= selectedYCBObjects.size(),
+              "generateBenchmarkEpisodeSet: config.numObjectVariations="
+                  << config.numObjectVariations
+                  << " must be <= selectedYCBObjects.size()="
+                  << selectedYCBObjects.size());
+
+    for (int i = 0; i < config.numObjectVariations; i++) {
+      addFreeObject(set, selectedYCBObjects[i]);
+    }
+
+    // sloppy: call postLoadFixup before adding episodes; this means that
+    // set.maxFreeObjects_ gets computed incorrectly in here (but it will get
+    // computed correctly, incrementally, in addEpisode).
+    postLoadFixup(set, sceneMapping, collection);
+
+    const auto robotProxy = createFreeObjectProxyForRobot(collection);
+
+    // distribute scenes across episodes
+    for (int i = 0; i < numEpisodes; i++) {
+      int sceneIndex = i * config.numStageVariations / numEpisodes;
+      addEpisode(config, set, collection, sceneIndex, random, random2,
+                 robotProxy);
+    }
+    BATCHED_SIM_ASSERT(set.maxFreeObjects_ > 0);
+  }
+
+  if (!config.saveFilepath.empty()) {
+    set.saveToFile(config.saveFilepath);
+  }
 
   return set;
 }

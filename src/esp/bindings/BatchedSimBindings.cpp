@@ -86,7 +86,7 @@ void initBatchedSimBindings(py::module& m) {
   py::class_<EpisodeGeneratorConfig, EpisodeGeneratorConfig::ptr>(
       m, "EpisodeGeneratorConfig")
       .def(py::init(&EpisodeGeneratorConfig::create<>))
-      .def_readwrite("numEpisodes", &EpisodeGeneratorConfig::numEpisodes,
+      .def_readwrite("num_episodes", &EpisodeGeneratorConfig::numEpisodes,
                      R"(Todo)")
       .def_readwrite("seed", &EpisodeGeneratorConfig::seed, R"(Todo)")
       .def_readwrite("num_stage_variations",
@@ -97,12 +97,17 @@ void initBatchedSimBindings(py::module& m) {
                      &EpisodeGeneratorConfig::minNontargetObjects, R"(Todo)")
       .def_readwrite("max_nontarget_objects",
                      &EpisodeGeneratorConfig::maxNontargetObjects, R"(Todo)")
-      .def_readwrite("used_fixed_robot_start_pos",
+      .def_readwrite("use_fixed_robot_start_pos",
                      &EpisodeGeneratorConfig::useFixedRobotStartPos, R"(Todo)")
       .def_readwrite("use_fixed_robot_start_yaw",
                      &EpisodeGeneratorConfig::useFixedRobotStartYaw, R"(Todo)")
       .def_readwrite("use_fixed_robot_joint_start_positions",
                      &EpisodeGeneratorConfig::useFixedRobotJointStartPositions,
+                     R"(Todo)")
+      .def_readwrite("reference_episode_set_filepath",
+                     &EpisodeGeneratorConfig::referenceEpisodeSetFilepath,
+                     R"(Todo)")
+      .def_readwrite("save_filepath", &EpisodeGeneratorConfig::saveFilepath,
                      R"(Todo)");
 
   py::class_<BatchedSimulatorConfig, BatchedSimulatorConfig::ptr>(
