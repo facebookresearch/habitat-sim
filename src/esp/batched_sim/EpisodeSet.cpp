@@ -544,16 +544,24 @@ esp::io::JsonGenericValue toJsonValue(const EpisodeSet& x,
 }
 
 EpisodeSet EpisodeSet::loadFromFile(const std::string& filepath) {
+  ESP_DEBUG() << "EpisodeSet::loadFromFile: " << filepath;
+
   EpisodeSet episodeSet;
   ESP_CHECK(Cr::Utility::Directory::exists(filepath),
             "couldn't find EpisodeSet file " << filepath);
   auto newDoc = esp::io::parseJsonFile(filepath);
   esp::io::readMember(newDoc, "episodeSet", episodeSet);
 
+  ESP_DEBUG() << "EpisodeSet::loadFromFile: Done";
+
   return episodeSet;
 }
 
 void EpisodeSet::saveToFile(const std::string& filepath) const {
+  ESP_DEBUG() << "EpisodeSet::saveToFile: " << filepath;
+  ESP_DEBUG() << episodes_.size() << " episodes";
+  ESP_DEBUG() << freeObjectSpawns_.size() << " spawns";
+
   rapidjson::Document document(rapidjson::kObjectType);
   rapidjson::Document::AllocatorType& allocator = document.GetAllocator();
   esp::io::addMember(document, "episodeSet", *this, allocator);
@@ -564,6 +572,8 @@ void EpisodeSet::saveToFile(const std::string& filepath) const {
   bool success = esp::io::writeJsonToFile(document, filepath, usePrettyWriter,
                                           maxDecimalPlaces);
   ESP_CHECK(success, "failed to save EpisodeSet to " << filepath);
+
+  ESP_DEBUG() << "EpisodeSet::saveToFile: Done.";
 }
 
 }  // namespace batched_sim
