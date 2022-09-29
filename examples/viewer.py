@@ -40,7 +40,7 @@ if not os.path.exists(output_path):
     os.mkdir(output_path)
 
 
-class UnitMapper:
+class MemoryUnitConverter:
     """
     class to convert computer memory value units
     """
@@ -1676,9 +1676,11 @@ CPU Frequency
             self.sim_duration_sum = 0.0
             self.sim_steps_tracked = 0
 
-    def get_ram_usage_string(self, unit_type: int = UnitMapper.MEGABYTES) -> str:
-        unit_conversion: int = UnitMapper.UNIT_CONVERSIONS[unit_type]
-        unit_str: str = UnitMapper.UNIT_STRS[unit_type]
+    def get_ram_usage_string(
+        self, unit_type: int = MemoryUnitConverter.MEGABYTES
+    ) -> str:
+        unit_conversion: int = MemoryUnitConverter.UNIT_CONVERSIONS[unit_type]
+        unit_str: str = MemoryUnitConverter.UNIT_STRS[unit_type]
         ram_memory_used = round(
             self.ram_memory_used / unit_conversion, self.decimal_points
         )
