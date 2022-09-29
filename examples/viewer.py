@@ -10,7 +10,7 @@ import string
 import sys
 import time
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import git
 import psutil
@@ -38,6 +38,22 @@ output_directory = "examples/video_output/"  # @param {type:"string"}
 output_path = os.path.join(dir_path, output_directory)
 if not os.path.exists(output_path):
     os.mkdir(output_path)
+
+
+class UnitMapper:
+    """
+    class to convert computer memory value units
+    """
+
+    BYTES = 0
+    KILOBYTES = 1
+    MEGABYTES = 2
+    GIGABYTES = 3
+    TERABYTES = 4
+
+    UNIT_STRS = ["bytes", "KB", "MB", "GB", "TB"]
+
+    UNIT_CONVERSIONS = [1, 1 << 10, 1 << 20, 1 << 30, 1 << 40]
 
 
 class HabitatSimInteractiveViewer(Application):
@@ -202,6 +218,8 @@ class HabitatSimInteractiveViewer(Application):
         self.render_duration_sum: float = 0.0
         self.avg_render_duration: float = 0.0
         self.render_frames_tracked: int = 0
+
+        self.ram_memory_used: int = 0
 
         self.decimal_points = 4
 
@@ -809,10 +827,13 @@ class HabitatSimInteractiveViewer(Application):
                 self.object_template_handle_index = (
                     len(self.object_template_handles) - 1
                 )
+            start_ram_used = psutil.virtual_memory()[3]
             self.add_new_object_from_dataset(
                 self.object_template_handle_index,
                 HabitatSimInteractiveViewer.DEFAULT_OBJ_POSITION,
             )
+            end_ram_used = psutil.virtual_memory()[3]
+            self.ram_memory_used = end_ram_used - start_ram_used  # in bytes
             if keep_simulating:
                 # make sure physics stays on, but place object upright in center of table
                 self.simulating = True
@@ -825,10 +846,13 @@ class HabitatSimInteractiveViewer(Application):
             self.object_template_handle_index += 1
             if self.object_template_handle_index >= len(self.object_template_handles):
                 self.object_template_handle_index = 0
+            start_ram_used = psutil.virtual_memory()[3]
             self.add_new_object_from_dataset(
                 self.object_template_handle_index,
                 HabitatSimInteractiveViewer.DEFAULT_OBJ_POSITION,
             )
+            end_ram_used = psutil.virtual_memory()[3]
+            self.ram_memory_used = end_ram_used - start_ram_used  # in bytes
             if keep_simulating:
                 # make sure physics stays on, but place object upright in center of table
                 self.simulating = True
@@ -1305,12 +1329,12 @@ class HabitatSimInteractiveViewer(Application):
         self.object_rotation_axis = ObjectRotationAxis.Y
 
         # for some reason they all end in "_:0000" so remove that substring before print
-        obj_name = self.curr_object.handle.replace("_:0000", "")
+        self.obj_name = self.curr_object.handle.replace("_:0000", "")
 
         # print out object name and its index into the list of the objects
         # in dataset.
         print_in_color(
-            f'\nCommand: placing object "{obj_name}" from template handle index: {index}\n',
+            f'\nCommand: placing object "{self.obj_name}" from template handle index: {index}\n',
             PrintColors.BLUE,
             logging=True,
         )
@@ -1614,7 +1638,7 @@ Not yet implemented
             PrintColors.CYAN,
         )
 
-    def exit_event(self, event: Application.ExitEvent):
+    def exit_event(self, event: Application.ExitEvent) -> None:
         """
         Overrides exit_event to properly close the Simulator before exiting the
         application.
@@ -1623,39 +1647,29 @@ Not yet implemented
         event.accepted = True
         exit(0)
 
-    def calc_logging_stats(self):
+    def calc_time_stats(self) -> None:
         self.render_frames_tracked += 1
         self.total_frame_count += 1  # TODO for debugging, remove
 
         self.frame_duration_sum += self.prev_frame_duration
         self.prev_frame_duration = 0.0
 
-        self.sim_duration_sum += self.prev_sim_duration
-        self.prev_sim_duration = 0.0
-
         self.render_duration_sum += self.prev_render_duration
         self.prev_render_duration = 0.0
 
+        self.sim_duration_sum += self.prev_sim_duration
+        self.prev_sim_duration = 0.0
+
         if self.render_frames_tracked % self.render_frames_to_track == 0:
             # # TODO debug logging, remove
-            # print(f"frame count: {self.render_frames_tracked} --- {self.total_frame_count}")
-            # print(
-            #     f"sim step count: {self.sim_steps_tracked} --- {self.total_frame_count}\n"
-            # )
+            # print(f"total frame count:  {self.total_frame_count}")
+            # print(f"render frame count: {self.render_frames_tracked}")
+            # print(f"sim step count:     {self.sim_steps_tracked}\n")
 
             # calculate average frame rate
             frame_duration_avg = self.frame_duration_sum / self.render_frames_to_track
             self.average_fps = round(1.0 / frame_duration_avg, self.decimal_points)
             self.frame_duration_sum = 0.0
-
-            # calculate average simulation time if simulating
-            if self.simulating and self.sim_steps_tracked != 0:
-                self.avg_sim_duration = self.sim_duration_sum / self.sim_steps_tracked
-                self.avg_sim_duration = round(
-                    self.avg_sim_duration / self.physics_step_duration,
-                    self.decimal_points,
-                )
-                self.sim_duration_sum = 0.0
 
             # calculate average render time
             self.avg_render_duration = (
@@ -1666,30 +1680,44 @@ Not yet implemented
                 self.decimal_points,
             )
             self.render_duration_sum = 0.0
-
-            # reset render frame and sim step tracking counts
             self.render_frames_tracked = 0
+
+            # calculate average simulation time if simulating and we have any tracked
+            # sim steps. We don't always step physics on each draw_event() call
+            if self.simulating and self.sim_steps_tracked != 0:
+                self.avg_sim_duration = self.sim_duration_sum / self.sim_steps_tracked
+                self.avg_sim_duration = round(
+                    self.avg_sim_duration / self.physics_step_duration,
+                    self.decimal_points,
+                )
+            self.sim_duration_sum = 0.0
             self.sim_steps_tracked = 0
 
-    def draw_text(self, sensor_spec):
-        self.calc_logging_stats()
+    def get_ram_usage_string(self, unit_type=UnitMapper.MEGABYTES) -> str:
+        unit_conversion: int = UnitMapper.UNIT_CONVERSIONS[unit_type]
+        unit_str: str = UnitMapper.UNIT_STRS[unit_type]
+        ram_memory_used = round(
+            self.ram_memory_used / unit_conversion, self.decimal_points
+        )
+        return f"{ram_memory_used} {unit_str}"
+
+    def draw_text(self, sensor_spec) -> None:
+        self.calc_time_stats()
+        ram_usage_string = self.get_ram_usage_string()
 
         self.shader.bind_vector_texture(self.glyph_cache.texture)
         self.shader.transformation_projection_matrix = self.window_text_transform
         self.shader.color = [1.0, 1.0, 1.0]
-        if self.simulating:
-            sim_info: Union[float, str] = self.avg_sim_duration
-        else:
-            sim_info: Union[float, str] = "N/A"
-
         self.window_text.render(
             f"""
-Avg fps: {self.average_fps}
-Avg sim/real time ratio: {sim_info}
-Avg render/real time ratio: {self.avg_render_duration}
-Sensor type: {str(sensor_spec.sensor_type.name)}
-Sensor subtype: {str(sensor_spec.sensor_subtype.name)}
-{str(self.mouse_interaction)}
+avg fps: {self.average_fps}
+avg sim time ratio: {self.avg_sim_duration if self.simulating else "N/A"}
+avg render time ratio: {self.avg_render_duration}
+sensor type: {str(sensor_spec.sensor_type.name).lower()}
+sensor subtype: {str(sensor_spec.sensor_subtype.name).lower()}
+curr obj: {self.obj_name if self.curr_object is not None else "None"}
+obj RAM usage: {ram_usage_string}
+{str(self.mouse_interaction).lower()}
             """
         )
         self.shader.draw(self.window_text.mesh)
