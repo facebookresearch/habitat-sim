@@ -259,15 +259,29 @@ void CommandLineViewer() {
   const bool forceRandomActions = doFreeCam || doTuneRobotCam;
 
   EpisodeGeneratorConfig generatorConfig{
-      .numEpisodes = 84,
+      // .numEpisodes = 1000,
+      // .seed = 0,
+      // .numStageVariations = 84,
+      // .numObjectVariations = 9,
+      // .minNontargetObjects = 27,
+      // .maxNontargetObjects = 32,
+      // .useFixedRobotStartPos = false,
+      // .useFixedRobotStartYaw = false,
+      // .useFixedRobotJointStartPositions =
+      // false};
+      .numEpisodes = 1000000,
       .seed = 0,
-      .numStageVariations = 84,
-      .numObjectVariations = 9,
-      .minNontargetObjects = 27,
-      .maxNontargetObjects = 32,
-      .useFixedRobotStartPos = true,
-      .useFixedRobotStartYaw = true,
-      .useFixedRobotJointStartPositions = true};
+      .numStageVariations = -1,
+      .numObjectVariations = -1,
+      .minNontargetObjects = -1,
+      .maxNontargetObjects = -1,
+      .useFixedRobotStartPos = false,
+      .useFixedRobotStartYaw = false,
+      .useFixedRobotJointStartPositions = true,
+      .referenceEpisodeSetFilepath =
+          "../data/"
+          "tidy_house_100ep.episode_set."
+          "json"};  // "../data/test_1ep.episode_set.json"};
 
   BatchedSimulatorConfig config{
       .numEnvs = 1,
@@ -282,18 +296,18 @@ void CommandLineViewer() {
       .numSubsteps = 1,
       .enableRobotCollision = true,
       .enableHeldObjectCollision = true,
-      .doProceduralEpisodeSet = false,
+      .doProceduralEpisodeSet = true,
       .episodeGeneratorConfig = generatorConfig,
-      .episodeSetFilepath = "../data/tidy_house_100ep.episode_set.json",
+      //.episodeSetFilepath = "../data/tidy_house_100ep.episode_set.json",
       //"/home/eundersander/Downloads/tidy_house_100ep.episode_set.json",
       .collectionFilepath = "../data/replicacad_composite.collection.json",
       .renderAssetCompositeFilepath =
           "../data/bps_data/composite/composite.bps",
       .enableSliding = true,
-  };
+      .isInteractiveDebugMode = true};
   BatchedSimulator bsim(config);
 
-  constexpr int startingEpisode = 38;
+  constexpr int startingEpisode = 0;
 
   Mn::Vector3 camPos;
   Mn::Quaternion camRot;
@@ -361,8 +375,8 @@ void CommandLineViewer() {
   }
   std::vector<float> actions(actionDim * config.numEnvs, 0.f);
 
-  int nextEpisode = startingEpisode;
   const int numEpisodes = bsim.getNumEpisodes();
+  int nextEpisode = Mn::Math::min(startingEpisode, numEpisodes - 1);
   auto getNextEpisode = [&]() {
     auto retVal = nextEpisode;
     nextEpisode = (nextEpisode + 1) % numEpisodes;
@@ -403,6 +417,18 @@ void CommandLineViewer() {
         bsim.waitStepPhysicsOrReset();
         doAdvanceSim = false;
       }
+
+#if 0
+      // debug rendering for entire episode set's robot start positions
+      {
+        const auto& set = bsim.getEpisodeSet();
+        for (const auto& ep : set.episodes_) {
+          constexpr float groundY = 0.f;
+          bsim.addSphereDebugInstance("sphere_pink_wireframe", 0,
+            Mn::Vector3(ep.agentStartPos_.x(), groundY, ep.agentStartPos_.y()), 0.07);
+        }
+      }
+#endif
       bsim.startRender();
       bsim.waitRender();
     }
