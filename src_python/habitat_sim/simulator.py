@@ -35,7 +35,15 @@ from habitat_sim.sensors.noise_models import SensorNoiseModel, make_sensor_noise
 from habitat_sim.sim import SimulatorBackend, SimulatorConfiguration
 from habitat_sim.utils.common import quat_from_angle_axis
 
-# Types to simplify sensor observation variables
+# Types to simplify sensor observation variables ------------------------
+# bool - if the sensor's corresponding agent collided with something.
+#   Query this status from an ObservationDict with the string "collided"
+#   rather than a sensor uuid string.
+#   TODO: Seems kind of out of place as a sensor observation, as it
+#   doesn't actually refer to a sensor, but rather its agent. May want
+#   to refactor agent collisions eventually.
+# ndarray - if the observation is from a visual sensor, e.g. 2d array image
+# "Tensor" - multi-dimensional matrix if using PyTorch
 SensorObservation = Union[bool, ndarray, "Tensor"]
 ObservationDict = Dict[str, SensorObservation]
 
