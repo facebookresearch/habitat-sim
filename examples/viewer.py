@@ -42,7 +42,8 @@ if not os.path.exists(output_path):
 
 class MemoryUnitConverter:
     """
-    class to convert computer memory value units
+    class to convert computer memory value units, e.g.
+    1,000,000 bytes to 1 megabyte
     """
 
     BYTES = 0
@@ -219,9 +220,10 @@ class HabitatSimInteractiveViewer(Application):
         self.avg_render_duration: float = 0.0
         self.render_frames_tracked: int = 0
 
-        self.ram_memory_used: int = 0
+        self.ram_memory_used_bytes: int = 0
+        self.obj_ram_memory_used: Dict[str, int] = {}
 
-        self.decimal_points = 4
+        self.decimal_points_round = 4
 
         # Cycle mouse utilities
         self.mouse_interaction = MouseMode.LOOK
@@ -821,42 +823,12 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.I:
             # decrement template handle index and add corresponding
             # ManagedBulletRigidObject to rigid object manager from dataset
-            keep_simulating = self.simulating
-            self.object_template_handle_index -= 1
-            if self.object_template_handle_index < 0:
-                self.object_template_handle_index = (
-                    len(self.object_template_handles) - 1
-                )
-            start_ram_used = psutil.virtual_memory()[3]
-            self.add_new_object_from_dataset(
-                self.object_template_handle_index,
-                HabitatSimInteractiveViewer.DEFAULT_OBJ_POSITION,
-            )
-            end_ram_used = psutil.virtual_memory()[3]
-            self.ram_memory_used = end_ram_used - start_ram_used  # in bytes
-            if keep_simulating:
-                # make sure physics stays on, but place object upright in center of table
-                self.simulating = True
-                self.snap_down_object(self.curr_object)
+            self.cycle_dataset_object(-1)
 
         elif key == pressed.P:
             # increment template handle index and add corresponding
             # ManagedBulletRigidObject to rigid object manager from dataset
-            keep_simulating = self.simulating
-            self.object_template_handle_index += 1
-            if self.object_template_handle_index >= len(self.object_template_handles):
-                self.object_template_handle_index = 0
-            start_ram_used = psutil.virtual_memory()[3]
-            self.add_new_object_from_dataset(
-                self.object_template_handle_index,
-                HabitatSimInteractiveViewer.DEFAULT_OBJ_POSITION,
-            )
-            end_ram_used = psutil.virtual_memory()[3]
-            self.ram_memory_used = end_ram_used - start_ram_used  # in bytes
-            if keep_simulating:
-                # make sure physics stays on, but place object upright in center of table
-                self.simulating = True
-                self.snap_down_object(self.curr_object)
+            self.cycle_dataset_object(1)
 
         elif key == pressed.O:
             if self.curr_object:
@@ -1271,6 +1243,31 @@ class HabitatSimInteractiveViewer(Application):
             include_static_objects=True,
         )
 
+    def cycle_dataset_object(self, index_delta: int = 1) -> None:
+        keep_simulating = self.simulating
+        if index_delta < 0:
+            # instantiate previous dataset object
+            self.object_template_handle_index -= 1
+            if self.object_template_handle_index < 0:
+                self.object_template_handle_index = (
+                    len(self.object_template_handles) - 1
+                )
+        elif index_delta > 0:
+            # instantiate next dataset object
+            self.object_template_handle_index += 1
+            if self.object_template_handle_index >= len(self.object_template_handles):
+                self.object_template_handle_index = 0
+        else:
+            return
+        self.add_new_object_from_dataset(
+            self.object_template_handle_index,
+            HabitatSimInteractiveViewer.DEFAULT_OBJ_POSITION,
+        )
+        if keep_simulating:
+            # make sure physics stays on, but place object upright in center of table
+            self.simulating = True
+            self.snap_down_object(self.curr_object)
+
     def add_new_object_from_dataset(self, index, position=DEFAULT_OBJ_POSITION) -> None:
         """
         Add to scene the ManagedBulletRigidObject at given template handle index
@@ -1312,10 +1309,13 @@ class HabitatSimInteractiveViewer(Application):
             rotation_z_quaternion * rotation_y_quaternion * rotation_x_quaternion
         )
 
+        start_ram_used = psutil.virtual_memory()[3]
         # Add object instantiated by desired template to scene using template handle
         self.curr_object = rigid_object_manager.add_object_by_template_handle(
             object_template_handle
         )
+        end_ram_used = psutil.virtual_memory()[3]
+        ram_memory_used_bytes = end_ram_used - start_ram_used
 
         # Agent local coordinate system is Y up and -Z forward.
         # Move object above table surface, then turn on Kinematic mode
@@ -1330,6 +1330,10 @@ class HabitatSimInteractiveViewer(Application):
 
         # for some reason they all end in "_:0000" so remove that substring before print
         self.obj_name = self.curr_object.handle.replace("_:0000", "")
+
+        # store RAM memory used for this object if not already stored
+        if self.obj_ram_memory_used.get(self.obj_name) == None:
+            self.obj_ram_memory_used[self.obj_name] = ram_memory_used_bytes
 
         # print out object name and its index into the list of the objects
         # in dataset.
@@ -1651,7 +1655,9 @@ CPU Frequency
 
             # calculate average frame rate
             frame_duration_avg = self.frame_duration_sum / self.render_frames_to_track
-            self.average_fps = round(1.0 / frame_duration_avg, self.decimal_points)
+            self.average_fps = round(
+                1.0 / frame_duration_avg, self.decimal_points_round
+            )
             self.frame_duration_sum = 0.0
 
             # calculate average render time
@@ -1660,7 +1666,7 @@ CPU Frequency
             )
             self.avg_render_duration = round(
                 self.avg_render_duration / self.physics_step_duration,
-                self.decimal_points,
+                self.decimal_points_round,
             )
             self.render_duration_sum = 0.0
             self.render_frames_tracked = 0
@@ -1671,7 +1677,7 @@ CPU Frequency
                 self.avg_sim_duration = self.sim_duration_sum / self.sim_steps_tracked
                 self.avg_sim_duration = round(
                     self.avg_sim_duration / self.physics_step_duration,
-                    self.decimal_points,
+                    self.decimal_points_round,
                 )
             self.sim_duration_sum = 0.0
             self.sim_steps_tracked = 0
@@ -1679,10 +1685,13 @@ CPU Frequency
     def get_ram_usage_string(
         self, unit_type: int = MemoryUnitConverter.MEGABYTES
     ) -> str:
+        if self.curr_object is None:
+            return "None"
         unit_conversion: int = MemoryUnitConverter.UNIT_CONVERSIONS[unit_type]
         unit_str: str = MemoryUnitConverter.UNIT_STRS[unit_type]
+        ram_memory_used_bytes = self.obj_ram_memory_used.get(self.obj_name)
         ram_memory_used = round(
-            self.ram_memory_used / unit_conversion, self.decimal_points
+            ram_memory_used_bytes / unit_conversion, self.decimal_points_round
         )
         return f"{ram_memory_used} {unit_str}"
 
