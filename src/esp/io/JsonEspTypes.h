@@ -169,6 +169,28 @@ inline bool fromJsonValue(const JsonGenericValue& obj,
   return true;
 }
 
+inline JsonGenericValue toJsonValue(const esp::gfx::LightInfo& x,
+                                    JsonAllocator& allocator) {
+  JsonGenericValue obj(rapidjson::kObjectType);
+  addMember(obj, "vector", x.vector, allocator);
+  addMember(obj, "color", x.color, allocator);
+  addMember(obj, "model", x.model, allocator);
+  return obj;
+}
+
+inline bool fromJsonValue(const JsonGenericValue& obj, esp::gfx::LightInfo& x) {
+  readMember(obj, "vector", x.vector);
+  readMember(obj, "color", x.color);
+  readMember(obj, "model", x.model);
+  return true;
+}
+
+JsonGenericValue toJsonValue(const esp::gfx::LightPositionModel& x,
+                             JsonAllocator& allocator);
+
+bool fromJsonValue(const JsonGenericValue& obj,
+                   esp::gfx::LightPositionModel& x);
+
 JsonGenericValue toJsonValue(const esp::gfx::replay::Keyframe& x,
                              JsonAllocator& allocator);
 

@@ -27,8 +27,12 @@ Keyframe Player::keyframeFromString(const std::string& keyframe) {
   return res;
 }
 
-Player::Player(const LoadAndCreateRenderAssetInstanceCallback& callback)
-    : loadAndCreateRenderAssetInstanceCallback(callback) {}
+Player::Player(const LoadAndCreateRenderAssetInstanceCallback&
+                   loadAndCreateRenderAssetInstanceCallback,
+               const ChangeLightSetupCallback& changeLightSetupCallback)
+    : loadAndCreateRenderAssetInstanceCallback(
+          loadAndCreateRenderAssetInstanceCallback),
+      changeLightSetupCallback(changeLightSetupCallback) {}
 
 void Player::readKeyframesFromFile(const std::string& filepath) {
   close();
@@ -165,6 +169,10 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     node->setTranslation(state.absTransform.translation);
     node->setRotation(state.absTransform.rotation);
     setSemanticIdForSubtree(node, state.semanticId);
+  }
+
+  if (keyframe.lightsChanged) {
+    changeLightSetupCallback(keyframe.lights);
   }
 }
 
