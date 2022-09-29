@@ -20,6 +20,42 @@ REPLICA_CAD_PATH = os.path.join(
 ROBOT_PATH = ""  # TODO, which dataset is this? Robot fetch?
 
 
+class PrintColors:
+    """
+    Console printing ANSI color codes
+    """
+
+    HEADER = "\033[95m"
+    WHITE = "\u001b[37m"
+    RED = "\033[1;31m"
+    GREEN = "\033[92m"
+    BLUE = "\033[94m"
+    CYAN = "\033[96m"
+    MAGENTA = "\u001b[35m"
+    YELLOW = "\u001b[33m"
+    BROWN = "\033[0;33m"
+    LIGHT_RED = "\033[1;31m"
+    LIGHT_GREEN = "\033[1;32m"
+    LIGHT_BLUE = "\033[1;34m"
+    LIGHT_PURPLE = "\033[1;35m"
+    LIGHT_CYAN = "\033[1;36m"
+    LIGHT_WHITE = "\033[1;37m"
+    LIGHT_GRAY = "\033[0;37m"
+    TEST = "\u001a[35m"
+    WARNING = "\033[93m"
+    FAIL = "\033[91m"
+    ENDC = "\033[0m"
+    BOLD = "\033[1m"
+    UNDERLINE = "\033[4m"
+
+
+def print_in_color(print_string="", color=PrintColors.WHITE) -> None:
+    """
+    Allows us to print to console in different colors
+    """
+    print(color + print_string + PrintColors.ENDC)
+
+
 def build_parser(
     parser: Optional[argparse.ArgumentParser] = None,
 ) -> argparse.ArgumentParser:
@@ -67,22 +103,34 @@ def parse_dataset(sim: habitat_sim.Simulator = None, dataset_path: str = None) -
     ):
         return
     active_dataset: str = metadata_mediator.active_dataset
-    print(active_dataset)
+    print_in_color("* " * 39, PrintColors.CYAN)
+    print_in_color(f"{active_dataset}\n", PrintColors.CYAN)
     dataset_report: str = metadata_mediator.dataset_report(dataset_path)
-    print(dataset_report)
+    print_in_color("* " * 39, PrintColors.BLUE)
+    print_in_color(f"{dataset_report}\n", PrintColors.BLUE)
 
 
 def make_configuration(sim_settings):
-
     # simulator configuration
     sim_cfg = habitat_sim.SimulatorConfiguration()
-    sim_cfg.scene_id = sim_settings["scene_dataset_config_file"]
+    if "scene_dataset_config_file" in sim_settings:
+        sim_cfg.scene_dataset_config_file = sim_settings["scene_dataset_config_file"]
+    sim_cfg.frustum_culling = sim_settings.get("frustum_culling", False)
+    if not hasattr(sim_cfg, "scene_id"):
+        raise RuntimeError(
+            "Error: Please upgrade habitat-sim. SimulatorConfig API version mismatch"
+        )
+    sim_cfg.scene_id = sim_settings["scene"]
     assert os.path.exists(sim_cfg.scene_id)
 
-    sensor_cfg = habitat_sim.CameraSensorSpec()
-    sensor_cfg.resolution = [544, 720]
+    camera_sensor_spec = habitat_sim.CameraSensorSpec()
+    camera_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
+    camera_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
+    camera_sensor_spec.resolution = [sim_settings["height"], sim_settings["width"]]
+    camera_sensor_spec.position = [0, sim_settings["sensor_height"], 0]
+
     agent_cfg = habitat_sim.agent.AgentConfiguration()
-    agent_cfg.sensor_specifications = [sensor_cfg]
+    agent_cfg.sensor_specifications = [camera_sensor_spec]
 
     return habitat_sim.Configuration(sim_cfg, [agent_cfg])
 
