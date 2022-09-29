@@ -190,7 +190,9 @@ if(NOT USE_SYSTEM_MAGNUM)
   set(MAGNUM_BUILD_STATIC ON CACHE BOOL "" FORCE)
   set(MAGNUM_BUILD_STATIC_PIC ON CACHE BOOL "" FORCE)
   # Always use EGL on platforms that support it. This means both windowless and
-  # windowed applications will
+  # windowed applications will use it. If you are experiencing driver issues or
+  # are on an older system where EGL doesn't really work yet, you might want to
+  # set MAGNUM_TARGET_EGL back to OFF below.
   if(NOT CORRADE_TARGET_APPLE AND NOT CORRADE_TARGET_WINDOWS)
     set(MAGNUM_TARGET_EGL ON CACHE BOOL "" FORCE)
   endif()
@@ -318,13 +320,21 @@ if(NOT USE_SYSTEM_MAGNUM)
   endif()
   if(MAGNUM_TARGET_EGL) # Includes also Emscripten
     set(MAGNUM_WITH_WINDOWLESSEGLAPPLICATION ON CACHE BOOL "" FORCE)
-  elseif(CORRADE_TARGET_APPLE)
-    set(MAGNUM_WITH_WINDOWLESSCGLAPPLICATION ON CACHE BOOL "" FORCE)
-  elseif(CORRADE_TARGET_WINDOWS)
-    set(MAGNUM_WITH_WINDOWLESSWGLAPPLICATION ON CACHE BOOL "" FORCE)
   else()
-    # WindowlessGlxApplication deliberately not used
-    message(FATAL_ERROR "Unsupported platform")
+    # Disable again to avoid more than one Windowless*Application being
+    # enabled, which makes linking to the Magnum::WindowlessApplication alias
+    # pick one of them arbitrarily.
+    set(MAGNUM_WITH_WINDOWLESSEGLAPPLICATION OFF CACHE BOOL "" FORCE)
+    if(CORRADE_TARGET_APPLE)
+      set(MAGNUM_WITH_WINDOWLESSCGLAPPLICATION ON CACHE BOOL "" FORCE)
+    elseif(CORRADE_TARGET_UNIX)
+      # Just for cases when EGL wouldn't work
+      set(MAGNUM_WITH_WINDOWLESSGLXAPPLICATION ON CACHE BOOL "" FORCE)
+    elseif(CORRADE_TARGET_WINDOWS)
+      set(MAGNUM_WITH_WINDOWLESSWGLAPPLICATION ON CACHE BOOL "" FORCE)
+    else()
+      message(FATAL_ERROR "Unsupported platform")
+    endif()
   endif()
   add_subdirectory("${DEPS_DIR}/magnum")
   add_subdirectory("${DEPS_DIR}/magnum-plugins")
