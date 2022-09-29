@@ -1090,13 +1090,18 @@ void BatchedSimulator::updateCollision() {
       const auto& episodeInstance =
           safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
       const auto& envState = safeVectorGet(pythonEnvStates_, b);
-      ESP_CHECK(envState.episode_step_idx > 0,
-                "For episode "
-                    << episodeInstance.episodeIndex_
-                    << ", the robot is in collision on the first step of the "
-                       "episode. In your "
-                    << "episode set, revise agentStartPos/agentStartYaw or "
-                       "rearrange the scene.");
+      if (envState.episode_step_idx == 0) {
+        std::string errorMsg =
+            "For episode " + std::to_string(episodeInstance.episodeIndex_) +
+            ", the robot is in collision on the first step of the episode. In "
+            "your episode set, revise agentStartPos/agentStartYaw or rearrange "
+            "the scene.";
+        if (config_.isInteractiveDebugMode) {
+          ESP_ERROR() << errorMsg;
+        } else {
+          ESP_CHECK(false, errorMsg);
+        }
+      }
       recentStats_.numStepsInCollision_++;
     }
   }
@@ -2052,7 +2057,6 @@ void BatchedSimulator::initEpisodeSet() {
 
     episodeSet_ = generateBenchmarkEpisodeSet(
         config_.episodeGeneratorConfig, sceneMapping_, serializeCollection_);
-    episodeSet_.saveToFile("../data/generated.episode_set.json");
   } else {
     ESP_CHECK(!config_.episodeSetFilepath.empty(),
               "For BatchedSimulatorConfig::doProceduralEpisodeSet==false, you "
@@ -2596,11 +2600,11 @@ const std::vector<PythonEnvironmentState>&
 BatchedSimulator::getEnvironmentStates() const {
   ESP_CHECK(!isPhysicsThreadActive(),
             "Don't call getEnvironmentStates during async physics step");
-#ifdef NDEBUG
-  ESP_CHECK(
-      isRenderStarted_,
-      "For best runtime perf, call getEnvironmentStates *after* startRender");
-#endif
+  if (!config_.isInteractiveDebugMode) {
+    ESP_CHECK(
+        isRenderStarted_,
+        "For best runtime perf, call getEnvironmentStates *after* startRender");
+  }
   return pythonEnvStates_;
 }
 
@@ -2682,9 +2686,10 @@ void BatchedSimulator::debugRenderColumnGrids(int b,
   const auto& blueprint =
       sceneMapping_.findInstanceBlueprint("cube_gray_shaded");
 
-  // note off by one
   const float maxOccludedY = 3.f;
-  for (int layerIdx = 0; layerIdx < source.layers.size() - 1; layerIdx++) {
+  const float minOccludedY = -2.f;
+  // note off by one
+  for (int layerIdx = 0; layerIdx <= source.layers.size(); layerIdx++) {
     // temp
     for (int cellZ = 0; cellZ < source.dimZ; cellZ++) {
       for (int cellX = 0; cellX < source.dimX; cellX++) {
@@ -2694,17 +2699,28 @@ void BatchedSimulator::debugRenderColumnGrids(int b,
           continue;
         }
 
-        auto col0 = source.debugGetColumn(cellX, cellZ, layerIdx);
-        auto col1 = source.debugGetColumn(cellX, cellZ, layerIdx + 1);
-        if (col0.freeMinY == source.INVALID_Y) {
+        float occludedMinY = minOccludedY;
+        if (layerIdx > 0) {
+          auto col0 = source.debugGetColumn(cellX, cellZ, layerIdx - 1);
+          if (col0.freeMinY != source.INVALID_Y) {
+            occludedMinY = col0.freeMaxY;
+          } else {
+            continue;
+          }
+        }
+
+        float occludedMaxY = maxOccludedY;
+        if (layerIdx < source.layers.size()) {
+          auto col1 = source.debugGetColumn(cellX, cellZ, layerIdx);
+          if (col1.freeMinY != source.INVALID_Y) {
+            occludedMaxY = col1.freeMinY;
+          }
+        }
+
+        // cull ceiling visualization?
+        if (occludedMinY >= maxOccludedY) {
           continue;
         }
-        if (col0.freeMaxY >= maxOccludedY) {
-          continue;
-        }
-        float occludedMinY = col0.freeMaxY;
-        float occludedMaxY =
-            (col1.freeMinY == source.INVALID_Y) ? maxOccludedY : col1.freeMinY;
 
         Mn::Range3D aabb(
             Mn::Vector3(source.minX + cellX * source.gridSpacing, occludedMinY,

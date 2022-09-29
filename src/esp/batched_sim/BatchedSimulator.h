@@ -59,6 +59,7 @@ struct BatchedSimulatorConfig {
   bool enableSliding = false;
   int slideMaxSteps = 5;
   float slideStepSize = 0.05f;  // meters
+  bool isInteractiveDebugMode = false;
   ESP_SMART_POINTERS(BatchedSimulatorConfig);
 };
 
@@ -283,6 +284,8 @@ class BatchedSimulator {
   void debugRenderColumnGrids(int b, int minProgress = 0, int maxProgress = -1);
 
   void reloadSerializeCollection();
+
+  const EpisodeSet& getEpisodeSet() { return episodeSet_; }
 
  private:
   struct StatRecord {
