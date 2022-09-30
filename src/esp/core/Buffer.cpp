@@ -4,6 +4,8 @@
 
 #include "Buffer.h"
 
+#include <cstring>
+
 namespace esp {
 namespace core {
 
@@ -32,7 +34,7 @@ size_t getDataTypeByteSize(DataType dt) {
 
 void Buffer::clear() {
   if (this->data != nullptr) {
-    memset(this->data, 0, this->data.size());
+    std::memset(this->data, 0, this->data.size());
   }
 }
 

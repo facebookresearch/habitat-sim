@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "esp/core/Esp.h"
+#include "esp/core/EspEigen.h"
 
 #include <Magnum/Math/Vector3.h>
 #include <Magnum/Trade/Trade.h>
