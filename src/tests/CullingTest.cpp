@@ -17,8 +17,8 @@
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/WindowlessContext.h"
-#include "esp/scene/SceneManager.h"
 #include "esp/metadata/MetadataMediator.h"
+#include "esp/scene/SceneManager.h"
 
 #include "configure.h"
 

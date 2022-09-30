@@ -45,7 +45,7 @@ namespace metadata {
 namespace attributes {
 class PhysicsManagerAttributes;
 }
-}
+}  // namespace metadata
 
 namespace physics {
 
@@ -231,7 +231,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   explicit PhysicsManager(
       assets::ResourceManager& _resourceManager,
-      const std::shared_ptr<const metadata::attributes::PhysicsManagerAttributes>&
+      const std::shared_ptr<
+          const metadata::attributes::PhysicsManagerAttributes>&
           _physicsManagerAttributes);
 
   /** @brief Destructor*/

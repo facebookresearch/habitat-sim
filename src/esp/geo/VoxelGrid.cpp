@@ -7,9 +7,9 @@
 #include <Corrade/Utility/Algorithms.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/Math/Vector.h>
+#include <Magnum/MeshTools/Compile.h>
 #include <Magnum/MeshTools/Interleave.h>
 #include <Magnum/MeshTools/Reference.h>
-#include <Magnum/MeshTools/Compile.h>
 #include <Magnum/Primitives/Cone.h>
 #include <Magnum/Primitives/Cube.h>
 #include <Magnum/Primitives/Cylinder.h>

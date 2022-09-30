@@ -57,7 +57,8 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
    * @return true if initialized successfully, false otherwise.
    */
   virtual bool initialize(
-      std::shared_ptr<metadata::attributes::AbstractObjectAttributes> initAttributes) = 0;
+      std::shared_ptr<metadata::attributes::AbstractObjectAttributes>
+          initAttributes) = 0;
 
   /**
    * @brief Finalize the creation of @ref RigidObject or @ref

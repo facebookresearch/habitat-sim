@@ -11,8 +11,8 @@
  */
 
 #include <Corrade/Containers/Optional.h>
-#include <Magnum/Math/Range.h>
 #include <Magnum/GL/GL.h>
+#include <Magnum/Math/Range.h>
 #include <Magnum/Trade/MeshData.h>
 #include "CollisionMeshData.h"
 #include "MeshData.h"

@@ -24,8 +24,8 @@
 #include "esp/gfx/VarianceShadowMapDrawable.h"
 #include "esp/gfx/replay/Recorder.h"
 #include "esp/gfx/replay/ReplayManager.h"
-#include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/metadata/MetadataMediator.h"
+#include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/physics/bullet/BulletCollisionHelper.h"
@@ -652,10 +652,10 @@ void Simulator::setActiveSceneDatasetName(const std::string& _dsHandle) {
 }
 
 bool Simulator::saveCurrentSceneInstance(const std::string& saveFilename,
-                              int sceneID) const {
+                                         int sceneID) const {
   if (sceneHasPhysics(sceneID)) {
     ESP_DEBUG() << "Attempting to save current scene layout as "
-                    "SceneInstanceAttributes with filename :"
+                   "SceneInstanceAttributes with filename :"
                 << saveFilename;
     return metadataMediator_->getSceneInstanceAttributesManager()
         ->saveManagedObjectToFile(buildCurrentStateSceneAttributes(),
@@ -667,7 +667,7 @@ bool Simulator::saveCurrentSceneInstance(const std::string& saveFilename,
 bool Simulator::saveCurrentSceneInstance(bool overwrite, int sceneID) const {
   if (sceneHasPhysics(sceneID)) {
     ESP_DEBUG() << "Attempting to save current scene layout as "
-                    "SceneInstanceAttributes.";
+                   "SceneInstanceAttributes.";
     return metadataMediator_->getSceneInstanceAttributesManager()
         ->saveManagedObjectToFile(buildCurrentStateSceneAttributes(),
                                   overwrite);
@@ -1055,28 +1055,29 @@ void Simulator::sampleRandomAgentState(agent::AgentState& agentState) {
   }
 }
 
-esp::physics::ManagedRigidObject::ptr Simulator::queryRigidObjWrapper(int sceneID,
-                                                            int objID) const {
+esp::physics::ManagedRigidObject::ptr Simulator::queryRigidObjWrapper(
+    int sceneID,
+    int objID) const {
   if (!sceneHasPhysics(sceneID)) {
     return nullptr;
   }
   return getRigidObjectManager()->getObjectCopyByID(objID);
 }
 
-esp::physics::ManagedArticulatedObject::ptr Simulator::queryArticulatedObjWrapper(
-    int sceneID,
-    int objID) const {
+esp::physics::ManagedArticulatedObject::ptr
+Simulator::queryArticulatedObjWrapper(int sceneID, int objID) const {
   if (!sceneHasPhysics(sceneID)) {
     return nullptr;
   }
   return getArticulatedObjectManager()->getObjectCopyByID(objID);
 }
 
-void Simulator::setMetadataMediator(metadata::MetadataMediator::ptr _metadataMediator) {
-    metadataMediator_ = std::move(_metadataMediator);
-    // set newly added MM to have current Simulator Config
-    metadataMediator_->setSimulatorConfiguration(this->config_);
-  }
+void Simulator::setMetadataMediator(
+    metadata::MetadataMediator::ptr _metadataMediator) {
+  metadataMediator_ = std::move(_metadataMediator);
+  // set newly added MM to have current Simulator Config
+  metadataMediator_->setSimulatorConfiguration(this->config_);
+}
 
 scene::SceneNode* Simulator::loadAndCreateRenderAssetInstance(
     const assets::AssetInfo& assetInfo,

@@ -80,8 +80,8 @@ bool PhysicsManager::addStage(
 }  // PhysicsManager::addStage
 
 int PhysicsManager::addObject(const std::string& attributesHandle,
-              scene::SceneNode* attachmentNode,
-              const std::string& lightSetup) {
+                              scene::SceneNode* attachmentNode,
+                              const std::string& lightSetup) {
   esp::metadata::attributes::ObjectAttributes::ptr attributes =
       resourceManager_.getObjectAttributesManager()->getObjectCopyByHandle(
           attributesHandle);
@@ -95,8 +95,8 @@ int PhysicsManager::addObject(const std::string& attributesHandle,
 }  // PhysicsManager::addObject
 
 int PhysicsManager::addObject(int attributesID,
-              scene::SceneNode* attachmentNode,
-              const std::string& lightSetup) {
+                              scene::SceneNode* attachmentNode,
+                              const std::string& lightSetup) {
   const esp::metadata::attributes::ObjectAttributes::ptr attributes =
       resourceManager_.getObjectAttributesManager()->getObjectCopyByID(
           attributesID);

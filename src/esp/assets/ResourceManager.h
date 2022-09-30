@@ -54,15 +54,15 @@ class ObjectAttributes;
 class PhysicsManagerAttributes;
 class SceneObjectInstanceAttributes;
 class StageAttributes;
-}
+}  // namespace attributes
 namespace managers {
 class AssetAttributesManager;
 class LightLayoutAttributesManager;
 class ObjectAttributesManager;
 class PhysicsAttributesManager;
 class StageAttributesManager;
-}
-}
+}  // namespace managers
+}  // namespace metadata
 namespace scene {
 class SceneManager;
 class SemanticScene;
@@ -138,8 +138,9 @@ class ResourceManager {
   typedef Corrade::Containers::EnumSet<Flag> Flags;
 
   /** @brief Constructor */
-  explicit ResourceManager(std::shared_ptr<metadata::MetadataMediator>& _metadataMediator,
-                           Flags flags = {});
+  explicit ResourceManager(
+      std::shared_ptr<metadata::MetadataMediator>& _metadataMediator,
+      Flags flags = {});
 
   /** @brief Destructor */
   ~ResourceManager();
@@ -249,8 +250,10 @@ class ResourceManager {
    * @return Whether or not the scene load succeeded.
    */
   bool loadStage(
-      const std::shared_ptr<metadata::attributes::StageAttributes>& stageAttributes,
-      const std::shared_ptr<const metadata::attributes::SceneObjectInstanceAttributes>&
+      const std::shared_ptr<metadata::attributes::StageAttributes>&
+          stageAttributes,
+      const std::shared_ptr<
+          const metadata::attributes::SceneObjectInstanceAttributes>&
           stageInstanceAttributes,
       const std::shared_ptr<physics::PhysicsManager>& _physicsManager,
       esp::scene::SceneManager* sceneManagerPtr,
@@ -281,7 +284,8 @@ class ResourceManager {
    * registration call fails.
    */
   bool instantiateAssetsOnDemand(
-      const std::shared_ptr<metadata::attributes::ObjectAttributes>& ObjectAttributes);
+      const std::shared_ptr<metadata::attributes::ObjectAttributes>&
+          ObjectAttributes);
 
   //======== Accessor functions ========
   /**
@@ -300,8 +304,8 @@ class ResourceManager {
   /**
    * @brief Return manager for construction and access to asset attributes.
    */
-  std::shared_ptr<metadata::managers::AssetAttributesManager> getAssetAttributesManager()
-      const;
+  std::shared_ptr<metadata::managers::AssetAttributesManager>
+  getAssetAttributesManager() const;
   /**
    * @brief Return manager for construction and access to light and lighting
    * layout attributes.
@@ -312,8 +316,8 @@ class ResourceManager {
   /**
    * @brief Return manager for construction and access to object attributes.
    */
-  std::shared_ptr<metadata::managers::ObjectAttributesManager> getObjectAttributesManager()
-      const;
+  std::shared_ptr<metadata::managers::ObjectAttributesManager>
+  getObjectAttributesManager() const;
   /**
    * @brief Return manager for construction and access to physics world
    * attributes.
@@ -323,8 +327,8 @@ class ResourceManager {
   /**
    * @brief Return manager for construction and access to scene attributes.
    */
-  std::shared_ptr<metadata::managers::StageAttributesManager> getStageAttributesManager()
-      const;
+  std::shared_ptr<metadata::managers::StageAttributesManager>
+  getStageAttributesManager() const;
 
   /**
    * @brief Set a reference to the current @ref metadataMediator_.  Perform any
@@ -494,7 +498,8 @@ class ResourceManager {
    * result of this process.
    */
   void addObjectToDrawables(
-      const std::shared_ptr<metadata::attributes::ObjectAttributes>& ObjectAttributes,
+      const std::shared_ptr<metadata::attributes::ObjectAttributes>&
+          ObjectAttributes,
       scene::SceneNode* parent,
       DrawableGroup* drawables,
       std::vector<scene::SceneNode*>& visNodeCache,
@@ -710,7 +715,8 @@ class ResourceManager {
   std::unordered_map<uint32_t,
                      std::vector<std::shared_ptr<scene::CCSemanticObject>>>
   buildSemanticCCObjects(
-      const std::shared_ptr<metadata::attributes::StageAttributes>& stageAttributes);
+      const std::shared_ptr<metadata::attributes::StageAttributes>&
+          stageAttributes);
 
   /**
    * @brief Build data for a report for vertex color mapping to semantic scene
@@ -719,7 +725,8 @@ class ResourceManager {
    * do not have their colors mapped in mesh verts.
    */
   std::vector<std::string> buildVertexColorMapReport(
-      const std::shared_ptr<metadata::attributes::StageAttributes>& stageAttributes);
+      const std::shared_ptr<metadata::attributes::StageAttributes>&
+          stageAttributes);
 
  private:
   /**
@@ -736,7 +743,8 @@ class ResourceManager {
    */
   bool loadObjectMeshDataFromFile(
       const std::string& filename,
-      const std::shared_ptr<metadata::attributes::ObjectAttributes>& objectAttributes,
+      const std::shared_ptr<metadata::attributes::ObjectAttributes>&
+          objectAttributes,
       const std::string& meshType,
       bool forceFlatShading);
 
@@ -1003,7 +1011,8 @@ class ResourceManager {
    * created
    */
   std::map<std::string, AssetInfo> createStageAssetInfosFromAttributes(
-      const std::shared_ptr<metadata::attributes::StageAttributes>& stageAttributes,
+      const std::shared_ptr<metadata::attributes::StageAttributes>&
+          stageAttributes,
       bool createCollisionInfo,
       bool createSemanticInfo);
 

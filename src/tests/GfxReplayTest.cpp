@@ -18,8 +18,8 @@
 #include "esp/gfx/replay/Player.h"
 #include "esp/gfx/replay/Recorder.h"
 #include "esp/gfx/replay/ReplayManager.h"
-#include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/metadata/MetadataMediator.h"
+#include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/sim/Simulator.h"
 

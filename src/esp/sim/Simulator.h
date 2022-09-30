@@ -8,7 +8,6 @@
 #include <Corrade/Utility/Assert.h>
 
 #include <utility>
-#include "esp/assets/ResourceManager.h"
 #include "esp/agent/Agent.h"
 #include "esp/assets/ResourceManager.h"
 #include "esp/core/Esp.h"
@@ -913,7 +912,8 @@ class Simulator {
   /**
    * @brief Set this simulator's MetadataMediator
    */
-  void setMetadataMediator(std::shared_ptr<metadata::MetadataMediator> _metadataMediator);
+  void setMetadataMediator(
+      std::shared_ptr<metadata::MetadataMediator> _metadataMediator);
 
   /**
    * @brief Load and add a render asset instance to the current scene graph(s).

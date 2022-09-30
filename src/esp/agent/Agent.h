@@ -4,10 +4,10 @@
 #ifndef ESP_AGENT_AGENT_H_
 #define ESP_AGENT_AGENT_H_
 
+#include <Magnum/SceneGraph/Object.h>
 #include <map>
 #include <set>
 #include <string>
-#include <Magnum/SceneGraph/Object.h>
 
 #include "esp/core/Esp.h"
 #include "esp/core/EspEigen.h"
@@ -21,7 +21,7 @@ namespace sensor {
 class Sensor;
 struct SensorSpec;
 class SensorSuite;
-}
+}  // namespace sensor
 namespace agent {
 
 // Represents the physical state of an agent

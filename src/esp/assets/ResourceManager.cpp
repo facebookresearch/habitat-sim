@@ -2231,14 +2231,14 @@ ObjectInstanceShaderType ResourceManager::getMaterialShaderType(
 }  // ResourceManager::getMaterialShaderType
 
 bool ResourceManager::checkForPassedShaderType(
-      const ObjectInstanceShaderType typeToCheck,
-      const Mn::Trade::MaterialData& materialData,
-      const ObjectInstanceShaderType verificationType,
-      const Mn::Trade::MaterialType mnVerificationType) const {
+    const ObjectInstanceShaderType typeToCheck,
+    const Mn::Trade::MaterialData& materialData,
+    const ObjectInstanceShaderType verificationType,
+    const Mn::Trade::MaterialType mnVerificationType) const {
   return (
       (typeToCheck == verificationType) ||
       ((typeToCheck == ObjectInstanceShaderType::Material) &&
-        ((materialData.types() & mnVerificationType) == mnVerificationType)));
+       ((materialData.types() & mnVerificationType) == mnVerificationType)));
 }
 
 gfx::PhongMaterialData::uptr ResourceManager::buildFlatShadedMaterialData(
@@ -2709,14 +2709,14 @@ bool ResourceManager::instantiateAssetsOnDemand(
 }  // ResourceManager::instantiateAssetsOnDemand
 
 const std::vector<assets::CollisionMeshData>& ResourceManager::getCollisionMesh(
-      const std::string& collisionAssetHandle) const {
+    const std::string& collisionAssetHandle) const {
   auto colMeshGroupIter = collisionMeshGroups_.find(collisionAssetHandle);
   CORRADE_INTERNAL_ASSERT(colMeshGroupIter != collisionMeshGroups_.end());
   return colMeshGroupIter->second;
 }
 
-metadata::managers::AssetAttributesManager::ptr ResourceManager::getAssetAttributesManager()
-    const {
+metadata::managers::AssetAttributesManager::ptr
+ResourceManager::getAssetAttributesManager() const {
   return metadataMediator_->getAssetAttributesManager();
 }
 
@@ -2725,8 +2725,8 @@ ResourceManager::getLightLayoutAttributesManager() const {
   return metadataMediator_->getLightLayoutAttributesManager();
 }
 
-metadata::managers::ObjectAttributesManager::ptr ResourceManager::getObjectAttributesManager()
-    const {
+metadata::managers::ObjectAttributesManager::ptr
+ResourceManager::getObjectAttributesManager() const {
   return metadataMediator_->getObjectAttributesManager();
 }
 
@@ -2735,12 +2735,13 @@ ResourceManager::getPhysicsAttributesManager() const {
   return metadataMediator_->getPhysicsAttributesManager();
 }
 
-metadata::managers::StageAttributesManager::ptr ResourceManager::getStageAttributesManager()
-    const {
+metadata::managers::StageAttributesManager::ptr
+ResourceManager::getStageAttributesManager() const {
   return metadataMediator_->getStageAttributesManager();
 }
 
-const MeshMetaData& ResourceManager::getMeshMetaData(const std::string& metaDataName) const {
+const MeshMetaData& ResourceManager::getMeshMetaData(
+    const std::string& metaDataName) const {
   auto resDictMDIter = resourceDict_.find(metaDataName);
   CORRADE_INTERNAL_ASSERT(resDictMDIter != resourceDict_.end());
   return resDictMDIter->second.meshMetaData;
