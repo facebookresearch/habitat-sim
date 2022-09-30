@@ -81,7 +81,9 @@ void NavMeshSettings::readFromJSON(const std::string& jsonFile) {
 void NavMeshSettings::writeToJSON(const std::string& jsonFile) const {
   rapidjson::Document d(rapidjson::kObjectType);
   rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
-  esp::io::toJsonValue(*this, allocator);
+  auto jsonObj = esp::io::toJsonValue(*this, allocator);
+  d.Swap(jsonObj);
+  ESP_CHECK(!d.ObjectEmpty(), "Error writing JSON. Shouldn't happen.");
 
   const float maxDecimalPlaces = 7;
   auto ok = esp::io::writeJsonToFile(d, jsonFile, true, maxDecimalPlaces);

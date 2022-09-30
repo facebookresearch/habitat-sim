@@ -121,11 +121,19 @@ corrade_add_test(
   LIBRARIES
   core
   nav
+  io
   assets
 )
 target_include_directories(NavTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(PathFinderTest PathFinderTest.cpp LIBRARIES nav Corrade::Utility)
+corrade_add_test(
+  PathFinderTest
+  PathFinderTest.cpp
+  LIBRARIES
+  nav
+  io
+  Corrade::Utility
+)
 target_include_directories(PathFinderTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(PhysicsTest PhysicsTest.cpp LIBRARIES physics)
