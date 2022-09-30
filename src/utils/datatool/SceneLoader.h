@@ -8,16 +8,11 @@
 #include <string>
 
 #include <Corrade/PluginManager/Manager.h>
+#include <Magnum/Trade/Trade.h>
 
 #include "esp/assets/Asset.h"
 #include "esp/assets/CollisionMeshData.h"
 #include "esp/assets/MeshData.h"
-
-namespace Magnum {
-namespace Trade {
-class AbstractImporter;
-}
-}  // namespace Magnum
 
 namespace esp {
 namespace assets {

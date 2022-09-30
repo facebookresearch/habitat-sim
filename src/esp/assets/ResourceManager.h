@@ -57,14 +57,6 @@
 
 namespace Mn = Magnum;
 
-// forward declarations
-namespace Magnum {
-namespace Trade {
-class AbstractImporter;
-class PhongMaterialData;
-}  // namespace Trade
-}  // namespace Magnum
-
 namespace esp {
 namespace gfx {
 class Drawable;

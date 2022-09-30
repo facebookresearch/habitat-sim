@@ -10,14 +10,6 @@
 #include "esp/gfx/MaterialData.h"
 
 namespace Mn = Magnum;
-// forward declarations
-namespace Magnum {
-namespace Trade {
-class AbstractImporter;
-class PhongMaterialData;
-class PbrMetallicRoughnessMaterialData;
-}  // namespace Trade
-}  // namespace Magnum
 
 namespace esp {
 namespace gfx {
