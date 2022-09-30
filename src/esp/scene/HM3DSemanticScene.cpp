@@ -76,15 +76,15 @@ void buildInstanceRegionCategory(
       instanceID, 0, objCategoryName,
       Cr::Utility::formatString("{}_{}", objCategoryName, instanceID),
       colorInt};
-  objInstance[instanceID] = obj;
+  objInstance[instanceID] = std::move(obj);
   // find category, build if dne
   TempHM3DCategory tmpCat{
       static_cast<int>(categories.size()), objCategoryName, {}};
-  auto categoryIter = categories.emplace(objCategoryName, tmpCat);
+  auto categoryIter = categories.emplace(objCategoryName, std::move(tmpCat));
   categoryIter.first->second.objInstances.push_back(&objInstance[instanceID]);
   // find region, build if dne
   TempHM3DRegion tmpRegion{regionID, {}};
-  auto regionIter = regions.emplace(regionID, tmpRegion);
+  auto regionIter = regions.emplace(regionID, std::move(tmpRegion));
   regionIter.first->second.objInstances.push_back(&objInstance[instanceID]);
 }  // buildInstanceRegionCategory
 
@@ -133,7 +133,7 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
                               uint8_t((colorInt >> 8) & 0xff),
                               uint8_t(colorInt & 0xff)};
     // object category will possibly have commas
-    const std::string objCategoryName = tokens[1];
+    const std::string& objCategoryName = tokens[1];
     // room/region is always last token - get rid of first comma
     int regionID =
         std::stoi(Cr::Utility::String::trim(tokens[tokens.size() - 1], " ,"));
@@ -173,7 +173,7 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
     for (TempHM3DObject* objItem : regionItem.second.objInstances) {
       objItem->region = regionPtr;
     }
-    scene.regions_.emplace_back(regionPtr);
+    scene.regions_.emplace_back(std::move(regionPtr));
   }
 
   // build all object instances
@@ -188,8 +188,8 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
     // set region
     objPtr->parentIndex_ = obj.region->index_;
     objPtr->region_ = obj.region;
-    objPtr->region_->objects_.push_back(objPtr);
-    scene.objects_.emplace_back(objPtr);
+    objPtr->region_->objects_.emplace_back(objPtr);
+    scene.objects_.emplace_back(std::move(objPtr));
   }
   scene.hasVertColors_ = true;
 

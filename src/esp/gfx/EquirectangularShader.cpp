@@ -76,7 +76,7 @@ EquirectangularShader::EquirectangularShader(Flags flags)
                      : "")
       .addSource(rs.getString("equirectangular.frag"));
 
-  CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));
+  CORRADE_INTERNAL_ASSERT_OUTPUT(vert.compile() && frag.compile());
 
   attachShaders({vert, frag});
 

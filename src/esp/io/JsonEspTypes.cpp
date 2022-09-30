@@ -49,6 +49,11 @@ JsonGenericValue toJsonValue(const gfx::replay::Keyframe& keyframe,
     io::addMember(obj, "userTransforms", userTransformsArray, allocator);
   }
 
+  if (keyframe.lightsChanged) {
+    io::addMember(obj, "lightsChanged", true, allocator);
+    io::addMember(obj, "lights", keyframe.lights, allocator);
+  }
+
   return obj;
 }
 
@@ -96,6 +101,11 @@ bool fromJsonValue(const JsonGenericValue& obj,
       io::readMember(userTransformObj, "transform", transform);
       keyframe.userTransforms[name] = transform;
     }
+  }
+
+  io::readMember(obj, "lightsChanged", keyframe.lightsChanged);
+  if (keyframe.lightsChanged) {
+    io::readMember(obj, "lights", keyframe.lights);
   }
 
   return true;
@@ -146,15 +156,42 @@ bool fromJsonValue(const JsonGenericValue& obj,
     const std::string shaderTypeLC =
         Cr::Utility::String::lowercase(shaderTypeToUseString);
     auto mapIter = metadata::attributes::ShaderTypeNamesMap.find(shaderTypeLC);
-    ESP_CHECK(
-        mapIter != metadata::attributes::ShaderTypeNamesMap.end(),
-        "Illegal shader_type value"
-            << shaderTypeToUseString
-            << "specified in JSON to be used to set AssetInfo.shaderTypeToUse. "
-               "Aborting.");
+    ESP_CHECK(mapIter != metadata::attributes::ShaderTypeNamesMap.end(),
+              "Illegal shader_type value '"
+                  << shaderTypeToUseString
+                  << "' specified in JSON to be used to set "
+                     "AssetInfo.shaderTypeToUse. "
+                     "Aborting.");
     x = mapIter->second;
   }
   return shaderTypeSucceess;
+}
+
+JsonGenericValue toJsonValue(const esp::gfx::LightPositionModel& x,
+                             JsonAllocator& allocator) {
+  return toJsonValue(metadata::attributes::getLightPositionModelName(x),
+                     allocator);
+}
+
+bool fromJsonValue(const JsonGenericValue& obj,
+                   esp::gfx::LightPositionModel& x) {
+  std::string lightPositionModelString;
+  // read as string
+  bool success = fromJsonValue(obj, lightPositionModelString);
+  // convert to enum
+  if (success) {
+    const std::string lightPositionModelLC =
+        Cr::Utility::String::lowercase(lightPositionModelString);
+    auto mapIter =
+        metadata::attributes::LightPositionNamesMap.find(lightPositionModelLC);
+    ESP_CHECK(mapIter != metadata::attributes::LightPositionNamesMap.end(),
+              "Illegal model value '"
+                  << lightPositionModelString
+                  << "' specified in JSON to be used to set LightInfo.model. "
+                  << "Aborting.");
+    x = mapIter->second;
+  }
+  return success;
 }
 
 }  // namespace io

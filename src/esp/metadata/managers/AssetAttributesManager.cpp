@@ -104,7 +104,7 @@ AssetAttributesManager::AssetAttributesManager()
     auto tmplt = AssetAttributesManager::createObject(elem.second, true);
     std::string tmpltHandle = tmplt->getHandle();
     defaultPrimAttributeHandles_[elem.second] = tmpltHandle;
-    this->undeletableObjectNames_.insert(tmpltHandle);
+    this->undeletableObjectNames_.insert(std::move(tmpltHandle));
   }
 
   ESP_DEBUG() << "Built default primitive asset templates :"
