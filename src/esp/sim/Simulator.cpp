@@ -29,6 +29,8 @@
 #include "esp/nav/PathFinder.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/physics/bullet/BulletCollisionHelper.h"
+#include "esp/physics/objectManagers/ArticulatedObjectManager.h"
+#include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/sensor/CameraSensor.h"
 #include "esp/sensor/SensorFactory.h"
@@ -1051,6 +1053,23 @@ void Simulator::sampleRandomAgentState(agent::AgentState& agentState) {
   } else {
     ESP_ERROR() << "No loaded PathFinder, aborting sampleRandomAgentState.";
   }
+}
+
+esp::physics::ManagedRigidObject::ptr Simulator::queryRigidObjWrapper(int sceneID,
+                                                            int objID) const {
+  if (!sceneHasPhysics(sceneID)) {
+    return nullptr;
+  }
+  return getRigidObjectManager()->getObjectCopyByID(objID);
+}
+
+esp::physics::ManagedArticulatedObject::ptr Simulator::queryArticulatedObjWrapper(
+    int sceneID,
+    int objID) const {
+  if (!sceneHasPhysics(sceneID)) {
+    return nullptr;
+  }
+  return getArticulatedObjectManager()->getObjectCopyByID(objID);
 }
 
 void Simulator::setMetadataMediator(metadata::MetadataMediator::ptr _metadataMediator) {

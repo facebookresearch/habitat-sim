@@ -18,13 +18,14 @@
 
 #include <Corrade/Containers/EnumSet.h>
 
+#include "Asset.h"
 #include "MeshMetaData.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/ShaderManager.h"
 #include "esp/gfx/ShadowMapManager.h"
 #include "esp/physics/configure.h"
 
-#include "esp/metadata/attributes/AttributesBase.h"
+#include "esp/metadata/attributes/AttributesEnumMaps.h"
 
 #ifdef ESP_BUILD_WITH_VHACD
 #include <VHACD.h>
@@ -33,6 +34,9 @@
 namespace Mn = Magnum;
 
 namespace esp {
+namespace assets {
+struct PhongMaterialColor;
+}
 namespace geo {
 class VoxelGrid;
 }
@@ -82,6 +86,7 @@ class BaseMesh;
 struct CollisionMeshData;
 class GenericSemanticMeshData;
 struct MeshData;
+struct RenderAssetInstanceCreationInfo;
 // used for shadertype specification
 using metadata::attributes::ObjectInstanceShaderType;
 

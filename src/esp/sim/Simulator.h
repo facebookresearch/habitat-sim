@@ -17,11 +17,7 @@
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/WindowlessContext.h"
 #include "esp/nav/PathFinder.h"
-#include "esp/physics/ArticulatedObject.h"
 #include "esp/physics/PhysicsManager.h"
-#include "esp/physics/RigidObject.h"
-#include "esp/physics/objectManagers/ArticulatedObjectManager.h"
-#include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
 #include "esp/sensor/Sensor.h"
@@ -1060,12 +1056,7 @@ class Simulator {
    * nullptr if DNE.
    */
   esp::physics::ManagedRigidObject::ptr queryRigidObjWrapper(int sceneID,
-                                                             int objID) const {
-    if (!sceneHasPhysics(sceneID)) {
-      return nullptr;
-    }
-    return getRigidObjectManager()->getObjectCopyByID(objID);
-  }
+                                                             int objID) const;
 
   /**
    * @brief TEMPORARY until sim access to objects is completely removed.  This
@@ -1079,12 +1070,7 @@ class Simulator {
    */
   esp::physics::ManagedArticulatedObject::ptr queryArticulatedObjWrapper(
       int sceneID,
-      int objID) const {
-    if (!sceneHasPhysics(sceneID)) {
-      return nullptr;
-    }
-    return getArticulatedObjectManager()->getObjectCopyByID(objID);
-  }
+      int objID) const;
 
   void reconfigureReplayManager(bool enableGfxReplaySave);
 
