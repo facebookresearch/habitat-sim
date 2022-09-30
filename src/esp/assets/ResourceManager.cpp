@@ -22,6 +22,7 @@
 #include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/GL/Context.h>
 #include <Magnum/GL/Extensions.h>
+#include <Magnum/Image.h>
 #include <Magnum/ImageView.h>
 #include <Magnum/Math/FunctionsBatch.h>
 #include <Magnum/Math/Range.h>

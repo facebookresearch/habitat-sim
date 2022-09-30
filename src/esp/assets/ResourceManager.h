@@ -26,6 +26,7 @@
 #include <Magnum/ResourceManager.h>
 #include <Magnum/SceneGraph/MatrixTransformation3D.h>
 #include <Magnum/Trade/Trade.h>
+#include <Magnum/Trade/MaterialData.h>
 
 #include "Asset.h"
 #include "BaseMesh.h"

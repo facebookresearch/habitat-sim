@@ -10,6 +10,8 @@
 #include <Corrade/Containers/Containers.h>
 #include <Corrade/Containers/Optional.h>
 #include <Magnum/Math/Range.h>
+#include <Magnum/SceneGraph/Object.h>
+#include <Magnum/SceneGraph/TranslationRotationScalingTransformation3D.h>
 
 #include "esp/core/Esp.h"
 #include "esp/gfx/magnum.h"

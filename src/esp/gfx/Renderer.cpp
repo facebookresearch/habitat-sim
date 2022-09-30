@@ -26,7 +26,6 @@
 #include "esp/gfx/GaussianFilterShader.h"
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/TextureVisualizerShader.h"
-#include "esp/gfx/magnum.h"
 #include "esp/sensor/VisualSensor.h"
 #include "esp/sim/Simulator.h"
 
