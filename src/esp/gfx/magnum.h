@@ -16,8 +16,6 @@
 #include <Magnum/SceneGraph/Scene.h>
 #include <Magnum/Trade/PhongMaterialData.h>
 
-typedef Magnum::GL::Mesh MagnumMesh;
-typedef Magnum::GL::Texture2D MagnumTexture2D;
 typedef Magnum::SceneGraph::Object<
     Magnum::SceneGraph::TranslationRotationScalingTransformation3D>
     MagnumObject;
@@ -27,7 +25,5 @@ typedef Magnum::SceneGraph::Scene<
 typedef Magnum::SceneGraph::Camera3D MagnumCamera;
 typedef Magnum::SceneGraph::Drawable3D MagnumDrawable;
 typedef Magnum::SceneGraph::DrawableGroup3D MagnumDrawableGroup;
-typedef Magnum::GL::AbstractShaderProgram MagnumShaderProgram;
-typedef Magnum::Trade::PhongMaterialData MagnumMaterialData;
 
 #endif  // ESP_GFX_MAGNUM_H_
