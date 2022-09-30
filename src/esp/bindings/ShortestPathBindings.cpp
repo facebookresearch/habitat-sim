@@ -122,6 +122,10 @@ void initShortestPathBindings(py::module& m) {
           &NavMeshSettings::filterWalkableLowHeightSpans,
           R"(Marks navigable spans as non-navigable if the clearence above the span is less than the specified height. Allows the formation of navigable regions that will flow over low lying objects such as curbs, and up structures such as stairways. Default True.)")
       .def("set_defaults", &NavMeshSettings::setDefaults)
+      .def("read_from_json", &NavMeshSettings::readFromJSON,
+           R"(Overwrite these settings with values from a JSON file.)")
+      .def("write_to_json", &NavMeshSettings::writeToJSON,
+           R"(Write these settings to a JSON file.)")
       .def(
           py::self == py::self,
           R"(Checks for equivalency of (or < eps 1e-5 distance between) each parameter.)")
