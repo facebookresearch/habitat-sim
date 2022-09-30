@@ -342,6 +342,50 @@ class ResourceManager {
   }
 
   /**
+   * @brief Return a vector of the vertex position in a given mesh.
+   *
+   * Given the integer ID of a semantic mesh, get the vertex positions in that
+   * mesh.
+   * @param mesh_key The number index of a mesh.
+   * @return A vector of vertex positions.
+   */
+  std::vector<vec3f> getVertices(int mesh_key);
+
+  /**
+   * @brief Return a vector of the surface indexes for a specific mesh in the
+   * scene.
+   * @param mesh_key The number index of a mesh.
+   * @return A vector of surface indexes.
+   */
+  std::vector<uint32_t> getSurfIndexes(int mesh_key);
+
+  /**
+   * @brief Return a vector of color per vertex for a specific mesh in the
+   * scene.
+   * @param mesh_key The number index of a mesh.
+   * @return A vector of vertex colors.
+   */
+  std::vector<vec3f> getVerticesColor(int mesh_key);
+
+  /**
+   * @brief Return a vector of object IDs for each vertex in a given mesh.
+   *
+   * Given the integer ID of a mesh, get the object IDs of each vertex in
+   * the mesh.
+   * @param mesh_key The number index of a mesh.
+   * @return A vector of object IDs.
+   */
+  std::vector<uint16_t> getObjectIds(int mesh_key);
+
+  /**
+   * @brief Return a vector of the integer IDs of existing meshes.
+   *
+   * Return a vector of the integer IDs of existing meshes.
+   * @return a vector of existing mesh IDs.
+   */
+  std::vector<int> getInstanceMeshKeys();
+
+  /**
    * @brief Set a reference to the current @ref metadataMediator_.  Perform any
    * initialization that may be required when @ref metadataMediator_ is changed.
    * @param MM a reference to the new @ref metadataMediator_.

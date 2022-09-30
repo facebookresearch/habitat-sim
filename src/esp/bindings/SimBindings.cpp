@@ -339,6 +339,23 @@ void initSimBindings(py::module& m) {
           R"(Register a LightSetup with a specific key. If a LightSetup is already registered with
           this key, it will be overridden. All Drawables referencing the key will use the newly
           registered LightSetup.)")
+      .def("get_vertices", &Simulator::getVertices, "mesh_key"_a,
+           pybind11::return_value_policy::reference,
+           R"(Return a vector of the vertex locations on a given mesh.)")
+      .def(
+          "get_vertices_color", &Simulator::getVerticesColor, "mesh_key"_a,
+          pybind11::return_value_policy::reference,
+          R"(Return a vector of color per vertex for a specific mesh in the scene.)")
+      .def(
+          "get_surface_ids", &Simulator::getSurfIndexes, "mesh_key"_a,
+          pybind11::return_value_policy::reference,
+          R"(Return a vector of the surface indexes for a specific mesh in the scene.)")
+      .def("get_object_ids", &Simulator::getObjectIds, "mesh_key"_a,
+           pybind11::return_value_policy::reference,
+           R"(Return the object IDs for each vertex in a given mesh.)")
+      .def("get_instance_mesh_keys", &Simulator::getInstanceMeshKeys,
+           pybind11::return_value_policy::reference,
+           R"(Return a list of the mesh keys of existing meshes.)")
       /* --- P2P/Fixed Constraints API --- */
       .def(
           "create_rigid_constraint", &Simulator::createRigidConstraint,

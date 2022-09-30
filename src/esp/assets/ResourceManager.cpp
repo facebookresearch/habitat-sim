@@ -2687,6 +2687,81 @@ bool ResourceManager::instantiateAssetsOnDemand(
   return true;
 }  // ResourceManager::instantiateAssetsOnDemand
 
+std::vector<vec3f> ResourceManager::getVertices(int mesh_key) {
+  BaseMesh& mesh = *meshes_.at(mesh_key);
+  std::vector<vec3f> vertexPositions;
+
+  ESP_CHECK(mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH,
+            "Error in getSurfIndexes. The mesh is not an instance mesh.");
+
+  // It is an instance mesh and it is possible to return the vertex data
+  const GenericSemanticMeshData& instMesh =
+      dynamic_cast<GenericSemanticMeshData&>(mesh);
+  const auto& vbo = instMesh.getVertexBufferObjectCPU();
+  vertexPositions.reserve(vbo.size());
+  for (const auto& v : vbo) {
+    vertexPositions.emplace_back(vec3f(v.x(), v.y(), v.z()));
+  }
+  return vertexPositions;
+}
+
+std::vector<uint32_t> ResourceManager::getSurfIndexes(int mesh_key) {
+  BaseMesh& mesh = *meshes_.at(mesh_key);
+
+  ESP_CHECK(mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH,
+            "Error in getSurfIndexes. The mesh is not an instance mesh.");
+
+  // It is an instance mesh and it is possible to return the vertex data
+  const GenericSemanticMeshData& instMesh =
+      dynamic_cast<GenericSemanticMeshData&>(mesh);
+  std::vector<uint32_t> surfIndexes = instMesh.getIndexBufferObjectCPU();
+  return surfIndexes;
+}
+
+std::vector<vec3f> ResourceManager::getVerticesColor(int mesh_key) {
+  BaseMesh& mesh = *meshes_.at(mesh_key);
+  std::vector<vec3f> colors;
+
+  ESP_CHECK(mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH,
+            "Error in getVerticesColor. The mesh is not an instance mesh.");
+
+  // It is an instance mesh and it is possible to return the vertex data
+  const GenericSemanticMeshData& instMesh =
+      dynamic_cast<GenericSemanticMeshData&>(mesh);
+  const auto& cbo = instMesh.getColorBufferObjectCPU();
+  colors.reserve(cbo.size());
+  for (const auto& c : cbo) {
+    auto clr = Mn::EigenIntegration::cast<esp::vec3uc>(c);
+    colors.emplace_back((clr.cast<float>() / 255.0f));
+  }
+  return colors;
+}
+
+std::vector<uint16_t> ResourceManager::getObjectIds(int mesh_key) {
+  BaseMesh& mesh = *meshes_.at(mesh_key);
+
+  ESP_CHECK(mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH,
+            "Error in getObjectIds. The mesh is not an instance mesh.");
+
+  // It is an instance mesh and it is possible to return the vertex data
+  const GenericSemanticMeshData& instMesh =
+      dynamic_cast<GenericSemanticMeshData&>(mesh);
+  std::vector<uint16_t> objIds = instMesh.getObjectIdsBufferObjectCPU();
+  return objIds;
+}
+
+std::vector<int> ResourceManager::getInstanceMeshKeys() {
+  std::vector<int> r;
+  for (auto const& m : meshes_) {
+    BaseMesh& mesh = *m.second;
+    if (mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH) {
+      int id = m.first;
+      r.push_back(id);
+    }
+  }
+  return r;
+}
+
 void ResourceManager::addObjectToDrawables(
     const ObjectAttributes::ptr& ObjectAttributes,
     scene::SceneNode* parent,
