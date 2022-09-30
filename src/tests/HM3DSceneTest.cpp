@@ -7,6 +7,7 @@
 
 #include "esp/scene/SemanticScene.h"
 #include "esp/sim/Simulator.h"
+#include "esp/metadata/MetadataMediator.h"
 
 #include "configure.h"
 

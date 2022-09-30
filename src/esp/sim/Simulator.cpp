@@ -25,6 +25,7 @@
 #include "esp/gfx/replay/Recorder.h"
 #include "esp/gfx/replay/ReplayManager.h"
 #include "esp/metadata/attributes/AttributesBase.h"
+#include "esp/metadata/MetadataMediator.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/physics/bullet/BulletCollisionHelper.h"
@@ -615,6 +616,63 @@ void Simulator::seed(uint32_t newSeed) {
   pathfinder_->seed(newSeed);
 }
 
+const metadata::managers::AssetAttributesManager::ptr&
+Simulator::getAssetAttributesManager() const {
+  return metadataMediator_->getAssetAttributesManager();
+}
+
+const metadata::managers::LightLayoutAttributesManager::ptr&
+Simulator::getLightLayoutAttributesManager() const {
+  return metadataMediator_->getLightLayoutAttributesManager();
+}
+
+const metadata::managers::ObjectAttributesManager::ptr&
+Simulator::getObjectAttributesManager() const {
+  return metadataMediator_->getObjectAttributesManager();
+}
+
+const metadata::managers::PhysicsAttributesManager::ptr&
+Simulator::getPhysicsAttributesManager() const {
+  return metadataMediator_->getPhysicsAttributesManager();
+}
+
+const metadata::managers::StageAttributesManager::ptr&
+Simulator::getStageAttributesManager() const {
+  return metadataMediator_->getStageAttributesManager();
+}
+
+std::string Simulator::getActiveSceneDatasetName() {
+  return metadataMediator_->getActiveSceneDatasetName();
+}
+
+void Simulator::setActiveSceneDatasetName(const std::string& _dsHandle) {
+  metadataMediator_->setActiveSceneDatasetName(_dsHandle);
+}
+
+bool Simulator::saveCurrentSceneInstance(const std::string& saveFilename,
+                              int sceneID) const {
+  if (sceneHasPhysics(sceneID)) {
+    ESP_DEBUG() << "Attempting to save current scene layout as "
+                    "SceneInstanceAttributes with filename :"
+                << saveFilename;
+    return metadataMediator_->getSceneInstanceAttributesManager()
+        ->saveManagedObjectToFile(buildCurrentStateSceneAttributes(),
+                                  saveFilename);
+  }
+  return false;
+}  // saveCurrentSceneInstance
+
+bool Simulator::saveCurrentSceneInstance(bool overwrite, int sceneID) const {
+  if (sceneHasPhysics(sceneID)) {
+    ESP_DEBUG() << "Attempting to save current scene layout as "
+                    "SceneInstanceAttributes.";
+    return metadataMediator_->getSceneInstanceAttributesManager()
+        ->saveManagedObjectToFile(buildCurrentStateSceneAttributes(),
+                                  overwrite);
+  }
+  return false;
+}  // saveCurrentSceneInstance
+
 void Simulator::reconfigureReplayManager(bool enableGfxReplaySave) {
   gfxReplayMgr_ = std::make_shared<gfx::replay::ReplayManager>();
 
@@ -994,6 +1052,12 @@ void Simulator::sampleRandomAgentState(agent::AgentState& agentState) {
     ESP_ERROR() << "No loaded PathFinder, aborting sampleRandomAgentState.";
   }
 }
+
+void Simulator::setMetadataMediator(metadata::MetadataMediator::ptr _metadataMediator) {
+    metadataMediator_ = std::move(_metadataMediator);
+    // set newly added MM to have current Simulator Config
+    metadataMediator_->setSimulatorConfiguration(this->config_);
+  }
 
 scene::SceneNode* Simulator::loadAndCreateRenderAssetInstance(
     const assets::AssetInfo& assetInfo,

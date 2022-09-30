@@ -14,6 +14,7 @@
 #include <string>
 
 #include "esp/assets/ResourceManager.h"
+#include "esp/metadata/MetadataMediator.h"
 #include "esp/physics/RigidObject.h"
 #include "esp/sensor/CameraSensor.h"
 #include "esp/sim/Simulator.h"

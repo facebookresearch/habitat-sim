@@ -9,6 +9,7 @@
 #include <Corrade/Containers/Reference.h>
 #include "esp/assets/ResourceManager.h"
 #include "esp/core/RigidState.h"
+#include "esp/metadata/attributes/SceneInstanceAttributes.h"
 #include "esp/physics/CollisionGroupHelper.h"
 
 /** @file

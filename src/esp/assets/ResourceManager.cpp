@@ -54,6 +54,7 @@
 #include "esp/gfx/replay/Recorder.h"
 #include "esp/io/Json.h"
 #include "esp/io/URDFParser.h"
+#include "esp/metadata/MetadataMediator.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/scene/SceneGraph.h"
 #include "esp/scene/SemanticScene.h"
@@ -2687,6 +2688,31 @@ bool ResourceManager::instantiateAssetsOnDemand(
 
   return true;
 }  // ResourceManager::instantiateAssetsOnDemand
+
+metadata::managers::AssetAttributesManager::ptr ResourceManager::getAssetAttributesManager()
+    const {
+  return metadataMediator_->getAssetAttributesManager();
+}
+
+metadata::managers::LightLayoutAttributesManager::ptr
+ResourceManager::getLightLayoutAttributesManager() const {
+  return metadataMediator_->getLightLayoutAttributesManager();
+}
+
+metadata::managers::ObjectAttributesManager::ptr ResourceManager::getObjectAttributesManager()
+    const {
+  return metadataMediator_->getObjectAttributesManager();
+}
+
+metadata::managers::PhysicsAttributesManager::ptr
+ResourceManager::getPhysicsAttributesManager() const {
+  return metadataMediator_->getPhysicsAttributesManager();
+}
+
+metadata::managers::StageAttributesManager::ptr ResourceManager::getStageAttributesManager()
+    const {
+  return metadataMediator_->getStageAttributesManager();
+}
 
 void ResourceManager::addObjectToDrawables(
     const ObjectAttributes::ptr& ObjectAttributes,
