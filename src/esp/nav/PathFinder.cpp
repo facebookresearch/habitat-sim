@@ -15,6 +15,7 @@
 #include <Magnum/EigenIntegration/Integration.h>
 
 #include <Corrade/Containers/Optional.h>
+#include <Corrade/Utility/Path.h>
 
 #include <cstdio>
 // NOLINTNEXTLINE
@@ -30,6 +31,11 @@
 #include "DetourNavMeshQuery.h"
 #include "DetourNode.h"
 #include "Recast.h"
+
+#include <rapidjson/document.h>
+#include "esp/core/Check.h"
+#include "esp/io/Json.h"
+#include "esp/io/JsonAllTypes.h"
 
 namespace Mn = Magnum;
 namespace Cr = Corrade;
@@ -56,6 +62,32 @@ bool operator==(const NavMeshSettings& a, const NavMeshSettings& b) {
 bool operator!=(const NavMeshSettings& a, const NavMeshSettings& b) {
   return !(a == b);
 }
+
+void NavMeshSettings::readFromJSON(const std::string& jsonFile) {
+  if (!Corrade::Utility::Path::exists(jsonFile)) {
+    ESP_ERROR() << "File" << jsonFile << "not found.";
+    return;
+  }
+  try {
+    auto newDoc = esp::io::parseJsonFile(jsonFile);
+
+    esp::io::fromJsonValue(newDoc, *this);
+
+  } catch (...) {
+    ESP_ERROR() << "Failed to parse keyframes from" << jsonFile << ".";
+  }
+}
+
+void NavMeshSettings::writeToJSON(const std::string& jsonFile) const {
+  rapidjson::Document d(rapidjson::kObjectType);
+  rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
+  esp::io::toJsonValue(*this, allocator);
+
+  const float maxDecimalPlaces = 7;
+  auto ok = esp::io::writeJsonToFile(d, jsonFile, true, maxDecimalPlaces);
+  ESP_CHECK(ok, "writeSavedKeyframesToFile: unable to write to " << jsonFile);
+}
+
 struct MultiGoalShortestPath::Impl {
   std::vector<vec3f> requestedEnds;
 
