@@ -17,36 +17,12 @@
 #include <vector>
 
 #include <Corrade/Containers/EnumSet.h>
-#include <Corrade/Containers/Optional.h>
-#include <Magnum/DebugTools/ColorMap.h>
-#include <Magnum/EigenIntegration/Integration.h>
-#include <Magnum/GL/TextureFormat.h>
-#include <Magnum/MeshTools/Compile.h>
-#include <Magnum/MeshTools/Transform.h>
-#include <Magnum/ResourceManager.h>
-#include <Magnum/SceneGraph/MatrixTransformation3D.h>
-#include <Magnum/Trade/Trade.h>
-#include <Magnum/Trade/MaterialData.h>
 
-#include "Asset.h"
-#include "BaseMesh.h"
-#include "CollisionMeshData.h"
-#include "GenericMeshData.h"
-#include "GenericSemanticMeshData.h"
-#include "MeshData.h"
 #include "MeshMetaData.h"
-#include "RenderAssetInstanceCreationInfo.h"
-#include "esp/geo/VoxelGrid.h"
-#include "esp/gfx/CubeMap.h"
 #include "esp/gfx/Drawable.h"
-#include "esp/gfx/DrawableGroup.h"
-#include "esp/gfx/MaterialData.h"
-#include "esp/gfx/PbrImageBasedLighting.h"
 #include "esp/gfx/ShaderManager.h"
 #include "esp/gfx/ShadowMapManager.h"
 #include "esp/physics/configure.h"
-#include "esp/scene/SceneManager.h"
-#include "esp/scene/SceneNode.h"
 
 #include "esp/metadata/attributes/AttributesBase.h"
 
@@ -57,8 +33,12 @@
 namespace Mn = Magnum;
 
 namespace esp {
+namespace geo {
+class VoxelGrid;
+}
 namespace gfx {
 class Drawable;
+class PbrImageBasedLighting;
 namespace replay {
 class Recorder;
 }
@@ -80,7 +60,9 @@ class StageAttributesManager;
 }
 }
 namespace scene {
+class SceneManager;
 class SemanticScene;
+class CCSemanticObject;
 struct SceneConfiguration;
 }  // namespace scene
 namespace physics {
@@ -96,6 +78,10 @@ class Model;
 }
 }  // namespace io
 namespace assets {
+class BaseMesh;
+struct CollisionMeshData;
+class GenericSemanticMeshData;
+struct MeshData;
 // used for shadertype specification
 using metadata::attributes::ObjectInstanceShaderType;
 
@@ -304,11 +290,7 @@ class ResourceManager {
    * individual components of the asset.
    */
   const std::vector<assets::CollisionMeshData>& getCollisionMesh(
-      const std::string& collisionAssetHandle) const {
-    auto colMeshGroupIter = collisionMeshGroups_.find(collisionAssetHandle);
-    CORRADE_INTERNAL_ASSERT(colMeshGroupIter != collisionMeshGroups_.end());
-    return colMeshGroupIter->second;
-  }
+      const std::string& collisionAssetHandle) const;
 
   /**
    * @brief Return manager for construction and access to asset attributes.
@@ -357,11 +339,7 @@ class ResourceManager {
    * Typically the filepath of file-based assets.
    * @return The asset's @ref MeshMetaData object.
    */
-  const MeshMetaData& getMeshMetaData(const std::string& metaDataName) const {
-    auto resDictMDIter = resourceDict_.find(metaDataName);
-    CORRADE_INTERNAL_ASSERT(resDictMDIter != resourceDict_.end());
-    return resDictMDIter->second.meshMetaData;
-  }
+  const MeshMetaData& getMeshMetaData(const std::string& metaDataName) const;
 
   /**
    * @brief check to see if a particular voxel grid has been created &
@@ -936,12 +914,7 @@ class ResourceManager {
       const ObjectInstanceShaderType typeToCheck,
       const Mn::Trade::MaterialData& materialData,
       const ObjectInstanceShaderType verificationType,
-      const Mn::Trade::MaterialType mnVerificationType) const {
-    return (
-        (typeToCheck == verificationType) ||
-        ((typeToCheck == ObjectInstanceShaderType::Material) &&
-         ((materialData.types() & mnVerificationType) == mnVerificationType)));
-  }
+      const Mn::Trade::MaterialType mnVerificationType) const;
 
   /**
    * @brief Build a @ref PhongMaterialData for use with flat shading
@@ -1043,7 +1016,7 @@ class ResourceManager {
    * @param info AssetInfo describing asset.
    * @return The GenericSemanticMeshData being built.
    */
-  GenericSemanticMeshData::uptr flattenImportedMeshAndBuildSemantic(
+  std::unique_ptr<GenericSemanticMeshData> flattenImportedMeshAndBuildSemantic(
       Importer& fileImporter,
       const AssetInfo& info);
 
@@ -1269,7 +1242,7 @@ class ResourceManager {
    * being rendered, since that mesh will have its components moved into actual
    * render mesh constructs.
    */
-  GenericSemanticMeshData::uptr infoSemanticMeshData_{};
+  std::unique_ptr<GenericSemanticMeshData> infoSemanticMeshData_{};
 
   /**
    * @brief Importer used to synthesize Magnum Primitives (PrimitiveImporter).

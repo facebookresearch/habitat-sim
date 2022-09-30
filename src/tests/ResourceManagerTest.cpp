@@ -14,6 +14,7 @@
 
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/assets/ResourceManager.h"
+#include "esp/assets/MeshData.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/WindowlessContext.h"
 #include "esp/metadata/attributes/AttributesBase.h"
