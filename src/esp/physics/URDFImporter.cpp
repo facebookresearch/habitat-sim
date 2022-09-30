@@ -10,6 +10,7 @@
 
 #include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Path.h>
+#include "esp/assets/ResourceManager.h"
 #include "esp/metadata/managers/AssetAttributesManager.h"
 
 namespace Mn = Magnum;

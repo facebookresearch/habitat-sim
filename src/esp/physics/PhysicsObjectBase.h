@@ -7,8 +7,8 @@
 
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/Containers/Reference.h>
-#include "esp/assets/ResourceManager.h"
 #include "esp/core/RigidState.h"
+#include "esp/gfx/ShaderManager.h"
 #include "esp/metadata/attributes/SceneInstanceAttributes.h"
 #include "esp/physics/CollisionGroupHelper.h"
 
@@ -19,6 +19,9 @@
  */
 
 namespace esp {
+namespace assets {
+class ResourceManager;
+}
 
 namespace physics {
 

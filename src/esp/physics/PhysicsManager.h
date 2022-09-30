@@ -27,7 +27,6 @@
 #include "esp/assets/CollisionMeshData.h"
 #include "esp/assets/GenericSemanticMeshData.h"
 #include "esp/assets/MeshMetaData.h"
-#include "esp/assets/ResourceManager.h"
 #include "esp/gfx/DrawableGroup.h"
 #include "esp/io/URDFParser.h"
 #include "esp/physics/objectWrappers/ManagedArticulatedObject.h"
@@ -35,10 +34,19 @@
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
+namespace assets {
+class ResourceManager;
+}
 //! core physics simulation namespace
 namespace sim {
 class Simulator;
 }
+namespace metadata {
+namespace attributes {
+class PhysicsManagerAttributes;
+}
+}
+
 namespace physics {
 
 /** @brief Holds information about one ray hit instance. */

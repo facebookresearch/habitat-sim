@@ -8,6 +8,7 @@
 #include <Corrade/Utility/Assert.h>
 
 #include <utility>
+#include "esp/assets/ResourceManager.h"
 #include "esp/agent/Agent.h"
 #include "esp/assets/ResourceManager.h"
 #include "esp/core/Esp.h"

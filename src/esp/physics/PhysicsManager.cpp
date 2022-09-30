@@ -5,6 +5,7 @@
 #include "PhysicsManager.h"
 #include <Magnum/Math/Range.h>
 #include "esp/assets/CollisionMeshData.h"
+#include "esp/assets/ResourceManager.h"
 #include "esp/metadata/managers/PhysicsAttributesManager.h"
 #include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
