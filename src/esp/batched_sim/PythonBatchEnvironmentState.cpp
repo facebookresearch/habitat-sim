@@ -24,9 +24,13 @@ PythonBatchEnvironmentStateWrapper::PythonBatchEnvironmentStateWrapper(
 
 #ifndef DISABLE_BATCHED_SIM_PYBIND
     //  py::array_t<int> episode_idx = -1;       // 0..len(episodes)-1
-    // state.episode_idx = getArray(intVectors, -1, numEnvs);
+    state.episode_idx = getArray(intVectors, -1, numEnvs);
     //   py::array_t<int> episode_step_idx = -1;  // will be zero if this env
-    //   was just reset py::array_t<int> target_obj_idx = -1;    // see
+    //   was just reset
+    state.episode_step_idx = getArray(intVectors, -1, numEnvs);
+    // py::array_t<int> target_obj_idx = -1;    // see
+    state.target_obj_idx = getArray(intVectors, -1, numEnvs);
+
     //   obj_positions, obj_rotations
     //   // all positions/rotations are relative to the mesh, i.e. some
     //   arbitrary
@@ -54,17 +58,20 @@ PythonBatchEnvironmentStateWrapper::PythonBatchEnvironmentStateWrapper(
     //   py::array_t<float> ee_rotation; // Magnum::Matrix3
     state.ee_inv_rotation = getArray(floatVectors, 0.f, numEnvs, 3, 3);
 
-//   py::array_t<bool> did_collide = false;
-//   py::array_t<int> held_obj_idx = -1;
-//   py::array_t<bool> did_attempt_grasp = false;
-//   py::array_t<bool> did_grasp = false;
-//   py::array_t<bool> did_drop = false;
-//   py::array_t<float> drop_height = NAN;
+    //   py::array_t<bool> did_collide = false;
+    //   py::array_t<int> held_obj_idx = -1;
+    state.held_obj_idx = getArray(intVectors, -1, numEnvs);
+    //   py::array_t<bool> did_attempt_grasp = false;
+    //   py::array_t<bool> did_grasp = false;
+    //   py::array_t<bool> did_drop = false;
+    state.did_drop = getArray<char>(boolVectors, false, numEnvs);
+    //   py::array_t<float> drop_height = NAN;
 
-//   // other env state
-//   //std::vector<Magnum::Vector3> obj_positions;
-//   //std::vector<Magnum::Quaternion> obj_rotations;
-//   py::array_t<float> target_obj_pos; // Magnum::Matrix3
+    //   // other env state
+    //   //std::vector<Magnum::Vector3> obj_positions;
+    //   //std::vector<Magnum::Quaternion> obj_rotations;
+    //   py::array_t<float> target_obj_pos; // Magnum::Matrix3
+    state.target_obj_pos = getArray(floatVectors, 0.f, numEnvs, 3);
 #endif
   }
 }
@@ -99,6 +106,19 @@ void safePyArraySet(pybind11::array_t<float>& arr,
     data[i] = item.data()[i];
   }
 }
+
+void safePyArraySet(pybind11::array_t<int>& arr, int idx0, int item) {
+  BATCHED_SIM_ASSERT(arr.ndim() == 1);
+  int* data = arr.mutable_data(idx0);
+  *data = item;
+}
+
+void safePyArraySet(pybind11::array_t<bool>& arr, int idx0, bool item) {
+  BATCHED_SIM_ASSERT(arr.ndim() == 1);
+  bool* data = arr.mutable_data(idx0);
+  *data = item;
+}
+
 #endif
 
 }  // namespace batched_sim

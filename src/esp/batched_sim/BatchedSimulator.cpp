@@ -476,6 +476,7 @@ void BatchedSimulator::updatePythonBatchEnvironmentState() {
 
   for (int b = 0; b < config_.numEnvs; b++) {
     const auto& robotInstance = safeVectorGet(robots_.robotInstances_, b);
+    auto& envState = safeVectorGet(pythonEnvStates_, b);
 
     auto& episodeInstance =
         safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
@@ -496,8 +497,14 @@ void BatchedSimulator::updatePythonBatchEnvironmentState() {
                    yawToRotation(yaws[b]).toMatrix().transposed());
 
     // envState.episode_idx = episodeInstance.episodeIndex_;
-    // envState.episode_step_idx = 0;
+    safePyArraySet(batchEnvState.episode_idx, b, episodeInstance.episodeIndex_);
+    safePyArraySet(batchEnvState.episode_step_idx, b,
+                   envState.episode_step_idx);
     // envState.target_obj_idx = episode.targetObjIndex_;
+    safePyArraySet(batchEnvState.target_obj_idx, b, episode.targetObjIndex_);
+    safePyArraySet(batchEnvState.held_obj_idx, b,
+                   robotInstance.grippedFreeObjectIndex_);
+
     // envState.goal_pos = episode.targetObjGoalPos_;
     safePyArraySet(batchEnvState.goal_pos, b, episode.targetObjGoalPos_);
     // envState.goal_rotation = episode.targetObjGoalRotation_;
@@ -516,6 +523,13 @@ void BatchedSimulator::updatePythonBatchEnvironmentState() {
     safePyArraySet(
         batchEnvState.ee_inv_rotation, b,
         robotInstance.cachedGripperLinkMat_.rotationNormalized().transposed());
+
+    safePyArraySet(
+        batchEnvState.target_obj_pos, b,
+        safeVectorGet(envState.obj_positions, episode.targetObjIndex_));
+
+    safePyArraySet(batchEnvState.did_drop, b, envState.did_drop);
+
 #endif
   }
 }

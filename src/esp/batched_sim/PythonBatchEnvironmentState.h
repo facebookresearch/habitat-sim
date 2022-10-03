@@ -113,7 +113,7 @@ class PythonBatchEnvironmentStateWrapper {
 
   std::vector<std::vector<float>> floatVectors;
   std::vector<std::vector<int>> intVectors;
-  std::vector<std::vector<bool>> boolVectors;
+  std::vector<std::vector<char>> boolVectors;
 };
 
 #ifndef DISABLE_BATCHED_SIM_PYBIND
@@ -123,6 +123,8 @@ void safePyArraySet(pybind11::array_t<float>& arr,
 void safePyArraySet(pybind11::array_t<float>& arr,
                     int idx0,
                     const Magnum::Matrix3x3& item);
+void safePyArraySet(pybind11::array_t<int>& arr, int idx0, int item);
+void safePyArraySet(pybind11::array_t<bool>& arr, int idx0, bool item);
 #endif
 
 }  // namespace batched_sim

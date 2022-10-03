@@ -38,9 +38,13 @@ void initBatchedSimBindings(py::module& m) {
 
   py::class_<PythonBatchEnvironmentState>(m, "PythonBatchEnvironmentState")
       // todo: finish implementing these members and then bind them
-      //.def_readwrite("episode_idx", &PythonBatchEnvironmentState::episode_idx,
-      // R"(Todo)") .def_readwrite("target_obj_idx",
-      //&PythonBatchEnvironmentState::target_obj_idx, R"(Todo)")
+      .def_readwrite("episode_idx", &PythonBatchEnvironmentState::episode_idx,
+                     R"(Todo)")
+      .def_readwrite("episode_step_idx",
+                     &PythonBatchEnvironmentState::episode_step_idx, R"(Todo)")
+
+      .def_readwrite("target_obj_idx",
+                     &PythonBatchEnvironmentState::target_obj_idx, R"(Todo)")
       .def_readwrite("target_obj_start_pos",
                      &PythonBatchEnvironmentState::target_obj_start_pos,
                      R"(Todo)")
@@ -67,17 +71,20 @@ void initBatchedSimBindings(py::module& m) {
       .def_readwrite("ee_inv_rotation",
                      &PythonBatchEnvironmentState::ee_inv_rotation, R"(Todo)")
       //.def_readwrite("did_collide", &PythonBatchEnvironmentState::did_collide,
-      // R"(Todo)") .def_readwrite("held_obj_idx",
-      //&PythonBatchEnvironmentState::held_obj_idx, R"(Todo)")
+      // R"(Todo)")
+      .def_readwrite("held_obj_idx", &PythonBatchEnvironmentState::held_obj_idx,
+                     R"(Todo)")
       //.def_readwrite("did_attempt_grasp",
       //&PythonBatchEnvironmentState::did_attempt_grasp, R"(Todo)")
       //.def_readwrite("did_grasp", &PythonBatchEnvironmentState::did_grasp,
-      // R"(Todo)") .def_readwrite("did_drop",
-      //&PythonBatchEnvironmentState::did_drop, R"(Todo)")
+      // R"(Todo)")
+      .def_readwrite("did_drop", &PythonBatchEnvironmentState::did_drop,
+                     R"(Todo)")
       //.def_readwrite("drop_height", &PythonBatchEnvironmentState::drop_height,
-      // R"(Todo)") .def_readwrite("target_obj_pos",
-      //&PythonBatchEnvironmentState::target_obj_pos, R"(Todo)");
-      ;
+      // R"(Todo)")
+      .def_readwrite("target_obj_pos",
+                     &PythonBatchEnvironmentState::target_obj_pos, R"(Todo)");
+  ;
 
   py::class_<CameraSensorConfig>(m, "CameraSensorConfig")
       .def_readwrite("width", &CameraSensorConfig::width, R"(Todo)")
@@ -149,7 +156,7 @@ void initBatchedSimBindings(py::module& m) {
                      R"(Todo)");
 
   py::class_<PythonEnvironmentState, PythonEnvironmentState::ptr>(
-      m, "EnvironmentState")
+      m, "PythonEnvironmentState")
       .def(py::init(&PythonEnvironmentState::create<>))
       .def_readwrite("episode_idx", &PythonEnvironmentState::episode_idx,
                      R"(Todo)")
