@@ -132,7 +132,9 @@ class ClosestPointExtractor(PoseExtractor):
     ) -> List[Tuple[Tuple[int, int], Tuple[int, int], str]]:
         # Determine the physical spacing between each camera position
         height, width = view.shape
-        dist_between_cam = min(height, width) // 10  # We can modify this to be user-defined later
+        dist_between_cam = (
+            min(height, width) // 10
+        )  # We can modify this to be user-defined later
 
         # Create a grid of camera positions
         n_gridpoints_width, n_gridpoints_height = (
@@ -147,7 +149,7 @@ class ClosestPointExtractor(PoseExtractor):
             for w in range(n_gridpoints_width):
                 point = (
                     dist_between_cam + h * dist_between_cam,
-                    dist_between_cam + w * dist_between_cam
+                    dist_between_cam + w * dist_between_cam,
                 )
                 if self._valid_point(*point, view):
                     gridpoints.append(point)
@@ -167,7 +169,11 @@ class ClosestPointExtractor(PoseExtractor):
         return poses
 
     def _bfs(
-        self, point: Tuple[int, int], labels: List[float], view: ndarray, dist_between_cam: int
+        self,
+        point: Tuple[int, int],
+        labels: List[float],
+        view: ndarray,
+        dist_between_cam: int,
     ) -> Union[Tuple[Tuple[int, int], float64], Tuple[None, None]]:
         step = 3  # making this larger really speeds up BFS
 
