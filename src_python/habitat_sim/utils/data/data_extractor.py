@@ -1,4 +1,4 @@
-from typing import Callable, List, Union
+from typing import Callable, List
 
 import numpy as np
 
@@ -139,7 +139,7 @@ class ImageExtractor:
         self.output = output
         self.use_caching = use_caching
         self.cache_capacity = cache_capacity
-        self.cache = {}
+        self.cache: dict = {}
 
     def __len__(self):
         return len(self.mode_to_data[self.mode])
@@ -165,7 +165,7 @@ class ImageExtractor:
             cache_key = (idx, mymode)
             cache_val = self.cache.get(cache_key, None)
             if cache_val is not None:
-                return cache_val            
+                return cache_val
 
         poses = self.mode_to_data[mymode]
         pos, rot, fp = poses[idx]
@@ -272,7 +272,7 @@ class ImageExtractor:
         sim_cfg = hsim.SimulatorConfiguration()
         sim_cfg.enable_physics = False
         sim_cfg.gpu_device_id = 0
-        sim_cfg.scene_id = settings['scene']
+        sim_cfg.scene_id = settings["scene"]
         if self.scene_dataset_config_file is not None:
             sim_cfg.scene_dataset_config_file = self.scene_dataset_config_file
 
