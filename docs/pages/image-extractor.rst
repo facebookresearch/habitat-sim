@@ -15,17 +15,19 @@ We will first provide an overview of how to use the image extraction API. Next w
 
 Habitat Sim provides an API to extract static images from a scene. The main class that handles image data extraction in Habitat Sim is called ImageExtractor. The user only needs to provide the scene filepath (either a .glb or .ply file).
 
-``class ImageExtractor(scene_filepath, img_size, output, pose_extractor_name, shuffle, split, use_caching, pixels_per_meter)``
+``class ImageExtractor(scene_filepath, img_size, output, pose_extractor_name, shuffle, split, use_caching, cache_capacity, pixels_per_meter)``
 
 **Args**
 
 * scene_filepath (required): A string or list of strings that is the filepath(s) to the scene file(s).
+* scene_dataset_config_file: A string to the scene dataset config file. This file specifies relative paths to other scene assets.
 * img_size: A tuple of (height, width) that represent the desired output image size. Default (512, 512).
 * output: A list of output images types. Options include any combination of ["rgba", "depth", "semantic"]. Default ["rgba"].
 * pose_extractor_name: The name of the pose extractor used to programmatically define camera poses for image extraction. If the user registered a custom pose extractor (see "Custom Pose Extraction" section), this is the name given during registration. Default "closest_point_extractor".
 * shuffle: Whether to shuffle the extracted images once they have been extracted. Default True.
 * split: A tuple of train/test split percentages. Must add to 100. Default (70, 30).
-* use_chaching: If True, ImageExtractor caches images in memory for quicker access during training. Default True.
+* use_caching: If True, ImageExtractor caches images in memory for quicker access during training. Default True.
+* cache_capacity: Capacity of the cache is use_caching is True. Default 1000.
 * pixels_per_meter: Resolution of topdown map (explained below). 0.1 means each pixel in the topdown map represents 0.1 x 0.1 meters in the coordinate system of the scene. Default 0.1.
 
 **Methods**
@@ -68,7 +70,9 @@ The ImageExtractor uses an instance of habitat_sim.Simulator on the backend to e
 `Basic Usage`_
 --------------
 
-Once the user instantiates an ImageExtractor object, they can index into it like a normal python list, or use slicing. Indexing returns a dictionary containing the images specified by the 'output' argument to the ImageExtractor constructor. All datasets support the use of "rgba" and "depth" outputs. For semantic outputs, you should use a dataset that supports semantic annotation (e.g. the Matterport3D dataset).
+Once the user instantiates an ImageExtractor object, they can index into it like a normal python list, or use slicing. Indexing returns a dictionary containing the images specified by the 'output' argument to the ImageExtractor constructor. All datasets support the use of "rgba" and "depth" outputs. For semantic outputs, you should use a dataset that supports semantic annotation (e.g. the Matterport3D dataset). Below we use all outputs from the HM3D dataset.
+
+If using the HM3D dataset with semantic images, you need to provide both the scene_filepath (a .glb file) and a scene_dataset_config_file (a json) to the ImageExtractor. If you don't need semantic output, you can just provide the scene_filepath.
 
 
 .. code:: py
@@ -81,31 +85,37 @@ Once the user instantiates an ImageExtractor object, they can index into it like
 
     # For viewing the extractor output
     def display_samples(samples):
-        fig, axs = plt.subplots(len(samples), 2)
+        fig, axs = plt.subplots(len(samples), 3)
         fig.set_size_inches(8, 8)
         for i, sample in enumerate(samples):
             img = sample["rgba"]
             depth = sample["depth"]
+            semantic = sample["semantic"]
 
             axs[i, 0].axis('off')
             axs[i, 0].imshow(img)
             axs[i, 1].axis('off')
             axs[i, 1].imshow(depth)
+            axs[i, 2].axis('off')
+            axs[i, 2].imshow(semantic)
 
             if i == 0:
                 axs[i, 0].set_title('RGB')
                 axs[i, 1].set_title('Depth')
+                axs[i, 2].set_title('Semantic')
 
         plt.show()
 
 
-    # Replace this with the path to your scene
-    scene_filepath = "data/scene_datasets/habitat-test-scenes/apartment_1.glb"
+    # For HM3D datasets, you should give the ImageExtractor
+    scene_filepath = 'data/hm3d-example-habitat/example/00861-GLAQ4DNUx5U/GLAQ4DNUx5U.basis.glb'
+    scene_dataset_config_file = 'data/hm3d-example-habitat/hm3d_annotated_basis.scene_dataset_config.json'
 
     extractor = ImageExtractor(
         scene_filepath,
+        scene_dataset_config_file,
         img_size=(512, 512),
-        output=["rgba", "depth"], # "semantic" can also be added for scenes that contain semantic annotations, e.g. Matterport3D dataset
+        output=["rgba", "depth", "semantic"], # "semantic" output only supported for datasets with semantics (e.g. Matterport3D)
     )
 
     # Use the list of train outputs instead of the default, which is the full list
@@ -474,20 +484,22 @@ Users can write their over subclass of PoseExtractor to define custom ways of ge
 override the extract_poses method. Further, the user must register the pose extractor using
 habitat_sim.registry (i.e. adding the @registry.register_pose_extractor(name) decorator). This allows you to pass the name of your custom pose extractor to the ImageExtractor constructor. For more detailed examples of using the Habitat registry, see `this code`_.
 
-`Default Behavior`_
--------------------
+`ClosestPointExtractor Behavior`_
+---------------------------------
 
-The default behavior is reliant on something called the topdown view of a scene, which is just a two-dimensional birds-eye representation of the scene. The topdown view is a two-dimensional array of 1s and 0s where 1 means that pixel is "navigable" in the scene (i.e. an agent can walk on top of that point) and 0 means that pixel is "unnavigable". For more detailed information about navigability and computing topdown maps, please refer to the `Habitat-Sim Basics for Navigation Colab notebook`_.
+The ClosestPointExtractor is reliant on something called the topdown view of a scene, which is just a two-dimensional birds-eye representation of the scene. The topdown view is a two-dimensional array of 1s and 0s where 1 means that pixel is "navigable" in the scene (i.e. an agent can walk on top of that point) and 0 means that pixel is "unnavigable". For more detailed information about navigability and computing topdown maps, please refer to the `Habitat-Sim Basics for Navigation Colab notebook`_.
 
-The default pose extractor is the ClosestPointExtractor, which behaves as follows. For each camera poisition, the pose extractor will aim the camera pose at the closest point that is "unnvaigable". For example, if the camera position is right next to a chair in the scene, and that chair is the closest point that an agent in the environment cannot walk on top of, the camera will point at the chair.
+One pose extractor we provide is the ClosestPointExtractor, which behaves as follows. For each camera poisition, the pose extractor will aim the camera pose at the closest point that is "unnvaigable". For example, if the camera position is right next to a chair in the scene, and that chair is the closest point that an agent in the environment cannot walk on top of, the camera will point at the chair.
 
 The ClosestPointExtractor will use the topdown view of the scene, which is given to it in its constructor, and create a grid of evenly spaced points. Each of those points will then yield a closest point as described above, which is used to define a camera angle, and subsequently a camera pose.
 
 
 .. image:: ../images/apt0-topdown.png
 
+`PanoramaExtractor Behavior`_
+-----------------------------
 
-With this method, the total number of images extracted is low compared to the PanoramaExtractor, which is another type of extractor we provide. The PanoramaExtractor has no notion of closest point, rather it extracts multiple camera poses from each camera position by turning all the way around.
+With this method, the total number of images extracted is low compared to the PanoramaExtractor, which is the default extractor we provide. The PanoramaExtractor has no notion of closest point, rather it extracts multiple camera poses from each camera position by turning all the way around.
 
 
 `Overriding required methods`_

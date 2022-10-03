@@ -6,7 +6,6 @@ import habitat_sim
 from habitat_sim import bindings as hsim
 from habitat_sim import registry as registry
 from habitat_sim.agent.agent import AgentConfiguration, AgentState
-from habitat_sim.utils.data.data_structures import ExtractorLRUCache
 from habitat_sim.utils.data.pose_extractor import PoseExtractor, TopdownView
 
 
@@ -29,7 +28,8 @@ class ImageExtractor:
     r"""Main class that extracts data by creating a simulator and generating a topdown map from which to
     iteratively generate image data.
 
-    :property scene_filepaths: The location of the scene mesh or directory containing the meshes given to the simulator
+    :property scene_filepath: The filepath to the .glb file for the scene
+    :property scene_dataset_config_file: Dataset config file (e.g. hm3d_annotated_basis.scene_dataset_config.json)
     :property cur_fp: The current scene filepath. This is only relevant when the extractor is operating on multiple scenes
     :property labels: class labels of things to gather images of (currently not used)
     :property img_size: Tuple of image output dimensions (height, width)
@@ -51,23 +51,24 @@ class ImageExtractor:
     :property test: A subset of poses used for testing
     :property mode: Mode that determines which poses to use, train poses, test poses, or all (full) poses
     :property instance_id_to_name: Maps instance_ids in the scene to their english names. E.g. 31 -> 'wall'
-    :property cache: LRU cache used to reduce the number of scene switches when extracting data. Can be disabled
-        with the 'use_caching' variable.
+    :property cache: Dictionary to cache samples. Change capacity with the cache_capacity param.
 
     :property output: list of output names that the user wants e.g. ['rgba', 'depth']
     """
 
     def __init__(
         self,
-        scene_filepath: Union[str, List[str]],
+        scene_filepath: str,
+        scene_dataset_config_file: str = None,
         labels: List[float] = None,
         img_size: tuple = (512, 512),
         output: List[str] = None,
-        pose_extractor_name: str = "closest_point_extractor",
+        pose_extractor_name: str = "panorama_extractor",
         sim=None,
         shuffle: bool = True,
         split: tuple = (70, 30),
         use_caching: bool = True,
+        cache_capacity: int = 1000,
         meters_per_pixel: float = 0.1,
     ):
         if labels is None:
@@ -78,6 +79,7 @@ class ImageExtractor:
             raise Exception("Train/test split must sum to 100.")
 
         self.scene_filepaths = None
+        self.scene_dataset_config_file = scene_dataset_config_file
         self.cur_fp = None
         if isinstance(scene_filepath, list):
             self.scene_filepaths = scene_filepath
@@ -94,7 +96,7 @@ class ImageExtractor:
             sim = habitat_sim.Simulator(self.cfg)
         else:
             # If a sim is provided we have to make a new cfg
-            self.cfg = self._config_sim(sim.config.sim_cfg.scene_id, img_size)
+            self.cfg = self._config_sim(sim.config.sim_cfg.scene_id, self.img_size)
             sim.reconfigure(self.cfg)
 
         self.sim = sim
@@ -136,8 +138,8 @@ class ImageExtractor:
         }
         self.output = output
         self.use_caching = use_caching
-        if self.use_caching:
-            self.cache = ExtractorLRUCache()
+        self.cache_capacity = cache_capacity
+        self.cache = {}
 
     def __len__(self):
         return len(self.mode_to_data[self.mode])
@@ -160,9 +162,10 @@ class ImageExtractor:
 
         mymode = self.mode.lower()
         if self.use_caching:
-            cache_entry = (idx, mymode)
-            if cache_entry in self.cache:
-                return self.cache[cache_entry]
+            cache_key = (idx, mymode)
+            cache_val = self.cache.get(cache_key, None)
+            if cache_val is not None:
+                return cache_val            
 
         poses = self.mode_to_data[mymode]
         pos, rot, fp = poses[idx]
@@ -182,8 +185,8 @@ class ImageExtractor:
             for out_name in self.output
         }
 
-        if self.use_caching:
-            self.cache.add(cache_entry, sample)
+        if self.use_caching and len(self.cache) < self.cache_capacity:
+            self.cache[cache_key] = sample
 
         return sample
 
@@ -269,7 +272,9 @@ class ImageExtractor:
         sim_cfg = hsim.SimulatorConfiguration()
         sim_cfg.enable_physics = False
         sim_cfg.gpu_device_id = 0
-        sim_cfg.scene_id = settings["scene"]
+        sim_cfg.scene_id = settings['scene']
+        if self.scene_dataset_config_file is not None:
+            sim_cfg.scene_dataset_config_file = self.scene_dataset_config_file
 
         # define default sensor parameters (see src/esp/Sensor/Sensor.h)
         sensor_specs = []
