@@ -18,9 +18,12 @@
 #include <Magnum/Math/Matrix3.h>
 #include <Magnum/Math/Matrix4.h>
 #include <Magnum/MeshTools/Concatenate.h>
+#include <Magnum/MeshTools/Combine.h>
 #include <Magnum/MeshTools/GenerateIndices.h>
+#include <Magnum/MeshTools/Transform.h>
 #include <Magnum/Primitives/Circle.h>
 #include <Magnum/Primitives/Plane.h>
+#include <Magnum/SceneTools/FlattenMeshHierarchy.h>
 #include <Magnum/Trade/AbstractImageConverter.h>
 #include <Magnum/Trade/AbstractSceneConverter.h>
 #include <Magnum/Trade/MaterialData.h>
@@ -68,11 +71,13 @@ struct GfxBatchRendererTest : Cr::TestSuite::Tester {
 const struct {
   const char* name;
   bool wholeFile;
+  bool scene;
   bool sceneDeepHierarchy;
   const char* filenamePrefix;
 } GenerateTestDataFourSquaresData[]{
-  {"", false, false, "batch-four-squares"},
-  {"deep scene hierarchy, as a whole file", true, true, "batch-four-squares-deep-hierarchy-whole-file"},
+  {"", false, true, false, "batch-four-squares"},
+  {"deep scene hierarchy, as a whole file", true, true, true, "batch-four-squares-deep-hierarchy-whole-file"},
+  {"no scene, as a whole file", true, false, false, "batch-four-squares-no-scene"}
 };
 // clang-format on
 
@@ -120,41 +125,48 @@ const struct {
   /* Filename, flags and name corresponding to addFile() arguments */
   Cr::Containers::Array<Cr::Containers::Triple<const char*, esp::gfx_batch::RendererFileFlags, const char*>> gltfFilenames;
   esp::gfx_batch::RendererFlags flags;
-  Mn::UnsignedInt batchCount;
+  Mn::UnsignedInt nodeCount, drawCount, batchCount;
   Mn::Float textureMultiplier;
   const char* filename;
 } MeshHierarchyData[]{
   {"", {Cr::InPlaceInit, {
     {"batch.gltf", {}, nullptr}}},
-    {}, 1, 0xcc/255.0f,
+    {}, 5, 4, 1, 0xcc/255.0f,
     "GfxBatchRendererTestMeshHierarchy.png"},
   {"multiple meshes", {Cr::InPlaceInit, {
     {"batch-multiple-meshes.gltf", {}, nullptr}}},
-    {}, 4, 0xcc/255.0f,
+    {}, 5, 4, 4, 0xcc/255.0f,
     "GfxBatchRendererTestMeshHierarchy.png"},
   {"multiple textures", {Cr::InPlaceInit, {
     {"batch-multiple-textures.gltf", {}, nullptr}}},
-    {}, 4, 0xcc/255.0f,
+    {}, 5, 4, 4, 0xcc/255.0f,
     "GfxBatchRendererTestMeshHierarchy.png"},
   {"multiple files", {Cr::InPlaceInit, {
     {"batch-square-circle-triangle.gltf", {}, nullptr},
     {"batch-four-squares.gltf", {}, nullptr}}},
-    {}, 4, 0xcc/255.0f,
+    {}, 5, 4, 4, 0xcc/255.0f,
     "GfxBatchRendererTestMeshHierarchy.png"},
   {"multiple files with deep hierarchy as a whole", {Cr::InPlaceInit, {
     {"batch-square-circle-triangle.gltf",
       esp::gfx_batch::RendererFileFlag::Whole, nullptr},
     {"batch-four-squares-deep-hierarchy-whole-file.gltf",
       esp::gfx_batch::RendererFileFlag::Whole, "four squares"}}},
-    {}, 4, 0xcc/255.0f,
+    {}, 5, 4, 4, 0xcc/255.0f,
     "GfxBatchRendererTestMeshHierarchy.png"},
   {"no textures", {Cr::InPlaceInit, {
     {"batch.gltf", {}, nullptr}}},
-    esp::gfx_batch::RendererFlag::NoTextures, 1, 1.0f,
+    esp::gfx_batch::RendererFlag::NoTextures, 5, 4, 1, 1.0f,
     "GfxBatchRendererTestMeshHierarchyNoTextures.png"},
   {"multiple meshes, no textures", {Cr::InPlaceInit, {
     {"batch-multiple-meshes.gltf", {}, nullptr}}},
-    esp::gfx_batch::RendererFlag::NoTextures, 4, 1.0f,
+    esp::gfx_batch::RendererFlag::NoTextures, 5, 4, 4, 1.0f,
+    "GfxBatchRendererTestMeshHierarchyNoTextures.png"},
+  {"multiple files, scene-less, as a whole", {Cr::InPlaceInit, {
+    {"batch-square-circle-triangle.gltf",
+      esp::gfx_batch::RendererFileFlag::Whole, nullptr},
+    {"batch-four-squares-no-scene.gltf",
+      esp::gfx_batch::RendererFileFlag::Whole, "four squares"}}},
+    {}, 2, 1, 1, 1.0f,
     "GfxBatchRendererTestMeshHierarchyNoTextures.png"},
 };
 // clang-format on
@@ -1037,74 +1049,77 @@ void GfxBatchRendererTest::generateTestDataFourSquares() {
   /* Begin file conversion */
   converter->beginFile(filename);
 
-  /* (Flat) square mesh. Used with four different materials so it gets
-     duplicated in the glTF. */
-  CORRADE_VERIFY(converter->add(Mn::MeshTools::generateIndices(Mn::Primitives::planeSolid(
-          Mn::Primitives::PlaneFlag::TextureCoordinates)), "square"));
+  /* File with a scene and textures */
+  if(data.scene) {
+    /* (Flat) square mesh. Used with four different materials so it gets
+       duplicated in the glTF. */
+    CORRADE_VERIFY(converter->add(Mn::MeshTools::generateIndices(Mn::Primitives::planeSolid(
+            Mn::Primitives::PlaneFlag::TextureCoordinates)), "square"));
 
-  /* Two-layer 4x4 texture, same as in generateTestData() */
-  // clang-format off
-  Mn::Color3ub image[4*4*2] {
-    0x990000_rgb, 0xcccccc_rgb, 0x990000_rgb, 0xcccccc_rgb,
-    0xcccccc_rgb, 0x990000_rgb, 0xcccccc_rgb, 0x990000_rgb,
-    0x990000_rgb, 0xcccccc_rgb, 0x990000_rgb, 0xcccccc_rgb,
-    0xcccccc_rgb, 0x990000_rgb, 0xcccccc_rgb, 0x990000_rgb,
+    /* Two-layer 4x4 texture, same as in generateTestData() */
+    // clang-format off
+    Mn::Color3ub image[4*4*2] {
+      0x990000_rgb, 0xcccccc_rgb, 0x990000_rgb, 0xcccccc_rgb,
+      0xcccccc_rgb, 0x990000_rgb, 0xcccccc_rgb, 0x990000_rgb,
+      0x990000_rgb, 0xcccccc_rgb, 0x990000_rgb, 0xcccccc_rgb,
+      0xcccccc_rgb, 0x990000_rgb, 0xcccccc_rgb, 0x990000_rgb,
 
-    0x33cccc_rgb, 0x33cccc_rgb, 0xcc33cc_rgb, 0xcc33cc_rgb,
-    0x33cccc_rgb, 0x33cccc_rgb, 0xcc33cc_rgb, 0xcc33cc_rgb,
-    0xcccc33_rgb, 0xcccc33_rgb, 0x333333_rgb, 0x333333_rgb,
-    0xcccc33_rgb, 0xcccc33_rgb, 0x333333_rgb, 0x333333_rgb
-  };
-  // clang-format on
-  CORRADE_VERIFY(converter->add(Mn::ImageView3D{
-      Mn::PixelFormat::RGB8Unorm, {4, 4, 2}, image, Mn::ImageFlag3D::Array}));
+      0x33cccc_rgb, 0x33cccc_rgb, 0xcc33cc_rgb, 0xcc33cc_rgb,
+      0x33cccc_rgb, 0x33cccc_rgb, 0xcc33cc_rgb, 0xcc33cc_rgb,
+      0xcccc33_rgb, 0xcccc33_rgb, 0x333333_rgb, 0x333333_rgb,
+      0xcccc33_rgb, 0xcccc33_rgb, 0x333333_rgb, 0x333333_rgb
+    };
+    // clang-format on
+    CORRADE_VERIFY(converter->add(Mn::ImageView3D{
+        Mn::PixelFormat::RGB8Unorm, {4, 4, 2}, image, Mn::ImageFlag3D::Array}));
 
-  /* A texture referencing the only image. Nearest neighbor filtering to have
-     less noise in the output images. */
-  CORRADE_VERIFY(converter->add(Mn::Trade::TextureData{
-      Mn::Trade::TextureType::Texture2DArray, Mn::SamplerFilter::Nearest,
-      Mn::SamplerFilter::Nearest, Mn::SamplerMipmap::Nearest,
-      Mn::SamplerWrapping::Repeat, 0}));
+    /* A texture referencing the only image. Nearest neighbor filtering to have
+       less noise in the output images. */
+    CORRADE_VERIFY(converter->add(Mn::Trade::TextureData{
+        Mn::Trade::TextureType::Texture2DArray, Mn::SamplerFilter::Nearest,
+        Mn::SamplerFilter::Nearest, Mn::SamplerMipmap::Nearest,
+        Mn::SamplerWrapping::Repeat, 0}));
 
-  /* A (default, white) material spanning the whole first texture layer */
-  // clang-format off
-  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
-    {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
-    {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 0u}
-  }}, "checkerboard"), 0);
-  // clang-format on
+    /* A (default, white) material spanning the whole first texture layer */
+    // clang-format off
+    CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+      {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
+      {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 0u}
+    }}, "checkerboard"), 0);
+    // clang-format on
 
-  /* A cyan / magenta / yellow material spanning the bottom left / top left /
-     bottom right quadrant of second texture layer. I.e., nothing should be
-     using the black-ish portion of the texture. When combined with the
-     texture color, the output should have the corresponding red / green / blue
-     channels zeroed out. */
-  // clang-format off
-  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
-    {Mn::Trade::MaterialAttribute::BaseColor, 0x00ffffff_rgbaf},
-    {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
-    {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 1u},
-    {Mn::Trade::MaterialAttribute::BaseColorTextureMatrix,
-      Mn::Matrix3::translation({0.0f, 0.0f})*
-      Mn::Matrix3::scaling(Mn::Vector2{0.5f})}
-  }}, "cyan"), 1);
-  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
-    {Mn::Trade::MaterialAttribute::BaseColor, 0xff00ffff_rgbaf},
-    {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
-    {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 1u},
-    {Mn::Trade::MaterialAttribute::BaseColorTextureMatrix,
-      Mn::Matrix3::translation({0.5f, 0.0f})*
-      Mn::Matrix3::scaling(Mn::Vector2{0.5f})}
-  }}, "magenta"), 2);
-  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
-    {Mn::Trade::MaterialAttribute::BaseColor, 0xffff00ff_rgbaf},
-    {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
-    {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 1u},
-    {Mn::Trade::MaterialAttribute::BaseColorTextureMatrix,
-      Mn::Matrix3::translation({0.0f, 0.5f})*
-      Mn::Matrix3::scaling(Mn::Vector2{0.5f})}
-  }}, "yellow"), 3);
-  // clang-format on
+    /* A cyan / magenta / yellow material spanning the bottom left / top left /
+       bottom right quadrant of second texture layer. I.e., nothing should be
+       using the black-ish portion of the texture. When combined with the
+       texture color, the output should have the corresponding red / green /
+       blue channels zeroed out. */
+    // clang-format off
+    CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+      {Mn::Trade::MaterialAttribute::BaseColor, 0x00ffffff_rgbaf},
+      {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
+      {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 1u},
+      {Mn::Trade::MaterialAttribute::BaseColorTextureMatrix,
+        Mn::Matrix3::translation({0.0f, 0.0f})*
+        Mn::Matrix3::scaling(Mn::Vector2{0.5f})}
+    }}, "cyan"), 1);
+    CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+      {Mn::Trade::MaterialAttribute::BaseColor, 0xff00ffff_rgbaf},
+      {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
+      {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 1u},
+      {Mn::Trade::MaterialAttribute::BaseColorTextureMatrix,
+        Mn::Matrix3::translation({0.5f, 0.0f})*
+        Mn::Matrix3::scaling(Mn::Vector2{0.5f})}
+    }}, "magenta"), 2);
+    CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+      {Mn::Trade::MaterialAttribute::BaseColor, 0xffff00ff_rgbaf},
+      {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
+      {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 1u},
+      {Mn::Trade::MaterialAttribute::BaseColorTextureMatrix,
+        Mn::Matrix3::translation({0.0f, 0.5f})*
+        Mn::Matrix3::scaling(Mn::Vector2{0.5f})}
+    }}, "yellow"), 3);
+    // clang-format on
+  }
 
   /* Scene with
       - a square using the checkerboard material
@@ -1143,23 +1158,7 @@ void GfxBatchRendererTest::generateTestDataFourSquares() {
      {4, Mn::Matrix4::translation({+0.5f, +0.5f, 0.0f})*
          Mn::Matrix4::scaling(Mn::Vector3{0.4f})}}
   }};
-  // clang-format on
-
-  /* Override the above if deep hierarchy is requested -- then the "right"
-     squares are children of the left, with relative transform */
-  if(data.sceneDeepHierarchy) {
-    scene->parents[2].parent = 1;
-    scene->parents[4].parent = 3;
-    scene->transformations[1].trasformation = Mn::Matrix4::translation(Mn::Vector3::xAxis(1.0f/0.4f));
-    scene->transformations[3].trasformation = Mn::Matrix4::translation(Mn::Vector3::xAxis(1.0f/0.4f));
-  }
-
-  /* We need the name only if the file isn't treated as a whole */
-  if(!data.wholeFile)
-    converter->setObjectName(0, "four squares");
-
-  // clang-format off
-  CORRADE_VERIFY(converter->add(Mn::Trade::SceneData{Mn::Trade::SceneMappingType::UnsignedInt, 7, {}, scene, {
+  Mn::Trade::SceneData sceneData{Mn::Trade::SceneMappingType::UnsignedInt, 7, {}, scene, {
     Mn::Trade::SceneFieldData{Mn::Trade::SceneField::Parent,
       Cr::Containers::stridedArrayView(scene->parents).slice(&Scene::Parent::object),
       Cr::Containers::stridedArrayView(scene->parents).slice(&Scene::Parent::parent)},
@@ -1172,8 +1171,56 @@ void GfxBatchRendererTest::generateTestDataFourSquares() {
     Mn::Trade::SceneFieldData{Mn::Trade::SceneField::Transformation,
       Cr::Containers::stridedArrayView(scene->transformations).slice(&Scene::Transformation::object),
       Cr::Containers::stridedArrayView(scene->transformations).slice(&Scene::Transformation::trasformation)},
-  }}));
+  }};
   // clang-format on
+
+  /* Override the above if deep hierarchy is requested -- then the "right"
+     squares are children of the left, with relative transform */
+  if(data.sceneDeepHierarchy) {
+    scene->parents[2].parent = 1;
+    scene->parents[4].parent = 3;
+    scene->transformations[1].trasformation = Mn::Matrix4::translation(Mn::Vector3::xAxis(1.0f/0.4f));
+    scene->transformations[3].trasformation = Mn::Matrix4::translation(Mn::Vector3::xAxis(1.0f/0.4f));
+  }
+
+  /* File with a scene */
+  if(data.scene) {
+    /* We need the name only if the file isn't treated as a whole */
+    if(!data.wholeFile)
+      converter->setObjectName(0, "four squares");
+
+    CORRADE_VERIFY(converter->add(sceneData));
+
+  /* File with a single mesh */
+  } else {
+    /* Use the scene to create a concatenated mesh */
+    const Mn::Trade::MeshData squares[]{ Mn::MeshTools::generateIndices(Mn::Primitives::planeSolid(
+            Mn::Primitives::PlaneFlag::TextureCoordinates))};
+    Cr::Containers::Array<Mn::Trade::MeshData> flattenedMeshes;
+    for(const Cr::Containers::Triple<Mn::UnsignedInt, Mn::Int, Mn::Matrix4>& meshTransformation:
+        Mn::SceneTools::flattenMeshHierarchy3D(sceneData))
+    {
+        arrayAppend(flattenedMeshes, Mn::MeshTools::transform3D(
+            squares[meshTransformation.first()], meshTransformation.third()));
+    }
+    const Mn::Trade::MeshData squaresJoined = Mn::MeshTools::concatenate(flattenedMeshes);
+
+    /* Bake materials as per-face vertex colors */
+    // clang-format off
+    Mn::Color3 faceColors[]{
+      /* Each triangle has two faces */
+      0xffffff_rgbf, 0xffffff_rgbf,
+      0x00ffff_rgbf, 0x00ffff_rgbf,
+      0xff00ff_rgbf, 0xff00ff_rgbf,
+      0xffff00_rgbf, 0xffff00_rgbf
+    };
+    // clang-format on
+    Mn::Trade::MeshData squaresJoinedColored = Mn::MeshTools::combineFaceAttributes(squaresJoined, {
+      Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Color, Cr::Containers::arrayView(faceColors)}
+    });
+
+    CORRADE_VERIFY(converter->add(squaresJoinedColored));
+  }
 
   CORRADE_VERIFY(converter->endFile());
 
@@ -1335,11 +1382,11 @@ void GfxBatchRendererTest::meshHierarchy() {
      layout inside the glTF file. The batch count reflects how many separate
      meshes and textures there are. */
   esp::gfx_batch::SceneStats stats = renderer.sceneStats(0);
-  CORRADE_COMPARE(stats.nodeCount, 5);
-  CORRADE_COMPARE(stats.drawCount, 4);
+  CORRADE_COMPARE(stats.nodeCount, data.nodeCount);
+  CORRADE_COMPARE(stats.drawCount, data.drawCount);
   CORRADE_COMPARE(stats.drawBatchCount, data.batchCount);
 
-  CORRADE_COMPARE(renderer.transformations(0).size(), 5);
+  CORRADE_COMPARE(renderer.transformations(0).size(), data.nodeCount);
   renderer.transformations(0)[0] = Mn::Matrix4::scaling(Mn::Vector3{0.8f});
 
   renderer.draw();

@@ -49,6 +49,7 @@ namespace gfx_batch {
 
 // clang-tidy you're NOT HELPING
 using namespace Cr::Containers::Literals;  // NOLINT
+using namespace Mn::Math::Literals;  // NOLINT
 
 struct RendererConfiguration::State {
   RendererFlags flags;
@@ -246,6 +247,11 @@ void Renderer::create(const RendererConfiguration& configurationWrapper) {
     .setWrapping(Mn::SamplerWrapping::Repeat)
     .setStorage(1, Mn::GL::TextureFormat::RGBA8, {1, 1, 1})
     .setSubImage(0, {}, Mn::ImageView3D{Mn::PixelFormat::RGBA8Unorm, {1, 1, 1}, "\xff\xff\xff\xff"});
+
+  /* Material 0 is reserved as a white ambient with no texture */
+  arrayAppend(state_->materials, Cr::InPlaceInit)
+    .setAmbientColor(0xffffff_rgbf);
+  arrayAppend(state_->materialTextureTransformations, Cr::InPlaceInit);
 
   // TODO move this outside
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
@@ -464,7 +470,33 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
       Cr::DefaultInit, std::size_t(state_->tileCount.product())};
   // TODO (mutable) buffer storage
 
-  {
+  /* Scene-less files are assumed to contain a single material-less mesh (such
+     as STL files) */
+  if(!importer->sceneCount()) {
+    CORRADE_ASSERT(importer->meshCount() == 1 && !importer->materialCount(),
+                   "Renderer::addFile(): expected exactly one mesh and no material for a scene-less file" << filename, );
+    /* Material 0 is reserved for such purposes */
+    MeshView& view = arrayAppend(state_->meshViews, Cr::InPlaceInit);
+    view.meshId = meshOffset;
+    view.indexOffsetInBytes = 0;
+    view.indexCount = state_->meshes[meshOffset].second().count();
+    view.materialId = 0;
+
+    /* Adding a scene-less file as a whole should be explicitly requested to
+       avoid accidents */
+    CORRADE_ASSERT(flags & RendererFileFlag::Whole,
+      "Renderer::addFile(): scene-less file" << filename << "has to be added with RendererFileFlag::Whole", );
+
+    /* If no name is specified, the full filename is used */
+    const Cr::Containers::StringView usedName = name ? name : filename;
+    CORRADE_ASSERT_OUTPUT(
+        state_->meshViewRangeForName
+            .insert(
+                {usedName, {meshViewOffset, meshViewOffset + 1}})
+            .second,
+        "Renderer::addFile(): node name" << usedName << "already exists", );
+
+  } else {
     CORRADE_ASSERT(importer->sceneCount() == 1,
                    "Renderer::addFile(): expected exactly one scene, got"
                        << importer->sceneCount() << "in" << filename, );
