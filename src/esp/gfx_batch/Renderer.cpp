@@ -29,6 +29,7 @@
 #include <Magnum/Math/PackingBatch.h>
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/MeshTools/Duplicate.h>
+#include <Magnum/MeshTools/RemoveDuplicates.h>
 #include <Magnum/SceneTools/FlattenMeshHierarchy.h>
 #include <Magnum/Shaders/Generic.h>
 #include <Magnum/Shaders/Phong.h>
@@ -421,6 +422,8 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
   for (Mn::UnsignedInt i = 0, iMax = importer->meshCount(); i != iMax; ++i) {
     Cr::Containers::Optional<Mn::Trade::MeshData> mesh = importer->mesh(i);
     CORRADE_INTERNAL_ASSERT(mesh);
+    /* Make the mesh indexed if it isn't */
+    if(!mesh->isIndexed()) mesh = Mn::MeshTools::removeDuplicates(*mesh);
 
     /* Decide what extra shader feature the mesh needs. Currently just vertex
        colors. */

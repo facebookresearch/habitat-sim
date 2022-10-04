@@ -443,20 +443,21 @@ void GfxBatchRendererTest::generateTestDataMultipleMeshes() {
   /* Begin file conversion. No custom scene fields used in this case. */
   converter->beginFile(filename);
 
-  /* Separate square, circle ... */
+  /* Separate square... */
   CORRADE_COMPARE(
       converter->add(Mn::MeshTools::generateIndices(Mn::Primitives::planeSolid(
                          Mn::Primitives::PlaneFlag::TextureCoordinates)),
                      "square"),
       0);
+
+  /* ... circle, which is a non-indexed triangle fan ... */
   CORRADE_COMPARE(
-      converter->add(
-          Mn::MeshTools::generateIndices(Mn::Primitives::circle3DSolid(
-              32, Mn::Primitives::Circle3DFlag::TextureCoordinates)),
+      converter->add(Mn::Primitives::circle3DSolid(
+              32, Mn::Primitives::Circle3DFlag::TextureCoordinates),
           "circle"),
       1);
 
-  /* ... and triangle mesh with additional magenta vertex colors */
+  /* ... and a triangle with additional magenta vertex colors */
   {
     /* "Triangle", it's actually a circle, a fan, so 5 vertices instead of 3 */
     Mn::Vector3 colors[]{0xff00ff_rgbf, 0xff00ff_rgbf, 0xff00ff_rgbf, 0xff00ff_rgbf, 0xff00ff_rgbf};
