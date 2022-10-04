@@ -4,15 +4,17 @@
     "generator": "Magnum GltfSceneConverter"
   },
   "extensionsUsed": [
-    "MAGNUMX_mesh_views"
+    "KHR_texture_ktx",
+    "KHR_texture_transform"
   ],
   "extensionsRequired": [
-    "MAGNUMX_mesh_views"
+    "KHR_texture_ktx",
+    "KHR_texture_transform"
   ],
   "buffers": [
     {
-      "uri": "batch-squares.bin",
-      "byteLength": 472
+      "uri": "batch-four-squares.bin",
+      "byteLength": 500
     }
   ],
   "bufferViews": [
@@ -42,22 +44,7 @@
     {
       "buffer": 0,
       "byteOffset": 152,
-      "byteLength": 83
-    },
-    {
-      "buffer": 0,
-      "byteOffset": 235,
-      "byteLength": 79
-    },
-    {
-      "buffer": 0,
-      "byteOffset": 314,
-      "byteLength": 79
-    },
-    {
-      "buffer": 0,
-      "byteOffset": 393,
-      "byteLength": 79
+      "byteLength": 348
     }
   ],
   "accessors": [
@@ -95,7 +82,50 @@
             "POSITION": 1,
             "NORMAL": 2,
             "TEXCOORD_0": 3
-          }
+          },
+          "material": 0
+        }
+      ],
+      "name": "square"
+    },
+    {
+      "primitives": [
+        {
+          "indices": 0,
+          "attributes": {
+            "POSITION": 1,
+            "NORMAL": 2,
+            "TEXCOORD_0": 3
+          },
+          "material": 1
+        }
+      ],
+      "name": "square"
+    },
+    {
+      "primitives": [
+        {
+          "indices": 0,
+          "attributes": {
+            "POSITION": 1,
+            "NORMAL": 2,
+            "TEXCOORD_0": 3
+          },
+          "material": 2
+        }
+      ],
+      "name": "square"
+    },
+    {
+      "primitives": [
+        {
+          "indices": 0,
+          "attributes": {
+            "POSITION": 1,
+            "NORMAL": 2,
+            "TEXCOORD_0": 3
+          },
+          "material": 3
         }
       ],
       "name": "square"
@@ -114,7 +144,13 @@
       "pbrMetallicRoughness": {
         "baseColorFactor": [0, 1, 1, 1],
         "baseColorTexture": {
-          "index": 1
+          "index": 1,
+          "extensions": {
+            "KHR_texture_transform": {
+              "offset": [0, 0.5],
+              "scale": [0.5, 0.5]
+            }
+          }
         }
       },
       "name": "cyan"
@@ -123,7 +159,13 @@
       "pbrMetallicRoughness": {
         "baseColorFactor": [1, 0, 1, 1],
         "baseColorTexture": {
-          "index": 2
+          "index": 1,
+          "extensions": {
+            "KHR_texture_transform": {
+              "offset": [0.5, 0.5],
+              "scale": [0.5, 0.5]
+            }
+          }
         }
       },
       "name": "magenta"
@@ -132,7 +174,12 @@
       "pbrMetallicRoughness": {
         "baseColorFactor": [1, 1, 0, 1],
         "baseColorTexture": {
-          "index": 3
+          "index": 1,
+          "extensions": {
+            "KHR_texture_transform": {
+              "scale": [0.5, 0.5]
+            }
+          }
         }
       },
       "name": "yellow"
@@ -149,62 +196,32 @@
   "textures": [
     {
       "sampler": 0,
-      "source": 0,
-      "name": "checkerboard"
+      "extensions": {
+        "KHR_texture_ktx": {
+          "source": 0,
+          "layer": 0
+        }
+      }
     },
     {
       "sampler": 0,
-      "source": 1,
-      "name": "cyan"
-    },
-    {
-      "sampler": 0,
-      "source": 2,
-      "name": "magenta"
-    },
-    {
-      "sampler": 0,
-      "source": 3,
-      "name": "yellow"
+      "extensions": {
+        "KHR_texture_ktx": {
+          "source": 0,
+          "layer": 1
+        }
+      }
     }
   ],
   "images": [
     {
-      "mimeType": "image/png",
-      "bufferView": 4,
-      "name": "checkerboard"
-    },
-    {
-      "mimeType": "image/png",
-      "bufferView": 5,
-      "name": "cyan"
-    },
-    {
-      "mimeType": "image/png",
-      "bufferView": 6,
-      "name": "magenta"
-    },
-    {
-      "mimeType": "image/png",
-      "bufferView": 7,
-      "name": "yellow"
+      "mimeType": "image/ktx2",
+      "bufferView": 4
     }
   ],
   "nodes": [
     {
-      "children": [1],
-      "name": "square"
-    },
-    {
-      "mesh": 0,
-      "extras": {
-        "meshViewIndexOffset": 0,
-        "meshViewIndexCount": 6,
-        "meshViewMaterial": 0
-      }
-    },
-    {
-      "children": [3, 4, 5, 6],
+      "children": [1, 2, 3, 4],
       "name": "four squares"
     },
     {
@@ -214,59 +231,39 @@
         0, 0.4, 0, 0,
         0, 0, 0.4, 0,
         -0.5, -0.5, 0, 1
-      ],
-      "extras": {
-        "meshViewIndexOffset": 0,
-        "meshViewIndexCount": 6,
-        "meshViewMaterial": 0
-      }
+      ]
     },
     {
-      "mesh": 0,
+      "mesh": 1,
       "matrix": [
         0.4, 0, 0, 0,
         0, 0.4, 0, 0,
         0, 0, 0.4, 0,
         0.5, -0.5, 0, 1
-      ],
-      "extras": {
-        "meshViewIndexOffset": 0,
-        "meshViewIndexCount": 6,
-        "meshViewMaterial": 1
-      }
+      ]
     },
     {
-      "mesh": 0,
+      "mesh": 2,
       "matrix": [
         0.4, 0, 0, 0,
         0, 0.4, 0, 0,
         0, 0, 0.4, 0,
         -0.5, 0.5, 0, 1
-      ],
-      "extras": {
-        "meshViewIndexOffset": 0,
-        "meshViewIndexCount": 6,
-        "meshViewMaterial": 2
-      }
+      ]
     },
     {
-      "mesh": 0,
+      "mesh": 3,
       "matrix": [
         0.4, 0, 0, 0,
         0, 0.4, 0, 0,
         0, 0, 0.4, 0,
         0.5, 0.5, 0, 1
-      ],
-      "extras": {
-        "meshViewIndexOffset": 0,
-        "meshViewIndexCount": 6,
-        "meshViewMaterial": 3
-      }
+      ]
     }
   ],
   "scenes": [
     {
-      "nodes": [0, 2]
+      "nodes": [0]
     }
   ]
 }

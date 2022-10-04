@@ -47,7 +47,8 @@ struct GfxBatchRendererTest : Cr::TestSuite::Tester {
   void generateTestData();
   void generateTestDataMultipleMeshes();
   void generateTestDataMultipleTextures();
-  void generateTestDataMultipleFiles();
+  void generateTestDataSquareCircleTriangle();
+  void generateTestDataFourSquares();
 
   void defaults();
 
@@ -80,9 +81,10 @@ const struct {
     /* Each has a separate texture */
     3,
     {4, 2, 0, 1}},
-  {"multiple files", Cr::Containers::array({"batch-circle-triangle.gltf", "batch-squares.gltf"}),
-    /* Circle and triangle are a separate mesh, square is a separate file */
-    3,
+  {"multiple files", Cr::Containers::array({"batch-square-circle-triangle.gltf", "batch-four-squares.gltf"}),
+    /* Square, circle and triangle are a single mesh but the hierarchical four
+       squares are a separate file */
+    2,
     {4, 2, 0, 1}},
 };
 
@@ -107,7 +109,7 @@ const struct {
     {}, 4, 0xcc/255.0f,
     "GfxBatchRendererTestMeshHierarchy.png"},
   {"multiple files",
-    Cr::Containers::array({"batch-circle-triangle.gltf", "batch-squares.gltf"}),
+    Cr::Containers::array({"batch-square-circle-triangle.gltf", "batch-four-squares.gltf"}),
     {}, 4, 0xcc/255.0f,
     "GfxBatchRendererTestMeshHierarchy.png"},
   {"no textures",
@@ -126,20 +128,21 @@ GfxBatchRendererTest::GfxBatchRendererTest() {
   addTests({&GfxBatchRendererTest::generateTestData,
             &GfxBatchRendererTest::generateTestDataMultipleMeshes,
             &GfxBatchRendererTest::generateTestDataMultipleTextures,
-            &GfxBatchRendererTest::generateTestDataMultipleFiles});
+            &GfxBatchRendererTest::generateTestDataSquareCircleTriangle});
+
+  addTests({&GfxBatchRendererTest::generateTestDataFourSquares});
 
   addInstancedTests({&GfxBatchRendererTest::defaults,
                      &GfxBatchRendererTest::singleMesh},
-    Cr::Containers::arraySize(FileData));
+      Cr::Containers::arraySize(FileData));
 
   addInstancedTests({&GfxBatchRendererTest::meshHierarchy},
-                    Cr::Containers::arraySize(MeshHierarchyData));
+      Cr::Containers::arraySize(MeshHierarchyData));
 
   addInstancedTests({&GfxBatchRendererTest::multipleMeshes,
-
                      &GfxBatchRendererTest::multipleScenes,
                      &GfxBatchRendererTest::clearScene},
-    Cr::Containers::arraySize(FileData));
+      Cr::Containers::arraySize(FileData));
 
   addTests({&GfxBatchRendererTest::cudaInterop});
   // clang-format on
@@ -799,12 +802,9 @@ void GfxBatchRendererTest::generateTestDataMultipleTextures() {
                      Cr::TestSuite::Compare::File);
 }
 
-void GfxBatchRendererTest::generateTestDataMultipleFiles() {
+void GfxBatchRendererTest::generateTestDataSquareCircleTriangle() {
   Cr::PluginManager::Manager<Mn::Trade::AbstractImageConverter>
       imageConverterManager;
-  if (imageConverterManager.loadState("KtxImageConverter") ==
-      Cr::PluginManager::LoadState::NotFound)
-    CORRADE_SKIP("KtxImageConverter plugin not found");
   if (imageConverterManager.loadState("PngImageConverter") ==
       Cr::PluginManager::LoadState::NotFound)
     CORRADE_SKIP("PngImageConverter plugin not found");
@@ -812,360 +812,315 @@ void GfxBatchRendererTest::generateTestDataMultipleFiles() {
   Cr::PluginManager::Manager<Mn::Trade::AbstractSceneConverter>
       converterManager;
   converterManager.registerExternalManager(imageConverterManager);
-  if (converterManager.loadState("GltfSceneConverter") ==
-      Cr::PluginManager::LoadState::NotFound)
+  Cr::Containers::Pointer<Mn::Trade::AbstractSceneConverter> converter =
+      converterManager.loadAndInstantiate("GltfSceneConverter");
+  if(!converter)
     CORRADE_SKIP("GltfSceneConverter plugin not found");
 
-  /* First file contains a separate circle and triangle mesh and an array
-     texture */
-  {
-    Cr::Containers::Pointer<Mn::Trade::AbstractSceneConverter> converter =
-        converterManager.loadAndInstantiate("GltfSceneConverter");
-    converter->configuration().setValue("experimentalKhrTextureKtx", true);
-    converter->configuration().setValue("imageConverter", "KtxImageConverter");
-    /* Bundle images in the bin file to reduce the amount of test files */
-    converter->configuration().setValue("bundleImages", true);
+  /* Bundle images in the bin file to reduce the amount of test files */
+  converter->configuration().setValue("bundleImages", true);
+  /* To prevent the file from being opened by unsuspecting libraries */
+  converter->configuration().addValue("extensionUsed", "MAGNUMX_mesh_views");
+  converter->configuration().addValue("extensionRequired",
+                                      "MAGNUMX_mesh_views");
 
-    const Cr::Containers::String filename = Cr::Utility::Path::join(
-        MAGNUMRENDERERTEST_OUTPUT_DIR, "batch-circle-triangle.gltf");
+  const Cr::Containers::String filename = Cr::Utility::Path::join(
+      MAGNUMRENDERERTEST_OUTPUT_DIR, "batch-square-circle-triangle.gltf");
 
-    /* Begin file conversion. No custom scene fields used in this case. */
-    converter->beginFile(filename);
+  /* Begin file conversion */
+  converter->beginFile(filename);
+  converter->setSceneFieldName(SceneFieldMeshViewIndexOffset,
+                               "meshViewIndexOffset");
+  converter->setSceneFieldName(SceneFieldMeshViewIndexCount,
+                               "meshViewIndexCount");
+  converter->setSceneFieldName(SceneFieldMeshViewMaterial, "meshViewMaterial");
 
-    /* Separate circle and triangle mesh */
-    CORRADE_COMPARE(
-        converter->add(
-            Mn::MeshTools::generateIndices(Mn::Primitives::circle3DSolid(
-                32, Mn::Primitives::Circle3DFlag::TextureCoordinates)),
-            "circle"),
-        0);
-    CORRADE_COMPARE(
-        converter->add(
-            Mn::MeshTools::generateIndices(Mn::Primitives::circle3DSolid(
-                3, Mn::Primitives::Circle3DFlag::TextureCoordinates)),
-            "triangle"),
-        1);
+  /* (Flat) square, circle and triangle mesh, same as in generateTestData() */
+  Mn::Trade::MeshData square =
+      Mn::MeshTools::generateIndices(Mn::Primitives::planeSolid(
+          Mn::Primitives::PlaneFlag::TextureCoordinates));
+  Mn::UnsignedInt squareIndexOffset = 0;
 
-    /* Bottom row of the second layer of the 4x4x2 texture from
-       generateTestData(), with cyan and magenta square. Even though it's just
-       a single slice it's still treated as 3D (2D array). */
-    // clang-format off
-    Mn::Color3ub image[4*2] {
-      0x33cccc_rgb, 0x33cccc_rgb, 0xcc33cc_rgb, 0xcc33cc_rgb,
-      0x33cccc_rgb, 0x33cccc_rgb, 0xcc33cc_rgb, 0xcc33cc_rgb
-    };
-    // clang-format on
-    CORRADE_VERIFY(converter->add(Mn::ImageView3D{
-        Mn::PixelFormat::RGB8Unorm, {4, 2, 1}, image, Mn::ImageFlag3D::Array}));
+  Mn::Trade::MeshData circle =
+      Mn::MeshTools::generateIndices(Mn::Primitives::circle3DSolid(
+          32, Mn::Primitives::Circle3DFlag::TextureCoordinates));
+  Mn::UnsignedInt circleIndexOffset =
+      squareIndexOffset + 4 * square.indexCount();
 
-    /* A texture referencing the image. Even though it's single-layer it's
-       still marked as 2D array. */
-    CORRADE_VERIFY(converter->add(Mn::Trade::TextureData{
-        Mn::Trade::TextureType::Texture2DArray, Mn::SamplerFilter::Nearest,
-        Mn::SamplerFilter::Nearest, Mn::SamplerMipmap::Nearest,
-        Mn::SamplerWrapping::Repeat, 0}));
+  Mn::Trade::MeshData triangle =
+      Mn::MeshTools::generateIndices(Mn::Primitives::circle3DSolid(
+          3, Mn::Primitives::Circle3DFlag::TextureCoordinates));
+  Mn::UnsignedInt triangleIndexOffset =
+      circleIndexOffset + 4 * circle.indexCount();
 
-    /* Cyan and magenta material, each spanning its half of the texture
-       layer */
-    // clang-format off
-    CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
-      {Mn::Trade::MaterialAttribute::BaseColor, 0x00ffffff_rgbaf},
-      {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
-      // {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 0u},
-      {Mn::Trade::MaterialAttribute::BaseColorTextureMatrix,
-        Mn::Matrix3::translation({0.0f, 0.0f})*
-        Mn::Matrix3::scaling(Mn::Vector2::xScale(0.5f))}
-    }}, "cyan"), 0);
-    CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
-      {Mn::Trade::MaterialAttribute::BaseColor, 0xff00ffff_rgbaf},
-      {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
-      // {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 1u},
-      {Mn::Trade::MaterialAttribute::BaseColorTextureMatrix,
-        Mn::Matrix3::translation({0.5f, 0.0f})*
-        Mn::Matrix3::scaling(Mn::Vector2::xScale(0.5f))}
-    }}, "magenta"), 1);
-    // clang-format on
+  CORRADE_VERIFY(
+      converter->add(Mn::MeshTools::concatenate({square, circle, triangle})));
 
-    /* Scene with
-        - a circle using the cyan material
-        - a triangle using the magenta material
-       Using separate mesh IDs, and no transformation needed in this case. */
-    // clang-format off
-    struct Scene {
-      struct Parent {
-        Mn::UnsignedInt object;
-        Mn::Int parent;
-      } parents[4];
-      struct Mesh {
-        Mn::UnsignedInt object;
-        Mn::UnsignedInt mesh;
-        Mn::Int meshMaterial;
-      } meshes[2];
-    } scene[]{{
-      {{0, -1}, {1, 0},  /* circle and its child mesh */
-       {2, -1}, {3, 2}}, /* triangle and its child mesh */
-      {{ 1, 0, 0},
-       { 3, 1, 1}},
-    }};
-    converter->setObjectName(0, "circle");
-    converter->setObjectName(2, "triangle");
-    CORRADE_VERIFY(converter->add(Mn::Trade::SceneData{Mn::Trade::SceneMappingType::UnsignedInt, 4, {}, scene, {
-      Mn::Trade::SceneFieldData{Mn::Trade::SceneField::Parent,
-        Cr::Containers::stridedArrayView(scene->parents).slice(&Scene::Parent::object),
-        Cr::Containers::stridedArrayView(scene->parents).slice(&Scene::Parent::parent)},
-      Mn::Trade::SceneFieldData{Mn::Trade::SceneField::Mesh,
-        Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::object),
-        Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::mesh)},
-      Mn::Trade::SceneFieldData{Mn::Trade::SceneField::MeshMaterial,
-        Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::object),
-        Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::meshMaterial)},
-      /* We don't need any transformation, using it just to properly mark the
-         scene as 3D */
-      Mn::Trade::SceneFieldData{Mn::Trade::SceneField::Transformation,
-        Mn::Trade::SceneMappingType::UnsignedInt, nullptr,
-        Mn::Trade::SceneFieldType::Matrix4x4, nullptr
-      },
-    }}));
-    // clang-format on
+  /* A checkerboard image, first layer of the image in generateTestData(), just
+     as a 2D texture */
+  // clang-format off
+  Mn::Color3ub image[4*4*1] {
+    0x990000_rgb, 0xcccccc_rgb, 0x990000_rgb, 0xcccccc_rgb,
+    0xcccccc_rgb, 0x990000_rgb, 0xcccccc_rgb, 0x990000_rgb,
+    0x990000_rgb, 0xcccccc_rgb, 0x990000_rgb, 0xcccccc_rgb,
+    0xcccccc_rgb, 0x990000_rgb, 0xcccccc_rgb, 0x990000_rgb
+  };
+  // clang-format on
+  CORRADE_VERIFY(converter->add(Mn::ImageView2D{
+      Mn::PixelFormat::RGB8Unorm, {4, 4}, image}));
+  CORRADE_VERIFY(converter->add(Mn::Trade::TextureData{
+      Mn::Trade::TextureType::Texture2D, Mn::SamplerFilter::Nearest,
+      Mn::SamplerFilter::Nearest, Mn::SamplerMipmap::Nearest,
+      Mn::SamplerWrapping::Repeat, 0}));
 
-    CORRADE_VERIFY(converter->endFile());
+  /* Checkerboard / cyan / magenta material. The checkerboard is same as in
+     generateTestData(), the other two materials are textureless. */
+  // clang-format off
+  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+    {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
+    {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 0u}
+  }}, "checkerboard"), 0);
+  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+    {Mn::Trade::MaterialAttribute::BaseColor, 0x00ffffff_rgbaf*0x33ccccff_rgbaf},
+  }}, "cyan"), 1);
+  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+    {Mn::Trade::MaterialAttribute::BaseColor, 0xff00ffff_rgbaf*0xcc33ccff_rgbaf},
+  }}, "magenta"), 2);
+  // clang-format on
 
-    /* Test that the output matches. Mainly as a trigger to update the in-repo
-       test data (pass `-S path/to/habitat_sim/data/test_scenes/` to the test
-       executable) */
-    CORRADE_COMPARE_AS(filename,
-                       Cr::Utility::Path::join(
-                           TEST_ASSETS, "scenes/batch-circle-triangle.gltf"),
-                       Cr::TestSuite::Compare::File);
-    CORRADE_COMPARE_AS(Cr::Utility::Path::join(MAGNUMRENDERERTEST_OUTPUT_DIR,
-                                               "batch-circle-triangle.bin"),
-                       Cr::Utility::Path::join(
-                           TEST_ASSETS, "scenes/batch-circle-triangle.bin"),
-                       Cr::TestSuite::Compare::File);
-  }
+  /* Scene with
+      - a square using the checkerboard material
+      - a circle using the cyan material
+      - a triangle using the magenta material
+      Same as in generateTestData(), no transformation needed in this case. */
+  // clang-format off
+  struct Scene {
+    struct Parent {
+      Mn::UnsignedInt object;
+      Mn::Int parent;
+    } parents[6];
+    struct Mesh {
+      Mn::UnsignedInt object;
+      Mn::UnsignedInt mesh;
+      Mn::UnsignedInt meshViewIndexOffset;
+      Mn::UnsignedInt meshViewIndexCount;
+      Mn::Int meshViewMaterial;
+    } meshes[3];
+  } scene[]{{
+    {{0, -1}, {1, 0},  /* square and its child mesh */
+     {2, -1}, {3, 2},  /* circle and its child mesh */
+     {4, -1}, {5, 4}}, /* triangle and its child mesh */
+    {{ 1, 0, squareIndexOffset, square.indexCount(), 0},
+     { 3, 0, circleIndexOffset, circle.indexCount(), 1},
+     { 5, 0, triangleIndexOffset, triangle.indexCount(), 2}},
+  }};
+  converter->setObjectName(0, "square");
+  converter->setObjectName(2, "circle");
+  converter->setObjectName(4, "triangle");
+  CORRADE_VERIFY(converter->add(Mn::Trade::SceneData{Mn::Trade::SceneMappingType::UnsignedInt, 6, {}, scene, {
+    Mn::Trade::SceneFieldData{Mn::Trade::SceneField::Parent,
+      Cr::Containers::stridedArrayView(scene->parents).slice(&Scene::Parent::object),
+      Cr::Containers::stridedArrayView(scene->parents).slice(&Scene::Parent::parent)},
+    Mn::Trade::SceneFieldData{Mn::Trade::SceneField::Mesh,
+      Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::object),
+      Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::mesh)},
+    Mn::Trade::SceneFieldData{SceneFieldMeshViewIndexOffset,
+      Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::object),
+      Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::meshViewIndexOffset)},
+    Mn::Trade::SceneFieldData{SceneFieldMeshViewIndexCount,
+      Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::object),
+      Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::meshViewIndexCount)},
+    Mn::Trade::SceneFieldData{SceneFieldMeshViewMaterial,
+      Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::object),
+      Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::meshViewMaterial)},
+    /* We don't need any transformation, using it just to properly mark the
+        scene as 3D */
+    Mn::Trade::SceneFieldData{Mn::Trade::SceneField::Transformation,
+      Mn::Trade::SceneMappingType::UnsignedInt, nullptr,
+      Mn::Trade::SceneFieldType::Matrix4x4, nullptr
+    },
+  }}));
+  // clang-format on
 
-  /* Second file contains the square mesh with two different materials,
-     with views, and plain 2D textures */
-  {
-    /* Using a new converter instance to prevent the config from being
-       accidentally carried over from the first file. If I wouldn't need to
-       ensure this, using a single converter would be less wasteful, ofc. */
-    Cr::Containers::Pointer<Mn::Trade::AbstractSceneConverter> converter =
-        converterManager.loadAndInstantiate("GltfSceneConverter");
-    /* Using just plain PNGs, no need for KTX in this case */
-    converter->configuration().setValue("imageConverter", "PngImageConverter");
-    /* Bundle images in the bin file to reduce the amount of test files */
-    converter->configuration().setValue("bundleImages", true);
-    /* To prevent the file from being opened by unsuspecting libraries */
-    converter->configuration().addValue("extensionUsed", "MAGNUMX_mesh_views");
-    converter->configuration().addValue("extensionRequired",
-                                        "MAGNUMX_mesh_views");
+  CORRADE_VERIFY(converter->endFile());
 
-    const Cr::Containers::String filename = Cr::Utility::Path::join(
-        MAGNUMRENDERERTEST_OUTPUT_DIR, "batch-squares.gltf");
+  /* Test that the output matches. Mainly as a trigger to update the in-repo
+      test data (pass `-S path/to/habitat_sim/data/test_scenes/` to the test
+      executable) */
+  CORRADE_COMPARE_AS(filename,
+                      Cr::Utility::Path::join(
+                          TEST_ASSETS, "scenes/batch-square-circle-triangle.gltf"),
+                      Cr::TestSuite::Compare::File);
+  CORRADE_COMPARE_AS(Cr::Utility::Path::join(MAGNUMRENDERERTEST_OUTPUT_DIR,
+                                              "batch-square-circle-triangle.bin"),
+                      Cr::Utility::Path::join(
+                          TEST_ASSETS, "scenes/batch-square-circle-triangle.bin"),
+                      Cr::TestSuite::Compare::File);
+}
 
-    /* Begin file conversion */
-    converter->beginFile(filename);
-    converter->setSceneFieldName(SceneFieldMeshViewIndexOffset,
-                                 "meshViewIndexOffset");
-    converter->setSceneFieldName(SceneFieldMeshViewIndexCount,
-                                 "meshViewIndexCount");
-    converter->setSceneFieldName(SceneFieldMeshViewMaterial,
-                                 "meshViewMaterial");
+void GfxBatchRendererTest::generateTestDataFourSquares() {
+  Cr::PluginManager::Manager<Mn::Trade::AbstractImageConverter>
+      imageConverterManager;
+  if (imageConverterManager.loadState("KtxImageConverter") ==
+      Cr::PluginManager::LoadState::NotFound)
+    CORRADE_SKIP("KtxImageConverter plugin not found");
 
-    /* (Flat) square mesh. There's just one but we're using views so remember
-       it to query its index count later. */
-    Mn::Trade::MeshData square =
-        Mn::MeshTools::generateIndices(Mn::Primitives::planeSolid(
-            Mn::Primitives::PlaneFlag::TextureCoordinates));
-    CORRADE_COMPARE(converter->add(square, "square"), 0);
+  Cr::PluginManager::Manager<Mn::Trade::AbstractSceneConverter>
+      converterManager;
+  converterManager.registerExternalManager(imageConverterManager);
+  Cr::Containers::Pointer<Mn::Trade::AbstractSceneConverter> converter =
+      converterManager.loadAndInstantiate("GltfSceneConverter");
+  if(!converter)
+    CORRADE_SKIP("GltfSceneConverter plugin not found");
 
-    /* Four separate images and textures, as needed by the five different
-       squares. Same as in generateTestDataMultipleTextures(); and yes the cyan
-       and magenta is duplicated with the first file. */
-    // clang-format off
-    Mn::Color3ub checkerboard[4*4*2] {
-      0x990000_rgb, 0xcccccc_rgb, 0x990000_rgb, 0xcccccc_rgb,
-      0xcccccc_rgb, 0x990000_rgb, 0xcccccc_rgb, 0x990000_rgb,
-      0x990000_rgb, 0xcccccc_rgb, 0x990000_rgb, 0xcccccc_rgb,
-      0xcccccc_rgb, 0x990000_rgb, 0xcccccc_rgb, 0x990000_rgb
-    };
-    Mn::Color3ub cyan[]{
-      0x33cccc_rgb, 0x33cccc_rgb,
-      0x33cccc_rgb, 0x33cccc_rgb,
-    };
-    Mn::Color3ub magenta[]{
-      0xcc33cc_rgb, 0xcc33cc_rgb,
-      0xcc33cc_rgb, 0xcc33cc_rgb,
-    };
-    Mn::Color3ub yellow[]{
-      0xcccc33_rgb, 0xcccc33_rgb,
-      0xcccc33_rgb, 0xcccc33_rgb,
-    };
-    // clang-format on
+  converter->configuration().setValue("imageConverter", "KtxImageConverter");
+  converter->configuration().setValue("experimentalKhrTextureKtx", true);
+  /* Bundle images in the bin file to reduce the amount of test files */
+  converter->configuration().setValue("bundleImages", true);
 
-    CORRADE_COMPARE(
-        converter->add(
-            Mn::ImageView2D{Mn::PixelFormat::RGB8Unorm, {4, 4}, checkerboard},
-            "checkerboard"),
-        0);
-    CORRADE_COMPARE(
-        converter->add(Mn::Trade::TextureData{Mn::Trade::TextureType::Texture2D,
-                                              Mn::SamplerFilter::Nearest,
-                                              Mn::SamplerFilter::Nearest,
-                                              Mn::SamplerMipmap::Nearest,
-                                              Mn::SamplerWrapping::Repeat, 0},
-                       "checkerboard"),
-        0);
+  const Cr::Containers::String filename = Cr::Utility::Path::join(
+      MAGNUMRENDERERTEST_OUTPUT_DIR, "batch-four-squares.gltf");
 
-    CORRADE_COMPARE(
-        converter->add(Mn::ImageView2D{Mn::PixelStorage{}.setAlignment(1),
-                                       Mn::PixelFormat::RGB8Unorm,
-                                       {2, 2},
-                                       cyan},
-                       "cyan"),
-        1);
-    CORRADE_COMPARE(
-        converter->add(Mn::Trade::TextureData{Mn::Trade::TextureType::Texture2D,
-                                              Mn::SamplerFilter::Nearest,
-                                              Mn::SamplerFilter::Nearest,
-                                              Mn::SamplerMipmap::Nearest,
-                                              Mn::SamplerWrapping::Repeat, 1},
-                       "cyan"),
-        1);
+  /* Begin file conversion */
+  converter->beginFile(filename);
 
-    CORRADE_COMPARE(
-        converter->add(Mn::ImageView2D{Mn::PixelStorage{}.setAlignment(1),
-                                       Mn::PixelFormat::RGB8Unorm,
-                                       {2, 2},
-                                       magenta},
-                       "magenta"),
-        2);
-    CORRADE_COMPARE(
-        converter->add(Mn::Trade::TextureData{Mn::Trade::TextureType::Texture2D,
-                                              Mn::SamplerFilter::Nearest,
-                                              Mn::SamplerFilter::Nearest,
-                                              Mn::SamplerMipmap::Nearest,
-                                              Mn::SamplerWrapping::Repeat, 2},
-                       "magenta"),
-        2);
+  /* (Flat) square mesh. Used with four different materials so it gets
+     duplicated in the glTF. */
+  CORRADE_VERIFY(converter->add(Mn::MeshTools::generateIndices(Mn::Primitives::planeSolid(
+          Mn::Primitives::PlaneFlag::TextureCoordinates)), "square"));
 
-    CORRADE_COMPARE(
-        converter->add(Mn::ImageView2D{Mn::PixelStorage{}.setAlignment(1),
-                                       Mn::PixelFormat::RGB8Unorm,
-                                       {2, 2},
-                                       yellow},
-                       "yellow"),
-        3);
-    CORRADE_COMPARE(
-        converter->add(Mn::Trade::TextureData{Mn::Trade::TextureType::Texture2D,
-                                              Mn::SamplerFilter::Nearest,
-                                              Mn::SamplerFilter::Nearest,
-                                              Mn::SamplerMipmap::Nearest,
-                                              Mn::SamplerWrapping::Repeat, 3},
-                       "yellow"),
-        3);
+  /* Two-layer 4x4 texture, same as in generateTestData() */
+  // clang-format off
+  Mn::Color3ub image[4*4*2] {
+    0x990000_rgb, 0xcccccc_rgb, 0x990000_rgb, 0xcccccc_rgb,
+    0xcccccc_rgb, 0x990000_rgb, 0xcccccc_rgb, 0x990000_rgb,
+    0x990000_rgb, 0xcccccc_rgb, 0x990000_rgb, 0xcccccc_rgb,
+    0xcccccc_rgb, 0x990000_rgb, 0xcccccc_rgb, 0x990000_rgb,
 
-    /* Corresponding materials, again same as in
-       generateTestDataMultipleTextures(). */
-    // clang-format off
-    CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
-      {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u}
-    }}, "checkerboard"), 0);
-    CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
-      {Mn::Trade::MaterialAttribute::BaseColor, 0x00ffffff_rgbaf},
-      {Mn::Trade::MaterialAttribute::BaseColorTexture, 1u},
-    }}, "cyan"), 1);
-    CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
-      {Mn::Trade::MaterialAttribute::BaseColor, 0xff00ffff_rgbaf},
-      {Mn::Trade::MaterialAttribute::BaseColorTexture, 2u},
-    }}, "magenta"), 2);
-    CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
-      {Mn::Trade::MaterialAttribute::BaseColor, 0xffff00ff_rgbaf},
-      {Mn::Trade::MaterialAttribute::BaseColorTexture, 3u},
-    }}, "yellow"), 3);
-    // clang-format on
+    0x33cccc_rgb, 0x33cccc_rgb, 0xcc33cc_rgb, 0xcc33cc_rgb,
+    0x33cccc_rgb, 0x33cccc_rgb, 0xcc33cc_rgb, 0xcc33cc_rgb,
+    0xcccc33_rgb, 0xcccc33_rgb, 0x333333_rgb, 0x333333_rgb,
+    0xcccc33_rgb, 0xcccc33_rgb, 0x333333_rgb, 0x333333_rgb
+  };
+  // clang-format on
+  CORRADE_VERIFY(converter->add(Mn::ImageView3D{
+      Mn::PixelFormat::RGB8Unorm, {4, 4, 2}, image, Mn::ImageFlag3D::Array}));
 
-    /* Scene with
-        - a square using the checkerboard material
-        - a subtree of four child meshes translated on X and Y, each being a
-          square using one of the materials
-      A subset of what's in generateTestData() except the circle and triangle
-      mesh that's in the first file instead. */
-    // clang-format off
-    struct Scene {
-      struct Parent {
-        Mn::UnsignedInt object;
-        Mn::Int parent;
-      } parents[7];
-      struct Mesh {
-        Mn::UnsignedInt object;
-        Mn::UnsignedInt mesh;
-        Mn::UnsignedInt meshViewIndexOffset;
-        Mn::UnsignedInt meshViewIndexCount;
-        Mn::Int meshViewMaterial;
-      } meshes[5];
-      struct Transformation {
-        Mn::UnsignedInt object;
-        Mn::Matrix4 trasformation;
-      } transformations[4];
-    } scene[]{{
-      {{0, -1}, {1, 0}, /* square and its child mesh */
-       {2, -1}, {3, 2}, {4, 2}, /* four squares */
-                {5, 2}, {6, 2}},
-      {{1, 0, 0, square.indexCount(), 0},
-       {3, 0, 0, square.indexCount(), 0},
-       {4, 0, 0, square.indexCount(), 1},
-       {5, 0, 0, square.indexCount(), 2},
-       {6, 0, 0, square.indexCount(), 3}},
-      {{3, Mn::Matrix4::translation({-0.5f, -0.5f, 0.0f})*
-           Mn::Matrix4::scaling(Mn::Vector3{0.4f})},
-       {4, Mn::Matrix4::translation({+0.5f, -0.5f, 0.0f})*
-           Mn::Matrix4::scaling(Mn::Vector3{0.4f})},
-       {5, Mn::Matrix4::translation({-0.5f, +0.5f, 0.0f})*
-           Mn::Matrix4::scaling(Mn::Vector3{0.4f})},
-       {6, Mn::Matrix4::translation({+0.5f, +0.5f, 0.0f})*
-           Mn::Matrix4::scaling(Mn::Vector3{0.4f})}}
-    }};
-    converter->setObjectName(0, "square");
-    converter->setObjectName(2, "four squares");
-    CORRADE_VERIFY(converter->add(Mn::Trade::SceneData{Mn::Trade::SceneMappingType::UnsignedInt, 7, {}, scene, {
-      Mn::Trade::SceneFieldData{Mn::Trade::SceneField::Parent,
-        Cr::Containers::stridedArrayView(scene->parents).slice(&Scene::Parent::object),
-        Cr::Containers::stridedArrayView(scene->parents).slice(&Scene::Parent::parent)},
-      Mn::Trade::SceneFieldData{Mn::Trade::SceneField::Mesh,
-        Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::object),
-        Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::mesh)},
-      Mn::Trade::SceneFieldData{SceneFieldMeshViewIndexOffset,
-        Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::object),
-        Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::meshViewIndexOffset)},
-      Mn::Trade::SceneFieldData{SceneFieldMeshViewIndexCount,
-        Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::object),
-        Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::meshViewIndexCount)},
-      Mn::Trade::SceneFieldData{SceneFieldMeshViewMaterial,
-        Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::object),
-        Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::meshViewMaterial)},
-      Mn::Trade::SceneFieldData{Mn::Trade::SceneField::Transformation,
-        Cr::Containers::stridedArrayView(scene->transformations).slice(&Scene::Transformation::object),
-        Cr::Containers::stridedArrayView(scene->transformations).slice(&Scene::Transformation::trasformation)},
-    }}));
-    // clang-format on
+  /* A texture referencing the only image. Nearest neighbor filtering to have
+     less noise in the output images. */
+  CORRADE_VERIFY(converter->add(Mn::Trade::TextureData{
+      Mn::Trade::TextureType::Texture2DArray, Mn::SamplerFilter::Nearest,
+      Mn::SamplerFilter::Nearest, Mn::SamplerMipmap::Nearest,
+      Mn::SamplerWrapping::Repeat, 0}));
 
-    CORRADE_VERIFY(converter->endFile());
+  /* A (default, white) material spanning the whole first texture layer */
+  // clang-format off
+  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+    {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
+    {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 0u}
+  }}, "checkerboard"), 0);
+  // clang-format on
 
-    /* Test that the output matches. Mainly as a trigger to update the in-repo
-       test data (pass `-S path/to/habitat_sim/data/test_scenes/` to the test
-       executable). */
-    CORRADE_COMPARE_AS(
-        filename,
-        Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch-squares.gltf"),
-        Cr::TestSuite::Compare::File);
-    CORRADE_COMPARE_AS(
-        Cr::Utility::Path::join(MAGNUMRENDERERTEST_OUTPUT_DIR,
-                                "batch-squares.bin"),
-        Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch-squares.bin"),
-        Cr::TestSuite::Compare::File);
-  }
+  /* A cyan / magenta / yellow material spanning the bottom left / top left /
+     bottom right quadrant of second texture layer. I.e., nothing should be
+     using the black-ish portion of the texture. When combined with the
+     texture color, the output should have the corresponding red / green / blue
+     channels zeroed out. */
+  // clang-format off
+  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+    {Mn::Trade::MaterialAttribute::BaseColor, 0x00ffffff_rgbaf},
+    {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
+    {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 1u},
+    {Mn::Trade::MaterialAttribute::BaseColorTextureMatrix,
+      Mn::Matrix3::translation({0.0f, 0.0f})*
+      Mn::Matrix3::scaling(Mn::Vector2{0.5f})}
+  }}, "cyan"), 1);
+  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+    {Mn::Trade::MaterialAttribute::BaseColor, 0xff00ffff_rgbaf},
+    {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
+    {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 1u},
+    {Mn::Trade::MaterialAttribute::BaseColorTextureMatrix,
+      Mn::Matrix3::translation({0.5f, 0.0f})*
+      Mn::Matrix3::scaling(Mn::Vector2{0.5f})}
+  }}, "magenta"), 2);
+  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+    {Mn::Trade::MaterialAttribute::BaseColor, 0xffff00ff_rgbaf},
+    {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
+    {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 1u},
+    {Mn::Trade::MaterialAttribute::BaseColorTextureMatrix,
+      Mn::Matrix3::translation({0.0f, 0.5f})*
+      Mn::Matrix3::scaling(Mn::Vector2{0.5f})}
+  }}, "yellow"), 3);
+  // clang-format on
+
+  /* Scene with
+      - a square using the checkerboard material
+      - a subtree of four child meshes translated on X and Y, each being a
+        square using one of the materials
+    A subset of what's in generateTestData() except the circle and triangle
+    mesh that's in the first file instead. */
+  // clang-format off
+  struct Scene {
+    struct Parent {
+      Mn::UnsignedInt object;
+      Mn::Int parent;
+    } parents[5];
+    struct Mesh {
+      Mn::UnsignedInt object;
+      Mn::UnsignedInt mesh;
+      Mn::Int meshMaterial;
+    } meshes[4];
+    struct Transformation {
+      Mn::UnsignedInt object;
+      Mn::Matrix4 trasformation;
+    } transformations[4];
+  } scene[]{{
+    {{0, -1}, {1, 0}, {2, 0}, /* four squares */
+              {3, 0}, {4, 0}},
+    {{1, 0, 0},
+     {2, 0, 1},
+     {3, 0, 2},
+     {4, 0, 3}},
+    {{1, Mn::Matrix4::translation({-0.5f, -0.5f, 0.0f})*
+         Mn::Matrix4::scaling(Mn::Vector3{0.4f})},
+     {2, Mn::Matrix4::translation({+0.5f, -0.5f, 0.0f})*
+         Mn::Matrix4::scaling(Mn::Vector3{0.4f})},
+     {3, Mn::Matrix4::translation({-0.5f, +0.5f, 0.0f})*
+         Mn::Matrix4::scaling(Mn::Vector3{0.4f})},
+     {4, Mn::Matrix4::translation({+0.5f, +0.5f, 0.0f})*
+         Mn::Matrix4::scaling(Mn::Vector3{0.4f})}}
+  }};
+  converter->setObjectName(0, "four squares");
+  CORRADE_VERIFY(converter->add(Mn::Trade::SceneData{Mn::Trade::SceneMappingType::UnsignedInt, 7, {}, scene, {
+    Mn::Trade::SceneFieldData{Mn::Trade::SceneField::Parent,
+      Cr::Containers::stridedArrayView(scene->parents).slice(&Scene::Parent::object),
+      Cr::Containers::stridedArrayView(scene->parents).slice(&Scene::Parent::parent)},
+    Mn::Trade::SceneFieldData{Mn::Trade::SceneField::Mesh,
+      Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::object),
+      Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::mesh)},
+    Mn::Trade::SceneFieldData{Mn::Trade::SceneField::MeshMaterial,
+      Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::object),
+      Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::meshMaterial)},
+    Mn::Trade::SceneFieldData{Mn::Trade::SceneField::Transformation,
+      Cr::Containers::stridedArrayView(scene->transformations).slice(&Scene::Transformation::object),
+      Cr::Containers::stridedArrayView(scene->transformations).slice(&Scene::Transformation::trasformation)},
+  }}));
+  // clang-format on
+
+  CORRADE_VERIFY(converter->endFile());
+
+  /* Test that the output matches. Mainly as a trigger to update the in-repo
+      test data (pass `-S path/to/habitat_sim/data/test_scenes/` to the test
+      executable). */
+  CORRADE_COMPARE_AS(
+      filename,
+      Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch-four-squares.gltf"),
+      Cr::TestSuite::Compare::File);
+  CORRADE_COMPARE_AS(
+      Cr::Utility::Path::join(MAGNUMRENDERERTEST_OUTPUT_DIR,
+                              "batch-four-squares.bin"),
+      Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch-four-squares.bin"),
+      Cr::TestSuite::Compare::File);
 }
 
 void GfxBatchRendererTest::defaults() {

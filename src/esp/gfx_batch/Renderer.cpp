@@ -23,6 +23,7 @@
 #include <Magnum/GL/TextureArray.h>
 #include <Magnum/GL/TextureFormat.h>
 #include <Magnum/ImageView.h>
+#include <Magnum/PixelFormat.h>
 #include <Magnum/Math/PackingBatch.h>
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/MeshTools/Duplicate.h>
@@ -223,6 +224,14 @@ void Renderer::create(const RendererConfiguration& configurationWrapper) {
   state_->projections = Cr::Containers::Array<ProjectionPadded>{sceneCount};
   state_->scenes = Cr::Containers::Array<Scene>{sceneCount};
 
+  /* Texture 0 is reserved as a white pixel */
+  arrayAppend(state_->textures, Cr::InPlaceInit)
+    .setMinificationFilter(Mn::SamplerFilter::Nearest, Mn::SamplerMipmap::Base)
+    .setMagnificationFilter(Mn::SamplerFilter::Nearest)
+    .setWrapping(Mn::SamplerWrapping::Repeat)
+    .setStorage(1, Mn::GL::TextureFormat::RGBA8, {1, 1, 1})
+    .setSubImage(0, {}, Mn::ImageView3D{Mn::PixelFormat::RGBA8Unorm, {1, 1, 1}, "\xff\xff\xff\xff"});
+
   // TODO move this outside
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
@@ -403,14 +412,13 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
       materials[i] = Mn::Shaders::PhongMaterialUniform{}.setAmbientColor(
           flatMaterial.color());
 
-      // TODO drop this requirement also and use some implicitly-added 1x1
-      //  texture? that's still a separate draw tho :(
-      CORRADE_ASSERT(
-          flatMaterial.hasTexture(),
-          "Renderer::addFile(): material" << i << "is not textured", );
-      materialTextureTransformations[i] = {
-          flatMaterial.texture() + textureOffset, flatMaterial.textureLayer(),
-          flatMaterial.textureMatrix()};
+      /* Untextured materials get the first reserved texture (a white pixel) */
+      if(!flatMaterial.hasTexture())
+        materialTextureTransformations[i] = {0, 0, {}};
+      else
+        materialTextureTransformations[i] = {
+            flatMaterial.texture() + textureOffset, flatMaterial.textureLayer(),
+            flatMaterial.textureMatrix()};
     }
 
     // TODO immutable buffer storage how? or populate on first draw() and then
