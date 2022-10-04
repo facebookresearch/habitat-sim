@@ -431,7 +431,7 @@ void GfxBatchRendererTest::generateTestDataMultipleMeshes() {
   /* Begin file conversion. No custom scene fields used in this case. */
   converter->beginFile(filename);
 
-  /* Separate square, circle and triangle mesh */
+  /* Separate square, circle ... */
   CORRADE_COMPARE(
       converter->add(Mn::MeshTools::generateIndices(Mn::Primitives::planeSolid(
                          Mn::Primitives::PlaneFlag::TextureCoordinates)),
@@ -443,12 +443,18 @@ void GfxBatchRendererTest::generateTestDataMultipleMeshes() {
               32, Mn::Primitives::Circle3DFlag::TextureCoordinates)),
           "circle"),
       1);
-  CORRADE_COMPARE(
-      converter->add(
-          Mn::MeshTools::generateIndices(Mn::Primitives::circle3DSolid(
-              3, Mn::Primitives::Circle3DFlag::TextureCoordinates)),
-          "triangle"),
-      2);
+
+  /* ... and triangle mesh with additional magenta vertex colors */
+  {
+    /* "Triangle", it's actually a circle, a fan, so 5 vertices instead of 3 */
+    Mn::Vector3 colors[]{0xff00ff_rgbf, 0xff00ff_rgbf, 0xff00ff_rgbf, 0xff00ff_rgbf, 0xff00ff_rgbf};
+    CORRADE_COMPARE(
+        converter->add(
+            Mn::MeshTools::generateIndices(Mn::MeshTools::interleave(Mn::Primitives::circle3DSolid(
+                3, Mn::Primitives::Circle3DFlag::TextureCoordinates), {Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Color, Cr::Containers::arrayView(colors)}})),
+            "triangle"),
+        2);
+  }
 
   /* Two-layer 4x4 texture, same as in generateTestData() */
   // clang-format off
@@ -504,14 +510,21 @@ void GfxBatchRendererTest::generateTestDataMultipleMeshes() {
       Mn::Matrix3::translation({0.0f, 0.5f})*
       Mn::Matrix3::scaling(Mn::Vector2{0.5f})}
   }}, "yellow"), 3);
+  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+    {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
+    {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 1u},
+    {Mn::Trade::MaterialAttribute::BaseColorTextureMatrix,
+      Mn::Matrix3::translation({0.5f, 0.0f})*
+      Mn::Matrix3::scaling(Mn::Vector2{0.5f})}
+  }}, "vertex-color magenta"), 4);
   // clang-format on
 
   /* Scene with
       - a square using the checkerboard material
       - a circle using the cyan material
-      - a triangle using the magenta material
+      - a triangle using the vertex-color magenta material
       - a subtree of four child meshes translated on X and Y, each being a
-        square using one of the materials
+        square using one of the first four materials
     The only difference compared to generateTestData() is using separate mesh
     IDs instead of mesh views. */
   // clang-format off
@@ -537,7 +550,7 @@ void GfxBatchRendererTest::generateTestDataMultipleMeshes() {
               {9, 6}, {10, 6}},
     {{ 1, 0, 0},
      { 3, 1, 1},
-     { 5, 2, 2},
+     { 5, 2, 4}, /* using the vertex-color magenta material */
      { 7, 0, 0},
      { 8, 0, 1},
      { 9, 0, 2},

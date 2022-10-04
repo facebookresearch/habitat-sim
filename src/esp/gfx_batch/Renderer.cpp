@@ -8,6 +8,7 @@
 #include <Corrade/Containers/GrowableArray.h>
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/Containers/Pair.h>
+#include <Corrade/Containers/Reference.h>
 #include <Corrade/Containers/StringStl.h>
 #include <Corrade/Containers/StringStlHash.h>
 #include <Corrade/Containers/Triple.h>
@@ -94,24 +95,31 @@ struct DrawCommand {
 };
 
 struct DrawBatch {
+  Mn::Shaders::PhongGL::Flags shaderFlags;
+  /* Caches access to the shader map (which is assumed to have stable pointers
+     for the whole lifetime) */
+  Cr::Containers::Reference<Mn::Shaders::PhongGL> shader;
   Mn::UnsignedInt meshId;
   Mn::UnsignedInt textureId;
   /* Here will eventually also be shader ID and other things like mask etc */
 };
 
-/* Finds a draw batch corresponding to given mesh and texture ID or creates a
-   new one, returning its ID. Yes, it's a linear search. You're not supposed to
-   have too many meshes and textures, anyway. */
+/* Finds a draw batch corresponding to given shader, mesh and texture or
+   creates a new one, returning its ID. Yes, it's a linear search. You're not
+   supposed to have too many meshes and textures, anyway. */
 Mn::UnsignedInt drawBatchId(Cr::Containers::Array<DrawBatch>& drawBatches,
+                            std::unordered_map<Mn::UnsignedInt, Mn::Shaders::PhongGL>& shaders,
+                            Mn::Shaders::PhongGL::Flags shaderFlags,
                             Mn::UnsignedInt meshId,
                             Mn::UnsignedInt textureId) {
   for (std::size_t i = 0; i != drawBatches.size(); ++i) {
-    if (drawBatches[i].meshId == meshId &&
+    if (drawBatches[i].shaderFlags == shaderFlags &&
+        drawBatches[i].meshId == meshId &&
         drawBatches[i].textureId == textureId)
       return i;
   }
 
-  arrayAppend(drawBatches, Cr::InPlaceInit, meshId, textureId);
+  arrayAppend(drawBatches, Cr::InPlaceInit, shaderFlags, shaders.at(Mn::UnsignedInt(shaderFlags)), meshId, textureId);
   return drawBatches.size() - 1;
 }
 
@@ -172,11 +180,16 @@ struct ProjectionPadded : Mn::Shaders::ProjectionUniform3D {
 struct Renderer::State {
   RendererFlags flags;
   Mn::Vector2i tileSize, tileCount;
-  Mn::Shaders::PhongGL shader{Mn::NoCreate};
+  /* Indexed with Mn::Shaders::PhongGL::Flag, but I don't want to bother with
+     writing a hash function for EnumSet */
+  // TODO add Containers/EnumSetHash.h for this
+  std::unordered_map<Mn::UnsignedInt, Mn::Shaders::PhongGL> shaders;
 
   /* Filled upon addFile() */
   Cr::Containers::Array<Mn::GL::Texture2DArray> textures;
-  Cr::Containers::Array<Mn::GL::Mesh> meshes;
+  /* Each mesh contains a set of flags it needs from the shader (such as
+     enabling vertex colors) */
+  Cr::Containers::Array<Cr::Containers::Pair<Mn::Shaders::PhongGL::Flags,  Mn::GL::Mesh>> meshes;
   // TODO clear this array once/if the materialUniform is populated on first
   //  draw() and adding more files is forbidden
   Cr::Containers::Array<Mn::Shaders::PhongMaterialUniform> materials;
@@ -399,10 +412,18 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
   }
 
   /* Import all meshes */
-  for (Mn::UnsignedInt i = 0, iMax = importer->meshCount(); i != iMax; ++i)
-    arrayAppend(state_->meshes,
-                Mn::MeshTools::compile(
-                    *CORRADE_INTERNAL_ASSERT_EXPRESSION(importer->mesh(i))));
+  for (Mn::UnsignedInt i = 0, iMax = importer->meshCount(); i != iMax; ++i) {
+    Cr::Containers::Optional<Mn::Trade::MeshData> mesh = importer->mesh(i);
+    CORRADE_INTERNAL_ASSERT(mesh);
+
+    /* Decide what extra shader feature the mesh needs. Currently just vertex
+       colors. */
+    Mn::Shaders::PhongGL::Flags flags;
+    if(mesh->hasAttribute(Mn::Trade::MeshAttribute::Color))
+      flags |= Mn::Shaders::PhongGL::Flag::VertexColor;
+
+    arrayAppend(state_->meshes, Cr::InPlaceInit, flags, Mn::MeshTools::compile(*mesh));
+  }
 
   /* Immutable material data. Save texture IDs, transformations and layers to a
      temporary array to apply them to draws instead */
@@ -575,23 +596,34 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
     }
   }
 
-  /* Setup a zero-light (flat) shader, bind buffers that don't change
-     per-view */
-  Mn::Shaders::PhongGL::Flags shaderFlags =
-      Mn::Shaders::PhongGL::Flag::MultiDraw |
-      Mn::Shaders::PhongGL::Flag::UniformBuffers;
-  if (!(state_->flags >= RendererFlag::NoTextures))
-    shaderFlags |= Mn::Shaders::PhongGL::Flag::AmbientTexture |
-             Mn::Shaders::PhongGL::Flag::TextureArrays |
-             Mn::Shaders::PhongGL::Flag::TextureTransformation;
-  // TODO 1024 is 64K divided by 64 bytes needed for one draw uniform, have
-  //  that fetched from actual GL limits instead once I get to actually
-  //  splitting draws by this limit
+  /* Setup a zero-light (flat) shader in desired combinations. For simplicity
+     and stutter-free experience instantiate all possibly needed combinations
+     upfront instead of lazy-compiling them once needed. */
   // TODO don't do this after adding each and every file, it's wasteful ...
   //  do lazily on first draw() and then FORBID adding more files?
-  state_->shader = Mn::Shaders::PhongGL{
-      shaderFlags, 0, Mn::UnsignedInt(state_->materials.size()), 1024};
-  state_->shader.bindMaterialBuffer(state_->materialUniform);
+  // TODO also might make sense to use async compilation when the combination
+  //  count grows further
+  for(Mn::Shaders::PhongGL::Flags extraFlags: {{}, Mn::Shaders::PhongGL::Flag::VertexColor}) {
+    Mn::Shaders::PhongGL::Flags shaderFlags =
+        extraFlags |
+        Mn::Shaders::PhongGL::Flag::MultiDraw |
+        Mn::Shaders::PhongGL::Flag::UniformBuffers;
+    if (!(state_->flags >= RendererFlag::NoTextures))
+      shaderFlags |= Mn::Shaders::PhongGL::Flag::AmbientTexture |
+              Mn::Shaders::PhongGL::Flag::TextureArrays |
+              Mn::Shaders::PhongGL::Flag::TextureTransformation;
+    /* Not using emplace() -- if a stale shader already exists in the map, it
+       wouldn't replace it */
+    // TODO 1024 is 64K divided by 64 bytes needed for one draw uniform, have
+    //  that fetched from actual GL limits instead once I get to actually
+    //  splitting draws by this limit
+    state_->shaders[Mn::UnsignedInt(extraFlags)] = Mn::Shaders::PhongGL{
+        shaderFlags, 0, Mn::UnsignedInt(state_->materials.size()), 1024};
+  }
+
+  /* Bind buffers that don't change per-view. All shaders share the same
+     binding points so it's fine to use an arbitrary one */
+  state_->shaders.begin()->second.bindMaterialBuffer(state_->materialUniform);
 }
 
 std::size_t Renderer::addMeshHierarchy(const Mn::UnsignedInt sceneId,
@@ -643,9 +675,10 @@ std::size_t Renderer::addMeshHierarchy(const Mn::UnsignedInt sceneId,
     arrayAppend(scene.parents, topLevelId);
     arrayAppend(scene.transformations, meshView.transformation);
 
-    /* Get a batch ID for given mesh/texture combination */
+    /* Get a batch ID for given shader/mesh/texture combination */
     const Mn::UnsignedInt batchId = drawBatchId(
-        scene.drawBatches, meshView.meshId,
+        scene.drawBatches, state_->shaders,
+        state_->meshes[meshView.meshId].first(), meshView.meshId,
         state_->materialTextureTransformations[meshView.materialId].textureId);
 
     arrayAppend(scene.drawBatchIds, batchId);
@@ -683,13 +716,13 @@ void Renderer::clear(const Mn::UnsignedInt sceneId) {
                                             << "scenes", );
 
   Scene& scene = state_->scenes[sceneId];
-  // TODO have arrayClear()
+  // TODO have arrayClear()!!!
   /* Resizing instead of `= {}` to not discard the memory */
   arrayResize(scene.parents, 0);
   arrayResize(scene.transformations, 0);
   arrayResize(scene.drawBatchIds, 0);
   arrayResize(scene.transformationIds, 0);
-  arrayResize(scene.drawBatches, 0);
+  arrayResize(scene.drawBatches, Cr::NoInit, 0);
   arrayResize(scene.draws, 0);
   arrayResize(scene.textureTransformations, 0);
   arrayResize(scene.drawCommands, 0);
@@ -843,11 +876,12 @@ void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
       const std::size_t sceneId = y * state_->tileCount.x() + x;
       Scene& scene = state_->scenes[sceneId];
 
-      /* Bind buffers */
+      /* Bind buffers. Again, all shaders share the same binding points so it
+         doesn't matter which one is used. */
       // TODO split by draw count limit? hard to do with those batches now, heh
       //  also hard to do due to the insane alignment rules
       state_
-          ->shader
+          ->shaders.begin()->second
           // TODO bind all buffers together with a multi API
           .bindProjectionBuffer(state_->projectionUniform,
                                 sceneId * sizeof(ProjectionPadded),
@@ -855,7 +889,7 @@ void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
           .bindTransformationBuffer(scene.transformationUniform)
           .bindDrawBuffer(scene.drawUniform);
       if (!(state_->flags & RendererFlag::NoTextures))
-        state_->shader.bindTextureTransformationBuffer(
+        state_->shaders.begin()->second.bindTextureTransformationBuffer(
             scene.textureTransformationUniform);
 
       /* Submit all draw batches */
@@ -863,7 +897,7 @@ void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
         const DrawBatch& drawBatch = scene.drawBatches[i];
 
         if (!(state_->flags >= RendererFlag::NoTextures))
-          state_->shader.bindAmbientTexture(
+          drawBatch.shader->bindAmbientTexture(
               state_->textures[drawBatch.textureId]);
 
         const Mn::UnsignedInt drawBatchOffset = scene.drawBatchOffsets[i];
@@ -873,8 +907,8 @@ void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
             drawBatchCommands =
                 scene.drawCommands.slice(drawBatchOffset, nextDrawBatchOffset);
 
-        state_->shader.setDrawOffset(drawBatchOffset)
-            .draw(state_->meshes[drawBatch.meshId],
+        drawBatch.shader->setDrawOffset(drawBatchOffset)
+            .draw(state_->meshes[drawBatch.meshId].second(),
                   drawBatchCommands.slice(&DrawCommand::indexCount), nullptr,
                   drawBatchCommands.slice(&DrawCommand::indexOffsetInBytes));
       }

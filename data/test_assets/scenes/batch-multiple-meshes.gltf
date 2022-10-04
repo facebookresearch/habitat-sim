@@ -14,7 +14,7 @@
   "buffers": [
     {
       "uri": "batch-multiple-meshes.bin",
-      "byteLength": 2168
+      "byteLength": 2228
     }
   ],
   "bufferViews": [
@@ -72,24 +72,30 @@
     {
       "buffer": 0,
       "byteOffset": 1660,
-      "byteLength": 140,
-      "byteStride": 32
+      "byteLength": 188,
+      "byteStride": 44
     },
     {
       "buffer": 0,
       "byteOffset": 1672,
-      "byteLength": 140,
-      "byteStride": 32
+      "byteLength": 188,
+      "byteStride": 44
     },
     {
       "buffer": 0,
       "byteOffset": 1684,
-      "byteLength": 136,
-      "byteStride": 32
+      "byteLength": 184,
+      "byteStride": 44
     },
     {
       "buffer": 0,
-      "byteOffset": 1820,
+      "byteOffset": 1692,
+      "byteLength": 188,
+      "byteStride": 44
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 1880,
       "byteLength": 348
     }
   ],
@@ -165,6 +171,12 @@
       "componentType": 5126,
       "count": 5,
       "type": "VEC2"
+    },
+    {
+      "bufferView": 12,
+      "componentType": 5126,
+      "count": 5,
+      "type": "VEC3"
     }
   ],
   "meshes": [
@@ -203,9 +215,10 @@
           "attributes": {
             "POSITION": 9,
             "NORMAL": 10,
-            "TEXCOORD_0": 11
+            "TEXCOORD_0": 11,
+            "COLOR_0": 12
           },
-          "material": 2
+          "material": 4
         }
       ],
       "name": "triangle"
@@ -305,6 +318,20 @@
         }
       },
       "name": "yellow"
+    },
+    {
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 1,
+          "extensions": {
+            "KHR_texture_transform": {
+              "offset": [0.5, 0.5],
+              "scale": [0.5, 0.5]
+            }
+          }
+        }
+      },
+      "name": "vertex-color magenta"
     }
   ],
   "samplers": [
@@ -338,7 +365,7 @@
   "images": [
     {
       "mimeType": "image/ktx2",
-      "bufferView": 12
+      "bufferView": 13
     }
   ],
   "nodes": [
