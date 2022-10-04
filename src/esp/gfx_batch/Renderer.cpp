@@ -516,7 +516,7 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
     } else {
       for (MeshView& view : meshViews) {
         view.indexOffsetInBytes = 0;
-        view.indexCount = state_->meshes[view.meshId + meshOffset].count();
+        view.indexCount = state_->meshes[view.meshId].second().count();
       }
       const Cr::Containers::Optional<Mn::UnsignedInt> meshMaterialFieldId =
           scene->findFieldId(Mn::Trade::SceneField::MeshMaterial);
