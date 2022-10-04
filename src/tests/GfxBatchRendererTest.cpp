@@ -2,8 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include <Corrade/Containers/Triple.h>
 #include <Corrade/Containers/StridedArrayView.h>
+#include <Corrade/Containers/Triple.h>
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/PluginManager/PluginMetadata.h>
 #include <Corrade/TestSuite/Compare/File.h>
@@ -17,8 +17,8 @@
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix3.h>
 #include <Magnum/Math/Matrix4.h>
-#include <Magnum/MeshTools/Concatenate.h>
 #include <Magnum/MeshTools/Combine.h>
+#include <Magnum/MeshTools/Concatenate.h>
 #include <Magnum/MeshTools/GenerateIndices.h>
 #include <Magnum/MeshTools/Transform.h>
 #include <Magnum/Primitives/Circle.h>
@@ -453,18 +453,23 @@ void GfxBatchRendererTest::generateTestDataMultipleMeshes() {
   /* ... circle, which is a non-indexed triangle fan ... */
   CORRADE_COMPARE(
       converter->add(Mn::Primitives::circle3DSolid(
-              32, Mn::Primitives::Circle3DFlag::TextureCoordinates),
-          "circle"),
+                         32, Mn::Primitives::Circle3DFlag::TextureCoordinates),
+                     "circle"),
       1);
 
   /* ... and a triangle with additional magenta vertex colors */
   {
     /* "Triangle", it's actually a circle, a fan, so 5 vertices instead of 3 */
-    Mn::Vector3 colors[]{0xff00ff_rgbf, 0xff00ff_rgbf, 0xff00ff_rgbf, 0xff00ff_rgbf, 0xff00ff_rgbf};
+    Mn::Vector3 colors[]{0xff00ff_rgbf, 0xff00ff_rgbf, 0xff00ff_rgbf,
+                         0xff00ff_rgbf, 0xff00ff_rgbf};
     CORRADE_COMPARE(
         converter->add(
-            Mn::MeshTools::generateIndices(Mn::MeshTools::interleave(Mn::Primitives::circle3DSolid(
-                3, Mn::Primitives::Circle3DFlag::TextureCoordinates), {Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Color, Cr::Containers::arrayView(colors)}})),
+            Mn::MeshTools::generateIndices(Mn::MeshTools::interleave(
+                Mn::Primitives::circle3DSolid(
+                    3, Mn::Primitives::Circle3DFlag::TextureCoordinates),
+                {Mn::Trade::MeshAttributeData{
+                    Mn::Trade::MeshAttribute::Color,
+                    Cr::Containers::arrayView(colors)}})),
             "triangle"),
         2);
   }
@@ -877,7 +882,7 @@ void GfxBatchRendererTest::generateTestDataSquareCircleTriangle() {
   converterManager.registerExternalManager(imageConverterManager);
   Cr::Containers::Pointer<Mn::Trade::AbstractSceneConverter> converter =
       converterManager.loadAndInstantiate("GltfSceneConverter");
-  if(!converter)
+  if (!converter)
     CORRADE_SKIP("GltfSceneConverter plugin not found");
 
   /* Bundle images in the bin file to reduce the amount of test files */
@@ -929,8 +934,8 @@ void GfxBatchRendererTest::generateTestDataSquareCircleTriangle() {
     0xcccccc_rgb, 0x990000_rgb, 0xcccccc_rgb, 0x990000_rgb
   };
   // clang-format on
-  CORRADE_VERIFY(converter->add(Mn::ImageView2D{
-      Mn::PixelFormat::RGB8Unorm, {4, 4}, image}));
+  CORRADE_VERIFY(converter->add(
+      Mn::ImageView2D{Mn::PixelFormat::RGB8Unorm, {4, 4}, image}));
   CORRADE_VERIFY(converter->add(Mn::Trade::TextureData{
       Mn::Trade::TextureType::Texture2D, Mn::SamplerFilter::Nearest,
       Mn::SamplerFilter::Nearest, Mn::SamplerMipmap::Nearest,
@@ -1010,15 +1015,17 @@ void GfxBatchRendererTest::generateTestDataSquareCircleTriangle() {
   /* Test that the output matches. Mainly as a trigger to update the in-repo
       test data (pass `-S path/to/habitat_sim/data/test_scenes/` to the test
       executable) */
-  CORRADE_COMPARE_AS(filename,
-                      Cr::Utility::Path::join(
-                          TEST_ASSETS, "scenes/batch-square-circle-triangle.gltf"),
-                      Cr::TestSuite::Compare::File);
-  CORRADE_COMPARE_AS(Cr::Utility::Path::join(MAGNUMRENDERERTEST_OUTPUT_DIR,
-                                              "batch-square-circle-triangle.bin"),
-                      Cr::Utility::Path::join(
-                          TEST_ASSETS, "scenes/batch-square-circle-triangle.bin"),
-                      Cr::TestSuite::Compare::File);
+  CORRADE_COMPARE_AS(
+      filename,
+      Cr::Utility::Path::join(TEST_ASSETS,
+                              "scenes/batch-square-circle-triangle.gltf"),
+      Cr::TestSuite::Compare::File);
+  CORRADE_COMPARE_AS(
+      Cr::Utility::Path::join(MAGNUMRENDERERTEST_OUTPUT_DIR,
+                              "batch-square-circle-triangle.bin"),
+      Cr::Utility::Path::join(TEST_ASSETS,
+                              "scenes/batch-square-circle-triangle.bin"),
+      Cr::TestSuite::Compare::File);
 }
 
 void GfxBatchRendererTest::generateTestDataFourSquares() {
@@ -1036,7 +1043,7 @@ void GfxBatchRendererTest::generateTestDataFourSquares() {
   converterManager.registerExternalManager(imageConverterManager);
   Cr::Containers::Pointer<Mn::Trade::AbstractSceneConverter> converter =
       converterManager.loadAndInstantiate("GltfSceneConverter");
-  if(!converter)
+  if (!converter)
     CORRADE_SKIP("GltfSceneConverter plugin not found");
 
   converter->configuration().setValue("imageConverter", "KtxImageConverter");
@@ -1044,18 +1051,20 @@ void GfxBatchRendererTest::generateTestDataFourSquares() {
   /* Bundle images in the bin file to reduce the amount of test files */
   converter->configuration().setValue("bundleImages", true);
 
-  const Cr::Containers::String filename = Cr::Utility::Path::join({
-      MAGNUMRENDERERTEST_OUTPUT_DIR, data.filenamePrefix + ".gltf"_s});
+  const Cr::Containers::String filename = Cr::Utility::Path::join(
+      {MAGNUMRENDERERTEST_OUTPUT_DIR, data.filenamePrefix + ".gltf"_s});
 
   /* Begin file conversion */
   converter->beginFile(filename);
 
   /* File with a scene and textures */
-  if(data.scene) {
+  if (data.scene) {
     /* (Flat) square mesh. Used with four different materials so it gets
        duplicated in the glTF. */
-    CORRADE_VERIFY(converter->add(Mn::MeshTools::generateIndices(Mn::Primitives::planeSolid(
-            Mn::Primitives::PlaneFlag::TextureCoordinates)), "square"));
+    CORRADE_VERIFY(converter->add(
+        Mn::MeshTools::generateIndices(Mn::Primitives::planeSolid(
+            Mn::Primitives::PlaneFlag::TextureCoordinates)),
+        "square"));
 
     /* Two-layer 4x4 texture, same as in generateTestData() */
     // clang-format off
@@ -1177,34 +1186,39 @@ void GfxBatchRendererTest::generateTestDataFourSquares() {
 
   /* Override the above if deep hierarchy is requested -- then the "right"
      squares are children of the left, with relative transform */
-  if(data.sceneDeepHierarchy) {
+  if (data.sceneDeepHierarchy) {
     scene->parents[2].parent = 1;
     scene->parents[4].parent = 3;
-    scene->transformations[1].trasformation = Mn::Matrix4::translation(Mn::Vector3::xAxis(1.0f/0.4f));
-    scene->transformations[3].trasformation = Mn::Matrix4::translation(Mn::Vector3::xAxis(1.0f/0.4f));
+    scene->transformations[1].trasformation =
+        Mn::Matrix4::translation(Mn::Vector3::xAxis(1.0f / 0.4f));
+    scene->transformations[3].trasformation =
+        Mn::Matrix4::translation(Mn::Vector3::xAxis(1.0f / 0.4f));
   }
 
   /* File with a scene */
-  if(data.scene) {
+  if (data.scene) {
     /* We need the name only if the file isn't treated as a whole */
-    if(!data.wholeFile)
+    if (!data.wholeFile)
       converter->setObjectName(0, "four squares");
 
     CORRADE_VERIFY(converter->add(sceneData));
 
-  /* File with a single mesh */
+    /* File with a single mesh */
   } else {
     /* Use the scene to create a concatenated mesh */
-    const Mn::Trade::MeshData squares[]{ Mn::MeshTools::generateIndices(Mn::Primitives::planeSolid(
+    const Mn::Trade::MeshData squares[]{
+        Mn::MeshTools::generateIndices(Mn::Primitives::planeSolid(
             Mn::Primitives::PlaneFlag::TextureCoordinates))};
     Cr::Containers::Array<Mn::Trade::MeshData> flattenedMeshes;
-    for(const Cr::Containers::Triple<Mn::UnsignedInt, Mn::Int, Mn::Matrix4>& meshTransformation:
-        Mn::SceneTools::flattenMeshHierarchy3D(sceneData))
-    {
-        arrayAppend(flattenedMeshes, Mn::MeshTools::transform3D(
-            squares[meshTransformation.first()], meshTransformation.third()));
+    for (const Cr::Containers::Triple<Mn::UnsignedInt, Mn::Int, Mn::Matrix4>&
+             meshTransformation :
+         Mn::SceneTools::flattenMeshHierarchy3D(sceneData)) {
+      arrayAppend(flattenedMeshes, Mn::MeshTools::transform3D(
+                                       squares[meshTransformation.first()],
+                                       meshTransformation.third()));
     }
-    const Mn::Trade::MeshData squaresJoined = Mn::MeshTools::concatenate(flattenedMeshes);
+    const Mn::Trade::MeshData squaresJoined =
+        Mn::MeshTools::concatenate(flattenedMeshes);
 
     /* Bake materials as per-face vertex colors */
     // clang-format off
@@ -1216,9 +1230,11 @@ void GfxBatchRendererTest::generateTestDataFourSquares() {
       0xffff00_rgbf, 0xffff00_rgbf
     };
     // clang-format on
-    Mn::Trade::MeshData squaresJoinedColored = Mn::MeshTools::combineFaceAttributes(squaresJoined, {
-      Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Color, Cr::Containers::arrayView(faceColors)}
-    });
+    Mn::Trade::MeshData squaresJoinedColored =
+        Mn::MeshTools::combineFaceAttributes(
+            squaresJoined, {Mn::Trade::MeshAttributeData{
+                               Mn::Trade::MeshAttribute::Color,
+                               Cr::Containers::arrayView(faceColors)}});
 
     CORRADE_VERIFY(converter->add(squaresJoinedColored));
   }
@@ -1228,15 +1244,15 @@ void GfxBatchRendererTest::generateTestDataFourSquares() {
   /* Test that the output matches. Mainly as a trigger to update the in-repo
       test data (pass `-S path/to/habitat_sim/data/test_scenes/` to the test
       executable). */
-  CORRADE_COMPARE_AS(
-      filename,
-      Cr::Utility::Path::join({TEST_ASSETS, "scenes", data.filenamePrefix + ".gltf"_s}),
-      Cr::TestSuite::Compare::File);
-  CORRADE_COMPARE_AS(
-      Cr::Utility::Path::join({MAGNUMRENDERERTEST_OUTPUT_DIR,
-                              data.filenamePrefix + ".bin"_s}),
-      Cr::Utility::Path::join({TEST_ASSETS, "scenes/", data.filenamePrefix + ".bin"_s}),
-      Cr::TestSuite::Compare::File);
+  CORRADE_COMPARE_AS(filename,
+                     Cr::Utility::Path::join({TEST_ASSETS, "scenes",
+                                              data.filenamePrefix + ".gltf"_s}),
+                     Cr::TestSuite::Compare::File);
+  CORRADE_COMPARE_AS(Cr::Utility::Path::join({MAGNUMRENDERERTEST_OUTPUT_DIR,
+                                              data.filenamePrefix + ".bin"_s}),
+                     Cr::Utility::Path::join({TEST_ASSETS, "scenes/",
+                                              data.filenamePrefix + ".bin"_s}),
+                     Cr::TestSuite::Compare::File);
 }
 
 void GfxBatchRendererTest::defaults() {
@@ -1274,8 +1290,10 @@ void GfxBatchRendererTest::defaults() {
 
   /* Add a file, because that's currently required */
   // TODO make it non-required (instantiate some empty shader if nothing)
-  for (const auto& file: data.gltfFilenames)
-    renderer.addFile(Cr::Utility::Path::join({TEST_ASSETS, "scenes", file.first()}), file.second(), file.third());
+  for (const auto& file : data.gltfFilenames)
+    renderer.addFile(
+        Cr::Utility::Path::join({TEST_ASSETS, "scenes", file.first()}),
+        file.second(), file.third());
 
   /* Nothing should be drawn, just the clear color */
   renderer.draw();
@@ -1313,8 +1331,10 @@ void GfxBatchRendererTest::singleMesh() {
   };
   // clang-format on
 
-  for (const auto& file: data.gltfFilenames)
-    renderer.addFile(Cr::Utility::Path::join({TEST_ASSETS, "scenes", file.first()}), file.second(), file.third());
+  for (const auto& file : data.gltfFilenames)
+    renderer.addFile(
+        Cr::Utility::Path::join({TEST_ASSETS, "scenes", file.first()}),
+        file.second(), file.third());
 
   /* Undo the aspect ratio, move camera back */
   renderer.camera(0) =
@@ -1367,8 +1387,10 @@ void GfxBatchRendererTest::meshHierarchy() {
   };
   // clang-format on
 
-  for (const auto& file: data.gltfFilenames)
-    renderer.addFile(Cr::Utility::Path::join({TEST_ASSETS, "scenes", file.first()}), file.second(), file.third());
+  for (const auto& file : data.gltfFilenames)
+    renderer.addFile(
+        Cr::Utility::Path::join({TEST_ASSETS, "scenes", file.first()}),
+        file.second(), file.third());
 
   /* Undo the aspect ratio, move camera back */
   renderer.camera(0) =
@@ -1423,8 +1445,10 @@ void GfxBatchRendererTest::multipleMeshes() {
   };
   // clang-format on
 
-  for (const auto& file: data.gltfFilenames)
-    renderer.addFile(Cr::Utility::Path::join({TEST_ASSETS, "scenes", file.first()}), file.second(), file.third());
+  for (const auto& file : data.gltfFilenames)
+    renderer.addFile(
+        Cr::Utility::Path::join({TEST_ASSETS, "scenes", file.first()}),
+        file.second(), file.third());
 
   renderer.camera(0) =
       Mn::Matrix4::orthographicProjection(2.0f * Mn::Vector2{4.0f / 3.0f, 1.0f},
@@ -1481,8 +1505,10 @@ void GfxBatchRendererTest::multipleScenes() {
   };
   // clang-format on
 
-  for (const auto& file: data.gltfFilenames)
-    renderer.addFile(Cr::Utility::Path::join({TEST_ASSETS, "scenes", file.first()}), file.second(), file.third());
+  for (const auto& file : data.gltfFilenames)
+    renderer.addFile(
+        Cr::Utility::Path::join({TEST_ASSETS, "scenes", file.first()}),
+        file.second(), file.third());
 
   renderer.camera(0) =
       Mn::Matrix4::orthographicProjection(2.0f * Mn::Vector2{1.0f, 4.0f / 3.0f},
@@ -1560,8 +1586,10 @@ void GfxBatchRendererTest::clearScene() {
   };
   // clang-format on
 
-  for (const auto& file: data.gltfFilenames)
-    renderer.addFile(Cr::Utility::Path::join({TEST_ASSETS, "scenes", file.first()}), file.second(), file.third());
+  for (const auto& file : data.gltfFilenames)
+    renderer.addFile(
+        Cr::Utility::Path::join({TEST_ASSETS, "scenes", file.first()}),
+        file.second(), file.third());
 
   renderer.camera(0) =
       Mn::Matrix4::orthographicProjection(2.0f * Mn::Vector2{1.0f, 4.0f / 3.0f},

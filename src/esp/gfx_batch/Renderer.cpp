@@ -25,11 +25,11 @@
 #include <Magnum/GL/TextureArray.h>
 #include <Magnum/GL/TextureFormat.h>
 #include <Magnum/ImageView.h>
-#include <Magnum/PixelFormat.h>
 #include <Magnum/Math/PackingBatch.h>
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/MeshTools/Duplicate.h>
 #include <Magnum/MeshTools/RemoveDuplicates.h>
+#include <Magnum/PixelFormat.h>
 #include <Magnum/SceneTools/FlattenMeshHierarchy.h>
 #include <Magnum/Shaders/Generic.h>
 #include <Magnum/Shaders/Phong.h>
@@ -50,7 +50,7 @@ namespace gfx_batch {
 
 // clang-tidy you're NOT HELPING
 using namespace Cr::Containers::Literals;  // NOLINT
-using namespace Mn::Math::Literals;  // NOLINT
+using namespace Mn::Math::Literals;        // NOLINT
 
 struct RendererConfiguration::State {
   RendererFlags flags;
@@ -109,11 +109,12 @@ struct DrawBatch {
 /* Finds a draw batch corresponding to given shader, mesh and texture or
    creates a new one, returning its ID. Yes, it's a linear search. You're not
    supposed to have too many meshes and textures, anyway. */
-Mn::UnsignedInt drawBatchId(Cr::Containers::Array<DrawBatch>& drawBatches,
-                            std::unordered_map<Mn::UnsignedInt, Mn::Shaders::PhongGL>& shaders,
-                            Mn::Shaders::PhongGL::Flags shaderFlags,
-                            Mn::UnsignedInt meshId,
-                            Mn::UnsignedInt textureId) {
+Mn::UnsignedInt drawBatchId(
+    Cr::Containers::Array<DrawBatch>& drawBatches,
+    std::unordered_map<Mn::UnsignedInt, Mn::Shaders::PhongGL>& shaders,
+    Mn::Shaders::PhongGL::Flags shaderFlags,
+    Mn::UnsignedInt meshId,
+    Mn::UnsignedInt textureId) {
   for (std::size_t i = 0; i != drawBatches.size(); ++i) {
     if (drawBatches[i].shaderFlags == shaderFlags &&
         drawBatches[i].meshId == meshId &&
@@ -121,7 +122,8 @@ Mn::UnsignedInt drawBatchId(Cr::Containers::Array<DrawBatch>& drawBatches,
       return i;
   }
 
-  arrayAppend(drawBatches, Cr::InPlaceInit, shaderFlags, shaders.at(Mn::UnsignedInt(shaderFlags)), meshId, textureId);
+  arrayAppend(drawBatches, Cr::InPlaceInit, shaderFlags,
+              shaders.at(Mn::UnsignedInt(shaderFlags)), meshId, textureId);
   return drawBatches.size() - 1;
 }
 
@@ -191,7 +193,9 @@ struct Renderer::State {
   Cr::Containers::Array<Mn::GL::Texture2DArray> textures;
   /* Each mesh contains a set of flags it needs from the shader (such as
      enabling vertex colors) */
-  Cr::Containers::Array<Cr::Containers::Pair<Mn::Shaders::PhongGL::Flags,  Mn::GL::Mesh>> meshes;
+  Cr::Containers::Array<
+      Cr::Containers::Pair<Mn::Shaders::PhongGL::Flags, Mn::GL::Mesh>>
+      meshes;
   // TODO clear this array once/if the materialUniform is populated on first
   //  draw() and adding more files is forbidden
   Cr::Containers::Array<Mn::Shaders::PhongMaterialUniform> materials;
@@ -243,15 +247,19 @@ void Renderer::create(const RendererConfiguration& configurationWrapper) {
 
   /* Texture 0 is reserved as a white pixel */
   arrayAppend(state_->textures, Cr::InPlaceInit)
-    .setMinificationFilter(Mn::SamplerFilter::Nearest, Mn::SamplerMipmap::Base)
-    .setMagnificationFilter(Mn::SamplerFilter::Nearest)
-    .setWrapping(Mn::SamplerWrapping::Repeat)
-    .setStorage(1, Mn::GL::TextureFormat::RGBA8, {1, 1, 1})
-    .setSubImage(0, {}, Mn::ImageView3D{Mn::PixelFormat::RGBA8Unorm, {1, 1, 1}, "\xff\xff\xff\xff"});
+      .setMinificationFilter(Mn::SamplerFilter::Nearest,
+                             Mn::SamplerMipmap::Base)
+      .setMagnificationFilter(Mn::SamplerFilter::Nearest)
+      .setWrapping(Mn::SamplerWrapping::Repeat)
+      .setStorage(1, Mn::GL::TextureFormat::RGBA8, {1, 1, 1})
+      .setSubImage(
+          0, {},
+          Mn::ImageView3D{
+              Mn::PixelFormat::RGBA8Unorm, {1, 1, 1}, "\xff\xff\xff\xff"});
 
   /* Material 0 is reserved as a white ambient with no texture */
   arrayAppend(state_->materials, Cr::InPlaceInit)
-    .setAmbientColor(0xffffff_rgbf);
+      .setAmbientColor(0xffffff_rgbf);
   arrayAppend(state_->materialTextureTransformations, Cr::InPlaceInit);
 
   // TODO move this outside
@@ -277,21 +285,27 @@ std::size_t Renderer::sceneCount() const {
   return state_->scenes.size();
 }
 
-void Renderer::addFile(const Cr::Containers::StringView filename, const RendererFileFlags flags) {
+void Renderer::addFile(const Cr::Containers::StringView filename,
+                       const RendererFileFlags flags) {
   return addFile(filename, "AnySceneImporter", flags);
 }
 
-void Renderer::addFile(const Cr::Containers::StringView filename, const RendererFileFlags flags, Cr::Containers::StringView name) {
+void Renderer::addFile(const Cr::Containers::StringView filename,
+                       const RendererFileFlags flags,
+                       Cr::Containers::StringView name) {
   return addFile(filename, "AnySceneImporter", flags, name);
 }
 
 void Renderer::addFile(const Cr::Containers::StringView filename,
-                       const Cr::Containers::StringView importerPlugin, const RendererFileFlags flags) {
+                       const Cr::Containers::StringView importerPlugin,
+                       const RendererFileFlags flags) {
   return addFile(filename, importerPlugin, flags, {});
 }
 
 void Renderer::addFile(const Cr::Containers::StringView filename,
-                       const Cr::Containers::StringView importerPlugin, const RendererFileFlags flags, const Cr::Containers::StringView name) {
+                       const Cr::Containers::StringView importerPlugin,
+                       const RendererFileFlags flags,
+                       const Cr::Containers::StringView name) {
   Cr::PluginManager::Manager<Mn::Trade::AbstractImporter> manager;
   Cr::Containers::Pointer<Mn::Trade::AbstractImporter> importer =
       manager.loadAndInstantiate(importerPlugin);
@@ -423,15 +437,17 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
     Cr::Containers::Optional<Mn::Trade::MeshData> mesh = importer->mesh(i);
     CORRADE_INTERNAL_ASSERT(mesh);
     /* Make the mesh indexed if it isn't */
-    if(!mesh->isIndexed()) mesh = Mn::MeshTools::removeDuplicates(*mesh);
+    if (!mesh->isIndexed())
+      mesh = Mn::MeshTools::removeDuplicates(*mesh);
 
     /* Decide what extra shader feature the mesh needs. Currently just vertex
        colors. */
     Mn::Shaders::PhongGL::Flags flags;
-    if(mesh->hasAttribute(Mn::Trade::MeshAttribute::Color))
+    if (mesh->hasAttribute(Mn::Trade::MeshAttribute::Color))
       flags |= Mn::Shaders::PhongGL::Flag::VertexColor;
 
-    arrayAppend(state_->meshes, Cr::InPlaceInit, flags, Mn::MeshTools::compile(*mesh));
+    arrayAppend(state_->meshes, Cr::InPlaceInit, flags,
+                Mn::MeshTools::compile(*mesh));
   }
 
   /* Immutable material data. Save texture IDs, transformations and layers to a
@@ -454,7 +470,7 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
           flatMaterial.color());
 
       /* Untextured materials get the first reserved texture (a white pixel) */
-      if(!flatMaterial.hasTexture())
+      if (!flatMaterial.hasTexture())
         materialTextureTransformations[i] = {0, 0, {}};
       else
         materialTextureTransformations[i] = {
@@ -475,9 +491,11 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
 
   /* Scene-less files are assumed to contain a single material-less mesh (such
      as STL files) */
-  if(!importer->sceneCount()) {
+  if (!importer->sceneCount()) {
     CORRADE_ASSERT(importer->meshCount() == 1 && !importer->materialCount(),
-                   "Renderer::addFile(): expected exactly one mesh and no material for a scene-less file" << filename, );
+                   "Renderer::addFile(): expected exactly one mesh and no "
+                   "material for a scene-less file"
+                       << filename, );
     /* Material 0 is reserved for such purposes */
     MeshView& view = arrayAppend(state_->meshViews, Cr::InPlaceInit);
     view.meshId = meshOffset;
@@ -488,14 +506,15 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
     /* Adding a scene-less file as a whole should be explicitly requested to
        avoid accidents */
     CORRADE_ASSERT(flags & RendererFileFlag::Whole,
-      "Renderer::addFile(): scene-less file" << filename << "has to be added with RendererFileFlag::Whole", );
+                   "Renderer::addFile(): scene-less file"
+                       << filename
+                       << "has to be added with RendererFileFlag::Whole", );
 
     /* If no name is specified, the full filename is used */
     const Cr::Containers::StringView usedName = name ? name : filename;
     CORRADE_ASSERT_OUTPUT(
         state_->meshViewRangeForName
-            .insert(
-                {usedName, {meshViewOffset, meshViewOffset + 1}})
+            .insert({usedName, {meshViewOffset, meshViewOffset + 1}})
             .second,
         "Renderer::addFile(): node name" << usedName << "already exists", );
 
@@ -531,12 +550,14 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
               importer->sceneFieldForName("meshViewIndexCount"));
       CORRADE_ASSERT(
           meshViewIndexCountFieldId,
-          "Renderer::addFile(): no meshViewIndexCount field in the scene in" << filename, );
+          "Renderer::addFile(): no meshViewIndexCount field in the scene in"
+              << filename, );
       const Cr::Containers::Optional<Mn::UnsignedInt> meshViewMaterialFieldId =
           scene->findFieldId(importer->sceneFieldForName("meshViewMaterial"));
       CORRADE_ASSERT(
           meshViewMaterialFieldId,
-          "Renderer::addFile(): no meshViewMaterial field in the scene in" << filename, );
+          "Renderer::addFile(): no meshViewMaterial field in the scene in"
+              << filename, );
       Cr::Utility::copy(
           scene->field<Mn::UnsignedInt>(*meshViewIndexOffsetFieldId),
           meshViews.slice(&MeshView::indexOffsetInBytes));
@@ -569,13 +590,13 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
 
     /* Unless the file is treated as a whole, root scene nodes are used as
        "named templates" to be referenced from addMeshHierarchy(). */
-    if(!(flags & RendererFileFlag::Whole)) {
+    if (!(flags & RendererFileFlag::Whole)) {
       /* Transformations of all objects in the scene. Objects that don't have
          this field default to an indentity transform. */
       Cr::Containers::Array<Mn::Matrix4> transformations{
           std::size_t(scene->mappingBound())};
       for (Cr::Containers::Pair<Mn::UnsignedInt, Mn::Matrix4> transformation :
-          scene->transformations3DAsArray()) {
+           scene->transformations3DAsArray()) {
         transformations[transformation.first()] = transformation.second();
       }
 
@@ -601,33 +622,39 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
 
         Cr::Containers::String name = importer->objectName(root);
         CORRADE_ASSERT(name,
-                      "Renderer::addFile(): node" << root << "in" << filename << "has no name", );
+                       "Renderer::addFile(): node" << root << "in" << filename
+                                                   << "has no name", );
         CORRADE_ASSERT_OUTPUT(
             state_->meshViewRangeForName
                 .insert(
                     {name, {offset, offset + Mn::UnsignedInt(children.size())}})
                 .second,
-            "Renderer::addFile(): node name" << name << "in" << filename << "already exists", );
+            "Renderer::addFile(): node name" << name << "in" << filename
+                                             << "already exists", );
         offset += children.size();
       }
       CORRADE_INTERNAL_ASSERT(offset == state_->meshViews.size());
 
-    /* Files treated as a whole have their hierarchy flattened and added under
-       a single name, which is the filename */
+      /* Files treated as a whole have their hierarchy flattened and added under
+         a single name, which is the filename */
     } else {
-      Cr::Containers::Array<Cr::Containers::Triple<Mn::UnsignedInt, Mn::Int, Mn::Matrix4>> flattened = Mn::SceneTools::flattenMeshHierarchy3D(*scene);
+      Cr::Containers::Array<
+          Cr::Containers::Triple<Mn::UnsignedInt, Mn::Int, Mn::Matrix4>>
+          flattened = Mn::SceneTools::flattenMeshHierarchy3D(*scene);
       for (std::size_t i = 0; i != flattened.size(); ++i) {
         meshViews[i].transformation = flattened[i].third();
       }
-        /* If no name is specified, the full filename is used */
-        const Cr::Containers::StringView usedName = name ? name : filename;
-        CORRADE_ASSERT_OUTPUT(
-            state_->meshViewRangeForName
-                .insert(
-                    {usedName, {meshViewOffset, meshViewOffset + Mn::UnsignedInt(flattened.size())}})
-                .second,
-            "Renderer::addFile(): node name" << usedName << "already exists", );
-      CORRADE_INTERNAL_ASSERT(meshViewOffset + flattened.size() == state_->meshViews.size());
+      /* If no name is specified, the full filename is used */
+      const Cr::Containers::StringView usedName = name ? name : filename;
+      CORRADE_ASSERT_OUTPUT(
+          state_->meshViewRangeForName
+              .insert({usedName,
+                       {meshViewOffset,
+                        meshViewOffset + Mn::UnsignedInt(flattened.size())}})
+              .second,
+          "Renderer::addFile(): node name" << usedName << "already exists", );
+      CORRADE_INTERNAL_ASSERT(meshViewOffset + flattened.size() ==
+                              state_->meshViews.size());
     }
   }
 
@@ -638,15 +665,15 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
   //  do lazily on first draw() and then FORBID adding more files?
   // TODO also might make sense to use async compilation when the combination
   //  count grows further
-  for(Mn::Shaders::PhongGL::Flags extraFlags: {{}, Mn::Shaders::PhongGL::Flag::VertexColor}) {
+  for (Mn::Shaders::PhongGL::Flags extraFlags :
+       {{}, Mn::Shaders::PhongGL::Flag::VertexColor}) {
     Mn::Shaders::PhongGL::Flags shaderFlags =
-        extraFlags |
-        Mn::Shaders::PhongGL::Flag::MultiDraw |
+        extraFlags | Mn::Shaders::PhongGL::Flag::MultiDraw |
         Mn::Shaders::PhongGL::Flag::UniformBuffers;
     if (!(state_->flags >= RendererFlag::NoTextures))
       shaderFlags |= Mn::Shaders::PhongGL::Flag::AmbientTexture |
-              Mn::Shaders::PhongGL::Flag::TextureArrays |
-              Mn::Shaders::PhongGL::Flag::TextureTransformation;
+                     Mn::Shaders::PhongGL::Flag::TextureArrays |
+                     Mn::Shaders::PhongGL::Flag::TextureTransformation;
     /* Not using emplace() -- if a stale shader already exists in the map, it
        wouldn't replace it */
     // TODO 1024 is 64K divided by 64 bytes needed for one draw uniform, have
@@ -915,8 +942,8 @@ void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
          doesn't matter which one is used. */
       // TODO split by draw count limit? hard to do with those batches now, heh
       //  also hard to do due to the insane alignment rules
-      state_
-          ->shaders.begin()->second
+      state_->shaders.begin()
+          ->second
           // TODO bind all buffers together with a multi API
           .bindProjectionBuffer(state_->projectionUniform,
                                 sceneId * sizeof(ProjectionPadded),

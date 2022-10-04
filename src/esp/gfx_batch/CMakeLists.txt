@@ -1,4 +1,11 @@
-find_package(Magnum REQUIRED GL SceneTools Shaders Trade)
+find_package(
+  Magnum
+  REQUIRED
+  GL
+  SceneTools
+  Shaders
+  Trade
+)
 
 set(gfx_batch_SOURCES Renderer.cpp Renderer.h RendererStandalone.cpp
                       RendererStandalone.h
@@ -42,7 +49,12 @@ target_link_libraries(
   # libraries, and it should be kept as such. Only Magnum libraries are an
   # allowed dependency. See the original PR for discussion:
   # https://github.com/facebookresearch/habitat-sim/pull/1798#discussion_r911398937
-  PUBLIC Magnum::GL Magnum::Magnum Magnum::SceneTools Magnum::Shaders Magnum::Trade Magnum::WindowlessApplication
+  PUBLIC Magnum::GL
+         Magnum::Magnum
+         Magnum::SceneTools
+         Magnum::Shaders
+         Magnum::Trade
+         Magnum::WindowlessApplication
   # Not linking any plugins here, as the renderer itself doesn't directly rely
   # on any of them. That also makes the plugins implicitly registered in
   # *every* target that links to gfx_batch, which is far from ideal. Only the
