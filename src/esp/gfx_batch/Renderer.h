@@ -20,6 +20,12 @@ enum class RendererFlag {
 typedef Corrade::Containers::EnumSet<RendererFlag> RendererFlags;
 CORRADE_ENUMSET_OPERATORS(RendererFlags)
 
+enum class RendererFileFlag {
+  Whole = 1 << 0
+};
+typedef Corrade::Containers::EnumSet<RendererFileFlag> RendererFileFlags;
+CORRADE_ENUMSET_OPERATORS(RendererFileFlags)
+
 struct RendererConfiguration {
   explicit RendererConfiguration();
   ~RendererConfiguration();
@@ -48,10 +54,13 @@ class Renderer {
   /* Same as tileCount().product() */
   std::size_t sceneCount() const;
 
+  void addFile(Corrade::Containers::StringView filename, RendererFileFlags flags = {});
+  void addFile(Corrade::Containers::StringView filename, RendererFileFlags flags, Corrade::Containers::StringView name);
   // TODO take an importer instead? that way the consumer can configure it
-  void addFile(Corrade::Containers::StringView filename);
   void addFile(Corrade::Containers::StringView filename,
-               Corrade::Containers::StringView importerPlugin);
+               Corrade::Containers::StringView importerPlugin, RendererFileFlags flags = {});
+  void addFile(Corrade::Containers::StringView filename,
+               Corrade::Containers::StringView importerPlugin, RendererFileFlags flags, Corrade::Containers::StringView name);
 
   // TODO "if there's a scene, name corresponds to a root bject name,
   //  otherwise it's the whole file"

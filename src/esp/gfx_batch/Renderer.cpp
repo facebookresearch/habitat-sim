@@ -10,6 +10,7 @@
 #include <Corrade/Containers/Pair.h>
 #include <Corrade/Containers/StringStl.h>
 #include <Corrade/Containers/StringStlHash.h>
+#include <Corrade/Containers/Triple.h>
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/PluginManager/PluginMetadata.h>
 #include <Corrade/Utility/Algorithms.h>
@@ -27,6 +28,7 @@
 #include <Magnum/Math/PackingBatch.h>
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/MeshTools/Duplicate.h>
+#include <Magnum/SceneTools/FlattenMeshHierarchy.h>
 #include <Magnum/Shaders/Generic.h>
 #include <Magnum/Shaders/Phong.h>
 #include <Magnum/Shaders/PhongGL.h>
@@ -255,12 +257,21 @@ std::size_t Renderer::sceneCount() const {
   return state_->scenes.size();
 }
 
-void Renderer::addFile(const Cr::Containers::StringView filename) {
-  return addFile(filename, "AnySceneImporter");
+void Renderer::addFile(const Cr::Containers::StringView filename, const RendererFileFlags flags) {
+  return addFile(filename, "AnySceneImporter", flags);
+}
+
+void Renderer::addFile(const Cr::Containers::StringView filename, const RendererFileFlags flags, Cr::Containers::StringView name) {
+  return addFile(filename, "AnySceneImporter", flags, name);
 }
 
 void Renderer::addFile(const Cr::Containers::StringView filename,
-                       const Cr::Containers::StringView importerPlugin) {
+                       const Cr::Containers::StringView importerPlugin, const RendererFileFlags flags) {
+  return addFile(filename, importerPlugin, flags, {});
+}
+
+void Renderer::addFile(const Cr::Containers::StringView filename,
+                       const Cr::Containers::StringView importerPlugin, const RendererFileFlags flags, const Cr::Containers::StringView name) {
   Cr::PluginManager::Manager<Mn::Trade::AbstractImporter> manager;
   Cr::Containers::Pointer<Mn::Trade::AbstractImporter> importer =
       manager.loadAndInstantiate(importerPlugin);
@@ -452,7 +463,10 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
     for (Mn::UnsignedInt& meshId : meshViews.slice(&MeshView::meshId))
       meshId += meshOffset;
 
-    /* If there are mesh view fields, it's a batch-friendly file */
+    /* If there are mesh view fields, it's a batch-friendly file. This is
+       independent of the RendererFileFlag::Whole setting, as ultimately mesh
+       views will be a builtin feature and thus any imported file can have
+       them. */
     if (const Cr::Containers::Optional<Mn::UnsignedInt>
             meshViewIndexOffsetFieldId = scene->findFieldId(
                 importer->sceneFieldForName("meshViewIndexOffset"))) {
@@ -497,55 +511,77 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
     for (Mn::Int& materialId : meshViews.slice(&MeshView::materialId))
       materialId += materialOffset;
 
-    /* Transformations of all objects in the scene. Objects that don't have
-       this field default to an indentity transform. */
-    Cr::Containers::Array<Mn::Matrix4> transformations{
-        std::size_t(scene->mappingBound())};
-    for (Cr::Containers::Pair<Mn::UnsignedInt, Mn::Matrix4> transformation :
-         scene->transformations3DAsArray()) {
-      transformations[transformation.first()] = transformation.second();
-    }
+    /* Unless the file is treated as a whole, root scene nodes are used as
+       "named templates" to be referenced from addMeshHierarchy(). */
+    if(!(flags & RendererFileFlag::Whole)) {
+      /* Transformations of all objects in the scene. Objects that don't have
+         this field default to an indentity transform. */
+      Cr::Containers::Array<Mn::Matrix4> transformations{
+          std::size_t(scene->mappingBound())};
+      for (Cr::Containers::Pair<Mn::UnsignedInt, Mn::Matrix4> transformation :
+          scene->transformations3DAsArray()) {
+        transformations[transformation.first()] = transformation.second();
+      }
 
-    /* Populate transforms of all mesh views. Assuming all three fields have
-       the same mapping. */
-    const Cr::Containers::StridedArrayView1D<const Mn::UnsignedInt>
-        meshViewMapping =
-            scene->mapping<Mn::UnsignedInt>(Mn::Trade::SceneField::Mesh);
-    for (std::size_t i = 0; i != meshViewMapping.size(); ++i) {
-      meshViews[i].transformation = transformations[meshViewMapping[i]];
-    }
+      /* Populate transforms of all mesh views. Assuming all mesh-related
+         fields (mesh, mesh view index count/offset, mesh material) have the
+         same mapping. */
+      const Cr::Containers::StridedArrayView1D<const Mn::UnsignedInt>
+          meshViewMapping =
+              scene->mapping<Mn::UnsignedInt>(Mn::Trade::SceneField::Mesh);
+      for (std::size_t i = 0; i != meshViewMapping.size(); ++i) {
+        meshViews[i].transformation = transformations[meshViewMapping[i]];
+      }
 
-    /* Templates are the root objects with their names. Their immediate
-       children are the actual meshes. Assumes the order matches the order of
-       the custom fields. */
-    // TODO hacky and brittle! doesn't handle nested children properly, doesn't
-    //  account for a different order of the field vs the child lists
-    Mn::UnsignedInt offset = meshViewOffset;
-    for (Mn::UnsignedLong root : scene->childrenFor(-1)) {
-      Cr::Containers::Array<Mn::UnsignedLong> children =
-          scene->childrenFor(root);
+      /* Templates are the root objects with their names. Their immediate
+         children are the actual meshes. Assumes the order matches the order of
+         the custom fields. */
+      // TODO hacky and brittle! doesn't handle nested children properly,
+      //  doesn't account for a different order of the field vs the child lists
+      Mn::UnsignedInt offset = meshViewOffset;
+      for (Mn::UnsignedLong root : scene->childrenFor(-1)) {
+        Cr::Containers::Array<Mn::UnsignedLong> children =
+            scene->childrenFor(root);
 
-      Cr::Containers::String name = importer->objectName(root);
-      CORRADE_ASSERT(name,
-                     "Renderer::addFile(): node" << root << "has no name", );
-      CORRADE_ASSERT_OUTPUT(
-          state_->meshViewRangeForName
-              .insert(
-                  {name, {offset, offset + Mn::UnsignedInt(children.size())}})
-              .second,
-          "Renderer::addFile(): node name" << name << "already exists", );
-      offset += children.size();
+        Cr::Containers::String name = importer->objectName(root);
+        CORRADE_ASSERT(name,
+                      "Renderer::addFile(): node" << root << "has no name", );
+        CORRADE_ASSERT_OUTPUT(
+            state_->meshViewRangeForName
+                .insert(
+                    {name, {offset, offset + Mn::UnsignedInt(children.size())}})
+                .second,
+            "Renderer::addFile(): node name" << name << "already exists", );
+        offset += children.size();
+      }
+      CORRADE_INTERNAL_ASSERT(offset == state_->meshViews.size());
+
+    /* Files treated as a whole have their hierarchy flattened and added under
+       a single name, which is the filename */
+    } else {
+      Cr::Containers::Array<Cr::Containers::Triple<Mn::UnsignedInt, Mn::Int, Mn::Matrix4>> flattened = Mn::SceneTools::flattenMeshHierarchy3D(*scene);
+      for (std::size_t i = 0; i != flattened.size(); ++i) {
+        meshViews[i].transformation = flattened[i].third();
+      }
+        /* If no name is specified, the full filename is used */
+        const Cr::Containers::StringView usedName = name ? name : filename;
+        CORRADE_ASSERT_OUTPUT(
+            state_->meshViewRangeForName
+                .insert(
+                    {usedName, {meshViewOffset, meshViewOffset + Mn::UnsignedInt(flattened.size())}})
+                .second,
+            "Renderer::addFile(): node name" << usedName << "already exists", );
+      CORRADE_INTERNAL_ASSERT(meshViewOffset + flattened.size() == state_->meshViews.size());
     }
-    CORRADE_INTERNAL_ASSERT(offset == state_->meshViews.size());
   }
 
   /* Setup a zero-light (flat) shader, bind buffers that don't change
      per-view */
-  Mn::Shaders::PhongGL::Flags flags =
+  Mn::Shaders::PhongGL::Flags shaderFlags =
       Mn::Shaders::PhongGL::Flag::MultiDraw |
       Mn::Shaders::PhongGL::Flag::UniformBuffers;
   if (!(state_->flags >= RendererFlag::NoTextures))
-    flags |= Mn::Shaders::PhongGL::Flag::AmbientTexture |
+    shaderFlags |= Mn::Shaders::PhongGL::Flag::AmbientTexture |
              Mn::Shaders::PhongGL::Flag::TextureArrays |
              Mn::Shaders::PhongGL::Flag::TextureTransformation;
   // TODO 1024 is 64K divided by 64 bytes needed for one draw uniform, have
@@ -554,7 +590,7 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
   // TODO don't do this after adding each and every file, it's wasteful ...
   //  do lazily on first draw() and then FORBID adding more files?
   state_->shader = Mn::Shaders::PhongGL{
-      flags, 0, Mn::UnsignedInt(state_->materials.size()), 1024};
+      shaderFlags, 0, Mn::UnsignedInt(state_->materials.size()), 1024};
   state_->shader.bindMaterialBuffer(state_->materialUniform);
 }
 

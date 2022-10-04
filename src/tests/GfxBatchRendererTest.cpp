@@ -2,6 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <Corrade/Containers/Triple.h>
 #include <Corrade/Containers/StridedArrayView.h>
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/PluginManager/PluginMetadata.h>
@@ -39,6 +40,7 @@ namespace {
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
+using namespace Cr::Containers::Literals;
 using namespace Mn::Math::Literals;
 
 struct GfxBatchRendererTest : Cr::TestSuite::Tester {
@@ -65,23 +67,48 @@ struct GfxBatchRendererTest : Cr::TestSuite::Tester {
 // clang-format off
 const struct {
   const char* name;
-  Cr::Containers::Array<const char*> gltfFilenames;
+  bool wholeFile;
+  bool sceneDeepHierarchy;
+  const char* filenamePrefix;
+} GenerateTestDataFourSquaresData[]{
+  {"", false, false, "batch-four-squares"},
+  {"deep scene hierarchy, as a whole file", true, true, "batch-four-squares-deep-hierarchy-whole-file"},
+};
+// clang-format on
+
+// clang-format off
+const struct {
+  const char* name;
+  /* Filename, flags and name corresponding to addFile() arguments */
+  Cr::Containers::Array<Cr::Containers::Triple<const char*, esp::gfx_batch::RendererFileFlags, const char*>> gltfFilenames;
   Mn::UnsignedInt singleSceneBatchCount;
   Mn::UnsignedInt multipleScenesBatchCount[4];
 } FileData[]{
-  {"", Cr::Containers::array({"batch.gltf"}),
+  {"", {Cr::InPlaceInit, {
+    {"batch.gltf", {}, nullptr}}},
     1,
     {1, 1, 0, 1}
   },
-  {"multiple meshes", Cr::Containers::array({"batch-multiple-meshes.gltf"}),
+  {"multiple meshes", {Cr::InPlaceInit, {
+    {"batch-multiple-meshes.gltf", {}, nullptr}}},
     /* Each has a separate mesh */
     3,
     {4, 2, 0, 1}},
-  {"multiple textures", Cr::Containers::array({"batch-multiple-textures.gltf"}),
+  {"multiple textures", {Cr::InPlaceInit, {
+    {"batch-multiple-textures.gltf", {}, nullptr}}},
     /* Each has a separate texture */
     3,
     {4, 2, 0, 1}},
-  {"multiple files", Cr::Containers::array({"batch-square-circle-triangle.gltf", "batch-four-squares.gltf"}),
+  {"multiple files", {Cr::InPlaceInit, {
+    {"batch-square-circle-triangle.gltf", {}, nullptr},
+    {"batch-four-squares.gltf", {}, nullptr}}},
+    /* Square, circle and triangle are a single mesh but the hierarchical four
+       squares are a separate file */
+    2,
+    {4, 2, 0, 1}},
+  {"multiple files, some whole-file", {Cr::InPlaceInit, {
+    {"batch-square-circle-triangle.gltf", {}, nullptr},
+    {"batch-four-squares-deep-hierarchy-whole-file.gltf", esp::gfx_batch::RendererFileFlag::Whole, "four squares"}}},
     /* Square, circle and triangle are a single mesh but the hierarchical four
        squares are a separate file */
     2,
@@ -90,36 +117,45 @@ const struct {
 
 const struct {
   const char* name;
-  Cr::Containers::Array<const char*> gltfFilenames;
+  /* Filename, flags and name corresponding to addFile() arguments */
+  Cr::Containers::Array<Cr::Containers::Triple<const char*, esp::gfx_batch::RendererFileFlags, const char*>> gltfFilenames;
   esp::gfx_batch::RendererFlags flags;
   Mn::UnsignedInt batchCount;
   Mn::Float textureMultiplier;
   const char* filename;
 } MeshHierarchyData[]{
-  {"",
-    Cr::Containers::array({"batch.gltf"}),
+  {"", {Cr::InPlaceInit, {
+    {"batch.gltf", {}, nullptr}}},
     {}, 1, 0xcc/255.0f,
     "GfxBatchRendererTestMeshHierarchy.png"},
-  {"multiple meshes",
-    Cr::Containers::array({"batch-multiple-meshes.gltf"}),
+  {"multiple meshes", {Cr::InPlaceInit, {
+    {"batch-multiple-meshes.gltf", {}, nullptr}}},
     {}, 4, 0xcc/255.0f,
     "GfxBatchRendererTestMeshHierarchy.png"},
-  {"multiple textures",
-    Cr::Containers::array({"batch-multiple-textures.gltf"}),
+  {"multiple textures", {Cr::InPlaceInit, {
+    {"batch-multiple-textures.gltf", {}, nullptr}}},
     {}, 4, 0xcc/255.0f,
     "GfxBatchRendererTestMeshHierarchy.png"},
-  {"multiple files",
-    Cr::Containers::array({"batch-square-circle-triangle.gltf", "batch-four-squares.gltf"}),
+  {"multiple files", {Cr::InPlaceInit, {
+    {"batch-square-circle-triangle.gltf", {}, nullptr},
+    {"batch-four-squares.gltf", {}, nullptr}}},
     {}, 4, 0xcc/255.0f,
     "GfxBatchRendererTestMeshHierarchy.png"},
-  {"no textures",
-    Cr::Containers::array({"batch.gltf"}),
+  {"multiple files with deep hierarchy as a whole", {Cr::InPlaceInit, {
+    {"batch-square-circle-triangle.gltf",
+      esp::gfx_batch::RendererFileFlag::Whole, nullptr},
+    {"batch-four-squares-deep-hierarchy-whole-file.gltf",
+      esp::gfx_batch::RendererFileFlag::Whole, "four squares"}}},
+    {}, 4, 0xcc/255.0f,
+    "GfxBatchRendererTestMeshHierarchy.png"},
+  {"no textures", {Cr::InPlaceInit, {
+    {"batch.gltf", {}, nullptr}}},
     esp::gfx_batch::RendererFlag::NoTextures, 1, 1.0f,
     "GfxBatchRendererTestMeshHierarchyNoTextures.png"},
-  {"multiple meshes, no textures",
-    Cr::Containers::array({"batch-multiple-meshes.gltf"}),
+  {"multiple meshes, no textures", {Cr::InPlaceInit, {
+    {"batch-multiple-meshes.gltf", {}, nullptr}}},
     esp::gfx_batch::RendererFlag::NoTextures, 4, 1.0f,
-    "GfxBatchRendererTestMeshHierarchyNoTextures.png"}
+    "GfxBatchRendererTestMeshHierarchyNoTextures.png"},
 };
 // clang-format on
 
@@ -130,7 +166,8 @@ GfxBatchRendererTest::GfxBatchRendererTest() {
             &GfxBatchRendererTest::generateTestDataMultipleTextures,
             &GfxBatchRendererTest::generateTestDataSquareCircleTriangle});
 
-  addTests({&GfxBatchRendererTest::generateTestDataFourSquares});
+  addInstancedTests({&GfxBatchRendererTest::generateTestDataFourSquares},
+      Cr::Containers::arraySize(GenerateTestDataFourSquaresData));
 
   addInstancedTests({&GfxBatchRendererTest::defaults,
                      &GfxBatchRendererTest::singleMesh},
@@ -959,6 +996,9 @@ void GfxBatchRendererTest::generateTestDataSquareCircleTriangle() {
 }
 
 void GfxBatchRendererTest::generateTestDataFourSquares() {
+  auto&& data = GenerateTestDataFourSquaresData[testCaseInstanceId()];
+  setTestCaseDescription(data.name);
+
   Cr::PluginManager::Manager<Mn::Trade::AbstractImageConverter>
       imageConverterManager;
   if (imageConverterManager.loadState("KtxImageConverter") ==
@@ -978,8 +1018,8 @@ void GfxBatchRendererTest::generateTestDataFourSquares() {
   /* Bundle images in the bin file to reduce the amount of test files */
   converter->configuration().setValue("bundleImages", true);
 
-  const Cr::Containers::String filename = Cr::Utility::Path::join(
-      MAGNUMRENDERERTEST_OUTPUT_DIR, "batch-four-squares.gltf");
+  const Cr::Containers::String filename = Cr::Utility::Path::join({
+      MAGNUMRENDERERTEST_OUTPUT_DIR, data.filenamePrefix + ".gltf"_s});
 
   /* Begin file conversion */
   converter->beginFile(filename);
@@ -1090,7 +1130,22 @@ void GfxBatchRendererTest::generateTestDataFourSquares() {
      {4, Mn::Matrix4::translation({+0.5f, +0.5f, 0.0f})*
          Mn::Matrix4::scaling(Mn::Vector3{0.4f})}}
   }};
-  converter->setObjectName(0, "four squares");
+  // clang-format on
+
+  /* Override the above if deep hierarchy is requested -- then the "right"
+     squares are children of the left, with relative transform */
+  if(data.sceneDeepHierarchy) {
+    scene->parents[2].parent = 1;
+    scene->parents[4].parent = 3;
+    scene->transformations[1].trasformation = Mn::Matrix4::translation(Mn::Vector3::xAxis(1.0f/0.4f));
+    scene->transformations[3].trasformation = Mn::Matrix4::translation(Mn::Vector3::xAxis(1.0f/0.4f));
+  }
+
+  /* We need the name only if the file isn't treated as a whole */
+  if(!data.wholeFile)
+    converter->setObjectName(0, "four squares");
+
+  // clang-format off
   CORRADE_VERIFY(converter->add(Mn::Trade::SceneData{Mn::Trade::SceneMappingType::UnsignedInt, 7, {}, scene, {
     Mn::Trade::SceneFieldData{Mn::Trade::SceneField::Parent,
       Cr::Containers::stridedArrayView(scene->parents).slice(&Scene::Parent::object),
@@ -1114,12 +1169,12 @@ void GfxBatchRendererTest::generateTestDataFourSquares() {
       executable). */
   CORRADE_COMPARE_AS(
       filename,
-      Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch-four-squares.gltf"),
+      Cr::Utility::Path::join({TEST_ASSETS, "scenes", data.filenamePrefix + ".gltf"_s}),
       Cr::TestSuite::Compare::File);
   CORRADE_COMPARE_AS(
-      Cr::Utility::Path::join(MAGNUMRENDERERTEST_OUTPUT_DIR,
-                              "batch-four-squares.bin"),
-      Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch-four-squares.bin"),
+      Cr::Utility::Path::join({MAGNUMRENDERERTEST_OUTPUT_DIR,
+                              data.filenamePrefix + ".bin"_s}),
+      Cr::Utility::Path::join({TEST_ASSETS, "scenes/", data.filenamePrefix + ".bin"_s}),
       Cr::TestSuite::Compare::File);
 }
 
@@ -1158,8 +1213,8 @@ void GfxBatchRendererTest::defaults() {
 
   /* Add a file, because that's currently required */
   // TODO make it non-required (instantiate some empty shader if nothing)
-  for (const char* file : data.gltfFilenames)
-    renderer.addFile(Cr::Utility::Path::join({TEST_ASSETS, "scenes", file}));
+  for (const auto& file: data.gltfFilenames)
+    renderer.addFile(Cr::Utility::Path::join({TEST_ASSETS, "scenes", file.first()}), file.second(), file.third());
 
   /* Nothing should be drawn, just the clear color */
   renderer.draw();
@@ -1197,8 +1252,8 @@ void GfxBatchRendererTest::singleMesh() {
   };
   // clang-format on
 
-  for (const char* file : data.gltfFilenames)
-    renderer.addFile(Cr::Utility::Path::join({TEST_ASSETS, "scenes", file}));
+  for (const auto& file: data.gltfFilenames)
+    renderer.addFile(Cr::Utility::Path::join({TEST_ASSETS, "scenes", file.first()}), file.second(), file.third());
 
   /* Undo the aspect ratio, move camera back */
   renderer.camera(0) =
@@ -1251,8 +1306,8 @@ void GfxBatchRendererTest::meshHierarchy() {
   };
   // clang-format on
 
-  for (const char* file : data.gltfFilenames)
-    renderer.addFile(Cr::Utility::Path::join({TEST_ASSETS, "scenes", file}));
+  for (const auto& file: data.gltfFilenames)
+    renderer.addFile(Cr::Utility::Path::join({TEST_ASSETS, "scenes", file.first()}), file.second(), file.third());
 
   /* Undo the aspect ratio, move camera back */
   renderer.camera(0) =
@@ -1307,8 +1362,8 @@ void GfxBatchRendererTest::multipleMeshes() {
   };
   // clang-format on
 
-  for (const char* file : data.gltfFilenames)
-    renderer.addFile(Cr::Utility::Path::join({TEST_ASSETS, "scenes", file}));
+  for (const auto& file: data.gltfFilenames)
+    renderer.addFile(Cr::Utility::Path::join({TEST_ASSETS, "scenes", file.first()}), file.second(), file.third());
 
   renderer.camera(0) =
       Mn::Matrix4::orthographicProjection(2.0f * Mn::Vector2{4.0f / 3.0f, 1.0f},
@@ -1365,8 +1420,8 @@ void GfxBatchRendererTest::multipleScenes() {
   };
   // clang-format on
 
-  for (const char* file : data.gltfFilenames)
-    renderer.addFile(Cr::Utility::Path::join({TEST_ASSETS, "scenes", file}));
+  for (const auto& file: data.gltfFilenames)
+    renderer.addFile(Cr::Utility::Path::join({TEST_ASSETS, "scenes", file.first()}), file.second(), file.third());
 
   renderer.camera(0) =
       Mn::Matrix4::orthographicProjection(2.0f * Mn::Vector2{1.0f, 4.0f / 3.0f},
@@ -1444,8 +1499,8 @@ void GfxBatchRendererTest::clearScene() {
   };
   // clang-format on
 
-  for (const char* file : data.gltfFilenames)
-    renderer.addFile(Cr::Utility::Path::join({TEST_ASSETS, "scenes", file}));
+  for (const auto& file: data.gltfFilenames)
+    renderer.addFile(Cr::Utility::Path::join({TEST_ASSETS, "scenes", file.first()}), file.second(), file.third());
 
   renderer.camera(0) =
       Mn::Matrix4::orthographicProjection(2.0f * Mn::Vector2{1.0f, 4.0f / 3.0f},
