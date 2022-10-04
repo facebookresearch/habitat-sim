@@ -446,7 +446,7 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
   {
     CORRADE_ASSERT(importer->sceneCount() == 1,
                    "Renderer::addFile(): expected exactly one scene, got"
-                       << importer->sceneCount(), );
+                       << importer->sceneCount() << "in" << filename, );
     Cr::Containers::Optional<Mn::Trade::SceneData> scene = importer->scene(0);
     CORRADE_INTERNAL_ASSERT(scene);
 
@@ -475,12 +475,12 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
               importer->sceneFieldForName("meshViewIndexCount"));
       CORRADE_ASSERT(
           meshViewIndexCountFieldId,
-          "Renderer::addFile(): no meshViewIndexCount field in the scene", );
+          "Renderer::addFile(): no meshViewIndexCount field in the scene in" << filename, );
       const Cr::Containers::Optional<Mn::UnsignedInt> meshViewMaterialFieldId =
           scene->findFieldId(importer->sceneFieldForName("meshViewMaterial"));
       CORRADE_ASSERT(
           meshViewMaterialFieldId,
-          "Renderer::addFile(): no meshViewMaterial field in the scene", );
+          "Renderer::addFile(): no meshViewMaterial field in the scene in" << filename, );
       Cr::Utility::copy(
           scene->field<Mn::UnsignedInt>(*meshViewIndexOffsetFieldId),
           meshViews.slice(&MeshView::indexOffsetInBytes));
@@ -502,7 +502,7 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
       CORRADE_ASSERT(meshMaterialFieldId,
                      "Renderer::addFile(): no"
                          << Mn::Trade::SceneField::MeshMaterial
-                         << "field in the scene", );
+                         << "field in the scene in" << filename, );
       Cr::Utility::copy(scene->field<Mn::Int>(*meshMaterialFieldId),
                         meshViews.slice(&MeshView::materialId));
     }
@@ -545,13 +545,13 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
 
         Cr::Containers::String name = importer->objectName(root);
         CORRADE_ASSERT(name,
-                      "Renderer::addFile(): node" << root << "has no name", );
+                      "Renderer::addFile(): node" << root << "in" << filename << "has no name", );
         CORRADE_ASSERT_OUTPUT(
             state_->meshViewRangeForName
                 .insert(
                     {name, {offset, offset + Mn::UnsignedInt(children.size())}})
                 .second,
-            "Renderer::addFile(): node name" << name << "already exists", );
+            "Renderer::addFile(): node name" << name << "in" << filename << "already exists", );
         offset += children.size();
       }
       CORRADE_INTERNAL_ASSERT(offset == state_->meshViews.size());
