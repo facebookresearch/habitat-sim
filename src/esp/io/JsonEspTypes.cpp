@@ -221,7 +221,6 @@ JsonGenericValue toJsonValue(const esp::nav::NavMeshSettings& x,
 
 bool fromJsonValue(const JsonGenericValue& obj, esp::nav::NavMeshSettings& x) {
   readMember(obj, "cellSize", x.cellSize);
-  readMember(obj, "cellSize", x.cellSize);
   readMember(obj, "cellHeight", x.cellHeight);
   readMember(obj, "agentHeight", x.agentHeight);
   readMember(obj, "agentRadius", x.agentRadius);
