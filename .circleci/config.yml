@@ -439,7 +439,7 @@ jobs:
                 git clone -q --depth 1 https://github.com/facebookresearch/habitat-lab.git
               fi
               cd habitat-lab
-              pip install -r requirements.txt --progress-bar off
+              pip install -r habitat-lab/requirements.txt --progress-bar off
               ln -s ../habitat-sim/data data
               touch ~/miniconda/pip_deps_installed
       - run:
@@ -461,7 +461,7 @@ jobs:
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat; cd habitat-lab
               # Install requirments first to avoid errors related to gym
-              pip install -r requirements.txt --progress-bar off
+              pip install -r habitat-lab/requirements.txt --progress-bar off
               python setup.py develop --all
 
               cd docs
