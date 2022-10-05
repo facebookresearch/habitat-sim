@@ -566,7 +566,7 @@ bool ResourceManager::loadStage(
     // or empty vector for mesh group - this should only be the case if
     // we are using None-type physicsManager.
     bool sceneSuccess = _physicsManager->addStage(
-        stageAttributes, stageInstanceAttributes, meshGroup);
+        stageAttributes, stageInstanceAttributes);
     if (!sceneSuccess) {
       ESP_ERROR() << "Adding Stage" << stageAttributes->getHandle()
                   << "to PhysicsManager failed. Aborting stage initialization.";
