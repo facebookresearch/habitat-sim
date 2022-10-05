@@ -47,8 +47,7 @@ pip install -r ./habitat-lab/requirements.txt
 reqs=(./habitat_baselines/**/requirements.txt)
 pip install "${reqs[@]/#/-r}"
 set -e
-python setup.py develop --all
-pip install . #Reinstall to trigger sys.path update
+pip install -e habitat-lab
 cd /content/habitat-sim/
 
 #Download Assets
