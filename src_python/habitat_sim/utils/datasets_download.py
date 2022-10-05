@@ -132,6 +132,12 @@ def initialize_test_data_sources(data_path):
             "link": data_path + "robots/franka_panda",
             "version": "1.0",
         },
+        "hab_spot_arm": {
+            "source": "http://dl.fbaipublicfiles.com/habitat/robots/hab_spot_arm_v1.0.zip",
+            "package_name": "hab_spot_arm_v1.0.zip",
+            "link": data_path + "robots/hab_spot_arm",
+            "version": "1.0",
+        },
         "hab_fetch": {
             "source": "http://dl.fbaipublicfiles.com/habitat/hab_fetch_v1.0.zip",
             "package_name": "hab_fetch_v1.0.zip",
