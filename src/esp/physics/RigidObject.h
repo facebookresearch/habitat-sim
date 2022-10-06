@@ -16,7 +16,6 @@
 #include "esp/assets/Asset.h"
 #include "esp/assets/BaseMesh.h"
 #include "esp/assets/GenericSemanticMeshData.h"
-#include "esp/assets/ResourceManager.h"
 #include "esp/core/Esp.h"
 #include "esp/core/RigidState.h"
 #include "esp/scene/SceneNode.h"

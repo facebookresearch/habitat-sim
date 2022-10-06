@@ -7,10 +7,12 @@
 #ifndef ESP_PHYSICS_URDFIMPORTER_H_
 #define ESP_PHYSICS_URDFIMPORTER_H_
 
-#include "esp/assets/ResourceManager.h"
-
 #include "esp/io/URDFParser.h"
 namespace esp {
+namespace assets {
+class ResourceManager;
+}
+
 namespace physics {
 
 enum ConvertURDFFlags {

@@ -8,7 +8,6 @@
 #include <Corrade/TestSuite/Compare/Numeric.h>
 #include <Corrade/TestSuite/Tester.h>
 #include <Corrade/Utility/Path.h>
-#include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/Math/Range.h>
 
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
@@ -19,6 +18,8 @@
 #include "esp/gfx/replay/Player.h"
 #include "esp/gfx/replay/Recorder.h"
 #include "esp/gfx/replay/ReplayManager.h"
+#include "esp/metadata/MetadataMediator.h"
+#include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/sim/Simulator.h"
 

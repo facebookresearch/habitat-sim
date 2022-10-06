@@ -66,7 +66,11 @@ LoggingLevel levelFromName(const Corrade::Containers::StringView name) {
                              {});
 }
 
+#if !defined(MAGNUM_BUILD_STATIC_UNIQUE_GLOBALS) || \
+    defined(CORRADE_TARGET_WINDOWS)
+/* (Of course) can't be in an unnamed namespace in order to export it below */
 namespace {
+#endif
 #if defined(MAGNUM_BUILD_STATIC_UNIQUE_GLOBALS) && \
     !defined(CORRADE_TARGET_WINDOWS)
 /* On static builds that get linked to multiple shared libraries and then used
@@ -81,7 +85,10 @@ __attribute__((weak))
 #endif
 #endif
 const LoggingContext* currentLoggingContext = nullptr;
+#if !defined(MAGNUM_BUILD_STATIC_UNIQUE_GLOBALS) || \
+    defined(CORRADE_TARGET_WINDOWS)
 }  // namespace
+#endif
 
 bool LoggingContext::hasCurrent() {
   return currentLoggingContext != nullptr;

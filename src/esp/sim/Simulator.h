@@ -15,13 +15,8 @@
 #include "esp/gfx/DebugLineRender.h"
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/WindowlessContext.h"
-#include "esp/metadata/MetadataMediator.h"
 #include "esp/nav/PathFinder.h"
-#include "esp/physics/ArticulatedObject.h"
 #include "esp/physics/PhysicsManager.h"
-#include "esp/physics/RigidObject.h"
-#include "esp/physics/objectManagers/ArticulatedObjectManager.h"
-#include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
 #include "esp/sensor/Sensor.h"
@@ -51,7 +46,7 @@ class Simulator {
  public:
   explicit Simulator(
       const SimulatorConfiguration& cfg,
-      metadata::MetadataMediator::ptr _metadataMediator = nullptr);
+      std::shared_ptr<metadata::MetadataMediator> _metadataMediator = nullptr);
   virtual ~Simulator();
 
   /**
@@ -148,59 +143,45 @@ class Simulator {
    * @brief Return manager for construction and access to asset attributes for
    * the current dataset.
    */
-  const metadata::managers::AssetAttributesManager::ptr&
-  getAssetAttributesManager() const {
-    return metadataMediator_->getAssetAttributesManager();
-  }
+  const std::shared_ptr<metadata::managers::AssetAttributesManager>&
+  getAssetAttributesManager() const;
   /**
    * @brief Return manager for construction and access to light attributes and
    * layouts for the current dataset.
    */
-  const metadata::managers::LightLayoutAttributesManager::ptr&
-  getLightLayoutAttributesManager() const {
-    return metadataMediator_->getLightLayoutAttributesManager();
-  }
+  const std::shared_ptr<metadata::managers::LightLayoutAttributesManager>&
+  getLightLayoutAttributesManager() const;
 
   /**
    * @brief Return manager for construction and access to object attributes and
    * layouts for the current dataset.
    */
-  const metadata::managers::ObjectAttributesManager::ptr&
-  getObjectAttributesManager() const {
-    return metadataMediator_->getObjectAttributesManager();
-  }
+  const std::shared_ptr<metadata::managers::ObjectAttributesManager>&
+  getObjectAttributesManager() const;
   /**
    * @brief Return manager for construction and access to physics world
    * attributes.
    */
-  const metadata::managers::PhysicsAttributesManager::ptr&
-  getPhysicsAttributesManager() const {
-    return metadataMediator_->getPhysicsAttributesManager();
-  }
+  const std::shared_ptr<metadata::managers::PhysicsAttributesManager>&
+  getPhysicsAttributesManager() const;
   /**
    * @brief Return manager for construction and access to scene attributes for
    * the current dataset.
    */
-  const metadata::managers::StageAttributesManager::ptr&
-  getStageAttributesManager() const {
-    return metadataMediator_->getStageAttributesManager();
-  }
+  const std::shared_ptr<metadata::managers::StageAttributesManager>&
+  getStageAttributesManager() const;
 
   /**
    * @brief Get current active dataset name from @ref metadataMediator_.
    */
-  std::string getActiveSceneDatasetName() {
-    return metadataMediator_->getActiveSceneDatasetName();
-  }
+  std::string getActiveSceneDatasetName();
 
   /**
    * @brief Set current active dataset name from @ref metadataMediator_.
    * @param _dsHandle The desired dataset to switch to. If has not been loaded,
    * an attempt will be made to load it.
    */
-  void setActiveSceneDatasetName(const std::string& _dsHandle) {
-    metadataMediator_->setActiveSceneDatasetName(_dsHandle);
-  }
+  void setActiveSceneDatasetName(const std::string& _dsHandle);
 
   /** @brief Return the library implementation type for the simulator currently
    * in use. Use to check for a particular implementation.
@@ -273,17 +254,7 @@ class Simulator {
    * @return whether successful or not.
    */
   bool saveCurrentSceneInstance(const std::string& saveFilename,
-                                int sceneID = 0) const {
-    if (sceneHasPhysics(sceneID)) {
-      ESP_DEBUG() << "Attempting to save current scene layout as "
-                     "SceneInstanceAttributes with filename :"
-                  << saveFilename;
-      return metadataMediator_->getSceneInstanceAttributesManager()
-          ->saveManagedObjectToFile(buildCurrentStateSceneAttributes(),
-                                    saveFilename);
-    }
-    return false;
-  }  // saveCurrentSceneInstance
+                                int sceneID = 0) const;
 
   /**
    * @brief Builds a @ref esp::metadata::SceneInstanceAttributes describing
@@ -294,16 +265,7 @@ class Simulator {
    * should one exist.
    * @return whether successful or not.
    */
-  bool saveCurrentSceneInstance(bool overwrite = false, int sceneID = 0) const {
-    if (sceneHasPhysics(sceneID)) {
-      ESP_DEBUG() << "Attempting to save current scene layout as "
-                     "SceneInstanceAttributes.";
-      return metadataMediator_->getSceneInstanceAttributesManager()
-          ->saveManagedObjectToFile(buildCurrentStateSceneAttributes(),
-                                    overwrite);
-    }
-    return false;
-  }  // saveCurrentSceneInstance
+  bool saveCurrentSceneInstance(bool overwrite = false, int sceneID = 0) const;
 
   /**
    * @brief Get the IDs of the physics objects instanced in a physical scene.
@@ -943,18 +905,15 @@ class Simulator {
   /**
    * @brief Get this simulator's MetadataMediator
    */
-  metadata::MetadataMediator::ptr getMetadataMediator() const {
+  std::shared_ptr<metadata::MetadataMediator> getMetadataMediator() const {
     return metadataMediator_;
   }
 
   /**
    * @brief Set this simulator's MetadataMediator
    */
-  void setMetadataMediator(metadata::MetadataMediator::ptr _metadataMediator) {
-    metadataMediator_ = std::move(_metadataMediator);
-    // set newly added MM to have current Simulator Config
-    metadataMediator_->setSimulatorConfiguration(this->config_);
-  }
+  void setMetadataMediator(
+      std::shared_ptr<metadata::MetadataMediator> _metadataMediator);
 
   /**
    * @brief Load and add a render asset instance to the current scene graph(s).
@@ -1097,12 +1056,7 @@ class Simulator {
    * nullptr if DNE.
    */
   esp::physics::ManagedRigidObject::ptr queryRigidObjWrapper(int sceneID,
-                                                             int objID) const {
-    if (!sceneHasPhysics(sceneID)) {
-      return nullptr;
-    }
-    return getRigidObjectManager()->getObjectCopyByID(objID);
-  }
+                                                             int objID) const;
 
   /**
    * @brief TEMPORARY until sim access to objects is completely removed.  This
@@ -1116,12 +1070,7 @@ class Simulator {
    */
   esp::physics::ManagedArticulatedObject::ptr queryArticulatedObjWrapper(
       int sceneID,
-      int objID) const {
-    if (!sceneHasPhysics(sceneID)) {
-      return nullptr;
-    }
-    return getArticulatedObjectManager()->getObjectCopyByID(objID);
-  }
+      int objID) const;
 
   void reconfigureReplayManager(bool enableGfxReplaySave);
 
@@ -1138,7 +1087,7 @@ class Simulator {
   /**
    * @brief Owns and manages the metadata/attributes managers
    */
-  metadata::MetadataMediator::ptr metadataMediator_ = nullptr;
+  std::shared_ptr<metadata::MetadataMediator> metadataMediator_ = nullptr;
 
   /**
    * @brief Configuration describing currently active scene

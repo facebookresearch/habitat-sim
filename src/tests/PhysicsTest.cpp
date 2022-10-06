@@ -10,6 +10,7 @@
 #include "esp/sim/Simulator.h"
 
 #include "esp/assets/ResourceManager.h"
+#include "esp/metadata/MetadataMediator.h"
 #include "esp/scene/SceneManager.h"
 
 #include "esp/physics/PhysicsManager.h"

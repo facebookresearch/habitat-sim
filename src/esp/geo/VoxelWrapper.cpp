@@ -1,7 +1,8 @@
+#include "VoxelWrapper.h"
 
 #include <cmath>
 
-#include "VoxelWrapper.h"
+#include "esp/assets/ResourceManager.h"
 
 namespace Mn = Magnum;
 namespace Cr = Corrade;
