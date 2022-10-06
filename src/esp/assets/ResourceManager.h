@@ -1256,7 +1256,7 @@ class ResourceManager {
    * being rendered, since that mesh will have its components moved into actual
    * render mesh constructs.
    */
-  std::unique_ptr<GenericSemanticMeshData> infoSemanticMeshData_{};
+  std::unique_ptr<GenericSemanticMeshData> infoSemanticMeshData_;
 
   /**
    * @brief Importer used to synthesize Magnum Primitives (PrimitiveImporter).
