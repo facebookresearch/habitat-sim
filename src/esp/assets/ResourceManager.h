@@ -924,10 +924,10 @@ class ResourceManager {
    * criteria.
    */
   bool checkForPassedShaderType(
-      const ObjectInstanceShaderType typeToCheck,
+      ObjectInstanceShaderType typeToCheck,
       const Mn::Trade::MaterialData& materialData,
-      const ObjectInstanceShaderType verificationType,
-      const Mn::Trade::MaterialType mnVerificationType) const;
+      ObjectInstanceShaderType verificationType,
+      Mn::Trade::MaterialType mnVerificationType) const;
 
   /**
    * @brief Build a @ref PhongMaterialData for use with flat shading
