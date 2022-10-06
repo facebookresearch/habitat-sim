@@ -85,6 +85,7 @@ WarningsAsErrors: '
 -clang-analyzer-cplusplus.PlacementNew,
 -cppcoreguidelines-pro-type-member-init,
 -optin.cplusplus.UninitializedObject,
+-readability-implicit-bool-conversion,
 '
 
 HeaderFilterRegex: "src/esp/"
@@ -102,3 +103,10 @@ HeaderFilterRegex: "src/esp/"
 #   APIs. Treating such warnings as error is counterproductive, since the first
 #   thing you want to do after an upgrade is compiling existing *unchanged*
 #   code and ensuring all tests pass, and only then start updating the code.
+# readability-implicit-bool-conversion
+#   There's many cases of checking counts in if statements, such as
+#   `if(!importer->sceneCount())` for Magnum importers. For those there are no
+#   corresponding `hasScenes()` or such, and having to write `== 0` doesn't
+#   really improve readability in any way. Keeping this as a warning tho, as it
+#   *might* actually be useful in certain cases, just not treating it as an
+#   error.
