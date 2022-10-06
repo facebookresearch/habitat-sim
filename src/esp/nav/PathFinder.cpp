@@ -64,7 +64,7 @@ bool operator!=(const NavMeshSettings& a, const NavMeshSettings& b) {
 }
 
 void NavMeshSettings::readFromJSON(const std::string& jsonFile) {
-  if (!Corrade::Utility::Path::exists(jsonFile)) {
+  if (!Corrade::Utility::Path::exists(jsonFile.data())) {
     ESP_ERROR() << "File" << jsonFile << "not found.";
     return;
   }
