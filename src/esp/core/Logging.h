@@ -13,6 +13,7 @@
 #include <Corrade/Utility/Debug.h>
 #include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/String.h>
+#include <Magnum/Magnum.h> /* for Magnum::Debug alias, mainly */
 
 namespace esp {
 namespace logging {

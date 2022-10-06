@@ -11,17 +11,12 @@
  */
 
 #include <Corrade/Containers/Optional.h>
-#include <Corrade/Containers/Reference.h>
-#include <Magnum/GL/Mesh.h>
-#include <Magnum/Magnum.h>
-#include <Magnum/Math/Color.h>
+#include <Magnum/GL/GL.h>
 #include <Magnum/Math/Range.h>
-#include <Magnum/Mesh.h>
 #include <Magnum/Trade/MeshData.h>
 #include "CollisionMeshData.h"
 #include "MeshData.h"
 #include "esp/core/Esp.h"
-#include "esp/gfx/magnum.h"
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;

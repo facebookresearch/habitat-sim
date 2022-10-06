@@ -28,7 +28,7 @@ enum class AssetType {
 
 // loading and asset info with filepath == EMPTY_SCENE creates a scene graph
 // with no scene mesh (ie. an empty scene)
-static const std::string EMPTY_SCENE = "NONE";
+constexpr char EMPTY_SCENE[] = "NONE";
 
 //! stores basic Phong compatible color properties for procedural override
 //! material construction

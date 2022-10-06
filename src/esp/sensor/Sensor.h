@@ -9,6 +9,7 @@
 
 #include "esp/core/Buffer.h"
 #include "esp/core/Esp.h"
+#include "esp/core/EspEigen.h"
 
 #include "esp/sensor/configure.h"
 

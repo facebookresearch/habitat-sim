@@ -11,6 +11,7 @@
 #include "BulletRigidObject.h"
 #include "BulletURDFImporter.h"
 #include "esp/assets/ResourceManager.h"
+#include "esp/metadata/attributes/PhysicsManagerAttributes.h"
 #include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/sim/Simulator.h"

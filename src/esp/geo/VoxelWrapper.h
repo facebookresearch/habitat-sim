@@ -2,11 +2,15 @@
 #define ESP_GEO_VOXEL_WRAPPER_H_
 
 #include "VoxelGrid.h"
-#include "esp/assets/ResourceManager.h"
 #include "esp/gfx/DrawableGroup.h"
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
+
+namespace assets {
+class ResourceManager;
+}
+
 namespace geo {
 
 /**

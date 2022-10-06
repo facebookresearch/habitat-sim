@@ -7,9 +7,10 @@
 
 #include <Corrade/Containers/EnumSet.h>
 #include <Corrade/Utility/Assert.h>
+#include <Magnum/GL/GL.h>
+#include <Magnum/SceneGraph/Drawable.h>
 
 #include "esp/core/Esp.h"
-#include "magnum.h"
 
 namespace esp {
 namespace scene {

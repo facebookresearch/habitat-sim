@@ -11,6 +11,7 @@
 #include "esp/core/Esp.h"
 #include "esp/geo/VoxelWrapper.h"
 #include "esp/metadata/attributes/AttributesBase.h"
+#include "esp/metadata/attributes/ObjectAttributes.h"
 #include "esp/physics/PhysicsObjectBase.h"
 
 /** @file
@@ -21,11 +22,6 @@ namespace esp {
 namespace assets {
 class ResourceManager;
 }
-namespace metadata {
-namespace attributes {
-class AbstractObjectAttributes;
-}  // namespace attributes
-}  // namespace metadata
 
 namespace physics {
 
@@ -61,7 +57,8 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
    * @return true if initialized successfully, false otherwise.
    */
   virtual bool initialize(
-      metadata::attributes::AbstractObjectAttributes::ptr initAttributes) = 0;
+      std::shared_ptr<metadata::attributes::AbstractObjectAttributes>
+          initAttributes) = 0;
 
   /**
    * @brief Finalize the creation of @ref RigidObject or @ref

@@ -5,6 +5,7 @@
 #ifndef ESP_SCENE_SEMANTICSCENE_H_
 #define ESP_SCENE_SEMANTICSCENE_H_
 
+#include <Corrade/Containers/StringStl.h>
 #include <Corrade/Utility/Path.h>
 #include <map>
 #include <memory>
