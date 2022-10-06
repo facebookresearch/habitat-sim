@@ -106,12 +106,13 @@ void BulletRigidStage::constructBulletSceneFromMeshes(
   if (node.meshIDLocal != ID_UNDEFINED)
     mesh = &meshGroup[node.meshIDLocal];
   // TODO TriangleStrip and TriangleFan would work
-  if(mesh && mesh->primitive != Mn::MeshPrimitive::Triangles) {
-    ESP_WARNING() << "Unsupported collision mesh primitive" << mesh->primitive << Mn::Debug::nospace << ", skipping";
+  if (mesh && mesh->primitive != Mn::MeshPrimitive::Triangles) {
+    ESP_WARNING() << "Unsupported collision mesh primitive" << mesh->primitive
+                  << Mn::Debug::nospace << ", skipping";
     mesh = nullptr;
   }
 
-  if(mesh) {
+  if (mesh) {
     // SCENE: create a concave static mesh
     btIndexedMesh bulletMesh;
 
