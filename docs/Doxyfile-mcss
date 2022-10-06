@@ -40,6 +40,7 @@ ALIASES                = \
     "cpp=@code{.cpp}" \
     "glsl=@code{.glsl}" \
     "cmake=@code{.cmake}" \
+    "relativeref{2}=@ref \1::\2 \"\2\"" \
     "ce=@endcode" \
     "m_div{1}=@xmlonly<mcss:div xmlns:mcss=\"http://mcss.mosra.cz/doxygen/\" mcss:class=\"\1\">@endxmlonly" \
     "m_enddiv=@xmlonly</mcss:div>@endxmlonly" \
