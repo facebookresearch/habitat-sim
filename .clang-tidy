@@ -63,6 +63,11 @@ readability-uniqueptr-delete-release,
 -modernize-use-auto,
 -modernize-use-trailing-return-type,
 -bugprone-easily-swappable-parameters,
+# This check would make forward declarations work only if each class name is
+# unique across all namespaces, otherwise it would complain that e.g. Buffer
+# is defined in Magnum::GL but a forward declaration appears in Magnum::Vk.
+# Which is just useless, and goes against the point of namespaces.
+-bugprone-forward-declaration-namespace,
 '
 
 CheckOptions:
