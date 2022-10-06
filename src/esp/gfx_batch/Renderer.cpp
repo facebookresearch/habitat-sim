@@ -55,7 +55,7 @@ using namespace Mn::Math::Literals;        // NOLINT
 struct RendererConfiguration::State {
   RendererFlags flags;
   Mn::Vector2i tileSize{128, 128};
-  Mn::Vector2i tileCount{16, 12};
+  Mn::Vector2i tileCount{1, 1};
 };
 
 RendererConfiguration::RendererConfiguration() : state{Cr::InPlaceInit} {}
@@ -272,6 +272,10 @@ void Renderer::destroy() {
 }
 
 Renderer::~Renderer() = default;
+
+RendererFlags Renderer::flags() const {
+  return state_->flags;
+}
 
 Mn::Vector2i Renderer::tileCount() const {
   return state_->tileCount;
@@ -990,6 +994,11 @@ SceneStats Renderer::sceneStats(Mn::UnsignedInt sceneId) const {
   SceneStats out;
   out.nodeCount = scene.transformations.size();
   out.drawCount = scene.draws.size();
+  /* This one will be up-to-date only after calling draw(). Another option
+     would be to explicitly perform a cleanup in case the scene is dirty, but
+     considering there will be more stats like number of culled draws -- which
+     again would be up-to-date only after draw() -- people should just learn to
+     only fetch stats after a draw, and not before. */
   out.drawBatchCount = scene.drawBatches.size();
   return out;
 }
