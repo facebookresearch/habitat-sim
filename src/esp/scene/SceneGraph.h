@@ -5,8 +5,8 @@
 #ifndef ESP_SCENE_SCENEGRAPH_H
 #define ESP_SCENE_SCENEGRAPH_H
 
+#include <Magnum/SceneGraph/Scene.h>
 #include <unordered_map>
-
 #include "esp/core/Esp.h"
 #include "esp/gfx/magnum.h"
 

@@ -6,6 +6,7 @@
 #include <Magnum/GL/BufferImage.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Framebuffer.h>
+#include <Magnum/GL/Mesh.h>
 #include <Magnum/GL/PixelFormat.h>
 #include <Magnum/GL/Renderbuffer.h>
 #include <Magnum/GL/RenderbufferFormat.h>
@@ -20,7 +21,6 @@
 
 #include "RenderTarget.h"
 #include "esp/sensor/VisualSensor.h"
-#include "magnum.h"
 
 #include "esp/gfx/DepthUnprojection.h"
 

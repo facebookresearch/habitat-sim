@@ -63,6 +63,7 @@ readability-uniqueptr-delete-release,
 -modernize-use-auto,
 -modernize-use-trailing-return-type,
 -bugprone-easily-swappable-parameters,
+-bugprone-forward-declaration-namespace,
 '
 
 CheckOptions:
@@ -75,12 +76,6 @@ CheckOptions:
 - key:             readability-implicit-bool-conversion.AllowPointerConditions
   value:           true
 
-# Let deprecation warnings through. From time to time, Magnum annotates APIs
-# with deprecation warnings, suggesting people to upgrade to newer / better
-# designed / more flexible APIs. Treating such warnings as error is
-# counterproductive, since the first thing you want to do after an upgrade is
-# compiling existing *unchanged* code and ensuring all tests pass, and only
-# then start updating the code.
 WarningsAsErrors: '
 *,
 -bugprone-narrowing-conversions,
@@ -93,3 +88,17 @@ WarningsAsErrors: '
 '
 
 HeaderFilterRegex: "src/esp/"
+
+# Comments for particular disabled checks:
+#
+# bugprone-forward-declaration-namespace
+#   This check would make forward declarations work only if each class name is
+#   unique across all namespaces, otherwise it would complain that e.g. Buffer
+#   is defined in Magnum::GL but a forward declaration appears in Magnum::Vk.
+#   Which is just useless, and goes against the point of namespaces.
+# clang-diagnostic-deprecated-declarations
+#   From time to time, Magnum annotates APIs with deprecation warnings,
+#   suggesting people to upgrade to newer / better designed / more flexible
+#   APIs. Treating such warnings as error is counterproductive, since the first
+#   thing you want to do after an upgrade is compiling existing *unchanged*
+#   code and ensuring all tests pass, and only then start updating the code.
