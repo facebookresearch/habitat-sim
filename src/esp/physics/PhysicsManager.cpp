@@ -688,7 +688,7 @@ void PhysicsManager::setStageVoxelizationDraw(const std::string& gridName,
 metadata::attributes::PhysicsManagerAttributes::ptr
 PhysicsManager::getInitializationAttributes() const {
   return metadata::attributes::PhysicsManagerAttributes::create(
-      *physicsManagerAttributes_.get());
+      *physicsManagerAttributes_);
 }
 
 void PhysicsManager::setVoxelizationDraw(const std::string& gridName,
