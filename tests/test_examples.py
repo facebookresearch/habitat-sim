@@ -94,6 +94,22 @@ def test_replica_cad_quickstart(args):
     run_main_subproc(args)
 
 
+@pytest.mark.skipif(
+    not habitat_sim.audio_enabled,
+    reason="Requires Habitat-sim to be built with RLR-audio-propogation support (--audio)",
+)
+@pytest.mark.skipif(
+    not osp.exists("data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"),
+    reason="Requires the MP3D test scene for semantic annotations.",
+)
+@pytest.mark.parametrize(
+    "args",
+    [("examples/tutorials/audio_agent.py")],
+)
+def test_audio_example(args):
+    run_main_subproc(args)
+
+
 @pytest.mark.gfxtest
 @pytest.mark.skipif(
     not osp.exists("data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"),
