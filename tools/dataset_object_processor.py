@@ -1,6 +1,8 @@
 import argparse
+import csv
+import datetime
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import git
 from magnum import trade
@@ -35,7 +37,7 @@ class MemoryUnitConverter:
     GIGABYTES = 3
 
     UNIT_STRS = ["bytes", "KB", "MB", "GB"]
-    UNIT_CONVERSIONS = [1, 1 << 10, 1 << 20, 1 << 30, 1 << 40]
+    UNIT_CONVERSIONS = [1, 1 << 10, 1 << 20, 1 << 30]
 
 
 class PrintColors:
@@ -90,85 +92,68 @@ def get_mem_size_str(
 
 def process_imported_asset(
     importer: trade.AbstractImporter,
-    asset_path: str = "",
-) -> None:
+    render_asset_handle: str = "",
+) -> Tuple:
     """
     Use the trade.AbstractImporter class to query data size of mesh and image
     of asset
     """
+    # get asset path
+    asset_path = os.path.join(HABITAT_SIM_PATH, render_asset_handle)
 
     # Open file with AbstractImporter
     importer.open_file(asset_path)
 
     # Get mesh data
-    print_in_color("\nMesh Data", PrintColors.GREEN)
-    print_in_color("-" * 72, PrintColors.GREEN)
+    index_data_size = 0  # bytes
+    vertex_data_size = 0  # bytes
     mesh_data_size = 0  # bytes
     for i in range(importer.mesh_count):
         mesh: trade.MeshData = importer.mesh(i)
-        index_data_size = len(mesh.index_data)
-        vertex_data_size = len(mesh.vertex_data)
-        mesh_data_size = index_data_size + vertex_data_size
-        print_in_color(f"mesh name: {importer.mesh_name(i)}", PrintColors.GREEN)
-        print_in_color(f"mesh index: {i}", PrintColors.GREEN)
-        print_in_color(
-            f"mesh level count: {importer.mesh_level_count(i)}",
-            PrintColors.GREEN,
-        )
-        print_in_color(
-            f"index data size: {get_mem_size_str(index_data_size)}",
-            PrintColors.GREEN,
-        )
-        print_in_color(
-            f"vertex data size: {get_mem_size_str(vertex_data_size)}",
-            PrintColors.GREEN,
-        )
-        print_in_color(
-            f"total mesh size: {get_mem_size_str(mesh_data_size)}\n",
-            PrintColors.GREEN,
-        )
+        index_data_size += len(mesh.index_data)
+        vertex_data_size += len(mesh.vertex_data)
+        mesh_data_size += index_data_size + vertex_data_size
+    index_data_str = get_mem_size_str(index_data_size)
+    vertex_data_str = get_mem_size_str(vertex_data_size)
+    mesh_data_str = get_mem_size_str(mesh_data_size)
 
     # Get image data
-    print_in_color("Image Data", PrintColors.RED)
-    print_in_color("-" * 72, PrintColors.RED)
-    print_in_color(f"num 2D images: {importer.image2d_count}", PrintColors.RED)
     image_data_size = 0  # bytes
     for i in range(importer.image2d_count):
-        print_in_color(f"image index: {i}", PrintColors.RED)
         for j in range(importer.image2d_level_count(i)):
             image: trade.ImageData2D = importer.image2d(i, j)
             image_data_size += len(image.data)
-            converted_size_str = get_mem_size_str(len(image.data))
-            print_in_color(
-                f"- image mip map level - {j}, size - ({image.size.x}, {image.size.y}), mem - {converted_size_str}",
-                PrintColors.RED,
-            )
-        print_in_color(
-            f"image index {i} total data size: {get_mem_size_str(image_data_size)}",
-            PrintColors.RED,
-        )
+    image_data_str = get_mem_size_str(image_data_size)
 
-    print("\n\n")
+    return [
+        render_asset_handle,
+        index_data_str,
+        vertex_data_str,
+        mesh_data_str,
+        image_data_str,
+    ]
 
 
-def parse_dataset(sim: habitat_sim.Simulator = None, dataset_path: str = None) -> None:
+def parse_dataset(
+    sim: habitat_sim.Simulator = None, dataset_path: str = None
+) -> List[str]:
     """ """
     if sim is None:
-        return
+        return []
 
     metadata_mediator = sim.metadata_mediator
     if (
         metadata_mediator is None
         or metadata_mediator.dataset_exists(dataset_path) is False
     ):
-        return
+        return []
 
     # get dataset that is currently being used by the simulator
     active_dataset: str = metadata_mediator.active_dataset
     print_in_color("* " * 39, PrintColors.BLUE)
     print_in_color(f"{active_dataset}\n", PrintColors.BLUE)
 
-    # get exhaustive list of information about the dataset
+    # get exhaustive List of information about the dataset
     dataset_report: str = metadata_mediator.dataset_report(dataset_path)
     print_in_color("* " * 39, PrintColors.CYAN)
     print_in_color(f"{dataset_report}\n", PrintColors.CYAN)
@@ -179,7 +164,7 @@ def parse_dataset(sim: habitat_sim.Simulator = None, dataset_path: str = None) -
     for handle in scene_handles:
         print_in_color(f"{handle}\n", PrintColors.PURPLE)
 
-    # get list of Unified Robotics Description Format files
+    # get List of Unified Robotics Description Format files
     urdf_paths = metadata_mediator.urdf_paths
     urdf_paths_list = list(urdf_paths.keys())
     print_in_color("-" * 72, PrintColors.MAGENTA)
@@ -206,7 +191,7 @@ def parse_dataset(sim: habitat_sim.Simulator = None, dataset_path: str = None) -
     print_in_color(rigid_object_manager.get_objects_CSV_info(), PrintColors.CYAN)
 
     # Get object attribute manager for objects from dataset, load the dataset,
-    # store all the object template handles in a list, then process each asset
+    # store all the object template handles in a List, then process each asset
     object_attributes_manager = sim.get_object_template_manager()
     object_attributes_manager.load_configs(dataset_path)
     object_template_handles = object_attributes_manager.get_file_template_handles("")
@@ -216,17 +201,54 @@ def parse_dataset(sim: habitat_sim.Simulator = None, dataset_path: str = None) -
     )
     print_in_color("-" * 72, PrintColors.PURPLE)
     print("")
+
+    # process each asset with trade.AbstractImporter and construct csv data
+    csv_rows: List[str] = []
     manager = trade.ImporterManager()
     importer = manager.load_and_instantiate("AnySceneImporter")
     for handle in object_template_handles:
         template = object_attributes_manager.get_template_by_handle(handle)
-        asset_path = os.path.join(HABITAT_SIM_PATH, template.render_asset_handle)
-        print_in_color(asset_path, PrintColors.CYAN)
-        print_in_color("-" * 72, PrintColors.CYAN)
-        process_imported_asset(importer, asset_path)
+        csv_rows.append(process_imported_asset(importer, template.render_asset_handle))
 
     # clean up
     importer.close()
+
+    return csv_rows
+
+
+def write_csv(csv_rows: List[str]) -> None:
+    """ """
+    # Current date and time so we can make unique file names for each csv
+    date_and_time = datetime.datetime.now()
+
+    # year-month-day
+    date = date_and_time.strftime("%Y-%m-%d")
+
+    # hour:min:sec - capital H is military time, %I is standard time
+    # (am/pm time format)
+    time = date_and_time.strftime("%H:%M:%S")
+
+    # make directory to store csvs if it doesn't exist
+    csv_dir_path = f"{DATA_PATH}/dataset_csvs"
+    dir_exists = os.path.exists(csv_dir_path)
+    if not dir_exists:
+        os.makedirs(csv_dir_path)
+
+    # create csv file and write data to it
+    # (make more descriptive file name)
+    file_path = f"{csv_dir_path}/date_{date}__time_{time}.csv"
+    print_in_color(f"Writing csv results to {file_path}", PrintColors.CYAN)
+    headers = [
+        "mesh name",
+        "mesh index data size",
+        "mesh vertex data size",
+        "total mesh data size",
+        "image data size",
+    ]
+    with open(file_path, "w") as csv_file:
+        writer = csv.writer(csv_file)
+        writer.writerow(headers)
+        writer.writerows(csv_rows)
 
 
 def make_configuration(sim_settings):
@@ -303,7 +325,8 @@ def main() -> None:
 
     cfg = make_configuration(sim_settings)
     sim = habitat_sim.Simulator(cfg)
-    parse_dataset(sim, args.dataset)
+    csv_rows: List[str] = parse_dataset(sim, args.dataset)
+    write_csv(csv_rows)
 
 
 if __name__ == "__main__":

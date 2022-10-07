@@ -346,14 +346,14 @@ if(NOT USE_SYSTEM_MAGNUM)
     if(BUILD_GUI_VIEWERS)
       set(
         MAGNUM_PYTHON_BINDINGS_STATIC_PLUGINS
-        MagnumPlugins::StbTrueTypeFont
         Magnum::AnyImageImporter
         Magnum::AnySceneImporter
+        MagnumPlugins::AssimpImporter
         MagnumPlugins::BasisImporter
         MagnumPlugins::GltfImporter
-        MagnumPlugins::AssimpImporter
         MagnumPlugins::StanfordImporter
         MagnumPlugins::StbImageImporter
+        MagnumPlugins::StbTrueTypeFont
         CACHE STRING "" FORCE
       )
     else()
