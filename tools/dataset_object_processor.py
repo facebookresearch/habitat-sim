@@ -1,4 +1,5 @@
 import argparse
+import math
 import os
 from typing import Any, Dict, List, Optional
 
@@ -19,6 +20,21 @@ REPLICA_CAD_PATH = os.path.join(
     "versioned_data/replica_cad_dataset_1.5/replicaCAD.scene_dataset_config.json",
 )
 ROBOT_PATH = ""  # TODO, which dataset is this? Robot fetch?
+
+
+class MemoryUnitConverter:
+    """
+    class to convert computer memory value units, e.g.
+    1,000,000 bytes to 1 megabyte
+    """
+
+    BYTES = 0
+    KILOBYTES = 1
+    MEGABYTES = 2
+    GIGABYTES = 3
+
+    UNIT_STRS = ["bytes", "KB", "MB", "GB"]
+    EXPONENT = [1, -3, -6, -9]
 
 
 class PrintColors:
@@ -52,22 +68,35 @@ def print_in_color(print_string="", color=PrintColors.WHITE) -> None:
     print(color + print_string + PrintColors.ENDC)
 
 
-def process_imported_asset(asset_path: str = "") -> None:
+def convert_units(
+    size: float,
+    conversion: float = 1.0,
+    decimals: int = 4,
+) -> float:
+    """
+    Convert units of a float, then round the result
+    """
+    return round(size * conversion, decimals)
+
+
+def process_imported_asset(
+    asset_path: str = "", unit_type: int = MemoryUnitConverter.KILOBYTES
+) -> None:
     """
     Use the trade.AbstractImporter class to query data size of mesh and image
     of asset
     """
+    conversion: int = math.pow(10.0, MemoryUnitConverter.EXPONENT[unit_type])
+    unit_str: str = MemoryUnitConverter.UNIT_STRS[unit_type]
+
     # Open AbstractImporter
     manager = trade.ImporterManager()
     importer = manager.load_and_instantiate("AnySceneImporter")
     importer.open_file(asset_path)
-    print_in_color(f"Plugin dir: {manager.plugin_directory}", PrintColors.PURPLE)
-    print_in_color("-" * 72, PrintColors.PURPLE)
 
     # Get mesh data
     print_in_color("\nMesh Data", PrintColors.GREEN)
     print_in_color("-" * 72, PrintColors.GREEN)
-    print_in_color(f"Scene importer class: {type(importer)}", PrintColors.GREEN)
     mesh_data_size = 0  # bytes
     for i in range(importer.mesh_count):
         mesh: trade.MeshData = importer.mesh(i)
@@ -80,13 +109,22 @@ def process_imported_asset(asset_path: str = "") -> None:
             f"mesh level count: {importer.mesh_level_count(i)}",
             PrintColors.GREEN,
         )
-        print_in_color(f"index data size: {index_data_size} bytes", PrintColors.GREEN)
-        print_in_color(f"vertex data size: {vertex_data_size} bytes", PrintColors.GREEN)
-        print_in_color(f"total mesh size: {mesh_data_size} bytes\n", PrintColors.GREEN)
+        print_in_color(
+            f"index data size: {convert_units(index_data_size, conversion)} {unit_str}",
+            PrintColors.GREEN,
+        )
+        print_in_color(
+            f"vertex data size: {convert_units(vertex_data_size, conversion)} {unit_str}",
+            PrintColors.GREEN,
+        )
+        print_in_color(
+            f"total mesh size: {convert_units(mesh_data_size, conversion)} {unit_str}\n",
+            PrintColors.GREEN,
+        )
 
     # Get image data
-    print_in_color("-" * 72, PrintColors.RED)
     print_in_color("Image Data", PrintColors.RED)
+    print_in_color("-" * 72, PrintColors.RED)
     print_in_color(f"Image importer class: {type(importer)}", PrintColors.RED)
     print_in_color(f"num 2D images: {importer.image2d_count}", PrintColors.RED)
     image_data_size = 0  # bytes
@@ -95,14 +133,19 @@ def process_imported_asset(asset_path: str = "") -> None:
         for j in range(importer.image2d_level_count(i)):
             image: trade.ImageData2D = importer.image2d(i, j)
             image_data_size += len(image.data)
+            converted_size = convert_units(len(image.data), conversion)
             print_in_color(
-                f"- image mip map level: {j}, size - ({image.size.x}, {image.size.y})",
+                f"- image mip map level - {j}, size - ({image.size.x}, {image.size.y}), mem - {converted_size} {unit_str}",
                 PrintColors.RED,
             )
         print_in_color(
-            f"image index {i} total data size: {image_data_size} bytes", PrintColors.RED
+            f"image index {i} total data size: {convert_units(image_data_size, conversion)} {unit_str}",
+            PrintColors.RED,
         )
 
+    print("\n")
+
+    # clean up
     importer.close()
 
 
@@ -143,23 +186,7 @@ def parse_dataset(sim: habitat_sim.Simulator = None, dataset_path: str = None) -
         print_in_color("-" * 72, PrintColors.MAGENTA)
         print_in_color(f"{name}\n", PrintColors.MAGENTA)
 
-    # Get object attribute manager for objects from dataset, load the dataset,
-    # store all the object template handles in a list
-    object_attributes_manager = sim.get_object_template_manager()
-    object_attributes_manager.load_configs(dataset_path)
-    object_template_handles = object_attributes_manager.get_file_template_handles("")
-    print_in_color(
-        f"\nnumber of ojects in dataset: {len(object_template_handles)}",
-        PrintColors.RED,
-    )
-    print_in_color("-" * 72, PrintColors.RED)
-    for handle in object_template_handles:
-        print_in_color(
-            handle,
-            PrintColors.RED,
-        )
-
-    # get asset template manager and get template handles of ech primitive asset
+    # get asset template manager and get template handles of each primitive asset
     asset_template_manager = metadata_mediator.asset_template_manager
     print_in_color(
         f"\nnumber of primitive asset templates: {asset_template_manager.get_num_templates()}",
@@ -176,12 +203,22 @@ def parse_dataset(sim: habitat_sim.Simulator = None, dataset_path: str = None) -
     rigid_object_manager = sim.get_rigid_object_manager()
     print_in_color(rigid_object_manager.get_objects_CSV_info(), PrintColors.CYAN)
 
-    # Use AbstractImporter to query data of this asset
-    asset_path = os.path.join(
-        DATA_PATH,
-        "versioned_data/ycb_1.2/meshes/002_master_chef_can/google_16k/textured.glb",
+    # Get object attribute manager for objects from dataset, load the dataset,
+    # store all the object template handles in a list, then process each asset
+    object_attributes_manager = sim.get_object_template_manager()
+    object_attributes_manager.load_configs(dataset_path)
+    object_template_handles = object_attributes_manager.get_file_template_handles("")
+    print_in_color(
+        f"\nnumber of ojects in dataset: {len(object_template_handles)}",
+        PrintColors.RED,
     )
-    process_imported_asset(asset_path)
+    print_in_color("-" * 72, PrintColors.RED)
+    for handle in object_template_handles:
+        template = object_attributes_manager.get_template_by_handle(handle)
+        asset_path = os.path.join(HABITAT_SIM_PATH, template.render_asset_handle)
+        print_in_color(asset_path, PrintColors.CYAN)
+        print_in_color("-" * 72, PrintColors.CYAN)
+        process_imported_asset(asset_path)
 
 
 def make_configuration(sim_settings):
