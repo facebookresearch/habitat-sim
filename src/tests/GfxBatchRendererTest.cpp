@@ -88,36 +88,50 @@ const struct {
   Cr::Containers::Array<Cr::Containers::Triple<const char*, esp::gfx_batch::RendererFileFlags, const char*>> gltfFilenames;
   Mn::UnsignedInt singleSceneBatchCount;
   Mn::UnsignedInt multipleScenesBatchCount[4];
+  Mn::Float maxThreshold, meanThreshold;
 } FileData[]{
   {"", {Cr::InPlaceInit, {
     {"batch.gltf", {}, nullptr}}},
     1,
-    {1, 1, 0, 1}
-  },
+    {1, 1, 0, 1},
+    0.0f, 0.0f},
   {"multiple meshes", {Cr::InPlaceInit, {
     {"batch-multiple-meshes.gltf", {}, nullptr}}},
     /* Each has a separate mesh */
     3,
-    {4, 2, 0, 1}},
+    {4, 2, 0, 1},
+    0.0f, 0.0f},
   {"multiple textures", {Cr::InPlaceInit, {
     {"batch-multiple-textures.gltf", {}, nullptr}}},
     /* Each has a separate texture */
     3,
-    {4, 2, 0, 1}},
+    {4, 2, 0, 1},
+    0.0f, 0.0f},
   {"multiple files", {Cr::InPlaceInit, {
     {"batch-square-circle-triangle.gltf", {}, nullptr},
     {"batch-four-squares.gltf", {}, nullptr}}},
     /* Square, circle and triangle are a single mesh but the hierarchical four
        squares are a separate file */
     2,
-    {4, 2, 0, 1}},
+    {4, 2, 0, 1},
+    0.0f, 0.0f},
+  {"multiple files, compressed textures", {Cr::InPlaceInit, {
+    {"batch-square-circle-triangle-compressed.gltf", {}, nullptr},
+    {"batch-four-squares-compressed.gltf", {}, nullptr}}},
+    /* Square, circle and triangle are a single mesh but the hierarchical four
+       squares are a separate file */
+    2,
+    {4, 2, 0, 1},
+    /* DXT-compressed images have minor compression errors */
+    1.5f, 0.5f},
   {"multiple files, some whole-file", {Cr::InPlaceInit, {
     {"batch-square-circle-triangle.gltf", {}, nullptr},
     {"batch-four-squares-deep-hierarchy-whole-file.gltf", esp::gfx_batch::RendererFileFlag::Whole, "four squares"}}},
     /* Square, circle and triangle are a single mesh but the hierarchical four
        squares are a separate file */
     2,
-    {4, 2, 0, 1}},
+    {4, 2, 0, 1},
+    0.0f, 0.0f},
 };
 
 const struct {
@@ -1362,15 +1376,19 @@ void GfxBatchRendererTest::singleMesh() {
   /* Check that texture coordinates, image data or whatever else didn't get
      flipped -- there should be a red pixel on the bottom left and grey pixel
      on the top left. */
-  CORRADE_COMPARE_AS(
+  CORRADE_COMPARE_WITH(
       renderer.colorImage(),
       Cr::Utility::Path::join(TEST_ASSETS,
                               "screenshots/GfxBatchRendererTestSingleMesh.png"),
-      Mn::DebugTools::CompareImageToFile);
+      (Mn::DebugTools::CompareImageToFile{data.maxThreshold,
+                                          data.meanThreshold}));
   CORRADE_COMPARE(color.size(), (Mn::Vector2i{128, 96}));
   CORRADE_COMPARE(color.format(), Mn::PixelFormat::RGBA8Unorm);
-  CORRADE_COMPARE(color.pixels<Mn::Color4ub>()[75][35], 0xcccccc_rgb);
-  CORRADE_COMPARE(color.pixels<Mn::Color4ub>()[20][38], 0x990000_rgb);
+  /* Fuzzy-comparing a single packed value is *annoying*; don't */
+  if (Mn::Math::equal(data.maxThreshold, 0.0f)) {
+    CORRADE_COMPARE(color.pixels<Mn::Color4ub>()[75][35], 0xcccccc_rgb);
+    CORRADE_COMPARE(color.pixels<Mn::Color4ub>()[20][38], 0x990000_rgb);
+  }
 }
 
 void GfxBatchRendererTest::meshHierarchy() {
@@ -1481,11 +1499,12 @@ void GfxBatchRendererTest::multipleMeshes() {
 
   /* Square should be the usual checkerboard, circle should be cyan, triangle
      magenta */
-  CORRADE_COMPARE_AS(
+  CORRADE_COMPARE_WITH(
       renderer.colorImage(),
       Cr::Utility::Path::join(
           TEST_ASSETS, "screenshots/GfxBatchRendererTestMultipleMeshes.png"),
-      Mn::DebugTools::CompareImageToFile);
+      (Mn::DebugTools::CompareImageToFile{data.maxThreshold,
+                                          data.meanThreshold}));
   CORRADE_COMPARE(color.size(), (Mn::Vector2i{128, 96}));
   CORRADE_COMPARE(color.format(), Mn::PixelFormat::RGBA8Unorm);
   CORRADE_COMPARE(color.pixels<Mn::Color4ub>()[18][44], 0x00cccc_rgb);
@@ -1566,11 +1585,12 @@ void GfxBatchRendererTest::multipleScenes() {
 
   /* Just a visual test, the texture transformation and material aspects were
      tested well enough above */
-  CORRADE_COMPARE_AS(
+  CORRADE_COMPARE_WITH(
       renderer.colorImage(),
       Cr::Utility::Path::join(
           TEST_ASSETS, "screenshots/GfxBatchRendererTestMultipleScenes.png"),
-      Mn::DebugTools::CompareImageToFile);
+      (Mn::DebugTools::CompareImageToFile{data.maxThreshold,
+                                          data.meanThreshold}));
 }
 
 void GfxBatchRendererTest::clearScene() {
@@ -1623,12 +1643,13 @@ void GfxBatchRendererTest::clearScene() {
   renderer.draw();
   Mn::Image2D color = renderer.colorImage();
   MAGNUM_VERIFY_NO_GL_ERROR();
-  CORRADE_COMPARE_AS(
+  CORRADE_COMPARE_WITH(
       renderer.colorImage(),
       Cr::Utility::Path::join(
           TEST_ASSETS,
           "screenshots/GfxBatchRendererTestMultipleScenesClearScene1.png"),
-      Mn::DebugTools::CompareImageToFile);
+      (Mn::DebugTools::CompareImageToFile{data.maxThreshold,
+                                          data.meanThreshold}));
 
   /* Add things to scene 1 again, transform them */
   CORRADE_COMPARE(renderer.addMeshHierarchy(1, "circle"), 0);
@@ -1642,11 +1663,12 @@ void GfxBatchRendererTest::clearScene() {
 
   /* Now it should match the output in multipleScenes() */
   renderer.draw();
-  CORRADE_COMPARE_AS(
+  CORRADE_COMPARE_WITH(
       renderer.colorImage(),
       Cr::Utility::Path::join(
           TEST_ASSETS, "screenshots/GfxBatchRendererTestMultipleScenes.png"),
-      Mn::DebugTools::CompareImageToFile);
+      (Mn::DebugTools::CompareImageToFile{data.maxThreshold,
+                                          data.meanThreshold}));
 }
 
 void GfxBatchRendererTest::cudaInterop() {
