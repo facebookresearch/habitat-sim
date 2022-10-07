@@ -3,18 +3,19 @@ import os
 from typing import Any, Dict, List, Optional
 
 import git
+from magnum import trade
 
 import habitat_sim
 from habitat_sim.utils.settings import default_sim_settings
 
 repo = git.Repo(".", search_parent_directories=True)
-dir_path = repo.working_tree_dir
-data_path = os.path.join(dir_path, "data")
+HABITAT_SIM_PATH = repo.working_tree_dir
+DATA_PATH = os.path.join(HABITAT_SIM_PATH, "data")
 YCB_PATH = os.path.join(
-    data_path, "versioned_data/ycb_1.2/ycb.scene_dataset_config.json"
+    DATA_PATH, "versioned_data/ycb_1.2/ycb.scene_dataset_config.json"
 )
 REPLICA_CAD_PATH = os.path.join(
-    data_path,
+    DATA_PATH,
     "versioned_data/replica_cad_dataset_1.5/replicaCAD.scene_dataset_config.json",
 )
 ROBOT_PATH = ""  # TODO, which dataset is this? Robot fetch?
@@ -34,7 +35,7 @@ class PrintColors:
     MAGENTA = "\u001b[35m"
     BROWN = "\033[0;33m"
     LIGHT_RED = "\033[1;31m"
-    LIGHT_PURPLE = "\033[1;35m"
+    PURPLE = "\033[1;35m"
     LIGHT_CYAN = "\033[1;36m"
     TEST = "\u001a[35m"
     WARNING = "\033[93m"
@@ -51,7 +52,62 @@ def print_in_color(print_string="", color=PrintColors.WHITE) -> None:
     print(color + print_string + PrintColors.ENDC)
 
 
+def process_imported_asset(asset_path: str = "") -> None:
+    """
+    Use the trade.AbstractImporter class to query data size of mesh and image
+    of asset
+    """
+    # Open AbstractImporter
+    manager = trade.ImporterManager()
+    importer = manager.load_and_instantiate("AnySceneImporter")
+    importer.open_file(asset_path)
+    print_in_color(f"Plugin dir: {manager.plugin_directory}", PrintColors.PURPLE)
+    print_in_color("-" * 72, PrintColors.PURPLE)
+
+    # Get mesh data
+    print_in_color("\nMesh Data", PrintColors.GREEN)
+    print_in_color("-" * 72, PrintColors.GREEN)
+    print_in_color(f"Scene importer class: {type(importer)}", PrintColors.GREEN)
+    mesh_data_size = 0  # bytes
+    for i in range(importer.mesh_count):
+        mesh: trade.MeshData = importer.mesh(i)
+        index_data_size = len(mesh.index_data)
+        vertex_data_size = len(mesh.vertex_data)
+        mesh_data_size = index_data_size + vertex_data_size
+        print_in_color(f"mesh name: {importer.mesh_name(i)}", PrintColors.GREEN)
+        print_in_color(f"mesh index: {i}", PrintColors.GREEN)
+        print_in_color(
+            f"mesh level count: {importer.mesh_level_count(i)}",
+            PrintColors.GREEN,
+        )
+        print_in_color(f"index data size: {index_data_size} bytes", PrintColors.GREEN)
+        print_in_color(f"vertex data size: {vertex_data_size} bytes", PrintColors.GREEN)
+        print_in_color(f"total mesh size: {mesh_data_size} bytes\n", PrintColors.GREEN)
+
+    # Get image data
+    print_in_color("-" * 72, PrintColors.RED)
+    print_in_color("Image Data", PrintColors.RED)
+    print_in_color(f"Image importer class: {type(importer)}", PrintColors.RED)
+    print_in_color(f"num 2D images: {importer.image2d_count}", PrintColors.RED)
+    image_data_size = 0  # bytes
+    for i in range(importer.image2d_count):
+        print_in_color(f"image index: {i}", PrintColors.RED)
+        for j in range(importer.image2d_level_count(i)):
+            image: trade.ImageData2D = importer.image2d(i, j)
+            image_data_size += len(image.data)
+            print_in_color(
+                f"- image mip map level: {j}, size - ({image.size.x}, {image.size.y})",
+                PrintColors.RED,
+            )
+        print_in_color(
+            f"image index {i} total data size: {image_data_size} bytes", PrintColors.RED
+        )
+
+    importer.close()
+
+
 def parse_dataset(sim: habitat_sim.Simulator = None, dataset_path: str = None) -> None:
+    """ """
     if sim is None:
         return
 
@@ -62,70 +118,74 @@ def parse_dataset(sim: habitat_sim.Simulator = None, dataset_path: str = None) -
     ):
         return
 
-    # ----------------------------------------------------------------
+    # get dataset that is currently being used by the simulator
     active_dataset: str = metadata_mediator.active_dataset
     print_in_color("* " * 39, PrintColors.BLUE)
     print_in_color(f"{active_dataset}\n", PrintColors.BLUE)
 
-    # ----------------------------------------------------------------
+    # get exhaustive list of information about the dataset
     dataset_report: str = metadata_mediator.dataset_report(dataset_path)
     print_in_color("* " * 39, PrintColors.CYAN)
     print_in_color(f"{dataset_report}\n", PrintColors.CYAN)
 
-    # ----------------------------------------------------------------
+    # get handles of every scene from the simulator
     scene_handles: List[str] = metadata_mediator.get_scene_handles()
-    print_in_color("* " * 39, PrintColors.LIGHT_PURPLE)
+    print_in_color("* " * 39, PrintColors.PURPLE)
     for handle in scene_handles:
-        print_in_color(f"{handle}\n", PrintColors.LIGHT_PURPLE)
+        print_in_color(f"{handle}\n", PrintColors.PURPLE)
 
-    # ----------------------------------------------------------------
+    # get list of Unified Robotics Description Format files
     urdf_paths = metadata_mediator.urdf_paths
     urdf_paths_list = list(urdf_paths.keys())
-    print_in_color("-" * 39, PrintColors.MAGENTA)
+    print_in_color("-" * 72, PrintColors.MAGENTA)
     print_in_color(f"num urdf paths: {len(urdf_paths_list)}\n", PrintColors.MAGENTA)
     for name in urdf_paths_list:
-        print_in_color("-" * 39, PrintColors.MAGENTA)
+        print_in_color("-" * 72, PrintColors.MAGENTA)
         print_in_color(f"{name}\n", PrintColors.MAGENTA)
 
-    # ----------------------------------------------------------------
-    # Get object attribute manager for test objects from dataset,
-    # load the dataset, store all the object template handles in a list,
+    # Get object attribute manager for objects from dataset, load the dataset,
+    # store all the object template handles in a list
     object_attributes_manager = sim.get_object_template_manager()
     object_attributes_manager.load_configs(dataset_path)
     object_template_handles = object_attributes_manager.get_file_template_handles("")
-    print_in_color("-" * 39, PrintColors.RED)
     print_in_color(
-        f"number of ojects in dataset: {len(object_template_handles)}",
+        f"\nnumber of ojects in dataset: {len(object_template_handles)}",
         PrintColors.RED,
     )
+    print_in_color("-" * 72, PrintColors.RED)
+    for handle in object_template_handles:
+        print_in_color(
+            handle,
+            PrintColors.RED,
+        )
 
-    # ----------------------------------------------------------------
+    # get asset template manager and get template handles of ech primitive asset
     asset_template_manager = metadata_mediator.asset_template_manager
     print_in_color(
         f"\nnumber of primitive asset templates: {asset_template_manager.get_num_templates()}",
         PrintColors.BROWN,
     )
-
-    # ----------------------------------------------------------------
-    print_in_color("-" * 39, PrintColors.BROWN)
+    print_in_color("-" * 72, PrintColors.BROWN)
     template_handles = asset_template_manager.get_template_handles()
     templates_info = asset_template_manager.get_templates_info()
     for (handle, info) in zip(template_handles, templates_info):
-        print_in_color(
-            f"-{handle}",
-            PrintColors.GREEN,
-        )
-        print_in_color(
-            f"{info}\n",
-            PrintColors.BROWN + PrintColors.UNDERLINE,
-        )
+        print_in_color(f"{handle}", PrintColors.GREEN)
+        print_in_color(f"{info}\n", PrintColors.BROWN + PrintColors.UNDERLINE)
 
-    # ----------------------------------------------------------------
+    # Get rigid object manager
     rigid_object_manager = sim.get_rigid_object_manager()
     print_in_color(rigid_object_manager.get_objects_CSV_info(), PrintColors.CYAN)
 
+    # Use AbstractImporter to query data of this asset
+    asset_path = os.path.join(
+        DATA_PATH,
+        "versioned_data/ycb_1.2/meshes/002_master_chef_can/google_16k/textured.glb",
+    )
+    process_imported_asset(asset_path)
+
 
 def make_configuration(sim_settings):
+    """ """
     # simulator configuration
     sim_cfg = habitat_sim.SimulatorConfiguration()
     if "scene_dataset_config_file" in sim_settings:
@@ -138,6 +198,7 @@ def make_configuration(sim_settings):
     sim_cfg.scene_id = sim_settings["scene"]
     assert os.path.exists(sim_cfg.scene_id)
 
+    # camera will likely not be used
     camera_sensor_spec = habitat_sim.CameraSensorSpec()
     camera_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
     camera_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
@@ -153,6 +214,7 @@ def make_configuration(sim_settings):
 def build_parser(
     parser: Optional[argparse.ArgumentParser] = None,
 ) -> argparse.ArgumentParser:
+    """ """
     if parser is None:
         parser = argparse.ArgumentParser(
             description="Tool to evaluate all objects in a dataset. Assesses CPU, GPU, mesh size, "
@@ -181,11 +243,11 @@ def build_parser(
         action="store_true",
         help="disable physics simulation (default: False)",
     )
-
     return parser
 
 
 def main() -> None:
+    """ """
     args = build_parser().parse_args()
 
     # Setting up sim_settings

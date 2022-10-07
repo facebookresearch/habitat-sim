@@ -344,8 +344,17 @@ if(NOT USE_SYSTEM_MAGNUM)
     # for Python as well; and reset that back to strange build procedures that
     # turn some features off again later can still work.
     if(BUILD_GUI_VIEWERS)
-      set(MAGNUM_PYTHON_BINDINGS_STATIC_PLUGINS MagnumPlugins::StbTrueTypeFont
-          CACHE STRING "" FORCE
+      set(
+        MAGNUM_PYTHON_BINDINGS_STATIC_PLUGINS
+        MagnumPlugins::StbTrueTypeFont
+        Magnum::AnyImageImporter
+        Magnum::AnySceneImporter
+        MagnumPlugins::BasisImporter
+        MagnumPlugins::GltfImporter
+        MagnumPlugins::AssimpImporter
+        MagnumPlugins::StanfordImporter
+        MagnumPlugins::StbImageImporter
+        CACHE STRING "" FORCE
       )
     else()
       set(MAGNUM_PYTHON_BINDINGS_STATIC_PLUGINS "" CACHE STRING "" FORCE)
