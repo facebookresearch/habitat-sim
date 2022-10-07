@@ -80,7 +80,9 @@ def convert_units(
 
 
 def process_imported_asset(
-    asset_path: str = "", unit_type: int = MemoryUnitConverter.KILOBYTES
+    importer: trade.AbstractImporter,
+    asset_path: str = "",
+    unit_type: int = MemoryUnitConverter.KILOBYTES,
 ) -> None:
     """
     Use the trade.AbstractImporter class to query data size of mesh and image
@@ -89,9 +91,7 @@ def process_imported_asset(
     conversion: int = math.pow(10.0, MemoryUnitConverter.EXPONENT[unit_type])
     unit_str: str = MemoryUnitConverter.UNIT_STRS[unit_type]
 
-    # Open AbstractImporter
-    manager = trade.ImporterManager()
-    importer = manager.load_and_instantiate("AnySceneImporter")
+    # Open file with AbstractImporter
     importer.open_file(asset_path)
 
     # Get mesh data
@@ -125,7 +125,6 @@ def process_imported_asset(
     # Get image data
     print_in_color("Image Data", PrintColors.RED)
     print_in_color("-" * 72, PrintColors.RED)
-    print_in_color(f"Image importer class: {type(importer)}", PrintColors.RED)
     print_in_color(f"num 2D images: {importer.image2d_count}", PrintColors.RED)
     image_data_size = 0  # bytes
     for i in range(importer.image2d_count):
@@ -143,10 +142,7 @@ def process_imported_asset(
             PrintColors.RED,
         )
 
-    print("\n")
-
-    # clean up
-    importer.close()
+    print("\n\n")
 
 
 def parse_dataset(sim: habitat_sim.Simulator = None, dataset_path: str = None) -> None:
@@ -210,15 +206,21 @@ def parse_dataset(sim: habitat_sim.Simulator = None, dataset_path: str = None) -
     object_template_handles = object_attributes_manager.get_file_template_handles("")
     print_in_color(
         f"\nnumber of ojects in dataset: {len(object_template_handles)}",
-        PrintColors.RED,
+        PrintColors.PURPLE,
     )
-    print_in_color("-" * 72, PrintColors.RED)
+    print_in_color("-" * 72, PrintColors.PURPLE)
+    print("")
+    manager = trade.ImporterManager()
+    importer = manager.load_and_instantiate("AnySceneImporter")
     for handle in object_template_handles:
         template = object_attributes_manager.get_template_by_handle(handle)
         asset_path = os.path.join(HABITAT_SIM_PATH, template.render_asset_handle)
         print_in_color(asset_path, PrintColors.CYAN)
         print_in_color("-" * 72, PrintColors.CYAN)
-        process_imported_asset(asset_path)
+        process_imported_asset(importer, asset_path)
+
+    # clean up
+    importer.close()
 
 
 def make_configuration(sim_settings):
