@@ -430,7 +430,7 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
               .setSubImage(0, {}, Mn::ImageView2D{*image});
         }
       } else
-        CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+        CORRADE_INTERNAL_ASSERT_UNREACHABLE(); /* LCOV_EXCL_LINE */
 
       arrayAppend(state_->textures, std::move(texture));
     }
