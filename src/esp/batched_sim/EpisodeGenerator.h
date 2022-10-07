@@ -20,6 +20,7 @@ struct EpisodeGeneratorConfig {
   bool useFixedRobotStartPos = false;
   bool useFixedRobotStartYaw = false;
   bool useFixedRobotJointStartPositions = false;
+  bool pickStartPosition = false;
   // for referenceEpisodeSetFilepath==true, you must set
   //    numStageVariations, numObjectVariations, minNontargetObjects,
   //    and maxNontargetObjects = -1

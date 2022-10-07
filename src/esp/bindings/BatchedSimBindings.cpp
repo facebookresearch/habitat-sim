@@ -115,6 +115,8 @@ void initBatchedSimBindings(py::module& m) {
                      &EpisodeGeneratorConfig::referenceEpisodeSetFilepath,
                      R"(Todo)")
       .def_readwrite("save_filepath", &EpisodeGeneratorConfig::saveFilepath,
+                     R"(Todo)")
+      .def_readwrite("pick_start_position", &EpisodeGeneratorConfig::pickStartPosition,
                      R"(Todo)");
 
   py::class_<BatchedSimulatorConfig, BatchedSimulatorConfig::ptr>(

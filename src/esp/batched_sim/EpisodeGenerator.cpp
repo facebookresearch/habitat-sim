@@ -283,12 +283,16 @@ void addModifiedEpisode(const EpisodeGeneratorConfig& config,
     collGrid.insertObstacle(spawn.startPos_, rotation, &freeObject.aabb_);
   }
 
+  auto& targetSpawn = safeVectorGet(
+        set.freeObjectSpawns_, episode.firstFreeObjectSpawnIndex_);
+
   // allow for slight variation in floor height
   // beware extra "basement" plane at y=-0.08; we don't want to allow snapping
   // down to that
   constexpr float allowedSnapDown = 0.05f;
   const auto& columnGrid = staticScene.columnGridSet_.getColumnGrid(0);
-  Mn::Range3D robotSpawnRange({columnGrid.minX, 0.04f, columnGrid.minZ},
+  Mn::Range3D robotSpawnRange;
+  robotSpawnRange=  Mn::Range3D({columnGrid.minX, 0.04f, columnGrid.minZ},
                               {columnGrid.getMaxX(), 0.04f,
                                columnGrid.getMaxZ()});  // just above the floor
 
@@ -301,7 +305,7 @@ void addModifiedEpisode(const EpisodeGeneratorConfig& config,
                                   collection, random, maxFailedPlacements);
 
   episode.targetObjIndex_ = refEpisode.targetObjIndex_;
-  int numSpawnAttempts = 4000;
+  int numSpawnAttempts = 40000;
   bool success = false;
   for (int i = 0; i < numSpawnAttempts; i++) {
     // find a robot spawn
@@ -321,17 +325,23 @@ void addModifiedEpisode(const EpisodeGeneratorConfig& config,
 
     ESP_CHECK(!config.useFixedRobotStartYaw,
               "addModifiedEpisode: config.useFixedRobotStartYaw must be false");
-    robotYaw = random.uniform_float(-float(Mn::Rad(Mn::Deg(180.f))),
-                                    float(Mn::Rad(Mn::Deg(180.f))));
 
-    rotation = yawToRotation(robotYaw);
 
     const auto& freeObject = *freeObjectPtr;
 
     Mn::Vector3 randomPos;
     int numAttempts = 0;
+    int maxNumAttemts = 1000;
     while (true) {
       numAttempts++;
+
+    if (config.pickStartPosition){
+      float spawndist = 1.0f + 3.0f * float(i) / float(numSpawnAttempts); // gradually increase distance from target
+      robotSpawnRange = Mn::Range3D({std::max(targetSpawn.startPos_.x() - spawndist, columnGrid.minX) , 0.04f, std::max(targetSpawn.startPos_.z() - spawndist, columnGrid.minZ)},
+                                {std::min(targetSpawn.startPos_.x() + spawndist, columnGrid.getMaxX()),  0.04f, std::min(targetSpawn.startPos_.z() + spawndist, columnGrid.getMaxZ())} 
+                                );  // just above the floor
+    }
+
       randomPos = Mn::Vector3(
           random.uniform_float(spawnRange.min().x(), spawnRange.max().x()),
           random.uniform_float(spawnRange.min().y(), spawnRange.max().y()),
@@ -340,8 +350,19 @@ void addModifiedEpisode(const EpisodeGeneratorConfig& config,
       if (!useExclusionRange || !exclusionRange.contains(randomPos)) {
         break;
       }
-      BATCHED_SIM_ASSERT(numAttempts < 1000);
+      BATCHED_SIM_ASSERT(numAttempts < maxNumAttemts);
     }
+
+    if (config.pickStartPosition){
+    //  robotYaw = std::atan2( (targetSpawn.startPos_.z() -  randomPos.z()) , (targetSpawn.startPos_.x() -  randomPos.x()));
+     robotYaw = std::atan2( (targetSpawn.startPos_.x() -  randomPos.x()) , (targetSpawn.startPos_.z() -  randomPos.z())) - float(Mn::Rad(Mn::Deg(90.f))) ;
+    }
+    else{
+      robotYaw = random.uniform_float(-float(Mn::Rad(Mn::Deg(180.f))),
+                          float(Mn::Rad(Mn::Deg(180.f))));
+    }
+
+    rotation = yawToRotation(robotYaw);
 
     Mn::Matrix4 mat = Mn::Matrix4::from(rotation.toMatrix(), randomPos);
 
