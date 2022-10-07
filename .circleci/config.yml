@@ -583,24 +583,7 @@ jobs:
               . ~/emsdk/emsdk_env.sh
               # Generate JS CodeConv
               npm run test_with_coverage
-      -  run:
-          name: Build, install habitat-sim with audio and run audio_agent script
-          no_output_timeout: 10m
-          command: |
-              export PATH=$HOME/miniconda/bin:$PATH
-              . activate habitat;
-              cd habitat-sim
-              pip install -r requirements.txt --progress-bar off
-              pip install imageio imageio-ffmpeg
-              git submodule update --init --recursive --jobs 8
-              python -u setup.py install --build-type "Release" --lto --headless --audio
-              python examples/tutorials/audio_agent.py
-      - save_cache:
-          key: ccache-{{ arch }}-{{ .Branch }}-{{ .BuildNum }}
-          background: true
-          paths:
-            - /home/circleci/.ccache
-      - run:
+      - run: &upload_coverage
           name: Upload test coverage
           command: |
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
@@ -623,6 +606,27 @@ jobs:
               #lcov --remove coverage.info "*/test/*" --output-file coverage.info > /dev/null
               #lcov --remove coverage.info "*/tests/*" --output-file coverage.info > /dev/null
               ./codecov -f coverage.info -cF CPP
+      -  run:
+          name: Build, install habitat-sim with audio and run audio_agent script
+          no_output_timeout: 10m
+          command: |
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat;
+              cd habitat-sim
+              pip install -r requirements.txt --progress-bar off
+              pip install imageio imageio-ffmpeg
+              git submodule update --init --recursive --jobs 8
+              python -u setup.py install --build-type "Release" --lto --headless --audio
+              python examples/tutorials/audio_agent.py
+      - save_cache:
+          key: ccache-{{ arch }}-{{ .Branch }}-{{ .BuildNum }}
+          background: true
+          paths:
+            - /home/circleci/.ccache
+      # Uploading test coverage again for code changed by the above rebuild.
+      # TODO: https://github.com/facebookresearch/habitat-sim/pull/1860 fixes
+      # this better, remove once it's merged
+      - run: *upload_coverage
 
 
 
