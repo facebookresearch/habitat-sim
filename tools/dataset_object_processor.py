@@ -1,5 +1,4 @@
 import argparse
-import math
 import os
 from typing import Any, Dict, List, Optional
 
@@ -24,8 +23,10 @@ ROBOT_PATH = ""  # TODO, which dataset is this? Robot fetch?
 
 class MemoryUnitConverter:
     """
-    class to convert computer memory value units, e.g.
-    1,000,000 bytes to 1 megabyte
+    class to convert computer memory value units, i.e.
+    1,024 bytes to 1 kilobyte
+    1,048,576 bytes to 1 megabyte
+    etc.
     """
 
     BYTES = 0
@@ -34,7 +35,7 @@ class MemoryUnitConverter:
     GIGABYTES = 3
 
     UNIT_STRS = ["bytes", "KB", "MB", "GB"]
-    EXPONENT = [1, -3, -6, -9]
+    UNIT_CONVERSIONS = [1, 1 << 10, 1 << 20, 1 << 30, 1 << 40]
 
 
 class PrintColors:
@@ -69,27 +70,32 @@ def print_in_color(print_string="", color=PrintColors.WHITE) -> None:
 
 
 def convert_units(
-    size: float,
-    conversion: float = 1.0,
-    decimals: int = 4,
+    size: float, unit_type: int = MemoryUnitConverter.KILOBYTES, decimals: int = 4
 ) -> float:
     """
     Convert units of a float, then round the result
     """
-    return round(size * conversion, decimals)
+    new_size = size / MemoryUnitConverter.UNIT_CONVERSIONS[unit_type]
+    return round(new_size, decimals)
+
+
+def get_mem_size_str(
+    size: float,
+    unit_type: int = MemoryUnitConverter.KILOBYTES,
+) -> str:
+    new_size: float = convert_units(size, unit_type)
+    unit_str: str = MemoryUnitConverter.UNIT_STRS[unit_type]
+    return f"{new_size} {unit_str}"
 
 
 def process_imported_asset(
     importer: trade.AbstractImporter,
     asset_path: str = "",
-    unit_type: int = MemoryUnitConverter.KILOBYTES,
 ) -> None:
     """
     Use the trade.AbstractImporter class to query data size of mesh and image
     of asset
     """
-    conversion: int = math.pow(10.0, MemoryUnitConverter.EXPONENT[unit_type])
-    unit_str: str = MemoryUnitConverter.UNIT_STRS[unit_type]
 
     # Open file with AbstractImporter
     importer.open_file(asset_path)
@@ -110,15 +116,15 @@ def process_imported_asset(
             PrintColors.GREEN,
         )
         print_in_color(
-            f"index data size: {convert_units(index_data_size, conversion)} {unit_str}",
+            f"index data size: {get_mem_size_str(index_data_size)}",
             PrintColors.GREEN,
         )
         print_in_color(
-            f"vertex data size: {convert_units(vertex_data_size, conversion)} {unit_str}",
+            f"vertex data size: {get_mem_size_str(vertex_data_size)}",
             PrintColors.GREEN,
         )
         print_in_color(
-            f"total mesh size: {convert_units(mesh_data_size, conversion)} {unit_str}\n",
+            f"total mesh size: {get_mem_size_str(mesh_data_size)}\n",
             PrintColors.GREEN,
         )
 
@@ -132,13 +138,13 @@ def process_imported_asset(
         for j in range(importer.image2d_level_count(i)):
             image: trade.ImageData2D = importer.image2d(i, j)
             image_data_size += len(image.data)
-            converted_size = convert_units(len(image.data), conversion)
+            converted_size_str = get_mem_size_str(len(image.data))
             print_in_color(
-                f"- image mip map level - {j}, size - ({image.size.x}, {image.size.y}), mem - {converted_size} {unit_str}",
+                f"- image mip map level - {j}, size - ({image.size.x}, {image.size.y}), mem - {converted_size_str}",
                 PrintColors.RED,
             )
         print_in_color(
-            f"image index {i} total data size: {convert_units(image_data_size, conversion)} {unit_str}",
+            f"image index {i} total data size: {get_mem_size_str(image_data_size)}",
             PrintColors.RED,
         )
 
