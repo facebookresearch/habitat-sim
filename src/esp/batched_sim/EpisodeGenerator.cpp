@@ -305,7 +305,7 @@ void addModifiedEpisode(const EpisodeGeneratorConfig& config,
                                   collection, random, maxFailedPlacements);
 
   episode.targetObjIndex_ = refEpisode.targetObjIndex_;
-  int numSpawnAttempts = 40000;
+  int numSpawnAttempts = 400000;
   bool success = false;
   for (int i = 0; i < numSpawnAttempts; i++) {
     // find a robot spawn
@@ -336,7 +336,7 @@ void addModifiedEpisode(const EpisodeGeneratorConfig& config,
       numAttempts++;
 
     if (config.pickStartPosition){
-      float spawndist = 1.0f + 3.0f * float(i) / float(numSpawnAttempts); // gradually increase distance from target
+      float spawndist = 0.0f + 4.0f * float(i) / float(numSpawnAttempts); // gradually increase distance from target
       robotSpawnRange = Mn::Range3D({std::max(targetSpawn.startPos_.x() - spawndist, columnGrid.minX) , 0.04f, std::max(targetSpawn.startPos_.z() - spawndist, columnGrid.minZ)},
                                 {std::min(targetSpawn.startPos_.x() + spawndist, columnGrid.getMaxX()),  0.04f, std::min(targetSpawn.startPos_.z() + spawndist, columnGrid.getMaxZ())} 
                                 );  // just above the floor
