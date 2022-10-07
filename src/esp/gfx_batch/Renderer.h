@@ -123,6 +123,10 @@ CORRADE_ENUMSET_OPERATORS(RendererFileFlags)
 
 struct SceneStats;
 
+// Even though Clang Format is told to skip formatting comments containing
+//  @section or @ref which can't be wrapped to prevent Doxygen bugs, it still
+//  wants to do that here. So I'm disabling it for this doc block altogether.
+// clang-format off
 /**
 @brief Batch renderer
 
@@ -378,6 +382,7 @@ magnum-sceneconverter --info-textures --info-images --info-materials \
   whole layer, or be a separate texture altogether.
 
 */
+// clang-format on
 class Renderer {
  public:
   /**
