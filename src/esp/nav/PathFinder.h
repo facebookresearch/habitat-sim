@@ -268,6 +268,12 @@ struct NavMeshSettings {
     filterWalkableLowHeightSpans = true;
   }
 
+  //! Load the settings from a JSON file
+  void readFromJSON(const std::string& jsonFile);
+
+  //! Save the settings to a JSON file
+  void writeToJSON(const std::string& jsonFile) const;
+
   NavMeshSettings() { setDefaults(); }
 
   ESP_SMART_POINTERS(NavMeshSettings)
