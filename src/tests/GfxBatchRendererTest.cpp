@@ -1284,6 +1284,8 @@ void GfxBatchRendererTest::defaults() {
   };
   // clang-format on
 
+  CORRADE_VERIFY(!renderer.flags());
+  CORRADE_COMPARE(!renderer.standaloneFlags(), testCaseInstanceId() == 0);
   CORRADE_COMPARE(renderer.tileSize(), (Mn::Vector2i{48, 32}));
   CORRADE_COMPARE(renderer.tileCount(), (Mn::Vector2i{2, 3}));
   CORRADE_COMPARE(renderer.sceneCount(), 6);
