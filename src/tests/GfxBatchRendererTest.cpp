@@ -1151,37 +1151,46 @@ void GfxBatchRendererTest::generateTestDataFourSquares() {
     }}, "yellow"), 3);
     // clang-format on
 
-  /* Otherwise, if we have a scene, the colors get baked into the meshes. If we
-     don't have a scene, it's handled below. */
-  } else if(data.scene) {
+    /* Otherwise, if we have a scene, the colors get baked into the meshes. If
+       we don't have a scene, it's handled below. */
+  } else if (data.scene) {
     /* Each triangle has two faces */
     Mn::Color3 white[]{0xffffff_rgbf, 0xffffff_rgbf};
     Mn::Color3 cyan[]{0x00ffff_rgbf, 0x00ffff_rgbf};
     Mn::Color3 magenta[]{0xff00ff_rgbf, 0xff00ff_rgbf};
     Mn::Color3 yellow[]{0xffff00_rgbf, 0xffff00_rgbf};
 
-    Mn::Trade::MeshData plane = Mn::MeshTools::generateIndices(Mn::Primitives::planeSolid(
+    Mn::Trade::MeshData plane =
+        Mn::MeshTools::generateIndices(Mn::Primitives::planeSolid(
             Mn::Primitives::PlaneFlag::TextureCoordinates));
-    CORRADE_COMPARE(converter->add(
-        Mn::MeshTools::combineFaceAttributes(
-            plane, {Mn::Trade::MeshAttributeData{
-                               Mn::Trade::MeshAttribute::Color,
-                               Cr::Containers::arrayView(white)}}), "white square"), 0);
-    CORRADE_COMPARE(converter->add(
-        Mn::MeshTools::combineFaceAttributes(
-            plane, {Mn::Trade::MeshAttributeData{
-                               Mn::Trade::MeshAttribute::Color,
-                               Cr::Containers::arrayView(cyan)}}), "cyan square"), 1);
-    CORRADE_COMPARE(converter->add(
-        Mn::MeshTools::combineFaceAttributes(
-            plane, {Mn::Trade::MeshAttributeData{
-                               Mn::Trade::MeshAttribute::Color,
-                               Cr::Containers::arrayView(magenta)}}), "magenta square"), 2);
-    CORRADE_COMPARE(converter->add(
-        Mn::MeshTools::combineFaceAttributes(
-            plane, {Mn::Trade::MeshAttributeData{
-                               Mn::Trade::MeshAttribute::Color,
-                               Cr::Containers::arrayView(yellow)}}), "yellow square"), 3);
+    CORRADE_COMPARE(
+        converter->add(Mn::MeshTools::combineFaceAttributes(
+                           plane, {Mn::Trade::MeshAttributeData{
+                                      Mn::Trade::MeshAttribute::Color,
+                                      Cr::Containers::arrayView(white)}}),
+                       "white square"),
+        0);
+    CORRADE_COMPARE(
+        converter->add(Mn::MeshTools::combineFaceAttributes(
+                           plane, {Mn::Trade::MeshAttributeData{
+                                      Mn::Trade::MeshAttribute::Color,
+                                      Cr::Containers::arrayView(cyan)}}),
+                       "cyan square"),
+        1);
+    CORRADE_COMPARE(
+        converter->add(Mn::MeshTools::combineFaceAttributes(
+                           plane, {Mn::Trade::MeshAttributeData{
+                                      Mn::Trade::MeshAttribute::Color,
+                                      Cr::Containers::arrayView(magenta)}}),
+                       "magenta square"),
+        2);
+    CORRADE_COMPARE(
+        converter->add(Mn::MeshTools::combineFaceAttributes(
+                           plane, {Mn::Trade::MeshAttributeData{
+                                      Mn::Trade::MeshAttribute::Color,
+                                      Cr::Containers::arrayView(yellow)}}),
+                       "yellow square"),
+        3);
   }
 
   /* Scene with
@@ -1239,7 +1248,7 @@ void GfxBatchRendererTest::generateTestDataFourSquares() {
 
   /* Override the above if we have no materials -- then the materials are -1
      and different meshes are used instead */
-  if(data.scene && !data.materials) {
+  if (data.scene && !data.materials) {
     scene->meshes[0].meshMaterial = -1;
     scene->meshes[1].meshMaterial = -1;
     scene->meshes[2].meshMaterial = -1;
@@ -1756,7 +1765,8 @@ void GfxBatchRendererTest::cudaInterop() {
   // clang-format on
 
   /* Mostly the same as singleMesh() */
-  CORRADE_VERIFY(renderer.addFile(Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch.gltf")));
+  CORRADE_VERIFY(renderer.addFile(
+      Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch.gltf")));
   renderer.camera(0) =
       Mn::Matrix4::orthographicProjection(2.0f * Mn::Vector2{4.0f / 3.0f, 1.0f},
                                           0.1f, 10.0f) *

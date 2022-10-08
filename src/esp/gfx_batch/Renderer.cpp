@@ -313,7 +313,8 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
   Cr::PluginManager::Manager<Mn::Trade::AbstractImporter> manager;
   Cr::Containers::Pointer<Mn::Trade::AbstractImporter> importer =
       manager.loadAndInstantiate(importerPlugin);
-  CORRADE_ASSERT(importer, "Renderer::addFile(): can't load importer plugin", {});
+  CORRADE_ASSERT(importer, "Renderer::addFile(): can't load importer plugin",
+                 {});
 
   /* Set up options for glTF import. We can also import any other files (such
      as serialized magnum blobs or BPS files), assume these don't need any
@@ -347,7 +348,7 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
 
   // TODO memory-map self-contained files (have a config option? do implicitly
   //  for glb, bps and ply?)
-  if(!importer->openFile(filename)) {
+  if (!importer->openFile(filename)) {
     Mn::Error{} << "Renderer::addFile(): can't open the file";
     return {};
   }
@@ -365,8 +366,9 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
          ++i) {
       const Cr::Containers::Optional<Mn::Trade::TextureData> textureData =
           importer->texture(i);
-      if(!textureData) {
-        Mn::Error{} << "Renderer::addFile(): can't import texture" << i << "of" << filename;
+      if (!textureData) {
+        Mn::Error{} << "Renderer::addFile(): can't import texture" << i << "of"
+                    << filename;
         return {};
       }
 
@@ -377,8 +379,9 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
             importer->image3DLevelCount(textureData->image());
         Cr::Containers::Optional<Mn::Trade::ImageData3D> image =
             importer->image3D(textureData->image());
-        if(!textureData) {
-          Mn::Error{} << "Renderer::addFile(): can't import 3D image" << textureData->image() << "of" << filename;
+        if (!textureData) {
+          Mn::Error{} << "Renderer::addFile(): can't import 3D image"
+                      << textureData->image() << "of" << filename;
           return {};
         }
 
@@ -412,8 +415,9 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
             importer->image2DLevelCount(textureData->image());
         Cr::Containers::Optional<Mn::Trade::ImageData2D> image =
             importer->image2D(textureData->image());
-        if(!textureData) {
-          Mn::Error{} << "Renderer::addFile(): can't import 2D image" << textureData->image() << "of" << filename;
+        if (!textureData) {
+          Mn::Error{} << "Renderer::addFile(): can't import 2D image"
+                      << textureData->image() << "of" << filename;
           return {};
         }
 
@@ -453,8 +457,9 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
   /* Import all meshes */
   for (Mn::UnsignedInt i = 0, iMax = importer->meshCount(); i != iMax; ++i) {
     Cr::Containers::Optional<Mn::Trade::MeshData> mesh = importer->mesh(i);
-    if(!mesh) {
-      Mn::Error{} << "Renderer::addFile(): can't import mesh" << i << "of" << filename;
+    if (!mesh) {
+      Mn::Error{} << "Renderer::addFile(): can't import mesh" << i << "of"
+                  << filename;
       return {};
     }
 
@@ -486,8 +491,9 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
     for (std::size_t i = 0; i != importer->materialCount(); ++i) {
       const Cr::Containers::Optional<Mn::Trade::MaterialData> material =
           importer->material(i);
-      if(!material) {
-        Mn::Error{} << "Renderer::addFile(): can't import material" << i << "of" << filename;
+      if (!material) {
+        Mn::Error{} << "Renderer::addFile(): can't import material" << i << "of"
+                    << filename;
         return {};
       }
 
@@ -518,10 +524,10 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
   /* Scene-less files are assumed to contain a single material-less mesh (such
      as STL files) */
   if (!importer->sceneCount()) {
-    if(importer->meshCount() != 1 || importer->materialCount()) {
+    if (importer->meshCount() != 1 || importer->materialCount()) {
       Mn::Error{} << "Renderer::addFile(): expected exactly one mesh and no "
-                   "material for a scene-less file"
-                       << filename;
+                     "material for a scene-less file"
+                  << filename;
       return {};
     }
 
@@ -537,21 +543,23 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
     CORRADE_ASSERT(flags & RendererFileFlag::Whole,
                    "Renderer::addFile(): scene-less file"
                        << filename
-                       << "has to be added with RendererFileFlag::Whole", {});
+                       << "has to be added with RendererFileFlag::Whole",
+                   {});
 
     /* If no name is specified, the full filename is used */
     const Cr::Containers::StringView usedName = name ? name : filename;
-    if(!state_->meshViewRangeForName
-            .insert({usedName, {meshViewOffset, meshViewOffset + 1}})
-            .second) {
-      Mn::Error{} << "Renderer::addFile(): node name" << usedName << "in" << filename << "already exists";
+    if (!state_->meshViewRangeForName
+             .insert({usedName, {meshViewOffset, meshViewOffset + 1}})
+             .second) {
+      Mn::Error{} << "Renderer::addFile(): node name" << usedName << "in"
+                  << filename << "already exists";
       return {};
     }
 
   } else {
-    if(importer->sceneCount() != 1) {
+    if (importer->sceneCount() != 1) {
       Mn::Error{} << "Renderer::addFile(): expected exactly one scene, got"
-                       << importer->sceneCount() << "in" << filename;
+                  << importer->sceneCount() << "in" << filename;
       return {};
     }
 
@@ -581,15 +589,19 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
       const Cr::Containers::Optional<Mn::UnsignedInt>
           meshViewIndexCountFieldId = scene->findFieldId(
               importer->sceneFieldForName("meshViewIndexCount"));
-      if(!meshViewIndexCountFieldId) {
-        Mn::Error{} << "Renderer::addFile(): no meshViewIndexCount field in the scene in" << filename;
+      if (!meshViewIndexCountFieldId) {
+        Mn::Error{} << "Renderer::addFile(): no meshViewIndexCount field in "
+                       "the scene in"
+                    << filename;
         return {};
       }
 
       const Cr::Containers::Optional<Mn::UnsignedInt> meshViewMaterialFieldId =
           scene->findFieldId(importer->sceneFieldForName("meshViewMaterial"));
-      if(!meshViewMaterialFieldId) {
-        Mn::Error{} << "Renderer::addFile(): no meshViewMaterial field in the scene in" << filename;
+      if (!meshViewMaterialFieldId) {
+        Mn::Error{}
+            << "Renderer::addFile(): no meshViewMaterial field in the scene in"
+            << filename;
         return {};
       }
 
@@ -611,14 +623,17 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
       }
       /* Not accessing SceneField::MeshMaterial directly, as it might not even
          be there */
-      scene->meshesMaterialsInto(nullptr, nullptr, meshViews.slice(&MeshView::materialId));
+      scene->meshesMaterialsInto(nullptr, nullptr,
+                                 meshViews.slice(&MeshView::materialId));
     }
 
     /* Add material offset to all material IDs. If the material is -1, use the
        default material (0). */
     for (Mn::Int& materialId : meshViews.slice(&MeshView::materialId)) {
-      if(materialId == -1) materialId = 0;
-      else materialId += materialOffset;
+      if (materialId == -1)
+        materialId = 0;
+      else
+        materialId += materialOffset;
     }
 
     /* Unless the file is treated as a whole, root scene nodes are used as
@@ -654,16 +669,17 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
             scene->childrenFor(root);
 
         Cr::Containers::String name = importer->objectName(root);
-        if(!name) {
+        if (!name) {
           Mn::Error{} << "Renderer::addFile(): node" << root << "in" << filename
-                                                   << "has no name";
+                      << "has no name";
           return {};
         }
-        if(!state_->meshViewRangeForName
-                .insert(
-                    {name, {offset, offset + Mn::UnsignedInt(children.size())}})
-                .second) {
-          Mn::Error{} << "Renderer::addFile(): node name" << name << "in" << filename << "already exists";
+        if (!state_->meshViewRangeForName
+                 .insert({name,
+                          {offset, offset + Mn::UnsignedInt(children.size())}})
+                 .second) {
+          Mn::Error{} << "Renderer::addFile(): node name" << name << "in"
+                      << filename << "already exists";
           return {};
         }
 
@@ -682,12 +698,13 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
       }
       /* If no name is specified, the full filename is used */
       const Cr::Containers::StringView usedName = name ? name : filename;
-      if(!state_->meshViewRangeForName
-              .insert({usedName,
-                       {meshViewOffset,
-                        meshViewOffset + Mn::UnsignedInt(flattened.size())}})
-              .second) {
-        Mn::Error{} << "Renderer::addFile(): node name" << usedName << "already exists";
+      if (!state_->meshViewRangeForName
+               .insert({usedName,
+                        {meshViewOffset,
+                         meshViewOffset + Mn::UnsignedInt(flattened.size())}})
+               .second) {
+        Mn::Error{} << "Renderer::addFile(): node name" << usedName
+                    << "already exists";
         return {};
       }
       CORRADE_INTERNAL_ASSERT(meshViewOffset + flattened.size() ==
@@ -732,7 +749,9 @@ bool Renderer::hasMeshHierarchy(const Cr::Containers::StringView name) const {
   // TODO return Optional<UnsignedInt> that can be reused in a subsequent
   //  addMeshHierarchy() call, in case the lookup proves to be too slow or in
   //  case the same string is about to be added many times
-  return state_->meshViewRangeForName.find(Cr::Containers::String::nullTerminatedView(name)) != state_->meshViewRangeForName.end();
+  return state_->meshViewRangeForName.find(
+             Cr::Containers::String::nullTerminatedView(name)) !=
+         state_->meshViewRangeForName.end();
 }
 
 std::size_t Renderer::addMeshHierarchy(const Mn::UnsignedInt sceneId,
