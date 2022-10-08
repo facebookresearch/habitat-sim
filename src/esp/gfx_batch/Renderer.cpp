@@ -726,6 +726,15 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
   return true;
 }
 
+bool Renderer::hasMeshHierarchy(const Cr::Containers::StringView name) const {
+  /* Using a non-owning wrapper over the view to avoid an allocated string copy
+     because yes hello STL you're uhhmazing */
+  // TODO return Optional<UnsignedInt> that can be reused in a subsequent
+  //  addMeshHierarchy() call, in case the lookup proves to be too slow or in
+  //  case the same string is about to be added many times
+  return state_->meshViewRangeForName.find(Cr::Containers::String::nullTerminatedView(name)) != state_->meshViewRangeForName.end();
+}
+
 std::size_t Renderer::addMeshHierarchy(const Mn::UnsignedInt sceneId,
                                        const Cr::Containers::StringView name,
                                        const Mn::Matrix4& transformation) {

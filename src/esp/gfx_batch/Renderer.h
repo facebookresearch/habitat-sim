@@ -493,6 +493,14 @@ class Renderer {
                RendererFileFlags flags = {});
 #endif
 
+  /**
+   * @brief If given mesh hierarchy exists
+   *
+   * Returns @cpp true @ce if @p name is a mesh hierarchy name added by any
+   * previous @ref addFile() call, @cpp false @ce otherwise.
+   */
+  bool hasMeshHierarchy(Corrade::Containers::StringView name) const;
+
 #ifdef DOXYGEN_GENERATING_OUTPUT
   /**
    * @brief Add a mesh hierarchy
@@ -506,6 +514,7 @@ class Renderer {
    * update transformations via @ref transformations(). The returned IDs are
    * *not* contiguous, the gaps correspond to number of child nodes in the
    * hierarchy.
+   * @see @ref hasMeshHierarchy()
    */
   std::size_t addMeshHierarchy(Magnum::UnsignedInt sceneId,
                                Corrade::Containers::StringView name,

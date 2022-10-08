@@ -1410,6 +1410,9 @@ void GfxBatchRendererTest::singleMesh() {
                                           0.1f, 10.0f) *
       Mn::Matrix4::translation(Mn::Vector3::zAxis(1.0f)).inverted();
 
+  CORRADE_VERIFY(renderer.hasMeshHierarchy("square"));
+  CORRADE_VERIFY(!renderer.hasMeshHierarchy("squares"));
+  CORRADE_VERIFY(!renderer.hasMeshHierarchy(""));
   CORRADE_COMPARE(renderer.addMeshHierarchy(0, "square"), 0);
 
   /* Stats will show two nodes now -- it adds one transformation for the
