@@ -571,26 +571,24 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
       Cr::Utility::copy(scene->field<Mn::Int>(*meshViewMaterialFieldId),
                         meshViews.slice(&MeshView::materialId));
 
-      /* If not, offsets are always zero, counts go directly from meshes and
-         materials from the builtin attribute */
+      /* If there are no mesh view fields, offsets are always zero, counts go
+         directly from meshes and materials from the builtin attribute */
     } else {
       for (MeshView& view : meshViews) {
         view.indexOffsetInBytes = 0;
         view.indexCount = state_->meshes[view.meshId].second().count();
       }
-      const Cr::Containers::Optional<Mn::UnsignedInt> meshMaterialFieldId =
-          scene->findFieldId(Mn::Trade::SceneField::MeshMaterial);
-      CORRADE_ASSERT(meshMaterialFieldId,
-                     "Renderer::addFile(): no"
-                         << Mn::Trade::SceneField::MeshMaterial
-                         << "field in the scene in" << filename, );
-      Cr::Utility::copy(scene->field<Mn::Int>(*meshMaterialFieldId),
-                        meshViews.slice(&MeshView::materialId));
+      /* Not accessing SceneField::MeshMaterial directly, as it might not even
+         be there */
+      scene->meshesMaterialsInto(nullptr, nullptr, meshViews.slice(&MeshView::materialId));
     }
 
-    /* Add material offset to all material IDs */
-    for (Mn::Int& materialId : meshViews.slice(&MeshView::materialId))
-      materialId += materialOffset;
+    /* Add material offset to all material IDs. If the material is -1, use the
+       default material (0). */
+    for (Mn::Int& materialId : meshViews.slice(&MeshView::materialId)) {
+      if(materialId == -1) materialId = 0;
+      else materialId += materialOffset;
+    }
 
     /* Unless the file is treated as a whole, root scene nodes are used as
        "named templates" to be referenced from addMeshHierarchy(). */

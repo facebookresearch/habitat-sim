@@ -73,11 +73,13 @@ const struct {
   bool wholeFile;
   bool scene;
   bool sceneDeepHierarchy;
+  bool materials;
   const char* filenamePrefix;
 } GenerateTestDataFourSquaresData[]{
-  {"", false, true, false, "batch-four-squares"},
-  {"deep scene hierarchy, as a whole file", true, true, true, "batch-four-squares-deep-hierarchy-whole-file"},
-  {"no scene, as a whole file", true, false, false, "batch-four-squares-no-scene"}
+  {"", false, true, false, true, "batch-four-squares"},
+  {"no materials", false, true, false, false, "batch-four-squares-no-materials"},
+  {"deep scene hierarchy, as a whole file", true, true, true, true, "batch-four-squares-deep-hierarchy-whole-file"},
+  {"no scene, as a whole file", true, false, false, false, "batch-four-squares-no-scene"}
 };
 // clang-format on
 
@@ -167,6 +169,11 @@ const struct {
       esp::gfx_batch::RendererFileFlag::Whole, "four squares"}}},
     {}, 5, 4, 4, 0xcc/255.0f,
     "GfxBatchRendererTestMeshHierarchy.png"},
+  {"multiple files, no materials", {Cr::InPlaceInit, {
+    {"batch-square-circle-triangle.gltf", {}, nullptr},
+    {"batch-four-squares-no-materials.gltf", {}, nullptr}}},
+    {}, 5, 4, 4, 1.0f,
+    "GfxBatchRendererTestMeshHierarchyNoTextures.png"},
   {"no textures", {Cr::InPlaceInit, {
     {"batch.gltf", {}, nullptr}}},
     esp::gfx_batch::RendererFlag::NoTextures, 5, 4, 1, 1.0f,
@@ -1071,8 +1078,8 @@ void GfxBatchRendererTest::generateTestDataFourSquares() {
   /* Begin file conversion */
   converter->beginFile(filename);
 
-  /* File with a scene and textures */
-  if (data.scene) {
+  /* File with materials */
+  if (data.materials) {
     /* (Flat) square mesh. Used with four different materials so it gets
        duplicated in the glTF. */
     CORRADE_VERIFY(converter->add(
@@ -1143,6 +1150,38 @@ void GfxBatchRendererTest::generateTestDataFourSquares() {
         Mn::Matrix3::scaling(Mn::Vector2{0.5f})}
     }}, "yellow"), 3);
     // clang-format on
+
+  /* Otherwise, if we have a scene, the colors get baked into the meshes. If we
+     don't have a scene, it's handled below. */
+  } else if(data.scene) {
+    /* Each triangle has two faces */
+    Mn::Color3 white[]{0xffffff_rgbf, 0xffffff_rgbf};
+    Mn::Color3 cyan[]{0x00ffff_rgbf, 0x00ffff_rgbf};
+    Mn::Color3 magenta[]{0xff00ff_rgbf, 0xff00ff_rgbf};
+    Mn::Color3 yellow[]{0xffff00_rgbf, 0xffff00_rgbf};
+
+    Mn::Trade::MeshData plane = Mn::MeshTools::generateIndices(Mn::Primitives::planeSolid(
+            Mn::Primitives::PlaneFlag::TextureCoordinates));
+    CORRADE_COMPARE(converter->add(
+        Mn::MeshTools::combineFaceAttributes(
+            plane, {Mn::Trade::MeshAttributeData{
+                               Mn::Trade::MeshAttribute::Color,
+                               Cr::Containers::arrayView(white)}}), "white square"), 0);
+    CORRADE_COMPARE(converter->add(
+        Mn::MeshTools::combineFaceAttributes(
+            plane, {Mn::Trade::MeshAttributeData{
+                               Mn::Trade::MeshAttribute::Color,
+                               Cr::Containers::arrayView(cyan)}}), "cyan square"), 1);
+    CORRADE_COMPARE(converter->add(
+        Mn::MeshTools::combineFaceAttributes(
+            plane, {Mn::Trade::MeshAttributeData{
+                               Mn::Trade::MeshAttribute::Color,
+                               Cr::Containers::arrayView(magenta)}}), "magenta square"), 2);
+    CORRADE_COMPARE(converter->add(
+        Mn::MeshTools::combineFaceAttributes(
+            plane, {Mn::Trade::MeshAttributeData{
+                               Mn::Trade::MeshAttribute::Color,
+                               Cr::Containers::arrayView(yellow)}}), "yellow square"), 3);
   }
 
   /* Scene with
@@ -1197,6 +1236,19 @@ void GfxBatchRendererTest::generateTestDataFourSquares() {
       Cr::Containers::stridedArrayView(scene->transformations).slice(&Scene::Transformation::trasformation)},
   }};
   // clang-format on
+
+  /* Override the above if we have no materials -- then the materials are -1
+     and different meshes are used instead */
+  if(data.scene && !data.materials) {
+    scene->meshes[0].meshMaterial = -1;
+    scene->meshes[1].meshMaterial = -1;
+    scene->meshes[2].meshMaterial = -1;
+    scene->meshes[3].meshMaterial = -1;
+    scene->meshes[0].mesh = 0;
+    scene->meshes[1].mesh = 1;
+    scene->meshes[2].mesh = 2;
+    scene->meshes[3].mesh = 3;
+  }
 
   /* Override the above if deep hierarchy is requested -- then the "right"
      squares are children of the left, with relative transform */
