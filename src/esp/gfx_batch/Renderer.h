@@ -448,16 +448,20 @@ class Renderer {
    * If @ref RendererFileFlag::Whole is set, the whole file is treated as a
    * single mesh hierarchy template instead, named @p name, or if @p name is
    * empty with the @p filename used as a name.
+   *
+   * Returns @cpp true @ce on success. Prints a message to @ref Magnum::Error
+   * and returns @cpp false @ce if the file can't be imported or the names are
+   * conflicting.
    */
-  void addFile(Corrade::Containers::StringView filename,
+  bool addFile(Corrade::Containers::StringView filename,
                RendererFileFlags flags = {},
                Corrade::Containers::StringView name = {});
 #else
   /* To avoid having to include StringView in the header */
-  void addFile(Corrade::Containers::StringView filename,
+  bool addFile(Corrade::Containers::StringView filename,
                RendererFileFlags flags,
                Corrade::Containers::StringView name);
-  void addFile(Corrade::Containers::StringView filename,
+  bool addFile(Corrade::Containers::StringView filename,
                RendererFileFlags flags = {});
 #endif
 
@@ -474,17 +478,17 @@ class Renderer {
    * for more information.
    */
   // TODO take an importer instead? that way the consumer can configure it
-  void addFile(Corrade::Containers::StringView filename,
+  bool addFile(Corrade::Containers::StringView filename,
                Corrade::Containers::StringView importerPlugin,
                RendererFileFlags flags = {},
                Corrade::Containers::StringView name = {});
 #else
   /* To avoid having to include StringView in the header */
-  void addFile(Corrade::Containers::StringView filename,
+  bool addFile(Corrade::Containers::StringView filename,
                Corrade::Containers::StringView importerPlugin,
                RendererFileFlags flags,
                Corrade::Containers::StringView name);
-  void addFile(Corrade::Containers::StringView filename,
+  bool addFile(Corrade::Containers::StringView filename,
                Corrade::Containers::StringView importerPlugin,
                RendererFileFlags flags = {});
 #endif

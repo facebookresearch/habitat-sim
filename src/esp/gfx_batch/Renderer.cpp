@@ -289,31 +289,31 @@ std::size_t Renderer::sceneCount() const {
   return state_->scenes.size();
 }
 
-void Renderer::addFile(const Cr::Containers::StringView filename,
+bool Renderer::addFile(const Cr::Containers::StringView filename,
                        const RendererFileFlags flags) {
   return addFile(filename, "AnySceneImporter", flags);
 }
 
-void Renderer::addFile(const Cr::Containers::StringView filename,
+bool Renderer::addFile(const Cr::Containers::StringView filename,
                        const RendererFileFlags flags,
                        Cr::Containers::StringView name) {
   return addFile(filename, "AnySceneImporter", flags, name);
 }
 
-void Renderer::addFile(const Cr::Containers::StringView filename,
+bool Renderer::addFile(const Cr::Containers::StringView filename,
                        const Cr::Containers::StringView importerPlugin,
                        const RendererFileFlags flags) {
   return addFile(filename, importerPlugin, flags, {});
 }
 
-void Renderer::addFile(const Cr::Containers::StringView filename,
+bool Renderer::addFile(const Cr::Containers::StringView filename,
                        const Cr::Containers::StringView importerPlugin,
                        const RendererFileFlags flags,
                        const Cr::Containers::StringView name) {
   Cr::PluginManager::Manager<Mn::Trade::AbstractImporter> manager;
   Cr::Containers::Pointer<Mn::Trade::AbstractImporter> importer =
       manager.loadAndInstantiate(importerPlugin);
-  CORRADE_INTERNAL_ASSERT(importer);
+  CORRADE_ASSERT(importer, "Renderer::addFile(): can't load importer plugin", {});
 
   /* Set up options for glTF import. We can also import any other files (such
      as serialized magnum blobs or BPS files), assume these don't need any
@@ -347,7 +347,10 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
 
   // TODO memory-map self-contained files (have a config option? do implicitly
   //  for glb, bps and ply?)
-  CORRADE_INTERNAL_ASSERT_OUTPUT(importer->openFile(filename));
+  if(!importer->openFile(filename)) {
+    Mn::Error{} << "Renderer::addFile(): can't open the file";
+    return {};
+  }
 
   /* Remember the count of data already present to offset the references with
      them */
@@ -362,7 +365,10 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
          ++i) {
       const Cr::Containers::Optional<Mn::Trade::TextureData> textureData =
           importer->texture(i);
-      CORRADE_INTERNAL_ASSERT(textureData);
+      if(!textureData) {
+        Mn::Error{} << "Renderer::addFile(): can't import texture" << i << "of" << filename;
+        return {};
+      }
 
       /* 2D textures are imported as single-layer 2D array textures */
       Mn::GL::Texture2DArray texture;
@@ -371,7 +377,11 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
             importer->image3DLevelCount(textureData->image());
         Cr::Containers::Optional<Mn::Trade::ImageData3D> image =
             importer->image3D(textureData->image());
-        CORRADE_INTERNAL_ASSERT(image);
+        if(!textureData) {
+          Mn::Error{} << "Renderer::addFile(): can't import 3D image" << textureData->image() << "of" << filename;
+          return {};
+        }
+
         texture
             .setMinificationFilter(textureData->minificationFilter(),
                                    textureData->mipmapFilter())
@@ -402,7 +412,11 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
             importer->image2DLevelCount(textureData->image());
         Cr::Containers::Optional<Mn::Trade::ImageData2D> image =
             importer->image2D(textureData->image());
-        CORRADE_INTERNAL_ASSERT(image);
+        if(!textureData) {
+          Mn::Error{} << "Renderer::addFile(): can't import 2D image" << textureData->image() << "of" << filename;
+          return {};
+        }
+
         texture
             .setMinificationFilter(textureData->minificationFilter(),
                                    textureData->mipmapFilter())
@@ -439,7 +453,11 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
   /* Import all meshes */
   for (Mn::UnsignedInt i = 0, iMax = importer->meshCount(); i != iMax; ++i) {
     Cr::Containers::Optional<Mn::Trade::MeshData> mesh = importer->mesh(i);
-    CORRADE_INTERNAL_ASSERT(mesh);
+    if(!mesh) {
+      Mn::Error{} << "Renderer::addFile(): can't import mesh" << i << "of" << filename;
+      return {};
+    }
+
     /* Make the mesh indexed if it isn't */
     if (!mesh->isIndexed())
       mesh = Mn::MeshTools::removeDuplicates(*mesh);
@@ -468,7 +486,11 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
     for (std::size_t i = 0; i != importer->materialCount(); ++i) {
       const Cr::Containers::Optional<Mn::Trade::MaterialData> material =
           importer->material(i);
-      CORRADE_INTERNAL_ASSERT(material);
+      if(!material) {
+        Mn::Error{} << "Renderer::addFile(): can't import material" << i << "of" << filename;
+        return {};
+      }
+
       const auto& flatMaterial = material->as<Mn::Trade::FlatMaterialData>();
       materials[i] = Mn::Shaders::PhongMaterialUniform{}.setAmbientColor(
           flatMaterial.color());
@@ -496,10 +518,13 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
   /* Scene-less files are assumed to contain a single material-less mesh (such
      as STL files) */
   if (!importer->sceneCount()) {
-    CORRADE_ASSERT(importer->meshCount() == 1 && !importer->materialCount(),
-                   "Renderer::addFile(): expected exactly one mesh and no "
+    if(importer->meshCount() != 1 || importer->materialCount()) {
+      Mn::Error{} << "Renderer::addFile(): expected exactly one mesh and no "
                    "material for a scene-less file"
-                       << filename, );
+                       << filename;
+      return {};
+    }
+
     /* Material 0 is reserved for such purposes */
     MeshView& view = arrayAppend(state_->meshViews, Cr::InPlaceInit);
     view.meshId = meshOffset;
@@ -512,20 +537,24 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
     CORRADE_ASSERT(flags & RendererFileFlag::Whole,
                    "Renderer::addFile(): scene-less file"
                        << filename
-                       << "has to be added with RendererFileFlag::Whole", );
+                       << "has to be added with RendererFileFlag::Whole", {});
 
     /* If no name is specified, the full filename is used */
     const Cr::Containers::StringView usedName = name ? name : filename;
-    CORRADE_ASSERT_OUTPUT(
-        state_->meshViewRangeForName
+    if(!state_->meshViewRangeForName
             .insert({usedName, {meshViewOffset, meshViewOffset + 1}})
-            .second,
-        "Renderer::addFile(): node name" << usedName << "already exists", );
+            .second) {
+      Mn::Error{} << "Renderer::addFile(): node name" << usedName << "in" << filename << "already exists";
+      return {};
+    }
 
   } else {
-    CORRADE_ASSERT(importer->sceneCount() == 1,
-                   "Renderer::addFile(): expected exactly one scene, got"
-                       << importer->sceneCount() << "in" << filename, );
+    if(importer->sceneCount() != 1) {
+      Mn::Error{} << "Renderer::addFile(): expected exactly one scene, got"
+                       << importer->sceneCount() << "in" << filename;
+      return {};
+    }
+
     Cr::Containers::Optional<Mn::Trade::SceneData> scene = importer->scene(0);
     CORRADE_INTERNAL_ASSERT(scene);
 
@@ -552,16 +581,18 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
       const Cr::Containers::Optional<Mn::UnsignedInt>
           meshViewIndexCountFieldId = scene->findFieldId(
               importer->sceneFieldForName("meshViewIndexCount"));
-      CORRADE_ASSERT(
-          meshViewIndexCountFieldId,
-          "Renderer::addFile(): no meshViewIndexCount field in the scene in"
-              << filename, );
+      if(!meshViewIndexCountFieldId) {
+        Mn::Error{} << "Renderer::addFile(): no meshViewIndexCount field in the scene in" << filename;
+        return {};
+      }
+
       const Cr::Containers::Optional<Mn::UnsignedInt> meshViewMaterialFieldId =
           scene->findFieldId(importer->sceneFieldForName("meshViewMaterial"));
-      CORRADE_ASSERT(
-          meshViewMaterialFieldId,
-          "Renderer::addFile(): no meshViewMaterial field in the scene in"
-              << filename, );
+      if(!meshViewMaterialFieldId) {
+        Mn::Error{} << "Renderer::addFile(): no meshViewMaterial field in the scene in" << filename;
+        return {};
+      }
+
       Cr::Utility::copy(
           scene->field<Mn::UnsignedInt>(*meshViewIndexOffsetFieldId),
           meshViews.slice(&MeshView::indexOffsetInBytes));
@@ -623,16 +654,19 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
             scene->childrenFor(root);
 
         Cr::Containers::String name = importer->objectName(root);
-        CORRADE_ASSERT(name,
-                       "Renderer::addFile(): node" << root << "in" << filename
-                                                   << "has no name", );
-        CORRADE_ASSERT_OUTPUT(
-            state_->meshViewRangeForName
+        if(!name) {
+          Mn::Error{} << "Renderer::addFile(): node" << root << "in" << filename
+                                                   << "has no name";
+          return {};
+        }
+        if(!state_->meshViewRangeForName
                 .insert(
                     {name, {offset, offset + Mn::UnsignedInt(children.size())}})
-                .second,
-            "Renderer::addFile(): node name" << name << "in" << filename
-                                             << "already exists", );
+                .second) {
+          Mn::Error{} << "Renderer::addFile(): node name" << name << "in" << filename << "already exists";
+          return {};
+        }
+
         offset += children.size();
       }
       CORRADE_INTERNAL_ASSERT(offset == state_->meshViews.size());
@@ -648,13 +682,14 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
       }
       /* If no name is specified, the full filename is used */
       const Cr::Containers::StringView usedName = name ? name : filename;
-      CORRADE_ASSERT_OUTPUT(
-          state_->meshViewRangeForName
+      if(!state_->meshViewRangeForName
               .insert({usedName,
                        {meshViewOffset,
                         meshViewOffset + Mn::UnsignedInt(flattened.size())}})
-              .second,
-          "Renderer::addFile(): node name" << usedName << "already exists", );
+              .second) {
+        Mn::Error{} << "Renderer::addFile(): node name" << usedName << "already exists";
+        return {};
+      }
       CORRADE_INTERNAL_ASSERT(meshViewOffset + flattened.size() ==
                               state_->meshViews.size());
     }
@@ -688,6 +723,7 @@ void Renderer::addFile(const Cr::Containers::StringView filename,
   /* Bind buffers that don't change per-view. All shaders share the same
      binding points so it's fine to use an arbitrary one */
   state_->shaders.begin()->second.bindMaterialBuffer(state_->materialUniform);
+  return true;
 }
 
 std::size_t Renderer::addMeshHierarchy(const Mn::UnsignedInt sceneId,

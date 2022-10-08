@@ -1359,9 +1359,9 @@ void GfxBatchRendererTest::defaults() {
   /* Add a file, because that's currently required */
   // TODO make it non-required (instantiate some empty shader if nothing)
   for (const auto& file : data.gltfFilenames)
-    renderer.addFile(
+    CORRADE_VERIFY(renderer.addFile(
         Cr::Utility::Path::join({TEST_ASSETS, "scenes", file.first()}),
-        file.second(), file.third());
+        file.second(), file.third()));
 
   /* Nothing should be drawn, just the clear color */
   renderer.draw();
@@ -1400,9 +1400,9 @@ void GfxBatchRendererTest::singleMesh() {
   // clang-format on
 
   for (const auto& file : data.gltfFilenames)
-    renderer.addFile(
+    CORRADE_VERIFY(renderer.addFile(
         Cr::Utility::Path::join({TEST_ASSETS, "scenes", file.first()}),
-        file.second(), file.third());
+        file.second(), file.third()));
 
   /* Undo the aspect ratio, move camera back */
   renderer.camera(0) =
@@ -1460,9 +1460,9 @@ void GfxBatchRendererTest::meshHierarchy() {
   // clang-format on
 
   for (const auto& file : data.gltfFilenames)
-    renderer.addFile(
+    CORRADE_VERIFY(renderer.addFile(
         Cr::Utility::Path::join({TEST_ASSETS, "scenes", file.first()}),
-        file.second(), file.third());
+        file.second(), file.third()));
 
   /* Undo the aspect ratio, move camera back */
   renderer.camera(0) =
@@ -1518,9 +1518,9 @@ void GfxBatchRendererTest::multipleMeshes() {
   // clang-format on
 
   for (const auto& file : data.gltfFilenames)
-    renderer.addFile(
+    CORRADE_VERIFY(renderer.addFile(
         Cr::Utility::Path::join({TEST_ASSETS, "scenes", file.first()}),
-        file.second(), file.third());
+        file.second(), file.third()));
 
   renderer.camera(0) =
       Mn::Matrix4::orthographicProjection(2.0f * Mn::Vector2{4.0f / 3.0f, 1.0f},
@@ -1579,9 +1579,9 @@ void GfxBatchRendererTest::multipleScenes() {
   // clang-format on
 
   for (const auto& file : data.gltfFilenames)
-    renderer.addFile(
+    CORRADE_VERIFY(renderer.addFile(
         Cr::Utility::Path::join({TEST_ASSETS, "scenes", file.first()}),
-        file.second(), file.third());
+        file.second(), file.third()));
 
   renderer.camera(0) =
       Mn::Matrix4::orthographicProjection(2.0f * Mn::Vector2{1.0f, 4.0f / 3.0f},
@@ -1661,9 +1661,9 @@ void GfxBatchRendererTest::clearScene() {
   // clang-format on
 
   for (const auto& file : data.gltfFilenames)
-    renderer.addFile(
+    CORRADE_VERIFY(renderer.addFile(
         Cr::Utility::Path::join({TEST_ASSETS, "scenes", file.first()}),
-        file.second(), file.third());
+        file.second(), file.third()));
 
   renderer.camera(0) =
       Mn::Matrix4::orthographicProjection(2.0f * Mn::Vector2{1.0f, 4.0f / 3.0f},
@@ -1753,7 +1753,7 @@ void GfxBatchRendererTest::cudaInterop() {
   // clang-format on
 
   /* Mostly the same as singleMesh() */
-  renderer.addFile(Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch.gltf"));
+  CORRADE_VERIFY(renderer.addFile(Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch.gltf")));
   renderer.camera(0) =
       Mn::Matrix4::orthographicProjection(2.0f * Mn::Vector2{4.0f / 3.0f, 1.0f},
                                           0.1f, 10.0f) *
