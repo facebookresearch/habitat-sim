@@ -453,6 +453,8 @@ class Renderer {
    * and returns @cpp false @ce if the file can't be imported or the names are
    * conflicting.
    */
+  // TODO the name could be used as a prefix for hierarchy template names to
+  //  make it possible to add several files of the same name
   bool addFile(Corrade::Containers::StringView filename,
                RendererFileFlags flags = {},
                Corrade::Containers::StringView name = {});
@@ -477,7 +479,8 @@ class Renderer {
    * See @ref addFile(Corrade::Containers::StringView, RendererFileFlags, Corrade::Containers::StringView)
    * for more information.
    */
-  // TODO take an importer instead? that way the consumer can configure it
+  // TODO take an importer instead? that way the consumer can configure it,
+  //  retrieve its own data from it...
   bool addFile(Corrade::Containers::StringView filename,
                Corrade::Containers::StringView importerPlugin,
                RendererFileFlags flags = {},
