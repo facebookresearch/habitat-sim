@@ -18,7 +18,7 @@ YCB_PATH = os.path.join(
 )
 REPLICA_CAD_PATH = os.path.join(
     DATA_PATH,
-    "versioned_data/replica_cad_dataset_1.5/replicaCAD.scene_dataset_config.json",
+    "versioned_data/replica_cad_dataset_1.5/reHABITAT_SIM_PATHplicaCAD.scene_dataset_config.json",
 )
 ROBOT_PATH = ""  # TODO, which dataset is this? Robot fetch?
 
@@ -27,6 +27,60 @@ class CSVWriter:
     """
     Generalized utility to write csv files
     """
+
+    csv_dir_path = None
+    file_path = None
+
+    def set_csv_dir_path(csv_dir_path: str = None) -> None:
+        """"""
+        if csv_dir_path is None:
+            CSVWriter.csv_dir_path = f"{DATA_PATH}/dataset_csvs"
+        else:
+            CSVWriter.csv_dir_path = csv_dir_path
+
+    def create_unique_filename() -> str:
+        """ """
+        # Current date and time so we can make unique file names for each csv
+        date_and_time = datetime.datetime.now()
+
+        # year-month-day
+        date = date_and_time.strftime("%Y-%m-%d")
+
+        # hour:min:sec - capital H is military time, %I is standard time
+        # (am/pm time format)
+        time = date_and_time.strftime("%H:%M:%S")
+
+        # make directory to store csvs if it doesn't exist
+        if CSVWriter.csv_dir_path is None:
+            CSVWriter.set_csv_dir_path()
+        dir_exists = os.path.exists(CSVWriter.csv_dir_path)
+        if not dir_exists:
+            os.makedirs(CSVWriter.csv_dir_path)
+
+        # create csv file name (TODO: make more descriptive file name)
+        CSVWriter.file_path = f"{CSVWriter.csv_dir_path}/date_{date}__time_{time}.csv"
+        return CSVWriter.file_path
+
+    def write_file(
+        headers: List[str] = None,
+        csv_rows: List[str] = None,
+        file_path: str = None,
+    ) -> None:
+        """"""
+        if headers is None:
+            raise RuntimeError("No headers provided to CSVWriter.write_file().")
+        if csv_rows is None:
+            raise RuntimeError("No CSV file data provided to CSVWriter.write_file().")
+        if file_path is None:
+            if CSVWriter.file_path is None:
+                file_path = CSVWriter.create_unique_filename()
+            else:
+                file_path = CSVWriter.file_path
+
+        with open(file_path, "w") as csv_file:
+            writer = csv.writer(csv_file)
+            writer.writerow(headers)
+            writer.writerows(csv_rows)
 
 
 class MemoryUnitConverter:
@@ -202,7 +256,7 @@ def parse_dataset(
     object_attributes_manager.load_configs(dataset_path)
     object_template_handles = object_attributes_manager.get_file_template_handles("")
     print_in_color(
-        f"\nnumber of ojects in dataset: {len(object_template_handles)}",
+        f"\nnumber of objects in dataset: {len(object_template_handles)}",
         PrintColors.PURPLE,
     )
     print_in_color("-" * 72, PrintColors.PURPLE)
@@ -222,27 +276,10 @@ def parse_dataset(
     return csv_rows
 
 
-def write_csv(csv_rows: List[str]) -> None:
+def write_csv(csv_rows: List[str] = None) -> None:
     """ """
-    # Current date and time so we can make unique file names for each csv
-    date_and_time = datetime.datetime.now()
-
-    # year-month-day
-    date = date_and_time.strftime("%Y-%m-%d")
-
-    # hour:min:sec - capital H is military time, %I is standard time
-    # (am/pm time format)
-    time = date_and_time.strftime("%H:%M:%S")
-
-    # make directory to store csvs if it doesn't exist
-    csv_dir_path = f"{DATA_PATH}/dataset_csvs"
-    dir_exists = os.path.exists(csv_dir_path)
-    if not dir_exists:
-        os.makedirs(csv_dir_path)
-
-    # create csv file and write data to it
-    # (make more descriptive file name)
-    file_path = f"{csv_dir_path}/date_{date}__time_{time}.csv"
+    CSVWriter.set_csv_dir_path()
+    file_path = CSVWriter.create_unique_filename()
     print_in_color(f"Writing csv results to {file_path}", PrintColors.CYAN)
     headers = [
         "mesh name",
@@ -251,10 +288,7 @@ def write_csv(csv_rows: List[str]) -> None:
         "total mesh data size",
         "image data size",
     ]
-    with open(file_path, "w") as csv_file:
-        writer = csv.writer(csv_file)
-        writer.writerow(headers)
-        writer.writerows(csv_rows)
+    CSVWriter.write_file(headers, csv_rows)
 
 
 def make_configuration(sim_settings):
