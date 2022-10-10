@@ -23,6 +23,12 @@ REPLICA_CAD_PATH = os.path.join(
 ROBOT_PATH = ""  # TODO, which dataset is this? Robot fetch?
 
 
+class CSVWriter:
+    """
+    Generalized utility to write csv files
+    """
+
+
 class MemoryUnitConverter:
     """
     class to convert computer memory value units, i.e.
