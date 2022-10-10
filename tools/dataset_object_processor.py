@@ -347,6 +347,7 @@ def build_parser(
     )
     parser.add_argument(
         "--disable_physics",
+        default=False,
         action="store_true",
         help="disable physics simulation (default: False)",
     )
