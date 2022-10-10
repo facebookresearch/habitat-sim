@@ -43,12 +43,11 @@ git clone https://github.com/facebookresearch/habitat-sim --depth 1
 #Install Requirements.
 cd /content/habitat-lab/
 set +e
-pip install -r ./requirements.txt
+pip install -r ./habitat-lab/requirements.txt
 reqs=(./habitat_baselines/**/requirements.txt)
 pip install "${reqs[@]/#/-r}"
 set -e
-python setup.py develop --all
-pip install . #Reinstall to trigger sys.path update
+pip install -e habitat-lab
 cd /content/habitat-sim/
 
 #Download Assets

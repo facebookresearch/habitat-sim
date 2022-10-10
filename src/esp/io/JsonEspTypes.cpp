@@ -194,5 +194,52 @@ bool fromJsonValue(const JsonGenericValue& obj,
   return success;
 }
 
+JsonGenericValue toJsonValue(const esp::nav::NavMeshSettings& x,
+                             JsonAllocator& allocator) {
+  JsonGenericValue obj(rapidjson::kObjectType);
+  addMember(obj, "cellSize", x.cellSize, allocator);
+  addMember(obj, "cellHeight", x.cellHeight, allocator);
+  addMember(obj, "agentHeight", x.agentHeight, allocator);
+  addMember(obj, "agentRadius", x.agentRadius, allocator);
+  addMember(obj, "agentMaxClimb", x.agentMaxClimb, allocator);
+  addMember(obj, "agentMaxSlope", x.agentMaxSlope, allocator);
+  addMember(obj, "regionMinSize", x.regionMinSize, allocator);
+  addMember(obj, "regionMergeSize", x.regionMergeSize, allocator);
+  addMember(obj, "edgeMaxLen", x.edgeMaxLen, allocator);
+  addMember(obj, "edgeMaxError", x.edgeMaxError, allocator);
+  addMember(obj, "vertsPerPoly", x.vertsPerPoly, allocator);
+  addMember(obj, "detailSampleDist", x.detailSampleDist, allocator);
+  addMember(obj, "detailSampleMaxError", x.detailSampleMaxError, allocator);
+  addMember(obj, "filterLowHangingObstacles", x.filterLowHangingObstacles,
+            allocator);
+  addMember(obj, "filterLedgeSpans", x.filterLedgeSpans, allocator);
+  addMember(obj, "filterWalkableLowHeightSpans", x.filterWalkableLowHeightSpans,
+            allocator);
+
+  return obj;
+}
+
+bool fromJsonValue(const JsonGenericValue& obj, esp::nav::NavMeshSettings& x) {
+  readMember(obj, "cellSize", x.cellSize);
+  readMember(obj, "cellHeight", x.cellHeight);
+  readMember(obj, "agentHeight", x.agentHeight);
+  readMember(obj, "agentRadius", x.agentRadius);
+  readMember(obj, "agentMaxClimb", x.agentMaxClimb);
+  readMember(obj, "agentMaxSlope", x.agentMaxSlope);
+  readMember(obj, "regionMinSize", x.regionMinSize);
+  readMember(obj, "regionMergeSize", x.regionMergeSize);
+  readMember(obj, "edgeMaxLen", x.edgeMaxLen);
+  readMember(obj, "edgeMaxError", x.edgeMaxError);
+  readMember(obj, "vertsPerPoly", x.vertsPerPoly);
+  readMember(obj, "detailSampleDist", x.detailSampleDist);
+  readMember(obj, "detailSampleMaxError", x.detailSampleMaxError);
+  readMember(obj, "filterLowHangingObstacles", x.filterLowHangingObstacles);
+  readMember(obj, "filterLedgeSpans", x.filterLedgeSpans);
+  readMember(obj, "filterWalkableLowHeightSpans",
+             x.filterWalkableLowHeightSpans);
+
+  return true;
+}
+
 }  // namespace io
 }  // namespace esp

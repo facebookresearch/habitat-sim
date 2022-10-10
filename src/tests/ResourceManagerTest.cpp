@@ -12,10 +12,12 @@
 #include <Magnum/Math/Range.h>
 #include <string>
 
+#include "esp/assets/MeshData.h"
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/WindowlessContext.h"
+#include "esp/metadata/MetadataMediator.h"
 #include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/scene/SceneManager.h"
 

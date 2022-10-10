@@ -65,7 +65,10 @@
 #include "esp/sensor/AudioSensor.h"
 #endif  // ESP_BUILD_WITH_AUDIO
 
+#include "esp/metadata/MetadataMediator.h"
 #include "esp/physics/configure.h"
+#include "esp/physics/objectManagers/ArticulatedObjectManager.h"
+#include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/sensor/CameraSensor.h"
 #include "esp/sensor/EquirectangularSensor.h"
 #include "esp/sensor/FisheyeSensor.h"

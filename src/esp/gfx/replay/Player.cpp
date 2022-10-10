@@ -4,8 +4,11 @@
 
 #include "Player.h"
 
+#include <Corrade/Utility/Path.h>
+
 #include "esp/assets/ResourceManager.h"
 #include "esp/core/Esp.h"
+#include "esp/io/Json.h"
 #include "esp/io/JsonAllTypes.h"
 
 #include <rapidjson/document.h>

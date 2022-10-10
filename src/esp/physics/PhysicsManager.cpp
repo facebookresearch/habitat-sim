@@ -5,6 +5,8 @@
 #include "PhysicsManager.h"
 #include <Magnum/Math/Range.h>
 #include "esp/assets/CollisionMeshData.h"
+#include "esp/assets/ResourceManager.h"
+#include "esp/metadata/managers/PhysicsAttributesManager.h"
 #include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/sim/Simulator.h"
@@ -76,6 +78,36 @@ bool PhysicsManager::addStage(
 
   return sceneSuccess;
 }  // PhysicsManager::addStage
+
+int PhysicsManager::addObject(const std::string& attributesHandle,
+                              scene::SceneNode* attachmentNode,
+                              const std::string& lightSetup) {
+  esp::metadata::attributes::ObjectAttributes::ptr attributes =
+      resourceManager_.getObjectAttributesManager()->getObjectCopyByHandle(
+          attributesHandle);
+  if (!attributes) {
+    ESP_ERROR() << "Object creation failed due to unknown attributes"
+                << attributesHandle;
+    return ID_UNDEFINED;
+  }
+  // attributes exist, get drawables if valid simulator accessible
+  return addObjectQueryDrawables(attributes, attachmentNode, lightSetup);
+}  // PhysicsManager::addObject
+
+int PhysicsManager::addObject(int attributesID,
+                              scene::SceneNode* attachmentNode,
+                              const std::string& lightSetup) {
+  const esp::metadata::attributes::ObjectAttributes::ptr attributes =
+      resourceManager_.getObjectAttributesManager()->getObjectCopyByID(
+          attributesID);
+  if (!attributes) {
+    ESP_ERROR() << "Object creation failed due to unknown attributes ID"
+                << attributesID;
+    return ID_UNDEFINED;
+  }
+  // attributes exist, get drawables if valid simulator accessible
+  return addObjectQueryDrawables(attributes, attachmentNode, lightSetup);
+}  // PhysicsManager::addObject
 
 bool PhysicsManager::addStageFinalize(
     const metadata::attributes::StageAttributes::ptr& initAttributes) {
@@ -651,6 +683,12 @@ void PhysicsManager::setStageVoxelizationDraw(const std::string& gridName,
   setVoxelizationDraw(
       gridName, static_cast<esp::physics::RigidBase*>(staticStageObject_.get()),
       drawables, drawVoxelization);
+}
+
+metadata::attributes::PhysicsManagerAttributes::ptr
+PhysicsManager::getInitializationAttributes() const {
+  return metadata::attributes::PhysicsManagerAttributes::create(
+      *physicsManagerAttributes_);
 }
 
 void PhysicsManager::setVoxelizationDraw(const std::string& gridName,

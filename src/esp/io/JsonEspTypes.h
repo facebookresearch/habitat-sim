@@ -15,6 +15,7 @@
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/core/Esp.h"
 #include "esp/gfx/replay/Keyframe.h"
+#include "esp/nav/PathFinder.h"
 
 namespace esp {
 namespace io {
@@ -196,6 +197,12 @@ JsonGenericValue toJsonValue(const esp::gfx::replay::Keyframe& x,
 
 bool fromJsonValue(const JsonGenericValue& keyframeObj,
                    esp::gfx::replay::Keyframe& keyframe);
+
+// NavMeshSettings JSON serialization
+JsonGenericValue toJsonValue(const esp::nav::NavMeshSettings& x,
+                             JsonAllocator& allocator);
+
+bool fromJsonValue(const JsonGenericValue& obj, esp::nav::NavMeshSettings& x);
 
 }  // namespace io
 }  // namespace esp

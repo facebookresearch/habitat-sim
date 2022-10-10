@@ -11,10 +11,11 @@
 #include <vector>
 
 #include "esp/core/Esp.h"
+#include "esp/core/EspEigen.h"
 
-#include <Magnum/Math/CubicHermite.h>
-#include <Magnum/Math/Range.h>
-#include "esp/gfx/magnum.h"
+#include <Magnum/Math/Vector3.h>
+#include <Magnum/Trade/Trade.h>
+
 namespace Mn = Magnum;
 namespace Cr = Corrade;
 

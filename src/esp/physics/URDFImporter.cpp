@@ -4,11 +4,14 @@
 
 // Code adapted from Bullet3/examples/Importers/ImportURDFDemo ...
 
+#include "URDFImporter.h"
+
 #include <iostream>
 
 #include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Path.h>
-#include "URDFImporter.h"
+#include "esp/assets/ResourceManager.h"
+#include "esp/metadata/managers/AssetAttributesManager.h"
 
 namespace Mn = Magnum;
 

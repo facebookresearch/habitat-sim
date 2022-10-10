@@ -124,8 +124,8 @@ commands:
                 # For whatever reason we have to install pytorch first. If it isn't
                 # it installs the 1.4 cpuonly version. Which is no good.
                 conda install -q -y pytorch torchvision cudatoolkit=11.3 -c pytorch
-                conda install -q -y -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis
-                pip install pytest-sugar pytest-xdist pytest-benchmark opencv-python cython
+                conda install -q -y -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis pytest-mock
+                pip install pytest-sugar pytest-xdist pytest-benchmark opencv-python cython mock
               fi
       - run:
           name: Install emscripten
@@ -439,7 +439,7 @@ jobs:
                 git clone -q --depth 1 https://github.com/facebookresearch/habitat-lab.git
               fi
               cd habitat-lab
-              pip install -r requirements.txt --progress-bar off
+              pip install -r habitat-lab/requirements.txt --progress-bar off
               ln -s ../habitat-sim/data data
               touch ~/miniconda/pip_deps_installed
       - run:
@@ -448,8 +448,11 @@ jobs:
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat; cd habitat-lab
-              python -u setup.py develop --all
-              python -u setup.py test
+              pip install -e habitat-lab
+              pip install -e habitat-baselines
+              export PYTHONPATH=.:$PYTHONPATH
+              export MULTI_PROC_OFFSET=0 && export MAGNUM_LOG=quiet && export HABITAT_SIM_LOG=quiet
+              python -m pytest
       - save_cache:
           key: habitat-lab-{{ checksum "./hablab_sha" }}
           background: true
@@ -461,8 +464,8 @@ jobs:
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat; cd habitat-lab
               # Install requirments first to avoid errors related to gym
-              pip install -r requirements.txt --progress-bar off
-              python setup.py develop --all
+              pip install -r habitat-lab/requirements.txt --progress-bar off
+              pip install -e habitat-lab
 
               cd docs
               conda install -y -c conda-forge doxygen
@@ -580,24 +583,7 @@ jobs:
               . ~/emsdk/emsdk_env.sh
               # Generate JS CodeConv
               npm run test_with_coverage
-      -  run:
-          name: Build, install habitat-sim with audio and run audio_agent script
-          no_output_timeout: 10m
-          command: |
-              export PATH=$HOME/miniconda/bin:$PATH
-              . activate habitat;
-              cd habitat-sim
-              pip install -r requirements.txt --progress-bar off
-              pip install imageio imageio-ffmpeg
-              git submodule update --init --recursive --jobs 8
-              python -u setup.py install --build-type "Release" --lto --headless --audio
-              python examples/tutorials/audio_agent.py
-      - save_cache:
-          key: ccache-{{ arch }}-{{ .Branch }}-{{ .BuildNum }}
-          background: true
-          paths:
-            - /home/circleci/.ccache
-      - run:
+      - run: &upload_coverage
           name: Upload test coverage
           command: |
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
@@ -620,6 +606,27 @@ jobs:
               #lcov --remove coverage.info "*/test/*" --output-file coverage.info > /dev/null
               #lcov --remove coverage.info "*/tests/*" --output-file coverage.info > /dev/null
               ./codecov -f coverage.info -cF CPP
+      -  run:
+          name: Build, install habitat-sim with audio and run audio_agent script
+          no_output_timeout: 10m
+          command: |
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat;
+              cd habitat-sim
+              pip install -r requirements.txt --progress-bar off
+              pip install imageio imageio-ffmpeg
+              git submodule update --init --recursive --jobs 8
+              python -u setup.py install --build-type "Release" --lto --headless --audio
+              python examples/tutorials/audio_agent.py
+      - save_cache:
+          key: ccache-{{ arch }}-{{ .Branch }}-{{ .BuildNum }}
+          background: true
+          paths:
+            - /home/circleci/.ccache
+      # Uploading test coverage again for code changed by the above rebuild.
+      # TODO: https://github.com/facebookresearch/habitat-sim/pull/1860 fixes
+      # this better, remove once it's merged
+      - run: *upload_coverage
 
 
 

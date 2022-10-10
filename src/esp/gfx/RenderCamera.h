@@ -5,10 +5,10 @@
 #ifndef ESP_GFX_RENDERCAMERA_H_
 #define ESP_GFX_RENDERCAMERA_H_
 
-#include "magnum.h"
-
+#include <Magnum/SceneGraph/Camera.h>
 #include "esp/core/Esp.h"
 #include "esp/geo/Geo.h"
+#include "esp/gfx/magnum.h"
 #include "esp/scene/SceneNode.h"
 
 namespace esp {

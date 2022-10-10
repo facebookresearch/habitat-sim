@@ -43,12 +43,15 @@ struct PathFinderTest : Cr::TestSuite::Tester {
 
   void testCaching();
 
+  void navMeshSettingsTestJSON();
+
   esp::logging::LoggingContext loggingContext;
 };
 
 PathFinderTest::PathFinderTest() {
   addTests({&PathFinderTest::bounds, &PathFinderTest::tryStepNoSliding,
-            &PathFinderTest::multiGoalPath, &PathFinderTest::testCaching});
+            &PathFinderTest::multiGoalPath, &PathFinderTest::testCaching,
+            &PathFinderTest::navMeshSettingsTestJSON});
 
   addBenchmarks({&PathFinderTest::benchmarkSingleGoal}, 1000);
   addInstancedBenchmarks({&PathFinderTest::benchmarkMultiGoal}, 100,
@@ -206,6 +209,48 @@ void PathFinderTest::benchmarkMultiGoal() {
   bool status = false;
   CORRADE_BENCHMARK(1) { status = pathFinder.findPath(path); };
   CORRADE_VERIFY(status);
+}
+
+void PathFinderTest::navMeshSettingsTestJSON() {
+  esp::nav::NavMeshSettings navmeshSettings;
+
+  // load test settings
+  navmeshSettings.readFromJSON(
+      Cr::Utility::Path::join(TEST_ASSETS, "test_navmeshsettings.json"));
+
+  // check against expected values
+  esp::nav::NavMeshSettings cacheCheckSettings;
+  cacheCheckSettings.cellSize = 0.0123;
+  cacheCheckSettings.cellHeight = 0.234;
+  cacheCheckSettings.agentHeight = 1.2345;
+  cacheCheckSettings.agentRadius = 0.123;
+  cacheCheckSettings.agentMaxClimb = 0.234;
+  cacheCheckSettings.agentMaxSlope = 34.0;
+  cacheCheckSettings.regionMinSize = 23.0;
+  cacheCheckSettings.regionMergeSize = 25.0;
+  cacheCheckSettings.edgeMaxLen = 23.0;
+  cacheCheckSettings.edgeMaxError = 1.345;
+  cacheCheckSettings.vertsPerPoly = 9.0;
+  cacheCheckSettings.detailSampleDist = 9.0;
+  cacheCheckSettings.detailSampleMaxError = 2.0;
+  cacheCheckSettings.filterLowHangingObstacles = false;
+  cacheCheckSettings.filterLedgeSpans = false;
+  cacheCheckSettings.filterWalkableLowHeightSpans = false;
+
+  CORRADE_VERIFY(cacheCheckSettings == navmeshSettings);
+
+  // check saving settings
+  esp::nav::NavMeshSettings defaultSettings;
+
+  // save defaults to a file
+  defaultSettings.writeToJSON(
+      Cr::Utility::Path::join(TEST_ASSETS, "test_navmeshsettings_reload.json"));
+
+  // reload and check against original
+  navmeshSettings.readFromJSON(
+      Cr::Utility::Path::join(TEST_ASSETS, "test_navmeshsettings_reload.json"));
+
+  CORRADE_VERIFY(defaultSettings == navmeshSettings);
 }
 
 }  // namespace

@@ -71,3 +71,18 @@ nano Doxyfile # modify it to have GENERATE_TAGFILE = bullet.tag
 doxygen # it'll complain about some CHM file, ignore that
 cp bullet.tag ../habitat-sim/docs/
 ```
+
+### Updating the CSS theme, refreshing the compiled version of it
+
+Make your changes to `theme.css`. Easiest is to experiment in a browser
+inspector and then copy the updated colors over to the theme file. Note that
+the color variables are shared by multiple places, so for example changing
+colors of the warning note will also affect labels and table backgrounds.
+
+Then, run `./build.sh` (which regenerates `theme-compiled.css`, which is
+deliberately *not* tracked in Git) and verify the generated output in the
+browser again.
+
+The `theme.css` should then get synced with the `habitat-lab` and
+`habitat-website` repositories so it's always possible to play with the colors
+in context of one repository and sync it to the others.

@@ -27,7 +27,6 @@
 #include "esp/assets/CollisionMeshData.h"
 #include "esp/assets/GenericSemanticMeshData.h"
 #include "esp/assets/MeshMetaData.h"
-#include "esp/assets/ResourceManager.h"
 #include "esp/gfx/DrawableGroup.h"
 #include "esp/io/URDFParser.h"
 #include "esp/physics/objectWrappers/ManagedArticulatedObject.h"
@@ -35,10 +34,19 @@
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
+namespace assets {
+class ResourceManager;
+}
 //! core physics simulation namespace
 namespace sim {
 class Simulator;
 }
+namespace metadata {
+namespace attributes {
+class PhysicsManagerAttributes;
+}
+}  // namespace metadata
+
 namespace physics {
 
 /** @brief Holds information about one ray hit instance. */
@@ -223,7 +231,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   explicit PhysicsManager(
       assets::ResourceManager& _resourceManager,
-      const metadata::attributes::PhysicsManagerAttributes::cptr&
+      const std::shared_ptr<
+          const metadata::attributes::PhysicsManagerAttributes>&
           _physicsManagerAttributes);
 
   /** @brief Destructor*/
@@ -311,18 +320,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   int addObject(const std::string& attributesHandle,
                 scene::SceneNode* attachmentNode = nullptr,
-                const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
-    esp::metadata::attributes::ObjectAttributes::ptr attributes =
-        resourceManager_.getObjectAttributesManager()->getObjectCopyByHandle(
-            attributesHandle);
-    if (!attributes) {
-      ESP_ERROR() << "Object creation failed due to unknown attributes"
-                  << attributesHandle;
-      return ID_UNDEFINED;
-    }
-    // attributes exist, get drawables if valid simulator accessible
-    return addObjectQueryDrawables(attributes, attachmentNode, lightSetup);
-  }  // PhysicsManager::addObject
+                const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
 
   /** @brief Instance a physical object from an object properties template in
    * the @ref esp::metadata::managers::ObjectAttributesManager by template
@@ -338,18 +336,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   int addObject(int attributesID,
                 scene::SceneNode* attachmentNode = nullptr,
-                const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
-    const esp::metadata::attributes::ObjectAttributes::ptr attributes =
-        resourceManager_.getObjectAttributesManager()->getObjectCopyByID(
-            attributesID);
-    if (!attributes) {
-      ESP_ERROR() << "Object creation failed due to unknown attributes ID"
-                  << attributesID;
-      return ID_UNDEFINED;
-    }
-    // attributes exist, get drawables if valid simulator accessible
-    return addObjectQueryDrawables(attributes, attachmentNode, lightSetup);
-  }  // PhysicsManager::addObject
+                const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
 
   /** @brief Queries simulator for drawables, if simulator exists, otherwise
    * passes nullptr, before instancing a physical object from an object
@@ -832,11 +819,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    *
    * @return The initialization settings for this physics manager
    */
-  metadata::attributes::PhysicsManagerAttributes::ptr
-  getInitializationAttributes() const {
-    return metadata::attributes::PhysicsManagerAttributes::create(
-        *physicsManagerAttributes_.get());
-  }
+  std::shared_ptr<metadata::attributes::PhysicsManagerAttributes>
+  getInitializationAttributes() const;
 
   /**
    * @brief Cast a ray into the collision world and return a @ref
@@ -1173,7 +1157,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * esp::metadata::attributes::PhysicsManagerAttributes describing
    * this physics manager
    */
-  const metadata::attributes::PhysicsManagerAttributes::cptr
+  const std::shared_ptr<const metadata::attributes::PhysicsManagerAttributes>
       physicsManagerAttributes_;
 
   /** @brief The current physics library implementation used by this

@@ -8,6 +8,7 @@
 #include <Corrade/Utility/FormatStl.h>
 #include <Magnum/DebugTools/ColorMap.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
+#include <Magnum/Math/Color.h>
 #include <Magnum/Math/PackingBatch.h>
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/MeshTools/RemoveDuplicates.h>

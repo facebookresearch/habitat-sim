@@ -7,6 +7,7 @@
 #define ESP_SENSOR_REDWOODNOISEMODEL_H_
 
 #include "esp/core/Esp.h"
+#include "esp/core/EspEigen.h"
 #include "esp/core/Random.h"
 
 #include "RedwoodNoiseModel.cuh"
