@@ -135,13 +135,6 @@ class MoreANSICodes(Enum):
     UNDERLINE = "\033[4m"
 
 
-def print_in_color(print_string="", color=Fore.WHITE, colorama=Fore.WHITE) -> None:
-    """
-    Allows us to print to console in different colors
-    """
-    print(color + print_string)
-
-
 def convert_units(
     size: float, unit_type: int = MemoryUnitConverter.KILOBYTES, decimals: int = 4
 ) -> float:
@@ -230,77 +223,69 @@ def parse_dataset(
 
     # get dataset that is currently being used by the simulator
     active_dataset: str = metadata_mediator.active_dataset
-    print_in_color(
-        "\nActive Dataset",
-        MoreANSICodes.BRIGHT_BLUE.value + MoreANSICodes.BOLD.value,
+    print(
+        MoreANSICodes.BRIGHT_BLUE.value + MoreANSICodes.BOLD.value + "\nActive Dataset"
     )
-    print_in_color("-" * 72, MoreANSICodes.BRIGHT_BLUE.value + MoreANSICodes.BOLD.value)
-    print_in_color(f"{active_dataset}\n", MoreANSICodes.BRIGHT_BLUE.value)
+    print(MoreANSICodes.BRIGHT_BLUE.value + MoreANSICodes.BOLD.value + "-" * 72)
+    print(MoreANSICodes.BRIGHT_BLUE.value + f"{active_dataset}\n")
     print("")
 
     # get exhaustive List of information about the dataset
     dataset_report: str = metadata_mediator.dataset_report(dataset_path)
-    print_in_color(
-        "Dataset Report",
-        MoreANSICodes.BRIGHT_CYAN.value + MoreANSICodes.BOLD.value,
-    )
-    print_in_color("-" * 72, MoreANSICodes.BRIGHT_CYAN.value + MoreANSICodes.BOLD.value)
-    print_in_color(f"{dataset_report}", MoreANSICodes.BRIGHT_CYAN.value)
+    print(MoreANSICodes.BRIGHT_CYAN.value + MoreANSICodes.BOLD.value + "Dataset Report")
+    print(MoreANSICodes.BRIGHT_CYAN.value + MoreANSICodes.BOLD.value + "-" * 72)
+    print(MoreANSICodes.BRIGHT_CYAN.value + f"{dataset_report}")
     print("")
 
     # get handles of every scene from the simulator
     scene_handles: List[str] = metadata_mediator.get_scene_handles()
-    print_in_color(
-        "Scene Handles",
-        MoreANSICodes.BRIGHT_MAGENTA.value + MoreANSICodes.BOLD.value,
+    print(
+        MoreANSICodes.BRIGHT_MAGENTA.value + MoreANSICodes.BOLD.value + "Scene Handles"
     )
-    print_in_color(
-        "-" * 72, MoreANSICodes.BRIGHT_MAGENTA.value + MoreANSICodes.BOLD.value
-    )
+    print(MoreANSICodes.BRIGHT_MAGENTA.value + MoreANSICodes.BOLD.value + "-" * 72)
     for handle in scene_handles:
-        print_in_color(f"{handle}\n", MoreANSICodes.BRIGHT_MAGENTA.value)
+        print(MoreANSICodes.BRIGHT_MAGENTA.value + f"{handle}\n")
     print("")
 
     # get List of Unified Robotics Description Format files
     urdf_paths = metadata_mediator.urdf_paths
     urdf_paths_list = list(urdf_paths.keys())
-    print_in_color(
-        f"num urdf paths: {len(urdf_paths_list)}",
-        MoreANSICodes.BRIGHT_RED.value + MoreANSICodes.BOLD.value,
+    print(
+        MoreANSICodes.BRIGHT_RED.value
+        + MoreANSICodes.BOLD.value
+        + f"num urdf paths: {len(urdf_paths_list)}"
     )
-    print_in_color("-" * 72, MoreANSICodes.BRIGHT_RED.value + MoreANSICodes.BOLD.value)
+    print(MoreANSICodes.BRIGHT_RED.value + MoreANSICodes.BOLD.value + "-" * 72)
     if len(urdf_paths_list) == 0:
         urdf_paths["Paths"] = "None"
     for key, val in urdf_paths.items():
-        print_in_color(f"{key} : {val}", MoreANSICodes.BRIGHT_RED.value)
+        print(MoreANSICodes.BRIGHT_RED.value + f"{key} : {val}")
     print("")
 
     # get asset template manager and get template handles of each primitive asset
     asset_template_manager = metadata_mediator.asset_template_manager
-    print_in_color(
-        f"\nnumber of primitive asset templates: {asset_template_manager.get_num_templates()}",
-        MoreANSICodes.ORANGE.value + MoreANSICodes.BOLD.value,
+    print(
+        MoreANSICodes.ORANGE.value
+        + MoreANSICodes.BOLD.value
+        + f"\nnumber of primitive asset templates: {asset_template_manager.get_num_templates()}"
     )
-    print_in_color("-" * 72, MoreANSICodes.ORANGE.value + MoreANSICodes.BOLD.value)
+    print(MoreANSICodes.ORANGE.value + MoreANSICodes.BOLD.value + "-" * 72)
     template_handles = asset_template_manager.get_template_handles()
     templates_info = asset_template_manager.get_templates_info()
     for (handle, info) in zip(template_handles, templates_info):
-        print_in_color(f"{handle}", Fore.GREEN)
-        print_in_color(
-            f"{info}\n", MoreANSICodes.ORANGE.value + MoreANSICodes.ITALIC.value
-        )
+        print(Fore.GREEN + f"{handle}")
+        print(MoreANSICodes.ORANGE.value + MoreANSICodes.ITALIC.value + f"{info}\n")
     print("")
 
     # Get rigid object manager
     rigid_object_manager = sim.get_rigid_object_manager()
-    print_in_color(
-        "Rigid object manager objects",
-        MoreANSICodes.YELLOW.value + MoreANSICodes.BOLD.value,
+    print(
+        MoreANSICodes.YELLOW.value
+        + MoreANSICodes.BOLD.value
+        + "Rigid object manager objects"
     )
-    print_in_color("-" * 72, MoreANSICodes.YELLOW.value + MoreANSICodes.BOLD.value)
-    print_in_color(
-        rigid_object_manager.get_objects_CSV_info(), MoreANSICodes.YELLOW.value
-    )
+    print(MoreANSICodes.YELLOW.value + MoreANSICodes.BOLD.value + "-" * 72)
+    print(MoreANSICodes.YELLOW.value + rigid_object_manager.get_objects_CSV_info())
     print("")
 
     # Get object attribute manager for objects from dataset, load the dataset,
@@ -308,13 +293,12 @@ def parse_dataset(
     object_attributes_manager = sim.get_object_template_manager()
     object_attributes_manager.load_configs(dataset_path)
     object_template_handles = object_attributes_manager.get_file_template_handles("")
-    print_in_color(
-        f"\nnumber of objects in dataset: {len(object_template_handles)}",
-        MoreANSICodes.BRIGHT_MAGENTA.value + MoreANSICodes.BOLD.value,
+    print(
+        MoreANSICodes.BRIGHT_MAGENTA.value
+        + MoreANSICodes.BOLD.value
+        + f"\nnumber of objects in dataset: {len(object_template_handles)}"
     )
-    print_in_color(
-        "-" * 72, MoreANSICodes.BRIGHT_MAGENTA.value + MoreANSICodes.BOLD.value
-    )
+    print(MoreANSICodes.BRIGHT_MAGENTA.value + MoreANSICodes.BOLD.value + "-" * 72)
     print("")
 
     # process each asset with trade.AbstractImporter and construct csv data
@@ -341,11 +325,12 @@ def write_csv(csv_rows: List[str] = None) -> None:
     csv_dir_path = f"{DATA_PATH}/dataset_csvs"
     csv_file_prefix = "ycb"
     file_path = CSVWriter.create_unique_filename(csv_dir_path, csv_file_prefix)
-    print_in_color(
-        f"Writing csv results to: \n{file_path}",
-        MoreANSICodes.PURPLE.value + MoreANSICodes.BOLD.value,
+    print(
+        MoreANSICodes.PURPLE.value
+        + MoreANSICodes.BOLD.value
+        + f"Writing csv results to: \n{file_path}"
     )
-    print_in_color("-" * 72, MoreANSICodes.PURPLE.value + MoreANSICodes.BOLD.value)
+    print(MoreANSICodes.PURPLE.value + MoreANSICodes.BOLD.value + "-" * 72)
     headers = [
         "mesh name",
         "mesh index data size",
@@ -354,7 +339,7 @@ def write_csv(csv_rows: List[str] = None) -> None:
         "image data size",
     ]
     CSVWriter.write_file(headers, csv_rows)
-    print_in_color("CSV writing done\n", MoreANSICodes.PURPLE.value)
+    print(MoreANSICodes.PURPLE.value + "CSV writing done\n")
 
 
 def make_configuration(sim_settings):
