@@ -5,6 +5,7 @@ import os
 from typing import Any, Dict, List, Optional, Tuple
 
 import git
+from colorama import Fore, init
 from magnum import trade
 
 import habitat_sim
@@ -28,18 +29,16 @@ class CSVWriter:
     Generalized utility to write csv files
     """
 
-    csv_dir_path = None
     file_path = None
 
-    def set_csv_dir_path(csv_dir_path: str = None) -> None:
-        """"""
-        if csv_dir_path is None:
-            CSVWriter.csv_dir_path = f"{DATA_PATH}/dataset_csvs"
-        else:
-            CSVWriter.csv_dir_path = csv_dir_path
-
-    def create_unique_filename() -> str:
-        """ """
+    def create_unique_filename(
+        csv_dir_path: str = None, filename_prefix: str = None
+    ) -> str:
+        """
+        Create unique file name / file path for the next csv we write.
+        Also create directory in which we save csv files if one doesn't
+        already exist
+        """
         # Current date and time so we can make unique file names for each csv
         date_and_time = datetime.datetime.now()
 
@@ -51,22 +50,30 @@ class CSVWriter:
         time = date_and_time.strftime("%H:%M:%S")
 
         # make directory to store csvs if it doesn't exist
-        if CSVWriter.csv_dir_path is None:
-            CSVWriter.set_csv_dir_path()
-        dir_exists = os.path.exists(CSVWriter.csv_dir_path)
-        if not dir_exists:
-            os.makedirs(CSVWriter.csv_dir_path)
+        if csv_dir_path is None:
+            csv_dir_path = "/"
+        if not os.path.exists(csv_dir_path):
+            os.makedirs(csv_dir_path)
 
         # create csv file name (TODO: make more descriptive file name)
-        CSVWriter.file_path = f"{CSVWriter.csv_dir_path}/date_{date}__time_{time}.csv"
+        if filename_prefix is None:
+            filename_prefix = ""
+        else:
+            filename_prefix = f"{filename_prefix}__"
+        CSVWriter.file_path = (
+            f"{csv_dir_path}/{filename_prefix}date_{date}__time_{time}.csv"
+        )
         return CSVWriter.file_path
 
     def write_file(
         headers: List[str] = None,
-        csv_rows: List[str] = None,
+        csv_rows: List[Tuple] = None,
         file_path: str = None,
     ) -> None:
-        """"""
+        """
+        Write column titles and csv data into csv file with the provided
+        file path. Use default file path if none is provided
+        """
         if headers is None:
             raise RuntimeError("No headers provided to CSVWriter.write_file().")
         if csv_rows is None:
@@ -76,6 +83,10 @@ class CSVWriter:
                 file_path = CSVWriter.create_unique_filename()
             else:
                 file_path = CSVWriter.file_path
+        if not len(csv_rows[0]) == len(headers):
+            raise RuntimeError(
+                "Number of headers does not equal number of columns in CSVWriter.write_file()."
+            )
 
         with open(file_path, "w") as csv_file:
             writer = csv.writer(csv_file)
@@ -100,42 +111,42 @@ class MemoryUnitConverter:
     UNIT_CONVERSIONS = [1, 1 << 10, 1 << 20, 1 << 30]
 
 
-class PrintColors:
+from enum import Enum
+
+
+class MoreColoramaCodes(Enum):
     """
     Console printing ANSI color codes
     """
 
     HEADER = "\033[95m"
-    WHITE = "\u001b[37m"
-    RED = "\033[1;31m"
-    GREEN = "\033[92m"
-    BLUE = "\033[94m"
-    CYAN = "\033[96m"
-    MAGENTA = "\u001b[35m"
-    BROWN = "\033[0;33m"
-    LIGHT_RED = "\033[1;31m"
-    PURPLE = "\033[1;35m"
-    LIGHT_CYAN = "\033[1;36m"
-    TEST = "\u001a[35m"
+    BROWN = "\033[38;5;130m"
+    ORANGE = "\033[38;5;202m"
+    YELLOW = "\033[38;5;220m"
+    PURPLE = "\033[38;5;177m"
+    BRIGHT_RED = "\033[38;5;196m"
+    BRIGHT_BLUE = "\033[38;5;27m"
+    BRIGHT_MAGENTA = "\033[38;5;201m"
+    BRIGHT_CYAN = "\033[38;5;14m"
     WARNING = "\033[93m"
     FAIL = "\033[91m"
-    ENDC = "\033[0m"
     BOLD = "\033[1m"
+    ITALIC = "\033[3m"
     UNDERLINE = "\033[4m"
 
 
-def print_in_color(print_string="", color=PrintColors.WHITE) -> None:
+def print_in_color(print_string="", color=Fore.WHITE, colorama=Fore.WHITE) -> None:
     """
     Allows us to print to console in different colors
     """
-    print(color + print_string + PrintColors.ENDC)
+    print(color + print_string)
 
 
 def convert_units(
     size: float, unit_type: int = MemoryUnitConverter.KILOBYTES, decimals: int = 4
 ) -> float:
     """
-    Convert units of a float, then round the result
+    Convert units of a float, bytes to desired unit, then round the result
     """
     new_size = size / MemoryUnitConverter.UNIT_CONVERSIONS[unit_type]
     return round(new_size, decimals)
@@ -145,6 +156,10 @@ def get_mem_size_str(
     size: float,
     unit_type: int = MemoryUnitConverter.KILOBYTES,
 ) -> str:
+    """
+    Convert bytes to desired memory unit size, then create string
+    that will be written into csv file rows
+    """
     new_size: float = convert_units(size, unit_type)
     unit_str: str = MemoryUnitConverter.UNIT_STRS[unit_type]
     return f"{new_size} {unit_str}"
@@ -185,6 +200,7 @@ def process_imported_asset(
             image_data_size += len(image.data)
     image_data_str = get_mem_size_str(image_data_size)
 
+    # return results as a tuple formatted for csv rows
     return [
         render_asset_handle,
         index_data_str,
@@ -196,59 +212,106 @@ def process_imported_asset(
 
 def parse_dataset(
     sim: habitat_sim.Simulator = None, dataset_path: str = None
-) -> List[str]:
-    """ """
+) -> List[Tuple]:
+    """
+    Load and process dataset objects using template handles
+    """
     if sim is None:
-        return []
+        raise RuntimeError("No simulator provided to parse_dataset(...).")
 
     metadata_mediator = sim.metadata_mediator
     if (
         metadata_mediator is None
         or metadata_mediator.dataset_exists(dataset_path) is False
     ):
-        return []
+        raise RuntimeError(
+            "No meta data mediator or dataset exists in parse_dataset(...)."
+        )
 
     # get dataset that is currently being used by the simulator
     active_dataset: str = metadata_mediator.active_dataset
-    print_in_color("* " * 39, PrintColors.BLUE)
-    print_in_color(f"{active_dataset}\n", PrintColors.BLUE)
+    print_in_color(
+        "\nActive Dataset",
+        MoreColoramaCodes.BRIGHT_BLUE.value + MoreColoramaCodes.BOLD.value,
+    )
+    print_in_color(
+        "-" * 72, MoreColoramaCodes.BRIGHT_BLUE.value + MoreColoramaCodes.BOLD.value
+    )
+    print_in_color(f"{active_dataset}\n", MoreColoramaCodes.BRIGHT_BLUE.value)
+    print("")
 
     # get exhaustive List of information about the dataset
     dataset_report: str = metadata_mediator.dataset_report(dataset_path)
-    print_in_color("* " * 39, PrintColors.CYAN)
-    print_in_color(f"{dataset_report}\n", PrintColors.CYAN)
+    print_in_color(
+        "Dataset Report",
+        MoreColoramaCodes.BRIGHT_CYAN.value + MoreColoramaCodes.BOLD.value,
+    )
+    print_in_color(
+        "-" * 72, MoreColoramaCodes.BRIGHT_CYAN.value + MoreColoramaCodes.BOLD.value
+    )
+    print_in_color(f"{dataset_report}", MoreColoramaCodes.BRIGHT_CYAN.value)
+    print("")
 
     # get handles of every scene from the simulator
     scene_handles: List[str] = metadata_mediator.get_scene_handles()
-    print_in_color("* " * 39, PrintColors.PURPLE)
+    print_in_color(
+        "Scene Handles",
+        MoreColoramaCodes.BRIGHT_MAGENTA.value + MoreColoramaCodes.BOLD.value,
+    )
+    print_in_color(
+        "-" * 72, MoreColoramaCodes.BRIGHT_MAGENTA.value + MoreColoramaCodes.BOLD.value
+    )
     for handle in scene_handles:
-        print_in_color(f"{handle}\n", PrintColors.PURPLE)
+        print_in_color(f"{handle}\n", MoreColoramaCodes.BRIGHT_MAGENTA.value)
+    print("")
 
     # get List of Unified Robotics Description Format files
     urdf_paths = metadata_mediator.urdf_paths
     urdf_paths_list = list(urdf_paths.keys())
-    print_in_color("-" * 72, PrintColors.MAGENTA)
-    print_in_color(f"num urdf paths: {len(urdf_paths_list)}\n", PrintColors.MAGENTA)
-    for name in urdf_paths_list:
-        print_in_color("-" * 72, PrintColors.MAGENTA)
-        print_in_color(f"{name}\n", PrintColors.MAGENTA)
+    print_in_color(
+        f"num urdf paths: {len(urdf_paths_list)}",
+        MoreColoramaCodes.BRIGHT_RED.value + MoreColoramaCodes.BOLD.value,
+    )
+    print_in_color(
+        "-" * 72, MoreColoramaCodes.BRIGHT_RED.value + MoreColoramaCodes.BOLD.value
+    )
+    if len(urdf_paths_list) == 0:
+        urdf_paths["Paths"] = "None"
+    for key, val in urdf_paths.items():
+        print_in_color(f"{key} : {val}", MoreColoramaCodes.BRIGHT_RED.value)
+    print("")
 
     # get asset template manager and get template handles of each primitive asset
     asset_template_manager = metadata_mediator.asset_template_manager
     print_in_color(
         f"\nnumber of primitive asset templates: {asset_template_manager.get_num_templates()}",
-        PrintColors.BROWN,
+        MoreColoramaCodes.ORANGE.value + MoreColoramaCodes.BOLD.value,
     )
-    print_in_color("-" * 72, PrintColors.BROWN)
+    print_in_color(
+        "-" * 72, MoreColoramaCodes.ORANGE.value + MoreColoramaCodes.BOLD.value
+    )
     template_handles = asset_template_manager.get_template_handles()
     templates_info = asset_template_manager.get_templates_info()
     for (handle, info) in zip(template_handles, templates_info):
-        print_in_color(f"{handle}", PrintColors.GREEN)
-        print_in_color(f"{info}\n", PrintColors.BROWN + PrintColors.UNDERLINE)
+        print_in_color(f"{handle}", Fore.GREEN)
+        print_in_color(
+            f"{info}\n", MoreColoramaCodes.ORANGE.value + MoreColoramaCodes.ITALIC.value
+        )
+    print("")
 
     # Get rigid object manager
     rigid_object_manager = sim.get_rigid_object_manager()
-    print_in_color(rigid_object_manager.get_objects_CSV_info(), PrintColors.CYAN)
+    print_in_color(
+        "Rigid object manager objects",
+        MoreColoramaCodes.YELLOW.value + MoreColoramaCodes.BOLD.value,
+    )
+    print_in_color(
+        "-" * 72, MoreColoramaCodes.YELLOW.value + MoreColoramaCodes.BOLD.value
+    )
+    print_in_color(
+        rigid_object_manager.get_objects_CSV_info(), MoreColoramaCodes.YELLOW.value
+    )
+    print("")
 
     # Get object attribute manager for objects from dataset, load the dataset,
     # store all the object template handles in a List, then process each asset
@@ -257,9 +320,11 @@ def parse_dataset(
     object_template_handles = object_attributes_manager.get_file_template_handles("")
     print_in_color(
         f"\nnumber of objects in dataset: {len(object_template_handles)}",
-        PrintColors.PURPLE,
+        MoreColoramaCodes.BRIGHT_MAGENTA.value + MoreColoramaCodes.BOLD.value,
     )
-    print_in_color("-" * 72, PrintColors.PURPLE)
+    print_in_color(
+        "-" * 72, MoreColoramaCodes.BRIGHT_MAGENTA.value + MoreColoramaCodes.BOLD.value
+    )
     print("")
 
     # process each asset with trade.AbstractImporter and construct csv data
@@ -273,14 +338,26 @@ def parse_dataset(
     # clean up
     importer.close()
 
+    # return list of rows to be written to csv file
     return csv_rows
 
 
 def write_csv(csv_rows: List[str] = None) -> None:
-    """ """
-    CSVWriter.set_csv_dir_path()
-    file_path = CSVWriter.create_unique_filename()
-    print_in_color(f"Writing csv results to {file_path}", PrintColors.CYAN)
+    """
+    Set directory where our csv's will be saved, create the csv file name,
+    create the column names of our csv data, then open and write the csv
+    file
+    """
+    csv_dir_path = f"{DATA_PATH}/dataset_csvs"
+    csv_file_prefix = "ycb"
+    file_path = CSVWriter.create_unique_filename(csv_dir_path, csv_file_prefix)
+    print_in_color(
+        f"Writing csv results to: \n{file_path}",
+        MoreColoramaCodes.PURPLE.value + MoreColoramaCodes.BOLD.value,
+    )
+    print_in_color(
+        "-" * 72, MoreColoramaCodes.PURPLE.value + MoreColoramaCodes.BOLD.value
+    )
     headers = [
         "mesh name",
         "mesh index data size",
@@ -289,10 +366,13 @@ def write_csv(csv_rows: List[str] = None) -> None:
         "image data size",
     ]
     CSVWriter.write_file(headers, csv_rows)
+    print_in_color("CSV writing done\n", MoreColoramaCodes.PURPLE.value)
 
 
 def make_configuration(sim_settings):
-    """ """
+    """
+    Create config of Simulator that will process the dataset
+    """
     # simulator configuration
     sim_cfg = habitat_sim.SimulatorConfiguration()
     if "scene_dataset_config_file" in sim_settings:
@@ -321,7 +401,11 @@ def make_configuration(sim_settings):
 def build_parser(
     parser: Optional[argparse.ArgumentParser] = None,
 ) -> argparse.ArgumentParser:
-    """ """
+    """
+    Parse arguments or set defaults when running script for scene,
+    dataset, and set if we are processing physics data of dataset
+    objects
+    """
     if parser is None:
         parser = argparse.ArgumentParser(
             description="Tool to evaluate all objects in a dataset. Assesses CPU, GPU, mesh size, "
@@ -355,7 +439,14 @@ def build_parser(
 
 
 def main() -> None:
-    """ """
+    """
+    Create Simulator, parse dataset, write csv file
+    """
+
+    # setup colorama terminal color printing
+    init(autoreset=True)
+
+    # parse arguments from command line: scene, dataset, if we process physics
     args = build_parser().parse_args()
 
     # Setting up sim_settings
