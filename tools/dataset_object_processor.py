@@ -15,16 +15,6 @@ from habitat_sim.utils.settings import default_sim_settings
 repo = git.Repo(".", search_parent_directories=True)
 HABITAT_SIM_PATH = repo.working_tree_dir
 
-# # TODO: if we ever need relative or absolute paths for whatever reason
-# YCB_RELATIVE_PATH = "./data/objects/ycb/ycb.scene_dataset_config.json"
-# YCB_PATH = os.path.join(HABITAT_SIM_PATH, YCB_RELATIVE_PATH)
-
-# REPLICA_CAD_RELATIVE_PATH = "./data/replica_cad/replicaCAD.scene_dataset_config.json"
-# REPLICA_CAD_PATH = os.path.join(HABITAT_SIM_PATH, REPLICA_CAD_RELATIVE_PATH)
-
-# REPLICA_CAD_BAKED_RELATIVE_PATH = "./data/replica_cad_baked_lighting/replicaCAD_baked.scene_dataset_config.json"
-# REPLICA_CAD_BAKED_PATH = os.path.join(HABITAT_SIM_PATH, REPLICA_CAD_BAKED_RELATIVE_PATH)
-
 # Hard-coded paths for common datasets this script will process
 YCB_PATH = "./data/objects/ycb/ycb.scene_dataset_config.json"
 
@@ -415,27 +405,37 @@ def build_parser(
         "--scene",
         default="./data/test_assets/scenes/simple_room.glb",
         type=str,
-        help='scene/stage file to load (default: "./data/test_assets/scenes/simple_room.glb")',
+        help="""
+scene/stage file to load (default: "./data/test_assets/scenes/simple_room.glb")
+        """,
     )
     parser.add_argument(
         "--dataset_name",
         default=None,
         type=str,
         metavar="DATASET_PATH",
-        help="for convenience, simple name of dataset configuration file to use, use None if you want to enter the file path instead (default: None)",
+        help="""
+for convenience, simple name of dataset configuration file to use,
+use None if you want to enter the file path instead (default: None)
+        """,
     )
     parser.add_argument(
         "--dataset_path",
         default="./data/objects/ycb/ycb.scene_dataset_config.json",
         type=str,
         metavar="DATASET_PATH",
-        help='relative path of dataset configuration file to use (default: "./data/objects/ycb/ycb.scene_dataset_config.json")',
+        help="""
+relative path of dataset configuration file to use
+(default: "./data/objects/ycb/ycb.scene_dataset_config.json")
+        """,
     )
     parser.add_argument(
         "--disable_physics",
         default=False,
         action="store_true",
-        help="disable physics simulation (default: False)",
+        help="""
+disable physics simulation (default: False)
+        """,
     )
     parser.add_argument(
         "--csv_file_prefix",
@@ -448,7 +448,7 @@ ycb,
 replica_CAD,
 fetch_robot,
 (default: None)
-""",
+        """,
     )
     return parser
 
