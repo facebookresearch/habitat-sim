@@ -2,7 +2,8 @@ import argparse
 import csv
 import datetime
 import os
-from typing import Any, Dict, List, Optional, Tuple
+from enum import Enum
+from typing import Any, Dict, List, Optional
 
 import git
 from colorama import Fore, init
@@ -13,15 +14,27 @@ from habitat_sim.utils.settings import default_sim_settings
 
 repo = git.Repo(".", search_parent_directories=True)
 HABITAT_SIM_PATH = repo.working_tree_dir
-DATA_PATH = os.path.join(HABITAT_SIM_PATH, "data")
-YCB_PATH = os.path.join(
-    DATA_PATH, "versioned_data/ycb_1.2/ycb.scene_dataset_config.json"
-)
-REPLICA_CAD_PATH = os.path.join(
-    DATA_PATH,
-    "versioned_data/replica_cad_dataset_1.5/reHABITAT_SIM_PATHplicaCAD.scene_dataset_config.json",
-)
-ROBOT_PATH = ""  # TODO, which dataset is this? Robot fetch?
+
+# # TODO: if we ever need relative or absolute paths for whatever reason
+# YCB_RELATIVE_PATH = "./data/objects/ycb/ycb.scene_dataset_config.json"
+# YCB_PATH = os.path.join(HABITAT_SIM_PATH, YCB_RELATIVE_PATH)
+
+# REPLICA_CAD_RELATIVE_PATH = "./data/replica_cad/replicaCAD.scene_dataset_config.json"
+# REPLICA_CAD_PATH = os.path.join(HABITAT_SIM_PATH, REPLICA_CAD_RELATIVE_PATH)
+
+# REPLICA_CAD_BAKED_RELATIVE_PATH = "./data/replica_cad_baked_lighting/replicaCAD_baked.scene_dataset_config.json"
+# REPLICA_CAD_BAKED_PATH = os.path.join(HABITAT_SIM_PATH, REPLICA_CAD_BAKED_RELATIVE_PATH)
+
+# Hard-coded paths for common datasets this script will process
+YCB_PATH = "./data/objects/ycb/ycb.scene_dataset_config.json"
+
+REPLICA_CAD_PATH = "./data/replica_cad/replicaCAD.scene_dataset_config.json"
+
+# TODO, which dataset is this? Fetch Robot?
+ROBOT_PATH = ""
+
+# dictionary to refer to datasets by simple names rather than full paths
+dataset_name_to_path_dict: Dict[str, str] = {}
 
 
 class CSVWriter:
@@ -31,13 +44,11 @@ class CSVWriter:
 
     file_path = None
 
-    def create_unique_filename(
-        csv_dir_path: str = None, filename_prefix: str = None
-    ) -> str:
+    def create_unique_filename(csv_dir_path: str, filename_prefix: str = None) -> str:
         """
-        Create unique file name / file path for the next csv we write.
-        Also create directory in which we save csv files if one doesn't
-        already exist
+        Create unique file name / file path for the next csv we write
+        based off of the current date and time. Also create directory
+        in which we save csv files if one doesn't already exist
         """
         # Current date and time so we can make unique file names for each csv
         date_and_time = datetime.datetime.now()
@@ -50,8 +61,6 @@ class CSVWriter:
         time = date_and_time.strftime("%H:%M:%S")
 
         # make directory to store csvs if it doesn't exist
-        if csv_dir_path is None:
-            csv_dir_path = "/"
         if not os.path.exists(csv_dir_path):
             os.makedirs(csv_dir_path)
 
@@ -61,23 +70,19 @@ class CSVWriter:
         else:
             filename_prefix = f"{filename_prefix}__"
         CSVWriter.file_path = (
-            f"{csv_dir_path}/{filename_prefix}date_{date}__time_{time}.csv"
+            f"{csv_dir_path}{filename_prefix}date_{date}__time_{time}.csv"
         )
         return CSVWriter.file_path
 
     def write_file(
-        headers: List[str] = None,
-        csv_rows: List[Tuple] = None,
+        headers: List[str],
+        csv_rows: List[List[str]],
         file_path: str = None,
     ) -> None:
         """
         Write column titles and csv data into csv file with the provided
         file path. Use default file path if none is provided
         """
-        if headers is None:
-            raise RuntimeError("No headers provided to CSVWriter.write_file().")
-        if csv_rows is None:
-            raise RuntimeError("No CSV file data provided to CSVWriter.write_file().")
         if file_path is None:
             if CSVWriter.file_path is None:
                 file_path = CSVWriter.create_unique_filename()
@@ -97,9 +102,9 @@ class CSVWriter:
 class MemoryUnitConverter:
     """
     class to convert computer memory value units, i.e.
-    1,024 bytes to 1 kilobyte
-    1,048,576 bytes to 1 megabyte
-    etc.
+    1,024 bytes to 1 kilobyte, or (1 << 10) bytes
+    1,048,576 bytes to 1 megabyte, or (1 << 20) bytes
+    1,073,741,824 bytes to 1 gigabyte, or (1 << 30) bytes
     """
 
     BYTES = 0
@@ -111,12 +116,9 @@ class MemoryUnitConverter:
     UNIT_CONVERSIONS = [1, 1 << 10, 1 << 20, 1 << 30]
 
 
-from enum import Enum
-
-
-class MoreANSICodes(Enum):
+class ANSICodes(Enum):
     """
-    Console printing ANSI color codes
+    Terminal printing ANSI color and format codes
     """
 
     HEADER = "\033[95m"
@@ -133,6 +135,25 @@ class MoreANSICodes(Enum):
     BOLD = "\033[1m"
     ITALIC = "\033[3m"
     UNDERLINE = "\033[4m"
+
+
+def print_help_text() -> None:
+    help_text = """
+=========================================================
+
+To save effort, you can refer to pre-coded dataset names
+instead of full paths for the "--dataset_name" parameter.
+If you enter both a dataset name and a dataset path,
+it will use dataset name instead.
+
+The ones registered in the script currently are:
+ycb
+replica_CAD
+fetch_robot
+
+=========================================================
+"""
+    print(ANSICodes.BRIGHT_MAGENTA.value + f"{help_text}")
 
 
 def convert_units(
@@ -161,7 +182,7 @@ def get_mem_size_str(
 def process_imported_asset(
     importer: trade.AbstractImporter,
     render_asset_handle: str = "",
-) -> Tuple:
+) -> List[str]:
     """
     Use the trade.AbstractImporter class to query data size of mesh and image
     of asset
@@ -205,12 +226,14 @@ def process_imported_asset(
 
 def parse_dataset(
     sim: habitat_sim.Simulator = None, dataset_path: str = None
-) -> List[Tuple]:
+) -> List[List[str]]:
     """
     Load and process dataset objects using template handles
     """
     if sim is None:
-        raise RuntimeError("No simulator provided to parse_dataset(...).")
+        raise RuntimeError(
+            ANSICodes.FAIL.value + "No simulator provided to parse_dataset(...)."
+        )
 
     metadata_mediator = sim.metadata_mediator
     if (
@@ -218,74 +241,77 @@ def parse_dataset(
         or metadata_mediator.dataset_exists(dataset_path) is False
     ):
         raise RuntimeError(
-            "No meta data mediator or dataset exists in parse_dataset(...)."
+            ANSICodes.FAIL.value
+            + "No meta data mediator or dataset exists in parse_dataset(...)."
         )
+
+    # print detailed information about how to use utilize certain parameters
+    # to run this script
+    print_help_text()
 
     # get dataset that is currently being used by the simulator
     active_dataset: str = metadata_mediator.active_dataset
-    print(
-        MoreANSICodes.BRIGHT_BLUE.value + MoreANSICodes.BOLD.value + "\nActive Dataset"
-    )
-    print(MoreANSICodes.BRIGHT_BLUE.value + MoreANSICodes.BOLD.value + "-" * 72)
-    print(MoreANSICodes.BRIGHT_BLUE.value + f"{active_dataset}\n")
+    text_format = ANSICodes.BRIGHT_BLUE.value + ANSICodes.BOLD.value
+    print(text_format + "\nActive Dataset")
+    print(text_format + "-" * 72)
+    text_format = ANSICodes.BRIGHT_BLUE.value
+    print(text_format + f"{active_dataset}\n")
     print("")
 
     # get exhaustive List of information about the dataset
     dataset_report: str = metadata_mediator.dataset_report(dataset_path)
-    print(MoreANSICodes.BRIGHT_CYAN.value + MoreANSICodes.BOLD.value + "Dataset Report")
-    print(MoreANSICodes.BRIGHT_CYAN.value + MoreANSICodes.BOLD.value + "-" * 72)
-    print(MoreANSICodes.BRIGHT_CYAN.value + f"{dataset_report}")
+    text_format = ANSICodes.BRIGHT_CYAN.value + ANSICodes.BOLD.value
+    print(text_format + "Dataset Report")
+    print(text_format + "-" * 72)
+    text_format = ANSICodes.BRIGHT_CYAN.value
+    print(text_format + f"{dataset_report}")
     print("")
 
     # get handles of every scene from the simulator
     scene_handles: List[str] = metadata_mediator.get_scene_handles()
-    print(
-        MoreANSICodes.BRIGHT_MAGENTA.value + MoreANSICodes.BOLD.value + "Scene Handles"
-    )
-    print(MoreANSICodes.BRIGHT_MAGENTA.value + MoreANSICodes.BOLD.value + "-" * 72)
+    text_format = ANSICodes.BRIGHT_MAGENTA.value + ANSICodes.BOLD.value
+    print(text_format + "Scene Handles")
+    print(text_format + "-" * 72)
+    text_format = ANSICodes.BRIGHT_MAGENTA.value
     for handle in scene_handles:
-        print(MoreANSICodes.BRIGHT_MAGENTA.value + f"{handle}\n")
+        print(text_format + f"{handle}\n")
     print("")
 
     # get List of Unified Robotics Description Format files
     urdf_paths = metadata_mediator.urdf_paths
     urdf_paths_list = list(urdf_paths.keys())
-    print(
-        MoreANSICodes.BRIGHT_RED.value
-        + MoreANSICodes.BOLD.value
-        + f"num urdf paths: {len(urdf_paths_list)}"
-    )
-    print(MoreANSICodes.BRIGHT_RED.value + MoreANSICodes.BOLD.value + "-" * 72)
+    text_format = ANSICodes.BRIGHT_RED.value + ANSICodes.BOLD.value
+    print(text_format + f"num urdf paths: {len(urdf_paths_list)}")
+    print(text_format + "-" * 72)
     if len(urdf_paths_list) == 0:
         urdf_paths["Paths"] = "None"
+    text_format = ANSICodes.BRIGHT_RED.value
     for key, val in urdf_paths.items():
-        print(MoreANSICodes.BRIGHT_RED.value + f"{key} : {val}")
+        print(text_format + f"{key} : {val}")
     print("")
 
     # get asset template manager and get template handles of each primitive asset
     asset_template_manager = metadata_mediator.asset_template_manager
+    text_format = ANSICodes.ORANGE.value + ANSICodes.BOLD.value
     print(
-        MoreANSICodes.ORANGE.value
-        + MoreANSICodes.BOLD.value
+        text_format
         + f"\nnumber of primitive asset templates: {asset_template_manager.get_num_templates()}"
     )
-    print(MoreANSICodes.ORANGE.value + MoreANSICodes.BOLD.value + "-" * 72)
+    print(text_format + "-" * 72)
     template_handles = asset_template_manager.get_template_handles()
     templates_info = asset_template_manager.get_templates_info()
     for (handle, info) in zip(template_handles, templates_info):
         print(Fore.GREEN + f"{handle}")
-        print(MoreANSICodes.ORANGE.value + MoreANSICodes.ITALIC.value + f"{info}\n")
+        print(ANSICodes.ORANGE.value + ANSICodes.ITALIC.value + f"{info}\n")
     print("")
 
     # Get rigid object manager
     rigid_object_manager = sim.get_rigid_object_manager()
-    print(
-        MoreANSICodes.YELLOW.value
-        + MoreANSICodes.BOLD.value
-        + "Rigid object manager objects"
-    )
-    print(MoreANSICodes.YELLOW.value + MoreANSICodes.BOLD.value + "-" * 72)
-    print(MoreANSICodes.YELLOW.value + rigid_object_manager.get_objects_CSV_info())
+    text_format = ANSICodes.YELLOW.value + ANSICodes.BOLD.value
+    print(text_format + "Rigid object manager objects")
+    print(text_format + "-" * 72)
+    text_format = ANSICodes.YELLOW.value
+    print(text_format + rigid_object_manager.get_objects_CSV_info())
     print("")
 
     # Get object attribute manager for objects from dataset, load the dataset,
@@ -293,16 +319,15 @@ def parse_dataset(
     object_attributes_manager = sim.get_object_template_manager()
     object_attributes_manager.load_configs(dataset_path)
     object_template_handles = object_attributes_manager.get_file_template_handles("")
+    text_format = ANSICodes.BRIGHT_MAGENTA.value + ANSICodes.BOLD.value
     print(
-        MoreANSICodes.BRIGHT_MAGENTA.value
-        + MoreANSICodes.BOLD.value
-        + f"\nnumber of objects in dataset: {len(object_template_handles)}"
+        text_format + f"\nnumber of objects in dataset: {len(object_template_handles)}"
     )
-    print(MoreANSICodes.BRIGHT_MAGENTA.value + MoreANSICodes.BOLD.value + "-" * 72)
+    print(text_format + "-" * 72)
     print("")
 
     # process each asset with trade.AbstractImporter and construct csv data
-    csv_rows: List[str] = []
+    csv_rows: List[List[str]] = []
     manager = trade.ImporterManager()
     importer = manager.load_and_instantiate("AnySceneImporter")
     for handle in object_template_handles:
@@ -316,21 +341,17 @@ def parse_dataset(
     return csv_rows
 
 
-def write_csv(csv_rows: List[str] = None) -> None:
+def create_csv_file(csv_rows: List[str], csv_file_prefix: str = "") -> None:
     """
     Set directory where our csv's will be saved, create the csv file name,
     create the column names of our csv data, then open and write the csv
     file
     """
-    csv_dir_path = f"{DATA_PATH}/dataset_csvs"
-    csv_file_prefix = "ycb"
+    csv_dir_path = f"{HABITAT_SIM_PATH}/data/dataset_csvs/"
     file_path = CSVWriter.create_unique_filename(csv_dir_path, csv_file_prefix)
-    print(
-        MoreANSICodes.PURPLE.value
-        + MoreANSICodes.BOLD.value
-        + f"Writing csv results to: \n{file_path}"
-    )
-    print(MoreANSICodes.PURPLE.value + MoreANSICodes.BOLD.value + "-" * 72)
+    text_format = ANSICodes.PURPLE.value + ANSICodes.BOLD.value
+    print(text_format + f"Writing csv results to: \n{file_path}")
+    print(text_format + "-" * 72)
     headers = [
         "mesh name",
         "mesh index data size",
@@ -339,7 +360,8 @@ def write_csv(csv_rows: List[str] = None) -> None:
         "image data size",
     ]
     CSVWriter.write_file(headers, csv_rows)
-    print(MoreANSICodes.PURPLE.value + "CSV writing done\n")
+    text_format = ANSICodes.PURPLE.value
+    print(text_format + "CSV writing done\n")
 
 
 def make_configuration(sim_settings):
@@ -396,17 +418,37 @@ def build_parser(
         help='scene/stage file to load (default: "./data/test_assets/scenes/simple_room.glb")',
     )
     parser.add_argument(
-        "--dataset",
+        "--dataset_name",
+        default=None,
+        type=str,
+        metavar="DATASET_PATH",
+        help="for convenience, simple name of dataset configuration file to use, use None if you want to enter the file path instead (default: None)",
+    )
+    parser.add_argument(
+        "--dataset_path",
         default="./data/objects/ycb/ycb.scene_dataset_config.json",
         type=str,
-        metavar="DATASET",
-        help='dataset configuration file to use (default: "./data/objects/ycb/ycb.scene_dataset_config.json")',
+        metavar="DATASET_PATH",
+        help='relative path of dataset configuration file to use (default: "./data/objects/ycb/ycb.scene_dataset_config.json")',
     )
     parser.add_argument(
         "--disable_physics",
         default=False,
         action="store_true",
         help="disable physics simulation (default: False)",
+    )
+    parser.add_argument(
+        "--csv_file_prefix",
+        default=None,
+        type=str,
+        metavar="PREFIX",
+        help="""
+Prefix string of file name for CSV file to create, e.g.
+ycb,
+replica_CAD,
+fetch_robot,
+(default: None)
+""",
     )
     return parser
 
@@ -416,7 +458,8 @@ def main() -> None:
     Create Simulator, parse dataset, write csv file
     """
 
-    # setup colorama terminal color printing
+    # setup colorama terminal color printing so that format and color reset
+    # after each print statement
     init(autoreset=True)
 
     # parse arguments from command line: scene, dataset, if we process physics
@@ -425,13 +468,37 @@ def main() -> None:
     # Setting up sim_settings
     sim_settings: Dict[str, Any] = default_sim_settings
     sim_settings["scene"] = args.scene
-    sim_settings["scene_dataset_config_file"] = args.dataset
+    sim_settings["simple_dataset_name"] = args.dataset_name
+    sim_settings["scene_dataset_config_file"] = args.dataset_path
     sim_settings["enable_physics"] = not args.disable_physics
+    sim_settings["csv_file_prefix"] = args.csv_file_prefix
 
+    # determine if using dataset_name or dataset_path to reference dataset config file
+    # dictionary to refer to datasets by simple names rather than full paths
+    dataset_name_to_path_dict["ycb"] = YCB_PATH
+    dataset_name_to_path_dict["replica_CAD"] = REPLICA_CAD_PATH
+    dataset_name_to_path_dict["fetch_robot"] = ROBOT_PATH
+    if (
+        args.dataset_name is not None
+        and dataset_name_to_path_dict[args.dataset_name] is not None
+    ):
+        dataset_path = dataset_name_to_path_dict[args.dataset_name]
+        sim_settings["scene_dataset_config_file"] = dataset_path
+        print(
+            ANSICodes.BRIGHT_CYAN.value
+            + f"\ndataset\n {args.dataset_name} : {dataset_name_to_path_dict[args.dataset_name]}\n"
+        )
+    else:
+        dataset_path = args.dataset_path
+        print(ANSICodes.BRIGHT_CYAN.value + f"\ndataset path:\n {dataset_path}\n")
+
+    # create simulator for this scene and dataset
     cfg = make_configuration(sim_settings)
     sim = habitat_sim.Simulator(cfg)
-    csv_rows: List[str] = parse_dataset(sim, args.dataset)
-    write_csv(csv_rows)
+
+    # parse dataset and write csv file
+    csv_rows: List[List[str]] = parse_dataset(sim, dataset_path)
+    create_csv_file(csv_rows, args.csv_file_prefix)
 
 
 if __name__ == "__main__":
