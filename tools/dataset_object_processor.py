@@ -177,7 +177,7 @@ def process_imported_asset(
     Use the trade.AbstractImporter class to query data size of mesh and image
     of asset
     """
-    # get asset path
+    # construct asset absolute file path
     asset_path = os.path.join(HABITAT_SIM_PATH, render_asset_handle)
 
     # Open file with AbstractImporter
