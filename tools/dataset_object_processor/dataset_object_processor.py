@@ -14,6 +14,12 @@ from habitat_sim.utils.settings import default_sim_settings
 
 repo = git.Repo(".", search_parent_directories=True)
 HABITAT_SIM_PATH = repo.working_tree_dir
+CSV_OUTPUT_PATH = os.path.join(
+    HABITAT_SIM_PATH, "tools/dataset_object_processor/dataset_csv_files/"
+)
+VIDEO_OUTPUT_PATH = os.path.join(
+    HABITAT_SIM_PATH, "tools/dataset_object_processor/dataset_video_recordings/"
+)
 
 # Hard-coded paths for common datasets this script will process
 YCB_PATH = "./data/objects/ycb/ycb.scene_dataset_config.json"
@@ -379,7 +385,7 @@ def parse_dataset(
 def create_csv_file(
     headers: List[str],
     csv_rows: List[List[str]],
-    csv_dir_path=f"{HABITAT_SIM_PATH}/data/dataset_csvs/",
+    csv_dir_path=CSV_OUTPUT_PATH,
     csv_file_prefix: str = "",
 ) -> None:
     """
@@ -544,7 +550,7 @@ def main() -> None:
         "Comes to Rest After...",
     ]
     csv_rows: List[List[str]] = parse_dataset(sim, dataset_path)
-    csv_dir_path = f"{HABITAT_SIM_PATH}/data/dataset_csvs/"
+    csv_dir_path = CSV_OUTPUT_PATH
     create_csv_file(headers, csv_rows, csv_dir_path, args.csv_file_prefix)
 
 
