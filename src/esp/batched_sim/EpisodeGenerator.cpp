@@ -305,8 +305,12 @@ void addModifiedEpisode(const EpisodeGeneratorConfig& config,
                                   collection, random, maxFailedPlacements);
 
   episode.targetObjIndex_ = refEpisode.targetObjIndex_;
-  int numSpawnAttempts = 400000;
+  int numSpawnAttempts = 40000;
   bool success = false;
+
+float currentBestSquaredDistance = std::numeric_limits<float>::infinity();
+
+
   for (int i = 0; i < numSpawnAttempts; i++) {
     // find a robot spawn
     BATCHED_SIM_ASSERT(std::isnan(episode.agentStartPos_.x()));
@@ -320,6 +324,7 @@ void addModifiedEpisode(const EpisodeGeneratorConfig& config,
     const FreeObject* freeObjectPtr = &robotProxy;
     Mn::Quaternion rotation;
     float robotYaw = 0.f;
+    Mn::Matrix4 mat ;
     BATCHED_SIM_ASSERT(isRobotPosAttempt);
     spawn.freeObjIndex_ = -1;
 
@@ -336,7 +341,7 @@ void addModifiedEpisode(const EpisodeGeneratorConfig& config,
       numAttempts++;
 
     if (config.pickStartPosition){
-      float spawndist = 0.0f + 4.0f * float(i) / float(numSpawnAttempts); // gradually increase distance from target
+      float spawndist = 1.0f + 3.0f * float(i) / float(numSpawnAttempts); // gradually increase distance from target
       robotSpawnRange = Mn::Range3D({std::max(targetSpawn.startPos_.x() - spawndist, columnGrid.minX) , 0.04f, std::max(targetSpawn.startPos_.z() - spawndist, columnGrid.minZ)},
                                 {std::min(targetSpawn.startPos_.x() + spawndist, columnGrid.getMaxX()),  0.04f, std::min(targetSpawn.startPos_.z() + spawndist, columnGrid.getMaxZ())} 
                                 );  // just above the floor
@@ -354,17 +359,16 @@ void addModifiedEpisode(const EpisodeGeneratorConfig& config,
     }
 
     if (config.pickStartPosition){
-    //  robotYaw = std::atan2( (targetSpawn.startPos_.z() -  randomPos.z()) , (targetSpawn.startPos_.x() -  randomPos.x()));
-     robotYaw = std::atan2( (targetSpawn.startPos_.x() -  randomPos.x()) , (targetSpawn.startPos_.z() -  randomPos.z())) - float(Mn::Rad(Mn::Deg(90.f))) ;
-    }
+        robotYaw = std::atan2( (targetSpawn.startPos_.x() -  randomPos.x()) , (targetSpawn.startPos_.z() -  randomPos.z())) - float(Mn::Rad(Mn::Deg(90.f))) ;
+        rotation = yawToRotation(robotYaw);
+        mat = Mn::Matrix4::from(rotation.toMatrix(), randomPos);
+      }
     else{
       robotYaw = random.uniform_float(-float(Mn::Rad(Mn::Deg(180.f))),
-                          float(Mn::Rad(Mn::Deg(180.f))));
+                            float(Mn::Rad(Mn::Deg(180.f))));
+      rotation = yawToRotation(robotYaw);
+      mat = Mn::Matrix4::from(rotation.toMatrix(), randomPos);
     }
-
-    rotation = yawToRotation(robotYaw);
-
-    Mn::Matrix4 mat = Mn::Matrix4::from(rotation.toMatrix(), randomPos);
 
     if (placementHelper.place(mat, freeObject)) {
       auto adjustedSpawnRange = spawnRange;
@@ -372,15 +376,36 @@ void addModifiedEpisode(const EpisodeGeneratorConfig& config,
       if (!adjustedSpawnRange.contains(mat.translation())) {
         continue;
       }
-      spawn.startPos_ = mat.translation();
 
-      BATCHED_SIM_ASSERT(isRobotPosAttempt);
-      episode.agentStartPos_ =
-          Mn::Vector2(spawn.startPos_.x(), spawn.startPos_.z());
-      episode.agentStartYaw_ = robotYaw;
+      if (config.pickStartPosition){
+        Mn::Vector3 robotToTarget = randomPos - targetSpawn.startPos_;
+        float tentativeDist = Mn::Math::dot(robotToTarget, robotToTarget);
+        if (tentativeDist < currentBestSquaredDistance){
+          currentBestSquaredDistance = tentativeDist;
 
-      success = true;
-      break;
+          spawn.startPos_ = mat.translation();
+          BATCHED_SIM_ASSERT(isRobotPosAttempt);
+          episode.agentStartPos_ =
+              Mn::Vector2(spawn.startPos_.x(), spawn.startPos_.z());
+          episode.agentStartYaw_ = robotYaw;
+          setFetchJointStartPositions(config,
+                                 episode,
+                                 collection,
+                                 random) ;
+          success = true;
+        }
+      }
+      else
+      {
+        spawn.startPos_ = mat.translation();
+        BATCHED_SIM_ASSERT(isRobotPosAttempt);
+        episode.agentStartPos_ =
+            Mn::Vector2(spawn.startPos_.x(), spawn.startPos_.z());
+        episode.agentStartYaw_ = robotYaw;
+
+        success = true;
+        break;
+      }
     }
   }
 
