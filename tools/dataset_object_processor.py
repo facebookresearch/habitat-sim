@@ -20,8 +20,7 @@ YCB_PATH = "./data/objects/ycb/ycb.scene_dataset_config.json"
 
 REPLICA_CAD_PATH = "./data/replica_cad/replicaCAD.scene_dataset_config.json"
 
-# TODO, which dataset is this? Fetch Robot?
-ROBOT_PATH = ""
+FETCH_ROBOT_PATH = ""  # TODO, which dataset is this? Fetch Robot?
 
 # dictionary to refer to datasets by simple names rather than full paths
 dataset_name_to_path_dict: Dict[str, str] = {}
@@ -134,7 +133,7 @@ def print_help_text() -> None:
 To save effort, you can refer to pre-coded dataset names
 instead of full paths for the "--dataset_name" parameter.
 If you enter both a dataset name and a dataset path,
-it will use dataset name instead.
+it will use dataset name.
 
 The ones registered in the script currently are:
 ycb
@@ -169,7 +168,7 @@ def get_mem_size_str(
     return f"{new_size} {unit_str}"
 
 
-def process_imported_asset(
+def process_asset_memory(
     importer: trade.AbstractImporter,
     render_asset_handle: str = "",
 ) -> List[str]:
@@ -177,12 +176,6 @@ def process_imported_asset(
     Use the trade.AbstractImporter class to query data size of mesh and image
     of asset
     """
-    # construct asset absolute file path
-    asset_path = os.path.join(HABITAT_SIM_PATH, render_asset_handle)
-
-    # Open file with AbstractImporter
-    importer.open_file(asset_path)
-
     # Get mesh data
     index_data_size = 0  # bytes
     vertex_data_size = 0  # bytes
@@ -204,7 +197,7 @@ def process_imported_asset(
             image_data_size += len(image.data)
     image_data_str = get_mem_size_str(image_data_size)
 
-    # return results as a tuple formatted for csv rows
+    # return results as a list of strings formatted for csv rows
     return [
         render_asset_handle,
         index_data_str,
@@ -212,6 +205,40 @@ def process_imported_asset(
         mesh_data_str,
         image_data_str,
     ]
+
+
+def process_asset_physics(
+    importer: trade.AbstractImporter,
+    render_asset_handle: str = "",
+) -> List[str]:
+    """
+    Run series of tests on asset to see how it responds in physics simulations
+    """
+    physics_data: List[str] = [""]
+
+    return physics_data
+
+
+def process_imported_asset(
+    importer: trade.AbstractImporter,
+    render_asset_handle: str = "",
+) -> List[str]:
+    """
+    Use the trade.AbstractImporter class to query data size of mesh and image
+    of asset and how the asset behaves during physics simulations
+    """
+    # construct asset absolute file path
+    asset_path = os.path.join(HABITAT_SIM_PATH, render_asset_handle)
+
+    # Open file with AbstractImporter
+    importer.open_file(asset_path)
+
+    # analyze objects with regard to memory and physics simulations
+    memory_csv_data: List[str] = process_asset_memory(importer, render_asset_handle)
+    physics_cvs_data: List[str] = process_asset_physics(importer, render_asset_handle)
+
+    # return results as a list of strings formatted for csv rows
+    return memory_csv_data + physics_cvs_data
 
 
 def parse_dataset(
@@ -331,7 +358,9 @@ def parse_dataset(
     return csv_rows
 
 
-def create_csv_file(csv_rows: List[str], csv_file_prefix: str = "") -> None:
+def create_csv_file(
+    headers: List[str], csv_rows: List[List[str]], csv_file_prefix: str = ""
+) -> None:
     """
     Set directory where our csv's will be saved, create the csv file name,
     create the column names of our csv data, then open and write the csv
@@ -342,13 +371,6 @@ def create_csv_file(csv_rows: List[str], csv_file_prefix: str = "") -> None:
     text_format = ANSICodes.PURPLE.value + ANSICodes.BOLD.value
     print(text_format + f"Writing csv results to: \n{file_path}")
     print(text_format + "-" * 72)
-    headers = [
-        "mesh name",
-        "mesh index data size",
-        "mesh vertex data size",
-        "total mesh data size",
-        "image data size",
-    ]
     CSVWriter.write_file(headers, csv_rows)
     text_format = ANSICodes.PURPLE.value
     print(text_format + "CSV writing done\n")
@@ -473,11 +495,10 @@ def main() -> None:
     sim_settings["enable_physics"] = not args.disable_physics
     sim_settings["csv_file_prefix"] = args.csv_file_prefix
 
-    # determine if using dataset_name or dataset_path to reference dataset config file
-    # dictionary to refer to datasets by simple names rather than full paths
+    # determine if using dataset_name or dataset_path to reference dataset config file.
     dataset_name_to_path_dict["ycb"] = YCB_PATH
     dataset_name_to_path_dict["replica_CAD"] = REPLICA_CAD_PATH
-    dataset_name_to_path_dict["fetch_robot"] = ROBOT_PATH
+    dataset_name_to_path_dict["fetch_robot"] = FETCH_ROBOT_PATH
     if (
         args.dataset_name is not None
         and dataset_name_to_path_dict[args.dataset_name] is not None
@@ -497,8 +518,16 @@ def main() -> None:
     sim = habitat_sim.Simulator(cfg)
 
     # parse dataset and write csv file
+    headers: List[str] = [
+        "Mesh Name",
+        "Mesh Index Data Size",
+        "Mesh Vertex Data Size",
+        "Total Mesh Data Size",
+        "Image Data Size",
+        "Comes to Rest After...",
+    ]
     csv_rows: List[List[str]] = parse_dataset(sim, dataset_path)
-    create_csv_file(csv_rows, args.csv_file_prefix)
+    create_csv_file(headers, csv_rows, args.csv_file_prefix)
 
 
 if __name__ == "__main__":
