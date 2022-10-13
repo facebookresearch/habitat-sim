@@ -4,8 +4,11 @@
 
 #include "Player.h"
 
+#include <Corrade/Utility/Path.h>
+
 #include "esp/assets/ResourceManager.h"
 #include "esp/core/Esp.h"
+#include "esp/io/Json.h"
 #include "esp/io/JsonAllTypes.h"
 
 #include <rapidjson/document.h>
@@ -27,8 +30,12 @@ Keyframe Player::keyframeFromString(const std::string& keyframe) {
   return res;
 }
 
-Player::Player(const LoadAndCreateRenderAssetInstanceCallback& callback)
-    : loadAndCreateRenderAssetInstanceCallback(callback) {}
+Player::Player(const LoadAndCreateRenderAssetInstanceCallback&
+                   loadAndCreateRenderAssetInstanceCallback,
+               const ChangeLightSetupCallback& changeLightSetupCallback)
+    : loadAndCreateRenderAssetInstanceCallback(
+          loadAndCreateRenderAssetInstanceCallback),
+      changeLightSetupCallback(changeLightSetupCallback) {}
 
 void Player::readKeyframesFromFile(const std::string& filepath) {
   close();
@@ -165,6 +172,10 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     node->setTranslation(state.absTransform.translation);
     node->setRotation(state.absTransform.rotation);
     setSemanticIdForSubtree(node, state.semanticId);
+  }
+
+  if (keyframe.lightsChanged) {
+    changeLightSetupCallback(keyframe.lights);
   }
 }
 

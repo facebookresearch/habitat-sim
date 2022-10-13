@@ -14,6 +14,7 @@
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
 #include "BulletCollisionHelper.h"
 #include "BulletRigidStage.h"
+#include "esp/assets/ResourceManager.h"
 #include "esp/physics/CollisionGroupHelper.h"
 
 namespace esp {

@@ -10,9 +10,10 @@
  * esp::assets::MeshMetaData
  */
 
+#include <Magnum/Math/Matrix4.h>
+#include <Magnum/Math/Quaternion.h>
 #include "esp/core/Esp.h"
 #include "esp/geo/CoordinateFrame.h"
-#include "esp/gfx/magnum.h"
 
 namespace esp {
 namespace assets {

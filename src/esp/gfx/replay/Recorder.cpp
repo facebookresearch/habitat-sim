@@ -96,6 +96,16 @@ void Recorder::addUserTransformToKeyframe(const std::string& name,
   getKeyframe().userTransforms[name] = Transform{translation, rotation};
 }
 
+void Recorder::addLightToKeyframe(const LightInfo& lightInfo) {
+  getKeyframe().lightsChanged = true;
+  getKeyframe().lights.emplace_back(lightInfo);
+}
+
+void Recorder::clearLightsFromKeyframe() {
+  getKeyframe().lightsChanged = true;
+  getKeyframe().lights.clear();
+}
+
 void Recorder::addLoadsCreationsDeletions(KeyframeIterator begin,
                                           KeyframeIterator end,
                                           Keyframe* dest) {

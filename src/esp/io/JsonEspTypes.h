@@ -15,6 +15,7 @@
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/core/Esp.h"
 #include "esp/gfx/replay/Keyframe.h"
+#include "esp/nav/PathFinder.h"
 
 namespace esp {
 namespace io {
@@ -169,11 +170,39 @@ inline bool fromJsonValue(const JsonGenericValue& obj,
   return true;
 }
 
+inline JsonGenericValue toJsonValue(const esp::gfx::LightInfo& x,
+                                    JsonAllocator& allocator) {
+  JsonGenericValue obj(rapidjson::kObjectType);
+  addMember(obj, "vector", x.vector, allocator);
+  addMember(obj, "color", x.color, allocator);
+  addMember(obj, "model", x.model, allocator);
+  return obj;
+}
+
+inline bool fromJsonValue(const JsonGenericValue& obj, esp::gfx::LightInfo& x) {
+  readMember(obj, "vector", x.vector);
+  readMember(obj, "color", x.color);
+  readMember(obj, "model", x.model);
+  return true;
+}
+
+JsonGenericValue toJsonValue(const esp::gfx::LightPositionModel& x,
+                             JsonAllocator& allocator);
+
+bool fromJsonValue(const JsonGenericValue& obj,
+                   esp::gfx::LightPositionModel& x);
+
 JsonGenericValue toJsonValue(const esp::gfx::replay::Keyframe& x,
                              JsonAllocator& allocator);
 
 bool fromJsonValue(const JsonGenericValue& keyframeObj,
                    esp::gfx::replay::Keyframe& keyframe);
+
+// NavMeshSettings JSON serialization
+JsonGenericValue toJsonValue(const esp::nav::NavMeshSettings& x,
+                             JsonAllocator& allocator);
+
+bool fromJsonValue(const JsonGenericValue& obj, esp::nav::NavMeshSettings& x);
 
 }  // namespace io
 }  // namespace esp

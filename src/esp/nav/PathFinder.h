@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "esp/core/Esp.h"
+#include "esp/core/EspEigen.h"
 
 namespace esp {
 // forward declaration
@@ -266,6 +267,12 @@ struct NavMeshSettings {
     filterLedgeSpans = true;
     filterWalkableLowHeightSpans = true;
   }
+
+  //! Load the settings from a JSON file
+  void readFromJSON(const std::string& jsonFile);
+
+  //! Save the settings to a JSON file
+  void writeToJSON(const std::string& jsonFile) const;
 
   NavMeshSettings() { setDefaults(); }
 

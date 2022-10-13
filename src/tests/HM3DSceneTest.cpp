@@ -5,6 +5,7 @@
 #include <Corrade/Utility/Path.h>
 #include <string>
 
+#include "esp/metadata/MetadataMediator.h"
 #include "esp/scene/SemanticScene.h"
 #include "esp/sim/Simulator.h"
 

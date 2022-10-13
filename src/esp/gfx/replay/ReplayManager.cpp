@@ -10,7 +10,8 @@ namespace replay {
 
 std::shared_ptr<Player> ReplayManager::readKeyframesFromFile(
     const std::string& filepath) {
-  auto player = std::make_shared<Player>(playerCallback_);
+  auto player = std::make_shared<Player>(
+      loadAndCreateRenderAssetInstanceCallback_, changeLightSetupCallback_);
   player->readKeyframesFromFile(filepath);
   if (player->getNumKeyframes() == 0) {
     ESP_ERROR(Mn::Debug::Flag::NoSpace)
@@ -21,7 +22,8 @@ std::shared_ptr<Player> ReplayManager::readKeyframesFromFile(
 }
 
 std::shared_ptr<Player> ReplayManager::createEmptyPlayer() {
-  auto player = std::make_shared<Player>(playerCallback_);
+  auto player = std::make_shared<Player>(
+      loadAndCreateRenderAssetInstanceCallback_, changeLightSetupCallback_);
   return player;
 }
 

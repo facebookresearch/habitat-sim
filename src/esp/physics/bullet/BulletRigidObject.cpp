@@ -16,6 +16,8 @@
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
 #include "BulletCollisionHelper.h"
 #include "BulletRigidObject.h"
+#include "esp/assets/ResourceManager.h"
+#include "esp/metadata/managers/AssetAttributesManager.h"
 
 //!  A Few considerations in construction
 //!  Bullet Mesh conversion adapted from:

@@ -22,6 +22,8 @@
 #include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/GL/Context.h>
 #include <Magnum/GL/Extensions.h>
+#include <Magnum/GL/TextureFormat.h>
+#include <Magnum/Image.h>
 #include <Magnum/ImageView.h>
 #include <Magnum/Math/FunctionsBatch.h>
 #include <Magnum/Math/Range.h>
@@ -32,6 +34,7 @@
 #include <Magnum/MeshTools/Interleave.h>
 #include <Magnum/MeshTools/Reference.h>
 #include <Magnum/MeshTools/RemoveDuplicates.h>
+#include <Magnum/MeshTools/Transform.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/SceneGraph/Object.h>
 #include <Magnum/SceneTools/FlattenMeshHierarchy.h>
@@ -46,6 +49,11 @@
 
 #include <memory>
 
+#include "esp/assets/BaseMesh.h"
+#include "esp/assets/CollisionMeshData.h"
+#include "esp/assets/GenericSemanticMeshData.h"
+#include "esp/assets/MeshMetaData.h"
+#include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/geo/Geo.h"
 #include "esp/gfx/GenericDrawable.h"
 #include "esp/gfx/MaterialUtil.h"
@@ -53,8 +61,10 @@
 #include "esp/gfx/replay/Recorder.h"
 #include "esp/io/Json.h"
 #include "esp/io/URDFParser.h"
+#include "esp/metadata/MetadataMediator.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/scene/SceneGraph.h"
+#include "esp/scene/SceneManager.h"
 #include "esp/scene/SemanticScene.h"
 
 #include "esp/nav/PathFinder.h"
@@ -2220,6 +2230,17 @@ ObjectInstanceShaderType ResourceManager::getMaterialShaderType(
   return infoSpecShaderType;
 }  // ResourceManager::getMaterialShaderType
 
+bool ResourceManager::checkForPassedShaderType(
+    const ObjectInstanceShaderType typeToCheck,
+    const Mn::Trade::MaterialData& materialData,
+    const ObjectInstanceShaderType verificationType,
+    const Mn::Trade::MaterialType mnVerificationType) const {
+  return (
+      (typeToCheck == verificationType) ||
+      ((typeToCheck == ObjectInstanceShaderType::Material) &&
+       ((materialData.types() & mnVerificationType) == mnVerificationType)));
+}
+
 gfx::PhongMaterialData::uptr ResourceManager::buildFlatShadedMaterialData(
     const Mn::Trade::MaterialData& materialData,
     int textureBaseIndex) {
@@ -2687,6 +2708,45 @@ bool ResourceManager::instantiateAssetsOnDemand(
   return true;
 }  // ResourceManager::instantiateAssetsOnDemand
 
+const std::vector<assets::CollisionMeshData>& ResourceManager::getCollisionMesh(
+    const std::string& collisionAssetHandle) const {
+  auto colMeshGroupIter = collisionMeshGroups_.find(collisionAssetHandle);
+  CORRADE_INTERNAL_ASSERT(colMeshGroupIter != collisionMeshGroups_.end());
+  return colMeshGroupIter->second;
+}
+
+metadata::managers::AssetAttributesManager::ptr
+ResourceManager::getAssetAttributesManager() const {
+  return metadataMediator_->getAssetAttributesManager();
+}
+
+metadata::managers::LightLayoutAttributesManager::ptr
+ResourceManager::getLightLayoutAttributesManager() const {
+  return metadataMediator_->getLightLayoutAttributesManager();
+}
+
+metadata::managers::ObjectAttributesManager::ptr
+ResourceManager::getObjectAttributesManager() const {
+  return metadataMediator_->getObjectAttributesManager();
+}
+
+metadata::managers::PhysicsAttributesManager::ptr
+ResourceManager::getPhysicsAttributesManager() const {
+  return metadataMediator_->getPhysicsAttributesManager();
+}
+
+metadata::managers::StageAttributesManager::ptr
+ResourceManager::getStageAttributesManager() const {
+  return metadataMediator_->getStageAttributesManager();
+}
+
+const MeshMetaData& ResourceManager::getMeshMetaData(
+    const std::string& metaDataName) const {
+  auto resDictMDIter = resourceDict_.find(metaDataName);
+  CORRADE_INTERNAL_ASSERT(resDictMDIter != resourceDict_.end());
+  return resDictMDIter->second.meshMetaData;
+}
+
 void ResourceManager::addObjectToDrawables(
     const ObjectAttributes::ptr& ObjectAttributes,
     scene::SceneNode* parent,
@@ -2973,6 +3033,20 @@ void ResourceManager::joinSemanticHierarchy(
     joinSemanticHierarchy(mesh, meshObjectIds, metaData, child,
                           transformFromLocalToWorld);
   }
+}
+
+void ResourceManager::setLightSetup(gfx::LightSetup setup,
+                                    const Mn::ResourceKey& key) {
+  // add lights to recorder keyframe
+  if (gfxReplayRecorder_) {
+    gfxReplayRecorder_->clearLightsFromKeyframe();
+    for (const auto& light : setup) {
+      gfxReplayRecorder_->addLightToKeyframe(light);
+    }
+  }
+
+  shaderManager_.set(key, std::move(setup), Mn::ResourceDataState::Mutable,
+                     Mn::ResourcePolicy::Manual);
 }
 
 std::unique_ptr<MeshData> ResourceManager::createJoinedCollisionMesh(
