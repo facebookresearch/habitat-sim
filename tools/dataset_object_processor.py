@@ -26,6 +26,7 @@ FETCH_ROBOT_PATH = ""  # TODO, which dataset is this? Fetch Robot?
 dataset_name_to_path_dict: Dict[str, str] = {}
 
 
+# TODO: possibly move to separate utils file
 class CSVWriter:
     """
     Generalized utility to write csv files
@@ -88,6 +89,7 @@ class CSVWriter:
             writer.writerows(csv_rows)
 
 
+# TODO: possibly move to separate utils file
 class MemoryUnitConverter:
     """
     class to convert computer memory value units, i.e.
@@ -105,6 +107,7 @@ class MemoryUnitConverter:
     UNIT_CONVERSIONS = [1, 1 << 10, 1 << 20, 1 << 30]
 
 
+# TODO: possibly move to separate utils file
 class ANSICodes(Enum):
     """
     Terminal printing ANSI color and format codes
@@ -145,14 +148,16 @@ fetch_robot
     print(ANSICodes.BRIGHT_MAGENTA.value + f"{help_text}")
 
 
-def convert_units(
-    size: float, unit_type: int = MemoryUnitConverter.KILOBYTES, decimals: int = 4
+def convert_memory_units(
+    size: float,
+    unit_type: int = MemoryUnitConverter.KILOBYTES,
+    decimal_num_round: int = 4,
 ) -> float:
     """
-    Convert units of a float, bytes to desired unit, then round the result
+    Convert units of a float, bytes, to desired unit, then round the result
     """
     new_size = size / MemoryUnitConverter.UNIT_CONVERSIONS[unit_type]
-    return round(new_size, decimals)
+    return round(new_size, decimal_num_round)
 
 
 def get_mem_size_str(
@@ -163,7 +168,7 @@ def get_mem_size_str(
     Convert bytes to desired memory unit size, then create string
     that will be written into csv file rows
     """
-    new_size: float = convert_units(size, unit_type)
+    new_size: float = convert_memory_units(size, unit_type)
     unit_str: str = MemoryUnitConverter.UNIT_STRS[unit_type]
     return f"{new_size} {unit_str}"
 
@@ -180,29 +185,42 @@ def process_asset_memory(
     index_data_size = 0  # bytes
     vertex_data_size = 0  # bytes
     mesh_data_size = 0  # bytes
-    for i in range(importer.mesh_count):
+    mesh_count = importer.mesh_count
+    for i in range(mesh_count):
         mesh: trade.MeshData = importer.mesh(i)
         index_data_size += len(mesh.index_data)
         vertex_data_size += len(mesh.vertex_data)
         mesh_data_size += index_data_size + vertex_data_size
+
+    # construct mesh data related strings formatted for csv file
+    mesh_count_unit = "mesh" if mesh_count == 1 else "meshes"
+    mesh_count_str = f"{mesh_count} {mesh_count_unit}"
     index_data_str = get_mem_size_str(index_data_size)
     vertex_data_str = get_mem_size_str(vertex_data_size)
     mesh_data_str = get_mem_size_str(mesh_data_size)
 
     # Get image data
     image_data_size = 0  # bytes
+    image_count = 0
     for i in range(importer.image2d_count):
+        image_count += importer.image2d_level_count(i)
         for j in range(importer.image2d_level_count(i)):
             image: trade.ImageData2D = importer.image2d(i, j)
             image_data_size += len(image.data)
+
+    # construct image data related strings formatted for csv file
+    image_count_units = "image" if image_count == 1 else "images"
+    image_count_str = f"{image_count} {image_count_units}"
     image_data_str = get_mem_size_str(image_data_size)
 
     # return results as a list of strings formatted for csv rows
     return [
         render_asset_handle,
+        mesh_count_str,
         index_data_str,
         vertex_data_str,
         mesh_data_str,
+        image_count_str,
         image_data_str,
     ]
 
@@ -228,7 +246,7 @@ def process_imported_asset(
     of asset and how the asset behaves during physics simulations
     """
     # construct asset absolute file path
-    asset_path = os.path.join(HABITAT_SIM_PATH, render_asset_handle)
+    asset_path: str = os.path.join(HABITAT_SIM_PATH, render_asset_handle)
 
     # Open file with AbstractImporter
     importer.open_file(asset_path)
@@ -359,14 +377,16 @@ def parse_dataset(
 
 
 def create_csv_file(
-    headers: List[str], csv_rows: List[List[str]], csv_file_prefix: str = ""
+    headers: List[str],
+    csv_rows: List[List[str]],
+    csv_dir_path=f"{HABITAT_SIM_PATH}/data/dataset_csvs/",
+    csv_file_prefix: str = "",
 ) -> None:
     """
     Set directory where our csv's will be saved, create the csv file name,
     create the column names of our csv data, then open and write the csv
     file
     """
-    csv_dir_path = f"{HABITAT_SIM_PATH}/data/dataset_csvs/"
     file_path = CSVWriter.create_unique_filename(csv_dir_path, csv_file_prefix)
     text_format = ANSICodes.PURPLE.value + ANSICodes.BOLD.value
     print(text_format + f"Writing csv results to: \n{file_path}")
@@ -505,29 +525,27 @@ def main() -> None:
     ):
         dataset_path = dataset_name_to_path_dict[args.dataset_name]
         sim_settings["scene_dataset_config_file"] = dataset_path
-        print(
-            ANSICodes.BRIGHT_CYAN.value
-            + f"\ndataset\n {args.dataset_name} : {dataset_name_to_path_dict[args.dataset_name]}\n"
-        )
     else:
         dataset_path = args.dataset_path
-        print(ANSICodes.BRIGHT_CYAN.value + f"\ndataset path:\n {dataset_path}\n")
 
     # create simulator for this scene and dataset
     cfg = make_configuration(sim_settings)
     sim = habitat_sim.Simulator(cfg)
 
-    # parse dataset and write csv file
+    # Parse dataset and write CSV. "headers" stores the titles of each column
     headers: List[str] = [
         "Mesh Name",
+        "Mesh Count",
         "Mesh Index Data Size",
         "Mesh Vertex Data Size",
         "Total Mesh Data Size",
+        "Image Mip Map Count",
         "Image Data Size",
         "Comes to Rest After...",
     ]
     csv_rows: List[List[str]] = parse_dataset(sim, dataset_path)
-    create_csv_file(headers, csv_rows, args.csv_file_prefix)
+    csv_dir_path = f"{HABITAT_SIM_PATH}/data/dataset_csvs/"
+    create_csv_file(headers, csv_rows, csv_dir_path, args.csv_file_prefix)
 
 
 if __name__ == "__main__":
