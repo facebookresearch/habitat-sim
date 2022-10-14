@@ -4,19 +4,15 @@
     "generator": "Magnum GltfSceneConverter"
   },
   "extensionsUsed": [
-    "MAGNUMX_mesh_views",
-    "KHR_texture_ktx",
-    "KHR_texture_transform"
+    "MAGNUMX_mesh_views"
   ],
   "extensionsRequired": [
-    "MAGNUMX_mesh_views",
-    "KHR_texture_ktx",
-    "KHR_texture_transform"
+    "MAGNUMX_mesh_views"
   ],
   "buffers": [
     {
-      "uri": "batch.bin",
-      "byteLength": 2168
+      "uri": "batch-square-circle-triangle.bin",
+      "byteLength": 1903
     }
   ],
   "bufferViews": [
@@ -46,7 +42,7 @@
     {
       "buffer": 0,
       "byteOffset": 1820,
-      "byteLength": 348
+      "byteLength": 83
     }
   ],
   "accessors": [
@@ -100,47 +96,15 @@
     },
     {
       "pbrMetallicRoughness": {
-        "baseColorFactor": [0, 1, 1, 1],
-        "baseColorTexture": {
-          "index": 1,
-          "extensions": {
-            "KHR_texture_transform": {
-              "offset": [0, 0.5],
-              "scale": [0.5, 0.5]
-            }
-          }
-        }
+        "baseColorFactor": [0, 0.8, 0.8, 1]
       },
       "name": "cyan"
     },
     {
       "pbrMetallicRoughness": {
-        "baseColorFactor": [1, 0, 1, 1],
-        "baseColorTexture": {
-          "index": 1,
-          "extensions": {
-            "KHR_texture_transform": {
-              "offset": [0.5, 0.5],
-              "scale": [0.5, 0.5]
-            }
-          }
-        }
+        "baseColorFactor": [0.8, 0, 0.8, 1]
       },
       "name": "magenta"
-    },
-    {
-      "pbrMetallicRoughness": {
-        "baseColorFactor": [1, 1, 0, 1],
-        "baseColorTexture": {
-          "index": 1,
-          "extensions": {
-            "KHR_texture_transform": {
-              "scale": [0.5, 0.5]
-            }
-          }
-        }
-      },
-      "name": "yellow"
     }
   ],
   "samplers": [
@@ -154,26 +118,12 @@
   "textures": [
     {
       "sampler": 0,
-      "extensions": {
-        "KHR_texture_ktx": {
-          "source": 0,
-          "layer": 0
-        }
-      }
-    },
-    {
-      "sampler": 0,
-      "extensions": {
-        "KHR_texture_ktx": {
-          "source": 0,
-          "layer": 1
-        }
-      }
+      "source": 0
     }
   ],
   "images": [
     {
-      "mimeType": "image/ktx2",
+      "mimeType": "image/png",
       "bufferView": 4
     }
   ],
@@ -213,71 +163,11 @@
         "meshViewIndexCount": 9,
         "meshViewMaterial": 2
       }
-    },
-    {
-      "children": [7, 8, 9, 10],
-      "name": "four squares"
-    },
-    {
-      "mesh": 0,
-      "matrix": [
-        0.4, 0, 0, 0,
-        0, 0.4, 0, 0,
-        0, 0, 0.4, 0,
-        -0.5, -0.5, 0, 1
-      ],
-      "extras": {
-        "meshViewIndexOffset": 0,
-        "meshViewIndexCount": 6,
-        "meshViewMaterial": 0
-      }
-    },
-    {
-      "mesh": 0,
-      "matrix": [
-        0.4, 0, 0, 0,
-        0, 0.4, 0, 0,
-        0, 0, 0.4, 0,
-        0.5, -0.5, 0, 1
-      ],
-      "extras": {
-        "meshViewIndexOffset": 0,
-        "meshViewIndexCount": 6,
-        "meshViewMaterial": 1
-      }
-    },
-    {
-      "mesh": 0,
-      "matrix": [
-        0.4, 0, 0, 0,
-        0, 0.4, 0, 0,
-        0, 0, 0.4, 0,
-        -0.5, 0.5, 0, 1
-      ],
-      "extras": {
-        "meshViewIndexOffset": 0,
-        "meshViewIndexCount": 6,
-        "meshViewMaterial": 2
-      }
-    },
-    {
-      "mesh": 0,
-      "matrix": [
-        0.4, 0, 0, 0,
-        0, 0.4, 0, 0,
-        0, 0, 0.4, 0,
-        0.5, 0.5, 0, 1
-      ],
-      "extras": {
-        "meshViewIndexOffset": 0,
-        "meshViewIndexCount": 6,
-        "meshViewMaterial": 3
-      }
     }
   ],
   "scenes": [
     {
-      "nodes": [0, 2, 4, 6]
+      "nodes": [0, 2, 4]
     }
   ]
 }

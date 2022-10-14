@@ -1,0 +1,357 @@
+{
+  "asset": {
+    "version": "2.0",
+    "generator": "Magnum GltfSceneConverter"
+  },
+  "buffers": [
+    {
+      "uri": "batch-four-squares-no-materials.bin",
+      "byteLength": 800
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 24
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 24,
+      "byteLength": 144,
+      "byteStride": 44
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 36,
+      "byteLength": 144,
+      "byteStride": 44
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 48,
+      "byteLength": 140,
+      "byteStride": 44
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 56,
+      "byteLength": 144,
+      "byteStride": 44
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 200,
+      "byteLength": 24
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 224,
+      "byteLength": 144,
+      "byteStride": 44
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 236,
+      "byteLength": 144,
+      "byteStride": 44
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 248,
+      "byteLength": 140,
+      "byteStride": 44
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 256,
+      "byteLength": 144,
+      "byteStride": 44
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 400,
+      "byteLength": 24
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 424,
+      "byteLength": 144,
+      "byteStride": 44
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 436,
+      "byteLength": 144,
+      "byteStride": 44
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 448,
+      "byteLength": 140,
+      "byteStride": 44
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 456,
+      "byteLength": 144,
+      "byteStride": 44
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 600,
+      "byteLength": 24
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 624,
+      "byteLength": 144,
+      "byteStride": 44
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 636,
+      "byteLength": 144,
+      "byteStride": 44
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 648,
+      "byteLength": 140,
+      "byteStride": 44
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 656,
+      "byteLength": 144,
+      "byteStride": 44
+    }
+  ],
+  "accessors": [
+    {
+      "bufferView": 0,
+      "componentType": 5125,
+      "count": 6,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 4,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "componentType": 5126,
+      "count": 4,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 3,
+      "componentType": 5126,
+      "count": 4,
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 4,
+      "componentType": 5126,
+      "count": 4,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 5,
+      "componentType": 5125,
+      "count": 6,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 6,
+      "componentType": 5126,
+      "count": 4,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 7,
+      "componentType": 5126,
+      "count": 4,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 8,
+      "componentType": 5126,
+      "count": 4,
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 9,
+      "componentType": 5126,
+      "count": 4,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 10,
+      "componentType": 5125,
+      "count": 6,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 11,
+      "componentType": 5126,
+      "count": 4,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 12,
+      "componentType": 5126,
+      "count": 4,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 13,
+      "componentType": 5126,
+      "count": 4,
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 14,
+      "componentType": 5126,
+      "count": 4,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 15,
+      "componentType": 5125,
+      "count": 6,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 16,
+      "componentType": 5126,
+      "count": 4,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 17,
+      "componentType": 5126,
+      "count": 4,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 18,
+      "componentType": 5126,
+      "count": 4,
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 19,
+      "componentType": 5126,
+      "count": 4,
+      "type": "VEC3"
+    }
+  ],
+  "meshes": [
+    {
+      "primitives": [
+        {
+          "indices": 0,
+          "attributes": {
+            "POSITION": 1,
+            "NORMAL": 2,
+            "TEXCOORD_0": 3,
+            "COLOR_0": 4
+          }
+        }
+      ],
+      "name": "white square"
+    },
+    {
+      "primitives": [
+        {
+          "indices": 5,
+          "attributes": {
+            "POSITION": 6,
+            "NORMAL": 7,
+            "TEXCOORD_0": 8,
+            "COLOR_0": 9
+          }
+        }
+      ],
+      "name": "cyan square"
+    },
+    {
+      "primitives": [
+        {
+          "indices": 10,
+          "attributes": {
+            "POSITION": 11,
+            "NORMAL": 12,
+            "TEXCOORD_0": 13,
+            "COLOR_0": 14
+          }
+        }
+      ],
+      "name": "magenta square"
+    },
+    {
+      "primitives": [
+        {
+          "indices": 15,
+          "attributes": {
+            "POSITION": 16,
+            "NORMAL": 17,
+            "TEXCOORD_0": 18,
+            "COLOR_0": 19
+          }
+        }
+      ],
+      "name": "yellow square"
+    }
+  ],
+  "nodes": [
+    {
+      "children": [1, 2, 3, 4],
+      "name": "four squares"
+    },
+    {
+      "mesh": 0,
+      "matrix": [
+        0.4, 0, 0, 0,
+        0, 0.4, 0, 0,
+        0, 0, 0.4, 0,
+        -0.5, -0.5, 0, 1
+      ]
+    },
+    {
+      "mesh": 1,
+      "matrix": [
+        0.4, 0, 0, 0,
+        0, 0.4, 0, 0,
+        0, 0, 0.4, 0,
+        0.5, -0.5, 0, 1
+      ]
+    },
+    {
+      "mesh": 2,
+      "matrix": [
+        0.4, 0, 0, 0,
+        0, 0.4, 0, 0,
+        0, 0, 0.4, 0,
+        -0.5, 0.5, 0, 1
+      ]
+    },
+    {
+      "mesh": 3,
+      "matrix": [
+        0.4, 0, 0, 0,
+        0, 0.4, 0, 0,
+        0, 0, 0.4, 0,
+        0.5, 0.5, 0, 1
+      ]
+    }
+  ],
+  "scenes": [
+    {
+      "nodes": [0]
+    }
+  ]
+}
