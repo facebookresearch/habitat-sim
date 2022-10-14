@@ -5,6 +5,8 @@
 from habitat_sim.utils.settings import default_sim_settings
 from habitat_sim.utils.settings import make_cfg as _make_cfg
 
+# TODO: maybe move this to a separate file as they are not "settings"
+# per se
 dataset_processor_settings = {
     "frustum_culling": True,
     "memory_data_headers": [
@@ -31,7 +33,7 @@ dataset_processor_settings = {
         "Translation Drift",
         "Rotation Drift",
     ],
-    # TODO: figure out what these metrics mean exactly
+    # TODO: make sure these are right
     # "mem_delta_order" is either -1 or 1. 1 means the delta is
     # calculated as (end_start - start_state), whereas -1 means
     # (start_state - end_state). E.g. Data "used" should be higher
@@ -42,7 +44,7 @@ dataset_processor_settings = {
         "percent": 1,
         "used": 1,
         "free": -1,
-        "active": 1,
+        "active": -1,
         "inactive": 1,
     },
 }
