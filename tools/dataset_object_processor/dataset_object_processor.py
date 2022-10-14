@@ -31,6 +31,20 @@ FETCH_ROBOT_PATH = ""  # TODO, which dataset is this? Fetch Robot?
 # dictionary to refer to datasets by simple names rather than full paths
 dataset_name_to_path_dict: Dict[str, str] = {}
 
+all_column_titles: List[str] = [
+    "Mesh Name",
+    "Mesh Count",
+    "Mesh Index Data Size",
+    "Mesh Vertex Data Size",
+    "Total Mesh Data Size",
+    "Image Mip Map Count",
+    "Image Data Size",
+    "Idle After...",
+    "Stable Start Rotations",
+    "Translation Drift",
+    "Rotation Drift",
+]
+
 
 # TODO: possibly move to separate utils file
 class CSVWriter:

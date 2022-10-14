@@ -1,0 +1,75 @@
+{
+  "scenes": [
+    "data/test_assets/scenes/simple_room.glb"
+  ],
+  "dataset_config_files": [
+    "data/objects/ycb/ycb.scene_dataset_config.json",
+    "data/replica_cad/replicaCAD.scene_dataset_config.json"
+  ],
+  "data_to_collect": {
+    "memory_data": true,
+    "sim_time_ratio": true,
+    "render_time_ratio": false,
+    "physics_data": true
+  },
+  "memory_thresholds": {
+    "mesh_size_units": "KB",
+    "max_mesh_num": 5,
+    "max_mesh_size": 2400,
+    "max_image_num": 5,
+    "max_image_size": 12000
+  },
+  "physics_thresholds": {
+    "wait_time_units": "seconds",
+    "max_wait_time": 5
+  },
+  "outputs": {
+    "csv": true,
+    "video_recording": true
+  },
+  "output_paths": {
+    "csv": "tools/dataset_object_processor/dataset_csv_files/",
+    "video_recordings": "tools/dataset_object_processor/dataset_video_recordings/"
+  },
+  "headless": true,
+  "enable_physics": true,
+  "sensor_height": 1.0,
+  "silent": false,
+  "show_bbox": true,
+  "show_collision_asset": true,
+  "show_bullet_collision_mesh": true,
+  "bbox_rgb": [
+    1.0,
+    0.8,
+    1.0
+  ],
+  "default_transforms": {
+    "rotation_unit": "degrees",
+    "default_agent_pos": {
+      "x": 0.25,
+      "y": 0.34,
+      "z": 0.73
+    },
+    "default_agent_rot": {
+      "angle": 0.0,
+      "axis": [
+        1,
+        0,
+        0
+      ]
+    },
+    "default_obj_pos": {
+      "x": 0.25,
+      "y": 1.75,
+      "z": -0.23
+    },
+    "default_obj_rot": {
+      "angle": 0.0,
+      "axis": [
+        1,
+        0,
+        0
+      ]
+    }
+  }
+}
