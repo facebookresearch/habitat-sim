@@ -1,6 +1,7 @@
 import argparse
 import csv
 import datetime
+import json
 import os
 from enum import Enum
 from typing import Any, Dict, List, Optional
@@ -8,42 +9,12 @@ from typing import Any, Dict, List, Optional
 import git
 from colorama import Fore, init
 from magnum import trade
+from processor_settings import default_sim_settings
 
 import habitat_sim
-from habitat_sim.utils.settings import default_sim_settings
 
 repo = git.Repo(".", search_parent_directories=True)
 HABITAT_SIM_PATH = repo.working_tree_dir
-CSV_OUTPUT_PATH = os.path.join(
-    HABITAT_SIM_PATH, "tools/dataset_object_processor/dataset_csv_files/"
-)
-VIDEO_OUTPUT_PATH = os.path.join(
-    HABITAT_SIM_PATH, "tools/dataset_object_processor/dataset_video_recordings/"
-)
-
-# Hard-coded paths for common datasets this script will process
-YCB_PATH = "./data/objects/ycb/ycb.scene_dataset_config.json"
-
-REPLICA_CAD_PATH = "./data/replica_cad/replicaCAD.scene_dataset_config.json"
-
-FETCH_ROBOT_PATH = ""  # TODO, which dataset is this? Fetch Robot?
-
-# dictionary to refer to datasets by simple names rather than full paths
-dataset_name_to_path_dict: Dict[str, str] = {}
-
-all_column_titles: List[str] = [
-    "Mesh Name",
-    "Mesh Count",
-    "Mesh Index Data Size",
-    "Mesh Vertex Data Size",
-    "Total Mesh Data Size",
-    "Image Mip Map Count",
-    "Image Data Size",
-    "Idle After...",
-    "Stable Start Rotations",
-    "Translation Drift",
-    "Rotation Drift",
-]
 
 
 # TODO: possibly move to separate utils file
@@ -54,7 +25,9 @@ class CSVWriter:
 
     file_path = None
 
-    def create_unique_filename(csv_dir_path: str, filename_prefix: str = None) -> str:
+    def create_unique_filename(
+        csv_dir_path: str = None, filename_prefix: str = None
+    ) -> str:
         """
         Create unique file name / file path for the next csv we write
         based off of the current date and time. Also create directory
@@ -71,11 +44,15 @@ class CSVWriter:
         time = date_and_time.strftime("%H:%M:%S")
 
         # make directory to store csvs if it doesn't exist
+        if csv_dir_path is None:
+            raise RuntimeError(
+                "CSVWriter.create_unique_filename: must provide a directory to save CSV file."
+            )
         if not os.path.exists(csv_dir_path):
             os.makedirs(csv_dir_path)
 
         # create csv file name (TODO: make more descriptive file name)
-        if filename_prefix is None:
+        if filename_prefix is None or filename_prefix == "":
             filename_prefix = ""
         else:
             filename_prefix = f"{filename_prefix}__"
@@ -95,9 +72,12 @@ class CSVWriter:
         """
         if file_path is None:
             if CSVWriter.file_path is None:
-                file_path = CSVWriter.create_unique_filename()
+                raise RuntimeError(
+                    "CSVWriter.write_file: must provide a file path to save CSV file."
+                )
             else:
                 file_path = CSVWriter.file_path
+
         if not len(csv_rows[0]) == len(headers):
             raise RuntimeError(
                 "Number of headers does not equal number of columns in CSVWriter.write_file()."
@@ -147,25 +127,6 @@ class ANSICodes(Enum):
     BOLD = "\033[1m"
     ITALIC = "\033[3m"
     UNDERLINE = "\033[4m"
-
-
-def print_help_text() -> None:
-    help_text = """
-=========================================================
-
-To save effort, you can refer to pre-coded dataset names
-instead of full paths for the "--dataset_name" parameter.
-If you enter both a dataset name and a dataset path,
-it will use dataset name.
-
-The ones registered in the script currently are:
-ycb
-replica_CAD
-fetch_robot
-
-=========================================================
-"""
-    print(ANSICodes.BRIGHT_MAGENTA.value + f"{help_text}")
 
 
 def convert_memory_units(
@@ -242,6 +203,7 @@ def process_asset_memory(
         mesh_data_str,
         image_count_str,
         image_data_str,
+        "CPU Mem ?",
     ]
 
 
@@ -252,7 +214,12 @@ def process_asset_physics(
     """
     Run series of tests on asset to see how it responds in physics simulations
     """
-    physics_data: List[str] = [""]
+    physics_data: List[str] = [
+        "Idle ?",
+        "Stable ?",
+        "Transl ?",
+        "Rot ?",
+    ]
 
     return physics_data
 
@@ -260,6 +227,7 @@ def process_asset_physics(
 def process_imported_asset(
     importer: trade.AbstractImporter,
     render_asset_handle: str = "",
+    sim_settings: Dict[str, Any] = None,
 ) -> List[str]:
     """
     Use the trade.AbstractImporter class to query data size of mesh and image
@@ -271,16 +239,27 @@ def process_imported_asset(
     # Open file with AbstractImporter
     importer.open_file(asset_path)
 
-    # analyze objects with regard to memory and physics simulations
-    memory_csv_data: List[str] = process_asset_memory(importer, render_asset_handle)
-    physics_cvs_data: List[str] = process_asset_physics(importer, render_asset_handle)
+    # run object through tests defined in dataset_processor_config.json file
+    memory_csv_data: List[str] = []
+    sim_time_csv_data: List[str] = []
+    render_time_csv_data: List[str] = []
+    physics_cvs_data: List[str] = []
+    data_to_collect = sim_settings["data_to_collect"]
+    if data_to_collect.get("memory_data"):
+        memory_csv_data = process_asset_memory(importer, render_asset_handle)
+    if data_to_collect.get("sim_time_ratio"):
+        sim_time_csv_data.append("...")
+    if data_to_collect.get("render_time_ratio"):
+        render_time_csv_data.append("...")
+    if data_to_collect.get("physics_data"):
+        physics_cvs_data = process_asset_physics(importer, render_asset_handle)
 
     # return results as a list of strings formatted for csv rows
-    return memory_csv_data + physics_cvs_data
+    return memory_csv_data + sim_time_csv_data + render_time_csv_data + physics_cvs_data
 
 
 def parse_dataset(
-    sim: habitat_sim.Simulator = None, dataset_path: str = None
+    sim: habitat_sim.Simulator = None, sim_settings: Dict[str, Any] = None
 ) -> List[List[str]]:
     """
     Load and process dataset objects using template handles
@@ -290,6 +269,7 @@ def parse_dataset(
             ANSICodes.FAIL.value + "No simulator provided to parse_dataset(...)."
         )
 
+    dataset_path = sim_settings["scene_dataset_config_file"]
     metadata_mediator = sim.metadata_mediator
     if (
         metadata_mediator is None
@@ -299,10 +279,6 @@ def parse_dataset(
             ANSICodes.FAIL.value
             + "No meta data mediator or dataset exists in parse_dataset(...)."
         )
-
-    # print detailed information about how to use utilize certain parameters
-    # to run this script
-    print_help_text()
 
     # get dataset that is currently being used by the simulator
     active_dataset: str = metadata_mediator.active_dataset
@@ -387,7 +363,9 @@ def parse_dataset(
     importer = manager.load_and_instantiate("AnySceneImporter")
     for handle in object_template_handles:
         template = object_attributes_manager.get_template_by_handle(handle)
-        csv_rows.append(process_imported_asset(importer, template.render_asset_handle))
+        csv_rows.append(
+            process_imported_asset(importer, template.render_asset_handle, sim_settings)
+        )
 
     # clean up
     importer.close()
@@ -396,11 +374,25 @@ def parse_dataset(
     return csv_rows
 
 
+def get_headers_for_csv(sim_settings) -> List[str]:
+    headers: List[str] = []
+    data_to_collect = sim_settings["data_to_collect"]
+    if data_to_collect.get("memory_data"):
+        headers += sim_settings["memory_data_headers"]
+    if data_to_collect.get("sim_time_ratio"):
+        headers += sim_settings["sim_time_headers"]
+    if data_to_collect.get("render_time_ratio"):
+        headers += sim_settings["render_time_headers"]
+    if data_to_collect.get("physics_data"):
+        headers += sim_settings["physics_data_headers"]
+    return headers
+
+
 def create_csv_file(
     headers: List[str],
     csv_rows: List[List[str]],
-    csv_dir_path=CSV_OUTPUT_PATH,
-    csv_file_prefix: str = "",
+    csv_dir_path: str = None,
+    csv_file_prefix: str = None,
 ) -> None:
     """
     Set directory where our csv's will be saved, create the csv file name,
@@ -409,21 +401,24 @@ def create_csv_file(
     """
     file_path = CSVWriter.create_unique_filename(csv_dir_path, csv_file_prefix)
     text_format = ANSICodes.PURPLE.value + ANSICodes.BOLD.value
-    print(text_format + f"Writing csv results to: \n{file_path}")
-    print(text_format + "-" * 72)
-    CSVWriter.write_file(headers, csv_rows)
+    print(text_format + "Writing csv results to:\n" + "-" * 72)
+    text_format = ANSICodes.PURPLE.value
+    print(text_format + f"{file_path}\n")
+    CSVWriter.write_file(headers, csv_rows, file_path)
     text_format = ANSICodes.PURPLE.value
     print(text_format + "CSV writing done\n")
 
 
 def make_configuration(sim_settings):
     """
-    Create config of Simulator that will process the dataset
+    Create config of Simulator that will process the dataset. Will not render,
+    but will record if video recording files are desired
     """
     # simulator configuration
     sim_cfg = habitat_sim.SimulatorConfiguration()
     if "scene_dataset_config_file" in sim_settings:
         sim_cfg.scene_dataset_config_file = sim_settings["scene_dataset_config_file"]
+
     sim_cfg.frustum_culling = sim_settings.get("frustum_culling", False)
     if not hasattr(sim_cfg, "scene_id"):
         raise RuntimeError(
@@ -439,6 +434,7 @@ def make_configuration(sim_settings):
     camera_sensor_spec.resolution = [sim_settings["height"], sim_settings["width"]]
     camera_sensor_spec.position = [0, sim_settings["sensor_height"], 0]
 
+    # Agent stays in place and will just record but not render
     agent_cfg = habitat_sim.agent.AgentConfiguration()
     agent_cfg.sensor_specifications = [camera_sensor_spec]
 
@@ -464,40 +460,10 @@ def build_parser(
 
     # optional arguments
     parser.add_argument(
-        "--scene",
-        default="./data/test_assets/scenes/simple_room.glb",
+        "--config_file_path",
+        default="tools/dataset_object_processor/configs/default.dataset_processor_config.json",
         type=str,
-        help="""
-scene/stage file to load (default: "./data/test_assets/scenes/simple_room.glb")
-        """,
-    )
-    parser.add_argument(
-        "--dataset_name",
-        default=None,
-        type=str,
-        metavar="DATASET_PATH",
-        help="""
-for convenience, simple name of dataset configuration file to use,
-use None if you want to enter the file path instead (default: None)
-        """,
-    )
-    parser.add_argument(
-        "--dataset_path",
-        default="./data/objects/ycb/ycb.scene_dataset_config.json",
-        type=str,
-        metavar="DATASET_PATH",
-        help="""
-relative path of dataset configuration file to use
-(default: "./data/objects/ycb/ycb.scene_dataset_config.json")
-        """,
-    )
-    parser.add_argument(
-        "--disable_physics",
-        default=False,
-        action="store_true",
-        help="""
-disable physics simulation (default: False)
-        """,
+        help='config file to load (default: "tools/dataset_object_processor/configs/default.dataset_processor_config.json")',
     )
     parser.add_argument(
         "--csv_file_prefix",
@@ -505,10 +471,9 @@ disable physics simulation (default: False)
         type=str,
         metavar="PREFIX",
         help="""
-Prefix string of file name for CSV file to create, e.g.
+Prefix string of file name for CSV and/or video recording file to create, e.g.
 ycb,
 replica_CAD,
-fetch_robot,
 (default: None)
         """,
     )
@@ -519,7 +484,6 @@ def main() -> None:
     """
     Create Simulator, parse dataset, write csv file
     """
-
     # setup colorama terminal color printing so that format and color reset
     # after each print statement
     init(autoreset=True)
@@ -527,45 +491,33 @@ def main() -> None:
     # parse arguments from command line: scene, dataset, if we process physics
     args = build_parser().parse_args()
 
-    # Setting up sim_settings
+    # Populate sim_settings with info from dataset_processor_config.json file
     sim_settings: Dict[str, Any] = default_sim_settings
-    sim_settings["scene"] = args.scene
-    sim_settings["simple_dataset_name"] = args.dataset_name
-    sim_settings["scene_dataset_config_file"] = args.dataset_path
-    sim_settings["enable_physics"] = not args.disable_physics
-    sim_settings["csv_file_prefix"] = args.csv_file_prefix
+    with open(os.path.join(HABITAT_SIM_PATH, args.config_file_path)) as config_json:
+        sim_settings.update(json.load(config_json))
 
-    # determine if using dataset_name or dataset_path to reference dataset config file.
-    dataset_name_to_path_dict["ycb"] = YCB_PATH
-    dataset_name_to_path_dict["replica_CAD"] = REPLICA_CAD_PATH
-    dataset_name_to_path_dict["fetch_robot"] = FETCH_ROBOT_PATH
-    if (
-        args.dataset_name is not None
-        and dataset_name_to_path_dict[args.dataset_name] is not None
-    ):
-        dataset_path = dataset_name_to_path_dict[args.dataset_name]
-        sim_settings["scene_dataset_config_file"] = dataset_path
-    else:
-        dataset_path = args.dataset_path
-
-    # create simulator for this scene and dataset
+    # Configure and make simulator
     cfg = make_configuration(sim_settings)
     sim = habitat_sim.Simulator(cfg)
 
     # Parse dataset and write CSV. "headers" stores the titles of each column
-    headers: List[str] = [
-        "Mesh Name",
-        "Mesh Count",
-        "Mesh Index Data Size",
-        "Mesh Vertex Data Size",
-        "Total Mesh Data Size",
-        "Image Mip Map Count",
-        "Image Data Size",
-        "Comes to Rest After...",
-    ]
-    csv_rows: List[List[str]] = parse_dataset(sim, dataset_path)
-    csv_dir_path = CSV_OUTPUT_PATH
-    create_csv_file(headers, csv_rows, csv_dir_path, args.csv_file_prefix)
+    headers = get_headers_for_csv(sim_settings)
+    csv_rows: List[List[str]] = parse_dataset(sim, sim_settings)
+    csv_dir_path = os.path.join(
+        HABITAT_SIM_PATH, sim_settings["output_paths"].get("csv")
+    )
+    csv_file_prefix = sim_settings["output_paths"].get("output_file_prefix")
+
+    # TODO: remove, testing csv header formation
+    text_format = ANSICodes.BRIGHT_CYAN.value + ANSICodes.BOLD.value
+    print(text_format + "HEADERS")
+    print(text_format + "-" * 72 + "\n")
+    text_format = ANSICodes.BRIGHT_CYAN.value
+    for i in headers:
+        print(text_format + f"{i}\n")
+    print("")
+
+    create_csv_file(headers, csv_rows, csv_dir_path, csv_file_prefix)
 
 
 if __name__ == "__main__":
