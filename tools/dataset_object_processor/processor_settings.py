@@ -8,7 +8,8 @@ from habitat_sim.utils.settings import make_cfg as _make_cfg
 dataset_processor_settings = {
     "frustum_culling": True,
     "memory_data_headers": [
-        "Mesh Name",
+        "Template Handle",
+        "Approx. Ram Delta",
         "Mesh Count",
         "Mesh Index Data Size",
         "Mesh Vertex Data Size",
