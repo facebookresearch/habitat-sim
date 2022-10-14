@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional
 import git
 from colorama import Fore, init
 from magnum import trade
-from processor_settings import default_sim_settings
+from processor_settings import default_sim_settings, make_cfg
 
 import habitat_sim
 
@@ -409,38 +409,6 @@ def create_csv_file(
     print(text_format + "CSV writing done\n")
 
 
-def make_configuration(sim_settings):
-    """
-    Create config of Simulator that will process the dataset. Will not render,
-    but will record if video recording files are desired
-    """
-    # simulator configuration
-    sim_cfg = habitat_sim.SimulatorConfiguration()
-    if "scene_dataset_config_file" in sim_settings:
-        sim_cfg.scene_dataset_config_file = sim_settings["scene_dataset_config_file"]
-
-    sim_cfg.frustum_culling = sim_settings.get("frustum_culling", False)
-    if not hasattr(sim_cfg, "scene_id"):
-        raise RuntimeError(
-            "Error: Please upgrade habitat-sim. SimulatorConfig API version mismatch"
-        )
-    sim_cfg.scene_id = sim_settings["scene"]
-    assert os.path.exists(sim_cfg.scene_id)
-
-    # camera will likely not be used
-    camera_sensor_spec = habitat_sim.CameraSensorSpec()
-    camera_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
-    camera_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
-    camera_sensor_spec.resolution = [sim_settings["height"], sim_settings["width"]]
-    camera_sensor_spec.position = [0, sim_settings["sensor_height"], 0]
-
-    # Agent stays in place and will just record but not render
-    agent_cfg = habitat_sim.agent.AgentConfiguration()
-    agent_cfg.sensor_specifications = [camera_sensor_spec]
-
-    return habitat_sim.Configuration(sim_cfg, [agent_cfg])
-
-
 def build_parser(
     parser: Optional[argparse.ArgumentParser] = None,
 ) -> argparse.ArgumentParser:
@@ -497,7 +465,7 @@ def main() -> None:
         sim_settings.update(json.load(config_json))
 
     # Configure and make simulator
-    cfg = make_configuration(sim_settings)
+    cfg = make_cfg(sim_settings)
     sim = habitat_sim.Simulator(cfg)
 
     # Parse dataset and write CSV. "headers" stores the titles of each column
@@ -513,8 +481,8 @@ def main() -> None:
     print(text_format + "HEADERS")
     print(text_format + "-" * 72 + "\n")
     text_format = ANSICodes.BRIGHT_CYAN.value
-    for i in headers:
-        print(text_format + f"{i}\n")
+    for header in headers:
+        print(text_format + f"{header}\n")
     print("")
 
     create_csv_file(headers, csv_rows, csv_dir_path, csv_file_prefix)

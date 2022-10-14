@@ -25,7 +25,7 @@
   "output_paths": {
     "csv": "tools/dataset_object_processor/dataset_csv_files/",
     "video_recordings": "tools/dataset_object_processor/dataset_video_recordings/",
-    "output_file_prefix": ""
+    "output_file_prefix": "default"
   },
   "headless": true,
   "enable_physics": true,

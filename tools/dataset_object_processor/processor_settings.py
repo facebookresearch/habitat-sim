@@ -6,12 +6,6 @@ from habitat_sim.utils.settings import default_sim_settings
 from habitat_sim.utils.settings import make_cfg as _make_cfg
 
 dataset_processor_settings = {
-    "config_file_path": "default",
-    # "data_to_collect": [],
-    # "memory_thresholds": [],
-    # "physics_thresholds": [],
-    # "outputs": [],
-    # "output_paths": [],
     "frustum_culling": True,
     "memory_data_headers": [
         "Mesh Name",
