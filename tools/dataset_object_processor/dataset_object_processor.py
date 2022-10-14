@@ -4,6 +4,7 @@ import datetime
 import json
 import os
 from enum import Enum
+from ntpath import basename
 from typing import Any, Dict, List, Optional
 
 import git
@@ -143,7 +144,7 @@ def write_to_console(message: str = "") -> None:
 def convert_memory_units(
     size: float,
     unit_type: int = MemoryUnitConverter.KILOBYTES,
-    decimal_num_round: int = 4,
+    decimal_num_round: int = 2,
 ) -> float:
     """
     Convert units of a float, bytes, to desired unit, then round the result
@@ -161,8 +162,9 @@ def get_mem_size_str(
     that will be written into csv file rows
     """
     new_size: float = convert_memory_units(size, unit_type)
+    new_size_str: str = "{:,}".format(new_size)
     unit_str: str = MemoryUnitConverter.UNIT_STRS[unit_type]
-    return f"{new_size} {unit_str}"
+    return f"{new_size_str} {unit_str}"
 
 
 def process_asset_memory(
@@ -179,6 +181,10 @@ def process_asset_memory(
         os.path.join(HABITAT_SIM_PATH, template.collision_asset_handle),
     ]
 
+    # get the render and collision asset file names for CSV
+    render_asset_file = basename(template.render_asset_handle)
+    collision_asset_file = basename(template.collision_asset_handle)
+
     # Log render and collision asset handles
     text_format = Fore.GREEN
     write_to_console(
@@ -191,8 +197,6 @@ def process_asset_memory(
     mesh_count = 0
     index_data_size = 0  # bytes
     vertex_data_size = 0  # bytes
-
-    # Create variables to store image data
     image_count = 0
     image_data_size = 0  # bytes
 
@@ -222,21 +226,20 @@ def process_asset_memory(
     index_data_str = get_mem_size_str(index_data_size)
     vertex_data_str = get_mem_size_str(vertex_data_size)
     mesh_data_str = get_mem_size_str(total_mesh_data_size)
-
-    # construct image data related strings formatted for csv file
     image_count_units = "image" if image_count == 1 else "images"
     image_count_str = f"{image_count} {image_count_units}"
     image_data_str = get_mem_size_str(image_data_size)
 
     # return results as a list of strings formatted for csv rows
     return [
+        render_asset_file,
+        collision_asset_file,
         mesh_count_str,
         index_data_str,
         vertex_data_str,
         mesh_data_str,
         image_count_str,
         image_data_str,
-        "CPU Mem ?",
     ]
 
 
@@ -304,15 +307,18 @@ def process_imported_asset(
     end_mem = psutil.virtual_memory()._asdict()
 
     # get average deltas of each RAM memory metric specified in the config file
-    metrics: Dict[str, int] = sim_settings["mem_metrics_to_use"]
+    metrics: List[str] = sim_settings["mem_metrics_to_use"]
     avg_ram_delta = 0  # bytes
-    for metric, order in metrics.items():
+    for metric in metrics:
         # "order" is either -1 or 1. 1 means the delta is calculated
         # as (end - start), whereas -1 means (start - end).
         # e.g. data used should be higher after loading, so order == 1
         # but data free should be higher before loading, so order == -1
-        avg_ram_delta += (end_mem.get(metric) - start_mem.get(metric)) * order
-    avg_ram_delta /= len(metrics.keys())
+        order = sim_settings["mem_delta_order"].get(metric)
+        # "percent" isn't calculated in bytes
+        if metric != "percent":
+            avg_ram_delta += (end_mem.get(metric) - start_mem.get(metric)) * order
+    avg_ram_delta /= len(metrics)
     avg_ram_str = get_mem_size_str(avg_ram_delta)
 
     # TODO testing
@@ -322,11 +328,11 @@ def process_imported_asset(
 
     # TODO: remove this when I figure out why ram usage is sometimes negative
     global negative_ram_count
-
     if avg_ram_delta < 0:
         negative_ram_count += 1
-        avg_ram_str = "-----" + avg_ram_str + "-----"
+        avg_ram_str = "***  " + avg_ram_str + "  ***"
 
+    # Print memory usage info before and after loading object
     text_format = ANSICodes.BRIGHT_RED.value
     write_to_console(text_format + "\nstart" + divider)
     for key, value in start_mem.items():
@@ -351,13 +357,13 @@ def process_imported_asset(
 
     write_to_console(text_format + "\naverage RAM used" + divider + f"\n{avg_ram_str}")
 
-    #
+    # TODO: still need to use object attributes
     template = obj_template_mgr.get_template_by_handle(handle)
     text_format = ANSICodes.YELLOW.value
     write_to_console(text_format + "\nHandles" + divider + f"\ntemplate: {handle}")
 
     # run object through tests defined in dataset_processor_config.json file
-    memory_data: List[str] = [avg_ram_str]
+    memory_data: List[str] = [basename(handle), avg_ram_str]
     sim_time_data: List[str] = []
     render_time_data: List[str] = []
     physics_data: List[str] = []
@@ -374,7 +380,7 @@ def process_imported_asset(
         )
 
     # return results as a list of strings formatted for csv rows
-    return [handle] + memory_data + sim_time_data + render_time_data + physics_data
+    return memory_data + sim_time_data + render_time_data + physics_data
 
 
 def parse_dataset(

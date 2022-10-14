@@ -8,15 +8,16 @@ from habitat_sim.utils.settings import make_cfg as _make_cfg
 dataset_processor_settings = {
     "frustum_culling": True,
     "memory_data_headers": [
-        "Template Handle",
-        "Approx. Ram Delta",
+        "Object Template File",
+        "Approx. Ram Use",
+        "Render Asset File",
+        "Collision Asset File",
         "Mesh Count",
         "Mesh Index Data Size",
         "Mesh Vertex Data Size",
         "Total Mesh Data Size",
         "Image Mip Map Count",
         "Image Data Size",
-        "CPU Memory Used",
     ],
     "sim_time_headers": [
         "Sim Time Ratio",
@@ -30,6 +31,20 @@ dataset_processor_settings = {
         "Translation Drift",
         "Rotation Drift",
     ],
+    # TODO: figure out what these metrics mean exactly
+    # "mem_delta_order" is either -1 or 1. 1 means the delta is
+    # calculated as (end_start - start_state), whereas -1 means
+    # (start_state - end_state). E.g. Data "used" should be higher
+    # after loading, so mem_delta_order == 1, but data free should
+    # be higher before loading, so mem_delta_order == -1
+    "mem_delta_order": {
+        "available": -1,
+        "percent": 1,
+        "used": 1,
+        "free": -1,
+        "active": 1,
+        "inactive": 1,
+    },
 }
 default_sim_settings.update(dataset_processor_settings)
 

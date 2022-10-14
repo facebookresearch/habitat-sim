@@ -14,11 +14,11 @@
     "max_image_num": 5,
     "max_image_size": 12000
   },
-  "mem_metrics_to_use": {
-    "available": -1,
-    "used": 1,
-    "free": -1
-  },
+  "mem_metrics_to_use": [
+    "available",
+    "used",
+    "free"
+  ],
   "physics_thresholds": {
     "wait_time_units": "seconds",
     "max_wait_time": 5
@@ -35,7 +35,7 @@
   "headless": true,
   "enable_physics": true,
   "sensor_height": 1.0,
-  "silent": false,
+  "silent": true,
   "show_bbox": true,
   "show_collision_asset": true,
   "show_bullet_collision_mesh": true,

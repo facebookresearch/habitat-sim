@@ -14,11 +14,11 @@
     "max_image_num": 5,
     "max_image_size": 12000
   },
-  "mem_metrics_to_use": {
-    "available": -1,
-    "used": 1,
-    "free": -1
-  },
+  "mem_metrics_to_use": [
+    "available",
+    "used",
+    "free"
+  ],
   "physics_thresholds": {
     "wait_time_units": "seconds",
     "max_wait_time": 5
