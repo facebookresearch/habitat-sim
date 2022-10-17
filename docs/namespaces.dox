@@ -12,6 +12,10 @@ namespace esp {
  * @brief GFX library
  */
 
+/** @namespace esp::gfx_batch
+ * @brief Batch renderer
+ */
+
 /** @namespace esp::logging
  * @brief logging library
  */

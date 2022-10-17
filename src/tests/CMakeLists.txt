@@ -1,20 +1,8 @@
 find_package(Magnum REQUIRED DebugTools AnyImageConverter AnySceneImporter)
 find_package(
-  MagnumPlugins
-  REQUIRED
-  GltfImporter
-  StbImageImporter
-  KtxImporter
-  # Disabled for now as the OPTIONAL component with a CMake subproject causes a
-  # CMake error. TODO: fix in the Find module
-  #OPTIONAL_COMPONENTS GltfSceneConverter KtxImageConverter
+  MagnumPlugins REQUIRED GltfImporter StbImageImporter KtxImporter
+  OPTIONAL_COMPONENTS GltfSceneConverter KtxImageConverter
 )
-
-# If the GltfSceneConverter is present, the new Magnum SceneConverter APIs are
-# as well. Which enables a data-generating test case in GfxBatchRendererTest.
-if(MagnumPlugins_GltfSceneConverter_FOUND)
-  set(HAS_MAGNUM_GLTFSCENECONVERTER ON)
-endif()
 
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/configure.h
@@ -58,10 +46,10 @@ if(BUILD_WITH_CUDA)
   )
 endif()
 if(MagnumPlugins_GltfSceneConverter_FOUND)
-  target_link_libraries(
-    GfxBatchRendererTest PRIVATE MagnumPlugins::GltfSceneConverter
-                                 MagnumPlugins::KtxImageConverter
-  )
+  target_link_libraries(GfxBatchRendererTest PRIVATE MagnumPlugins::GltfSceneConverter)
+endif()
+if(MagnumPlugins_KtxImageConverter_FOUND)
+  target_link_libraries(GfxBatchRendererTest PRIVATE MagnumPlugins::KtxImageConverter)
 endif()
 
 corrade_add_test(CoreTest CoreTest.cpp LIBRARIES core io)

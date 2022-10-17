@@ -1,0 +1,16 @@
+…
+[1;39mMaterial 3[0m[1;39m:[0m[1;33m yellow[0m
+  Type:[0;36m PbrMetallicRoughness[0m
+  Base layer:
+   [1;39m BaseColor[0;34m @[0;36m Vector4[0m: [38;2;255;255;0m[48;2;255;255;0m██[0m {1, 1, 0, 1}
+   [1;39m BaseColorTexture[0;34m @[0;36m UnsignedInt[0m: 0
+   [1;39m BaseColorTextureLayer[0;34m @[0;36m UnsignedInt[0m: 1
+   [1;39m BaseColorTextureMatrix[0;34m @[0;36m Matrix3x3[0m: {0.5, 0, 0,
+ 0, 0.5, 0.5,
+ 0, 0, 1}
+[1;39mTexture 0[0m (referenced by 4 material attributes)[1;39m:[0m
+  Type:[0;36m Texture2DArray[0m, image 0
+  Minification, mipmap and magnification:[0;36m Nearest,[0;36m Nearest,[0;36m Nearest[0m
+  Wrapping: {[0;36mRepeat[0m,[0;36m Repeat[0m,[0;36m Repeat[0m}
+[1;39m3D image 0[0m (referenced by 1 textures)[1;39m:[0m
+  Level 0:[0;36m Array[0m {4, 4, 2}[0;34m @[0m[0;36m RGB8Unorm[0m (0.1 kB)

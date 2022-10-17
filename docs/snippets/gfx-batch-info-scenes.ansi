@@ -1,0 +1,10 @@
+[1;39mScene 0:[0m
+  Bound: 11 objects[0;34m @[0;36m UnsignedInt[0m (0.7 kB)
+  Fields:
+   [1;39m Parent[0;34m @[0;36m Int[0m, 11 entries
+   [1;39m ImporterState[0;34m @[0;36m Pointer[0m, 11 entries
+   [1;39m Transformation[0;34m @[0;36m Matrix4x4[0m, 4 entries
+   [1;39m Mesh[0;34m @[0;36m UnsignedInt[0m, 7 entries
+   [1;39m Custom(0:[0;33mmeshViewIndexOffset[1;39m)[0;34m @[0;36m Float[0m, 7 entries
+   [1;39m Custom(1:[0;33mmeshViewIndexCount[1;39m)[0;34m @[0;36m Float[0m, 7 entries
+   [1;39m Custom(2:[0;33mmeshViewMaterial[1;39m)[0;34m @[0;36m Float[0m, 7 entries
