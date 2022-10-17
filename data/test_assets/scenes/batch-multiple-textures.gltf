@@ -4,19 +4,15 @@
     "generator": "Magnum GltfSceneConverter"
   },
   "extensionsUsed": [
-    "MAGNUMX_mesh_views",
-    "KHR_texture_ktx",
-    "KHR_texture_transform"
+    "MAGNUMX_mesh_views"
   ],
   "extensionsRequired": [
-    "MAGNUMX_mesh_views",
-    "KHR_texture_ktx",
-    "KHR_texture_transform"
+    "MAGNUMX_mesh_views"
   ],
   "buffers": [
     {
-      "uri": "batch.bin",
-      "byteLength": 2168
+      "uri": "batch-multiple-textures.bin",
+      "byteLength": 2140
     }
   ],
   "bufferViews": [
@@ -46,7 +42,22 @@
     {
       "buffer": 0,
       "byteOffset": 1820,
-      "byteLength": 348
+      "byteLength": 83
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 1903,
+      "byteLength": 79
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 1982,
+      "byteLength": 79
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 2061,
+      "byteLength": 79
     }
   ],
   "accessors": [
@@ -102,13 +113,7 @@
       "pbrMetallicRoughness": {
         "baseColorFactor": [0, 1, 1, 1],
         "baseColorTexture": {
-          "index": 1,
-          "extensions": {
-            "KHR_texture_transform": {
-              "offset": [0, 0.5],
-              "scale": [0.5, 0.5]
-            }
-          }
+          "index": 1
         }
       },
       "name": "cyan"
@@ -117,13 +122,7 @@
       "pbrMetallicRoughness": {
         "baseColorFactor": [1, 0, 1, 1],
         "baseColorTexture": {
-          "index": 1,
-          "extensions": {
-            "KHR_texture_transform": {
-              "offset": [0.5, 0.5],
-              "scale": [0.5, 0.5]
-            }
-          }
+          "index": 2
         }
       },
       "name": "magenta"
@@ -132,12 +131,7 @@
       "pbrMetallicRoughness": {
         "baseColorFactor": [1, 1, 0, 1],
         "baseColorTexture": {
-          "index": 1,
-          "extensions": {
-            "KHR_texture_transform": {
-              "scale": [0.5, 0.5]
-            }
-          }
+          "index": 3
         }
       },
       "name": "yellow"
@@ -154,27 +148,45 @@
   "textures": [
     {
       "sampler": 0,
-      "extensions": {
-        "KHR_texture_ktx": {
-          "source": 0,
-          "layer": 0
-        }
-      }
+      "source": 0,
+      "name": "checkerboard"
     },
     {
       "sampler": 0,
-      "extensions": {
-        "KHR_texture_ktx": {
-          "source": 0,
-          "layer": 1
-        }
-      }
+      "source": 1,
+      "name": "cyan"
+    },
+    {
+      "sampler": 0,
+      "source": 2,
+      "name": "magenta"
+    },
+    {
+      "sampler": 0,
+      "source": 3,
+      "name": "yellow"
     }
   ],
   "images": [
     {
-      "mimeType": "image/ktx2",
-      "bufferView": 4
+      "mimeType": "image/png",
+      "bufferView": 4,
+      "name": "checkerboard"
+    },
+    {
+      "mimeType": "image/png",
+      "bufferView": 5,
+      "name": "cyan"
+    },
+    {
+      "mimeType": "image/png",
+      "bufferView": 6,
+      "name": "magenta"
+    },
+    {
+      "mimeType": "image/png",
+      "bufferView": 7,
+      "name": "yellow"
     }
   ],
   "nodes": [

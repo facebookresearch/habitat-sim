@@ -62,6 +62,7 @@ RendererStandaloneConfiguration& RendererStandaloneConfiguration::setFlags(
 }
 
 struct RendererStandalone::State {
+  RendererStandaloneFlags flags;
   Mn::Platform::WindowlessGLContext context;
   Mn::Platform::GLContext magnumContext{Mn::NoCreate};
   Mn::GL::Renderbuffer color{Mn::NoCreate}, depth{Mn::NoCreate};
@@ -74,7 +75,7 @@ struct RendererStandalone::State {
 #endif
 
   explicit State(const RendererStandaloneConfiguration& configuration)
-      : context {
+      : flags{configuration.state->flags}, context {
     Mn::Platform::WindowlessGLContext::Configuration {}
 #if defined(MAGNUM_TARGET_EGL) && !defined(CORRADE_TARGET_EMSCRIPTEN)
     .setCudaDevice(configuration.state->cudaDevice)
@@ -136,6 +137,10 @@ RendererStandalone::~RendererStandalone() {
   /* Yup, shitty, but as we hold the GL context we can't let any GL resources
      to be destructed after our destructor. Better ideas? */
   Renderer::destroy();
+}
+
+RendererStandaloneFlags RendererStandalone::standaloneFlags() const {
+  return state_->flags;
 }
 
 Mn::PixelFormat RendererStandalone::colorFramebufferFormat() const {
