@@ -341,8 +341,6 @@ class Simulator(SimulatorBackend):
     def start_async_render_and_step_physics(
         self, dt: float, agent_ids: Union[int, List[int]] = 0
     ):
-        assert not self.habitat_config.BATCH_RENDER
-
         if self._async_draw_agent_ids is not None:
             raise RuntimeError(
                 "start_async_render_and_step_physics was already called.  "
@@ -363,8 +361,6 @@ class Simulator(SimulatorBackend):
         self.step_physics(dt)
 
     def start_async_render(self, agent_ids: Union[int, List[int]] = 0):
-        assert not self.habitat_config.BATCH_RENDER
-
         if self._async_draw_agent_ids is not None:
             raise RuntimeError(
                 "start_async_render_and_step_physics was already called.  "
@@ -434,21 +430,18 @@ class Simulator(SimulatorBackend):
         else:
             return_single = False
 
+        for agent_id in agent_ids:
+            agent_sensorsuite = self.__sensors[agent_id]
+            for _sensor_uuid, sensor in agent_sensorsuite.items():
+                sensor.draw_observation()
+
         # As backport. All Dicts are ordered in Python >= 3.7
         observations: Dict[int, ObservationDict] = OrderedDict()
 
-        # For batch-render, avoid drawing sensors here in the sim (we'll draw them
-        # later).
-        if not self.habitat_config.BATCH_RENDER:
-            for agent_id in agent_ids:
-                agent_sensorsuite = self.__sensors[agent_id]
-                for _sensor_uuid, sensor in agent_sensorsuite.items():
-                    sensor.draw_observation()
         for agent_id in agent_ids:
             agent_observations: ObservationDict = {}
-            if not self.habitat_config.BATCH_RENDER:
-                for sensor_uuid, sensor in self.__sensors[agent_id].items():
-                    agent_observations[sensor_uuid] = sensor.get_observation()
+            for sensor_uuid, sensor in self.__sensors[agent_id].items():
+                agent_observations[sensor_uuid] = sensor.get_observation()
             observations[agent_id] = agent_observations
         if return_single:
             return next(iter(observations.values()))
@@ -565,23 +558,6 @@ class Simulator(SimulatorBackend):
     def step_physics(self, dt: float, scene_id: int = 0) -> None:
         self.step_world(dt)
 
-    def check_add_sim_blob_observation(self, observations):
-
-        if self.habitat_config.BATCH_RENDER:
-            agent_sensorsuite = self._sensors
-            sensor_user_prefix = "sensor_"  # temp: hard-coded to match BatchRenderer
-            for _sensor_uuid, sensor in agent_sensorsuite.items():
-                node = sensor._sensor_object.node
-                transform = node.absolute_transformation()
-                rotation = mn.Quaternion.from_matrix(transform.rotation())
-                self.gfx_replay_manager.add_user_transform_to_keyframe(
-                    sensor_user_prefix + _sensor_uuid, transform.translation, rotation
-                )
-
-            assert "sim_blob" not in observations
-            observations["sim_blob"] = self.gfx_replay_manager.extract_keyframe()
-
-
 class Sensor:
     r"""Wrapper around habitat_sim.Sensor
 
@@ -657,17 +633,16 @@ class Sensor:
                     self._buffer.reshape(self._spec.resolution[0], -1),
                 )
 
-        if self._sim.renderer is not None:
-            noise_model_kwargs = self._spec.noise_model_kwargs
-            self._noise_model = make_sensor_noise_model(
-                self._spec.noise_model,
-                {"gpu_device_id": self._sim.gpu_device, **noise_model_kwargs},
-            )
-            assert self._noise_model.is_valid_sensor_type(
-                self._spec.sensor_type
-            ), "Noise model '{}' is not valid for sensor '{}'".format(
-                self._spec.noise_model, self._spec.uuid
-            )
+        noise_model_kwargs = self._spec.noise_model_kwargs
+        self._noise_model = make_sensor_noise_model(
+            self._spec.noise_model,
+            {"gpu_device_id": self._sim.gpu_device, **noise_model_kwargs},
+        )
+        assert self._noise_model.is_valid_sensor_type(
+            self._spec.sensor_type
+        ), "Noise model '{}' is not valid for sensor '{}'".format(
+            self._spec.noise_model, self._spec.uuid
+        )
 
     def draw_observation(self) -> None:
         if self._spec.sensor_type == SensorType.AUDIO:
