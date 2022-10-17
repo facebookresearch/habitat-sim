@@ -22,13 +22,13 @@ import magnum as mn
 import numpy as np
 from magnum import shaders, text
 from magnum.platform.glfw import Application
+from viewer_settings import default_sim_settings, make_cfg
 
 import habitat_sim
 from habitat_sim import physics
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils import viz_utils as vut
 from habitat_sim.utils.common import quat_from_angle_axis
-from habitat_sim.utils.settings import default_sim_settings, make_cfg
 
 repo = git.Repo(".", search_parent_directories=True)
 dir_path = repo.working_tree_dir
@@ -253,6 +253,12 @@ class HabitatSimInteractiveViewer(Application):
         self.recording = False
         self.saving_video = False
 
+        # TODO testing
+        self.idle_start_time: float = 0
+        self.idle_end_time: float = 0
+        self.obj_awake: bool = False
+        self.rot_index: int = 0
+
         # configure our simulator
         self.cfg: Optional[habitat_sim.simulator.Configuration] = None
         self.sim: Optional[habitat_sim.simulator.Simulator] = None
@@ -449,10 +455,27 @@ class HabitatSimInteractiveViewer(Application):
                 self.time_since_last_simulation, self.physics_step_duration
             )
 
-        # If in Kinematic movement mode and there is a ManagedBulletRigidObject
-        # that is displayed from the dataset, rotate it
-        if self.curr_object is not None and not self.simulating:
-            self.rotate_displayed_object(self.curr_object)
+        # # If in Kinematic movement mode and there is a ManagedBulletRigidObject
+        # # that is displayed from the dataset, rotate it
+        # if self.curr_object is not None and not self.simulating:
+        #     self.rotate_displayed_object(self.curr_object)
+
+        # TODO testing awake functionality
+        if (
+            self.curr_object is not None
+            and self.obj_awake
+            and not self.curr_object.awake
+        ):
+            self.idle_end_time = time.time()
+            duration = round(
+                self.idle_end_time - self.idle_start_time, self.decimal_points_round
+            )
+            dur_str: str = "{:,}".format(duration)
+            self.obj_awake = False
+            print_in_color(
+                f"time until idle - {self.curr_object.handle}\n{dur_str} sec",
+                PrintColors.CYAN,
+            )
 
         # Get agent id, agent, and sensor uuid
         keys = active_agent_id_and_sensor_name
@@ -669,7 +692,12 @@ class HabitatSimInteractiveViewer(Application):
                     # velocity, and angular velocity
                     obj = self.curr_object
                     obj.translation = HabitatSimInteractiveViewer.DEFAULT_OBJ_POSITION
-                    obj.rotation = HabitatSimInteractiveViewer.DEFAULT_OBJ_ROTATION
+                    rotations: List[Tuple] = self.sim_settings["sim_test_rotations"]
+                    angle_axis: Tuple = (
+                        mn.Rad(mn.Deg(rotations[self.rot_index][0])),
+                        mn.Vector3(rotations[self.rot_index][1]),
+                    )
+                    obj.rotation = mn.Quaternion.rotation(angle_axis[0], angle_axis[1])
                     obj.linear_velocity = mn.Vector3(0.0)
                     obj.angular_velocity = mn.Vector3(0.0)
 
@@ -840,8 +868,22 @@ class HabitatSimInteractiveViewer(Application):
                     "Command: snapping dataset object to table and switching to Dynamic motion\n"
                 )
                 self.snap_down_object(self.curr_object)
+                self.idle_start_time = time.time()
+                self.obj_awake = True
             else:
                 logger.info("Can't snap NULL object to table\n")
+
+        elif key == pressed.R:
+            if self.curr_object:
+                rotations: List[Tuple] = self.sim_settings["sim_test_rotations"]
+                self.rot_index = (self.rot_index + 1) % len(rotations)
+                angle_axis: Tuple = (
+                    mn.Rad(mn.Deg(rotations[self.rot_index][0])),
+                    mn.Vector3(rotations[self.rot_index][1]),
+                )
+                self.curr_object.rotation = mn.Quaternion.rotation(
+                    angle_axis[0], angle_axis[1]
+                )
 
         elif key == pressed.L:
             # press L to start recording, then L again to stop it
