@@ -437,7 +437,6 @@ class Simulator(SimulatorBackend):
 
         # As backport. All Dicts are ordered in Python >= 3.7
         observations: Dict[int, ObservationDict] = OrderedDict()
-
         for agent_id in agent_ids:
             agent_observations: ObservationDict = {}
             for sensor_uuid, sensor in self.__sensors[agent_id].items():
@@ -557,6 +556,7 @@ class Simulator(SimulatorBackend):
 
     def step_physics(self, dt: float, scene_id: int = 0) -> None:
         self.step_world(dt)
+
 
 class Sensor:
     r"""Wrapper around habitat_sim.Sensor

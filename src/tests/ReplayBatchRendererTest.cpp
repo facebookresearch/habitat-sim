@@ -7,6 +7,8 @@
 #include "esp/agent/Agent.h"  // todo: try to avoid using this
 #include "esp/gfx/replay/Recorder.h"
 #include "esp/gfx/replay/ReplayManager.h"
+#include "esp/metadata/managers/ObjectAttributesManager.h"
+#include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/sensor/CameraSensor.h"
 #include "esp/sensor/Sensor.h"
 #include "esp/sim/ReplayBatchRenderer.h"
@@ -48,19 +50,10 @@ struct ReplayBatchRendererTest : Cr::TestSuite::Tester {
 Mn::MutableImageView2D getRGBView(int width,
                                   int height,
                                   std::vector<char>& buffer) {
-  // self._buffer = np.empty(
-  //     (
-  //         self._spec.resolution[0],
-  //         self._spec.resolution[1],
-  //         self._spec.channels,
-  //     ),
-  //     dtype=np.uint8,
-  // )
-
   Mn::Vector2i size(width, height);
   constexpr int pixelSize = 4;
 
-  buffer.resize(width * height * pixelSize);
+  buffer.resize(static_cast<size_type>(width * height * pixelSize));
 
   auto view = Mn::MutableImageView2D(Mn::PixelFormat::RGB8Unorm, size, buffer);
 

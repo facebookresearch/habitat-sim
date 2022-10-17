@@ -7,7 +7,9 @@
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/replay/ReplayManager.h"
+#include "esp/metadata/MetadataMediator.h"
 #include "esp/sensor/SensorFactory.h"
+#include "esp/sim/SimulatorConfiguration.h"
 
 #include <Magnum/GL/Context.h>
 
@@ -30,11 +32,14 @@ ReplayBatchRenderer::ReplayBatchRenderer(
   sceneManager_ = scene::SceneManager::create_unique();
 
   for (int b = 0; b < config_.numEnvironments; b++) {
-    auto cb = [this, b](const assets::AssetInfo& assetInfo,
-                        const assets::RenderAssetInstanceCreationInfo& creation)
+    auto assetCallback =
+        [this, b](const assets::AssetInfo& assetInfo,
+                  const assets::RenderAssetInstanceCreationInfo& creation)
         -> scene::SceneNode* {
       return loadAndCreateRenderAssetInstance(b, assetInfo, creation);
     };
+    auto lightCallback =
+        [this](const gfx::LightSetup& lights) -> void { /* TODO */ };
     auto sceneID = sceneManager_->initSceneGraph();
     auto semanticSceneID = cfg.forceSeparateSemanticSceneGraph
                                ? sceneManager_->initSceneGraph()
@@ -52,11 +57,12 @@ ReplayBatchRenderer::ReplayBatchRenderer(
     //   renderer_->bindRenderTarget(sensor);
     // }
 
-    envs_.emplace_back(EnvironmentRecord{.player_ = gfx::replay::Player(cb),
-                                         .sceneID_ = sceneID,
-                                         .semanticSceneID_ = semanticSceneID,
-                                         .sensorParentNode_ = &parentNode,
-                                         .sensorMap_ = std::move(sensorMap)});
+    envs_.emplace_back(EnvironmentRecord{
+        .player_ = gfx::replay::Player(assetCallback, lightCallback),
+        .sceneID_ = sceneID,
+        .semanticSceneID_ = semanticSceneID,
+        .sensorParentNode_ = &parentNode,
+        .sensorMap_ = std::move(sensorMap)});
   }
 
   // OpenGL context and renderer
