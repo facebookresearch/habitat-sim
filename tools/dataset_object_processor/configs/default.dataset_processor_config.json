@@ -2,9 +2,8 @@
   "scene": "data/test_assets/scenes/simple_room.glb",
   "scene_dataset_config_file": "data/replica_cad/replicaCAD.scene_dataset_config.json",
   "data_to_collect": {
-    "memory_data": true,
-    "sim_time_ratio": true,
-    "render_time_ratio": true,
+    "memory_data": false,
+    "render_time_ratio": false,
     "physics_data": true
   },
   "memory_thresholds": {
@@ -17,11 +16,12 @@
   "mem_metrics_to_use": [
     "available",
     "used",
-    "free"
+    "free",
+    "inactive"
   ],
   "physics_thresholds": {
     "wait_time_units": "seconds",
-    "max_wait_time": 5
+    "max_wait_time": 10
   },
   "outputs": {
     "csv": true,
@@ -35,7 +35,7 @@
   "headless": true,
   "enable_physics": true,
   "sensor_height": 1.0,
-  "silent": false,
+  "silent": true,
   "show_bbox": true,
   "show_collision_asset": true,
   "show_bullet_collision_mesh": true,
@@ -65,7 +65,7 @@
       -0.23
     ],
     "default_obj_rot": {
-      "angle": 0.0,
+      "angle": 0,
       "axis": [
         1,
         0,

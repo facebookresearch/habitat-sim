@@ -8,10 +8,13 @@ from habitat_sim.utils.settings import make_cfg as _make_cfg
 # TODO: maybe move this to a separate file as they are not "settings"
 # per se
 dataset_processor_settings = {
-    "frustum_culling": True,
-    "memory_data_headers": [
+    # Column titles that are always displayed in CSV file
+    "always_displayed": [
         "Object Template File",
         "Approx. Ram Use",
+    ],
+    # Column titles of CSV file when memory stats are requested
+    "memory_data_headers": [
         "Render Asset File",
         "Collision Asset File",
         "Mesh Count",
@@ -21,17 +24,34 @@ dataset_processor_settings = {
         "Image Mip Map Count",
         "Image Data Size",
     ],
-    "sim_time_headers": [
-        "Sim Time Ratio",
-    ],
+    # Column titles of CSV file when rendering stats are requested
     "render_time_headers": [
         "Render Time Ratio",
     ],
+    # Column titles of CSV file when physics stats are requested
     "physics_data_headers": [
-        "Idle After...",
+        "Sim Time Ratio",
+        "Awake Duration\nAngle: 0,\nAxis (1, 0, 0)",
+        "Awake Duration\nAngle: 90,\nAxis (1, 0, 0)",
+        "Awake Duration\nAngle: 180,\nAxis (1, 0, 0)",
+        "Awake Duration\nAngle: 270,\nAxis (1, 0, 0)",
+        "Awake Duration\nAngle: -90,\nAxis (0, 0, 1)",
+        "Awake Duration\nAngle: 90,\nAxis (0, 0, 1)",
         "Stable Start Rotations",
         "Translation Drift",
         "Rotation Drift",
+    ],
+    # we must test rigid objects in 6 different orientations, each corresponding
+    # to a face of an imaginary cube bounding the object. Each rotation is of
+    # the form:
+    # (angle in degrees, (axis.x, axis.y, axis.z))
+    "sim_test_rotations": [
+        (0, (1, 0, 0)),
+        (90, (1, 0, 0)),
+        (180, (1, 0, 0)),
+        (270, (1, 0, 0)),
+        (-90, (0, 0, 1)),
+        (90, (0, 0, 1)),
     ],
     # TODO: make sure these are right
     # "mem_delta_order" is either -1 or 1. 1 means the delta is

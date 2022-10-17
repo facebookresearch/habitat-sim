@@ -3,7 +3,6 @@
   "scene_dataset_config_file": "data/replica_cad/replicaCAD.scene_dataset_config.json",
   "data_to_collect": {
     "memory_data": true,
-    "sim_time_ratio": true,
     "render_time_ratio": false,
     "physics_data": true
   },
@@ -65,7 +64,7 @@
       -0.23
     ],
     "default_obj_rot": {
-      "angle": 0.0,
+      "angle": 45.0,
       "axis": [
         1,
         0,
