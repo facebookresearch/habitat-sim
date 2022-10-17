@@ -16,12 +16,11 @@
   "mem_metrics_to_use": [
     "available",
     "used",
-    "free",
-    "inactive"
+    "free"
   ],
   "physics_thresholds": {
     "wait_time_units": "seconds",
-    "max_wait_time": 10
+    "max_wait_time": 5
   },
   "outputs": {
     "csv": true,
@@ -61,7 +60,7 @@
     },
     "default_obj_pos": [
       0.25,
-      1.75,
+      3.00,
       -0.23
     ],
     "default_obj_rot": {

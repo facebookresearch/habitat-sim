@@ -106,17 +106,18 @@ class CSVWriter:
             else:
                 file_path = CSVWriter.file_path
 
-        print(ANSICodes.BRIGHT_CYAN.value + "HEADERS")
+        # TODO: debugging, remove
+        print_if_logging(ANSICodes.BRIGHT_CYAN.value + "HEADERS")
         for header in headers:
-            print(ANSICodes.BRIGHT_CYAN.value + header + "\n")
-
-        print(ANSICodes.BRIGHT_RED.value + "VALUES")
+            print_if_logging(ANSICodes.BRIGHT_CYAN.value + header + "\n")
+        print_if_logging(ANSICodes.BRIGHT_RED.value + "VALUES")
         for value in csv_rows[0]:
-            print(ANSICodes.BRIGHT_RED.value + value + "\n")
-
-        print(
+            print_if_logging(ANSICodes.BRIGHT_RED.value + value + "\n")
+        print_if_logging(
             f" ===== num columns: {len(csv_rows[0])}, num headers: {len(headers)} ============="
         )
+
+        # make sure the number of columns line up
         if not len(csv_rows[0]) == len(headers):
             raise RuntimeError(
                 "Number of headers does not equal number of columns in CSVWriter.write_file()."
@@ -457,52 +458,34 @@ def process_asset_physics(
     """
     Run series of tests on asset to see how it responds in physics simulations
     """
-    # return csv list of placeholders if physics is disabled in the config
-    if not sim_settings["enable_physics"]:
-        return ["..."] * len(sim_settings["physics_data_headers"])
-
-    # Get default position of the rigid objects from the config file
-    default_position = sim_settings["default_transforms"].get("default_obj_pos")
-
     # we must test object in 6 different orientations, each corresponding to a face
     # of an imaginary cube bounding the object. Each rotation in rotations is of the form:
     # (angle, (axis.x, axis.y, axis.z))
     rotations: List[Tuple] = sim_settings["sim_test_rotations"]
     rotations = [(mn.Rad(mn.Deg(rot[0])), mn.Vector3(rot[1])) for rot in rotations]
-    awake_durations = [0] * len(rotations)
+    awake_durations: List[float] = [0] * len(rotations)
+    # pos_deltas: List[mn.Vector3] = [mn.Vector3(0)] * len(rotations)
+    translation_drifts: List[float] = [0] * len(rotations)
+    rotation_drifts: List[Tuple] = [mn.Quaternion.identity_init()] * len(rotations)
 
     # TODO: debugging log, remove
-    text_format = ANSICodes.YELLOW.value
-    for rot in rotations:
-        print(text_format + f"rot from settings - {rot}")
-    print("")
-
-    # set motion_type to Dynamic and initialize physics state variables
-    rigid_obj.motion_type = physics.MotionType.DYNAMIC
-    rigid_obj.awake = True
     obj_init_attributes = rigid_obj.creation_attributes
-    # obj_mass = obj_init_attributes.mass
-    # gravity = sim.get_gravity()
-    # prev_obj_pose = [rigid_obj.translation, rigid_obj.rotation]
-    dt = 1.0 / 60.0  # seconds
-    max_wait_time = sim_settings["physics_thresholds"].get("max_wait_time")  # seconds
-
-    # TODO: debugging log, remove
     text_format = ANSICodes.BRIGHT_RED.value
-    print(
+    print_if_logging(
         text_format
-        + f"----------------- start simulating {basename(obj_init_attributes.handle)} -----------------"
+        + f"\nstart simulating {basename(obj_init_attributes.handle)}"
+        + section_divider
     )
 
     # Loop over the 6 rotations and simulate snapping the object down and waiting for
     # it to become idle (at least until "max_wait_time" from the config file expires)
+    default_position = sim_settings["default_transforms"].get("default_obj_pos")
+    dt = 1.0 / 60.0  # seconds
+    max_wait_time = sim_settings["physics_thresholds"].get("max_wait_time")  # seconds
     for i in range(len(rotations)):
         # get next rotation
         angle = rotations[i][0]
         axis = rotations[i][1]
-        print(f"Angle: {angle}")
-        print(f"Axis: {axis}")
-        print(f"Rotation index: {i}")
 
         # Reset object state with new rotation
         rigid_obj.motion_type = physics.MotionType.DYNAMIC
@@ -510,52 +493,61 @@ def process_asset_physics(
         rigid_obj.translation = default_position
         rigid_obj.rotation = mn.Quaternion.rotation(angle, axis)
 
-        # TODO: debugging log, remove
-        print(
-            text_format
-            + "Transform before snapping\n"
-            + f"pos - {rigid_obj.translation}\n"
-            + f"quaternion - angle: {rigid_obj.rotation.scalar} rad, axis: {rigid_obj.rotation.vector}"
-        )
+        # snap rigid object to surface below
+        success = snap_down_object(sim, rigid_obj)
+        if not success:
+            print_if_logging(ANSICodes.BRIGHT_CYAN.value + "snapping failed")
+        start_pos = rigid_obj.translation
+        start_rot = rigid_obj.rotation
 
-        # # TODO: debugging
-        # # snap rigid object to surface below
-        # success = snap_down_object(sim, rigid_obj)
-        # print(ANSICodes.BRIGHT_CYAN.value + f"{success}")
-
-        # TODO: debugging log, remove
-        print(
-            text_format
-            + "Transform after snapping\n"
-            + f"pos - {rigid_obj.translation}\n"
-            + f"quaternion - angle: {rigid_obj.rotation.scalar} rad, axis: {rigid_obj.rotation.vector}"
-        )
+        # # TODO: debugging finding difference in rotation
+        # test_angle = rotations[2][0]
+        # test_axis = rotations[2][1]
+        # test_quat = mn.Quaternion.rotation(test_angle, test_axis) # 180 about x-axis
+        # print_if_logging(
+        #     text_format
+        #     + "Transform after snapping\n"
+        #     + f"pos - {rigid_obj.translation}\n"
+        #     + ANSICodes.BRIGHT_MAGENTA.value
+        #     + f"quaternion - {rigid_obj.rotation}"
+        # )
+        # print_if_logging(ANSICodes.BRIGHT_CYAN.value + f"180 about x-axis: {test_quat}")
+        # delta_rot = rigid_obj.rotation * test_quat
+        # print_if_logging(ANSICodes.YELLOW.value + f"delta rotation: {delta_rot}")
+        # print_if_logging(Fore.GREEN + f"angle: {round(float(delta_rot.angle()), 3)}, axis: {delta_rot.axis()}\n")
 
         # simulate until rigid object becomes idle or time limit from config file runs out
         while rigid_obj.awake and awake_durations[i] < max_wait_time:
             sim.step_physics(dt)
             awake_durations[i] += dt
-        print(text_format + f"Awake Duration - {awake_durations[i]}\n")
         awake_durations[i] = round(awake_durations[i], 3)
+        # pos_deltas[i] = rigid_obj.translation - start_pos
+        translation_drifts[i] = (rigid_obj.translation - start_pos).length()
+        rotation_drifts[i] = rigid_obj.rotation * start_rot
 
-    # convert wait times to strings with appropriate units
-    times_as_strs = [f"{time} sec" for time in awake_durations]
-
-    # TODO: debugging log, remove
-    text_format = ANSICodes.YELLOW.value
-    for time in times_as_strs:
-        print(text_format + f"{time}")
-    print("")
+    # convert results to lists of strings
+    times_as_strs = [
+        "timed out" if time >= max_wait_time else f"{time} sec"
+        for time in awake_durations
+    ]
+    # pos_deltas_strs = [f"({round(delta.x, 3)}, {round(delta.y, 3)}, {round(delta.z, 3)})" for delta in pos_deltas]
+    translation_drifts_strs = [
+        f"{round(translation, 3)} units" for translation in translation_drifts
+    ]
+    rotation_drifts_strs = [
+        f"{round(float(mn.Deg(rotation.angle())), 3)} deg"
+        for rotation in rotation_drifts
+    ]
+    # rotation_drifts_strs = [f"{round(float(rotation.angle()), 3)} rad" for rotation in rotation_drifts]
 
     # return concatenated list of physics results formatted for CSV file row
     return (
-        ["Sim Time Ratio?"]
+        ["..."]
+        + [f"max {round(max_wait_time, 3)} sec"]
         + times_as_strs
-        + [
-            "Stable Rotations?",
-            "Translation Drift?",
-            "Rotation Drift?",
-        ]
+        + ["..."]
+        + translation_drifts_strs
+        + rotation_drifts_strs
     )
 
 
@@ -567,6 +559,7 @@ def load_obj_and_assess_ram_usage(
     """ """
     # Get memory state before and after loading object with RigidObjectManager
     rigid_obj_mgr = sim.get_rigid_object_manager()
+    rigid_obj_mgr.remove_all_objects()
     start_mem = psutil.virtual_memory()._asdict()
     rigid_obj = rigid_obj_mgr.add_object_by_template_handle(handle)
     end_mem = psutil.virtual_memory()._asdict()

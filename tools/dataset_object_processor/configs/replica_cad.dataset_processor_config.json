@@ -60,11 +60,11 @@
     },
     "default_obj_pos": [
       0.25,
-      1.75,
+      3.00,
       -0.23
     ],
     "default_obj_rot": {
-      "angle": 45.0,
+      "angle": 0.0,
       "axis": [
         1,
         0,
