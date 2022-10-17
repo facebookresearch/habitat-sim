@@ -78,6 +78,7 @@ dataset_processor_settings = {
         "active": -1,
         "inactive": 1,
     },
+    "bbox_rgb": [1.0, 0.8, 1.0],
 }
 default_sim_settings.update(dataset_processor_settings)
 

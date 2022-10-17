@@ -4,6 +4,7 @@ import datetime
 import json
 import os
 from enum import Enum
+from logging import raiseExceptions
 from ntpath import basename
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -376,7 +377,7 @@ def snap_down_object(
         return False
 
 
-def process_asset_memory(
+def process_mem_usage(
     importer: trade.AbstractImporter,
     template: attributes.ObjectAttributes,
 ) -> List[str]:
@@ -450,7 +451,7 @@ def process_render_time() -> List[str]:
     ...
 
 
-def process_asset_physics(
+def process_physics(
     sim: habitat_sim.simulator,
     rigid_obj: physics.ManagedBulletRigidObject,
     sim_settings: Dict[str, Any],
@@ -460,11 +461,12 @@ def process_asset_physics(
     """
     # we must test object in 6 different orientations, each corresponding to a face
     # of an imaginary cube bounding the object. Each rotation in rotations is of the form:
-    # (angle, (axis.x, axis.y, axis.z))
-    rotations: List[Tuple] = sim_settings["sim_test_rotations"]
-    rotations = [(mn.Rad(mn.Deg(rot[0])), mn.Vector3(rot[1])) for rot in rotations]
-    awake_durations: List[float] = [0] * len(rotations)
-    # pos_deltas: List[mn.Vector3] = [mn.Vector3(0)] * len(rotations)
+    # (angle, (axis.x, axis.y, axis.z)) where angle is in degrees
+    rotations: List[Tuple] = [
+        (mn.Rad(mn.Deg(rot[0])), mn.Vector3(rot[1]))
+        for rot in sim_settings["sim_test_rotations"]
+    ]
+    times: List[float] = [0] * len(rotations)
     translation_drifts: List[float] = [0] * len(rotations)
     rotation_drifts: List[Tuple] = [mn.Quaternion.identity_init()] * len(rotations)
 
@@ -483,54 +485,38 @@ def process_asset_physics(
     dt = 1.0 / 60.0  # seconds
     max_wait_time = sim_settings["physics_thresholds"].get("max_wait_time")  # seconds
     for i in range(len(rotations)):
-        # get next rotation
-        angle = rotations[i][0]
-        axis = rotations[i][1]
 
         # Reset object state with new rotation
         rigid_obj.motion_type = physics.MotionType.DYNAMIC
         rigid_obj.awake = True
         rigid_obj.translation = default_position
+        angle = rotations[i][0]
+        axis = rotations[i][1]
         rigid_obj.rotation = mn.Quaternion.rotation(angle, axis)
 
         # snap rigid object to surface below
         success = snap_down_object(sim, rigid_obj)
         if not success:
-            print_if_logging(ANSICodes.BRIGHT_CYAN.value + "snapping failed")
+            raiseExceptions(
+                "dataset_object_processor.process_physics(...) - snapping failed"
+            )
         start_pos = rigid_obj.translation
         start_rot = rigid_obj.rotation
 
-        # # TODO: debugging finding difference in rotation
-        # test_angle = rotations[2][0]
-        # test_axis = rotations[2][1]
-        # test_quat = mn.Quaternion.rotation(test_angle, test_axis) # 180 about x-axis
-        # print_if_logging(
-        #     text_format
-        #     + "Transform after snapping\n"
-        #     + f"pos - {rigid_obj.translation}\n"
-        #     + ANSICodes.BRIGHT_MAGENTA.value
-        #     + f"quaternion - {rigid_obj.rotation}"
-        # )
-        # print_if_logging(ANSICodes.BRIGHT_CYAN.value + f"180 about x-axis: {test_quat}")
-        # delta_rot = rigid_obj.rotation * test_quat
-        # print_if_logging(ANSICodes.YELLOW.value + f"delta rotation: {delta_rot}")
-        # print_if_logging(Fore.GREEN + f"angle: {round(float(delta_rot.angle()), 3)}, axis: {delta_rot.axis()}\n")
-
         # simulate until rigid object becomes idle or time limit from config file runs out
-        while rigid_obj.awake and awake_durations[i] < max_wait_time:
+        while rigid_obj.awake and times[i] < max_wait_time:
             sim.step_physics(dt)
-            awake_durations[i] += dt
-        awake_durations[i] = round(awake_durations[i], 3)
-        # pos_deltas[i] = rigid_obj.translation - start_pos
+            times[i] += dt
+
+        # store final information once object becomes idle or it times out
+        times[i] = round(times[i], 3)
         translation_drifts[i] = (rigid_obj.translation - start_pos).length()
         rotation_drifts[i] = rigid_obj.rotation * start_rot
 
     # convert results to lists of strings
     times_as_strs = [
-        "timed out" if time >= max_wait_time else f"{time} sec"
-        for time in awake_durations
+        "timed out" if time >= max_wait_time else f"{time} sec" for time in times
     ]
-    # pos_deltas_strs = [f"({round(delta.x, 3)}, {round(delta.y, 3)}, {round(delta.z, 3)})" for delta in pos_deltas]
     translation_drifts_strs = [
         f"{round(translation, 3)} units" for translation in translation_drifts
     ]
@@ -538,12 +524,11 @@ def process_asset_physics(
         f"{round(float(mn.Deg(rotation.angle())), 3)} deg"
         for rotation in rotation_drifts
     ]
-    # rotation_drifts_strs = [f"{round(float(rotation.angle()), 3)} rad" for rotation in rotation_drifts]
 
     # return concatenated list of physics results formatted for CSV file row
     return (
         ["..."]
-        + [f"max {round(max_wait_time, 3)} sec"]
+        + [f"--- max {round(max_wait_time, 3)} sec ---"]
         + times_as_strs
         + ["..."]
         + translation_drifts_strs
@@ -551,7 +536,7 @@ def process_asset_physics(
     )
 
 
-def load_obj_and_assess_ram_usage(
+def load_obj_and_store_ram_usage(
     sim: habitat_sim.simulator,
     handle: str,
     sim_settings: Dict[str, Any],
@@ -605,7 +590,7 @@ def process_imported_asset(
     # Get memory state before and after loading object with RigidObjectManager,
     # then use psutil to get a sense of how much RAM was used during the
     # loading process
-    (rigid_obj, avg_ram_used_str) = load_obj_and_assess_ram_usage(
+    (rigid_obj, avg_ram_used_str) = load_obj_and_store_ram_usage(
         sim,
         handle,
         sim_settings,
@@ -632,11 +617,11 @@ def process_imported_asset(
     physics_data: List[str] = []
     data_to_collect = sim_settings["data_to_collect"]
     if data_to_collect.get("memory_data"):
-        memory_data += process_asset_memory(importer, template)
+        memory_data += process_mem_usage(importer, template)
     if data_to_collect.get("render_time_ratio"):
         render_time_data.append("...")
     if data_to_collect.get("physics_data"):
-        physics_data = process_asset_physics(sim, rigid_obj, sim_settings)
+        physics_data = process_physics(sim, rigid_obj, sim_settings)
 
     # return results as a list of strings formatted for csv rows
     return always_displayed + memory_data + render_time_data + physics_data
@@ -713,17 +698,19 @@ def parse_dataset(
     csv_rows: List[List[str]] = []
     manager = trade.ImporterManager()
     importer = manager.load_and_instantiate("AnySceneImporter")
-    # for handle in object_template_handles:
-    #     row = process_imported_asset(
-    #         sim, importer, handle, obj_template_mgr, sim_settings
-    #     )
-    #     csv_rows.append(row)
-    for i in range(5):
-        handle = object_template_handles[i]
+    for handle in object_template_handles:
         row = process_imported_asset(
             sim, importer, handle, obj_template_mgr, sim_settings
         )
         csv_rows.append(row)
+
+    # # TODO: debugging, remove
+    # for i in range(5):
+    #     handle = object_template_handles[i]
+    #     row = process_imported_asset(
+    #         sim, importer, handle, obj_template_mgr, sim_settings
+    #     )
+    #     csv_rows.append(row)
 
     # clean up
     importer.close()

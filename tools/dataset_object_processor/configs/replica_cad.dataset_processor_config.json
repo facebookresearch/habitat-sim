@@ -20,7 +20,9 @@
   ],
   "physics_thresholds": {
     "wait_time_units": "seconds",
-    "max_wait_time": 5
+    "max_wait_time": 5,
+    "distance_units": "cm",
+    "angle_units": "deg"
   },
   "outputs": {
     "csv": true,
@@ -38,13 +40,7 @@
   "show_bbox": true,
   "show_collision_asset": true,
   "show_bullet_collision_mesh": true,
-  "bbox_rgb": [
-    1.0,
-    0.8,
-    1.0
-  ],
   "default_transforms": {
-    "rotation_unit": "degrees",
     "default_agent_pos": [
       0.25,
       0.34,
