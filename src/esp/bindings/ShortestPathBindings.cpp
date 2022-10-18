@@ -141,9 +141,14 @@ void initShortestPathBindings(py::module& m) {
       .def(
           "seed", &PathFinder::seed,
           R"(Seed the pathfinder.  Useful for get_random_navigable_point(). Seeds the global c rand function.)")
-      .def("get_topdown_view", &PathFinder::getTopDownView,
-           R"(Returns the topdown view of the PathFinder's navmesh.)",
-           "meters_per_pixel"_a, "height"_a)
+      .def(
+          "get_topdown_view", &PathFinder::getTopDownView,
+          R"(Returns the topdown view of the PathFinder's navmesh at a given vertical slice with eps slack.)",
+          "meters_per_pixel"_a, "height"_a, "eps"_a = 0.5)
+      .def(
+          "get_topdown_island_view", &PathFinder::getTopDownIslandView,
+          R"(Returns the topdown view of the PathFinder's navmesh with island indicies at each point or -1 for non-navigable cells for a given vertical slice with eps slack.)",
+          "meters_per_pixel"_a, "height"_a, "eps"_a = 0.5)
       // detailed docs in docs/docs.rst
       .def("get_random_navigable_point", &PathFinder::getRandomNavigablePoint,
            "max_tries"_a = 10, "island_index"_a = ID_UNDEFINED)

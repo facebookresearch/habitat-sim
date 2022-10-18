@@ -411,7 +411,7 @@ struct PathFinder::Impl {
   T snapPoint(const T& pt, int islandIndex = ID_UNDEFINED);
 
   template <typename T>
-  int getIsland(const T& pt);
+  int getIsland(const T& pt) const;
 
   bool loadNavMesh(const std::string& path);
 
@@ -440,9 +440,11 @@ struct PathFinder::Impl {
 
   std::pair<vec3f, vec3f> bounds() const { return bounds_; };
 
-  Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> getTopDownView(
-      float metersPerPixel,
-      float height) const;
+  Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic>
+  getTopDownView(float metersPerPixel, float height, float eps) const;
+
+  Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic>
+  getTopDownIslandView(float metersPerPixel, float height, float eps) const;
 
   assets::MeshData::ptr getNavMeshData(int islandIndex /*= ID_UNDEFINED*/);
 
@@ -1530,7 +1532,7 @@ T PathFinder::Impl::snapPoint(const T& pt, int islandIndex /*=ID_UNDEFINED*/) {
 }
 
 template <typename T>
-int PathFinder::Impl::getIsland(const T& pt) {
+int PathFinder::Impl::getIsland(const T& pt) const {
   dtStatus status = 0;
   vec3f projectedPt;
   dtPolyRef polyRef = 0;
@@ -1607,7 +1609,8 @@ typedef Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> MatrixXb;
 
 Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic>
 PathFinder::Impl::getTopDownView(const float metersPerPixel,
-                                 const float height) const {
+                                 const float height,
+                                 const float eps) const {
   std::pair<vec3f, vec3f> mapBounds = bounds();
   vec3f bound1 = mapBounds.first;
   vec3f bound2 = mapBounds.second;
@@ -1625,7 +1628,44 @@ PathFinder::Impl::getTopDownView(const float metersPerPixel,
   for (int h = 0; h < zResolution; ++h) {
     for (int w = 0; w < xResolution; ++w) {
       vec3f point = vec3f(curx, height, curz);
-      topdownMap(h, w) = isNavigable(point, 0.5);
+      topdownMap(h, w) = isNavigable(point, eps);
+      curx = curx + metersPerPixel;
+    }
+    curz = curz + metersPerPixel;
+    curx = startx;
+  }
+
+  return topdownMap;
+}
+
+typedef Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic> MatrixXi;
+
+MatrixXi PathFinder::Impl::getTopDownIslandView(const float metersPerPixel,
+                                                const float height,
+                                                const float eps) const {
+  std::pair<vec3f, vec3f> mapBounds = bounds();
+  vec3f bound1 = mapBounds.first;
+  vec3f bound2 = mapBounds.second;
+
+  float xspan = std::abs(bound1[0] - bound2[0]);
+  float zspan = std::abs(bound1[2] - bound2[2]);
+  int xResolution = xspan / metersPerPixel;
+  int zResolution = zspan / metersPerPixel;
+  float startx = fmin(bound1[0], bound2[0]);
+  float startz = fmin(bound1[2], bound2[2]);
+  MatrixXi topdownMap(zResolution, xResolution);
+
+  float curz = startz;
+  float curx = startx;
+  for (int h = 0; h < zResolution; ++h) {
+    for (int w = 0; w < xResolution; ++w) {
+      vec3f point = vec3f(curx, height, curz);
+      if (isNavigable(point, eps)) {
+        // get the island
+        topdownMap(h, w) = getIsland(point);
+      } else {
+        topdownMap(h, w) = -1;
+      }
       curx = curx + metersPerPixel;
     }
     curz = curz + metersPerPixel;
@@ -1813,8 +1853,16 @@ std::pair<vec3f, vec3f> PathFinder::bounds() const {
 
 Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> PathFinder::getTopDownView(
     const float metersPerPixel,
-    const float height) {
-  return pimpl_->getTopDownView(metersPerPixel, height);
+    const float height,
+    const float eps) {
+  return pimpl_->getTopDownView(metersPerPixel, height, eps);
+}
+
+Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic>
+PathFinder::getTopDownIslandView(const float metersPerPixel,
+                                 const float height,
+                                 const float eps) {
+  return pimpl_->getTopDownIslandView(metersPerPixel, height, eps);
 }
 
 assets::MeshData::ptr PathFinder::getNavMeshData(
