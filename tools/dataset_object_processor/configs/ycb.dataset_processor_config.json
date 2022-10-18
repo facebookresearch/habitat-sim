@@ -46,7 +46,7 @@
   "enable_physics": true,
   "sensor_height": 1.0,
   "silent": true,
-  "debug_print": true,
+  "debug_print": false,
   "default_transforms": {
     "default_agent_pos": [
       0.25,

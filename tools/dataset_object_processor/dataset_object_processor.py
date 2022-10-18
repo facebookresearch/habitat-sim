@@ -14,7 +14,7 @@ from magnum import trade
 from processor_settings import default_sim_settings, make_cfg
 from processor_utils import ANSICodes, CSVWriter, MemoryUnitConverter, RotationAxis
 
-import habitat_sim
+import habitat_sim as hsim
 from habitat_sim import attributes, attributes_managers, physics
 from habitat_sim.logging import logger
 from habitat_sim.utils import viz_utils as vut
@@ -90,7 +90,7 @@ def get_mem_size_str(
 
 
 def get_bounding_box_corners(
-    obj: habitat_sim.physics.ManagedBulletRigidObject,
+    obj: physics.ManagedBulletRigidObject,
 ) -> List[mn.Vector3]:
     """
     Return a list of object bounding box corners in object local space.
@@ -109,8 +109,8 @@ def get_bounding_box_corners(
 
 
 def bounding_box_ray_prescreen(
-    sim: habitat_sim.simulator,
-    obj: habitat_sim.physics.ManagedBulletRigidObject,
+    sim: hsim.simulator,
+    obj: physics.ManagedBulletRigidObject,
     support_obj_ids: Optional[List[int]] = None,
     check_all_corners: bool = False,
 ) -> Dict[str, Any]:
@@ -146,7 +146,7 @@ def bounding_box_ray_prescreen(
             lowest_key_point_height = world_point_height
         # cast a ray in gravity direction
         if ix == 0 or check_all_corners:
-            ray = habitat_sim.geo.Ray(world_point, gravity_dir)
+            ray = hsim.geo.Ray(world_point, gravity_dir)
             raycast_results.append(sim.cast_ray(ray))
             # classify any obstructions before hitting the support surface
             for hit in raycast_results[-1].hits:
@@ -195,8 +195,8 @@ def bounding_box_ray_prescreen(
 
 
 def snap_down_object(
-    sim: habitat_sim.simulator,
-    obj: habitat_sim.physics.ManagedBulletRigidObject,
+    sim: hsim.simulator,
+    obj: physics.ManagedBulletRigidObject,
     support_obj_ids: Optional[List[int]] = None,
 ) -> bool:
     """
@@ -251,7 +251,7 @@ def snap_down_object(
 
 
 def record_revolving_obj(
-    sim: habitat_sim.simulator,
+    sim: hsim.simulator,
     rigid_obj: physics.ManagedBulletRigidObject,
     angle_delta: float,
     axis,
@@ -291,7 +291,7 @@ def record_revolving_obj(
 
 
 def record_video(
-    sim: habitat_sim.simulator,
+    sim: hsim.simulator,
     rigid_obj: physics.ManagedBulletRigidObject,
     sim_settings: Dict[str, Any],
 ) -> None:
@@ -438,7 +438,7 @@ def process_render_time() -> List[str]:
 
 
 def process_physics(
-    sim: habitat_sim.simulator,
+    sim: hsim.simulator,
     rigid_obj: physics.ManagedBulletRigidObject,
     sim_settings: Dict[str, Any],
 ) -> List[str]:
@@ -573,7 +573,7 @@ def process_physics(
 
 
 def process_asset(
-    sim: habitat_sim.simulator,
+    sim: hsim.simulator,
     importer: trade.AbstractImporter,
     handle: str,
     obj_template_mgr: attributes_managers.ObjectAttributesManager,
@@ -663,7 +663,7 @@ def process_asset(
 
 
 def parse_dataset(
-    sim: habitat_sim.simulator,
+    sim: hsim.simulator,
     sim_settings: Dict[str, Any],
 ) -> List[List[str]]:
     """
@@ -679,8 +679,7 @@ def parse_dataset(
         or metadata_mediator.dataset_exists(dataset_path) is False
     ):
         raise RuntimeError(
-            ANSICodes.FAIL.value
-            + "No meta data mediator or dataset exists in parse_dataset(...)."
+            "parse_dataset(...): No meta data mediator or dataset exists."
         )
 
     # get dataset that is currently being used by the simulator
@@ -777,13 +776,33 @@ def create_csv_file(
     )
 
 
+def configure_sim(sim_settings: Dict[str, Any]):
+    """
+    Configure simulator while adding post configuration for the transform of
+    the agent
+    """
+    cfg = make_cfg(sim_settings)
+    sim = hsim.Simulator(cfg)
+    default_transforms = sim_settings["default_transforms"]
+
+    # init agent
+    agent_state = hsim.AgentState()
+    agent = sim.initialize_agent(sim_settings["default_agent"], agent_state)
+    agent.body.object.translation = default_transforms.get("default_agent_pos")
+    agent_rot = default_transforms.get("default_agent_rot")
+    agent.body.object.rotation = mn.Quaternion.rotation(
+        mn.Rad(mn.Deg(agent_rot.get("angle"))), mn.Vector3(agent_rot.get("axis"))
+    )
+
+    return sim
+
+
 def build_parser(
     parser: Optional[argparse.ArgumentParser] = None,
 ) -> argparse.ArgumentParser:
     """
-    Parse arguments or set defaults when running script for scene,
-    dataset, and set if we are processing physics data of dataset
-    objects
+    Parse config file argument or set default when running script for scene and
+    dataset
     """
     if parser is None:
         parser = argparse.ArgumentParser(
@@ -802,38 +821,7 @@ def build_parser(
         help="config file to load"
         ' (default: "tools/dataset_object_processor/configs/default.dataset_processor_config.json")',
     )
-    parser.add_argument(
-        "--csv_file_prefix",
-        default=None,
-        type=str,
-        metavar="PREFIX",
-        help="Prefix string of file name for CSV and/or video recording file to create, e.g."
-        " ycb,"
-        " replica_CAD,"
-        " (default: None)",
-    )
     return parser
-
-
-def configure_sim(sim_settings: Dict[str, Any]):
-    """
-    Configure simulator while adding post configuration for the transform of
-    the agent
-    """
-    cfg = make_cfg(sim_settings)
-    sim = habitat_sim.Simulator(cfg)
-    default_transforms = sim_settings["default_transforms"]
-
-    # init agent
-    agent_state = habitat_sim.AgentState()
-    agent = sim.initialize_agent(sim_settings["default_agent"], agent_state)
-    agent.body.object.translation = default_transforms.get("default_agent_pos")
-    agent_rot = default_transforms.get("default_agent_rot")
-    agent.body.object.rotation = mn.Quaternion.rotation(
-        mn.Rad(mn.Deg(agent_rot.get("angle"))), mn.Vector3(agent_rot.get("axis"))
-    )
-
-    return sim
 
 
 def main() -> None:

@@ -45,7 +45,7 @@
   "headless": true,
   "enable_physics": true,
   "sensor_height": 1.0,
-  "silent": false,
+  "silent": true,
   "debug_print": false,
   "default_transforms": {
     "default_agent_pos": [

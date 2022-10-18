@@ -13,8 +13,8 @@ import magnum as mn
 # A line of dashes to divide sections of terminal output
 section_divider: str = "\n" + "-" * 72
 
-# globals to dictate if we are logging anything to console
-# are overriden from config file
+# globals to dictate if we are logging anything to console.
+# Are overriden from config file
 silent = True
 debug_print = False
 
@@ -47,8 +47,11 @@ def create_unique_filename(
     else:
         filename_prefix = f"{filename_prefix}__"
 
+    # make sure directory path and filename extension are formatted correctly
     if not dir_path.endswith("/"):
         dir_path = dir_path + "/"
+    if not extension.startswith("."):
+        extension = "." + extension
 
     # create file name
     file_path = f"{dir_path}{filename_prefix}date_{date}__time_{time}{extension}"
@@ -56,16 +59,26 @@ def create_unique_filename(
 
 
 def print_if_logging(message: str = "") -> None:
+    """
+    Print to console if "silent" is set to false in the config file
+    """
     if not silent:
         print(message)
 
 
 def print_debug(message: str = "") -> None:
+    """
+    Print to console if "debug_print" is set to true in the config file
+    """
     if debug_print:
         print(message)
 
 
 def print_quaternion_debug(name: str, q: mn.Quaternion, color) -> None:
+    """
+    Print quaternion to console in angle-axis form if "debug_print" is set
+    to true in the config file
+    """
     global debug_print
     if debug_print:
         decimal = 1
