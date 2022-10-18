@@ -691,16 +691,7 @@ def parse_dataset(
     csv_rows: List[List[str]] = []
     manager = trade.ImporterManager()
     importer = manager.load_and_instantiate("AnySceneImporter")
-
-    # for handle in object_template_handles:
-    #     row = process_asset(
-    #         sim, importer, handle, obj_template_mgr, sim_settings
-    #     )
-    #     csv_rows.append(row)
-
-    # TODO: debugging, remove
-    for i in range(10):
-        handle = object_template_handles[i]
+    for handle in object_template_handles:
         row = process_asset(sim, importer, handle, obj_template_mgr, sim_settings)
         csv_rows.append(row)
 
