@@ -20,7 +20,7 @@
   ],
   "physics_vars": {
     "fps": 60,
-    "wait_time_units": "seconds",
+    "time_units": "seconds",
     "max_wait_time": 5,
     "distance_units": "cm",
     "angle_units": "deg"
@@ -38,6 +38,7 @@
   "enable_physics": true,
   "sensor_height": 1.0,
   "silent": false,
+  "debug_print": true,
   "show_bbox": true,
   "show_collision_asset": true,
   "show_bullet_collision_mesh": true,

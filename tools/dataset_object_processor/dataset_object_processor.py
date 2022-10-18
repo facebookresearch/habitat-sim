@@ -16,6 +16,7 @@ from processor_settings import default_sim_settings, make_cfg
 
 import habitat_sim
 from habitat_sim import attributes, attributes_managers, physics
+from habitat_sim.logging import logger
 
 repo = git.Repo(".", search_parent_directories=True)
 HABITAT_SIM_PATH = repo.working_tree_dir
@@ -151,6 +152,23 @@ def print_if_logging(message: str = "") -> None:
     global silent
     if not silent:
         print(message)
+
+
+def print_debug(message: str = "") -> None:
+    global debug_print
+    if debug_print:
+        print(message)
+
+
+def print_quaternion_debug(name: str, q: mn.Quaternion, color) -> None:
+    global debug_print
+    if debug_print:
+        decimal = 1
+        angle = round(float(mn.Deg(q.angle())), decimal)
+        x = round(q.axis().x, decimal)
+        y = round(q.axis().y, decimal)
+        z = round(q.axis().z, decimal)
+        print(color + name + f"{angle} ({x}, {y}, {z})")
 
 
 def print_mem_usage_info(
@@ -312,7 +330,8 @@ def bounding_box_ray_prescreen(
         if 0 not in support_impacts
         else support_impacts[0] + gravity_dir * (base_rel_height - margin_offset)
     )
-    # return list of obstructed and grounded rays, relative base height, distance to first surface impact, and ray results details
+    # return list of obstructed and grounded rays, relative base height,
+    # distance to first surface impact, and ray results details
     return {
         "base_rel_height": base_rel_height,
         "surface_snap_point": surface_snap_point,
@@ -462,20 +481,19 @@ def process_physics(
     # of an imaginary cube bounding the object. Each rotation in rotations is of the form:
     # (angle, (axis.x, axis.y, axis.z)) where angle is in degrees
     rotations: List[Tuple] = [
-        (mn.Rad(mn.Deg(rotation[0])), mn.Vector3(rotation[1]))  # angle  # axis
+        (mn.Rad(mn.Deg(rotation[0])), mn.Vector3(rotation[1]))
         for rotation in sim_settings["sim_test_rotations"]
     ]
-
     times: List[float] = [0.0] * len(rotations)
     translation_deltas: List[float] = [0.0] * len(rotations)
     rotation_deltas: List[mn.Quaternion] = [mn.Quaternion.identity_init()] * len(
         rotations
     )
 
-    # TODO: debugging log, remove
+    # TODO: debugging, remove
     obj_init_attributes = rigid_obj.creation_attributes
     text_format = ANSICodes.BRIGHT_RED.value
-    print(
+    print_debug(
         text_format
         + f"\nstart simulating {basename(obj_init_attributes.handle)}"
         + section_divider
@@ -492,86 +510,73 @@ def process_physics(
         rigid_obj.motion_type = physics.MotionType.DYNAMIC
         rigid_obj.awake = True
         rigid_obj.translation = default_position
-        angle = rotations[i][0]
+        angle = mn.Deg(rotations[i][0])
         axis = rotations[i][1]
-        print(Fore.GREEN + f"{angle}")
-        print(Fore.GREEN + f"{axis}")
-        rigid_obj.rotation = (
-            mn.Quaternion.identity_init()
-            if i == 0
-            else mn.Quaternion.rotation(angle, axis)
-        )
-        print(Fore.GREEN + f"{rigid_obj.rotation}")
-        br = rigid_obj.rotation
-        angle = round(float(mn.Deg(br.angle())), 0)
-        # axis = (round(br.axis().x, 0), round(br.axis().y, 0), round(br.axis().z, 0))
-        axis = (br.axis().x, br.axis().y, br.axis().z, 0)
-        print(
-            ANSICodes.YELLOW.value
-            + "start - "
-            + f"{angle} ({axis[0]}, {axis[1]}, {axis[2]})"
-        )
+        rigid_obj.rotation = mn.Quaternion.rotation(angle, axis)
+
+        # TODO: debugging, remove
+        print_debug(f"init as quaternion - {rigid_obj.rotation}")
+        print_quaternion_debug("init - ", rigid_obj.rotation, ANSICodes.YELLOW.value)
 
         # snap rigid object to surface below
         success = snap_down_object(sim, rigid_obj)
         if not success:
-            print_if_logging(
+            logger.warning(
                 ANSICodes.BRIGHT_RED.value
                 + "dataset_object_processor.process_physics(...) - snapping failed"
             )
-        start_pos: mn.Vector3 = rigid_obj.translation
-        start_rot: mn.Quaternion = rigid_obj.rotation
-        print(
-            ANSICodes.BRIGHT_CYAN.value
-            + "drop - "
-            + f"{round(float(mn.Deg(start_rot.angle())), 0)} ({round(start_rot.axis().x, 0)}, {round(start_rot.axis().y, 0)}, {round(start_rot.axis().z, 0)})"
-        )
+        snap_pos: mn.Vector3 = rigid_obj.translation
+        snap_rot: mn.Quaternion = rigid_obj.rotation
+
+        # TODO: debugging, remove
+        print_quaternion_debug("snap - ", snap_rot, ANSICodes.BRIGHT_CYAN.value)
 
         # simulate until rigid object becomes idle or time limit from config file runs out
         while rigid_obj.awake and times[i] < max_wait_time:
             sim.step_physics(dt)
             times[i] += dt
 
+        # TODO: debugging, remove
+        print_quaternion_debug(
+            "idle - ", rigid_obj.rotation, ANSICodes.BRIGHT_MAGENTA.value
+        )
+
         # store final information once object becomes idle or it times out
         times[i] = round(times[i], 3)
-        translation_deltas[i] = (rigid_obj.translation - start_pos).length()
-        er = rigid_obj.rotation
-        print(
-            ANSICodes.BRIGHT_MAGENTA.value
-            + "idle - "
-            + f"{round(float(mn.Deg(er.angle())), 0)} ({round(er.axis().x, 0)}, {round(er.axis().y, 0)}, {round(er.axis().z, 0)})"
+        translation_deltas[i] = (rigid_obj.translation - snap_pos).length()
+        rotation_deltas[i] = rigid_obj.rotation * snap_rot.conjugated()
+
+        # TODO: debugging, remove
+        print_quaternion_debug(
+            "delta r - ", rotation_deltas[i], ANSICodes.BRIGHT_BLUE.value
         )
-        delta_r = rigid_obj.rotation * start_rot.conjugated()
-        rotation_deltas[i] = delta_r
-        print(
-            ANSICodes.BRIGHT_BLUE.value
-            + "delta r - "
-            + f"{round(float(mn.Deg(delta_r.angle())), 0)} ({round(delta_r.axis().x, 0)}, {round(delta_r.axis().y, 0)}, {round(delta_r.axis().z, 0)})\n"
-        )
-        # rotation_deltas[i] = start_rot.conjugated() * rigid_obj.rotation
-        # rotation_deltas[i] = start_rot * rigid_obj.rotation.conjugated()
-        # diff * start = end --> diff = end * inv(start)
+        print_debug("")
 
     # convert results to lists of strings
+    time_units = sim_settings["physics_vars"].get("time_units")
     times_as_strs = [
-        "timed out" if time >= max_wait_time else f"{time} sec" for time in times
+        "timed out" if time >= max_wait_time else f"{time} {time_units}"
+        for time in times
     ]
     translation_deltas_strs = [
         f"{round(translation, 3)} units" for translation in translation_deltas
     ]
+    decimal = 1
     rotation_deltas_strs = [
-        f"{round(float(mn.Deg(r.angle())), 0)} ({round(r.axis().x, 0)}, {round(r.axis().y, 0)}, {round(r.axis().z, 0)})"
+        f"angle: {round(float(mn.Deg(r.angle())), decimal)}\n"
+        + f"axis: ({round(r.axis().x, decimal)}, {round(r.axis().y, decimal)}, {round(r.axis().z, decimal)})"
         for r in rotation_deltas
     ]
 
     # return concatenated list of physics results formatted for CSV file row
     return (
         ["..."]
-        + [f"--- max {round(max_wait_time, 3)} sec ---"]
+        + [f"--- max {round(max_wait_time, 3)} {time_units} ---"]
         + times_as_strs
         + ["..."]
+        + [""]
         + translation_deltas_strs
-        + ["angle degrees (axis)"]
+        + [""]
         + rotation_deltas_strs
     )
 
@@ -812,8 +817,10 @@ def main() -> None:
     # setup colorama terminal color printing so that format and color reset
     # after each print_if_logging statement
     global silent
+    global debug_print
     init(autoreset=True)
     silent = sim_settings["silent"]
+    debug_print = sim_settings["debug_print"]
 
     # Configure and make simulator
     cfg = make_cfg(sim_settings)
