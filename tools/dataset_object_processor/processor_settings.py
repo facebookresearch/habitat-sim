@@ -8,7 +8,7 @@ from habitat_sim.utils.settings import make_cfg as _make_cfg
 # TODO: maybe move this to a separate file as they are not "settings"
 # per se
 dataset_processor_settings = {
-    # Column titles that are always displayed in CSV file
+    # object_config.json file name
     "object_name": [
         "object template file",
     ],

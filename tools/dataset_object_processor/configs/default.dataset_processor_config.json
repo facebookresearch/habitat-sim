@@ -2,8 +2,8 @@
   "scene": "data/test_assets/scenes/simple_room.glb",
   "scene_dataset_config_file": "data/replica_cad/replicaCAD.scene_dataset_config.json",
   "data_to_collect": {
-    "memory_data": false,
-    "render_time_ratio": false,
+    "memory_data": true,
+    "render_time_ratio": true,
     "physics_data": true
   },
   "memory_vars": {
@@ -25,28 +25,33 @@
     "distance_units": "cm",
     "angle_units": "deg"
   },
+  "video_vars": {
+    "tasks": {
+      "show_bbox": true,
+      "show_collision_asset": true,
+      "show_bullet_collision_mesh": true
+    },
+    "revolution_dur": 4.0
+  },
   "outputs": {
     "csv": true,
-    "video_recording": true
+    "video": true
   },
   "output_paths": {
     "csv": "tools/dataset_object_processor/dataset_csv_files/",
-    "video_recordings": "tools/dataset_object_processor/dataset_video_recordings/",
+    "video": "tools/dataset_object_processor/dataset_video_recordings/",
     "output_file_prefix": "default"
   },
   "headless": true,
   "enable_physics": true,
   "sensor_height": 1.0,
   "silent": true,
-  "debug_print": true,
-  "show_bbox": true,
-  "show_collision_asset": true,
-  "show_bullet_collision_mesh": true,
+  "debug_print": false,
   "default_transforms": {
     "default_agent_pos": [
       0.25,
-      0.34,
-      0.73
+      2.00,
+      1.73
     ],
     "default_agent_rot": {
       "angle": 0.0,

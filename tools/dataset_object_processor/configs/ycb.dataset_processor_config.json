@@ -2,7 +2,7 @@
   "scene": "data/test_assets/scenes/simple_room.glb",
   "scene_dataset_config_file": "data/objects/ycb/ycb.scene_dataset_config.json",
   "data_to_collect": {
-    "memory_data": true,
+    "memory_data": false,
     "render_time_ratio": false,
     "physics_data": true
   },
@@ -25,13 +25,21 @@
     "distance_units": "cm",
     "angle_units": "deg"
   },
+  "video_vars": {
+    "tasks": {
+      "show_bbox": true,
+      "show_collision_asset": false,
+      "show_bullet_collision_mesh": false
+    },
+    "revolution_dur": 4.0
+  },
   "outputs": {
     "csv": true,
-    "video_recording": true
+    "video": true
   },
   "output_paths": {
     "csv": "tools/dataset_object_processor/dataset_csv_files/",
-    "video_recordings": "tools/dataset_object_processor/dataset_video_recordings/",
+    "video": "tools/dataset_object_processor/dataset_video_recordings/",
     "output_file_prefix": "ycb"
   },
   "headless": true,
@@ -39,9 +47,6 @@
   "sensor_height": 1.0,
   "silent": true,
   "debug_print": true,
-  "show_bbox": true,
-  "show_collision_asset": true,
-  "show_bullet_collision_mesh": true,
   "default_transforms": {
     "default_agent_pos": [
       0.25,

@@ -1,177 +1,26 @@
 import argparse
-import csv
-import datetime
 import json
 import os
 import time
-from enum import Enum
 from ntpath import basename
 from typing import Any, Dict, List, Optional, Tuple
 
 import git
 import magnum as mn
+import processor_utils as pcsu
 import psutil
 from colorama import Fore, init
 from magnum import trade
 from processor_settings import default_sim_settings, make_cfg
+from processor_utils import ANSICodes, CSVWriter, MemoryUnitConverter, RotationAxis
 
 import habitat_sim
 from habitat_sim import attributes, attributes_managers, physics
 from habitat_sim.logging import logger
+from habitat_sim.utils import viz_utils as vut
 
 repo = git.Repo(".", search_parent_directories=True)
 HABITAT_SIM_PATH = repo.working_tree_dir
-
-# A line of dashes to divide sections of terminal output
-section_divider: str = "\n" + "-" * 72
-
-# TODO: possibly move to separate utils file
-class ANSICodes(Enum):
-    """
-    Terminal printing ANSI color and format codes
-    """
-
-    HEADER = "\033[95m"
-    BROWN = "\033[38;5;130m"
-    ORANGE = "\033[38;5;202m"
-    YELLOW = "\033[38;5;220m"
-    PURPLE = "\033[38;5;177m"
-    BRIGHT_RED = "\033[38;5;196m"
-    BRIGHT_BLUE = "\033[38;5;27m"
-    BRIGHT_MAGENTA = "\033[38;5;201m"
-    BRIGHT_CYAN = "\033[38;5;14m"
-    WARNING = "\033[93m"
-    FAIL = "\033[91m"
-    BOLD = "\033[1m"
-    ITALIC = "\033[3m"
-    UNDERLINE = "\033[4m"
-
-
-# TODO: possibly move to separate utils file
-class CSVWriter:
-    """
-    Generalized utility to write csv files
-    """
-
-    file_path = None
-
-    def create_unique_filename(
-        csv_dir_path: str = None, filename_prefix: str = None
-    ) -> str:
-        """
-        Create unique file name / file path for the next csv we write
-        based off of the current date and time. Also create directory
-        in which we save csv files if one doesn't already exist
-        """
-        # Current date and time so we can make unique file names for each csv
-        date_and_time = datetime.datetime.now()
-
-        # year-month-day
-        date = date_and_time.strftime("%Y-%m-%d")
-
-        # hour:min:sec - capital H is military time, %I is standard time
-        # (am/pm time format)
-        time = date_and_time.strftime("%H:%M:%S")
-
-        # make directory to store csvs if it doesn't exist
-        if csv_dir_path is None:
-            raise RuntimeError(
-                "CSVWriter.create_unique_filename: must provide a directory to save CSV file."
-            )
-        if not os.path.exists(csv_dir_path):
-            os.makedirs(csv_dir_path)
-
-        # create csv file name (TODO: make more descriptive file name)
-        if filename_prefix is None or filename_prefix == "":
-            filename_prefix = ""
-        else:
-            filename_prefix = f"{filename_prefix}__"
-        CSVWriter.file_path = (
-            f"{csv_dir_path}{filename_prefix}date_{date}__time_{time}.csv"
-        )
-        return CSVWriter.file_path
-
-    def write_file(
-        headers: List[str],
-        csv_rows: List[List[str]],
-        file_path: str = None,
-    ) -> None:
-        """
-        Write column titles and csv data into csv file with the provided
-        file path. Use default file path if none is provided
-        """
-        if file_path is None:
-            if CSVWriter.file_path is None:
-                raise RuntimeError(
-                    "CSVWriter.write_file: must provide a file path to save CSV file."
-                )
-            else:
-                file_path = CSVWriter.file_path
-
-        # TODO: debugging, remove
-        print_debug(ANSICodes.BRIGHT_CYAN.value + "HEADERS" + section_divider)
-        for header in headers:
-            print_debug(ANSICodes.BRIGHT_CYAN.value + "-" + header)
-        print_debug(ANSICodes.BRIGHT_RED.value + "\nVALUES" + section_divider)
-        for value in csv_rows[0]:
-            print_debug(ANSICodes.BRIGHT_RED.value + "-" + value)
-        print_debug(
-            f"\nnum columns: {len(csv_rows[0])}, num headers: {len(headers)}"
-            + section_divider
-            + "\n"
-        )
-
-        # make sure the number of columns line up
-        if not len(csv_rows[0]) == len(headers):
-            raise RuntimeError(
-                "Number of headers does not equal number of columns in CSVWriter.write_file()."
-            )
-
-        with open(file_path, "w") as csv_file:
-            writer = csv.writer(csv_file)
-            writer.writerow(headers)
-            writer.writerows(csv_rows)
-
-
-# TODO: possibly move to separate utils file
-class MemoryUnitConverter:
-    """
-    class to convert computer memory value units, i.e.
-    1,024 bytes to 1 kilobyte, or (1 << 10) bytes
-    1,048,576 bytes to 1 megabyte, or (1 << 20) bytes
-    1,073,741,824 bytes to 1 gigabyte, or (1 << 30) bytes
-    """
-
-    BYTES = 0
-    KILOBYTES = 1
-    MEGABYTES = 2
-    GIGABYTES = 3
-
-    UNIT_STRS = ["bytes", "KB", "MB", "GB"]
-    UNIT_CONVERSIONS = [1, 1 << 10, 1 << 20, 1 << 30]
-
-
-def print_if_logging(message: str = "") -> None:
-    global silent
-    if not silent:
-        print(message)
-
-
-def print_debug(message: str = "") -> None:
-    global debug_print
-    if debug_print:
-        print(message)
-
-
-def print_quaternion_debug(name: str, q: mn.Quaternion, color) -> None:
-    global debug_print
-    if debug_print:
-        decimal = 1
-        angle = round(float(mn.Deg(q.angle())), decimal)
-        x = round(q.axis().x, decimal)
-        y = round(q.axis().y, decimal)
-        z = round(q.axis().z, decimal)
-        print(color + name + f"{angle} ({x}, {y}, {z})")
 
 
 def print_mem_usage_info(
@@ -182,32 +31,35 @@ def print_mem_usage_info(
     """"""
     # Print memory usage info before loading object
     text_format = ANSICodes.BRIGHT_RED.value
-    print_if_logging(text_format + "\nstart mem state" + section_divider)
+    pcsu.print_if_logging(text_format + "\nstart mem state" + pcsu.section_divider)
     for key, value in start_mem.items():
         value_str = value
         if key != "percent":
             value_str = get_mem_size_str(value)
-        print_if_logging(text_format + f"{key} : {value_str}")
+        pcsu.print_if_logging(text_format + f"{key} : {value_str}")
 
     # Print memory usage info after loading object
-    print_if_logging(text_format + "\nend mem state" + section_divider)
+    pcsu.print_if_logging(text_format + "\nend mem state" + pcsu.section_divider)
     for key, value in end_mem.items():
         value_str = value
         if key != "percent":
             value_str = get_mem_size_str(value)
-        print_if_logging(text_format + f"{key} : {value_str}")
+        pcsu.print_if_logging(text_format + f"{key} : {value_str}")
 
     # Print difference in memory usage before and after loading object
-    print_if_logging(text_format + "\nchange in mem states" + section_divider)
+    pcsu.print_if_logging(text_format + "\nchange in mem states" + pcsu.section_divider)
     for (key_s, value_s), (key_e, value_e) in zip(start_mem.items(), end_mem.items()):
         value_str = value_e - value_s
         if key_s != "percent" and key_e != "percent":
             value_str = get_mem_size_str(value_e - value_s)
-        print_if_logging(text_format + f"{key_s} : {value_str}")
+        pcsu.print_if_logging(text_format + f"{key_s} : {value_str}")
 
     # Print rough estimate of RAM used when loading object
-    print_if_logging(
-        text_format + "\naverage RAM used" + section_divider + f"\n{avg_ram_used_str}"
+    pcsu.print_if_logging(
+        text_format
+        + "\naverage RAM used"
+        + pcsu.section_divider
+        + f"\n{avg_ram_used_str}"
     )
 
 
@@ -398,6 +250,104 @@ def snap_down_object(
         return False
 
 
+def record_revolving_obj(
+    sim: habitat_sim.simulator,
+    rigid_obj: physics.ManagedBulletRigidObject,
+    angle_delta: float,
+    axis,
+) -> Dict[int, Any]:
+    """ """
+    curr_angle = 0.0
+    finished = False
+    observations = []
+    while curr_angle < 360.0:
+        # rotate_recorded_obj(rigid_obj, curr_angle, angle_delta, axis)
+        if curr_angle + angle_delta >= 360.0:
+            finished = True
+            angle_delta = 360.0 - curr_angle
+            curr_angle = 360.0
+
+        # rotate about object's local y axis (up vector)
+        if axis == RotationAxis.Y:
+            y_rot_rad = mn.Rad(mn.Deg(angle_delta))
+            rigid_obj.rotate_y_local(y_rot_rad)
+
+        # rotate about object's local x axis (horizontal vector)
+        else:
+            x_rot_rad = mn.Rad(mn.Deg(angle_delta))
+            rigid_obj.rotate_x_local(x_rot_rad)
+
+        # save this observation in a buffer of frames
+        observations.append(sim.get_sensor_observations())
+
+        # update current rotation angle
+        curr_angle += angle_delta
+
+        # reset current rotation angle if it passed 360 degrees
+        if finished:
+            curr_angle = 360.0
+
+    return observations
+
+
+def record_video(
+    sim: habitat_sim.simulator,
+    rigid_obj: physics.ManagedBulletRigidObject,
+    sim_settings: Dict[str, Any],
+) -> None:
+    """ """
+    # init object
+    default_transforms = sim_settings["default_transforms"]
+    obj_rot = default_transforms.get("default_obj_rot")
+    rigid_obj.translation = default_transforms.get("default_obj_pos")
+    angle = mn.Rad(mn.Deg(obj_rot.get("angle")))
+    axis = mn.Vector3(obj_rot.get("axis"))
+    rigid_obj.rotation = mn.Quaternion.rotation(angle, axis)
+    rigid_obj.motion_type = physics.MotionType.KINEMATIC
+
+    # init video and rotation parameters
+    video_vars: Dict[str, Any] = sim_settings["video_vars"]
+    tasks: Dict[str, bool] = video_vars.get("tasks")
+    deg_per_sec = 360.0 / sim_settings["video_vars"].get("revolution_dur")
+    dt = 1.0 / sim_settings["physics_vars"].get("fps")
+    angle_delta = deg_per_sec * dt
+
+    observations = []
+    for task, required in tasks.items():
+        if required == False:
+            continue
+        if task == "show_bbox":
+            pcsu.print_if_logging("draw bbox")
+            # rgb = sim_settings["bbox_rgb"]
+            # line_color = mn.Color4.from_xyz(rgb)
+            # bb_corners: List[mn.Vector3] = get_bounding_box_corners(rigid_obj)
+            # num_corners = len(bb_corners)
+            # sim.get_debug_line_render().set_line_width(0.01)
+            # obj_transform = rigid_obj.transformation
+        elif task == "show_collision_asset":
+            pcsu.print_if_logging("draw collision asset")
+        elif task == "show_bullet_collision_mesh":
+            pcsu.print_if_logging("draw bullet collision mesh")
+
+        for axis in list(RotationAxis):
+            observations += record_revolving_obj(sim, rigid_obj, angle_delta, axis)
+
+    video_file_dir = os.path.join(
+        HABITAT_SIM_PATH, sim_settings["output_paths"].get("video")
+    )
+    obj_handle = rigid_obj.handle.replace("_:0000", "")
+    video_file_prefix = sim_settings["output_paths"].get("output_file_prefix")
+    video_file_prefix += f"_{obj_handle}"
+    file_path = pcsu.create_unique_filename(video_file_dir, ".mp4", video_file_prefix)
+    vut.make_video(
+        observations,
+        "color_sensor",
+        "color",
+        file_path,
+        open_vid=False,
+    )
+
+
 def process_mem_usage(
     importer: trade.AbstractImporter,
     template: attributes.ObjectAttributes,
@@ -420,7 +370,7 @@ def process_mem_usage(
 
     # Log render asset handle and collision asset handle
     text_format = Fore.GREEN
-    print_if_logging(
+    pcsu.print_if_logging(
         text_format
         + f"-render: {render_asset_handle}\n"
         + f"-collision: {collision_asset_handle}\n"
@@ -492,20 +442,20 @@ def process_physics(
     rotation_deltas: List[mn.Quaternion] = [mn.Quaternion.identity_init()] * len(
         rotations
     )
-    sim_times: List[float] = [0.0] * len(rotations)
+    sim_time_ratios: List[float] = [0.0] * len(rotations)
 
     # TODO: debugging, remove
     obj_init_attributes = rigid_obj.creation_attributes
     text_format = ANSICodes.BRIGHT_RED.value
-    print_debug(
+    pcsu.print_debug(
         text_format
         + f"\nstart simulating {basename(obj_init_attributes.handle)}"
-        + section_divider
+        + pcsu.section_divider
     )
 
     # Loop over the 6 rotations and simulate snapping the object down and waiting for
     # it to become idle (at least until "max_wait_time" from the config file expires)
-    default_position = sim_settings["default_transforms"].get("default_obj_pos")
+    default_pos = sim_settings["default_transforms"].get("default_obj_pos")
     dt = 1.0 / sim_settings["physics_vars"].get("fps")  # seconds
     max_wait_time = sim_settings["physics_vars"].get("max_wait_time")  # seconds
     for i in range(len(rotations)):
@@ -513,14 +463,16 @@ def process_physics(
         # Reset object state with new rotation
         rigid_obj.motion_type = physics.MotionType.DYNAMIC
         rigid_obj.awake = True
-        rigid_obj.translation = default_position
+        rigid_obj.translation = default_pos
         angle = mn.Deg(rotations[i][0])
         axis = rotations[i][1]
         rigid_obj.rotation = mn.Quaternion.rotation(angle, axis)
 
         # TODO: debugging, remove
-        print_debug(f"init as quaternion - {rigid_obj.rotation}")
-        print_quaternion_debug("init - ", rigid_obj.rotation, ANSICodes.YELLOW.value)
+        pcsu.print_debug(f"init as quaternion - {rigid_obj.rotation}")
+        pcsu.print_quaternion_debug(
+            "init - ", rigid_obj.rotation, ANSICodes.YELLOW.value
+        )
 
         # snap rigid object to surface below
         success = snap_down_object(sim, rigid_obj)
@@ -533,7 +485,7 @@ def process_physics(
         snap_rot: mn.Quaternion = rigid_obj.rotation
 
         # TODO: debugging, remove
-        print_quaternion_debug("snap - ", snap_rot, ANSICodes.BRIGHT_CYAN.value)
+        pcsu.print_quaternion_debug("snap - ", snap_rot, ANSICodes.BRIGHT_CYAN.value)
 
         # simulate until rigid object becomes idle or time limit from config file runs out
         sim_steps: int = 0
@@ -542,16 +494,16 @@ def process_physics(
             start_sim_time = time.time()
             sim.step_physics(dt)
             end_sim_time = time.time()
-            sim_times[i] += end_sim_time - start_sim_time
+            sim_time_ratios[i] += (end_sim_time - start_sim_time) / dt
             wait_times[i] += dt
 
         # TODO: debugging, remove
-        sim_time_ms = round((sim_times[i] / sim_steps) * 1000, 5)
-        print_debug(ANSICodes.BOLD.value + f"sim time: {sim_time_ms} ms")
-        print_debug(ANSICodes.BOLD.value + f"sim steps: {sim_steps}")
+        sim_time_ms = round((sim_time_ratios[i] / sim_steps) * 1000, 5)
+        pcsu.print_debug(ANSICodes.BOLD.value + f"sim time: {sim_time_ms} ms")
+        pcsu.print_debug(ANSICodes.BOLD.value + f"sim steps: {sim_steps}")
 
         # TODO: debugging, remove
-        print_quaternion_debug(
+        pcsu.print_quaternion_debug(
             "idle - ", rigid_obj.rotation, ANSICodes.BRIGHT_MAGENTA.value
         )
 
@@ -559,13 +511,13 @@ def process_physics(
         wait_times[i] = round(wait_times[i], 3)
         translation_deltas[i] = (rigid_obj.translation - snap_pos).length()
         rotation_deltas[i] = rigid_obj.rotation * snap_rot.conjugated()
-        sim_times[i] /= sim_steps
+        sim_time_ratios[i] /= sim_steps
 
         # TODO: debugging, remove
-        print_quaternion_debug(
+        pcsu.print_quaternion_debug(
             "delta r - ", rotation_deltas[i], ANSICodes.BRIGHT_BLUE.value
         )
-        print_debug("")
+        pcsu.print_debug("")
 
     # convert results to lists of strings for csv file
     time_units = sim_settings["physics_vars"].get("time_units")
@@ -583,7 +535,7 @@ def process_physics(
         for r in rotation_deltas
     ]
     decimal = 7
-    sim_time_strs = [f"{round(t, decimal)}" for t in sim_times]
+    sim_time_strs = [f"{round(ratio, decimal)}" for ratio in sim_time_ratios]
 
     # return concatenated list of physics results formatted for csv file row
     return (
@@ -647,27 +599,32 @@ def process_asset(
 
     # Log object template handle
     text_format = Fore.GREEN
-    print_if_logging(
+    pcsu.print_if_logging(
         text_format
         + "\n"
         + "Handles"
-        + section_divider
+        + pcsu.section_divider
         + "\n"
         + f"-template: {handle}\n"
     )
 
     # run object through tests defined in dataset_processor_config.json file
-    data_to_collect = sim_settings["data_to_collect"]
-    csv_row: List[str] = [basename(handle)]
-    if data_to_collect.get("memory_data"):
-        data = ["", avg_ram_used_str] + process_mem_usage(importer, template)
-        csv_row += data
-    if data_to_collect.get("render_time_ratio"):
-        data = [""] + process_render_time()
-        csv_row += data
-    if data_to_collect.get("physics_data"):
-        data = [""] + process_physics(sim, rigid_obj, sim_settings)
-        csv_row += data
+    csv_row: List[str] = []
+    if sim_settings["outputs"].get("csv"):
+        data_to_collect = sim_settings["data_to_collect"]
+        csv_row += [basename(handle)]
+        if data_to_collect.get("memory_data"):
+            data = ["", avg_ram_used_str] + process_mem_usage(importer, template)
+            csv_row += data
+        if data_to_collect.get("render_time_ratio"):
+            data = [""] + process_render_time()
+            csv_row += data
+        if data_to_collect.get("physics_data"):
+            data = [""] + process_physics(sim, rigid_obj, sim_settings)
+            csv_row += data
+
+    if sim_settings["outputs"].get("video"):
+        record_video(sim, rigid_obj, sim_settings)
 
     # return results as a list of strings formatted for csv rows
     return csv_row
@@ -694,9 +651,9 @@ def parse_dataset(
     # get dataset that is currently being used by the simulator
     active_dataset: str = metadata_mediator.active_dataset
     text_format = ANSICodes.BRIGHT_BLUE.value + ANSICodes.BOLD.value
-    print_if_logging(text_format + "\nActive Dataset" + section_divider)
+    pcsu.print_if_logging(text_format + "\nActive Dataset" + pcsu.section_divider)
     text_format = ANSICodes.BRIGHT_BLUE.value
-    print_if_logging(text_format + f"{active_dataset}\n")
+    pcsu.print_if_logging(text_format + f"{active_dataset}\n")
 
     # Get ObjectAttributesManager for objects from dataset, load the dataset,
     # and store all the object template handles in a List
@@ -714,7 +671,7 @@ def parse_dataset(
         csv_rows.append(row)
 
     # # TODO: debugging, remove
-    # for i in range(5):
+    # for i in range(3):
     #     handle = object_template_handles[i]
     #     row = process_asset(sim, importer, handle, obj_template_mgr, sim_settings)
     #     csv_rows.append(row)
@@ -753,25 +710,27 @@ def create_csv_file(
     create the column names of our csv data, then open and write the csv
     file
     """
-    file_path = CSVWriter.create_unique_filename(csv_dir_path, csv_file_prefix)
+    file_path = pcsu.create_unique_filename(csv_dir_path, ".csv", csv_file_prefix)
 
     text_format = ANSICodes.PURPLE.value + ANSICodes.BOLD.value
-    print_if_logging(text_format + "Writing csv results to:" + section_divider)
+    pcsu.print_if_logging(
+        text_format + "Writing csv results to:" + pcsu.section_divider
+    )
     text_format = ANSICodes.PURPLE.value
-    print_if_logging(text_format + f"{file_path}\n")
+    pcsu.print_if_logging(text_format + f"{file_path}\n")
 
     CSVWriter.write_file(headers, csv_rows, file_path)
 
     text_format = ANSICodes.PURPLE.value
-    print_if_logging(text_format + "CSV writing done\n")
+    pcsu.print_if_logging(text_format + "CSV writing done\n")
 
     # TODO: remove this when I figure out why ram usage is sometimes negative
     text_format = ANSICodes.BRIGHT_MAGENTA.value
     global negative_ram_count
-    print_debug(
+    pcsu.print_debug(
         text_format
         + f"negative RAM usage count: {negative_ram_count}"
-        + section_divider
+        + pcsu.section_divider
     )
 
 
@@ -813,6 +772,24 @@ def build_parser(
     return parser
 
 
+def configure_sim(sim_settings: Dict[str, Any]):
+    """ """
+    cfg = make_cfg(sim_settings)
+    sim = habitat_sim.Simulator(cfg)
+    default_transforms = sim_settings["default_transforms"]
+
+    # init agent
+    agent_state = habitat_sim.AgentState()
+    agent = sim.initialize_agent(sim_settings["default_agent"], agent_state)
+    agent.body.object.translation = default_transforms.get("default_agent_pos")
+    agent_rot = default_transforms.get("default_agent_rot")
+    agent.body.object.rotation = mn.Quaternion.rotation(
+        mn.Rad(mn.Deg(agent_rot.get("angle"))), mn.Vector3(agent_rot.get("axis"))
+    )
+
+    return sim
+
+
 def main() -> None:
     """
     Create Simulator, parse dataset, write csv file
@@ -830,30 +807,29 @@ def main() -> None:
         sim_settings.update(json.load(config_json))
 
     # setup colorama terminal color printing so that format and color reset
-    # after each print_if_logging statement
-    global silent
-    global debug_print
+    # after each pcsu.print_if_logging() statement
     init(autoreset=True)
-    silent = sim_settings["silent"]
-    debug_print = sim_settings["debug_print"]
+    pcsu.silent = sim_settings["silent"]
+    pcsu.debug_print = sim_settings["debug_print"]
 
     # Configure and make simulator
-    cfg = make_cfg(sim_settings)
-    sim = habitat_sim.Simulator(cfg)
+    sim = configure_sim(sim_settings)
 
     # Print sim settings
     text_format = ANSICodes.PURPLE.value
     for key, value in sim_settings.items():
-        print_if_logging(text_format + f"{key} : {value}\n")
+        pcsu.print_if_logging(text_format + f"{key} : {value}\n")
 
-    # Parse dataset and write CSV. "headers" stores the titles of each column
-    headers = get_csv_headers(sim_settings)
+    # Parse dataset and write CSV if specified in the config file.
+    # "headers" stores the titles of each column
     csv_rows: List[List[str]] = parse_dataset(sim, sim_settings)
-    csv_dir_path = os.path.join(
-        HABITAT_SIM_PATH, sim_settings["output_paths"].get("csv")
-    )
-    csv_file_prefix = sim_settings["output_paths"].get("output_file_prefix")
-    create_csv_file(headers, csv_rows, csv_dir_path, csv_file_prefix)
+    if sim_settings["outputs"].get("csv"):
+        headers = get_csv_headers(sim_settings)
+        csv_dir_path = os.path.join(
+            HABITAT_SIM_PATH, sim_settings["output_paths"].get("csv")
+        )
+        csv_file_prefix = sim_settings["output_paths"].get("output_file_prefix")
+        create_csv_file(headers, csv_rows, csv_dir_path, csv_file_prefix)
 
 
 if __name__ == "__main__":
