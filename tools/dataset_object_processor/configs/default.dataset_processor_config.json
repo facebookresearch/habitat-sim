@@ -7,7 +7,7 @@
     "physics_data": true
   },
   "memory_vars": {
-    "mesh_size_units": "KB",
+    "size_units": "KB",
     "max_mesh_num": 5,
     "max_mesh_size": 2400,
     "max_image_num": 5,
@@ -20,7 +20,7 @@
   ],
   "physics_vars": {
     "fps": 60,
-    "time_units": "seconds",
+    "time_units": "sec",
     "max_wait_time": 5,
     "distance_units": "cm",
     "angle_units": "deg"

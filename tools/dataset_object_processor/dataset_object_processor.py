@@ -3,6 +3,7 @@ import csv
 import datetime
 import json
 import os
+import time
 from enum import Enum
 from ntpath import basename
 from typing import Any, Dict, List, Optional, Tuple
@@ -108,14 +109,16 @@ class CSVWriter:
                 file_path = CSVWriter.file_path
 
         # TODO: debugging, remove
-        print_if_logging(ANSICodes.BRIGHT_CYAN.value + "HEADERS")
+        print_debug(ANSICodes.BRIGHT_CYAN.value + "HEADERS" + section_divider)
         for header in headers:
-            print_if_logging(ANSICodes.BRIGHT_CYAN.value + header + "\n")
-        print_if_logging(ANSICodes.BRIGHT_RED.value + "VALUES")
+            print_debug(ANSICodes.BRIGHT_CYAN.value + "-" + header)
+        print_debug(ANSICodes.BRIGHT_RED.value + "\nVALUES" + section_divider)
         for value in csv_rows[0]:
-            print_if_logging(ANSICodes.BRIGHT_RED.value + value + "\n")
-        print_if_logging(
-            f" ===== num columns: {len(csv_rows[0])}, num headers: {len(headers)} ============="
+            print_debug(ANSICodes.BRIGHT_RED.value + "-" + value)
+        print_debug(
+            f"\nnum columns: {len(csv_rows[0])}, num headers: {len(headers)}"
+            + section_divider
+            + "\n"
         )
 
         # make sure the number of columns line up
@@ -466,7 +469,7 @@ def process_mem_usage(
 
 
 def process_render_time() -> List[str]:
-    ...
+    return ["..."]
 
 
 def process_physics(
@@ -484,11 +487,12 @@ def process_physics(
         (mn.Rad(mn.Deg(rotation[0])), mn.Vector3(rotation[1]))
         for rotation in sim_settings["sim_test_rotations"]
     ]
-    times: List[float] = [0.0] * len(rotations)
+    wait_times: List[float] = [0.0] * len(rotations)
     translation_deltas: List[float] = [0.0] * len(rotations)
     rotation_deltas: List[mn.Quaternion] = [mn.Quaternion.identity_init()] * len(
         rotations
     )
+    sim_times: List[float] = [0.0] * len(rotations)
 
     # TODO: debugging, remove
     obj_init_attributes = rigid_obj.creation_attributes
@@ -532,9 +536,19 @@ def process_physics(
         print_quaternion_debug("snap - ", snap_rot, ANSICodes.BRIGHT_CYAN.value)
 
         # simulate until rigid object becomes idle or time limit from config file runs out
-        while rigid_obj.awake and times[i] < max_wait_time:
+        sim_steps: int = 0
+        while rigid_obj.awake and wait_times[i] < max_wait_time:
+            sim_steps += 1
+            start_sim_time = time.time()
             sim.step_physics(dt)
-            times[i] += dt
+            end_sim_time = time.time()
+            sim_times[i] += end_sim_time - start_sim_time
+            wait_times[i] += dt
+
+        # TODO: debugging, remove
+        sim_time_ms = round((sim_times[i] / sim_steps) * 1000, 5)
+        print_debug(ANSICodes.BOLD.value + f"sim time: {sim_time_ms} ms")
+        print_debug(ANSICodes.BOLD.value + f"sim steps: {sim_steps}")
 
         # TODO: debugging, remove
         print_quaternion_debug(
@@ -542,9 +556,10 @@ def process_physics(
         )
 
         # store final information once object becomes idle or it times out
-        times[i] = round(times[i], 3)
+        wait_times[i] = round(wait_times[i], 3)
         translation_deltas[i] = (rigid_obj.translation - snap_pos).length()
         rotation_deltas[i] = rigid_obj.rotation * snap_rot.conjugated()
+        sim_times[i] /= sim_steps
 
         # TODO: debugging, remove
         print_quaternion_debug(
@@ -552,32 +567,34 @@ def process_physics(
         )
         print_debug("")
 
-    # convert results to lists of strings
+    # convert results to lists of strings for csv file
     time_units = sim_settings["physics_vars"].get("time_units")
     times_as_strs = [
-        "timed out" if time >= max_wait_time else f"{time} {time_units}"
-        for time in times
+        "*** timed out ***" if t >= max_wait_time else f"{t} {time_units}"
+        for t in wait_times
     ]
-    translation_deltas_strs = [
-        f"{round(translation, 3)} units" for translation in translation_deltas
-    ]
+    decimal = 3
+    translation_deltas_strs = [f"{round(t, decimal)} units" for t in translation_deltas]
     decimal = 1
+    angle_units = sim_settings["physics_vars"].get("angle_units")
     rotation_deltas_strs = [
-        f"angle: {round(float(mn.Deg(r.angle())), decimal)}\n"
-        + f"axis: ({round(r.axis().x, decimal)}, {round(r.axis().y, decimal)}, {round(r.axis().z, decimal)})"
+        f"angle:  {round(float(mn.Deg(r.angle())), decimal)} {angle_units}\n"
+        + f"axis:  ({round(r.axis().x, decimal)}, {round(r.axis().y, decimal)}, {round(r.axis().z, decimal)})"
         for r in rotation_deltas
     ]
+    decimal = 7
+    sim_time_strs = [f"{round(t, decimal)}" for t in sim_times]
 
-    # return concatenated list of physics results formatted for CSV file row
+    # return concatenated list of physics results formatted for csv file row
     return (
-        ["..."]
-        + [f"--- max {round(max_wait_time, 3)} {time_units} ---"]
+        [f"({round(max_wait_time, 3)} {time_units} max)"]
         + times_as_strs
-        + ["..."]
         + [""]
         + translation_deltas_strs
         + [""]
         + rotation_deltas_strs
+        + [""]
+        + sim_time_strs
     )
 
 
@@ -640,20 +657,20 @@ def process_asset(
     )
 
     # run object through tests defined in dataset_processor_config.json file
-    always_displayed = [basename(handle), avg_ram_used_str]
-    memory_data: List[str] = []
-    render_time_data: List[str] = []
-    physics_data: List[str] = []
     data_to_collect = sim_settings["data_to_collect"]
+    csv_row: List[str] = [basename(handle)]
     if data_to_collect.get("memory_data"):
-        memory_data += process_mem_usage(importer, template)
+        data = ["", avg_ram_used_str] + process_mem_usage(importer, template)
+        csv_row += data
     if data_to_collect.get("render_time_ratio"):
-        render_time_data.append("...")
+        data = [""] + process_render_time()
+        csv_row += data
     if data_to_collect.get("physics_data"):
-        physics_data = process_physics(sim, rigid_obj, sim_settings)
+        data = [""] + process_physics(sim, rigid_obj, sim_settings)
+        csv_row += data
 
     # return results as a list of strings formatted for csv rows
-    return always_displayed + memory_data + render_time_data + physics_data
+    return csv_row
 
 
 def parse_dataset(
@@ -691,9 +708,16 @@ def parse_dataset(
     csv_rows: List[List[str]] = []
     manager = trade.ImporterManager()
     importer = manager.load_and_instantiate("AnySceneImporter")
+
     for handle in object_template_handles:
         row = process_asset(sim, importer, handle, obj_template_mgr, sim_settings)
         csv_rows.append(row)
+
+    # # TODO: debugging, remove
+    # for i in range(5):
+    #     handle = object_template_handles[i]
+    #     row = process_asset(sim, importer, handle, obj_template_mgr, sim_settings)
+    #     csv_rows.append(row)
 
     # clean up
     importer.close()
@@ -706,7 +730,7 @@ def get_csv_headers(sim_settings) -> List[str]:
     """
     Collect the column titles we'll need given which tests we ran
     """
-    headers: List[str] = sim_settings["always_displayed"]
+    headers: List[str] = sim_settings["object_name"]
     data_to_collect = sim_settings["data_to_collect"]
     if data_to_collect.get("memory_data"):
         headers += sim_settings["memory_data_headers"]
@@ -742,11 +766,11 @@ def create_csv_file(
     print_if_logging(text_format + "CSV writing done\n")
 
     # TODO: remove this when I figure out why ram usage is sometimes negative
-    text_format = ANSICodes.BRIGHT_RED.value
+    text_format = ANSICodes.BRIGHT_MAGENTA.value
     global negative_ram_count
-    print_if_logging(
+    print_debug(
         text_format
-        + f"Negative RAM usage count: {negative_ram_count}"
+        + f"negative RAM usage count: {negative_ram_count}"
         + section_divider
     )
 
