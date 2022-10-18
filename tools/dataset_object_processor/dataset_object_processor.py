@@ -295,7 +295,17 @@ def record_video(
     rigid_obj: physics.ManagedBulletRigidObject,
     sim_settings: Dict[str, Any],
 ) -> None:
-    """ """
+    """
+    Loop over each recording task specified in the config file, i.e. show bounding box,
+    show collision asset, and show bullet collision mesh, then using the transforms
+    of the agent and sensor, record the observations of the revolving ManagedBulletRigidObject,
+    which is in Kinematic mode and just being displayed, not simulated. The object
+    currently revolves 360 degrees once around its x-axis, then once around its y-axis for
+    each task. Then save the cumulation of observations as a video file.
+    :param sim: The Simulator instance.
+    :param rigid_obj: The ManagedBulletRigidObject to record
+    :param sim_settings: simulator settings, defines tasks, rotation speed, and time step
+    """
     # init object
     default_transforms = sim_settings["default_transforms"]
     obj_rot = default_transforms.get("default_obj_rot")
@@ -312,6 +322,7 @@ def record_video(
     dt = 1.0 / sim_settings["physics_vars"].get("fps")
     angle_delta = deg_per_sec * dt
 
+    # Loop over each recording task specified in the config file
     observations = []
     for task, required in tasks.items():
         if required == False:
@@ -329,9 +340,11 @@ def record_video(
         elif task == "show_bullet_collision_mesh":
             pcsu.print_if_logging("draw bullet collision mesh")
 
+        # record object rotating about its x-axis, then its y-axis
         for axis in list(RotationAxis):
             observations += record_revolving_obj(sim, rigid_obj, angle_delta, axis)
 
+    # construct file path and write "observations" to video file
     video_file_dir = os.path.join(
         HABITAT_SIM_PATH, sim_settings["output_paths"].get("video")
     )
@@ -355,6 +368,8 @@ def process_mem_usage(
     """
     Use the trade.AbstractImporter class to query data size of mesh and image
     of asset
+    :param importer: AbstractImporter to open files and get mem size info
+    :param template: ObjectAttributes to get render asset and collision asset
     """
     # construct absolute file paths for render and collision assets
     render_asset_handle = template.render_asset_handle
@@ -428,7 +443,14 @@ def process_physics(
     sim_settings: Dict[str, Any],
 ) -> List[str]:
     """
-    Run series of tests on asset to see how it responds in physics simulations
+    Run series of tests on asset to see how it responds in physics simulations.
+    We snap an object down onto the surface below, then see how long it takes
+    for the object to stabilize and become idle.
+    :param sim: The Simulator instance.
+    :param rigid_obj: The ManagedBulletRigidObject to test
+    :param sim_settings: simulator settings, defines initial orientations to test
+    object from, object initial position, fps, max amount of time we wait until
+    object becomes idle, and our units for time and angle
     """
     # we must test object in 6 different orientations, each corresponding to a face
     # of an imaginary cube bounding the object. Each rotation in rotations is of the form:
@@ -558,8 +580,18 @@ def process_asset(
     sim_settings: Dict[str, Any],
 ) -> List[str]:
     """
-    Use the trade.AbstractImporter class to query data size of mesh and image
-    of asset and how the asset behaves during physics simulations
+    Depending on what the user specifies in the dataset_processor_config.json file,
+    use the trade.AbstractImporter class to query data size of mesh and image
+    of asset and how the asset behaves during physics simulations. Likewise,
+    make a recording of the object in Kinematic mode displaying any/all of its
+    bounding box, collision asset, and bullet collision mesh.
+    :param sim: Simulator instance
+    :param importer: AbstractImporter, used to process memory stats of the mesh
+    :param handle: template handle of the asset to test from ObjectAttributes
+    :param obj_template_mgr: the ObjectAttributes of the asset to test
+    :param sim_settings: Simulator settings, defines which data to collect, if
+    we are making a csv and/or a video recording, and also passed to the function
+    to test the physics of the ManagedBulletRigidObject
     """
     # Get memory state before and after loading object with RigidObjectManager,
     # then use psutil to get a sense of how much RAM was used during the
@@ -636,6 +668,9 @@ def parse_dataset(
 ) -> List[List[str]]:
     """
     Load and process dataset objects using template handles
+    :param sim: Simulator instance
+    :param sim_settings: Simulator settings, defines dataset to use,
+    and is also passed to function to test each dataset object
     """
     dataset_path = sim_settings["scene_dataset_config_file"]
     metadata_mediator = sim.metadata_mediator
@@ -685,7 +720,9 @@ def parse_dataset(
 
 def get_csv_headers(sim_settings) -> List[str]:
     """
-    Collect the column titles we'll need given which tests we ran
+    Collect the csv column titles we'll need given which tests we ran
+    :param sim_settings: Simulator settings, defines which metrics
+    we are collecting for each object
     """
     headers: List[str] = sim_settings["object_name"]
     data_to_collect = sim_settings["data_to_collect"]
@@ -709,6 +746,12 @@ def create_csv_file(
     Set directory where our csv's will be saved, create the csv file name,
     create the column names of our csv data, then open and write the csv
     file
+    :param headers: column titles of csv file
+    :param csv_rows: List of Lists of strings defining asset processing results
+    for each dataset object
+    :param csv_dir_path: absolute path to directory where csv file will be saved
+    :param csv_file_prefix: prefix we will add to beginning of the csv filename
+    to specify which dataset this csv is describing
     """
     file_path = pcsu.create_unique_filename(csv_dir_path, ".csv", csv_file_prefix)
 
@@ -773,7 +816,10 @@ def build_parser(
 
 
 def configure_sim(sim_settings: Dict[str, Any]):
-    """ """
+    """
+    Configure simulator while adding post configuration for the transform of
+    the agent
+    """
     cfg = make_cfg(sim_settings)
     sim = habitat_sim.Simulator(cfg)
     default_transforms = sim_settings["default_transforms"]
@@ -792,7 +838,8 @@ def configure_sim(sim_settings: Dict[str, Any]):
 
 def main() -> None:
     """
-    Create Simulator, parse dataset, write csv file
+    Create Simulator, parse dataset (which also records a video if requested),
+    then writes a csv file if requested
     """
     # TODO: remove this when I figure out why ram usage is sometimes negative
     global negative_ram_count
