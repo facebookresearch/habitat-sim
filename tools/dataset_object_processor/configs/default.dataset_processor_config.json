@@ -6,7 +6,7 @@
     "render_time_ratio": false,
     "physics_data": true
   },
-  "memory_thresholds": {
+  "memory_vars": {
     "mesh_size_units": "KB",
     "max_mesh_num": 5,
     "max_mesh_size": 2400,
@@ -18,7 +18,7 @@
     "used",
     "free"
   ],
-  "physics_thresholds": {
+  "physics_vars": {
     "fps": 60,
     "wait_time_units": "seconds",
     "max_wait_time": 5,
@@ -61,12 +61,9 @@
       -0.23
     ],
     "default_obj_rot": {
-      "angle": 0,
-      "axis": [
-        1,
-        0,
-        0
-      ]
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
     }
   }
 }

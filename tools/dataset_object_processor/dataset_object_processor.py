@@ -4,7 +4,6 @@ import datetime
 import json
 import os
 from enum import Enum
-from logging import raiseExceptions
 from ntpath import basename
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -463,17 +462,20 @@ def process_physics(
     # of an imaginary cube bounding the object. Each rotation in rotations is of the form:
     # (angle, (axis.x, axis.y, axis.z)) where angle is in degrees
     rotations: List[Tuple] = [
-        (mn.Rad(mn.Deg(rot[0])), mn.Vector3(rot[1]))
-        for rot in sim_settings["sim_test_rotations"]
+        (mn.Rad(mn.Deg(rotation[0])), mn.Vector3(rotation[1]))  # angle  # axis
+        for rotation in sim_settings["sim_test_rotations"]
     ]
-    times: List[float] = [0] * len(rotations)
-    translation_drifts: List[float] = [0] * len(rotations)
-    rotation_drifts: List[Tuple] = [mn.Quaternion.identity_init()] * len(rotations)
+
+    times: List[float] = [0.0] * len(rotations)
+    translation_deltas: List[float] = [0.0] * len(rotations)
+    rotation_deltas: List[mn.Quaternion] = [mn.Quaternion.identity_init()] * len(
+        rotations
+    )
 
     # TODO: debugging log, remove
     obj_init_attributes = rigid_obj.creation_attributes
     text_format = ANSICodes.BRIGHT_RED.value
-    print_if_logging(
+    print(
         text_format
         + f"\nstart simulating {basename(obj_init_attributes.handle)}"
         + section_divider
@@ -482,8 +484,8 @@ def process_physics(
     # Loop over the 6 rotations and simulate snapping the object down and waiting for
     # it to become idle (at least until "max_wait_time" from the config file expires)
     default_position = sim_settings["default_transforms"].get("default_obj_pos")
-    dt = 1.0 / 60.0  # seconds
-    max_wait_time = sim_settings["physics_thresholds"].get("max_wait_time")  # seconds
+    dt = 1.0 / sim_settings["physics_vars"].get("fps")  # seconds
+    max_wait_time = sim_settings["physics_vars"].get("max_wait_time")  # seconds
     for i in range(len(rotations)):
 
         # Reset object state with new rotation
@@ -492,16 +494,38 @@ def process_physics(
         rigid_obj.translation = default_position
         angle = rotations[i][0]
         axis = rotations[i][1]
-        rigid_obj.rotation = mn.Quaternion.rotation(angle, axis)
+        print(Fore.GREEN + f"{angle}")
+        print(Fore.GREEN + f"{axis}")
+        rigid_obj.rotation = (
+            mn.Quaternion.identity_init()
+            if i == 0
+            else mn.Quaternion.rotation(angle, axis)
+        )
+        print(Fore.GREEN + f"{rigid_obj.rotation}")
+        br = rigid_obj.rotation
+        angle = round(float(mn.Deg(br.angle())), 0)
+        # axis = (round(br.axis().x, 0), round(br.axis().y, 0), round(br.axis().z, 0))
+        axis = (br.axis().x, br.axis().y, br.axis().z, 0)
+        print(
+            ANSICodes.YELLOW.value
+            + "start - "
+            + f"{angle} ({axis[0]}, {axis[1]}, {axis[2]})"
+        )
 
         # snap rigid object to surface below
         success = snap_down_object(sim, rigid_obj)
         if not success:
-            raiseExceptions(
-                "dataset_object_processor.process_physics(...) - snapping failed"
+            print_if_logging(
+                ANSICodes.BRIGHT_RED.value
+                + "dataset_object_processor.process_physics(...) - snapping failed"
             )
-        start_pos = rigid_obj.translation
-        start_rot = rigid_obj.rotation
+        start_pos: mn.Vector3 = rigid_obj.translation
+        start_rot: mn.Quaternion = rigid_obj.rotation
+        print(
+            ANSICodes.BRIGHT_CYAN.value
+            + "drop - "
+            + f"{round(float(mn.Deg(start_rot.angle())), 0)} ({round(start_rot.axis().x, 0)}, {round(start_rot.axis().y, 0)}, {round(start_rot.axis().z, 0)})"
+        )
 
         # simulate until rigid object becomes idle or time limit from config file runs out
         while rigid_obj.awake and times[i] < max_wait_time:
@@ -510,19 +534,34 @@ def process_physics(
 
         # store final information once object becomes idle or it times out
         times[i] = round(times[i], 3)
-        translation_drifts[i] = (rigid_obj.translation - start_pos).length()
-        rotation_drifts[i] = rigid_obj.rotation * start_rot
+        translation_deltas[i] = (rigid_obj.translation - start_pos).length()
+        er = rigid_obj.rotation
+        print(
+            ANSICodes.BRIGHT_MAGENTA.value
+            + "idle - "
+            + f"{round(float(mn.Deg(er.angle())), 0)} ({round(er.axis().x, 0)}, {round(er.axis().y, 0)}, {round(er.axis().z, 0)})"
+        )
+        delta_r = rigid_obj.rotation * start_rot.conjugated()
+        rotation_deltas[i] = delta_r
+        print(
+            ANSICodes.BRIGHT_BLUE.value
+            + "delta r - "
+            + f"{round(float(mn.Deg(delta_r.angle())), 0)} ({round(delta_r.axis().x, 0)}, {round(delta_r.axis().y, 0)}, {round(delta_r.axis().z, 0)})\n"
+        )
+        # rotation_deltas[i] = start_rot.conjugated() * rigid_obj.rotation
+        # rotation_deltas[i] = start_rot * rigid_obj.rotation.conjugated()
+        # diff * start = end --> diff = end * inv(start)
 
     # convert results to lists of strings
     times_as_strs = [
         "timed out" if time >= max_wait_time else f"{time} sec" for time in times
     ]
-    translation_drifts_strs = [
-        f"{round(translation, 3)} units" for translation in translation_drifts
+    translation_deltas_strs = [
+        f"{round(translation, 3)} units" for translation in translation_deltas
     ]
-    rotation_drifts_strs = [
-        f"{round(float(mn.Deg(rotation.angle())), 3)} deg"
-        for rotation in rotation_drifts
+    rotation_deltas_strs = [
+        f"{round(float(mn.Deg(r.angle())), 0)} ({round(r.axis().x, 0)}, {round(r.axis().y, 0)}, {round(r.axis().z, 0)})"
+        for r in rotation_deltas
     ]
 
     # return concatenated list of physics results formatted for CSV file row
@@ -531,18 +570,26 @@ def process_physics(
         + [f"--- max {round(max_wait_time, 3)} sec ---"]
         + times_as_strs
         + ["..."]
-        + translation_drifts_strs
-        + rotation_drifts_strs
+        + translation_deltas_strs
+        + ["angle degrees (axis)"]
+        + rotation_deltas_strs
     )
 
 
-def load_obj_and_store_ram_usage(
+def process_asset(
     sim: habitat_sim.simulator,
+    importer: trade.AbstractImporter,
     handle: str,
+    obj_template_mgr: attributes_managers.ObjectAttributesManager,
     sim_settings: Dict[str, Any],
-) -> Tuple[physics.ManagedBulletRigidObject, str]:
-    """ """
-    # Get memory state before and after loading object with RigidObjectManager
+) -> List[str]:
+    """
+    Use the trade.AbstractImporter class to query data size of mesh and image
+    of asset and how the asset behaves during physics simulations
+    """
+    # Get memory state before and after loading object with RigidObjectManager,
+    # then use psutil to get a sense of how much RAM was used during the
+    # loading process
     rigid_obj_mgr = sim.get_rigid_object_manager()
     rigid_obj_mgr.remove_all_objects()
     start_mem = psutil.virtual_memory()._asdict()
@@ -572,29 +619,6 @@ def load_obj_and_store_ram_usage(
 
     # Print memory usage info before and after loading object
     print_mem_usage_info(start_mem, end_mem, avg_ram_used_str)
-
-    return (rigid_obj, avg_ram_used_str)
-
-
-def process_imported_asset(
-    sim: habitat_sim.simulator,
-    importer: trade.AbstractImporter,
-    handle: str,
-    obj_template_mgr: attributes_managers.ObjectAttributesManager,
-    sim_settings: Dict[str, Any],
-) -> List[str]:
-    """
-    Use the trade.AbstractImporter class to query data size of mesh and image
-    of asset and how the asset behaves during physics simulations
-    """
-    # Get memory state before and after loading object with RigidObjectManager,
-    # then use psutil to get a sense of how much RAM was used during the
-    # loading process
-    (rigid_obj, avg_ram_used_str) = load_obj_and_store_ram_usage(
-        sim,
-        handle,
-        sim_settings,
-    )
 
     # Get object attributes by template handle and associated mesh assets
     template = obj_template_mgr.get_template_by_handle(handle)
@@ -652,65 +676,28 @@ def parse_dataset(
     text_format = ANSICodes.BRIGHT_BLUE.value
     print_if_logging(text_format + f"{active_dataset}\n")
 
-    # get handles of every scene from the simulator
-    scene_handles: List[str] = metadata_mediator.get_scene_handles()
-    text_format = ANSICodes.BRIGHT_CYAN.value + ANSICodes.BOLD.value
-    print_if_logging(text_format + "Scene Handles" + section_divider)
-    text_format = ANSICodes.BRIGHT_CYAN.value
-    for handle in scene_handles:
-        print_if_logging(text_format + f"{handle}\n")
-
-    # get List of Unified Robotics Description Format files
-    urdf_paths = metadata_mediator.urdf_paths
-    urdf_paths_list = list(urdf_paths.keys())
-    text_format = ANSICodes.BRIGHT_RED.value + ANSICodes.BOLD.value
-    print_if_logging(
-        text_format + f"num urdf paths: {len(urdf_paths_list)}" + section_divider
-    )
-    if len(urdf_paths_list) == 0:
-        urdf_paths["Paths"] = "None"
-    text_format = ANSICodes.BRIGHT_RED.value
-    for key, val in urdf_paths.items():
-        print_if_logging(text_format + f"{key} : {val}\n")
-
-    # get AssetAttributesManager and get template handles of each primitive asset
-    asset_template_manager = metadata_mediator.asset_template_manager
-    text_format = ANSICodes.ORANGE.value + ANSICodes.BOLD.value
-    print_if_logging(
-        text_format
-        + f"number of primitive asset templates: {asset_template_manager.get_num_templates()}"
-        + section_divider
-    )
-    asset_template_handles = asset_template_manager.get_template_handles()
-    asset_templates_info = asset_template_manager.get_templates_info()
-    for (handle, info) in zip(asset_template_handles, asset_templates_info):
-        print_if_logging(Fore.GREEN + f"{handle}")
-        print_if_logging(ANSICodes.ORANGE.value + ANSICodes.ITALIC.value + f"{info}\n")
-
     # Get ObjectAttributesManager for objects from dataset, load the dataset,
     # and store all the object template handles in a List
     obj_template_mgr = sim.get_object_template_manager()
     obj_template_mgr.load_configs(dataset_path)
     object_template_handles = obj_template_mgr.get_file_template_handles("")
 
-    # Get RigidObjectManager and add templates from ObjectAttributesManager
-    # process each asset with trade.AbstractImporter and construct csv data
+    # Process each asset with trade.AbstractImporter and construct csv data
     csv_rows: List[List[str]] = []
     manager = trade.ImporterManager()
     importer = manager.load_and_instantiate("AnySceneImporter")
-    for handle in object_template_handles:
-        row = process_imported_asset(
-            sim, importer, handle, obj_template_mgr, sim_settings
-        )
-        csv_rows.append(row)
 
-    # # TODO: debugging, remove
-    # for i in range(5):
-    #     handle = object_template_handles[i]
-    #     row = process_imported_asset(
+    # for handle in object_template_handles:
+    #     row = process_asset(
     #         sim, importer, handle, obj_template_mgr, sim_settings
     #     )
     #     csv_rows.append(row)
+
+    # TODO: debugging, remove
+    for i in range(10):
+        handle = object_template_handles[i]
+        row = process_asset(sim, importer, handle, obj_template_mgr, sim_settings)
+        csv_rows.append(row)
 
     # clean up
     importer.close()
