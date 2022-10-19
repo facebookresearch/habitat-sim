@@ -6,8 +6,8 @@
     "render_time_ratio": false,
     "physics_data": true
   },
-  "memory_vars": {
-    "size_units": "KB",
+  "memory_thresholds": {
+    "mesh_size_units": "KB",
     "max_mesh_num": 5,
     "max_mesh_size": 2400,
     "max_image_num": 5,
@@ -18,40 +18,33 @@
     "used",
     "free"
   ],
-  "physics_vars": {
-    "fps": 60,
-    "time_units": "sec",
+  "physics_thresholds": {
+    "wait_time_units": "seconds",
     "max_wait_time": 5,
     "distance_units": "cm",
     "angle_units": "deg"
   },
-  "video_vars": {
-    "tasks": {
-      "show_bbox": true,
-      "show_collision_asset": true,
-      "show_bullet_collision_mesh": true
-    },
-    "revolution_dur": 4.0
-  },
   "outputs": {
     "csv": true,
-    "video": true
+    "video_recording": true
   },
   "output_paths": {
     "csv": "tools/dataset_object_processor/dataset_csv_files/",
-    "video": "tools/dataset_object_processor/dataset_video_recordings/",
-    "output_file_prefix": "replica_cad"
+    "video_recordings": "tools/dataset_object_processor/dataset_video_recordings/",
+    "output_file_prefix": "replica_CAD"
   },
   "headless": true,
   "enable_physics": true,
   "sensor_height": 1.0,
-  "silent": true,
-  "debug_print": false,
+  "silent": false,
+  "show_bbox": true,
+  "show_collision_asset": true,
+  "show_bullet_collision_mesh": true,
   "default_transforms": {
     "default_agent_pos": [
       0.25,
-      2.00,
-      1.73
+      0.34,
+      0.73
     ],
     "default_agent_rot": {
       "angle": 0.0,
