@@ -6,7 +6,7 @@
     "render_time_ratio": false,
     "physics_data": true
   },
-  "memory_thresholds": {
+  "memory_vars": {
     "mesh_size_units": "KB",
     "max_mesh_num": 5,
     "max_mesh_size": 2400,
@@ -18,9 +18,9 @@
     "used",
     "free"
   ],
-  "physics_thresholds": {
+  "physics_vars": {
     "fps": 60,
-    "wait_time_units": "seconds",
+    "time_units": "seconds",
     "max_wait_time": 5,
     "distance_units": "cm",
     "angle_units": "deg"
@@ -37,7 +37,8 @@
   "headless": true,
   "enable_physics": true,
   "sensor_height": 1.0,
-  "silent": false,
+  "silent": true,
+  "debug_print": true,
   "show_bbox": true,
   "show_collision_asset": true,
   "show_bullet_collision_mesh": true,
@@ -61,7 +62,7 @@
       -0.23
     ],
     "default_obj_rot": {
-      "angle": 0,
+      "angle": 0.0,
       "axis": [
         1,
         0,
