@@ -2,9 +2,11 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include "Magnum/DebugTools/Screenshot.h"
+#include "Magnum/Magnum.h"
+#include "Magnum/Trade/AbstractImageConverter.h"
 #include "configure.h"
 
-#include "esp/agent/Agent.h"  // todo: try to avoid using this
 #include "esp/gfx/replay/Recorder.h"
 #include "esp/gfx/replay/ReplayManager.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
@@ -69,8 +71,10 @@ void ReplayBatchRendererTest::testIntegration() {
   const std::string vangogh = Cr::Utility::Path::join(
       SCENE_DATASETS, "habitat-test-scenes/van-gogh-room.glb");
   constexpr int numEnvs = 4;
-  std::string sensorName = "my_rgb";
-  std::string userPrefix = "sensor_";
+  const std::string sensorName = "my_rgb";
+  const std::string userPrefix = "sensor_";
+  const std::string screenshotPrefix = "ReplayBatchRendererTest_env";
+  const std::string screenshotExtension = ".png";
 
   std::vector<std::string> serKeyframes;
   for (int envIndex = 0; envIndex < numEnvs; envIndex++) {
@@ -107,7 +111,7 @@ void ReplayBatchRendererTest::testIntegration() {
                                    Mn::Vector3(0.f, 0.f, 1.f).normalized()));
     }
 
-    auto& recorder = *sim->getGfxReplayManager()->getRecorder().get();
+    auto& recorder = *sim->getGfxReplayManager()->getRecorder();
     recorder.addUserTransformToKeyframe(
         userPrefix + sensorName, Mn::Vector3(3.3f, 1.3f + envIndex * 0.1f, 0.f),
         Mn::Quaternion::rotation(Mn::Deg(80.f + envIndex * 5.f),
@@ -178,7 +182,7 @@ void ReplayBatchRendererTest::testIntegration() {
 
   for (int envIndex = 0; envIndex < numEnvs; envIndex++) {
     std::string groundTruthImageFile =
-        "ReplayBatchRendererTest_env" + std::to_string(envIndex) + ".png";
+        screenshotPrefix + std::to_string(envIndex) + screenshotExtension;
     CORRADE_COMPARE_WITH(
         Mn::ImageView2D{imageViews[envIndex]},
         Cr::Utility::Path::join(screenshotDir, groundTruthImageFile),

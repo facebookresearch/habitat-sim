@@ -55,6 +55,7 @@ class ReplayBatchRenderer {
   };
 
   explicit ReplayBatchRenderer(const ReplayBatchRendererConfiguration& cfg);
+  ~ReplayBatchRenderer();
 
   std::shared_ptr<gfx::Renderer> getRenderer() { return renderer_; }
 

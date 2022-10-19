@@ -50,13 +50,6 @@ ReplayBatchRenderer::ReplayBatchRenderer(
     auto sensorMap = esp::sensor::SensorFactory::createSensors(
         parentNode, cfg.sensorSpecifications);
 
-    // not needed; python will do bind_render_target
-    // for (const auto& kv : sensorMap) {
-    //   sensor::VisualSensor& sensor =
-    //       static_cast<sensor::VisualSensor&>(kv.second.get());
-    //   renderer_->bindRenderTarget(sensor);
-    // }
-
     envs_.emplace_back(EnvironmentRecord{
         .player_ = gfx::replay::Player(assetCallback, lightCallback),
         .sceneID_ = sceneID,
@@ -88,10 +81,17 @@ ReplayBatchRenderer::ReplayBatchRenderer(
   }
 }
 
-// ReplayBatchRenderer::~ReplayBatchRenderer() {
-//   ESP_DEBUG() << "Deconstructing ReplayBatchRenderer";
-//   close();
-// }
+ReplayBatchRenderer::~ReplayBatchRenderer() {
+  ESP_DEBUG() << "Deconstructing ReplayBatchRenderer";
+  resourceManager_.release();
+  for (int envIdx = 0; envIdx < config_.numEnvironments; ++envIdx) {
+    envs_[envIdx].player_.close();
+    auto& sensorMap = envs_[envIdx].sensorMap_;
+    for (auto& sensorPair : sensorMap) {
+      sensor::SensorFactory::deleteSensor(sensorPair.second);
+    }
+  }
+}
 
 void ReplayBatchRenderer::setSensorTransformsFromKeyframe(
     int envIndex,
