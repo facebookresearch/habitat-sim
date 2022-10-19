@@ -330,8 +330,11 @@ def test_topdown_map(test_scene):
     hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
 
     with habitat_sim.Simulator(hab_cfg) as sim:
-        binary_top_down_map = sim.pathfinder.get_topdown_view(0.1, 0)
-        island_top_down_map = sim.pathfinder.get_topdown_island_view(0.1, 0)
+        scene_bb = sim.get_active_scene_graph().get_root_node().cumulative_bb
+        height = scene_bb.y().min
+
+        binary_top_down_map = sim.pathfinder.get_topdown_view(0.1, height)
+        island_top_down_map = sim.pathfinder.get_topdown_island_view(0.1, height)
 
         # cache new ground truth map caches
         filename = osp.join(
@@ -349,3 +352,10 @@ def test_topdown_map(test_scene):
         # check the computed data against the cache
         assert np.array_equal(binary_topdown_map_cached, binary_top_down_map)
         assert np.array_equal(islands_topdown_map_cached, island_top_down_map)
+
+        # example/test of simple image generation from island maps
+        from habitat_sim.utils.viz_utils import get_island_colored_map
+
+        island_colored_map_image = get_island_colored_map(island_top_down_map)
+        island_colored_map_image.save(filename + ".png")
+        # island_colored_map_image.show()
