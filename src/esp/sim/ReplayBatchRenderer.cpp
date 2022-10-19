@@ -26,20 +26,18 @@ ReplayBatchRenderer::ReplayBatchRenderer(
   resourceManager_ =
       std::make_unique<assets::ResourceManager>(metadataMediator, flags);
 
-  // after we get GfxReplay to sync lightSetups, we shouldn't need this
-  resourceManager_->setLightSetup(gfx::getDefaultLights());
-
   sceneManager_ = scene::SceneManager::create_unique();
 
-  for (int b = 0; b < config_.numEnvironments; b++) {
+  for (int envIdx = 0; envIdx < config_.numEnvironments; ++envIdx) {
     auto assetCallback =
-        [this, b](const assets::AssetInfo& assetInfo,
-                  const assets::RenderAssetInstanceCreationInfo& creation)
+        [this, envIdx](const assets::AssetInfo& assetInfo,
+                       const assets::RenderAssetInstanceCreationInfo& creation)
         -> scene::SceneNode* {
-      return loadAndCreateRenderAssetInstance(b, assetInfo, creation);
+      return loadAndCreateRenderAssetInstance(envIdx, assetInfo, creation);
     };
-    auto lightCallback =
-        [this](const gfx::LightSetup& lights) -> void { /* TODO */ };
+    auto lightCallback = [this](const gfx::LightSetup& lights) -> void {
+      resourceManager_->setLightSetup(lights);
+    };
     auto sceneID = sceneManager_->initSceneGraph();
     auto semanticSceneID = cfg.forceSeparateSemanticSceneGraph
                                ? sceneManager_->initSceneGraph()
@@ -60,8 +58,7 @@ ReplayBatchRenderer::ReplayBatchRenderer(
 
   // OpenGL context and renderer
   {
-    // not sure what's going on here
-    if (!context_ && !Magnum::GL::Context::hasCurrent()) {
+    if (!Magnum::GL::Context::hasCurrent()) {
       context_ = gfx::WindowlessContext::create_unique(config_.gpuDeviceId);
     }
 
