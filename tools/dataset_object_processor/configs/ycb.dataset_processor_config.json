@@ -2,11 +2,11 @@
   "scene": "data/test_assets/scenes/simple_room.glb",
   "scene_dataset_config_file": "data/objects/ycb/ycb.scene_dataset_config.json",
   "data_to_collect": {
-    "memory_data": false,
+    "memory_data": true,
     "render_time_ratio": false,
     "physics_data": true
   },
-  "memory_vars": {
+  "memory_thresholds": {
     "mesh_size_units": "KB",
     "max_mesh_num": 5,
     "max_mesh_size": 2400,
@@ -18,9 +18,8 @@
     "used",
     "free"
   ],
-  "physics_vars": {
-    "fps": 60,
-    "time_units": "sec",
+  "physics_thresholds": {
+    "wait_time_units": "seconds",
     "max_wait_time": 5,
     "distance_units": "cm",
     "angle_units": "deg"
@@ -38,7 +37,6 @@
   "enable_physics": true,
   "sensor_height": 1.0,
   "silent": true,
-  "debug_print": true,
   "show_bbox": true,
   "show_collision_asset": true,
   "show_bullet_collision_mesh": true,

@@ -496,7 +496,7 @@ def process_physics(
         # snap rigid object to surface below
         success = snap_down_object(sim, rigid_obj)
         if not success:
-            print(
+            print_if_logging(
                 ANSICodes.BRIGHT_CYAN.value
                 + "dataset_object_processor.process_physics(...) - snapping failed"
             )
@@ -525,12 +525,6 @@ def process_physics(
         for rotation in rotation_drifts
     ]
 
-    text_format = ANSICodes.BRIGHT_RED.value
-    print_if_logging(
-        text_format
-        + f"\ndone simulating {basename(obj_init_attributes.handle)}"
-        + section_divider
-    )
     # return concatenated list of physics results formatted for CSV file row
     return (
         ["..."]
@@ -704,19 +698,19 @@ def parse_dataset(
     csv_rows: List[List[str]] = []
     manager = trade.ImporterManager()
     importer = manager.load_and_instantiate("AnySceneImporter")
-    # for handle in object_template_handles:
-    #     row = process_imported_asset(
-    #         sim, importer, handle, obj_template_mgr, sim_settings
-    #     )
-    #     csv_rows.append(row)
-
-    # TODO: debugging, remove
-    for i in range(5):
-        handle = object_template_handles[i]
+    for handle in object_template_handles:
         row = process_imported_asset(
             sim, importer, handle, obj_template_mgr, sim_settings
         )
         csv_rows.append(row)
+
+    # # TODO: debugging, remove
+    # for i in range(5):
+    #     handle = object_template_handles[i]
+    #     row = process_imported_asset(
+    #         sim, importer, handle, obj_template_mgr, sim_settings
+    #     )
+    #     csv_rows.append(row)
 
     # clean up
     importer.close()
