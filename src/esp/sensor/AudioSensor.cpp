@@ -243,7 +243,6 @@ bool AudioSensor:: sourceIsVisible() const
   ray.direction[2] = direction[2];
   ray.tMin = epsilon;
   ray.tMax = distance - epsilon;
-  ray.primitive = ~uint32_t(0);
 
   // Trace ray.
   if ( RLRA_TraceRayAnyHit(context, &ray) != RLRA_Success ) {
@@ -251,7 +250,7 @@ bool AudioSensor:: sourceIsVisible() const
   }
 
   // Source is visible if there is no intersection.
-  return ray.primitive == ~uint32_t(0);
+  return ray.hit == RLRA_RayHit_False;
 }
 
 #endif  // ESP_BUILD_WITH_AUDIO
