@@ -335,7 +335,7 @@ def test_topdown_map(test_scene):
     with habitat_sim.Simulator(hab_cfg) as sim:
         # use the lowest navmesh vert as the slice height
         navmesh_verts = sim.pathfinder.build_navmesh_vertices(-1)
-        height = min([x[1] for x in navmesh_verts])
+        height = min(x[1] for x in navmesh_verts)
 
         binary_top_down_map = sim.pathfinder.get_topdown_view(0.1, height)
         island_top_down_map = sim.pathfinder.get_topdown_island_view(0.1, height)
