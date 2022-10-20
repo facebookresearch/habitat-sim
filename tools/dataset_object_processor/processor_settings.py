@@ -54,7 +54,7 @@ dataset_processor_settings = {
     "sensor_height": 1.0,
     "silent": True,
     "debug_print": False,
-    # object_config.json file name
+    # First column of csv file. object_config.json file name
     "object_name": [
         "object template file",
     ],

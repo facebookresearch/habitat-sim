@@ -328,7 +328,7 @@ def record_video(
         if required == False:
             continue
         if task == "show_bbox":
-            pcsu.print_if_logging("draw bbox")
+            pcsu.print_if_logging(ANSICodes.YELLOW.value + "draw bbox")
             # rgb = sim_settings["bbox_rgb"]
             # line_color = mn.Color4.from_xyz(rgb)
             # bb_corners: List[mn.Vector3] = get_bounding_box_corners(rigid_obj)
@@ -336,9 +336,9 @@ def record_video(
             # sim.get_debug_line_render().set_line_width(0.01)
             # obj_transform = rigid_obj.transformation
         elif task == "show_collision_asset":
-            pcsu.print_if_logging("draw collision asset")
+            pcsu.print_if_logging(ANSICodes.YELLOW.value + "draw collision asset")
         elif task == "show_bullet_collision_mesh":
-            pcsu.print_if_logging("draw bullet collision mesh")
+            pcsu.print_if_logging(ANSICodes.YELLOW.value + "draw bullet collision mesh")
 
         # record object rotating about its x-axis, then its y-axis
         for axis in list(RotationAxis):
@@ -575,7 +575,6 @@ def process_asset(
     # then use psutil to get a sense of how much RAM was used during the
     # loading process
     rigid_obj_mgr = sim.get_rigid_object_manager()
-    rigid_obj_mgr.remove_all_objects()
     start_mem = psutil.virtual_memory()._asdict()
     rigid_obj = rigid_obj_mgr.add_object_by_template_handle(handle)
     end_mem = psutil.virtual_memory()._asdict()
@@ -599,12 +598,12 @@ def process_asset(
     global negative_ram_count
     if avg_ram_delta < 0:
         negative_ram_count += 1
-        avg_ram_used_str = "***  " + avg_ram_used_str + "  ***"
+        avg_ram_used_str = "****" + avg_ram_used_str + "****"
 
     # Print memory usage info before and after loading object
     print_mem_usage_info(start_mem, end_mem, avg_ram_used_str)
 
-    # Log object template handle
+    # Log object template handle if "silent" is false in the config file
     text_format = Fore.GREEN
     pcsu.print_if_logging(
         text_format
@@ -637,6 +636,10 @@ def process_asset(
     if sim_settings["outputs"].get("video"):
         record_video(sim, rigid_obj, sim_settings)
 
+    # remove this object so the next one can be added without interacting
+    # with the previous one
+    rigid_obj_mgr.remove_all_objects()
+
     # return results as a list of strings formatted for csv rows
     return csv_row
 
@@ -644,7 +647,7 @@ def process_asset(
 def parse_dataset(
     sim: hsim.simulator,
     sim_settings: Dict[str, Any],
-) -> List[List[str]]:
+) -> None:
     """
     Load and process dataset objects using template handles
     :param sim: Simulator instance
@@ -680,8 +683,10 @@ def parse_dataset(
     manager = trade.ImporterManager()
     importer = manager.load_and_instantiate("AnySceneImporter")
 
-    # loop over the assets specified in the config file, starting with index "start"
-    # and proceeding for "num_objs" iterations of the loop
+    # loop over the assets specified in the config file, starting with index
+    # "index_start_obj" and proceeding for "num_objects" iterations of the loop.
+    # If "index_start_obj" and/or "num_objects" is not specified in the config file,
+    # process every asset in the dataset
     start = sim_settings["index_start_obj"]
     num_objs = sim_settings["num_objects"]
     if isinstance(start, int) and isinstance(num_objs, int):
@@ -695,6 +700,16 @@ def parse_dataset(
         for handle in object_template_handles:
             row = process_asset(sim, importer, handle, obj_template_mgr, sim_settings)
             csv_rows.append(row)
+
+    # write csv if specified in the config file. "headers" stores the titles of
+    # each csv column
+    if sim_settings["outputs"].get("csv"):
+        headers = get_csv_headers(sim_settings)
+        csv_dir_path = os.path.join(
+            HABITAT_SIM_PATH, sim_settings["output_paths"].get("csv")
+        )
+        csv_file_prefix = sim_settings["output_paths"].get("output_file_prefix")
+        create_csv_file(headers, csv_rows, csv_dir_path, csv_file_prefix)
 
     # clean up
     importer.close()
@@ -829,10 +844,6 @@ def main() -> None:
     Create Simulator, parse dataset (which also records a video if requested),
     then writes a csv file if requested
     """
-    # TODO: remove this when I figure out why ram usage is sometimes negative
-    global negative_ram_count
-    negative_ram_count = 0
-
     # parse arguments from command line: scene, dataset, if we process physics
     args = build_parser().parse_args()
 
@@ -855,16 +866,13 @@ def main() -> None:
     for key, value in sim_settings.items():
         pcsu.print_if_logging(text_format + f"{key} : {value}\n")
 
-    # Parse dataset and write CSV if specified in the config file.
-    # "headers" stores the titles of each column
-    csv_rows: List[List[str]] = parse_dataset(sim, sim_settings)
-    if sim_settings["outputs"].get("csv"):
-        headers = get_csv_headers(sim_settings)
-        csv_dir_path = os.path.join(
-            HABITAT_SIM_PATH, sim_settings["output_paths"].get("csv")
-        )
-        csv_file_prefix = sim_settings["output_paths"].get("output_file_prefix")
-        create_csv_file(headers, csv_rows, csv_dir_path, csv_file_prefix)
+    # TODO: remove this when I figure out why ram usage is sometimes negative
+    global negative_ram_count
+    negative_ram_count = 0
+
+    # Parse dataset and write csv/make video recording if specified in the
+    # config file. "headers" stores the titles of each csv column
+    parse_dataset(sim, sim_settings)
 
     # TODO: remove this when I figure out why ram usage is sometimes negative
     text_format = ANSICodes.BRIGHT_MAGENTA.value

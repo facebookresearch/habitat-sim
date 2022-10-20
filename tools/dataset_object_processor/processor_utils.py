@@ -25,6 +25,13 @@ def create_unique_filename(
     """
     Create unique file name / file path based off of the current date and time.
     Also create directory in which we save the file if one doesn't already exist
+    :param dir_path: Absolute file path of directory in which to create this new
+    file
+    :param extension: extension of file name. Of the form ".mp4", ".csv", etc
+    :param filename_prefix: if you want the filename to be more descriptive,
+    rather than just have the date and time. The filepath will be of the form:
+    <path to dir>/<filename_prefix>__date_<year>-<month>-<day>__time_<hour>:<min>:<sec>.
+    If no filename_prefix: <path to dir>/date_<year>-<month>-<day>__time_<hour>:<min>:<sec>
     """
     # Current date and time so we can make unique file names for each csv
     date_and_time = datetime.datetime.now()
@@ -127,21 +134,12 @@ class CSVWriter:
     ) -> None:
         """
         Write column titles and csv data into csv file with the provided
-        file path. Use default file path if none is provided
+        file path.
+        :param headers: List of strings that refers to csv column titles
+        :param csv_rows: A List of a List of strings, where each List of strings
+        is a row of the csv file, one string entry for each column
+        :param file_path: absolute file path of csv file to save to
         """
-        # TODO: debugging, remove
-        print_debug(ANSICodes.BRIGHT_CYAN.value + "HEADERS" + section_divider)
-        for header in headers:
-            print_debug(ANSICodes.BRIGHT_CYAN.value + "-" + header)
-        print_debug(ANSICodes.BRIGHT_RED.value + "\nVALUES" + section_divider)
-        for value in csv_rows[0]:
-            print_debug(ANSICodes.BRIGHT_RED.value + "-" + value)
-        print_debug(
-            f"\nnum columns: {len(csv_rows[0])}, num headers: {len(headers)}"
-            + section_divider
-            + "\n"
-        )
-
         # make sure the number of columns line up
         if not len(csv_rows[0]) == len(headers):
             raise RuntimeError(
