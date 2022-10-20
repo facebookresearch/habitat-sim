@@ -320,6 +320,9 @@ def test_navmesh_islands(test_scene):
 
 @pytest.mark.parametrize("test_scene", test_scenes)
 def test_topdown_map(test_scene):
+    # optionally generate human-readable map images
+    generate_test_map_images = False
+
     if not osp.exists(test_scene):
         pytest.skip(f"{test_scene} not found")
 
@@ -330,8 +333,9 @@ def test_topdown_map(test_scene):
     hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
 
     with habitat_sim.Simulator(hab_cfg) as sim:
-        scene_bb = sim.get_active_scene_graph().get_root_node().cumulative_bb
-        height = scene_bb.y().min
+        # use the lowest navmesh vert as the slice height
+        navmesh_verts = sim.pathfinder.build_navmesh_vertices(-1)
+        height = min([x[1] for x in navmesh_verts])
 
         binary_top_down_map = sim.pathfinder.get_topdown_view(0.1, height)
         island_top_down_map = sim.pathfinder.get_topdown_island_view(0.1, height)
@@ -357,5 +361,7 @@ def test_topdown_map(test_scene):
         from habitat_sim.utils.viz_utils import get_island_colored_map
 
         island_colored_map_image = get_island_colored_map(island_top_down_map)
-        island_colored_map_image.save(filename + ".png")
-        # island_colored_map_image.show()
+
+        if generate_test_map_images:
+            island_colored_map_image.save(filename + ".png")
+            # island_colored_map_image.show()

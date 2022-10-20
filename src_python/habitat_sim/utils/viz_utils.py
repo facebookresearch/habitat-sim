@@ -298,14 +298,12 @@ def get_island_colored_map(island_top_down_map_data: np.ndarray):
     :return: rgb Image of islands at the desired slice.
     """
 
-    island_map = Image.new("RGB", island_top_down_map_data.shape)
-    pixels = island_map.load()
     white = int("0xffffff", base=16)
+    island_map = Image.new("RGB", island_top_down_map_data.shape, color=white)
+    pixels = island_map.load()
     for x in range(island_top_down_map_data.shape[0]):
         for y in range(island_top_down_map_data.shape[1]):
-            if island_top_down_map_data[x, y] == -1:
-                pixels[x, y] = white
-            else:
+            if island_top_down_map_data[x, y] >= 0:
                 pixels[x, y] = int(
                     d3_40_colors_hex[island_top_down_map_data[x, y]], base=16
                 )

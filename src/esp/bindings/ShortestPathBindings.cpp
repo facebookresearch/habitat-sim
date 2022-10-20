@@ -147,7 +147,7 @@ void initShortestPathBindings(py::module& m) {
           "meters_per_pixel"_a, "height"_a, "eps"_a = 0.5)
       .def(
           "get_topdown_island_view", &PathFinder::getTopDownIslandView,
-          R"(Returns the topdown view of the PathFinder's navmesh with island indicies at each point or -1 for non-navigable cells for a given vertical slice with eps slack.)",
+          R"(Returns the topdown view of the PathFinder's navmesh with island indices at each point or -1 for non-navigable cells for a given vertical slice with eps slack.)",
           "meters_per_pixel"_a, "height"_a, "eps"_a = 0.5)
       // detailed docs in docs/docs.rst
       .def("get_random_navigable_point", &PathFinder::getRandomNavigablePoint,

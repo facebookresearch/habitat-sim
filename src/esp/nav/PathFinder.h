@@ -153,7 +153,7 @@ struct NavMeshSettings {
    * @brief Maximum ledge height that is considered to be traversable in world
    * units.
    *
-   * For example, this constrains the maximum step hieght for traversing
+   * For example, this constrains the maximum step height for traversing
    * stairways. Will be truncated to a multiple of cellHeight.
    */
   float agentMaxClimb{};
@@ -597,7 +597,7 @@ class PathFinder {
 
   /**
    * @brief Get a 2D grid marking navigable and non-navigable cells at a
-   * specified hieght and resolution.
+   * specified height and resolution.
    *
    * The size of the grid depends on the navmesh bounds and selected resolution.
    *
@@ -617,7 +617,7 @@ class PathFinder {
 
   /**
    * @brief Get a 2D grid marking island index for navigable cells and -1 for
-   * non-navigable cells at a specified hieght and resolution.
+   * non-navigable cells at a specified height and resolution.
    *
    * The size of the grid depends on the navmesh bounds and selected resolution.
    *

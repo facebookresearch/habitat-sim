@@ -1612,8 +1612,8 @@ PathFinder::Impl::getTopDownView(const float metersPerPixel,
                                  const float height,
                                  const float eps) const {
   std::pair<vec3f, vec3f> mapBounds = bounds();
-  vec3f bound1 = mapBounds.first;
-  vec3f bound2 = mapBounds.second;
+  vec3f bound1 = std::move(mapBounds.first);
+  vec3f bound2 = std::move(mapBounds.second);
 
   float xspan = std::abs(bound1[0] - bound2[0]);
   float zspan = std::abs(bound1[2] - bound2[2]);
@@ -1644,8 +1644,8 @@ MatrixXi PathFinder::Impl::getTopDownIslandView(const float metersPerPixel,
                                                 const float height,
                                                 const float eps) const {
   std::pair<vec3f, vec3f> mapBounds = bounds();
-  vec3f bound1 = mapBounds.first;
-  vec3f bound2 = mapBounds.second;
+  vec3f bound1 = std::move(mapBounds.first);
+  vec3f bound2 = std::move(mapBounds.second);
 
   float xspan = std::abs(bound1[0] - bound2[0]);
   float zspan = std::abs(bound1[2] - bound2[2]);
