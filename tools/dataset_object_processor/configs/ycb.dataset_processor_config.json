@@ -1,13 +1,15 @@
 {
   "scene": "data/test_assets/scenes/simple_room.glb",
-  "scene_dataset_config_file": "data/objects/ycb/ycb.scene_dataset_config.json",
+  "scene_dataset_config_file": "data/versioned_data/ycb_1.2/ycb.scene_dataset_config.json",
   "data_to_collect": {
-    "memory_data": true,
+    "memory_data": false,
     "render_time_ratio": false,
     "physics_data": true
   },
-  "memory_thresholds": {
-    "mesh_size_units": "KB",
+  "index_start_obj": 0,
+  "num_objects": 5,
+  "memory_vars": {
+    "units": "KB",
     "max_mesh_num": 5,
     "max_mesh_size": 2400,
     "max_image_num": 5,
@@ -18,28 +20,35 @@
     "used",
     "free"
   ],
-  "physics_thresholds": {
-    "wait_time_units": "seconds",
+  "physics_vars": {
+    "fps": 60,
+    "time_units": "sec",
     "max_wait_time": 5,
     "distance_units": "cm",
     "angle_units": "deg"
   },
+  "video_vars": {
+    "tasks": {
+      "show_bbox": true,
+      "show_collision_asset": false,
+      "show_bullet_collision_mesh": false
+    },
+    "revolution_dur": 4.0
+  },
   "outputs": {
     "csv": true,
-    "video_recording": true
+    "video": true
   },
   "output_paths": {
     "csv": "tools/dataset_object_processor/dataset_csv_files/",
-    "video_recordings": "tools/dataset_object_processor/dataset_video_recordings/",
+    "video": "tools/dataset_object_processor/dataset_video_recordings/",
     "output_file_prefix": "ycb"
   },
   "headless": true,
   "enable_physics": true,
   "sensor_height": 1.0,
   "silent": true,
-  "show_bbox": true,
-  "show_collision_asset": true,
-  "show_bullet_collision_mesh": true,
+  "debug_print": false,
   "default_transforms": {
     "default_agent_pos": [
       0.25,
