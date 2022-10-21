@@ -12,7 +12,7 @@ import psutil
 from colorama import Fore, init
 from magnum import trade
 from processor_settings import default_sim_settings, make_cfg
-from processor_utils import ANSICodes, CSVWriter, RotationAxis
+from processor_utils import ANSICodes, RotationAxis
 
 import habitat_sim as hsim
 from habitat_sim import attributes, attributes_managers, physics
@@ -658,66 +658,18 @@ def process_dataset(
     # Write csv if specified in the config file. "headers" stores the titles of
     # each csv column.
     if sim.sim_settings["outputs"].get("csv"):
-        headers = get_csv_headers(sim)
+        headers = pcsu.get_csv_headers(sim)
         csv_dir_path = os.path.join(
             HABITAT_SIM_PATH, sim.sim_settings["output_paths"].get("csv")
         )
         csv_file_prefix = sim.sim_settings["output_paths"].get("output_file_prefix")
-        create_csv_file(headers, csv_rows, csv_dir_path, csv_file_prefix)
+        pcsu.create_csv_file(headers, csv_rows, csv_dir_path, csv_file_prefix)
 
     # clean up
     importer.close()
 
     # return list of rows to be written to csv file
     return csv_rows
-
-
-def get_csv_headers(sim: DatasetProcessorSim) -> List[str]:
-    """
-    Collect the csv column titles we'll need given which tests we ran
-    """
-    headers: List[str] = sim.sim_settings["object_name"]
-    data_to_collect = sim.sim_settings["data_to_collect"]
-    if data_to_collect.get("memory_data"):
-        headers += sim.sim_settings["memory_data_headers"]
-    if data_to_collect.get("render_time_ratio"):
-        headers += sim.sim_settings["render_time_headers"]
-    if data_to_collect.get("physics_data"):
-        headers += sim.sim_settings["physics_data_headers"]
-
-    return headers
-
-
-def create_csv_file(
-    headers: List[str],
-    csv_rows: List[List[str]],
-    csv_dir_path: str = None,
-    csv_file_prefix: str = None,
-) -> None:
-    """
-    Set directory where our csv's will be saved, create the csv file name,
-    create the column names of our csv data, then open and write the csv
-    file
-    :param headers: column titles of csv file
-    :param csv_rows: List of Lists of strings defining asset processing results
-    for each dataset object
-    :param csv_dir_path: absolute path to directory where csv file will be saved
-    :param csv_file_prefix: prefix we will add to beginning of the csv filename
-    to specify which dataset this csv is describing
-    """
-    file_path = pcsu.create_unique_filename(csv_dir_path, ".csv", csv_file_prefix)
-
-    text_format = ANSICodes.PURPLE.value + ANSICodes.BOLD.value
-    pcsu.print_if_logging(
-        text_format + "\nWriting csv results to:" + pcsu.section_divider
-    )
-    text_format = ANSICodes.PURPLE.value
-    pcsu.print_if_logging(text_format + f"{file_path}\n")
-
-    CSVWriter.write_file(headers, csv_rows, file_path)
-
-    text_format = ANSICodes.PURPLE.value
-    pcsu.print_if_logging(text_format + "CSV writing done\n")
 
 
 def update_sim_settings(

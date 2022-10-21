@@ -248,3 +248,49 @@ def get_bounding_box_corners(obj) -> List[mn.Vector3]:
         bounding_box.front_bottom_right,
         bounding_box.front_bottom_left,
     ]
+
+
+def get_csv_headers(sim) -> List[str]:
+    """
+    Collect the csv column titles we'll need given which tests we ran
+    """
+    headers: List[str] = sim.sim_settings["object_name"]
+    data_to_collect = sim.sim_settings["data_to_collect"]
+    if data_to_collect.get("memory_data"):
+        headers += sim.sim_settings["memory_data_headers"]
+    if data_to_collect.get("render_time_ratio"):
+        headers += sim.sim_settings["render_time_headers"]
+    if data_to_collect.get("physics_data"):
+        headers += sim.sim_settings["physics_data_headers"]
+
+    return headers
+
+
+def create_csv_file(
+    headers: List[str],
+    csv_rows: List[List[str]],
+    csv_dir_path: str = None,
+    csv_file_prefix: str = None,
+) -> None:
+    """
+    Set directory where our csv's will be saved, create the csv file name,
+    create the column names of our csv data, then open and write the csv
+    file
+    :param headers: column titles of csv file
+    :param csv_rows: List of Lists of strings defining asset processing results
+    for each dataset object
+    :param csv_dir_path: absolute path to directory where csv file will be saved
+    :param csv_file_prefix: prefix we will add to beginning of the csv filename
+    to specify which dataset this csv is describing
+    """
+    file_path = create_unique_filename(csv_dir_path, ".csv", csv_file_prefix)
+
+    text_format = ANSICodes.PURPLE.value + ANSICodes.BOLD.value
+    print_if_logging(text_format + "\nWriting csv results to:" + section_divider)
+    text_format = ANSICodes.PURPLE.value
+    print_if_logging(text_format + f"{file_path}\n")
+
+    CSVWriter.write_file(headers, csv_rows, file_path)
+
+    text_format = ANSICodes.PURPLE.value
+    print_if_logging(text_format + "CSV writing done\n")
