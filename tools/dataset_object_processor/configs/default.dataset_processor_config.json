@@ -14,6 +14,10 @@
   "output_paths": {
     "output_file_prefix": "default"
   },
+  "default_transforms": {
+    "default_agent_pos": [-2.0, 0.5, 4.00],
+    "default_obj_pos": [-2.0, 1.5, 2.00]
+  },
   "silent": false,
   "debug_print": true
 }

@@ -6,13 +6,17 @@ from habitat_sim.utils.settings import default_sim_settings
 from habitat_sim.utils.settings import make_cfg as _make_cfg
 
 dataset_processor_settings = {
+    # -------------------------------------------------------------------
+    # These settings can be overridden in the dataset_processor_config.json
+    # files
+    # -------------------------------------------------------------------
     "scene": "data/test_assets/scenes/simple_room.glb",
     "data_to_collect": {
         "memory_data": True,
         "render_time_ratio": True,
         "physics_data": True,
     },
-    "index_start_obj": 0,
+    "start_obj_index": 0,
     "num_objects": "all",
     "memory_vars": {
         "units": "KB",
@@ -31,9 +35,9 @@ dataset_processor_settings = {
     },
     "video_vars": {
         "tasks": {
-            "show_bbox": True,
-            "show_collision_asset": True,
-            "show_bullet_collision_mesh": True,
+            "draw_bbox": True,
+            "draw_collision_asset": True,
+            "draw_bullet_collision_mesh": True,
         },
         "revolution_dur": 4.0,
     },
@@ -44,9 +48,9 @@ dataset_processor_settings = {
         "output_file_prefix": "",
     },
     "default_transforms": {
-        "default_agent_pos": [0.25, 2.00, 1.73],
+        "default_agent_pos": [-2.0, 0.5, 3.73],
         "default_agent_rot": {"angle": 0.0, "axis": [1.0, 0.0, 0.0]},
-        "default_obj_pos": [0.25, 3.00, -0.23],
+        "default_obj_pos": [-2.0, 1.5, 2.23],
         "default_obj_rot": {"angle": 0.0, "axis": [1.0, 0.0, 0.0]},
     },
     "headless": True,
@@ -54,6 +58,10 @@ dataset_processor_settings = {
     "sensor_height": 1.0,
     "silent": True,
     "debug_print": False,
+    "bbox_rgb": [1.0, 0.8, 1.0],
+    # -------------------------------------------------------------------
+    # The following settings likely shouldn't be changed
+    # -------------------------------------------------------------------
     # First column of csv file. object_config.json file name
     "object_name": [
         "object template file",
@@ -134,7 +142,6 @@ dataset_processor_settings = {
         "active": -1,
         "inactive": 1,
     },
-    "bbox_rgb": [1.0, 0.8, 1.0],
 }
 default_sim_settings.update(dataset_processor_settings)
 

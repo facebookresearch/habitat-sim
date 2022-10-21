@@ -434,6 +434,7 @@ class Simulator(SimulatorBackend):
             agent_sensorsuite = self.__sensors[agent_id]
             for _sensor_uuid, sensor in agent_sensorsuite.items():
                 sensor.draw_observation()
+                self.debug_draw(_sensor_uuid)
 
         # As backport. All Dicts are ordered in Python >= 3.7
         observations: Dict[int, ObservationDict] = OrderedDict()
@@ -445,6 +446,12 @@ class Simulator(SimulatorBackend):
         if return_single:
             return next(iter(observations.values()))
         return observations
+
+    def debug_draw(self, sensor_uuid: Optional[str] = None) -> None:
+        r"""Override this method in derived Simulator class to add optional, application specific debug line drawing commands to the sensor output.
+        See Simulator.get_debug_line_render().
+        :param sensor_uuid: The uuid of the sensor being rendered to optionally limit debug drawing to specific visualizations (e.g. a third person eval camera)
+        """
 
     @property
     def _default_agent(self) -> Agent:

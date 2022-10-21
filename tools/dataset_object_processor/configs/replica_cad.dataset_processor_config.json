@@ -29,9 +29,9 @@
   },
   "video_vars": {
     "tasks": {
-      "show_bbox": true,
-      "show_collision_asset": true,
-      "show_bullet_collision_mesh": true
+      "draw_bbox": true,
+      "draw_collision_asset": true,
+      "draw_bullet_collision_mesh": true
     },
     "revolution_dur": 4.0
   },
@@ -50,31 +50,15 @@
   "silent": true,
   "debug_print": false,
   "default_transforms": {
-    "default_agent_pos": [
-      0.25,
-      2.00,
-      1.73
-    ],
+    "default_agent_pos": [-2.0, 0.5, 4.00],
     "default_agent_rot": {
       "angle": 0.0,
-      "axis": [
-        1,
-        0,
-        0
-      ]
+      "axis": [1, 0, 0]
     },
-    "default_obj_pos": [
-      0.25,
-      3.00,
-      -0.23
-    ],
+    "default_obj_pos": [-2.0, 1.5, 2.00],
     "default_obj_rot": {
       "angle": 0.0,
-      "axis": [
-        1,
-        0,
-        0
-      ]
+      "axis": [1, 0, 0]
     }
   }
 }

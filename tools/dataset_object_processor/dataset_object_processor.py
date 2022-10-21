@@ -12,7 +12,7 @@ import psutil
 from colorama import Fore, init
 from magnum import trade
 from processor_settings import default_sim_settings, make_cfg
-from processor_utils import ANSICodes, CSVWriter, MemoryUnitConverter, RotationAxis
+from processor_utils import ANSICodes, CSVWriter, RotationAxis
 
 import habitat_sim as hsim
 from habitat_sim import attributes, attributes_managers, physics
@@ -23,93 +23,84 @@ repo = git.Repo(".", search_parent_directories=True)
 HABITAT_SIM_PATH = repo.working_tree_dir
 
 
-def print_mem_usage_info(
-    start_mem: Dict[str, int],
-    end_mem: Dict[str, int],
-    avg_ram_used_str: str,
-) -> None:
-    """"""
-    # Print memory usage info before loading object
-    text_format = ANSICodes.BRIGHT_RED.value
-    pcsu.print_if_logging(text_format + "\nstart mem state" + pcsu.section_divider)
-    for key, value in start_mem.items():
-        value_str = value
-        if key != "percent":
-            value_str = get_mem_size_str(value)
-        pcsu.print_if_logging(text_format + f"{key} : {value_str}")
+class DatasetProcessorSim(hsim.Simulator):
+    """ """
 
-    # Print memory usage info after loading object
-    pcsu.print_if_logging(text_format + "\nend mem state" + pcsu.section_divider)
-    for key, value in end_mem.items():
-        value_str = value
-        if key != "percent":
-            value_str = get_mem_size_str(value)
-        pcsu.print_if_logging(text_format + f"{key} : {value_str}")
+    draw_task: str = None
+    sim_settings: Dict[str, Any] = None
+    curr_obj: physics.ManagedBulletRigidObject = None
 
-    # Print difference in memory usage before and after loading object
-    pcsu.print_if_logging(text_format + "\nchange in mem states" + pcsu.section_divider)
-    for (key_s, value_s), (key_e, value_e) in zip(start_mem.items(), end_mem.items()):
-        value_str = value_e - value_s
-        if key_s != "percent" and key_e != "percent":
-            value_str = get_mem_size_str(value_e - value_s)
-        pcsu.print_if_logging(text_format + f"{key_s} : {value_str}")
+    def debug_draw(self, sensor_uuid: Optional[str] = None) -> None:
+        r"""Override this method in derived Simulator class to add optional,
+        application specific debug line drawing commands to the sensor output.
+        See Simulator.get_debug_line_render().
+        :param sensor_uuid: The uuid of the sensor being rendered to optionally
+        limit debug drawing to specific visualizations (e.g. a third person eval camera)
+        """
+        # determine which task we are drawing and call the associated function
+        if self.draw_task == "draw_bbox":
+            self.debug_draw_bbox()
+        elif self.draw_task == "draw_collision_asset":
+            self.debug_draw_collision_asset()
+        elif self.draw_task == "draw_bullet_collision_mesh":
+            self.debug_draw_bullet_collision_mesh()
 
-    # Print rough estimate of RAM used when loading object
-    pcsu.print_if_logging(
-        text_format
-        + "\naverage RAM used"
-        + pcsu.section_divider
-        + f"\n{avg_ram_used_str}"
-    )
+    def debug_draw_bbox(self) -> None:
+        """ """
+        rgb = self.sim_settings["bbox_rgb"]
+        line_color = mn.Color4.from_xyz(rgb)
+        bb_corners: List[mn.Vector3] = pcsu.get_bounding_box_corners(self.curr_obj)
+        num_corners = len(bb_corners)
+        self.get_debug_line_render().set_line_width(0.01)
+        obj_transform = self.curr_obj.transformation
 
+        # only need to iterate over first 4 corners to draw whole thing
+        for i in range(int(num_corners / 2)):
+            # back of box
+            back_corner_local_pos = bb_corners[i]
+            back_corner_world_pos = obj_transform.transform_point(back_corner_local_pos)
+            next_back_index = (i + 1) % 4
+            next_back_corner_local_pos = bb_corners[next_back_index]
+            next_back_corner_world_pos = obj_transform.transform_point(
+                next_back_corner_local_pos
+            )
+            self.get_debug_line_render().draw_transformed_line(
+                back_corner_world_pos,
+                next_back_corner_world_pos,
+                line_color,
+            )
+            # side edge that this corner is a part of
+            front_counterpart_index = num_corners - i - 1
+            front_counterpart_local_pos = bb_corners[front_counterpart_index]
+            front_counterpart_world_pos = obj_transform.transform_point(
+                front_counterpart_local_pos
+            )
+            self.get_debug_line_render().draw_transformed_line(
+                back_corner_world_pos,
+                front_counterpart_world_pos,
+                line_color,
+            )
+            # front of box
+            next_front_index = (front_counterpart_index - 4 - 1) % 4 + 4
+            next_front_corner_local_pos = bb_corners[next_front_index]
+            next_front_corner_world_pos = obj_transform.transform_point(
+                next_front_corner_local_pos
+            )
+            self.get_debug_line_render().draw_transformed_line(
+                front_counterpart_world_pos,
+                next_front_corner_world_pos,
+                line_color,
+            )
 
-def convert_memory_units(
-    size: float,
-    unit_type: int = MemoryUnitConverter.KILOBYTES,
-    decimal_num_round: int = 2,
-) -> float:
-    """
-    Convert units from bytes to desired unit, then round the result
-    """
-    new_size = size / MemoryUnitConverter.UNIT_CONVERSIONS[unit_type]
-    return round(new_size, decimal_num_round)
+    def debug_draw_collision_asset(self) -> None:
+        ...
 
-
-def get_mem_size_str(
-    size: float,
-    unit_type: int = MemoryUnitConverter.KILOBYTES,
-) -> str:
-    """
-    Convert bytes to desired memory unit size, then create string
-    that will be written into csv file rows. Add commas to numbers
-    """
-    new_size: float = convert_memory_units(size, unit_type)
-    new_size_str: str = "{:,}".format(new_size)
-    unit_str: str = MemoryUnitConverter.UNIT_STRS[unit_type]
-    return f"{new_size_str} {unit_str}"
-
-
-def get_bounding_box_corners(
-    obj: physics.ManagedBulletRigidObject,
-) -> List[mn.Vector3]:
-    """
-    Return a list of object bounding box corners in object local space.
-    """
-    bounding_box = obj.root_scene_node.cumulative_bb
-    return [
-        bounding_box.back_bottom_left,
-        bounding_box.back_bottom_right,
-        bounding_box.back_top_right,
-        bounding_box.back_top_left,
-        bounding_box.front_top_left,
-        bounding_box.front_top_right,
-        bounding_box.front_bottom_right,
-        bounding_box.front_bottom_left,
-    ]
+    def debug_draw_bullet_collision_mesh(self) -> None:
+        ...
 
 
 def bounding_box_ray_prescreen(
-    sim: hsim.simulator,
+    sim: DatasetProcessorSim,
     obj: physics.ManagedBulletRigidObject,
     support_obj_ids: Optional[List[int]] = None,
     check_all_corners: bool = False,
@@ -132,7 +123,7 @@ def bounding_box_ray_prescreen(
     raycast_results = []
     gravity_dir = sim.get_gravity().normalized()
     object_local_to_global = obj.transformation
-    bounding_box_corners = get_bounding_box_corners(obj)
+    bounding_box_corners = pcsu.get_bounding_box_corners(obj)
     key_points = [mn.Vector3(0)] + bounding_box_corners  # [COM, c0, c1 ...]
     support_impacts: Dict[int, mn.Vector3] = {}  # indexed by keypoints
     for ix, key_point in enumerate(key_points):
@@ -195,7 +186,7 @@ def bounding_box_ray_prescreen(
 
 
 def snap_down_object(
-    sim: hsim.simulator,
+    sim: DatasetProcessorSim,
     obj: physics.ManagedBulletRigidObject,
     support_obj_ids: Optional[List[int]] = None,
 ) -> bool:
@@ -251,50 +242,40 @@ def snap_down_object(
 
 
 def record_revolving_obj(
-    sim: hsim.simulator,
-    rigid_obj: physics.ManagedBulletRigidObject,
+    sim: DatasetProcessorSim,
     angle_delta: float,
-    axis,
 ) -> Dict[int, Any]:
     """ """
-    curr_angle = 0.0
-    finished = False
     observations = []
-    while curr_angle < 360.0:
-        # rotate_recorded_obj(rigid_obj, curr_angle, angle_delta, axis)
-        if curr_angle + angle_delta >= 360.0:
-            finished = True
-            angle_delta = 360.0 - curr_angle
-            curr_angle = 360.0
+    for axis in list(RotationAxis):
+        curr_angle = 0.0
+        finished = False
+        while curr_angle < 360.0:
+            # determine if this iteration will push the object past
+            # 360.0 degrees, meaning we are done
+            if curr_angle + angle_delta >= 360.0:
+                finished = True
+                angle_delta = 360.0 - curr_angle
+                curr_angle = 360.0
 
-        # rotate about object's local y axis (up vector)
-        if axis == RotationAxis.Y:
-            y_rot_rad = mn.Rad(mn.Deg(angle_delta))
-            rigid_obj.rotate_y_local(y_rot_rad)
+            # rotate about object's local x or y axis
+            rot_rad = mn.Rad(mn.Deg(angle_delta))
+            sim.curr_obj.rotate_local(rot_rad, mn.Vector3(axis))
 
-        # rotate about object's local x axis (horizontal vector)
-        else:
-            x_rot_rad = mn.Rad(mn.Deg(angle_delta))
-            rigid_obj.rotate_x_local(x_rot_rad)
+            # save this observation in a buffer of frames
+            observations.append(sim.get_sensor_observations())
 
-        # save this observation in a buffer of frames
-        observations.append(sim.get_sensor_observations())
+            # update current rotation angle
+            curr_angle += angle_delta
 
-        # update current rotation angle
-        curr_angle += angle_delta
-
-        # reset current rotation angle if it passed 360 degrees
-        if finished:
-            curr_angle = 360.0
+            # reset current rotation angle if it passed 360 degrees
+            if finished:
+                curr_angle = 360.0
 
     return observations
 
 
-def record_video(
-    sim: hsim.simulator,
-    rigid_obj: physics.ManagedBulletRigidObject,
-    sim_settings: Dict[str, Any],
-) -> None:
+def record_asset_video(sim: DatasetProcessorSim) -> None:
     """
     Loop over each recording task specified in the config file, i.e. show bounding box,
     show collision asset, and show bullet collision mesh, then using the transforms
@@ -303,53 +284,39 @@ def record_video(
     currently revolves 360 degrees once around its x-axis, then once around its y-axis for
     each task. Then save the cumulation of observations as a video file.
     :param sim: The Simulator instance.
-    :param rigid_obj: The ManagedBulletRigidObject to record
-    :param sim_settings: simulator settings, defines tasks, rotation speed, and time step
     """
-    # init object
-    default_transforms = sim_settings["default_transforms"]
+    # init video and rotation parameters
+    video_vars: Dict[str, Any] = sim.sim_settings["video_vars"]
+    tasks: Dict[str, bool] = video_vars.get("tasks")
+    deg_per_sec = 360.0 / sim.sim_settings["video_vars"].get("revolution_dur")
+    dt = 1.0 / sim.sim_settings["physics_vars"].get("fps")
+    angle_delta = deg_per_sec * dt
+
+    # init object transforms
+    default_transforms = sim.sim_settings["default_transforms"]
     obj_rot = default_transforms.get("default_obj_rot")
-    rigid_obj.translation = default_transforms.get("default_obj_pos")
+    sim.curr_obj.translation = default_transforms.get("default_obj_pos")
     angle = mn.Rad(mn.Deg(obj_rot.get("angle")))
     axis = mn.Vector3(obj_rot.get("axis"))
-    rigid_obj.rotation = mn.Quaternion.rotation(angle, axis)
-    rigid_obj.motion_type = physics.MotionType.KINEMATIC
-
-    # init video and rotation parameters
-    video_vars: Dict[str, Any] = sim_settings["video_vars"]
-    tasks: Dict[str, bool] = video_vars.get("tasks")
-    deg_per_sec = 360.0 / sim_settings["video_vars"].get("revolution_dur")
-    dt = 1.0 / sim_settings["physics_vars"].get("fps")
-    angle_delta = deg_per_sec * dt
+    sim.curr_obj.rotation = mn.Quaternion.rotation(angle, axis)
+    sim.curr_obj.motion_type = physics.MotionType.KINEMATIC
 
     # Loop over each recording task specified in the config file
     observations = []
     for task, required in tasks.items():
         if required == False:
             continue
-        if task == "show_bbox":
-            pcsu.print_if_logging(ANSICodes.YELLOW.value + "draw bbox")
-            # rgb = sim_settings["bbox_rgb"]
-            # line_color = mn.Color4.from_xyz(rgb)
-            # bb_corners: List[mn.Vector3] = get_bounding_box_corners(rigid_obj)
-            # num_corners = len(bb_corners)
-            # sim.get_debug_line_render().set_line_width(0.01)
-            # obj_transform = rigid_obj.transformation
-        elif task == "show_collision_asset":
-            pcsu.print_if_logging(ANSICodes.YELLOW.value + "draw collision asset")
-        elif task == "show_bullet_collision_mesh":
-            pcsu.print_if_logging(ANSICodes.YELLOW.value + "draw bullet collision mesh")
-
         # record object rotating about its x-axis, then its y-axis
-        for axis in list(RotationAxis):
-            observations += record_revolving_obj(sim, rigid_obj, angle_delta, axis)
+        pcsu.print_if_logging(ANSICodes.YELLOW.value + "draw " + task)
+        sim.draw_task = task
+        observations += record_revolving_obj(sim, angle_delta)
 
     # construct file path and write "observations" to video file
     video_file_dir = os.path.join(
-        HABITAT_SIM_PATH, sim_settings["output_paths"].get("video")
+        HABITAT_SIM_PATH, sim.sim_settings["output_paths"].get("video")
     )
-    obj_handle = rigid_obj.handle.replace("_:0000", "")
-    video_file_prefix = sim_settings["output_paths"].get("output_file_prefix")
+    obj_handle = sim.curr_obj.handle.replace("_:0000", "")
+    video_file_prefix = sim.sim_settings["output_paths"].get("output_file_prefix")
     video_file_prefix += f"_{obj_handle}"
     file_path = pcsu.create_unique_filename(video_file_dir, ".mp4", video_file_prefix)
     vut.make_video(
@@ -361,7 +328,7 @@ def record_video(
     )
 
 
-def process_mem_usage(
+def process_asset_mem_usage(
     importer: trade.AbstractImporter,
     template: attributes.ObjectAttributes,
 ) -> List[str]:
@@ -425,39 +392,31 @@ def process_mem_usage(
         render_asset_filename,
         collision_asset_filename,
         f"{mesh_count} {mesh_count_units}",
-        get_mem_size_str(index_data_size),
-        get_mem_size_str(vertex_data_size),
-        get_mem_size_str(total_mesh_data_size),
+        pcsu.get_mem_size_str(index_data_size),
+        pcsu.get_mem_size_str(vertex_data_size),
+        pcsu.get_mem_size_str(total_mesh_data_size),
         f"{image_count} {image_count_units}",
-        get_mem_size_str(image_data_size),
+        pcsu.get_mem_size_str(image_data_size),
     ]
 
 
-def process_render_time() -> List[str]:
+def process_asset_render_time() -> List[str]:
     return ["..."]
 
 
-def process_physics(
-    sim: hsim.simulator,
-    rigid_obj: physics.ManagedBulletRigidObject,
-    sim_settings: Dict[str, Any],
-) -> List[str]:
+def process_asset_physics(sim: DatasetProcessorSim) -> List[str]:
     """
     Run series of tests on asset to see how it responds in physics simulations.
     We snap an object down onto the surface below, then see how long it takes
     for the object to stabilize and become idle.
     :param sim: The Simulator instance.
-    :param rigid_obj: The ManagedBulletRigidObject to test
-    :param sim_settings: simulator settings, defines initial orientations to test
-    object from, object initial position, fps, max amount of time we wait until
-    object becomes idle, and our units for time and angle
     """
     # we must test object in 6 different orientations, each corresponding to a face
     # of an imaginary cube bounding the object. Each rotation in rotations is of the form:
     # (angle, (axis.x, axis.y, axis.z)) where angle is in degrees
     rotations: List[Tuple] = [
         (mn.Rad(mn.Deg(rotation[0])), mn.Vector3(rotation[1]))
-        for rotation in sim_settings["sim_test_rotations"]
+        for rotation in sim.sim_settings["sim_test_rotations"]
     ]
     wait_times: List[float] = [0.0] * len(rotations)
     translation_deltas: List[float] = [0.0] * len(rotations)
@@ -470,42 +429,42 @@ def process_physics(
     text_format = ANSICodes.BRIGHT_RED.value
     pcsu.print_if_logging(
         text_format
-        + f"\nstart simulating {basename(rigid_obj.creation_attributes.handle)}"
+        + f"\nstart simulating {basename(sim.curr_obj.creation_attributes.handle)}"
         + pcsu.section_divider
     )
 
     # Loop over the 6 rotations and simulate snapping the object down and waiting for
     # it to become idle (at least until "max_wait_time" from the config file expires)
-    default_pos = sim_settings["default_transforms"].get("default_obj_pos")
-    dt = 1.0 / sim_settings["physics_vars"].get("fps")  # seconds
-    max_wait_time = sim_settings["physics_vars"].get("max_wait_time")  # seconds
+    default_pos = sim.sim_settings["default_transforms"].get("default_obj_pos")
+    dt = 1.0 / sim.sim_settings["physics_vars"].get("fps")  # seconds
+    max_wait_time = sim.sim_settings["physics_vars"].get("max_wait_time")  # seconds
     for i in range(len(rotations)):
 
         # Reset object state with new rotation using angle-axis to construct
         # a quaternion. If axis is (0, 0, 0), that means there is no rotation
-        rigid_obj.motion_type = physics.MotionType.DYNAMIC
-        rigid_obj.awake = True
-        rigid_obj.translation = default_pos
+        sim.curr_obj.motion_type = physics.MotionType.DYNAMIC
+        sim.curr_obj.awake = True
+        sim.curr_obj.translation = default_pos
         angle = rotations[i][0]
         axis = rotations[i][1]
         if axis.is_zero():
-            rigid_obj.rotation = mn.Quaternion.identity_init()
+            sim.curr_obj.rotation = mn.Quaternion.identity_init()
         else:
-            rigid_obj.rotation = mn.Quaternion.rotation(angle, axis)
+            sim.curr_obj.rotation = mn.Quaternion.rotation(angle, axis)
 
         # snap rigid object to surface below
-        success = snap_down_object(sim, rigid_obj)
+        success = snap_down_object(sim, sim.curr_obj)
         if not success:
             logger.warning(
                 ANSICodes.BRIGHT_RED.value
-                + "dataset_object_processor.process_physics(...) - snapping failed"
+                + "dataset_object_processor.process_asset_physics(...) - snapping failed"
             )
-        snap_pos: mn.Vector3 = rigid_obj.translation
-        snap_rot: mn.Quaternion = rigid_obj.rotation
+        snap_pos: mn.Vector3 = sim.curr_obj.translation
+        snap_rot: mn.Quaternion = sim.curr_obj.rotation
 
         # simulate until rigid object becomes idle or time limit from config file runs out
         sim_steps: int = 0
-        while rigid_obj.awake and wait_times[i] < max_wait_time:
+        while sim.curr_obj.awake and wait_times[i] < max_wait_time:
             sim_steps += 1
             start_sim_time = time.time()
             sim.step_physics(dt)
@@ -515,12 +474,12 @@ def process_physics(
 
         # store final information once object becomes idle or it times out
         wait_times[i] = round(wait_times[i], 3)
-        translation_deltas[i] = (rigid_obj.translation - snap_pos).length()
-        rotation_deltas[i] = rigid_obj.rotation * snap_rot.conjugated()
+        translation_deltas[i] = (sim.curr_obj.translation - snap_pos).length()
+        rotation_deltas[i] = sim.curr_obj.rotation * snap_rot.conjugated()
         sim_time_ratios[i] /= sim_steps
 
     # convert results to lists of strings for csv file
-    time_units = sim_settings["physics_vars"].get("time_units")
+    time_units = sim.sim_settings["physics_vars"].get("time_units")
     times_as_strs = [
         "****timed out****" if t >= max_wait_time else f"{t} {time_units}"
         for t in wait_times
@@ -528,7 +487,7 @@ def process_physics(
     decimal = 3
     translation_deltas_strs = [f"{round(t, decimal)} units" for t in translation_deltas]
     decimal = 1
-    angle_units = sim_settings["physics_vars"].get("angle_units")
+    angle_units = sim.sim_settings["physics_vars"].get("angle_units")
     rotation_deltas_strs = [
         f"angle:  {round(float(mn.Deg(r.angle())), decimal)} {angle_units}\n"
         + f"axis:  ({round(r.axis().x, decimal)}, {round(r.axis().y, decimal)}, {round(r.axis().z, decimal)})"
@@ -551,11 +510,10 @@ def process_physics(
 
 
 def process_asset(
-    sim: hsim.simulator,
+    sim: DatasetProcessorSim,
     importer: trade.AbstractImporter,
     handle: str,
     obj_template_mgr: attributes_managers.ObjectAttributesManager,
-    sim_settings: Dict[str, Any],
 ) -> List[str]:
     """
     Depending on what the user specifies in the dataset_processor_config.json file,
@@ -567,32 +525,32 @@ def process_asset(
     :param importer: AbstractImporter, used to process memory stats of the mesh
     :param handle: template handle of the asset to test from ObjectAttributes
     :param obj_template_mgr: the ObjectAttributes of the asset to test
-    :param sim_settings: Simulator settings, defines which data to collect, if
-    we are making a csv and/or a video recording, and also passed to the function
-    to test the physics of the ManagedBulletRigidObject
     """
     # Get memory state before and after loading object with RigidObjectManager,
     # then use psutil to get a sense of how much RAM was used during the
     # loading process
     rigid_obj_mgr = sim.get_rigid_object_manager()
     start_mem = psutil.virtual_memory()._asdict()
-    rigid_obj = rigid_obj_mgr.add_object_by_template_handle(handle)
+    sim.curr_obj = rigid_obj_mgr.add_object_by_template_handle(handle)
     end_mem = psutil.virtual_memory()._asdict()
 
     # Get average deltas of each memory metric specified in the config file.
-    # The variable "order" below is either -1 or 1. 1 means the delta is
-    # calculated as (end - start), whereas -1 means (start - end).
-    # e.g. Data "used" should be higher after loading, so order == 1,
-    # but data "free" should be higher before loading, so order == -1
-    metrics: List[str] = sim_settings["mem_metrics_to_use"]
+    # The variable "subtract_order" below is either -1 or 1. 1 means the delta is
+    # calculated as (end - start), whereas -1 means (start - end). e.g. Data "used"
+    # should be higher after loading, so subtract_order == 1, but data "free"
+    # should be higher before loading, so subtract_order == -1
+    metrics: List[str] = sim.sim_settings["mem_metrics_to_use"]
     avg_ram_delta = 0  # bytes
     for metric in metrics:
-        order = sim_settings["mem_delta_order"].get(metric)
-        # "percent" isn't calculated in bytes
+        subtract_order = sim.sim_settings["mem_delta_order"].get(metric)
+        # "percent" isn't calculated in bytes, so skip it
         if metric != "percent":
-            avg_ram_delta += (end_mem.get(metric) - start_mem.get(metric)) * order
+            avg_ram_delta += (
+                end_mem.get(metric) - start_mem.get(metric)
+            ) * subtract_order
+
     avg_ram_delta /= len(metrics)
-    avg_ram_used_str = get_mem_size_str(avg_ram_delta)
+    avg_ram_used_str = pcsu.get_mem_size_str(avg_ram_delta)
 
     # TODO: remove this when I figure out why ram usage is sometimes negative
     global negative_ram_count
@@ -601,7 +559,7 @@ def process_asset(
         avg_ram_used_str = "****" + avg_ram_used_str + "****"
 
     # Print memory usage info before and after loading object
-    print_mem_usage_info(start_mem, end_mem, avg_ram_used_str)
+    pcsu.print_mem_usage_info(start_mem, end_mem, avg_ram_used_str)
 
     # Log object template handle if "silent" is false in the config file
     text_format = Fore.GREEN
@@ -619,22 +577,22 @@ def process_asset(
 
     # run object through tests defined in dataset_processor_config.json file
     csv_row: List[str] = []
-    if sim_settings["outputs"].get("csv"):
-        data_to_collect = sim_settings["data_to_collect"]
+    if sim.sim_settings["outputs"].get("csv"):
+        data_to_collect = sim.sim_settings["data_to_collect"]
         csv_row += [basename(handle)]
         if data_to_collect.get("memory_data"):
-            data = ["", avg_ram_used_str] + process_mem_usage(importer, template)
+            data = ["", avg_ram_used_str] + process_asset_mem_usage(importer, template)
             csv_row += data
         if data_to_collect.get("render_time_ratio"):
-            data = [""] + process_render_time()
+            data = [""] + process_asset_render_time()
             csv_row += data
         if data_to_collect.get("physics_data"):
-            data = [""] + process_physics(sim, rigid_obj, sim_settings)
+            data = [""] + process_asset_physics(sim)
             csv_row += data
 
     # record video of object if denoted in dataset_processor_config.json file
-    if sim_settings["outputs"].get("video"):
-        record_video(sim, rigid_obj, sim_settings)
+    if sim.sim_settings["outputs"].get("video"):
+        record_asset_video(sim)
 
     # remove this object so the next one can be added without interacting
     # with the previous one
@@ -644,24 +602,21 @@ def process_asset(
     return csv_row
 
 
-def parse_dataset(
-    sim: hsim.simulator,
-    sim_settings: Dict[str, Any],
+def process_dataset(
+    sim: DatasetProcessorSim,
 ) -> None:
     """
     Load and process dataset objects using template handles
     :param sim: Simulator instance
-    :param sim_settings: Simulator settings, defines dataset to use,
-    and is also passed to function to test each dataset object
     """
-    dataset_path = sim_settings["scene_dataset_config_file"]
+    dataset_path = sim.sim_settings["scene_dataset_config_file"]
     metadata_mediator = sim.metadata_mediator
     if (
         metadata_mediator is None
         or metadata_mediator.dataset_exists(dataset_path) is False
     ):
         raise RuntimeError(
-            "parse_dataset(...): No meta data mediator or dataset exists."
+            "process_dataset(...): No meta data mediator or dataset exists."
         )
 
     # get dataset that is currently being used by the simulator
@@ -684,31 +639,30 @@ def parse_dataset(
     importer = manager.load_and_instantiate("AnySceneImporter")
 
     # loop over the assets specified in the config file, starting with index
-    # "index_start_obj" and proceeding for "num_objects" iterations of the loop.
-    # If "index_start_obj" and/or "num_objects" is not specified in the config file,
-    # process every asset in the dataset
-    start = sim_settings["index_start_obj"]
-    num_objs = sim_settings["num_objects"]
-    if isinstance(start, int) and isinstance(num_objs, int):
-        for i in range(num_objs):
-            if i >= len(object_template_handles):
-                break
-            handle = object_template_handles[start + i]
-            row = process_asset(sim, importer, handle, obj_template_mgr, sim_settings)
-            csv_rows.append(row)
-    else:
-        for handle in object_template_handles:
-            row = process_asset(sim, importer, handle, obj_template_mgr, sim_settings)
-            csv_rows.append(row)
+    # "start_obj_index" and proceeding for "num_objects" iterations of the loop.
+    # If "start_obj_index" and/or "num_objects" is not specified in the config file,
+    # or is not an int, process every asset in the dataset
+    start_index = sim.sim_settings["start_obj_index"]
+    num_objs = sim.sim_settings["num_objects"]
+    if not isinstance(start_index, int) or not isinstance(num_objs, int):
+        start_index = 0
+        num_objs = len(object_template_handles)
 
-    # write csv if specified in the config file. "headers" stores the titles of
-    # each csv column
-    if sim_settings["outputs"].get("csv"):
-        headers = get_csv_headers(sim_settings)
+    for i in range(num_objs):
+        if i >= len(object_template_handles):
+            break
+        handle = object_template_handles[start_index + i]
+        row = process_asset(sim, importer, handle, obj_template_mgr)
+        csv_rows.append(row)
+
+    # Write csv if specified in the config file. "headers" stores the titles of
+    # each csv column.
+    if sim.sim_settings["outputs"].get("csv"):
+        headers = get_csv_headers(sim)
         csv_dir_path = os.path.join(
-            HABITAT_SIM_PATH, sim_settings["output_paths"].get("csv")
+            HABITAT_SIM_PATH, sim.sim_settings["output_paths"].get("csv")
         )
-        csv_file_prefix = sim_settings["output_paths"].get("output_file_prefix")
+        csv_file_prefix = sim.sim_settings["output_paths"].get("output_file_prefix")
         create_csv_file(headers, csv_rows, csv_dir_path, csv_file_prefix)
 
     # clean up
@@ -718,20 +672,18 @@ def parse_dataset(
     return csv_rows
 
 
-def get_csv_headers(sim_settings) -> List[str]:
+def get_csv_headers(sim: DatasetProcessorSim) -> List[str]:
     """
     Collect the csv column titles we'll need given which tests we ran
-    :param sim_settings: Simulator settings, defines which metrics
-    we are collecting for each object
     """
-    headers: List[str] = sim_settings["object_name"]
-    data_to_collect = sim_settings["data_to_collect"]
+    headers: List[str] = sim.sim_settings["object_name"]
+    data_to_collect = sim.sim_settings["data_to_collect"]
     if data_to_collect.get("memory_data"):
-        headers += sim_settings["memory_data_headers"]
+        headers += sim.sim_settings["memory_data_headers"]
     if data_to_collect.get("render_time_ratio"):
-        headers += sim_settings["render_time_headers"]
+        headers += sim.sim_settings["render_time_headers"]
     if data_to_collect.get("physics_data"):
-        headers += sim_settings["physics_data_headers"]
+        headers += sim.sim_settings["physics_data_headers"]
 
     return headers
 
@@ -757,7 +709,7 @@ def create_csv_file(
 
     text_format = ANSICodes.PURPLE.value + ANSICodes.BOLD.value
     pcsu.print_if_logging(
-        text_format + "Writing csv results to:" + pcsu.section_divider
+        text_format + "\nWriting csv results to:" + pcsu.section_divider
     )
     text_format = ANSICodes.PURPLE.value
     pcsu.print_if_logging(text_format + f"{file_path}\n")
@@ -780,6 +732,7 @@ def update_sim_settings(
             sim_settings[key] = returned
         else:
             sim_settings[key] = config_settings[key]
+
     return sim_settings
 
 
@@ -789,7 +742,7 @@ def configure_sim(sim_settings: Dict[str, Any]):
     the agent
     """
     cfg = make_cfg(sim_settings)
-    sim = hsim.Simulator(cfg)
+    sim = DatasetProcessorSim(cfg)
     default_transforms = sim_settings["default_transforms"]
 
     # init agent
@@ -809,6 +762,7 @@ def configure_sim(sim_settings: Dict[str, Any]):
     else:
         agent.body.object.rotation = mn.Quaternion.rotation(mn.Rad(mn.Deg(angle)), axis)
 
+    sim.sim_settings = sim_settings
     return sim
 
 
@@ -870,9 +824,9 @@ def main() -> None:
     global negative_ram_count
     negative_ram_count = 0
 
-    # Parse dataset and write csv/make video recording if specified in the
-    # config file. "headers" stores the titles of each csv column
-    parse_dataset(sim, sim_settings)
+    # Iterate through dataset objects and write csv and/or make video recording
+    # if specified in the config file.
+    process_dataset(sim)
 
     # TODO: remove this when I figure out why ram usage is sometimes negative
     text_format = ANSICodes.BRIGHT_MAGENTA.value
