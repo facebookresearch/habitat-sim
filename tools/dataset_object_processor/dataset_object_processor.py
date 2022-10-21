@@ -1,244 +1,32 @@
-import argparse
 import json
 import os
 import time
 from ntpath import basename
-from typing import Any, Dict, List, Optional, Tuple
 
 import git
-import magnum as mn
 import processor_utils as pcsu
 import psutil
 from colorama import Fore, init
 from magnum import trade
-from processor_settings import default_sim_settings, make_cfg
-from processor_utils import ANSICodes, RotationAxis
+from processor_settings import default_sim_settings
+from processor_utils import (
+    ANSICodes,
+    Any,
+    DatasetProcessorSim,
+    Dict,
+    List,
+    RotationAxis,
+    Tuple,
+    mn,
+    physics,
+)
 
-import habitat_sim as hsim
-from habitat_sim import attributes, attributes_managers, physics
+from habitat_sim import attributes, attributes_managers
 from habitat_sim.logging import logger
 from habitat_sim.utils import viz_utils as vut
 
 repo = git.Repo(".", search_parent_directories=True)
 HABITAT_SIM_PATH = repo.working_tree_dir
-
-
-class DatasetProcessorSim(hsim.Simulator):
-    """ """
-
-    draw_task: str = None
-    sim_settings: Dict[str, Any] = None
-    curr_obj: physics.ManagedBulletRigidObject = None
-
-    def debug_draw(self, sensor_uuid: Optional[str] = None) -> None:
-        r"""Override this method in derived Simulator class to add optional,
-        application specific debug line drawing commands to the sensor output.
-        See Simulator.get_debug_line_render().
-        :param sensor_uuid: The uuid of the sensor being rendered to optionally
-        limit debug drawing to specific visualizations (e.g. a third person eval camera)
-        """
-        # determine which task we are drawing and call the associated function
-        if self.draw_task == "draw_bbox":
-            self.debug_draw_bbox()
-        elif self.draw_task == "draw_collision_asset":
-            self.debug_draw_collision_asset()
-        elif self.draw_task == "draw_bullet_collision_mesh":
-            self.debug_draw_bullet_collision_mesh()
-
-    def debug_draw_bbox(self) -> None:
-        """ """
-        rgb = self.sim_settings["bbox_rgb"]
-        line_color = mn.Color4.from_xyz(rgb)
-        bb_corners: List[mn.Vector3] = pcsu.get_bounding_box_corners(self.curr_obj)
-        num_corners = len(bb_corners)
-        self.get_debug_line_render().set_line_width(0.01)
-        obj_transform = self.curr_obj.transformation
-
-        # only need to iterate over first 4 corners to draw whole thing
-        for i in range(int(num_corners / 2)):
-            # back of box
-            back_corner_local_pos = bb_corners[i]
-            back_corner_world_pos = obj_transform.transform_point(back_corner_local_pos)
-            next_back_index = (i + 1) % 4
-            next_back_corner_local_pos = bb_corners[next_back_index]
-            next_back_corner_world_pos = obj_transform.transform_point(
-                next_back_corner_local_pos
-            )
-            self.get_debug_line_render().draw_transformed_line(
-                back_corner_world_pos,
-                next_back_corner_world_pos,
-                line_color,
-            )
-            # side edge that this corner is a part of
-            front_counterpart_index = num_corners - i - 1
-            front_counterpart_local_pos = bb_corners[front_counterpart_index]
-            front_counterpart_world_pos = obj_transform.transform_point(
-                front_counterpart_local_pos
-            )
-            self.get_debug_line_render().draw_transformed_line(
-                back_corner_world_pos,
-                front_counterpart_world_pos,
-                line_color,
-            )
-            # front of box
-            next_front_index = (front_counterpart_index - 4 - 1) % 4 + 4
-            next_front_corner_local_pos = bb_corners[next_front_index]
-            next_front_corner_world_pos = obj_transform.transform_point(
-                next_front_corner_local_pos
-            )
-            self.get_debug_line_render().draw_transformed_line(
-                front_counterpart_world_pos,
-                next_front_corner_world_pos,
-                line_color,
-            )
-
-    def debug_draw_collision_asset(self) -> None:
-        ...
-
-    def debug_draw_bullet_collision_mesh(self) -> None:
-        ...
-
-
-def bounding_box_ray_prescreen(
-    sim: DatasetProcessorSim,
-    obj: physics.ManagedBulletRigidObject,
-    support_obj_ids: Optional[List[int]] = None,
-    check_all_corners: bool = False,
-) -> Dict[str, Any]:
-    """
-    Pre-screen a potential placement by casting rays in the gravity direction from the object center of mass (and optionally each corner of its bounding box) checking for interferring objects below.
-    :param sim: The Simulator instance.
-    :param obj: The RigidObject instance.
-    :param support_obj_ids: A list of object ids designated as valid support surfaces for object placement. Contact with other objects is a criteria for placement rejection.
-    :param check_all_corners: Optionally cast rays from all bounding box corners instead of only casting a ray from the center of mass.
-    """
-    if support_obj_ids is None:
-        # set default support surface to stage/ground mesh
-        support_obj_ids = [-1]
-    lowest_key_point: mn.Vector3 = None
-    lowest_key_point_height = None
-    highest_support_impact: mn.Vector3 = None
-    highest_support_impact_height = None
-    highest_support_impact_with_stage = False
-    raycast_results = []
-    gravity_dir = sim.get_gravity().normalized()
-    object_local_to_global = obj.transformation
-    bounding_box_corners = pcsu.get_bounding_box_corners(obj)
-    key_points = [mn.Vector3(0)] + bounding_box_corners  # [COM, c0, c1 ...]
-    support_impacts: Dict[int, mn.Vector3] = {}  # indexed by keypoints
-    for ix, key_point in enumerate(key_points):
-        world_point = object_local_to_global.transform_point(key_point)
-        # NOTE: instead of explicit Y coordinate, we project onto any gravity vector
-        world_point_height = world_point.projected_onto_normalized(
-            -gravity_dir
-        ).length()
-        if lowest_key_point is None or lowest_key_point_height > world_point_height:
-            lowest_key_point = world_point
-            lowest_key_point_height = world_point_height
-        # cast a ray in gravity direction
-        if ix == 0 or check_all_corners:
-            ray = hsim.geo.Ray(world_point, gravity_dir)
-            raycast_results.append(sim.cast_ray(ray))
-            # classify any obstructions before hitting the support surface
-            for hit in raycast_results[-1].hits:
-                if hit.object_id == obj.object_id:
-                    continue
-                elif hit.object_id in support_obj_ids:
-                    hit_point = ray.origin + ray.direction * hit.ray_distance
-                    support_impacts[ix] = hit_point
-                    support_impact_height = mn.math.dot(hit_point, -gravity_dir)
-
-                    if (
-                        highest_support_impact is None
-                        or highest_support_impact_height < support_impact_height
-                    ):
-                        highest_support_impact = hit_point
-                        highest_support_impact_height = support_impact_height
-                        highest_support_impact_with_stage = hit.object_id == -1
-
-                # terminates at the first non-self ray hit
-                break
-    # compute the relative base height of the object from its lowest bounding_box corner and COM
-    base_rel_height = (
-        lowest_key_point_height
-        - obj.translation.projected_onto_normalized(-gravity_dir).length()
-    )
-
-    # account for the affects of stage mesh margin
-    margin_offset = (
-        0
-        if not highest_support_impact_with_stage
-        else sim.get_stage_initialization_template().margin
-    )
-
-    surface_snap_point = (
-        None
-        if 0 not in support_impacts
-        else support_impacts[0] + gravity_dir * (base_rel_height - margin_offset)
-    )
-    # return list of obstructed and grounded rays, relative base height,
-    # distance to first surface impact, and ray results details
-    return {
-        "base_rel_height": base_rel_height,
-        "surface_snap_point": surface_snap_point,
-        "raycast_results": raycast_results,
-    }
-
-
-def snap_down_object(
-    sim: DatasetProcessorSim,
-    obj: physics.ManagedBulletRigidObject,
-    support_obj_ids: Optional[List[int]] = None,
-) -> bool:
-    """
-    Attempt to project an object in the gravity direction onto the surface below it.
-    :param sim: The Simulator instance.
-    :param obj: The RigidObject instance.
-    :param support_obj_ids: A list of object ids designated as valid support surfaces for object placement. Contact with other objects is a criteria for placement rejection. If none provided, default support surface is the stage/ground mesh (-1).
-    :param vdb: Optionally provide a DebugVisualizer (vdb) to render debug images of each object's computed snap position before collision culling.
-    Reject invalid placements by checking for penetration with other existing objects.
-    Returns boolean success.
-    If placement is successful, the object state is updated to the snapped location.
-    If placement is rejected, object position is not modified and False is returned.
-    To use this utility, generate an initial placement for any object above any of the designated support surfaces and call this function to attempt to snap it onto the nearest surface in the gravity direction.
-    """
-    cached_position = obj.translation
-
-    if support_obj_ids is None:
-        # set default support surface to stage/ground mesh
-        support_obj_ids = [-1]
-
-    bounding_box_ray_prescreen_results = bounding_box_ray_prescreen(
-        sim, obj, support_obj_ids
-    )
-
-    if bounding_box_ray_prescreen_results["surface_snap_point"] is None:
-        # no support under this object, return failure
-        return False
-
-    # finish up
-    if bounding_box_ray_prescreen_results["surface_snap_point"] is not None:
-        # accept the final location if a valid location exists
-        obj.translation = bounding_box_ray_prescreen_results["surface_snap_point"]
-        sim.perform_discrete_collision_detection()
-        cps = sim.get_physics_contact_points()
-        for cp in cps:
-            if (
-                cp.object_id_a == obj.object_id or cp.object_id_b == obj.object_id
-            ) and (
-                (cp.contact_distance < -0.01)
-                or not (
-                    cp.object_id_a in support_obj_ids
-                    or cp.object_id_b in support_obj_ids
-                )
-            ):
-                obj.translation = cached_position
-                return False
-        return True
-    else:
-        # no valid position found, reset and return failure
-        obj.translation = cached_position
-        return False
 
 
 def record_revolving_obj(
@@ -453,7 +241,7 @@ def process_asset_physics(sim: DatasetProcessorSim) -> List[str]:
             sim.curr_obj.rotation = mn.Quaternion.rotation(angle, axis)
 
         # snap rigid object to surface below
-        success = snap_down_object(sim, sim.curr_obj)
+        success = pcsu.snap_down_object(sim, sim.curr_obj)
         if not success:
             logger.warning(
                 ANSICodes.BRIGHT_RED.value
@@ -672,100 +460,25 @@ def process_dataset(
     return csv_rows
 
 
-def update_sim_settings(
-    sim_settings: Dict[str, Any], config_settings
-) -> Dict[str, Any]:
-    """
-    Update nested sim_settings dictionary. Modifies sim_settings in place.
-    """
-    for key, value in config_settings.items():
-        if isinstance(value, Dict) and value:
-            returned = update_sim_settings(sim_settings.get(key, {}), value)
-            sim_settings[key] = returned
-        else:
-            sim_settings[key] = config_settings[key]
-
-    return sim_settings
-
-
-def configure_sim(sim_settings: Dict[str, Any]):
-    """
-    Configure simulator while adding post configuration for the transform of
-    the agent
-    """
-    cfg = make_cfg(sim_settings)
-    sim = DatasetProcessorSim(cfg)
-    default_transforms = sim_settings["default_transforms"]
-
-    # init agent
-    agent_state = hsim.AgentState()
-    agent = sim.initialize_agent(sim_settings["default_agent"], agent_state)
-    agent.body.object.translation = mn.Vector3(
-        default_transforms.get("default_agent_pos")
-    )
-    agent_rot = default_transforms.get("default_agent_rot")
-    angle = agent_rot.get("angle")
-    axis = mn.Vector3(agent_rot.get("axis"))
-
-    # construct rotation as quaternion, and if axis is (0, 0, 0), that means there
-    # is no rotation
-    if axis.is_zero():
-        agent.body.object.rotation = mn.Quaternion.identity_init()
-    else:
-        agent.body.object.rotation = mn.Quaternion.rotation(mn.Rad(mn.Deg(angle)), axis)
-
-    sim.sim_settings = sim_settings
-    return sim
-
-
-def build_parser(
-    parser: Optional[argparse.ArgumentParser] = None,
-) -> argparse.ArgumentParser:
-    """
-    Parse config file argument or set default when running script for scene and
-    dataset
-    """
-    if parser is None:
-        parser = argparse.ArgumentParser(
-            description="Tool to evaluate all objects in a dataset. Assesses CPU, GPU, mesh size, "
-            " and other characteristics to determine if an object will be problematic when using it"
-            " in a simulation",
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        )
-    parser = argparse.ArgumentParser()
-
-    # optional arguments
-    parser.add_argument(
-        "--config_file_path",
-        default="tools/dataset_object_processor/configs/default.dataset_processor_config.json",
-        type=str,
-        help="config file to load"
-        ' (default: "tools/dataset_object_processor/configs/default.dataset_processor_config.json")',
-    )
-    return parser
-
-
 def main() -> None:
     """
     Create Simulator, parse dataset (which also records a video if requested),
     then writes a csv file if requested
     """
     # parse arguments from command line: scene, dataset, if we process physics
-    args = build_parser().parse_args()
-
-    # Populate sim_settings with info from dataset_processor_config.json file
-    sim_settings: Dict[str, Any] = default_sim_settings
-    with open(os.path.join(HABITAT_SIM_PATH, args.config_file_path)) as config_json:
-        update_sim_settings(sim_settings, json.load(config_json))
+    args = pcsu.build_parser().parse_args()
 
     # setup colorama terminal color printing so that format and color reset
     # after each pcsu.print_if_logging() statement
     init(autoreset=True)
-    pcsu.silent = sim_settings["silent"]
-    pcsu.debug_print = sim_settings["debug_print"]
+
+    # Populate sim_settings with info from dataset_processor_config.json file
+    sim_settings: Dict[str, Any] = default_sim_settings
+    with open(os.path.join(HABITAT_SIM_PATH, args.config_file_path)) as config_json:
+        pcsu.update_sim_settings(sim_settings, json.load(config_json))
 
     # Configure and make simulator
-    sim = configure_sim(sim_settings)
+    sim = pcsu.configure_sim(sim_settings)
 
     # Print sim settings
     text_format = ANSICodes.PURPLE.value
