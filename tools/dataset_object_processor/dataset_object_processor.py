@@ -37,14 +37,11 @@ def record_revolving_obj(
     observations = []
     for axis in list(RotationAxis):
         curr_angle = 0.0
-        finished = False
         while curr_angle < 360.0:
             # determine if this iteration will push the object past
             # 360.0 degrees, meaning we are done
             if curr_angle + angle_delta >= 360.0:
-                finished = True
                 angle_delta = 360.0 - curr_angle
-                curr_angle = 360.0
 
             # rotate about object's local x or y axis
             rot_rad = mn.Rad(mn.Deg(angle_delta))
@@ -55,10 +52,6 @@ def record_revolving_obj(
 
             # update current rotation angle
             curr_angle += angle_delta
-
-            # reset current rotation angle if it passed 360 degrees
-            if finished:
-                curr_angle = 360.0
 
     return observations
 
@@ -92,10 +85,10 @@ def record_asset_video(sim: DatasetProcessorSim) -> None:
     # Loop over each recording task specified in the config file
     observations = []
     for task, required in tasks.items():
-        if required == False:
+        if not required:
             continue
         # record object rotating about its x-axis, then its y-axis
-        pcsu.print_if_logging(ANSICodes.YELLOW.value + "draw " + task)
+        pcsu.print_if_logging(ANSICodes.YELLOW.value + task)
         sim.draw_task = task
         observations += record_revolving_obj(sim, angle_delta)
 
@@ -117,6 +110,7 @@ def record_asset_video(sim: DatasetProcessorSim) -> None:
 
 
 def process_asset_mem_usage(
+    sim: DatasetProcessorSim,
     importer: trade.AbstractImporter,
     template: attributes.ObjectAttributes,
 ) -> List[str]:

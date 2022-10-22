@@ -448,9 +448,11 @@ class Simulator(SimulatorBackend):
         return observations
 
     def debug_draw(self, sensor_uuid: Optional[str] = None) -> None:
-        r"""Override this method in derived Simulator class to add optional, application specific debug line drawing commands to the sensor output.
+        r"""Override this method in derived Simulator class to add optional,
+        application specific debug line drawing commands to the sensor output.
         See Simulator.get_debug_line_render().
-        :param sensor_uuid: The uuid of the sensor being rendered to optionally limit debug drawing to specific visualizations (e.g. a third person eval camera)
+        :param sensor_uuid: The uuid of the sensor being rendered to optionally
+        limit debug drawing to specific visualizations (e.g. a third person eval camera)
         """
 
     @property

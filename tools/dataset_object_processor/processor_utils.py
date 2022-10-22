@@ -32,22 +32,24 @@ class DatasetProcessorSim(hsim.Simulator):
     curr_obj: physics.ManagedBulletRigidObject = None
 
     def debug_draw(self, sensor_uuid: Optional[str] = None) -> None:
-        r"""Override this method in derived Simulator class to add optional,
+        r"""Override method in habitat_sim.Simulator class to add optional,
         application specific debug line drawing commands to the sensor output.
         See Simulator.get_debug_line_render().
         :param sensor_uuid: The uuid of the sensor being rendered to optionally
         limit debug drawing to specific visualizations (e.g. a third person eval camera)
         """
         # determine which task we are drawing and call the associated function
+
         if self.draw_task == "draw_bbox":
             self.debug_draw_bbox()
         elif self.draw_task == "draw_collision_asset":
-            self.debug_draw_collision_asset()
+            self.debug_draw_collision_asset(sensor_uuid)
         elif self.draw_task == "draw_bullet_collision_mesh":
             self.debug_draw_bullet_collision_mesh()
 
     def debug_draw_bbox(self) -> None:
         """ """
+        # self.set_object_bb_draw(True, self.curr_obj.object_id)
         rgb = self.sim_settings["bbox_rgb"]
         line_color = mn.Color4.from_xyz(rgb)
         bb_corners: List[mn.Vector3] = get_bounding_box_corners(self.curr_obj)
@@ -93,8 +95,11 @@ class DatasetProcessorSim(hsim.Simulator):
                 line_color,
             )
 
-    def debug_draw_collision_asset(self) -> None:
-        ...
+    def debug_draw_collision_asset(self, sensor_uuid: str) -> None:
+        agent = self.get_agent(0)
+        render_cam = agent.scene_node.node_sensor_suite.get(sensor_uuid).render_camera
+        proj_mat = render_cam.projection_matrix.__matmul__(render_cam.camera_matrix)
+        self.physics_debug_draw(proj_mat)
 
     def debug_draw_bullet_collision_mesh(self) -> None:
         ...

@@ -1,12 +1,20 @@
 {
   "scene_dataset_config_file": "data/versioned_data/replica_cad_dataset_1.5/replicaCAD.scene_dataset_config.json",
   "data_to_collect": {
-    "memory_data": true,
+    "memory_data": false,
     "render_time_ratio": false,
-    "physics_data": true
+    "physics_data": false
   },
   "index_start_obj": 0,
   "num_objects": 3,
+  "video_vars": {
+    "tasks": {
+        "draw_bbox": true,
+        "draw_collision_asset": true,
+        "draw_bullet_collision_mesh": false
+    },
+    "revolution_dur": 2.0
+  },
   "outputs": {
     "csv": true,
     "video": true
@@ -18,6 +26,6 @@
     "default_agent_pos": [-2.0, 0.5, 4.00],
     "default_obj_pos": [-2.0, 1.5, 2.00]
   },
-  "silent": false,
-  "debug_print": true
+  "silent": true,
+  "debug_print": false
 }
