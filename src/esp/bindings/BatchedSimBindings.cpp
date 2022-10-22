@@ -62,8 +62,9 @@ void initBatchedSimBindings(py::module& m) {
       .def_readwrite("robot_inv_rotation",
                      &PythonBatchEnvironmentState::robot_inv_rotation,
                      R"(Todo)")
-      //.def_readwrite("robot_joint_positions",
-      //&PythonBatchEnvironmentState::robot_joint_positions, R"(Todo)")
+      .def_readwrite("robot_joint_positions",
+                     &PythonBatchEnvironmentState::robot_joint_positions,
+                     R"(Todo)")
       //.def_readwrite("robot_joint_positions_normalized",
       //&PythonBatchEnvironmentState::robot_joint_positions_normalized,
       // R"(Todo)")
@@ -116,8 +117,8 @@ void initBatchedSimBindings(py::module& m) {
                      R"(Todo)")
       .def_readwrite("save_filepath", &EpisodeGeneratorConfig::saveFilepath,
                      R"(Todo)")
-      .def_readwrite("pick_start_position", &EpisodeGeneratorConfig::pickStartPosition,
-                     R"(Todo)");
+      .def_readwrite("pick_start_position",
+                     &EpisodeGeneratorConfig::pickStartPosition, R"(Todo)");
 
   py::class_<BatchedSimulatorConfig, BatchedSimulatorConfig::ptr>(
       m, "BatchedSimulatorConfig")
@@ -209,8 +210,8 @@ void initBatchedSimBindings(py::module& m) {
       .def("enable_debug_sensor", &BatchedSimulator::enableDebugSensor,
            R"(todo)")
       .def("reset", &BatchedSimulator::reset, R"(todo)")
-      .def("get_environment_states", &BatchedSimulator::getEnvironmentStates,
-           R"(todo)")
+      .def("deprecated_get_environment_states",
+           &BatchedSimulator::getEnvironmentStates, R"(todo)")
       .def("get_batch_environment_state",
            &BatchedSimulator::getBatchEnvironmentState, "previous"_a = false,
            R"(todo)")

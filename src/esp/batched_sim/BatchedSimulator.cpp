@@ -530,6 +530,11 @@ void BatchedSimulator::updatePythonBatchEnvironmentState() {
 
     safePyArraySet(batchEnvState.did_drop, b, envState.did_drop);
 
+    for (int i = 0; i < numPosVars; i++) {
+      safePyArraySet(batchEnvState.robot_joint_positions, b, i,
+                     envState.robot_joint_positions[i]);
+    }
+
 #endif
   }
 }

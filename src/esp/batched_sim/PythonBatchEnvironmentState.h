@@ -63,7 +63,7 @@ class PythonBatchEnvironmentStateWrapper {
  public:
   PythonBatchEnvironmentStateWrapper(int numBatches,
                                      int numEnvs,
-                                     int numJoints);
+                                     int numJointPosVars);
 
   PythonBatchEnvironmentStateWrapper() = default;
   // disallow copy
@@ -125,6 +125,10 @@ void safePyArraySet(pybind11::array_t<float>& arr,
                     const Magnum::Matrix3x3& item);
 void safePyArraySet(pybind11::array_t<int>& arr, int idx0, int item);
 void safePyArraySet(pybind11::array_t<bool>& arr, int idx0, bool item);
+void safePyArraySet(pybind11::array_t<float>& arr,
+                    int idx0,
+                    int idx1,
+                    float item);
 #endif
 
 }  // namespace batched_sim

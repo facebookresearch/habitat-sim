@@ -16,7 +16,7 @@ namespace batched_sim {
 PythonBatchEnvironmentStateWrapper::PythonBatchEnvironmentStateWrapper(
     int numBatches,
     int numEnvs,
-    int numJoints) {
+    int numJointPosVars) {
   states.resize(numBatches);
 
   for (int batchIdx = 0; batchIdx < numBatches; batchIdx++) {
@@ -52,6 +52,8 @@ PythonBatchEnvironmentStateWrapper::PythonBatchEnvironmentStateWrapper(
     //   py::array_t<float> robot_rotation; // Magnum::Matrix3
     state.robot_inv_rotation = getArray(floatVectors, 0.f, numEnvs, 3, 3);
     //   py::array_t<float> robot_joint_positions; // std::vector<float>
+    state.robot_joint_positions =
+        getArray(floatVectors, 0.f, numEnvs, numJointPosVars);
     //   py::array_t<float> robot_joint_positions_normalized; //
     //   std::vector<float> py::array_t<float> ee_pos; // Magnum::Vector3
     state.ee_pos = getArray(floatVectors, 0.f, numEnvs, 3);
@@ -91,6 +93,8 @@ void safePyArraySet(pybind11::array_t<float>& arr,
                     int idx0,
                     const Magnum::Vector3& item) {
   BATCHED_SIM_ASSERT(arr.ndim() == 2);
+  BATCHED_SIM_ASSERT(idx0 >= 0 && idx0 < arr.shape(0));
+  BATCHED_SIM_ASSERT(arr.shape(1) == 3);
   float* data = arr.mutable_data(idx0);
   for (int i = 0; i < 3; i++) {
     data[i] = item.data()[i];
@@ -101,6 +105,9 @@ void safePyArraySet(pybind11::array_t<float>& arr,
                     int idx0,
                     const Magnum::Matrix3x3& item) {
   BATCHED_SIM_ASSERT(arr.ndim() == 3);
+  BATCHED_SIM_ASSERT(idx0 >= 0 && idx0 < arr.shape(0));
+  BATCHED_SIM_ASSERT(arr.shape(1) == 3);
+  BATCHED_SIM_ASSERT(arr.shape(2) == 3);
   float* data = arr.mutable_data(idx0);
   for (int i = 0; i < 9; i++) {
     data[i] = item.data()[i];
@@ -109,14 +116,27 @@ void safePyArraySet(pybind11::array_t<float>& arr,
 
 void safePyArraySet(pybind11::array_t<int>& arr, int idx0, int item) {
   BATCHED_SIM_ASSERT(arr.ndim() == 1);
+  BATCHED_SIM_ASSERT(idx0 >= 0 && idx0 < arr.shape(0));
   int* data = arr.mutable_data(idx0);
   *data = item;
 }
 
 void safePyArraySet(pybind11::array_t<bool>& arr, int idx0, bool item) {
   BATCHED_SIM_ASSERT(arr.ndim() == 1);
+  BATCHED_SIM_ASSERT(idx0 >= 0 && idx0 < arr.shape(0));
   bool* data = arr.mutable_data(idx0);
   *data = item;
+}
+
+void safePyArraySet(pybind11::array_t<float>& arr,
+                    int idx0,
+                    int idx1,
+                    float item) {
+  BATCHED_SIM_ASSERT(arr.ndim() == 2);
+  BATCHED_SIM_ASSERT(idx0 >= 0 && idx0 < arr.shape(0));
+  BATCHED_SIM_ASSERT(idx1 >= 0 && idx1 < arr.shape(1));
+  float* data = arr.mutable_data(idx0);
+  data[idx1] = item;
 }
 
 #endif
