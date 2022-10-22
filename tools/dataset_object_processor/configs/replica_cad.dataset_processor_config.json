@@ -31,9 +31,14 @@
     "tasks": {
       "draw_bbox": true,
       "draw_collision_asset": true,
-      "draw_bullet_collision_mesh": true
+      "draw_physics": true
     },
-    "revolution_dur": 4.0
+    "physics_recording_pos": [-2.0, 0.5, 4.00],
+    "physics_recording_rot": {
+      "angle": -20.0,
+      "axis": [1, 0, 0]
+    },
+    "revolution_dur": 3.0
   },
   "outputs": {
     "csv": true,

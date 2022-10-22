@@ -37,8 +37,10 @@ dataset_processor_settings = {
         "tasks": {
             "draw_bbox": True,
             "draw_collision_asset": True,
-            "draw_bullet_collision_mesh": True,
+            "draw_physics": True,
         },
+        "physics_recording_pos": [-2.0, 0.5, 4.00],
+        "physics_recording_rot": {"angle": -20.0, "axis": [1, 0, 0]},
         "revolution_dur": 4.0,
     },
     "outputs": {"csv": True, "video": True},
@@ -48,9 +50,9 @@ dataset_processor_settings = {
         "output_file_prefix": "",
     },
     "default_transforms": {
-        "default_agent_pos": [-2.0, 0.5, 3.73],
+        "default_agent_pos": [-2.0, 0.5, 4.00],
         "default_agent_rot": {"angle": 0.0, "axis": [1.0, 0.0, 0.0]},
-        "default_obj_pos": [-2.0, 1.5, 2.23],
+        "default_obj_pos": [-2.0, 1.5, 2.00],
         "default_obj_rot": {"angle": 0.0, "axis": [1.0, 0.0, 0.0]},
     },
     "headless": True,

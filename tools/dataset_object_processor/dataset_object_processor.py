@@ -21,9 +21,8 @@ from processor_utils import (
     physics,
 )
 
-from habitat_sim import attributes, attributes_managers
+from habitat_sim import attributes_managers
 from habitat_sim.logging import logger
-from habitat_sim.utils import viz_utils as vut
 
 repo = git.Repo(".", search_parent_directories=True)
 HABITAT_SIM_PATH = repo.working_tree_dir
@@ -33,7 +32,28 @@ def record_revolving_obj(
     sim: DatasetProcessorSim,
     angle_delta: float,
 ) -> Dict[int, Any]:
-    """ """
+    """
+    record object rotating about its x-axis, then its y-axis
+    :param sim: DatasetProcessorSim(hsim.Simulator) instance
+    :param angle_delta: how much the object should rotate every frame
+    """
+    # replace render asset with collision asset if drawing collision asset
+    if sim.draw_task == "draw_collision_asset":
+        obj_attributes_mgr = sim.get_object_template_manager()
+        obj_attributes = sim.curr_obj.creation_attributes
+        obj_attributes.render_asset_handle = sim.collision_asset_handle
+        obj_attributes_mgr.register_template(obj_attributes, obj_attributes.handle)
+        rigid_obj_mgr = sim.get_rigid_object_manager()
+        rigid_obj_mgr.remove_all_objects()
+        sim.curr_obj = rigid_obj_mgr.add_object_by_template_handle(
+            obj_attributes.handle
+        )
+
+    # init object transforms
+    sim.curr_obj.translation = sim.default_obj_pos
+    sim.curr_obj.rotation = sim.default_obj_rot
+
+    # record object rotating about its x-axis, then its y-axis
     observations = []
     for axis in list(RotationAxis):
         curr_angle = 0.0
@@ -53,10 +73,24 @@ def record_revolving_obj(
             # update current rotation angle
             curr_angle += angle_delta
 
+    # restore render asset if done drawing collision asset
+    if sim.draw_task == "draw_collision_asset":
+        obj_attributes_mgr = sim.get_object_template_manager()
+        obj_attributes = sim.curr_obj.creation_attributes
+        obj_attributes.render_asset_handle = sim.render_asset_handle
+        obj_attributes_mgr.register_template(obj_attributes, obj_attributes.handle)
+        rigid_obj_mgr = sim.get_rigid_object_manager()
+        rigid_obj_mgr.remove_all_objects()
+        sim.curr_obj = rigid_obj_mgr.add_object_by_template_handle(
+            obj_attributes.handle
+        )
+        sim.curr_obj.translation = sim.default_obj_pos
+        sim.curr_obj.rotation = sim.default_obj_rot
+
     return observations
 
 
-def record_asset_video(sim: DatasetProcessorSim) -> None:
+def record_kinematic_asset_video(sim: DatasetProcessorSim) -> None:
     """
     Loop over each recording task specified in the config file, i.e. show bounding box,
     show collision asset, and show bullet collision mesh, then using the transforms
@@ -73,46 +107,25 @@ def record_asset_video(sim: DatasetProcessorSim) -> None:
     dt = 1.0 / sim.sim_settings["physics_vars"].get("fps")
     angle_delta = deg_per_sec * dt
 
-    # init object transforms
-    default_transforms = sim.sim_settings["default_transforms"]
-    obj_rot = default_transforms.get("default_obj_rot")
-    sim.curr_obj.translation = default_transforms.get("default_obj_pos")
-    angle = mn.Rad(mn.Deg(obj_rot.get("angle")))
-    axis = mn.Vector3(obj_rot.get("axis"))
-    sim.curr_obj.rotation = mn.Quaternion.rotation(angle, axis)
+    # init agent transform and object movement type
+    sim.default_agent.body.object.translation = sim.default_agent_pos
+    sim.default_agent.body.object.rotation = sim.default_agent_rot
     sim.curr_obj.motion_type = physics.MotionType.KINEMATIC
 
     # Loop over each recording task specified in the config file
-    observations = []
     for task, required in tasks.items():
-        if not required:
+        if not required or task == "draw_physics":
             continue
-        # record object rotating about its x-axis, then its y-axis
-        pcsu.print_if_logging(ANSICodes.YELLOW.value + task)
+        # save which video recording task we are performing
+        pcsu.print_if_logging(sim, ANSICodes.YELLOW.value + task + "\n")
         sim.draw_task = task
-        observations += record_revolving_obj(sim, angle_delta)
-
-    # construct file path and write "observations" to video file
-    video_file_dir = os.path.join(
-        HABITAT_SIM_PATH, sim.sim_settings["output_paths"].get("video")
-    )
-    obj_handle = sim.curr_obj.handle.replace("_:0000", "")
-    video_file_prefix = sim.sim_settings["output_paths"].get("output_file_prefix")
-    video_file_prefix += f"_{obj_handle}"
-    file_path = pcsu.create_unique_filename(video_file_dir, ".mp4", video_file_prefix)
-    vut.make_video(
-        observations,
-        "color_sensor",
-        "color",
-        file_path,
-        open_vid=False,
-    )
+        # record object rotating about its x-axis, then its y-axis
+        sim.observations += record_revolving_obj(sim, angle_delta)
 
 
 def process_asset_mem_usage(
     sim: DatasetProcessorSim,
     importer: trade.AbstractImporter,
-    template: attributes.ObjectAttributes,
 ) -> List[str]:
     """
     Use the trade.AbstractImporter class to query data size of mesh and image
@@ -121,23 +134,22 @@ def process_asset_mem_usage(
     :param template: ObjectAttributes to get render asset and collision asset
     """
     # construct absolute file paths for render and collision assets
-    render_asset_handle = template.render_asset_handle
-    collision_asset_handle = template.collision_asset_handle
     asset_paths: List[str] = [
-        os.path.join(HABITAT_SIM_PATH, render_asset_handle),
-        os.path.join(HABITAT_SIM_PATH, collision_asset_handle),
+        os.path.join(HABITAT_SIM_PATH, sim.render_asset_handle),
+        os.path.join(HABITAT_SIM_PATH, sim.collision_asset_handle),
     ]
 
     # get the render and collision asset file names for CSV
-    render_asset_filename = basename(render_asset_handle)
-    collision_asset_filename = basename(collision_asset_handle)
+    render_asset_filename = basename(sim.render_asset_handle)
+    collision_asset_filename = basename(sim.collision_asset_handle)
 
     # Log render asset handle and collision asset handle
     text_format = Fore.GREEN
     pcsu.print_if_logging(
+        sim,
         text_format
-        + f"-render: {render_asset_handle}\n"
-        + f"-collision: {collision_asset_handle}\n"
+        + f"-render: {sim.render_asset_handle}\n"
+        + f"-collision: {sim.collision_asset_handle}\n",
     )
 
     # Create variables to store mesh data
@@ -210,14 +222,31 @@ def process_asset_physics(sim: DatasetProcessorSim) -> List[str]:
     # Print object that we will be imminently simulating
     text_format = ANSICodes.BRIGHT_RED.value
     pcsu.print_if_logging(
+        sim,
         text_format
         + f"\nstart simulating {basename(sim.curr_obj.creation_attributes.handle)}"
-        + pcsu.section_divider
+        + pcsu.section_divider,
     )
+
+    # determine if we are recording a video and set up agent recording transforms
+    # if so
+    make_recording = sim.sim_settings["outputs"].get("video")
+    draw_physics = sim.sim_settings["video_vars"].get("tasks").get("draw_physics")
+    record = make_recording and draw_physics
+    if record:
+        sim.draw_task = "draw_physics"
+        pcsu.print_if_logging(sim, ANSICodes.YELLOW.value + sim.draw_task + "\n")
+        recording_pos = sim.sim_settings["video_vars"].get("physics_recording_pos")
+        sim.default_agent.body.object.translation = mn.Vector3(recording_pos)
+        recording_rot = sim.sim_settings["video_vars"].get("physics_recording_rot")
+        angle = recording_rot.get("angle")
+        axis = mn.Vector3(recording_rot.get("axis"))
+        sim.default_agent.body.object.rotation = mn.Quaternion.rotation(
+            mn.Rad(mn.Deg(angle)), axis
+        )
 
     # Loop over the 6 rotations and simulate snapping the object down and waiting for
     # it to become idle (at least until "max_wait_time" from the config file expires)
-    default_pos = sim.sim_settings["default_transforms"].get("default_obj_pos")
     dt = 1.0 / sim.sim_settings["physics_vars"].get("fps")  # seconds
     max_wait_time = sim.sim_settings["physics_vars"].get("max_wait_time")  # seconds
     for i in range(len(rotations)):
@@ -226,13 +255,21 @@ def process_asset_physics(sim: DatasetProcessorSim) -> List[str]:
         # a quaternion. If axis is (0, 0, 0), that means there is no rotation
         sim.curr_obj.motion_type = physics.MotionType.DYNAMIC
         sim.curr_obj.awake = True
-        sim.curr_obj.translation = default_pos
+        sim.curr_obj.translation = sim.default_obj_pos
         angle = rotations[i][0]
         axis = rotations[i][1]
         if axis.is_zero():
             sim.curr_obj.rotation = mn.Quaternion.identity_init()
         else:
             sim.curr_obj.rotation = mn.Quaternion.rotation(angle, axis)
+
+        # Record a few frames of the object before snapping down
+        if record:
+            pre_drop_time = 0
+            pre_drop_duration = 0.5
+            while pre_drop_time < pre_drop_duration:
+                sim.observations.append(sim.get_sensor_observations())
+                pre_drop_time += dt
 
         # snap rigid object to surface below
         success = pcsu.snap_down_object(sim, sim.curr_obj)
@@ -253,6 +290,9 @@ def process_asset_physics(sim: DatasetProcessorSim) -> List[str]:
             end_sim_time = time.time()
             sim_time_ratios[i] += (end_sim_time - start_sim_time) / dt
             wait_times[i] += dt
+            # Save observations of object as it falls asleep or times out
+            if record:
+                sim.observations.append(sim.get_sensor_observations())
 
         # store final information once object becomes idle or it times out
         wait_times[i] = round(wait_times[i], 3)
@@ -341,40 +381,63 @@ def process_asset(
         avg_ram_used_str = "****" + avg_ram_used_str + "****"
 
     # Print memory usage info before and after loading object
-    pcsu.print_mem_usage_info(start_mem, end_mem, avg_ram_used_str)
+    pcsu.print_mem_usage_info(sim, start_mem, end_mem, avg_ram_used_str)
 
     # Log object template handle if "silent" is false in the config file
     text_format = Fore.GREEN
     pcsu.print_if_logging(
+        sim,
         text_format
         + "\n"
         + "Handles"
         + pcsu.section_divider
         + "\n"
-        + f"-template: {handle}\n"
+        + f"-template: {handle}\n",
     )
 
-    # Get object attributes by template handle and associated mesh assets
+    # Get object attributes by template handle and associated render and collision
+    # mesh assets
     template = obj_template_mgr.get_template_by_handle(handle)
+    sim.render_asset_handle = template.render_asset_handle
+    sim.collision_asset_handle = template.collision_asset_handle
 
-    # run object through tests defined in dataset_processor_config.json file
+    # create variables to store if we are writing to a csv and which data we are
+    # collecting, and/or if we are recording a video and which tasks we are recording
+    write_csv = sim.sim_settings["outputs"].get("csv")
+    data_to_collect = sim.sim_settings["data_to_collect"]
+    collect_physics_data = data_to_collect.get("physics_data")
+    make_recording = sim.sim_settings["outputs"].get("video")
+    draw_physics = sim.sim_settings["video_vars"].get("tasks").get("draw_physics")
+
+    # record video of object's bounding box, its collision asset, or neither,
+    # if denoted in the dataset_processor_config.json file
+    sim.observations = []
+    if make_recording:
+        record_kinematic_asset_video(sim)
+
+    # collect the data we need to write a csv (excluding physics data, which we
+    # need to collect separately in case we are recording it too)
     csv_row: List[str] = []
-    if sim.sim_settings["outputs"].get("csv"):
-        data_to_collect = sim.sim_settings["data_to_collect"]
+    if write_csv:
         csv_row += [basename(handle)]
         if data_to_collect.get("memory_data"):
-            data = ["", avg_ram_used_str] + process_asset_mem_usage(importer, template)
+            data = ["", avg_ram_used_str] + process_asset_mem_usage(sim, importer)
             csv_row += data
         if data_to_collect.get("render_time_ratio"):
             data = [""] + process_asset_render_time()
             csv_row += data
-        if data_to_collect.get("physics_data"):
-            data = [""] + process_asset_physics(sim)
-            csv_row += data
 
-    # record video of object if denoted in dataset_processor_config.json file
-    if sim.sim_settings["outputs"].get("video"):
-        record_asset_video(sim)
+    # If we are collecting physics data to write to a csv or to record in a video
+    # file, we will call "process_asset_physics()"
+    if (write_csv and collect_physics_data) or (make_recording and draw_physics):
+        data = [""] + process_asset_physics(sim)
+        if write_csv and collect_physics_data:
+            csv_row += data
+        if make_recording and draw_physics:
+            video_file_dir = os.path.join(
+                HABITAT_SIM_PATH, sim.sim_settings["output_paths"].get("video")
+            )
+            pcsu.create_video(sim, video_file_dir)
 
     # remove this object so the next one can be added without interacting
     # with the previous one
@@ -404,9 +467,9 @@ def process_dataset(
     # get dataset that is currently being used by the simulator
     active_dataset: str = metadata_mediator.active_dataset
     text_format = ANSICodes.BRIGHT_BLUE.value + ANSICodes.BOLD.value
-    pcsu.print_if_logging(text_format + "\nActive Dataset" + pcsu.section_divider)
+    pcsu.print_if_logging(sim, text_format + "\nActive Dataset" + pcsu.section_divider)
     text_format = ANSICodes.BRIGHT_BLUE.value
-    pcsu.print_if_logging(text_format + f"{active_dataset}\n")
+    pcsu.print_if_logging(sim, text_format + f"{active_dataset}\n")
 
     # Get ObjectAttributesManager for objects from dataset, load the dataset,
     # and store all the object template handles in a List
@@ -445,7 +508,7 @@ def process_dataset(
             HABITAT_SIM_PATH, sim.sim_settings["output_paths"].get("csv")
         )
         csv_file_prefix = sim.sim_settings["output_paths"].get("output_file_prefix")
-        pcsu.create_csv_file(headers, csv_rows, csv_dir_path, csv_file_prefix)
+        pcsu.create_csv_file(sim, headers, csv_rows, csv_dir_path, csv_file_prefix)
 
     # clean up
     importer.close()
@@ -477,7 +540,7 @@ def main() -> None:
     # Print sim settings
     text_format = ANSICodes.PURPLE.value
     for key, value in sim_settings.items():
-        pcsu.print_if_logging(text_format + f"{key} : {value}\n")
+        pcsu.print_if_logging(sim, text_format + f"{key} : {value}\n")
 
     # TODO: remove this when I figure out why ram usage is sometimes negative
     global negative_ram_count
@@ -490,9 +553,10 @@ def main() -> None:
     # TODO: remove this when I figure out why ram usage is sometimes negative
     text_format = ANSICodes.BRIGHT_MAGENTA.value
     pcsu.print_debug(
+        sim,
         text_format
         + f"negative RAM usage count: {negative_ram_count}"
-        + pcsu.section_divider
+        + pcsu.section_divider,
     )
 
 

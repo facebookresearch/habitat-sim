@@ -1,9 +1,9 @@
 {
   "scene_dataset_config_file": "data/versioned_data/replica_cad_dataset_1.5/replicaCAD.scene_dataset_config.json",
   "data_to_collect": {
-    "memory_data": false,
-    "render_time_ratio": false,
-    "physics_data": false
+    "memory_data": true,
+    "render_time_ratio": true,
+    "physics_data": true
   },
   "index_start_obj": 0,
   "num_objects": 3,
@@ -11,7 +11,12 @@
     "tasks": {
         "draw_bbox": true,
         "draw_collision_asset": true,
-        "draw_bullet_collision_mesh": false
+        "draw_physics": true
+    },
+    "physics_recording_pos": [-2.0, 0.5, 4.50],
+    "physics_recording_rot": {
+      "angle": -20.0,
+      "axis": [1, 0, 0]
     },
     "revolution_dur": 2.0
   },
@@ -26,6 +31,6 @@
     "default_agent_pos": [-2.0, 0.5, 4.00],
     "default_obj_pos": [-2.0, 1.5, 2.00]
   },
-  "silent": true,
-  "debug_print": false
+  "silent": false,
+  "debug_print": true
 }

@@ -4,7 +4,7 @@
   "data_to_collect": {
     "memory_data": false,
     "render_time_ratio": false,
-    "physics_data": true
+    "physics_data": false
   },
   "index_start_obj": 0,
   "num_objects": 5,
@@ -30,10 +30,15 @@
   "video_vars": {
     "tasks": {
       "draw_bbox": true,
-      "draw_collision_asset": false,
-      "draw_bullet_collision_mesh": false
+      "draw_collision_asset": true,
+      "draw_physics": true
     },
-    "revolution_dur": 4.0
+    "physics_recording_pos": [-2.0, 0.0, 4.00],
+    "physics_recording_rot": {
+      "angle": -20.0,
+      "axis": [1, 0, 0]
+    },
+    "revolution_dur": 3.0
   },
   "outputs": {
     "csv": true,
@@ -50,12 +55,12 @@
   "silent": true,
   "debug_print": false,
   "default_transforms": {
-    "default_agent_pos": [-2.0, 0.5, 4.00],
+    "default_agent_pos": [-2.0, 0.0, 4.00],
     "default_agent_rot": {
       "angle": 0.0,
       "axis": [1, 0, 0]
     },
-    "default_obj_pos": [-2.0, 1.5, 2.77],
+    "default_obj_pos": [-2.0, 1.0, 2.77],
     "default_obj_rot": {
       "angle": 0.0,
       "axis": [1, 0, 0]

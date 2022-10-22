@@ -14,22 +14,44 @@ from processor_settings import make_cfg
 
 import habitat_sim as hsim
 from habitat_sim import physics
+from habitat_sim.agent.agent import Agent
+from habitat_sim.utils import viz_utils as vut
 
 # A line of dashes to divide sections of terminal output
 section_divider: str = "\n" + "-" * 72
-
-# globals to dictate if we are logging anything to console.
-# Are overriden from config file
-silent = True
-debug_print = False
 
 
 class DatasetProcessorSim(hsim.Simulator):
     """ """
 
-    draw_task: str = None
     sim_settings: Dict[str, Any] = None
+
+    # indicates if we are logging, either during the normal execution of the
+    # simulation, or if we are debugging. Are overriden from config file
+    silent: bool = True
+    debug_print: bool = False
+
+    default_agent: Agent = None
+
+    # stores info about current rigid object displayed and its render/collision
+    # mesh asset names
     curr_obj: physics.ManagedBulletRigidObject = None
+    render_asset_handle: str = None
+    collision_asset_handle: str = None
+
+    # so that we can easily reset the agent to its default transform
+    default_agent_pos: mn.Vector3 = None
+    default_agent_rot: mn.Quaternion = None
+
+    # so that we can easily reset the rigid objects to their default transforms
+    default_obj_pos: mn.Vector3 = None
+    default_obj_rot: mn.Quaternion = None
+
+    # indicates if we are making a video recording, and which is the current recording
+    # task we are drawing. Possible values are "draw_bbox", "draw_collision_asset",
+    # and "draw_physics"
+    draw_task: str = None
+    observations = []
 
     def debug_draw(self, sensor_uuid: Optional[str] = None) -> None:
         r"""Override method in habitat_sim.Simulator class to add optional,
@@ -39,15 +61,16 @@ class DatasetProcessorSim(hsim.Simulator):
         limit debug drawing to specific visualizations (e.g. a third person eval camera)
         """
         # determine which task we are drawing and call the associated function
-
         if self.draw_task == "draw_bbox":
-            self.debug_draw_bbox()
+            self.draw_bbox()
         elif self.draw_task == "draw_collision_asset":
-            self.debug_draw_collision_asset(sensor_uuid)
-        elif self.draw_task == "draw_bullet_collision_mesh":
-            self.debug_draw_bullet_collision_mesh()
+            # # uncomment if you want to draw the collision mesh wireframe
+            # self.draw_collision_asset(sensor_uuid)
+            ...
+        elif self.draw_task == "draw_physics":
+            self.draw_physics()
 
-    def debug_draw_bbox(self) -> None:
+    def draw_bbox(self) -> None:
         """ """
         # self.set_object_bb_draw(True, self.curr_obj.object_id)
         rgb = self.sim_settings["bbox_rgb"]
@@ -95,13 +118,14 @@ class DatasetProcessorSim(hsim.Simulator):
                 line_color,
             )
 
-    def debug_draw_collision_asset(self, sensor_uuid: str) -> None:
+    def draw_collision_asset(self, sensor_uuid: str) -> None:
+        """ """
         agent = self.get_agent(0)
         render_cam = agent.scene_node.node_sensor_suite.get(sensor_uuid).render_camera
         proj_mat = render_cam.projection_matrix.__matmul__(render_cam.camera_matrix)
         self.physics_debug_draw(proj_mat)
 
-    def debug_draw_bullet_collision_mesh(self) -> None:
+    def draw_physics(self) -> None:
         ...
 
 
@@ -178,38 +202,24 @@ class MemoryUnitConverter:
     UNIT_CONVERSIONS = [1, 1 << 10, 1 << 20, 1 << 30]
 
 
-def print_if_logging(message: str = "") -> None:
+def print_if_logging(sim: DatasetProcessorSim, message: str = "") -> None:
     """
-    Print to console if "silent" is set to false in the config file
+    Print to console if "sim.silent" is set to false in the config file
     """
-    if not silent:
+    if not sim.silent:
         print(message)
 
 
-def print_debug(message: str = "") -> None:
+def print_debug(sim: DatasetProcessorSim, message: str = "") -> None:
     """
-    Print to console if "debug_print" is set to true in the config file
+    Print to console if "sim.debug_print" is set to true in the config file
     """
-    if debug_print:
+    if sim.debug_print:
         print(message)
-
-
-def print_quaternion_debug(name: str, q: mn.Quaternion, color) -> None:
-    """
-    Print quaternion to console in angle-axis form if "debug_print" is set
-    to true in the config file
-    """
-    global debug_print
-    if debug_print:
-        decimal = 1
-        angle = round(float(mn.Deg(q.angle())), decimal)
-        x = round(q.axis().x, decimal)
-        y = round(q.axis().y, decimal)
-        z = round(q.axis().z, decimal)
-        print(color + name + f"{angle} ({x}, {y}, {z})")
 
 
 def print_mem_usage_info(
+    sim: DatasetProcessorSim,
     start_mem,
     end_mem,
     avg_ram_used_str: str,
@@ -217,32 +227,33 @@ def print_mem_usage_info(
     """"""
     # Print memory usage info before loading object
     text_format = ANSICodes.BRIGHT_RED.value
-    print_if_logging(text_format + "\nstart mem state" + section_divider)
+    print_if_logging(sim, text_format + "\nstart mem state" + section_divider)
     for key, value in start_mem.items():
         value_str = value
         if key != "percent":
             value_str = get_mem_size_str(value)
-        print_if_logging(text_format + f"{key} : {value_str}")
+        print_if_logging(sim, text_format + f"{key} : {value_str}")
 
     # Print memory usage info after loading object
-    print_if_logging(text_format + "\nend mem state" + section_divider)
+    print_if_logging(sim, text_format + "\nend mem state" + section_divider)
     for key, value in end_mem.items():
         value_str = value
         if key != "percent":
             value_str = get_mem_size_str(value)
-        print_if_logging(text_format + f"{key} : {value_str}")
+        print_if_logging(sim, text_format + f"{key} : {value_str}")
 
     # Print difference in memory usage before and after loading object
-    print_if_logging(text_format + "\nchange in mem states" + section_divider)
+    print_if_logging(sim, text_format + "\nchange in mem states" + section_divider)
     for (key_s, value_s), (key_e, value_e) in zip(start_mem.items(), end_mem.items()):
         value_str = value_e - value_s
         if key_s != "percent" and key_e != "percent":
             value_str = get_mem_size_str(value_e - value_s)
-        print_if_logging(text_format + f"{key_s} : {value_str}")
+        print_if_logging(sim, text_format + f"{key_s} : {value_str}")
 
     # Print rough estimate of RAM used when loading object
     print_if_logging(
-        text_format + "\naverage RAM used" + section_divider + f"\n{avg_ram_used_str}"
+        sim,
+        text_format + "\naverage RAM used" + section_divider + f"\n{avg_ram_used_str}",
     )
 
 
@@ -399,6 +410,7 @@ def bounding_box_ray_prescreen(
 
                 # terminates at the first non-self ray hit
                 break
+
     # compute the relative base height of the object from its lowest bounding_box corner and COM
     base_rel_height = (
         lowest_key_point_height
@@ -417,6 +429,7 @@ def bounding_box_ray_prescreen(
         if 0 not in support_impacts
         else support_impacts[0] + gravity_dir * (base_rel_height - margin_offset)
     )
+
     # return list of obstructed and grounded rays, relative base height,
     # distance to first surface impact, and ray results details
     return {
@@ -487,6 +500,21 @@ def snap_down_object(
         return False
 
 
+def create_video(sim: DatasetProcessorSim, video_file_dir: str) -> None:
+    # construct file path and write "observations" to video file
+    obj_handle = sim.curr_obj.handle.replace("_:0000", "")
+    video_file_prefix = sim.sim_settings["output_paths"].get("output_file_prefix")
+    video_file_prefix += f"_{obj_handle}"
+    file_path = create_unique_filename(video_file_dir, ".mp4", video_file_prefix)
+    vut.make_video(
+        sim.observations,
+        "color_sensor",
+        "color",
+        file_path,
+        open_vid=False,
+    )
+
+
 def get_csv_headers(sim: DatasetProcessorSim) -> List[str]:
     """
     Collect the csv column titles we'll need given which tests we ran
@@ -504,6 +532,7 @@ def get_csv_headers(sim: DatasetProcessorSim) -> List[str]:
 
 
 def create_csv_file(
+    sim: DatasetProcessorSim,
     headers: List[str],
     csv_rows: List[List[str]],
     csv_dir_path: str = None,
@@ -523,14 +552,14 @@ def create_csv_file(
     file_path = create_unique_filename(csv_dir_path, ".csv", csv_file_prefix)
 
     text_format = ANSICodes.PURPLE.value + ANSICodes.BOLD.value
-    print_if_logging(text_format + "\nWriting csv results to:" + section_divider)
+    print_if_logging(sim, text_format + "\nWriting csv results to:" + section_divider)
     text_format = ANSICodes.PURPLE.value
-    print_if_logging(text_format + f"{file_path}\n")
+    print_if_logging(sim, text_format + f"{file_path}\n")
 
     CSVWriter.write_file(headers, csv_rows, file_path)
 
     text_format = ANSICodes.PURPLE.value
-    print_if_logging(text_format + "CSV writing done\n")
+    print_if_logging(sim, text_format + "CSV writing done\n")
 
 
 def configure_sim(sim_settings: Dict[str, Any]):
@@ -538,21 +567,19 @@ def configure_sim(sim_settings: Dict[str, Any]):
     Configure simulator while adding post configuration for the transform of
     the agent
     """
-    global silent
-    global debug_print
-    silent = sim_settings["silent"]
-    debug_print = sim_settings["debug_print"]
-
     cfg = make_cfg(sim_settings)
     sim = DatasetProcessorSim(cfg)
+    sim.sim_settings = sim_settings
+    sim.silent = sim_settings["silent"]
+    sim.debug_print = sim_settings["debug_print"]
+
     default_transforms = sim_settings["default_transforms"]
 
     # init agent
     agent_state = hsim.AgentState()
-    agent = sim.initialize_agent(sim_settings["default_agent"], agent_state)
-    agent.body.object.translation = mn.Vector3(
-        default_transforms.get("default_agent_pos")
-    )
+    sim.default_agent = sim.initialize_agent(sim_settings["default_agent"], agent_state)
+    sim.default_agent_pos = mn.Vector3(default_transforms.get("default_agent_pos"))
+    sim.default_agent.body.object.translation = sim.default_agent_pos
     agent_rot = default_transforms.get("default_agent_rot")
     angle = agent_rot.get("angle")
     axis = mn.Vector3(agent_rot.get("axis"))
@@ -560,11 +587,18 @@ def configure_sim(sim_settings: Dict[str, Any]):
     # construct rotation as quaternion, and if axis is (0, 0, 0), that means there
     # is no rotation
     if axis.is_zero():
-        agent.body.object.rotation = mn.Quaternion.identity_init()
+        sim.default_agent_rot = mn.Quaternion.identity_init()
     else:
-        agent.body.object.rotation = mn.Quaternion.rotation(mn.Rad(mn.Deg(angle)), axis)
+        sim.default_agent_rot = mn.Quaternion.rotation(mn.Rad(mn.Deg(angle)), axis)
+    sim.default_agent.body.object.rotation = sim.default_agent_rot
 
-    sim.sim_settings = sim_settings
+    # save default rigid object transforms
+    sim.default_obj_pos = default_transforms.get("default_obj_pos")
+    obj_rot = default_transforms.get("default_obj_rot")
+    angle = mn.Rad(mn.Deg(obj_rot.get("angle")))
+    axis = mn.Vector3(obj_rot.get("axis"))
+    sim.default_obj_rot = mn.Quaternion.rotation(angle, axis)
+
     return sim
 
 
