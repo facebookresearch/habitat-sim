@@ -10,8 +10,10 @@ dataset_processor_settings = {
     # These settings can be overridden in the dataset_processor_config.json
     # files
     # -------------------------------------------------------------------
+    # "scene": scene to use for testing dataset objects
     "scene": "data/test_assets/scenes/simple_room.glb",
-    # determines if we are making a csv file and/or a video recording
+    # "csv": if we are making a csv file of the results of any/all of our tests
+    # "video": if we are making a video recording of any/all of our tests
     "outputs": {"csv": True, "video": True},
     # "csv": relative path from 'habitat_sim' that csv files are saved
     # "video": relative path from 'habitat_sim' that video recordings are saved
