@@ -1,19 +1,16 @@
 Habitat Sim Image Extractor Tutorial
 ####################################
 
-:summary: This tutorial will demonstrate how to use the Image Extraction API in Habitat Sim and the different user options available.
+:summary: This tutorial will demonstrate how to extract RGB, depth, and semantic images from Habitat Sim with the ImageExtracor class. It also provides and example of using the ImageExtractor to do end-to-end instance segmentation.
 
 .. contents::
     :class: m-block m-default
 
-In this tutorial we will learn how to use the image extraction API in Habitat Sim by working through an example use case - training a semantic segmentation model on images and segmentation ground-truth extracted from environments loaded into Habitat Sim. The tutorial will be structured as follows.
 
-We will first provide an overview of how to use the image extraction API. Next we will show how to use the API to train a semantic segmentation model. Finally, we will show how to define a custom pose extraction method, which is how a user programmatically defines the camera poses for image extraction.
+`The ImageExtractor Class`_
+============================
 
-`Overview of Image Extraction`_
-===============================
-
-Habitat Sim provides an API to extract static images from a scene. The main class that handles image data extraction in Habitat Sim is called ImageExtractor. The user only needs to provide the scene filepath (either a .glb or .ply file).
+Habitat Sim provides an object that extracts static images from a scene. The main class that handles image data extraction in Habitat Sim is called ImageExtractor. The user only needs to provide the scene filepath (either a .glb or .ply file) and sometimes a scene dataset config file (a json).
 
 ``class ImageExtractor(scene_filepath, img_size, output, pose_extractor_name, shuffle, split, use_caching, cache_capacity, pixels_per_meter)``
 
@@ -107,7 +104,8 @@ If using the HM3D dataset with semantic images, you need to provide both the sce
         plt.show()
 
 
-    # For HM3D datasets, you should give the ImageExtractor
+    # For HM3D datasets, you should give the ImageExtractor both a scene_filepath (a .glb for example) as well as
+    # a scene dataset config file
     scene_filepath = 'data/hm3d-example-habitat/example/00861-GLAQ4DNUx5U/GLAQ4DNUx5U.basis.glb'
     scene_dataset_config_file = 'data/hm3d-example-habitat/hm3d_annotated_basis.scene_dataset_config.json'
 
@@ -115,7 +113,7 @@ If using the HM3D dataset with semantic images, you need to provide both the sce
         scene_filepath,
         scene_dataset_config_file,
         img_size=(512, 512),
-        output=["rgba", "depth", "semantic"], # "semantic" output only supported for datasets with semantics (e.g. Matterport3D)
+        output=["rgba", "depth", "semantic"], # "semantic" output only supported for datasets with semantics (e.g. HM3D)
     )
 
     # Use the list of train outputs instead of the default, which is the full list
