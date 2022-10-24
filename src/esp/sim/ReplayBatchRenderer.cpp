@@ -83,7 +83,6 @@ ReplayBatchRenderer::ReplayBatchRenderer(
 
 ReplayBatchRenderer::~ReplayBatchRenderer() {
   ESP_DEBUG() << "Deconstructing ReplayBatchRenderer";
-  resourceManager_.release();
   for (int envIdx = 0; envIdx < config_.numEnvironments; ++envIdx) {
     envs_[envIdx].player_.close();
     auto& sensorMap = envs_[envIdx].sensorMap_;
@@ -91,13 +90,14 @@ ReplayBatchRenderer::~ReplayBatchRenderer() {
       sensor::SensorFactory::deleteSensor(sensorPair.second);
     }
   }
+  resourceManager_.reset();
 }
 
 void ReplayBatchRenderer::setSensorTransformsFromKeyframe(
     int envIndex,
     const std::string& prefix) {
   CORRADE_INTERNAL_ASSERT(envIndex >= 0 && envIndex < envs_.size());
-  auto& env = envs_[envIndex];
+  const auto& env = envs_[envIndex];
   ESP_CHECK(env.player_.getNumKeyframes() == 1,
             "setSensorTransformsFromKeyframe: for environment "
                 << envIndex
@@ -123,7 +123,7 @@ void ReplayBatchRenderer::setSensorTransformsFromKeyframe(
 esp::scene::SceneNode* ReplayBatchRenderer::getEnvironmentSensorParentNode(
     int envIndex) const {
   CORRADE_INTERNAL_ASSERT(envIndex >= 0 && envIndex < envs_.size());
-  auto& env = envs_[envIndex];
+  const auto& env = envs_[envIndex];
   return env.sensorParentNode_;
 }
 
