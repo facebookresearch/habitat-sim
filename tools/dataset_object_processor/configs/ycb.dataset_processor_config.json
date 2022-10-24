@@ -6,7 +6,7 @@
     "render_time_ratio": false,
     "physics_data": false
   },
-  "index_start_obj": 0,
+  "start_obj_index": 0,
   "num_objects": 5,
   "memory_vars": {
     "units": "KB",

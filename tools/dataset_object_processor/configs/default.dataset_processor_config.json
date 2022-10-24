@@ -5,8 +5,8 @@
     "render_time_ratio": true,
     "physics_data": true
   },
-  "index_start_obj": 0,
-  "num_objects": 3,
+  "start_obj_index": 0,
+  "num_objects": 5,
   "video_vars": {
     "tasks": {
         "draw_bbox": true,
