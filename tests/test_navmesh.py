@@ -235,8 +235,8 @@ def test_navmesh_islands(test_scene):
     hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
 
     with habitat_sim.Simulator(hab_cfg) as sim:
-        print(dir(sim.pathfinder))
-        print(f"sim.pathfinder.num_islands = {sim.pathfinder.num_islands}")
+        # print(dir(sim.pathfinder))
+        # print(f"sim.pathfinder.num_islands = {sim.pathfinder.num_islands}")
         num_islands = sim.pathfinder.num_islands
         # cached_test_results["num_islands"] = num_islands
         assert num_islands == cached_test_results["num_islands"]
@@ -316,3 +316,52 @@ def test_navmesh_islands(test_scene):
         # check total mesh data against island meshes
         assert island_mesh_data["total_verts"] == len(navmesh_verts)
         assert island_mesh_data["total_indicies"] == len(navmesh_indices)
+
+
+@pytest.mark.parametrize("test_scene", test_scenes)
+def test_topdown_map(test_scene):
+    # optionally generate human-readable map images
+    generate_test_map_images = False
+
+    if not osp.exists(test_scene):
+        pytest.skip(f"{test_scene} not found")
+
+    test_scene_name = test_scene.split("/")[-1].split(".")[0]
+
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
+    cfg_settings["scene"] = test_scene
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
+
+    with habitat_sim.Simulator(hab_cfg) as sim:
+        # use the lowest navmesh vert as the slice height
+        navmesh_verts = sim.pathfinder.build_navmesh_vertices(-1)
+        height = min(x[1] for x in navmesh_verts)
+
+        binary_top_down_map = sim.pathfinder.get_topdown_view(0.1, height)
+        island_top_down_map = sim.pathfinder.get_topdown_island_view(0.1, height)
+
+        # cache new ground truth map caches
+        filename = osp.join(
+            base_dir, "data/test_assets/" + test_scene_name + "_topdown_binary.npy"
+        )
+        # np.save(filename, binary_top_down_map)
+        binary_topdown_map_cached = np.load(filename)
+
+        filename = osp.join(
+            base_dir, "data/test_assets/" + test_scene_name + "_topdown_islands.npy"
+        )
+        # np.save(filename, island_top_down_map)
+        islands_topdown_map_cached = np.load(filename)
+
+        # check the computed data against the cache
+        assert np.array_equal(binary_topdown_map_cached, binary_top_down_map)
+        assert np.array_equal(islands_topdown_map_cached, island_top_down_map)
+
+        # example/test of simple image generation from island maps
+        from habitat_sim.utils.viz_utils import get_island_colored_map
+
+        island_colored_map_image = get_island_colored_map(island_top_down_map)
+
+        if generate_test_map_images:
+            island_colored_map_image.save(filename + ".png")
+            # island_colored_map_image.show()

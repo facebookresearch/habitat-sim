@@ -153,7 +153,7 @@ struct NavMeshSettings {
    * @brief Maximum ledge height that is considered to be traversable in world
    * units.
    *
-   * For example, this constrains the maximum step hieght for traversing
+   * For example, this constrains the maximum step height for traversing
    * stairways. Will be truncated to a multiple of cellHeight.
    */
   float agentMaxClimb{};
@@ -597,7 +597,7 @@ class PathFinder {
 
   /**
    * @brief Get a 2D grid marking navigable and non-navigable cells at a
-   * specified hieght and resolution.
+   * specified height and resolution.
    *
    * The size of the grid depends on the navmesh bounds and selected resolution.
    *
@@ -606,14 +606,31 @@ class PathFinder {
    *
    * @param metersPerPixel size of the discrete grid cells. Controls grid
    * resolution.
-   * @param height The vertical height of the 2D slice. Allows 0.5 meter Y
-   * offsets from this value.
+   * @param height The vertical height of the 2D slice.
+   * @param eps Sets allowable epsilon meter Y offsets from the configured
+   * height value.
    *
    * @return The 2D grid marking cells as navigable or not.
    */
-  Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> getTopDownView(
-      float metersPerPixel,
-      float height);
+  Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic>
+  getTopDownView(float metersPerPixel, float height, float eps = 0.5);
+
+  /**
+   * @brief Get a 2D grid marking island index for navigable cells and -1 for
+   * non-navigable cells at a specified height and resolution.
+   *
+   * The size of the grid depends on the navmesh bounds and selected resolution.
+   *
+   * @param metersPerPixel size of the discrete grid cells. Controls grid
+   * resolution.
+   * @param height The vertical height of the 2D slice.
+   * @param eps Sets allowable epsilon meter Y offsets from the configured
+   * height value.
+   *
+   * @return The 2D grid marking cell islands or -1 for not navigable.
+   */
+  Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic>
+  getTopDownIslandView(float metersPerPixel, float height, float eps = 0.5);
 
   /**
    * @brief Returns a MeshData object containing triangulated NavMesh polys.
