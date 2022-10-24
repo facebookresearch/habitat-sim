@@ -70,7 +70,10 @@ ReplayBatchRenderer::ReplayBatchRenderer(
     if (context_ && config_.leaveContextWithBackgroundRenderer)
       flags |= gfx::Renderer::Flag::LeaveContextWithBackgroundRenderer;
 #else
-#error unsupported
+    if (config_.numEnvironments > 1)
+      ESP_DEBUG()
+          << "ReplayBatchRenderer created without a background renderer. "
+             "Multiple environments require a background renderer.";
 #endif
     renderer_ = gfx::Renderer::create(context_.get(), flags);
 
