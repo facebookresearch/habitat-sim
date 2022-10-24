@@ -63,10 +63,8 @@ class DatasetProcessorSim(hsim.Simulator):
         # determine which task we are drawing and call the associated function
         if self.draw_task == "draw_bbox":
             self.draw_bbox()
-        elif self.draw_task == "draw_collision_asset":
-            # # uncomment if you want to draw the collision mesh wireframe
-            # self.draw_collision_asset(sensor_uuid)
-            ...
+        elif self.draw_task == "draw_collision_asset_wireframe":
+            self.draw_collision_asset_wireframe(sensor_uuid)
         elif self.draw_task == "draw_physics":
             self.draw_physics()
 
@@ -118,7 +116,7 @@ class DatasetProcessorSim(hsim.Simulator):
                 line_color,
             )
 
-    def draw_collision_asset(self, sensor_uuid: str) -> None:
+    def draw_collision_asset_wireframe(self, sensor_uuid: str) -> None:
         """ """
         agent = self.get_agent(0)
         render_cam = agent.scene_node.node_sensor_suite.get(sensor_uuid).render_camera

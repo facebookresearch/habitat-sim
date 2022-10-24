@@ -2,6 +2,7 @@
   "scene": "data/test_assets/scenes/simple_room.glb",
   "scene_dataset_config_file": "data/versioned_data/ycb_1.2/ycb.scene_dataset_config.json",
   "data_to_collect": {
+    "extensive_RAM_calculation": true,
     "memory_data": false,
     "render_time_ratio": false,
     "physics_data": false
@@ -31,6 +32,7 @@
     "tasks": {
       "draw_bbox": true,
       "draw_collision_asset": true,
+      "draw_collision_asset_wireframe": true,
       "draw_physics": true
     },
     "physics_recording_pos": [-2.0, 0.0, 4.00],
@@ -38,7 +40,7 @@
       "angle": -20.0,
       "axis": [1, 0, 0]
     },
-    "revolution_dur": 3.0
+    "revolution_dur": 2.0
   },
   "outputs": {
     "csv": true,

@@ -42,6 +42,18 @@ def record_revolving_obj(
         obj_attributes_mgr = sim.get_object_template_manager()
         obj_attributes = sim.curr_obj.creation_attributes
         obj_attributes.render_asset_handle = sim.collision_asset_handle
+        obj_attributes.force_flat_shading = True
+        obj_attributes_mgr.register_template(obj_attributes, obj_attributes.handle)
+        rigid_obj_mgr = sim.get_rigid_object_manager()
+        rigid_obj_mgr.remove_all_objects()
+        sim.curr_obj = rigid_obj_mgr.add_object_by_template_handle(
+            obj_attributes.handle
+        )
+    # make asset invisible if just drawing collision asset mesh
+    if sim.draw_task == "draw_collision_asset_wireframe":
+        obj_attributes_mgr = sim.get_object_template_manager()
+        obj_attributes = sim.curr_obj.creation_attributes
+        obj_attributes.is_visibile = False
         obj_attributes_mgr.register_template(obj_attributes, obj_attributes.handle)
         rigid_obj_mgr = sim.get_rigid_object_manager()
         rigid_obj_mgr.remove_all_objects()
@@ -73,19 +85,22 @@ def record_revolving_obj(
             # update current rotation angle
             curr_angle += angle_delta
 
-    # restore render asset if done drawing collision asset
-    if sim.draw_task == "draw_collision_asset":
+    # restore render asset and visibility if done drawing collision asset/asset mesh
+    if (
+        sim.draw_task == "draw_collision_asset"
+        or sim.draw_task == "draw_collision_asset_wireframe"
+    ):
         obj_attributes_mgr = sim.get_object_template_manager()
         obj_attributes = sim.curr_obj.creation_attributes
         obj_attributes.render_asset_handle = sim.render_asset_handle
+        obj_attributes.is_visibile = True
+        obj_attributes.force_flat_shading = False
         obj_attributes_mgr.register_template(obj_attributes, obj_attributes.handle)
         rigid_obj_mgr = sim.get_rigid_object_manager()
         rigid_obj_mgr.remove_all_objects()
         sim.curr_obj = rigid_obj_mgr.add_object_by_template_handle(
             obj_attributes.handle
         )
-        sim.curr_obj.translation = sim.default_obj_pos
-        sim.curr_obj.rotation = sim.default_obj_rot
 
     return observations
 

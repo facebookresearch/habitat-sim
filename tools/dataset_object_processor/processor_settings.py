@@ -35,12 +35,15 @@ dataset_processor_settings = {
     # process all objects.
     "num_objects": "all",
     # if making a csv, this dictates the data you want to collect for it
+    # "extensive_RAM_calculation": load and then remove the asset with the
+    # RigidObjectManager many times, then take the average RAM usage.
     # "memory_data": collect RAM usage, size of meshes, and size of images of asset
     # "render_time_ratio": time asset takes to render vs duration of frame (dt)
     # "physics_data": snap down asset from 6 orthogonal rotations and see how long
     # it takes to fall asleep. Calculate difference in position, rotation, and the
     # ratio of how long it takes to simulate a frame versus frame duration (dt)
     "data_to_collect": {
+        "extensive_RAM_calculation": True,
         "memory_data": True,
         "render_time_ratio": True,
         "physics_data": True,
@@ -87,8 +90,10 @@ dataset_processor_settings = {
     },
     # "tasks": which tasks to record when making a video.
     #   "draw_bbox": draw the object's bbox as you rotate/display it in KINEMATIC movement mode
-    #   "draw_collision_asset": draw the object's collision mesh asset instead of its render
-    #   asset as you rotate/display it in KINEMATIC mode
+    #   "draw_collision_asset": draw the object's collision mesh asset with lighting instead of
+    #   its render asset as you rotate/display it in KINEMATIC mode
+    #   "draw_collision_asset_wireframe": same as "draw_collision_asset", but instead of drawing
+    #   the collision asset mesh with lighting, draw it as a wireframe.
     #   "draw_physics": record the object during its physics tests descripted above
     # "physics_recording_pos": position of the agent when recording the physics tests
     # "physics_recording_rot": rotation of the agent when recording the physics tests
@@ -98,6 +103,7 @@ dataset_processor_settings = {
         "tasks": {
             "draw_bbox": True,
             "draw_collision_asset": True,
+            "draw_collision_asset_wireframe": True,
             "draw_physics": True,
         },
         "physics_recording_pos": [-2.0, 0.5, 4.00],

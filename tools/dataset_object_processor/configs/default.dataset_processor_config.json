@@ -1,6 +1,7 @@
 {
   "scene_dataset_config_file": "data/versioned_data/replica_cad_dataset_1.5/replicaCAD.scene_dataset_config.json",
   "data_to_collect": {
+    "extensive_RAM_calculation": true,
     "memory_data": true,
     "render_time_ratio": true,
     "physics_data": true
@@ -11,6 +12,7 @@
     "tasks": {
         "draw_bbox": true,
         "draw_collision_asset": true,
+        "draw_collision_asset_wireframe": true,
         "draw_physics": true
     },
     "physics_recording_pos": [-2.0, 0.5, 4.50],
