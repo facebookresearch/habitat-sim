@@ -168,13 +168,13 @@ def initialize_test_data_sources(data_path):
         {
             f"hm3d_{split}_{data_format}": {
                 "source": "https://api.matterport.com/resources/habitat/hm3d-{split}-{data_format}.tar{ext}".format(
-                    ext=".gz" if data_format == "obj+mtl" else "",
+                    ext="",
                     split=split,
                     data_format=data_format,
                 ),
                 "download_pre_args": "--location",
                 "package_name": "hm3d-{split}-{data_format}.tar{ext}".format(
-                    ext=".gz" if data_format == "obj+mtl" else "",
+                    ext="",
                     split=split,
                     data_format=data_format,
                 ),
@@ -200,11 +200,11 @@ def initialize_test_data_sources(data_path):
         {
             f"hm3d_example_{data_format}": {
                 "source": "https://github.com/matterport/habitat-matterport-3dresearch/raw/main/example/hm3d-example-{data_format}.tar{ext}".format(
-                    ext=".gz" if data_format == "obj+mtl" else "",
+                    ext="",
                     data_format=data_format,
                 ),
                 "package_name": "hm3d-example-{data_format}.tar{ext}".format(
-                    ext=".gz" if data_format == "obj+mtl" else "",
+                    ext="",
                     data_format=data_format,
                 ),
                 "link": data_path + "scene_datasets/hm3d",
@@ -221,13 +221,13 @@ def initialize_test_data_sources(data_path):
         {
             f"hm3d_{split}_semantic_{data_format}_v0.2": {
                 "source": "https://api.matterport.com/resources/habitat/hm3d-{split}-semantic-{data_format}-v0.2.tar{ext}".format(
-                    ext=".gz" if data_format == "annots" else "",
+                    ext="",
                     split=split,
                     data_format=data_format,
                 ),
                 "download_pre_args": "--location",
                 "package_name": "hm3d-{split}-semantic-{data_format}-v0.2.tar{ext}".format(
-                    ext=".gz" if data_format == "annots" else "",
+                    ext="",
                     split=split,
                     data_format=data_format,
                 ),
@@ -253,11 +253,11 @@ def initialize_test_data_sources(data_path):
         {
             f"hm3d_example_semantic_{data_format}_v0.2": {
                 "source": "https://github.com/matterport/habitat-matterport-3dresearch/raw/main/example/hm3d-example-semantic-{data_format}-v0.2.tar{ext}".format(
-                    ext=".gz" if data_format == "annots" else "",
+                    ext="",
                     data_format=data_format,
                 ),
                 "package_name": "hm3d-example-semantic-{data_format}-v0.2.tar{ext}".format(
-                    ext=".gz" if data_format == "annots" else "",
+                    ext="",
                     data_format=data_format,
                 ),
                 "link": data_path + "scene_datasets/hm3d",
