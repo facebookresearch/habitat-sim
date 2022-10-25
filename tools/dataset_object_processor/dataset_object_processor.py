@@ -504,12 +504,6 @@ def get_multi_sample_ram_use(
     # loop of loading each asset, testing memory, removing it, reconfiguring the
     # simulator, then repeating for "num_samples"
     for _ in range(num_samples):
-
-        # ------------------------------------------------------------------------
-        # TODO debugging remove
-        first_asset_result: str = ""
-        # ------------------------------------------------------------------------
-
         # loop through each asset we are considering and calculate its RAM usage
         # according to the memory metrics specified in the config file. Add this RAM
         # usage to a List of size "end_index - start_index" with each index
@@ -544,27 +538,8 @@ def get_multi_sample_ram_use(
 
             ram_usages[i] += total_ram_delta
 
-            # ------------------------------------------------------------------------
-            # TODO debugging remove
-            if i == 0:
-                first_asset_result = pcsu.get_mem_size_str(
-                    total_ram_delta / len(metrics)
-                )
-            # ------------------------------------------------------------------------
-
             # remove object so we can load it again and test its RAM use
             rigid_obj_mgr.remove_all_objects()
-
-        # ------------------------------------------------------------------------
-        # TODO debugging remove
-        pcsu.print_debug(
-            sim,
-            pcsu.ANSICodes.BRIGHT_CYAN.value
-            + f"\n{sim.obj_template_handles[0]}"
-            + pcsu.section_divider,
-        )
-        pcsu.print_debug(sim, f"{first_asset_result}\n")
-        # ------------------------------------------------------------------------
 
         # reset the simulator to somewhat reset the cache and RAM. When you load an
         # asset once, it uses less RAM the next time you load it, if any, as the
@@ -578,18 +553,6 @@ def get_multi_sample_ram_use(
 
     # calculate overall average using num_samples times the number of metrics used
     ram_usages = [ram_use / (len(metrics) * num_samples) for ram_use in ram_usages]
-
-    # ------------------------------------------------------------------------
-    # TODO debugging remove
-    for i in range(start_index, end_index):
-        pcsu.print_debug(
-            sim,
-            pcsu.ANSICodes.BRIGHT_MAGENTA.value
-            + f"avg ram usage for {sim.obj_template_handles[i]}"
-            + pcsu.section_divider,
-        )
-        pcsu.print_debug(sim, pcsu.get_mem_size_str(ram_usages[i]) + "\n")
-    # ------------------------------------------------------------------------
 
     return (sim, ram_usages)
 
