@@ -1,33 +1,37 @@
 {
   "scene_dataset_config_file": "data/versioned_data/replica_cad_dataset_1.5/replicaCAD.scene_dataset_config.json",
-  "data_to_collect": {
-    "extensive_RAM_calculation": true,
-    "memory_data": true,
-    "render_time_ratio": true,
-    "physics_data": true
-  },
-  "start_obj_index": 0,
-  "num_objects": 5,
-  "video_vars": {
-    "tasks": {
-        "draw_bbox": true,
-        "draw_collision_asset": true,
-        "draw_collision_asset_wireframe": true,
-        "draw_physics": true
-    },
-    "physics_recording_pos": [-2.0, 0.5, 4.50],
-    "physics_recording_rot": {
-      "angle": -20.0,
-      "axis": [1, 0, 0]
-    },
-    "revolution_dur": 2.0
-  },
   "outputs": {
     "csv": true,
     "video": true
   },
   "output_paths": {
     "output_file_prefix": "default"
+  },
+  "start_obj_index": 0,
+  "num_objects": 5,
+  "data_to_collect": {
+    "ram_calc_multiple_samples": true,
+    "memory_data": true,
+    "render_time_ratio": false,
+    "physics_data": true
+  },
+  "memory_vars": {
+    "ram_calc_num_samples": 10
+  },
+  "video_vars": {
+    "tasks": {
+        "draw_bbox": true,
+        "draw_collision_mesh": true,
+        "draw_collision_mesh_wireframe": true,
+        "record_physics": true
+    },
+    "revolution_angle": 720.0,
+    "revolution_dur": 4.0,
+    "physics_recording_pos": [-2.0, 0.5, 4.50],
+    "physics_recording_rot": {
+      "angle": -20.0,
+      "axis": [1, 0, 0]
+    }
   },
   "default_transforms": {
     "default_agent_pos": [-2.0, 0.5, 4.00],

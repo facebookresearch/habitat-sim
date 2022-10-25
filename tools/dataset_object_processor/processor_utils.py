@@ -48,8 +48,9 @@ class DatasetProcessorSim(hsim.Simulator):
     default_obj_rot: mn.Quaternion = None
 
     # indicates if we are making a video recording, and which is the current recording
-    # task we are drawing. Possible values are "draw_bbox", "draw_collision_asset",
-    # and "draw_physics"
+    # task we are drawing. Possible values are "draw_bbox", "draw_collision_mesh",
+    # "draw_collision_mesh_wireframe", and "record_physics", but not all of these
+    # tasks is taken care of in this sim object directly
     draw_task: str = None
     observations = []
 
@@ -63,10 +64,8 @@ class DatasetProcessorSim(hsim.Simulator):
         # determine which task we are drawing and call the associated function
         if self.draw_task == "draw_bbox":
             self.draw_bbox()
-        elif self.draw_task == "draw_collision_asset_wireframe":
-            self.draw_collision_asset_wireframe(sensor_uuid)
-        elif self.draw_task == "draw_physics":
-            self.draw_physics()
+        elif self.draw_task == "draw_collision_mesh_wireframe":
+            self.draw_collision_mesh_wireframe(sensor_uuid)
 
     def draw_bbox(self) -> None:
         """ """
@@ -116,20 +115,17 @@ class DatasetProcessorSim(hsim.Simulator):
                 line_color,
             )
 
-    def draw_collision_asset_wireframe(self, sensor_uuid: str) -> None:
+    def draw_collision_mesh_wireframe(self, sensor_uuid: str) -> None:
         """ """
         agent = self.get_agent(0)
         render_cam = agent.scene_node.node_sensor_suite.get(sensor_uuid).render_camera
         proj_mat = render_cam.projection_matrix.__matmul__(render_cam.camera_matrix)
         self.physics_debug_draw(proj_mat)
 
-    def draw_physics(self) -> None:
-        ...
-
 
 class RotationAxis(Tuple, Enum):
-    Y = (0.0, 1.0, 0.0)
     X = (1.0, 0.0, 0.0)
+    Y = (0.0, 1.0, 0.0)
 
 
 class ANSICodes(Enum):
@@ -251,7 +247,10 @@ def print_mem_usage_info(
     # Print rough estimate of RAM used when loading object
     print_if_logging(
         sim,
-        text_format + "\naverage RAM used" + section_divider + f"\n{avg_ram_used_str}",
+        text_format
+        + "\naverage RAM used"
+        + section_divider
+        + f"\n{avg_ram_used_str}\n",
     )
 
 
@@ -303,27 +302,27 @@ def create_unique_filename(
 
 def convert_memory_units(
     size: float,
-    unit_type: int = MemoryUnitConverter.KILOBYTES,
+    units: int = MemoryUnitConverter.KILOBYTES,
     decimal_num_round: int = 2,
 ) -> float:
     """
     Convert units from bytes to desired unit, then round the result
     """
-    new_size = size / MemoryUnitConverter.UNIT_CONVERSIONS[unit_type]
+    new_size = size / MemoryUnitConverter.UNIT_CONVERSIONS[units]
     return round(new_size, decimal_num_round)
 
 
 def get_mem_size_str(
     size: float,
-    unit_type: int = MemoryUnitConverter.KILOBYTES,
+    units: int = MemoryUnitConverter.KILOBYTES,
 ) -> str:
     """
     Convert bytes to desired memory unit size, then create string
     that will be written into csv file rows. Add commas to numbers
     """
-    new_size: float = convert_memory_units(size, unit_type)
+    new_size: float = convert_memory_units(size, units)
     new_size_str: str = "{:,}".format(new_size)
-    unit_str: str = MemoryUnitConverter.UNIT_STRS[unit_type]
+    unit_str: str = MemoryUnitConverter.UNIT_STRS[units]
     return f"{new_size_str} {unit_str}"
 
 
@@ -571,20 +570,19 @@ def configure_sim(sim_settings: Dict[str, Any]):
     sim.silent = sim_settings["silent"]
     sim.debug_print = sim_settings["debug_print"]
 
-    default_transforms = sim_settings["default_transforms"]
-
     # init agent
     agent_state = hsim.AgentState()
     sim.default_agent = sim.initialize_agent(sim_settings["default_agent"], agent_state)
+    default_transforms = sim_settings["default_transforms"]
     sim.default_agent_pos = mn.Vector3(default_transforms.get("default_agent_pos"))
     sim.default_agent.body.object.translation = sim.default_agent_pos
     agent_rot = default_transforms.get("default_agent_rot")
     angle = agent_rot.get("angle")
     axis = mn.Vector3(agent_rot.get("axis"))
 
-    # construct rotation as quaternion, and if axis is (0, 0, 0), that means there
-    # is no rotation
-    if axis.is_zero():
+    # construct rotation as quaternion, and if angle is 0 or axis is (0, 0, 0), that
+    # means there is no rotation
+    if angle == 0.0 or axis.is_zero():
         sim.default_agent_rot = mn.Quaternion.identity_init()
     else:
         sim.default_agent_rot = mn.Quaternion.rotation(mn.Rad(mn.Deg(angle)), axis)

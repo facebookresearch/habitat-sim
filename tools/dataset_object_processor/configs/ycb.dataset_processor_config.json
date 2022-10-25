@@ -16,7 +16,7 @@
     "max_image_num": 5,
     "max_image_size": 12000
   },
-  "mem_metrics_to_use": [
+  "ram_metrics_to_use": [
     "available",
     "used",
     "free"
@@ -31,9 +31,9 @@
   "video_vars": {
     "tasks": {
       "draw_bbox": true,
-      "draw_collision_asset": true,
-      "draw_collision_asset_wireframe": true,
-      "draw_physics": true
+      "draw_collision_mesh": true,
+      "draw_collision_mesh_wireframe": true,
+      "record_physics": true
     },
     "physics_recording_pos": [-2.0, 0.0, 4.00],
     "physics_recording_rot": {

@@ -7,8 +7,9 @@ from habitat_sim.utils.settings import make_cfg as _make_cfg
 
 dataset_processor_settings = {
     # -------------------------------------------------------------------
-    # These settings can be overridden in the dataset_processor_config.json
-    # files
+    # All, any, or none of these settings can be overridden in the
+    # dataset_processor_config.json files. In those configs, you only
+    # have to include the settings you want to override.
     # -------------------------------------------------------------------
     # "scene": scene to use for testing dataset objects
     "scene": "data/test_assets/scenes/simple_room.glb",
@@ -28,11 +29,11 @@ dataset_processor_settings = {
         "output_file_prefix": "",
     },
     # "start_obj_index": index of the dataset object to start processing. If this
-    # value is a string, process all objects.
+    # or the next settings value is a string, process all objects.
     "start_obj_index": 0,
     # "num_objects": number of dataset objects to process in total. Process asset
-    # indices 0 through num_objects-1 of the dataset. If this value is a string,
-    # process all objects.
+    # indices 0 through num_objects-1 of the dataset. If this or the previous
+    # settings value is a string, process all objects.
     "num_objects": "all",
     # if making a csv, this dictates the data you want to collect for it
     # "extensive_RAM_calculation": load and then remove the asset with the
@@ -43,7 +44,7 @@ dataset_processor_settings = {
     # it takes to fall asleep. Calculate difference in position, rotation, and the
     # ratio of how long it takes to simulate a frame versus frame duration (dt)
     "data_to_collect": {
-        "extensive_RAM_calculation": True,
+        "ram_calc_multiple_samples": True,
         "memory_data": True,
         "render_time_ratio": True,
         "physics_data": True,
@@ -63,6 +64,7 @@ dataset_processor_settings = {
     # the asset can have before flagging
     "memory_vars": {
         "units": "KB",
+        "ram_calc_num_samples": 10,
         "max_mesh_num": 5,
         "max_mesh_size": 2400,
         "max_image_num": 32,
@@ -73,7 +75,25 @@ dataset_processor_settings = {
     # psutil.virtual_memory() function to see what each metric means, as "available"
     # and "free" seem like the same thing, but they aren't. I calculate the difference
     # in these metrics before and after loading the object, then take the average of them.
-    "mem_metrics_to_use": ["available", "used", "free"],
+    # All possible metrics are:
+    # "total", "available", "percent", "used", "free", "active", "inactive", "buffers",
+    # "cached", "shared", and "slab", but only really "available", "used", "free",
+    # "active", and "inactive" work with the way the script is currently implemented.
+    "ram_metrics_to_use": ["available", "used", "free"],
+    # TODO: make sure these are right
+    # "mem_delta_order" is either -1 or 1. 1 means the delta is
+    # calculated as (end_start - start_state), whereas -1 means
+    # (start_state - end_state). E.g. Data "used" should be higher
+    # after loading, so mem_delta_order == 1, but data free should
+    # be higher before loading, so mem_delta_order == -1
+    "mem_delta_order": {
+        "available": -1,
+        "percent": 1,
+        "used": 1,
+        "free": -1,
+        "active": -1,
+        "inactive": 1,
+    },
     # "fps": framerate used for physics simulation and video recording
     # "max_wait_time": max number of "time_units" script will wait for an object to become
     # asleep after snapping to ground.
@@ -90,11 +110,11 @@ dataset_processor_settings = {
     },
     # "tasks": which tasks to record when making a video.
     #   "draw_bbox": draw the object's bbox as you rotate/display it in KINEMATIC movement mode
-    #   "draw_collision_asset": draw the object's collision mesh asset with lighting instead of
+    #   "draw_collision_mesh": draw the object's collision mesh asset with lighting instead of
     #   its render asset as you rotate/display it in KINEMATIC mode
-    #   "draw_collision_asset_wireframe": same as "draw_collision_asset", but instead of drawing
+    #   "draw_collision_mesh_wireframe": same as "draw_collision_mesh", but instead of drawing
     #   the collision asset mesh with lighting, draw it as a wireframe.
-    #   "draw_physics": record the object during its physics tests descripted above
+    #   "record_physics": record the object during its physics tests descripted above
     # "physics_recording_pos": position of the agent when recording the physics tests
     # "physics_recording_rot": rotation of the agent when recording the physics tests
     # "revolution_dur": number of "time_units" it takes for the object to turn 360 degrees
@@ -102,13 +122,14 @@ dataset_processor_settings = {
     "video_vars": {
         "tasks": {
             "draw_bbox": True,
-            "draw_collision_asset": True,
-            "draw_collision_asset_wireframe": True,
-            "draw_physics": True,
+            "draw_collision_mesh": True,
+            "draw_collision_mesh_wireframe": True,
+            "record_physics": True,
         },
+        "revolution_angle": 360.0,
+        "revolution_dur": 4.0,
         "physics_recording_pos": [-2.0, 0.5, 4.00],
         "physics_recording_rot": {"angle": -20.0, "axis": [1, 0, 0]},
-        "revolution_dur": 4.0,
     },
     # "default_transforms": transforms that objects or agent are initialized as or often
     # reverted to.
@@ -145,15 +166,16 @@ dataset_processor_settings = {
     # Column titles of CSV file when memory stats are requested
     "memory_data_headers": [
         "MEMORY --->",
-        "approx. RAM use",
+        "RAM",
         "render asset file",
         "collision asset file",
         "mesh count",
         "index data size",
         "vertex data size",
         "total mesh data size",
-        "mip map count",
+        "image count",
         "image data size",
+        "total asset size",
     ],
     # Column titles of CSV file when rendering stats are requested
     "render_time_headers": [
@@ -204,20 +226,6 @@ dataset_processor_settings = {
         (90, (0, 0, -1)),
         (90, (0, 0, 1)),
     ],
-    # TODO: make sure these are right
-    # "mem_delta_order" is either -1 or 1. 1 means the delta is
-    # calculated as (end_start - start_state), whereas -1 means
-    # (start_state - end_state). E.g. Data "used" should be higher
-    # after loading, so mem_delta_order == 1, but data free should
-    # be higher before loading, so mem_delta_order == -1
-    "mem_delta_order": {
-        "available": -1,
-        "percent": 1,
-        "used": 1,
-        "free": -1,
-        "active": -1,
-        "inactive": 1,
-    },
 }
 default_sim_settings.update(dataset_processor_settings)
 
