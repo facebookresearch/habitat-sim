@@ -19,7 +19,7 @@ import numpy as np
 from PIL import Image
 from tqdm.auto import tqdm
 
-from habitat_sim.utils.common import d3_40_colors_rgb
+from habitat_sim.utils.common import d3_40_colors_hex, d3_40_colors_rgb
 
 
 def is_notebook() -> bool:
@@ -287,3 +287,25 @@ def semantic_to_rgb(semantic_image: np.ndarray) -> np.ndarray:
     semantic_image_rgb.putdata((semantic_image.flatten() % 40).astype(np.uint8))
     semantic_image_rgb = semantic_image_rgb.convert("RGBA")
     return semantic_image_rgb
+
+
+def get_island_colored_map(island_top_down_map_data: np.ndarray):
+    """
+    Get the topdown map for a scene with island colors.
+
+    :param island_top_down_map_data: The island index map data from Pathfinder.get_topdown_island_view()
+
+    :return: rgb Image of islands at the desired slice.
+    """
+
+    white = int("0xffffff", base=16)
+    island_map = Image.new("RGB", island_top_down_map_data.shape, color=white)
+    pixels = island_map.load()
+    for x in range(island_top_down_map_data.shape[0]):
+        for y in range(island_top_down_map_data.shape[1]):
+            if island_top_down_map_data[x, y] >= 0:
+                pixels[x, y] = int(
+                    d3_40_colors_hex[island_top_down_map_data[x, y]], base=16
+                )
+
+    return island_map
