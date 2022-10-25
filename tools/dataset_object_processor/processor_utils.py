@@ -124,8 +124,8 @@ class DatasetProcessorSim(hsim.Simulator):
 
 
 class RotationAxis(Tuple, Enum):
-    X = (1.0, 0.0, 0.0)
     Y = (0.0, 1.0, 0.0)
+    X = (1.0, 0.0, 0.0)
 
 
 class ANSICodes(Enum):
