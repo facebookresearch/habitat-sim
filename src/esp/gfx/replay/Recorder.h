@@ -66,6 +66,8 @@ class Recorder {
    */
   void saveKeyframe();
 
+  Keyframe extractKeyframe();
+
   /**
    * @brief Returns the last saved keyframe.
    */
@@ -120,7 +122,7 @@ class Recorder {
   /**
    * @brief returns JSONized version of given keyframe.
    */
-  std::string keyframeToString(const Keyframe& keyframe);
+  static std::string keyframeToString(const Keyframe& keyframe);
 
   /**
    * @brief Reserved for unit-testing.
