@@ -1758,9 +1758,9 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
   auto inserted = resourceDict_.emplace(filename, std::move(loadedAssetData));
   MeshMetaData& meshMetaData = inserted.first->second.meshMetaData;
 
-  // no default scene --- standalone OBJ/PLY files, for example
+  // no scenes --- standalone OBJ/PLY files, for example
   // take a wild guess and load the first mesh with the first material
-  if (fileImporter_->defaultScene() == -1) {
+  if (!fileImporter_->sceneCount()) {
     if ((fileImporter_->meshCount() != 0u) &&
         meshes_.at(meshMetaData.meshIndex.first)) {
       meshMetaData.root.children.emplace_back();
@@ -1772,9 +1772,11 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
     }
   }
 
-  /* Load the scene */
+  /* Load the scene. If no default scene is specified, use the first one. */
   Cr::Containers::Optional<Mn::Trade::SceneData> scene;
-  if (!(scene = fileImporter_->scene(fileImporter_->defaultScene())) ||
+  if (!(scene = fileImporter_->scene(fileImporter_->defaultScene() == -1
+                                         ? 0
+                                         : fileImporter_->defaultScene())) ||
       !scene->is3D() || !scene->hasField(Mn::Trade::SceneField::Parent)) {
     ESP_ERROR() << "Cannot load scene, exiting";
     return false;
