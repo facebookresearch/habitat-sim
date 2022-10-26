@@ -169,7 +169,7 @@ void ResourceManager::initDefaultPrimAttributes() {
     return;
   }
 
-  ConfigureImporterManagerGLExtensions();
+  configureImporterManagerGLExtensions();
   // by this point, we should have a GL::Context so load the bb primitive.
   // TODO: replace this completely with standard mesh (i.e. treat the bb
   // wireframe cube no differently than other primitive-based rendered
@@ -1523,7 +1523,7 @@ bool ResourceManager::loadRenderAssetSemantic(const AssetInfo& info) {
   const std::string& filename = info.filepath;
 
   CORRADE_INTERNAL_ASSERT(resourceDict_.count(filename) == 0);
-  ConfigureImporterManagerGLExtensions();
+  configureImporterManagerGLExtensions();
 
   /* Open the file. On error the importer already prints a diagnostic message,
      so no need to do that here. The importer implicitly converts per-face
@@ -1632,13 +1632,16 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceVertSemantic(
   return instanceRoot;
 }  // ResourceManager::createRenderAssetInstanceVertSemantic
 
-void ResourceManager::ConfigureImporterManagerGLExtensions() {
+void ResourceManager::configureImporterManagerGLExtensions() {
   if (!getCreateRenderer()) {
     return;
   }
 
   Cr::PluginManager::PluginMetadata* const metadata =
       importerManager_.metadata("BasisImporter");
+  if (!metadata)
+    return;
+
   Mn::GL::Context& context = Mn::GL::Context::current();
 #ifdef MAGNUM_TARGET_WEBGL
   if (context.isExtensionSupported<
@@ -1709,7 +1712,7 @@ void ResourceManager::ConfigureImporterManagerGLExtensions() {
   }
 #endif
 
-}  // ResourceManager::ConfigureImporterManagerGLExtensions
+}  // ResourceManager::configureImporterManagerGLExtensions
 
 namespace {
 
@@ -1738,7 +1741,7 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
 
   const std::string& filename = info.filepath;
   CORRADE_INTERNAL_ASSERT(resourceDict_.count(filename) == 0);
-  ConfigureImporterManagerGLExtensions();
+  configureImporterManagerGLExtensions();
 
   ESP_CHECK(
       (fileImporter_->openFile(filename) && (fileImporter_->meshCount() > 0u)),
@@ -1755,9 +1758,9 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
   auto inserted = resourceDict_.emplace(filename, std::move(loadedAssetData));
   MeshMetaData& meshMetaData = inserted.first->second.meshMetaData;
 
-  // no default scene --- standalone OBJ/PLY files, for example
+  // no scenes --- standalone OBJ/PLY files, for example
   // take a wild guess and load the first mesh with the first material
-  if (fileImporter_->defaultScene() == -1) {
+  if (!fileImporter_->sceneCount()) {
     if ((fileImporter_->meshCount() != 0u) &&
         meshes_.at(meshMetaData.meshIndex.first)) {
       meshMetaData.root.children.emplace_back();
@@ -1769,9 +1772,11 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
     }
   }
 
-  /* Load the scene */
+  /* Load the scene. If no default scene is specified, use the first one. */
   Cr::Containers::Optional<Mn::Trade::SceneData> scene;
-  if (!(scene = fileImporter_->scene(fileImporter_->defaultScene())) ||
+  if (!(scene = fileImporter_->scene(fileImporter_->defaultScene() == -1
+                                         ? 0
+                                         : fileImporter_->defaultScene())) ||
       !scene->is3D() || !scene->hasField(Mn::Trade::SceneField::Parent)) {
     ESP_ERROR() << "Cannot load scene, exiting";
     return false;
