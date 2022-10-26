@@ -205,13 +205,15 @@ def initialize_test_data_sources(data_path):
     data_sources.update(
         {
             f"hm3d_example_{data_format}": {
-                "source": "https://github.com/matterport/habitat-matterport-3dresearch/raw/main/example/hm3d-example-{data_format}-v0.2.tar{ext}".format(
+                "source": "https://github.com/matterport/habitat-matterport-3dresearch/raw/main/example/hm3d-example-{data_format}{version_string}.tar{ext}".format(
                     ext="",
                     data_format=data_format,
+                    version_string="-v0.2" if data_format != "configs" else "",
                 ),
-                "package_name": "hm3d-example-{data_format}-v0.2.tar{ext}".format(
+                "package_name": "hm3d-example-{data_format}{version_string}.tar{ext}".format(
                     ext="",
                     data_format=data_format,
+                    version_string="-v0.2" if data_format != "configs" else "",
                 ),
                 "link": data_path + "scene_datasets/hm3d",
                 "version": "0.2",
