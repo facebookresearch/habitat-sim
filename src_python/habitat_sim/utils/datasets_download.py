@@ -205,7 +205,7 @@ def initialize_test_data_sources(data_path):
     data_sources.update(
         {
             f"hm3d_example_{data_format}": {
-                "source": "https://github.com/matterport/habitat-matterport-3dresearch/raw/main/example/hm3d-example-{data_format}.tar{ext}".format(
+                "source": "https://github.com/matterport/habitat-matterport-3dresearch/raw/main/example/hm3d-example-{data_format}-v0.2.tar{ext}".format(
                     ext="",
                     data_format=data_format,
                 ),
