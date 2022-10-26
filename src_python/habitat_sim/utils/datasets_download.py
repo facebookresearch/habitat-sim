@@ -164,13 +164,17 @@ def initialize_test_data_sources(data_path):
         },
     }
 
+    # add individual hm3d splits, format components, and versions
     data_sources.update(
         {
-            f"hm3d_{split}_{data_format}": {
-                "source": "https://api.matterport.com/resources/habitat/hm3d-{split}-{data_format}-v0.2.tar{ext}".format(
+            f"hm3d_{split}_{data_format}_v{version}": {
+                "source": "https://api.matterport.com/resources/habitat/hm3d-{split}-{data_format}{version_string}.tar{ext}".format(
                     ext="",
                     split=split,
                     data_format=data_format,
+                    version_string="-v0.2"
+                    if (version == "0.2" and data_format != "configs")
+                    else "",
                 ),
                 "download_pre_args": "--location",
                 "package_name": "hm3d-{split}-{data_format}.tar{ext}".format(
@@ -179,7 +183,7 @@ def initialize_test_data_sources(data_path):
                     data_format=data_format,
                 ),
                 "link": data_path + "scene_datasets/hm3d",
-                "version": "0.2",
+                "version": version,
                 "version_dir": "hm3d-{version}/hm3d",
                 "extract_postfix": f"{split}",
                 "downloaded_file_list": f"hm3d-{{version}}/{split}-{data_format}-files.json.gz",
@@ -189,17 +193,19 @@ def initialize_test_data_sources(data_path):
                 if split == "train" and data_format == "configs"
                 else None,
             }
-            for split, data_format in itertools.product(
+            for split, data_format, version in itertools.product(
                 ["minival", "train", "val"],
                 ["glb", "habitat", "configs"],
+                ["0.1", "0.2"],
             )
         }
     )
 
+    # all all hm3d examples (v0.2 only)
     data_sources.update(
         {
             f"hm3d_example_{data_format}": {
-                "source": "https://github.com/matterport/habitat-matterport-3dresearch/raw/main/example/hm3d-example-{data_format}-v0.2.tar{ext}".format(
+                "source": "https://github.com/matterport/habitat-matterport-3dresearch/raw/main/example/hm3d-example-{data_format}.tar{ext}".format(
                     ext="",
                     data_format=data_format,
                 ),
@@ -217,22 +223,25 @@ def initialize_test_data_sources(data_path):
         }
     )
 
+    # add all hm3d semantic splits, format components, and versions
     data_sources.update(
         {
-            f"hm3d_{split}_semantic_{data_format}_v0.2": {
-                "source": "https://api.matterport.com/resources/habitat/hm3d-{split}-semantic-{data_format}-v0.2.tar{ext}".format(
-                    ext="",
+            f"hm3d_{split}_semantic_{data_format}_v{version}": {
+                "source": "https://api.matterport.com/resources/habitat/hm3d-{split}-semantic-{data_format}-v{version_string}.tar{ext}".format(
+                    ext=".gz" if (version == "0.1" and data_format == "annots") else "",
                     split=split,
                     data_format=data_format,
+                    version_string=version,
                 ),
                 "download_pre_args": "--location",
-                "package_name": "hm3d-{split}-semantic-{data_format}-v0.2.tar{ext}".format(
-                    ext="",
+                "package_name": "hm3d-{split}-semantic-{data_format}-v{version_string}.tar{ext}".format(
+                    ext=".gz" if (version == "0.1" and data_format == "annots") else "",
                     split=split,
                     data_format=data_format,
+                    version_string=version,
                 ),
                 "link": data_path + "scene_datasets/hm3d",
-                "version": "0.2",
+                "version": version,
                 "version_dir": "hm3d-{version}/hm3d",
                 "extract_postfix": f"{split}",
                 "downloaded_file_list": f"hm3d-{{version}}/{split}-semantic-{data_format}-files.json.gz",
@@ -242,16 +251,16 @@ def initialize_test_data_sources(data_path):
                 if data_format == "configs"
                 else None,
             }
-            for split, data_format in itertools.product(
-                ["minival", "train", "val"],
-                ["annots", "configs"],
+            for split, data_format, version in itertools.product(
+                ["minival", "train", "val"], ["annots", "configs"], ["0.1", "0.2"]
             )
         }
     )
 
+    # all all hm3d semantic examples (v0.2 only)
     data_sources.update(
         {
-            f"hm3d_example_semantic_{data_format}_v0.2": {
+            f"hm3d_example_semantic_{data_format}": {
                 "source": "https://github.com/matterport/habitat-matterport-3dresearch/raw/main/example/hm3d-example-semantic-{data_format}-v0.2.tar{ext}".format(
                     ext="",
                     data_format=data_format,
@@ -292,53 +301,100 @@ def initialize_test_data_sources(data_path):
         "hm3d_example": [
             "hm3d_example_habitat",
             "hm3d_example_configs",
-            "hm3d_example_semantic_annots_v0.2",
-            "hm3d_example_semantic_configs_v0.2",
+            "hm3d_example_semantic_annots",
+            "hm3d_example_semantic_configs",
         ],
-        "hm3d_val": [
-            "hm3d_val_habitat",
-            "hm3d_val_configs",
-            "hm3d_val_semantic_annots_v0.2",
-            "hm3d_val_semantic_configs_v0.2",
-        ],
-        "hm3d_train": [
-            "hm3d_train_habitat",
-            "hm3d_train_configs",
-            "hm3d_train_semantic_annots_v0.2",
-            "hm3d_train_semantic_configs_v0.2",
-        ],
-        "hm3d_minival": [
-            "hm3d_minival_habitat",
-            "hm3d_minival_configs",
-            "hm3d_minival_semantic_annots_v0.2",
-            "hm3d_minival_semantic_configs_v0.2",
-        ],
-        "hm3d_semantics": [
-            "hm3d_example_semantic_annots_v0.2",
-            "hm3d_example_semantic_configs_v0.2",
-            "hm3d_val_semantic_annots_v0.2",
-            "hm3d_val_semantic_configs_v0.2",
-            "hm3d_train_semantic_annots_v0.2",
-            "hm3d_train_semantic_configs_v0.2",
-            "hm3d_minival_semantic_annots_v0.2",
-            "hm3d_minival_semantic_configs_v0.2",
-        ],
-        "hm3d_full": list(filter(lambda k: k.startswith("hm3d_"), data_sources.keys())),
     }
 
+    # add all hm3d variations splits + versions
+    for version in ["v0.1", "v0.2"]:
+        data_groups.update(
+            {
+                f"hm3d_val_{version}": [
+                    f"hm3d_val_habitat_{version}",
+                    f"hm3d_val_configs_{version}",
+                    f"hm3d_val_semantic_annots_{version}",
+                    f"hm3d_val_semantic_configs_{version}",
+                ],
+            }
+        )
+        data_groups.update(
+            {
+                f"hm3d_train_{version}": [
+                    f"hm3d_train_habitat_{version}",
+                    f"hm3d_train_configs_{version}",
+                    f"hm3d_train_semantic_annots_{version}",
+                    f"hm3d_train_semantic_configs_{version}",
+                ],
+            }
+        )
+        data_groups.update(
+            {
+                f"hm3d_minival_{version}": [
+                    f"hm3d_minival_habitat_{version}",
+                    f"hm3d_minival_configs_{version}",
+                    f"hm3d_minival_semantic_annots_{version}",
+                    f"hm3d_minival_semantic_configs_{version}",
+                ]
+            }
+        )
+        data_groups.update(
+            {
+                f"hm3d_semantics_{version}": [
+                    f"hm3d_example_semantic_annots_{version}",
+                    f"hm3d_example_semantic_configs_{version}",
+                    f"hm3d_val_semantic_annots_{version}",
+                    f"hm3d_val_semantic_configs_{version}",
+                    f"hm3d_train_semantic_annots_{version}",
+                    f"hm3d_train_semantic_configs_{version}",
+                    f"hm3d_minival_semantic_annots_{version}",
+                    f"hm3d_minival_semantic_configs_{version}",
+                ]
+            }
+        )
+
+    # to reproduce old experiments with hm3d v1.0 and hm3d semantics v0.1
+    data_groups["hm3d_v0.1"] = (
+        data_groups["hm3d_val_v0.1"]
+        + data_groups["hm3d_train_v0.1"]
+        + data_groups["hm3d_minival_v0.1"]
+    )
+
+    # this download is all of hm3d v0.2 + all examples in both original glb and BASIS compressed formats
+    data_groups.update(
+        {
+            "hm3d_full": list(
+                filter(
+                    lambda k: (
+                        k.startswith("hm3d_") and ("v0.2" in k or "example" in k)
+                    ),
+                    data_sources.keys(),
+                )
+            )
+        }
+    )
+
+    # add full (glb + BASIS) downloads for v0.2 grouped by split
     data_groups.update(
         {
             f"hm3d_{split}_full": list(
-                filter(lambda k: k.startswith(f"hm3d_{split}"), data_sources.keys())
+                filter(
+                    lambda k: (
+                        k.startswith(f"hm3d_{split}")
+                        and ("v0.2" in k or "example" in k)
+                    ),
+                    data_sources.keys(),
+                )
             )
             for split in ["train", "val", "minival", "example"]
         }
     )
 
+    # this is the primary hm3d download with v0.2 splits for use with Habitat (BASIS compressed only)
     data_groups["hm3d"] = (
-        data_groups["hm3d_val"]
-        + data_groups["hm3d_train"]
-        + data_groups["hm3d_minival"]
+        data_groups["hm3d_val_v0.2"]
+        + data_groups["hm3d_train_v0.2"]
+        + data_groups["hm3d_minival_v0.2"]
     )
 
     data_groups["ci_test_assets"].extend(data_groups["hm3d_example"])
