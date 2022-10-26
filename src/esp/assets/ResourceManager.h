@@ -762,7 +762,7 @@ class ResourceManager {
    * compilation flags, before any general assets are imported.  This should
    * only occur if a gl context exists.
    */
-  void ConfigureImporterManagerGLExtensions();
+  void configureImporterManagerGLExtensions();
 
  protected:
   // ======== Structs and Types only used locally ========

@@ -169,7 +169,7 @@ void ResourceManager::initDefaultPrimAttributes() {
     return;
   }
 
-  ConfigureImporterManagerGLExtensions();
+  configureImporterManagerGLExtensions();
   // by this point, we should have a GL::Context so load the bb primitive.
   // TODO: replace this completely with standard mesh (i.e. treat the bb
   // wireframe cube no differently than other primitive-based rendered
@@ -1523,7 +1523,7 @@ bool ResourceManager::loadRenderAssetSemantic(const AssetInfo& info) {
   const std::string& filename = info.filepath;
 
   CORRADE_INTERNAL_ASSERT(resourceDict_.count(filename) == 0);
-  ConfigureImporterManagerGLExtensions();
+  configureImporterManagerGLExtensions();
 
   /* Open the file. On error the importer already prints a diagnostic message,
      so no need to do that here. The importer implicitly converts per-face
@@ -1632,13 +1632,16 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceVertSemantic(
   return instanceRoot;
 }  // ResourceManager::createRenderAssetInstanceVertSemantic
 
-void ResourceManager::ConfigureImporterManagerGLExtensions() {
+void ResourceManager::configureImporterManagerGLExtensions() {
   if (!getCreateRenderer()) {
     return;
   }
 
   Cr::PluginManager::PluginMetadata* const metadata =
       importerManager_.metadata("BasisImporter");
+  if (!metadata)
+    return;
+
   Mn::GL::Context& context = Mn::GL::Context::current();
 #ifdef MAGNUM_TARGET_WEBGL
   if (context.isExtensionSupported<
@@ -1709,7 +1712,7 @@ void ResourceManager::ConfigureImporterManagerGLExtensions() {
   }
 #endif
 
-}  // ResourceManager::ConfigureImporterManagerGLExtensions
+}  // ResourceManager::configureImporterManagerGLExtensions
 
 namespace {
 
@@ -1738,7 +1741,7 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
 
   const std::string& filename = info.filepath;
   CORRADE_INTERNAL_ASSERT(resourceDict_.count(filename) == 0);
-  ConfigureImporterManagerGLExtensions();
+  configureImporterManagerGLExtensions();
 
   ESP_CHECK(
       (fileImporter_->openFile(filename) && (fileImporter_->meshCount() > 0u)),
