@@ -5,12 +5,12 @@
 from habitat_sim.utils.settings import default_sim_settings
 from habitat_sim.utils.settings import make_cfg as _make_cfg
 
-dataset_processor_settings = {
-    # -------------------------------------------------------------------
-    # All, any, or none of these settings can be overridden in the
-    # dataset_processor_config.json files. In those configs, you only
-    # have to include the settings you want to override.
-    # -------------------------------------------------------------------
+# -------------------------------------------------------------------
+# All, any, or none of these settings can be overridden in the
+# dataset_processor_config.json files. In those configs, you only
+# have to include the settings you want to override.
+# -------------------------------------------------------------------
+dataset_processor_config_fields = {
     # "scene": scene to use for testing dataset objects
     "scene": "data/test_assets/scenes/simple_room.glb",
     # "csv": if we are making a csv file of the results of any/all of our tests
@@ -49,6 +49,16 @@ dataset_processor_settings = {
         "render_time_ratio": True,
         "physics_data": True,
     },
+    # these refer to which metrics you will use to calculate how much RAM an object
+    # uses when you load it using the RigidObjectManager. Refer to the
+    # psutil.virtual_memory() function to see what each metric means, as "available"
+    # and "free" seem like the same thing, but they aren't. I calculate the difference
+    # in these metrics before and after loading the object, then take the average of them.
+    # All possible metrics are:
+    # "total", "available", "percent", "used", "free", "active", "inactive", "buffers",
+    # "cached", "shared", and "slab", but only really "available", "used", "free",
+    # "active", and "inactive" work with the way the script is currently implemented.
+    "ram_metrics_to_use": ["available", "used", "free"],
     # These indicate the units and thresholds you will allow when collecting
     # memory data from each asset.
     # "units": units used to measure asset sizes. Possible values are "bytes", "KB",
@@ -69,30 +79,6 @@ dataset_processor_settings = {
         "max_mesh_size": 2400,
         "max_image_num": 32,
         "max_image_size": 12000,
-    },
-    # these refer to which metrics you will use to calculate how much RAM an object
-    # uses when you load it using the RigidObjectManager. Refer to the
-    # psutil.virtual_memory() function to see what each metric means, as "available"
-    # and "free" seem like the same thing, but they aren't. I calculate the difference
-    # in these metrics before and after loading the object, then take the average of them.
-    # All possible metrics are:
-    # "total", "available", "percent", "used", "free", "active", "inactive", "buffers",
-    # "cached", "shared", and "slab", but only really "available", "used", "free",
-    # "active", and "inactive" work with the way the script is currently implemented.
-    "ram_metrics_to_use": ["available", "used", "free"],
-    # TODO: make sure these are right
-    # "mem_delta_order" is either -1 or 1. 1 means the delta is
-    # calculated as (end_start - start_state), whereas -1 means
-    # (start_state - end_state). E.g. Data "used" should be higher
-    # after loading, so mem_delta_order == 1, but data free should
-    # be higher before loading, so mem_delta_order == -1
-    "mem_delta_order": {
-        "available": -1,
-        "percent": 1,
-        "used": 1,
-        "free": -1,
-        "active": -1,
-        "inactive": 1,
     },
     # "fps": framerate used for physics simulation and video recording
     # "max_wait_time": max number of "time_units" script will wait for an object to become
@@ -156,10 +142,13 @@ dataset_processor_settings = {
     "debug_print": False,
     # "bbox_rgb": color of bounding box if recording video of rigid objects' bboxes
     "bbox_rgb": [1.0, 0.8, 1.0],
-    # -------------------------------------------------------------------
-    # The following settings likely shouldn't be changed
-    # -------------------------------------------------------------------
-    # First column of csv file. object_config.json file name
+}
+
+# -------------------------------------------------------------------
+# The following settings shouldn't be changed
+# -------------------------------------------------------------------
+dataset_processor_constants = {
+    # Title of first column of csv file. object_config.json file name
     "object_name": [
         "object template file",
     ],
@@ -214,20 +203,34 @@ dataset_processor_settings = {
         "pose 5",
         "pose 6",
     ],
-    # we must run physics tests on rigid objects in 6 different orientations,
-    # each corresponding to a face of an imaginary cube bounding the object.
-    # Each rotation is of the form:
+    # we must run physics tests on rigid objects in 6 different, orthogonal
+    # orientations, each corresponding to a face of an imaginary cube
+    # bounding the object. Each rotation is of the form:
     # (angle in degrees, (axis.x, axis.y, axis.z))
     "sim_test_rotations": [
-        (0, (1, 0, 0)),
-        (90, (1, 0, 0)),
-        (180, (1, 0, 0)),
-        (90, (-1, 0, 0)),
-        (90, (0, 0, -1)),
-        (90, (0, 0, 1)),
+        (0.0, (1, 0, 0)),
+        (90.0, (1, 0, 0)),
+        (180.0, (1, 0, 0)),
+        (90.0, (-1, 0, 0)),
+        (90.0, (0, 0, -1)),
+        (90.0, (0, 0, 1)),
     ],
+    # "mem_delta_order" is either -1 or 1. 1 means the delta is
+    # calculated as (end_start - start_state), whereas -1 means
+    # (start_state - end_state). E.g. Data "used" should be higher
+    # after loading, so mem_delta_order == 1, but data free should
+    # be higher before loading, so mem_delta_order == -1
+    "mem_delta_order": {
+        "available": -1,
+        "percent": 1,
+        "used": 1,
+        "free": -1,
+        "active": -1,
+        "inactive": 1,
+    },
 }
-default_sim_settings.update(dataset_processor_settings)
+default_sim_settings.update(dataset_processor_config_fields)
+default_sim_settings.update(dataset_processor_constants)
 
 
 def make_cfg(settings):

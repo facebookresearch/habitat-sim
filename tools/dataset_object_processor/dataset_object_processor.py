@@ -67,7 +67,7 @@ def record_revolving_obj(
     sim.curr_obj.translation = sim.default_obj_pos
     sim.curr_obj.rotation = last_rotation
 
-    # record object rotating about its x-axis, then its y-axis
+    # record object rotating about its y-axis, then its x-axis
     observations = []
     for axis in list(RotationAxis):
         curr_angle = 0.0
@@ -148,13 +148,12 @@ def record_kinematic_asset_video(sim: DatasetProcessorSim) -> None:
         sim.observations += record_revolving_obj(sim, revolution_angle, angle_delta)
 
 
-def process_asset_physics(sim: DatasetProcessorSim) -> List[str]:
-    """
-    Run series of tests on asset to see how it responds in physics simulations.
-    We snap an object down onto the surface below, then see how long it takes
-    for the object to stabilize and become idle.
-    :param sim: The Simulator instance.
-    """
+def run_simulations(
+    sim: DatasetProcessorSim,
+    max_wait_time: float,
+    recording: bool,
+) -> Tuple[List, List, List, List]:
+    """ """
     # we must test object in 6 different orientations, each corresponding to a face
     # of an imaginary cube bounding the object. Each rotation in rotations is of the form:
     # (angle, (axis.x, axis.y, axis.z)) where angle is in degrees
@@ -169,36 +168,9 @@ def process_asset_physics(sim: DatasetProcessorSim) -> List[str]:
     )
     sim_time_ratios: List[float] = [0.0] * len(rotations)
 
-    # Print object that we will be imminently simulating
-    text_format = ANSICodes.BRIGHT_RED.value
-    pcsu.print_if_logging(
-        sim,
-        text_format
-        + f"\nstart simulating {basename(sim.curr_obj.creation_attributes.handle)}"
-        + pcsu.section_divider,
-    )
-
-    # determine if we are recording a video, recording physics, and if so, set up
-    # agent recording transforms
-    record_video = sim.sim_settings["outputs"].get("video")
-    record_physics = sim.sim_settings["video_vars"].get("tasks").get("record_physics")
-    recording = record_video and record_physics
-    if recording:
-        sim.draw_task = "record_physics"
-        pcsu.print_if_logging(sim, ANSICodes.YELLOW.value + sim.draw_task + "\n")
-        recording_pos = sim.sim_settings["video_vars"].get("physics_recording_pos")
-        sim.default_agent.body.object.translation = mn.Vector3(recording_pos)
-        recording_rot = sim.sim_settings["video_vars"].get("physics_recording_rot")
-        angle = recording_rot.get("angle")
-        axis = mn.Vector3(recording_rot.get("axis"))
-        sim.default_agent.body.object.rotation = mn.Quaternion.rotation(
-            mn.Rad(mn.Deg(angle)), axis
-        )
-
     # Loop over the 6 rotations and simulate snapping the object down and waiting for
     # it to become idle (or until "max_wait_time" from the config file expires)
     dt = 1.0 / sim.sim_settings["physics_vars"].get("fps")  # seconds
-    max_wait_time = sim.sim_settings["physics_vars"].get("max_wait_time")  # seconds
     for i in range(len(rotations)):
 
         # Reset object state with new rotation using angle-axis to construct
@@ -208,7 +180,7 @@ def process_asset_physics(sim: DatasetProcessorSim) -> List[str]:
         sim.curr_obj.translation = sim.default_obj_pos
         angle = rotations[i][0]
         axis = rotations[i][1]
-        if axis.is_zero():
+        if angle == 0.0 or axis.is_zero():
             sim.curr_obj.rotation = mn.Quaternion.identity_init()
         else:
             sim.curr_obj.rotation = mn.Quaternion.rotation(angle, axis)
@@ -250,14 +222,65 @@ def process_asset_physics(sim: DatasetProcessorSim) -> List[str]:
         rotation_deltas[i] = sim.curr_obj.rotation * snap_rot.conjugated()
         sim_time_ratios[i] /= sim_steps
 
-    # convert results to lists of strings for csv file
+    return (wait_times, translation_deltas, rotation_deltas, sim_time_ratios)
+
+
+def process_asset_physics(sim: DatasetProcessorSim) -> List[str]:
+    """
+    Run series of tests on asset to see how it responds in physics simulations.
+    We snap an object down onto the surface below, then see how long it takes
+    for the object to stabilize and become idle.
+    :param sim: The Simulator instance.
+    """
+    # Print object that we will be imminently simulating
+    text_format = ANSICodes.BRIGHT_RED.value
+    pcsu.print_if_logging(
+        sim,
+        text_format
+        + f"\nstart simulating {basename(sim.curr_obj.creation_attributes.handle)}"
+        + pcsu.section_divider,
+    )
+
+    # determine if we are recording a video, recording physics, and if so, set up
+    # agent recording transforms
+    record_video = sim.sim_settings["outputs"].get("video")
+    record_physics = sim.sim_settings["video_vars"].get("tasks").get("record_physics")
+    recording = record_video and record_physics
+    if recording:
+        sim.draw_task = "record_physics"
+        pcsu.print_if_logging(sim, ANSICodes.YELLOW.value + sim.draw_task + "\n")
+        recording_pos = sim.sim_settings["video_vars"].get("physics_recording_pos")
+        sim.default_agent.body.object.translation = mn.Vector3(recording_pos)
+        recording_rot = sim.sim_settings["video_vars"].get("physics_recording_rot")
+        angle = recording_rot.get("angle")
+        axis = mn.Vector3(recording_rot.get("axis"))
+        sim.default_agent.body.object.rotation = mn.Quaternion.rotation(
+            mn.Rad(mn.Deg(angle)), axis
+        )
+
+    # Test object in 6 different orientations, each corresponding to a face
+    # of an imaginary cube bounding the object.
+    max_wait_time = sim.sim_settings["physics_vars"].get("max_wait_time")  # seconds
+    (
+        wait_times,
+        translation_deltas,
+        rotation_deltas,
+        sim_time_ratios,
+    ) = run_simulations(sim, max_wait_time, recording)
+
+    # convert each result to lists of strings for csv file
     time_units = sim.sim_settings["physics_vars"].get("time_units")
     times_as_strs = [
         "****timed out****" if t >= max_wait_time else f"{t} {time_units}"
         for t in wait_times
     ]
+
     decimal = 3
-    translation_deltas_strs = [f"{round(t, decimal)}" for t in translation_deltas]
+    distance_units = sim.sim_settings["physics_vars"].get("distance_units")
+    translation_deltas_strs = [
+        f"{round(t, decimal)} {distance_units}" for t in translation_deltas
+    ]
+
     decimal = 1
     angle_units = sim.sim_settings["physics_vars"].get("angle_units")
     rotation_deltas_strs = [
@@ -265,6 +288,7 @@ def process_asset_physics(sim: DatasetProcessorSim) -> List[str]:
         + f"axis:  ({round(r.axis().x, decimal)}, {round(r.axis().y, decimal)}, {round(r.axis().z, decimal)})"
         for r in rotation_deltas
     ]
+
     decimal = 7
     sim_time_strs = [f"{round(ratio, decimal)}" for ratio in sim_time_ratios]
 
@@ -342,14 +366,16 @@ def process_asset_mem_usage(
     total_mesh_data_size = index_data_size + vertex_data_size
 
     # return results as a list of strings formatted for csv rows
+    mesh_count_units = "meshes" if mesh_count != 1 else "mesh"
+    image_count_units = "images" if image_count != 1 else "image"
     return [
         render_asset_filename,
         collision_asset_filename,
-        f"{mesh_count}",
+        f"{mesh_count} {mesh_count_units}",
         pcsu.get_mem_size_str(index_data_size),
         pcsu.get_mem_size_str(vertex_data_size),
         pcsu.get_mem_size_str(total_mesh_data_size),
-        f"{image_count}",
+        f"{image_count} {image_count_units}",
         pcsu.get_mem_size_str(image_data_size),
         pcsu.get_mem_size_str(total_mesh_data_size + image_data_size),
     ]
