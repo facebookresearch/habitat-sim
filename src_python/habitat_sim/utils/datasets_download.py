@@ -167,7 +167,7 @@ def initialize_test_data_sources(data_path):
     data_sources.update(
         {
             f"hm3d_{split}_{data_format}": {
-                "source": "https://api.matterport.com/resources/habitat/hm3d-{split}-{data_format}.tar{ext}".format(
+                "source": "https://api.matterport.com/resources/habitat/hm3d-{split}-{data_format}-v0.2.tar{ext}".format(
                     ext="",
                     split=split,
                     data_format=data_format,
@@ -191,7 +191,7 @@ def initialize_test_data_sources(data_path):
             }
             for split, data_format in itertools.product(
                 ["minival", "train", "val"],
-                ["glb", "obj+mtl", "habitat", "configs"],
+                ["glb", "habitat", "configs"],
             )
         }
     )
@@ -199,11 +199,11 @@ def initialize_test_data_sources(data_path):
     data_sources.update(
         {
             f"hm3d_example_{data_format}": {
-                "source": "https://github.com/matterport/habitat-matterport-3dresearch/raw/main/example/hm3d-example-{data_format}.tar{ext}".format(
+                "source": "https://github.com/matterport/habitat-matterport-3dresearch/raw/main/example/hm3d-example-{data_format}-v0.2.tar{ext}".format(
                     ext="",
                     data_format=data_format,
                 ),
-                "package_name": "hm3d-example-{data_format}.tar{ext}".format(
+                "package_name": "hm3d-example-{data_format}-v0.2.tar{ext}".format(
                     ext="",
                     data_format=data_format,
                 ),
@@ -213,7 +213,7 @@ def initialize_test_data_sources(data_path):
                 "extract_postfix": "example",
                 "downloaded_file_list": f"hm3d-{{version}}/example-{data_format}-files.json.gz",
             }
-            for data_format in ["glb", "obj+mtl", "habitat", "configs"]
+            for data_format in ["glb", "habitat", "configs"]
         }
     )
 
