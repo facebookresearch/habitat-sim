@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright (c) Facebook, Inc. and its affiliates.
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
@@ -132,6 +132,12 @@ def initialize_test_data_sources(data_path):
             "link": data_path + "robots/franka_panda",
             "version": "1.0",
         },
+        "hab_spot_arm": {
+            "source": "http://dl.fbaipublicfiles.com/habitat/robots/hab_spot_arm_v1.0.zip",
+            "package_name": "hab_spot_arm_v1.0.zip",
+            "link": data_path + "robots/hab_spot_arm",
+            "version": "1.0",
+        },
         "hab_fetch": {
             "source": "http://dl.fbaipublicfiles.com/habitat/hab_fetch_v1.0.zip",
             "package_name": "hab_fetch_v1.0.zip",
@@ -162,18 +168,18 @@ def initialize_test_data_sources(data_path):
         {
             f"hm3d_{split}_{data_format}": {
                 "source": "https://api.matterport.com/resources/habitat/hm3d-{split}-{data_format}.tar{ext}".format(
-                    ext=".gz" if data_format == "obj+mtl" else "",
+                    ext="",
                     split=split,
                     data_format=data_format,
                 ),
                 "download_pre_args": "--location",
                 "package_name": "hm3d-{split}-{data_format}.tar{ext}".format(
-                    ext=".gz" if data_format == "obj+mtl" else "",
+                    ext="",
                     split=split,
                     data_format=data_format,
                 ),
                 "link": data_path + "scene_datasets/hm3d",
-                "version": "1.0",
+                "version": "0.2",
                 "version_dir": "hm3d-{version}/hm3d",
                 "extract_postfix": f"{split}",
                 "downloaded_file_list": f"hm3d-{{version}}/{split}-{data_format}-files.json.gz",
@@ -194,15 +200,15 @@ def initialize_test_data_sources(data_path):
         {
             f"hm3d_example_{data_format}": {
                 "source": "https://github.com/matterport/habitat-matterport-3dresearch/raw/main/example/hm3d-example-{data_format}.tar{ext}".format(
-                    ext=".gz" if data_format == "obj+mtl" else "",
+                    ext="",
                     data_format=data_format,
                 ),
                 "package_name": "hm3d-example-{data_format}.tar{ext}".format(
-                    ext=".gz" if data_format == "obj+mtl" else "",
+                    ext="",
                     data_format=data_format,
                 ),
                 "link": data_path + "scene_datasets/hm3d",
-                "version": "1.0",
+                "version": "0.2",
                 "version_dir": "hm3d-{version}/hm3d",
                 "extract_postfix": "example",
                 "downloaded_file_list": f"hm3d-{{version}}/example-{data_format}-files.json.gz",
@@ -213,20 +219,20 @@ def initialize_test_data_sources(data_path):
 
     data_sources.update(
         {
-            f"hm3d_{split}_semantic_{data_format}_v0.1": {
-                "source": "https://api.matterport.com/resources/habitat/hm3d-{split}-semantic-{data_format}-v0.1.tar{ext}".format(
-                    ext=".gz" if data_format == "annots" else "",
+            f"hm3d_{split}_semantic_{data_format}_v0.2": {
+                "source": "https://api.matterport.com/resources/habitat/hm3d-{split}-semantic-{data_format}-v0.2.tar{ext}".format(
+                    ext="",
                     split=split,
                     data_format=data_format,
                 ),
                 "download_pre_args": "--location",
-                "package_name": "hm3d-{split}-semantic-{data_format}-v0.1.tar{ext}".format(
-                    ext=".gz" if data_format == "annots" else "",
+                "package_name": "hm3d-{split}-semantic-{data_format}-v0.2.tar{ext}".format(
+                    ext="",
                     split=split,
                     data_format=data_format,
                 ),
                 "link": data_path + "scene_datasets/hm3d",
-                "version": "1.0",
+                "version": "0.2",
                 "version_dir": "hm3d-{version}/hm3d",
                 "extract_postfix": f"{split}",
                 "downloaded_file_list": f"hm3d-{{version}}/{split}-semantic-{data_format}-files.json.gz",
@@ -245,17 +251,17 @@ def initialize_test_data_sources(data_path):
 
     data_sources.update(
         {
-            f"hm3d_example_semantic_{data_format}_v0.1": {
-                "source": "https://github.com/matterport/habitat-matterport-3dresearch/raw/main/example/hm3d-example-semantic-{data_format}-v0.1.tar{ext}".format(
-                    ext=".gz" if data_format == "annots" else "",
+            f"hm3d_example_semantic_{data_format}_v0.2": {
+                "source": "https://github.com/matterport/habitat-matterport-3dresearch/raw/main/example/hm3d-example-semantic-{data_format}-v0.2.tar{ext}".format(
+                    ext="",
                     data_format=data_format,
                 ),
-                "package_name": "hm3d-example-semantic-{data_format}-v0.1.tar{ext}".format(
-                    ext=".gz" if data_format == "annots" else "",
+                "package_name": "hm3d-example-semantic-{data_format}-v0.2.tar{ext}".format(
+                    ext="",
                     data_format=data_format,
                 ),
                 "link": data_path + "scene_datasets/hm3d",
-                "version": "1.0",
+                "version": "0.2",
                 "version_dir": "hm3d-{version}/hm3d",
                 "extract_postfix": "example",
                 "downloaded_file_list": f"hm3d-{{version}}/example-semantic-{data_format}-files.json.gz",
@@ -286,36 +292,36 @@ def initialize_test_data_sources(data_path):
         "hm3d_example": [
             "hm3d_example_habitat",
             "hm3d_example_configs",
-            "hm3d_example_semantic_annots_v0.1",
-            "hm3d_example_semantic_configs_v0.1",
+            "hm3d_example_semantic_annots_v0.2",
+            "hm3d_example_semantic_configs_v0.2",
         ],
         "hm3d_val": [
             "hm3d_val_habitat",
             "hm3d_val_configs",
-            "hm3d_val_semantic_annots_v0.1",
-            "hm3d_val_semantic_configs_v0.1",
+            "hm3d_val_semantic_annots_v0.2",
+            "hm3d_val_semantic_configs_v0.2",
         ],
         "hm3d_train": [
             "hm3d_train_habitat",
             "hm3d_train_configs",
-            "hm3d_train_semantic_annots_v0.1",
-            "hm3d_train_semantic_configs_v0.1",
+            "hm3d_train_semantic_annots_v0.2",
+            "hm3d_train_semantic_configs_v0.2",
         ],
         "hm3d_minival": [
             "hm3d_minival_habitat",
             "hm3d_minival_configs",
-            "hm3d_minival_semantic_annots_v0.1",
-            "hm3d_minival_semantic_configs_v0.1",
+            "hm3d_minival_semantic_annots_v0.2",
+            "hm3d_minival_semantic_configs_v0.2",
         ],
         "hm3d_semantics": [
-            "hm3d_example_semantic_annots_v0.1",
-            "hm3d_example_semantic_configs_v0.1",
-            "hm3d_val_semantic_annots_v0.1",
-            "hm3d_val_semantic_configs_v0.1",
-            "hm3d_train_semantic_annots_v0.1",
-            "hm3d_train_semantic_configs_v0.1",
-            "hm3d_minival_semantic_annots_v0.1",
-            "hm3d_minival_semantic_configs_v0.1",
+            "hm3d_example_semantic_annots_v0.2",
+            "hm3d_example_semantic_configs_v0.2",
+            "hm3d_val_semantic_annots_v0.2",
+            "hm3d_val_semantic_configs_v0.2",
+            "hm3d_train_semantic_annots_v0.2",
+            "hm3d_train_semantic_configs_v0.2",
+            "hm3d_minival_semantic_annots_v0.2",
+            "hm3d_minival_semantic_configs_v0.2",
         ],
         "hm3d_full": list(filter(lambda k: k.startswith("hm3d_"), data_sources.keys())),
     }

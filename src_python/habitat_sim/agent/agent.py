@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright (c) Facebook, Inc. and its affiliates.
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
@@ -253,7 +253,7 @@ class Agent:
         attr.validate(state)
         habitat_sim.errors.assert_obj_valid(self.body)
 
-        if isinstance(state.rotation, (list, np.ndarray)):
+        if not isinstance(state.rotation, qt.quaternion):
             state.rotation = quat_from_coeffs(state.rotation)
 
         self.body.object.reset_transformation()
@@ -270,7 +270,7 @@ class Agent:
         if not infer_sensor_states:
             for k, v in state.sensor_states.items():
                 assert k in self.__sensor_suite
-                if isinstance(v.rotation, list):
+                if not isinstance(v.rotation, qt.quaternion):
                     v.rotation = quat_from_coeffs(v.rotation)
 
                 s = self.__sensor_suite[k]

@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -82,6 +82,13 @@ void Recorder::saveKeyframe() {
   advanceKeyframe();
 }
 
+Keyframe Recorder::extractKeyframe() {
+  updateInstanceStates();
+  auto retVal = std::move(currKeyframe_);
+  currKeyframe_ = Keyframe{};
+  return retVal;
+}
+
 const Keyframe& Recorder::getLatestKeyframe() {
   CORRADE_ASSERT(!savedKeyframes_.empty(),
                  "Recorder::getLatestKeyframe() : Trying to access latest "
@@ -162,8 +169,9 @@ int Recorder::findInstance(const scene::SceneNode* queryNode) {
                            return record.node == queryNode;
                          });
 
-  return it == instanceRecords_.end() ? ID_UNDEFINED
-                                      : int(it - instanceRecords_.begin());
+  return it == instanceRecords_.end()
+             ? ID_UNDEFINED
+             : static_cast<int>(it - instanceRecords_.begin());
 }
 
 RenderAssetInstanceState Recorder::getInstanceState(
@@ -196,7 +204,7 @@ void Recorder::writeSavedKeyframesToFile(const std::string& filepath,
                                          bool usePrettyWriter) {
   auto document = writeKeyframesToJsonDocument();
   // replay::Keyframes use floats (not doubles) so this is plenty of precision
-  const float maxDecimalPlaces = 7;
+  const int maxDecimalPlaces = 7;
   auto ok = esp::io::writeJsonToFile(document, filepath, usePrettyWriter,
                                      maxDecimalPlaces);
   ESP_CHECK(ok, "writeSavedKeyframesToFile: unable to write to " << filepath);

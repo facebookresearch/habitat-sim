@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -26,7 +26,6 @@
 #include "esp/gfx/GaussianFilterShader.h"
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/TextureVisualizerShader.h"
-#include "esp/gfx/magnum.h"
 #include "esp/sensor/VisualSensor.h"
 #include "esp/sim/Simulator.h"
 

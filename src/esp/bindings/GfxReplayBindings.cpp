@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -57,6 +57,19 @@ void initGfxReplayBindings(py::module& m) {
             self.getRecorder()->saveKeyframe();
           },
           R"(Save a render keyframe; a render keyframe can be loaded later and used to draw observations.)")
+
+      .def(
+          "extract_keyframe",
+          [](ReplayManager& self) {
+            if (!self.getRecorder()) {
+              throw std::runtime_error(
+                  "replay save not enabled. See "
+                  "SimulatorConfiguration.enable_gfx_replay_save.");
+            }
+            return esp::gfx::replay::Recorder::keyframeToString(
+                self.getRecorder()->extractKeyframe());
+          },
+          R"(Extract a render keyframe as a JSON-formatted string)")
 
       .def(
           "add_user_transform_to_keyframe",

@@ -1,12 +1,12 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
 #ifndef ESP_SCENE_SCENEGRAPH_H
 #define ESP_SCENE_SCENEGRAPH_H
 
+#include <Magnum/SceneGraph/Scene.h>
 #include <unordered_map>
-
 #include "esp/core/Esp.h"
 #include "esp/gfx/magnum.h"
 

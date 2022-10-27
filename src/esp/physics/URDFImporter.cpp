@@ -1,14 +1,17 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
 // Code adapted from Bullet3/examples/Importers/ImportURDFDemo ...
 
+#include "URDFImporter.h"
+
 #include <iostream>
 
 #include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Path.h>
-#include "URDFImporter.h"
+#include "esp/assets/ResourceManager.h"
+#include "esp/metadata/managers/AssetAttributesManager.h"
 
 namespace Mn = Magnum;
 

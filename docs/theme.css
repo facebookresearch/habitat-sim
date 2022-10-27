@@ -1,3 +1,7 @@
+/** Copyright (c) Meta Platforms, Inc. and its affiliates.
+ *  This source code is licensed under the MIT license found in the
+ *  LICENSE file in the root directory of this source tree.
+ */
 :root {
   /* Text properties */
   --font: 'Source Sans Pro', sans-serif;
@@ -97,10 +101,10 @@
 
   --success-color: #3bd267;
   --success-link-active-color: #acecbe;
-  --success-filled-color: #acecbe;
-  --success-filled-background-color: #2a703f;
-  --success-filled-link-color: #3bd267;
-  --success-filled-link-active-color: #acecbe;
+  --success-filled-color: #2a703f;
+  --success-filled-background-color: #d9efdf;
+  --success-filled-link-color: #00cf3c;
+  --success-filled-link-active-color: #53e97d;
 
   --warning-color: #6d7207;
   --warning-link-active-color: #e9ecae;
@@ -118,8 +122,8 @@
 
   --info-color: #2f83cc;
   --info-link-active-color: #5297d7;
-  --info-filled-color: #a5caeb;
-  --info-filled-background-color: #2a4f70;
+  --info-filled-color: #2a4f70;
+  --info-filled-background-color: #d7ebfe;
   --info-filled-link-color: #5297d7;
   --info-filled-link-active-color: #a5caeb;
 

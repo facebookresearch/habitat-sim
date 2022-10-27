@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -7,22 +7,18 @@
 
 #include <vector>
 
+#include <Corrade/Containers/Array.h>
 #include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/Containers/StridedArrayView.h>
-#include <Corrade/Utility/Path.h>
-#include <Magnum/GL/PixelFormat.h>
-#include <Magnum/Image.h>
+#include <Magnum/GL/Mesh.h>
 #include <Magnum/Math/Color.h>
-#include <Magnum/Math/CubicHermite.h>
-#include <Magnum/Math/Range.h>
-#include <Magnum/PixelFormat.h>
+#include <Magnum/Trade/MeshData.h>
 
 #include "esp/assets/MeshData.h"
 #include "esp/assets/MeshMetaData.h"
 #include "esp/core/Esp.h"
 #include "esp/geo/Geo.h"
 #include "esp/gfx/Drawable.h"
-#include "esp/gfx/magnum.h"
 
 #ifdef ESP_BUILD_WITH_VHACD
 #include "VHACD.h"

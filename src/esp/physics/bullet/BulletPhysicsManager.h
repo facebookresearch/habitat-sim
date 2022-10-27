@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -57,7 +57,8 @@ class BulletPhysicsManager : public PhysicsManager {
    */
   explicit BulletPhysicsManager(
       assets::ResourceManager& _resourceManager,
-      const metadata::attributes::PhysicsManagerAttributes::cptr&
+      const std::shared_ptr<
+          const metadata::attributes::PhysicsManagerAttributes>&
           _physicsManagerAttributes);
 
   /** @brief Destructor which destructs necessary Bullet physics structures.*/

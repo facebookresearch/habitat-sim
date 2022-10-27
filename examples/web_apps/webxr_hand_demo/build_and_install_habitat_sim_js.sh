@@ -1,4 +1,9 @@
 #!/bin/sh
+
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 cd ../../.. || { echo "Failed to navigate to habitat_sim directory"; exit 1; }
 ./build_js.sh --bullet
 mkdir -p examples/web_apps/webxr_hand_demo/lib/habitat-sim-js/

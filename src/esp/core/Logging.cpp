@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -66,7 +66,11 @@ LoggingLevel levelFromName(const Corrade::Containers::StringView name) {
                              {});
 }
 
+#if !defined(MAGNUM_BUILD_STATIC_UNIQUE_GLOBALS) || \
+    defined(CORRADE_TARGET_WINDOWS)
+/* (Of course) can't be in an unnamed namespace in order to export it below */
 namespace {
+#endif
 #if defined(MAGNUM_BUILD_STATIC_UNIQUE_GLOBALS) && \
     !defined(CORRADE_TARGET_WINDOWS)
 /* On static builds that get linked to multiple shared libraries and then used
@@ -81,7 +85,10 @@ __attribute__((weak))
 #endif
 #endif
 const LoggingContext* currentLoggingContext = nullptr;
+#if !defined(MAGNUM_BUILD_STATIC_UNIQUE_GLOBALS) || \
+    defined(CORRADE_TARGET_WINDOWS)
 }  // namespace
+#endif
 
 bool LoggingContext::hasCurrent() {
   return currentLoggingContext != nullptr;

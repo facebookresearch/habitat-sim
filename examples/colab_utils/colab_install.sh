@@ -1,4 +1,9 @@
 #!/bin/bash
+
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 set -e
 shopt -s extglob
 shopt -s globstar
@@ -43,12 +48,11 @@ git clone https://github.com/facebookresearch/habitat-sim --depth 1
 #Install Requirements.
 cd /content/habitat-lab/
 set +e
-pip install -r ./requirements.txt
+pip install -r ./habitat-lab/requirements.txt
 reqs=(./habitat_baselines/**/requirements.txt)
 pip install "${reqs[@]/#/-r}"
 set -e
-python setup.py develop --all
-pip install . #Reinstall to trigger sys.path update
+pip install -e habitat-lab
 cd /content/habitat-sim/
 
 #Download Assets

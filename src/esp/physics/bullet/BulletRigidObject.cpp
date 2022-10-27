@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -16,6 +16,8 @@
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
 #include "BulletCollisionHelper.h"
 #include "BulletRigidObject.h"
+#include "esp/assets/ResourceManager.h"
+#include "esp/metadata/managers/AssetAttributesManager.h"
 
 //!  A Few considerations in construction
 //!  Bullet Mesh conversion adapted from:
