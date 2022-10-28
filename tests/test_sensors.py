@@ -199,7 +199,11 @@ def test_sensors(
         else:
             make_cfg_settings[sens] = False
 
-    make_cfg_settings[sensor_type] = True
+    make_cfg_settings["sensors"] = [
+        {
+            "uuid": sensor_type,
+        }
+    ]
     make_cfg_settings["scene"] = scene
     make_cfg_settings["scene_dataset_config_file"] = scene_dataset_config
     make_cfg_settings["frustum_culling"] = frustum_culling
@@ -249,7 +253,11 @@ def test_reconfigure_render(
 
     make_cfg_settings["scene"] = _test_scenes[-1][0]
     make_cfg_settings["scene_dataset_config_file"] = _test_scenes[-1][1]
-    make_cfg_settings[sensor_type] = True
+    make_cfg_settings["sensors"] = [
+        {
+            "uuid": sensor_type,
+        }
+    ]
 
     cfg = make_cfg(make_cfg_settings)
 
@@ -301,9 +309,11 @@ def test_smoke_redwood_noise(scene_and_dataset, gpu2gpu, make_cfg_settings):
     if gpu2gpu and (not habitat_sim.cuda_enabled or not _HAS_TORCH):
         pytest.skip("Skipping GPU->GPU test")
     scene_dataset_config = scene_and_dataset[1]
-    make_cfg_settings["depth_sensor"] = True
-    make_cfg_settings["color_sensor"] = False
-    make_cfg_settings["semantic_sensor"] = False
+    make_cfg_settings["sensors"] = [
+        {
+            "uuid": "depth_sensor",
+        }
+    ]
     make_cfg_settings["scene"] = scene
     make_cfg_settings["scene_dataset_config_file"] = scene_dataset_config
     hsim_cfg = make_cfg(make_cfg_settings)
@@ -351,9 +361,11 @@ def test_rgba_noise(scene_and_dataset, model_name, make_cfg_settings):
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
     scene_dataset_config = scene_and_dataset[1]
-    make_cfg_settings["depth_sensor"] = False
-    make_cfg_settings["color_sensor"] = True
-    make_cfg_settings["semantic_sensor"] = False
+    make_cfg_settings["sensors"] = [
+        {
+            "uuid": "color_sensor",
+        }
+    ]
     make_cfg_settings["scene"] = scene
     make_cfg_settings["scene_dataset_config_file"] = scene_dataset_config
     hsim_cfg = make_cfg(make_cfg_settings)

@@ -38,7 +38,7 @@ def test_kinematics():
     ] = "data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"
     # enable the physics simulator: also clears available actions to no-op
     cfg_settings["enable_physics"] = True
-    cfg_settings["depth_sensor"] = True
+    cfg_settings["sensors"] = [{"uuid": "depth_sensor"}, {"uuid": "color_sensor"}]
 
     # test loading the physical scene
     hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
@@ -152,7 +152,14 @@ def test_kinematics_no_physics():
     ] = "data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"
     # enable the physics simulator: also clears available actions to no-op
     cfg_settings["enable_physics"] = False
-    cfg_settings["depth_sensor"] = True
+    cfg_settings["sensors"] = [
+        {
+            "uuid": "depth_sensor",
+        },
+        {
+            "uuid": "color_sensor",
+        },
+    ]
 
     # test loading the physical scene
     hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
@@ -269,7 +276,14 @@ def test_dynamics():
     ] = "data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"
     # enable the physics simulator: also clears available actions to no-op
     cfg_settings["enable_physics"] = True
-    cfg_settings["depth_sensor"] = True
+    cfg_settings["sensors"] = [
+        {
+            "uuid": "depth_sensor",
+        },
+        {
+            "uuid": "color_sensor",
+        },
+    ]
 
     # test loading the physical scene
     hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)

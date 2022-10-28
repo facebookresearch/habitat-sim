@@ -14,17 +14,16 @@ default_sim_settings = {
     "sensors": [
         {
             "uuid": "color_sensor",
-            "width": 640,
-            "height": 480,
-            "sensor_height": 1.5,
-            "hfov": 90,
-            "sensor_subtype": habitat_sim.SensorSubType.PINHOLE,
-            "sensor_type": habitat_sim.SensorType.COLOR,
-            "position": [0, 1.5, 0],
-            "channels": 3,
-            "camera_type": habitat_sim.CameraSensorSpec,
         },
     ],
+}
+
+default_sensor_settings = {
+    "width": 640,
+    "height": 480,
+    "hfov": 90,
+    "position": [0, 1.5, 0],
+    "orientation": [0, 0, 0],
 }
 
 
@@ -85,39 +84,58 @@ def make_cfg(settings):
         return equirect_sensor_spec
 
     for sensor_cfg in settings["sensors"]:
-        if sensor_cfg["camera_type"] == habitat_sim.CameraSensorSpec:
-            camera_spec = create_camera_spec(
-                uuid=sensor_cfg["uuid"],
-                hfov=sensor_cfg["hfov"],
-                sensor_type=sensor_cfg["sensor_type"],
-                sensor_subtype=sensor_cfg["sensor_subtype"],
-                position=sensor_cfg["position"],
-                channels=sensor_cfg["channels"],
-                resolution=[sensor_cfg["height"], sensor_cfg["width"]],
+        sensor_cfg = {**default_sensor_settings, **sensor_cfg}
+        uuid = sensor_cfg["uuid"]
+
+        sensor_type = (
+            habitat_sim.SensorType.DEPTH
+            if "depth" in uuid
+            else (
+                habitat_sim.SensorType.SEMANTIC
+                if "semantic" in uuid
+                else habitat_sim.SensorType.COLOR
             )
-            sensor_specs.append(camera_spec)
-        elif sensor_cfg["camera_type"] == habitat_sim.FisheyeSensorDoubleSphereSpec:
+        )
+        sensor_subtype = (
+            habitat_sim.SensorSubType.ORTHOGRAPHI
+            if "ortho" in uuid
+            else habitat_sim.SensorSubType.PINHOLE
+        )
+        channels = 3 if sensor_type is habitat_sim.SensorType.COLOR else 1
+
+        if "fisheye" in uuid:
             fisheye_spec = create_fisheye_spec(
                 uuid=sensor_cfg["uuid"],
                 hfov=sensor_cfg["hfov"],
-                sensor_type=sensor_cfg["sensor_type"],
-                sensor_subtype=sensor_cfg["sensor_subtype"],
                 position=sensor_cfg["position"],
-                channels=sensor_cfg["channels"],
                 resolution=[sensor_cfg["height"], sensor_cfg["width"]],
+                sensor_type=sensor_type,
+                sensor_subtype=sensor_subtype,
+                channels=channels,
             )
             sensor_specs.append(fisheye_spec)
-        elif sensor_cfg["camera_type"] == habitat_sim.EquirectangularSensorSpec:
+        elif "equirect" in uuid:
             equirect_spec = create_equirect_spec(
                 uuid=sensor_cfg["uuid"],
                 hfov=sensor_cfg["hfov"],
-                sensor_type=sensor_cfg["sensor_type"],
-                sensor_subtype=sensor_cfg["sensor_subtype"],
                 position=sensor_cfg["position"],
-                channels=sensor_cfg["channels"],
                 resolution=[sensor_cfg["height"], sensor_cfg["width"]],
+                sensor_type=sensor_type,
+                sensor_subtype=sensor_subtype,
+                channels=channels,
             )
             sensor_specs.append(equirect_spec)
+        else:
+            camera_spec = create_camera_spec(
+                uuid=sensor_cfg["uuid"],
+                hfov=sensor_cfg["hfov"],
+                position=sensor_cfg["position"],
+                resolution=[sensor_cfg["height"], sensor_cfg["width"]],
+                sensor_type=sensor_type,
+                sensor_subtype=sensor_subtype,
+                channels=channels,
+            )
+            sensor_specs.append(camera_spec)
 
     # create agent specifications
     agent_cfg = habitat_sim.agent.AgentConfiguration()
