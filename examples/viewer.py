@@ -268,7 +268,7 @@ class HabitatSimInteractiveViewer(Application):
         sensor_uuid = active_agent_id_and_sensor_name[1]
 
         # get specified sensor, then get sensor observations, which renders them
-        self.camera_sensor = self.sim._Simulator__sensors[agent_id][sensor_uuid]
+        self.camera_sensor = self.sim.get_sensor(sensor_uuid, agent_id)
         self.sim.get_sensor_observations(agent_id)
         self.debug_draw()
         self.camera_sensor.render_target.blit_rgba_to_default()
