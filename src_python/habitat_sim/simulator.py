@@ -37,6 +37,8 @@ from habitat_sim.utils.common import quat_from_angle_axis
 
 # ------------------------------------------------------------------------
 # Types to simplify sensor observation variables
+
+#
 uuidToSensor = Dict[str, Sensor]
 
 # bool - if the sensor's corresponding agent collided with something.
@@ -48,9 +50,15 @@ uuidToSensor = Dict[str, Sensor]
 # ndarray - if the observation is from a visual sensor, e.g. 2d array image
 # "Tensor" - multi-dimensional matrix if using PyTorch
 SensorObservation = Union[bool, ndarray, "Tensor"]
+
+#
 uuidToSensorObs = Dict[str, SensorObservation]
 
+#
 uuidToImageView = Dict[str, mn.MutableImageView2D]
+
+#
+uuidToSensorNoiseModel = Dict[str, SensorNoiseModel]
 # ------------------------------------------------------------------------
 
 
@@ -83,23 +91,33 @@ class Simulator(SimulatorBackend):
     object manipulation, and physics simulation.
     """
 
+    # Simulator variables
     config: Configuration
-    agents: List[Agent] = attr.ib(factory=list, init=False)
+    _initialized: bool = attr.ib(default=False, init=False)
 
+    # agent variables
+    agents: List[Agent] = attr.ib(factory=list, init=False)
+    _default_agent_id: int = attr.ib(default=0, init=False)
+    _async_draw_agent_ids: Optional[Union[int, List[int]]] = None
+    __last_state: Dict[int, AgentState] = attr.ib(factory=dict, init=False)
+
+    # sensor variables
+    # ------------------------------------------------------------------------
     # TODO: remove these eventually in favor of sensors that are not
     # necessarily tied to agents
-    __sensors: List[Dict[str, Sensor]] = attr.ib(factory=list, init=False)
+    __sensors: List[uuidToSensor] = attr.ib(factory=list, init=False)
     __obs_buffers: List[uuidToSensorObs] = attr.ib(factory=list, init=False)
     __image_views: List[uuidToImageView] = attr.ib(factory=list, init=False)
 
-    __noise_models: Dict[str, SensorNoiseModel] = attr.ib(factory=dict, init=False)
-    __last_state: Dict[int, AgentState] = attr.ib(factory=dict, init=False)
-    _default_agent_id: int = attr.ib(default=0, init=False)
-    _async_draw_agent_ids: Optional[Union[int, List[int]]] = None
+    # # TODO: use these eventually instead of the above variables
+    # __sensors: uuidToSensor = attr.ib(factory=dict, init=False)
+    # __obs_buffers: uuidToSensorObs = attr.ib(factory=dict, init=False)
+    # __image_views: uuidToImageView = attr.ib(factory=dict, init=False)
+    # ------------------------------------------------------------------------
+    __noise_models: uuidToSensorNoiseModel = attr.ib(factory=dict, init=False)
+
+    # physics variables/time step variables
     _num_total_frames: int = attr.ib(default=0, init=False)
-
-    _initialized: bool = attr.ib(default=False, init=False)
-
     _previous_step_time: float = attr.ib(
         default=0.0, init=False
     )  # track the compute time of each step
@@ -308,10 +326,8 @@ class Simulator(SimulatorBackend):
 
         self._default_agent_id = config.sim_cfg.default_agent_id
 
-        self.__noise_models: Dict[str, SensorNoiseModel] = dict()
-        self.__sensors: List[Dict[str, Sensor]] = [
-            dict() for i in range(len(config.agents))
-        ]
+        self.__noise_models: uuidToSensorNoiseModel = dict()
+        self.__sensors: List[uuidToSensor] = [dict() for i in range(len(config.agents))]
         self.__obs_buffers: List[uuidToSensorObs] = [
             dict() for i in range(len(config.agents))
         ]
@@ -467,8 +483,9 @@ class Simulator(SimulatorBackend):
         if agent_id is not None:
             return self.__sensors[agent_id].get(sensor_uuid)
         else:
-            # TODO: use this eventually, so that sensors are independent of agents
-            return self.__sensors_dict.get(sensor_uuid)
+            # # TODO: use this eventually, so that sensors are independent of agents
+            # return self.__sensors.get(sensor_uuid)
+            return None
 
     def get_agent(self, agent_id: int) -> Agent:
         return self.agents[agent_id]

@@ -252,16 +252,16 @@ void initSensorBindings(py::module& m) {
           "far_plane_dist", &CameraSensor::getFar, &CameraSensor::setFar,
           R"(The distance to the far clipping plane for this CameraSensor uses.)")
       .def(
-          "buffer",
+          "obs_buffer",
           [](CameraSensor& self, int gpuDevice) {
             py::handle handle = py::cast(self);
-            if (!py::hasattr(handle, "__buffer")) {
+            if (!py::hasattr(handle, "__obs_buffer")) {
               if (self.specification()->gpu2gpuTransfer) {
                 auto torch = py::module_::import("torch");
                 if (self.specification()->sensorType ==
                     esp::sensor::SensorType::Semantic) {
                   py::setattr(
-                      handle, "__buffer",
+                      handle, "__obs_buffer",
                       torch.attr("empty")(
                           (py::int_(self.specification()->resolution[0]),
                            py::int_(self.specification()->resolution[1])),
@@ -271,7 +271,7 @@ void initSensorBindings(py::module& m) {
                 } else if (self.specification()->sensorType ==
                            esp::sensor::SensorType::Depth) {
                   py::setattr(
-                      handle, "__buffer",
+                      handle, "__obs_buffer",
                       torch.attr("empty")(
                           (py::int_(self.specification()->resolution[0]),
                            py::int_(self.specification()->resolution[1])),
@@ -280,7 +280,7 @@ void initSensorBindings(py::module& m) {
                               py::str("cuda"), py::int_(gpuDevice))));
                 } else {
                   py::setattr(
-                      handle, "__buffer",
+                      handle, "__obs_buffer",
                       torch.attr("empty")(
                           (py::int_(self.specification()->resolution[0]),
                            py::int_(self.specification()->resolution[1]),
@@ -306,7 +306,7 @@ void initSensorBindings(py::module& m) {
                       {sizeof(uint32_t) * self.specification()->resolution[1],
                        sizeof(uint32_t)} /* Strides for each dimension */
                       ));
-                  py::setattr(handle, "__buffer", pyBuffer);
+                  py::setattr(handle, "__obs_buffer", pyBuffer);
                 } else if (self.specification()->sensorType ==
                            esp::sensor::SensorType::Depth) {
                   auto pyBuffer = py::array(py::buffer_info(
@@ -322,7 +322,7 @@ void initSensorBindings(py::module& m) {
                       {sizeof(float) * self.specification()->resolution[1],
                        sizeof(float)} /* Strides for each dimension */
                       ));
-                  py::setattr(handle, "__buffer", pyBuffer);
+                  py::setattr(handle, "__obs_buffer", pyBuffer);
                 } else {
                   auto pyBuffer = py::array(py::buffer_info(
                       nullptr, /* Pointer to data (nullptr -> ask NumPy to
@@ -339,11 +339,11 @@ void initSensorBindings(py::module& m) {
                        sizeof(uint8_t) * self.specification()->channels,
                        sizeof(uint8_t)} /* Strides for each dimension */
                       ));
-                  py::setattr(handle, "__buffer", pyBuffer);
+                  py::setattr(handle, "__obs_buffer", pyBuffer);
                 }
               }
             }
-            return py::getattr(handle, "__buffer");
+            return py::getattr(handle, "__obs_buffer");
           },
           "Buffer attribute");
 

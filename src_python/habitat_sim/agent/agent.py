@@ -326,5 +326,4 @@ class Agent:
         return self.get_subtree_sensors().get(uuid)
 
     def close(self) -> None:
-        self.__sensor_suite.clear()
         self.__sensor_suite = None
