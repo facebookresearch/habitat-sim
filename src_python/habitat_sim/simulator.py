@@ -1,15 +1,16 @@
-#!/usr/bin/env python3collided
+#!/usr/bin/env python3
 
 # Copyright (c) Meta Platforms, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
 import time
+from collections import OrderedDict
 from collections.abc import MutableMapping
 from os import path as osp
 from typing import Any, Dict, List
 from typing import MutableMapping as MutableMapping_T
-from typing import Optional, OrderedDict, Union, cast, overload
+from typing import Optional, Union, cast, overload
 
 import attr
 import magnum as mn
@@ -551,10 +552,9 @@ class Simulator(SimulatorBackend):
         # As backport. All Dicts are ordered in Python >= 3.7
         per_agent_observations: Dict[int, uuidToSensorObs] = OrderedDict()
         for agent_id in agent_ids:
-            agent_observations = {
-                uuid: self._get_observation_async(sensor, agent_id)
-                for (uuid, sensor) in self.__sensors[agent_id].items()
-            }
+            agent_observations: uuidToSensorObs = {}
+            for sensor_uuid, sensor in self.__sensors[agent_id].items():
+                agent_observations[sensor_uuid] = sensor._get_observation_async()
             per_agent_observations[agent_id] = agent_observations
 
         if return_single:
@@ -799,7 +799,7 @@ class Simulator(SimulatorBackend):
             rot = quat_from_angle_axis(0, np.array([1, 0, 0]))
 
         audio_sensor.setAudioListenerTransform(
-            audio_sensor.node.absolute_translation,  # set the listener position
+            audio_sensor.object.absolute_translation,  # set the listener position
             np.array([rot.w, rot.x, rot.y, rot.z]),  # set the listener orientation
         )
 
@@ -817,16 +817,12 @@ class Simulator(SimulatorBackend):
             assert self.renderer is not None
             # see if the sensor is attached to a scene graph, otherwise it is invalid,
             # and cannot make any observation
-            if sensor.node is None:
+            if sensor.object is None:
                 raise habitat_sim.errors.InvalidAttachedObject(
                     "Sensor observation requested but sensor is invalid.\
                     (has it been detached from a scene node?)"
                 )
-            # TODO which draw_observation call to use?
-            # I believe "self.renderer.draw(sensor, self)" calls
-            # "sensor.draw_observation(self)" anyway
-            sensor.draw_observation(self)
-            # self.renderer.draw(sensor, self)
+            self.renderer.draw(sensor, self)
 
     def _draw_observation_async(
         self,
@@ -852,7 +848,7 @@ class Simulator(SimulatorBackend):
 
             # see if the sensor is attached to a scene graph, otherwise it is invalid,
             # and cannot make any observation
-            if sensor.node is None:
+            if sensor.object is None:
                 raise habitat_sim.errors.InvalidAttachedObject(
                     "Sensor observation requested but sensor is invalid.\
                     (has it been detached from a scene node?)"
