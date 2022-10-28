@@ -264,20 +264,18 @@ class HabitatSimInteractiveViewer(Application):
             )
 
         # Get agent id and sensor uuid
-        keys = active_agent_id_and_sensor_name
-        agent_id = keys[0]
-        sensor_uuid = keys[1]
+        agent_id = active_agent_id_and_sensor_name[0]
+        sensor_uuid = active_agent_id_and_sensor_name[1]
 
         # get specified sensor, then get sensor observations, which renders them
-        sensor = self.sim._Simulator__sensors[agent_id][sensor_uuid]
-        self.camera_sensor = sensor
+        self.camera_sensor = self.sim._Simulator__sensors[agent_id][sensor_uuid]
         self.sim.get_sensor_observations(agent_id)
         self.debug_draw()
-        sensor.render_target.blit_rgba_to_default()
+        self.camera_sensor.render_target.blit_rgba_to_default()
         mn.gl.default_framebuffer.bind()
 
         # draw CPU/GPU usage data and other info to the app window
-        self.draw_text(sensor.specification())
+        self.draw_text(self.camera_sensor.specification())
 
         self.swap_buffers()
         Timer.next_frame()
