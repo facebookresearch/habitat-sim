@@ -1,14 +1,14 @@
 {
-  "scene_dataset_config_file": "data/versioned_data/replica_cad_dataset_1.5/replicaCAD.scene_dataset_config.json",
+  "scene_dataset_config_file": "data/google_object_dataset/google_object_dataset.scene_dataset_config.json",
   "outputs": {
     "csv": true,
     "video": true
   },
   "output_paths": {
-    "output_file_prefix": "default"
+    "output_file_prefix": "google_scanned"
   },
   "start_obj_index": 0,
-  "num_objects": 10,
+  "num_objects": 5,
   "data_to_collect": {
     "ram_calc_multiple_samples": true,
     "memory_data": true,
