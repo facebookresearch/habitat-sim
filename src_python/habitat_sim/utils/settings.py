@@ -101,7 +101,7 @@ def make_cfg(settings):
             if "ortho" in uuid
             else habitat_sim.SensorSubType.PINHOLE
         )
-        channels = 3 if sensor_type is habitat_sim.SensorType.COLOR else 1
+        channels = 4 if sensor_type is habitat_sim.SensorType.COLOR else 1
 
         if "fisheye" in uuid:
             fisheye_spec = create_fisheye_spec(

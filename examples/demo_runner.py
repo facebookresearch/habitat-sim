@@ -258,12 +258,13 @@ class DemoRunner:
             # get simulation step time without sensor observations
             total_sim_step_time += self._sim._previous_step_time
 
+            sensor_uuids = [sensor["uuid"] for sensor in self._sim_settings["sensors"]]
             if self._sim_settings["save_png"]:
-                if self._sim_settings["color_sensor"]:
+                if "color_sensor" in sensor_uuids:
                     self.save_color_observation(observations, total_frames)
-                if self._sim_settings["depth_sensor"]:
+                if "depth_sensor" in sensor_uuids:
                     self.save_depth_observation(observations, total_frames)
-                if self._sim_settings["semantic_sensor"]:
+                if "semantic_sensor" in sensor_uuids:
                     self.save_semantic_observation(observations, total_frames)
 
             state = self._sim.last_state()
@@ -283,7 +284,7 @@ class DemoRunner:
                 print("len(action_path)", len(self._action_path))
 
             if (
-                self._sim_settings["semantic_sensor"]
+                "semantic_sensor" in sensor_uuids
                 and self._sim_settings["print_semantic_mask_stats"]
             ):
                 self.output_semantic_mask_stats(observations, total_frames)
@@ -409,7 +410,6 @@ class DemoRunner:
 
     def example(self):
         start_state = self.init_common()
-
         # initialize and compute shortest path to goal
         if self._sim_settings["compute_shortest_path"]:
             self._shortest_path = ShortestPath()

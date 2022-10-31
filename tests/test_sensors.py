@@ -190,20 +190,23 @@ def test_sensors(
     # We only support adding more RGB Sensors if one is already in a scene
     # We can add depth sensors whenever
     add_sensor_lazy = add_sensor_lazy and all_base_sensor_types[1] == sensor_type
-
     for sens in all_base_sensor_types:
-        if add_sensor_lazy:
-            make_cfg_settings[sens] = (
-                sens in all_base_sensor_types[:2] and sens != sensor_type
+        if (
+            add_sensor_lazy
+            and sens in all_base_sensor_types[:2]
+            and sens != sensor_type
+        ):
+            make_cfg_settings["sensors"].append(
+                {
+                    "uuid": sens,
+                }
             )
-        else:
-            make_cfg_settings[sens] = False
 
-    make_cfg_settings["sensors"] = [
+    make_cfg_settings["sensors"].append(
         {
             "uuid": sensor_type,
         }
-    ]
+    )
     make_cfg_settings["scene"] = scene
     make_cfg_settings["scene_dataset_config_file"] = scene_dataset_config
     make_cfg_settings["frustum_culling"] = frustum_culling
