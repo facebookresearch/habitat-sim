@@ -24,11 +24,11 @@ def test_unproject():
 
     # configure some settings in case defaults change
     cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/apartment_1.glb"
+    cfg_settings["width"] = 101
+    cfg_settings["height"] = 101
     cfg_settings["sensors"] = [
         {
             "uuid": "color_sensor",
-            "width": 101,
-            "height": 101,
             "position": [0, 0, 0],
         }
     ]

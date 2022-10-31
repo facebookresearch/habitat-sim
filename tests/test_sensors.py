@@ -290,7 +290,6 @@ def test_smoke_no_sensors(make_cfg_settings):
             continue
         scene_dataset_config = scene_and_dataset[1]
         make_cfg_settings = {k: v for k, v in make_cfg_settings.items()}
-        make_cfg_settings["semantic_sensor"] = False
         make_cfg_settings["scene"] = scene
         make_cfg_settings["scene_dataset_config_file"] = scene_dataset_config
         cfg = make_cfg(make_cfg_settings)

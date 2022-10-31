@@ -8,6 +8,8 @@ import habitat_sim.agent
 default_sim_settings = {
     "scene_dataset_config_file": "default",
     "scene": "NONE",
+    "width": 640,
+    "height": 480,
     "default_agent": 0,
     "seed": 1,
     "physics_config_file": "data/default.physics_config.json",
@@ -19,8 +21,6 @@ default_sim_settings = {
 }
 
 default_sensor_settings = {
-    "width": 640,
-    "height": 480,
     "hfov": 90,
     "position": [0, 1.5, 0],
     "orientation": [0, 0, 0],
@@ -107,7 +107,7 @@ def make_cfg(settings):
             fisheye_spec = create_fisheye_spec(
                 uuid=sensor_cfg["uuid"],
                 position=sensor_cfg["position"],
-                resolution=[sensor_cfg["height"], sensor_cfg["width"]],
+                resolution=[settings["height"], settings["width"]],
                 sensor_type=sensor_type,
                 channels=channels,
             )
@@ -116,7 +116,7 @@ def make_cfg(settings):
             equirect_spec = create_equirect_spec(
                 uuid=sensor_cfg["uuid"],
                 position=sensor_cfg["position"],
-                resolution=[sensor_cfg["height"], sensor_cfg["width"]],
+                resolution=[settings["height"], settings["width"]],
                 sensor_type=sensor_type,
                 channels=channels,
             )
@@ -126,7 +126,7 @@ def make_cfg(settings):
                 uuid=sensor_cfg["uuid"],
                 hfov=sensor_cfg["hfov"],
                 position=sensor_cfg["position"],
-                resolution=[sensor_cfg["height"], sensor_cfg["width"]],
+                resolution=[settings["height"], settings["width"]],
                 sensor_type=sensor_type,
                 sensor_subtype=sensor_subtype,
                 channels=channels,

@@ -40,6 +40,8 @@ args = parser.parse_args()
 def make_settings():
     settings = dr.default_sim_settings.copy()
     settings["max_frames"] = args.max_frames
+    settings["width"] = args.width
+    settings["height"] = args.height
     settings["scene"] = args.scene
     settings["save_png"] = args.save_png
     settings["print_semantic_scene"] = args.print_semantic_scene
@@ -58,8 +60,6 @@ def make_settings():
         settings["sensors"].append(
             {
                 "uuid": "color_sensor",
-                "width": args.width,
-                "height": args.height,
                 "position": [0, args.sensor_height, 0],
             }
         )
@@ -67,8 +67,6 @@ def make_settings():
         settings["sensors"].append(
             {
                 "uuid": "semantic_sensor",
-                "width": args.width,
-                "height": args.height,
                 "position": [0, args.sensor_height, 0],
             }
         )
@@ -76,8 +74,6 @@ def make_settings():
         settings["sensors"].append(
             {
                 "uuid": "depth_sensor",
-                "width": args.width,
-                "height": args.height,
                 "position": [0, args.sensor_height, 0],
             }
         )
