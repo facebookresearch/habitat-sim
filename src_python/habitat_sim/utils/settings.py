@@ -97,7 +97,7 @@ def make_cfg(settings):
             )
         )
         sensor_subtype = (
-            habitat_sim.SensorSubType.ORTHOGRAPHI
+            habitat_sim.SensorSubType.ORTHOGRAPHIC
             if "ortho" in uuid
             else habitat_sim.SensorSubType.PINHOLE
         )

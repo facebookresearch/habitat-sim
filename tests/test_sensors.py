@@ -189,6 +189,7 @@ def test_sensors(
 
     # We only support adding more RGB Sensors if one is already in a scene
     # We can add depth sensors whenever
+    make_cfg_settings["sensors"] = []
     add_sensor_lazy = add_sensor_lazy and all_base_sensor_types[1] == sensor_type
     for sens in all_base_sensor_types:
         if (
@@ -341,7 +342,8 @@ def test_initial_hfov(scene_and_dataset, sensor_type, make_cfg_settings):
     scene = scene_and_dataset[0]
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
-    make_cfg_settings["hfov"] = 70
+    for sens_cfg in make_cfg_settings["sensors"]:
+        sens_cfg["hfov"] = 70
     with habitat_sim.Simulator(make_cfg(make_cfg_settings)) as sim:
         assert sim.agents[0]._sensors[sensor_type].hfov == mn.Deg(
             70
