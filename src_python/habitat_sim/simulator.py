@@ -405,9 +405,7 @@ class Simulator(SimulatorBackend):
         # self._init_sensor(sensor_spec)
 
     @overload
-    def add_sensor(
-        self, sensor_spec: SensorSpec, attach_to: Optional[bool] = None
-    ) -> None:
+    def add_sensor(self, sensor_spec: SensorSpec) -> None:
         # Add global sensor to root node
         ...
 
@@ -418,15 +416,14 @@ class Simulator(SimulatorBackend):
 
     @overload
     def add_sensor(self, sensor_spec: SensorSpec, attach_to: managedObject) -> None:
-        # Add sensor to scene node that a scene object is attached to (e.g.)
-        # a ManagedBulletRigidObject
+        # Add sensor to scene node that a scene object is attached to,
+        # e.g., a ManagedBulletRigidObject
         ...
 
     def add_sensor(
         self,
         sensor_spec: SensorSpec,
         attach_to: Union[
-            bool,
             int,
             managedObject,
         ] = None,
@@ -436,8 +433,12 @@ class Simulator(SimulatorBackend):
         scene_node: SceneNode = None
         if attach_to is None:
             scene_node = self.get_active_scene_graph().get_root_node()
-        elif isinstance(attach_to, SceneNode):
-            scene_node = attach_to
+        elif isinstance(attach_to, int):
+            agent_id = attach_to
+            agent = self.get_agent(agent_id)
+            agent._add_sensor(sensor_spec)
+            self._init_sensor(sensor_spec, agent_id)
+            return
         elif isinstance(
             attach_to,
             (
