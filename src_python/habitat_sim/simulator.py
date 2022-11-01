@@ -406,76 +406,54 @@ class Simulator(SimulatorBackend):
 
     @overload
     def add_sensor(
-        self, sensor_spec: SensorSpec, instance: Optional[bool] = None
+        self, sensor_spec: SensorSpec, attach_to: Optional[bool] = None
     ) -> None:
         # Add global sensor to root node
         ...
 
     @overload
-    def add_sensor(self, sensor_spec: SensorSpec, instance: SceneNode) -> None:
-        # Add sensor directly to given scene node
+    def add_sensor(self, sensor_spec: SensorSpec, attach_to: int) -> None:
+        # Add sensor to scene node associated with the given agent id
+        ...
+
+    @overload
+    def add_sensor(self, sensor_spec: SensorSpec, attach_to: managedObject) -> None:
+        # Add sensor to scene node that a scene object is attached to (e.g.)
+        # a ManagedBulletRigidObject
         ...
 
     def add_sensor(
         self,
         sensor_spec: SensorSpec,
-        instance: Union[
-            Optional[bool],
-            SceneNode,
+        attach_to: Union[
+            bool,
+            int,
+            managedObject,
         ] = None,
     ) -> None:
         self.__verify_sensor_spec(sensor_spec)
 
         scene_node: SceneNode = None
-        if isinstance(instance, bool):
+        if attach_to is None:
             scene_node = self.get_active_scene_graph().get_root_node()
-        elif isinstance(instance, SceneNode):
-            scene_node = instance
+        elif isinstance(attach_to, SceneNode):
+            scene_node = attach_to
+        elif isinstance(
+            attach_to,
+            (
+                ManagedRigidObject,
+                ManagedBulletRigidObject,
+                ManagedArticulatedObject,
+                ManagedBulletArticulatedObject,
+            ),
+        ):
+            scene_node = attach_to.root_scene_node
 
         self.__create_sensor(sensor_spec, scene_node)
 
-    # @overload
-    # def add_sensor(self, sensor_spec: SensorSpec, obj: managedObject) -> None:
-    #     # Add sensor to scene node that obj is attached to
-    #     ...
-
-    # @overload
-    # def add_sensor(self, sensor_spec: SensorSpec, agent_id: int) -> None:
-    #     # Add sensor to scene node associated with the given agent
-    #     ...
-
-    # def add_sensor(
-    #     self,
-    #     sensor_spec: SensorSpec,
-    #     instance: Union[
-    #         bool,
-    #         SceneNode,
-    #         managedObject,
-    #         int,
-    #     ],
-    # ) -> None:
-    #     self.__verify_sensor_spec(sensor_spec)
-
-    #     scene_node: SceneNode = None
-    #     if isinstance(instance, bool):
-    #         scene_node = self.get_active_scene_graph().get_root_node()
-    #     elif isinstance(instance, SceneNode):
-    #         scene_node = instance
-    #     elif (
-    #         isinstance(instance, ManagedRigidObject)
-    #         or isinstance(instance, ManagedBulletRigidObject)
-    #         or isinstance(instance, ManagedArticulatedObject)
-    #         or isinstance(instance, ManagedBulletArticulatedObject)
-    #     ):
-    #         scene_node = instance.root_scene_node
-    #     elif isinstance(instance, int):
-    #         scene_node = self.get_agent(instance).scene_node
-
-    #     self.__create_sensor(sensor_spec, scene_node)
-
-    #     # TODO: temporary, adapt as we refactor our sensor functionality
-    #     if isinstance(instance, int):
-    #         self._init_sensor(sensor_spec, instance)
+        # TODO: temporary, adapt as we refactor our sensor functionality
+        if isinstance(attach_to, int):
+            self._init_sensor(sensor_spec, attach_to)
 
     # @overload
     # def _init_sensor(self, sensor_spec: SensorSpec) -> None:
