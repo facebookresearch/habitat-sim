@@ -1051,7 +1051,7 @@ for iteration in range(2):
                     apply_filter=True,
                 )
             else:
-                for _, v in agent._sensors.items():
+                for v in agent._sensors.values():
                     habitat_sim.errors.assert_obj_valid(v)
                     agent.controls.action(
                         v.object,
