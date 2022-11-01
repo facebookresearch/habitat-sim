@@ -28,10 +28,23 @@ except ImportError:
 
 import habitat_sim.errors
 from habitat_sim.agent.agent import Agent, AgentConfiguration, AgentState
-from habitat_sim.bindings import Sensor, SensorSpec, SensorType, cuda_enabled
+from habitat_sim.bindings import (
+    Sensor,
+    SensorFactory,
+    SensorSpec,
+    SensorType,
+    cuda_enabled,
+)
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.metadata import MetadataMediator
 from habitat_sim.nav import GreedyGeodesicFollower, NavMeshSettings
+from habitat_sim.physics import (
+    ManagedArticulatedObject,
+    ManagedBulletArticulatedObject,
+    ManagedBulletRigidObject,
+    ManagedRigidObject,
+)
+from habitat_sim.scene import SceneNode
 from habitat_sim.sensors.noise_models import SensorNoiseModel, make_sensor_noise_model
 from habitat_sim.sim import SimulatorBackend, SimulatorConfiguration
 from habitat_sim.utils.common import quat_from_angle_axis
@@ -60,6 +73,14 @@ uuidToImageView = Dict[str, mn.MutableImageView2D]
 
 #
 uuidToSensorNoiseModel = Dict[str, SensorNoiseModel]
+
+#
+managedObject = Union[
+    ManagedRigidObject,
+    ManagedBulletRigidObject,
+    ManagedArticulatedObject,
+    ManagedBulletArticulatedObject,
+]
 # ------------------------------------------------------------------------
 
 
@@ -107,9 +128,9 @@ class Simulator(SimulatorBackend):
     __image_views: List[uuidToImageView] = attr.ib(factory=list, init=False)
 
     # # TODO: use these eventually instead of the above variables
-    # __sensors: uuidToSensor = attr.ib(factory=dict, init=False)
-    # __obs_buffers: uuidToSensorObs = attr.ib(factory=dict, init=False)
-    # __image_views: uuidToImageView = attr.ib(factory=dict, init=False)
+    __sensors_: uuidToSensor = attr.ib(factory=dict, init=False)
+    __obs_buffers_: uuidToSensorObs = attr.ib(factory=dict, init=False)
+    __image_views_: uuidToImageView = attr.ib(factory=dict, init=False)
     # ------------------------------------------------------------------------
     __noise_models: uuidToSensorNoiseModel = attr.ib(factory=dict, init=False)
 
@@ -355,9 +376,7 @@ class Simulator(SimulatorBackend):
             self.__noise_models[sensor_spec.uuid] = self.make_noise_model(sensor_spec)
         return self.__noise_models.get(sensor_spec.uuid)
 
-    def add_sensor(
-        self, sensor_spec: SensorSpec, agent_id: Optional[int] = None
-    ) -> None:
+    def __verify_sensor_spec(self, sensor_spec: SensorSpec) -> None:
         if (
             (
                 not self.config.sim_cfg.load_semantic_mesh
@@ -379,17 +398,179 @@ class Simulator(SimulatorBackend):
                     """
             )
 
-        # TODO: change such that sensors don't need to be tied to agents
-        if agent_id is None:
-            agent_id = self._default_agent_id
-        agent = self.get_agent(agent_id=agent_id)
-        agent._add_sensor(sensor_spec)
+    def __create_sensor(self, sensor_spec: SensorSpec, scene_node: SceneNode) -> None:
+        assert scene_node is not None
+        sensors_added = SensorFactory.create_sensors(scene_node, [sensor_spec])
+        self.__sensors_[sensor_spec.uuid][sensors_added[sensor_spec.uuid]]
+        # self._init_sensor(sensor_spec)
 
-        # TODO: temporary, adapt as we refactor our sensor functionality
-        self._init_sensor(sensor_spec, agent_id)
+    @overload
+    def add_sensor(
+        self, sensor_spec: SensorSpec, instance: Optional[bool] = None
+    ) -> None:
+        # Add global sensor to root node
+        ...
 
-    def _init_sensor(self, sensor_spec: SensorSpec, agent_id: Optional[int] = None):
-        # TODO: temporary method while we get rid of Simulator.Sensor wrapper class
+    @overload
+    def add_sensor(self, sensor_spec: SensorSpec, instance: SceneNode) -> None:
+        # Add sensor directly to given scene node
+        ...
+
+    def add_sensor(
+        self,
+        sensor_spec: SensorSpec,
+        instance: Union[
+            Optional[bool],
+            SceneNode,
+        ] = None,
+    ) -> None:
+        self.__verify_sensor_spec(sensor_spec)
+
+        scene_node: SceneNode = None
+        if isinstance(instance, bool):
+            scene_node = self.get_active_scene_graph().get_root_node()
+        elif isinstance(instance, SceneNode):
+            scene_node = instance
+
+        self.__create_sensor(sensor_spec, scene_node)
+
+    # @overload
+    # def add_sensor(self, sensor_spec: SensorSpec, obj: managedObject) -> None:
+    #     # Add sensor to scene node that obj is attached to
+    #     ...
+
+    # @overload
+    # def add_sensor(self, sensor_spec: SensorSpec, agent_id: int) -> None:
+    #     # Add sensor to scene node associated with the given agent
+    #     ...
+
+    # def add_sensor(
+    #     self,
+    #     sensor_spec: SensorSpec,
+    #     instance: Union[
+    #         bool,
+    #         SceneNode,
+    #         managedObject,
+    #         int,
+    #     ],
+    # ) -> None:
+    #     self.__verify_sensor_spec(sensor_spec)
+
+    #     scene_node: SceneNode = None
+    #     if isinstance(instance, bool):
+    #         scene_node = self.get_active_scene_graph().get_root_node()
+    #     elif isinstance(instance, SceneNode):
+    #         scene_node = instance
+    #     elif (
+    #         isinstance(instance, ManagedRigidObject)
+    #         or isinstance(instance, ManagedBulletRigidObject)
+    #         or isinstance(instance, ManagedArticulatedObject)
+    #         or isinstance(instance, ManagedBulletArticulatedObject)
+    #     ):
+    #         scene_node = instance.root_scene_node
+    #     elif isinstance(instance, int):
+    #         scene_node = self.get_agent(instance).scene_node
+
+    #     self.__create_sensor(sensor_spec, scene_node)
+
+    #     # TODO: temporary, adapt as we refactor our sensor functionality
+    #     if isinstance(instance, int):
+    #         self._init_sensor(sensor_spec, instance)
+
+    # @overload
+    # def _init_sensor(self, sensor_spec: SensorSpec) -> None:
+    #     ...
+
+    # def _init_sensor(self, sensor_spec: SensorSpec) -> None:
+    #     # TODO: temporary method while we refactor sensors
+
+    #     sensor = self.__sensors_.get(sensor_spec.uuid)
+    #     if sensor_spec.sensor_type == SensorType.AUDIO:
+    #         return
+
+    #     if self.renderer is not None:
+    #         self.renderer.bind_render_target(sensor)
+
+    #     if sensor_spec.gpu2gpu_transfer:
+    #         # TODO: this part may not be right, it was adapted from what was in Simulator.Sensor
+    #         assert cuda_enabled, "Must build habitat sim with cuda for gpu2gpu-transfer"
+    #         assert _HAS_TORCH
+    #         device = torch.device("cuda", self.gpu_device)  # type: ignore[attr-defined]
+    #         torch.cuda.set_device(device)
+
+    #         # create empty "Torch" buffers to store sensor observations
+    #         if sensor_spec.sensor_type == SensorType.SEMANTIC:
+    #             self.__obs_buffers_[sensor_spec.uuid] = torch.empty(
+    #                 sensor_spec.resolution[0],
+    #                 sensor_spec.resolution[1],
+    #                 dtype=torch.int32,
+    #                 device=device,
+    #             )
+    #         elif sensor_spec.sensor_type == SensorType.DEPTH:
+    #             self.__obs_buffers_[sensor_spec.uuid] = torch.empty(
+    #                 sensor_spec.resolution[0],
+    #                 sensor_spec.resolution[1],
+    #                 dtype=torch.float32,
+    #                 device=device,
+    #             )
+    #         else:
+    #             self.__obs_buffers_[sensor_spec.uuid] = torch.empty(
+    #                 sensor_spec.resolution[0],
+    #                 sensor_spec.resolution[1],
+    #                 sensor_spec.channels,  # for R, G, B, A
+    #                 dtype=torch.uint8,
+    #                 device=device,
+    #             )
+    #     else:
+    #         # create empty ndarry to store sensor observations
+    #         # create empty MutableImageView2D to store results of what is in render target
+    #         view_size = sensor.framebuffer_size
+
+    #         if sensor_spec.sensor_type == SensorType.SEMANTIC:
+    #             self.__obs_buffers_[sensor_spec.uuid] = np.empty(
+    #                 (sensor_spec.resolution[0], sensor_spec.resolution[1]),
+    #                 dtype=np.uint32,
+    #             )
+
+    #             obs_buffer = self.__obs_buffers_.get(sensor_spec.uuid)
+    #             self.__image_views_[sensor_spec.uuid] = mn.MutableImageView2D(
+    #                 mn.PixelFormat.R32UI, view_size, obs_buffer
+    #             )
+    #         elif sensor_spec.sensor_type == SensorType.DEPTH:
+    #             self.__obs_buffers_[sensor_spec.uuid] = np.empty(
+    #                 (sensor_spec.resolution[0], sensor_spec.resolution[1]),
+    #                 dtype=np.float32,
+    #             )
+
+    #             obs_buffer = self.__obs_buffers_.get(sensor_spec.uuid)
+    #             self.__image_views_[sensor_spec.uuid] = mn.MutableImageView2D(
+    #                 mn.PixelFormat.R32F,
+    #                 view_size,
+    #                 obs_buffer,
+    #             )
+    #         else:  # sensor_spec.sensor_type == SensorType.COLOR:
+    #             self.__obs_buffers_[sensor_spec.uuid] = np.empty(
+    #                 (
+    #                     sensor_spec.resolution[0],
+    #                     sensor_spec.resolution[1],
+    #                     sensor_spec.channels,  # for R, G, B, A
+    #                 ),
+    #                 dtype=np.uint8,
+    #             )
+
+    #             obs_buffer = self.__obs_buffers_.get(sensor_spec.uuid)
+    #             self.__image_views_[sensor_spec.uuid] = mn.MutableImageView2D(
+    #                 mn.PixelFormat.RGBA8_UNORM,
+    #                 view_size,
+    #                 obs_buffer.reshape(sensor_spec.resolution[0], -1),  # type: ignore[union-attr]
+    #             )
+
+    # @overload
+    # def _init_sensor(self, sensor_spec: SensorSpec, agent_id: int) -> None:
+    #     ...
+
+    def _init_sensor(self, sensor_spec: SensorSpec, agent_id: int) -> None:
+        # TODO: temporary method while we refactor sensors
 
         sensor = self.get_agent(agent_id)._sensors[sensor_spec.uuid]
         self.__sensors[agent_id][sensor_spec.uuid] = sensor
@@ -480,6 +661,11 @@ class Simulator(SimulatorBackend):
             # # TODO: use this eventually, so that sensors are independent of agents
             # return self.__sensors.get(sensor_uuid)
             return None
+
+    # TODO
+    def get_subtree_sensors(self, scene_node: SceneNode) -> uuidToSensor:
+        assert scene_node is not None
+        return scene_node.subtree_sensors
 
     def get_agent(self, agent_id: int) -> Agent:
         return self.agents[agent_id]
