@@ -448,6 +448,8 @@ jobs:
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat; cd habitat-lab
+              git checkout sensor-refactor-habitat-sim
+              git pull origin/main
               pip install -e habitat-lab
               pip install -e habitat-baselines
               export PYTHONPATH=.:$PYTHONPATH
