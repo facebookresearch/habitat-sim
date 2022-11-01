@@ -609,6 +609,11 @@ class Simulator(SimulatorBackend):
         # TODO Deprecate and remove
         self.__last_state[self._default_agent_id] = state
 
+    @property
+    def _sensors(self) -> Dict[str, "Sensor"]:
+        # TODO Deprecate and remove
+        return self.__sensors[self._default_agent_id]
+
     def last_state(self, agent_id: Optional[int] = None) -> AgentState:
         if agent_id is None:
             agent_id = self._default_agent_id
