@@ -114,7 +114,7 @@ def make_custom_settings():
         "width": 720,  # Spatial resolution of the observations
         "height": 544,
         "scene": "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb",  # Scene path
-        "scene_dataset_config": "./data/scene_datasets/mp3d_example/mp3d.scene_dataset_config.json",  # MP3D scene dataset
+        "scene_dataset_config_file": "./data/scene_datasets/mp3d_example/mp3d.scene_dataset_config.json",  # MP3D scene dataset
         "default_agent": 0,
         "sensors": [
             {
