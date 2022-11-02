@@ -101,7 +101,7 @@ def make_custom_settings():
     settings = {
         "width": 1280,  # Spatial resolution of the observations
         "height": 720,
-        "scene_dataset": "data/replica_cad/replicaCAD.scene_dataset_config.json",  # dataset path
+        "scene_dataset_config_file": "data/replica_cad/replicaCAD.scene_dataset_config.json",  # dataset path
         "scene": "NONE",  # Scene path
         "default_agent": 0,
         "seed": 1,
