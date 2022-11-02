@@ -49,7 +49,6 @@
 
 # %cd /content/habitat-sim
 ## [setup]
-import math
 import os
 import random
 import sys
@@ -65,6 +64,7 @@ from PIL import Image
 import habitat_sim
 from habitat_sim.utils import common as ut
 from habitat_sim.utils import viz_utils as vut
+from habitat_sim.utils.settings import default_sim_settings, make_cfg
 
 try:
     import ipywidgets as widgets
@@ -404,117 +404,27 @@ def show_template_properties(template):
 # @markdown (double click to show code)
 
 # @markdown This cell defines a number of utility functions used throughout the tutorial to make simulator reconstruction easy:
-# @markdown - make_cfg
-# @markdown - make_default_settings
+# @markdown - make_custom_settings
 # @markdown - make_simulator_from_settings
 
 
-def make_cfg(settings):
-    sim_cfg = habitat_sim.SimulatorConfiguration()
-    sim_cfg.gpu_device_id = 0
-    sim_cfg.scene_id = settings["scene"]
-    sim_cfg.enable_physics = settings["enable_physics"]
-    # Optional; Specify the location of an existing scene dataset configuration
-    # that describes the locations and configurations of all the assets to be used
-    if "scene_dataset_config" in settings:
-        sim_cfg.scene_dataset_config_file = settings["scene_dataset_config"]
-
-    # Note: all sensors must have the same resolution
-    sensor_specs = []
-    if settings["color_sensor_1st_person"]:
-        color_sensor_1st_person_spec = habitat_sim.CameraSensorSpec()
-        color_sensor_1st_person_spec.uuid = "color_sensor_1st_person"
-        color_sensor_1st_person_spec.sensor_type = habitat_sim.SensorType.COLOR
-        color_sensor_1st_person_spec.resolution = [
-            settings["height"],
-            settings["width"],
-        ]
-        color_sensor_1st_person_spec.position = [0.0, settings["sensor_height"], 0.0]
-        color_sensor_1st_person_spec.orientation = [
-            settings["sensor_pitch"],
-            0.0,
-            0.0,
-        ]
-        color_sensor_1st_person_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
-        sensor_specs.append(color_sensor_1st_person_spec)
-    if settings["depth_sensor_1st_person"]:
-        depth_sensor_1st_person_spec = habitat_sim.CameraSensorSpec()
-        depth_sensor_1st_person_spec.uuid = "depth_sensor_1st_person"
-        depth_sensor_1st_person_spec.sensor_type = habitat_sim.SensorType.DEPTH
-        depth_sensor_1st_person_spec.resolution = [
-            settings["height"],
-            settings["width"],
-        ]
-        depth_sensor_1st_person_spec.position = [0.0, settings["sensor_height"], 0.0]
-        depth_sensor_1st_person_spec.orientation = [
-            settings["sensor_pitch"],
-            0.0,
-            0.0,
-        ]
-        depth_sensor_1st_person_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
-        sensor_specs.append(depth_sensor_1st_person_spec)
-    if settings["semantic_sensor_1st_person"]:
-        semantic_sensor_1st_person_spec = habitat_sim.CameraSensorSpec()
-        semantic_sensor_1st_person_spec.uuid = "semantic_sensor_1st_person"
-        semantic_sensor_1st_person_spec.sensor_type = habitat_sim.SensorType.SEMANTIC
-        semantic_sensor_1st_person_spec.resolution = [
-            settings["height"],
-            settings["width"],
-        ]
-        semantic_sensor_1st_person_spec.position = [
-            0.0,
-            settings["sensor_height"],
-            0.0,
-        ]
-        semantic_sensor_1st_person_spec.orientation = [
-            settings["sensor_pitch"],
-            0.0,
-            0.0,
-        ]
-        semantic_sensor_1st_person_spec.sensor_subtype = (
-            habitat_sim.SensorSubType.PINHOLE
-        )
-        sensor_specs.append(semantic_sensor_1st_person_spec)
-    if settings["color_sensor_3rd_person"]:
-        color_sensor_3rd_person_spec = habitat_sim.CameraSensorSpec()
-        color_sensor_3rd_person_spec.uuid = "color_sensor_3rd_person"
-        color_sensor_3rd_person_spec.sensor_type = habitat_sim.SensorType.COLOR
-        color_sensor_3rd_person_spec.resolution = [
-            settings["height"],
-            settings["width"],
-        ]
-        color_sensor_3rd_person_spec.position = [
-            0.0,
-            settings["sensor_height"] + 0.2,
-            0.2,
-        ]
-        color_sensor_3rd_person_spec.orientation = [-math.pi / 4, 0, 0]
-        color_sensor_3rd_person_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
-        sensor_specs.append(color_sensor_3rd_person_spec)
-
-    # Here you can specify the amount of displacement in a forward action and the turn angle
-    agent_cfg = habitat_sim.agent.AgentConfiguration()
-    agent_cfg.sensor_specifications = sensor_specs
-
-    return habitat_sim.Configuration(sim_cfg, [agent_cfg])
-
-
-def make_default_settings():
+def make_custom_settings():
     settings = {
         "width": 720,  # Spatial resolution of the observations
         "height": 544,
         "scene": "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb",  # Scene path
         "scene_dataset": "./data/scene_datasets/mp3d_example/mp3d.scene_dataset_config.json",  # mp3d scene dataset
         "default_agent": 0,
-        "sensor_height": 1.5,  # Height of sensors in meters
-        "sensor_pitch": -math.pi / 8.0,  # sensor pitch (x rotation in rads)
-        "color_sensor_1st_person": True,  # RGB sensor
-        "color_sensor_3rd_person": False,  # RGB sensor 3rd person
-        "depth_sensor_1st_person": False,  # Depth sensor
-        "semantic_sensor_1st_person": False,  # Semantic sensor
+        "sensors": [
+            {
+                "uuid": "color_sensor_1st_person",
+                "position": [0, 1.5, 0],
+            },
+        ],
         "seed": 1,
         "enable_physics": True,  # enable dynamics simulation
     }
+    settings = {**default_sim_settings, **settings}
     return settings
 
 
@@ -852,9 +762,8 @@ def build_widget_ui(obj_attr_mgr, prim_attr_mgr):
 
 # %%
 # @title Initialize Simulator and Load Scene { display-mode: "form" }
-sim_settings = make_default_settings()
+sim_settings = make_custom_settings()
 sim_settings["scene"] = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
-sim_settings["sensor_pitch"] = 0
 
 make_simulator_from_settings(sim_settings)
 
@@ -1007,10 +916,13 @@ rigid_obj_mgr.remove_all_objects()
 # %%
 # @markdown ###Configuring Object Semantic IDs:
 
-sim_settings = make_default_settings()
+sim_settings = make_custom_settings()
 sim_settings["scene"] = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
-sim_settings["sensor_pitch"] = 0
-sim_settings["semantic_sensor_1st_person"] = True
+sim_settings["sensors"].append(
+    {
+        "uuid": "semantic_sensor_1st_person",
+    },
+)
 
 make_simulator_from_settings(sim_settings)
 
@@ -1096,9 +1008,8 @@ rigid_obj_mgr.remove_all_objects()
 # %%
 # @title Initialize Simulator and Load Scene { display-mode: "form" }
 # @markdown (load the apartment_1 scene for object and primitive asset customization in an open space)
-sim_settings = make_default_settings()
+sim_settings = make_custom_settings()
 sim_settings["scene"] = "./data/scene_datasets/habitat-test-scenes/apartment_1.glb"
-sim_settings["sensor_pitch"] = 0
 
 make_simulator_from_settings(sim_settings)
 
