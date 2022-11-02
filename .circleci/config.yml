@@ -439,6 +439,10 @@ jobs:
                 git clone -q --depth 1 https://github.com/facebookresearch/habitat-lab.git
               fi
               cd habitat-lab
+              git pull origin main
+              git submodule update --init --recursive
+              git checkout sensor-refactor-habitat-sim
+              git commit
               pip install -r habitat-lab/requirements.txt --progress-bar off
               ln -s ../habitat-sim/data data
               touch ~/miniconda/pip_deps_installed
@@ -448,10 +452,6 @@ jobs:
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat; cd habitat-lab
-              git pull origin/main
-              git submodule update --init --recursive
-              git checkout sensor-refactor-habitat-sim
-              git commit
               pip install -e habitat-lab
               pip install -e habitat-baselines
               export PYTHONPATH=.:$PYTHONPATH
