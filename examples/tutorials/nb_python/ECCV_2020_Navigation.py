@@ -273,7 +273,7 @@ sim_settings = {
     "width": 256,  # Spatial resolution of the observations
     "height": 256,
     "scene": test_scene,  # Scene path
-    "scene_dataset": mp3d_scene_dataset,  # the scene dataset configuration files
+    "scene_dataset_config_file": mp3d_scene_dataset,  # the scene dataset configuration files
     "default_agent": 0,
     "sensors": [],
     "seed": 1,  # used in the random navigation
