@@ -107,6 +107,7 @@ def make_cfg(settings):
             fisheye_spec = create_fisheye_spec(
                 uuid=sensor_cfg["uuid"],
                 position=sensor_cfg["position"],
+                orientation=sensor_cfg["orientation"],
                 resolution=[settings["height"], settings["width"]],
                 sensor_type=sensor_type,
                 channels=channels,
@@ -116,6 +117,7 @@ def make_cfg(settings):
             equirect_spec = create_equirect_spec(
                 uuid=sensor_cfg["uuid"],
                 position=sensor_cfg["position"],
+                orientation=sensor_cfg["orientation"],
                 resolution=[settings["height"], settings["width"]],
                 sensor_type=sensor_type,
                 channels=channels,
@@ -126,6 +128,7 @@ def make_cfg(settings):
                 uuid=sensor_cfg["uuid"],
                 hfov=sensor_cfg["hfov"],
                 position=sensor_cfg["position"],
+                orientation=sensor_cfg["orientation"],
                 resolution=[settings["height"], settings["width"]],
                 sensor_type=sensor_type,
                 sensor_subtype=sensor_subtype,
