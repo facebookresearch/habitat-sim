@@ -184,13 +184,6 @@ jobs:
       - run:
           name: setup
           command: |
-              # Updated llvm to v 10
-              sudo apt-get update
-              sudo apt-get install llvm-10
-              cd /usr/bin
-              sudo rm  llvm-config
-              sudo ln -s llvm-config-10 llvm-config
-              cd ~/project/
               pip install -U pip
               pip install -U --prefer-binary \
                 black \
