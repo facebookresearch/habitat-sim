@@ -1720,7 +1720,7 @@ assets::MeshData::ptr PathFinder::Impl::getNavMeshData(
       }
     }
     // return newly added meshdata
-    return islandMeshData_.emplace(islandIndex, curIslandMeshData)
+    return islandMeshData_.emplace(islandIndex, std::move(curIslandMeshData))
         .first->second;
   }
   // meshdata already exists, so lookup and return
