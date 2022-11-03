@@ -441,7 +441,7 @@ jobs:
               cd habitat-lab
               git pull origin main
               git submodule update --init --recursive
-              git checkout sensor-refactor-habitat-sim
+              git checkout origin/sensor_refactor_1.0
               git commit
               pip install -r habitat-lab/requirements.txt --progress-bar off
               ln -s ../habitat-sim/data data
@@ -452,6 +452,10 @@ jobs:
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat; cd habitat-lab
+              git pull origin main
+              git submodule update --init --recursive
+              git checkout origin/sensor_refactor_1.0
+              git commit
               pip install -e habitat-lab
               pip install -e habitat-baselines
               export PYTHONPATH=.:$PYTHONPATH
