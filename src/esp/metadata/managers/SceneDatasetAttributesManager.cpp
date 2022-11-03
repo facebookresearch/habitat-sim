@@ -462,7 +462,7 @@ void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(
     // object is available now. Modify it using json tag data
     attrMgr->setValsFromJSONDoc(attr, jCell["attributes"]);
     // register object
-    attrMgr->registerObject(attr, regHandle);
+    attrMgr->registerObject(std::move(attr), regHandle);
   } else {  // orig file name not specified, create a new object
     // create a default object
     auto attr = attrMgr->createDefaultObject(newTemplateHandle, false);
@@ -481,7 +481,7 @@ void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(
     // default object is available now. Modify it using json tag data
     attrMgr->setValsFromJSONDoc(attr, jCell["attributes"]);
     // register object
-    attrMgr->registerObject(attr, regHandle);
+    attrMgr->registerObject(std::move(attr), regHandle);
   }  // if original filename was specified else
 }  // SceneDatasetAttributesManager::readDatasetConfigsJSONCell
 

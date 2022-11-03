@@ -1494,7 +1494,7 @@ T PathFinder::Impl::tryStep(const T& start, const T& end, bool allowSliding) {
     endPoint = endPoint + nudgeDistance * nudgeDir;
   }
 
-  return T{endPoint};
+  return T{std::move(endPoint)};
 }
 
 template <typename T>
@@ -1527,7 +1527,7 @@ T PathFinder::Impl::snapPoint(const T& pt, int islandIndex /*=ID_UNDEFINED*/) {
   }
 
   if (dtStatusSucceed(status)) {
-    return T{projectedPt};
+    return T{std::move(projectedPt)};
   }
   return {Mn::Constants::nan(), Mn::Constants::nan(), Mn::Constants::nan()};
 }
