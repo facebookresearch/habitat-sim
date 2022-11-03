@@ -72,7 +72,7 @@ bool jsonIntoSetter(const JsonGenericValue& d,
                     std::function<void(T)> setter) {
   T val;
   if (readMember(d, tag, val)) {
-    setter(val);
+    setter(std::move(val));
     return true;
   }
   return false;
