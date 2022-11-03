@@ -5,6 +5,8 @@
 #ifndef ESP_METADATA_MANAGERS_PHYSICSATTRIBUTEMANAGER_H_
 #define ESP_METADATA_MANAGERS_PHYSICSATTRIBUTEMANAGER_H_
 
+#include <utility>
+
 #include "AttributesManagerBase.h"
 
 #include "ObjectAttributesManager.h"
@@ -133,8 +135,8 @@ class PhysicsAttributesManager
     // adds template to library, and returns either the ID of the existing
     // template referenced by physicsAttributesHandle, or the next available ID
     // if not found.
-    int physicsTemplateID = this->addObjectToLibrary(physicsAttributesTemplate,
-                                                     physicsAttributesHandle);
+    int physicsTemplateID = this->addObjectToLibrary(
+        std::move(physicsAttributesTemplate), physicsAttributesHandle);
     return physicsTemplateID;
   }  // PhysicsAttributesManager::registerObjectFinalize
 

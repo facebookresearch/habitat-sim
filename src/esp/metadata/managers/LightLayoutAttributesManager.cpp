@@ -3,6 +3,8 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "LightLayoutAttributesManager.h"
+
+#include <utility>
 #include "esp/io/Io.h"
 #include "esp/io/Json.h"
 
@@ -53,7 +55,6 @@ void LightLayoutAttributesManager::setValsFromJSONDoc(
       Cr::Utility::Path::splitExtension(
           Cr::Utility::Path::splitExtension(filenameExt).first())
           .first();
-  LightInstanceAttributes::ptr lightInstanceAttribs = nullptr;
 
   // check if positive scaling is set
   bool hasPosScale = io::jsonIntoSetter<double>(
@@ -83,7 +84,8 @@ void LightLayoutAttributesManager::setValsFromJSONDoc(
       const std::string key = it->name.GetString();
       const auto& obj = it->value;
       // TODO construct name using file name prepended to key
-      lightInstanceAttribs = LightInstanceAttributes::create(key);
+      LightInstanceAttributes::ptr lightInstanceAttribs =
+          LightInstanceAttributes::create(key);
       // set file directory here, based on layout's directory
       lightInstanceAttribs->setFileDirectory(lightAttribs->getFileDirectory());
       // set attributes values from JSON doc
@@ -92,7 +94,7 @@ void LightLayoutAttributesManager::setValsFromJSONDoc(
       // check for user defined attributes
       this->parseUserDefinedJsonVals(lightInstanceAttribs, obj);
       // add ref to object in appropriate layout
-      lightAttribs->addLightInstance(lightInstanceAttribs);
+      lightAttribs->addLightInstance(std::move(lightInstanceAttribs));
       ++count;
     }
     ESP_DEBUG() << "" << count
@@ -105,7 +107,7 @@ void LightLayoutAttributesManager::setValsFromJSONDoc(
 
   if (hasLights || hasUserConfig || hasNegScale || hasPosScale) {
     // register if anything worth registering was found
-    this->postCreateRegister(lightAttribs, true);
+    this->postCreateRegister(std::move(lightAttribs), true);
   } else {
     ESP_WARNING() << layoutName
                   << "does not contain a \"lights\" object or a valid "
@@ -258,7 +260,7 @@ int LightLayoutAttributesManager::registerObjectFinalize(
   // template referenced by LightLayoutAttributesHandle, or the next available
   // ID if not found.
   int LightLayoutAttributesID =
-      this->addObjectToLibrary(lightAttribs, lightAttribsHandle);
+      this->addObjectToLibrary(std::move(lightAttribs), lightAttribsHandle);
 
   return LightLayoutAttributesID;
 }  // LightLayoutAttributesManager::registerObjectFinalize
