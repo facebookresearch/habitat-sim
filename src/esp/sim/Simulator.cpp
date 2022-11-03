@@ -1179,7 +1179,7 @@ agent::Agent::ptr Simulator::addAgent(
         return pathfinder_->tryStepNoSliding(start, end);
       };
     }
-    ag->getControls()->setMoveFilterFunction(moveFilterFunction);
+    ag->getControls()->setMoveFilterFunction(std::move(moveFilterFunction));
   }
 
   return ag;
