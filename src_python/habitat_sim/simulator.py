@@ -50,13 +50,10 @@ from habitat_sim.sim import SimulatorBackend, SimulatorConfiguration
 from habitat_sim.utils.common import quat_from_angle_axis
 
 # ------------------------------------------------------------------------
-# Types to simplify sensor observation variables
-
-#
-uuidToSensor = Dict[str, Sensor]
+# Types to simplify variables
 
 # bool - if the sensor's corresponding agent collided with something.
-#   Query this status from an uuidToSensorObs with the string "collided"
+#   Query this status from an Dict[str, SensorObservation] with the string "collided"
 #   rather than a sensor uuid string.
 #   TODO: Seems kind of out of place as a sensor observation, as it
 #   doesn't actually refer to a sensor, but rather its agent. May want
@@ -64,15 +61,6 @@ uuidToSensor = Dict[str, Sensor]
 # ndarray - if the observation is from a visual sensor, e.g. 2d array image
 # "Tensor" - multi-dimensional matrix if using PyTorch
 SensorObservation = Union[bool, ndarray, "Tensor"]
-
-#
-uuidToSensorObs = Dict[str, SensorObservation]
-
-#
-uuidToImageView = Dict[str, mn.MutableImageView2D]
-
-#
-uuidToSensorNoiseModel = Dict[str, SensorNoiseModel]
 
 #
 managedObject = Union[
@@ -123,16 +111,20 @@ class Simulator(SimulatorBackend):
     # ------------------------------------------------------------------------
     # TODO: remove these eventually in favor of sensors that are not
     # necessarily tied to agents
-    __sensors: List[uuidToSensor] = attr.ib(factory=list, init=False)
-    __obs_buffers: List[uuidToSensorObs] = attr.ib(factory=list, init=False)
-    __image_views: List[uuidToImageView] = attr.ib(factory=list, init=False)
+    __sensors: List[Dict[str, Sensor]] = attr.ib(factory=list, init=False)
+    __obs_buffers: List[Dict[str, SensorObservation]] = attr.ib(
+        factory=list, init=False
+    )
+    __image_views: List[Dict[str, mn.MutableImageView2D]] = attr.ib(
+        factory=list, init=False
+    )
 
     # # TODO: use these eventually instead of the above variables
-    __sensors_: uuidToSensor = attr.ib(factory=dict, init=False)
-    __obs_buffers_: uuidToSensorObs = attr.ib(factory=dict, init=False)
-    __image_views_: uuidToImageView = attr.ib(factory=dict, init=False)
+    __sensors_: Dict[str, Sensor] = attr.ib(factory=dict, init=False)
+    __obs_buffers_: Dict[str, SensorObservation] = attr.ib(factory=dict, init=False)
+    __image_views_: Dict[str, mn.MutableImageView2D] = attr.ib(factory=dict, init=False)
     # ------------------------------------------------------------------------
-    __noise_models: uuidToSensorNoiseModel = attr.ib(factory=dict, init=False)
+    __noise_models: Dict[str, SensorNoiseModel] = attr.ib(factory=dict, init=False)
 
     # physics variables/time step variables
     _num_total_frames: int = attr.ib(default=0, init=False)
@@ -227,16 +219,16 @@ class Simulator(SimulatorBackend):
         self.pathfinder.seed(new_seed)
 
     @overload
-    def reset(self, agent_ids: Optional[int] = None) -> uuidToSensorObs:
+    def reset(self, agent_ids: Optional[int] = None) -> Dict[str, SensorObservation]:
         ...
 
     @overload
-    def reset(self, agent_ids: List[int]) -> Dict[int, uuidToSensorObs]:
+    def reset(self, agent_ids: List[int]) -> Dict[int, Dict[str, SensorObservation]]:
         ...
 
     def reset(
         self, agent_ids: Union[Optional[int], List[int]] = None
-    ) -> Union[uuidToSensorObs, Dict[int, uuidToSensorObs],]:
+    ) -> Union[Dict[str, SensorObservation], Dict[int, Dict[str, SensorObservation]],]:
         super().reset()
         for i in range(len(self.agents)):
             self.reset_agent(i)
@@ -343,12 +335,14 @@ class Simulator(SimulatorBackend):
 
         self._default_agent_id = config.sim_cfg.default_agent_id
 
-        self.__noise_models: uuidToSensorNoiseModel = dict()
-        self.__sensors: List[uuidToSensor] = [dict() for i in range(len(config.agents))]
-        self.__obs_buffers: List[uuidToSensorObs] = [
+        self.__noise_models: Dict[str, SensorNoiseModel] = dict()
+        self.__sensors: List[Dict[str, Sensor]] = [
             dict() for i in range(len(config.agents))
         ]
-        self.__image_views: List[uuidToImageView] = [
+        self.__obs_buffers: List[Dict[str, SensorObservation]] = [
+            dict() for i in range(len(config.agents))
+        ]
+        self.__image_views: List[Dict[str, mn.MutableImageView2D]] = [
             dict() for i in range(len(config.agents))
         ]
         self.__last_state = dict()
@@ -644,7 +638,7 @@ class Simulator(SimulatorBackend):
             return self.__sensors_.get(sensor_uuid)
 
     # TODO: make this work to get agent sensors
-    def get_subtree_sensors(self, scene_node: SceneNode) -> uuidToSensor:
+    def get_subtree_sensors(self, scene_node: SceneNode) -> Dict[str, Sensor]:
         assert scene_node is not None
         return scene_node.subtree_sensors
 
@@ -693,7 +687,7 @@ class Simulator(SimulatorBackend):
 
     def get_sensor_observations_async_finish(
         self,
-    ) -> Union[uuidToSensorObs, Dict[int, uuidToSensorObs],]:
+    ) -> Union[Dict[str, SensorObservation], Dict[int, Dict[str, SensorObservation]],]:
         if self._async_draw_agent_ids is None:
             raise RuntimeError(
                 "get_sensor_observations_async_finish was called before calling start_async_render_and_step_physics."
@@ -709,9 +703,9 @@ class Simulator(SimulatorBackend):
 
         self.renderer.wait_draw_jobs()
         # As backport. All Dicts are ordered in Python >= 3.7
-        per_agent_observations: Dict[int, uuidToSensorObs] = OrderedDict()
+        per_agent_observations: Dict[int, Dict[str, SensorObservation]] = OrderedDict()
         for agent_id in agent_ids:
-            agent_observations: uuidToSensorObs = {}
+            agent_observations: Dict[str, SensorObservation] = {}
             for sensor_uuid, sensor in self.__sensors[agent_id].items():
                 agent_observations[sensor_uuid] = sensor._get_observation_async()
             per_agent_observations[agent_id] = agent_observations
@@ -721,18 +715,20 @@ class Simulator(SimulatorBackend):
         return per_agent_observations
 
     @overload
-    def get_sensor_observations(self, agent_ids: int = 0) -> uuidToSensorObs:
+    def get_sensor_observations(
+        self, agent_ids: int = 0
+    ) -> Dict[str, SensorObservation]:
         ...
 
     @overload
     def get_sensor_observations(
         self, agent_ids: List[int]
-    ) -> Dict[int, uuidToSensorObs]:
+    ) -> Dict[int, Dict[str, SensorObservation]]:
         ...
 
     def get_sensor_observations(
         self, agent_ids: Union[int, List[int]] = 0
-    ) -> Union[uuidToSensorObs, Dict[int, uuidToSensorObs],]:
+    ) -> Union[Dict[str, SensorObservation], Dict[int, Dict[str, SensorObservation]],]:
 
         if isinstance(agent_ids, int):
             agent_ids = [agent_ids]
@@ -747,7 +743,7 @@ class Simulator(SimulatorBackend):
                 self.draw_observation(sensor)
 
         # As backport. All Dicts are ordered in Python >= 3.7
-        per_agent_observations: Dict[int, uuidToSensorObs] = OrderedDict()
+        per_agent_observations: Dict[int, Dict[str, SensorObservation]] = OrderedDict()
         for agent_id in agent_ids:
             # dict comprehension to get observation from each sensor
             per_agent_observations[agent_id] = {
@@ -787,20 +783,22 @@ class Simulator(SimulatorBackend):
         return self.__last_state[agent_id]
 
     @overload
-    def step(self, action: Union[str, int], dt: float = 1.0 / 60.0) -> uuidToSensorObs:
+    def step(
+        self, action: Union[str, int], dt: float = 1.0 / 60.0
+    ) -> Dict[str, SensorObservation]:
         ...
 
     @overload
     def step(
         self, action: MutableMapping_T[int, Union[str, int]], dt: float = 1.0 / 60.0
-    ) -> Dict[int, uuidToSensorObs]:
+    ) -> Dict[int, Dict[str, SensorObservation]]:
         ...
 
     def step(
         self,
         action: Union[str, int, MutableMapping_T[int, Union[str, int]]],
         dt: float = 1.0 / 60.0,
-    ) -> Union[uuidToSensorObs, Dict[int, uuidToSensorObs],]:
+    ) -> Union[Dict[str, SensorObservation], Dict[int, Dict[str, SensorObservation]],]:
         self._num_total_frames += 1
         if isinstance(action, MutableMapping):
             return_single = False
