@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -126,10 +126,9 @@ class Simulator {
    * --headless mode on linux
    */
   int gpuDevice() const {
-    CORRADE_ASSERT(config_.createRenderer,
-                   "Simulator::gpuDevice() : cannot get gpu device when "
-                   "createRenderer flag is false",
-                   0);
+    ESP_CHECK(config_.createRenderer,
+              "Simulator::gpuDevice() : cannot get gpu device when "
+              "createRenderer flag is false");
     if (context_ == nullptr) {
       return 0;
     }

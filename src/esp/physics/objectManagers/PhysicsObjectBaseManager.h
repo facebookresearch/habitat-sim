@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -128,7 +128,7 @@ class PhysicsObjectBaseManager
                              const std::string& objectHandle,
                              CORRADE_UNUSED bool forceRegistration) override {
     // Add wrapper to template library
-    return this->addObjectToLibrary(object, objectHandle);
+    return this->addObjectToLibrary(std::move(object), objectHandle);
   }  // PhysicsObjectBaseManager::registerObjectFinalize
 
   /**

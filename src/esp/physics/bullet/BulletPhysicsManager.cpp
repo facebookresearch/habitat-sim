@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -6,6 +6,8 @@
 //#include "BulletCollision/Gimpact/btGImpactShape.h"
 
 #include "BulletPhysicsManager.h"
+
+#include <utility>
 #include "BulletArticulatedObject.h"
 #include "BulletDynamics/Featherstone/btMultiBodyLinkCollider.h"
 #include "BulletRigidObject.h"
@@ -223,7 +225,8 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
       existingArticulatedObjects_.at(articulatedObjectID));
 
   // 4.0 register wrapper in manager
-  articulatedObjectManager_->registerObject(AObjWrapper, newArtObjectHandle);
+  articulatedObjectManager_->registerObject(std::move(AObjWrapper),
+                                            newArtObjectHandle);
 
   return articulatedObjectID;
 }  // BulletPhysicsManager::addArticulatedObjectFromURDF

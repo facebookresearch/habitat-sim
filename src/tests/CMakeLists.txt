@@ -1,3 +1,7 @@
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 find_package(Magnum REQUIRED DebugTools AnyImageConverter AnySceneImporter)
 find_package(
   MagnumPlugins REQUIRED GltfImporter StbImageImporter KtxImporter
@@ -82,6 +86,20 @@ corrade_add_test(
   sim
 )
 target_include_directories(GfxReplayTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
+if(BUILD_WITH_BACKGROUND_RENDERER)
+  corrade_add_test(
+    ReplayBatchRendererTest
+    ReplayBatchRendererTest.cpp
+    LIBRARIES
+    assets
+    gfx
+    sim
+  )
+  target_include_directories(
+    ReplayBatchRendererTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+  )
+endif()
 
 corrade_add_test(GibsonSceneTest GibsonSceneTest.cpp LIBRARIES scene sim)
 target_include_directories(GibsonSceneTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})

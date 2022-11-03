@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -72,7 +72,7 @@ bool jsonIntoSetter(const JsonGenericValue& d,
                     std::function<void(T)> setter) {
   T val;
   if (readMember(d, tag, val)) {
-    setter(val);
+    setter(std::move(val));
     return true;
   }
   return false;

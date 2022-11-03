@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -22,6 +22,7 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <limits>
+#include <utility>
 
 #include "esp/assets/MeshData.h"
 #include "esp/core/Esp.h"
@@ -1493,7 +1494,7 @@ T PathFinder::Impl::tryStep(const T& start, const T& end, bool allowSliding) {
     endPoint = endPoint + nudgeDistance * nudgeDir;
   }
 
-  return T{endPoint};
+  return T{std::move(endPoint)};
 }
 
 template <typename T>
@@ -1526,7 +1527,7 @@ T PathFinder::Impl::snapPoint(const T& pt, int islandIndex /*=ID_UNDEFINED*/) {
   }
 
   if (dtStatusSucceed(status)) {
-    return T{projectedPt};
+    return T{std::move(projectedPt)};
   }
   return {Mn::Constants::nan(), Mn::Constants::nan(), Mn::Constants::nan()};
 }
@@ -1583,7 +1584,7 @@ HitRecord PathFinder::Impl::closestObstacleSurfacePoint(
   navQuery_->findDistanceToWall(ptRef, polyPt.data(), maxSearchRadius,
                                 filter_.get(), &hitDist, hitPos.data(),
                                 hitNormal.data());
-  return {hitPos, hitNormal, hitDist};
+  return {std::move(hitPos), std::move(hitNormal), hitDist};
 }
 
 bool PathFinder::Impl::isNavigable(const vec3f& pt,
@@ -1719,7 +1720,7 @@ assets::MeshData::ptr PathFinder::Impl::getNavMeshData(
       }
     }
     // return newly added meshdata
-    return islandMeshData_.emplace(islandIndex, curIslandMeshData)
+    return islandMeshData_.emplace(islandIndex, std::move(curIslandMeshData))
         .first->second;
   }
   // meshdata already exists, so lookup and return

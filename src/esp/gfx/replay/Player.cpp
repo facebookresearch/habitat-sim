@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -185,6 +185,13 @@ void Player::appendKeyframe(Keyframe&& keyframe) {
 
 void Player::appendJSONKeyframe(const std::string& keyframe) {
   appendKeyframe(keyframeFromString(keyframe));
+}
+
+void Player::setSingleKeyframe(Keyframe&& keyframe) {
+  keyframes_.clear();
+  frameIndex_ = -1;
+  keyframes_.emplace_back(std::move(keyframe));
+  setKeyframeIndex(0);
 }
 
 void Player::setSemanticIdForSubtree(esp::scene::SceneNode* rootNode,
