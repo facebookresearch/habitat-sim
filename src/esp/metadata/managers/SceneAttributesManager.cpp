@@ -5,6 +5,8 @@
 #include "SceneAttributesManager.h"
 
 #include <Corrade/Utility/FormatStl.h>
+
+#include <utility>
 #include "esp/metadata/MetadataUtils.h"
 #include "esp/physics/RigidBase.h"
 
@@ -333,7 +335,7 @@ int SceneAttributesManager::registerObjectFinalize(
   // template referenced by sceneAttributesHandle, or the next available ID
   // if not found.
   int datasetTemplateID =
-      this->addObjectToLibrary(sceneAttributes, sceneAttributesHandle);
+      this->addObjectToLibrary(std::move(sceneAttributes), sceneAttributesHandle);
   return datasetTemplateID;
 }  // SceneAttributesManager::registerObjectFinalize
 

@@ -3,6 +3,8 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "LightLayoutAttributesManager.h"
+
+#include <utility>
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 
@@ -104,7 +106,7 @@ void LightLayoutAttributesManager::setValsFromJSONDoc(
 
   if (hasLights || hasUserConfig || hasNegScale || hasPosScale) {
     // register if anything worth registering was found
-    this->postCreateRegister(lightAttribs, true);
+    this->postCreateRegister(std::move(lightAttribs), true);
   } else {
     ESP_WARNING() << layoutName
                   << "does not contain a \"lights\" object or a valid "
@@ -147,7 +149,7 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
   std::string tmpPosMdleVal = "";
   if (io::readMember<std::string>(jsonConfig, "position_model",
                                   tmpPosMdleVal)) {
-    std::string strToLookFor = Cr::Utility::String::lowercase(tmpPosMdleVal);
+    std::string strToLookFor = Cr::Utility::String::lowercase(std::move(tmpPosMdleVal));
     if (LightInstanceAttributes::LightPositionNamesMap.count(strToLookFor) !=
         0u) {
       posMdleVal = static_cast<int>(
@@ -260,7 +262,7 @@ int LightLayoutAttributesManager::registerObjectFinalize(
   // template referenced by LightLayoutAttributesHandle, or the next available
   // ID if not found.
   int LightLayoutAttributesID =
-      this->addObjectToLibrary(lightAttribs, lightAttribsHandle);
+      this->addObjectToLibrary(std::move(lightAttribs), lightAttribsHandle);
 
   return LightLayoutAttributesID;
 }  // LightLayoutAttributesManager::registerObjectFinalize

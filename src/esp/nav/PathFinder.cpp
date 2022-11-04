@@ -20,6 +20,7 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <limits>
+#include <utility>
 
 #include "esp/assets/MeshData.h"
 #include "esp/core/esp.h"
@@ -1236,7 +1237,7 @@ HitRecord PathFinder::Impl::closestObstacleSurfacePoint(
     navQuery_->findDistanceToWall(ptRef, polyPt.data(), maxSearchRadius,
                                   filter_.get(), &hitDist, hitPos.data(),
                                   hitNormal.data());
-    return {hitPos, hitNormal, hitDist};
+    return {std::move(hitPos), std::move(hitNormal), hitDist};
   }
 }
 
