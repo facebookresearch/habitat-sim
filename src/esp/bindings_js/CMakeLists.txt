@@ -15,6 +15,7 @@ target_link_libraries(
          nav
          sensor
          sim
+         ${HABITAT_USED_MAGNUM_PLUGINS}
 )
 
 set_target_properties(

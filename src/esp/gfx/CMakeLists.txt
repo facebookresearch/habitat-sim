@@ -94,18 +94,13 @@ endif()
 find_package(
   Magnum
   REQUIRED
-  AnyImageImporter
-  AnySceneImporter
   GL
   MeshTools
   DebugTools
   SceneGraph
   Shaders
   Trade
-  AnyImageConverter
 )
-
-find_package(MagnumPlugins REQUIRED GltfImporter StbImageImporter StbImageConverter)
 
 find_package(MagnumIntegration REQUIRED Eigen)
 
@@ -141,8 +136,6 @@ target_link_libraries(
          core
          io
          physics
-         Magnum::AnyImageImporter
-         Magnum::AnySceneImporter
          Magnum::GL
          Magnum::Magnum
          Magnum::MeshTools
@@ -150,12 +143,8 @@ target_link_libraries(
          Magnum::SceneGraph
          Magnum::Shaders
          Magnum::Trade
-         MagnumPlugins::GltfImporter
-         MagnumPlugins::StbImageImporter
-         MagnumPlugins::StbImageConverter
          MagnumIntegration::Eigen
          Corrade::Utility
-         Magnum::AnyImageConverter
 )
 
 if(BUILD_WITH_BACKGROUND_RENDERER)

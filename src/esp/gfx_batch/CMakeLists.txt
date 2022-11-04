@@ -59,10 +59,4 @@ target_link_libraries(
          Magnum::Shaders
          Magnum::Trade
          Magnum::WindowlessApplication
-  # Not linking any plugins here, as the renderer itself doesn't directly rely
-  # on any of them. That also makes the plugins implicitly registered in
-  # *every* target that links to gfx_batch, which is far from ideal. Only the
-  # leaf executable links to them, and only to those that are actually used
-  # in that scenario -- i.e., a test only needs a tiny subset of plugins for
-  # data it uses, not everything to handle general file formats.
 )
