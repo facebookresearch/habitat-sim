@@ -4,6 +4,8 @@
 
 #include "SceneDatasetAttributesManager.h"
 
+#include <utility>
+
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 
@@ -500,7 +502,7 @@ int SceneDatasetAttributesManager::registerObjectFinalize(
   // template referenced by SceneDatasetAttributesHandle, or the next
   // available ID if not found.
   int datasetTemplateID = this->addObjectToLibrary(
-      SceneDatasetAttributes, SceneDatasetAttributesHandle);
+      std::move(SceneDatasetAttributes), SceneDatasetAttributesHandle);
   return datasetTemplateID;
 }  // SceneDatasetAttributesManager::registerObjectFinalize
 

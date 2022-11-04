@@ -341,7 +341,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
           metadataMediator_->getLightLayoutAttributesManager()
               ->createLightSetupFromAttributes(lightSetupKey);
       // set lightsetup in resource manager
-      resourceManager_->setLightSetup(lightingSetup,
+      resourceManager_->setLightSetup(std::move(lightingSetup),
                                       Mn::ResourceKey{lightSetupKey});
     }
   }
@@ -824,7 +824,7 @@ int Simulator::addTrajectoryObject(const std::string& trajVisName,
   // turn off collisions
   trajObjAttr->setIsCollidable(false);
   trajObjAttr->setComputeCOMFromShape(false);
-  objAttrMgr->registerObject(trajObjAttr, trajVisName, true);
+  objAttrMgr->registerObject(std::move(trajObjAttr), trajVisName, true);
 
   // 3. add trajectory object to manager
   auto trajVisID = physicsManager_->addObject(trajVisName, &drawables);
@@ -960,7 +960,7 @@ agent::Agent::ptr Simulator::addAgent(
         return pathfinder_->tryStepNoSliding(start, end);
       };
     }
-    ag->getControls()->setMoveFilterFunction(moveFilterFunction);
+    ag->getControls()->setMoveFilterFunction(std::move(moveFilterFunction));
   }
 
   return ag;
