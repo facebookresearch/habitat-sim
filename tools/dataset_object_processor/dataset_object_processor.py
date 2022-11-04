@@ -602,8 +602,10 @@ def process_dataset(
 
     # get dataset that is currently being used by the simulator
     active_dataset: str = metadata_mediator.active_dataset
+
     text_format = ANSICodes.BRIGHT_BLUE.value + ANSICodes.BOLD.value
     pcsu.print_if_logging(sim, text_format + "\nActive Dataset" + pcsu.section_divider)
+
     text_format = ANSICodes.BRIGHT_BLUE.value
     pcsu.print_if_logging(sim, text_format + f"{active_dataset}\n")
 
