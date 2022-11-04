@@ -171,15 +171,13 @@ void initSensorBindings(py::module& m) {
       .def("clear", &SensorSuite::clear)
       .def("get", &SensorSuite::get)
       .def("get_sensors",
-           py::overload_cast<>(&SensorSuite::getSensors, py::const_))
-      .def_property_readonly("node", nodeGetter<Sensor>,
-                             "Node this object is attached to")
-      .def_property_readonly("object", nodeGetter<Sensor>, "Alias to node");
+           py::overload_cast<>(&SensorSuite::getSensors, py::const_));
 
   // ==== Sensor ====
   py::class_<Sensor, Magnum::SceneGraph::PyFeature<Sensor>,
              Magnum::SceneGraph::AbstractFeature3D,
-             Magnum::SceneGraph::PyFeatureHolder<Sensor>>(m, "Sensor")
+             Magnum::SceneGraph::PyFeatureHolder<Sensor>>(m, "Sensor",
+                                                          py::dynamic_attr())
       .def("specification", &Sensor::specification)
       .def("set_transformation_from_spec", &Sensor::setTransformationFromSpec)
       .def("is_visual_sensor", &Sensor::isVisualSensor)
@@ -192,6 +190,10 @@ void initSensorBindings(py::module& m) {
   py::class_<VisualSensor, Magnum::SceneGraph::PyFeature<VisualSensor>, Sensor,
              Magnum::SceneGraph::PyFeatureHolder<VisualSensor>>(m,
                                                                 "VisualSensor")
+      .def(
+          "draw_observation", &VisualSensor::drawObservation,
+          R"(Draw an observation to the frame buffer using simulator's renderer)")
+      .def("has_render_target", &VisualSensor::hasRenderTarget)
       .def_property_readonly(
           "render_camera", &VisualSensor::getRenderCamera,
           R"(Get the RenderCamera in the sensor (if there is one) for rendering PYTHON DOES NOT GET OWNERSHIP)",
@@ -248,7 +250,102 @@ void initSensorBindings(py::module& m) {
           R"(The distance to the near clipping plane for this CameraSensor uses.)")
       .def_property(
           "far_plane_dist", &CameraSensor::getFar, &CameraSensor::setFar,
-          R"(The distance to the far clipping plane for this CameraSensor uses.)");
+          R"(The distance to the far clipping plane for this CameraSensor uses.)")
+      .def(
+          "obs_buffer",
+          [](CameraSensor& self, int gpuDevice) {
+            py::handle handle = py::cast(self);
+            if (!py::hasattr(handle, "__obs_buffer")) {
+              if (self.specification()->gpu2gpuTransfer) {
+                auto torch = py::module_::import("torch");
+                if (self.specification()->sensorType ==
+                    esp::sensor::SensorType::Semantic) {
+                  py::setattr(
+                      handle, "__obs_buffer",
+                      torch.attr("empty")(
+                          (py::int_(self.specification()->resolution[0]),
+                           py::int_(self.specification()->resolution[1])),
+                          "dtype"_a = torch.attr("int32"),
+                          "device"_a = torch.attr("device")(
+                              py::str("cuda"), py::int_(gpuDevice))));
+                } else if (self.specification()->sensorType ==
+                           esp::sensor::SensorType::Depth) {
+                  py::setattr(
+                      handle, "__obs_buffer",
+                      torch.attr("empty")(
+                          (py::int_(self.specification()->resolution[0]),
+                           py::int_(self.specification()->resolution[1])),
+                          "dtype"_a = torch.attr("float32"),
+                          "device"_a = torch.attr("device")(
+                              py::str("cuda"), py::int_(gpuDevice))));
+                } else {
+                  py::setattr(
+                      handle, "__obs_buffer",
+                      torch.attr("empty")(
+                          (py::int_(self.specification()->resolution[0]),
+                           py::int_(self.specification()->resolution[1]),
+                           py::int_(self.specification()->channels)),
+                          "dtype"_a = torch.attr("uint32"),
+                          "device"_a = torch.attr("device")(
+                              py::str("cuda"), py::int_(gpuDevice))));
+                }
+              } else {
+                if (self.specification()->sensorType ==
+                    esp::sensor::SensorType::Semantic) {
+                  auto pyBuffer = py::array(py::buffer_info(
+                      nullptr, /* Pointer to data (nullptr -> ask NumPy to
+                                 allocate!) */
+                      sizeof(uint32_t), /* Size of one item */
+                      py::format_descriptor<uint32_t>::value, /* Buffer format
+                                                               */
+                      2, /* How many dimensions? */
+                      {self.specification()->resolution[0],
+                       self.specification()
+                           ->resolution[1]}, /* Number of elements for
+                                               each dimension */
+                      {sizeof(uint32_t) * self.specification()->resolution[1],
+                       sizeof(uint32_t)} /* Strides for each dimension */
+                      ));
+                  py::setattr(handle, "__obs_buffer", pyBuffer);
+                } else if (self.specification()->sensorType ==
+                           esp::sensor::SensorType::Depth) {
+                  auto pyBuffer = py::array(py::buffer_info(
+                      nullptr,       /* Pointer to data (nullptr -> ask NumPy to
+                                        allocate!) */
+                      sizeof(float), /* Size of one item */
+                      py::format_descriptor<float>::value, /* Buffer format */
+                      2, /* How many dimensions? */
+                      {self.specification()->resolution[0],
+                       self.specification()
+                           ->resolution[1]}, /* Number of elements for
+                                               each dimension */
+                      {sizeof(float) * self.specification()->resolution[1],
+                       sizeof(float)} /* Strides for each dimension */
+                      ));
+                  py::setattr(handle, "__obs_buffer", pyBuffer);
+                } else {
+                  auto pyBuffer = py::array(py::buffer_info(
+                      nullptr, /* Pointer to data (nullptr -> ask NumPy to
+                                  allocate!) */
+                      sizeof(uint8_t), /* Size of one item */
+                      py::format_descriptor<uint8_t>::value, /* Buffer format */
+                      3, /* How many dimensions? */
+                      {self.specification()->resolution[0],
+                       self.specification()->resolution[1],
+                       self.specification()->channels}, /* Number of elements
+                                                           for each dimension */
+                      {sizeof(uint8_t) * self.specification()->resolution[1] *
+                           self.specification()->channels,
+                       sizeof(uint8_t) * self.specification()->channels,
+                       sizeof(uint8_t)} /* Strides for each dimension */
+                      ));
+                  py::setattr(handle, "__obs_buffer", pyBuffer);
+                }
+              }
+            }
+            return py::getattr(handle, "__obs_buffer");
+          },
+          "Buffer attribute");
 
   // === CubeMapSensorBase ===
   // NOLINTNEXTLINE (bugprone-unused-raii)
