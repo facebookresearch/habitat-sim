@@ -57,15 +57,7 @@ PhysicsManager::~PhysicsManager() {
 bool PhysicsManager::addStage(
     const metadata::attributes::StageAttributes::ptr& initAttributes,
     const metadata::attributes::SceneObjectInstanceAttributes::cptr&
-        stageInstanceAttributes,
-    const std::vector<assets::CollisionMeshData>& meshGroup) {
-  // Test Mesh primitive is valid
-  for (const assets::CollisionMeshData& meshData : meshGroup) {
-    if (!isMeshPrimitiveValid(meshData)) {
-      return false;
-    }
-  }
-
+        stageInstanceAttributes) {
   //! Initialize stage
   bool sceneSuccess = addStageFinalize(initAttributes);
   if (sceneSuccess) {
@@ -533,11 +525,6 @@ bool PhysicsManager::makeAndAddRigidObject(
     existingObjects_.emplace(newObjectID, std::move(ptr));
   }
   return objSuccess;
-}
-
-//! Base physics manager has no requirement for mesh primitive
-bool PhysicsManager::isMeshPrimitiveValid(const assets::CollisionMeshData&) {
-  return true;
 }
 
 // TODO: this function should do any engine specific setting which is

@@ -431,15 +431,6 @@ class BulletPhysicsManager : public PhysicsManager {
   int recentNumSubStepsTaken_ = -1;
 
  private:
-  /** @brief Check if a particular mesh can be used as a collision mesh for
-   * Bullet.
-   * @param meshData The mesh to validate. Only a triangle mesh is valid. Checks
-   * that the only #ref Magnum::MeshPrimitive are @ref
-   * Magnum::MeshPrimitive::Triangles.
-   * @return true if valid, false otherwise.
-   */
-  bool isMeshPrimitiveValid(const assets::CollisionMeshData& meshData) override;
-
   /**
    * @brief Helper function for getting object and link unique ids from
    * btCollisionObject cache
