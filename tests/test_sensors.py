@@ -265,13 +265,29 @@ def test_reconfigure_render(
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
 
-    for sens in all_base_sensor_types:
-        make_cfg_settings[sens] = False
     scene_dataset_config = scene_and_dataset[1]
 
     make_cfg_settings["scene"] = _test_scenes[-1][0]
     make_cfg_settings["scene_dataset_config_file"] = _test_scenes[-1][1]
-    make_cfg_settings["sensors"] = {sensor_type: {}}
+    sensor = (
+        habitat_sim.SensorType.DEPTH
+        if "depth" in sensor_type
+        else (
+            habitat_sim.SensorType.SEMANTIC
+            if "semantic" in sensor_type
+            else habitat_sim.SensorType.COLOR
+        )
+    )
+
+    sensor_subtype = (
+        habitat_sim.SensorSubType.ORTHOGRAPHIC
+        if "ortho" in sensor_type
+        else habitat_sim.SensorSubType.PINHOLE
+    )
+
+    make_cfg_settings["sensors"] = {
+        sensor_type: {"sensor_type": sensor, "sensor_subtype": sensor_subtype}
+    }
 
     cfg = make_cfg(make_cfg_settings)
 
@@ -322,6 +338,8 @@ def test_smoke_redwood_noise(scene_and_dataset, gpu2gpu, make_cfg_settings):
     if gpu2gpu and (not habitat_sim.cuda_enabled or not _HAS_TORCH):
         pytest.skip("Skipping GPU->GPU test")
     scene_dataset_config = scene_and_dataset[1]
+    del make_cfg_settings["sensors"]["color_sensor"]
+    del make_cfg_settings["sensors"]["semantic_sensor"]
     make_cfg_settings["sensors"]["depth_sensor"] = {
         "sensor_type": habitat_sim.SensorType.DEPTH
     }
