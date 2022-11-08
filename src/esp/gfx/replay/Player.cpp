@@ -1,11 +1,14 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
 #include "Player.h"
 
+#include <Corrade/Utility/Path.h>
+
 #include "esp/assets/ResourceManager.h"
 #include "esp/core/Esp.h"
+#include "esp/io/Json.h"
 #include "esp/io/JsonAllTypes.h"
 
 #include <rapidjson/document.h>
@@ -27,8 +30,12 @@ Keyframe Player::keyframeFromString(const std::string& keyframe) {
   return res;
 }
 
-Player::Player(const LoadAndCreateRenderAssetInstanceCallback& callback)
-    : loadAndCreateRenderAssetInstanceCallback(callback) {}
+Player::Player(const LoadAndCreateRenderAssetInstanceCallback&
+                   loadAndCreateRenderAssetInstanceCallback,
+               const ChangeLightSetupCallback& changeLightSetupCallback)
+    : loadAndCreateRenderAssetInstanceCallback(
+          loadAndCreateRenderAssetInstanceCallback),
+      changeLightSetupCallback(changeLightSetupCallback) {}
 
 void Player::readKeyframesFromFile(const std::string& filepath) {
   close();
@@ -166,6 +173,10 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     node->setRotation(state.absTransform.rotation);
     setSemanticIdForSubtree(node, state.semanticId);
   }
+
+  if (keyframe.lightsChanged) {
+    changeLightSetupCallback(keyframe.lights);
+  }
 }
 
 void Player::appendKeyframe(Keyframe&& keyframe) {
@@ -174,6 +185,13 @@ void Player::appendKeyframe(Keyframe&& keyframe) {
 
 void Player::appendJSONKeyframe(const std::string& keyframe) {
   appendKeyframe(keyframeFromString(keyframe));
+}
+
+void Player::setSingleKeyframe(Keyframe&& keyframe) {
+  keyframes_.clear();
+  frameIndex_ = -1;
+  keyframes_.emplace_back(std::move(keyframe));
+  setKeyframeIndex(0);
 }
 
 void Player::setSemanticIdForSubtree(esp::scene::SceneNode* rootNode,

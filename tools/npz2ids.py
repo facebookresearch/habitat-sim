@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 # npz2ids - tool for extracting object_ids from 3dscenegraph dataset
 #           (https://3dscenegraph.stanford.edu/)
 

@@ -1,10 +1,14 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
 #include "PhysicsManager.h"
 #include <Magnum/Math/Range.h>
+
+#include <utility>
 #include "esp/assets/CollisionMeshData.h"
+#include "esp/assets/ResourceManager.h"
+#include "esp/metadata/managers/PhysicsAttributesManager.h"
 #include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/sim/Simulator.h"
@@ -53,15 +57,7 @@ PhysicsManager::~PhysicsManager() {
 bool PhysicsManager::addStage(
     const metadata::attributes::StageAttributes::ptr& initAttributes,
     const metadata::attributes::SceneObjectInstanceAttributes::cptr&
-        stageInstanceAttributes,
-    const std::vector<assets::CollisionMeshData>& meshGroup) {
-  // Test Mesh primitive is valid
-  for (const assets::CollisionMeshData& meshData : meshGroup) {
-    if (!isMeshPrimitiveValid(meshData)) {
-      return false;
-    }
-  }
-
+        stageInstanceAttributes) {
   //! Initialize stage
   bool sceneSuccess = addStageFinalize(initAttributes);
   if (sceneSuccess) {
@@ -76,6 +72,36 @@ bool PhysicsManager::addStage(
 
   return sceneSuccess;
 }  // PhysicsManager::addStage
+
+int PhysicsManager::addObject(const std::string& attributesHandle,
+                              scene::SceneNode* attachmentNode,
+                              const std::string& lightSetup) {
+  esp::metadata::attributes::ObjectAttributes::ptr attributes =
+      resourceManager_.getObjectAttributesManager()->getObjectCopyByHandle(
+          attributesHandle);
+  if (!attributes) {
+    ESP_ERROR() << "Object creation failed due to unknown attributes"
+                << attributesHandle;
+    return ID_UNDEFINED;
+  }
+  // attributes exist, get drawables if valid simulator accessible
+  return addObjectQueryDrawables(attributes, attachmentNode, lightSetup);
+}  // PhysicsManager::addObject
+
+int PhysicsManager::addObject(int attributesID,
+                              scene::SceneNode* attachmentNode,
+                              const std::string& lightSetup) {
+  const esp::metadata::attributes::ObjectAttributes::ptr attributes =
+      resourceManager_.getObjectAttributesManager()->getObjectCopyByID(
+          attributesID);
+  if (!attributes) {
+    ESP_ERROR() << "Object creation failed due to unknown attributes ID"
+                << attributesID;
+    return ID_UNDEFINED;
+  }
+  // attributes exist, get drawables if valid simulator accessible
+  return addObjectQueryDrawables(attributes, attachmentNode, lightSetup);
+}  // PhysicsManager::addObject
 
 bool PhysicsManager::addStageFinalize(
     const metadata::attributes::StageAttributes::ptr& initAttributes) {
@@ -264,7 +290,7 @@ int PhysicsManager::addObject(
   objWrapper->setObjectRef(existingObjects_.at(nextObjectID_));
 
   // 4.0 register wrapper in manager
-  rigidObjectManager_->registerObject(objWrapper, newObjectHandle);
+  rigidObjectManager_->registerObject(std::move(objWrapper), newObjectHandle);
 
   return nextObjectID_;
 }  // PhysicsManager::addObject
@@ -501,11 +527,6 @@ bool PhysicsManager::makeAndAddRigidObject(
   return objSuccess;
 }
 
-//! Base physics manager has no requirement for mesh primitive
-bool PhysicsManager::isMeshPrimitiveValid(const assets::CollisionMeshData&) {
-  return true;
-}
-
 // TODO: this function should do any engine specific setting which is
 // necessary to change the timestep
 void PhysicsManager::setTimestep(double dt) {
@@ -651,6 +672,12 @@ void PhysicsManager::setStageVoxelizationDraw(const std::string& gridName,
   setVoxelizationDraw(
       gridName, static_cast<esp::physics::RigidBase*>(staticStageObject_.get()),
       drawables, drawVoxelization);
+}
+
+metadata::attributes::PhysicsManagerAttributes::ptr
+PhysicsManager::getInitializationAttributes() const {
+  return metadata::attributes::PhysicsManagerAttributes::create(
+      *physicsManagerAttributes_);
 }
 
 void PhysicsManager::setVoxelizationDraw(const std::string& gridName,

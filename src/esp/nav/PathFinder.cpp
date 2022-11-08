@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -15,12 +15,14 @@
 #include <Magnum/EigenIntegration/Integration.h>
 
 #include <Corrade/Containers/Optional.h>
+#include <Corrade/Utility/Path.h>
 
 #include <cstdio>
 // NOLINTNEXTLINE
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <limits>
+#include <utility>
 
 #include "esp/assets/MeshData.h"
 #include "esp/core/Esp.h"
@@ -30,6 +32,11 @@
 #include "DetourNavMeshQuery.h"
 #include "DetourNode.h"
 #include "Recast.h"
+
+#include <rapidjson/document.h>
+#include "esp/core/Check.h"
+#include "esp/io/Json.h"
+#include "esp/io/JsonAllTypes.h"
 
 namespace Mn = Magnum;
 namespace Cr = Corrade;
@@ -56,6 +63,34 @@ bool operator==(const NavMeshSettings& a, const NavMeshSettings& b) {
 bool operator!=(const NavMeshSettings& a, const NavMeshSettings& b) {
   return !(a == b);
 }
+
+void NavMeshSettings::readFromJSON(const std::string& jsonFile) {
+  if (!Corrade::Utility::Path::exists(jsonFile.data())) {
+    ESP_ERROR() << "File" << jsonFile << "not found.";
+    return;
+  }
+  try {
+    auto newDoc = esp::io::parseJsonFile(jsonFile);
+
+    esp::io::fromJsonValue(newDoc, *this);
+
+  } catch (...) {
+    ESP_ERROR() << "Failed to parse keyframes from" << jsonFile << ".";
+  }
+}
+
+void NavMeshSettings::writeToJSON(const std::string& jsonFile) const {
+  rapidjson::Document d(rapidjson::kObjectType);
+  rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
+  auto jsonObj = esp::io::toJsonValue(*this, allocator);
+  d.Swap(jsonObj);
+  ESP_CHECK(!d.ObjectEmpty(), "Error writing JSON. Shouldn't happen.");
+
+  const float maxDecimalPlaces = 7;
+  auto ok = esp::io::writeJsonToFile(d, jsonFile, true, maxDecimalPlaces);
+  ESP_CHECK(ok, "writeSavedKeyframesToFile: unable to write to " << jsonFile);
+}
+
 struct MultiGoalShortestPath::Impl {
   std::vector<vec3f> requestedEnds;
 
@@ -377,7 +412,7 @@ struct PathFinder::Impl {
   T snapPoint(const T& pt, int islandIndex = ID_UNDEFINED);
 
   template <typename T>
-  int getIsland(const T& pt);
+  int getIsland(const T& pt) const;
 
   bool loadNavMesh(const std::string& path);
 
@@ -406,9 +441,11 @@ struct PathFinder::Impl {
 
   std::pair<vec3f, vec3f> bounds() const { return bounds_; };
 
-  Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> getTopDownView(
-      float metersPerPixel,
-      float height) const;
+  Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic>
+  getTopDownView(float metersPerPixel, float height, float eps) const;
+
+  Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic>
+  getTopDownIslandView(float metersPerPixel, float height, float eps) const;
 
   assets::MeshData::ptr getNavMeshData(int islandIndex /*= ID_UNDEFINED*/);
 
@@ -1457,7 +1494,7 @@ T PathFinder::Impl::tryStep(const T& start, const T& end, bool allowSliding) {
     endPoint = endPoint + nudgeDistance * nudgeDir;
   }
 
-  return T{endPoint};
+  return T{std::move(endPoint)};
 }
 
 template <typename T>
@@ -1490,13 +1527,13 @@ T PathFinder::Impl::snapPoint(const T& pt, int islandIndex /*=ID_UNDEFINED*/) {
   }
 
   if (dtStatusSucceed(status)) {
-    return T{projectedPt};
+    return T{std::move(projectedPt)};
   }
   return {Mn::Constants::nan(), Mn::Constants::nan(), Mn::Constants::nan()};
 }
 
 template <typename T>
-int PathFinder::Impl::getIsland(const T& pt) {
+int PathFinder::Impl::getIsland(const T& pt) const {
   dtStatus status = 0;
   vec3f projectedPt;
   dtPolyRef polyRef = 0;
@@ -1547,7 +1584,7 @@ HitRecord PathFinder::Impl::closestObstacleSurfacePoint(
   navQuery_->findDistanceToWall(ptRef, polyPt.data(), maxSearchRadius,
                                 filter_.get(), &hitDist, hitPos.data(),
                                 hitNormal.data());
-  return {hitPos, hitNormal, hitDist};
+  return {std::move(hitPos), std::move(hitNormal), hitDist};
 }
 
 bool PathFinder::Impl::isNavigable(const vec3f& pt,
@@ -1573,10 +1610,11 @@ typedef Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> MatrixXb;
 
 Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic>
 PathFinder::Impl::getTopDownView(const float metersPerPixel,
-                                 const float height) const {
+                                 const float height,
+                                 const float eps) const {
   std::pair<vec3f, vec3f> mapBounds = bounds();
-  vec3f bound1 = mapBounds.first;
-  vec3f bound2 = mapBounds.second;
+  vec3f bound1 = std::move(mapBounds.first);
+  vec3f bound2 = std::move(mapBounds.second);
 
   float xspan = std::abs(bound1[0] - bound2[0]);
   float zspan = std::abs(bound1[2] - bound2[2]);
@@ -1591,7 +1629,44 @@ PathFinder::Impl::getTopDownView(const float metersPerPixel,
   for (int h = 0; h < zResolution; ++h) {
     for (int w = 0; w < xResolution; ++w) {
       vec3f point = vec3f(curx, height, curz);
-      topdownMap(h, w) = isNavigable(point, 0.5);
+      topdownMap(h, w) = isNavigable(point, eps);
+      curx = curx + metersPerPixel;
+    }
+    curz = curz + metersPerPixel;
+    curx = startx;
+  }
+
+  return topdownMap;
+}
+
+typedef Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic> MatrixXi;
+
+MatrixXi PathFinder::Impl::getTopDownIslandView(const float metersPerPixel,
+                                                const float height,
+                                                const float eps) const {
+  std::pair<vec3f, vec3f> mapBounds = bounds();
+  vec3f bound1 = std::move(mapBounds.first);
+  vec3f bound2 = std::move(mapBounds.second);
+
+  float xspan = std::abs(bound1[0] - bound2[0]);
+  float zspan = std::abs(bound1[2] - bound2[2]);
+  int xResolution = xspan / metersPerPixel;
+  int zResolution = zspan / metersPerPixel;
+  float startx = fmin(bound1[0], bound2[0]);
+  float startz = fmin(bound1[2], bound2[2]);
+  MatrixXi topdownMap(zResolution, xResolution);
+
+  float curz = startz;
+  float curx = startx;
+  for (int h = 0; h < zResolution; ++h) {
+    for (int w = 0; w < xResolution; ++w) {
+      vec3f point = vec3f(curx, height, curz);
+      if (isNavigable(point, eps)) {
+        // get the island
+        topdownMap(h, w) = getIsland(point);
+      } else {
+        topdownMap(h, w) = -1;
+      }
       curx = curx + metersPerPixel;
     }
     curz = curz + metersPerPixel;
@@ -1645,7 +1720,7 @@ assets::MeshData::ptr PathFinder::Impl::getNavMeshData(
       }
     }
     // return newly added meshdata
-    return islandMeshData_.emplace(islandIndex, curIslandMeshData)
+    return islandMeshData_.emplace(islandIndex, std::move(curIslandMeshData))
         .first->second;
   }
   // meshdata already exists, so lookup and return
@@ -1779,8 +1854,16 @@ std::pair<vec3f, vec3f> PathFinder::bounds() const {
 
 Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> PathFinder::getTopDownView(
     const float metersPerPixel,
-    const float height) {
-  return pimpl_->getTopDownView(metersPerPixel, height);
+    const float height,
+    const float eps) {
+  return pimpl_->getTopDownView(metersPerPixel, height, eps);
+}
+
+Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic>
+PathFinder::getTopDownIslandView(const float metersPerPixel,
+                                 const float height,
+                                 const float eps) {
+  return pimpl_->getTopDownIslandView(metersPerPixel, height, eps);
 }
 
 assets::MeshData::ptr PathFinder::getNavMeshData(

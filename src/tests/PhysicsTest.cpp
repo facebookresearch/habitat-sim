@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -10,6 +10,7 @@
 #include "esp/sim/Simulator.h"
 
 #include "esp/assets/ResourceManager.h"
+#include "esp/metadata/MetadataMediator.h"
 #include "esp/scene/SceneManager.h"
 
 #include "esp/physics/PhysicsManager.h"

@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -54,7 +54,7 @@ DepthShader::DepthShader(Flags flags) : flags_{flags} {
   vert.addSource(rs.getString("depth.vert"));
   frag.addSource(rs.getString("depth.frag"));
 
-  CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));
+  CORRADE_INTERNAL_ASSERT_OUTPUT(vert.compile() && frag.compile());
 
   attachShaders({vert, frag});
 

@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -10,7 +10,8 @@ namespace replay {
 
 std::shared_ptr<Player> ReplayManager::readKeyframesFromFile(
     const std::string& filepath) {
-  auto player = std::make_shared<Player>(playerCallback_);
+  auto player = std::make_shared<Player>(
+      loadAndCreateRenderAssetInstanceCallback_, changeLightSetupCallback_);
   player->readKeyframesFromFile(filepath);
   if (player->getNumKeyframes() == 0) {
     ESP_ERROR(Mn::Debug::Flag::NoSpace)
@@ -21,7 +22,8 @@ std::shared_ptr<Player> ReplayManager::readKeyframesFromFile(
 }
 
 std::shared_ptr<Player> ReplayManager::createEmptyPlayer() {
-  auto player = std::make_shared<Player>(playerCallback_);
+  auto player = std::make_shared<Player>(
+      loadAndCreateRenderAssetInstanceCallback_, changeLightSetupCallback_);
   return player;
 }
 

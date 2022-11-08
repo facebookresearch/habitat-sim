@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -44,12 +44,16 @@ class Player {
       std::function<esp::scene::SceneNode*(
           const esp::assets::AssetInfo&,
           const esp::assets::RenderAssetInstanceCreationInfo&)>;
+  using ChangeLightSetupCallback =
+      std::function<void(const gfx::LightSetup& lights)>;
 
   /**
    * @brief Construct a Player.
    * @param callback A function to load and create a render asset instance.
    */
-  explicit Player(const LoadAndCreateRenderAssetInstanceCallback& callback);
+  explicit Player(const LoadAndCreateRenderAssetInstanceCallback&
+                      loadAndCreateRenderAssetInstanceCallback,
+                  const ChangeLightSetupCallback& lightSetupCallback);
 
   ~Player();
 
@@ -64,7 +68,7 @@ class Player {
    * @brief Given a JSON string encoding a keyframe, returns the keyframe
    * itself.
    */
-  Keyframe keyframeFromString(const std::string& keyframe);
+  static Keyframe keyframeFromString(const std::string& keyframe);
 
   /**
    * @brief Get the currently-set keyframe, or -1 if no keyframe is set.
@@ -112,6 +116,8 @@ class Player {
    */
   void appendKeyframe(Keyframe&& keyframe);
 
+  void setSingleKeyframe(Keyframe&& keyframe);
+
   /**
    * @brief Appends a JSON keyframe to the keyframe list.
    */
@@ -126,6 +132,8 @@ class Player {
 
   LoadAndCreateRenderAssetInstanceCallback
       loadAndCreateRenderAssetInstanceCallback;
+  ChangeLightSetupCallback changeLightSetupCallback;
+
   int frameIndex_ = -1;
   std::vector<Keyframe> keyframes_;
   std::map<std::string, esp::assets::AssetInfo> assetInfos_;

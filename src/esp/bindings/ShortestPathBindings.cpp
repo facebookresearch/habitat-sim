@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -122,6 +122,10 @@ void initShortestPathBindings(py::module& m) {
           &NavMeshSettings::filterWalkableLowHeightSpans,
           R"(Marks navigable spans as non-navigable if the clearence above the span is less than the specified height. Allows the formation of navigable regions that will flow over low lying objects such as curbs, and up structures such as stairways. Default True.)")
       .def("set_defaults", &NavMeshSettings::setDefaults)
+      .def("read_from_json", &NavMeshSettings::readFromJSON,
+           R"(Overwrite these settings with values from a JSON file.)")
+      .def("write_to_json", &NavMeshSettings::writeToJSON,
+           R"(Write these settings to a JSON file.)")
       .def(
           py::self == py::self,
           R"(Checks for equivalency of (or < eps 1e-5 distance between) each parameter.)")
@@ -137,9 +141,14 @@ void initShortestPathBindings(py::module& m) {
       .def(
           "seed", &PathFinder::seed,
           R"(Seed the pathfinder.  Useful for get_random_navigable_point(). Seeds the global c rand function.)")
-      .def("get_topdown_view", &PathFinder::getTopDownView,
-           R"(Returns the topdown view of the PathFinder's navmesh.)",
-           "meters_per_pixel"_a, "height"_a)
+      .def(
+          "get_topdown_view", &PathFinder::getTopDownView,
+          R"(Returns the topdown view of the PathFinder's navmesh at a given vertical slice with eps slack.)",
+          "meters_per_pixel"_a, "height"_a, "eps"_a = 0.5)
+      .def(
+          "get_topdown_island_view", &PathFinder::getTopDownIslandView,
+          R"(Returns the topdown view of the PathFinder's navmesh with island indices at each point or -1 for non-navigable cells for a given vertical slice with eps slack.)",
+          "meters_per_pixel"_a, "height"_a, "eps"_a = 0.5)
       // detailed docs in docs/docs.rst
       .def("get_random_navigable_point", &PathFinder::getRandomNavigablePoint,
            "max_tries"_a = 10, "island_index"_a = ID_UNDEFINED)

@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -16,6 +16,8 @@
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
 #include "BulletCollisionHelper.h"
 #include "BulletRigidObject.h"
+#include "esp/assets/ResourceManager.h"
+#include "esp/metadata/managers/AssetAttributesManager.h"
 
 //!  A Few considerations in construction
 //!  Bullet Mesh conversion adapted from:
@@ -430,7 +432,7 @@ void BulletRigidObject::activateCollisionIsland() {
   // bitset template argument specifies reasonable allocation size at compile
   // time - it is not expected that we would require more than 65536 different
   // islands; if we do, this number should be increased.
-  Magnum::Math::BoolVector<65536> overlappingSimIslands;
+  Magnum::Math::BitVector<65536> overlappingSimIslands;
   // each index represents an island tag present - default in bullet is -1, so
   // add one.
   overlappingSimIslands.set(thisColObj->getIslandTag() + 1, true);

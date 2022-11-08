@@ -1,3 +1,7 @@
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 set(
   gfx_SOURCES
   CubeMap.cpp
@@ -170,21 +174,21 @@ if(BUILD_GUI_VIEWERS)
 endif()
 
 # Link appropriate windowless library
-if(APPLE)
-  find_package(Magnum REQUIRED WindowlessCglApplication)
-  target_link_libraries(gfx PUBLIC Magnum::WindowlessCglApplication)
-elseif(WIN32)
-  find_package(Magnum REQUIRED WindowlessWglApplication)
-  target_link_libraries(gfx PUBLIC Magnum::WindowlessWglApplication)
-elseif(CORRADE_TARGET_EMSCRIPTEN)
+if(MAGNUM_TARGET_EGL)
+  # Includes also Emscripten
   find_package(Magnum REQUIRED WindowlessEglApplication)
-  target_link_libraries(gfx PUBLIC Magnum::WindowlessEglApplication)
-elseif(UNIX)
-  if(BUILD_GUI_VIEWERS)
-    find_package(Magnum REQUIRED WindowlessGlxApplication)
-    target_link_libraries(gfx PUBLIC Magnum::WindowlessGlxApplication)
-  else()
-    find_package(Magnum REQUIRED WindowlessEglApplication)
-    target_link_libraries(gfx PUBLIC Magnum::WindowlessEglApplication)
-  endif()
+elseif(CORRADE_TARGET_APPLE)
+  find_package(Magnum REQUIRED WindowlessCglApplication)
+elseif(CORRADE_TARGET_UNIX)
+  # Mainly for builds with external Magnum that might not have TARGET_EGL
+  # enabled
+  find_package(Magnum REQUIRED WindowlessGlxApplication)
+elseif(CORRADE_TARGET_WINDOWS)
+  find_package(Magnum REQUIRED WindowlessWglApplication)
+else()
+  message(FATAL_ERROR "Unsupported platform")
 endif()
+target_link_libraries(
+  gfx
+  PUBLIC Magnum::WindowlessApplication
+)

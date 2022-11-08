@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright (c) Facebook, Inc. and its affiliates.
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
@@ -322,14 +322,6 @@ class CMakeBuild(build_ext):
             "-DBUILD_GUI_VIEWERS={}".format("ON" if not args.headless else "OFF")
         ]
 
-        if sys.platform not in ["darwin", "win32", "win64"]:
-            cmake_args += [
-                # So Magnum itself prefers EGL over GLX for windowless apps.
-                # Makes sense only on platforms with EGL (Linux, BSD, ...).
-                "-DTARGET_HEADLESS={}".format("ON" if args.headless else "OFF")
-            ]
-        # NOTE: BUILD_TEST is intentional as opposed to BUILD_TESTS which collides
-        # with definition used by some of our dependencies
         cmake_args += ["-DBUILD_TEST={}".format("ON" if args.build_tests else "OFF")]
         cmake_args += [
             "-DBUILD_WITH_BULLET={}".format("ON" if args.with_bullet else "OFF")

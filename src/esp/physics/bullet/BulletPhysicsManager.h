@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -57,7 +57,8 @@ class BulletPhysicsManager : public PhysicsManager {
    */
   explicit BulletPhysicsManager(
       assets::ResourceManager& _resourceManager,
-      const metadata::attributes::PhysicsManagerAttributes::cptr&
+      const std::shared_ptr<
+          const metadata::attributes::PhysicsManagerAttributes>&
           _physicsManagerAttributes);
 
   /** @brief Destructor which destructs necessary Bullet physics structures.*/
@@ -430,15 +431,6 @@ class BulletPhysicsManager : public PhysicsManager {
   int recentNumSubStepsTaken_ = -1;
 
  private:
-  /** @brief Check if a particular mesh can be used as a collision mesh for
-   * Bullet.
-   * @param meshData The mesh to validate. Only a triangle mesh is valid. Checks
-   * that the only #ref Magnum::MeshPrimitive are @ref
-   * Magnum::MeshPrimitive::Triangles.
-   * @return true if valid, false otherwise.
-   */
-  bool isMeshPrimitiveValid(const assets::CollisionMeshData& meshData) override;
-
   /**
    * @brief Helper function for getting object and link unique ids from
    * btCollisionObject cache

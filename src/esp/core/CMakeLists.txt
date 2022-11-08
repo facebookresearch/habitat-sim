@@ -1,6 +1,6 @@
-if(NOT BUILD_GUI_VIEWERS AND CORRADE_TARGET_UNIX AND NOT CORRADE_TARGET_APPLE)
-  set(ESP_BUILD_EGL_SUPPORT ON)
-endif()
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
 
 if(BUILD_ASSIMP_SUPPORT)
   set(ESP_BUILD_ASSIMP_SUPPORT ON)

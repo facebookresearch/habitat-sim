@@ -1,18 +1,15 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
 #ifndef ESP_ASSETS_RENDERASSETINSTANCECREATIONINFO_H_
 #define ESP_ASSETS_RENDERASSETINSTANCECREATIONINFO_H_
 
-#include "Asset.h"
-
-#include "esp/scene/SceneNode.h"
-
-#include "Magnum/Resource.h"
-
 #include <Corrade/Containers/EnumSet.h>
 #include <Corrade/Containers/Optional.h>
+#include <Magnum/Magnum.h>
+#include <Magnum/Math/Vector3.h>
+#include <string>
 
 namespace esp {
 namespace assets {

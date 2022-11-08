@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -64,12 +64,20 @@ void GenericMeshData::setMeshData(Magnum::Trade::MeshData&& meshData) {
 
   /* For collision data we need indices as UnsignedInt. If the mesh already has
      those, just make the collision data reference them. If not, unpack them
-     and store them here. */
-  if (meshData_->indexType() == Mn::MeshIndexType::UnsignedInt)
+     and store them here. And if there is no index buffer at all, generate a
+     trivial one (0, 1, 2, 3...). */
+  if (!meshData_->isIndexed()) {
+    collisionMeshData_.indices = indexData_ =
+        Cr::Containers::Array<Mn::UnsignedInt>{Cr::NoInit,
+                                               meshData_->vertexCount()};
+    for (Mn::UnsignedInt i = 0; i != indexData_.size(); ++i)
+      indexData_[i] = i;
+  } else if (meshData_->indexType() == Mn::MeshIndexType::UnsignedInt) {
     collisionMeshData_.indices =
         meshData_->mutableIndices<Mn::UnsignedInt>().asContiguous();
-  else
+  } else {
     collisionMeshData_.indices = indexData_ = meshData_->indicesAsArray();
+  }
 }  // setMeshData
 
 void GenericMeshData::importAndSetMeshData(

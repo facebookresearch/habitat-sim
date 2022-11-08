@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -11,6 +11,8 @@ namespace em = emscripten;
 
 #include "esp/gfx/replay/Recorder.h"
 #include "esp/gfx/replay/ReplayManager.h"
+#include "esp/metadata/managers/ObjectAttributesManager.h"
+#include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/scene/SemanticScene.h"
 #include "esp/sensor/CameraSensor.h"
 #include "esp/sensor/EquirectangularSensor.h"

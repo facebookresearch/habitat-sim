@@ -46,7 +46,10 @@ BreakConstructorInitializers: BeforeColon
 BreakAfterJavaFieldAnnotations: false
 BreakStringLiterals: true
 ColumnLimit:     80
-CommentPragmas:  '^ IWYU pragma:'
+# Doc block @ref and @section commands often cause Doxygen parsing bugs if
+# wrapped on multiple lines. If a comment contains them, it's not formatted in
+# any way.
+CommentPragmas:  '(^ IWYU pragma:|@ref|@section)'
 CompactNamespaces: false
 ConstructorInitializerAllOnOneLineOrOnePerLine: true
 ConstructorInitializerIndentWidth: 4

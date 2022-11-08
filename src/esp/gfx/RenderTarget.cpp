@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -6,6 +6,7 @@
 #include <Magnum/GL/BufferImage.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Framebuffer.h>
+#include <Magnum/GL/Mesh.h>
 #include <Magnum/GL/PixelFormat.h>
 #include <Magnum/GL/Renderbuffer.h>
 #include <Magnum/GL/RenderbufferFormat.h>
@@ -20,7 +21,6 @@
 
 #include "RenderTarget.h"
 #include "esp/sensor/VisualSensor.h"
-#include "magnum.h"
 
 #include "esp/gfx/DepthUnprojection.h"
 

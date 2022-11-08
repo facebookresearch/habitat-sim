@@ -1,3 +1,7 @@
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 find_package(MagnumBindings REQUIRED Python)
 
 pybind11_add_module(
@@ -35,13 +39,6 @@ target_link_libraries(
          physics
          sim
 )
-
-# Make Magnum text rendering (used by the native viewer) available for Python
-# as well
-if(BUILD_GUI_VIEWERS)
-  find_package(MagnumPlugins REQUIRED StbTrueTypeFont)
-  target_link_libraries(habitat_sim_bindings PRIVATE MagnumPlugins::StbTrueTypeFont)
-endif()
 
 if(BUILD_WITH_AUDIO)
   add_custom_command(
