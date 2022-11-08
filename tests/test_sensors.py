@@ -187,7 +187,7 @@ def test_sensors(
         pytest.skip("Skipping GPU->GPU test")
     scene_dataset_config = scene_and_dataset[1]
 
-    sensor = (
+    sim_sensor_type = (
         habitat_sim.SensorType.DEPTH
         if "depth" in sensor_type
         else (
@@ -202,7 +202,7 @@ def test_sensors(
         if "ortho" in sensor_type
         else habitat_sim.SensorSubType.PINHOLE
     )
-
+    make_cfg_settings["sensors"] = {}
     # We only support adding more RGB Sensors if one is already in a scene
     # We can add depth sensors whenever
     add_sensor_lazy = add_sensor_lazy and all_base_sensor_types[1] == sensor_type
@@ -213,12 +213,12 @@ def test_sensors(
             and sens != sensor_type
         ):
             make_cfg_settings["sensors"][sensor_type] = {
-                "sensor_type": sensor,
+                "sensor_type": sim_sensor_type,
                 "sensor_subtype": sensor_subtype,
             }
 
     make_cfg_settings["sensors"][sensor_type] = {
-        "sensor_type": sensor,
+        "sensor_type": sim_sensor_type,
         "sensor_subtype": sensor_subtype,
     }
 
