@@ -275,16 +275,20 @@ sim_settings = {
     "scene": test_scene,  # Scene path
     "scene_dataset_config_file": mp3d_scene_dataset,  # the scene dataset configuration files
     "default_agent": 0,
-    "sensors": [],
+    "sensors": {},
     "seed": 1,  # used in the random navigation
     "enable_physics": False,  # kinematics only
 }
 if rgb_sensor:
     sim_settings["sensors"]["color_sensor"] = {}
 if depth_sensor:
-    sim_settings["sensors"]["depth_sensor"] = {}
+    sim_settings["sensors"]["depth_sensor"] = {
+        "sensor_type": habitat_sim.SensorType.DEPTH
+    }
 if semantic_sensor:
-    sim_settings["sensors"]["semantic_sensor"] = {}
+    sim_settings["sensors"]["semantic_sensor"] = {
+        "sensor_type": habitat_sim.SensorType.SEMANTIC
+    }
 
 sim_settings = {**default_sim_settings, **sim_settings}
 

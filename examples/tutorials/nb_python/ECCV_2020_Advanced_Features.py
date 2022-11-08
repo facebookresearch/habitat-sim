@@ -49,6 +49,7 @@
 
 # %cd /content/habitat-sim
 ## [setup]
+import math
 import os
 import random
 import sys
@@ -418,6 +419,7 @@ def make_custom_settings():
         "sensors": {
             "color_sensor_1st_person": {
                 "position": [0, 1.5, 0],
+                "orientation": [-math.pi / 8.0, 0, 0],
             },
         },
         "seed": 1,
