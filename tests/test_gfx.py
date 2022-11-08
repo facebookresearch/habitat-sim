@@ -26,12 +26,7 @@ def test_unproject():
     cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/apartment_1.glb"
     cfg_settings["width"] = 101
     cfg_settings["height"] = 101
-    cfg_settings["sensors"] = [
-        {
-            "uuid": "color_sensor",
-            "position": [0, 0, 0],
-        }
-    ]
+    cfg_settings["sensors"]["color_sensor"] = {"position": [0, 0, 0]}
 
     # loading the scene
     hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
