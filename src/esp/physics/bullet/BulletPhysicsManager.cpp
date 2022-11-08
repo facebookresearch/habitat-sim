@@ -244,40 +244,6 @@ BulletPhysicsManager::getArticulatedObjectWrapper() {
       "ManagedBulletArticulatedObject");
 }
 
-//! Check if mesh primitive is compatible with physics
-bool BulletPhysicsManager::isMeshPrimitiveValid(
-    const assets::CollisionMeshData& meshData) {
-  if (meshData.primitive == Magnum::MeshPrimitive::Triangles) {
-    //! Only triangle mesh works
-    return true;
-  } else {
-    switch (meshData.primitive) {
-      case Magnum::MeshPrimitive::Lines:
-        ESP_ERROR() << "Invalid primitive: Lines";
-        break;
-      case Magnum::MeshPrimitive::Points:
-        ESP_ERROR() << "Invalid primitive: Points";
-        break;
-      case Magnum::MeshPrimitive::LineLoop:
-        ESP_ERROR() << "Invalid primitive Line loop";
-        break;
-      case Magnum::MeshPrimitive::LineStrip:
-        ESP_ERROR() << "Invalid primitive Line Strip";
-        break;
-      case Magnum::MeshPrimitive::TriangleStrip:
-        ESP_ERROR() << "Invalid primitive Triangle Strip";
-        break;
-      case Magnum::MeshPrimitive::TriangleFan:
-        ESP_ERROR() << "Invalid primitive Triangle Fan";
-        break;
-      default:
-        ESP_ERROR() << "Invalid primitive" << int(meshData.primitive);
-    }
-    ESP_ERROR() << "Cannot load collision mesh, skipping";
-    return false;
-  }
-}
-
 bool BulletPhysicsManager::attachLinkGeometry(
     ArticulatedLink* linkObject,
     const std::shared_ptr<io::URDF::Link>& link,
