@@ -445,7 +445,7 @@ jobs:
                 git clone -q https://github.com/facebookresearch/habitat-lab.git
               fi
               cd habitat-lab
-              git checkout sensor_refactor_python
+              gh pr checkout 990
               pip install -r habitat-lab/requirements.txt --progress-bar off
               ln -s ../habitat-sim/data data
               touch ~/miniconda/pip_deps_installed
