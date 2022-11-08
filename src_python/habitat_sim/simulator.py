@@ -478,7 +478,8 @@ class Simulator(SimulatorBackend):
             assert cuda_enabled, "Must build habitat sim with cuda for gpu2gpu-transfer"
             assert _HAS_TORCH
             device = torch.device("cuda", self.gpu_device)  # type: ignore[attr-defined]
-            torch.cuda.set_device(device)
+            # torch.cuda.set_device(device)
+            torch.cuda.device(device)
 
             # create empty "Torch" buffers to store sensor observations
             if sensor_spec.sensor_type == SensorType.SEMANTIC:
