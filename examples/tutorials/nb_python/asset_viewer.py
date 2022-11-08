@@ -107,16 +107,15 @@ def make_custom_settings():
         "height": 720,
         "scene": "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb",  # Scene path
         "default_agent": 0,
-        "sensors": [
-            {
-                "uuid": "color_sensor_1st_person",  # RGB sensor
+        "sensors": {
+            "color_sensor_1st_person": {
                 "orientation": [
                     -math.pi / 8.0,
                     0.0,
                     0.0,
                 ],  # sensor pitch (x rotation in rads)
-            },
-        ],
+            },  # RGB sensor
+        },
         "seed": 1,
         "enable_physics": True,  # enable dynamics simulation
     }
@@ -638,12 +637,9 @@ sim_settings["override_scene_light_defaults"] = True
 sim_settings["scene_light_setup"] = ""
 
 # use 3rd person camera
-sim_settings["sensors"].append(
-    {
-        "uuid": "color_sensor_3rd_person",
-        "position": [0.0, 1.7, 0.2],
-    },
-)
+sim_settings["sensors"]["color_sensor_3rd_person"] = {
+    "position": [0.0, 1.7, 0.2],
+}
 
 make_simulator_from_settings(sim_settings)
 # [/initialize]
