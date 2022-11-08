@@ -1,10 +1,12 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
 #include "SceneInstanceAttributesManager.h"
 
 #include <Corrade/Utility/FormatStl.h>
+
+#include <utility>
 #include "esp/metadata/MetadataUtils.h"
 #include "esp/physics/RigidBase.h"
 
@@ -334,7 +336,7 @@ int SceneInstanceAttributesManager::registerObjectFinalize(
   // template referenced by sceneInstanceAttributesHandle, or the next available
   // ID if not found.
   int datasetTemplateID = this->addObjectToLibrary(
-      sceneInstanceAttributes, sceneInstanceAttributesHandle);
+      std::move(sceneInstanceAttributes), sceneInstanceAttributesHandle);
   return datasetTemplateID;
 }  // SceneInstanceAttributesManager::registerObjectFinalize
 

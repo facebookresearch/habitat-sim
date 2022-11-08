@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -6,6 +6,8 @@
 #include "AbstractObjectAttributesManagerBase.h"
 
 #include <Corrade/Utility/String.h>
+
+#include <utility>
 
 #include "esp/assets/Asset.h"
 #include "esp/io/Json.h"
@@ -53,7 +55,8 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
   // collision primitive mesh needs to be configured and set in MeshMetaData
   // and CollisionMesh
 
-  return this->postCreateRegister(primObjectAttributes, registerTemplate);
+  return this->postCreateRegister(std::move(primObjectAttributes),
+                                  registerTemplate);
 }  // ObjectAttributesManager::createPrimBasedAttributesTemplate
 
 void ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates() {
@@ -284,7 +287,7 @@ int ObjectAttributesManager::registerObjectFinalize(
 
   // Add object template to template library
   int objectTemplateID =
-      this->addObjectToLibrary(objectTemplate, objectTemplateHandle);
+      this->addObjectToLibrary(std::move(objectTemplate), objectTemplateHandle);
 
   if (mapToUse != nullptr) {
     mapToUse->emplace(objectTemplateID, objectTemplateHandle);

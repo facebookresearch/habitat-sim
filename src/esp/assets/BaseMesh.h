@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -11,17 +11,12 @@
  */
 
 #include <Corrade/Containers/Optional.h>
-#include <Corrade/Containers/Reference.h>
-#include <Magnum/GL/Mesh.h>
-#include <Magnum/Magnum.h>
-#include <Magnum/Math/Color.h>
+#include <Magnum/GL/GL.h>
 #include <Magnum/Math/Range.h>
-#include <Magnum/Mesh.h>
 #include <Magnum/Trade/MeshData.h>
 #include "CollisionMeshData.h"
 #include "MeshData.h"
 #include "esp/core/Esp.h"
-#include "esp/gfx/magnum.h"
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;

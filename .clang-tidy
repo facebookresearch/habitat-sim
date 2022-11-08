@@ -63,6 +63,7 @@ readability-uniqueptr-delete-release,
 -modernize-use-auto,
 -modernize-use-trailing-return-type,
 -bugprone-easily-swappable-parameters,
+-bugprone-forward-declaration-namespace,
 '
 
 CheckOptions:
@@ -75,12 +76,6 @@ CheckOptions:
 - key:             readability-implicit-bool-conversion.AllowPointerConditions
   value:           true
 
-# Let deprecation warnings through. From time to time, Magnum annotates APIs
-# with deprecation warnings, suggesting people to upgrade to newer / better
-# designed / more flexible APIs. Treating such warnings as error is
-# counterproductive, since the first thing you want to do after an upgrade is
-# compiling existing *unchanged* code and ensuring all tests pass, and only
-# then start updating the code.
 WarningsAsErrors: '
 *,
 -bugprone-narrowing-conversions,
@@ -90,6 +85,28 @@ WarningsAsErrors: '
 -clang-analyzer-cplusplus.PlacementNew,
 -cppcoreguidelines-pro-type-member-init,
 -optin.cplusplus.UninitializedObject,
+-readability-implicit-bool-conversion,
 '
 
 HeaderFilterRegex: "src/esp/"
+
+# Comments for particular disabled checks:
+#
+# bugprone-forward-declaration-namespace
+#   This check would make forward declarations work only if each class name is
+#   unique across all namespaces, otherwise it would complain that e.g. Buffer
+#   is defined in Magnum::GL but a forward declaration appears in Magnum::Vk.
+#   Which is just useless, and goes against the point of namespaces.
+# clang-diagnostic-deprecated-declarations
+#   From time to time, Magnum annotates APIs with deprecation warnings,
+#   suggesting people to upgrade to newer / better designed / more flexible
+#   APIs. Treating such warnings as error is counterproductive, since the first
+#   thing you want to do after an upgrade is compiling existing *unchanged*
+#   code and ensuring all tests pass, and only then start updating the code.
+# readability-implicit-bool-conversion
+#   There's many cases of checking counts in if statements, such as
+#   `if(!importer->sceneCount())` for Magnum importers. For those there are no
+#   corresponding `hasScenes()` or such, and having to write `== 0` doesn't
+#   really improve readability in any way. Keeping this as a warning tho, as it
+#   *might* actually be useful in certain cases, just not treating it as an
+#   error.

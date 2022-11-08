@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -6,11 +6,14 @@
 //#include "BulletCollision/Gimpact/btGImpactShape.h"
 
 #include "BulletPhysicsManager.h"
+
+#include <utility>
 #include "BulletArticulatedObject.h"
 #include "BulletDynamics/Featherstone/btMultiBodyLinkCollider.h"
 #include "BulletRigidObject.h"
 #include "BulletURDFImporter.h"
 #include "esp/assets/ResourceManager.h"
+#include "esp/metadata/attributes/PhysicsManagerAttributes.h"
 #include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/sim/Simulator.h"
@@ -222,7 +225,8 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
       existingArticulatedObjects_.at(articulatedObjectID));
 
   // 4.0 register wrapper in manager
-  articulatedObjectManager_->registerObject(AObjWrapper, newArtObjectHandle);
+  articulatedObjectManager_->registerObject(std::move(AObjWrapper),
+                                            newArtObjectHandle);
 
   return articulatedObjectID;
 }  // BulletPhysicsManager::addArticulatedObjectFromURDF
@@ -238,40 +242,6 @@ BulletPhysicsManager::getArticulatedObjectWrapper() {
   // TODO make sure this is appropriately cast
   return articulatedObjectManager_->createObject(
       "ManagedBulletArticulatedObject");
-}
-
-//! Check if mesh primitive is compatible with physics
-bool BulletPhysicsManager::isMeshPrimitiveValid(
-    const assets::CollisionMeshData& meshData) {
-  if (meshData.primitive == Magnum::MeshPrimitive::Triangles) {
-    //! Only triangle mesh works
-    return true;
-  } else {
-    switch (meshData.primitive) {
-      case Magnum::MeshPrimitive::Lines:
-        ESP_ERROR() << "Invalid primitive: Lines";
-        break;
-      case Magnum::MeshPrimitive::Points:
-        ESP_ERROR() << "Invalid primitive: Points";
-        break;
-      case Magnum::MeshPrimitive::LineLoop:
-        ESP_ERROR() << "Invalid primitive Line loop";
-        break;
-      case Magnum::MeshPrimitive::LineStrip:
-        ESP_ERROR() << "Invalid primitive Line Strip";
-        break;
-      case Magnum::MeshPrimitive::TriangleStrip:
-        ESP_ERROR() << "Invalid primitive Triangle Strip";
-        break;
-      case Magnum::MeshPrimitive::TriangleFan:
-        ESP_ERROR() << "Invalid primitive Triangle Fan";
-        break;
-      default:
-        ESP_ERROR() << "Invalid primitive" << int(meshData.primitive);
-    }
-    ESP_ERROR() << "Cannot load collision mesh, skipping";
-    return false;
-  }
 }
 
 bool BulletPhysicsManager::attachLinkGeometry(

@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -68,7 +68,7 @@ class Player {
    * @brief Given a JSON string encoding a keyframe, returns the keyframe
    * itself.
    */
-  Keyframe keyframeFromString(const std::string& keyframe);
+  static Keyframe keyframeFromString(const std::string& keyframe);
 
   /**
    * @brief Get the currently-set keyframe, or -1 if no keyframe is set.
@@ -115,6 +115,8 @@ class Player {
    * @brief Appends a Keyframe to the keyframe list.
    */
   void appendKeyframe(Keyframe&& keyframe);
+
+  void setSingleKeyframe(Keyframe&& keyframe);
 
   /**
    * @brief Appends a JSON keyframe to the keyframe list.

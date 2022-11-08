@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -12,10 +12,12 @@
 #include <Magnum/Math/Range.h>
 #include <string>
 
+#include "esp/assets/MeshData.h"
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/WindowlessContext.h"
+#include "esp/metadata/MetadataMediator.h"
 #include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/scene/SceneManager.h"
 

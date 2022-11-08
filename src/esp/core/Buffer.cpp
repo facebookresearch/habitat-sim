@@ -1,8 +1,10 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
 #include "Buffer.h"
+
+#include <cstring>
 
 namespace esp {
 namespace core {
@@ -32,7 +34,7 @@ size_t getDataTypeByteSize(DataType dt) {
 
 void Buffer::clear() {
   if (this->data != nullptr) {
-    memset(this->data, 0, this->data.size());
+    std::memset(this->data, 0, this->data.size());
   }
 }
 

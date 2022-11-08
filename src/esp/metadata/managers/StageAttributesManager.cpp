@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -124,8 +124,8 @@ int StageAttributesManager::registerObjectFinalize(
   // adds template to library, and returns either the ID of the existing
   // template referenced by stageAttributesHandle, or the next available ID
   // if not found.
-  int stageTemplateID =
-      this->addObjectToLibrary(stageAttributes, stageAttributesHandle);
+  int stageTemplateID = this->addObjectToLibrary(std::move(stageAttributes),
+                                                 stageAttributesHandle);
   return stageTemplateID;
 }  // StageAttributesManager::registerAttributesTemplate
 
@@ -156,7 +156,7 @@ StageAttributes::ptr StageAttributesManager::createPrimBasedAttributesTemplate(
   // collision primitive mesh needs to be configured and set in MeshMetaData
   // and CollisionMesh
 
-  return this->postCreateRegister(stageAttributes, registerTemplate);
+  return this->postCreateRegister(std::move(stageAttributes), registerTemplate);
 }  // StageAttributesManager::createPrimBasedAttributesTemplate
 
 StageAttributes::ptr StageAttributesManager::initNewObjectInternal(

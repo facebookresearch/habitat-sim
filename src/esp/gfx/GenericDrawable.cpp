@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -29,7 +29,13 @@ GenericDrawable::GenericDrawable(scene::SceneNode& node,
       materialData_{
           shaderManager.get<MaterialData, PhongMaterialData>(materialDataKey)} {
   flags_ = Mn::Shaders::PhongGL::Flag::ObjectId;
-  if (materialData_->textureMatrix != Mn::Matrix3{}) {
+
+  /* If texture transformation is specified, enable it only if the material is
+     actually textured -- it's an error otherwise */
+  if (materialData_->textureMatrix != Mn::Matrix3{} &&
+      (materialData_->ambientTexture || materialData_->diffuseTexture ||
+       materialData_->specularTexture || materialData_->specularTexture ||
+       materialData_->textureObjectId)) {
     flags_ |= Mn::Shaders::PhongGL::Flag::TextureTransformation;
   }
   if (materialData_->ambientTexture) {

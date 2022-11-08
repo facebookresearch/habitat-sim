@@ -1,3 +1,6 @@
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
 
 #include <cassert>
 #include <climits>
@@ -7,6 +10,7 @@
 #include <Corrade/Utility/Algorithms.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/Math/Vector.h>
+#include <Magnum/MeshTools/Compile.h>
 #include <Magnum/MeshTools/Interleave.h>
 #include <Magnum/MeshTools/Reference.h>
 #include <Magnum/Primitives/Cone.h>

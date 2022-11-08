@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -14,6 +14,7 @@
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
 #include "BulletCollisionHelper.h"
 #include "BulletRigidStage.h"
+#include "esp/assets/ResourceManager.h"
 #include "esp/physics/CollisionGroupHelper.h"
 
 namespace esp {
@@ -100,14 +101,23 @@ void BulletRigidStage::constructBulletSceneFromMeshes(
     const assets::MeshTransformNode& node) {
   Magnum::Matrix4 transformFromLocalToWorld =
       transformFromParentToWorld * node.transformFromLocalToParent;
-  if (node.meshIDLocal != ID_UNDEFINED) {
-    const assets::CollisionMeshData& mesh = meshGroup[node.meshIDLocal];
 
+  const assets::CollisionMeshData* mesh = nullptr;
+  if (node.meshIDLocal != ID_UNDEFINED)
+    mesh = &meshGroup[node.meshIDLocal];
+  // TODO TriangleStrip and TriangleFan would work
+  if (mesh && mesh->primitive != Mn::MeshPrimitive::Triangles) {
+    ESP_WARNING() << "Unsupported collision mesh primitive" << mesh->primitive
+                  << Mn::Debug::nospace << ", skipping";
+    mesh = nullptr;
+  }
+
+  if (mesh) {
     // SCENE: create a concave static mesh
     btIndexedMesh bulletMesh;
 
-    Corrade::Containers::ArrayView<Magnum::Vector3> v_data = mesh.positions;
-    Corrade::Containers::ArrayView<Magnum::UnsignedInt> ui_data = mesh.indices;
+    Corrade::Containers::ArrayView<Magnum::Vector3> v_data = mesh->positions;
+    Corrade::Containers::ArrayView<Magnum::UnsignedInt> ui_data = mesh->indices;
 
     //! Configure Bullet Mesh
     //! This part is very likely to cause segfault, if done incorrectly

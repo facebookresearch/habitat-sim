@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -6,6 +6,7 @@
 
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/FunctionsBatch.h>
+#include <Magnum/Math/Matrix4.h>
 #include <Magnum/Primitives/Circle.h>
 #include <Magnum/Trade/MeshData.h>
 #include <cmath>
