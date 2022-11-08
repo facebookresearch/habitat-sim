@@ -271,11 +271,7 @@ def test_reconfigure_render(
 
     make_cfg_settings["scene"] = _test_scenes[-1][0]
     make_cfg_settings["scene_dataset_config_file"] = _test_scenes[-1][1]
-    make_cfg_settings["sensors"] = [
-        {
-            "uuid": sensor_type,
-        }
-    ]
+    make_cfg_settings["sensors"] = {sensor_type: {}}
 
     cfg = make_cfg(make_cfg_settings)
 
@@ -377,7 +373,6 @@ def test_rgba_noise(scene_and_dataset, model_name, make_cfg_settings):
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
     scene_dataset_config = scene_and_dataset[1]
-    make_cfg_settings["sensors"]["color_sensor"] = {}
     make_cfg_settings["scene"] = scene
     make_cfg_settings["scene_dataset_config_file"] = scene_dataset_config
     hsim_cfg = make_cfg(make_cfg_settings)
