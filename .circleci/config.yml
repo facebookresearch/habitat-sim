@@ -434,13 +434,11 @@ jobs:
               #Rebuild headless
               python setup.py install --headless --with-bullet --with-cuda --vhacd
               cd ..
-              rm -r habitat-lab
               if [ ! -d ./habitat-lab ]
               then
-                git clone -q https://github.com/facebookresearch/habitat-lab.git
+                git clone -q --depth 1 https://github.com/facebookresearch/habitat-lab.git
               fi
               cd habitat-lab
-              git checkout sensor_refactor_1.0
               pip install -r habitat-lab/requirements.txt --progress-bar off
               ln -s ../habitat-sim/data data
               touch ~/miniconda/pip_deps_installed
