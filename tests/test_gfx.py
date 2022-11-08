@@ -47,10 +47,7 @@ def test_unproject(zfar):
         sim.agents[0].scene_node.translation = mn.Vector3(0.5, 0, 0)
 
         # setup camera
-        far_plane = sim._sensors["depth_sensor"]._sensor_object.far_plane_dist
-        assert zfar == far_plane
-        render_camera = sim._sensors["color_sensor"]._sensor_object.render_camera
-        depth_camera = sim._sensors["depth_sensor"]._sensor_object.render_camera
+        render_camera = sim._sensors["color_sensor"].render_camera
 
         # test unproject with known values
         center_ray = render_camera.unproject(

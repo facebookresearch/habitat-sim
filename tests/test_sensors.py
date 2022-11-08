@@ -215,7 +215,8 @@ def test_sensors(
             obs: Dict[str, Any] = sim.reset()
             assert len(obs) == 1, "Other sensors were not removed"
             for sensor_spec in additional_sensors:
-                sim.add_sensor(sensor_spec)
+                agent_id = 0
+                sim.add_sensor(sensor_spec, agent_id)
         if sensor_type not in all_base_sensor_types:
             obs = _render_scene(sim, scene, sensor_type, gpu2gpu)
             # Smoke Test.
