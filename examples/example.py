@@ -55,18 +55,17 @@ def make_settings():
     settings["frustum_culling"] = not args.disable_frustum_culling
     settings["recompute_navmesh"] = args.recompute_navmesh
 
-    settings["sensors"] = []
     if not args.disable_color_sensor:
         settings["sensors"]["color_sensor"] = {
-            "position": [0, args.sensor_height, 0],
+            "position": [0.0, args.sensor_height, 0.0],
         }
     if args.semantic_sensor:
         settings["sensors"]["semantic_sensor"] = {
-            "position": [0, args.sensor_height, 0],
+            "position": [0.0, args.sensor_height, 0.0],
         }
     if args.depth_sensor:
         settings["sensors"]["depth_sensor"] = {
-            "position": [0, args.sensor_height, 0],
+            "position": [0.0, args.sensor_height, 0.0],
         }
     return settings
 
