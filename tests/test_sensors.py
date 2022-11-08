@@ -187,9 +187,24 @@ def test_sensors(
         pytest.skip("Skipping GPU->GPU test")
     scene_dataset_config = scene_and_dataset[1]
 
+    sensor = (
+        habitat_sim.SensorType.DEPTH
+        if "depth" in sensor_type
+        else (
+            habitat_sim.SensorType.SEMANTIC
+            if "semantic" in sensor_type
+            else habitat_sim.SensorType.COLOR
+        )
+    )
+
+    sensor_subtype = (
+        habitat_sim.SensorSubType.ORTHOGRAPHIC
+        if "ortho" in sensor_type
+        else habitat_sim.SensorSubType.PINHOLE
+    )
+
     # We only support adding more RGB Sensors if one is already in a scene
     # We can add depth sensors whenever
-    make_cfg_settings["sensors"] = []
     add_sensor_lazy = add_sensor_lazy and all_base_sensor_types[1] == sensor_type
     for sens in all_base_sensor_types:
         if (
@@ -197,17 +212,16 @@ def test_sensors(
             and sens in all_base_sensor_types[:2]
             and sens != sensor_type
         ):
-            make_cfg_settings["sensors"].append(
-                {
-                    "uuid": sens,
-                }
-            )
+            make_cfg_settings["sensors"][sensor_type] = {
+                "sensor_type": sensor,
+                "sensor_subtype": sensor_subtype,
+            }
 
-    make_cfg_settings["sensors"].append(
-        {
-            "uuid": sensor_type,
-        }
-    )
+    make_cfg_settings["sensors"][sensor_type] = {
+        "sensor_type": sensor,
+        "sensor_subtype": sensor_subtype,
+    }
+
     make_cfg_settings["scene"] = scene
     make_cfg_settings["scene_dataset_config_file"] = scene_dataset_config
     make_cfg_settings["frustum_culling"] = frustum_culling
@@ -312,11 +326,9 @@ def test_smoke_redwood_noise(scene_and_dataset, gpu2gpu, make_cfg_settings):
     if gpu2gpu and (not habitat_sim.cuda_enabled or not _HAS_TORCH):
         pytest.skip("Skipping GPU->GPU test")
     scene_dataset_config = scene_and_dataset[1]
-    make_cfg_settings["sensors"] = [
-        {
-            "uuid": "depth_sensor",
-        }
-    ]
+    make_cfg_settings["sensors"]["depth_sensor"] = {
+        "sensor_type": habitat_sim.SensorType.DEPTH
+    }
     make_cfg_settings["scene"] = scene
     make_cfg_settings["scene_dataset_config_file"] = scene_dataset_config
     hsim_cfg = make_cfg(make_cfg_settings)
@@ -341,7 +353,7 @@ def test_initial_hfov(scene_and_dataset, sensor_type, make_cfg_settings):
     scene = scene_and_dataset[0]
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
-    for sens_cfg in make_cfg_settings["sensors"]:
+    for _, sens_cfg in make_cfg_settings["sensors"].items():
         sens_cfg["hfov"] = 70
     with habitat_sim.Simulator(make_cfg(make_cfg_settings)) as sim:
         assert sim.agents[0]._sensors[sensor_type].hfov == mn.Deg(
@@ -365,11 +377,7 @@ def test_rgba_noise(scene_and_dataset, model_name, make_cfg_settings):
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
     scene_dataset_config = scene_and_dataset[1]
-    make_cfg_settings["sensors"] = [
-        {
-            "uuid": "color_sensor",
-        }
-    ]
+    make_cfg_settings["sensors"]["color_sensor"] = {}
     make_cfg_settings["scene"] = scene
     make_cfg_settings["scene_dataset_config_file"] = scene_dataset_config
     hsim_cfg = make_cfg(make_cfg_settings)

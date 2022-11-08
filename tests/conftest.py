@@ -25,11 +25,11 @@ def make_cfg_settings():
     import habitat_sim.utils.settings
 
     cfg = habitat_sim.utils.settings.default_sim_settings.copy()
-    cfg["sensors"] = [
-        {"uuid": "color_sensor"},
-        {"uuid": "semantic_sensor"},
-        {"uuid": "depth_sensor"},
-    ]
+    cfg["sensors"] = {
+        "color_sensor": {},
+        "semantic_sensor": {},
+        "depth_sensor": {},
+    }
     cfg["silent"] = True
     cfg["scene"] = _test_scene
     cfg["frustum_culling"] = True

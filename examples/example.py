@@ -57,26 +57,17 @@ def make_settings():
 
     settings["sensors"] = []
     if not args.disable_color_sensor:
-        settings["sensors"].append(
-            {
-                "uuid": "color_sensor",
-                "position": [0, args.sensor_height, 0],
-            }
-        )
+        settings["sensors"]["color_sensor"] = {
+            "position": [0, args.sensor_height, 0],
+        }
     if args.semantic_sensor:
-        settings["sensors"].append(
-            {
-                "uuid": "semantic_sensor",
-                "position": [0, args.sensor_height, 0],
-            }
-        )
+        settings["sensors"]["semantic_sensor"] = {
+            "position": [0, args.sensor_height, 0],
+        }
     if args.depth_sensor:
-        settings["sensors"].append(
-            {
-                "uuid": "depth_sensor",
-                "position": [0, args.sensor_height, 0],
-            }
-        )
+        settings["sensors"]["depth_sensor"] = {
+            "position": [0, args.sensor_height, 0],
+        }
     return settings
 
 
