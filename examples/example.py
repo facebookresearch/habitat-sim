@@ -9,6 +9,8 @@ import argparse
 
 import demo_runner as dr
 
+import habitat_sim
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--scene", type=str, default=dr.default_sim_settings["scene"])
 parser.add_argument("--width", type=int, default=640)
@@ -62,10 +64,12 @@ def make_settings():
     if args.semantic_sensor:
         settings["sensors"]["semantic_sensor"] = {
             "position": [0.0, args.sensor_height, 0.0],
+            "sensor_type": habitat_sim.SensorType.SEMANTIC,
         }
     if args.depth_sensor:
         settings["sensors"]["depth_sensor"] = {
             "position": [0.0, args.sensor_height, 0.0],
+            "sensor_type": habitat_sim.SensorType.DEPTH,
         }
     return settings
 

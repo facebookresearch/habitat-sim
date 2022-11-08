@@ -338,10 +338,8 @@ def test_smoke_redwood_noise(scene_and_dataset, gpu2gpu, make_cfg_settings):
     if gpu2gpu and (not habitat_sim.cuda_enabled or not _HAS_TORCH):
         pytest.skip("Skipping GPU->GPU test")
     scene_dataset_config = scene_and_dataset[1]
-    del make_cfg_settings["sensors"]["color_sensor"]
-    del make_cfg_settings["sensors"]["semantic_sensor"]
-    make_cfg_settings["sensors"]["depth_sensor"] = {
-        "sensor_type": habitat_sim.SensorType.DEPTH
+    make_cfg_settings["sensors"] = {
+        "depth_sensor": {"sensor_type": habitat_sim.SensorType.DEPTH}
     }
     make_cfg_settings["scene"] = scene
     make_cfg_settings["scene_dataset_config_file"] = scene_dataset_config

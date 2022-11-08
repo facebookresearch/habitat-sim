@@ -51,7 +51,9 @@ def test_empty_scene():
     # keyword "NONE" initializes a scene with no scene mesh
     cfg_settings["scene"] = "NONE"
     # test that depth sensor doesn't mind an empty scene
-    cfg_settings["sensors"]["depth_sensor"] = {}
+    cfg_settings["sensors"]["depth_sensor"] = {
+        {"sensor_type": habitat_sim.SensorType.DEPTH},
+    }
     cfg_settings["sensors"]["color_sensor"] = {}
 
     hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)

@@ -27,8 +27,8 @@ def make_cfg_settings():
     cfg = habitat_sim.utils.settings.default_sim_settings.copy()
     cfg["sensors"] = {
         "color_sensor": {},
-        "semantic_sensor": {},
-        "depth_sensor": {},
+        "semantic_sensor": {"sensor_type": habitat_sim.SensorType.SEMANTIC},
+        "depth_sensor": {"sensor_type": habitat_sim.SensorType.DEPTH},
     }
     cfg["silent"] = True
     cfg["scene"] = _test_scene
