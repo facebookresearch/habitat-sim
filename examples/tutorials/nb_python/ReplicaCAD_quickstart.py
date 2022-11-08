@@ -106,11 +106,7 @@ def make_custom_settings():
         "default_agent": 0,
         "seed": 1,
         "enable_physics": True,  # enable dynamics simulation
-        "sensors": [
-            {
-                "uuid": "color_sensor_1st_person",
-            },
-        ],
+        "sensors": {"color_sensor_1st_person": {}},
     }
     settings = {**default_sim_settings, **settings}
     return settings

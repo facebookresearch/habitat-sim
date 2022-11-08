@@ -415,12 +415,11 @@ def make_custom_settings():
         "scene": "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb",  # Scene path
         "scene_dataset": "./data/scene_datasets/mp3d_example/mp3d.scene_dataset_config.json",  # mp3d scene dataset
         "default_agent": 0,
-        "sensors": [
-            {
-                "uuid": "color_sensor_1st_person",
+        "sensors": {
+            "color_sensor_1st_person": {
                 "position": [0, 1.5, 0],
             },
-        ],
+        },
         "seed": 1,
         "enable_physics": True,  # enable dynamics simulation
     }
@@ -918,11 +917,9 @@ rigid_obj_mgr.remove_all_objects()
 
 sim_settings = make_custom_settings()
 sim_settings["scene"] = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
-sim_settings["sensors"].append(
-    {
-        "uuid": "semantic_sensor_1st_person",
-    },
-)
+sim_settings["sensors"]["semantic_sensor_1st_person"] = {
+    "sensor_type": habitat_sim.SensorType.SEMANTIC
+}
 
 make_simulator_from_settings(sim_settings)
 

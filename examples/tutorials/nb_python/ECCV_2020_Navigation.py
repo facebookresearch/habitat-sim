@@ -280,23 +280,12 @@ sim_settings = {
     "enable_physics": False,  # kinematics only
 }
 if rgb_sensor:
-    sim_settings["sensors"].append(
-        {
-            "uuid": "color_sensor",
-        }
-    )
+    sim_settings["sensors"]["color_sensor"] = {}
 if depth_sensor:
-    sim_settings["sensors"].append(
-        {
-            "uuid": "depth_sensor",
-        }
-    )
+    sim_settings["sensors"]["depth_sensor"] = {}
 if semantic_sensor:
-    sim_settings["sensors"].append(
-        {
-            "uuid": "semantic_sensor",
-        }
-    )
+    sim_settings["sensors"]["semantic_sensor"] = {}
+
 sim_settings = {**default_sim_settings, **sim_settings}
 
 # %%

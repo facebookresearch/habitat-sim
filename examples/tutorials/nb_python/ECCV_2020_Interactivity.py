@@ -116,13 +116,12 @@ def make_custom_settings():
         "scene": "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb",  # Scene path
         "scene_dataset_config_file": "./data/scene_datasets/mp3d_example/mp3d.scene_dataset_config.json",  # MP3D scene dataset
         "default_agent": 0,
-        "sensors": [
-            {
-                "uuid": "color_sensor_1st_person",
+        "sensors": {
+            "color_sensor_1st_person": {
                 "position": [0.0, 1.5, 0.0],
                 "orientation": [-math.pi / 8.0, 0.0, 0.0],
             },
-        ],
+        },
         "seed": 1,
         "enable_physics": True,  # enable dynamics simulation
     }
@@ -518,9 +517,8 @@ obj_1 = rigid_obj_mgr.add_object_by_template_handle(obj_template_handle)
 set_object_state_from_agent(sim, obj_1, offset=offset, orientation=orientation)
 
 # display a still frame of the scene after the object is added if RGB sensor is enabled
-uuids = [sens_cfg["uuid"] for sens_cfg in sim_settings["sensors"]]
 observations = sim.get_sensor_observations()
-if display and "color_sensor_1st_person" in uuids:
+if display and "color_sensor_1st_person" in sim_settings["sensors"]:
     display_sample(observations["color_sensor_1st_person"])
 
 example_type = "adding objects test"
@@ -1098,24 +1096,22 @@ sim_settings = make_custom_settings()
 # fmt: off
 sim_settings["scene"] = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"  # @param{type:"string"}
 # fmt: on
-sim_settings["sensors"] = [
-    {
-        "uuid": "color_sensor_1st_person",
+sim_settings["sensors"] = {
+    "color_sensor_1st_person": {
         "position": [0.0, 0.6, 0.0],
     },
-    {
-        "uuid": "color_sensor_3rd_person",
+    "color_sensor_3rd_person": {
         "position": [0.0, 0.8, 0.2],
     },
-    {
-        "uuid": "depth_sensor_1st_person",
+    "depth_sensor_1st_person": {
         "position": [0.0, 0.6, 0.0],
+        "sensor_type": habitat_sim.SensorType.DEPTH,
     },
-    {
-        "uuid": "semantic_sensor_1st_person",
+    "semantic_sensor_1st_person": {
         "position": [0.0, 0.6, 0.0],
+        "sensor_type": habitat_sim.SensorType.SEMANTIC,
     },
-]
+}
 
 make_simulator_from_settings(sim_settings)
 
