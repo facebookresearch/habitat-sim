@@ -708,7 +708,7 @@ class Simulator(SimulatorBackend):
         for agent_id in agent_ids:
             agent_observations: Dict[str, SensorObservation] = {}
             for sensor_uuid, sensor in self.__sensors[agent_id].items():
-                agent_observations[sensor_uuid] = sensor._get_observation_async()
+                agent_observations[sensor_uuid] = self._get_observation_async(sensor)
             per_agent_observations[agent_id] = agent_observations
 
         if return_single:
