@@ -397,7 +397,7 @@ class Simulator(SimulatorBackend):
         assert scene_node is not None
         sensors_added = SensorFactory.create_sensors(scene_node, [sensor_spec])
         sensor = sensors_added[sensor_spec.uuid]
-        self.__sensors_[sensor_spec.uuid][sensor]
+        self.__sensors_[sensor_spec.uuid] = sensor
         self._init_sensor(sensor_spec)
 
     @overload
