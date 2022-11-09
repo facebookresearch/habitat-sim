@@ -442,9 +442,10 @@ jobs:
               cd ..
               if [ ! -d ./habitat-lab ]
               then
-                git clone -q --depth 1 https://github.com/facebookresearch/habitat-lab.git
+                git clone -q https://github.com/facebookresearch/habitat-lab.git
               fi
               cd habitat-lab
+              checkout sensor_refactor_1.0
               pip install -r habitat-lab/requirements.txt --progress-bar off
               ln -s ../habitat-sim/data data
               touch ~/miniconda/pip_deps_installed
