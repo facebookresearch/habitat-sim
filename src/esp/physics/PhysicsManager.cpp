@@ -4,6 +4,8 @@
 
 #include "PhysicsManager.h"
 #include <Magnum/Math/Range.h>
+
+#include <utility>
 #include "esp/assets/CollisionMeshData.h"
 #include "esp/assets/ResourceManager.h"
 #include "esp/metadata/managers/PhysicsAttributesManager.h"
@@ -55,15 +57,7 @@ PhysicsManager::~PhysicsManager() {
 bool PhysicsManager::addStage(
     const metadata::attributes::StageAttributes::ptr& initAttributes,
     const metadata::attributes::SceneObjectInstanceAttributes::cptr&
-        stageInstanceAttributes,
-    const std::vector<assets::CollisionMeshData>& meshGroup) {
-  // Test Mesh primitive is valid
-  for (const assets::CollisionMeshData& meshData : meshGroup) {
-    if (!isMeshPrimitiveValid(meshData)) {
-      return false;
-    }
-  }
-
+        stageInstanceAttributes) {
   //! Initialize stage
   bool sceneSuccess = addStageFinalize(initAttributes);
   if (sceneSuccess) {
@@ -296,7 +290,7 @@ int PhysicsManager::addObject(
   objWrapper->setObjectRef(existingObjects_.at(nextObjectID_));
 
   // 4.0 register wrapper in manager
-  rigidObjectManager_->registerObject(objWrapper, newObjectHandle);
+  rigidObjectManager_->registerObject(std::move(objWrapper), newObjectHandle);
 
   return nextObjectID_;
 }  // PhysicsManager::addObject
@@ -531,11 +525,6 @@ bool PhysicsManager::makeAndAddRigidObject(
     existingObjects_.emplace(newObjectID, std::move(ptr));
   }
   return objSuccess;
-}
-
-//! Base physics manager has no requirement for mesh primitive
-bool PhysicsManager::isMeshPrimitiveValid(const assets::CollisionMeshData&) {
-  return true;
 }
 
 // TODO: this function should do any engine specific setting which is

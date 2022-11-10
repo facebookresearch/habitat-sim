@@ -274,14 +274,12 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * Attributes Manager.
    * @param stageInstanceAttributes The stage instance attributes that was used
    * to create this stage. Might be empty.
-   * @param meshGroup collision meshs for the scene.
    * @return true if successful and false otherwise
    */
   bool addStage(
       const metadata::attributes::StageAttributes::ptr& initAttributes,
       const metadata::attributes::SceneObjectInstanceAttributes::cptr&
-          stageInstanceAttributes,
-      const std::vector<assets::CollisionMeshData>& meshGroup);
+          stageInstanceAttributes);
 
   /**
    * @brief Instance and place a physics object from a @ref
@@ -1072,15 +1070,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
     CORRADE_INTERNAL_ASSERT(aObjIter != existingArticulatedObjects_.end());
     return aObjIter;
   }
-
-  /** @brief Check if a particular mesh can be used as a collision mesh for
-   * a particular physics implemenation. Always True for base @ref
-   * PhysicsManager class, since the mesh has already been successfully
-   * loaded by @ref esp::assets::ResourceManager.
-   * @param meshData The mesh to validate.
-   * @return true if valid, false otherwise.
-   */
-  virtual bool isMeshPrimitiveValid(const assets::CollisionMeshData& meshData);
 
   /** @brief Acquire a new ObjectID by recycling the ID of an object removed
    * with @ref removeObject or by incrementing @ref nextObjectID_. See @ref

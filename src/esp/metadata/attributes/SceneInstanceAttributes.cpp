@@ -3,6 +3,8 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "SceneInstanceAttributes.h"
+
+#include <utility>
 #include "esp/physics/RigidBase.h"
 namespace esp {
 namespace metadata {
@@ -315,8 +317,7 @@ SceneInstanceAttributes& SceneInstanceAttributes::operator=(
     SceneInstanceAttributes&& otr) noexcept {
   availableObjInstIDs_ = std::move(otr.availableObjInstIDs_);
   availableArtObjInstIDs_ = std::move(otr.availableArtObjInstIDs_);
-  this->AbstractAttributes::operator=(
-      std::move(static_cast<AbstractAttributes>(otr)));
+  this->AbstractAttributes::operator=(static_cast<AbstractAttributes&&>(otr));
 
   objInstConfig_ = editSubconfig<Configuration>("object_instances");
   artObjInstConfig_ =

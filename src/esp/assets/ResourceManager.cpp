@@ -48,6 +48,7 @@
 #include <Magnum/VertexFormat.h>
 
 #include <memory>
+#include <utility>
 
 #include "esp/assets/BaseMesh.h"
 #include "esp/assets/CollisionMeshData.h"
@@ -564,8 +565,8 @@ bool ResourceManager::loadStage(
     // Either add with pre-built meshGroup if collision assets are loaded
     // or empty vector for mesh group - this should only be the case if
     // we are using None-type physicsManager.
-    bool sceneSuccess = _physicsManager->addStage(
-        stageAttributes, stageInstanceAttributes, meshGroup);
+    bool sceneSuccess =
+        _physicsManager->addStage(stageAttributes, stageInstanceAttributes);
     if (!sceneSuccess) {
       ESP_ERROR() << "Adding Stage" << stageAttributes->getHandle()
                   << "to PhysicsManager failed. Aborting stage initialization.";
@@ -1295,7 +1296,7 @@ void ResourceManager::buildPrimitiveAssetData(
   // set the root rotation to world frame upon load
   meshMetaData.setRootFrameOrientation(info.frame);
   // make LoadedAssetData corresponding to this asset
-  LoadedAssetData loadedAssetData{info, meshMetaData};
+  LoadedAssetData loadedAssetData{std::move(info), std::move(meshMetaData)};
   auto inserted =
       resourceDict_.emplace(primAssetHandle, std::move(loadedAssetData));
 
@@ -1979,7 +1980,7 @@ bool ResourceManager::buildTrajectoryVisualization(
   meshMetaData.setRootFrameOrientation(info.frame);
 
   // make LoadedAssetData corresponding to this asset
-  LoadedAssetData loadedAssetData{info, meshMetaData};
+  LoadedAssetData loadedAssetData{std::move(info), std::move(meshMetaData)};
   // TODO : need to free render assets associated with this object if
   // collision occurs, otherwise leak! (Currently unsupported).
   // if (resourceDict_.count(trajVisName) != 0) {

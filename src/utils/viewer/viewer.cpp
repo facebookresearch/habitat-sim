@@ -849,6 +849,7 @@ Viewer::Viewer(const Arguments& arguments)
       .addOption("dataset", "default")
       .setHelp("dataset", "dataset configuration file to use")
       .addBooleanOption("enable-physics")
+      .setHelp("enable-physics", "Enable Bullet physics.")
       .addBooleanOption("stage-requires-lighting")
       .setHelp("stage-requires-lighting",
                "Stage asset should be lit with Phong shading.")

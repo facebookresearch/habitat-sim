@@ -367,8 +367,8 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
         (oldFName != assetName)) {
       // if mesh name is specified and different than old value,
       // perform name-specific mesh-type config.
-      setDefaultAssetNameBasedAttributes(attributes, false, assetName,
-                                         meshTypeSetter);
+      setDefaultAssetNameBasedAttributes(std::move(attributes), false,
+                                         assetName, meshTypeSetter);
     } else {
       // is not valid primitive, assume valid file name
       assetName = Cr::Utility::Path::join(propertiesFileDirectory, assetName);
@@ -376,8 +376,8 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
         // if file name is different, and type val has not been specified,
         // perform name-specific mesh type config do not override orientation
         // - should be specified in json.
-        setDefaultAssetNameBasedAttributes(attributes, false, assetName,
-                                           meshTypeSetter);
+        setDefaultAssetNameBasedAttributes(std::move(attributes), false,
+                                           assetName, meshTypeSetter);
       }
     }  // value is valid prim and exists, else value is valid file and exists
     return assetName;
