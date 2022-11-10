@@ -63,7 +63,7 @@ from habitat_sim.utils.common import quat_from_angle_axis
 SensorObservation = Union[bool, ndarray, "Tensor"]
 
 #
-managedObject = Union[
+SceneObject = Union[
     ManagedRigidObject,
     ManagedBulletRigidObject,
     ManagedArticulatedObject,
@@ -411,7 +411,7 @@ class Simulator(SimulatorBackend):
         ...
 
     @overload
-    def add_sensor(self, sensor_spec: SensorSpec, attach_to: managedObject) -> None:
+    def add_sensor(self, sensor_spec: SensorSpec, attach_to: SceneObject) -> None:
         # Add sensor to scene node that a scene object is attached to,
         # e.g., a ManagedBulletRigidObject
         ...
@@ -421,7 +421,7 @@ class Simulator(SimulatorBackend):
         sensor_spec: SensorSpec,
         attach_to: Union[
             int,
-            managedObject,
+            SceneObject,
         ] = None,
     ) -> None:
         self.__verify_sensor_spec(sensor_spec)
