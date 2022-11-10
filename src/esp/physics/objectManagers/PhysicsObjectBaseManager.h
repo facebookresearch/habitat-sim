@@ -128,7 +128,7 @@ class PhysicsObjectBaseManager
                              const std::string& objectHandle,
                              CORRADE_UNUSED bool forceRegistration) override {
     // Add wrapper to template library
-    return this->addObjectToLibrary(std::move(object), objectHandle);
+    return this->addObjectToLibrary(object, objectHandle);
   }  // PhysicsObjectBaseManager::registerObjectFinalize
 
   /**

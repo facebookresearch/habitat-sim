@@ -6,8 +6,6 @@
 //#include "BulletCollision/Gimpact/btGImpactShape.h"
 
 #include "BulletPhysicsManager.h"
-
-#include <utility>
 #include "BulletArticulatedObject.h"
 #include "BulletDynamics/Featherstone/btMultiBodyLinkCollider.h"
 #include "BulletRigidObject.h"
@@ -225,8 +223,7 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
       existingArticulatedObjects_.at(articulatedObjectID));
 
   // 4.0 register wrapper in manager
-  articulatedObjectManager_->registerObject(std::move(AObjWrapper),
-                                            newArtObjectHandle);
+  articulatedObjectManager_->registerObject(AObjWrapper, newArtObjectHandle);
 
   return articulatedObjectID;
 }  // BulletPhysicsManager::addArticulatedObjectFromURDF

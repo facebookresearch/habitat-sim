@@ -77,7 +77,7 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
     // convert doc to const value
     const io::JsonGenericValue config = docConfig->GetObject();
     ManagedFileIOPtr attr = this->buildManagedObjectFromDoc(filename, config);
-    return this->postCreateRegister(std::move(attr), registerObject);
+    return this->postCreateRegister(attr, registerObject);
   }  // ManagedFileBasedContainer::createObjectFromJSONFile
 
   /**

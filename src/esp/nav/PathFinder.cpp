@@ -22,7 +22,6 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <limits>
-#include <utility>
 
 #include "esp/assets/MeshData.h"
 #include "esp/core/Esp.h"
@@ -1494,7 +1493,7 @@ T PathFinder::Impl::tryStep(const T& start, const T& end, bool allowSliding) {
     endPoint = endPoint + nudgeDistance * nudgeDir;
   }
 
-  return T{std::move(endPoint)};
+  return T{endPoint};
 }
 
 template <typename T>
@@ -1527,7 +1526,7 @@ T PathFinder::Impl::snapPoint(const T& pt, int islandIndex /*=ID_UNDEFINED*/) {
   }
 
   if (dtStatusSucceed(status)) {
-    return T{std::move(projectedPt)};
+    return T{projectedPt};
   }
   return {Mn::Constants::nan(), Mn::Constants::nan(), Mn::Constants::nan()};
 }
@@ -1584,7 +1583,7 @@ HitRecord PathFinder::Impl::closestObstacleSurfacePoint(
   navQuery_->findDistanceToWall(ptRef, polyPt.data(), maxSearchRadius,
                                 filter_.get(), &hitDist, hitPos.data(),
                                 hitNormal.data());
-  return {std::move(hitPos), std::move(hitNormal), hitDist};
+  return {hitPos, hitNormal, hitDist};
 }
 
 bool PathFinder::Impl::isNavigable(const vec3f& pt,
@@ -1720,7 +1719,7 @@ assets::MeshData::ptr PathFinder::Impl::getNavMeshData(
       }
     }
     // return newly added meshdata
-    return islandMeshData_.emplace(islandIndex, std::move(curIslandMeshData))
+    return islandMeshData_.emplace(islandIndex, curIslandMeshData)
         .first->second;
   }
   // meshdata already exists, so lookup and return

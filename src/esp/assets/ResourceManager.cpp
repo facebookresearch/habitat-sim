@@ -48,7 +48,6 @@
 #include <Magnum/VertexFormat.h>
 
 #include <memory>
-#include <utility>
 
 #include "esp/assets/BaseMesh.h"
 #include "esp/assets/CollisionMeshData.h"
@@ -1296,7 +1295,7 @@ void ResourceManager::buildPrimitiveAssetData(
   // set the root rotation to world frame upon load
   meshMetaData.setRootFrameOrientation(info.frame);
   // make LoadedAssetData corresponding to this asset
-  LoadedAssetData loadedAssetData{std::move(info), std::move(meshMetaData)};
+  LoadedAssetData loadedAssetData{info, meshMetaData};
   auto inserted =
       resourceDict_.emplace(primAssetHandle, std::move(loadedAssetData));
 
@@ -1980,7 +1979,7 @@ bool ResourceManager::buildTrajectoryVisualization(
   meshMetaData.setRootFrameOrientation(info.frame);
 
   // make LoadedAssetData corresponding to this asset
-  LoadedAssetData loadedAssetData{std::move(info), std::move(meshMetaData)};
+  LoadedAssetData loadedAssetData{info, meshMetaData};
   // TODO : need to free render assets associated with this object if
   // collision occurs, otherwise leak! (Currently unsupported).
   // if (resourceDict_.count(trajVisName) != 0) {

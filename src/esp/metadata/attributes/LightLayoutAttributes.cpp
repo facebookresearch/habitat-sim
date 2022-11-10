@@ -3,8 +3,6 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "LightLayoutAttributes.h"
-
-#include <utility>
 using Magnum::Math::Literals::operator""_radf;
 using Magnum::Math::Literals::operator""_degf;
 
@@ -84,7 +82,8 @@ LightLayoutAttributes& LightLayoutAttributes::operator=(
     LightLayoutAttributes&& otr) noexcept {
   // point to our own light instance config and available ids
   availableLightIDs_ = std::move(otr.availableLightIDs_);
-  this->AbstractAttributes::operator=(static_cast<AbstractAttributes&&>(otr));
+  this->AbstractAttributes::operator=(
+      std::move(static_cast<AbstractAttributes>(otr)));
   lightInstConfig_ = editSubconfig<Configuration>("lights");
   return *this;
 }

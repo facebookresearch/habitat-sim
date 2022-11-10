@@ -7,8 +7,6 @@
 
 #include <Corrade/Utility/String.h>
 
-#include <utility>
-
 #include "esp/assets/Asset.h"
 #include "esp/io/Json.h"
 
@@ -55,8 +53,7 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
   // collision primitive mesh needs to be configured and set in MeshMetaData
   // and CollisionMesh
 
-  return this->postCreateRegister(std::move(primObjectAttributes),
-                                  registerTemplate);
+  return this->postCreateRegister(primObjectAttributes, registerTemplate);
 }  // ObjectAttributesManager::createPrimBasedAttributesTemplate
 
 void ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates() {
@@ -287,7 +284,7 @@ int ObjectAttributesManager::registerObjectFinalize(
 
   // Add object template to template library
   int objectTemplateID =
-      this->addObjectToLibrary(std::move(objectTemplate), objectTemplateHandle);
+      this->addObjectToLibrary(objectTemplate, objectTemplateHandle);
 
   if (mapToUse != nullptr) {
     mapToUse->emplace(objectTemplateID, objectTemplateHandle);

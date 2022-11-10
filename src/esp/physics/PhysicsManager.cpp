@@ -4,8 +4,6 @@
 
 #include "PhysicsManager.h"
 #include <Magnum/Math/Range.h>
-
-#include <utility>
 #include "esp/assets/CollisionMeshData.h"
 #include "esp/assets/ResourceManager.h"
 #include "esp/metadata/managers/PhysicsAttributesManager.h"
@@ -298,7 +296,7 @@ int PhysicsManager::addObject(
   objWrapper->setObjectRef(existingObjects_.at(nextObjectID_));
 
   // 4.0 register wrapper in manager
-  rigidObjectManager_->registerObject(std::move(objWrapper), newObjectHandle);
+  rigidObjectManager_->registerObject(objWrapper, newObjectHandle);
 
   return nextObjectID_;
 }  // PhysicsManager::addObject

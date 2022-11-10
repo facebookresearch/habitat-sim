@@ -264,18 +264,20 @@ class HabitatSimInteractiveViewer(Application):
             )
 
         # Get agent id and sensor uuid
-        agent_id = active_agent_id_and_sensor_name[0]
-        sensor_uuid = active_agent_id_and_sensor_name[1]
+        keys = active_agent_id_and_sensor_name
+        agent_id = keys[0]
+        sensor_uuid = keys[1]
 
         # get specified sensor, then get sensor observations, which renders them
-        self.camera_sensor = self.sim.get_sensor(sensor_uuid, agent_id)
+        sensor = self.sim._Simulator__sensors[agent_id][sensor_uuid]
+        self.camera_sensor = sensor
         self.sim.get_sensor_observations(agent_id)
         self.debug_draw()
-        self.camera_sensor.render_target.blit_rgba_to_default()
+        sensor.render_target.blit_rgba_to_default()
         mn.gl.default_framebuffer.bind()
 
         # draw CPU/GPU usage data and other info to the app window
-        self.draw_text(self.camera_sensor.specification())
+        self.draw_text(sensor.specification())
 
         self.swap_buffers()
         Timer.next_frame()
@@ -806,6 +808,15 @@ class HabitatSimInteractiveViewer(Application):
             include_static_objects=True,
         )
 
+    def exit_event(self, event: Application.ExitEvent):
+        """
+        Overrides exit_event to properly close the Simulator before exiting the
+        application.
+        """
+        self.sim.close(destroy=True)
+        event.accepted = True
+        exit(0)
+
     def draw_text(self, sensor_spec):
         self.shader.bind_vector_texture(self.glyph_cache.texture)
         self.shader.transformation_projection_matrix = self.window_text_transform
@@ -843,6 +854,7 @@ In LOOK mode (default):
         Click and drag to rotate the agent and look up/down.
     WHEEL:
         Modify orthographic camera zoom/perspective camera FOV (+SHIFT for fine grained control)
+
 In GRAB mode (with 'enable-physics'):
     LEFT:
         Click and drag to pickup and move an object with a point-to-point constraint (e.g. ball joint).
@@ -854,15 +866,19 @@ In GRAB mode (with 'enable-physics'):
         (+CTRL) rotate object fixed constraint frame (pitch)
         (+ALT+CTRL) rotate object fixed constraint frame (roll)
         (+SHIFT) amplify scroll magnitude
+
+
 Key Commands:
 -------------
     esc:        Exit the application.
     'h':        Display this help message.
     'm':        Cycle mouse interaction modes.
+
     Agent Controls:
     'wasd':     Move the agent's body forward/backward and left/right.
     'zx':       Move the agent's body up/down.
     arrow keys: Turn the agent's body left/right and camera look up/down.
+
     Utilities:
     'r':        Reset the simulator with the most recently loaded scene.
     'n':        Show/hide NavMesh wireframe.
@@ -871,6 +887,7 @@ Key Commands:
     ',':        Render a Bullet collision shape debug wireframe overlay (white=active, green=sleeping, blue=wants sleeping, red=can't sleep).
     'c':        Run a discrete collision detection pass and render a debug wireframe overlay showing active contact points and normals (yellow=fixed length normals, red=collision distances).
                 (+SHIFT) Toggle the contact point debug render overlay on/off.
+
     Object Interactions:
     SPACE:      Toggle physics simulation on/off.
     '.':        Take a single simulation step if not simulating continuously.
@@ -881,15 +898,6 @@ Key Commands:
 =====================================================
 """
         )
-
-    def exit_event(self, event: Application.ExitEvent):
-        """
-        Overrides exit_event to properly close the Simulator before exiting the
-        application.
-        """
-        self.sim.close(destroy=True)
-        event.accepted = True
-        exit(0)
 
 
 class MouseMode(Enum):

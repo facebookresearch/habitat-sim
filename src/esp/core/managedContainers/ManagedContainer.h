@@ -107,7 +107,7 @@ class ManagedContainer : public ManagedContainerBase {
     if (nullptr == object) {
       return nullptr;
     }
-    return this->postCreateRegister(std::move(object), registerObject);
+    return this->postCreateRegister(object, registerObject);
   }  // ManagedContainer::createDefault
 
   /**
@@ -135,7 +135,7 @@ class ManagedContainer : public ManagedContainerBase {
       return ID_UNDEFINED;
     }
     if ("" != objectHandle) {
-      return registerObjectFinalize(std::move(managedObject), objectHandle,
+      return registerObjectFinalize(managedObject, objectHandle,
                                     forceRegistration);
     }
     std::string handleToSet = managedObject->getHandle();
@@ -146,7 +146,7 @@ class ManagedContainer : public ManagedContainerBase {
           << this->objectType_ << " managed object. Aborting.";
       return ID_UNDEFINED;
     }
-    return registerObjectFinalize(std::move(managedObject), handleToSet,
+    return registerObjectFinalize(managedObject, handleToSet,
                                   forceRegistration);
   }  // ManagedContainer::registerObject
 
