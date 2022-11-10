@@ -186,7 +186,7 @@ class HabitatSimInteractiveViewer(Application):
         red = mn.Color4.red()
         cps = self.sim.get_physics_contact_points()
         self.sim.get_debug_line_render().set_line_width(1.5)
-        camera_position = self.camera_sensor.render_camera.node.absolute_translation
+        camera_position = self.render_camera.render_camera.node.absolute_translation
         # only showing active contacts
         active_contacts = (x for x in cps if x.is_active)
         for cp in active_contacts:
@@ -216,10 +216,8 @@ class HabitatSimInteractiveViewer(Application):
         Additional draw commands to be called during draw_event.
         """
         if self.debug_bullet_draw:
-            render_camera = self.camera_sensor.render_camera
-            proj_mat = render_camera.projection_matrix.__matmul__(
-                render_camera.camera_matrix
-            )
+            render_cam = self.render_camera.render_camera
+            proj_mat = render_cam.projection_matrix.__matmul__(render_cam.camera_matrix)
             self.sim.physics_debug_draw(proj_mat)
         if self.contact_debug_draw:
             self.draw_contact_debug()
@@ -263,21 +261,17 @@ class HabitatSimInteractiveViewer(Application):
                 self.time_since_last_simulation, 1.0 / self.fps
             )
 
-        # Get agent id and sensor uuid
         keys = active_agent_id_and_sensor_name
-        agent_id = keys[0]
-        sensor_uuid = keys[1]
 
-        # get specified sensor, then get sensor observations, which renders them
-        sensor = self.sim._Simulator__sensors[agent_id][sensor_uuid]
-        self.camera_sensor = sensor
-        self.sim.get_sensor_observations(agent_id)
+        self.sim._Simulator__sensors[keys[0]][keys[1]].draw_observation()
+        agent = self.sim.get_agent(keys[0])
+        self.render_camera = agent.scene_node.node_sensor_suite.get(keys[1])
         self.debug_draw()
-        sensor.render_target.blit_rgba_to_default()
+        self.render_camera.render_target.blit_rgba_to_default()
         mn.gl.default_framebuffer.bind()
 
         # draw CPU/GPU usage data and other info to the app window
-        self.draw_text(sensor.specification())
+        self.draw_text(self.render_camera.specification())
 
         self.swap_buffers()
         Timer.next_frame()
@@ -356,7 +350,7 @@ class HabitatSimInteractiveViewer(Application):
         self.active_scene_graph = self.sim.get_active_scene_graph()
         self.default_agent = self.sim.get_agent(self.agent_id)
         self.agent_body_node = self.default_agent.scene_node
-        self.camera_sensor = self.agent_body_node.node_sensor_suite.get("color_sensor")
+        self.render_camera = self.agent_body_node.node_sensor_suite.get("color_sensor")
         # set sim_settings scene name as actual loaded scene
         self.sim_settings["scene"] = self.sim.curr_scene_name
 
@@ -606,7 +600,7 @@ class HabitatSimInteractiveViewer(Application):
 
         # if interactive mode is True -> GRAB MODE
         if self.mouse_interaction == MouseMode.GRAB and physics_enabled:
-            render_camera = self.camera_sensor.render_camera
+            render_camera = self.render_camera.render_camera
             ray = render_camera.unproject(self.get_mouse_position(event.position))
             raycast_results = self.sim.cast_ray(ray=ray)
 
@@ -717,7 +711,7 @@ class HabitatSimInteractiveViewer(Application):
             # use shift for fine-grained zooming
             mod_val = 1.01 if shift_pressed else 1.1
             mod = mod_val if scroll_mod_val > 0 else 1.0 / mod_val
-            cam = self.camera_sensor
+            cam = self.render_camera
             cam.zoom(mod)
             self.redraw()
 
@@ -763,7 +757,7 @@ class HabitatSimInteractiveViewer(Application):
         if not self.mouse_grabber:
             return
 
-        render_camera = self.camera_sensor.render_camera
+        render_camera = self.render_camera.render_camera
         ray = render_camera.unproject(point)
 
         rotation: mn.Matrix3x3 = self.agent_body_node.rotation.to_matrix()
@@ -854,7 +848,6 @@ In LOOK mode (default):
         Click and drag to rotate the agent and look up/down.
     WHEEL:
         Modify orthographic camera zoom/perspective camera FOV (+SHIFT for fine grained control)
-
 In GRAB mode (with 'enable-physics'):
     LEFT:
         Click and drag to pickup and move an object with a point-to-point constraint (e.g. ball joint).
@@ -866,19 +859,15 @@ In GRAB mode (with 'enable-physics'):
         (+CTRL) rotate object fixed constraint frame (pitch)
         (+ALT+CTRL) rotate object fixed constraint frame (roll)
         (+SHIFT) amplify scroll magnitude
-
-
 Key Commands:
 -------------
     esc:        Exit the application.
     'h':        Display this help message.
     'm':        Cycle mouse interaction modes.
-
     Agent Controls:
     'wasd':     Move the agent's body forward/backward and left/right.
     'zx':       Move the agent's body up/down.
     arrow keys: Turn the agent's body left/right and camera look up/down.
-
     Utilities:
     'r':        Reset the simulator with the most recently loaded scene.
     'n':        Show/hide NavMesh wireframe.
@@ -887,7 +876,6 @@ Key Commands:
     ',':        Render a Bullet collision shape debug wireframe overlay (white=active, green=sleeping, blue=wants sleeping, red=can't sleep).
     'c':        Run a discrete collision detection pass and render a debug wireframe overlay showing active contact points and normals (yellow=fixed length normals, red=collision distances).
                 (+SHIFT) Toggle the contact point debug render overlay on/off.
-
     Object Interactions:
     SPACE:      Toggle physics simulation on/off.
     '.':        Take a single simulation step if not simulating continuously.
