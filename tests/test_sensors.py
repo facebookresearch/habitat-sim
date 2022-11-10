@@ -251,12 +251,12 @@ def test_duplicate_sensors(
     make_cfg_settings["scene_dataset_config_file"] = scene_dataset_config
 
     cfg = make_cfg(make_cfg_settings)
+    agent_id = 0
     additional_sensors = additional_sensors = cfg.agents[0].sensor_specifications
     for spec in additional_sensors:
         print("---------------------------------------------------------------------")
         print(f"additional sensor uuid: {spec.uuid}\n")
 
-    agent_id = 0
     with habitat_sim.Simulator(cfg) as sim:
         print(
             "\n\n\n---------------------------------------------------------------------"

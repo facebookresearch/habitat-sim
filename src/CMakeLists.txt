@@ -9,6 +9,7 @@ option(BUILD_WITH_CUDA "Build Habitat-Sim with CUDA features enabled -- Requires
 )
 
 if(BUILD_WITH_CUDA)
+  set(CMAKE_CUDA_COMPILER "/usr/local/cuda/bin/nvcc")
   project(esp LANGUAGES C CXX CUDA)
   find_library(CUDART_LIBRARY cudart ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
 else()
