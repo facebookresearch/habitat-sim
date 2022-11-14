@@ -18,32 +18,15 @@ import magnum as mn
 import numpy as np
 from magnum import shaders, text
 from magnum.platform.glfw import Application
+from viewer_settings import default_sim_settings, make_cfg
 
 import habitat_sim
 from habitat_sim import ReplayRenderer, ReplayRendererConfiguration, physics
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.common import quat_from_angle_axis
-from habitat_sim.utils.settings import default_sim_settings, make_cfg
 
 
 class HabitatSimInteractiveViewer(Application):
-    # the maximum number of chars displayable in the app window
-    # using the magnum text module. These chars are used to
-    # display the CPU/GPU usage data
-    MAX_DISPLAY_TEXT_CHARS = 256
-
-    # how much to displace window text relative to the center of the
-    # app window (e.g if you want the display text in the top left of
-    # the app window, you will displace the text
-    # window width * -TEXT_DELTA_FROM_CENTER in the x axis and
-    # window height * TEXT_DELTA_FROM_CENTER in the y axis, as the text
-    # position defaults to the middle of the app window)
-    TEXT_DELTA_FROM_CENTER = 0.49
-
-    # font size of the magnum in-window display text that displays
-    # CPU and GPU usage info
-    DISPLAY_FONT_SIZE = 16.0
-
     def __init__(self, sim_settings: Dict[str, Any]) -> None:
         self.sim_settings: Dict[str:Any] = sim_settings
 
@@ -72,11 +55,11 @@ class HabitatSimInteractiveViewer(Application):
         self.fps: float = 60.0
 
         # draw Bullet debug line visualizations (e.g. collision meshes)
-        self.debug_bullet_draw = False
+        self.debug_bullet_draw = sim_settings["debug_bullet_draw"]
         # draw active contact point debug line visualizations
-        self.contact_debug_draw = False
+        self.debug_contact_draw = sim_settings["debug_contact_draw"]
         # cache most recently loaded URDF file for quick-reload
-        self.cached_urdf = ""
+        self.cached_urdf = sim_settings["cached_urdf"]
 
         # set up our movement map
         key = Application.KeyEvent.Key
@@ -109,10 +92,11 @@ class HabitatSimInteractiveViewer(Application):
         }
 
         # Load a TrueTypeFont plugin and open the font file
-        self.display_font = text.FontManager().load_and_instantiate("TrueTypeFont")
-        relative_path_to_font = "../data/fonts/ProggyClean.ttf"
+        self.display_font = text.FontManager().load_and_instantiate(
+            sim_settings["display_font"]
+        )
         self.display_font.open_file(
-            os.path.join(os.path.dirname(__file__), relative_path_to_font),
+            os.path.join(os.path.dirname(__file__), sim_settings["font_relative_path"]),
             13,
         )
 
@@ -130,10 +114,10 @@ class HabitatSimInteractiveViewer(Application):
         self.window_text = text.Renderer2D(
             self.display_font,
             self.glyph_cache,
-            HabitatSimInteractiveViewer.DISPLAY_FONT_SIZE,
+            sim_settings["display_font_size"],
             text.Alignment.TOP_LEFT,
         )
-        self.window_text.reserve(HabitatSimInteractiveViewer.MAX_DISPLAY_TEXT_CHARS)
+        self.window_text.reserve(sim_settings["max_display_text_chars"])
 
         # text object transform in window space is Projection matrix times Translation Matrix
         # put text in top left of window
@@ -141,8 +125,8 @@ class HabitatSimInteractiveViewer(Application):
             mn.Vector2(surface_size)
         ) @ mn.Matrix3.translation(
             mn.Vector2(
-                surface_size[0] * -HabitatSimInteractiveViewer.TEXT_DELTA_FROM_CENTER,
-                surface_size[1] * HabitatSimInteractiveViewer.TEXT_DELTA_FROM_CENTER,
+                self.viewport_size[0] * -sim_settings["text_delta_from_center"],
+                self.viewport_size[1] * sim_settings["text_delta_from_center"],
             )
         )
         self.shader = shaders.VectorGL2D()
@@ -158,7 +142,7 @@ class HabitatSimInteractiveViewer(Application):
         )
 
         # variables that track app data and CPU/GPU usage
-        self.num_frames_to_track = 60
+        self.num_frames_to_track = sim_settings["num_frames_to_track"]
 
         # Cycle mouse utilities
         self.mouse_interaction = MouseMode.LOOK
@@ -166,7 +150,7 @@ class HabitatSimInteractiveViewer(Application):
         self.previous_mouse_point = None
 
         # toggle physics simulation on/off
-        self.simulating = True
+        self.simulating = sim_settings["simulating"]
 
         # toggle a single simulation step at the next opportunity if not
         # simulating continuously.
@@ -236,7 +220,7 @@ class HabitatSimInteractiveViewer(Application):
                 render_camera.camera_matrix
             )
             self.sim.physics_debug_draw(proj_mat)
-        if self.contact_debug_draw:
+        if self.debug_contact_draw:
             self.draw_contact_debug()
 
     def draw_event(
@@ -527,9 +511,9 @@ class HabitatSimInteractiveViewer(Application):
 
         elif key == pressed.C:
             if shift_pressed:
-                self.contact_debug_draw = not self.contact_debug_draw
+                self.debug_contact_draw = not self.debug_contact_draw
                 logger.info(
-                    f"Command: toggle contact debug draw: {self.contact_debug_draw}"
+                    f"Command: toggle contact debug draw: {self.debug_contact_draw}"
                 )
             else:
                 # perform a discrete collision detection pass and enable contact debug drawing to visualize the results
@@ -537,7 +521,7 @@ class HabitatSimInteractiveViewer(Application):
                     "Command: perform discrete collision detection and visualize active contacts."
                 )
                 self.sim.perform_discrete_collision_detection()
-                self.contact_debug_draw = True
+                self.debug_contact_draw = True
                 # TODO: add a nice log message with concise contact pair naming.
 
         elif key == pressed.T:
