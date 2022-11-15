@@ -43,7 +43,7 @@ python -m habitat_sim.utils.datasets_download --username <api-token-id> --passwo
 By default, downloading the data for train/val/example scenes also pulls in the semantic annotations and configs for [HM3D-Semantics v0.2](https://aihabitat.org/datasets/hm3d-semantics/). To download only the semantic files for these splits, use the uid `hm3d_semantics`.
 
 
-By default the download script will only download what is needed for Habitat-Sim.  You can add `_full` to the uid to download the raw glbs in addition to what is needed for use with Habitat-Sim.
+By default the download script will only download what is needed for Habitat-Sim. You can add `_full` to the uid to download the raw glbs in addition to what is needed for use with Habitat-Sim.
 
 ### Loading semantics for HM3D
 
