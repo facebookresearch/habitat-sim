@@ -848,6 +848,7 @@ In LOOK mode (default):
         Click and drag to rotate the agent and look up/down.
     WHEEL:
         Modify orthographic camera zoom/perspective camera FOV (+SHIFT for fine grained control)
+
 In GRAB mode (with 'enable-physics'):
     LEFT:
         Click and drag to pickup and move an object with a point-to-point constraint (e.g. ball joint).
@@ -859,15 +860,19 @@ In GRAB mode (with 'enable-physics'):
         (+CTRL) rotate object fixed constraint frame (pitch)
         (+ALT+CTRL) rotate object fixed constraint frame (roll)
         (+SHIFT) amplify scroll magnitude
+
+
 Key Commands:
 -------------
     esc:        Exit the application.
     'h':        Display this help message.
     'm':        Cycle mouse interaction modes.
+
     Agent Controls:
     'wasd':     Move the agent's body forward/backward and left/right.
     'zx':       Move the agent's body up/down.
     arrow keys: Turn the agent's body left/right and camera look up/down.
+
     Utilities:
     'r':        Reset the simulator with the most recently loaded scene.
     'n':        Show/hide NavMesh wireframe.
@@ -876,6 +881,7 @@ Key Commands:
     ',':        Render a Bullet collision shape debug wireframe overlay (white=active, green=sleeping, blue=wants sleeping, red=can't sleep).
     'c':        Run a discrete collision detection pass and render a debug wireframe overlay showing active contact points and normals (yellow=fixed length normals, red=collision distances).
                 (+SHIFT) Toggle the contact point debug render overlay on/off.
+
     Object Interactions:
     SPACE:      Toggle physics simulation on/off.
     '.':        Take a single simulation step if not simulating continuously.

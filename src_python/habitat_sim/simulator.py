@@ -44,9 +44,11 @@ ObservationDict = Dict[str, Union[bool, np.ndarray, "Tensor"]]
 @attr.s(auto_attribs=True, slots=True)
 class Configuration:
     r"""Specifies how to configure the simulator.
+
     :property sim_cfg: The configuration of the backend of the simulator
     :property agents: A list of agent configurations
     :property metadata_mediator: (optional) The metadata mediator to build the simulator from.
+
     Ties together a backend config, `sim_cfg` and a list of agent
     configurations `agents`.
     """
@@ -60,7 +62,9 @@ class Configuration:
 @attr.s(auto_attribs=True)
 class Simulator(SimulatorBackend):
     r"""The core class of habitat-sim
+
     :property config: configuration for the simulator
+
     The simulator ties together the backend, the agent, controls functions,
     NavMesh collision checking/pathfinding, attribute template management,
     object manipulation, and physics simulation.
@@ -115,6 +119,7 @@ class Simulator(SimulatorBackend):
 
     def close(self, destroy: bool = True) -> None:
         r"""Close the simulator instance.
+
         :param destroy: Whether or not to force the OpenGL context to be
             destroyed if async rendering was used.  If async rendering wasn't used,
             this has no effect.
@@ -534,6 +539,7 @@ class Simulator(SimulatorBackend):
     def step_filter(self, start_pos: Vector3, end_pos: Vector3) -> Vector3:
         r"""Computes a valid navigable end point given a target translation on the NavMesh.
         Uses the configured sliding flag.
+
         :param start_pos: The valid initial position of a translation.
         :param end_pos: The target end position of a translation.
         """
@@ -554,6 +560,7 @@ class Simulator(SimulatorBackend):
 
 class Sensor:
     r"""Wrapper around habitat_sim.Sensor
+
     TODO(MS) define entire Sensor class in python, reducing complexity
     """
     buffer = Union[np.ndarray, "Tensor"]
