@@ -232,60 +232,42 @@ def test_sensors(
         ) < 9.0e-2 * np.linalg.norm(gt.astype(float)), f"Incorrect {sensor_type} output"
 
 
-@pytest.mark.parametrize("scene_and_dataset", _non_semantic_scenes)
+@pytest.mark.parametrize(
+    "scene_and_dataset, sensor_type",
+    list(itertools.product(_semantic_scenes, all_base_sensor_types))
+    + list(itertools.product(_non_semantic_scenes, all_base_sensor_types[0:2])),
+)
 def test_duplicate_sensors(
     scene_and_dataset,
+    sensor_type,
     make_cfg_settings,
 ):
-    print("\n\n\n---------------------------------------------------------------------")
-    print("in test_duplicate_sensors start\n")
     scene = scene_and_dataset[0]
-    print(f"scene: {scene}\n\n")
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
     scene_dataset_config = scene_and_dataset[1]
 
-    make_cfg_settings["color_sensor"] = True
-    make_cfg_settings["depth_sensor"] = True
+    make_cfg_settings[sensor_type] = True
     make_cfg_settings["scene"] = scene
     make_cfg_settings["scene_dataset_config_file"] = scene_dataset_config
 
     cfg = make_cfg(make_cfg_settings)
     agent_id = 0
-    additional_sensors = additional_sensors = cfg.agents[0].sensor_specifications
-    for spec in additional_sensors:
-        print("---------------------------------------------------------------------")
-        print(f"additional sensor uuid: {spec.uuid}\n")
+    additional_sensors = cfg.agents[agent_id].sensor_specifications
 
     with habitat_sim.Simulator(cfg) as sim:
-        print(
-            "\n\n\n---------------------------------------------------------------------"
-        )
-        print("in test_duplicate_sensors after sim creation\n\n\n")
         for sensor_spec in additional_sensors:
-
-            print(
-                "---------------------------------------------------------------------"
-            )
-            print(f"in test_duplicate_sensors adding {sensor_spec.uuid} to scene node")
             try:
                 sim.add_sensor(sensor_spec)
             except Exception:
-                print(
-                    f"error adding {sensor_spec.uuid} to scene node **************************"
-                )
-            print("\n")
+                print(f"Skipping: {sensor_spec.uuid} is duplicate sensor")
 
-            print(f"in test_duplicate_sensors adding {sensor_spec.uuid} to agent")
             try:
                 sim.add_sensor(sensor_spec, agent_id)
             except Exception:
                 print(
-                    f"error adding {sensor_spec.uuid} to agent **************************"
+                    f"Skipping: {sensor_spec.uuid} for agent {agent_id} is duplicate sensor"
                 )
-            print("\n")
-
-        print("\n\n")
 
 
 @pytest.mark.gfxtest
