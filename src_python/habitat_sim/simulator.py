@@ -450,10 +450,16 @@ class Simulator(SimulatorBackend):
 
     @overload
     def _init_sensor(self, sensor_spec: SensorSpec) -> None:
+        """
+        Init sensor not necessarily attached to any agent nor scene object
+        """
         ...
 
     @overload
     def _init_sensor(self, sensor_spec: SensorSpec, agent_id: int) -> None:
+        """
+        Init sensor attached to an agent
+        """
         ...
 
     def _init_sensor(self, sensor_spec: SensorSpec, agent_id: int = None) -> None:
