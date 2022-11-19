@@ -472,7 +472,7 @@ class Simulator(SimulatorBackend):
 
     def __init_agent_sensor(self, sensor_spec: SensorSpec, agent_id: int) -> None:
         """ """
-        sensor = self.get_agent(agent_id)._sensors[sensor_spec.uuid]
+        sensor = self.get_agent(agent_id).get_sensors()[sensor_spec.uuid]
         self.__sensors[agent_id][sensor_spec.uuid] = sensor
         if sensor_spec.sensor_type == SensorType.AUDIO:
             return
