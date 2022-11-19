@@ -265,6 +265,9 @@ class Agent:
         return self.body.object
 
     def get_sensors(self) -> Dict[str, Sensor]:
+        """
+        retrieve all sensors from this scene node, as well as from all child nodes in the subtree
+        """
         return self.scene_node.subtree_sensors
 
     @property

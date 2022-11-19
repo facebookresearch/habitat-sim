@@ -361,7 +361,7 @@ class HabitatSimInteractiveViewer(Application):
         # post reconfigure
         self.default_agent = self.sim.get_agent(self.agent_id)
         self.agent_body_node = self.default_agent.scene_node
-        self.camera_sensor = self.agent_body_node.node_sensor_suite.get("color_sensor")
+        self.camera_sensor = self.default_agent.get_sensors()["color_sensor"]
         # set sim_settings scene name as actual loaded scene
         self.sim_settings["scene"] = self.sim.curr_scene_name
 
@@ -628,7 +628,7 @@ class HabitatSimInteractiveViewer(Application):
 
             # up/down on cameras' scene nodes
             action = habitat_sim.agent.ObjectControls()
-            sensors = list(self.default_agent.scene_node.subtree_sensors.values())
+            sensors = self.default_agent.get_sensors()
             [action(s.object, "look_down", act_spec(delta.y), False) for s in sensors]
 
         # if interactive mode is TRUE -> GRAB MODE
