@@ -1490,7 +1490,7 @@ def test_rigid_constraints():
 
         # setup the camera for debug video (looking at 0,0,0)
         sim.agents[0].scene_node.translation = [0.0, -1.5, 2.0]
-        sim.agents[0]._sensors["color_sensor"].specification().clear_color = [
+        sim.agents[0].get_sensors()["color_sensor"].specification().clear_color = [
             0.5,
             0.5,
             0.5,

@@ -23,15 +23,15 @@ def test_reconfigure():
     agent = habitat_sim.Agent(scene_graph.get_root_node().create_child())
 
     habitat_sim.errors.assert_obj_valid(agent.body)
-    for _, v in agent._sensors.items():
+    for _, v in agent.get_sensors().values():
         habitat_sim.errors.assert_obj_valid(v)
 
     agent.reconfigure(agent.agent_config)
-    for _, v in agent._sensors.items():
+    for _, v in agent.get_sensors().values():
         habitat_sim.errors.assert_obj_valid(v)
 
     agent.reconfigure(agent.agent_config, True)
-    for _, v in agent._sensors.items():
+    for _, v in agent.get_sensors().values():
         habitat_sim.errors.assert_obj_valid(v)
 
 
