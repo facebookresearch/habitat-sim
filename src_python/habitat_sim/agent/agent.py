@@ -176,7 +176,7 @@ class Agent:
                 self.scene_node, action.name, action.actuation, apply_filter=True
             )
         else:
-            for _, v in self.get_sensors().items():
+            for v in self.sensors.values():
                 habitat_sim.errors.assert_obj_valid(v)
                 self.controls.action(
                     v.object, action.name, action.actuation, apply_filter=False
@@ -191,7 +191,7 @@ class Agent:
             np.array(self.body.object.absolute_translation), self.body.object.rotation
         )
 
-        for k, v in self.get_sensors().items():
+        for k, v in self.sensors.items():
             habitat_sim.errors.assert_obj_valid(v)
             state.sensor_states[k] = SixDOFPose(
                 np.array(v.node.absolute_translation),
@@ -237,16 +237,16 @@ class Agent:
         self.body.object.rotation = quat_to_magnum(state.rotation)
 
         if reset_sensors:
-            for v in self.get_sensors().values():
+            for v in self.sensors.values():
                 v.set_transformation_from_spec()
 
         if not infer_sensor_states:
             for k, v in state.sensor_states.items():
-                assert k in self.get_sensors()
+                assert k in self.sensors
                 if not isinstance(v.rotation, qt.quaternion):
                     v.rotation = quat_from_coeffs(v.rotation)
 
-                s = self.get_sensors()[k]
+                s = self.sensors[k]
 
                 s.node.reset_transformation()
                 s.node.translate(
@@ -263,6 +263,13 @@ class Agent:
     def scene_node(self) -> SceneNode:
         habitat_sim.errors.assert_obj_valid(self.body)
         return self.body.object
+
+    @property
+    def sensors(self) -> Dict[str, Sensor]:
+        """
+        retrieve all sensors from this scene node, as well as from all child nodes in the subtree
+        """
+        return self.scene_node.subtree_sensors
 
     def get_sensors(self) -> Dict[str, Sensor]:
         """

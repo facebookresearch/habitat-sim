@@ -81,7 +81,6 @@ class Configuration:
     Ties together a backend config, `sim_cfg` and a list of agent
     configurations `agents`.
     """
-
     sim_cfg: SimulatorConfiguration
     agents: List[AgentConfiguration]
     # An existing Metadata Mediator can also be used to construct a SimulatorBackend
@@ -97,7 +96,6 @@ class Simulator(SimulatorBackend):
     NavMesh collision checking/pathfinding, attribute template management,
     object manipulation, and physics simulation.
     """
-
     # Simulator variables
     config: Configuration
     _initialized: bool = attr.ib(default=False, init=False)
@@ -120,7 +118,7 @@ class Simulator(SimulatorBackend):
         factory=list, init=False
     )
 
-    # # TODO: use these eventually instead of the above variables
+    # TODO: use these eventually instead of the above variables
     __sensors_: Dict[str, Sensor] = attr.ib(factory=dict, init=False)
     __obs_buffers_: Dict[str, SensorObservation] = attr.ib(factory=dict, init=False)
     __image_views_: Dict[str, mn.MutableImageView2D] = attr.ib(factory=dict, init=False)
@@ -472,7 +470,7 @@ class Simulator(SimulatorBackend):
 
     def __init_agent_sensor(self, sensor_spec: SensorSpec, agent_id: int) -> None:
         """ """
-        sensor = self.get_agent(agent_id).get_sensors()[sensor_spec.uuid]
+        sensor = self.get_agent(agent_id).sensors[sensor_spec.uuid]
         self.__sensors[agent_id][sensor_spec.uuid] = sensor
         if sensor_spec.sensor_type == SensorType.AUDIO:
             return
@@ -645,7 +643,6 @@ class Simulator(SimulatorBackend):
             # TODO: use this eventually, so that sensors are independent of agents
             return self.__sensors_.get(sensor_uuid)
 
-    # TODO: make this work to get agent sensors
     def get_subtree_sensors(self, scene_node: SceneNode) -> Dict[str, Sensor]:
         assert scene_node is not None
         return scene_node.subtree_sensors
@@ -782,7 +779,8 @@ class Simulator(SimulatorBackend):
 
     @property
     def _sensors(self) -> Dict[str, Sensor]:
-        # TODO Deprecate and remove
+        # TODO eventually be able to return all sensors regardless of
+        # whether or not it is attached to an agent
         return self.__sensors[self._default_agent_id]
 
     def last_state(self, agent_id: Optional[int] = None) -> AgentState:

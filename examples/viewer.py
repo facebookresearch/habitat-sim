@@ -361,7 +361,7 @@ class HabitatSimInteractiveViewer(Application):
         # post reconfigure
         self.default_agent = self.sim.get_agent(self.agent_id)
         self.agent_body_node = self.default_agent.scene_node
-        self.camera_sensor = self.default_agent.get_sensors()["color_sensor"]
+        self.camera_sensor = self.default_agent.sensors["color_sensor"]
         # set sim_settings scene name as actual loaded scene
         self.sim_settings["scene"] = self.sim.curr_scene_name
 
@@ -628,8 +628,11 @@ class HabitatSimInteractiveViewer(Application):
 
             # up/down on cameras' scene nodes
             action = habitat_sim.agent.ObjectControls()
-            sensors = self.default_agent.get_sensors()
-            [action(s.object, "look_down", act_spec(delta.y), False) for s in sensors]
+            sensors = self.default_agent.sensors
+            [
+                action(s.node, "look_down", act_spec(delta.y), False)
+                for s in sensors.values()
+            ]
 
         # if interactive mode is TRUE -> GRAB MODE
         elif self.mouse_interaction == MouseMode.GRAB and self.mouse_grabber:
@@ -859,9 +862,8 @@ class HabitatSimInteractiveViewer(Application):
 
         sensor_type_string = str(sensor_spec.sensor_type.name)
         sensor_subtype_string = str(sensor_spec.sensor_subtype.name)
-        if self.mouse_interaction == MouseMode.LOOK:
-            mouse_mode_string = "LOOK"
-        elif self.mouse_interaction == MouseMode.GRAB:
+        mouse_mode_string = "LOOK"
+        if self.mouse_interaction == MouseMode.GRAB:
             mouse_mode_string = "GRAB"
         self.window_text.render(
             f"""
