@@ -14,6 +14,7 @@
 #include "esp/core/Random.h"
 #include "esp/gfx/DebugLineRender.h"
 #include "esp/gfx/RenderTarget.h"
+#include "esp/gfx/replay/Player.h"
 #include "esp/gfx/WindowlessContext.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/physics/PhysicsManager.h"
@@ -919,7 +920,7 @@ class Simulator {
    * @param assetInfo the asset to load
    * @param creation how to create the instance
    */
-  scene::SceneNode* loadAndCreateRenderAssetInstance(
+  gfx::replay::GfxReplayNode* loadAndCreateRenderAssetInstance(
       const assets::AssetInfo& assetInfo,
       const assets::RenderAssetInstanceCreationInfo& creation);
 

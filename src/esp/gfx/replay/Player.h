@@ -9,6 +9,7 @@
 
 #include "esp/assets/Asset.h"
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
+#include "esp/gfx/replay/PlayerCallbacks.h"
 
 #include <rapidjson/document.h>
 
@@ -40,20 +41,13 @@ namespace replay {
  */
 class Player {
  public:
-  using LoadAndCreateRenderAssetInstanceCallback =
-      std::function<esp::scene::SceneNode*(
-          const esp::assets::AssetInfo&,
-          const esp::assets::RenderAssetInstanceCreationInfo&)>;
-  using ChangeLightSetupCallback =
-      std::function<void(const gfx::LightSetup& lights)>;
-
   /**
    * @brief Construct a Player.
    * @param callback A function to load and create a render asset instance.
    */
-  explicit Player(const LoadAndCreateRenderAssetInstanceCallback&
+  explicit Player(const PlayerCallbacks::LoadAndCreateRenderAssetInstance&
                       loadAndCreateRenderAssetInstanceCallback,
-                  const ChangeLightSetupCallback& lightSetupCallback);
+                  const PlayerCallbacks::ChangeLightSetup& lightSetupCallback);
 
   ~Player();
 
@@ -130,9 +124,9 @@ class Player {
   static void setSemanticIdForSubtree(esp::scene::SceneNode* rootNode,
                                       int semanticId);
 
-  LoadAndCreateRenderAssetInstanceCallback
+  PlayerCallbacks::LoadAndCreateRenderAssetInstance
       loadAndCreateRenderAssetInstanceCallback;
-  ChangeLightSetupCallback changeLightSetupCallback;
+  PlayerCallbacks::ChangeLightSetup changeLightSetupCallback;
 
   int frameIndex_ = -1;
   std::vector<Keyframe> keyframes_;

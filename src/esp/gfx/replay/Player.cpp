@@ -8,6 +8,7 @@
 
 #include "esp/assets/ResourceManager.h"
 #include "esp/core/Esp.h"
+#include "esp/gfx/replay/Keyframe.h"
 #include "esp/io/Json.h"
 #include "esp/io/JsonAllTypes.h"
 
@@ -30,9 +31,9 @@ Keyframe Player::keyframeFromString(const std::string& keyframe) {
   return res;
 }
 
-Player::Player(const LoadAndCreateRenderAssetInstanceCallback&
+Player::Player(const PlayerCallbacks::LoadAndCreateRenderAssetInstance&
                    loadAndCreateRenderAssetInstanceCallback,
-               const ChangeLightSetupCallback& changeLightSetupCallback)
+               const PlayerCallbacks::ChangeLightSetup& changeLightSetupCallback)
     : loadAndCreateRenderAssetInstanceCallback(
           loadAndCreateRenderAssetInstanceCallback),
       changeLightSetupCallback(changeLightSetupCallback) {}
@@ -131,7 +132,7 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
       continue;
     }
     CORRADE_INTERNAL_ASSERT(assetInfos_.count(creation.filepath));
-    auto* node = loadAndCreateRenderAssetInstanceCallback(
+    auto node = loadAndCreateRenderAssetInstanceCallback(
         assetInfos_[creation.filepath], creation);
     if (!node) {
       if (failedFilepaths_.count(creation.filepath) == 0u) {
@@ -144,7 +145,7 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
 
     const auto& instanceKey = pair.first;
     CORRADE_INTERNAL_ASSERT(createdInstances_.count(instanceKey) == 0);
-    createdInstances_[instanceKey] = node;
+    createdInstances_[instanceKey] = reinterpret_cast<scene::SceneNode*>(node);
   }
 
   for (const auto& deletionInstanceKey : keyframe.deletions) {

@@ -75,7 +75,7 @@ class ReplayBatchRenderer {
   void setSensorTransformsFromKeyframe(int envIndex, const std::string& prefix);
 
  private:
-  scene::SceneNode* loadAndCreateRenderAssetInstance(
+  gfx::replay::GfxReplayNode* loadAndCreateRenderAssetInstance(
       int envIndex,
       const assets::AssetInfo& assetInfo,
       const assets::RenderAssetInstanceCreationInfo& creation);

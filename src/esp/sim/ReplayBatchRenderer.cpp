@@ -6,6 +6,7 @@
 
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/Renderer.h"
+#include "esp/gfx/replay/PlayerCallbacks.h"
 #include "esp/gfx/replay/ReplayManager.h"
 #include "esp/metadata/MetadataMediator.h"
 #include "esp/sensor/SensorFactory.h"
@@ -32,7 +33,7 @@ ReplayBatchRenderer::ReplayBatchRenderer(
     auto assetCallback =
         [this, envIdx](const assets::AssetInfo& assetInfo,
                        const assets::RenderAssetInstanceCreationInfo& creation)
-        -> scene::SceneNode* {
+        -> gfx::replay::GfxReplayNode* {
       return loadAndCreateRenderAssetInstance(envIdx, assetInfo, creation);
     };
     auto lightCallback = [this](const gfx::LightSetup& lights) -> void {
@@ -158,7 +159,7 @@ void ReplayBatchRenderer::setEnvironmentKeyframe(
       esp::gfx::replay::Player::keyframeFromString(serKeyframe));
 }
 
-scene::SceneNode* ReplayBatchRenderer::loadAndCreateRenderAssetInstance(
+gfx::replay::GfxReplayNode* ReplayBatchRenderer::loadAndCreateRenderAssetInstance(
     int envIndex,
     const assets::AssetInfo& assetInfo,
     const assets::RenderAssetInstanceCreationInfo& creation) {
@@ -168,8 +169,9 @@ scene::SceneNode* ReplayBatchRenderer::loadAndCreateRenderAssetInstance(
   const auto& env = envs_[envIndex];
   // perf todo: avoid dynamic mem alloc
   std::vector<int> tempIDs{env.sceneID_, env.semanticSceneID_};
-  return resourceManager_->loadAndCreateRenderAssetInstance(
+  auto node = resourceManager_->loadAndCreateRenderAssetInstance(
       assetInfo, creation, sceneManager_.get(), tempIDs);
+  return reinterpret_cast<gfx::replay::GfxReplayNode*>(node);
 }
 
 }  // namespace sim

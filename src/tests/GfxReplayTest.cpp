@@ -16,6 +16,7 @@
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/WindowlessContext.h"
 #include "esp/gfx/replay/Player.h"
+#include "esp/gfx/replay/PlayerCallbacks.h"
 #include "esp/gfx/replay/Recorder.h"
 #include "esp/gfx/replay/ReplayManager.h"
 #include "esp/metadata/MetadataMediator.h"
@@ -211,8 +212,9 @@ void GfxReplayTest::testPlayer() {
       [&](const esp::assets::AssetInfo& assetInfo,
           const esp::assets::RenderAssetInstanceCreationInfo& creation) {
         std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
-        return resourceManager.loadAndCreateRenderAssetInstance(
+        auto node = resourceManager.loadAndCreateRenderAssetInstance(
             assetInfo, creation, &sceneManager_, tempIDs);
+        return reinterpret_cast<esp::gfx::replay::GfxReplayNode*>(node);
       };
   auto dummyLightsCallback = [&](const esp::gfx::LightSetup& lights) -> void {};
   esp::gfx::replay::Player player(assetsCallback, dummyLightsCallback);

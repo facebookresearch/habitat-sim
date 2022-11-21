@@ -22,6 +22,7 @@
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/VarianceShadowMapDrawable.h"
+#include "esp/gfx/replay/PlayerCallbacks.h"
 #include "esp/gfx/replay/Recorder.h"
 #include "esp/gfx/replay/ReplayManager.h"
 #include "esp/metadata/MetadataMediator.h"
@@ -690,7 +691,7 @@ void Simulator::reconfigureReplayManager(bool enableGfxReplaySave) {
   gfxReplayMgr_->setPlayerCallbacks(
       [this](const assets::AssetInfo& assetInfo,
              const assets::RenderAssetInstanceCreationInfo& creation)
-          -> scene::SceneNode* {
+          -> gfx::replay::GfxReplayNode* {
         return loadAndCreateRenderAssetInstance(assetInfo, creation);
       },
       [this](const gfx::LightSetup& lights) -> void {
@@ -1079,7 +1080,7 @@ void Simulator::setMetadataMediator(
   metadataMediator_->setSimulatorConfiguration(this->config_);
 }
 
-scene::SceneNode* Simulator::loadAndCreateRenderAssetInstance(
+gfx::replay::GfxReplayNode* Simulator::loadAndCreateRenderAssetInstance(
     const assets::AssetInfo& assetInfo,
     const assets::RenderAssetInstanceCreationInfo& creation) {
   getRenderGLContext();
@@ -1087,8 +1088,9 @@ scene::SceneNode* Simulator::loadAndCreateRenderAssetInstance(
   // Note this pattern of passing the scene manager and two scene ids to
   // resource manager. This is similar to ResourceManager::loadStage.
   std::vector<int> tempIDs{activeSceneID_, activeSemanticSceneID_};
-  return resourceManager_->loadAndCreateRenderAssetInstance(
+  auto node = resourceManager_->loadAndCreateRenderAssetInstance(
       assetInfo, creation, sceneManager_.get(), tempIDs);
+  return reinterpret_cast<gfx::replay::GfxReplayNode*>(node);
 }
 
 #ifdef ESP_BUILD_WITH_VHACD
