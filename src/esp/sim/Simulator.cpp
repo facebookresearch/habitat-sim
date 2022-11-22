@@ -688,15 +688,18 @@ void Simulator::reconfigureReplayManager(bool enableGfxReplaySave) {
   resourceManager_->setRecorder(gfxReplayMgr_->getRecorder());
 
   // provide Player callbacks to replay manager
-  gfxReplayMgr_->setPlayerCallbacks(
-      [this](const assets::AssetInfo& assetInfo,
+  gfx::replay::PlayerCallbacks callbacks;
+  callbacks.loadAndCreateRenderInstance_ =
+    [this](const assets::AssetInfo& assetInfo,
              const assets::RenderAssetInstanceCreationInfo& creation)
           -> gfx::replay::GfxReplayNode* {
         return loadAndCreateRenderAssetInstance(assetInfo, creation);
-      },
-      [this](const gfx::LightSetup& lights) -> void {
+      };
+  callbacks.changeLightSetup_ =
+    [this](const gfx::LightSetup& lights) -> void {
         this->setLightSetup(lights);
-      });
+      };
+  gfxReplayMgr_->setPlayerCallbacks(callbacks);
 }
 
 void Simulator::updateShadowMapDrawableGroup() {

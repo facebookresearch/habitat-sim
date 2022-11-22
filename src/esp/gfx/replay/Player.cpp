@@ -31,12 +31,8 @@ Keyframe Player::keyframeFromString(const std::string& keyframe) {
   return res;
 }
 
-Player::Player(const PlayerCallbacks::LoadAndCreateRenderAssetInstance&
-                   loadAndCreateRenderAssetInstanceCallback,
-               const PlayerCallbacks::ChangeLightSetup& changeLightSetupCallback)
-    : loadAndCreateRenderAssetInstanceCallback(
-          loadAndCreateRenderAssetInstanceCallback),
-      changeLightSetupCallback(changeLightSetupCallback) {}
+Player::Player(const PlayerCallbacks& callbacks)
+    : callbacks_(callbacks) {}
 
 void Player::readKeyframesFromFile(const std::string& filepath) {
   close();
@@ -132,7 +128,7 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
       continue;
     }
     CORRADE_INTERNAL_ASSERT(assetInfos_.count(creation.filepath));
-    auto node = loadAndCreateRenderAssetInstanceCallback(
+    auto node = callbacks_.loadAndCreateRenderInstance_(
         assetInfos_[creation.filepath], creation);
     if (!node) {
       if (failedFilepaths_.count(creation.filepath) == 0u) {
@@ -176,7 +172,7 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
   }
 
   if (keyframe.lightsChanged) {
-    changeLightSetupCallback(keyframe.lights);
+    callbacks_.changeLightSetup_(keyframe.lights);
   }
 }
 

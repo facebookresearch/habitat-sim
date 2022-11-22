@@ -45,9 +45,7 @@ class Player {
    * @brief Construct a Player.
    * @param callback A function to load and create a render asset instance.
    */
-  explicit Player(const PlayerCallbacks::LoadAndCreateRenderAssetInstance&
-                      loadAndCreateRenderAssetInstanceCallback,
-                  const PlayerCallbacks::ChangeLightSetup& lightSetupCallback);
+  explicit Player(const PlayerCallbacks& callbacks);
 
   ~Player();
 
@@ -124,9 +122,7 @@ class Player {
   static void setSemanticIdForSubtree(esp::scene::SceneNode* rootNode,
                                       int semanticId);
 
-  PlayerCallbacks::LoadAndCreateRenderAssetInstance
-      loadAndCreateRenderAssetInstanceCallback;
-  PlayerCallbacks::ChangeLightSetup changeLightSetupCallback;
+  PlayerCallbacks callbacks_;
 
   int frameIndex_ = -1;
   std::vector<Keyframe> keyframes_;

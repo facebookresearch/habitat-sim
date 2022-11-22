@@ -208,7 +208,8 @@ void GfxReplayTest::testPlayer() {
 
   // Construct Player. Hook up ResourceManager::loadAndCreateRenderAssetInstance
   // to Player via callback.
-  auto assetsCallback =
+  esp::gfx::replay::PlayerCallbacks callbacks;
+  callbacks.loadAndCreateRenderInstance_ =
       [&](const esp::assets::AssetInfo& assetInfo,
           const esp::assets::RenderAssetInstanceCreationInfo& creation) {
         std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
@@ -216,8 +217,8 @@ void GfxReplayTest::testPlayer() {
             assetInfo, creation, &sceneManager_, tempIDs);
         return reinterpret_cast<esp::gfx::replay::GfxReplayNode*>(node);
       };
-  auto dummyLightsCallback = [&](const esp::gfx::LightSetup& lights) -> void {};
-  esp::gfx::replay::Player player(assetsCallback, dummyLightsCallback);
+  callbacks.changeLightSetup_ = [&](const esp::gfx::LightSetup& lights) -> void {};
+  esp::gfx::replay::Player player(callbacks);
 
   std::vector<esp::gfx::replay::Keyframe> keyframes;
 
@@ -346,13 +347,14 @@ void GfxReplayTest::testPlayer() {
 }
 
 void GfxReplayTest::testPlayerReadMissingFile() {
-  auto dummyAssetsCallback =
+  esp::gfx::replay::PlayerCallbacks callbacks;
+  callbacks.loadAndCreateRenderInstance_ =
       [&](const esp::assets::AssetInfo& assetInfo,
           const esp::assets::RenderAssetInstanceCreationInfo& creation) {
         return nullptr;
       };
-  auto dummyLightsCallback = [&](const esp::gfx::LightSetup& lights) -> void {};
-  esp::gfx::replay::Player player(dummyAssetsCallback, dummyLightsCallback);
+  callbacks.changeLightSetup_ = [&](const esp::gfx::LightSetup& lights) -> void {};
+  esp::gfx::replay::Player player(callbacks);
 
   player.readKeyframesFromFile("file_that_does_not_exist.json");
   CORRADE_COMPARE(player.getNumKeyframes(), 0);
@@ -367,13 +369,14 @@ void GfxReplayTest::testPlayerReadInvalidFile() {
   out << "{invalid json";
   out.close();
 
-  auto dummyAssetsCallback =
+  esp::gfx::replay::PlayerCallbacks callbacks;
+  callbacks.loadAndCreateRenderInstance_ =
       [&](const esp::assets::AssetInfo& assetInfo,
           const esp::assets::RenderAssetInstanceCreationInfo& creation) {
         return nullptr;
       };
-  auto dummyLightsCallback = [&](const esp::gfx::LightSetup& lights) -> void {};
-  esp::gfx::replay::Player player(dummyAssetsCallback, dummyLightsCallback);
+  callbacks.changeLightSetup_ = [&](const esp::gfx::LightSetup& lights) -> void {};
+  esp::gfx::replay::Player player(callbacks);
 
   player.readKeyframesFromFile(testFilepath);
   CORRADE_COMPARE(player.getNumKeyframes(), 0);

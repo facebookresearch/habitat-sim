@@ -30,13 +30,14 @@ ReplayBatchRenderer::ReplayBatchRenderer(
   sceneManager_ = scene::SceneManager::create_unique();
 
   for (int envIdx = 0; envIdx < config_.numEnvironments; ++envIdx) {
-    auto assetCallback =
+    gfx::replay::PlayerCallbacks callbacks;
+    callbacks.loadAndCreateRenderInstance_ =
         [this, envIdx](const assets::AssetInfo& assetInfo,
                        const assets::RenderAssetInstanceCreationInfo& creation)
         -> gfx::replay::GfxReplayNode* {
       return loadAndCreateRenderAssetInstance(envIdx, assetInfo, creation);
     };
-    auto lightCallback = [this](const gfx::LightSetup& lights) -> void {
+    callbacks.changeLightSetup_ = [this](const gfx::LightSetup& lights) -> void {
       resourceManager_->setLightSetup(lights);
     };
     auto sceneID = sceneManager_->initSceneGraph();
@@ -50,7 +51,7 @@ ReplayBatchRenderer::ReplayBatchRenderer(
         parentNode, cfg.sensorSpecifications);
 
     envs_.emplace_back(EnvironmentRecord{
-        .player_ = gfx::replay::Player(assetCallback, lightCallback),
+        .player_ = gfx::replay::Player(callbacks),
         .sceneID_ = sceneID,
         .semanticSceneID_ = semanticSceneID,
         .sensorParentNode_ = &parentNode,

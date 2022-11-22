@@ -20,7 +20,6 @@ typedef size_t GfxReplayNode;
  */
 struct PlayerCallbacks
 {
-public:
     using LoadAndCreateRenderAssetInstance =
     std::function<GfxReplayNode*(
         const esp::assets::AssetInfo&,
@@ -28,6 +27,9 @@ public:
 
     using ChangeLightSetup =
         std::function<void(const gfx::LightSetup& lights)>;
+
+    LoadAndCreateRenderAssetInstance loadAndCreateRenderInstance_ = {};
+    ChangeLightSetup changeLightSetup_ = {};
 };
 
 }

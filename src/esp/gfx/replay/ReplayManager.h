@@ -7,6 +7,7 @@
 
 #include "Player.h"
 #include "Recorder.h"
+#include "esp/gfx/replay/PlayerCallbacks.h"
 
 namespace esp {
 namespace gfx {
@@ -37,13 +38,9 @@ class ReplayManager {
    * @brief Set callbacks that are invoked when simulation state changes upon
    * playing a new keyframe. This is required to construct Player instances.
    */
-  void setPlayerCallbacks(
-      const PlayerCallbacks::LoadAndCreateRenderAssetInstance&
-          loadAndCreateRenderAssetInstanceCallback,
-      const PlayerCallbacks::ChangeLightSetup& changeLightSetupCallback) {
-    loadAndCreateRenderAssetInstanceCallback_ =
-        loadAndCreateRenderAssetInstanceCallback;
-    changeLightSetupCallback_ = changeLightSetupCallback;
+  void setPlayerCallbacks(const PlayerCallbacks& playerCallbacks)
+  {
+    playerCallbacks_ = playerCallbacks;
   }
 
   /**
@@ -60,9 +57,7 @@ class ReplayManager {
 
  private:
   std::shared_ptr<Recorder> recorder_;
-  PlayerCallbacks::LoadAndCreateRenderAssetInstance
-      loadAndCreateRenderAssetInstanceCallback_;
-  PlayerCallbacks::ChangeLightSetup changeLightSetupCallback_;
+  PlayerCallbacks playerCallbacks_;
 
   ESP_SMART_POINTERS(ReplayManager)
 };
