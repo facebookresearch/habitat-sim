@@ -32,7 +32,6 @@ class NoSensorNoiseModel(SensorNoiseModel):
     ) -> Union[ndarray, "torch.Tensor"]:
         if isinstance(x, np.ndarray):
             return x.copy()
-        elif torch is not None and torch.is_tensor(x):
+        if torch is not None and torch.is_tensor(x):
             return x.clone()
-        else:
-            return x
+        return x
