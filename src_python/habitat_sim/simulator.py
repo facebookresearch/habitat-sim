@@ -400,18 +400,24 @@ class Simulator(SimulatorBackend):
 
     @overload
     def add_sensor(self, sensor_spec: SensorSpec) -> None:
-        # Add global sensor to root node
+        """
+        Add global sensor to root node
+        """
         ...
 
     @overload
     def add_sensor(self, sensor_spec: SensorSpec, attach_to: int) -> None:
-        # Add sensor to scene node associated with the given agent id
+        """
+        Add sensor to scene node associated with the given agent id
+        """
         ...
 
     @overload
     def add_sensor(self, sensor_spec: SensorSpec, attach_to: SceneObject) -> None:
-        # Add sensor to scene node that a scene object is attached to,
-        # e.g., a ManagedBulletRigidObject
+        """
+        Add sensor to scene node that a scene object is attached to,
+        e.g., a ManagedBulletRigidObject
+        """
         ...
 
     def add_sensor(
@@ -462,7 +468,6 @@ class Simulator(SimulatorBackend):
 
     def _init_sensor(self, sensor_spec: SensorSpec, agent_id: int = None) -> None:
         # TODO: temporary method while we refactor sensors
-
         if agent_id is not None:
             self.__init_agent_sensor(sensor_spec, agent_id)
         else:
