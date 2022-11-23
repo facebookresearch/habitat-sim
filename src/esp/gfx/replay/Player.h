@@ -13,15 +13,7 @@
 
 #include <rapidjson/document.h>
 
-#include <map>
-#include <set>
-#include <string>
-#include <vector>
-
 namespace esp {
-namespace scene {
-class SceneNode;
-}
 namespace gfx {
 namespace replay {
 
@@ -119,15 +111,13 @@ class Player {
   void applyKeyframe(const Keyframe& keyframe);
   void readKeyframesFromJsonDocument(const rapidjson::Document& d);
   void clearFrame();
-  static void setSemanticIdForSubtree(esp::scene::SceneNode* rootNode,
-                                      int semanticId);
 
   PlayerCallbacks callbacks_;
 
   int frameIndex_ = -1;
   std::vector<Keyframe> keyframes_;
-  std::map<std::string, esp::assets::AssetInfo> assetInfos_;
-  std::map<RenderAssetInstanceKey, scene::SceneNode*> createdInstances_;
+  std::unordered_map<std::string, esp::assets::AssetInfo> assetInfos_;
+  std::unordered_map<RenderAssetInstanceKey, GfxReplayNode*> createdInstances_;
   std::set<std::string> failedFilepaths_;
 
   ESP_SMART_POINTERS(Player)

@@ -30,7 +30,7 @@ ReplayBatchRenderer::ReplayBatchRenderer(
   sceneManager_ = scene::SceneManager::create_unique();
 
   for (int envIdx = 0; envIdx < config_.numEnvironments; ++envIdx) {
-    gfx::replay::PlayerCallbacks callbacks;
+    auto callbacks = esp::gfx::replay::createSceneGraphPlayerCallbacks();
     callbacks.loadAndCreateRenderInstance_ =
         [this, envIdx](const assets::AssetInfo& assetInfo,
                        const assets::RenderAssetInstanceCreationInfo& creation)
@@ -40,6 +40,7 @@ ReplayBatchRenderer::ReplayBatchRenderer(
     callbacks.changeLightSetup_ = [this](const gfx::LightSetup& lights) -> void {
       resourceManager_->setLightSetup(lights);
     };
+
     auto sceneID = sceneManager_->initSceneGraph();
     auto semanticSceneID = cfg.forceSeparateSemanticSceneGraph
                                ? sceneManager_->initSceneGraph()

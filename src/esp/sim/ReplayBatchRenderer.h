@@ -31,7 +31,7 @@ class ReplayBatchRendererConfiguration {
   bool forceSeparateSemanticSceneGraph = false;
   /**
    * @brief Leave the context with the background thread after finishing draw
-   * jobs. This will improve performance as transfering the OpenGL context back
+   * jobs. This will improve performance as transferring the OpenGL context back
    * and forth takes time but will require the user to manually transfer the
    * context back to the main thread before adding or removing objects.
    */

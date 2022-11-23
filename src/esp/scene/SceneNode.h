@@ -335,6 +335,30 @@ void preOrderFeatureTraversalWithCallback(SceneNode& node, Callable&& cb) {
       const_cast<const SceneNode&>(node), constFeatureCb);
 }
 
+/**
+ * @brief Set the semantic ID of a node subtree.
+ *
+ * @param node Root node for this traversal
+ * @param semanticId Semantic ID to apply to the subtree
+ */
+static void setSemanticIdForSubtree(esp::scene::SceneNode* node,
+                                      int semanticId)
+{
+  if (node->getSemanticId() == semanticId) {
+    // We assume the entire subtree's semanticId matches the root's, so we can
+    // early out here.
+    return;
+  }
+
+  // See also RigidBase setSemanticId. That function uses a prepared container
+  // of visual nodes, whereas this function traverses the subtree to touch all
+  // nodes (including visual nodes). The results should be the same.
+  auto cb = [&](esp::scene::SceneNode& node) {
+    node.setSemanticId(semanticId);
+  };
+  esp::scene::preOrderTraversalWithCallback(*node, cb);
+}
+
 CORRADE_ENUMSET_OPERATORS(SceneNodeTags)
 }  // namespace scene
 }  // namespace esp

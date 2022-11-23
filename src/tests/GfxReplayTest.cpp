@@ -208,7 +208,7 @@ void GfxReplayTest::testPlayer() {
 
   // Construct Player. Hook up ResourceManager::loadAndCreateRenderAssetInstance
   // to Player via callback.
-  esp::gfx::replay::PlayerCallbacks callbacks;
+  auto callbacks = esp::gfx::replay::createSceneGraphPlayerCallbacks();
   callbacks.loadAndCreateRenderInstance_ =
       [&](const esp::assets::AssetInfo& assetInfo,
           const esp::assets::RenderAssetInstanceCreationInfo& creation) {
@@ -347,7 +347,7 @@ void GfxReplayTest::testPlayer() {
 }
 
 void GfxReplayTest::testPlayerReadMissingFile() {
-  esp::gfx::replay::PlayerCallbacks callbacks;
+  auto callbacks = esp::gfx::replay::createSceneGraphPlayerCallbacks();
   callbacks.loadAndCreateRenderInstance_ =
       [&](const esp::assets::AssetInfo& assetInfo,
           const esp::assets::RenderAssetInstanceCreationInfo& creation) {
@@ -369,7 +369,7 @@ void GfxReplayTest::testPlayerReadInvalidFile() {
   out << "{invalid json";
   out.close();
 
-  esp::gfx::replay::PlayerCallbacks callbacks;
+  auto callbacks = esp::gfx::replay::createSceneGraphPlayerCallbacks();
   callbacks.loadAndCreateRenderInstance_ =
       [&](const esp::assets::AssetInfo& assetInfo,
           const esp::assets::RenderAssetInstanceCreationInfo& creation) {

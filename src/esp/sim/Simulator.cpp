@@ -688,7 +688,7 @@ void Simulator::reconfigureReplayManager(bool enableGfxReplaySave) {
   resourceManager_->setRecorder(gfxReplayMgr_->getRecorder());
 
   // provide Player callbacks to replay manager
-  gfx::replay::PlayerCallbacks callbacks;
+  auto callbacks = esp::gfx::replay::createSceneGraphPlayerCallbacks();
   callbacks.loadAndCreateRenderInstance_ =
     [this](const assets::AssetInfo& assetInfo,
              const assets::RenderAssetInstanceCreationInfo& creation)
@@ -697,7 +697,7 @@ void Simulator::reconfigureReplayManager(bool enableGfxReplaySave) {
       };
   callbacks.changeLightSetup_ =
     [this](const gfx::LightSetup& lights) -> void {
-        this->setLightSetup(lights);
+        setLightSetup(lights);
       };
   gfxReplayMgr_->setPlayerCallbacks(callbacks);
 }

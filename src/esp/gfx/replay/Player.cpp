@@ -98,10 +98,7 @@ void Player::close() {
 
 void Player::clearFrame() {
   for (const auto& pair : createdInstances_) {
-    // TODO: use NodeDeletionHelper to safely delete nodes owned by the Player.
-    // the deletion here is unsafe because a Player may persist beyond the
-    // lifetime of these nodes.
-    delete pair.second;
+    callbacks_.deleteAssetInstance_(pair.second);
   }
   createdInstances_.clear();
   assetInfos_.clear();
@@ -141,7 +138,7 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
 
     const auto& instanceKey = pair.first;
     CORRADE_INTERNAL_ASSERT(createdInstances_.count(instanceKey) == 0);
-    createdInstances_[instanceKey] = reinterpret_cast<scene::SceneNode*>(node);
+    createdInstances_[instanceKey] = node;
   }
 
   for (const auto& deletionInstanceKey : keyframe.deletions) {
@@ -152,8 +149,7 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
       continue;
     }
 
-    auto* node = it->second;
-    delete node;
+    callbacks_.deleteAssetInstance_(it->second);
     createdInstances_.erase(deletionInstanceKey);
   }
 
@@ -166,9 +162,8 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     }
     auto* node = it->second;
     const auto& state = pair.second;
-    node->setTranslation(state.absTransform.translation);
-    node->setRotation(state.absTransform.rotation);
-    setSemanticIdForSubtree(node, state.semanticId);
+    callbacks_.setAssetInstanceTransform_(node, state.absTransform.translation, state.absTransform.rotation);
+    callbacks_.setAssetInstanceSemanticId_(node, state.semanticId);
   }
 
   if (keyframe.lightsChanged) {
@@ -189,23 +184,6 @@ void Player::setSingleKeyframe(Keyframe&& keyframe) {
   frameIndex_ = -1;
   keyframes_.emplace_back(std::move(keyframe));
   setKeyframeIndex(0);
-}
-
-void Player::setSemanticIdForSubtree(esp::scene::SceneNode* rootNode,
-                                     int semanticId) {
-  if (rootNode->getSemanticId() == semanticId) {
-    // We assume the entire subtree's semanticId matches the root's, so we can
-    // early out here.
-    return;
-  }
-
-  // See also RigidBase setSemanticId. That function uses a prepared container
-  // of visual nodes, whereas this function traverses the subtree to touch all
-  // nodes (including visual nodes). The results should be the same.
-  auto cb = [&](esp::scene::SceneNode& node) {
-    node.setSemanticId(semanticId);
-  };
-  esp::scene::preOrderTraversalWithCallback(*rootNode, cb);
 }
 
 }  // namespace replay
