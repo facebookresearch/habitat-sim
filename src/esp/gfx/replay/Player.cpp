@@ -31,8 +31,7 @@ Keyframe Player::keyframeFromString(const std::string& keyframe) {
   return res;
 }
 
-Player::Player(const PlayerCallbacks& callbacks)
-    : callbacks_(callbacks) {}
+Player::Player(const PlayerCallbacks& callbacks) : callbacks_(callbacks) {}
 
 void Player::readKeyframesFromFile(const std::string& filepath) {
   close();
@@ -162,7 +161,8 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     }
     auto* node = it->second;
     const auto& state = pair.second;
-    callbacks_.setAssetInstanceTransform_(node, state.absTransform.translation, state.absTransform.rotation);
+    callbacks_.setAssetInstanceTransform_(node, state.absTransform.translation,
+                                          state.absTransform.rotation);
     callbacks_.setAssetInstanceSemanticId_(node, state.semanticId);
   }
 

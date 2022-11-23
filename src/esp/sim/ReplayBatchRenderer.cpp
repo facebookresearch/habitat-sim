@@ -37,7 +37,8 @@ ReplayBatchRenderer::ReplayBatchRenderer(
         -> gfx::replay::GfxReplayNode* {
       return loadAndCreateRenderAssetInstance(envIdx, assetInfo, creation);
     };
-    callbacks.changeLightSetup_ = [this](const gfx::LightSetup& lights) -> void {
+    callbacks.changeLightSetup_ =
+        [this](const gfx::LightSetup& lights) -> void {
       resourceManager_->setLightSetup(lights);
     };
 
@@ -51,12 +52,12 @@ ReplayBatchRenderer::ReplayBatchRenderer(
     auto sensorMap = esp::sensor::SensorFactory::createSensors(
         parentNode, cfg.sensorSpecifications);
 
-    envs_.emplace_back(EnvironmentRecord{
-        .player_ = gfx::replay::Player(callbacks),
-        .sceneID_ = sceneID,
-        .semanticSceneID_ = semanticSceneID,
-        .sensorParentNode_ = &parentNode,
-        .sensorMap_ = std::move(sensorMap)});
+    envs_.emplace_back(
+        EnvironmentRecord{.player_ = gfx::replay::Player(callbacks),
+                          .sceneID_ = sceneID,
+                          .semanticSceneID_ = semanticSceneID,
+                          .sensorParentNode_ = &parentNode,
+                          .sensorMap_ = std::move(sensorMap)});
   }
 
   // OpenGL context and renderer
@@ -161,7 +162,8 @@ void ReplayBatchRenderer::setEnvironmentKeyframe(
       esp::gfx::replay::Player::keyframeFromString(serKeyframe));
 }
 
-gfx::replay::GfxReplayNode* ReplayBatchRenderer::loadAndCreateRenderAssetInstance(
+gfx::replay::GfxReplayNode*
+ReplayBatchRenderer::loadAndCreateRenderAssetInstance(
     int envIndex,
     const assets::AssetInfo& assetInfo,
     const assets::RenderAssetInstanceCreationInfo& creation) {
