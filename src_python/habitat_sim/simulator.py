@@ -979,16 +979,16 @@ class Simulator(SimulatorBackend):
             # do nothing in draw observation, get_observation will be called after this
             # run the simulation there
             return
-        else:
-            assert self.renderer is not None
-            # see if the sensor is attached to a scene graph, otherwise it is invalid,
-            # and cannot make any observation
-            if sensor.object is None:
-                raise habitat_sim.errors.InvalidAttachedObject(
-                    "Sensor observation requested but sensor is invalid.\
-                    (has it been detached from a scene node?)"
-                )
-            self.renderer.draw(sensor, self)
+
+        assert self.renderer is not None
+        # see if the sensor is attached to a scene graph, otherwise it is invalid,
+        # and cannot make any observation
+        if sensor.node is None:
+            raise habitat_sim.errors.InvalidAttachedObject(
+                "Sensor observation requested but sensor is invalid.\
+                (has it been detached from a scene node?)"
+            )
+        self.renderer.draw(sensor, self)
 
     def _draw_observation_async(
         self,
@@ -1000,46 +1000,48 @@ class Simulator(SimulatorBackend):
             # do nothing in draw observation, get_observation will be called after this
             # run the simulation there
             return
-        else:
-            assert self.renderer is not None
-            if (
-                sensor_spec.sensor_type == SensorType.SEMANTIC
-                and self.get_active_scene_graph()
-                is not self.get_active_semantic_scene_graph()
-            ):
+
+        assert self.renderer is not None
+        if (
+            sensor_spec.sensor_type == SensorType.SEMANTIC
+            and self.get_active_scene_graph()
+            is not self.get_active_semantic_scene_graph()
+        ):
+            raise RuntimeError(
+                "Async drawing doesn't support semantic rendering when there are multiple scene graphs"
+            )
+        # TODO: sync this path with renderer changes as above (render from sensor object)
+
+        # see if the sensor is attached to a scene graph, otherwise it is invalid,
+        # and cannot make any observation
+        if sensor.node is None:
+            raise habitat_sim.errors.InvalidAttachedObject(
+                "Sensor observation requested but sensor is invalid.\
+                (has it been detached from a scene node?)"
+            )
+
+        # get the correct scene graph based on application
+        if sensor_spec.sensor_type == SensorType.SEMANTIC:
+            if self.semantic_scene is None:
                 raise RuntimeError(
                     "SemanticSensor observation requested but no SemanticScene is loaded"
                 )
-            scene = self._sim.get_active_semantic_scene_graph()
+            scene = self.get_active_semantic_scene_graph()
         else:  # SensorType is DEPTH or any other type
-            scene = self._sim.get_active_scene_graph()
+            scene = self.get_active_scene_graph()
 
-            # see if the sensor is attached to a scene graph, otherwise it is invalid,
-            # and cannot make any observation
-            if sensor.object is None:
-                raise habitat_sim.errors.InvalidAttachedObject(
-                    "Sensor observation requested but sensor is invalid.\
-                    (has it been detached from a scene node?)"
-                )
+        # now, connect the agent to the root node of the current scene graph
+        self.agents[agent_id].scene_node.parent = scene.get_root_node()
 
-            # get the correct scene graph based on application
-            if sensor_spec.sensor_type == SensorType.SEMANTIC:
-                if self.semantic_scene is None:
-                    raise RuntimeError(
-                        "SemanticSensor observation requested but no SemanticScene is loaded"
-                    )
-                scene = self.get_active_semantic_scene_graph()
-            elif sensor_spec.sensor_type == SensorType.DEPTH:
-                scene = self.get_active_scene_graph()
-            else:
-                scene = self.get_active_scene_graph()
+        # sanity check is not needed on agent:
+        # because if a sensor is attached to a scene graph,
+        # it implies the agent is attached to the same scene graph
+        # (it assumes backend simulator will guarantee it.)
 
-            render_flags = habitat_sim.gfx.Camera.Flags.NONE
+        render_flags = habitat_sim.gfx.Camera.Flags.NONE
 
-            if self.frustum_culling:
-                render_flags |= habitat_sim.gfx.Camera.Flags.FRUSTUM_CULLING
+        if self.frustum_culling:
+            render_flags |= habitat_sim.gfx.Camera.Flags.FRUSTUM_CULLING
 
-            image_view = self.__image_views[agent_id].get(sensor_spec.uuid)
-            self.renderer.enqueue_async_draw_job(
-                sensor, scene, image_view, render_flags
-            )
+        image_view = self.__image_views[agent_id].get(sensor_spec.uuid)
+        self.renderer.enqueue_async_draw_job(sensor, scene, image_view, render_flags)
