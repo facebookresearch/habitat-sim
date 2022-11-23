@@ -1,4 +1,5 @@
-#pragma once
+#ifndef ESP_GFX_REPLAY_PLAYERCALLBACKS_H_
+#define ESP_GFX_REPLAY_PLAYERCALLBACKS_H_
 
 #include "Magnum/Magnum.h"
 #include "esp/assets/Asset.h"
@@ -68,3 +69,5 @@ static PlayerCallbacks createSceneGraphPlayerCallbacks() {
 }  // namespace replay
 }  // namespace gfx
 }  // namespace esp
+
+#endif // ESP_GFX_REPLAY_PLAYERCALLBACKS_H_
