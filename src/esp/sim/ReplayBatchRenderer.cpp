@@ -173,7 +173,7 @@ ReplayBatchRenderer::loadAndCreateRenderAssetInstance(
   const auto& env = envs_[envIndex];
   // perf todo: avoid dynamic mem alloc
   std::vector<int> tempIDs{env.sceneID_, env.semanticSceneID_};
-  auto node = resourceManager_->loadAndCreateRenderAssetInstance(
+  auto* node = resourceManager_->loadAndCreateRenderAssetInstance(
       assetInfo, creation, sceneManager_.get(), tempIDs);
   return reinterpret_cast<gfx::replay::GfxReplayNode*>(node);
 }

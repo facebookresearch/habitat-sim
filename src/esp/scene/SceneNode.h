@@ -341,7 +341,7 @@ void preOrderFeatureTraversalWithCallback(SceneNode& node, Callable&& cb) {
  * @param node Root node for this traversal
  * @param semanticId Semantic ID to apply to the subtree
  */
-static void setSemanticIdForSubtree(esp::scene::SceneNode* node,
+static inline void setSemanticIdForSubtree(esp::scene::SceneNode* node,
                                     int semanticId) {
   if (node->getSemanticId() == semanticId) {
     // We assume the entire subtree's semanticId matches the root's, so we can

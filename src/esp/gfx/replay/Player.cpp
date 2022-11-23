@@ -124,7 +124,7 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
       continue;
     }
     CORRADE_INTERNAL_ASSERT(assetInfos_.count(creation.filepath));
-    auto node = callbacks_.loadAndCreateRenderInstance_(
+    auto* node = callbacks_.loadAndCreateRenderInstance_(
         assetInfos_[creation.filepath], creation);
     if (!node) {
       if (failedFilepaths_.count(creation.filepath) == 0u) {

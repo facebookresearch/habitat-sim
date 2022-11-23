@@ -484,7 +484,7 @@ bool Simulator::instanceStageForSceneAttributes(
 bool Simulator::instanceObjectsForSceneAttributes(
     const metadata::attributes::SceneInstanceAttributes::cptr&
         curSceneInstanceAttributes_) {
-  // Load object instances as spceified by Scene Instance Attributes.
+  // Load object instances as specified by Scene Instance Attributes.
   // Get all instances of objects described in scene
   const std::vector<SceneObjectInstanceAttributes::cptr> objectInstances =
       curSceneInstanceAttributes_->getObjectInstances();
@@ -562,7 +562,7 @@ bool Simulator::instanceArticulatedObjectsForSceneAttributes(
         Cr::Utility::formatString(
             "Simulator::instanceArticulatedObjectsForSceneAttributes() : "
             "Attempt "
-            "to load articualted object instance specified in current scene "
+            "to load articulated object instance specified in current scene "
             "instance :{} failed due to AO instance configuration file handle "
             "'{}' being empty or unknown. Aborting",
             config_.activeSceneName, artObjInst->getHandle()));
@@ -602,7 +602,7 @@ Simulator::buildCurrentStateSceneAttributes() const {
   // for a copy of curSceneInstanceAttributes_.
   ESP_CHECK(initSceneInstanceAttr,
             "Simulator::saveCurrentSceneInstance : SceneInstanceAttributes "
-            "used to initializee current scene never registered or has been "
+            "used to initialize current scene never registered or has been "
             "removed from SceneInstanceAttributesManager. Aborting.");
 
   // 2. Pass the copy to Physics Manager so that it can be updated with current
@@ -1090,7 +1090,7 @@ gfx::replay::GfxReplayNode* Simulator::loadAndCreateRenderAssetInstance(
   // Note this pattern of passing the scene manager and two scene ids to
   // resource manager. This is similar to ResourceManager::loadStage.
   std::vector<int> tempIDs{activeSceneID_, activeSemanticSceneID_};
-  auto node = resourceManager_->loadAndCreateRenderAssetInstance(
+  auto* node = resourceManager_->loadAndCreateRenderAssetInstance(
       assetInfo, creation, sceneManager_.get(), tempIDs);
   return reinterpret_cast<gfx::replay::GfxReplayNode*>(node);
 }
