@@ -4,13 +4,12 @@
 #include "Magnum/Magnum.h"
 #include "esp/assets/Asset.h"
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
-#include "esp/assets/ResourceManager.h"
 
 namespace esp {
 namespace gfx {
 namespace replay {
 
-// Represents either a esp::scene::SceneNode or batch renderer index.
+// Represents either a scene::SceneNode* or batch renderer entity index.
 class GfxReplayNode;
 
 /**
@@ -25,21 +24,21 @@ struct PlayerCallbacks {
 
   using DeleteAssetInstance = std::function<void(GfxReplayNode*)>;
 
-  using SetAssetInstanceTransform =
+  using SetNodeTransform =
       std::function<void(GfxReplayNode*, Magnum::Vector3, Magnum::Quaternion)>;
 
-  using SetAssetInstanceSemanticId = std::function<void(GfxReplayNode*, int)>;
+  using SetNodeSemanticId = std::function<void(GfxReplayNode*, int)>;
 
   LoadAndCreateRenderAssetInstance loadAndCreateRenderInstance_;
   DeleteAssetInstance deleteAssetInstance_;
-  SetAssetInstanceTransform setAssetInstanceTransform_;
-  SetAssetInstanceSemanticId setAssetInstanceSemanticId_;
+  SetNodeTransform setNodeTransform_;
+  SetNodeSemanticId setNodeSemanticId_;
   ChangeLightSetup changeLightSetup_;
 };
 
 /**
- * @brief Factory method to create a PlayerCallbacks that handles
- * esp::scene::SceneNode
+ * @brief Factory method that instantiates PlayerCallbacks boilerplate to handle
+ * scene graph nodes.
  */
 static inline PlayerCallbacks createSceneGraphPlayerCallbacks() {
   gfx::replay::PlayerCallbacks callbacks;
@@ -50,15 +49,15 @@ static inline PlayerCallbacks createSceneGraphPlayerCallbacks() {
     auto* sceneNode = reinterpret_cast<scene::SceneNode*>(node);
     delete sceneNode;
   };
-  callbacks.setAssetInstanceTransform_ = [](gfx::replay::GfxReplayNode* node,
-                                            Magnum::Vector3 translation,
-                                            Magnum::Quaternion rotation) {
+  callbacks.setNodeTransform_ = [](gfx::replay::GfxReplayNode* node,
+                                   Magnum::Vector3 translation,
+                                   Magnum::Quaternion rotation) {
     auto* sceneNode = reinterpret_cast<scene::SceneNode*>(node);
     sceneNode->setTranslation(translation);
     sceneNode->setRotation(rotation);
   };
-  callbacks.setAssetInstanceSemanticId_ = [](gfx::replay::GfxReplayNode* node,
-                                             int semanticId) {
+  callbacks.setNodeSemanticId_ = [](gfx::replay::GfxReplayNode* node,
+                                    int semanticId) {
     auto* sceneNode = reinterpret_cast<scene::SceneNode*>(node);
     setSemanticIdForSubtree(sceneNode, semanticId);
   };

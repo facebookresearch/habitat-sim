@@ -5,8 +5,6 @@
 #ifndef ESP_SIM_REPLAYBATCHRENDERER_H_
 #define ESP_SIM_REPLAYBATCHRENDERER_H_
 
-#include "esp/assets/Asset.h"
-#include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/gfx/WindowlessContext.h"
 #include "esp/gfx/replay/Player.h"
 #include "esp/scene/SceneManager.h"

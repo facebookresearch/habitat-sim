@@ -10,7 +10,6 @@
 #include <Corrade/Containers/Containers.h>
 #include <Corrade/Containers/Optional.h>
 #include <Magnum/Math/Range.h>
-#include <Magnum/SceneGraph/Object.h>
 #include <Magnum/SceneGraph/TranslationRotationScalingTransformation3D.h>
 
 #include "esp/core/Esp.h"
@@ -336,13 +335,13 @@ void preOrderFeatureTraversalWithCallback(SceneNode& node, Callable&& cb) {
 }
 
 /**
- * @brief Set the semantic ID of a node subtree.
+ * @brief Set the semantic ID of a scene graph subtree.
  *
- * @param node Root node for this traversal
- * @param semanticId Semantic ID to apply to the subtree
+ * @param node Root node of the subtree.
+ * @param semanticId Semantic ID to apply to the subtree.
  */
 static inline void setSemanticIdForSubtree(esp::scene::SceneNode* node,
-                                    int semanticId) {
+                                           int semanticId) {
   if (node->getSemanticId() == semanticId) {
     // We assume the entire subtree's semanticId matches the root's, so we can
     // early out here.

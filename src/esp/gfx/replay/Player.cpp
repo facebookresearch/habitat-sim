@@ -161,9 +161,9 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     }
     auto* node = it->second;
     const auto& state = pair.second;
-    callbacks_.setAssetInstanceTransform_(node, state.absTransform.translation,
-                                          state.absTransform.rotation);
-    callbacks_.setAssetInstanceSemanticId_(node, state.semanticId);
+    callbacks_.setNodeTransform_(node, state.absTransform.translation,
+                                 state.absTransform.rotation);
+    callbacks_.setNodeSemanticId_(node, state.semanticId);
   }
 
   if (keyframe.lightsChanged) {
