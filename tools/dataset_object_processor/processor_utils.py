@@ -392,7 +392,7 @@ def bounding_box_ray_prescreen(
             for hit in raycast_results[-1].hits:
                 if hit.object_id == obj.object_id:
                     continue
-                elif hit.object_id in support_obj_ids:
+                if hit.object_id in support_obj_ids:
                     hit_point = ray.origin + ray.direction * hit.ray_distance
                     support_impacts[ix] = hit_point
                     support_impact_height = mn.math.dot(hit_point, -gravity_dir)
