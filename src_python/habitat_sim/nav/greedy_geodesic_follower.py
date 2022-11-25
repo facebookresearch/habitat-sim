@@ -163,8 +163,7 @@ class GreedyGeodesicFollower:
 
         if next_act == GreedyFollowerCodes.ERROR:
             raise errors.GreedyFollowerError()
-        else:
-            return self.action_mapping[next_act]
+        return self.action_mapping[next_act]
 
     def find_path(self, goal_pos: np.ndarray) -> List[Any]:
         r"""Finds the sequence actions that greedily follow the geodesic

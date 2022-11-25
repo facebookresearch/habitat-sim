@@ -416,10 +416,9 @@ def prompt_yes_no(message):
         answer = input("(y|n): ")
         if answer.lower() == "y":
             return True
-        elif answer.lower() == "n":
+        if answer.lower() == "n":
             return False
-        else:
-            print("Invalid answer...")
+        print("Invalid answer...")
 
 
 def get_version_dir(uid, data_path):

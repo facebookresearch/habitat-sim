@@ -40,8 +40,8 @@ def _undistort(x, y, z, model):
 
     if f < 1e-5:
         return 0.0
-    else:
-        return z / f
+
+    return z / f
 
 
 @numba.jit(nopython=True, parallel=True, fastmath=True)
@@ -134,13 +134,12 @@ class RedwoodDepthNoiseModel(SensorNoiseModel):
         if cuda_enabled:
             if isinstance(gt_depth, np.ndarray):
                 return self._impl.simulate_from_cpu(gt_depth)
-            else:
-                noisy_depth = torch.empty_like(gt_depth)
-                rows, cols = gt_depth.size()
-                self._impl.simulate_from_gpu(
-                    gt_depth.data_ptr(), rows, cols, noisy_depth.data_ptr()  # type: ignore[attr-defined]
-                )
-                return noisy_depth
+            noisy_depth = torch.empty_like(gt_depth)
+            rows, cols = gt_depth.size()
+            self._impl.simulate_from_gpu(
+                gt_depth.data_ptr(), rows, cols, noisy_depth.data_ptr()  # type: ignore[attr-defined]
+            )
+            return noisy_depth
         else:
             return self._impl.simulate(gt_depth)
 
