@@ -14,11 +14,11 @@ class ExtractorLRUCache:
     def __getitem__(self, key):
         if not self.__contains__(key):
             raise KeyError("Key {} not in extractor cache".format(key))
-        else:
-            # Accessing the data should move it to front of cache
-            k, data = self._order.pop(key)
-            self._order[key] = (k, data)
-            return data
+
+        # Accessing the data should move it to front of cache
+        k, data = self._order.pop(key)
+        self._order[key] = (k, data)
+        return data
 
     def __contains__(self, key):
         return key in self._order
