@@ -153,7 +153,14 @@ def run_simulations(
     max_wait_time: float,
     recording: bool,
 ) -> Tuple[List, List, List, List]:
-    """ """
+    """
+    Drop current stationary rigid object from six different orthogonal initial rotations
+    and wait for it to fall asleep (become idle), or wait for it to time out. If
+    recording is set to True, also save the frames to be stored in a video file.
+    :param sim: The Simulator instance.
+    :param max_wait_time: the max time in seconds we will wait for object to fall asleep
+    :param recording: whether or not we will save these simulation frames to a video file
+    """
     # we must test object in 6 different orientations, each corresponding to a face
     # of an imaginary cube bounding the object. Each rotation in rotations is of the form:
     # (angle, (axis.x, axis.y, axis.z)) where angle is in degrees
