@@ -45,8 +45,8 @@ struct PlayerCallbacks {
 
 /**
  * @brief Factory method that instantiates PlayerCallbacks boilerplate for
- * callbacks that handle scene graph nodes. Note that this does not provide an
- * implementation for all callbacks.
+ * callbacks that handle scene graph nodes.
+ * Note that you still need to provide @ref PlayerCallbacks::loadAndCreateRendererInstance_ and @ref PlayerCallbacks::changeLightSetup_ yourself.
  */
 PlayerCallbacks createSceneGraphPlayerCallbacks();
 

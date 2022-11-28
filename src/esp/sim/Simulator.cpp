@@ -698,7 +698,7 @@ void Simulator::reconfigureReplayManager(bool enableGfxReplaySave) {
   callbacks.changeLightSetup_ = [this](const gfx::LightSetup& lights) -> void {
     setLightSetup(lights);
   };
-  gfxReplayMgr_->setPlayerCallbacks(callbacks);
+  gfxReplayMgr_->setPlayerCallbacks(std::move(callbacks));
 }
 
 void Simulator::updateShadowMapDrawableGroup() {

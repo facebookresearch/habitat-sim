@@ -52,7 +52,7 @@ ReplayBatchRenderer::ReplayBatchRenderer(
         parentNode, cfg.sensorSpecifications);
 
     envs_.emplace_back(
-        EnvironmentRecord{.player_ = gfx::replay::Player(callbacks),
+        EnvironmentRecord{.player_ = gfx::replay::Player(std::move(callbacks)),
                           .sceneID_ = sceneID,
                           .semanticSceneID_ = semanticSceneID,
                           .sensorParentNode_ = &parentNode,

@@ -31,7 +31,7 @@ Keyframe Player::keyframeFromString(const std::string& keyframe) {
   return res;
 }
 
-Player::Player(const PlayerCallbacks& callbacks) : callbacks_(callbacks) {}
+Player::Player(PlayerCallbacks callbacks) : callbacks_(std::move(callbacks)) {}
 
 void Player::readKeyframesFromFile(const std::string& filepath) {
   close();
