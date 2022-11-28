@@ -30,7 +30,7 @@ ReplayBatchRenderer::ReplayBatchRenderer(
   sceneManager_ = scene::SceneManager::create_unique();
 
   for (int envIdx = 0; envIdx < config_.numEnvironments; ++envIdx) {
-    auto callbacks = esp::gfx::replay::createSceneGraphPlayerCallbacks();
+    auto callbacks = gfx::replay::createSceneGraphPlayerCallbacks();
     callbacks.loadAndCreateRenderInstance_ =
         [this, envIdx](const assets::AssetInfo& assetInfo,
                        const assets::RenderAssetInstanceCreationInfo& creation)

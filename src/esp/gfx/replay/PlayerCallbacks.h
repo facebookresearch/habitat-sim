@@ -2,11 +2,18 @@
 #define ESP_GFX_REPLAY_PLAYERCALLBACKS_H_
 
 #include "Magnum/Magnum.h"
-#include "esp/assets/Asset.h"
-#include "esp/assets/RenderAssetInstanceCreationInfo.h"
+
+#include <functional>
+#include <vector>
 
 namespace esp {
+namespace assets {
+struct AssetInfo;
+struct RenderAssetInstanceCreationInfo;
+}  // namespace assets
 namespace gfx {
+struct LightInfo;
+using LightSetup = std::vector<LightInfo>;
 namespace replay {
 
 // Represents either a scene::SceneNode* or batch renderer entity index.
@@ -40,29 +47,7 @@ struct PlayerCallbacks {
  * @brief Factory method that instantiates PlayerCallbacks boilerplate to handle
  * scene graph nodes.
  */
-static inline PlayerCallbacks createSceneGraphPlayerCallbacks() {
-  gfx::replay::PlayerCallbacks callbacks;
-  callbacks.deleteAssetInstance_ = [](gfx::replay::GfxReplayNode* node) {
-    // TODO: use NodeDeletionHelper to safely delete nodes owned by the Player.
-    // the deletion here is unsafe because a Player may persist beyond the
-    // lifetime of these nodes.
-    auto* sceneNode = reinterpret_cast<scene::SceneNode*>(node);
-    delete sceneNode;
-  };
-  callbacks.setNodeTransform_ = [](gfx::replay::GfxReplayNode* node,
-                                   Magnum::Vector3 translation,
-                                   Magnum::Quaternion rotation) {
-    auto* sceneNode = reinterpret_cast<scene::SceneNode*>(node);
-    sceneNode->setTranslation(translation);
-    sceneNode->setRotation(rotation);
-  };
-  callbacks.setNodeSemanticId_ = [](gfx::replay::GfxReplayNode* node,
-                                    int semanticId) {
-    auto* sceneNode = reinterpret_cast<scene::SceneNode*>(node);
-    setSemanticIdForSubtree(sceneNode, semanticId);
-  };
-  return callbacks;
-};
+PlayerCallbacks createSceneGraphPlayerCallbacks();
 
 }  // namespace replay
 }  // namespace gfx

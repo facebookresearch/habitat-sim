@@ -10,6 +10,7 @@
 #include <Corrade/Containers/Containers.h>
 #include <Corrade/Containers/Optional.h>
 #include <Magnum/Math/Range.h>
+#include <Magnum/SceneGraph/Object.h>
 #include <Magnum/SceneGraph/TranslationRotationScalingTransformation3D.h>
 
 #include "esp/core/Esp.h"
@@ -340,22 +341,7 @@ void preOrderFeatureTraversalWithCallback(SceneNode& node, Callable&& cb) {
  * @param node Root node of the subtree.
  * @param semanticId Semantic ID to apply to the subtree.
  */
-static inline void setSemanticIdForSubtree(esp::scene::SceneNode* node,
-                                           int semanticId) {
-  if (node->getSemanticId() == semanticId) {
-    // We assume the entire subtree's semanticId matches the root's, so we can
-    // early out here.
-    return;
-  }
-
-  // See also RigidBase setSemanticId. That function uses a prepared container
-  // of visual nodes, whereas this function traverses the subtree to touch all
-  // nodes (including visual nodes). The results should be the same.
-  auto cb = [&](esp::scene::SceneNode& node) {
-    node.setSemanticId(semanticId);
-  };
-  esp::scene::preOrderTraversalWithCallback(*node, cb);
-}
+void setSemanticIdForSubtree(SceneNode* node, int semanticId);
 
 CORRADE_ENUMSET_OPERATORS(SceneNodeTags)
 }  // namespace scene
