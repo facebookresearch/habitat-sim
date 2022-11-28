@@ -7,7 +7,6 @@
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/replay/PlayerCallbacks.h"
-#include "esp/gfx/replay/ReplayManager.h"
 #include "esp/metadata/MetadataMediator.h"
 #include "esp/sensor/SensorFactory.h"
 #include "esp/sim/SimulatorConfiguration.h"

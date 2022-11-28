@@ -217,8 +217,8 @@ void GfxReplayTest::testPlayer() {
             assetInfo, creation, &sceneManager_, tempIDs);
         return reinterpret_cast<esp::gfx::replay::GfxReplayNode*>(node);
       };
-  callbacks.changeLightSetup_ =
-      [&](const esp::gfx::LightSetup& lights) -> void {};
+  callbacks.changeLightSetup_ = [](const esp::gfx::LightSetup& lights) -> void {
+  };
   esp::gfx::replay::Player player(callbacks);
 
   std::vector<esp::gfx::replay::Keyframe> keyframes;
@@ -350,12 +350,12 @@ void GfxReplayTest::testPlayer() {
 void GfxReplayTest::testPlayerReadMissingFile() {
   auto callbacks = esp::gfx::replay::createSceneGraphPlayerCallbacks();
   callbacks.loadAndCreateRenderInstance_ =
-      [&](const esp::assets::AssetInfo& assetInfo,
-          const esp::assets::RenderAssetInstanceCreationInfo& creation) {
+      [](const esp::assets::AssetInfo& assetInfo,
+         const esp::assets::RenderAssetInstanceCreationInfo& creation) {
         return nullptr;
       };
-  callbacks.changeLightSetup_ =
-      [&](const esp::gfx::LightSetup& lights) -> void {};
+  callbacks.changeLightSetup_ = [](const esp::gfx::LightSetup& lights) -> void {
+  };
   esp::gfx::replay::Player player(callbacks);
 
   player.readKeyframesFromFile("file_that_does_not_exist.json");
@@ -373,12 +373,12 @@ void GfxReplayTest::testPlayerReadInvalidFile() {
 
   auto callbacks = esp::gfx::replay::createSceneGraphPlayerCallbacks();
   callbacks.loadAndCreateRenderInstance_ =
-      [&](const esp::assets::AssetInfo& assetInfo,
-          const esp::assets::RenderAssetInstanceCreationInfo& creation) {
+      [](const esp::assets::AssetInfo& assetInfo,
+         const esp::assets::RenderAssetInstanceCreationInfo& creation) {
         return nullptr;
       };
-  callbacks.changeLightSetup_ =
-      [&](const esp::gfx::LightSetup& lights) -> void {};
+  callbacks.changeLightSetup_ = [](const esp::gfx::LightSetup& lights) -> void {
+  };
   esp::gfx::replay::Player player(callbacks);
 
   player.readKeyframesFromFile(testFilepath);

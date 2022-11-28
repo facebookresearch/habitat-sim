@@ -1,6 +1,5 @@
 #include "PlayerCallbacks.h"
 
-#include "Magnum/Magnum.h"
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
