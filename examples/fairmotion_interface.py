@@ -221,7 +221,7 @@ class FairmotionInterface:
                     break
 
                 # we are no longer overwriting a file
-                elif "/" not in file:
+                if "/" not in file:
                     # file is not a file path, we need to aim it at our directory
                     if ".json" not in file:
                         # add file type
@@ -422,14 +422,14 @@ class FairmotionInterface:
                 raise KeyError(
                     "Error: pose data does not have a transform for that joint name"
                 )
-            elif joint_type not in [phy.JointType.Spherical]:
+            if joint_type not in [phy.JointType.Spherical]:
                 raise NotImplementedError(
                     f"Error: {joint_type} is not a supported joint type"
                 )
-            else:
-                T = pose.get_transform(pose_joint_index, local=True)
-                if joint_type == phy.JointType.Spherical:
-                    Q, _ = conversions.T2Qp(T)
+
+            T = pose.get_transform(pose_joint_index, local=True)
+            if joint_type == phy.JointType.Spherical:
+                Q, _ = conversions.T2Qp(T)
 
             new_pose += list(Q)
 

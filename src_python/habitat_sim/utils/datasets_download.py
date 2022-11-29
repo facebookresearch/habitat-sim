@@ -138,6 +138,12 @@ def initialize_test_data_sources(data_path):
             "link": data_path + "robots/hab_spot_arm",
             "version": "1.0",
         },
+        "hab_stretch": {
+            "source": "http://dl.fbaipublicfiles.com/habitat/robots/hab_stretch_v1.0.zip",
+            "package_name": "hab_stretch_v1.0.zip",
+            "link": data_path + "robots/hab_stretch",
+            "version": "1.0",
+        },
         "hab_fetch": {
             "source": "http://dl.fbaipublicfiles.com/habitat/hab_fetch_v1.0.zip",
             "package_name": "hab_fetch_v1.0.zip",
@@ -410,10 +416,9 @@ def prompt_yes_no(message):
         answer = input("(y|n): ")
         if answer.lower() == "y":
             return True
-        elif answer.lower() == "n":
+        if answer.lower() == "n":
             return False
-        else:
-            print("Invalid answer...")
+        print("Invalid answer...")
 
 
 def get_version_dir(uid, data_path):

@@ -7,6 +7,7 @@
 #include "BulletCollisionHelper.h"
 
 #include <sstream>
+#include <utility>
 
 namespace esp {
 namespace physics {
@@ -93,7 +94,7 @@ std::string BulletCollisionHelper::getDebugStringForCollisionObject(
     result += ", no broadphase handle";
   }
 #else
-  std::string result = name;
+  std::string result = std::move(name);
 #endif
   return result;
 }

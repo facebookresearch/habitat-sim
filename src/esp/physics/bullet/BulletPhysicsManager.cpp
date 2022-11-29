@@ -6,6 +6,8 @@
 //#include "BulletCollision/Gimpact/btGImpactShape.h"
 
 #include "BulletPhysicsManager.h"
+
+#include <utility>
 #include "BulletArticulatedObject.h"
 #include "BulletDynamics/Featherstone/btMultiBodyLinkCollider.h"
 #include "BulletRigidObject.h"
@@ -223,7 +225,8 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
       existingArticulatedObjects_.at(articulatedObjectID));
 
   // 4.0 register wrapper in manager
-  articulatedObjectManager_->registerObject(AObjWrapper, newArtObjectHandle);
+  articulatedObjectManager_->registerObject(std::move(AObjWrapper),
+                                            newArtObjectHandle);
 
   return articulatedObjectID;
 }  // BulletPhysicsManager::addArticulatedObjectFromURDF
@@ -239,40 +242,6 @@ BulletPhysicsManager::getArticulatedObjectWrapper() {
   // TODO make sure this is appropriately cast
   return articulatedObjectManager_->createObject(
       "ManagedBulletArticulatedObject");
-}
-
-//! Check if mesh primitive is compatible with physics
-bool BulletPhysicsManager::isMeshPrimitiveValid(
-    const assets::CollisionMeshData& meshData) {
-  if (meshData.primitive == Magnum::MeshPrimitive::Triangles) {
-    //! Only triangle mesh works
-    return true;
-  } else {
-    switch (meshData.primitive) {
-      case Magnum::MeshPrimitive::Lines:
-        ESP_ERROR() << "Invalid primitive: Lines";
-        break;
-      case Magnum::MeshPrimitive::Points:
-        ESP_ERROR() << "Invalid primitive: Points";
-        break;
-      case Magnum::MeshPrimitive::LineLoop:
-        ESP_ERROR() << "Invalid primitive Line loop";
-        break;
-      case Magnum::MeshPrimitive::LineStrip:
-        ESP_ERROR() << "Invalid primitive Line Strip";
-        break;
-      case Magnum::MeshPrimitive::TriangleStrip:
-        ESP_ERROR() << "Invalid primitive Triangle Strip";
-        break;
-      case Magnum::MeshPrimitive::TriangleFan:
-        ESP_ERROR() << "Invalid primitive Triangle Fan";
-        break;
-      default:
-        ESP_ERROR() << "Invalid primitive" << int(meshData.primitive);
-    }
-    ESP_ERROR() << "Cannot load collision mesh, skipping";
-    return false;
-  }
 }
 
 bool BulletPhysicsManager::attachLinkGeometry(

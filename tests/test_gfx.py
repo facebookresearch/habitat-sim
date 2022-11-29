@@ -4,6 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from copy import deepcopy
 from os import path as osp
 
 import magnum as mn
@@ -20,7 +21,7 @@ import habitat_sim.utils.settings
     reason="Requires the habitat-test-scenes",
 )
 def test_unproject():
-    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
+    cfg_settings = deepcopy(habitat_sim.utils.settings.default_sim_settings)
 
     # configure some settings in case defaults change
     cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/apartment_1.glb"

@@ -5,6 +5,8 @@
 #include <Corrade/Containers/StaticArray.h>
 #include <Corrade/Utility/String.h>
 
+#include <utility>
+
 #include "AssetAttributesManager.h"
 #include "AttributesManagerBase.h"
 
@@ -123,7 +125,8 @@ AbstractPrimitiveAttributes::ptr AssetAttributesManager::createObject(
       << primAssetAttributes->getHandle() << ") created"
       << (registerTemplate ? " and registered." : ".");
 
-  return this->postCreateRegister(primAssetAttributes, registerTemplate);
+  return this->postCreateRegister(std::move(primAssetAttributes),
+                                  registerTemplate);
 }  // AssetAttributesManager::createObject
 
 attributes::AbstractPrimitiveAttributes::ptr
@@ -161,7 +164,8 @@ AssetAttributesManager::createTemplateFromHandle(
                     << primAssetAttributes->getHandle() << ".";
     }
   }
-  return this->postCreateRegister(primAssetAttributes, registerTemplate);
+  return this->postCreateRegister(std::move(primAssetAttributes),
+                                  registerTemplate);
 }  // AssetAttributesManager::createTemplateFromHandle
 
 int AssetAttributesManager::registerObjectFinalize(
@@ -181,8 +185,8 @@ int AssetAttributesManager::registerObjectFinalize(
 
   // return either the ID of the existing template referenced by
   // primAttributesHandle, or the next available ID if not found.
-  int primTemplateID =
-      this->addObjectToLibrary(primAttributesTemplate, primAttributesHandle);
+  int primTemplateID = this->addObjectToLibrary(
+      std::move(primAttributesTemplate), primAttributesHandle);
   return primTemplateID;
 }  // AssetAttributesManager::registerObjectFinalize
 

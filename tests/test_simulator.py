@@ -3,7 +3,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import random
-from copy import copy
+from copy import copy, deepcopy
 from os import path as osp
 
 import magnum as mn
@@ -46,7 +46,7 @@ def test_no_navmesh_smoke():
 
 
 def test_empty_scene():
-    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
+    cfg_settings = deepcopy(habitat_sim.utils.settings.default_sim_settings)
 
     # keyword "NONE" initializes a scene with no scene mesh
     cfg_settings["scene"] = "NONE"
@@ -181,7 +181,7 @@ def test_multiple_construct_destroy():
 
 
 def test_scene_bounding_boxes():
-    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
+    cfg_settings = deepcopy(habitat_sim.utils.settings.default_sim_settings)
     cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
     hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
     hab_cfg_mm = habitat_sim.utils.settings.make_cfg(cfg_settings)
@@ -203,7 +203,7 @@ def test_scene_bounding_boxes():
 
 
 def test_object_template_editing():
-    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
+    cfg_settings = deepcopy(habitat_sim.utils.settings.default_sim_settings)
     cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
     cfg_settings["enable_physics"] = True
     hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)

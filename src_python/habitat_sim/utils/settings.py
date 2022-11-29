@@ -7,6 +7,7 @@ from typing import Any, Dict
 import habitat_sim
 import habitat_sim.agent
 
+# [default_sim_settings]
 default_sim_settings: Dict[str, Any] = {
     "scene_dataset_config_file": "default",
     "scene": "NONE",
@@ -19,6 +20,7 @@ default_sim_settings: Dict[str, Any] = {
         "color_sensor": {},
     },
 }
+# [/default_sim_settings]
 
 default_sensor_settings: Dict[str, Any] = {
     "hfov": 90,
@@ -30,7 +32,17 @@ default_sensor_settings: Dict[str, Any] = {
 
 
 # build SimulatorConfiguration
-def make_cfg(settings):
+def make_cfg(settings: Dict[str, Any]):
+    r"""Isolates the boilerplate code to create a habitat_sim.Configuration from a settings dictionary.
+
+    :param settings: A dict with pre-defined keys, each a basic simulator initialization parameter.
+
+    Allows configuration of dataset and scene, visual sensor parameters, and basic agent parameters.
+
+    Optionally creates up to one of each of a variety of aligned visual sensors under Agent 0.
+
+    The output can be passed directly into habitat_sim.simulator.Simulator constructor or reconfigure to initialize a Simulator instance.
+    """
     sim_cfg = habitat_sim.SimulatorConfiguration()
     if "scene_dataset_config_file" in settings:
         sim_cfg.scene_dataset_config_file = settings["scene_dataset_config_file"]

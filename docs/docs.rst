@@ -181,3 +181,11 @@
         :start-after: # [d3_40_colors_hex]
         :end-before: # [/d3_40_colors_hex]
         :filters: string_hex_colors
+
+.. py:data:: habitat_sim.utils.settings.default_sim_settings
+    :summary: Quickstart settings dictionary. Can be passed directly to settings.make_cfg() to create a default Configuration for an empty scene. Edit to customize the simulator.
+
+    .. include:: ../src_python/habitat_sim/utils/settings.py
+        :code: py
+        :start-after: # [default_sim_settings]
+        :end-before: # [/default_sim_settings]
