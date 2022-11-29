@@ -2971,12 +2971,17 @@ void ResourceManager::joinHierarchy(
         meshes_.at(node.meshIDLocal + metaData.meshIndex.first)
             ->getCollisionMeshData();
     int lastIndex = mesh.vbo.size();
-    for (const auto& pos : meshData.positions) {
-      mesh.vbo.push_back(Mn::EigenIntegration::cast<vec3f>(
-          transformFromLocalToWorld.transformPoint(pos)));
-    }
-    for (const auto& index : meshData.indices) {
-      mesh.ibo.push_back(index + lastIndex);
+    if (meshData.primitive != Mn::MeshPrimitive::Triangles) {
+      ESP_WARNING() << "Unsupported mesh primitive in join: "
+                    << meshData.primitive << Mn::Debug::nospace << ", skipping";
+    } else {
+      for (const auto& pos : meshData.positions) {
+        mesh.vbo.push_back(Mn::EigenIntegration::cast<vec3f>(
+            transformFromLocalToWorld.transformPoint(pos)));
+      }
+      for (const auto& index : meshData.indices) {
+        mesh.ibo.push_back(index + lastIndex);
+      }
     }
   }
 
