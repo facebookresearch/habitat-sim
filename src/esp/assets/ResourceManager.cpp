@@ -106,10 +106,10 @@ using Mn::Trade::MaterialAttribute;
 namespace assets {
 
 ResourceManager::ResourceManager(
-    metadata::MetadataMediator::ptr& _metadataMediator,
+    metadata::MetadataMediator::ptr _metadataMediator,
     Flags _flags)
     : flags_(_flags),
-      metadataMediator_(_metadataMediator)
+      metadataMediator_(std::move(_metadataMediator))
 #ifdef MAGNUM_BUILD_STATIC
       ,
       // avoid using plugins that might depend on different library versions

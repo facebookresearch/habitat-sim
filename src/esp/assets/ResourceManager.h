@@ -139,7 +139,7 @@ class ResourceManager {
 
   /** @brief Constructor */
   explicit ResourceManager(
-      std::shared_ptr<metadata::MetadataMediator>& _metadataMediator,
+      std::shared_ptr<metadata::MetadataMediator> _metadataMediator,
       Flags flags = {});
 
   /** @brief Destructor */

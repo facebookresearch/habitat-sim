@@ -32,7 +32,9 @@ class AbstractManagedPhysicsObject
     AbstractManagedPhysicsObject::setClassKey(classKey);
   }
 
-  void setObjectRef(const std::shared_ptr<T>& objRef) { weakObjRef_ = objRef; }
+  void setObjectRef(std::shared_ptr<T> objRef) {
+    weakObjRef_ = std::move(objRef);
+  }
 
   ~AbstractManagedPhysicsObject() override = default;
 
