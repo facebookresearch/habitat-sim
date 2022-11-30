@@ -616,9 +616,8 @@ class ResourceManager {
    * @brief Set a replay recorder so that ResourceManager can notify it about
    * render assets.
    */
-  void setRecorder(
-      const std::shared_ptr<gfx::replay::Recorder>& gfxReplayRecorder) {
-    gfxReplayRecorder_ = gfxReplayRecorder;
+  void setRecorder(std::shared_ptr<gfx::replay::Recorder> gfxReplayRecorder) {
+    gfxReplayRecorder_ = std::move(gfxReplayRecorder);
   }
 
   /**
