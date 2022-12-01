@@ -206,11 +206,11 @@ def test_sensors(
     # We only support adding more RGB Sensors if one is already in a scene
     # We can add depth sensors whenever
     add_sensor_lazy = add_sensor_lazy and all_base_sensor_types[1] == sensor_type
-    for sens in all_base_sensor_types:
+    for base_sensor_type in all_base_sensor_types:
         if (
             add_sensor_lazy
-            and sens in all_base_sensor_types[:2]
-            and sens != sensor_type
+            and base_sensor_type in all_base_sensor_types[:2]
+            and base_sensor_type != sensor_type
         ):
             make_cfg_settings["sensors"][sensor_type] = {
                 "sensor_type": sim_sensor_type,
@@ -238,7 +238,22 @@ def test_sensors(
             obs: Dict[str, Any] = sim.reset()
             assert len(obs) == 1, "Other sensors were not removed"
             for sensor_spec in additional_sensors:
-                sim.add_sensor(sensor_spec)
+                # TODO: unnecessary for now, as additional_sensors all come from
+                # agent 0, but eventually we may have more than one agent
+                if sensor_spec.uuid in make_cfg_settings["sensors"]:
+                    agent_id = make_cfg_settings["sensors"][sensor_spec.uuid].get(
+                        "agent_id"
+                    )
+                    # TODO: after sensor refactor, not specifying an agent will attach
+                    # sensor as global sensor to root scene node
+                    if sensor_spec.agent_id == "None":
+                        sim.add_sensor(sensor_spec)
+                    else:
+                        sim.add_sensor(sensor_spec, agent_id)
+                else:
+                    agent_id = 0
+                    sim.add_sensor(sensor_spec, agent_id)
+
         if sensor_type not in all_base_sensor_types:
             obs = _render_scene(sim, scene, sensor_type, gpu2gpu)
             # Smoke Test.

@@ -26,8 +26,11 @@ default_sensor_settings: Dict[str, Any] = {
     "hfov": 90,
     "position": [0, 1.5, 0],
     "orientation": [0, 0, 0],
-    # "sensor_type": habitat_sim.SensorType.COLOR,
-    # "sensor_subtype": habitat_sim.SensorSubType.PINHOLE,
+    "sensor_type": habitat_sim.sensor.SensorType.COLOR,
+    "sensor_subtype": habitat_sim.sensor.SensorSubType.PINHOLE,
+    # can be agent ID or "None".
+    # TODO: If the value is "None", then make it a global sensor attached to root scene node
+    "agent_id": default_sim_settings["default_agent"],
 }
 
 
@@ -36,14 +39,14 @@ def make_cfg(settings: Dict[str, Any]):
     r"""Isolates the boilerplate code to create a habitat_sim.Configuration from a settings dictionary.
 
     :param settings: A dict with pre-defined keys, each a basic simulator initialization parameter.
-
     Allows configuration of dataset and scene, visual sensor parameters, and basic agent parameters.
-
     Optionally creates up to one of each of a variety of aligned visual sensors under Agent 0.
-
-    The output can be passed directly into habitat_sim.simulator.Simulator constructor or reconfigure to initialize a Simulator instance.
+    The output can be passed directly into habitat_sim.simulator.Simulator constructor or reconfigure
+    to initialize a Simulator instance.
     """
     sim_cfg = habitat_sim.SimulatorConfiguration()
+
+    # define scene and gpu device parameters
     if "scene_dataset_config_file" in settings:
         sim_cfg.scene_dataset_config_file = settings["scene_dataset_config_file"]
     sim_cfg.frustum_culling = settings.get("frustum_culling", False)
@@ -97,44 +100,44 @@ def make_cfg(settings: Dict[str, Any]):
             setattr(equirect_sensor_spec, k, kw_args[k])
         return equirect_sensor_spec
 
-    for uuid, sensor_cfg in settings["sensors"].items():
+    for uuid, sensor_settings in settings["sensors"].items():
 
-        sensor_cfg = {**default_sensor_settings, **sensor_cfg}
-        sensor_type = sensor_cfg.get("sensor_type", habitat_sim.SensorType.COLOR)
-        sensor_subtype = sensor_cfg.get(
-            "sensor_subtype", habitat_sim.SensorSubType.PINHOLE
+        sensor_settings = {**default_sensor_settings, **sensor_settings}
+        channels = (
+            4
+            if sensor_settings["sensor_type"] is habitat_sim.sensor.SensorType.COLOR
+            else 1
         )
-        channels = 4 if sensor_type is habitat_sim.SensorType.COLOR else 1
 
         if "fisheye" in uuid:
             fisheye_spec = create_fisheye_spec(
                 uuid=uuid,
-                position=sensor_cfg["position"],
-                orientation=sensor_cfg["orientation"],
+                position=sensor_settings["position"],
+                orientation=sensor_settings["orientation"],
                 resolution=[settings["height"], settings["width"]],
-                sensor_type=sensor_type,
+                sensor_type=sensor_settings["sensor_type"],
                 channels=channels,
             )
             sensor_specs.append(fisheye_spec)
         elif "equirect" in uuid:
             equirect_spec = create_equirect_spec(
                 uuid=uuid,
-                position=sensor_cfg["position"],
-                orientation=sensor_cfg["orientation"],
+                position=sensor_settings["position"],
+                orientation=sensor_settings["orientation"],
                 resolution=[settings["height"], settings["width"]],
-                sensor_type=sensor_type,
+                sensor_type=sensor_settings["sensor_type"],
                 channels=channels,
             )
             sensor_specs.append(equirect_spec)
         else:
             camera_spec = create_camera_spec(
                 uuid=uuid,
-                hfov=sensor_cfg["hfov"],
-                position=sensor_cfg["position"],
-                orientation=sensor_cfg["orientation"],
+                hfov=sensor_settings["hfov"],
+                position=sensor_settings["position"],
+                orientation=sensor_settings["orientation"],
                 resolution=[settings["height"], settings["width"]],
-                sensor_type=sensor_type,
-                sensor_subtype=sensor_subtype,
+                sensor_type=sensor_settings["sensor_type"],
+                sensor_subtype=sensor_settings["sensor_subtype"],
                 channels=channels,
             )
             sensor_specs.append(camera_spec)
