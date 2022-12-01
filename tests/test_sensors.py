@@ -203,6 +203,7 @@ def test_sensors(
         else habitat_sim.SensorSubType.PINHOLE
     )
     make_cfg_settings["sensors"] = {}
+    agent_id = 0
     # We only support adding more RGB Sensors if one is already in a scene
     # We can add depth sensors whenever
     add_sensor_lazy = add_sensor_lazy and all_base_sensor_types[1] == sensor_type
@@ -215,11 +216,13 @@ def test_sensors(
             make_cfg_settings["sensors"][sensor_type] = {
                 "sensor_type": sim_sensor_type,
                 "sensor_subtype": sensor_subtype,
+                "agent_id": agent_id,
             }
 
     make_cfg_settings["sensors"][sensor_type] = {
         "sensor_type": sim_sensor_type,
         "sensor_subtype": sensor_subtype,
+        "agent_id": agent_id,
     }
 
     make_cfg_settings["scene"] = scene
@@ -228,9 +231,11 @@ def test_sensors(
 
     cfg = make_cfg(make_cfg_settings)
     if add_sensor_lazy:
-        additional_sensors = cfg.agents[0].sensor_specifications[1:]
-        cfg.agents[0].sensor_specifications = cfg.agents[0].sensor_specifications[:1]
-    for sensor_spec in cfg.agents[0].sensor_specifications:
+        additional_sensors = cfg.agents[agent_id].sensor_specifications[1:]
+        cfg.agents[agent_id].sensor_specifications = cfg.agents[
+            agent_id
+        ].sensor_specifications[:1]
+    for sensor_spec in cfg.agents[agent_id].sensor_specifications:
         sensor_spec.gpu2gpu_transfer = gpu2gpu
 
     with habitat_sim.Simulator(cfg) as sim:

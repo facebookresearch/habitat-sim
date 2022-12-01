@@ -18,6 +18,9 @@ default_sim_settings: Dict[str, Any] = {
     "physics_config_file": "data/default.physics_config.json",
     "sensors": {
         "color_sensor": {},
+        # Other example sensor entries:
+        # "depth_sensor": {},
+        # "semantic_sensor": {},
     },
 }
 # [/default_sim_settings]
@@ -49,14 +52,20 @@ def make_cfg(settings: Dict[str, Any]):
     # define scene and gpu device parameters
     if "scene_dataset_config_file" in settings:
         sim_cfg.scene_dataset_config_file = settings["scene_dataset_config_file"]
-    sim_cfg.frustum_culling = settings.get("frustum_culling", False)
+
     if "enable_physics" in settings:
         sim_cfg.enable_physics = settings["enable_physics"]
+
     if "physics_config_file" in settings:
         sim_cfg.physics_config_file = settings["physics_config_file"]
+
     if "scene_light_setup" in settings:
         sim_cfg.scene_light_setup = settings["scene_light_setup"]
+
+    sim_cfg.frustum_culling = settings.get("frustum_culling", False)
+
     sim_cfg.gpu_device_id = 0
+
     if not hasattr(sim_cfg, "scene_id"):
         raise RuntimeError(
             "Error: Please upgrade habitat-sim. SimulatorConfig API version mismatch"
@@ -109,7 +118,9 @@ def make_cfg(settings: Dict[str, Any]):
             else 1
         )
 
-        if "fisheye" in uuid:
+        if (
+            "fisheye" in uuid
+        ):  # fisheye_rgba_sensor, fisheye_depth_sensor, fisheye_semantic_sensor
             fisheye_spec = create_fisheye_spec(
                 uuid=uuid,
                 position=sensor_settings["position"],
@@ -119,7 +130,9 @@ def make_cfg(settings: Dict[str, Any]):
                 channels=channels,
             )
             sensor_specs.append(fisheye_spec)
-        elif "equirect" in uuid:
+        elif (
+            "equirect" in uuid
+        ):  # equirect_rgba_sensor, equirect_depth_sensor, equirect_semantic_sensor
             equirect_spec = create_equirect_spec(
                 uuid=uuid,
                 position=sensor_settings["position"],
@@ -129,7 +142,7 @@ def make_cfg(settings: Dict[str, Any]):
                 channels=channels,
             )
             sensor_specs.append(equirect_spec)
-        else:
+        else:  # color_sensor, depth_sensor, semantic_sensor, ortho_rgba_sensor, ortho_depth_sensor, ortho_semantic_sensor
             camera_spec = create_camera_spec(
                 uuid=uuid,
                 hfov=sensor_settings["hfov"],
