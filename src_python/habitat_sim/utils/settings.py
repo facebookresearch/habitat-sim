@@ -186,13 +186,6 @@ def make_cfg(settings: Dict[str, Any]):
             )
             sensor_specs.append(camera_spec)
 
-    # TODO: remove
-    print(
-        "in make_cfg, done making sensor specs --------------------------------------"
-    )
-    print_settings(settings)
-    print()
-
     # create agent specifications
     agent_cfg = habitat_sim.agent.AgentConfiguration()
     agent_cfg.sensor_specifications = sensor_specs
