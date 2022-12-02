@@ -164,13 +164,14 @@ if display:
 # we support a variety of mesh formats, such as .glb, .gltf, .obj, .ply
 test_scene = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
 
-sim_settings = default_sim_settings.copy()
 sim_settings = {
     "scene": test_scene,  # Scene path
     "default_agent": 0,  # Index of the default agent
     "width": 256,  # Spatial resolution of the observations
     "height": 256,
 }
+# Instantiate all non-assigned elements of simulator settings to the default values
+sim_settings = {**default_sim_settings, **sim_settings}
 
 
 # %% [markdown]
@@ -272,7 +273,6 @@ rgb_sensor = True  # @param {type:"boolean"}
 depth_sensor = True  # @param {type:"boolean"}
 semantic_sensor = True  # @param {type:"boolean"}
 
-sim_settings = default_sim_settings.copy()
 sim_settings = {
     "width": 256,  # Spatial resolution of the observations
     "height": 256,
@@ -281,6 +281,8 @@ sim_settings = {
     "default_agent": 0,
     "enable_physics": False,  # kinematics only
 }
+# Instantiate all non-assigned elements of simulator settings to the default values
+sim_settings = {**default_sim_settings, **sim_settings}
 
 # Add sensor settings to simulator settings
 if rgb_sensor:

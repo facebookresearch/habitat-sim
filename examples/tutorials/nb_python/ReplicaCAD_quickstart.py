@@ -102,7 +102,9 @@ if "sim" not in globals():
 
 
 def make_custom_settings():
-    settings = default_sim_settings.copy()
+    """
+    create custom simulator settings. All sim settings not explicitly assigned are given default values
+    """
     settings = {
         "width": 1280,  # Spatial resolution of the observations
         "height": 720,
@@ -110,6 +112,9 @@ def make_custom_settings():
         "scene": "NONE",  # Scene path
         "enable_physics": True,  # enable dynamics simulation
     }
+    # Instantiate all non-assigned elements of simulator settings to the default values
+    settings = {**default_sim_settings, **settings}
+
     # add sensor settings to sim settings
     update_sensor_settings(settings, uuid="color_sensor_1st_person")
     return settings

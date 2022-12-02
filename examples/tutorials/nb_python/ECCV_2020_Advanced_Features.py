@@ -424,7 +424,6 @@ def make_custom_settings():
         "scene_dataset_config_file": "./data/scene_datasets/mp3d_example/mp3d.scene_dataset_config.json",  # mp3d scene dataset
         "enable_physics": True,  # enable dynamics simulation
     }
-
     # Instantiate all non-assigned elements of simulator settings to the default values
     settings = {**default_sim_settings, **settings}
 

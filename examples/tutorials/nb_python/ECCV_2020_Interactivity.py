@@ -117,7 +117,6 @@ def make_custom_settings():
     """
     create custom simulator settings. All sim settings not explicitly assigned are given default values
     """
-    settings = default_sim_settings.copy()
     settings = {
         "width": 720,  # Spatial resolution of the observations
         "height": 544,
@@ -125,6 +124,8 @@ def make_custom_settings():
         "scene_dataset_config_file": "./data/scene_datasets/mp3d_example/mp3d.scene_dataset_config.json",  # MP3D scene dataset
         "enable_physics": True,  # enable dynamics simulation
     }
+    # Instantiate all non-assigned elements of simulator settings to the default values
+    settings = {**default_sim_settings, **settings}
 
     # add settings for a new sensor to the simulator settings. All sensor settings not
     # explicitly assigned are given default values
