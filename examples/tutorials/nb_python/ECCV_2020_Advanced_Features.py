@@ -65,7 +65,11 @@ from PIL import Image
 import habitat_sim
 from habitat_sim.utils import common as ut
 from habitat_sim.utils import viz_utils as vut
-from habitat_sim.utils.settings import default_sim_settings, make_cfg
+from habitat_sim.utils.settings import (
+    default_sim_settings,
+    make_cfg,
+    update_sensor_settings,
+)
 
 try:
     import ipywidgets as widgets
@@ -410,21 +414,28 @@ def show_template_properties(template):
 
 
 def make_custom_settings():
+    """
+    create custom simulator settings. All sim settings not explicitly assigned are given default values
+    """
     settings = {
         "width": 720,  # Spatial resolution of the observations
         "height": 544,
         "scene": "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb",  # Scene path
-        "scene_dataset": "./data/scene_datasets/mp3d_example/mp3d.scene_dataset_config.json",  # mp3d scene dataset
-        "default_agent": 0,
-        "sensors": {
-            "color_sensor_1st_person": {
-                "position": [0, 1.5, 0],
-                "orientation": [-math.pi / 8.0, 0, 0],
-            },
-        },
+        "scene_dataset_config_file": "./data/scene_datasets/mp3d_example/mp3d.scene_dataset_config.json",  # mp3d scene dataset
         "enable_physics": True,  # enable dynamics simulation
     }
+
+    # Instantiate all non-assigned elements of simulator settings to the default values
     settings = {**default_sim_settings, **settings}
+
+    # add settings for a new sensor to the simulator settings. All sensor settings not
+    # explicitly assigned are given default values
+    update_sensor_settings(
+        settings,
+        "color_sensor_1st_person",
+        position=[0, 1.5, 0],
+        orientation=[-math.pi / 8.0, 0.0, 0.0],
+    )
     return settings
 
 
@@ -918,9 +929,11 @@ rigid_obj_mgr.remove_all_objects()
 
 sim_settings = make_custom_settings()
 sim_settings["scene"] = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
-sim_settings["sensors"]["semantic_sensor_1st_person"] = {
-    "sensor_type": habitat_sim.SensorType.SEMANTIC
-}
+update_sensor_settings(
+    sim_settings,
+    uuid="semantic_sensor_1st_person",
+    sensor_type=habitat_sim.SensorType.SEMANTIC,
+)
 
 make_simulator_from_settings(sim_settings)
 

@@ -2,7 +2,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import habitat_sim
 import habitat_sim.agent
@@ -17,10 +17,11 @@ default_sim_settings: Dict[str, Any] = {
     "seed": 1,
     "physics_config_file": "data/default.physics_config.json",
     "sensors": {
-        "color_sensor": {},
-        # Other example sensor entries:
+        # Examples:
+        # "color_sensor": {},
         # "depth_sensor": {},
-        # "semantic_sensor": {},
+        # If left empty, a default sensor called "color_sensor" will be created.
+        # Any unassigned sensor settings are populated with the default values below
     },
 }
 # [/default_sim_settings]
@@ -31,10 +32,32 @@ default_sensor_settings: Dict[str, Any] = {
     "orientation": [0, 0, 0],
     "sensor_type": habitat_sim.sensor.SensorType.COLOR,
     "sensor_subtype": habitat_sim.sensor.SensorSubType.PINHOLE,
-    # can be agent ID or "None".
+    # can be an int agent ID or "None".
     # TODO: If the value is "None", then make it a global sensor attached to root scene node
     "agent_id": default_sim_settings["default_agent"],
 }
+
+
+# TODO: possibly remove, useful for debugging and testing
+def print_settings(settings: Dict[str, Any], nest_level: Optional[int] = 0):
+    for k, v in settings.items():
+        if isinstance(v, Dict):
+            print("   " * nest_level + f"{k}:")
+            print_settings(v, nest_level + 1)
+        else:
+            print("   " * nest_level + f"{k}: {v}")
+
+
+def update_sensor_settings(settings: Dict[str, Any], uuid: str, **kw_args) -> None:
+    if uuid not in settings["sensors"]:
+        # if there is no Dict of sensor settings for a sensor with this uuid, create a new
+        # Dict of sensor settings with this uuid and initiate all sensor setting fields
+        # to their default values
+        settings["sensors"][uuid] = default_sensor_settings.copy()
+
+    # update all Dict fields in the given sensor settings with the new values
+    for k in kw_args:
+        settings["sensors"][uuid][k] = kw_args[k]
 
 
 # build SimulatorConfiguration
@@ -98,6 +121,7 @@ def make_cfg(settings: Dict[str, Any]):
 
         # The default principal_point_offset is the middle of the image
         fisheye_sensor_spec.principal_point_offset = None
+
         # default: fisheye_sensor_spec.principal_point_offset = [i/2 for i in fisheye_sensor_spec.resolution]
         for k in kw_args:
             setattr(fisheye_sensor_spec, k, kw_args[k])
@@ -109,18 +133,25 @@ def make_cfg(settings: Dict[str, Any]):
             setattr(equirect_sensor_spec, k, kw_args[k])
         return equirect_sensor_spec
 
+    # if user has not specified any sensors of their own,
+    # use default sensor with uuid of "color_sensor"
+    if len(settings.get("sensors")) == 0:
+        settings["sensors"]["color_sensor"] = {}
+
     for uuid, sensor_settings in settings["sensors"].items():
 
+        # update all non assigned sensor setting fields to their default values
         sensor_settings = {**default_sensor_settings, **sensor_settings}
+
         channels = (
             4
             if sensor_settings["sensor_type"] is habitat_sim.sensor.SensorType.COLOR
             else 1
         )
 
-        if (
+        if (  # fisheye_rgba_sensor, fisheye_depth_sensor, fisheye_semantic_sensor
             "fisheye" in uuid
-        ):  # fisheye_rgba_sensor, fisheye_depth_sensor, fisheye_semantic_sensor
+        ):
             fisheye_spec = create_fisheye_spec(
                 uuid=uuid,
                 position=sensor_settings["position"],
@@ -130,9 +161,9 @@ def make_cfg(settings: Dict[str, Any]):
                 channels=channels,
             )
             sensor_specs.append(fisheye_spec)
-        elif (
+        elif (  # equirect_rgba_sensor, equirect_depth_sensor, equirect_semantic_sensor
             "equirect" in uuid
-        ):  # equirect_rgba_sensor, equirect_depth_sensor, equirect_semantic_sensor
+        ):
             equirect_spec = create_equirect_spec(
                 uuid=uuid,
                 position=sensor_settings["position"],
@@ -154,6 +185,13 @@ def make_cfg(settings: Dict[str, Any]):
                 channels=channels,
             )
             sensor_specs.append(camera_spec)
+
+    # TODO: remove
+    print(
+        "in make_cfg, done making sensor specs --------------------------------------"
+    )
+    print_settings(settings)
+    print()
 
     # create agent specifications
     agent_cfg = habitat_sim.agent.AgentConfiguration()

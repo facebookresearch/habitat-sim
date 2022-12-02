@@ -61,7 +61,11 @@ from PIL import Image
 import habitat_sim
 from habitat_sim.utils import common as ut
 from habitat_sim.utils import viz_utils as vut
-from habitat_sim.utils.settings import default_sim_settings, make_cfg
+from habitat_sim.utils.settings import (
+    default_sim_settings,
+    make_cfg,
+    update_sensor_settings,
+)
 
 try:
     import ipywidgets as widgets
@@ -110,19 +114,28 @@ if "sim" not in globals():
 
 
 def make_custom_settings():
+    """
+    create custom simulator settings. All sim settings not explicitly assigned are given default values
+    """
     settings = {
         "width": 720,  # Spatial resolution of the observations
         "height": 544,
         "scene": "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb",  # Scene path
         "scene_dataset_config_file": "./data/scene_datasets/mp3d_example/mp3d.scene_dataset_config.json",  # MP3D scene dataset
-        "sensors": {
-            "color_sensor_1st_person": {
-                "orientation": [-math.pi / 8.0, 0.0, 0.0],
-            },
-        },
         "enable_physics": True,  # enable dynamics simulation
     }
+
+    # Instantiate all non-assigned elements of simulator settings to the default values
     settings = {**default_sim_settings, **settings}
+
+    # add settings for a new sensor to the simulator settings. All sensor settings not
+    # explicitly assigned are given default values
+    update_sensor_settings(
+        settings,
+        "color_sensor_1st_person",
+        position=[0, 1.5, 0],
+        orientation=[-math.pi / 8.0, 0.0, 0.0],
+    )
     return settings
 
 
@@ -798,7 +811,8 @@ rigid_obj_mgr.remove_all_objects()
 # @markdown (load the apartment_1 scene for clutter generation in an open space)
 sim_settings = make_custom_settings()
 sim_settings["scene"] = "./data/scene_datasets/habitat-test-scenes/apartment_1.glb"
-for sensor_settings in sim_settings["sensors"]:
+
+for sensor_settings in sim_settings["sensors"].values():
     sensor_settings["orientation"] = [0.0, 0.0, 0.0]
 
 make_simulator_from_settings(sim_settings)
@@ -1095,22 +1109,26 @@ sim_settings = make_custom_settings()
 # fmt: off
 sim_settings["scene"] = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"  # @param{type:"string"}
 # fmt: on
-sim_settings["sensors"] = {
-    "color_sensor_1st_person": {
-        "position": [0.0, 0.6, 0.0],
-    },
-    "color_sensor_3rd_person": {
-        "position": [0.0, 0.8, 0.2],
-    },
-    "depth_sensor_1st_person": {
-        "position": [0.0, 0.6, 0.0],
-        "sensor_type": habitat_sim.SensorType.DEPTH,
-    },
-    "semantic_sensor_1st_person": {
-        "position": [0.0, 0.6, 0.0],
-        "sensor_type": habitat_sim.SensorType.SEMANTIC,
-    },
-}
+
+# add sensor settings to simulator settings
+update_sensor_settings(
+    sim_settings, uuid="color_sensor_1st_person", position=[0.0, 0.6, 0.0]
+)
+update_sensor_settings(
+    sim_settings, uuid="color_sensor_3rd_person", position=[0.0, 0.8, 0.2]
+)
+update_sensor_settings(
+    sim_settings,
+    uuid="depth_sensor_1st_person",
+    position=[0.0, 0.6, 0.0],
+    sensor_type=habitat_sim.SensorType.DEPTH,
+)
+update_sensor_settings(
+    sim_settings,
+    uuid="semantic_sensor_1st_person",
+    position=[0.0, 0.6, 0.0],
+    sensor_type=habitat_sim.SensorType.SEMANTIC,
+)
 
 make_simulator_from_settings(sim_settings)
 
