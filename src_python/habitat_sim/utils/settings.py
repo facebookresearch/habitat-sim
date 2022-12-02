@@ -49,6 +49,8 @@ def print_settings(settings: Dict[str, Any], nest_level: Optional[int] = 0):
 
 
 def update_sensor_settings(settings: Dict[str, Any], uuid: str, **kw_args) -> None:
+    if "sensors" not in settings:
+        settings["sensors"] = {}
     if uuid not in settings["sensors"]:
         # if there is no Dict of sensor settings for a sensor with this uuid, create a new
         # Dict of sensor settings with this uuid and initiate all sensor setting fields
