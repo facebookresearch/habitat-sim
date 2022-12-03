@@ -17,7 +17,11 @@ import quaternion  # noqa: F401
 import habitat_sim
 import habitat_sim.errors
 from habitat_sim.utils.common import quat_from_coeffs
-from habitat_sim.utils.settings import make_cfg
+from habitat_sim.utils.settings import (
+    add_sensor_to_settings,
+    clear_sensor_settings,
+    make_cfg,
+)
 
 torch_spec = importlib.util.find_spec("torch")
 _HAS_TORCH = torch_spec is not None
@@ -218,12 +222,28 @@ def test_sensors(
                 "sensor_subtype": sensor_subtype,
                 "agent_id": agent_id,
             }
+            # TODO: worth it to use the new function here despite awkward variable names?
+            # add_sensor_to_settings(
+            #     make_cfg_settings,
+            #     uuid=sensor_type,
+            #     sensor_type=sim_sensor_type,
+            #     sensor_subtype=sensor_subtype,
+            #     agent_id=agent_id
+            # )
 
     make_cfg_settings["sensors"][sensor_type] = {
         "sensor_type": sim_sensor_type,
         "sensor_subtype": sensor_subtype,
         "agent_id": agent_id,
     }
+    # TODO: worth it to use the new function here despite awkward variable names?
+    # add_sensor_to_settings(
+    #     make_cfg_settings,
+    #     uuid=sensor_type,
+    #     sensor_type=sim_sensor_type,
+    #     sensor_subtype=sensor_subtype,
+    #     agent_id=agent_id
+    # )
 
     make_cfg_settings["scene"] = scene
     make_cfg_settings["scene_dataset_config_file"] = scene_dataset_config
@@ -289,7 +309,7 @@ def test_reconfigure_render(
 
     make_cfg_settings["scene"] = _test_scenes[-1][0]
     make_cfg_settings["scene_dataset_config_file"] = _test_scenes[-1][1]
-    sensor = (
+    sim_sensor_type = (
         habitat_sim.SensorType.DEPTH
         if "depth" in sensor_type
         else (
@@ -306,8 +326,15 @@ def test_reconfigure_render(
     )
 
     make_cfg_settings["sensors"] = {
-        sensor_type: {"sensor_type": sensor, "sensor_subtype": sensor_subtype}
+        sensor_type: {"sensor_type": sim_sensor_type, "sensor_subtype": sensor_subtype}
     }
+    # TODO: worth it to use the new function here despite awkward variable names?
+    # add_sensor_to_settings(
+    #     make_cfg_settings,
+    #     uuid=sensor_type,
+    #     sensor_type=sim_sensor_type,
+    #     sensor_subtype=sensor_subtype,
+    # )
 
     cfg = make_cfg(make_cfg_settings)
 
@@ -358,9 +385,10 @@ def test_smoke_redwood_noise(scene_and_dataset, gpu2gpu, make_cfg_settings):
     if gpu2gpu and (not habitat_sim.cuda_enabled or not _HAS_TORCH):
         pytest.skip("Skipping GPU->GPU test")
     scene_dataset_config = scene_and_dataset[1]
-    make_cfg_settings["sensors"] = {
-        "depth_sensor": {"sensor_type": habitat_sim.SensorType.DEPTH}
-    }
+    clear_sensor_settings(make_cfg_settings)
+    add_sensor_to_settings(
+        make_cfg_settings, "depth_sensor", sensor_type=habitat_sim.SensorType.DEPTH
+    )
     make_cfg_settings["scene"] = scene
     make_cfg_settings["scene_dataset_config_file"] = scene_dataset_config
     hsim_cfg = make_cfg(make_cfg_settings)
@@ -385,8 +413,8 @@ def test_initial_hfov(scene_and_dataset, sensor_type, make_cfg_settings):
     scene = scene_and_dataset[0]
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
-    for _, sens_cfg in make_cfg_settings["sensors"].items():
-        sens_cfg["hfov"] = 70
+    for sensor_settings in make_cfg_settings["sensors"].values():
+        sensor_settings["hfov"] = 70
     with habitat_sim.Simulator(make_cfg(make_cfg_settings)) as sim:
         assert sim.agents[0]._sensors[sensor_type].hfov == mn.Deg(
             70

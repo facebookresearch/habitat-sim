@@ -22,18 +22,20 @@ _test_scene = osp.abspath(
 # Testing configurations
 @pytest.fixture(scope="function")
 def make_cfg_settings():
-    import habitat_sim.utils.settings
+    from habitat_sim.utils.settings import add_sensor_to_settings, default_sim_settings
 
-    cfg = habitat_sim.utils.settings.default_sim_settings.copy()
-    cfg["sensors"] = {
-        "color_sensor": {},
-        "semantic_sensor": {"sensor_type": habitat_sim.SensorType.SEMANTIC},
-        "depth_sensor": {"sensor_type": habitat_sim.SensorType.DEPTH},
-    }
-    cfg["silent"] = True
-    cfg["scene"] = _test_scene
-    cfg["frustum_culling"] = True
-    return cfg
+    settings = default_sim_settings.copy()
+    add_sensor_to_settings(settings, "color_sensor")
+    add_sensor_to_settings(
+        settings, "depth_sensor", sensor_type=habitat_sim.SensorType.DEPTH
+    )
+    add_sensor_to_settings(
+        settings, "semantic_sensor", sensor_type=habitat_sim.SensorType.SEMANTIC
+    )
+    settings["silent"] = True
+    settings["scene"] = _test_scene
+    settings["frustum_culling"] = True
+    return settings
 
 
 def pytest_report_header(config):

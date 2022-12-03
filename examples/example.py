@@ -10,7 +10,7 @@ import argparse
 import demo_runner as dr
 
 import habitat_sim
-from habitat_sim.utils.settings import update_sensor_settings
+from habitat_sim.utils.settings import add_sensor_to_settings
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--scene", type=str, default=dr.default_sim_settings["scene"])
@@ -60,18 +60,18 @@ def make_settings():
 
     # add sensor settings to simulator settings
     if not args.disable_color_sensor:
-        update_sensor_settings(
+        add_sensor_to_settings(
             settings, uuid="color_sensor", position=[0.0, args.sensor_height, 0.0]
         )
     if args.semantic_sensor:
-        update_sensor_settings(
+        add_sensor_to_settings(
             settings,
             uuid="semantic_sensor",
             position=[0.0, args.sensor_height, 0.0],
             sensor_type=habitat_sim.SensorType.SEMANTIC,
         )
     if args.depth_sensor:
-        update_sensor_settings(
+        add_sensor_to_settings(
             settings,
             uuid="depth_sensor",
             position=[0.0, args.sensor_height, 0.0],

@@ -48,7 +48,22 @@ def print_settings(settings: Dict[str, Any], nest_level: Optional[int] = 0):
             print("   " * nest_level + f"{k}: {v}")
 
 
+def clear_sensor_settings(settings: Dict[str, Any]) -> None:
+    settings["sensors"] = {}
+
+
 def update_sensor_settings(settings: Dict[str, Any], uuid: str, **kw_args) -> None:
+    if "sensors" not in settings:
+        settings["sensors"] = {}
+
+    assert uuid in settings["sensors"], f"sensor with uuid {uuid} not in settings"
+
+    # update all Dict fields in the given sensor settings with the new values
+    for k in kw_args:
+        settings["sensors"][uuid][k] = kw_args[k]
+
+
+def add_sensor_to_settings(settings: Dict[str, Any], uuid: str, **kw_args) -> None:
     if "sensors" not in settings:
         settings["sensors"] = {}
     if uuid not in settings["sensors"]:
@@ -83,6 +98,11 @@ def make_cfg(settings: Dict[str, Any]):
 
     if "physics_config_file" in settings:
         sim_cfg.physics_config_file = settings["physics_config_file"]
+
+    if "override_scene_light_defaults" in settings:
+        sim_cfg.override_scene_light_defaults = settings[
+            "override_scene_light_defaults"
+        ]
 
     if "scene_light_setup" in settings:
         sim_cfg.scene_light_setup = settings["scene_light_setup"]

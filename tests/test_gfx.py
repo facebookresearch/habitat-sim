@@ -4,7 +4,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from copy import deepcopy
 from os import path as osp
 
 import magnum as mn
@@ -13,7 +12,11 @@ import pytest
 import quaternion  # noqa: F401
 
 import habitat_sim
-import habitat_sim.utils.settings
+from habitat_sim.utils.settings import (
+    add_sensor_to_settings,
+    default_sim_settings,
+    make_cfg,
+)
 
 
 @pytest.mark.skipif(
@@ -21,16 +24,16 @@ import habitat_sim.utils.settings
     reason="Requires the habitat-test-scenes",
 )
 def test_unproject():
-    cfg_settings = deepcopy(habitat_sim.utils.settings.default_sim_settings)
+    cfg_settings = default_sim_settings.copy()
 
     # configure some settings in case defaults change
     cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/apartment_1.glb"
     cfg_settings["width"] = 101
     cfg_settings["height"] = 101
-    cfg_settings["sensors"]["color_sensor"] = {"position": [0, 0, 0]}
+    add_sensor_to_settings(cfg_settings, uuid="color_sensor", position=[0, 0, 0])
 
     # loading the scene
-    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
+    hab_cfg = make_cfg(cfg_settings)
     with habitat_sim.Simulator(hab_cfg) as sim:
         # position agent
         sim.agents[0].scene_node.rotation = mn.Quaternion()

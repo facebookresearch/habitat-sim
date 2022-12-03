@@ -64,9 +64,9 @@ import habitat_sim
 from habitat_sim.utils import common as utils
 from habitat_sim.utils import viz_utils as vut
 from habitat_sim.utils.settings import (
+    add_sensor_to_settings,
     default_sim_settings,
     make_cfg,
-    update_sensor_settings,
 )
 
 # %cd /content/habitat-sim
@@ -286,13 +286,13 @@ sim_settings = {**default_sim_settings, **sim_settings}
 
 # Add sensor settings to simulator settings
 if rgb_sensor:
-    update_sensor_settings(sim_settings, "color_sensor")
+    add_sensor_to_settings(sim_settings, "color_sensor")
 if depth_sensor:
-    update_sensor_settings(
+    add_sensor_to_settings(
         sim_settings, "depth_sensor", sensor_type=habitat_sim.SensorType.DEPTH
     )
 if semantic_sensor:
-    update_sensor_settings(
+    add_sensor_to_settings(
         sim_settings, "semantic_sensor", sensor_type=habitat_sim.SensorType.SEMANTIC
     )
 
