@@ -24,8 +24,8 @@ class ReplayManager {
    * @brief Optionally make a Recorder instance available to python, or pass
    * nullptr.
    */
-  void setRecorder(const std::shared_ptr<Recorder>& writer) {
-    recorder_ = writer;
+  void setRecorder(std::shared_ptr<Recorder> writer) {
+    recorder_ = std::move(writer);
   }
 
   /**
