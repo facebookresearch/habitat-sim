@@ -29,7 +29,9 @@ def hm3d_train_configs_post(extract_dir: str) -> List[str]:
     )
     assert os.path.exists(all_scene_dataset_cfg)
 
-    link_name = os.path.join(extract_dir, "..", "hm3d_basis.scene_dataset_config.json")
+    link_name = os.path.join(
+        extract_dir, "..", "hm3d_basis.scene_dataset_config.json"
+    )
     os.symlink(all_scene_dataset_cfg, link_name)
 
     return [link_name]
@@ -146,9 +148,9 @@ def initialize_test_data_sources(data_path):
         },
         "hab_fetch": {
             "source": "http://dl.fbaipublicfiles.com/habitat/hab_fetch_v1.0.zip",
-            "package_name": "hab_fetch_v1.0.zip",
+            "package_name": "hab_fetch_v2.0.zip",
             "link": data_path + "robots/hab_fetch",
-            "version": "1.0",
+            "version": "2.0",
         },
         "rearrange_pick_dataset_v0": {
             "source": "https://dl.fbaipublicfiles.com/habitat/data/datasets/rearrange_pick/replica_cad/v0/rearrange_pick_replica_cad_v0.zip",
@@ -236,14 +238,18 @@ def initialize_test_data_sources(data_path):
         {
             f"hm3d_{split}_semantic_{data_format}_v{version}": {
                 "source": "https://api.matterport.com/resources/habitat/hm3d-{split}-semantic-{data_format}-v{version_string}.tar{ext}".format(
-                    ext=".gz" if (version == "0.1" and data_format == "annots") else "",
+                    ext=".gz"
+                    if (version == "0.1" and data_format == "annots")
+                    else "",
                     split=split,
                     data_format=data_format,
                     version_string=version,
                 ),
                 "download_pre_args": "--location",
                 "package_name": "hm3d-{split}-semantic-{data_format}-v{version_string}.tar{ext}".format(
-                    ext=".gz" if (version == "0.1" and data_format == "annots") else "",
+                    ext=".gz"
+                    if (version == "0.1" and data_format == "annots")
+                    else "",
                     split=split,
                     data_format=data_format,
                     version_string=version,
@@ -260,7 +266,9 @@ def initialize_test_data_sources(data_path):
                 else None,
             }
             for split, data_format, version in itertools.product(
-                ["minival", "train", "val"], ["annots", "configs"], ["0.1", "0.2"]
+                ["minival", "train", "val"],
+                ["annots", "configs"],
+                ["0.1", "0.2"],
             )
         }
     )
@@ -375,7 +383,8 @@ def initialize_test_data_sources(data_path):
             "hm3d_full": list(
                 filter(
                     lambda k: (
-                        k.startswith("hm3d_") and ("v0.2" in k or "example" in k)
+                        k.startswith("hm3d_")
+                        and ("v0.2" in k or "example" in k)
                     ),
                     data_sources.keys(),
                 )
@@ -444,7 +453,9 @@ def get_downloaded_file_list(uid, data_path):
         downloaded_file_list = os.path.join(
             data_path,
             "versioned_data",
-            data_sources[uid]["downloaded_file_list"].format(version=version_tag),
+            data_sources[uid]["downloaded_file_list"].format(
+                version=version_tag
+            ),
         )
     return downloaded_file_list
 
@@ -473,9 +484,14 @@ def clean_data(uid, data_path):
             package_files = json.load(f)
 
         for package_file in reversed(package_files):
-            if os.path.isdir(package_file) and len(os.listdir(package_file)) == 0:
+            if (
+                os.path.isdir(package_file)
+                and len(os.listdir(package_file)) == 0
+            ):
                 os.rmdir(package_file)
-            elif not os.path.isdir(package_file) and os.path.exists(package_file):
+            elif not os.path.isdir(package_file) and os.path.exists(
+                package_file
+            ):
                 os.remove(package_file)
             elif os.path.islink(package_file):
                 os.unlink(package_file)
@@ -519,7 +535,9 @@ def download_and_place(
             f"Existing data source ({uid}) version ({version_tag}) is current. Data located: '{version_dir}'. Symblink: '{link_path}'."
         )
         replace_existing = (
-            replace if replace is not None else prompt_yes_no("Replace versioned data?")
+            replace
+            if replace is not None
+            else prompt_yes_no("Replace versioned data?")
         )
 
         if replace_existing:
@@ -535,7 +553,9 @@ def download_and_place(
                 os.unlink(link_path)
             elif not link_path.parent.exists():
                 link_path.parent.mkdir(parents=True, exist_ok=True)
-            os.symlink(src=version_dir, dst=link_path, target_is_directory=True)
+            os.symlink(
+                src=version_dir, dst=link_path, target_is_directory=True
+            )
             assert link_path.exists(), "Failed, no symlink generated."
 
             return
@@ -545,7 +565,9 @@ def download_and_place(
     download_post_args = data_sources[uid].get("download_post_args", "")
     requires_auth = data_sources[uid].get("requires_auth", False)
     if requires_auth:
-        assert username is not None, "Usename required, please enter with --username"
+        assert (
+            username is not None
+        ), "Usename required, please enter with --username"
         assert (
             password is not None
         ), "Password is required, please enter with --password"
@@ -553,7 +575,9 @@ def download_and_place(
     use_curl = data_sources[uid].get("use_curl", False)
     if use_curl:
         if requires_auth:
-            download_pre_args = f"{download_pre_args} --user {username}:{password}"
+            download_pre_args = (
+                f"{download_pre_args} --user {username}:{password}"
+            )
 
         download_command = (
             "curl --continue-at - "
@@ -598,11 +622,17 @@ def download_and_place(
             package_files = tar_ref.getnames()
     else:
         # TODO: support more compression types as necessary
-        print(f"Data unpack failed for {uid}. Unsupported filetype: {package_name}")
+        print(
+            f"Data unpack failed for {uid}. Unsupported filetype: {package_name}"
+        )
         return
 
-    assert os.path.exists(version_dir), "Unpacking failed, no version directory."
-    package_files = [os.path.join(extract_dir, fname) for fname in package_files]
+    assert os.path.exists(
+        version_dir
+    ), "Unpacking failed, no version directory."
+    package_files = [
+        os.path.join(extract_dir, fname) for fname in package_files
+    ]
 
     post_extract_fn = data_sources[uid].get("post_extract_fn", None)
     if post_extract_fn is not None:
@@ -709,12 +739,18 @@ def main(args):
                 os.makedirs(data_path)
         except Exception:
             traceback.print_exc(file=sys.stdout)
-            print("----------------------------------------------------------------")
+            print(
+                "----------------------------------------------------------------"
+            )
             print(
                 "Aborting download, failed to create default data_path and none provided."
             )
-            print("Try providing --data-path (e.g. '/path/to/habitat-sim/data/')")
-            print("----------------------------------------------------------------")
+            print(
+                "Try providing --data-path (e.g. '/path/to/habitat-sim/data/')"
+            )
+            print(
+                "----------------------------------------------------------------"
+            )
             parser.print_help()
             exit(2)
 
