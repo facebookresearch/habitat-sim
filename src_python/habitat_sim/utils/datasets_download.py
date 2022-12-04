@@ -147,7 +147,7 @@ def initialize_test_data_sources(data_path):
             "version": "1.0",
         },
         "hab_fetch": {
-            "source": "http://dl.fbaipublicfiles.com/habitat/hab_fetch_v1.0.zip",
+            "source": "http://dl.fbaipublicfiles.com/habitat/hab_fetch_v2.0.zip",
             "package_name": "hab_fetch_v2.0.zip",
             "link": data_path + "robots/hab_fetch",
             "version": "2.0",
