@@ -379,7 +379,7 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
             importer->image3DLevelCount(textureData->image());
         Cr::Containers::Optional<Mn::Trade::ImageData3D> image =
             importer->image3D(textureData->image());
-        if (!textureData) {
+        if (!image) {
           Mn::Error{} << "Renderer::addFile(): can't import 3D image"
                       << textureData->image() << "of" << filename;
           return {};
@@ -415,7 +415,7 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
             importer->image2DLevelCount(textureData->image());
         Cr::Containers::Optional<Mn::Trade::ImageData2D> image =
             importer->image2D(textureData->image());
-        if (!textureData) {
+        if (!image) {
           Mn::Error{} << "Renderer::addFile(): can't import 2D image"
                       << textureData->image() << "of" << filename;
           return {};
