@@ -882,8 +882,13 @@ Mn::Matrix4& Renderer::camera(const Mn::UnsignedInt scene) {
 }
 
 Cr::Containers::StridedArrayView1D<Mn::Matrix4> Renderer::transformations(
-    const Mn::UnsignedInt scene) {
-  return state_->scenes[scene].transformations;
+    const Mn::UnsignedInt sceneId) {
+  CORRADE_ASSERT(sceneId < state_->scenes.size(),
+                 "Renderer::transformations(): index" << sceneId << "out of range for"
+                                            << state_->scenes.size()
+                                            << "scenes", {});
+
+  return state_->scenes[sceneId].transformations;
 }
 
 void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
