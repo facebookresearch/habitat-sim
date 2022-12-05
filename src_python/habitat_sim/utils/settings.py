@@ -17,11 +17,11 @@ default_sim_settings: Dict[str, Any] = {
     "seed": 1,
     "physics_config_file": "data/default.physics_config.json",
     "sensors": {
-        # Examples:
+        # Example values:
         # "color_sensor": {},
         # "depth_sensor": {},
         # If left empty, a default sensor called "color_sensor" will be created.
-        # Any unassigned sensor settings are populated with the default values below
+        # Any empty sensor setting values are populated with the default values below
     },
 }
 # [/default_sim_settings]
@@ -53,9 +53,12 @@ def clear_sensor_settings(settings: Dict[str, Any]) -> None:
 
 
 def update_sensor_settings(settings: Dict[str, Any], uuid: str, **kw_args) -> None:
+    # If there is no section for sensor settings in "settings", add one
     if "sensors" not in settings:
         settings["sensors"] = {}
 
+    # make sure that the sensor with the given uuid exists. If it doesn't, user
+    # should call the function "add_sensor_to_settings" instead.
     assert uuid in settings["sensors"], f"sensor with uuid {uuid} not in settings"
 
     # update all Dict fields in the given sensor settings with the new values
@@ -64,17 +67,23 @@ def update_sensor_settings(settings: Dict[str, Any], uuid: str, **kw_args) -> No
 
 
 def add_sensor_to_settings(settings: Dict[str, Any], uuid: str, **kw_args) -> None:
+    # If there is no section for sensor settings in "settings", add one
     if "sensors" not in settings:
         settings["sensors"] = {}
+
+    # if there is no Dict of sensor settings for a sensor with this uuid, create a new
+    # Dict of sensor settings with this uuid and initiate all sensor setting fields
+    # to their default values
     if uuid not in settings["sensors"]:
-        # if there is no Dict of sensor settings for a sensor with this uuid, create a new
-        # Dict of sensor settings with this uuid and initiate all sensor setting fields
-        # to their default values
         settings["sensors"][uuid] = default_sensor_settings.copy()
 
     # update all Dict fields in the given sensor settings with the new values
     for k in kw_args:
         settings["sensors"][uuid][k] = kw_args[k]
+
+
+def fill_out_settings_with_defaults(settings: Dict[str, Any]) -> None:
+    settings = {**default_sim_settings, **settings}
 
 
 # build SimulatorConfiguration
@@ -155,14 +164,20 @@ def make_cfg(settings: Dict[str, Any]):
             setattr(equirect_sensor_spec, k, kw_args[k])
         return equirect_sensor_spec
 
-    # if user has not specified any sensors of their own,
-    # use default sensor with uuid of "color_sensor"
+    # If there is no section for sensor settings in "settings", add one
+    if "sensors" not in settings:
+        settings["sensors"] = {}
+
+    # if user has not specified any sensor settings of their own, use default sensor
+    # with uuid of "color_sensor"
     if len(settings.get("sensors")) == 0:
         settings["sensors"]["color_sensor"] = {}
 
+    # Loop through each sensor setting, fill out the unassigned fields with the defaults,
+    # then create a sensor spec from it
     for uuid, sensor_settings in settings["sensors"].items():
 
-        # update all non assigned sensor setting fields to their default values
+        # update all unassigned sensor setting fields to their default values
         sensor_settings = {**default_sensor_settings, **sensor_settings}
 
         channels = (
@@ -171,9 +186,8 @@ def make_cfg(settings: Dict[str, Any]):
             else 1
         )
 
-        if (  # fisheye_rgba_sensor, fisheye_depth_sensor, fisheye_semantic_sensor
-            "fisheye" in uuid
-        ):
+        if "fisheye" in uuid:
+            # e.g., fisheye_rgba_sensor, fisheye_depth_sensor, fisheye_semantic_sensor
             fisheye_spec = create_fisheye_spec(
                 uuid=uuid,
                 position=sensor_settings["position"],
@@ -183,9 +197,8 @@ def make_cfg(settings: Dict[str, Any]):
                 channels=channels,
             )
             sensor_specs.append(fisheye_spec)
-        elif (  # equirect_rgba_sensor, equirect_depth_sensor, equirect_semantic_sensor
-            "equirect" in uuid
-        ):
+        elif "equirect" in uuid:
+            # e.g. equirect_rgba_sensor, equirect_depth_sensor, equirect_semantic_sensor
             equirect_spec = create_equirect_spec(
                 uuid=uuid,
                 position=sensor_settings["position"],
@@ -195,7 +208,9 @@ def make_cfg(settings: Dict[str, Any]):
                 channels=channels,
             )
             sensor_specs.append(equirect_spec)
-        else:  # color_sensor, depth_sensor, semantic_sensor, ortho_rgba_sensor, ortho_depth_sensor, ortho_semantic_sensor
+        else:
+            # e.g., color_sensor, depth_sensor, semantic_sensor, ortho_rgba_sensor,
+            # ortho_depth_sensor, ortho_semantic_sensor
             camera_spec = create_camera_spec(
                 uuid=uuid,
                 hfov=sensor_settings["hfov"],
