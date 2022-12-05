@@ -298,6 +298,7 @@ def initialize_test_data_sources(data_path):
             "coda_scene",
             "replica_cad_dataset",
             "hab_fetch",
+            "hab_stretch",
         ],
         "rearrange_task_assets": [
             "replica_cad_dataset",

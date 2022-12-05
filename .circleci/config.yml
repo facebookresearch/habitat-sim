@@ -157,9 +157,9 @@ commands:
                 npm install
                 touch ~/npm_deps_installed
               fi
-      - restore_cache:
-          keys:
-            - habitat-lab-{{ checksum "./hablab_sha" }}
+      #- restore_cache:
+      #    keys:
+      #      - habitat-lab-{{ checksum "./hablab_sha" }}
       - restore_cache: &ccache_cache
           keys:
             - ccache-{{ arch }}-{{ .Branch }}-{{ .BuildNum }}
