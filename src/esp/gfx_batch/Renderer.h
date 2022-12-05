@@ -109,7 +109,23 @@ enum class RendererFileFlag {
    *    This flag is required to be set when importing scene-less files such as
    *    STL or PLY.
    */
-  Whole = 1 << 0
+  Whole = 1 << 0,
+
+  /**
+   * Generate a mipmap out of single-level uncompressed textures.
+   *
+   * By default, no renderer-side processing of imported textures is done ---
+   * if the image contains multiple levels, they're imported as well, otherwise
+   * just a single level is uploaded, regardless of whether the texture has a
+   * filtering across mip levels set up.
+   *
+   * With this option enabled, if the input image is uncompressed and there's
+   * just a single level, the texture is created with a full mip pyramid and
+   * the lower levels get generated on the fly, leading to a smoother look with
+   * large textures. On-the-fly mip level generation is impossible for
+   * compressed formats, there this option is ignored.
+   */
+  GenerateMipmap = 1 << 1
 };
 
 /**
