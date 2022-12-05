@@ -1422,7 +1422,10 @@ void GfxBatchRendererTest::singleMesh() {
   CORRADE_VERIFY(renderer.hasMeshHierarchy("square"));
   CORRADE_VERIFY(!renderer.hasMeshHierarchy("squares"));
   CORRADE_VERIFY(!renderer.hasMeshHierarchy(""));
-  CORRADE_COMPARE(renderer.addMeshHierarchy(0, "square"), 0);
+  CORRADE_COMPARE(renderer.addMeshHierarchy(0, "square",
+    /* Initial baked-in transformation, combined with what's set in
+       transformations() below */
+    Mn::Matrix4::scaling(Mn::Vector3{0.4f})), 0);
 
   /* Stats will show two nodes now -- it adds one transformation for the
      top-level object and then one nested for the mesh, corresponding to the
@@ -1433,7 +1436,10 @@ void GfxBatchRendererTest::singleMesh() {
   CORRADE_COMPARE(stats.drawBatchCount, 1);
 
   CORRADE_COMPARE(renderer.transformations(0).size(), 2);
-  renderer.transformations(0)[0] = Mn::Matrix4::scaling(Mn::Vector3{0.8f});
+  /* The initial baked-in transformation shouldn't appear here (that's why it's
+     baked), combine it so it's a 0.8 scale in total */
+  CORRADE_COMPARE(renderer.transformations(0)[0], Mn::Matrix4{});
+  renderer.transformations(0)[0] = Mn::Matrix4::scaling(Mn::Vector3{2.0f});
 
   renderer.draw();
   Mn::Image2D color = renderer.colorImage();
