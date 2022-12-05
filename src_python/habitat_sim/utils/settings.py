@@ -82,7 +82,7 @@ def add_sensor_to_settings(settings: Dict[str, Any], uuid: str, **kw_args) -> No
         settings["sensors"][uuid][k] = kw_args[k]
 
 
-def fill_out_settings_with_defaults(settings: Dict[str, Any]) -> None:
+def fill_out_sim_settings_with_defaults(settings: Dict[str, Any]) -> None:
     settings = {**default_sim_settings, **settings}
 
 
@@ -163,10 +163,6 @@ def make_cfg(settings: Dict[str, Any]):
         for k in kw_args:
             setattr(equirect_sensor_spec, k, kw_args[k])
         return equirect_sensor_spec
-
-    # If there is no section for sensor settings in "settings", add one
-    if "sensors" not in settings:
-        settings["sensors"] = {}
 
     # if user has not specified any sensor settings of their own, use default sensor
     # with uuid of "color_sensor"
