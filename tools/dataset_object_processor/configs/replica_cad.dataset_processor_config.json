@@ -1,7 +1,7 @@
 {
   "scene": "data/test_assets/scenes/simple_room.glb",
   "scene_dataset_config_file": "data/versioned_data/replica_cad_dataset_1.5/replicaCAD.scene_dataset_config.json",
-  "data_to_collect": {
+  "csv_data_to_collect": {
     "extensive_RAM_calculation": false,
     "memory_data": true,
     "render_time_ratio": false,

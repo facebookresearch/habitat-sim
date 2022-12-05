@@ -43,7 +43,7 @@ dataset_processor_config_fields = {
     # "physics_data": snap down asset from 6 orthogonal rotations and see how long
     # it takes to fall asleep. Calculate difference in position, rotation, and the
     # ratio of how long it takes to simulate a frame versus frame duration (dt)
-    "data_to_collect": {
+    "csv_data_to_collect": {
         "ram_calc_multiple_samples": True,
         "memory_data": True,
         "render_time_ratio": True,
@@ -229,6 +229,8 @@ dataset_processor_constants = {
         "inactive": 1,
     },
 }
+
+
 default_sim_settings.update(dataset_processor_config_fields)
 default_sim_settings.update(dataset_processor_constants)
 

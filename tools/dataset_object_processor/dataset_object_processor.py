@@ -465,8 +465,8 @@ def process_asset(
     # collecting, and/or if we are recording a video and which tasks we are recording
     write_csv = sim.sim_settings["outputs"].get("csv")
     record_video = sim.sim_settings["outputs"].get("video")
-    data_to_collect = sim.sim_settings["data_to_collect"]
-    collect_physics_data = data_to_collect.get("physics_data")
+    csv_data_to_collect = sim.sim_settings["csv_data_to_collect"]
+    collect_physics_data = csv_data_to_collect.get("physics_data")
     record_physics = sim.sim_settings["video_vars"].get("tasks").get("record_physics")
 
     # record video of object's bounding box, its collision asset, its collision
@@ -481,7 +481,7 @@ def process_asset(
     csv_row: List[str] = []
     if write_csv:
         csv_row += [basename(handle)]
-        if data_to_collect.get("memory_data"):
+        if csv_data_to_collect.get("memory_data"):
             ram_str = (
                 pcsu.get_mem_size_str(ram_use_multi_sample)
                 if ram_multi_sample
@@ -489,7 +489,7 @@ def process_asset(
             )
             data = ["", ram_str] + process_asset_mem_usage(sim, importer)
             csv_row += data
-        if data_to_collect.get("render_time_ratio"):
+        if csv_data_to_collect.get("render_time_ratio"):
             data = [""] + process_asset_render_time()
             csv_row += data
 
@@ -640,7 +640,7 @@ def process_dataset(
     write_csv = sim.sim_settings["outputs"].get("csv")
     num_samples: int = 1
     ram_usages: List[float] = [0.0] * (end_index - start_index)
-    ram_multiple_samples: bool = sim.sim_settings["data_to_collect"].get(
+    ram_multiple_samples: bool = sim.sim_settings["csv_data_to_collect"].get(
         "ram_calc_multiple_samples"
     )
     if write_csv and ram_multiple_samples:
@@ -658,9 +658,14 @@ def process_dataset(
     # i.e. study its memory usage and run it through some physics simulations,
     # if the config file requests them.
     for i in range(start_index, end_index):
-        handle = sim.obj_template_handles[start_index + i]
+        handle = sim.obj_template_handles[i]
         row = process_asset(
-            sim, importer, handle, obj_template_mgr, ram_multiple_samples, ram_usages[i]
+            sim,
+            importer,
+            handle,
+            obj_template_mgr,
+            ram_multiple_samples,
+            ram_usages[i - start_index],
         )
         csv_rows.append(row)
 
@@ -668,7 +673,7 @@ def process_dataset(
     # each csv column.
     if write_csv:
         headers = pcsu.get_csv_headers(sim)
-        if sim.sim_settings["data_to_collect"].get("memory_data"):
+        if sim.sim_settings["csv_data_to_collect"].get("memory_data"):
             headers[2] = f"RAM usage\n{num_samples} sample(s)"
         csv_dir_path = os.path.join(
             HABITAT_SIM_PATH, sim.sim_settings["output_paths"].get("csv")

@@ -1,7 +1,7 @@
 {
   "scene": "data/test_assets/scenes/simple_room.glb",
   "scene_dataset_config_file": "data/versioned_data/ycb_1.2/ycb.scene_dataset_config.json",
-  "data_to_collect": {
+  "csv_data_to_collect": {
     "extensive_RAM_calculation": true,
     "memory_data": false,
     "render_time_ratio": false,

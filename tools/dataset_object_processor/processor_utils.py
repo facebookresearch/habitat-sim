@@ -517,12 +517,12 @@ def get_csv_headers(sim: DatasetProcessorSim) -> List[str]:
     Collect the csv column titles we'll need given which tests we ran
     """
     headers: List[str] = sim.sim_settings["object_name"]
-    data_to_collect = sim.sim_settings["data_to_collect"]
-    if data_to_collect.get("memory_data"):
+    csv_data_to_collect = sim.sim_settings["csv_data_to_collect"]
+    if csv_data_to_collect.get("memory_data"):
         headers += sim.sim_settings["memory_data_headers"]
-    if data_to_collect.get("render_time_ratio"):
+    if csv_data_to_collect.get("render_time_ratio"):
         headers += sim.sim_settings["render_time_headers"]
-    if data_to_collect.get("physics_data"):
+    if csv_data_to_collect.get("physics_data"):
         headers += sim.sim_settings["physics_data_headers"]
 
     return headers
