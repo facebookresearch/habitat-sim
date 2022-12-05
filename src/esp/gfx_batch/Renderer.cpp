@@ -756,7 +756,7 @@ bool Renderer::hasMeshHierarchy(const Cr::Containers::StringView name) const {
 
 std::size_t Renderer::addMeshHierarchy(const Mn::UnsignedInt sceneId,
                                        const Cr::Containers::StringView name,
-                                       const Mn::Matrix4& transformation) {
+                                       const Mn::Matrix4& bakeTransformation) {
   CORRADE_ASSERT(sceneId < state_->scenes.size(),
                  "Renderer::add(): index" << sceneId << "out of range for"
                                           << state_->scenes.size() << "scenes",
@@ -789,7 +789,7 @@ std::size_t Renderer::addMeshHierarchy(const Mn::UnsignedInt sceneId,
   /* Add a top-level object with no attached mesh */
   const std::size_t topLevelId = scene.transformations.size();
   arrayAppend(scene.parents, -1);
-  arrayAppend(scene.transformations, transformation);
+  arrayAppend(scene.transformations, Cr::InPlaceInit);
 
   /* Add the whole hierarchy under this name, with a mesh for each */
   // TODO the hierarchy can eventually also have meshless "grouping nodes" or
@@ -801,7 +801,7 @@ std::size_t Renderer::addMeshHierarchy(const Mn::UnsignedInt sceneId,
        transformation */
     const std::size_t id = scene.transformations.size();
     arrayAppend(scene.parents, topLevelId);
-    arrayAppend(scene.transformations, meshView.transformation);
+    arrayAppend(scene.transformations, bakeTransformation*meshView.transformation);
 
     /* Get a batch ID for given shader/mesh/texture combination */
     const Mn::UnsignedInt batchId = drawBatchId(
