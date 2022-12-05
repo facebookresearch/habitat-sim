@@ -385,6 +385,12 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
           return {};
         }
 
+        /* Generate a full mipmap if there's just one level and if the image is
+           not compressed. It's opt-in to force people to learn how to make
+           assets Vulkan-ready. */
+        const bool generateMipmap = levelCount == 1 && (flags & RendererFileFlag::GenerateMipmap) && !image->isCompressed();
+        const Mn::UnsignedInt desiredLevelCount = generateMipmap ? Mn::Math::log2(image->size().xy().min()) + 1 : levelCount;
+
         texture
             .setMinificationFilter(textureData->minificationFilter(),
                                    textureData->mipmapFilter())
@@ -406,9 +412,11 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
           }
         } else {
           texture
-              .setStorage(levelCount, Mn::GL::textureFormat(image->format()),
+              .setStorage(desiredLevelCount, Mn::GL::textureFormat(image->format()),
                           image->size())
               .setSubImage(0, {}, *image);
+          if(generateMipmap)
+              texture.generateMipmap();
         }
       } else if (textureData->type() == Mn::Trade::TextureType::Texture2D) {
         const Mn::UnsignedInt levelCount =
@@ -420,6 +428,12 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
                       << textureData->image() << "of" << filename;
           return {};
         }
+
+        /* Generate a full mipmap if there's just one level and if the image is
+           not compressed. It's opt-in to force people to learn how to make
+           assets Vulkan-ready. */
+        const bool generateMipmap = levelCount == 1 && (flags & RendererFileFlag::GenerateMipmap) && !image->isCompressed();
+        const Mn::UnsignedInt desiredLevelCount = generateMipmap ? Mn::Math::log2(image->size().min()) + 1 : levelCount;
 
         texture
             .setMinificationFilter(textureData->minificationFilter(),
@@ -443,9 +457,11 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
           }
         } else {
           texture
-              .setStorage(levelCount, Mn::GL::textureFormat(image->format()),
+              .setStorage(desiredLevelCount, Mn::GL::textureFormat(image->format()),
                           {image->size(), 1})
               .setSubImage(0, {}, Mn::ImageView2D{*image});
+          if(generateMipmap)
+              texture.generateMipmap();
         }
       } else
         CORRADE_INTERNAL_ASSERT_UNREACHABLE(); /* LCOV_EXCL_LINE */

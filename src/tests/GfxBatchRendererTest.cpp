@@ -97,6 +97,13 @@ const struct {
     1,
     {1, 1, 0, 1},
     0.0f, 0.0f},
+  /* Doesn't really verify that the right level count is generated, but at
+     least checks that things don't crash */
+  {"generate mipmap", {Cr::InPlaceInit, {
+    {"batch.gltf", esp::gfx_batch::RendererFileFlag::GenerateMipmap, nullptr}}},
+    1,
+    {1, 1, 0, 1},
+    0.0f, 0.0f},
   {"multiple meshes", {Cr::InPlaceInit, {
     {"batch-multiple-meshes.gltf", {}, nullptr}}},
     /* Each has a separate mesh */
@@ -105,6 +112,14 @@ const struct {
     0.0f, 0.0f},
   {"multiple textures", {Cr::InPlaceInit, {
     {"batch-multiple-textures.gltf", {}, nullptr}}},
+    /* Each has a separate texture */
+    3,
+    {4, 2, 0, 1},
+    0.0f, 0.0f},
+  /* Doesn't really verify that the right level count is generated, but at
+     least checks that things don't crash */
+  {"multiple textures, generate mipmap", {Cr::InPlaceInit, {
+    {"batch-multiple-textures.gltf", esp::gfx_batch::RendererFileFlag::GenerateMipmap, nullptr}}},
     /* Each has a separate texture */
     3,
     {4, 2, 0, 1},
@@ -125,6 +140,13 @@ const struct {
     2,
     {4, 2, 0, 1},
     /* DXT-compressed images have minor compression errors */
+    1.5f, 0.5f},
+  /* Mip level generation should do nothing for compressed textures */
+  {"multiple files, compressed textures, generate mipmap", {Cr::InPlaceInit, {
+    {"batch-square-circle-triangle-compressed.gltf", esp::gfx_batch::RendererFileFlag::GenerateMipmap, nullptr},
+    {"batch-four-squares-compressed.gltf", esp::gfx_batch::RendererFileFlag::GenerateMipmap, nullptr}}},
+    2,
+    {4, 2, 0, 1},
     1.5f, 0.5f},
   {"multiple files, some whole-file", {Cr::InPlaceInit, {
     {"batch-square-circle-triangle.gltf", {}, nullptr},
