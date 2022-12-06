@@ -143,8 +143,7 @@ class RendererStandalone : public Renderer {
    *
    * Format in which @ref colorImage() and @ref colorCudaBufferDevicePointer()
    * is returned. At the moment @ref Magnum::PixelFormat::RGBA8Unorm.
-   * Framebuffer size is given by the @ref Magnum::Math::Vector::product() "product()"
-   * of @ref tileSize() and @ref tileCount().
+   * Framebuffer size is @ref tileSize() multiplied by @ref tileCount().
    * @see @ref Magnum::pixelFormatSize(), @ref Magnum::pixelFormatChannelCount()
    */
   Magnum::PixelFormat colorFramebufferFormat() const;
@@ -153,9 +152,8 @@ class RendererStandalone : public Renderer {
    * @brief Depth framebuffer format
    *
    * Format in which @ref depthImage() and @ref colorCudaBufferDevicePointer()
-   * is returned. At the moment @ref Magnum::PixelFormat::Depth32F.
-   * Framebuffer size is given by the @ref Magnum::Math::Vector::product() "product()"
-   * of @ref tileSize() and @ref tileCount().
+   * is returned. At the moment @ref Magnum::PixelFormat::Depth32F. Framebuffer
+   * size is @ref tileSize() multiplied by @ref tileCount().
    * @see @ref Magnum::pixelFormatSize()
    */
   Magnum::PixelFormat depthFramebufferFormat() const;
@@ -174,9 +172,8 @@ class RendererStandalone : public Renderer {
    * @brief Retrieve the rendered color output
    *
    * Stalls the CPU until the GPU finishes the last @ref draw() and then
-   * returns an image in @ref colorFramebufferFormat() and with size given by
-   * the @ref Magnum::Math::Vector::product() "product()" of @ref tileSize()
-   * and @ref tileCount().
+   * returns an image in @ref colorFramebufferFormat() and with size being
+   * @ref tileSize() multiplied by @ref tileCount().
    */
   Magnum::Image2D colorImage();
 
@@ -184,9 +181,8 @@ class RendererStandalone : public Renderer {
    * @brief Retrieve the rendered depth output
    *
    * Stalls the CPU until the GPU finishes the last @ref draw() and then
-   * returns an image in @ref depthFramebufferFormat() and with size given by
-   * the @ref Magnum::Math::Vector::product() "product()" of @ref tileSize()
-   * and @ref tileCount().
+   * returns an image in @ref depthFramebufferFormat() and with size being
+   * @ref tileSize() multiplied by @ref tileCount().
    */
   Magnum::Image2D depthImage();
 
