@@ -1483,6 +1483,13 @@ void GfxBatchRendererTest::singleMesh() {
     CORRADE_COMPARE(color.pixels<Mn::Color4ub>()[75][35], 0xcccccc_rgb);
     CORRADE_COMPARE(color.pixels<Mn::Color4ub>()[20][38], 0x990000_rgb);
   }
+
+  /* Depth should have *some* data also */
+  Mn::Image2D depth = renderer.depthImage();
+  MAGNUM_VERIFY_NO_GL_ERROR();
+  CORRADE_COMPARE(depth.pixels<Mn::Float>()[0][0], 1.0f);
+  CORRADE_COMPARE(depth.pixels<Mn::Float>()[95][127], 1.0f);
+  CORRADE_COMPARE(depth.pixels<Mn::Float>()[64][48], 0.0909091f);
 }
 
 void GfxBatchRendererTest::meshHierarchy() {
