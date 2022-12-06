@@ -27,8 +27,7 @@ namespace Mn = Magnum;
 using esp::assets::ResourceManager;
 using esp::metadata::MetadataMediator;
 using esp::scene::SceneManager;
-using esp::sim::ReplayBatchRenderer;
-using esp::sim::ReplayBatchRendererConfiguration;
+using esp::sim::ReplayRendererConfiguration;
 using esp::sim::Simulator;
 using esp::sim::SimulatorConfiguration;
 
@@ -62,12 +61,28 @@ Mn::MutableImageView2D getRGBView(int width,
   return view;
 }
 
+const struct {
+  const char* name;
+  Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer>(*create)(const ReplayRendererConfiguration& configuration);
+} TestIntegrationData[]{
+  {"classic renderer", [](const ReplayRendererConfiguration& configuration) {
+    return Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer>{new esp::sim::ReplayRenderer{configuration}};
+  }},
+  {"batch renderer", [](const ReplayRendererConfiguration& configuration) {
+    return Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer>{new esp::sim::ReplayBatchRenderer{configuration}};
+  }}
+};
+
 ReplayBatchRendererTest::ReplayBatchRendererTest() {
-  addTests({&ReplayBatchRendererTest::testIntegration});
+  addInstancedTests({&ReplayBatchRendererTest::testIntegration},
+    Cr::Containers::arraySize(TestIntegrationData));
 }  // ctor
 
 // test recording and playback through the simulator interface
 void ReplayBatchRendererTest::testIntegration() {
+  auto&& data = TestIntegrationData[testCaseInstanceId()];
+  setTestCaseDescription(data.name);
+
   const std::string vangogh = Cr::Utility::Path::join(
       SCENE_DATASETS, "habitat-test-scenes/van-gogh-room.glb");
   constexpr int numEnvs = 4;
@@ -133,54 +148,28 @@ void ReplayBatchRendererTest::testIntegration() {
     sensorSpecifications = {pinholeCameraSpec};
   }
 
-  ReplayBatchRendererConfiguration batchRendererConfig;
+  ReplayRendererConfiguration batchRendererConfig;
   batchRendererConfig.sensorSpecifications = std::move(sensorSpecifications);
   batchRendererConfig.numEnvironments = numEnvs;
-  ReplayBatchRenderer batchRenderer(batchRendererConfig);
-  auto renderer = batchRenderer.getRenderer();
+  Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer> renderer = data.create(batchRendererConfig);
 
   std::vector<std::vector<char>> buffers(numEnvs);
   std::vector<Mn::MutableImageView2D> imageViews;
 
   for (int envIndex = 0; envIndex < numEnvs; envIndex++) {
-    auto& sensorMap = batchRenderer.getEnvironmentSensors(envIndex);
-    CORRADE_INTERNAL_ASSERT(sensorMap.size() == 1);
-    for (auto& kv : sensorMap) {
-      CORRADE_VERIFY(kv.second.get().isVisualSensor());
-      auto& visualSensor =
-          static_cast<esp::sensor::VisualSensor&>(kv.second.get());
-      renderer->bindRenderTarget(visualSensor);
-
-      const int width = visualSensor.framebufferSize().x();
-      const int height = visualSensor.framebufferSize().y();
-      imageViews.emplace_back(getRGBView(width, height, buffers[envIndex]));
-    }
+    // TODO ugh, pass a vector; use an Image instead of a std::vector
+    imageViews.emplace_back(getRGBView(renderer->sensorSize(envIndex).x(), renderer->sensorSize(envIndex).y(), buffers[envIndex]));
   }
 
   for (int envIndex = 0; envIndex < numEnvs; envIndex++) {
-    batchRenderer.setEnvironmentKeyframe(envIndex, serKeyframes[envIndex]);
-    batchRenderer.setSensorTransformsFromKeyframe(envIndex, userPrefix);
-
-    auto& sensorMap = batchRenderer.getEnvironmentSensors(envIndex);
-    CORRADE_INTERNAL_ASSERT(sensorMap.size() == 1);
-    for (auto& kv : sensorMap) {
-      CORRADE_VERIFY(kv.second.get().isVisualSensor());
-      auto& visualSensor =
-          static_cast<esp::sensor::VisualSensor&>(kv.second.get());
-
-      auto& sceneGraph = batchRenderer.getSceneGraph(envIndex);
-
-      // todo: investigate flags (frustum culling?)
-      renderer->enqueueAsyncDrawJob(visualSensor, sceneGraph,
-                                    imageViews[envIndex],
-                                    esp::gfx::RenderCamera::Flags{});
-    }
+    renderer->setEnvironmentKeyframe(envIndex, serKeyframes[envIndex]);
+    renderer->setSensorTransformsFromKeyframe(envIndex, userPrefix);
   }
 
-  renderer->startDrawJobs();
-  renderer->waitDrawJobs();
+  renderer->render(imageViews);
 
   for (int envIndex = 0; envIndex < numEnvs; envIndex++) {
+    CORRADE_ITERATION(envIndex);
     std::string groundTruthImageFile =
         screenshotPrefix + std::to_string(envIndex) + screenshotExtension;
     CORRADE_COMPARE_WITH(

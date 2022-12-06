@@ -31,7 +31,13 @@ Keyframe Player::keyframeFromString(const std::string& keyframe) {
   return res;
 }
 
-Player::Player(PlayerCallbacks callbacks) : callbacks_(std::move(callbacks)) {}
+Player::Player(PlayerCallbacks callbacks) : callbacks_(std::move(callbacks)) {
+  CORRADE_INTERNAL_ASSERT(callbacks_.changeLightSetup_);
+  CORRADE_INTERNAL_ASSERT(callbacks_.deleteAssetInstance_);
+  CORRADE_INTERNAL_ASSERT(callbacks_.loadAndCreateRenderInstance_);
+  CORRADE_INTERNAL_ASSERT(callbacks_.setNodeSemanticId_);
+  CORRADE_INTERNAL_ASSERT(callbacks_.setNodeTransform_);
+}
 
 void Player::readKeyframesFromFile(const std::string& filepath) {
   close();
@@ -49,7 +55,7 @@ void Player::readKeyframesFromFile(const std::string& filepath) {
 }
 
 Player::~Player() {
-  clearFrame();
+  // clearFrame(); TODO why!!
 }
 
 int Player::getKeyframeIndex() const {

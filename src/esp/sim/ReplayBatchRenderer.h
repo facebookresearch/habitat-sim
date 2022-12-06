@@ -6,6 +6,7 @@
 #define ESP_SIM_REPLAYBATCHRENDERER_H_
 
 #include "esp/gfx/WindowlessContext.h"
+#include "esp/gfx_batch/RendererStandalone.h"
 #include "esp/gfx/replay/Player.h"
 #include "esp/scene/SceneManager.h"
 
@@ -21,7 +22,7 @@ class Renderer;
 namespace esp {
 namespace sim {
 
-class ReplayBatchRendererConfiguration {
+class ReplayRendererConfiguration {
  public:
   int numEnvironments = 1;
   //! The system GPU device to use for rendering.
@@ -37,10 +38,29 @@ class ReplayBatchRendererConfiguration {
 
   std::vector<sensor::SensorSpec::ptr> sensorSpecifications;
 
-  ESP_SMART_POINTERS(ReplayBatchRendererConfiguration)
+  ESP_SMART_POINTERS(ReplayRendererConfiguration)
 };
 
-class ReplayBatchRenderer {
+class AbstractReplayRenderer {
+ public:
+  virtual ~AbstractReplayRenderer();
+
+  // Assumes there's just one sensor per env
+  virtual Magnum::Vector2i sensorSize(int envIndex) = 0;
+
+  virtual void setEnvironmentKeyframe(int envIndex, const std::string& serKeyframe) = 0;
+
+  // You must have done Recorder::addUserTransformToKeyframe(prefix +
+  // sensorName, ...) for every sensor in
+  // ReplayRendererConfiguration::sensorSpecifications, for the specified
+  // environment's keyframe. See also setEnvironmentKeyframe.
+  virtual void setSensorTransformsFromKeyframe(int envIndex, const std::string& prefix) = 0;
+
+  // Renders and waits for the render to finish
+  virtual void render(Corrade::Containers::ArrayView<const Magnum::MutableImageView2D> imageViews) = 0;
+};
+
+class ReplayRenderer: public AbstractReplayRenderer {
  public:
   class EnvironmentRecord {
    public:
@@ -52,9 +72,20 @@ class ReplayBatchRenderer {
         sensorMap_;
   };
 
-  explicit ReplayBatchRenderer(const ReplayBatchRendererConfiguration& cfg);
-  ~ReplayBatchRenderer();
+  explicit ReplayRenderer(const ReplayRendererConfiguration& cfg);
 
+  ~ReplayRenderer();
+
+  Magnum::Vector2i sensorSize(int envIndex) override;
+
+  void setEnvironmentKeyframe(int envIndex, const std::string& serKeyframe) override;
+
+  void setSensorTransformsFromKeyframe(int envIndex, const std::string& prefix) override;
+
+  void render(Corrade::Containers::ArrayView<const Magnum::MutableImageView2D> imageViews) override;
+
+  // TODO those are used by bindings at the moment, but should eventually
+  //  become private as well
   std::shared_ptr<gfx::Renderer> getRenderer() { return renderer_; }
 
   esp::scene::SceneGraph& getSceneGraph(int envIndex);
@@ -63,14 +94,6 @@ class ReplayBatchRenderer {
   esp::scene::SceneNode* getEnvironmentSensorParentNode(int envIndex) const;
   std::map<std::string, std::reference_wrapper<esp::sensor::Sensor>>&
   getEnvironmentSensors(int envIndex);
-
-  void setEnvironmentKeyframe(int envIndex, const std::string& serKeyframe);
-
-  // You must have done Recorder::addUserTransformToKeyframe(prefix +
-  // sensorName, ...) for every sensor in
-  // ReplayBatchRendererConfiguration::sensorSpecifications, for the specified
-  // environment's keyframe. See also setEnvironmentKeyframe.
-  void setSensorTransformsFromKeyframe(int envIndex, const std::string& prefix);
 
  private:
   gfx::replay::GfxReplayNode* loadAndCreateRenderAssetInstance(
@@ -87,9 +110,34 @@ class ReplayBatchRenderer {
   gfx::WindowlessContext::uptr context_ = nullptr;
   std::shared_ptr<gfx::Renderer> renderer_ = nullptr;
 
-  ReplayBatchRendererConfiguration config_;
+  ReplayRendererConfiguration config_;
 
-  ESP_SMART_POINTERS(ReplayBatchRenderer)
+  ESP_SMART_POINTERS(ReplayRenderer)
+};
+
+class ReplayBatchRenderer: public AbstractReplayRenderer {
+ public:
+  explicit ReplayBatchRenderer(const ReplayRendererConfiguration& cfg);
+
+  ~ReplayBatchRenderer() override;
+
+  Magnum::Vector2i sensorSize(int envIndex) override;
+
+  void setEnvironmentKeyframe(int envIndex, const std::string& serKeyframe) override;
+
+  void setSensorTransformsFromKeyframe(int envIndex, const std::string& prefix) override;
+
+  void render(Corrade::Containers::ArrayView<const Magnum::MutableImageView2D> imageViews) override;
+ private:
+   // TODO pimpl all this?
+  struct EnvironmentRecord {
+    esp::gfx::replay::Player player_;
+  };
+  Corrade::Containers::Array<EnvironmentRecord> envs_;
+
+  esp::gfx_batch::RendererStandalone renderer_;
+  Corrade::Containers::String theOnlySensorName_;
+  Mn::Matrix4 theOnlySensorProjection_;
 };
 
 }  // namespace sim

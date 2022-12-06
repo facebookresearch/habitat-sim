@@ -14,5 +14,8 @@ add_library(
 
 target_link_libraries(
   sim
+  # TODO wait where's gfx and everything else??
   PUBLIC nav
+  # TODO actually don't link, i don't to wait for 24 SLOW relinks
+  # gfx_batch
 )
