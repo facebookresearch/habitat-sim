@@ -27,6 +27,15 @@ class ReplayRendererConfiguration {
   int numEnvironments = 1;
   //! The system GPU device to use for rendering.
   int gpuDeviceId = 0;
+  /**
+   * @brief Have the renderer create its own GPU context
+   *
+   * Set to @cpp false @ce in scenarios where the renderer is meant to draw
+   * into a GUI application window.
+   */
+  bool standalone = true;
+  // TODO document that those are obsolete options affecting the classic
+  //  renderer only
   bool forceSeparateSemanticSceneGraph = false;
   /**
    * @brief Leave the context with the background thread after finishing draw
@@ -43,12 +52,18 @@ class ReplayRendererConfiguration {
 
 class AbstractReplayRenderer {
  public:
+  static Magnum::Vector2i environmentGridSize(int environmentCount);
+
   virtual ~AbstractReplayRenderer();
 
   // Assumes there's just one sensor per env
   virtual Magnum::Vector2i sensorSize(int envIndex) = 0;
 
   virtual void setEnvironmentKeyframe(int envIndex, const std::string& serKeyframe) = 0;
+
+  virtual void setSensorTransform(int envIndex,
+                                             const std::string& sensorName,
+                                             const Mn::Matrix4& transform) = 0;
 
   // You must have done Recorder::addUserTransformToKeyframe(prefix +
   // sensorName, ...) for every sensor in
@@ -58,6 +73,8 @@ class AbstractReplayRenderer {
 
   // Renders and waits for the render to finish
   virtual void render(Corrade::Containers::ArrayView<const Magnum::MutableImageView2D> imageViews) = 0;
+
+  virtual void render(Magnum::GL::AbstractFramebuffer& framebuffer) = 0;
 };
 
 class ReplayRenderer: public AbstractReplayRenderer {
@@ -80,9 +97,15 @@ class ReplayRenderer: public AbstractReplayRenderer {
 
   void setEnvironmentKeyframe(int envIndex, const std::string& serKeyframe) override;
 
+  void setSensorTransform(int envIndex,
+                                             const std::string& sensorName,
+                                             const Mn::Matrix4& transform) override;
+
   void setSensorTransformsFromKeyframe(int envIndex, const std::string& prefix) override;
 
   void render(Corrade::Containers::ArrayView<const Magnum::MutableImageView2D> imageViews) override;
+
+  void render(Magnum::GL::AbstractFramebuffer& framebuffer) override;
 
   // TODO those are used by bindings at the moment, but should eventually
   //  become private as well
@@ -103,7 +126,7 @@ class ReplayRenderer: public AbstractReplayRenderer {
 
   std::vector<EnvironmentRecord> envs_;
 
-  std::unique_ptr<assets::ResourceManager> resourceManager_ = nullptr;
+  std::unique_ptr<assets::ResourceManager> resourceManager_;
 
   scene::SceneManager::uptr sceneManager_ = nullptr;
 
@@ -125,9 +148,15 @@ class ReplayBatchRenderer: public AbstractReplayRenderer {
 
   void setEnvironmentKeyframe(int envIndex, const std::string& serKeyframe) override;
 
+  void setSensorTransform(int envIndex,
+                                             const std::string& sensorName,
+                                             const Mn::Matrix4& transform) override;
+
   void setSensorTransformsFromKeyframe(int envIndex, const std::string& prefix) override;
 
   void render(Corrade::Containers::ArrayView<const Magnum::MutableImageView2D> imageViews) override;
+
+  void render(Magnum::GL::AbstractFramebuffer& framebuffer) override;
  private:
    // TODO pimpl all this?
   struct EnvironmentRecord {
@@ -135,7 +164,10 @@ class ReplayBatchRenderer: public AbstractReplayRenderer {
   };
   Corrade::Containers::Array<EnvironmentRecord> envs_;
 
-  esp::gfx_batch::RendererStandalone renderer_;
+  /* If standalone_ is true, renderer_ contains a RendererStandalone */
+  bool standalone_;
+  Corrade::Containers::Pointer<esp::gfx_batch::Renderer> renderer_;
+
   Corrade::Containers::String theOnlySensorName_;
   Mn::Matrix4 theOnlySensorProjection_;
 };

@@ -112,7 +112,10 @@ void Player::clearFrame() {
 
 void Player::applyKeyframe(const Keyframe& keyframe) {
   for (const auto& assetInfo : keyframe.loads) {
-    CORRADE_INTERNAL_ASSERT(assetInfos_.count(assetInfo.filepath) == 0);
+    if(assetInfos_.count(assetInfo.filepath) != 0) {
+      ESP_WARNING() << assetInfo.filepath << "already loaded";
+      // continue;
+    }
     if (failedFilepaths_.count(assetInfo.filepath) != 0u) {
       continue;
     }
