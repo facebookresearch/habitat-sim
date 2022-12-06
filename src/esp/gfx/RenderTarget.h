@@ -146,6 +146,12 @@ class RenderTarget {
   void readFrameObjectId(const Magnum::MutableImageView2D& view);
 
   /**
+   * @brief Blits the rgba buffer from internal FBO to given framebuffer
+   * rectangle
+   */
+  void blitRgbaTo(Magnum::GL::AbstractFramebuffer& target, const Magnum::Range2Di& targetRectangle);
+
+  /**
    * @brief Blits the rgba buffer from internal FBO to default frame buffer
    * which in case of EmscriptenApplication will be a canvas element.
    */
