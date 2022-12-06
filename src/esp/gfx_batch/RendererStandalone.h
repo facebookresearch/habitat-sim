@@ -178,6 +178,17 @@ class RendererStandalone : public Renderer {
   Magnum::Image2D colorImage();
 
   /**
+   * @brief Retrieve the rendered color output into a pre-allocated location
+   *
+   * Expects that @p rectangle is contained in a size defined
+   * by @ref tileSize() multiplied by @ref tileCount(), that @p image
+   * size corresponds to @p rectangle size and that its format is compatible
+   * with @ref colorFramebufferFormat().
+   */
+  void colorImageInto(const Magnum::Range2Di& rectangle,
+                      const Magnum::MutableImageView2D& image);
+
+  /**
    * @brief Retrieve the rendered depth output
    *
    * Stalls the CPU until the GPU finishes the last @ref draw() and then
@@ -185,6 +196,17 @@ class RendererStandalone : public Renderer {
    * @ref tileSize() multiplied by @ref tileCount().
    */
   Magnum::Image2D depthImage();
+
+  /**
+   * @brief Retrieve the rendered depth output into a pre-allocated location
+   *
+   * Expects that @p rectangle is contained in a size defined
+   * by @ref tileSize() multiplied by @ref tileCount(), that @p image
+   * size corresponds to @p rectangle size and that its format is compatible
+   * with @ref depthFramebufferFormat().
+   */
+  void depthImageInto(const Magnum::Range2Di& rectangle,
+                      const Magnum::MutableImageView2D& image);
 
 #if defined(ESP_BUILD_WITH_CUDA) || defined(DOXYGEN_GENERATING_OUTPUT)
   /**

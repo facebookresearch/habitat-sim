@@ -17,6 +17,7 @@
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix3.h>
 #include <Magnum/Math/Matrix4.h>
+#include <Magnum/Math/Range.h>
 #include <Magnum/MeshTools/Combine.h>
 #include <Magnum/MeshTools/Concatenate.h>
 #include <Magnum/MeshTools/GenerateIndices.h>
@@ -64,6 +65,7 @@ struct GfxBatchRendererTest : Cr::TestSuite::Tester {
   void multipleScenes();
   void clearScene();
 
+  void imageInto();
   void cudaInterop();
 };
 
@@ -236,7 +238,8 @@ GfxBatchRendererTest::GfxBatchRendererTest() {
                      &GfxBatchRendererTest::clearScene},
       Cr::Containers::arraySize(FileData));
 
-  addTests({&GfxBatchRendererTest::cudaInterop});
+  addTests({&GfxBatchRendererTest::imageInto,
+            &GfxBatchRendererTest::cudaInterop});
   // clang-format on
 }
 
@@ -1772,6 +1775,60 @@ void GfxBatchRendererTest::clearScene() {
           TEST_ASSETS, "screenshots/GfxBatchRendererTestMultipleScenes.png"),
       (Mn::DebugTools::CompareImageToFile{data.maxThreshold,
                                           data.meanThreshold}));
+}
+
+void GfxBatchRendererTest::imageInto() {
+  /* Same as singleMesh(), just with a lot less checking and using *ImageInto()
+     instead of *Image() */
+
+  // clang-format off
+  esp::gfx_batch::RendererStandalone renderer{
+      esp::gfx_batch::RendererConfiguration{}
+          .setTileSizeCount({128, 96}, {1, 1}),
+      esp::gfx_batch::RendererStandaloneConfiguration{}
+          .setFlags(esp::gfx_batch::RendererStandaloneFlag::QuietLog)
+  };
+  // clang-format on
+
+  /* Mostly the same as singleMesh() */
+  CORRADE_VERIFY(renderer.addFile(
+      Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch.gltf")));
+  renderer.camera(0) =
+      Mn::Matrix4::orthographicProjection(2.0f * Mn::Vector2{4.0f / 3.0f, 1.0f},
+                                          0.1f, 10.0f) *
+      Mn::Matrix4::translation(Mn::Vector3::zAxis(1.0f)).inverted();
+  renderer.addMeshHierarchy(0, "square",
+                            Mn::Matrix4::scaling(Mn::Vector3{0.8f}));
+  renderer.draw();
+
+  // TODO use the NoInit constructor once it exists
+  Mn::Image2D color{
+      Mn::PixelFormat::RGBA8Unorm, renderer.tileCount() * renderer.tileSize(),
+      Cr::Containers::Array<char>{
+          Cr::NoInit,
+          std::size_t(
+              (renderer.tileCount() * renderer.tileSize() * 4).product())}};
+  renderer.colorImageInto({{}, color.size()}, color);
+  MAGNUM_VERIFY_NO_GL_ERROR();
+  CORRADE_COMPARE_AS(
+      color,
+      Cr::Utility::Path::join(TEST_ASSETS,
+                              "screenshots/GfxBatchRendererTestSingleMesh.png"),
+      Mn::DebugTools::CompareImageToFile);
+
+  /* Depth should have *some* data also */
+  // TODO use the NoInit constructor once it exists
+  Mn::Image2D depth{
+      Mn::PixelFormat::Depth32F, renderer.tileCount() * renderer.tileSize(),
+      Cr::Containers::Array<char>{
+          Cr::NoInit,
+          std::size_t(
+              (renderer.tileCount() * renderer.tileSize() * 4).product())}};
+  renderer.depthImageInto({{}, depth.size()}, depth);
+  MAGNUM_VERIFY_NO_GL_ERROR();
+  CORRADE_COMPARE(depth.pixels<Mn::Float>()[0][0], 1.0f);
+  CORRADE_COMPARE(depth.pixels<Mn::Float>()[95][127], 1.0f);
+  CORRADE_COMPARE(depth.pixels<Mn::Float>()[64][48], 0.0909091f);
 }
 
 void GfxBatchRendererTest::cudaInterop() {
