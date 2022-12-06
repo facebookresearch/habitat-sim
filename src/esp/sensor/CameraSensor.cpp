@@ -41,19 +41,26 @@ namespace {
 
 /* Needs to be an internal utility because CameraSensor uses everything except
    hFoV from the CameraSensorSpec */
-Mn::Matrix4 projectionMatrixInternal(const CameraSensorSpec& spec, Mn::Rad hfov) {
-  const Mn::Vector2 nearPlaneSize{1.0f, Mn::Vector2{Mn::Vector2i{spec.resolution}}.aspectRatio()};
+Mn::Matrix4 projectionMatrixInternal(const CameraSensorSpec& spec,
+                                     Mn::Rad hfov) {
+  const Mn::Vector2 nearPlaneSize{
+      1.0f, Mn::Vector2{Mn::Vector2i{spec.resolution}}.aspectRatio()};
   if (spec.sensorSubType == SensorSubType::Orthographic) {
-    return Mn::Matrix4::orthographicProjection(nearPlaneSize/spec.orthoScale, spec.near, spec.far);
-  } else if(spec.sensorSubType == SensorSubType::Pinhole) {
+    return Mn::Matrix4::orthographicProjection(nearPlaneSize / spec.orthoScale,
+                                               spec.near, spec.far);
+  } else if (spec.sensorSubType == SensorSubType::Pinhole) {
     const float scale = 1.0f / (2.0f * spec.near * Mn::Math::tan(0.5f * hfov));
-    return Mn::Matrix4::perspectiveProjection(nearPlaneSize/scale, spec.near, spec.far);
-  } else CORRADE_ASSERT_UNREACHABLE("CameraSensorSpec::projectionMatrix(): sensorSpec does not have "
-      "SensorSubType "
-      "Pinhole or Orthographic", {});
+    return Mn::Matrix4::perspectiveProjection(nearPlaneSize / scale, spec.near,
+                                              spec.far);
+  } else
+    CORRADE_ASSERT_UNREACHABLE(
+        "CameraSensorSpec::projectionMatrix(): sensorSpec does not have "
+        "SensorSubType "
+        "Pinhole or Orthographic",
+        {});
 }
 
-}
+}  // namespace
 
 Mn::Matrix4 CameraSensorSpec::projectionMatrix() const {
   return projectionMatrixInternal(*this, hfov);

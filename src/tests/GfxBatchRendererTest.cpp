@@ -1444,10 +1444,12 @@ void GfxBatchRendererTest::singleMesh() {
   CORRADE_VERIFY(renderer.hasMeshHierarchy("square"));
   CORRADE_VERIFY(!renderer.hasMeshHierarchy("squares"));
   CORRADE_VERIFY(!renderer.hasMeshHierarchy(""));
-  CORRADE_COMPARE(renderer.addMeshHierarchy(0, "square",
-    /* Initial baked-in transformation, combined with what's set in
-       transformations() below */
-    Mn::Matrix4::scaling(Mn::Vector3{0.4f})), 0);
+  CORRADE_COMPARE(
+      renderer.addMeshHierarchy(0, "square",
+                                /* Initial baked-in transformation, combined
+                                   with what's set in transformations() below */
+                                Mn::Matrix4::scaling(Mn::Vector3{0.4f})),
+      0);
 
   /* Stats will show two nodes now -- it adds one transformation for the
      top-level object and then one nested for the mesh, corresponding to the
