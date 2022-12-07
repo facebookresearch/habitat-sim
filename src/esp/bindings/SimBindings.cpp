@@ -11,13 +11,13 @@
 #include <Magnum/PythonBindings.h>
 #include <Magnum/SceneGraph/PythonBindings.h>
 
-#include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/replay/ReplayManager.h"
 #include "esp/metadata/MetadataMediator.h"
 #include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/scene/SemanticScene.h"
+#include "esp/sim/ReplayBatchRenderer.h"
 #include "esp/sim/Simulator.h"
 #include "esp/sim/SimulatorConfiguration.h"
 
@@ -73,6 +73,9 @@ void initSimBindings(py::module& m) {
           "enable_gfx_replay_save",
           &SimulatorConfiguration::enableGfxReplaySave,
           R"(Enable replay recording. See sim.gfx_replay.save_keyframe.)")
+      .def_readwrite(
+          "enable_batch_renderer", &SimulatorConfiguration::enableBatchRenderer,
+          R"(Enable batch rendering, which accelerates rendering of multiple scenes in parallel.)")
       .def_readwrite("physics_config_file",
                      &SimulatorConfiguration::physicsConfigFile,
                      R"(Path to the physics parameter config file.)")
@@ -358,6 +361,52 @@ void initSimBindings(py::module& m) {
       .def("get_debug_line_render", &Simulator::getDebugLineRender,
            pybind11::return_value_policy::reference,
            R"(Get visualization helper for rendering lines.)");
+
+  // ==== ReplayRendererConfiguration ====
+  // TODO: Descriptions
+  py::class_<ReplayRendererConfiguration,
+             ReplayRendererConfiguration::ptr>(
+      m, "ReplayRendererConfiguration")
+      .def(py::init(&ReplayRendererConfiguration::create<>))
+      .def_readwrite("num_environments",
+                     &ReplayRendererConfiguration::numEnvironments,
+                     R"(todo)")
+      .def_readwrite("sensor_specifications",
+                     &ReplayRendererConfiguration::sensorSpecifications,
+                     R"(todo)")
+      .def_readwrite("gpu_device_id",
+                     &ReplayRendererConfiguration::gpuDeviceId, R"(todo)")
+      .def_readwrite(
+          "force_separate_semantic_scene_graph",
+          &ReplayRendererConfiguration::forceSeparateSemanticSceneGraph,
+          R"(todo)")
+      .def_readwrite(
+          "leave_context_with_background_renderer",
+          &ReplayRendererConfiguration::leaveContextWithBackgroundRenderer,
+          R"(todo)");
+
+  // ==== ReplayRenderer ====
+  // TODO: Descriptions
+  py::class_<ReplayRenderer, ReplayRenderer::ptr>(
+      m, "ReplayRenderer")
+      // modify constructor to pass MetadataMediator
+      .def(py::init<const ReplayRendererConfiguration&>())
+      .def_property_readonly("renderer", &ReplayRenderer::getRenderer)
+      .def("get_scene_graph", &ReplayRenderer::getSceneGraph,
+           R"(PYTHON DOES NOT GET OWNERSHIP)",
+           py::return_value_policy::reference)
+      .def("get_semantic_scene_graph",
+           &ReplayRenderer::getSemanticSceneGraph,
+           R"(PYTHON DOES NOT GET OWNERSHIP)",
+           py::return_value_policy::reference)
+      .def("get_environment_sensors",
+           &ReplayRenderer::getEnvironmentSensors)
+      .def("set_sensor_transforms_from_keyframe",
+           &ReplayRenderer::setSensorTransformsFromKeyframe)
+      .def("get_environment_sensor_parent_node",
+           &ReplayRenderer::getEnvironmentSensorParentNode)
+      .def("set_environment_keyframe",
+           &ReplayRenderer::setEnvironmentKeyframe);
 }
 
 }  // namespace sim
