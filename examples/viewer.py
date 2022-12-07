@@ -363,7 +363,7 @@ class HabitatSimInteractiveViewer(Application):
         any changes in the movement keys map `Dict[KeyEvent.key, Bool]`.
         When a key in the map is set to `True` the corresponding action is taken.
         """
-        # avoids unecessary updates to grabber's object position
+        # avoids unnecessary updates to grabber's object position
         if repetitions == 0:
             return
 
@@ -563,7 +563,7 @@ class HabitatSimInteractiveViewer(Application):
         """
         Handles `Application.MouseMoveEvent`. When in LOOK mode, enables the left
         mouse button to steer the agent's facing direction. When in GRAB mode,
-        continues to update the grabber's object positiion with our agents position.
+        continues to update the grabber's object position with our agents position.
         """
         button = Application.MouseMoveEvent.Buttons
         # if interactive mode -> LOOK MODE
@@ -988,7 +988,7 @@ class Timer:
     @staticmethod
     def stop() -> None:
         """
-        Stops timer and erases any previous time data, reseting the timer
+        Stops timer and erases any previous time data, resetting the timer
         """
         Timer.running = False
         Timer.start_time = 0.0
