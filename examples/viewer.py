@@ -273,7 +273,26 @@ class HabitatSimInteractiveViewer(Application):
         keys = active_agent_id_and_sensor_name
 
         if self.enable_batch_renderer:
-            pass
+            keyframes = []
+            for i in range(self.num_env):
+                # Copy sensor transforms
+                sensor_suite = self.sim[i]._sensors
+                for sensor_uuid, sensor in sensor_suite.items():
+                    transform = sensor._sensor_object.node.absolute_transformation()
+                    rotation = mn.Quaternion.from_matrix(transform.rotation())
+                    self.sim[i].gfx_replay_manager.add_user_transform_to_keyframe(
+                        "sensor_" + sensor_uuid, transform.translation, rotation
+                    )
+                # Generate keyframe
+                keyframes.append(
+                    self.sim[i].gfx_replay_manager.extract_keyframe()
+                )
+                # Apply keyframe
+                self.replay_renderer.set_environment_keyframe(i, keyframes[i])
+                # Apply sensor transforms
+                self.replay_renderer.set_sensor_transforms_from_keyframe(i, "sensor_")
+                # Render
+                self.replay_renderer.render(mn.gl.default_framebuffer)
         else:
             self.sim[0]._Simulator__sensors[keys[0]][keys[1]].draw_observation()
             agent = self.sim[0].get_agent(keys[0])
@@ -351,6 +370,10 @@ class HabitatSimInteractiveViewer(Application):
             else 1
         )
 
+        if self.enable_batch_renderer:
+            self.cfg.sim_cfg.create_renderer = False
+            self.cfg.sim_cfg.enable_gfx_replay_save = True
+
         if self.sim_settings["stage_requires_lighting"]:
             logger.info("Setting synthetic lighting override for stage.")
             self.cfg.sim_cfg.override_scene_light_defaults = True
@@ -378,6 +401,22 @@ class HabitatSimInteractiveViewer(Application):
         #TODO: Scene per sim
         self.sim_settings["scene"] = self.sim[0].curr_scene_name
         
+        # Initialize batch renderer
+        if (self.enable_batch_renderer) and self.replay_renderer_cfg is None:
+            self.replay_renderer_cfg = ReplayRendererConfiguration()
+            self.replay_renderer_cfg.num_environments = self.num_env
+            self.replay_renderer_cfg.sensor_specifications = self.cfg.agents[
+                self.agent_id
+            ].sensor_specifications
+            self.replay_renderer_cfg.gpu_device_id = (
+                self.cfg.sim_cfg.gpu_device_id
+            )
+            self.replay_renderer_cfg.force_separate_semantic_scene_graph = False
+            self.replay_renderer_cfg.leave_context_with_background_renderer = (
+                False  # Context is owned by the GLFW window
+            )
+            self.replay_renderer = ReplayRenderer(self.replay_renderer_cfg)
+
         Timer.start()
         self.step = -1
 
@@ -436,6 +475,10 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.H:
             self.print_help_text()
 
+        # TODO: Document
+        elif key == pressed.ONE:
+            self.active_env_idx = (self.active_env_idx + 1) % self.num_env
+        
         elif key == pressed.TAB:
             # NOTE: (+ALT) - reconfigure without cycling scenes
             if not alt_pressed:
