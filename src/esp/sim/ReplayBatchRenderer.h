@@ -111,9 +111,9 @@ class AbstractReplayRenderer {
 
 class ReplayRenderer: public AbstractReplayRenderer {
  public:
-  class EnvironmentRecord {
-   public:
-    esp::gfx::replay::Player player_;
+  struct EnvironmentRecord {
+    std::unique_ptr<gfx::replay::AbstractSceneGraphPlayerImplementation> playerImplementation_;
+    esp::gfx::replay::Player player_{*playerImplementation_};
     int sceneID_ = ID_UNDEFINED;
     int semanticSceneID_ = ID_UNDEFINED;
     esp::scene::SceneNode* sensorParentNode_ = nullptr;
@@ -155,7 +155,7 @@ class ReplayRenderer: public AbstractReplayRenderer {
 
   void doRender(Magnum::GL::AbstractFramebuffer& framebuffer) override;
 
-  gfx::replay::GfxReplayNode* loadAndCreateRenderAssetInstance(
+  gfx::replay::NodeHandle loadAndCreateRenderAssetInstance(
       unsigned envIndex,
       const assets::AssetInfo& assetInfo,
       const assets::RenderAssetInstanceCreationInfo& creation);
@@ -201,7 +201,8 @@ class ReplayBatchRenderer: public AbstractReplayRenderer {
 
    // TODO pimpl all this?
   struct EnvironmentRecord {
-    esp::gfx::replay::Player player_;
+    Corrade::Containers::Pointer<gfx::replay::AbstractPlayerImplementation> playerImplementation_;
+    gfx::replay::Player player_{*playerImplementation_};
   };
   Corrade::Containers::Array<EnvironmentRecord> envs_;
 

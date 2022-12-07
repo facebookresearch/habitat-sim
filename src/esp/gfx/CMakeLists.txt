@@ -35,8 +35,6 @@ set(
   replay/Keyframe.h
   replay/Player.cpp
   replay/Player.h
-  replay/PlayerCallbacks.cpp
-  replay/PlayerCallbacks.h
   replay/Recorder.cpp
   replay/Recorder.h
   replay/ReplayManager.h

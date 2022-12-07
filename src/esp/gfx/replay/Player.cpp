@@ -18,6 +18,29 @@ namespace esp {
 namespace gfx {
 namespace replay {
 
+static_assert(std::is_nothrow_move_constructible<Player>::value, "");
+
+void AbstractPlayerImplementation::setNodeSemanticId(NodeHandle, unsigned) {}
+
+void AbstractPlayerImplementation::changeLightSetup(const LightSetup&) {}
+
+void AbstractSceneGraphPlayerImplementation::deleteAssetInstance(const NodeHandle node) {
+  // TODO: use NodeDeletionHelper to safely delete nodes owned by the Player.
+  // the deletion here is unsafe because a Player may persist beyond the
+  // lifetime of these nodes.
+  delete reinterpret_cast<scene::SceneNode*>(node);
+}
+
+void AbstractSceneGraphPlayerImplementation::setNodeTransform(const NodeHandle node, const Mn::Vector3& translation, const Mn::Quaternion& rotation) {
+  (*reinterpret_cast<scene::SceneNode*>(node))
+    .setTranslation(translation)
+    .setRotation(rotation);
+}
+
+void AbstractSceneGraphPlayerImplementation::setNodeSemanticId(const NodeHandle node, const unsigned id) {
+  setSemanticIdForSubtree(reinterpret_cast<scene::SceneNode*>(node), id);
+}
+
 void Player::readKeyframesFromJsonDocument(const rapidjson::Document& d) {
   CORRADE_INTERNAL_ASSERT(keyframes_.empty());
   esp::io::readMember(d, "keyframes", keyframes_);
@@ -31,13 +54,7 @@ Keyframe Player::keyframeFromString(const std::string& keyframe) {
   return res;
 }
 
-Player::Player(PlayerCallbacks callbacks) : callbacks_(std::move(callbacks)) {
-  CORRADE_INTERNAL_ASSERT(callbacks_.changeLightSetup_);
-  CORRADE_INTERNAL_ASSERT(callbacks_.deleteAssetInstance_);
-  CORRADE_INTERNAL_ASSERT(callbacks_.loadAndCreateRenderInstance_);
-  CORRADE_INTERNAL_ASSERT(callbacks_.setNodeSemanticId_);
-  CORRADE_INTERNAL_ASSERT(callbacks_.setNodeTransform_);
-}
+Player::Player(AbstractPlayerImplementation& implementation) : implementation_{implementation} {}
 
 void Player::readKeyframesFromFile(const std::string& filepath) {
   close();
@@ -103,7 +120,7 @@ void Player::close() {
 
 void Player::clearFrame() {
   for (const auto& pair : createdInstances_) {
-    callbacks_.deleteAssetInstance_(pair.second);
+    implementation_->deleteAssetInstance(pair.second);
   }
   createdInstances_.clear();
   assetInfos_.clear();
@@ -133,7 +150,7 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
       continue;
     }
     CORRADE_INTERNAL_ASSERT(assetInfos_.count(creation.filepath));
-    auto* node = callbacks_.loadAndCreateRenderInstance_(
+    auto* node = implementation_->loadAndCreateRenderAssetInstance(
         assetInfos_[creation.filepath], creation);
     if (!node) {
       if (failedFilepaths_.count(creation.filepath) == 0u) {
@@ -157,7 +174,7 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
       continue;
     }
 
-    callbacks_.deleteAssetInstance_(it->second);
+    implementation_->deleteAssetInstance(it->second);
     createdInstances_.erase(deletionInstanceKey);
   }
 
@@ -170,13 +187,13 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     }
     auto* node = it->second;
     const auto& state = pair.second;
-    callbacks_.setNodeTransform_(node, state.absTransform.translation,
+    implementation_->setNodeTransform(node, state.absTransform.translation,
                                  state.absTransform.rotation);
-    callbacks_.setNodeSemanticId_(node, state.semanticId);
+    implementation_->setNodeSemanticId(node, state.semanticId);
   }
 
   if (keyframe.lightsChanged) {
-    callbacks_.changeLightSetup_(keyframe.lights);
+    implementation_->changeLightSetup(keyframe.lights);
   }
 }
 

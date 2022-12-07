@@ -7,12 +7,12 @@
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/RenderTarget.h"
-#include "esp/gfx/replay/PlayerCallbacks.h"
 #include "esp/metadata/MetadataMediator.h"
 #include "esp/sensor/SensorFactory.h"
 #include "esp/sensor/CameraSensor.h"
 #include "esp/sim/SimulatorConfiguration.h"
 
+#include <Corrade/Containers/GrowableArray.h>
 #include <Corrade/Utility/Algorithms.h>
 #include <Magnum/GL/Context.h>
 #include <Magnum/ImageView.h>
@@ -87,19 +87,25 @@ ReplayRenderer::ReplayRenderer(
 
   sceneManager_ = scene::SceneManager::create_unique();
 
-  for (int envIdx = 0; envIdx < config_.numEnvironments; ++envIdx) {
-    auto callbacks = gfx::replay::createSceneGraphPlayerCallbacks();
-    callbacks.loadAndCreateRenderInstance_ =
-        [this, envIdx](const assets::AssetInfo& assetInfo,
-                       const assets::RenderAssetInstanceCreationInfo& creation)
-        -> gfx::replay::GfxReplayNode* {
-      return loadAndCreateRenderAssetInstance(envIdx, assetInfo, creation);
-    };
-    callbacks.changeLightSetup_ =
-        [this](const gfx::LightSetup& lights) -> void {
-      resourceManager_->setLightSetup(lights);
-    };
+  class SceneGraphPlayerImplementation: public gfx::replay::AbstractSceneGraphPlayerImplementation {
+   public:
+    SceneGraphPlayerImplementation(ReplayRenderer& self, unsigned envIdx): self_{self}, envIdx_{envIdx} {}
 
+   private:
+    gfx::replay::NodeHandle loadAndCreateRenderAssetInstance(
+      const esp::assets::AssetInfo& assetInfo,
+      const esp::assets::RenderAssetInstanceCreationInfo& creation) override {
+      return self_.loadAndCreateRenderAssetInstance(envIdx_, assetInfo, creation);
+    }
+    void changeLightSetup(const gfx::LightSetup& lights) override {
+      return self_.resourceManager_->setLightSetup(lights);
+    }
+
+    ReplayRenderer& self_;
+    unsigned envIdx_;
+  };
+
+  for (int envIdx = 0; envIdx < config_.numEnvironments; ++envIdx) {
     auto sceneID = sceneManager_->initSceneGraph();
     auto semanticSceneID = cfg.forceSeparateSemanticSceneGraph
                                ? sceneManager_->initSceneGraph()
@@ -111,7 +117,7 @@ ReplayRenderer::ReplayRenderer(
         parentNode, cfg.sensorSpecifications);
 
     envs_.emplace_back(
-        EnvironmentRecord{.player_ = gfx::replay::Player(std::move(callbacks)),
+        EnvironmentRecord{.playerImplementation_ = std::make_unique<SceneGraphPlayerImplementation>(*this, envIdx),
                           .sceneID_ = sceneID,
                           .semanticSceneID_ = semanticSceneID,
                           .sensorParentNode_ = &parentNode,
@@ -301,7 +307,7 @@ esp::scene::SceneGraph& ReplayRenderer::getSemanticSceneGraph(
                                           : env.semanticSceneID_);
 }
 
-gfx::replay::GfxReplayNode*
+gfx::replay::NodeHandle
 ReplayRenderer::loadAndCreateRenderAssetInstance(
     unsigned envIndex,
     const assets::AssetInfo& assetInfo,
@@ -314,7 +320,7 @@ ReplayRenderer::loadAndCreateRenderAssetInstance(
   std::vector<int> tempIDs{env.sceneID_, env.semanticSceneID_};
   auto* node = resourceManager_->loadAndCreateRenderAssetInstance(
       assetInfo, creation, sceneManager_.get(), tempIDs);
-  return reinterpret_cast<gfx::replay::GfxReplayNode*>(node);
+  return reinterpret_cast<gfx::replay::NodeHandle>(node);
 }
 
 ReplayBatchRenderer::ReplayBatchRenderer(const ReplayRendererConfiguration& cfg) {
@@ -338,26 +344,27 @@ ReplayBatchRenderer::ReplayBatchRenderer(const ReplayRendererConfiguration& cfg)
   theOnlySensorName_ = sensor.uuid;
   theOnlySensorProjection_ = sensor.projectionMatrix();
 
-  envs_ = Cr::Containers::Array<EnvironmentRecord>{Cr::NoInit, std::size_t(cfg.numEnvironments)};
-  for(std::size_t i = 0; i != cfg.numEnvironments; ++i) {
-    gfx::replay::PlayerCallbacks callbacks;
-    callbacks.loadAndCreateRenderInstance_ = [this, i](
-                        const assets::AssetInfo& assetInfo,
-                        const assets::RenderAssetInstanceCreationInfo& creation)
-        -> gfx::replay::GfxReplayNode* {
+  class BatchPlayerImplementation: public gfx::replay::AbstractSceneGraphPlayerImplementation {
+   public:
+    BatchPlayerImplementation(gfx_batch::Renderer& renderer, Mn::UnsignedInt sceneId): renderer_{renderer}, sceneId_{sceneId} {}
+
+   private:
+    gfx::replay::NodeHandle loadAndCreateRenderAssetInstance(
+      const esp::assets::AssetInfo& assetInfo,
+      const esp::assets::RenderAssetInstanceCreationInfo& creation) override {
       // TODO i have no idea what these are, skip. expected 0 but it is 7!!
       // CORRADE_ASSERT(!creation.flags, "ReplayBatchRenderer: no idea what these flags are for:" << unsigned(creation.flags), {});
         // TODO and this is no_lights?!!
       // CORRADE_ASSERT(creation.lightSetupKey.empty(), "ReplayBatchRenderer: no idea what light setup key is for:" << creation.lightSetupKey, {});
 
       /* If no such name is known yet, add as a file */
-      if(!renderer_->hasMeshHierarchy(creation.filepath)) {
+      if(!renderer_.hasMeshHierarchy(creation.filepath)) {
         // TODO asserts might be TOO BRUTAL?
-        CORRADE_INTERNAL_ASSERT_OUTPUT(renderer_->addFile(creation.filepath, gfx_batch::RendererFileFlag::Whole|gfx_batch::RendererFileFlag::GenerateMipmap));
-        CORRADE_INTERNAL_ASSERT(renderer_->hasMeshHierarchy(creation.filepath));
+        CORRADE_INTERNAL_ASSERT_OUTPUT(renderer_.addFile(creation.filepath, gfx_batch::RendererFileFlag::Whole|gfx_batch::RendererFileFlag::GenerateMipmap));
+        CORRADE_INTERNAL_ASSERT(renderer_.hasMeshHierarchy(creation.filepath));
       }
 
-      return reinterpret_cast<gfx::replay::GfxReplayNode*>(renderer_->addMeshHierarchy(i, creation.filepath,
+      return reinterpret_cast<gfx::replay::NodeHandle>(renderer_.addMeshHierarchy(sceneId_, creation.filepath,
         /* Baking the initial scaling and coordinate frame into the
            transformation */
         // TODO why the scale has to be an optional??
@@ -366,23 +373,33 @@ ReplayBatchRenderer::ReplayBatchRenderer(const ReplayRendererConfiguration& cfg)
         /* Returning incremented by 1 because 0 (nullptr) is treated as an
            error */
         + 1);
-    };
-    callbacks.deleteAssetInstance_ = [this, i](const gfx::replay::GfxReplayNode* node) {
+    }
+
+    void deleteAssetInstance(const gfx::replay::NodeHandle node) override {
       // TODO actually remove from the scene instead of setting a zero scale
-      renderer_->transformations(i)[reinterpret_cast<std::size_t>(node) - 1] = Mn::Matrix4{Mn::Math::ZeroInit};
-    };
-    callbacks.setNodeTransform_ = [this, i](const gfx::replay::GfxReplayNode* node, const Mn::Vector3& translation, const Mn::Quaternion& rotation) {
-      renderer_->transformations(i)[reinterpret_cast<std::size_t>(node) - 1] = Mn::Matrix4::from(rotation.toMatrix(), translation);
-    };
-    callbacks.setNodeSemanticId_ = [](const gfx::replay::GfxReplayNode*, int) {
+      renderer_.transformations(sceneId_)[reinterpret_cast<std::size_t>(node) - 1] = Mn::Matrix4{Mn::Math::ZeroInit};
+    }
+
+    void setNodeTransform(const gfx::replay::NodeHandle node, const Mn::Vector3& translation, const Mn::Quaternion& rotation) override {
+      renderer_.transformations(sceneId_)[reinterpret_cast<std::size_t>(node) - 1] = Mn::Matrix4::from(rotation.toMatrix(), translation);
+    }
+
+    void setNodeSemanticId(esp::gfx::replay::NodeHandle, Mn::UnsignedInt) override {
       // CORRADE_INTERNAL_ASSERT_UNREACHABLE(); // TODO
-    };
-    callbacks.changeLightSetup_ = [](const gfx::LightSetup&) {
+    }
+
+    void changeLightSetup(const gfx::LightSetup&) override {
       // CORRADE_INTERNAL_ASSERT_UNREACHABLE(); // TODO
-    };
-    // TODO arrayAppend() doesn't work because something in here is not
-    //  nothrow-movable. FUN (yes the _FUN is to blame!)
-    new(&envs_[i]) EnvironmentRecord{gfx::replay::Player{callbacks}};
+    }
+
+    gfx_batch::Renderer& renderer_;
+    Mn::UnsignedInt sceneId_;
+  };
+
+  // envs_ = Cr::Containers::Array<EnvironmentRecord>{Cr::NoInit, std::size_t(cfg.numEnvironments)};
+  for(Mn::UnsignedInt i = 0; i != cfg.numEnvironments; ++i) {
+    // TODO arrayAppend() doesn't work because something in Player is not not
+    arrayAppend(envs_, EnvironmentRecord{Cr::Containers::Pointer<gfx::replay::AbstractPlayerImplementation>{new BatchPlayerImplementation{*renderer_, i}}});
   }
 }
 

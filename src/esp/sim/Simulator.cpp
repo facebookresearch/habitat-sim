@@ -22,7 +22,6 @@
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/VarianceShadowMapDrawable.h"
-#include "esp/gfx/replay/PlayerCallbacks.h"
 #include "esp/gfx/replay/Recorder.h"
 #include "esp/gfx/replay/ReplayManager.h"
 #include "esp/metadata/MetadataMediator.h"
@@ -687,17 +686,23 @@ void Simulator::reconfigureReplayManager(bool enableGfxReplaySave) {
   CORRADE_INTERNAL_ASSERT(resourceManager_);
   resourceManager_->setRecorder(gfxReplayMgr_->getRecorder());
 
-  // provide Player callbacks to replay manager
-  auto callbacks = esp::gfx::replay::createSceneGraphPlayerCallbacks();
-  callbacks.loadAndCreateRenderInstance_ =
-      [this](const assets::AssetInfo& assetInfo,
-             const assets::RenderAssetInstanceCreationInfo& creation) {
-    return reinterpret_cast<gfx::replay::GfxReplayNode*>(loadAndCreateRenderAssetInstance(assetInfo, creation));
+  // provide Player backend implementation to replay manager
+  class SceneGraphPlayerImplementation: public gfx::replay::AbstractSceneGraphPlayerImplementation {
+  public:
+    explicit SceneGraphPlayerImplementation(Simulator& self): self_{self} {}
+
+  private:
+    gfx::replay::NodeHandle loadAndCreateRenderAssetInstance(const assets::AssetInfo& assetInfo, const assets::RenderAssetInstanceCreationInfo& creation) override {
+      return reinterpret_cast<gfx::replay::NodeHandle>(self_.loadAndCreateRenderAssetInstance(assetInfo, creation));
+    }
+
+    void changeLightSetup(const gfx::LightSetup& lights) override {
+      self_.setLightSetup(lights);
+    }
+
+    Simulator& self_;
   };
-  callbacks.changeLightSetup_ = [this](const gfx::LightSetup& lights) -> void {
-    setLightSetup(lights);
-  };
-  gfxReplayMgr_->setPlayerCallbacks(std::move(callbacks));
+  gfxReplayMgr_->setPlayerImplementation(std::make_unique<SceneGraphPlayerImplementation>(*this));
 }
 
 void Simulator::updateShadowMapDrawableGroup() {

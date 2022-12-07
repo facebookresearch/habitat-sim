@@ -9,13 +9,105 @@
 
 #include "esp/assets/Asset.h"
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
-#include "esp/gfx/replay/PlayerCallbacks.h"
 
+#include <Corrade/Containers/Reference.h>
 #include <rapidjson/document.h>
 
 namespace esp {
 namespace gfx {
 namespace replay {
+
+class Player;
+
+/**
+@brief Node handle
+
+Represents either a @ref scene::SceneNode "scene::SceneNode*" or an arbitrary
+handle value. A @cpp nullptr @ce value is treated as an empty / invalid handle.
+*/
+typedef class NodeHandle_* NodeHandle;
+
+/**
+@brief Backend implementation for @ref Player
+
+Intended to be used via subclassing and implementing at least all pure virtual
+functions, optionally also @ref setNodeSematicId() and @ref changeLightSetup()
+which are no-op by default.
+*/
+class AbstractPlayerImplementation {
+ public:
+  explicit AbstractPlayerImplementation() = default;
+  virtual ~AbstractPlayerImplementation() = default;
+
+  /* Deliberately non-copyable to avoid accidents */
+  AbstractPlayerImplementation(const AbstractPlayerImplementation&) = delete;
+  AbstractPlayerImplementation(AbstractPlayerImplementation&&) noexcept = default;
+  AbstractPlayerImplementation& operator=(const AbstractPlayerImplementation&) = delete;
+  AbstractPlayerImplementation& operator=(AbstractPlayerImplementation&&) noexcept = default;
+
+ private:
+  /* The interfaces are private, i.e. not meant to be called from subclasses */
+  friend Player;
+
+  /**
+   * @brief Load and create a render asset instance
+   *
+   * Returns a handle that references the newly added node containing the
+   * loaded asset --- i.e., it's meant to appear in the scene. Returns
+   * @cpp nullptr @ce in case of a failure.
+   */
+  virtual NodeHandle loadAndCreateRenderAssetInstance(
+      const esp::assets::AssetInfo& assetInfo,
+      const esp::assets::RenderAssetInstanceCreationInfo& creation) = 0;
+
+  /**
+   * @brief Delete asset instance
+   *
+   * The @p handle is expected to be returned from an earlier call to
+   * @ref loadAndCreateRenderAssetInstance() on the same instance.
+   */
+  virtual void deleteAssetInstance(NodeHandle node) = 0;
+
+  /**
+   * @brief Set node transform
+   *
+   * The @p handle is expected to be returned from an earlier call to
+   * @ref loadAndCreateRenderAssetInstance() on the same instance.
+   */
+  virtual void setNodeTransform(NodeHandle node, const Magnum::Vector3& translation, const Magnum::Quaternion& rotation) = 0;
+
+  /**
+   * @brief Set node semantic ID
+   *
+   * The @p handle is expected to be returned from an earlier call to
+   * @ref loadAndCreateRenderAssetInstance() on the same instance. Default
+   * implementation does nothing.
+   */
+  virtual void setNodeSemanticId(NodeHandle node, unsigned id);
+
+  /**
+   * @brief Change light setup
+   *
+   * Default implementation does nothing.
+   */
+  virtual void changeLightSetup(const LightSetup& lights);
+};
+
+/**
+@brief Classic scene graph backend implementation for @ref Player
+
+Intended to be used via subclassing and implementing
+@ref loadAndCreateRenderAssetInstance() and @ref changeLightSetup().
+*/
+class AbstractSceneGraphPlayerImplementation: public AbstractPlayerImplementation {
+  /* The interfaces are private, i.e. not meant to be called from subclasses */
+
+  void deleteAssetInstance(NodeHandle node) override;
+
+  void setNodeTransform(NodeHandle node, const Magnum::Vector3& translation, const Magnum::Quaternion& rotation) override;
+
+  void setNodeSemanticId(NodeHandle node, unsigned id) override;
+};
 
 /**
  * @brief Playback for "render replay".
@@ -35,9 +127,17 @@ class Player {
  public:
   /**
    * @brief Construct a Player.
-   * @param callback A function to load and create a render asset instance.
+   *
+   * The @p implementation is assumed to be owned by the caller for the whole
+   * lifetime of the @ref Player instance.
    */
-  explicit Player(PlayerCallbacks callbacks);
+  explicit Player(AbstractPlayerImplementation& implementation);
+
+  /* Deliberately move-only, it's heavy */
+  Player(const Player&&) = delete;
+  Player(Player&&) noexcept = default;
+  Player& operator=(const Player&) = delete;
+  Player& operator=(Player&&) noexcept = default;
 
   ~Player();
 
@@ -112,12 +212,15 @@ class Player {
   void readKeyframesFromJsonDocument(const rapidjson::Document& d);
   void clearFrame();
 
-  PlayerCallbacks callbacks_;
+  /* Not just a & to make the class movable. Not using
+     std::reference_wrapper so we can access the reference with -> instead of
+     forced to use .get(). */
+  Corrade::Containers::Reference<AbstractPlayerImplementation> implementation_;
 
   int frameIndex_ = -1;
   std::vector<Keyframe> keyframes_;
   std::unordered_map<std::string, esp::assets::AssetInfo> assetInfos_;
-  std::unordered_map<RenderAssetInstanceKey, GfxReplayNode*> createdInstances_;
+  std::unordered_map<RenderAssetInstanceKey, NodeHandle> createdInstances_;
   std::set<std::string> failedFilepaths_;
 
   ESP_SMART_POINTERS(Player)

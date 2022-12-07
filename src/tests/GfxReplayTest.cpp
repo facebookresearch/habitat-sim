@@ -16,7 +16,6 @@
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/WindowlessContext.h"
 #include "esp/gfx/replay/Player.h"
-#include "esp/gfx/replay/PlayerCallbacks.h"
 #include "esp/gfx/replay/Recorder.h"
 #include "esp/gfx/replay/ReplayManager.h"
 #include "esp/metadata/MetadataMediator.h"
@@ -207,19 +206,23 @@ void GfxReplayTest::testPlayer() {
   int numberOfChildren = getNumberOfChildrenOfRoot(rootNode);
 
   // Construct Player. Hook up ResourceManager::loadAndCreateRenderAssetInstance
-  // to Player via callback.
-  auto callbacks = esp::gfx::replay::createSceneGraphPlayerCallbacks();
-  callbacks.loadAndCreateRenderInstance_ =
-      [&](const esp::assets::AssetInfo& assetInfo,
-          const esp::assets::RenderAssetInstanceCreationInfo& creation) {
-        std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
-        auto node = resourceManager.loadAndCreateRenderAssetInstance(
-            assetInfo, creation, &sceneManager_, tempIDs);
-        return reinterpret_cast<esp::gfx::replay::GfxReplayNode*>(node);
-      };
-  callbacks.changeLightSetup_ = [](const esp::gfx::LightSetup& lights) -> void {
-  };
-  esp::gfx::replay::Player player(callbacks);
+  // to Player via backend implementation
+  class SceneGraphPlayerImplementation: public esp::gfx::replay::AbstractSceneGraphPlayerImplementation {
+  public:
+    explicit SceneGraphPlayerImplementation(esp::assets::ResourceManager& resourceManager, esp::scene::SceneManager& sceneManager, int sceneID): resourceManager_{resourceManager}, sceneManager_{sceneManager}, sceneID_{sceneID} {}
+
+  private:
+    esp::gfx::replay::NodeHandle loadAndCreateRenderAssetInstance(const esp::assets::AssetInfo& assetInfo, const esp::assets::RenderAssetInstanceCreationInfo& creation) override {
+      std::vector<int> tempIDs{sceneID_, esp::ID_UNDEFINED};
+      return reinterpret_cast<esp::gfx::replay::NodeHandle>(resourceManager_.loadAndCreateRenderAssetInstance(
+          assetInfo, creation, &sceneManager_, tempIDs));
+    }
+
+    esp::assets::ResourceManager& resourceManager_;
+    esp::scene::SceneManager& sceneManager_;
+    int sceneID_;
+  } implementation{resourceManager, sceneManager_, sceneID};
+  esp::gfx::replay::Player player(implementation);
 
   std::vector<esp::gfx::replay::Keyframe> keyframes;
 
@@ -347,16 +350,20 @@ void GfxReplayTest::testPlayer() {
   }
 }
 
+namespace {
+
+class DummySceneGraphPlayerImplementation: public esp::gfx::replay::AbstractSceneGraphPlayerImplementation {
+private:
+  esp::gfx::replay::NodeHandle loadAndCreateRenderAssetInstance(const esp::assets::AssetInfo& assetInfo, const esp::assets::RenderAssetInstanceCreationInfo& creation) override {
+    return {};
+  }
+};
+
+}
+
 void GfxReplayTest::testPlayerReadMissingFile() {
-  auto callbacks = esp::gfx::replay::createSceneGraphPlayerCallbacks();
-  callbacks.loadAndCreateRenderInstance_ =
-      [](const esp::assets::AssetInfo& assetInfo,
-         const esp::assets::RenderAssetInstanceCreationInfo& creation) {
-        return nullptr;
-      };
-  callbacks.changeLightSetup_ = [](const esp::gfx::LightSetup& lights) -> void {
-  };
-  esp::gfx::replay::Player player(callbacks);
+  DummySceneGraphPlayerImplementation implementation;
+  esp::gfx::replay::Player player(implementation);
 
   player.readKeyframesFromFile("file_that_does_not_exist.json");
   CORRADE_COMPARE(player.getNumKeyframes(), 0);
@@ -371,15 +378,8 @@ void GfxReplayTest::testPlayerReadInvalidFile() {
   out << "{invalid json";
   out.close();
 
-  auto callbacks = esp::gfx::replay::createSceneGraphPlayerCallbacks();
-  callbacks.loadAndCreateRenderInstance_ =
-      [](const esp::assets::AssetInfo& assetInfo,
-         const esp::assets::RenderAssetInstanceCreationInfo& creation) {
-        return nullptr;
-      };
-  callbacks.changeLightSetup_ = [](const esp::gfx::LightSetup& lights) -> void {
-  };
-  esp::gfx::replay::Player player(callbacks);
+  DummySceneGraphPlayerImplementation implementation;
+  esp::gfx::replay::Player player(implementation);
 
   player.readKeyframesFromFile(testFilepath);
   CORRADE_COMPARE(player.getNumKeyframes(), 0);
