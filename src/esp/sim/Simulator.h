@@ -920,7 +920,7 @@ class Simulator {
    * @param assetInfo the asset to load
    * @param creation how to create the instance
    */
-  gfx::replay::GfxReplayNode* loadAndCreateRenderAssetInstance(
+  scene::SceneNode* loadAndCreateRenderAssetInstance(
       const assets::AssetInfo& assetInfo,
       const assets::RenderAssetInstanceCreationInfo& creation);
 
