@@ -5,4 +5,7 @@
 find_package(Magnum REQUIRED GlfwApplication)
 
 add_executable(replayer replayer.cpp)
-target_link_libraries(replayer PRIVATE sensor gfx_batch Magnum::Application)
+target_link_libraries(
+  replayer
+  PRIVATE sensor gfx_batch Magnum::Application
+)

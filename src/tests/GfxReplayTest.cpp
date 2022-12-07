@@ -207,15 +207,25 @@ void GfxReplayTest::testPlayer() {
 
   // Construct Player. Hook up ResourceManager::loadAndCreateRenderAssetInstance
   // to Player via backend implementation
-  class SceneGraphPlayerImplementation: public esp::gfx::replay::AbstractSceneGraphPlayerImplementation {
-  public:
-    explicit SceneGraphPlayerImplementation(esp::assets::ResourceManager& resourceManager, esp::scene::SceneManager& sceneManager, int sceneID): resourceManager_{resourceManager}, sceneManager_{sceneManager}, sceneID_{sceneID} {}
+  class SceneGraphPlayerImplementation
+      : public esp::gfx::replay::AbstractSceneGraphPlayerImplementation {
+   public:
+    explicit SceneGraphPlayerImplementation(
+        esp::assets::ResourceManager& resourceManager,
+        esp::scene::SceneManager& sceneManager,
+        int sceneID)
+        : resourceManager_{resourceManager},
+          sceneManager_{sceneManager},
+          sceneID_{sceneID} {}
 
-  private:
-    esp::gfx::replay::NodeHandle loadAndCreateRenderAssetInstance(const esp::assets::AssetInfo& assetInfo, const esp::assets::RenderAssetInstanceCreationInfo& creation) override {
+   private:
+    esp::gfx::replay::NodeHandle loadAndCreateRenderAssetInstance(
+        const esp::assets::AssetInfo& assetInfo,
+        const esp::assets::RenderAssetInstanceCreationInfo& creation) override {
       std::vector<int> tempIDs{sceneID_, esp::ID_UNDEFINED};
-      return reinterpret_cast<esp::gfx::replay::NodeHandle>(resourceManager_.loadAndCreateRenderAssetInstance(
-          assetInfo, creation, &sceneManager_, tempIDs));
+      return reinterpret_cast<esp::gfx::replay::NodeHandle>(
+          resourceManager_.loadAndCreateRenderAssetInstance(
+              assetInfo, creation, &sceneManager_, tempIDs));
     }
 
     esp::assets::ResourceManager& resourceManager_;
@@ -352,14 +362,17 @@ void GfxReplayTest::testPlayer() {
 
 namespace {
 
-class DummySceneGraphPlayerImplementation: public esp::gfx::replay::AbstractSceneGraphPlayerImplementation {
-private:
-  esp::gfx::replay::NodeHandle loadAndCreateRenderAssetInstance(const esp::assets::AssetInfo& assetInfo, const esp::assets::RenderAssetInstanceCreationInfo& creation) override {
+class DummySceneGraphPlayerImplementation
+    : public esp::gfx::replay::AbstractSceneGraphPlayerImplementation {
+ private:
+  esp::gfx::replay::NodeHandle loadAndCreateRenderAssetInstance(
+      const esp::assets::AssetInfo& assetInfo,
+      const esp::assets::RenderAssetInstanceCreationInfo& creation) override {
     return {};
   }
 };
 
-}
+}  // namespace
 
 void GfxReplayTest::testPlayerReadMissingFile() {
   DummySceneGraphPlayerImplementation implementation;

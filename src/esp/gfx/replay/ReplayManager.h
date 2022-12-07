@@ -37,7 +37,8 @@ class ReplayManager {
    * @brief Set callbacks that are invoked when simulation state changes upon
    * playing a new keyframe. This is required to construct Player instances.
    */
-  void setPlayerImplementation(std::unique_ptr<AbstractPlayerImplementation>&& implementation) {
+  void setPlayerImplementation(
+      std::unique_ptr<AbstractPlayerImplementation>&& implementation) {
     playerImplementation_ = std::move(implementation);
   }
 

@@ -5,27 +5,28 @@
 #include "ReplayBatchRenderer.h"
 
 #include "esp/assets/ResourceManager.h"
-#include "esp/gfx/Renderer.h"
 #include "esp/gfx/RenderTarget.h"
+#include "esp/gfx/Renderer.h"
 #include "esp/metadata/MetadataMediator.h"
-#include "esp/sensor/SensorFactory.h"
 #include "esp/sensor/CameraSensor.h"
+#include "esp/sensor/SensorFactory.h"
 #include "esp/sim/SimulatorConfiguration.h"
 
 #include <Corrade/Containers/GrowableArray.h>
 #include <Corrade/Utility/Algorithms.h>
 #include <Magnum/GL/Context.h>
-#include <Magnum/ImageView.h>
 #include <Magnum/Image.h>
+#include <Magnum/ImageView.h>
 
 namespace esp {
 namespace sim {
 
 using namespace Mn::Math::Literals;
 
-Mn::Vector2i AbstractReplayRenderer::environmentGridSize(Mn::Int environmentCount) {
+Mn::Vector2i AbstractReplayRenderer::environmentGridSize(
+    Mn::Int environmentCount) {
   const Mn::Int x = Mn::Math::ceil(Mn::Math::sqrt(Mn::Float(environmentCount)));
-  return {x, (environmentCount + x - 1)/x};
+  return {x, (environmentCount + x - 1) / x};
 }
 
 AbstractReplayRenderer::~AbstractReplayRenderer() = default;
@@ -48,8 +49,8 @@ void AbstractReplayRenderer::setEnvironmentKeyframe(
 }
 
 void AbstractReplayRenderer::setSensorTransform(unsigned envIndex,
-                                             const std::string& sensorName,
-                                             const Mn::Matrix4& transform) {
+                                                const std::string& sensorName,
+                                                const Mn::Matrix4& transform) {
   CORRADE_INTERNAL_ASSERT(envIndex < doEnvironmentCount());
   return doSetSensorTransform(envIndex, sensorName, transform);
 }
@@ -65,18 +66,21 @@ void AbstractReplayRenderer::setSensorTransformsFromKeyframe(
   return doSetSensorTransformsFromKeyframe(envIndex, prefix);
 }
 
-void AbstractReplayRenderer::render(Cr::Containers::ArrayView<const Mn::MutableImageView2D> imageViews) {
+void AbstractReplayRenderer::render(
+    Cr::Containers::ArrayView<const Mn::MutableImageView2D> imageViews) {
   CORRADE_ASSERT(imageViews.size() == doEnvironmentCount(),
-    "ReplayRenderer::render(): expected" << doEnvironmentCount() << "image views but got" << imageViews.size(), );
+                 "ReplayRenderer::render(): expected" << doEnvironmentCount()
+                                                      << "image views but got"
+                                                      << imageViews.size(), );
   return doRender(imageViews);
 }
 
-void AbstractReplayRenderer::render(Magnum::GL::AbstractFramebuffer& framebuffer) {
+void AbstractReplayRenderer::render(
+    Magnum::GL::AbstractFramebuffer& framebuffer) {
   return doRender(framebuffer);
 }
 
-ReplayRenderer::ReplayRenderer(
-    const ReplayRendererConfiguration& cfg) {
+ReplayRenderer::ReplayRenderer(const ReplayRendererConfiguration& cfg) {
   config_ = cfg;
   SimulatorConfiguration simConfig;
   simConfig.createRenderer = true;
@@ -87,15 +91,18 @@ ReplayRenderer::ReplayRenderer(
 
   sceneManager_ = scene::SceneManager::create_unique();
 
-  class SceneGraphPlayerImplementation: public gfx::replay::AbstractSceneGraphPlayerImplementation {
+  class SceneGraphPlayerImplementation
+      : public gfx::replay::AbstractSceneGraphPlayerImplementation {
    public:
-    SceneGraphPlayerImplementation(ReplayRenderer& self, unsigned envIdx): self_{self}, envIdx_{envIdx} {}
+    SceneGraphPlayerImplementation(ReplayRenderer& self, unsigned envIdx)
+        : self_{self}, envIdx_{envIdx} {}
 
    private:
     gfx::replay::NodeHandle loadAndCreateRenderAssetInstance(
-      const esp::assets::AssetInfo& assetInfo,
-      const esp::assets::RenderAssetInstanceCreationInfo& creation) override {
-      return self_.loadAndCreateRenderAssetInstance(envIdx_, assetInfo, creation);
+        const esp::assets::AssetInfo& assetInfo,
+        const esp::assets::RenderAssetInstanceCreationInfo& creation) override {
+      return self_.loadAndCreateRenderAssetInstance(envIdx_, assetInfo,
+                                                    creation);
     }
     void changeLightSetup(const gfx::LightSetup& lights) override {
       return self_.resourceManager_->setLightSetup(lights);
@@ -116,12 +123,13 @@ ReplayRenderer::ReplayRenderer(
     auto sensorMap = esp::sensor::SensorFactory::createSensors(
         parentNode, cfg.sensorSpecifications);
 
-    envs_.emplace_back(
-        EnvironmentRecord{.playerImplementation_ = std::make_unique<SceneGraphPlayerImplementation>(*this, envIdx),
-                          .sceneID_ = sceneID,
-                          .semanticSceneID_ = semanticSceneID,
-                          .sensorParentNode_ = &parentNode,
-                          .sensorMap_ = std::move(sensorMap)});
+    envs_.emplace_back(EnvironmentRecord{
+        .playerImplementation_ =
+            std::make_unique<SceneGraphPlayerImplementation>(*this, envIdx),
+        .sceneID_ = sceneID,
+        .semanticSceneID_ = semanticSceneID,
+        .sensorParentNode_ = &parentNode,
+        .sensorMap_ = std::move(sensorMap)});
   }
 
   // OpenGL context and renderer
@@ -184,7 +192,9 @@ Mn::Vector2i ReplayRenderer::doSensorSize(unsigned envIndex) {
   auto& env = envs_[envIndex];
 
   CORRADE_INTERNAL_ASSERT(env.sensorMap_.size() == 1);
-  return static_cast<esp::sensor::VisualSensor&>(env.sensorMap_.begin()->second.get()).framebufferSize();
+  return static_cast<esp::sensor::VisualSensor&>(
+             env.sensorMap_.begin()->second.get())
+      .framebufferSize();
 }
 
 gfx::replay::Player& ReplayRenderer::doPlayerFor(unsigned envIndex) {
@@ -192,8 +202,8 @@ gfx::replay::Player& ReplayRenderer::doPlayerFor(unsigned envIndex) {
 }
 
 void ReplayRenderer::doSetSensorTransform(unsigned envIndex,
-                                             const std::string& sensorName,
-                                             const Mn::Matrix4& transform) {
+                                          const std::string& sensorName,
+                                          const Mn::Matrix4& transform) {
   auto& env = envs_[envIndex];
 
   ESP_CHECK(env.sensorMap_.count(sensorName),
@@ -231,7 +241,8 @@ void ReplayRenderer::doSetSensorTransformsFromKeyframe(
   }
 }
 
-void ReplayRenderer::doRender(Cr::Containers::ArrayView<const Mn::MutableImageView2D> imageViews) {
+void ReplayRenderer::doRender(
+    Cr::Containers::ArrayView<const Mn::MutableImageView2D> imageViews) {
   for (int envIndex = 0; envIndex < config_.numEnvironments; envIndex++) {
     auto& sensorMap = getEnvironmentSensors(envIndex);
     CORRADE_INTERNAL_ASSERT(sensorMap.size() == 1);
@@ -244,8 +255,8 @@ void ReplayRenderer::doRender(Cr::Containers::ArrayView<const Mn::MutableImageVi
 
       // todo: investigate flags (frustum culling?)
       renderer_->enqueueAsyncDrawJob(visualSensor, sceneGraph,
-                                    imageViews[envIndex],
-                                    esp::gfx::RenderCamera::Flags{});
+                                     imageViews[envIndex],
+                                     esp::gfx::RenderCamera::Flags{});
     }
   }
 
@@ -260,21 +271,25 @@ void ReplayRenderer::doRender(Magnum::GL::AbstractFramebuffer& framebuffer) {
     auto& sensorMap = getEnvironmentSensors(envIndex);
     CORRADE_INTERNAL_ASSERT(sensorMap.size() == 1);
     CORRADE_INTERNAL_ASSERT(sensorMap.begin()->second.get().isVisualSensor());
-      auto& visualSensor =
-          static_cast<esp::sensor::VisualSensor&>(sensorMap.begin()->second.get());
+    auto& visualSensor = static_cast<esp::sensor::VisualSensor&>(
+        sensorMap.begin()->second.get());
 
-        visualSensor.renderTarget().renderEnter();
+    visualSensor.renderTarget().renderEnter();
 
-      auto& sceneGraph = getSceneGraph(envIndex);
-      renderer_->draw(*visualSensor.getRenderCamera(), sceneGraph, esp::gfx::RenderCamera::Flags{});
+    auto& sceneGraph = getSceneGraph(envIndex);
+    renderer_->draw(*visualSensor.getRenderCamera(), sceneGraph,
+                    esp::gfx::RenderCamera::Flags{});
 
-      visualSensor.renderTarget().renderExit();
+    visualSensor.renderTarget().renderExit();
 
-      // TODO ugh wait, this is calculating the size from scratch for every
-      //  environment in a hope that all have the same?? UGH
-      const auto size = Mn::Vector2i{visualSensor.specification()->resolution}.flipped();
-      const auto rectangle = Mn::Range2Di::fromSize(size*Mn::Vector2i{envIndex% gridSize.x(), envIndex/gridSize.x()}, size);
-      visualSensor.renderTarget().blitRgbaTo(framebuffer, rectangle);
+    // TODO ugh wait, this is calculating the size from scratch for every
+    //  environment in a hope that all have the same?? UGH
+    const auto size =
+        Mn::Vector2i{visualSensor.specification()->resolution}.flipped();
+    const auto rectangle = Mn::Range2Di::fromSize(
+        size * Mn::Vector2i{envIndex % gridSize.x(), envIndex / gridSize.x()},
+        size);
+    visualSensor.renderTarget().blitRgbaTo(framebuffer, rectangle);
   }
 }
 
@@ -307,8 +322,7 @@ esp::scene::SceneGraph& ReplayRenderer::getSemanticSceneGraph(
                                           : env.semanticSceneID_);
 }
 
-gfx::replay::NodeHandle
-ReplayRenderer::loadAndCreateRenderAssetInstance(
+gfx::replay::NodeHandle ReplayRenderer::loadAndCreateRenderAssetInstance(
     unsigned envIndex,
     const assets::AssetInfo& assetInfo,
     const assets::RenderAssetInstanceCreationInfo& creation) {
@@ -323,68 +337,91 @@ ReplayRenderer::loadAndCreateRenderAssetInstance(
   return reinterpret_cast<gfx::replay::NodeHandle>(node);
 }
 
-ReplayBatchRenderer::ReplayBatchRenderer(const ReplayRendererConfiguration& cfg) {
+ReplayBatchRenderer::ReplayBatchRenderer(
+    const ReplayRendererConfiguration& cfg) {
   CORRADE_ASSERT(cfg.sensorSpecifications.size() == 1,
-    "ReplayBatchRenderer: expecting exactly one sensor", );
-  const auto& sensor = static_cast<esp::sensor::CameraSensorSpec&>(*cfg.sensorSpecifications.front());
+                 "ReplayBatchRenderer: expecting exactly one sensor", );
+  const auto& sensor = static_cast<esp::sensor::CameraSensorSpec&>(
+      *cfg.sensorSpecifications.front());
 
   gfx_batch::RendererConfiguration configuration;
-  configuration
-      .setTileSizeCount(Mn::Vector2i{sensor.resolution}.flipped(), environmentGridSize(cfg.numEnvironments));
-  if((standalone_ = cfg.standalone))
+  configuration.setTileSizeCount(Mn::Vector2i{sensor.resolution}.flipped(),
+                                 environmentGridSize(cfg.numEnvironments));
+  if ((standalone_ = cfg.standalone))
     renderer_.emplace<gfx_batch::RendererStandalone>(
-      configuration,
-      gfx_batch::RendererStandaloneConfiguration{});
+        configuration, gfx_batch::RendererStandaloneConfiguration{});
   else {
     CORRADE_ASSERT(Mn::GL::Context::hasCurrent(),
-      "ReplayBatchRenderer: expecting a current GL context if a standalone renderer is disabled", );
+                   "ReplayBatchRenderer: expecting a current GL context if a "
+                   "standalone renderer is disabled", );
     renderer_.emplace<gfx_batch::Renderer>(configuration);
   }
 
   theOnlySensorName_ = sensor.uuid;
   theOnlySensorProjection_ = sensor.projectionMatrix();
 
-  class BatchPlayerImplementation: public gfx::replay::AbstractSceneGraphPlayerImplementation {
+  class BatchPlayerImplementation
+      : public gfx::replay::AbstractSceneGraphPlayerImplementation {
    public:
-    BatchPlayerImplementation(gfx_batch::Renderer& renderer, Mn::UnsignedInt sceneId): renderer_{renderer}, sceneId_{sceneId} {}
+    BatchPlayerImplementation(gfx_batch::Renderer& renderer,
+                              Mn::UnsignedInt sceneId)
+        : renderer_{renderer}, sceneId_{sceneId} {}
 
    private:
     gfx::replay::NodeHandle loadAndCreateRenderAssetInstance(
-      const esp::assets::AssetInfo& assetInfo,
-      const esp::assets::RenderAssetInstanceCreationInfo& creation) override {
+        const esp::assets::AssetInfo& assetInfo,
+        const esp::assets::RenderAssetInstanceCreationInfo& creation) override {
       // TODO i have no idea what these are, skip. expected 0 but it is 7!!
-      // CORRADE_ASSERT(!creation.flags, "ReplayBatchRenderer: no idea what these flags are for:" << unsigned(creation.flags), {});
-        // TODO and this is no_lights?!!
-      // CORRADE_ASSERT(creation.lightSetupKey.empty(), "ReplayBatchRenderer: no idea what light setup key is for:" << creation.lightSetupKey, {});
+      // CORRADE_ASSERT(!creation.flags, "ReplayBatchRenderer: no idea what
+      // these flags are for:" << unsigned(creation.flags), {});
+      // TODO and this is no_lights?!!
+      // CORRADE_ASSERT(creation.lightSetupKey.empty(), "ReplayBatchRenderer: no
+      // idea what light setup key is for:" << creation.lightSetupKey, {});
 
       /* If no such name is known yet, add as a file */
-      if(!renderer_.hasMeshHierarchy(creation.filepath)) {
+      if (!renderer_.hasMeshHierarchy(creation.filepath)) {
         // TODO asserts might be TOO BRUTAL?
-        CORRADE_INTERNAL_ASSERT_OUTPUT(renderer_.addFile(creation.filepath, gfx_batch::RendererFileFlag::Whole|gfx_batch::RendererFileFlag::GenerateMipmap));
+        CORRADE_INTERNAL_ASSERT_OUTPUT(
+            renderer_.addFile(creation.filepath,
+                              gfx_batch::RendererFileFlag::Whole |
+                                  gfx_batch::RendererFileFlag::GenerateMipmap));
         CORRADE_INTERNAL_ASSERT(renderer_.hasMeshHierarchy(creation.filepath));
       }
 
-      return reinterpret_cast<gfx::replay::NodeHandle>(renderer_.addMeshHierarchy(sceneId_, creation.filepath,
-        /* Baking the initial scaling and coordinate frame into the
-           transformation */
-        // TODO why the scale has to be an optional??
-        Mn::Matrix4::scaling(creation.scale ? *creation.scale : Mn::Vector3{1.0f})*
-        Mn::Matrix4::from(Mn::Quaternion{assetInfo.frame.rotationFrameToWorld()}.toMatrix(), {}))
-        /* Returning incremented by 1 because 0 (nullptr) is treated as an
-           error */
-        + 1);
+      return reinterpret_cast<gfx::replay::NodeHandle>(
+          renderer_.addMeshHierarchy(
+              sceneId_, creation.filepath,
+              /* Baking the initial scaling and coordinate frame into the
+                 transformation */
+              // TODO why the scale has to be an optional??
+              Mn::Matrix4::scaling(creation.scale ? *creation.scale
+                                                  : Mn::Vector3{1.0f}) *
+                  Mn::Matrix4::from(
+                      Mn::Quaternion{assetInfo.frame.rotationFrameToWorld()}
+                          .toMatrix(),
+                      {}))
+          /* Returning incremented by 1 because 0 (nullptr) is treated as an
+             error */
+          + 1);
     }
 
     void deleteAssetInstance(const gfx::replay::NodeHandle node) override {
       // TODO actually remove from the scene instead of setting a zero scale
-      renderer_.transformations(sceneId_)[reinterpret_cast<std::size_t>(node) - 1] = Mn::Matrix4{Mn::Math::ZeroInit};
+      renderer_.transformations(
+          sceneId_)[reinterpret_cast<std::size_t>(node) - 1] =
+          Mn::Matrix4{Mn::Math::ZeroInit};
     }
 
-    void setNodeTransform(const gfx::replay::NodeHandle node, const Mn::Vector3& translation, const Mn::Quaternion& rotation) override {
-      renderer_.transformations(sceneId_)[reinterpret_cast<std::size_t>(node) - 1] = Mn::Matrix4::from(rotation.toMatrix(), translation);
+    void setNodeTransform(const gfx::replay::NodeHandle node,
+                          const Mn::Vector3& translation,
+                          const Mn::Quaternion& rotation) override {
+      renderer_.transformations(
+          sceneId_)[reinterpret_cast<std::size_t>(node) - 1] =
+          Mn::Matrix4::from(rotation.toMatrix(), translation);
     }
 
-    void setNodeSemanticId(esp::gfx::replay::NodeHandle, Mn::UnsignedInt) override {
+    void setNodeSemanticId(esp::gfx::replay::NodeHandle,
+                           Mn::UnsignedInt) override {
       // CORRADE_INTERNAL_ASSERT_UNREACHABLE(); // TODO
     }
 
@@ -396,10 +433,15 @@ ReplayBatchRenderer::ReplayBatchRenderer(const ReplayRendererConfiguration& cfg)
     Mn::UnsignedInt sceneId_;
   };
 
-  // envs_ = Cr::Containers::Array<EnvironmentRecord>{Cr::NoInit, std::size_t(cfg.numEnvironments)};
-  for(Mn::UnsignedInt i = 0; i != cfg.numEnvironments; ++i) {
+  // envs_ = Cr::Containers::Array<EnvironmentRecord>{Cr::NoInit,
+  // std::size_t(cfg.numEnvironments)};
+  for (Mn::UnsignedInt i = 0; i != cfg.numEnvironments; ++i) {
     // TODO arrayAppend() doesn't work because something in Player is not not
-    arrayAppend(envs_, EnvironmentRecord{Cr::Containers::Pointer<gfx::replay::AbstractPlayerImplementation>{new BatchPlayerImplementation{*renderer_, i}}});
+    arrayAppend(
+        envs_,
+        EnvironmentRecord{
+            Cr::Containers::Pointer<gfx::replay::AbstractPlayerImplementation>{
+                new BatchPlayerImplementation{*renderer_, i}}});
   }
 }
 
@@ -410,7 +452,7 @@ unsigned ReplayBatchRenderer::doEnvironmentCount() const {
 }
 
 Mn::Vector2i ReplayBatchRenderer::doSensorSize(
-  unsigned /* all environments have the same size */
+    unsigned /* all environments have the same size */
 ) {
   return renderer_->tileSize();
 }
@@ -419,45 +461,58 @@ gfx::replay::Player& ReplayBatchRenderer::doPlayerFor(unsigned envIndex) {
   return envs_[envIndex].player_;
 }
 
-void ReplayBatchRenderer::doSetSensorTransform(unsigned envIndex,
-                          // TODO assumes there's just one sensor per env
-                          const std::string&,
-                          const Mn::Matrix4& transform) {
-  renderer_->camera(envIndex) = theOnlySensorProjection_*transform.inverted();
+void ReplayBatchRenderer::doSetSensorTransform(
+    unsigned envIndex,
+    // TODO assumes there's just one sensor per env
+    const std::string&,
+    const Mn::Matrix4& transform) {
+  renderer_->camera(envIndex) = theOnlySensorProjection_ * transform.inverted();
 }
 
-void ReplayBatchRenderer::doSetSensorTransformsFromKeyframe(unsigned envIndex, const std::string& prefix) {
+void ReplayBatchRenderer::doSetSensorTransformsFromKeyframe(
+    unsigned envIndex,
+    const std::string& prefix) {
   auto& env = envs_[envIndex];
   std::string userName = prefix + theOnlySensorName_;
   Mn::Vector3 translation;
   Mn::Quaternion rotation;
-  bool found =
-    env.player_.getUserTransform(userName, &translation, &rotation);
+  bool found = env.player_.getUserTransform(userName, &translation, &rotation);
   ESP_CHECK(found,
-    "setSensorTransformsFromKeyframe: couldn't find user transform \""
-    << userName << "\" for environment " << envIndex << ".");
-  renderer_->camera(envIndex) = theOnlySensorProjection_*Mn::Matrix4::from(rotation.toMatrix(), translation).inverted();
+            "setSensorTransformsFromKeyframe: couldn't find user transform \""
+                << userName << "\" for environment " << envIndex << ".");
+  renderer_->camera(envIndex) =
+      theOnlySensorProjection_ *
+      Mn::Matrix4::from(rotation.toMatrix(), translation).inverted();
 }
 
-void ReplayBatchRenderer::doRender(Cr::Containers::ArrayView<const Mn::MutableImageView2D> imageViews) {
+void ReplayBatchRenderer::doRender(
+    Cr::Containers::ArrayView<const Mn::MutableImageView2D> imageViews) {
   CORRADE_ASSERT(standalone_,
-    "ReplayBatchRenderer::render(): can use this function only with a standalone renderer", );
+                 "ReplayBatchRenderer::render(): can use this function only "
+                 "with a standalone renderer", );
   static_cast<gfx_batch::RendererStandalone&>(*renderer_).draw();
 
-  for(int envIndex = 0; envIndex != envs_.size(); ++envIndex) {
-    const auto rectangle = Mn::Range2Di::fromSize(renderer_->tileSize()*Mn::Vector2i{envIndex%renderer_->tileCount().x(), envIndex/renderer_->tileCount().x()}, renderer_->tileSize());
-    static_cast<gfx_batch::RendererStandalone&>(*renderer_).colorImageInto(rectangle, imageViews[envIndex]);
+  for (int envIndex = 0; envIndex != envs_.size(); ++envIndex) {
+    const auto rectangle = Mn::Range2Di::fromSize(
+        renderer_->tileSize() *
+            Mn::Vector2i{envIndex % renderer_->tileCount().x(),
+                         envIndex / renderer_->tileCount().x()},
+        renderer_->tileSize());
+    static_cast<gfx_batch::RendererStandalone&>(*renderer_)
+        .colorImageInto(rectangle, imageViews[envIndex]);
   }
 }
 
-void ReplayBatchRenderer::doRender(Magnum::GL::AbstractFramebuffer& framebuffer) {
+void ReplayBatchRenderer::doRender(
+    Magnum::GL::AbstractFramebuffer& framebuffer) {
   CORRADE_ASSERT(!standalone_,
-    "ReplayBatchRenderer::render(): can't use this function with a standalone renderer", );
+                 "ReplayBatchRenderer::render(): can't use this function with "
+                 "a standalone renderer", );
 
   /* The non-standalone renderer doesn't clear on its own, it's the user
      responsibility */
   framebuffer.clear(Mn::GL::FramebufferClear::Color |
-                            Mn::GL::FramebufferClear::Depth);
+                    Mn::GL::FramebufferClear::Depth);
 
   renderer_->draw(framebuffer);
 }

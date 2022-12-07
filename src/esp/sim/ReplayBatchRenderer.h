@@ -6,8 +6,8 @@
 #define ESP_SIM_REPLAYBATCHRENDERER_H_
 
 #include "esp/gfx/WindowlessContext.h"
-#include "esp/gfx_batch/RendererStandalone.h"
 #include "esp/gfx/replay/Player.h"
+#include "esp/gfx_batch/RendererStandalone.h"
 #include "esp/scene/SceneManager.h"
 
 namespace esp {
@@ -61,20 +61,23 @@ class AbstractReplayRenderer {
   // Assumes there's just one sensor per env
   Magnum::Vector2i sensorSize(unsigned envIndex);
 
-  void setEnvironmentKeyframe(unsigned envIndex, const std::string& serKeyframe);
+  void setEnvironmentKeyframe(unsigned envIndex,
+                              const std::string& serKeyframe);
 
   void setSensorTransform(unsigned envIndex,
-                                             const std::string& sensorName,
-                                             const Mn::Matrix4& transform);
+                          const std::string& sensorName,
+                          const Mn::Matrix4& transform);
 
   // You must have done Recorder::addUserTransformToKeyframe(prefix +
   // sensorName, ...) for every sensor in
   // ReplayRendererConfiguration::sensorSpecifications, for the specified
   // environment's keyframe. See also setEnvironmentKeyframe.
-  void setSensorTransformsFromKeyframe(unsigned envIndex, const std::string& prefix);
+  void setSensorTransformsFromKeyframe(unsigned envIndex,
+                                       const std::string& prefix);
 
   // Renders and waits for the render to finish
-  void render(Corrade::Containers::ArrayView<const Magnum::MutableImageView2D> imageViews);
+  void render(Corrade::Containers::ArrayView<const Magnum::MutableImageView2D>
+                  imageViews);
 
   void render(Magnum::GL::AbstractFramebuffer& framebuffer);
 
@@ -97,22 +100,26 @@ class AbstractReplayRenderer {
 
   /* envIndex is guaranteed to be in bounds */
   virtual void doSetSensorTransform(unsigned envIndex,
-                                             const std::string& sensorName,
-                                             const Mn::Matrix4& transform) = 0;
+                                    const std::string& sensorName,
+                                    const Mn::Matrix4& transform) = 0;
 
   /* envIndex is guaranteed to be in bounds */
-  virtual void doSetSensorTransformsFromKeyframe(unsigned envIndex, const std::string& prefix) = 0;
+  virtual void doSetSensorTransformsFromKeyframe(unsigned envIndex,
+                                                 const std::string& prefix) = 0;
 
   /* imageViews.size() is guaranteed to be same as doEnvironmentCount() */
-  virtual void doRender(Corrade::Containers::ArrayView<const Magnum::MutableImageView2D> imageViews) = 0;
+  virtual void doRender(
+      Corrade::Containers::ArrayView<const Magnum::MutableImageView2D>
+          imageViews) = 0;
 
   virtual void doRender(Magnum::GL::AbstractFramebuffer& framebuffer) = 0;
 };
 
-class ReplayRenderer: public AbstractReplayRenderer {
+class ReplayRenderer : public AbstractReplayRenderer {
  public:
   struct EnvironmentRecord {
-    std::unique_ptr<gfx::replay::AbstractSceneGraphPlayerImplementation> playerImplementation_;
+    std::unique_ptr<gfx::replay::AbstractSceneGraphPlayerImplementation>
+        playerImplementation_;
     esp::gfx::replay::Player player_{*playerImplementation_};
     int sceneID_ = ID_UNDEFINED;
     int semanticSceneID_ = ID_UNDEFINED;
@@ -132,7 +139,8 @@ class ReplayRenderer: public AbstractReplayRenderer {
   esp::scene::SceneGraph& getSceneGraph(unsigned envIndex);
   esp::scene::SceneGraph& getSemanticSceneGraph(unsigned envIndex);
 
-  esp::scene::SceneNode* getEnvironmentSensorParentNode(unsigned envIndex) const;
+  esp::scene::SceneNode* getEnvironmentSensorParentNode(
+      unsigned envIndex) const;
   std::map<std::string, std::reference_wrapper<esp::sensor::Sensor>>&
   getEnvironmentSensors(unsigned envIndex);
 
@@ -143,15 +151,18 @@ class ReplayRenderer: public AbstractReplayRenderer {
 
   esp::gfx::replay::Player& doPlayerFor(unsigned envIndex) override;
 
-  // void doSetEnvironmentKeyframe(int envIndex, const std::string& serKeyframe) override;
+  // void doSetEnvironmentKeyframe(int envIndex, const std::string& serKeyframe)
+  // override;
 
   void doSetSensorTransform(unsigned envIndex,
-                                             const std::string& sensorName,
-                                             const Mn::Matrix4& transform) override;
+                            const std::string& sensorName,
+                            const Mn::Matrix4& transform) override;
 
-  void doSetSensorTransformsFromKeyframe(unsigned envIndex, const std::string& prefix) override;
+  void doSetSensorTransformsFromKeyframe(unsigned envIndex,
+                                         const std::string& prefix) override;
 
-  void doRender(Corrade::Containers::ArrayView<const Magnum::MutableImageView2D> imageViews) override;
+  void doRender(Corrade::Containers::ArrayView<const Magnum::MutableImageView2D>
+                    imageViews) override;
 
   void doRender(Magnum::GL::AbstractFramebuffer& framebuffer) override;
 
@@ -174,7 +185,7 @@ class ReplayRenderer: public AbstractReplayRenderer {
   ESP_SMART_POINTERS(ReplayRenderer)
 };
 
-class ReplayBatchRenderer: public AbstractReplayRenderer {
+class ReplayBatchRenderer : public AbstractReplayRenderer {
  public:
   explicit ReplayBatchRenderer(const ReplayRendererConfiguration& cfg);
 
@@ -187,21 +198,25 @@ class ReplayBatchRenderer: public AbstractReplayRenderer {
 
   esp::gfx::replay::Player& doPlayerFor(unsigned envIndex) override;
 
-  // void doSetEnvironmentKeyframe(unsigned envIndex, const std::string& serKeyframe) override;
+  // void doSetEnvironmentKeyframe(unsigned envIndex, const std::string&
+  // serKeyframe) override;
 
   void doSetSensorTransform(unsigned envIndex,
-                                             const std::string& sensorName,
-                                             const Mn::Matrix4& transform) override;
+                            const std::string& sensorName,
+                            const Mn::Matrix4& transform) override;
 
-  void doSetSensorTransformsFromKeyframe(unsigned envIndex, const std::string& prefix) override;
+  void doSetSensorTransformsFromKeyframe(unsigned envIndex,
+                                         const std::string& prefix) override;
 
-  void doRender(Corrade::Containers::ArrayView<const Magnum::MutableImageView2D> imageViews) override;
+  void doRender(Corrade::Containers::ArrayView<const Magnum::MutableImageView2D>
+                    imageViews) override;
 
   void doRender(Magnum::GL::AbstractFramebuffer& framebuffer) override;
 
-   // TODO pimpl all this?
+  // TODO pimpl all this?
   struct EnvironmentRecord {
-    Corrade::Containers::Pointer<gfx::replay::AbstractPlayerImplementation> playerImplementation_;
+    Corrade::Containers::Pointer<gfx::replay::AbstractPlayerImplementation>
+        playerImplementation_;
     gfx::replay::Player player_{*playerImplementation_};
   };
   Corrade::Containers::Array<EnvironmentRecord> envs_;

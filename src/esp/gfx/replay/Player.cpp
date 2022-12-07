@@ -24,20 +24,26 @@ void AbstractPlayerImplementation::setNodeSemanticId(NodeHandle, unsigned) {}
 
 void AbstractPlayerImplementation::changeLightSetup(const LightSetup&) {}
 
-void AbstractSceneGraphPlayerImplementation::deleteAssetInstance(const NodeHandle node) {
+void AbstractSceneGraphPlayerImplementation::deleteAssetInstance(
+    const NodeHandle node) {
   // TODO: use NodeDeletionHelper to safely delete nodes owned by the Player.
   // the deletion here is unsafe because a Player may persist beyond the
   // lifetime of these nodes.
   delete reinterpret_cast<scene::SceneNode*>(node);
 }
 
-void AbstractSceneGraphPlayerImplementation::setNodeTransform(const NodeHandle node, const Mn::Vector3& translation, const Mn::Quaternion& rotation) {
+void AbstractSceneGraphPlayerImplementation::setNodeTransform(
+    const NodeHandle node,
+    const Mn::Vector3& translation,
+    const Mn::Quaternion& rotation) {
   (*reinterpret_cast<scene::SceneNode*>(node))
-    .setTranslation(translation)
-    .setRotation(rotation);
+      .setTranslation(translation)
+      .setRotation(rotation);
 }
 
-void AbstractSceneGraphPlayerImplementation::setNodeSemanticId(const NodeHandle node, const unsigned id) {
+void AbstractSceneGraphPlayerImplementation::setNodeSemanticId(
+    const NodeHandle node,
+    const unsigned id) {
   setSemanticIdForSubtree(reinterpret_cast<scene::SceneNode*>(node), id);
 }
 
@@ -54,7 +60,8 @@ Keyframe Player::keyframeFromString(const std::string& keyframe) {
   return res;
 }
 
-Player::Player(AbstractPlayerImplementation& implementation) : implementation_{implementation} {}
+Player::Player(AbstractPlayerImplementation& implementation)
+    : implementation_{implementation} {}
 
 void Player::readKeyframesFromFile(const std::string& filepath) {
   close();
@@ -129,7 +136,7 @@ void Player::clearFrame() {
 
 void Player::applyKeyframe(const Keyframe& keyframe) {
   for (const auto& assetInfo : keyframe.loads) {
-    if(assetInfos_.count(assetInfo.filepath) != 0) {
+    if (assetInfos_.count(assetInfo.filepath) != 0) {
       ESP_WARNING() << assetInfo.filepath << "already loaded";
       // continue;
     }
@@ -188,7 +195,7 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     auto* node = it->second;
     const auto& state = pair.second;
     implementation_->setNodeTransform(node, state.absTransform.translation,
-                                 state.absTransform.rotation);
+                                      state.absTransform.rotation);
     implementation_->setNodeSemanticId(node, state.semanticId);
   }
 

@@ -41,9 +41,12 @@ class AbstractPlayerImplementation {
 
   /* Deliberately non-copyable to avoid accidents */
   AbstractPlayerImplementation(const AbstractPlayerImplementation&) = delete;
-  AbstractPlayerImplementation(AbstractPlayerImplementation&&) noexcept = default;
-  AbstractPlayerImplementation& operator=(const AbstractPlayerImplementation&) = delete;
-  AbstractPlayerImplementation& operator=(AbstractPlayerImplementation&&) noexcept = default;
+  AbstractPlayerImplementation(AbstractPlayerImplementation&&) noexcept =
+      default;
+  AbstractPlayerImplementation& operator=(const AbstractPlayerImplementation&) =
+      delete;
+  AbstractPlayerImplementation& operator=(
+      AbstractPlayerImplementation&&) noexcept = default;
 
  private:
   /* The interfaces are private, i.e. not meant to be called from subclasses */
@@ -74,7 +77,9 @@ class AbstractPlayerImplementation {
    * The @p handle is expected to be returned from an earlier call to
    * @ref loadAndCreateRenderAssetInstance() on the same instance.
    */
-  virtual void setNodeTransform(NodeHandle node, const Magnum::Vector3& translation, const Magnum::Quaternion& rotation) = 0;
+  virtual void setNodeTransform(NodeHandle node,
+                                const Magnum::Vector3& translation,
+                                const Magnum::Quaternion& rotation) = 0;
 
   /**
    * @brief Set node semantic ID
@@ -99,12 +104,15 @@ class AbstractPlayerImplementation {
 Intended to be used via subclassing and implementing
 @ref loadAndCreateRenderAssetInstance() and @ref changeLightSetup().
 */
-class AbstractSceneGraphPlayerImplementation: public AbstractPlayerImplementation {
+class AbstractSceneGraphPlayerImplementation
+    : public AbstractPlayerImplementation {
   /* The interfaces are private, i.e. not meant to be called from subclasses */
 
   void deleteAssetInstance(NodeHandle node) override;
 
-  void setNodeTransform(NodeHandle node, const Magnum::Vector3& translation, const Magnum::Quaternion& rotation) override;
+  void setNodeTransform(NodeHandle node,
+                        const Magnum::Vector3& translation,
+                        const Magnum::Quaternion& rotation) override;
 
   void setNodeSemanticId(NodeHandle node, unsigned id) override;
 };

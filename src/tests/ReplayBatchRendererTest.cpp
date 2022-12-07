@@ -63,19 +63,22 @@ Mn::MutableImageView2D getRGBView(int width,
 
 const struct {
   const char* name;
-  Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer>(*create)(const ReplayRendererConfiguration& configuration);
+  Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer> (*create)(
+      const ReplayRendererConfiguration& configuration);
 } TestIntegrationData[]{
-  {"classic renderer", [](const ReplayRendererConfiguration& configuration) {
-    return Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer>{new esp::sim::ReplayRenderer{configuration}};
-  }},
-  {"batch renderer", [](const ReplayRendererConfiguration& configuration) {
-    return Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer>{new esp::sim::ReplayBatchRenderer{configuration}};
-  }}
-};
+    {"classic renderer",
+     [](const ReplayRendererConfiguration& configuration) {
+       return Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer>{
+           new esp::sim::ReplayRenderer{configuration}};
+     }},
+    {"batch renderer", [](const ReplayRendererConfiguration& configuration) {
+       return Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer>{
+           new esp::sim::ReplayBatchRenderer{configuration}};
+     }}};
 
 ReplayBatchRendererTest::ReplayBatchRendererTest() {
   addInstancedTests({&ReplayBatchRendererTest::testIntegration},
-    Cr::Containers::arraySize(TestIntegrationData));
+                    Cr::Containers::arraySize(TestIntegrationData));
 }  // ctor
 
 // test recording and playback through the simulator interface
@@ -151,14 +154,17 @@ void ReplayBatchRendererTest::testIntegration() {
   ReplayRendererConfiguration batchRendererConfig;
   batchRendererConfig.sensorSpecifications = std::move(sensorSpecifications);
   batchRendererConfig.numEnvironments = numEnvs;
-  Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer> renderer = data.create(batchRendererConfig);
+  Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer> renderer =
+      data.create(batchRendererConfig);
 
   std::vector<std::vector<char>> buffers(numEnvs);
   std::vector<Mn::MutableImageView2D> imageViews;
 
   for (int envIndex = 0; envIndex < numEnvs; envIndex++) {
     // TODO ugh, pass a vector; use an Image instead of a std::vector
-    imageViews.emplace_back(getRGBView(renderer->sensorSize(envIndex).x(), renderer->sensorSize(envIndex).y(), buffers[envIndex]));
+    imageViews.emplace_back(getRGBView(renderer->sensorSize(envIndex).x(),
+                                       renderer->sensorSize(envIndex).y(),
+                                       buffers[envIndex]));
   }
 
   for (int envIndex = 0; envIndex < numEnvs; envIndex++) {

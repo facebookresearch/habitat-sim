@@ -687,13 +687,17 @@ void Simulator::reconfigureReplayManager(bool enableGfxReplaySave) {
   resourceManager_->setRecorder(gfxReplayMgr_->getRecorder());
 
   // provide Player backend implementation to replay manager
-  class SceneGraphPlayerImplementation: public gfx::replay::AbstractSceneGraphPlayerImplementation {
-  public:
-    explicit SceneGraphPlayerImplementation(Simulator& self): self_{self} {}
+  class SceneGraphPlayerImplementation
+      : public gfx::replay::AbstractSceneGraphPlayerImplementation {
+   public:
+    explicit SceneGraphPlayerImplementation(Simulator& self) : self_{self} {}
 
-  private:
-    gfx::replay::NodeHandle loadAndCreateRenderAssetInstance(const assets::AssetInfo& assetInfo, const assets::RenderAssetInstanceCreationInfo& creation) override {
-      return reinterpret_cast<gfx::replay::NodeHandle>(self_.loadAndCreateRenderAssetInstance(assetInfo, creation));
+   private:
+    gfx::replay::NodeHandle loadAndCreateRenderAssetInstance(
+        const assets::AssetInfo& assetInfo,
+        const assets::RenderAssetInstanceCreationInfo& creation) override {
+      return reinterpret_cast<gfx::replay::NodeHandle>(
+          self_.loadAndCreateRenderAssetInstance(assetInfo, creation));
     }
 
     void changeLightSetup(const gfx::LightSetup& lights) override {
@@ -702,7 +706,8 @@ void Simulator::reconfigureReplayManager(bool enableGfxReplaySave) {
 
     Simulator& self_;
   };
-  gfxReplayMgr_->setPlayerImplementation(std::make_unique<SceneGraphPlayerImplementation>(*this));
+  gfxReplayMgr_->setPlayerImplementation(
+      std::make_unique<SceneGraphPlayerImplementation>(*this));
 }
 
 void Simulator::updateShadowMapDrawableGroup() {
