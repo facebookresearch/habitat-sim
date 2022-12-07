@@ -399,6 +399,8 @@ void initSimBindings(py::module& m) {
            &ReplayRenderer::getSemanticSceneGraph,
            R"(PYTHON DOES NOT GET OWNERSHIP)",
            py::return_value_policy::reference)
+      .def("render",
+           static_cast<void(ReplayRenderer::*)(Magnum::GL::AbstractFramebuffer&)>(&ReplayRenderer::render))
       .def("get_environment_sensors",
            &ReplayRenderer::getEnvironmentSensors)
       .def("set_sensor_transforms_from_keyframe",
