@@ -30,6 +30,51 @@ Mn::Vector2i AbstractReplayRenderer::environmentGridSize(Mn::Int environmentCoun
 
 AbstractReplayRenderer::~AbstractReplayRenderer() = default;
 
+unsigned AbstractReplayRenderer::environmentCount() const {
+  return doEnvironmentCount();
+}
+
+Mn::Vector2i AbstractReplayRenderer::sensorSize(unsigned envIndex) {
+  CORRADE_INTERNAL_ASSERT(envIndex < doEnvironmentCount());
+  return doSensorSize(envIndex);
+}
+
+void AbstractReplayRenderer::setEnvironmentKeyframe(
+    unsigned envIndex,
+    const std::string& serKeyframe) {
+  CORRADE_INTERNAL_ASSERT(envIndex < doEnvironmentCount());
+  doPlayerFor(envIndex).setSingleKeyframe(
+      esp::gfx::replay::Player::keyframeFromString(serKeyframe));
+}
+
+void AbstractReplayRenderer::setSensorTransform(unsigned envIndex,
+                                             const std::string& sensorName,
+                                             const Mn::Matrix4& transform) {
+  CORRADE_INTERNAL_ASSERT(envIndex < doEnvironmentCount());
+  return doSetSensorTransform(envIndex, sensorName, transform);
+}
+
+void AbstractReplayRenderer::setSensorTransformsFromKeyframe(
+    unsigned envIndex,
+    const std::string& prefix) {
+  CORRADE_INTERNAL_ASSERT(envIndex < doEnvironmentCount());
+  ESP_CHECK(doPlayerFor(envIndex).getNumKeyframes() == 1,
+            "setSensorTransformsFromKeyframe: for environment "
+                << envIndex
+                << ", you have not yet called setEnvironmentKeyframe.");
+  return doSetSensorTransformsFromKeyframe(envIndex, prefix);
+}
+
+void AbstractReplayRenderer::render(Cr::Containers::ArrayView<const Mn::MutableImageView2D> imageViews) {
+  CORRADE_ASSERT(imageViews.size() == doEnvironmentCount(),
+    "ReplayRenderer::render(): expected" << doEnvironmentCount() << "image views but got" << imageViews.size(), );
+  return doRender(imageViews);
+}
+
+void AbstractReplayRenderer::render(Magnum::GL::AbstractFramebuffer& framebuffer) {
+  return doRender(framebuffer);
+}
+
 ReplayRenderer::ReplayRenderer(
     const ReplayRendererConfiguration& cfg) {
   config_ = cfg;
@@ -124,7 +169,11 @@ ReplayRenderer::~ReplayRenderer() {
   resourceManager_.reset();
 }
 
-Mn::Vector2i ReplayRenderer::sensorSize(int envIndex) {
+unsigned ReplayRenderer::doEnvironmentCount() const {
+  return envs_.size();
+}
+
+Mn::Vector2i ReplayRenderer::doSensorSize(unsigned envIndex) {
   CORRADE_INTERNAL_ASSERT(envIndex >= 0 && envIndex < envs_.size());
   auto& env = envs_[envIndex];
 
@@ -132,10 +181,13 @@ Mn::Vector2i ReplayRenderer::sensorSize(int envIndex) {
   return static_cast<esp::sensor::VisualSensor&>(env.sensorMap_.begin()->second.get()).framebufferSize();
 }
 
-void ReplayRenderer::setSensorTransform(int envIndex,
+gfx::replay::Player& ReplayRenderer::doPlayerFor(unsigned envIndex) {
+  return envs_[envIndex].player_;
+}
+
+void ReplayRenderer::doSetSensorTransform(unsigned envIndex,
                                              const std::string& sensorName,
                                              const Mn::Matrix4& transform) {
-  CORRADE_INTERNAL_ASSERT(envIndex >= 0 && envIndex < envs_.size());
   auto& env = envs_[envIndex];
 
   ESP_CHECK(env.sensorMap_.count(sensorName),
@@ -151,15 +203,10 @@ void ReplayRenderer::setSensorTransform(int envIndex,
   sensor.node().setTransformation(transform);
 }
 
-void ReplayRenderer::setSensorTransformsFromKeyframe(
-    int envIndex,
+void ReplayRenderer::doSetSensorTransformsFromKeyframe(
+    unsigned envIndex,
     const std::string& prefix) {
-  CORRADE_INTERNAL_ASSERT(envIndex >= 0 && envIndex < envs_.size());
   const auto& env = envs_[envIndex];
-  ESP_CHECK(env.player_.getNumKeyframes() == 1,
-            "setSensorTransformsFromKeyframe: for environment "
-                << envIndex
-                << ", you have not yet called setEnvironmentKeyframe.");
   for (const auto& kv : env.sensorMap_) {
     const auto sensorName = kv.first;
     sensor::VisualSensor& sensor =
@@ -178,10 +225,7 @@ void ReplayRenderer::setSensorTransformsFromKeyframe(
   }
 }
 
-void ReplayRenderer::render(Cr::Containers::ArrayView<const Mn::MutableImageView2D> imageViews) {
-  CORRADE_ASSERT(imageViews.size() == config_.numEnvironments,
-    "ReplayRenderer::render(): expected" << envs_.size() << "image views but got" << imageViews.size(), );
-
+void ReplayRenderer::doRender(Cr::Containers::ArrayView<const Mn::MutableImageView2D> imageViews) {
   for (int envIndex = 0; envIndex < config_.numEnvironments; envIndex++) {
     auto& sensorMap = getEnvironmentSensors(envIndex);
     CORRADE_INTERNAL_ASSERT(sensorMap.size() == 1);
@@ -203,12 +247,10 @@ void ReplayRenderer::render(Cr::Containers::ArrayView<const Mn::MutableImageView
   renderer_->waitDrawJobs();
 }
 
-void ReplayRenderer::render(Magnum::GL::AbstractFramebuffer& framebuffer) {
+void ReplayRenderer::doRender(Magnum::GL::AbstractFramebuffer& framebuffer) {
   const Mn::Vector2i gridSize = environmentGridSize(config_.numEnvironments);
 
   for (int envIndex = 0; envIndex < config_.numEnvironments; envIndex++) {
-
-
     auto& sensorMap = getEnvironmentSensors(envIndex);
     CORRADE_INTERNAL_ASSERT(sensorMap.size() == 1);
     CORRADE_INTERNAL_ASSERT(sensorMap.begin()->second.get().isVisualSensor());
@@ -219,9 +261,6 @@ void ReplayRenderer::render(Magnum::GL::AbstractFramebuffer& framebuffer) {
 
       auto& sceneGraph = getSceneGraph(envIndex);
       renderer_->draw(*visualSensor.getRenderCamera(), sceneGraph, esp::gfx::RenderCamera::Flags{});
-      // for(auto&& drawables: sceneGraph.getDrawableGroups()) {
-      //   visualSensor.getRenderCamera()->draw(drawables.second, esp::gfx::RenderCamera::Flags{});
-      // }
 
       visualSensor.renderTarget().renderExit();
 
@@ -234,47 +273,37 @@ void ReplayRenderer::render(Magnum::GL::AbstractFramebuffer& framebuffer) {
 }
 
 esp::scene::SceneNode* ReplayRenderer::getEnvironmentSensorParentNode(
-    int envIndex) const {
-  CORRADE_INTERNAL_ASSERT(envIndex >= 0 && envIndex < envs_.size());
+    unsigned envIndex) const {
+  CORRADE_INTERNAL_ASSERT(envIndex < envs_.size());
   const auto& env = envs_[envIndex];
   return env.sensorParentNode_;
 }
 
 std::map<std::string, std::reference_wrapper<esp::sensor::Sensor>>&
-ReplayRenderer::getEnvironmentSensors(int envIndex) {
-  CORRADE_INTERNAL_ASSERT(envIndex >= 0 && envIndex < envs_.size());
+ReplayRenderer::getEnvironmentSensors(unsigned envIndex) {
+  CORRADE_INTERNAL_ASSERT(envIndex < envs_.size());
   auto& env = envs_[envIndex];
   return env.sensorMap_;
 }
 
-esp::scene::SceneGraph& ReplayRenderer::getSceneGraph(int envIndex) {
-  CORRADE_INTERNAL_ASSERT(envIndex >= 0 && envIndex < envs_.size());
+esp::scene::SceneGraph& ReplayRenderer::getSceneGraph(unsigned envIndex) {
+  CORRADE_INTERNAL_ASSERT(envIndex < envs_.size());
   const auto& env = envs_[envIndex];
   return sceneManager_->getSceneGraph(env.sceneID_);
 }
 
 esp::scene::SceneGraph& ReplayRenderer::getSemanticSceneGraph(
-    int envIndex) {
-  CORRADE_INTERNAL_ASSERT(envIndex >= 0 && envIndex < envs_.size());
+    unsigned envIndex) {
+  CORRADE_INTERNAL_ASSERT(envIndex < envs_.size());
   const auto& env = envs_[envIndex];
   return sceneManager_->getSceneGraph(env.semanticSceneID_ == ID_UNDEFINED
                                           ? env.sceneID_
                                           : env.semanticSceneID_);
 }
 
-void ReplayRenderer::setEnvironmentKeyframe(
-    int envIndex,
-    const std::string& serKeyframe) {
-  // TODO ugh this needs to be in the base class, how to access the player there tho?
-  CORRADE_INTERNAL_ASSERT(envIndex >= 0 && envIndex < envs_.size());
-  auto& env = envs_[envIndex];
-  env.player_.setSingleKeyframe(
-      esp::gfx::replay::Player::keyframeFromString(serKeyframe));
-}
-
 gfx::replay::GfxReplayNode*
 ReplayRenderer::loadAndCreateRenderAssetInstance(
-    int envIndex,
+    unsigned envIndex,
     const assets::AssetInfo& assetInfo,
     const assets::RenderAssetInstanceCreationInfo& creation) {
   // Note this pattern of passing the scene manager and two scene ids to
@@ -289,7 +318,6 @@ ReplayRenderer::loadAndCreateRenderAssetInstance(
 }
 
 ReplayBatchRenderer::ReplayBatchRenderer(const ReplayRendererConfiguration& cfg) {
-  // TODO
   CORRADE_ASSERT(cfg.sensorSpecifications.size() == 1,
     "ReplayBatchRenderer: expecting exactly one sensor", );
   const auto& sensor = static_cast<esp::sensor::CameraSensorSpec&>(*cfg.sensorSpecifications.front());
@@ -322,7 +350,7 @@ ReplayBatchRenderer::ReplayBatchRenderer(const ReplayRendererConfiguration& cfg)
         // TODO and this is no_lights?!!
       // CORRADE_ASSERT(creation.lightSetupKey.empty(), "ReplayBatchRenderer: no idea what light setup key is for:" << creation.lightSetupKey, {});
 
-      /* if no such name is known yet, add as a file */
+      /* If no such name is known yet, add as a file */
       if(!renderer_->hasMeshHierarchy(creation.filepath)) {
         // TODO asserts might be TOO BRUTAL?
         CORRADE_INTERNAL_ASSERT_OUTPUT(renderer_->addFile(creation.filepath, gfx_batch::RendererFileFlag::Whole|gfx_batch::RendererFileFlag::GenerateMipmap));
@@ -360,37 +388,29 @@ ReplayBatchRenderer::ReplayBatchRenderer(const ReplayRendererConfiguration& cfg)
 
 ReplayBatchRenderer::~ReplayBatchRenderer() = default;
 
-Mn::Vector2i ReplayBatchRenderer::sensorSize(
-  int /* all environments have the same size */
+unsigned ReplayBatchRenderer::doEnvironmentCount() const {
+  return envs_.size();
+}
+
+Mn::Vector2i ReplayBatchRenderer::doSensorSize(
+  unsigned /* all environments have the same size */
 ) {
   return renderer_->tileSize();
 }
 
-void ReplayBatchRenderer::setEnvironmentKeyframe(int envIndex, const std::string& serKeyframe) {
-  // TODO asserts for env index, do in base class
-
-  // TODO why is this here at all???? needs to be in the base class, which should have access to the player somehow
-  auto& env = envs_[envIndex];
-  env.player_.setSingleKeyframe(
-      esp::gfx::replay::Player::keyframeFromString(serKeyframe));
+gfx::replay::Player& ReplayBatchRenderer::doPlayerFor(unsigned envIndex) {
+  return envs_[envIndex].player_;
 }
 
-void ReplayBatchRenderer::setSensorTransform(int envIndex,
+void ReplayBatchRenderer::doSetSensorTransform(unsigned envIndex,
                           // TODO assumes there's just one sensor per env
                           const std::string&,
                           const Mn::Matrix4& transform) {
   renderer_->camera(envIndex) = theOnlySensorProjection_*transform.inverted();
 }
 
-void ReplayBatchRenderer::setSensorTransformsFromKeyframe(int envIndex, const std::string& prefix) {
-  // TODO asserts for env index, do in base class
+void ReplayBatchRenderer::doSetSensorTransformsFromKeyframe(unsigned envIndex, const std::string& prefix) {
   auto& env = envs_[envIndex];
-  // TODO what iz diz??
-  ESP_CHECK(env.player_.getNumKeyframes() == 1,
-            "setSensorTransformsFromKeyframe: for environment "
-                << envIndex
-                << ", you have not yet called setEnvironmentKeyframe.");
-  // TODO huh??
   std::string userName = prefix + theOnlySensorName_;
   Mn::Vector3 translation;
   Mn::Quaternion rotation;
@@ -402,11 +422,9 @@ void ReplayBatchRenderer::setSensorTransformsFromKeyframe(int envIndex, const st
   renderer_->camera(envIndex) = theOnlySensorProjection_*Mn::Matrix4::from(rotation.toMatrix(), translation).inverted();
 }
 
-void ReplayBatchRenderer::render(Cr::Containers::ArrayView<const Mn::MutableImageView2D> imageViews) {
+void ReplayBatchRenderer::doRender(Cr::Containers::ArrayView<const Mn::MutableImageView2D> imageViews) {
   CORRADE_ASSERT(standalone_,
     "ReplayBatchRenderer::render(): can use this function only with a standalone renderer", );
-  CORRADE_ASSERT(imageViews.size() == envs_.size(),
-    "ReplayBatchRenderer::render(): expected" << envs_.size() << "image views but got" << imageViews.size(), );
   static_cast<gfx_batch::RendererStandalone&>(*renderer_).draw();
 
   for(int envIndex = 0; envIndex != envs_.size(); ++envIndex) {
@@ -415,7 +433,7 @@ void ReplayBatchRenderer::render(Cr::Containers::ArrayView<const Mn::MutableImag
   }
 }
 
-void ReplayBatchRenderer::render(Magnum::GL::AbstractFramebuffer& framebuffer) {
+void ReplayBatchRenderer::doRender(Magnum::GL::AbstractFramebuffer& framebuffer) {
   CORRADE_ASSERT(!standalone_,
     "ReplayBatchRenderer::render(): can't use this function with a standalone renderer", );
 
