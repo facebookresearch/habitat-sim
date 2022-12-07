@@ -17,7 +17,6 @@
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix3.h>
 #include <Magnum/Math/Matrix4.h>
-#include <Magnum/Math/Range.h>
 #include <Magnum/MeshTools/Combine.h>
 #include <Magnum/MeshTools/Concatenate.h>
 #include <Magnum/MeshTools/GenerateIndices.h>
@@ -65,7 +64,6 @@ struct GfxBatchRendererTest : Cr::TestSuite::Tester {
   void multipleScenes();
   void clearScene();
 
-  void imageInto();
   void cudaInterop();
 };
 
@@ -99,13 +97,6 @@ const struct {
     1,
     {1, 1, 0, 1},
     0.0f, 0.0f},
-  /* Doesn't really verify that the right level count is generated, but at
-     least checks that things don't crash */
-  {"generate mipmap", {Cr::InPlaceInit, {
-    {"batch.gltf", esp::gfx_batch::RendererFileFlag::GenerateMipmap, nullptr}}},
-    1,
-    {1, 1, 0, 1},
-    0.0f, 0.0f},
   {"multiple meshes", {Cr::InPlaceInit, {
     {"batch-multiple-meshes.gltf", {}, nullptr}}},
     /* Each has a separate mesh */
@@ -114,14 +105,6 @@ const struct {
     0.0f, 0.0f},
   {"multiple textures", {Cr::InPlaceInit, {
     {"batch-multiple-textures.gltf", {}, nullptr}}},
-    /* Each has a separate texture */
-    3,
-    {4, 2, 0, 1},
-    0.0f, 0.0f},
-  /* Doesn't really verify that the right level count is generated, but at
-     least checks that things don't crash */
-  {"multiple textures, generate mipmap", {Cr::InPlaceInit, {
-    {"batch-multiple-textures.gltf", esp::gfx_batch::RendererFileFlag::GenerateMipmap, nullptr}}},
     /* Each has a separate texture */
     3,
     {4, 2, 0, 1},
@@ -142,13 +125,6 @@ const struct {
     2,
     {4, 2, 0, 1},
     /* DXT-compressed images have minor compression errors */
-    1.5f, 0.5f},
-  /* Mip level generation should do nothing for compressed textures */
-  {"multiple files, compressed textures, generate mipmap", {Cr::InPlaceInit, {
-    {"batch-square-circle-triangle-compressed.gltf", esp::gfx_batch::RendererFileFlag::GenerateMipmap, nullptr},
-    {"batch-four-squares-compressed.gltf", esp::gfx_batch::RendererFileFlag::GenerateMipmap, nullptr}}},
-    2,
-    {4, 2, 0, 1},
     1.5f, 0.5f},
   {"multiple files, some whole-file", {Cr::InPlaceInit, {
     {"batch-square-circle-triangle.gltf", {}, nullptr},
@@ -238,8 +214,7 @@ GfxBatchRendererTest::GfxBatchRendererTest() {
                      &GfxBatchRendererTest::clearScene},
       Cr::Containers::arraySize(FileData));
 
-  addTests({&GfxBatchRendererTest::imageInto,
-            &GfxBatchRendererTest::cudaInterop});
+  addTests({&GfxBatchRendererTest::cudaInterop});
   // clang-format on
 }
 
@@ -1447,10 +1422,7 @@ void GfxBatchRendererTest::singleMesh() {
   CORRADE_VERIFY(renderer.hasMeshHierarchy("square"));
   CORRADE_VERIFY(!renderer.hasMeshHierarchy("squares"));
   CORRADE_VERIFY(!renderer.hasMeshHierarchy(""));
-  CORRADE_COMPARE(renderer.addMeshHierarchy(0, "square",
-    /* Initial baked-in transformation, combined with what's set in
-       transformations() below */
-    Mn::Matrix4::scaling(Mn::Vector3{0.4f})), 0);
+  CORRADE_COMPARE(renderer.addMeshHierarchy(0, "square"), 0);
 
   /* Stats will show two nodes now -- it adds one transformation for the
      top-level object and then one nested for the mesh, corresponding to the
@@ -1461,10 +1433,7 @@ void GfxBatchRendererTest::singleMesh() {
   CORRADE_COMPARE(stats.drawBatchCount, 1);
 
   CORRADE_COMPARE(renderer.transformations(0).size(), 2);
-  /* The initial baked-in transformation shouldn't appear here (that's why it's
-     baked), combine it so it's a 0.8 scale in total */
-  CORRADE_COMPARE(renderer.transformations(0)[0], Mn::Matrix4{});
-  renderer.transformations(0)[0] = Mn::Matrix4::scaling(Mn::Vector3{2.0f});
+  renderer.transformations(0)[0] = Mn::Matrix4::scaling(Mn::Vector3{0.8f});
 
   renderer.draw();
   Mn::Image2D color = renderer.colorImage();
@@ -1486,13 +1455,6 @@ void GfxBatchRendererTest::singleMesh() {
     CORRADE_COMPARE(color.pixels<Mn::Color4ub>()[75][35], 0xcccccc_rgb);
     CORRADE_COMPARE(color.pixels<Mn::Color4ub>()[20][38], 0x990000_rgb);
   }
-
-  /* Depth should have *some* data also */
-  Mn::Image2D depth = renderer.depthImage();
-  MAGNUM_VERIFY_NO_GL_ERROR();
-  CORRADE_COMPARE(depth.pixels<Mn::Float>()[0][0], 1.0f);
-  CORRADE_COMPARE(depth.pixels<Mn::Float>()[95][127], 1.0f);
-  CORRADE_COMPARE(depth.pixels<Mn::Float>()[64][48], 0.0909091f);
 }
 
 void GfxBatchRendererTest::meshHierarchy() {
@@ -1773,49 +1735,6 @@ void GfxBatchRendererTest::clearScene() {
           TEST_ASSETS, "screenshots/GfxBatchRendererTestMultipleScenes.png"),
       (Mn::DebugTools::CompareImageToFile{data.maxThreshold,
                                           data.meanThreshold}));
-}
-
-void GfxBatchRendererTest::imageInto() {
-  /* Same as singleMesh(), just with a lot less checking and using *ImageInto()
-     instead of *Image() */
-
-  // clang-format off
-  esp::gfx_batch::RendererStandalone renderer{
-      esp::gfx_batch::RendererConfiguration{}
-          .setTileSizeCount({128, 96}, {1, 1}),
-      esp::gfx_batch::RendererStandaloneConfiguration{}
-          .setFlags(esp::gfx_batch::RendererStandaloneFlag::QuietLog)
-  };
-  // clang-format on
-
-  /* Mostly the same as singleMesh() */
-  CORRADE_VERIFY(renderer.addFile(
-      Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch.gltf")));
-  renderer.camera(0) =
-      Mn::Matrix4::orthographicProjection(2.0f * Mn::Vector2{4.0f / 3.0f, 1.0f},
-                                          0.1f, 10.0f) *
-      Mn::Matrix4::translation(Mn::Vector3::zAxis(1.0f)).inverted();
-  renderer.addMeshHierarchy(0, "square", Mn::Matrix4::scaling(Mn::Vector3{0.8f}));
-  renderer.draw();
-
-  // TODO use the NoInit constructor once it exists
-  Mn::Image2D color{Mn::PixelFormat::RGBA8Unorm, renderer.tileCount()*renderer.tileSize(), Cr::Containers::Array<char>{Cr::NoInit, std::size_t((renderer.tileCount()*renderer.tileSize()*4).product())}};
-  renderer.colorImageInto({{}, color.size()}, color);
-  MAGNUM_VERIFY_NO_GL_ERROR();
-  CORRADE_COMPARE_AS(
-      color,
-      Cr::Utility::Path::join(TEST_ASSETS,
-                              "screenshots/GfxBatchRendererTestSingleMesh.png"),
-      Mn::DebugTools::CompareImageToFile);
-
-  /* Depth should have *some* data also */
-  // TODO use the NoInit constructor once it exists
-  Mn::Image2D depth{Mn::PixelFormat::Depth32F, renderer.tileCount()*renderer.tileSize(), Cr::Containers::Array<char>{Cr::NoInit, std::size_t((renderer.tileCount()*renderer.tileSize()*4).product())}};
-  renderer.depthImageInto({{}, depth.size()}, depth);
-  MAGNUM_VERIFY_NO_GL_ERROR();
-  CORRADE_COMPARE(depth.pixels<Mn::Float>()[0][0], 1.0f);
-  CORRADE_COMPARE(depth.pixels<Mn::Float>()[95][127], 1.0f);
-  CORRADE_COMPARE(depth.pixels<Mn::Float>()[64][48], 0.0909091f);
 }
 
 void GfxBatchRendererTest::cudaInterop() {
