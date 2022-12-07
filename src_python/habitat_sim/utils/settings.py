@@ -28,6 +28,7 @@ default_sim_settings = {
     "equirect_rgba_sensor": False,
     "equirect_depth_sensor": False,
     "equirect_semantic_sensor": False,
+    "enable_batch_renderer": False,
     "seed": 1,
     "physics_config_file": "data/default.physics_config.json",
 }
@@ -55,6 +56,8 @@ def make_cfg(settings: Dict[str, Any]):
         sim_cfg.physics_config_file = settings["physics_config_file"]
     if "scene_light_setup" in settings:
         sim_cfg.scene_light_setup = settings["scene_light_setup"]
+    if "enable_batch_renderer" in settings:
+        sim_cfg.enable_batch_renderer = settings["enable_batch_renderer"]
     sim_cfg.gpu_device_id = 0
     if not hasattr(sim_cfg, "scene_id"):
         raise RuntimeError(

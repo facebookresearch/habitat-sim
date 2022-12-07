@@ -978,7 +978,7 @@ class Timer:
     @staticmethod
     def start() -> None:
         """
-        Starts timer and resets previous frame time to the start time
+        Starts timer and resets previous frame time to the start time.
         """
         Timer.running = True
         Timer.start_time = time.time()
@@ -988,7 +988,7 @@ class Timer:
     @staticmethod
     def stop() -> None:
         """
-        Stops timer and erases any previous time data, resetting the timer
+        Stops timer and erases any previous time data, resetting the timer.
         """
         Timer.running = False
         Timer.start_time = 0.0
@@ -1036,15 +1036,31 @@ if __name__ == "__main__":
         action="store_true",
         help="Override configured lighting to use synthetic lighting for the stage.",
     )
+    parser.add_argument(
+        "--enable_batch_renderer",
+        action="store_true",
+        help="Enable batch rendering mode. The number of concurrent environments is specified with the num_environments parameter.",
+    )
+    parser.add_argument(
+        "--num_environments",
+        default=1,
+        type=int,
+        help="Number of concurrent environments to batch render.",
+    )
 
     args = parser.parse_args()
 
+    if args.num_environments < 1:
+        parser.error("num_environments must be a positive non-zero integer.")
+    
     # Setting up sim_settings
     sim_settings: Dict[str, Any] = default_sim_settings
     sim_settings["scene"] = args.scene
     sim_settings["scene_dataset_config_file"] = args.dataset
     sim_settings["enable_physics"] = not args.disable_physics
     sim_settings["stage_requires_lighting"] = args.stage_requires_lighting
+    sim_settings["enable_batch_renderer"] = args.enable_batch_renderer
+    sim_settings["num_environments"] = args.num_environments
 
     # start the application
     HabitatSimInteractiveViewer(sim_settings).exec()
