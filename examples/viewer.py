@@ -37,7 +37,7 @@ class HabitatSimInteractiveViewer(Application):
     # app window (e.g if you want the display text in the top left of
     # the app window, you will displace the text
     # window width * -TEXT_DELTA_FROM_CENTER in the x axis and
-    # widnow height * TEXT_DELTA_FROM_CENTER in the y axis, as the text
+    # window height * TEXT_DELTA_FROM_CENTER in the y axis, as the text
     # position defaults to the middle of the app window)
     TEXT_DELTA_FROM_CENTER = 0.49
 
