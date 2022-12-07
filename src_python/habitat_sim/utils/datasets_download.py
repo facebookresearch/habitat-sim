@@ -145,10 +145,10 @@ def initialize_test_data_sources(data_path):
             "version": "1.0",
         },
         "hab_fetch": {
-            "source": "http://dl.fbaipublicfiles.com/habitat/hab_fetch_v1.0.zip",
-            "package_name": "hab_fetch_v1.0.zip",
+            "source": "http://dl.fbaipublicfiles.com/habitat/hab_fetch_v2.0.zip",
+            "package_name": "hab_fetch_v2.0.zip",
             "link": data_path + "robots/hab_fetch",
-            "version": "1.0",
+            "version": "2.0",
         },
         "rearrange_pick_dataset_v0": {
             "source": "https://dl.fbaipublicfiles.com/habitat/data/datasets/rearrange_pick/replica_cad/v0/rearrange_pick_replica_cad_v0.zip",
@@ -298,6 +298,7 @@ def initialize_test_data_sources(data_path):
             "coda_scene",
             "replica_cad_dataset",
             "hab_fetch",
+            "hab_stretch",
         ],
         "rearrange_task_assets": [
             "replica_cad_dataset",
