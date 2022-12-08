@@ -363,38 +363,38 @@ void initSimBindings(py::module& m) {
            R"(Get visualization helper for rendering lines.)");
 
   // ==== ReplayRendererConfiguration ====
-  // TODO: Descriptions
   py::class_<ReplayRendererConfiguration,
              ReplayRendererConfiguration::ptr>(
       m, "ReplayRendererConfiguration")
       .def(py::init(&ReplayRendererConfiguration::create<>))
       .def_readwrite("num_environments",
                      &ReplayRendererConfiguration::numEnvironments,
-                     R"(todo)")
+                     R"(Number of concurrent environments to render.)")
       .def_readwrite("standalone",
                      &ReplayRendererConfiguration::standalone,
-                     R"(todo)")
+                     R"(Determines if the renderer is standalone (windowless) or not (embedded in another window).)")
       .def_readwrite("sensor_specifications",
                      &ReplayRendererConfiguration::sensorSpecifications,
-                     R"(todo)")
+                     R"(List of sensor specifications for one simulator. For batch rendering, all simulators must have the same specification.)")
       .def_readwrite("gpu_device_id",
-                     &ReplayRendererConfiguration::gpuDeviceId, R"(todo)")
+                     &ReplayRendererConfiguration::gpuDeviceId, R"(The system GPU device to use for rendering)")
       .def_readwrite(
           "force_separate_semantic_scene_graph",
           &ReplayRendererConfiguration::forceSeparateSemanticSceneGraph,
-          R"(todo)")
+          R"(Required to support playback of any gfx replay that includes a
+          stage with a semantic mesh. Set to false otherwise.)")
       .def_readwrite(
           "leave_context_with_background_renderer",
           &ReplayRendererConfiguration::leaveContextWithBackgroundRenderer,
-          R"(todo)");
+          R"(See See tutorials/async_rendering.py.)");
 
   // ==== ReplayRenderer ====
-  // TODO: Descriptions
   py::class_<ReplayRenderer, ReplayRenderer::ptr>(
       m, "ReplayRenderer")
       // modify constructor to pass MetadataMediator
       .def(py::init<const ReplayRendererConfiguration&>())
-      .def_property_readonly("renderer", &ReplayRenderer::getRenderer)
+      .def_property_readonly("renderer", &ReplayRenderer::getRenderer,
+           R"(Get the renderer used by the ReplayRenderer.)")
       .def("get_scene_graph", &ReplayRenderer::getSceneGraph,
            R"(PYTHON DOES NOT GET OWNERSHIP)",
            py::return_value_policy::reference)
@@ -403,32 +403,34 @@ void initSimBindings(py::module& m) {
            R"(PYTHON DOES NOT GET OWNERSHIP)",
            py::return_value_policy::reference)
       .def("render",
-           static_cast<void(ReplayRenderer::*)(Cr::Containers::ArrayView<const Mn::MutableImageView2D>)>(&ReplayRenderer::render))
-      .def("render_all",
-           static_cast<void(ReplayRenderer::*)(Magnum::GL::AbstractFramebuffer&)>(&ReplayRenderer::render))
+           static_cast<void(ReplayRenderer::*)(Magnum::GL::AbstractFramebuffer&)>(&ReplayRenderer::render),
+           R"(Render all sensors onto the main framebuffer.)")
       .def("get_environment_sensors",
-           &ReplayRenderer::getEnvironmentSensors)
+           &ReplayRenderer::getEnvironmentSensors,
+           R"(Get the sensors contained within a specific environment.)")
       .def("set_sensor_transforms_from_keyframe",
-           &ReplayRenderer::setSensorTransformsFromKeyframe)
+           &ReplayRenderer::setSensorTransformsFromKeyframe,
+           R"(Set the sensor transforms from a keyframe. Sensors are stored as user data and identified using the prefix.)")
       .def("get_environment_sensor_parent_node",
-           &ReplayRenderer::getEnvironmentSensorParentNode)
+           &ReplayRenderer::getEnvironmentSensorParentNode,
+           R"(Get the parent scene node of a sensor.)")
       .def("set_environment_keyframe",
-           &ReplayRenderer::setEnvironmentKeyframe);
+           &ReplayRenderer::setEnvironmentKeyframe,
+           R"(Set the keyframe for a specific environment.)");
 
   // ==== ReplayBatchRenderer ====
-  // TODO: Descriptions
   py::class_<ReplayBatchRenderer, ReplayBatchRenderer::ptr>(
       m, "ReplayBatchRenderer")
       // modify constructor to pass MetadataMediator
       .def(py::init<const ReplayRendererConfiguration&>())
       .def("render",
-           static_cast<void(ReplayBatchRenderer::*)(Cr::Containers::ArrayView<const Mn::MutableImageView2D>)>(&ReplayBatchRenderer::render))
-      .def("render_all",
            static_cast<void(ReplayBatchRenderer::*)(Magnum::GL::AbstractFramebuffer&)>(&ReplayBatchRenderer::render))
       .def("set_sensor_transforms_from_keyframe",
-           &ReplayBatchRenderer::setSensorTransformsFromKeyframe)
+           &ReplayBatchRenderer::setSensorTransformsFromKeyframe,
+           R"(Set the sensor transforms from a keyframe. Sensors are stored as user data and identified using the prefix.)")
       .def("set_environment_keyframe",
-           &ReplayBatchRenderer::setEnvironmentKeyframe);
+           &ReplayBatchRenderer::setEnvironmentKeyframe,
+           R"(Set the keyframe for a specific environment.)");
 }
 
 }  // namespace sim

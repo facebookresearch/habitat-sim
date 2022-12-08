@@ -291,7 +291,7 @@ class HabitatSimInteractiveViewer(Application):
                 # Apply sensor transforms
                 self.replay_renderer.set_sensor_transforms_from_keyframe(i, "sensor_")
                 # Render
-                self.replay_renderer.render_all(mn.gl.default_framebuffer)
+                self.replay_renderer.render(mn.gl.default_framebuffer)
         else:
             self.sim[0]._Simulator__sensors[keys[0]][keys[1]].draw_observation()
             agent = self.sim[0].get_agent(keys[0])
@@ -467,8 +467,8 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.H:
             self.print_help_text()
 
-        # TODO: Document
         elif key == pressed.ONE:
+            # Change the active scene
             self.active_env_idx = (self.active_env_idx + 1) % self.num_env
         
         elif key == pressed.TAB:
@@ -511,7 +511,7 @@ class HabitatSimInteractiveViewer(Application):
 
         elif key == pressed.PERIOD:
             if self.simulating:
-                logger.warn("Warning: physic simulation already running")
+                logger.warn("Warning: physics simulation already running")
             else:
                 self.simulate_single_step = True
                 logger.info("Command: physics step taken")
@@ -942,6 +942,7 @@ Key Commands:
     ',':        Render a Bullet collision shape debug wireframe overlay (white=active, green=sleeping, blue=wants sleeping, red=can't sleep).
     'c':        Run a discrete collision detection pass and render a debug wireframe overlay showing active contact points and normals (yellow=fixed length normals, red=collision distances).
                 (+SHIFT) Toggle the contact point debug render overlay on/off.
+    '1':        Cycle the controllable environment when using batch rendering.
 
     Object Interactions:
     SPACE:      Toggle physics simulation on/off.
