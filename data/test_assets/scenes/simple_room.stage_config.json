@@ -1,10 +1,8 @@
 {
-    "render_asset": "chair.glb",
-    "mass": 9,
-    "user_defined": {
-        "receptacle_aabb_chair_test": {
+	"render_asset": "simple_room.glb",
+	"user_defined": {
+        "receptacle_aabb_simpleroom_test": {
             "name": "receptacle_aabb_chair_test",
-            "parent_object": "chair",
             "position": [
                 0.0,
                 0.0,
@@ -16,9 +14,8 @@
                 1.0
             ]
         },
-        "receptacle_mesh_chair_test": {
+        "receptacle_mesh_simpleroom_test": {
             "name": "receptacle_mesh_chair_test",
-            "parent_object": "chair",
             "position": [
                 0.0,
                 0.0,
