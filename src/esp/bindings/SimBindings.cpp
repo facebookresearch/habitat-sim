@@ -363,21 +363,21 @@ void initSimBindings(py::module& m) {
            R"(Get visualization helper for rendering lines.)");
 
   // ==== ReplayRendererConfiguration ====
-  py::class_<ReplayRendererConfiguration,
-             ReplayRendererConfiguration::ptr>(
+  py::class_<ReplayRendererConfiguration, ReplayRendererConfiguration::ptr>(
       m, "ReplayRendererConfiguration")
       .def(py::init(&ReplayRendererConfiguration::create<>))
       .def_readwrite("num_environments",
                      &ReplayRendererConfiguration::numEnvironments,
                      R"(Number of concurrent environments to render.)")
-      .def_readwrite("standalone",
-                     &ReplayRendererConfiguration::standalone,
-                     R"(Determines if the renderer is standalone (windowless) or not (embedded in another window).)")
-      .def_readwrite("sensor_specifications",
-                     &ReplayRendererConfiguration::sensorSpecifications,
-                     R"(List of sensor specifications for one simulator. For batch rendering, all simulators must have the same specification.)")
-      .def_readwrite("gpu_device_id",
-                     &ReplayRendererConfiguration::gpuDeviceId, R"(The system GPU device to use for rendering)")
+      .def_readwrite(
+          "standalone", &ReplayRendererConfiguration::standalone,
+          R"(Determines if the renderer is standalone (windowless) or not (embedded in another window).)")
+      .def_readwrite(
+          "sensor_specifications",
+          &ReplayRendererConfiguration::sensorSpecifications,
+          R"(List of sensor specifications for one simulator. For batch rendering, all simulators must have the same specification.)")
+      .def_readwrite("gpu_device_id", &ReplayRendererConfiguration::gpuDeviceId,
+                     R"(The system GPU device to use for rendering)")
       .def_readwrite(
           "force_separate_semantic_scene_graph",
           &ReplayRendererConfiguration::forceSeparateSemanticSceneGraph,
@@ -392,13 +392,15 @@ void initSimBindings(py::module& m) {
   py::class_<AbstractReplayRenderer, AbstractReplayRenderer::ptr>(
       m, "AbstractReplayRenderer")
       .def("render",
-           static_cast<void(AbstractReplayRenderer::*)(Magnum::GL::AbstractFramebuffer&)>(&AbstractReplayRenderer::render),
+           static_cast<void (AbstractReplayRenderer::*)(
+               Magnum::GL::AbstractFramebuffer&)>(
+               &AbstractReplayRenderer::render),
            R"(Render all sensors onto the main framebuffer.)")
-      .def("set_sensor_transforms_from_keyframe",
-           &AbstractReplayRenderer::setSensorTransformsFromKeyframe,
-           R"(Set the sensor transforms from a keyframe. Sensors are stored as user data and identified using a prefix in their name.)")
-      .def("set_sensor_transform",
-           &AbstractReplayRenderer::setSensorTransform,
+      .def(
+          "set_sensor_transforms_from_keyframe",
+          &AbstractReplayRenderer::setSensorTransformsFromKeyframe,
+          R"(Set the sensor transforms from a keyframe. Sensors are stored as user data and identified using a prefix in their name.)")
+      .def("set_sensor_transform", &AbstractReplayRenderer::setSensorTransform,
            R"(Set the transform of a specific sensor.)")
       .def("set_environment_keyframe",
            &AbstractReplayRenderer::setEnvironmentKeyframe,
@@ -406,30 +408,30 @@ void initSimBindings(py::module& m) {
       .def("environment_grid_size",
            &AbstractReplayRenderer::environmentGridSize,
            R"(Dimensions of the environment grid.)");
-  
+
   // ==== ReplayRenderer ====
   py::class_<ReplayRenderer, ReplayRenderer::ptr, AbstractReplayRenderer>(
       m, "ReplayRenderer")
       .def(py::init<const ReplayRendererConfiguration&>())
       .def_property_readonly("renderer", &ReplayRenderer::getRenderer,
-           R"(Get the renderer used by the ReplayRenderer.)")
+                             R"(Get the renderer used by the ReplayRenderer.)")
       .def("get_scene_graph", &ReplayRenderer::getSceneGraph,
            R"(PYTHON DOES NOT GET OWNERSHIP)",
            py::return_value_policy::reference)
-      .def("get_semantic_scene_graph",
-           &ReplayRenderer::getSemanticSceneGraph,
+      .def("get_semantic_scene_graph", &ReplayRenderer::getSemanticSceneGraph,
            R"(PYTHON DOES NOT GET OWNERSHIP)",
            py::return_value_policy::reference)
       .def("render",
-           static_cast<void(ReplayRenderer::*)(Magnum::GL::AbstractFramebuffer&)>(&ReplayRenderer::render),
+           static_cast<void (ReplayRenderer::*)(
+               Magnum::GL::AbstractFramebuffer&)>(&ReplayRenderer::render),
            R"(Render all sensors onto the main framebuffer.)")
       .def("get_environment_sensors",
            &ReplayRenderer::getEnvironmentSensorParentNode,
            R"(Get the parent scene node of a sensor.)");
 
   // ==== ReplayBatchRenderer ====
-  py::class_<ReplayBatchRenderer, ReplayBatchRenderer::ptr, AbstractReplayRenderer>(
-      m, "ReplayBatchRenderer")
+  py::class_<ReplayBatchRenderer, ReplayBatchRenderer::ptr,
+             AbstractReplayRenderer>(m, "ReplayBatchRenderer")
       .def(py::init<const ReplayRendererConfiguration&>());
 }
 

@@ -20,11 +20,16 @@ from magnum import shaders, text
 from magnum.platform.glfw import Application
 
 import habitat_sim
-from habitat_sim import physics
-from habitat_sim import ReplayRenderer, ReplayBatchRenderer, ReplayRendererConfiguration
+from habitat_sim import (
+    ReplayBatchRenderer,
+    ReplayRenderer,
+    ReplayRendererConfiguration,
+    physics,
+)
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.common import quat_from_angle_axis
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
+
 
 class HabitatSimInteractiveViewer(Application):
 
@@ -50,18 +55,21 @@ class HabitatSimInteractiveViewer(Application):
 
         self.enable_batch_renderer: bool = self.sim_settings["enable_batch_renderer"]
         self.num_env: int = (
-            self.sim_settings["num_environments"]
-            if self.enable_batch_renderer
-            else 1
+            self.sim_settings["num_environments"] if self.enable_batch_renderer else 1
         )
-        
+
         # Compute environment camera resolution based on the number of environments to render in the window.
         surface_size: tuple(int, int) = (800, 600)
-        grid_size: tuple(int, int) = ReplayBatchRenderer.environment_grid_size(self.num_env)
-        camera_resolution: tuple(int, int) = (surface_size[0] / grid_size[0], surface_size[1] / grid_size[1])
+        grid_size: tuple(int, int) = ReplayBatchRenderer.environment_grid_size(
+            self.num_env
+        )
+        camera_resolution: tuple(int, int) = (
+            surface_size[0] / grid_size[0],
+            surface_size[1] / grid_size[1],
+        )
         self.sim_settings["width"] = camera_resolution[0]
         self.sim_settings["height"] = camera_resolution[1]
-        
+
         configuration = self.Configuration()
         configuration.title = "Habitat Sim Interactive Viewer"
         configuration.size = surface_size
@@ -140,10 +148,8 @@ class HabitatSimInteractiveViewer(Application):
             mn.Vector2(surface_size)
         ) @ mn.Matrix3.translation(
             mn.Vector2(
-                surface_size[0]
-                * -HabitatSimInteractiveViewer.TEXT_DELTA_FROM_CENTER,
-                surface_size[1]
-                * HabitatSimInteractiveViewer.TEXT_DELTA_FROM_CENTER,
+                surface_size[0] * -HabitatSimInteractiveViewer.TEXT_DELTA_FROM_CENTER,
+                surface_size[1] * HabitatSimInteractiveViewer.TEXT_DELTA_FROM_CENTER,
             )
         )
         self.shader = shaders.VectorGL2D()
@@ -202,7 +208,9 @@ class HabitatSimInteractiveViewer(Application):
         red = mn.Color4.red()
         cps = self.sim[env_index].get_physics_contact_points()
         self.sim[env_index].get_debug_line_render().set_line_width(1.5)
-        camera_position = self.render_camera[env_index].render_camera.node.absolute_translation
+        camera_position = self.render_camera[
+            env_index
+        ].render_camera.node.absolute_translation
         # only showing active contacts
         active_contacts = (x for x in cps if x.is_active)
         for cp in active_contacts:
@@ -284,9 +292,7 @@ class HabitatSimInteractiveViewer(Application):
             keyframes = []
             for i in range(self.num_env):
                 # Generate keyframe
-                keyframes.append(
-                    self.sim[i].gfx_replay_manager.extract_keyframe()
-                )
+                keyframes.append(self.sim[i].gfx_replay_manager.extract_keyframe())
                 # Copy sensor transforms
                 sensor_suite = self.sim[i]._sensors
                 for sensor_uuid, sensor in sensor_suite.items():
@@ -302,7 +308,7 @@ class HabitatSimInteractiveViewer(Application):
             self.render_camera[0] = agent.scene_node.node_sensor_suite.get(keys[1])
             self.debug_draw(0)
             self.render_camera[0].render_target.blit_rgba_to_default()
-        
+
         # draw CPU/GPU usage data and other info to the app window
         mn.gl.default_framebuffer.bind()
         self.draw_text(self.render_camera[self.active_env_idx].specification())
@@ -392,22 +398,24 @@ class HabitatSimInteractiveViewer(Application):
         self.render_camera = []
         for i in range(self.num_env):
             self.default_agent.append(self.sim[i].get_agent(self.agent_id))
-            self.render_camera.append(self.default_agent[i].scene_node.node_sensor_suite.get("color_sensor"))
-        
+            self.render_camera.append(
+                self.default_agent[i].scene_node.node_sensor_suite.get("color_sensor")
+            )
+
         # set sim_settings scene name as actual loaded scene
         self.sim_settings["scene"] = self.sim[0].curr_scene_name
-        
+
         # Initialize replay renderer
         if (self.enable_batch_renderer) and self.replay_renderer_cfg is None:
             self.replay_renderer_cfg = ReplayRendererConfiguration()
             self.replay_renderer_cfg.num_environments = self.num_env
-            self.replay_renderer_cfg.standalone = False # Context is owned by the GLFW window
+            self.replay_renderer_cfg.standalone = (
+                False  # Context is owned by the GLFW window
+            )
             self.replay_renderer_cfg.sensor_specifications = self.cfg.agents[
                 self.agent_id
             ].sensor_specifications
-            self.replay_renderer_cfg.gpu_device_id = (
-                self.cfg.sim_cfg.gpu_device_id
-            )
+            self.replay_renderer_cfg.gpu_device_id = self.cfg.sim_cfg.gpu_device_id
             self.replay_renderer_cfg.force_separate_semantic_scene_graph = False
             self.replay_renderer_cfg.leave_context_with_background_renderer = False
             self.replay_renderer = ReplayBatchRenderer(self.replay_renderer_cfg)
@@ -473,13 +481,15 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.ONE:
             # Change the active scene
             self.active_env_idx = (self.active_env_idx + 1) % self.num_env
-        
+
         elif key == pressed.TAB:
             # NOTE: (+ALT) - reconfigure without cycling scenes
             if not alt_pressed:
                 # cycle the active scene from the set available in MetadataMediator
                 inc = -1 if shift_pressed else 1
-                scene_ids = self.sim[self.active_env_idx].metadata_mediator.get_scene_handles()
+                scene_ids = self.sim[
+                    self.active_env_idx
+                ].metadata_mediator.get_scene_handles()
                 cur_scene_index = 0
                 if self.sim_settings["scene"] not in scene_ids:
                     matching_scenes = [
@@ -557,9 +567,9 @@ class HabitatSimInteractiveViewer(Application):
                 ao = aom.add_articulated_object_from_urdf(
                     urdf_file_path, fixed_base, 1.0, 1.0, True
                 )
-                ao.translation = self.default_agent[self.active_env_idx].scene_node.transformation.transform_point(
-                    [0.0, 1.0, -1.5]
-                )
+                ao.translation = self.default_agent[
+                    self.active_env_idx
+                ].scene_node.transformation.transform_point([0.0, 1.0, -1.5])
             else:
                 logger.warn("Load URDF: input file not found. Aborting.")
 
@@ -579,11 +589,13 @@ class HabitatSimInteractiveViewer(Application):
                 logger.info("Command: resample agent state from navmesh")
                 if self.sim[self.active_env_idx].pathfinder.is_loaded:
                     new_agent_state = habitat_sim.AgentState()
-                    new_agent_state.position = (
-                        self.sim[self.active_env_idx].pathfinder.get_random_navigable_point()
-                    )
+                    new_agent_state.position = self.sim[
+                        self.active_env_idx
+                    ].pathfinder.get_random_navigable_point()
                     new_agent_state.rotation = quat_from_angle_axis(
-                        self.sim[self.active_env_idx].random.uniform_float(0, 2.0 * np.pi),
+                        self.sim[self.active_env_idx].random.uniform_float(
+                            0, 2.0 * np.pi
+                        ),
                         np.array([0, 1, 0]),
                     )
                     self.default_agent[self.active_env_idx].set_state(new_agent_state)
@@ -596,7 +608,9 @@ class HabitatSimInteractiveViewer(Application):
                 self.navmesh_config_and_recompute()
             else:
                 if self.sim[self.active_env_idx].pathfinder.is_loaded:
-                    self.sim[self.active_env_idx].navmesh_visualization = not self.sim[self.active_env_idx].navmesh_visualization
+                    self.sim[self.active_env_idx].navmesh_visualization = not self.sim[
+                        self.active_env_idx
+                    ].navmesh_visualization
                     logger.info("Command: toggle navmesh")
                 else:
                     logger.warn("Warning: recompute navmesh first")
@@ -640,7 +654,11 @@ class HabitatSimInteractiveViewer(Application):
 
             # up/down on cameras' scene nodes
             action = habitat_sim.agent.ObjectControls()
-            sensors = list(self.default_agent[self.active_env_idx].scene_node.subtree_sensors.values())
+            sensors = list(
+                self.default_agent[
+                    self.active_env_idx
+                ].scene_node.subtree_sensors.values()
+            )
             [action(s.object, "look_down", act_spec(delta.y), False) for s in sensors]
 
         # if interactive mode is TRUE -> GRAB MODE
@@ -673,7 +691,9 @@ class HabitatSimInteractiveViewer(Application):
                 if hit_info.object_id >= 0:
                     # we hit an non-staged collision object
                     ro_mngr = self.sim[self.active_env_idx].get_rigid_object_manager()
-                    ao_mngr = self.sim[self.active_env_idx].get_articulated_object_manager()
+                    ao_mngr = self.sim[
+                        self.active_env_idx
+                    ].get_articulated_object_manager()
                     ao = ao_mngr.get_object_by_id(hit_info.object_id)
                     ro = ro_mngr.get_object_by_id(hit_info.object_id)
 
@@ -783,7 +803,9 @@ class HabitatSimInteractiveViewer(Application):
             scroll_delta = scroll_mod_val * mod_val
             if alt_pressed or ctrl_pressed:
                 # rotate the object's local constraint frame
-                agent_t = self.default_agent[self.active_env_idx].scene_node.transformation_matrix()
+                agent_t = self.default_agent[
+                    self.active_env_idx
+                ].scene_node.transformation_matrix()
                 # ALT - yaw
                 rotation_axis = agent_t.transform_vector(mn.Vector3(0, 1, 0))
                 if alt_pressed and ctrl_pressed:
@@ -822,7 +844,9 @@ class HabitatSimInteractiveViewer(Application):
         render_camera = self.render_camera[self.active_env_idx].render_camera
         ray = render_camera.unproject(point)
 
-        rotation: mn.Matrix3x3 = self.default_agent[self.active_env_idx].scene_node.rotation.to_matrix()
+        rotation: mn.Matrix3x3 = self.default_agent[
+            self.active_env_idx
+        ].scene_node.rotation.to_matrix()
         translation: mn.Vector3 = (
             render_camera.node.absolute_translation
             + ray.direction * self.mouse_grabber.grip_depth
@@ -1117,7 +1141,7 @@ if __name__ == "__main__":
 
     if args.num_environments < 1:
         parser.error("num_environments must be a positive non-zero integer.")
-    
+
     # Setting up sim_settings
     sim_settings: Dict[str, Any] = default_sim_settings
     sim_settings["scene"] = args.scene
