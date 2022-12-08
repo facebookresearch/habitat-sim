@@ -46,11 +46,26 @@ class HabitatSimInteractiveViewer(Application):
     DISPLAY_FONT_SIZE = 16.0
 
     def __init__(self, sim_settings: Dict[str, Any]) -> None:
+        self.sim_settings: Dict[str:Any] = sim_settings
+
+        self.enable_batch_renderer: bool = self.sim_settings["enable_batch_renderer"]
+        self.num_env: int = (
+            self.sim_settings["num_environments"]
+            if self.enable_batch_renderer
+            else 1
+        )
+        
+        # Compute environment camera resolution based on the number of environments to render in the window.
+        surface_size: tuple(int, int) = (800, 600)
+        grid_size: tuple(int, int) = ReplayBatchRenderer.environment_grid_size(self.num_env)
+        camera_resolution: tuple(int, int) = (surface_size[0] / grid_size[0], surface_size[1] / grid_size[1])
+        self.sim_settings["width"] = camera_resolution[0]
+        self.sim_settings["height"] = camera_resolution[1]
+        
         configuration = self.Configuration()
         configuration.title = "Habitat Sim Interactive Viewer"
-        configuration.size = (800, 600)
+        configuration.size = surface_size
         Application.__init__(self, configuration)
-        self.sim_settings: Dict[str:Any] = sim_settings
         self.fps: float = 60.0
 
         # Index of the environment being controlled by the user.
@@ -61,12 +76,6 @@ class HabitatSimInteractiveViewer(Application):
         self.contact_debug_draw = False
         # cache most recently loaded URDF file for quick-reload
         self.cached_urdf = ""
-
-        # set proper viewport size
-        # TODO: Batch renderer visualization
-        self.viewport_size: mn.Vector2i = mn.gl.default_framebuffer.viewport.size()
-        self.sim_settings["width"] = self.viewport_size[0]
-        self.sim_settings["height"] = self.viewport_size[1]
 
         # set up our movement map
         key = Application.KeyEvent.Key
@@ -128,12 +137,12 @@ class HabitatSimInteractiveViewer(Application):
         # text object transform in window space is Projection matrix times Translation Matrix
         # put text in top left of window
         self.window_text_transform = mn.Matrix3.projection(
-            mn.Vector2(self.viewport_size)
+            mn.Vector2(surface_size)
         ) @ mn.Matrix3.translation(
             mn.Vector2(
-                self.viewport_size[0]
+                surface_size[0]
                 * -HabitatSimInteractiveViewer.TEXT_DELTA_FROM_CENTER,
-                self.viewport_size[1]
+                surface_size[1]
                 * HabitatSimInteractiveViewer.TEXT_DELTA_FROM_CENTER,
             )
         )
@@ -175,7 +184,7 @@ class HabitatSimInteractiveViewer(Application):
         for i in range(self.num_env):
             if (
                 not self.sim[i].pathfinder.is_loaded
-                and self.cfg.sim_cfg.scene_id.lower() != "none" #TODO: Scene per sim
+                and self.cfg.sim_cfg.scene_id.lower() != "none"
             ):
                 self.navmesh_config_and_recompute(i)
 
@@ -274,22 +283,17 @@ class HabitatSimInteractiveViewer(Application):
         if self.enable_batch_renderer:
             keyframes = []
             for i in range(self.num_env):
-                # Copy sensor transforms
-                sensor_suite = self.sim[i]._sensors
-                for sensor_uuid, sensor in sensor_suite.items():
-                    transform = sensor._sensor_object.node.absolute_transformation()
-                    rotation = mn.Quaternion.from_matrix(transform.rotation())
-                    self.sim[i].gfx_replay_manager.add_user_transform_to_keyframe(
-                        "sensor_" + sensor_uuid, transform.translation, rotation
-                    )
                 # Generate keyframe
                 keyframes.append(
                     self.sim[i].gfx_replay_manager.extract_keyframe()
                 )
+                # Copy sensor transforms
+                sensor_suite = self.sim[i]._sensors
+                for sensor_uuid, sensor in sensor_suite.items():
+                    transform = sensor._sensor_object.node.absolute_transformation()
+                    self.replay_renderer.set_sensor_transform(i, sensor_uuid, transform)
                 # Apply keyframe
                 self.replay_renderer.set_environment_keyframe(i, keyframes[i])
-                # Apply sensor transforms
-                self.replay_renderer.set_sensor_transforms_from_keyframe(i, "sensor_")
                 # Render
                 self.replay_renderer.render(mn.gl.default_framebuffer)
         else:
@@ -391,7 +395,6 @@ class HabitatSimInteractiveViewer(Application):
             self.render_camera.append(self.default_agent[i].scene_node.node_sensor_suite.get("color_sensor"))
         
         # set sim_settings scene name as actual loaded scene
-        #TODO: Scene per sim
         self.sim_settings["scene"] = self.sim[0].curr_scene_name
         
         # Initialize replay renderer

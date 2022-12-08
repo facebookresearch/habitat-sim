@@ -8,6 +8,7 @@
 #   with existing code
 
 from habitat_sim._ext.habitat_sim_bindings import (
+    AbstractReplayRenderer,
     AudioSensor,
     AudioSensorSpec,
     CameraSensor,
