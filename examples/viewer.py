@@ -20,12 +20,7 @@ from magnum import shaders, text
 from magnum.platform.glfw import Application
 
 import habitat_sim
-from habitat_sim import (
-    ReplayBatchRenderer,
-    ReplayRenderer,
-    ReplayRendererConfiguration,
-    physics,
-)
+from habitat_sim import ReplayBatchRenderer, ReplayRendererConfiguration, physics
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.common import quat_from_angle_axis
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
@@ -59,7 +54,10 @@ class HabitatSimInteractiveViewer(Application):
         )
 
         # Compute environment camera resolution based on the number of environments to render in the window.
-        surface_size: tuple(int, int) = (800, 600)
+        surface_size: tuple(int, int) = (
+            self.sim_settings["window_width"],
+            self.sim_settings["window_height"],
+        )
         grid_size: tuple(int, int) = ReplayBatchRenderer.environment_grid_size(
             self.num_env
         )
@@ -308,10 +306,10 @@ class HabitatSimInteractiveViewer(Application):
             self.render_camera[0] = agent.scene_node.node_sensor_suite.get(keys[1])
             self.debug_draw(0)
             self.render_camera[0].render_target.blit_rgba_to_default()
-
-        # draw CPU/GPU usage data and other info to the app window
-        mn.gl.default_framebuffer.bind()
-        self.draw_text(self.render_camera[self.active_env_idx].specification())
+            # draw CPU/GPU usage data and other info to the app window
+            # TODO: Doesn't work with batch renderer.
+            mn.gl.default_framebuffer.bind()
+            self.draw_text(self.render_camera[self.active_env_idx].specification())
 
         self.swap_buffers()
         Timer.next_frame()
@@ -877,17 +875,16 @@ class HabitatSimInteractiveViewer(Application):
         This method is setup to be overridden in for setting config accessibility
         in inherited classes.
         """
-        for i in range(self.num_env):
-            self.navmesh_settings = habitat_sim.NavMeshSettings()
-            self.navmesh_settings.set_defaults()
-            self.navmesh_settings.agent_height = self.cfg.agents[self.agent_id].height
-            self.navmesh_settings.agent_radius = self.cfg.agents[self.agent_id].radius
+        self.navmesh_settings = habitat_sim.NavMeshSettings()
+        self.navmesh_settings.set_defaults()
+        self.navmesh_settings.agent_height = self.cfg.agents[self.agent_id].height
+        self.navmesh_settings.agent_radius = self.cfg.agents[self.agent_id].radius
 
-            self.sim[env_index].recompute_navmesh(
-                self.sim[env_index].pathfinder,
-                self.navmesh_settings,
-                include_static_objects=True,
-            )
+        self.sim[env_index].recompute_navmesh(
+            self.sim[env_index].pathfinder,
+            self.navmesh_settings,
+            include_static_objects=True,
+        )
 
     def exit_event(self, event: Application.ExitEvent):
         """
@@ -1136,11 +1133,27 @@ if __name__ == "__main__":
         type=int,
         help="Number of concurrent environments to batch render.",
     )
+    parser.add_argument(
+        "--width",
+        default=800,
+        type=int,
+        help="Horizontal resolution of the window.",
+    )
+    parser.add_argument(
+        "--height",
+        default=600,
+        type=int,
+        help="Vertical resolution of the window.",
+    )
 
     args = parser.parse_args()
 
     if args.num_environments < 1:
         parser.error("num_environments must be a positive non-zero integer.")
+    if args.width < 1:
+        parser.error("width must be a positive non-zero integer.")
+    if args.height < 1:
+        parser.error("height must be a positive non-zero integer.")
 
     # Setting up sim_settings
     sim_settings: Dict[str, Any] = default_sim_settings
@@ -1150,6 +1163,8 @@ if __name__ == "__main__":
     sim_settings["stage_requires_lighting"] = args.stage_requires_lighting
     sim_settings["enable_batch_renderer"] = args.enable_batch_renderer
     sim_settings["num_environments"] = args.num_environments
+    sim_settings["window_width"] = args.width
+    sim_settings["window_height"] = args.height
 
     # start the application
     HabitatSimInteractiveViewer(sim_settings).exec()
