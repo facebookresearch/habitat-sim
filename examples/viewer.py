@@ -21,11 +21,10 @@ from magnum.platform.glfw import Application
 
 import habitat_sim
 from habitat_sim import physics
-from habitat_sim import ReplayRenderer, ReplayRendererConfiguration
+from habitat_sim import ReplayRenderer, ReplayBatchRenderer, ReplayRendererConfiguration
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.common import quat_from_angle_axis
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
-
 
 class HabitatSimInteractiveViewer(Application):
 
@@ -169,7 +168,7 @@ class HabitatSimInteractiveViewer(Application):
         self.cfg: Optional[habitat_sim.simulator.Configuration] = None
         self.sim: list[habitat_sim.simulator.Simulator] = None
         self.replay_renderer_cfg: Optional[ReplayRendererConfiguration] = None
-        self.replay_renderer: Optional[ReplayRenderer] = None
+        self.replay_renderer: Optional[ReplayBatchRenderer] = None
         self.reconfigure_sim()
 
         # compute NavMesh if not already loaded by the scene.
@@ -292,7 +291,7 @@ class HabitatSimInteractiveViewer(Application):
                 # Apply sensor transforms
                 self.replay_renderer.set_sensor_transforms_from_keyframe(i, "sensor_")
                 # Render
-                self.replay_renderer.render(mn.gl.default_framebuffer)
+                self.replay_renderer.render_all(mn.gl.default_framebuffer)
         else:
             self.sim[0]._Simulator__sensors[keys[0]][keys[1]].draw_observation()
             agent = self.sim[0].get_agent(keys[0])
@@ -363,12 +362,6 @@ class HabitatSimInteractiveViewer(Application):
         self.cfg = make_cfg(self.sim_settings)
         self.agent_id: int = self.sim_settings["default_agent"]
         self.cfg.agents[self.agent_id] = self.default_agent_config()
-        self.enable_batch_renderer: bool = self.sim_settings["enable_batch_renderer"]
-        self.num_env: int = (
-            self.sim_settings["num_environments"]
-            if self.enable_batch_renderer
-            else 1
-        )
 
         if self.enable_batch_renderer:
             self.cfg.sim_cfg.create_renderer = False
@@ -401,10 +394,11 @@ class HabitatSimInteractiveViewer(Application):
         #TODO: Scene per sim
         self.sim_settings["scene"] = self.sim[0].curr_scene_name
         
-        # Initialize batch renderer
+        # Initialize replay renderer
         if (self.enable_batch_renderer) and self.replay_renderer_cfg is None:
             self.replay_renderer_cfg = ReplayRendererConfiguration()
             self.replay_renderer_cfg.num_environments = self.num_env
+            self.replay_renderer_cfg.standalone = False # Context is owned by the GLFW window
             self.replay_renderer_cfg.sensor_specifications = self.cfg.agents[
                 self.agent_id
             ].sensor_specifications
@@ -412,10 +406,8 @@ class HabitatSimInteractiveViewer(Application):
                 self.cfg.sim_cfg.gpu_device_id
             )
             self.replay_renderer_cfg.force_separate_semantic_scene_graph = False
-            self.replay_renderer_cfg.leave_context_with_background_renderer = (
-                False  # Context is owned by the GLFW window
-            )
-            self.replay_renderer = ReplayRenderer(self.replay_renderer_cfg)
+            self.replay_renderer_cfg.leave_context_with_background_renderer = False
+            self.replay_renderer = ReplayBatchRenderer(self.replay_renderer_cfg)
 
         Timer.start()
         self.step = -1
