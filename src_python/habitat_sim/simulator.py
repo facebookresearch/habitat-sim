@@ -135,12 +135,16 @@ class Simulator(SimulatorBackend):
     def _sanitize_config(config: Configuration) -> None:
         if len(config.agents) == 0:
             raise RuntimeError(
-                "Config has not agents specified.  Must specify at least 1 agent"
+                "Config has no agents specified.  Must specify at least 1 agent"
             )
 
-        config.sim_cfg.create_renderer = not config.enable_batch_renderer and any(
-            len(cfg.sensor_specifications) > 0 for cfg in config.agents
+        # TODO: may remove this, as Simulator may not render internally anymore after
+        # batched renderer is pushed. Observations will likely be stored in a tensor
+        # somewhere to be rendered later
+        config.sim_cfg.create_renderer = any(
+            (len(cfg.sensor_specifications) > 0 for cfg in config.agents)
         )
+
         config.sim_cfg.load_semantic_mesh |= any(
             (
                 any(
@@ -335,14 +339,18 @@ class Simulator(SimulatorBackend):
         self._default_agent_id = config.sim_cfg.default_agent_id
 
         self.__noise_models: Dict[str, SensorNoiseModel] = dict()
+
+        # TODO, change these three variables so that they are of the type:
+        # Dict[str, <other type>], as we are getting rid of sensors
+        # exclusively attached to agents
         self.__sensors: List[Dict[str, Sensor]] = [
-            dict() for i in range(len(config.agents))
+            dict() for _ in range(len(config.agents))
         ]
         self.__obs_buffers: List[Dict[str, SensorObservation]] = [
-            dict() for i in range(len(config.agents))
+            dict() for _ in range(len(config.agents))
         ]
         self.__image_views: List[Dict[str, mn.MutableImageView2D]] = [
-            dict() for i in range(len(config.agents))
+            dict() for _ in range(len(config.agents))
         ]
         self.__last_state = dict()
 
@@ -413,10 +421,9 @@ class Simulator(SimulatorBackend):
         ...
 
     @overload
-    def add_sensor(self, sensor_spec: SensorSpec, attach_to: SceneObject) -> None:
+    def add_sensor(self, sensor_spec: SensorSpec, attach_to: SceneNode) -> None:
         """
-        Add sensor to scene node that a scene object is attached to,
-        e.g., a ManagedBulletRigidObject
+        Add sensor to any scene node
         """
         ...
 
@@ -425,49 +432,35 @@ class Simulator(SimulatorBackend):
         sensor_spec: SensorSpec,
         attach_to: Union[
             int,
+            SceneNode,
             SceneObject,
         ] = None,
     ) -> None:
+        """
+        overloaded function that adds a sensor to a scene node determined by which
+        parameter is passed in.
+        """
         self.__verify_sensor_spec(sensor_spec)
 
         scene_node: SceneNode = None
         if attach_to is None:
+            # global sensor attached to root scene node
             scene_node = self.get_active_scene_graph().get_root_node()
         elif isinstance(attach_to, int):
+            # attached to scene node of agent with given agent ID
             agent_id = attach_to
             agent = self.get_agent(agent_id)
             agent._add_sensor(sensor_spec)
             self._init_sensor(sensor_spec, agent_id)
             return
-        elif isinstance(
-            attach_to,
-            (
-                ManagedRigidObject,
-                ManagedBulletRigidObject,
-                ManagedArticulatedObject,
-                ManagedBulletArticulatedObject,
-            ),
-        ):
-            scene_node = attach_to.root_scene_node
+        elif isinstance(attach_to, SceneNode):
+            # attach directly to explicitly given scene node
+            scene_node = attach_to
 
         self.__create_sensor(sensor_spec, scene_node)
 
-    @overload
-    def _init_sensor(self, sensor_spec: SensorSpec) -> None:
-        """
-        Init sensor not necessarily attached to any agent nor scene object
-        """
-        ...
-
-    @overload
-    def _init_sensor(self, sensor_spec: SensorSpec, agent_id: int) -> None:
-        """
-        Init sensor attached to an agent
-        """
-        ...
-
     def _init_sensor(self, sensor_spec: SensorSpec, agent_id: int = None) -> None:
-        # TODO: temporary method while we refactor sensors
+        # TODO: temporary if statement while we refactor sensors
         if agent_id is not None:
             self.__init_agent_sensor(sensor_spec, agent_id)
         else:
