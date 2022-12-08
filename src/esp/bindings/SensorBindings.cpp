@@ -160,6 +160,7 @@ void initSensorBindings(py::module& m) {
       .def("delete_sensor", &SensorFactory::deleteSensor)
       .def("delete_subtree_sensor", &SensorFactory::deleteSubtreeSensor);
 
+  // TODO: probably remove this as we are deprecating SensorSuites
   // ==== SensorSuite ====
   py::class_<SensorSuite, Magnum::SceneGraph::PyFeature<SensorSuite>,
              Magnum::SceneGraph::AbstractFeature3D,
