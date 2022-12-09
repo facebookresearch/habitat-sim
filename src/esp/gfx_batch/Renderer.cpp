@@ -1073,8 +1073,8 @@ void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
             drawBatchCommands =
                 // TODO if unsorted scene.drawCommands is here, the unit test
                 //  still passes -- fix!
-                scene.drawCommandsSorted.slice(drawBatchOffset,
-                                               nextDrawBatchOffset);
+            scene.drawCommandsSorted.slice(drawBatchOffset,
+                                           nextDrawBatchOffset);
 
         drawBatch.shader->setDrawOffset(drawBatchOffset)
             .draw(state_->meshes[drawBatch.meshId].second(),
