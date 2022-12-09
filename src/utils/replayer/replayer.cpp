@@ -23,6 +23,7 @@ class Replayer : public Mn::Platform::Application {
 
  private:
   void drawEvent() override;
+  void mousePressEvent(MouseEvent& event) override;
 
   esp::logging::LoggingContext loggingContext_;
 
@@ -37,6 +38,7 @@ class Replayer : public Mn::Platform::Application {
 
   std::size_t maxFrameCount_ = 0;
   std::size_t frameIndex_ = 0;
+  bool paused_ = false;
 
   Mn::DebugTools::FrameProfilerGL profiler_;
 };
@@ -151,29 +153,33 @@ Replayer::Replayer(const Arguments& arguments)
 void Replayer::drawEvent() {
   profiler_.beginFrame();
 
-  for (std::size_t envIndex = 0; envIndex < jsonFiles_.size(); ++envIndex) {
-    const Cr::Containers::ArrayView<const Cr::Containers::StringView>
-        keyframesForEnvironment = keyframes_.slice(
-            fileKeyframeOffsets_[envIndex], fileKeyframeOffsets_[envIndex + 1]);
-    // Beware, we can't set arbitrary keyframes, as they are usually generated
-    // incrementally. We must set them exactly in order. And there is
-    // currently no BatchRenderer wrapper for Player::clearFrame, so we can't
-    // reset/loop the replay.
-    if (frameIndex_ < keyframesForEnvironment.size()) {
-      replayRenderer_->setEnvironmentKeyframe(envIndex,
-                                    keyframesForEnvironment[frameIndex_]);
-    }
+  if(!paused_) {
+    for (std::size_t envIndex = 0; envIndex < jsonFiles_.size(); ++envIndex) {
+      const Cr::Containers::ArrayView<const Cr::Containers::StringView>
+          keyframesForEnvironment = keyframes_.slice(
+              fileKeyframeOffsets_[envIndex], fileKeyframeOffsets_[envIndex + 1]);
+      // Beware, we can't set arbitrary keyframes, as they are usually generated
+      // incrementally. We must set them exactly in order. And there is
+      // currently no BatchRenderer wrapper for Player::clearFrame, so we can't
+      // reset/loop the replay.
+      if (frameIndex_ < keyframesForEnvironment.size()) {
+        replayRenderer_->setEnvironmentKeyframe(envIndex,
+                                      keyframesForEnvironment[frameIndex_]);
+      }
 
-    // if (frameIndex % frameSkip == 0) {
-    // vary camera over time and across environments
-    const auto eyePos = Mn::Vector3(-1.5f, 1.75f - (float)envIndex * 0.1f,
-                                    -0.5f + (float)envIndex * 0.5f);
-    Mn::Matrix4 transform = Mn::Matrix4::lookAt(
-        eyePos,
-        eyePos + Mn::Vector3(2.f - (float)frameIndex_ * 0.002f, -0.5f, 1.f),
-        {0.f, 1.f, 0.f});
-    // TODO why the stringly typing?
-    replayRenderer_->setSensorTransform(envIndex, "my_rgb", transform);
+      // if (frameIndex % frameSkip == 0) {
+      // vary camera over time and across environments
+      const auto eyePos = Mn::Vector3(-1.5f, 1.75f - (float)envIndex * 0.1f,
+                                      -0.5f + (float)envIndex * 0.5f);
+      Mn::Matrix4 transform = Mn::Matrix4::lookAt(
+          eyePos,
+          eyePos + Mn::Vector3(2.f - (float)frameIndex_ * 0.002f, -0.5f, 1.f),
+          {0.f, 1.f, 0.f});
+      // TODO why the stringly typing?
+      replayRenderer_->setSensorTransform(envIndex, "my_rgb", transform);
+  }
+
+    ++frameIndex_;
   }
 
   replayRenderer_->render(Mn::GL::defaultFramebuffer);
@@ -183,9 +189,17 @@ void Replayer::drawEvent() {
 
   /* Stop redrawing once we reached all frames */
   // TODO change to a repeat once it's possible to clear
-  if (++frameIndex_ < maxFrameCount_ || profiler_.isEnabled())
+  if (frameIndex_ < maxFrameCount_ || profiler_.isEnabled())
     redraw();
   swapBuffers();
+}
+
+void Replayer::mousePressEvent(MouseEvent& event) {
+  if(event.button() == MouseEvent::Button::Left)
+    paused_ ^= true;
+  else return;
+
+  event.setAccepted();
 }
 
 }  // namespace
