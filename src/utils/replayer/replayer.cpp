@@ -132,6 +132,9 @@ Replayer::Replayer(const Arguments& arguments)
   else
     replayRenderer_.emplace<esp::sim::ReplayBatchRenderer>(rendererConfig);
 
+  for(std::size_t i = 0, iMax = args.arrayValueCount("preload"); i != iMax; ++i)
+    replayRenderer_->preloadFile(args.arrayValue("preload", i));
+
   // We're going to be lazy and only set up one buffer/imageView per env, on the
   // assumption that there's only one sensor.
   CORRADE_INTERNAL_ASSERT(rendererConfig.sensorSpecifications.size() == 1);

@@ -31,6 +31,12 @@ Mn::Vector2i AbstractReplayRenderer::environmentGridSize(
 
 AbstractReplayRenderer::~AbstractReplayRenderer() = default;
 
+void AbstractReplayRenderer::preloadFile(Cr::Containers::StringView filename) {
+  doPreloadFile(filename);
+}
+
+void AbstractReplayRenderer::doPreloadFile(Cr::Containers::StringView) {}
+
 unsigned AbstractReplayRenderer::environmentCount() const {
   return doEnvironmentCount();
 }
@@ -388,6 +394,7 @@ ReplayBatchRenderer::ReplayBatchRenderer(
 
       /* If no such name is known yet, add as a file */
       if (!renderer_.hasMeshHierarchy(creation.filepath)) {
+        Mn::Warning{} << creation.filepath << "not found in any composite file, loading from the filesystem";
         // TODO asserts might be TOO BRUTAL?
         CORRADE_INTERNAL_ASSERT_OUTPUT(
             renderer_.addFile(creation.filepath,
@@ -454,6 +461,10 @@ ReplayBatchRenderer::ReplayBatchRenderer(
 }
 
 ReplayBatchRenderer::~ReplayBatchRenderer() = default;
+
+void ReplayBatchRenderer::doPreloadFile(Cr::Containers::StringView filename) {
+  CORRADE_INTERNAL_ASSERT(renderer_->addFile(filename));
+}
 
 unsigned ReplayBatchRenderer::doEnvironmentCount() const {
   return envs_.size();

@@ -56,6 +56,8 @@ class AbstractReplayRenderer {
 
   virtual ~AbstractReplayRenderer();
 
+  void preloadFile(Corrade::Containers::StringView filename);
+
   unsigned environmentCount() const;
 
   // Assumes there's just one sensor per env
@@ -90,6 +92,9 @@ class AbstractReplayRenderer {
      all necessary checking (such as ensuring envIndex is in bounds) in order
      to allow the implementations be only about what's actually
      backend-specific, with no unnecessary duplicated code. */
+
+  /* Default implementation does nothing */
+  virtual void doPreloadFile(Corrade::Containers::StringView filename);
 
   virtual unsigned doEnvironmentCount() const = 0;
 
@@ -195,6 +200,8 @@ class ReplayBatchRenderer : public AbstractReplayRenderer {
   ~ReplayBatchRenderer() override;
 
  private:
+  void doPreloadFile(Corrade::Containers::StringView filename) override;
+
   unsigned doEnvironmentCount() const override;
 
   Magnum::Vector2i doSensorSize(unsigned envIndex) override;
