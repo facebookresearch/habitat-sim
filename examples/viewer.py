@@ -306,10 +306,10 @@ class HabitatSimInteractiveViewer(Application):
             self.render_camera[0] = agent.scene_node.node_sensor_suite.get(keys[1])
             self.debug_draw(0)
             self.render_camera[0].render_target.blit_rgba_to_default()
-            # draw CPU/GPU usage data and other info to the app window
-            # TODO: Doesn't work with batch renderer.
-            mn.gl.default_framebuffer.bind()
-            self.draw_text(self.render_camera[self.active_env_idx].specification())
+
+        # draw CPU/GPU usage data and other info to the app window
+        mn.gl.default_framebuffer.bind()
+        self.draw_text(self.render_camera[self.active_env_idx].specification())
 
         self.swap_buffers()
         Timer.next_frame()
