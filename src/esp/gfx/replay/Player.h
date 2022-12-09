@@ -157,10 +157,24 @@ class Player {
   void readKeyframesFromFile(const std::string& filepath);
 
   /**
-   * @brief Given a JSON string encoding a keyframe, returns the keyframe
+   * @brief Given a JSON string encoding a wrapped keyframe, returns the keyframe
    * itself.
+   *
+   * The JSON string is expected to be an object with a single `keyframe` key
+   * containing data for the one keyframe. Use @ref keyframeFromStringUnwrapped()
+   * to consume directly the data.
    */
   static Keyframe keyframeFromString(const std::string& keyframe);
+
+  /**
+   * @brief Given a JSON string encoding a keyframe, returns the keyframe
+   * itself.
+   *
+   * The JSON string is expected to directly contain the keyframe object,
+   * (with `loads`, `creations`, etc.). Use @ref keyframeFromString() to
+   * consume a keyframe wrapped in an additional object.
+   */
+  static Keyframe keyframeFromStringUnwrapped(Corrade::Containers::StringView keyframe);
 
   /**
    * @brief Get the currently-set keyframe, or -1 if no keyframe is set.

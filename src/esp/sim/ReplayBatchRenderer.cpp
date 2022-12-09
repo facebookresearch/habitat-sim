@@ -48,6 +48,14 @@ void AbstractReplayRenderer::setEnvironmentKeyframe(
       esp::gfx::replay::Player::keyframeFromString(serKeyframe));
 }
 
+void AbstractReplayRenderer::setEnvironmentKeyframeUnwrapped(
+    unsigned envIndex,
+    const Cr::Containers::StringView serKeyframe) {
+  CORRADE_INTERNAL_ASSERT(envIndex < doEnvironmentCount());
+  doPlayerFor(envIndex).setSingleKeyframe(
+      esp::gfx::replay::Player::keyframeFromStringUnwrapped(serKeyframe));
+}
+
 void AbstractReplayRenderer::setSensorTransform(unsigned envIndex,
                                                 const std::string& sensorName,
                                                 const Mn::Matrix4& transform) {

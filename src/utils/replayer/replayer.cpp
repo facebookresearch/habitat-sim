@@ -1,7 +1,6 @@
 #include <Corrade/Containers/GrowableArray.h>
 #include <Corrade/Utility/Arguments.h>
 #include <Corrade/Utility/DebugStl.h>
-#include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/Json.h>
 #include <Corrade/Utility/Path.h>
 #include <Magnum/DebugTools/FrameProfiler.h>
@@ -158,11 +157,8 @@ void Replayer::drawEvent() {
     // currently no BatchRenderer wrapper for Player::clearFrame, so we can't
     // reset/loop the replay.
     if (frameIndex_ < keyframesForEnvironment.size()) {
-      replayRenderer_->setEnvironmentKeyframe(
-          envIndex,
-          // TODO wtf is this? WHY?
-          Cr::Utility::formatString("{{\"keyframe\":{}}}",
-                                    keyframesForEnvironment[frameIndex_]));
+      replayRenderer_->setEnvironmentKeyframe(envIndex,
+                                    keyframesForEnvironment[frameIndex_]);
     }
 
     // if (frameIndex % frameSkip == 0) {
