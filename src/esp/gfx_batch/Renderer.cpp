@@ -1028,6 +1028,12 @@ void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
             scene.transformationIdsSorted.size()));
   }
 
+  /* Remember the original viewport to set it back to where it was after.
+     Important if we're not the only code that renders to it, such as when
+     rendering directly to a GUI application framebuffer and the application
+     wants to draw HUD etc. on top. */
+  const Mn::Range2Di previousViewport = framebuffer.viewport();
+
   for (Mn::Int y = 0; y != state_->tileCount.y(); ++y) {
     for (Mn::Int x = 0; x != state_->tileCount.x(); ++x) {
       framebuffer.setViewport(Mn::Range2Di::fromSize(
@@ -1074,6 +1080,8 @@ void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
       }
     }
   }
+
+  framebuffer.setViewport(previousViewport);
 }
 
 SceneStats Renderer::sceneStats(Mn::UnsignedInt sceneId) const {
