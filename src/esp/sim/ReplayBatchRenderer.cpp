@@ -375,7 +375,7 @@ ReplayBatchRenderer::ReplayBatchRenderer(
   theOnlySensorProjection_ = sensor.projectionMatrix();
 
   class BatchPlayerImplementation
-      : public gfx::replay::AbstractSceneGraphPlayerImplementation {
+      : public gfx::replay::AbstractPlayerImplementation {
    public:
     BatchPlayerImplementation(gfx_batch::Renderer& renderer,
                               Mn::UnsignedInt sceneId)
@@ -435,23 +435,11 @@ ReplayBatchRenderer::ReplayBatchRenderer(
           Mn::Matrix4::from(rotation.toMatrix(), translation);
     }
 
-    void setNodeSemanticId(esp::gfx::replay::NodeHandle,
-                           Mn::UnsignedInt) override {
-      // CORRADE_INTERNAL_ASSERT_UNREACHABLE(); // TODO
-    }
-
-    void changeLightSetup(const gfx::LightSetup&) override {
-      // CORRADE_INTERNAL_ASSERT_UNREACHABLE(); // TODO
-    }
-
     gfx_batch::Renderer& renderer_;
     Mn::UnsignedInt sceneId_;
   };
 
-  // envs_ = Cr::Containers::Array<EnvironmentRecord>{Cr::NoInit,
-  // std::size_t(cfg.numEnvironments)};
   for (Mn::UnsignedInt i = 0; i != cfg.numEnvironments; ++i) {
-    // TODO arrayAppend() doesn't work because something in Player is not not
     arrayAppend(
         envs_,
         EnvironmentRecord{

@@ -121,6 +121,8 @@ class AbstractReplayRenderer {
           imageViews) = 0;
 
   virtual void doRender(Magnum::GL::AbstractFramebuffer& framebuffer) = 0;
+
+  ESP_SMART_POINTERS(AbstractReplayRenderer)
 };
 
 class ReplayRenderer : public AbstractReplayRenderer {
@@ -158,9 +160,6 @@ class ReplayRenderer : public AbstractReplayRenderer {
   Magnum::Vector2i doSensorSize(unsigned envIndex) override;
 
   esp::gfx::replay::Player& doPlayerFor(unsigned envIndex) override;
-
-  // void doSetEnvironmentKeyframe(int envIndex, const std::string& serKeyframe)
-  // override;
 
   void doSetSensorTransform(unsigned envIndex,
                             const std::string& sensorName,
@@ -208,9 +207,6 @@ class ReplayBatchRenderer : public AbstractReplayRenderer {
 
   esp::gfx::replay::Player& doPlayerFor(unsigned envIndex) override;
 
-  // void doSetEnvironmentKeyframe(unsigned envIndex, const std::string&
-  // serKeyframe) override;
-
   void doSetSensorTransform(unsigned envIndex,
                             const std::string& sensorName,
                             const Mn::Matrix4& transform) override;
@@ -237,6 +233,8 @@ class ReplayBatchRenderer : public AbstractReplayRenderer {
 
   Corrade::Containers::String theOnlySensorName_;
   Mn::Matrix4 theOnlySensorProjection_;
+
+  ESP_SMART_POINTERS(ReplayBatchRenderer)
 };
 
 }  // namespace sim
