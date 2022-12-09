@@ -168,7 +168,7 @@ void Replayer::drawEvent() {
       // currently no BatchRenderer wrapper for Player::clearFrame, so we can't
       // reset/loop the replay.
       if (frameIndex_ < keyframesForEnvironment.size()) {
-        replayRenderer_->setEnvironmentKeyframe(
+        replayRenderer_->setEnvironmentKeyframeUnwrapped(
             envIndex, keyframesForEnvironment[frameIndex_]);
       }
 
