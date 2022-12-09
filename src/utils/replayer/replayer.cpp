@@ -151,6 +151,9 @@ Replayer::Replayer(const Arguments& arguments)
 }
 
 void Replayer::drawEvent() {
+  Mn::GL::defaultFramebuffer.clear(Mn::GL::FramebufferClear::Color |
+                    Mn::GL::FramebufferClear::Depth);
+
   profiler_.beginFrame();
 
   if(!paused_) {

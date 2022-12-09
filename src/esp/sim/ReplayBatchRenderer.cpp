@@ -516,11 +516,6 @@ void ReplayBatchRenderer::doRender(
                  "ReplayBatchRenderer::render(): can't use this function with "
                  "a standalone renderer", );
 
-  /* The non-standalone renderer doesn't clear on its own, it's the user
-     responsibility */
-  framebuffer.clear(Mn::GL::FramebufferClear::Color |
-                    Mn::GL::FramebufferClear::Depth);
-
   renderer_->draw(framebuffer);
 }
 
