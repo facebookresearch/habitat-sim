@@ -123,13 +123,10 @@ class Simulator {
 
   /**
    * @brief The ID of the CUDA device of the OpenGL context owned by the
-   * simulator.  This will only be nonzero if the simulator is built in
+   * simulator. This will only be nonzero if the simulator is built in
    * --headless mode on linux
    */
   int gpuDevice() const {
-    ESP_CHECK(config_.createRenderer,
-              "Simulator::gpuDevice() : cannot get gpu device when "
-              "createRenderer flag is false");
     if (context_ == nullptr) {
       return 0;
     }

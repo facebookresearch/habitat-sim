@@ -195,11 +195,6 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     flextGLInit(Magnum::GL::Context::current());
 #endif
     renderer_->acquireGlContext();
-  } else {
-    CORRADE_ASSERT(
-        !Magnum::GL::Context::hasCurrent(),
-        "Simulator::reconfigure() : Unexpected existing context when "
-        "createRenderer==false", );
   }
 
   // (re) create scene instance
