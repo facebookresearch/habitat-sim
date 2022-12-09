@@ -32,6 +32,13 @@ void AbstractSceneGraphPlayerImplementation::deleteAssetInstance(
   delete reinterpret_cast<scene::SceneNode*>(node);
 }
 
+void AbstractSceneGraphPlayerImplementation::deleteAssetInstances(
+    const std::unordered_map<RenderAssetInstanceKey, NodeHandle>& instances) {
+  for (const auto& pair : instances) {
+    delete reinterpret_cast<scene::SceneNode*>(pair.second);
+  }
+}
+
 void AbstractSceneGraphPlayerImplementation::setNodeTransform(
     const NodeHandle node,
     const Mn::Vector3& translation,
@@ -135,9 +142,7 @@ void Player::close() {
 }
 
 void Player::clearFrame() {
-  for (const auto& pair : createdInstances_) {
-    implementation_->deleteAssetInstance(pair.second);
-  }
+  implementation_->deleteAssetInstances(createdInstances_);
   createdInstances_.clear();
   assetInfos_.clear();
   frameIndex_ = -1;

@@ -429,6 +429,12 @@ ReplayBatchRenderer::ReplayBatchRenderer(
           Mn::Matrix4{Mn::Math::ZeroInit};
     }
 
+    void deleteAssetInstances(
+        const std::unordered_map<gfx::replay::RenderAssetInstanceKey,
+                                 gfx::replay::NodeHandle>&) override {
+      renderer_.clear(sceneId_);
+    }
+
     void setNodeTransform(const gfx::replay::NodeHandle node,
                           const Mn::Vector3& translation,
                           const Mn::Quaternion& rotation) override {

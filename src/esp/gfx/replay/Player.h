@@ -67,9 +67,23 @@ class AbstractPlayerImplementation {
    * @brief Delete asset instance
    *
    * The @p handle is expected to be returned from an earlier call to
-   * @ref loadAndCreateRenderAssetInstance() on the same instance.
+   * @ref loadAndCreateRenderAssetInstance() on the same instance. Use
+   * @ref clearAssetInstances() for deleting everything instead.
    */
   virtual void deleteAssetInstance(NodeHandle node) = 0;
+
+  /**
+   * @brief Clear all asset instances
+   *
+   * The player behaves as if @ref loadAndCreateRenderAssetInstance() was not
+   * called at all. It *may* still contain the resources like meshes and
+   * textures loaded by the previous calls though. The @p instances contain
+   * all node handles returned from @ref loadAndCreateRenderAssetInstance() and
+   * can be ignored if the implementation keeps track of these on its own.
+   */
+  virtual void deleteAssetInstances(
+      const std::unordered_map<RenderAssetInstanceKey, NodeHandle>&
+          instances) = 0;
 
   /**
    * @brief Set node transform
@@ -109,6 +123,10 @@ class AbstractSceneGraphPlayerImplementation
   /* The interfaces are private, i.e. not meant to be called from subclasses */
 
   void deleteAssetInstance(NodeHandle node) override;
+
+  void deleteAssetInstances(
+      const std::unordered_map<RenderAssetInstanceKey, NodeHandle>& instances)
+      override;
 
   void setNodeTransform(NodeHandle node,
                         const Magnum::Vector3& translation,
