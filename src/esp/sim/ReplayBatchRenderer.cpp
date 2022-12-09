@@ -369,7 +369,8 @@ gfx::replay::NodeHandle ReplayRenderer::loadAndCreateRenderAssetInstance(
 
 ReplayBatchRenderer::ReplayBatchRenderer(
     const ReplayRendererConfiguration& cfg) {
-  flextGLInit(Magnum::GL::Context::current()); // TODO: Avoid globals duplications across SOs.
+  flextGLInit(Magnum::GL::Context::current());  // TODO: Avoid globals
+                                                // duplications across SOs.
   CORRADE_ASSERT(cfg.sensorSpecifications.size() == 1,
                  "ReplayBatchRenderer: expecting exactly one sensor", );
   const auto& sensor = static_cast<esp::sensor::CameraSensorSpec&>(

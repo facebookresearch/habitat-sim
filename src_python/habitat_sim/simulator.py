@@ -89,8 +89,9 @@ class Simulator(SimulatorBackend):
                 "Config has not agents specified.  Must specify at least 1 agent"
             )
 
-        config.sim_cfg.create_renderer = not config.sim_cfg.enable_batch_renderer and any(
-            (len(cfg.sensor_specifications) > 0 for cfg in config.agents)
+        config.sim_cfg.create_renderer = (
+            not config.sim_cfg.enable_batch_renderer
+            and any((len(cfg.sensor_specifications) > 0 for cfg in config.agents))
         )
         config.sim_cfg.load_semantic_mesh |= any(
             (
