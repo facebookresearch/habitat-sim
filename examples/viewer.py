@@ -188,6 +188,7 @@ class HabitatSimInteractiveViewer(Application):
         for i in range(self.num_env):
             if (
                 not self.sim[i].pathfinder.is_loaded
+                and not self.enable_batch_renderer # TODO: Computing a navmesh currently requires the legacy renderer.
                 and self.cfg.sim_cfg.scene_id.lower() != "none"
             ):
                 self.navmesh_config_and_recompute(i)
