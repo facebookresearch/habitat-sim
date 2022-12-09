@@ -1113,22 +1113,22 @@ if __name__ == "__main__":
         help='dataset configuration file to use (default: "./data/objects/ycb/ycb.scene_dataset_config.json")',
     )
     parser.add_argument(
-        "--disable_physics",
+        "--disable-physics",
         action="store_true",
         help="disable physics simulation (default: False)",
     )
     parser.add_argument(
-        "--stage_requires_lighting",
+        "--stage-requires-lighting",
         action="store_true",
         help="Override configured lighting to use synthetic lighting for the stage.",
     )
     parser.add_argument(
-        "--enable_batch_renderer",
+        "--enable-batch-renderer",
         action="store_true",
         help="Enable batch rendering mode. The number of concurrent environments is specified with the num_environments parameter.",
     )
     parser.add_argument(
-        "--num_environments",
+        "--num-environments",
         default=1,
         type=int,
         help="Number of concurrent environments to batch render.",
@@ -1149,7 +1149,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.num_environments < 1:
-        parser.error("num_environments must be a positive non-zero integer.")
+        parser.error("num-environments must be a positive non-zero integer.")
     if args.width < 1:
         parser.error("width must be a positive non-zero integer.")
     if args.height < 1:
