@@ -66,8 +66,9 @@ class AbstractReplayRenderer {
   void setEnvironmentKeyframe(unsigned envIndex,
                               const std::string& serKeyframe);
 
-  void setEnvironmentKeyframeUnwrapped(unsigned envIndex,
-                              const Corrade::Containers::StringView serKeyframe);
+  void setEnvironmentKeyframeUnwrapped(
+      unsigned envIndex,
+      const Corrade::Containers::StringView serKeyframe);
 
   void setSensorTransform(unsigned envIndex,
                           const std::string& sensorName,

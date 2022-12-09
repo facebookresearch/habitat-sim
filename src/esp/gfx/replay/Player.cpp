@@ -60,7 +60,8 @@ Keyframe Player::keyframeFromString(const std::string& keyframe) {
   return res;
 }
 
-Keyframe Player::keyframeFromStringUnwrapped(const Cr::Containers::StringView keyframe) {
+Keyframe Player::keyframeFromStringUnwrapped(
+    const Cr::Containers::StringView keyframe) {
   Keyframe res;
   rapidjson::Document d;
   d.Parse<0>(keyframe.data(), keyframe.size());

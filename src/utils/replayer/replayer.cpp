@@ -134,7 +134,8 @@ Replayer::Replayer(const Arguments& arguments)
   else
     replayRenderer_.emplace<esp::sim::ReplayBatchRenderer>(rendererConfig);
 
-  for(std::size_t i = 0, iMax = args.arrayValueCount("preload"); i != iMax; ++i)
+  for (std::size_t i = 0, iMax = args.arrayValueCount("preload"); i != iMax;
+       ++i)
     replayRenderer_->preloadFile(args.arrayValue("preload", i));
 
   // We're going to be lazy and only set up one buffer/imageView per env, on the
@@ -152,22 +153,23 @@ Replayer::Replayer(const Arguments& arguments)
 
 void Replayer::drawEvent() {
   Mn::GL::defaultFramebuffer.clear(Mn::GL::FramebufferClear::Color |
-                    Mn::GL::FramebufferClear::Depth);
+                                   Mn::GL::FramebufferClear::Depth);
 
   profiler_.beginFrame();
 
-  if(!paused_) {
+  if (!paused_) {
     for (std::size_t envIndex = 0; envIndex < jsonFiles_.size(); ++envIndex) {
       const Cr::Containers::ArrayView<const Cr::Containers::StringView>
-          keyframesForEnvironment = keyframes_.slice(
-              fileKeyframeOffsets_[envIndex], fileKeyframeOffsets_[envIndex + 1]);
+          keyframesForEnvironment =
+              keyframes_.slice(fileKeyframeOffsets_[envIndex],
+                               fileKeyframeOffsets_[envIndex + 1]);
       // Beware, we can't set arbitrary keyframes, as they are usually generated
       // incrementally. We must set them exactly in order. And there is
       // currently no BatchRenderer wrapper for Player::clearFrame, so we can't
       // reset/loop the replay.
       if (frameIndex_ < keyframesForEnvironment.size()) {
-        replayRenderer_->setEnvironmentKeyframe(envIndex,
-                                      keyframesForEnvironment[frameIndex_]);
+        replayRenderer_->setEnvironmentKeyframe(
+            envIndex, keyframesForEnvironment[frameIndex_]);
       }
 
       // if (frameIndex % frameSkip == 0) {
@@ -180,7 +182,7 @@ void Replayer::drawEvent() {
           {0.f, 1.f, 0.f});
       // TODO why the stringly typing?
       replayRenderer_->setSensorTransform(envIndex, "my_rgb", transform);
-  }
+    }
 
     ++frameIndex_;
   }
@@ -198,9 +200,10 @@ void Replayer::drawEvent() {
 }
 
 void Replayer::mousePressEvent(MouseEvent& event) {
-  if(event.button() == MouseEvent::Button::Left)
+  if (event.button() == MouseEvent::Button::Left)
     paused_ ^= true;
-  else return;
+  else
+    return;
 
   event.setAccepted();
 }

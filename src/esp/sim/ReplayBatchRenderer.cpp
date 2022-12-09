@@ -394,7 +394,9 @@ ReplayBatchRenderer::ReplayBatchRenderer(
 
       /* If no such name is known yet, add as a file */
       if (!renderer_.hasMeshHierarchy(creation.filepath)) {
-        Mn::Warning{} << creation.filepath << "not found in any composite file, loading from the filesystem";
+        Mn::Warning{}
+            << creation.filepath
+            << "not found in any composite file, loading from the filesystem";
         // TODO asserts might be TOO BRUTAL?
         CORRADE_INTERNAL_ASSERT_OUTPUT(
             renderer_.addFile(creation.filepath,
