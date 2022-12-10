@@ -22,6 +22,7 @@ target_link_libraries(
           geo
           Magnum::DebugTools
           Magnum::Text
+          ${HABITAT_USED_MAGNUM_PLUGINS}
           MagnumPlugins::StbTrueTypeFont
 )
 

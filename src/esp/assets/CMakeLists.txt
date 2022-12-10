@@ -28,8 +28,6 @@ endif()
 find_package(
   Magnum
   REQUIRED
-  AnyImageImporter
-  AnySceneImporter
   GL
   MeshTools
   SceneGraph
@@ -38,21 +36,6 @@ find_package(
   Trade
   Primitives
 )
-
-find_package(
-  MagnumPlugins
-  REQUIRED
-  BasisImporter
-  GltfImporter
-  PrimitiveImporter
-  StanfordImporter
-  StbImageImporter
-  StbImageConverter
-)
-
-if(BUILD_ASSIMP_SUPPORT)
-  find_package(MagnumPlugins REQUIRED AssimpImporter)
-endif()
 
 add_library(
   assets STATIC
@@ -66,8 +49,6 @@ target_link_libraries(
          physics
          scene
          nav
-         Magnum::AnyImageImporter
-         Magnum::AnySceneImporter
          Magnum::GL
          Magnum::Magnum
          Magnum::MeshTools
@@ -76,23 +57,11 @@ target_link_libraries(
          Magnum::Shaders
          Magnum::Trade
          Magnum::Primitives
-         MagnumPlugins::BasisImporter
-         MagnumPlugins::GltfImporter
-         MagnumPlugins::PrimitiveImporter
-         MagnumPlugins::StanfordImporter
-         MagnumPlugins::StbImageImporter
-         MagnumPlugins::StbImageConverter
   PRIVATE geo io
 )
 
 if(BUILD_WITH_VHACD)
   target_link_libraries(assets PUBLIC vhacd)
-endif()
-
-if(BUILD_ASSIMP_SUPPORT)
-  target_link_libraries(
-    assets PUBLIC MagnumPlugins::AssimpImporter PRIVATE Assimp::Assimp
-  )
 endif()
 
 if(OpenMP_CXX_FOUND)

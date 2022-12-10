@@ -2,8 +2,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-find_package(MagnumPlugins REQUIRED GltfImporter StbImageImporter StbImageConverter)
-
 set(ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH ./data/default.physics_config.json)
 set(ESP_DEFAULT_PHYSICS_CONFIG
     ${PROJECT_SOURCE_DIR}/.${ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH}
@@ -47,12 +45,7 @@ endif()
 
 target_link_libraries(
   physics
-  PUBLIC core
-         scene
-         assets
-         MagnumPlugins::GltfImporter
-         MagnumPlugins::StbImageImporter
-         MagnumPlugins::StbImageConverter
+  PUBLIC core scene assets
 )
 
 set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)

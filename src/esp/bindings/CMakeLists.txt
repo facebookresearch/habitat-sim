@@ -38,6 +38,7 @@ target_link_libraries(
          sensor
          physics
          sim
+         ${HABITAT_USED_MAGNUM_PLUGINS}
 )
 
 if(BUILD_WITH_AUDIO)

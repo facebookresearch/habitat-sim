@@ -339,17 +339,49 @@ if(NOT USE_SYSTEM_MAGNUM)
   add_subdirectory("${DEPS_DIR}/magnum")
   add_subdirectory("${DEPS_DIR}/magnum-plugins")
   add_subdirectory("${DEPS_DIR}/magnum-integration")
+
+  # A list of (static) plugins to link to each leaf executable, i.e. a test,
+  # an utility such as the viewer, or a JS bindings module. The plugins are
+  # deliberately not linked to the static libraries themselves, because it
+  # would result in the plugin import file being compiled several times for
+  # each target that links to the static library and then ultimately thrown
+  # away by the linker except for a single copy.
+  #
+  # A special case is the Habitat Python bindings -- because the plugins are
+  # already linked to Magnum Python bindings via the
+  # MAGNUM_PYTHON_BINDINGS_STATIC_PLUGINS variable below (so they can be used
+  # with just `import magnum`), linking them to the Habitat Python bindings
+  # again would mean they get duplicated, causing warnings on PluginManager
+  # construction.
+  set(
+    HABITAT_USED_MAGNUM_PLUGINS
+    Magnum::AnyImageImporter
+    Magnum::AnyImageConverter
+    Magnum::AnySceneImporter
+    MagnumPlugins::BasisImporter
+    MagnumPlugins::GltfImporter
+    MagnumPlugins::PrimitiveImporter
+    MagnumPlugins::StanfordImporter
+    MagnumPlugins::StbImageImporter
+    MagnumPlugins::StbImageConverter
+  )
+  if(BUILD_ASSIMP_SUPPORT)
+    list(APPEND HABITAT_USED_MAGNUM_PLUGINS MagnumPlugins::AssimpImporter)
+  endif()
+
   if(BUILD_PYTHON_BINDINGS)
     # Make Magnum text rendering plugins (used by the native viewer) available
-    # for Python as well; and reset that back to strange build procedures that
+    # for Python as well; and reset that back so strange build procedures that
     # turn some features off again later can still work.
     if(BUILD_GUI_VIEWERS)
-      set(MAGNUM_PYTHON_BINDINGS_STATIC_PLUGINS MagnumPlugins::StbTrueTypeFont
-          CACHE STRING "" FORCE
-      )
+      set(HABITAT_BINDINGS_USED_MAGNUM_PLUGINS MagnumPlugins::StbTrueTypeFont)
     else()
-      set(MAGNUM_PYTHON_BINDINGS_STATIC_PLUGINS "" CACHE STRING "" FORCE)
+      set(HABITAT_BINDINGS_USED_MAGNUM_PLUGINS)
     endif()
+    set(MAGNUM_PYTHON_BINDINGS_STATIC_PLUGINS ${HABITAT_USED_MAGNUM_PLUGINS}
+                                              ${HABITAT_BINDINGS_USED_MAGNUM_PLUGINS}
+        CACHE STRING "" FORCE
+    )
     add_subdirectory("${DEPS_DIR}/magnum-bindings")
   endif()
 

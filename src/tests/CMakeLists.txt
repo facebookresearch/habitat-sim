@@ -2,9 +2,23 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-find_package(Magnum REQUIRED DebugTools AnyImageConverter AnySceneImporter)
 find_package(
-  MagnumPlugins REQUIRED GltfImporter StbImageImporter KtxImporter
+  Magnum
+  REQUIRED
+  DebugTools
+  AnyImageImporter
+  AnyImageConverter
+  AnySceneImporter
+)
+find_package(
+  MagnumPlugins
+  REQUIRED
+  BasisImporter
+  GltfImporter
+  PrimitiveImporter
+  StanfordImporter
+  StbImageImporter
+  KtxImporter
   OPTIONAL_COMPONENTS GltfSceneConverter KtxImageConverter
 )
 
@@ -19,6 +33,7 @@ corrade_add_test(
   core
   assets
   metadata
+  ${HABITAT_USED_MAGNUM_PLUGINS}
 )
 target_include_directories(AttributesConfigsTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
@@ -29,6 +44,7 @@ corrade_add_test(
   core
   assets
   metadata
+  ${HABITAT_USED_MAGNUM_PLUGINS}
 )
 target_include_directories(AttributesManagersTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
@@ -42,6 +58,8 @@ corrade_add_test(
   MagnumPlugins::GltfImporter
   MagnumPlugins::KtxImporter
   MagnumPlugins::StbImageImporter
+  # No HABITAT_USED_MAGNUM_PLUGINS, the set of plugins is deliberately
+  # restricted here
 )
 target_include_directories(GfxBatchRendererTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 if(BUILD_WITH_CUDA)
@@ -56,9 +74,18 @@ if(MagnumPlugins_KtxImageConverter_FOUND)
   target_link_libraries(GfxBatchRendererTest PRIVATE MagnumPlugins::KtxImageConverter)
 endif()
 
-corrade_add_test(CoreTest CoreTest.cpp LIBRARIES core io)
+corrade_add_test(
+  CoreTest
+  CoreTest.cpp
+  LIBRARIES
+  core
+  io
+  ${HABITAT_USED_MAGNUM_PLUGINS}
+)
 
-corrade_add_test(CullingTest CullingTest.cpp LIBRARIES gfx)
+corrade_add_test(
+  CullingTest CullingTest.cpp LIBRARIES gfx ${HABITAT_USED_MAGNUM_PLUGINS}
+)
 target_include_directories(CullingTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(
@@ -70,12 +97,15 @@ corrade_add_test(
   Magnum::OpenGLTester
   Magnum::Trade
   Magnum::Primitives
+  ${HABITAT_USED_MAGNUM_PLUGINS}
 )
 
-corrade_add_test(DrawableTest DrawableTest.cpp LIBRARIES gfx)
+corrade_add_test(
+  DrawableTest DrawableTest.cpp LIBRARIES gfx ${HABITAT_USED_MAGNUM_PLUGINS}
+)
 target_include_directories(DrawableTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(GeoTest GeoTest.cpp LIBRARIES geo)
+corrade_add_test(GeoTest GeoTest.cpp LIBRARIES geo ${HABITAT_USED_MAGNUM_PLUGINS})
 
 corrade_add_test(
   GfxReplayTest
@@ -84,6 +114,7 @@ corrade_add_test(
   assets
   gfx
   sim
+  ${HABITAT_USED_MAGNUM_PLUGINS}
 )
 target_include_directories(GfxReplayTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
@@ -95,30 +126,59 @@ if(BUILD_WITH_BACKGROUND_RENDERER)
     assets
     gfx
     sim
+    ${HABITAT_USED_MAGNUM_PLUGINS}
   )
   target_include_directories(
     ReplayBatchRendererTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
   )
 endif()
 
-corrade_add_test(GibsonSceneTest GibsonSceneTest.cpp LIBRARIES scene sim)
+corrade_add_test(
+  GibsonSceneTest
+  GibsonSceneTest.cpp
+  LIBRARIES
+  scene
+  sim
+  ${HABITAT_USED_MAGNUM_PLUGINS}
+)
 target_include_directories(GibsonSceneTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(HM3DSceneTest HM3DSceneTest.cpp LIBRARIES scene sim)
+corrade_add_test(
+  HM3DSceneTest
+  HM3DSceneTest.cpp
+  LIBRARIES
+  scene
+  sim
+  ${HABITAT_USED_MAGNUM_PLUGINS}
+)
 target_include_directories(HM3DSceneTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(IOTest IOTest.cpp LIBRARIES io metadata)
+corrade_add_test(
+  IOTest
+  IOTest.cpp
+  LIBRARIES
+  io
+  metadata
+  ${HABITAT_USED_MAGNUM_PLUGINS}
+)
 target_include_directories(IOTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(LoggingTest LoggingTest.cpp LIBRARIES core)
+corrade_add_test(
+  LoggingTest LoggingTest.cpp LIBRARIES core ${HABITAT_USED_MAGNUM_PLUGINS}
+)
 set_tests_properties(LoggingTest PROPERTIES ENVIRONMENT HABITAT_SIM_LOG="")
 
 corrade_add_test(
-  MetadataMediatorTest MetadataMediatorTest.cpp LIBRARIES assets metadata
+  MetadataMediatorTest
+  MetadataMediatorTest.cpp
+  LIBRARIES
+  assets
+  metadata
+  ${HABITAT_USED_MAGNUM_PLUGINS}
 )
 target_include_directories(MetadataMediatorTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(Mp3dTest Mp3dTest.cpp LIBRARIES scene)
+corrade_add_test(Mp3dTest Mp3dTest.cpp LIBRARIES scene ${HABITAT_USED_MAGNUM_PLUGINS})
 target_include_directories(Mp3dTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(
@@ -129,6 +189,7 @@ corrade_add_test(
   nav
   io
   assets
+  ${HABITAT_USED_MAGNUM_PLUGINS}
 )
 target_include_directories(NavTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
@@ -138,11 +199,13 @@ corrade_add_test(
   LIBRARIES
   nav
   io
-  Corrade::Utility
+  ${HABITAT_USED_MAGNUM_PLUGINS}
 )
 target_include_directories(PathFinderTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(PhysicsTest PhysicsTest.cpp LIBRARIES physics)
+corrade_add_test(
+  PhysicsTest PhysicsTest.cpp LIBRARIES physics ${HABITAT_USED_MAGNUM_PLUGINS}
+)
 target_include_directories(PhysicsTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(
@@ -152,15 +215,28 @@ corrade_add_test(
   scene
   assets
   sim
+  ${HABITAT_USED_MAGNUM_PLUGINS}
 )
 target_include_directories(ReplicaSceneTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(ResourceManagerTest ResourceManagerTest.cpp LIBRARIES assets)
+corrade_add_test(
+  ResourceManagerTest ResourceManagerTest.cpp LIBRARIES assets
+  ${HABITAT_USED_MAGNUM_PLUGINS}
+)
 target_include_directories(ResourceManagerTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(SceneGraphTest SceneGraphTest.cpp LIBRARIES scene)
+corrade_add_test(
+  SceneGraphTest SceneGraphTest.cpp LIBRARIES scene ${HABITAT_USED_MAGNUM_PLUGINS}
+)
 
-corrade_add_test(SensorTest SensorTest.cpp LIBRARIES sensor sim)
+corrade_add_test(
+  SensorTest
+  SensorTest.cpp
+  LIBRARIES
+  sensor
+  sim
+  ${HABITAT_USED_MAGNUM_PLUGINS}
+)
 
 corrade_add_test(
   SimTest
@@ -168,8 +244,7 @@ corrade_add_test(
   LIBRARIES
   sim
   Magnum::DebugTools
-  Magnum::AnyImageConverter
-  MagnumPlugins::StbImageImporter
+  ${HABITAT_USED_MAGNUM_PLUGINS}
 )
 target_include_directories(SimTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
@@ -182,8 +257,7 @@ if(BUILD_WITH_VHACD)
     assets
     geo
     Magnum::DebugTools
-    Magnum::AnyImageConverter
-    MagnumPlugins::StbImageImporter
+    ${HABITAT_USED_MAGNUM_PLUGINS}
   )
   target_include_directories(VoxelGridTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 endif()
