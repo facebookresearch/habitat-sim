@@ -104,7 +104,6 @@ Replayer::Replayer(const Arguments& arguments)
   Mn::Debug{} << "Playing" << maxFrameCount_ << "frames from" << fileCount
               << "files";
 
-  // TODO what is this for??
   std::string sensorName = "my_rgb";
   std::string userPrefix = "sensor_";
 
@@ -172,15 +171,12 @@ void Replayer::drawEvent() {
             envIndex, keyframesForEnvironment[frameIndex_]);
       }
 
-      // if (frameIndex % frameSkip == 0) {
-      // vary camera over time and across environments
       const auto eyePos = Mn::Vector3(-1.5f, 1.75f - (float)envIndex * 0.1f,
                                       -0.5f + (float)envIndex * 0.5f);
       Mn::Matrix4 transform = Mn::Matrix4::lookAt(
           eyePos,
           eyePos + Mn::Vector3(2.f - (float)frameIndex_ * 0.002f, -0.5f, 1.f),
           {0.f, 1.f, 0.f});
-      // TODO why the stringly typing?
       replayRenderer_->setSensorTransform(envIndex, "my_rgb", transform);
     }
 

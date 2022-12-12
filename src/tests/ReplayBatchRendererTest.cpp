@@ -161,7 +161,9 @@ void ReplayBatchRendererTest::testIntegration() {
   std::vector<Mn::MutableImageView2D> imageViews;
 
   for (int envIndex = 0; envIndex < numEnvs; envIndex++) {
-    // TODO ugh, pass a vector; use an Image instead of a std::vector
+    // TODO pass size as a Vector2i; use an Image instead of a std::vector
+    //  once there's Iterable<MutableImageView2D> that can be implicitly
+    //  converted from a list of Image2D.
     imageViews.emplace_back(getRGBView(renderer->sensorSize(envIndex).x(),
                                        renderer->sensorSize(envIndex).y(),
                                        buffers[envIndex]));

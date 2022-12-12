@@ -87,18 +87,20 @@ corrade_add_test(
 )
 target_include_directories(GfxReplayTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-# if(BUILD_WITH_BACKGROUND_RENDERER) TODO what is this
-corrade_add_test(
-  ReplayBatchRendererTest
-  ReplayBatchRendererTest.cpp
-  LIBRARIES
-  assets
-  gfx
-  gfx_batch
-  sim
-)
-target_include_directories(ReplayBatchRendererTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-# endif()
+if(BUILD_WITH_BACKGROUND_RENDERER)
+  corrade_add_test(
+    ReplayBatchRendererTest
+    ReplayBatchRendererTest.cpp
+    LIBRARIES
+    assets
+    gfx
+    gfx_batch
+    sim
+  )
+  target_include_directories(
+    ReplayBatchRendererTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+  )
+endif()
 
 corrade_add_test(GibsonSceneTest GibsonSceneTest.cpp LIBRARIES scene sim)
 target_include_directories(GibsonSceneTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})

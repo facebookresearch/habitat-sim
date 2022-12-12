@@ -14,6 +14,5 @@ add_library(
 
 target_link_libraries(
   sim
-  # TODO wait where's gfx and everything else??
   PUBLIC nav gfx_batch
 )

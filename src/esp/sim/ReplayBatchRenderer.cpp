@@ -177,7 +177,7 @@ ReplayRenderer::ReplayRenderer(const ReplayRendererConfiguration& cfg) {
     renderer_->acquireGlContext();
   }
 
-  // Stuff?
+  // Bind things to other things
   for (int envIndex = 0; envIndex < config_.numEnvironments; envIndex++) {
     auto& sensorMap = getEnvironmentSensors(envIndex);
     CORRADE_INTERNAL_ASSERT(sensorMap.size() == 1);
@@ -191,7 +191,6 @@ ReplayRenderer::ReplayRenderer(const ReplayRendererConfiguration& cfg) {
 }
 
 ReplayRenderer::~ReplayRenderer() {
-  ESP_DEBUG() << "Deconstructing ReplayBatchRenderer";
   for (int envIdx = 0; envIdx < config_.numEnvironments; ++envIdx) {
     envs_[envIdx].player_.close();
     auto& sensorMap = envs_[envIdx].sensorMap_;
@@ -226,15 +225,13 @@ void ReplayRenderer::doSetSensorTransform(unsigned envIndex,
   auto& env = envs_[envIndex];
 
   ESP_CHECK(env.sensorMap_.count(sensorName),
-            "ReplayBatchRenderer::setSensorTransform: sensor "
+            "ReplayRenderer::setSensorTransform: sensor "
                 << sensorName << " not found.");
 
   // note: can't use operator[] with map of reference_wrappers
   auto& thingy = env.sensorMap_.at(sensorName).get();
   auto& sensor = static_cast<sensor::VisualSensor&>(thingy);
 
-  // auto& sensor =
-  // static_cast<sensor::VisualSensor&>(env.sensorMap_[sensorName].get());
   sensor.node().setTransformation(transform);
 }
 
@@ -301,8 +298,8 @@ void ReplayRenderer::doRender(Magnum::GL::AbstractFramebuffer& framebuffer) {
 
     visualSensor.renderTarget().renderExit();
 
-    // TODO ugh wait, this is calculating the size from scratch for every
-    //  environment in a hope that all have the same?? UGH
+    // TODO this is calculating the size from scratch for every environment in
+    //  a hope that all have the same, figure out a better way
     const auto size =
         Mn::Vector2i{visualSensor.specification()->resolution}.flipped();
     const auto rectangle = Mn::Range2Di::fromSize(
@@ -390,12 +387,9 @@ ReplayBatchRenderer::ReplayBatchRenderer(
     gfx::replay::NodeHandle loadAndCreateRenderAssetInstance(
         const esp::assets::AssetInfo& assetInfo,
         const esp::assets::RenderAssetInstanceCreationInfo& creation) override {
-      // TODO i have no idea what these are, skip. expected 0 but it is 7!!
-      // CORRADE_ASSERT(!creation.flags, "ReplayBatchRenderer: no idea what
-      // these flags are for:" << unsigned(creation.flags), {});
-      // TODO and this is no_lights?!!
-      // CORRADE_ASSERT(creation.lightSetupKey.empty(), "ReplayBatchRenderer: no
-      // idea what light setup key is for:" << creation.lightSetupKey, {});
+      // TODO anything to use creation.flags for?
+      // TODO is creation.lightSetupKey actually mapping to anything in the
+      //  replay file?
 
       /* If no such name is known yet, add as a file */
       if (!renderer_.hasMeshHierarchy(creation.filepath)) {
@@ -415,7 +409,6 @@ ReplayBatchRenderer::ReplayBatchRenderer(
               sceneId_, creation.filepath,
               /* Baking the initial scaling and coordinate frame into the
                  transformation */
-              // TODO why the scale has to be an optional??
               Mn::Matrix4::scaling(creation.scale ? *creation.scale
                                                   : Mn::Vector3{1.0f}) *
                   Mn::Matrix4::from(
