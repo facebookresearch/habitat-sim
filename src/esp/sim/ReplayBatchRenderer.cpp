@@ -21,7 +21,8 @@
 namespace esp {
 namespace sim {
 
-using namespace Mn::Math::Literals;
+// clang-tidy you're NOT HELPING
+using namespace Mn::Math::Literals; // NOLINT
 
 Mn::Vector2i AbstractReplayRenderer::environmentGridSize(
     Mn::Int environmentCount) {
