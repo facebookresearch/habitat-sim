@@ -65,6 +65,7 @@ readability-uniqueptr-delete-release,
 -bugprone-easily-swappable-parameters,
 -bugprone-forward-declaration-namespace,
 -performance-no-int-to-ptr,
+-misc-misplaced-const,
 '
 
 CheckOptions:
