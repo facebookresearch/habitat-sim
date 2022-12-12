@@ -39,6 +39,7 @@ class Replayer : public Mn::Platform::Application {
   std::size_t maxFrameCount_ = 0;
   std::size_t frameIndex_ = 0;
   bool paused_ = false;
+  bool once_ = false;
 
   Mn::DebugTools::FrameProfilerGL profiler_;
 };
@@ -56,9 +57,12 @@ Replayer::Replayer(const Arguments& arguments)
       .setHelp("classic", "use the classic renderer")
       .addBooleanOption("profile")
       .setHelp("profile", "print frame profiling info to the console")
+      .addBooleanOption("once")
+      .setHelp("once", "run through the replay just once instead of repeating forever, useful for benchmarking the renderer without the gfx-replay parsing overhead")
       .addSkippedPrefix("magnum", "engine-specific options")
       .parse(arguments.argc, arguments.argv);
 
+  once_ = args.isSet("once");
   const std::size_t fileCount = args.arrayValueCount("json");
 
   create(Configuration{}
@@ -103,6 +107,9 @@ Replayer::Replayer(const Arguments& arguments)
 
   Mn::Debug{} << "Playing" << maxFrameCount_ << "frames from" << fileCount
               << "files";
+  /* If we're repeating forever there's no max frame count after which the
+     redrawing should stop */
+  if(!once_) maxFrameCount_ = ~std::size_t{};
 
   std::string sensorName = "my_rgb";
   std::string userPrefix = "sensor_";
@@ -162,20 +169,22 @@ void Replayer::drawEvent() {
           keyframesForEnvironment =
               keyframes_.slice(fileKeyframeOffsets_[envIndex],
                                fileKeyframeOffsets_[envIndex + 1]);
-      // Beware, we can't set arbitrary keyframes, as they are usually generated
-      // incrementally. We must set them exactly in order. And there is
-      // currently no BatchRenderer wrapper for Player::clearFrame, so we can't
-      // reset/loop the replay.
-      if (frameIndex_ < keyframesForEnvironment.size()) {
+      /* Beware, we can't set arbitrary keyframes, as they are usually
+         generated. We must set them exactly in order, or clear and start
+         over. */
+      const std::size_t environmentFrameIndex = once_ ? frameIndex_ : frameIndex_ % keyframesForEnvironment.size();
+      if(frameIndex_ != 0 && environmentFrameIndex == 0)
+        replayRenderer_->clearEnviroment(envIndex);
+      if(environmentFrameIndex < keyframesForEnvironment.size()) {
         replayRenderer_->setEnvironmentKeyframeUnwrapped(
-            envIndex, keyframesForEnvironment[frameIndex_]);
+            envIndex, keyframesForEnvironment[environmentFrameIndex]);
       }
 
       const auto eyePos = Mn::Vector3(-1.5f, 1.75f - (float)envIndex * 0.1f,
                                       -0.5f + (float)envIndex * 0.5f);
       Mn::Matrix4 transform = Mn::Matrix4::lookAt(
           eyePos,
-          eyePos + Mn::Vector3(2.f - (float)frameIndex_ * 0.002f, -0.5f, 1.f),
+          eyePos + Mn::Vector3(2.f - (float)environmentFrameIndex * 0.002f, -0.5f, 1.f),
           {0.f, 1.f, 0.f});
       replayRenderer_->setSensorTransform(envIndex, "my_rgb", transform);
     }
@@ -188,9 +197,10 @@ void Replayer::drawEvent() {
   profiler_.endFrame();
   profiler_.printStatistics(10);
 
-  /* Stop redrawing once we reached all frames */
-  // TODO change to a repeat once it's possible to clear
-  if (frameIndex_ < maxFrameCount_ || profiler_.isEnabled())
+  /* Stop redrawing if we're playing just once once and we reached all frames.
+     Also don't waste the CPU if we're paused and the profiler isn't
+     enabled. */
+  if ((frameIndex_ < maxFrameCount_ && !paused_) || profiler_.isEnabled())
     redraw();
   swapBuffers();
 }
@@ -202,6 +212,7 @@ void Replayer::mousePressEvent(MouseEvent& event) {
     return;
 
   event.setAccepted();
+  redraw();
 }
 
 }  // namespace

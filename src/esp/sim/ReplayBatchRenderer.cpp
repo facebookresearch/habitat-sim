@@ -47,6 +47,12 @@ Mn::Vector2i AbstractReplayRenderer::sensorSize(unsigned envIndex) {
   return doSensorSize(envIndex);
 }
 
+void AbstractReplayRenderer::clearEnviroment(unsigned envIndex) {
+  CORRADE_INTERNAL_ASSERT(envIndex < doEnvironmentCount());
+  // TODO a strange API name, but it does what I need
+  doPlayerFor(envIndex).close();
+}
+
 void AbstractReplayRenderer::setEnvironmentKeyframe(
     unsigned envIndex,
     const std::string& serKeyframe) {
