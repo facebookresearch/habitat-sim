@@ -133,7 +133,10 @@ class ReplayRenderer : public AbstractReplayRenderer {
  public:
   struct EnvironmentRecord {
     explicit EnvironmentRecord(
-      std::unique_ptr<gfx::replay::AbstractSceneGraphPlayerImplementation> playerImplementation): playerImplementation_{std::move(playerImplementation)}, player_{*playerImplementation_} {}
+        std::unique_ptr<gfx::replay::AbstractSceneGraphPlayerImplementation>
+            playerImplementation)
+        : playerImplementation_{std::move(playerImplementation)},
+          player_{*playerImplementation_} {}
     std::unique_ptr<gfx::replay::AbstractSceneGraphPlayerImplementation>
         playerImplementation_;
     esp::gfx::replay::Player player_;

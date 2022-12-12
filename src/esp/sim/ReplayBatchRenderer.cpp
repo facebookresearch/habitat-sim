@@ -22,11 +22,12 @@ namespace esp {
 namespace sim {
 
 // clang-tidy you're NOT HELPING
-using namespace Mn::Math::Literals; // NOLINT
+using namespace Mn::Math::Literals;  // NOLINT
 
 Mn::Vector2i AbstractReplayRenderer::environmentGridSize(
     Mn::Int environmentCount) {
-  const auto x = Mn::Int(Mn::Math::ceil(Mn::Math::sqrt(Mn::Float(environmentCount))));
+  const auto x =
+      Mn::Int(Mn::Math::ceil(Mn::Math::sqrt(Mn::Float(environmentCount))));
   return {x, (environmentCount + x - 1) / x};
 }
 
@@ -149,9 +150,9 @@ ReplayRenderer::ReplayRenderer(const ReplayRendererConfiguration& cfg) {
        supported" so I revert back to standard C++14. It also means I have to
        create a constructor so the Player gets a non-null PlayerImplementation
        reference. */
-    EnvironmentRecord e{std::make_unique<SceneGraphPlayerImplementation>(*this, envIdx)};
-    e.sceneID_ = sceneID,
-    e.semanticSceneID_ = semanticSceneID;
+    EnvironmentRecord e{
+        std::make_unique<SceneGraphPlayerImplementation>(*this, envIdx)};
+    e.sceneID_ = sceneID, e.semanticSceneID_ = semanticSceneID;
     e.sensorParentNode_ = &parentNode;
     e.sensorMap_ = std::move(sensorMap);
     envs_.push_back(std::move(e));
@@ -231,8 +232,8 @@ void ReplayRenderer::doSetSensorTransform(unsigned envIndex,
   auto& env = envs_[envIndex];
 
   ESP_CHECK(env.sensorMap_.count(sensorName),
-            "ReplayRenderer::setSensorTransform: sensor "
-                << sensorName << " not found.");
+            "ReplayRenderer::setSensorTransform: sensor " << sensorName
+                                                          << " not found.");
 
   // note: can't use operator[] with map of reference_wrappers
   auto& thingy = env.sensorMap_.at(sensorName).get();

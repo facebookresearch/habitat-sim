@@ -58,7 +58,10 @@ Replayer::Replayer(const Arguments& arguments)
       .addBooleanOption("profile")
       .setHelp("profile", "print frame profiling info to the console")
       .addBooleanOption("once")
-      .setHelp("once", "run through the replay just once instead of repeating forever, useful for benchmarking the renderer without the gfx-replay parsing overhead")
+      .setHelp("once",
+               "run through the replay just once instead of repeating forever, "
+               "useful for benchmarking the renderer without the gfx-replay "
+               "parsing overhead")
       .addSkippedPrefix("magnum", "engine-specific options")
       .parse(arguments.argc, arguments.argv);
 
@@ -109,7 +112,8 @@ Replayer::Replayer(const Arguments& arguments)
               << "files";
   /* If we're repeating forever there's no max frame count after which the
      redrawing should stop */
-  if(!once_) maxFrameCount_ = ~std::size_t{};
+  if (!once_)
+    maxFrameCount_ = ~std::size_t{};
 
   std::string sensorName = "my_rgb";
   std::string userPrefix = "sensor_";
@@ -172,10 +176,11 @@ void Replayer::drawEvent() {
       /* Beware, we can't set arbitrary keyframes, as they are usually
          generated. We must set them exactly in order, or clear and start
          over. */
-      const std::size_t environmentFrameIndex = once_ ? frameIndex_ : frameIndex_ % keyframesForEnvironment.size();
-      if(frameIndex_ != 0 && environmentFrameIndex == 0)
+      const std::size_t environmentFrameIndex =
+          once_ ? frameIndex_ : frameIndex_ % keyframesForEnvironment.size();
+      if (frameIndex_ != 0 && environmentFrameIndex == 0)
         replayRenderer_->clearEnviroment(envIndex);
-      if(environmentFrameIndex < keyframesForEnvironment.size()) {
+      if (environmentFrameIndex < keyframesForEnvironment.size()) {
         replayRenderer_->setEnvironmentKeyframeUnwrapped(
             envIndex, keyframesForEnvironment[environmentFrameIndex]);
       }
@@ -184,7 +189,8 @@ void Replayer::drawEvent() {
                                       -0.5f + (float)envIndex * 0.5f);
       Mn::Matrix4 transform = Mn::Matrix4::lookAt(
           eyePos,
-          eyePos + Mn::Vector3(2.f - (float)environmentFrameIndex * 0.002f, -0.5f, 1.f),
+          eyePos + Mn::Vector3(2.f - (float)environmentFrameIndex * 0.002f,
+                               -0.5f, 1.f),
           {0.f, 1.f, 0.f});
       replayRenderer_->setSensorTransform(envIndex, "my_rgb", transform);
     }
