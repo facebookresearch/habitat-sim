@@ -25,7 +25,7 @@ using namespace Mn::Math::Literals;
 
 Mn::Vector2i AbstractReplayRenderer::environmentGridSize(
     Mn::Int environmentCount) {
-  const Mn::Int x = Mn::Math::ceil(Mn::Math::sqrt(Mn::Float(environmentCount)));
+  const auto x = Mn::Int(Mn::Math::ceil(Mn::Math::sqrt(Mn::Float(environmentCount))));
   return {x, (environmentCount + x - 1) / x};
 }
 

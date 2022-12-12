@@ -68,7 +68,7 @@ class AbstractReplayRenderer {
 
   void setEnvironmentKeyframeUnwrapped(
       unsigned envIndex,
-      const Corrade::Containers::StringView serKeyframe);
+      Corrade::Containers::StringView serKeyframe);
 
   void setSensorTransform(unsigned envIndex,
                           const std::string& sensorName,
@@ -142,7 +142,7 @@ class ReplayRenderer : public AbstractReplayRenderer {
 
   explicit ReplayRenderer(const ReplayRendererConfiguration& cfg);
 
-  ~ReplayRenderer();
+  ~ReplayRenderer() override;
 
   // TODO those are used by bindings at the moment, but should eventually
   //  become private as well
