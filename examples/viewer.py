@@ -288,17 +288,15 @@ class HabitatSimInteractiveViewer(Application):
         keys = active_agent_id_and_sensor_name
 
         if self.enable_batch_renderer:
-            keyframes = []
             for i in range(self.num_env):
-                # Generate keyframe
-                keyframes.append(self.sim[i].gfx_replay_manager.extract_keyframe())
+                # Apply keyframe
+                keyframe = self.sim[i].gfx_replay_manager.extract_keyframe()
+                self.replay_renderer.set_environment_keyframe(i, keyframe)
                 # Copy sensor transforms
                 sensor_suite = self.sim[i]._sensors
                 for sensor_uuid, sensor in sensor_suite.items():
                     transform = sensor._sensor_object.node.absolute_transformation()
                     self.replay_renderer.set_sensor_transform(i, sensor_uuid, transform)
-                # Apply keyframe
-                self.replay_renderer.set_environment_keyframe(i, keyframes[i])
                 # Render
                 self.replay_renderer.render(mn.gl.default_framebuffer)
         else:
