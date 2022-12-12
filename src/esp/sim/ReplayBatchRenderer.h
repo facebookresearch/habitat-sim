@@ -223,6 +223,12 @@ class ReplayBatchRenderer : public AbstractReplayRenderer {
 
   void doRender(Magnum::GL::AbstractFramebuffer& framebuffer) override;
 
+  /* If standalone_ is true, renderer_ contains a RendererStandalone. Has to be
+     before the EnvironmentRecord array because Player calls
+     gfx_batch::Renderer::clear() on destruction. */
+  bool standalone_;
+  Corrade::Containers::Pointer<esp::gfx_batch::Renderer> renderer_;
+
   // TODO pimpl all this?
   struct EnvironmentRecord {
     Corrade::Containers::Pointer<gfx::replay::AbstractPlayerImplementation>
@@ -230,10 +236,6 @@ class ReplayBatchRenderer : public AbstractReplayRenderer {
     gfx::replay::Player player_{*playerImplementation_};
   };
   Corrade::Containers::Array<EnvironmentRecord> envs_;
-
-  /* If standalone_ is true, renderer_ contains a RendererStandalone */
-  bool standalone_;
-  Corrade::Containers::Pointer<esp::gfx_batch::Renderer> renderer_;
 
   Corrade::Containers::String theOnlySensorName_;
   Mn::Matrix4 theOnlySensorProjection_;

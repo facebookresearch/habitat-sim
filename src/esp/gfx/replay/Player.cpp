@@ -95,7 +95,7 @@ void Player::readKeyframesFromFile(const std::string& filepath) {
 }
 
 Player::~Player() {
-  // clearFrame(); TODO why!!
+  clearFrame();
 }
 
 int Player::getKeyframeIndex() const {
