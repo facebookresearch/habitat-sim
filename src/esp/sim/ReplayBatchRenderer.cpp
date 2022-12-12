@@ -138,13 +138,17 @@ ReplayRenderer::ReplayRenderer(const ReplayRendererConfiguration& cfg) {
     auto sensorMap = esp::sensor::SensorFactory::createSensors(
         parentNode, cfg.sensorSpecifications);
 
-    envs_.emplace_back(EnvironmentRecord{
-        .playerImplementation_ =
-            std::make_unique<SceneGraphPlayerImplementation>(*this, envIdx),
-        .sceneID_ = sceneID,
-        .semanticSceneID_ = semanticSceneID,
-        .sensorParentNode_ = &parentNode,
-        .sensorMap_ = std::move(sensorMap)});
+    /* This used to use designated initializers. However, GCC 7.3 says
+       "sorry, unimplemented: non-trivial designated initializers not
+       supported" so I revert back to standard C++14. It also means I have to
+       create a constructor so the Player gets a non-null PlayerImplementation
+       reference. */
+    EnvironmentRecord e{std::make_unique<SceneGraphPlayerImplementation>(*this, envIdx)};
+    e.sceneID_ = sceneID,
+    e.semanticSceneID_ = semanticSceneID;
+    e.sensorParentNode_ = &parentNode;
+    e.sensorMap_ = std::move(sensorMap);
+    envs_.push_back(std::move(e));
   }
 
   // OpenGL context and renderer

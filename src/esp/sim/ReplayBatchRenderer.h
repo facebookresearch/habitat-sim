@@ -130,9 +130,11 @@ class AbstractReplayRenderer {
 class ReplayRenderer : public AbstractReplayRenderer {
  public:
   struct EnvironmentRecord {
+    explicit EnvironmentRecord(
+      std::unique_ptr<gfx::replay::AbstractSceneGraphPlayerImplementation> playerImplementation): playerImplementation_{std::move(playerImplementation)}, player_{*playerImplementation_} {}
     std::unique_ptr<gfx::replay::AbstractSceneGraphPlayerImplementation>
         playerImplementation_;
-    esp::gfx::replay::Player player_{*playerImplementation_};
+    esp::gfx::replay::Player player_;
     int sceneID_ = ID_UNDEFINED;
     int semanticSceneID_ = ID_UNDEFINED;
     esp::scene::SceneNode* sensorParentNode_ = nullptr;
