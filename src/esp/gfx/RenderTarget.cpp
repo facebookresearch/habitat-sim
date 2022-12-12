@@ -180,22 +180,22 @@ struct RenderTarget::Impl {
 
   void renderExit() {}
 
-  void blitRgbaToDefault() {
+  void blitRgbaTo(Mn::GL::AbstractFramebuffer& target,
+                  const Mn::Range2Di& targetRectangle) {
     CORRADE_ASSERT(
         flags_ & Flag::RgbaAttachment,
         "RenderTarget::Impl::blitRgbaToDefault(): this render target "
         "was not created with rgba render buffer enabled.", );
     CORRADE_ASSERT(
-        framebuffer_.viewport() == Mn::GL::defaultFramebuffer.viewport(),
-        "RenderTarget::Impl::blitRgbaToDefault(): the viewport size does not "
-        "match "
-        "between the internal frame buffer and the default frame buffer", );
+        framebuffer_.viewport().size() == targetRectangle.size(),
+        "RenderTarget::Impl::blitRgbaTo(): target framebuffer has a size of"
+            << targetRectangle.size() << "but expected"
+            << framebuffer_.viewport().size(), );
 
     framebuffer_.mapForRead(RgbaBufferAttachment);
     Mn::GL::AbstractFramebuffer::blit(
-        framebuffer_, Mn::GL::defaultFramebuffer, framebuffer_.viewport(),
-        Mn::GL::defaultFramebuffer.viewport(), Mn::GL::FramebufferBlit::Color,
-        Mn::GL::FramebufferBlitFilter::Nearest);
+        framebuffer_, target, framebuffer_.viewport(), targetRectangle,
+        Mn::GL::FramebufferBlit::Color, Mn::GL::FramebufferBlitFilter::Nearest);
   }
 
   void readFrameRgba(const Mn::MutableImageView2D& view) {
@@ -404,8 +404,14 @@ void RenderTarget::readFrameObjectId(const Mn::MutableImageView2D& view) {
   pimpl_->readFrameObjectId(view);
 }
 
+void RenderTarget::blitRgbaTo(Mn::GL::AbstractFramebuffer& target,
+                              const Mn::Range2Di& targetRectangle) {
+  pimpl_->blitRgbaTo(target, targetRectangle);
+}
+
 void RenderTarget::blitRgbaToDefault() {
-  pimpl_->blitRgbaToDefault();
+  pimpl_->blitRgbaTo(Mn::GL::defaultFramebuffer,
+                     Mn::GL::defaultFramebuffer.viewport());
 }
 
 Mn::Vector2i RenderTarget::framebufferSize() const {

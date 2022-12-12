@@ -1,5 +1,16 @@
 # Datasets commonly used with Habitat-Sim
 
+## Table of contents
+   1. [Habitat test scenes](#habitat-test-scenes)
+   1. [Habitat-Matterport 3D Research Dataset (HM3D)](#habitat-matterport-3d-research-dataset-hm3d)
+   1. [Matterport3D (MP3D) dataset](#matterport3d-mp3d-dataset)
+   1. [Gibson and 3DSceneGraph datasets](#gibson-and-3dscenegraph-datasets)
+   1. [Replica Dataset](#replica-dataset)
+   1. [ReplicaCAD](#replicacad)
+   1. [ScanNet](#scannet)
+   1. [YCB Benchmarks - Object and Model Set](#ycb-benchmarks---object-and-model-set)
+   1. [Previewing dataset assets using Habitat-Sim's viewers](#previewing-dataset-assets-using-habitat-sims-viewers)
+
 ## Habitat test scenes
 
 We provide 3 example scenes for performing unit tests in habitat-sim. These can be programmatically downloaded via Habitat's data download utility.

@@ -106,10 +106,10 @@ using Mn::Trade::MaterialAttribute;
 namespace assets {
 
 ResourceManager::ResourceManager(
-    metadata::MetadataMediator::ptr& _metadataMediator,
+    metadata::MetadataMediator::ptr _metadataMediator,
     Flags _flags)
     : flags_(_flags),
-      metadataMediator_(_metadataMediator)
+      metadataMediator_(std::move(_metadataMediator))
 #ifdef MAGNUM_BUILD_STATIC
       ,
       // avoid using plugins that might depend on different library versions
@@ -2971,12 +2971,17 @@ void ResourceManager::joinHierarchy(
         meshes_.at(node.meshIDLocal + metaData.meshIndex.first)
             ->getCollisionMeshData();
     int lastIndex = mesh.vbo.size();
-    for (const auto& pos : meshData.positions) {
-      mesh.vbo.push_back(Mn::EigenIntegration::cast<vec3f>(
-          transformFromLocalToWorld.transformPoint(pos)));
-    }
-    for (const auto& index : meshData.indices) {
-      mesh.ibo.push_back(index + lastIndex);
+    if (meshData.primitive != Mn::MeshPrimitive::Triangles) {
+      ESP_WARNING() << "Unsupported mesh primitive in join: "
+                    << meshData.primitive << Mn::Debug::nospace << ", skipping";
+    } else {
+      for (const auto& pos : meshData.positions) {
+        mesh.vbo.push_back(Mn::EigenIntegration::cast<vec3f>(
+            transformFromLocalToWorld.transformPoint(pos)));
+      }
+      for (const auto& index : meshData.indices) {
+        mesh.ibo.push_back(index + lastIndex);
+      }
     }
   }
 

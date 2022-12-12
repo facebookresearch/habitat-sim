@@ -109,7 +109,23 @@ enum class RendererFileFlag {
    *    This flag is required to be set when importing scene-less files such as
    *    STL or PLY.
    */
-  Whole = 1 << 0
+  Whole = 1 << 0,
+
+  /**
+   * Generate a mipmap out of single-level uncompressed textures.
+   *
+   * By default, no renderer-side processing of imported textures is done ---
+   * if the image contains multiple levels, they're imported as well, otherwise
+   * just a single level is uploaded, regardless of whether the texture has a
+   * filtering across mip levels set up.
+   *
+   * With this option enabled, if the input image is uncompressed and there's
+   * just a single level, the texture is created with a full mip pyramid and
+   * the lower levels get generated on the fly, leading to a smoother look with
+   * large textures. On-the-fly mip level generation is impossible for
+   * compressed formats, there this option is ignored.
+   */
+  GenerateMipmap = 1 << 1
 };
 
 /**
@@ -511,22 +527,27 @@ class Renderer {
    *    @ref sceneCount()
    * @param name            *Mesh hierarchy template* name, added with
    *    @ref addFile() earlier
-   * @param transformation  Initial transformation of the hierarchy
+   * @param bakeTransformation Transformation to bake into the hierarchy
+   * @return ID of the newly added node
    *
-   * Returns an ID of the newly added node, which can be subsequently used to
-   * update transformations via @ref transformations(). The returned IDs are
-   * *not* contiguous, the gaps correspond to number of child nodes in the
-   * hierarchy.
+   * The returned ID can be subsequently used to update transformations via
+   * @ref transformations(). The returned IDs are *not* contiguous, the gaps
+   * correspond to number of child nodes in the hierarchy.
+   *
+   * The @p bakeTransformation is baked into the added hierarchy, i.e.
+   * @ref transformations() at the returned ID is kept as an identity transform
+   * and writing to it will not overwrite the baked transformation. This
+   * parameter is useful for correcting orientation/scale of the imported mesh.
    * @see @ref hasMeshHierarchy()
    */
   std::size_t addMeshHierarchy(Magnum::UnsignedInt sceneId,
                                Corrade::Containers::StringView name,
-                               const Magnum::Matrix4& transformation = {});
+                               const Magnum::Matrix4& bakeTransformation = {});
 #else
   /* To avoid having to include Matrix4 in the header */
   std::size_t addMeshHierarchy(Magnum::UnsignedInt sceneId,
                                Corrade::Containers::StringView name,
-                               const Magnum::Matrix4& transformation);
+                               const Magnum::Matrix4& bakeTransformation);
   std::size_t addMeshHierarchy(Magnum::UnsignedInt sceneId,
                                Corrade::Containers::StringView name);
 #endif
