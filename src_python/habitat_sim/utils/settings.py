@@ -2,9 +2,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from typing import Any, Dict
+
 import habitat_sim
 import habitat_sim.agent
 
+# [default_sim_settings]
 default_sim_settings = {
     "scene_dataset_config_file": "default",
     "scene": "NONE",
@@ -28,9 +31,20 @@ default_sim_settings = {
     "seed": 1,
     "physics_config_file": "data/default.physics_config.json",
 }
+# [/default_sim_settings]
 
 # build SimulatorConfiguration
-def make_cfg(settings):
+def make_cfg(settings: Dict[str, Any]):
+    r"""Isolates the boilerplate code to create a habitat_sim.Configuration from a settings dictionary.
+
+    :param settings: A dict with pre-defined keys, each a basic simulator initialization parameter.
+
+    Allows configuration of dataset and scene, visual sensor parameters, and basic agent parameters.
+
+    Optionally creates up to one of each of a variety of aligned visual sensors under Agent 0.
+
+    The output can be passed directly into habitat_sim.simulator.Simulator constructor or reconfigure to initialize a Simulator instance.
+    """
     sim_cfg = habitat_sim.SimulatorConfiguration()
     if "scene_dataset_config_file" in settings:
         sim_cfg.scene_dataset_config_file = settings["scene_dataset_config_file"]

@@ -18,6 +18,7 @@ struct CameraSensorSpec : public VisualSensorSpec {
   CameraSensorSpec();
   void sanityCheck() const override;
   bool operator==(const CameraSensorSpec& a) const;
+  Magnum::Matrix4 projectionMatrix() const;
   ESP_SMART_POINTERS(CameraSensorSpec)
 };
 
