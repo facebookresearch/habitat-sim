@@ -136,26 +136,34 @@ class ClosestPointExtractor(PoseExtractor):
     ) -> List[Tuple[Tuple[int, int], Tuple[int, int], str]]:
         # Determine the physical spacing between each camera position
         height, width = view.shape
-        dist = min(height, width) // 10  # We can modify this to be user-defined later
+        dist_between_cam = (
+            min(height, width) // 10
+        )  # We can modify this to be user-defined later
 
         # Create a grid of camera positions
         n_gridpoints_width, n_gridpoints_height = (
-            width // dist - 1,
-            height // dist - 1,
+            width // dist_between_cam - 1,
+            height // dist_between_cam - 1,
         )
 
-        # Exclude camera positions at invalid positions
+        # Get a list of indices for the topdown view matrix at which the camera will be placed.
+        # Exclude positions that are not valid (e.g. inside a wall)
         gridpoints = []
         for h in range(n_gridpoints_height):
             for w in range(n_gridpoints_width):
-                point = (dist + h * dist, dist + w * dist)
+                point = (
+                    dist_between_cam + h * dist_between_cam,
+                    dist_between_cam + w * dist_between_cam,
+                )
                 if self._valid_point(*point, view):
                     gridpoints.append(point)
 
         # Find the closest point of the target class to each gridpoint
         poses = []
         for point in gridpoints:
-            closest_point_of_interest, label = self._bfs(point, self.labels, view, dist)
+            closest_point_of_interest, label = self._bfs(
+                point, self.labels, view, dist_between_cam
+            )
             if closest_point_of_interest is None:
                 continue
 
@@ -165,7 +173,11 @@ class ClosestPointExtractor(PoseExtractor):
         return poses
 
     def _bfs(
-        self, point: Tuple[int, int], labels: List[float], view: ndarray, dist: int
+        self,
+        point: Tuple[int, int],
+        labels: List[float],
+        view: ndarray,
+        dist_between_cam: int,
     ) -> Union[Tuple[Tuple[int, int], float64], Tuple[None, None]]:
         step = 3  # making this larger really speeds up BFS
 
@@ -184,10 +196,10 @@ class ClosestPointExtractor(PoseExtractor):
 
         point_row, point_col = point
         bounding_box = [
-            point_row - 2 * dist,
-            point_row + 2 * dist,
-            point_col - 2 * dist,
-            point_col + 2 * dist,
+            point_row - 2 * dist_between_cam,
+            point_row + 2 * dist_between_cam,
+            point_col - 2 * dist_between_cam,
+            point_col + 2 * dist_between_cam,
         ]
         in_bounds = (
             lambda row, col: bounding_box[0] <= row <= bounding_box[1]
@@ -204,7 +216,7 @@ class ClosestPointExtractor(PoseExtractor):
             visited.add(cur)
             is_point_of_interest, label = self._is_point_of_interest(cur, labels, view)
             if is_point_of_interest:
-                if layer > dist / 2:
+                if layer > dist_between_cam / 2:
                     return cur, label
                 else:
                     return None, None
