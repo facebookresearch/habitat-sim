@@ -1,22 +1,16 @@
 {
   "scene_dataset_config_file": "data/versioned_data/replica_cad_dataset_1.5/replicaCAD.scene_dataset_config.json",
-  "width": 1024,
-  "height": 720,
+  "width": 1440,
+  "height": 1088,
   "outputs": {
     "csv": false,
     "video": true
   },
   "output_paths": {
-    "output_file_prefix": "default"
+    "output_file_prefix": "default_1080p"
   },
   "start_obj_index": 1,
-  "num_objects": 10,
-  "csv_data_to_collect": {
-    "ram_calc_multiple_samples": false,
-    "memory_data": false,
-    "render_time_ratio": false,
-    "physics_data": false
-  },
+  "num_objects": 3,
   "memory_vars": {
     "ram_calc_num_samples": 10
   },
@@ -24,11 +18,17 @@
     "distance_units": "m",
     "angle_units": "deg"
   },
+  "csv_data_to_collect": {
+    "ram_calc_multiple_samples": false,
+    "memory_data": false,
+    "render_time_ratio": false,
+    "physics_data": false
+  },
   "video_vars": {
     "tasks": {
         "draw_bbox": true,
         "draw_collision_mesh": true,
-        "draw_collision_mesh_wireframe": true,
+        "draw_collision_mesh_wireframe": false,
         "record_physics": true
     },
     "revolution_angle": 720.0,

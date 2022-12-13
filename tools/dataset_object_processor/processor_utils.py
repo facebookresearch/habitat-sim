@@ -2,14 +2,18 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import argparse
 import csv
 import datetime
 import os
 from enum import Enum
+from functools import partial
+from threading import Thread
 from typing import Any, Dict, List, Optional, Tuple
 
+import imageio
 import magnum as mn
+import numpy as np
+import psutil
 from processor_settings import make_cfg
 
 import habitat_sim as hsim
@@ -137,6 +141,7 @@ class ANSICodes(Enum):
     BROWN = "\033[38;5;130m"
     ORANGE = "\033[38;5;202m"
     YELLOW = "\033[38;5;220m"
+    GREEN = "\u001b[32m"
     PURPLE = "\033[38;5;177m"
     BRIGHT_RED = "\033[38;5;196m"
     BRIGHT_BLUE = "\033[38;5;27m"
@@ -194,6 +199,38 @@ class MemoryUnitConverter:
 
     UNIT_STRS = ["bytes", "KB", "MB", "GB"]
     UNIT_CONVERSIONS = [1, 1 << 10, 1 << 20, 1 << 30]
+
+
+class ReturnValueThread(Thread):
+    """
+    Need ability to get return values from functions executed in Threads
+    """
+
+    def __init__(
+        self,
+        group=None,
+        target=None,
+        name=None,
+        args=None,
+        kwargs=None,
+    ):
+        Thread.__init__(
+            self,
+            group,
+            target,
+            name,
+            args,
+            kwargs,
+        )
+        self._return = None
+
+    def run(self):
+        if self._target is not None:
+            self._return = self._target(*self._args, **self._kwargs)
+
+    def join(self, *args):
+        Thread.join(self, *args)
+        return self._return
 
 
 def print_if_logging(sim: DatasetProcessorSim, message: str = "") -> None:
@@ -497,19 +534,100 @@ def snap_down_object(
         return False
 
 
-def create_video(sim: DatasetProcessorSim, video_file_dir: str) -> None:
+def make_video(
+    observations: List[np.ndarray],
+    primary_obs: str,
+    primary_obs_type: str,
+    video_file: str,
+    fps: int = 60,
+    open_vid: bool = True,
+    video_dims: Optional[Tuple[int]] = None,
+    overlay_settings: Optional[List[Dict[str, Any]]] = None,
+    depth_clip: Optional[float] = 10.0,
+    observation_to_image=vut.observation_to_image,
+):
+    """Build a video from a passed observations array, with some images optionally overlayed.
+    :param observations: List of observations from which the video should be constructed.
+    :param primary_obs: Sensor name in observations to be used for primary video images.
+    :param primary_obs_type: Primary image observation type ("color", "depth", "semantic" supported).
+    :param video_file: File to save resultant .mp4 video.
+    :param fps: Desired video frames per second.
+    :param open_vid: Whether or not to open video upon creation.
+    :param video_dims: Height by Width of video if different than observation dimensions. Applied after overlays.
+    :param overlay_settings: List of settings Dicts, optional.
+    :param depth_clip: Defines default depth clip normalization for all depth images.
+    :param observation_to_image: Allows overriding the observation_to_image function
+    With **overlay_settings** dicts specifying per-entry: \n
+        "type": observation type ("color", "depth", "semantic" supported)\n
+        "dims": overlay dimensions (Tuple : (width, height))\n
+        "pos": overlay position (top left) (Tuple : (width, height))\n
+        "border": overlay image border thickness (int)\n
+        "border_color": overlay image border color [0-255] (3d: array, list, or tuple). Defaults to gray [150]\n
+        "obs": observation key (string)\n
+    """
+    if not video_file.endswith(".mp4"):
+        video_file = video_file + ".mp4"
+    print("Encoding the video: %s " % video_file)
+    # USE GPU Accelerated Hardware Encoding
+    writer = imageio.get_writer(
+        video_file,
+        fps=fps,
+        codec="h264_nvenc",
+        mode="I",
+        bitrate="1000k",
+        format="FFMPEG",  # type: ignore[arg-type]
+        ffmpeg_log_level="info",
+        output_params=["-minrate", "500k", "-maxrate", "5000k"],
+    )
+    observation_to_image = partial(observation_to_image, depth_clip=depth_clip)
+
+    for ob in observations:
+        # primary image processing
+        image_frame = vut.make_video_frame(
+            ob,
+            primary_obs,
+            primary_obs_type,
+            video_dims,
+            overlay_settings=overlay_settings,
+            observation_to_image=observation_to_image,
+        )
+
+        # write the desired image to video
+        writer.append_data(np.array(image_frame))
+
+    writer.close()
+    if open_vid:
+        vut.display_video(video_file)
+
+
+def create_video(
+    sim: DatasetProcessorSim, video_file_dir: str, thread: bool = False
+) -> None:
     # construct file path and write "observations" to video file
     obj_handle = sim.curr_obj.handle.replace("_:0000", "")
     video_file_prefix = sim.sim_settings["output_paths"].get("output_file_prefix")
     video_file_prefix += f"_{obj_handle}"
     file_path = create_unique_filename(video_file_dir, ".mp4", video_file_prefix)
-    vut.make_video(
-        sim.observations,
-        "color_sensor",
-        "color",
-        file_path,
-        open_vid=False,
-    )
+    observations = sim.observations.copy()
+    sim.observations.clear()
+
+    if thread:
+        if sim.video_thread is not None:
+            sim.video_thread.join()
+        sim.video_thread = Thread(
+            target=make_video,
+            args=(observations, "color_sensor", "color", file_path),
+            kwargs={"open_vid": False},
+        )
+        sim.video_thread.start()
+    else:
+        make_video(
+            observations,
+            "color_sensor",
+            "color",
+            file_path,
+            open_vid=False,
+        )
 
 
 def get_csv_headers(sim: DatasetProcessorSim) -> List[str]:
@@ -598,6 +716,74 @@ def configure_sim(sim_settings: Dict[str, Any]):
     return sim
 
 
+def get_multi_sample_ram_use(
+    sim: DatasetProcessorSim,
+    start_index: int,
+    end_index: int,
+    num_samples: int = 10,
+) -> Tuple[DatasetProcessorSim, List[float]]:
+    """ """
+    dataset_path = sim.sim_settings["scene_dataset_config_file"]
+    metrics: List[str] = sim.sim_settings["ram_metrics_to_use"]
+    ram_usages: List[float] = [0.0] * (end_index - start_index)
+    rigid_obj_mgr: physics.RigidObjectManager = sim.get_rigid_object_manager()
+
+    # loop of loading each asset, testing memory, removing it, reconfiguring the
+    # simulator, then repeating for "num_samples"
+    for _ in range(num_samples):
+        # loop through each asset we are considering and calculate its RAM usage
+        # according to the memory metrics specified in the config file. Add this RAM
+        # usage to a List of size "end_index - start_index" with each index
+        # corresponding to an asset
+        for i in range(start_index, end_index):
+            # Get memory state before and after loading object with RigidObjectManager
+            # using psutil. "psutil.virtual_memory()._asdict()" returns a Dict with
+            # several metrics (keys) by which you can analyze the memory state. These
+            # metrics are:
+            # "total", "available", "percent", "used", "free", "active", "inactive,"
+            # "buffers", "cached", "shared", and "slab"
+            # the default metrics as defined in "processor_settings.py" are:
+            # "available", "used", and "free"
+            handle = sim.obj_template_handles[i]
+            start_mem = psutil.virtual_memory()._asdict()
+            sim.curr_obj = rigid_obj_mgr.add_object_by_template_handle(handle)
+            end_mem = psutil.virtual_memory()._asdict()
+
+            # Get average deltas of each memory metric specified in the config file.
+            # The variable "subtract_order" below is either -1 or 1. 1 means the delta is
+            # calculated as (end - start), whereas -1 means (start - end). e.g. Data "used"
+            # should be higher after loading, so subtract_order == 1, but data "free"
+            # should be higher before loading, so subtract_order == -1
+            total_ram_delta = 0  # bytes
+            for metric in metrics:
+                subtract_order = sim.sim_settings["mem_delta_order"].get(metric)
+                # "percent" isn't calculated in bytes, so skip it
+                if metric != "percent":
+                    total_ram_delta += (
+                        end_mem.get(metric) - start_mem.get(metric)
+                    ) * subtract_order
+
+            ram_usages[i] += total_ram_delta
+
+            # remove object so we can load it again and test its RAM use
+            rigid_obj_mgr.remove_all_objects()
+
+        # reset the simulator to somewhat reset the cache and RAM. When you load an
+        # asset once, it uses less RAM the next time you load it, if any, as the
+        # asset is usually already cached, so less memory is needed.
+        sim.close(destroy=True)
+        sim = configure_sim(sim.sim_settings)
+        obj_template_mgr = sim.get_object_template_manager()
+        obj_template_mgr.load_configs(dataset_path)
+        sim.obj_template_handles = obj_template_mgr.get_file_template_handles("")
+        rigid_obj_mgr: physics.RigidObjectManager = sim.get_rigid_object_manager()
+
+    # calculate overall average using num_samples times the number of metrics used
+    ram_usages = [ram_use / (len(metrics) * num_samples) for ram_use in ram_usages]
+
+    return (sim, ram_usages)
+
+
 def update_sim_settings(
     sim_settings: Dict[str, Any], config_settings
 ) -> Dict[str, Any]:
@@ -612,30 +798,3 @@ def update_sim_settings(
             sim_settings[key] = config_settings[key]
 
     return sim_settings
-
-
-def build_parser(
-    parser: Optional[argparse.ArgumentParser] = None,
-) -> argparse.ArgumentParser:
-    """
-    Parse config file argument or set default when running script for scene and
-    dataset
-    """
-    if parser is None:
-        parser = argparse.ArgumentParser(
-            description="Tool to evaluate all objects in a dataset. Assesses CPU, GPU, mesh size, "
-            " and other characteristics to determine if an object will be problematic when using it"
-            " in a simulation",
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        )
-    parser = argparse.ArgumentParser()
-
-    # optional arguments
-    parser.add_argument(
-        "--config_file_path",
-        default="tools/dataset_object_processor/configs/default.dataset_processor_config.json",
-        type=str,
-        help="config file to load"
-        ' (default: "tools/dataset_object_processor/configs/default.dataset_processor_config.json")',
-    )
-    return parser
