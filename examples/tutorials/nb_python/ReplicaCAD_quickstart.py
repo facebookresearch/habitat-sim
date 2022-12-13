@@ -50,9 +50,9 @@ import magnum as mn
 import habitat_sim
 from habitat_sim.utils import viz_utils as vut
 from habitat_sim.utils.settings import (
-    add_sensor_to_settings,
     default_sim_settings,
     make_cfg,
+    update_or_add_sensor_settings,
 )
 
 try:
@@ -116,7 +116,7 @@ def make_custom_settings():
     settings = {**default_sim_settings, **settings}
 
     # add sensor settings to sim settings
-    add_sensor_to_settings(settings, uuid="color_sensor_1st_person")
+    update_or_add_sensor_settings(settings, uuid="color_sensor_1st_person")
     return settings
 
 

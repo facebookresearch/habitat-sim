@@ -12,9 +12,9 @@ import pytest
 
 import habitat_sim
 from habitat_sim.utils.settings import (
-    add_sensor_to_settings,
     default_sim_settings,
     make_cfg,
+    update_or_add_sensor_settings,
 )
 
 
@@ -56,10 +56,10 @@ def test_empty_scene():
     cfg_settings["scene"] = "NONE"
 
     # test that depth sensor doesn't mind an empty scene
-    add_sensor_to_settings(
+    update_or_add_sensor_settings(
         cfg_settings, "depth_sensor", sensor_type=habitat_sim.SensorType.DEPTH
     )
-    add_sensor_to_settings(cfg_settings, "color_sensor")
+    update_or_add_sensor_settings(cfg_settings, "color_sensor")
 
     hab_cfg = make_cfg(cfg_settings)
     hab_cfg_mm = make_cfg(cfg_settings)

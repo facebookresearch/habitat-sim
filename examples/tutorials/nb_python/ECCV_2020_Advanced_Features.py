@@ -66,9 +66,9 @@ import habitat_sim
 from habitat_sim.utils import common as ut
 from habitat_sim.utils import viz_utils as vut
 from habitat_sim.utils.settings import (
-    add_sensor_to_settings,
     default_sim_settings,
     make_cfg,
+    update_or_add_sensor_settings,
 )
 
 try:
@@ -429,7 +429,7 @@ def make_custom_settings():
 
     # add settings for a new sensor to the simulator settings. All sensor settings not
     # explicitly assigned are given default values
-    add_sensor_to_settings(
+    update_or_add_sensor_settings(
         settings,
         "color_sensor_1st_person",
         position=[0, 1.5, 0],
@@ -928,7 +928,7 @@ rigid_obj_mgr.remove_all_objects()
 
 sim_settings = make_custom_settings()
 sim_settings["scene"] = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
-add_sensor_to_settings(
+update_or_add_sensor_settings(
     sim_settings,
     uuid="semantic_sensor_1st_person",
     sensor_type=habitat_sim.SensorType.SEMANTIC,

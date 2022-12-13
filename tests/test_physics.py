@@ -22,9 +22,9 @@ from habitat_sim.utils.common import (
     random_quaternion,
 )
 from habitat_sim.utils.settings import (
-    add_sensor_to_settings,
     default_sim_settings,
     make_cfg,
+    update_or_add_sensor_settings,
 )
 from utils import simulate
 
@@ -42,8 +42,8 @@ def test_kinematics():
     ] = "data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"
     # enable the physics simulator: also clears available actions to no-op
     cfg_settings["enable_physics"] = True
-    add_sensor_to_settings(cfg_settings, "color_sensor")
-    add_sensor_to_settings(
+    update_or_add_sensor_settings(cfg_settings, "color_sensor")
+    update_or_add_sensor_settings(
         cfg_settings, "depth_sensor", sensor_type=habitat_sim.SensorType.DEPTH
     )
 
@@ -159,8 +159,8 @@ def test_kinematics_no_physics():
     ] = "data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"
     # enable the physics simulator: also clears available actions to no-op
     cfg_settings["enable_physics"] = False
-    add_sensor_to_settings(cfg_settings, "color_sensor")
-    add_sensor_to_settings(
+    update_or_add_sensor_settings(cfg_settings, "color_sensor")
+    update_or_add_sensor_settings(
         cfg_settings, "depth_sensor", sensor_type=habitat_sim.SensorType.DEPTH
     )
 
@@ -279,8 +279,8 @@ def test_dynamics():
     ] = "data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"
     # enable the physics simulator: also clears available actions to no-op
     cfg_settings["enable_physics"] = True
-    add_sensor_to_settings(cfg_settings, "color_sensor")
-    add_sensor_to_settings(
+    update_or_add_sensor_settings(cfg_settings, "color_sensor")
+    update_or_add_sensor_settings(
         cfg_settings, "depth_sensor", sensor_type=habitat_sim.SensorType.DEPTH
     )
 

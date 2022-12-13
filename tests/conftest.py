@@ -22,14 +22,17 @@ _test_scene = osp.abspath(
 # Testing configurations
 @pytest.fixture(scope="function")
 def make_cfg_settings():
-    from habitat_sim.utils.settings import add_sensor_to_settings, default_sim_settings
+    from habitat_sim.utils.settings import (
+        default_sim_settings,
+        update_or_add_sensor_settings,
+    )
 
     settings = default_sim_settings.copy()
-    add_sensor_to_settings(settings, "color_sensor")
-    add_sensor_to_settings(
+    update_or_add_sensor_settings(settings, "color_sensor")
+    update_or_add_sensor_settings(
         settings, "depth_sensor", sensor_type=habitat_sim.SensorType.DEPTH
     )
-    add_sensor_to_settings(
+    update_or_add_sensor_settings(
         settings, "semantic_sensor", sensor_type=habitat_sim.SensorType.SEMANTIC
     )
     settings["silent"] = True

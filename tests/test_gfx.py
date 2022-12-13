@@ -13,9 +13,9 @@ import quaternion  # noqa: F401
 
 import habitat_sim
 from habitat_sim.utils.settings import (
-    add_sensor_to_settings,
     default_sim_settings,
     make_cfg,
+    update_or_add_sensor_settings,
 )
 
 
@@ -30,7 +30,7 @@ def test_unproject():
     cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/apartment_1.glb"
     cfg_settings["width"] = 101
     cfg_settings["height"] = 101
-    add_sensor_to_settings(cfg_settings, uuid="color_sensor", position=[0, 0, 0])
+    update_or_add_sensor_settings(cfg_settings, uuid="color_sensor", position=[0, 0, 0])
 
     # loading the scene
     hab_cfg = make_cfg(cfg_settings)

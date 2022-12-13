@@ -18,9 +18,9 @@ import habitat_sim
 import habitat_sim.errors
 from habitat_sim.utils.common import quat_from_coeffs
 from habitat_sim.utils.settings import (
-    add_sensor_to_settings,
     clear_sensor_settings,
     make_cfg,
+    update_or_add_sensor_settings,
 )
 
 torch_spec = importlib.util.find_spec("torch")
@@ -223,7 +223,7 @@ def test_sensors(
                 "agent_id": agent_id,
             }
             # TODO: worth it to use the new function here despite awkward variable names?
-            # add_sensor_to_settings(
+            # update_or_add_sensor_settings(
             #     make_cfg_settings,
             #     uuid=sensor_type,
             #     sensor_type=sim_sensor_type,
@@ -237,7 +237,7 @@ def test_sensors(
         "agent_id": agent_id,
     }
     # TODO: worth it to use the new function here despite awkward variable names?
-    # add_sensor_to_settings(
+    # update_or_add_sensor_settings(
     #     make_cfg_settings,
     #     uuid=sensor_type,
     #     sensor_type=sim_sensor_type,
@@ -329,7 +329,7 @@ def test_reconfigure_render(
         sensor_type: {"sensor_type": sim_sensor_type, "sensor_subtype": sensor_subtype}
     }
     # TODO: worth it to use the new function here despite awkward variable names?
-    # add_sensor_to_settings(
+    # update_or_add_sensor_settings(
     #     make_cfg_settings,
     #     uuid=sensor_type,
     #     sensor_type=sim_sensor_type,
@@ -386,7 +386,7 @@ def test_smoke_redwood_noise(scene_and_dataset, gpu2gpu, make_cfg_settings):
         pytest.skip("Skipping GPU->GPU test")
     scene_dataset_config = scene_and_dataset[1]
     clear_sensor_settings(make_cfg_settings)
-    add_sensor_to_settings(
+    update_or_add_sensor_settings(
         make_cfg_settings, "depth_sensor", sensor_type=habitat_sim.SensorType.DEPTH
     )
     make_cfg_settings["scene"] = scene

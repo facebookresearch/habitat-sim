@@ -52,9 +52,9 @@ import habitat_sim
 from habitat_sim.utils import common as ut
 from habitat_sim.utils import viz_utils as vut
 from habitat_sim.utils.settings import (
-    add_sensor_to_settings,
     default_sim_settings,
     make_cfg,
+    update_or_add_sensor_settings,
 )
 
 try:
@@ -117,7 +117,7 @@ def make_custom_settings():
 
     # add settings for a new sensor to the simulator settings. All sensor settings not
     # explicitly assigned are given default values
-    add_sensor_to_settings(
+    update_or_add_sensor_settings(
         settings,
         "color_sensor_1st_person",
         position=[0, 1.5, 0],
@@ -640,7 +640,7 @@ sim_settings["override_scene_light_defaults"] = True
 sim_settings["scene_light_setup"] = ""
 
 # use 3rd person camera
-add_sensor_to_settings(
+update_or_add_sensor_settings(
     sim_settings, uuid="color_sensor_3rd_person", position=[0.0, 1.7, 0.2]
 )
 

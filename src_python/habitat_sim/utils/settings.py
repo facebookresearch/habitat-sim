@@ -28,6 +28,8 @@ default_sim_settings: Dict[str, Any] = {
 
 default_sensor_settings: Dict[str, Any] = {
     "hfov": 90,
+    "width": default_sim_settings["width"],
+    "height": default_sim_settings["height"],
     "position": [0, 1.5, 0],
     "orientation": [0, 0, 0],
     "sensor_type": habitat_sim.sensor.SensorType.COLOR,
@@ -39,8 +41,8 @@ default_sensor_settings: Dict[str, Any] = {
 
 
 # TODO: possibly remove, useful for debugging and testing
-def print_settings(settings: Dict[str, Any], nest_level: Optional[int] = 0):
-    for k, v in settings.items():
+def print_settings(sim_settings: Dict[str, Any], nest_level: Optional[int] = 0):
+    for k, v in sim_settings.items():
         if isinstance(v, Dict):
             print("   " * nest_level + f"{k}:")
             print_settings(v, nest_level + 1)
@@ -48,49 +50,50 @@ def print_settings(settings: Dict[str, Any], nest_level: Optional[int] = 0):
             print("   " * nest_level + f"{k}: {v}")
 
 
-def clear_sensor_settings(settings: Dict[str, Any]) -> None:
-    settings["sensors"] = {}
+def clear_sensor_settings(sim_settings: Dict[str, Any]) -> None:
+    sim_settings["sensors"].clear()
 
 
-def update_sensor_settings(settings: Dict[str, Any], uuid: str, **kw_args) -> None:
-    # If there is no section for sensor settings in "settings", add one
-    if "sensors" not in settings:
-        settings["sensors"] = {}
+def update_or_add_sensor_settings(
+    sim_settings: Dict[str, Any], uuid: str, **kw_args
+) -> None:
+    """
+    if the sensor settings with the given uuid is in "sim_settings", then update its entries
+    with the keyword arguments specified in "kw_args". If the given uuid is not a key in
+    the "sim_settings" dictionary, then add it. Instantiate the associated value with the
+    default_sensor_settings above, then set the values specified in the keyword args,
+    "kw_args".
 
-    # make sure that the sensor with the given uuid exists. If it doesn't, user
-    # should call the function "add_sensor_to_settings" instead.
-    assert uuid in settings["sensors"], f"sensor with uuid {uuid} not in settings"
-
-    # update all Dict fields in the given sensor settings with the new values
-    for k in kw_args:
-        settings["sensors"][uuid][k] = kw_args[k]
-
-
-def add_sensor_to_settings(settings: Dict[str, Any], uuid: str, **kw_args) -> None:
-    # If there is no section for sensor settings in "settings", add one
-    if "sensors" not in settings:
-        settings["sensors"] = {}
+    :param sim_settings: the simulator settings that we want to update with the given
+    new sensor settings
+    :param uuid: the uuid of the sensor whose settings we either want to add to the sim_settings
+    or update in the sim_settings
+    :param kw_args: the key-value pair entries in the sensor settings with the given uuid.
+    """
+    # If there is no section for sensor settings in "sim_settings", add one
+    if "sensors" not in sim_settings:
+        sim_settings["sensors"] = {}
 
     # if there is no Dict of sensor settings for a sensor with this uuid, create a new
     # Dict of sensor settings with this uuid and initiate all sensor setting fields
     # to their default values
-    if uuid not in settings["sensors"]:
-        settings["sensors"][uuid] = default_sensor_settings.copy()
+    if uuid not in sim_settings["sensors"]:
+        sim_settings["sensors"][uuid] = default_sensor_settings.copy()
 
     # update all Dict fields in the given sensor settings with the new values
     for k in kw_args:
-        settings["sensors"][uuid][k] = kw_args[k]
+        sim_settings["sensors"][uuid][k] = kw_args[k]
 
 
-def fill_out_sim_settings_with_defaults(settings: Dict[str, Any]) -> None:
-    settings = {**default_sim_settings, **settings}
+def fill_out_sim_settings_with_defaults(sim_settings: Dict[str, Any]) -> None:
+    sim_settings = {**default_sim_settings, **sim_settings}
 
 
 # build SimulatorConfiguration
-def make_cfg(settings: Dict[str, Any]):
-    r"""Isolates the boilerplate code to create a habitat_sim.Configuration from a settings dictionary.
+def make_cfg(sim_settings: Dict[str, Any]):
+    r"""Isolates the boilerplate code to create a habitat_sim.Configuration from a sim_settings dictionary.
 
-    :param settings: A dict with pre-defined keys, each a basic simulator initialization parameter.
+    :param sim_settings: A dict with pre-defined keys, each a basic simulator initialization parameter.
     Allows configuration of dataset and scene, visual sensor parameters, and basic agent parameters.
     Optionally creates up to one of each of a variety of aligned visual sensors under Agent 0.
     The output can be passed directly into habitat_sim.simulator.Simulator constructor or reconfigure
@@ -99,24 +102,24 @@ def make_cfg(settings: Dict[str, Any]):
     sim_cfg = habitat_sim.SimulatorConfiguration()
 
     # define scene and gpu device parameters
-    if "scene_dataset_config_file" in settings:
-        sim_cfg.scene_dataset_config_file = settings["scene_dataset_config_file"]
+    if "scene_dataset_config_file" in sim_settings:
+        sim_cfg.scene_dataset_config_file = sim_settings["scene_dataset_config_file"]
 
-    if "enable_physics" in settings:
-        sim_cfg.enable_physics = settings["enable_physics"]
+    if "enable_physics" in sim_settings:
+        sim_cfg.enable_physics = sim_settings["enable_physics"]
 
-    if "physics_config_file" in settings:
-        sim_cfg.physics_config_file = settings["physics_config_file"]
+    if "physics_config_file" in sim_settings:
+        sim_cfg.physics_config_file = sim_settings["physics_config_file"]
 
-    if "override_scene_light_defaults" in settings:
-        sim_cfg.override_scene_light_defaults = settings[
+    if "override_scene_light_defaults" in sim_settings:
+        sim_cfg.override_scene_light_defaults = sim_settings[
             "override_scene_light_defaults"
         ]
 
-    if "scene_light_setup" in settings:
-        sim_cfg.scene_light_setup = settings["scene_light_setup"]
+    if "scene_light_setup" in sim_settings:
+        sim_cfg.scene_light_setup = sim_settings["scene_light_setup"]
 
-    sim_cfg.frustum_culling = settings.get("frustum_culling", False)
+    sim_cfg.frustum_culling = sim_settings.get("frustum_culling", False)
 
     sim_cfg.gpu_device_id = 0
 
@@ -124,7 +127,7 @@ def make_cfg(settings: Dict[str, Any]):
         raise RuntimeError(
             "Error: Please upgrade habitat-sim. SimulatorConfig API version mismatch"
         )
-    sim_cfg.scene_id = settings["scene"]
+    sim_cfg.scene_id = sim_settings["scene"]
 
     # define default sensor parameters (see src/esp/Sensor/Sensor.h)
     sensor_specs = []
@@ -164,14 +167,18 @@ def make_cfg(settings: Dict[str, Any]):
             setattr(equirect_sensor_spec, k, kw_args[k])
         return equirect_sensor_spec
 
+    # If there is no section for sensor settings in "sim_settings", add one
+    if "sensors" not in sim_settings:
+        sim_settings["sensors"] = {}
+
     # if user has not specified any sensor settings of their own, use default sensor
     # with uuid of "color_sensor"
-    if len(settings.get("sensors")) == 0:
-        settings["sensors"]["color_sensor"] = {}
+    if len(sim_settings.get("sensors")) == 0:
+        sim_settings["sensors"]["color_sensor"] = {}
 
     # Loop through each sensor setting, fill out the unassigned fields with the defaults,
     # then create a sensor spec from it
-    for uuid, sensor_settings in settings["sensors"].items():
+    for uuid, sensor_settings in sim_settings["sensors"].items():
 
         # update all unassigned sensor setting fields to their default values
         sensor_settings = {**default_sensor_settings, **sensor_settings}
@@ -188,7 +195,7 @@ def make_cfg(settings: Dict[str, Any]):
                 uuid=uuid,
                 position=sensor_settings["position"],
                 orientation=sensor_settings["orientation"],
-                resolution=[settings["height"], settings["width"]],
+                resolution=[sim_settings["height"], sim_settings["width"]],
                 sensor_type=sensor_settings["sensor_type"],
                 channels=channels,
             )
@@ -199,7 +206,7 @@ def make_cfg(settings: Dict[str, Any]):
                 uuid=uuid,
                 position=sensor_settings["position"],
                 orientation=sensor_settings["orientation"],
-                resolution=[settings["height"], settings["width"]],
+                resolution=[sim_settings["height"], sim_settings["width"]],
                 sensor_type=sensor_settings["sensor_type"],
                 channels=channels,
             )
@@ -212,7 +219,7 @@ def make_cfg(settings: Dict[str, Any]):
                 hfov=sensor_settings["hfov"],
                 position=sensor_settings["position"],
                 orientation=sensor_settings["orientation"],
-                resolution=[settings["height"], settings["width"]],
+                resolution=[sim_settings["height"], sim_settings["width"]],
                 sensor_type=sensor_settings["sensor_type"],
                 sensor_subtype=sensor_settings["sensor_subtype"],
                 channels=channels,
