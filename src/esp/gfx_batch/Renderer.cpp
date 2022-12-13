@@ -379,11 +379,21 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
             importer->image3DLevelCount(textureData->image());
         Cr::Containers::Optional<Mn::Trade::ImageData3D> image =
             importer->image3D(textureData->image());
-        if (!textureData) {
+        if (!image) {
           Mn::Error{} << "Renderer::addFile(): can't import 3D image"
                       << textureData->image() << "of" << filename;
           return {};
         }
+
+        /* Generate a full mipmap if there's just one level and if the image is
+           not compressed. It's opt-in to force people to learn how to make
+           assets Vulkan-ready. */
+        const bool generateMipmap =
+            levelCount == 1 && (flags & RendererFileFlag::GenerateMipmap) &&
+            !image->isCompressed();
+        const Mn::UnsignedInt desiredLevelCount =
+            generateMipmap ? Mn::Math::log2(image->size().xy().min()) + 1
+                           : levelCount;
 
         texture
             .setMinificationFilter(textureData->minificationFilter(),
@@ -406,20 +416,32 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
           }
         } else {
           texture
-              .setStorage(levelCount, Mn::GL::textureFormat(image->format()),
-                          image->size())
+              .setStorage(desiredLevelCount,
+                          Mn::GL::textureFormat(image->format()), image->size())
               .setSubImage(0, {}, *image);
+          if (generateMipmap)
+            texture.generateMipmap();
         }
       } else if (textureData->type() == Mn::Trade::TextureType::Texture2D) {
         const Mn::UnsignedInt levelCount =
             importer->image2DLevelCount(textureData->image());
         Cr::Containers::Optional<Mn::Trade::ImageData2D> image =
             importer->image2D(textureData->image());
-        if (!textureData) {
+        if (!image) {
           Mn::Error{} << "Renderer::addFile(): can't import 2D image"
                       << textureData->image() << "of" << filename;
           return {};
         }
+
+        /* Generate a full mipmap if there's just one level and if the image is
+           not compressed. It's opt-in to force people to learn how to make
+           assets Vulkan-ready. */
+        const bool generateMipmap =
+            levelCount == 1 && (flags & RendererFileFlag::GenerateMipmap) &&
+            !image->isCompressed();
+        const Mn::UnsignedInt desiredLevelCount =
+            generateMipmap ? Mn::Math::log2(image->size().min()) + 1
+                           : levelCount;
 
         texture
             .setMinificationFilter(textureData->minificationFilter(),
@@ -443,9 +465,12 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
           }
         } else {
           texture
-              .setStorage(levelCount, Mn::GL::textureFormat(image->format()),
+              .setStorage(desiredLevelCount,
+                          Mn::GL::textureFormat(image->format()),
                           {image->size(), 1})
               .setSubImage(0, {}, Mn::ImageView2D{*image});
+          if (generateMipmap)
+            texture.generateMipmap();
         }
       } else
         CORRADE_INTERNAL_ASSERT_UNREACHABLE(); /* LCOV_EXCL_LINE */
@@ -756,7 +781,7 @@ bool Renderer::hasMeshHierarchy(const Cr::Containers::StringView name) const {
 
 std::size_t Renderer::addMeshHierarchy(const Mn::UnsignedInt sceneId,
                                        const Cr::Containers::StringView name,
-                                       const Mn::Matrix4& transformation) {
+                                       const Mn::Matrix4& bakeTransformation) {
   CORRADE_ASSERT(sceneId < state_->scenes.size(),
                  "Renderer::add(): index" << sceneId << "out of range for"
                                           << state_->scenes.size() << "scenes",
@@ -789,7 +814,7 @@ std::size_t Renderer::addMeshHierarchy(const Mn::UnsignedInt sceneId,
   /* Add a top-level object with no attached mesh */
   const std::size_t topLevelId = scene.transformations.size();
   arrayAppend(scene.parents, -1);
-  arrayAppend(scene.transformations, transformation);
+  arrayAppend(scene.transformations, Cr::InPlaceInit);
 
   /* Add the whole hierarchy under this name, with a mesh for each */
   // TODO the hierarchy can eventually also have meshless "grouping nodes" or
@@ -801,7 +826,8 @@ std::size_t Renderer::addMeshHierarchy(const Mn::UnsignedInt sceneId,
        transformation */
     const std::size_t id = scene.transformations.size();
     arrayAppend(scene.parents, topLevelId);
-    arrayAppend(scene.transformations, meshView.transformation);
+    arrayAppend(scene.transformations,
+                bakeTransformation * meshView.transformation);
 
     /* Get a batch ID for given shader/mesh/texture combination */
     const Mn::UnsignedInt batchId = drawBatchId(
@@ -866,8 +892,14 @@ Mn::Matrix4& Renderer::camera(const Mn::UnsignedInt scene) {
 }
 
 Cr::Containers::StridedArrayView1D<Mn::Matrix4> Renderer::transformations(
-    const Mn::UnsignedInt scene) {
-  return state_->scenes[scene].transformations;
+    const Mn::UnsignedInt sceneId) {
+  CORRADE_ASSERT(sceneId < state_->scenes.size(),
+                 "Renderer::transformations(): index"
+                     << sceneId << "out of range for" << state_->scenes.size()
+                     << "scenes",
+                 {});
+
+  return state_->scenes[sceneId].transformations;
 }
 
 void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
