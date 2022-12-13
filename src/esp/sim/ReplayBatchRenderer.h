@@ -133,11 +133,11 @@ class ReplayRenderer : public AbstractReplayRenderer {
  public:
   struct EnvironmentRecord {
     explicit EnvironmentRecord(
-        std::unique_ptr<gfx::replay::AbstractSceneGraphPlayerImplementation>
+        std::shared_ptr<gfx::replay::AbstractSceneGraphPlayerImplementation>
             playerImplementation)
         : playerImplementation_{std::move(playerImplementation)},
-          player_{*playerImplementation_} {}
-    std::unique_ptr<gfx::replay::AbstractSceneGraphPlayerImplementation>
+          player_{playerImplementation_} {}
+    std::shared_ptr<gfx::replay::AbstractSceneGraphPlayerImplementation>
         playerImplementation_;
     esp::gfx::replay::Player player_;
     int sceneID_ = ID_UNDEFINED;
@@ -236,9 +236,9 @@ class ReplayBatchRenderer : public AbstractReplayRenderer {
 
   // TODO pimpl all this?
   struct EnvironmentRecord {
-    Corrade::Containers::Pointer<gfx::replay::AbstractPlayerImplementation>
+    std::shared_ptr<gfx::replay::AbstractPlayerImplementation>
         playerImplementation_;
-    gfx::replay::Player player_{*playerImplementation_};
+    gfx::replay::Player player_{playerImplementation_};
   };
   Corrade::Containers::Array<EnvironmentRecord> envs_;
 

@@ -707,7 +707,7 @@ void Simulator::reconfigureReplayManager(bool enableGfxReplaySave) {
     Simulator& self_;
   };
   gfxReplayMgr_->setPlayerImplementation(
-      std::make_unique<SceneGraphPlayerImplementation>(*this));
+      std::make_shared<SceneGraphPlayerImplementation>(*this));
 }
 
 void Simulator::updateShadowMapDrawableGroup() {

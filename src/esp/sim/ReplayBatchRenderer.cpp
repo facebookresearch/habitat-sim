@@ -461,10 +461,8 @@ ReplayBatchRenderer::ReplayBatchRenderer(
 
   for (Mn::UnsignedInt i = 0; i != cfg.numEnvironments; ++i) {
     arrayAppend(
-        envs_,
-        EnvironmentRecord{
-            Cr::Containers::Pointer<gfx::replay::AbstractPlayerImplementation>{
-                new BatchPlayerImplementation{*renderer_, i}}});
+        envs_, EnvironmentRecord{
+                   std::make_shared<BatchPlayerImplementation>(*renderer_, i)});
   }
 }
 

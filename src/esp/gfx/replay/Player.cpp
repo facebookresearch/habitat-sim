@@ -76,8 +76,8 @@ Keyframe Player::keyframeFromStringUnwrapped(
   return res;
 }
 
-Player::Player(AbstractPlayerImplementation& implementation)
-    : implementation_{implementation} {}
+Player::Player(std::shared_ptr<AbstractPlayerImplementation> implementation)
+    : implementation_{std::move(implementation)} {}
 
 void Player::readKeyframesFromFile(const std::string& filepath) {
   close();
@@ -142,7 +142,11 @@ void Player::close() {
 }
 
 void Player::clearFrame() {
-  implementation_->deleteAssetInstances(createdInstances_);
+  /* In a moved-out Player the implementation_ shared_ptr becomes null for
+     some reason (why, C++?), and since clearFrame() is called on destruction
+     accessing it will blow up. So it's a destructive move, yes. */
+  if (implementation_)
+    implementation_->deleteAssetInstances(createdInstances_);
   createdInstances_.clear();
   assetInfos_.clear();
   frameIndex_ = -1;

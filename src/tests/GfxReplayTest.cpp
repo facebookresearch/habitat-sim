@@ -231,8 +231,10 @@ void GfxReplayTest::testPlayer() {
     esp::assets::ResourceManager& resourceManager_;
     esp::scene::SceneManager& sceneManager_;
     int sceneID_;
-  } implementation{resourceManager, sceneManager_, sceneID};
-  esp::gfx::replay::Player player(implementation);
+  };
+  esp::gfx::replay::Player player{
+      std::make_shared<SceneGraphPlayerImplementation>(resourceManager,
+                                                       sceneManager_, sceneID)};
 
   std::vector<esp::gfx::replay::Keyframe> keyframes;
 
@@ -375,8 +377,8 @@ class DummySceneGraphPlayerImplementation
 }  // namespace
 
 void GfxReplayTest::testPlayerReadMissingFile() {
-  DummySceneGraphPlayerImplementation implementation;
-  esp::gfx::replay::Player player(implementation);
+  esp::gfx::replay::Player player{
+      std::make_shared<DummySceneGraphPlayerImplementation>()};
 
   player.readKeyframesFromFile("file_that_does_not_exist.json");
   CORRADE_COMPARE(player.getNumKeyframes(), 0);
@@ -391,8 +393,8 @@ void GfxReplayTest::testPlayerReadInvalidFile() {
   out << "{invalid json";
   out.close();
 
-  DummySceneGraphPlayerImplementation implementation;
-  esp::gfx::replay::Player player(implementation);
+  esp::gfx::replay::Player player{
+      std::make_shared<DummySceneGraphPlayerImplementation>()};
 
   player.readKeyframesFromFile(testFilepath);
   CORRADE_COMPARE(player.getNumKeyframes(), 0);

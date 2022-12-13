@@ -38,7 +38,7 @@ class ReplayManager {
    * playing a new keyframe. This is required to construct Player instances.
    */
   void setPlayerImplementation(
-      std::unique_ptr<AbstractPlayerImplementation>&& implementation) {
+      std::shared_ptr<AbstractPlayerImplementation>&& implementation) {
     playerImplementation_ = std::move(implementation);
   }
 
@@ -56,7 +56,7 @@ class ReplayManager {
 
  private:
   std::shared_ptr<Recorder> recorder_;
-  std::unique_ptr<AbstractPlayerImplementation> playerImplementation_;
+  std::shared_ptr<AbstractPlayerImplementation> playerImplementation_;
 
   ESP_SMART_POINTERS(ReplayManager)
 };

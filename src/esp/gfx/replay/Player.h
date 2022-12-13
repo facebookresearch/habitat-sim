@@ -10,7 +10,6 @@
 #include "esp/assets/Asset.h"
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
 
-#include <Corrade/Containers/Reference.h>
 #include <rapidjson/document.h>
 
 namespace esp {
@@ -157,7 +156,7 @@ class Player {
    * The @p implementation is assumed to be owned by the caller for the whole
    * lifetime of the @ref Player instance.
    */
-  explicit Player(AbstractPlayerImplementation& implementation);
+  explicit Player(std::shared_ptr<AbstractPlayerImplementation> implementation);
 
   /* Deliberately move-only, it's heavy */
   Player(const Player&&) = delete;
@@ -253,10 +252,7 @@ class Player {
   void readKeyframesFromJsonDocument(const rapidjson::Document& d);
   void clearFrame();
 
-  /* Not just a & to make the class movable. Not using
-     std::reference_wrapper so we can access the reference with -> instead of
-     forced to use .get(). */
-  Corrade::Containers::Reference<AbstractPlayerImplementation> implementation_;
+  std::shared_ptr<AbstractPlayerImplementation> implementation_;
 
   int frameIndex_ = -1;
   std::vector<Keyframe> keyframes_;
