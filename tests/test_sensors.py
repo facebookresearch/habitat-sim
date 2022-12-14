@@ -191,25 +191,23 @@ def test_sensors(
         pytest.skip("Skipping GPU->GPU test")
     scene_dataset_config = scene_and_dataset[1]
 
-    sim_sensor_type = (
-        habitat_sim.SensorType.DEPTH
-        if "depth" in sensor_type
-        else (
-            habitat_sim.SensorType.SEMANTIC
-            if "semantic" in sensor_type
-            else habitat_sim.SensorType.COLOR
-        )
-    )
+    sensor_type_enum = habitat_sim.SensorType.COLOR
+    if "depth" in sensor_type:
+        sensor_type_enum = habitat_sim.SensorType.DEPTH
+    elif "semantic" in sensor_type:
+        sensor_type_enum = habitat_sim.SensorType.SEMANTIC
 
-    sensor_subtype = (
-        habitat_sim.SensorSubType.ORTHOGRAPHIC
-        if "ortho" in sensor_type
-        else habitat_sim.SensorSubType.PINHOLE
-    )
-    make_cfg_settings["sensors"] = {}
-    agent_id = 0
+    sensor_subtype_enum = habitat_sim.SensorSubType.PINHOLE
+    if "ortho" in sensor_type:
+        sensor_subtype_enum = habitat_sim.SensorSubType.ORTHOGRAPHIC
+    elif "fisheye" in sensor_type:
+        sensor_subtype_enum = habitat_sim.SensorSubType.FISHEYE
+    elif "equirect" in sensor_type:
+        sensor_subtype_enum = habitat_sim.SensorSubType.EQUIRECTANGULAR
+
     # We only support adding more RGB Sensors if one is already in a scene
     # We can add depth sensors whenever
+    agent_id = 0
     add_sensor_lazy = add_sensor_lazy and all_base_sensor_types[1] == sensor_type
     for base_sensor_type in all_base_sensor_types:
         if (
@@ -217,33 +215,21 @@ def test_sensors(
             and base_sensor_type in all_base_sensor_types[:2]
             and base_sensor_type != sensor_type
         ):
-            make_cfg_settings["sensors"][sensor_type] = {
-                "sensor_type": sim_sensor_type,
-                "sensor_subtype": sensor_subtype,
-                "agent_id": agent_id,
-            }
-            # TODO: worth it to use the new function here despite awkward variable names?
-            # update_or_add_sensor_settings(
-            #     make_cfg_settings,
-            #     uuid=sensor_type,
-            #     sensor_type=sim_sensor_type,
-            #     sensor_subtype=sensor_subtype,
-            #     agent_id=agent_id
-            # )
+            update_or_add_sensor_settings(
+                make_cfg_settings,
+                uuid=sensor_type,
+                sensor_type=sensor_type_enum,
+                sensor_subtype=sensor_subtype_enum,
+                agent_id=agent_id,
+            )
 
-    make_cfg_settings["sensors"][sensor_type] = {
-        "sensor_type": sim_sensor_type,
-        "sensor_subtype": sensor_subtype,
-        "agent_id": agent_id,
-    }
-    # TODO: worth it to use the new function here despite awkward variable names?
-    # update_or_add_sensor_settings(
-    #     make_cfg_settings,
-    #     uuid=sensor_type,
-    #     sensor_type=sim_sensor_type,
-    #     sensor_subtype=sensor_subtype,
-    #     agent_id=agent_id
-    # )
+    update_or_add_sensor_settings(
+        make_cfg_settings,
+        uuid=sensor_type,
+        sensor_type=sensor_type_enum,
+        sensor_subtype=sensor_subtype_enum,
+        agent_id=agent_id,
+    )
 
     make_cfg_settings["scene"] = scene
     make_cfg_settings["scene_dataset_config_file"] = scene_dataset_config
@@ -309,7 +295,7 @@ def test_reconfigure_render(
 
     make_cfg_settings["scene"] = _test_scenes[-1][0]
     make_cfg_settings["scene_dataset_config_file"] = _test_scenes[-1][1]
-    sim_sensor_type = (
+    sensor_type_enum = (
         habitat_sim.SensorType.DEPTH
         if "depth" in sensor_type
         else (
@@ -325,16 +311,16 @@ def test_reconfigure_render(
         else habitat_sim.SensorSubType.PINHOLE
     )
 
-    make_cfg_settings["sensors"] = {
-        sensor_type: {"sensor_type": sim_sensor_type, "sensor_subtype": sensor_subtype}
-    }
+    # make_cfg_settings["sensors"] = {
+    #     sensor_type: {"sensor_type": sensor_type_enum, "sensor_subtype": sensor_subtype}
+    # }
     # TODO: worth it to use the new function here despite awkward variable names?
-    # update_or_add_sensor_settings(
-    #     make_cfg_settings,
-    #     uuid=sensor_type,
-    #     sensor_type=sim_sensor_type,
-    #     sensor_subtype=sensor_subtype,
-    # )
+    update_or_add_sensor_settings(
+        make_cfg_settings,
+        uuid=sensor_type,
+        sensor_type=sensor_type_enum,
+        sensor_subtype=sensor_subtype,
+    )
 
     cfg = make_cfg(make_cfg_settings)
 
@@ -439,6 +425,7 @@ def test_rgba_noise(scene_and_dataset, model_name, make_cfg_settings):
     scene_dataset_config = scene_and_dataset[1]
     make_cfg_settings["scene"] = scene
     make_cfg_settings["scene_dataset_config_file"] = scene_dataset_config
+    clear_sensor_settings(make_cfg_settings)
     hsim_cfg = make_cfg(make_cfg_settings)
     hsim_cfg.agents[0].sensor_specifications[0].noise_model = model_name
 
