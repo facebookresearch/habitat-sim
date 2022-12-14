@@ -207,21 +207,17 @@ def test_sensors(
 
     # We only support adding more RGB Sensors if one is already in a scene
     # We can add depth sensors whenever
-    agent_id = 0
     add_sensor_lazy = add_sensor_lazy and all_base_sensor_types[1] == sensor_type
-    for base_sensor_type in all_base_sensor_types:
-        if (
-            add_sensor_lazy
-            and base_sensor_type in all_base_sensor_types[:2]
-            and base_sensor_type != sensor_type
-        ):
-            update_or_add_sensor_settings(
-                make_cfg_settings,
-                uuid=sensor_type,
-                sensor_type=sensor_type_enum,
-                sensor_subtype=sensor_subtype_enum,
-                agent_id=agent_id,
-            )
+
+    agent_id = 0
+    if add_sensor_lazy:
+        update_or_add_sensor_settings(
+            make_cfg_settings,
+            uuid="color_sensor",
+            sensor_type=habitat_sim.SensorType.COLOR,
+            sensor_subtype=habitat_sim.SensorSubType.PINHOLE,
+            agent_id=agent_id,
+        )
 
     update_or_add_sensor_settings(
         make_cfg_settings,
@@ -257,7 +253,7 @@ def test_sensors(
                     )
                     # TODO: after sensor refactor, not specifying an agent will attach
                     # sensor as global sensor to root scene node
-                    if sensor_spec.agent_id == "None":
+                    if agent_id == "None":
                         sim.add_sensor(sensor_spec)
                     else:
                         sim.add_sensor(sensor_spec, agent_id)
