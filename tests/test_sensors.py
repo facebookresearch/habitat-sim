@@ -190,13 +190,32 @@ def test_sensors(
     if gpu2gpu and (not habitat_sim.cuda_enabled or not _HAS_TORCH):
         pytest.skip("Skipping GPU->GPU test")
     scene_dataset_config = scene_and_dataset[1]
+    make_cfg_settings["scene"] = scene
+    make_cfg_settings["scene_dataset_config_file"] = scene_dataset_config
+    make_cfg_settings["frustum_culling"] = frustum_culling
 
+    # We only support adding more RGB Sensors if one is already in a scene.
+    # We can add depth sensors whenever.
+    is_depth_sensor = sensor_type == all_base_sensor_types[1]
+    add_sensor_lazy = add_sensor_lazy and is_depth_sensor
+    agent_id = 0
+    if add_sensor_lazy:
+        update_or_add_sensor_settings(
+            sim_settings=make_cfg_settings,
+            uuid=all_base_sensor_types[0],
+            sensor_type=habitat_sim.SensorType.COLOR,
+            sensor_subtype=habitat_sim.SensorSubType.PINHOLE,
+            agent_id=agent_id,
+        )
+
+    # determine sensor type
     sensor_type_enum = habitat_sim.SensorType.COLOR
     if "depth" in sensor_type:
         sensor_type_enum = habitat_sim.SensorType.DEPTH
     elif "semantic" in sensor_type:
         sensor_type_enum = habitat_sim.SensorType.SEMANTIC
 
+    # determine sensor subtype
     sensor_subtype_enum = habitat_sim.SensorSubType.PINHOLE
     if "ortho" in sensor_type:
         sensor_subtype_enum = habitat_sim.SensorSubType.ORTHOGRAPHIC
@@ -205,31 +224,13 @@ def test_sensors(
     elif "equirect" in sensor_type:
         sensor_subtype_enum = habitat_sim.SensorSubType.EQUIRECTANGULAR
 
-    # We only support adding more RGB Sensors if one is already in a scene
-    # We can add depth sensors whenever
-    add_sensor_lazy = add_sensor_lazy and all_base_sensor_types[1] == sensor_type
-
-    agent_id = 0
-    if add_sensor_lazy:
-        update_or_add_sensor_settings(
-            make_cfg_settings,
-            uuid="color_sensor",
-            sensor_type=habitat_sim.SensorType.COLOR,
-            sensor_subtype=habitat_sim.SensorSubType.PINHOLE,
-            agent_id=agent_id,
-        )
-
     update_or_add_sensor_settings(
-        make_cfg_settings,
+        sim_settings=make_cfg_settings,
         uuid=sensor_type,
         sensor_type=sensor_type_enum,
         sensor_subtype=sensor_subtype_enum,
         agent_id=agent_id,
     )
-
-    make_cfg_settings["scene"] = scene
-    make_cfg_settings["scene_dataset_config_file"] = scene_dataset_config
-    make_cfg_settings["frustum_culling"] = frustum_culling
 
     cfg = make_cfg(make_cfg_settings)
     if add_sensor_lazy:
@@ -291,31 +292,26 @@ def test_reconfigure_render(
 
     make_cfg_settings["scene"] = _test_scenes[-1][0]
     make_cfg_settings["scene_dataset_config_file"] = _test_scenes[-1][1]
-    sensor_type_enum = (
-        habitat_sim.SensorType.DEPTH
-        if "depth" in sensor_type
-        else (
-            habitat_sim.SensorType.SEMANTIC
-            if "semantic" in sensor_type
-            else habitat_sim.SensorType.COLOR
-        )
-    )
 
-    sensor_subtype = (
-        habitat_sim.SensorSubType.ORTHOGRAPHIC
-        if "ortho" in sensor_type
-        else habitat_sim.SensorSubType.PINHOLE
-    )
+    # determine sensor type
+    sensor_type_enum = habitat_sim.SensorType.COLOR
+    if "depth" in sensor_type:
+        sensor_type_enum = habitat_sim.SensorType.DEPTH
+    elif "semantic" in sensor_type:
+        sensor_type_enum = habitat_sim.SensorType.SEMANTIC
 
-    # make_cfg_settings["sensors"] = {
-    #     sensor_type: {"sensor_type": sensor_type_enum, "sensor_subtype": sensor_subtype}
-    # }
-    # TODO: worth it to use the new function here despite awkward variable names?
+    # determine sensor subtype
+    sensor_subtype_enum = habitat_sim.SensorSubType.PINHOLE
+    if "ortho" in sensor_type:
+        sensor_subtype_enum = habitat_sim.SensorSubType.ORTHOGRAPHIC
+
+    agent_id = 0
     update_or_add_sensor_settings(
-        make_cfg_settings,
+        sim_settings=make_cfg_settings,
         uuid=sensor_type,
         sensor_type=sensor_type_enum,
-        sensor_subtype=sensor_subtype,
+        sensor_subtype=sensor_subtype_enum,
+        agent_id=agent_id,
     )
 
     cfg = make_cfg(make_cfg_settings)
@@ -367,15 +363,24 @@ def test_smoke_redwood_noise(scene_and_dataset, gpu2gpu, make_cfg_settings):
     if gpu2gpu and (not habitat_sim.cuda_enabled or not _HAS_TORCH):
         pytest.skip("Skipping GPU->GPU test")
     scene_dataset_config = scene_and_dataset[1]
+
+    agent_id = 0
     clear_sensor_settings(make_cfg_settings)
     update_or_add_sensor_settings(
-        make_cfg_settings, "depth_sensor", sensor_type=habitat_sim.SensorType.DEPTH
+        make_cfg_settings,
+        all_base_sensor_types[1],
+        sensor_type=habitat_sim.SensorType.DEPTH,
+        sensor_subtype=habitat_sim.SensorSubType.PINHOLE,
+        agent_id=agent_id,
     )
+
     make_cfg_settings["scene"] = scene
     make_cfg_settings["scene_dataset_config_file"] = scene_dataset_config
     hsim_cfg = make_cfg(make_cfg_settings)
-    hsim_cfg.agents[0].sensor_specifications[0].noise_model = "RedwoodDepthNoiseModel"
-    for sensor_spec in hsim_cfg.agents[0].sensor_specifications:
+    hsim_cfg.agents[agent_id].sensor_specifications[
+        0
+    ].noise_model = "RedwoodDepthNoiseModel"
+    for sensor_spec in hsim_cfg.agents[agent_id].sensor_specifications:
         sensor_spec.gpu2gpu_transfer = gpu2gpu
 
     with habitat_sim.Simulator(hsim_cfg) as sim:
@@ -398,7 +403,8 @@ def test_initial_hfov(scene_and_dataset, sensor_type, make_cfg_settings):
     for sensor_settings in make_cfg_settings["sensors"].values():
         sensor_settings["hfov"] = 70
     with habitat_sim.Simulator(make_cfg(make_cfg_settings)) as sim:
-        assert sim.agents[0]._sensors[sensor_type].hfov == mn.Deg(
+        agent_id = 0
+        assert sim.agents[agent_id]._sensors[sensor_type].hfov == mn.Deg(
             70
         ), "HFOV was not properly set"
 
@@ -421,9 +427,19 @@ def test_rgba_noise(scene_and_dataset, model_name, make_cfg_settings):
     scene_dataset_config = scene_and_dataset[1]
     make_cfg_settings["scene"] = scene
     make_cfg_settings["scene_dataset_config_file"] = scene_dataset_config
+
     clear_sensor_settings(make_cfg_settings)
+    agent_id = 0
+    update_or_add_sensor_settings(
+        sim_settings=make_cfg_settings,
+        uuid=all_base_sensor_types[0],
+        sensor_type=habitat_sim.SensorType.COLOR,
+        sensor_subtype=habitat_sim.SensorSubType.PINHOLE,
+        agent_id=agent_id,
+    )
+
     hsim_cfg = make_cfg(make_cfg_settings)
-    hsim_cfg.agents[0].sensor_specifications[0].noise_model = model_name
+    hsim_cfg.agents[agent_id].sensor_specifications[0].noise_model = model_name
 
     with habitat_sim.Simulator(hsim_cfg) as sim:
         obs, gt = _render_and_load_gt(sim, scene, "color_sensor", False)

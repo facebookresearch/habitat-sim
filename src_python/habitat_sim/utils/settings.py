@@ -20,6 +20,7 @@ default_sim_settings: Dict[str, Any] = {
         # Example values:
         # "color_sensor": {},
         # "depth_sensor": {},
+        # etc.
         # If left empty, a default sensor called "color_sensor" will be created.
         # Any empty sensor setting values are populated with the default values below
     },
@@ -51,6 +52,11 @@ def print_settings(sim_settings: Dict[str, Any], nest_level: Optional[int] = 0):
 
 
 def clear_sensor_settings(sim_settings: Dict[str, Any]) -> None:
+    # If there is no section for sensor settings in "sim_settings", add one
+    if "sensors" not in sim_settings:
+        sim_settings["sensors"] = {}
+        return
+
     sim_settings["sensors"].clear()
 
 
@@ -60,7 +66,7 @@ def update_or_add_sensor_settings(
     """
     if the sensor settings with the given uuid is in "sim_settings", then update its entries
     with the keyword arguments specified in "kw_args". If the given uuid is not a key in
-    the "sim_settings" dictionary, then add it. Instantiate the associated value with the
+    the "sim_settings" dictionary, then add it and instantiate the associated values with the
     default_sensor_settings above, then set the values specified in the keyword args,
     "kw_args".
 
@@ -82,6 +88,9 @@ def update_or_add_sensor_settings(
 
     # update all Dict fields in the given sensor settings with the new values
     for k in kw_args:
+        assert (
+            k in default_sensor_settings
+        ), f"'{k}' is not a valid key for '{uuid}' sensor settings"
         sim_settings["sensors"][uuid][k] = kw_args[k]
 
 
