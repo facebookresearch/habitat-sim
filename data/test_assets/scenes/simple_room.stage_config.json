@@ -1,5 +1,8 @@
 {
 	"render_asset": "simple_room.glb",
+    "up": [0,0,1],
+    "front": [0,1,0],
+    "shader_type": "pbr",
 	"user_defined": {
         "receptacle_aabb_simpleroom_test": {
             "name": "receptacle_aabb_chair_test",
@@ -26,8 +29,7 @@
                 1.0,
                 1.0
             ],
-            "verts":[[1.0,2.0,3.0], [2.0,2.0,3.0], [2.0,3.0,3.0]],
-            "indices":[0,1,2]
+            "mesh_filepath": "receptacle_mesh_simple_room_table.ply"
         }
     }
 }
