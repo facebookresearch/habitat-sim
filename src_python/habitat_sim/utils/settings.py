@@ -51,24 +51,15 @@ def print_settings(sim_settings: Dict[str, Any], nest_level: Optional[int] = 0):
             print("   " * nest_level + f"{k}: {v}")
 
 
-def clear_sensor_settings(sim_settings: Dict[str, Any]) -> None:
-    # If there is no section for sensor settings in "sim_settings", add one
-    if "sensors" not in sim_settings:
-        sim_settings["sensors"] = {}
-        return
-
-    sim_settings["sensors"].clear()
-
-
 def update_or_add_sensor_settings(
     sim_settings: Dict[str, Any], uuid: str, **kw_args
 ) -> None:
-    """
-    if the sensor settings with the given uuid is in "sim_settings", then update its entries
+    r"""if the sensor settings with the given uuid is in "sim_settings", then update its entries
     with the keyword arguments specified in "kw_args". If the given uuid is not a key in
     the "sim_settings" dictionary, then add it and instantiate the associated values with the
     default_sensor_settings above, then set the values specified in the keyword args,
     "kw_args".
+
     :param sim_settings: the simulator settings that we want to update with the given
     new sensor settings
     :param uuid: the uuid of the sensor whose settings we either want to add to the sim_settings
@@ -91,6 +82,31 @@ def update_or_add_sensor_settings(
             k in default_sensor_settings
         ), f"'{k}' is not a valid key for '{uuid}' sensor settings"
         sim_settings["sensors"][uuid][k] = kw_args[k]
+
+
+def remove_sensor_settings(sim_settings: Dict[str, Any], uuid: str) -> None:
+    r""" """
+    # If there is no section for sensor settings in "sim_settings", add one
+    if "sensors" not in sim_settings:
+        sim_settings["sensors"] = {}
+        return
+
+    # If the given sensor uuid is not currently in the sim settings, there
+    # is nothing to remove.
+    if uuid not in sim_settings["sensors"]:
+        return
+
+    del sim_settings["sensors"][uuid]
+
+
+def clear_sensor_settings(sim_settings: Dict[str, Any]) -> None:
+    r""" """
+    # If there is no section for sensor settings in "sim_settings", add one
+    if "sensors" not in sim_settings:
+        sim_settings["sensors"] = {}
+        return
+
+    sim_settings["sensors"].clear()
 
 
 def fill_out_sim_settings_with_defaults(sim_settings: Dict[str, Any]) -> None:
