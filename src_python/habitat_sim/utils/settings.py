@@ -99,7 +99,8 @@ def update_or_add_sensor_settings(
     # update all Dict fields in the given sensor settings with the new values.
     # make sure that the key 'k' in "kw_args" is a valid entry for a sensor setting.
     sensor_settings = sim_settings["sensors"][uuid]
-    fill_out_sensor_settings_with_defaults(sensor_settings)
+    # fill_out_sensor_settings_with_defaults(sensor_settings)
+    sensor_settings = {**default_sensor_settings, **sensor_settings}
     for k in kw_args:
         assert (
             k in sensor_settings
@@ -201,7 +202,8 @@ def make_cfg(sim_settings: Dict[str, Any]):
         # Merge default_sensor_settings with key:value pairs in sensor_settings.
         # Override key:value pairs in default_sensor_settings with those in
         # sensor_settings
-        fill_out_sensor_settings_with_defaults(sensor_settings)
+        # fill_out_sensor_settings_with_defaults(sensor_settings)
+        sensor_settings = {**default_sensor_settings, **sensor_settings}
 
         channels = (
             4
