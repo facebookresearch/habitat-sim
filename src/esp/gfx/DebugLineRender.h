@@ -171,7 +171,8 @@ class DebugLineRender {
     Magnum::GL::Buffer buffer;
     Magnum::GL::Mesh mesh{Magnum::GL::MeshPrimitive::Lines};
     Magnum::Shaders::FlatGL3D shader{
-        Magnum::Shaders::FlatGL3D::Flag::VertexColor};
+        Magnum::Shaders::FlatGL3D::Configuration{}.setFlags(
+            Magnum::Shaders::FlatGL3D::Flag::VertexColor)};
   };
 
   std::vector<Magnum::Matrix4> _inputTransformStack;
