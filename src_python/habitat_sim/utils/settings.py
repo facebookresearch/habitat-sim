@@ -18,7 +18,7 @@ default_sim_settings: Dict[str, Any] = {
     "physics_config_file": "data/default.physics_config.json",
     "sensors": {
         # Example values:
-        # "color_sensor": {},
+        # "color_sensor": default_sensor_settings,
         # "depth_sensor": {},
         # etc.
         # If left empty, a default sensor called "color_sensor" will be created.
@@ -51,7 +51,18 @@ def print_settings(sim_settings: Dict[str, Any], nest_level: Optional[int] = 0):
             print("   " * nest_level + f"{k}: {v}")
 
 
+def fill_out_sim_settings_with_defaults(sim_settings: Dict[str, Any]) -> None:
+    r""" """
+    sim_settings = {**default_sim_settings, **sim_settings}
+
+
+def fill_out_sensor_settings_with_defaults(sensor_settings: Dict[str, Any]) -> None:
+    r""" """
+    sensor_settings = {**default_sensor_settings, **sensor_settings}
+
+
 def clear_sensor_settings(sim_settings: Dict[str, Any]) -> None:
+    r""" """
     # If there is no section for sensor settings in "sim_settings", add one
     if "sensors" not in sim_settings:
         sim_settings["sensors"] = {}
@@ -63,8 +74,7 @@ def clear_sensor_settings(sim_settings: Dict[str, Any]) -> None:
 def update_or_add_sensor_settings(
     sim_settings: Dict[str, Any], uuid: str, **kw_args
 ) -> None:
-    """
-    if the sensor settings with the given uuid is in "sim_settings", then update its entries
+    r"""If the sensor settings with the given uuid is in "sim_settings", then update its entries
     with the keyword arguments specified in "kw_args". If the given uuid is not a key in
     the "sim_settings" dictionary, then add it and instantiate the associated values with the
     default_sensor_settings above, then set the values specified in the keyword args,
@@ -86,16 +96,15 @@ def update_or_add_sensor_settings(
     if uuid not in sim_settings["sensors"]:
         sim_settings["sensors"][uuid] = default_sensor_settings.copy()
 
-    # update all Dict fields in the given sensor settings with the new values
+    # update all Dict fields in the given sensor settings with the new values.
+    # make sure that the key 'k' in "kw_args" is a valid entry for a sensor setting.
+    sensor_settings = sim_settings["sensors"][uuid]
+    fill_out_sensor_settings_with_defaults(sensor_settings)
     for k in kw_args:
         assert (
-            k in default_sensor_settings
+            k in sensor_settings
         ), f"'{k}' is not a valid key for '{uuid}' sensor settings"
-        sim_settings["sensors"][uuid][k] = kw_args[k]
-
-
-def fill_out_sim_settings_with_defaults(sim_settings: Dict[str, Any]) -> None:
-    sim_settings = {**default_sim_settings, **sim_settings}
+        sensor_settings[k] = kw_args[k]
 
 
 # build SimulatorConfiguration
@@ -138,7 +147,7 @@ def make_cfg(sim_settings: Dict[str, Any]):
         )
     sim_cfg.scene_id = sim_settings["scene"]
 
-    # define default sensor parameters (see src/esp/Sensor/Sensor.h)
+    # define default sensor specs (see src/esp/Sensor/Sensor.h)
     sensor_specs = []
 
     def create_camera_spec(**kw_args):
@@ -189,8 +198,10 @@ def make_cfg(sim_settings: Dict[str, Any]):
     # then create a sensor spec from it
     for uuid, sensor_settings in sim_settings["sensors"].items():
 
-        # update all unassigned sensor setting fields to their default values
-        sensor_settings = {**default_sensor_settings, **sensor_settings}
+        # Merge default_sensor_settings with key:value pairs in sensor_settings.
+        # Override key:value pairs in default_sensor_settings with those in
+        # sensor_settings
+        fill_out_sensor_settings_with_defaults(sensor_settings)
 
         channels = (
             4

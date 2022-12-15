@@ -184,14 +184,21 @@ def test_sensors(
     add_sensor_lazy,
     make_cfg_settings,
 ):
+    # skip test if we need to use CUDA and Torch but they aren't enabled or installed
+    if gpu2gpu and (not habitat_sim.cuda_enabled or not _HAS_TORCH):
+        pytest.skip("Skipping GPU->GPU test")
+
+    # get .glb scene, make sure it exists, and store it in the sim settings
     scene = scene_and_dataset[0]
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
-    if gpu2gpu and (not habitat_sim.cuda_enabled or not _HAS_TORCH):
-        pytest.skip("Skipping GPU->GPU test")
-    scene_dataset_config = scene_and_dataset[1]
     make_cfg_settings["scene"] = scene
+
+    # get .json dataset config and store it in the sim settings
+    scene_dataset_config = scene_and_dataset[1]
     make_cfg_settings["scene_dataset_config_file"] = scene_dataset_config
+
+    # frustum culling
     make_cfg_settings["frustum_culling"] = frustum_culling
 
     # We only support adding more RGB Sensors if one is already in a scene.
@@ -224,6 +231,7 @@ def test_sensors(
     elif "equirect" in sensor_type:
         sensor_subtype_enum = habitat_sim.SensorSubType.EQUIRECTANGULAR
 
+    # add sensor settings of "sensor_type" to the sim settings
     update_or_add_sensor_settings(
         sim_settings=make_cfg_settings,
         uuid=sensor_type,
@@ -232,12 +240,20 @@ def test_sensors(
         agent_id=agent_id,
     )
 
+    # create simulator and agent configs
     cfg = make_cfg(make_cfg_settings)
+
     if add_sensor_lazy:
+        # store 'all_base_sensor_types[1]' ("depth_sensor") sensor spec as additional
+        # sensor to add after sim config is already made
         additional_sensors = cfg.agents[agent_id].sensor_specifications[1:]
+
+        # set 'all_base_sensor_types[1]' ("depth_sensor") sensor spec as the given
+        # agent's sole sensor spec (ignoring "color_sensor" spec at index 0)
         cfg.agents[agent_id].sensor_specifications = cfg.agents[
             agent_id
         ].sensor_specifications[:1]
+
     for sensor_spec in cfg.agents[agent_id].sensor_specifications:
         sensor_spec.gpu2gpu_transfer = gpu2gpu
 
@@ -247,8 +263,11 @@ def test_sensors(
             assert len(obs) == 1, "Other sensors were not removed"
             for sensor_spec in additional_sensors:
                 # TODO: unnecessary for now, as additional_sensors all come from
-                # agent 0, but eventually we may have more than one agent
+                # agent 0, but eventually we may have more than one agent, or
+                # have sensors not associated with agents at all.
                 if sensor_spec.uuid in make_cfg_settings["sensors"]:
+                    # if this sensor was specified in the sim settings, get its agent_id
+                    # from its sensor settings
                     agent_id = make_cfg_settings["sensors"][sensor_spec.uuid].get(
                         "agent_id"
                     )
@@ -266,11 +285,11 @@ def test_sensors(
             obs = _render_scene(sim, scene, sensor_type, gpu2gpu)
             # Smoke Test.
             return
-        obs, gt = _render_and_load_gt(sim, scene, sensor_type, gpu2gpu)
 
         # Different GPUs and different driver version will produce slightly
         # different images; differences on aliased edges might also stem from how a
         # particular importer parses transforms
+        obs, gt = _render_and_load_gt(sim, scene, sensor_type, gpu2gpu)
         assert np.linalg.norm(
             obs[sensor_type].astype(float) - gt.astype(float)
         ) < 9.0e-2 * np.linalg.norm(gt.astype(float)), f"Incorrect {sensor_type} output"
