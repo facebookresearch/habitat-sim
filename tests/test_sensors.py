@@ -168,21 +168,32 @@ all_exotic_semantic_sensor_types = [
     "equirect_semantic_sensor",
 ]
 
+color_sensor_noise_models = [
+    "SpeckleNoiseModel",
+    "GaussianNoiseModel",
+    "SaltAndPepperNoiseModel",
+    "PoissonNoiseModel",
+]
+
 
 @pytest.mark.gfxtest
 @pytest.mark.parametrize(
     "scene_and_dataset, sensor_type",
-    list(itertools.product(_semantic_scenes, all_base_sensor_types))
-    + list(itertools.product(_non_semantic_scenes, non_semantic_base_sensor_types))
-    + list(itertools.product(_test_scenes, all_exotic_sensor_types))
-    + list(itertools.product(_semantic_scenes, all_exotic_semantic_sensor_types)),
-)
+    list(itertools.product(_semantic_scenes, all_base_sensor_types))  # 6 tests
+    + list(
+        itertools.product(_non_semantic_scenes, non_semantic_base_sensor_types)
+    )  # 4 tests
+    + list(itertools.product(_test_scenes, all_exotic_sensor_types))  # 24 tests
+    + list(
+        itertools.product(_semantic_scenes, all_exotic_semantic_sensor_types)
+    ),  # 6 tests
+)  # 40 total tests
 @pytest.mark.parametrize("gpu2gpu", [True, False])
 # NB: This should go last, we have to force a close on the simulator when
 # this value changes, thus we should change it as little as possible
 @pytest.mark.parametrize("frustum_culling", [True, False])
 @pytest.mark.parametrize("add_sensor_dynamically", [True, False])
-def test_sensors(
+def test_sensors(  # 320 total tests
     scene_and_dataset,
     sensor_type,
     gpu2gpu,
@@ -190,25 +201,25 @@ def test_sensors(
     add_sensor_dynamically,
     make_cfg_settings,
 ):
-    # save .glb scene
+    # save .glb scene sim settings
     scene = scene_and_dataset[0]
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
     make_cfg_settings["scene"] = scene
 
-    # save .json dataset
+    # save .json dataset sim settings
     if gpu2gpu and (not habitat_sim.cuda_enabled or not _HAS_TORCH):
         pytest.skip("Skipping GPU->GPU test")
     scene_dataset_config = scene_and_dataset[1]
     make_cfg_settings["scene_dataset_config_file"] = scene_dataset_config
 
+    # save frustum culling sim settings
     make_cfg_settings["frustum_culling"] = frustum_culling
 
-    clear_sensor_settings(make_cfg_settings)
-    agent_id = 0
-
     # We only support adding more color sensors dynamically (after sim is already
-    # constructed) if one is already in a scene
+    # constructed) if one is already in a scene, so add an initial color sensor
+    # that will be unused but will allow us to dynamically add another color sensor
+    # later.
     if add_sensor_dynamically:
         update_or_add_sensor_settings(
             sim_settings=make_cfg_settings,
@@ -232,6 +243,7 @@ def test_sensors(
         sensor_subtype_enum = habitat_sim.SensorSubType.EQUIRECTANGULAR
 
     # add "sensor_type" sensor settings to the sim settings
+    agent_id = 0
     update_or_add_sensor_settings(
         sim_settings=make_cfg_settings,
         uuid=sensor_type,
@@ -248,6 +260,7 @@ def test_sensors(
             agent_id
         ].sensor_specifications[:1]
 
+    # specify whether or not the sensors will use CUDA/Torch
     for sensor_spec in cfg.agents[agent_id].sensor_specifications:
         sensor_spec.gpu2gpu_transfer = gpu2gpu
 
@@ -288,9 +301,9 @@ def test_sensors(
 
 
 @pytest.mark.gfxtest
-@pytest.mark.parametrize("scene_and_dataset", _test_scenes)
-@pytest.mark.parametrize("sensor_type", non_semantic_base_sensor_types)
-def test_reconfigure_render(
+@pytest.mark.parametrize("scene_and_dataset", _test_scenes)  # 4 tests
+@pytest.mark.parametrize("sensor_type", non_semantic_base_sensor_types)  # 2 tests
+def test_reconfigure_render(  # 8 total tests
     scene_and_dataset,
     sensor_type,
     make_cfg_settings,
@@ -339,7 +352,7 @@ def test_reconfigure_render(
 # Tests to make sure that no sensors is supported and doesn't crash
 # Also tests to make sure we can have multiple instances
 # of the simulator with no sensors
-def test_smoke_no_sensors(make_cfg_settings):
+def test_smoke_no_sensors(make_cfg_settings):  # 1 total tests
     sims = []
     for scene_and_dataset in _test_scenes:
         scene = scene_and_dataset[0]
@@ -362,9 +375,11 @@ def test_smoke_no_sensors(make_cfg_settings):
 @pytest.mark.parametrize(
     "scene_and_dataset",
     _test_scenes,
-)
-@pytest.mark.parametrize("gpu2gpu", [True, False])
-def test_smoke_redwood_noise(scene_and_dataset, gpu2gpu, make_cfg_settings):
+)  # 4 tests
+@pytest.mark.parametrize("gpu2gpu", [True, False])  # 2 tests
+def test_smoke_redwood_noise(
+    scene_and_dataset, gpu2gpu, make_cfg_settings
+):  # 8 total tests
     scene = scene_and_dataset[0]
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
@@ -404,9 +419,11 @@ def test_smoke_redwood_noise(scene_and_dataset, gpu2gpu, make_cfg_settings):
 
 
 @pytest.mark.gfxtest
-@pytest.mark.parametrize("scene_and_dataset", _test_scenes)
-@pytest.mark.parametrize("sensor_type", non_semantic_base_sensor_types)
-def test_initial_hfov(scene_and_dataset, sensor_type, make_cfg_settings):
+@pytest.mark.parametrize("scene_and_dataset", _test_scenes)  # 4 tests
+@pytest.mark.parametrize("sensor_type", non_semantic_base_sensor_types)  # 2 tests
+def test_initial_hfov(
+    scene_and_dataset, sensor_type, make_cfg_settings
+):  # 8 total tests
     scene = scene_and_dataset[0]
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
@@ -436,17 +453,9 @@ def test_initial_hfov(scene_and_dataset, sensor_type, make_cfg_settings):
 
 
 @pytest.mark.gfxtest
-@pytest.mark.parametrize("scene_and_dataset", _test_scenes)
-@pytest.mark.parametrize(
-    "model_name",
-    [
-        "SpeckleNoiseModel",
-        "GaussianNoiseModel",
-        "SaltAndPepperNoiseModel",
-        "PoissonNoiseModel",
-    ],
-)
-def test_rgba_noise(scene_and_dataset, model_name, make_cfg_settings):
+@pytest.mark.parametrize("scene_and_dataset", _test_scenes)  # 4 tests
+@pytest.mark.parametrize("model_name", color_sensor_noise_models)  # 4 tests
+def test_rgba_noise(scene_and_dataset, model_name, make_cfg_settings):  # 16 total tests
     scene = scene_and_dataset[0]
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
