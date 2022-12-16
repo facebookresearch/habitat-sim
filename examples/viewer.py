@@ -416,6 +416,10 @@ class HabitatSimInteractiveViewer(Application):
             self.replay_renderer_cfg.force_separate_semantic_scene_graph = False
             self.replay_renderer_cfg.leave_context_with_background_renderer = False
             self.replay_renderer = ReplayBatchRenderer(self.replay_renderer_cfg)
+            # Pre-load composite files
+            if sim_settings["composite_files"] is not None:
+                for composite_file in sim_settings["composite_files"]:
+                    self.replay_renderer.preload_file(composite_file)
 
         Timer.start()
         self.step = -1
@@ -1124,13 +1128,19 @@ if __name__ == "__main__":
     parser.add_argument(
         "--enable-batch-renderer",
         action="store_true",
-        help="Enable batch rendering mode. The number of concurrent environments is specified with the num_environments parameter.",
+        help="Enable batch rendering mode. The number of concurrent environments is specified with the num-environments parameter.",
     )
     parser.add_argument(
         "--num-environments",
         default=1,
         type=int,
         help="Number of concurrent environments to batch render.",
+    )
+    parser.add_argument(
+        "--composite-files",
+        type=str,
+        nargs="*",
+        help="Composite files that the batch renderer will use in-place of simulation assets to improve memory usage and performance. If none is specified, the original scene files will be loaded from disk.",
     )
     parser.add_argument(
         "--width",
@@ -1162,6 +1172,7 @@ if __name__ == "__main__":
     sim_settings["stage_requires_lighting"] = args.stage_requires_lighting
     sim_settings["enable_batch_renderer"] = args.enable_batch_renderer
     sim_settings["num_environments"] = args.num_environments
+    sim_settings["composite_files"] = args.composite_files
     sim_settings["window_width"] = args.width
     sim_settings["window_height"] = args.height
 

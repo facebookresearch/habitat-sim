@@ -5,6 +5,7 @@
 #include "ReplayBatchRenderer.h"
 
 #include "esp/assets/ResourceManager.h"
+#include "esp/core/Logging.h"
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/metadata/MetadataMediator.h"
@@ -411,7 +412,7 @@ ReplayBatchRenderer::ReplayBatchRenderer(
 
       /* If no such name is known yet, add as a file */
       if (!renderer_.hasMeshHierarchy(creation.filepath)) {
-        Mn::Warning{}
+        ESP_WARNING()
             << creation.filepath
             << "not found in any composite file, loading from the filesystem";
         // TODO asserts might be TOO BRUTAL?

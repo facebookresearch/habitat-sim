@@ -391,6 +391,11 @@ void initSimBindings(py::module& m) {
   // ==== AbstractReplayRenderer ====
   py::class_<AbstractReplayRenderer, AbstractReplayRenderer::ptr>(
       m, "AbstractReplayRenderer")
+      .def("preload_file",
+            [](AbstractReplayRenderer& self, const std::string& filePath) {
+                self.preloadFile(filePath);
+            },
+            R"(Load an composite file that the renderer will use in-place of simulation assets to improve memory usage and performance.)")
       .def("render",
            static_cast<void (AbstractReplayRenderer::*)(
                Magnum::GL::AbstractFramebuffer&)>(
