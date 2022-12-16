@@ -58,7 +58,7 @@ BatchReplayRenderer::BatchReplayRenderer(
 
       /* If no such name is known yet, add as a file */
       if (!renderer_.hasMeshHierarchy(creation.filepath)) {
-        Mn::Warning{}
+        ESP_WARNING()
             << creation.filepath
             << "not found in any composite file, loading from the filesystem";
         // TODO asserts might be TOO BRUTAL?
