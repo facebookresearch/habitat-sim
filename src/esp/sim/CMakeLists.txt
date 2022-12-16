@@ -4,8 +4,12 @@
 
 add_library(
   sim STATIC
-  ReplayBatchRenderer.cpp
-  ReplayBatchRenderer.h
+  AbstractReplayRenderer.cpp
+  AbstractReplayRenderer.h
+  BatchReplayRenderer.cpp
+  BatchReplayRenderer.h
+  ClassicReplayRenderer.cpp
+  ClassicReplayRenderer.h
   Simulator.cpp
   Simulator.h
   SimulatorConfiguration.cpp

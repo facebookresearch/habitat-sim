@@ -8,7 +8,8 @@
 #include <Magnum/Platform/GlfwApplication.h>
 
 #include "esp/sensor/CameraSensor.h"
-#include "esp/sim/ReplayBatchRenderer.h"
+#include "esp/sim/BatchReplayRenderer.h"
+#include "esp/sim/ClassicReplayRenderer.h"
 
 namespace {
 
@@ -163,7 +164,7 @@ settle down.
   if (args.isSet("classic"))
     replayRenderer_.emplace<esp::sim::ClassicReplayRenderer>(rendererConfig);
   else
-    replayRenderer_.emplace<esp::sim::ReplayBatchRenderer>(rendererConfig);
+    replayRenderer_.emplace<esp::sim::BatchReplayRenderer>(rendererConfig);
 
   for (std::size_t i = 0, iMax = args.arrayValueCount("preload"); i != iMax;
        ++i)
