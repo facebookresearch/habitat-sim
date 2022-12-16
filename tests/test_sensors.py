@@ -181,13 +181,13 @@ all_exotic_semantic_sensor_types = [
 # NB: This should go last, we have to force a close on the simulator when
 # this value changes, thus we should change it as little as possible
 @pytest.mark.parametrize("frustum_culling", [True, False])
-@pytest.mark.parametrize("add_sensor_lazy", [True, False])
+@pytest.mark.parametrize("add_sensor_dynamically", [True, False])
 def test_sensors(
     scene_and_dataset,
     sensor_type,
     gpu2gpu,
     frustum_culling,
-    add_sensor_lazy,
+    add_sensor_dynamically,
     make_cfg_settings,
 ):
     # save .glb scene
@@ -204,22 +204,16 @@ def test_sensors(
 
     make_cfg_settings["frustum_culling"] = frustum_culling
 
+    clear_sensor_settings(make_cfg_settings)
     agent_id = 0
-    for sens in non_semantic_base_sensor_types:
-        if add_sensor_lazy and sens != sensor_type:
 
-            # determine sensor type
-            sensor_type_enum = habitat_sim.SensorType.COLOR
-            if "depth" in sens:
-                sensor_type_enum = habitat_sim.SensorType.DEPTH
-
-            update_or_add_sensor_settings(
-                sim_settings=make_cfg_settings,
-                uuid=sens,
-                sensor_type=sensor_type_enum,
-                sensor_subtype=habitat_sim.SensorSubType.PINHOLE,
-                agent_id=agent_id,
-            )
+    # We only support adding more color sensors dynamically (after sim is already
+    # constructed) if one is already in a scene
+    if add_sensor_dynamically:
+        update_or_add_sensor_settings(
+            sim_settings=make_cfg_settings,
+            uuid="color_sensor",
+        )
 
     # determine sensor type enum of "sensor_type"
     sensor_type_enum = habitat_sim.SensorType.COLOR
@@ -237,6 +231,7 @@ def test_sensors(
     elif "equirect" in sensor_type:
         sensor_subtype_enum = habitat_sim.SensorSubType.EQUIRECTANGULAR
 
+    # add "sensor_type" sensor settings to the sim settings
     update_or_add_sensor_settings(
         sim_settings=make_cfg_settings,
         uuid=sensor_type,
@@ -245,9 +240,9 @@ def test_sensors(
         agent_id=agent_id,
     )
 
-    # make sim config and determine sensors to add later (lazily)
+    # make sim config and determine sensors to add dynamically
     cfg = make_cfg(make_cfg_settings)
-    if add_sensor_lazy:
+    if add_sensor_dynamically:
         additional_sensors = cfg.agents[agent_id].sensor_specifications[1:]
         cfg.agents[agent_id].sensor_specifications = cfg.agents[
             agent_id
@@ -257,9 +252,10 @@ def test_sensors(
         sensor_spec.gpu2gpu_transfer = gpu2gpu
 
     with habitat_sim.Simulator(cfg) as sim:
-        if add_sensor_lazy:
+        if add_sensor_dynamically:
             obs: Dict[str, Any] = sim.reset()
             assert len(obs) == 1, "Other sensors were not removed"
+
             for sensor_spec in additional_sensors:
                 # TODO: unnecessary for now, as additional_sensors all come from
                 # agent 0, but eventually we may have more than one agent
@@ -281,11 +277,11 @@ def test_sensors(
             obs = _render_scene(sim, scene, sensor_type, gpu2gpu)
             # Smoke Test.
             return
-        obs, gt = _render_and_load_gt(sim, scene, sensor_type, gpu2gpu)
 
         # Different GPUs and different driver version will produce slightly
         # different images; differences on aliased edges might also stem from how a
         # particular importer parses transforms
+        obs, gt = _render_and_load_gt(sim, scene, sensor_type, gpu2gpu)
         assert np.linalg.norm(
             obs[sensor_type].astype(float) - gt.astype(float)
         ) < 9.0e-2 * np.linalg.norm(gt.astype(float)), f"Incorrect {sensor_type} output"
@@ -307,8 +303,8 @@ def test_reconfigure_render(
     scene_dataset_config = scene_and_dataset[1]
     make_cfg_settings["scene_dataset_config_file"] = _test_scenes[-1][1]
 
-    for sens in all_base_sensor_types:
-        remove_sensor_settings(make_cfg_settings, sens)
+    for uuid in all_base_sensor_types:
+        remove_sensor_settings(make_cfg_settings, uuid)
 
     # determine sensor type
     sensor_type_enum = habitat_sim.SensorType.COLOR
