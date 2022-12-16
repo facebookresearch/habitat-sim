@@ -161,7 +161,7 @@ settle down.
   rendererConfig.numEnvironments = fileCount;
   rendererConfig.standalone = false;
   if (args.isSet("classic"))
-    replayRenderer_.emplace<esp::sim::ReplayRenderer>(rendererConfig);
+    replayRenderer_.emplace<esp::sim::ClassicReplayRenderer>(rendererConfig);
   else
     replayRenderer_.emplace<esp::sim::ReplayBatchRenderer>(rendererConfig);
 

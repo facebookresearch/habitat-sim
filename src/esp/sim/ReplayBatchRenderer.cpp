@@ -102,7 +102,8 @@ void AbstractReplayRenderer::render(
   return doRender(framebuffer);
 }
 
-ReplayRenderer::ReplayRenderer(const ReplayRendererConfiguration& cfg) {
+ClassicReplayRenderer::ClassicReplayRenderer(
+    const ReplayRendererConfiguration& cfg) {
   config_ = cfg;
   SimulatorConfiguration simConfig;
   simConfig.createRenderer = true;
@@ -116,7 +117,7 @@ ReplayRenderer::ReplayRenderer(const ReplayRendererConfiguration& cfg) {
   class SceneGraphPlayerImplementation
       : public gfx::replay::AbstractSceneGraphPlayerImplementation {
    public:
-    SceneGraphPlayerImplementation(ReplayRenderer& self, unsigned envIdx)
+    SceneGraphPlayerImplementation(ClassicReplayRenderer& self, unsigned envIdx)
         : self_{self}, envIdx_{envIdx} {}
 
    private:
@@ -130,7 +131,7 @@ ReplayRenderer::ReplayRenderer(const ReplayRendererConfiguration& cfg) {
       return self_.resourceManager_->setLightSetup(lights);
     }
 
-    ReplayRenderer& self_;
+    ClassicReplayRenderer& self_;
     unsigned envIdx_;
   };
 
@@ -197,7 +198,7 @@ ReplayRenderer::ReplayRenderer(const ReplayRendererConfiguration& cfg) {
   }
 }
 
-ReplayRenderer::~ReplayRenderer() {
+ClassicReplayRenderer::~ClassicReplayRenderer() {
   for (int envIdx = 0; envIdx < config_.numEnvironments; ++envIdx) {
     envs_[envIdx].player_.close();
     auto& sensorMap = envs_[envIdx].sensorMap_;
@@ -208,11 +209,11 @@ ReplayRenderer::~ReplayRenderer() {
   resourceManager_.reset();
 }
 
-unsigned ReplayRenderer::doEnvironmentCount() const {
+unsigned ClassicReplayRenderer::doEnvironmentCount() const {
   return envs_.size();
 }
 
-Mn::Vector2i ReplayRenderer::doSensorSize(unsigned envIndex) {
+Mn::Vector2i ClassicReplayRenderer::doSensorSize(unsigned envIndex) {
   CORRADE_INTERNAL_ASSERT(envIndex >= 0 && envIndex < envs_.size());
   auto& env = envs_[envIndex];
 
@@ -222,13 +223,13 @@ Mn::Vector2i ReplayRenderer::doSensorSize(unsigned envIndex) {
       .framebufferSize();
 }
 
-gfx::replay::Player& ReplayRenderer::doPlayerFor(unsigned envIndex) {
+gfx::replay::Player& ClassicReplayRenderer::doPlayerFor(unsigned envIndex) {
   return envs_[envIndex].player_;
 }
 
-void ReplayRenderer::doSetSensorTransform(unsigned envIndex,
-                                          const std::string& sensorName,
-                                          const Mn::Matrix4& transform) {
+void ClassicReplayRenderer::doSetSensorTransform(unsigned envIndex,
+                                                 const std::string& sensorName,
+                                                 const Mn::Matrix4& transform) {
   auto& env = envs_[envIndex];
 
   ESP_CHECK(env.sensorMap_.count(sensorName),
@@ -242,7 +243,7 @@ void ReplayRenderer::doSetSensorTransform(unsigned envIndex,
   sensor.node().setTransformation(transform);
 }
 
-void ReplayRenderer::doSetSensorTransformsFromKeyframe(
+void ClassicReplayRenderer::doSetSensorTransformsFromKeyframe(
     unsigned envIndex,
     const std::string& prefix) {
   const auto& env = envs_[envIndex];
@@ -264,7 +265,7 @@ void ReplayRenderer::doSetSensorTransformsFromKeyframe(
   }
 }
 
-void ReplayRenderer::doRender(
+void ClassicReplayRenderer::doRender(
     Cr::Containers::ArrayView<const Mn::MutableImageView2D> imageViews) {
   for (int envIndex = 0; envIndex < config_.numEnvironments; envIndex++) {
     auto& sensorMap = getEnvironmentSensors(envIndex);
@@ -294,7 +295,8 @@ void ReplayRenderer::doRender(
 #endif
 }
 
-void ReplayRenderer::doRender(Magnum::GL::AbstractFramebuffer& framebuffer) {
+void ClassicReplayRenderer::doRender(
+    Magnum::GL::AbstractFramebuffer& framebuffer) {
   const Mn::Vector2i gridSize = environmentGridSize(config_.numEnvironments);
 
   for (int envIndex = 0; envIndex < config_.numEnvironments; envIndex++) {
@@ -323,7 +325,7 @@ void ReplayRenderer::doRender(Magnum::GL::AbstractFramebuffer& framebuffer) {
   }
 }
 
-esp::scene::SceneNode* ReplayRenderer::getEnvironmentSensorParentNode(
+esp::scene::SceneNode* ClassicReplayRenderer::getEnvironmentSensorParentNode(
     unsigned envIndex) const {
   CORRADE_INTERNAL_ASSERT(envIndex < envs_.size());
   const auto& env = envs_[envIndex];
@@ -331,19 +333,20 @@ esp::scene::SceneNode* ReplayRenderer::getEnvironmentSensorParentNode(
 }
 
 std::map<std::string, std::reference_wrapper<esp::sensor::Sensor>>&
-ReplayRenderer::getEnvironmentSensors(unsigned envIndex) {
+ClassicReplayRenderer::getEnvironmentSensors(unsigned envIndex) {
   CORRADE_INTERNAL_ASSERT(envIndex < envs_.size());
   auto& env = envs_[envIndex];
   return env.sensorMap_;
 }
 
-esp::scene::SceneGraph& ReplayRenderer::getSceneGraph(unsigned envIndex) {
+esp::scene::SceneGraph& ClassicReplayRenderer::getSceneGraph(
+    unsigned envIndex) {
   CORRADE_INTERNAL_ASSERT(envIndex < envs_.size());
   const auto& env = envs_[envIndex];
   return sceneManager_->getSceneGraph(env.sceneID_);
 }
 
-esp::scene::SceneGraph& ReplayRenderer::getSemanticSceneGraph(
+esp::scene::SceneGraph& ClassicReplayRenderer::getSemanticSceneGraph(
     unsigned envIndex) {
   CORRADE_INTERNAL_ASSERT(envIndex < envs_.size());
   const auto& env = envs_[envIndex];
@@ -352,7 +355,7 @@ esp::scene::SceneGraph& ReplayRenderer::getSemanticSceneGraph(
                                           : env.semanticSceneID_);
 }
 
-gfx::replay::NodeHandle ReplayRenderer::loadAndCreateRenderAssetInstance(
+gfx::replay::NodeHandle ClassicReplayRenderer::loadAndCreateRenderAssetInstance(
     unsigned envIndex,
     const assets::AssetInfo& assetInfo,
     const assets::RenderAssetInstanceCreationInfo& creation) {

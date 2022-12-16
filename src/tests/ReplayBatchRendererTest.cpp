@@ -69,7 +69,7 @@ const struct {
     {"classic renderer",
      [](const ReplayRendererConfiguration& configuration) {
        return Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer>{
-           new esp::sim::ReplayRenderer{configuration}};
+           new esp::sim::ClassicReplayRenderer{configuration}};
      }},
     {"batch renderer", [](const ReplayRendererConfiguration& configuration) {
        return Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer>{

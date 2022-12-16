@@ -129,7 +129,7 @@ class AbstractReplayRenderer {
   ESP_SMART_POINTERS(AbstractReplayRenderer)
 };
 
-class ReplayRenderer : public AbstractReplayRenderer {
+class ClassicReplayRenderer : public AbstractReplayRenderer {
  public:
   struct EnvironmentRecord {
     explicit EnvironmentRecord(
@@ -147,9 +147,9 @@ class ReplayRenderer : public AbstractReplayRenderer {
         sensorMap_;
   };
 
-  explicit ReplayRenderer(const ReplayRendererConfiguration& cfg);
+  explicit ClassicReplayRenderer(const ReplayRendererConfiguration& cfg);
 
-  ~ReplayRenderer() override;
+  ~ClassicReplayRenderer() override;
 
   // TODO those are used by bindings at the moment, but should eventually
   //  become private as well
@@ -198,7 +198,7 @@ class ReplayRenderer : public AbstractReplayRenderer {
 
   ReplayRendererConfiguration config_;
 
-  ESP_SMART_POINTERS(ReplayRenderer)
+  ESP_SMART_POINTERS(ClassicReplayRenderer)
 };
 
 class ReplayBatchRenderer : public AbstractReplayRenderer {
