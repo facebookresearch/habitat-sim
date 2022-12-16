@@ -63,6 +63,27 @@ Replayer::Replayer(const Arguments& arguments)
                "useful for benchmarking the renderer without the gfx-replay "
                "parsing overhead")
       .addSkippedPrefix("magnum", "engine-specific options")
+      .setGlobalHelp(R"(
+Plays back one or more gfx-replay JSON files, optionally using a set of
+composite files to render from instead of loading individual meshes.
+
+When more JSON files are supplied, they're organized in a grid. Use --size to
+control how large is each grid cell. By default each individual file is
+repeated forever, use --once to run each just once. A mouse click pauses /
+unpauses the playback.
+
+By default the batch renderer is used, however it implicitly loads individual
+files from the filesystem as referenced by the gfx-replay JSON. If you pass one
+or more compposite files via the -P / --preload option, it'll prefer them if
+they contain given referenced file, and will fall back to loading from the
+filesystem if not, printing a warning. The --classic option switches to the
+classic renderer and resource management, --preload is ignored in that case.
+
+For simple profiling, the --profile option will print GPU, CPU and total frame
+time to the console. It includes the JSON parsing overhead as well, to
+benchmark just the renderer itself use --once and wait until all animations
+settle down.
+)"_s.trimmed())
       .parse(arguments.argc, arguments.argv);
 
   once_ = args.isSet("once");
