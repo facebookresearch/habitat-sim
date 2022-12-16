@@ -220,6 +220,7 @@ def test_sensors(  # 320 total tests
     # constructed) if one is already in a scene, so add an initial color sensor
     # that will be unused but will allow us to dynamically add another color sensor
     # later.
+    clear_sensor_settings(make_cfg_settings)
     if add_sensor_dynamically:
         update_or_add_sensor_settings(
             sim_settings=make_cfg_settings,
