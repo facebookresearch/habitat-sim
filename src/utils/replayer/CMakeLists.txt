@@ -3,9 +3,10 @@
 # LICENSE file in the root directory of this source tree.
 
 find_package(Magnum REQUIRED GlfwApplication)
+find_package(MagnumPlugins REQUIRED KtxImporter)
 
 add_executable(replayer replayer.cpp)
 target_link_libraries(
   replayer
-  PRIVATE sensor gfx_batch Magnum::Application
+  PRIVATE sensor gfx_batch Magnum::Application MagnumPlugins::KtxImporter
 )
