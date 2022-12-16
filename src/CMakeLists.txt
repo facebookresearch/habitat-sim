@@ -213,3 +213,6 @@ if(BUILD_GUI_VIEWERS)
     add_subdirectory(utils/replayer)
   endif()
 endif()
+
+# TODO some options? reuse BUILD_DATATOOL?
+add_subdirectory(utils/compositor)
