@@ -885,12 +885,6 @@ double Simulator::getPhysicsTimeStep() {
 bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
                                  const nav::NavMeshSettings& navMeshSettings,
                                  const bool includeStaticObjects) {
-  ESP_CHECK(config_.createRenderer,
-            "::recomputeNavMesh: "
-            "SimulatorConfiguration::createRenderer is false. Scene "
-            "geometry is required to recompute navmesh. No geometry is "
-            "loaded without renderer initialization.");
-
   assets::MeshData::ptr joinedMesh = getJoinedMesh(includeStaticObjects);
 
   if (!pathfinder.build(navMeshSettings, *joinedMesh)) {
