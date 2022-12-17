@@ -50,7 +50,7 @@ Mn::Vector2i AbstractReplayRenderer::sensorSize(unsigned envIndex) {
   return doSensorSize(envIndex);
 }
 
-void AbstractReplayRenderer::clearEnviroment(unsigned envIndex) {
+void AbstractReplayRenderer::clearEnvironment(unsigned envIndex) {
   CORRADE_INTERNAL_ASSERT(envIndex < doEnvironmentCount());
   // TODO a strange API name, but it does what I need
   doPlayerFor(envIndex).close();

@@ -55,7 +55,7 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
     )
     from habitat_sim.bindings import (  # noqa: F401
         AbstractReplayRenderer,
-        ReplayBatchRenderer,
+        BatchReplayRenderer,
         ReplayRenderer,
         ReplayRendererConfiguration,
         RigidState,

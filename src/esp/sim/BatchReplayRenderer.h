@@ -2,8 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_SIM_REPLAYBATCHRENDERER_H_
-#define ESP_SIM_REPLAYBATCHRENDERER_H_
+#ifndef ESP_SIM_BATCHREPLAYRENDERER_H_
+#define ESP_SIM_BATCHREPLAYRENDERER_H_
 
 #include "esp/gfx/replay/Player.h"
 #include "esp/gfx_batch/RendererStandalone.h"

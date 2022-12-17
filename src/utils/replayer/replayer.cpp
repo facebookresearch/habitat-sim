@@ -201,7 +201,7 @@ void Replayer::drawEvent() {
       const std::size_t environmentFrameIndex =
           once_ ? frameIndex_ : frameIndex_ % keyframesForEnvironment.size();
       if (frameIndex_ != 0 && environmentFrameIndex == 0)
-        replayRenderer_->clearEnviroment(envIndex);
+        replayRenderer_->clearEnvironment(envIndex);
       if (environmentFrameIndex < keyframesForEnvironment.size()) {
         replayRenderer_->setEnvironmentKeyframeUnwrapped(
             envIndex, keyframesForEnvironment[environmentFrameIndex]);

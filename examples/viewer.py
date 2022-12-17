@@ -20,7 +20,7 @@ from magnum import shaders, text
 from magnum.platform.glfw import Application
 
 import habitat_sim
-from habitat_sim import ReplayBatchRenderer, ReplayRendererConfiguration, physics
+from habitat_sim import BatchReplayRenderer, ReplayRendererConfiguration, physics
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.common import quat_from_angle_axis
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
@@ -58,7 +58,7 @@ class HabitatSimInteractiveViewer(Application):
             self.sim_settings["window_width"],
             self.sim_settings["window_height"],
         )
-        grid_size: tuple(int, int) = ReplayBatchRenderer.environment_grid_size(
+        grid_size: tuple(int, int) = BatchReplayRenderer.environment_grid_size(
             self.num_env
         )
         camera_resolution: tuple(int, int) = (
@@ -181,7 +181,7 @@ class HabitatSimInteractiveViewer(Application):
         self.cfg: Optional[habitat_sim.simulator.Configuration] = None
         self.sim: list[habitat_sim.simulator.Simulator] = None
         self.replay_renderer_cfg: Optional[ReplayRendererConfiguration] = None
-        self.replay_renderer: Optional[ReplayBatchRenderer] = None
+        self.replay_renderer: Optional[BatchReplayRenderer] = None
         self.reconfigure_sim()
 
         # compute NavMesh if not already loaded by the scene.
@@ -414,7 +414,7 @@ class HabitatSimInteractiveViewer(Application):
             self.replay_renderer_cfg.gpu_device_id = self.cfg.sim_cfg.gpu_device_id
             self.replay_renderer_cfg.force_separate_semantic_scene_graph = False
             self.replay_renderer_cfg.leave_context_with_background_renderer = False
-            self.replay_renderer = ReplayBatchRenderer(self.replay_renderer_cfg)
+            self.replay_renderer = BatchReplayRenderer(self.replay_renderer_cfg)
             # Pre-load composite files
             if sim_settings["composite_files"] is not None:
                 for composite_file in sim_settings["composite_files"]:

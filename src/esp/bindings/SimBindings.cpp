@@ -17,7 +17,9 @@
 #include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/scene/SemanticScene.h"
-#include "esp/sim/ReplayBatchRenderer.h"
+#include "esp/sim/AbstractReplayRenderer.h"
+#include "esp/sim/BatchReplayRenderer.h"
+#include "esp/sim/ClassicReplayRenderer.h"
 #include "esp/sim/Simulator.h"
 #include "esp/sim/SimulatorConfiguration.h"
 
@@ -415,28 +417,28 @@ void initSimBindings(py::module& m) {
            R"(Dimensions of the environment grid.)");
 
   // ==== ReplayRenderer ====
-  py::class_<ReplayRenderer, ReplayRenderer::ptr, AbstractReplayRenderer>(
+  py::class_<ClassicReplayRenderer, ClassicReplayRenderer::ptr, AbstractReplayRenderer>(
       m, "ReplayRenderer")
       .def(py::init<const ReplayRendererConfiguration&>())
-      .def_property_readonly("renderer", &ReplayRenderer::getRenderer,
-                             R"(Get the renderer used by the ReplayRenderer.)")
-      .def("get_scene_graph", &ReplayRenderer::getSceneGraph,
+      .def_property_readonly("renderer", &ClassicReplayRenderer::getRenderer,
+                             R"(Get the renderer used by the ClassicReplayRenderer.)")
+      .def("get_scene_graph", &ClassicReplayRenderer::getSceneGraph,
            R"(PYTHON DOES NOT GET OWNERSHIP)",
            py::return_value_policy::reference)
-      .def("get_semantic_scene_graph", &ReplayRenderer::getSemanticSceneGraph,
+      .def("get_semantic_scene_graph", &ClassicReplayRenderer::getSemanticSceneGraph,
            R"(PYTHON DOES NOT GET OWNERSHIP)",
            py::return_value_policy::reference)
       .def("render",
-           static_cast<void (ReplayRenderer::*)(
-               Magnum::GL::AbstractFramebuffer&)>(&ReplayRenderer::render),
+           static_cast<void (ClassicReplayRenderer::*)(
+               Magnum::GL::AbstractFramebuffer&)>(&ClassicReplayRenderer::render),
            R"(Render all sensors onto the main framebuffer.)")
       .def("get_environment_sensors",
-           &ReplayRenderer::getEnvironmentSensorParentNode,
+           &ClassicReplayRenderer::getEnvironmentSensorParentNode,
            R"(Get the parent scene node of a sensor.)");
 
-  // ==== ReplayBatchRenderer ====
-  py::class_<ReplayBatchRenderer, ReplayBatchRenderer::ptr,
-             AbstractReplayRenderer>(m, "ReplayBatchRenderer")
+  // ==== BatchReplayRenderer ====
+  py::class_<BatchReplayRenderer, BatchReplayRenderer::ptr,
+             AbstractReplayRenderer>(m, "BatchReplayRenderer")
       .def(py::init<const ReplayRendererConfiguration&>());
 }
 
