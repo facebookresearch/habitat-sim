@@ -398,6 +398,15 @@ void initSimBindings(py::module& m) {
                 self.preloadFile(filePath);
             },
             R"(Load an composite file that the renderer will use in-place of simulation assets to improve memory usage and performance.)")
+      .def("environment_count",
+           &AbstractReplayRenderer::environmentCount,
+           "Get the batch size.")
+      .def("sensor_size",
+           &AbstractReplayRenderer::sensorSize,
+           "Get the resolution of a sensor.")
+      .def("clear_environment",
+           &AbstractReplayRenderer::clearEnvironment,
+           "Clear all instances and resets memory of an environment.")
       .def("render",
            static_cast<void (AbstractReplayRenderer::*)(
                Magnum::GL::AbstractFramebuffer&)>(
