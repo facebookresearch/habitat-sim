@@ -92,7 +92,7 @@ void BatchReplayRendererTest::testIntegration() {
   constexpr int numEnvs = 4;
   const std::string sensorName = "my_rgb";
   const std::string userPrefix = "sensor_";
-  const std::string screenshotPrefix = "BatchReplayRendererTest_env";
+  const std::string screenshotPrefix = "ReplayBatchRendererTest_env";
   const std::string screenshotExtension = ".png";
 
   std::vector<std::string> serKeyframes;
