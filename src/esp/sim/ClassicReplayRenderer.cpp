@@ -148,8 +148,8 @@ void ClassicReplayRenderer::doSetSensorTransform(unsigned envIndex,
   auto& env = envs_[envIndex];
 
   ESP_CHECK(env.sensorMap_.count(sensorName),
-            "ClassicReplayRenderer::setSensorTransform: sensor " << sensorName
-                                                          << " not found.");
+            "ClassicReplayRenderer::setSensorTransform: sensor "
+                << sensorName << " not found.");
 
   // note: can't use operator[] with map of reference_wrappers
   auto& thingy = env.sensorMap_.at(sensorName).get();
@@ -173,7 +173,8 @@ void ClassicReplayRenderer::doSetSensorTransformsFromKeyframe(
     bool found =
         env.player_.getUserTransform(userName, &translation, &rotation);
     ESP_CHECK(found,
-              "ClassicReplayRenderer::setSensorTransformsFromKeyframe: couldn't find user transform \""
+              "ClassicReplayRenderer::setSensorTransformsFromKeyframe: "
+              "couldn't find user transform \""
                   << userName << "\" for environment " << envIndex << ".");
     sensor.node().setRotation(rotation);
     sensor.node().setTranslation(translation);

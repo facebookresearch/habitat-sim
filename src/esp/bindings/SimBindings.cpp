@@ -393,19 +393,17 @@ void initSimBindings(py::module& m) {
   // ==== AbstractReplayRenderer ====
   py::class_<AbstractReplayRenderer, AbstractReplayRenderer::ptr>(
       m, "AbstractReplayRenderer")
-      .def("preload_file",
-            [](AbstractReplayRenderer& self, const std::string& filePath) {
-                self.preloadFile(filePath);
-            },
-            R"(Load an composite file that the renderer will use in-place of simulation assets to improve memory usage and performance.)")
-      .def("environment_count",
-           &AbstractReplayRenderer::environmentCount,
+      .def(
+          "preload_file",
+          [](AbstractReplayRenderer& self, const std::string& filePath) {
+            self.preloadFile(filePath);
+          },
+          R"(Load an composite file that the renderer will use in-place of simulation assets to improve memory usage and performance.)")
+      .def("environment_count", &AbstractReplayRenderer::environmentCount,
            "Get the batch size.")
-      .def("sensor_size",
-           &AbstractReplayRenderer::sensorSize,
+      .def("sensor_size", &AbstractReplayRenderer::sensorSize,
            "Get the resolution of a sensor.")
-      .def("clear_environment",
-           &AbstractReplayRenderer::clearEnvironment,
+      .def("clear_environment", &AbstractReplayRenderer::clearEnvironment,
            "Clear all instances and resets memory of an environment.")
       .def("render",
            static_cast<void (AbstractReplayRenderer::*)(
@@ -426,20 +424,23 @@ void initSimBindings(py::module& m) {
            R"(Dimensions of the environment grid.)");
 
   // ==== ReplayRenderer ====
-  py::class_<ClassicReplayRenderer, ClassicReplayRenderer::ptr, AbstractReplayRenderer>(
-      m, "ReplayRenderer")
+  py::class_<ClassicReplayRenderer, ClassicReplayRenderer::ptr,
+             AbstractReplayRenderer>(m, "ReplayRenderer")
       .def(py::init<const ReplayRendererConfiguration&>())
-      .def_property_readonly("renderer", &ClassicReplayRenderer::getRenderer,
-                             R"(Get the renderer used by the ClassicReplayRenderer.)")
+      .def_property_readonly(
+          "renderer", &ClassicReplayRenderer::getRenderer,
+          R"(Get the renderer used by the ClassicReplayRenderer.)")
       .def("get_scene_graph", &ClassicReplayRenderer::getSceneGraph,
            R"(PYTHON DOES NOT GET OWNERSHIP)",
            py::return_value_policy::reference)
-      .def("get_semantic_scene_graph", &ClassicReplayRenderer::getSemanticSceneGraph,
+      .def("get_semantic_scene_graph",
+           &ClassicReplayRenderer::getSemanticSceneGraph,
            R"(PYTHON DOES NOT GET OWNERSHIP)",
            py::return_value_policy::reference)
       .def("render",
            static_cast<void (ClassicReplayRenderer::*)(
-               Magnum::GL::AbstractFramebuffer&)>(&ClassicReplayRenderer::render),
+               Magnum::GL::AbstractFramebuffer&)>(
+               &ClassicReplayRenderer::render),
            R"(Render all sensors onto the main framebuffer.)")
       .def("get_environment_sensors",
            &ClassicReplayRenderer::getEnvironmentSensorParentNode,
