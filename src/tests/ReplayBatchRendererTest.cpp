@@ -13,7 +13,8 @@
 #include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/sensor/CameraSensor.h"
 #include "esp/sensor/Sensor.h"
-#include "esp/sim/ReplayBatchRenderer.h"
+#include "esp/sim/BatchReplayRenderer.h"
+#include "esp/sim/ClassicReplayRenderer.h"
 #include "esp/sim/Simulator.h"
 
 #include <Corrade/TestSuite/Compare/Numeric.h>
@@ -69,11 +70,11 @@ const struct {
     {"classic renderer",
      [](const ReplayRendererConfiguration& configuration) {
        return Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer>{
-           new esp::sim::ReplayRenderer{configuration}};
+           new esp::sim::ClassicReplayRenderer{configuration}};
      }},
     {"batch renderer", [](const ReplayRendererConfiguration& configuration) {
        return Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer>{
-           new esp::sim::ReplayBatchRenderer{configuration}};
+           new esp::sim::BatchReplayRenderer{configuration}};
      }}};
 
 ReplayBatchRendererTest::ReplayBatchRendererTest() {

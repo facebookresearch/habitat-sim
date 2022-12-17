@@ -6,7 +6,6 @@ cppcoreguidelines-init-variables,
 cppcoreguidelines-pro-type-member-init,
 google-*,
 misc-definitions-in-headers,
-misc-misplaced-const,
 misc-static-assert,
 misc-unconventional-assign-operator,
 misc-uniqueptr-reset-release,
@@ -65,7 +64,6 @@ readability-uniqueptr-delete-release,
 -bugprone-easily-swappable-parameters,
 -bugprone-forward-declaration-namespace,
 -performance-no-int-to-ptr,
--misc-misplaced-const,
 '
 
 CheckOptions:
