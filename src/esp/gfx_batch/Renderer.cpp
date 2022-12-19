@@ -759,7 +759,11 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
     //  that fetched from actual GL limits instead once I get to actually
     //  splitting draws by this limit
     state_->shaders[Mn::UnsignedInt(extraFlags)] = Mn::Shaders::PhongGL{
-        shaderFlags, 0, Mn::UnsignedInt(state_->materials.size()), 1024};
+        Mn::Shaders::PhongGL::Configuration{}
+            .setFlags(shaderFlags)
+            .setLightCount(0)
+            .setMaterialCount(Mn::UnsignedInt(state_->materials.size()))
+            .setDrawCount(1024)};
   }
 
   /* Bind buffers that don't change per-view. All shaders share the same
