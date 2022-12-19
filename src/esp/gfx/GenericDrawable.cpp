@@ -183,7 +183,10 @@ void GenericDrawable::updateShader() {
     // if no shader with desired number of lights and flags exists, create one
     if (!shader_) {
       shaderManager_.set<Mn::GL::AbstractShaderProgram>(
-          shader_.key(), new Mn::Shaders::PhongGL{flags_, lightCount},
+          shader_.key(),
+          new Mn::Shaders::PhongGL{Mn::Shaders::PhongGL::Configuration{}
+                                       .setFlags(flags_)
+                                       .setLightCount(lightCount)},
           Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
     }
 

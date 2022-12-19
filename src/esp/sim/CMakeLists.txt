@@ -4,8 +4,12 @@
 
 add_library(
   sim STATIC
-  ReplayBatchRenderer.cpp
-  ReplayBatchRenderer.h
+  AbstractReplayRenderer.cpp
+  AbstractReplayRenderer.h
+  BatchReplayRenderer.cpp
+  BatchReplayRenderer.h
+  ClassicReplayRenderer.cpp
+  ClassicReplayRenderer.h
   Simulator.cpp
   Simulator.h
   SimulatorConfiguration.cpp
@@ -14,5 +18,5 @@ add_library(
 
 target_link_libraries(
   sim
-  PUBLIC nav
+  PUBLIC nav gfx_batch
 )

@@ -68,7 +68,8 @@ class ObjectPickingHelper {
   Magnum::GL::Renderbuffer selectionDrawableId_;
 
   Magnum::Shaders::MeshVisualizerGL3D shader_{
-      Magnum::Shaders::MeshVisualizerGL3D::Flag::Wireframe};
+      Magnum::Shaders::MeshVisualizerGL3D::Configuration{}.setFlags(
+          Magnum::Shaders::MeshVisualizerGL3D::Flag::Wireframe)};
   esp::gfx::MeshVisualizerDrawable* meshVisualizerDrawable_ = nullptr;
   esp::gfx::DrawableGroup pickedObjectDrawbles_;
   ObjectPickingHelper& mapForDraw();

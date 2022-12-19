@@ -206,4 +206,10 @@ endif()
 if(BUILD_GUI_VIEWERS)
   message("Building GUI viewer")
   add_subdirectory(utils/viewer)
+
+  # The replayer utility consumes *huge* files supplied on a command line,
+  # which makes it useless in a browser setting. Thus not building it at all.
+  if(NOT CORRADE_TARGET_EMSCRIPTEN)
+    add_subdirectory(utils/replayer)
+  endif()
 endif()

@@ -8,6 +8,7 @@
 
 #include "esp/assets/ResourceManager.h"
 #include "esp/core/Esp.h"
+#include "esp/gfx/replay/Keyframe.h"
 #include "esp/io/Json.h"
 #include "esp/io/JsonAllTypes.h"
 
@@ -17,6 +18,42 @@ namespace esp {
 namespace gfx {
 namespace replay {
 
+static_assert(std::is_nothrow_move_constructible<Player>::value, "");
+
+void AbstractPlayerImplementation::setNodeSemanticId(NodeHandle, unsigned) {}
+
+void AbstractPlayerImplementation::changeLightSetup(const LightSetup&) {}
+
+void AbstractSceneGraphPlayerImplementation::deleteAssetInstance(
+    const NodeHandle node) {
+  // TODO: use NodeDeletionHelper to safely delete nodes owned by the Player.
+  // the deletion here is unsafe because a Player may persist beyond the
+  // lifetime of these nodes.
+  delete reinterpret_cast<scene::SceneNode*>(node);
+}
+
+void AbstractSceneGraphPlayerImplementation::deleteAssetInstances(
+    const std::unordered_map<RenderAssetInstanceKey, NodeHandle>& instances) {
+  for (const auto& pair : instances) {
+    delete reinterpret_cast<scene::SceneNode*>(pair.second);
+  }
+}
+
+void AbstractSceneGraphPlayerImplementation::setNodeTransform(
+    const NodeHandle node,
+    const Mn::Vector3& translation,
+    const Mn::Quaternion& rotation) {
+  (*reinterpret_cast<scene::SceneNode*>(node))
+      .setTranslation(translation)
+      .setRotation(rotation);
+}
+
+void AbstractSceneGraphPlayerImplementation::setNodeSemanticId(
+    const NodeHandle node,
+    const unsigned id) {
+  setSemanticIdForSubtree(reinterpret_cast<scene::SceneNode*>(node), id);
+}
+
 void Player::readKeyframesFromJsonDocument(const rapidjson::Document& d) {
   CORRADE_INTERNAL_ASSERT(keyframes_.empty());
   esp::io::readMember(d, "keyframes", keyframes_);
@@ -25,17 +62,22 @@ void Player::readKeyframesFromJsonDocument(const rapidjson::Document& d) {
 Keyframe Player::keyframeFromString(const std::string& keyframe) {
   Keyframe res;
   rapidjson::Document d;
-  d.Parse<0>(keyframe.c_str());
+  d.Parse<0>(keyframe.data(), keyframe.size());
   esp::io::readMember(d, "keyframe", res);
   return res;
 }
 
-Player::Player(const LoadAndCreateRenderAssetInstanceCallback&
-                   loadAndCreateRenderAssetInstanceCallback,
-               const ChangeLightSetupCallback& changeLightSetupCallback)
-    : loadAndCreateRenderAssetInstanceCallback(
-          loadAndCreateRenderAssetInstanceCallback),
-      changeLightSetupCallback(changeLightSetupCallback) {}
+Keyframe Player::keyframeFromStringUnwrapped(
+    const Cr::Containers::StringView keyframe) {
+  Keyframe res;
+  rapidjson::Document d;
+  d.Parse<0>(keyframe.data(), keyframe.size());
+  esp::io::fromJsonValue(d, res);
+  return res;
+}
+
+Player::Player(std::shared_ptr<AbstractPlayerImplementation> implementation)
+    : implementation_{std::move(implementation)} {}
 
 void Player::readKeyframesFromFile(const std::string& filepath) {
   close();
@@ -100,12 +142,11 @@ void Player::close() {
 }
 
 void Player::clearFrame() {
-  for (const auto& pair : createdInstances_) {
-    // TODO: use NodeDeletionHelper to safely delete nodes owned by the Player.
-    // the deletion here is unsafe because a Player may persist beyond the
-    // lifetime of these nodes.
-    delete pair.second;
-  }
+  /* In a moved-out Player the implementation_ shared_ptr becomes null for
+     some reason (why, C++?), and since clearFrame() is called on destruction
+     accessing it will blow up. So it's a destructive move, yes. */
+  if (implementation_)
+    implementation_->deleteAssetInstances(createdInstances_);
   createdInstances_.clear();
   assetInfos_.clear();
   frameIndex_ = -1;
@@ -131,7 +172,7 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
       continue;
     }
     CORRADE_INTERNAL_ASSERT(assetInfos_.count(creation.filepath));
-    auto* node = loadAndCreateRenderAssetInstanceCallback(
+    auto* node = implementation_->loadAndCreateRenderAssetInstance(
         assetInfos_[creation.filepath], creation);
     if (!node) {
       if (failedFilepaths_.count(creation.filepath) == 0u) {
@@ -155,8 +196,7 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
       continue;
     }
 
-    auto* node = it->second;
-    delete node;
+    implementation_->deleteAssetInstance(it->second);
     createdInstances_.erase(deletionInstanceKey);
   }
 
@@ -169,13 +209,13 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     }
     auto* node = it->second;
     const auto& state = pair.second;
-    node->setTranslation(state.absTransform.translation);
-    node->setRotation(state.absTransform.rotation);
-    setSemanticIdForSubtree(node, state.semanticId);
+    implementation_->setNodeTransform(node, state.absTransform.translation,
+                                      state.absTransform.rotation);
+    implementation_->setNodeSemanticId(node, state.semanticId);
   }
 
   if (keyframe.lightsChanged) {
-    changeLightSetupCallback(keyframe.lights);
+    implementation_->changeLightSetup(keyframe.lights);
   }
 }
 
@@ -192,23 +232,6 @@ void Player::setSingleKeyframe(Keyframe&& keyframe) {
   frameIndex_ = -1;
   keyframes_.emplace_back(std::move(keyframe));
   setKeyframeIndex(0);
-}
-
-void Player::setSemanticIdForSubtree(esp::scene::SceneNode* rootNode,
-                                     int semanticId) {
-  if (rootNode->getSemanticId() == semanticId) {
-    // We assume the entire subtree's semanticId matches the root's, so we can
-    // early out here.
-    return;
-  }
-
-  // See also RigidBase setSemanticId. That function uses a prepared container
-  // of visual nodes, whereas this function traverses the subtree to touch all
-  // nodes (including visual nodes). The results should be the same.
-  auto cb = [&](esp::scene::SceneNode& node) {
-    node.setSemanticId(semanticId);
-  };
-  esp::scene::preOrderTraversalWithCallback(*rootNode, cb);
 }
 
 }  // namespace replay

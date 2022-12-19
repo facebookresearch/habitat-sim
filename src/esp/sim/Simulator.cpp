@@ -483,7 +483,7 @@ bool Simulator::instanceStageForSceneAttributes(
 bool Simulator::instanceObjectsForSceneAttributes(
     const metadata::attributes::SceneInstanceAttributes::cptr&
         curSceneInstanceAttributes_) {
-  // Load object instances as spceified by Scene Instance Attributes.
+  // Load object instances as specified by Scene Instance Attributes.
   // Get all instances of objects described in scene
   const std::vector<SceneObjectInstanceAttributes::cptr> objectInstances =
       curSceneInstanceAttributes_->getObjectInstances();
@@ -561,7 +561,7 @@ bool Simulator::instanceArticulatedObjectsForSceneAttributes(
         Cr::Utility::formatString(
             "Simulator::instanceArticulatedObjectsForSceneAttributes() : "
             "Attempt "
-            "to load articualted object instance specified in current scene "
+            "to load articulated object instance specified in current scene "
             "instance :{} failed due to AO instance configuration file handle "
             "'{}' being empty or unknown. Aborting",
             config_.activeSceneName, artObjInst->getHandle()));
@@ -601,7 +601,7 @@ Simulator::buildCurrentStateSceneAttributes() const {
   // for a copy of curSceneInstanceAttributes_.
   ESP_CHECK(initSceneInstanceAttr,
             "Simulator::saveCurrentSceneInstance : SceneInstanceAttributes "
-            "used to initializee current scene never registered or has been "
+            "used to initialize current scene never registered or has been "
             "removed from SceneInstanceAttributesManager. Aborting.");
 
   // 2. Pass the copy to Physics Manager so that it can be updated with current
@@ -686,16 +686,28 @@ void Simulator::reconfigureReplayManager(bool enableGfxReplaySave) {
   CORRADE_INTERNAL_ASSERT(resourceManager_);
   resourceManager_->setRecorder(gfxReplayMgr_->getRecorder());
 
-  // provide Player callbacks to replay manager
-  gfxReplayMgr_->setPlayerCallbacks(
-      [this](const assets::AssetInfo& assetInfo,
-             const assets::RenderAssetInstanceCreationInfo& creation)
-          -> scene::SceneNode* {
-        return loadAndCreateRenderAssetInstance(assetInfo, creation);
-      },
-      [this](const gfx::LightSetup& lights) -> void {
-        this->setLightSetup(lights);
-      });
+  // provide Player backend implementation to replay manager
+  class SceneGraphPlayerImplementation
+      : public gfx::replay::AbstractSceneGraphPlayerImplementation {
+   public:
+    explicit SceneGraphPlayerImplementation(Simulator& self) : self_{self} {}
+
+   private:
+    gfx::replay::NodeHandle loadAndCreateRenderAssetInstance(
+        const assets::AssetInfo& assetInfo,
+        const assets::RenderAssetInstanceCreationInfo& creation) override {
+      return reinterpret_cast<gfx::replay::NodeHandle>(
+          self_.loadAndCreateRenderAssetInstance(assetInfo, creation));
+    }
+
+    void changeLightSetup(const gfx::LightSetup& lights) override {
+      self_.setLightSetup(lights);
+    }
+
+    Simulator& self_;
+  };
+  gfxReplayMgr_->setPlayerImplementation(
+      std::make_shared<SceneGraphPlayerImplementation>(*this));
 }
 
 void Simulator::updateShadowMapDrawableGroup() {
