@@ -75,7 +75,7 @@ unpauses the playback.
 
 By default the batch renderer is used, however it implicitly loads individual
 files from the filesystem as referenced by the gfx-replay JSON. If you pass one
-or more compposite files via the -P / --preload option, it'll prefer them if
+or more composite files via the -P / --preload option, it'll prefer them if
 they contain given referenced file, and will fall back to loading from the
 filesystem if not, printing a warning. The --classic option switches to the
 classic renderer and resource management, --preload is ignored in that case.

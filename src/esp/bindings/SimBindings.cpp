@@ -425,7 +425,7 @@ void initSimBindings(py::module& m) {
 
   // ==== ReplayRenderer ====
   py::class_<ClassicReplayRenderer, ClassicReplayRenderer::ptr,
-             AbstractReplayRenderer>(m, "ReplayRenderer")
+             AbstractReplayRenderer>(m, "ClassicReplayRenderer")
       .def(py::init<const ReplayRendererConfiguration&>())
       .def_property_readonly(
           "renderer", &ClassicReplayRenderer::getRenderer,
