@@ -19,6 +19,10 @@ namespace sim {
 
 ClassicReplayRenderer::ClassicReplayRenderer(
     const ReplayRendererConfiguration& cfg) {
+  if (Magnum::GL::Context::hasCurrent()) {
+    flextGLInit(Magnum::GL::Context::current());  // TODO: Avoid globals
+                                                  // duplications across SOs.
+  }
   config_ = cfg;
   SimulatorConfiguration simConfig;
   simConfig.createRenderer = true;
