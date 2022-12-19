@@ -81,6 +81,14 @@ struct RendererConfiguration {
   RendererConfiguration& setTileSizeCount(const Magnum::Vector2i& tileSize,
                                           const Magnum::Vector2i& tileCount);
 
+  /**
+   * @brief Set max light count per draw
+   *
+   * By default no lights are used, i.e. flat-shaded rendering.
+   * @see @ref Renderer::maxLightCount()
+   */
+  RendererConfiguration& setMaxLightCount(Magnum::UnsignedInt count);
+
  private:
   friend Renderer;
   struct State;
@@ -136,6 +144,16 @@ enum class RendererFileFlag {
 typedef Corrade::Containers::EnumSet<RendererFileFlag> RendererFileFlags;
 
 CORRADE_ENUMSET_OPERATORS(RendererFileFlags)
+
+/**
+@brief Renderer light type
+
+@see @ref Renderer::addLight()
+*/
+enum class RendererLightType {
+  Directional = 0, /**< Directional */
+  Point = 1        /**< Point */
+};
 
 struct SceneStats;
 
@@ -447,6 +465,14 @@ class Renderer {
    */
   std::size_t sceneCount() const;
 
+  /**
+   * @brief Max light count
+   *
+   * By default there's zero lights, i.e. flat-shaded renderering.
+   * @see @ref RendererConfiguration::setMaxLightCount()
+   */
+  Magnum::UnsignedInt maxLightCount() const;
+
 #ifdef DOXYGEN_GENERATING_OUTPUT
   /**
    * @brief Add a file
@@ -538,7 +564,7 @@ class Renderer {
    * @ref transformations() at the returned ID is kept as an identity transform
    * and writing to it will not overwrite the baked transformation. This
    * parameter is useful for correcting orientation/scale of the imported mesh.
-   * @see @ref hasMeshHierarchy()
+   * @see @ref hasNodeHierarchy(), @ref clear()
    */
   std::size_t addNodeHierarchy(Magnum::UnsignedInt sceneId,
                                Corrade::Containers::StringView name,
@@ -552,11 +578,49 @@ class Renderer {
                                Corrade::Containers::StringView name);
 #endif
 
+  std::size_t addEmptyNode(Magnum::UnsignedInt sceneId);
+
+  /**
+   * @brief Add a light
+   * @param sceneId         Scene ID, expected to be less than
+   *    @ref sceneCount()
+   * @param nodeId          Node ID to inherit transformation from, returned
+   *    from @ref addNodeHierarchy() or @ref addEmptyNode() earlier
+   * @param type            Light type. Can't be changed after adding the
+   *    light.
+   *
+   * Expects that @ref maxLightCount() isn't @cpp 0 @ce. If @p type is
+   * @ref RendererLightType::Directional, a negative
+   * @ref Magnum::Matrix4::backwards() is taken from @p nodeId transformation
+   * as the direction, if @p type is @ref RendererLightType::Point,
+   * @ref Magnum::Matrix4::translation() is taken from @p nodeId transformation
+   * as the position. The ID returned from this function can be subsequently
+   * used to update light properties via @ref lightColors() and
+   * @ref lightRanges().
+   * @see @ref clearLights(), @ref clear()
+   */
+  std::size_t addLight(Magnum::UnsignedInt sceneId,
+                       std::size_t nodeId,
+                       RendererLightType type);
+
   /**
    * @brief Clear a scene
    * @param sceneId   Scene ID, expected to be less than @ref sceneCount()
+   *
+   * Clears everything added by @ref addNodeHierarchy(),
+   * @ref addEmptyNode() and @ref addLight().
+   * @see @ref clearLights()
    */
   void clear(Magnum::UnsignedInt sceneId);
+
+  /**
+   * @brief Clear lights in a scene
+   * @param sceneId   Scene ID, expected to be less than @ref sceneCount()
+   *
+   * Clears everything added by @ref addLight().
+   * @see @ref clear()
+   */
+  void clearLights(Magnum::UnsignedInt sceneId);
 
   /**
    * @brief Combined camera projection and transformation matrix
@@ -573,11 +637,45 @@ class Renderer {
    *
    * Returns a view on all node transformations in given scene. Desired usage
    * is to update only transformations at indices returned by
-   * @ref addNodeHierarchy(), updating transformations at other indices is
-   * possible but could have unintended consequences. Modifications to the
-   * transformations are taken into account in the next @ref draw().
+   * @ref addNodeHierarchy() and @ref addEmptyNode(), updating transformations
+   * at other indices is possible but could have unintended consequences.
+   * Modifications to the transformations are taken into account in the next
+   * @ref draw(). By default, transformations of root nodes (those which IDs
+   * were returned from @ref addNodeHierarchy() or @ref addEmptyNode()) are
+   * identities, transformations of other nodes are unspecified.
    */
   Corrade::Containers::StridedArrayView1D<Magnum::Matrix4> transformations(
+      Magnum::UnsignedInt sceneId);
+
+  /**
+   * @brief Colors of all lights in the scene
+   * @param sceneId   Scene ID, expected to be less than @ref sceneCount()
+   *
+   * Returns a view on colors of all lights in given scene. Desired usage is to
+   * update only colors at indices returned by @ref addLight(), updating colors
+   * at other indices is possible but could have unintended consequences.
+   * Modifications to the lights are taken into account in the next
+   * @ref draw(). By default, colors of root lights (those which IDs were
+   * returned from @ref addLight()) are @cpp 0xffffff_rgbf @ce, colors of other
+   * lights are unspecified.
+   */
+  Corrade::Containers::StridedArrayView1D<Magnum::Color3> lightColors(
+      Magnum::UnsignedInt sceneId);
+
+  /**
+   * @brief Ranges of all lights in the scene
+   * @param sceneId   Scene ID, expected to be less than @ref sceneCount()
+   *
+   * Returns a view on ranges of all lights in given scene. Desired usage is to
+   * update only ranges at indices returned by @ref addLight(), updating ranges
+   * at other indices is possible but could have unintended consequences.
+   * Modifications to the lights are taken into account in the next
+   * @ref draw(). The value range is ignored for
+   * @ref RendererLightType::Directional. By default, ranges of root lights
+   * (those which IDs were returned from @ref addLight()) are
+   * @ref Magnum::Constants::inf(), ranges of other lights are unspecified.
+   */
+  Corrade::Containers::StridedArrayView1D<Magnum::Float> lightRanges(
       Magnum::UnsignedInt sceneId);
 
   /**

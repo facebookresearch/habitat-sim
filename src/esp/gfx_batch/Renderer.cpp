@@ -38,6 +38,7 @@
 #include <Magnum/Trade/FlatMaterialData.h>
 #include <Magnum/Trade/ImageData.h>
 #include <Magnum/Trade/MeshData.h>
+#include <Magnum/Trade/PhongMaterialData.h>
 #include <Magnum/Trade/SceneData.h>
 #include <Magnum/Trade/TextureData.h>
 #include <unordered_map>
@@ -56,6 +57,7 @@ struct RendererConfiguration::State {
   RendererFlags flags;
   Mn::Vector2i tileSize{128, 128};
   Mn::Vector2i tileCount{1, 1};
+  Mn::UnsignedInt maxLightCount{0};
 };
 
 RendererConfiguration::RendererConfiguration() : state{Cr::InPlaceInit} {}
@@ -74,6 +76,12 @@ RendererConfiguration& RendererConfiguration::setTileSizeCount(
   return *this;
 }
 
+RendererConfiguration& RendererConfiguration::setMaxLightCount(
+    Mn::UnsignedInt count) {
+  state->maxLightCount = count;
+  return *this;
+}
+
 namespace {
 
 struct MeshView {
@@ -84,6 +92,13 @@ struct MeshView {
   // TODO also parent, when we are able to fetch the whole hierarchy for a
   //  particular root object name instead of having the hierarchy flattened
   Mn::Matrix4 transformation;
+};
+
+struct Light {
+  std::size_t node;
+  RendererLightType type;
+  Mn::Color3 color;
+  Mn::Float range;
 };
 
 struct DrawCommand {
@@ -132,6 +147,8 @@ struct Scene {
      (but not all) are referenced from the transformationIds array below. */
   Cr::Containers::Array<Mn::Int> parents; /* parents[i] < i, always */
   Cr::Containers::Array<Mn::Matrix4> transformations;
+  /* Lights, with node IDs referencing transformations from above */
+  Cr::Containers::Array<Light> lights;
 
   /* Draw batches, each being a unique combination of a mesh and a texture,
      thus requiring a dedicated draw call. See also drawBatchId(). */
@@ -150,9 +167,9 @@ struct Scene {
   Cr::Containers::Array<DrawCommand> drawCommands;
 
   /* The transformationIds and drawCommands arrays sorted by meshIds. The
-     draws and textureTransformations arrays are uploaded to uniform buffers
-     after sorting and not used from the CPU again so they don't need to be
-     cached here. */
+     textureTransformations array is uploaded to uniform buffers after sorting
+     and not used from the CPU again so it doesn't need to be cached here. */
+  Cr::Containers::Array<Mn::Shaders::PhongDrawUniform> drawsSorted;
   Cr::Containers::Array<Mn::UnsignedInt> transformationIdsSorted;
   // TODO make the layout match GL (... deinterleave) to avoid a copy in draw()
   //  or maybe not and just go with draw indirect directly
@@ -160,8 +177,12 @@ struct Scene {
   Cr::Containers::Array<DrawCommand> drawCommandsSorted;
 
   /* Updated every frame */
+  // TODO make these two global, uploaded just once (plus accounting for
+  //  padding)
   Mn::GL::Buffer transformationUniform;
+  Mn::GL::Buffer lightUniform;
   /* Updated at most once a frame if dirty is true */
+  // TODO split for lights vs nodes?
   bool dirty = false;
   Mn::GL::Buffer drawUniform;
   Mn::GL::Buffer textureTransformationUniform;
@@ -184,8 +205,10 @@ struct ProjectionPadded : Mn::Shaders::ProjectionUniform3D {
 struct Renderer::State {
   RendererFlags flags;
   Mn::Vector2i tileSize, tileCount;
+  Mn::UnsignedInt maxLightCount;
   /* Indexed with Mn::Shaders::PhongGL::Flag, but I don't want to bother with
      writing a hash function for EnumSet */
+  // TODO have a dedicated shader for flat materials
   // TODO add Containers/EnumSetHash.h for this
   std::unordered_map<Mn::UnsignedInt, Mn::Shaders::PhongGL> shaders;
 
@@ -228,6 +251,7 @@ struct Renderer::State {
       absoluteTransformations;
   Cr::Containers::Array<Mn::Shaders::TransformationUniform3D>
       absoluteTransformationsSorted;
+  Cr::Containers::Array<Mn::Shaders::PhongLightUniform> absoluteLights;
 };
 
 Renderer::Renderer(Mn::NoCreateT) {}
@@ -241,11 +265,14 @@ void Renderer::create(const RendererConfiguration& configurationWrapper) {
   state_->flags = configuration.flags;
   state_->tileSize = configuration.tileSize;
   state_->tileCount = configuration.tileCount;
+  state_->maxLightCount = configuration.maxLightCount;
   const std::size_t sceneCount = configuration.tileCount.product();
   state_->projections = Cr::Containers::Array<ProjectionPadded>{sceneCount};
   state_->scenes = Cr::Containers::Array<Scene>{sceneCount};
 
   /* Texture 0 is reserved as a white pixel */
+  // TODO drop this altogether and use an untextured shader instead? since it's
+  //  causing a dedicated draw call anyway
   arrayAppend(state_->textures, Cr::InPlaceInit)
       .setMinificationFilter(Mn::SamplerFilter::Nearest,
                              Mn::SamplerMipmap::Base)
@@ -287,6 +314,10 @@ Mn::Vector2i Renderer::tileSize() const {
 
 std::size_t Renderer::sceneCount() const {
   return state_->scenes.size();
+}
+
+Mn::UnsignedInt Renderer::maxLightCount() const {
+  return state_->maxLightCount;
 }
 
 bool Renderer::addFile(const Cr::Containers::StringView filename,
@@ -522,17 +553,47 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
         return {};
       }
 
-      const auto& flatMaterial = material->as<Mn::Trade::FlatMaterialData>();
-      materials[i] = Mn::Shaders::PhongMaterialUniform{}.setAmbientColor(
-          flatMaterial.color());
+      /* Set up flat shading either if the material is marked as flat or if
+         we have no lights enabled */
+      if (material->types() & Mn::Trade::MaterialType::Flat ||
+          !state_->maxLightCount) {
+        const auto& flatMaterial = material->as<Mn::Trade::FlatMaterialData>();
+        materials[i] = Mn::Shaders::PhongMaterialUniform{}
+                           .setAmbientColor(flatMaterial.color())
+                           /* Diffuse is zero so lights (if enabled) have no
+                              effect on this material  */
+                           .setDiffuseColor(0x00000000_rgbaf);
 
-      /* Untextured materials get the first reserved texture (a white pixel) */
-      if (!flatMaterial.hasTexture())
-        materialTextureTransformations[i] = {0, 0, {}};
-      else
-        materialTextureTransformations[i] = {
-            flatMaterial.texture() + textureOffset, flatMaterial.textureLayer(),
-            flatMaterial.textureMatrix()};
+        /* Untextured materials get the first reserved texture (a white
+           pixel) */
+        if (!flatMaterial.hasTexture())
+          materialTextureTransformations[i] = {0, 0, {}};
+        else
+          materialTextureTransformations[i] = {
+              flatMaterial.texture() + textureOffset,
+              flatMaterial.textureLayer(), flatMaterial.textureMatrix()};
+      } else {
+        const auto& phongMaterial =
+            material->as<Mn::Trade::PhongMaterialData>();
+        materials[i] = Mn::Shaders::PhongMaterialUniform{}
+                           .setAmbientColor(phongMaterial.diffuseColor() * 0.1f)
+                           .setDiffuseColor(phongMaterial.diffuseColor())
+            /* Specular not used (and shader compiled with NoSpecular). Much
+               plastic. Very fugly. Thus we also don't need shininess for
+               anything (and it's not imported from the glTF anyway). */
+            ;
+
+        /* Untextured materials get the first reserved texture (a white
+           pixel) */
+        if (!phongMaterial.hasAttribute(
+                Mn::Trade::MaterialAttribute::DiffuseTexture))
+          materialTextureTransformations[i] = {0, 0, {}};
+        else
+          materialTextureTransformations[i] = {
+              phongMaterial.diffuseTexture() + textureOffset,
+              phongMaterial.diffuseTextureLayer(),
+              phongMaterial.diffuseTextureMatrix()};
+      }
     }
 
     // TODO immutable buffer storage how? or populate on first draw() and then
@@ -748,11 +809,17 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
        {{}, Mn::Shaders::PhongGL::Flag::VertexColor}) {
     Mn::Shaders::PhongGL::Flags shaderFlags =
         extraFlags | Mn::Shaders::PhongGL::Flag::MultiDraw |
-        Mn::Shaders::PhongGL::Flag::UniformBuffers;
-    if (!(state_->flags >= RendererFlag::NoTextures))
+        Mn::Shaders::PhongGL::Flag::UniformBuffers |
+        Mn::Shaders::PhongGL::Flag::NoSpecular |
+        Mn::Shaders::PhongGL::Flag::LightCulling;
+    if (!(state_->flags >= RendererFlag::NoTextures)) {
       shaderFlags |= Mn::Shaders::PhongGL::Flag::AmbientTexture |
                      Mn::Shaders::PhongGL::Flag::TextureArrays |
                      Mn::Shaders::PhongGL::Flag::TextureTransformation;
+      /* Enable also a diffuse texture if we're rendering with lights */
+      if (state_->maxLightCount)
+        shaderFlags |= Mn::Shaders::PhongGL::Flag::DiffuseTexture;
+    }
     /* Not using emplace() -- if a stale shader already exists in the map, it
        wouldn't replace it */
     // TODO 1024 is 64K divided by 64 bytes needed for one draw uniform, have
@@ -761,7 +828,7 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
     state_->shaders[Mn::UnsignedInt(extraFlags)] = Mn::Shaders::PhongGL{
         Mn::Shaders::PhongGL::Configuration{}
             .setFlags(shaderFlags)
-            .setLightCount(0)
+            .setLightCount(state_->maxLightCount)
             .setMaterialCount(Mn::UnsignedInt(state_->materials.size()))
             .setDrawCount(1024)};
   }
@@ -787,8 +854,9 @@ std::size_t Renderer::addNodeHierarchy(const Mn::UnsignedInt sceneId,
                                        const Cr::Containers::StringView name,
                                        const Mn::Matrix4& bakeTransformation) {
   CORRADE_ASSERT(sceneId < state_->scenes.size(),
-                 "Renderer::add(): index" << sceneId << "out of range for"
-                                          << state_->scenes.size() << "scenes",
+                 "Renderer::addNodeHierarchy(): index"
+                     << sceneId << "out of range for" << state_->scenes.size()
+                     << "scenes",
                  {});
 
   Scene& scene = state_->scenes[sceneId];
@@ -809,6 +877,8 @@ std::size_t Renderer::addNodeHierarchy(const Mn::UnsignedInt sceneId,
   CORRADE_INTERNAL_ASSERT(scene.textureTransformations.size() ==
                           scene.drawBatchIds.size());
   CORRADE_INTERNAL_ASSERT(scene.drawCommands.size() ==
+                          scene.drawBatchIds.size());
+  CORRADE_INTERNAL_ASSERT(scene.drawsSorted.size() ==
                           scene.drawBatchIds.size());
   CORRADE_INTERNAL_ASSERT(scene.transformationIdsSorted.size() ==
                           scene.drawBatchIds.size());
@@ -853,6 +923,7 @@ std::size_t Renderer::addNodeHierarchy(const Mn::UnsignedInt sceneId,
                 meshView.indexOffsetInBytes, meshView.indexCount);
     /* Just to have them with the right size, they get filled in a next dirty
        state update in draw() */
+    arrayAppend(scene.drawsSorted, Cr::NoInit, 1);
     arrayAppend(scene.transformationIdsSorted, Cr::NoInit, 1);
     arrayAppend(scene.drawCommandsSorted, Cr::NoInit, 1);
   }
@@ -867,6 +938,55 @@ std::size_t Renderer::addNodeHierarchy(const Mn::UnsignedInt scene,
   return addNodeHierarchy(scene, name, Mn::Matrix4{});
 }
 
+std::size_t Renderer::addEmptyNode(const Mn::UnsignedInt sceneId) {
+  CORRADE_ASSERT(sceneId < state_->scenes.size(),
+                 "Renderer::addEmptyNode(): index"
+                     << sceneId << "out of range for" << state_->scenes.size()
+                     << "scenes",
+                 {});
+
+  Scene& scene = state_->scenes[sceneId];
+
+  /* The parent and transformation arrays should have the same size */
+  CORRADE_INTERNAL_ASSERT(scene.transformations.size() == scene.parents.size());
+
+  /* Add a top-level object with no attached mesh */
+  const std::size_t id = scene.transformations.size();
+  arrayAppend(scene.parents, -1);
+  arrayAppend(scene.transformations, Cr::InPlaceInit);
+
+  /* Not marking the dirty bit as nothing changed rendering-wise, and the
+     transformations are processed every frame anyway */
+  return id;
+}
+
+std::size_t Renderer::addLight(const Mn::UnsignedInt sceneId,
+                               const std::size_t nodeId,
+                               const RendererLightType type) {
+  CORRADE_ASSERT(state_->maxLightCount,
+                 "Renderer::addLight(): max light count is zero", {});
+  CORRADE_ASSERT(sceneId < state_->scenes.size(),
+                 "Renderer::addLight(): index" << sceneId << "out of range for"
+                                               << state_->scenes.size()
+                                               << "scenes",
+                 {});
+
+  Scene& scene = state_->scenes[sceneId];
+  CORRADE_ASSERT(nodeId < scene.parents.size(),
+                 "Renderer::addLight(): index" << nodeId << "out of range for"
+                                               << scene.parents.size()
+                                               << "nodes in scene" << sceneId,
+                 {});
+
+  const std::size_t id = scene.lights.size();
+  arrayAppend(scene.lights, Cr::InPlaceInit, nodeId, type, 0xffffff_rgbf,
+              Mn::Constants::inf());
+
+  /* Not marking the dirty bit as lights are processed with updated
+     transformations every frame anyway */
+  return id;
+}
+
 void Renderer::clear(const Mn::UnsignedInt sceneId) {
   CORRADE_ASSERT(sceneId < state_->scenes.size(),
                  "Renderer::clear(): index" << sceneId << "out of range for"
@@ -878,17 +998,34 @@ void Renderer::clear(const Mn::UnsignedInt sceneId) {
   /* Resizing instead of `= {}` to not discard the memory */
   arrayResize(scene.parents, 0);
   arrayResize(scene.transformations, 0);
+  arrayResize(scene.lights, 0);
   arrayResize(scene.drawBatchIds, 0);
   arrayResize(scene.transformationIds, 0);
   arrayResize(scene.drawBatches, Cr::NoInit, 0);
   arrayResize(scene.draws, 0);
   arrayResize(scene.textureTransformations, 0);
   arrayResize(scene.drawCommands, 0);
+  arrayResize(scene.drawsSorted, 0);
   arrayResize(scene.transformationIdsSorted, 0);
   arrayResize(scene.drawCommandsSorted, 0);
 
   /* There's nothing in the scene, so there's no dirty state to process */
   scene.dirty = false;
+}
+
+void Renderer::clearLights(const Mn::UnsignedInt sceneId) {
+  CORRADE_ASSERT(sceneId < state_->scenes.size(),
+                 "Renderer::clear(): index" << sceneId << "out of range for"
+                                            << state_->scenes.size()
+                                            << "scenes", );
+
+  Scene& scene = state_->scenes[sceneId];
+  // TODO have arrayClear()!!!
+  /* Resizing instead of `= {}` to not discard the memory */
+  arrayResize(scene.lights, 0);
+
+  /* Not marking the dirty bit as lights are processed with updated
+     transformations every frame anyway */
 }
 
 Mn::Matrix4& Renderer::camera(const Mn::UnsignedInt scene) {
@@ -906,6 +1043,28 @@ Cr::Containers::StridedArrayView1D<Mn::Matrix4> Renderer::transformations(
   return state_->scenes[sceneId].transformations;
 }
 
+Cr::Containers::StridedArrayView1D<Mn::Color3> Renderer::lightColors(
+    const Mn::UnsignedInt sceneId) {
+  CORRADE_ASSERT(sceneId < state_->scenes.size(),
+                 "Renderer::lightColors(): index"
+                     << sceneId << "out of range for" << state_->scenes.size()
+                     << "scenes",
+                 {});
+
+  return stridedArrayView(state_->scenes[sceneId].lights).slice(&Light::color);
+}
+
+Cr::Containers::StridedArrayView1D<Mn::Float> Renderer::lightRanges(
+    const Mn::UnsignedInt sceneId) {
+  CORRADE_ASSERT(sceneId < state_->scenes.size(),
+                 "Renderer::lightRanges(): index"
+                     << sceneId << "out of range for" << state_->scenes.size()
+                     << "scenes",
+                 {});
+
+  return stridedArrayView(state_->scenes[sceneId].lights).slice(&Light::range);
+}
+
 void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
   // TODO allow this (currently addFile() sets up shader limits)
   CORRADE_ASSERT(!state_->meshes.isEmpty(),
@@ -917,7 +1076,6 @@ void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
   {
     // TODO have a dedicated bump allocator for this to avoid allocating on
     //  every dirty processing
-    Cr::Containers::Array<Mn::Shaders::PhongDrawUniform> drawsSorted;
     Cr::Containers::Array<Mn::Shaders::TextureTransformationUniform>
         textureTransformationsSorted;
     for (std::size_t sceneId = 0; sceneId != state_->scenes.size(); ++sceneId) {
@@ -927,8 +1085,7 @@ void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
 
       /* Resize temp arrays if too small */
       // TODO make this unconditional to catch OOB access?
-      if (drawsSorted.size() < scene.draws.size()) {
-        arrayResize(drawsSorted, Cr::NoInit, scene.draws.size());
+      if (textureTransformationsSorted.size() < scene.draws.size()) {
         arrayResize(textureTransformationsSorted, Cr::NoInit,
                     scene.draws.size());
       }
@@ -965,7 +1122,7 @@ void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
         Mn::UnsignedInt& offset =
             scene.drawBatchOffsets[scene.drawBatchIds[i] + 1];
 
-        drawsSorted[offset] = scene.draws[i];
+        scene.drawsSorted[offset] = scene.draws[i];
         textureTransformationsSorted[offset] = scene.textureTransformations[i];
         scene.transformationIdsSorted[offset] = scene.transformationIds[i];
         scene.drawCommandsSorted[offset] = scene.drawCommands[i];
@@ -976,7 +1133,6 @@ void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
                               scene.draws.size());
 
       /* Upload the (temporary) sorted data to uniforms */
-      scene.drawUniform.setData(drawsSorted);
       scene.textureTransformationUniform.setData(textureTransformationsSorted);
       scene.dirty = false;
     }
@@ -1030,6 +1186,49 @@ void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
     scene.transformationUniform.setData(
         state_->absoluteTransformationsSorted.prefix(
             scene.transformationIdsSorted.size()));
+
+    /* Finish transformation-dependent per-draw info, upload it */
+    for (std::size_t i = 0; i != scene.transformationIds.size(); ++i) {
+      scene
+          .drawsSorted[i]
+          /* Extract normal matrix */
+          .setNormalMatrix(state_->absoluteTransformationsSorted[i]
+                               .transformationMatrix.normalMatrix())
+          // TODO light culling should happen here
+          .setLightOffsetCount(0, scene.lights.size());
+    }
+    // TODO have a single buffer for this
+    scene.drawUniform.setData(scene.drawsSorted);
+
+    /* Copy light properties and cherry-pick transformations for them. Resize
+       the temp destination if it's too small. */
+    if (state_->absoluteLights.size() < scene.lights.size())
+      arrayResize(state_->absoluteLights, Cr::NoInit, scene.lights.size());
+    for (std::size_t i = 0; i != scene.lights.size(); ++i) {
+      const Light& light = scene.lights[i];
+      state_->absoluteLights[i]
+          .setColor(light.color)
+          .setSpecularColor(light.color)
+          .setRange(light.range);
+      if (light.type == RendererLightType::Directional)
+        state_->absoluteLights[i].setPosition(
+            Mn::Vector4{-state_->absoluteTransformations[light.node + 1]
+                             .transformationMatrix.backward(),
+                        0.0f});
+      else if (light.type == RendererLightType::Point)
+        state_->absoluteLights[i].setPosition(
+            Mn::Vector4{state_->absoluteTransformations[light.node + 1]
+                            .transformationMatrix.translation(),
+                        1.0f});
+      else
+        CORRADE_INTERNAL_ASSERT_UNREACHABLE(); /* LCOV_EXCL_LINE */
+    }
+
+    /* Upload the light uniforms, as they get overwritten in the next loop. */
+    // TODO again, have a single buffer for this
+    if (!scene.lights.isEmpty())
+      scene.lightUniform.setData(
+          state_->absoluteLights.prefix(scene.lights.size()));
   }
 
   /* Remember the original viewport to set it back to where it was after.
@@ -1057,6 +1256,7 @@ void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
                                 sceneId * sizeof(ProjectionPadded),
                                 sizeof(ProjectionPadded))
           .bindTransformationBuffer(scene.transformationUniform)
+          .bindLightBuffer(scene.lightUniform)
           .bindDrawBuffer(scene.drawUniform);
       if (!(state_->flags & RendererFlag::NoTextures))
         state_->shaders.begin()->second.bindTextureTransformationBuffer(
@@ -1066,9 +1266,13 @@ void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
       for (std::size_t i = 0; i != scene.drawBatches.size(); ++i) {
         const DrawBatch& drawBatch = scene.drawBatches[i];
 
-        if (!(state_->flags >= RendererFlag::NoTextures))
+        if (!(state_->flags >= RendererFlag::NoTextures)) {
           drawBatch.shader->bindAmbientTexture(
               state_->textures[drawBatch.textureId]);
+          if (state_->maxLightCount)
+            drawBatch.shader->bindDiffuseTexture(
+                state_->textures[drawBatch.textureId]);
+        }
 
         const Mn::UnsignedInt drawBatchOffset = scene.drawBatchOffsets[i];
         const Mn::UnsignedInt nextDrawBatchOffset =

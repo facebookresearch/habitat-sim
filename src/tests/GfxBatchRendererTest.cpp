@@ -24,6 +24,7 @@
 #include <Magnum/MeshTools/Transform.h>
 #include <Magnum/Primitives/Circle.h>
 #include <Magnum/Primitives/Plane.h>
+#include <Magnum/Primitives/UVSphere.h>
 #include <Magnum/SceneTools/FlattenMeshHierarchy.h>
 #include <Magnum/Trade/AbstractImageConverter.h>
 #include <Magnum/Trade/AbstractSceneConverter.h>
@@ -64,6 +65,9 @@ struct GfxBatchRendererTest : Cr::TestSuite::Tester {
 
   void multipleScenes();
   void clearScene();
+
+  void lights();
+  void clearLights();
 
   void imageInto();
   void cudaInterop();
@@ -214,6 +218,53 @@ const struct {
     {}, 2, 1, 1, 1.0f,
     "GfxBatchRendererTestMeshHierarchyNoTextures.png"},
 };
+
+const struct {
+  const char* name;
+  Mn::UnsignedInt maxLightCount;
+  Mn::UnsignedInt sceneLightCount;
+  Mn::Deg rotation;
+  const char* firstObject;
+  const char* secondObject;
+  const char* thirdObject;
+  const char* expected;
+} LightData[]{
+  {"no lights enabled", 0, 0, 0.0_degf,
+    "flat checkerboard sphere",
+    "shaded yellow sphere",
+    "shaded checkerboard sphere",
+    "GfxBatchRendererTestLightsDisabled.png"},
+  {"no lights added", 2, 0, 0.0_degf,
+    "flat checkerboard sphere",
+    "shaded yellow sphere",
+    "shaded checkerboard sphere",
+    "GfxBatchRendererTestLightsNone.png"},
+  {"two lights", 2, 2, 0.0_degf,
+    "flat checkerboard sphere",
+    "shaded yellow sphere",
+    "shaded checkerboard sphere",
+    "GfxBatchRendererTestLights.png"},
+  {"two lights, rotated", 2, 2, 180.0_degf,
+    "flat checkerboard sphere",
+    "shaded yellow sphere",
+    "shaded checkerboard sphere",
+    "GfxBatchRendererTestLights.png"},
+  {"four lights used but two max", 2, 4, 0.0_degf,
+    "flat checkerboard sphere",
+    "shaded yellow sphere",
+    "shaded checkerboard sphere",
+    "GfxBatchRendererTestLights.png"},
+  {"two lights used but four max", 4, 2, 0.0_degf,
+    "flat checkerboard sphere",
+    "shaded yellow sphere",
+    "shaded checkerboard sphere",
+    "GfxBatchRendererTestLights.png"},
+  {"two lights but everything flat-shaded", 2, 2, 0.0_degf,
+    "flat checkerboard sphere",
+    "flat yellow sphere",
+    "flat checkerboard sphere",
+    "GfxBatchRendererTestLightsDisabled.png"},
+};
 // clang-format on
 
 GfxBatchRendererTest::GfxBatchRendererTest() {
@@ -238,7 +289,11 @@ GfxBatchRendererTest::GfxBatchRendererTest() {
                      &GfxBatchRendererTest::clearScene},
       Cr::Containers::arraySize(FileData));
 
-  addTests({&GfxBatchRendererTest::imageInto,
+  addInstancedTests({&GfxBatchRendererTest::lights},
+      Cr::Containers::arraySize(LightData));
+
+  addTests({&GfxBatchRendererTest::clearLights,
+            &GfxBatchRendererTest::imageInto,
             &GfxBatchRendererTest::cudaInterop});
   // clang-format on
 }
@@ -284,7 +339,7 @@ void GfxBatchRendererTest::generateTestData() {
                                "meshViewIndexCount");
   converter->setSceneFieldName(SceneFieldMeshViewMaterial, "meshViewMaterial");
 
-  /* (Flat) square, circle and triangle mesh. All made indexed and joined
+  /* Square, circle, triangle, and a sphere mesh. All made indexed and joined
      together. Important: offsets are in bytes. */
   Mn::Trade::MeshData square =
       Mn::MeshTools::generateIndices(Mn::Primitives::planeSolid(
@@ -303,8 +358,13 @@ void GfxBatchRendererTest::generateTestData() {
   Mn::UnsignedInt triangleIndexOffset =
       circleIndexOffset + 4 * circle.indexCount();
 
-  CORRADE_VERIFY(
-      converter->add(Mn::MeshTools::concatenate({square, circle, triangle})));
+  Mn::Trade::MeshData sphere = Mn::Primitives::uvSphereSolid(
+      8, 16, Mn::Primitives::UVSphereFlag::TextureCoordinates);
+  Mn::UnsignedInt sphereIndexOffset =
+      triangleIndexOffset + 4 * triangle.indexCount();
+
+  CORRADE_VERIFY(converter->add(
+      Mn::MeshTools::concatenate({square, circle, triangle, sphere})));
 
   /* Two-layer 4x4 texture. First layer is a grey/red checkerboard, second
      layer is a cyan, magenta, yellow and black-ish square. Having each channel
@@ -333,44 +393,65 @@ void GfxBatchRendererTest::generateTestData() {
       Mn::SamplerFilter::Nearest, Mn::SamplerMipmap::Nearest,
       Mn::SamplerWrapping::Repeat, 0}));
 
-  /* A (default, white) material spanning the whole first texture layer */
+  /* A (default, white) flat material spanning the whole first texture layer */
   // clang-format off
-  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{Mn::Trade::MaterialType::Flat, {
     {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
     {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 0u}
-  }}, "checkerboard"), 0);
+  }}, "flat checkerboard"), 0);
   // clang-format on
 
-  /* A cyan / magenta / yellow material spanning the bottom left / top left /
-     bottom right quadrant of second texture layer. I.e., nothing should be
-     using the black-ish portion of the texture. When combined with the
+  /* A cyan / magenta / yellow flat material spanning the bottom left / top
+     left / bottom right quadrant of second texture layer. I.e., nothing should
+     be using the black-ish portion of the texture. When combined with the
      texture color, the output should have the corresponding red / green / blue
      channels zeroed out. */
   // clang-format off
-  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{Mn::Trade::MaterialType::Flat, {
     {Mn::Trade::MaterialAttribute::BaseColor, 0x00ffffff_rgbaf},
     {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
     {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 1u},
     {Mn::Trade::MaterialAttribute::BaseColorTextureMatrix,
       Mn::Matrix3::translation({0.0f, 0.0f})*
       Mn::Matrix3::scaling(Mn::Vector2{0.5f})}
-  }}, "cyan"), 1);
-  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+  }}, "flat cyan"), 1);
+  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{Mn::Trade::MaterialType::Flat, {
     {Mn::Trade::MaterialAttribute::BaseColor, 0xff00ffff_rgbaf},
     {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
     {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 1u},
     {Mn::Trade::MaterialAttribute::BaseColorTextureMatrix,
       Mn::Matrix3::translation({0.5f, 0.0f})*
       Mn::Matrix3::scaling(Mn::Vector2{0.5f})}
-  }}, "magenta"), 2);
-  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+  }}, "flat magenta"), 2);
+  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{Mn::Trade::MaterialType::Flat, {
     {Mn::Trade::MaterialAttribute::BaseColor, 0xffff00ff_rgbaf},
     {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
     {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 1u},
     {Mn::Trade::MaterialAttribute::BaseColorTextureMatrix,
       Mn::Matrix3::translation({0.0f, 0.5f})*
       Mn::Matrix3::scaling(Mn::Vector2{0.5f})}
-  }}, "yellow"), 3);
+  }}, "flat yellow"), 3);
+  // clang-format on
+
+  /* A flat and non-flat yellowish checkerboard material used to render the
+     sphere with lights */
+  // clang-format off
+  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{Mn::Trade::MaterialType::Flat, {
+    {Mn::Trade::MaterialAttribute::BaseColor, 0xffff99ff_rgbaf}
+  }}, "flat yellow"), 4);
+  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{Mn::Trade::MaterialType::Flat, {
+    {Mn::Trade::MaterialAttribute::BaseColor, 0xffff99ff_rgbaf},
+    {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
+    {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 0u}
+  }}, "flat checkerboard"), 5);
+  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+    {Mn::Trade::MaterialAttribute::BaseColor, 0xffff99ff_rgbaf}
+  }}, "shaded yellow"), 6);
+  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+    {Mn::Trade::MaterialAttribute::BaseColor, 0xffff99ff_rgbaf},
+    {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
+    {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 0u}
+  }}, "shaded checkerboard"), 7);
   // clang-format on
 
   /* Scene with
@@ -388,14 +469,14 @@ void GfxBatchRendererTest::generateTestData() {
     struct Parent {
       Mn::UnsignedInt object;
       Mn::Int parent;
-    } parents[11];
+    } parents[19];
     struct Mesh {
       Mn::UnsignedInt object;
       Mn::UnsignedInt mesh;
       Mn::UnsignedInt meshViewIndexOffset;
       Mn::UnsignedInt meshViewIndexCount;
       Mn::Int meshViewMaterial;
-    } meshes[7];
+    } meshes[11];
     struct Transformation {
       Mn::UnsignedInt object;
       Mn::Matrix4 trasformation;
@@ -405,14 +486,22 @@ void GfxBatchRendererTest::generateTestData() {
      {2, -1}, {3, 2}, /* circle and its child mesh */
      {4, -1}, {5, 4}, /* triangle and its child mesh */
      {6, -1}, {7, 6}, {8, 6}, /* four squares */
-              {9, 6}, {10, 6}},
+              {9, 6}, {10, 6},
+     {11, -1}, {12, 11}, /* flat yellow sphere and its child mesh */
+     {13, -1}, {14, 13}, /* flat checkerboard sphere and its child mesh */
+     {15, -1}, {16, 15}, /* shaded yellow sphere and its child mesh */
+     {17, -1}, {18, 17}}, /* shaded checkerboard sphere and its child mesh */
     {{ 1, 0, squareIndexOffset, square.indexCount(), 0},
      { 3, 0, circleIndexOffset, circle.indexCount(), 1},
      { 5, 0, triangleIndexOffset, triangle.indexCount(), 2},
      { 7, 0, squareIndexOffset, square.indexCount(), 0},
      { 8, 0, squareIndexOffset, square.indexCount(), 1},
      { 9, 0, squareIndexOffset, square.indexCount(), 2},
-     {10, 0, squareIndexOffset, square.indexCount(), 3}},
+     {10, 0, squareIndexOffset, square.indexCount(), 3},
+     {12, 0, sphereIndexOffset, sphere.indexCount(), 4},
+     {14, 0, sphereIndexOffset, sphere.indexCount(), 5},
+     {16, 0, sphereIndexOffset, sphere.indexCount(), 6},
+     {18, 0, sphereIndexOffset, sphere.indexCount(), 7}},
     {{ 7, Mn::Matrix4::translation({-0.5f, -0.5f, 0.0f})*
           Mn::Matrix4::scaling(Mn::Vector3{0.4f})},
      { 8, Mn::Matrix4::translation({+0.5f, -0.5f, 0.0f})*
@@ -426,7 +515,11 @@ void GfxBatchRendererTest::generateTestData() {
   converter->setObjectName(2, "circle");
   converter->setObjectName(4, "triangle");
   converter->setObjectName(6, "four squares");
-  CORRADE_VERIFY(converter->add(Mn::Trade::SceneData{Mn::Trade::SceneMappingType::UnsignedInt, 11, {}, scene, {
+  converter->setObjectName(11, "flat yellow sphere");
+  converter->setObjectName(13, "flat checkerboard sphere");
+  converter->setObjectName(15, "shaded yellow sphere");
+  converter->setObjectName(17, "shaded checkerboard sphere");
+  CORRADE_VERIFY(converter->add(Mn::Trade::SceneData{Mn::Trade::SceneMappingType::UnsignedInt, Cr::Containers::arraySize(scene->parents), {}, scene, {
     Mn::Trade::SceneFieldData{Mn::Trade::SceneField::Parent,
       Cr::Containers::stridedArrayView(scene->parents).slice(&Scene::Parent::object),
       Cr::Containers::stridedArrayView(scene->parents).slice(&Scene::Parent::parent)},
@@ -546,41 +639,41 @@ void GfxBatchRendererTest::generateTestDataMultipleMeshes() {
   /* A (default, white) material and cyan / magenta / yellow material, same as
      in generateTestData() */
   // clang-format off
-  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{Mn::Trade::MaterialType::Flat, {
     {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
     {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 0u}
-  }}, "checkerboard"), 0);
-  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+  }}, "flat checkerboard"), 0);
+  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{Mn::Trade::MaterialType::Flat, {
     {Mn::Trade::MaterialAttribute::BaseColor, 0x00ffffff_rgbaf},
     {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
     {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 1u},
     {Mn::Trade::MaterialAttribute::BaseColorTextureMatrix,
       Mn::Matrix3::translation({0.0f, 0.0f})*
       Mn::Matrix3::scaling(Mn::Vector2{0.5f})}
-  }}, "cyan"), 1);
-  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+  }}, "flat cyan"), 1);
+  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{Mn::Trade::MaterialType::Flat, {
     {Mn::Trade::MaterialAttribute::BaseColor, 0xff00ffff_rgbaf},
     {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
     {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 1u},
     {Mn::Trade::MaterialAttribute::BaseColorTextureMatrix,
       Mn::Matrix3::translation({0.5f, 0.0f})*
       Mn::Matrix3::scaling(Mn::Vector2{0.5f})}
-  }}, "magenta"), 2);
-  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+  }}, "flat magenta"), 2);
+  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{Mn::Trade::MaterialType::Flat, {
     {Mn::Trade::MaterialAttribute::BaseColor, 0xffff00ff_rgbaf},
     {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
     {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 1u},
     {Mn::Trade::MaterialAttribute::BaseColorTextureMatrix,
       Mn::Matrix3::translation({0.0f, 0.5f})*
       Mn::Matrix3::scaling(Mn::Vector2{0.5f})}
-  }}, "yellow"), 3);
-  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+  }}, "flat yellow"), 3);
+  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{Mn::Trade::MaterialType::Flat, {
     {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
     {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 1u},
     {Mn::Trade::MaterialAttribute::BaseColorTextureMatrix,
       Mn::Matrix3::translation({0.5f, 0.0f})*
       Mn::Matrix3::scaling(Mn::Vector2{0.5f})}
-  }}, "vertex-color magenta"), 4);
+  }}, "flat vertex-color magenta"), 4);
   // clang-format on
 
   /* Scene with
@@ -811,21 +904,21 @@ void GfxBatchRendererTest::generateTestDataMultipleTextures() {
   /* A (default, white) material with the checkerboard texture; cyan / magenta
      / yellow materials referencing the other three textures */
   // clang-format off
-  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{Mn::Trade::MaterialType::Flat, {
     {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u}
-  }}, "checkerboard"), 0);
-  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+  }}, "flat checkerboard"), 0);
+  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{Mn::Trade::MaterialType::Flat, {
     {Mn::Trade::MaterialAttribute::BaseColor, 0x00ffffff_rgbaf},
     {Mn::Trade::MaterialAttribute::BaseColorTexture, 1u},
-  }}, "cyan"), 1);
-  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+  }}, "flat cyan"), 1);
+  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{Mn::Trade::MaterialType::Flat, {
     {Mn::Trade::MaterialAttribute::BaseColor, 0xff00ffff_rgbaf},
     {Mn::Trade::MaterialAttribute::BaseColorTexture, 2u},
-  }}, "magenta"), 2);
-  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+  }}, "flat magenta"), 2);
+  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{Mn::Trade::MaterialType::Flat, {
     {Mn::Trade::MaterialAttribute::BaseColor, 0xffff00ff_rgbaf},
     {Mn::Trade::MaterialAttribute::BaseColorTexture, 3u},
-  }}, "yellow"), 3);
+  }}, "flat yellow"), 3);
   // clang-format on
 
   /* Scene with
@@ -990,16 +1083,16 @@ void GfxBatchRendererTest::generateTestDataSquareCircleTriangle() {
   /* Checkerboard / cyan / magenta material. The checkerboard is same as in
      generateTestData(), the other two materials are textureless. */
   // clang-format off
-  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{Mn::Trade::MaterialType::Flat, {
     {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
     {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 0u}
-  }}, "checkerboard"), 0);
-  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+  }}, "flat checkerboard"), 0);
+  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{Mn::Trade::MaterialType::Flat, {
     {Mn::Trade::MaterialAttribute::BaseColor, 0x00ffffff_rgbaf*0x33ccccff_rgbaf},
-  }}, "cyan"), 1);
-  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+  }}, "flat cyan"), 1);
+  CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{Mn::Trade::MaterialType::Flat, {
     {Mn::Trade::MaterialAttribute::BaseColor, 0xff00ffff_rgbaf*0xcc33ccff_rgbaf},
-  }}, "magenta"), 2);
+  }}, "flat magenta"), 2);
   // clang-format on
 
   /* Scene with
@@ -1138,10 +1231,10 @@ void GfxBatchRendererTest::generateTestDataFourSquares() {
 
     /* A (default, white) material spanning the whole first texture layer */
     // clang-format off
-    CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+    CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{Mn::Trade::MaterialType::Flat, {
       {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
       {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 0u}
-    }}, "checkerboard"), 0);
+    }}, "flat checkerboard"), 0);
     // clang-format on
 
     /* A cyan / magenta / yellow material spanning the bottom left / top left /
@@ -1150,30 +1243,30 @@ void GfxBatchRendererTest::generateTestDataFourSquares() {
        texture color, the output should have the corresponding red / green /
        blue channels zeroed out. */
     // clang-format off
-    CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+    CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{Mn::Trade::MaterialType::Flat, {
       {Mn::Trade::MaterialAttribute::BaseColor, 0x00ffffff_rgbaf},
       {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
       {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 1u},
       {Mn::Trade::MaterialAttribute::BaseColorTextureMatrix,
         Mn::Matrix3::translation({0.0f, 0.0f})*
         Mn::Matrix3::scaling(Mn::Vector2{0.5f})}
-    }}, "cyan"), 1);
-    CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+    }}, "flat cyan"), 1);
+    CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{Mn::Trade::MaterialType::Flat, {
       {Mn::Trade::MaterialAttribute::BaseColor, 0xff00ffff_rgbaf},
       {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
       {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 1u},
       {Mn::Trade::MaterialAttribute::BaseColorTextureMatrix,
         Mn::Matrix3::translation({0.5f, 0.0f})*
         Mn::Matrix3::scaling(Mn::Vector2{0.5f})}
-    }}, "magenta"), 2);
-    CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{{}, {
+    }}, "flat magenta"), 2);
+    CORRADE_COMPARE(converter->add(Mn::Trade::MaterialData{Mn::Trade::MaterialType::Flat, {
       {Mn::Trade::MaterialAttribute::BaseColor, 0xffff00ff_rgbaf},
       {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
       {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 1u},
       {Mn::Trade::MaterialAttribute::BaseColorTextureMatrix,
         Mn::Matrix3::translation({0.0f, 0.5f})*
         Mn::Matrix3::scaling(Mn::Vector2{0.5f})}
-    }}, "yellow"), 3);
+    }}, "flat yellow"), 3);
     // clang-format on
 
     /* Otherwise, if we have a scene, the colors get baked into the meshes. If
@@ -1775,6 +1868,216 @@ void GfxBatchRendererTest::clearScene() {
           TEST_ASSETS, "screenshots/GfxBatchRendererTestMultipleScenes.png"),
       (Mn::DebugTools::CompareImageToFile{data.maxThreshold,
                                           data.meanThreshold}));
+}
+
+void GfxBatchRendererTest::lights() {
+  auto&& data = LightData[testCaseInstanceId()];
+  setTestCaseDescription(data.name);
+
+  // clang-format off
+  esp::gfx_batch::RendererStandalone renderer{
+      esp::gfx_batch::RendererConfiguration{}
+          .setTileSizeCount({128, 96}, {1, 1})
+          .setMaxLightCount(data.maxLightCount),
+      esp::gfx_batch::RendererStandaloneConfiguration{}
+          .setFlags(esp::gfx_batch::RendererStandaloneFlag::QuietLog)
+  };
+  // clang-format on
+
+  CORRADE_VERIFY(renderer.addFile(
+      Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch.gltf")));
+
+  /* Undo the aspect ratio, move camera back */
+  renderer.camera(0) =
+      Mn::Matrix4::perspectiveProjection(60.0_degf, 4.0f / 3.0f, 0.1f, 10.0f) *
+      Mn::Matrix4::translation(Mn::Vector3::zAxis(5.0f)).inverted();
+
+  /* Add meshes, transform them in place */
+  CORRADE_COMPARE(renderer.addNodeHierarchy(0, data.firstObject), 0);
+  CORRADE_COMPARE(renderer.addNodeHierarchy(0, data.secondObject), 2);
+  CORRADE_COMPARE(renderer.addNodeHierarchy(0, data.thirdObject), 4);
+  renderer.transformations(0)[0] =
+      Mn::Matrix4::translation({-1.5f, -1.0f, 0.0f});
+  renderer.transformations(0)[2] = Mn::Matrix4::translation({0.0f, 1.0f, 0.0f});
+  renderer.transformations(0)[4] =
+      Mn::Matrix4::translation({1.5f, -1.0f, 0.0f});
+
+  /* Add lights to new nodes */
+  if (data.sceneLightCount) {
+    CORRADE_COMPARE(renderer.addEmptyNode(0), 6);
+    CORRADE_COMPARE(renderer.addEmptyNode(0), 7);
+    renderer.transformations(0)[6] =
+        Mn::Matrix4::translation({-1.0f, 1.5f, 1.0f});
+    renderer.transformations(0)[7] =
+        Mn::Matrix4::lookAt({}, {3.0f, 1.0f, 3.0f}, Mn::Vector3::xAxis());
+
+    for (Mn::UnsignedInt i = 0; i != data.sceneLightCount; ++i) {
+      CORRADE_COMPARE(renderer.addLight(
+                          0, 6 + (i % 2),
+                          i % 2 ? esp::gfx_batch::RendererLightType::Directional
+                                : esp::gfx_batch::RendererLightType::Point),
+                      i);
+      renderer.lightColors(0)[i] =
+          i % 2 ? 0xccffff_rgbf * 1.0f : 0x3333ff_rgbf * 3.0f;
+      renderer.lightRanges(0)[i] = i % 2 ? Mn::Constants::inf() : 1.0f;
+    }
+  }
+
+  /* There should be three draws, the textured flat + phong together in one
+     batch and the untextured sphere in another. This might change in the
+     future if it proves to be faster to draw flat-shaded meshes separately. */
+  esp::gfx_batch::SceneStats stats = renderer.sceneStats(0);
+  CORRADE_COMPARE(stats.nodeCount, data.sceneLightCount ? 8 : 6);
+  CORRADE_COMPARE(stats.drawCount, 3);
+  CORRADE_COMPARE(stats.drawBatchCount, 2);
+
+  /* Render for the first time */
+  renderer.draw();
+  MAGNUM_VERIFY_NO_GL_ERROR();
+  CORRADE_COMPARE_WITH(
+      renderer.colorImage(),
+      Cr::Utility::Path::join({TEST_ASSETS, "screenshots", data.expected}),
+      (Mn::DebugTools::CompareImageToFile{0.75f, 0.005f}));
+
+  /* Rotate if desired to test that the normal matrix is correctly propagated
+     every frame, i.e. even if nothing is dirty, and render again */
+  renderer.transformations(0)[0] =
+      renderer.transformations(0)[0] * Mn::Matrix4::rotationY(data.rotation);
+  renderer.transformations(0)[2] =
+      renderer.transformations(0)[2] * Mn::Matrix4::rotationY(data.rotation);
+  renderer.transformations(0)[4] =
+      renderer.transformations(0)[4] * Mn::Matrix4::rotationY(data.rotation);
+  renderer.draw();
+  Mn::Image2D color = renderer.colorImage();
+  MAGNUM_VERIFY_NO_GL_ERROR();
+  CORRADE_COMPARE_WITH(
+      renderer.colorImage(),
+      Cr::Utility::Path::join({TEST_ASSETS, "screenshots", data.expected}),
+      (Mn::DebugTools::CompareImageToFile{95.0f, 0.07f}));
+}
+
+void GfxBatchRendererTest::clearLights() {
+  // clang-format off
+  esp::gfx_batch::RendererStandalone renderer{
+      esp::gfx_batch::RendererConfiguration{}
+          .setTileSizeCount({128, 96}, {1, 1})
+          .setMaxLightCount(2),
+      esp::gfx_batch::RendererStandaloneConfiguration{}
+          .setFlags(esp::gfx_batch::RendererStandaloneFlag::QuietLog)
+  };
+  // clang-format on
+
+  CORRADE_VERIFY(renderer.addFile(
+      Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch.gltf")));
+
+  /* Undo the aspect ratio, move camera back */
+  renderer.camera(0) =
+      Mn::Matrix4::perspectiveProjection(60.0_degf, 4.0f / 3.0f, 0.1f, 10.0f) *
+      Mn::Matrix4::translation(Mn::Vector3::zAxis(5.0f)).inverted();
+
+  /* Add the same scene as in lights() */
+  CORRADE_COMPARE(renderer.addNodeHierarchy(0, "flat checkerboard sphere"), 0);
+  CORRADE_COMPARE(renderer.addNodeHierarchy(0, "shaded yellow sphere"), 2);
+  CORRADE_COMPARE(renderer.addNodeHierarchy(0, "shaded checkerboard sphere"),
+                  4);
+  CORRADE_COMPARE(renderer.addEmptyNode(0), 6);
+  CORRADE_COMPARE(renderer.addEmptyNode(0), 7);
+  renderer.transformations(0)[0] =
+      Mn::Matrix4::translation({-1.5f, -1.0f, 0.0f});
+  renderer.transformations(0)[2] = Mn::Matrix4::translation({0.0f, 1.0f, 0.0f});
+  renderer.transformations(0)[4] =
+      Mn::Matrix4::translation({1.5f, -1.0f, 0.0f});
+  renderer.transformations(0)[6] =
+      Mn::Matrix4::translation({-1.0f, 1.5f, 1.0f});
+  renderer.transformations(0)[7] =
+      Mn::Matrix4::lookAt({}, {3.0f, 1.0f, 3.0f}, Mn::Vector3::yAxis());
+
+  CORRADE_COMPARE(
+      renderer.addLight(0, 6, esp::gfx_batch::RendererLightType::Point), 0);
+  CORRADE_COMPARE(
+      renderer.addLight(0, 7, esp::gfx_batch::RendererLightType::Directional),
+      1);
+  renderer.lightColors(0)[0] = 0x3333ff_rgbf * 3.0f;
+  renderer.lightColors(0)[1] = 0xccffff_rgbf * 1.0f;
+  renderer.lightRanges(0)[0] = 1.0f;
+  renderer.lightRanges(0)[1] = Mn::Constants::inf();
+
+  /* Verify the rendering is the same. This will upload the light uniform
+     for the first time -- i.e., if it wasn't drawing there, the next draw()
+     would be uploading the (empty) light uniform first and thus not testing
+     that the clear happens correctly. */
+  renderer.draw();
+  MAGNUM_VERIFY_NO_GL_ERROR();
+  CORRADE_COMPARE_WITH(
+      renderer.colorImage(),
+      Cr::Utility::Path::join(TEST_ASSETS,
+                              "screenshots/GfxBatchRendererTestLights.png"),
+      (Mn::DebugTools::CompareImageToFile{0.75f, 0.005f}));
+
+  /* Clearing the lights should not remove nodes */
+  CORRADE_COMPARE(renderer.transformations(0).size(), 8);
+  CORRADE_COMPARE(renderer.lightColors(0).size(), 2);
+  renderer.clearLights(0);
+  CORRADE_COMPARE(renderer.transformations(0).size(), 8);
+  CORRADE_COMPARE(renderer.lightColors(0).size(), 0);
+
+  /* Rendering now should result in the same as with no lights at all. The
+     light uniform is not updated (as there are no lights, thus nothing to
+     upload), nevertheless the rendering should not use them and respect the
+     per-draw light count. This thus also test that variable light count among
+     more than one scene works correctly. */
+  renderer.draw();
+  MAGNUM_VERIFY_NO_GL_ERROR();
+  CORRADE_COMPARE_WITH(
+      renderer.colorImage(),
+      Cr::Utility::Path::join(TEST_ASSETS,
+                              "screenshots/GfxBatchRendererTestLightsNone.png"),
+      (Mn::DebugTools::CompareImageToFile{0.75f, 0.005f}));
+
+  renderer.addLight(0, 6, esp::gfx_batch::RendererLightType::Point);
+  renderer.addLight(0, 7, esp::gfx_batch::RendererLightType::Directional);
+  CORRADE_COMPARE(renderer.lightColors(0).size(), 2);
+
+  /* Clearing everything should remove the lights as well */
+  renderer.clear(0);
+  CORRADE_COMPARE(renderer.transformations(0).size(), 0);
+  CORRADE_COMPARE(renderer.lightColors(0).size(), 0);
+
+  /* Add everything again to test that the internal state isn't corrupted in
+     any way */
+  CORRADE_COMPARE(renderer.addNodeHierarchy(0, "flat checkerboard sphere"), 0);
+  CORRADE_COMPARE(renderer.addNodeHierarchy(0, "shaded yellow sphere"), 2);
+  CORRADE_COMPARE(renderer.addNodeHierarchy(0, "shaded checkerboard sphere"),
+                  4);
+  CORRADE_COMPARE(renderer.addEmptyNode(0), 6);
+  CORRADE_COMPARE(renderer.addEmptyNode(0), 7);
+  renderer.transformations(0)[0] =
+      Mn::Matrix4::translation({-1.5f, -1.0f, 0.0f});
+  renderer.transformations(0)[2] = Mn::Matrix4::translation({0.0f, 1.0f, 0.0f});
+  renderer.transformations(0)[4] =
+      Mn::Matrix4::translation({1.5f, -1.0f, 0.0f});
+  renderer.transformations(0)[6] =
+      Mn::Matrix4::translation({-1.0f, 1.5f, 1.0f});
+  renderer.transformations(0)[7] =
+      Mn::Matrix4::lookAt({}, {3.0f, 1.0f, 3.0f}, Mn::Vector3::xAxis());
+
+  CORRADE_COMPARE(
+      renderer.addLight(0, 6, esp::gfx_batch::RendererLightType::Point), 0);
+  CORRADE_COMPARE(
+      renderer.addLight(0, 7, esp::gfx_batch::RendererLightType::Directional),
+      1);
+  renderer.lightColors(0)[0] = 0x3333ff_rgbf * 3.0f;
+  renderer.lightColors(0)[1] = 0xccffff_rgbf * 1.0f;
+  renderer.lightRanges(0)[0] = 1.0f;
+  renderer.lightRanges(0)[1] = Mn::Constants::inf();
+
+  renderer.draw();
+  MAGNUM_VERIFY_NO_GL_ERROR();
+  CORRADE_COMPARE_WITH(
+      renderer.colorImage(),
+      Cr::Utility::Path::join(TEST_ASSETS,
+                              "screenshots/GfxBatchRendererTestLights.png"),
+      (Mn::DebugTools::CompareImageToFile{0.75f, 0.005f}));
 }
 
 void GfxBatchRendererTest::imageInto() {
