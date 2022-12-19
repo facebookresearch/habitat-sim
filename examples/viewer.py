@@ -402,27 +402,23 @@ class HabitatSimInteractiveViewer(Application):
         self.sim_settings["scene"] = self.sim[0].curr_scene_name
 
         # Initialize replay renderer
-        if self.enable_batch_renderer:
-            if self.replay_renderer is None:
-                self.replay_renderer_cfg = ReplayRendererConfiguration()
-                self.replay_renderer_cfg.num_environments = self.num_env
-                self.replay_renderer_cfg.standalone = (
-                    False  # Context is owned by the GLFW window
-                )
-                self.replay_renderer_cfg.sensor_specifications = self.cfg.agents[
-                    self.agent_id
-                ].sensor_specifications
-                self.replay_renderer_cfg.gpu_device_id = self.cfg.sim_cfg.gpu_device_id
-                self.replay_renderer_cfg.force_separate_semantic_scene_graph = False
-                self.replay_renderer_cfg.leave_context_with_background_renderer = False
-                self.replay_renderer = BatchReplayRenderer(self.replay_renderer_cfg)
-                # Pre-load composite files
-                if sim_settings["composite_files"] is not None:
-                    for composite_file in sim_settings["composite_files"]:
-                        self.replay_renderer.preload_file(composite_file)
-            else:
-                for i in range(self.num_env):
-                    self.replay_renderer.clear_environment(i)
+        if self.enable_batch_renderer and self.replay_renderer is None:
+            self.replay_renderer_cfg = ReplayRendererConfiguration()
+            self.replay_renderer_cfg.num_environments = self.num_env
+            self.replay_renderer_cfg.standalone = (
+                False  # Context is owned by the GLFW window
+            )
+            self.replay_renderer_cfg.sensor_specifications = self.cfg.agents[
+                self.agent_id
+            ].sensor_specifications
+            self.replay_renderer_cfg.gpu_device_id = self.cfg.sim_cfg.gpu_device_id
+            self.replay_renderer_cfg.force_separate_semantic_scene_graph = False
+            self.replay_renderer_cfg.leave_context_with_background_renderer = False
+            self.replay_renderer = BatchReplayRenderer(self.replay_renderer_cfg)
+            # Pre-load composite files
+            if sim_settings["composite_files"] is not None:
+                for composite_file in sim_settings["composite_files"]:
+                    self.replay_renderer.preload_file(composite_file)
 
         Timer.start()
         self.step = -1
