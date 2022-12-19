@@ -278,7 +278,8 @@ void initSensorBindings(py::module& m) {
                           "dtype"_a = torch.attr("float32"),
                           "device"_a = torch.attr("device")(
                               py::str("cuda"), py::int_(gpuDevice))));
-                } else {
+                } else if (self.specification()->sensorType ==
+                           esp::sensor::SensorType::Color) {
                   py::setattr(
                       handle, "__obs_buffer",
                       torch.attr("empty")(
@@ -288,6 +289,11 @@ void initSensorBindings(py::module& m) {
                           "dtype"_a = torch.attr("uint32"),
                           "device"_a = torch.attr("device")(
                               py::str("cuda"), py::int_(gpuDevice))));
+                } else {
+                  throw std::invalid_argument(
+                      std::string("The sensor \"") +
+                      self.specification()->uuid +
+                      "\" does not have a __obs_buffer attribute.");
                 }
               } else {
                 if (self.specification()->sensorType ==
@@ -323,7 +329,8 @@ void initSensorBindings(py::module& m) {
                        sizeof(float)} /* Strides for each dimension */
                       ));
                   py::setattr(handle, "__obs_buffer", pyBuffer);
-                } else {
+                } else if (self.specification()->sensorType ==
+                           esp::sensor::SensorType::Color) {
                   auto pyBuffer = py::array(py::buffer_info(
                       nullptr, /* Pointer to data (nullptr -> ask NumPy to
                                   allocate!) */
@@ -340,6 +347,11 @@ void initSensorBindings(py::module& m) {
                        sizeof(uint8_t)} /* Strides for each dimension */
                       ));
                   py::setattr(handle, "__obs_buffer", pyBuffer);
+                } else {
+                  throw std::invalid_argument(
+                      std::string("The sensor \"") +
+                      self.specification()->uuid +
+                      "\" does not have a __obs_buffer attribute.");
                 }
               }
             }
