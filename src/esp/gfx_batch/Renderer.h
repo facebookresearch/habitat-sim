@@ -97,8 +97,8 @@ enum class RendererFileFlag {
    * Treat the file as a whole.
    *
    * By default a file is treated as a so-called *composite* --- a collection
-   * of *mesh hierarchy templates* --- which you then add with
-   * @ref Renderer::addMeshHierarchy() using a name corresponding to one of the
+   * of *node hierarchy templates* --- which you then add with
+   * @ref Renderer::addNodeHierarchy() using a name corresponding to one of the
    * root nodes. With this flag set, the whole file is treated as a single
    * hierarchy instead, with the @p filename (or @p name, if present) argument
    * of @ref Renderer::addFile() used as a name.
@@ -166,7 +166,7 @@ organized in a grid, all scenes have the same rendered size.
 First, files with meshes, materials and textures that are meant to be rendered
 from should get added via @ref addFile(). The file itself isn't directly
 rendered, instead it's treated as a *composite file* with named root scene
-nodes being *mesh hierarchy templates* to be selectively added to particular
+nodes being *node hierarchy templates* to be selectively added to particular
 scenes. Apart from picking particular root nodes, it's also possible to treat
 the whole file as a single hierarchy using @ref RendererFileFlag::Whole. See
 the flag documentation for more information.
@@ -178,8 +178,8 @@ the flag documentation for more information.
   drawing anything. This is currently not enforced in any way, but is subject
   to change.
 
-Then, particular scenes are populated using @ref addMeshHierarchy(),
-referencing the mesh hierarchy templates via their names. The function takes an
+Then, particular scenes are populated using @ref addNodeHierarchy(),
+referencing the node hierarchy templates via their names. The function takes an
 initial transformation and returns an ID of the node added into the scene. The
 ID can then be used to subsequently update its transformation via
 @ref transformations(), for example in respose to a physics simulation or an
@@ -199,7 +199,7 @@ implemented in @ref shaders-usage-multidraw "Magnum shaders".
   the GPU. The data consists of meshes, texture image levels and packed
   material uniforms. Such data are uploaded only once and treated as immutable
   for the rest of the renderer lifetime.
-- On each @ref addMeshHierarchy() call, a list of mesh views each together with
+- On each @ref addNodeHierarchy() call, a list of mesh views each together with
   material association, texture layer and transform and node assignment is
   added to a *draw list*. The draw list is
   @ref gfx_batch-Renderer-workflow-draw-list "further detailed below".
@@ -219,7 +219,7 @@ In the ideal (and often impossible) case, there would be just a single file
 added with @ref addFile(), containing exactly one mesh and exactly one texture
 array, with scene nodes referring to sub-views of them --- i.e., mesh index
 ranges, texture layer indices and texture transformation matrices. Then, no
-matter how many times @ref addMeshHierarchy() gets called, the whole draw list
+matter how many times @ref addNodeHierarchy() gets called, the whole draw list
 populated by it can be drawn with a single multi-draw call.
 
 @m_class{m-note m-info}
@@ -233,7 +233,7 @@ In practice however, the files may contain meshes with different vertex layouts
 (such as some having vertex colors and some not), textures of different formats
 and sizes, and different materials requiring different shaders (such as
 vertex-colored, alpha-masked etc.). Draw lists populated with
-@ref addMeshHierarchy() are then partitioned into *draw batches*, where a
+@ref addNodeHierarchy() are then partitioned into *draw batches*, where a
 particular draw batch contains all draws with a particular shader, from a
 particular mesh and with a particular texture. Each draw batch then corresponds
 to a single multi-draw call issued on the GPU.
@@ -456,8 +456,8 @@ class Renderer {
    *    @ref RendererFileFlag::Whole isn't set.
    *
    * By default a file is treated as a so-called *composite* --- a collection
-   * of *mesh hierarchy templates*, which you then add with
-   * @ref Renderer::addMeshHierarchy() using a name corresponding to one of the
+   * of *node hierarchy templates*, which you then add with
+   * @ref Renderer::addNodeHierarchy() using a name corresponding to one of the
    * root nodes. This means all root nodes have to be named and have their
    * names unique.
    *
@@ -518,14 +518,14 @@ class Renderer {
    * Returns @cpp true @ce if @p name is a mesh hierarchy name added by any
    * previous @ref addFile() call, @cpp false @ce otherwise.
    */
-  bool hasMeshHierarchy(Corrade::Containers::StringView name) const;
+  bool hasNodeHierarchy(Corrade::Containers::StringView name) const;
 
 #ifdef DOXYGEN_GENERATING_OUTPUT
   /**
    * @brief Add a mesh hierarchy
    * @param sceneId         Scene ID, expected to be less than
    *    @ref sceneCount()
-   * @param name            *Mesh hierarchy template* name, added with
+   * @param name            *Node hierarchy template* name, added with
    *    @ref addFile() earlier
    * @param bakeTransformation Transformation to bake into the hierarchy
    * @return ID of the newly added node
@@ -540,15 +540,15 @@ class Renderer {
    * parameter is useful for correcting orientation/scale of the imported mesh.
    * @see @ref hasMeshHierarchy()
    */
-  std::size_t addMeshHierarchy(Magnum::UnsignedInt sceneId,
+  std::size_t addNodeHierarchy(Magnum::UnsignedInt sceneId,
                                Corrade::Containers::StringView name,
                                const Magnum::Matrix4& bakeTransformation = {});
 #else
   /* To avoid having to include Matrix4 in the header */
-  std::size_t addMeshHierarchy(Magnum::UnsignedInt sceneId,
+  std::size_t addNodeHierarchy(Magnum::UnsignedInt sceneId,
                                Corrade::Containers::StringView name,
                                const Magnum::Matrix4& bakeTransformation);
-  std::size_t addMeshHierarchy(Magnum::UnsignedInt sceneId,
+  std::size_t addNodeHierarchy(Magnum::UnsignedInt sceneId,
                                Corrade::Containers::StringView name);
 #endif
 
@@ -573,7 +573,7 @@ class Renderer {
    *
    * Returns a view on all node transformations in given scene. Desired usage
    * is to update only transformations at indices returned by
-   * @ref addMeshHierarchy(), updating transformations at other indices is
+   * @ref addNodeHierarchy(), updating transformations at other indices is
    * possible but could have unintended consequences. Modifications to the
    * transformations are taken into account in the next @ref draw().
    */

@@ -1444,11 +1444,11 @@ void GfxBatchRendererTest::singleMesh() {
                                           0.1f, 10.0f) *
       Mn::Matrix4::translation(Mn::Vector3::zAxis(1.0f)).inverted();
 
-  CORRADE_VERIFY(renderer.hasMeshHierarchy("square"));
-  CORRADE_VERIFY(!renderer.hasMeshHierarchy("squares"));
-  CORRADE_VERIFY(!renderer.hasMeshHierarchy(""));
+  CORRADE_VERIFY(renderer.hasNodeHierarchy("square"));
+  CORRADE_VERIFY(!renderer.hasNodeHierarchy("squares"));
+  CORRADE_VERIFY(!renderer.hasNodeHierarchy(""));
   CORRADE_COMPARE(
-      renderer.addMeshHierarchy(0, "square",
+      renderer.addNodeHierarchy(0, "square",
                                 /* Initial baked-in transformation, combined
                                    with what's set in transformations() below */
                                 Mn::Matrix4::scaling(Mn::Vector3{0.4f})),
@@ -1522,7 +1522,7 @@ void GfxBatchRendererTest::meshHierarchy() {
                                           0.1f, 10.0f) *
       Mn::Matrix4::translation(Mn::Vector3::zAxis(1.0f)).inverted();
 
-  CORRADE_COMPARE(renderer.addMeshHierarchy(0, "four squares"), 0);
+  CORRADE_COMPARE(renderer.addNodeHierarchy(0, "four squares"), 0);
 
   /* Stats will show five nodes now -- it adds one transformation for the
      top-level object and then four nested for each mesh, corresponding to the
@@ -1579,17 +1579,17 @@ void GfxBatchRendererTest::multipleMeshes() {
                                           0.1f, 10.0f) *
       Mn::Matrix4::translation(Mn::Vector3::zAxis(1.0f)).inverted();
 
-  CORRADE_COMPARE(renderer.addMeshHierarchy(0, "square"), 0);
+  CORRADE_COMPARE(renderer.addNodeHierarchy(0, "square"), 0);
   renderer.transformations(0)[0] =
       Mn::Matrix4::translation({0.0f, 0.5f, 0.0f}) *
       Mn::Matrix4::scaling(Mn::Vector3{0.4f});
 
-  CORRADE_COMPARE(renderer.addMeshHierarchy(0, "circle"), 2);
+  CORRADE_COMPARE(renderer.addNodeHierarchy(0, "circle"), 2);
   renderer.transformations(0)[2] =
       Mn::Matrix4::translation({-0.5f, -0.5f, 0.0f}) *
       Mn::Matrix4::scaling(Mn::Vector3{0.4f});
 
-  CORRADE_COMPARE(renderer.addMeshHierarchy(0, "triangle"), 4);
+  CORRADE_COMPARE(renderer.addNodeHierarchy(0, "triangle"), 4);
   renderer.transformations(0)[4] =
       Mn::Matrix4::translation({0.5f, -0.5f, 0.0f}) *
       Mn::Matrix4::scaling(Mn::Vector3{0.4f});
@@ -1642,10 +1642,10 @@ void GfxBatchRendererTest::multipleScenes() {
 
   /* Scene 0 has one multi-mesh, scene 1 has two single-meshes, scene 2 is
      unused and scene 3 has a single triangle */
-  CORRADE_COMPARE(renderer.addMeshHierarchy(0, "four squares"), 0);
-  CORRADE_COMPARE(renderer.addMeshHierarchy(1, "circle"), 0);
-  CORRADE_COMPARE(renderer.addMeshHierarchy(1, "square"), 2);
-  CORRADE_COMPARE(renderer.addMeshHierarchy(3, "triangle"), 0);
+  CORRADE_COMPARE(renderer.addNodeHierarchy(0, "four squares"), 0);
+  CORRADE_COMPARE(renderer.addNodeHierarchy(1, "circle"), 0);
+  CORRADE_COMPARE(renderer.addNodeHierarchy(1, "square"), 2);
+  CORRADE_COMPARE(renderer.addNodeHierarchy(3, "triangle"), 0);
 
   esp::gfx_batch::SceneStats stats0 = renderer.sceneStats(0);
   CORRADE_COMPARE(stats0.nodeCount, 5);
@@ -1724,11 +1724,11 @@ void GfxBatchRendererTest::clearScene() {
 
   /* Like in multipleScenes(), except in different order, there's more stuff
      added to scene 1 and it isn't transformed in any way */
-  CORRADE_COMPARE(renderer.addMeshHierarchy(3, "triangle"), 0);
-  CORRADE_COMPARE(renderer.addMeshHierarchy(1, "square"), 0);
-  CORRADE_COMPARE(renderer.addMeshHierarchy(1, "circle"), 2);
-  CORRADE_COMPARE(renderer.addMeshHierarchy(1, "triangle"), 4);
-  CORRADE_COMPARE(renderer.addMeshHierarchy(0, "four squares"), 0);
+  CORRADE_COMPARE(renderer.addNodeHierarchy(3, "triangle"), 0);
+  CORRADE_COMPARE(renderer.addNodeHierarchy(1, "square"), 0);
+  CORRADE_COMPARE(renderer.addNodeHierarchy(1, "circle"), 2);
+  CORRADE_COMPARE(renderer.addNodeHierarchy(1, "triangle"), 4);
+  CORRADE_COMPARE(renderer.addNodeHierarchy(0, "four squares"), 0);
 
   renderer.camera(0) = Mn::Matrix4::translation({0.0f, 0.0f, 1.0f}).inverted();
   renderer.transformations(0)[0] = Mn::Matrix4::translation({0.0f, 0.0f, 0.0f});
@@ -1758,8 +1758,8 @@ void GfxBatchRendererTest::clearScene() {
                                           data.meanThreshold}));
 
   /* Add things to scene 1 again, transform them */
-  CORRADE_COMPARE(renderer.addMeshHierarchy(1, "circle"), 0);
-  CORRADE_COMPARE(renderer.addMeshHierarchy(1, "square"), 2);
+  CORRADE_COMPARE(renderer.addNodeHierarchy(1, "circle"), 0);
+  CORRADE_COMPARE(renderer.addNodeHierarchy(1, "square"), 2);
   renderer.transformations(1)[0] =
       Mn::Matrix4::translation({0.5f, 0.0f, 0.0f}) *
       Mn::Matrix4::scaling(Mn::Vector3{0.5f});
@@ -1797,7 +1797,7 @@ void GfxBatchRendererTest::imageInto() {
       Mn::Matrix4::orthographicProjection(2.0f * Mn::Vector2{4.0f / 3.0f, 1.0f},
                                           0.1f, 10.0f) *
       Mn::Matrix4::translation(Mn::Vector3::zAxis(1.0f)).inverted();
-  renderer.addMeshHierarchy(0, "square",
+  renderer.addNodeHierarchy(0, "square",
                             Mn::Matrix4::scaling(Mn::Vector3{0.8f}));
   renderer.draw();
 
@@ -1865,7 +1865,7 @@ void GfxBatchRendererTest::cudaInterop() {
       Mn::Matrix4::orthographicProjection(2.0f * Mn::Vector2{4.0f / 3.0f, 1.0f},
                                           0.1f, 10.0f) *
       Mn::Matrix4::translation(Mn::Vector3::zAxis(1.0f)).inverted();
-  renderer.addMeshHierarchy(0, "square");
+  renderer.addNodeHierarchy(0, "square");
   renderer.transformations(0)[0] = Mn::Matrix4::scaling(Mn::Vector3{0.8f});
   renderer.draw();
 

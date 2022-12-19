@@ -61,7 +61,7 @@ BatchReplayRenderer::BatchReplayRenderer(
       //  replay file?
 
       /* If no such name is known yet, add as a file */
-      if (!renderer_.hasMeshHierarchy(creation.filepath)) {
+      if (!renderer_.hasNodeHierarchy(creation.filepath)) {
         ESP_WARNING()
             << creation.filepath
             << "not found in any composite file, loading from the filesystem";
@@ -70,11 +70,11 @@ BatchReplayRenderer::BatchReplayRenderer(
             renderer_.addFile(creation.filepath,
                               gfx_batch::RendererFileFlag::Whole |
                                   gfx_batch::RendererFileFlag::GenerateMipmap));
-        CORRADE_INTERNAL_ASSERT(renderer_.hasMeshHierarchy(creation.filepath));
+        CORRADE_INTERNAL_ASSERT(renderer_.hasNodeHierarchy(creation.filepath));
       }
 
       return reinterpret_cast<gfx::replay::NodeHandle>(
-          renderer_.addMeshHierarchy(
+          renderer_.addNodeHierarchy(
               sceneId_, creation.filepath,
               /* Baking the initial scaling and coordinate frame into the
                  transformation */

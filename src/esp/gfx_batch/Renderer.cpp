@@ -662,7 +662,7 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
     }
 
     /* Unless the file is treated as a whole, root scene nodes are used as
-       "named templates" to be referenced from addMeshHierarchy(). */
+       "named templates" to be referenced from addNodeHierarchy(). */
     if (!(flags & RendererFileFlag::Whole)) {
       /* Transformations of all objects in the scene. Objects that don't have
          this field default to an indentity transform. */
@@ -772,18 +772,18 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
   return true;
 }
 
-bool Renderer::hasMeshHierarchy(const Cr::Containers::StringView name) const {
+bool Renderer::hasNodeHierarchy(const Cr::Containers::StringView name) const {
   /* Using a non-owning wrapper over the view to avoid an allocated string copy
      because yes hello STL you're uhhmazing */
   // TODO return Optional<UnsignedInt> that can be reused in a subsequent
-  //  addMeshHierarchy() call, in case the lookup proves to be too slow or in
+  //  addNodeHierarchy() call, in case the lookup proves to be too slow or in
   //  case the same string is about to be added many times
   return state_->meshViewRangeForName.find(
              Cr::Containers::String::nullTerminatedView(name)) !=
          state_->meshViewRangeForName.end();
 }
 
-std::size_t Renderer::addMeshHierarchy(const Mn::UnsignedInt sceneId,
+std::size_t Renderer::addNodeHierarchy(const Mn::UnsignedInt sceneId,
                                        const Cr::Containers::StringView name,
                                        const Mn::Matrix4& bakeTransformation) {
   CORRADE_ASSERT(sceneId < state_->scenes.size(),
@@ -862,9 +862,9 @@ std::size_t Renderer::addMeshHierarchy(const Mn::UnsignedInt sceneId,
   return topLevelId;
 }
 
-std::size_t Renderer::addMeshHierarchy(const Mn::UnsignedInt scene,
+std::size_t Renderer::addNodeHierarchy(const Mn::UnsignedInt scene,
                                        const Cr::Containers::StringView name) {
-  return addMeshHierarchy(scene, name, Mn::Matrix4{});
+  return addNodeHierarchy(scene, name, Mn::Matrix4{});
 }
 
 void Renderer::clear(const Mn::UnsignedInt sceneId) {
