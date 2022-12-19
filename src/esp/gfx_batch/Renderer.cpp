@@ -938,8 +938,8 @@ void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
 
       // TODO make a counting sort utility in corrade? i'm reusing the temp
       //  offset array here in a quite specific way tho
-      /* Count how many uses of each mesh are there; meshOffsets[0] and [1]
-         stays 0 */
+      /* Count how many uses of each draw batch are there; meshOffsets[0] and
+         [1] stays 0 */
       for (Mn::UnsignedInt i : scene.drawBatchIds)
         ++scene.drawBatchOffsets[i + 2];
 
@@ -1028,6 +1028,12 @@ void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
             scene.transformationIdsSorted.size()));
   }
 
+  /* Remember the original viewport to set it back to where it was after.
+     Important if we're not the only code that renders to it, such as when
+     rendering directly to a GUI application framebuffer and the application
+     wants to draw HUD etc. on top. */
+  const Mn::Range2Di previousViewport = framebuffer.viewport();
+
   for (Mn::Int y = 0; y != state_->tileCount.y(); ++y) {
     for (Mn::Int x = 0; x != state_->tileCount.x(); ++x) {
       framebuffer.setViewport(Mn::Range2Di::fromSize(
@@ -1065,7 +1071,10 @@ void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
             scene.drawBatchOffsets[i + 1];
         const Cr::Containers::StridedArrayView1D<DrawCommand>
             drawBatchCommands =
-                scene.drawCommands.slice(drawBatchOffset, nextDrawBatchOffset);
+                // TODO if unsorted scene.drawCommands is here, the unit test
+                //  still passes -- fix!
+            scene.drawCommandsSorted.slice(drawBatchOffset,
+                                           nextDrawBatchOffset);
 
         drawBatch.shader->setDrawOffset(drawBatchOffset)
             .draw(state_->meshes[drawBatch.meshId].second(),
@@ -1074,6 +1083,8 @@ void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
       }
     }
   }
+
+  framebuffer.setViewport(previousViewport);
 }
 
 SceneStats Renderer::sceneStats(Mn::UnsignedInt sceneId) const {

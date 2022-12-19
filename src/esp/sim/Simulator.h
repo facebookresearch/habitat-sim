@@ -15,6 +15,7 @@
 #include "esp/gfx/DebugLineRender.h"
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/WindowlessContext.h"
+#include "esp/gfx/replay/Player.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/scene/SceneManager.h"
@@ -260,7 +261,7 @@ class Simulator {
    * the current scene configuration, and saves it to a JSON file, using the
    * current scene attributes' filename, or an incremented version if @p
    * overwrite == false.
-   * @param overwrite Whether to overrite an existing file with the same name,
+   * @param overwrite Whether to overwrite an existing file with the same name,
    * should one exist.
    * @return whether successful or not.
    */
@@ -956,7 +957,7 @@ class Simulator {
    */
   void computeShadowMaps(float lightNearPlane, float lightFarPlane);
   /**
-   * @brief propergate shadow maps to the drawables
+   * @brief propagate shadow maps to the drawables
    * NOTE: so far only pbr drawable and shader support the shadow maps
    */
   void setShadowMapsToDrawables();
@@ -965,7 +966,7 @@ class Simulator {
   Simulator() = default;
 
   /**
-   * @brief if Navemesh visualization is active, reset the visualization.
+   * @brief if Navmesh visualization is active, reset the visualization.
    */
   void resetNavMeshVisIfActive() {
     if (isNavMeshVisualizationActive()) {
@@ -1012,7 +1013,7 @@ class Simulator {
 
   /**
    * @brief Instance all the articulated objects in the scene based
-   * oncurSceneInstanceAttributes_, the currently active scene's @ref
+   * on curSceneInstanceAttributes_, the currently active scene's @ref
    * esp::metadata::SceneInstanceAttributes.
    * @param curSceneInstanceAttributes The attributes describing the current
    * scene instance.
@@ -1046,7 +1047,7 @@ class Simulator {
 
   /**
    * @brief TEMPORARY until sim access to objects is completely removed.  This
-   * method will return an object's wrapper if the passsed @p sceneID and @p
+   * method will return an object's wrapper if the passed @p sceneID and @p
    * objID are both valid.  This wrapper will then be used by the calling
    * function to access components of the object.
    * @param sceneID The ID of the scene to query
@@ -1059,7 +1060,7 @@ class Simulator {
 
   /**
    * @brief TEMPORARY until sim access to objects is completely removed.  This
-   * method will return an object's wrapper if the passsed @p sceneID and @p
+   * method will return an object's wrapper if the passed @p sceneID and @p
    * objID are both valid.  This wrapper will then be used by the calling
    * function to access components of the object.
    * @param sceneID The ID of the scene to query
@@ -1124,7 +1125,7 @@ class Simulator {
   // information ideally, to avoid inconsistency at any time, and reduce
   // maintenance cost this state should be defined in just one place.e.g., only
   // in the frontend Currently, we need it defined here, because sensor., e.g.,
-  // PinholeCamera rquires it when drawing the observation
+  // PinholeCamera requires it when drawing the observation
   bool frustumCulling_ = true;
 
   //! NavMesh visualization variables

@@ -94,6 +94,7 @@ if(BUILD_WITH_BACKGROUND_RENDERER)
     LIBRARIES
     assets
     gfx
+    gfx_batch
     sim
   )
   target_include_directories(
