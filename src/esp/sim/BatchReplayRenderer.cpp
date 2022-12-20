@@ -19,7 +19,8 @@ namespace sim {
 using namespace Mn::Math::Literals;  // NOLINT
 
 BatchReplayRenderer::BatchReplayRenderer(
-    const ReplayRendererConfiguration& cfg) {
+    const ReplayRendererConfiguration& cfg,
+    gfx_batch::RendererConfiguration&& batchRendererConfiguration) {
   if (Magnum::GL::Context::hasCurrent()) {
     flextGLInit(Magnum::GL::Context::current());  // TODO: Avoid globals
                                                   // duplications across SOs.
@@ -29,17 +30,18 @@ BatchReplayRenderer::BatchReplayRenderer(
   const auto& sensor = static_cast<esp::sensor::CameraSensorSpec&>(
       *cfg.sensorSpecifications.front());
 
-  gfx_batch::RendererConfiguration configuration;
-  configuration.setTileSizeCount(Mn::Vector2i{sensor.resolution}.flipped(),
-                                 environmentGridSize(cfg.numEnvironments));
+  batchRendererConfiguration.setTileSizeCount(
+      Mn::Vector2i{sensor.resolution}.flipped(),
+      environmentGridSize(cfg.numEnvironments));
   if ((standalone_ = cfg.standalone))
     renderer_.emplace<gfx_batch::RendererStandalone>(
-        configuration, gfx_batch::RendererStandaloneConfiguration{});
+        batchRendererConfiguration,
+        gfx_batch::RendererStandaloneConfiguration{});
   else {
     CORRADE_ASSERT(Mn::GL::Context::hasCurrent(),
                    "BatchReplayRenderer: expecting a current GL context if a "
                    "standalone renderer is disabled", );
-    renderer_.emplace<gfx_batch::Renderer>(configuration);
+    renderer_.emplace<gfx_batch::Renderer>(batchRendererConfiguration);
   }
 
   theOnlySensorName_ = sensor.uuid;
@@ -108,6 +110,43 @@ BatchReplayRenderer::BatchReplayRenderer(
       renderer_.transformations(
           sceneId_)[reinterpret_cast<std::size_t>(node) - 1] =
           Mn::Matrix4::from(rotation.toMatrix(), translation);
+    }
+
+    void changeLightSetup(const esp::gfx::LightSetup& lights) override {
+      if (!renderer_.maxLightCount()) {
+        ESP_WARNING() << "Attempted to change" << lights.size()
+                      << "lights for scene" << sceneId_
+                      << "but the renderer is configured without lights";
+        return;
+      }
+
+      renderer_.clearLights(sceneId_);
+      for (std::size_t i = 0; i != lights.size(); ++i) {
+        const gfx::LightInfo& light = lights[i];
+        CORRADE_INTERNAL_ASSERT(light.model == gfx::LightPositionModel::Global);
+
+        const std::size_t nodeId = renderer_.addEmptyNode(sceneId_);
+
+        std::size_t lightId;
+        if (light.vector.z()) {
+          renderer_.transformations(sceneId_)[nodeId] =
+              Mn::Matrix4::translation(light.vector.xyz());
+          lightId = renderer_.addLight(sceneId_, nodeId,
+                                       gfx_batch::RendererLightType::Point);
+        } else {
+          /* The matrix will be partially NaNs if the light vector is in the
+             direction of the Y axis, but that's fine -- we only really care
+             about the Z axis direction, which is always the "target" vector
+             normalized. */
+          renderer_.transformations(sceneId_)[nodeId] =
+              Mn::Matrix4::lookAt({}, light.vector.xyz(), Mn::Vector3::yAxis());
+          lightId = renderer_.addLight(
+              sceneId_, nodeId, gfx_batch::RendererLightType::Directional);
+        }
+
+        renderer_.lightColors(sceneId_)[lightId] = light.color;
+        // TODO range, once Habitat has that
+      }
     }
 
     gfx_batch::Renderer& renderer_;

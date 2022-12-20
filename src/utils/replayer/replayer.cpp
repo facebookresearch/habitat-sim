@@ -54,6 +54,8 @@ Replayer::Replayer(const Arguments& arguments)
       .setHelp("preload", "composite file(s) to preload", "file.glb")
       .addOption("size", "512 384")
       .setHelp("size", "environment size", "\"X Y\"")
+      .addOption("max-light-count", "0")
+      .setHelp("max-light-count", "max light count used per scene")
       .addBooleanOption("classic")
       .setHelp("classic", "use the classic renderer")
       .addBooleanOption("profile")
@@ -79,6 +81,10 @@ or more composite files via the -P / --preload option, it'll prefer them if
 they contain given referenced file, and will fall back to loading from the
 filesystem if not, printing a warning. The --classic option switches to the
 classic renderer and resource management, --preload is ignored in that case.
+
+Default rendering is flat-shaded. Set --max-light-count to a value higher than
+0 to consume also light information from the gfx-replay JSON files. Meshes with
+materials marked as Flat will be rendered flat-shaded even with lights present.
 
 For simple profiling, the --profile option will print GPU, CPU and total frame
 time to the console. It includes the JSON parsing overhead as well, to
@@ -161,10 +167,14 @@ settle down.
   rendererConfig.sensorSpecifications = std::move(sensorSpecifications);
   rendererConfig.numEnvironments = fileCount;
   rendererConfig.standalone = false;
+  esp::gfx_batch::RendererConfiguration batchRendererConfig;
+  batchRendererConfig.setMaxLightCount(
+      args.value<Mn::UnsignedInt>("max-light-count"));
   if (args.isSet("classic"))
     replayRenderer_.emplace<esp::sim::ClassicReplayRenderer>(rendererConfig);
   else
-    replayRenderer_.emplace<esp::sim::BatchReplayRenderer>(rendererConfig);
+    replayRenderer_.emplace<esp::sim::BatchReplayRenderer>(
+        rendererConfig, std::move(batchRendererConfig));
 
   for (std::size_t i = 0, iMax = args.arrayValueCount("preload"); i != iMax;
        ++i)

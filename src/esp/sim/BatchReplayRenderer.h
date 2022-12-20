@@ -14,7 +14,13 @@ namespace sim {
 
 class BatchReplayRenderer : public AbstractReplayRenderer {
  public:
-  explicit BatchReplayRenderer(const ReplayRendererConfiguration& cfg);
+  // TODO figure out a better way how to abstract this so i don't need to
+  //  propagate each and every batch-renderer-specific option through all these
+  //  layers like an animal
+  explicit BatchReplayRenderer(
+      const ReplayRendererConfiguration& cfg,
+      gfx_batch::RendererConfiguration&& batchRendererConfiguration =
+          gfx_batch::RendererConfiguration{});
 
   ~BatchReplayRenderer() override;
 
