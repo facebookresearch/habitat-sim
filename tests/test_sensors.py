@@ -232,6 +232,57 @@ def test_sensors(
         ) < 9.0e-2 * np.linalg.norm(gt.astype(float)), f"Incorrect {sensor_type} output"
 
 
+@pytest.mark.parametrize("scene_and_dataset", _non_semantic_scenes)
+def test_obs_buffer_is_invalid(
+    scene_and_dataset,
+    make_cfg_settings,
+):
+    scene = scene_and_dataset[0]
+    if not osp.exists(scene):
+        pytest.skip("Skipping {}".format(scene))
+    make_cfg_settings["scene"] = scene
+
+    scene_dataset_config = scene_and_dataset[1]
+    make_cfg_settings["scene_dataset_config_file"] = scene_dataset_config
+
+    for uuid in all_base_sensor_types:
+        make_cfg_settings[uuid] = False
+
+    # add default color sensor to sim. Won't affect anything
+    make_cfg_settings["color_sensor"] = True
+
+    cfg = make_cfg(make_cfg_settings)
+    with habitat_sim.Simulator(cfg) as sim:
+        # create sensor spec for a valid depth sensor. After we add it, we will change some of its
+        # specs to make it invalid
+        sensor_spec = habitat_sim.CameraSensorSpec()
+        sensor_spec.uuid = "depth_sensor"
+        sensor_spec.sensor_type = habitat_sim.SensorType.DEPTH
+        sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
+        sensor_spec.channels = 1
+        sensor_spec.hfov = 90
+        sensor_spec.position = [0, 0, 0]
+
+        agent_id = 0
+        sim.add_sensor(sensor_spec, agent_id)
+        invalid_sensor = sim.get_sensor(sensor_spec.uuid, 0)
+
+        # make sensor invalid by changing its sensor type to an invalid one (doesn't have an observation
+        # buffer)
+        invalid_sensor.specification().sensor_type = habitat_sim.SensorType.AUDIO
+
+        # attempt to get observation buffer from invalid sensor type and catch exception
+        with pytest.raises(ValueError) as exception_info:
+            invalid_sensor.obs_buffer(0)
+        assert (
+            str(exception_info.value)
+            == f'The sensor "{sensor_spec.uuid}" does not have a __obs_buffer attribute.'
+        )
+        print(
+            f'Successfully tested that invalid sensor "{sensor_spec.uuid}" does not have __obs_buffer attribute'
+        )
+
+
 @pytest.mark.parametrize(
     "scene_and_dataset, sensor_type",
     list(itertools.product(_semantic_scenes, all_base_sensor_types))

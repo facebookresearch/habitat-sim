@@ -142,6 +142,7 @@ class Simulator(SimulatorBackend):
         config.sim_cfg.create_renderer = any(
             (len(cfg.sensor_specifications) > 0 for cfg in config.agents)
         )
+
         config.sim_cfg.load_semantic_mesh |= any(
             (
                 any(
@@ -161,98 +162,6 @@ class Simulator(SimulatorBackend):
                 for cfg in config.agents
             )
         )
-
-    def __attrs_post_init__(self) -> None:
-        LoggingContext.reinitialize_from_env()
-        self._sanitize_config(self.config)
-        self.__set_from_config(self.config)
-
-    def close(self, destroy: bool = True) -> None:
-        r"""Close the simulator instance.
-        :param destroy: Whether or not to force the OpenGL context to be
-            destroyed if async rendering was used.  If async rendering wasn't used,
-            this has no effect.
-        """
-        # NB: Python still still call __del__ (and thus)
-        # close even if __init__ errors. We don't
-        # have anything to close if we aren't initialized so
-        # we can just return.
-        if not self._initialized:
-            return
-
-        if self.renderer is not None:
-            self.renderer.acquire_gl_context()
-
-        for sensors in self.__sensors:
-            sensors.clear()
-            # TODO do I need to delete anything?
-        self.__sensors = []
-
-        for obs_buffers_dict in self.__obs_buffers:
-            obs_buffers_dict.clear()
-            # TODO do I need to delete anything?
-        self.__obs_buffers = []
-
-        for image_views_dict in self.__image_views:
-            image_views_dict.clear()
-            # TODO do I need to delete anything?
-        self.__image_views = []
-
-        self.__noise_models.clear()
-
-        for agent in self.agents:
-            del agent
-        self.agents = []
-
-        self.__last_state.clear()
-
-        super().close(destroy)
-
-    def __enter__(self) -> "Simulator":
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close(destroy=True)
-
-    def seed(self, new_seed: int) -> None:
-        super().seed(new_seed)
-        self.pathfinder.seed(new_seed)
-
-    @overload
-    def reset(self, agent_ids: Optional[int] = None) -> Dict[str, SensorObservation]:
-        ...
-
-    @overload
-    def reset(self, agent_ids: List[int]) -> Dict[int, Dict[str, SensorObservation]]:
-        ...
-
-    def reset(
-        self, agent_ids: Union[Optional[int], List[int]] = None
-    ) -> Union[Dict[str, SensorObservation], Dict[int, Dict[str, SensorObservation]],]:
-        super().reset()
-        for i in range(len(self.agents)):
-            self.reset_agent(i)
-
-        if agent_ids is None:
-            agent_ids = [self._default_agent_id]
-            return_single = True
-        else:
-            agent_ids = cast(List[int], agent_ids)
-            return_single = False
-
-        per_agent_observations = self.get_sensor_observations(agent_ids=agent_ids)
-
-        if return_single:
-            return per_agent_observations[agent_ids[0]]
-        return per_agent_observations
-
-    def reset_agent(self, agent_id: int) -> None:
-        agent = self.get_agent(agent_id)
-        initial_agent_state = agent.initial_state
-        if initial_agent_state is None:
-            raise RuntimeError("reset called before agent was given an initial state")
-
-        self.initialize_agent(agent_id, initial_agent_state)
 
     def _config_backend(self, config: Configuration) -> None:
         if not self._initialized:
@@ -317,13 +226,6 @@ class Simulator(SimulatorBackend):
                 "no collision checking will be done"
             )
 
-    def reconfigure(self, config: Configuration) -> None:
-        self._sanitize_config(config)
-
-        if self.config != config:
-            self.__set_from_config(config)
-            self.config = config
-
     def __set_from_config(self, config: Configuration) -> None:
         self._config_backend(config)
         self._config_agents(config)
@@ -337,13 +239,13 @@ class Simulator(SimulatorBackend):
 
         self.__noise_models: Dict[str, SensorNoiseModel] = dict()
         self.__sensors: List[Dict[str, Sensor]] = [
-            dict() for i in range(len(config.agents))
+            dict() for _ in range(len(config.agents))
         ]
         self.__obs_buffers: List[Dict[str, SensorObservation]] = [
-            dict() for i in range(len(config.agents))
+            dict() for _ in range(len(config.agents))
         ]
         self.__image_views: List[Dict[str, mn.MutableImageView2D]] = [
-            dict() for i in range(len(config.agents))
+            dict() for _ in range(len(config.agents))
         ]
         self.__last_state = dict()
 
@@ -351,6 +253,108 @@ class Simulator(SimulatorBackend):
             for sensor_spec in agent_cfg.sensor_specifications:
                 self._init_sensor(sensor_spec, agent_id)
             self.initialize_agent(agent_id)
+
+    def __attrs_post_init__(self) -> None:
+        LoggingContext.reinitialize_from_env()
+        self._sanitize_config(self.config)
+        self.__set_from_config(self.config)
+
+    def __enter__(self) -> "Simulator":
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close(destroy=True)
+
+    def __del__(self) -> None:
+        self.close(destroy=True)
+
+    def close(self, destroy: bool = True) -> None:
+        r"""Close the simulator instance.
+        :param destroy: Whether or not to force the OpenGL context to be
+            destroyed if async rendering was used.  If async rendering wasn't used,
+            this has no effect.
+        """
+        # NB: Python still still call __del__ (and thus)
+        # close even if __init__ errors. We don't
+        # have anything to close if we aren't initialized so
+        # we can just return.
+        if not self._initialized:
+            return
+
+        if self.renderer is not None:
+            self.renderer.acquire_gl_context()
+
+        for sensors in self.__sensors:
+            sensors.clear()
+            # TODO do I need to delete anything?
+        self.__sensors = []
+
+        for obs_buffers_dict in self.__obs_buffers:
+            obs_buffers_dict.clear()
+            # TODO do I need to delete anything?
+        self.__obs_buffers = []
+
+        for image_views_dict in self.__image_views:
+            image_views_dict.clear()
+            # TODO do I need to delete anything?
+        self.__image_views = []
+
+        self.__noise_models.clear()
+
+        for agent in self.agents:
+            del agent
+        self.agents = []
+
+        self.__last_state.clear()
+
+        super().close(destroy)
+
+    def seed(self, new_seed: int) -> None:
+        super().seed(new_seed)
+        self.pathfinder.seed(new_seed)
+
+    @overload
+    def reset(self, agent_ids: Optional[int] = None) -> Dict[str, SensorObservation]:
+        ...
+
+    @overload
+    def reset(self, agent_ids: List[int]) -> Dict[int, Dict[str, SensorObservation]]:
+        ...
+
+    def reset(
+        self, agent_ids: Union[Optional[int], List[int]] = None
+    ) -> Union[Dict[str, SensorObservation], Dict[int, Dict[str, SensorObservation]],]:
+        super().reset()
+        for i in range(len(self.agents)):
+            self.reset_agent(i)
+
+        if agent_ids is None:
+            agent_ids = [self._default_agent_id]
+            return_single = True
+        else:
+            agent_ids = cast(List[int], agent_ids)
+            return_single = False
+
+        per_agent_observations = self.get_sensor_observations(agent_ids=agent_ids)
+
+        if return_single:
+            return per_agent_observations[agent_ids[0]]
+        return per_agent_observations
+
+    def reset_agent(self, agent_id: int) -> None:
+        agent = self.get_agent(agent_id)
+        initial_agent_state = agent.initial_state
+        if initial_agent_state is None:
+            raise RuntimeError("reset called before agent was given an initial state")
+
+        self.initialize_agent(agent_id, initial_agent_state)
+
+    def reconfigure(self, config: Configuration) -> None:
+        self._sanitize_config(config)
+
+        if self.config != config:
+            self.__set_from_config(config)
+            self.config = config
 
     def make_noise_model(self, sensor_spec: SensorSpec) -> SensorNoiseModel:
         noise_model_kwargs = sensor_spec.noise_model_kwargs
@@ -398,54 +402,6 @@ class Simulator(SimulatorBackend):
         sensor = sensors_added[sensor_spec.uuid]
         self.__sensors_[sensor_spec.uuid] = sensor
         self._init_sensor(sensor_spec)
-
-    @overload
-    def add_sensor(self, sensor_spec: SensorSpec) -> None:
-        # Add global sensor to root node
-        ...
-
-    @overload
-    def add_sensor(self, sensor_spec: SensorSpec, attach_to: int) -> None:
-        # Add sensor to scene node associated with the given agent id
-        ...
-
-    @overload
-    def add_sensor(self, sensor_spec: SensorSpec, attach_to: SceneObject) -> None:
-        # Add sensor to scene node that a scene object is attached to,
-        # e.g., a ManagedBulletRigidObject
-        ...
-
-    def add_sensor(
-        self,
-        sensor_spec: SensorSpec,
-        attach_to: Union[
-            int,
-            SceneObject,
-        ] = None,
-    ) -> None:
-        self.__verify_sensor_spec(sensor_spec)
-
-        scene_node: SceneNode = None
-        if attach_to is None:
-            scene_node = self.get_active_scene_graph().get_root_node()
-        elif isinstance(attach_to, int):
-            agent_id = attach_to
-            agent = self.get_agent(agent_id)
-            agent._add_sensor(sensor_spec)
-            self._init_sensor(sensor_spec, agent_id)
-            return
-        elif isinstance(
-            attach_to,
-            (
-                ManagedRigidObject,
-                ManagedBulletRigidObject,
-                ManagedArticulatedObject,
-                ManagedBulletArticulatedObject,
-            ),
-        ):
-            scene_node = attach_to.root_scene_node
-
-        self.__create_sensor(sensor_spec, scene_node)
 
     @overload
     def _init_sensor(self, sensor_spec: SensorSpec) -> None:
@@ -636,6 +592,54 @@ class Simulator(SimulatorBackend):
                     view_size,
                     obs_buffer.reshape(sensor_spec.resolution[0], -1),  # type: ignore[union-attr]
                 )
+
+    @overload
+    def add_sensor(self, sensor_spec: SensorSpec) -> None:
+        # Add global sensor to root node
+        ...
+
+    @overload
+    def add_sensor(self, sensor_spec: SensorSpec, attach_to: int) -> None:
+        # Add sensor to scene node associated with the given agent id
+        ...
+
+    @overload
+    def add_sensor(self, sensor_spec: SensorSpec, attach_to: SceneObject) -> None:
+        # Add sensor to scene node that a scene object is attached to,
+        # e.g., a ManagedBulletRigidObject
+        ...
+
+    def add_sensor(
+        self,
+        sensor_spec: SensorSpec,
+        attach_to: Union[
+            int,
+            SceneObject,
+        ] = None,
+    ) -> None:
+        self.__verify_sensor_spec(sensor_spec)
+
+        scene_node: SceneNode = None
+        if attach_to is None:
+            scene_node = self.get_active_scene_graph().get_root_node()
+        elif isinstance(attach_to, int):
+            agent_id = attach_to
+            agent = self.get_agent(agent_id)
+            agent._add_sensor(sensor_spec)
+            self._init_sensor(sensor_spec, agent_id)
+            return
+        elif isinstance(
+            attach_to,
+            (
+                ManagedRigidObject,
+                ManagedBulletRigidObject,
+                ManagedArticulatedObject,
+                ManagedBulletArticulatedObject,
+            ),
+        ):
+            scene_node = attach_to.root_scene_node
+
+        self.__create_sensor(sensor_spec, scene_node)
 
     def get_sensor(self, sensor_uuid, agent_id: Optional[int] = None) -> Sensor:
         if agent_id is not None:
@@ -870,9 +874,6 @@ class Simulator(SimulatorBackend):
                 end_pos = self.pathfinder.try_step_no_sliding(start_pos, end_pos)
 
         return end_pos
-
-    def __del__(self) -> None:
-        self.close(destroy=True)
 
     def step_physics(self, dt: float, scene_id: int = 0) -> None:
         self.step_world(dt)
