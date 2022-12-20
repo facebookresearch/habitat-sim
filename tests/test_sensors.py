@@ -244,6 +244,9 @@ def test_obs_buffer_is_invalid(
         pytest.skip("Skipping {}".format(scene))
     make_cfg_settings["scene"] = scene
 
+    if gpu2gpu and (not habitat_sim.cuda_enabled or not _HAS_TORCH):
+        pytest.skip("Skipping GPU->GPU test")
+
     scene_dataset_config = scene_and_dataset[1]
     make_cfg_settings["scene_dataset_config_file"] = scene_dataset_config
 
