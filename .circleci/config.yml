@@ -124,7 +124,7 @@ commands:
                 # For whatever reason we have to install pytorch first. If it isn't
                 # it installs the 1.4 cpuonly version. Which is no good.
                 #conda install -q -y pytorch=1.12 torchvision pytorch-cuda=11.3 -c pytorch -c nvidia
-                conda install pytorch==1.12.1 torchvision==0.13.1 cudatoolkit=11.3 -c pytorch
+                conda install -q -y pytorch==1.12.1 torchvision==0.13.1 cudatoolkit=11.3 -c pytorch
                 conda install -q -y -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis pytest-mock
                 pip install pytest-sugar pytest-xdist pytest-benchmark opencv-python cython mock
               fi
