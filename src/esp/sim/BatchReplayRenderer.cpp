@@ -127,7 +127,13 @@ BatchReplayRenderer::BatchReplayRenderer(
 
         const std::size_t nodeId = renderer_.addEmptyNode(sceneId_);
 
-        std::size_t lightId;
+        /* Clang Tidy, you're stupid, why do you say that "lightId" is not
+           initialized?! I'm initializing it right in the branches below, I
+           won't zero-init it just to "prevent bugs" because an accidentally
+           zero-initialized variable is *also* a bug, you know? Plus I have
+           range asserts in all functions so your "suggestions" are completely
+           unhelpful. */
+        std::size_t lightId;  // NOLINT
         if (light.vector.z()) {
           renderer_.transformations(sceneId_)[nodeId] =
               Mn::Matrix4::translation(light.vector.xyz());
