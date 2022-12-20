@@ -265,7 +265,7 @@ def test_obs_buffer_is_invalid(
 
         agent_id = 0
         sim.add_sensor(sensor_spec, agent_id)
-        invalid_sensor = sim.get_sensor(sensor_spec.uuid, 0)
+        invalid_sensor = sim.get_sensor(sensor_spec.uuid, agent_id)
 
         # make sensor invalid by changing its sensor type to an invalid one (doesn't have an observation
         # buffer)
