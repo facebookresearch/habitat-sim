@@ -233,8 +233,10 @@ def test_sensors(
 
 
 @pytest.mark.parametrize("scene_and_dataset", _non_semantic_scenes)
+@pytest.mark.parametrize("gpu2gpu", [True, False])
 def test_obs_buffer_is_invalid(
     scene_and_dataset,
+    gpu2gpu,
     make_cfg_settings,
 ):
     scene = scene_and_dataset[0]
@@ -252,16 +254,18 @@ def test_obs_buffer_is_invalid(
     make_cfg_settings["color_sensor"] = True
 
     cfg = make_cfg(make_cfg_settings)
+
     with habitat_sim.Simulator(cfg) as sim:
         # create sensor spec for a valid depth sensor. After we add it, we will change some of its
         # specs to make it invalid
         sensor_spec = habitat_sim.CameraSensorSpec()
-        sensor_spec.uuid = "depth_sensor"
+        sensor_spec.uuid = "invalid_sensor"
         sensor_spec.sensor_type = habitat_sim.SensorType.DEPTH
         sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
         sensor_spec.channels = 1
         sensor_spec.hfov = 90
         sensor_spec.position = [0, 0, 0]
+        sensor_spec.gpu2gpu_transfer = gpu2gpu
 
         agent_id = 0
         sim.add_sensor(sensor_spec, agent_id)
@@ -269,7 +273,7 @@ def test_obs_buffer_is_invalid(
 
         # make sensor invalid by changing its sensor type to an invalid one (doesn't have an observation
         # buffer)
-        invalid_sensor.specification().sensor_type = habitat_sim.SensorType.AUDIO
+        sensor_spec.sensor_type = habitat_sim.SensorType.AUDIO
 
         # attempt to get observation buffer from invalid sensor type and catch exception
         with pytest.raises(ValueError) as exception_info:
