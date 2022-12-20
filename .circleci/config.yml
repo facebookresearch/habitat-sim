@@ -128,6 +128,19 @@ commands:
                 conda install -q -y -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis pytest-mock
                 pip install pytest-sugar pytest-xdist pytest-benchmark opencv-python cython mock
               fi
+      - run: &validate_pytorch_installation
+          name: Validate Pytorch Installation
+          no_output_timeout: 20m
+          command: |
+              # Check that pytorch is installed with CUDA.
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat;
+              $(python -c 'import torch; torch.cuda.set_device(0)')
+              if [ $? != 0 ];
+              then
+                  echo "exit 1"
+              fi
+              echo "exit 0"
       - run:
           name: Install emscripten
           no_output_timeout: 20m
