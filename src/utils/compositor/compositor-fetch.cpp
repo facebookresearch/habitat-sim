@@ -87,7 +87,7 @@ int main(int argc, char** argv) {
     arrayAppend(ds.inputMeshes, *std::move(mesh));
 
     /* Add an empty colored material */
-    arrayAppend(ds.inputMaterials, Mn::Trade::MaterialData{Mn::Trade::MaterialType::Flat, {
+    arrayAppend(ds.inputMaterials, Mn::Trade::MaterialData{Mn::Trade::MaterialType::PbrMetallicRoughness, {
       {Mn::Trade::MaterialAttribute::BaseColor, color},
       {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
       {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 0u},
@@ -234,8 +234,7 @@ int main(int argc, char** argv) {
         CORRADE_INTERNAL_ASSERT(material->layerCount() == 1);
         arrayAppend(attributes, material->attributeData());
 
-        /* Make it just Flat */
-        material = Mn::Trade::MaterialData{Mn::Trade::MaterialType::Flat, std::move(attributes)};
+        material = Mn::Trade::MaterialData{material->types(), std::move(attributes)};
 
         importedMaterialIds[transformationMeshMaterial.second()] = m.meshMaterial = ds.inputMaterials.size();
         arrayAppend(ds.inputMaterials, *std::move(material));

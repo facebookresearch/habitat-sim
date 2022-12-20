@@ -182,8 +182,7 @@ int main(int argc, char** argv) {
         CORRADE_INTERNAL_ASSERT(material->layerCount() == 1);
         arrayAppend(attributes, material->attributeData());
 
-        /* Make it just Flat */
-        material = Mn::Trade::MaterialData{Mn::Trade::MaterialType::Flat, std::move(attributes)};
+        material = Mn::Trade::MaterialData{material->types(), std::move(attributes)};
 
         importedMaterialIds[transformationMeshMaterial.second()] = m.meshMaterial = ds.inputMaterials.size();
         arrayAppend(ds.inputMaterials, *std::move(material));

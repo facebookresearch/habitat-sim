@@ -125,7 +125,7 @@ CompositorDataState::CompositorDataState(const Mn::Vector2i& textureAtlasSize): 
     Mn::PixelFormat::RGB8Unorm, {1, 1},
     Mn::Trade::DataFlags{}, WhitePixel});
 
-  arrayAppend(inputMaterials, Mn::Trade::MaterialData{Mn::Trade::MaterialType::Flat, {
+  arrayAppend(inputMaterials, Mn::Trade::MaterialData{Mn::Trade::MaterialType::PbrMetallicRoughness, {
     {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
     /* The layer ID and matrix translation get updated based on where the 1x1
        image ends up being in the atlas */
@@ -136,12 +136,14 @@ CompositorDataState::CompositorDataState(const Mn::Vector2i& textureAtlasSize): 
 }
 
 Mn::Trade::MeshData CompositorDataState::finalizeMesh() const {
-  /* Target layout for the mesh. So far just for flat rendering, no normals
-     etc */
+  /* Target layout for the mesh. So far just normals, no tangents for normal
+     mapping. */
   Mn::Trade::MeshData mesh{Mn::MeshPrimitive::Triangles, nullptr, {
     Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Position, Mn::VertexFormat::Vector3, nullptr},
+    Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Normal, Mn::VertexFormat::Vector3, nullptr},
     Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::TextureCoordinates, Mn::VertexFormat::Vector2, nullptr},
   }};
+  // TODO generate normals for meshes that don't have them if there are any
   Mn::MeshTools::concatenateInto(mesh, inputMeshes);
 
   return mesh;

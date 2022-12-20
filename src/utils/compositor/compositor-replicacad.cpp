@@ -43,7 +43,9 @@ int main(int argc, char** argv) {
 
   const auto import = [&](
     Cr::Containers::StringView filename,
-    Cr::Containers::StringView name) {
+    Cr::Containers::StringView name,
+    Mn::Trade::MaterialType materialType)
+  {
     CORRADE_INTERNAL_ASSERT_OUTPUT(importer->openFile(filename));
     CORRADE_INTERNAL_ASSERT(importer->sceneCount() == 1);
 
@@ -212,8 +214,8 @@ int main(int argc, char** argv) {
         CORRADE_INTERNAL_ASSERT(material->layerCount() == 1);
         arrayAppend(attributes, material->attributeData());
 
-        /* Make it just Flat */
-        material = Mn::Trade::MaterialData{Mn::Trade::MaterialType::Flat, std::move(attributes)};
+        /* The material type is overriden to Flat for some */
+        material = Mn::Trade::MaterialData{materialType, std::move(attributes)};
 
         importedMaterialIds[transformationMeshMaterial.second()] = m.meshMaterial = ds.inputMaterials.size();
         arrayAppend(ds.inputMaterials, *std::move(material));
@@ -224,13 +226,17 @@ int main(int argc, char** argv) {
   };
 
   Cr::Containers::String replicaPath = Cr::Utility::Path::join(args.value("input"), "ReplicaCAD_dataset_v1.5");
+
+  /* Stage_v3_sc*_staging are already pre-baked so Flat, frl_apartment_stage
+     is not */
+  import(Cr::Utility::Path::join({replicaPath, "stages/frl_apartment_stage.glb"}), "data/replica_cad/configs/stages/../../stages/frl_apartment_stage.glb", Mn::Trade::MaterialType::PbrMetallicRoughness);
   for(const char* name: {
     "Stage_v3_sc0_staging.glb",
     "Stage_v3_sc1_staging.glb",
     "Stage_v3_sc2_staging.glb",
     "Stage_v3_sc3_staging.glb"
   })
-    import(Cr::Utility::Path::join({replicaPath, "stages", name}), "data/replica_cad/configs/stages/../../stages/"_s + name);
+    import(Cr::Utility::Path::join({replicaPath, "stages", name}), "data/replica_cad/configs/stages/../../stages/"_s + name, Mn::Trade::MaterialType::Flat);
 
   for(const char* name: {
     "frl_apartment_basket.glb",
@@ -326,7 +332,7 @@ int main(int argc, char** argv) {
     "frl_apartment_wall_cabinet_02.glb",
     "frl_apartment_wall_cabinet_03.glb"
   })
-    import(Cr::Utility::Path::join({replicaPath, "objects", name}), "data/replica_cad/configs/objects/../../objects/"_s + name);
+    import(Cr::Utility::Path::join({replicaPath, "objects", name}), "data/replica_cad/configs/objects/../../objects/"_s + name, Mn::Trade::MaterialType::PbrMetallicRoughness);
 
   for(const char* name: {
     "doors/double_door_R.glb",
@@ -354,7 +360,7 @@ int main(int argc, char** argv) {
     "kitchen_cupboards/kitchencupboard_doorWhole_L.glb",
     "kitchen_cupboards/kitchencupboard_doorWindow_L.glb"
   })
-    import(Cr::Utility::Path::join({replicaPath, "urdf", name}), "data/replica_cad/urdf/"_s + name);
+    import(Cr::Utility::Path::join({replicaPath, "urdf", name}), "data/replica_cad/urdf/"_s + name, Mn::Trade::MaterialType::PbrMetallicRoughness);
 
   // TODO some mesh optimization first?
   CORRADE_INTERNAL_ASSERT(s.converter->add(ds.finalizeMesh()));
