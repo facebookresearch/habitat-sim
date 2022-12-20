@@ -793,7 +793,7 @@ class HabitatSimInteractiveViewer(Application):
             # use shift for fine-grained zooming
             mod_val = 1.01 if shift_pressed else 1.1
             mod = mod_val if scroll_mod_val > 0 else 1.0 / mod_val
-            cam = self.render_camera
+            cam = self.render_camera[self.active_env_idx]
             cam.zoom(mod)
             self.redraw()
 
