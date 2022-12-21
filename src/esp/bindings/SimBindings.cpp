@@ -394,14 +394,14 @@ void initSimBindings(py::module& m) {
           "create_classic_replay_renderer",
           [](const ReplayRendererConfiguration& cfg)
               -> AbstractReplayRenderer::ptr {
-            return ClassicReplayRenderer::ptr(new ClassicReplayRenderer(cfg));
+            return std::make_shared<ClassicReplayRenderer>(cfg);
           },
           R"(Create a replay renderer using the classic render pipeline.)")
       .def_static(
           "create_batch_replay_renderer",
           [](const ReplayRendererConfiguration& cfg)
               -> AbstractReplayRenderer::ptr {
-            return BatchReplayRenderer::ptr(new BatchReplayRenderer(cfg));
+            return std::make_shared<BatchReplayRenderer>(cfg);
           },
           R"(Create a replay renderer using the batch render pipeline.)")
       .def(
