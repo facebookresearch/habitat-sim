@@ -1,12 +1,15 @@
+import json
 import math
 import os
 import time
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import git
 import numpy as np
+from colorama import init
 from matplotlib import pyplot as plt
 from PIL import Image
+from qa_scene_utils import ANSICodes, print_if_logging, section_divider_str
 
 import habitat_sim
 from habitat_sim.utils import common as utils
@@ -18,10 +21,13 @@ from habitat_sim.utils.settings import default_sim_settings, make_cfg
 repo = git.Repo(".", search_parent_directories=True)
 dir_path = repo.working_tree_dir
 data_path = os.path.join(dir_path, "data")
-output_directory = "qa_scenes_output/"  # @param {type:"string"}
+output_directory = "tools/qa_scenes/qa_scenes_output/"  # @param {type:"string"}
 output_path = os.path.join(dir_path, output_directory)
 if not os.path.exists(output_path):
     os.mkdir(output_path)
+
+# NOTE: change this as you will
+default_config_file = "tools/qa_scenes/configs/default.qa_scene_config.json"
 
 # Change to do something like this maybe: https://stackoverflow.com/a/41432704
 def display_sample(
@@ -61,6 +67,7 @@ def display_sample(
         plt.savefig(fname=output_file)
     # else:
     #    plt.show(block=False)
+    ...
 
 
 def pil_save_obs(output_file, rgb=None, semantic=None, depth=None):
@@ -92,27 +99,13 @@ def pil_save_obs(output_file, rgb=None, semantic=None, depth=None):
     contact_image.save(output_file)
 
 
-# setup the scene
-# NOTE: change this as you will
-scene_dataset = os.path.join(
-    data_path, "scene_datasets/mp3d_example/mp3d.scene_dataset_config.json"
-)
-
-sim_settings = default_sim_settings.copy()
-sim_settings["enable_physics"] = False  # kinematics only
-sim_settings["scene_dataset_config_file"] = scene_dataset
-# square image
-sim_settings["width"]: 256
-sim_settings["height"]: 256
-
-
 def make_cfg_mm(settings):
     """
     Create a Configuration with an attached MetadataMediator for shared dataset access and re-use
     """
     config = make_cfg(settings)
 
-    # create an attach a MetadataMediator
+    # create and attach a MetadataMediator
     mm = habitat_sim.metadata.MetadataMediator(config.sim_cfg)
 
     return habitat_sim.Configuration(config.sim_cfg, config.agents, mm)
@@ -215,7 +208,7 @@ def profile_scene(cfg):
 
     profile_info = {
         "avg_render_time": 0,  # averge time taken to render a frame
-        "physics_realtime_ratio": 0,  # simulation : realtime ration
+        "physics_realtime_ratio": 0,  # simulation : realtime ratio
     }
 
     with habitat_sim.Simulator(cfg) as sim:
@@ -238,6 +231,7 @@ def profile_scene(cfg):
         # sim_horizon = 10  # seconds of simulation to sample over
 
         # TODO: run collision grid test
+        ...
 
 
 def collision_grid_test(sim):
@@ -271,45 +265,79 @@ def collision_grid_test(sim):
         current_cell.x += cell_size
 
 
-def iteratively_test_all_scenes(config_with_mm, generate_navmesh=False):
+def iteratively_test_all_scenes(cfg: habitat_sim.Configuration, generate_navmesh=False):
+
+    mm = cfg.metadata_mediator
+
     # now iterate over all scenes in the dataset via the mm
-    print("-------------------------------")
-    print(config_with_mm.metadata_mediator.dataset_report())
-    print("SCENES")
-    for scene_handle in config_with_mm.metadata_mediator.get_scene_handles():
-        print(scene_handle)
 
-    stage_handles = (
-        config_with_mm.metadata_mediator.stage_template_manager.get_templates_by_handle_substring()
-    )
+    # print dataset report
+    text_format = ANSICodes.BRIGHT_CYAN.value
+    print_if_logging(None, text_format + "\nDATASET REPORT:\n")
+    print_if_logging(None, text_format + section_divider_str)
+    print_if_logging(None, text_format + mm.dataset_report())
 
+    # print active dataset
+    text_format = ANSICodes.ORANGE.value
+    print(text_format + f"Active dataset: {mm.active_dataset}\n")
+    print(text_format + section_divider_str)
+
+    # print list of scenes
+    text_format = ANSICodes.BRIGHT_MAGENTA.value
+    print_if_logging(None, text_format + "SCENES:\n")
+    print(text_format + section_divider_str)
+    for scene_handle in mm.get_scene_handles():
+        print_if_logging(None, text_format + "- " + scene_handle + "\n")
+
+    # get and print list of stage handles
+    text_format = ANSICodes.BROWN.value
+    print(text_format + "STAGES:\n")
+    stage_handles = mm.stage_template_manager.get_templates_by_handle_substring()
     # optionally manually cull some problem scenes
     # stage_handles = [x for x in stage_handles if "106366104_174226320" not in x]
     # stage_handles = [x for x in stage_handles if x.split("/")[-1].split(".")[0] in modified_stage_handles]
-
-    print("STAGES")
     failure_log = []
     all_scenes_navmesh_metrics = {}
+
+    # process each stage
     for stage_handle in stage_handles:
-        print("=================================================")
-        print(f"    {stage_handle}")
-        config_with_mm.sim_cfg.scene_id = stage_handle
+        text_format = ANSICodes.BROWN.value
+        print(text_format + section_divider_str)
+        print(text_format + f"- {stage_handle}\n")
+        cfg.sim_cfg.scene_id = stage_handle
+
         if stage_handle == "NONE":
             continue
+
+        # attempt to construct simulator
         try:
-            with habitat_sim.Simulator(config_with_mm) as sim:
+            with habitat_sim.Simulator(cfg) as sim:
                 stage_filename = stage_handle.split("/")[-1]
+                text_format = ANSICodes.PURPLE.value
+                print_if_logging(
+                    sim, text_format + f"\n  -stage filename: {stage_filename} \n"
+                )
+
+                # generate and save navmesh
                 if generate_navmesh:
                     stage_directory = stage_handle[: -len(stage_filename)]
-                    # scene_dataset_directory = sim.metadata_mediator.active_dataset[:-len(sim.metadata_mediator.active_dataset.split("/")[-1])]
+                    print_if_logging(
+                        sim, text_format + f"  -stage directory: {stage_directory} \n"
+                    )
+                    # scene_dataset_directory = mm.active_dataset[:-len(mm.active_dataset.split("/")[-1])]
                     # stage_directory = os.path.join(scene_dataset_directory, stage_directory)
+
                     navmesh_filename = (
                         stage_filename[: -len(stage_filename.split(".")[-1])]
                         + "navmesh"
                     )
+                    print_if_logging(
+                        sim, text_format + f"  -navmesh filename: {navmesh_filename} \n"
+                    )
                     navmesh_settings = habitat_sim.NavMeshSettings()
                     navmesh_settings.set_defaults()
                     sim.recompute_navmesh(sim.pathfinder, navmesh_settings)
+
                     if os.path.exists(stage_directory):
                         sim.pathfinder.save_nav_mesh(stage_directory + navmesh_filename)
                     else:
@@ -319,6 +347,8 @@ def iteratively_test_all_scenes(config_with_mm, generate_navmesh=False):
                                 f"No target directory for navmesh: {stage_directory}",
                             )
                         )
+
+                # init agent and get its sensor observations from 4 different poses
                 agent = sim.initialize_agent(sim_settings["default_agent"])
                 agent_state = habitat_sim.AgentState()
                 for _orientation in range(4):
@@ -327,12 +357,15 @@ def iteratively_test_all_scenes(config_with_mm, generate_navmesh=False):
                     )
                     agent.set_state(agent_state)
                     sim.get_sensor_observations()
-                    # to extract the images:
+
+                    # # to extract the images:
                     # observations = sim.get_sensor_observations()
                     # rgb = observations["color_sensor"]
                     # semantic = observations["semantic_sensor"]
                     # depth = observations["depth_sensor"]
                     # pil_save_obs(output_file=output_path+stage_handle.split("/")[-1]+str(_orientation)+".png", rgb=rgb, semantic=semantic, depth=depth)
+
+                # process navmesh
                 all_scenes_navmesh_metrics[stage_filename] = collect_navmesh_metrics(
                     sim
                 )
@@ -340,30 +373,73 @@ def iteratively_test_all_scenes(config_with_mm, generate_navmesh=False):
 
         except Exception as e:
             failure_log.append((stage_handle, e))
-        print("=================================================")
-    print(f"Failure log = {failure_log}")
+
+    # print failure log
+    text_format = ANSICodes.GREEN.value
+    print(text_format + f"\nFailure log = {failure_log}\n")
+
+    # print number of stages we attempted to process
     print(
-        f"Tried {len(stage_handles)-1} stages."
+        text_format + f"Tried {len(stage_handles)-1} stages.\n"
     )  # manually decrement the "NONE" scene
-    print("-------------------------------")
+    print(text_format + section_divider_str)
+
+    # create cvs detailing navmesh metrics
     aggregate_navmesh_metrics(
         all_scenes_navmesh_metrics, filename=output_path + "navmesh_metrics.csv"
     )
+
+    text_format = ANSICodes.BRIGHT_RED.value
+    print(text_format + "PROCESSING COMPLETE\n")
+    print(text_format + section_divider_str)
+
+
+def process_config_json_file(
+    sim_settings: Dict[str, Any], config_json
+) -> Dict[str, Any]:
+    """
+    Update nested sim_settings dictionary. Modifies sim_settings in place.
+    """
+    for key, value in config_json.items():
+        if isinstance(value, Dict) and value:
+            nested_settings = process_config_json_file(sim_settings.get(key, {}), value)
+            sim_settings[key] = nested_settings
+        else:
+            sim_settings[key] = config_json[key]
+
+    return sim_settings
 
 
 if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--no-display", dest="display", action="store_false")
-    parser.add_argument("--no-make-video", dest="make_video", action="store_false")
-    parser.add_argument("--dataset", dest="dataset", type=str)
-    parser.set_defaults(show_video=True, make_video=True)
+    parser.add_argument(
+        "--config_file_path",
+        dest="config_file_path",
+        type=str,
+        help="config file to load" f' (default: "{default_config_file}")',
+    )
+    parser.set_defaults(config_file_path=os.path.join(dir_path, default_config_file))
     args, _ = parser.parse_known_args()
-    show_video = args.display
-    display = args.display
-    do_make_video = args.make_video
 
-    sim_settings["scene_dataset_config_file"] = args.dataset
+    # Populate sim_settings with info from dataset_processor_config.json file
+    sim_settings: Dict[str, Any] = default_sim_settings.copy()
 
-    iteratively_test_all_scenes(make_cfg_mm(sim_settings), generate_navmesh=True)
+    with open(os.path.join(dir_path, args.config_file_path)) as config_json:
+        process_config_json_file(sim_settings, json.load(config_json))
+
+    sim_settings["scene_dataset_config_file"] = os.path.join(
+        data_path, sim_settings["scene_dataset_config_file"]
+    )
+
+    # setup colored console print statement logic
+    init(autoreset=True)
+
+    # create sim config and process scenes/stages
+    text_format = ANSICodes.BRIGHT_RED.value
+    print(text_format + "\nBEGIN PROCESSING:\n")
+    print(text_format + section_divider_str)
+
+    cfg = make_cfg_mm(sim_settings)
+    iteratively_test_all_scenes(cfg, generate_navmesh=True)

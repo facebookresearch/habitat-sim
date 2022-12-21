@@ -1,0 +1,12 @@
+{
+  "scene_dataset_config_file": "scene_datasets/replica_cad/replicaCAD.scene_dataset_config.json",
+  "make_csv": true,
+  "make_video": true,
+  "show_video": true,
+  "output_file_prefix": "default",
+  "enable_physics": false,
+  "width": 256,
+  "height": 256,
+  "silent": false,
+  "debug_print": true
+}
