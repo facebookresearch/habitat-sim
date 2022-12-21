@@ -277,17 +277,7 @@ class HabitatSimInteractiveViewer(Application):
         keys = active_agent_id_and_sensor_name
 
         if self.enable_batch_renderer:
-            for i in range(self.num_env):
-                # Apply keyframe
-                keyframe = self.tiled_sims[i].gfx_replay_manager.extract_keyframe()
-                self.replay_renderer.set_environment_keyframe(i, keyframe)
-                # Copy sensor transforms
-                sensor_suite = self.tiled_sims[i]._sensors
-                for sensor_uuid, sensor in sensor_suite.items():
-                    transform = sensor._sensor_object.node.absolute_transformation()
-                    self.replay_renderer.set_sensor_transform(i, sensor_uuid, transform)
-                # Render
-                self.replay_renderer.render(mn.gl.default_framebuffer)
+            self.render_batch()
         else:
             self.sim._Simulator__sensors[keys[0]][keys[1]].draw_observation()
             agent = self.sim.get_agent(keys[0])
@@ -360,6 +350,7 @@ class HabitatSimInteractiveViewer(Application):
         self.cfg.agents[self.agent_id] = self.default_agent_config()
 
         if self.enable_batch_renderer:
+            self.cfg.enable_batch_renderer = True
             self.cfg.sim_cfg.create_renderer = False
             self.cfg.sim_cfg.enable_gfx_replay_save = True
 
@@ -415,6 +406,22 @@ class HabitatSimInteractiveViewer(Application):
 
         Timer.start()
         self.step = -1
+
+    def render_batch(self):
+        """
+        This method updates the replay manager with the current state of environments and renders them.
+        """
+        for i in range(self.num_env):
+            # Apply keyframe
+            keyframe = self.tiled_sims[i].gfx_replay_manager.extract_keyframe()
+            self.replay_renderer.set_environment_keyframe(i, keyframe)
+            # Copy sensor transforms
+            sensor_suite = self.tiled_sims[i]._sensors
+            for sensor_uuid, sensor in sensor_suite.items():
+                transform = sensor._sensor_object.node.absolute_transformation()
+                self.replay_renderer.set_sensor_transform(i, sensor_uuid, transform)
+            # Render
+            self.replay_renderer.render(mn.gl.default_framebuffer)
 
     def move_and_look(self, repetitions: int) -> None:
         """

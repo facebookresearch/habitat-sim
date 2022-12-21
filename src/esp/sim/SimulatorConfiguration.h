@@ -36,11 +36,6 @@ struct SimulatorConfiguration {
    */
   bool enablePhysics = false;
   /**
-   * @brief Toggles batch rendering, which accelerates rendering of multiple
-   * environments in parallel.
-   */
-  bool enableBatchRenderer = false;
-  /**
    * @brief Enable the recording of render keyframes during simulation.
    * These keyframes can be used later to replay the graphics of a simulation.
    */
