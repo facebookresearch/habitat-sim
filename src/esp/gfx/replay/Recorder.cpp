@@ -6,6 +6,7 @@
 
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/core/Check.h"
+#include "esp/gfx/Drawable.h"
 #include "esp/io/Json.h"
 #include "esp/io/JsonAllTypes.h"
 #include "esp/scene/SceneNode.h"
@@ -77,6 +78,17 @@ void Recorder::onCreateRenderAssetInstance(
       node, instanceKey, Corrade::Containers::NullOpt, deletionHelper});
 }
 
+void Recorder::onRemoveSceneGraph(const esp::scene::SceneGraph& sceneGraph) {
+  auto& root = sceneGraph.getRootNode();
+  scene::preOrderTraversalWithCallback(root,
+                                       [this](const scene::SceneNode& node) {
+                                         int index = findInstance(&node);
+                                         if (index != ID_UNDEFINED) {
+                                           onDeleteRenderAssetInstance(&node);
+                                         }
+                                       });
+}
+
 void Recorder::saveKeyframe() {
   updateInstanceStates();
   advanceKeyframe();
@@ -146,13 +158,12 @@ void Recorder::checkAndAddDeletion(Keyframe* keyframe,
 
 void Recorder::onDeleteRenderAssetInstance(const scene::SceneNode* node) {
   int index = findInstance(node);
-  CORRADE_INTERNAL_ASSERT(index != ID_UNDEFINED);
 
-  auto instanceKey = instanceRecords_[index].instanceKey;
-
-  checkAndAddDeletion(&getKeyframe(), instanceKey);
-
-  instanceRecords_.erase(instanceRecords_.begin() + index);
+  if (index != ID_UNDEFINED) {
+    auto instanceKey = instanceRecords_[index].instanceKey;
+    checkAndAddDeletion(&getKeyframe(), instanceKey);
+    instanceRecords_.erase(instanceRecords_.begin() + index);
+  }
 }
 
 Keyframe& Recorder::getKeyframe() {

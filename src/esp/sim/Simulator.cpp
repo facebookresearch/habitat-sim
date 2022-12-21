@@ -249,6 +249,15 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   // before anything else.
   seed(config_.randomSeed);
 
+  // This code removes the previously loaded scene from gfx-replay. Because of
+  // the issue below, scene graphs are leaked, so we cannot rely on node
+  // deletion to issue gfx-replay deletion entries.
+  auto recorder = gfxReplayMgr_->getRecorder();
+  if (recorder && activeSceneID_ >= 0 &&
+      activeSceneID_ < sceneManager_->getSceneGraphCount()) {
+    recorder->onRemoveSceneGraph(sceneManager_->getSceneGraph(activeSceneID_));
+  }
+
   // initialize scene graph CAREFUL! previous scene graph is not deleted!
   // TODO:
   // We need to make a design decision here:
@@ -319,7 +328,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
 
   // 8. Load stage specified by Scene Instance Attributes
   bool success = instanceStageForSceneAttributes(curSceneInstanceAttributes_);
-  // 9. Load object instances as spceified by Scene Instance Attributes.
+  // 9. Load object instances as specified by Scene Instance Attributes.
   if (success) {
     success = instanceObjectsForSceneAttributes(curSceneInstanceAttributes_);
     if (success) {

@@ -1428,7 +1428,7 @@ scene::SceneNode* ResourceManager::createSemanticRenderAssetInstance(
     scene::SceneNode* parent,
     DrawableGroup* drawables) {
   if (creation.isTextureBasedSemantic()) {
-    // Treat texture-based semantic meshes as General/Primitves.
+    // Treat texture-based semantic meshes as General/Primitives.
     return createRenderAssetInstanceGeneralPrimitive(creation, parent,
                                                      drawables, nullptr);
   }
@@ -1820,7 +1820,7 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
 
     // If meshIDLocal != -1 then we have multiple meshes assigned to the same
     // MeshTransformNode.  We make subsequent meshes children of the first mesh
-    // we've seen, and give them identity trasnforms.
+    // we've seen, and give them identity transforms.
     // TODO: either drop MeshTransformNode in favor of SceneData or use
     // Mn::SceneTools::convertToSingleFunctionObjects() when it's exposed.
     esp::assets::MeshTransformNode* tmpNode = &*node;
@@ -2065,7 +2065,7 @@ namespace {
  * @param typeToCheck The type of shader being specified.
  * @param materialData The imported material to check for type
  * @return Whether the imported material's supported types include one
- * congruient with the specified shader type.
+ * congruent with the specified shader type.
  */
 bool compareShaderTypeToMnMatType(const ObjectInstanceShaderType typeToCheck,
                                   const Mn::Trade::MaterialData& materialData) {

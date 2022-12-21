@@ -11,13 +11,10 @@
 #include "esp/core/Esp.h"
 
 #include "SceneGraph.h"
-#include "SceneNode.h"
 
 namespace esp {
 namespace scene {
 
-// TODO:
-// make SceneManager a singleton class
 class SceneManager {
  public:
   SceneManager() = default;
@@ -29,6 +26,9 @@ class SceneManager {
   // returns the scene graph
   SceneGraph& getSceneGraph(int sceneID);
   const SceneGraph& getSceneGraph(int sceneID) const;
+
+  // Returns the count of registered scene graphs
+  inline int getSceneGraphCount() { return sceneGraphs_.size(); }
 
  protected:
   // Each item within is a base node, parent of all in that scene, for easy

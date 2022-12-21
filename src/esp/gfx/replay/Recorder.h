@@ -18,7 +18,8 @@ struct RenderAssetInstanceCreationInfo;
 }  // namespace assets
 namespace scene {
 class SceneNode;
-}
+class SceneGraph;
+}  // namespace scene
 namespace gfx {
 namespace replay {
 
@@ -56,6 +57,15 @@ class Recorder {
    * @param assetInfo The asset that was loaded.
    */
   void onLoadRenderAsset(const esp::assets::AssetInfo& assetInfo);
+
+  /**
+   * @brief Remove all graph nodes from the current keyframe.
+   * Because scene graphs are currently leaked when scenes changes, we cannot
+   * rely on node deletion to issue deletion entries. This function allows to
+   * circumvent this issue.
+   * @param sceneGraph The scene graph from which deletion entries are issued.
+   */
+  void onRemoveSceneGraph(const esp::scene::SceneGraph& sceneGraph);
 
   /**
    * @brief Save/capture a render keyframe (a visual snapshot of the scene).
