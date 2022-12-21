@@ -5,6 +5,7 @@
 import csv
 import datetime
 import os
+import time
 from enum import Enum
 from typing import List
 
@@ -83,21 +84,62 @@ class MemoryUnitConverter:
     UNIT_CONVERSIONS = [1, 1 << 10, 1 << 20, 1 << 30]
 
 
-def print_if_logging(sim: habitat_sim.Simulator, message: str = "") -> None:
+class Timer:
     """
-    Print to console if "sim.silent" is set to false in the config file
+    Timer class used to keep track of time between buffer swaps
+    and guide the display frame rate.
     """
-    # if not sim.silent:
-    #     print(message)
 
-    print(message)
+    start_time = 0.0
+    prev_frame_time = 0.0
+    prev_frame_duration = 0.0
+    running = False
+
+    @staticmethod
+    def start() -> None:
+        """
+        Starts timer and resets previous frame time to the start time
+        """
+        Timer.running = True
+        Timer.start_time = time.time()
+        Timer.prev_frame_time = Timer.start_time
+        Timer.prev_frame_duration = 0.0
+
+    @staticmethod
+    def stop() -> None:
+        """
+        Stops timer and erases any previous time data, reseting the timer
+        """
+        Timer.running = False
+        Timer.start_time = 0.0
+        Timer.prev_frame_time = 0.0
+        Timer.prev_frame_duration = 0.0
+
+    @staticmethod
+    def next_frame() -> None:
+        """
+        Records previous frame duration and updates the previous frame timestamp
+        to the current time. If the timer is not currently running, perform nothing.
+        """
+        if not Timer.running:
+            return
+        Timer.prev_frame_duration = time.time() - Timer.prev_frame_time
+        Timer.prev_frame_time = time.time()
 
 
-def print_debug(sim: habitat_sim.Simulator, message: str = "") -> None:
+def print_if_logging(silent: bool = False, message: str = "") -> None:
     """
-    Print to console if "sim.debug_print" is set to true in the config file
+    Print to console if "silent" is set to false in the config file
     """
-    if sim.debug_print:
+    if not silent:
+        print(message)
+
+
+def print_debug(debug_print: bool = False, message: str = "") -> None:
+    """
+    Print to console if "debug_print" is set to true in the config file
+    """
+    if debug_print:
         print(message)
 
 
