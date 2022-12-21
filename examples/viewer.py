@@ -896,7 +896,7 @@ class HabitatSimInteractiveViewer(Application):
         for i in range(self.num_env):
             self.sim[i].close(destroy=True)
             event.accepted = True
-            exit(0)
+        exit(0)
 
     def draw_text(self, sensor_spec):
         self.shader.bind_vector_texture(self.glyph_cache.texture)
