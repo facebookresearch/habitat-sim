@@ -20,7 +20,7 @@ from magnum import shaders, text
 from magnum.platform.glfw import Application
 
 import habitat_sim
-from habitat_sim import BatchReplayRenderer, ReplayRendererConfiguration, physics
+from habitat_sim import ReplayRenderer, ReplayRendererConfiguration, physics
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.common import quat_from_angle_axis
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
@@ -58,9 +58,7 @@ class HabitatSimInteractiveViewer(Application):
             self.sim_settings["window_width"],
             self.sim_settings["window_height"],
         )
-        grid_size: tuple(int, int) = BatchReplayRenderer.environment_grid_size(
-            self.num_env
-        )
+        grid_size: tuple(int, int) = ReplayRenderer.environment_grid_size(self.num_env)
         camera_resolution: tuple(int, int) = (
             surface_size[0] / grid_size[0],
             surface_size[1] / grid_size[1],
@@ -180,7 +178,7 @@ class HabitatSimInteractiveViewer(Application):
         self.sim: Optional[habitat_sim.simulator.Simulator] = None
         self.tiled_sims: list[habitat_sim.simulator.Simulator] = None
         self.replay_renderer_cfg: Optional[ReplayRendererConfiguration] = None
-        self.replay_renderer: Optional[BatchReplayRenderer] = None
+        self.replay_renderer: Optional[ReplayRenderer] = None
         self.reconfigure_sim()
 
         # compute NavMesh if not already loaded by the scene.
@@ -407,7 +405,9 @@ class HabitatSimInteractiveViewer(Application):
             self.replay_renderer_cfg.gpu_device_id = self.cfg.sim_cfg.gpu_device_id
             self.replay_renderer_cfg.force_separate_semantic_scene_graph = False
             self.replay_renderer_cfg.leave_context_with_background_renderer = False
-            self.replay_renderer = BatchReplayRenderer(self.replay_renderer_cfg)
+            self.replay_renderer = ReplayRenderer.create_batch_replay_renderer(
+                self.replay_renderer_cfg
+            )
             # Pre-load composite files
             if sim_settings["composite_files"] is not None:
                 for composite_file in sim_settings["composite_files"]:
@@ -1107,7 +1107,7 @@ if __name__ == "__main__":
         "--num-environments",
         default=1,
         type=int,
-        help="Number of concurrent environments to batch render. Note that only the first environment simulates physics or can be controlled.",
+        help="Number of concurrent environments to batch render. Note that only the first environment simulates physics and can be controlled.",
     )
     parser.add_argument(
         "--composite-files",

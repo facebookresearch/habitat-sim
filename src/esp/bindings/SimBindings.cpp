@@ -75,9 +75,6 @@ void initSimBindings(py::module& m) {
           "enable_gfx_replay_save",
           &SimulatorConfiguration::enableGfxReplaySave,
           R"(Enable replay recording. See sim.gfx_replay.save_keyframe.)")
-      .def_readwrite(
-          "enable_batch_renderer", &SimulatorConfiguration::enableBatchRenderer,
-          R"(Enable batch rendering, which accelerates rendering of multiple scenes in parallel.)")
       .def_readwrite("physics_config_file",
                      &SimulatorConfiguration::physicsConfigFile,
                      R"(Path to the physics parameter config file.)")
@@ -390,9 +387,23 @@ void initSimBindings(py::module& m) {
           &ReplayRendererConfiguration::leaveContextWithBackgroundRenderer,
           R"(See See tutorials/async_rendering.py.)");
 
-  // ==== AbstractReplayRenderer ====
+  // ==== ReplayRenderer ====
   py::class_<AbstractReplayRenderer, AbstractReplayRenderer::ptr>(
-      m, "AbstractReplayRenderer")
+      m, "ReplayRenderer")
+      .def_static(
+          "create_classic_replay_renderer",
+          [](const ReplayRendererConfiguration& cfg)
+              -> AbstractReplayRenderer::ptr {
+            return ClassicReplayRenderer::ptr(new ClassicReplayRenderer(cfg));
+          },
+          R"(Create a replay renderer using the classic render pipeline.)")
+      .def_static(
+          "create_batch_replay_renderer",
+          [](const ReplayRendererConfiguration& cfg)
+              -> AbstractReplayRenderer::ptr {
+            return BatchReplayRenderer::ptr(new BatchReplayRenderer(cfg));
+          },
+          R"(Create a replay renderer using the batch render pipeline.)")
       .def(
           "preload_file",
           [](AbstractReplayRenderer& self, const std::string& filePath) {
@@ -422,34 +433,6 @@ void initSimBindings(py::module& m) {
       .def_static("environment_grid_size",
                   &AbstractReplayRenderer::environmentGridSize,
                   R"(Dimensions of the environment grid.)");
-
-  // ==== ReplayRenderer ====
-  py::class_<ClassicReplayRenderer, ClassicReplayRenderer::ptr,
-             AbstractReplayRenderer>(m, "ClassicReplayRenderer")
-      .def(py::init<const ReplayRendererConfiguration&>())
-      .def_property_readonly(
-          "renderer", &ClassicReplayRenderer::getRenderer,
-          R"(Get the renderer used by the ClassicReplayRenderer.)")
-      .def("get_scene_graph", &ClassicReplayRenderer::getSceneGraph,
-           R"(PYTHON DOES NOT GET OWNERSHIP)",
-           py::return_value_policy::reference)
-      .def("get_semantic_scene_graph",
-           &ClassicReplayRenderer::getSemanticSceneGraph,
-           R"(PYTHON DOES NOT GET OWNERSHIP)",
-           py::return_value_policy::reference)
-      .def("render",
-           static_cast<void (ClassicReplayRenderer::*)(
-               Magnum::GL::AbstractFramebuffer&)>(
-               &ClassicReplayRenderer::render),
-           R"(Render all sensors onto the main framebuffer.)")
-      .def("get_environment_sensors",
-           &ClassicReplayRenderer::getEnvironmentSensorParentNode,
-           R"(Get the parent scene node of a sensor.)");
-
-  // ==== BatchReplayRenderer ====
-  py::class_<BatchReplayRenderer, BatchReplayRenderer::ptr,
-             AbstractReplayRenderer>(m, "BatchReplayRenderer")
-      .def(py::init<const ReplayRendererConfiguration&>());
 }
 
 }  // namespace sim
