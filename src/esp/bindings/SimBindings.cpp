@@ -419,9 +419,9 @@ void initSimBindings(py::module& m) {
       .def("set_environment_keyframe",
            &AbstractReplayRenderer::setEnvironmentKeyframe,
            R"(Set the keyframe for a specific environment.)")
-      .def("environment_grid_size",
-           &AbstractReplayRenderer::environmentGridSize,
-           R"(Dimensions of the environment grid.)");
+      .def_static("environment_grid_size",
+                  &AbstractReplayRenderer::environmentGridSize,
+                  R"(Dimensions of the environment grid.)");
 
   // ==== ReplayRenderer ====
   py::class_<ClassicReplayRenderer, ClassicReplayRenderer::ptr,

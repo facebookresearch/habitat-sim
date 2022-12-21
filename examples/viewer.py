@@ -74,8 +74,6 @@ class HabitatSimInteractiveViewer(Application):
         Application.__init__(self, configuration)
         self.fps: float = 60.0
 
-        # Index of the environment being controlled by the user.
-        self.active_env_idx: int = 0
         # draw Bullet debug line visualizations (e.g. collision meshes)
         self.debug_bullet_draw = False
         # draw active contact point debug line visualizations
@@ -179,70 +177,68 @@ class HabitatSimInteractiveViewer(Application):
 
         # configure our simulator
         self.cfg: Optional[habitat_sim.simulator.Configuration] = None
-        self.sim: list[habitat_sim.simulator.Simulator] = None
+        self.sim: Optional[habitat_sim.simulator.Simulator] = None
+        self.tiled_sims: list[habitat_sim.simulator.Simulator] = None
         self.replay_renderer_cfg: Optional[ReplayRendererConfiguration] = None
         self.replay_renderer: Optional[BatchReplayRenderer] = None
         self.reconfigure_sim()
 
         # compute NavMesh if not already loaded by the scene.
-        for i in range(self.num_env):
-            if (
-                not self.sim[i].pathfinder.is_loaded
-                and self.cfg.sim_cfg.scene_id.lower() != "none"
-            ):
-                self.navmesh_config_and_recompute(i)
+        if (
+            not self.sim.pathfinder.is_loaded
+            and self.cfg.sim_cfg.scene_id.lower() != "none"
+        ):
+            self.navmesh_config_and_recompute()
 
         self.time_since_last_simulation = 0.0
         LoggingContext.reinitialize_from_env()
         logger.setLevel("INFO")
         self.print_help_text()
 
-    def draw_contact_debug(self, env_index):
+    def draw_contact_debug(self):
         """
         This method is called to render a debug line overlay displaying active contact points and normals.
         Yellow lines show the contact distance along the normal and red lines show the contact normal at a fixed length.
         """
         yellow = mn.Color4.yellow()
         red = mn.Color4.red()
-        cps = self.sim[env_index].get_physics_contact_points()
-        self.sim[env_index].get_debug_line_render().set_line_width(1.5)
-        camera_position = self.render_camera[
-            env_index
-        ].render_camera.node.absolute_translation
+        cps = self.sim.get_physics_contact_points()
+        self.sim.get_debug_line_render().set_line_width(1.5)
+        camera_position = self.render_camera.render_camera.node.absolute_translation
         # only showing active contacts
         active_contacts = (x for x in cps if x.is_active)
         for cp in active_contacts:
             # red shows the contact distance
-            self.sim[env_index].get_debug_line_render().draw_transformed_line(
+            self.sim.get_debug_line_render().draw_transformed_line(
                 cp.position_on_b_in_ws,
                 cp.position_on_b_in_ws
                 + cp.contact_normal_on_b_in_ws * -cp.contact_distance,
                 red,
             )
             # yellow shows the contact normal at a fixed length for visualization
-            self.sim[env_index].get_debug_line_render().draw_transformed_line(
+            self.sim.get_debug_line_render().draw_transformed_line(
                 cp.position_on_b_in_ws,
                 # + cp.contact_normal_on_b_in_ws * cp.contact_distance,
                 cp.position_on_b_in_ws + cp.contact_normal_on_b_in_ws * 0.1,
                 yellow,
             )
-            self.sim[env_index].get_debug_line_render().draw_circle(
+            self.sim.get_debug_line_render().draw_circle(
                 translation=cp.position_on_b_in_ws,
                 radius=0.005,
                 color=yellow,
                 normal=camera_position - cp.position_on_b_in_ws,
             )
 
-    def debug_draw(self, env_index):
+    def debug_draw(self):
         """
         Additional draw commands to be called during draw_event.
         """
         if self.debug_bullet_draw:
-            render_cam = self.render_camera[env_index].render_camera
+            render_cam = self.render_camera.render_camera
             proj_mat = render_cam.projection_matrix.__matmul__(render_cam.camera_matrix)
-            self.sim[env_index].physics_debug_draw(proj_mat)
+            self.sim.physics_debug_draw(proj_mat)
         if self.contact_debug_draw:
-            self.draw_contact_debug(env_index)
+            self.draw_contact_debug()
 
     def draw_event(
         self,
@@ -268,14 +264,10 @@ class HabitatSimInteractiveViewer(Application):
         # Occasionally a frame will pass quicker than 1/60 seconds
         if self.time_since_last_simulation >= 1.0 / self.fps:
             if self.simulating or self.simulate_single_step:
-                for i in range(self.num_env):
-                    # step physics at a fixed rate
-                    # In the interest of frame rate, only a single step is taken,
-                    # even if time_since_last_simulation is quite large
-                    self.sim[i].step_world(1.0 / self.fps)
-                    self.simulate_single_step = False
-                    if simulation_call is not None:
-                        simulation_call()
+                self.sim.step_world(1.0 / self.fps)
+                self.simulate_single_step = False
+                if simulation_call is not None:
+                    simulation_call()
             if global_call is not None:
                 global_call()
 
@@ -289,25 +281,25 @@ class HabitatSimInteractiveViewer(Application):
         if self.enable_batch_renderer:
             for i in range(self.num_env):
                 # Apply keyframe
-                keyframe = self.sim[i].gfx_replay_manager.extract_keyframe()
+                keyframe = self.tiled_sims[i].gfx_replay_manager.extract_keyframe()
                 self.replay_renderer.set_environment_keyframe(i, keyframe)
                 # Copy sensor transforms
-                sensor_suite = self.sim[i]._sensors
+                sensor_suite = self.tiled_sims[i]._sensors
                 for sensor_uuid, sensor in sensor_suite.items():
                     transform = sensor._sensor_object.node.absolute_transformation()
                     self.replay_renderer.set_sensor_transform(i, sensor_uuid, transform)
                 # Render
                 self.replay_renderer.render(mn.gl.default_framebuffer)
         else:
-            self.sim[0]._Simulator__sensors[keys[0]][keys[1]].draw_observation()
-            agent = self.sim[0].get_agent(keys[0])
-            self.render_camera[0] = agent.scene_node.node_sensor_suite.get(keys[1])
-            self.debug_draw(0)
-            self.render_camera[0].render_target.blit_rgba_to_default()
+            self.sim._Simulator__sensors[keys[0]][keys[1]].draw_observation()
+            agent = self.sim.get_agent(keys[0])
+            self.render_camera = agent.scene_node.node_sensor_suite.get(keys[1])
+            self.debug_draw()
+            self.render_camera.render_target.blit_rgba_to_default()
 
         # draw CPU/GPU usage data and other info to the app window
         mn.gl.default_framebuffer.bind()
-        self.draw_text(self.render_camera[self.active_env_idx].specification())
+        self.draw_text(self.render_camera.specification())
 
         self.swap_buffers()
         Timer.next_frame()
@@ -379,27 +371,28 @@ class HabitatSimInteractiveViewer(Application):
             self.cfg.sim_cfg.scene_light_setup = habitat_sim.gfx.DEFAULT_LIGHTING_KEY
 
         if self.sim is None:
-            self.sim = []
+            self.tiled_sims = []
             for _i in range(self.num_env):
-                self.sim.append(habitat_sim.Simulator(self.cfg))
+                self.tiled_sims.append(habitat_sim.Simulator(self.cfg))
+            self.sim = self.tiled_sims[0]
         else:  # edge case
             for i in range(self.num_env):
-                if self.sim[i].config.sim_cfg.scene_id == self.cfg.sim_cfg.scene_id:
+                if (
+                    self.tiled_sims[i].config.sim_cfg.scene_id
+                    == self.cfg.sim_cfg.scene_id
+                ):
                     # we need to force a reset, so change the internal config scene name
-                    self.sim[i].config.sim_cfg.scene_id = "NONE"
-                self.sim[i].reconfigure(self.cfg)
+                    self.tiled_sims[i].config.sim_cfg.scene_id = "NONE"
+                self.tiled_sims[i].reconfigure(self.cfg)
 
         # post reconfigure
-        self.default_agent = []
-        self.render_camera = []
-        for i in range(self.num_env):
-            self.default_agent.append(self.sim[i].get_agent(self.agent_id))
-            self.render_camera.append(
-                self.default_agent[i].scene_node.node_sensor_suite.get("color_sensor")
-            )
+        self.default_agent = self.sim.get_agent(self.agent_id)
+        self.render_camera = self.default_agent.scene_node.node_sensor_suite.get(
+            "color_sensor"
+        )
 
         # set sim_settings scene name as actual loaded scene
-        self.sim_settings["scene"] = self.sim[0].curr_scene_name
+        self.sim_settings["scene"] = self.sim.curr_scene_name
 
         # Initialize replay renderer
         if self.enable_batch_renderer and self.replay_renderer is None:
@@ -434,7 +427,7 @@ class HabitatSimInteractiveViewer(Application):
             return
 
         key = Application.KeyEvent.Key
-        agent = self.sim[self.active_env_idx].agents[self.agent_id]
+        agent = self.sim.agents[self.agent_id]
         press: Dict[key.key, bool] = self.pressed
         act: Dict[key.key, str] = self.key_to_action
 
@@ -453,8 +446,8 @@ class HabitatSimInteractiveViewer(Application):
         Sets the gravity vector to the negative of it's previous value. This is
         a good method for testing simulation functionality.
         """
-        gravity: mn.Vector3 = self.sim[self.active_env_idx].get_gravity() * -1
-        self.sim[self.active_env_idx].set_gravity(gravity)
+        gravity: mn.Vector3 = self.sim.get_gravity() * -1
+        self.sim.set_gravity(gravity)
 
     def key_press_event(self, event: Application.KeyEvent) -> None:
         """
@@ -478,18 +471,12 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.H:
             self.print_help_text()
 
-        elif key == pressed.ONE:
-            # Change the active scene
-            self.active_env_idx = (self.active_env_idx + 1) % self.num_env
-
         elif key == pressed.TAB:
             # NOTE: (+ALT) - reconfigure without cycling scenes
             if not alt_pressed:
                 # cycle the active scene from the set available in MetadataMediator
                 inc = -1 if shift_pressed else 1
-                scene_ids = self.sim[
-                    self.active_env_idx
-                ].metadata_mediator.get_scene_handles()
+                scene_ids = self.sim.metadata_mediator.get_scene_handles()
                 cur_scene_index = 0
                 if self.sim_settings["scene"] not in scene_ids:
                     matching_scenes = [
@@ -516,7 +503,7 @@ class HabitatSimInteractiveViewer(Application):
             )
 
         elif key == pressed.SPACE:
-            if not self.sim[self.active_env_idx].config.sim_cfg.enable_physics:
+            if not self.sim.config.sim_cfg.enable_physics:
                 logger.warn("Warning: physics was not enabled during setup")
             else:
                 self.simulating = not self.simulating
@@ -544,7 +531,7 @@ class HabitatSimInteractiveViewer(Application):
                 logger.info(
                     "Command: perform discrete collision detection and visualize active contacts."
                 )
-                self.sim[self.active_env_idx].perform_discrete_collision_detection()
+                self.sim.perform_discrete_collision_detection()
                 self.contact_debug_draw = True
                 # TODO: add a nice log message with concise contact pair naming.
 
@@ -563,13 +550,15 @@ class HabitatSimInteractiveViewer(Application):
                 logger.warn("Load URDF: input is not a URDF. Aborting.")
             elif os.path.exists(urdf_file_path):
                 self.cached_urdf = urdf_file_path
-                aom = self.sim[self.active_env_idx].get_articulated_object_manager()
+                aom = self.sim.get_articulated_object_manager()
                 ao = aom.add_articulated_object_from_urdf(
                     urdf_file_path, fixed_base, 1.0, 1.0, True
                 )
-                ao.translation = self.default_agent[
-                    self.active_env_idx
-                ].scene_node.transformation.transform_point([0.0, 1.0, -1.5])
+                ao.translation = (
+                    self.default_agent.scene_node.transformation.transform_point(
+                        [0.0, 1.0, -1.5]
+                    )
+                )
             else:
                 logger.warn("Load URDF: input file not found. Aborting.")
 
@@ -587,18 +576,16 @@ class HabitatSimInteractiveViewer(Application):
             # NOTE: (+SHIFT) - re-compute the NavMesh
             if alt_pressed:
                 logger.info("Command: resample agent state from navmesh")
-                if self.sim[self.active_env_idx].pathfinder.is_loaded:
+                if self.sim.pathfinder.is_loaded:
                     new_agent_state = habitat_sim.AgentState()
-                    new_agent_state.position = self.sim[
-                        self.active_env_idx
-                    ].pathfinder.get_random_navigable_point()
+                    new_agent_state.position = (
+                        self.sim.pathfinder.get_random_navigable_point()
+                    )
                     new_agent_state.rotation = quat_from_angle_axis(
-                        self.sim[self.active_env_idx].random.uniform_float(
-                            0, 2.0 * np.pi
-                        ),
+                        self.sim.random.uniform_float(0, 2.0 * np.pi),
                         np.array([0, 1, 0]),
                     )
-                    self.default_agent[self.active_env_idx].set_state(new_agent_state)
+                    self.default_agent.set_state(new_agent_state)
                 else:
                     logger.warning(
                         "NavMesh is not initialized. Cannot sample new agent state."
@@ -607,10 +594,8 @@ class HabitatSimInteractiveViewer(Application):
                 logger.info("Command: recompute navmesh")
                 self.navmesh_config_and_recompute()
             else:
-                if self.sim[self.active_env_idx].pathfinder.is_loaded:
-                    self.sim[self.active_env_idx].navmesh_visualization = not self.sim[
-                        self.active_env_idx
-                    ].navmesh_visualization
+                if self.sim.pathfinder.is_loaded:
+                    self.sim.navmesh_visualization = not self.sim.navmesh_visualization
                     logger.info("Command: toggle navmesh")
                 else:
                     logger.warn("Warning: recompute navmesh first")
@@ -644,7 +629,7 @@ class HabitatSimInteractiveViewer(Application):
         button = Application.MouseMoveEvent.Buttons
         # if interactive mode -> LOOK MODE
         if event.buttons == button.LEFT and self.mouse_interaction == MouseMode.LOOK:
-            agent = self.sim[self.active_env_idx].agents[self.agent_id]
+            agent = self.sim.agents[self.agent_id]
             delta = self.get_mouse_position(event.relative_position) / 2
             action = habitat_sim.agent.ObjectControls()
             act_spec = habitat_sim.agent.ActuationSpec
@@ -654,11 +639,7 @@ class HabitatSimInteractiveViewer(Application):
 
             # up/down on cameras' scene nodes
             action = habitat_sim.agent.ObjectControls()
-            sensors = list(
-                self.default_agent[
-                    self.active_env_idx
-                ].scene_node.subtree_sensors.values()
-            )
+            sensors = list(self.default_agent.scene_node.subtree_sensors.values())
             [action(s.object, "look_down", act_spec(delta.y), False) for s in sensors]
 
         # if interactive mode is TRUE -> GRAB MODE
@@ -676,13 +657,13 @@ class HabitatSimInteractiveViewer(Application):
         objects to drag their position. (right-click for fixed constraints)
         """
         button = Application.MouseEvent.Button
-        physics_enabled = self.sim[self.active_env_idx].get_physics_simulation_library()
+        physics_enabled = self.sim.get_physics_simulation_library()
 
         # if interactive mode is True -> GRAB MODE
         if self.mouse_interaction == MouseMode.GRAB and physics_enabled:
-            render_camera = self.render_camera[self.active_env_idx].render_camera
+            render_camera = self.render_camera.render_camera
             ray = render_camera.unproject(self.get_mouse_position(event.position))
-            raycast_results = self.sim[self.active_env_idx].cast_ray(ray=ray)
+            raycast_results = self.sim.cast_ray(ray=ray)
 
             if raycast_results.has_hits():
                 hit_object, ao_link = -1, -1
@@ -690,10 +671,8 @@ class HabitatSimInteractiveViewer(Application):
 
                 if hit_info.object_id >= 0:
                     # we hit an non-staged collision object
-                    ro_mngr = self.sim[self.active_env_idx].get_rigid_object_manager()
-                    ao_mngr = self.sim[
-                        self.active_env_idx
-                    ].get_articulated_object_manager()
+                    ro_mngr = self.sim.get_rigid_object_manager()
+                    ao_mngr = self.sim.get_articulated_object_manager()
                     ao = ao_mngr.get_object_by_id(hit_info.object_id)
                     ro = ro_mngr.get_object_by_id(hit_info.object_id)
 
@@ -732,7 +711,7 @@ class HabitatSimInteractiveViewer(Application):
                     # done checking for AO
 
                     if hit_object >= 0:
-                        node = self.default_agent[self.active_env_idx].scene_node
+                        node = self.default_agent.scene_node
                         constraint_settings = physics.RigidConstraintSettings()
 
                         constraint_settings.object_id_a = hit_object
@@ -793,7 +772,7 @@ class HabitatSimInteractiveViewer(Application):
             # use shift for fine-grained zooming
             mod_val = 1.01 if shift_pressed else 1.1
             mod = mod_val if scroll_mod_val > 0 else 1.0 / mod_val
-            cam = self.render_camera[self.active_env_idx]
+            cam = self.render_camera
             cam.zoom(mod)
             self.redraw()
 
@@ -803,9 +782,7 @@ class HabitatSimInteractiveViewer(Application):
             scroll_delta = scroll_mod_val * mod_val
             if alt_pressed or ctrl_pressed:
                 # rotate the object's local constraint frame
-                agent_t = self.default_agent[
-                    self.active_env_idx
-                ].scene_node.transformation_matrix()
+                agent_t = self.default_agent.scene_node.transformation_matrix()
                 # ALT - yaw
                 rotation_axis = agent_t.transform_vector(mn.Vector3(0, 1, 0))
                 if alt_pressed and ctrl_pressed:
@@ -841,12 +818,10 @@ class HabitatSimInteractiveViewer(Application):
         if not self.mouse_grabber:
             return
 
-        render_camera = self.render_camera[self.active_env_idx].render_camera
+        render_camera = self.render_camera.render_camera
         ray = render_camera.unproject(point)
 
-        rotation: mn.Matrix3x3 = self.default_agent[
-            self.active_env_idx
-        ].scene_node.rotation.to_matrix()
+        rotation: mn.Matrix3x3 = self.default_agent.scene_node.rotation.to_matrix()
         translation: mn.Vector3 = (
             render_camera.node.absolute_translation
             + ray.direction * self.mouse_grabber.grip_depth
@@ -872,7 +847,7 @@ class HabitatSimInteractiveViewer(Application):
         elif self.mouse_interaction == MouseMode.GRAB:
             self.mouse_interaction = MouseMode.LOOK
 
-    def navmesh_config_and_recompute(self, env_index) -> None:
+    def navmesh_config_and_recompute(self) -> None:
         """
         This method is setup to be overridden in for setting config accessibility
         in inherited classes.
@@ -882,8 +857,8 @@ class HabitatSimInteractiveViewer(Application):
         self.navmesh_settings.agent_height = self.cfg.agents[self.agent_id].height
         self.navmesh_settings.agent_radius = self.cfg.agents[self.agent_id].radius
 
-        self.sim[env_index].recompute_navmesh(
-            self.sim[env_index].pathfinder,
+        self.sim.recompute_navmesh(
+            self.sim.pathfinder,
             self.navmesh_settings,
             include_static_objects=True,
         )
@@ -894,7 +869,7 @@ class HabitatSimInteractiveViewer(Application):
         application.
         """
         for i in range(self.num_env):
-            self.sim[i].close(destroy=True)
+            self.tiled_sims[i].close(destroy=True)
             event.accepted = True
         exit(0)
 
@@ -968,7 +943,6 @@ Key Commands:
     ',':        Render a Bullet collision shape debug wireframe overlay (white=active, green=sleeping, blue=wants sleeping, red=can't sleep).
     'c':        Run a discrete collision detection pass and render a debug wireframe overlay showing active contact points and normals (yellow=fixed length normals, red=collision distances).
                 (+SHIFT) Toggle the contact point debug render overlay on/off.
-    '1':        Cycle the controllable environment when using batch rendering.
 
     Object Interactions:
     SPACE:      Toggle physics simulation on/off.
@@ -1133,7 +1107,7 @@ if __name__ == "__main__":
         "--num-environments",
         default=1,
         type=int,
-        help="Number of concurrent environments to batch render.",
+        help="Number of concurrent environments to batch render. Note that only the first environment simulates physics or can be controlled.",
     )
     parser.add_argument(
         "--composite-files",
