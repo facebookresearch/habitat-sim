@@ -80,13 +80,13 @@ void Recorder::onCreateRenderAssetInstance(
 
 void Recorder::onDeleteSceneGraph(const esp::scene::SceneGraph& sceneGraph) {
   auto& root = sceneGraph.getRootNode();
-  scene::preOrderTraversalWithCallback(root,
-                                       [this](const scene::SceneNode& node) {
-                                         int index = findInstance(&node);
-                                         if (index != ID_UNDEFINED) {
-                                           onDeleteRenderAssetInstance(&node);
-                                         }
-                                       });
+  scene::preOrderTraversalWithCallback(
+      root, [this](const scene::SceneNode& node) {
+        int index = findInstance(&node);
+        if (index != ID_UNDEFINED) {
+          delete instanceRecords_[index].deletionHelper;
+        }
+      });
 }
 
 void Recorder::saveKeyframe() {
