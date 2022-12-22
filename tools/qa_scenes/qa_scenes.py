@@ -8,7 +8,7 @@ import math
 import os
 import sys
 import time
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
@@ -20,7 +20,13 @@ from colorama import init
 from magnum.platform.glfw import Application
 from matplotlib import pyplot as plt
 from PIL import Image
-from qa_scene_utils import ANSICodes, Timer, print_if_logging, section_divider_str
+from qa_scene_utils import (
+    ANSICodes,
+    Timer,
+    print_dataset_info,
+    print_if_logging,
+    section_divider_str,
+)
 
 import habitat_sim
 from habitat_sim.utils import common as utils
@@ -28,19 +34,28 @@ from habitat_sim.utils import viz_utils as vut
 from habitat_sim.utils.common import d3_40_colors_rgb
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
 
+# clean up types with TypeVars
+NavmeshMetrics = Dict[str, Union[int, float]]
+
 # get the output directory and data path
 repo = git.Repo(".", search_parent_directories=True)
 dir_path = repo.working_tree_dir
 data_path = os.path.join(dir_path, "data")
-output_directory = "tools/qa_scenes/qa_scenes_output/"  # @param {type:"string"}
+output_directory = "./tools/qa_scenes/qa_scenes_output/"  # @param {type:"string"}
 output_path = os.path.join(dir_path, output_directory)
 if not os.path.exists(output_path):
     os.mkdir(output_path)
 
 silent: bool = False
 
-# NOTE: change this as you will
-default_qa_config_file = "tools/qa_scenes/configs/default.qa_scene_config.json"
+# NOTE: change this to config file to test
+qa_config_filename = "apt_1"
+
+config_directory = "./tools/qa_scenes/configs/"
+qa_config_extension = ".qa_scene_config.json"
+qa_config_filepath = os.path.join(
+    config_directory, qa_config_filename + qa_config_extension
+)
 
 
 class QASceneProcessingViewer(Application):
@@ -48,11 +63,14 @@ class QASceneProcessingViewer(Application):
 
         # Construct magnum.platform.glfw.Application
         configuration = self.Configuration()
-        configuration.title = "QA Scene Processing Application"
+        configuration.title = "QA Scene Processing Viewer"
         Application.__init__(self, configuration)
 
+        # set proper viewport size
         self.sim_settings: Dict[str, Any] = sim_settings
-        self.fps: float = 60.0
+        self.viewport_size: mn.Vector2i = mn.gl.default_framebuffer.viewport.size()
+        self.sim_settings["width"] = self.viewport_size[0]
+        self.sim_settings["height"] = self.viewport_size[1]
 
         # x_range: mn.Vector2i = mn.Vector2i(0, sim_settings["width"])
         # y_range: mn.Vector2i = mn.Vector2i(0, sim_settings["height"])
@@ -60,33 +78,25 @@ class QASceneProcessingViewer(Application):
         # self.viewport_size: mn.Vector2i = viewport_range.size()
         # self.framebuffer = mn.gl.Framebuffer(viewport_range)
 
-        # set proper viewport size
-        self.viewport_size: mn.Vector2i = mn.gl.default_framebuffer.viewport.size()
-        self.sim_settings["width"] = self.viewport_size[0]
-        self.sim_settings["height"] = self.viewport_size[1]
-
         # variables that track sim time and render time
         self.total_frame_count: int = 0  # TODO debugging, remove
 
         self.fps: float = 60.0
-        self.physics_step_duration: float = 1.0 / self.fps
-
-        self.render_frames_to_track: int = 30
-
+        self.average_fps: float = self.fps
         self.prev_frame_duration: float = 0.0
         self.frame_duration_sum: float = 0.0
-        self.average_fps: float = self.fps
 
+        self.physics_step_duration: float = 1.0 / self.fps
         self.prev_sim_duration: float = 0.0
         self.sim_duration_sum: float = 0.0
         self.avg_sim_duration: float = 0.0
         self.sim_steps_tracked: int = 0
 
+        self.render_frames_to_track: int = 30
         self.prev_render_duration: float = 0.0
         self.render_duration_sum: float = 0.0
         self.avg_render_duration: float = 0.0
         self.render_frames_tracked: int = 0
-
         self.time_since_last_simulation = 0.0
 
         # toggle physics simulation on/off
@@ -136,17 +146,12 @@ class QASceneProcessingViewer(Application):
         sim_settings: Dict[str, Any],
     ) -> None:
 
-        # scene_handle = "/home/johnreyna/dev/habitat-sim/data/versioned_data/replica_cad_dataset_1.5/stages/frl_apartment_stage.glb"
-
         self.sim_settings = sim_settings
-        # self.sim_settings["scene"] = scene_handle
 
         self.cfg = make_cfg_mm(self.sim_settings)
         self.agent_id: int = self.sim_settings["default_agent"]
         self.cfg.agents[self.agent_id] = self.default_agent_config()
-
-        # self.cfg.sim_cfg.scene_id = scene_handle
-        # self.mm = self.cfg.metadata_mediator
+        self.mm = self.cfg.metadata_mediator
 
         if self.sim_settings["stage_requires_lighting"]:
             print("Setting synthetic lighting override for stage.")
@@ -258,10 +263,9 @@ class QASceneProcessingViewer(Application):
         at a fixed rate.
         """
 
+        # self.framebuffer.clear(
         mn.gl.default_framebuffer.clear(
-            # self.framebuffer.clear(
-            mn.gl.FramebufferClear.COLOR
-            | mn.gl.FramebufferClear.DEPTH
+            mn.gl.FramebufferClear.COLOR | mn.gl.FramebufferClear.DEPTH
         )
 
         # Agent actions should occur at a fixed rate per second
@@ -331,11 +335,46 @@ class QASceneProcessingViewer(Application):
         """
         key = event.key
         pressed = Application.KeyEvent.Key
+        mod = Application.InputEvent.Modifier
+
+        shift_pressed = bool(event.modifiers & mod.SHIFT)
+        alt_pressed = bool(event.modifiers & mod.ALT)
+        # warning: ctrl doesn't always pass through with other key-presses
 
         if key == pressed.ESC:
             event.accepted = True
             self.exit_event(Application.ExitEvent)
             return
+
+        # TODO make sure this works
+        elif key == pressed.TAB:
+            # NOTE: (+ALT) - reconfigure without cycling scenes
+            if not alt_pressed:
+                # cycle the active scene from the set available in MetadataMediator
+                inc = -1 if shift_pressed else 1
+                scene_ids = self.mm.get_scene_handles()
+                cur_scene_index = 0
+                if self.sim_settings["scene"] not in scene_ids:
+                    matching_scenes = [
+                        (ix, x)
+                        for ix, x in enumerate(scene_ids)
+                        if self.sim_settings["scene"] in x
+                    ]
+                    if not matching_scenes:
+                        print(
+                            f"The current scene, '{self.sim_settings['scene']}', is not in the list, starting cycle at index 0."
+                        )
+                    else:
+                        cur_scene_index = matching_scenes[0][0]
+                else:
+                    cur_scene_index = scene_ids.index(self.sim_settings["scene"])
+
+                next_scene_index = min(
+                    max(cur_scene_index + inc, 0), len(scene_ids) - 1
+                )
+                self.sim_settings["scene"] = scene_ids[next_scene_index]
+            self.reconfigure_sim()
+            print(f"Reconfigured simulator for scene: {self.sim_settings['scene']}")
 
         # update map of moving/looking keys which are currently pressed
         if key in self.pressed:
@@ -466,7 +505,7 @@ def make_cfg_mm(settings) -> habitat_sim.Configuration:
 ######################################################
 
 
-def collect_navmesh_metrics(sim):
+def collect_navmesh_metrics(sim) -> NavmeshMetrics:
     nav_metrics = {}
     if sim.pathfinder.is_loaded:
         nav_metrics["num_islands"] = sim.pathfinder.num_islands
@@ -490,7 +529,9 @@ def collect_navmesh_metrics(sim):
     return nav_metrics
 
 
-def aggregate_navmesh_metrics(all_scenes_navmesh_metrics, filename):
+def aggregate_navmesh_metrics(
+    all_scenes_navmesh_metrics: Dict[str, NavmeshMetrics], filename
+) -> None:
     import csv
 
     # save a csv of navmesh metrics
@@ -622,40 +663,21 @@ def collision_grid_test(sim):
         current_cell.x += cell_size
 
 
-def iteratively_test_all_scenes(cfg: habitat_sim.Configuration, generate_navmesh=False):
-
-    mm = cfg.metadata_mediator
-
-    # print dataset report
-    text_format = ANSICodes.BRIGHT_CYAN.value
-    print_if_logging(silent, text_format + "\nDATASET REPORT")
-    print_if_logging(silent, text_format + section_divider_str)
-    print_if_logging(silent, text_format + mm.dataset_report())
-
-    # print active dataset
-    text_format = ANSICodes.ORANGE.value
-    print_if_logging(silent, text_format + "ACTIVE DATASET")
-    print_if_logging(silent, text_format + section_divider_str)
-    print_if_logging(silent, text_format + f"{mm.active_dataset}\n")
-
-    # print list of scenes
-    text_format = ANSICodes.BRIGHT_MAGENTA.value
-    print_if_logging(silent, text_format + "SCENES")
-    print_if_logging(silent, text_format + section_divider_str)
-    for scene_handle in mm.get_scene_handles():
-        print_if_logging(silent, text_format + "-" + scene_handle + "\n")
-
-    # get and print list of stage handles
+def process_stages(
+    mm: habitat_sim.metadata.MetadataMediator,
+    sim_settings: Dict[str, Any],
+    generate_navmesh=False,
+) -> Dict[str, NavmeshMetrics]:
+    # process each stage
     text_format = ANSICodes.BROWN.value
     print_if_logging(silent, text_format + "STAGES")
     stage_handles = mm.stage_template_manager.get_templates_by_handle_substring()
     # optionally manually cull some problem scenes
     # stage_handles = [x for x in stage_handles if "106366104_174226320" not in x]
     # stage_handles = [x for x in stage_handles if x.split("/")[-1].split(".")[0] in modified_stage_handles]
+
     failure_log = []
     all_scenes_navmesh_metrics = {}
-
-    # process each stage
     for stage_handle in stage_handles:
 
         # print stage handle
@@ -765,6 +787,90 @@ def iteratively_test_all_scenes(cfg: habitat_sim.Configuration, generate_navmesh
     )  # manually decrement the "NONE" scene
     print_if_logging(silent, text_format + section_divider_str)
 
+    return all_scenes_navmesh_metrics
+
+
+def process_scenes(
+    mm: habitat_sim.metadata.MetadataMediator,
+    sim_settings: Dict[str, Any],
+) -> None:
+    # get scene handles
+    text_format = ANSICodes.BRIGHT_MAGENTA.value
+    print_if_logging(silent, text_format + "SCENES")
+    scene_handles: List[str] = mm.get_scene_handles()
+
+    # determine indices of scenes to process
+    start_index = 0
+    end_index = len(scene_handles)
+
+    # start index provided is valid given the number of scenes
+    if (
+        "start_scene_index" in sim_settings
+        and isinstance(sim_settings["start_scene_index"], int)
+        and sim_settings["start_scene_index"] >= 0
+        and sim_settings["start_scene_index"] <= len(scene_handles)
+    ):
+        start_index = sim_settings["start_scene_index"]
+
+    # end index provided is valid given the number of scenes
+    if (
+        "end_scene_index" in sim_settings
+        and isinstance(sim_settings["end_scene_index"], int)
+        and sim_settings["end_scene_index"] > sim_settings["start_scene_index"]
+        and sim_settings["end_scene_index"] <= len(scene_handles)
+    ):
+        # end index is exclusive
+        end_index = sim_settings["end_scene_index"] + 1
+
+    # process specified scenes
+    failure_log = []
+    # all_scenes_navmesh_metrics = {}
+    for i in range(start_index, end_index):
+        scene_handle = scene_handles[i]
+
+        # print scene handle
+        text_format = ANSICodes.BRIGHT_MAGENTA.value
+        print_if_logging(silent, text_format + section_divider_str)
+        print_if_logging(silent, text_format + f"-{scene_handle}\n")
+        cfg.sim_cfg.scene_id = scene_handle
+
+        # attempt to construct simulator and process scene
+        try:
+            with habitat_sim.Simulator(cfg) as sim:
+                text_format = ANSICodes.PURPLE.value
+                scene_filename = scene_handle.split("/")[-1]
+                print_if_logging(
+                    silent, text_format + f"\n  -scene filename: {scene_filename}\n"
+                )
+                scene_directory = scene_handle[: -len(scene_filename)]
+                print_if_logging(
+                    silent, text_format + f"  -scene directory: {scene_directory}\n"
+                )
+                sim.close()
+
+        except Exception as e:
+            # store any exceptions raised when constructing simulator
+            failure_log.append((scene_handle, e))
+
+    # print failure log
+    text_format = ANSICodes.GREEN.value
+    print_if_logging(silent, text_format + f"\nFailure log = {failure_log}\n")
+
+
+def iteratively_test_all_scenes(
+    cfg: habitat_sim.Configuration, sim_settings: Dict[str, Any], generate_navmesh=False
+) -> None:
+
+    mm = cfg.metadata_mediator
+
+    print_dataset_info(silent, mm)
+
+    process_scenes(mm, sim_settings)
+
+    all_scenes_navmesh_metrics: Dict[str, NavmeshMetrics] = process_stages(
+        mm, sim_settings, generate_navmesh
+    )
+
     # create cvs detailing navmesh metrics
     aggregate_navmesh_metrics(
         all_scenes_navmesh_metrics, filename=output_path + "navmesh_metrics.csv"
@@ -802,18 +908,23 @@ if __name__ == "__main__":
         "--config_file_path",
         dest="config_file_path",
         type=str,
-        help=f'config file to load (default: "{default_qa_config_file}")',
+        help=f'config file to load (default: "{qa_config_filepath}")',
     )
-    parser.set_defaults(config_file_path=os.path.join(dir_path, default_qa_config_file))
+    parser.set_defaults(config_file_path=os.path.join(dir_path, qa_config_filepath))
     args, _ = parser.parse_known_args()
 
     # Populate sim_settings with data from qa_scene_config.json file
     sim_settings: Dict[str, Any] = default_sim_settings.copy()
     with open(os.path.join(dir_path, args.config_file_path)) as config_json:
         parse_config_json_file(sim_settings, json.load(config_json))
+
     sim_settings["scene_dataset_config_file"] = os.path.join(
         data_path, sim_settings["scene_dataset_config_file"]
     )
+    if "enable_physics" not in sim_settings:
+        sim_settings["enable_physics"] = True
+    if "stage_requires_lighting" not in sim_settings:
+        sim_settings["stage_requires_lighting"] = True
     silent = sim_settings["silent"]
 
     # setup colored console print statement logic
@@ -824,12 +935,10 @@ if __name__ == "__main__":
     print_if_logging(silent, text_format + "\nBEGIN PROCESSING")
     print_if_logging(silent, text_format + section_divider_str)
 
-    # TODO: testing
-    #   sim_settings["scene"] = "./data/scene_datasets/habitat-test-scenes/apartment_1.glb",
-    sim_settings["enable_physics"] = True
-    sim_settings["stage_requires_lighting"] = True
-    QASceneProcessingViewer(sim_settings).exec()
-
-    # # make simulator configuration and process all scenes
-    # cfg = make_cfg_mm(sim_settings)
-    # iteratively_test_all_scenes(cfg, generate_navmesh=True)
+    if "run_viewer" in sim_settings and sim_settings["run_viewer"]:
+        # create viewer app
+        QASceneProcessingViewer(sim_settings).exec()
+    else:
+        # make simulator configuration and process all scenes without viewing them in app
+        cfg = make_cfg_mm(sim_settings)
+        iteratively_test_all_scenes(cfg, sim_settings, generate_navmesh=True)

@@ -143,6 +143,27 @@ def print_debug(debug_print: bool = False, message: str = "") -> None:
         print(message)
 
 
+def print_dataset_info(silent: bool, mm: habitat_sim.metadata.MetadataMediator):
+    # print dataset report
+    text_format = ANSICodes.BRIGHT_CYAN.value
+    print_if_logging(silent, text_format + "\nDATASET REPORT")
+    print_if_logging(silent, text_format + section_divider_str)
+    print_if_logging(silent, text_format + mm.dataset_report())
+
+    # print active dataset
+    text_format = ANSICodes.ORANGE.value
+    print_if_logging(silent, text_format + "ACTIVE DATASET")
+    print_if_logging(silent, text_format + section_divider_str)
+    print_if_logging(silent, text_format + f"{mm.active_dataset}\n")
+
+    # print list of scenes
+    text_format = ANSICodes.BRIGHT_MAGENTA.value
+    print_if_logging(silent, text_format + "SCENES")
+    print_if_logging(silent, text_format + section_divider_str)
+    for scene_handle in mm.get_scene_handles():
+        print_if_logging(silent, text_format + "-" + scene_handle + "\n")
+
+
 def create_unique_filename(
     dir_path: str, extension: str, filename_prefix: str = None
 ) -> str:
