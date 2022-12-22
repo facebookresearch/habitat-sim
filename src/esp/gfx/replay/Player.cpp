@@ -161,6 +161,18 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     assetInfos_[assetInfo.filepath] = assetInfo;
   }
 
+  for (const auto& deletionInstanceKey : keyframe.deletions) {
+    const auto& it = createdInstances_.find(deletionInstanceKey);
+    if (it == createdInstances_.end()) {
+      // missing instance for this key, probably due to a failed instance
+      // creation
+      continue;
+    }
+
+    implementation_->deleteAssetInstance(it->second);
+    createdInstances_.erase(deletionInstanceKey);
+  }
+
   for (const auto& pair : keyframe.creations) {
     const auto& creation = pair.second;
     if (assetInfos_.count(creation.filepath) == 0u) {
@@ -186,18 +198,6 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     const auto& instanceKey = pair.first;
     CORRADE_INTERNAL_ASSERT(createdInstances_.count(instanceKey) == 0);
     createdInstances_[instanceKey] = node;
-  }
-
-  for (const auto& deletionInstanceKey : keyframe.deletions) {
-    const auto& it = createdInstances_.find(deletionInstanceKey);
-    if (it == createdInstances_.end()) {
-      // missing instance for this key, probably due to a failed instance
-      // creation
-      continue;
-    }
-
-    implementation_->deleteAssetInstance(it->second);
-    createdInstances_.erase(deletionInstanceKey);
   }
 
   for (const auto& pair : keyframe.stateUpdates) {
