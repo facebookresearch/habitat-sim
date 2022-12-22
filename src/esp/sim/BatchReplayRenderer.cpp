@@ -20,8 +20,12 @@ using namespace Mn::Math::Literals;  // NOLINT
 
 BatchReplayRenderer::BatchReplayRenderer(
     const ReplayRendererConfiguration& cfg) {
+  if (Magnum::GL::Context::hasCurrent()) {
+    flextGLInit(Magnum::GL::Context::current());  // TODO: Avoid globals
+                                                  // duplications across SOs.
+  }
   CORRADE_ASSERT(cfg.sensorSpecifications.size() == 1,
-                 "ReplayBatchRenderer: expecting exactly one sensor", );
+                 "BatchReplayRenderer: expecting exactly one sensor", );
   const auto& sensor = static_cast<esp::sensor::CameraSensorSpec&>(
       *cfg.sensorSpecifications.front());
 
@@ -33,7 +37,7 @@ BatchReplayRenderer::BatchReplayRenderer(
         configuration, gfx_batch::RendererStandaloneConfiguration{});
   else {
     CORRADE_ASSERT(Mn::GL::Context::hasCurrent(),
-                   "ReplayBatchRenderer: expecting a current GL context if a "
+                   "BatchReplayRenderer: expecting a current GL context if a "
                    "standalone renderer is disabled", );
     renderer_.emplace<gfx_batch::Renderer>(configuration);
   }
@@ -164,7 +168,7 @@ void BatchReplayRenderer::doSetSensorTransformsFromKeyframe(
 void BatchReplayRenderer::doRender(
     Cr::Containers::ArrayView<const Mn::MutableImageView2D> imageViews) {
   CORRADE_ASSERT(standalone_,
-                 "ReplayBatchRenderer::render(): can use this function only "
+                 "BatchReplayRenderer::render(): can use this function only "
                  "with a standalone renderer", );
   static_cast<gfx_batch::RendererStandalone&>(*renderer_).draw();
 
@@ -182,7 +186,7 @@ void BatchReplayRenderer::doRender(
 void BatchReplayRenderer::doRender(
     Magnum::GL::AbstractFramebuffer& framebuffer) {
   CORRADE_ASSERT(!standalone_,
-                 "ReplayBatchRenderer::render(): can't use this function with "
+                 "BatchReplayRenderer::render(): can't use this function with "
                  "a standalone renderer", );
 
   renderer_->draw(framebuffer);

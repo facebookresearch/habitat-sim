@@ -8,7 +8,6 @@
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/metadata/MetadataMediator.h"
-#include "esp/sensor/CameraSensor.h"
 #include "esp/sensor/SensorFactory.h"
 #include "esp/sim/SimulatorConfiguration.h"
 
@@ -20,6 +19,10 @@ namespace sim {
 
 ClassicReplayRenderer::ClassicReplayRenderer(
     const ReplayRendererConfiguration& cfg) {
+  if (Magnum::GL::Context::hasCurrent()) {
+    flextGLInit(Magnum::GL::Context::current());  // TODO: Avoid globals
+                                                  // duplications across SOs.
+  }
   config_ = cfg;
   SimulatorConfiguration simConfig;
   simConfig.createRenderer = true;
@@ -93,7 +96,7 @@ ClassicReplayRenderer::ClassicReplayRenderer(
 #else
     if (config_.numEnvironments > 1)
       ESP_DEBUG()
-          << "ReplayBatchRenderer created without a background renderer. "
+          << "ClassicReplayRenderer created without a background renderer. "
              "Multiple environments require a background renderer.";
 #endif
     renderer_ = gfx::Renderer::create(context_.get(), flags);
@@ -149,8 +152,8 @@ void ClassicReplayRenderer::doSetSensorTransform(unsigned envIndex,
   auto& env = envs_[envIndex];
 
   ESP_CHECK(env.sensorMap_.count(sensorName),
-            "ReplayRenderer::setSensorTransform: sensor " << sensorName
-                                                          << " not found.");
+            "ClassicReplayRenderer::setSensorTransform: sensor "
+                << sensorName << " not found.");
 
   // note: can't use operator[] with map of reference_wrappers
   auto& thingy = env.sensorMap_.at(sensorName).get();
@@ -174,7 +177,8 @@ void ClassicReplayRenderer::doSetSensorTransformsFromKeyframe(
     bool found =
         env.player_.getUserTransform(userName, &translation, &rotation);
     ESP_CHECK(found,
-              "setSensorTransformsFromKeyframe: couldn't find user transform \""
+              "ClassicReplayRenderer::setSensorTransformsFromKeyframe: "
+              "couldn't find user transform \""
                   << userName << "\" for environment " << envIndex << ".");
     sensor.node().setRotation(rotation);
     sensor.node().setTranslation(translation);

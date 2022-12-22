@@ -9,7 +9,7 @@ import builtins
 __version__ = "0.2.3"
 
 if not getattr(builtins, "__HSIM_SETUP__", False):
-    # TODO: kept only for compatibiliy with existing code. Please gradually remove
+    # TODO: kept only for compatibility with existing code. Please gradually remove
     import habitat_sim._ext.habitat_sim_bindings
     from habitat_sim import (
         agent,
@@ -54,6 +54,8 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         pyrobot_noisy_controls,
     )
     from habitat_sim.bindings import (  # noqa: F401
+        ReplayRenderer,
+        ReplayRendererConfiguration,
         RigidState,
         SceneGraph,
         SceneNode,

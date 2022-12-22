@@ -37,8 +37,8 @@ namespace {
 const std::string screenshotDir =
     Cr::Utility::Path::join(TEST_ASSETS, "screenshots/");
 
-struct ReplayBatchRendererTest : Cr::TestSuite::Tester {
-  explicit ReplayBatchRendererTest();
+struct BatchReplayRendererTest : Cr::TestSuite::Tester {
+  explicit BatchReplayRendererTest();
 
   void testIntegration();
 
@@ -47,7 +47,7 @@ struct ReplayBatchRendererTest : Cr::TestSuite::Tester {
 
   esp::logging::LoggingContext loggingContext;
 
-};  // struct ReplayBatchRendererTest
+};  // struct BatchReplayRendererTest
 
 Mn::MutableImageView2D getRGBView(int width,
                                   int height,
@@ -77,13 +77,13 @@ const struct {
            new esp::sim::BatchReplayRenderer{configuration}};
      }}};
 
-ReplayBatchRendererTest::ReplayBatchRendererTest() {
-  addInstancedTests({&ReplayBatchRendererTest::testIntegration},
+BatchReplayRendererTest::BatchReplayRendererTest() {
+  addInstancedTests({&BatchReplayRendererTest::testIntegration},
                     Cr::Containers::arraySize(TestIntegrationData));
 }  // ctor
 
 // test recording and playback through the simulator interface
-void ReplayBatchRendererTest::testIntegration() {
+void BatchReplayRendererTest::testIntegration() {
   auto&& data = TestIntegrationData[testCaseInstanceId()];
   setTestCaseDescription(data.name);
 
@@ -190,4 +190,4 @@ void ReplayBatchRendererTest::testIntegration() {
 
 }  // namespace
 
-CORRADE_TEST_MAIN(ReplayBatchRendererTest)
+CORRADE_TEST_MAIN(BatchReplayRendererTest)

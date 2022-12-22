@@ -195,11 +195,6 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     flextGLInit(Magnum::GL::Context::current());
 #endif
     renderer_->acquireGlContext();
-  } else {
-    CORRADE_ASSERT(
-        !Magnum::GL::Context::hasCurrent(),
-        "Simulator::reconfigure() : Unexpected existing context when "
-        "createRenderer==false", );
   }
 
   // (re) create scene instance
@@ -890,12 +885,6 @@ double Simulator::getPhysicsTimeStep() {
 bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
                                  const nav::NavMeshSettings& navMeshSettings,
                                  const bool includeStaticObjects) {
-  ESP_CHECK(config_.createRenderer,
-            "::recomputeNavMesh: "
-            "SimulatorConfiguration::createRenderer is false. Scene "
-            "geometry is required to recompute navmesh. No geometry is "
-            "loaded without renderer initialization.");
-
   assets::MeshData::ptr joinedMesh = getJoinedMesh(includeStaticObjects);
 
   if (!pathfinder.build(navMeshSettings, *joinedMesh)) {

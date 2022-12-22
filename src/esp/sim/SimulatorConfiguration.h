@@ -36,7 +36,8 @@ struct SimulatorConfiguration {
    */
   bool enablePhysics = false;
   /**
-   * @brief todo
+   * @brief Enable the recording of render keyframes during simulation.
+   * These keyframes can be used later to replay the graphics of a simulation.
    */
   bool enableGfxReplaySave = false;
   /**
@@ -58,7 +59,7 @@ struct SimulatorConfiguration {
 
   /**
    * @brief Leave the context with the background thread after finishing draw
-   * jobs. This will improve performance as transfering the OpenGL context back
+   * jobs. This will improve performance as transferring the OpenGL context back
    * and forth takes time but will require the user to manually transfer the
    * context back to the main thread before adding or removing objects.
    */

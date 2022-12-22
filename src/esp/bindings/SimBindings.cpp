@@ -11,13 +11,15 @@
 #include <Magnum/PythonBindings.h>
 #include <Magnum/SceneGraph/PythonBindings.h>
 
-#include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/replay/ReplayManager.h"
 #include "esp/metadata/MetadataMediator.h"
 #include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/scene/SemanticScene.h"
+#include "esp/sim/AbstractReplayRenderer.h"
+#include "esp/sim/BatchReplayRenderer.h"
+#include "esp/sim/ClassicReplayRenderer.h"
 #include "esp/sim/Simulator.h"
 #include "esp/sim/SimulatorConfiguration.h"
 
@@ -358,6 +360,79 @@ void initSimBindings(py::module& m) {
       .def("get_debug_line_render", &Simulator::getDebugLineRender,
            pybind11::return_value_policy::reference,
            R"(Get visualization helper for rendering lines.)");
+
+  // ==== ReplayRendererConfiguration ====
+  py::class_<ReplayRendererConfiguration, ReplayRendererConfiguration::ptr>(
+      m, "ReplayRendererConfiguration")
+      .def(py::init(&ReplayRendererConfiguration::create<>))
+      .def_readwrite("num_environments",
+                     &ReplayRendererConfiguration::numEnvironments,
+                     R"(Number of concurrent environments to render.)")
+      .def_readwrite(
+          "standalone", &ReplayRendererConfiguration::standalone,
+          R"(Determines if the renderer is standalone (windowless) or not (embedded in another window).)")
+      .def_readwrite(
+          "sensor_specifications",
+          &ReplayRendererConfiguration::sensorSpecifications,
+          R"(List of sensor specifications for one simulator. For batch rendering, all simulators must have the same specification.)")
+      .def_readwrite("gpu_device_id", &ReplayRendererConfiguration::gpuDeviceId,
+                     R"(The system GPU device to use for rendering)")
+      .def_readwrite(
+          "force_separate_semantic_scene_graph",
+          &ReplayRendererConfiguration::forceSeparateSemanticSceneGraph,
+          R"(Required to support playback of any gfx replay that includes a
+          stage with a semantic mesh. Set to false otherwise.)")
+      .def_readwrite(
+          "leave_context_with_background_renderer",
+          &ReplayRendererConfiguration::leaveContextWithBackgroundRenderer,
+          R"(See See tutorials/async_rendering.py.)");
+
+  // ==== ReplayRenderer ====
+  py::class_<AbstractReplayRenderer, AbstractReplayRenderer::ptr>(
+      m, "ReplayRenderer")
+      .def_static(
+          "create_classic_replay_renderer",
+          [](const ReplayRendererConfiguration& cfg)
+              -> AbstractReplayRenderer::ptr {
+            return std::make_shared<ClassicReplayRenderer>(cfg);
+          },
+          R"(Create a replay renderer using the classic render pipeline.)")
+      .def_static(
+          "create_batch_replay_renderer",
+          [](const ReplayRendererConfiguration& cfg)
+              -> AbstractReplayRenderer::ptr {
+            return std::make_shared<BatchReplayRenderer>(cfg);
+          },
+          R"(Create a replay renderer using the batch render pipeline.)")
+      .def(
+          "preload_file",
+          [](AbstractReplayRenderer& self, const std::string& filePath) {
+            self.preloadFile(filePath);
+          },
+          R"(Load an composite file that the renderer will use in-place of simulation assets to improve memory usage and performance.)")
+      .def("environment_count", &AbstractReplayRenderer::environmentCount,
+           "Get the batch size.")
+      .def("sensor_size", &AbstractReplayRenderer::sensorSize,
+           "Get the resolution of a sensor.")
+      .def("clear_environment", &AbstractReplayRenderer::clearEnvironment,
+           "Clear all instances and resets memory of an environment.")
+      .def("render",
+           static_cast<void (AbstractReplayRenderer::*)(
+               Magnum::GL::AbstractFramebuffer&)>(
+               &AbstractReplayRenderer::render),
+           R"(Render all sensors onto the main framebuffer.)")
+      .def(
+          "set_sensor_transforms_from_keyframe",
+          &AbstractReplayRenderer::setSensorTransformsFromKeyframe,
+          R"(Set the sensor transforms from a keyframe. Sensors are stored as user data and identified using a prefix in their name.)")
+      .def("set_sensor_transform", &AbstractReplayRenderer::setSensorTransform,
+           R"(Set the transform of a specific sensor.)")
+      .def("set_environment_keyframe",
+           &AbstractReplayRenderer::setEnvironmentKeyframe,
+           R"(Set the keyframe for a specific environment.)")
+      .def_static("environment_grid_size",
+                  &AbstractReplayRenderer::environmentGridSize,
+                  R"(Dimensions of the environment grid.)");
 }
 
 }  // namespace sim
