@@ -78,7 +78,7 @@ void Recorder::onCreateRenderAssetInstance(
       node, instanceKey, Corrade::Containers::NullOpt, deletionHelper});
 }
 
-void Recorder::onRemoveSceneGraph(const esp::scene::SceneGraph& sceneGraph) {
+void Recorder::onDeleteSceneGraph(const esp::scene::SceneGraph& sceneGraph) {
   auto& root = sceneGraph.getRootNode();
   scene::preOrderTraversalWithCallback(root,
                                        [this](const scene::SceneNode& node) {
@@ -158,12 +158,13 @@ void Recorder::checkAndAddDeletion(Keyframe* keyframe,
 
 void Recorder::onDeleteRenderAssetInstance(const scene::SceneNode* node) {
   int index = findInstance(node);
+  CORRADE_INTERNAL_ASSERT(index != ID_UNDEFINED);
 
-  if (index != ID_UNDEFINED) {
-    auto instanceKey = instanceRecords_[index].instanceKey;
-    checkAndAddDeletion(&getKeyframe(), instanceKey);
-    instanceRecords_.erase(instanceRecords_.begin() + index);
-  }
+  auto instanceKey = instanceRecords_[index].instanceKey;
+
+  checkAndAddDeletion(&getKeyframe(), instanceKey);
+
+  instanceRecords_.erase(instanceRecords_.begin() + index);
 }
 
 Keyframe& Recorder::getKeyframe() {
