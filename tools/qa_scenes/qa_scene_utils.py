@@ -165,7 +165,10 @@ def print_dataset_info(silent: bool, mm: habitat_sim.metadata.MetadataMediator):
 
 
 def create_unique_filename(
-    dir_path: str, extension: str, filename_prefix: str = None
+    dir_path: str,
+    extension: str,
+    filename_prefix: str = None,
+    filename_suffix: str = None,
 ) -> str:
     """
     Create unique file name / file path based off of the current date and time.
@@ -199,6 +202,13 @@ def create_unique_filename(
     else:
         filename_prefix = f"{filename_prefix}__"
 
+    # adjust suffix to make sure there is a delimeter between it and the rest
+    # of the file name
+    if filename_suffix is None or filename_suffix == "":
+        filename_suffix = ""
+    else:
+        filename_suffix = f"_{filename_suffix}"
+
     # make sure directory path and filename extension are formatted correctly
     if not dir_path.endswith("/"):
         dir_path = dir_path + "/"
@@ -206,7 +216,7 @@ def create_unique_filename(
         extension = "." + extension
 
     # create file name
-    file_path = f"{dir_path}{filename_prefix}date_{date}__time_{time}{extension}"
+    file_path = f"{dir_path}{filename_prefix}date_{date}__time_{time}{filename_suffix}{extension}"
     return file_path
 
 

@@ -20,9 +20,11 @@ from colorama import init
 from magnum.platform.glfw import Application
 from matplotlib import pyplot as plt
 from PIL import Image
+from qa_scene_settings import default_sim_settings, make_cfg
 from qa_scene_utils import (
     ANSICodes,
     Timer,
+    create_unique_filename,
     print_dataset_info,
     print_if_logging,
     section_divider_str,
@@ -32,7 +34,6 @@ import habitat_sim
 from habitat_sim.utils import common as utils
 from habitat_sim.utils import viz_utils as vut
 from habitat_sim.utils.common import d3_40_colors_rgb
-from habitat_sim.utils.settings import default_sim_settings, make_cfg
 
 # clean up types with TypeVars
 NavmeshMetrics = Dict[str, Union[int, float]]
@@ -174,7 +175,6 @@ class QASceneProcessingViewer(Application):
 
         # set sim_settings scene name as actual loaded scene
         self.sim_settings["scene"] = self.sim.curr_scene_name
-        # self.sim_settings["scene"] = scene_handle
 
         # # Reset agent transform
         # self.agent_body_node.translation = mn.Vector3(
@@ -872,9 +872,10 @@ def iteratively_test_all_scenes(
     )
 
     # create cvs detailing navmesh metrics
-    aggregate_navmesh_metrics(
-        all_scenes_navmesh_metrics, filename=output_path + "navmesh_metrics.csv"
+    filename = create_unique_filename(
+        output_path, ".csv", sim_settings["output_file_prefix"], "navmesh_metrics"
     )
+    aggregate_navmesh_metrics(all_scenes_navmesh_metrics, filename=filename)
 
     # print that we are done processing
     text_format = ANSICodes.BRIGHT_RED.value
@@ -921,11 +922,6 @@ if __name__ == "__main__":
     sim_settings["scene_dataset_config_file"] = os.path.join(
         data_path, sim_settings["scene_dataset_config_file"]
     )
-    if "enable_physics" not in sim_settings:
-        sim_settings["enable_physics"] = True
-    if "stage_requires_lighting" not in sim_settings:
-        sim_settings["stage_requires_lighting"] = True
-    silent = sim_settings["silent"]
 
     # setup colored console print statement logic
     init(autoreset=True)
