@@ -28,7 +28,7 @@ class SceneManager {
   const SceneGraph& getSceneGraph(int sceneID) const;
 
   // Returns the count of registered scene graphs
-  inline int getSceneGraphCount() { return sceneGraphs_.size(); }
+  inline size_t getSceneGraphCount() const { return sceneGraphs_.size(); }
 
  protected:
   // Each item within is a base node, parent of all in that scene, for easy

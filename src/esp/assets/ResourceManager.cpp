@@ -1428,7 +1428,7 @@ scene::SceneNode* ResourceManager::createSemanticRenderAssetInstance(
     scene::SceneNode* parent,
     DrawableGroup* drawables) {
   if (creation.isTextureBasedSemantic()) {
-    // Treat texture-based semantic meshes as General/Primitives.
+    // Treat texture-based semantic meshes as General/Primitves.
     return createRenderAssetInstanceGeneralPrimitive(creation, parent,
                                                      drawables, nullptr);
   }
