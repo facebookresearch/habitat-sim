@@ -255,7 +255,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   auto recorder = gfxReplayMgr_->getRecorder();
   if (recorder && activeSceneID_ >= 0 &&
       activeSceneID_ < sceneManager_->getSceneGraphCount()) {
-    recorder->onDeleteSceneGraph(sceneManager_->getSceneGraph(activeSceneID_));
+    recorder->onHideSceneGraph(sceneManager_->getSceneGraph(activeSceneID_));
   }
 
   // initialize scene graph CAREFUL! previous scene graph is not deleted!

@@ -78,8 +78,8 @@ void Recorder::onCreateRenderAssetInstance(
       node, instanceKey, Corrade::Containers::NullOpt, deletionHelper});
 }
 
-void Recorder::onDeleteSceneGraph(const esp::scene::SceneGraph& sceneGraph) {
-  auto& root = sceneGraph.getRootNode();
+void Recorder::onHideSceneGraph(const esp::scene::SceneGraph& sceneGraph) {
+  const auto& root = sceneGraph.getRootNode();
   scene::preOrderTraversalWithCallback(
       root, [this](const scene::SceneNode& node) {
         int index = findInstance(&node);

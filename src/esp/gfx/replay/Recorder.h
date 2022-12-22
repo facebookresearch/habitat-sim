@@ -63,9 +63,10 @@ class Recorder {
    * Because scene graphs are currently leaked when the active scene changes, we
    * cannot rely on node deletion to issue gfx-replay deletion entries. This
    * function allows to circumvent this issue.
-   * @param sceneGraph The scene graph to delete.
+   * The scene graph leak occurs in createSceneInstance(), in Simulator.cpp.
+   * @param sceneGraph The scene graph being hidden.
    */
-  void onDeleteSceneGraph(const esp::scene::SceneGraph& sceneGraph);
+  void onHideSceneGraph(const esp::scene::SceneGraph& sceneGraph);
 
   /**
    * @brief Save/capture a render keyframe (a visual snapshot of the scene).
