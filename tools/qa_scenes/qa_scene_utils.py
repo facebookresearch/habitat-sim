@@ -166,9 +166,9 @@ def print_dataset_info(silent: bool, mm: habitat_sim.metadata.MetadataMediator):
 
 def create_unique_filename(
     dir_path: str,
-    extension: str,
     filename_prefix: str = None,
     filename_suffix: str = None,
+    extension: str = ".csv",
 ) -> str:
     """
     Create unique file name / file path based off of the current date and time.

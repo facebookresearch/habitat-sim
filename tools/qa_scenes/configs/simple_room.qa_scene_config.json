@@ -1,5 +1,5 @@
 {
-  "scene": "scene_datasets/replica_cad/configs/scenes/apt_1.scene_instance.json",
+  "scene": "./data/test_assets/scenes/simple_room.glb",
   "scene_dataset_config_file": "scene_datasets/replica_cad/replicaCAD.scene_dataset_config.json",
   "color_sensor": true,
   "semantic_sensor": true,
@@ -11,11 +11,11 @@
   "make_csv": true,
   "make_video": true,
   "show_video": true,
-  "output_file_prefix": "default",
+  "output_file_prefix": "simple_room",
   "enable_physics": true,
   "silent": false,
   "debug_print": false,
-  "run_viewer": false,
-  "agent_pos": [-1.6971087, 0.11937292, -1.0771935],
-  "agent_rot": [2.435, 0.0, -1.0, 0.0]
+  "run_viewer": true,
+  "agent_pos": [-1.3379936, 0.33861828, 3.4932363],
+  "agent_rot": [0.7068584878138089, 0.0, -1.0, 0.0]
 }
