@@ -46,11 +46,12 @@ from habitat_sim.utils.common import (
 # clean up types with TypeVars
 NavmeshMetrics = Dict[str, Union[int, float]]
 
-# get the output directory and data path
+# get the data path
 repo = git.Repo(".", search_parent_directories=True)
 dir_path = repo.working_tree_dir
 data_path = os.path.join(dir_path, "data")
 
+# get the output directory
 output_directory = "./tools/qa_scenes/qa_scenes_output/"  # @param {type:"string"}
 output_path = os.path.join(dir_path, output_directory)
 if not os.path.exists(output_path):
@@ -58,7 +59,7 @@ if not os.path.exists(output_path):
 
 # if there are no "scene_instance.json" files in this dataset, create default scenes
 # in this folder using the stages in the dataset instead.
-default_scene_dir = os.path.join(data_path, "default_scenes")
+default_scene_dir = os.path.join(data_path, "default_qa_scenes")
 if not os.path.exists(default_scene_dir):
     os.mkdir(default_scene_dir)
 
@@ -447,18 +448,6 @@ class QASceneProcessingViewer(Application):
             self.pressed[key] = False
         event.accepted = True
         self.redraw()
-
-    def mouse_move_event(self, event: Application.MouseMoveEvent) -> None:
-        ...
-
-    def mouse_press_event(self, event: Application.MouseEvent) -> None:
-        ...
-
-    def mouse_scroll_event(self, event: Application.MouseScrollEvent) -> None:
-        ...
-
-    def mouse_release_event(self, event: Application.MouseEvent) -> None:
-        ...
 
     def exit_event(self, event: Application.ExitEvent) -> None:
         """
