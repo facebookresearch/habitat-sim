@@ -154,11 +154,21 @@ void Player::clearFrame() {
 
 void Player::applyKeyframe(const Keyframe& keyframe) {
   for (const auto& assetInfo : keyframe.loads) {
-    CORRADE_INTERNAL_ASSERT(assetInfos_.count(assetInfo.filepath) == 0);
     if (failedFilepaths_.count(assetInfo.filepath) != 0u) {
       continue;
     }
+    // TODO: This overwrites the previous AssetInfo. This is not ideal. Consider
+    // including AssetInfo in creations rather than using keyframe loads.
     assetInfos_[assetInfo.filepath] = assetInfo;
+  }
+
+  // If all current instances are being deleted, clear the frame. This enables
+  // the implementation to clear its memory and optimize its internals.
+  bool frameCleared = keyframe.deletions.size() > 0 &&
+                      createdInstances_.size() == keyframe.deletions.size();
+  if (frameCleared) {
+    implementation_->deleteAssetInstances(createdInstances_);
+    createdInstances_.clear();
   }
 
   for (const auto& pair : keyframe.creations) {
@@ -188,16 +198,18 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     createdInstances_[instanceKey] = node;
   }
 
-  for (const auto& deletionInstanceKey : keyframe.deletions) {
-    const auto& it = createdInstances_.find(deletionInstanceKey);
-    if (it == createdInstances_.end()) {
-      // missing instance for this key, probably due to a failed instance
-      // creation
-      continue;
-    }
+  if (!frameCleared) {
+    for (const auto& deletionInstanceKey : keyframe.deletions) {
+      const auto& it = createdInstances_.find(deletionInstanceKey);
+      if (it == createdInstances_.end()) {
+        // missing instance for this key, probably due to a failed instance
+        // creation
+        continue;
+      }
 
-    implementation_->deleteAssetInstance(it->second);
-    createdInstances_.erase(deletionInstanceKey);
+      implementation_->deleteAssetInstance(it->second);
+      createdInstances_.erase(deletionInstanceKey);
+    }
   }
 
   for (const auto& pair : keyframe.stateUpdates) {
