@@ -49,7 +49,7 @@ git clone https://github.com/facebookresearch/habitat-sim --depth 1
 cd /content/habitat-lab/
 set +e
 pip install -r ./habitat-lab/requirements.txt
-reqs=(./habitat_baselines/**/requirements.txt)
+reqs=(./habitat-baselines/habitat_baselines/**/requirements.txt)
 pip install "${reqs[@]/#/-r}"
 set -e
 pip install -e habitat-lab
