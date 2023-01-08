@@ -188,7 +188,7 @@ def calc_camera_transform(
 
 
 # %% [markdown]
-# # Coordinate frame conventions: y-up and left-handed
+# # Coordinate frame conventions: y-up and right-handed
 # Create a sim with an empty scene. Draw the world axes at the origin, with colors x+ = red, y+ = green, z+ = blue. Note conventions: y-up (green vector) and right-handed (https://en.wikipedia.org/wiki/Right-hand_rule).
 
 
