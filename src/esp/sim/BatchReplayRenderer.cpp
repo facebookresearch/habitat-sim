@@ -144,6 +144,9 @@ BatchReplayRenderer::BatchReplayRenderer(
              direction of the Y axis, but that's fine -- we only really care
              about the Z axis direction, which is always the "target" vector
              normalized. */
+          // TODO for more robustness use something that "invents" some
+          //  arbitrary orthogonal axes instead of the NaNs, once Magnum has
+          //  such utility
           renderer_.transformations(sceneId_)[nodeId] =
               Mn::Matrix4::lookAt({}, light.vector.xyz(), Mn::Vector3::yAxis());
           lightId = renderer_.addLight(
