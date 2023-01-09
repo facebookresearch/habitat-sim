@@ -84,7 +84,9 @@ struct RendererConfiguration {
   /**
    * @brief Set max light count per draw
    *
-   * By default no lights are used, i.e. flat-shaded rendering.
+   * By default no lights are used, i.e. flat-shaded rendering. At the moment
+   * there's no light culling in place, which means that light count per draw
+   * is equivalent to the total light count used per scene.
    * @see @ref Renderer::maxLightCount()
    */
   RendererConfiguration& setMaxLightCount(Magnum::UnsignedInt count);
