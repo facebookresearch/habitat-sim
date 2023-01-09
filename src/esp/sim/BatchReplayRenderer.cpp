@@ -134,7 +134,7 @@ BatchReplayRenderer::BatchReplayRenderer(
            range asserts in all functions so your "suggestions" are completely
            unhelpful. */
         std::size_t lightId;  // NOLINT
-        if (light.vector.z()) {
+        if (light.vector.w()) {
           renderer_.transformations(sceneId_)[nodeId] =
               Mn::Matrix4::translation(light.vector.xyz());
           lightId = renderer_.addLight(sceneId_, nodeId,
