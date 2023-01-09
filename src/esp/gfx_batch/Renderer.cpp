@@ -58,6 +58,7 @@ struct RendererConfiguration::State {
   Mn::Vector2i tileSize{128, 128};
   Mn::Vector2i tileCount{1, 1};
   Mn::UnsignedInt maxLightCount{0};
+  Mn::Float ambientFactor{0.1f};
 };
 
 RendererConfiguration::RendererConfiguration() : state{Cr::InPlaceInit} {}
@@ -79,6 +80,12 @@ RendererConfiguration& RendererConfiguration::setTileSizeCount(
 RendererConfiguration& RendererConfiguration::setMaxLightCount(
     Mn::UnsignedInt count) {
   state->maxLightCount = count;
+  return *this;
+}
+
+RendererConfiguration& RendererConfiguration::setAmbientFactor(
+    Mn::Float factor) {
+  state->ambientFactor = factor;
   return *this;
 }
 
@@ -206,6 +213,7 @@ struct Renderer::State {
   RendererFlags flags;
   Mn::Vector2i tileSize, tileCount;
   Mn::UnsignedInt maxLightCount;
+  Mn::Float ambientFactor;
   /* Indexed with Mn::Shaders::PhongGL::Flag, but I don't want to bother with
      writing a hash function for EnumSet */
   // TODO have a dedicated shader for flat materials
@@ -266,6 +274,7 @@ void Renderer::create(const RendererConfiguration& configurationWrapper) {
   state_->tileSize = configuration.tileSize;
   state_->tileCount = configuration.tileCount;
   state_->maxLightCount = configuration.maxLightCount;
+  state_->ambientFactor = configuration.ambientFactor;
   const std::size_t sceneCount = configuration.tileCount.product();
   state_->projections = Cr::Containers::Array<ProjectionPadded>{sceneCount};
   state_->scenes = Cr::Containers::Array<Scene>{sceneCount};
@@ -576,7 +585,8 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
         const auto& phongMaterial =
             material->as<Mn::Trade::PhongMaterialData>();
         materials[i] = Mn::Shaders::PhongMaterialUniform{}
-                           .setAmbientColor(phongMaterial.diffuseColor() * 0.1f)
+                           .setAmbientColor(phongMaterial.diffuseColor() *
+                                            state_->ambientFactor)
                            .setDiffuseColor(phongMaterial.diffuseColor())
             /* Specular not used (and shader compiled with NoSpecular). Much
                plastic. Very fugly. Thus we also don't need shininess for

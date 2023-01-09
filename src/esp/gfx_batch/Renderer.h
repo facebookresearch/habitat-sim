@@ -91,6 +91,21 @@ struct RendererConfiguration {
    */
   RendererConfiguration& setMaxLightCount(Magnum::UnsignedInt count);
 
+  /**
+   * @brief Set ambient factor
+   *
+   * How much of the diffuse color / texture is used for ambient light in
+   * Phong-shaded materials. Default value is @cpp 0.1f @ce, setting it to
+   * @cpp 0.0f @ce will make the render completely black in areas without light
+   * contribution. In comparison, flat-shaded materials (i.e., imported with
+   * @ref Magnum::Trade::MaterialType::Flat) have the ambient factor always
+   * @cpp 1.0 @ce and are unaffected by lights.
+   *
+   * This value can currently only set upfront due to how materials are
+   * implemented internally.
+   */
+  RendererConfiguration& setAmbientFactor(Magnum::Float factor);
+
  private:
   friend Renderer;
   struct State;

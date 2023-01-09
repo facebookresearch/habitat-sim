@@ -154,6 +154,10 @@ BatchReplayRenderer::BatchReplayRenderer(
         }
 
         renderer_.lightColors(sceneId_)[lightId] = light.color;
+        // TODO use gfx::getAmbientLightColor(lights) once it's not hardcoded
+        //  to an arbitrary value and once it's possible to change the ambient
+        //  factor in the renderer at runtime (and not just in
+        //  RendererConfiguration::setAmbientFactor())
         // TODO range, once Habitat has that
       }
     }
