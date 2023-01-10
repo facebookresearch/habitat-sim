@@ -4,7 +4,8 @@
     "generator": "Magnum GltfSceneConverter"
   },
   "extensionsUsed": [
-    "MAGNUMX_mesh_views"
+    "MAGNUMX_mesh_views",
+    "KHR_materials_unlit"
   ],
   "extensionsRequired": [
     "MAGNUMX_mesh_views"
@@ -87,19 +88,28 @@
           "index": 0
         }
       },
-      "name": "checkerboard"
+      "extensions": {
+        "KHR_materials_unlit": {}
+      },
+      "name": "flat checkerboard"
     },
     {
       "pbrMetallicRoughness": {
         "baseColorFactor": [0, 0.8, 0.8, 1]
       },
-      "name": "cyan"
+      "extensions": {
+        "KHR_materials_unlit": {}
+      },
+      "name": "flat cyan"
     },
     {
       "pbrMetallicRoughness": {
         "baseColorFactor": [0.8, 0, 0.8, 1]
       },
-      "name": "magenta"
+      "extensions": {
+        "KHR_materials_unlit": {}
+      },
+      "name": "flat magenta"
     }
   ],
   "samplers": [

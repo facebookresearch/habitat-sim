@@ -19,7 +19,8 @@ namespace sim {
 using namespace Mn::Math::Literals;  // NOLINT
 
 BatchReplayRenderer::BatchReplayRenderer(
-    const ReplayRendererConfiguration& cfg) {
+    const ReplayRendererConfiguration& cfg,
+    gfx_batch::RendererConfiguration&& batchRendererConfiguration) {
   if (Magnum::GL::Context::hasCurrent()) {
     flextGLInit(Magnum::GL::Context::current());  // TODO: Avoid globals
                                                   // duplications across SOs.
@@ -29,17 +30,18 @@ BatchReplayRenderer::BatchReplayRenderer(
   const auto& sensor = static_cast<esp::sensor::CameraSensorSpec&>(
       *cfg.sensorSpecifications.front());
 
-  gfx_batch::RendererConfiguration configuration;
-  configuration.setTileSizeCount(Mn::Vector2i{sensor.resolution}.flipped(),
-                                 environmentGridSize(cfg.numEnvironments));
+  batchRendererConfiguration.setTileSizeCount(
+      Mn::Vector2i{sensor.resolution}.flipped(),
+      environmentGridSize(cfg.numEnvironments));
   if ((standalone_ = cfg.standalone))
     renderer_.emplace<gfx_batch::RendererStandalone>(
-        configuration, gfx_batch::RendererStandaloneConfiguration{});
+        batchRendererConfiguration,
+        gfx_batch::RendererStandaloneConfiguration{});
   else {
     CORRADE_ASSERT(Mn::GL::Context::hasCurrent(),
                    "BatchReplayRenderer: expecting a current GL context if a "
                    "standalone renderer is disabled", );
-    renderer_.emplace<gfx_batch::Renderer>(configuration);
+    renderer_.emplace<gfx_batch::Renderer>(batchRendererConfiguration);
   }
 
   theOnlySensorName_ = sensor.uuid;
@@ -61,7 +63,7 @@ BatchReplayRenderer::BatchReplayRenderer(
       //  replay file?
 
       /* If no such name is known yet, add as a file */
-      if (!renderer_.hasMeshHierarchy(creation.filepath)) {
+      if (!renderer_.hasNodeHierarchy(creation.filepath)) {
         ESP_WARNING()
             << creation.filepath
             << "not found in any composite file, loading from the filesystem";
@@ -70,11 +72,11 @@ BatchReplayRenderer::BatchReplayRenderer(
             renderer_.addFile(creation.filepath,
                               gfx_batch::RendererFileFlag::Whole |
                                   gfx_batch::RendererFileFlag::GenerateMipmap));
-        CORRADE_INTERNAL_ASSERT(renderer_.hasMeshHierarchy(creation.filepath));
+        CORRADE_INTERNAL_ASSERT(renderer_.hasNodeHierarchy(creation.filepath));
       }
 
       return reinterpret_cast<gfx::replay::NodeHandle>(
-          renderer_.addMeshHierarchy(
+          renderer_.addNodeHierarchy(
               sceneId_, creation.filepath,
               /* Baking the initial scaling and coordinate frame into the
                  transformation */
@@ -108,6 +110,56 @@ BatchReplayRenderer::BatchReplayRenderer(
       renderer_.transformations(
           sceneId_)[reinterpret_cast<std::size_t>(node) - 1] =
           Mn::Matrix4::from(rotation.toMatrix(), translation);
+    }
+
+    void changeLightSetup(const esp::gfx::LightSetup& lights) override {
+      if (!renderer_.maxLightCount()) {
+        ESP_WARNING() << "Attempted to change" << lights.size()
+                      << "lights for scene" << sceneId_
+                      << "but the renderer is configured without lights";
+        return;
+      }
+
+      renderer_.clearLights(sceneId_);
+      for (std::size_t i = 0; i != lights.size(); ++i) {
+        const gfx::LightInfo& light = lights[i];
+        CORRADE_INTERNAL_ASSERT(light.model == gfx::LightPositionModel::Global);
+
+        const std::size_t nodeId = renderer_.addEmptyNode(sceneId_);
+
+        /* Clang Tidy, you're stupid, why do you say that "lightId" is not
+           initialized?! I'm initializing it right in the branches below, I
+           won't zero-init it just to "prevent bugs" because an accidentally
+           zero-initialized variable is *also* a bug, you know? Plus I have
+           range asserts in all functions so your "suggestions" are completely
+           unhelpful. */
+        std::size_t lightId;  // NOLINT
+        if (light.vector.w()) {
+          renderer_.transformations(sceneId_)[nodeId] =
+              Mn::Matrix4::translation(light.vector.xyz());
+          lightId = renderer_.addLight(sceneId_, nodeId,
+                                       gfx_batch::RendererLightType::Point);
+        } else {
+          /* The matrix will be partially NaNs if the light vector is in the
+             direction of the Y axis, but that's fine -- we only really care
+             about the Z axis direction, which is always the "target" vector
+             normalized. */
+          // TODO for more robustness use something that "invents" some
+          //  arbitrary orthogonal axes instead of the NaNs, once Magnum has
+          //  such utility
+          renderer_.transformations(sceneId_)[nodeId] =
+              Mn::Matrix4::lookAt({}, light.vector.xyz(), Mn::Vector3::yAxis());
+          lightId = renderer_.addLight(
+              sceneId_, nodeId, gfx_batch::RendererLightType::Directional);
+        }
+
+        renderer_.lightColors(sceneId_)[lightId] = light.color;
+        // TODO use gfx::getAmbientLightColor(lights) once it's not hardcoded
+        //  to an arbitrary value and once it's possible to change the ambient
+        //  factor in the renderer at runtime (and not just in
+        //  RendererConfiguration::setAmbientFactor())
+        // TODO range, once Habitat has that
+      }
     }
 
     gfx_batch::Renderer& renderer_;
