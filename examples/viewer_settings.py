@@ -11,11 +11,16 @@ viewer_settings = {
     # display the CPU/GPU usage data
     "max_display_text_chars": 256,
     # how much to displace window text relative to the center of the
-    # app window (e.g if you want the display text in the top left of
-    # the app window, you will displace the text
-    # window width * -TEXT_DELTA_FROM_CENTER in the x axis and
-    # widnow height * TEXT_DELTA_FROM_CENTER in the y axis, as the text
-    # position defaults to the middle of the app window)
+    # app window. E.g if you want the display text in the top left of
+    # the app window, you will displace the text:
+    #
+    # window width * -sim_settings["text_delta_from_center"] in the x axis,
+    #
+    # and:
+    #
+    # window height * sim_settings["text_delta_from_center"] in the y axis,
+    #
+    # as the text position defaults to the middle of the app window)
     "text_delta_from_center": 0.49,
     # font size of the magnum in-window display text that displays
     # CPU and GPU usage info
