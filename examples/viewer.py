@@ -125,8 +125,8 @@ class HabitatSimInteractiveViewer(Application):
             mn.Vector2(surface_size)
         ) @ mn.Matrix3.translation(
             mn.Vector2(
-                self.viewport_size[0] * -sim_settings["text_delta_from_center"],
-                self.viewport_size[1] * sim_settings["text_delta_from_center"],
+                surface_size[0] * -sim_settings["text_delta_from_center"],
+                surface_size[1] * sim_settings["text_delta_from_center"],
             )
         )
         self.shader = shaders.VectorGL2D()
@@ -263,14 +263,22 @@ class HabitatSimInteractiveViewer(Application):
         agent_id = active_agent_id_and_sensor_name[0]
         sensor_uuid = active_agent_id_and_sensor_name[1]
 
-        # get specified sensor, then get sensor observations, which renders them
-        self.camera_sensor = self.sim.get_sensor(sensor_uuid, agent_id)
-        self.sim.get_sensor_observations(agent_id)
-        self.debug_draw()
-        self.camera_sensor.render_target.blit_rgba_to_default()
-        mn.gl.default_framebuffer.bind()
+        if self.enable_batch_renderer:
+            self.render_batch()
+        else:
+            # Get agent id and sensor uuid
+            agent_id = active_agent_id_and_sensor_name[0]
+            sensor_uuid = active_agent_id_and_sensor_name[1]
+
+            # get specified sensor, then call get_sensor_observations, which also
+            # renders them
+            self.camera_sensor = self.sim.get_sensor(sensor_uuid, agent_id)
+            self.sim.get_sensor_observations(agent_id)
+            self.debug_draw()
+            self.camera_sensor.render_target.blit_rgba_to_default()
 
         # draw CPU/GPU usage data and other info to the app window
+        mn.gl.default_framebuffer.bind()
         self.draw_text(self.camera_sensor.specification())
 
         self.swap_buffers()
@@ -360,8 +368,8 @@ class HabitatSimInteractiveViewer(Application):
 
         # post reconfigure
         self.default_agent = self.sim.get_agent(self.agent_id)
-        self.agent_body_node = self.default_agent.scene_node
         self.camera_sensor = self.default_agent.sensors["color_sensor"]
+
         # set sim_settings scene name as actual loaded scene
         self.sim_settings["scene"] = self.sim.curr_scene_name
 
