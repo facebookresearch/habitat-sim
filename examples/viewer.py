@@ -79,6 +79,9 @@ class HabitatSimInteractiveViewer(Application):
         # cache most recently loaded URDF file for quick-reload
         self.cached_urdf = ""
 
+        # Used for drawing debug visualizations of navmesh islands.
+        self.navmesh_classification_results: Optional[Dict[str, Any]] = None
+
         # set up our movement map
         key = Application.KeyEvent.Key
         self.pressed = {
@@ -227,6 +230,147 @@ class HabitatSimInteractiveViewer(Application):
                 normal=camera_position - cp.position_on_b_in_ws,
             )
 
+    def island_indoor_metric(
+        self, island_ix: int, num_samples=100, jitter_dist=0.1, max_tries=1000
+    ) -> float:
+        """
+        Compute a heuristic for ratio of an island inside vs. outside based on checking whether there is a roof over a set of sampled navmesh points.
+        """
+
+        assert self.sim.pathfinder.is_loaded
+        assert self.sim.pathfinder.num_islands > island_ix
+
+        # collect jittered samples
+        samples = []
+        for _sample_ix in range(max_tries):
+            new_sample = self.sim.pathfinder.get_random_navigable_point(
+                island_index=island_ix
+            )
+            too_close = False
+            for prev_sample in samples:
+                dist_to = np.linalg.norm(prev_sample - new_sample)
+                if dist_to < jitter_dist:
+                    too_close = True
+                    break
+            if not too_close:
+                samples.append(new_sample)
+            if len(samples) >= num_samples:
+                break
+
+        # classify samples
+        indoor_count = 0
+        for sample in samples:
+            raycast_results = self.sim.cast_ray(
+                habitat_sim.geo.Ray(origin=sample, direction=mn.Vector3(0, 1, 0))
+            )
+            if raycast_results.has_hits():
+                # assume any hit indicates "indoor"
+                indoor_count += 1
+
+        # return the ration of indoor to outdoor as the metric
+        return indoor_count / len(samples)
+
+    def compute_navmesh_island_classifications(self, active_indoor_threshold=0.85):
+        """
+        Classify navmeshes as outdoor or indoor and find the largest indoor island.
+        active_indoor_threshold is acceptacle indoor|outdoor ration for an active island (for example to allow some islands with a small porch or skylight)
+        """
+        if not self.sim.pathfinder.is_loaded:
+            self.navmesh_classification_results = None
+            print("No NavMesh loaded to visualize.")
+            return
+
+        self.navmesh_classification_results = {}
+
+        self.navmesh_classification_results["active_island"] = -1
+        self.navmesh_classification_results[
+            "active_indoor_threshold"
+        ] = active_indoor_threshold
+        active_island_size = 0
+        number_of_indoor = 0
+        self.navmesh_classification_results["island_info"] = {}
+
+        for island_ix in range(self.sim.pathfinder.num_islands):
+            self.navmesh_classification_results["island_info"][island_ix] = {}
+            self.navmesh_classification_results["island_info"][island_ix][
+                "indoor"
+            ] = self.island_indoor_metric(island_ix=island_ix)
+            if (
+                self.navmesh_classification_results["island_info"][island_ix]["indoor"]
+                > active_indoor_threshold
+            ):
+                number_of_indoor += 1
+            island_size = self.sim.pathfinder.island_area(island_ix)
+            if (
+                active_island_size < island_size
+                and self.navmesh_classification_results["island_info"][island_ix][
+                    "indoor"
+                ]
+                > active_indoor_threshold
+            ):
+                active_island_size = island_size
+                self.navmesh_classification_results["active_island"] = island_ix
+        print(
+            f"Found active island {self.navmesh_classification_results['active_island']} with area {active_island_size}."
+        )
+        print(
+            f"     Found {number_of_indoor} indoor islands out of {self.sim.pathfinder.num_islands} total."
+        )
+
+    def debug_draw_navmesh_island(self, island_ix: int, color: mn.Color4 = None):
+        """
+        Draw a NavMesh island using DebugLineRender.
+        """
+        # if not color is provided, use magenta
+        if color is None:
+            color = mn.Color4.magenta()
+
+        assert self.sim.pathfinder.is_loaded
+        assert island_ix < self.sim.pathfinder.num_islands
+
+        dblr = self.sim.get_debug_line_render()
+        verts = self.sim.pathfinder.build_navmesh_vertices(island_index=island_ix)
+        ixs = self.sim.pathfinder.build_navmesh_vertex_indices(island_index=island_ix)
+
+        def get_face_verts(f_ix):
+            f_verts = []
+            for ix in range(3):
+                f_verts.append(verts[ixs[int(f_ix * 3 + ix)]])
+            return f_verts
+
+        for tri_ix in range(int(len(ixs) / 3)):
+            f_verts = get_face_verts(f_ix=tri_ix)
+            for edge in range(3):
+                dblr.draw_transformed_line(
+                    f_verts[edge], f_verts[(edge + 1) % 3], color
+                )
+
+    def draw_navmesh_island_classifications(
+        self, active_indoor_threshold: Optional[float] = None
+    ):
+        """
+        Draw debug classification of navmeshes as outdoor(red) or indoor(blue) and show the largest indoor island (green).
+        If provided, active_indoor_threshold overrides the value used for initial computation.
+        """
+        if self.navmesh_classification_results is None:
+            if active_indoor_threshold is not None:
+                self.compute_navmesh_island_classifications(active_indoor_threshold)
+            else:
+                self.compute_navmesh_island_classifications()
+            if self.navmesh_classification_results is None:
+                return
+
+        for island_ix in self.navmesh_classification_results["island_info"].keys():
+            color = mn.Color4.red()
+            if self.navmesh_classification_results["active_island"] == island_ix:
+                color = mn.Color4.green()
+            elif (
+                self.navmesh_classification_results["island_info"][island_ix]["indoor"]
+                > self.navmesh_classification_results["active_indoor_threshold"]
+            ):
+                color = mn.Color4.blue()
+            self.debug_draw_navmesh_island(island_ix=island_ix, color=color)
+
     def debug_draw(self):
         """
         Additional draw commands to be called during draw_event.
@@ -237,6 +381,7 @@ class HabitatSimInteractiveViewer(Application):
             self.sim.physics_debug_draw(proj_mat)
         if self.contact_debug_draw:
             self.draw_contact_debug()
+        self.draw_navmesh_island_classifications()
 
     def draw_event(
         self,

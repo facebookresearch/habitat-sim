@@ -60,7 +60,8 @@ void initGeoBindings(py::module& m) {
 
   // ==== Ray ====
   py::class_<Ray>(m, "Ray")
-      .def(py::init<Magnum::Vector3, Magnum::Vector3>())
+      .def(py::init<Magnum::Vector3, Magnum::Vector3>(), "origin"_a,
+           "direction"_a)
       .def(py::init<>())
       .def_readwrite("origin", &Ray::origin)
       .def_readwrite("direction", &Ray::direction);
