@@ -14,8 +14,9 @@ qa_scene_settings = {
     "width": 256,
     "height": 256,
     "agent_pos": [-1.6971087, 0.11937292, -1.0771935],
-    "agent_rot": [0.0, 0.0, 1.0, 0.0],  # (angle, [axis])
-    "make_csv": True,
+    "agent_rot": [0.0, 0.0, 1.0, 0.0],  # (angle, axis.x, axis.y, axis.z)
+    "generate_navmesh": True,
+    "render_sensor_obs": True,
     "make_video": True,
     "show_video": True,
     "run_viewer": False,
@@ -25,7 +26,7 @@ qa_scene_settings = {
     "enable_gfx_replay_save": False,
     "frustum_culling": True,
     "stage_requires_lighting": True,
-    "silent": False,  # do not print log info (default: OFF)
+    "silent": False,  # do not print log info
 }
 default_sim_settings.update(qa_scene_settings)
 

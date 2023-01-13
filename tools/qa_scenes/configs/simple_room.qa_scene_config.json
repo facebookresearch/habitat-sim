@@ -1,6 +1,5 @@
 {
-  "scene": "./data/test_assets/scenes/simple_room.glb",
-  "scene_dataset_config_file": "scene_datasets/replica_cad/replicaCAD.scene_dataset_config.json",
+  "scene_dataset_config_file": "test_assets/dataset_tests/dataset_0/test_dataset_0.scene_dataset_config.json",
   "color_sensor": true,
   "semantic_sensor": true,
   "depth_sensor": true,
@@ -16,6 +15,7 @@
   "silent": false,
   "debug_print": false,
   "run_viewer": true,
+  "scene": "./data/test_assets/scenes/simple_room.glb",
   "agent_pos": [-1.3379936, 0.33861828, 3.4932363],
   "agent_rot": [0.7068584878138089, 0.0, -1.0, 0.0]
 }
