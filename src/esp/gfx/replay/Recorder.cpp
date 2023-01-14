@@ -6,6 +6,7 @@
 
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/core/Check.h"
+#include "esp/gfx/Drawable.h"
 #include "esp/io/Json.h"
 #include "esp/io/JsonAllTypes.h"
 #include "esp/scene/SceneNode.h"
@@ -75,6 +76,17 @@ void Recorder::onCreateRenderAssetInstance(
 
   instanceRecords_.emplace_back(InstanceRecord{
       node, instanceKey, Corrade::Containers::NullOpt, deletionHelper});
+}
+
+void Recorder::onHideSceneGraph(const esp::scene::SceneGraph& sceneGraph) {
+  const auto& root = sceneGraph.getRootNode();
+  scene::preOrderTraversalWithCallback(
+      root, [this](const scene::SceneNode& node) {
+        int index = findInstance(&node);
+        if (index != ID_UNDEFINED) {
+          delete instanceRecords_[index].deletionHelper;
+        }
+      });
 }
 
 void Recorder::saveKeyframe() {

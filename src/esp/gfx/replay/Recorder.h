@@ -18,7 +18,8 @@ struct RenderAssetInstanceCreationInfo;
 }  // namespace assets
 namespace scene {
 class SceneNode;
-}
+class SceneGraph;
+}  // namespace scene
 namespace gfx {
 namespace replay {
 
@@ -56,6 +57,16 @@ class Recorder {
    * @param assetInfo The asset that was loaded.
    */
   void onLoadRenderAsset(const esp::assets::AssetInfo& assetInfo);
+
+  /**
+   * @brief Record deletion of all render instances in a scene graph.
+   * Because scene graphs are currently leaked when the active scene changes, we
+   * cannot rely on node deletion to issue gfx-replay deletion entries. This
+   * function allows to circumvent this issue.
+   * The scene graph leak occurs in createSceneInstance(), in Simulator.cpp.
+   * @param sceneGraph The scene graph being hidden.
+   */
+  void onHideSceneGraph(const esp::scene::SceneGraph& sceneGraph);
 
   /**
    * @brief Save/capture a render keyframe (a visual snapshot of the scene).

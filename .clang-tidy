@@ -6,7 +6,6 @@ cppcoreguidelines-init-variables,
 cppcoreguidelines-pro-type-member-init,
 google-*,
 misc-definitions-in-headers,
-misc-misplaced-const,
 misc-static-assert,
 misc-unconventional-assign-operator,
 misc-uniqueptr-reset-release,
@@ -64,6 +63,7 @@ readability-uniqueptr-delete-release,
 -modernize-use-trailing-return-type,
 -bugprone-easily-swappable-parameters,
 -bugprone-forward-declaration-namespace,
+-performance-no-int-to-ptr,
 '
 
 CheckOptions:
@@ -110,3 +110,18 @@ HeaderFilterRegex: "src/esp/"
 #   really improve readability in any way. Keeping this as a warning tho, as it
 #   *might* actually be useful in certain cases, just not treating it as an
 #   error.
+# performance-no-int-to-ptr
+#   "error: integer to pointer cast pessimizes optimization opportunities"
+#   triggered by gfx::replay::NodeHandle, which can be either a pointer (for
+#   the SceneGraph backend) or an arbitrary integer value (for the new
+#   data-oriented backend). Clang Tidy, tell me, how else am I supposed to
+#   implement type-safe handles?!
+# misc-misplaced-const
+#   "'node' declared with a const-qualified typedef; results in the type being
+#   'esp::gfx::replay::NodeHandle_ *const' instead of 'const
+#   esp::gfx::replay::NodeHandle_ *'". Same problem, how else am I supposed to
+#   implement type-safe handles? If the handle represents an integer, it's also
+#   not really "const" because I can use it to index a mutable array (which I
+#   regularly do). "Fixing" this warning would mean adding a const to the
+#   typedef AND THEN a const_cast to each and every reinterpret_cast that turns
+#   it into a SceneNode*. Which is way worse than the original problem.

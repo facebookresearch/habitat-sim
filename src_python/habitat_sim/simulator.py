@@ -57,6 +57,7 @@ class Configuration:
     agents: List[AgentConfiguration]
     # An existing Metadata Mediator can also be used to construct a SimulatorBackend
     metadata_mediator: Optional[MetadataMediator] = None
+    enable_batch_renderer: bool = False
 
 
 @attr.s(auto_attribs=True)
@@ -89,8 +90,8 @@ class Simulator(SimulatorBackend):
                 "Config has not agents specified.  Must specify at least 1 agent"
             )
 
-        config.sim_cfg.create_renderer = any(
-            (len(cfg.sensor_specifications) > 0 for cfg in config.agents)
+        config.sim_cfg.create_renderer = not config.enable_batch_renderer and any(
+            len(cfg.sensor_specifications) > 0 for cfg in config.agents
         )
         config.sim_cfg.load_semantic_mesh |= any(
             (
@@ -124,8 +125,8 @@ class Simulator(SimulatorBackend):
             destroyed if async rendering was used.  If async rendering wasn't used,
             this has no effect.
         """
-        # NB: Python still still call __del__ (and thus)
-        # close even if __init__ errors. We don't
+        # NB: Python still calls __del__ (and thus)
+        # closes even if __init__ fails. We don't
         # have anything to close if we aren't initialized so
         # we can just return.
         if not self._initialized:
@@ -215,13 +216,13 @@ class Simulator(SimulatorBackend):
         # subfolder called "habitat" (a level deeper than the "mesh.ply")
         if scene_basename == "mesh.ply":
             scene_dir = osp.dirname(config.sim_cfg.scene_id)
-            navmesh_filenname = osp.join(scene_dir, "habitat", "mesh_semantic.navmesh")
+            navmesh_filename = osp.join(scene_dir, "habitat", "mesh_semantic.navmesh")
         else:
-            navmesh_filenname = osp.splitext(config.sim_cfg.scene_id)[0] + ".navmesh"
+            navmesh_filename = osp.splitext(config.sim_cfg.scene_id)[0] + ".navmesh"
 
-        if osp.exists(navmesh_filenname) and not self.pathfinder.is_loaded:
-            self.pathfinder.load_nav_mesh(navmesh_filenname)
-            logger.info(f"Loaded navmesh {navmesh_filenname}")
+        if osp.exists(navmesh_filename) and not self.pathfinder.is_loaded:
+            self.pathfinder.load_nav_mesh(navmesh_filename)
+            logger.info(f"Loaded navmesh {navmesh_filename}")
 
         # NOTE: this recomputed NavMesh does not include STATIC objects.
         needed_settings = NavMeshSettings()

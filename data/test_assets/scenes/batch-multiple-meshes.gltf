@@ -4,6 +4,7 @@
     "generator": "Magnum GltfSceneConverter"
   },
   "extensionsUsed": [
+    "KHR_materials_unlit",
     "KHR_texture_ktx",
     "KHR_texture_transform"
   ],
@@ -262,7 +263,10 @@
           "index": 0
         }
       },
-      "name": "checkerboard"
+      "extensions": {
+        "KHR_materials_unlit": {}
+      },
+      "name": "flat checkerboard"
     },
     {
       "pbrMetallicRoughness": {
@@ -277,7 +281,10 @@
           }
         }
       },
-      "name": "cyan"
+      "extensions": {
+        "KHR_materials_unlit": {}
+      },
+      "name": "flat cyan"
     },
     {
       "pbrMetallicRoughness": {
@@ -292,7 +299,10 @@
           }
         }
       },
-      "name": "magenta"
+      "extensions": {
+        "KHR_materials_unlit": {}
+      },
+      "name": "flat magenta"
     },
     {
       "pbrMetallicRoughness": {
@@ -306,7 +316,10 @@
           }
         }
       },
-      "name": "yellow"
+      "extensions": {
+        "KHR_materials_unlit": {}
+      },
+      "name": "flat yellow"
     },
     {
       "pbrMetallicRoughness": {
@@ -320,7 +333,10 @@
           }
         }
       },
-      "name": "vertex-color magenta"
+      "extensions": {
+        "KHR_materials_unlit": {}
+      },
+      "name": "flat vertex-color magenta"
     }
   ],
   "samplers": [

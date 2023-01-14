@@ -56,7 +56,7 @@ void initGfxReplayBindings(py::module& m) {
             }
             self.getRecorder()->saveKeyframe();
           },
-          R"(Save a render keyframe; a render keyframe can be loaded later and used to draw observations.)")
+          R"(Save a render keyframe. A render keyframe can be loaded later and used to draw observations.)")
 
       .def(
           "extract_keyframe",
@@ -69,7 +69,7 @@ void initGfxReplayBindings(py::module& m) {
             return esp::gfx::replay::Recorder::keyframeToString(
                 self.getRecorder()->extractKeyframe());
           },
-          R"(Extract a render keyframe as a JSON-formatted string)")
+          R"(Extract the current keyframe as a JSON-formatted string.)")
 
       .def(
           "add_user_transform_to_keyframe",
@@ -84,7 +84,7 @@ void initGfxReplayBindings(py::module& m) {
             self.getRecorder()->addUserTransformToKeyframe(name, translation,
                                                            rotation);
           },
-          R"(Add a user transform to the current render keyframe; it will get stored with the keyframe and will be available later upon loading the keyframe)")
+          R"(Add a user transform to the current render keyframe. It will get stored with the keyframe and will be available later upon loading the keyframe.)")
 
       .def(
           "write_saved_keyframes_to_file",
