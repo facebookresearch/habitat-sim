@@ -39,8 +39,8 @@ import numpy as np
 import habitat_sim
 
 # %%
-test_scene = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
-config_file = "./data/scene_datasets/mp3d_example/mp3d.scene_dataset_config.json"
+test_scene = "../data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
+config_file = "../data/scene_datasets/mp3d_example/mp3d.scene_dataset_config.json"
 
 sim_settings = {
     "width": 256,  # Spatial resolution of the observations
@@ -88,7 +88,7 @@ def make_cfg(settings):
     sensor_specs = []
     for sensor_uuid, sensor_params in sensors.items():
         if settings[sensor_uuid]:
-            sensor_spec = habitat_sim.SensorSpec()
+            sensor_spec = habitat_sim.CameraSensorSpec()
             sensor_spec.uuid = sensor_uuid
             sensor_spec.sensor_type = sensor_params["sensor_type"]
             sensor_spec.resolution = sensor_params["resolution"]
@@ -171,7 +171,7 @@ print("agent_state: position", agent_state.position, "rotation", agent_state.rot
 # %%
 from PIL import Image
 
-from habitat_sim.utils import d3_40_colors_rgb
+from habitat_sim.utils.viz_utils import d3_40_colors_rgb
 
 
 def display_sample(rgb_obs, semantic_obs, depth_obs):
