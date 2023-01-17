@@ -119,24 +119,24 @@ To load semantic annotations in habitat-lab:
 
     defaults:
       - /habitat: habitat_config_base
-      - /habitat/simulator/agents@habitat.simulator.agents.<agent_name>: agent_base
+      - /habitat/simulator/agents@habitat.simulator.agents.<your_agent_name>: agent_base
       # add semantic sensor:
-      - /habitat/simulator/sim_sensors@habitat.simulator.agents.<agent_name>.sim_sensors.semantic_sensor: semantic_sensor
-      - /habitat/task/rearrange: <task>
-      - /habitat/dataset/rearrangement: <dataset>
+      - /habitat/simulator/sim_sensors@habitat.simulator.agents.<your_agent_name>.sim_sensors.semantic_sensor: semantic_sensor
+      - /habitat/task/rearrange: <your_task>
+      - /habitat/dataset/rearrangement: <your_dataset>
       - _self_
     
     habitat:
       simulator:
         agents:
-          <agent_name>:
+          <your_agent_name>:
             sim_sensors:
               # configure semantic sensor:
               semantic_sensor:
                 height: 256
                 width: 256
     ```
-* Set the `habitat.simulator.scene_dataset` configuration variable:
+* Set the `habitat.simulator.scene_dataset` configuration value:
 
     ```yaml
     habitat:
