@@ -316,6 +316,12 @@ class HabitatSimInteractiveViewer(Application):
         print(
             f"     Found {number_of_indoor} indoor islands out of {self.sim.pathfinder.num_islands} total."
         )
+        for island_ix in range(self.sim.pathfinder.num_islands):
+            island_info = self.navmesh_classification_results["island_info"][island_ix]
+            info_str = f"    {island_ix}: indoor ratio = {island_info['indoor']}, area = {self.sim.pathfinder.island_area(island_ix)}"
+            if self.navmesh_classification_results["active_island"] == island_ix:
+                info_str += "  -- active--"
+            print(info_str)
 
     def debug_draw_navmesh_island(self, island_ix: int, color: mn.Color4 = None):
         """
@@ -1014,6 +1020,7 @@ class HabitatSimInteractiveViewer(Application):
             self.navmesh_settings,
             include_static_objects=True,
         )
+        self.navmesh_classification_results = None
 
     def exit_event(self, event: Application.ExitEvent):
         """
