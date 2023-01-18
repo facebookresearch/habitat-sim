@@ -27,6 +27,15 @@ qa_scene_settings = {
     "frustum_culling": True,
     "stage_requires_lighting": True,
     "silent": False,  # do not print log info
+    "collision_test_cell_size": 0.5,
+    "collision_test_max_time": 0.005,
+    "collision_test_json_entry": {
+        "collision_test_num": 0,
+        "ijk_indices": [0, 0, 0],
+        "pos": [0.0, 0.0, 0.0],
+        "test_time": 0.0,
+        "exceeds_time_threshold": False,
+    },
 }
 default_sim_settings.update(qa_scene_settings)
 

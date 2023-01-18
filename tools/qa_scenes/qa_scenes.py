@@ -34,7 +34,7 @@ import habitat_sim
 from habitat_sim.agent import AgentState
 
 # from habitat_sim.physics import MotionType
-from habitat_sim.simulator import ObservationDict
+# from habitat_sim.simulator import ObservationDict
 from habitat_sim.utils import common as utils
 from habitat_sim.utils import viz_utils as vut
 from habitat_sim.utils.common import (
@@ -356,7 +356,7 @@ class QASceneProcessingViewer(Application):
         agent = self.sim.get_agent(agent_id)
         self.sensor_uuid = keys[1]
 
-        # observations: ObservationDict = self.sim.get_sensor_observations(agent_id)
+        # observations: Dict[str, Any] = self.sim.get_sensor_observations(agent_id)
         self.sim.get_sensor_observations(agent_id)
 
         # get the sensor.CameraSensor object
@@ -480,19 +480,19 @@ class QASceneProcessingViewer(Application):
         self.sim.perform_discrete_collision_detection()
 
         # update z coordinate
-        self.grid_pos.z += 2.0 * self.cell_size
+        self.grid_pos.z += self.cell_size
 
         # if z coordinate exceeds max
         if self.grid_pos.z >= self.scene_bb.max.z:
             # reset z coordinate and update y coordinate
             self.grid_pos.z = self.scene_bb.min.z
-            self.grid_pos.y += 2.0 * self.cell_size
+            self.grid_pos.y += self.cell_size
 
             # if y coordinate exceeds max
             if self.grid_pos.y >= self.scene_bb.max.y:
                 # reset y coordinate and update x coordinate
                 self.grid_pos.y = self.scene_bb.min.y
-                self.grid_pos.x += 2.0 * self.cell_size
+                self.grid_pos.x += self.cell_size
 
                 # if x coordinate exceeds max
                 if self.grid_pos.x >= self.scene_bb.max.x:
@@ -717,7 +717,10 @@ def export_navmesh_data_to_obj(filename, vertex_data, index_data):
 
 
 def profile_scene(
-    sim: habitat_sim.Simulator, sim_settings: Dict[str, Any], scene_filename: str
+    sim: habitat_sim.Simulator,
+    sim_settings: Dict[str, Any],
+    scene_filename: str,
+    detailed_info_json_dict: Dict[str, Any],
 ) -> None:
     """
     Profile a scene's performance for rendering, collisions, physics, etc...
@@ -742,7 +745,7 @@ def profile_scene(
 
     # TODO: run collision grid test
     if sim_settings["run_collision_test"]:
-        collision_grid_test(sim)
+        collision_grid_test(sim, sim_settings, scene_filename, detailed_info_json_dict)
 
 
 def render_sensor_observations(
@@ -790,10 +793,15 @@ def render_sensor_observations(
     return render_time_total / num_poses
 
 
-def collision_grid_test(sim: habitat_sim.Simulator):
+def collision_grid_test(
+    sim: habitat_sim.Simulator,
+    sim_settings: Dict[str, Any],
+    scene_filename: str,
+    detailed_info_json_dict: Dict[str, Any],
+):
     """ """
-    # run a collision detection grid
-    cell_size = 0.5
+    # create scaled cube to iterate through scene and test its collisions
+    cell_size = sim_settings["collision_test_cell_size"]
 
     obj_templates_mgr = sim.get_object_template_manager()
     rigid_obj_mgr = sim.get_rigid_object_manager()
@@ -814,6 +822,16 @@ def collision_grid_test(sim: habitat_sim.Simulator):
     running_collision_test = True
     collision_test_failure_log: List[tuple(str, Exception)] = []
     collision_test_times: List[tuple(mn.Vector3, float)] = []
+
+    collision_test_json_info: List[Dict[str, Any]] = []
+    collision_test_constants: Dict[str, Any] = {
+        "collision_test_cell_size": sim_settings["collision_test_cell_size"],
+        "collision_test_max_time": sim_settings["collision_test_max_time"],
+    }
+    collision_test_json_info.append(collision_test_constants)
+
+    test_num: int = 1
+    ijk_indices = [0, 0, 0]
     while running_collision_test:
         scaled_cube.translation = grid_pos
 
@@ -822,299 +840,77 @@ def collision_grid_test(sim: habitat_sim.Simulator):
             sim.perform_discrete_collision_detection()
             collision_test_time = time.time() - start_time
             collision_test_times.append((scaled_cube.translation, collision_test_time))
+
+            # construct json entry for exhaustive collision test info and append it to list
+            entry: Dict[str, Any] = sim_settings["collision_test_json_entry"].copy()
+            entry["collision_test_num"] = test_num
+            entry["ijk_indices"] = [ijk_indices[0], ijk_indices[1], ijk_indices[2]]
+            entry["pos"] = [grid_pos.x, grid_pos.y, grid_pos.z]
+            entry["test_time"] = collision_test_time
+            entry["exceeds_time_threshold"] = bool(
+                collision_test_time > sim_settings["collision_test_max_time"]
+            )
+            collision_test_json_info.append(entry)
+
         except Exception as e:
             # store any exceptions raised when constructing simulator
             pos_string = f"collision test failure at cube position: {grid_pos}"
             collision_test_failure_log.append((pos_string, e))
 
+        # TODO: the following code would probably be clearer as a nested for-loop
         # update z coordinate
-        grid_pos.z += 2.0 * cell_size
+        grid_pos.z += cell_size
+        ijk_indices[2] += 1
 
         # if z coordinate exceeds max
         if grid_pos.z >= scene_bb.max.z:
             # reset z coordinate and update y coordinate
             grid_pos.z = scene_bb.min.z
-            grid_pos.y += 2.0 * cell_size
+            ijk_indices[2] = 0
+
+            grid_pos.y += cell_size
+            ijk_indices[1] += 1
 
             # if y coordinate exceeds max
             if grid_pos.y >= scene_bb.max.y:
                 # reset y coordinate and update x coordinate
                 grid_pos.y = scene_bb.min.y
-                grid_pos.x += 2.0 * cell_size
+                ijk_indices[1] = 0
+
+                grid_pos.x += cell_size
+                ijk_indices[0] += 1
 
                 # if x coordinate exceeds max
                 if grid_pos.x >= scene_bb.max.x:
                     # we are done running collision test
                     running_collision_test = False
 
+        test_num += 1
+
     # print failure log, possibly write to file
     text_format = ANSICodes.BRIGHT_CYAN.value
     for failure in collision_test_failure_log:
         print_if_logging(silent, text_format + f"{failure}")
 
-    # print collision test times, possibly write to file
+    # print collision test info entries
     text_format = ANSICodes.BRIGHT_MAGENTA.value
-    print_if_logging(silent, text_format + "\nCollision test times:")
-    for collision_time in collision_test_times:
+    print_if_logging(silent, text_format + "\nCollision test json entries:")
+    for entry in collision_test_json_info:
+        json_entry = json.dumps(entry, indent=2)
         print_if_logging(
             silent,
-            text_format
-            + f"cube pos: {collision_time[0]}, collision time: {collision_time[1]}",
+            text_format + f"{json_entry}",
         )
+
+    # add this collision test info to our comprehensive json dict
+    detailed_info_json_dict[scene_filename] = {
+        "collision_test": collision_test_json_info
+    }
 
 
 ######################################################
 # end scene profiling code
 ######################################################
-
-
-# TODO: probably remove, refactored into other functions
-def process_stages(
-    sim_settings: Dict[str, Any],
-    stage_handles: List[str],
-) -> Dict[str, NavmeshMetrics]:
-
-    # process each stage
-    text_format = ANSICodes.BROWN.value
-    print_if_logging(silent, text_format + "STAGES")
-
-    # optionally manually cull some problem scenes
-    # stage_handles = [x for x in stage_handles if "106366104_174226320" not in x]
-    # stage_handles = [x for x in stage_handles if x.split("/")[-1].split(".")[0] in modified_stage_handles]
-
-    failure_log: List[tuple(str, Exception)] = []
-    all_stages_navmesh_metrics = {}
-    for stage_handle in stage_handles:
-
-        # print stage handle
-        text_format = ANSICodes.BROWN.value
-        print_if_logging(silent, text_format + section_divider_str)
-        print_if_logging(silent, text_format + f"-{stage_handle}\n")
-        cfg.sim_cfg.scene_id = stage_handle
-
-        if stage_handle == "NONE":
-            continue
-
-        # attempt to construct simulator and process stage
-        try:
-            with habitat_sim.Simulator(cfg) as sim:
-                stage_filename = stage_handle.split("/")[-1]
-                text_format = ANSICodes.PURPLE.value
-                print_if_logging(
-                    silent, text_format + f"\n  -stage filename: {stage_filename}\n"
-                )
-
-                # generate and save navmesh
-                if sim_settings["generate_navmesh"]:
-                    stage_directory = stage_handle[: -len(stage_filename)]
-                    print_if_logging(
-                        silent, text_format + f"  -stage directory: {stage_directory}\n"
-                    )
-                    # scene_dataset_directory = mm.active_dataset[:-len(mm.active_dataset.split("/")[-1])]
-                    # stage_directory = os.path.join(scene_dataset_directory, stage_directory)
-
-                    # create navmesh settings and compute navmesh
-                    navmesh_filename = (
-                        stage_filename[: -len(stage_filename.split(".")[-1])]
-                        + "navmesh"
-                    )
-                    print_if_logging(
-                        silent,
-                        text_format + f"  -navmesh filename: {navmesh_filename}\n",
-                    )
-                    navmesh_settings = habitat_sim.NavMeshSettings()
-                    navmesh_settings.set_defaults()
-                    sim.recompute_navmesh(sim.pathfinder, navmesh_settings)
-
-                    # save navmesh
-                    if os.path.exists(stage_directory):
-                        sim.pathfinder.save_nav_mesh(stage_directory + navmesh_filename)
-                    else:
-                        failure_log.append(
-                            (
-                                stage_handle,
-                                f"No target directory for navmesh: {stage_directory}",
-                            )
-                        )
-
-                # init agent and get its sensor observations from 4 different poses
-                agent = sim.initialize_agent(sim_settings["default_agent"])
-                agent_state = habitat_sim.AgentState()
-                for _pose_num in range(4):
-                    agent_state.rotation = utils.quat_from_angle_axis(
-                        theta=_pose_num * (math.pi / 2.0), axis=np.array([0, 1, 0])
-                    )
-                    agent.set_state(agent_state)
-
-                    # extract the images
-                    observations: ObservationDict = sim.get_sensor_observations()
-
-                    rgb = None
-                    if "color_sensor" in observations:
-                        rgb = observations["color_sensor"]
-
-                    semantic = None
-                    if "semantic_sensor" in observations:
-                        semantic = observations["semantic_sensor"]
-
-                    depth = None
-                    if "depth_sensor" in observations:
-                        depth = observations["depth_sensor"]
-
-                    pil_save_obs(
-                        output_file=output_path + stage_filename.split(".")[0]
-                        # + stage_handle.split("/")[-1]
-                        + "_" + str(_pose_num) + ".png",
-                        rgb=rgb,
-                        semantic=semantic,
-                        depth=depth,
-                    )
-
-                # process navmesh
-                all_stages_navmesh_metrics[stage_filename] = collect_navmesh_metrics(
-                    sim
-                )
-                save_navmesh_data(sim)
-
-                sim.close()
-
-        except Exception as e:
-            # store any exceptions raised when constructing simulator
-            failure_log.append((stage_handle, e))
-
-    # print failure log
-    text_format = ANSICodes.GREEN.value
-    print_if_logging(silent, text_format + f"\nFailure log = {failure_log}\n")
-
-    # print number of stages we attempted to process
-    print_if_logging(
-        silent, text_format + f"Tried {len(stage_handles)-1} stages.\n"
-    )  # manually decrement the "NONE" scene
-    print_if_logging(silent, text_format + section_divider_str)
-
-    return all_stages_navmesh_metrics
-
-
-# TODO: probably remove, refactored into other functions
-def process_scenes(
-    sim_settings: Dict[str, Any],
-    cfg: habitat_sim.Configuration,
-    scene_handles: List[str],
-) -> Dict[str, NavmeshMetrics]:
-
-    # determine indices of scenes to process
-    start_index = 0
-    end_index = len(scene_handles)
-
-    # determine if start index provided in config is valid
-    if (
-        isinstance(sim_settings["start_scene_index"], int)
-        and sim_settings["start_scene_index"] >= 0
-        and sim_settings["start_scene_index"] <= len(scene_handles)
-    ):
-        start_index = sim_settings["start_scene_index"]
-
-    # determine if end index provided in config is valid
-    if (
-        isinstance(sim_settings["end_scene_index"], int)
-        and sim_settings["end_scene_index"] >= sim_settings["start_scene_index"]
-        and sim_settings["end_scene_index"] <= len(scene_handles)
-    ):
-        # end index is exclusive
-        end_index = sim_settings["end_scene_index"] + 1
-
-    # process specified scenes
-    failure_log: List[tuple(str, Exception)] = []
-    all_scenes_navmesh_metrics = {}
-    text_format = ANSICodes.BRIGHT_MAGENTA.value
-    print_if_logging(silent, text_format + "SCENES")
-    for i in range(start_index, end_index):
-
-        scene_handle = scene_handles[i]
-        cfg.sim_cfg.scene_id = scene_handle
-
-        # print scene handle
-        text_format = ANSICodes.BRIGHT_MAGENTA.value
-        print_if_logging(silent, text_format + section_divider_str)
-        print_if_logging(silent, text_format + f"-{scene_handle}\n")
-
-        # attempt to construct simulator and process scene
-        try:
-            with habitat_sim.Simulator(cfg) as sim:
-
-                text_format = ANSICodes.PURPLE.value
-                scene_filename = scene_handle.split("/")[-1]
-                print_if_logging(
-                    silent, text_format + f"\n  -scene filename: {scene_filename}\n"
-                )
-
-                # generate and save navmesh
-                if sim_settings["generate_navmesh"]:
-
-                    # get and print scene directory
-                    scene_directory = scene_handle[: -len(scene_filename)]
-                    print_if_logging(
-                        silent, text_format + f"  -scene directory: {scene_directory}\n"
-                    )
-
-                    # get and print navmesh filename
-                    navmesh_filename = (
-                        scene_filename[: -len(scene_filename.split(".")[-1])]
-                        + "navmesh"
-                    )
-                    print_if_logging(
-                        silent,
-                        text_format + f"  -navmesh filename: {navmesh_filename}\n",
-                    )
-
-                    # create navmesh settings and compute navmesh
-                    navmesh_settings = habitat_sim.NavMeshSettings()
-                    navmesh_settings.set_defaults()
-                    sim.recompute_navmesh(sim.pathfinder, navmesh_settings)
-
-                    # save navmesh
-                    if os.path.exists(scene_directory):
-                        sim.pathfinder.save_nav_mesh(scene_directory + navmesh_filename)
-                        # process navmesh
-                        all_scenes_navmesh_metrics[
-                            scene_filename
-                        ] = collect_navmesh_metrics(sim)
-                        save_navmesh_data(sim)
-                    else:
-                        failure_log.append(
-                            (
-                                scene_handle,
-                                f"No target directory for navmesh: {scene_directory}",
-                            )
-                        )
-
-                profile_scene(sim, sim_settings, scene_filename)
-
-                sim.close()
-
-        except Exception as e:
-            # store any exceptions raised when constructing simulator
-            failure_log.append((scene_handle, e))
-
-    # print failure log
-    text_format = ANSICodes.GREEN.value
-    print_if_logging(silent, text_format + f"\nFailure log = {failure_log}\n")
-
-    # print number of scenes we attempted to process
-    print_if_logging(
-        silent, text_format + f"Tried {end_index - start_index} scenes.\n"
-    )  # manually decrement the "NONE" scene
-    print_if_logging(silent, text_format + section_divider_str)
-
-    # save navmesh metrics in a csv
-    if sim_settings["generate_navmesh"]:
-        filename = create_unique_filename(
-            dir_path=output_path,
-            filename_prefix=sim_settings["output_file_prefix"],
-            filename_suffix="scene_navmesh_metrics",
-            extension=".csv",
-        )
-        aggregate_navmesh_metrics(all_scenes_navmesh_metrics, filename=filename)
 
 
 def test_requested_scenes(
@@ -1167,21 +963,37 @@ def test_requested_scenes(
     # attempt to construct simulator and process scene
     all_scenes_navmesh_metrics: Dict[str, NavmeshMetrics] = {}
     navmesh_failure_log: List[Tuple[str, Any]] = []
+    detailed_info_json_dict: Dict[str, Any] = {}
+
     text_format = ANSICodes.BRIGHT_MAGENTA.value
     print_if_logging(silent, text_format + "SCENES")
     for i in range(start_index, end_index):
         process_scene(
-            cfg, scene_handles[i], all_scenes_navmesh_metrics, navmesh_failure_log
+            cfg,
+            scene_handles[i],
+            all_scenes_navmesh_metrics,
+            navmesh_failure_log,
+            detailed_info_json_dict,
         )
 
     # create cvs detailing scene navmesh metrics
-    filename = create_unique_filename(
+    cvs_filename = create_unique_filename(
         dir_path=output_path,
         filename_prefix=sim_settings["output_file_prefix"],
         filename_suffix="scene_navmesh_metrics",
         extension=".csv",
     )
-    aggregate_navmesh_metrics(all_scenes_navmesh_metrics, filename=filename)
+    aggregate_navmesh_metrics(all_scenes_navmesh_metrics, filename=cvs_filename)
+
+    # save json file with comprehensive test data for each scene
+    json_filename = create_unique_filename(
+        dir_path=output_path,
+        filename_prefix=sim_settings["output_file_prefix"],
+        filename_suffix="detailed_info",
+        extension=".json",
+    )
+    with open(json_filename, "w") as outfile:
+        json.dump(detailed_info_json_dict, fp=outfile, indent=2)
 
     # print failure log
     text_format = ANSICodes.GREEN.value
@@ -1236,6 +1048,7 @@ def process_scene(
     scene_handle: str,
     all_scenes_navmesh_metrics: Dict[str, NavmeshMetrics],
     navmesh_failure_log: List[Tuple[str, Any]],
+    detailed_info_json_dict: Dict[str, Any],
 ):
     cfg.sim_cfg.scene_id = scene_handle
 
@@ -1262,7 +1075,7 @@ def process_scene(
                     navmesh_failure_log,
                 )
 
-            profile_scene(sim, sim_settings, scene_filename)
+            profile_scene(sim, sim_settings, scene_filename, detailed_info_json_dict)
 
             sim.close()
 
