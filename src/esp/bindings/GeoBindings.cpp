@@ -27,40 +27,58 @@ void initGeoBindings(py::module& m) {
   geo.attr("RIGHT") = ESP_FRONT.cross(ESP_UP);
 
   // ==== OBB ====
-  py::class_<OBB>(m, "OBB")
+  py::class_<OBB>(m, "OBB", R"(This is an OBB.)")
       .def(py::init([](const vec3f& center, const vec3f& dimensions,
                        const Mn::Quaternion& rotation) {
-        return OBB(center, dimensions,
-                   Mn::EigenIntegration::cast<quatf>(rotation));
-      }))
+             return OBB(center, dimensions,
+                        Mn::EigenIntegration::cast<quatf>(rotation));
+           }),
+           "center"_a, "dimensions"_a, "rotation"_a)
       .def(py::init<box3f&>())
-      .def("contains", &OBB::contains)
-      .def("closest_point", &OBB::closestPoint)
-      .def("distance", &OBB::distance)
-      .def("to_aabb", &OBB::toAABB)
-      .def("rotate",
-           [](OBB& self, const Mn::Quaternion& rotation) {
-             return self.rotate(Mn::EigenIntegration::cast<quatf>(rotation));
-           })
-      .def_property_readonly("center", &OBB::center)
-      .def_property_readonly("sizes", &OBB::sizes)
-      .def_property_readonly("volume", &OBB::volume)
-      .def_property_readonly("half_extents", &OBB::halfExtents)
+      .def(
+          "contains", &OBB::contains,
+          R"(Returns whether world coordinate point p is contained in this OBB within threshold distance epsilon.)")
+      .def("closest_point", &OBB::closestPoint,
+           R"(Return closest point to p within OBB.  If p is inside return p.)")
+      .def(
+          "distance", &OBB::distance,
+          R"(Returns distance to p from closest point on OBB surface (0 if point p is inside box))")
+      .def("to_aabb", &OBB::toAABB,
+           R"(Returns an axis aligned bounding box bounding this OBB.)")
+      .def(
+          "rotate",
+          [](OBB& self, const Mn::Quaternion& rotation) {
+            return self.rotate(Mn::EigenIntegration::cast<quatf>(rotation));
+          },
+          R"(Rotate this OBB by the given rotation and return reference to self.)")
+      .def_property_readonly("center", &OBB::center, R"(Centroid of this OBB.)")
+      .def_property_readonly("sizes", &OBB::sizes,
+                             R"(The dimensions of this OBB in its own frame.)")
+      .def_property_readonly("volume", &OBB::volume,
+                             R"(The volume of this bbox.)")
+      .def_property_readonly("half_extents", &OBB::halfExtents,
+                             R"(Half-extents of this OBB (dimensions).)")
       .def_property_readonly(
-          "rotation", [](const OBB& self) { return self.rotation().coeffs(); })
+          "rotation", [](const OBB& self) { return self.rotation().coeffs(); },
+          R"(Quaternion representing rotation of this OBB.)")
       .def_property_readonly(
           "local_to_world",
-          [](const OBB& self) { return self.localToWorld().matrix(); })
-      .def_property_readonly("world_to_local", [](const OBB& self) {
-        return self.worldToLocal().matrix();
-      });
+          [](const OBB& self) { return self.localToWorld().matrix(); },
+          R"(Transform from local [0,1]^3 coordinates to world coordinates.)")
+      .def_property_readonly(
+          "world_to_local",
+          [](const OBB& self) { return self.worldToLocal().matrix(); },
+          R"(Transform from world coordinates to local [0,1]^3 coordinates.)");
 
-  geo.def("compute_gravity_aligned_MOBB", &geo::computeGravityAlignedMOBB);
-  geo.def("get_transformed_bb", &geo::getTransformedBB, "range"_a, "xform"_a);
+  geo.def("compute_gravity_aligned_MOBB", &geo::computeGravityAlignedMOBB,
+          R"()");
+  geo.def("get_transformed_bb", &geo::getTransformedBB, "range"_a, "xform"_a,
+          R"()");
 
   // ==== Ray ====
   py::class_<Ray>(m, "Ray")
-      .def(py::init<Magnum::Vector3, Magnum::Vector3>())
+      .def(py::init<Magnum::Vector3, Magnum::Vector3>(), "origin"_a,
+           "direction"_a)
       .def(py::init<>())
       .def_readwrite("origin", &Ray::origin)
       .def_readwrite("direction", &Ray::direction);
