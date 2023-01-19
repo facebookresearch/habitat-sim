@@ -697,33 +697,35 @@ def main(args):
     args = parser.parse_args(args)
     replace = args.replace
 
-    # get a default data_path "./data/"
-    data_path = args.data_path
-    if not data_path:
-        try:
-            data_path = os.path.abspath("./data/")
-            print(
-                f"No data-path provided, default to: {data_path}. Use '--data-path' to specify another location."
-            )
-            if not os.path.exists(data_path):
-                os.makedirs(data_path)
-        except Exception:
-            traceback.print_exc(file=sys.stdout)
-            print("----------------------------------------------------------------")
-            print(
-                "Aborting download, failed to create default data_path and none provided."
-            )
-            print("Try providing --data-path (e.g. '/path/to/habitat-sim/data/')")
-            print("----------------------------------------------------------------")
-            parser.print_help()
-            exit(2)
+    default_data_path = "./data"
+    data_path = os.path.realpath(
+        args.data_path if args.data_path else default_data_path
+    )
+    if not args.data_path:
+        print(
+            f"No data-path provided, defaults to: {default_data_path}. Use '--data-path' to specify another location."
+        )
+        if os.path.islink(default_data_path):
+            print(f"Note, {default_data_path} is a symbolic link that points to {data_path}.")
+
+    try:
+        os.makedirs(data_path, exist_ok=True)
+    except Exception:
+        traceback.print_exc(file=sys.stdout)
+        print("----------------------------------------------------------------")
+        print(
+            "Aborting download, failed to create data_path."
+        )
+        print("Try providing --data-path (e.g. '/path/to/habitat-sim/data/')")
+        print("----------------------------------------------------------------")
+        parser.print_help()
+        exit(2)
 
     # initialize data_sources and data_groups with test and example assets
-    os.makedirs(data_path, exist_ok=True)
     data_path = os.path.abspath(data_path) + "/"
     initialize_test_data_sources(data_path=data_path)
 
-    # validatation: ids are unique between groups and sources
+    # validation: ids are unique between groups and sources
     for key in data_groups:
         assert key not in data_sources, "Duplicate key: " + key
 
