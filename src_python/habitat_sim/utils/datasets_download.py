@@ -706,16 +706,16 @@ def main(args):
             f"No data-path provided, defaults to: {default_data_path}. Use '--data-path' to specify another location."
         )
         if os.path.islink(default_data_path):
-            print(f"Note, {default_data_path} is a symbolic link that points to {data_path}.")
+            print(
+                f"Note, {default_data_path} is a symbolic link that points to {data_path}."
+            )
 
     try:
         os.makedirs(data_path, exist_ok=True)
     except Exception:
         traceback.print_exc(file=sys.stdout)
         print("----------------------------------------------------------------")
-        print(
-            "Aborting download, failed to create data_path."
-        )
+        print("Aborting download, failed to create data_path.")
         print("Try providing --data-path (e.g. '/path/to/habitat-sim/data/')")
         print("----------------------------------------------------------------")
         parser.print_help()
