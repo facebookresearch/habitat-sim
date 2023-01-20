@@ -125,7 +125,7 @@ To load semantic annotations in habitat-lab:
       - /habitat/task/rearrange: <your_task>
       - /habitat/dataset/rearrangement: <your_dataset>
       - _self_
-    
+
     habitat:
       simulator:
         agents:
