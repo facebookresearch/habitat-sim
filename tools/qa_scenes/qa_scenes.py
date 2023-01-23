@@ -31,7 +31,7 @@ from qa_scene_utils import (  # print_dataset_info,
 )
 
 import habitat_sim
-from habitat_sim.agent import AgentState
+from habitat_sim.agent import Agent, AgentState
 
 # from habitat_sim.physics import MotionType
 # from habitat_sim.simulator import ObservationDict
@@ -64,6 +64,8 @@ if not os.path.exists(default_scene_dir):
     os.mkdir(default_scene_dir)
 
 silent: bool = False
+# MAX_RENDER_TIME = np.float128
+MAX_RENDER_TIME = sys.float_info.max
 
 # NOTE: change this to config file name to test
 qa_config_filename = "default"
@@ -219,11 +221,26 @@ class QASceneProcessingViewer(Application):
         # # get the sensor.CameraSensor object
         # self.camera_sensor = self.agent_scene_node.node_sensor_suite.get("color_sensor")
 
+        # place camera looking down from above to see whole scene
+        self.place_scene_topdown_camera()
+
         # set sim_settings scene name as actual loaded scene
         self.sim_settings["scene"] = self.sim.curr_scene_name
 
         Timer.start()
         self.step = -1
+
+    def place_scene_topdown_camera(self) -> None:
+        """
+        Place the camera in the scene center looking down.
+        """
+        scene_bb = self.sim.get_active_scene_graph().get_root_node().cumulative_bb
+        look_down = mn.Quaternion.rotation(mn.Deg(-90), mn.Vector3.x_axis())
+        max_dim = max(scene_bb.size_x(), scene_bb.size_z())
+        cam_pos = scene_bb.center()
+        cam_pos[1] += 0.52 * max_dim + scene_bb.size_y() / 2.0
+        self.default_agent.scene_node.translation = cam_pos
+        self.default_agent.scene_node.rotation = look_down
 
     def default_agent_config(self) -> habitat_sim.agent.AgentConfiguration:
         """
@@ -326,7 +343,7 @@ class QASceneProcessingViewer(Application):
         # ------------------------------------------------------------------
 
         # run collision test
-        if self.running_collision_test and self.frame_count % 1 == 0:
+        if self.running_collision_test and self.frame_count % 30 == 0:
             self.run_discrete_collision_test()
 
         self.frame_count += 1
@@ -415,7 +432,7 @@ class QASceneProcessingViewer(Application):
                     max(cur_scene_index + inc, 0), len(scene_ids) - 1
                 )
                 self.sim_settings["scene"] = scene_ids[next_scene_index]
-            self.reconfigure_sim()
+            self.reconfigure_sim(self.sim_settings)
             print(f"Reconfigured simulator for scene: {self.sim_settings['scene']}")
 
         elif key == pressed.C and not self.running_collision_test:
@@ -453,7 +470,8 @@ class QASceneProcessingViewer(Application):
         exit(0)
 
     def setup_collision_test(self):
-        self.cell_size = 0.5
+        self.cell_size = 1.0
+        scale_factor = 0.5 * self.cell_size
 
         obj_templates_mgr = self.sim.get_object_template_manager()
         rigid_obj_mgr = self.sim.get_rigid_object_manager()
@@ -462,7 +480,7 @@ class QASceneProcessingViewer(Application):
 
         cube_handle = obj_templates_mgr.get_template_handles("cubeSolid")[0]
         cube_template_cpy = obj_templates_mgr.get_template_by_handle(cube_handle)
-        cube_template_cpy.scale = np.ones(3) * self.cell_size
+        cube_template_cpy.scale = np.ones(3) * scale_factor
 
         obj_templates_mgr.register_template(cube_template_cpy, "my_scaled_cube")
         self.scaled_cube = rigid_obj_mgr.add_object_by_template_handle("my_scaled_cube")
@@ -716,92 +734,173 @@ def export_navmesh_data_to_obj(filename, vertex_data, index_data):
 ######################################################
 
 
-def profile_scene(
-    sim: habitat_sim.Simulator,
-    sim_settings: Dict[str, Any],
-    scene_filename: str,
-    detailed_info_json_dict: Dict[str, Any],
-) -> None:
+def place_scene_topdown_camera(sim: habitat_sim.Simulator, agent: Agent) -> None:
     """
-    Profile a scene's performance for rendering, collisions, physics, etc...
+    Place the camera in the scene center looking down.
     """
-    profiling_info = {
-        "avg_render_time": 0,  # averge time taken to render a frame
-        # TODO: needed?
-        # "physics_realtime_ratio": 0,  # simulation : realtime ratio
-        # "collision_test_avg_time": 0, # average time taken to update collision info
-    }
-
-    # Get sensor observations from 4 different poses.
-    # Record the average rendering time and save the observations in an image.
-    if sim_settings["render_sensor_obs"]:
-        profiling_info["avg_render_time"] = render_sensor_observations(
-            sim, scene_filename
-        )
-
-    # TODO: profile physics
-    # sim_horizon = 10  # seconds of simulation to sample over
-    # dt = 1.0 / sim_settings["fps"]  # seconds
-
-    # TODO: run collision grid test
-    if sim_settings["run_collision_test"]:
-        collision_grid_test(sim, sim_settings, scene_filename, detailed_info_json_dict)
+    scene_bb = sim.get_active_scene_graph().get_root_node().cumulative_bb
+    look_down = mn.Quaternion.rotation(mn.Deg(-90), mn.Vector3.x_axis())
+    max_dim = max(scene_bb.size_x(), scene_bb.size_z())
+    cam_pos = scene_bb.center()
+    cam_pos[1] += 0.52 * max_dim + scene_bb.size_y() / 2.0
+    agent.scene_node.translation = cam_pos
+    agent.scene_node.rotation = look_down
 
 
 def render_sensor_observations(
-    sim: habitat_sim.Simulator, scene_filename: str
-) -> float:
+    sim: habitat_sim.Simulator,
+    scene_filename: str,
+    render_time_highlights: Dict[str, List[float]],
+    detailed_info_json_dict: Dict[str, Any],
+) -> None:
     """ """
+    text_format = ANSICodes.PURPLE.value
+    print_if_logging(
+        silent, text_format + f"\nRendering sensor obs for scene: {scene_filename}"
+    )
+
     # init agent
     agent = sim.initialize_agent(sim_settings["default_agent"])
     agent_state = habitat_sim.AgentState()
 
-    render_time_total = 0.0
-    num_poses = 4
-
+    # need sensor observation for each cardinal direction and from above
+    cardinal_directions: int = 4
+    num_poses: int = cardinal_directions + 1
     rgb: List[np.ndarray] = [None] * num_poses
     semantic: List[np.ndarray] = [None] * num_poses
     depth: List[np.ndarray] = [None] * num_poses
 
-    for _pose_num in range(num_poses):
-        agent_state.rotation = utils.quat_from_angle_axis(
-            theta=_pose_num * (math.pi / 2.0), axis=np.array([0, 1, 0])
-        )
-        agent.set_state(agent_state)
-        start_time = time.time()
-        observations = sim.get_sensor_observations()
-        render_time_total += time.time() - start_time
+    # take sensor observation for each cardinal direction
+    render_time_total: float = 0.0
+    min_render_time: float = MAX_RENDER_TIME
+    max_render_time: float = 0.0
+    render_times_for_pose: List[float] = [0.0] * num_poses
 
-        if "color_sensor" in observations:
-            rgb[_pose_num] = observations["color_sensor"]
-        if "semantic_sensor" in observations:
-            semantic[_pose_num] = observations["semantic_sensor"]
-        if "depth_sensor" in observations:
-            depth[_pose_num] = observations["depth_sensor"]
+    render_failure_log: List[tuple(str, Exception)] = []
 
-        pil_save_obs(
-            output_file=output_path
-            + scene_filename.split(".")[0]
-            + "_"
-            + str(_pose_num)
-            + ".png",
-            rgb=rgb[_pose_num],
-            semantic=semantic[_pose_num],
-            depth=depth[_pose_num],
-        )
+    try:
+        for pose_num in range(num_poses):
+            image_filename_suffix: str = ""
+            if pose_num == num_poses - 1:
+                # take sensor observation from above with all objects visible
+                place_scene_topdown_camera(sim, agent)
+                image_filename_suffix = "__from_above"
+            else:
+                # take sensor observation from horizontal direction
+                agent_state.rotation = utils.quat_from_angle_axis(
+                    theta=pose_num * (math.pi / 2.0), axis=np.array([0, 1, 0])
+                )
+                agent.set_state(agent_state)
+                angle_deg: int = pose_num * 90
+                image_filename_suffix = f"__{angle_deg}_deg"
 
-    return render_time_total / num_poses
+            start_time: float = time.time()
+            observations = sim.get_sensor_observations()
+            render_times_for_pose[pose_num]: float = time.time() - start_time
+
+            if render_times_for_pose[pose_num] < min_render_time:
+                min_render_time = render_times_for_pose[pose_num]
+            if render_times_for_pose[pose_num] > max_render_time:
+                max_render_time = render_times_for_pose[pose_num]
+
+            render_time_total += render_times_for_pose[pose_num]
+
+            if "color_sensor" in observations:
+                rgb[pose_num] = observations["color_sensor"]
+            if "semantic_sensor" in observations:
+                semantic[pose_num] = observations["semantic_sensor"]
+            if "depth_sensor" in observations:
+                depth[pose_num] = observations["depth_sensor"]
+
+            pil_save_obs(
+                output_file=output_path
+                + scene_filename.split(".")[0]
+                + image_filename_suffix
+                + ".png",
+                rgb=rgb[pose_num],
+                semantic=semantic[pose_num],
+                depth=depth[pose_num],
+            )
+
+        avg_render_time: float = render_time_total / num_poses
+
+        # save min, max, and avg render times for this scene
+        render_time_highlights[scene_filename] = [
+            min_render_time,
+            max_render_time,
+            avg_render_time,
+        ]
+
+    except Exception as e:
+        msg = f"render failure for scene: {scene_filename}"
+        render_failure_log.append((msg, e))
+
+        # save min, max, and avg render times for this scene
+        render_time_highlights[scene_filename] = [
+            MAX_RENDER_TIME,
+            MAX_RENDER_TIME,
+            MAX_RENDER_TIME,
+        ]
+
+    # construct json entry for exhaustive render test info and append it to list
+    # variables to store exhaustive collision test info for json
+    render_test_json_info: List[Dict[str, Any]] = []
+    render_test_constants: Dict[str, Any] = {
+        "render_test_max_time": sim_settings["render_test_max_time"],
+    }
+    render_test_json_info.append(render_test_constants)
+
+    json_entry: Dict[str, Any] = sim_settings["render_test_json_entry"].copy()
+    json_entry["cardinal_dir_render_times"] = [
+        render_times_for_pose[0],
+        render_times_for_pose[1],
+        render_times_for_pose[2],
+        render_times_for_pose[3],
+    ]
+    json_entry["overhead_render_time"] = render_times_for_pose[4]
+
+    json_entry["min_render_time"] = render_time_highlights[scene_filename][0]
+    json_entry["max_render_time"] = render_time_highlights[scene_filename][1]
+    json_entry["avg_render_time"] = render_time_highlights[scene_filename][2]
+
+    json_entry["max_time_exceeds_threshold"] = bool(
+        render_time_highlights[scene_filename][1] > sim_settings["render_test_max_time"]
+    )
+    render_test_json_info.append(json_entry)
+
+    # add this render test info to our comprehensive json dict
+    detailed_info_json_dict[scene_filename].update(
+        {"render_test": render_test_json_info}
+    )
+
+    # print rendering failure log, possibly write to file
+    text_format = ANSICodes.BRIGHT_CYAN.value
+    print_if_logging(
+        silent, text_format + f"\nRender test failure log for {scene_filename}:"
+    )
+    for failure in render_failure_log:
+        print_if_logging(silent, text_format + f"{failure}")
 
 
 def collision_grid_test(
     sim: habitat_sim.Simulator,
     sim_settings: Dict[str, Any],
     scene_filename: str,
+    all_collision_times: Dict[str, List[float]],
     detailed_info_json_dict: Dict[str, Any],
 ):
     """ """
+    text_format = ANSICodes.PURPLE.value
+    print_if_logging(
+        silent, text_format + f"\nRunning collision test for scene: {scene_filename}"
+    )
+
     # create scaled cube to iterate through scene and test its collisions
     cell_size = sim_settings["collision_test_cell_size"]
+
+    # scales from center of cube, so we scale halfway in both positive and
+    # negative directions for each dimension
+    scale_factor = 0.5 * cell_size
 
     obj_templates_mgr = sim.get_object_template_manager()
     rigid_obj_mgr = sim.get_rigid_object_manager()
@@ -810,36 +909,33 @@ def collision_grid_test(
 
     cube_handle = obj_templates_mgr.get_template_handles("cubeSolid")[0]
     cube_template_cpy = obj_templates_mgr.get_template_by_handle(cube_handle)
-    cube_template_cpy.scale = np.ones(3) * cell_size
+    cube_template_cpy.scale = np.ones(3) * scale_factor
 
     obj_templates_mgr.register_template(cube_template_cpy, "my_scaled_cube")
     scaled_cube = rigid_obj_mgr.add_object_by_template_handle("my_scaled_cube")
 
     grid_pos = scene_bb.min
 
-    # iterate cube through a 3D grid of positions, checking its collisions at
-    # each one.
-    running_collision_test = True
-    collision_test_failure_log: List[tuple(str, Exception)] = []
-    collision_test_times: List[tuple(mn.Vector3, float)] = []
-
+    # variables to store exhaustive collision test info for json
     collision_test_json_info: List[Dict[str, Any]] = []
     collision_test_constants: Dict[str, Any] = {
         "collision_test_cell_size": sim_settings["collision_test_cell_size"],
         "collision_test_max_time": sim_settings["collision_test_max_time"],
     }
     collision_test_json_info.append(collision_test_constants)
-
     test_num: int = 1
     ijk_indices = [0, 0, 0]
+
+    # iterate cube through a 3D grid of positions, checking its collisions at
+    # each one.
+    running_collision_test = True
+    collision_test_failure_log: List[tuple(str, Exception)] = []
     while running_collision_test:
         scaled_cube.translation = grid_pos
-
         try:
             start_time = time.time()
             sim.perform_discrete_collision_detection()
             collision_test_time = time.time() - start_time
-            collision_test_times.append((scaled_cube.translation, collision_test_time))
 
             # construct json entry for exhaustive collision test info and append it to list
             entry: Dict[str, Any] = sim_settings["collision_test_json_entry"].copy()
@@ -857,7 +953,9 @@ def collision_grid_test(
             pos_string = f"collision test failure at cube position: {grid_pos}"
             collision_test_failure_log.append((pos_string, e))
 
-        # TODO: the following code would probably be clearer as a nested for-loop
+        # TODO: the following code would probably be clearer as a nested for-loop.
+        # That way we don't have to manually track the i,j, and k indices
+
         # update z coordinate
         grid_pos.z += cell_size
         ijk_indices[2] += 1
@@ -887,25 +985,64 @@ def collision_grid_test(
 
         test_num += 1
 
+    # add this collision test info to our comprehensive json dict
+    detailed_info_json_dict[scene_filename].update(
+        {"collision_test": collision_test_json_info}
+    )
+
     # print failure log, possibly write to file
     text_format = ANSICodes.BRIGHT_CYAN.value
+    print_if_logging(
+        silent, text_format + f"\nCollision test failure log for {scene_filename}:"
+    )
     for failure in collision_test_failure_log:
         print_if_logging(silent, text_format + f"{failure}")
 
-    # print collision test info entries
+    # # print collision test info entries
+    # text_format = ANSICodes.BRIGHT_MAGENTA.value
+    # print_if_logging(silent, text_format + f"\nCollision test json entries for {scene_filename}:")
+    # for entry in collision_test_json_info:
+    #     json_entry = json.dumps(entry, indent=2)
+    #     print_if_logging(
+    #         silent,
+    #         text_format + f"{json_entry}",
+    #     )
+
+
+def profile_scene(
+    sim: habitat_sim.Simulator,
+    sim_settings: Dict[str, Any],
+    scene_filename: str,
+    render_time_highlights: Dict[str, List[float]],
+    all_collision_times: Dict[str, List[float]],
+    detailed_info_json_dict: Dict[str, Any],
+) -> None:
+    """
+    Profile a scene's performance for rendering, collisions, physics, etc...
+    """
     text_format = ANSICodes.BRIGHT_MAGENTA.value
-    print_if_logging(silent, text_format + "\nCollision test json entries:")
-    for entry in collision_test_json_info:
-        json_entry = json.dumps(entry, indent=2)
-        print_if_logging(
-            silent,
-            text_format + f"{json_entry}",
+    print_if_logging(silent, text_format + f"\n     -Profiling scene: {scene_filename}")
+
+    # Get sensor observations from 4 different poses.
+    # Record the average rendering time and save the observations in an image.
+    if sim_settings["render_sensor_obs"]:
+        render_sensor_observations(
+            sim, scene_filename, render_time_highlights, detailed_info_json_dict
         )
 
-    # add this collision test info to our comprehensive json dict
-    detailed_info_json_dict[scene_filename] = {
-        "collision_test": collision_test_json_info
-    }
+    # TODO: profile physics
+    # sim_horizon = 10  # seconds of simulation to sample over
+    # dt = 1.0 / sim_settings["fps"]  # seconds
+
+    # TODO: run collision grid test
+    if sim_settings["run_collision_test"]:
+        collision_grid_test(
+            sim,
+            sim_settings,
+            scene_filename,
+            all_collision_times,
+            detailed_info_json_dict,
+        )
 
 
 ######################################################
@@ -913,23 +1050,70 @@ def collision_grid_test(
 ######################################################
 
 
-def test_requested_scenes(
+def process_scene(
+    cfg: habitat_sim.Configuration,
+    scene_handle: str,
+    all_scenes_navmesh_metrics: Dict[str, NavmeshMetrics],
+    navmesh_failure_log: List[Tuple[str, Any]],
+    render_time_highlights: Dict[str, List[float]],
+    all_collision_times: Dict[str, List[float]],
+    detailed_info_json_dict: Dict[str, Any],
+):
+    cfg.sim_cfg.scene_id = scene_handle
+
+    # print scene handle
+    text_format = ANSICodes.BRIGHT_MAGENTA.value
+    print_if_logging(silent, text_format + section_divider_str)
+    print_if_logging(silent, text_format + f"-{scene_handle}\n")
+
+    try:
+        with habitat_sim.Simulator(cfg) as sim:
+
+            text_format = ANSICodes.BRIGHT_RED.value
+            scene_filename = scene_handle.split("/")[-1]
+            print_if_logging(
+                silent, text_format + f"\n      ---scene filename: {scene_filename}\n"
+            )
+            detailed_info_json_dict[scene_filename] = {}
+            # generate and save navmesh
+            if sim_settings["generate_navmesh"]:
+                process_navmesh(
+                    sim,
+                    scene_filename,
+                    scene_handle,
+                    all_scenes_navmesh_metrics,
+                    navmesh_failure_log,
+                )
+
+            profile_scene(
+                sim,
+                sim_settings,
+                scene_filename,
+                render_time_highlights,
+                all_collision_times,
+                detailed_info_json_dict,
+            )
+
+            sim.close()
+
+    except Exception as e:
+        # store any exceptions raised when constructing simulator
+        navmesh_failure_log.append((scene_handle, e))
+
+
+def process_requested_scenes(
     cfg: habitat_sim.Configuration, sim_settings: Dict[str, Any]
 ) -> None:
 
     mm = cfg.metadata_mediator
 
-    # print_dataset_info(silent, mm)
-
-    # get scene and handles
+    # get scene handles
     scene_handles: List[str] = mm.get_scene_handles()
 
-    # ------------------------------------------------------------------------
-    # TODO: needed?
+    # make stages into simple scenes with just the stage
     stage_handles: List[
         str
     ] = mm.stage_template_manager.get_templates_by_handle_substring()
-    # ------------------------------------------------------------------------
 
     # TODO: if no scenes, make default scenes using the stages
     if len(scene_handles) == 0:
@@ -960,7 +1144,6 @@ def test_requested_scenes(
         end_index = sim_settings["end_scene_index"] + 1
 
     # process specified scenes
-    # attempt to construct simulator and process scene
     all_scenes_navmesh_metrics: Dict[str, NavmeshMetrics] = {}
     navmesh_failure_log: List[Tuple[str, Any]] = []
     detailed_info_json_dict: Dict[str, Any] = {}
@@ -968,11 +1151,15 @@ def test_requested_scenes(
     text_format = ANSICodes.BRIGHT_MAGENTA.value
     print_if_logging(silent, text_format + "SCENES")
     for i in range(start_index, end_index):
+        render_time_highlights: Dict[str, List[float]] = {}
+        all_collision_times: Dict[str, List[float]] = {}
         process_scene(
             cfg,
             scene_handles[i],
             all_scenes_navmesh_metrics,
             navmesh_failure_log,
+            render_time_highlights,
+            all_collision_times,
             detailed_info_json_dict,
         )
 
@@ -997,7 +1184,7 @@ def test_requested_scenes(
 
     # print failure log
     text_format = ANSICodes.GREEN.value
-    print_if_logging(silent, text_format + "\nFailure log:")
+    print_if_logging(silent, text_format + "\nOverall failure log:")
     for error in navmesh_failure_log:
         print_if_logging(silent, text_format + f"{error}")
 
@@ -1041,47 +1228,6 @@ def construct_default_scenes(stage_handles: List[str]) -> List[str]:
         print_if_logging(silent, text_format + "No stages available either.\n")
 
     return []
-
-
-def process_scene(
-    cfg: habitat_sim.Configuration,
-    scene_handle: str,
-    all_scenes_navmesh_metrics: Dict[str, NavmeshMetrics],
-    navmesh_failure_log: List[Tuple[str, Any]],
-    detailed_info_json_dict: Dict[str, Any],
-):
-    cfg.sim_cfg.scene_id = scene_handle
-
-    # print scene handle
-    text_format = ANSICodes.BRIGHT_MAGENTA.value
-    print_if_logging(silent, text_format + section_divider_str)
-    print_if_logging(silent, text_format + f"-{scene_handle}\n")
-
-    try:
-        with habitat_sim.Simulator(cfg) as sim:
-
-            text_format = ANSICodes.PURPLE.value
-            scene_filename = scene_handle.split("/")[-1]
-            print_if_logging(
-                silent, text_format + f"\n  -scene filename: {scene_filename}\n"
-            )
-            # generate and save navmesh
-            if sim_settings["generate_navmesh"]:
-                process_navmesh(
-                    sim,
-                    scene_filename,
-                    scene_handle,
-                    all_scenes_navmesh_metrics,
-                    navmesh_failure_log,
-                )
-
-            profile_scene(sim, sim_settings, scene_filename, detailed_info_json_dict)
-
-            sim.close()
-
-    except Exception as e:
-        # store any exceptions raised when constructing simulator
-        navmesh_failure_log.append((scene_handle, e))
 
 
 def parse_config_json_file(
@@ -1151,7 +1297,7 @@ if __name__ == "__main__":
     else:
         # make simulator configuration and process all scenes without viewing them in app
         cfg = make_cfg_mm(sim_settings)
-        test_requested_scenes(cfg, sim_settings)
+        process_requested_scenes(cfg, sim_settings)
 
     # done processing
     text_format = ANSICodes.BRIGHT_RED.value
