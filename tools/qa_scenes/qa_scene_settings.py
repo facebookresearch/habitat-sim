@@ -46,20 +46,20 @@ qa_scene_settings = {
         "min_render_time": 0.0,
         "max_render_time": 0.0,
         "avg_render_time": 0.0,
-        "max_time_exceeds_threshold": False,
+        "exceeds_time_threshold": False,
     },
     # for output json storing detailed scene information. "collision_test_cell_size"
-    # and "collision_test_max_time" can be overridden in a qa_scene_config.json file in
+    # and "collision_test_max_time_threshold" can be overridden in a qa_scene_config.json file in
     # the "./tools/qa_scenes/configs" directory. Don't override the data in
     # "collision_test_json_entry", as it is used as a template for json construction
     "collision_test_cell_size": 1.0,
-    "collision_test_max_time": 0.005,
+    "collision_test_max_time_threshold": 0.005,
     "collision_test_json_entry": {
         "collision_test_num": 0,
         "ijk_indices": [0, 0, 0],
         "pos": [0.0, 0.0, 0.0],
         "test_time": 0.0,
-        "max_time_exceeds_threshold": False,
+        "exceeds_time_threshold": False,
     },
     #
     "sleep_test_steps_per_sec": 60,

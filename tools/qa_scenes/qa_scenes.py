@@ -843,7 +843,7 @@ def render_sensor_observations(
     json_entry["max_render_time"] = min_max_avg_render_times[scene_filename][1]
     json_entry["avg_render_time"] = min_max_avg_render_times[scene_filename][2]
 
-    json_entry["max_time_exceeds_threshold"] = bool(
+    json_entry["exceeds_time_threshold"] = bool(
         min_max_avg_render_times[scene_filename][1]
         > sim_settings["render_test_max_time"]
     )
@@ -891,12 +891,12 @@ def collision_grid_test(
 
     # variables to store exhaustive collision test info for json
     collision_test_json_info: List[Dict[str, Any]] = []
-    collision_test_constants: Dict[str, Any] = {
+    collision_test_overall_data: Dict[str, Any] = {
         "--": "Overall Collision Test Info",
         "collision_test_cell_size": sim_settings["collision_test_cell_size"],
-        "collision_test_max_time": sim_settings["collision_test_max_time"],
+        "max_time_threshold": sim_settings["collision_test_max_time_threshold"],
     }
-    collision_test_json_info.append(collision_test_constants)
+    collision_test_json_info.append(collision_test_overall_data)
     test_num: int = 1
     ijk_indices = [0, 0, 0]
 
@@ -929,7 +929,7 @@ def collision_grid_test(
             entry["pos"] = [grid_pos.x, grid_pos.y, grid_pos.z]
             entry["test_time"] = collision_test_time
             entry["exceeds_time_threshold"] = bool(
-                collision_test_time > sim_settings["collision_test_max_time"]
+                collision_test_time > sim_settings["collision_test_max_time_threshold"]
             )
             collision_test_json_info.append(entry)
 
@@ -979,6 +979,9 @@ def collision_grid_test(
     ]
 
     # add this collision test info to our comprehensive json dict
+    collision_test_overall_data["min_collision_time"] = min_collision_time
+    collision_test_overall_data["max_collision_time"] = max_collision_time
+    collision_test_overall_data["avg_collision_time"] = avg_collision_time
     detailed_info_json_dict[scene_filename].update(
         {"collision_test": collision_test_json_info}
     )
@@ -1121,21 +1124,38 @@ def save_test_times_csv(
         )
         for i in range(start_index, end_index):
             scene_filename = scene_handles[i].split("/")[-1]
-            row_data = [
-                scene_filename,
-                "",
-                min_max_avg_render_times[scene_filename][0],
-                min_max_avg_render_times[scene_filename][1],
-                min_max_avg_render_times[scene_filename][2],
-                "",
-                min_max_avg_collision_times[scene_filename][0],
-                min_max_avg_collision_times[scene_filename][1],
-                min_max_avg_collision_times[scene_filename][2],
-                "",
-                min_max_avg_asleep_times[scene_filename][0],
-                min_max_avg_asleep_times[scene_filename][1],
-                min_max_avg_asleep_times[scene_filename][2],
-            ]
+
+            row_data = [scene_filename, ""]
+
+            if sim_settings["render_sensor_obs"]:
+                row_data.append(min_max_avg_render_times[scene_filename][0])
+                row_data.append(min_max_avg_render_times[scene_filename][1])
+                row_data.append(min_max_avg_render_times[scene_filename][2])
+            else:
+                row_data.append("")
+                row_data.append("")
+                row_data.append("")
+            row_data.append("")
+
+            if sim_settings["run_collision_test"]:
+                row_data.append(min_max_avg_collision_times[scene_filename][0])
+                row_data.append(min_max_avg_collision_times[scene_filename][1])
+                row_data.append(min_max_avg_collision_times[scene_filename][2])
+            else:
+                row_data.append("")
+                row_data.append("")
+                row_data.append("")
+            row_data.append("")
+
+            if sim_settings["run_asset_sleep_test"]:
+                row_data.append(min_max_avg_asleep_times[scene_filename][0])
+                row_data.append(min_max_avg_asleep_times[scene_filename][1])
+                row_data.append(min_max_avg_asleep_times[scene_filename][2])
+            else:
+                row_data.append("")
+                row_data.append("")
+                row_data.append("")
+
             writer.writerow(row_data)
 
 

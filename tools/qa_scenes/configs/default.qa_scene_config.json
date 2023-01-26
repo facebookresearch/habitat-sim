@@ -11,7 +11,7 @@
   "output_file_prefix": "default",
   "generate_navmesh": false,
   "render_sensor_obs": true,
-  "run_collision_test": true,
+  "run_collision_test": false,
   "run_asset_sleep_test": true,
   "max_render_time": 0.01,
   "collision_test_cell_size": 1.0,
