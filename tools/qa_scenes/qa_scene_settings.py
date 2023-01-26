@@ -22,10 +22,10 @@ qa_scene_settings = {
     "output_file_prefix": "default",
     "generate_navmesh": True,
     "render_sensor_obs": True,
-    "max_render_time": 0.01,
     "make_video": True,
     "show_video": True,
     "run_collision_test": True,
+    "run_asset_sleep_test": True,
     "silent": False,  # do not print log info
     "debug_print": False,
     # primarily for debugging. When "run_viewer" is True, it won't output results as
@@ -46,7 +46,7 @@ qa_scene_settings = {
         "min_render_time": 0.0,
         "max_render_time": 0.0,
         "avg_render_time": 0.0,
-        "exceeds_time_threshold": False,
+        "max_time_exceeds_threshold": False,
     },
     # for output json storing detailed scene information. "collision_test_cell_size"
     # and "collision_test_max_time" can be overridden in a qa_scene_config.json file in
@@ -59,7 +59,15 @@ qa_scene_settings = {
         "ijk_indices": [0, 0, 0],
         "pos": [0.0, 0.0, 0.0],
         "test_time": 0.0,
-        "exceeds_time_threshold": False,
+        "max_time_exceeds_threshold": False,
+    },
+    #
+    "phyics_steps_per_sec": 60,
+    "asset_sleep_test_duration_seconds": 10.0,
+    "asleep_test_json_entry": {
+        "asset_handle": "",
+        "test_time": 0.0,
+        "successfully_sleeps": False,
     },
     # TODO: may not need all of these
     "enable_gfx_replay_save": False,
