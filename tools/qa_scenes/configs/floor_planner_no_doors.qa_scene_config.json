@@ -1,0 +1,23 @@
+{
+  "scene_dataset_config_file": "scene_datasets/replica_cad/replicaCAD.scene_dataset_config.json",
+  "color_sensor": true,
+  "semantic_sensor": true,
+  "depth_sensor": true,
+  "width": 1024,
+  "height": 1024,
+  "enable_physics": true,
+  "start_scene_index": 0,
+  "end_scene_index": 1,
+  "output_file_prefix": "floor_planner_no_doors",
+  "generate_navmesh": false,
+  "render_sensor_obs": true,
+  "run_collision_test": false,
+  "run_asset_sleep_test": true,
+  "max_render_time": 0.01,
+  "collision_test_cell_size": 1.0,
+  "collision_test_max_time": 0.005,
+  "sleep_test_steps_per_sec": 60.0,
+  "asset_sleep_test_duration_seconds": 10.0,
+  "silent": false,
+  "debug_print": false
+}

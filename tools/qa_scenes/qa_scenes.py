@@ -62,7 +62,8 @@ silent: bool = False
 MAX_TEST_TIME = sys.float_info.max
 
 # NOTE: change this to config file name to test
-qa_config_filename = "default"
+# qa_config_filename = "default"
+qa_config_filename = "floor_planner_no_doors"
 # qa_config_filename = "simple_room"
 # qa_config_filename = "mp3d_example"
 # qa_config_filename = "ycb"
