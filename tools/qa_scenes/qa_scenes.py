@@ -1022,24 +1022,11 @@ def asset_sleep_test(
 
     total_obj_asleep: int = 0
     while curr_sim_time <= test_duration:
-
-        # TODO: debugging
-        text_format = ANSICodes.BRIGHT_CYAN.value
-        print_if_logging(silent, text_format + f"curr sim time: {curr_sim_time}")
-        print_if_logging(silent, text_format + f"test dur: {test_duration}")
-        # TODO: debugging
-
         for handle in rigid_obj_handles:
             rigid_obj = rigid_obj_mgr.get_object_by_handle(handle)
 
             # object is asleep, record the current time
             if not rigid_obj.awake and all_asleep_times.get(handle) is None:
-
-                # TODO: debugging
-                text_format = ANSICodes.BRIGHT_CYAN.value
-                print_if_logging(silent, text_format + f"obj asleep: {handle}:")
-                # TODO: debugging
-
                 all_asleep_times[handle] = curr_sim_time
                 if curr_sim_time < min_asleep_time:
                     min_asleep_time = curr_sim_time
@@ -1049,13 +1036,6 @@ def asset_sleep_test(
                 total_obj_asleep += 1
                 if total_obj_asleep == len(rigid_obj_handles):
                     break
-
-        # TODO: debugging
-        text_format = ANSICodes.BRIGHT_RED.value
-        print_if_logging(
-            silent, text_format + f"total obj asleep: {total_obj_asleep}\n"
-        )
-        # TODO: debugging
 
         sim.step_world(physics_step_dur)
         curr_sim_time += physics_step_dur
