@@ -62,7 +62,7 @@ qa_scene_settings = {
         "max_time_exceeds_threshold": False,
     },
     #
-    "phyics_steps_per_sec": 60,
+    "sleep_test_steps_per_sec": 60,
     "asset_sleep_test_duration_seconds": 10.0,
     "asleep_test_json_entry": {
         "asset_handle": "",

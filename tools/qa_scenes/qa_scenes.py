@@ -854,14 +854,6 @@ def render_sensor_observations(
         {"render_test": render_test_json_info}
     )
 
-    # print rendering failure log, possibly write to file
-    text_format = ANSICodes.BRIGHT_CYAN.value
-    print_if_logging(
-        silent, text_format + f"\nRender test failure log for {scene_filename}:"
-    )
-    for failure in failure_log:
-        print_if_logging(silent, text_format + f"{failure}")
-
 
 def collision_grid_test(
     sim: habitat_sim.Simulator,
@@ -910,6 +902,11 @@ def collision_grid_test(
 
     # iterate cube through a 3D grid of positions, checking its collisions at
     # each one.
+    min_collision_time: float = MAX_TEST_TIME
+    max_collision_time: float = 0.0
+    total_collision_time: float = 0.0
+    avg_collision_time: float = MAX_TEST_TIME
+
     running_collision_test = True
     while running_collision_test:
         scaled_cube.translation = grid_pos
@@ -917,6 +914,13 @@ def collision_grid_test(
             start_time = time.time()
             sim.perform_discrete_collision_detection()
             collision_test_time = time.time() - start_time
+            total_collision_time += collision_test_time
+
+            # determine if this is the min or max collision time so far
+            if collision_test_time < min_collision_time:
+                min_collision_time = collision_test_time
+            if collision_test_time > max_collision_time:
+                max_collision_time = collision_test_time
 
             # construct json entry for exhaustive collision test info and append it to list
             entry: Dict[str, Any] = sim_settings["collision_test_json_entry"].copy()
@@ -966,18 +970,18 @@ def collision_grid_test(
 
         test_num += 1
 
+    # save collision time summary to save in csv later
+    avg_collision_time = total_collision_time / test_num
+    min_max_avg_collision_times[scene_filename] = [
+        min_collision_time,
+        max_collision_time,
+        avg_collision_time,
+    ]
+
     # add this collision test info to our comprehensive json dict
     detailed_info_json_dict[scene_filename].update(
         {"collision_test": collision_test_json_info}
     )
-
-    # print failure log, possibly write to file
-    text_format = ANSICodes.BRIGHT_CYAN.value
-    print_if_logging(
-        silent, text_format + f"\nCollision test failure log for {scene_filename}:"
-    )
-    for failure in failure_log:
-        print_if_logging(silent, text_format + f"{failure}")
 
 
 def asset_sleep_test(
@@ -995,6 +999,11 @@ def asset_sleep_test(
     obj_templates_mgr = sim.get_object_template_manager()
     obj_templates_mgr.load_configs(sim_settings["scene_dataset_config_file"])
     rigid_obj_mgr = sim.get_rigid_object_manager()
+
+    if rigid_obj_mgr.get_num_objects() == 0:
+        failure_log.append(("No dataset objects in scene", scene_filename))
+        return
+
     rigid_obj_handles: List[str] = rigid_obj_mgr.get_object_handles("")
 
     # store times it takes for each object to fall asleep, as well as the min,
@@ -1016,7 +1025,7 @@ def asset_sleep_test(
 
     # Step physics at given fps for given number of seconds and test if the
     # dataset objects are asleep
-    physics_step_dur: float = 1.0 / sim_settings["phyics_steps_per_sec"]
+    physics_step_dur: float = 1.0 / sim_settings["sleep_test_steps_per_sec"]
     curr_sim_time: float = 0.0
     test_duration: float = sim_settings["asset_sleep_test_duration_seconds"]
 
@@ -1077,6 +1086,57 @@ def asset_sleep_test(
     detailed_info_json_dict[scene_filename].update(
         {"asleep_test": asleep_test_json_info}
     )
+
+
+def save_test_times_csv(
+    scene_handles: List[str],
+    start_index: int,
+    end_index: int,
+    min_max_avg_render_times: Dict[str, List[float]],
+    min_max_avg_collision_times: Dict[str, List[float]],
+    min_max_avg_asleep_times: Dict[str, List[float]],
+    filename: str,
+) -> None:
+    import csv
+
+    # save a csv of navmesh metrics
+    with open(filename, "w") as f:
+        writer = csv.writer(f, quoting=csv.QUOTE_ALL)
+        writer.writerow(
+            [
+                "Scene",
+                "Render Times ->",
+                "min",
+                "max",
+                "avg",
+                "Collision Times ->",
+                "min",
+                "max",
+                "avg",
+                "Sleep Times ->",
+                "min",
+                "max",
+                "avg",
+            ]
+        )
+        for i in range(start_index, end_index):
+            scene_filename = scene_handles[i].split("/")[-1]
+            row_data = [
+                scene_filename,
+                "",
+                min_max_avg_render_times[scene_filename][0],
+                min_max_avg_render_times[scene_filename][1],
+                min_max_avg_render_times[scene_filename][2],
+                "",
+                min_max_avg_collision_times[scene_filename][0],
+                min_max_avg_collision_times[scene_filename][1],
+                min_max_avg_collision_times[scene_filename][2],
+                "",
+                min_max_avg_asleep_times[scene_filename][0],
+                min_max_avg_asleep_times[scene_filename][1],
+                min_max_avg_asleep_times[scene_filename][2],
+            ]
+            writer.writerow(row_data)
 
 
 ######################################################
@@ -1205,17 +1265,17 @@ def process_requested_scenes(
         # end index is exclusive
         end_index = sim_settings["end_scene_index"] + 1
 
-    # process specified scenes
-    all_scenes_navmesh_metrics: Dict[str, NavmeshMetrics] = {}
-    failure_log: List[Tuple[str, Any]] = []
-    detailed_info_json_dict: Dict[str, Any] = {}
-
     text_format = ANSICodes.BRIGHT_MAGENTA.value
     print_if_logging(silent, text_format + "SCENES")
+
+    # process specified scenes
+    all_scenes_navmesh_metrics: Dict[str, NavmeshMetrics] = {}
+    min_max_avg_render_times: Dict[str, List[float]] = {}
+    min_max_avg_collision_times: Dict[str, List[float]] = {}
+    min_max_avg_asleep_times: Dict[str, List[float]] = {}
+    detailed_info_json_dict: Dict[str, Any] = {}
+    failure_log: List[Tuple[str, Any]] = []
     for i in range(start_index, end_index):
-        min_max_avg_render_times: Dict[str, List[float]] = {}
-        min_max_avg_collision_times: Dict[str, List[float]] = {}
-        min_max_avg_asleep_times: Dict[str, List[float]] = {}
         process_scene(
             cfg,
             scene_handles[i],
@@ -1228,13 +1288,31 @@ def process_requested_scenes(
         )
 
     # create cvs detailing scene navmesh metrics
-    cvs_filename = create_unique_filename(
+    navmesh_cvs_filename = create_unique_filename(
         dir_path=output_path,
         filename_prefix=sim_settings["output_file_prefix"],
         filename_suffix="scene_navmesh_metrics",
         extension=".csv",
     )
-    aggregate_navmesh_metrics(all_scenes_navmesh_metrics, filename=cvs_filename)
+    aggregate_navmesh_metrics(all_scenes_navmesh_metrics, filename=navmesh_cvs_filename)
+
+    # TODO: create cvs detailing rendering, collision, and asset sleep test metric
+    # summaries. More comprehensive metrics will be stored in a json
+    test_times_cvs_filename = create_unique_filename(
+        dir_path=output_path,
+        filename_prefix=sim_settings["output_file_prefix"],
+        filename_suffix="test_time_metrics",
+        extension=".csv",
+    )
+    save_test_times_csv(
+        scene_handles,
+        start_index,
+        end_index,
+        min_max_avg_render_times,
+        min_max_avg_collision_times,
+        min_max_avg_asleep_times,
+        test_times_cvs_filename,
+    )
 
     # save json file with comprehensive test data for each scene
     json_filename = create_unique_filename(
@@ -1251,11 +1329,10 @@ def process_requested_scenes(
     print_if_logging(silent, text_format + "\nOverall failure log:")
     for error in failure_log:
         print_if_logging(silent, text_format + f"{error}")
+    print_if_logging(silent, text_format + section_divider_str)
 
     # print number of scenes we attempted to process
-    print_if_logging(
-        silent, text_format + f"\nTried {end_index - start_index} scenes.\n"
-    )  # manually decrement the "NONE" scene
+    print_if_logging(silent, text_format + f"\nTried {end_index - start_index} scenes.")
     print_if_logging(silent, text_format + section_divider_str)
 
 
