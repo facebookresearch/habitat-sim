@@ -8,7 +8,7 @@ import math
 import os
 import sys
 import time
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
@@ -464,16 +464,15 @@ class QASceneProcessingViewer(Application):
         cube_template_cpy = obj_templates_mgr.get_template_by_handle(cube_handle)
         cube_template_cpy.scale = np.ones(3) * scale_factor
 
-        obj_templates_mgr.register_template(cube_template_cpy, "my_scaled_cube")
-        self.scaled_cube = rigid_obj_mgr.add_object_by_template_handle("my_scaled_cube")
+        collision_obj_handle = "my_scaled_cube"
+        obj_templates_mgr.register_template(cube_template_cpy, collision_obj_handle)
+        self.scaled_cube = rigid_obj_mgr.add_object_by_template_handle(
+            collision_obj_handle
+        )
 
         self.grid_pos = self.scene_bb.min
 
-        # self.scaled_cube.awake = True
         self.scaled_cube.motion_type = habitat_sim.physics.MotionType.DYNAMIC
-        # self.sim.config.sim_cfg.enable_physics = True
-        # self.sim.perform_discrete_collision_detection()
-        ...
 
     def run_discrete_collision_test(self):
         self.scaled_cube.translation = self.grid_pos
@@ -498,6 +497,9 @@ class QASceneProcessingViewer(Application):
                 if self.grid_pos.x >= self.scene_bb.max.x:
                     # we are done running collision test
                     self.running_collision_test = False
+                    self.sim.get_rigid_object_manager().remove_object_by_handle(
+                        self.scaled_cube.handle
+                    )
 
 
 # Change to do something like this maybe: https://stackoverflow.com/a/41432704
@@ -712,7 +714,7 @@ def export_navmesh_data_to_obj(filename, vertex_data, index_data):
 
 
 ######################################################
-# scene profiling code
+# scene processing timed test code
 ######################################################
 
 
@@ -885,8 +887,9 @@ def collision_grid_test(
     cube_template_cpy = obj_templates_mgr.get_template_by_handle(cube_handle)
     cube_template_cpy.scale = np.ones(3) * scale_factor
 
-    obj_templates_mgr.register_template(cube_template_cpy, "my_scaled_cube")
-    scaled_cube = rigid_obj_mgr.add_object_by_template_handle("my_scaled_cube")
+    obj_handle = "my_scaled_cube"
+    obj_templates_mgr.register_template(cube_template_cpy, obj_handle)
+    scaled_cube = rigid_obj_mgr.add_object_by_template_handle(obj_handle)
 
     grid_pos = scene_bb.min
 
@@ -987,6 +990,8 @@ def collision_grid_test(
         {"collision_test": collision_test_json_info}
     )
 
+    rigid_obj_mgr.remove_object_by_handle(scaled_cube.handle)
+
 
 def asset_sleep_test(
     sim: habitat_sim.Simulator,
@@ -1005,7 +1010,17 @@ def asset_sleep_test(
     rigid_obj_mgr = sim.get_rigid_object_manager()
 
     if rigid_obj_mgr.get_num_objects() == 0:
-        failure_log.append(("No dataset objects in scene", scene_filename))
+        failure_log.append(
+            (
+                "No dataset objects in scene to perform asset sleep test on.",
+                scene_filename,
+            )
+        )
+        min_max_avg_asleep_times[scene_filename] = [
+            0.0,
+            0.0,
+            0.0,
+        ]
         return
 
     rigid_obj_handles: List[str] = rigid_obj_mgr.get_object_handles("")
@@ -1124,10 +1139,11 @@ def save_test_times_csv(
             ]
         )
         for i in range(start_index, end_index):
+            if scene_handles[i] == "NONE":
+                continue
+
             scene_filename = scene_handles[i].split("/")[-1]
-
             row_data = [scene_filename, ""]
-
             if sim_settings["render_sensor_obs"]:
                 row_data.append(min_max_avg_render_times[scene_filename][0])
                 row_data.append(min_max_avg_render_times[scene_filename][1])
@@ -1161,11 +1177,11 @@ def save_test_times_csv(
 
 
 ######################################################
-# end scene profiling code
+# end scene processing timed test code
 ######################################################
 
 
-def process_scene(
+def process_scene_or_stage(
     cfg: habitat_sim.Configuration,
     scene_handle: str,
     all_scenes_navmesh_metrics: Dict[str, NavmeshMetrics],
@@ -1244,26 +1260,46 @@ def process_scene(
         failure_log.append((msg, e))
 
 
-def process_requested_scenes(
-    cfg: habitat_sim.Configuration, sim_settings: Dict[str, Any]
+def strip_path_and_ext(handle: str) -> str:
+    handle_cpy = handle
+    handle_sans_path = handle_cpy.split("/")[-1]
+    name_sans_path_and_ext = handle_sans_path.split(".")[0]
+    return name_sans_path_and_ext
+
+
+def print_handles_san_ext(handles: List[str]) -> None:
+    text_format = ANSICodes.BRIGHT_MAGENTA.value
+
+    for handle in handles:
+        if handle == "NONE":
+            continue
+        stage_filename = handle.split("/")[-1]
+        stage_filename_sans_ext = stage_filename.split(".")[0]
+        print_if_logging(
+            silent,
+            text_format + f"handle without extension: {stage_filename_sans_ext}\n",
+        )
+
+
+def process_scenes_and_stages(
+    cfg_with_mm: habitat_sim.Configuration, sim_settings: Dict[str, Any]
 ) -> None:
 
-    mm = cfg.metadata_mediator
+    mm = cfg_with_mm.metadata_mediator
 
     # get scene handles
     scene_handles: List[str] = mm.get_scene_handles()
 
-    # make stages into simple scenes with just the stage
+    # treat stages as simple scenes with just the stage and no other assets
     stage_handles: List[
         str
     ] = mm.stage_template_manager.get_templates_by_handle_substring()
 
-    # TODO: if no scenes, make default scenes using the stages
-    if len(scene_handles) == 0:
-        scene_handles = construct_default_scenes(stage_handles)
-        # no default scenes to process (there were no stages)
-        if len(scene_handles) == 0:
-            return
+    scene_handles.extend(stage_handles)
+
+    # TODO testing
+    # print_handles_san_ext(scene_handles)
+    # TODO testing
 
     # determine indices of scenes to process
     start_index = 0
@@ -1287,17 +1323,29 @@ def process_requested_scenes(
         end_index = sim_settings["end_scene_index"] + 1
 
     text_format = ANSICodes.BRIGHT_MAGENTA.value
-    print_if_logging(silent, text_format + "SCENES")
+    print_if_logging(silent, text_format + "HANDLES TO PROCESS")
 
-    # process specified scenes
+    # this set keeps track of whether or not a stage or scene with the same name
+    # has already been processed. Sometimes stages and scenes have the same name
+    # but different folders and extensions, so we don't want to do duplicate work
+    scenes_processed: Set[str] = set()
+
+    # data to write to csvs and json, as well as a failure log
     all_scenes_navmesh_metrics: Dict[str, NavmeshMetrics] = {}
     min_max_avg_render_times: Dict[str, List[float]] = {}
     min_max_avg_collision_times: Dict[str, List[float]] = {}
     min_max_avg_asleep_times: Dict[str, List[float]] = {}
     detailed_info_json_dict: Dict[str, Any] = {}
     failure_log: List[Tuple[str, Any]] = []
+
+    # process specified scenes and stages
     for i in range(start_index, end_index):
-        process_scene(
+        if scene_handles[i] == "NONE":
+            continue
+        handle_sans_path_and_ext = strip_path_and_ext(scene_handles[i])
+        if handle_sans_path_and_ext in scenes_processed:
+            continue
+        process_scene_or_stage(
             cfg,
             scene_handles[i],
             all_scenes_navmesh_metrics,
@@ -1307,6 +1355,7 @@ def process_requested_scenes(
             detailed_info_json_dict,
             failure_log,
         )
+        scenes_processed.add(handle_sans_path_and_ext)
 
     # create cvs detailing scene navmesh metrics
     navmesh_cvs_filename = create_unique_filename(
@@ -1317,7 +1366,7 @@ def process_requested_scenes(
     )
     aggregate_navmesh_metrics(all_scenes_navmesh_metrics, filename=navmesh_cvs_filename)
 
-    # TODO: create cvs detailing rendering, collision, and asset sleep test metric
+    # create cvs detailing rendering, collision, and asset sleep test metric
     # summaries. More comprehensive metrics will be stored in a json
     test_times_cvs_filename = create_unique_filename(
         dir_path=output_path,
@@ -1352,13 +1401,15 @@ def process_requested_scenes(
         print_if_logging(silent, text_format + f"{error}")
     print_if_logging(silent, text_format + section_divider_str)
 
-    # print number of scenes we attempted to process
-    print_if_logging(silent, text_format + f"\nTried {end_index - start_index} scenes.")
+    # print number of scenes and stages we attempted to process
+    print_if_logging(
+        silent, text_format + f"\nTried {len(scenes_processed)} scenes and stages."
+    )
     print_if_logging(silent, text_format + section_divider_str)
 
 
 def construct_default_scenes(stage_handles: List[str]) -> List[str]:
-
+    """ """
     text_format = ANSICodes.BRIGHT_RED.value
     print_if_logging(
         silent,
@@ -1442,11 +1493,12 @@ if __name__ == "__main__":
         # create viewer app
         QASceneProcessingViewer(sim_settings).exec()
     else:
-        # make simulator configuration and process all scenes without viewing them in app
+        # make simulator configuration and process all scenes without viewing
+        # them in app
         cfg = make_cfg_mm(sim_settings)
-        process_requested_scenes(cfg, sim_settings)
+        process_scenes_and_stages(cfg, sim_settings)
 
     # done processing
     text_format = ANSICodes.BRIGHT_RED.value
-    print_if_logging(silent, text_format + "PROCESSING COMPLETE")
+    print_if_logging(silent, text_format + "\nPROCESSING COMPLETE")
     print_if_logging(silent, text_format + section_divider_str)
