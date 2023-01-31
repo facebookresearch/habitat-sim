@@ -6,14 +6,15 @@
             "name": "receptacle_aabb_chair_test",
             "parent_object": "chair",
             "position": [
-                0.0,
-                0.0,
-                0.0
+                -0.079131,
+                0.119772,
+                0
             ],
             "scale": [
-                1.0,
-                1.0,
-                1.0
+                0.158802,
+                0.11,
+                0.19
+
             ]
         },
         "receptacle_mesh_chair_test": {
@@ -29,8 +30,7 @@
                 1.0,
                 1.0
             ],
-            "verts":[[1.0,2.0,3.0], [2.0,2.0,3.0], [2.0,3.0,3.0]],
-            "indices":[0,1,2]
+            "mesh_filepath": "receptacle_mesh_chair.ply"
         }
     }
 }

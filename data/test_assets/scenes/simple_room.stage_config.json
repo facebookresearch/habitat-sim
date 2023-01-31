@@ -5,20 +5,20 @@
     "shader_type": "pbr",
 	"user_defined": {
         "receptacle_aabb_simpleroom_test": {
-            "name": "receptacle_aabb_chair_test",
+            "name": "receptacle_aabb_simpleroom_test",
             "position": [
-                0.0,
-                0.0,
-                0.0
+                2.36945,
+                -1.3934,
+                2.61652
             ],
             "scale": [
                 1.0,
                 1.0,
-                1.0
+                0.39171
             ]
         },
         "receptacle_mesh_simpleroom_test": {
-            "name": "receptacle_mesh_chair_test",
+            "name": "receptacle_mesh_simpleroom_test",
             "position": [
                 0.0,
                 0.0,
