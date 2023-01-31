@@ -9,6 +9,9 @@ import argparse
 
 import demo_runner as dr
 
+import habitat_sim
+from habitat_sim.utils.settings import update_or_add_sensor_settings
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--scene", type=str, default=dr.default_sim_settings["scene"])
 parser.add_argument("--width", type=int, default=640)
@@ -44,10 +47,6 @@ def make_settings():
     settings["height"] = args.height
     settings["scene"] = args.scene
     settings["save_png"] = args.save_png
-    settings["sensor_height"] = args.sensor_height
-    settings["color_sensor"] = not args.disable_color_sensor
-    settings["semantic_sensor"] = args.semantic_sensor
-    settings["depth_sensor"] = args.depth_sensor
     settings["print_semantic_scene"] = args.print_semantic_scene
     settings["print_semantic_mask_stats"] = args.print_semantic_mask_stats
     settings["compute_shortest_path"] = args.compute_shortest_path
@@ -59,6 +58,25 @@ def make_settings():
     settings["frustum_culling"] = not args.disable_frustum_culling
     settings["recompute_navmesh"] = args.recompute_navmesh
 
+    # add sensor settings to simulator settings
+    if not args.disable_color_sensor:
+        update_or_add_sensor_settings(
+            settings, uuid="color_sensor", position=[0.0, args.sensor_height, 0.0]
+        )
+    if args.semantic_sensor:
+        update_or_add_sensor_settings(
+            settings,
+            uuid="semantic_sensor",
+            position=[0.0, args.sensor_height, 0.0],
+            sensor_type=habitat_sim.SensorType.SEMANTIC,
+        )
+    if args.depth_sensor:
+        update_or_add_sensor_settings(
+            settings,
+            uuid="depth_sensor",
+            position=[0.0, args.sensor_height, 0.0],
+            sensor_type=habitat_sim.SensorType.DEPTH,
+        )
     return settings
 
 
@@ -72,8 +90,7 @@ for _i in range(1):
 
     print(" ========================= Performance ======================== ")
     print(
-        " %d x %d, total time %0.2f s,"
-        % (settings["width"], settings["height"], perf["total_time"]),
+        " %d x %d, total time %0.2f s," % (args.width, args.height, perf["total_time"]),
         "frame time %0.3f ms (%0.1f FPS)" % (perf["frame_time"] * 1000.0, perf["fps"]),
     )
     print(" ============================================================== ")

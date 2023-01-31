@@ -63,6 +63,11 @@ from PIL import Image
 import habitat_sim
 from habitat_sim.utils import common as utils
 from habitat_sim.utils import viz_utils as vut
+from habitat_sim.utils.settings import (
+    make_cfg,
+    overwrite_default_sim_settings,
+    update_or_add_sensor_settings,
+)
 
 # %cd /content/habitat-sim
 
@@ -159,13 +164,15 @@ if display:
 # we support a variety of mesh formats, such as .glb, .gltf, .obj, .ply
 test_scene = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
 
-sim_settings = {
+settings_to_overwrite = {
     "scene": test_scene,  # Scene path
     "default_agent": 0,  # Index of the default agent
-    "sensor_height": 1.5,  # Height of sensors in meters, relative to the agent
-    "width": 256,  # Spatial resolution of the observations
-    "height": 256,
+    "width": 512,  # Spatial resolution of the observations
+    "height": 512,
 }
+# Overwrite specified entries of default_sim_settings with the values above. Instantiate all non-assigned elements of simulator settings to the default values
+# TODO: testing, make sure this works
+sim_settings = overwrite_default_sim_settings(settings_to_overwrite)
 
 
 # %% [markdown]
@@ -182,28 +189,7 @@ sim_settings = {
 # It contains two parts:
 # one for the simulator backend
 # one for the agent, where you can attach a bunch of sensors
-def make_simple_cfg(settings):
-    # simulator backend
-    sim_cfg = habitat_sim.SimulatorConfiguration()
-    sim_cfg.scene_id = settings["scene"]
-
-    # agent
-    agent_cfg = habitat_sim.agent.AgentConfiguration()
-
-    # In the 1st example, we attach only one sensor,
-    # a RGB visual sensor, to the agent
-    rgb_sensor_spec = habitat_sim.CameraSensorSpec()
-    rgb_sensor_spec.uuid = "color_sensor"
-    rgb_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
-    rgb_sensor_spec.resolution = [settings["height"], settings["width"]]
-    rgb_sensor_spec.position = [0.0, settings["sensor_height"], 0.0]
-
-    agent_cfg.sensor_specifications = [rgb_sensor_spec]
-
-    return habitat_sim.Configuration(sim_cfg, [agent_cfg])
-
-
-cfg = make_simple_cfg(sim_settings)
+cfg = make_cfg(sim_settings)
 
 # %% [markdown]
 # ### Create a simulator instance
@@ -288,72 +274,29 @@ rgb_sensor = True  # @param {type:"boolean"}
 depth_sensor = True  # @param {type:"boolean"}
 semantic_sensor = True  # @param {type:"boolean"}
 
-sim_settings = {
-    "width": 256,  # Spatial resolution of the observations
-    "height": 256,
+settings_to_overwrite = {
+    "width": 512,  # Spatial resolution of the observations
+    "height": 512,
     "scene": test_scene,  # Scene path
-    "scene_dataset": mp3d_scene_dataset,  # the scene dataset configuration files
+    "scene_dataset_config_file": mp3d_scene_dataset,  # the scene dataset configuration files
     "default_agent": 0,
-    "sensor_height": 1.5,  # Height of sensors in meters
-    "color_sensor": rgb_sensor,  # RGB sensor
-    "depth_sensor": depth_sensor,  # Depth sensor
-    "semantic_sensor": semantic_sensor,  # Semantic sensor
-    "seed": 1,  # used in the random navigation
     "enable_physics": False,  # kinematics only
 }
+# Overwrite specified entries of default_sim_settings with the values above. Instantiate all non-assigned elements of simulator settings to the default values
+# TODO: testing, make sure this works
+settings = overwrite_default_sim_settings(settings_to_overwrite)
 
-
-# %%
-def make_cfg(settings):
-    sim_cfg = habitat_sim.SimulatorConfiguration()
-    sim_cfg.gpu_device_id = 0
-    sim_cfg.scene_id = settings["scene"]
-    sim_cfg.scene_dataset_config_file = settings["scene_dataset"]
-    sim_cfg.enable_physics = settings["enable_physics"]
-
-    # Note: all sensors must have the same resolution
-    sensor_specs = []
-
-    color_sensor_spec = habitat_sim.CameraSensorSpec()
-    color_sensor_spec.uuid = "color_sensor"
-    color_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
-    color_sensor_spec.resolution = [settings["height"], settings["width"]]
-    color_sensor_spec.position = [0.0, settings["sensor_height"], 0.0]
-    color_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
-    sensor_specs.append(color_sensor_spec)
-
-    depth_sensor_spec = habitat_sim.CameraSensorSpec()
-    depth_sensor_spec.uuid = "depth_sensor"
-    depth_sensor_spec.sensor_type = habitat_sim.SensorType.DEPTH
-    depth_sensor_spec.resolution = [settings["height"], settings["width"]]
-    depth_sensor_spec.position = [0.0, settings["sensor_height"], 0.0]
-    depth_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
-    sensor_specs.append(depth_sensor_spec)
-
-    semantic_sensor_spec = habitat_sim.CameraSensorSpec()
-    semantic_sensor_spec.uuid = "semantic_sensor"
-    semantic_sensor_spec.sensor_type = habitat_sim.SensorType.SEMANTIC
-    semantic_sensor_spec.resolution = [settings["height"], settings["width"]]
-    semantic_sensor_spec.position = [0.0, settings["sensor_height"], 0.0]
-    semantic_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
-    sensor_specs.append(semantic_sensor_spec)
-
-    # Here you can specify the amount of displacement in a forward action and the turn angle
-    agent_cfg = habitat_sim.agent.AgentConfiguration()
-    agent_cfg.sensor_specifications = sensor_specs
-    agent_cfg.action_space = {
-        "move_forward": habitat_sim.agent.ActionSpec(
-            "move_forward", habitat_sim.agent.ActuationSpec(amount=0.25)
-        ),
-        "turn_left": habitat_sim.agent.ActionSpec(
-            "turn_left", habitat_sim.agent.ActuationSpec(amount=30.0)
-        ),
-        "turn_right": habitat_sim.agent.ActionSpec(
-            "turn_right", habitat_sim.agent.ActuationSpec(amount=30.0)
-        ),
-    }
-
-    return habitat_sim.Configuration(sim_cfg, [agent_cfg])
+# Add sensor settings to simulator settings
+if rgb_sensor:
+    update_or_add_sensor_settings(sim_settings, "color_sensor")
+if depth_sensor:
+    update_or_add_sensor_settings(
+        sim_settings, "depth_sensor", sensor_type=habitat_sim.SensorType.DEPTH
+    )
+if semantic_sensor:
+    update_or_add_sensor_settings(
+        sim_settings, "semantic_sensor", sensor_type=habitat_sim.SensorType.SEMANTIC
+    )
 
 
 # %%
@@ -1061,7 +1004,7 @@ for iteration in range(2):
                     )
 
         # simulate and collect frames
-        for _frame in range(frame_skip):
+        for _ in range(frame_skip):
             if continuous_nav:
                 # Integrate the velocity and apply the transform.
                 # Note: this can be done at a higher frequency for more accuracy

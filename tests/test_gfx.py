@@ -12,7 +12,11 @@ import pytest
 import quaternion  # noqa: F401
 
 import habitat_sim
-import habitat_sim.utils.settings
+from habitat_sim.utils.settings import (
+    default_sim_settings,
+    make_cfg,
+    update_or_add_sensor_settings,
+)
 
 
 @pytest.mark.skipif(
@@ -20,17 +24,16 @@ import habitat_sim.utils.settings
     reason="Requires the habitat-test-scenes",
 )
 def test_unproject():
-    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
+    cfg_settings = default_sim_settings.copy()
 
     # configure some settings in case defaults change
     cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/apartment_1.glb"
     cfg_settings["width"] = 101
     cfg_settings["height"] = 101
-    cfg_settings["sensor_height"] = 0
-    cfg_settings["color_sensor"] = True
+    update_or_add_sensor_settings(cfg_settings, uuid="color_sensor", position=[0, 0, 0])
 
     # loading the scene
-    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
+    hab_cfg = make_cfg(cfg_settings)
     with habitat_sim.Simulator(hab_cfg) as sim:
         # position agent
         sim.agents[0].scene_node.rotation = mn.Quaternion()

@@ -49,6 +49,11 @@ import magnum as mn
 
 import habitat_sim
 from habitat_sim.utils import viz_utils as vut
+from habitat_sim.utils.settings import (
+    make_cfg,
+    overwrite_default_sim_settings,
+    update_or_add_sensor_settings,
+)
 
 try:
     import ipywidgets as widgets
@@ -92,64 +97,27 @@ if "sim" not in globals():
 # @markdown (double click to show code)
 
 # @markdown This cell defines a number of utility functions used throughout the tutorial to make simulator reconstruction easy:
-# @markdown - make_cfg
-# @markdown - make_default_settings
+# @markdown - make_custom_settings
 # @markdown - make_simulator_from_settings
 
 
-def make_cfg(settings):
-    sim_cfg = habitat_sim.SimulatorConfiguration()
-    sim_cfg.gpu_device_id = 0
-    sim_cfg.scene_dataset_config_file = settings["scene_dataset"]
-    sim_cfg.scene_id = settings["scene"]
-    sim_cfg.enable_physics = settings["enable_physics"]
-    # Specify the location of the scene dataset
-    if "scene_dataset_config" in settings:
-        sim_cfg.scene_dataset_config_file = settings["scene_dataset_config"]
-    if "override_scene_light_defaults" in settings:
-        sim_cfg.override_scene_light_defaults = settings[
-            "override_scene_light_defaults"
-        ]
-    if "scene_light_setup" in settings:
-        sim_cfg.scene_light_setup = settings["scene_light_setup"]
-
-    # Note: all sensors must have the same resolution
-    sensor_specs = []
-    color_sensor_1st_person_spec = habitat_sim.CameraSensorSpec()
-    color_sensor_1st_person_spec.uuid = "color_sensor_1st_person"
-    color_sensor_1st_person_spec.sensor_type = habitat_sim.SensorType.COLOR
-    color_sensor_1st_person_spec.resolution = [
-        settings["height"],
-        settings["width"],
-    ]
-    color_sensor_1st_person_spec.position = [0.0, settings["sensor_height"], 0.0]
-    color_sensor_1st_person_spec.orientation = [
-        settings["sensor_pitch"],
-        0.0,
-        0.0,
-    ]
-    color_sensor_1st_person_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
-    sensor_specs.append(color_sensor_1st_person_spec)
-
-    # Here you can specify the amount of displacement in a forward action and the turn angle
-    agent_cfg = habitat_sim.agent.AgentConfiguration()
-    agent_cfg.sensor_specifications = sensor_specs
-
-    return habitat_sim.Configuration(sim_cfg, [agent_cfg])
-
-
-def make_default_settings():
-    settings = {
+def make_custom_settings():
+    """
+    create custom simulator settings. All sim settings not explicitly assigned are given default values
+    """
+    settings_to_overwrite = {
         "width": 1280,  # Spatial resolution of the observations
         "height": 720,
-        "scene_dataset": "data/replica_cad/replicaCAD.scene_dataset_config.json",  # dataset path
+        "scene_dataset_config_file": "data/replica_cad/replicaCAD.scene_dataset_config.json",  # dataset path
         "scene": "NONE",  # Scene path
-        "default_agent": 0,
-        "sensor_height": 1.5,  # Height of sensors in meters
-        "sensor_pitch": 0,  # sensor pitch (x rotation in rads)
-        "seed": 1,
         "enable_physics": True,  # enable dynamics simulation
     }
+    # Overwrite specified entries of default_sim_settings with the values above. Instantiate all non-assigned elements of simulator settings to the default values
+    # TODO: testing, make sure this works
+    settings = overwrite_default_sim_settings(settings_to_overwrite)
+
+    # add sensor settings to sim settings
+    update_or_add_sensor_settings(settings, uuid="color_sensor_1st_person")
     return settings
 
 
@@ -297,7 +265,7 @@ else:
 # [initialize]
 # @title Initialize Simulator{ display-mode: "form" }
 
-sim_settings = make_default_settings()
+sim_settings = make_custom_settings()
 make_simulator_from_settings(sim_settings)
 # [/initialize]
 
