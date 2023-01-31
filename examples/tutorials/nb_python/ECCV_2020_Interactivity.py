@@ -62,8 +62,8 @@ import habitat_sim
 from habitat_sim.utils import common as ut
 from habitat_sim.utils import viz_utils as vut
 from habitat_sim.utils.settings import (
-    default_sim_settings,
     make_cfg,
+    overwrite_default_sim_settings,
     update_or_add_sensor_settings,
 )
 
@@ -117,15 +117,16 @@ def make_custom_settings():
     """
     create custom simulator settings. All sim settings not explicitly assigned are given default values
     """
-    settings = {
+    settings_to_overwrite = {
         "width": 720,  # Spatial resolution of the observations
         "height": 544,
         "scene": "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb",  # Scene path
         "scene_dataset_config_file": "./data/scene_datasets/mp3d_example/mp3d.scene_dataset_config.json",  # MP3D scene dataset
         "enable_physics": True,  # enable dynamics simulation
     }
-    # Instantiate all non-assigned elements of simulator settings to the default values
-    settings = {**default_sim_settings, **settings}
+    # Overwrite specified entries of default_sim_settings with the values above. Instantiate all non-assigned elements of simulator settings to the default values
+    # TODO: testing, make sure this works
+    settings = overwrite_default_sim_settings(settings_to_overwrite)
 
     # add settings for a new sensor to the simulator settings. All sensor settings not
     # explicitly assigned are given default values

@@ -64,8 +64,8 @@ import habitat_sim
 from habitat_sim.utils import common as utils
 from habitat_sim.utils import viz_utils as vut
 from habitat_sim.utils.settings import (
-    default_sim_settings,
     make_cfg,
+    overwrite_default_sim_settings,
     update_or_add_sensor_settings,
 )
 
@@ -164,14 +164,15 @@ if display:
 # we support a variety of mesh formats, such as .glb, .gltf, .obj, .ply
 test_scene = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
 
-sim_settings = {
+settings_to_overwrite = {
     "scene": test_scene,  # Scene path
     "default_agent": 0,  # Index of the default agent
-    "width": 256,  # Spatial resolution of the observations
-    "height": 256,
+    "width": 512,  # Spatial resolution of the observations
+    "height": 512,
 }
-# Instantiate all non-assigned elements of simulator settings to the default values
-sim_settings = {**default_sim_settings, **sim_settings}
+# Overwrite specified entries of default_sim_settings with the values above. Instantiate all non-assigned elements of simulator settings to the default values
+# TODO: testing, make sure this works
+sim_settings = overwrite_default_sim_settings(settings_to_overwrite)
 
 
 # %% [markdown]
@@ -273,16 +274,17 @@ rgb_sensor = True  # @param {type:"boolean"}
 depth_sensor = True  # @param {type:"boolean"}
 semantic_sensor = True  # @param {type:"boolean"}
 
-sim_settings = {
-    "width": 256,  # Spatial resolution of the observations
-    "height": 256,
+settings_to_overwrite = {
+    "width": 512,  # Spatial resolution of the observations
+    "height": 512,
     "scene": test_scene,  # Scene path
     "scene_dataset_config_file": mp3d_scene_dataset,  # the scene dataset configuration files
     "default_agent": 0,
     "enable_physics": False,  # kinematics only
 }
-# Instantiate all non-assigned elements of simulator settings to the default values
-sim_settings = {**default_sim_settings, **sim_settings}
+# Overwrite specified entries of default_sim_settings with the values above. Instantiate all non-assigned elements of simulator settings to the default values
+# TODO: testing, make sure this works
+settings = overwrite_default_sim_settings(settings_to_overwrite)
 
 # Add sensor settings to simulator settings
 if rgb_sensor:
@@ -1002,7 +1004,7 @@ for iteration in range(2):
                     )
 
         # simulate and collect frames
-        for _frame in range(frame_skip):
+        for _ in range(frame_skip):
             if continuous_nav:
                 # Integrate the velocity and apply the transform.
                 # Note: this can be done at a higher frequency for more accuracy

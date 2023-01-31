@@ -50,8 +50,8 @@ import magnum as mn
 import habitat_sim
 from habitat_sim.utils import viz_utils as vut
 from habitat_sim.utils.settings import (
-    default_sim_settings,
     make_cfg,
+    overwrite_default_sim_settings,
     update_or_add_sensor_settings,
 )
 
@@ -105,15 +105,16 @@ def make_custom_settings():
     """
     create custom simulator settings. All sim settings not explicitly assigned are given default values
     """
-    settings = {
+    settings_to_overwrite = {
         "width": 1280,  # Spatial resolution of the observations
         "height": 720,
         "scene_dataset_config_file": "data/replica_cad/replicaCAD.scene_dataset_config.json",  # dataset path
         "scene": "NONE",  # Scene path
         "enable_physics": True,  # enable dynamics simulation
     }
-    # Instantiate all non-assigned elements of simulator settings to the default values
-    settings = {**default_sim_settings, **settings}
+    # Overwrite specified entries of default_sim_settings with the values above. Instantiate all non-assigned elements of simulator settings to the default values
+    # TODO: testing, make sure this works
+    settings = overwrite_default_sim_settings(settings_to_overwrite)
 
     # add sensor settings to sim settings
     update_or_add_sensor_settings(settings, uuid="color_sensor_1st_person")

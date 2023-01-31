@@ -51,6 +51,21 @@ def print_settings(sim_settings: Dict[str, Any], nest_level: Optional[int] = 0):
             print("   " * nest_level + f"{k}: {v}")
 
 
+def overwrite_default_sim_settings(
+    settings_to_overwrite: Dict[str, Any]
+) -> Dict[str, Any]:
+    """
+    create new sim settings by overwriting default sim settings with the new
+    setting values
+
+    :param settings_to_overwrite: new settings for the simulator to overwrite the default
+    settings with. Not all of the default settings need to be overwritten, so
+    this can theoretically be empty.
+    """
+    # TODO: still testing, make sure this works
+    return {**default_sim_settings, **settings_to_overwrite}
+
+
 def update_or_add_sensor_settings(
     sim_settings: Dict[str, Any], uuid: str, **kw_args
 ) -> None:
