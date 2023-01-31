@@ -58,15 +58,12 @@ default_scene_dir = os.path.join(data_path, "default_qa_scenes")
 if not os.path.exists(default_scene_dir):
     os.mkdir(default_scene_dir)
 
-silent: bool = False
 MAX_TEST_TIME = sys.float_info.max
 
 # NOTE: change this to config file name to test
-# qa_config_filename = "default"
 qa_config_filename = "floor_planner_no_doors"
 # qa_config_filename = "simple_room"
 # qa_config_filename = "mp3d_example"
-# qa_config_filename = "ycb"
 # qa_config_filename = "replica_cad"
 
 config_directory = "./tools/qa_scenes/configs/"
@@ -1291,7 +1288,7 @@ def process_scenes_and_stages(
     if (
         isinstance(sim_settings["start_scene_index"], int)
         and sim_settings["start_scene_index"] >= 0
-        and sim_settings["start_scene_index"] <= len(scene_handles)
+        and sim_settings["start_scene_index"] < len(scene_handles)
     ):
         start_index = sim_settings["start_scene_index"]
 
@@ -1299,7 +1296,7 @@ def process_scenes_and_stages(
     if (
         isinstance(sim_settings["end_scene_index"], int)
         and sim_settings["end_scene_index"] >= sim_settings["start_scene_index"]
-        and sim_settings["end_scene_index"] <= len(scene_handles)
+        and sim_settings["end_scene_index"] < len(scene_handles)
     ):
         # end index is exclusive
         end_index = sim_settings["end_scene_index"] + 1
@@ -1465,6 +1462,10 @@ if __name__ == "__main__":
 
     # setup colored console print statement logic
     init(autoreset=True)
+
+    # whether or not we are making print statements
+    global silent
+    silent = sim_settings["silent"]
 
     # begin processing
     text_format = ANSICodes.BRIGHT_RED.value

@@ -27,7 +27,6 @@ qa_scene_settings = {
     "run_collision_test": True,
     "run_asset_sleep_test": True,
     "silent": False,  # do not print log info
-    "debug_print": False,
     # primarily for debugging. When "run_viewer" is True, it won't output results as
     # files, but rather, you can look at the scene and press "c" to run the collision
     # test and watch it

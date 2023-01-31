@@ -18,6 +18,5 @@
   "collision_test_max_time": 0.005,
   "sleep_test_steps_per_sec": 60.0,
   "asset_sleep_test_duration_seconds": 10.0,
-  "silent": false,
-  "debug_print": false
+  "silent": false
 }
