@@ -239,5 +239,19 @@ const Mn::Range3D& SceneNode::getAbsoluteAABB() const {
   }
 }
 
+void setSemanticIdForSubtree(SceneNode* node, int semanticId) {
+  if (node->getSemanticId() == semanticId) {
+    // We assume the entire subtree's semanticId matches the root's, so we can
+    // early out here.
+    return;
+  }
+
+  // See also RigidBase setSemanticId. That function uses a prepared container
+  // of visual nodes, whereas this function traverses the subtree to touch all
+  // nodes (including visual nodes). The results should be the same.
+  auto cb = [&](SceneNode& node) { node.setSemanticId(semanticId); };
+  preOrderTraversalWithCallback(*node, cb);
+}
+
 }  // namespace scene
 }  // namespace esp

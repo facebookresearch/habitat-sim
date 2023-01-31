@@ -335,6 +335,14 @@ void preOrderFeatureTraversalWithCallback(SceneNode& node, Callable&& cb) {
       const_cast<const SceneNode&>(node), constFeatureCb);
 }
 
+/**
+ * @brief Set the semantic ID of a scene graph subtree.
+ *
+ * @param node Root node of the subtree.
+ * @param semanticId Semantic ID to apply to the subtree.
+ */
+void setSemanticIdForSubtree(SceneNode* node, int semanticId);
+
 CORRADE_ENUMSET_OPERATORS(SceneNodeTags)
 }  // namespace scene
 }  // namespace esp

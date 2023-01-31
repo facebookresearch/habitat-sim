@@ -116,18 +116,25 @@ commands:
               then
                 curl -o ~/miniconda.sh -O  https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
                 chmod +x ~/miniconda.sh
-                ~/miniconda.sh -b -p $HOME/miniconda
+                bash ~/miniconda.sh -b -p $HOME/miniconda
                 rm ~/miniconda.sh
                 export PATH=$HOME/miniconda/bin:$PATH
                 conda create -y -n habitat python=3.7
                 . activate habitat
                 # For whatever reason we have to install pytorch first. If it isn't
                 # it installs the 1.4 cpuonly version. Which is no good.
-                #conda install -q -y pytorch=1.12 torchvision pytorch-cuda=11.3 -c pytorch -c nvidia
-                conda install pytorch==1.12.1 torchvision==0.13.1 cudatoolkit=11.3 -c pytorch
-                conda install -q -y -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis pytest-mock
+                conda install -y pytorch==1.12.1=py3.7_cuda11.3_cudnn8.3.2_0 torchvision==0.13.1=py37_cu113 cudatoolkit=11.3 -c pytorch -c nvidia
+                conda install -y -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis pytest-mock
                 pip install pytest-sugar pytest-xdist pytest-benchmark opencv-python cython mock
               fi
+      - run: &validate_pytorch_installation
+          name: Validate Pytorch Installation
+          no_output_timeout: 5m
+          command: |
+              # Check that pytorch is installed with CUDA.
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat;
+              python -c 'import torch; torch.cuda.set_device(0)'
       - run:
           name: Install emscripten
           no_output_timeout: 20m

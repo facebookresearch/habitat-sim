@@ -9,9 +9,6 @@
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
 
 namespace esp {
-namespace scene {
-class SceneNode;
-}
 namespace gfx {
 namespace replay {
 

@@ -206,16 +206,35 @@ void GfxReplayTest::testPlayer() {
   int numberOfChildren = getNumberOfChildrenOfRoot(rootNode);
 
   // Construct Player. Hook up ResourceManager::loadAndCreateRenderAssetInstance
-  // to Player via callback.
-  auto assetsCallback =
-      [&](const esp::assets::AssetInfo& assetInfo,
-          const esp::assets::RenderAssetInstanceCreationInfo& creation) {
-        std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
-        return resourceManager.loadAndCreateRenderAssetInstance(
-            assetInfo, creation, &sceneManager_, tempIDs);
-      };
-  auto dummyLightsCallback = [&](const esp::gfx::LightSetup& lights) -> void {};
-  esp::gfx::replay::Player player(assetsCallback, dummyLightsCallback);
+  // to Player via backend implementation
+  class SceneGraphPlayerImplementation
+      : public esp::gfx::replay::AbstractSceneGraphPlayerImplementation {
+   public:
+    explicit SceneGraphPlayerImplementation(
+        esp::assets::ResourceManager& resourceManager,
+        esp::scene::SceneManager& sceneManager,
+        int sceneID)
+        : resourceManager_{resourceManager},
+          sceneManager_{sceneManager},
+          sceneID_{sceneID} {}
+
+   private:
+    esp::gfx::replay::NodeHandle loadAndCreateRenderAssetInstance(
+        const esp::assets::AssetInfo& assetInfo,
+        const esp::assets::RenderAssetInstanceCreationInfo& creation) override {
+      std::vector<int> tempIDs{sceneID_, esp::ID_UNDEFINED};
+      return reinterpret_cast<esp::gfx::replay::NodeHandle>(
+          resourceManager_.loadAndCreateRenderAssetInstance(
+              assetInfo, creation, &sceneManager_, tempIDs));
+    }
+
+    esp::assets::ResourceManager& resourceManager_;
+    esp::scene::SceneManager& sceneManager_;
+    int sceneID_;
+  };
+  esp::gfx::replay::Player player{
+      std::make_shared<SceneGraphPlayerImplementation>(resourceManager,
+                                                       sceneManager_, sceneID)};
 
   std::vector<esp::gfx::replay::Keyframe> keyframes;
 
@@ -343,14 +362,23 @@ void GfxReplayTest::testPlayer() {
   }
 }
 
+namespace {
+
+class DummySceneGraphPlayerImplementation
+    : public esp::gfx::replay::AbstractSceneGraphPlayerImplementation {
+ private:
+  esp::gfx::replay::NodeHandle loadAndCreateRenderAssetInstance(
+      const esp::assets::AssetInfo& assetInfo,
+      const esp::assets::RenderAssetInstanceCreationInfo& creation) override {
+    return {};
+  }
+};
+
+}  // namespace
+
 void GfxReplayTest::testPlayerReadMissingFile() {
-  auto dummyAssetsCallback =
-      [&](const esp::assets::AssetInfo& assetInfo,
-          const esp::assets::RenderAssetInstanceCreationInfo& creation) {
-        return nullptr;
-      };
-  auto dummyLightsCallback = [&](const esp::gfx::LightSetup& lights) -> void {};
-  esp::gfx::replay::Player player(dummyAssetsCallback, dummyLightsCallback);
+  esp::gfx::replay::Player player{
+      std::make_shared<DummySceneGraphPlayerImplementation>()};
 
   player.readKeyframesFromFile("file_that_does_not_exist.json");
   CORRADE_COMPARE(player.getNumKeyframes(), 0);
@@ -365,13 +393,8 @@ void GfxReplayTest::testPlayerReadInvalidFile() {
   out << "{invalid json";
   out.close();
 
-  auto dummyAssetsCallback =
-      [&](const esp::assets::AssetInfo& assetInfo,
-          const esp::assets::RenderAssetInstanceCreationInfo& creation) {
-        return nullptr;
-      };
-  auto dummyLightsCallback = [&](const esp::gfx::LightSetup& lights) -> void {};
-  esp::gfx::replay::Player player(dummyAssetsCallback, dummyLightsCallback);
+  esp::gfx::replay::Player player{
+      std::make_shared<DummySceneGraphPlayerImplementation>()};
 
   player.readKeyframesFromFile(testFilepath);
   CORRADE_COMPARE(player.getNumKeyframes(), 0);

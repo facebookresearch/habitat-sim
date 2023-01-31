@@ -11,6 +11,7 @@
 #include <Magnum/GL/Renderbuffer.h>
 #include <Magnum/GL/RenderbufferFormat.h>
 #include <Magnum/Image.h>
+#include <Magnum/ImageView.h>
 #include <Magnum/PixelFormat.h>
 
 #ifdef MAGNUM_TARGET_EGL
@@ -164,11 +165,40 @@ Mn::Image2D RendererStandalone::colorImage() {
                                   colorFramebufferFormat());
 }
 
+void RendererStandalone::colorImageInto(const Magnum::Range2Di& rectangle,
+                                        const Mn::MutableImageView2D& image) {
+  /* Deliberately not checking that image.format() == colorFramebufferFormat()
+     in order to allow for pixel format by the driver (such as RGBA to RGB) */
+  CORRADE_ASSERT(rectangle.max() <= tileCount() * tileSize(),
+                 "RendererStandalone::colorImageInto():"
+                     << rectangle << "doesn't fit in a size of"
+                     << tileCount() * tileSize(), );
+  CORRADE_ASSERT(image.size() == rectangle.size(),
+                 "RendererStandalone::colorImageInto(): expected image size of"
+                     << rectangle.size() << "pixels but got" << image.size(), );
+  return state_->framebuffer.read(rectangle, image);
+}
+
 Mn::Image2D RendererStandalone::depthImage() {
   /* Not using state_->framebuffer.viewport() as it's left pointing to whatever
      tile was rendered last */
   return state_->framebuffer.read({{}, tileCount() * tileSize()},
                                   depthFramebufferFormat());
+}
+
+void RendererStandalone::depthImageInto(const Magnum::Range2Di& rectangle,
+                                        const Mn::MutableImageView2D& image) {
+  /* Deliberately not checking that image.format() == depthFramebufferFormat()
+     in order to allow for pixel format by the driver (such as 24-bit to 32-bit
+     float) */
+  CORRADE_ASSERT(rectangle.max() <= tileCount() * tileSize(),
+                 "RendererStandalone::depthImageInto():"
+                     << rectangle << "doesn't fit in a size of"
+                     << tileCount() * tileSize(), );
+  CORRADE_ASSERT(image.size() == rectangle.size(),
+                 "RendererStandalone::depthImageInto(): expected image size of"
+                     << rectangle.size() << "pixels but got" << image.size(), );
+  return state_->framebuffer.read(rectangle, image);
 }
 
 #ifdef ESP_BUILD_WITH_CUDA

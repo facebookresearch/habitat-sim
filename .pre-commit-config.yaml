@@ -41,6 +41,8 @@ repos:
         args: [--autofix]
     -   id: pretty-format-toml
         args: [--autofix]
+        additional_dependencies:
+         - toml-sort==0.21.0
 
 -   repo: https://github.com/pre-commit/pygrep-hooks
     rev: v1.9.0  # Use the ref you want to point at

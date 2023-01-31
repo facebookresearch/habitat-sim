@@ -81,6 +81,31 @@ struct RendererConfiguration {
   RendererConfiguration& setTileSizeCount(const Magnum::Vector2i& tileSize,
                                           const Magnum::Vector2i& tileCount);
 
+  /**
+   * @brief Set max light count per draw
+   *
+   * By default no lights are used, i.e. flat-shaded rendering. At the moment
+   * there's no light culling in place, which means that light count per draw
+   * is equivalent to the total light count used per scene.
+   * @see @ref Renderer::maxLightCount()
+   */
+  RendererConfiguration& setMaxLightCount(Magnum::UnsignedInt count);
+
+  /**
+   * @brief Set ambient factor
+   *
+   * How much of the diffuse color / texture is used for ambient light in
+   * Phong-shaded materials. Default value is @cpp 0.1f @ce, setting it to
+   * @cpp 0.0f @ce will make the render completely black in areas without light
+   * contribution. In comparison, flat-shaded materials (i.e., imported with
+   * @ref Magnum::Trade::MaterialType::Flat) have the ambient factor always
+   * @cpp 1.0 @ce and are unaffected by lights.
+   *
+   * This value can currently only set upfront due to how materials are
+   * implemented internally.
+   */
+  RendererConfiguration& setAmbientFactor(Magnum::Float factor);
+
  private:
   friend Renderer;
   struct State;
@@ -97,8 +122,8 @@ enum class RendererFileFlag {
    * Treat the file as a whole.
    *
    * By default a file is treated as a so-called *composite* --- a collection
-   * of *mesh hierarchy templates* --- which you then add with
-   * @ref Renderer::addMeshHierarchy() using a name corresponding to one of the
+   * of *node hierarchy templates* --- which you then add with
+   * @ref Renderer::addNodeHierarchy() using a name corresponding to one of the
    * root nodes. With this flag set, the whole file is treated as a single
    * hierarchy instead, with the @p filename (or @p name, if present) argument
    * of @ref Renderer::addFile() used as a name.
@@ -109,7 +134,23 @@ enum class RendererFileFlag {
    *    This flag is required to be set when importing scene-less files such as
    *    STL or PLY.
    */
-  Whole = 1 << 0
+  Whole = 1 << 0,
+
+  /**
+   * Generate a mipmap out of single-level uncompressed textures.
+   *
+   * By default, no renderer-side processing of imported textures is done ---
+   * if the image contains multiple levels, they're imported as well, otherwise
+   * just a single level is uploaded, regardless of whether the texture has a
+   * filtering across mip levels set up.
+   *
+   * With this option enabled, if the input image is uncompressed and there's
+   * just a single level, the texture is created with a full mip pyramid and
+   * the lower levels get generated on the fly, leading to a smoother look with
+   * large textures. On-the-fly mip level generation is impossible for
+   * compressed formats, there this option is ignored.
+   */
+  GenerateMipmap = 1 << 1
 };
 
 /**
@@ -120,6 +161,16 @@ enum class RendererFileFlag {
 typedef Corrade::Containers::EnumSet<RendererFileFlag> RendererFileFlags;
 
 CORRADE_ENUMSET_OPERATORS(RendererFileFlags)
+
+/**
+@brief Renderer light type
+
+@see @ref Renderer::addLight()
+*/
+enum class RendererLightType {
+  Directional = 0, /**< Directional */
+  Point = 1        /**< Point */
+};
 
 struct SceneStats;
 
@@ -150,7 +201,7 @@ organized in a grid, all scenes have the same rendered size.
 First, files with meshes, materials and textures that are meant to be rendered
 from should get added via @ref addFile(). The file itself isn't directly
 rendered, instead it's treated as a *composite file* with named root scene
-nodes being *mesh hierarchy templates* to be selectively added to particular
+nodes being *node hierarchy templates* to be selectively added to particular
 scenes. Apart from picking particular root nodes, it's also possible to treat
 the whole file as a single hierarchy using @ref RendererFileFlag::Whole. See
 the flag documentation for more information.
@@ -162,8 +213,8 @@ the flag documentation for more information.
   drawing anything. This is currently not enforced in any way, but is subject
   to change.
 
-Then, particular scenes are populated using @ref addMeshHierarchy(),
-referencing the mesh hierarchy templates via their names. The function takes an
+Then, particular scenes are populated using @ref addNodeHierarchy(),
+referencing the node hierarchy templates via their names. The function takes an
 initial transformation and returns an ID of the node added into the scene. The
 ID can then be used to subsequently update its transformation via
 @ref transformations(), for example in respose to a physics simulation or an
@@ -183,7 +234,7 @@ implemented in @ref shaders-usage-multidraw "Magnum shaders".
   the GPU. The data consists of meshes, texture image levels and packed
   material uniforms. Such data are uploaded only once and treated as immutable
   for the rest of the renderer lifetime.
-- On each @ref addMeshHierarchy() call, a list of mesh views each together with
+- On each @ref addNodeHierarchy() call, a list of mesh views each together with
   material association, texture layer and transform and node assignment is
   added to a *draw list*. The draw list is
   @ref gfx_batch-Renderer-workflow-draw-list "further detailed below".
@@ -203,7 +254,7 @@ In the ideal (and often impossible) case, there would be just a single file
 added with @ref addFile(), containing exactly one mesh and exactly one texture
 array, with scene nodes referring to sub-views of them --- i.e., mesh index
 ranges, texture layer indices and texture transformation matrices. Then, no
-matter how many times @ref addMeshHierarchy() gets called, the whole draw list
+matter how many times @ref addNodeHierarchy() gets called, the whole draw list
 populated by it can be drawn with a single multi-draw call.
 
 @m_class{m-note m-info}
@@ -217,7 +268,7 @@ In practice however, the files may contain meshes with different vertex layouts
 (such as some having vertex colors and some not), textures of different formats
 and sizes, and different materials requiring different shaders (such as
 vertex-colored, alpha-masked etc.). Draw lists populated with
-@ref addMeshHierarchy() are then partitioned into *draw batches*, where a
+@ref addNodeHierarchy() are then partitioned into *draw batches*, where a
 particular draw batch contains all draws with a particular shader, from a
 particular mesh and with a particular texture. Each draw batch then corresponds
 to a single multi-draw call issued on the GPU.
@@ -431,6 +482,14 @@ class Renderer {
    */
   std::size_t sceneCount() const;
 
+  /**
+   * @brief Max light count
+   *
+   * By default there's zero lights, i.e. flat-shaded renderering.
+   * @see @ref RendererConfiguration::setMaxLightCount()
+   */
+  Magnum::UnsignedInt maxLightCount() const;
+
 #ifdef DOXYGEN_GENERATING_OUTPUT
   /**
    * @brief Add a file
@@ -440,8 +499,8 @@ class Renderer {
    *    @ref RendererFileFlag::Whole isn't set.
    *
    * By default a file is treated as a so-called *composite* --- a collection
-   * of *mesh hierarchy templates*, which you then add with
-   * @ref Renderer::addMeshHierarchy() using a name corresponding to one of the
+   * of *node hierarchy templates*, which you then add with
+   * @ref Renderer::addNodeHierarchy() using a name corresponding to one of the
    * root nodes. This means all root nodes have to be named and have their
    * names unique.
    *
@@ -502,40 +561,83 @@ class Renderer {
    * Returns @cpp true @ce if @p name is a mesh hierarchy name added by any
    * previous @ref addFile() call, @cpp false @ce otherwise.
    */
-  bool hasMeshHierarchy(Corrade::Containers::StringView name) const;
+  bool hasNodeHierarchy(Corrade::Containers::StringView name) const;
 
 #ifdef DOXYGEN_GENERATING_OUTPUT
   /**
    * @brief Add a mesh hierarchy
    * @param sceneId         Scene ID, expected to be less than
    *    @ref sceneCount()
-   * @param name            *Mesh hierarchy template* name, added with
+   * @param name            *Node hierarchy template* name, added with
    *    @ref addFile() earlier
-   * @param transformation  Initial transformation of the hierarchy
+   * @param bakeTransformation Transformation to bake into the hierarchy
+   * @return ID of the newly added node
    *
-   * Returns an ID of the newly added node, which can be subsequently used to
-   * update transformations via @ref transformations(). The returned IDs are
-   * *not* contiguous, the gaps correspond to number of child nodes in the
-   * hierarchy.
-   * @see @ref hasMeshHierarchy()
+   * The returned ID can be subsequently used to update transformations via
+   * @ref transformations(). The returned IDs are *not* contiguous, the gaps
+   * correspond to number of child nodes in the hierarchy.
+   *
+   * The @p bakeTransformation is baked into the added hierarchy, i.e.
+   * @ref transformations() at the returned ID is kept as an identity transform
+   * and writing to it will not overwrite the baked transformation. This
+   * parameter is useful for correcting orientation/scale of the imported mesh.
+   * @see @ref hasNodeHierarchy(), @ref clear()
    */
-  std::size_t addMeshHierarchy(Magnum::UnsignedInt sceneId,
+  std::size_t addNodeHierarchy(Magnum::UnsignedInt sceneId,
                                Corrade::Containers::StringView name,
-                               const Magnum::Matrix4& transformation = {});
+                               const Magnum::Matrix4& bakeTransformation = {});
 #else
   /* To avoid having to include Matrix4 in the header */
-  std::size_t addMeshHierarchy(Magnum::UnsignedInt sceneId,
+  std::size_t addNodeHierarchy(Magnum::UnsignedInt sceneId,
                                Corrade::Containers::StringView name,
-                               const Magnum::Matrix4& transformation);
-  std::size_t addMeshHierarchy(Magnum::UnsignedInt sceneId,
+                               const Magnum::Matrix4& bakeTransformation);
+  std::size_t addNodeHierarchy(Magnum::UnsignedInt sceneId,
                                Corrade::Containers::StringView name);
 #endif
+
+  std::size_t addEmptyNode(Magnum::UnsignedInt sceneId);
+
+  /**
+   * @brief Add a light
+   * @param sceneId         Scene ID, expected to be less than
+   *    @ref sceneCount()
+   * @param nodeId          Node ID to inherit transformation from, returned
+   *    from @ref addNodeHierarchy() or @ref addEmptyNode() earlier
+   * @param type            Light type. Can't be changed after adding the
+   *    light.
+   *
+   * Expects that @ref maxLightCount() isn't @cpp 0 @ce. If @p type is
+   * @ref RendererLightType::Directional, a negative
+   * @ref Magnum::Matrix4::backwards() is taken from @p nodeId transformation
+   * as the direction, if @p type is @ref RendererLightType::Point,
+   * @ref Magnum::Matrix4::translation() is taken from @p nodeId transformation
+   * as the position. The ID returned from this function can be subsequently
+   * used to update light properties via @ref lightColors() and
+   * @ref lightRanges().
+   * @see @ref clearLights(), @ref clear()
+   */
+  std::size_t addLight(Magnum::UnsignedInt sceneId,
+                       std::size_t nodeId,
+                       RendererLightType type);
 
   /**
    * @brief Clear a scene
    * @param sceneId   Scene ID, expected to be less than @ref sceneCount()
+   *
+   * Clears everything added by @ref addNodeHierarchy(),
+   * @ref addEmptyNode() and @ref addLight().
+   * @see @ref clearLights()
    */
   void clear(Magnum::UnsignedInt sceneId);
+
+  /**
+   * @brief Clear lights in a scene
+   * @param sceneId   Scene ID, expected to be less than @ref sceneCount()
+   *
+   * Clears everything added by @ref addLight().
+   * @see @ref clear()
+   */
+  void clearLights(Magnum::UnsignedInt sceneId);
 
   /**
    * @brief Combined camera projection and transformation matrix
@@ -552,11 +654,45 @@ class Renderer {
    *
    * Returns a view on all node transformations in given scene. Desired usage
    * is to update only transformations at indices returned by
-   * @ref addMeshHierarchy(), updating transformations at other indices is
-   * possible but could have unintended consequences. Modifications to the
-   * transformations are taken into account in the next @ref draw().
+   * @ref addNodeHierarchy() and @ref addEmptyNode(), updating transformations
+   * at other indices is possible but could have unintended consequences.
+   * Modifications to the transformations are taken into account in the next
+   * @ref draw(). By default, transformations of root nodes (those which IDs
+   * were returned from @ref addNodeHierarchy() or @ref addEmptyNode()) are
+   * identities, transformations of other nodes are unspecified.
    */
   Corrade::Containers::StridedArrayView1D<Magnum::Matrix4> transformations(
+      Magnum::UnsignedInt sceneId);
+
+  /**
+   * @brief Colors of all lights in the scene
+   * @param sceneId   Scene ID, expected to be less than @ref sceneCount()
+   *
+   * Returns a view on colors of all lights in given scene. Desired usage is to
+   * update only colors at indices returned by @ref addLight(), updating colors
+   * at other indices is possible but could have unintended consequences.
+   * Modifications to the lights are taken into account in the next
+   * @ref draw(). By default, colors of root lights (those which IDs were
+   * returned from @ref addLight()) are @cpp 0xffffff_rgbf @ce, colors of other
+   * lights are unspecified.
+   */
+  Corrade::Containers::StridedArrayView1D<Magnum::Color3> lightColors(
+      Magnum::UnsignedInt sceneId);
+
+  /**
+   * @brief Ranges of all lights in the scene
+   * @param sceneId   Scene ID, expected to be less than @ref sceneCount()
+   *
+   * Returns a view on ranges of all lights in given scene. Desired usage is to
+   * update only ranges at indices returned by @ref addLight(), updating ranges
+   * at other indices is possible but could have unintended consequences.
+   * Modifications to the lights are taken into account in the next
+   * @ref draw(). The value range is ignored for
+   * @ref RendererLightType::Directional. By default, ranges of root lights
+   * (those which IDs were returned from @ref addLight()) are
+   * @ref Magnum::Constants::inf(), ranges of other lights are unspecified.
+   */
+  Corrade::Containers::StridedArrayView1D<Magnum::Float> lightRanges(
       Magnum::UnsignedInt sceneId);
 
   /**
