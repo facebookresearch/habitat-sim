@@ -1267,20 +1267,6 @@ def strip_path_and_ext(handle: str) -> str:
     return name_sans_path_and_ext
 
 
-def print_handles_san_ext(handles: List[str]) -> None:
-    text_format = ANSICodes.BRIGHT_MAGENTA.value
-
-    for handle in handles:
-        if handle == "NONE":
-            continue
-        stage_filename = handle.split("/")[-1]
-        stage_filename_sans_ext = stage_filename.split(".")[0]
-        print_if_logging(
-            silent,
-            text_format + f"handle without extension: {stage_filename_sans_ext}\n",
-        )
-
-
 def process_scenes_and_stages(
     cfg_with_mm: habitat_sim.Configuration, sim_settings: Dict[str, Any]
 ) -> None:
@@ -1296,10 +1282,6 @@ def process_scenes_and_stages(
     ] = mm.stage_template_manager.get_templates_by_handle_substring()
 
     scene_handles.extend(stage_handles)
-
-    # TODO testing
-    # print_handles_san_ext(scene_handles)
-    # TODO testing
 
     # determine indices of scenes to process
     start_index = 0
