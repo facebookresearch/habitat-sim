@@ -14,6 +14,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
+import habitat.datasets.rearrange.samplers.receptacle as hab_receptacle
 import magnum as mn
 import numpy as np
 from magnum import shaders, text
@@ -169,6 +170,8 @@ class HabitatSimInteractiveViewer(Application):
         # toggle physics simulation on/off
         self.simulating = True
 
+        self.receptacles = None
+
         # toggle a single simulation step at the next opportunity if not
         # simulating continuously.
         self.simulate_single_step = False
@@ -237,6 +240,9 @@ class HabitatSimInteractiveViewer(Application):
             self.sim.physics_debug_draw(proj_mat)
         if self.contact_debug_draw:
             self.draw_contact_debug()
+        if self.receptacles is not None:
+            for receptacle in self.receptacles:
+                receptacle.debug_draw(self.sim)
 
     def draw_event(
         self,
@@ -574,8 +580,7 @@ class HabitatSimInteractiveViewer(Application):
             logger.info(f"Command: mouse mode set to {self.mouse_interaction}")
 
         elif key == pressed.V:
-            self.invert_gravity()
-            logger.info("Command: gravity inverted")
+            self.receptacles = hab_receptacle.find_receptacles(self.sim)
 
         elif key == pressed.N:
             # (default) - toggle navmesh visualization
