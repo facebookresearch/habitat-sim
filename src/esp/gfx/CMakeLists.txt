@@ -71,6 +71,70 @@ set(
   VarianceShadowMapDrawable.cpp
   GaussianFilterShader.h
   GaussianFilterShader.cpp
+  ssao/HBAOHelper.cpp
+  ssao/HBAOHelper.h
+  # temp: nvpro helpers used by HBAO
+  # todo: get rid of nvpro completely
+  #  ssao/nvpro_core/nvgl/appwindowprofiler_gl.cpp
+  #  ssao/nvpro_core/nvgl/contextwindow_gl.cpp
+  ssao/nvpro_core/nvgl/error_gl.cpp
+  #  ssao/nvpro_core/nvgl/extensions_gl.cpp
+  ssao/nvpro_core/nvgl/profiler_gl.cpp
+  ssao/nvpro_core/nvgl/programmanager_gl.cpp
+  #  ssao/nvpro_core/nvh/appwindowprofiler.cpp
+  ssao/nvpro_core/nvh/bitarray.cpp
+  ssao/nvpro_core/nvh/cameramanipulator.cpp
+  ssao/nvpro_core/nvh/filemapping.cpp
+  #  ssao/nvpro_core/nvh/gltfscene.cpp
+  ssao/nvpro_core/nvh/nvprint.cpp
+  ssao/nvpro_core/nvh/parametertools.cpp
+  ssao/nvpro_core/nvh/primitives.cpp
+  ssao/nvpro_core/nvh/profiler.cpp
+  ssao/nvpro_core/nvh/shaderfilemanager.cpp
+  ssao/nvpro_core/nvp/nvpfilesystem.cpp
+  #  ssao/nvpro_core/nvp/nvpsystem.cpp
+  #  ssao/nvpro_core/nvp/nvpsystem_linux.cpp
+  #ssao/nvpro_core/nvp/nvpsystem_win32.cpp
+  #  ssao/nvpro_core/nvp/nvpwindow.cpp
+  ssao/nvpro_core/nvp/perproject_globals.cpp
+  ssao/nvpro_core/nvgl/appwindowprofiler_gl.hpp
+  ssao/nvpro_core/nvgl/base_gl.hpp
+  ssao/nvpro_core/nvgl/contextwindow_gl.hpp
+  ssao/nvpro_core/nvgl/error_gl.hpp
+  ssao/nvpro_core/nvgl/extensions_gl.hpp
+  ssao/nvpro_core/nvgl/glsltypes_gl.hpp
+  ssao/nvpro_core/nvgl/profiler_gl.hpp
+  ssao/nvpro_core/nvgl/programmanager_gl.hpp
+  ssao/nvpro_core/nvh/alignment.hpp
+  ssao/nvpro_core/nvh/appwindowcamerainertia.hpp
+  ssao/nvpro_core/nvh/appwindowprofiler.hpp
+  ssao/nvpro_core/nvh/bitarray.hpp
+  ssao/nvpro_core/nvh/boundingbox.hpp
+  ssao/nvpro_core/nvh/cameracontrol.hpp
+  ssao/nvpro_core/nvh/camerainertia.hpp
+  ssao/nvpro_core/nvh/cameramanipulator.hpp
+  ssao/nvpro_core/nvh/commandlineparser.hpp
+  ssao/nvpro_core/nvh/container_utils.hpp
+  ssao/nvpro_core/nvh/filemapping.hpp
+  ssao/nvpro_core/nvh/fileoperations.hpp
+  ssao/nvpro_core/nvh/geometry.hpp
+  #  ssao/nvpro_core/nvh/gltfscene.hpp
+  ssao/nvpro_core/nvh/misc.hpp
+  ssao/nvpro_core/nvh/nvprint.hpp
+  ssao/nvpro_core/nvh/parallel_work.hpp
+  ssao/nvpro_core/nvh/parametertools.hpp
+  ssao/nvpro_core/nvh/primitives.hpp
+  ssao/nvpro_core/nvh/profiler.hpp
+  ssao/nvpro_core/nvh/radixsort.hpp
+  ssao/nvpro_core/nvh/shaderfilemanager.hpp
+  ssao/nvpro_core/nvh/threading.hpp
+  ssao/nvpro_core/nvh/timesampler.hpp
+  ssao/nvpro_core/nvh/trangeallocator.hpp
+  ssao/nvpro_core/nvp/nvpfilesystem.hpp
+  ssao/nvpro_core/nvp/nvpsystem.hpp
+  ssao/nvpro_core/nvp/nvpwindow.hpp
+  ssao/nvpro_core/nvp/perproject_globals.hpp
+  ssao/nvpro_core/nvmath/nvmath.inl
 )
 
 # If ptex support is enabled add relevant source files

@@ -103,6 +103,12 @@ struct SimulatorConfiguration {
    */
   nav::NavMeshSettings::ptr navMeshSettings = nullptr;
 
+  /**
+   * @brief Enable HBAO visual effect that adds soft shadows to corners and
+   * crevices.
+   */
+  bool horizonBasedAmbientOcclusion = false;
+
   ESP_SMART_POINTERS(SimulatorConfiguration)
 };
 bool operator==(const SimulatorConfiguration& a,
