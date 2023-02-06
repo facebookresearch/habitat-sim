@@ -1124,6 +1124,11 @@ if __name__ == "__main__":
         help="Override configured lighting to use default lighting for the stage.",
     )
     parser.add_argument(
+        "--hbao",
+        action="store_true",
+        help="Enable horizon-based ambient occlusion.",
+    )
+    parser.add_argument(
         "--enable-batch-renderer",
         action="store_true",
         help="Enable batch rendering mode. The number of concurrent environments is specified with the num-environments parameter.",
@@ -1174,6 +1179,7 @@ if __name__ == "__main__":
     sim_settings["window_width"] = args.width
     sim_settings["window_height"] = args.height
     sim_settings["default_agent_navmesh"] = False
+    sim_settings["hbao_visual_effects"] = args.hbao
 
     # start the application
     HabitatSimInteractiveViewer(sim_settings).exec()
