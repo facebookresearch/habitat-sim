@@ -854,10 +854,9 @@ class HabitatSimInteractiveViewer(Application):
         """
         This method defines how to cycle through the mouse mode.
         """
-        if self.mouse_interaction == MouseMode.LOOK:
-            self.mouse_interaction = MouseMode.GRAB
-        elif self.mouse_interaction == MouseMode.GRAB:
-            self.mouse_interaction = MouseMode.LOOK
+        self.mouse_interaction = MouseMode(
+            (self.mouse_interaction.value + 1) % (len(MouseMode))
+        )
 
     def navmesh_config_and_recompute(self) -> None:
         """
@@ -892,10 +891,7 @@ class HabitatSimInteractiveViewer(Application):
 
         sensor_type_string = str(sensor_spec.sensor_type.name)
         sensor_subtype_string = str(sensor_spec.sensor_subtype.name)
-        if self.mouse_interaction == MouseMode.LOOK:
-            mouse_mode_string = "LOOK"
-        elif self.mouse_interaction == MouseMode.GRAB:
-            mouse_mode_string = "GRAB"
+        mouse_mode_string = self.mouse_interaction.name
         self.window_text.render(
             f"""
 {self.fps} FPS
