@@ -20,6 +20,7 @@
 #include <Magnum/Shaders/GenericGL.h>
 
 #include "RenderTarget.h"
+#include "esp/gfx/ssao/HBAOHelper.h"
 #include "esp/sensor/VisualSensor.h"
 
 #include "esp/gfx_batch/DepthUnprojection.h"
@@ -117,6 +118,14 @@ struct RenderTarget::Impl {
     CORRADE_INTERNAL_ASSERT(
         framebuffer_.checkStatus(Mn::GL::FramebufferTarget::Draw) ==
         Mn::GL::Framebuffer::Status::Complete);
+
+    if (flags_ & Flag::HorizonBasedAmbientOcclusion) {
+      // depth texture is required for HBAO
+      CORRADE_INTERNAL_ASSERT(flags_ & Flag::DepthTextureAttachment);
+      m_hbaoHelper = std::make_unique<ssao::HBAOHelper>();
+      // todo: get rid of init and use constructor
+      m_hbaoHelper->init(size.x(), size.y());
+    }
   }
 
   void initDepthUnprojector() {
@@ -180,6 +189,31 @@ struct RenderTarget::Impl {
   void renderReEnter() { framebuffer_.bind(); }
 
   void renderExit() {}
+
+  void tryDrawHbao() {
+    if (!m_hbaoHelper) {
+      return;
+    }
+
+    ssao::HBAOHelper::Projection projection;
+    const int width = framebuffer_.viewport().size().x();
+    const int height = framebuffer_.viewport().size().y();
+    constexpr int samples = 1;  // todo: drive correctly
+
+    projection.fov = 90.f;  // todo: drive from camera
+    projection.ortho = false;
+    projection.orthoheight = 1.f;
+    projection.nearplane = 0.01f;  // todo: drive from camera
+    projection.farplane = 1000.f;  // todo: drive from camera
+    projection.update(width, height);
+
+    // auto frameBuffer = Mn::GL::defaultFramebuffer._id;
+    // GLuint frameBuffer = 0; // target._id // temp hack
+
+    m_hbaoHelper->drawHbaoCacheAware(projection, width, height, samples,
+                                     depthRenderTexture_.id(),
+                                     framebuffer_.id());
+  }
 
   void blitRgbaTo(Mn::GL::AbstractFramebuffer& target,
                   const Mn::Range2Di& targetRectangle) {
@@ -367,6 +401,8 @@ struct RenderTarget::Impl {
   cudaGraphicsResource_t objecIdBufferCugl_ = nullptr;
   cudaGraphicsResource_t depthBufferCugl_ = nullptr;
 #endif
+
+  std::unique_ptr<ssao::HBAOHelper> m_hbaoHelper;
 };  // namespace gfx
 
 RenderTarget::RenderTarget(const Mn::Vector2i& size,
@@ -424,6 +460,10 @@ Mn::GL::Texture2D& RenderTarget::getDepthTexture() {
 
 Mn::GL::Texture2D& RenderTarget::getObjectIdTexture() {
   return pimpl_->getObjectIdTexture();
+}
+
+void RenderTarget::tryDrawHbao() {
+  return pimpl_->tryDrawHbao();
 }
 
 #ifdef ESP_BUILD_WITH_CUDA

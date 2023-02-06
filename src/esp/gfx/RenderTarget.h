@@ -52,6 +52,11 @@ class RenderTarget {
      * rendering slower (default depth buffer will be used in this case.)
      */
     DepthTextureAttachment = 1 << 2,
+
+    /**
+     * Enable HBAO visual effect that adds soft shadows to corners and crevices.
+     */
+    HorizonBasedAmbientOcclusion = 1 << 3,
   };
 
   typedef Corrade::Containers::EnumSet<Flag> Flags;
@@ -169,6 +174,11 @@ class RenderTarget {
    * @brief get the object id texture
    */
   Magnum::GL::Texture2D& getObjectIdTexture();
+
+  /**
+   * @brief draw HBAO effect if enabled for this render target
+   */
+  void tryDrawHbao();
 
   // @brief Delete copy Constructor
   RenderTarget(const RenderTarget&) = delete;
