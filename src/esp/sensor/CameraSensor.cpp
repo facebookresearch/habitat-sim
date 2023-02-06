@@ -154,10 +154,12 @@ bool CameraSensor::drawObservation(sim::Simulator& sim) {
     // SensorType is Color, Depth or any other type
     draw(sim.getActiveSceneGraph(), flags);
 
-    // include DebugLineRender in Color sensors
     if (cameraSensorSpec_->sensorType == SensorType::Color) {
+      // include HBAO in Color sensors (only if enabled for render target)
+      renderTarget().tryDrawHbao();
+
+      // include DebugLineRender in Color sensors
       const auto debugLineRender = sim.getDebugLineRender();
-      // debugLineRender is generally null (unless the user drew lines)
       if (debugLineRender) {
         debugLineRender->flushLines(renderCamera_->cameraMatrix(),
                                     renderCamera_->projectionMatrix(),
