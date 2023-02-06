@@ -273,6 +273,11 @@ void ClassicReplayRenderer::doRender(
         *visualSensor.getRenderCamera(), sceneGraph,
         esp::gfx::RenderCamera::Flags{gfx::RenderCamera::Flag::FrustumCulling});
 
+    if (visualSensor.specification()->sensorType == sensor::SensorType::Color) {
+      // include HBAO in Color sensors (only if enabled for render target)
+      visualSensor.renderTarget().tryDrawHbao();
+    }
+
     if (envIndex == 0 && debugLineRender_) {
       auto* camera = visualSensor.getRenderCamera();
       debugLineRender_->flushLines(camera->cameraMatrix(),

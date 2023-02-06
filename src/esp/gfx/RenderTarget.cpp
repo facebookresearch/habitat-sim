@@ -4,6 +4,7 @@
 
 #include <Magnum/GL/Buffer.h>
 #include <Magnum/GL/BufferImage.h>
+#include <Magnum/GL/Context.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Framebuffer.h>
 #include <Magnum/GL/Mesh.h>
@@ -23,6 +24,7 @@
 #include "esp/sensor/VisualSensor.h"
 
 #include "esp/gfx_batch/DepthUnprojection.h"
+#include "esp/gfx_batch/Hbao.h"
 
 #ifdef ESP_BUILD_WITH_CUDA
 #include <cuda_gl_interop.h>
@@ -32,6 +34,7 @@
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
+using namespace Mn::Math::Literals;
 
 namespace esp {
 namespace gfx {
@@ -117,6 +120,15 @@ struct RenderTarget::Impl {
     CORRADE_INTERNAL_ASSERT(
         framebuffer_.checkStatus(Mn::GL::FramebufferTarget::Draw) ==
         Mn::GL::Framebuffer::Status::Complete);
+
+    if (flags_ & Flag::HorizonBasedAmbientOcclusion) {
+      // depth texture is required for HBAO
+      CORRADE_INTERNAL_ASSERT(flags_ & Flag::DepthTextureAttachment);
+      hbao_ = gfx_batch::Hbao{gfx_batch::HbaoConfiguration{}
+        .setSize(size)
+        // TODO other options here?
+      };
+    }
   }
 
   void initDepthUnprojector() {
@@ -180,6 +192,17 @@ struct RenderTarget::Impl {
   void renderReEnter() { framebuffer_.bind(); }
 
   void renderExit() {}
+
+  void drawHbao() {
+    hbao_.drawCacheAwarePerspective(
+      Mn::Matrix4::perspectiveProjection(
+        90.0_degf, // TODO where the F do i get this
+        Mn::Vector2{framebuffer_.viewport().size()}.aspectRatio(),
+        visualSensor_->specification().get()->near,
+        visualSensor_->specification().get()->far),
+      depthRenderTexture_,
+      framebuffer_);
+  }
 
   void blitRgbaTo(Mn::GL::AbstractFramebuffer& target,
                   const Mn::Range2Di& targetRectangle) {
@@ -367,6 +390,8 @@ struct RenderTarget::Impl {
   cudaGraphicsResource_t objecIdBufferCugl_ = nullptr;
   cudaGraphicsResource_t depthBufferCugl_ = nullptr;
 #endif
+
+  gfx_batch::Hbao hbao_{Mn::NoCreate};
 };  // namespace gfx
 
 RenderTarget::RenderTarget(const Mn::Vector2i& size,
@@ -424,6 +449,11 @@ Mn::GL::Texture2D& RenderTarget::getDepthTexture() {
 
 Mn::GL::Texture2D& RenderTarget::getObjectIdTexture() {
   return pimpl_->getObjectIdTexture();
+}
+
+// TODO why "try"? it works
+void RenderTarget::tryDrawHbao() {
+  return pimpl_->drawHbao();
 }
 
 #ifdef ESP_BUILD_WITH_CUDA
