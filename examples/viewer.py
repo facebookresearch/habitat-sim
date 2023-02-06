@@ -671,12 +671,10 @@ class HabitatSimInteractiveViewer(Application):
         button = Application.MouseEvent.Button
         physics_enabled = self.sim.get_physics_simulation_library()
 
-        # if interactive mode is True -> GRAB MODE
-        if self.mouse_interaction == MouseMode.GRAB and physics_enabled:
+        if physics_enabled:
             render_camera = self.render_camera.render_camera
             ray = render_camera.unproject(self.get_mouse_position(event.position))
             raycast_results = self.sim.cast_ray(ray=ray)
-
             if raycast_results.has_hits():
                 hit_object, ao_link = -1, -1
                 hit_info = raycast_results.hits[0]
@@ -688,71 +686,111 @@ class HabitatSimInteractiveViewer(Application):
                     ao = ao_mngr.get_object_by_id(hit_info.object_id)
                     ro = ro_mngr.get_object_by_id(hit_info.object_id)
 
-                    if ro:
-                        # if grabbed an object
-                        hit_object = hit_info.object_id
-                        object_pivot = ro.transformation.inverted().transform_point(
-                            hit_info.point
-                        )
-                        object_frame = ro.rotation.inverted()
-                    elif ao:
-                        # if grabbed the base link
-                        hit_object = hit_info.object_id
-                        object_pivot = ao.transformation.inverted().transform_point(
-                            hit_info.point
-                        )
-                        object_frame = ao.rotation.inverted()
-                    else:
-                        for ao_handle in ao_mngr.get_objects_by_handle_substring():
-                            ao = ao_mngr.get_object_by_handle(ao_handle)
-                            link_to_obj_ids = ao.link_object_ids
+                    # if interactive mode is True -> GRAB MODE
+                    if self.mouse_interaction == MouseMode.GRAB:
+                        if ro:
+                            # if grabbed an object
+                            hit_object = hit_info.object_id
+                            object_pivot = ro.transformation.inverted().transform_point(
+                                hit_info.point
+                            )
+                            object_frame = ro.rotation.inverted()
+                        elif ao:
+                            # if grabbed the base link
+                            hit_object = hit_info.object_id
+                            object_pivot = ao.transformation.inverted().transform_point(
+                                hit_info.point
+                            )
+                            object_frame = ao.rotation.inverted()
+                        else:
+                            for ao_handle in ao_mngr.get_objects_by_handle_substring():
+                                ao = ao_mngr.get_object_by_handle(ao_handle)
+                                link_to_obj_ids = ao.link_object_ids
 
-                            if hit_info.object_id in link_to_obj_ids:
-                                # if we got a link
-                                ao_link = link_to_obj_ids[hit_info.object_id]
-                                object_pivot = (
-                                    ao.get_link_scene_node(ao_link)
-                                    .transformation.inverted()
-                                    .transform_point(hit_info.point)
+                                if hit_info.object_id in link_to_obj_ids:
+                                    # if we got a link
+                                    ao_link = link_to_obj_ids[hit_info.object_id]
+                                    object_pivot = (
+                                        ao.get_link_scene_node(ao_link)
+                                        .transformation.inverted()
+                                        .transform_point(hit_info.point)
+                                    )
+                                    object_frame = ao.get_link_scene_node(
+                                        ao_link
+                                    ).rotation.inverted()
+                                    hit_object = ao.object_id
+                                    break
+                        # done checking for AO
+
+                        if hit_object >= 0:
+                            node = self.default_agent.scene_node
+                            constraint_settings = physics.RigidConstraintSettings()
+
+                            constraint_settings.object_id_a = hit_object
+                            constraint_settings.link_id_a = ao_link
+                            constraint_settings.pivot_a = object_pivot
+                            constraint_settings.frame_a = (
+                                object_frame.to_matrix() @ node.rotation.to_matrix()
+                            )
+                            constraint_settings.frame_b = node.rotation.to_matrix()
+                            constraint_settings.pivot_b = hit_info.point
+
+                            # by default use a point 2 point constraint
+                            if event.button == button.RIGHT:
+                                constraint_settings.constraint_type = (
+                                    physics.RigidConstraintType.Fixed
                                 )
-                                object_frame = ao.get_link_scene_node(
-                                    ao_link
-                                ).rotation.inverted()
-                                hit_object = ao.object_id
-                                break
-                    # done checking for AO
 
-                    if hit_object >= 0:
-                        node = self.default_agent.scene_node
-                        constraint_settings = physics.RigidConstraintSettings()
+                            grip_depth = (
+                                hit_info.point - render_camera.node.absolute_translation
+                            ).length()
 
-                        constraint_settings.object_id_a = hit_object
-                        constraint_settings.link_id_a = ao_link
-                        constraint_settings.pivot_a = object_pivot
-                        constraint_settings.frame_a = (
-                            object_frame.to_matrix() @ node.rotation.to_matrix()
-                        )
-                        constraint_settings.frame_b = node.rotation.to_matrix()
-                        constraint_settings.pivot_b = hit_info.point
-
-                        # by default use a point 2 point constraint
-                        if event.button == button.RIGHT:
-                            constraint_settings.constraint_type = (
-                                physics.RigidConstraintType.Fixed
+                            self.mouse_grabber = MouseGrabber(
+                                constraint_settings,
+                                grip_depth,
+                                self.sim,
+                            )
+                        else:
+                            logger.warn(
+                                "Oops, couldn't find the hit object. That's odd."
                             )
 
-                        grip_depth = (
-                            hit_info.point - render_camera.node.absolute_translation
-                        ).length()
+                    # LOOK RIGHT click to generate/remove a collision proxy
+                    elif (
+                        self.mouse_interaction == MouseMode.LOOK
+                        and event.button == button.RIGHT
+                        and ro
+                    ):
+                        # we hit a rigid object
+                        if "collision_stand-in" in ro.creation_attributes.handle:
+                            # remove an existing collision_stand-in object
+                            ro_mngr.remove_object_by_handle(ro.handle)
+                        else:
+                            # replace the object with a collision_object
+                            otm = self.sim.get_object_template_manager()
+                            object_template = otm.get_template_by_handle(
+                                ro.creation_attributes.handle
+                            )
+                            object_template.scale = (
+                                object_template.scale + np.ones(3) * 0.01
+                            )
+                            object_template.render_asset_handle = (
+                                object_template.collision_asset_handle
+                            )
+                            reg_id = otm.register_template(
+                                object_template,
+                                object_template.handle + "_collision_stand-in",
+                            )
+                            new_obj = ro_mngr.add_object_by_template_id(reg_id)
+                            new_obj.motion_type = (
+                                habitat_sim.physics.MotionType.KINEMATIC
+                            )
+                            new_obj.translation = ro.translation
+                            new_obj.rotation = ro.rotation
+                            self.sim.set_object_bb_draw(True, new_obj.object_id)
+                            print(new_obj.handle)
 
-                        self.mouse_grabber = MouseGrabber(
-                            constraint_settings,
-                            grip_depth,
-                            self.sim,
-                        )
-                    else:
-                        logger.warn("Oops, couldn't find the hit object. That's odd.")
-                # end if didn't hit the scene
+                # end hit object
             # end has raycast hit
         # end has physics enabled
 
