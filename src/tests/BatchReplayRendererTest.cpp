@@ -55,7 +55,7 @@ Mn::MutableImageView2D getRGBView(int width,
   Mn::Vector2i size(width, height);
   constexpr int pixelSize = 4;
 
-  buffer.resize(static_cast<size_type>(width * height * pixelSize));
+  buffer.resize(std::size_t(width * height * pixelSize));
 
   auto view = Mn::MutableImageView2D(Mn::PixelFormat::RGB8Unorm, size, buffer);
 
