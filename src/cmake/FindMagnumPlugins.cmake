@@ -48,6 +48,7 @@
 #  StbTrueTypeFont              - TrueType font using stb_truetype
 #  StbVorbisAudioImporter       - OGG audio importer using stb_vorbis
 #  StlImporter                  - STL importer
+#  UfbxImporter                 - FBX and OBJ importer using ufbx
 #  WebPImporter                 - WebP importer
 #
 # If Magnum is built with MAGNUM_BUILD_DEPRECATED enabled, these additional
@@ -140,6 +141,8 @@ foreach(_component ${MagnumPlugins_FIND_COMPONENTS})
         list(APPEND _MAGNUMPLUGINS_${_component}_MAGNUM_DEPENDENCIES MeshTools)
     elseif(_component STREQUAL StanfordSceneConverter)
         list(APPEND _MAGNUMPLUGINS_${_component}_MAGNUM_DEPENDENCIES MeshTools)
+    elseif(_component STREQUAL UfbxImporter)
+        list(APPEND _MAGNUMPLUGINS_${_component}_MAGNUM_DEPENDENCIES AnyImageImporter)
     elseif(_component STREQUAL TinyGltfImporter)
         # TODO remove when the deprecated plugin is gone
         list(APPEND _MAGNUMPLUGINS_${_component}_MAGNUM_DEPENDENCIES AnyImageImporter)
@@ -168,7 +171,7 @@ set(_MAGNUMPLUGINS_PLUGIN_COMPONENTS
     SpirvToolsShaderConverter StanfordImporter StanfordSceneConverter
     StbDxtImageConverter StbImageConverter StbImageImporter
     StbResizeImageConverter StbTrueTypeFont StbVorbisAudioImporter StlImporter
-    WebPImporter)
+    UfbxImporter WebPImporter)
 # Nothing is enabled by default right now
 set(_MAGNUMPLUGINS_IMPLICITLY_ENABLED_COMPONENTS )
 
@@ -477,6 +480,7 @@ foreach(_component ${MagnumPlugins_FIND_COMPONENTS})
         # StbTrueTypeFont has no dependencies
         # StbVorbisAudioImporter has no dependencies
         # StlImporter has no dependencies
+        # UfbxImporter has no dependencies
         # TinyGltfImporter has no dependencies
 
         # WebPImporter plugin dependencies
