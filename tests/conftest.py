@@ -19,6 +19,7 @@ _test_scene = osp.abspath(
     )
 )
 
+
 # Testing configurations
 @pytest.fixture(scope="function")
 def make_cfg_settings():

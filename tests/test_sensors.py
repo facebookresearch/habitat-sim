@@ -53,7 +53,6 @@ def _render_scene(sim, scene, sensor_type, gpu2gpu):
 
 
 def _render_and_load_gt(sim, scene, sensor_type, gpu2gpu):
-
     obs = _render_scene(sim, scene, sensor_type, gpu2gpu)
 
     # now that sensors are constructed, test some getter/setters

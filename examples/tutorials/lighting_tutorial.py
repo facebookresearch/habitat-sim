@@ -73,6 +73,7 @@ def make_configuration():
 
 # [/setup]
 
+
 # This is wrapped such that it can be added to a unit test
 def main(show_imgs=True, save_imgs=False):
     if save_imgs and not os.path.exists(output_path):
