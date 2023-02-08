@@ -33,6 +33,7 @@ default_sim_settings = {
 }
 # [/default_sim_settings]
 
+
 # build SimulatorConfiguration
 def make_cfg(settings: Dict[str, Any]):
     r"""Isolates the boilerplate code to create a habitat_sim.Configuration from a settings dictionary.

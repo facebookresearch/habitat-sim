@@ -33,7 +33,6 @@ def main():
     cfg = habitat_sim.Configuration(backend_cfg, [agent_config])
 
     with habitat_sim.Simulator(cfg) as sim:
-
         # create the acoustic configs
         acoustics_config = habitat_sim.sensor.RLRAudioPropagationConfiguration()
         acoustics_config.enableMaterials = True
