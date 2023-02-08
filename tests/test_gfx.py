@@ -24,13 +24,15 @@ import habitat_sim.utils.settings
     not habitat_sim.built_with_bullet,
     reason="Bullet physics used for validation.",
 )
-def test_unproject():
+@pytest.mark.parametrize("zfar", [500, 1000])
+def test_unproject(zfar):
     cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
 
     # configure some settings in case defaults change
     cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/apartment_1.glb"
     cfg_settings["enable_physics"] = True
     cfg_settings["depth_sensor"] = True
+    cfg_settings["zfar"] = zfar
     cfg_settings["width"] = 501
     cfg_settings["height"] = 501
     cfg_settings["sensor_height"] = 0
@@ -44,6 +46,7 @@ def test_unproject():
         sim.agents[0].scene_node.translation = mn.Vector3(0.5, 0, 0)
 
         # setup camera
+        far_plane = sim._sensors["depth_sensor"]._sensor_object.far_plane_dist
         render_camera = sim._sensors["color_sensor"]._sensor_object.render_camera
         depth_camera = sim._sensors["depth_sensor"]._sensor_object.render_camera
 
@@ -61,11 +64,6 @@ def test_unproject():
         assert np.allclose(
             center_ray_normalized.direction, np.array([0, 0, -1.0]), atol=0.02
         )
-        assert np.allclose(
-            center_ray.direction,
-            np.array([-0.00198859, -0.00198948, -0.996745]),
-            atol=0.02,
-        )
 
         # NOTE: viewport y==0 is at the top
         test_ray_2 = render_camera.unproject(
@@ -81,9 +79,6 @@ def test_unproject():
             test_ray_2_normalized.direction,
             np.array([0.569653, -0.581161, -0.581161]),
             atol=0.07,
-        )
-        assert np.allclose(
-            test_ray_2.direction, np.array([0.992766, -0.996745, -0.996745]), atol=0.07
         )
 
         # add a primitive sphere object to the world
@@ -120,8 +115,9 @@ def test_unproject():
                 random.randint(0, render_camera.viewport[0] - 1),
                 random.randint(0, render_camera.viewport[1] - 1),
             )
-            # NOTE: use un-normlized rays for this application
+            # NOTE: use un-normlized rays scaled to unit z distance for this application
             ray = render_camera.unproject(view_point, normalized=False)
+            ray.direction /= far_plane
             depth_obs: np.ndarray = sim.get_sensor_observations()["depth_sensor"]
             # NOTE: (height, width) for buffer access
             depth = depth_obs[view_point[1]][view_point[0]]

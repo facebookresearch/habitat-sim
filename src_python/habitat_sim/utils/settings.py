@@ -16,6 +16,7 @@ default_sim_settings = {
     "default_agent": 0,
     "sensor_height": 1.5,
     "hfov": 90,
+    "zfar": 1000.0,
     "color_sensor": True,
     "semantic_sensor": False,
     "depth_sensor": False,
@@ -80,6 +81,7 @@ def make_cfg(settings: Dict[str, Any]):
         color_sensor_spec = create_camera_spec(
             uuid="color_sensor",
             hfov=settings["hfov"],
+            far=settings["zfar"],
             sensor_type=habitat_sim.SensorType.COLOR,
             sensor_subtype=habitat_sim.SensorSubType.PINHOLE,
         )

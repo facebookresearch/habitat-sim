@@ -226,7 +226,8 @@ class RenderCamera : public MagnumCamera {
 
   /**
    * @brief Unproject a 2D viewport point to a 3D ray with origin at camera
-   * position. Ray direction is optionally normalized.
+   * position. Ray direction is optionally normalized. Non-normalized rays
+   * originate at the camera location and end at the camera far clipping plane.
    *
    * @param viewportPosition The 2D point on the viewport to unproject
    * ([0,width], [0,height]).

@@ -72,7 +72,7 @@ void initGfxBindings(py::module& m) {
            "height"_a, "znear"_a, "zfar"_a, "scale"_a)
       .def(
           "unproject", &RenderCamera::unproject,
-          R"(Unproject a 2D viewport point to a 3D ray with its origin at the camera position. Ray direction is optionally normalized.)",
+          R"(Unproject a 2D viewport point to a 3D ray with its origin at the camera position. Ray direction is optionally normalized. Non-normalized rays originate at the camera location and end at the camera far clipping plane.)",
           "viewport_point"_a, "normalized"_a = true)
       .def_property_readonly("node", nodeGetter<RenderCamera>,
                              "Node this object is attached to")
