@@ -208,6 +208,7 @@ def simulate(sim, dt=1.0, get_frames=True):
 
 # @markdown This cell provides utility functions to build and manage IPyWidget interactive components.
 
+
 # Event handler for dropdowns displaying file-based object handles
 def on_scene_ddl_change(ddl_values):
     global selected_scene

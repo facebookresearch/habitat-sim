@@ -25,6 +25,7 @@ test_requires_torch_cuda = pytest.mark.skipif(
     reason="Torch not installed with CUDA support so skipping test",
 )
 
+
 # Based on the env var, reloading the profiling_utils module should set
 # profiling_utils._enable_profiling to True or False.
 @test_requires_torch_cuda

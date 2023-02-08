@@ -166,7 +166,6 @@ def make_video_frame(
     overlay_settings=None,
     observation_to_image=observation_to_image,
 ):
-
     image_frame = observation_to_image(ob[primary_obs], primary_obs_type)
     if image_frame is None:
         raise RuntimeError(

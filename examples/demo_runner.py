@@ -356,7 +356,6 @@ class DemoRunner:
 
         best_perf = None
         for _ in range(3):
-
             if _barrier is not None:
                 _barrier.wait()
                 if _idx == 0:
