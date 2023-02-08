@@ -477,7 +477,6 @@ class FairmotionInterface:
             data = self.user_metadata
 
             for k in self.key_frames:
-
                 self.key_frame_models.append(
                     self.art_obj_mgr.add_articulated_object_from_urdf(
                         filepath=data["urdf_path"], fixed_base=True
@@ -830,7 +829,6 @@ class FairmotionInterface:
             finished_processing = False
 
             while Timer.check() < (THRESHOLD / self.draw_fps):
-
                 # get time that motion is at
                 time_ = time_ + (1.0 / self.draw_fps)
 
@@ -1063,7 +1061,6 @@ class FairmotionInterface:
         j: int = 0
 
         while i < len(path_points):
-
             progress: float = (mn.Vector3(path_points[i] - path_points[j])).length()
             if t >= progress + covered:
                 covered += progress
@@ -1115,7 +1112,6 @@ class FairmotionInterface:
 
         found_path = False
         while not found_path:
-
             while start_point is None:
                 start_point = pf.get_random_navigable_point()
                 start_point = pf.snap_point(start_point)
