@@ -118,7 +118,9 @@ def test_unproject(zfar):
             # NOTE: use un-normlized rays scaled to unit z distance for this application
             ray = render_camera.unproject(view_point, normalized=False)
             ray.direction /= far_plane
-            depth_obs: np.ndarray = sim.get_sensor_observations()["depth_sensor"]
+            depth_obs: np.ndarray = np.ndarray(
+                sim.get_sensor_observations()["depth_sensor"]
+            )
             # NOTE: (height, width) for buffer access
             depth = depth_obs[view_point[1]][view_point[0]]
 
