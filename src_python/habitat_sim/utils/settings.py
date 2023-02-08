@@ -91,6 +91,7 @@ def make_cfg(settings: Dict[str, Any]):
         depth_sensor_spec = create_camera_spec(
             uuid="depth_sensor",
             hfov=settings["hfov"],
+            far=settings["zfar"],
             sensor_type=habitat_sim.SensorType.DEPTH,
             channels=1,
             sensor_subtype=habitat_sim.SensorSubType.PINHOLE,
@@ -101,6 +102,7 @@ def make_cfg(settings: Dict[str, Any]):
         semantic_sensor_spec = create_camera_spec(
             uuid="semantic_sensor",
             hfov=settings["hfov"],
+            far=settings["zfar"],
             sensor_type=habitat_sim.SensorType.SEMANTIC,
             channels=1,
             sensor_subtype=habitat_sim.SensorSubType.PINHOLE,
@@ -110,6 +112,7 @@ def make_cfg(settings: Dict[str, Any]):
     if settings["ortho_rgba_sensor"]:
         ortho_rgba_sensor_spec = create_camera_spec(
             uuid="ortho_rgba_sensor",
+            far=settings["zfar"],
             sensor_type=habitat_sim.SensorType.COLOR,
             sensor_subtype=habitat_sim.SensorSubType.ORTHOGRAPHIC,
         )
@@ -118,6 +121,7 @@ def make_cfg(settings: Dict[str, Any]):
     if settings["ortho_depth_sensor"]:
         ortho_depth_sensor_spec = create_camera_spec(
             uuid="ortho_depth_sensor",
+            far=settings["zfar"],
             sensor_type=habitat_sim.SensorType.DEPTH,
             channels=1,
             sensor_subtype=habitat_sim.SensorSubType.ORTHOGRAPHIC,
@@ -127,6 +131,7 @@ def make_cfg(settings: Dict[str, Any]):
     if settings["ortho_semantic_sensor"]:
         ortho_semantic_sensor_spec = create_camera_spec(
             uuid="ortho_semantic_sensor",
+            far=settings["zfar"],
             sensor_type=habitat_sim.SensorType.SEMANTIC,
             channels=1,
             sensor_subtype=habitat_sim.SensorSubType.ORTHOGRAPHIC,

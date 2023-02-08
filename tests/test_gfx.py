@@ -47,6 +47,7 @@ def test_unproject(zfar):
 
         # setup camera
         far_plane = sim._sensors["depth_sensor"]._sensor_object.far_plane_dist
+        assert zfar == far_plane
         render_camera = sim._sensors["color_sensor"]._sensor_object.render_camera
         depth_camera = sim._sensors["depth_sensor"]._sensor_object.render_camera
 
@@ -110,7 +111,6 @@ def test_unproject(zfar):
             depth_camera.node.rotation = render_camera.node.rotation
 
             # do the unprojection from depth image
-            print(render_camera.viewport)
             view_point = mn.Vector2i(
                 random.randint(0, render_camera.viewport[0] - 1),
                 random.randint(0, render_camera.viewport[1] - 1),
@@ -118,9 +118,7 @@ def test_unproject(zfar):
             # NOTE: use un-normlized rays scaled to unit z distance for this application
             ray = render_camera.unproject(view_point, normalized=False)
             ray.direction /= far_plane
-            depth_obs: np.ndarray = np.ndarray(
-                sim.get_sensor_observations()["depth_sensor"]
-            )
+            depth_obs: np.ndarray = sim.get_sensor_observations()["depth_sensor"]
             # NOTE: (height, width) for buffer access
             depth = depth_obs[view_point[1]][view_point[0]]
 
