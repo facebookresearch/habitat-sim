@@ -212,8 +212,8 @@ esp::geo::Ray RenderCamera::unproject(const Mn::Vector2i& viewportPosition) {
   ray.direction =
       ((object().absoluteTransformationMatrix() * projectionMatrix().inverted())
            .transformPoint(normalizedPos) -
-       ray.origin)
-          .normalized();
+       ray.origin) /
+      1000.0;
   return ray;
 }
 
