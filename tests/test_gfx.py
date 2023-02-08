@@ -49,11 +49,17 @@ def test_unproject():
 
         # test unproject with known values
         center_ray = render_camera.unproject(
-            mn.Vector2i(250, 250)
+            mn.Vector2i(250, 250), normalized=False
         )  # middle of the viewport
+        center_ray_normalized = render_camera.unproject(mn.Vector2i(250, 250))
+        assert np.allclose(
+            center_ray_normalized.direction,
+            center_ray.direction.normalized(),
+            atol=0.07,
+        )
         assert np.allclose(center_ray.origin, np.array([0.5, 0, 0]), atol=0.07)
         assert np.allclose(
-            center_ray.direction.normalized(), np.array([0, 0, -1.0]), atol=0.02
+            center_ray_normalized.direction, np.array([0, 0, -1.0]), atol=0.02
         )
         assert np.allclose(
             center_ray.direction,
@@ -63,10 +69,16 @@ def test_unproject():
 
         # NOTE: viewport y==0 is at the top
         test_ray_2 = render_camera.unproject(
-            mn.Vector2i(500, 500)
+            mn.Vector2i(500, 500), normalized=False
         )  # bottom right of the viewport
+        test_ray_2_normalized = render_camera.unproject(mn.Vector2i(500, 500))
         assert np.allclose(
+            test_ray_2_normalized.direction,
             test_ray_2.direction.normalized(),
+            atol=0.07,
+        )
+        assert np.allclose(
+            test_ray_2_normalized.direction,
             np.array([0.569653, -0.581161, -0.581161]),
             atol=0.07,
         )
@@ -108,7 +120,8 @@ def test_unproject():
                 random.randint(0, render_camera.viewport[0] - 1),
                 random.randint(0, render_camera.viewport[1] - 1),
             )
-            ray = render_camera.unproject(view_point)
+            # NOTE: use un-normlized rays for this application
+            ray = render_camera.unproject(view_point, normalized=False)
             depth_obs: np.ndarray = sim.get_sensor_observations()["depth_sensor"]
             # NOTE: (height, width) for buffer access
             depth = depth_obs[view_point[1]][view_point[0]]

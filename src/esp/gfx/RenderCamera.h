@@ -223,16 +223,19 @@ class RenderCamera : public MagnumCamera {
    * following rendering pass, otherwise false
    */
   bool useDrawableIds() const { return useDrawableIds_; }
+
   /**
    * @brief Unproject a 2D viewport point to a 3D ray with origin at camera
-   * position.
+   * position. Ray direction is optionally normalized.
    *
    * @param viewportPosition The 2D point on the viewport to unproject
    * ([0,width], [0,height]).
+   * @param normalized If true(default), normalize ray direction.
    * @return a @ref esp::geo::Ray with unit length direction or zero direction
    * if failed.
    */
-  esp::geo::Ray unproject(const Mn::Vector2i& viewportPosition);
+  esp::geo::Ray unproject(const Mn::Vector2i& viewportPosition,
+                          bool normalized = true);
 
   /**
    * @brief Query the cached number of Drawables visible after frustum culling

@@ -197,7 +197,8 @@ size_t RenderCamera::filterTransforms(DrawableTransforms& drawableTransforms,
   return drawableTransforms.size();
 }
 
-esp::geo::Ray RenderCamera::unproject(const Mn::Vector2i& viewportPosition) {
+esp::geo::Ray RenderCamera::unproject(const Mn::Vector2i& viewportPosition,
+                                      bool normalized) {
   esp::geo::Ray ray;
   ray.origin = object().absoluteTranslation();
 
@@ -214,6 +215,9 @@ esp::geo::Ray RenderCamera::unproject(const Mn::Vector2i& viewportPosition) {
            .transformPoint(normalizedPos) -
        ray.origin) /
       1000.0;
+  if (normalized) {
+    ray.direction = ray.direction.normalized();
+  }
   return ray;
 }
 
