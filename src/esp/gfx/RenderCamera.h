@@ -147,6 +147,7 @@ class RenderCamera : public MagnumCamera {
                                     Mn::Matrix4& projMat) {
     MagnumCamera::setProjectionMatrix(projMat).setViewport(
         Magnum::Vector2i(width, height));
+    invertedProjectionMatrix = projectionMatrix().inverted();
     return *this;
   }
 
@@ -248,6 +249,9 @@ class RenderCamera : public MagnumCamera {
   }
 
  protected:
+  //! cached inverted projection matrix to save compute on repeated calls (e.g.
+  //! to unproject) without moving the camera
+  Mn::Matrix4 invertedProjectionMatrix;
   size_t previousNumVisibleDrawables_ = 0;
   bool useDrawableIds_ = false;
   ESP_SMART_POINTERS(RenderCamera)

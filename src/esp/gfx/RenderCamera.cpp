@@ -216,7 +216,7 @@ esp::geo::Ray RenderCamera::unproject(const Mn::Vector2i& viewportPosition,
   float farDistance = zFar[3] / zFar.xyz().length();
 
   ray.direction =
-      ((object().absoluteTransformationMatrix() * projectionMatrix().inverted())
+      ((object().absoluteTransformationMatrix() * invertedProjectionMatrix)
            .transformPoint(normalizedPos) -
        ray.origin) /
       farDistance;
