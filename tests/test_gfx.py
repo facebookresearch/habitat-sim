@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import random
+import typing
 from os import path as osp
 
 import magnum as mn
@@ -117,7 +118,9 @@ def test_unproject(zfar):
             )
             # NOTE: use un-normlized rays scaled to unit z distance for this application
             ray = render_camera.unproject(view_point, normalized=False)
-            depth_obs: np.ndarray = sim.get_sensor_observations()["depth_sensor"]
+            depth_obs = typing.cast(
+                np.ndarray, sim.get_sensor_observations()["depth_sensor"]
+            )
             # NOTE: (height, width) for buffer access
             depth = depth_obs[view_point[1]][view_point[0]]
 
