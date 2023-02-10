@@ -408,7 +408,6 @@ class CMakeBuild(build_ext):
                 # Strip +D
                 k = k[2:]
                 for l in cache_contents:
-
                     match = cache_parser.match(l)
                     if match is None:
                         continue
