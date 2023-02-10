@@ -1,5 +1,5 @@
 {
-  "scene_dataset_config_file": "fphab-v0.2.0/hab-fp.scene_dataset_config.json",
+  "scene_dataset_config_file": "fphab-v0.2.1/fphab.scene_dataset_config.json",
   "color_sensor": true,
   "semantic_sensor": true,
   "depth_sensor": true,
