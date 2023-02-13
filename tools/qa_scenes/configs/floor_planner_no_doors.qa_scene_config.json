@@ -8,7 +8,7 @@
   "enable_physics": true,
   "start_scene_index": 0,
   "end_scene_index": -1,
-  "output_file_prefix": "fphab_v0.2",
+  "output_file_prefix": "fphab_v0.2.1",
   "generate_navmesh": true,
   "render_sensor_obs": true,
   "run_collision_test": true,

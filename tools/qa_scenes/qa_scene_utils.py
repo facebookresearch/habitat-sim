@@ -5,7 +5,6 @@
 import csv
 import datetime
 import os
-import time
 from enum import Enum
 from typing import List
 
@@ -82,49 +81,6 @@ class MemoryUnitConverter:
 
     UNIT_STRS = ["bytes", "KB", "MB", "GB"]
     UNIT_CONVERSIONS = [1, 1 << 10, 1 << 20, 1 << 30]
-
-
-class Timer:
-    """
-    Timer class used to keep track of time between buffer swaps
-    and guide the display frame rate.
-    """
-
-    start_time = 0.0
-    prev_frame_time = 0.0
-    prev_frame_duration = 0.0
-    running = False
-
-    @staticmethod
-    def start() -> None:
-        """
-        Starts timer and resets previous frame time to the start time
-        """
-        Timer.running = True
-        Timer.start_time = time.time()
-        Timer.prev_frame_time = Timer.start_time
-        Timer.prev_frame_duration = 0.0
-
-    @staticmethod
-    def stop() -> None:
-        """
-        Stops timer and erases any previous time data, reseting the timer
-        """
-        Timer.running = False
-        Timer.start_time = 0.0
-        Timer.prev_frame_time = 0.0
-        Timer.prev_frame_duration = 0.0
-
-    @staticmethod
-    def next_frame() -> None:
-        """
-        Records previous frame duration and updates the previous frame timestamp
-        to the current time. If the timer is not currently running, perform nothing.
-        """
-        if not Timer.running:
-            return
-        Timer.prev_frame_duration = time.time() - Timer.prev_frame_time
-        Timer.prev_frame_time = time.time()
 
 
 def print_if_logging(silent: bool = False, message: str = "") -> None:

@@ -8,7 +8,7 @@ import math
 import os
 import sys
 import time
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
@@ -17,13 +17,10 @@ import git
 import magnum as mn
 import numpy as np
 from colorama import init
-from magnum.platform.glfw import Application
-from matplotlib import pyplot as plt
 from PIL import Image
-from qa_scene_settings import default_sim_settings, make_cfg
+from qa_scene_settings import default_sim_settings
 from qa_scene_utils import (  # print_dataset_info,
     ANSICodes,
-    Timer,
     create_unique_filename,
     print_if_logging,
     section_divider_str,
@@ -36,7 +33,7 @@ from habitat_sim.agent import Agent, AgentState
 # from habitat_sim.simulator import ObservationDict
 from habitat_sim.utils import common as utils
 from habitat_sim.utils import viz_utils as vut
-from habitat_sim.utils.common import d3_40_colors_rgb, quat_from_angle_axis
+from habitat_sim.utils.settings import make_cfg
 
 # clean up types with TypeVars
 NavmeshMetrics = Dict[str, Union[int, float]]
@@ -59,470 +56,6 @@ if not os.path.exists(default_scene_dir):
     os.mkdir(default_scene_dir)
 
 MAX_TEST_TIME = sys.float_info.max
-
-# NOTE: change this to config file name to test
-qa_config_filename = "floor_planner_no_doors"
-# qa_config_filename = "simple_room"
-# qa_config_filename = "mp3d_example"
-# qa_config_filename = "replica_cad"
-
-config_directory = "./tools/qa_scenes/configs/"
-qa_config_filepath = os.path.join(
-    config_directory, qa_config_filename + ".qa_scene_config.json"
-)
-
-
-class QASceneProcessingViewer(Application):
-    """
-    For testing, or just visualization
-    """
-
-    def __init__(self, sim_settings: Dict[str, Any]) -> None:
-        # Construct magnum.platform.glfw.Application
-        configuration = self.Configuration()
-        configuration.title = "QA Scene Processing Viewer"
-        Application.__init__(self, configuration)
-
-        # set proper viewport size
-        self.sim_settings: Dict[str, Any] = sim_settings
-        self.viewport_size: mn.Vector2i = mn.gl.default_framebuffer.viewport.size()
-        self.sim_settings["width"] = self.viewport_size[0]
-        self.sim_settings["height"] = self.viewport_size[1]
-
-        # x_range: mn.Vector2i = mn.Vector2i(0, sim_settings["width"])
-        # y_range: mn.Vector2i = mn.Vector2i(0, sim_settings["height"])
-        # viewport_range: mn.Range2Di = mn.Range2Di(x_range, y_range)
-        # self.viewport_size: mn.Vector2i = viewport_range.size()
-        # self.framebuffer = mn.gl.Framebuffer(viewport_range)
-
-        # variables that track sim time and render time
-        self.total_frame_count: int = 0  # TODO debugging, remove
-
-        self.fps: float = sim_settings["fps"]
-        self.average_fps: float = self.fps
-        self.prev_frame_duration: float = 0.0
-        self.frame_duration_sum: float = 0.0
-
-        self.physics_step_duration: float = 1.0 / self.fps
-        self.prev_sim_duration: float = 0.0
-        self.sim_duration_sum: float = 0.0
-        self.avg_sim_duration: float = 0.0
-        self.sim_steps_tracked: int = 0
-
-        self.render_frames_to_track: int = 30
-        self.prev_render_duration: float = 0.0
-        self.render_duration_sum: float = 0.0
-        self.avg_render_duration: float = 0.0
-        self.render_frames_tracked: int = 0
-        self.time_since_last_simulation = 0.0
-
-        # toggle physics simulation on/off
-        self.simulating = True
-
-        # toggle a single simulation step at the next opportunity if not
-        # simulating continuously.
-        self.simulate_single_step = False
-
-        # set up our movement map
-        key = Application.KeyEvent.Key
-        self.pressed = {
-            key.UP: False,
-            key.DOWN: False,
-            key.LEFT: False,
-            key.RIGHT: False,
-            key.A: False,
-            key.D: False,
-            key.S: False,
-            key.W: False,
-            key.Q: False,
-            key.E: False,
-        }
-
-        # set up our movement key bindings map
-        key = Application.KeyEvent.Key
-        self.key_to_action = {
-            key.UP: "look_up",
-            key.DOWN: "look_down",
-            key.LEFT: "turn_left",
-            key.RIGHT: "turn_right",
-            key.A: "move_left",
-            key.D: "move_right",
-            key.S: "move_backward",
-            key.W: "move_forward",
-            key.Q: "move_down",
-            key.E: "move_up",
-        }
-
-        # Configure and construct simulator
-        self.cfg: Optional[habitat_sim.Configuration] = None
-        self.sim: Optional[habitat_sim.Simulator] = None
-        self.reconfigure_sim(self.sim_settings)
-
-        # setup process to iterate an object through positions in a 3D grid and
-        # check its collisions with the other objects in the scene
-        self.running_collision_test = False
-        # TODO: remove
-        self.frame_count = 0
-
-    def reconfigure_sim(
-        self,
-        sim_settings: Dict[str, Any],
-    ) -> None:
-        self.sim_settings = sim_settings
-        self.sim_settings["color_sensor"] = True
-        self.sim_settings["depth_sensor"] = False
-        self.sim_settings["semantic_sensor"] = False
-
-        self.cfg = make_cfg_mm(self.sim_settings)
-        self.agent_id: int = self.sim_settings["default_agent"]
-        self.cfg.agents[self.agent_id] = self.default_agent_config()
-        self.mm = self.cfg.metadata_mediator
-
-        if self.sim_settings["stage_requires_lighting"]:
-            print("Setting synthetic lighting override for stage.")
-            self.cfg.sim_cfg.override_scene_light_defaults = True
-            self.cfg.sim_cfg.scene_light_setup = habitat_sim.gfx.DEFAULT_LIGHTING_KEY
-
-        if self.sim is None:
-            self.sim = habitat_sim.Simulator(self.cfg)
-        else:
-            if self.sim.config.sim_cfg.scene_id == self.cfg.sim_cfg.scene_id:
-                # we need to force a reset, so change the internal config scene name
-                self.sim.config.sim_cfg.scene_id = "NONE"
-            self.sim.reconfigure(self.cfg)
-
-        # post reconfigure
-        self.active_scene_graph = self.sim.get_active_scene_graph()
-
-        # get default agent and its scene node
-        self.default_agent = self.sim.get_agent(self.agent_id)
-        # self.agent_scene_node = self.default_agent.scene_node
-
-        # get agent position from config file
-        agent_pos = mn.Vector3(self.sim_settings["agent_pos"])
-
-        # get agent rotation from config file (angle, [axis])
-        r = self.sim_settings["agent_rot"]
-        agent_rot = quat_from_angle_axis(r[0], np.array(r[1:4]))
-
-        # set agent transform
-        self.default_agent.set_state(AgentState(agent_pos, agent_rot))
-
-        # # get the sensor.CameraSensor object
-        # self.camera_sensor = self.agent_scene_node.node_sensor_suite.get("color_sensor")
-
-        # # place camera looking down from above to see whole scene
-        # self.place_scene_topdown_camera()
-
-        # set sim_settings scene name as actual loaded scene
-        self.sim_settings["scene"] = self.sim.curr_scene_name
-
-        Timer.start()
-        self.step = -1
-
-    def default_agent_config(self) -> habitat_sim.agent.AgentConfiguration:
-        """
-        Set up our own agent and agent controls
-        """
-        make_action_spec = habitat_sim.agent.ActionSpec
-        make_actuation_spec = habitat_sim.agent.ActuationSpec
-        MOVE, LOOK = 0.07, 1.5
-
-        # all of our possible actions' names
-        action_list = [
-            "move_left",
-            "turn_left",
-            "move_right",
-            "turn_right",
-            "move_backward",
-            "look_up",
-            "move_forward",
-            "look_down",
-            "move_down",
-            "move_up",
-        ]
-
-        action_space: Dict[str, habitat_sim.agent.ActionSpec] = {}
-
-        # build our action space map
-        for action in action_list:
-            actuation_spec_amt = MOVE if "move" in action else LOOK
-            action_spec = make_action_spec(
-                action, make_actuation_spec(actuation_spec_amt)
-            )
-            action_space[action] = action_spec
-
-        sensor_spec: List[habitat_sim.sensor.SensorSpec] = self.cfg.agents[
-            self.agent_id
-        ].sensor_specifications
-
-        agent_config = habitat_sim.agent.AgentConfiguration(
-            height=1.5,
-            radius=0.1,
-            sensor_specifications=sensor_spec,
-            action_space=action_space,
-            body_type="cylinder",
-        )
-        return agent_config
-
-    def move_and_look(self, repetitions: int) -> None:
-        """
-        This method is called continuously with `self.draw_event` to monitor
-        any changes in the movement keys map `Dict[KeyEvent.key, Bool]`.
-        When a key in the map is set to `True` the corresponding action is taken.
-        """
-        # avoids unecessary updates to grabber's object position
-        if repetitions == 0:
-            return
-
-        key = Application.KeyEvent.Key
-        agent = self.sim.agents[self.agent_id]
-        press: Dict[key.key, bool] = self.pressed
-        act: Dict[key.key, str] = self.key_to_action
-
-        action_queue: List[str] = [act[k] for k, v in press.items() if v]
-
-        for _ in range(int(repetitions)):
-            [agent.act(x) for x in action_queue]
-
-    def draw_event(
-        self,
-        simulation_call: Optional[Callable] = None,
-        global_call: Optional[Callable] = None,
-        active_agent_id_and_sensor_name: Tuple[int, str] = (0, "color_sensor"),
-    ) -> None:
-        """
-        Calls continuously to re-render frames and swap the two frame buffers
-        at a fixed rate.
-        """
-        agent_acts_per_sec = self.fps
-
-        # self.framebuffer.clear(
-        mn.gl.default_framebuffer.clear(
-            mn.gl.FramebufferClear.COLOR | mn.gl.FramebufferClear.DEPTH
-        )
-
-        # Agent actions should occur at a fixed rate per second
-        self.time_since_last_simulation += Timer.prev_frame_duration
-        num_agent_actions: int = self.time_since_last_simulation * agent_acts_per_sec
-        self.move_and_look(int(num_agent_actions))
-
-        # run collision test
-        if self.running_collision_test and self.frame_count % 30 == 0:
-            self.run_discrete_collision_test()
-
-        self.frame_count += 1
-
-        # Occasionally a frame will pass quicker than 1 / fps seconds
-        if self.time_since_last_simulation >= self.physics_step_duration:
-            if self.simulating or self.simulate_single_step:
-                # step physics at a fixed rate
-                # In the interest of frame rate, only a single step is taken,
-                # even if time_since_last_simulation is quite large
-                if not self.running_collision_test:
-                    self.sim.step_world(self.physics_step_duration)
-                self.simulate_single_step = False
-                if simulation_call is not None:
-                    simulation_call()
-            if global_call is not None:
-                global_call()
-
-            # reset time_since_last_simulation, accounting for potential overflow
-            self.time_since_last_simulation = math.fmod(
-                self.time_since_last_simulation, self.physics_step_duration
-            )
-
-        # Get agent id, agent, and sensor uuid
-        keys = active_agent_id_and_sensor_name
-        agent_id = keys[0]
-        agent = self.sim.get_agent(agent_id)
-        self.sensor_uuid = keys[1]
-
-        # observations: Dict[str, Any] = self.sim.get_sensor_observations(agent_id)
-        self.sim.get_sensor_observations(agent_id)
-
-        # get the sensor.CameraSensor object
-        self.camera_sensor = agent.scene_node.node_sensor_suite.get(self.sensor_uuid)
-
-        # TODO write a good comment here, not sure what "blit" is
-        self.camera_sensor.render_target.blit_rgba_to_default()
-        mn.gl.default_framebuffer.bind()
-        # self.framebuffer.bind()
-
-        self.swap_buffers()
-        Timer.next_frame()
-        self.redraw()
-
-    def key_press_event(self, event: Application.KeyEvent) -> None:
-        """
-        Handles `Application.KeyEvent` on a key press by performing the corresponding functions.
-        """
-        key = event.key
-        pressed = Application.KeyEvent.Key
-        mod = Application.InputEvent.Modifier
-
-        shift_pressed = bool(event.modifiers & mod.SHIFT)
-        alt_pressed = bool(event.modifiers & mod.ALT)
-        # warning: ctrl doesn't always pass through with other key-presses
-
-        if key == pressed.ESC:
-            event.accepted = True
-            self.exit_event(Application.ExitEvent)
-            return
-
-        # TODO make sure this works
-        elif key == pressed.TAB:
-            # NOTE: (+ALT) - reconfigure without cycling scenes
-            if not alt_pressed:
-                # cycle the active scene from the set available in MetadataMediator
-                inc = -1 if shift_pressed else 1
-                scene_ids = self.mm.get_scene_handles()
-                cur_scene_index = 0
-                if self.sim_settings["scene"] not in scene_ids:
-                    matching_scenes = [
-                        (ix, x)
-                        for ix, x in enumerate(scene_ids)
-                        if self.sim_settings["scene"] in x
-                    ]
-                    if not matching_scenes:
-                        print(
-                            f"The current scene, '{self.sim_settings['scene']}', is not in the list, starting cycle at index 0."
-                        )
-                    else:
-                        cur_scene_index = matching_scenes[0][0]
-                else:
-                    cur_scene_index = scene_ids.index(self.sim_settings["scene"])
-
-                next_scene_index = min(
-                    max(cur_scene_index + inc, 0), len(scene_ids) - 1
-                )
-                self.sim_settings["scene"] = scene_ids[next_scene_index]
-            self.reconfigure_sim(self.sim_settings)
-            print(f"Reconfigured simulator for scene: {self.sim_settings['scene']}")
-
-        elif key == pressed.C and not self.running_collision_test:
-            self.running_collision_test = True
-            self.setup_collision_test()
-            self.contact_debug_draw = True
-
-        # update map of moving/looking keys which are currently pressed
-        if key in self.pressed:
-            self.pressed[key] = True
-        event.accepted = True
-        self.redraw()
-
-    def key_release_event(self, event: Application.KeyEvent) -> None:
-        """
-        Handles `Application.KeyEvent` on a key release. When a key is released, if it
-        is part of the movement keys map `Dict[KeyEvent.key, Bool]`, then the key will
-        be set to False for the next `self.move_and_look()` to update the current actions.
-        """
-        key = event.key
-
-        # update map of moving/looking keys which are currently pressed
-        if key in self.pressed:
-            self.pressed[key] = False
-        event.accepted = True
-        self.redraw()
-
-    def exit_event(self, event: Application.ExitEvent) -> None:
-        """
-        Overrides exit_event to properly close the Simulator before exiting the
-        application.
-        """
-        self.sim.close(destroy=True)
-        event.accepted = True
-        exit(0)
-
-    def setup_collision_test(self):
-        self.cell_size = 1.0
-        scale_factor = 0.5 * self.cell_size
-
-        obj_templates_mgr = self.sim.get_object_template_manager()
-        rigid_obj_mgr = self.sim.get_rigid_object_manager()
-
-        self.scene_bb = self.sim.get_active_scene_graph().get_root_node().cumulative_bb
-
-        cube_handle = obj_templates_mgr.get_template_handles("cubeSolid")[0]
-        cube_template_cpy = obj_templates_mgr.get_template_by_handle(cube_handle)
-        cube_template_cpy.scale = np.ones(3) * scale_factor
-
-        collision_obj_handle = "my_scaled_cube"
-        obj_templates_mgr.register_template(cube_template_cpy, collision_obj_handle)
-        self.scaled_cube = rigid_obj_mgr.add_object_by_template_handle(
-            collision_obj_handle
-        )
-
-        self.grid_pos = self.scene_bb.min
-
-        self.scaled_cube.motion_type = habitat_sim.physics.MotionType.DYNAMIC
-
-    def run_discrete_collision_test(self):
-        self.scaled_cube.translation = self.grid_pos
-        self.sim.perform_discrete_collision_detection()
-
-        # update z coordinate
-        self.grid_pos.z += self.cell_size
-
-        # if z coordinate exceeds max
-        if self.grid_pos.z >= self.scene_bb.max.z:
-            # reset z coordinate and update y coordinate
-            self.grid_pos.z = self.scene_bb.min.z
-            self.grid_pos.y += self.cell_size
-
-            # if y coordinate exceeds max
-            if self.grid_pos.y >= self.scene_bb.max.y:
-                # reset y coordinate and update x coordinate
-                self.grid_pos.y = self.scene_bb.min.y
-                self.grid_pos.x += self.cell_size
-
-                # if x coordinate exceeds max
-                if self.grid_pos.x >= self.scene_bb.max.x:
-                    # we are done running collision test
-                    self.running_collision_test = False
-                    self.sim.get_rigid_object_manager().remove_object_by_handle(
-                        self.scaled_cube.handle
-                    )
-
-
-# Change to do something like this maybe: https://stackoverflow.com/a/41432704
-def display_sample(
-    rgb_obs: np.array,
-    semantic_obs: Optional[np.array] = None,
-    depth_obs: Optional[np.array] = None,
-    output_file=None,
-):
-    print_if_logging(silent, f"output file = {output_file}")
-    rgb_img = Image.fromarray(rgb_obs, mode="RGBA")
-
-    arr = [rgb_img]
-    titles = ["rgb"]
-    if semantic_obs is not None:
-        semantic_img = Image.new("P", (semantic_obs.shape[1], semantic_obs.shape[0]))
-        semantic_img.putpalette(d3_40_colors_rgb.flatten())
-        semantic_img.putdata((semantic_obs.flatten() % 40).astype(np.uint8))
-        semantic_img = semantic_img.convert("RGBA")
-        arr.append(semantic_img)
-        titles.append("semantic")
-
-    if depth_obs is not None:
-        depth_img = Image.fromarray((depth_obs / 10 * 255).astype(np.uint8), mode="L")
-        arr.append(depth_img)
-        titles.append("depth")
-
-    plt.figure(figsize=(12, 8))
-    for i, data in enumerate(arr):
-        ax = plt.subplot(1, 3, i + 1)
-        ax.axis("off")
-        ax.set_title(titles[i])
-        plt.imshow(data)
-
-    if output_file is not None:
-        print_if_logging(silent, "saving")
-        plt.savefig(fname=output_file)
-    # else:
-    #    plt.show(block=False)
-    ...
 
 
 def pil_save_obs(
@@ -691,7 +224,7 @@ def render_sensor_observations(
 
     # init agent
     agent = sim.initialize_agent(sim_settings["default_agent"])
-    agent_state = habitat_sim.AgentState()
+    agent_state = AgentState()
 
     # need sensor observation for each cardinal direction and from above
     cardinal_directions: int = 4
@@ -1422,16 +955,17 @@ if __name__ == "__main__":
         "--config_file_path",
         dest="config_file_path",
         type=str,
-        help=f'config file to load (default: "{qa_config_filepath}")',
+        help="config file to load (default replicaCAD)",
     )
-    parser.set_defaults(config_file_path=os.path.join(dir_path, qa_config_filepath))
     args, _ = parser.parse_known_args()
 
     # Populate sim_settings with data from qa_scene_config.json file
     sim_settings: Dict[str, Any] = default_sim_settings.copy()
-    with open(os.path.join(dir_path, args.config_file_path)) as config_json:
-        parse_config_json_file(sim_settings, json.load(config_json))
+    if args.config_file_path:
+        with open(os.path.join(dir_path, args.config_file_path)) as config_json:
+            parse_config_json_file(sim_settings, json.load(config_json))
 
+    # dataset paths in config are relative to data folder
     sim_settings["scene_dataset_config_file"] = os.path.join(
         data_path, sim_settings["scene_dataset_config_file"]
     )
@@ -1450,7 +984,9 @@ if __name__ == "__main__":
 
     if sim_settings["run_viewer"]:
         # create viewer app
-        QASceneProcessingViewer(sim_settings).exec()
+        # QASceneProcessingViewer(sim_settings).exec()
+        pass
+        # TODO: add a viewer module extension
     else:
         # make simulator configuration and process all scenes without viewing
         # them in app
