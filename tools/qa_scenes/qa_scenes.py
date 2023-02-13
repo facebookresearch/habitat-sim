@@ -78,7 +78,6 @@ class QASceneProcessingViewer(Application):
     """
 
     def __init__(self, sim_settings: Dict[str, Any]) -> None:
-
         # Construct magnum.platform.glfw.Application
         configuration = self.Configuration()
         configuration.title = "QA Scene Processing Viewer"
@@ -169,7 +168,6 @@ class QASceneProcessingViewer(Application):
         self,
         sim_settings: Dict[str, Any],
     ) -> None:
-
         self.sim_settings = sim_settings
         self.sim_settings["color_sensor"] = True
         self.sim_settings["depth_sensor"] = False
@@ -221,18 +219,6 @@ class QASceneProcessingViewer(Application):
 
         Timer.start()
         self.step = -1
-
-    def place_scene_topdown_camera(self) -> None:
-        """
-        Place the camera in the scene center looking down.
-        """
-        scene_bb = self.sim.get_active_scene_graph().get_root_node().cumulative_bb
-        look_down = mn.Quaternion.rotation(mn.Deg(-90), mn.Vector3.x_axis())
-        max_dim = max(scene_bb.size_x(), scene_bb.size_z())
-        cam_pos = scene_bb.center()
-        cam_pos[1] += 0.52 * max_dim + scene_bb.size_y() / 2.0
-        self.default_agent.scene_node.translation = cam_pos
-        self.default_agent.scene_node.rotation = look_down
 
     def default_agent_config(self) -> habitat_sim.agent.AgentConfiguration:
         """
@@ -506,7 +492,6 @@ def display_sample(
     depth_obs: Optional[np.array] = None,
     output_file=None,
 ):
-
     print_if_logging(silent, f"output file = {output_file}")
     rgb_img = Image.fromarray(rgb_obs, mode="RGBA")
 
@@ -579,50 +564,9 @@ def pil_save_obs(
 ######################################################
 
 
-def process_navmesh(
-    sim: habitat_sim.Simulator,
-    scene_filename: str,
-    scene_handle: str,
-    all_scenes_navmesh_metrics: Dict[str, NavmeshMetrics],
-    failure_log: List[Tuple[str, Any]],
-):
-    # get and print scene directory
-    scene_directory = scene_handle[: -len(scene_filename)]
-    print_if_logging(silent, text_format + f"  -scene directory: {scene_directory}\n")
-
-    # get and print navmesh filename
-    navmesh_filename = scene_filename[: -len(scene_filename.split(".")[-1])] + "navmesh"
-    print_if_logging(
-        silent,
-        text_format + f"  -navmesh filename: {navmesh_filename}\n",
-    )
-
-    # create navmesh settings and compute navmesh
-    navmesh_settings = habitat_sim.NavMeshSettings()
-    navmesh_settings.set_defaults()
-    sim.recompute_navmesh(sim.pathfinder, navmesh_settings)
-
-    # save navmesh
-    if os.path.exists(scene_directory):
-        sim.pathfinder.save_nav_mesh(scene_directory + navmesh_filename)
-
-        # process navmesh
-        all_scenes_navmesh_metrics[scene_filename] = collect_navmesh_metrics(sim)
-        save_navmesh_data(sim)
-    else:
-        # TODO: possibly remove this, we have two failure logs for navmeshes
-        failure_log.append(
-            (
-                scene_handle,
-                f"No target directory for navmesh: {scene_directory}",
-            )
-        )
-
-
 def collect_navmesh_metrics(sim: habitat_sim.Simulator) -> NavmeshMetrics:
     nav_metrics = {}
     if sim.pathfinder.is_loaded:
-
         nav_metrics["num_islands"] = sim.pathfinder.num_islands
         nav_metrics["island_areas"] = []
         largest_island_area = 0
@@ -720,10 +664,14 @@ def place_scene_topdown_camera(sim: habitat_sim.Simulator, agent: Agent) -> None
     Place the camera in the scene center looking down.
     """
     scene_bb = sim.get_active_scene_graph().get_root_node().cumulative_bb
-    look_down = mn.Quaternion.rotation(mn.Deg(-90), mn.Vector3.x_axis())
     max_dim = max(scene_bb.size_x(), scene_bb.size_z())
     cam_pos = scene_bb.center()
     cam_pos[1] += 0.52 * max_dim + scene_bb.size_y() / 2.0
+    look_down = mn.Quaternion.from_matrix(
+        mn.Matrix4.look_at(
+            eye=cam_pos, target=scene_bb.center(), up=mn.Vector3.x_axis()
+        ).rotation()
+    )
     agent.scene_node.translation = cam_pos
     agent.scene_node.rotation = look_down
 
@@ -1141,7 +1089,10 @@ def save_test_times_csv(
 
             scene_filename = scene_handles[i].split("/")[-1]
             row_data = [scene_filename, ""]
-            if sim_settings["render_sensor_obs"]:
+            if (
+                sim_settings["render_sensor_obs"]
+                and scene_filename in min_max_avg_render_times
+            ):
                 row_data.append(min_max_avg_render_times[scene_filename][0])
                 row_data.append(min_max_avg_render_times[scene_filename][1])
                 row_data.append(min_max_avg_render_times[scene_filename][2])
@@ -1151,7 +1102,10 @@ def save_test_times_csv(
                 row_data.append("")
             row_data.append("")
 
-            if sim_settings["run_collision_test"]:
+            if (
+                sim_settings["run_collision_test"]
+                and scene_filename in min_max_avg_collision_times
+            ):
                 row_data.append(min_max_avg_collision_times[scene_filename][0])
                 row_data.append(min_max_avg_collision_times[scene_filename][1])
                 row_data.append(min_max_avg_collision_times[scene_filename][2])
@@ -1161,7 +1115,10 @@ def save_test_times_csv(
                 row_data.append("")
             row_data.append("")
 
-            if sim_settings["run_asset_sleep_test"]:
+            if (
+                sim_settings["run_asset_sleep_test"]
+                and scene_filename in min_max_avg_asleep_times
+            ):
                 row_data.append(min_max_avg_asleep_times[scene_filename][0])
                 row_data.append(min_max_avg_asleep_times[scene_filename][1])
                 row_data.append(min_max_avg_asleep_times[scene_filename][2])
@@ -1196,8 +1153,9 @@ def process_scene_or_stage(
     print_if_logging(silent, text_format + f"-{scene_handle}\n")
 
     try:
+        # track which stage we're on for more accurate failure logging
+        process_scene_or_stage_phase = "initialization"
         with habitat_sim.Simulator(cfg) as sim:
-
             text_format = ANSICodes.BRIGHT_RED.value
             scene_filename = scene_handle.split("/")[-1]
             print_if_logging(
@@ -1205,20 +1163,39 @@ def process_scene_or_stage(
             )
             detailed_info_json_dict[scene_filename] = {}
 
-            # generate and save navmesh
             if sim_settings["generate_navmesh"]:
-                process_navmesh(
-                    sim,
-                    scene_filename,
-                    scene_handle,
-                    all_scenes_navmesh_metrics,
-                    failure_log,
+                process_scene_or_stage_phase = "generating navmesh"
+                # create navmesh settings and re-compute navmesh
+                navmesh_settings = habitat_sim.NavMeshSettings()
+                navmesh_settings.set_defaults()
+                sim.recompute_navmesh(
+                    sim.pathfinder,
+                    navmesh_settings,
+                    include_static_objects=sim_settings["navmesh_include_static"],
                 )
+
+            process_scene_or_stage_phase = "navmesh metrics"
+            # compute the navmesh metrics and cache the results
+            all_scenes_navmesh_metrics[scene_filename] = collect_navmesh_metrics(sim)
+
+            process_scene_or_stage_phase = "island topdown map"
+            # save a topdown island map of the scene
+            navmesh_verts = sim.pathfinder.build_navmesh_vertices(-1)
+            floor_height = min(x[1] for x in navmesh_verts)
+            island_top_down_map = sim.pathfinder.get_topdown_island_view(
+                0.1, floor_height
+            )
+
+            island_colored_map_image = vut.get_island_colored_map(island_top_down_map)
+            island_colored_map_image.save(
+                output_path + scene_filename.split(".")[0] + "_navmesh_islands.png"
+            )
 
             # Get sensor observations from 5 different poses.
             # Record all rendering times, as well as min, max, and avg rendering time.
             # Save the observations in an image and the times in a json/csv
             if sim_settings["render_sensor_obs"]:
+                process_scene_or_stage_phase = "render_sensor_observations"
                 render_sensor_observations(
                     sim,
                     scene_filename,
@@ -1230,6 +1207,7 @@ def process_scene_or_stage(
             # run collision grid test, save all test times, as well as min, max, and
             # avgerage times in a json/csv
             if sim_settings["run_collision_test"]:
+                process_scene_or_stage_phase = "collision_grid_test"
                 collision_grid_test(
                     sim,
                     scene_filename,
@@ -1241,6 +1219,7 @@ def process_scene_or_stage(
             # run physics for a set number of seconds (default to 10 seconds) to see
             # how long the assets take to go to sleep
             if sim_settings["run_asset_sleep_test"]:
+                process_scene_or_stage_phase = "asset_sleep_test"
                 asset_sleep_test(
                     sim,
                     scene_filename,
@@ -1249,11 +1228,9 @@ def process_scene_or_stage(
                     failure_log,
                 )
 
-            sim.close()
-
     except Exception as e:
         # store any exceptions raised when processing scene
-        msg = f"error with scene {scene_handle} in process_scene(...) function"
+        msg = f"error with scene {scene_handle} in process_scene(...) function phase '{process_scene_or_stage_phase}'"
         failure_log.append((msg, e))
 
 
@@ -1267,7 +1244,6 @@ def strip_path_and_ext(handle: str) -> str:
 def process_scenes_and_stages(
     cfg_with_mm: habitat_sim.Configuration, sim_settings: Dict[str, Any]
 ) -> None:
-
     mm = cfg_with_mm.metadata_mediator
 
     # get scene handles
