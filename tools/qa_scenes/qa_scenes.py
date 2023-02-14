@@ -34,6 +34,7 @@ from habitat_sim.agent import Agent, AgentState
 from habitat_sim.utils import common as utils
 from habitat_sim.utils import viz_utils as vut
 from habitat_sim.utils.settings import make_cfg
+from habitat_sim.utils.sim_utils import get_floor_navigable_extents
 
 # clean up types with TypeVars
 NavmeshMetrics = Dict[str, Union[int, float]]
@@ -464,9 +465,10 @@ def collision_grid_test(
     collision_test_overall_data["min_collision_time"] = min_collision_time
     collision_test_overall_data["max_collision_time"] = max_collision_time
     collision_test_overall_data["avg_collision_time"] = avg_collision_time
-    detailed_info_json_dict[scene_filename].update(
-        {"collision_test": collision_test_json_info}
-    )
+    if sim_settings["collision_test_save_detail_json"]:
+        detailed_info_json_dict[scene_filename].update(
+            {"collision_test": collision_test_json_info}
+        )
 
     rigid_obj_mgr.remove_object_by_handle(scaled_cube.handle)
 
@@ -712,17 +714,23 @@ def process_scene_or_stage(
             all_scenes_navmesh_metrics[scene_filename] = collect_navmesh_metrics(sim)
 
             process_scene_or_stage_phase = "island topdown map"
-            # save a topdown island map of the scene
-            navmesh_verts = sim.pathfinder.build_navmesh_vertices(-1)
-            floor_height = min(x[1] for x in navmesh_verts)
-            island_top_down_map = sim.pathfinder.get_topdown_island_view(
-                0.1, floor_height
-            )
 
-            island_colored_map_image = vut.get_island_colored_map(island_top_down_map)
-            island_colored_map_image.save(
-                output_path + scene_filename.split(".")[0] + "_navmesh_islands.png"
-            )
+            # save a topdown island maps of all floors in the scene
+            if sim_settings["save_navmesh_island_maps"]:
+                floor_extents = get_floor_navigable_extents(sim)
+                for f_ix, floor in enumerate(floor_extents):
+                    floor_height = floor["mean"]
+                    island_top_down_map = sim.pathfinder.get_topdown_island_view(
+                        0.1, floor_height
+                    )
+                    island_colored_map_image = vut.get_island_colored_map(
+                        island_top_down_map
+                    )
+                    island_colored_map_image.save(
+                        output_path
+                        + scene_filename.split(".")[0]
+                        + f"_floor_{f_ix}_navmesh_islands.png"
+                    )
 
             # Get sensor observations from 5 different poses.
             # Record all rendering times, as well as min, max, and avg rendering time.
@@ -780,14 +788,17 @@ def process_scenes_and_stages(
     mm = cfg_with_mm.metadata_mediator
 
     # get scene handles
-    scene_handles: List[str] = mm.get_scene_handles()
+    scene_handles: List[str] = []
+
+    # get all pre-defined scene instances from MetadataMediator
+    if sim_settings["process_scene_instances"]:
+        scene_handles.extend(mm.get_scene_handles())
 
     # treat stages as simple scenes with just the stage and no other assets
-    stage_handles: List[
-        str
-    ] = mm.stage_template_manager.get_templates_by_handle_substring()
-
-    scene_handles.extend(stage_handles)
+    if sim_settings["process_stages"]:
+        scene_handles.extend(
+            mm.stage_template_manager.get_templates_by_handle_substring()
+        )
 
     # determine indices of scenes to process
     start_index = 0
@@ -985,7 +996,7 @@ if __name__ == "__main__":
     if sim_settings["run_viewer"]:
         # create viewer app
         # QASceneProcessingViewer(sim_settings).exec()
-        pass
+        raise NotImplementedError
         # TODO: add a viewer module extension
     else:
         # make simulator configuration and process all scenes without viewing

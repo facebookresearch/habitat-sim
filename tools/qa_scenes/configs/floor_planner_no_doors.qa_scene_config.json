@@ -6,12 +6,13 @@
   "width": 1024,
   "height": 1024,
   "enable_physics": true,
-  "start_scene_index": 0,
-  "end_scene_index": -1,
+  "start_scene_index": 11,
+  "end_scene_index": 11,
   "output_file_prefix": "fphab_v0.2.1",
   "generate_navmesh": true,
   "render_sensor_obs": true,
   "run_collision_test": true,
+  "collision_test_save_detail_json": false,
   "run_asset_sleep_test": true,
   "silent": false
 }

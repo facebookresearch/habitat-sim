@@ -17,11 +17,13 @@ qa_scene_settings = {
     "enable_physics": True,
     # set the desired scenes
     "start_scene_index": 0,
-    # -1 indicates end of list
-    "end_scene_index": -1,
+    "end_scene_index": -1,  # -1 indicates end of list
+    "process_scene_instances": True,  # includes all dataset scene instances
+    "process_stages": True,  # includes all dataset stages
     "output_file_prefix": "default",
     "generate_navmesh": True,
     "navmesh_include_static": True,
+    "save_navmesh_island_maps": True,  # if true, saves a set of navmesh topdown island maps for all floors (detected heuristically)
     "render_sensor_obs": True,
     "make_video": True,
     "show_video": True,
@@ -52,6 +54,7 @@ qa_scene_settings = {
     # and "collision_test_max_time_threshold" can be overridden in a qa_scene_config.json file in
     # the "./tools/qa_scenes/configs" directory. Don't override the data in
     # "collision_test_json_entry", as it is used as a template for json construction
+    "collision_test_save_detail_json": True,
     "collision_test_cell_size": 1.0,
     "collision_test_max_time_threshold": 0.005,
     "collision_test_json_entry": {
