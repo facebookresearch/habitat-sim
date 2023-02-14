@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -18,6 +18,7 @@ namespace py = pybind11;
 using py::literals::operator""_a;
 
 namespace PhysWraps = esp::physics;
+using esp::core::managedContainers::AbstractManagedObject;
 using PhysWraps::ManagedArticulatedObject;
 using PhysWraps::ManagedRigidObject;
 
@@ -265,6 +266,25 @@ void declareRigidBaseWrapper(py::module& m,
                      "MotionType::DYNAMIC objects.")
                         .c_str())
       .def_property(
+          "rolling_friction_coefficient",
+          &RigidBaseWrapper::getRollingFrictionCoefficient,
+          &RigidBaseWrapper::setRollingFrictionCoefficient,
+          ("Get or set this " + objType +
+           "'s scalar rolling coefficient of friction. Damps angular velocity "
+           "about axis orthogonal to the contact normal to prevent rounded "
+           "shapes from rolling forever. Only applies to "
+           "MotionType::DYNAMIC objects.")
+              .c_str())
+      .def_property(
+          "spinning_friction_coefficient",
+          &RigidBaseWrapper::getSpinningFrictionCoefficient,
+          &RigidBaseWrapper::setSpinningFrictionCoefficient,
+          ("Get or set this " + objType +
+           "'s scalar spinning coefficient of friction. Damps angular velocity "
+           "about the contact normal. Only applies to "
+           "MotionType::DYNAMIC objects.")
+              .c_str())
+      .def_property(
           "intertia_diagonal", &RigidBaseWrapper::getInertiaVector,
           &RigidBaseWrapper::setInertiaVector,
           ("Get or set the inertia matrix's diagonal for this " + objType +
@@ -405,6 +425,13 @@ void declareArticulatedObjectWrapper(py::module& m,
                      "'s joint positions. For link to index mapping see "
                      "get_link_joint_pos_offset and get_link_num_joint_pos.")
                         .c_str())
+      .def("get_joint_motor_torques",
+           &ManagedArticulatedObject::getJointMotorTorques,
+           ("Get " + objType +
+            "'s array of joint torques given the current physics time step "
+            "fixedTimeStep")
+               .c_str(),
+           "fixedTimeStep"_a)
       .def_property_readonly("joint_position_limits",
                              &ManagedArticulatedObject::getJointPositionLimits,
                              ("Get a tuple of lists of this " + objType +

@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates.
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
@@ -20,6 +20,7 @@ endif()
 add_subdirectory(core)
 add_subdirectory(geo)
 add_subdirectory(gfx)
+add_subdirectory(gfx_batch)
 add_subdirectory(assets)
 add_subdirectory(metadata)
 add_subdirectory(io)

@@ -1,3 +1,6 @@
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
 
 #include "VoxelUtils.h"
 #include <Corrade/Utility/Algorithms.h>
@@ -19,10 +22,10 @@ void generateInteriorExteriorVoxelGrid(
                       static_cast<std::size_t>(m_voxelGridDimensions[1]),
                       static_cast<std::size_t>(m_voxelGridDimensions[2])};
   Corrade::Containers::Array<char> cr_grid{
-      Corrade::ValueInit, v_grid->gridSize() * sizeof(Mn::Math::BoolVector<6>)};
+      Corrade::ValueInit, v_grid->gridSize() * sizeof(Mn::Math::BitVector<6>)};
   auto shadowGrid_ =
-      Cr::Containers::StridedArrayView<3, Mn::Math::BoolVector<6>>{
-          Cr::Containers::arrayCast<Mn::Math::BoolVector<6>>(cr_grid), dims};
+      Cr::Containers::StridedArrayView<3, Mn::Math::BitVector<6>>{
+          Cr::Containers::arrayCast<Mn::Math::BitVector<6>>(cr_grid), dims};
 
   // fill each grid with ray cast
   bool hit = false;
@@ -32,8 +35,8 @@ void generateInteriorExteriorVoxelGrid(
   for (int castAxis = 0; castAxis < 3; ++castAxis) {
     int a1 = castAxis != 0 ? 0 : 1;
     int a2 = castAxis == 2 ? 1 : 2;
-    for (int j = 0; j < m_voxelGridDimensions[a1]; j++) {
-      for (int k = 0; k < m_voxelGridDimensions[a2]; k++) {
+    for (int j = 0; j < m_voxelGridDimensions[a1]; ++j) {
+      for (int k = 0; k < m_voxelGridDimensions[a2]; ++k) {
         indices[a1] = j;
         indices[a2] = k;
         // fill from front and back of each 1D slice
@@ -59,9 +62,9 @@ void generateInteriorExteriorVoxelGrid(
   auto intExtGrid = v_grid->getGrid<int>(gridName);
   bool nX = false, pX = false, nY = false, pY = false, nZ = false, pZ = false;
   // fill in int grid with voting approach
-  for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
-    for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
-      for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
+  for (int i = 0; i < m_voxelGridDimensions[0]; ++i) {
+    for (int j = 0; j < m_voxelGridDimensions[1]; ++j) {
+      for (int k = 0; k < m_voxelGridDimensions[2]; ++k) {
         Mn::Vector3i index = Mn::Vector3i(i, j, k);
         if (boundaryGrid[i][j][k]) {
           intExtGrid[i][j][k] = 0;
@@ -106,9 +109,9 @@ void generateManhattanDistanceSDF(
   Cr::Utility::copy(intExtGrid, sdfGrid);
 
   // 1st sweep
-  for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
-    for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
-      for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
+  for (int i = 0; i < m_voxelGridDimensions[0]; ++i) {
+    for (int j = 0; j < m_voxelGridDimensions[1]; ++j) {
+      for (int k = 0; k < m_voxelGridDimensions[2]; ++k) {
         int i_behind = INT_MAX, j_behind = INT_MAX, k_behind = INT_MAX;
         if (v_grid->isValidIndex(Mn::Vector3i(i - 1, j, k))) {
           i_behind = abs(std::max(sdfGrid[i - 1][j][k], -INT_MAX));
@@ -230,7 +233,7 @@ void generateEuclideanDistanceSDF(
           }
           // find the best neighbor "behind" the current voxel
           bestDistance = std::numeric_limits<float>::max();
-          for (int bAxis = 0; bAxis < 3; bAxis++) {
+          for (int bAxis = 0; bAxis < 3; ++bAxis) {
             behind = curIndex;
             behind[bAxis] -= sweep;  // check
             if (v_grid->isValidIndex(behind)) {
@@ -283,9 +286,9 @@ std::vector<Mn::Vector3i> getVoxelSetFromBoolGrid(
 
   assert(v_grid->gridExists(boolGridName));
   auto boolGrid = v_grid->getGrid<bool>(boolGridName);
-  for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
-    for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
-      for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
+  for (int i = 0; i < m_voxelGridDimensions[0]; ++i) {
+    for (int j = 0; j < m_voxelGridDimensions[1]; ++j) {
+      for (int k = 0; k < m_voxelGridDimensions[2]; ++k) {
         if (boolGrid[i][j][k]) {
           voxelSet.emplace_back(i, j, k);
         }
@@ -306,9 +309,9 @@ std::vector<Mn::Vector3i> getVoxelSetFromIntGrid(
 
   assert(v_grid->gridExists(intGridName));
   auto intGrid = v_grid->getGrid<int>(intGridName);
-  for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
-    for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
-      for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
+  for (int i = 0; i < m_voxelGridDimensions[0]; ++i) {
+    for (int j = 0; j < m_voxelGridDimensions[1]; ++j) {
+      for (int k = 0; k < m_voxelGridDimensions[2]; ++k) {
         if (intGrid[i][j][k] >= lb && intGrid[i][j][k] <= ub) {
           voxelSet.emplace_back(i, j, k);
         }
@@ -329,9 +332,9 @@ std::vector<Mn::Vector3i> getVoxelSetFromFloatGrid(
 
   assert(v_grid->gridExists(floatGridName));
   auto floatGrid = v_grid->getGrid<float>(floatGridName);
-  for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
-    for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
-      for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
+  for (int i = 0; i < m_voxelGridDimensions[0]; ++i) {
+    for (int j = 0; j < m_voxelGridDimensions[1]; ++j) {
+      for (int k = 0; k < m_voxelGridDimensions[2]; ++k) {
         if (floatGrid[i][j][k] >= lb && floatGrid[i][j][k] <= ub) {
           voxelSet.emplace_back(i, j, k);
         }

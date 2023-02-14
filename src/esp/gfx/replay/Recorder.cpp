@@ -1,10 +1,12 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
 #include "Recorder.h"
 
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
+#include "esp/core/Check.h"
+#include "esp/gfx/Drawable.h"
 #include "esp/io/Json.h"
 #include "esp/io/JsonAllTypes.h"
 #include "esp/scene/SceneNode.h"
@@ -54,7 +56,18 @@ void Recorder::onCreateRenderAssetInstance(
 
   RenderAssetInstanceKey instanceKey = getNewInstanceKey();
 
-  getKeyframe().creations.emplace_back(std::make_pair(instanceKey, creation));
+  auto adjustedCreation = creation;
+
+  // bake node scale into creation
+  auto nodeScale = node->absoluteTransformation().scaling();
+  if (nodeScale != Mn::Vector3(1.f, 1.f, 1.f)) {
+    adjustedCreation.scale = adjustedCreation.scale
+                                 ? *adjustedCreation.scale * nodeScale
+                                 : nodeScale;
+  }
+
+  getKeyframe().creations.emplace_back(instanceKey,
+                                       std::move(adjustedCreation));
 
   // Constructing NodeDeletionHelper here is equivalent to calling
   // node->addFeature. We keep a pointer to deletionHelper so we can delete it
@@ -65,9 +78,27 @@ void Recorder::onCreateRenderAssetInstance(
       node, instanceKey, Corrade::Containers::NullOpt, deletionHelper});
 }
 
+void Recorder::onHideSceneGraph(const esp::scene::SceneGraph& sceneGraph) {
+  const auto& root = sceneGraph.getRootNode();
+  scene::preOrderTraversalWithCallback(
+      root, [this](const scene::SceneNode& node) {
+        int index = findInstance(&node);
+        if (index != ID_UNDEFINED) {
+          delete instanceRecords_[index].deletionHelper;
+        }
+      });
+}
+
 void Recorder::saveKeyframe() {
   updateInstanceStates();
   advanceKeyframe();
+}
+
+Keyframe Recorder::extractKeyframe() {
+  updateInstanceStates();
+  auto retVal = std::move(currKeyframe_);
+  currKeyframe_ = Keyframe{};
+  return retVal;
 }
 
 const Keyframe& Recorder::getLatestKeyframe() {
@@ -84,11 +115,21 @@ void Recorder::addUserTransformToKeyframe(const std::string& name,
   getKeyframe().userTransforms[name] = Transform{translation, rotation};
 }
 
+void Recorder::addLightToKeyframe(const LightInfo& lightInfo) {
+  getKeyframe().lightsChanged = true;
+  getKeyframe().lights.emplace_back(lightInfo);
+}
+
+void Recorder::clearLightsFromKeyframe() {
+  getKeyframe().lightsChanged = true;
+  getKeyframe().lights.clear();
+}
+
 void Recorder::addLoadsCreationsDeletions(KeyframeIterator begin,
                                           KeyframeIterator end,
                                           Keyframe* dest) {
   CORRADE_INTERNAL_ASSERT(dest);
-  for (KeyframeIterator curr = begin; curr != end; curr++) {
+  for (KeyframeIterator curr = begin; curr != end; ++curr) {
     const auto& keyframe = *curr;
     dest->loads.insert(dest->loads.end(), keyframe.loads.begin(),
                        keyframe.loads.end());
@@ -140,8 +181,9 @@ int Recorder::findInstance(const scene::SceneNode* queryNode) {
                            return record.node == queryNode;
                          });
 
-  return it == instanceRecords_.end() ? ID_UNDEFINED
-                                      : int(it - instanceRecords_.begin());
+  return it == instanceRecords_.end()
+             ? ID_UNDEFINED
+             : static_cast<int>(it - instanceRecords_.begin());
 }
 
 RenderAssetInstanceState Recorder::getInstanceState(
@@ -174,9 +216,10 @@ void Recorder::writeSavedKeyframesToFile(const std::string& filepath,
                                          bool usePrettyWriter) {
   auto document = writeKeyframesToJsonDocument();
   // replay::Keyframes use floats (not doubles) so this is plenty of precision
-  const float maxDecimalPlaces = 7;
-  esp::io::writeJsonToFile(document, filepath, usePrettyWriter,
-                           maxDecimalPlaces);
+  const int maxDecimalPlaces = 7;
+  auto ok = esp::io::writeJsonToFile(document, filepath, usePrettyWriter,
+                                     maxDecimalPlaces);
+  ESP_CHECK(ok, "writeSavedKeyframesToFile: unable to write to " << filepath);
 
   consolidateSavedKeyframes();
 }

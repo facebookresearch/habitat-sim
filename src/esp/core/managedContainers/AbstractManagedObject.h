@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -9,6 +9,7 @@
 
 namespace esp {
 namespace core {
+namespace managedContainers {
 /**
  * @brief This abstract base class provides the interface of expected
  * functionality for an object to be manageable by @ref
@@ -71,18 +72,7 @@ class AbstractManagedObject {
   ESP_SMART_POINTERS(AbstractManagedObject)
 };  // class AbstractManagedObject
 
-class AbstractFileBasedManagedObject : public AbstractManagedObject {
- public:
-  /**
-   * @brief directory where files used to construct ManagedObject can be found.
-   */
-  virtual void setFileDirectory(const std::string& fileDirectory) = 0;
-  virtual std::string getFileDirectory() const = 0;
-
- public:
-  ESP_SMART_POINTERS(AbstractFileBasedManagedObject)
-};  // class AbstractFileBasedManagedObject
-
+}  // namespace managedContainers
 }  // namespace core
 }  // namespace esp
 #endif  // ESP_CORE_ABSTRACTMANAGEDOBJECT_H_

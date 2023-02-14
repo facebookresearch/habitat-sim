@@ -1,9 +1,10 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
 #include "esp/bindings/Bindings.h"
 #include "esp/core/Random.h"
+#include "esp/core/Utility.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;
@@ -48,6 +49,11 @@ void initCoreBindings(py::module& m) {
                logging::LoggingLevel::Debug;
       });
   core.attr("_logging_context") = new LoggingContext{};
+
+  core.def("orthonormalize_rotation_shear",
+           &orthonormalizeRotationShear<float>);
+  core.def("orthonormalize_rotation_shear",
+           &orthonormalizeRotationShear<double>);
 }
 }  // namespace core
 

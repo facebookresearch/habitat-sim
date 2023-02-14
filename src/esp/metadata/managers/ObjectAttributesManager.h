@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -15,16 +15,19 @@
 namespace esp {
 namespace metadata {
 namespace managers {
+using core::managedContainers::ManagedFileBasedContainer;
+using core::managedContainers::ManagedObjectAccess;
+
 /**
  * @brief single instance class managing templates describing physical objects
  */
 class ObjectAttributesManager
     : public AbstractObjectAttributesManager<attributes::ObjectAttributes,
-                                             core::ManagedObjectAccess::Copy> {
+                                             ManagedObjectAccess::Copy> {
  public:
   ObjectAttributesManager()
       : AbstractObjectAttributesManager<attributes::ObjectAttributes,
-                                        core::ManagedObjectAccess::Copy>::
+                                        ManagedObjectAccess::Copy>::
             AbstractObjectAttributesManager("Object", "object_config.json") {
     // build this manager's copy constructor map
     this->copyConstructorMap_["ObjectAttributes"] =
@@ -188,7 +191,7 @@ class ObjectAttributesManager
       attributes::ObjectAttributes::ptr attributes,
       bool setFrame,
       const std::string& meshHandle,
-      std::function<void(int)> assetTypeSetter) override;
+      const std::function<void(int)>& assetTypeSetter) override;
 
   /**
    * @brief Used Internally.  Create and configure newly-created attributes

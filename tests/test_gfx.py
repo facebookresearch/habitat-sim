@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright (c) Facebook, Inc. and its affiliates.
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
@@ -11,8 +11,8 @@ import numpy as np
 import pytest
 import quaternion  # noqa: F401
 
-import examples.settings
 import habitat_sim
+import habitat_sim.utils.settings
 
 
 @pytest.mark.skipif(
@@ -20,7 +20,7 @@ import habitat_sim
     reason="Requires the habitat-test-scenes",
 )
 def test_unproject():
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
 
     # configure some settings in case defaults change
     cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/apartment_1.glb"
@@ -30,7 +30,7 @@ def test_unproject():
     cfg_settings["color_sensor"] = True
 
     # loading the scene
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
     with habitat_sim.Simulator(hab_cfg) as sim:
         # position agent
         sim.agents[0].scene_node.rotation = mn.Quaternion()
@@ -52,3 +52,25 @@ def test_unproject():
         assert np.allclose(
             test_ray_2.direction, np.array([0.569653, -0.581161, -0.581161]), atol=0.07
         )
+
+
+@pytest.mark.parametrize(
+    "sensor_type",
+    [
+        habitat_sim.SensorType.COLOR,
+        habitat_sim.SensorType.DEPTH,
+        habitat_sim.SensorType.SEMANTIC,
+    ],
+)
+def test_empty_scene(sensor_type):
+    backend_cfg = habitat_sim.SimulatorConfiguration()
+    backend_cfg.scene_id = "NONE"
+
+    agent_cfg = habitat_sim.AgentConfiguration()
+    agent_cfg.sensor_specifications = [habitat_sim.CameraSensorSpec()]
+    agent_cfg.sensor_specifications[-1].sensor_type = sensor_type
+
+    with habitat_sim.Simulator(
+        habitat_sim.Configuration(backend_cfg, [agent_cfg])
+    ) as sim:
+        _ = sim.get_sensor_observations()

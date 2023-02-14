@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -18,11 +18,17 @@ namespace Cr = Corrade;
 
 namespace esp {
 namespace core {
+namespace managedContainers {
 enum class ManagedObjectAccess;
 class ManagedFileBasedContainerBase;
+}  // namespace managedContainers
 }  // namespace core
 namespace metadata {
 namespace managers {
+
+using core::config::Configuration;
+using core::managedContainers::ManagedFileBasedContainer;
+using core::managedContainers::ManagedObjectAccess;
 
 /**
  * @brief Class template defining responsibilities and functionality for
@@ -34,9 +40,8 @@ namespace managers {
  * container provides copies of the objects held, or the actual objects
  * themselves.
  */
-template <class T, core::ManagedObjectAccess Access>
-class AttributesManager
-    : public esp::core::ManagedFileBasedContainer<T, Access> {
+template <class T, ManagedObjectAccess Access>
+class AttributesManager : public ManagedFileBasedContainer<T, Access> {
  public:
   static_assert(std::is_base_of<attributes::AbstractAttributes, T>::value,
                 "AttributesManager :: Managed object type must be derived from "
@@ -44,10 +49,19 @@ class AttributesManager
 
   typedef std::shared_ptr<T> AttribsPtr;
 
+  /**
+   * @brief Construct an attributes manager to manage shared pointers of
+   * attributes of type T.
+   * @param attrType A string describing the type of attributes, for
+   * @param JSONTypeExt The attributes JSON file extension, which must be of the
+   * form 'XXXXXX.json', where XXXXXX represents the sub extension specific to
+   * the managed type of attributes (i.e. "stage_config.json" for configurations
+   * describing stages).
+   */
   AttributesManager(const std::string& attrType, const std::string& JSONTypeExt)
-      : esp::core::ManagedFileBasedContainer<T, Access>::
-            ManagedFileBasedContainer(attrType),
-        JSONTypeExt_(JSONTypeExt) {}
+      : ManagedFileBasedContainer<T, Access>::ManagedFileBasedContainer(
+            attrType,
+            JSONTypeExt) {}
   ~AttributesManager() override = default;
 
   /**
@@ -190,18 +204,6 @@ class AttributesManager
       const attributes::AbstractAttributes::ptr& attribs,
       const io::JsonGenericValue& jsonConfig) const;
 
-  /**
-   * @brief Return a properly formated JSON file name for the attributes
-   * managed by this manager.  This will change the extension to the
-   * appropriate json extension.
-   * @param filename The original filename
-   * @return a candidate JSON file name for the attributes managed by this
-   * manager.
-   */
-  std::string getFormattedJSONFileName(const std::string& filename) {
-    return this->convertFilenameToPassedExt(filename, this->JSONTypeExt_);
-  }
-
  protected:
   /**
    * @brief Called intenrally from createObject.  This will create either a
@@ -218,12 +220,33 @@ class AttributesManager
                                              std::string& msg,
                                              bool registerObj);
 
-  // ======== Typedefs and Instance Variables ========
   /**
-   * @brief The string extension for json files for this manager's attributes
-   * types
+   * @brief Set a filename attribute to hold the appropriate data if the
+   * existing attribute's given path contains the sentinel tag value defined at
+   * @ref esp::metadata::CONFIG_NAME_AS_ASSET_FILENAME. This will be used in
+   * the Scene Dataset configuration file in the "default_attributes" tag for
+   * any attributes which consume file names to specify that the name specified
+   * as the instanced attributes should also be used to build the name of the
+   * specified asset. The tag value will be replaced by the attributes object's
+   * simplified handle.
+   *
+   * This will only be called from the specified manager's initNewObjectInternal
+   * function, where the attributes is initially built from a default attributes
+   * (if such an attributes exists).
+   * @param attributers The AbstractAttributes being worked with.
+   * @param srcAssetFilename The given asset's stored filename to be queried for
+   * the specified tag. If the tag exists, replace it to build the  with the
+   * simplified handle given by the attributes (hence copy). If this DNE on
+   * disk, add file directory.
+   * @param filenameSetter The function to set the filename appropriately for
+   * the given asset.
+   * @return Whether or not the final value residing within the attribute's
+   * asset filename exists or not.
    */
-  const std::string JSONTypeExt_;
+  bool setHandleFromDefaultTag(
+      const attributes::AbstractAttributes::ptr& attributes,
+      const std::string& srcAssetFilename,
+      const std::function<void(const std::string&)>& filenameSetter);
 
  public:
   ESP_SMART_POINTERS(AttributesManager<T, Access>)
@@ -232,20 +255,20 @@ class AttributesManager
 
 /////////////////////////////
 // Class Template Method Definitions
-template <class T, core::ManagedObjectAccess Access>
+template <class T, ManagedObjectAccess Access>
 std::vector<int> AttributesManager<T, Access>::loadAllFileBasedTemplates(
     const std::vector<std::string>& paths,
     bool saveAsDefaults) {
   std::vector<int> templateIndices(paths.size(), ID_UNDEFINED);
   if (paths.size() > 0) {
-    std::string dir = Cr::Utility::Directory::path(paths[0]);
+    std::string dir = Cr::Utility::Path::split(paths[0]).first();
     ESP_DEBUG() << "Loading" << paths.size() << "" << this->objectType_
                 << "templates found in" << dir;
     for (int i = 0; i < paths.size(); ++i) {
       auto attributesFilename = paths[i];
-      ESP_VERY_VERBOSE() << "Load" << this->objectType_ << "template:"
-                         << Cr::Utility::Directory::filename(
-                                attributesFilename);
+      ESP_VERY_VERBOSE()
+          << "Load" << this->objectType_ << "template:"
+          << Cr::Utility::Path::split(attributesFilename).second();
       auto tmplt = this->createObject(attributesFilename, true);
       // If failed to load, do not attempt to modify further
       if (tmplt == nullptr) {
@@ -254,33 +277,33 @@ std::vector<int> AttributesManager<T, Access>::loadAllFileBasedTemplates(
       // save handles in list of defaults, so they are not removed, if desired.
       if (saveAsDefaults) {
         std::string tmpltHandle = tmplt->getHandle();
-        this->undeletableObjectNames_.insert(tmpltHandle);
+        this->undeletableObjectNames_.insert(std::move(tmpltHandle));
       }
       templateIndices[i] = tmplt->getID();
     }
   }
-  ESP_DEBUG() << "<" << Magnum::Debug::nospace << this->objectType_
-              << Magnum::Debug::nospace << "> : Loaded file-based templates:"
-              << std::to_string(paths.size());
+  ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+      << "<" << this->objectType_
+      << "> : Loaded file-based templates: " << std::to_string(paths.size());
   return templateIndices;
 }  // AttributesManager<T, Access>::loadAllObjectTemplates
 
-template <class T, core::ManagedObjectAccess Access>
+template <class T, ManagedObjectAccess Access>
 std::vector<int> AttributesManager<T, Access>::loadAllTemplatesFromPathAndExt(
     const std::string& path,
     const std::string& extType,
     bool saveAsDefaults) {
-  namespace Dir = Cr::Utility::Directory;
+  namespace Dir = Cr::Utility::Path;
   std::vector<std::string> paths;
   std::vector<int> templateIndices;
 
   // Check if directory
   const bool dirExists = Dir::isDirectory(path);
   if (dirExists) {
-    ESP_DEBUG() << "Parsing" << this->objectType_
-                << "library directory: " + path + " for \'" + extType +
-                       "\' files";
-    for (auto& file : Dir::list(path, Dir::Flag::SortAscending)) {
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << "Parsing " << this->objectType_
+        << " library directory: " + path + " for \'" + extType + "\' files";
+    for (auto& file : *Dir::list(path, Dir::ListFlag::SortAscending)) {
       std::string absoluteSubfilePath = Dir::join(path, file);
       if (Cr::Utility::String::endsWith(absoluteSubfilePath, extType)) {
         paths.push_back(absoluteSubfilePath);
@@ -295,11 +318,10 @@ std::vector<int> AttributesManager<T, Access>::loadAllTemplatesFromPathAndExt(
     if (fileExists) {
       paths.push_back(attributesFilepath);
     } else {  // neither a directory or a file
-      ESP_WARNING() << "<" << Magnum::Debug::nospace << this->objectType_
-                    << Magnum::Debug::nospace << "> : Parsing"
-                    << this->objectType_ << ": Cannot find" << path
-                    << "as directory or" << attributesFilepath
-                    << "as config file. Aborting parse.";
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << "<" << this->objectType_ << "> : Parsing" << this->objectType_
+          << ": Cannot find " << path << " as directory or "
+          << attributesFilepath << " as config file. Aborting parse.";
       return templateIndices;
     }  // if fileExists else
   }    // if dirExists else
@@ -310,7 +332,7 @@ std::vector<int> AttributesManager<T, Access>::loadAllTemplatesFromPathAndExt(
   return templateIndices;
 }  // AttributesManager<T, Access>::loadAllTemplatesFromPathAndExt
 
-template <class T, core::ManagedObjectAccess Access>
+template <class T, ManagedObjectAccess Access>
 void AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad(
     const std::string& configDir,
     const std::string& extType,
@@ -322,7 +344,7 @@ void AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad(
       continue;
     }
     std::string absolutePath =
-        Cr::Utility::Directory::join(configDir, filePaths[i].GetString());
+        Cr::Utility::Path::join(configDir, filePaths[i].GetString());
     std::vector<std::string> globPaths = io::globDirs(absolutePath);
     if (globPaths.size() > 0) {
       for (const auto& globPath : globPaths) {
@@ -335,14 +357,12 @@ void AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad(
       ESP_WARNING() << "No Glob path result for" << absolutePath;
     }
   }
-  ESP_DEBUG() << "<" << Magnum::Debug::nospace << this->objectType_
-              << Magnum::Debug::nospace
-              << ">:" << std::to_string(filePaths.Size())
-              << "paths specified in JSON doc for" << this->objectType_
-              << "templates.";
+  ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+      << "<" << this->objectType_ << ">:" << std::to_string(filePaths.Size())
+      << "paths specified in JSON doc for" << this->objectType_ << "templates.";
 }  // AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad
 
-template <class T, core::ManagedObjectAccess Access>
+template <class T, ManagedObjectAccess Access>
 auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
     const std::string& filename,
     std::string& msg,
@@ -353,15 +373,15 @@ auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
   std::string jsonAttrFileName =
       (Cr::Utility::String::endsWith(filename, this->JSONTypeExt_)
            ? filename
-           : getFormattedJSONFileName(filename));
+           : this->getFormattedJSONFileName(filename));
   // Check if this configuration file exists and if so use it to build
   // attributes
-  bool jsonFileExists = (this->isValidFileName(jsonAttrFileName));
-  ESP_DEBUG() << "<" << Magnum::Debug::nospace << this->objectType_
-              << Magnum::Debug::nospace
-              << ">: Proposing JSON name :" << jsonAttrFileName
-              << "from original name :" << filename << "| This file"
-              << (jsonFileExists ? " exists." : " does not exist.");
+  bool jsonFileExists = Cr::Utility::Path::exists(jsonAttrFileName);
+  ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+      << "<" << this->objectType_
+      << ">: Proposing JSON name : " << jsonAttrFileName
+      << " from original name : " << filename << "| This file"
+      << (jsonFileExists ? " exists." : " does not exist.");
   if (jsonFileExists) {
     // configuration file exists with requested name, use to build Attributes
     attrs = this->createObjectFromJSONFile(jsonAttrFileName, registerObj);
@@ -372,7 +392,7 @@ auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
     // default attributes.
     attrs = this->createDefaultObject(filename, registerObj);
     // check if original filename is an actual object
-    bool fileExists = (this->isValidFileName(filename));
+    bool fileExists = Cr::Utility::Path::exists(filename);
     // if filename passed is name of some kind of asset, or if it was not
     // found
     if (fileExists) {
@@ -386,30 +406,29 @@ auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
   return attrs;
 }  // AttributesManager<T, Access>::createFromJsonFileOrDefaultInternal
 
-template <class T, core::ManagedObjectAccess Access>
+template <class T, ManagedObjectAccess Access>
 bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
     const attributes::AbstractAttributes::ptr& attribs,
     const io::JsonGenericValue& jsonConfig) const {
   // check for user defined attributes and verify it is an object
   if (jsonConfig.HasMember("user_defined")) {
     if (!jsonConfig["user_defined"].IsObject()) {
-      ESP_WARNING() << "<" << Magnum::Debug::nospace << this->objectType_
-                    << Magnum::Debug::nospace
-                    << "> :" << attribs->getSimplifiedHandle()
-                    << "attributes specifies user_defined attributes but they "
-                       "are not of the correct format. Skipping.";
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << "<" << this->objectType_
+          << "> : " << attribs->getSimplifiedHandle()
+          << " attributes specifies user_defined attributes but they are not "
+             "of the correct format. Skipping.";
       return false;
     } else {
       const std::string subGroupName = "user_defined";
       // get pointer to user_defined subgroup configuration
-      std::shared_ptr<core::config::Configuration> subGroupPtr =
+      std::shared_ptr<Configuration> subGroupPtr =
           attribs->getUserConfiguration();
       // get json object referenced by tag subGroupName
       const io::JsonGenericValue& jsonObj = jsonConfig[subGroupName.c_str()];
 
       // count number of valid user config settings found
-      int numConfigSettings =
-          io::loadJsonIntoConfiguration(jsonObj, subGroupPtr);
+      int numConfigSettings = subGroupPtr->loadFromJson(jsonObj);
 
       // save as user_defined subgroup configuration
       attribs->setSubconfigPtr("user_defined", subGroupPtr);
@@ -419,6 +438,43 @@ bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
   }  // if has user_defined tag
   return false;
 }  // AttributesManager<T, Access>::parseUserDefinedJsonVals
+
+template <class T, ManagedObjectAccess Access>
+bool AttributesManager<T, Access>::setHandleFromDefaultTag(
+    const attributes::AbstractAttributes::ptr& attributes,
+    const std::string& srcAssetFilename,
+    const std::function<void(const std::string&)>& filenameSetter) {
+  if (srcAssetFilename.empty()) {
+    return false;
+  }
+  std::string tempStr(srcAssetFilename);
+  const auto loc = srcAssetFilename.find(CONFIG_NAME_AS_ASSET_FILENAME);
+  if (loc != std::string::npos) {
+    // sentinel tag is found - replace tag with simplified handle of
+    // attributes and use filenameSetter and return whether this file exists or
+    // not.
+    tempStr.replace(loc, strlen(CONFIG_NAME_AS_ASSET_FILENAME),
+                    attributes->getSimplifiedHandle());
+    if (Cr::Utility::Path::exists(tempStr)) {
+      // replace the component of the string containing the tag with the base
+      // filename/handle, and verify it exists. Otherwise, clear it.
+      filenameSetter(tempStr);
+      return true;
+    }
+    tempStr = Cr::Utility::Path::join(attributes->getFileDirectory(), tempStr);
+    if (Cr::Utility::Path::exists(tempStr)) {
+      // replace the component of the string containing the tag with the base
+      // filename/handle, and verify it exists. Otherwise, clear it.
+      filenameSetter(tempStr);
+      return true;
+    }
+    // out of options, clear out the wild-card default so that init-based
+    // default is derived and used.
+    filenameSetter("");
+  }
+  // no tag found - check if existing non-empty field exists.
+  return Cr::Utility::Path::exists(srcAssetFilename);
+}  // AttributesManager<T, Access>::setHandleFromDefaultTag
 
 }  // namespace managers
 }  // namespace metadata

@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -9,8 +9,8 @@
 
 #include <utility>
 
+#include "esp/core/Utility.h"
 #include "esp/gfx/RenderTarget.h"
-#include "esp/gfx/TextureVisualizerShader.h"
 #include "esp/sim/Simulator.h"
 
 namespace esp {
@@ -174,8 +174,10 @@ VisualSensor::MoveSemanticSensorNodeHelper::MoveSemanticSensorNodeHelper(
   CORRADE_INTERNAL_ASSERT(relativeTransformBackup_ == Cr::Containers::NullOpt);
 
   // back up the data
-  relativeTransformBackup_ = node.transformation();
-  Mn::Matrix4 absTransform = node.absoluteTransformation();
+  relativeTransformBackup_ =
+      core::orthonormalizeRotationShear(node.transformation());
+  Mn::Matrix4 absTransform =
+      core::orthonormalizeRotationShear(node.absoluteTransformation());
   semanticSensorParentNodeBackup_ =
       static_cast<scene::SceneNode*>(node.parent());
 

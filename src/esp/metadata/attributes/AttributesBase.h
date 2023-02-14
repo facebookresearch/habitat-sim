@@ -1,133 +1,74 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
 #ifndef ESP_METADATA_ATTRIBUTES_ATTRIBUTESBASE_H_
 #define ESP_METADATA_ATTRIBUTES_ATTRIBUTESBASE_H_
 
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/Path.h>
 #include <deque>
+#include "AttributesEnumMaps.h"
 #include "esp/core/Configuration.h"
-#include "esp/core/managedContainers/AbstractManagedObject.h"
+#include "esp/core/managedContainers/AbstractFileBasedManagedObject.h"
 
 namespace esp {
+namespace asset {
+enum class AssetType;
+}
 namespace metadata {
+/**
+ * @brief A tag to search for in the default_attributes section of the Scene
+ * Dataset JSON configuration files denoting that an implementation of the
+ * attributes should replace this tag with the base filename (minus all paths
+ * and extensions)
+ */
+constexpr char CONFIG_NAME_AS_ASSET_FILENAME[] =
+    "%%CONFIG_NAME_AS_ASSET_FILENAME%%";
+
 namespace attributes {
 
 /**
- * @brief This enum class defines the possible shader options for rendering
- * instances of objects or stages in Habitat-sim.
+ * @brief Constant static map to provide mappings from string tags to
+ * @ref esp::assets::AssetType values.  This will be used to map values
+ * set in json for mesh type to @ref esp::assets::AssetType.  Keys must
+ * be lowercase.
  */
-enum class ObjectInstanceShaderType {
-  /**
-   * Represents an unknown/unspecified value for the shader type to use. Resort
-   * to defaults for object type.
-   */
-  Unknown = ID_UNDEFINED,
-  /**
-   * Override any config-specified or default shader-type values to use the
-   * material-specified shader.
-   */
-  Material,
-  /**
-   * Refers to flat shading, pure color and no lighting.  This is often used for
-   * textured objects
-   */
-  Flat,
-  /**
-   * Refers to phong shading with pure diffuse color.
-   */
-  Phong,
-  /**
-   * Refers to using a shader built with physically-based rendering models.
-   */
-  PBR,
-  /**
-   * End cap value - no shader type enums should be defined past this enum.
-   */
-  EndShaderType,
-};
+const extern std::map<std::string, esp::assets::AssetType> AssetTypeNamesMap;
 
 /**
- * @brief Constant map to provide mappings from string tags to @ref
- * ObjectInstanceShaderType values.  This will be used to map values set
- * in json for translation origin to @ref ObjectInstanceShaderType.  Keys
- * must be lowercase.
+ * @brief Get a string name representing the specified @ref
+ * esp::assets::AssetType enum value.
  */
-const extern std::map<std::string, ObjectInstanceShaderType> ShaderTypeNamesMap;
-
-/**
- * @brief This method will convert an int value to the string key it maps to in
- * the ShaderTypeNamesMap
- */
-std::string getShaderTypeName(int shaderTypeVal);
-
-/**
- * @brief This enum class describes whether an object instance position is
- * relative to its COM or the asset's local origin.  Depending on this value, we
- * may take certain actions when instantiating a scene described by a scene
- * instance. For example, scene instances exported from Blender will have no
- * conception of an object's configured COM, and so will require adjustment to
- * translations to account for COM location when the object is placed*/
-enum class SceneInstanceTranslationOrigin {
-  /**
-   * @brief Default value - in the case of object instances, this means use the
-   * specified scene instance default; in the case of a scene instance, this
-   * means do not correct for COM.
-   */
-  Unknown = -1,
-  /**
-   * @brief Indicates scene instance objects were placed without knowledge of
-   * their COM location, and so need to be corrected when placed in scene in
-   * Habitat. For example, they were exported from an external editor like
-   * Blender.
-   */
-  AssetLocal,
-  /**
-   * @brief Indicates scene instance objects' location were recorded at their
-   * COM location, and so do not need correction.  For example they were
-   * exported from Habitat-sim.
-   */
-  COM,
-  /**
-   * End cap value - no instance translation origin type enums should be defined
-   * past this enum.
-   */
-  EndTransOrigin,
-};
-
-/**
- * @brief Constant map to provide mappings from string tags to @ref
- * SceneInstanceTranslationOrigin values.  This will be used to map values set
- * in json for translation origin to @ref SceneInstanceTranslationOrigin.  Keys
- * must be lowercase.
- */
-const extern std::map<std::string, SceneInstanceTranslationOrigin>
-    InstanceTranslationOriginMap;
-/**
- * @brief This method will convert an int value to the string key it maps to in
- * the InstanceTranslationOriginMap
- */
-std::string getTranslationOriginName(int translationOrigin);
+std::string getMeshTypeName(esp::assets::AssetType meshTypeEnum);
 
 /**
  * @brief Base class for all implemented attributes.  Inherits from @ref
  * esp::core::AbstractFileBasedManagedObject so the attributes can be managed by
  * a @ref esp::core::ManagedContainer.
  */
-class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
-                           public esp::core::config::Configuration {
+class AbstractAttributes
+    : public esp::core::managedContainers::AbstractFileBasedManagedObject,
+      public esp::core::config::Configuration {
  public:
   AbstractAttributes(const std::string& attributesClassKey,
                      const std::string& handle);
 
   AbstractAttributes(const AbstractAttributes& otr) = default;
   AbstractAttributes(AbstractAttributes&& otr) noexcept = default;
+  ~AbstractAttributes() override = default;
 
   AbstractAttributes& operator=(const AbstractAttributes& otr) = default;
   AbstractAttributes& operator=(AbstractAttributes&& otr) noexcept = default;
 
-  ~AbstractAttributes() override = default;
+  /**
+   * @brief Support writing to JSON object as required by @ref
+   * esp::core::managedContainers::AbstractFileBasedManagedObject
+   */
+  io::JsonGenericValue writeToJsonObject(
+      io::JsonAllocator& allocator) const override {
+    return Configuration::writeToJsonObject(allocator);
+  }
+
   /**
    * @brief Get this attributes' class.  Should only be set from constructor.
    * Used as key in constructor function pointer maps in AttributesManagers.
@@ -144,21 +85,6 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
    */
   void setHandle(const std::string& handle) override { set("handle", handle); }
   std::string getHandle() const override { return get<std::string>("handle"); }
-
-  /**
-   * @brief This will return a simplified version of the attributes handle. Note
-   * : there's no guarantee this handle will be sufficiently unique to identify
-   * this attributes, so this should only be used for logging, and not for
-   * attempts to search for attributes.
-   */
-  virtual std::string getSimplifiedHandle() const {
-    // first parse for file name, and then get rid of extension(s).
-    return Corrade::Utility::Directory::splitExtension(
-               Corrade::Utility::Directory::splitExtension(
-                   Corrade::Utility::Directory::filename(getHandle()))
-                   .first)
-        .first;
-  }
 
   /**
    * @brief directory where files used to construct attributes can be found.

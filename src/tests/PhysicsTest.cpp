@@ -1,15 +1,16 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
 #include <Corrade/TestSuite/Compare/Numeric.h>
 #include <Corrade/TestSuite/Tester.h>
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/Path.h>
 #include <string>
 
 #include "esp/sim/Simulator.h"
 
 #include "esp/assets/ResourceManager.h"
+#include "esp/metadata/MetadataMediator.h"
 #include "esp/scene/SceneManager.h"
 
 #include "esp/physics/PhysicsManager.h"
@@ -32,10 +33,9 @@ using esp::metadata::attributes::ObjectAttributes;
 using esp::physics::PhysicsManager;
 using esp::scene::SceneManager;
 
-const std::string dataDir = Cr::Utility::Directory::join(SCENE_DATASETS, "../");
+const std::string dataDir = Cr::Utility::Path::join(SCENE_DATASETS, "../");
 const std::string physicsConfigFile =
-    Cr::Utility::Directory::join(SCENE_DATASETS,
-                                 "../default.physics_config.json");
+    Cr::Utility::Path::join(SCENE_DATASETS, "../default.physics_config.json");
 
 namespace {
 struct PhysicsTest : Cr::TestSuite::Tester {
@@ -86,7 +86,23 @@ struct PhysicsTest : Cr::TestSuite::Tester {
       stageAttributesMgr->setCurrPhysicsManagerAttributesHandle(
           physicsManagerAttributes->getHandle());
     }
-    auto stageAttributes = stageAttributesMgr->createObject(stageFile, true);
+    // create scene instance attributes
+    esp::metadata::attributes::SceneInstanceAttributes::cptr
+        curSceneInstanceAttributes =
+            metadataMediator_->getSceneInstanceAttributesByName(stageFile);
+
+    const esp::metadata::attributes::SceneObjectInstanceAttributes::cptr
+        stageInstanceAttributes =
+            curSceneInstanceAttributes->getStageInstance();
+
+    // Get full library name of StageAttributes
+    const std::string stageAttributesHandle =
+        metadataMediator_->getStageAttrFullHandle(
+            stageInstanceAttributes->getHandle());
+    // Get StageAttributes copy
+    auto stageAttributes =
+        metadataMediator_->getStageAttributesManager()->getObjectCopyByHandle(
+            stageAttributesHandle);
 
     // construct physics manager based on specifications in attributes
     resourceManager_->initPhysicsManager(physicsManager_, &rootNode,
@@ -94,8 +110,9 @@ struct PhysicsTest : Cr::TestSuite::Tester {
 
     // load scene
     std::vector<int> tempIDs{sceneID_, esp::ID_UNDEFINED};
-    resourceManager_->loadStage(stageAttributes, nullptr, physicsManager_,
-                                sceneManager_.get(), tempIDs);
+    auto stageInstanceAttrs = resourceManager_->loadStage(
+        stageAttributes, stageInstanceAttributes, physicsManager_,
+        sceneManager_.get(), tempIDs);
 
     rigidObjectManager_ = physicsManager_->getRigidObjectManager();
   }
@@ -106,8 +123,12 @@ struct PhysicsTest : Cr::TestSuite::Tester {
     if (drawables == nullptr) {
       drawables = &sceneManager_->getSceneGraph(sceneID_).getDrawables();
     }
+    auto objAttr =
+        metadataMediator_->getObjectAttributesManager()->getObjectCopyByHandle(
+            objectFile);
+
     int objectId =
-        physicsManager_->addObject(objectFile, drawables, attachmentNode);
+        physicsManager_->addObject(objAttr, drawables, attachmentNode);
 #ifdef ESP_BUILD_WITH_BULLET
     esp::physics::ManagedBulletRigidObject::ptr objectWrapper =
         rigidObjectManager_
@@ -155,9 +176,12 @@ const struct {
 
 PhysicsTest::PhysicsTest() {
   addInstancedTests(
-      {&PhysicsTest::testJoinCompound, &PhysicsTest::testCollisionBoundingBox,
+      {&PhysicsTest::testJoinCompound,
+#ifdef ESP_BUILD_WITH_BULLET
+       &PhysicsTest::testCollisionBoundingBox,
        &PhysicsTest::testDiscreteContactTest,
        &PhysicsTest::testBulletCompoundShapeMargins,
+#endif
        &PhysicsTest::testConfigurableScaling, &PhysicsTest::testVelocityControl,
        &PhysicsTest::testSceneNodeAttachment, &PhysicsTest::testMotionTypes,
        &PhysicsTest::testNumActiveContactPoints,
@@ -166,10 +190,10 @@ PhysicsTest::PhysicsTest() {
 }
 
 void PhysicsTest::testJoinCompound() {
-  std::string stageFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/scenes/simple_room.glb");
-  std::string objectFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/objects/nested_box.glb");
+  std::string stageFile =
+      Cr::Utility::Path::join(dataDir, "test_assets/scenes/simple_room.glb");
+  std::string objectFile =
+      Cr::Utility::Path::join(dataDir, "test_assets/objects/nested_box.glb");
 
   resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
 
@@ -190,7 +214,7 @@ void PhysicsTest::testJoinCompound() {
     ObjectAttributes::ptr objectTemplate =
         objectAttributesManager->getObjectCopyByHandle(objectFile);
 
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 2; ++i) {
       // mark the object not joined
       if (i == 0) {
         objectTemplate->setJoinCollisionMeshes(false);
@@ -202,7 +226,7 @@ void PhysicsTest::testJoinCompound() {
 
       // add and simulate objects
       int num_objects = 7;
-      for (int o = 0; o < num_objects; o++) {
+      for (int o = 0; o < num_objects; ++o) {
         auto objWrapper = rigidObjectManager_->addObjectByHandle(objectFile);
 
         esp::scene::SceneNode* node = objWrapper->getSceneNode();
@@ -242,9 +266,9 @@ void PhysicsTest::testJoinCompound() {
 #ifdef ESP_BUILD_WITH_BULLET
 void PhysicsTest::testCollisionBoundingBox() {
   std::string stageFile =
-      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
+      Cr::Utility::Path::join(dataDir, "test_assets/scenes/plane.glb");
   std::string objectFile =
-      Cr::Utility::Directory::join(dataDir, "test_assets/objects/sphere.glb");
+      Cr::Utility::Path::join(dataDir, "test_assets/objects/sphere.glb");
 
   resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
 
@@ -268,7 +292,7 @@ void PhysicsTest::testCollisionBoundingBox() {
     ObjectAttributes::ptr objectTemplate =
         objectAttributesManager->getObjectCopyByHandle(objectFile);
 
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 2; ++i) {
       if (i == 0) {
         objectTemplate->setBoundingBoxCollisions(false);
       } else {
@@ -321,9 +345,9 @@ void PhysicsTest::testCollisionBoundingBox() {
 
 void PhysicsTest::testDiscreteContactTest() {
   std::string stageFile =
-      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
-  std::string objectFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/objects/transform_box.glb");
+      Cr::Utility::Path::join(dataDir, "test_assets/scenes/plane.glb");
+  std::string objectFile =
+      Cr::Utility::Path::join(dataDir, "test_assets/objects/transform_box.glb");
 
   resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
   initStage(stageFile);
@@ -405,8 +429,8 @@ void PhysicsTest::testBulletCompoundShapeMargins() {
   // test that all different construction methods for a simple shape result in
   // the same Aabb for the given margin
 
-  std::string objectFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/objects/transform_box.glb");
+  std::string objectFile =
+      Cr::Utility::Path::join(dataDir, "test_assets/objects/transform_box.glb");
 
   resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
   initStage(objectFile);
@@ -474,10 +498,10 @@ void PhysicsTest::testConfigurableScaling() {
   resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
 
   std::string stageFile =
-      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
+      Cr::Utility::Path::join(dataDir, "test_assets/scenes/plane.glb");
 
-  std::string objectFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/objects/transform_box.glb");
+  std::string objectFile =
+      Cr::Utility::Path::join(dataDir, "test_assets/objects/transform_box.glb");
 
   initStage(stageFile);
 
@@ -530,7 +554,7 @@ void PhysicsTest::testConfigurableScaling() {
   }
 
   // check that scales are stored and queried correctly
-  for (size_t ix = 0; ix < objectIDs.size(); ix++) {
+  for (size_t ix = 0; ix < objectIDs.size(); ++ix) {
     CORRADE_COMPARE(
         rigidObjectManager_->getObjectCopyByID(objectIDs[ix])->getScale(),
         testScales[ix]);
@@ -542,11 +566,11 @@ void PhysicsTest::testVelocityControl() {
 
   resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
 
-  std::string objectFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/objects/transform_box.glb");
+  std::string objectFile =
+      Cr::Utility::Path::join(dataDir, "test_assets/objects/transform_box.glb");
 
   std::string stageFile =
-      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
+      Cr::Utility::Path::join(dataDir, "test_assets/scenes/plane.glb");
 
   initStage(stageFile);
 
@@ -690,11 +714,11 @@ void PhysicsTest::testSceneNodeAttachment() {
 
   resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
 
-  std::string objectFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/objects/transform_box.glb");
+  std::string objectFile =
+      Cr::Utility::Path::join(dataDir, "test_assets/objects/transform_box.glb");
 
   std::string stageFile =
-      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
+      Cr::Utility::Path::join(dataDir, "test_assets/scenes/plane.glb");
 
   initStage(stageFile);
 
@@ -748,11 +772,11 @@ void PhysicsTest::testMotionTypes() {
 
   resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
 
-  std::string objectFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/objects/transform_box.glb");
+  std::string objectFile =
+      Cr::Utility::Path::join(dataDir, "test_assets/objects/transform_box.glb");
 
   std::string stageFile =
-      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
+      Cr::Utility::Path::join(dataDir, "test_assets/scenes/plane.glb");
 
   initStage(stageFile);
 
@@ -779,7 +803,7 @@ void PhysicsTest::testMotionTypes() {
 
     float stageCollisionMargin = 0.04;
 
-    for (int testId = 0; testId < 3; testId++) {
+    for (int testId = 0; testId < 3; ++testId) {
       auto objWrapper0 =
           makeObjectGetWrapper(objTemplate->getHandle(), &drawables);
       auto objWrapper1 =
@@ -866,8 +890,8 @@ void PhysicsTest::testMotionTypes() {
 void PhysicsTest::testNumActiveContactPoints() {
   resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
 
-  std::string stageFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/scenes/simple_room.glb");
+  std::string stageFile =
+      Cr::Utility::Path::join(dataDir, "test_assets/scenes/simple_room.glb");
 
   initStage(stageFile);
   auto& drawables = sceneManager_->getSceneGraph(sceneID_).getDrawables();
@@ -888,6 +912,9 @@ void PhysicsTest::testNumActiveContactPoints() {
 
     // no active contact points at start
     CORRADE_COMPARE(physicsManager_->getNumActiveContactPoints(), 0);
+    CORRADE_COMPARE(physicsManager_->getNumActiveOverlappingPairs(), 0);
+    CORRADE_COMPARE(physicsManager_->getStepCollisionSummary(),
+                    "(no active collision manifolds)\n");
 
     // simulate to let cube fall and hit the ground
     while (physicsManager_->getWorldTime() < 2.0) {
@@ -898,6 +925,12 @@ void PhysicsTest::testNumActiveContactPoints() {
     // expect 4 active contact points for cube
     CORRADE_COMPARE(allContactPoints.size(), 4);
     CORRADE_COMPARE(physicsManager_->getNumActiveContactPoints(), 4);
+    // simple_room.glb has multiple subparts and our box is near two of them
+    CORRADE_COMPARE(physicsManager_->getNumActiveOverlappingPairs(), 2);
+    CORRADE_COMPARE(
+        physicsManager_->getStepCollisionSummary(),
+        "[RigidObject, cubeSolid, id 0] vs [Stage, subpart 6], 4 points\n");
+
     float totalNormalForce = 0;
     for (auto& cp : allContactPoints) {
       // contacts are still active
@@ -927,6 +960,7 @@ void PhysicsTest::testNumActiveContactPoints() {
     CORRADE_COMPARE(physicsManager_->getContactPoints().size(), 4);
     // no active contact points at end
     CORRADE_COMPARE(physicsManager_->getNumActiveContactPoints(), 0);
+    CORRADE_COMPARE(physicsManager_->getNumActiveOverlappingPairs(), 0);
   }
 }  // PhysicsTest::testNumActiveContactPoints
 

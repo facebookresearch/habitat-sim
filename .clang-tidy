@@ -6,7 +6,6 @@ cppcoreguidelines-init-variables,
 cppcoreguidelines-pro-type-member-init,
 google-*,
 misc-definitions-in-headers,
-misc-misplaced-const,
 misc-static-assert,
 misc-unconventional-assign-operator,
 misc-uniqueptr-reset-release,
@@ -54,6 +53,7 @@ readability-uniqueptr-delete-release,
 -*.cocoa.*,
 -clang-analyzer-core.NullDereference,
 -clang-analyzer-security.insecureAPI.rand,
+-google-build-explicit-make-pair,
 -google-default-arguments,
 -google-readability-braces-around-statements,
 -google-readability-todo,
@@ -61,6 +61,9 @@ readability-uniqueptr-delete-release,
 -modernize-avoid-c-arrays,
 -modernize-use-auto,
 -modernize-use-trailing-return-type,
+-bugprone-easily-swappable-parameters,
+-bugprone-forward-declaration-namespace,
+-performance-no-int-to-ptr,
 '
 
 CheckOptions:
@@ -73,12 +76,6 @@ CheckOptions:
 - key:             readability-implicit-bool-conversion.AllowPointerConditions
   value:           true
 
-# Let deprecation warnings through. From time to time, Magnum annotates APIs
-# with deprecation warnings, suggesting people to upgrade to newer / better
-# designed / more flexible APIs. Treating such warnings as error is
-# counterproductive, since the first thing you want to do after an upgrade is
-# compiling existing *unchanged* code and ensuring all tests pass, and only
-# then start updating the code.
 WarningsAsErrors: '
 *,
 -bugprone-narrowing-conversions,
@@ -87,7 +84,44 @@ WarningsAsErrors: '
 -clang-diagnostic-deprecated-declarations,
 -clang-analyzer-cplusplus.PlacementNew,
 -cppcoreguidelines-pro-type-member-init,
--optin.cplusplus.UninitializedObject
+-optin.cplusplus.UninitializedObject,
+-readability-implicit-bool-conversion,
 '
 
 HeaderFilterRegex: "src/esp/"
+
+# Comments for particular disabled checks:
+#
+# bugprone-forward-declaration-namespace
+#   This check would make forward declarations work only if each class name is
+#   unique across all namespaces, otherwise it would complain that e.g. Buffer
+#   is defined in Magnum::GL but a forward declaration appears in Magnum::Vk.
+#   Which is just useless, and goes against the point of namespaces.
+# clang-diagnostic-deprecated-declarations
+#   From time to time, Magnum annotates APIs with deprecation warnings,
+#   suggesting people to upgrade to newer / better designed / more flexible
+#   APIs. Treating such warnings as error is counterproductive, since the first
+#   thing you want to do after an upgrade is compiling existing *unchanged*
+#   code and ensuring all tests pass, and only then start updating the code.
+# readability-implicit-bool-conversion
+#   There's many cases of checking counts in if statements, such as
+#   `if(!importer->sceneCount())` for Magnum importers. For those there are no
+#   corresponding `hasScenes()` or such, and having to write `== 0` doesn't
+#   really improve readability in any way. Keeping this as a warning tho, as it
+#   *might* actually be useful in certain cases, just not treating it as an
+#   error.
+# performance-no-int-to-ptr
+#   "error: integer to pointer cast pessimizes optimization opportunities"
+#   triggered by gfx::replay::NodeHandle, which can be either a pointer (for
+#   the SceneGraph backend) or an arbitrary integer value (for the new
+#   data-oriented backend). Clang Tidy, tell me, how else am I supposed to
+#   implement type-safe handles?!
+# misc-misplaced-const
+#   "'node' declared with a const-qualified typedef; results in the type being
+#   'esp::gfx::replay::NodeHandle_ *const' instead of 'const
+#   esp::gfx::replay::NodeHandle_ *'". Same problem, how else am I supposed to
+#   implement type-safe handles? If the handle represents an integer, it's also
+#   not really "const" because I can use it to index a mutable array (which I
+#   regularly do). "Fixing" this warning would mean adding a const to the
+#   typedef AND THEN a const_cast to each and every reinterpret_cast that turns
+#   it into a SceneNode*. Which is way worse than the original problem.

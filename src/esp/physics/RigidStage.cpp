@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -18,6 +18,8 @@ bool RigidStage::initialize(
     return false;
   }
   objectMotionType_ = MotionType::STATIC;
+  objectName_ = Cr::Utility::formatString(
+      "Stage from {}", initAttributes->getSimplifiedHandle());
   // save the copy of the template used to create the object at initialization
   // time
   setUserAttributes(initAttributes->getUserConfiguration());

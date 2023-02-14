@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -29,6 +29,18 @@ struct JointLimitConstraintInfo {
   int dof;
   float lowerLimit, upperLimit;
   btMultiBodyConstraint* con;
+};
+
+/**
+ * @brief struct to encapsulate mapping between child and parent links ids.
+ */
+struct childParentIndex {
+  int m_index;
+  int m_mbIndex;
+  int m_parentIndex;
+  int m_parentMBIndex;
+
+  std::string m_link_name;
 };
 
 /**
@@ -85,11 +97,18 @@ class BulletURDFImporter : public URDFImporter {
       btMultiBodyDynamicsWorld* world1,
       std::map<int, std::unique_ptr<btCompoundShape>>& linkCompoundShapes,
       std::map<int, std::vector<std::unique_ptr<btCollisionShape>>>&
-          linkChildShapes);
+          linkChildShapes,
+      bool recursive = false);
 
   //! The temporary Bullet multibody cache initialized by
   //! convertURDF2BulletInternal and cleared after instancing the object
   std::shared_ptr<URDF2BulletCached> cache = nullptr;
+
+  //! Recursively get all indices from the model with mappings between parents
+  //! and children
+  void getAllIndices(int urdfLinkIndex,
+                     int parentIndex,
+                     std::vector<childParentIndex>& allIndices);
 
  protected:
   //! Construct a set of Bullet collision shapes from the URDF::CollisionShape

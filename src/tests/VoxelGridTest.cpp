@@ -1,8 +1,8 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 #include <Corrade/TestSuite/Tester.h>
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/Path.h>
 #include <Magnum/Magnum.h>
 
 #include "esp/geo/VoxelUtils.h"
@@ -34,7 +34,7 @@ VoxelGridTest::VoxelGridTest() {
 void VoxelGridTest::testVoxelGridWithVHACD() {
   // configure and intialize Simulator
   auto simConfig = esp::sim::SimulatorConfiguration();
-  simConfig.activeSceneName = Cr::Utility::Directory::join(
+  simConfig.activeSceneName = Cr::Utility::Path::join(
       SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.glb");
   simConfig.enablePhysics = true;
   simConfig.frustumCulling = true;
@@ -65,7 +65,7 @@ void VoxelGridTest::testVoxelGridWithVHACD() {
   std::vector<Mn::Vector3> global_coords =
       std::vector<Mn::Vector3>{Mn::Vector3(-9.75916, -0.390074, 0.973851),
                                Mn::Vector3(8.89573, 7.07188, 25.5983)};
-  for (int i = 0; i < voxel_indices.size(); i++) {
+  for (int i = 0; i < voxel_indices.size(); ++i) {
     CORRADE_COMPARE(
         voxelization->getGlobalCoordsFromVoxelIndex(voxel_indices[i]),
         global_coords[i]);
@@ -80,18 +80,18 @@ void VoxelGridTest::testVoxelGridWithVHACD() {
   auto intGrid = voxelization->getGrid<int>("intGrid");
 
   Mn::Vector3i dims = voxelization->getVoxelGridDimensions();
-  for (int i = 0; i < dims[0]; i++) {
-    for (int j = 0; j < dims[1]; j++) {
-      for (int k = 0; k < dims[2]; k++) {
+  for (int i = 0; i < dims[0]; ++i) {
+    for (int j = 0; j < dims[1]; ++j) {
+      for (int k = 0; k < dims[2]; ++k) {
         intGrid[i][j][k] = 10;
       }
     }
   }
   bool settersWorked = true;
 
-  for (int i = 0; i < dims[0]; i++) {
-    for (int j = 0; j < dims[1]; j++) {
-      for (int k = 0; k < dims[2]; k++) {
+  for (int i = 0; i < dims[0]; ++i) {
+    for (int j = 0; j < dims[1]; ++j) {
+      for (int k = 0; k < dims[2]; ++k) {
         if (voxelization->getVoxel<int>(Mn::Vector3i(i, j, k), "intGrid") !=
             10) {
           settersWorked = false;
@@ -115,7 +115,7 @@ void VoxelGridTest::testVoxelGridWithVHACD() {
 void VoxelGridTest::testVoxelUtilityFunctions() {
   // configure and intialize Simulator
   auto simConfig = esp::sim::SimulatorConfiguration();
-  simConfig.activeSceneName = Cr::Utility::Directory::join(
+  simConfig.activeSceneName = Cr::Utility::Path::join(
       SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.glb");
   simConfig.enablePhysics = true;
   simConfig.frustumCulling = true;
@@ -156,7 +156,7 @@ void VoxelGridTest::testVoxelUtilityFunctions() {
   // tolerance for comparing ESDF values
   float tolerance = 0.00001;
 
-  for (int i = 0; i < voxel_indices.size(); i++) {
+  for (int i = 0; i < voxel_indices.size(); ++i) {
     auto& ind = voxel_indices[i];
     if (abs(esdf_grid[ind[0]][ind[1]][ind[2]] - correct_esdf_values[i]) >
         tolerance) {

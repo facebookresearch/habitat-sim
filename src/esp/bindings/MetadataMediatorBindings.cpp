@@ -1,5 +1,4 @@
-
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -16,7 +15,9 @@ namespace esp {
 namespace metadata {
 
 void initMetadataMediatorBindings(py::module& m) {
-  py::class_<MetadataMediator, MetadataMediator::ptr>(m, "MetadataMediator")
+  py::class_<MetadataMediator, MetadataMediator::ptr>(
+      m, "MetadataMediator",
+      R"(Aggregates all AttributesManagers and provides an API for swapping the active SceneDataset. It can exist independant of a :ref:`Simulator` object for programmatic metadata management and can be passed into the constructor via the :ref:`SimulatorConfiguration`.)")
       .def(py::init(&MetadataMediator::create<>))
       .def(py::init<const sim::SimulatorConfiguration&>())
       .def_property(

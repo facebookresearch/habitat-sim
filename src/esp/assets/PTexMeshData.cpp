@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -16,7 +16,7 @@
 #include <Corrade/Utility/Assert.h>
 #include <Corrade/Utility/Debug.h>
 #include <Corrade/Utility/DebugStl.h>
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/Path.h>
 #include <Magnum/GL/BufferTextureFormat.h>
 #include <Magnum/GL/TextureFormat.h>
 #include <Magnum/ImageView.h>
@@ -37,18 +37,18 @@ namespace assets {
 
 void PTexMeshData::load(const std::string& meshFile,
                         const std::string& atlasFolder) {
-  if (!Cr::Utility::Directory::exists(meshFile)) {
+  if (!Cr::Utility::Path::exists(meshFile)) {
     Cr::Utility::Fatal{-1} << "PTexMeshData::load: Mesh file" << meshFile
                            << "does not exist.";
   }
-  if (!Cr::Utility::Directory::exists(atlasFolder)) {
+  if (!Cr::Utility::Path::exists(atlasFolder)) {
     Cr::Utility::Fatal{-1} << "PTexMeshData::load: The atlasFolder"
                            << atlasFolder << "does not exist.";
   }
 
   // Parse parameters
   const auto& paramsFile = atlasFolder + "/parameters.json";
-  if (!Cr::Utility::Directory::exists(paramsFile)) {
+  if (!Cr::Utility::Path::exists(paramsFile)) {
     Cr::Utility::Fatal{-1} << "PTexMeshData::load: The parameter file"
                            << paramsFile << "does not exist.";
   }
@@ -151,13 +151,13 @@ std::vector<PTexMeshData::MeshData> splitMesh(
 
   box3f boundingBox;
 
-  for (size_t i = 0; i < mesh.vbo.size(); i++) {
+  for (size_t i = 0; i < mesh.vbo.size(); ++i) {
     boundingBox.extend(mesh.vbo[i].head<3>());
   }
 
 // calculate vertex grid position and code
 #pragma omp parallel for
-  for (size_t i = 0; i < mesh.vbo.size(); i++) {
+  for (size_t i = 0; i < mesh.vbo.size(); ++i) {
     const vec3f p = mesh.vbo[i].head<3>();
     vec3f pi = (p - boundingBox.min()) / splitSize;
     verts[i] = EncodeMorton3(pi.cast<int>());
@@ -179,10 +179,10 @@ std::vector<PTexMeshData::MeshData> splitMesh(
   faces.resize(numFaces);
 
 #pragma omp parallel for
-  for (size_t i = 0; i < numFaces; i++) {
+  for (size_t i = 0; i < numFaces; ++i) {
     faces[i].originalFace = i;
     faces[i].code = std::numeric_limits<uint32_t>::max();
-    for (int j = 0; j < 4; j++) {
+    for (int j = 0; j < 4; ++j) {
       faces[i].index[j] = mesh.ibo[i * 4 + j];
 
       // face code is minimum of referenced vertices codes
@@ -200,7 +200,7 @@ std::vector<PTexMeshData::MeshData> splitMesh(
   std::vector<uint32_t> chunkStart;
   chunkStart.push_back(0);
   uint32_t prevCode = faces[0].code;
-  for (size_t i = 1; i < faces.size(); i++) {
+  for (size_t i = 1; i < faces.size(); ++i) {
     if (faces[i].code != prevCode) {
       chunkStart.push_back(i);
       prevCode = faces[i].code;
@@ -214,7 +214,7 @@ std::vector<PTexMeshData::MeshData> splitMesh(
   // Do we need the maxFaces anywhere?
   // If not, remove it in the future PR
   size_t maxFaces = 0;
-  for (size_t i = 0; i < numChunks; i++) {
+  for (size_t i = 0; i < numChunks; ++i) {
     uint32_t chunkSize = chunkStart[i + 1] - chunkStart[i];
     if (chunkSize > maxFaces)
       maxFaces = chunkSize;
@@ -223,12 +223,12 @@ std::vector<PTexMeshData::MeshData> splitMesh(
   // create new mesh for each chunk of faces
   std::vector<PTexMeshData::MeshData> subMeshes;
 
-  for (size_t i = 0; i < numChunks; i++) {
+  for (size_t i = 0; i < numChunks; ++i) {
     subMeshes.emplace_back();
   }
 
 #pragma omp parallel for
-  for (size_t i = 0; i < numChunks; i++) {
+  for (size_t i = 0; i < numChunks; ++i) {
     uint32_t chunkSize = chunkStart[i + 1] - chunkStart[i];
 
     std::vector<uint32_t> refdVerts;
@@ -236,9 +236,9 @@ std::vector<PTexMeshData::MeshData> splitMesh(
     std::unordered_map<uint32_t, uint32_t> refdVertsMap;
     subMeshes[i].ibo.resize(chunkSize * 4);
 
-    for (size_t j = 0; j < chunkSize; j++) {
+    for (size_t j = 0; j < chunkSize; ++j) {
       size_t faceIdx = chunkStart[i] + j;
-      for (int k = 0; k < 4; k++) {
+      for (int k = 0; k < 4; ++k) {
         uint32_t vertIndex = faces[faceIdx].index[k];
         uint32_t newIndex = 0;
 
@@ -262,7 +262,7 @@ std::vector<PTexMeshData::MeshData> splitMesh(
     // add referenced vertices to submesh
     subMeshes[i].vbo.resize(refdVerts.size());
     subMeshes[i].nbo.resize(refdVerts.size());
-    for (size_t j = 0; j < refdVerts.size(); j++) {
+    for (size_t j = 0; j < refdVerts.size(); ++j) {
       uint32_t index = refdVerts[j];
       subMeshes[i].vbo[j] = mesh.vbo[index];
       subMeshes[i].nbo[j] = mesh.nbo[index];
@@ -401,9 +401,9 @@ void PTexMeshData::calculateAdjacency(const PTexMeshData::MeshData& mesh,
   std::vector<EdgeIter> edgeIterators(numFaces * 4);
 
   // for each face
-  for (int f = 0; f < numFaces; f++) {
+  for (int f = 0; f < numFaces; ++f) {
     // for each edge
-    for (int e = 0; e < 4; e++) {
+    for (int e = 0; e < 4; ++e) {
       // add to edge to face map
       const int e_index = f * 4 + e;
       const uint32_t i0 = mesh.ibo[e_index];
@@ -429,15 +429,15 @@ void PTexMeshData::calculateAdjacency(const PTexMeshData::MeshData& mesh,
 
   adjFaces.resize(numFaces * 4);
 
-  for (int f = 0; f < numFaces; f++) {
-    for (int e = 0; e < 4; e++) {
+  for (int f = 0; f < numFaces; ++f) {
+    for (int e = 0; e < 4; ++e) {
       const int e_index = f * 4 + e;
       auto it = edgeIterators[e_index];
       const std::vector<EdgeData>& adj = it->second;
 
       // find adjacent face
       int adjFace = -1;
-      for (size_t i = 0; i < adj.size(); i++) {
+      for (size_t i = 0; i < adj.size(); ++i) {
         if (adj[i].face != f)
           adjFace = adj[i].face;
       }
@@ -490,7 +490,7 @@ void PTexMeshData::loadMeshData(const std::string& meshFile) {
     // splitMesh(...)
 
     // See detailed comments in front of the splitMesh(...)
-    std::string subMeshesFilename = Corrade::Utility::Directory::join(
+    std::string subMeshesFilename = Corrade::Utility::Path::join(
         atlasFolder_, "../habitat/sorted_faces.bin");
     submeshes_ = loadSubMeshes(originalMesh, subMeshesFilename);
 
@@ -736,7 +736,7 @@ void PTexMeshData::parsePLY(const std::string& filename,
 
   size_t offsetSoFarBytes = 0;
 
-  for (size_t i = 0; i < vertexLayout.size(); i++) {
+  for (size_t i = 0; i < vertexLayout.size(); ++i) {
     if (vertexLayout[i] == Properties::POSITION) {
       positionOffsetBytes = offsetSoFarBytes;
       offsetSoFarBytes += positionBytes;
@@ -756,15 +756,15 @@ void PTexMeshData::parsePLY(const std::string& filename,
 
   file.close();
 
-  Cr::Containers::Array<const char, Cr::Utility::Directory::MapDeleter>
-      mmappedData = Cr::Utility::Directory::mapRead(filename);
+  Cr::Containers::Array<const char, Cr::Utility::Path::MapDeleter> mmappedData =
+      *Cr::Utility::Path::mapRead(filename);
 
-  const size_t fileSize = *Cr::Utility::Directory::fileSize(filename);
+  const size_t fileSize = *Cr::Utility::Path::size(filename);
 
   // Parse each vertex packet and unpack
   const char* bytes = mmappedData + postHeader;
 
-  for (size_t i = 0; i < numVertices; i++) {
+  for (size_t i = 0; i < numVertices; ++i) {
     const char* nextBytes = bytes + vertexPacketSizeBytes * i;
 
     memcpy(meshData.vbo[i].data(), &nextBytes[positionOffsetBytes],
@@ -811,7 +811,7 @@ void PTexMeshData::parsePLY(const std::string& filename,
 
   meshData.ibo.resize(numFaces * faceDimensions);
 
-  for (size_t i = 0; i < numFaces; i++) {
+  for (size_t i = 0; i < numFaces; ++i) {
     const char* nextBytes = bytes + facePacketSizeBytes * i;
 
     memcpy(&meshData.ibo[i * faceDimensions], &nextBytes[countBytes],
@@ -903,18 +903,18 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
   // load atlas data and upload them to GPU
   ESP_DEBUG() << "loading atlas textures:";
   for (size_t iMesh = 0; iMesh < renderingBuffers_.size(); ++iMesh) {
-    const std::string hdrFile = Cr::Utility::Directory::join(
+    const std::string hdrFile = Cr::Utility::Path::join(
         atlasFolder_, std::to_string(iMesh) + "-color-ptex.hdr");
 
-    CORRADE_ASSERT(Cr::Utility::Directory::exists(hdrFile),
+    CORRADE_ASSERT(Cr::Utility::Path::exists(hdrFile),
                    "PTexMeshData::uploadBuffersToGPU: Cannot find the .hdr file"
                        << hdrFile, );
 
     ESP_DEBUG() << "Loading atlas" << iMesh + 1 << "/"
                 << renderingBuffers_.size() << "from" << hdrFile << ".";
 
-    Cr::Containers::Array<const char, Cr::Utility::Directory::MapDeleter> data =
-        Cr::Utility::Directory::mapRead(hdrFile);
+    Cr::Containers::Array<const char, Cr::Utility::Path::MapDeleter> data =
+        *Cr::Utility::Path::mapRead(hdrFile);
     // divided by 6, since there are 3 channels, R, G, B, each of which takes
     // 1 half_float (2 bytes)
     const int dim = static_cast<int>(std::sqrt(data.size() / 6));  // square

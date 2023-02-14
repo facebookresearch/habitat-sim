@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -18,7 +18,8 @@ struct RenderAssetInstanceCreationInfo;
 }  // namespace assets
 namespace scene {
 class SceneNode;
-}
+class SceneGraph;
+}  // namespace scene
 namespace gfx {
 namespace replay {
 
@@ -58,6 +59,16 @@ class Recorder {
   void onLoadRenderAsset(const esp::assets::AssetInfo& assetInfo);
 
   /**
+   * @brief Record deletion of all render instances in a scene graph.
+   * Because scene graphs are currently leaked when the active scene changes, we
+   * cannot rely on node deletion to issue gfx-replay deletion entries. This
+   * function allows to circumvent this issue.
+   * The scene graph leak occurs in createSceneInstance(), in Simulator.cpp.
+   * @param sceneGraph The scene graph being hidden.
+   */
+  void onHideSceneGraph(const esp::scene::SceneGraph& sceneGraph);
+
+  /**
    * @brief Save/capture a render keyframe (a visual snapshot of the scene).
    *
    * User code can call this any time, but the intended usage is to save a
@@ -65,6 +76,8 @@ class Recorder {
    * See also writeSavedKeyframesToFile.
    */
   void saveKeyframe();
+
+  Keyframe extractKeyframe();
 
   /**
    * @brief Returns the last saved keyframe.
@@ -91,6 +104,18 @@ class Recorder {
                                   const Magnum::Quaternion& rotation);
 
   /**
+   * @brief Add a light to the current keyframe.
+   *
+   * @param lightInfo Parameters of the light to be added to the keyframe.
+   */
+  void addLightToKeyframe(const LightInfo& lightInfo);
+
+  /**
+   * @brief Delete all lights from the current keyframe.
+   */
+  void clearLightsFromKeyframe();
+
+  /**
    * @brief write saved keyframes to file.
    * @param filepath
    *
@@ -108,7 +133,7 @@ class Recorder {
   /**
    * @brief returns JSONized version of given keyframe.
    */
-  std::string keyframeToString(const Keyframe& keyframe);
+  static std::string keyframeToString(const Keyframe& keyframe);
 
   /**
    * @brief Reserved for unit-testing.

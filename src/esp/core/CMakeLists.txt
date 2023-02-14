@@ -1,6 +1,6 @@
-if(NOT BUILD_GUI_VIEWERS AND CORRADE_TARGET_UNIX AND NOT CORRADE_TARGET_APPLE)
-  set(ESP_BUILD_EGL_SUPPORT ON)
-endif()
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
 
 if(BUILD_ASSIMP_SUPPORT)
   set(ESP_BUILD_ASSIMP_SUPPORT ON)
@@ -31,6 +31,7 @@ configure_file(
 )
 
 find_package(Corrade REQUIRED Utility)
+find_package(MagnumIntegration REQUIRED Eigen)
 
 add_library(
   core STATIC
@@ -44,6 +45,7 @@ add_library(
   Esp.h
   Logging.cpp
   Logging.h
+  managedContainers/AbstractFileBasedManagedObject.h
   managedContainers/AbstractManagedObject.h
   managedContainers/ManagedContainer.h
   managedContainers/ManagedContainerBase.cpp

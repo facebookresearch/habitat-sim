@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates.
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
@@ -291,8 +291,7 @@ class DemoRunner:
             total_frames += 1
 
         end_time = time.time()
-        perf = {}
-        perf["total_time"] = end_time - start_time
+        perf = {"total_time": end_time - start_time}
         perf["frame_time"] = perf["total_time"] / total_frames
         perf["fps"] = 1.0 / perf["frame_time"]
         perf["time_per_step"] = time_per_step
@@ -357,7 +356,6 @@ class DemoRunner:
 
         best_perf = None
         for _ in range(3):
-
             if _barrier is not None:
                 _barrier.wait()
                 if _idx == 0:

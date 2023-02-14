@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -237,6 +237,20 @@ const Mn::Range3D& SceneNode::getAbsoluteAABB() const {
           geo::getTransformedBB(getCumulativeBB(), absoluteTransformation_)};
     return *worldCumulativeBB_;
   }
+}
+
+void setSemanticIdForSubtree(SceneNode* node, int semanticId) {
+  if (node->getSemanticId() == semanticId) {
+    // We assume the entire subtree's semanticId matches the root's, so we can
+    // early out here.
+    return;
+  }
+
+  // See also RigidBase setSemanticId. That function uses a prepared container
+  // of visual nodes, whereas this function traverses the subtree to touch all
+  // nodes (including visual nodes). The results should be the same.
+  auto cb = [&](SceneNode& node) { node.setSemanticId(semanticId); };
+  preOrderTraversalWithCallback(*node, cb);
 }
 
 }  // namespace scene

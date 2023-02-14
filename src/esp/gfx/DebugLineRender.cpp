@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -95,7 +95,7 @@ void DebugLineRender::flushLines(const Magnum::Matrix4& camMatrix,
                  "DebugLineRender::flushLines: no GL resources; see "
                  "also releaseGLResources", );
 
-  if (_verts.empty()) {
+  if (_verts.isEmpty()) {
     return;
   }
 
@@ -247,7 +247,7 @@ void DebugLineRender::drawCircle(const Magnum::Vector3& pos,
                 Mn::Matrix4::scaling(Mn::Vector3(radius, radius, 0.f)));
 
   Mn::Vector3 prevPt;
-  for (int seg = 0; seg <= numSegments; seg++) {
+  for (int seg = 0; seg <= numSegments; ++seg) {
     Mn::Deg angle = Mn::Deg(360.f * float(seg) / numSegments);
     Mn::Vector3 pt(Mn::Math::cos(angle), Mn::Math::sin(angle), 0.f);
     if (seg > 0) {
@@ -275,7 +275,7 @@ void DebugLineRender::drawPathWithEndpointCircles(
   drawCircle(end1, radius, color, numSegments, normal);
 
   Mn::Vector3 prevPos;
-  for (int i = 0; i < points.size(); i++) {
+  for (int i = 0; i < points.size(); ++i) {
     const auto& pos = points[i];
     if (i > 0) {
       if ((prevPos - end0).length() > radius &&

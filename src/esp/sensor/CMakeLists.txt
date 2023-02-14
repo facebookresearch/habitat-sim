@@ -1,3 +1,7 @@
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 set(
   sensor_SOURCES
   CameraSensor.cpp
@@ -14,11 +18,22 @@ set(
   FisheyeSensor.h
   EquirectangularSensor.cpp
   EquirectangularSensor.h
+  AudioSensor.cpp
+  AudioSensor.h
+  AudioSensorStubs.h
 )
 
 if(BUILD_WITH_CUDA)
   list(APPEND sensor_SOURCES RedwoodNoiseModel.cpp RedwoodNoiseModel.h)
 endif()
+
+if(BUILD_WITH_AUDIO)
+  set(ESP_BUILD_WITH_AUDIO ON)
+endif()
+
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/configure.h
+)
 
 add_library(
   sensor STATIC
@@ -46,4 +61,9 @@ if(BUILD_WITH_CUDA)
 
   target_link_libraries(sensor PUBLIC noise_model_kernels)
   target_include_directories(sensor PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+endif()
+
+if(BUILD_WITH_AUDIO)
+  include_directories(${DEPS_DIR}/rlr-audio-propagation/RLRAudioPropagationPkg/headers)
+  target_link_libraries(sensor PUBLIC ${RLRAudioPropagation_LIBRARY})
 endif()

@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -7,6 +7,7 @@
 #include <Corrade/Utility/FormatStl.h>
 #include <Magnum/Math/ConfigurationValue.h>
 #include "esp/core/Check.h"
+#include "esp/io/Json.h"
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
@@ -34,9 +35,10 @@ const std::unordered_map<ConfigStoredType, std::string, ConfigStoredTypeHash>
                           {ConfigStoredType::Boolean, "bool"},
                           {ConfigStoredType::Integer, "int"},
                           {ConfigStoredType::Double, "double"},
-                          {ConfigStoredType::MagnumVec3, "Magnum::Vector3"},
-                          {ConfigStoredType::MagnumQuat, "Magnum::Quaternion"},
-                          {ConfigStoredType::MagnumRad, "Magnum::Rad"},
+                          {ConfigStoredType::MagnumVec3, "Mn::Vector3"},
+                          {ConfigStoredType::MagnumMat3, "Mn::Matrix3"},
+                          {ConfigStoredType::MagnumQuat, "Mn::Quaternion"},
+                          {ConfigStoredType::MagnumRad, "Mn::Rad"},
                           {ConfigStoredType::String, "std::string"}};
 
 // force this functionality to remain local to this file.
@@ -85,7 +87,7 @@ constexpr NonTrivialTypeHandler nonTrivialTypeHandlers[]{
     NonTrivialTypeHandler::make<std::string>()};
 
 NonTrivialTypeHandler nonTrivialConfigStoredTypeHandlerFor(
-    ConfigStoredType type) {  // eugh, long name
+    ConfigStoredType type) {
   const std::size_t i = int(type) - int(ConfigStoredType::_nonTrivialTypes);
   CORRADE_INTERNAL_ASSERT(i <
                           Cr::Containers::arraySize(nonTrivialTypeHandlers));
@@ -141,10 +143,10 @@ void ConfigValue::moveValueFrom(ConfigValue&& otr) {
 }
 
 void ConfigValue::deleteCurrentValue() {
-  _type = ConfigStoredType::Unknown;
   if (isConfigStoredTypeNonTrivial(_type)) {
     nonTrivialConfigStoredTypeHandlerFor(_type).destructor(_data);
   }
+  _type = ConfigStoredType::Unknown;
 }
 
 ConfigValue& ConfigValue::operator=(const ConfigValue& otr) {
@@ -182,11 +184,22 @@ std::string ConfigValue::getAsString() const {
       auto v = get<Mn::Vector3>();
       return Cr::Utility::formatString("[{} {} {}]", v.x(), v.y(), v.z());
     }
+    case ConfigStoredType::MagnumMat3: {
+      auto m = get<Mn::Matrix3>();
+      std::string res = "[";
+      for (int i = 0; i < m.Size; ++i) {
+        auto v = m.row(i);
+        Cr::Utility::formatInto(res, res.length(), "[{} {} {}]", v.x(), v.y(),
+                                v.z());
+      }
+      Cr::Utility::formatInto(res, res.length(), "]");
+      return res;
+    }
     case ConfigStoredType::MagnumQuat: {
       auto q = get<Mn::Quaternion>();
       auto qv = q.vector();
-      return Cr::Utility::formatString("[{} {} {}] {}", qv.x(), qv.y(), qv.z(),
-                                       q.scalar());
+      return Cr::Utility::formatString("{} [{} {} {}]", q.scalar(), qv.x(),
+                                       qv.y(), qv.z());
     }
     case ConfigStoredType::MagnumRad: {
       auto r = get<Mn::Rad>();
@@ -197,6 +210,41 @@ std::string ConfigValue::getAsString() const {
           "Unknown/unsupported Type in ConfigValue::getAsString", "");
   }  // switch
 }  // ConfigValue::getAsString
+
+io::JsonGenericValue ConfigValue::writeToJsonObject(
+    io::JsonAllocator& allocator) const {
+  // unknown is checked before this function is called, so does not need support
+  switch (getType()) {
+    case ConfigStoredType::Boolean: {
+      return io::toJsonValue(get<bool>(), allocator);
+    }
+    case ConfigStoredType::Integer: {
+      return io::toJsonValue(get<int>(), allocator);
+    }
+    case ConfigStoredType::Double: {
+      return io::toJsonValue(get<double>(), allocator);
+    }
+    case ConfigStoredType::MagnumVec3: {
+      return io::toJsonValue(get<Mn::Vector3>(), allocator);
+    }
+    case ConfigStoredType::MagnumMat3: {
+      return io::toJsonValue(get<Mn::Matrix3>(), allocator);
+    }
+    case ConfigStoredType::MagnumQuat: {
+      return io::toJsonValue(get<Mn::Quaternion>(), allocator);
+    }
+    case ConfigStoredType::MagnumRad: {
+      auto r = get<Mn::Rad>();
+      return io::toJsonValue((r.operator float()), allocator);
+    }
+    case ConfigStoredType::String: {
+      return io::toJsonValue(get<std::string>(), allocator);
+    }
+    default:
+      CORRADE_ASSERT_UNREACHABLE(
+          "Unknown/unsupported Type in io::toJsonValue<ConfigValue>", {});
+  }
+}  // ConfigValue::cfgValToJson
 
 bool ConfigValue::putValueInConfigGroup(
     const std::string& key,
@@ -214,6 +262,8 @@ bool ConfigValue::putValueInConfigGroup(
       return cfg.setValue(key, get<std::string>());
     case ConfigStoredType::MagnumVec3:
       return cfg.setValue(key, get<Mn::Vector3>());
+    case ConfigStoredType::MagnumMat3:
+      return cfg.setValue(key, get<Mn::Matrix3>());
     case ConfigStoredType::MagnumQuat:
       return cfg.setValue(key, get<Mn::Quaternion>());
     case ConfigStoredType::MagnumRad:
@@ -233,6 +283,153 @@ Mn::Debug& operator<<(Mn::Debug& debug, const ConfigValue& value) {
   return debug << "ConfigValue :(" << Mn::Debug::nospace << value.getAsString()
                << "|" << value.getType() << Mn::Debug::nospace << ")";
 }
+
+int Configuration::loadFromJson(const io::JsonGenericValue& jsonObj) {
+  // count number of valid user config settings found
+
+  int numConfigSettings = 0;
+  for (rapidjson::Value::ConstMemberIterator it = jsonObj.MemberBegin();
+       it != jsonObj.MemberEnd(); ++it) {
+    // for each key, attempt to parse
+    const std::string key{it->name.GetString()};
+    const auto& obj = it->value;
+    // increment, assuming is valid object
+    ++numConfigSettings;
+
+    if (obj.IsDouble()) {
+      set(key, obj.GetDouble());
+    } else if (obj.IsNumber()) {
+      set(key, obj.GetInt());
+    } else if (obj.IsString()) {
+      set(key, obj.GetString());
+    } else if (obj.IsBool()) {
+      set(key, obj.GetBool());
+    } else if (obj.IsArray() && obj.Size() > 0) {
+      // non-empty array of values
+      if (obj[0].IsNumber()) {
+        // numeric vector or quaternion
+        if (obj.Size() == 3) {
+          Mn::Vector3 val{};
+          if (io::fromJsonValue(obj, val)) {
+            set(key, val);
+          }
+        } else if (obj.Size() == 4) {
+          // assume is quaternion
+          Mn::Quaternion val{};
+          if (io::fromJsonValue(obj, val)) {
+            set(key, val);
+          }
+        } else if (obj.Size() == 9) {
+          // assume is 3x3 matrix
+          Mn::Matrix3 mat{};
+          if (io::fromJsonValue(obj, mat)) {
+            set(key, mat);
+          }
+        } else {
+          // decrement count for key:obj due to not being handled vector
+          --numConfigSettings;
+          // TODO support numeric array in JSON
+          ESP_WARNING()
+              << "Config cell in JSON document contains key" << key
+              << "referencing an unsupported numeric array of length :"
+              << obj.Size() << "so skipping.";
+        }
+      } else {
+        // decrement count for key:obj due to not being handled vector or matrix
+        --numConfigSettings;
+        // TODO support numeric array in JSON
+        ESP_WARNING() << "Config cell in JSON document contains key" << key
+                      << "referencing an unsupported array of non-numeric, "
+                         "non-array type of length :"
+                      << obj.Size() << "so skipping.";
+      }
+    } else if (obj.IsObject()) {
+      // support nested objects
+      // create a new subgroup
+      std::shared_ptr<core::config::Configuration> subGroupPtr =
+          getSubconfigCopy<core::config::Configuration>(key);
+      numConfigSettings += subGroupPtr->loadFromJson(obj);
+      // save subgroup's subgroup configuration in original config
+      setSubconfigPtr<core::config::Configuration>(key, subGroupPtr);
+      //
+    } else {
+      // TODO support other types?
+      // decrement count for key:obj due to not being handled type
+      --numConfigSettings;
+      ESP_WARNING() << "Config cell in JSON document contains key" << key
+                    << "referencing an unknown/unparsable value type, so "
+                       "skipping this key.";
+    }
+  }
+  return numConfigSettings;
+}  // namespace config
+
+void Configuration::writeValueToJson(const char* key,
+                                     const char* jsonName,
+                                     io::JsonGenericValue& jsonObj,
+                                     io::JsonAllocator& allocator) const {
+  rapidjson::GenericStringRef<char> name{jsonName};
+  auto jsonVal = get(key).writeToJsonObject(allocator);
+  jsonObj.AddMember(name, jsonVal, allocator);
+}
+
+void Configuration::writeValuesToJson(io::JsonGenericValue& jsonObj,
+                                      io::JsonAllocator& allocator) const {
+  // iterate through all values
+  // pair of begin/end const iterators to all values
+  auto valIterPair = getValuesIterator();
+  auto valBegin = valIterPair.first;
+  auto valEnd = valIterPair.second;
+  for (auto& valIter = valIterPair.first; valIter != valIterPair.second;
+       ++valIter) {
+    if (valIter->second.isValid()) {
+      // make sure value is legal
+      rapidjson::GenericStringRef<char> name{valIter->first.c_str()};
+      auto jsonVal = valIter->second.writeToJsonObject(allocator);
+      jsonObj.AddMember(name, jsonVal, allocator);
+    } else {
+      ESP_VERY_VERBOSE()
+          << "Unitialized ConfigValue in Configuration @ key ["
+          << valIter->first
+          << "], so nothing will be written to JSON for this key.";
+    }
+  }  // iterate through all values
+}  // Configuration::writeValuesToJson
+
+void Configuration::writeSubconfigsToJson(io::JsonGenericValue& jsonObj,
+                                          io::JsonAllocator& allocator) const {
+  // iterate through subconfigs
+  // pair of begin/end const iterators to all subconfigurations
+  auto cfgIterPair = getSubconfigIterator();
+  for (auto& cfgIter = cfgIterPair.first; cfgIter != cfgIterPair.second;
+       ++cfgIter) {
+    // only save if subconfig has entries
+    if (cfgIter->second->getNumEntries() > 0) {
+      rapidjson::GenericStringRef<char> name{cfgIter->first.c_str()};
+      io::JsonGenericValue subObj =
+          cfgIter->second->writeToJsonObject(allocator);
+      jsonObj.AddMember(name, subObj, allocator);
+    } else {
+      ESP_VERY_VERBOSE()
+          << "Unitialized/empty Subconfig in Configuration @ key ["
+          << cfgIter->first
+          << "], so nothing will be written to JSON for this key.";
+    }
+  }  // iterate through all configurations
+
+}  // Configuration::writeSubconfigsToJson
+
+io::JsonGenericValue Configuration::writeToJsonObject(
+    io::JsonAllocator& allocator) const {
+  io::JsonGenericValue jsonObj(rapidjson::kObjectType);
+  // iterate through all values - always call base version - this will only ever
+  // be called from subconfigs.
+  writeValuesToJson(jsonObj, allocator);
+  // iterate through subconfigs
+  writeSubconfigsToJson(jsonObj, allocator);
+
+  return jsonObj;
+}  // writeToJsonObject
 
 /**
  * @brief Retrieves a shared pointer to a copy of the subConfig @ref

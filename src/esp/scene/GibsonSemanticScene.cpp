@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -15,7 +15,7 @@ namespace Cr = Corrade;
 namespace esp {
 namespace scene {
 
-constexpr int kMaxIds = 10000; /* We shouldn't every need more than this. */
+constexpr int kMaxIds = 10000; /* We shouldn't ever need more than this. */
 
 bool SemanticScene::
     loadGibsonHouse(const std::string& houseFilename, SemanticScene& scene, const quatf& rotation /* = quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY) */) {
@@ -62,7 +62,7 @@ bool SemanticScene::buildGibsonHouse(const io::JsonDocument& jsonDoc,
       int nextCategoryIndex = scene.categories_.size();
       categories[categoryName] = nextCategoryIndex;
       // NOTE(msb) vector is 0-indexed but categories index starts at 1
-      nextCategoryIndex++;
+      ++nextCategoryIndex;
       auto category = std::make_shared<GibsonObjectCategory>(nextCategoryIndex,
                                                              categoryName);
       scene.categories_.push_back(category);
@@ -81,7 +81,7 @@ bool SemanticScene::buildGibsonHouse(const io::JsonDocument& jsonDoc,
         ESP_WARNING() << "Object size from" << categoryName
                       << "isn't provided.";
       }
-      object->obb_ = geo::OBB(center, size, quatf::Identity());
+      object->setObb(center, size, quatf::Identity());
     } else {
       ESP_WARNING() << "Object center coordinates from" << categoryName
                     << "aren't provided.";

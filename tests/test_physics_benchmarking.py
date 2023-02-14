@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
-# Copyright (c) Facebook, Inc. and its affiliates.
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
 import pytest
 
-import examples.settings
 import habitat_sim
+import habitat_sim.utils.settings
 import utils
 
 
@@ -40,10 +40,10 @@ def test_benchmark_urdf_add_remove(benchmark, iterations, force_reload):
     # test loading and removing a URDF ArticultedObject multiple times consecutively
     def instance_remove_urdf(iterations):
         # first configure the simulator
-        cfg_settings = examples.settings.default_sim_settings.copy()
+        cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
         cfg_settings["scene"] = "NONE"
         cfg_settings["enable_physics"] = True
-        hab_cfg = examples.settings.make_cfg(cfg_settings)
+        hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
         with habitat_sim.Simulator(hab_cfg) as sim:
             art_obj_mgr = sim.get_articulated_object_manager()
 

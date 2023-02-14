@@ -1,9 +1,9 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
 #include <Corrade/TestSuite/Tester.h>
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/Path.h>
 #include <Magnum/GL/Mesh.h>
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/Primitives/Cube.h>
@@ -13,6 +13,7 @@
 #include "esp/gfx/GenericDrawable.h"
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/WindowlessContext.h"
+#include "esp/metadata/MetadataMediator.h"
 #include "esp/scene/SceneManager.h"
 
 #include "configure.h"
@@ -28,14 +29,6 @@ using esp::scene::SceneManager;
 // printed when you have accidentally unused variables or functions in the test
 namespace {
 
-class ResourceManagerExtended : public ResourceManager {
- public:
-  explicit ResourceManagerExtended(
-      esp::metadata::MetadataMediator::ptr& _metadataMediator)
-      : ResourceManager(_metadataMediator) {}
-  esp::gfx::ShaderManager& getShaderManager() { return shaderManager_; }
-};
-
 struct DrawableTest : Cr::TestSuite::Tester {
   explicit DrawableTest();
   // tests
@@ -46,7 +39,7 @@ struct DrawableTest : Cr::TestSuite::Tester {
   esp::gfx::WindowlessContext::uptr context_ =
       esp::gfx::WindowlessContext::create_unique(0);
   // must declare these in this order due to avoid deallocation errors
-  std::unique_ptr<ResourceManagerExtended> resourceManager_ = nullptr;
+  std::unique_ptr<ResourceManager> resourceManager_ = nullptr;
   SceneManager sceneManager_;
   // must create a GL context which will be used in the resource manager
   int sceneID_ = -1;
@@ -59,13 +52,13 @@ DrawableTest::DrawableTest() {
   cfg.loadSemanticMesh = false;
   cfg.forceSeparateSemanticSceneGraph = false;
   auto MM = MetadataMediator::create(cfg);
-  resourceManager_ = std::make_unique<ResourceManagerExtended>(MM);
+  resourceManager_ = std::make_unique<ResourceManager>(MM);
   //clang-format off
   addTests({&DrawableTest::addRemoveDrawables});
   //clang-format on
   auto stageAttributesMgr = MM->getStageAttributesManager();
   std::string stageFile =
-      Cr::Utility::Directory::join(TEST_ASSETS, "objects/5boxes.glb");
+      Cr::Utility::Path::join(TEST_ASSETS, "objects/5boxes.glb");
   auto stageAttributes = stageAttributesMgr->createObject(stageFile, true);
 
   sceneID_ = sceneManager_.initSceneGraph();

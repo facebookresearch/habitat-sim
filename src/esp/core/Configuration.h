@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -10,11 +10,11 @@
 #include <Corrade/Utility/FormatStl.h>
 #include <Magnum/Magnum.h>
 #include <string>
-#include <typeinfo>
 #include <unordered_map>
 
 #include "esp/core/Check.h"
 #include "esp/core/Esp.h"
+#include "esp/io/Json.h"
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
@@ -36,6 +36,7 @@ enum class ConfigStoredType {
   Integer,
   Double,
   MagnumVec3,
+  MagnumMat3,
   MagnumQuat,
   MagnumRad,
 
@@ -92,6 +93,10 @@ constexpr ConfigStoredType configStoredTypeFor<Mn::Vector3>() {
   return ConfigStoredType::MagnumVec3;
 }
 template <>
+constexpr ConfigStoredType configStoredTypeFor<Mn::Matrix3>() {
+  return ConfigStoredType::MagnumMat3;
+}
+template <>
 constexpr ConfigStoredType configStoredTypeFor<Mn::Quaternion>() {
   return ConfigStoredType::MagnumQuat;
 }
@@ -118,10 +123,13 @@ class ConfigValue {
   ConfigStoredType _type{ConfigStoredType::Unknown};
 
   /**
-   * @brief The data this ConfigValue holds - four doubles at most (strings
-   * require 32 bytes), doubles and 64bit pointers need 8-byte alignment
+   * @brief The data this ConfigValue holds.
+   * Aligns to individual 8-byte bounds. The pair the Configuration map holds
+   * consists of a std::string key (sizeof:24 bytes) and a ConfigValue. The
+   * _type is 4 bytes, 4 bytes of padding (on 64 bit machines) and 48 bytes for
+   * data.
    */
-  alignas(sizeof(void*) * 2) char _data[4 * 8] = {0};
+  alignas(8) char _data[6 * 8] = {0};
 
   /**
    * @brief Copy the passed @p val into this ConfigValue.  If this @ref
@@ -157,21 +165,34 @@ class ConfigValue {
 
   bool isValid() const { return _type != ConfigStoredType::Unknown; }
 
+  /**
+   * @brief Write this ConfigValue to an appropriately configured json object.
+   */
+  io::JsonGenericValue writeToJsonObject(io::JsonAllocator& allocator) const;
+
   template <class T>
   void set(const T& value) {
-    // this never fails, not a bool anymore
     deleteCurrentValue();
-    // this will blow up at compile time if such type is not supported
+    // This will blow up at compile time if given type is not supported
     _type = configStoredTypeFor<T>();
-    // see later
+    // These asserts are checking the integrity of the support for T's type, and
+    // will fire if conditions are not met.
+
+    // This fails if we added a new type into @ref ConfigStoredType enum
+    // improperly (trivial type added after entry
+    // ConfigStoredType::_nonTrivialTypes, or vice-versa)
     static_assert(isConfigStoredTypeNonTrivial(configStoredTypeFor<T>()) !=
                       std::is_trivially_copyable<T>::value,
-                  "something's off!");
-    // this will blow up if we added new larger types but forgot to update the
-    // storage
-    static_assert(sizeof(T) <= sizeof(_data), "internal storage too small");
-    static_assert(alignof(T) <= alignof(ConfigValue),
-                  "internal storage too unaligned");
+                  "Something's incorrect about enum placement for added type!");
+    // This fails if a new type was added that is too large for internal storage
+    static_assert(
+        sizeof(T) <= sizeof(_data),
+        "ConfigValue's internal storage is too small for added type!");
+    // This fails if a new type was added whose alignment does not match
+    // internal storage alignment
+    static_assert(
+        alignof(T) <= alignof(ConfigValue),
+        "ConfigValue's internal storage improperly aligned for added type!");
 
     //_data should be destructed at this point, construct a new value
     new (_data) T{value};
@@ -260,7 +281,7 @@ class Configuration {
     if (mapIter != valueMap_.end()) {
       return mapIter->second;
     }
-    ESP_ERROR() << "Key :" << key << "not present in configuration";
+    ESP_WARNING() << "Key :" << key << "not present in configuration";
     return {};
   }
 
@@ -633,10 +654,61 @@ class Configuration {
     return std::make_pair(configMap_.cbegin(), configMap_.cend());
   }
 
+  // ==================== load from and save to json =========================
+
+  /**
+   * @brief Load values into this Configuration from the passed @p jsonObj. Will
+   * recurse for subconfigurations.
+   * @param jsonObj The JSON object to read from for the data for this
+   * configuration.
+   * @return The number of fields successfully read and populated.
+   */
+  int loadFromJson(const io::JsonGenericValue& jsonObj);
+
+  /**
+   * @brief Build and return a json object holding the values and nested objects
+   * holding the subconfigs of this Configuration.
+   */
+  io::JsonGenericValue writeToJsonObject(io::JsonAllocator& allocator) const;
+
+  /**
+   * @brief Populate a json object with all the first-level values held in this
+   * configuration.  May be overridden to handle special cases for root-level
+   * configuration of Attributes classes derived from Configuration.
+   */
+  virtual void writeValuesToJson(io::JsonGenericValue& jsonObj,
+                                 io::JsonAllocator& allocator) const;
+
+  /**
+   * @brief Populate a json object with all the data from the subconfigurations,
+   * held in json sub-objects, for this Configuration.
+   */
+  virtual void writeSubconfigsToJson(io::JsonGenericValue& jsonObj,
+                                     io::JsonAllocator& allocator) const;
+
+  /**
+   * @brief Take the passed @p key and query the config value for that key,
+   * writing it to @p jsonName within the passed jsonObj.
+   * @param key The key of the data in the configuration
+   * @param jsonName The tag to use in the json file
+   * @param jsonObj The json object to write to
+   * @param allocator The json allocator to use to build the json object
+   */
+  void writeValueToJson(const char* key,
+                        const char* jsonName,
+                        io::JsonGenericValue& jsonObj,
+                        io::JsonAllocator& allocator) const;
+
+  void writeValueToJson(const char* key,
+                        io::JsonGenericValue& jsonObj,
+                        io::JsonAllocator& allocator) const {
+    writeValueToJson(key, key, jsonObj, allocator);
+  }
+
  protected:
   /**
-   * @brief Friend function.  Checks if passed @p key is contained in @p config.
-   * Returns the highest level where @p key was found
+   * @brief Friend function.  Checks if passed @p key is contained in @p
+   * config. Returns the highest level where @p key was found
    * @param config The configuration to search for passed key
    * @param key The key to look for
    * @param parentLevel The parent level to the current iteration.  If
@@ -676,7 +748,7 @@ class Configuration {
    */
   std::shared_ptr<Configuration> addSubgroup(const std::string& name) {
     // Attempt to insert an empty pointer
-    auto result = configMap_.insert({name, std::shared_ptr<Configuration>{}});
+    auto result = configMap_.emplace(name, std::shared_ptr<Configuration>{});
     // If name not already present (insert succeeded) then add new
     // configuration
     if (result.second) {

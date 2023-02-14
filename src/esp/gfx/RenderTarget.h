@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -144,6 +144,13 @@ class RenderTarget {
    * Magnum::PixelFormat::R16UI
    */
   void readFrameObjectId(const Magnum::MutableImageView2D& view);
+
+  /**
+   * @brief Blits the rgba buffer from internal FBO to given framebuffer
+   * rectangle
+   */
+  void blitRgbaTo(Magnum::GL::AbstractFramebuffer& target,
+                  const Magnum::Range2Di& targetRectangle);
 
   /**
    * @brief Blits the rgba buffer from internal FBO to default frame buffer

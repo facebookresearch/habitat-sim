@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -16,8 +16,6 @@
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
 #include "esp/scene/SemanticScene.h"
-#include "esp/scene/SuncgSemanticScene.h"
-
 namespace py = pybind11;
 using py::literals::operator""_a;
 
@@ -142,18 +140,6 @@ void initSceneBindings(py::module& m) {
       .def("index", &Mp3dRegionCategory::index, "mapping"_a = "")
       .def("name", &Mp3dRegionCategory::name, "mapping"_a = "");
 
-  // === SuncgObjectCategory ===
-  py::class_<SuncgObjectCategory, SemanticCategory, SuncgObjectCategory::ptr>(
-      m, "SuncgObjectCategory")
-      .def("index", &SuncgObjectCategory::index, "mapping"_a = "")
-      .def("name", &SuncgObjectCategory::name, "mapping"_a = "");
-
-  // === SuncgRegionCategory ===
-  py::class_<SuncgRegionCategory, SemanticCategory, SuncgRegionCategory::ptr>(
-      m, "SuncgRegionCategory")
-      .def("index", &SuncgRegionCategory::index, "mapping"_a = "")
-      .def("name", &SuncgRegionCategory::name, "mapping"_a = "");
-
   // These two are (cyclically) referenced by multiple classes below, define
   // the classes first so pybind has the type definition available when binding
   // functions
@@ -181,34 +167,16 @@ void initSceneBindings(py::module& m) {
       .def_property_readonly("objects", &SemanticRegion::objects,
                              "All objects in the region");
 
-  // ==== SuncgSemanticRegion ====
-  py::class_<SuncgSemanticRegion, SemanticRegion, SuncgSemanticRegion::ptr>(
-      m, "SuncgSemanticRegion")
-      .def_property_readonly("id", &SuncgSemanticRegion::id)
-      .def_property_readonly("level", &SuncgSemanticRegion::level)
-      .def_property_readonly("aabb", &SuncgSemanticRegion::aabb)
-      .def_property_readonly("category", &SuncgSemanticRegion::category)
-      .def_property_readonly("objects", &SuncgSemanticRegion::objects);
-
   // ==== SemanticObject ====
   semanticObject
       .def_property_readonly("id", &SemanticObject::id,
                              "The ID of the object, of the form "
                              "``<level_id>_<region_id>_<object_id>``")
+      .def_property_readonly("semantic_id", &SemanticObject::semanticID)
       .def_property_readonly("region", &SemanticObject::region)
       .def_property_readonly("aabb", &SemanticObject::aabb)
       .def_property_readonly("obb", &SemanticObject::obb)
       .def_property_readonly("category", &SemanticObject::category);
-
-  // ==== SuncgSemanticObject ====
-  py::class_<SuncgSemanticObject, SemanticObject, SuncgSemanticObject::ptr>(
-      m, "SuncgSemanticObject")
-      .def_property_readonly("id", &SuncgSemanticObject::id)
-      .def_property_readonly("region", &SuncgSemanticObject::region)
-      .def_property_readonly("aabb", &SuncgSemanticObject::aabb)
-      .def_property_readonly("obb", &SuncgSemanticObject::obb)
-      .def_property_readonly("category", &SuncgSemanticObject::category,
-                             "The semantic category of the object.");
 
   // ==== SemanticScene ====
   py::class_<SemanticScene, SemanticScene::ptr>(m, "SemanticScene")

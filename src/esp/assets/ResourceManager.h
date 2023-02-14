@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -9,6 +9,7 @@
  * @brief Class @ref esp::assets::ResourceManager
  */
 
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <string>
@@ -16,59 +17,58 @@
 #include <vector>
 
 #include <Corrade/Containers/EnumSet.h>
-#include <Corrade/Containers/Optional.h>
-#include <Magnum/EigenIntegration/Integration.h>
-#include <Magnum/GL/TextureFormat.h>
-#include <Magnum/MeshTools/Compile.h>
-#include <Magnum/MeshTools/Transform.h>
-#include <Magnum/SceneGraph/MatrixTransformation3D.h>
-#include <Magnum/Trade/Trade.h>
 
 #include "Asset.h"
-#include "BaseMesh.h"
-#include "CollisionMeshData.h"
-#include "GenericMeshData.h"
-#include "MeshData.h"
 #include "MeshMetaData.h"
-#include "RenderAssetInstanceCreationInfo.h"
-#include "esp/geo/VoxelGrid.h"
-#include "esp/gfx/CubeMap.h"
 #include "esp/gfx/Drawable.h"
-#include "esp/gfx/DrawableGroup.h"
-#include "esp/gfx/MaterialData.h"
-#include "esp/gfx/PbrImageBasedLighting.h"
 #include "esp/gfx/ShaderManager.h"
+#include "esp/gfx/ShadowMapManager.h"
 #include "esp/physics/configure.h"
-#include "esp/scene/SceneManager.h"
-#include "esp/scene/SceneNode.h"
 
-#include "esp/metadata/MetadataMediator.h"
-#include "esp/metadata/attributes/AttributesBase.h"
+#include "esp/metadata/attributes/AttributesEnumMaps.h"
 
 #ifdef ESP_BUILD_WITH_VHACD
 #include <VHACD.h>
 #endif
 
-// forward declarations
-namespace Magnum {
-namespace Trade {
-class AbstractImporter;
-class PhongMaterialData;
-}  // namespace Trade
-}  // namespace Magnum
-
 namespace Mn = Magnum;
 
 namespace esp {
+namespace assets {
+struct PhongMaterialColor;
+}
+namespace geo {
+class VoxelGrid;
+}
 namespace gfx {
 class Drawable;
+class PbrImageBasedLighting;
 namespace replay {
 class Recorder;
 }
 }  // namespace gfx
+namespace metadata {
+class MetadataMediator;
+namespace attributes {
+class ObjectAttributes;
+class PhysicsManagerAttributes;
+class SceneObjectInstanceAttributes;
+class StageAttributes;
+}  // namespace attributes
+namespace managers {
+class AssetAttributesManager;
+class LightLayoutAttributesManager;
+class ObjectAttributesManager;
+class PhysicsAttributesManager;
+class StageAttributesManager;
+}  // namespace managers
+}  // namespace metadata
 namespace scene {
+class SceneManager;
+class SemanticScene;
+class CCSemanticObject;
 struct SceneConfiguration;
-}
+}  // namespace scene
 namespace physics {
 class PhysicsManager;
 class RigidObject;
@@ -82,6 +82,13 @@ class Model;
 }
 }  // namespace io
 namespace assets {
+class BaseMesh;
+struct CollisionMeshData;
+class GenericSemanticMeshData;
+struct MeshData;
+struct RenderAssetInstanceCreationInfo;
+// used for shadertype specification
+using metadata::attributes::ObjectInstanceShaderType;
 
 /**
  * @brief Singleton class responsible for
@@ -120,14 +127,9 @@ class ResourceManager {
    */
   enum class Flag : Magnum::UnsignedShort {
     /**
-     * build phong material from PBR material
-     */
-    BuildPhongFromPbr = 1 << 0,
-
-    /**
      * use pbr image based lighting
      */
-    PbrImageBasedLighting = 1 << 1,
+    PbrImageBasedLighting = 1 << 0,
   };
 
   /**
@@ -136,8 +138,9 @@ class ResourceManager {
   typedef Corrade::Containers::EnumSet<Flag> Flags;
 
   /** @brief Constructor */
-  explicit ResourceManager(metadata::MetadataMediator::ptr& _metadataMediator,
-                           Flags flags = {});
+  explicit ResourceManager(
+      std::shared_ptr<metadata::MetadataMediator> _metadataMediator,
+      Flags flags = {});
 
   /** @brief Destructor */
   ~ResourceManager();
@@ -168,8 +171,64 @@ class ResourceManager {
   void initPhysicsManager(
       std::shared_ptr<physics::PhysicsManager>& physicsManager,
       scene::SceneNode* parent,
-      const metadata::attributes::PhysicsManagerAttributes::ptr&
+      const std::shared_ptr<metadata::attributes::PhysicsManagerAttributes>&
           physicsManagerAttributes);
+
+  /**
+   * @brief Return the currently loaded @ref esp::scene::SemanticScene .
+   */
+  std::shared_ptr<scene::SemanticScene> getSemanticScene() {
+    return semanticScene_;
+  }
+
+  /**
+   * @brief Return a view of the currently set Semantic scene colormap.
+   */
+  const std::vector<Mn::Vector3ub>& getSemanticSceneColormap() const {
+    return semanticColorMapBeingUsed_;
+  }
+
+  /**
+   * @brief Build @ref semanticColorMapBeingUsed_ holding the semantic colors
+   * defined from a semantic scene descriptor, by iterating through the objects
+   * and mapping their color values to their semantic ids.
+   */
+  void buildSemanticColorMap();
+
+  /**
+   * @brief Build @ref semanticColorAsInt_ (array of colors as integers) from
+   * the current @ref semanticColorMapBeingUsed_ map. The @ref
+   * semanticColorAsInt_ is used when building the color matrix for conversion
+   * of colors found in semantic textures to their semantic IDs. When semantic
+   * textures are preprocessed, this will not need to be performed.
+   */
+  void buildSemanticColorAsIntMap();
+
+  /**
+   * @brief Remap a semantic annotation texture to have the semantic IDs per
+   * pxl.
+   * @param srcImage The source texture with the semantic colors.
+   * @param clrToSemanticId Large table of all possible colors to their semantic
+   * IDs. initialized to 0xffff
+   * @return An image of the semantic IDs, with the ID mapped
+   */
+  Mn::Image2D convertRGBToSemanticId(
+      const Mn::ImageView2D& srcImage,
+      Cr::Containers::Array<Mn::UnsignedShort>& clrToSemanticId);
+
+  /** @brief check if the @ref esp::scene::SemanticScene exists.*/
+  bool semanticSceneExists() const { return (semanticScene_ != nullptr); }
+
+  /**
+   * @brief Load semantic scene descriptor file specified by @p ssdFilename ,
+   * for the passed @p activeSceneName .
+   * @param ssdFilename The fully qualified filename candidate for the ssd file.
+   * @param activeSceneName Name of the currently active scene that we will be
+   * loading the SSD for.
+   * @return whether loaded successfully or not.
+   */
+  bool loadSemanticSceneDescriptor(const std::string& ssdFilename,
+                                   const std::string& activeSceneName);
 
   /**
    * @brief Load a scene mesh and add it to the specified @ref DrawableGroup as
@@ -191,8 +250,10 @@ class ResourceManager {
    * @return Whether or not the scene load succeeded.
    */
   bool loadStage(
-      const metadata::attributes::StageAttributes::ptr& stageAttributes,
-      const metadata::attributes::SceneObjectInstanceAttributes::cptr&
+      const std::shared_ptr<metadata::attributes::StageAttributes>&
+          stageAttributes,
+      const std::shared_ptr<
+          const metadata::attributes::SceneObjectInstanceAttributes>&
           stageInstanceAttributes,
       const std::shared_ptr<physics::PhysicsManager>& _physicsManager,
       esp::scene::SceneManager* sceneManagerPtr,
@@ -223,7 +284,8 @@ class ResourceManager {
    * registration call fails.
    */
   bool instantiateAssetsOnDemand(
-      const metadata::attributes::ObjectAttributes::ptr& ObjectAttributes);
+      const std::shared_ptr<metadata::attributes::ObjectAttributes>&
+          ObjectAttributes);
 
   //======== Accessor functions ========
   /**
@@ -237,71 +299,44 @@ class ResourceManager {
    * individual components of the asset.
    */
   const std::vector<assets::CollisionMeshData>& getCollisionMesh(
-      const std::string& collisionAssetHandle) const {
-    CORRADE_INTERNAL_ASSERT(collisionMeshGroups_.count(collisionAssetHandle) >
-                            0);
-    return collisionMeshGroups_.at(collisionAssetHandle);
-  }
+      const std::string& collisionAssetHandle) const;
 
   /**
    * @brief Return manager for construction and access to asset attributes.
    */
-  metadata::managers::AssetAttributesManager::ptr getAssetAttributesManager()
-      const {
-    return metadataMediator_->getAssetAttributesManager();
-  }
+  std::shared_ptr<metadata::managers::AssetAttributesManager>
+  getAssetAttributesManager() const;
   /**
    * @brief Return manager for construction and access to light and lighting
    * layout attributes.
    */
-  metadata::managers::LightLayoutAttributesManager::ptr
-  getLightLayoutAttributesManager() const {
-    return metadataMediator_->getLightLayoutAttributesManager();
-  }
+  std::shared_ptr<metadata::managers::LightLayoutAttributesManager>
+  getLightLayoutAttributesManager() const;
 
   /**
    * @brief Return manager for construction and access to object attributes.
    */
-  metadata::managers::ObjectAttributesManager::ptr getObjectAttributesManager()
-      const {
-    return metadataMediator_->getObjectAttributesManager();
-  }
+  std::shared_ptr<metadata::managers::ObjectAttributesManager>
+  getObjectAttributesManager() const;
   /**
    * @brief Return manager for construction and access to physics world
    * attributes.
    */
-  metadata::managers::PhysicsAttributesManager::ptr
-  getPhysicsAttributesManager() const {
-    return metadataMediator_->getPhysicsAttributesManager();
-  }
+  std::shared_ptr<metadata::managers::PhysicsAttributesManager>
+  getPhysicsAttributesManager() const;
   /**
    * @brief Return manager for construction and access to scene attributes.
    */
-  metadata::managers::StageAttributesManager::ptr getStageAttributesManager()
-      const {
-    return metadataMediator_->getStageAttributesManager();
-  }
+  std::shared_ptr<metadata::managers::StageAttributesManager>
+  getStageAttributesManager() const;
 
   /**
    * @brief Set a reference to the current @ref metadataMediator_.  Perform any
    * initialization that may be required when @ref metadataMediator_ is changed.
    * @param MM a reference to the new @ref metadataMediator_.
    */
-  void setMetadataMediator(metadata::MetadataMediator::ptr MM) {
+  void setMetadataMediator(std::shared_ptr<metadata::MetadataMediator> MM) {
     metadataMediator_ = std::move(MM);
-  }
-
-  /**
-   * @brief Retrieve the composition of all transforms applied to a mesh
-   * since it was loaded.
-   *
-   * See @ref translateMesh.
-   * @param meshIndex Index of the mesh in @ref meshes_.
-   * @return The transformation matrix mapping from the original state to
-   * its current state.
-   */
-  const Mn::Matrix4& getMeshTransformation(const int meshIndex) const {
-    return meshes_.at(meshIndex)->meshTransform_;
   }
 
   /**
@@ -313,10 +348,7 @@ class ResourceManager {
    * Typically the filepath of file-based assets.
    * @return The asset's @ref MeshMetaData object.
    */
-  const MeshMetaData& getMeshMetaData(const std::string& metaDataName) const {
-    CORRADE_INTERNAL_ASSERT(resourceDict_.count(metaDataName) > 0);
-    return resourceDict_.at(metaDataName).meshMetaData;
-  }
+  const MeshMetaData& getMeshMetaData(const std::string& metaDataName) const;
 
   /**
    * @brief check to see if a particular voxel grid has been created &
@@ -337,8 +369,9 @@ class ResourceManager {
    */
   std::shared_ptr<esp::geo::VoxelGrid> getVoxelGrid(
       const std::string& voxelGridName) const {
-    CORRADE_INTERNAL_ASSERT(voxelGridDict_.count(voxelGridName) > 0);
-    return voxelGridDict_.at(voxelGridName);
+    auto voxGridIter = voxelGridDict_.find(voxelGridName);
+    CORRADE_INTERNAL_ASSERT(voxGridIter != voxelGridDict_.end());
+    return voxGridIter->second;
   }
 
   /**
@@ -351,12 +384,10 @@ class ResourceManager {
   bool registerVoxelGrid(
       const std::string& voxelGridHandle,
       const std::shared_ptr<esp::geo::VoxelGrid>& VoxelGridPtr) {
-    if (voxelGridDict_.count(voxelGridHandle) > 0)
-      return false;
-    else {
-      voxelGridDict_.emplace(voxelGridHandle, VoxelGridPtr);
-      return true;
-    }
+    auto voxGridEmplaceIter =
+        voxelGridDict_.emplace(voxelGridHandle, VoxelGridPtr);
+    // return whether placed or not;
+    return voxGridEmplaceIter.second;
   }
 
   /**
@@ -381,10 +412,7 @@ class ResourceManager {
    */
   void setLightSetup(gfx::LightSetup setup,
                      const Mn::ResourceKey& key = Mn::ResourceKey{
-                         DEFAULT_LIGHTING_KEY}) {
-    shaderManager_.set(key, std::move(setup), Mn::ResourceDataState::Mutable,
-                       Mn::ResourcePolicy::Manual);
-  }
+                         DEFAULT_LIGHTING_KEY});
 
   /**
    * @brief Construct a unified @ref MeshData from a loaded asset's collision
@@ -396,6 +424,21 @@ class ResourceManager {
    * @return The unified @ref MeshData object for the asset.
    */
   std::unique_ptr<MeshData> createJoinedCollisionMesh(
+      const std::string& filename) const;
+
+  /**
+   * @brief Construct a unified @ref MeshData from a loaded asset's semantic
+   * meshes.
+   *
+   * See @ref joinHierarchy.
+   * @param[out] objectIds vector of uint16_t, will be populated with the object
+   * ids of the semantic mesh
+   * @param filename The identifying string key for the asset. See @ref
+   * resourceDict_ and @ref meshes_.
+   * @return The unified @ref MeshData object for the asset.
+   */
+  std::unique_ptr<MeshData> createJoinedSemanticCollisionMesh(
+      std::vector<std::uint16_t>& objectIds,
       const std::string& filename) const;
 
 #ifdef ESP_BUILD_WITH_VHACD
@@ -455,7 +498,8 @@ class ResourceManager {
    * result of this process.
    */
   void addObjectToDrawables(
-      const metadata::attributes::ObjectAttributes::ptr& ObjectAttributes,
+      const std::shared_ptr<metadata::attributes::ObjectAttributes>&
+          ObjectAttributes,
       scene::SceneNode* parent,
       DrawableGroup* drawables,
       std::vector<scene::SceneNode*>& visNodeCache,
@@ -526,10 +570,10 @@ class ResourceManager {
    * @brief Generate a tube following the passed trajectory of points.
    * @param trajVisName The name to use for the trajectory visualization mesh.
    * @param pts The points of a trajectory, in order
+   * @param colorVec Array of Colors for trajectory tube.
    * @param numSegments The number of the segments around the circumference of
    * the tube. Must be greater than or equal to 3.
    * @param radius The radius of the tube.
-   * @param color Color for trajectory tube.
    * @param smooth Whether to smooth the points in the trajectory or not
    * @param numInterp The number of interpolations between each trajectory
    * point, if smoothing.
@@ -537,24 +581,29 @@ class ResourceManager {
    */
   bool buildTrajectoryVisualization(const std::string& trajVisName,
                                     const std::vector<Mn::Vector3>& pts,
+                                    const std::vector<Mn::Color3>& colorVec,
                                     int numSegments = 3,
                                     float radius = .001,
-                                    const Magnum::Color4& color = {0.9, 0.1,
-                                                                   0.1, 1.0},
                                     bool smooth = false,
                                     int numInterp = 10);
 
   /**
-   * @brief Build a configuration frame from scene or object attributes values
-   * and return it
+   * @brief Build a configuration frame from specified up and front vectors
+   * and return it.  If up is not orthogonal to front, will return default
+   * frame.
    *
-   * @param attribs the attributes to query for the information.
+   * @param attribName the handle to the attributes the frame is being built
+   * for, for debug purposes.
+   * @param up The up vector to build the frame from
+   * @param front The front vector to build the frame from.
    * @param origin Either the origin of the stageAttributes or the COM value of
    * the objectAttributes.
    * @return the coordinate frame of the assets the passed attributes describes.
    */
   esp::geo::CoordinateFrame buildFrameFromAttributes(
-      const metadata::attributes::AbstractObjectAttributes::ptr& attribs,
+      const std::string& attribName,
+      const Magnum::Vector3& up,
+      const Magnum::Vector3& front,
       const Magnum::Vector3& origin);
 
   /**
@@ -567,9 +616,8 @@ class ResourceManager {
    * @brief Set a replay recorder so that ResourceManager can notify it about
    * render assets.
    */
-  void setRecorder(
-      const std::shared_ptr<gfx::replay::Recorder>& gfxReplayRecorder) {
-    gfxReplayRecorder_ = gfxReplayRecorder;
+  void setRecorder(std::shared_ptr<gfx::replay::Recorder> gfxReplayRecorder) {
+    gfxReplayRecorder_ = std::move(gfxReplayRecorder);
   }
 
   /**
@@ -581,6 +629,20 @@ class ResourceManager {
    */
   std::string createColorMaterial(
       const esp::assets::PhongMaterialColor& materialColor);
+
+  /**
+   * @brief Creates an asset name appropriately modified based certain
+   * conditions present in passed @p assetInfo.  This function will derive
+   * encodings based on the state of the assetInfo so that different material
+   * configurations can be specified on the same asset.
+   * @param info The AssetInfo that describes the asset being named.
+   * @param materialId [in/out] A string key representing the material to use.
+   * If empty, this will be generated and populated.
+   * @return the modified asset name to be used to save this asset to @p
+   * resourceDict_.
+   */
+  std::string createModifiedAssetName(const AssetInfo& info,
+                                      std::string& materialId);
 
   /**
    * @brief Load a render asset (if not already loaded) and create a render
@@ -624,6 +686,47 @@ class ResourceManager {
    */
   bool loadRenderAsset(const AssetInfo& info);
 
+  /**
+   * @brief get the shader manager
+   */
+  gfx::ShaderManager& getShaderManager() { return shaderManager_; }
+
+  /**
+   * @brief get the shadow map manager
+   */
+  gfx::ShadowMapManager& getShadowMapManger() { return shadowManager_; }
+
+  /**
+   * @brief get the shadow map keys
+   */
+  std::map<int, std::vector<Magnum::ResourceKey>>& getShadowMapKeys() {
+    return shadowMapKeys_;
+  }
+
+  static constexpr const char* SHADOW_MAP_KEY_TEMPLATE =
+      "scene_id={}-light_id={}";
+
+  /**
+   * @brief Build data for a report for semantic mesh connected components based
+   * on color/id.  Returns map of data keyed by SemanticObject index in
+   * SemanticObjs array.
+   */
+  std::unordered_map<uint32_t,
+                     std::vector<std::shared_ptr<scene::CCSemanticObject>>>
+  buildSemanticCCObjects(
+      const std::shared_ptr<metadata::attributes::StageAttributes>&
+          stageAttributes);
+
+  /**
+   * @brief Build data for a report for vertex color mapping to semantic scene
+   * objects - this list of strings will disclose which colors are found in
+   * vertices but not in semantic scene descirptors, and which semantic objects
+   * do not have their colors mapped in mesh verts.
+   */
+  std::vector<std::string> buildVertexColorMapReport(
+      const std::shared_ptr<metadata::attributes::StageAttributes>&
+          stageAttributes);
+
  private:
   /**
    * @brief Load the requested mesh info into @ref meshInfo corresponding to
@@ -633,15 +736,16 @@ class ResourceManager {
    * @param objectAttributes the object attributes owning
    * this mesh.
    * @param assetType either "render" or "collision" (for error log output)
-   * @param requiresLighting whether or not this mesh asset responds to
-   * lighting
+   * @param forceFlatShading whether to force this asset to be rendered via
+   * flat shading.
    * @return whether or not the mesh was loaded successfully
    */
   bool loadObjectMeshDataFromFile(
       const std::string& filename,
-      const metadata::attributes::ObjectAttributes::ptr& objectAttributes,
+      const std::shared_ptr<metadata::attributes::ObjectAttributes>&
+          objectAttributes,
       const std::string& meshType,
-      bool requiresLighting);
+      bool forceFlatShading);
 
   /**
    * @brief Build a primitive asset based on passed template parameters.  If
@@ -651,6 +755,13 @@ class ResourceManager {
    * primitive to instantiate
    */
   void buildPrimitiveAssetData(const std::string& primTemplateHandle);
+
+  /**
+   * @brief Configure the importerManager_ GL Extensions appropriately based on
+   * compilation flags, before any general assets are imported.  This should
+   * only occur if a gl context exists.
+   */
+  void configureImporterManagerGLExtensions();
 
  protected:
   // ======== Structs and Types only used locally ========
@@ -688,8 +799,7 @@ class ResourceManager {
    * @return Whether it is a General
    */
   inline bool isRenderAssetGeneral(AssetType type) {
-    return type == AssetType::MP3D_MESH || type == AssetType::UNKNOWN ||
-           type == AssetType::SUNCG_OBJECT;
+    return type == AssetType::MP3D_MESH || type == AssetType::UNKNOWN;
   }
   /**
    * @brief Recursive construction of scene nodes for an asset.
@@ -744,22 +854,6 @@ class ResourceManager {
   void loadMeshes(Importer& importer, LoadedAssetData& loadedAssetData);
 
   /**
-   * @brief Recursively parse the mesh component transformation hierarchy for
-   * the imported asset.
-   *
-   * @param importer The importer already loaded with information for the
-   * asset.
-   * @param parent The root of the mesh transform hierarchy for the remaining
-   * sub-tree. The generated @ref MeshTransformNode will be added as a child.
-   * Typically the @ref MeshMetaData::root to begin recursion.
-   * @param componentID The next component to add to the hierarchy. Identifies
-   * the component in the @ref Importer.
-   */
-  void loadMeshHierarchy(Importer& importer,
-                         MeshTransformNode& parent,
-                         int componentID);
-
-  /**
    * @brief Recursively build a unified @ref MeshData from loaded assets via a
    * tree of @ref MeshTransformNode.
    *
@@ -776,6 +870,25 @@ class ResourceManager {
                      const Mn::Matrix4& transformFromParentToWorld) const;
 
   /**
+   * @brief Recursively build a unified @ref MeshData from loaded semantic
+   * assets via a tree of @ref MeshTransformNode.
+   *
+   * @param[in,out] mesh The @ref MeshData being constructed.
+   * @param[out] meshObjectIds The object ids
+   * @param metaData The @ref MeshMetaData for the object hierarchy being
+   * joined.
+   * @param node The current @ref MeshTransformNode in the recursion.
+   * @param transformFromParentToWorld The cumulative transformation up to but
+   * not including the current @ref MeshTransformNode.
+   */
+  void joinSemanticHierarchy(
+      MeshData& mesh,
+      std::vector<uint16_t>& meshObjectIds,
+      const MeshMetaData& metaData,
+      const MeshTransformNode& node,
+      const Mn::Matrix4& transformFromParentToWorld) const;
+
+  /**
    * @brief Load materials from importer into assets, and update metaData for
    * an asset to link materials to that asset.
    *
@@ -786,6 +899,36 @@ class ResourceManager {
   void loadMaterials(Importer& importer, LoadedAssetData& loadedAssetData);
 
   /**
+   * @brief Get the appropriate the @ref
+   * esp::metadata::attributes::ObjectInstanceShaderType to use to render the
+   * passed @p material based on specification in passed @p info or the material
+   * itself.
+   * @param info The asset info describing the asset whose material is being
+   * rendered.
+   * @return the @ref esp::metadata::attributes::ObjectInstanceShaderType to use
+   * to render the material.
+   */
+  ObjectInstanceShaderType getMaterialShaderType(const AssetInfo& info) const;
+
+  /**
+   * @brief Boolean check if @p typeToCheck aligns with passed types explicitly
+   * specified, or type in material
+   * @param typeToCheck The ObjectInstanceShaderType value beign queried for.
+   * @param materialData The material whose type we are verifying against
+   * @param verificationType The ObjectInstanceShaderType we are verifying
+   * against
+   * @param mnVerificationType The @ref Mn::Trade::MaterialType bitflag that the
+   * passed material's specified type is being verified against.
+   * @return Whether or not the passed @p typeToCheck matches the passed
+   * criteria.
+   */
+  bool checkForPassedShaderType(
+      ObjectInstanceShaderType typeToCheck,
+      const Mn::Trade::MaterialData& materialData,
+      ObjectInstanceShaderType verificationType,
+      Mn::Trade::MaterialType mnVerificationType) const;
+
+  /**
    * @brief Build a @ref PhongMaterialData for use with flat shading
    *
    * Textures must already be loaded for the asset this material belongs to
@@ -794,7 +937,7 @@ class ResourceManager {
    * @param textureBaseIndex Base index of the assets textures in textures_
    */
   gfx::PhongMaterialData::uptr buildFlatShadedMaterialData(
-      const Mn::Trade::PhongMaterialData& material,
+      const Mn::Trade::MaterialData& materialData,
       int textureBaseIndex);
 
   /**
@@ -807,7 +950,7 @@ class ResourceManager {
 
    */
   gfx::PhongMaterialData::uptr buildPhongShadedMaterialData(
-      const Mn::Trade::PhongMaterialData& material,
+      const Mn::Trade::MaterialData& material,
       int textureBaseIndex) const;
 
   /**
@@ -819,7 +962,7 @@ class ResourceManager {
    * @param textureBaseIndex Base index of the assets textures in textures_
    */
   gfx::PbrMaterialData::uptr buildPbrShadedMaterialData(
-      const Mn::Trade::PbrMetallicRoughnessMaterialData& material,
+      const Mn::Trade::MaterialData& material,
       int textureBaseIndex) const;
 
   /**
@@ -867,7 +1010,8 @@ class ResourceManager {
    * created
    */
   std::map<std::string, AssetInfo> createStageAssetInfosFromAttributes(
-      const metadata::attributes::StageAttributes::ptr& stageAttributes,
+      const std::shared_ptr<metadata::attributes::StageAttributes>&
+          stageAttributes,
       bool createCollisionInfo,
       bool createSemanticInfo);
 
@@ -877,9 +1021,30 @@ class ResourceManager {
   bool loadRenderAssetPTex(const AssetInfo& info);
 
   /**
-   * @brief Instance Mesh backend for loadRenderAsset
+   * @brief Build @ref GenericSemanticMeshData from a single, flattened Magnum
+   * Meshdata, built from the meshes provided by the importer, preserving all
+   * transformations.  This building process will also synthesize bounding boxes
+   * if requested from the @ref semanticScene_ .
+   * @param fileImporter Importer used to load the scene.
+   * @param info AssetInfo describing asset.
+   * @return The GenericSemanticMeshData being built.
    */
-  bool loadRenderAssetIMesh(const AssetInfo& info);
+  std::unique_ptr<GenericSemanticMeshData> flattenImportedMeshAndBuildSemantic(
+      Importer& fileImporter,
+      const AssetInfo& info);
+
+  /**
+   * @brief Semantic Mesh backend for loadRenderAsset.  Either use
+   * loadRenderAssetSemantic if semantic mesh has vertex annotations only, or
+   * loadRenderAssetGeneral if semantic mesh has texture-based annotations. This
+   * choice is governed by info.hasSemanticTextures.
+   */
+  bool loadSemanticRenderAsset(const AssetInfo& info);
+
+  /**
+   * @brief Semantic (vertex-annotated) Mesh backend for loadRenderAsset
+   */
+  bool loadRenderAssetSemantic(const AssetInfo& info);
 
   /**
    * @brief General Mesh backend for loadRenderAsset
@@ -912,9 +1077,22 @@ class ResourceManager {
       DrawableGroup* drawables);
 
   /**
-   * @brief Instance Mesh backend for createRenderAssetInstance
+   * @brief Semantic Mesh backend creation. Either use
+   * createRenderAssetInstanceVertSemantic if semantic mesh has vertex
+   * annotations only, or createRenderAssetInstanceGeneralPrimitive if semantic
+   * mesh has texture-based annotations. This choice is governed by
+   * creation.isTextureBasedSemantic().
    */
-  scene::SceneNode* createRenderAssetInstanceIMesh(
+  scene::SceneNode* createSemanticRenderAssetInstance(
+      const RenderAssetInstanceCreationInfo& creation,
+      scene::SceneNode* parent,
+      DrawableGroup* drawables);
+
+  /**
+   * @brief Semantic Mesh (vertex-annotated) backend for
+   * createRenderAssetInstance
+   */
+  scene::SceneNode* createRenderAssetInstanceVertSemantic(
       const RenderAssetInstanceCreationInfo& creation,
       scene::SceneNode* parent,
       DrawableGroup* drawables);
@@ -928,20 +1106,6 @@ class ResourceManager {
       scene::SceneNode* parent,
       DrawableGroup* drawables,
       std::vector<scene::SceneNode*>* userVisNodeCache);
-
-  /**
-   * @brief Load a SUNCG mesh into assets from a file. !Deprecated! TODO:
-   * remove?
-   *
-   * @param info The @ref AssetInfo for the mesh, already parsed from a file.
-   * @param parent The @ref scene::SceneNode to which the mesh will be added
-   * as a child.
-   * @param drawables The @ref DrawableGroup with which the mesh will be
-   * rendered.
-   */
-  bool loadSUNCGHouseFile(const AssetInfo& info,
-                          scene::SceneNode* parent,
-                          DrawableGroup* drawables);
 
   /**
    * @brief initialize default lighting setups in the current ShaderManager
@@ -973,15 +1137,6 @@ class ResourceManager {
                               const Mn::ResourceKey& lightSetupKey) const;
 
   // ======== Geometry helper functions, data structures ========
-
-  /**
-   * @brief Apply a translation to the vertices of a mesh asset and store that
-   * transformation in @ref BaseMesh::meshTransform_.
-   *
-   * @param meshDataGL The mesh data.
-   * @param translation The translation transform to apply.
-   */
-  void translateMesh(BaseMesh* meshDataGL, Mn::Vector3 translation);
 
   /**
    * @brief Compute and return the axis aligned bounding box of a mesh in mesh
@@ -1084,12 +1239,23 @@ class ResourceManager {
    * @brief A reference to the MetadataMediator managing all the metadata
    * currently in use.
    */
-  metadata::MetadataMediator::ptr metadataMediator_ = nullptr;
+  std::shared_ptr<metadata::MetadataMediator> metadataMediator_ = nullptr;
   /**
    * @brief Plugin Manager used to instantiate importers which in turn are used
    * to load asset data
    */
   Corrade::PluginManager::Manager<Importer> importerManager_;
+
+  /**
+   * @brief This @ref GenericSemanticMeshData unique pointer is not used to
+   * actually create a mesh, but rather for reporting and color annotations (for
+   * texture-based semantics processing). We retain this so we do not need to
+   * re-load from scratch for future reporting functionality.
+   * NOTE : We must not use this to retain a semantic mesh that is actually
+   * being rendered, since that mesh will have its components moved into actual
+   * render mesh constructs.
+   */
+  std::unique_ptr<GenericSemanticMeshData> infoSemanticMeshData_;
 
   /**
    * @brief Importer used to synthesize Magnum Primitives (PrimitiveImporter).
@@ -1102,6 +1268,17 @@ class ResourceManager {
    * @brief Importer used to load generic mesh files (AnySceneImporter)
    */
   Corrade::Containers::Pointer<Importer> fileImporter_;
+
+  /**
+   * @brief Reference to the currently loaded semanticScene Descriptor
+   */
+  std::shared_ptr<scene::SemanticScene> semanticScene_ = nullptr;
+
+  /**
+   * @brief Colormap to use for visualizing currently loaded semantic scene.
+   */
+  std::vector<Mn::Vector3ub> semanticColorMapBeingUsed_{};
+  std::vector<uint32_t> semanticColorAsInt_{};
 
   // ======== Physical parameter data ========
 
@@ -1138,7 +1315,15 @@ class ResourceManager {
       pbrImageBasedLightings_;
 
   int activePbrIbl_ = ID_UNDEFINED;
-};  // class ResourceManager
+
+  /**
+   * @brief shadow map for point lights
+   */
+  // TODO: directional light shadow maps
+  gfx::ShadowMapManager shadowManager_;
+  // scene graph id -> keys for the shadow maps
+  std::map<int, std::vector<Magnum::ResourceKey>> shadowMapKeys_;
+};  // namespace assets
 
 CORRADE_ENUMSET_OPERATORS(ResourceManager::Flags)
 

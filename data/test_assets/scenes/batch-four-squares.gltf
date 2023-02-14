@@ -1,0 +1,282 @@
+{
+  "asset": {
+    "version": "2.0",
+    "generator": "Magnum GltfSceneConverter"
+  },
+  "extensionsUsed": [
+    "KHR_materials_unlit",
+    "KHR_texture_ktx",
+    "KHR_texture_transform"
+  ],
+  "extensionsRequired": [
+    "KHR_texture_ktx",
+    "KHR_texture_transform"
+  ],
+  "buffers": [
+    {
+      "uri": "batch-four-squares.bin",
+      "byteLength": 500
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 24
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 24,
+      "byteLength": 108,
+      "byteStride": 32
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 36,
+      "byteLength": 108,
+      "byteStride": 32
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 48,
+      "byteLength": 104,
+      "byteStride": 32
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 152,
+      "byteLength": 348
+    }
+  ],
+  "accessors": [
+    {
+      "bufferView": 0,
+      "componentType": 5125,
+      "count": 6,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 4,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "componentType": 5126,
+      "count": 4,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 3,
+      "componentType": 5126,
+      "count": 4,
+      "type": "VEC2"
+    }
+  ],
+  "meshes": [
+    {
+      "primitives": [
+        {
+          "indices": 0,
+          "attributes": {
+            "POSITION": 1,
+            "NORMAL": 2,
+            "TEXCOORD_0": 3
+          },
+          "material": 0
+        }
+      ],
+      "name": "square"
+    },
+    {
+      "primitives": [
+        {
+          "indices": 0,
+          "attributes": {
+            "POSITION": 1,
+            "NORMAL": 2,
+            "TEXCOORD_0": 3
+          },
+          "material": 1
+        }
+      ],
+      "name": "square"
+    },
+    {
+      "primitives": [
+        {
+          "indices": 0,
+          "attributes": {
+            "POSITION": 1,
+            "NORMAL": 2,
+            "TEXCOORD_0": 3
+          },
+          "material": 2
+        }
+      ],
+      "name": "square"
+    },
+    {
+      "primitives": [
+        {
+          "indices": 0,
+          "attributes": {
+            "POSITION": 1,
+            "NORMAL": 2,
+            "TEXCOORD_0": 3
+          },
+          "material": 3
+        }
+      ],
+      "name": "square"
+    }
+  ],
+  "materials": [
+    {
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 0
+        }
+      },
+      "extensions": {
+        "KHR_materials_unlit": {}
+      },
+      "name": "flat checkerboard"
+    },
+    {
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [0, 1, 1, 1],
+        "baseColorTexture": {
+          "index": 1,
+          "extensions": {
+            "KHR_texture_transform": {
+              "offset": [0, 0.5],
+              "scale": [0.5, 0.5]
+            }
+          }
+        }
+      },
+      "extensions": {
+        "KHR_materials_unlit": {}
+      },
+      "name": "flat cyan"
+    },
+    {
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [1, 0, 1, 1],
+        "baseColorTexture": {
+          "index": 1,
+          "extensions": {
+            "KHR_texture_transform": {
+              "offset": [0.5, 0.5],
+              "scale": [0.5, 0.5]
+            }
+          }
+        }
+      },
+      "extensions": {
+        "KHR_materials_unlit": {}
+      },
+      "name": "flat magenta"
+    },
+    {
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [1, 1, 0, 1],
+        "baseColorTexture": {
+          "index": 1,
+          "extensions": {
+            "KHR_texture_transform": {
+              "scale": [0.5, 0.5]
+            }
+          }
+        }
+      },
+      "extensions": {
+        "KHR_materials_unlit": {}
+      },
+      "name": "flat yellow"
+    }
+  ],
+  "samplers": [
+    {
+      "wrapS": 10497,
+      "wrapT": 10497,
+      "minFilter": 9984,
+      "magFilter": 9728
+    }
+  ],
+  "textures": [
+    {
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_ktx": {
+          "source": 0,
+          "layer": 0
+        }
+      }
+    },
+    {
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_ktx": {
+          "source": 0,
+          "layer": 1
+        }
+      }
+    }
+  ],
+  "images": [
+    {
+      "mimeType": "image/ktx2",
+      "bufferView": 4
+    }
+  ],
+  "nodes": [
+    {
+      "children": [1, 2, 3, 4],
+      "name": "four squares"
+    },
+    {
+      "mesh": 0,
+      "matrix": [
+        0.4, 0, 0, 0,
+        0, 0.4, 0, 0,
+        0, 0, 0.4, 0,
+        -0.5, -0.5, 0, 1
+      ]
+    },
+    {
+      "mesh": 1,
+      "matrix": [
+        0.4, 0, 0, 0,
+        0, 0.4, 0, 0,
+        0, 0, 0.4, 0,
+        0.5, -0.5, 0, 1
+      ]
+    },
+    {
+      "mesh": 2,
+      "matrix": [
+        0.4, 0, 0, 0,
+        0, 0.4, 0, 0,
+        0, 0, 0.4, 0,
+        -0.5, 0.5, 0, 1
+      ]
+    },
+    {
+      "mesh": 3,
+      "matrix": [
+        0.4, 0, 0, 0,
+        0, 0.4, 0, 0,
+        0, 0, 0.4, 0,
+        0.5, 0.5, 0, 1
+      ]
+    }
+  ],
+  "scenes": [
+    {
+      "nodes": [0]
+    }
+  ]
+}

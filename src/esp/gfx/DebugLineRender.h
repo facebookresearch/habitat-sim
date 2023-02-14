@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -171,7 +171,8 @@ class DebugLineRender {
     Magnum::GL::Buffer buffer;
     Magnum::GL::Mesh mesh{Magnum::GL::MeshPrimitive::Lines};
     Magnum::Shaders::FlatGL3D shader{
-        Magnum::Shaders::FlatGL3D::Flag::VertexColor};
+        Magnum::Shaders::FlatGL3D::Configuration{}.setFlags(
+            Magnum::Shaders::FlatGL3D::Flag::VertexColor)};
   };
 
   std::vector<Magnum::Matrix4> _inputTransformStack;

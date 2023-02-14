@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -137,6 +137,13 @@ class ManagedArticulatedObject
   std::vector<float> getJointPositions() {
     if (auto sp = getObjectReference()) {
       return sp->getJointPositions();
+    }
+    return {};
+  }
+
+  std::vector<float> getJointMotorTorques(double fixedTimeStep) {
+    if (auto sp = getObjectReference()) {
+      return sp->getJointMotorTorques(fixedTimeStep);
     }
     return {};
   }

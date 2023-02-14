@@ -1,10 +1,10 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
 #include <Corrade/TestSuite/Compare/Numeric.h>
 #include <Corrade/TestSuite/Tester.h>
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/Path.h>
 
 #include "esp/assets/MeshData.h"
 #include "esp/core/Esp.h"
@@ -45,9 +45,9 @@ NavTest::NavTest() {
 
 void NavTest::PathFinderLoadTest() {
   esp::nav::PathFinder pf;
-  pf.loadNavMesh(Cr::Utility::Directory::join(
+  pf.loadNavMesh(Cr::Utility::Path::join(
       SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
-  for (int i = 0; i < 100000; i++) {
+  for (int i = 0; i < 100000; ++i) {
     esp::nav::ShortestPath path;
     path.requestedStart = pf.getRandomNavigablePoint();
     path.requestedEnd = pf.getRandomNavigablePoint();
@@ -55,7 +55,7 @@ void NavTest::PathFinderLoadTest() {
     if (foundPath) {
       const float islandSize = pf.islandRadius(path.requestedStart);
       CORRADE_COMPARE_AS(islandSize, 0.0, Cr::TestSuite::Compare::Greater);
-      for (int j = 0; j < path.points.size(); j++) {
+      for (int j = 0; j < path.points.size(); ++j) {
         printPathPoint(i, j, path.points[j], path.geodesicDistance);
         CORRADE_COMPARE(pf.islandRadius(path.points[j]), islandSize);
       }
@@ -78,7 +78,7 @@ void printRandomizedPathSet(esp::nav::PathFinder& pf) {
   path.requestedStart = pf.getRandomNavigablePoint();
   path.requestedEnd = pf.getRandomNavigablePoint();
   ESP_VERY_VERBOSE() << "run,step,x,y,z,geodesicDistance";
-  for (int i = 0; i < 100; i++) {
+  for (int i = 0; i < 100; ++i) {
     const float r = 0.1;
     esp::vec3f rv(random.uniform_float(-r, r), 0, random.uniform_float(-r, r));
     esp::vec3f rv2(random.uniform_float(-r, r), 0, random.uniform_float(-r, r));
@@ -88,7 +88,7 @@ void printRandomizedPathSet(esp::nav::PathFinder& pf) {
 
     if (foundPath) {
       printPathPoint(i, 0, path.requestedStart, path.geodesicDistance);
-      for (int j = 0; j < path.points.size(); j++) {
+      for (int j = 0; j < path.points.size(); ++j) {
         printPathPoint(i, j + 1, path.points[j], path.geodesicDistance);
       }
       printPathPoint(i, path.points.size() + 1, path.requestedEnd,
@@ -103,7 +103,7 @@ void printRandomizedPathSet(esp::nav::PathFinder& pf) {
 
 void NavTest::PathFinderTestCases() {
   esp::nav::PathFinder pf;
-  pf.loadNavMesh(Cr::Utility::Directory::join(
+  pf.loadNavMesh(Cr::Utility::Path::join(
       SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
   esp::nav::ShortestPath testPath;
   testPath.requestedStart = esp::vec3f(-6.493, 0.072, -3.292);
@@ -128,7 +128,7 @@ void NavTest::PathFinderTestCases() {
 
 void NavTest::PathFinderTestNonNavigable() {
   esp::nav::PathFinder pf;
-  pf.loadNavMesh(Cr::Utility::Directory::join(
+  pf.loadNavMesh(Cr::Utility::Path::join(
       SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
 
   const esp::vec3f nonNavigablePoint{1e2, 1e2, 1e2};
@@ -141,7 +141,7 @@ void NavTest::PathFinderTestNonNavigable() {
 
 void NavTest::PathFinderTestSeed() {
   esp::nav::PathFinder pf;
-  pf.loadNavMesh(Cr::Utility::Directory::join(
+  pf.loadNavMesh(Cr::Utility::Path::join(
       SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
 
   // The same seed should produce the same point
@@ -169,7 +169,7 @@ void NavTest::PathFinderTestSeed() {
 
 void NavTest::PathFinderTestMeshData() {
   esp::nav::PathFinder pf;
-  pf.loadNavMesh(Cr::Utility::Directory::join(
+  pf.loadNavMesh(Cr::Utility::Path::join(
       SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
 
   esp::assets::MeshData::ptr meshData = pf.getNavMeshData();
@@ -178,7 +178,7 @@ void NavTest::PathFinderTestMeshData() {
   CORRADE_COMPARE(meshData->vbo.size(), 1155);
   CORRADE_COMPARE(meshData->ibo.size(), 1155);
 
-  pf.loadNavMesh(Cr::Utility::Directory::join(
+  pf.loadNavMesh(Cr::Utility::Path::join(
       SCENE_DATASETS, "habitat-test-scenes/van-gogh-room.navmesh"));
 
   meshData = pf.getNavMeshData();

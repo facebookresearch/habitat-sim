@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -62,20 +62,20 @@ PbrPrecomputedMapShader::PbrPrecomputedMapShader(Flags flags) : flags_(flags) {
   vert
       .addSource(Cr::Utility::formatString(
           "#define ATTRIBUTE_LOCATION_POSITION {}\n", Position::Location))
-      .addSource(rs.get("pbrPrecomputedMap.vert"));
+      .addSource(rs.getString("pbrPrecomputedMap.vert"));
 
   frag
       .addSource(Cr::Utility::formatString(
           "#define OUTPUT_ATTRIBUTE_LOCATION_COLOR {}\n", ColorOutput))
-      .addSource(rs.get("pbrCommon.glsl") + "\n");
+      .addSource(rs.getString("pbrCommon.glsl") + "\n");
 
   if (flags & Flag::IrradianceMap) {
-    frag.addSource(rs.get("pbrIrradianceMap.frag"));
+    frag.addSource(rs.getString("pbrIrradianceMap.frag"));
   } else if (flags & Flag::PrefilteredMap) {
-    frag.addSource(rs.get("pbrPrefilteredMap.frag"));
+    frag.addSource(rs.getString("pbrPrefilteredMap.frag"));
   }
 
-  CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));
+  CORRADE_INTERNAL_ASSERT_OUTPUT(vert.compile() && frag.compile());
 
   attachShaders({vert, frag});
 

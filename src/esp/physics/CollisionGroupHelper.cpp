@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -92,9 +92,10 @@ void CollisionGroupHelper::setMaskForGroup(CollisionGroup group,
 }
 
 CollisionGroup CollisionGroupHelper::getGroup(const std::string& groupName) {
-  ESP_CHECK(collisionGroupNames.count(groupName) != 0,
+  auto colGroupNamesIter = collisionGroupNames.find(groupName);
+  ESP_CHECK(colGroupNamesIter != collisionGroupNames.end(),
             "Invalid groupName provided. Matches no CollisionGroup.");
-  return collisionGroupNames.at(groupName);
+  return colGroupNamesIter->second;
 }
 
 std::string CollisionGroupHelper::getGroupName(CollisionGroup group) {

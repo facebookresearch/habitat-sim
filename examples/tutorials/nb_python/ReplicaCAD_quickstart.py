@@ -14,14 +14,14 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.11.4
+#       jupytext_version: 1.13.7
 #   kernelspec:
 #     display_name: Python 3
 #     name: python3
 # ---
 
 # %% [markdown]
-# <a href="https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/master/examples/tutorials/colabs/ReplicaCAD_quickstart.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+# <a href="https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/ReplicaCAD_quickstart.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
 # %% [markdown]
 # #Habitat-sim ReplicaCAD Quickstart
@@ -33,7 +33,7 @@
 # @title Installation { display-mode: "form" }
 # @markdown (double click to show code).
 
-# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/master/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
+# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/main/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
 
 # %%
 # @title Path Setup and Imports { display-mode: "form" }
@@ -208,6 +208,7 @@ def simulate(sim, dt=1.0, get_frames=True):
 
 # @markdown This cell provides utility functions to build and manage IPyWidget interactive components.
 
+
 # Event handler for dropdowns displaying file-based object handles
 def on_scene_ddl_change(ddl_values):
     global selected_scene
@@ -217,7 +218,6 @@ def on_scene_ddl_change(ddl_values):
 
 # Build a dropdown list holding obj_handles and set its event handler
 def set_handle_ddl_widget(scene_handles, sel_handle, on_change):
-    sel_handle = scene_handles[0]
     descStr = "Available Scenes:"
     style = {"description_width": "300px"}
     obj_ddl = widgets.Dropdown(
@@ -245,16 +245,24 @@ def set_button_launcher(desc):
 def build_widget_ui(metadata_mediator):
     # Holds the user's desired scene
     global selected_scene
-    selected_scene = "NONE"
 
-    # Construct DDLs and assign event handlers
     # All file-based object template handles
     scene_handles = metadata_mediator.get_scene_handles()
-    # If not using widgets, set as first available handle
+    # Set default as first available valid handle, or NONE scene if none are available
+    if len(scene_handles) == 0:
+        selected_scene = "NONE"
+    else:
+        # Set default selection to be first valid non-NONE scene (for python consumers)
+        for scene_handle in scene_handles:
+            if "NONE" not in scene_handle:
+                selected_scene = scene_handle
+                break
+
     if not HAS_WIDGETS:
-        selected_scene = scene_handles[0]
+        # If no widgets present, return, using default
         return
 
+    # Construct DDLs and assign event handlers
     # Build widgets
     scene_obj_ddl, selected_scene = set_handle_ddl_widget(
         scene_handles,

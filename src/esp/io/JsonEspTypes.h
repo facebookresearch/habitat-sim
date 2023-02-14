@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -15,6 +15,7 @@
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/core/Esp.h"
 #include "esp/gfx/replay/Keyframe.h"
+#include "esp/nav/PathFinder.h"
 
 namespace esp {
 namespace io {
@@ -81,31 +82,17 @@ inline bool fromJsonValue(const JsonGenericValue& obj,
   return success;
 }
 
-inline JsonGenericValue toJsonValue(const esp::assets::AssetInfo& x,
-                                    JsonAllocator& allocator) {
-  JsonGenericValue obj(rapidjson::kObjectType);
-  addMemberAsUint32(obj, "type", x.type, allocator);
-  addMember(obj, "filepath", x.filepath, allocator);
-  addMember(obj, "frame", x.frame, allocator);
-  addMember(obj, "virtualUnitToMeters", x.virtualUnitToMeters, allocator);
-  addMember(obj, "requiresLighting", x.requiresLighting, allocator);
-  addMember(obj, "splitInstanceMesh", x.splitInstanceMesh, allocator);
-  addMember(obj, "overridePhongMaterial", x.overridePhongMaterial, allocator);
+JsonGenericValue toJsonValue(const esp::assets::AssetInfo& x,
+                             JsonAllocator& allocator);
 
-  return obj;
-}
+bool fromJsonValue(const JsonGenericValue& obj, esp::assets::AssetInfo& x);
 
-inline bool fromJsonValue(const JsonGenericValue& obj,
-                          esp::assets::AssetInfo& x) {
-  readMemberAsUint32(obj, "type", x.type);
-  readMember(obj, "filepath", x.filepath);
-  readMember(obj, "frame", x.frame);
-  readMember(obj, "virtualUnitToMeters", x.virtualUnitToMeters);
-  readMember(obj, "requiresLighting", x.requiresLighting);
-  readMember(obj, "splitInstanceMesh", x.splitInstanceMesh);
-  readMember(obj, "overridePhongMaterial", x.overridePhongMaterial);
-  return true;
-}
+JsonGenericValue toJsonValue(
+    const metadata::attributes::ObjectInstanceShaderType& x,
+    JsonAllocator& allocator);
+
+bool fromJsonValue(const JsonGenericValue& obj,
+                   metadata::attributes::ObjectInstanceShaderType& x);
 
 inline JsonGenericValue toJsonValue(
     const esp::assets::RenderAssetInstanceCreationInfo& x,
@@ -116,6 +103,7 @@ inline JsonGenericValue toJsonValue(
   addMember(obj, "isStatic", x.isStatic(), allocator);
   addMember(obj, "isRGBD", x.isRGBD(), allocator);
   addMember(obj, "isSemantic", x.isSemantic(), allocator);
+  addMember(obj, "isTextureSemantic", x.isTextureBasedSemantic(), allocator);
   addMember(obj, "lightSetupKey", x.lightSetupKey, allocator);
   return obj;
 }
@@ -130,6 +118,8 @@ inline bool fromJsonValue(const JsonGenericValue& obj,
   readMember(obj, "isRGBD", isRGBD);
   bool isSemantic = false;
   readMember(obj, "isSemantic", isSemantic);
+  bool isTextureSemantic = false;
+  readMember(obj, "isTextureSemantic", isTextureSemantic);
   if (isStatic) {
     x.flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsStatic;
   }
@@ -139,6 +129,11 @@ inline bool fromJsonValue(const JsonGenericValue& obj,
   if (isSemantic) {
     x.flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsSemantic;
   }
+  if (isTextureSemantic) {
+    x.flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::
+        IsTextureBasedSemantic;
+  }
+
   readMember(obj, "lightSetupKey", x.lightSetupKey);
   return true;
 }
@@ -175,11 +170,39 @@ inline bool fromJsonValue(const JsonGenericValue& obj,
   return true;
 }
 
+inline JsonGenericValue toJsonValue(const esp::gfx::LightInfo& x,
+                                    JsonAllocator& allocator) {
+  JsonGenericValue obj(rapidjson::kObjectType);
+  addMember(obj, "vector", x.vector, allocator);
+  addMember(obj, "color", x.color, allocator);
+  addMember(obj, "model", x.model, allocator);
+  return obj;
+}
+
+inline bool fromJsonValue(const JsonGenericValue& obj, esp::gfx::LightInfo& x) {
+  readMember(obj, "vector", x.vector);
+  readMember(obj, "color", x.color);
+  readMember(obj, "model", x.model);
+  return true;
+}
+
+JsonGenericValue toJsonValue(const esp::gfx::LightPositionModel& x,
+                             JsonAllocator& allocator);
+
+bool fromJsonValue(const JsonGenericValue& obj,
+                   esp::gfx::LightPositionModel& x);
+
 JsonGenericValue toJsonValue(const esp::gfx::replay::Keyframe& x,
                              JsonAllocator& allocator);
 
 bool fromJsonValue(const JsonGenericValue& keyframeObj,
                    esp::gfx::replay::Keyframe& keyframe);
+
+// NavMeshSettings JSON serialization
+JsonGenericValue toJsonValue(const esp::nav::NavMeshSettings& x,
+                             JsonAllocator& allocator);
+
+bool fromJsonValue(const JsonGenericValue& obj, esp::nav::NavMeshSettings& x);
 
 }  // namespace io
 }  // namespace esp

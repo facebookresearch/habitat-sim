@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -18,7 +18,8 @@ namespace physics {
  * enable Managed Container access.
  */
 template <class T>
-class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
+class AbstractManagedPhysicsObject
+    : public esp::core::managedContainers::AbstractManagedObject {
  public:
   static_assert(
       std::is_base_of<esp::physics::PhysicsObjectBase, T>::value,
@@ -267,7 +268,7 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
    * info returned for this managed object.
    */
   std::string getObjectInfoHeader() const override {
-    return "Type, Name, ID, Translation XYZ, Rotation XYZW, " +
+    return "Type, Name, ID, Translation XYZ, Rotation W[XYZ], " +
            getPhyObjInfoHeaderInternal();
   }
 

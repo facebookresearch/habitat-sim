@@ -1,10 +1,10 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
 #include <Corrade/TestSuite/Tester.h>
 #include <Corrade/Utility/DebugStl.h>
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/Path.h>
 
 #include "esp/scene/SemanticScene.h"
 
@@ -27,9 +27,9 @@ Mp3dTest::Mp3dTest() {
 }  // Mp3dTest ctor
 
 void Mp3dTest::testLoad() {
-  const std::string filename = Cr::Utility::Directory::join(
+  const std::string filename = Cr::Utility::Path::join(
       SCENE_DATASETS, "mp3d/17DRP5sb8fy/17DRP5sb8fy.house");
-  if (!Cr::Utility::Directory::exists(filename)) {
+  if (!Cr::Utility::Path::exists(filename)) {
     CORRADE_SKIP("MP3D dataset not found.");
   }
 

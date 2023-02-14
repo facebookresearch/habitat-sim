@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -10,8 +10,10 @@
  * esp::assets::MeshMetaData
  */
 
+#include <Magnum/Math/Matrix4.h>
+#include <Magnum/Math/Quaternion.h>
 #include "esp/core/Esp.h"
-#include "esp/gfx/magnum.h"
+#include "esp/geo/CoordinateFrame.h"
 
 namespace esp {
 namespace assets {
@@ -112,6 +114,17 @@ struct MeshMetaData {
   void setTextureIndices(int textureStart, int textureEnd) {
     textureIndex.first = textureStart;
     textureIndex.second = textureEnd;
+  }
+
+  /**
+   * @brief Set the root frame orientation based on passed frame
+   * @param frame target frame in world space
+   */
+  void setRootFrameOrientation(const geo::CoordinateFrame& frame) {
+    const quatf& transform = frame.rotationFrameToWorld();
+    Magnum::Matrix4 R = Magnum::Matrix4::from(
+        Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
+    root.transformFromLocalToParent = R * root.transformFromLocalToParent;
   }
 };
 

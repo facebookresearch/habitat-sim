@@ -82,7 +82,7 @@ It is often desirable to add new objects (such as furniture, robots, or navigati
 These objects are handled separately from the scene and can be configured with the same or different light setups.
 
 By default, object assets are instanced with PBR shading compatibility. This is not ideal for assets with illumination baked into textures.
-Objects can be loaded for Flat shading by using the object template's :ref:`ObjectAttributes.requires_lighting` property *before* instancing the asset.
+Objects can be loaded for Flat shading by setting the object template's :ref:`ObjectAttributes.force_flat_shading` property *before* instancing the asset.
 Alternatively, this option can be set in the object template's configuration file:
 
 E.g. in ``my_object.object_config.json``
@@ -91,7 +91,7 @@ E.g. in ``my_object.object_config.json``
 
     {
         "render_asset": "my_object.glb",
-        "requires_lighting": false
+        "force_flat_shading": true
     }
 
 By default, new objects with Phong and PBR shading enabled are added to the scene with the :ref:`DEFAULT_LIGHTING_KEY` setup.

@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -12,7 +12,7 @@
 #include "esp/metadata/attributes/ObjectAttributes.h"
 #include "esp/metadata/attributes/PhysicsManagerAttributes.h"
 #include "esp/metadata/attributes/PrimitiveAssetAttributes.h"
-#include "esp/metadata/attributes/SceneAttributes.h"
+#include "esp/metadata/attributes/SceneInstanceAttributes.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;
@@ -32,8 +32,8 @@ using Attrs::ObjectAttributes;
 using Attrs::PhysicsManagerAttributes;
 using Attrs::StageAttributes;
 using Attrs::UVSpherePrimitiveAttributes;
-using esp::core::AbstractFileBasedManagedObject;
-using esp::core::AbstractManagedObject;
+using esp::core::managedContainers::AbstractFileBasedManagedObject;
+using esp::core::managedContainers::AbstractManagedObject;
 
 namespace esp {
 namespace metadata {
@@ -45,12 +45,12 @@ void initAttributesBindings(py::module& m) {
       m, "AbstractManagedObject");
   // ==== AbstractFileBasedManagedObject ====
   // NOLINTNEXTLINE(bugprone-unused-raii)
-  py::class_<AbstractFileBasedManagedObject, esp::core::AbstractManagedObject,
+  py::class_<AbstractFileBasedManagedObject, AbstractManagedObject,
              AbstractFileBasedManagedObject::ptr>(
       m, "AbstractFileBasedManagedObject");
 
   // ==== AbstractAttributes ====
-  py::class_<AbstractAttributes, esp::core::AbstractFileBasedManagedObject,
+  py::class_<AbstractAttributes, AbstractFileBasedManagedObject,
              esp::core::config::Configuration, AbstractAttributes::ptr>(
       m, "AbstractAttributes")
       .def(py::init(
@@ -79,7 +79,110 @@ void initAttributesBindings(py::module& m) {
                              R"(Class name of Attributes template.)")
       .def_property_readonly(
           "csv_info", &AbstractAttributes::getObjectInfo,
-          R"(Comma-separated informational string describing this Attributes template)");
+          R"(Comma-separated informational string describing this Attributes template)")
+
+      // Attributes should only use named properties or subconfigurations to set
+      // string values, to guarantee essential value type integrity.)
+      .def(
+          "set",
+          [](CORRADE_UNUSED AbstractAttributes& self,
+             CORRADE_UNUSED const std::string& key,
+             CORRADE_UNUSED const std::string& val) {
+            ESP_CHECK(false,
+                      "Attributes should only use named properties or "
+                      "subconfigurations to set string values, to "
+                      "guarantee essential value type integrity.");
+          },
+          R"(This method is inherited from Configuration, but should not be used with Attributes due
+          to the possibility of changing the type of a required variable. Use the provided Attributes
+          instead, to change values for this object.)",
+          "key"_a, "value"_a)
+      .def(
+          "set",
+          [](CORRADE_UNUSED AbstractAttributes& self,
+             CORRADE_UNUSED const std::string& key,
+             CORRADE_UNUSED const char* val) {
+            ESP_CHECK(false,
+                      "Attributes should only use named properties or "
+                      "subconfigurations to set string values, to "
+                      "guarantee essential value type integrity.");
+          },
+          R"(This method is inherited from Configuration, but should not be used with Attributes due
+          to the possibility of changing the type of a required variable. Use the provided Attributes
+          instead, to change values for this object.)",
+          "key"_a, "value"_a)
+      .def(
+          "set",
+          [](CORRADE_UNUSED AbstractAttributes& self,
+             CORRADE_UNUSED const std::string& key,
+             CORRADE_UNUSED const int val) {
+            ESP_CHECK(false,
+                      "Attributes should only use named properties or "
+                      "subconfigurations to set integer values, to "
+                      "guarantee essential value type integrity.");
+          },
+          R"(This method is inherited from Configuration, but should not be used with Attributes due
+          to the possibility of changing the type of a required variable. Use the provided Attributes
+          instead, to change values for this object.)",
+          "key"_a, "value"_a)
+      .def(
+          "set",
+          [](CORRADE_UNUSED AbstractAttributes& self,
+             CORRADE_UNUSED const std::string& key,
+             CORRADE_UNUSED const double val) {
+            ESP_CHECK(false,
+                      "Attributes should only use named properties or "
+                      "subconfigurations to set floating-point values, to "
+                      "guarantee essential value type integrity.");
+          },
+          R"(This method is inherited from Configuration, but should not be used with Attributes due
+          to the possibility of changing the type of a required variable. Use the provided Attributes
+          instead, to change values for this object.)",
+          "key"_a, "value"_a)
+      .def(
+          "set",
+          [](CORRADE_UNUSED AbstractAttributes& self,
+             CORRADE_UNUSED const std::string& key,
+             CORRADE_UNUSED const bool val) {
+            ESP_CHECK(false,
+                      "Attributes should only use named properties or "
+                      "subconfigurations to set boolean values, to "
+                      "guarantee essential value type integrity.");
+          },
+          R"(This method is inherited from Configuration, but should not be used with Attributes due
+          to the possibility of changing the type of a required variable. Use the provided Attributes
+          instead, to change values for this object.)",
+          "key"_a, "value"_a)
+      .def(
+          "set",
+          [](CORRADE_UNUSED AbstractAttributes& self,
+             CORRADE_UNUSED const std::string& key,
+             CORRADE_UNUSED const Magnum::Quaternion& val) {
+            ESP_CHECK(false,
+                      "Attributes should only use named properties or "
+                      "subconfigurations to set Nagnum::Quaternion values, to "
+                      "guarantee essential value type integrity.");
+          },
+          R"(This method is inherited from Configuration, but should not be used with Attributes due
+          to the possibility of changing the type of a required variable. Use the provided Attributes
+          instead, to change values for this object.)",
+          "key"_a, "value"_a)
+      .def(
+          "set",
+          [](CORRADE_UNUSED AbstractAttributes& self,
+             CORRADE_UNUSED const std::string& key,
+             CORRADE_UNUSED const Magnum::Vector3& val) {
+            ESP_CHECK(false,
+                      "Attributes should only use named properties or "
+                      "subconfigurations to set Magnum::Vector3 values, to "
+                      "guarantee essential value type integrity.");
+          },
+          R"(This method is inherited from Configuration, but should not be used with Attributes due
+          to the possibility of changing the type of a required variable. Use the provided Attributes
+          instead, to change values for this object.)",
+          "key"_a, "value"_a)
+
+      ;
 
   // ==== AbstractObjectAttributes ====
   py::class_<AbstractObjectAttributes, AbstractAttributes,
@@ -119,6 +222,16 @@ void initAttributesBindings(py::module& m) {
           &AbstractObjectAttributes::setFrictionCoefficient,
           R"(Friction coefficient for constructions built from this template.)")
       .def_property(
+          "rolling_friction_coefficient",
+          &AbstractObjectAttributes::getRollingFrictionCoefficient,
+          &AbstractObjectAttributes::setRollingFrictionCoefficient,
+          R"(Rolling friction coefficient for constructions built from this template. Damps angular velocity about axis orthogonal to the contact normal to prevent rounded shapes from rolling forever.)")
+      .def_property(
+          "spinning_friction_coefficient",
+          &AbstractObjectAttributes::getSpinningFrictionCoefficient,
+          &AbstractObjectAttributes::setSpinningFrictionCoefficient,
+          R"(Spinning friction coefficient for constructions built from this template. Damps angular velocity about the contact normal.)")
+      .def_property(
           "restitution_coefficient",
           &AbstractObjectAttributes::getRestitutionCoefficient,
           &AbstractObjectAttributes::setRestitutionCoefficient,
@@ -151,9 +264,9 @@ void initAttributesBindings(py::module& m) {
           &AbstractObjectAttributes::setShaderType,
           R"(The shader type [0=material, 1=flat, 2=phong, 3=pbr] to use for this construction)")
       .def_property(
-          "requires_lighting", &AbstractObjectAttributes::getRequiresLighting,
-          &AbstractObjectAttributes::setRequiresLighting,
-          R"(If false, this object will be rendered flat, ignoring shader type settings.)")
+          "force_flat_shading", &AbstractObjectAttributes::getForceFlatShading,
+          &AbstractObjectAttributes::setForceFlatShading,
+          R"(If true, this object will be rendered flat, ignoring shader type settings.)")
       .def_property_readonly(
           "render_asset_is_primitive",
           &AbstractObjectAttributes::getRenderAssetIsPrimitive,
@@ -182,7 +295,8 @@ void initAttributesBindings(py::module& m) {
 
   // ==== ObjectAttributes ====
   py::class_<ObjectAttributes, AbstractObjectAttributes, ObjectAttributes::ptr>(
-      m, "ObjectAttributes")
+      m, "ObjectAttributes",
+      R"(A metadata template for rigid objects pre-instantiation. Defines asset paths, physical properties, scale, semantic ids, shader type overrides, and user defined metadata. ManagedRigidObjects are instantiated from these blueprints. Can be imported from .object_config.json files.)")
       .def(py::init(&ObjectAttributes::create<>))
       .def(py::init(&ObjectAttributes::create<const std::string&>))
       .def_property(
@@ -232,7 +346,8 @@ void initAttributesBindings(py::module& m) {
 
   // ==== StageAttributes ====
   py::class_<StageAttributes, AbstractObjectAttributes, StageAttributes::ptr>(
-      m, "StageAttributes")
+      m, "StageAttributes",
+      R"(A metadata template for stages pre-instantiation. Defines asset paths, collision properties, gravity direction, shader type overrides, semantic asset information, and user defined metadata. Consumed to instantiate the static background of a scene (e.g. the building architecture). Can be imported from .stage_config.json files.)")
       .def(py::init(&StageAttributes::create<>))
       .def(py::init(&StageAttributes::create<const std::string&>))
       .def_property(
@@ -243,6 +358,14 @@ void initAttributesBindings(py::module& m) {
           "origin", &StageAttributes::getOrigin, &StageAttributes::setOrigin,
           R"(The desired location of the origin of stages built from this
           template.)")
+      .def_property(
+          "semantic_orient_up", &StageAttributes::getSemanticOrientUp,
+          &StageAttributes::setSemanticOrientUp,
+          R"(Up direction for semantic stage meshes built from this template.)")
+      .def_property(
+          "semantic_orient_front", &StageAttributes::getSemanticOrientFront,
+          &StageAttributes::setSemanticOrientFront,
+          R"(Forward direction for semantic stage meshes built from this template.)")
       .def_property(
           "semantic_asset_handle", &StageAttributes::getSemanticAssetHandle,
           &StageAttributes::setSemanticAssetHandle,
@@ -259,8 +382,8 @@ void initAttributesBindings(py::module& m) {
           R"(Handle of the navmesh asset used for constructions built from
           this template.)")
       .def_property(
-          "house_filename", &StageAttributes::getHouseFilename,
-          &StageAttributes::setHouseFilename,
+          "house_filename", &StageAttributes::getSemanticDescriptorFilename,
+          &StageAttributes::setSemanticDescriptorFilename,
           R"(Handle for file containing semantic type maps and hierarchy for
           constructions built from this template.)")
       .def_property(
@@ -270,7 +393,9 @@ void initAttributesBindings(py::module& m) {
 
   // ==== LightInstanceAttributes ====
   py::class_<LightInstanceAttributes, AbstractAttributes,
-             LightInstanceAttributes::ptr>(m, "LightInstanceAttributes")
+             LightInstanceAttributes::ptr>(
+      m, "LightInstanceAttributes",
+      R"(A metadata template for light configurations. Supports point and directional lights. Can be imported from .lighting_config.json files.)")
       .def(py::init(&LightInstanceAttributes::create<>))
       .def(py::init(&LightInstanceAttributes::create<const std::string&>))
       .def_property(
@@ -306,7 +431,9 @@ void initAttributesBindings(py::module& m) {
 
   // ==== PhysicsManagerAttributes ====
   py::class_<PhysicsManagerAttributes, AbstractAttributes,
-             PhysicsManagerAttributes::ptr>(m, "PhysicsManagerAttributes")
+             PhysicsManagerAttributes::ptr>(
+      m, "PhysicsManagerAttributes",
+      R"(A metadata template for Simulation parameters (e.g. timestep, simulation backend, default gravity direction) and defaults. Consumed to instace a Simualtor object. Can be imported from .physics_config.json files.)")
       .def(py::init(&PhysicsManagerAttributes::create<>))
       .def(py::init(&PhysicsManagerAttributes::create<const std::string&>))
       .def_property_readonly(
@@ -402,7 +529,9 @@ void initAttributesBindings(py::module& m) {
 
   // ==== CapsulePrimitiveAttributes ====
   py::class_<CapsulePrimitiveAttributes, AbstractPrimitiveAttributes,
-             CapsulePrimitiveAttributes::ptr>(m, "CapsulePrimitiveAttributes")
+             CapsulePrimitiveAttributes::ptr>(
+      m, "CapsulePrimitiveAttributes",
+      R"(Parameters for constructing a primitive capsule mesh shape.)")
       .def(py::init(
           &CapsulePrimitiveAttributes::create<bool, int, const std::string&>))
       .def_property(
@@ -418,7 +547,9 @@ void initAttributesBindings(py::module& m) {
 
   // ==== ConePrimitiveAttributes ====
   py::class_<ConePrimitiveAttributes, AbstractPrimitiveAttributes,
-             ConePrimitiveAttributes::ptr>(m, "ConePrimitiveAttributes")
+             ConePrimitiveAttributes::ptr>(
+      m, "ConePrimitiveAttributes",
+      R"(Parameters for constructing a primitive cone mesh shape.)")
       .def(py::init(
           &ConePrimitiveAttributes::create<bool, int, const std::string&>))
       .def_property(
@@ -428,13 +559,17 @@ void initAttributesBindings(py::module& m) {
 
   // ==== CubePrimitiveAttributes ====
   py::class_<CubePrimitiveAttributes, AbstractPrimitiveAttributes,
-             CubePrimitiveAttributes::ptr>(m, "CubePrimitiveAttributes")
+             CubePrimitiveAttributes::ptr>(
+      m, "CubePrimitiveAttributes",
+      R"(Parameters for constructing a primitive cube mesh shape.)")
       .def(py::init(
           &CubePrimitiveAttributes::create<bool, int, const std::string&>));
 
   // ==== CylinderPrimitiveAttributes ====
   py::class_<CylinderPrimitiveAttributes, AbstractPrimitiveAttributes,
-             CylinderPrimitiveAttributes::ptr>(m, "CylinderPrimitiveAttributes")
+             CylinderPrimitiveAttributes::ptr>(
+      m, "CylinderPrimitiveAttributes",
+      R"(Parameters for constructing a primitive capsule mesh shape.)")
       .def(py::init(
           &CylinderPrimitiveAttributes::create<bool, int, const std::string&>))
       .def_property(
@@ -444,8 +579,9 @@ void initAttributesBindings(py::module& m) {
 
   // ==== IcospherePrimitiveAttributes ====
   py::class_<IcospherePrimitiveAttributes, AbstractPrimitiveAttributes,
-             IcospherePrimitiveAttributes::ptr>(m,
-                                                "IcospherePrimitiveAttributes")
+             IcospherePrimitiveAttributes::ptr>(
+      m, "IcospherePrimitiveAttributes",
+      R"(Parameters for constructing a primitive icosphere mesh shape.)")
       .def(py::init(
           &IcospherePrimitiveAttributes::create<bool, int, const std::string&>))
       .def_property(
@@ -456,7 +592,9 @@ void initAttributesBindings(py::module& m) {
 
   // ==== UVSpherePrimitiveAttributes ====
   py::class_<UVSpherePrimitiveAttributes, AbstractPrimitiveAttributes,
-             UVSpherePrimitiveAttributes::ptr>(m, "UVSpherePrimitiveAttributes")
+             UVSpherePrimitiveAttributes::ptr>(
+      m, "UVSpherePrimitiveAttributes",
+      R"(Parameters for constructing a primitive uvsphere mesh shape.)")
       .def(py::init(
           &UVSpherePrimitiveAttributes::create<bool, int, const std::string&>));
 

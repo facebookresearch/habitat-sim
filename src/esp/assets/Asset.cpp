@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -19,8 +19,6 @@ AssetInfo AssetInfo::fromPath(const std::string& path) {
   } else if (endsWith(path, "mesh.ply")) {
     info.type = AssetType::FRL_PTEX_MESH;
     info.frame = geo::CoordinateFrame(geo::ESP_BACK, geo::ESP_UP);
-  } else if (endsWith(path, "house.json")) {
-    info.type = AssetType::SUNCG_SCENE;
   } else if (endsWith(path, ".glb")) {
     // assumes MP3D glb with gravity = -Z
     info.type = AssetType::MP3D_MESH;
@@ -34,11 +32,24 @@ AssetInfo AssetInfo::fromPath(const std::string& path) {
 
 bool operator==(const AssetInfo& a, const AssetInfo& b) {
   return a.type == b.type && a.filepath == b.filepath && a.frame == b.frame &&
+         a.shaderTypeToUse == b.shaderTypeToUse &&
+         a.hasSemanticTextures == b.hasSemanticTextures &&
          a.virtualUnitToMeters == b.virtualUnitToMeters &&
-         a.requiresLighting == b.requiresLighting;
+         a.splitInstanceMesh == b.splitInstanceMesh &&
+         a.overridePhongMaterial == b.overridePhongMaterial &&
+         a.forceFlatShading == b.forceFlatShading;
 }
 
 bool operator!=(const AssetInfo& a, const AssetInfo& b) {
+  return !(a == b);
+}
+
+bool operator==(const PhongMaterialColor& a, const PhongMaterialColor& b) {
+  return a.ambientColor == b.ambientColor && a.diffuseColor == b.diffuseColor &&
+         a.specularColor == b.specularColor;
+}
+
+bool operator!=(const PhongMaterialColor& a, const PhongMaterialColor& b) {
   return !(a == b);
 }
 

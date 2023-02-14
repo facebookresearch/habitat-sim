@@ -12,7 +12,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.11.4
+#       jupytext_version: 1.13.7
 #   kernelspec:
 #     display_name: Python 3
 #     name: python3
@@ -38,7 +38,7 @@
 # - player.get_user_transform
 
 # %%
-# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/master/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
+# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/main/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
 
 # %%
 # %cd /content/habitat-sim
@@ -123,7 +123,6 @@ def simulate_with_moving_agent(
     observations = []
     start_time = sim.get_world_time()
     while sim.get_world_time() < start_time + duration:
-
         # move agent
         agent_node.translation += agent_vel * time_step
 
@@ -430,7 +429,7 @@ for frame in range(player.get_num_keyframes()):
     )
     debug_line_render.pop_transform()
 
-    for (radius, opacity) in [(0.2, 0.6), (0.25, 0.4), (0.3, 0.2)]:
+    for radius, opacity in [(0.2, 0.6), (0.25, 0.4), (0.3, 0.2)]:
         debug_line_render.draw_circle(
             agent_translation, radius, mn.Color4(0.0, 1.0, 1.0, opacity)
         )

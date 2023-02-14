@@ -1,11 +1,11 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 //
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/TestSuite/Compare/Numeric.h>
 #include <Corrade/TestSuite/Tester.h>
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/Path.h>
 #include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/GL/SampleQuery.h>
 #include <Magnum/Math/Frustum.h>
@@ -17,6 +17,7 @@
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/WindowlessContext.h"
+#include "esp/metadata/MetadataMediator.h"
 #include "esp/scene/SceneManager.h"
 
 #include "configure.h"
@@ -75,7 +76,7 @@ int CullingTest::setupTests() {
   }
   auto stageAttributesMgr = MM->getStageAttributesManager();
   std::string stageFile =
-      Cr::Utility::Directory::join(TEST_ASSETS, "objects/5boxes.glb");
+      Cr::Utility::Path::join(TEST_ASSETS, "objects/5boxes.glb");
   // create scene attributes file
   auto stageAttributes = stageAttributesMgr->createObject(stageFile, true);
   int sceneID = sceneManager_->initSceneGraph();
@@ -259,7 +260,7 @@ void CullingTest::frustumCulling() {
         CORRADE_VERIFY(q.result<bool>());
 
         if (q.result<bool>()) {
-          numVisibleObjectsGroundTruth++;
+          ++numVisibleObjectsGroundTruth;
         }
       };
   for_each(drawableTransforms.begin(), newEndIter, renderOneDrawable);

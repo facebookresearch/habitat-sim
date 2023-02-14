@@ -1,3 +1,7 @@
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 import magnum as mn
 import numpy as np
 
@@ -40,6 +44,11 @@ def test_core_configuration():
     my_vec3 = np.array([1.12345, 2.0, -3.0])
     config.set("vec3", my_vec3)
     assert config.get("vec3") == my_vec3
+
+    # Magnum::Matrix3 (3x3)
+    my_mat3x3 = mn.Matrix3((1.1, 2.2, -3.3), (4.4, 5.0, -6.6), (7.7, 8.0, -9.9))
+    config.set("mat3x3", my_mat3x3)
+    assert config.get("mat3x3") == my_mat3x3
 
     # Magnum::Quaternion (float)
     my_quat = mn.Quaternion(((1.12345, 2.0, -3.0), 4.0))
@@ -150,6 +159,10 @@ def test_physics_object_attributes():
     assert object_template.scale == my_test_vec
     object_template.friction_coefficient = 1.345
     assert object_template.friction_coefficient == 1.345
+    object_template.rolling_friction_coefficient = 1.456
+    assert object_template.rolling_friction_coefficient == 1.456
+    object_template.spinning_friction_coefficient = 1.567
+    assert object_template.spinning_friction_coefficient == 1.567
     object_template.restitution_coefficient = 1.456
     assert object_template.restitution_coefficient == 1.456
     object_template.linear_damping = 1.567
@@ -166,5 +179,5 @@ def test_physics_object_attributes():
     assert object_template.bounding_box_collisions == True
     object_template.join_collision_meshes = False
     assert object_template.join_collision_meshes == False
-    object_template.requires_lighting = False
-    assert object_template.requires_lighting == False
+    object_template.force_flat_shading = True
+    assert object_template.force_flat_shading == True

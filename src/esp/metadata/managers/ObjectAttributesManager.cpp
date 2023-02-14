@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -6,6 +6,8 @@
 #include "AbstractObjectAttributesManagerBase.h"
 
 #include <Corrade/Utility/String.h>
+
+#include <utility>
 
 #include "esp/assets/Asset.h"
 #include "esp/io/Json.h"
@@ -15,6 +17,7 @@ namespace Cr = Corrade;
 namespace esp {
 
 using assets::AssetType;
+
 namespace metadata {
 
 using attributes::AbstractObjectAttributes;
@@ -27,9 +30,9 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
     bool registerTemplate) {
   // verify that a primitive asset with the given handle exists
   if (!this->isValidPrimitiveAttributes(primAttrTemplateHandle)) {
-    ESP_ERROR() << "No primitive with handle '" << Mn::Debug::nospace
-                << primAttrTemplateHandle << Mn::Debug::nospace
-                << "' exists so cannot build physical object.  Aborting.";
+    ESP_ERROR(Mn::Debug::Flag::NoSpace)
+        << "No primitive with handle '" << primAttrTemplateHandle
+        << "' exists so cannot build physical object.  Aborting.";
     return nullptr;
   }
 
@@ -52,7 +55,8 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
   // collision primitive mesh needs to be configured and set in MeshMetaData
   // and CollisionMesh
 
-  return this->postCreateRegister(primObjectAttributes, registerTemplate);
+  return this->postCreateRegister(std::move(primObjectAttributes),
+                                  registerTemplate);
 }  // ObjectAttributesManager::createPrimBasedAttributesTemplate
 
 void ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates() {
@@ -65,7 +69,7 @@ void ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates() {
     auto tmplt = createPrimBasedAttributesTemplate(elem, true);
     // save handles in list of defaults, so they are not removed
     std::string tmpltHandle = tmplt->getHandle();
-    this->undeletableObjectNames_.insert(tmpltHandle);
+    this->undeletableObjectNames_.insert(std::move(tmpltHandle));
   }
 }  // ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates
 
@@ -133,18 +137,42 @@ ObjectAttributes::ptr ObjectAttributesManager::initNewObjectInternal(
     bool builtFromConfig) {
   ObjectAttributes::ptr newAttributes =
       this->constructFromDefault(attributesHandle);
-  if (nullptr == newAttributes) {
+  bool createNewAttributes = (nullptr == newAttributes);
+  if (createNewAttributes) {
     newAttributes = ObjectAttributes::create(attributesHandle);
   }
+  // set the attributes source filedirectory, from the attributes name
   this->setFileDirectoryFromHandle(newAttributes);
 
-  // set default render and collision asset handle\
-  // only set handle defaults if attributesHandle is not a config file (which would
-  // never be a valid render or collision asset name).  Otherise, expect handles
-  // and types to be set when config is read.
+  if (!createNewAttributes) {
+    // default exists and was used to create this attributes - investigate any
+    // filename fields that may have %%USE_FILENAME%% directive specified in the
+    // default attributes.
+    // Render asset handle
+    setHandleFromDefaultTag(newAttributes,
+                            newAttributes->getRenderAssetHandle(),
+                            [newAttributes](const std::string& newHandle) {
+                              newAttributes->setRenderAssetHandle(newHandle);
+                            });
+    // Collision asset handle
+    setHandleFromDefaultTag(newAttributes,
+                            newAttributes->getCollisionAssetHandle(),
+                            [newAttributes](const std::string& newHandle) {
+                              newAttributes->setCollisionAssetHandle(newHandle);
+                            });
+  }
+
+  // set default render and collision asset handle
+  // only set handle defaults if attributesHandle is not a config file (which
+  // would never be a valid render or collision asset name).  Otherise, expect
+  // handles and types to be set when config is read.
   if (!builtFromConfig) {
-    newAttributes->setRenderAssetHandle(attributesHandle);
-    newAttributes->setCollisionAssetHandle(attributesHandle);
+    if (newAttributes->getRenderAssetHandle().empty()) {
+      newAttributes->setRenderAssetHandle(attributesHandle);
+    }
+    if (newAttributes->getCollisionAssetHandle().empty()) {
+      newAttributes->setCollisionAssetHandle(attributesHandle);
+    }
 
     // set defaults for passed render asset handles
     this->setDefaultAssetNameBasedAttributes(
@@ -168,7 +196,7 @@ void ObjectAttributesManager::setDefaultAssetNameBasedAttributes(
     ObjectAttributes::ptr attributes,
     bool setFrame,
     const std::string& meshHandle,
-    std::function<void(int)> assetTypeSetter) {
+    const std::function<void(int)>& assetTypeSetter) {
   if (this->isValidPrimitiveAttributes(meshHandle)) {
     // value is valid primitive, and value is different than existing value
     assetTypeSetter(static_cast<int>(AssetType::PRIMITIVE));
@@ -180,7 +208,7 @@ void ObjectAttributesManager::setDefaultAssetNameBasedAttributes(
     attributes->setOrientUp({0, 1, 0});
     attributes->setOrientFront({0, 0, -1});
   }
-}  // SceneAttributesManager::setDefaultAssetNameBasedAttributes
+}  // SceneInstanceAttributesManager::setDefaultAssetNameBasedAttributes
 
 int ObjectAttributesManager::registerObjectFinalize(
     ObjectAttributes::ptr objectTemplate,
@@ -206,7 +234,7 @@ int ObjectAttributesManager::registerObjectFinalize(
     // physicsSynthObjTmpltLibByID_
     objectTemplate->setRenderAssetIsPrimitive(true);
     mapToUse = &physicsSynthObjTmpltLibByID_;
-  } else if (this->isValidFileName(renderAssetHandle)) {
+  } else if (Cr::Utility::Path::exists(renderAssetHandle)) {
     // Check if renderAssetHandle is valid file name and is found in file system
     // - if so then setRenderAssetIsPrimitive to false and set map of IDs->Names
     // to physicsFileObjTmpltLibByID_ - verify file  exists
@@ -236,7 +264,7 @@ int ObjectAttributesManager::registerObjectFinalize(
     // If collisionAssetHandle corresponds to valid/existing primitive
     // attributes then setCollisionAssetIsPrimitive to true
     objectTemplate->setCollisionAssetIsPrimitive(true);
-  } else if (this->isValidFileName(collisionAssetHandle)) {
+  } else if (Cr::Utility::Path::exists(collisionAssetHandle)) {
     // Check if collisionAssetHandle is valid file name and is found in file
     // system - if so then setCollisionAssetIsPrimitive to false
     objectTemplate->setCollisionAssetIsPrimitive(false);
@@ -259,7 +287,7 @@ int ObjectAttributesManager::registerObjectFinalize(
 
   // Add object template to template library
   int objectTemplateID =
-      this->addObjectToLibrary(objectTemplate, objectTemplateHandle);
+      this->addObjectToLibrary(std::move(objectTemplate), objectTemplateHandle);
 
   if (mapToUse != nullptr) {
     mapToUse->emplace(objectTemplateID, objectTemplateHandle);

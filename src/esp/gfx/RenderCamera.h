@@ -1,14 +1,14 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
 #ifndef ESP_GFX_RENDERCAMERA_H_
 #define ESP_GFX_RENDERCAMERA_H_
 
-#include "magnum.h"
-
+#include <Magnum/SceneGraph/Camera.h>
 #include "esp/core/Esp.h"
 #include "esp/geo/Geo.h"
+#include "esp/gfx/magnum.h"
 #include "esp/scene/SceneNode.h"
 
 namespace esp {

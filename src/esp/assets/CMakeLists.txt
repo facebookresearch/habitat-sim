@@ -1,3 +1,7 @@
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 set(
   assets_SOURCES
   Asset.cpp
@@ -5,14 +9,12 @@ set(
   BaseMesh.cpp
   BaseMesh.h
   CollisionMeshData.h
-  GenericInstanceMeshData.cpp
-  GenericInstanceMeshData.h
+  GenericSemanticMeshData.cpp
+  GenericSemanticMeshData.h
   GenericMeshData.cpp
   GenericMeshData.h
   MeshData.h
   MeshMetaData.h
-  Mp3dInstanceMeshData.cpp
-  Mp3dInstanceMeshData.h
   RenderAssetInstanceCreationInfo.cpp
   RenderAssetInstanceCreationInfo.h
   ResourceManager.cpp
@@ -31,6 +33,7 @@ find_package(
   GL
   MeshTools
   SceneGraph
+  SceneTools
   Shaders
   Trade
   Primitives
@@ -40,11 +43,11 @@ find_package(
   MagnumPlugins
   REQUIRED
   BasisImporter
+  GltfImporter
   PrimitiveImporter
   StanfordImporter
   StbImageImporter
   StbImageConverter
-  TinyGltfImporter
 )
 
 if(BUILD_ASSIMP_SUPPORT)
@@ -69,15 +72,16 @@ target_link_libraries(
          Magnum::Magnum
          Magnum::MeshTools
          Magnum::SceneGraph
+         Magnum::SceneTools
          Magnum::Shaders
          Magnum::Trade
          Magnum::Primitives
          MagnumPlugins::BasisImporter
+         MagnumPlugins::GltfImporter
          MagnumPlugins::PrimitiveImporter
          MagnumPlugins::StanfordImporter
          MagnumPlugins::StbImageImporter
          MagnumPlugins::StbImageConverter
-         MagnumPlugins::TinyGltfImporter
   PRIVATE geo io
 )
 

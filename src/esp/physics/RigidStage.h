@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -77,11 +77,8 @@ class RigidStage : public RigidBase {
   /**
    * @brief Currently not supported. Set or reset the stages's state using the
    * object's specified @p sceneInstanceAttributes_.
-   * @param defaultCOMCorrection The default value of whether COM-based
-   * translation correction needs to occur.
    */
-  void resetStateFromSceneInstanceAttr(
-      CORRADE_UNUSED bool defaultCOMCorrection = false) override {}
+  void resetStateFromSceneInstanceAttr() override {}
 
   /**
    * @brief Currently ignored for stage objects.

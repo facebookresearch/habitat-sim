@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright (c) Facebook, Inc. and its affiliates.
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
@@ -40,15 +40,14 @@ versions = re.findall(
 )
 # Using len(versions) - MAX_NUMBER_OF_VERSIONS to support MAX_NUMBER_OF_VERSIONS == 0
 remove_versions = versions[: len(versions) - MAX_NUMBER_OF_VERSIONS]
-print(
-    f"anaconda remove {' '.join(list(map(lambda x: f'aihabitat-nightly/habitat-sim/{x}', remove_versions)))}"
-)
+remove_versions_list = [f"aihabitat-nightly/habitat-sim/{x}" for x in remove_versions]
+print(f"anaconda remove {' '.join(remove_versions_list)}")
 result_remove = subprocess.run(
     [
         "anaconda",
         "remove",
         "-f",
-        *list(map(lambda x: f"aihabitat-nightly/habitat-sim/{x}", remove_versions)),
+        *remove_versions_list,
     ],
     stderr=subprocess.PIPE,
     stdout=subprocess.PIPE,

@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -98,10 +98,11 @@ void SensorSuite::remove(const std::string& uuid) {
 }
 
 sensor::Sensor& SensorSuite::get(const std::string& uuid) const {
+  auto sensorIter = sensors_.find(uuid);
   ESP_CHECK(
-      sensors_.count(uuid),
+      sensorIter != sensors_.end(),
       "SensorSuite::get(): SensorSuite does not contain key:" << uuid.c_str());
-  return sensors_.at(uuid).get();
+  return sensorIter->second.get();
 }
 
 void SensorSuite::clear() {

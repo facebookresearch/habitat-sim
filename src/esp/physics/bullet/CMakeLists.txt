@@ -1,3 +1,7 @@
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 find_package(MagnumIntegration REQUIRED Bullet)
 find_package(Bullet REQUIRED Dynamics)
 
@@ -7,6 +11,8 @@ add_library(
   BulletArticulatedObject.h
   BulletBase.cpp
   BulletBase.h
+  BulletCollisionHelper.cpp
+  BulletCollisionHelper.h
   BulletPhysicsManager.cpp
   BulletPhysicsManager.h
   BulletRigidObject.cpp

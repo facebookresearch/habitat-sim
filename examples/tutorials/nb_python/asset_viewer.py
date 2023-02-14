@@ -14,14 +14,14 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.11.4
+#       jupytext_version: 1.13.7
 #   kernelspec:
 #     display_name: Python 3
 #     name: python3
 # ---
 
 # %% [markdown]
-# <a href="https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/master/examples/tutorials/colabs/asset_viewer.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+# <a href="https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/asset_viewer.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
 # %% [markdown]
 # #Habitat-sim Asset Viewer
@@ -33,7 +33,7 @@
 # @title Installation { display-mode: "form" }
 # @markdown (double click to show code).
 
-# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/master/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
+# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/main/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
 
 # %%
 # @title Path Setup and Imports { display-mode: "form" }
@@ -261,18 +261,20 @@ def make_simulator_from_settings(sim_settings):
 
 # @markdown This cell defines utility functions that expose Attribute template object properties.
 
+
 # This method builds a dictionary of k-v pairs of attribute property names and
 # values shared by all attribute template types.  The values are tuples with the
 # first entry being the value and the second being whether the property is
 # editable and the third being the type.
 def build_dict_of_Default_attrs(template):
-    res_dict = {}
-    res_dict["handle"] = (template.handle, True, "string")
-    # Read-only values
-    res_dict["template_id"] = (template.template_id, False, "int")
-    res_dict["template_class"] = (template.template_class, False, "string")
-    res_dict["file_directory"] = (template.file_directory, False, "string")
-    res_dict["num_user_configs"] = (template.num_user_configs, False, "int")
+    res_dict = {
+        "handle": (template.handle, True, "string"),
+        # Read-only values
+        "template_id": (template.template_id, False, "int"),
+        "template_class": (template.template_class, False, "string"),
+        "file_directory": (template.file_directory, False, "string"),
+        "num_user_configs": (template.num_user_configs, False, "int"),
+    }
     return res_dict
 
 
@@ -304,8 +306,8 @@ def build_dict_of_PhyObj_attrs(phys_obj_template):
         True,
         "string",
     )
-    res_dict["requires_lighting"] = (
-        phys_obj_template.requires_lighting,
+    res_dict["force_flat_shading"] = (
+        phys_obj_template.force_flat_shading,
         True,
         "boolean",
     )
@@ -551,6 +553,7 @@ def show_template_properties(template):
 # @title Define Simulation Utility Functions { display-mode: "form" }
 # @markdown (double click to show code)
 
+
 # @markdown - simulate
 def simulate(sim, dt=1.0, get_frames=True):
     # simulate dt seconds at 60Hz to the nearest fixed timestep
@@ -569,6 +572,7 @@ def simulate(sim, dt=1.0, get_frames=True):
 # @markdown (double click to show code)
 
 # @markdown This cell provides utility functions to build and manage IPyWidget interactive components.
+
 
 # Event handler for dropdowns displaying file-based object handles
 def on_file_obj_ddl_change(ddl_values):
@@ -760,7 +764,6 @@ clip_short_name = object_to_view_path.split("/")[-1].split(".")[0]
 
 # check if desired object actually exists
 if os.path.exists(object_to_view_path) and os.path.isfile(object_to_view_path):
-
     # Acquire the sensor being used
     visual_sensor = sim._sensors["color_sensor_3rd_person"]
     initial_sensor_position = np.array(visual_sensor._spec.position)

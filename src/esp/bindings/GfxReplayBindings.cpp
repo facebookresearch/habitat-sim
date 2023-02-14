@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -56,7 +56,20 @@ void initGfxReplayBindings(py::module& m) {
             }
             self.getRecorder()->saveKeyframe();
           },
-          R"(Save a render keyframe; a render keyframe can be loaded later and used to draw observations.)")
+          R"(Save a render keyframe. A render keyframe can be loaded later and used to draw observations.)")
+
+      .def(
+          "extract_keyframe",
+          [](ReplayManager& self) {
+            if (!self.getRecorder()) {
+              throw std::runtime_error(
+                  "replay save not enabled. See "
+                  "SimulatorConfiguration.enable_gfx_replay_save.");
+            }
+            return esp::gfx::replay::Recorder::keyframeToString(
+                self.getRecorder()->extractKeyframe());
+          },
+          R"(Extract the current keyframe as a JSON-formatted string.)")
 
       .def(
           "add_user_transform_to_keyframe",
@@ -71,7 +84,7 @@ void initGfxReplayBindings(py::module& m) {
             self.getRecorder()->addUserTransformToKeyframe(name, translation,
                                                            rotation);
           },
-          R"(Add a user transform to the current render keyframe; it will get stored with the keyframe and will be available later upon loading the keyframe)")
+          R"(Add a user transform to the current render keyframe. It will get stored with the keyframe and will be available later upon loading the keyframe.)")
 
       .def(
           "write_saved_keyframes_to_file",
@@ -84,6 +97,18 @@ void initGfxReplayBindings(py::module& m) {
             self.getRecorder()->writeSavedKeyframesToFile(filepath);
           },
           R"(Write all saved keyframes to a file, then discard the keyframes.)")
+
+      .def(
+          "write_saved_keyframes_to_string",
+          [](ReplayManager& self) {
+            if (!self.getRecorder()) {
+              throw std::runtime_error(
+                  "replay save not enabled. See "
+                  "SimulatorConfiguration.enable_gfx_replay_save.");
+            }
+            return self.getRecorder()->writeSavedKeyframesToString();
+          },
+          R"(Write all saved keyframes to a string, then discard the keyframes.)")
 
       .def("read_keyframes_from_file", &ReplayManager::readKeyframesFromFile,
            R"(Create a Player object from a replay file.)");

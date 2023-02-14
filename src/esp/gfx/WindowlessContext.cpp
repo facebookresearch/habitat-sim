@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -6,23 +6,23 @@
 
 #include <Corrade/configure.h>
 
-#if defined(CORRADE_TARGET_APPLE)
-#include <Magnum/Platform/WindowlessCglApplication.h>
-#elif defined(CORRADE_TARGET_EMSCRIPTEN)
+#ifdef MAGNUM_TARGET_EGL
 #include <Magnum/Platform/WindowlessEglApplication.h>
-#elif defined(CORRADE_TARGET_UNIX)
-
-#ifdef ESP_BUILD_EGL_SUPPORT
-#include <Magnum/Platform/WindowlessEglApplication.h>
-#else
-#include <Magnum/Platform/WindowlessGlxApplication.h>
-#endif
-
+#ifndef CORRADE_TARGET_EMSCRIPTEN
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#endif
+#elif defined(CORRADE_TARGET_APPLE)
+#include <Magnum/Platform/WindowlessCglApplication.h>
+#elif defined(CORRADE_TARGET_UNIX)
+/* Mainly for builds with external Magnum that might not have TARGET_EGL
+   enabled. */
+#include <Magnum/Platform/WindowlessGlxApplication.h>
 #elif defined(CORRADE_TARGET_WINDOWS)
 #include <Magnum/Platform/WindowlessWglApplication.h>
+#else
+#error unsupported platform
 #endif
 
 #include <Magnum/Platform/GLContext.h>
@@ -41,9 +41,9 @@ struct WindowlessContext::Impl {
     Mn::Platform::WindowlessGLContext::Configuration config;
 
 #if defined(CORRADE_TARGET_UNIX) && !defined(CORRADE_TARGET_APPLE)
-#ifdef ESP_BUILD_EGL_SUPPORT
+#ifdef MAGNUM_TARGET_EGL
     config.setCudaDevice(device);
-#else  // NO ESP_BUILD_EGL_SUPPORT
+#else  // NO MAGNUM_TARGET_EGL
     if (device != 0)
       Mn::Fatal{} << "GLX context does not support multiple GPUs. Please "
                      "compile with --headless for multi-gpu support via EGL";

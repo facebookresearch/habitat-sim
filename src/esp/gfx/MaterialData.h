@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -32,16 +32,24 @@ struct MaterialData {
 
   bool perVertexObjectId = false;
 
+  // This denotes a material with texture-based annotations
+  bool textureObjectId = false;
+
+  // This references the texture of ObjectID values
+  Magnum::GL::Texture2D* objectIdTexture = nullptr;
+
   // construct it using the default constructor. NO initial values, such as
   // identity matrix
   Magnum::Matrix3 textureMatrix;
 
   bool doubleSided = false;
+
+  // Shader type specified for this material upon load/creation
+  int shaderTypeSpec = -1;
 };
 
 struct PhongMaterialData : public MaterialData {
   PhongMaterialData() : MaterialData(MaterialDataType::Phong){};
-
   Magnum::Float shininess = 80.f;
   Magnum::Color4 ambientColor{0.1};
   // NOTE: This multiplication is a hack to roughly balance the Phong and PBR

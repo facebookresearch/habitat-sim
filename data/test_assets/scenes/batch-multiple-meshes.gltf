@@ -1,0 +1,444 @@
+{
+  "asset": {
+    "version": "2.0",
+    "generator": "Magnum GltfSceneConverter"
+  },
+  "extensionsUsed": [
+    "KHR_materials_unlit",
+    "KHR_texture_ktx",
+    "KHR_texture_transform"
+  ],
+  "extensionsRequired": [
+    "KHR_texture_ktx",
+    "KHR_texture_transform"
+  ],
+  "buffers": [
+    {
+      "uri": "batch-multiple-meshes.bin",
+      "byteLength": 1844
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 24
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 24,
+      "byteLength": 108,
+      "byteStride": 32
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 36,
+      "byteLength": 108,
+      "byteStride": 32
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 48,
+      "byteLength": 104,
+      "byteStride": 32
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 152,
+      "byteLength": 1068,
+      "byteStride": 32
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 164,
+      "byteLength": 1068,
+      "byteStride": 32
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 176,
+      "byteLength": 1064,
+      "byteStride": 32
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 1240,
+      "byteLength": 36
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 1276,
+      "byteLength": 188,
+      "byteStride": 44
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 1288,
+      "byteLength": 188,
+      "byteStride": 44
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 1300,
+      "byteLength": 184,
+      "byteStride": 44
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 1308,
+      "byteLength": 188,
+      "byteStride": 44
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 1496,
+      "byteLength": 348
+    }
+  ],
+  "accessors": [
+    {
+      "bufferView": 0,
+      "componentType": 5125,
+      "count": 6,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 4,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "componentType": 5126,
+      "count": 4,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 3,
+      "componentType": 5126,
+      "count": 4,
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 4,
+      "componentType": 5126,
+      "count": 34,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 5,
+      "componentType": 5126,
+      "count": 34,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 6,
+      "componentType": 5126,
+      "count": 34,
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 7,
+      "componentType": 5125,
+      "count": 9,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 8,
+      "componentType": 5126,
+      "count": 5,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 9,
+      "componentType": 5126,
+      "count": 5,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 10,
+      "componentType": 5126,
+      "count": 5,
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 11,
+      "componentType": 5126,
+      "count": 5,
+      "type": "VEC3"
+    }
+  ],
+  "meshes": [
+    {
+      "primitives": [
+        {
+          "indices": 0,
+          "attributes": {
+            "POSITION": 1,
+            "NORMAL": 2,
+            "TEXCOORD_0": 3
+          },
+          "material": 0
+        }
+      ],
+      "name": "square"
+    },
+    {
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 4,
+            "NORMAL": 5,
+            "TEXCOORD_0": 6
+          },
+          "mode": 6,
+          "material": 1
+        }
+      ],
+      "name": "circle"
+    },
+    {
+      "primitives": [
+        {
+          "indices": 7,
+          "attributes": {
+            "POSITION": 8,
+            "NORMAL": 9,
+            "TEXCOORD_0": 10,
+            "COLOR_0": 11
+          },
+          "material": 4
+        }
+      ],
+      "name": "triangle"
+    },
+    {
+      "primitives": [
+        {
+          "indices": 0,
+          "attributes": {
+            "POSITION": 1,
+            "NORMAL": 2,
+            "TEXCOORD_0": 3
+          },
+          "material": 1
+        }
+      ],
+      "name": "square"
+    },
+    {
+      "primitives": [
+        {
+          "indices": 0,
+          "attributes": {
+            "POSITION": 1,
+            "NORMAL": 2,
+            "TEXCOORD_0": 3
+          },
+          "material": 2
+        }
+      ],
+      "name": "square"
+    },
+    {
+      "primitives": [
+        {
+          "indices": 0,
+          "attributes": {
+            "POSITION": 1,
+            "NORMAL": 2,
+            "TEXCOORD_0": 3
+          },
+          "material": 3
+        }
+      ],
+      "name": "square"
+    }
+  ],
+  "materials": [
+    {
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 0
+        }
+      },
+      "extensions": {
+        "KHR_materials_unlit": {}
+      },
+      "name": "flat checkerboard"
+    },
+    {
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [0, 1, 1, 1],
+        "baseColorTexture": {
+          "index": 1,
+          "extensions": {
+            "KHR_texture_transform": {
+              "offset": [0, 0.5],
+              "scale": [0.5, 0.5]
+            }
+          }
+        }
+      },
+      "extensions": {
+        "KHR_materials_unlit": {}
+      },
+      "name": "flat cyan"
+    },
+    {
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [1, 0, 1, 1],
+        "baseColorTexture": {
+          "index": 1,
+          "extensions": {
+            "KHR_texture_transform": {
+              "offset": [0.5, 0.5],
+              "scale": [0.5, 0.5]
+            }
+          }
+        }
+      },
+      "extensions": {
+        "KHR_materials_unlit": {}
+      },
+      "name": "flat magenta"
+    },
+    {
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [1, 1, 0, 1],
+        "baseColorTexture": {
+          "index": 1,
+          "extensions": {
+            "KHR_texture_transform": {
+              "scale": [0.5, 0.5]
+            }
+          }
+        }
+      },
+      "extensions": {
+        "KHR_materials_unlit": {}
+      },
+      "name": "flat yellow"
+    },
+    {
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 1,
+          "extensions": {
+            "KHR_texture_transform": {
+              "offset": [0.5, 0.5],
+              "scale": [0.5, 0.5]
+            }
+          }
+        }
+      },
+      "extensions": {
+        "KHR_materials_unlit": {}
+      },
+      "name": "flat vertex-color magenta"
+    }
+  ],
+  "samplers": [
+    {
+      "wrapS": 10497,
+      "wrapT": 10497,
+      "minFilter": 9984,
+      "magFilter": 9728
+    }
+  ],
+  "textures": [
+    {
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_ktx": {
+          "source": 0,
+          "layer": 0
+        }
+      }
+    },
+    {
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_ktx": {
+          "source": 0,
+          "layer": 1
+        }
+      }
+    }
+  ],
+  "images": [
+    {
+      "mimeType": "image/ktx2",
+      "bufferView": 12
+    }
+  ],
+  "nodes": [
+    {
+      "children": [1],
+      "name": "square"
+    },
+    {
+      "mesh": 0
+    },
+    {
+      "children": [3],
+      "name": "circle"
+    },
+    {
+      "mesh": 1
+    },
+    {
+      "children": [5],
+      "name": "triangle"
+    },
+    {
+      "mesh": 2
+    },
+    {
+      "children": [7, 8, 9, 10],
+      "name": "four squares"
+    },
+    {
+      "mesh": 0,
+      "matrix": [
+        0.4, 0, 0, 0,
+        0, 0.4, 0, 0,
+        0, 0, 0.4, 0,
+        -0.5, -0.5, 0, 1
+      ]
+    },
+    {
+      "mesh": 3,
+      "matrix": [
+        0.4, 0, 0, 0,
+        0, 0.4, 0, 0,
+        0, 0, 0.4, 0,
+        0.5, -0.5, 0, 1
+      ]
+    },
+    {
+      "mesh": 4,
+      "matrix": [
+        0.4, 0, 0, 0,
+        0, 0.4, 0, 0,
+        0, 0, 0.4, 0,
+        -0.5, 0.5, 0, 1
+      ]
+    },
+    {
+      "mesh": 5,
+      "matrix": [
+        0.4, 0, 0, 0,
+        0, 0.4, 0, 0,
+        0, 0, 0.4, 0,
+        0.5, 0.5, 0, 1
+      ]
+    }
+  ],
+  "scenes": [
+    {
+      "nodes": [0, 2, 4, 6]
+    }
+  ]
+}

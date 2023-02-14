@@ -1,3 +1,8 @@
+/** Copyright (c) Meta Platforms, Inc. and its affiliates.
+ *  This source code is licensed under the MIT license found in the
+ *  LICENSE file in the root directory of this source tree.
+ */
+
 #include "esp/nav/GreedyFollower.h"
 
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
@@ -168,7 +173,7 @@ GreedyGeodesicFollowerImpl::CODES GreedyGeodesicFollowerImpl::nextActionAlong(
     thrashingActions_.pop_back();
   } else {
     const auto nextActions = nextBestPrimAlong(start, path);
-    if (nextActions.size() == 0) {
+    if (nextActions.empty()) {
       nextAction = CODES::ERROR;
     } else if (fixThrashing_ && isThrashing()) {
       thrashingActions_ = {nextActions.rbegin(), nextActions.rend()};
@@ -199,7 +204,7 @@ GreedyGeodesicFollowerImpl::findPath(const core::RigidState& start,
     path.requestedEnd = cast<vec3f>(end);
     pathfinder_->findPath(path);
     const auto nextPrim = nextBestPrimAlong(state, path);
-    if (nextPrim.size() == 0) {
+    if (nextPrim.empty()) {
       actions_.emplace_back(CODES::ERROR);
     } else {
       for (const auto nextAction : nextPrim) {

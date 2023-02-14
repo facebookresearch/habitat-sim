@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -88,7 +88,7 @@ LightSetup getDefaultLights() {
 }
 
 Magnum::Color3 getAmbientLightColor(const LightSetup& lightSetup) {
-  if (lightSetup.size() == 0) {
+  if (lightSetup.empty()) {
     // We assume an empty light setup means the user wants "flat" shading,
     // meaning object ambient color should be copied directly to pixels as-is.
     // We can achieve this in the Phong shader using an ambient light color of

@@ -1,11 +1,12 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
 // Code adapted from Bullet3/examples/Importers/ImportURDFDemo ...
 
+#include <Corrade/Containers/Pair.h>
 #include <Corrade/Utility/DebugStl.h>
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/Path.h>
 #include <Corrade/Utility/String.h>
 #include <Magnum/Math/Quaternion.h>
 #include <iostream>
@@ -104,11 +105,11 @@ void Model::setMassScaling(float massScaling) {
 bool Model::loadJsonAttributes(const std::string& filename) {
   namespace CrUt = Corrade::Utility;
   const std::string jsonName = CrUt::formatString(
-      "{}.ao_config.json", CrUt::Directory::splitExtension(
-                               CrUt::Directory::splitExtension(filename).first)
-                               .first);
+      "{}.ao_config.json",
+      CrUt::Path::splitExtension(CrUt::Path::splitExtension(filename).first())
+          .first());
 
-  if (!CrUt::Directory::exists(jsonName)) {
+  if (!CrUt::Path::exists(jsonName)) {
     // file does not exists, so no Json configuration defined for this Model.
     return false;
   }
@@ -144,7 +145,8 @@ bool Model::loadJsonAttributes(const std::string& filename) {
     // get json object referenced by tag subGroupName
     const io::JsonGenericValue& jsonObj = jsonConfig[subGroupName.c_str()];
     // count number of valid user config settings found
-    int numConfigSettings = io::loadJsonIntoConfiguration(jsonObj, subGroupPtr);
+
+    int numConfigSettings = subGroupPtr->loadFromJson(jsonObj);
 
     // save as user_defined subgroup configuration
     jsonAttributes_->setSubconfigPtr(subGroupName, subGroupPtr);
@@ -163,7 +165,7 @@ bool Parser::parseURDF(std::shared_ptr<Model>& urdfModel,
   sourceFilePath_ = filename;
   urdfModel->m_sourceFile = filename;
 
-  std::string xmlString = Corrade::Utility::Directory::readString(filename);
+  std::string xmlString = *Corrade::Utility::Path::readString(filename);
 
   XMLDocument xml_doc;
   xml_doc.Parse(xmlString.c_str());
@@ -207,6 +209,7 @@ bool Parser::parseURDF(std::shared_ptr<Model>& urdfModel,
   }
 
   // Get all link elements including shapes
+  int link_index = 0;
   for (const XMLElement* link_xml = robot_xml->FirstChildElement("link");
        link_xml; link_xml = link_xml->NextSiblingElement("link")) {
     std::shared_ptr<Link> link = std::make_shared<Link>();
@@ -221,7 +224,7 @@ bool Parser::parseURDF(std::shared_ptr<Model>& urdfModel,
         return false;
       } else {
         // copy model material into link material, if link has no local material
-        for (size_t i = 0; i < link->m_visualArray.size(); i++) {
+        for (size_t i = 0; i < link->m_visualArray.size(); ++i) {
           VisualShape& vis = link->m_visualArray.at(i);
           if (!vis.m_geometry.m_hasLocalMaterial &&
               !vis.m_materialName.empty()) {
@@ -238,6 +241,9 @@ bool Parser::parseURDF(std::shared_ptr<Model>& urdfModel,
 
         // register the new link
         urdfModel->m_links[link->m_name] = link;
+        link->m_linkIndex = link_index;
+        urdfModel->m_linkIndicesToNames[link->m_linkIndex] = link->m_name;
+        ++link_index;
       }
     } else {
       ESP_ERROR() << "Failed to parse link. Aborting parse/load for"
@@ -649,19 +655,20 @@ bool Parser::parseVisual(const std::shared_ptr<Model>& model,
             visual.m_geometry.m_localMaterial;
         visual.m_geometry.m_hasLocalMaterial = true;
       }
-    } else if (model->m_materials.count(visual.m_materialName) > 0) {
-      // need this to handle possible overwriting of this material name in a
-      // later call.
-      visual.m_geometry.m_localMaterial =
-          model->m_materials.at(visual.m_materialName);
-      visual.m_geometry.m_hasLocalMaterial = true;
     } else {
-      ESP_VERY_VERBOSE() << "Warning: visual element \"" << visual.m_name
-                         << "\" specified un-defined material name \""
-                         << visual.m_materialName << "\".";
+      auto matIter = model->m_materials.find(visual.m_materialName);
+      if (matIter != model->m_materials.end()) {
+        // need this to handle possible overwriting of this material name in a
+        // later call.
+        visual.m_geometry.m_localMaterial = matIter->second;
+        visual.m_geometry.m_hasLocalMaterial = true;
+      } else {
+        ESP_VERY_VERBOSE() << "Warning: visual element \"" << visual.m_name
+                           << "\" specified un-defined material name \""
+                           << visual.m_materialName << "\".";
+      }
     }
   }
-
   return true;
 }
 
@@ -875,11 +882,11 @@ bool Parser::validateMeshFile(std::string& meshFilename) {
       sourceFilePath_.substr(0, sourceFilePath_.find_last_of('/'));
 
   std::string meshFilePath =
-      Corrade::Utility::Directory::join(urdfDirectory, meshFilename);
+      Corrade::Utility::Path::join(urdfDirectory, meshFilename);
 
   bool meshSuccess = false;
   // defer asset loading to instancing time. Check asset file existence here.
-  meshSuccess = Corrade::Utility::Directory::exists(meshFilePath);
+  meshSuccess = Corrade::Utility::Path::exists(meshFilePath);
 
   if (meshSuccess) {
     // modify the meshFilename to full filepath to enable access into
@@ -900,7 +907,7 @@ bool Parser::initTreeAndRoot(const std::shared_ptr<Model>& model) const {
   // loop through all joints, for every link, assign children links and children
   // joints
   for (auto itr = model->m_joints.begin(); itr != model->m_joints.end();
-       itr++) {
+       ++itr) {
     auto joint = itr->second;
 
     std::string parent_link_name = joint->m_parentLinkName;
@@ -935,23 +942,17 @@ bool Parser::initTreeAndRoot(const std::shared_ptr<Model>& model) const {
   }
 
   // search for children that have no parent, those are 'root'
-  int index = 0;
-  for (auto itr = model->m_links.begin(); itr != model->m_links.end(); itr++) {
+  for (auto itr = model->m_links.begin(); itr != model->m_links.end(); ++itr) {
     auto link = itr->second;
-
-    link->m_linkIndex = index;
-    model->m_linkIndicesToNames[link->m_linkIndex] = link->m_name;
-
     if (!link->m_parentLink.lock()) {
       model->m_rootLinks.push_back(link);
     }
-    index++;
   }
 
   if (model->m_rootLinks.size() > 1) {
     ESP_VERY_VERBOSE() << "W - URDF file with multiple root links found:";
 
-    for (size_t i = 0; i < model->m_rootLinks.size(); i++) {
+    for (size_t i = 0; i < model->m_rootLinks.size(); ++i) {
       ESP_VERY_VERBOSE() << model->m_rootLinks[i]->m_name;
     }
   }
@@ -1175,7 +1176,7 @@ void printLinkChildrenHelper(Link& link, const std::string& printPrefix = "") {
         << printPrefix << "child J(" << childIndex
         << "):" << child.lock()->m_name << "->("
         << child.lock()->m_childLinkName << ")";
-    childIndex++;
+    ++childIndex;
   }
   childIndex = 0;
   for (auto& child : link.m_childLinks) {
@@ -1183,7 +1184,7 @@ void printLinkChildrenHelper(Link& link, const std::string& printPrefix = "") {
         << printPrefix << "child L(" << childIndex
         << "):" << child.lock()->m_name;
     printLinkChildrenHelper(*(child.lock()), printPrefix + "  ");
-    childIndex++;
+    ++childIndex;
   }
 }
 
@@ -1197,7 +1198,7 @@ void Model::printKinematicChain() const {
     ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
         << "root L(" << rootIndex << "):" << root->m_name;
     printLinkChildrenHelper(*root);
-    rootIndex++;
+    ++rootIndex;
   }
   ESP_VERY_VERBOSE()
       << "------------------------------------------------------";

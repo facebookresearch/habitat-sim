@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -8,12 +8,33 @@
 namespace esp {
 namespace io {
 
+JsonGenericValue toJsonValue(const Magnum::Matrix3& mat,
+                             JsonAllocator& allocator) {
+  return toJsonArrayHelper(mat.data(), 9, allocator);
+}
+
+bool fromJsonValue(const JsonGenericValue& obj, Magnum::Matrix3& mat) {
+  if (obj.IsArray() && obj.Size() == 9) {
+    for (rapidjson::SizeType i = 0; i < 9; ++i) {
+      if (obj[i].IsNumber()) {
+        mat.data()[i] = obj[i].GetFloat();
+      } else {
+        ESP_ERROR()
+            << "Invalid numeric value specified in JSON Matrix3, index :" << i;
+        return false;
+      }
+    }
+    return true;
+  }
+  return false;
+}
+
 JsonGenericValue toJsonValue(const Magnum::Quaternion& quat,
                              JsonAllocator& allocator) {
   JsonGenericValue arr(rapidjson::kArrayType);
   // note squashing
   arr.PushBack(squashTinyDecimals(quat.scalar()), allocator);
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < 3; ++i) {
     arr.PushBack(squashTinyDecimals(quat.vector()[i]), allocator);
   }
   return arr;

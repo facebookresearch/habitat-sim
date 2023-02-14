@@ -1,0 +1,177 @@
+{
+  "asset": {
+    "version": "2.0",
+    "generator": "Magnum GltfSceneConverter"
+  },
+  "extensionsUsed": [
+    "MAGNUMX_mesh_views",
+    "KHR_materials_unlit"
+  ],
+  "extensionsRequired": [
+    "MAGNUMX_mesh_views"
+  ],
+  "buffers": [
+    {
+      "uri": "batch-square-circle-triangle.bin",
+      "byteLength": 1903
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 444
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 444,
+      "byteLength": 1356,
+      "byteStride": 32
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 456,
+      "byteLength": 1356,
+      "byteStride": 32
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 468,
+      "byteLength": 1352,
+      "byteStride": 32
+    }
+  ],
+  "accessors": [
+    {
+      "bufferView": 0,
+      "componentType": 5125,
+      "count": 111,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 43,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "componentType": 5126,
+      "count": 43,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 3,
+      "componentType": 5126,
+      "count": 43,
+      "type": "VEC2"
+    }
+  ],
+  "meshes": [
+    {
+      "primitives": [
+        {
+          "indices": 0,
+          "attributes": {
+            "POSITION": 1,
+            "NORMAL": 2,
+            "TEXCOORD_0": 3
+          }
+        }
+      ]
+    }
+  ],
+  "materials": [
+    {
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 0
+        }
+      },
+      "extensions": {
+        "KHR_materials_unlit": {}
+      },
+      "name": "flat checkerboard"
+    },
+    {
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [0, 0.8, 0.8, 1]
+      },
+      "extensions": {
+        "KHR_materials_unlit": {}
+      },
+      "name": "flat cyan"
+    },
+    {
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [0.8, 0, 0.8, 1]
+      },
+      "extensions": {
+        "KHR_materials_unlit": {}
+      },
+      "name": "flat magenta"
+    }
+  ],
+  "samplers": [
+    {
+      "wrapS": 10497,
+      "wrapT": 10497,
+      "minFilter": 9984,
+      "magFilter": 9728
+    }
+  ],
+  "textures": [
+    {
+      "sampler": 0,
+      "source": 0
+    }
+  ],
+  "images": [
+    {
+      "uri": "batch-square-circle-triangle.0.2x.dxt.ktx2"
+    }
+  ],
+  "nodes": [
+    {
+      "children": [1],
+      "name": "square"
+    },
+    {
+      "mesh": 0,
+      "extras": {
+        "meshViewIndexOffset": 0,
+        "meshViewIndexCount": 6,
+        "meshViewMaterial": 0
+      }
+    },
+    {
+      "children": [3],
+      "name": "circle"
+    },
+    {
+      "mesh": 0,
+      "extras": {
+        "meshViewIndexOffset": 24,
+        "meshViewIndexCount": 96,
+        "meshViewMaterial": 1
+      }
+    },
+    {
+      "children": [5],
+      "name": "triangle"
+    },
+    {
+      "mesh": 0,
+      "extras": {
+        "meshViewIndexOffset": 408,
+        "meshViewIndexCount": 9,
+        "meshViewMaterial": 2
+      }
+    }
+  ],
+  "scenes": [
+    {
+      "nodes": [0, 2, 4]
+    }
+  ]
+}

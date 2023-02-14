@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -35,6 +35,35 @@ void CameraSensorSpec::sanityCheck() const {
 
 bool CameraSensorSpec::operator==(const CameraSensorSpec& a) const {
   return VisualSensorSpec::operator==(a) && orthoScale == a.orthoScale;
+}
+
+namespace {
+
+/* Needs to be an internal utility because CameraSensor uses everything except
+   hFoV from the CameraSensorSpec */
+Mn::Matrix4 projectionMatrixInternal(const CameraSensorSpec& spec,
+                                     Mn::Rad hfov) {
+  const Mn::Vector2 nearPlaneSize{
+      1.0f, Mn::Vector2{Mn::Vector2i{spec.resolution}}.aspectRatio()};
+  if (spec.sensorSubType == SensorSubType::Orthographic) {
+    return Mn::Matrix4::orthographicProjection(nearPlaneSize / spec.orthoScale,
+                                               spec.near, spec.far);
+  } else if (spec.sensorSubType == SensorSubType::Pinhole) {
+    const float scale = 1.0f / (2.0f * spec.near * Mn::Math::tan(0.5f * hfov));
+    return Mn::Matrix4::perspectiveProjection(nearPlaneSize / scale, spec.near,
+                                              spec.far);
+  } else
+    CORRADE_ASSERT_UNREACHABLE(
+        "CameraSensorSpec::projectionMatrix(): sensorSpec does not have "
+        "SensorSubType "
+        "Pinhole or Orthographic",
+        {});
+}
+
+}  // namespace
+
+Mn::Matrix4 CameraSensorSpec::projectionMatrix() const {
+  return projectionMatrixInternal(*this, hfov);
 }
 
 CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
@@ -77,28 +106,7 @@ void CameraSensor::recomputeProjectionMatrix() {
 
 void CameraSensor::recomputeBaseProjectionMatrix() {
   // refresh size after relevant parameters have changed
-  CORRADE_ASSERT(
-      cameraSensorSpec_->sensorSubType == SensorSubType::Pinhole ||
-          cameraSensorSpec_->sensorSubType == SensorSubType::Orthographic,
-      "CameraSensor::recomputeBaseProjectionMatrix(): sensorSpec does not have "
-      "SensorSubType "
-      "Pinhole or Orthographic", );
-  Mn::Vector2 nearPlaneSize_ =
-      Mn::Vector2{1.0f, static_cast<float>(cameraSensorSpec_->resolution[0]) /
-                            cameraSensorSpec_->resolution[1]};
-  if (cameraSensorSpec_->sensorSubType == SensorSubType::Orthographic) {
-    nearPlaneSize_ /= cameraSensorSpec_->orthoScale;
-    baseProjMatrix_ = Mn::Matrix4::orthographicProjection(
-        nearPlaneSize_, cameraSensorSpec_->near, cameraSensorSpec_->far);
-  } else {
-    // cameraSensorSpec_ is subtype Pinhole
-    Magnum::Deg halfHFovRad{Magnum::Deg(.5 * hfov_)};
-    float scale = 1.0f / (2.0f * cameraSensorSpec_->near *
-                          Magnum::Math::tan(halfHFovRad));
-    nearPlaneSize_ /= scale;
-    baseProjMatrix_ = Mn::Matrix4::perspectiveProjection(
-        nearPlaneSize_, cameraSensorSpec_->near, cameraSensorSpec_->far);
-  }
+  baseProjMatrix_ = projectionMatrixInternal(*cameraSensorSpec_, hfov_);
   // build projection matrix
   recomputeProjectionMatrix();
 }  // CameraSensor::recomputeNearPlaneSize

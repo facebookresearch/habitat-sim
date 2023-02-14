@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -24,8 +24,8 @@ class ReplayManager {
    * @brief Optionally make a Recorder instance available to python, or pass
    * nullptr.
    */
-  void setRecorder(const std::shared_ptr<Recorder>& writer) {
-    recorder_ = writer;
+  void setRecorder(std::shared_ptr<Recorder> writer) {
+    recorder_ = std::move(writer);
   }
 
   /**
@@ -34,11 +34,12 @@ class ReplayManager {
   std::shared_ptr<Recorder> getRecorder() const { return recorder_; }
 
   /**
-   * @brief Set a Player callback; this is needed to construct Player instances.
+   * @brief Set callbacks that are invoked when simulation state changes upon
+   * playing a new keyframe. This is required to construct Player instances.
    */
-  void setPlayerCallback(
-      const Player::LoadAndCreateRenderAssetInstanceCallback& callback) {
-    playerCallback_ = callback;
+  void setPlayerImplementation(
+      std::shared_ptr<AbstractPlayerImplementation>&& implementation) {
+    playerImplementation_ = std::move(implementation);
   }
 
   /**
@@ -55,7 +56,7 @@ class ReplayManager {
 
  private:
   std::shared_ptr<Recorder> recorder_;
-  Player::LoadAndCreateRenderAssetInstanceCallback playerCallback_;
+  std::shared_ptr<AbstractPlayerImplementation> playerImplementation_;
 
   ESP_SMART_POINTERS(ReplayManager)
 };

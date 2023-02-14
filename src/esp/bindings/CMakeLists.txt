@@ -1,4 +1,9 @@
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 find_package(MagnumBindings REQUIRED Python)
+find_package(MagnumPlugins REQUIRED KtxImporter)
 
 pybind11_add_module(
   habitat_sim_bindings
@@ -23,17 +28,26 @@ pybind11_add_module(
 )
 target_link_libraries(
   habitat_sim_bindings
-  PRIVATE MagnumBindings::Python
+  PRIVATE MagnumBindings::Python MagnumPlugins::KtxImporter
   PUBLIC agent
          assets
          scene
          core
          gfx
+         metadata
          nav
          sensor
          physics
          sim
 )
+
+if(BUILD_WITH_AUDIO)
+  add_custom_command(
+    TARGET habitat_sim_bindings POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RLRAudioPropagation_LIBRARY}
+            $<TARGET_FILE_DIR:habitat_sim_bindings>
+  )
+endif()
 
 # target_include_directories(environment
 #   PUBLIC

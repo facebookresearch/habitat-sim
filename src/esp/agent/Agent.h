@@ -1,23 +1,27 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 #ifndef ESP_AGENT_AGENT_H_
 #define ESP_AGENT_AGENT_H_
 
+#include <Magnum/SceneGraph/Object.h>
 #include <map>
 #include <set>
 #include <string>
 
 #include "esp/core/Esp.h"
-#include "esp/scene/ObjectControls.h"
+#include "esp/core/EspEigen.h"
 #include "esp/scene/SceneNode.h"
-#include "esp/sensor/Sensor.h"
 
 namespace esp {
-
-namespace sensor {
-class SensorSuite;
+namespace scene {
+class ObjectControls;
 }
+namespace sensor {
+class Sensor;
+struct SensorSpec;
+class SensorSuite;
+}  // namespace sensor
 namespace agent {
 
 // Represents the physical state of an agent
@@ -27,10 +31,6 @@ struct AgentState {
   // interop, replace with quatf when we have custom pybind11 type conversion
   // for quaternions
   vec4f rotation = {0, 0, 0, 1};
-  vec3f velocity;
-  vec3f angularVelocity;
-  vec3f force;
-  vec3f torque;
   ESP_SMART_POINTERS(AgentState)
 };
 
@@ -56,14 +56,8 @@ typedef std::map<std::string, ActionSpec::ptr> ActionSpace;
 struct AgentConfiguration {
   float height = 1.5;
   float radius = 0.1;
-  float mass = 32.0;
-  float linearAcceleration = 20.0;
-  float angularAcceleration = 4 * 3.14;
-  float linearFriction = 0.5;
-  float angularFriction = 1.0;
-  float coefficientOfRestitution = 0.0;
 
-  std::vector<sensor::SensorSpec::ptr> sensorSpecifications = {};
+  std::vector<std::shared_ptr<sensor::SensorSpec>> sensorSpecifications = {};
 
   ActionSpace actionSpace = {  // default ActionSpace
       {"moveForward",
@@ -121,7 +115,7 @@ class Agent : public Magnum::SceneGraph::AbstractFeature3D {
     setState(state, resetSensors);
   }
 
-  scene::ObjectControls::ptr getControls() { return controls_; }
+  std::shared_ptr<scene::ObjectControls> getControls() { return controls_; }
 
   /**
    * @brief Return SensorSuite containing references to superset of all Sensors
@@ -153,7 +147,7 @@ class Agent : public Magnum::SceneGraph::AbstractFeature3D {
 
  private:
   AgentConfiguration configuration_;
-  scene::ObjectControls::ptr controls_;
+  std::shared_ptr<scene::ObjectControls> controls_;
   AgentState initialState_;
 
   ESP_SMART_POINTERS(Agent)

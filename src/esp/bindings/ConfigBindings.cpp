@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -26,6 +26,8 @@ py::object getObjectForConfigValue(const ConfigValue& value) {
       return py::cast(value.get<std::string>());
     case ConfigStoredType::MagnumVec3:
       return py::cast(value.get<Mn::Vector3>());
+    case ConfigStoredType::MagnumMat3:
+      return py::cast(value.get<Mn::Matrix3>());
     case ConfigStoredType::MagnumQuat:
       return py::cast(value.get<Mn::Quaternion>());
     case ConfigStoredType::MagnumRad:
@@ -42,6 +44,7 @@ void initConfigBindings(py::module& m) {
       .value("Float", ConfigStoredType::Double)
       .value("String", ConfigStoredType::String)
       .value("MagnumVec3", ConfigStoredType::MagnumVec3)
+      .value("MagnumMat3", ConfigStoredType::MagnumMat3)
       .value("MagnumQuat", ConfigStoredType::MagnumQuat)
       .value("MagnumRad", ConfigStoredType::MagnumRad);
 
@@ -55,21 +58,58 @@ void initConfigBindings(py::module& m) {
           },
           R"(Retrieve the requested value referenced by key argument, if it exists)")
 
-      .def("set", [](Configuration& self, const std::string& key,
-                     const std::string& val) { self.set(key, val); })
-      .def("set", [](Configuration& self, const std::string& key,
-                     const char* val) { self.set(key, val); })
-      .def("set", [](Configuration& self, const std::string& key,
-                     const int val) { self.set(key, val); })
-      .def("set", [](Configuration& self, const std::string& key,
-                     const double val) { self.set(key, val); })
-      .def("set", [](Configuration& self, const std::string& key,
-                     const bool val) { self.set(key, val); })
-      .def("set", [](Configuration& self, const std::string& key,
-                     const Magnum::Quaternion& val) { self.set(key, val); })
-      .def("set", [](Configuration& self, const std::string& key,
-                     const Magnum::Vector3& val) { self.set(key, val); })
-
+      .def(
+          "set",
+          [](Configuration& self, const std::string& key,
+             const std::string& val) { self.set(key, val); },
+          R"(Set the value specified by given string key to be specified string value)",
+          "key"_a, "value"_a)
+      .def(
+          "set",
+          [](Configuration& self, const std::string& key, const char* val) {
+            self.set(key, val);
+          },
+          R"(Set the value specified by given string key to be specified string value)",
+          "key"_a, "value"_a)
+      .def(
+          "set",
+          [](Configuration& self, const std::string& key, const int val) {
+            self.set(key, val);
+          },
+          R"(Set the value specified by given string key to be specified integer value)",
+          "key"_a, "value"_a)
+      .def(
+          "set",
+          [](Configuration& self, const std::string& key, const double val) {
+            self.set(key, val);
+          },
+          R"(Set the value specified by given string key to be specified double value)",
+          "key"_a, "value"_a)
+      .def(
+          "set",
+          [](Configuration& self, const std::string& key, const bool val) {
+            self.set(key, val);
+          },
+          R"(Set the value specified by given string key to be specified boolean value)",
+          "key"_a, "value"_a)
+      .def(
+          "set",
+          [](Configuration& self, const std::string& key,
+             const Magnum::Quaternion& val) { self.set(key, val); },
+          R"(Set the value specified by given string key to be specified Magnum::Quaternion value)",
+          "key"_a, "value"_a)
+      .def(
+          "set",
+          [](Configuration& self, const std::string& key,
+             const Magnum::Vector3& val) { self.set(key, val); },
+          R"(Set the value specified by given string key to be specified Magnum::Vector3 value)",
+          "key"_a, "value"_a)
+      .def(
+          "set",
+          [](Configuration& self, const std::string& key,
+             const Magnum::Matrix3& val) { self.set(key, val); },
+          R"(Set the value specified by given string key to be specified Magnum::Matrix3 value)",
+          "key"_a, "value"_a)
       .def(
           "get_type", &Configuration::getType,
           R"(Retrieves the ConfigStoredType of the value referred to by the passed key.)")

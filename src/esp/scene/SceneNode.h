@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -10,6 +10,8 @@
 #include <Corrade/Containers/Containers.h>
 #include <Corrade/Containers/Optional.h>
 #include <Magnum/Math/Range.h>
+#include <Magnum/SceneGraph/Object.h>
+#include <Magnum/SceneGraph/TranslationRotationScalingTransformation3D.h>
 
 #include "esp/core/Esp.h"
 #include "esp/gfx/magnum.h"
@@ -332,6 +334,14 @@ void preOrderFeatureTraversalWithCallback(SceneNode& node, Callable&& cb) {
   preOrderFeatureTraversalWithCallback<Feature>(
       const_cast<const SceneNode&>(node), constFeatureCb);
 }
+
+/**
+ * @brief Set the semantic ID of a scene graph subtree.
+ *
+ * @param node Root node of the subtree.
+ * @param semanticId Semantic ID to apply to the subtree.
+ */
+void setSemanticIdForSubtree(SceneNode* node, int semanticId);
 
 CORRADE_ENUMSET_OPERATORS(SceneNodeTags)
 }  // namespace scene

@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -11,8 +11,6 @@ bool operator==(const SimulatorConfiguration& a,
   return a.activeSceneName == b.activeSceneName &&
          a.defaultAgentId == b.defaultAgentId &&
          a.gpuDeviceId == b.gpuDeviceId && a.randomSeed == b.randomSeed &&
-         a.defaultCameraUuid == b.defaultCameraUuid &&
-         a.compressTextures == b.compressTextures &&
          a.createRenderer == b.createRenderer &&
          a.allowSliding == b.allowSliding &&
          a.frustumCulling == b.frustumCulling &&
@@ -24,10 +22,11 @@ bool operator==(const SimulatorConfiguration& a,
          a.requiresTextures == b.requiresTextures &&
          a.leaveContextWithBackgroundRenderer ==
              b.leaveContextWithBackgroundRenderer &&
+         a.useSemanticTexturesIfFound == b.useSemanticTexturesIfFound &&
          a.sceneDatasetConfigFile == b.sceneDatasetConfigFile &&
          a.physicsConfigFile == b.physicsConfigFile &&
          a.overrideSceneLightDefaults == b.overrideSceneLightDefaults &&
-         a.sceneLightSetup == b.sceneLightSetup;
+         a.sceneLightSetupKey == b.sceneLightSetupKey;
 }
 
 bool operator!=(const SimulatorConfiguration& a,

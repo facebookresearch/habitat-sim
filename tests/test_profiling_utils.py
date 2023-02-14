@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright (c) Facebook, Inc. and its affiliates.
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
@@ -24,6 +24,7 @@ test_requires_torch_cuda = pytest.mark.skipif(
     not torch.cuda.is_available(),
     reason="Torch not installed with CUDA support so skipping test",
 )
+
 
 # Based on the env var, reloading the profiling_utils module should set
 # profiling_utils._enable_profiling to True or False.

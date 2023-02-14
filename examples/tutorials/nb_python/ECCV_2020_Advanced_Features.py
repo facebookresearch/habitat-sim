@@ -18,14 +18,14 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.11.4
+#       jupytext_version: 1.13.7
 #   kernelspec:
 #     display_name: Python 3
 #     name: python3
 # ---
 
 # %% [markdown]
-# <a href="https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/master/examples/tutorials/colabs/ECCV_2020_Advanced_Features.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+# <a href="https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/ECCV_2020_Advanced_Features.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
 # %% [markdown]
 # #Habitat-sim Advanced Features
@@ -41,7 +41,7 @@
 # @title Installation { display-mode: "form" }
 # @markdown (double click to show code).
 
-# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/master/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
+# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/main/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
 
 # %%
 # @title Path Setup and Imports { display-mode: "form" }
@@ -111,17 +111,19 @@ if "sim" not in globals():
 
 # @markdown This cell defines utility functions that expose Attribute template object properties.
 
+
 # This method builds a dictionary of k-v pairs of attribute property names and
 # values shared by all attribute template types.  The values are tuples with the
 # first entry being the value and the second being whether the property is
 # editable and the third being the type.
 def build_dict_of_Default_attrs(template):
-    res_dict = {}
-    res_dict["handle"] = (template.handle, True, "string")
-    # Read-only values
-    res_dict["template_id"] = (template.template_id, False, "int")
-    res_dict["template_class"] = (template.template_class, False, "string")
-    res_dict["file_directory"] = (template.file_directory, False, "string")
+    res_dict = {
+        "handle": (template.handle, True, "string"),
+        # Read-only values
+        "template_id": (template.template_id, False, "int"),
+        "template_class": (template.template_class, False, "string"),
+        "file_directory": (template.file_directory, False, "string"),
+    }
     return res_dict
 
 
@@ -153,8 +155,8 @@ def build_dict_of_PhyObj_attrs(phys_obj_template):
         True,
         "string",
     )
-    res_dict["requires_lighting"] = (
-        phys_obj_template.requires_lighting,
+    res_dict["force_flat_shading"] = (
+        phys_obj_template.force_flat_shading,
         True,
         "boolean",
     )
@@ -413,6 +415,10 @@ def make_cfg(settings):
     sim_cfg.gpu_device_id = 0
     sim_cfg.scene_id = settings["scene"]
     sim_cfg.enable_physics = settings["enable_physics"]
+    # Optional; Specify the location of an existing scene dataset configuration
+    # that describes the locations and configurations of all the assets to be used
+    if "scene_dataset_config" in settings:
+        sim_cfg.scene_dataset_config_file = settings["scene_dataset_config"]
 
     # Note: all sensors must have the same resolution
     sensor_specs = []
@@ -499,6 +505,7 @@ def make_default_settings():
         "width": 720,  # Spatial resolution of the observations
         "height": 544,
         "scene": "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb",  # Scene path
+        "scene_dataset": "./data/scene_datasets/mp3d_example/mp3d.scene_dataset_config.json",  # mp3d scene dataset
         "default_agent": 0,
         "sensor_height": 1.5,  # Height of sensors in meters
         "sensor_pitch": -math.pi / 8.0,  # sensor pitch (x rotation in rads)
@@ -652,6 +659,7 @@ def set_object_state_from_agent(
 # @markdown (double click to show code)
 # @markdown - display_sample
 
+
 # Change to do something like this maybe: https://stackoverflow.com/a/41432704
 def display_sample(
     rgb_obs, semantic_obs=np.array([]), depth_obs=np.array([]), key_points=None
@@ -711,6 +719,7 @@ else:
 # @markdown (double click to show code)
 
 # @markdown This cell provides utility functions to build and manage IPyWidget interactive components.
+
 
 # Event handler for dropdowns displaying file-based object handles
 def on_file_obj_ddl_change(ddl_values):
@@ -930,6 +939,7 @@ rigid_obj_mgr.remove_all_objects()
 # ## Advanced Topic : 3D to 2D Key-point Projection
 #
 # The Habitat-sim visual-sensor API makes it easy to project 3D points into 2D for use cases such as generating ground-truth for image space key-points.
+
 
 # %%
 # @markdown ###Display 2D Projection of Object COMs
@@ -1250,8 +1260,8 @@ restitution_coefficient = 0.3  # @param {type:"slider", min:0.0, max:1.0, step:0
 new_template.restitution_coefficient = restitution_coefficient
 
 # @markdown Whether the object should be lit via Phong shading.
-requires_lighting = False  # @param {type:"boolean"}
-new_template.requires_lighting = requires_lighting
+force_flat_shading = True  # @param {type:"boolean"}
+new_template.force_flat_shading = force_flat_shading
 
 # @markdown The x,y,z components of the intertia matrix diagonal
 
@@ -1395,6 +1405,7 @@ make_clear_all_objects_button()
 # Primitive Asset Attributes Manager, provides access to AssetAttributesTemplates
 prim_attr_mgr = sim.get_asset_template_manager()
 
+
 # This will register a primitive template if valid, and add it to a passed
 # dictionary of handles; If not valid it will give a message
 def register_prim_template_if_valid(
@@ -1422,13 +1433,11 @@ def register_prim_template_if_valid(
 
 # Build a dictionary of templates to use to construct objects
 # Configure dictionaries to hold handles of attributes to use to build objects
-solid_handles_to_use = {}
 # Solid and Wireframe cube primitives lack customizable attributes, as does wireframe icosphere
-solid_handles_to_use["cubeSolid"] = prim_attr_mgr.get_template_handles("cubeSolid")[0]
-wireframe_handles_to_use = {}
-wireframe_handles_to_use["cubeWireframe"] = prim_attr_mgr.get_template_handles(
-    "cubeWireframe"
-)[0]
+solid_handles_to_use = {"cubeSolid": prim_attr_mgr.get_template_handles("cubeSolid")[0]}
+wireframe_handles_to_use = {
+    "cubeWireframe": prim_attr_mgr.get_template_handles("cubeWireframe")[0]
+}
 wireframe_handles_to_use["icosphereWireframe"] = prim_attr_mgr.get_template_handles(
     "icosphereWireframe"
 )[0]

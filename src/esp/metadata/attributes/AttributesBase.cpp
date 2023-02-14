@@ -1,58 +1,31 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
 #include "AttributesBase.h"
+#include "esp/physics/PhysicsObjectBase.h"
 namespace esp {
+
 namespace metadata {
 namespace attributes {
 
-const std::map<std::string, ObjectInstanceShaderType> ShaderTypeNamesMap = {
-    {"material", ObjectInstanceShaderType::Material},
-    {"flat", ObjectInstanceShaderType::Flat},
-    {"phong", ObjectInstanceShaderType::Phong},
-    {"pbr", ObjectInstanceShaderType::PBR},
+// All keys must be lowercase
+const std::map<std::string, esp::assets::AssetType> AssetTypeNamesMap = {
+    {"unknown", esp::assets::AssetType::UNKNOWN},
+    {"mp3d", esp::assets::AssetType::MP3D_MESH},
+    {"semantic", esp::assets::AssetType::INSTANCE_MESH},
+    {"ptex", esp::assets::AssetType::FRL_PTEX_MESH},
+    {"navmesh", esp::assets::AssetType::NAVMESH},
 };
 
-const std::map<std::string, SceneInstanceTranslationOrigin>
-    InstanceTranslationOriginMap = {
-        {"asset_local", SceneInstanceTranslationOrigin::AssetLocal},
-        {"com", SceneInstanceTranslationOrigin::COM},
-};
-
-std::string getShaderTypeName(int shaderTypeVal) {
-  if (shaderTypeVal <= static_cast<int>(ObjectInstanceShaderType::Unknown) ||
-      shaderTypeVal >=
-          static_cast<int>(ObjectInstanceShaderType::EndShaderType)) {
-    return "unspecified";
-  }
+std::string getMeshTypeName(esp::assets::AssetType meshTypeEnum) {
   // Must always be valid value
-  ObjectInstanceShaderType shaderType =
-      static_cast<ObjectInstanceShaderType>(shaderTypeVal);
-  for (const auto& it : ShaderTypeNamesMap) {
-    if (it.second == shaderType) {
+  for (const auto& it : AssetTypeNamesMap) {
+    if (it.second == meshTypeEnum) {
       return it.first;
     }
   }
-  return "unspecified";
-}
-
-std::string getTranslationOriginName(int translationOrigin) {
-  if (translationOrigin <=
-          static_cast<int>(SceneInstanceTranslationOrigin::Unknown) ||
-      translationOrigin >=
-          static_cast<int>(SceneInstanceTranslationOrigin::EndTransOrigin)) {
-    return "default";
-  }
-  // Must always be valid value
-  SceneInstanceTranslationOrigin transOrigin =
-      static_cast<SceneInstanceTranslationOrigin>(translationOrigin);
-  for (const auto& it : InstanceTranslationOriginMap) {
-    if (it.second == transOrigin) {
-      return it.first;
-    }
-  }
-  return "default";
+  return "unknown";
 }
 
 AbstractAttributes::AbstractAttributes(const std::string& attributesClassKey,

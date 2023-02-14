@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -36,6 +36,8 @@ class ArticulatedObjectManager
    * the components of the @ref ArticulatedObject.
    * @param forceReload If true, reload the source URDF from file, replacing the
    * cached model.
+   * @param maintainLinkOrder If true, maintain the order of link definitions
+   * from the URDF file as the link indices.
    * @param lightSetup The string name of the desired lighting setup to use.
    *
    * @return A reference to the created ArticulatedObject
@@ -46,6 +48,7 @@ class ArticulatedObjectManager
       float globalScale = 1.0,
       float massScale = 1.0,
       bool forceReload = false,
+      bool maintainLinkOrder = false,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
 
   /**
@@ -62,21 +65,30 @@ class ArticulatedObjectManager
    * the components of the @ref ArticulatedObject.
    * @param forceReload If true, reload the source URDF from file, replacing the
    * cached model.
+   * @param maintainLinkOrder If true, maintain the order of link definitions
+   * from the URDF file as the link indices.
    * @param lightSetup The string name of the desired lighting setup to use.
    *
    * @return A reference to the created ArticulatedObject
    */
-  std::shared_ptr<ManagedBulletArticulatedObject>
-  addBulletArticulatedObjectFromURDF(
+  std::shared_ptr<ManagedArticulatedObject> addBulletArticulatedObjectFromURDF(
       const std::string& filepath,
       bool fixedBase = false,
       float globalScale = 1.0,
       float massScale = 1.0,
       bool forceReload = false,
+      bool maintainLinkOrder = false,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
-    return std::static_pointer_cast<ManagedBulletArticulatedObject>(
+    std::shared_ptr<ManagedArticulatedObject> objPtr =
         addArticulatedObjectFromURDF(filepath, fixedBase, globalScale,
-                                     massScale, forceReload, lightSetup));
+                                     massScale, forceReload, maintainLinkOrder,
+                                     lightSetup);
+
+    if (std::shared_ptr<ManagedBulletArticulatedObject> castObjPtr =
+            std::dynamic_pointer_cast<ManagedBulletArticulatedObject>(objPtr)) {
+      return castObjPtr;
+    }
+    return objPtr;
   }
 
   /**
@@ -94,6 +106,8 @@ class ArticulatedObjectManager
    * all the components of the @ref ArticulatedObject.
    * @param forceReload If true, reload the source URDF from file, replacing
    * the cached model.
+   * @param maintainLinkOrder If true, maintain the order of link definitions
+   * from the URDF file as the link indices.
    * @param lightSetup The string name of the desired lighting setup to use.
    *
    * @return A reference to the created ArticulatedObject
@@ -106,6 +120,7 @@ class ArticulatedObjectManager
       float globalScale = 1.0,
       float massScale = 1.0,
       bool forceReload = false,
+      bool maintainLinkOrder = false,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
 
  protected:
@@ -122,6 +137,7 @@ class ArticulatedObjectManager
       int objectID,
       CORRADE_UNUSED const std::string& objectHandle) override {
     if (auto physMgr = this->getPhysicsManager()) {
+      // don't try to double remove or will throw an exception
       if (physMgr->isValidArticulatedObjectId(objectID)) {
         physMgr->removeArticulatedObject(objectID);
       }

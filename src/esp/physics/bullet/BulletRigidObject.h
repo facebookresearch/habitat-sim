@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -269,6 +269,25 @@ class BulletRigidObject : public BulletBase,
     return static_cast<double>(bObjectRigidBody_->getFriction());
   }
 
+  /** @brief Get the scalar rolling friction coefficient of the object.
+   * See @ref btCollisionObject::getRollingFriction.
+   * @return The scalar rolling friction coefficient of the object. Damps
+   * angular velocity about axis orthogonal to the contact normal to prevent
+   * rounded shapes from rolling forever.
+   */
+  double getRollingFrictionCoefficient() const override {
+    return static_cast<double>(bObjectRigidBody_->getRollingFriction());
+  }
+
+  /** @brief Get the scalar spinning friction coefficient of the object.
+   * See @ref btCollisionObject::getSpinningFriction.
+   * @return The scalar spinning friction coefficient of the object. Damps
+   * angular velocity about the contact normal.
+   */
+  double getSpinningFrictionCoefficient() const override {
+    return static_cast<double>(bObjectRigidBody_->getSpinningFriction());
+  }
+
   /** @brief Get the scalar coefficient of restitution  of the object.
    * See @ref btCollisionObject::getRestitution.
    * @return The scalar coefficient of restitution  of the object.
@@ -368,6 +387,27 @@ class BulletRigidObject : public BulletBase,
     bObjectRigidBody_->setFriction(frictionCoefficient);
   }
 
+  /** @brief Set the scalar rolling friction coefficient of the object.
+   * See @ref btCollisionObject::setRollingFriction.
+   * @param rollingFrictionCoefficient The new scalar rolling friction
+   * coefficient of the object. Damps angular velocity about axis orthogonal to
+   * the contact normal to prevent rounded shapes from rolling forever.
+   */
+  void setRollingFrictionCoefficient(
+      const double rollingFrictionCoefficient) override {
+    bObjectRigidBody_->setRollingFriction(rollingFrictionCoefficient);
+  }
+
+  /** @brief Set the scalar spinning friction coefficient of the object.
+   * See @ref btCollisionObject::setSpinningFriction.
+   * @param spinningFrictionCoefficient The new scalar spinning friction
+   * coefficient of the object. Damps angular velocity about the contact normal.
+   */
+  void setSpinningFrictionCoefficient(
+      const double spinningFrictionCoefficient) override {
+    bObjectRigidBody_->setSpinningFriction(spinningFrictionCoefficient);
+  }
+
   /** @brief Set the scalar coefficient of restitution of the object.
    * See @ref btCollisionObject::setRestitution.
    * @param restitutionCoefficient The new scalar coefficient of restitution of
@@ -400,7 +440,7 @@ class BulletRigidObject : public BulletBase,
    * @param margin The new scalar collision margin of the object.
    */
   void setMargin(const double margin) override {
-    for (std::size_t i = 0; i < bObjectConvexShapes_.size(); i++) {
+    for (std::size_t i = 0; i < bObjectConvexShapes_.size(); ++i) {
       bObjectConvexShapes_[i]->setMargin(margin);
     }
     bObjectShape_->setMargin(margin);
@@ -499,6 +539,8 @@ class BulletRigidObject : public BulletBase,
   void setWorldTransform(const btTransform& worldTrans) override;
 
   void getWorldTransform(btTransform& worldTrans) const override;
+
+  std::string getCollisionDebugName();
 
   Corrade::Containers::Optional<btTransform> deferredUpdate_ =
       Corrade::Containers::NullOpt;

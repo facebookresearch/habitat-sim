@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -112,6 +112,16 @@ class BulletArticulatedObject : public ArticulatedObject {
   void updateNodes(bool force = false) override;
 
   /**
+   * @brief Return a @ref
+   * metadata::attributes::SceneAOInstanceAttributes reflecting the current
+   * state of this Articulated Object.
+   * @return a @ref SceneAOInstanceAttributes reflecting this Articulated
+   * Object's current state
+   */
+  std::shared_ptr<metadata::attributes::SceneAOInstanceAttributes>
+  getCurrentStateInstanceAttr() override;
+
+  /**
    * @brief Get the linear velocity of the articulated object's root in the
    * global frame.
    *
@@ -208,6 +218,16 @@ class BulletArticulatedObject : public ArticulatedObject {
    * @return The current joint positions.
    */
   std::vector<float> getJointPositions() override;
+
+  /**
+   * @brief Get the torques on each joint
+   *
+   * @param fixedTimeStep The physics timestep used by the simulator.  Necessary
+   * to convert impulse into torque.
+   *
+   * @return Array of torques on each joint
+   */
+  std::vector<float> getJointMotorTorques(double fixedTimeStep) override;
 
   /**
    * @brief Get position limits for all joints. (lower, upper)
@@ -335,6 +355,12 @@ class BulletArticulatedObject : public ArticulatedObject {
   //! clamp current pose to joint limits
   void clampJointLimits() override;
 
+  /**
+   * @brief Manually set the collision group for all links of the object.
+   * @param group The desired CollisionGroup for the object.
+   */
+  void overrideCollisionGroup(CollisionGroup group) override;
+
   //============ Joint Motor Constraints =============
 
   //! Bullet supports vel/pos control joint motors for revolute and prismatic
@@ -404,8 +430,7 @@ class BulletArticulatedObject : public ArticulatedObject {
    * @param defaultCOMCorrection Not used in AO currently. The default value of
    * whether COM-based translation correction needs to occur.
    */
-  void resetStateFromSceneInstanceAttr(
-      CORRADE_UNUSED bool defaultCOMCorrection = false) override;
+  void resetStateFromSceneInstanceAttr() override;
 
   //! The Bullet multibody structure
   std::unique_ptr<btMultiBody> btMultiBody_;

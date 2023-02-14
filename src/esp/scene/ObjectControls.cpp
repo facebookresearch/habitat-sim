@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -28,7 +28,9 @@ SceneNode& moveLeft(SceneNode& object, float distance) {
 
 SceneNode& moveUp(SceneNode& object, float distance) {
   // TODO: this assumes no scale is applied
-  object.translateLocal(object.transformation().up() * distance);
+  // Note: this is not a body action and is applied to the sensor rather than
+  // the Agent, so it will move the sensor in Agent's +Y (up) direction
+  object.translate(Magnum::Vector3(0, 1, 0) * distance);
   return object;
 }
 
@@ -89,18 +91,19 @@ ObjectControls& ObjectControls::action(SceneNode& object,
                                        const std::string& actName,
                                        float distance,
                                        bool applyFilter /* = true */) {
-  if (moveFuncMap_.count(actName) != 0u) {
+  auto moveFuncMapIter = moveFuncMap_.find(actName);
+  if (moveFuncMapIter != moveFuncMap_.end()) {
     if (applyFilter) {
       // TODO: use magnum math for the filter func as well?
       const auto startPosition =
           cast<vec3f>(object.absoluteTransformation().translation());
-      moveFuncMap_[actName](object, distance);
+      moveFuncMapIter->second(object, distance);
       const auto endPos =
           cast<vec3f>(object.absoluteTransformation().translation());
       const vec3f filteredEndPosition = moveFilterFunc_(startPosition, endPos);
       object.translate(Magnum::Vector3(vec3f(filteredEndPosition - endPos)));
     } else {
-      moveFuncMap_[actName](object, distance);
+      moveFuncMapIter->second(object, distance);
     }
   } else {
     ESP_ERROR() << "Tried to perform unknown action with name" << actName;

@@ -1,10 +1,12 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
 #include "Io.h"
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Containers/Pair.h>
+#include <Corrade/Containers/StringStl.h>
 #include <Corrade/Utility/FormatStl.h>
+#include <Corrade/Utility/Path.h>
 #include <Corrade/Utility/String.h>
 #include <glob.h>
 
@@ -14,8 +16,8 @@ namespace io {
 
 std::string changeExtension(const std::string& filename,
                             const std::string& ext) {
-  const std::string filenameBase =
-      Cr::Utility::Directory::splitExtension(filename).first;
+  const Cr::Containers::StringView filenameBase =
+      Cr::Utility::Path::splitExtension(filename).first();
   return Cr::Utility::formatString(
       ext.empty() || ext[0] == '.' ? "{}{}" : "{}.{}", filenameBase, ext);
 

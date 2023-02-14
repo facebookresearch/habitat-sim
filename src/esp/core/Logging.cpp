@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -6,14 +6,17 @@
 #include "Check.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cstdlib>
 
 #include <Corrade/Containers/Array.h>
+#include <Corrade/Containers/Pair.h>
 #include <Corrade/Containers/StaticArray.h>
 #include <Corrade/Containers/String.h>
 #include <Corrade/Containers/StringStl.h>
-#include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/Format.h>
+#include <Corrade/Utility/FormatStl.h>
+#include <Corrade/Utility/Path.h>
 
 namespace Cr = Corrade;
 using Cr::Containers::Literals::operator""_s;
@@ -63,7 +66,11 @@ LoggingLevel levelFromName(const Corrade::Containers::StringView name) {
                              {});
 }
 
+#if !defined(MAGNUM_BUILD_STATIC_UNIQUE_GLOBALS) || \
+    defined(CORRADE_TARGET_WINDOWS)
+/* (Of course) can't be in an unnamed namespace in order to export it below */
 namespace {
+#endif
 #if defined(MAGNUM_BUILD_STATIC_UNIQUE_GLOBALS) && \
     !defined(CORRADE_TARGET_WINDOWS)
 /* On static builds that get linked to multiple shared libraries and then used
@@ -78,7 +85,10 @@ __attribute__((weak))
 #endif
 #endif
 const LoggingContext* currentLoggingContext = nullptr;
+#if !defined(MAGNUM_BUILD_STATIC_UNIQUE_GLOBALS) || \
+    defined(CORRADE_TARGET_WINDOWS)
 }  // namespace
+#endif
 
 bool LoggingContext::hasCurrent() {
   return currentLoggingContext != nullptr;
@@ -130,10 +140,23 @@ Cr::Containers::String buildMessagePrefix(Subsystem subsystem,
                                           const std::string& filename,
                                           const std::string& function,
                                           int line) {
-  auto baseFileName = Cr::Utility::Directory::filename(filename);
-  return ""_s.join({"["_s, subsystemNames[uint8_t(subsystem)], "] "_s,
-                    baseFileName, "("_s, std::to_string(line), ")::"_s,
-                    function, " : "_s});
+  auto baseFileName = Cr::Utility::Path::split(filename).second();
+
+  const auto timePassed =
+      std::chrono::high_resolution_clock::now().time_since_epoch();
+  const auto timePassedSeconds =
+      std::chrono::duration_cast<std::chrono::seconds>(timePassed);
+  // for micro time
+  const auto nowMicros = std::chrono::duration_cast<std::chrono::microseconds>(
+      timePassed - timePassedSeconds);
+  std::time_t t = std::time_t(timePassedSeconds.count());
+  // format hour,min, second
+  std::tm timeNow = *std::localtime(&t);
+
+  return Cr::Utility::formatString(
+      "[{:.02d}:{:.02d}:{:.02d}:{:.06d}]:[{}] {}({})::{} : ", timeNow.tm_hour,
+      timeNow.tm_min, timeNow.tm_sec, nowMicros.count(),
+      subsystemNames[uint8_t(subsystem)], baseFileName, line, function);
 }
 
 }  // namespace logging

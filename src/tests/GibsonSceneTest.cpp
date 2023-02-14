@@ -1,8 +1,8 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 #include <Corrade/TestSuite/Tester.h>
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/Path.h>
 #include <string>
 #include "esp/io/Io.h"
 #include "esp/scene/SemanticScene.h"
@@ -18,12 +18,12 @@ using esp::sim::SimulatorConfiguration;
 
 namespace {
 
-const std::string houseFilename = Cr::Utility::Directory::join(
+const std::string houseFilename = Cr::Utility::Path::join(
     DATA_DIR,
     "test_assets/dataset_tests/GibsonSceneTest/GibsonTestScene.scn");
 
 const std::string gibsonSemanticFilename =
-    Cr::Utility::Directory::join(SCENE_DATASETS, "gibson/Allensville.scn");
+    Cr::Utility::Path::join(SCENE_DATASETS, "gibson/Allensville.scn");
 
 struct GibsonSceneTest : Cr::TestSuite::Tester {
   explicit GibsonSceneTest();
@@ -61,7 +61,7 @@ void GibsonSceneTest::testGibsonScene() {
 
 void GibsonSceneTest::testGibsonSemanticScene() {
   esp::logging::LoggingContext loggingContext;
-  if (!Cr::Utility::Directory::exists(gibsonSemanticFilename)) {
+  if (!Cr::Utility::Path::exists(gibsonSemanticFilename)) {
     std::string skip_message = "Gibson's semantic scene file \"" +
                                gibsonSemanticFilename + "\" wasn't found.";
     CORRADE_SKIP(skip_message.c_str());

@@ -1,9 +1,26 @@
-find_package(Magnum REQUIRED DebugTools AnyImageConverter)
-find_package(MagnumPlugins REQUIRED StbImageImporter)
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+find_package(Magnum REQUIRED DebugTools AnyImageConverter AnySceneImporter)
+find_package(
+  MagnumPlugins REQUIRED GltfImporter StbImageImporter KtxImporter
+  OPTIONAL_COMPONENTS GltfSceneConverter KtxImageConverter
+)
 
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/configure.h
 )
+
+corrade_add_test(
+  AttributesConfigsTest
+  AttributesConfigsTest.cpp
+  LIBRARIES
+  core
+  assets
+  metadata
+)
+target_include_directories(AttributesConfigsTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(
   AttributesManagersTest
@@ -14,6 +31,30 @@ corrade_add_test(
   metadata
 )
 target_include_directories(AttributesManagersTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
+corrade_add_test(
+  GfxBatchRendererTest
+  GfxBatchRendererTest.cpp
+  LIBRARIES
+  gfx_batch
+  Magnum::DebugTools
+  Magnum::AnySceneImporter
+  MagnumPlugins::GltfImporter
+  MagnumPlugins::KtxImporter
+  MagnumPlugins::StbImageImporter
+)
+target_include_directories(GfxBatchRendererTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+if(BUILD_WITH_CUDA)
+  target_include_directories(
+    GfxBatchRendererTest PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
+  )
+endif()
+if(MagnumPlugins_GltfSceneConverter_FOUND)
+  target_link_libraries(GfxBatchRendererTest PRIVATE MagnumPlugins::GltfSceneConverter)
+endif()
+if(MagnumPlugins_KtxImageConverter_FOUND)
+  target_link_libraries(GfxBatchRendererTest PRIVATE MagnumPlugins::KtxImageConverter)
+endif()
 
 corrade_add_test(CoreTest CoreTest.cpp LIBRARIES core io)
 
@@ -46,8 +87,26 @@ corrade_add_test(
 )
 target_include_directories(GfxReplayTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
+if(BUILD_WITH_BACKGROUND_RENDERER)
+  corrade_add_test(
+    BatchReplayRendererTest
+    BatchReplayRendererTest.cpp
+    LIBRARIES
+    assets
+    gfx
+    gfx_batch
+    sim
+  )
+  target_include_directories(
+    BatchReplayRendererTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+  )
+endif()
+
 corrade_add_test(GibsonSceneTest GibsonSceneTest.cpp LIBRARIES scene sim)
 target_include_directories(GibsonSceneTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
+corrade_add_test(HM3DSceneTest HM3DSceneTest.cpp LIBRARIES scene sim)
+target_include_directories(HM3DSceneTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(IOTest IOTest.cpp LIBRARIES io metadata)
 target_include_directories(IOTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
@@ -69,11 +128,19 @@ corrade_add_test(
   LIBRARIES
   core
   nav
+  io
   assets
 )
 target_include_directories(NavTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(PathFinderTest PathFinderTest.cpp LIBRARIES nav Corrade::Utility)
+corrade_add_test(
+  PathFinderTest
+  PathFinderTest.cpp
+  LIBRARIES
+  nav
+  io
+  Corrade::Utility
+)
 target_include_directories(PathFinderTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(PhysicsTest PhysicsTest.cpp LIBRARIES physics)
@@ -107,9 +174,6 @@ corrade_add_test(
 )
 target_include_directories(SimTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(SuncgTest SuncgTest.cpp LIBRARIES scene)
-target_include_directories(SuncgTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-
 if(BUILD_WITH_VHACD)
   corrade_add_test(
     VoxelGridTest
@@ -129,6 +193,7 @@ endif()
 # want to have full log from others, so this is a compromise)
 set_tests_properties(
   GfxReplayTest
+  HM3DSceneTest
   MetadataMediatorTest
   Mp3dTest
   NavTest
@@ -136,6 +201,5 @@ set_tests_properties(
   ReplicaSceneTest
   ResourceManagerTest
   SimTest
-  SuncgTest
   PROPERTIES ENVIRONMENT "HABITAT_SIM_LOG=quiet;MAGNUM_LOG=QUIET"
 )

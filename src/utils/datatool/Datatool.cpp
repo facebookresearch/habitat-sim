@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -11,7 +11,7 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 
-#include "esp/assets/Mp3dInstanceMeshData.h"
+#include "Mp3dInstanceMeshData.h"
 #include "esp/core/Esp.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/scene/SemanticScene.h"
@@ -97,7 +97,7 @@ int createGibsonSemanticMesh(const std::string& objFile,
   // We need to rotate to match .glb where -Z is gravity
   const auto transform =
       esp::quatf::FromTwoVectors(esp::vec3f::UnitY(), esp::vec3f::UnitZ());
-  for (size_t i = 0; i < numVerts; i++) {
+  for (size_t i = 0; i < numVerts; ++i) {
     unsigned char gray[] = {0x80, 0x80, 0x80};
     float* components = &attrib.vertices[i * 3];
     Eigen::Map<esp::vec3f> vertex{components};
@@ -107,11 +107,11 @@ int createGibsonSemanticMesh(const std::string& objFile,
   }
 
   size_t index_offset = 0;
-  for (size_t i = 0; i < shapes[0].mesh.num_face_vertices.size(); i++) {
+  for (size_t i = 0; i < shapes[0].mesh.num_face_vertices.size(); ++i) {
     unsigned char fv = shapes[0].mesh.num_face_vertices[i];
     f.put(fv);
 
-    for (size_t j = 0; j < fv; j++) {
+    for (size_t j = 0; j < fv; ++j) {
       tinyobj::index_t idx = shapes[0].mesh.indices[index_offset + j];
       f.write(reinterpret_cast<char*>(&idx.vertex_index),
               sizeof(idx.vertex_index));

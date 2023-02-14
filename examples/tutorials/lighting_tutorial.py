@@ -1,3 +1,7 @@
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 # [setup]
 import math
 import os
@@ -69,6 +73,7 @@ def make_configuration():
 
 # [/setup]
 
+
 # This is wrapped such that it can be added to a unit test
 def main(show_imgs=True, save_imgs=False):
     if save_imgs and not os.path.exists(output_path):
@@ -88,19 +93,21 @@ def main(show_imgs=True, save_imgs=False):
     sim.close()
     cfg = make_configuration()
     cfg.sim_cfg.scene_light_setup = habitat_sim.gfx.DEFAULT_LIGHTING_KEY
+    cfg.sim_cfg.override_scene_light_defaults = True
     sim = habitat_sim.Simulator(cfg)
     agent_transform = place_agent(sim)
     get_obs(sim, show_imgs, save_imgs)
 
     # create and register new light setup:
     my_scene_lighting_setup = [
-        LightInfo(vector=[0.0, 2.0, 0.6, 0.0], model=LightPositionModel.Global)
+        LightInfo(vector=[0.0, 2.0, 0.6, 1.0], model=LightPositionModel.Global)
     ]
     sim.set_light_setup(my_scene_lighting_setup, "my_scene_lighting")
 
     # reconfigure with custom key:
     new_cfg = make_configuration()
     new_cfg.sim_cfg.scene_light_setup = "my_scene_lighting"
+    new_cfg.sim_cfg.override_scene_light_defaults = True
     sim.reconfigure(new_cfg)
     agent_transform = place_agent(sim)
     get_obs(sim, show_imgs, save_imgs)

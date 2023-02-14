@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -14,7 +14,10 @@
 #include "BulletCollision/CollisionShapes/btConvexTriangleMeshShape.h"
 #include "BulletCollision/Gimpact/btGImpactShape.h"
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
+#include "BulletCollisionHelper.h"
 #include "BulletRigidObject.h"
+#include "esp/assets/ResourceManager.h"
+#include "esp/metadata/managers/AssetAttributesManager.h"
 
 //!  A Few considerations in construction
 //!  Bullet Mesh conversion adapted from:
@@ -304,7 +307,7 @@ void BulletRigidObject::shiftOrigin(const Magnum::Vector3& shift) {
 void BulletRigidObject::shiftObjectCollisionShape(
     const Magnum::Vector3& shift) {
   // shift all children of the parent collision shape
-  for (int i = 0; i < bObjectShape_->getNumChildShapes(); i++) {
+  for (int i = 0; i < bObjectShape_->getNumChildShapes(); ++i) {
     btTransform cT = bObjectShape_->getChildTransform(i);
     cT.setOrigin(cT.getOrigin() + btVector3(shift));
     bObjectShape_->updateChildTransform(i, cT, false);
@@ -365,12 +368,16 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
     // set physical properties from possibly modified current rigidBody
     info.m_startWorldTransform = bObjectRigidBody_->getWorldTransform();
     info.m_friction = bObjectRigidBody_->getFriction();
+    info.m_rollingFriction = bObjectRigidBody_->getRollingFriction();
+    info.m_spinningFriction = bObjectRigidBody_->getSpinningFriction();
     info.m_restitution = bObjectRigidBody_->getRestitution();
     info.m_linearDamping = bObjectRigidBody_->getLinearDamping();
     info.m_angularDamping = bObjectRigidBody_->getAngularDamping();
   } else {
     // set properties from initialization template
     info.m_friction = tmpAttr->getFrictionCoefficient();
+    info.m_rollingFriction = tmpAttr->getRollingFrictionCoefficient();
+    info.m_spinningFriction = tmpAttr->getSpinningFrictionCoefficient();
     info.m_restitution = tmpAttr->getRestitutionCoefficient();
     info.m_linearDamping = tmpAttr->getLinearDamping();
     info.m_angularDamping = tmpAttr->getAngularDamping();
@@ -382,6 +389,8 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
   }
   bObjectRigidBody_ = std::make_unique<btRigidBody>(info);
   collisionObjToObjIds_->emplace(bObjectRigidBody_.get(), objectId_);
+  BulletCollisionHelper::get().mapCollisionObjectTo(bObjectRigidBody_.get(),
+                                                    getCollisionDebugName());
 
   // add the object to the world
   if (mt == MotionType::STATIC) {
@@ -409,6 +418,11 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
   }
 }
 
+std::string BulletRigidObject::getCollisionDebugName() {
+  return "RigidObject, " + initializationAttributes_->getHandle() + ", id " +
+         std::to_string(objectId_);
+}
+
 void BulletRigidObject::activateCollisionIsland() {
   btCollisionObject* thisColObj = bObjectRigidBody_.get();
 
@@ -418,7 +432,7 @@ void BulletRigidObject::activateCollisionIsland() {
   // bitset template argument specifies reasonable allocation size at compile
   // time - it is not expected that we would require more than 65536 different
   // islands; if we do, this number should be increased.
-  Magnum::Math::BoolVector<65536> overlappingSimIslands;
+  Magnum::Math::BitVector<65536> overlappingSimIslands;
   // each index represents an island tag present - default in bullet is -1, so
   // add one.
   overlappingSimIslands.set(thisColObj->getIslandTag() + 1, true);

@@ -1,9 +1,11 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
 #include <Corrade/Containers/StaticArray.h>
 #include <Corrade/Utility/String.h>
+
+#include <utility>
 
 #include "AssetAttributesManager.h"
 #include "AttributesManagerBase.h"
@@ -18,6 +20,7 @@ using attributes::CubePrimitiveAttributes;
 using attributes::CylinderPrimitiveAttributes;
 using attributes::IcospherePrimitiveAttributes;
 using attributes::UVSpherePrimitiveAttributes;
+using core::managedContainers::ManagedObjectAccess;
 namespace managers {
 
 const std::map<PrimObjTypes, const char*>
@@ -37,9 +40,10 @@ const std::map<PrimObjTypes, const char*>
         {PrimObjTypes::END_PRIM_OBJ_TYPES, "NONE DEFINED"}};
 
 AssetAttributesManager::AssetAttributesManager()
-    : AttributesManager<attributes::AbstractPrimitiveAttributes,
-                        core::ManagedObjectAccess::Copy>::
-          AttributesManager("Primitive Asset", "prim_config.json") {
+    : AttributesManager<
+          attributes::AbstractPrimitiveAttributes,
+          ManagedObjectAccess::Copy>::AttributesManager("Primitive Asset",
+                                                        "prim_config.json") {
   // function pointers to asset attributes constructors
   primTypeConstructorMap_["capsule3DSolid"] =
       &AssetAttributesManager::createPrimAttributes<
@@ -102,11 +106,10 @@ AssetAttributesManager::AssetAttributesManager()
     auto tmplt = AssetAttributesManager::createObject(elem.second, true);
     std::string tmpltHandle = tmplt->getHandle();
     defaultPrimAttributeHandles_[elem.second] = tmpltHandle;
-    this->undeletableObjectNames_.insert(tmpltHandle);
+    this->undeletableObjectNames_.insert(std::move(tmpltHandle));
   }
 
-  ESP_DEBUG() << "Built default "
-                 "primitive asset templates :"
+  ESP_DEBUG() << "Built default primitive asset templates :"
               << std::to_string(defaultPrimAttributeHandles_.size());
 }  // AssetAttributesManager::ctor
 
@@ -122,7 +125,8 @@ AbstractPrimitiveAttributes::ptr AssetAttributesManager::createObject(
       << primAssetAttributes->getHandle() << ") created"
       << (registerTemplate ? " and registered." : ".");
 
-  return this->postCreateRegister(primAssetAttributes, registerTemplate);
+  return this->postCreateRegister(std::move(primAssetAttributes),
+                                  registerTemplate);
 }  // AssetAttributesManager::createObject
 
 attributes::AbstractPrimitiveAttributes::ptr
@@ -160,7 +164,8 @@ AssetAttributesManager::createTemplateFromHandle(
                     << primAssetAttributes->getHandle() << ".";
     }
   }
-  return this->postCreateRegister(primAssetAttributes, registerTemplate);
+  return this->postCreateRegister(std::move(primAssetAttributes),
+                                  registerTemplate);
 }  // AssetAttributesManager::createTemplateFromHandle
 
 int AssetAttributesManager::registerObjectFinalize(
@@ -180,8 +185,8 @@ int AssetAttributesManager::registerObjectFinalize(
 
   // return either the ID of the existing template referenced by
   // primAttributesHandle, or the next available ID if not found.
-  int primTemplateID =
-      this->addObjectToLibrary(primAttributesTemplate, primAttributesHandle);
+  int primTemplateID = this->addObjectToLibrary(
+      std::move(primAttributesTemplate), primAttributesHandle);
   return primTemplateID;
 }  // AssetAttributesManager::registerObjectFinalize
 
@@ -190,9 +195,9 @@ AbstractPrimitiveAttributes::ptr AssetAttributesManager::buildObjectFromJSONDoc(
     const io::JsonGenericValue& jsonDoc) {
   // find type of attributes - file name should contain handle
   const std::string primAttrHandle =
-      Cr::Utility::Directory::splitExtension(
-          Cr::Utility::Directory::filename(filename))
-          .first;
+      Cr::Utility::Path::splitExtension(
+          Cr::Utility::Path::split(filename).second())
+          .first();
 
   std::string primClassName =
       Cr::Utility::String::partition(primAttrHandle, '_')[0];
@@ -226,7 +231,7 @@ void AssetAttributesManager::setValsFromJSONDoc(
   // check for user defined attributes
   // this->parseUserDefinedJsonVals(attribs, jsonConfig);
 
-}  // AssetAttributesManager::buildObjectFromJSONDoc
+}  // AssetAttributesManager::setValsFromJSONDoc
 
 }  // namespace managers
 }  // namespace metadata

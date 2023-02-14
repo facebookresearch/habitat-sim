@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -299,8 +299,9 @@ class Model {
    * @return The link metadata object or nullptr if no link with provided name.
    */
   std::shared_ptr<Link> getLink(const std::string& linkName) const {
-    if (m_links.count(linkName) != 0u) {
-      return m_links.at(linkName);
+    auto linkIter = m_links.find(linkName);
+    if (linkIter != m_links.end()) {
+      return linkIter->second;
     }
     return nullptr;
   }
@@ -312,8 +313,9 @@ class Model {
    * @return The link metadata object or nullptr if no link with provided index.
    */
   std::shared_ptr<Link> getLink(int linkIndex) const {
-    if (m_linkIndicesToNames.count(linkIndex) != 0u) {
-      return getLink(m_linkIndicesToNames.at(linkIndex));
+    auto linkIdxToNameIter = m_linkIndicesToNames.find(linkIndex);
+    if (linkIdxToNameIter != m_linkIndicesToNames.end()) {
+      return getLink(linkIdxToNameIter->second);
     }
     return nullptr;
   }
@@ -326,8 +328,9 @@ class Model {
    * provided index.
    */
   std::shared_ptr<Joint> getJoint(int linkIndex) const {
-    if (m_linkIndicesToNames.count(linkIndex) != 0u) {
-      return getLink(m_linkIndicesToNames.at(linkIndex))->m_parentJoint.lock();
+    auto linkIdxToNameIter = m_linkIndicesToNames.find(linkIndex);
+    if (linkIdxToNameIter != m_linkIndicesToNames.end()) {
+      return getLink(linkIdxToNameIter->second)->m_parentJoint.lock();
     }
     return nullptr;
   }

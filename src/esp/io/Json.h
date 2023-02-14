@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -13,7 +13,6 @@
 #include <functional>
 #include <string>
 #include <vector>
-#include "esp/core/Configuration.h"
 #include "esp/core/Esp.h"
 
 #include <Magnum/Magnum.h>
@@ -55,18 +54,6 @@ std::string jsonToString(const JsonDocument& d);
 esp::vec3f jsonToVec3f(const JsonGenericValue& jsonArray);
 
 /**
- * @brief Recursively load data into a @ref esp::core::Configuration based on a
- * json file.
- * @param jsonObj The source json being read
- * @param configPtr Shared pointer to configuration to populate with the JSON
- * data
- * @return The number of configuration settings successfully read.
- */
-int loadJsonIntoConfiguration(
-    const JsonGenericValue& jsonObj,
-    const std::shared_ptr<esp::core::config::Configuration>& configPtr);
-
-/**
  * @brief Check passed json doc for existence of passed jsonTag as value of
  * type T. If present, populate passed setter with value. Returns
  * whether tag is found and successfully populated, or not. Logs an error if
@@ -85,7 +72,7 @@ bool jsonIntoSetter(const JsonGenericValue& d,
                     std::function<void(T)> setter) {
   T val;
   if (readMember(d, tag, val)) {
-    setter(val);
+    setter(std::move(val));
     return true;
   }
   return false;
@@ -123,7 +110,7 @@ void toVector(const GV& arr,
               const std::function<T(const GV&)>& conv) {
   const unsigned n = arr.Size();
   vec->resize(n);
-  for (unsigned i = 0; i < n; i++) {
+  for (unsigned i = 0; i < n; ++i) {
     (*vec)[i] = conv(arr[i]);
   }
 }

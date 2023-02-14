@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -20,19 +20,19 @@ using esp::metadata::MetadataMediator;
 namespace {
 
 const std::string physicsConfigFile =
-    Cr::Utility::Directory::join(DATA_DIR,
-                                 "test_assets/testing.physics_config.json");
+    Cr::Utility::Path::join(DATA_DIR,
+                            "test_assets/testing.physics_config.json");
 
 const std::string datasetTestDirs =
-    Cr::Utility::Directory::join(DATA_DIR, "test_assets/dataset_tests/");
+    Cr::Utility::Path::join(DATA_DIR, "test_assets/dataset_tests/");
 
-const std::string sceneDatasetConfigFile_0 = Cr::Utility::Directory::join(
+const std::string sceneDatasetConfigFile_0 = Cr::Utility::Path::join(
     datasetTestDirs,
     "dataset_0/test_dataset_0.scene_dataset_config.json");
 
 // test dataset contains glob wildcards in scene config, and articulated object
 // refs
-const std::string sceneDatasetConfigFile_1 = Cr::Utility::Directory::join(
+const std::string sceneDatasetConfigFile_1 = Cr::Utility::Path::join(
     datasetTestDirs,
     "dataset_1/test_dataset_1.scene_dataset_config.json");
 
@@ -47,25 +47,31 @@ struct MetadataMediatorTest : Cr::TestSuite::Tester {
 
   void initDataset0() {
     auto cfg_0 = esp::sim::SimulatorConfiguration{};
+    ESP_WARNING() << "Starting testDataset0 : initDataset0 0";
     cfg_0.sceneDatasetConfigFile = sceneDatasetConfigFile_0;
     cfg_0.physicsConfigFile = physicsConfigFile;
     MM_->setSimulatorConfiguration(cfg_0);
+    ESP_WARNING() << "Starting testDataset0 : initDataset0 1";
   }
 
   void initDataset1() {
     auto cfg_1 = esp::sim::SimulatorConfiguration{};
+    ESP_WARNING() << "Starting testDataset0 : initDataset1 0";
     cfg_1.sceneDatasetConfigFile = sceneDatasetConfigFile_1;
     cfg_1.physicsConfigFile = physicsConfigFile;
     MM_->setSimulatorConfiguration(cfg_1);
+    ESP_WARNING() << "Starting testDataset0 : initDataset1 1";
   }
 
   void displayDSReports() {
     // display info report
     std::string dsOverView = MM_->getDatasetsOverview();
-    ESP_WARNING() << "\nDataset Overview : \n" << dsOverView << "\n";
+    ESP_WARNING() << "\nDataset Overview : \n"
+                  << dsOverView << "\nDataset Overview Done";
     // display info report
     std::string dsInfoReport = MM_->createDatasetReport();
-    ESP_WARNING() << "\nActive Dataset Details : \n" << dsInfoReport << "\n";
+    ESP_WARNING() << "\nActive Dataset Details : \n"
+                  << dsInfoReport << "\nActive Dataset Done";
   }
 
   // tests
@@ -91,7 +97,8 @@ void MetadataMediatorTest::testDataset0() {
   // setup dataset 0 for test
   initDataset0();
 
-  ESP_DEBUG() << "Starting testDataset0 : test LoadStages";
+  ESP_WARNING() << "Starting testDataset0 : test LoadStages";
+
   const auto& stageAttributesMgr = MM_->getStageAttributesManager();
   int numStageHandles = stageAttributesMgr->getNumObjects();
   // should be 7 - one for default NONE stage, one original JSON, one based on
@@ -122,7 +129,7 @@ void MetadataMediatorTest::testDataset0() {
   CORRADE_VERIFY(stageAttr);
   // verify set to values in file
   CORRADE_COMPARE(stageAttr->getScale(), Magnum::Vector3(2, 2, 2));
-  CORRADE_VERIFY(stageAttr->getRequiresLighting());
+  CORRADE_VERIFY(!stageAttr->getForceFlatShading());
   CORRADE_COMPARE(stageAttr->getMargin(), 0.03);
   CORRADE_COMPARE(stageAttr->getFrictionCoefficient(), 0.3);
   CORRADE_COMPARE(stageAttr->getRestitutionCoefficient(), 0.3);
@@ -164,7 +171,7 @@ void MetadataMediatorTest::testDataset0() {
   CORRADE_COMPARE(stageAttr->getFrictionCoefficient(), 0.35);
   CORRADE_COMPARE(stageAttr->getRestitutionCoefficient(), 0.25);
   CORRADE_COMPARE(stageAttr->getUnitsToMeters(), 2.0);
-  CORRADE_VERIFY(!stageAttr->getRequiresLighting());
+  CORRADE_VERIFY(stageAttr->getForceFlatShading());
 
   // get new attributes but don't register
   stageAttr = stageAttributesMgr->createObject("new_default_attributes", false);
@@ -175,7 +182,7 @@ void MetadataMediatorTest::testDataset0() {
 
   // end test LoadStages
 
-  ESP_DEBUG() << "Starting test LoadObjects";
+  ESP_WARNING() << "Starting test LoadObjects";
 
   const auto& objectAttributesMgr = MM_->getObjectAttributesManager();
   int numObjHandles = objectAttributesMgr->getNumFileTemplateObjects();
@@ -193,10 +200,12 @@ void MetadataMediatorTest::testDataset0() {
   CORRADE_VERIFY(objAttr);
   // verify set to values in file
   CORRADE_COMPARE(objAttr->getScale(), Magnum::Vector3(1, 1, 1));
-  CORRADE_VERIFY(objAttr->getRequiresLighting());
+  CORRADE_VERIFY(!objAttr->getForceFlatShading());
   CORRADE_COMPARE(objAttr->getMargin(), 0.03);
   CORRADE_COMPARE(objAttr->getMass(), 0.038);
   CORRADE_COMPARE(objAttr->getFrictionCoefficient(), 0.5);
+  CORRADE_COMPARE(objAttr->getRollingFrictionCoefficient(), 0.6);
+  CORRADE_COMPARE(objAttr->getSpinningFrictionCoefficient(), 0.7);
   CORRADE_COMPARE(objAttr->getRestitutionCoefficient(), 0.2);
   CORRADE_COMPARE(objAttr->getOrientUp(), Magnum::Vector3(0, 1, 0));
   CORRADE_COMPARE(objAttr->getOrientFront(), Magnum::Vector3(0, 0, -1));
@@ -215,10 +224,12 @@ void MetadataMediatorTest::testDataset0() {
   // verify identical to copied object except for override values in
   // dataset_config file
   CORRADE_COMPARE(objAttr->getScale(), Magnum::Vector3(1, 1, 1));
-  CORRADE_VERIFY(objAttr->getRequiresLighting());
+  CORRADE_VERIFY(!objAttr->getForceFlatShading());
   CORRADE_COMPARE(objAttr->getMargin(), 0.03);
   CORRADE_COMPARE(objAttr->getMass(), 3.5);
   CORRADE_COMPARE(objAttr->getFrictionCoefficient(), 0.2);
+  CORRADE_COMPARE(objAttr->getRollingFrictionCoefficient(), 0.0002);
+  CORRADE_COMPARE(objAttr->getSpinningFrictionCoefficient(), 0.0003);
   CORRADE_COMPARE(objAttr->getRestitutionCoefficient(), 0.2);
   CORRADE_COMPARE(objAttr->getOrientUp(), Magnum::Vector3(0, 1, 0));
   CORRADE_COMPARE(objAttr->getOrientFront(), Magnum::Vector3(0, 0, -1));
@@ -255,7 +266,7 @@ void MetadataMediatorTest::testDataset0() {
 
   // end test LoadObjects
 
-  ESP_DEBUG() << "Starting test LoadLights";
+  ESP_WARNING() << "Starting test LoadLights";
 
   const auto& lightsLayoutAttributesMgr =
       MM_->getLightLayoutAttributesManager();
@@ -305,19 +316,21 @@ void MetadataMediatorTest::testDataset0() {
 
   // end test LoadLights
 
-  ESP_DEBUG() << "Starting test LoadSceneInstances";
+  ESP_WARNING() << "Starting test LoadSceneInstances";
   //
   // SHOULD NOT BE REFERENCED DIRECTLY IN USER CODE, but rather desired scene
   // instance should be acquired through MM.
   //
-  const auto& sceneAttributesMgr = MM_->getSceneAttributesManager();
+  const auto& sceneInstanceAttributesMgr =
+      MM_->getSceneInstanceAttributesManager();
   // get # of loaded scene attributes.
-  int numSceneHandles = sceneAttributesMgr->getNumObjects();
+  int numSceneHandles = sceneInstanceAttributesMgr->getNumObjects();
   // should be 1
   CORRADE_COMPARE(numSceneHandles, 1);
   // get handle list matching passed handle
-  auto sceneAttrHandles = sceneAttributesMgr->getObjectHandlesBySubstring(
-      "dataset_test_scene", true);
+  auto sceneAttrHandles =
+      sceneInstanceAttributesMgr->getObjectHandlesBySubstring(
+          "dataset_test_scene", true);
   // make sure there is only 1 matching dataset_test_scene
   CORRADE_COMPARE(sceneAttrHandles.size(), 1);
 
@@ -325,12 +338,13 @@ void MetadataMediatorTest::testDataset0() {
   ESP_WARNING() << "testLoadSceneInstances : Scene instance attr handle :"
                 << activeSceneName;
   // get scene instance attributes ref
-  // metadata::attributes::SceneAttributes::cptr curSceneInstanceAttributes =
-  auto sceneAttrs = MM_->getSceneAttributesByName(activeSceneName);
+  // metadata::attributes::SceneInstanceAttributes::cptr
+  // curSceneInstanceAttributes =
+  auto sceneAttrs = MM_->getSceneInstanceAttributesByName(activeSceneName);
   // this should be a scene instance attributes with specific stage and object
   CORRADE_VERIFY(sceneAttrs);
   // verify default value for translation origin
-  CORRADE_COMPARE(sceneAttrs->getTranslationOrigin(),
+  CORRADE_COMPARE(static_cast<int>(sceneAttrs->getTranslationOrigin()),
                   static_cast<int>(Attrs::SceneInstanceTranslationOrigin::COM));
   const int assetLocalInt =
       static_cast<int>(Attrs::SceneInstanceTranslationOrigin::AssetLocal);
@@ -357,7 +371,8 @@ void MetadataMediatorTest::testDataset0() {
   const std::string stageName = stageInstanceAttrs->getHandle();
   CORRADE_VERIFY(stageName.find("modified_test_stage") != std::string::npos);
   // verify translation origin to be asset_local
-  CORRADE_COMPARE(stageInstanceAttrs->getTranslationOrigin(), assetLocalInt);
+  CORRADE_COMPARE(static_cast<int>(stageInstanceAttrs->getTranslationOrigin()),
+                  assetLocalInt);
   // verify translation amount to be expected amount
   CORRADE_COMPARE(stageInstanceAttrs->getTranslation(),
                   Magnum::Vector3(1.1, 2.2, 3.3));
@@ -379,7 +394,8 @@ void MetadataMediatorTest::testDataset0() {
   // translation
   CORRADE_COMPARE(objAttr0->getTranslation(), Magnum::Vector3(0.1, 0.2, 0.3));
   // translation origin
-  CORRADE_COMPARE(objAttr0->getTranslationOrigin(), assetLocalInt);
+  CORRADE_COMPARE(static_cast<int>(objAttr0->getTranslationOrigin()),
+                  assetLocalInt);
 
   // second object instance
   const Attrs::SceneObjectInstanceAttributes::cptr& objAttr1 =
@@ -391,11 +407,12 @@ void MetadataMediatorTest::testDataset0() {
   // translation
   CORRADE_COMPARE(objAttr1->getTranslation(), Magnum::Vector3(0.3, 0.4, 0.5));
   // translation origin
-  CORRADE_COMPARE(objAttr1->getTranslationOrigin(), assetLocalInt);
+  CORRADE_COMPARE(static_cast<int>(objAttr1->getTranslationOrigin()),
+                  assetLocalInt);
 
   // end test LoadSceneInstances
 
-  ESP_DEBUG() << "Starting test LoadNavmesh";
+  ESP_WARNING() << "Starting test LoadNavmesh";
   // get map of navmeshes
   const std::map<std::string, std::string> navmeshMap =
       MM_->getActiveNavmeshMap();
@@ -410,7 +427,7 @@ void MetadataMediatorTest::testDataset0() {
   CORRADE_COMPARE(navmeshMap.at("navmesh_path2"), "test_navmesh_path2");
   // end test LoadNavmesh
 
-  ESP_DEBUG() << "Starting test LoadSemanticScene";
+  ESP_WARNING() << "Starting test LoadSemanticScene";
   // get map of semantic scene instances
   const std::map<std::string, std::string> semanticMap =
       MM_->getActiveSemanticSceneDescriptorMap();
@@ -434,7 +451,7 @@ void MetadataMediatorTest::testDataset1() {
   // primarily testing glob file wildcard loading
   initDataset1();
 
-  ESP_DEBUG() << "Starting testDataset1 : test LoadStages";
+  ESP_WARNING() << "Starting testDataset1 : test LoadStages";
   const auto& stageAttributesMgr = MM_->getStageAttributesManager();
   int numStageHandles = stageAttributesMgr->getNumObjects();
   // shoudld be 6 : one for default NONE stage, glob lookup yields 2 stages +
@@ -442,14 +459,14 @@ void MetadataMediatorTest::testDataset1() {
   CORRADE_COMPARE(numStageHandles, 6);
   // end test LoadStages
 
-  ESP_DEBUG() << "Starting test LoadObjects";
+  ESP_WARNING() << "Starting test LoadObjects";
   const auto& objectAttributesMgr = MM_->getObjectAttributesManager();
   int numObjHandles = objectAttributesMgr->getNumFileTemplateObjects();
   // glob lookup yields 4 files + 2 modified in config
   CORRADE_COMPARE(numObjHandles, 6);
   // end test LoadObjects
 
-  ESP_DEBUG() << "Starting test LoadLights";
+  ESP_WARNING() << "Starting test LoadLights";
   const auto& lightsLayoutAttributesMgr =
       MM_->getLightLayoutAttributesManager();
   // get # of loaded light layout attributes.
@@ -459,22 +476,23 @@ void MetadataMediatorTest::testDataset1() {
 
   // end test LoadLights
 
-  ESP_DEBUG() << "Starting test LoadSceneInstances";
+  ESP_WARNING() << "Starting test LoadSceneInstances";
   //
   // SHOULD NOT BE REFERENCED DIRECTLY IN USER CODE, but rather desired scene
   // instance should be acquired through MM.
   //
-  const auto& sceneAttributesMgr = MM_->getSceneAttributesManager();
+  const auto& sceneInstanceAttributesMgr =
+      MM_->getSceneInstanceAttributesManager();
   // get # of loaded scene attributes.
-  int numSceneHandles = sceneAttributesMgr->getNumObjects();
+  int numSceneHandles = sceneInstanceAttributesMgr->getNumObjects();
   // should be 2 - 2 file based
   CORRADE_COMPARE(numSceneHandles, 2);
 
   // end test LoadSceneInstances
 
-  ESP_DEBUG() << "Starting test LoadArticulatedObjects";
+  ESP_WARNING() << "Starting test LoadArticulatedObjects";
 
-  namespace Dir = Cr::Utility::Directory;
+  namespace Dir = Cr::Utility::Path;
   // verify # of urdf filepaths loaded - should be 6;
   const std::map<std::string, std::string>& urdfTestFilenames =
       MM_->getArticulatedObjectModelFilenames();
@@ -488,21 +506,21 @@ void MetadataMediatorTest::testDataset1() {
     // instances proper key synth methods.
     const std::string shortHandle =
         Dir::splitExtension(
-            Dir::splitExtension(Dir::filename(iter->second)).first)
-            .first;
+            Dir::splitExtension(Dir::split(iter->second).second()).first())
+            .first();
     // test that map key constructed as shortened handle.
     CORRADE_COMPARE(shortHandle, iter->first);
     // test that file name ends in ".urdf"
-    CORRADE_COMPARE(Dir::splitExtension(Dir::filename(iter->second))
-                        .second.compare(".urdf"),
-                    0);
+    CORRADE_COMPARE(
+        Dir::splitExtension(Dir::split(iter->second).second()).second(),
+        ".urdf");
     // test that file actually exists
     const std::string filename = iter->second;
     CORRADE_VERIFY(Dir::exists(filename));
   }
   // end test LoadArticulatedObjects
 
-  ESP_DEBUG() << "Starting test LoadNavmesh";
+  ESP_WARNING() << "Starting test LoadNavmesh";
   // get map of navmeshes
   const std::map<std::string, std::string> navmeshMap =
       MM_->getActiveNavmeshMap();
@@ -510,7 +528,7 @@ void MetadataMediatorTest::testDataset1() {
   CORRADE_COMPARE(navmeshMap.size(), 3);
   // end test LoadNavmesh
 
-  ESP_DEBUG() << "Starting test LoadSemanticScene";
+  ESP_WARNING() << "Starting test LoadSemanticScene";
   // get map of semantic scene instances
   const std::map<std::string, std::string> semanticMap =
       MM_->getActiveSemanticSceneDescriptorMap();

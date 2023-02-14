@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -25,6 +25,13 @@ class OBB {
 
   //! Returns the dimensions of this OBB in its own frame of reference
   vec3f sizes() const { return halfExtents_ * 2; }
+
+  /**
+   * @brief Return the volume of this bbox
+   */
+  float volume() const {
+    return halfExtents_.x() * halfExtents_.y() * halfExtents_.z() * 8.0f;
+  }
 
   //! Returns half-extents of this OBB (dimensions)
   vec3f halfExtents() const { return halfExtents_; }

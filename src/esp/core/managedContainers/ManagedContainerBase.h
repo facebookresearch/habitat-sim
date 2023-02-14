@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -24,7 +24,7 @@ namespace Cr = Corrade;
 
 namespace esp {
 namespace core {
-
+namespace managedContainers {
 /**
  * @brief Base class of Managed Container, holding template-type-independent
  * functionality
@@ -200,13 +200,14 @@ class ManagedContainerBase {
    * objectLibrary_, or nullptr if does not exist.
    */
   std::string getObjectHandleByID(const int objectID) const {
-    if (objectLibKeyByID_.count(objectID) == 0) {
+    auto objKeyByIDIter = objectLibKeyByID_.find(objectID);
+    if (objKeyByIDIter == objectLibKeyByID_.end()) {
       ESP_ERROR() << "Unknown" << objectType_
                   << "managed object ID:" << objectID << ". Aborting";
       // never will have registered object with registration handle == ""
       return "";
     }
-    return objectLibKeyByID_.at(objectID);
+    return objKeyByIDIter->second;
   }  // ManagedContainerBase::getObjectHandleByID
 
   /**
@@ -232,11 +233,7 @@ class ManagedContainerBase {
    * @param ID the ID to look for
    */
   bool getObjectLibHasID(int ID) const {
-    const std::string handle = getObjectHandleByID(ID);
-    if (handle == "") {
-      return false;
-    }
-    return objectLibrary_.count(handle) > 0;
+    return objectLibKeyByID_.count(ID) > 0;
   }  // ManagedContainerBase::getObjectLibHasHandle
 
   /**
@@ -482,6 +479,7 @@ class ManagedContainerBase {
   ESP_SMART_POINTERS(ManagedContainerBase)
 };  // class ManagedContainerBase
 
+}  // namespace managedContainers
 }  // namespace core
 }  // namespace esp
 

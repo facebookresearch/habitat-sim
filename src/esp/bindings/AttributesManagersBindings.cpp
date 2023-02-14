@@ -1,5 +1,5 @@
 
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -24,16 +24,11 @@ namespace Attrs = esp::metadata::attributes;
 using Attrs::AbstractAttributes;
 using Attrs::AbstractObjectAttributes;
 using Attrs::AbstractPrimitiveAttributes;
-using Attrs::CapsulePrimitiveAttributes;
-using Attrs::ConePrimitiveAttributes;
-using Attrs::CubePrimitiveAttributes;
-using Attrs::CylinderPrimitiveAttributes;
-using Attrs::IcospherePrimitiveAttributes;
 using Attrs::LightLayoutAttributes;
 using Attrs::ObjectAttributes;
 using Attrs::PhysicsManagerAttributes;
 using Attrs::StageAttributes;
-using Attrs::UVSpherePrimitiveAttributes;
+using esp::core::managedContainers::ManagedObjectAccess;
 
 namespace esp {
 namespace metadata {
@@ -48,7 +43,7 @@ namespace managers {
  * @param classStrPrefix string prefix for python class name specification.
  */
 
-template <class T, core::ManagedObjectAccess Access>
+template <class T, ManagedObjectAccess Access>
 void declareBaseAttributesManager(py::module& m,
                                   const std::string& attrType,
                                   const std::string& classStrPrefix) {
@@ -103,8 +98,7 @@ void declareBaseAttributesManager(py::module& m,
           ("Build " + attrType +
            " templates for all JSON files with appropriate extension "
            "that exist in the provided file or directory path. If "
-           "save_as_defaults is true, "
-           "then these " +
+           "save_as_defaults is true, then these " +
            attrType + " templates will be unable to be deleted")
               .c_str(),
           "path"_a, "save_as_defaults"_a = false)
@@ -124,9 +118,13 @@ void declareBaseAttributesManager(py::module& m,
             "it in the library if register_template is True.")
                .c_str(),
            "handle"_a, "register_template"_a = false)
-      .def("is_valid_filename", &MgrClass::isValidFileName, R"(
-             Returns whether the passed handle exists and the user has access.)",
-           "handle"_a)
+      .def(
+          "is_valid_filename",
+          [](CORRADE_UNUSED MgrClass& self, const std::string& filename) {
+            return Corrade::Utility::Path::exists(filename);
+          },
+          R"(Returns whether the passed handle is a valid, existing file.)",
+          "handle"_a)
       .def("get_num_templates", &MgrClass::getNumObjects,
            ("Returns the number of existing " + attrType +
             " templates being managed.")
@@ -183,11 +181,8 @@ void declareBaseAttributesManager(py::module& m,
            ("This sets the lock state for all " + attrType +
             " templates whose handles are passed "
             "in list. Returns a list of handles for templates locked by this "
-            "function call. "
-            "Lock == True makes the " +
-            attrType +
-            " template unable to be deleted. Note : "
-            "Locked " +
+            "function call. Lock == True makes the " +
+            attrType + " template unable to be deleted. Note : Locked " +
             attrType + " templates can still be edited.")
                .c_str(),
            "handles"_a, "lock"_a)
@@ -267,12 +262,14 @@ void initAttributesManagersBindings(py::module& m) {
 
   // ==== Primitive Asset Attributes Template manager ====
   declareBaseAttributesManager<AbstractPrimitiveAttributes,
-                               core::ManagedObjectAccess::Copy>(
-      m, "Primitive Asset", "BaseAsset");
-  py::class_<AssetAttributesManager,
-             AttributesManager<AbstractPrimitiveAttributes,
-                               core::ManagedObjectAccess::Copy>,
-             AssetAttributesManager::ptr>(m, "AssetAttributesManager")
+                               ManagedObjectAccess::Copy>(m, "Primitive Asset",
+                                                          "BaseAsset");
+  py::class_<
+      AssetAttributesManager,
+      AttributesManager<AbstractPrimitiveAttributes, ManagedObjectAccess::Copy>,
+      AssetAttributesManager::ptr>(
+      m, "AssetAttributesManager",
+      R"(Manages PrimtiveAttributes objects which define parameters for constructing primitive mesh shapes such as cubes, capsules, cylinders, and cones.)")
       // AssetAttributesMangaer-specific bindings
       // return appropriately cast capsule templates
       .def("get_default_capsule_template",
@@ -352,22 +349,22 @@ void initAttributesManagersBindings(py::module& m) {
 
   // ==== Light Layout Attributes Template manager ====
   declareBaseAttributesManager<LightLayoutAttributes,
-                               core::ManagedObjectAccess::Copy>(
-      m, "LightLayout", "BaseLightLayout");
+                               ManagedObjectAccess::Copy>(m, "LightLayout",
+                                                          "BaseLightLayout");
   // NOLINTNEXTLINE(bugprone-unused-raii)
   py::class_<
       LightLayoutAttributesManager,
-      AttributesManager<LightLayoutAttributes, core::ManagedObjectAccess::Copy>,
+      AttributesManager<LightLayoutAttributes, ManagedObjectAccess::Copy>,
       LightLayoutAttributesManager::ptr>(m, "LightLayoutAttributesManager");
   // ==== Object Attributes Template manager ====
-  declareBaseAttributesManager<ObjectAttributes,
-                               core::ManagedObjectAccess::Copy>(
+  declareBaseAttributesManager<ObjectAttributes, ManagedObjectAccess::Copy>(
       m, "ObjectAttributes", "BaseObject");
   // NOLINTNEXTLINE(bugprone-unused-raii)
-  py::class_<
-      ObjectAttributesManager,
-      AttributesManager<ObjectAttributes, core::ManagedObjectAccess::Copy>,
-      ObjectAttributesManager::ptr>(m, "ObjectAttributesManager")
+  py::class_<ObjectAttributesManager,
+             AttributesManager<ObjectAttributes, ManagedObjectAccess::Copy>,
+             ObjectAttributesManager::ptr>(
+      m, "ObjectAttributesManager",
+      R"(Manages ObjectAttributes which define metadata for rigid objects pre-instantiation. Can import .object_config.json files.)")
 
       // ObjectAttributesManager-specific bindings
       .def("load_object_configs",
@@ -418,25 +415,27 @@ void initAttributesManagersBindings(py::module& m) {
           template chosen from the existing ObjectAttributes templates being managed.)");
 
   // ==== Stage Attributes Template manager ====
-  declareBaseAttributesManager<StageAttributes,
-                               core::ManagedObjectAccess::Copy>(
+  declareBaseAttributesManager<StageAttributes, ManagedObjectAccess::Copy>(
       m, "StageAttributes", "BaseStage");
   // NOLINTNEXTLINE(bugprone-unused-raii)
-  py::class_<
-      StageAttributesManager,
-      AttributesManager<StageAttributes, core::ManagedObjectAccess::Copy>,
-      StageAttributesManager::ptr>(m, "StageAttributesManager");
+  py::class_<StageAttributesManager,
+             AttributesManager<StageAttributes, ManagedObjectAccess::Copy>,
+             StageAttributesManager::ptr>(
+      m, "StageAttributesManager",
+      R"(Manages StageAttributes which define metadata for stages (i.e. static background mesh such as architectural elements) pre-instantiation. Can import .stage_config.json files.)");
 
   // ==== Physics World/Manager Template manager ====
 
   declareBaseAttributesManager<PhysicsManagerAttributes,
-                               core::ManagedObjectAccess::Copy>(
+                               ManagedObjectAccess::Copy>(
       m, "PhysicsAttributes", "BasePhysics");
   // NOLINTNEXTLINE(bugprone-unused-raii)
-  py::class_<PhysicsAttributesManager,
-             AttributesManager<PhysicsManagerAttributes,
-                               core::ManagedObjectAccess::Copy>,
-             PhysicsAttributesManager::ptr>(m, "PhysicsAttributesManager");
+  py::class_<
+      PhysicsAttributesManager,
+      AttributesManager<PhysicsManagerAttributes, ManagedObjectAccess::Copy>,
+      PhysicsAttributesManager::ptr>(
+      m, "PhysicsAttributesManager",
+      R"(Manages PhysicsManagerAttributes which define global Simulation parameters such as timestep. Can import .physics_config.json files.)");
 
 }  // initAttributesManagersBindings
 }  // namespace managers

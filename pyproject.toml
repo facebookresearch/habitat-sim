@@ -32,5 +32,6 @@ exclude = '''
 
 [tool.isort]
 skip_glob = ["*/deps/*", "*/build/*", "*/obselete/*"]
+known_first_party = ["habitat_sim"]
 profile = 'black'
 treat_comments_as_code = "# %%"

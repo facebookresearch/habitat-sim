@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright (c) Facebook, Inc. and its affiliates.
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
@@ -13,9 +13,9 @@ import numpy as np
 import pytest
 import quaternion
 
-import examples.settings
 import habitat_sim
 import habitat_sim.physics
+import habitat_sim.utils.settings
 from habitat_sim.utils.common import (
     quat_from_angle_axis,
     quat_from_magnum,
@@ -31,7 +31,7 @@ from utils import simulate
     reason="Requires the habitat-test-scenes and habitat test objects",
 )
 def test_kinematics():
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
 
     cfg_settings[
         "scene"
@@ -41,7 +41,7 @@ def test_kinematics():
     cfg_settings["depth_sensor"] = True
 
     # test loading the physical scene
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
     with habitat_sim.Simulator(hab_cfg) as sim:
         # get the rigid object attributes manager, which manages
         # templates used to create objects
@@ -103,7 +103,121 @@ def test_kinematics():
         for _ in range(2):
             # do some kinematics here (todo: translating or rotating instead of absolute)
             cheezit_box.translation = np.random.rand(3)
-            T = cheezit_box.transformation  # noqa : F841
+            T = cheezit_box.transformation  # noqa: F841
+
+            # test getting observation
+            sim.step(random.choice(list(hab_cfg.agents[0].action_space.keys())))
+
+            # check that time is increasing in the world
+            assert sim.get_world_time() > prev_time
+            prev_time = sim.get_world_time()
+
+        rigid_obj_mgr.remove_object_by_id(cheezit_box.object_id)
+
+        # test attaching/dettaching an Agent to/from physics simulation
+        agent_node = sim.agents[0].scene_node
+        obj_handle_list = obj_template_mgr.get_template_handles("cheezit")
+        cheezit_agent = rigid_obj_mgr.add_object_by_template_handle(
+            obj_handle_list[0], agent_node
+        )
+
+        cheezit_agent.translation = np.random.rand(3)
+        assert np.allclose(agent_node.translation, cheezit_agent.translation)
+        rigid_obj_mgr.remove_object_by_id(
+            cheezit_agent.object_id, delete_object_node=False
+        )  # don't delete the agent's node
+        assert agent_node.translation
+
+        # test get/set RigidState
+        cheezit_box = rigid_obj_mgr.add_object_by_template_handle(obj_handle_list[0])
+        targetRigidState = habitat_sim.bindings.RigidState(
+            mn.Quaternion(), np.array([1.0, 2.0, 3.0])
+        )
+        cheezit_box.rigid_state = targetRigidState
+        objectRigidState = cheezit_box.rigid_state
+        assert np.allclose(objectRigidState.translation, targetRigidState.translation)
+        assert objectRigidState.rotation == targetRigidState.rotation
+
+
+@pytest.mark.skipif(
+    not osp.exists("data/scene_datasets/habitat-test-scenes/skokloster-castle.glb")
+    or not osp.exists("data/objects/example_objects/"),
+    reason="Requires the habitat-test-scenes and habitat test objects",
+)
+def test_kinematics_no_physics():
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
+
+    cfg_settings[
+        "scene"
+    ] = "data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"
+    # enable the physics simulator: also clears available actions to no-op
+    cfg_settings["enable_physics"] = False
+    cfg_settings["depth_sensor"] = True
+
+    # test loading the physical scene
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
+    with habitat_sim.Simulator(hab_cfg) as sim:
+        # get the rigid object attributes manager, which manages
+        # templates used to create objects
+        obj_template_mgr = sim.get_object_template_manager()
+        obj_template_mgr.load_configs("data/objects/example_objects/", True)
+        assert obj_template_mgr.get_num_templates() > 0
+        # get the rigid object manager, which provides direct
+        # access to objects
+        rigid_obj_mgr = sim.get_rigid_object_manager()
+
+        # test adding an object to the world
+        # get handle for object 0, used to test
+        obj_handle_list = obj_template_mgr.get_template_handles("cheezit")
+        cheezit_box = rigid_obj_mgr.add_object_by_template_handle(obj_handle_list[0])
+        assert rigid_obj_mgr.get_num_objects() > 0
+        assert (
+            len(rigid_obj_mgr.get_object_handles()) == rigid_obj_mgr.get_num_objects()
+        )
+
+        # test setting the motion type
+        cheezit_box.motion_type = habitat_sim.physics.MotionType.STATIC
+        assert cheezit_box.motion_type == habitat_sim.physics.MotionType.STATIC
+        cheezit_box.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+        assert cheezit_box.motion_type == habitat_sim.physics.MotionType.KINEMATIC
+
+        # test kinematics
+        I = np.identity(4)
+
+        # test get and set translation
+        cheezit_box.translation = [0.0, 1.0, 0.0]
+        assert np.allclose(cheezit_box.translation, np.array([0.0, 1.0, 0.0]))
+
+        # test object SceneNode
+        assert np.allclose(
+            cheezit_box.translation, cheezit_box.root_scene_node.translation
+        )
+
+        # test get and set transform
+        cheezit_box.transformation = I
+        assert np.allclose(cheezit_box.transformation, I)
+
+        # test get and set rotation
+        Q = quat_from_angle_axis(np.pi, np.array([0.0, 1.0, 0.0]))
+        expected = np.eye(4)
+        expected[0:3, 0:3] = quaternion.as_rotation_matrix(Q)
+        cheezit_box.rotation = quat_to_magnum(Q)
+        assert np.allclose(cheezit_box.transformation, expected)
+        assert np.allclose(quat_from_magnum(cheezit_box.rotation), Q)
+
+        # test object removal
+        rigid_obj_mgr.remove_object_by_id(cheezit_box.object_id)
+
+        assert rigid_obj_mgr.get_num_objects() == 0
+
+        obj_handle_list = obj_template_mgr.get_template_handles("cheezit")
+        cheezit_box = rigid_obj_mgr.add_object_by_template_handle(obj_handle_list[0])
+
+        prev_time = 0.0
+        for _ in range(2):
+            # do some kinematics here (todo: translating or rotating instead of absolute)
+            cheezit_box.translation = np.random.rand(3)
+            T = cheezit_box.transformation  # noqa: F841
 
             # test getting observation
             sim.step(random.choice(list(hab_cfg.agents[0].action_space.keys())))
@@ -148,7 +262,7 @@ def test_dynamics():
     # This test assumes that default.phys_scene_config.json contains "physics simulator": "bullet".
     # TODO: enable dynamic override of this setting in simulation config structure
 
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
 
     cfg_settings[
         "scene"
@@ -158,14 +272,14 @@ def test_dynamics():
     cfg_settings["depth_sensor"] = True
 
     # test loading the physical scene
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
     with habitat_sim.Simulator(hab_cfg) as sim:
         # get the rigid object attributes manager, which manages
         # templates used to create objects
         obj_template_mgr = sim.get_object_template_manager()
         obj_template_mgr.load_configs("data/objects/example_objects/", True)
         # make the simulation deterministic (C++ seed is set in reconfigure)
-        np.random.seed(cfg_settings["seed"])
+        np.random.seed(cfg_settings["seed"])  # type: ignore[arg-type]
         assert obj_template_mgr.get_num_templates() > 0
         # get the rigid object manager, which provides direct
         # access to objects
@@ -276,12 +390,24 @@ def test_dynamics():
             sim.step_physics(0.1)
             assert cheezit_box1.translation[0] > new_object_start[0]
 
+            # test gettings/setting friction
+            cheezit_box1.friction_coefficient = 0.123
+            assert np.allclose(cheezit_box1.friction_coefficient, 0.123, atol=1e-7)
+            cheezit_box1.rolling_friction_coefficient = 0.234
+            assert np.allclose(
+                cheezit_box1.rolling_friction_coefficient, 0.234, atol=1e-7
+            )
+            cheezit_box1.spinning_friction_coefficient = 0.345
+            assert np.allclose(
+                cheezit_box1.spinning_friction_coefficient, 0.345, atol=1e-7
+            )
+
 
 def test_velocity_control():
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "NONE"
     cfg_settings["enable_physics"] = True
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
     with habitat_sim.Simulator(hab_cfg) as sim:
         sim.set_gravity(np.array([0.0, 0.0, 0.0]))
         # get the rigid object attributes manager, which manages
@@ -368,7 +494,7 @@ def test_velocity_control():
     reason="Requires the habitat-test-scenes",
 )
 def test_raycast():
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
 
     # configure some settings in case defaults change
     cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/apartment_1.glb"
@@ -377,7 +503,7 @@ def test_raycast():
     cfg_settings["enable_physics"] = True
 
     # loading the physical scene
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
     with habitat_sim.Simulator(hab_cfg) as sim:
         # get the rigid object attributes manager, which manages
         # templates used to create objects
@@ -449,7 +575,7 @@ def test_raycast():
     reason="Requires the habitat-test-scenes",
 )
 def test_collision_groups():
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
 
     # configure some settings in case defaults change
     cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/apartment_1.glb"
@@ -458,7 +584,7 @@ def test_collision_groups():
     cfg_settings["enable_physics"] = True
 
     # loading the physical scene
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
 
     with habitat_sim.Simulator(hab_cfg) as sim:
         # get the rigid object attributes manager, which manages
@@ -467,6 +593,7 @@ def test_collision_groups():
         # get the rigid object manager, which provides direct
         # access to objects
         rigid_obj_mgr = sim.get_rigid_object_manager()
+        ao_mgr = sim.get_articulated_object_manager()
 
         if (
             sim.get_physics_simulation_library()
@@ -503,6 +630,21 @@ def test_collision_groups():
             cube_obj1.override_collision_group(cg.UserGroup1)
             assert not cube_obj1.contact_test()
             assert not cube_obj2.contact_test()
+
+            # add an ArticulatedObject in contact with cube 2
+            ao = ao_mgr.add_articulated_object_from_urdf(
+                filepath="data/test_assets/urdf/amass_male.urdf"
+            )
+            ao.translation = [1.1, 0.0, 4.6]
+            assert ao.contact_test()
+            assert cube_obj2.contact_test()
+            assert not cube_obj1.contact_test()
+            # set to non-collidable and check no contacts
+            ao.override_collision_group(cg.Noncollidable)
+            assert not ao.contact_test()
+            assert not cube_obj2.contact_test()
+            assert not cube_obj1.contact_test()
+
             # override cube2 to a new group and configure custom mask to interact with it
             cgh.set_mask_for_group(cg.UserGroup1, new_user_group_1_mask | cg.UserGroup2)
             # NOTE: changing group settings requires overriding object group again
@@ -636,12 +778,12 @@ def getRandomPositions(articulated_object):
     reason="ArticulatedObject API requires Bullet physics.",
 )
 def test_articulated_object_add_remove():
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "NONE"
     cfg_settings["enable_physics"] = True
 
     # loading the physical scene
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
 
     with habitat_sim.Simulator(hab_cfg) as sim:
         art_obj_mgr = sim.get_articulated_object_manager()
@@ -686,6 +828,58 @@ def test_articulated_object_add_remove():
     not habitat_sim.built_with_bullet,
     reason="ArticulatedObject API requires Bullet physics.",
 )
+def test_articulated_object_maintain_link_order():
+    # test that the maintain_link_order option for urdf import
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
+    cfg_settings["scene"] = "NONE"
+    cfg_settings["enable_physics"] = True
+
+    # loading the physical scene
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
+
+    with habitat_sim.Simulator(hab_cfg) as sim:
+        art_obj_mgr = sim.get_articulated_object_manager()
+        amass_file = "data/test_assets/urdf/amass_male.urdf"
+
+        # parse URDF and add a humanoid to the world
+        ao = art_obj_mgr.add_articulated_object_from_urdf(
+            filepath=amass_file, maintain_link_order=True
+        )
+        assert ao
+        assert ao.is_alive
+
+        amass_urdf_link_order = [
+            "lhip",
+            "lknee",
+            "lankle",
+            "rhip",
+            "rknee",
+            "rankle",
+            "lowerback",
+            "upperback",
+            "chest",
+            "lowerneck",
+            "upperneck",
+            "lclavicle",
+            "lshoulder",
+            "lelbow",
+            "lwrist",
+            "rclavicle",
+            "rshoulder",
+            "relbow",
+            "rwrist",
+        ]
+        link_names = []
+        for link_ix in range(ao.num_links):
+            link_names.append(ao.get_link_name(link_ix))
+        # check the link ordering against ground truth
+        assert amass_urdf_link_order == link_names
+
+
+@pytest.mark.skipif(
+    not habitat_sim.built_with_bullet,
+    reason="ArticulatedObject API requires Bullet physics.",
+)
 @pytest.mark.parametrize(
     "test_asset",
     [
@@ -696,12 +890,12 @@ def test_articulated_object_add_remove():
     ],
 )
 def test_articulated_object_kinematics(test_asset):
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "NONE"
     cfg_settings["enable_physics"] = True
 
     # loading the physical scene
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
 
     with habitat_sim.Simulator(hab_cfg) as sim:
         art_obj_mgr = sim.get_articulated_object_manager()
@@ -848,12 +1042,12 @@ def test_articulated_object_kinematics(test_asset):
     ],
 )
 def test_articulated_object_dynamics(test_asset):
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/apartment_1.glb"
     cfg_settings["enable_physics"] = True
 
     # loading the physical scene
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
 
     with habitat_sim.Simulator(hab_cfg) as sim:
         art_obj_mgr = sim.get_articulated_object_manager()
@@ -959,12 +1153,12 @@ def test_articulated_object_dynamics(test_asset):
     reason="ArticulatedObject API requires Bullet physics.",
 )
 def test_articulated_object_fixed_base_proxy():
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "NONE"
     cfg_settings["enable_physics"] = True
 
     # loading the physical scene
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
 
     with habitat_sim.Simulator(hab_cfg) as sim:
         art_obj_mgr = sim.get_articulated_object_manager()
@@ -1010,10 +1204,10 @@ def test_articulated_object_fixed_base_proxy():
 def test_articulated_object_damping_joint_motors():
     # test automated creation of joint motors from URDF configured joint damping values
     robot_file = "data/test_assets/urdf/kuka_iiwa/model_free_base.urdf"
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "NONE"
     cfg_settings["enable_physics"] = True
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
     with habitat_sim.Simulator(hab_cfg) as sim:
         art_obj_mgr = sim.get_articulated_object_manager()
         # parse URDF and add an ArticulatedObject to the world
@@ -1079,12 +1273,12 @@ def check_joint_positions(robot, target, single_dof_eps=5.0e-3, quat_eps=0.2):
 def test_articulated_object_joint_motors(test_asset):
     # set this to output test results as video for easy investigation
     produce_debug_video = False
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "NONE"
     cfg_settings["enable_physics"] = True
 
     # loading the physical scene
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
 
     with habitat_sim.Simulator(hab_cfg) as sim:
         art_obj_mgr = sim.get_articulated_object_manager()
@@ -1161,6 +1355,15 @@ def test_articulated_object_joint_motors(test_asset):
             if produce_debug_video:
                 observations.append(sim.get_sensor_observations())
 
+        # check that at rest position torque is low
+        if "amass_male" not in test_asset:
+            assert (
+                np.abs(
+                    np.array(robot.get_joint_motor_torques(sim.get_physics_time_step()))
+                )
+                < 10
+            ).all()
+
         # validate that rest pose is maintained
         # Note: assume all joints for test assets can be actuated
         target_positions = getRestPositions(robot)
@@ -1217,9 +1420,20 @@ def test_articulated_object_joint_motors(test_asset):
         # to ensure joint has enough distance to achieve target velocity, reset positions
         robot.clear_joint_states()
 
+        firstStep = True
         target_time += 0.5
         while sim.get_world_time() < target_time:
             sim.step_physics(1.0 / 60.0)
+            if (
+                firstStep and "amass_male" not in test_asset
+            ):  # amass_male has spherical joints
+                joint_motor_torques = np.abs(
+                    np.array(robot.get_joint_motor_torques(sim.get_physics_time_step()))
+                )
+                assert (joint_motor_torques > 1.0).any()
+                assert len(joint_motor_torques) > 0
+                print("PYTORQUES: ", joint_motor_torques)
+                firstStep = False
             if produce_debug_video:
                 observations.append(sim.get_sensor_observations())
 
@@ -1232,7 +1446,7 @@ def test_articulated_object_joint_motors(test_asset):
             from habitat_sim.utils import viz_utils as vut
 
             vut.make_video(
-                observations,
+                observations,  # type: ignore[arg-type]
                 "color_sensor",
                 "color",
                 "test_articulated_object_joint_motors__" + test_asset.split("/")[-1],
@@ -1248,12 +1462,12 @@ def test_rigid_constraints():
     # set this to output test results as video for easy investigation
     produce_debug_video = False
     observations = []
-    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "NONE"
     cfg_settings["enable_physics"] = True
 
     # loading the physical scene
-    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
 
     with habitat_sim.Simulator(hab_cfg) as sim:
         obj_template_mgr = sim.get_object_template_manager()
@@ -1502,13 +1716,10 @@ def test_rigid_constraints():
         assert np.allclose(global_connect_a, global_connect_b, atol=0.08)
 
         # check that relative frames of objects near 0
-        assert (
-            mn.math.angle(
-                cube_obj.rotation,
-                robot.get_link_scene_node(constraint_settings_2.link_id_a).rotation,
-            )
-            < mn.Rad(0.1)
-        )
+        assert mn.math.angle(
+            cube_obj.rotation,
+            robot.get_link_scene_node(constraint_settings_2.link_id_a).rotation,
+        ) < mn.Rad(0.1)
 
         # counter rotate object frames pi/4
         local_target_frame_1 = mn.Quaternion.rotation(
@@ -1523,13 +1734,10 @@ def test_rigid_constraints():
 
         observations += simulate(sim, 4.0, produce_debug_video)
         # check frames align
-        angle_error = (
-            mn.math.angle(
-                cube_obj.rotation,
-                robot.get_link_scene_node(constraint_settings_2.link_id_a).rotation,
-            )
-            - mn.Rad(mn.math.pi / 4.0)
-        )
+        angle_error = mn.math.angle(
+            cube_obj.rotation,
+            robot.get_link_scene_node(constraint_settings_2.link_id_a).rotation,
+        ) - mn.Rad(mn.math.pi / 4.0)
         assert abs(float(angle_error)) < 0.05
 
         # remove cube and AO should fall
@@ -1544,7 +1752,7 @@ def test_rigid_constraints():
             habitat_sim.physics.RigidConstraintType.PointToPoint
         )
         constraint_id_2 = sim.create_rigid_constraint(constraint_settings_2)
-        observations += simulate(sim, 5.0, produce_debug_video)
+        observations += simulate(sim, 7.0, produce_debug_video)
 
         # check pivots are aligned
         global_connect_a = robot.get_link_scene_node(
@@ -1576,13 +1784,10 @@ def test_rigid_constraints():
         assert np.allclose(global_connect_a, constraint_settings_2.pivot_b, atol=0.08)
 
         # check frames align
-        angle_error = (
-            mn.math.angle(
-                local_target_frame_2,
-                robot.get_link_scene_node(constraint_settings_2.link_id_a).rotation,
-            )
-            - mn.Rad(mn.math.pi / 4.0)
-        )
+        angle_error = mn.math.angle(
+            local_target_frame_2,
+            robot.get_link_scene_node(constraint_settings_2.link_id_a).rotation,
+        ) - mn.Rad(mn.math.pi / 4.0)
         assert abs(float(angle_error)) < 0.2
 
         # hang the object from its base link
@@ -1675,3 +1880,94 @@ def test_rigid_constraints():
                 "test_rigid_constraints",
                 open_vid=True,
             )
+
+
+@pytest.mark.skipif(
+    not osp.exists("data/scene_datasets/habitat-test-scenes/apartment_1.glb"),
+    reason="Requires the habitat-test-scenes",
+)
+@pytest.mark.skipif(
+    not habitat_sim.built_with_bullet,
+    reason="ArticulatedObject API requires Bullet physics.",
+)
+def test_bullet_collision_helper():
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
+    cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/apartment_1.glb"
+    cfg_settings["enable_physics"] = True
+
+    # loading the physical scene
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
+
+    with habitat_sim.Simulator(hab_cfg) as sim:
+        obj_template_mgr = sim.get_object_template_manager()
+        cube_prim_handle = obj_template_mgr.get_template_handles("cube")[0]
+        rigid_obj_mgr = sim.get_rigid_object_manager()
+        cube_obj = rigid_obj_mgr.add_object_by_template_handle(cube_prim_handle)
+        cube_obj.translation = [2.5, 1.5, 2.5]
+
+        sim.step_physics(0.01)
+
+        assert sim.get_physics_num_active_contact_points() == 0
+        assert sim.get_physics_num_active_overlapping_pairs() == 0
+        assert (
+            sim.get_physics_step_collision_summary()
+            == "(no active collision manifolds)\n"
+        )
+
+        sim.step_physics(0.25)
+
+        assert sim.get_physics_num_active_contact_points() == 4
+        assert sim.get_physics_num_active_overlapping_pairs() == 1
+        assert (
+            sim.get_physics_step_collision_summary()
+            == "[RigidObject, cubeSolid, id 0] vs [Stage, subpart 0], 4 points\n"
+        )
+
+        sim.step_physics(3.0)
+
+        assert sim.get_physics_num_active_contact_points() == 0
+        assert sim.get_physics_num_active_overlapping_pairs() == 0
+        assert (
+            sim.get_physics_step_collision_summary()
+            == "(no active collision manifolds)\n"
+        )
+
+        rigid_obj_mgr.remove_object_by_id(cube_obj.object_id)
+
+        art_obj_mgr = sim.get_articulated_object_manager()
+        robot_file = "data/test_assets/urdf/fridge/fridge.urdf"
+
+        # parse URDF and add an ArticulatedObject to the world
+        robot = art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
+        assert robot.is_alive
+
+        robot.translation = mn.Vector3(2.5, 4.0, 2.5)
+        robot.rotation = mn.Quaternion()
+
+        sim.step_physics(0.01)
+
+        assert sim.get_physics_num_active_contact_points() == 0
+        assert sim.get_physics_num_active_overlapping_pairs() == 0
+        assert (
+            sim.get_physics_step_collision_summary()
+            == "(no active collision manifolds)\n"
+        )
+
+        sim.step_physics(0.75)
+
+        assert sim.get_physics_num_active_contact_points() == 2
+        # lots of overlapping pairs due to various fridge links near the stage
+        assert sim.get_physics_num_active_overlapping_pairs() == 5
+        assert (
+            sim.get_physics_step_collision_summary()
+            == "[URDF, fridge, link body] vs [Stage, subpart 0], 2 points\n"
+        )
+
+        sim.step_physics(3.0)
+
+        assert sim.get_physics_num_active_contact_points() == 0
+        assert sim.get_physics_num_active_overlapping_pairs() == 0
+        assert (
+            sim.get_physics_step_collision_summary()
+            == "(no active collision manifolds)\n"
+        )

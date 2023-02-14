@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright (c) Facebook, Inc. and its affiliates.
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
@@ -15,7 +15,6 @@ from habitat_sim.utils import compare_profiles
 # profiling events. Verify compare_profiles functionality including creating and
 # printing a timing summary.
 def test_compare_profiles():
-
     c = sqlite3.connect(":memory:")
 
     # Parse a sqlite database which is missing the expected table.

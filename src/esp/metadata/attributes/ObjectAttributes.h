@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -6,8 +6,6 @@
 #define ESP_METADATA_ATTRIBUTES_OBJECTATTRIBUTES_H_
 
 #include "AttributesBase.h"
-
-#include "esp/assets/Asset.h"
 
 namespace esp {
 namespace metadata {
@@ -21,14 +19,6 @@ namespace attributes {
  */
 class AbstractObjectAttributes : public AbstractAttributes {
  public:
-  /**
-   * @brief Constant static map to provide mappings from string tags to
-   * @ref esp::assets::AssetType values.  This will be used to map values
-   * set in json for mesh type to @ref esp::assets::AssetType.  Keys must
-   * be lowercase.
-   */
-  static const std::map<std::string, esp::assets::AssetType> AssetTypeNamesMap;
-
   AbstractObjectAttributes(const std::string& classKey,
                            const std::string& handle);
 
@@ -54,7 +44,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
   bool getIsCollidable() const { return get<bool>("is_collidable"); }
 
   /**
-   * @brief set default up orientation for object/stage mesh
+   * @brief Set default up orientation for object/stage mesh
    */
   void setOrientUp(const Magnum::Vector3& orientUp) {
     set("orient_up", orientUp);
@@ -66,7 +56,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
     return get<Magnum::Vector3>("orient_up");
   }
   /**
-   * @brief set default forward orientation for object/stage mesh
+   * @brief Set default forward orientation for object/stage mesh
    */
   void setOrientFront(const Magnum::Vector3& orientFront) {
     set("orient_front", orientFront);
@@ -89,11 +79,29 @@ class AbstractObjectAttributes : public AbstractAttributes {
    */
   double getUnitsToMeters() const { return get<double>("units_to_meters"); }
 
+  /**
+   * @brief If not visible can add dynamic non-rendered object into a scene
+   * object.  If is not visible then should not add object to drawables.
+   */
+  void setIsVisible(bool isVisible) { set("is_visible", isVisible); }
+  bool getIsVisible() const { return get<bool>("is_visible"); }
   void setFrictionCoefficient(double frictionCoefficient) {
     set("friction_coefficient", frictionCoefficient);
   }
   double getFrictionCoefficient() const {
     return get<double>("friction_coefficient");
+  }
+  void setRollingFrictionCoefficient(double rollingFrictionCoefficient) {
+    set("rolling_friction_coefficient", rollingFrictionCoefficient);
+  }
+  double getRollingFrictionCoefficient() const {
+    return get<double>("rolling_friction_coefficient");
+  }
+  void setSpinningFrictionCoefficient(double spinningFrictionCoefficient) {
+    set("spinning_friction_coefficient", spinningFrictionCoefficient);
+  }
+  double getSpinningFrictionCoefficient() const {
+    return get<double>("spinning_friction_coefficient");
   }
 
   void setRestitutionCoefficient(double restitutionCoefficient) {
@@ -124,7 +132,12 @@ class AbstractObjectAttributes : public AbstractAttributes {
   void setRenderAssetIsPrimitive(bool renderAssetIsPrimitive) {
     set("renderAssetIsPrimitive", renderAssetIsPrimitive);
   }
-
+  /**
+   * @brief Get whether this object uses file-based mesh render object or
+   * primitive render shapes
+   * @return whether this object's render asset is a
+   * primitive or not
+   */
   bool getRenderAssetIsPrimitive() const {
     return get<bool>("renderAssetIsPrimitive");
   }
@@ -188,33 +201,85 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * @brief Set the default shader to use for an object or stage.  This may be
    * overridden by a scene instance specification.
    */
-  void setShaderType(int shader_type) { set("shader_type", shader_type); }
+  void setShaderType(const std::string& shader_type) {
+    // force to lowercase before setting
+    const std::string shaderTypeLC =
+        Cr::Utility::String::lowercase(shader_type);
+    auto mapIter = ShaderTypeNamesMap.find(shaderTypeLC);
+    ESP_CHECK(mapIter != ShaderTypeNamesMap.end(),
+              "Illegal shader_type value"
+                  << shader_type
+                  << "attempted to be set in AbstractObjectAttributes:"
+                  << getHandle() << ". Aborting.");
+    set("shader_type", shader_type);
+  }
 
   /**
    * @brief Get the default shader to use for an object or stage.  This may be
    * overridden by a scene instance specification.
    */
-  int getShaderType() const { return get<int>("shader_type"); }
-
-  // if true use phong illumination model instead of flat shading
-  void setRequiresLighting(bool requiresLighting) {
-    set("requires_lighting", requiresLighting);
+  ObjectInstanceShaderType getShaderType() const {
+    const std::string val =
+        Cr::Utility::String::lowercase(get<std::string>("shader_type"));
+    auto mapIter = ShaderTypeNamesMap.find(val);
+    if (mapIter != ShaderTypeNamesMap.end()) {
+      return mapIter->second;
+    }
+    // Unspecified is default value - should never be returned since setter
+    // verifies value
+    return ObjectInstanceShaderType::Unspecified;
   }
-  bool getRequiresLighting() const { return get<bool>("requires_lighting"); }
+
+  /**
+   * @brief If true then use flat shading regardless of what shader-type is
+   * specified by materials or other configs.
+   */
+  void setForceFlatShading(bool force_flat_shading) {
+    set("force_flat_shading", force_flat_shading);
+  }
+  /**
+   * @brief if true use flat shading instead of phong or pbr shader
+   */
+  bool getForceFlatShading() const { return get<bool>("force_flat_shading"); }
 
   bool getIsDirty() const { return get<bool>("__isDirty"); }
   void setIsClean() { set("__isDirty", false); }
 
   /**
-   * @brief Used for info purposes.  Return a string name corresponding to the
-   * currently specified shader type value;
+   * @brief Populate a json object with all the first-level values held in this
+   * configuration.  Default is overridden to handle special cases for
+   * AbstractObjectAttributes and deriving (ObjectAttributes and
+   * StageAttributes) classes.
    */
-  std::string getCurrShaderTypeName() const {
-    int shaderTypeVal = getShaderType();
-    return getShaderTypeName(shaderTypeVal);
+  void writeValuesToJson(io::JsonGenericValue& jsonObj,
+                         io::JsonAllocator& allocator) const override;
+
+  /**
+   * @brief Whether to use the specified orientation frame for all orientation
+   * tasks for this asset.  This will always be true, except if an overriding
+   * semantic mesh-specific frame is specified for stages.
+   */
+  bool getUseFrameForAllOrientation() const {
+    return get<bool>("use_frame_for_all_orientation");
   }
 
  protected:
+  /**
+   * @brief Whether to use the specified orientation frame for all orientation
+   * tasks for this asset.  This will always be true, except if an overriding
+   * semantic mesh-specific frame is specified for stages.
+   */
+  void setUseFrameForAllOrientation(bool useFrameForAllOrientation) {
+    set("use_frame_for_all_orientation", useFrameForAllOrientation);
+  }
+
+  /**
+   * @brief Write child-class-specific values to json object
+   *
+   */
+  virtual void writeValuesToJsonInternal(
+      CORRADE_UNUSED io::JsonGenericValue& jsonObj,
+      CORRADE_UNUSED io::JsonAllocator& allocator) const {}
   /**
    * @brief Retrieve a comma-separated string holding the header values for the
    * info returned for this managed object, type-specific.
@@ -245,8 +310,8 @@ class AbstractObjectAttributes : public AbstractAttributes {
 };  // class AbstractObjectAttributes
 
 /**
- * @brief Specific Attributes instance describing an object, constructed with
- * a default set of object-specific required attributes
+ * @brief Specific Attributes instance describing a rigid object, constructed
+ * with a default set of object-specific required attributes.
  */
 class ObjectAttributes : public AbstractObjectAttributes {
  public:
@@ -298,18 +363,17 @@ class ObjectAttributes : public AbstractObjectAttributes {
     return get<bool>("join_collision_meshes");
   }
 
-  /**
-   * @brief If not visible can add dynamic non-rendered object into a scene
-   * object.  If is not visible then should not add object to drawables.
-   */
-  void setIsVisible(bool isVisible) { set("is_visible", isVisible); }
-  bool getIsVisible() const { return get<bool>("is_visible"); }
-
   void setSemanticId(int semanticId) { set("semantic_id", semanticId); }
 
   uint32_t getSemanticId() const { return get<int>("semantic_id"); }
 
  protected:
+  /**
+   * @brief Write object-specific values to json object
+   */
+  void writeValuesToJsonInternal(io::JsonGenericValue& jsonObj,
+                                 io::JsonAllocator& allocator) const override;
+
   /**
    * @brief get AbstractObject specific info header
    */
@@ -331,8 +395,8 @@ class ObjectAttributes : public AbstractObjectAttributes {
 // stage attributes
 
 /**
- * @brief Specific Attributes instance describing a stage, constructed with a
- * default set of stage-specific required attributes
+ * @brief Specific Attributes instance describing a rigid stage, constructed
+ * with a default set of stage-specific required attributes
  */
 class StageAttributes : public AbstractObjectAttributes {
  public:
@@ -343,12 +407,70 @@ class StageAttributes : public AbstractObjectAttributes {
 
   void setGravity(const Magnum::Vector3& gravity) { set("gravity", gravity); }
   Magnum::Vector3 getGravity() const { return get<Magnum::Vector3>("gravity"); }
-  void setHouseFilename(const std::string& houseFilename) {
-    set("houseFilename", houseFilename);
+
+  /**
+   * @brief Set default up orientation for semantic mesh. This is to support
+   * stage aligning semantic meshes that have different orientations than the
+   * stage render mesh.
+   */
+  void setSemanticOrientUp(const Magnum::Vector3& semanticOrientUp) {
+    set("semantic_orient_up", semanticOrientUp);
+    // specify that semantic meshes should not use base class render asset
+    // orientation
+    setUseFrameForAllOrientation(false);
+  }
+  /**
+   * @brief get default up orientation for semantic mesh. This is to support
+   * stage aligning semantic meshes that have different orientations than the
+   * stage render mesh. Returns render asset up if no value for semantic asset
+   * was specifically set.
+   */
+  Magnum::Vector3 getSemanticOrientUp() const {
+    return (getUseFrameForAllOrientation()
+                ? getOrientUp()
+                : get<Magnum::Vector3>("semantic_orient_up"));
+  }
+
+  /**
+   * @brief Set default forward orientation for semantic mesh. This is to
+   * support stage aligning semantic meshes that have different orientations
+   * than the stage render mesh.
+   */
+  void setSemanticOrientFront(const Magnum::Vector3& semanticOrientFront) {
+    set("semantic_orient_front", semanticOrientFront);
+    // specify that semantic meshes should not use base class render asset
+    // orientation
+    setUseFrameForAllOrientation(false);
+  }
+  /**
+   * @brief get default forward orientation for semantic mesh. This is to
+   * support stage aligning semantic meshes that have different orientations
+   * than the stage render mesh. Returns render asset front if no value for
+   * semantic asset was specifically set.
+   */
+  Magnum::Vector3 getSemanticOrientFront() const {
+    return (getUseFrameForAllOrientation()
+                ? getOrientFront()
+                : get<Magnum::Vector3>("semantic_orient_front"));
+  }
+
+  /**
+   * @brief Text file that describes the hierharchy of semantic information
+   * embedded in the Semantic Asset mesh.  May be overridden by value
+   * specified in Scene Instance Attributes.
+   */
+  void setSemanticDescriptorFilename(
+      const std::string& semantic_descriptor_filename) {
+    set("semantic_descriptor_filename", semantic_descriptor_filename);
     setIsDirty();
   }
-  std::string getHouseFilename() const {
-    return get<std::string>("houseFilename");
+  /**
+   * @brief Text file that describes the hierharchy of semantic information
+   * embedded in the Semantic Asset mesh.  May be overridden by value
+   * specified in Scene Instance Attributes.
+   */
+  std::string getSemanticDescriptorFilename() const {
+    return get<std::string>("semantic_descriptor_filename");
   }
   void setSemanticAssetHandle(const std::string& semanticAssetHandle) {
     set("semantic_asset", semanticAssetHandle);
@@ -360,36 +482,73 @@ class StageAttributes : public AbstractObjectAttributes {
   void setSemanticAssetType(int semanticAssetType) {
     set("semantic_asset_type", semanticAssetType);
   }
-  int getSemanticAssetType() { return get<int>("semantic_asset_type"); }
+  int getSemanticAssetType() const { return get<int>("semantic_asset_type"); }
 
+  /**
+   * @brief Set whether or not the semantic asset for this stage supports
+   * texture semantics.
+   */
+  void setHasSemanticTextures(bool hasSemanticTextures) {
+    set("has_semantic_textures", hasSemanticTextures);
+  }
+
+  bool getHasSemanticTextures() const {
+    return get<bool>("has_semantic_textures");
+  }
+
+  /**
+   * @brief Only set internally if we should use semantic textures for semantic
+   * asset loading/rendering. Should only be true if "has_semantic_textures" is
+   * true and user has specified to use semantic textures via
+   * SimulatorConfiguration.
+   */
+  bool useSemanticTextures() const {
+    return get<bool>("use_textures_for_semantic_rendering");
+  }
+
+  /**
+   * @brief Only should be called when simulator::reconfigure is called, based
+   * on setting
+   */
+  void setUseSemanticTextures(bool useSemanticTextures) {
+    set("use_textures_for_semantic_rendering",
+        (useSemanticTextures && getHasSemanticTextures()));
+  }
+
+  // Currently not supported
   void setLoadSemanticMesh(bool loadSemanticMesh) {
     set("loadSemanticMesh", loadSemanticMesh);
   }
+
+  // Currently not supported
   bool getLoadSemanticMesh() { return get<bool>("loadSemanticMesh"); }
 
-  void setNavmeshAssetHandle(const std::string& navmeshAssetHandle) {
-    set("navmeshAssetHandle", navmeshAssetHandle);
+  void setNavmeshAssetHandle(const std::string& nav_asset) {
+    set("nav_asset", nav_asset);
     setIsDirty();
   }
   std::string getNavmeshAssetHandle() const {
-    return get<std::string>("navmeshAssetHandle");
+    return get<std::string>("nav_asset");
   }
 
   /**
-   * @brief set lighting setup for stage.  Default value comes from
+   * @brief Set lighting setup for stage.  Default value comes from
    * @ref esp::sim::SimulatorConfiguration, is overridden by any value set in
    * json, if exists.
    */
-  void setLightSetup(const std::string& lightSetup) {
-    set("light_setup", lightSetup);
-    setRequiresLighting(lightSetup != NO_LIGHT_KEY);
+  void setLightSetupKey(const std::string& light_setup_key) {
+    set("light_setup_key", light_setup_key);
+    setForceFlatShading(light_setup_key == NO_LIGHT_KEY);
   }
-  std::string getLightSetup() const { return get<std::string>("light_setup"); }
+  std::string getLightSetupKey() const {
+    return get<std::string>("light_setup_key");
+  }
 
   /**
-   * @brief set frustum culling for stage.  Default value comes from
+   * @brief Set frustum culling for stage.  Default value comes from
    * @ref esp::sim::SimulatorConfiguration, is overridden by any value set in
    * json, if exists.
+   * Currently only set from SimulatorConfiguration
    */
   void setFrustumCulling(bool frustumCulling) {
     set("frustum_culling", frustumCulling);
@@ -398,20 +557,21 @@ class StageAttributes : public AbstractObjectAttributes {
 
  protected:
   /**
+   * @brief Write stage-specific values to json object
+   *
+   */
+  void writeValuesToJsonInternal(io::JsonGenericValue& jsonObj,
+                                 io::JsonAllocator& allocator) const override;
+
+  /**
    * @brief get AbstractObject specific info header
    */
-  std::string getAbstractObjectInfoHeaderInternal() const override {
-    return "Navmesh Handle,Gravity XYZ,Origin XYZ,Light Setup,";
-  }
+  std::string getAbstractObjectInfoHeaderInternal() const override;
 
   /**
    * @brief get AbstractObject specific info for csv string
    */
-  std::string getAbstractObjectInfoInternal() const override {
-    return Cr::Utility::formatString("{},{},{},{}", getNavmeshAssetHandle(),
-                                     getAsString("gravity"),
-                                     getAsString("origin"), getLightSetup());
-  }
+  std::string getAbstractObjectInfoInternal() const override;
 
  public:
   ESP_SMART_POINTERS(StageAttributes)

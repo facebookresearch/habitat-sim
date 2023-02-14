@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -28,7 +28,7 @@ namespace managers {
  * of this class works with.  Must inherit from @ref
  * esp::metadata::attributes::AbstractObjectAttributes.
  */
-template <class T, core::ManagedObjectAccess Access>
+template <class T, ManagedObjectAccess Access>
 class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
  public:
   static_assert(std::is_base_of<attributes::AbstractObjectAttributes, T>::value,
@@ -104,6 +104,7 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
       const io::JsonGenericValue& jsonDoc);
 
   //======== Internally accessed functions ========
+
   /**
    * @brief Only used by @ref
    * esp::metadata::attributes::AbstractObjectAttributes derived-attributes. Set
@@ -150,7 +151,7 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
       AbsObjAttrPtr attributes,
       bool setFrame,
       const std::string& assetName,
-      std::function<void(int)> meshTypeSetter) = 0;
+      const std::function<void(int)>& meshTypeSetter) = 0;
 
   // ======== Typedefs and Instance Variables ========
 
@@ -162,7 +163,7 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
 /////////////////////////////
 // Class Template Method Definitions
 
-template <class T, core::ManagedObjectAccess Access>
+template <class T, ManagedObjectAccess Access>
 auto AbstractObjectAttributesManager<T, Access>::createObject(
     const std::string& attributesTemplateHandle,
     bool registerTemplate) -> AbsObjAttrPtr {
@@ -180,14 +181,14 @@ auto AbstractObjectAttributesManager<T, Access>::createObject(
 
   }  // if this is prim else
   if (nullptr != attrs) {
-    ESP_DEBUG() << msg << "" << this->objectType_ << "attributes created"
+    ESP_DEBUG() << msg << this->objectType_ << "attributes created"
                 << (registerTemplate ? "and registered." : ".");
   }
   return attrs;
 
 }  // AbstractObjectAttributesManager<T>::createObject
 
-template <class T, core::ManagedObjectAccess Access>
+template <class T, ManagedObjectAccess Access>
 auto AbstractObjectAttributesManager<T, Access>::
     loadAbstractObjectAttributesFromJson(AbsObjAttrPtr attributes,
                                          const io::JsonGenericValue& jsonDoc)
@@ -221,6 +222,21 @@ auto AbstractObjectAttributesManager<T, Access>::
         attributes->setFrictionCoefficient(friction_coefficient);
       });
 
+  // load the rolling friction coefficient
+  io::jsonIntoSetter<double>(
+      jsonDoc, "rolling_friction_coefficient",
+      [attributes](double rolling_friction_coefficient) {
+        attributes->setRollingFrictionCoefficient(rolling_friction_coefficient);
+      });
+
+  // load the spinning friction coefficient
+  io::jsonIntoSetter<double>(
+      jsonDoc, "spinning_friction_coefficient",
+      [attributes](double spinning_friction_coefficient) {
+        attributes->setSpinningFrictionCoefficient(
+            spinning_friction_coefficient);
+      });
+
   // load the restitution coefficient
   io::jsonIntoSetter<double>(
       jsonDoc, "restitution_coefficient",
@@ -228,11 +244,11 @@ auto AbstractObjectAttributesManager<T, Access>::
         attributes->setRestitutionCoefficient(restitution_coefficient);
       });
 
-  // if object will be flat or phong shaded
-  io::jsonIntoSetter<bool>(jsonDoc, "requires_lighting",
-                           [attributes](bool requires_lighting) {
-                             attributes->setRequiresLighting(requires_lighting);
-                           });
+  // if object or stage will be forced to be flat shaded
+  io::jsonIntoSetter<bool>(
+      jsonDoc, "force_flat_shading", [attributes](bool force_flat_shading) {
+        attributes->setForceFlatShading(force_flat_shading);
+      });
 
   // units to meters
   io::jsonIntoSetter<double>(jsonDoc, "units_to_meters",
@@ -290,18 +306,19 @@ auto AbstractObjectAttributesManager<T, Access>::
 
   // set attributes shader type to use.  This may be overridden by a scene
   // instance specification.
-  int shaderTypeVal = getShaderTypeFromJsonDoc(jsonDoc);
+  const std::string shaderTypeVal = getShaderTypeFromJsonDoc(jsonDoc);
   // if a known shader type val is specified in json, set that value for the
-  // attributes, overriding constructor defaults.
+  // attributes, overriding constructor defaults.  Do not overwrite anything for
+  // unknown
   if (shaderTypeVal !=
-      static_cast<int>(attributes::ObjectInstanceShaderType::Unknown)) {
+      getShaderTypeName(attributes::ObjectInstanceShaderType::Unspecified)) {
     attributes->setShaderType(shaderTypeVal);
   }
 
   return attributes;
 }  // AbstractObjectAttributesManager<AbsObjAttrPtr>::createObjectAttributesFromJson
 
-template <class T, core::ManagedObjectAccess Access>
+template <class T, ManagedObjectAccess Access>
 std::string
 AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
     AbsObjAttrPtr attributes,
@@ -325,16 +342,18 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
   if (io::readMember<std::string>(jsonDoc, jsonMeshTypeTag, tmpVal)) {
     // tag was found, perform check
     std::string strToLookFor = Cr::Utility::String::lowercase(tmpVal);
-    if (T::AssetTypeNamesMap.count(strToLookFor)) {
-      typeVal = static_cast<int>(T::AssetTypeNamesMap.at(strToLookFor));
+
+    auto found = attributes::AssetTypeNamesMap.find(strToLookFor);
+    if (found != attributes::AssetTypeNamesMap.end()) {
+      typeVal =
+          static_cast<int>(attributes::AssetTypeNamesMap.at(strToLookFor));
     } else {
-      ESP_WARNING() << "<" << Magnum::Debug::nospace << this->objectType_
-                    << Magnum::Debug::nospace
-                    << "> : Value in json @ tag :" << jsonMeshTypeTag << ": `"
-                    << tmpVal
-                    << "` does not map to a valid "
-                       "AbstractObjectAttributes::AssetTypeNamesMap value, so "
-                       "defaulting mesh type to AssetType::UNKNOWN.";
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << "<" << this->objectType_
+          << "> : Value in json @ tag :" << jsonMeshTypeTag << ": `" << tmpVal
+          << "` does not map to a valid "
+             "AbstractObjectAttributes::AssetTypeNamesMap value, so "
+             "defaulting mesh type to AssetType::UNKNOWN.";
       typeVal = static_cast<int>(esp::assets::AssetType::UNKNOWN);
     }
     // value found so override current value, otherwise do not.
@@ -348,18 +367,17 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
         (oldFName != assetName)) {
       // if mesh name is specified and different than old value,
       // perform name-specific mesh-type config.
-      setDefaultAssetNameBasedAttributes(attributes, false, assetName,
-                                         meshTypeSetter);
+      setDefaultAssetNameBasedAttributes(std::move(attributes), false,
+                                         assetName, meshTypeSetter);
     } else {
       // is not valid primitive, assume valid file name
-      assetName =
-          Cr::Utility::Directory::join(propertiesFileDirectory, assetName);
+      assetName = Cr::Utility::Path::join(propertiesFileDirectory, assetName);
       if ((typeVal == -1) && (oldFName != assetName)) {
         // if file name is different, and type val has not been specified,
-        // perform name-specific mesh type config do not override orientation -
-        // should be specified in json.
-        setDefaultAssetNameBasedAttributes(attributes, false, assetName,
-                                           meshTypeSetter);
+        // perform name-specific mesh type config do not override orientation
+        // - should be specified in json.
+        setDefaultAssetNameBasedAttributes(std::move(attributes), false,
+                                           assetName, meshTypeSetter);
       }
     }  // value is valid prim and exists, else value is valid file and exists
     return assetName;

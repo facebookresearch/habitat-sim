@@ -1,10 +1,10 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
 #include <Corrade/TestSuite/Tester.h>
 #include <Corrade/Utility/DebugStl.h>
-#include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/Path.h>
 
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/core/Esp.h"
@@ -22,8 +22,7 @@ using esp::metadata::attributes::AbstractObjectAttributes;
 using esp::metadata::attributes::ObjectAttributes;
 
 namespace {
-const std::string dataDir =
-    Corrade::Utility::Directory::join(SCENE_DATASETS, "../");
+const std::string dataDir = Corrade::Utility::Path::join(SCENE_DATASETS, "../");
 
 struct IOTest : Cr::TestSuite::Tester {
   explicit IOTest();
@@ -36,6 +35,16 @@ struct IOTest : Cr::TestSuite::Tester {
   void testJsonEspTypes();
 
   void testJsonUserType();
+
+  template <typename T>
+  void _testJsonReadWrite(T src,
+                          rapidjson::GenericStringRef<char> name,
+                          rapidjson::Document& d) {
+    esp::io::addMember(d, name, src, d.GetAllocator());
+    T src2;
+    CORRADE_VERIFY(esp::io::readMember(d, name, src2));
+    CORRADE_COMPARE(src2, src);
+  }
 
   esp::logging::LoggingContext loggingContext;
 };
@@ -90,7 +99,7 @@ void IOTest::fileReplaceExtTest() {
 }
 
 void IOTest::parseURDF() {
-  const std::string iiwaURDF = Cr::Utility::Directory::join(
+  const std::string iiwaURDF = Cr::Utility::Path::join(
       TEST_ASSETS, "urdf/kuka_iiwa/model_free_base.urdf");
 
   esp::io::URDF::Parser parser;
@@ -156,11 +165,11 @@ void IOTest::testJson() {
 
   // test io
   auto testFilepath =
-      Corrade::Utility::Directory::join(dataDir, "../io_test_json.json");
+      Corrade::Utility::Path::join(dataDir, "../io_test_json.json");
   CORRADE_VERIFY(esp::io::writeJsonToFile(json, testFilepath));
   const auto& loadedJson = esp::io::parseJsonFile(testFilepath);
   CORRADE_COMPARE(esp::io::jsonToString(loadedJson), s);
-  Corrade::Utility::Directory::rm(testFilepath);
+  Corrade::Utility::Path::remove(testFilepath);
 
   // test basic attributes populating
 
@@ -210,105 +219,63 @@ void IOTest::testJson() {
 }
 
 // Serialize/deserialize the 7 rapidjson builtin types using
-// io::esp::io::addMember/esp::io::readMember and assert equality.
+// esp::io::addMember/esp::io::readMember and assert equality.
 void IOTest::testJsonBuiltinTypes() {
   rapidjson::Document d(rapidjson::kObjectType);
   rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
 
-  {
-    int x{std::numeric_limits<int>::lowest()};
-    esp::io::addMember(d, "myint", x, allocator);
-    int x2{0};
-    CORRADE_VERIFY(esp::io::readMember(d, "myint", x2));
-    CORRADE_COMPARE(x2, x);
-  }
+  int x0{std::numeric_limits<int>::lowest()};
+  _testJsonReadWrite(x0, "myint", d);
 
-  {
-    unsigned x{std::numeric_limits<unsigned>::max()};
-    esp::io::addMember(d, "myunsigned", x, allocator);
-    unsigned x2{0};
-    CORRADE_VERIFY(esp::io::readMember(d, "myunsigned", x2));
-    CORRADE_COMPARE(x2, x);
-  }
+  unsigned x1{std::numeric_limits<unsigned>::max()};
+  _testJsonReadWrite(x1, "myunsigned", d);
 
-  {
-    int64_t x{std::numeric_limits<int64_t>::lowest()};
-    esp::io::addMember(d, "myint64_t", x, allocator);
-    int64_t x2{0};
-    CORRADE_VERIFY(esp::io::readMember(d, "myint64_t", x2));
-    CORRADE_COMPARE(x2, x);
-  }
+  int64_t x2{std::numeric_limits<int64_t>::lowest()};
+  _testJsonReadWrite(x2, "myint64_t", d);
 
-  {
-    uint64_t x{std::numeric_limits<uint64_t>::max()};
-    esp::io::addMember(d, "myuint64_t", x, allocator);
-    uint64_t x2{0};
-    CORRADE_VERIFY(esp::io::readMember(d, "myuint64_t", x2));
-    CORRADE_COMPARE(x2, x);
-  }
+  uint64_t x3{std::numeric_limits<uint64_t>::max()};
+  _testJsonReadWrite(x3, "myuint64_t", d);
 
-  {
-    float x{1.0 / 7};
-    esp::io::addMember(d, "myfloat", x, allocator);
-    float x2{0};
-    CORRADE_VERIFY(esp::io::readMember(d, "myfloat", x2));
-    CORRADE_COMPARE(x2, x);
-  }
+  float x4{1.0 / 7};
+  _testJsonReadWrite(x4, "myfloat", d);
 
-  {
-    double x{1.0 / 13};
-    esp::io::addMember(d, "mydouble", x, allocator);
-    double x2{0};
-    CORRADE_VERIFY(esp::io::readMember(d, "mydouble", x2));
-    CORRADE_COMPARE(x2, x);
-  }
+  double x5{1.0 / 13};
+  _testJsonReadWrite(x5, "mydouble", d);
 
-  {
-    bool x{true};
-    esp::io::addMember(d, "mybool", x, allocator);
-    bool x2{false};
-    CORRADE_VERIFY(esp::io::readMember(d, "mybool", x2));
-    CORRADE_COMPARE(x2, x);
-  }
+  bool xb{true};
+  _testJsonReadWrite(xb, "mybool", d);
 
   // verify failure to read bool into int
-  {
-    int x2{0};
-    CORRADE_VERIFY(!esp::io::readMember(d, "mybool", x2));
-  }
+  int x_err{0};
+  CORRADE_VERIFY(!esp::io::readMember(d, "mybool", x_err));
 
   // verify failure to read missing tag
-  {
-    int x2{0};
-    CORRADE_VERIFY(!esp::io::readMember(d, "my_missing_int", x2));
-  }
+  int x_err2{0};
+  CORRADE_VERIFY(!esp::io::readMember(d, "my_missing_int", x_err2));
 }
 
 // Serialize/deserialize a few stl types using
-// io::esp::io::addMember/esp::io::readMember and assert equality.
+// esp::io::addMember/esp::io::readMember and assert equality.
 void IOTest::testJsonStlTypes() {
   rapidjson::Document d(rapidjson::kObjectType);
   rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
 
   std::string s{"hello world"};
-  esp::io::addMember(d, "s", s, allocator);
-  std::string s2;
-  CORRADE_VERIFY(esp::io::readMember(d, "s", s2));
-  CORRADE_COMPARE(s2, s);
+  _testJsonReadWrite(s, "s", d);
+
+  std::pair<float, std::string> pair(1.5f, "second");
+  esp::io::addMember(d, "pair", pair, allocator);
+  std::pair<float, std::string> pair2;
+  CORRADE_VERIFY(esp::io::readMember(d, "pair", pair2));
+  CORRADE_COMPARE(pair2, pair);
 
   // test a vector of ints
   std::vector<int> vec{3, 4, 5, 6};
-  esp::io::addMember(d, "vec", vec, allocator);
-  std::vector<int> vec2;
-  CORRADE_VERIFY(esp::io::readMember(d, "vec", vec2));
-  CORRADE_COMPARE(vec2, vec);
+  _testJsonReadWrite(vec, "vec", d);
 
   // test an empty vector
   std::vector<float> emptyVec{};
-  esp::io::addMember(d, "emptyVec", emptyVec, allocator);
-  std::vector<float> emptyVec2;
-  CORRADE_VERIFY(esp::io::readMember(d, "emptyVec", emptyVec2));
-  CORRADE_COMPARE(emptyVec2, emptyVec);
+  _testJsonReadWrite(emptyVec, "emptyVec", d);
 
   // test reading a vector of wrong type
   std::vector<std::string> vec3;
@@ -316,23 +283,20 @@ void IOTest::testJsonStlTypes() {
 }
 
 // Serialize/deserialize a few Magnum types using
-// io::esp::io::addMember/esp::io::readMember and
+// esp::io::addMember/esp::io::readMember and
 // assert equality.
 void IOTest::testJsonMagnumTypes() {
   rapidjson::Document d(rapidjson::kObjectType);
   rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
 
   Magnum::Vector3 vec{1, 2, 3};
-  esp::io::addMember(d, "myvec", vec, allocator);
-  Magnum::Vector3 vec2;
-  CORRADE_VERIFY(esp::io::readMember(d, "myvec", vec2));
-  CORRADE_COMPARE(vec2, vec);
+  _testJsonReadWrite(vec, "myvec", d);
 
   Magnum::Quaternion quat{{1, 2, 3}, 4};
-  esp::io::addMember(d, "myquat", quat, allocator);
-  Magnum::Quaternion quat2;
-  CORRADE_VERIFY(esp::io::readMember(d, "myquat", quat2));
-  CORRADE_COMPARE(quat2, quat);
+  _testJsonReadWrite(quat, "myquat", d);
+
+  Magnum::Matrix3 mat{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+  _testJsonReadWrite(mat, "mymat", d);
 
   // test reading the wrong type (wrong number of fields)
   Magnum::Quaternion quat3;
@@ -349,7 +313,7 @@ void IOTest::testJsonMagnumTypes() {
 }
 
 // Serialize/deserialize a few esp types using
-// io::esp::io::addMember/esp::io::readMember and assert equality.
+// esp::io::addMember/esp::io::readMember and assert equality.
 void IOTest::testJsonEspTypes() {
   rapidjson::Document d(rapidjson::kObjectType);
   rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
@@ -357,10 +321,7 @@ void IOTest::testJsonEspTypes() {
   {
     // vec3f
     esp::vec3f vec{1, 2, 3};
-    esp::io::addMember(d, "myvec3f", vec, allocator);
-    esp::vec3f vec2;
-    CORRADE_VERIFY(esp::io::readMember(d, "myvec3f", vec2));
-    CORRADE_COMPARE(vec2, vec);
+    _testJsonReadWrite(vec, "myvec3f", d);
 
     // test reading the wrong type (wrong number of fields)
     std::vector<float> wrongNumFieldsVec{1, 3, 4, 4};
@@ -411,7 +372,7 @@ void IOTest::testJsonEspTypes() {
         assetInfo2.frame.origin().isApprox(assetInfo.frame.origin()));
     CORRADE_COMPARE(assetInfo2.virtualUnitToMeters,
                     assetInfo.virtualUnitToMeters);
-    CORRADE_COMPARE(assetInfo2.requiresLighting, assetInfo.requiresLighting);
+    CORRADE_COMPARE(assetInfo2.forceFlatShading, assetInfo.forceFlatShading);
     CORRADE_COMPARE(assetInfo2.splitInstanceMesh, assetInfo.splitInstanceMesh);
     CORRADE_VERIFY(assetInfo2.overridePhongMaterial == Cr::Containers::NullOpt);
     // now test again with override material
@@ -493,7 +454,7 @@ bool fromJsonValue(const esp::io::JsonGenericValue& obj, MyOuterStruct& x) {
 }  // namespace
 
 // Serialize/deserialize MyOuterStruct using
-// io::esp::io::addMember/esp::io::readMember and assert
+// esp::io::addMember/esp::io::readMember and assert
 // equality.
 void IOTest::testJsonUserType() {
   rapidjson::Document d(rapidjson::kObjectType);

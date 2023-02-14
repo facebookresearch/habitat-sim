@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright (c) Facebook, Inc. and its affiliates.
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
@@ -33,7 +33,7 @@ try:
 except ImportError:
     CMAKE_BIN_DIR = ""
 
-sys.path.insert(0, osp.dirname(__file__))
+sys.path.insert(0, osp.join(osp.dirname(__file__), "src_python"))
 
 ARG_CACHE_BLACKLIST = {"force_cmake", "cache_args", "inplace"}
 
@@ -163,6 +163,15 @@ Use "CMAKE_ARGS="..." pip install ." to set cmake args with pip""",
         help="Wether or not to build the basis compressor."
         "  Loading basis compressed meshes does NOT require this.",
     )
+
+    parser.add_argument(
+        "--audio",
+        action="store_true",
+        default=str2bool(os.environ.get("WITH_AUDIO", "False")),
+        dest="with_audio",
+        help="Build with audio features enabled.",
+    )
+
     return parser
 
 
@@ -313,14 +322,6 @@ class CMakeBuild(build_ext):
             "-DBUILD_GUI_VIEWERS={}".format("ON" if not args.headless else "OFF")
         ]
 
-        if sys.platform not in ["darwin", "win32", "win64"]:
-            cmake_args += [
-                # So Magnum itself prefers EGL over GLX for windowless apps.
-                # Makes sense only on platforms with EGL (Linux, BSD, ...).
-                "-DTARGET_HEADLESS={}".format("ON" if args.headless else "OFF")
-            ]
-        # NOTE: BUILD_TEST is intentional as opposed to BUILD_TESTS which collides
-        # with definition used by some of our dependencies
         cmake_args += ["-DBUILD_TEST={}".format("ON" if args.build_tests else "OFF")]
         cmake_args += [
             "-DBUILD_WITH_BULLET={}".format("ON" if args.with_bullet else "OFF")
@@ -336,6 +337,9 @@ class CMakeBuild(build_ext):
             "-DBUILD_BASIS_COMPRESSOR={}".format(
                 "ON" if args.build_basis_compressor else "OFF"
             )
+        ]
+        cmake_args += [
+            "-DBUILD_WITH_AUDIO={}".format("ON" if args.with_audio else "OFF")
         ]
 
         env = os.environ.copy()
@@ -404,7 +408,6 @@ class CMakeBuild(build_ext):
                 # Strip +D
                 k = k[2:]
                 for l in cache_contents:
-
                     match = cache_parser.match(l)
                     if match is None:
                         continue
@@ -446,7 +449,7 @@ class CMakeBuild(build_ext):
 if __name__ == "__main__":
     assert StrictVersion(
         "{}.{}".format(sys.version_info[0], sys.version_info[1])
-    ) >= StrictVersion("3.6"), "Must use python3.6 or newer"
+    ) >= StrictVersion("3.7"), "Must use python3.7 or newer"
     with open("./requirements.txt", "r") as f:
         requirements = [l.strip() for l in f.readlines() if len(l.strip()) > 0]
 
@@ -459,10 +462,11 @@ if __name__ == "__main__":
         author="FAIR A-STAR",
         description="A high performance simulator for training embodied agents",
         long_description="",
-        packages=find_packages(),
+        packages=find_packages(where="src_python"),
+        package_dir={"": "src_python"},
         install_requires=requirements,
         tests_require=["hypothesis", "pytest-benchmark", "pytest"],
-        python_requires=">=3.6",
+        python_requires=">=3.7",
         # add extension module
         ext_modules=[CMakeExtension("habitat_sim._ext.habitat_sim_bindings", "src")],
         # add custom build_ext command

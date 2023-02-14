@@ -1,4 +1,8 @@
-find_package(MagnumPlugins REQUIRED StbImageImporter StbImageConverter TinyGltfImporter)
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+find_package(MagnumPlugins REQUIRED GltfImporter StbImageImporter StbImageConverter)
 
 set(ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH ./data/default.physics_config.json)
 set(ESP_DEFAULT_PHYSICS_CONFIG
@@ -46,9 +50,9 @@ target_link_libraries(
   PUBLIC core
          scene
          assets
+         MagnumPlugins::GltfImporter
          MagnumPlugins::StbImageImporter
          MagnumPlugins::StbImageConverter
-         MagnumPlugins::TinyGltfImporter
 )
 
 set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)

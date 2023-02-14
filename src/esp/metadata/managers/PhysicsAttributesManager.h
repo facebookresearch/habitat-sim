@@ -1,9 +1,11 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
 #ifndef ESP_METADATA_MANAGERS_PHYSICSATTRIBUTEMANAGER_H_
 #define ESP_METADATA_MANAGERS_PHYSICSATTRIBUTEMANAGER_H_
+
+#include <utility>
 
 #include "AttributesManagerBase.h"
 
@@ -17,13 +19,16 @@ namespace Cr = Corrade;
 namespace esp {
 namespace metadata {
 namespace managers {
+using core::managedContainers::ManagedFileBasedContainer;
+using core::managedContainers::ManagedObjectAccess;
+
 class PhysicsAttributesManager
     : public AttributesManager<attributes::PhysicsManagerAttributes,
-                               core::ManagedObjectAccess::Copy> {
+                               ManagedObjectAccess::Copy> {
  public:
   PhysicsAttributesManager()
       : AttributesManager<attributes::PhysicsManagerAttributes,
-                          core::ManagedObjectAccess::Copy>::
+                          ManagedObjectAccess::Copy>::
             AttributesManager("Physics Manager", "physics_config.json") {
     this->copyConstructorMap_["PhysicsManagerAttributes"] =
         &PhysicsAttributesManager::createObjectCopy<
@@ -130,8 +135,8 @@ class PhysicsAttributesManager
     // adds template to library, and returns either the ID of the existing
     // template referenced by physicsAttributesHandle, or the next available ID
     // if not found.
-    int physicsTemplateID = this->addObjectToLibrary(physicsAttributesTemplate,
-                                                     physicsAttributesHandle);
+    int physicsTemplateID = this->addObjectToLibrary(
+        std::move(physicsAttributesTemplate), physicsAttributesHandle);
     return physicsTemplateID;
   }  // PhysicsAttributesManager::registerObjectFinalize
 

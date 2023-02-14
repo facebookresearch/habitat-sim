@@ -1,7 +1,10 @@
-#include "esp/bindings/Bindings.h"
-#include "esp/physics/PhysicsManager.h"
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
 
-#include "python/corrade/EnumOperators.h"
+#include "esp/bindings/Bindings.h"
+#include "esp/bindings/EnumOperators.h"
+#include "esp/physics/PhysicsManager.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;
@@ -207,7 +210,7 @@ void initPhysicsBindings(py::module& m) {
       .value("UserGroup8", CollisionGroup::UserGroup8)
       .value("UserGroup9", CollisionGroup::UserGroup9)
       .value("None", CollisionGroup{});
-  corrade::enumOperators(collisionGroups);
+  pybindEnumOperators(collisionGroups);
 
   // ==== class object CollisionGroupHelper ====
   py::class_<CollisionGroupHelper, std::shared_ptr<CollisionGroupHelper>>(

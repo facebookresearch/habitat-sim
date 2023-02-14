@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -16,6 +16,16 @@ PhysicsManagerAttributes::PhysicsManagerAttributes(const std::string& handle)
   setFrictionCoefficient(0.4);
   setRestitutionCoefficient(0.1);
 }  // PhysicsManagerAttributes ctor
+
+void PhysicsManagerAttributes::writeValuesToJson(
+    io::JsonGenericValue& jsonObj,
+    io::JsonAllocator& allocator) const {
+  writeValueToJson("physics_simulator", jsonObj, allocator);
+  writeValueToJson("timestep", jsonObj, allocator);
+  writeValueToJson("gravity", jsonObj, allocator);
+  writeValueToJson("friction_coefficient", jsonObj, allocator);
+  writeValueToJson("restitution_coefficient", jsonObj, allocator);
+}  // PhysicsManagerAttributes::writeValuesToJson
 
 }  // namespace attributes
 }  // namespace metadata

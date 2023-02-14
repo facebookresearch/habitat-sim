@@ -1,14 +1,17 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
 // Code adapted from Bullet3/examples/Importers/ImportURDFDemo ...
 
+#include "URDFImporter.h"
+
 #include <iostream>
 
 #include <Corrade/Utility/DebugStl.h>
-#include <Corrade/Utility/Directory.h>
-#include "URDFImporter.h"
+#include <Corrade/Utility/Path.h>
+#include "esp/assets/ResourceManager.h"
+#include "esp/metadata/managers/AssetAttributesManager.h"
 
 namespace Mn = Magnum;
 
@@ -19,9 +22,11 @@ bool URDFImporter::loadURDF(const std::string& filename,
                             float globalScale,
                             float massScale,
                             bool forceReload) {
-  if ((modelCache_.count(filename) == 0u) || forceReload) {
-    if (!Corrade::Utility::Directory::exists(filename) ||
-        Corrade::Utility::Directory::isDirectory(filename)) {
+  auto modelCacheIter = modelCache_.find(filename);
+  // if map not found or forcing reload
+  if ((modelCacheIter == modelCache_.end()) || forceReload) {
+    if (!Corrade::Utility::Path::exists(filename) ||
+        Corrade::Utility::Path::isDirectory(filename)) {
       ESP_DEBUG() << "File does not exist:" << filename
                   << ". Aborting URDF parse/load.";
       return false;
@@ -40,15 +45,15 @@ bool URDFImporter::loadURDF(const std::string& filename,
       urdfModel->printKinematicChain();
     }
 
-    // if reloading, clear the old model
-    if (modelCache_.count(filename) != 0u) {
-      modelCache_.erase(filename);
+    // if reloading, clear the old model if exists
+    if (modelCacheIter != modelCache_.end()) {
+      modelCache_.erase(modelCacheIter);
     }
 
-    // register the new model
-    modelCache_.emplace(filename, urdfModel);
+    // register the new model and set to iterator
+    modelCacheIter = modelCache_.emplace(filename, urdfModel).first;
   }
-  activeModel_ = modelCache_.at(filename);
+  activeModel_ = modelCacheIter->second;
 
   // re-scale the cached model
   activeModel_->setGlobalScaling(globalScale);
@@ -71,7 +76,7 @@ void URDFImporter::getLinkChildIndices(
   auto link = activeModel_->getLink(linkIndex);
 
   if (link != nullptr) {
-    for (size_t i = 0; i < link->m_childLinks.size(); i++) {
+    for (size_t i = 0; i < link->m_childLinks.size(); ++i) {
       int childIndex = link->m_childLinks[i].lock()->m_linkIndex;
       childLinkIndices.push_back(childIndex);
     }
@@ -278,7 +283,7 @@ void URDFImporter::importURDFAssets() {
     // handle
     for (auto& visual : link->m_visualArray) {
       assets::AssetInfo visualMeshInfo{assets::AssetType::UNKNOWN};
-      visualMeshInfo.requiresLighting = true;
+      visualMeshInfo.forceFlatShading = false;
 
       std::shared_ptr<io::URDF::Material> material =
           visual.m_geometry.m_localMaterial;

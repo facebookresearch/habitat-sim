@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -15,8 +15,10 @@
 
 namespace esp {
 namespace core {
+namespace managedContainers {
 enum class ManagedObjectAccess;
 class ManagedContainerBase;
+}  // namespace managedContainers
 }  // namespace core
 namespace physics {
 
@@ -30,11 +32,15 @@ namespace physics {
  */
 template <class T>
 class PhysicsObjectBaseManager
-    : public esp::core::ManagedContainer<T, core::ManagedObjectAccess::Copy> {
+    : public esp::core::managedContainers::ManagedContainer<
+          T,
+          core::managedContainers::ManagedObjectAccess::Copy> {
  public:
   typedef std::shared_ptr<T> ObjWrapperPtr;
   explicit PhysicsObjectBaseManager(const std::string& objType)
-      : esp::core::ManagedContainer<T, core::ManagedObjectAccess::Copy>::
+      : core::managedContainers::ManagedContainer<
+            T,
+            core::managedContainers::ManagedObjectAccess::Copy>::
             ManagedContainer(objType) {}
   ~PhysicsObjectBaseManager() override = default;
 
@@ -42,7 +48,7 @@ class PhysicsObjectBaseManager
    * @brief set the weak reference to the physics manager that owns this wrapper
    * manager
    */
-  void setPhysicsManager(std::weak_ptr<esp::physics::PhysicsManager> physMgr) {
+  void setPhysicsManager(std::weak_ptr<physics::PhysicsManager> physMgr) {
     weakPhysManager_ = std::move(physMgr);
   }
 
@@ -95,13 +101,15 @@ class PhysicsObjectBaseManager
       const std::string& objectTypeName,
       CORRADE_UNUSED bool builtFromConfig) override {
     // construct a new wrapper based on the passed object
-    if (managedObjTypeConstructorMap_.count(objectTypeName) == 0) {
-      ESP_ERROR() << "<" << Magnum::Debug::nospace << this->objectType_
-                  << Magnum::Debug::nospace << "> Unknown constructor type"
-                  << objectTypeName << ".  Aborting.";
+    auto mgdObjTypeCtorMapIter =
+        managedObjTypeConstructorMap_.find(objectTypeName);
+    if (mgdObjTypeCtorMapIter == managedObjTypeConstructorMap_.end()) {
+      ESP_ERROR(Mn::Debug::Flag::NoSpace)
+          << "<" << this->objectType_ << "> Unknown constructor type"
+          << objectTypeName << ".  Aborting.";
       return nullptr;
     }
-    auto newWrapper = (*this.*managedObjTypeConstructorMap_[objectTypeName])();
+    auto newWrapper = (*this.*(mgdObjTypeCtorMapIter->second))();
 
     return newWrapper;
   }  // RigidObjectManager::initNewObjectInternal(
@@ -120,7 +128,7 @@ class PhysicsObjectBaseManager
                              const std::string& objectHandle,
                              CORRADE_UNUSED bool forceRegistration) override {
     // Add wrapper to template library
-    return this->addObjectToLibrary(object, objectHandle);
+    return this->addObjectToLibrary(std::move(object), objectHandle);
   }  // PhysicsObjectBaseManager::registerObjectFinalize
 
   /**

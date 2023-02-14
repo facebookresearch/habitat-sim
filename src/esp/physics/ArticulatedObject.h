@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -253,11 +253,8 @@ class ArticulatedLink : public RigidBase {
   /**
    * @brief Not used for articulated links.  Set or reset the object's state
    * using the object's specified @p sceneInstanceAttributes_.
-   * @param defaultCOMCorrection The default value of whether COM-based
-   * translation correction needs to occur.
    */
-  void resetStateFromSceneInstanceAttr(
-      CORRADE_UNUSED bool defaultCOMCorrection = false) override {
+  void resetStateFromSceneInstanceAttr() override {
     ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
 
@@ -331,8 +328,9 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
       // base link
       return baseLink_->node();
     }
-    CORRADE_INTERNAL_ASSERT(links_.count(linkId));
-    return links_.at(linkId)->node();
+    auto linkIter = links_.find(linkId);
+    CORRADE_INTERNAL_ASSERT(linkIter != links_.end());
+    return linkIter->second->node();
   }
 
   /**
@@ -346,8 +344,9 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
       // base link
       return baseLink_->visualNodes_;
     }
-    CORRADE_INTERNAL_ASSERT(links_.count(linkId));
-    return links_.at(linkId)->visualNodes_;
+    auto linkIter = links_.find(linkId);
+    CORRADE_INTERNAL_ASSERT(linkIter != links_.end());
+    return linkIter->second->visualNodes_;
   }
 
   /**
@@ -399,8 +398,10 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
     if (id == -1) {
       return *baseLink_.get();
     }
-    CORRADE_INTERNAL_ASSERT(links_.count(id));
-    return *links_.at(id).get();
+
+    auto linkIter = links_.find(id);
+    CORRADE_INTERNAL_ASSERT(linkIter != links_.end());
+    return *linkIter->second;
   }
 
   /**
@@ -498,6 +499,19 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   virtual std::vector<float> getJointPositions() { return {}; }
 
   /**
+   * @brief Get the torques on each joint
+   *
+   * @param fixedTimeStep The physics timestep used by the simulator.  Necessary
+   * to convert impulse into torque.
+   *
+   * @return Vector of torques on each joint
+   */
+  virtual std::vector<float> getJointMotorTorques(
+      CORRADE_UNUSED double fixedTimeStep) {
+    return {};
+  }
+
+  /**
    * @brief Get position limits for all joints.
    *
    * @return The active joint position limits. Default implementation returns
@@ -587,10 +601,11 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * @return The link's parent joint's name.
    */
   virtual std::string getLinkJointName(CORRADE_UNUSED int linkId) const {
-    ESP_CHECK(links_.count(linkId) != 0,
+    auto linkIter = links_.find(linkId);
+    ESP_CHECK(linkIter != links_.end(),
               "ArticulatedObject::getLinkJointName - no link with linkId ="
                   << linkId);
-    return links_.at(linkId)->linkJointName;
+    return linkIter->second->linkJointName;
   }
 
   /**
@@ -603,10 +618,12 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
     if (linkId == -1) {
       return baseLink_->linkName;
     }
+
+    auto linkIter = links_.find(linkId);
     ESP_CHECK(
-        links_.count(linkId) != 0,
+        linkIter != links_.end(),
         "ArticulatedObject::getLinkName - no link with linkId =" << linkId);
-    return links_.at(linkId)->linkName;
+    return linkIter->second->linkName;
   }
 
   /**
@@ -704,22 +721,24 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * @brief Remove and destroy a joint motor.
    */
   virtual void removeJointMotor(const int motorId) {
+    auto jointMotorIter = jointMotors_.find(motorId);
     ESP_CHECK(
-        jointMotors_.count(motorId) > 0,
+        jointMotorIter != jointMotors_.end(),
         "ArticulatedObject::removeJointMotor - No motor exists with motorId ="
             << motorId);
-    jointMotors_.erase(motorId);
+    jointMotors_.erase(jointMotorIter);
   }
 
   /**
    * @brief Get a copy of the JointMotorSettings for an existing motor.
    */
   virtual JointMotorSettings getJointMotorSettings(const int motorId) {
-    ESP_CHECK(jointMotors_.count(motorId) > 0,
+    auto jointMotorIter = jointMotors_.find(motorId);
+    ESP_CHECK(jointMotorIter != jointMotors_.end(),
               "ArticulatedObject::getJointMotorSettings - No motor exists with "
               "motorId ="
                   << motorId);
-    return jointMotors_.at(motorId)->settings;
+    return jointMotorIter->second->settings;
   }
 
   /**
@@ -727,15 +746,16 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    */
   virtual void updateJointMotor(const int motorId,
                                 const JointMotorSettings& settings) {
+    auto jointMotorIter = jointMotors_.find(motorId);
     ESP_CHECK(
-        jointMotors_.count(motorId) > 0,
+        jointMotorIter != jointMotors_.end(),
         "ArticulatedObject::updateJointMotor - No motor exists with motorId ="
             << motorId);
     ESP_CHECK(
-        jointMotors_.at(motorId)->settings.motorType == settings.motorType,
+        jointMotorIter->second->settings.motorType == settings.motorType,
         "ArticulatedObject::updateJointMotor - JointMotorSettings.motorType "
         "does not match joint type.");
-    jointMotors_.at(motorId)->settings = settings;
+    jointMotorIter->second->settings = settings;
   }
 
   /**
@@ -795,14 +815,30 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   /**
    * @brief Returns the @ref
    * metadata::attributes::SceneAOInstanceAttributes used to place this
-   * Articulated object in the scene.
-   * @return a copy of the scene instance attributes used to place this object
-   * in the scene.
+   * Articulated Object initially in the scene.
+   * @return a read-only copy of the scene instance attributes used to place
+   * this object in the scene.
    */
   std::shared_ptr<const metadata::attributes::SceneAOInstanceAttributes>
-  getSceneInstanceAttributes() const {
-    return PhysicsObjectBase::getSceneInstanceAttrInternal<
+  getInitObjectInstanceAttr() const {
+    return PhysicsObjectBase::getInitObjectInstanceAttrInternal<
         const metadata::attributes::SceneAOInstanceAttributes>();
+  }
+
+  /**
+   * @brief Return a @ref
+   * metadata::attributes::SceneAOInstanceAttributes reflecting the current
+   * state of this Articulated Object.
+   * Note : base PhysicsManager implementation does not support state changes on
+   * ArticulatedObjects, so no change will occur from initialization
+   * InstanceAttributes.
+   * @return a @ref SceneAOInstanceAttributes reflecting this Articulated
+   * Object's current state
+   */
+  virtual std::shared_ptr<metadata::attributes::SceneAOInstanceAttributes>
+  getCurrentStateInstanceAttr() {
+    return PhysicsObjectBase::getCurrentObjectInstanceAttrInternal<
+        metadata::attributes::SceneAOInstanceAttributes>();
   }
 
  protected:

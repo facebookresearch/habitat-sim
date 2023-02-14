@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates.
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
@@ -67,6 +67,7 @@ option(
   "Wether or not to build the basis compressor.  Loading basis compressed meshes does NOT require this."
   OFF
 )
+option(BUILD_WITH_AUDIO "Build Habitat-Sim with Audio sensor" OFF)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -205,4 +206,10 @@ endif()
 if(BUILD_GUI_VIEWERS)
   message("Building GUI viewer")
   add_subdirectory(utils/viewer)
+
+  # The replayer utility consumes *huge* files supplied on a command line,
+  # which makes it useless in a browser setting. Thus not building it at all.
+  if(NOT CORRADE_TARGET_EMSCRIPTEN)
+    add_subdirectory(utils/replayer)
+  endif()
 endif()

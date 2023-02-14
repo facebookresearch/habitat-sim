@@ -1,14 +1,17 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
 #ifndef ESP_GFX_PBRDRAWABLE_H_
 #define ESP_GFX_PBRDRAWABLE_H_
 
+#include <Corrade/Containers/Optional.h>
+
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/PbrImageBasedLighting.h"
 #include "esp/gfx/PbrShader.h"
 #include "esp/gfx/ShaderManager.h"
+#include "esp/gfx/ShadowMapManager.h"
 namespace esp {
 namespace gfx {
 
@@ -33,6 +36,16 @@ class PbrDrawable : public Drawable {
    *  @param lightSetupKey the key value for the light resource
    */
   void setLightSetup(const Magnum::ResourceKey& lightSetupKey) override;
+
+  /**
+   * @brief Set the shadow map info
+   * @param[in] manager, stores the shadow maps
+   * @param[in] keys, keys to retrieve the shadow maps
+   * @param[in] shadowFlag, can only be either ShadowsPCF or ShadowsVSM
+   */
+  void setShadowData(ShadowMapManager& manager,
+                     ShadowMapKeys& keys,
+                     PbrShader::Flag shadowFlag);
 
   static constexpr const char* SHADER_KEY_TEMPLATE = "PBR-lights={}-flags={}";
 
@@ -87,6 +100,8 @@ class PbrDrawable : public Drawable {
   Magnum::Resource<MaterialData, PbrMaterialData> materialData_;
   Magnum::Resource<LightSetup> lightSetup_;
   PbrImageBasedLighting* pbrIbl_ = nullptr;
+  ShadowMapManager* shadowMapManger_ = nullptr;
+  ShadowMapKeys* shadowMapKeys_ = nullptr;
 };
 
 }  // namespace gfx

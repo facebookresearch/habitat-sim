@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -7,8 +7,9 @@
 
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/Containers/Reference.h>
-#include "esp/assets/ResourceManager.h"
 #include "esp/core/RigidState.h"
+#include "esp/gfx/ShaderManager.h"
+#include "esp/metadata/attributes/SceneInstanceAttributes.h"
 #include "esp/physics/CollisionGroupHelper.h"
 
 /** @file
@@ -18,6 +19,9 @@
  */
 
 namespace esp {
+namespace assets {
+class ResourceManager;
+}
 
 namespace physics {
 
@@ -399,11 +403,8 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   /**
    * @brief Set or reset the object's state using the object's specified @p
    * sceneInstanceAttributes_.
-   * @param defaultCOMCorrection The default value of whether COM-based
-   * translation correction needs to occur.
    */
-  virtual void resetStateFromSceneInstanceAttr(
-      CORRADE_UNUSED bool defaultCOMCorrection = false) = 0;
+  virtual void resetStateFromSceneInstanceAttr() = 0;
 
   /**
    * @brief Set this object's @ref
@@ -416,7 +417,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
 
   template <class U>
   void setSceneInstanceAttr(std::shared_ptr<U> instanceAttr) {
-    _sceneInstanceAttributes = std::move(instanceAttr);
+    _initObjInstanceAttrs = std::move(instanceAttr);
   }  // setSceneInstanceAttr
 
   /**
@@ -457,11 +458,47 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * instance or nullptr if no template exists.
    */
   template <class T>
-  std::shared_ptr<T> getSceneInstanceAttrInternal() const {
-    if (!_sceneInstanceAttributes) {
+  std::shared_ptr<T> getInitObjectInstanceAttrInternal() const {
+    if (!_initObjInstanceAttrs) {
       return nullptr;
     }
-    return T::create(*(static_cast<T*>(_sceneInstanceAttributes.get())));
+    return T::create(*(static_cast<T*>(_initObjInstanceAttrs.get())));
+  }
+
+  /**
+   * @brief Reverses the COM correction transformation for objects that require
+   * it. Currently a simple passthrough for stages and Articulated Objects.
+   */
+  virtual Magnum::Vector3 getUncorrectedTranslation() const {
+    return getTranslation();
+  }
+
+  /** @brief Accessed internally. Get an appropriately cast copy of the @ref
+   * metadata::attributes::SceneObjectInstanceAttributes used to place the
+   * object within the scene, updated to have the c.
+   * @return A copy of the initialization template used to create this object
+   * instance or nullptr if no template exists.
+   */
+  template <class T>
+  std::shared_ptr<T> getCurrentObjectInstanceAttrInternal() {
+    if (!_initObjInstanceAttrs) {
+      return nullptr;
+    }
+    static_assert(
+        std::is_base_of<metadata::attributes::SceneObjectInstanceAttributes,
+                        T>::value,
+        "PhysicsObjectBase : Cast of SceneObjectInstanceAttributes must be to "
+        "class that inherits from SceneObjectInstanceAttributes");
+
+    std::shared_ptr<T> initAttrs = std::const_pointer_cast<T>(
+        T::create(*(static_cast<const T*>(_initObjInstanceAttrs.get()))));
+    // set values
+    initAttrs->setTranslation(getUncorrectedTranslation());
+    initAttrs->setRotation(getRotation());
+    initAttrs->setMotionType(
+        metadata::attributes::getMotionTypeName(objectMotionType_));
+
+    return initAttrs;
   }
 
   /**
@@ -512,7 +549,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * creation.
    */
   std::shared_ptr<const metadata::attributes::SceneObjectInstanceAttributes>
-      _sceneInstanceAttributes = nullptr;
+      _initObjInstanceAttrs = nullptr;
 
  public:
   ESP_SMART_POINTERS(PhysicsObjectBase)

@@ -1,3 +1,7 @@
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 import itertools
 from os import path as osp
 
@@ -26,12 +30,6 @@ def powerset(iterable):
         ("examples/tutorials/stereo_agent.py", "--no-display"),
         ("examples/tutorials/lighting_tutorial.py", "--no-show-images"),
         ("examples/tutorials/new_actions.py",),
-        # This is deprecated and replaced by the managed_rigid_object_tutorial
-        # (
-        #     "examples/tutorials/nb_python/rigid_object_tutorial.py",
-        #     "--no-show-video",
-        #     "--no-make-video",
-        # ),
         (
             "examples/tutorials/nb_python/managed_rigid_object_tutorial.py",
             "--no-show-video",

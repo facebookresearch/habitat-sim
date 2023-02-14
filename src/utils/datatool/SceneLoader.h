@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -8,16 +8,11 @@
 #include <string>
 
 #include <Corrade/PluginManager/Manager.h>
+#include <Magnum/Trade/Trade.h>
 
 #include "esp/assets/Asset.h"
 #include "esp/assets/CollisionMeshData.h"
 #include "esp/assets/MeshData.h"
-
-namespace Magnum {
-namespace Trade {
-class AbstractImporter;
-}
-}  // namespace Magnum
 
 namespace esp {
 namespace assets {

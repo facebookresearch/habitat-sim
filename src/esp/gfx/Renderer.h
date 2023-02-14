@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -6,6 +6,7 @@
 #define ESP_GFX_RENDERER_H_
 
 #include "esp/core/Esp.h"
+#include "esp/gfx/CubeMap.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/WindowlessContext.h"
 #include "esp/scene/SceneGraph.h"
@@ -91,8 +92,13 @@ class Renderer {
    * semantic
    */
   void visualize(sensor::VisualSensor& visualSensor,
-                 float colorMapOffset = 1.0f / 512.0f,
-                 float colorMapScale = 1.0f / 256.0f);
+                 float colorMapOffset,
+                 float colorMapScale);
+  /**
+   * @brief visualize the observation of a non-rgb visual sensor, e.g., depth,
+   * semantic, using already-specified offset and scale.
+   */
+  void visualize(sensor::VisualSensor& visualSensor);
 
 #ifdef ESP_BUILD_WITH_BACKGROUND_RENDERER
   /**
@@ -121,6 +127,15 @@ class Renderer {
    */
   void waitDrawJobs();
 #endif
+  /**
+   * @brief Sets the colormap for the @ref TextureVisualizerShader used for
+   * Semantic Scene rendering. Note, these colors are only used for
+   * visualization purposes.
+   * @param colormap The colormap to use, where idxs correspond to per-vertex
+   * semantic IDs.
+   */
+  void setSemanticVisualizerColormap(
+      Cr::Containers::ArrayView<const Mn::Vector3ub> colorMap);
 
   /**
    * @brief Acquires ownership of the scene graph from the background render
@@ -151,6 +166,19 @@ class Renderer {
    * @param[in] bindingFlags flags, such as to control the bindings
    */
   void bindRenderTarget(sensor::VisualSensor& sensor, Flags bindingFlags = {});
+
+  /**
+   * @brief apply gaussian filtering to source cubemap and store the result in
+   * target cubemap
+   * @param[in,out] target, the target cubemap
+   * @param[in,out] helper, a helper cubemap with the same cube size, and
+   * texture type (e.g., color, variance shadow map)
+   * @param[in] type cubemap texture type, indicating which texture type the
+   * filtering would apply to. It can ONLY be Color, VarianceShadowMap
+   */
+  void applyGaussianFiltering(CubeMap& target,
+                              CubeMap& helper,
+                              CubeMap::TextureType type);
 
   ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(Renderer)
 };

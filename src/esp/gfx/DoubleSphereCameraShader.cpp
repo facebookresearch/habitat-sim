@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 #include "DoubleSphereCameraShader.h"
@@ -46,7 +46,7 @@ DoubleSphereCameraShader::DoubleSphereCameraShader(
   Mn::GL::Shader frag{glVersion, Mn::GL::Shader::Type::Fragment};
 
   // Add macros
-  vert.addSource(rs.get("bigTriangle.vert"));
+  vert.addSource(rs.getString("bigTriangle.vert"));
 
   std::stringstream outputAttributeLocationsStream;
 
@@ -69,9 +69,9 @@ DoubleSphereCameraShader::DoubleSphereCameraShader(
       .addSource(flags_ & CubeMapShaderBase::Flag::ObjectIdTexture
                      ? "#define OBJECT_ID_TEXTURE\n"
                      : "")
-      .addSource(rs.get("doubleSphereCamera.frag"));
+      .addSource(rs.getString("doubleSphereCamera.frag"));
 
-  CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));
+  CORRADE_INTERNAL_ASSERT_OUTPUT(vert.compile() && frag.compile());
 
   attachShaders({vert, frag});
 

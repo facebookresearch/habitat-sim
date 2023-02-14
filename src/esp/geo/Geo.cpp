@@ -1,10 +1,12 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
 #include "esp/geo/Geo.h"
 
+#include <Magnum/Math/Color.h>
 #include <Magnum/Math/FunctionsBatch.h>
+#include <Magnum/Math/Matrix4.h>
 #include <Magnum/Primitives/Circle.h>
 #include <Magnum/Trade/MeshData.h>
 #include <cmath>
@@ -12,7 +14,7 @@
 
 namespace Mn = Magnum;
 namespace Cr = Corrade;
-
+using Magnum::Math::Literals::operator""_rgb;
 namespace esp {
 namespace geo {
 
@@ -143,10 +145,10 @@ void buildCatmullRomTraj4Points(const std::vector<Mn::Vector3>& pts,
   // t values are based on distances between sequential points and type of
   // spline
   float t0 = 0.0f;
-  float t1 = ptKnotVals[stIdx];
-  float t2 = ptKnotVals[stIdx + 1] + t1;
-  float t3 = ptKnotVals[stIdx + 2] + t2;
-  float incr = (t2 - t1) / (1.0f * numInterp);
+  float t1 = ptKnotVals[stIdx + 1];
+  float t2 = ptKnotVals[stIdx + 2] + t1;
+  float t3 = ptKnotVals[stIdx + 3] + t2;
+  float incr = (t2 - t1) / (1.0f * (numInterp - 1));
   for (int i = 0; i < numInterp; ++i) {
     float t = t1 + i * incr;
     // don't allow float error to cause t to go past 3rd interpolated point in
@@ -172,8 +174,11 @@ std::vector<Mn::Vector3> buildCatmullRomTrajOfPoints(
   alpha = clamp(alpha, 0.0f, 1.0f);
   // points in trajectory
   std::vector<Mn::Vector3> trajectory;
+  trajectory.reserve(pts.size() * numInterp);
   std::vector<Mn::Vector3> tmpPoints;
+  tmpPoints.reserve(pts.size() + 2);
   std::vector<float> ptKnotVals;
+  ptKnotVals.reserve(pts.size() + 2);
   // build padded array of points to use to synthesize centripetal catmul-rom
   // trajectory by adding "ghost" point so we start drawing from initial point
   // in trajectory.
@@ -181,8 +186,7 @@ std::vector<Mn::Vector3> buildCatmullRomTrajOfPoints(
   ptKnotVals.emplace_back(calcWeightedDistance(tmpPoints[0], pts[0], alpha));
   for (int i = 0; i < pts.size(); ++i) {
     tmpPoints.emplace_back(pts[i]);
-    ptKnotVals.emplace_back(
-        calcWeightedDistance(tmpPoints[i], tmpPoints[i + 1], alpha));
+    ptKnotVals.emplace_back(calcWeightedDistance(tmpPoints[i], pts[i], alpha));
   }
   // add final ghost point in trajectory
   int lastIdx = pts.size() - 1;
@@ -207,12 +211,70 @@ std::vector<float> getPointDistsAlongTrajectory(
   return dists;
 }  // getPointDistsAlongTrajectory
 
+namespace {
+Mn::Vector3 convertClrToInterpClrVector(const Mn::Color3& clrFloat,
+                                        ColorSpace clrType) {
+  Mn::Color3ub clr = Mn::Math::pack<Mn::Color3ub>(clrFloat);
+  switch (clrType) {
+    case ColorSpace::RGBA: {
+      return Mn::Vector3(clr.r(), clr.g(), clr.b());
+    }
+    case ColorSpace::sRGBA: {
+      return clr.toSrgb();
+    }
+    case ColorSpace::HSV: {
+      Mn::ColorHsv tmpHsv = clr.toHsv();
+      return Mn::Vector3(tmpHsv.hue.operator float(), tmpHsv.saturation,
+                         tmpHsv.value);
+    }
+    case ColorSpace::XYZ: {
+      return clr.toXyz();
+    }
+    default: {
+      CORRADE_ASSERT_UNREACHABLE("Unknown Geo::ColorSpace specified.",
+                                 Mn::Vector3({clr.r(), clr.g(), clr.b()}));
+    }
+  }
+}  // convertClrToInterpClrVector
+
+Mn::Color3ub convertInterpClrVecToUBClr(const Mn::Vector3& clrVec,
+                                        ColorSpace clrType) {
+  Mn::Color3ub resClr(clrVec);
+  switch (clrType) {
+    case ColorSpace::RGBA: {
+      break;
+    }
+    case ColorSpace::sRGBA: {
+      resClr = Mn::Color3ub::fromSrgb(clrVec);
+      break;
+    }
+    case ColorSpace::HSV: {
+      resClr =
+          Mn::Color3ub::fromHsv({Mn::Deg(clrVec[0]), clrVec[1], clrVec[2]});
+      break;
+    }
+    case ColorSpace::XYZ: {
+      resClr = Mn::Color3ub::fromXyz(clrVec);
+      break;
+    }
+    default: {
+      CORRADE_ASSERT_UNREACHABLE("Unknown Geo::ColorSpace specified.",
+                                 {clrVec});
+    }
+  }
+  return resClr;
+}  // convertInterpClrVecToUBClr
+
+}  // namespace
+
 Mn::Trade::MeshData buildTrajectoryTubeSolid(
     const std::vector<Mn::Vector3>& pts,
+    const std::vector<Mn::Color3>& interpColors,
     int numSegments,
     float radius,
     bool smooth,
-    int numInterp) {
+    int numInterp,
+    ColorSpace clrSpace) {
   // 1. Build smoothed trajectory through passed points if requested
   // points in trajectory
   // A centripetal CR spline (alpha == .5) will not have cusps, while remaining
@@ -224,13 +286,46 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
   // size of trajectory
   const Mn::UnsignedInt trajSize = trajectory.size();
 
-  // 2. Build mesh vertex points around each trajectory point at appropriate
+  // 2. Build list of interpolating colors for each ring of trajectory.
+  // want to evenly interpolate between colors provided
+  const Mn::UnsignedInt numColors = interpColors.size();
+  std::vector<Mn::Vector3> trajColors;
+
+  if (numColors == 1) {
+    trajColors.reserve(trajSize);
+    // with only 1 color, just make duplicates of color for every trajectory
+    // point/vertex
+    for (const auto& pt : trajectory) {
+      trajColors.emplace_back(
+          convertClrToInterpClrVector(interpColors[0], clrSpace));
+    }
+
+  } else {
+    // interpolate in hsv space - first convert src colors to HSV
+    std::vector<Mn::Vector3> srcClrs;
+    srcClrs.reserve(numColors);
+    for (const auto& clr : interpColors) {
+      srcClrs.emplace_back(convertClrToInterpClrVector(clr, clrSpace));
+    }
+    // determine how many interpolations we should have : trajColors should be
+    // trajSize in size
+    int numClrInterp = (trajSize / (numColors - 1)) + 1;
+    // now build interpolated vector of colors
+    trajColors = buildCatmullRomTrajOfPoints(srcClrs, numClrInterp, alpha);
+    // fill end of trajColors array with final color if smaller than size of
+    // trajectory
+    while (trajColors.size() < trajSize) {
+      trajColors.push_back(trajColors.back());
+    }
+  }
+
+  // 3. Build mesh vertex points around each trajectory point at appropriate
   // distance (radius). For each point in trajectory, add a wireframe circle
   // centered at that point, appropriately oriented based on tangents
 
   Cr::Containers::Array<Magnum::Vector3> circleVerts =
       Mn::Primitives::circle3DWireframe(numSegments).positions3DAsArray();
-  // normalized verts
+  // normalized verts will provide vert normals.
   Cr::Containers::Array<Magnum::Vector3> circleNormVerts{
       Cr::NoInit, sizeof(Magnum::Vector3) * numSegments};
 
@@ -247,6 +342,8 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
   struct Vertex {
     Mn::Vector3 position;
     Mn::Vector3 normal;
+    // vertex color default to white
+    Mn::Color3ub color = 0xffffff_rgb;
   };
 
   // Vertex data storage
@@ -255,12 +352,15 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
   // Cast memory to be a strided array so it can be accessed via slices.
   Cr::Containers::StridedArrayView1D<Vertex> vertices =
       Cr::Containers::arrayCast<Vertex>(vertexData);
-  // Position and normal views of vertex array
+  // Position, normal and color views of vertex array
   Cr::Containers::StridedArrayView1D<Mn::Vector3> positions =
       vertices.slice(&Vertex::position);
   Cr::Containers::StridedArrayView1D<Mn::Vector3> normals =
       vertices.slice(&Vertex::normal);
+  Cr::Containers::StridedArrayView1D<Mn::Color3ub> colors =
+      vertices.slice(&Vertex::color);
 
+  // Beginning Endcap
   Mn::UnsignedInt circlePtIDX = 0;
   Mn::Vector3 tangent = trajectory[1] - trajectory[0];
   // get the orientation matrix assuming y-up preference
@@ -272,14 +372,16 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
     // pre-rotated normal for circle is normalized point
     normals[circlePtIDX] =
         tangentOrientation.transformVector(circleNormVerts[i]);
+    colors[circlePtIDX] = convertInterpClrVecToUBClr(trajColors[0], clrSpace);
     ++circlePtIDX;
   }
-  // add cap vert at the end of the list
+  // add beginning cap vert at the end of the list
   // build vertex (circleVerts[i] is at radius)
   positions[vertexCount - 2] = trajectory[0];
-  // pre-rotated normal for circle is normalized point
+  // normal points out at beginning cap vert
   normals[vertexCount - 2] =
       tangentOrientation.transformVector({0.0f, 0.0f, -1.0f});
+  colors[vertexCount - 2] = convertInterpClrVecToUBClr(trajColors[0], clrSpace);
 
   for (Mn::UnsignedInt vertIx = 1; vertIx < trajSize - 1; ++vertIx) {
     const Mn::Vector3& vert = trajectory[vertIx];
@@ -296,9 +398,13 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
       // pre-rotated normal for circle is normalized point
       normals[circlePtIDX] =
           tangentOrientation.transformVector(circleNormVerts[i]);
+      colors[circlePtIDX] =
+          convertInterpClrVecToUBClr(trajColors[vertIx], clrSpace);
       ++circlePtIDX;
     }
   }
+
+  // Ending Endcap
   int idx = trajSize - 1;
   tangent = trajectory[idx] - trajectory[idx - 1];
   // get the orientation matrix assuming y-up preference
@@ -310,16 +416,19 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
     // pre-rotated normal for circle is normalized point
     normals[circlePtIDX] =
         tangentOrientation.transformVector(circleNormVerts[i]);
+    colors[circlePtIDX] = convertInterpClrVecToUBClr(trajColors[idx], clrSpace);
     ++circlePtIDX;
   }
-  // add cap verts
+  // add end cap vert
   // build vertex (circleVerts[i] is at radius)
   positions[vertexCount - 1] = trajectory[idx];
-  // pre-rotated normal for circle is normalized point
+  // normal points out at end cap vert
   normals[vertexCount - 1] =
       tangentOrientation.transformVector({0.0f, 0.0f, 1.0f});
+  colors[vertexCount - 1] =
+      convertInterpClrVecToUBClr(trajColors[idx], clrSpace);
 
-  // 3. Create polys between all points
+  // 4. Create polys between all points
   Cr::Containers::Array<char> indexData{
       Cr::NoInit, 6 * numSegments * trajSize * sizeof(Mn::UnsignedInt)};
   Cr::Containers::ArrayView<Mn::UnsignedInt> indices =
@@ -391,11 +500,63 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
       std::move(vertexData),
       {Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Position,
                                     positions},
-       Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Normal, normals}},
+       Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Normal, normals},
+       Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Color, colors}},
       static_cast<Mn::UnsignedInt>(positions.size())};
 
   return meshData;
-}  // ResourceManager::trajectoryTubeSolid
+}  // buildTrajectoryTubeSolid
+
+namespace {
+// TODO remove when/if Magnum ever supports this function for Color3ub
+constexpr const char Hex[]{"0123456789abcdef"};
+}  // namespace
+std::string getColorAsString(const Magnum::Color3ub& color) {
+  char out[] = "#______";
+  out[1] = Hex[(color.r() >> 4) & 0xf];
+  out[2] = Hex[(color.r() >> 0) & 0xf];
+  out[3] = Hex[(color.g() >> 4) & 0xf];
+  out[4] = Hex[(color.g() >> 0) & 0xf];
+  out[5] = Hex[(color.b() >> 4) & 0xf];
+  out[6] = Hex[(color.b() >> 0) & 0xf];
+  return std::string(out);
+}
+
+std::vector<std::set<uint32_t>> buildAdjList(
+    int numVerts,
+    const std::vector<uint32_t>& indexBuffer) {
+  // build adj list by assuming that each sequence of 3 indices in index list
+  // denote a triangle.  Idx matches vertex index in vert list, value is set of
+  // verts that are adjacent
+  std::vector<std::set<uint32_t>> adjList(numVerts, std::set<uint32_t>{});
+  for (size_t i = 0; i < indexBuffer.size(); i += 3) {
+    // find idxs of triangle
+    const uint32_t idx0 = indexBuffer[i];
+    const uint32_t idx1 = indexBuffer[i + 1];
+    const uint32_t idx2 = indexBuffer[i + 2];
+    // save adjacency info for triangle
+    adjList[idx0].insert(idx1);
+    adjList[idx1].insert(idx0);
+    adjList[idx0].insert(idx2);
+    adjList[idx2].insert(idx0);
+    adjList[idx1].insert(idx2);
+    adjList[idx2].insert(idx1);
+  }
+  return adjList;
+
+}  // buildAdjList
+
+uint32_t getValueAsUInt(const Mn::Color3ub& color) {
+  return (unsigned(color[0]) << 16) | (unsigned(color[1]) << 8) |
+         unsigned(color[2]);
+}
+uint32_t getValueAsUInt(const Mn::Color4ub& color) {
+  return (unsigned(color[0]) << 24) | (unsigned(color[1]) << 16) |
+         unsigned(color[2] << 8) | (unsigned(color[3]));
+}
+uint32_t getValueAsUInt(int color) {
+  return static_cast<uint32_t>(color);
+}
 
 }  // namespace geo
 }  // namespace esp

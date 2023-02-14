@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -22,6 +22,7 @@
 #include "BulletDynamics/Featherstone/btMultiBodyJointMotor.h"
 #include "BulletDynamics/Featherstone/btMultiBodyPoint2Point.h"
 
+#include "BulletCollisionHelper.h"
 #include "BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h"
 #include "BulletRigidObject.h"
 #include "BulletRigidStage.h"
@@ -56,7 +57,8 @@ class BulletPhysicsManager : public PhysicsManager {
    */
   explicit BulletPhysicsManager(
       assets::ResourceManager& _resourceManager,
-      const metadata::attributes::PhysicsManagerAttributes::cptr&
+      const std::shared_ptr<
+          const metadata::attributes::PhysicsManagerAttributes>&
           _physicsManagerAttributes);
 
   /** @brief Destructor which destructs necessary Bullet physics structures.*/
@@ -78,6 +80,8 @@ class BulletPhysicsManager : public PhysicsManager {
    * the components of the @ref ArticulatedObject.
    * @param forceReload If true, reload the source URDF from file, replacing the
    * cached model.
+   * @param maintainLinkOrder If true, maintain the order of link definitions
+   * from the URDF file as the link indices.
    * @param lightSetup The string name of the desired lighting setup to use.
    *
    * @return A unique id for the @ref ArticulatedObject, allocated from the same
@@ -89,6 +93,7 @@ class BulletPhysicsManager : public PhysicsManager {
       float globalScale = 1.0,
       float massScale = 1.0,
       bool forceReload = false,
+      bool maintainLinkOrder = false,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY) override;
 
   /**
@@ -106,6 +111,8 @@ class BulletPhysicsManager : public PhysicsManager {
    * the components of the @ref ArticulatedObject.
    * @param forceReload If true, reload the source URDF from file, replacing the
    * cached model.
+   * @param maintainLinkOrder If true, maintain the order of link definitions
+   * from the URDF file as the link indices.
    * @param lightSetup The string name of the desired lighting setup to use.
    *
    * @return A unique id for the @ref ArticulatedObject, allocated from the same
@@ -118,6 +125,7 @@ class BulletPhysicsManager : public PhysicsManager {
       float globalScale = 1.0,
       float massScale = 1.0,
       bool forceReload = false,
+      bool maintainLinkOrder = false,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY) override;
 
   /**
@@ -264,7 +272,33 @@ class BulletPhysicsManager : public PhysicsManager {
    *
    * @return the number of active contact points.
    */
-  int getNumActiveContactPoints() override;
+  int getNumActiveContactPoints() override {
+    return BulletCollisionHelper::get().getNumActiveContactPoints(
+        bWorld_.get());
+  }
+
+  /**
+   * @brief Query the number of overlapping pairs that were active during the
+   * collision detection check.
+   *
+   * When object bounding boxes overlap and either object is active, additional
+   * "narrowphase" collision-detection must be run. This count is a proxy for
+   * complexity/cost of collision-handling in the current scene. See also
+   * getNumActiveContactPoints.
+   *
+   * @return the number of active overlapping pairs.
+   */
+  int getNumActiveOverlappingPairs() override {
+    return BulletCollisionHelper::get().getNumActiveOverlappingPairs(
+        bWorld_.get());
+  }
+
+  /**
+   * @brief Get a summary of collision-processing from the last physics step.
+   */
+  std::string getStepCollisionSummary() override {
+    return BulletCollisionHelper::get().getStepCollisionSummary(bWorld_.get());
+  }
 
   /**
    * @brief Perform discrete collision detection for the scene.
@@ -397,15 +431,6 @@ class BulletPhysicsManager : public PhysicsManager {
   int recentNumSubStepsTaken_ = -1;
 
  private:
-  /** @brief Check if a particular mesh can be used as a collision mesh for
-   * Bullet.
-   * @param meshData The mesh to validate. Only a triangle mesh is valid. Checks
-   * that the only #ref Magnum::MeshPrimitive are @ref
-   * Magnum::MeshPrimitive::Triangles.
-   * @return true if valid, false otherwise.
-   */
-  bool isMeshPrimitiveValid(const assets::CollisionMeshData& meshData) override;
-
   /**
    * @brief Helper function for getting object and link unique ids from
    * btCollisionObject cache
@@ -427,8 +452,9 @@ class BulletPhysicsManager : public PhysicsManager {
    * @param objectId The unique id for the rigid or articulated object.
    */
   void removeObjectRigidConstraints(int objectId) {
-    if (objectConstraints_.count(objectId) > 0) {
-      for (auto c_id : objectConstraints_.at(objectId)) {
+    auto objConstraintIter = objectConstraints_.find(objectId);
+    if (objConstraintIter != objectConstraints_.end()) {
+      for (auto c_id : objConstraintIter->second) {
         removeRigidConstraint(c_id);
       }
       objectConstraints_.erase(objectId);

@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -7,11 +7,11 @@
 
 #include "esp/assets/Asset.h"
 #include "esp/assets/BaseMesh.h"
-#include "esp/assets/GenericInstanceMeshData.h"
-#include "esp/assets/MeshData.h"
+#include "esp/assets/GenericSemanticMeshData.h"
 #include "esp/core/Esp.h"
 #include "esp/geo/VoxelWrapper.h"
 #include "esp/metadata/attributes/AttributesBase.h"
+#include "esp/metadata/attributes/ObjectAttributes.h"
 #include "esp/physics/PhysicsObjectBase.h"
 
 /** @file
@@ -22,11 +22,6 @@ namespace esp {
 namespace assets {
 class ResourceManager;
 }
-namespace metadata {
-namespace attributes {
-class AbstractObjectAttributes;
-}  // namespace attributes
-}  // namespace metadata
 
 namespace physics {
 
@@ -62,7 +57,8 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
    * @return true if initialized successfully, false otherwise.
    */
   virtual bool initialize(
-      metadata::attributes::AbstractObjectAttributes::ptr initAttributes) = 0;
+      std::shared_ptr<metadata::attributes::AbstractObjectAttributes>
+          initAttributes) = 0;
 
   /**
    * @brief Finalize the creation of @ref RigidObject or @ref
@@ -207,6 +203,38 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
   virtual void setFrictionCoefficient(
       CORRADE_UNUSED const double frictionCoefficient) {}
 
+  /** @brief Get the scalar rolling friction coefficient of the object. Only
+   * used for dervied dynamic implementations of @ref RigidObject.
+   * @return The scalar rolling friction coefficient of the object. Damps
+   * angular velocity about axis orthogonal to the contact normal to prevent
+   * rounded shapes from rolling forever.
+   */
+  virtual double getRollingFrictionCoefficient() const { return 0.0; }
+
+  /** @brief Set the scalar rolling friction coefficient of the object. Only
+   * used for dervied dynamic implementations of @ref RigidObject.
+   * @param rollingFrictionCoefficient The new scalar rolling friction
+   * coefficient of the object. Damps angular velocity about axis orthogonal to
+   * the contact normal to prevent rounded shapes from rolling forever.
+   */
+  virtual void setRollingFrictionCoefficient(
+      CORRADE_UNUSED const double rollingFrictionCoefficient) {}
+
+  /** @brief Get the scalar spinning friction coefficient of the object. Only
+   * used for dervied dynamic implementations of @ref RigidObject.
+   * @return The scalar spinning friction coefficient of the object. Damps
+   * angular velocity about the contact normal.
+   */
+  virtual double getSpinningFrictionCoefficient() const { return 0.0; }
+
+  /** @brief Set the scalar spinning friction coefficient of the object. Only
+   * used for dervied dynamic implementations of @ref RigidObject.
+   * @param spinningFrictionCoefficient The new scalar friction coefficient of
+   * the object. Damps angular velocity about the contact normal.
+   */
+  virtual void setSpinningFrictionCoefficient(
+      CORRADE_UNUSED const double spinningFrictionCoefficient) {}
+
   /** @brief Get the 3x3 inertia matrix for an object.
    * @return The object's 3x3 inertia matrix.
    * @todo provide a setter for the full 3x3 inertia matrix. Not all
@@ -239,13 +267,28 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
   /**
    * @brief Returns the @ref metadata::attributes::SceneObjectInstanceAttributes
    * used to place this rigid object in the scene.
-   * @return a copy of the scene instance attributes used to place this object
-   * in the scene.
+   * @return a read-only copy of the scene instance attributes used to place
+   * this object in the scene.
    */
   std::shared_ptr<const metadata::attributes::SceneObjectInstanceAttributes>
-  getSceneInstanceAttributes() const {
-    return PhysicsObjectBase::getSceneInstanceAttrInternal<
+  getInitObjectInstanceAttr() const {
+    return PhysicsObjectBase::getInitObjectInstanceAttrInternal<
         const metadata::attributes::SceneObjectInstanceAttributes>();
+  }
+
+  /**
+   * @brief Return a @ref
+   * metadata::attributes::SceneObjectInstanceAttributes reflecting the current
+   * state of this Rigid.
+   * @return a @ref metadata::attributes::SceneObjectInstanceAttributes
+   * reflecting this rigid
+   */
+  std::shared_ptr<metadata::attributes::SceneObjectInstanceAttributes>
+  getCurrentStateInstanceAttr() {
+    // retrieve copy of initial SceneObjectInstanceAttributes with appropriate
+    // fields updated based on current state
+    return PhysicsObjectBase::getCurrentObjectInstanceAttrInternal<
+        metadata::attributes::SceneObjectInstanceAttributes>();
   }
 
   /** @brief Get a copy of the template used to initialize this object

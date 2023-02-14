@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -12,7 +12,9 @@
 #include "BulletCollision/CollisionShapes/btConvexTriangleMeshShape.h"
 #include "BulletCollision/Gimpact/btGImpactShape.h"
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
+#include "BulletCollisionHelper.h"
 #include "BulletRigidStage.h"
+#include "esp/assets/ResourceManager.h"
 #include "esp/physics/CollisionGroupHelper.h"
 
 namespace esp {
@@ -99,14 +101,23 @@ void BulletRigidStage::constructBulletSceneFromMeshes(
     const assets::MeshTransformNode& node) {
   Magnum::Matrix4 transformFromLocalToWorld =
       transformFromParentToWorld * node.transformFromLocalToParent;
-  if (node.meshIDLocal != ID_UNDEFINED) {
-    const assets::CollisionMeshData& mesh = meshGroup[node.meshIDLocal];
 
+  const assets::CollisionMeshData* mesh = nullptr;
+  if (node.meshIDLocal != ID_UNDEFINED)
+    mesh = &meshGroup[node.meshIDLocal];
+  // TODO TriangleStrip and TriangleFan would work
+  if (mesh && mesh->primitive != Mn::MeshPrimitive::Triangles) {
+    ESP_WARNING() << "Unsupported collision mesh primitive" << mesh->primitive
+                  << Mn::Debug::nospace << ", skipping";
+    mesh = nullptr;
+  }
+
+  if (mesh) {
     // SCENE: create a concave static mesh
     btIndexedMesh bulletMesh;
 
-    Corrade::Containers::ArrayView<Magnum::Vector3> v_data = mesh.positions;
-    Corrade::Containers::ArrayView<Magnum::UnsignedInt> ui_data = mesh.indices;
+    Corrade::Containers::ArrayView<Magnum::Vector3> v_data = mesh->positions;
+    Corrade::Containers::ArrayView<Magnum::UnsignedInt> ui_data = mesh->indices;
 
     //! Configure Bullet Mesh
     //! This part is very likely to cause segfault, if done incorrectly
@@ -148,6 +159,9 @@ void BulletRigidStage::constructBulletSceneFromMeshes(
     std::unique_ptr<btRigidBody> sceneCollisionObject =
         std::make_unique<btRigidBody>(cInfo);
     CORRADE_INTERNAL_ASSERT(sceneCollisionObject->isStaticObject());
+    BulletCollisionHelper::get().mapCollisionObjectTo(
+        sceneCollisionObject.get(),
+        getCollisionDebugName(bStaticCollisionObjects_.size()));
     bStageArrays_.emplace_back(std::move(indexedVertexArray));
     bStageShapes_.emplace_back(std::move(meshShape));
     bStaticCollisionObjects_.emplace_back(std::move(sceneCollisionObject));
@@ -160,20 +174,20 @@ void BulletRigidStage::constructBulletSceneFromMeshes(
 
 void BulletRigidStage::setFrictionCoefficient(
     const double frictionCoefficient) {
-  for (std::size_t i = 0; i < bStaticCollisionObjects_.size(); i++) {
+  for (std::size_t i = 0; i < bStaticCollisionObjects_.size(); ++i) {
     bStaticCollisionObjects_[i]->setFriction(frictionCoefficient);
   }
 }
 
 void BulletRigidStage::setRestitutionCoefficient(
     const double restitutionCoefficient) {
-  for (std::size_t i = 0; i < bStaticCollisionObjects_.size(); i++) {
+  for (std::size_t i = 0; i < bStaticCollisionObjects_.size(); ++i) {
     bStaticCollisionObjects_[i]->setRestitution(restitutionCoefficient);
   }
 }
 
 double BulletRigidStage::getFrictionCoefficient() const {
-  if (bStaticCollisionObjects_.size() == 0) {
+  if (bStaticCollisionObjects_.empty()) {
     return 0.0;
   } else {
     // Assume uniform friction in scene parts
@@ -183,7 +197,7 @@ double BulletRigidStage::getFrictionCoefficient() const {
 
 double BulletRigidStage::getRestitutionCoefficient() const {
   // Assume uniform restitution in scene parts
-  if (bStaticCollisionObjects_.size() == 0) {
+  if (bStaticCollisionObjects_.empty()) {
     return 0.0;
   } else {
     return static_cast<double>(
@@ -210,6 +224,10 @@ Magnum::Range3D BulletRigidStage::getCollisionShapeAabb() const {
   }
   return combinedAABB;
 }  // getCollisionShapeAabb
+
+std::string BulletRigidStage::getCollisionDebugName(int subpartId) {
+  return "Stage, subpart " + std::to_string(subpartId);
+}
 
 }  // namespace physics
 }  // namespace esp
