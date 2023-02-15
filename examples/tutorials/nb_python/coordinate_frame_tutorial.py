@@ -48,7 +48,6 @@
 
 # [imports]
 import os
-import sys
 
 import git
 import magnum as mn
