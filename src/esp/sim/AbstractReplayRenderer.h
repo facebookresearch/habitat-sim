@@ -102,6 +102,12 @@ class AbstractReplayRenderer {
   // Assumes the framebuffer color & depth is cleared
   void render(Magnum::GL::AbstractFramebuffer& framebuffer);
 
+  // Retrieve the color buffer as a CUDA device pointer. */
+  virtual const void* getCudaColorBufferDevicePointer();
+
+  // Retrieve the depth buffer as a CUDA device pointer. */
+  virtual const void* getCudaDepthBufferDevicePointer();
+
  private:
   /* Implementation of all public API is in the private do*() functions,
      similarly to how e.g. Magnum plugin interfaces work. The public API does

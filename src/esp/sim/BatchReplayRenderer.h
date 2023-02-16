@@ -24,6 +24,10 @@ class BatchReplayRenderer : public AbstractReplayRenderer {
 
   ~BatchReplayRenderer() override;
 
+  const void* getCudaColorBufferDevicePointer() override;
+
+  const void* getCudaDepthBufferDevicePointer() override;
+
  private:
   void doPreloadFile(Corrade::Containers::StringView filename) override;
 

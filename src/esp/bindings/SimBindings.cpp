@@ -432,7 +432,19 @@ void initSimBindings(py::module& m) {
            R"(Set the keyframe for a specific environment.)")
       .def_static("environment_grid_size",
                   &AbstractReplayRenderer::environmentGridSize,
-                  R"(Dimensions of the environment grid.)");
+                  R"(Dimensions of the environment grid.)")
+      .def(
+          "get_cuda_color_buffer_device_pointer",
+          [](AbstractReplayRenderer& self) {
+            return py::capsule(self.getCudaColorBufferDevicePointer());
+          },
+          R"(Retrieve the color buffer as a CUDA device pointer.)")
+      .def(
+          "get_cuda_depth_buffer_device_pointer",
+          [](AbstractReplayRenderer& self) {
+            return py::capsule(self.getCudaColorBufferDevicePointer());
+          },
+          R"(Retrieve the depth buffer as a CUDA device pointer.)");
 }
 
 }  // namespace sim

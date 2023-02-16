@@ -104,5 +104,15 @@ void AbstractReplayRenderer::render(
   return doRender(framebuffer);
 }
 
+const void* AbstractReplayRenderer::getCudaColorBufferDevicePointer() {
+  ESP_ERROR() << "CUDA device pointer only available with the batch renderer.";
+  return nullptr;
+}
+
+const void* AbstractReplayRenderer::getCudaDepthBufferDevicePointer() {
+  ESP_ERROR() << "CUDA device pointer only available with the batch renderer.";
+  return nullptr;
+}
+
 }  // namespace sim
 }  // namespace esp
