@@ -51,7 +51,7 @@ Note conventions: y-up (green vector) and `right-handed <https://en.wikipedia.or
     :end-before: # [/empty_scene_coord_frame]
 
 .. image:: images/coordinate-frame-tutorial-images/empty_scene_coord_frame.png
-    :width: 20em
+    :width: 60em
 
 Loading a ReplicaCAD scene
 **************************
@@ -62,7 +62,7 @@ Loading a ReplicaCAD scene
     :end-before: # [/replica_cad_scene_coord_frame]
 
 .. image:: images/coordinate-frame-tutorial-images/replica_cad_scene_coord_frame.png
-    :width: 20em
+    :width: 60em
 
 A rigid object's local coordinate frame
 ***************************************
@@ -77,7 +77,7 @@ ReplicaCAD object models follow these conventions, but models from other dataset
     :end-before: # [/rigid_object_coord_frame]
 
 .. image:: images/coordinate-frame-tutorial-images/rigid_object_coord_frame.png
-    :width: 20em
+    :width: 60em
 
 Camera coordinate frame
 ***********************
@@ -91,7 +91,7 @@ The camera's local axes are similar to the chair: right = red = x+, up = green =
     :end-before: # [/camera_coord_frame]
 
 .. image:: images/coordinate-frame-tutorial-images/camera_coord_frame.png
-    :width: 20em
+    :width: 60em
 
 More object coordinate frames
 *****************************
@@ -104,7 +104,7 @@ Let's show the local origins and axes of all rigid objects in the scene.
     :end-before: # [/more_objects_coord_frame]
 
 .. image:: images/coordinate-frame-tutorial-images/more_objects_coord_frame.png
-    :width: 20em
+    :width: 60em
 
 Loading a GLB as a scene
 ************************
@@ -119,7 +119,7 @@ One quirk of this legacy codepath is that it rotates the model 90 degrees!
     :end-before: # [/glb_scene_coord_frame]
 
 .. image:: images/coordinate-frame-tutorial-images/glb_scene_coord_frame.png
-    :width: 20em
+    :width: 60em
 
 Blender conventions and sources of confusion
 ********************************************
