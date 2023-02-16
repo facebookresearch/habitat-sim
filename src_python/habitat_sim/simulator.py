@@ -103,7 +103,7 @@ class Simulator(SimulatorBackend):
             )
         )
 
-        config.sim_cfg.requires_textures = any(
+        config.sim_cfg.requires_textures = not config.enable_batch_renderer and any(
             (
                 any(
                     sens_spec.sensor_type == SensorType.COLOR
