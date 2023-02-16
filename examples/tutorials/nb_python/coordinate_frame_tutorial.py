@@ -206,16 +206,19 @@ def calc_camera_transform(
 
 
 # %%
+# [empty_scene_coord_frame]
 create_sim_helper(scene_id="NONE")
 draw_axes(origin)
 show_scene(calc_camera_transform(eye_translation=eye_pos0, lookat=origin))
+# [/empty_scene_coord_frame]
 
 # %% [markdown]
-# # Load a ReplicaCAD scene
+# # Loading a ReplicaCAD scene
 # Draw the world axes again.
 
 
 # %%
+# [replica_cad_scene_coord_frame]
 create_sim_helper(
     scene_id=os.path.join(
         data_path, "replica_cad/configs/scenes/v3_sc0_staging_00.scene_instance.json"
@@ -223,6 +226,7 @@ create_sim_helper(
 )
 draw_axes(origin)
 show_scene(calc_camera_transform(eye_translation=eye_pos0, lookat=origin))
+# [/replica_cad_scene_coord_frame]
 
 # %% [markdown]
 # # A rigid object's local coordinate frame
@@ -230,6 +234,7 @@ show_scene(calc_camera_transform(eye_translation=eye_pos0, lookat=origin))
 
 
 # %%
+# [rigid_object_coord_frame]
 rigid_obj_mgr = sim.get_rigid_object_manager()
 obj_template = os.path.join(
     data_path, "replica_cad/configs/objects/frl_apartment_chair_01.object_config.json"
@@ -259,6 +264,7 @@ for obj in [obj0, obj1]:
 # save the camera transform for use in the next block
 camera_transform = calc_camera_transform(eye_translation=eye_pos0, lookat=origin)
 show_scene(camera_transform)
+# [/rigid_object_coord_frame]
 
 # %% [markdown]
 # # Camera coordinate frame
@@ -266,6 +272,7 @@ show_scene(camera_transform)
 
 
 # %%
+# [camera_coord_frame]
 # draw the previous camera's local axes
 lr.push_transform(camera_transform)
 draw_axes(origin, axis_len=obj_axes_len)
@@ -282,6 +289,7 @@ lr.pop_transform()
 # Show the scene from a position slightly offset from the previous camera.
 eye_offset = mn.Vector3(0.5, 0.75, 1.75)
 show_scene(calc_camera_transform(eye_translation=eye_pos0 + eye_offset, lookat=origin))
+# [/camera_coord_frame]
 
 # %% [markdown]
 # # More object coordinate frames
@@ -289,6 +297,7 @@ show_scene(calc_camera_transform(eye_translation=eye_pos0 + eye_offset, lookat=o
 
 
 # %%
+# [more_objects_coord_frame]
 obj_dict = rigid_obj_mgr.get_objects_by_handle_substring()
 for _, obj in obj_dict.items():
     lr.push_transform(obj.transformation)
@@ -296,6 +305,7 @@ for _, obj in obj_dict.items():
     lr.pop_transform()
 
 show_scene(calc_camera_transform(eye_translation=eye_pos1, lookat=origin))
+# [/more_objects_coord_frame]
 
 # %% [markdown]
 # # Beware loading a GLB as a scene!
@@ -303,21 +313,25 @@ show_scene(calc_camera_transform(eye_translation=eye_pos1, lookat=origin))
 
 
 # %%
+# [glb_scene_coord_frame]
 create_sim_helper(
     scene_id=os.path.join(data_path, "replica_cad/objects/frl_apartment_chair_01.glb")
 )
 draw_axes(origin)
 show_scene(calc_camera_transform(eye_translation=eye_pos0, lookat=origin))
+# [/glb_scene_coord_frame]
 
 
 # %% [markdown]
+# # [blender_chair]
 # # Blender conventions and sources of confusion
 # Blender is an open-source 3D-modeling tool that we on the Habitat team often use. We describe two caveats here:
 # 1. Its convention is z-up, e.g. the default 3D camera is oriented such that z is up.
 # 2. Blender automatically rotates gltf/glb models on import (essentially making the assumption that they were authored as y-up). It also reverses this rotation on export (see `+Y Up` gltf exporter option; enabled by default). The rotation is 90 degrees about the local x axis.
 #
-# Here, I've imported `frl_apartment_chair_01.glb` and taken a screenshot. Note the axes with the same colors used elsewhere in this tutorial: red = x+, green = y+, and blue = z+. Compare this image to the section above, `A rigid object's local coordinate frame`. The local axes are different, but the chair still appears upright.
+# Here, we've imported `frl_apartment_chair_01.glb` and taken a screenshot. Note the axes with the same colors used elsewhere in this tutorial: red = x+, green = y+, and blue = z+. Compare this image to the section above, `A rigid object's local coordinate frame`. The local axes are different, but the chair still appears upright.
 #
 # ![Blender Chair](https://user-images.githubusercontent.com/6557808/134411206-eeff1529-04ab-4f20-bc7c-68102f2879f1.png)
 #
 # Let's consider an individual vertex stored in a mesh in a gltf file. Suppose the vertex's local `(x,y,z)` position is `(1,2,3)`. After importing into blender, the vertex's local position in Blender will be `(1,-3,2)`. If the mesh is re-exported as a gltf, the vertex will be written to the file as `(1,2,3)`.
+# # [/blender_chair]
