@@ -409,7 +409,7 @@ void initSimBindings(py::module& m) {
           [](AbstractReplayRenderer& self, const std::string& filePath) {
             self.preloadFile(filePath);
           },
-          R"(Load an composite file that the renderer will use in-place of simulation assets to improve memory usage and performance.)")
+          R"(Load a composite file that the renderer will use in-place of simulation assets to improve memory usage and performance.)")
       .def("environment_count", &AbstractReplayRenderer::environmentCount,
            "Get the batch size.")
       .def("sensor_size", &AbstractReplayRenderer::sensorSize,
@@ -420,7 +420,7 @@ void initSimBindings(py::module& m) {
            static_cast<void (AbstractReplayRenderer::*)(
                Magnum::GL::AbstractFramebuffer&)>(
                &AbstractReplayRenderer::render),
-           R"(Render all sensors onto the main framebuffer.)")
+           R"(Render all sensors onto the specified framebuffer.)")
       .def(
           "set_sensor_transforms_from_keyframe",
           &AbstractReplayRenderer::setSensorTransformsFromKeyframe,
@@ -430,9 +430,9 @@ void initSimBindings(py::module& m) {
       .def("set_environment_keyframe",
            &AbstractReplayRenderer::setEnvironmentKeyframe,
            R"(Set the keyframe for a specific environment.)")
-      .def_static("environment_grid_size",
-                  &AbstractReplayRenderer::environmentGridSize,
-                  R"(Dimensions of the environment grid.)")
+      .def_static(
+          "environment_grid_size", &AbstractReplayRenderer::environmentGridSize,
+          R"(Get the dimensions (tile counts) of the environment grid.)")
       .def(
           "get_cuda_color_buffer_device_pointer",
           [](AbstractReplayRenderer& self) {
