@@ -41,6 +41,7 @@ INPUT_PAGES = [
     "pages/asset-viewer-tutorial.rst",
     "pages/managed-rigid-object-tutorial.rst",
     "pages/logging.rst",
+    "pages/coordinate-frame-tutorial.rst",
 ]
 
 PLUGINS = [
@@ -82,6 +83,7 @@ LINKS_NAVBAR1 = [
             ("Image extraction", "image-extractor"),
             ("View Assets in Habitat-sim", "asset-viewer-tutorial"),
             ("Managed Rigid Object Tutorial", "managed-rigid-object-tutorial"),
+            ("Coordinate Frame Tutorial", "coordinate-frame-tutorial"),
         ],
     ),
     ("Classes", "classes", []),
