@@ -775,11 +775,10 @@ def process_scene_or_stage(
         failure_log.append((msg, e))
 
 
-def strip_path_and_ext(handle: str) -> str:
+def strip_path(handle: str) -> str:
     handle_cpy = handle
     handle_sans_path = handle_cpy.split("/")[-1]
-    name_sans_path_and_ext = handle_sans_path.split(".")[0]
-    return name_sans_path_and_ext
+    return handle_sans_path
 
 
 def process_scenes_and_stages(
@@ -841,8 +840,8 @@ def process_scenes_and_stages(
     for i in range(start_index, end_index):
         if scene_handles[i] == "NONE":
             continue
-        handle_sans_path_and_ext = strip_path_and_ext(scene_handles[i])
-        if handle_sans_path_and_ext in scenes_processed:
+        handle_sans_path = strip_path(scene_handles[i])
+        if handle_sans_path in scenes_processed:
             continue
         process_scene_or_stage(
             cfg,
@@ -854,7 +853,7 @@ def process_scenes_and_stages(
             detailed_info_json_dict,
             failure_log,
         )
-        scenes_processed.add(handle_sans_path_and_ext)
+        scenes_processed.add(handle_sans_path)
 
     # create cvs detailing scene navmesh metrics
     navmesh_cvs_filename = create_unique_filename(
