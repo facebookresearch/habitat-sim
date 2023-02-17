@@ -123,7 +123,6 @@ def simulate_with_moving_agent(
     observations = []
     start_time = sim.get_world_time()
     while sim.get_world_time() < start_time + duration:
-
         # move agent
         agent_node.translation += agent_vel * time_step
 
@@ -430,7 +429,7 @@ for frame in range(player.get_num_keyframes()):
     )
     debug_line_render.pop_transform()
 
-    for (radius, opacity) in [(0.2, 0.6), (0.25, 0.4), (0.3, 0.2)]:
+    for radius, opacity in [(0.2, 0.6), (0.25, 0.4), (0.3, 0.2)]:
         debug_line_render.draw_circle(
             agent_translation, radius, mn.Color4(0.0, 1.0, 1.0, opacity)
         )

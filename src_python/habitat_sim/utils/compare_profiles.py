@@ -106,7 +106,6 @@ def create_summary_from_events(events: List[Event]) -> DefaultDict[str, SummaryI
     items: DefaultDict[str, SummaryItem] = defaultdict(lambda: SummaryItem())
 
     for i, event in enumerate(events):
-
         item = items[event.name]
 
         event_duration = event.end - event.start
@@ -120,7 +119,6 @@ def create_summary_from_events(events: List[Event]) -> DefaultDict[str, SummaryI
         recent_exclusive_start_time: Optional[int] = event.start
         child_end_times: Set[int] = set()
         for j in range(i + 1, len(events) + 1):  # note one extra iteration
-
             other_event: Optional[Event] = None if j == len(events) else events[j]
             if other_event:
                 if other_event.thread_id != event.thread_id:
@@ -232,7 +230,7 @@ def print_summaries(
     for tup in all_names_with_times_list:
         name = tup[0]
         print(name.ljust(max_name_len + column_pad), end="")
-        for (index, summary) in enumerate(summaries):
+        for index, summary in enumerate(summaries):
             base_summary = summaries[0] if index > 0 else None
             if name in summary:
                 item = summary[name]
