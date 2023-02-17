@@ -7,11 +7,12 @@
   "height": 1024,
   "enable_physics": true,
   "start_scene_index": 0,
-  "end_scene_index": 1,
+  "end_scene_index": -1,
   "output_file_prefix": "r-cad",
-  "generate_navmesh": false,
+  "generate_navmesh": true,
   "render_sensor_obs": true,
   "run_collision_test": true,
-  "run_asset_sleep_test": true,
+  "collision_test_save_detail_json": false,
+  "run_asset_sleep_test": false,
   "silent": false
 }
