@@ -712,7 +712,7 @@ def main(args):
 
     try:
         os.makedirs(data_path, exist_ok=True)
-    except Exception:
+    except OSError:
         traceback.print_exc(file=sys.stdout)
         print("----------------------------------------------------------------")
         print("Aborting download, failed to create data_path.")
