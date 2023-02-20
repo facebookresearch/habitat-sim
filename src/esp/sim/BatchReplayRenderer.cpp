@@ -244,8 +244,8 @@ void BatchReplayRenderer::doRender(
   renderer_->draw(framebuffer);
 }
 
-#ifdef ESP_BUILD_WITH_CUDA
 const void* BatchReplayRenderer::getCudaColorBufferDevicePointer() {
+#ifdef ESP_BUILD_WITH_CUDA
   CORRADE_ASSERT(standalone_,
                  "ReplayBatchRenderer::colorCudaBufferDevicePointer(): can use "
                  "this function only "
@@ -253,9 +253,15 @@ const void* BatchReplayRenderer::getCudaColorBufferDevicePointer() {
                  nullptr);
   return static_cast<gfx_batch::RendererStandalone&>(*renderer_)
       .colorCudaBufferDevicePointer();
+#else
+  ESP_ERROR() << "Failed to retrieve device pointer because CUDA is not "
+                 "available in this build.";
+  return nullptr;
+#endif
 }
 
 const void* BatchReplayRenderer::getCudaDepthBufferDevicePointer() {
+#ifdef ESP_BUILD_WITH_CUDA
   CORRADE_ASSERT(standalone_,
                  "ReplayBatchRenderer::getCudaDepthBufferDevicePointer(): can "
                  "use this function only "
@@ -263,19 +269,11 @@ const void* BatchReplayRenderer::getCudaDepthBufferDevicePointer() {
                  nullptr);
   return static_cast<gfx_batch::RendererStandalone&>(*renderer_)
       .depthCudaBufferDevicePointer();
-}
 #else
-const void* BatchReplayRenderer::getCudaColorBufferDevicePointer() {
   ESP_ERROR() << "Failed to retrieve device pointer because CUDA is not "
                  "available in this build.";
   return nullptr;
-}
-
-const void* BatchReplayRenderer::getCudaDepthBufferDevicePointer() {
-  ESP_ERROR() << "Failed to retrieve device pointer because CUDA is not "
-                 "available in this build.";
-  return nullptr;
-}
 #endif
+}
 }  // namespace sim
 }  // namespace esp

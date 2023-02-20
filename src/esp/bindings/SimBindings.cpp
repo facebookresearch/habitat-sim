@@ -410,8 +410,9 @@ void initSimBindings(py::module& m) {
             self.preloadFile(filePath);
           },
           R"(Load a composite file that the renderer will use in-place of simulation assets to improve memory usage and performance.)")
-      .def("environment_count", &AbstractReplayRenderer::environmentCount,
-           "Get the batch size.")
+      .def_property_readonly("environment_count",
+                             &AbstractReplayRenderer::environmentCount,
+                             "Get the batch size.")
       .def("sensor_size", &AbstractReplayRenderer::sensorSize,
            "Get the resolution of a sensor.")
       .def("clear_environment", &AbstractReplayRenderer::clearEnvironment,
@@ -430,17 +431,17 @@ void initSimBindings(py::module& m) {
       .def("set_environment_keyframe",
            &AbstractReplayRenderer::setEnvironmentKeyframe,
            R"(Set the keyframe for a specific environment.)")
-      .def_static(
+      .def_property_readonly(
           "environment_grid_size", &AbstractReplayRenderer::environmentGridSize,
           R"(Get the dimensions (tile counts) of the environment grid.)")
       .def(
-          "get_cuda_color_buffer_device_pointer",
+          "cuda_color_buffer_device_pointer",
           [](AbstractReplayRenderer& self) {
             return py::capsule(self.getCudaColorBufferDevicePointer());
           },
           R"(Retrieve the color buffer as a CUDA device pointer.)")
       .def(
-          "get_cuda_depth_buffer_device_pointer",
+          "cuda_depth_buffer_device_pointer",
           [](AbstractReplayRenderer& self) {
             return py::capsule(self.getCudaColorBufferDevicePointer());
           },
