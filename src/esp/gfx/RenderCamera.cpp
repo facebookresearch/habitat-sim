@@ -197,7 +197,8 @@ size_t RenderCamera::filterTransforms(DrawableTransforms& drawableTransforms,
   return drawableTransforms.size();
 }
 
-esp::geo::Ray RenderCamera::unproject(const Mn::Vector2i& viewportPosition) {
+esp::geo::Ray RenderCamera::unproject(const Mn::Vector2i& viewportPosition,
+                                      bool normalized) {
   esp::geo::Ray ray;
   ray.origin = object().absoluteTranslation();
 
@@ -209,11 +210,19 @@ esp::geo::Ray RenderCamera::unproject(const Mn::Vector2i& viewportPosition) {
           Magnum::Vector2{1.0f},
       1.0};
 
+  // compute the far plane distance
+  auto farDistance =
+      projectionMatrix()[3][2] / (1.0f + projectionMatrix()[2][2]);
+
   ray.direction =
-      ((object().absoluteTransformationMatrix() * projectionMatrix().inverted())
+      ((object().absoluteTransformationMatrix() * invertedProjectionMatrix)
            .transformPoint(normalizedPos) -
-       ray.origin)
-          .normalized();
+       ray.origin) /
+      farDistance;
+
+  if (normalized) {
+    ray.direction = ray.direction.normalized();
+  }
   return ray;
 }
 
