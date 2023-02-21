@@ -308,7 +308,7 @@ jobs:
             conda init "$(basename "${SHELL}")"
       - run:
           name: Conda OSX build
-          no_output_timeout: 30m
+          no_output_timeout: 240m
           command: |
             export PATH=$HOME/miniconda/bin:$PATH
             source ~/.bash_profile
@@ -736,12 +736,12 @@ workflows:
       - js_lint
       - lab_build_habitat
       - build_conda_osx:
-         CI_TEST: true
+         CI_TEST: false
       - test_pip_build
       - install_and_test_ubuntu
       - pre-commit
       - build_conda_binaries:
-          CI_TEST: true
+          CI_TEST: false
       - clang_tidy
   nightly:
     triggers:

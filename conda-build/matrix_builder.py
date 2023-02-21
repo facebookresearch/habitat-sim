@@ -27,7 +27,7 @@ conda build \
   --no-test \
   {ANACONDA_UPLOAD_MODE} \
   --output-folder {OUTPUT_FOLDER} \
-  habitat-sim
+  habitat-sim-challenge-2023
 """
 
 
