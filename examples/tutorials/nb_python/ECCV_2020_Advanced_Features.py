@@ -111,6 +111,7 @@ if "sim" not in globals():
 
 # @markdown This cell defines utility functions that expose Attribute template object properties.
 
+
 # This method builds a dictionary of k-v pairs of attribute property names and
 # values shared by all attribute template types.  The values are tuples with the
 # first entry being the value and the second being whether the property is
@@ -658,6 +659,7 @@ def set_object_state_from_agent(
 # @markdown (double click to show code)
 # @markdown - display_sample
 
+
 # Change to do something like this maybe: https://stackoverflow.com/a/41432704
 def display_sample(
     rgb_obs, semantic_obs=np.array([]), depth_obs=np.array([]), key_points=None
@@ -717,6 +719,7 @@ else:
 # @markdown (double click to show code)
 
 # @markdown This cell provides utility functions to build and manage IPyWidget interactive components.
+
 
 # Event handler for dropdowns displaying file-based object handles
 def on_file_obj_ddl_change(ddl_values):
@@ -936,6 +939,7 @@ rigid_obj_mgr.remove_all_objects()
 # ## Advanced Topic : 3D to 2D Key-point Projection
 #
 # The Habitat-sim visual-sensor API makes it easy to project 3D points into 2D for use cases such as generating ground-truth for image space key-points.
+
 
 # %%
 # @markdown ###Display 2D Projection of Object COMs
@@ -1400,6 +1404,7 @@ make_clear_all_objects_button()
 
 # Primitive Asset Attributes Manager, provides access to AssetAttributesTemplates
 prim_attr_mgr = sim.get_asset_template_manager()
+
 
 # This will register a primitive template if valid, and add it to a passed
 # dictionary of handles; If not valid it will give a message

@@ -1899,7 +1899,6 @@ def test_bullet_collision_helper():
     hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
 
     with habitat_sim.Simulator(hab_cfg) as sim:
-
         obj_template_mgr = sim.get_object_template_manager()
         cube_prim_handle = obj_template_mgr.get_template_handles("cube")[0]
         rigid_obj_mgr = sim.get_rigid_object_manager()
