@@ -116,7 +116,7 @@ def test_unproject(zfar):
                 random.randint(0, render_camera.viewport[0] - 1),
                 random.randint(0, render_camera.viewport[1] - 1),
             )
-            # NOTE: use un-normlized rays scaled to unit z distance for this application
+            # NOTE: use un-normalized rays scaled to unit z distance for this application
             ray = render_camera.unproject(view_point, normalized=False)
             depth_obs = typing.cast(
                 np.ndarray, sim.get_sensor_observations()["depth_sensor"]
