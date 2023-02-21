@@ -241,16 +241,22 @@ void PathFinderTest::navMeshSettingsTestJSON() {
 
   // check saving settings
   esp::nav::NavMeshSettings defaultSettings;
-
+  const auto testFilepath =
+      Cr::Utility::Path::join(TEST_ASSETS, "test_navmeshsettings_reload.json");
   // save defaults to a file
-  defaultSettings.writeToJSON(
-      Cr::Utility::Path::join(TEST_ASSETS, "test_navmeshsettings_reload.json"));
+  defaultSettings.writeToJSON(testFilepath);
 
   // reload and check against original
-  navmeshSettings.readFromJSON(
-      Cr::Utility::Path::join(TEST_ASSETS, "test_navmeshsettings_reload.json"));
+  navmeshSettings.readFromJSON(testFilepath);
 
   CORRADE_VERIFY(defaultSettings == navmeshSettings);
+
+  // remove file created for this test
+  bool success = Corrade::Utility::Path::remove(testFilepath);
+  if (!success) {
+    ESP_WARNING() << "Unable to remove temporary test JSON file"
+                  << testFilepath;
+  }
 }
 
 }  // namespace
