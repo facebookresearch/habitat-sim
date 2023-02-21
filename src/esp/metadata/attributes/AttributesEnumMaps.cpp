@@ -88,12 +88,6 @@ std::string getLightTypeName(esp::gfx::LightType lightTypeEnum) {
   }
   return "point";
 }
-
-const std::map<std::string, esp::gfx::LightPositionModel>
-    LightPositionNamesMap = {{"global", esp::gfx::LightPositionModel::Global},
-                             {"camera", esp::gfx::LightPositionModel::Camera},
-                             {"object", esp::gfx::LightPositionModel::Object}};
-
 std::string getLightPositionModelName(
     esp::gfx::LightPositionModel lightPositionEnum) {
   // this verifies that enum value being checked is supported by string-keyed
@@ -212,14 +206,6 @@ std::string getAORenderModeName(ArticulatedObjectRenderMode aoRenderMode) {
   return "unspecified";
 }  // getAORenderModeName
 
-const std::map<std::string, ObjectInstanceShaderType> ShaderTypeNamesMap = {
-    {"unspecified", ObjectInstanceShaderType::Unspecified},
-    {"material", ObjectInstanceShaderType::Material},
-    {"flat", ObjectInstanceShaderType::Flat},
-    {"phong", ObjectInstanceShaderType::Phong},
-    {"pbr", ObjectInstanceShaderType::PBR},
-};
-
 std::string getShaderTypeName(ObjectInstanceShaderType shaderTypeVal) {
   // this verifies that enum value being checked is supported by string-keyed
   // map. The values below should be the minimum and maximum enums supported by
@@ -279,13 +265,6 @@ std::string getTranslationOriginName(
   }
   return "default";
 }  // getTranslationOriginName
-
-// All keys must be lowercase
-const std::map<std::string, esp::physics::MotionType> MotionTypeNamesMap = {
-    {"static", esp::physics::MotionType::STATIC},
-    {"kinematic", esp::physics::MotionType::KINEMATIC},
-    {"dynamic", esp::physics::MotionType::DYNAMIC},
-};
 
 std::string getMotionTypeName(esp::physics::MotionType motionTypeEnum) {
   // this verifies that enum value being checked is supported by string-keyed
