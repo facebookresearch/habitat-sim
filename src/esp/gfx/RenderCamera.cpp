@@ -210,10 +210,9 @@ esp::geo::Ray RenderCamera::unproject(const Mn::Vector2i& viewportPosition,
           Magnum::Vector2{1.0f},
       1.0};
 
-  // compute the far plane
-  auto zFar =
-      Mn::Frustum::fromMatrix(projectionMatrix() * cameraMatrix()).far();
-  float farDistance = zFar[3] / zFar.xyz().length();
+  // compute the far plane distance
+  auto farDistance =
+      projectionMatrix()[3][2] / (1.0f + projectionMatrix()[2][2]);
 
   ray.direction =
       ((object().absoluteTransformationMatrix() * invertedProjectionMatrix)
