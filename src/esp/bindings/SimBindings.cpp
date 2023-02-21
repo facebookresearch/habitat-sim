@@ -431,7 +431,7 @@ void initSimBindings(py::module& m) {
       .def("set_environment_keyframe",
            &AbstractReplayRenderer::setEnvironmentKeyframe,
            R"(Set the keyframe for a specific environment.)")
-      .def_property_readonly(
+      .def_static(
           "environment_grid_size", &AbstractReplayRenderer::environmentGridSize,
           R"(Get the dimensions (tile counts) of the environment grid.)")
       .def(
