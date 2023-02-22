@@ -1349,6 +1349,7 @@ bool PathFinder::Impl::findPathSetup(MultiGoalShortestPath& path,
   if (!path.pimpl_->endRefs.empty())
     return true;
 
+  int numValidPoints = 0;
   for (const auto& rqEnd : path.getRequestedEnds()) {
     dtPolyRef endRef = 0;
     vec3f pathEnd;
@@ -1356,11 +1357,18 @@ bool PathFinder::Impl::findPathSetup(MultiGoalShortestPath& path,
         projectToPoly(rqEnd, navQuery_.get(), filter_.get());
 
     if (status != DT_SUCCESS || endRef == 0) {
-      return false;
+      ESP_DEBUG() << "Can't project end-point to navmesh, skipping: " << rqEnd;
+    } else {
+      numValidPoints++;
     }
 
     path.pimpl_->endRefs.emplace_back(endRef);
     path.pimpl_->pathEnds.emplace_back(pathEnd);
+
+    if (numValidPoints == 0) {
+      ESP_DEBUG() << "Early abort, can't project any points to navmesh.";
+      return false;
+    }
   }
 
   return true;
