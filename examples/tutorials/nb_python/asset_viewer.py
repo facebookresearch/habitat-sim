@@ -764,7 +764,6 @@ clip_short_name = object_to_view_path.split("/")[-1].split(".")[0]
 
 # check if desired object actually exists
 if os.path.exists(object_to_view_path) and os.path.isfile(object_to_view_path):
-
     # initialize an agent and set its intial state
     agent_id = sim_settings["default_agent"]
     agent = sim.initialize_agent(agent_id)
