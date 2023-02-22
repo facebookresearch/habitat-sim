@@ -732,7 +732,6 @@ class Simulator(SimulatorBackend):
     def get_sensor_observations(
         self, agent_ids: Union[int, List[int]] = 0
     ) -> Union[Dict[str, SensorObservation], Dict[int, Dict[str, SensorObservation]],]:
-
         if isinstance(agent_ids, int):
             agent_ids = [agent_ids]
             return_single = True
@@ -889,7 +888,6 @@ class Simulator(SimulatorBackend):
         obs_buffer = self.__obs_buffers[agent_id].get(sensor_spec.uuid)
         if sensor_spec.gpu2gpu_transfer:
             with torch.cuda.device(self.gpu_device):  # type: ignore[attr-defined, union-attr]
-
                 # write what is in render target into a "Tensor" buffer
                 buffer_data = obs_buffer.data_ptr()  # type: ignore[attr-defined, union-attr]
                 if sensor_spec.sensor_type == SensorType.SEMANTIC:
@@ -924,7 +922,6 @@ class Simulator(SimulatorBackend):
         sensor: Sensor,
         agent_id: Optional[int] = 0,  # TODO change default to None eventually
     ) -> SensorObservation:
-
         sensor_spec = sensor.specification()
         if sensor_spec.sensor_type == SensorType.AUDIO:
             return self._get_audio_observation(sensor, agent_id)
@@ -946,7 +943,6 @@ class Simulator(SimulatorBackend):
         audio_sensor: Sensor,
         agent_id: Optional[int] = 0,  # TODO, change to None eventually
     ) -> SensorObservation:
-
         assert audio_sensor.specification().sensor_type == SensorType.AUDIO
 
         # tell the audio sensor about the agent location (if any)
