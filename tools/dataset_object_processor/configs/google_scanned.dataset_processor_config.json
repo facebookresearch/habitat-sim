@@ -1,0 +1,46 @@
+{
+  "scene_dataset_config_file": "data/google_object_dataset/google_object_dataset.scene_dataset_config.json",
+  "outputs": {
+    "csv": true,
+    "video": true
+  },
+  "output_paths": {
+    "output_file_prefix": "google_scanned"
+  },
+  "start_obj_index": 0,
+  "num_objects": 5,
+  "csv_data_to_collect": {
+    "ram_calc_multiple_samples": true,
+    "memory_data": true,
+    "render_time_ratio": false,
+    "physics_data": true
+  },
+  "memory_vars": {
+    "ram_calc_num_samples": 10
+  },
+  "physics_vars": {
+    "distance_units": "m",
+    "angle_units": "deg"
+  },
+  "video_vars": {
+    "tasks": {
+        "draw_bbox": true,
+        "draw_collision_mesh": true,
+        "draw_collision_mesh_wireframe": true,
+        "record_physics": true
+    },
+    "revolution_angle": 720.0,
+    "revolution_dur": 4.0,
+    "physics_recording_pos": [-2.0, 0.5, 4.50],
+    "physics_recording_rot": {
+      "angle": -20.0,
+      "axis": [1, 0, 0]
+    }
+  },
+  "default_transforms": {
+    "default_agent_pos": [-2.0, 0.5, 4.00],
+    "default_obj_pos": [-2.0, 1.5, 2.00]
+  },
+  "silent": false,
+  "debug_print": true
+}

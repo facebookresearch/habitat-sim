@@ -1,4 +1,5 @@
 attrs>=19.1.0
+colorama
 gitpython
 imageio
 imageio-ffmpeg
@@ -7,5 +8,6 @@ numba
 numpy
 numpy-quaternion
 pillow
+psutil
 scipy>=1.3.0
 tqdm

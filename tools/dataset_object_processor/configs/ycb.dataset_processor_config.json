@@ -1,0 +1,71 @@
+{
+  "scene": "data/test_assets/scenes/simple_room.glb",
+  "scene_dataset_config_file": "data/versioned_data/ycb_1.2/ycb.scene_dataset_config.json",
+  "csv_data_to_collect": {
+    "extensive_RAM_calculation": true,
+    "memory_data": false,
+    "render_time_ratio": false,
+    "physics_data": false
+  },
+  "start_obj_index": 0,
+  "num_objects": 5,
+  "memory_vars": {
+    "units": "KB",
+    "max_mesh_num": 5,
+    "max_mesh_size": 2400,
+    "max_image_num": 5,
+    "max_image_size": 12000
+  },
+  "ram_metrics_to_use": [
+    "available",
+    "used",
+    "free"
+  ],
+  "physics_vars": {
+    "fps": 60,
+    "time_units": "sec",
+    "max_wait_time": 5,
+    "distance_units": "cm",
+    "angle_units": "deg"
+  },
+  "video_vars": {
+    "tasks": {
+      "draw_bbox": true,
+      "draw_collision_mesh": true,
+      "draw_collision_mesh_wireframe": true,
+      "record_physics": true
+    },
+    "physics_recording_pos": [-2.0, 0.0, 4.00],
+    "physics_recording_rot": {
+      "angle": -20.0,
+      "axis": [1, 0, 0]
+    },
+    "revolution_dur": 2.0
+  },
+  "outputs": {
+    "csv": true,
+    "video": true
+  },
+  "output_paths": {
+    "csv": "tools/dataset_object_processor/dataset_csv_files/",
+    "video": "tools/dataset_object_processor/dataset_video_recordings/",
+    "output_file_prefix": "ycb"
+  },
+  "headless": true,
+  "enable_physics": true,
+  "sensor_height": 1.0,
+  "silent": true,
+  "debug_print": false,
+  "default_transforms": {
+    "default_agent_pos": [-2.0, 0.0, 4.00],
+    "default_agent_rot": {
+      "angle": 0.0,
+      "axis": [1, 0, 0]
+    },
+    "default_obj_pos": [-2.0, 1.0, 2.77],
+    "default_obj_rot": {
+      "angle": 0.0,
+      "axis": [1, 0, 0]
+    }
+  }
+}
