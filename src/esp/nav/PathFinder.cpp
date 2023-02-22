@@ -1335,6 +1335,7 @@ bool PathFinder::Impl::findPathSetup(MultiGoalShortestPath& path,
                                      dtPolyRef& startRef,
                                      vec3f& pathStart) {
   path.geodesicDistance = std::numeric_limits<float>::infinity();
+  path.closestEndPointIndex = -1;
   path.points.clear();
 
   // find nearest polys and path
@@ -1423,6 +1424,7 @@ bool PathFinder::Impl::findPath(MultiGoalShortestPath& path) {
       path.pimpl_->minTheoreticalDist[i] = std::get<0>(*findResult);
       path.geodesicDistance = std::get<0>(*findResult);
       path.points = std::get<1>(*findResult);
+      path.closestEndPointIndex = i;
     }
   }
 
