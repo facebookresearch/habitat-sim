@@ -150,6 +150,12 @@ def initialize_test_data_sources(data_path):
             "link": data_path + "robots/hab_fetch",
             "version": "2.0",
         },
+        "humanoid_data": {
+            "source": "http://dl.fbaipublicfiles.com/habitat/humanoids/humanoid_data_v0.1.zip",
+            "package_name": "humanoid_data_v0.1.zip",
+            "link": data_path + "humanoids/humanoid_data",
+            "version": "0.1",
+        },
         "rearrange_pick_dataset_v0": {
             "source": "https://dl.fbaipublicfiles.com/habitat/data/datasets/rearrange_pick/replica_cad/v0/rearrange_pick_replica_cad_v0.zip",
             "package_name": "rearrange_pick_replica_cad_v0.zip",
