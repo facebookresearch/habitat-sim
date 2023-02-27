@@ -70,7 +70,7 @@ void initShortestPathBindings(py::module& m) {
       .def_readwrite(
           "closest_end_point_index",
           &MultiGoalShortestPath::closestEndPointIndex,
-          R"(he index of the closest end point corresponding to end of the shortest path. Will be -1 if no path exists.)");
+          R"(The index of the closest end point corresponding to end of the shortest path. Will be -1 if no path exists.)");
 
   py::class_<NavMeshSettings, NavMeshSettings::ptr>(
       m, "NavMeshSettings",

@@ -1365,11 +1365,10 @@ bool PathFinder::Impl::findPathSetup(MultiGoalShortestPath& path,
 
     path.pimpl_->endRefs.emplace_back(endRef);
     path.pimpl_->pathEnds.emplace_back(pathEnd);
-
-    if (numValidPoints == 0) {
-      ESP_DEBUG() << "Early abort, can't project any points to navmesh.";
-      return false;
-    }
+  }
+  if (numValidPoints == 0) {
+    ESP_DEBUG() << "Early abort, can't project any points to navmesh.";
+    return false;
   }
 
   return true;
