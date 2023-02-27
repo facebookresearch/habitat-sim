@@ -103,7 +103,8 @@ class AbstractReplayRenderer {
   void render(Corrade::Containers::ArrayView<const Magnum::MutableImageView2D>
                   imageViews);
 
-  // Assumes the framebuffer color & depth is cleared.
+  // Renders into an external framebuffer. Assumes the framebuffer color & depth
+  // is cleared.
   void render(Magnum::GL::AbstractFramebuffer& framebuffer);
 
   // Retrieve the color buffer as a CUDA device pointer. */
