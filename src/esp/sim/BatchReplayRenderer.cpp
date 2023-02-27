@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -244,5 +244,36 @@ void BatchReplayRenderer::doRender(
   renderer_->draw(framebuffer);
 }
 
+const void* BatchReplayRenderer::getCudaColorBufferDevicePointer() {
+#ifdef ESP_BUILD_WITH_CUDA
+  CORRADE_ASSERT(standalone_,
+                 "ReplayBatchRenderer::colorCudaBufferDevicePointer(): can use "
+                 "this function only "
+                 "with a standalone renderer",
+                 nullptr);
+  return static_cast<gfx_batch::RendererStandalone&>(*renderer_)
+      .colorCudaBufferDevicePointer();
+#else
+  ESP_ERROR() << "Failed to retrieve device pointer because CUDA is not "
+                 "available in this build.";
+  return nullptr;
+#endif
+}
+
+const void* BatchReplayRenderer::getCudaDepthBufferDevicePointer() {
+#ifdef ESP_BUILD_WITH_CUDA
+  CORRADE_ASSERT(standalone_,
+                 "ReplayBatchRenderer::getCudaDepthBufferDevicePointer(): can "
+                 "use this function only "
+                 "with a standalone renderer",
+                 nullptr);
+  return static_cast<gfx_batch::RendererStandalone&>(*renderer_)
+      .depthCudaBufferDevicePointer();
+#else
+  ESP_ERROR() << "Failed to retrieve device pointer because CUDA is not "
+                 "available in this build.";
+  return nullptr;
+#endif
+}
 }  // namespace sim
 }  // namespace esp
