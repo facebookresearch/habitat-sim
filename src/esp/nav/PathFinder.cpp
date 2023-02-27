@@ -95,6 +95,9 @@ struct MultiGoalShortestPath::Impl {
   std::vector<vec3f> requestedEnds;
 
   std::vector<dtPolyRef> endRefs;
+  //! Tracks whether an endpoint is valid or not as determined by setup to avoid
+  //! extra work or issues later.
+  std::vector<bool> endIsValid;
   std::vector<vec3f> pathEnds;
 
   std::vector<float> minTheoreticalDist;
@@ -1358,8 +1361,10 @@ bool PathFinder::Impl::findPathSetup(MultiGoalShortestPath& path,
         projectToPoly(rqEnd, navQuery_.get(), filter_.get());
 
     if (status != DT_SUCCESS || endRef == 0) {
+      path.pimpl_->endIsValid.emplace_back(false);
       ESP_DEBUG() << "Can't project end-point to navmesh, skipping: " << rqEnd;
     } else {
+      path.pimpl_->endIsValid.emplace_back(true);
       numValidPoints++;
     }
 
@@ -1410,6 +1415,9 @@ bool PathFinder::Impl::findPath(MultiGoalShortestPath& path) {
             });
 
   for (size_t i : ordering) {
+    if (!path.pimpl_->endIsValid[i])
+      continue;
+
     if (path.pimpl_->minTheoreticalDist[i] > path.geodesicDistance)
       continue;
 
