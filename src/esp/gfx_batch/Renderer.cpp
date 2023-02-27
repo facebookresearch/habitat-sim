@@ -1076,10 +1076,6 @@ Cr::Containers::StridedArrayView1D<Mn::Float> Renderer::lightRanges(
 }
 
 void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
-  // TODO allow this (currently addFile() sets up shader limits)
-  CORRADE_ASSERT(!state_->meshes.isEmpty(),
-                 "Renderer::draw(): no file was added", );
-
   /* Process scenes that are marked as dirty */
   // TODO this could be a separate step to allow the user to control when it
   //  runs
