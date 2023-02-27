@@ -217,6 +217,10 @@ void BatchReplayRenderer::doSetSensorTransformsFromKeyframe(
       Mn::Matrix4::from(rotation.toMatrix(), translation).inverted();
 }
 
+void BatchReplayRenderer::doRender() {
+  renderer_->draw();
+}
+
 void BatchReplayRenderer::doRender(
     Cr::Containers::ArrayView<const Mn::MutableImageView2D> imageViews) {
   CORRADE_ASSERT(standalone_,

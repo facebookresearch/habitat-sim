@@ -95,11 +95,15 @@ class AbstractReplayRenderer {
   void setSensorTransformsFromKeyframe(unsigned envIndex,
                                        const std::string& prefix);
 
-  // Renders and waits for the render to finish
+  // Render into the default framebuffer. Assumes the framebuffer color & depth
+  // is cleared.
+  void render();
+
+  // Renders and waits for the render to finish.
   void render(Corrade::Containers::ArrayView<const Magnum::MutableImageView2D>
                   imageViews);
 
-  // Assumes the framebuffer color & depth is cleared
+  // Assumes the framebuffer color & depth is cleared.
   void render(Magnum::GL::AbstractFramebuffer& framebuffer);
 
   // Retrieve the color buffer as a CUDA device pointer. */
@@ -136,6 +140,8 @@ class AbstractReplayRenderer {
   /* envIndex is guaranteed to be in bounds */
   virtual void doSetSensorTransformsFromKeyframe(unsigned envIndex,
                                                  const std::string& prefix) = 0;
+
+  virtual void doRender() = 0;
 
   /* imageViews.size() is guaranteed to be same as doEnvironmentCount() */
   virtual void doRender(

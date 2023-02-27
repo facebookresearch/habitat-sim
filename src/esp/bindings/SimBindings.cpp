@@ -418,10 +418,15 @@ void initSimBindings(py::module& m) {
       .def("clear_environment", &AbstractReplayRenderer::clearEnvironment,
            "Clear all instances and resets memory of an environment.")
       .def("render",
-           static_cast<void (AbstractReplayRenderer::*)(
-               Magnum::GL::AbstractFramebuffer&)>(
+           static_cast<void (AbstractReplayRenderer::*)()>(
                &AbstractReplayRenderer::render),
-           R"(Render all sensors onto the specified framebuffer.)")
+           R"(Render all sensors onto the main framebuffer.)")
+      .def(
+          "render",
+          static_cast<void (AbstractReplayRenderer::*)(
+              Magnum::GL::AbstractFramebuffer&)>(
+              &AbstractReplayRenderer::render),
+          R"(Render all sensors onto an external framebuffer. For standalone applications, use the parameterless overload.)")
       .def(
           "set_sensor_transforms_from_keyframe",
           &AbstractReplayRenderer::setSensorTransformsFromKeyframe,

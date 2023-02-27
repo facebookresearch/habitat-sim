@@ -90,6 +90,10 @@ void AbstractReplayRenderer::setSensorTransformsFromKeyframe(
   return doSetSensorTransformsFromKeyframe(envIndex, prefix);
 }
 
+void AbstractReplayRenderer::render() {
+  doRender();
+}
+
 void AbstractReplayRenderer::render(
     Cr::Containers::ArrayView<const Mn::MutableImageView2D> imageViews) {
   CORRADE_ASSERT(imageViews.size() == doEnvironmentCount(),

@@ -29,7 +29,7 @@ enum class RendererStandaloneFlag {
    * @m_class{m-note m-warning}
    *
    * @par
-   *    **Not recommmended** to be enabled in end-user applications, as the log
+   *    **Not recommended** to be enabled in end-user applications, as the log
    *    contains vital information for debugging platform-specific issues.
    */
   QuietLog = 1 << 0
@@ -166,7 +166,7 @@ class RendererStandalone : public Renderer {
    * @ref depthImage() or @ref colorCudaBufferDevicePointer() /
    * @ref depthCudaBufferDevicePointer() to retrieve the output.
    */
-  void draw();
+  void draw() override;
 
   /**
    * @brief Retrieve the rendered color output

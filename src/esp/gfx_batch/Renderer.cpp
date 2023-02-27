@@ -20,6 +20,7 @@
 #include <Corrade/Utility/Path.h>
 #include <Magnum/GL/AbstractFramebuffer.h>
 #include <Magnum/GL/Buffer.h>
+#include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Mesh.h>
 #include <Magnum/GL/Renderer.h>
 #include <Magnum/GL/TextureArray.h>
@@ -1073,6 +1074,10 @@ Cr::Containers::StridedArrayView1D<Mn::Float> Renderer::lightRanges(
                  {});
 
   return stridedArrayView(state_->scenes[sceneId].lights).slice(&Light::range);
+}
+
+void Renderer::draw() {
+  draw(Mn::GL::defaultFramebuffer);
 }
 
 void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {

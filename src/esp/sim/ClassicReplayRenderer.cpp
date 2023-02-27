@@ -12,6 +12,7 @@
 #include "esp/sim/SimulatorConfiguration.h"
 
 #include <Magnum/GL/Context.h>
+#include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/ImageView.h>
 
 namespace esp {
@@ -183,6 +184,10 @@ void ClassicReplayRenderer::doSetSensorTransformsFromKeyframe(
     sensor.node().setRotation(rotation);
     sensor.node().setTranslation(translation);
   }
+}
+
+void ClassicReplayRenderer::doRender() {
+  doRender(Mn::GL::defaultFramebuffer);
 }
 
 void ClassicReplayRenderer::doRender(

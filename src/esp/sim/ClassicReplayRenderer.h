@@ -70,6 +70,8 @@ class ClassicReplayRenderer : public AbstractReplayRenderer {
   void doSetSensorTransformsFromKeyframe(unsigned envIndex,
                                          const std::string& prefix) override;
 
+  void doRender() override;
+
   void doRender(Corrade::Containers::ArrayView<const Magnum::MutableImageView2D>
                     imageViews) override;
 

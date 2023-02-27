@@ -696,6 +696,11 @@ class Renderer {
       Magnum::UnsignedInt sceneId);
 
   /**
+   * @brief Draw all scenes in the default framebuffer.
+   */
+  virtual void draw();
+
+  /**
    * @brief Draw all scenes into provided framebuffer
    *
    * The @p framebuffer is expected to have a size at least as larger as the
