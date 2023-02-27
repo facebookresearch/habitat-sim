@@ -737,7 +737,7 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
        "named templates" to be referenced from addNodeHierarchy(). */
     if (!(flags & RendererFileFlag::Whole)) {
       /* Transformations of all objects in the scene. Objects that don't have
-         this field default to an indentity transform. */
+         this field default to an identity transform. */
       Cr::Containers::Array<Mn::Matrix4> transformations{
           std::size_t(scene->mappingBound())};
       for (Cr::Containers::Pair<Mn::UnsignedInt, Mn::Matrix4> transformation :

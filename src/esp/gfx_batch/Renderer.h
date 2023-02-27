@@ -485,7 +485,7 @@ class Renderer {
   /**
    * @brief Max light count
    *
-   * By default there's zero lights, i.e. flat-shaded renderering.
+   * By default there's zero lights, i.e. flat-shaded rendering.
    * @see @ref RendererConfiguration::setMaxLightCount()
    */
   Magnum::UnsignedInt maxLightCount() const;
