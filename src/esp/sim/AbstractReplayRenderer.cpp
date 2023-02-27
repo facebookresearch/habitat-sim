@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -102,6 +102,16 @@ void AbstractReplayRenderer::render(
 void AbstractReplayRenderer::render(
     Magnum::GL::AbstractFramebuffer& framebuffer) {
   return doRender(framebuffer);
+}
+
+const void* AbstractReplayRenderer::getCudaColorBufferDevicePointer() {
+  ESP_ERROR() << "CUDA device pointer only available with the batch renderer.";
+  return nullptr;
+}
+
+const void* AbstractReplayRenderer::getCudaDepthBufferDevicePointer() {
+  ESP_ERROR() << "CUDA device pointer only available with the batch renderer.";
+  return nullptr;
 }
 
 }  // namespace sim
