@@ -8,6 +8,7 @@ set -ex
 
 git clone https://github.com/NixOS/patchelf
 cd patchelf
+git checkout 0.17.2
 sed -i 's/serial/parallel/g' configure.ac
 ./bootstrap.sh
 ./configure
