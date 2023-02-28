@@ -1,7 +1,8 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include "Corrade/Utility/Assert.h"
 #include "Magnum/DebugTools/Screenshot.h"
 #include "Magnum/Magnum.h"
 #include "Magnum/Trade/AbstractImageConverter.h"
@@ -13,6 +14,7 @@
 #include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/sensor/CameraSensor.h"
 #include "esp/sensor/Sensor.h"
+#include "esp/sim/AbstractReplayRenderer.h"
 #include "esp/sim/BatchReplayRenderer.h"
 #include "esp/sim/ClassicReplayRenderer.h"
 #include "esp/sim/Simulator.h"
@@ -186,6 +188,24 @@ void BatchReplayRendererTest::testIntegration() {
         Cr::Utility::Path::join(screenshotDir, groundTruthImageFile),
         (Mn::DebugTools::CompareImageToFile{maxThreshold, meanThreshold}));
   }
+
+  const auto colorPtr = renderer->getCudaColorBufferDevicePointer();
+  const auto depthPtr = renderer->getCudaDepthBufferDevicePointer();
+  bool isBatchRenderer =
+      dynamic_cast<esp::sim::BatchReplayRenderer*>(renderer.get());
+#ifdef ESP_BUILD_WITH_CUDA
+  if (isBatchRenderer) {
+    CORRADE_VERIFY(colorPtr);
+    CORRADE_VERIFY(depthPtr);
+  } else {
+    // Not implemented in ClassicReplayRenderer
+    CORRADE_VERIFY(!colorPtr);
+    CORRADE_VERIFY(!depthPtr);
+  }
+#else
+  CORRADE_VERIFY(!colorPtr);
+  CORRADE_VERIFY(!depthPtr);
+#endif
 }
 
 }  // namespace
