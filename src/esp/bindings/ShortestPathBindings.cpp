@@ -66,7 +66,11 @@ void initShortestPathBindings(py::module& m) {
           R"(A list of points that specify the shortest path on the navigation mesh between requestedStart and the closest (by geodesic distance) point in requestedEnds. Will be empty if no path exists.)")
       .def_readwrite(
           "geodesic_distance", &MultiGoalShortestPath::geodesicDistance,
-          R"(The total geodesic distance of the path. Will be inf if no path exists.)");
+          R"(The total geodesic distance of the path. Will be inf if no path exists.)")
+      .def_readwrite(
+          "closest_end_point_index",
+          &MultiGoalShortestPath::closestEndPointIndex,
+          R"(The index of the closest end point corresponding to end of the shortest path. Will be -1 if no path exists.)");
 
   py::class_<NavMeshSettings, NavMeshSettings::ptr>(
       m, "NavMeshSettings",

@@ -95,6 +95,9 @@ struct MultiGoalShortestPath::Impl {
   std::vector<vec3f> requestedEnds;
 
   std::vector<dtPolyRef> endRefs;
+  //! Tracks whether an endpoint is valid or not as determined by setup to avoid
+  //! extra work or issues later.
+  std::vector<bool> endIsValid;
   std::vector<vec3f> pathEnds;
 
   std::vector<float> minTheoreticalDist;
@@ -1335,6 +1338,7 @@ bool PathFinder::Impl::findPathSetup(MultiGoalShortestPath& path,
                                      dtPolyRef& startRef,
                                      vec3f& pathStart) {
   path.geodesicDistance = std::numeric_limits<float>::infinity();
+  path.closestEndPointIndex = -1;
   path.points.clear();
 
   // find nearest polys and path
@@ -1349,6 +1353,7 @@ bool PathFinder::Impl::findPathSetup(MultiGoalShortestPath& path,
   if (!path.pimpl_->endRefs.empty())
     return true;
 
+  int numValidPoints = 0;
   for (const auto& rqEnd : path.getRequestedEnds()) {
     dtPolyRef endRef = 0;
     vec3f pathEnd;
@@ -1356,11 +1361,19 @@ bool PathFinder::Impl::findPathSetup(MultiGoalShortestPath& path,
         projectToPoly(rqEnd, navQuery_.get(), filter_.get());
 
     if (status != DT_SUCCESS || endRef == 0) {
-      return false;
+      path.pimpl_->endIsValid.emplace_back(false);
+      ESP_DEBUG() << "Can't project end-point to navmesh, skipping: " << rqEnd;
+    } else {
+      path.pimpl_->endIsValid.emplace_back(true);
+      numValidPoints++;
     }
 
     path.pimpl_->endRefs.emplace_back(endRef);
     path.pimpl_->pathEnds.emplace_back(pathEnd);
+  }
+  if (numValidPoints == 0) {
+    ESP_DEBUG() << "Early abort, can't project any points to navmesh.";
+    return false;
   }
 
   return true;
@@ -1402,6 +1415,9 @@ bool PathFinder::Impl::findPath(MultiGoalShortestPath& path) {
             });
 
   for (size_t i : ordering) {
+    if (!path.pimpl_->endIsValid[i])
+      continue;
+
     if (path.pimpl_->minTheoreticalDist[i] > path.geodesicDistance)
       continue;
 
@@ -1415,6 +1431,7 @@ bool PathFinder::Impl::findPath(MultiGoalShortestPath& path) {
       path.pimpl_->minTheoreticalDist[i] = std::get<0>(*findResult);
       path.geodesicDistance = std::get<0>(*findResult);
       path.points = std::get<1>(*findResult);
+      path.closestEndPointIndex = i;
     }
   }
 
