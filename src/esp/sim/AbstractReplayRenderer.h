@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -101,6 +101,12 @@ class AbstractReplayRenderer {
 
   // Assumes the framebuffer color & depth is cleared
   void render(Magnum::GL::AbstractFramebuffer& framebuffer);
+
+  // Retrieve the color buffer as a CUDA device pointer. */
+  virtual const void* getCudaColorBufferDevicePointer();
+
+  // Retrieve the depth buffer as a CUDA device pointer. */
+  virtual const void* getCudaDepthBufferDevicePointer();
 
  private:
   /* Implementation of all public API is in the private do*() functions,
