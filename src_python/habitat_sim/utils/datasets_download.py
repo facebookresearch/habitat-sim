@@ -133,10 +133,10 @@ def initialize_test_data_sources(data_path):
             "version": "1.0",
         },
         "hab_spot_arm": {
-            "source": "http://dl.fbaipublicfiles.com/habitat/robots/hab_spot_arm_v1.0.zip",
-            "package_name": "hab_spot_arm_v1.0.zip",
+            "source": "http://dl.fbaipublicfiles.com/habitat/robots/hab_spot_arm_v2.0.zip",
+            "package_name": "hab_spot_arm_v2.0.zip",
             "link": data_path + "robots/hab_spot_arm",
-            "version": "1.0",
+            "version": "2.0",
         },
         "hab_stretch": {
             "source": "http://dl.fbaipublicfiles.com/habitat/robots/hab_stretch_v1.0.zip",
