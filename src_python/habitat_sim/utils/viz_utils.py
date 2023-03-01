@@ -302,6 +302,7 @@ def get_island_colored_map(island_top_down_map_data: np.ndarray):
     island_map = Image.new("RGB", island_top_down_map_data.shape, color=white)
     pixels = island_map.load()
     extra_colors: List[int] = []
+    r = lambda: random.randint(0, 255)
     for x in range(island_top_down_map_data.shape[0]):
         for y in range(island_top_down_map_data.shape[1]):
             if island_top_down_map_data[x, y] >= 0:
@@ -314,7 +315,6 @@ def get_island_colored_map(island_top_down_map_data: np.ndarray):
                     random_color_index = color_index - len(d3_40_colors_hex)
                     # pick random colors once fixed colors are overflowed
                     while random_color_index >= len(extra_colors):
-                        r = lambda: random.randint(0, 255)
                         new_color = int(("0x%02X%02X%02X" % (r(), r(), r())), base=16)
                         if new_color not in extra_colors:
                             extra_colors.append(new_color)
