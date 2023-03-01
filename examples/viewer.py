@@ -25,6 +25,17 @@ from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.common import quat_from_angle_axis
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
 
+# add tools directory so I can import things to try them in the viewer
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../tools"))
+print(sys.path)
+import collision_shape_automation as csa
+
+gt_raycast_results = None
+pr_raycast_results = None
+obj_temp_handle = None
+test_points = None
+normalized_error = 0
+
 
 class HabitatSimInteractiveViewer(Application):
     # the maximum number of chars displayable in the app window
@@ -166,7 +177,10 @@ class HabitatSimInteractiveViewer(Application):
         self.previous_mouse_point = None
 
         # toggle physics simulation on/off
-        self.simulating = True
+        self.simulating = False
+        self.sample_seed = 0
+        self.collision_proxy_obj = None
+        self.mouse_cast_results = None
 
         # toggle a single simulation step at the next opportunity if not
         # simulating continuously.
@@ -192,6 +206,7 @@ class HabitatSimInteractiveViewer(Application):
         LoggingContext.reinitialize_from_env()
         logger.setLevel("INFO")
         self.print_help_text()
+        print(f"Normalized Error = {normalized_error}")
 
     def draw_contact_debug(self, debug_line_render: Any):
         """
@@ -261,6 +276,51 @@ class HabitatSimInteractiveViewer(Application):
                         mn.Vector3(np.random.random(3))
                     )
             self.draw_region_debug(debug_line_render)
+
+        if gt_raycast_results is not None:
+            scene_bb = self.sim.get_active_scene_graph().get_root_node().cumulative_bb
+            inflated_scene_bb = scene_bb.scaled(mn.Vector3(1.25))
+            inflated_scene_bb = mn.Range3D.from_center(
+                scene_bb.center(), inflated_scene_bb.size() / 2.0
+            )
+            white = mn.Color4(mn.Vector3(1.0), 1.0)
+            self.sim.get_debug_line_render().draw_box(
+                inflated_scene_bb.min, inflated_scene_bb.max, white
+            )
+            if self.sim.get_rigid_object_manager().get_num_objects() == 0:
+                self.collision_proxy_obj = (
+                    self.sim.get_rigid_object_manager().add_object_by_template_handle(
+                        obj_temp_handle
+                    )
+                )
+
+            csa.debug_draw_raycast_results(
+                self.sim, gt_raycast_results, pr_raycast_results, seed=self.sample_seed
+            )
+
+            # draw test points
+            for side in test_points:
+                for p in side:
+                    self.sim.get_debug_line_render().draw_circle(
+                        translation=p,
+                        radius=0.005,
+                        color=mn.Color4.yellow(),
+                    )
+
+            if (
+                self.mouse_cast_results is not None
+                and self.mouse_cast_results.has_hits()
+            ):
+                m_ray = self.mouse_cast_results.ray
+                self.sim.get_debug_line_render().draw_circle(
+                    translation=m_ray.origin
+                    + m_ray.direction
+                    * self.mouse_cast_results.hits[0].ray_distance
+                    * m_ray.direction.length(),
+                    radius=0.005,
+                    color=white,
+                    normal=self.mouse_cast_results.hits[0].normal,
+                )
 
     def draw_event(
         self,
@@ -382,6 +442,28 @@ class HabitatSimInteractiveViewer(Application):
             logger.info("Setting default lighting override for scene.")
             self.cfg.sim_cfg.override_scene_light_defaults = True
             self.cfg.sim_cfg.scene_light_setup = habitat_sim.gfx.DEFAULT_LIGHTING_KEY
+
+        # create custom stage from object
+        self.cfg.metadata_mediator = habitat_sim.metadata.MetadataMediator()
+        self.cfg.metadata_mediator.active_dataset = self.sim_settings[
+            "scene_dataset_config_file"
+        ]
+        otm = self.cfg.metadata_mediator.object_template_manager
+        obj_template = otm.get_template_by_handle(obj_temp_handle)
+        obj_template.compute_COM_from_shape = False
+        obj_template.com = mn.Vector3(0)
+        otm.register_template(obj_template)
+        stm = self.cfg.metadata_mediator.stage_template_manager
+        stage_template_name = "obj_as_stage_template"
+        new_stage_template = stm.create_new_template(handle=stage_template_name)
+        new_stage_template.render_asset_handle = obj_template.render_asset_handle
+        stm.register_template(
+            template=new_stage_template, specified_handle=stage_template_name
+        )
+        self.cfg.sim_cfg.scene_id = stage_template_name
+        # visualize the object as its collision shape
+        obj_template.render_asset_handle = obj_template.collision_asset_handle
+        otm.register_template(obj_template)
 
         if self.sim is None:
             self.tiled_sims = []
@@ -572,7 +654,22 @@ class HabitatSimInteractiveViewer(Application):
                 self.contact_debug_draw = True
                 # TODO: add a nice log message with concise contact pair naming.
 
+        elif key == pressed.O:
+            # move the object in/out of the frame
+            if self.collision_proxy_obj is not None:
+                if self.collision_proxy_obj.translation == mn.Vector3(0):
+                    self.collision_proxy_obj.translation = mn.Vector3(100)
+                else:
+                    self.collision_proxy_obj.translation = mn.Vector3(0)
+
         elif key == pressed.T:
+            if shift_pressed:
+                self.sample_seed -= 1
+            else:
+                self.sample_seed += 1
+
+            event.accepted = True
+            return
             # load URDF
             fixed_base = alt_pressed
             urdf_file_path = ""
@@ -680,6 +777,11 @@ class HabitatSimInteractiveViewer(Application):
         mouse button to steer the agent's facing direction. When in GRAB mode,
         continues to update the grabber's object position with our agents position.
         """
+
+        render_camera = self.render_camera.render_camera
+        ray = render_camera.unproject(self.get_mouse_position(event.position))
+        self.mouse_cast_results = self.sim.cast_ray(ray=ray)
+
         button = Application.MouseMoveEvent.Buttons
         # if interactive mode -> LOOK MODE
         if event.buttons == button.LEFT and self.mouse_interaction == MouseMode.LOOK:
@@ -1208,7 +1310,8 @@ if __name__ == "__main__":
 
     # Setting up sim_settings
     sim_settings: Dict[str, Any] = default_sim_settings
-    sim_settings["scene"] = args.scene
+    # sim_settings["scene"] = args.scene
+    sim_settings["scene"] = "NONE"
     sim_settings["scene_dataset_config_file"] = args.dataset
     sim_settings["enable_physics"] = not args.disable_physics
     sim_settings["use_default_lighting"] = args.use_default_lighting
@@ -1219,6 +1322,15 @@ if __name__ == "__main__":
     sim_settings["window_height"] = args.height
     sim_settings["default_agent_navmesh"] = False
     sim_settings["enable_hbao"] = args.hbao
+
+    obj_name = "d1d1e0cdaba797ee70882e63f66055675c3f1e7f"
+    (
+        gt_raycast_results,
+        pr_raycast_results,
+        obj_temp_handle,
+        test_points,
+        normalized_error,
+    ) = csa.evaluate_collision_shape(obj_name, sim_settings)
 
     # start the application
     HabitatSimInteractiveViewer(sim_settings).exec()
