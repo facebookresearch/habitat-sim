@@ -8,7 +8,7 @@ import habitat_sim
 import habitat_sim.agent
 
 # [default_sim_settings]
-default_sim_settings = {
+default_sim_settings: Dict[str, Any] = {
     "scene_dataset_config_file": "default",
     "scene": "NONE",
     "width": 640,
