@@ -1076,6 +1076,10 @@ Cr::Containers::StridedArrayView1D<Mn::Float> Renderer::lightRanges(
 }
 
 void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
+  if (state_->shaders.empty()) {
+    return;
+  }
+
   /* Process scenes that are marked as dirty */
   // TODO this could be a separate step to allow the user to control when it
   //  runs

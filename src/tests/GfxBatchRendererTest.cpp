@@ -63,6 +63,7 @@ struct GfxBatchRendererTest : Cr::TestSuite::Tester {
   void meshHierarchy();
   void multipleMeshes();
 
+  void emptyScene();
   void multipleScenes();
   void clearScene();
 
@@ -283,6 +284,8 @@ GfxBatchRendererTest::GfxBatchRendererTest() {
 
   addInstancedTests({&GfxBatchRendererTest::meshHierarchy},
       Cr::Containers::arraySize(MeshHierarchyData));
+
+  addTests({&GfxBatchRendererTest::emptyScene});
 
   addInstancedTests({&GfxBatchRendererTest::multipleMeshes,
                      &GfxBatchRendererTest::multipleScenes,
@@ -1708,6 +1711,27 @@ void GfxBatchRendererTest::multipleMeshes() {
   CORRADE_COMPARE(color.format(), Mn::PixelFormat::RGBA8Unorm);
   CORRADE_COMPARE(color.pixels<Mn::Color4ub>()[18][44], 0x00cccc_rgb);
   CORRADE_COMPARE(color.pixels<Mn::Color4ub>()[24][88], 0xcc00cc_rgb);
+}
+
+void GfxBatchRendererTest::emptyScene() {
+  // clang-format off
+  esp::gfx_batch::RendererStandalone renderer{
+      esp::gfx_batch::RendererConfiguration{}
+          .setTileSizeCount({64, 48}, {2, 2}),
+      esp::gfx_batch::RendererStandaloneConfiguration{}
+          .setFlags(esp::gfx_batch::RendererStandaloneFlag::QuietLog)
+  };
+  // clang-format on
+
+  for (int i = 0; i < 4; ++i) {
+    esp::gfx_batch::SceneStats stats = renderer.sceneStats(i);
+    CORRADE_COMPARE(stats.nodeCount, 0);
+    CORRADE_COMPARE(stats.drawCount, 0);
+    CORRADE_COMPARE(stats.drawBatchCount, 0);
+  }
+
+  renderer.draw();
+  MAGNUM_VERIFY_NO_GL_ERROR();
 }
 
 void GfxBatchRendererTest::multipleScenes() {
