@@ -1076,7 +1076,10 @@ Cr::Containers::StridedArrayView1D<Mn::Float> Renderer::lightRanges(
 }
 
 void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
+  /* If addFile() was not called, we don't have the shaders set up yet. In that
+     case there should be no meshes to render from either, so nothing to do. */
   if (state_->shaders.empty()) {
+    CORRADE_INTERNAL_ASSERT(state_->meshes.isEmpty());
     return;
   }
 
