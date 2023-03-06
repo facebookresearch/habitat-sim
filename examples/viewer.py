@@ -1259,13 +1259,50 @@ if __name__ == "__main__":
     sim_settings["window_height"] = args.height
 
     obj_name = "d1d1e0cdaba797ee70882e63f66055675c3f1e7f"
-    (
-        gt_raycast_results,
-        pr_raycast_results,
-        obj_temp_handle,
-        test_points,
-        normalized_error,
-    ) = csa.evaluate_collision_shape(obj_name, sim_settings)
+
+    # load JSON once instead of repeating
+    mm = habitat_sim.metadata.MetadataMediator()
+    mm.active_dataset = sim_settings["scene_dataset_config_file"]
+
+    num_point_samples = 1000
+    sample_metrics = []
+    avg_metric = 0
+    avg_profile_metrics = {}
+    for _sample in range(5):
+        (
+            gt_raycast_results,
+            pr_raycast_results,
+            obj_temp_handle,
+            test_points,
+            normalized_error,
+            profile_metrics,
+        ) = csa.evaluate_collision_shape(
+            obj_name,
+            sim_settings,
+            sample_shape="aabb",
+            mm=mm,
+            num_point_samples=num_point_samples,
+        )
+        for key in list(profile_metrics.keys()):
+            if key not in avg_profile_metrics:
+                avg_profile_metrics[key] = profile_metrics[key]
+            else:
+                avg_profile_metrics[key] += profile_metrics[key]
+
+        sample_metrics.append(normalized_error)
+        avg_metric += normalized_error
+    for key in list(avg_profile_metrics.keys()):
+        avg_profile_metrics[key] = avg_profile_metrics[key] / len(sample_metrics)
+    avg_metric /= len(sample_metrics)
+    print(f"sample_metrics ({len(sample_metrics)} samples) = {sample_metrics}")
+    print(f"avg_metric = {avg_metric}")
+    variance = 0
+    for metric in sample_metrics:
+        variance += (metric - avg_metric) ** 2
+    variance /= len(sample_metrics)
+    print(f"variance = {variance}")
+    print(f"avg_profile_metrics = {avg_profile_metrics}")
+    exit()
 
     # start the application
     HabitatSimInteractiveViewer(sim_settings).exec()
