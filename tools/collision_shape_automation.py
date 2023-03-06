@@ -4,6 +4,7 @@
 
 import argparse
 import random
+import time
 from typing import Any, Dict, List, Tuple
 
 import magnum as mn
@@ -17,15 +18,11 @@ from habitat_sim.utils.settings import default_sim_settings, make_cfg
 # shelves - bad approximation: d1d1e0cdaba797ee70882e63f66055675c3f1e7f.glb
 
 
-def sample_points_from_range3d(
-    range3d: mn.Range3D, num_points: int = 100
-) -> List[List[mn.Vector3]]:
+def compute_area_weights_for_range3d_faces(range3d: mn.Range3D):
     """
-    Sample 'num_points' from the surface of a box defeined by 'range3d'.
+    Compute a set of area weights from a Range3D.
     """
 
-    # -----------------------------------------
-    # area weighted face sampling
     face_areas = [
         range3d.size_x() * range3d.size_y(),  # front/back
         range3d.size_x() * range3d.size_z(),  # top/bottom
@@ -40,7 +37,20 @@ def sample_points_from_range3d(
             area_accumulator.append(face_areas[area_ix] + area_accumulator[-1])
 
     normalized_area_accumulator = [x / area_accumulator[-1] for x in area_accumulator]
-    print(normalized_area_accumulator)
+
+    return normalized_area_accumulator
+
+
+def sample_points_from_range3d(
+    range3d: mn.Range3D, num_points: int = 100
+) -> List[List[mn.Vector3]]:
+    """
+    Sample 'num_points' from the surface of a box defeined by 'range3d'.
+    """
+
+    # -----------------------------------------
+    # area weighted face sampling
+    normalized_area_accumulator = compute_area_weights_for_range3d_faces(range3d)
 
     def sample_face() -> int:
         """
@@ -283,14 +293,13 @@ def get_raycast_results_cumulative_error_metric(
         local_max_error = ray_len
         gt_dist = ray_len
         if ground_truth_results[r_ix].has_hits():
-            gt_dist = ground_truth_results[r_ix].hits[0].ray_distance
+            gt_dist = ground_truth_results[r_ix].hits[0].ray_distance * ray_len
             local_max_error = max(gt_dist, ray_len - gt_dist)
         max_error += local_max_error
-        local_absolute_error = ray_len
+        local_proxy_dist = ray_len
         if proxy_results[r_ix].has_hits():
-            local_absolute_error = abs(
-                proxy_results[r_ix].hits[0].ray_distance - gt_dist
-            )
+            local_proxy_dist = proxy_results[r_ix].hits[0].ray_distance * ray_len
+        local_absolute_error = abs(local_proxy_dist - gt_dist)
         absolute_error += local_absolute_error
 
     normalized_error = absolute_error / max_error
@@ -298,7 +307,11 @@ def get_raycast_results_cumulative_error_metric(
 
 
 def evaluate_collision_shape(
-    object_handle: str, sim_settings: Dict[str, Any], sample_shape="sphere"
+    object_handle: str,
+    sim_settings: Dict[str, Any],
+    sample_shape="sphere",
+    mm=None,
+    num_point_samples=100,
 ) -> None:
     """
     Runs in-engine evaluation of collision shape accuracy for a single object.
@@ -316,9 +329,17 @@ def evaluate_collision_shape(
     :param object_handle: The object to evaluate.
     :param sim_settings: Any simulator settings for initialization (should be physics enabled and point to correct dataset).
     :param sample_shape: The desired bounding shape for raycast: "sphere" or "aabb".
+    :param mm: A pre-configured MetadataMediator may be provided to reduce initialization time. Should have the correct dataset already configured.
     """
+    profile_metrics = {}
+    start_time = time.time()
+    check_time = time.time()
     cfg = make_cfg(sim_settings)
+    if mm is not None:
+        cfg.metadata_mediator = mm
     with habitat_sim.Simulator(cfg) as sim:
+        profile_metrics["init0"] = time.time() - check_time
+        check_time = time.time()
         # evaluate the collision shape defined in an object's template
         # 1. get the template from MM
         matching_templates = sim.get_object_template_manager().get_template_handles(
@@ -333,8 +354,8 @@ def evaluate_collision_shape(
         )
         obj_template.compute_COM_from_shape = False
         obj_template.com = mn.Vector3(0)
-        obj_template.bounding_box_collisions = True
-        obj_template.is_collidable = False
+        # obj_template.bounding_box_collisions = True
+        # obj_template.is_collidable = False
         sim.get_object_template_manager().register_template(obj_template)
         # 2. Setup a stage from the object's render mesh
         stm = sim.get_stage_template_manager()
@@ -349,20 +370,40 @@ def evaluate_collision_shape(
         new_settings["scene"] = stage_template_name
         new_config = make_cfg(new_settings)
         sim.reconfigure(new_config)
+        profile_metrics["init_stage"] = time.time() - check_time
+        check_time = time.time()
+
         # 4. compute initial metric baselines
         scene_bb = sim.get_active_scene_graph().get_root_node().cumulative_bb
         inflated_scene_bb = scene_bb.scaled(mn.Vector3(1.25))
         inflated_scene_bb = mn.Range3D.from_center(
             scene_bb.center(), inflated_scene_bb.size() / 2.0
         )
-        # bounding box sample
-        # test_points = sample_points_from_range3d(range3d=inflated_scene_bb)
-        # bounding sphere sample
-        half_diagonal = (scene_bb.max - scene_bb.min).length() / 2.0
-        test_points = sample_points_from_sphere(
-            center=inflated_scene_bb.center(), radius=half_diagonal
-        )
+        test_points = None
+        if sample_shape == "aabb":
+            # bounding box sample
+            test_points = sample_points_from_range3d(
+                range3d=inflated_scene_bb, num_points=num_point_samples
+            )
+        elif sample_shape == "sphere":
+            # bounding sphere sample
+            half_diagonal = (scene_bb.max - scene_bb.min).length() / 2.0
+            test_points = sample_points_from_sphere(
+                center=inflated_scene_bb.center(),
+                radius=half_diagonal,
+                num_points=num_point_samples,
+            )
+        else:
+            raise NotImplementedError(
+                f"sample_shape == `{sample_shape}` is not implemented. Use `sphere` or `aabb`."
+            )
+        profile_metrics["sample_points"] = time.time() - check_time
+        check_time = time.time()
+
         gt_raycast_results = run_pairwise_raycasts(test_points, sim)
+        profile_metrics["raycast_stage"] = time.time() - check_time
+        check_time = time.time()
+
         # 5. load the object with proxy (in NONE stage)
         new_settings = sim_settings.copy()
         new_config = make_cfg(new_settings)
@@ -371,18 +412,29 @@ def evaluate_collision_shape(
             obj_template_handle
         )
         obj.translation = obj.com
+        profile_metrics["init_object"] = time.time() - check_time
+        check_time = time.time()
+
         # 6. compute the metric for proxy object
         pr_raycast_results = run_pairwise_raycasts(test_points, sim)
+        profile_metrics["raycast_object"] = time.time() - check_time
+        check_time = time.time()
+
         # 7. compare metrics
         normalized_error = get_raycast_results_cumulative_error_metric(
             gt_raycast_results, pr_raycast_results
         )
+        profile_metrics["compute_metrics"] = time.time() - check_time
+        check_time = time.time()
+        profile_metrics["total"] = time.time() - start_time
+
         return (
             gt_raycast_results,
             pr_raycast_results,
             obj_template_handle,
             test_points,
             normalized_error,
+            profile_metrics,
         )
 
 
