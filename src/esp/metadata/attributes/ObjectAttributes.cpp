@@ -91,7 +91,7 @@ ObjectAttributes::ObjectAttributes(const std::string& handle)
   setComputeCOMFromShape(true);
 
   setBoundingBoxCollisions(false);
-  setJoinCollisionMeshes(true);
+  setJoinCollisionMeshes(false);
   // default to use material-derived shader unless otherwise specified in config
   // or instance config
   setShaderType(getShaderTypeName(ObjectInstanceShaderType::Material));
