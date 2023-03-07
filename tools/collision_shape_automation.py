@@ -216,13 +216,22 @@ def sample_points_from_sphere(
 
 
 def run_pairwise_raycasts(
-    points: List[List[mn.Vector3]], sim: habitat_sim.Simulator, min_dist: float = 0.1
+    points: List[List[mn.Vector3]],
+    sim: habitat_sim.Simulator,
+    min_dist: float = 0.05,
+    discard_invalid_results: bool = True,
 ) -> List[habitat_sim.physics.RaycastResults]:
     """
     Raycast between each pair of points from different surfaces.
     :param min_dist: The minimum ray distance to allow. Cull all candidate pairs closer than this distance.
+    :param discard_invalid_results: If true, discard ray hit distances > 1
     """
+    ray_max_local_dist = 100.0  # default
+    if discard_invalid_results:
+        # disallow contacts outside of the bounding volume (shouldn't happen anyway...)
+        ray_max_local_dist = 1.0
     all_raycast_results: List[habitat_sim.physics.RaycastResults] = []
+    print("Rays detected with invalid hit distance: ")
     for fix0 in range(len(points)):
         for fix1 in range(len(points)):
             if fix0 != fix1:  # no pairs on the same face
@@ -232,11 +241,25 @@ def run_pairwise_raycasts(
                             # this is a valid pair of points
                             ray = habitat_sim.geo.Ray(p0, p1 - p0)  # origin, direction
                             # raycast
-                            all_raycast_results.append(sim.cast_ray(ray=ray))
+                            all_raycast_results.append(
+                                sim.cast_ray(ray=ray, max_distance=ray_max_local_dist)
+                            )
                             # reverse direction as separate entry (because exiting a convex does not generate a hit record)
                             ray2 = habitat_sim.geo.Ray(p1, p0 - p1)  # origin, direction
                             # raycast
-                            all_raycast_results.append(sim.cast_ray(ray=ray2))
+                            all_raycast_results.append(
+                                sim.cast_ray(ray=ray2, max_distance=ray_max_local_dist)
+                            )
+
+                            # prints invalid rays if not discarded by discard_invalid_results==True
+                            for ix in [-1, -2]:
+                                if all_raycast_results[ix].has_hits() and (
+                                    all_raycast_results[ix].hits[0].ray_distance > 1
+                                    or all_raycast_results[ix].hits[0].ray_distance < 0
+                                ):
+                                    print(
+                                        f"     distance={all_raycast_results[ix].hits[0].ray_distance}"
+                                    )
 
     return all_raycast_results
 
@@ -265,8 +288,8 @@ def debug_draw_raycast_results(
             overshoot_dists = []
             undershoot_dists = []
 
+            # draw first hits for gt and proxy
             if gt_results.has_hits():
-                # draw first and last hits for gt and proxy
                 sim.get_debug_line_render().draw_circle(
                     translation=ray.origin
                     + ray.direction * gt_results.hits[0].ray_distance,
@@ -479,6 +502,7 @@ def evaluate_collision_shape(
         profile_metrics["sample_points"] = time.time() - check_time
         check_time = time.time()
 
+        print("GT raycast:")
         gt_raycast_results = run_pairwise_raycasts(test_points, sim)
         profile_metrics["raycast_stage"] = time.time() - check_time
         check_time = time.time()
@@ -495,6 +519,7 @@ def evaluate_collision_shape(
         check_time = time.time()
 
         # 6. compute the metric for proxy object
+        print("PR raycast:")
         pr_raycast_results = run_pairwise_raycasts(test_points, sim)
         profile_metrics["raycast_object"] = time.time() - check_time
         check_time = time.time()
@@ -647,8 +672,6 @@ class CollisionProxyOptimizer:
             obj_handle in self.gt_data
         ), f"`{obj_handle}` does not have any entry in gt_data: {self.gt_data.keys()}. Call to `setup_obj_gt(obj_handle)` required."
 
-        print(self.gt_data[obj_handle]["raycasts"].keys())
-
         # start with empty scene
         cfg = self.get_cfg_with_mm()
         with habitat_sim.Simulator(cfg) as sim:
@@ -774,7 +797,6 @@ class CollisionProxyOptimizer:
                     for key in self.results[obj_handle]["normalized_errors"]:
                         if key not in existing_cols:
                             existing_cols.append(key)
-            print(f"existing_cols = {existing_cols}")
             # put the baselines first
             ordered_cols = ["object_handle"]
             if "empty" in existing_cols:
@@ -784,7 +806,6 @@ class CollisionProxyOptimizer:
             for key in existing_cols:
                 if key not in ordered_cols:
                     ordered_cols.append(key)
-            print(f"ordered_cols = {ordered_cols}")
             # write column names row
             writer.writerow(ordered_cols)
 
@@ -800,7 +821,6 @@ class CollisionProxyOptimizer:
                                 )
                             else:
                                 row_data.append("")
-                print(f"row_data = {row_data}")
                 writer.writerow(row_data)
 
     def compute_and_save_results_for_objects(
@@ -848,15 +868,22 @@ def main():
     sim_settings = default_sim_settings.copy()
     sim_settings["scene_dataset_config_file"] = args.dataset
 
+    # one-off single object logic:
+    # evaluate_collision_shape(args.object_handle, sim_settings)
+
     # use the CollisionProxyOptimizer to compute metrics for multiple objects
     cpo = CollisionProxyOptimizer(sim_settings)
 
-    obj_handle1 = "0a5e809804911e71de6a4ef89f2c8fef5b9291b3"
-    obj_handle2 = "d1d1e0cdaba797ee70882e63f66055675c3f1e7f"
+    # get all object handles
+    all_handles = cpo.mm.object_template_manager.get_file_template_handles()
+    # get a subset for scale testing
+    all_handles = all_handles[:100]
+    cpo.compute_and_save_results_for_objects(all_handles)
 
-    cpo.compute_and_save_results_for_objects([obj_handle1, obj_handle2])
-
-    # evaluate_collision_shape(args.object_handle, sim_settings)
+    # testing objects
+    # obj_handle1 = "0a5e809804911e71de6a4ef89f2c8fef5b9291b3"
+    # obj_handle2 = "d1d1e0cdaba797ee70882e63f66055675c3f1e7f"
+    # cpo.compute_and_save_results_for_objects([obj_handle1, obj_handle2])
 
 
 if __name__ == "__main__":
