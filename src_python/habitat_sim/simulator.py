@@ -400,7 +400,7 @@ class Simulator(SimulatorBackend):
             )
 
     def __create_sensor(self, sensor_spec: SensorSpec, scene_node: SceneNode) -> None:
-        assert scene_node is not None
+        assert scene_node is not None, "Cannot attach sensor to None scene_node"
         sensors_added = SensorFactory.create_sensors(scene_node, [sensor_spec])
         sensor = sensors_added[sensor_spec.uuid]
         self.__sensors_[sensor_spec.uuid] = sensor

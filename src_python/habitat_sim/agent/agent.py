@@ -153,7 +153,9 @@ class Agent:
 
     def _add_sensor(self, spec: SensorSpec, modify_agent_config: bool = True) -> None:
         if modify_agent_config:
-            assert spec not in self.agent_config.sensor_specifications
+            assert (
+                spec not in self.agent_config.sensor_specifications
+            ), "Spec already exists in agent config"
             self.agent_config.sensor_specifications.append(spec)
         SensorFactory.create_sensors(self.scene_node, [spec])
 
