@@ -3,6 +3,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import argparse
+import math
 import random
 import time
 from typing import Any, Dict, List, Tuple
@@ -16,6 +17,9 @@ from habitat_sim.utils.settings import default_sim_settings, make_cfg
 # object samples:
 # chair - good approximation: 0a5e809804911e71de6a4ef89f2c8fef5b9291b3.glb
 # shelves - bad approximation: d1d1e0cdaba797ee70882e63f66055675c3f1e7f.glb
+
+# =======================================================================
+# Range3D surface sampling utils
 
 
 def compute_area_weights_for_range3d_faces(range3d: mn.Range3D):
@@ -41,29 +45,10 @@ def compute_area_weights_for_range3d_faces(range3d: mn.Range3D):
     return normalized_area_accumulator
 
 
-def sample_points_from_range3d(
-    range3d: mn.Range3D, num_points: int = 100
-) -> List[List[mn.Vector3]]:
+def get_range3d_sample_planes(range3d: mn.Range3D):
     """
-    Sample 'num_points' from the surface of a box defeined by 'range3d'.
+    Get origin and basis vectors for each face's sample planes.
     """
-
-    # -----------------------------------------
-    # area weighted face sampling
-    normalized_area_accumulator = compute_area_weights_for_range3d_faces(range3d)
-
-    def sample_face() -> int:
-        """
-        Weighted sampling of a face from the area accumulator.
-        """
-        rand = random.random()
-        for ix in range(6):
-            if normalized_area_accumulator[ix] > rand:
-                return ix
-        raise (AssertionError, "Should not reach here.")
-
-    # -----------------------------------------
-
     # For each face a starting point and two edge vectors (un-normalized)
     face_info: List[Tuple[mn.Vector3, mn.Vector3, mn.Vector3]] = [
         (
@@ -97,6 +82,91 @@ def sample_points_from_range3d(
             mn.Vector3.z_axis(range3d.size_z()),
         ),  # right
     ]
+    return face_info
+
+
+def sample_jittered_points_from_range3d(range3d: mn.Range3D, num_points: int = 100):
+    """
+    Use jittered sampling to compute a more uniformly distributed set of random points.
+    """
+    normalized_area_accumulator = compute_area_weights_for_range3d_faces(range3d)
+    normalized_areas = []
+    for vix in range(len(normalized_area_accumulator)):
+        if vix == 0:
+            normalized_areas.append(normalized_area_accumulator[vix])
+        else:
+            normalized_areas.append(
+                normalized_area_accumulator[vix] - normalized_area_accumulator[vix - 1]
+            )
+
+    # get number of points per face based on area
+    # NOTE: rounded up, so may be slightly more points than requested.
+    points_per_face = [max(1, math.ceil(x * num_points)) for x in normalized_areas]
+
+    # get face plane basis
+    face_info = get_range3d_sample_planes(range3d)
+
+    # one internal list of each face of the box:
+    samples = []
+    for _ in range(6):
+        samples.append([])
+
+    real_total_points = 0
+    # print("Sampling Stats: ")
+    # for each face, jittered sample of total area:
+    for face_ix, f in enumerate(face_info):
+        # get ratio of width/height in local space to plan jittering
+        aspect_ratio = f[1].length() / f[2].length()
+        num_wide = max(1, int(math.sqrt(aspect_ratio * points_per_face[face_ix])))
+        num_high = max(1, int((points_per_face[face_ix] + num_wide - 1) / num_wide))
+        total_points = num_wide * num_high
+        real_total_points += total_points
+        # print(f"    f_{face_ix}: ")
+        # print(f"        points_per_face = {points_per_face[face_ix]}")
+        # print(f"        aspect_ratio = {aspect_ratio}")
+        # print(f"        num_wide = {num_wide}")
+        # print(f"        num_high = {num_high}")
+        # print(f"        total_points = {total_points}")
+
+        # get jittered cell sizes
+        dx = f[1] / num_wide
+        dy = f[2] / num_high
+        for x in range(num_wide):
+            for y in range(num_high):
+                # get cell origin
+                org = f[0] + x * dx + y * dy
+                # point is randomly placed in the cell
+                point = org + random.random() * dx + random.random() * dy
+                samples[face_ix].append(point)
+    # print(f"        real_total_points = {real_total_points}")
+
+    return samples
+
+
+def sample_points_from_range3d(
+    range3d: mn.Range3D, num_points: int = 100
+) -> List[List[mn.Vector3]]:
+    """
+    Sample 'num_points' from the surface of a box defeined by 'range3d'.
+    """
+
+    # -----------------------------------------
+    # area weighted face sampling
+    normalized_area_accumulator = compute_area_weights_for_range3d_faces(range3d)
+
+    def sample_face() -> int:
+        """
+        Weighted sampling of a face from the area accumulator.
+        """
+        rand = random.random()
+        for ix in range(6):
+            if normalized_area_accumulator[ix] > rand:
+                return ix
+        raise (AssertionError, "Should not reach here.")
+
+    # -----------------------------------------
+
+    face_info = get_range3d_sample_planes(range3d)
 
     # one internal list of each face of the box:
     samples = []
@@ -111,6 +181,10 @@ def sample_points_from_range3d(
         samples[face_ix].append(point)
 
     return samples
+
+
+# End - Range3D surface sampling utils
+# =======================================================================
 
 
 def sample_points_from_sphere(
@@ -328,7 +402,7 @@ def evaluate_collision_shape(
 
     :param object_handle: The object to evaluate.
     :param sim_settings: Any simulator settings for initialization (should be physics enabled and point to correct dataset).
-    :param sample_shape: The desired bounding shape for raycast: "sphere" or "aabb".
+    :param sample_shape: The desired bounding shape for raycast: "sphere" or "aabb", "jittered_aabb".
     :param mm: A pre-configured MetadataMediator may be provided to reduce initialization time. Should have the correct dataset already configured.
     """
     profile_metrics = {}
@@ -383,6 +457,11 @@ def evaluate_collision_shape(
         if sample_shape == "aabb":
             # bounding box sample
             test_points = sample_points_from_range3d(
+                range3d=inflated_scene_bb, num_points=num_point_samples
+            )
+        elif sample_shape == "jittered_aabb":
+            # bounding box sample
+            test_points = sample_jittered_points_from_range3d(
                 range3d=inflated_scene_bb, num_points=num_point_samples
             )
         elif sample_shape == "sphere":
