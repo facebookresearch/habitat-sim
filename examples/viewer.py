@@ -1329,11 +1329,11 @@ if __name__ == "__main__":
     mm = habitat_sim.metadata.MetadataMediator()
     mm.active_dataset = sim_settings["scene_dataset_config_file"]
 
-    num_point_samples = 1000
+    num_point_samples = 100
     sample_metrics = []
     avg_metric = 0
     avg_profile_metrics = {}
-    for _sample in range(5):
+    for _sample in range(10):
         (
             gt_raycast_results,
             pr_raycast_results,
@@ -1344,7 +1344,7 @@ if __name__ == "__main__":
         ) = csa.evaluate_collision_shape(
             obj_name,
             sim_settings,
-            sample_shape="aabb",
+            sample_shape="jittered_aabb",
             mm=mm,
             num_point_samples=num_point_samples,
         )
@@ -1364,8 +1364,9 @@ if __name__ == "__main__":
     variance = 0
     for metric in sample_metrics:
         variance += (metric - avg_metric) ** 2
-    variance /= len(sample_metrics)
+    variance /= len(sample_metrics) - 1
     print(f"variance = {variance}")
+    print(f"std = {math.sqrt(variance)}")
     print(f"avg_profile_metrics = {avg_profile_metrics}")
     exit()
 
