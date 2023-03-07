@@ -258,14 +258,14 @@ def test_duplicate_sensors(
         for sensor_spec in additional_sensors:
             try:
                 sim.add_sensor(sensor_spec)
-            except Exception:
-                print(f"Skipping: {sensor_spec.uuid} is duplicate sensor")
+            except AssertionError as err_msg:
+                print(f"Skipping: {sensor_spec.uuid} is duplicate sensor : {err_msg}")
 
             try:
                 sim.add_sensor(sensor_spec, agent_id)
-            except Exception:
+            except AssertionError as err_msg:
                 print(
-                    f"Skipping: {sensor_spec.uuid} for agent {agent_id} is duplicate sensor"
+                    f"Skipping: {sensor_spec.uuid} for agent {agent_id} is duplicate sensor : {err_msg}"
                 )
 
 
