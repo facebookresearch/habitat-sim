@@ -181,6 +181,7 @@ class HabitatSimInteractiveViewer(Application):
         self.sample_seed = 0
         self.collision_proxy_obj = None
         self.mouse_cast_results = None
+        self.debug_draw_raycasts = True
 
         # toggle a single simulation step at the next opportunity if not
         # simulating continuously.
@@ -277,13 +278,26 @@ class HabitatSimInteractiveViewer(Application):
                     )
             self.draw_region_debug(debug_line_render)
 
-        if gt_raycast_results is not None:
+        # mouse raycast circle
+        white = mn.Color4(mn.Vector3(1.0), 1.0)
+        if self.mouse_cast_results is not None and self.mouse_cast_results.has_hits():
+            m_ray = self.mouse_cast_results.ray
+            self.sim.get_debug_line_render().draw_circle(
+                translation=m_ray.origin
+                + m_ray.direction
+                * self.mouse_cast_results.hits[0].ray_distance
+                * m_ray.direction.length(),
+                radius=0.005,
+                color=white,
+                normal=self.mouse_cast_results.hits[0].normal,
+            )
+
+        if gt_raycast_results is not None and self.debug_draw_raycasts:
             scene_bb = self.sim.get_active_scene_graph().get_root_node().cumulative_bb
             inflated_scene_bb = scene_bb.scaled(mn.Vector3(1.25))
             inflated_scene_bb = mn.Range3D.from_center(
                 scene_bb.center(), inflated_scene_bb.size() / 2.0
             )
-            white = mn.Color4(mn.Vector3(1.0), 1.0)
             self.sim.get_debug_line_render().draw_box(
                 inflated_scene_bb.min, inflated_scene_bb.max, white
             )
@@ -304,23 +318,8 @@ class HabitatSimInteractiveViewer(Application):
                     self.sim.get_debug_line_render().draw_circle(
                         translation=p,
                         radius=0.005,
-                        color=mn.Color4.yellow(),
+                        color=mn.Color4.magenta(),
                     )
-
-            if (
-                self.mouse_cast_results is not None
-                and self.mouse_cast_results.has_hits()
-            ):
-                m_ray = self.mouse_cast_results.ray
-                self.sim.get_debug_line_render().draw_circle(
-                    translation=m_ray.origin
-                    + m_ray.direction
-                    * self.mouse_cast_results.hits[0].ray_distance
-                    * m_ray.direction.length(),
-                    radius=0.005,
-                    color=white,
-                    normal=self.mouse_cast_results.hits[0].normal,
-                )
 
     def draw_event(
         self,
@@ -663,7 +662,10 @@ class HabitatSimInteractiveViewer(Application):
                     self.collision_proxy_obj.translation = mn.Vector3(0)
 
         elif key == pressed.T:
-            if shift_pressed:
+            if alt_pressed:
+                self.debug_draw_raycasts = not self.debug_draw_raycasts
+                print(f"Toggled self.debug_draw_raycasts: {self.debug_draw_raycasts}")
+            elif shift_pressed:
                 self.sample_seed -= 1
             else:
                 self.sample_seed += 1
@@ -1325,6 +1327,10 @@ if __name__ == "__main__":
 
     obj_name = "d1d1e0cdaba797ee70882e63f66055675c3f1e7f"
 
+    # check against default
+    if args.scene != "./data/test_assets/scenes/simple_room.glb":
+        obj_name = args.scene
+
     # load JSON once instead of repeating
     mm = habitat_sim.metadata.MetadataMediator()
     mm.active_dataset = sim_settings["scene_dataset_config_file"]
@@ -1368,7 +1374,7 @@ if __name__ == "__main__":
     print(f"variance = {variance}")
     print(f"std = {math.sqrt(variance)}")
     print(f"avg_profile_metrics = {avg_profile_metrics}")
-    exit()
+    # exit()
 
     # start the application
     HabitatSimInteractiveViewer(sim_settings).exec()
