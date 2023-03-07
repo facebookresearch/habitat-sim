@@ -462,45 +462,69 @@ class Simulator(SimulatorBackend):
     def _init_sensor(self, sensor_spec: SensorSpec, agent_id: int = None) -> None:
         # TODO: temporary if statement while we refactor sensors
         if agent_id is not None:
-            self.__init_agent_sensor(sensor_spec, agent_id)
+            sensor = self.get_agent(agent_id).sensors[sensor_spec.uuid]
+            # populate to-be-removed list of per-agent dicts with sensor
+            self.__sensors[agent_id][sensor_spec.uuid] = sensor
+
+            if sensor_spec.sensor_type != SensorType.AUDIO:
+                # create buffer and put in member variables
+                self.__create_obs_buffer(
+                    sensor_spec,
+                    sensor,
+                    self.__obs_buffers[agent_id],
+                    self.__image_views[agent_id],
+                )
+
         else:
-            self.__init_independent_sensor(sensor_spec)
+            sensor = self.__sensors_.get(sensor_spec.uuid)
+            if sensor_spec.sensor_type != SensorType.AUDIO:
+                # create buffer and put in member variables
+                self.__create_obs_buffer(
+                    sensor_spec, sensor, self.__obs_buffers_, self.__image_views_
+                )
 
-    def __init_agent_sensor(self, sensor_spec: SensorSpec, agent_id: int) -> None:
-        """ """
-        sensor = self.get_agent(agent_id).sensors[sensor_spec.uuid]
-        self.__sensors[agent_id][sensor_spec.uuid] = sensor
-        if sensor_spec.sensor_type == SensorType.AUDIO:
-            return
-
+    def __create_obs_buffer(
+        self,
+        sensor_spec: SensorSpec,
+        sensor: Sensor,
+        obs_buffer_dict: Dict[str, SensorObservation],
+        image_view_dict: Dict[str, mn.MutableImageView2D],
+    ) -> None:
+        r"""Creates an observation buffer, and possibly an image view, of correct type and
+        dimensions for the given sensor as described by the sensor_spec, and places the
+        appropriate constructs in t
+        :param sensor_spec: The SensorSpec describing the sensor
+        :param sensor: The Sensor object responsible for the observation buffer
+        :param obs_buffer_dict: dictionary holding all the observation buffers,
+            keyed by the sensor's uuid
+        :param image_view_dict: dictionary holding all the image view corresponding to
+            observation buffer (only built for non-torch obs buffers)
+        """
         if self.renderer is not None:
             self.renderer.bind_render_target(sensor)
 
         if sensor_spec.gpu2gpu_transfer:
-            # TODO: this part may not be right, it was adapted from what was in Simulator.Sensor
             assert cuda_enabled, "Must build habitat sim with cuda for gpu2gpu-transfer"
             assert _HAS_TORCH
             device = torch.device("cuda", self.gpu_device)  # type: ignore[attr-defined]
-            # torch.cuda.set_device(device)
             torch.cuda.device(device)
-
             # create empty "Torch" buffers to store sensor observations
             if sensor_spec.sensor_type == SensorType.SEMANTIC:
-                self.__obs_buffers[agent_id][sensor_spec.uuid] = torch.empty(
+                obs_buffer_dict[sensor_spec.uuid] = torch.empty(
                     sensor_spec.resolution[0],
                     sensor_spec.resolution[1],
                     dtype=torch.int32,
                     device=device,
                 )
             elif sensor_spec.sensor_type == SensorType.DEPTH:
-                self.__obs_buffers[agent_id][sensor_spec.uuid] = torch.empty(
+                obs_buffer_dict[sensor_spec.uuid] = torch.empty(
                     sensor_spec.resolution[0],
                     sensor_spec.resolution[1],
                     dtype=torch.float32,
                     device=device,
                 )
             else:
-                self.__obs_buffers[agent_id][sensor_spec.uuid] = torch.empty(
+                obs_buffer_dict[sensor_spec.uuid] = torch.empty(
                     sensor_spec.resolution[0],
                     sensor_spec.resolution[1],
                     sensor_spec.channels,  # for R, G, B, A
@@ -508,34 +532,28 @@ class Simulator(SimulatorBackend):
                     device=device,
                 )
         else:
-            # create empty ndarry to store sensor observations
-            # create empty MutableImageView2D to store results of what is in render target
             view_size = sensor.framebuffer_size
-
             if sensor_spec.sensor_type == SensorType.SEMANTIC:
-                self.__obs_buffers[agent_id][sensor_spec.uuid] = np.empty(
+                obs_buffer = np.empty(
                     (sensor_spec.resolution[0], sensor_spec.resolution[1]),
                     dtype=np.uint32,
                 )
-
-                obs_buffer = self.__obs_buffers[agent_id].get(sensor_spec.uuid)
-                self.__image_views[agent_id][sensor_spec.uuid] = mn.MutableImageView2D(
+                image_view_dict[sensor_spec.uuid] = mn.MutableImageView2D(
                     mn.PixelFormat.R32UI, view_size, obs_buffer
                 )
             elif sensor_spec.sensor_type == SensorType.DEPTH:
-                self.__obs_buffers[agent_id][sensor_spec.uuid] = np.empty(
+                obs_buffer = np.empty(
                     (sensor_spec.resolution[0], sensor_spec.resolution[1]),
                     dtype=np.float32,
                 )
 
-                obs_buffer = self.__obs_buffers[agent_id].get(sensor_spec.uuid)
-                self.__image_views[agent_id][sensor_spec.uuid] = mn.MutableImageView2D(
+                image_view_dict[sensor_spec.uuid] = mn.MutableImageView2D(
                     mn.PixelFormat.R32F,
                     view_size,
                     obs_buffer,
                 )
             else:
-                self.__obs_buffers[agent_id][sensor_spec.uuid] = np.empty(
+                obs_buffer = np.empty(
                     (
                         sensor_spec.resolution[0],
                         sensor_spec.resolution[1],
@@ -544,95 +562,12 @@ class Simulator(SimulatorBackend):
                     dtype=np.uint8,
                 )
 
-                obs_buffer = self.__obs_buffers[agent_id].get(sensor_spec.uuid)
-                self.__image_views[agent_id][sensor_spec.uuid] = mn.MutableImageView2D(
+                image_view_dict[sensor_spec.uuid] = mn.MutableImageView2D(
                     mn.PixelFormat.RGBA8_UNORM,
                     view_size,
                     obs_buffer.reshape(sensor_spec.resolution[0], -1),  # type: ignore[union-attr]
                 )
-
-    def __init_independent_sensor(self, sensor_spec: SensorSpec) -> None:
-        """ """
-        sensor = self.__sensors_.get(sensor_spec.uuid)
-        if sensor_spec.sensor_type == SensorType.AUDIO:
-            return
-
-        if self.renderer is not None:
-            self.renderer.bind_render_target(sensor)
-
-        if sensor_spec.gpu2gpu_transfer:
-            # TODO: this part may not be right, it was adapted from what was in Simulator.Sensor
-            assert cuda_enabled, "Must build habitat sim with cuda for gpu2gpu-transfer"
-            assert _HAS_TORCH
-            device = torch.device("cuda", self.gpu_device)  # type: ignore[attr-defined]
-            torch.cuda.set_device(device)
-
-            # create empty "Torch" buffers to store sensor observations
-            if sensor_spec.sensor_type == SensorType.SEMANTIC:
-                self.__obs_buffers_[sensor_spec.uuid] = torch.empty(
-                    sensor_spec.resolution[0],
-                    sensor_spec.resolution[1],
-                    dtype=torch.int32,
-                    device=device,
-                )
-            elif sensor_spec.sensor_type == SensorType.DEPTH:
-                self.__obs_buffers_[sensor_spec.uuid] = torch.empty(
-                    sensor_spec.resolution[0],
-                    sensor_spec.resolution[1],
-                    dtype=torch.float32,
-                    device=device,
-                )
-            else:
-                self.__obs_buffers_[sensor_spec.uuid] = torch.empty(
-                    sensor_spec.resolution[0],
-                    sensor_spec.resolution[1],
-                    sensor_spec.channels,  # for R, G, B, A
-                    dtype=torch.uint8,
-                    device=device,
-                )
-        else:
-            # create empty ndarry to store sensor observations
-            # create empty MutableImageView2D to store results of what is in render target
-            view_size = sensor.framebuffer_size
-
-            if sensor_spec.sensor_type == SensorType.SEMANTIC:
-                self.__obs_buffers_[sensor_spec.uuid] = np.empty(
-                    (sensor_spec.resolution[0], sensor_spec.resolution[1]),
-                    dtype=np.uint32,
-                )
-
-                obs_buffer = self.__obs_buffers_.get(sensor_spec.uuid)
-                self.__image_views_[sensor_spec.uuid] = mn.MutableImageView2D(
-                    mn.PixelFormat.R32UI, view_size, obs_buffer
-                )
-            elif sensor_spec.sensor_type == SensorType.DEPTH:
-                self.__obs_buffers_[sensor_spec.uuid] = np.empty(
-                    (sensor_spec.resolution[0], sensor_spec.resolution[1]),
-                    dtype=np.float32,
-                )
-
-                obs_buffer = self.__obs_buffers_.get(sensor_spec.uuid)
-                self.__image_views_[sensor_spec.uuid] = mn.MutableImageView2D(
-                    mn.PixelFormat.R32F,
-                    view_size,
-                    obs_buffer,
-                )
-            else:  # sensor_spec.sensor_type == SensorType.COLOR:
-                self.__obs_buffers_[sensor_spec.uuid] = np.empty(
-                    (
-                        sensor_spec.resolution[0],
-                        sensor_spec.resolution[1],
-                        sensor_spec.channels,  # for R, G, B, A
-                    ),
-                    dtype=np.uint8,
-                )
-
-                obs_buffer = self.__obs_buffers_.get(sensor_spec.uuid)
-                self.__image_views_[sensor_spec.uuid] = mn.MutableImageView2D(
-                    mn.PixelFormat.RGBA8_UNORM,
-                    view_size,
-                    obs_buffer.reshape(sensor_spec.resolution[0], -1),  # type: ignore[union-attr]
-                )
+            obs_buffer_dict[sensor_spec.uuid] = obs_buffer
 
     def get_sensor(self, sensor_uuid, agent_id: Optional[int] = None) -> Sensor:
         if agent_id is not None:
