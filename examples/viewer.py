@@ -195,12 +195,15 @@ class HabitatSimInteractiveViewer(Application):
         self.replay_renderer: Optional[ReplayRenderer] = None
         self.reconfigure_sim()
 
+        if self.sim.pathfinder.is_loaded:
+            self.sim.pathfinder = habitat_sim.nav.PathFinder()
+
         # compute NavMesh if not already loaded by the scene.
-        if (
-            not self.sim.pathfinder.is_loaded
-            and self.cfg.sim_cfg.scene_id.lower() != "none"
-        ):
-            self.navmesh_config_and_recompute()
+        # if (
+        #     not self.sim.pathfinder.is_loaded
+        #     and self.cfg.sim_cfg.scene_id.lower() != "none"
+        # ):
+        #     self.navmesh_config_and_recompute()
 
         self.time_since_last_simulation = 0.0
         LoggingContext.reinitialize_from_env()
