@@ -855,6 +855,29 @@ class CollisionProxyOptimizer:
         self.save_results_to_csv(output_filename)
 
 
+def object_has_receptacles(
+    object_template_handle: str,
+    otm: habitat_sim.attributes_managers.ObjectAttributesManager,
+) -> bool:
+    """
+    Returns whether or not an object has a receptacle defined in its config file.
+    """
+    # this prefix will be present for any entry which defines a receptacle
+    receptacle_prefix_string = "receptacle_"
+
+    object_template = otm.get_template_by_handle(object_template_handle)
+    assert (
+        object_template is not None
+    ), f"No template matching handle {object_template_handle}."
+
+    user_cfg = object_template.get_user_config()
+
+    return any(
+        sub_config_key.startswith(receptacle_prefix_string)
+        for sub_config_key in user_cfg.get_subconfig_keys()
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Automate collision shape creation and validation."
@@ -875,8 +898,15 @@ def main():
     cpo = CollisionProxyOptimizer(sim_settings)
 
     # get all object handles
-    all_handles = cpo.mm.object_template_manager.get_file_template_handles()
-    # get a subset for scale testing
+    otm = cpo.mm.object_template_manager
+    all_handles = otm.get_file_template_handles()
+    # get a subset with receptacles defined
+    all_handles = [
+        all_handles[i]
+        for i in range(len(all_handles))
+        if object_has_receptacles(all_handles[i], otm)
+    ]
+    print(f"Number of objects with receptacles = {len(all_handles)}")
     all_handles = all_handles[:100]
     cpo.compute_and_save_results_for_objects(all_handles)
 
