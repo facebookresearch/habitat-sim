@@ -4,10 +4,15 @@
 
 import argparse
 import math
+import os
 import random
 import time
 from typing import Any, Dict, List, Tuple
 
+# imports from Habitat-lab
+# NOTE: requires PR 1108 branch: rearrange-gen-improvements (https://github.com/facebookresearch/habitat-lab/pull/1108)
+# import habitat.datasets.rearrange.samplers.receptacle as hab_receptacle
+import habitat.sims.habitat_simulator.debug_visualizer as hab_debug_vis
 import magnum as mn
 import numpy as np
 
@@ -553,10 +558,18 @@ class CollisionProxyOptimizer:
     Stateful control flow for using Habitat-sim to evaluate and optimize collision proxy shapes.
     """
 
-    def __init__(self, sim_settings: Dict[str, Any]) -> None:
+    def __init__(self, sim_settings: Dict[str, Any], output_directory="") -> None:
         # load the dataset into a persistent, shared MetadataMediator instance.
         self.mm = habitat_sim.metadata.MetadataMediator()
         self.mm.active_dataset = sim_settings["scene_dataset_config_file"]
+        self.sim_settings = sim_settings.copy()
+
+        # path to the desired output directory for images/csv
+        self.output_directory = output_directory
+        os.makedirs(self.output_directory, exist_ok=True)
+
+        # if true, render and save debug images in self.output_directory
+        self.generate_debug_images = False
 
         # cache of test points, rays, distances, etc... for use by active processes
         # NOTE: entries created by `setup_obj_gt` and cleaned by `clean_obj_gt` for memory efficiency.
@@ -573,7 +586,7 @@ class CollisionProxyOptimizer:
 
         :param scene: The desired scene entry, defaulting to the empty NONE scene.
         """
-        sim_settings = default_sim_settings.copy()
+        sim_settings = self.sim_settings.copy()
         sim_settings["scene_dataset_config_file"] = self.mm.active_dataset
         sim_settings["scene"] = scene
         cfg = make_cfg(sim_settings)
@@ -597,6 +610,43 @@ class CollisionProxyOptimizer:
         otm = self.mm.object_template_manager
         obj_template = otm.get_template_by_handle(obj_handle)
         assert obj_template is not None, f"Could not find object handle `{obj_handle}`"
+
+        # capture debug images of the ground truth object and collision asset before adjusting COM
+        if self.generate_debug_images:
+            cfg = self.get_cfg_with_mm()
+            with habitat_sim.Simulator(cfg) as sim:
+                # load the gt object
+                rom = sim.get_rigid_object_manager()
+                obj = rom.add_object_by_template_handle(obj_handle)
+                assert obj.is_alive, "Object was not added correctly."
+                # use DebugVisualizer to get 6-axis view of the object
+                dvb = hab_debug_vis.DebugVisualizer(
+                    sim=sim,
+                    output_path=self.output_directory,
+                    default_sensor_uuid="color_sensor",
+                )
+                dvb.peek_rigid_object(
+                    obj, peek_all_axis=True, additional_savefile_prefix="gt_"
+                )
+                # modify the template to render collision object
+                render_asset = obj_template.render_asset_handle
+                obj_template.render_asset_handle = obj_template.collision_asset_handle
+                otm.register_template(obj_template)
+                col_obj = rom.add_object_by_template_handle(obj_handle)
+                # use DebugVisualizer to get 6-axis view of both objects
+                dvb.peek_rigid_object(
+                    obj, peek_all_axis=True, additional_savefile_prefix="combined_"
+                )
+                # remove ground truth object
+                rom.remove_object_by_handle(obj.handle)
+                # use DebugVisualizer to get 6-axis view of the collision object
+                dvb.peek_rigid_object(
+                    col_obj, peek_all_axis=True, additional_savefile_prefix="pr_"
+                )
+                # undo template modification
+                obj_template.render_asset_handle = render_asset
+                otm.register_template(obj_template)
+
         # correct now for any COM automation
         obj_template.compute_COM_from_shape = False
         obj_template.com = mn.Vector3(0)
@@ -720,7 +770,10 @@ class CollisionProxyOptimizer:
         cfg = self.get_cfg_with_mm()
         with habitat_sim.Simulator(cfg) as sim:
             # load the object
-            sim.get_rigid_object_manager().add_object_by_template_handle(obj_handle)
+            obj = sim.get_rigid_object_manager().add_object_by_template_handle(
+                obj_handle
+            )
+            assert obj.is_alive, "Object was not added correctly."
 
             # run evaluation
             pr_raycast_results = run_pairwise_raycasts(
@@ -780,15 +833,17 @@ class CollisionProxyOptimizer:
 
     def save_results_to_csv(self, filename: str) -> None:
         """
-        Save current global results to a csv file.
+        Save current global results to a csv file in the self.output_directory.
         """
 
         assert len(self.results) > 0, "There musst be results to save."
 
         import csv
 
+        filepath = os.path.join(self.output_directory, filename)
+
         # save normalized error csv
-        with open(filename, "w") as f:
+        with open(filepath, "w") as f:
             writer = csv.writer(f, quoting=csv.QUOTE_ALL)
             # first collect all column names:
             existing_cols = []
@@ -883,6 +938,12 @@ def main():
         description="Automate collision shape creation and validation."
     )
     parser.add_argument("--dataset", type=str, help="path to SceneDataset.")
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        default="collision_shape_automation/",
+        help="output directory for saved csv and images. Default = `./collision_shape_automation/`.",
+    )
     # parser.add_argument(
     #    "--object-handle", type=str, help="handle identifying the object to evaluate."
     # )
@@ -890,12 +951,17 @@ def main():
 
     sim_settings = default_sim_settings.copy()
     sim_settings["scene_dataset_config_file"] = args.dataset
+    # necessary for debug rendering
+    sim_settings["sensor_height"] = 0
+    sim_settings["width"] = 720
+    sim_settings["height"] = 720
 
     # one-off single object logic:
     # evaluate_collision_shape(args.object_handle, sim_settings)
 
     # use the CollisionProxyOptimizer to compute metrics for multiple objects
-    cpo = CollisionProxyOptimizer(sim_settings)
+    cpo = CollisionProxyOptimizer(sim_settings, output_directory=args.output_dir)
+    cpo.generate_debug_images = True
 
     # get all object handles
     otm = cpo.mm.object_template_manager
