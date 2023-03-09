@@ -25,13 +25,13 @@ All necessary configuration can be done as a pre-process via the JSON configurat
 .. figure:: images/scenedataset_documentation_diagram.svg
     :width: 100em
 
-    A *SceneDataset* system diagram illustrating the correspondance between JSON configs and programmatic structures. Note that the *Simulator* controls instatiation of objects by accessing data cached within its internal *MetadataMediator*.
+    A *SceneDataset* system diagram illustrating the correspondence between JSON configs and programmatic structures. Note that the *Simulator* controls instantiation of objects by accessing data cached within its internal *MetadataMediator*.
 
 Programmatically, a *SceneDataset* consists of sets of *Attributes* objects detailing the configuration of individual objects, stages, scenes etc... which can be modified via C++ and python APIs (:ref:`habitat_sim.attributes`) and managed by *AttributeManager* APIs (:ref:`habitat_sim.attributes_managers`).
 
-These *Attributes* objects are improted from their corresponding .json files. See `ReplicaCAD <https://aihabitat.org/datasets/replica_cad/index.html>`_ for an example of a complete SceneDataset JSON config structure.
+These *Attributes* objects are imported from their corresponding .json files. See `ReplicaCAD <https://aihabitat.org/datasets/replica_cad/index.html>`_ for an example of a complete SceneDataset JSON config structure.
 
-The :ref:`MetadataMediator` aggregates all *AttributesManagers* and provides an API for swapping the active *SceneDataset*. It can exist independant of a :ref:`Simulator` object for programmatic metadata management and can be passed into the constructor via the :ref:`SimulatorConfiguration`.
+The :ref:`MetadataMediator` aggregates all *AttributesManagers* and provides an API for swapping the active *SceneDataset*. It can exist independent of a :ref:`Simulator` object for programmatic metadata management and can be passed into the constructor via the :ref:`SimulatorConfiguration`.
 
 The remaining documentation on this page details the *SceneDataset* JSON configuration options available at this time.
 
@@ -318,6 +318,9 @@ Below are stage-specific physical and object-related quantities.  These values w
 "is_collidable"
     - boolean
     - Whether the stage should be added to the collision and physics simulation world upon instancing.
+"force_flat_shading"
+    - boolean
+    - Whether the stage should be rendered with a flat shader. If this is set to true, it will override any shader_type specifications.
 "shader_type"
     - string (one of "material", "flat", "phong", "pbr")
     - The shader to be used to render the stage. 'material' uses the render asset's specified material, other values force specified shader regardless of asset specification.
@@ -399,6 +402,9 @@ Below are object-specific physical quantities.  These values will override simil
 "units_to_meters"
     - double
     - The conversion of given units to meters.
+"force_flat_shading"
+    - boolean
+    - Whether the object should be rendered with a flat shader. If this is set to true, it will override any shader_type specifications.
 "shader_type"
     - string (one of "material", "flat", "phong", "pbr")
     - The shader to be used to render the object. 'material' uses the render asset's specified material, other values force specified shader regardless of asset specification.
@@ -487,7 +493,7 @@ Below are the supported JSON tags for Physics Manager Attributes templates, and 
 `User Defined Attributes`_
 ==========================
 
-For all Attributes objects, the "user_defined" tag is reserved for a json configuration node which can be filled with user data. There are no limitations on the depth of this subtree (i.e., you can stack JSON objects to arbitrary depth) and Habitat-sim functioanlity will not depend on any specific metadata under this tag.
+For all Attributes objects, the "user_defined" tag is reserved for a json configuration node which can be filled with user data. There are no limitations on the depth of this subtree (i.e., you can stack JSON objects to arbitrary depth) and Habitat-sim functionality will not depend on any specific metadata under this tag.
 You can use this tag to cache object information for your specific use cases or track simulation properties over time in user code.
 
 For example, :ref:`ObjectAttributes.get_user_config` returns the configuration object containing all metadata from this tag within a *.object_config.json* file:
@@ -502,11 +508,34 @@ For example, :ref:`ObjectAttributes.get_user_config` returns the configuration o
                 "can open"
             ],
             "custom_object_properties":{
-                "is_gripped": "false",
+                "is_gripped": false,
                 "temperature": 10.0,
             },
         }
     }
+
+The attributes parser interprets the type of the data in the user-defined json fields based on each field's data and layout, with a few exceptions, as illustrated below:
+
+User-Defined JSON Field type mappings
+-------------------------------------
+
+.. class:: m-table m-fullwidth
+
+======================= =========================== ===================
+JSON field data example Habitat-Sim internal type   Notes
+======================= =========================== ===================
+10.0                    double
+(false, true)           boolean
+"false"
+======================= =========================== ===================
+
+
+
+
+
+
+
+
 
 Object Instance User Data
 -------------------------
@@ -516,4 +545,4 @@ User data can also be tied to specific instances of an object. When an object is
 ArticulatedObject User Data
 ---------------------------
 
-While *ArticulatedObjects* are completely defined by their URDF files and parsing parameters. However, Habitat-sim does support importing of additional user metadata via an accompanying *<urdf_name>.ao_config.json* file. See `ReplicaCAD <https://aihabitat.org/datasets/replica_cad/index.html>`_ for an example.
+While *ArticulatedObjects* are completely defined by their URDF files and parsing parameters, Habitat-sim does support importing additional user metadata via an accompanying *<urdf_name>.ao_config.json* file. See `ReplicaCAD <https://aihabitat.org/datasets/replica_cad/index.html>`_ for an example.

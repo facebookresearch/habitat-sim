@@ -27,6 +27,7 @@ namespace io {
  * into JsonGenericValue.
  *
  * @param mat Source Magnum::Matrix3 to parse into Json
+ * @param allocator
  * @return Json value containing data
  */
 JsonGenericValue toJsonValue(const Magnum::Matrix3& mat,
@@ -46,7 +47,8 @@ bool fromJsonValue(const JsonGenericValue& obj, Magnum::Matrix3& val);
  * @brief Specialization to handle Magnum::Vector3 values. Parses passed value
  * into JsonGenericValue.
  *
- * @param mat Source Magnum::Vector3 to parse into Json
+ * @param vec Source Magnum::Vector3 to parse into Json
+ * @param allocator
  * @return Json value containing data
  */
 JsonGenericValue toJsonValue(const Magnum::Vector3& vec,
@@ -66,7 +68,8 @@ bool fromJsonValue(const JsonGenericValue& obj, Magnum::Vector3& val);
  * @brief Specialization to handle Magnum::Vector4 values. Parses passed value
  * into JsonGenericValue.
  *
- * @param mat Source Magnum::Vector4 to parse into Json
+ * @param vec Source Magnum::Vector4 to parse into Json
+ * @param allocator
  * @return Json value containing data
  */
 JsonGenericValue toJsonValue(const Magnum::Vector4& vec,
@@ -87,6 +90,7 @@ bool fromJsonValue(const JsonGenericValue& obj, Magnum::Vector4& val);
  * into JsonGenericValue.
  *
  * @param mat Source Magnum::Color4 to parse into Json
+ * @param allocator
  * @return Json value containing data
  */
 JsonGenericValue toJsonValue(const Magnum::Color4& color,
@@ -107,7 +111,8 @@ bool fromJsonValue(const JsonGenericValue& obj, Magnum::Color4& val);
  * @brief Specialization to handle Magnum::Quaternion values. Parses passed
  * value into JsonGenericValue.
  *
- * @param mat Source Magnum::Quaternion to parse into Json
+ * @param quat Source Magnum::Quaternion to parse into Json
+ * @param allocator
  * @return Json value containing data
  */
 
