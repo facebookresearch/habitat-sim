@@ -642,10 +642,13 @@ class CollisionProxyOptimizer:
 
                     # sample test points on the receptacles
                     self.gt_data[obj_handle]["receptacles"] = {}
-                    for _receptacle in obj_receptacles:
-                        # TODO: sample receptacle points
-                        # test_points = receptacle.sample_uniform_global()
-                        pass
+                    for receptacle in obj_receptacles:
+                        rec_test_points = []
+                        for _ in range(num_point_samples):
+                            rec_test_points.append(receptacle.sample_uniform_global())
+                        self.gt_data[obj_handle]["receptacles"][
+                            receptacle.name
+                        ] = rec_test_points
 
                 if self.generate_debug_images:
                     # use DebugVisualizer to get 6-axis view of the object
