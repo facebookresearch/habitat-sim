@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Tuple
 
 # imports from Habitat-lab
 # NOTE: requires PR 1108 branch: rearrange-gen-improvements (https://github.com/facebookresearch/habitat-lab/pull/1108)
-# import habitat.datasets.rearrange.samplers.receptacle as hab_receptacle
+import habitat.datasets.rearrange.samplers.receptacle as hab_receptacle
 import habitat.sims.habitat_simulator.debug_visualizer as hab_debug_vis
 import magnum as mn
 import numpy as np
@@ -571,6 +571,9 @@ class CollisionProxyOptimizer:
         # if true, render and save debug images in self.output_directory
         self.generate_debug_images = False
 
+        # option to use Receptacle annotations to compute an additional accuracy metric
+        self.compute_receptacle_useability_metrics = True
+
         # cache of test points, rays, distances, etc... for use by active processes
         # NOTE: entries created by `setup_obj_gt` and cleaned by `clean_obj_gt` for memory efficiency.
         self.gt_data: Dict[str, Dict[str, Any]] = {}
@@ -611,48 +614,49 @@ class CollisionProxyOptimizer:
         obj_template = otm.get_template_by_handle(obj_handle)
         assert obj_template is not None, f"Could not find object handle `{obj_handle}`"
 
-        # capture debug images of the ground truth object and collision asset before adjusting COM
-        if self.generate_debug_images:
-            cfg = self.get_cfg_with_mm()
-            with habitat_sim.Simulator(cfg) as sim:
-                # load the gt object
-                rom = sim.get_rigid_object_manager()
-                obj = rom.add_object_by_template_handle(obj_handle)
-                assert obj.is_alive, "Object was not added correctly."
-                # use DebugVisualizer to get 6-axis view of the object
-                dvb = hab_debug_vis.DebugVisualizer(
-                    sim=sim,
-                    output_path=self.output_directory,
-                    default_sensor_uuid="color_sensor",
-                )
-                dvb.peek_rigid_object(
-                    obj, peek_all_axis=True, additional_savefile_prefix="gt_"
-                )
-                # modify the template to render collision object
-                render_asset = obj_template.render_asset_handle
-                obj_template.render_asset_handle = obj_template.collision_asset_handle
-                otm.register_template(obj_template)
-                col_obj = rom.add_object_by_template_handle(obj_handle)
-                # use DebugVisualizer to get 6-axis view of both objects
-                dvb.peek_rigid_object(
-                    obj, peek_all_axis=True, additional_savefile_prefix="combined_"
-                )
-                # remove ground truth object
-                rom.remove_object_by_handle(obj.handle)
-                # use DebugVisualizer to get 6-axis view of the collision object
-                dvb.peek_rigid_object(
-                    col_obj, peek_all_axis=True, additional_savefile_prefix="pr_"
-                )
-                # undo template modification
-                obj_template.render_asset_handle = render_asset
-                otm.register_template(obj_template)
+        self.gt_data[obj_handle] = {}
 
         # correct now for any COM automation
         obj_template.compute_COM_from_shape = False
         obj_template.com = mn.Vector3(0)
         otm.register_template(obj_template)
 
-        self.gt_data[obj_handle] = {}
+        if self.compute_receptacle_useability_metrics or self.generate_debug_images:
+            # pre-process the ground truth object and receptacles
+            cfg = self.get_cfg_with_mm()
+            with habitat_sim.Simulator(cfg) as sim:
+                # load the gt object
+                rom = sim.get_rigid_object_manager()
+                obj = rom.add_object_by_template_handle(obj_handle)
+                assert obj.is_alive, "Object was not added correctly."
+
+                if self.compute_receptacle_useability_metrics:
+                    # get receptacles defined for the object:
+                    source_template_file = obj.creation_attributes.file_directory
+                    user_attr = obj.user_attributes
+                    obj_receptacles = hab_receptacle.parse_receptacles_from_user_config(
+                        user_attr,
+                        parent_object_handle=obj_handle,
+                        parent_template_directory=source_template_file,
+                    )
+
+                    # sample test points on the receptacles
+                    self.gt_data[obj_handle]["receptacles"] = {}
+                    for _receptacle in obj_receptacles:
+                        # TODO: sample receptacle points
+                        # test_points = receptacle.sample_uniform_global()
+                        pass
+
+                if self.generate_debug_images:
+                    # use DebugVisualizer to get 6-axis view of the object
+                    dvb = hab_debug_vis.DebugVisualizer(
+                        sim=sim,
+                        output_path=self.output_directory,
+                        default_sensor_uuid="color_sensor",
+                    )
+                    dvb.peek_rigid_object(
+                        obj, peek_all_axis=True, additional_savefile_prefix="gt_"
+                    )
 
         # load a simulator instance with this object as the stage
         stm = self.mm.stage_template_manager
@@ -671,6 +675,8 @@ class CollisionProxyOptimizer:
             inflated_scene_bb = mn.Range3D.from_center(
                 scene_bb.center(), inflated_scene_bb.size() / 2.0
             )
+            self.gt_data[obj_handle]["scene_bb"] = scene_bb
+            self.gt_data[obj_handle]["inflated_scene_bb"] = inflated_scene_bb
             test_points = None
             if sample_shape == "aabb":
                 # bounding box sample
@@ -769,17 +775,47 @@ class CollisionProxyOptimizer:
         # start with empty scene
         cfg = self.get_cfg_with_mm()
         with habitat_sim.Simulator(cfg) as sim:
+            # modify the template to render collision object
+            otm = self.mm.object_template_manager
+            obj_template = otm.get_template_by_handle(obj_handle)
+            render_asset = obj_template.render_asset_handle
+            obj_template.render_asset_handle = obj_template.collision_asset_handle
+            otm.register_template(obj_template)
+
             # load the object
             obj = sim.get_rigid_object_manager().add_object_by_template_handle(
                 obj_handle
             )
             assert obj.is_alive, "Object was not added correctly."
 
+            # check that collision shape bounding box is similar
+            col_bb = obj.root_scene_node.cumulative_bb
+            assert self.gt_data[obj_handle]["inflated_scene_bb"].contains(
+                col_bb.min
+            ) and self.gt_data[obj_handle]["inflated_scene_bb"].contains(
+                col_bb.max
+            ), f"Inflated bounding box does not contain the collision shape. (Object `{obj_handle}`)"
+
+            if self.generate_debug_images:
+                # use DebugVisualizer to get 6-axis view of the object
+                dvb = hab_debug_vis.DebugVisualizer(
+                    sim=sim,
+                    output_path=self.output_directory,
+                    default_sensor_uuid="color_sensor",
+                )
+                dvb.peek_rigid_object(
+                    obj, peek_all_axis=True, additional_savefile_prefix="pr_"
+                )
+
             # run evaluation
             pr_raycast_results = run_pairwise_raycasts(
                 self.gt_data[obj_handle]["test_points"], sim
             )
             self.gt_data[obj_handle]["raycasts"]["pr"] = {"results": pr_raycast_results}
+
+            # undo template modification
+            obj_template.render_asset_handle = render_asset
+            otm.register_template(obj_template)
 
     def compute_gt_errors(self, obj_handle: str) -> None:
         """
