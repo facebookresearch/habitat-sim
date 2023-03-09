@@ -36,6 +36,7 @@ const std::unordered_map<ConfigStoredType, std::string, ConfigStoredTypeHash>
                           {ConfigStoredType::Integer, "int"},
                           {ConfigStoredType::Double, "double"},
                           {ConfigStoredType::MagnumVec3, "Mn::Vector3"},
+                          {ConfigStoredType::MagnumColor3, "Mn::Color3"},
                           {ConfigStoredType::MagnumVec4, "Mn::Vector4"},
                           {ConfigStoredType::MagnumColor4, "Mn::Color4"},
                           {ConfigStoredType::MagnumMat3, "Mn::Matrix3"},
@@ -186,6 +187,10 @@ std::string ConfigValue::getAsString() const {
       auto v = get<Mn::Vector3>();
       return Cr::Utility::formatString("[{} {} {}]", v.x(), v.y(), v.z());
     }
+    case ConfigStoredType::MagnumColor3: {
+      auto c = get<Mn::Color3>();
+      return Cr::Utility::formatString("[r:{} g:{} b:{}]", c.r(), c.g(), c.b());
+    }
     case ConfigStoredType::MagnumVec4: {
       auto v = get<Mn::Vector4>();
       return Cr::Utility::formatString("[{} {} {} {}]", v.x(), v.y(), v.z(),
@@ -239,6 +244,9 @@ io::JsonGenericValue ConfigValue::writeToJsonObject(
     case ConfigStoredType::MagnumVec3: {
       return io::toJsonValue(get<Mn::Vector3>(), allocator);
     }
+    case ConfigStoredType::MagnumColor3: {
+      return io::toJsonValue(get<Mn::Color3>(), allocator);
+    }
     case ConfigStoredType::MagnumVec4: {
       return io::toJsonValue(get<Mn::Vector4>(), allocator);
     }
@@ -280,6 +288,8 @@ bool ConfigValue::putValueInConfigGroup(
       return cfg.setValue(key, get<std::string>());
     case ConfigStoredType::MagnumVec3:
       return cfg.setValue(key, get<Mn::Vector3>());
+    case ConfigStoredType::MagnumColor3:
+      return cfg.setValue(key, get<Mn::Color3>());
     case ConfigStoredType::MagnumVec4:
       return cfg.setValue(key, get<Mn::Vector4>());
     case ConfigStoredType::MagnumColor4:
@@ -330,9 +340,55 @@ int Configuration::loadFromJson(const io::JsonGenericValue& jsonObj) {
       if (obj[0].IsNumber()) {
         // numeric vector, quaternion or matrix
         if (obj.Size() == 3) {
-          Mn::Vector3 val{};
-          if (io::fromJsonValue(obj, val)) {
-            set(key, val);
+          // Check if this configuration has pre-defined field with given key
+          if (hasValue(key)) {
+            ConfigStoredType valType = get(key).getType();
+            if (valType == ConfigStoredType::MagnumColor3) {
+              // if object exists already @ key and its type is Color3
+              Mn::Color3 val{};
+              if (io::fromJsonValue(obj, val)) {
+                set(key, val);
+              }
+            } else if (valType == ConfigStoredType::MagnumVec3) {
+              Mn::Vector3 val{};
+              if (io::fromJsonValue(obj, val)) {
+                set(key, val);
+              }
+            } else {
+              // unknown predefined type of config of size 3
+              // this indicates incomplete implementation of size 3
+              // configuration type.
+              // decrement count for key:obj due to not being handled vector
+              --numConfigSettings;
+
+              ESP_WARNING()
+                  << "Config cell in JSON document contains key" << key
+                  << "referencing an existing configuration element of size 3 "
+                     "of unknown type:"
+                  << getNameForStoredType(valType) << "so skipping.";
+            }
+          } else {
+            // This supports fields that do not yet exist.
+            // Check if label contains substrings inferring expected type,
+            // otherwise assume this field is a mn::Vector3
+
+            auto lcaseKey = Cr::Utility::String::lowercase(key);
+            // labels denoting colors
+            if ((lcaseKey.find("color") != std::string::npos) ||
+                (lcaseKey.find("clr") != std::string::npos)) {
+              // object label contains color tag, treat as a Mn::Color3
+              Mn::Color3 val{};
+              if (io::fromJsonValue(obj, val)) {
+                set(key, val);
+              }
+            } else {
+              // if unrecognized label for user-defined field, default the
+              // value to be treated as a Mn::Vector3
+              Mn::Vector3 val{};
+              if (io::fromJsonValue(obj, val)) {
+                set(key, val);
+              }
+            }
           }
         } else if (obj.Size() == 4) {
           // JSON numeric array of size 4 can be either vector4, quaternion or

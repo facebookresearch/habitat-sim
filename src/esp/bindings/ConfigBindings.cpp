@@ -24,6 +24,8 @@ py::object getObjectForConfigValue(const ConfigValue& value) {
       return py::cast(value.get<double>());
     case ConfigStoredType::String:
       return py::cast(value.get<std::string>());
+    case ConfigStoredType::MagnumColor3:
+      return py::cast(value.get<Mn::Color3>());
     case ConfigStoredType::MagnumVec3:
       return py::cast(value.get<Mn::Vector3>());
     case ConfigStoredType::MagnumVec4:
@@ -47,6 +49,7 @@ void initConfigBindings(py::module& m) {
       .value("Integer", ConfigStoredType::Integer)
       .value("Float", ConfigStoredType::Double)
       .value("String", ConfigStoredType::String)
+      .value("MagnumColor3", ConfigStoredType::MagnumColor3)
       .value("MagnumVec3", ConfigStoredType::MagnumVec3)
       .value("MagnumVec4", ConfigStoredType::MagnumVec4)
       .value("MagnumMat3", ConfigStoredType::MagnumMat3)
@@ -103,6 +106,12 @@ void initConfigBindings(py::module& m) {
           [](Configuration& self, const std::string& key,
              const Magnum::Quaternion& val) { self.set(key, val); },
           R"(Set the value specified by given string key to be specified Magnum::Quaternion value)",
+          "key"_a, "value"_a)
+      .def(
+          "set",
+          [](Configuration& self, const std::string& key,
+             const Magnum::Color3& val) { self.set(key, val); },
+          R"(Set the value specified by given string key to be specified Magnum::Color3 value)",
           "key"_a, "value"_a)
       .def(
           "set",
