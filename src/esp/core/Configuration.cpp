@@ -308,7 +308,6 @@ Mn::Debug& operator<<(Mn::Debug& debug, const ConfigValue& value) {
 
 int Configuration::loadFromJson(const io::JsonGenericValue& jsonObj) {
   // count number of valid user config settings found
-
   int numConfigSettings = 0;
   for (rapidjson::Value::ConstMemberIterator it = jsonObj.MemberBegin();
        it != jsonObj.MemberEnd(); ++it) {
@@ -329,7 +328,7 @@ int Configuration::loadFromJson(const io::JsonGenericValue& jsonObj) {
     } else if (obj.IsArray() && obj.Size() > 0) {
       // non-empty array of values
       if (obj[0].IsNumber()) {
-        // numeric vector or quaternion
+        // numeric vector, quaternion or matrix
         if (obj.Size() == 3) {
           Mn::Vector3 val{};
           if (io::fromJsonValue(obj, val)) {
@@ -339,28 +338,77 @@ int Configuration::loadFromJson(const io::JsonGenericValue& jsonObj) {
           // JSON numeric array of size 4 can be either vector4, quaternion or
           // color4, so must get type of object that exists with key
           // NOTE : to properly make use of vector4 and color4 configValues
-          // loaded from JSON, the owning Configuration must be pre-initialized
-          // in its constructor with a default value at the target key.
-          // Otherwise for backwards compatibility, we default to reading a
-          // quaternion
-          ConfigValue valAtKey = get(key);
-          if (valAtKey.getType() == ConfigStoredType::MagnumColor4) {
-            // if object exists already @ key and its type is Color4
-            Mn::Color4 val{};
-            if (io::fromJsonValue(obj, val)) {
-              set(key, val);
-            }
-          } else if (valAtKey.getType() == ConfigStoredType::MagnumVec4) {
-            // if object exists already @ key and its type is Vector4
-            Mn::Vector4 val{};
-            if (io::fromJsonValue(obj, val)) {
-              set(key, val);
+          // loaded from JSON, the owning Configuration must be
+          // pre-initialized in its constructor with a default value at the
+          // target key. Otherwise for backwards compatibility, we default to
+          // reading a quaternion
+
+          // Check if this configuration has pre-defined field with given key
+          if (hasValue(key)) {
+            ConfigStoredType valType = get(key).getType();
+            if (valType == ConfigStoredType::MagnumColor4) {
+              // if object exists already @ key and its type is Color4
+              Mn::Color4 val{};
+              if (io::fromJsonValue(obj, val)) {
+                set(key, val);
+              }
+            } else if (valType == ConfigStoredType::MagnumQuat) {
+              // if predefined object is neither
+              Mn::Quaternion val{};
+              if (io::fromJsonValue(obj, val)) {
+                set(key, val);
+              }
+            } else if (valType == ConfigStoredType::MagnumVec4) {
+              // if object exists already @ key and its type is Vector4
+              Mn::Vector4 val{};
+              if (io::fromJsonValue(obj, val)) {
+                set(key, val);
+              }
+            } else {
+              // unknown predefined type of config of size 4
+              // this indicates incomplete implementation of size 4
+              // configuration type.
+              // decrement count for key:obj due to not being handled vector
+              --numConfigSettings;
+
+              ESP_WARNING()
+                  << "Config cell in JSON document contains key" << key
+                  << "referencing an existing configuration element of size "
+                     "4 "
+                     "of unknown type:"
+                  << getNameForStoredType(valType) << "so skipping.";
             }
           } else {
-            // if no object exists then default type is MagnumQuat
-            Mn::Quaternion val{};
-            if (io::fromJsonValue(obj, val)) {
-              set(key, val);
+            // This supports fields that do not yet exist.
+            // Check if label contains substrings inferring expected type,
+            // otherwise assume this field is a mn::Vector4
+
+            auto lcaseKey = Cr::Utility::String::lowercase(key);
+            // labels denoting colors
+            if ((lcaseKey.find("color") != std::string::npos) ||
+                (lcaseKey.find("clr") != std::string::npos)) {
+              // object label contains color tag, treat as a Mn::Color4
+              Mn::Color4 val{};
+              if (io::fromJsonValue(obj, val)) {
+                set(key, val);
+              }
+              // labels denoting quaternion fields
+            } else if ((lcaseKey.find("quat") != std::string::npos) ||
+                       (lcaseKey.find("rotat") != std::string::npos) ||
+                       (lcaseKey.find("orient") != std::string::npos)) {
+              // object label contains quaternion tag, treat as a
+              // Mn::Quaternion
+              Mn::Quaternion val{};
+              if (io::fromJsonValue(obj, val)) {
+                set(key, val);
+              }
+            } else {
+              // if unrecognized label for user-defined field, default the
+              // value to be treated as a Mn::Vector4
+              Mn::Vector4 val{};
+              if (io::fromJsonValue(obj, val)) {
+                set(key, val);
+              }
             }
           }
         } else if (obj.Size() == 9) {
@@ -379,7 +427,8 @@ int Configuration::loadFromJson(const io::JsonGenericValue& jsonObj) {
               << obj.Size() << "so skipping.";
         }
       } else {
-        // decrement count for key:obj due to not being handled vector or matrix
+        // decrement count for key:obj due to not being handled vector or
+        // matrix
         --numConfigSettings;
         // TODO support numeric array in JSON
         ESP_WARNING() << "Config cell in JSON document contains key" << key
@@ -466,8 +515,8 @@ void Configuration::writeSubconfigsToJson(io::JsonGenericValue& jsonObj,
 io::JsonGenericValue Configuration::writeToJsonObject(
     io::JsonAllocator& allocator) const {
   io::JsonGenericValue jsonObj(rapidjson::kObjectType);
-  // iterate through all values - always call base version - this will only ever
-  // be called from subconfigs.
+  // iterate through all values - always call base version - this will only
+  // ever be called from subconfigs.
   writeValuesToJson(jsonObj, allocator);
   // iterate through subconfigs
   writeSubconfigsToJson(jsonObj, allocator);
