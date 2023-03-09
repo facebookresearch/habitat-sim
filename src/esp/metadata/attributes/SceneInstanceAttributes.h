@@ -39,16 +39,14 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
    * @brief Set the translation from the origin of the described
    * stage/object instance.
    */
-  void setTranslation(const Magnum::Vector3& translation) {
+  void setTranslation(const Mn::Vector3& translation) {
     set("translation", translation);
   }
   /**
    * @brief Get the translation from the origin of the described
    * stage/object instance.
    */
-  Magnum::Vector3 getTranslation() const {
-    return get<Magnum::Vector3>("translation");
-  }
+  Mn::Vector3 getTranslation() const { return get<Mn::Vector3>("translation"); }
 
   /**
    * @brief Set a value representing the mechanism used to create this scene
@@ -92,15 +90,13 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
   /**
    * @brief Set the rotation of the object
    */
-  void setRotation(const Magnum::Quaternion& rotation) {
+  void setRotation(const Mn::Quaternion& rotation) {
     set("rotation", rotation);
   }
   /**
    * @brief Get the rotation of the object
    */
-  Magnum::Quaternion getRotation() const {
-    return get<Magnum::Quaternion>("rotation");
-  }
+  Mn::Quaternion getRotation() const { return get<Mn::Quaternion>("rotation"); }
 
   /**
    * @brief If not visible can add dynamic non-rendered object into a scene
@@ -181,15 +177,15 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
    * @brief Get the non-uniform scale vector of the described stage/object
    * instance.
    */
-  Magnum::Vector3 getNonUniformScale() const {
-    return get<Magnum::Vector3>("non_uniform_scale");
+  Mn::Vector3 getNonUniformScale() const {
+    return get<Mn::Vector3>("non_uniform_scale");
   }
 
   /**
    * @brief Set the non-uniform scale vector of the described stage/object
    * instance.
    */
-  void setNonUniformScale(const Magnum::Vector3& non_uniform_scale) {
+  void setNonUniformScale(const Mn::Vector3& non_uniform_scale) {
     set("non_uniform_scale", non_uniform_scale);
   }
 
