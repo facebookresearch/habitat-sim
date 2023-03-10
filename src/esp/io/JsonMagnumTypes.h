@@ -65,26 +65,6 @@ JsonGenericValue toJsonValue(const Magnum::Vector3& vec,
 bool fromJsonValue(const JsonGenericValue& obj, Magnum::Vector3& val);
 
 /**
- * @brief Specialization to handle Magnum::Color3 values. Parses passed value
- * into JsonGenericValue.
- *
- * @param color Source Magnum::Color3 to parse into Json
- * @param allocator
- * @return Json value containing data
- */
-JsonGenericValue toJsonValue(const Magnum::Color3& color,
-                             JsonAllocator& allocator);
-/**
- * @brief Specialization to handle Magnum::Color3 values. Populate passed @p
- * val with value. Returns whether successfully populated, or not. Logs an error
- * if inappropriate type.
- *
- * @param obj json value to parse
- * @param color destination color to be populated
- * @return whether successful or not
- */
-bool fromJsonValue(const JsonGenericValue& obj, Magnum::Color3& color);
-/**
  * @brief Specialization to handle Magnum::Vector4 values. Parses passed value
  * into JsonGenericValue.
  *
@@ -104,28 +84,6 @@ JsonGenericValue toJsonValue(const Magnum::Vector4& vec,
  * @return whether successful or not
  */
 bool fromJsonValue(const JsonGenericValue& obj, Magnum::Vector4& val);
-
-/**
- * @brief Specialization to handle Magnum::Color4 values. Parses passed value
- * into JsonGenericValue.
- *
- * @param color Source Magnum::Color4 to parse into Json
- * @param allocator
- * @return Json value containing data
- */
-JsonGenericValue toJsonValue(const Magnum::Color4& color,
-                             JsonAllocator& allocator);
-
-/**
- * @brief Specialization to handle Magnum::Color4 values. Populate passed @p
- * val with value. Returns whether successfully populated, or not. Logs an error
- * if inappropriate type.
- *
- * @param obj json value to parse
- * @param val destination value to be populated
- * @return whether successful or not
- */
-bool fromJsonValue(const JsonGenericValue& obj, Magnum::Color4& val);
 
 /**
  * @brief Specialization to handle Magnum::Quaternion values. Parses passed

@@ -49,26 +49,6 @@ bool fromJsonValue(const JsonGenericValue& obj, Magnum::Vector3& val) {
   return false;
 }
 
-JsonGenericValue toJsonValue(const Magnum::Color3& color,
-                             JsonAllocator& allocator) {
-  return toJsonArrayHelper(color.data(), color.Size, allocator);
-}
-
-bool fromJsonValue(const JsonGenericValue& obj, Magnum::Color3& color) {
-  if (obj.IsArray() && obj.Size() == color.Size) {
-    for (rapidjson::SizeType i = 0; i < color.Size; ++i) {
-      if (!fromJsonValue(obj[i], color.data()[i])) {
-        ESP_ERROR() << "Invalid numeric value specified in JSON "
-                       "Magnum::Color3, index :"
-                    << i;
-        return false;
-      }
-    }
-    return true;
-  }
-  return false;
-}
-
 JsonGenericValue toJsonValue(const Magnum::Vector4& vec,
                              JsonAllocator& allocator) {
   return toJsonArrayHelper(vec.data(), vec.Size, allocator);
@@ -112,26 +92,6 @@ bool fromJsonValue(const JsonGenericValue& obj, Magnum::Quaternion& val) {
         ESP_ERROR() << "Invalid numeric vector value specified in JSON "
                        "Magnum::Quaternion, index :"
                     << i;
-        return false;
-      }
-    }
-    return true;
-  }
-  return false;
-}
-
-JsonGenericValue toJsonValue(const Magnum::Color4& color,
-                             JsonAllocator& allocator) {
-  return toJsonArrayHelper(color.data(), color.Size, allocator);
-}
-
-bool fromJsonValue(const JsonGenericValue& obj, Magnum::Color4& val) {
-  if (obj.IsArray() && obj.Size() == val.Size) {
-    for (rapidjson::SizeType i = 0; i < val.Size; ++i) {
-      if (!fromJsonValue(obj[i], val.data()[i])) {
-        ESP_ERROR()
-            << "Invalid numeric value specified in JSON Magnum::Color4, index :"
-            << i;
         return false;
       }
     }
