@@ -94,7 +94,15 @@ constexpr ConfigStoredType configStoredTypeFor<Mn::Vector3>() {
   return ConfigStoredType::MagnumVec3;
 }
 template <>
+constexpr ConfigStoredType configStoredTypeFor<Mn::Color3>() {
+  return ConfigStoredType::MagnumVec3;
+}
+template <>
 constexpr ConfigStoredType configStoredTypeFor<Mn::Vector4>() {
+  return ConfigStoredType::MagnumVec4;
+}
+template <>
+constexpr ConfigStoredType configStoredTypeFor<Mn::Color4>() {
   return ConfigStoredType::MagnumVec4;
 }
 template <>

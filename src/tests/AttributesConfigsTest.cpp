@@ -249,8 +249,12 @@ void AttributesConfigsTest::testUserDefinedConfigVals(
                    "`user_double`.";
   }
   CORRADE_COMPARE(userConfig->get<Mn::Vector3>("user_vec3"), vec3_val);
+  // Test access as a color
+  CORRADE_COMPARE(userConfig->get<Mn::Color3>("user_vec3"), vec3_val);
   CORRADE_COMPARE(userConfig->get<Mn::Quaternion>("user_quat"), quat_val);
   CORRADE_COMPARE(userConfig->get<Mn::Vector4>("user_vec4"), vec4_val);
+  // Test access as a color
+  CORRADE_COMPARE(userConfig->get<Mn::Color4>("user_vec4"), vec4_val);
 
 }  // AttributesConfigsTest::testUserDefinedConfigVals
 
