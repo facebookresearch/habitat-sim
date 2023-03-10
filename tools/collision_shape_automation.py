@@ -636,19 +636,59 @@ class CollisionProxyOptimizer:
                     user_attr = obj.user_attributes
                     obj_receptacles = hab_receptacle.parse_receptacles_from_user_config(
                         user_attr,
-                        parent_object_handle=obj_handle,
+                        parent_object_handle=obj.handle,
                         parent_template_directory=source_template_file,
                     )
 
                     # sample test points on the receptacles
                     self.gt_data[obj_handle]["receptacles"] = {}
                     for receptacle in obj_receptacles:
-                        rec_test_points = []
-                        for _ in range(num_point_samples):
-                            rec_test_points.append(receptacle.sample_uniform_global())
-                        self.gt_data[obj_handle]["receptacles"][
-                            receptacle.name
-                        ] = rec_test_points
+                        if type(receptacle) == hab_receptacle.TriangleMeshReceptacle:
+                            rec_test_points = []
+                            for _ in range(num_point_samples):
+                                rec_test_points.append(
+                                    receptacle.sample_uniform_global(
+                                        sim, sample_region_scale=1.0
+                                    )
+                                )
+                            self.gt_data[obj_handle]["receptacles"][
+                                receptacle.name
+                            ] = rec_test_points
+                            if self.generate_debug_images:
+                                debug_lines = []
+                                assert (
+                                    len(receptacle.mesh_data[1]) % 3 == 0
+                                ), "must be triangles"
+                                for face in range(
+                                    int(len(receptacle.mesh_data[1]) / 3)
+                                ):
+                                    verts = receptacle.get_face_verts(f_ix=face)
+                                    for edge in range(3):
+                                        debug_lines.append(
+                                            (
+                                                [verts[edge], verts[(edge + 1) % 3]],
+                                                mn.Color4.green(),
+                                            )
+                                        )
+                                for p in rec_test_points:
+                                    debug_lines.append(
+                                        (
+                                            [p, p + mn.Vector3(0, 0.01, 0)],
+                                            mn.Color4.red(),
+                                        )
+                                    )
+                                # use DebugVisualizer to get 6-axis view of the object
+                                dvb = hab_debug_vis.DebugVisualizer(
+                                    sim=sim,
+                                    output_path=self.output_directory,
+                                    default_sensor_uuid="color_sensor",
+                                )
+                                dvb.peek_rigid_object(
+                                    obj,
+                                    peek_all_axis=True,
+                                    additional_savefile_prefix=f"{receptacle.name}_",
+                                    debug_lines=debug_lines,
+                                )
 
                 if self.generate_debug_images:
                     # use DebugVisualizer to get 6-axis view of the object
@@ -994,6 +1034,7 @@ def main():
     sim_settings["sensor_height"] = 0
     sim_settings["width"] = 720
     sim_settings["height"] = 720
+    sim_settings["clear_color"] = mn.Color4.magenta() * 0.5
 
     # one-off single object logic:
     # evaluate_collision_shape(args.object_handle, sim_settings)
