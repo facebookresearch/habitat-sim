@@ -4,8 +4,12 @@
 
 from typing import Any, Dict
 
+import magnum as mn
+
 import habitat_sim
 import habitat_sim.agent
+
+black = mn.Color4.from_linear_rgb_int(0)
 
 # [default_sim_settings]
 default_sim_settings: Dict[str, Any] = {
@@ -17,6 +21,7 @@ default_sim_settings: Dict[str, Any] = {
     "sensor_height": 1.5,
     "hfov": 90,
     "zfar": 1000.0,
+    "clear_color": black,  # optional background color override for rgb sensors
     "color_sensor": True,
     "semantic_sensor": False,
     "depth_sensor": False,
@@ -84,6 +89,7 @@ def make_cfg(settings: Dict[str, Any]):
             far=settings["zfar"],
             sensor_type=habitat_sim.SensorType.COLOR,
             sensor_subtype=habitat_sim.SensorSubType.PINHOLE,
+            clear_color=settings["clear_color"],
         )
         sensor_specs.append(color_sensor_spec)
 
