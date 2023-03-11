@@ -23,6 +23,88 @@ from habitat_sim.utils.settings import default_sim_settings, make_cfg
 # chair - good approximation: 0a5e809804911e71de6a4ef89f2c8fef5b9291b3.glb
 # shelves - bad approximation: d1d1e0cdaba797ee70882e63f66055675c3f1e7f.glb
 
+# 71 equidistant points on a unit hemisphere generated from icosphere subdivision
+# Sphere center is (0,0,0) and no points lie on x,z plane
+# used for hemisphere raycasting from Receptacle points
+icosphere_points_subdiv_3 = [
+    mn.Vector3(-0.276388, 0.447220, -0.850649),
+    mn.Vector3(-0.483971, 0.502302, -0.716565),
+    mn.Vector3(-0.232822, 0.657519, -0.716563),
+    mn.Vector3(0.723607, 0.447220, -0.525725),
+    mn.Vector3(0.531941, 0.502302, -0.681712),
+    mn.Vector3(0.609547, 0.657519, -0.442856),
+    mn.Vector3(0.723607, 0.447220, 0.525725),
+    mn.Vector3(0.812729, 0.502301, 0.295238),
+    mn.Vector3(0.609547, 0.657519, 0.442856),
+    mn.Vector3(-0.276388, 0.447220, 0.850649),
+    mn.Vector3(-0.029639, 0.502302, 0.864184),
+    mn.Vector3(-0.232822, 0.657519, 0.716563),
+    mn.Vector3(-0.894426, 0.447216, 0.000000),
+    mn.Vector3(-0.831051, 0.502299, 0.238853),
+    mn.Vector3(-0.753442, 0.657515, 0.000000),
+    mn.Vector3(-0.251147, 0.967949, 0.000000),
+    mn.Vector3(-0.077607, 0.967950, 0.238853),
+    mn.Vector3(0.000000, 1.000000, 0.000000),
+    mn.Vector3(-0.525730, 0.850652, 0.000000),
+    mn.Vector3(-0.361800, 0.894429, 0.262863),
+    mn.Vector3(-0.638194, 0.723610, 0.262864),
+    mn.Vector3(-0.162456, 0.850654, 0.499995),
+    mn.Vector3(-0.447209, 0.723612, 0.525728),
+    mn.Vector3(-0.688189, 0.525736, 0.499997),
+    mn.Vector3(-0.483971, 0.502302, 0.716565),
+    mn.Vector3(0.203181, 0.967950, 0.147618),
+    mn.Vector3(0.138197, 0.894430, 0.425319),
+    mn.Vector3(0.052790, 0.723612, 0.688185),
+    mn.Vector3(0.425323, 0.850654, 0.309011),
+    mn.Vector3(0.361804, 0.723612, 0.587778),
+    mn.Vector3(0.262869, 0.525738, 0.809012),
+    mn.Vector3(0.531941, 0.502302, 0.681712),
+    mn.Vector3(0.203181, 0.967950, -0.147618),
+    mn.Vector3(0.447210, 0.894429, 0.000000),
+    mn.Vector3(0.670817, 0.723611, 0.162457),
+    mn.Vector3(0.425323, 0.850654, -0.309011),
+    mn.Vector3(0.670817, 0.723611, -0.162457),
+    mn.Vector3(0.850648, 0.525736, 0.000000),
+    mn.Vector3(0.812729, 0.502301, -0.295238),
+    mn.Vector3(-0.077607, 0.967950, -0.238853),
+    mn.Vector3(0.138197, 0.894430, -0.425319),
+    mn.Vector3(0.361804, 0.723612, -0.587778),
+    mn.Vector3(-0.162456, 0.850654, -0.499995),
+    mn.Vector3(0.052790, 0.723612, -0.688185),
+    mn.Vector3(0.262869, 0.525738, -0.809012),
+    mn.Vector3(-0.029639, 0.502302, -0.864184),
+    mn.Vector3(-0.361800, 0.894429, -0.262863),
+    mn.Vector3(-0.447209, 0.723612, -0.525728),
+    mn.Vector3(-0.638194, 0.723610, -0.262864),
+    mn.Vector3(-0.688189, 0.525736, -0.499997),
+    mn.Vector3(-0.831051, 0.502299, -0.238853),
+    mn.Vector3(-0.956626, 0.251149, 0.147618),
+    mn.Vector3(-0.861804, 0.276396, 0.425322),
+    mn.Vector3(-0.670821, 0.276397, 0.688189),
+    mn.Vector3(-0.436007, 0.251152, 0.864188),
+    mn.Vector3(-0.155215, 0.251152, 0.955422),
+    mn.Vector3(0.138199, 0.276397, 0.951055),
+    mn.Vector3(0.447215, 0.276397, 0.850649),
+    mn.Vector3(0.687159, 0.251152, 0.681715),
+    mn.Vector3(0.860698, 0.251151, 0.442858),
+    mn.Vector3(0.947213, 0.276396, 0.162458),
+    mn.Vector3(0.947213, 0.276397, -0.162458),
+    mn.Vector3(0.860698, 0.251151, -0.442858),
+    mn.Vector3(0.687159, 0.251152, -0.681715),
+    mn.Vector3(0.447216, 0.276397, -0.850648),
+    mn.Vector3(0.138199, 0.276397, -0.951055),
+    mn.Vector3(-0.155215, 0.251152, -0.955422),
+    mn.Vector3(-0.436007, 0.251152, -0.864188),
+    mn.Vector3(-0.670820, 0.276396, -0.688190),
+    mn.Vector3(-0.861804, 0.276394, -0.425323),
+    mn.Vector3(-0.956626, 0.251149, -0.147618),
+]
+
+
+def get_scaled_hemisphere_vectors(scale: float):
+    return [v * scale for v in icosphere_points_subdiv_3]
+
+
 # =======================================================================
 # Range3D surface sampling utils
 
@@ -193,11 +275,16 @@ def sample_points_from_range3d(
 
 
 def sample_points_from_sphere(
-    center: mn.Vector3, radius: float, num_points: int = 100
+    center: mn.Vector3,
+    radius: float,
+    num_points: int = 100,
 ) -> List[List[mn.Vector3]]:
     """
     Sample num_points from a sphere defined by center and radius.
     Return all points in two identical lists to indicate pairwise raycasting.
+    :param center: sphere center position
+    :param radius: sphere radius
+    :param num_points: number of points to sample
     """
     samples = []
 
@@ -218,6 +305,47 @@ def sample_points_from_sphere(
     samples = [samples, samples]
 
     return samples
+
+
+def receptacle_density_sample(
+    sim: habitat_sim.simulator.Simulator,
+    receptacle: hab_receptacle.TriangleMeshReceptacle,
+    target_radius: float = 0.04,
+    max_points: int = 100,
+    min_points: int = 5,
+    max_tries: int = 200,
+):
+    target_point_area = math.pi * target_radius**2
+    expected_points = receptacle.total_area / target_point_area
+
+    # if necessary, compute new target_radius to best cover the area
+    if expected_points > max_points or expected_points < min_points:
+        expected_points = max(min_points, min(max_points, expected_points))
+        target_radius = math.sqrt(receptacle.total_area / (expected_points * math.pi))
+
+    # print(f"receptacle_density_sample(`{receptacle.name}`): area={receptacle.total_area}, r={target_radius}, num_p={expected_points}")
+
+    sampled_points = []
+    num_tries = 0
+    min_dist = target_radius * 2
+    while len(sampled_points) < expected_points and num_tries < max_tries:
+        sample_point = receptacle.sample_uniform_global(sim, sample_region_scale=1.0)
+        success = True
+        for existing_point in sampled_points:
+            if (sample_point - existing_point).length() < min_dist:
+                num_tries += 1
+                success = False
+                break
+        if success:
+            # print(f"        success {sample_point} in {num_tries} tries")
+
+            # if no rejection, add the point
+            sampled_points.append(sample_point)
+            num_tries = 0
+
+    # print(f"    found {len(sampled_points)}/{expected_points} points.")
+
+    return sampled_points, target_radius
 
 
 def run_pairwise_raycasts(
@@ -645,15 +773,21 @@ class CollisionProxyOptimizer:
                     for receptacle in obj_receptacles:
                         if type(receptacle) == hab_receptacle.TriangleMeshReceptacle:
                             rec_test_points = []
-                            for _ in range(num_point_samples):
-                                rec_test_points.append(
-                                    receptacle.sample_uniform_global(
-                                        sim, sample_region_scale=1.0
-                                    )
-                                )
-                            self.gt_data[obj_handle]["receptacles"][
-                                receptacle.name
-                            ] = rec_test_points
+                            t_radius = 0.01
+                            # adaptive density sample:
+                            rec_test_points, t_radius = receptacle_density_sample(
+                                sim, receptacle
+                            )
+                            # random sample:
+                            # for _ in range(num_point_samples):
+                            #    rec_test_points.append(
+                            #        receptacle.sample_uniform_global(
+                            #            sim, sample_region_scale=1.0
+                            #        )
+                            #    )
+                            self.gt_data[obj_handle]["receptacles"][receptacle.name] = {
+                                "sample_points": rec_test_points
+                            }
                             if self.generate_debug_images:
                                 debug_lines = []
                                 assert (
@@ -670,11 +804,16 @@ class CollisionProxyOptimizer:
                                                 mn.Color4.green(),
                                             )
                                         )
+                                debug_circles = []
                                 for p in rec_test_points:
-                                    debug_lines.append(
+                                    debug_circles.append(
                                         (
-                                            [p, p + mn.Vector3(0, 0.01, 0)],
-                                            mn.Color4.red(),
+                                            (
+                                                p,  # center
+                                                t_radius,  # radius
+                                                mn.Vector3(0, 1, 0),  # normal
+                                                mn.Color4.red(),  # color
+                                            )
                                         )
                                     )
                                 # use DebugVisualizer to get 6-axis view of the object
@@ -688,6 +827,7 @@ class CollisionProxyOptimizer:
                                     peek_all_axis=True,
                                     additional_savefile_prefix=f"{receptacle.name}_",
                                     debug_lines=debug_lines,
+                                    debug_circles=debug_circles,
                                 )
 
                 if self.generate_debug_images:
@@ -718,7 +858,10 @@ class CollisionProxyOptimizer:
             inflated_scene_bb = mn.Range3D.from_center(
                 scene_bb.center(), inflated_scene_bb.size() / 2.0
             )
-            self.gt_data[obj_handle]["scene_bb"] = scene_bb
+            # NOTE: to save the referenced Range3D object, we need to deep or Magnum will destroy the underlying C++ objects.
+            self.gt_data[obj_handle]["scene_bb"] = mn.Range3D(
+                scene_bb.min, scene_bb.max
+            )
             self.gt_data[obj_handle]["inflated_scene_bb"] = inflated_scene_bb
             test_points = None
             if sample_shape == "aabb":
@@ -815,6 +958,13 @@ class CollisionProxyOptimizer:
             obj_handle in self.gt_data
         ), f"`{obj_handle}` does not have any entry in gt_data: {self.gt_data.keys()}. Call to `setup_obj_gt(obj_handle)` required."
 
+        # when evaluating multiple proxy shapes, need unique ids:
+        pr_id = "pr0"
+        id_counter = 0
+        while pr_id in self.gt_data[obj_handle]["raycasts"]:
+            pr_id = "pr" + str(id_counter)
+            id_counter += 1
+
         # start with empty scene
         cfg = self.get_cfg_with_mm()
         with habitat_sim.Simulator(cfg) as sim:
@@ -847,18 +997,114 @@ class CollisionProxyOptimizer:
                     default_sensor_uuid="color_sensor",
                 )
                 dvb.peek_rigid_object(
-                    obj, peek_all_axis=True, additional_savefile_prefix="pr_"
+                    obj, peek_all_axis=True, additional_savefile_prefix=pr_id + "_"
                 )
 
             # run evaluation
             pr_raycast_results = run_pairwise_raycasts(
                 self.gt_data[obj_handle]["test_points"], sim
             )
-            self.gt_data[obj_handle]["raycasts"]["pr"] = {"results": pr_raycast_results}
+            self.gt_data[obj_handle]["raycasts"][pr_id] = {
+                "results": pr_raycast_results
+            }
 
             # undo template modification
             obj_template.render_asset_handle = render_asset
             otm.register_template(obj_template)
+
+    def compute_receptacle_access_metrics(
+        self, obj_handle: str, use_gt=False, acces_ratio_threshold: float = 0.1
+    ):
+        """
+        Compute a heuristic for the accessibility of all Receptacles for an object.
+        Uses raycasting from previously sampled receptacle locations to approximate how open a particular receptacle is.
+        :param use_gt: Compute the metric for the ground truth shape instead of the currently active collision proxy (default)
+        :param acces_ratio_threshold: The ratio of accessible:blocked rays necessary for a recetpacle point to be considered accessible
+        """
+        # algorithm:
+        # For each receptacle, r:
+        #  For each sample point, s:
+        #    Generate `num_point_rays` directions, d (length bb diagnonal) and Ray(origin=s+d, direction=d)
+        #    For each ray:
+        #      If dist > 1, success, otherwise failure
+        #
+        # metrics:
+        # - %rays
+        # - %points w/ success% > eps(10%) #call these successful/accessible
+        # - average % for points
+        # ? how to get regions?
+        # ? debug draw this metric?
+        # ? how to diff b/t gt and pr?
+
+        print(f"compute_receptacle_access_metrics - obj_handle = {obj_handle}")
+
+        # start with empty scene or stage as scene:
+        scene_name = "NONE"
+        if use_gt:
+            scene_name = self.gt_data[obj_handle]["stage_template_name"]
+        cfg = self.get_cfg_with_mm(scene=scene_name)
+        with habitat_sim.Simulator(cfg) as sim:
+            if not use_gt:
+                # load the object
+                obj = sim.get_rigid_object_manager().add_object_by_template_handle(
+                    obj_handle
+                )
+                assert obj.is_alive, "Object was not added correctly."
+
+            # gather hemisphere rays scaled to object's size
+            # NOTE: because the receptacle points can be located anywhere in the bounding box, raycast radius must be bb diagonal length
+            ray_sphere_radius = self.gt_data[obj_handle]["scene_bb"].size().length()
+            assert ray_sphere_radius > 0, "otherwise we have an error"
+            ray_sphere_points = get_scaled_hemisphere_vectors(ray_sphere_radius)
+
+            # collect hemisphere raycast samples for all receptacle sample points
+            obj_rec_data = self.gt_data[obj_handle]["receptacles"]
+            for receptacle_name in obj_rec_data.keys():
+                sample_point_ray_results: List[
+                    List[habitat_sim.physics.RaycastResults]
+                ] = []
+                sample_point_access_ratios: List[float] = []
+                # access rate is percent of "accessible" points apssing the threshold
+                receptacle_access_rate = 0
+                # access score is average accessibility of points
+                receptacle_access_score = 0
+                sample_points = obj_rec_data[receptacle_name]["sample_points"]
+                for sample_point in sample_points:
+                    # NOTE: rays must originate outside the shape because origins inside a convex will not collide.
+                    # move ray origins to new point location
+                    hemi_rays = [
+                        habitat_sim.geo.Ray(v + sample_point, -v)
+                        for v in ray_sphere_points
+                    ]
+                    # rays are not unit length, so use local max_distance==1 ray length
+                    ray_results = [
+                        sim.cast_ray(ray=ray, max_distance=1.0) for ray in hemi_rays
+                    ]
+                    sample_point_ray_results.append(ray_results)
+
+                    # compute per-point access metrics
+                    blocked_rays = len([rr for rr in ray_results if rr.has_hits()])
+                    sample_point_access_ratios.append(
+                        (len(ray_results) - blocked_rays) / len(ray_results)
+                    )
+                    receptacle_access_score += sample_point_access_ratios[-1]
+                    if sample_point_access_ratios[-1] > acces_ratio_threshold:
+                        receptacle_access_rate += 1
+
+                receptacle_access_score /= len(sample_points)
+                receptacle_access_rate /= len(sample_points)
+                obj_rec_data[receptacle_name][
+                    "sample_point_ray_results"
+                ] = sample_point_ray_results
+                obj_rec_data[receptacle_name][
+                    "receptacle_access_score"
+                ] = receptacle_access_score
+                obj_rec_data[receptacle_name][
+                    "receptacle_access_rate"
+                ] = receptacle_access_rate
+                print(f" receptacle_name = {receptacle_name}")
+                print(f" receptacle_access_score = {receptacle_access_score}")
+                print(f" receptacle_access_rate = {receptacle_access_rate}")
 
     def compute_gt_errors(self, obj_handle: str) -> None:
         """
@@ -893,7 +1139,7 @@ class CollisionProxyOptimizer:
     def cache_global_results(self) -> None:
         """
         Cache the current global cumulative results.
-        Do this after an object's computation is done before cleaning the gt data.
+        Do this after an object's computation is done (compute_gt_errors) before cleaning the gt data.
         """
 
         for obj_handle in self.gt_data.keys():
@@ -909,6 +1155,7 @@ class CollisionProxyOptimizer:
                     self.results[obj_handle]["normalized_errors"][key] = self.gt_data[
                         obj_handle
                     ]["raycasts"][key]["normalized_errors"]
+        # TODO: cache the receptacle access metrics for CSV save
 
     def save_results_to_csv(self, filename: str) -> None:
         """
@@ -981,6 +1228,12 @@ class CollisionProxyOptimizer:
             self.setup_obj_gt(obj_h)
             self.compute_baseline_metrics(obj_h)
             self.compute_proxy_metrics(obj_h)
+            # receptacle metrics:
+            if self.compute_receptacle_useability_metrics:
+                print(" GT Recetpacle Metrics:")
+                self.compute_receptacle_access_metrics(obj_h, use_gt=True)
+                print(" PR Recetpacle Metrics:")
+                self.compute_receptacle_access_metrics(obj_h, use_gt=False)
             self.compute_gt_errors(obj_h)
             self.cache_global_results()
             self.clean_obj_gt(obj_h)
