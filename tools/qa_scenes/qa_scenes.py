@@ -54,7 +54,7 @@ if not os.path.exists(OUTPUT_PATH_BASE):
 OUTPUT_PATH_DICT = {}
 OUTPUT_PATH_DICT["base"] = OUTPUT_PATH_BASE
 for subdir in ["stage", "scene"]:
-    tmp_path = os.path.join(OUTPUT_PATH_BASE, subdir)
+    tmp_path = os.path.join(OUTPUT_PATH_BASE, subdir + "/")
     OUTPUT_PATH_DICT[subdir] = tmp_path
     if not os.path.exists(tmp_path):
         os.mkdir(tmp_path)
@@ -703,10 +703,10 @@ def process_scene_or_stage(
         with habitat_sim.Simulator(cfg) as sim:
             text_format = ANSICodes.BRIGHT_RED.value
             # TODO Needs to be split based on os path sep.
+            # use os.path.basename(scene_handle)
             scene_filename = scene_handle.split("/")[-1]
             # Determine whether stage or scene
-            print(f"Scene filename : {scene_filename}")
-            is_stage = scene_filename.find("stage_config")
+            is_stage = scene_filename.find("stage_config") != -1
             file_type = "stage" if is_stage else "scene"
             output_filepath = OUTPUT_PATH_DICT[file_type]
             print_if_logging(
