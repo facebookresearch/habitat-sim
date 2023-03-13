@@ -701,6 +701,8 @@ class CollisionProxyOptimizer:
 
         # option to use Receptacle annotations to compute an additional accuracy metric
         self.compute_receptacle_useability_metrics = True
+        # add a vertical epsilon offset to the receptacle points for analysis. This is added directly to the sampled points.
+        self.rec_point_vertical_offset = 0.02
 
         # cache of test points, rays, distances, etc... for use by active processes
         # NOTE: entries created by `setup_obj_gt` and cleaned by `clean_obj_gt` for memory efficiency.
@@ -751,6 +753,7 @@ class CollisionProxyOptimizer:
 
         if self.compute_receptacle_useability_metrics or self.generate_debug_images:
             # pre-process the ground truth object and receptacles
+            rec_vertical_offset = mn.Vector3(0, self.rec_point_vertical_offset, 0)
             cfg = self.get_cfg_with_mm()
             with habitat_sim.Simulator(cfg) as sim:
                 # load the gt object
@@ -778,6 +781,11 @@ class CollisionProxyOptimizer:
                             rec_test_points, t_radius = receptacle_density_sample(
                                 sim, receptacle
                             )
+                            # add the vertical offset
+                            rec_test_points = [
+                                p + rec_vertical_offset for p in rec_test_points
+                            ]
+
                             # random sample:
                             # for _ in range(num_point_samples):
                             #    rec_test_points.append(
@@ -1044,6 +1052,9 @@ class CollisionProxyOptimizer:
             scene_name = self.gt_data[obj_handle]["stage_template_name"]
         cfg = self.get_cfg_with_mm(scene=scene_name)
         with habitat_sim.Simulator(cfg) as sim:
+            obj_rec_data = self.gt_data[obj_handle]["receptacles"]
+            shape_id = "gt"
+            obj = None
             if not use_gt:
                 # load the object
                 obj = sim.get_rigid_object_manager().add_object_by_template_handle(
@@ -1051,15 +1062,36 @@ class CollisionProxyOptimizer:
                 )
                 assert obj.is_alive, "Object was not added correctly."
 
+                # when evaluating multiple proxy shapes, need unique ids:
+                pr_id = "pr0"
+                id_counter = 0
+                while pr_id in self.gt_data[obj_handle]["raycasts"]:
+                    pr_id = "pr" + str(id_counter)
+                    id_counter += 1
+                shape_id = pr_id
+
             # gather hemisphere rays scaled to object's size
             # NOTE: because the receptacle points can be located anywhere in the bounding box, raycast radius must be bb diagonal length
             ray_sphere_radius = self.gt_data[obj_handle]["scene_bb"].size().length()
             assert ray_sphere_radius > 0, "otherwise we have an error"
             ray_sphere_points = get_scaled_hemisphere_vectors(ray_sphere_radius)
 
+            # save a list of point accessibility scores for debugging and visualization
+            receptacle_point_access_scores = {}
+            dvb = hab_debug_vis.DebugVisualizer(
+                sim=sim,
+                output_path=self.output_directory,
+                default_sensor_uuid="color_sensor",
+            )
+
             # collect hemisphere raycast samples for all receptacle sample points
-            obj_rec_data = self.gt_data[obj_handle]["receptacles"]
             for receptacle_name in obj_rec_data.keys():
+                if "results" not in obj_rec_data[receptacle_name]:
+                    obj_rec_data[receptacle_name]["results"] = {}
+                assert (
+                    shape_id not in obj_rec_data[receptacle_name]["results"]
+                ), f" overwriting results for {shape_id}"
+                obj_rec_data[receptacle_name]["results"][shape_id] = {}
                 sample_point_ray_results: List[
                     List[habitat_sim.physics.RaycastResults]
                 ] = []
@@ -1090,21 +1122,96 @@ class CollisionProxyOptimizer:
                     receptacle_access_score += sample_point_access_ratios[-1]
                     if sample_point_access_ratios[-1] > acces_ratio_threshold:
                         receptacle_access_rate += 1
+                    receptacle_point_access_scores[
+                        receptacle_name
+                    ] = sample_point_access_ratios
 
                 receptacle_access_score /= len(sample_points)
                 receptacle_access_rate /= len(sample_points)
-                obj_rec_data[receptacle_name][
+
+                obj_rec_data[receptacle_name]["results"][shape_id][
                     "sample_point_ray_results"
                 ] = sample_point_ray_results
-                obj_rec_data[receptacle_name][
+                obj_rec_data[receptacle_name]["results"][shape_id][
                     "receptacle_access_score"
                 ] = receptacle_access_score
-                obj_rec_data[receptacle_name][
+                obj_rec_data[receptacle_name]["results"][shape_id][
                     "receptacle_access_rate"
                 ] = receptacle_access_rate
                 print(f" receptacle_name = {receptacle_name}")
                 print(f" receptacle_access_score = {receptacle_access_score}")
                 print(f" receptacle_access_rate = {receptacle_access_rate}")
+
+                if self.generate_debug_images:
+                    # generate receptacle access debug images
+                    # 1a Show missed rays vs 1b hit rays
+                    debug_lines = []
+                    for ray_results in obj_rec_data[receptacle_name]["results"][
+                        shape_id
+                    ]["sample_point_ray_results"]:
+                        for hit_record in ray_results:
+                            if not hit_record.has_hits():
+                                debug_lines.append(
+                                    (
+                                        [
+                                            hit_record.ray.origin,
+                                            hit_record.ray.origin
+                                            + hit_record.ray.direction,
+                                        ],
+                                        mn.Color4.green(),
+                                    )
+                                )
+                    if use_gt:
+                        dvb.peek_scene(
+                            peek_all_axis=True,
+                            additional_savefile_prefix=f"{receptacle_name}_access_rays_",
+                            debug_lines=debug_lines,
+                            debug_circles=None,
+                        )
+                    else:
+                        dvb.peek_rigid_object(
+                            obj,
+                            peek_all_axis=True,
+                            additional_savefile_prefix=f"{receptacle_name}_access_rays_",
+                            debug_lines=debug_lines,
+                            debug_circles=None,
+                        )
+
+                    # 2 Show only rec points colored by "access" metric or percentage
+                    debug_circles = []
+                    color_r = mn.Color4.red().to_xyz()
+                    color_g = mn.Color4.green().to_xyz()
+                    delta = color_g - color_r
+                    for point_access_ratio, point in zip(
+                        receptacle_point_access_scores[receptacle_name],
+                        obj_rec_data[receptacle_name]["sample_points"],
+                    ):
+                        point_color_xyz = color_r + delta * point_access_ratio
+                        debug_circles.append(
+                            (
+                                point,
+                                0.02,
+                                mn.Vector3(0, 1, 0),
+                                mn.Color4.from_xyz(point_color_xyz),
+                            )
+                        )
+                    # use DebugVisualizer to get 6-axis view of the object
+                    if use_gt:
+                        dvb.peek_scene(
+                            peek_all_axis=True,
+                            additional_savefile_prefix=f"{receptacle_name}_point_ratios_",
+                            debug_lines=None,
+                            debug_circles=debug_circles,
+                        )
+                    else:
+                        dvb.peek_rigid_object(
+                            obj,
+                            peek_all_axis=True,
+                            additional_savefile_prefix=f"{receptacle_name}_point_ratios_",
+                            debug_lines=None,
+                            debug_circles=debug_circles,
+                        )
+                    # obj_rec_data[receptacle_name]["results"][shape_id]["sample_point_ray_results"]
 
     def compute_gt_errors(self, obj_handle: str) -> None:
         """
