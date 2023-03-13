@@ -1063,11 +1063,14 @@ class CollisionProxyOptimizer:
                 assert obj.is_alive, "Object was not added correctly."
 
                 # when evaluating multiple proxy shapes, need unique ids:
-                pr_id = "pr0"
+                pr_id = None
+                next_pr_id = "pr0"
                 id_counter = 0
-                while pr_id in self.gt_data[obj_handle]["raycasts"]:
-                    pr_id = "pr" + str(id_counter)
+                while next_pr_id in self.gt_data[obj_handle]["raycasts"]:
+                    pr_id = next_pr_id
+                    next_pr_id = "pr" + str(id_counter)
                     id_counter += 1
+                assert pr_id is not None
                 shape_id = pr_id
 
             # gather hemisphere rays scaled to object's size
@@ -1262,21 +1265,48 @@ class CollisionProxyOptimizer:
                     self.results[obj_handle]["normalized_errors"][key] = self.gt_data[
                         obj_handle
                     ]["raycasts"][key]["normalized_errors"]
-        # TODO: cache the receptacle access metrics for CSV save
+
+            if self.compute_receptacle_useability_metrics:
+                self.results[obj_handle]["receptacle_info"] = {}
+                # cache the receptacle access metrics for CSV save
+                for rec_key in self.gt_data[obj_handle]["receptacles"].keys():
+                    self.results[obj_handle]["receptacle_info"][rec_key] = {}
+                    assert (
+                        "results" in self.gt_data[obj_handle]["receptacles"][rec_key]
+                    ), "Must run 'compute_receptacle_access_metrics' before caching global receptacle data."
+                    rec_results = self.gt_data[obj_handle]["receptacles"][rec_key][
+                        "results"
+                    ]
+
+                    # access rate and score
+                    for metric in ["receptacle_access_score", "receptacle_access_rate"]:
+                        for shape_id in rec_results.keys():
+                            if (
+                                metric
+                                not in self.results[obj_handle]["receptacle_info"][
+                                    rec_key
+                                ]
+                            ):
+                                self.results[obj_handle]["receptacle_info"][rec_key][
+                                    metric
+                                ] = {}
+                            self.results[obj_handle]["receptacle_info"][rec_key][
+                                metric
+                            ][shape_id] = rec_results[shape_id][metric]
 
     def save_results_to_csv(self, filename: str) -> None:
         """
         Save current global results to a csv file in the self.output_directory.
         """
 
-        assert len(self.results) > 0, "There musst be results to save."
+        assert len(self.results) > 0, "There must be results to save."
 
         import csv
 
         filepath = os.path.join(self.output_directory, filename)
 
         # save normalized error csv
-        with open(filepath, "w") as f:
+        with open(filepath + ".csv", "w") as f:
             writer = csv.writer(f, quoting=csv.QUOTE_ALL)
             # first collect all column names:
             existing_cols = []
@@ -1311,8 +1341,54 @@ class CollisionProxyOptimizer:
                                 row_data.append("")
                 writer.writerow(row_data)
 
+        # export receptacle metrics to CSV
+        if self.compute_receptacle_useability_metrics:
+            rec_filepath = filepath + "_receptacle_metrics"
+            with open(rec_filepath + ".csv", "w") as f:
+                writer = csv.writer(f, quoting=csv.QUOTE_ALL)
+                # first collect all column names:
+                existing_cols = ["receptacle"]
+                shape_ids = []
+                metrics = []
+                for obj_handle in self.results.keys():
+                    if "receptacle_info" in self.results[obj_handle]:
+                        for rec_key in self.results[obj_handle]["receptacle_info"]:
+                            for metric in self.results[obj_handle]["receptacle_info"][
+                                rec_key
+                            ].keys():
+                                if metric not in metrics:
+                                    metrics.append(metric)
+                                for shape_id in self.results[obj_handle][
+                                    "receptacle_info"
+                                ][rec_key][metric].keys():
+                                    if shape_id not in shape_ids:
+                                        shape_ids.append(shape_id)
+                                    if shape_id + "-" + metric not in existing_cols:
+                                        existing_cols.append(shape_id + "-" + metric)
+                # write column names row
+                writer.writerow(existing_cols)
+
+                # write results rows
+                for obj_handle in self.results.keys():
+                    if "receptacle_info" in self.results[obj_handle]:
+                        for rec_key in self.results[obj_handle]["receptacle_info"]:
+                            rec_info = self.results[obj_handle]["receptacle_info"][
+                                rec_key
+                            ]
+                            row_data = [obj_handle + "_" + rec_key]
+                            for metric in metrics:
+                                for shape_id in shape_ids:
+                                    if (
+                                        metric in rec_info
+                                        and shape_id in rec_info[metric]
+                                    ):
+                                        row_data.append(rec_info[metric][shape_id])
+                                    else:
+                                        row_data.append("")
+                            writer.writerow(row_data)
+
     def compute_and_save_results_for_objects(
-        self, obj_handle_substrings: List[str], output_filename: str = "cpo_out.csv"
+        self, obj_handle_substrings: List[str], output_filename: str = "cpo_out"
     ) -> None:
         # first find all full object handles
         otm = self.mm.object_template_manager
