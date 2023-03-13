@@ -10,8 +10,8 @@ import sys
 import time
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
-flags = sys.getdlopenflags()
-sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
+FLAGS = sys.getdlopenflags()
+sys.setdlopenflags(FLAGS | ctypes.RTLD_GLOBAL)
 
 import git
 import magnum as mn
@@ -40,21 +40,30 @@ from habitat_sim.utils.sim_utils import get_floor_navigable_extents
 NavmeshMetrics = Dict[str, Union[int, float]]
 
 # get the data path
-repo = git.Repo(".", search_parent_directories=True)
-dir_path = repo.working_tree_dir
-data_path = os.path.join(dir_path, "data")
+REPO = git.Repo(".", search_parent_directories=True)
+DIR_PATH = REPO.working_tree_dir
+DATA_PATH = os.path.join(DIR_PATH, "data")
 
 # get the output directory
-output_directory = "./tools/qa_scenes/qa_scenes_output/"  # @param {type:"string"}
-output_path = os.path.join(dir_path, output_directory)
-if not os.path.exists(output_path):
-    os.mkdir(output_path)
+OUTPUT_DIRECTORY = "./tools/qa_scenes/qa_scenes_output/"  # @param {type:"string"}
+OUTPUT_PATH_BASE = os.path.join(DIR_PATH, OUTPUT_DIRECTORY)
+if not os.path.exists(OUTPUT_PATH_BASE):
+    os.mkdir(OUTPUT_PATH_BASE)
+# build subpaths for stage and scene output
+
+OUTPUT_PATH_DICT = {}
+OUTPUT_PATH_DICT["base"] = OUTPUT_PATH_BASE
+for subdir in ["stage", "scene"]:
+    tmp_path = os.path.join(OUTPUT_PATH_BASE, subdir)
+    OUTPUT_PATH_DICT[subdir] = tmp_path
+    if not os.path.exists(tmp_path):
+        os.mkdir(tmp_path)
 
 # if there are no "scene_instance.json" files in this dataset, create default scenes
 # in this folder using the stages in the dataset instead.
-default_scene_dir = os.path.join(data_path, "default_qa_scenes")
-if not os.path.exists(default_scene_dir):
-    os.mkdir(default_scene_dir)
+DEFAULT_SCENE_DIR = os.path.join(DATA_PATH, "default_qa_scenes")
+if not os.path.exists(DEFAULT_SCENE_DIR):
+    os.mkdir(DEFAULT_SCENE_DIR)
 
 MAX_TEST_TIME = sys.float_info.max
 
@@ -213,6 +222,7 @@ def place_scene_topdown_camera(sim: habitat_sim.Simulator, agent: Agent) -> None
 def render_sensor_observations(
     sim: habitat_sim.Simulator,
     scene_filename: str,
+    output_filepath: str,
     min_max_avg_render_times: Dict[str, List[float]],
     detailed_info_json_dict: Dict[str, Any],
     failure_log: List[Tuple[str, Any]],
@@ -275,7 +285,7 @@ def render_sensor_observations(
                 depth[pose_num] = observations["depth_sensor"]
 
             pil_save_obs(
-                output_file=output_path
+                output_file=output_filepath
                 + scene_filename.split(".")[0]
                 + image_filename_suffix
                 + ".png",
@@ -692,9 +702,16 @@ def process_scene_or_stage(
         process_scene_or_stage_phase = "initialization"
         with habitat_sim.Simulator(cfg) as sim:
             text_format = ANSICodes.BRIGHT_RED.value
+            # TODO Needs to be split based on os path sep.
             scene_filename = scene_handle.split("/")[-1]
+            # Determine whether stage or scene
+            print(f"Scene filename : {scene_filename}")
+            is_stage = scene_filename.find("stage_config")
+            file_type = "stage" if is_stage else "scene"
+            output_filepath = OUTPUT_PATH_DICT[file_type]
             print_if_logging(
-                silent, text_format + f"\n\t---processing scene: {scene_filename}\n"
+                silent,
+                text_format + f"\n\t---processing {file_type}: {scene_filename}\n",
             )
             detailed_info_json_dict[scene_filename] = {}
 
@@ -727,7 +744,7 @@ def process_scene_or_stage(
                         island_top_down_map
                     )
                     island_colored_map_image.save(
-                        output_path
+                        output_filepath
                         + scene_filename.split(".")[0]
                         + f"_floor_{f_ix}_navmesh_islands.png"
                     )
@@ -740,6 +757,7 @@ def process_scene_or_stage(
                 render_sensor_observations(
                     sim,
                     scene_filename,
+                    output_filepath,
                     min_max_avg_render_times,
                     detailed_info_json_dict,
                     failure_log,
@@ -837,6 +855,7 @@ def process_scenes_and_stages(
     failure_log: List[Tuple[str, Any]] = []
 
     # process specified scenes and stages
+    print(f"Start loop for {start_index} to {end_index}")
     for i in range(start_index, end_index):
         if scene_handles[i] == "NONE":
             continue
@@ -857,7 +876,7 @@ def process_scenes_and_stages(
 
     # create cvs detailing scene navmesh metrics
     navmesh_cvs_filename = create_unique_filename(
-        dir_path=output_path,
+        dir_path=OUTPUT_PATH_DICT["base"],
         filename_prefix=sim_settings["output_file_prefix"],
         filename_suffix="scene_navmesh_metrics",
         extension=".csv",
@@ -867,7 +886,7 @@ def process_scenes_and_stages(
     # create cvs detailing rendering, collision, and asset sleep test metric
     # summaries. More comprehensive metrics will be stored in a json
     test_times_cvs_filename = create_unique_filename(
-        dir_path=output_path,
+        dir_path=OUTPUT_PATH_DICT["base"],
         filename_prefix=sim_settings["output_file_prefix"],
         filename_suffix="test_time_metrics",
         extension=".csv",
@@ -884,7 +903,7 @@ def process_scenes_and_stages(
 
     # save json file with comprehensive test data for each scene
     json_filename = create_unique_filename(
-        dir_path=output_path,
+        dir_path=OUTPUT_PATH_DICT["base"],
         filename_prefix=sim_settings["output_file_prefix"],
         filename_suffix="detailed_info",
         extension=".json",
@@ -972,12 +991,12 @@ if __name__ == "__main__":
     # Populate sim_settings with data from qa_scene_config.json file
     sim_settings: Dict[str, Any] = default_sim_settings.copy()
     if args.config_file_path:
-        with open(os.path.join(dir_path, args.config_file_path)) as config_json:
+        with open(os.path.join(DIR_PATH, args.config_file_path)) as config_json:
             parse_config_json_file(sim_settings, json.load(config_json))
 
     # dataset paths in config are relative to data folder
     sim_settings["scene_dataset_config_file"] = os.path.join(
-        data_path, sim_settings["scene_dataset_config_file"]
+        DATA_PATH, sim_settings["scene_dataset_config_file"]
     )
 
     # setup colored console print statement logic
