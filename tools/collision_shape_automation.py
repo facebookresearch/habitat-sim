@@ -745,6 +745,7 @@ class CollisionProxyOptimizer:
         assert obj_template is not None, f"Could not find object handle `{obj_handle}`"
 
         self.gt_data[obj_handle] = {}
+        self.gt_data[obj_handle]["next_proxy_id"] = 0
 
         # correct now for any COM automation
         obj_template.compute_COM_from_shape = False
@@ -967,11 +968,8 @@ class CollisionProxyOptimizer:
         ), f"`{obj_handle}` does not have any entry in gt_data: {self.gt_data.keys()}. Call to `setup_obj_gt(obj_handle)` required."
 
         # when evaluating multiple proxy shapes, need unique ids:
-        pr_id = "pr0"
-        id_counter = 0
-        while pr_id in self.gt_data[obj_handle]["raycasts"]:
-            pr_id = "pr" + str(id_counter)
-            id_counter += 1
+        pr_id = f"pr{self.gt_data[obj_handle]['next_proxy_id']}"
+        self.gt_data[obj_handle]["next_proxy_id"] += 1
 
         # start with empty scene
         cfg = self.get_cfg_with_mm()
@@ -1063,15 +1061,7 @@ class CollisionProxyOptimizer:
                 assert obj.is_alive, "Object was not added correctly."
 
                 # when evaluating multiple proxy shapes, need unique ids:
-                pr_id = None
-                next_pr_id = "pr0"
-                id_counter = 0
-                while next_pr_id in self.gt_data[obj_handle]["raycasts"]:
-                    pr_id = next_pr_id
-                    next_pr_id = "pr" + str(id_counter)
-                    id_counter += 1
-                assert pr_id is not None
-                shape_id = pr_id
+                shape_id = f"pr{self.gt_data[obj_handle]['next_proxy_id']-1}"
 
             # gather hemisphere rays scaled to object's size
             # NOTE: because the receptacle points can be located anywhere in the bounding box, raycast radius must be bb diagonal length
@@ -1253,14 +1243,78 @@ class CollisionProxyOptimizer:
         2. evaluating new proxy shape across various metrics
         """
 
-        vhacd_test_params = habitat_sim.VHACDParameters()
+        # vhacd_test_params = habitat_sim.VHACDParameters()
 
-        self.compute_vhacd_col_shape(obj_template_handle, vhacd_test_params)
+        # vhacd_test_params.max_num_vertices_per_ch = 64
+        # vhacd_test_params.max_convex_hulls = 1024
+        # vhacd_test_params.plane_downsampling = 4 #1-16
+        # vhacd_test_params.convex_hull_downsampling = 4 #1-16
 
-        self.compute_proxy_metrics(obj_template_handle)
+        # vhacd_test_params.alpha = 0.05 #bias towards symmetry [0-1]
+        # vhacd_test_params.beta = 0.05 #bias toward revolution axes [0-1]
 
-        if self.compute_receptacle_useability_metrics:
-            self.compute_receptacle_access_metrics(obj_handle=obj_template_handle)
+        # vhacd_test_params.mode = 0 #0=voxel, 1=tetrahedral
+        # vhacd_test_params.pca = 0 #1=use PCA normalization
+
+        param_ranges = {
+            # "pca": (0,1), #pca seems worse, no speed improvement
+            # "mode": (0,1), #tetrahedral mode seems worse
+            "alpha": (0.05, 0.1),
+            "beta": (0.05, 0.1),
+            "plane_downsampling": [2],
+            "convex_hull_downsampling": [2],
+            "max_num_vertices_per_ch": (16, 32),
+            # "max_convex_hulls": (8,16,32,64),
+            "max_convex_hulls": (16, 32, 64),
+            "resolution": [200000],
+        }
+
+        permutations = [[]]
+
+        # permute variations
+        for attr, values in param_ranges.items():
+            new_permutations = []
+            for v in values:
+                for permutation in permutations:
+                    extended_permutation = [(attr, v)]
+                    for setting in permutation:
+                        extended_permutation.append(setting)
+                    new_permutations.append(extended_permutation)
+            permutations = new_permutations
+        print(f"Parameter permutations = {len(permutations)}")
+        for setting in permutations:
+            print(f"    {setting}")
+
+        vhacd_start_time = time.time()
+        vhacd_iteration_times = {}
+        # evaluate VHACD settings
+        for setting in permutations:
+            vhacd_params = habitat_sim.VHACDParameters()
+            setting_string = ""
+            for attr, val in setting:
+                setattr(vhacd_params, attr, val)
+                setting_string += f" '{attr}'={val}"
+            vhacd_iteration_time = time.time()
+            self.compute_vhacd_col_shape(obj_template_handle, vhacd_params)
+
+            self.compute_proxy_metrics(obj_template_handle)
+            proxy_id = f"pr{self.gt_data[obj_template_handle]['next_proxy_id']-1}"
+            if "vhacd_settings" not in self.gt_data[obj_template_handle]:
+                self.gt_data[obj_template_handle]["vhacd_settings"] = {}
+            self.gt_data[obj_template_handle]["vhacd_settings"][
+                proxy_id
+            ] = setting_string
+
+            if self.compute_receptacle_useability_metrics:
+                self.compute_receptacle_access_metrics(obj_handle=obj_template_handle)
+            vhacd_iteration_times[proxy_id] = time.time() - vhacd_iteration_time
+
+        print(f"Total VHACD time = {time.time()-vhacd_start_time}")
+        print("    Iteration times = ")
+        for proxy_id, settings in self.gt_data[obj_template_handle][
+            "vhacd_settings"
+        ].items():
+            print(f"     {proxy_id} - {settings} - {vhacd_iteration_times[proxy_id]}")
 
     def compute_vhacd_col_shape(
         self, obj_template_handle: str, vhacd_params: habitat_sim.VHACDParameters
@@ -1279,15 +1333,12 @@ class CollisionProxyOptimizer:
         obj_template = otm.get_template_by_handle(matching_obj_handles[0])
         render_asset = obj_template.render_asset_handle
         render_asset_path = os.path.abspath(render_asset)
-        print(f"render_asset_path = {render_asset_path}")
 
         cfg = self.get_cfg_with_mm()
         with habitat_sim.Simulator(cfg) as sim:
             new_template_handle = sim.apply_convex_hull_decomposition(
                 render_asset_path, vhacd_params, save_chd_to_obj=True
             )
-
-        print(f"new_template_handle = {new_template_handle}")
 
         # set the collision asset
         matching_vhacd_handles = otm.get_file_template_handles(new_template_handle)
@@ -1297,13 +1348,8 @@ class CollisionProxyOptimizer:
 
         vhacd_template = otm.get_template_by_handle(matching_vhacd_handles[0])
 
-        print(f"vhacd_template.csv_info = {vhacd_template.csv_info}")
-        print(f"obj_template.csv_info = {obj_template.csv_info}")
-
         obj_template.collision_asset_handle = vhacd_template.collision_asset_handle
-        print(
-            f"vhacd_template.collision_asset_handle = {vhacd_template.collision_asset_handle}"
-        )
+
         otm.register_template(obj_template)
 
     def cache_global_results(self) -> None:
@@ -1550,7 +1596,26 @@ def main():
         if object_has_receptacles(all_handles[i], otm)
     ]
     print(f"Number of objects with receptacles = {len(all_handles)}")
-    all_handles = all_handles[:100]
+
+    # NOTE: select objects for testing VHACD pipeline
+    target_object_handles = [
+        "01be253cbfd14b947e9dbe09d0b1959e97d72122",  # desk
+        "01b65339d622bb9f89eb8fdd753a76cffc7eb8d6",  # shelves,
+        "00ea83bf1b2544df87f6d52d02382c0bb75598c6",  # bookcase
+        "00e388a751b3654216f2109ee073dc44f1241eee",  # counter
+        "01d9fff2f701af7d5d40a7a5adad5bf40d4c49c8",  # round table
+        "03c328fccef4975310314838e42b6dff06709b06",  # shelves
+        "0110c7ff0e787bf98c9da923554ddea1484e4a3d",  # wood table
+        "00366b86401aa16b702c21de49fd59b75ab9c57b",  # ratan sofa
+    ]
+    all_handles = [
+        h for h in all_handles if any([t in h for t in target_object_handles])
+    ]
+
+    # indexed subset of the objects
+    # all_handles = all_handles[1:2]
+
+    # print(all_handles)
     cpo.compute_and_save_results_for_objects(all_handles)
 
     # testing objects
