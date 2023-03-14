@@ -5,7 +5,7 @@
 [![Conda Platforms support Badge](https://img.shields.io/conda/pn/aihabitat/habitat-sim?color=orange&label=platforms)](https://anaconda.org/aihabitat/habitat-sim)
 [![Documentation](https://img.shields.io/badge/docs-automated-green.svg)](https://aihabitat.org/docs/habitat-sim/)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
-[![Python 3.7, 3.8](https://img.shields.io/badge/python-3.6%20%7C%203.7%20%7C%203.8-blue.svg)](https://www.python.org/downloads/release/)
+[![Python 3.9](https://img.shields.io/badge/python-3.9.svg)](https://www.python.org/downloads/release/)
 [![Supports Bullet](https://img.shields.io/static/v1?label=supports&message=Bullet%20Physics&color=informational&link=https://opensource.google/projects/bullet3)](https://opensource.google/projects/bullet3)
 [![Twitter Follow](https://img.shields.io/twitter/follow/ai_habitat?style=social)](https://twitter.com/ai_habitat)
 
@@ -35,13 +35,18 @@ https://user-images.githubusercontent.com/2941091/126080914-36dc8045-01d4-4a68-8
 ---
 
 ## Table of contents
-   1. [Citing Habitat](#citing-habitat)
-   1. [Installation](#installation)
-   1. [Testing](#testing)
-   1. [Documentation](#documentation)
-   1. [Datasets](#datasets)
-   1. [External Contributions](#external-contributions)
-   1. [License](#license)
+- [Habitat-Sim](#habitat-sim)
+  - [Questions or Comments? Join the AI Habitat community discussions forum.](#questions-or-comments-join-the-ai-habitat-community-discussions-forum)
+  - [Table of contents](#table-of-contents)
+  - [Citing Habitat](#citing-habitat)
+  - [Installation](#installation)
+    - [\[Recommended\] Conda Packages](#recommended-conda-packages)
+  - [Testing](#testing)
+    - [Common testing issues](#common-testing-issues)
+  - [Documentation](#documentation)
+  - [Datasets](#datasets)
+  - [External Contributions](#external-contributions)
+  - [License](#license)
 
 
 ## Citing Habitat
@@ -83,8 +88,8 @@ Habitat is under active development, and we advise users to restrict themselves 
 
    Assuming you have [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/) installed, let's prepare a conda env:
    ```bash
-   # We require python>=3.7 and cmake>=3.10
-   conda create -n habitat python=3.7 cmake=3.14.0
+   # We require python>=3.9 and cmake>=3.10
+   conda create -n habitat python=3.9 cmake=3.14.0
    conda activate habitat
    ```
 
