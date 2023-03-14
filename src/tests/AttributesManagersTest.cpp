@@ -568,7 +568,7 @@ void AttributesManagersTest::testPhysicsAttributesManagersCreate() {
 
 void AttributesManagersTest::testStageAttributesManagersCreate() {
   std::string stageConfigFile =
-      Cr::Utility::Path::join(DATA_DIR, "test_assets/scenes/simple_room.glb");
+      Cr::Utility::Path::join(DATA_DIR, "test_assets/scenes/plane.glb");
 
   CORRADE_INFO(
       "Start Test : Create, Edit, Remove Attributes for "
