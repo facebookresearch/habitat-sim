@@ -1167,7 +1167,7 @@ class CollisionProxyOptimizer:
                     if use_gt:
                         dvb.peek_scene(
                             peek_all_axis=True,
-                            additional_savefile_prefix=f"{receptacle_name}_access_rays_",
+                            additional_savefile_prefix=f"gt_{receptacle_name}_access_rays_",
                             debug_lines=debug_lines,
                             debug_circles=None,
                         )
@@ -1175,7 +1175,7 @@ class CollisionProxyOptimizer:
                         dvb.peek_rigid_object(
                             obj,
                             peek_all_axis=True,
-                            additional_savefile_prefix=f"{receptacle_name}_access_rays_",
+                            additional_savefile_prefix=f"{shape_id}_{receptacle_name}_access_rays_",
                             debug_lines=debug_lines,
                             debug_circles=None,
                         )
@@ -1202,7 +1202,7 @@ class CollisionProxyOptimizer:
                     if use_gt:
                         dvb.peek_scene(
                             peek_all_axis=True,
-                            additional_savefile_prefix=f"{receptacle_name}_point_ratios_",
+                            additional_savefile_prefix=f"gt_{receptacle_name}_point_ratios_",
                             debug_lines=None,
                             debug_circles=debug_circles,
                         )
@@ -1210,7 +1210,7 @@ class CollisionProxyOptimizer:
                         dvb.peek_rigid_object(
                             obj,
                             peek_all_axis=True,
-                            additional_savefile_prefix=f"{receptacle_name}_point_ratios_",
+                            additional_savefile_prefix=f"{shape_id}_{receptacle_name}_point_ratios_",
                             debug_lines=None,
                             debug_circles=debug_circles,
                         )
@@ -1245,6 +1245,66 @@ class CollisionProxyOptimizer:
                 self.gt_data[obj_handle]["raycasts"][key][
                     "normalized_errors"
                 ] = normalized_error
+
+    def grid_search_vhacd_params(self, obj_template_handle: str):
+        """
+        For a specified set of search parameters, try all combinations by:
+        1. computing new proxy shape
+        2. evaluating new proxy shape across various metrics
+        """
+
+        vhacd_test_params = habitat_sim.VHACDParameters()
+
+        self.compute_vhacd_col_shape(obj_template_handle, vhacd_test_params)
+
+        self.compute_proxy_metrics(obj_template_handle)
+
+        if self.compute_receptacle_useability_metrics:
+            self.compute_receptacle_access_metrics(obj_handle=obj_template_handle)
+
+    def compute_vhacd_col_shape(
+        self, obj_template_handle: str, vhacd_params: habitat_sim.VHACDParameters
+    ) -> None:
+        """
+        Compute a new VHACD convex decomposition for the object and set it as the active collision proxy.
+        """
+
+        new_template_handle = None
+
+        otm = self.mm.object_template_manager
+        matching_obj_handles = otm.get_file_template_handles(obj_template_handle)
+        assert (
+            len(matching_obj_handles) == 1
+        ), f"None or many matching handles to substring `{obj_template_handle}`: {matching_obj_handles}"
+        obj_template = otm.get_template_by_handle(matching_obj_handles[0])
+        render_asset = obj_template.render_asset_handle
+        render_asset_path = os.path.abspath(render_asset)
+        print(f"render_asset_path = {render_asset_path}")
+
+        cfg = self.get_cfg_with_mm()
+        with habitat_sim.Simulator(cfg) as sim:
+            new_template_handle = sim.apply_convex_hull_decomposition(
+                render_asset_path, vhacd_params, save_chd_to_obj=True
+            )
+
+        print(f"new_template_handle = {new_template_handle}")
+
+        # set the collision asset
+        matching_vhacd_handles = otm.get_file_template_handles(new_template_handle)
+        assert (
+            len(matching_vhacd_handles) == 1
+        ), f"None or many matching VHACD handles to substring `{new_template_handle}`: {matching_vhacd_handles}"
+
+        vhacd_template = otm.get_template_by_handle(matching_vhacd_handles[0])
+
+        print(f"vhacd_template.csv_info = {vhacd_template.csv_info}")
+        print(f"obj_template.csv_info = {obj_template.csv_info}")
+
+        obj_template.collision_asset_handle = vhacd_template.collision_asset_handle
+        print(
+            f"vhacd_template.collision_asset_handle = {vhacd_template.collision_asset_handle}"
+        )
+        otm.register_template(obj_template)
 
     def cache_global_results(self) -> None:
         """
@@ -1417,6 +1477,7 @@ class CollisionProxyOptimizer:
                 self.compute_receptacle_access_metrics(obj_h, use_gt=True)
                 print(" PR Recetpacle Metrics:")
                 self.compute_receptacle_access_metrics(obj_h, use_gt=False)
+            self.grid_search_vhacd_params(obj_h)
             self.compute_gt_errors(obj_h)
             self.cache_global_results()
             self.clean_obj_gt(obj_h)

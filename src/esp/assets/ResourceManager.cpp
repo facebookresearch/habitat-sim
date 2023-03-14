@@ -3142,7 +3142,7 @@ bool ResourceManager::isAssetDataRegistered(
   return (resourceDict_.count(resourceName) > 0);
 }
 
-void ResourceManager::createConvexHullDecomposition(
+std::string ResourceManager::createConvexHullDecomposition(
     const std::string& filename,
     const std::string& chdFilename,
     const VHACDParameters& params,
@@ -3262,7 +3262,9 @@ void ResourceManager::createConvexHullDecomposition(
             .second() +
         ".obj";
     outputMeshMetaDataToObj(chdFilename, new_filename, objDirectory);
+    return Cr::Utility::Path::join(objDirectory, new_filename);
   }
+  return "";
 }
 #endif
 

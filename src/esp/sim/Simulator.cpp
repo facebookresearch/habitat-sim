@@ -1125,15 +1125,22 @@ std::string Simulator::convexHullDecomposition(
 
   // run VHACD on the given filename mesh with the given params, store the
   // results in the resourceDict_ registered under chdFilename
-  resourceManager_->createConvexHullDecomposition(filename, chdFilename, params,
-                                                  saveChdToObj);
+  std::string savedChdFilename =
+      resourceManager_->createConvexHullDecomposition(filename, chdFilename,
+                                                      params, saveChdToObj);
 
   // create object attributes for the new chd object
   auto objAttrMgr = metadataMediator_->getObjectAttributesManager();
   auto chdObjAttr = objAttrMgr->createObject(chdFilename, false);
 
   // specify collision asset handle & other attributes
+
+  // NOTE: The following won't actually work because the file doesn't exist...
   chdObjAttr->setCollisionAssetHandle(chdFilename);
+  // instead we should set this to the saved filepath
+  if (savedChdFilename != "") {
+    chdObjAttr->setCollisionAssetHandle(savedChdFilename);
+  }
   chdObjAttr->setIsCollidable(true);
   chdObjAttr->setCollisionAssetIsPrimitive(false);
   chdObjAttr->setJoinCollisionMeshes(false);

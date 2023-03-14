@@ -470,8 +470,10 @@ class ResourceManager {
    * hull, etc.
    * @param saveChdToObj Specifies whether or not to save the newly created
    * convex hull asset to an obj file.
+   *
+   * @return The saved filename if save requested, otherwise empty string.
    */
-  void createConvexHullDecomposition(
+  std::string createConvexHullDecomposition(
       const std::string& filename,
       const std::string& chdFilename,
       const VHACDParameters& params = VHACDParameters(),
