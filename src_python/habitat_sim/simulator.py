@@ -357,7 +357,7 @@ class Simulator(SimulatorBackend):
 
         for agent_id in agent_ids:
             agent_sensorsuite = self.__sensors[agent_id]
-            for _sensor_uuid, sensor in agent_sensorsuite.items():
+            for sensor in agent_sensorsuite.values():
                 sensor._draw_observation_async()
 
         self.renderer.start_draw_jobs()
@@ -379,7 +379,7 @@ class Simulator(SimulatorBackend):
 
         for agent_id in agent_ids:
             agent_sensorsuite = self.__sensors[agent_id]
-            for _sensor_uuid, sensor in agent_sensorsuite.items():
+            for sensor in agent_sensorsuite.values():
                 sensor._draw_observation_async()
 
         self.renderer.start_draw_jobs()
