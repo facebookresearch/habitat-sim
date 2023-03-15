@@ -440,12 +440,16 @@ class Simulator(SimulatorBackend):
         # As backport. All Dicts are ordered in Python >= 3.7.
         observations: Dict[int, ObservationDict] = OrderedDict()
 
-        # Draw observations for classic non-batched renderer.
+        # Draw observations (for classic non-batched renderer).
         if not self.config.enable_batch_renderer:
             for agent_id in agent_ids:
                 agent_sensorsuite = self.__sensors[agent_id]
                 for _sensor_uuid, sensor in agent_sensorsuite.items():
                     sensor.draw_observation()
+        else:
+            # The batch renderer draws observations from external code.
+            # Sensors are only used as data containers.
+            pass
 
         # Get observations.
         for agent_id in agent_ids:
@@ -588,9 +592,13 @@ class Sensor:
         self._spec = self._sensor_object.specification()
 
         # When using the batch renderer, no memory is allocated here.
-        if self._sim.config.enable_batch_renderer:
-            return
+        if not self._sim.config.enable_batch_renderer:
+            self._initialize_sensor()
 
+    def _initialize_sensor(self):
+        r"""
+        Allocate buffers and initialize noise model in preparation for rendering.
+        """
         if self._spec.sensor_type == SensorType.AUDIO:
             return
 
