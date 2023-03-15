@@ -35,18 +35,13 @@ https://user-images.githubusercontent.com/2941091/126080914-36dc8045-01d4-4a68-8
 ---
 
 ## Table of contents
-- [Habitat-Sim](#habitat-sim)
-  - [Questions or Comments? Join the AI Habitat community discussions forum.](#questions-or-comments-join-the-ai-habitat-community-discussions-forum)
-  - [Table of contents](#table-of-contents)
-  - [Citing Habitat](#citing-habitat)
-  - [Installation](#installation)
-    - [\[Recommended\] Conda Packages](#recommended-conda-packages)
-  - [Testing](#testing)
-    - [Common testing issues](#common-testing-issues)
-  - [Documentation](#documentation)
-  - [Datasets](#datasets)
-  - [External Contributions](#external-contributions)
-  - [License](#license)
+   1. [Citing Habitat](#citing-habitat)
+   1. [Installation](#installation)
+   1. [Testing](#testing)
+   1. [Documentation](#documentation)
+   1. [Datasets](#datasets)
+   1. [External Contributions](#external-contributions)
+   1. [License](#license)
 
 
 ## Citing Habitat
