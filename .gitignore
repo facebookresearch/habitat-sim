@@ -195,3 +195,5 @@ examples/web_apps/webxr_hand_demo/js/hsim_bindings.wasm
 data/fairmotion/
 
 pre-commit-deps.txt
+
+tools/qa_scenes/qa_scenes_output/
