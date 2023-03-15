@@ -159,7 +159,7 @@ def test_greedy_follower(test_navmesh, move_filter_fn, action_noise, pbar):
 
             agent.act(next_action)
 
-            agent_distance += np.linalg.norm(last_xyz - agent.state.position)
+            agent_distance += float(np.linalg.norm(last_xyz - agent.state.position))
             last_xyz = agent.state.position
 
             num_acts += 1
