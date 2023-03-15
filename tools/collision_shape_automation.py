@@ -15,6 +15,7 @@ import habitat.datasets.rearrange.samplers.receptacle as hab_receptacle
 import habitat.sims.habitat_simulator.debug_visualizer as hab_debug_vis
 import magnum as mn
 import numpy as np
+from habitat.sims.habitat_simulator.sim_utilities import snap_down
 
 import habitat_sim
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
@@ -1025,7 +1026,7 @@ class CollisionProxyOptimizer:
         Compute a heuristic for the accessibility of all Receptacles for an object.
         Uses raycasting from previously sampled receptacle locations to approximate how open a particular receptacle is.
         :param use_gt: Compute the metric for the ground truth shape instead of the currently active collision proxy (default)
-        :param acces_ratio_threshold: The ratio of accessible:blocked rays necessary for a recetpacle point to be considered accessible
+        :param acces_ratio_threshold: The ratio of accessible:blocked rays necessary for a Receptacle point to be considered accessible
         """
         # algorithm:
         # For each receptacle, r:
@@ -1205,6 +1206,164 @@ class CollisionProxyOptimizer:
                             debug_circles=debug_circles,
                         )
                     # obj_rec_data[receptacle_name]["results"][shape_id]["sample_point_ray_results"]
+
+    def compute_receptacle_stability(
+        self,
+        obj_handle: str,
+        use_gt: bool = False,
+        cyl_radius: float = 0.04,
+        cyl_height: float = 0.15,
+        accepted_height_error: float = 0.02,
+    ):
+        """
+        Try to place a dynamic cylinder on the receptacle points. Record snap error and physical stability.
+
+        :param obj_handle: The object to evaluate.
+        :param use_gt: Compute the metric for the ground truth shape instead of the currently active collision proxy (default)
+        :param cyl_radius: Radius of the test cylinder object (default similar to food can)
+        :param cyl_height: Height of the test cylinder object (default similar to food can)
+        :param accepted_height_error: The acceptacle distance from sample point to snapped point considered successful (meters)
+        """
+
+        constructed_cyl_obj_handle = f"cylinder_test_obj_r{cyl_radius}_h{cyl_height}"
+        otm = self.mm.object_template_manager
+        if not otm.get_library_has_handle(constructed_cyl_obj_handle):
+            # ensure that a correctly sized asset mesh is available
+            atm = self.mm.asset_template_manager
+            half_length = (cyl_height / 2.0) / cyl_radius
+            custom_prim_name = f"cylinderSolid_rings_1_segments_12_halfLen_{half_length}_useTexCoords_false_useTangents_false_capEnds_true"
+
+            if not atm.get_library_has_handle(custom_prim_name):
+                # build the primitive template
+                cylinder_prim_handle = atm.get_template_handles("cylinderSolid")[0]
+                cyl_template = atm.get_template_by_handle(cylinder_prim_handle)
+                # default radius==1, so we modify the half-length
+                cyl_template.half_length = half_length
+                atm.register_template(cyl_template)
+
+            assert atm.get_library_has_handle(
+                custom_prim_name
+            ), "primitive asset creation bug."
+
+            if not otm.get_library_has_handle(constructed_cyl_obj_handle):
+                default_cyl_template_handle = otm.get_synth_template_handles(
+                    "cylinderSolid"
+                )[0]
+                default_cyl_template = otm.get_template_by_handle(
+                    default_cyl_template_handle
+                )
+                default_cyl_template.render_asset_handle = custom_prim_name
+                default_cyl_template.collision_asset_handle = custom_prim_name
+                # our prim asset has unit radius, so scale the object by desired radius
+                default_cyl_template.scale = mn.Vector3(cyl_radius)
+                otm.register_template(default_cyl_template, constructed_cyl_obj_handle)
+                assert otm.get_library_has_handle(constructed_cyl_obj_handle)
+
+        assert (
+            len(self.gt_data[obj_handle]["receptacles"].keys()) > 0
+        ), "Object must have receptacle sampling metadata defined. See `setup_obj_gt`"
+
+        # start with empty scene or stage as scene:
+        scene_name = "NONE"
+        if use_gt:
+            scene_name = self.gt_data[obj_handle]["stage_template_name"]
+        cfg = self.get_cfg_with_mm(scene=scene_name)
+        with habitat_sim.Simulator(cfg) as sim:
+            dvb = hab_debug_vis.DebugVisualizer(
+                sim=sim,
+                output_path=self.output_directory,
+                default_sensor_uuid="color_sensor",
+            )
+            # load the object
+            rom = sim.get_rigid_object_manager()
+            obj = None
+            support_obj_ids = [-1]
+            shape_id = "gt"
+            if not use_gt:
+                obj = rom.add_object_by_template_handle(obj_handle)
+                support_obj_ids = [obj.object_id]
+                assert obj.is_alive, "Object was not added correctly."
+                # when evaluating multiple proxy shapes, need unique ids:
+                shape_id = f"pr{self.gt_data[obj_handle]['next_proxy_id']-1}"
+
+            # add the test object
+            cyl_test_obj = rom.add_object_by_template_handle(constructed_cyl_obj_handle)
+            cyl_test_obj_com_height = cyl_test_obj.root_scene_node.cumulative_bb.max[1]
+            assert cyl_test_obj.is_alive, "Test object was not added correctly."
+
+            # evaluation the sample points for each receptacle
+            rec_data = self.gt_data[obj_handle]["receptacles"]
+            for rec_name in rec_data.keys():
+                sample_points = rec_data[rec_name]["sample_points"]
+
+                failed_snap = 0
+                failed_by_distance = 0
+                failed_unstable = 0
+                for sample_point in sample_points:
+                    cyl_test_obj.translation = sample_point
+                    cyl_test_obj.rotation = mn.Quaternion.identity_init()
+                    # snap check
+                    success = snap_down(
+                        sim, cyl_test_obj, support_obj_ids=support_obj_ids, vdb=dvb
+                    )
+                    if success:
+                        expected_height_error = abs(
+                            (cyl_test_obj.translation - sample_point).length()
+                            - cyl_test_obj_com_height
+                        )
+                        if expected_height_error > accepted_height_error:
+                            failed_by_distance += 1
+                            continue
+
+                        # physical stability analysis
+                        snap_position = cyl_test_obj.translation
+                        identity_q = mn.Quaternion.identity_init()
+                        displacement_limit = 0.04  # meters
+                        rotation_limit = mn.Rad(0.1)  # radians
+                        max_sim_time = 3.0
+                        dt = 0.5
+                        start_time = sim.get_world_time()
+                        object_is_stable = True
+                        while sim.get_world_time() - start_time < max_sim_time:
+                            sim.step_world(dt)
+                            linear_displacement = (
+                                cyl_test_obj.translation - snap_position
+                            ).length()
+                            # NOTE: negative quaternion represents the same rotation, but gets a different angle error so check both
+                            angular_displacement = min(
+                                mn.math.angle(cyl_test_obj.rotation, identity_q),
+                                mn.math.angle(-1 * cyl_test_obj.rotation, identity_q),
+                            )
+                            if (
+                                angular_displacement > rotation_limit
+                                or linear_displacement > displacement_limit
+                            ):
+                                object_is_stable = False
+                                break
+                            if not cyl_test_obj.awake:
+                                # the object has settled, no need to continue simulating
+                                break
+                        # NOTE: we assume that if the object has not moved past the threshold in 'max_sim_time', then it must be stabel enough
+                        if not object_is_stable:
+                            failed_unstable += 1
+                    else:
+                        failed_snap += 1
+
+                successful_points = (
+                    len(sample_points)
+                    - failed_snap
+                    - failed_by_distance
+                    - failed_unstable
+                )
+                success_ratio = successful_points / len(sample_points)
+                print(
+                    f"{shape_id}: receptacle '{rec_name}' success_ratio = {success_ratio}"
+                )
+                print(
+                    f"     failed_snap = {failed_snap}|failed_by_distance = {failed_by_distance}|failed_unstable={failed_unstable}|total={len(sample_points)}"
+                )
+                # TODO: visualize this error
+                # TODO: record results for later processing
 
     def compute_gt_errors(self, obj_handle: str) -> None:
         """
@@ -1492,6 +1651,7 @@ class CollisionProxyOptimizer:
                                     else:
                                         row_data.append("")
                             writer.writerow(row_data)
+        # TODO: add receptacle stability reporting
 
     def compute_and_save_results_for_objects(
         self, obj_handle_substrings: List[str], output_filename: str = "cpo_out"
@@ -1519,9 +1679,11 @@ class CollisionProxyOptimizer:
             self.compute_proxy_metrics(obj_h)
             # receptacle metrics:
             if self.compute_receptacle_useability_metrics:
-                print(" GT Recetpacle Metrics:")
+                self.compute_receptacle_stability(obj_h, use_gt=True)
+                self.compute_receptacle_stability(obj_h)
+                print(" GT Receptacle Metrics:")
                 self.compute_receptacle_access_metrics(obj_h, use_gt=True)
-                print(" PR Recetpacle Metrics:")
+                print(" PR Receptacle Metrics:")
                 self.compute_receptacle_access_metrics(obj_h, use_gt=False)
             self.grid_search_vhacd_params(obj_h)
             self.compute_gt_errors(obj_h)
