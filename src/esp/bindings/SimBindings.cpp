@@ -423,6 +423,15 @@ void initSimBindings(py::module& m) {
                &AbstractReplayRenderer::render),
            R"(Render all sensors onto the specified framebuffer.)")
       .def(
+          "render",
+          [](AbstractReplayRenderer& self,
+             std::vector<Mn::MutableImageView2D> images) {
+            self.render(images);
+          },
+          R"(Render color sensors into the specified image vector (one per environment).
+          The images are required to be pre-allocated.
+          Blocks the thread during the GPU-to-CPU memory transfer operation.)")
+      .def(
           "set_sensor_transforms_from_keyframe",
           &AbstractReplayRenderer::setSensorTransformsFromKeyframe,
           R"(Set the sensor transforms from a keyframe. Sensors are stored as user data and identified using a prefix in their name.)")
