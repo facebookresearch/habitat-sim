@@ -35,6 +35,7 @@ const std::unordered_map<ConfigStoredType, std::string, ConfigStoredTypeHash>
                           {ConfigStoredType::Boolean, "bool"},
                           {ConfigStoredType::Integer, "int"},
                           {ConfigStoredType::Double, "double"},
+                          {ConfigStoredType::MagnumVec2, "Mn::Vector2"},
                           {ConfigStoredType::MagnumVec3, "Mn::Vector3"},
                           {ConfigStoredType::MagnumVec4, "Mn::Vector4"},
                           {ConfigStoredType::MagnumMat3, "Mn::Matrix3"},
@@ -181,6 +182,11 @@ std::string ConfigValue::getAsString() const {
     case ConfigStoredType::String: {
       return get<std::string>();
     }
+
+    case ConfigStoredType::MagnumVec2: {
+      auto v = get<Mn::Vector2>();
+      return Cr::Utility::formatString("[{} {}]", v.x(), v.y());
+    }
     case ConfigStoredType::MagnumVec3: {
       auto v = get<Mn::Vector3>();
       return Cr::Utility::formatString("[{} {} {}]", v.x(), v.y(), v.z());
@@ -230,6 +236,9 @@ io::JsonGenericValue ConfigValue::writeToJsonObject(
     case ConfigStoredType::Double: {
       return io::toJsonValue(get<double>(), allocator);
     }
+    case ConfigStoredType::MagnumVec2: {
+      return io::toJsonValue(get<Mn::Vector2>(), allocator);
+    }
     case ConfigStoredType::MagnumVec3: {
       return io::toJsonValue(get<Mn::Vector3>(), allocator);
     }
@@ -269,6 +278,8 @@ bool ConfigValue::putValueInConfigGroup(
       return cfg.setValue(key, get<double>());
     case ConfigStoredType::String:
       return cfg.setValue(key, get<std::string>());
+    case ConfigStoredType::MagnumVec2:
+      return cfg.setValue(key, get<Mn::Vector2>());
     case ConfigStoredType::MagnumVec3:
       return cfg.setValue(key, get<Mn::Vector3>());
     case ConfigStoredType::MagnumVec4:
@@ -315,10 +326,16 @@ int Configuration::loadFromJson(const io::JsonGenericValue& jsonObj) {
     } else if (obj.IsBool()) {
       set(key, obj.GetBool());
     } else if (obj.IsArray() && obj.Size() > 0) {
-      // non-empty array of values
+      // non-empty array of numeric values
       if (obj[0].IsNumber()) {
         // numeric vector, quaternion or matrix
-        if (obj.Size() == 3) {
+        if (obj.Size() == 2) {
+          // All size 2 numeric arrays are mapped to Mn::Vector2
+          Mn::Vector2 val{};
+          if (io::fromJsonValue(obj, val)) {
+            set(key, val);
+          }
+        } else if (obj.Size() == 3) {
           // All size 3 numeric arrays are mapped to Mn::Vector3
           Mn::Vector3 val{};
           if (io::fromJsonValue(obj, val)) {

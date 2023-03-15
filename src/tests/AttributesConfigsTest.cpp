@@ -90,6 +90,7 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
    * @param str_val Expected string value
    * @param bool_val Expected boolean value
    * @param double_val Exptected double value
+   * @param vec2_val Expected Mn::Vector2 value.
    * @param vec3_val Expected Mn::Vector3 value.
    * @param quat_val Expected quaternion value. Note that the JSON is read
    * with scalar at idx 0, whereas the quaternion constructor takes the vector
@@ -105,6 +106,7 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
       bool bool_val,
       int int_val,
       double double_val,
+      Mn::Vector2 vec2_val,
       Mn::Vector3 vec3_val,
       Mn::Quaternion quat_val,
       Mn::Vector4 vec4_val);
@@ -233,6 +235,7 @@ void AttributesConfigsTest::testUserDefinedConfigVals(
     bool bool_val,
     int int_val,
     double double_val,
+    Mn::Vector2 vec2_val,
     Mn::Vector3 vec3_val,
     Mn::Quaternion quat_val,
     Mn::Vector4 vec4_val) {
@@ -248,6 +251,7 @@ void AttributesConfigsTest::testUserDefinedConfigVals(
     ESP_DEBUG() << "Temporarily skipping test that triggered CI error on key "
                    "`user_double`.";
   }
+  CORRADE_COMPARE(userConfig->get<Mn::Vector2>("user_vec2"), vec2_val);
   CORRADE_COMPARE(userConfig->get<Mn::Vector3>("user_vec3"), vec3_val);
   // Test access as a color
   CORRADE_COMPARE(userConfig->get<Mn::Color3>("user_vec3"), vec3_val);
@@ -271,11 +275,11 @@ void AttributesConfigsTest::testPhysicsAttrVals(
   CORRADE_COMPARE(physMgrAttr->getFrictionCoefficient(), 1.4);
   CORRADE_COMPARE(physMgrAttr->getRestitutionCoefficient(), 1.1);
   // test physics manager attributes-level user config vals
-  testUserDefinedConfigVals(physMgrAttr->getUserConfiguration(),
-                            "pm defined string", true, 15, 12.6,
-                            Mn::Vector3(215.4, 217.6, 2110.1),
-                            Mn::Quaternion({5.2f, 6.2f, 7.2f}, 0.2f),
-                            Mn::Vector4(3.5f, 4.6f, 5.7f, 6.9f));
+  testUserDefinedConfigVals(
+      physMgrAttr->getUserConfiguration(), "pm defined string", true, 15, 12.6,
+      Mn::Vector2(1.0f, 2.0f), Mn::Vector3(215.4, 217.6, 2110.1),
+      Mn::Quaternion({5.2f, 6.2f, 7.2f}, 0.2f),
+      Mn::Vector4(3.5f, 4.6f, 5.7f, 6.9f));
   // remove added template
   // remove json-string built attributes added for test
   testRemoveAttributesBuiltByJSONString(physicsAttributesManager_,
@@ -297,6 +301,7 @@ void AttributesConfigsTest::testPhysicsJSONLoad() {
       "user_bool" : true,
       "user_int" : 15,
       "user_double" : 12.6,
+      "user_vec2" : [1.0, 2.0],
       "user_vec3" : [215.4, 217.6, 2110.1],
       "user_quat" : [0.2, 5.2, 6.2, 7.2],
       "user_vec4" : [3.5, 4.6, 5.7, 6.9]
@@ -349,7 +354,7 @@ void AttributesConfigsTest::testLightAttrVals(
   // test light layout attributes-level user config vals
   testUserDefinedConfigVals(lightLayoutAttr->getUserConfiguration(),
                             "light attribs defined string", true, 23, 2.3,
-                            Mn::Vector3(1.1, 3.3, 5.5),
+                            Mn::Vector2(1.1f, 2.2f), Mn::Vector3(1.1, 3.3, 5.5),
                             Mn::Quaternion({0.6f, 0.7f, 0.8f}, 0.5f),
                             Mn::Vector4(1.5f, 1.6f, 1.7f, 1.9f));
   CORRADE_COMPARE(lightLayoutAttr->getPositiveIntensityScale(), 2.0);
@@ -389,7 +394,7 @@ void AttributesConfigsTest::testLightAttrVals(
   // test user defined attributes from light instance
   testUserDefinedConfigVals(lightAttr1->getUserConfiguration(),
                             "light instance defined string", false, 42, 1.2,
-                            Mn::Vector3(0.1, 2.3, 4.5),
+                            Mn::Vector2(1.2f, 2.1f), Mn::Vector3(0.1, 2.3, 4.5),
                             Mn::Quaternion({0.2f, 0.3f, 0.4f}, 0.1f),
                             Mn::Vector4(1.1f, 1.2f, 1.3f, 1.4f));
 
@@ -427,6 +432,7 @@ void AttributesConfigsTest::testLightJSONLoad() {
             "user_bool" : false,
             "user_int" : 42,
             "user_double" : 1.2,
+            "user_vec2" : [1.2, 2.1],
             "user_vec3" : [0.1, 2.3, 4.5],
             "user_quat" : [0.1, 0.2, 0.3, 0.4],
             "user_vec4" : [1.1, 1.2, 1.3, 1.4]
@@ -438,6 +444,7 @@ void AttributesConfigsTest::testLightJSONLoad() {
         "user_bool" : true,
         "user_int" : 23,
         "user_double" : 2.3,
+        "user_vec2" : [1.1, 2.2],
         "user_vec3" : [1.1, 3.3, 5.5],
         "user_quat" : [0.5, 0.6, 0.7, 0.8],
         "user_vec4" : [1.5, 1.6, 1.7, 1.9]
@@ -499,11 +506,11 @@ void AttributesConfigsTest::testSceneInstanceAttrVals(
   CORRADE_COMPARE(sceneAttr->getSemanticSceneHandle(),
                   "test_semantic_descriptor_path1");
   // test scene instance attributes-level user config vals
-  testUserDefinedConfigVals(sceneAttr->getUserConfiguration(),
-                            "scene instance defined string", true, 99, 9.1,
-                            Mn::Vector3(12.3, 32.5, 25.07),
-                            Mn::Quaternion({3.2f, 2.6f, 5.1f}, 0.3f),
-                            Mn::Vector4(13.5f, 14.6f, 15.7f, 16.9f));
+  testUserDefinedConfigVals(
+      sceneAttr->getUserConfiguration(), "scene instance defined string", true,
+      99, 9.1, Mn::Vector2(1.3f, 2.4f), Mn::Vector3(12.3, 32.5, 25.07),
+      Mn::Quaternion({3.2f, 2.6f, 5.1f}, 0.3f),
+      Mn::Vector4(13.5f, 14.6f, 15.7f, 16.9f));
 
   // verify objects
   auto objectInstanceList = sceneAttr->getObjectInstances();
@@ -524,7 +531,7 @@ void AttributesConfigsTest::testSceneInstanceAttrVals(
   // test object 0 instance attributes-level user config vals
   testUserDefinedConfigVals(objInstance->getUserConfiguration(),
                             "obj0 instance defined string", false, 12, 2.3,
-                            Mn::Vector3(1.3, 3.5, 5.7),
+                            Mn::Vector2(1.6f, 2.8f), Mn::Vector3(1.3, 3.5, 5.7),
                             Mn::Quaternion({0.2f, 0.6f, 0.1f}, 0.3f),
                             Mn::Vector4(4.5f, 3.6f, 2.7f, 1.9f));
 
@@ -540,11 +547,11 @@ void AttributesConfigsTest::testSceneInstanceAttrVals(
                   Mn::Vector3(2.1f, 3.2f, 4.3f));
 
   // test object 1 instance attributes-level user config vals
-  testUserDefinedConfigVals(objInstance->getUserConfiguration(),
-                            "obj1 instance defined string", false, 1, 1.1,
-                            Mn::Vector3(10.3, 30.5, -5.07),
-                            Mn::Quaternion({1.2f, 1.6f, 1.1f}, 1.3f),
-                            Mn::Vector4(4.5f, 5.6f, 6.7f, 7.9f));
+  testUserDefinedConfigVals(
+      objInstance->getUserConfiguration(), "obj1 instance defined string",
+      false, 1, 1.1, Mn::Vector2(2.1f, 3.2f), Mn::Vector3(10.3, 30.5, -5.07),
+      Mn::Quaternion({1.2f, 1.6f, 1.1f}, 1.3f),
+      Mn::Vector4(4.5f, 5.6f, 6.7f, 7.9f));
 
   // verify articulated object instances
   auto artObjInstances = sceneAttr->getArticulatedObjectInstances();
@@ -581,7 +588,7 @@ void AttributesConfigsTest::testSceneInstanceAttrVals(
   // test test_urdf_template0 ao instance attributes-level user config vals
   testUserDefinedConfigVals(artObjInstance->getUserConfiguration(),
                             "test_urdf_template0 instance defined string",
-                            false, 2, 1.22,
+                            false, 2, 1.22, Mn::Vector2(3.1f, 4.2f),
                             Mn::Vector3(120.3f, 302.5f, -25.07f),
                             Mn::Quaternion({1.22f, 1.26f, 1.21f}, 1.23f),
                             Mn::Vector4(13.5f, 24.6f, 35.7f, 46.9f));
@@ -607,7 +614,7 @@ void AttributesConfigsTest::testSceneInstanceAttrVals(
   // test test_urdf_template0 ao instance attributes-level user config vals
   testUserDefinedConfigVals(artObjInstance->getUserConfiguration(),
                             "test_urdf_template1 instance defined string",
-                            false, 21, 11.22,
+                            false, 21, 11.22, Mn::Vector2(1.9f, 2.9f),
                             Mn::Vector3(190.3f, 902.5f, -95.07f),
                             Mn::Quaternion({9.22f, 9.26f, 0.21f}, 1.25f),
                             Mn::Vector4(13.5f, 4.6f, 25.7f, 76.9f));
@@ -628,7 +635,7 @@ void AttributesConfigsTest::testSceneInstanceAttrVals(
   // test stage instance attributes-level user config vals
   testUserDefinedConfigVals(stageInstance->getUserConfiguration(),
                             "stage instance defined string", true, 11, 2.2,
-                            Mn::Vector3(1.2, 3.4, 5.6),
+                            Mn::Vector2(4.1f, 5.2f), Mn::Vector3(1.2, 3.4, 5.6),
                             Mn::Quaternion({0.5f, 0.6f, 0.7f}, 0.4f),
                             Mn::Vector4(3.5f, 4.6f, 5.7f, 6.9f));
 
@@ -653,6 +660,7 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
           "user_bool" : true,
           "user_int" : 11,
           "user_double" : 2.2,
+          "user_vec2" : [4.1, 5.2],
           "user_vec3" : [1.2, 3.4, 5.6],
           "user_quat" : [0.4, 0.5, 0.6, 0.7],
           "user_vec4" : [3.5, 4.6, 5.7, 6.9]
@@ -672,6 +680,7 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
               "user_bool" : false,
               "user_int" : 12,
               "user_double" : 2.3,
+              "user_vec2" : [1.6, 2.8],
               "user_vec3" : [1.3, 3.5, 5.7],
               "user_vec4" : [4.5, 3.6, 2.7, 1.9],
               "user_quat" : [0.3, 0.2, 0.6, 0.1]
@@ -689,6 +698,7 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
               "user_bool" : false,
               "user_int" : 1,
               "user_double" : 1.1,
+              "user_vec2" : [2.1, 3.2],
               "user_vec3" : [10.3, 30.5, -5.07],
               "user_vec4" : [4.5, 5.6, 6.7, 7.9],
               "user_quat" : [1.3, 1.2, 1.6, 1.1]
@@ -711,6 +721,7 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
                   "user_bool" : false,
                   "user_int" : 2,
                   "user_double" : 1.22,
+                  "user_vec2" : [3.1, 4.2],
                   "user_vec3" : [120.3, 302.5, -25.07],
                   "user_vec4" : [13.5, 24.6, 35.7, 46.9],
                   "user_quat" : [1.23, 1.22, 1.26, 1.21],
@@ -732,6 +743,7 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
                   "user_bool" : false,
                   "user_int" : 21,
                   "user_double" : 11.22,
+                  "user_vec2" : [1.9, 2.9],
                   "user_vec3" : [190.3, 902.5, -95.07],
                   "user_vec4" : [13.5, 4.6, 25.7, 76.9],
                   "user_quat" : [1.25, 9.22, 9.26, 0.21]
@@ -746,6 +758,7 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
           "user_bool" : true,
           "user_int" : 99,
           "user_double" : 9.1,
+          "user_vec2" : [1.3, 2.4],
           "user_vec3" : [12.3, 32.5, 25.07],
           "user_vec4" : [13.5, 14.6, 15.7, 16.9],
           "user_quat" : [0.3, 3.2, 2.6, 5.1]
@@ -826,7 +839,8 @@ void AttributesConfigsTest::testStageAttrVals(
   // test stage attributes-level user config vals
   testUserDefinedConfigVals(
       stageAttr->getUserConfiguration(), "stage defined string", false, 3, 0.8,
-      Mn::Vector3(5.4, 7.6, 10.1), Mn::Quaternion({1.5f, 2.6f, 3.7f}, 0.1f),
+      Mn::Vector2(2.3f, 4.5f), Mn::Vector3(5.4, 7.6, 10.1),
+      Mn::Quaternion({1.5f, 2.6f, 3.7f}, 0.1f),
       Mn::Vector4(14.5f, 15.6f, 16.7f, 17.9f));
 
   // remove json-string built attributes added for test
@@ -859,6 +873,7 @@ void AttributesConfigsTest::testStageJSONLoad() {
             "user_bool" : false,
             "user_int" : 3,
             "user_double" : 0.8,
+            "user_vec2" : [2.3, 4.5],
             "user_vec3" : [5.4, 7.6, 10.1],
             "user_vec4" : [14.5, 15.6, 16.7, 17.9],
             "user_quat" : [0.1, 1.5, 2.6, 3.7]
@@ -953,7 +968,8 @@ void AttributesConfigsTest::testObjectAttrVals(
   // test object attributes-level user config vals
   testUserDefinedConfigVals(
       objAttr->getUserConfiguration(), "object defined string", true, 5, 2.6,
-      Mn::Vector3(15.4, 17.6, 110.1), Mn::Quaternion({5.5f, 6.6f, 7.7f}, 0.7f),
+      Mn::Vector2(4.1f, 2.8f), Mn::Vector3(15.4, 17.6, 110.1),
+      Mn::Quaternion({5.5f, 6.6f, 7.7f}, 0.7f),
       Mn::Vector4(1.5f, 1.6f, 6.7f, 7.9f));
 
   // remove json-string built attributes added for test
@@ -990,6 +1006,7 @@ void AttributesConfigsTest::testObjectJSONLoad() {
       "user_bool" : true,
       "user_int" : 5,
       "user_double" : 2.6,
+      "user_vec2" : [4.1, 2.8],
       "user_vec3" : [15.4, 17.6, 110.1],
       "user_vec4" : [1.5, 1.6, 6.7, 7.9],
       "user_quat" : [0.7, 5.5, 6.6, 7.7]
