@@ -525,14 +525,9 @@ User-Defined JSON Field type mappings
 JSON field data example Habitat-Sim internal type   Notes
 ======================= =========================== ===================
 10.0                    double
-(false, true)           boolean
-"false"
+false                   boolean
+[0,1]                   Magnum Vector2
 ======================= =========================== ===================
-
-
-
-
-
 
 
 
