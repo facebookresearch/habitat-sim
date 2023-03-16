@@ -18,6 +18,27 @@ namespace esp {
 namespace gfx {
 namespace replay {
 
+namespace {
+
+// At recording time, material overrides gets stringified and appended to the
+// filepath. See ResourceManager::createModifiedAssetName.
+// AbstractSceneGraphPlayerImplementation doesn't support parsing this material
+// info. More info at
+// https://docs.google.com/document/d/1ngA73cXl3YRaPfFyICSUHONZN44C-XvieS7kwyQDbkI/edit#bookmark=id.aoe7xgsro2r7
+std::string removeMaterialOverrideFromFilepathAndWarn(const std::string& src) {
+  auto pos = src.find('?');
+  if (pos != std::string::npos) {
+    ESP_WARNING(Mn::Debug::Flag::NoSpace)
+        << "Ignoring material-override for [" << src << "]";
+
+    return src.substr(0, pos);
+  } else {
+    return src;
+  }
+}
+
+}  // namespace
+
 static_assert(std::is_nothrow_move_constructible<Player>::value, "");
 
 void AbstractPlayerImplementation::setNodeSemanticId(NodeHandle, unsigned) {}
@@ -173,22 +194,28 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
 
   for (const auto& pair : keyframe.creations) {
     const auto& creation = pair.second;
-    if (assetInfos_.count(creation.filepath) == 0u) {
-      if (failedFilepaths_.count(creation.filepath) == 0u) {
+
+    auto adjustedFilepath =
+        removeMaterialOverrideFromFilepathAndWarn(creation.filepath);
+
+    if (assetInfos_.count(adjustedFilepath) == 0u) {
+      if (failedFilepaths_.count(adjustedFilepath) == 0u) {
         ESP_WARNING(Mn::Debug::Flag::NoSpace)
-            << "Missing asset info for [" << creation.filepath << "]";
-        failedFilepaths_.insert(creation.filepath);
+            << "Missing asset info for [" << adjustedFilepath << "]";
+        failedFilepaths_.insert(adjustedFilepath);
       }
       continue;
     }
-    CORRADE_INTERNAL_ASSERT(assetInfos_.count(creation.filepath));
+    CORRADE_INTERNAL_ASSERT(assetInfos_.count(adjustedFilepath));
+    auto adjustedCreation = creation;
+    adjustedCreation.filepath = adjustedFilepath;
     auto* node = implementation_->loadAndCreateRenderAssetInstance(
-        assetInfos_[creation.filepath], creation);
+        assetInfos_[adjustedFilepath], adjustedCreation);
     if (!node) {
-      if (failedFilepaths_.count(creation.filepath) == 0u) {
+      if (failedFilepaths_.count(adjustedFilepath) == 0u) {
         ESP_WARNING(Mn::Debug::Flag::NoSpace)
-            << "Load failed for asset [" << creation.filepath << "]";
-        failedFilepaths_.insert(creation.filepath);
+            << "Load failed for asset [" << adjustedFilepath << "]";
+        failedFilepaths_.insert(adjustedFilepath);
       }
       continue;
     }

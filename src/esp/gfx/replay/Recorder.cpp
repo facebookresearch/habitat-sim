@@ -232,6 +232,24 @@ std::string Recorder::writeSavedKeyframesToString() {
   return esp::io::jsonToString(document);
 }
 
+std::vector<std::string> Recorder::writeSavedKeyframesToStringArray(
+    bool incremental) {
+  std::vector<std::string> results;
+  results.reserve(savedKeyframes_.size());
+
+  for (const auto& keyframe : savedKeyframes_) {
+    results.emplace_back(keyframeToString(keyframe));
+  }
+
+  if (incremental) {
+    savedKeyframes_.clear();
+  } else {
+    consolidateSavedKeyframes();
+  }
+
+  return results;
+}
+
 std::string Recorder::keyframeToString(const Keyframe& keyframe) {
   rapidjson::Document d(rapidjson::kObjectType);
   rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
