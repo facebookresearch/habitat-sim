@@ -229,6 +229,8 @@ class Simulator(SimulatorBackend):
         default_agent_config = config.agents[config.sim_cfg.default_agent_id]
         needed_settings.agent_radius = default_agent_config.radius
         needed_settings.agent_height = default_agent_config.height
+        needed_settings.agent_max_climb = default_agent_config.max_climb
+        needed_settings.cell_height = default_agent_config.cell_height
         if (
             # If we loaded a navmesh and we need one with different settings,
             # always try and recompute
@@ -246,8 +248,10 @@ class Simulator(SimulatorBackend):
             )
         ):
             logger.info(
-                f"Recomputing navmesh for agent's height {default_agent_config.height} and radius"
-                f" {default_agent_config.radius}."
+                f"Recomputing navmesh for agent's height {default_agent_config.height}, "
+                f"agent's radius {default_agent_config.radius}, "
+                f"agent's max climb {default_agent_config.max_climb}, and "
+                f"navmesh cell height {default_agent_config.cell_height}"
             )
             self.recompute_navmesh(self.pathfinder, needed_settings)
 
