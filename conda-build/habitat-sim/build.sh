@@ -30,7 +30,15 @@ if [ "$(uname)" == "Linux" ]; then
   export CMAKE_PREFIX_PATH=${PREFIX}:${CMAKE_PREFIX_PATH}
 fi
 
-${PYTHON} setup.py install "${build_args[@]}"
+# Prefix each install arg by --install-option=
+addPipInstallOptionArgs() {
+   (( "$#" )) && printf -- '--install-option=\0%s\0' "$@"
+}
+mapfile -d '' pipInstallOptions < <(addPipInstallOptionArgs "${build_args[@]}")
+echo "pipInstallOptions:"
+declare -p pipInstallOptions
+# Equivalent to 'python setup.py install "${build_args[@]}"'
+pip install . "${pipInstallOptions[@]}"
 ${PYTHON} -m pip install build/deps/magnum-bindings/src/python
 
 if [ -f "build/viewer" ]; then
