@@ -293,7 +293,7 @@ jobs:
           type: string
           default: "AIHABITAT_CONDA_PWD"
     macos:
-      xcode: 13.0.0
+      xcode: 14.2.0
     steps:
       - checkout:
           path: ./habitat-sim
