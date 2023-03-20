@@ -650,7 +650,7 @@ jobs:
       - checkout:
           path: ./habitat-sim
       - run:
-          name: Build conda Linux packages
+          name: Build conda Linux packages test
           no_output_timeout: 240m
           command: |
               # export PATH=$HOME/miniconda/bin:$PATH
