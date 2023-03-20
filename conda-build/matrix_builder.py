@@ -37,7 +37,7 @@ def call(cmd, env=None):
 
 
 def get_default_modes_and_vers():
-    py_vers = ["3.7", "3.8"]
+    py_vers = ["3.8", "3.9"]
     bullet_modes = [False, True]
     if platform.system() == "Darwin":
         return py_vers, bullet_modes, [False], [None]
