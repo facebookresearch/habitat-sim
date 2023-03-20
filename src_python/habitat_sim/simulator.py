@@ -346,6 +346,8 @@ class Simulator(SimulatorBackend):
     def start_async_render_and_step_physics(
         self, dt: float, agent_ids: Union[int, List[int]] = 0
     ):
+        assert not self.config.enable_batch_renderer
+
         if self._async_draw_agent_ids is not None:
             raise RuntimeError(
                 "start_async_render_and_step_physics was already called.  "
@@ -359,13 +361,15 @@ class Simulator(SimulatorBackend):
 
         for agent_id in agent_ids:
             agent_sensorsuite = self.__sensors[agent_id]
-            for _sensor_uuid, sensor in agent_sensorsuite.items():
+            for sensor in agent_sensorsuite.values():
                 sensor._draw_observation_async()
 
         self.renderer.start_draw_jobs()
         self.step_physics(dt)
 
     def start_async_render(self, agent_ids: Union[int, List[int]] = 0):
+        assert not self.config.enable_batch_renderer
+
         if self._async_draw_agent_ids is not None:
             raise RuntimeError(
                 "start_async_render_and_step_physics was already called.  "
@@ -379,7 +383,7 @@ class Simulator(SimulatorBackend):
 
         for agent_id in agent_ids:
             agent_sensorsuite = self.__sensors[agent_id]
-            for _sensor_uuid, sensor in agent_sensorsuite.items():
+            for sensor in agent_sensorsuite.values():
                 sensor._draw_observation_async()
 
         self.renderer.start_draw_jobs()
@@ -390,6 +394,8 @@ class Simulator(SimulatorBackend):
         Dict[str, Union[ndarray, "Tensor"]],
         Dict[int, Dict[str, Union[ndarray, "Tensor"]]],
     ]:
+        assert not self.config.enable_batch_renderer
+
         if self._async_draw_agent_ids is None:
             raise RuntimeError(
                 "get_sensor_observations_async_finish was called before calling start_async_render_and_step_physics."
@@ -435,18 +441,27 @@ class Simulator(SimulatorBackend):
         else:
             return_single = False
 
-        for agent_id in agent_ids:
-            agent_sensorsuite = self.__sensors[agent_id]
-            for _sensor_uuid, sensor in agent_sensorsuite.items():
-                sensor.draw_observation()
-
-        # As backport. All Dicts are ordered in Python >= 3.7
+        # As backport. All Dicts are ordered in Python >= 3.7.
         observations: Dict[int, ObservationDict] = OrderedDict()
+
+        # Draw observations (for classic non-batched renderer).
+        if not self.config.enable_batch_renderer:
+            for agent_id in agent_ids:
+                agent_sensorsuite = self.__sensors[agent_id]
+                for _sensor_uuid, sensor in agent_sensorsuite.items():
+                    sensor.draw_observation()
+        else:
+            # The batch renderer draws observations from external code.
+            # Sensors are only used as data containers.
+            pass
+
+        # Get observations.
         for agent_id in agent_ids:
             agent_observations: ObservationDict = {}
             for sensor_uuid, sensor in self.__sensors[agent_id].items():
                 agent_observations[sensor_uuid] = sensor.get_observation()
             observations[agent_id] = agent_observations
+
         if return_single:
             return next(iter(observations.values()))
         return observations
@@ -580,6 +595,14 @@ class Sensor:
 
         self._spec = self._sensor_object.specification()
 
+        # When using the batch renderer, no memory is allocated here.
+        if not self._sim.config.enable_batch_renderer:
+            self._initialize_sensor()
+
+    def _initialize_sensor(self):
+        r"""
+        Allocate buffers and initialize noise model in preparation for rendering.
+        """
         if self._spec.sensor_type == SensorType.AUDIO:
             return
 
@@ -650,6 +673,9 @@ class Sensor:
         )
 
     def draw_observation(self) -> None:
+        # Batch rendering happens elsewhere.
+        assert not self._sim.config.enable_batch_renderer
+
         if self._spec.sensor_type == SensorType.AUDIO:
             # do nothing in draw observation, get_observation will be called after this
             # run the simulation there
@@ -666,6 +692,9 @@ class Sensor:
         self._sim.renderer.draw(self._sensor_object, self._sim)
 
     def _draw_observation_async(self) -> None:
+        # Batch rendering happens elsewhere.
+        assert not self._sim.config.enable_batch_renderer
+
         if self._spec.sensor_type == SensorType.AUDIO:
             # do nothing in draw observation, get_observation will be called after this
             # run the simulation there
@@ -729,6 +758,10 @@ class Sensor:
         if self._spec.sensor_type == SensorType.AUDIO:
             return self._get_audio_observation()
 
+        # Placeholder until batch renderer emplaces the final value.
+        if self._sim.config.enable_batch_renderer:
+            return None
+
         assert self._sim.renderer is not None
         tgt = self._sensor_object.render_target
 
@@ -757,7 +790,6 @@ class Sensor:
     def _get_observation_async(self) -> Union[ndarray, "Tensor"]:
         if self._spec.sensor_type == SensorType.AUDIO:
             return self._get_audio_observation()
-
         if self._spec.gpu2gpu_transfer:
             obs = self._buffer.flip(0)  # type: ignore[union-attr]
         else:

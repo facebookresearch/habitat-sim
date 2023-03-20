@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -23,6 +23,10 @@ class BatchReplayRenderer : public AbstractReplayRenderer {
           gfx_batch::RendererConfiguration{});
 
   ~BatchReplayRenderer() override;
+
+  const void* getCudaColorBufferDevicePointer() override;
+
+  const void* getCudaDepthBufferDevicePointer() override;
 
  private:
   void doPreloadFile(Corrade::Containers::StringView filename) override;
