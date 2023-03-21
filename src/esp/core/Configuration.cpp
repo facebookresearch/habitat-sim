@@ -418,15 +418,31 @@ int Configuration::loadFromJson(const io::JsonGenericValue& jsonObj) {
               << "referencing an unsupported numeric array of length :"
               << obj.Size() << "so skipping.";
         }
-      } else {
-        // decrement count for key:obj due to not being handled vector or
-        // matrix
-        --numConfigSettings;
-        // TODO support numeric array in JSON
-        ESP_WARNING() << "Config cell in JSON document contains key" << key
-                      << "referencing an unsupported array of non-numeric, "
-                         "non-array type of length :"
-                      << obj.Size() << "so skipping.";
+      } else if (obj[0].IsString()) {
+        // Array of strings
+
+        // create a new subgroup
+        std::shared_ptr<core::config::Configuration> subGroupPtr =
+            getSubconfigCopy<core::config::Configuration>(key);
+
+        for (size_t i = 0; i < obj.Size(); ++i) {
+          std::string dest;
+          if (!io::fromJsonValue(obj[i], dest)) {
+            ESP_ERROR() << "Failed to parse array element" << i
+                        << "in non-numeric list of values keyed by" << key
+                        << "so skipping this value.";
+          } else {
+            const std::string subKey =
+                Cr::Utility::formatString("{}_{:.02d}", key, i);
+            subGroupPtr->set(subKey, dest);
+            // Increment for each sub-config object
+            ++numConfigSettings;
+          }
+        }
+
+        // Incremented numConfigSettings for this config already.
+        // save subgroup's subgroup configuration in original config
+        setSubconfigPtr<core::config::Configuration>(key, subGroupPtr);
       }
     } else if (obj.IsObject()) {
       // support nested objects
