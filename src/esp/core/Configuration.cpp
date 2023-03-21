@@ -375,8 +375,7 @@ int Configuration::loadFromJson(const io::JsonGenericValue& jsonObj) {
               ESP_WARNING()
                   << "Config cell in JSON document contains key" << key
                   << "referencing an existing configuration element of size "
-                     "4 "
-                     "of unknown type:"
+                     "4 of unknown type:"
                   << getNameForStoredType(valType) << "so skipping.";
             }
           } else {
@@ -454,7 +453,9 @@ void Configuration::writeValueToJson(const char* key,
                                      const char* jsonName,
                                      io::JsonGenericValue& jsonObj,
                                      io::JsonAllocator& allocator) const {
-  rapidjson::GenericStringRef<char> name{jsonName};
+  // Create Generic value for key, using allocator, to make sure its a copy
+  // and lives long enough
+  io::JsonGenericValue name{jsonName, allocator};
   auto jsonVal = get(key).writeToJsonObject(allocator);
   jsonObj.AddMember(name, jsonVal, allocator);
 }
@@ -469,8 +470,9 @@ void Configuration::writeValuesToJson(io::JsonGenericValue& jsonObj,
   for (auto& valIter = valIterPair.first; valIter != valIterPair.second;
        ++valIter) {
     if (valIter->second.isValid()) {
-      // make sure value is legal
-      rapidjson::GenericStringRef<char> name{valIter->first.c_str()};
+      // Create Generic value for key, using allocator, to make sure its a copy
+      // and lives long enough
+      io::JsonGenericValue name{valIter->first.c_str(), allocator};
       auto jsonVal = valIter->second.writeToJsonObject(allocator);
       jsonObj.AddMember(name, jsonVal, allocator);
     } else {
@@ -491,7 +493,9 @@ void Configuration::writeSubconfigsToJson(io::JsonGenericValue& jsonObj,
        ++cfgIter) {
     // only save if subconfig has entries
     if (cfgIter->second->getNumEntries() > 0) {
-      rapidjson::GenericStringRef<char> name{cfgIter->first.c_str()};
+      // Create Generic value for key, using allocator, to make sure its a copy
+      // and lives long enough
+      io::JsonGenericValue name{cfgIter->first.c_str(), allocator};
       io::JsonGenericValue subObj =
           cfgIter->second->writeToJsonObject(allocator);
       jsonObj.AddMember(name, subObj, allocator);
