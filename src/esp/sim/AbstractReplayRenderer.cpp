@@ -96,16 +96,16 @@ void AbstractReplayRenderer::render(
     Corrade::Containers::ArrayView<const Magnum::MutableImageView2D>
         depthImageViews) {
   if (colorImageViews != nullptr) {
-    CORRADE_ASSERT(colorImageViews.size() == doEnvironmentCount(),
-                   "ReplayRenderer::render(): expected"
-                       << doEnvironmentCount() << "color image views but got"
-                       << colorImageViews.size(), );
+    ESP_CHECK(colorImageViews.size() == doEnvironmentCount(),
+              "ReplayRenderer::render(): expected"
+                  << doEnvironmentCount() << "color image views but got"
+                  << colorImageViews.size());
   }
   if (depthImageViews != nullptr) {
-    CORRADE_ASSERT(depthImageViews.size() == doEnvironmentCount(),
-                   "ReplayRenderer::render(): expected"
-                       << doEnvironmentCount() << "depth image views but got"
-                       << depthImageViews.size(), );
+    ESP_CHECK(depthImageViews.size() == doEnvironmentCount(),
+              "ReplayRenderer::render(): expected"
+                  << doEnvironmentCount() << "depth image views but got"
+                  << depthImageViews.size());
   }
   return doRender(colorImageViews, depthImageViews);
 }
