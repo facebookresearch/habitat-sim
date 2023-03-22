@@ -4,6 +4,7 @@
 
 #include "BatchReplayRenderer.h"
 
+#include "esp/core/Logging.h"
 #include "esp/sensor/CameraSensor.h"
 
 #include <Corrade/Containers/GrowableArray.h>
@@ -251,7 +252,10 @@ void BatchReplayRenderer::doSetSensorTransformsFromKeyframe(
 }
 
 void BatchReplayRenderer::doRender(
-    Cr::Containers::ArrayView<const Mn::MutableImageView2D> imageViews) {
+    Corrade::Containers::ArrayView<const Magnum::MutableImageView2D>
+        colorImageViews,
+    Corrade::Containers::ArrayView<const Magnum::MutableImageView2D>
+        depthImageViews) {
   CORRADE_ASSERT(standalone_,
                  "BatchReplayRenderer::render(): can use this function only "
                  "with a standalone renderer", );
@@ -263,8 +267,15 @@ void BatchReplayRenderer::doRender(
             Mn::Vector2i{envIndex % renderer_->tileCount().x(),
                          envIndex / renderer_->tileCount().x()},
         renderer_->tileSize());
-    static_cast<gfx_batch::RendererStandalone&>(*renderer_)
-        .colorImageInto(rectangle, imageViews[envIndex]);
+
+    if (colorImageViews) {
+      static_cast<gfx_batch::RendererStandalone&>(*renderer_)
+          .colorImageInto(rectangle, colorImageViews[envIndex]);
+    }
+    if (depthImageViews) {
+      static_cast<gfx_batch::RendererStandalone&>(*renderer_)
+          .depthImageInto(rectangle, depthImageViews[envIndex]);
+    }
   }
 }
 

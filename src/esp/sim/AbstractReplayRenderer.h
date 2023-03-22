@@ -95,9 +95,11 @@ class AbstractReplayRenderer {
   void setSensorTransformsFromKeyframe(unsigned envIndex,
                                        const std::string& prefix);
 
-  // Renders and waits for the render to finish
+  // TODO Renders and waits for the render to finish
   void render(Corrade::Containers::ArrayView<const Magnum::MutableImageView2D>
-                  imageViews);
+                  colorImageViews,
+              Corrade::Containers::ArrayView<const Magnum::MutableImageView2D>
+                  depthImageViews);
 
   // Assumes the framebuffer color & depth is cleared
   void render(Magnum::GL::AbstractFramebuffer& framebuffer);
@@ -140,7 +142,9 @@ class AbstractReplayRenderer {
   /* imageViews.size() is guaranteed to be same as doEnvironmentCount() */
   virtual void doRender(
       Corrade::Containers::ArrayView<const Magnum::MutableImageView2D>
-          imageViews) = 0;
+          colorImageViews,
+      Corrade::Containers::ArrayView<const Magnum::MutableImageView2D>
+          depthImageViews) = 0;
 
   virtual void doRender(Magnum::GL::AbstractFramebuffer& framebuffer) = 0;
 

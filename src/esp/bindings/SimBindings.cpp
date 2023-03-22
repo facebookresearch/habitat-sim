@@ -425,10 +425,11 @@ void initSimBindings(py::module& m) {
       .def(
           "render",
           [](AbstractReplayRenderer& self,
-             std::vector<Mn::MutableImageView2D> images) {
-            self.render(images);
+             std::vector<Mn::MutableImageView2D> colorImageViews,
+             std::vector<Mn::MutableImageView2D> depthImageViews) {
+            self.render(colorImageViews, depthImageViews);
           },
-          R"(Render color sensors into the specified image vector (one per environment).
+          R"(TODO Render color sensors into the specified image vector (one per environment).
           The images are required to be pre-allocated.
           Blocks the thread during the GPU-to-CPU memory transfer operation.)")
       .def(

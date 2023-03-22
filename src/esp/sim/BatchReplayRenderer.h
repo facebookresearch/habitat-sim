@@ -45,7 +45,9 @@ class BatchReplayRenderer : public AbstractReplayRenderer {
                                          const std::string& prefix) override;
 
   void doRender(Corrade::Containers::ArrayView<const Magnum::MutableImageView2D>
-                    imageViews) override;
+                    colorImageViews,
+                Corrade::Containers::ArrayView<const Magnum::MutableImageView2D>
+                    depthImageViews) override;
 
   void doRender(Magnum::GL::AbstractFramebuffer& framebuffer) override;
 
