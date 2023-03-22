@@ -47,8 +47,6 @@ int main(int argc, char** argv) {
   imageResizer->configuration().setValue("size", Mn::Vector2i{256}); // TODO even less?
   imageResizer->configuration().setValue("upsample", false);
 
-  std::unordered_map<Cr::Containers::String, Cr::Containers::Pair<Mn::UnsignedInt, Mn::UnsignedInt>> uniqueMeshes;
-
   const auto import = [&](
     Cr::Containers::StringView filename,
     Cr::Containers::StringView name) {
@@ -104,12 +102,10 @@ int main(int argc, char** argv) {
       m.meshIndexCount = mesh->indexCount();
 
       Mn::Debug{} << "New mesh" << meshName << "in" << Cr::Utility::Path::split(filename).second();
-      uniqueMeshes.insert({std::move(meshName), {ds.indexOffset, mesh->indexCount()}});
 
       m.meshIndexOffset = ds.indexOffset;
       ds.indexOffset += mesh->indexCount()*4; // TODO ints hardcoded
 
-      // TODO convert from a strip/... if not triangles
       arrayAppend(ds.inputMeshes, *std::move(mesh));
 
       /* If the material is already parsed, reuse its ID */

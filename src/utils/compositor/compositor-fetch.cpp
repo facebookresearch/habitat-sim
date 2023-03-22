@@ -83,7 +83,6 @@ int main(int argc, char** argv) {
     m.meshIndexOffset = ds.indexOffset;
     ds.indexOffset += mesh->indexCount()*sizeof(Mn::UnsignedInt);
 
-    // TODO convert from a strip/... if not triangles
     arrayAppend(ds.inputMeshes, *std::move(mesh));
 
     /* Add an empty colored material */
@@ -133,7 +132,6 @@ int main(int argc, char** argv) {
         continue;
       }
 
-      // TODO convert from a strip/... if not triangles
       CORRADE_INTERNAL_ASSERT(mesh && mesh->isIndexed() && mesh->primitive() == Mn::MeshPrimitive::Triangles);
 
       esp::Parent o;
@@ -158,7 +156,6 @@ int main(int argc, char** argv) {
       m.meshIndexOffset = ds.indexOffset;
       ds.indexOffset += mesh->indexCount()*4; // TODO ints hardcoded
 
-      // TODO convert from a strip/... if not triangles
       arrayAppend(ds.inputMeshes, *std::move(mesh));
 
       /* If the material is already parsed, reuse its ID */
@@ -189,6 +186,8 @@ int main(int argc, char** argv) {
 
           // TODO textures referencing the same image ID -> deduplicate;
           Cr::Containers::Optional<Mn::Trade::ImageData2D> image = importer->image2D(texture->image());
+
+          // TODO hash & deduplicate image data
 
           /* Resize the image if it's too big */
           CORRADE_INTERNAL_ASSERT(image);
