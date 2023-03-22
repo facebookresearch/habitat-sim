@@ -181,7 +181,7 @@ void BatchReplayRendererTest::testIntegration() {
       renderer->setEnvironmentKeyframe(envIndex, serKeyframes[envIndex]);
       renderer->setSensorTransformsFromKeyframe(envIndex, userPrefix);
     }
-    
+
     renderer->render(imageViews, nullptr);
 
     for (int envIndex = 0; envIndex < numEnvs; envIndex++) {
