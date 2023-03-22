@@ -819,7 +819,7 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
        {{}, Mn::Shaders::PhongGL::Flag::VertexColor}) {
     Mn::Shaders::PhongGL::Flags shaderFlags =
         extraFlags | Mn::Shaders::PhongGL::Flag::MultiDraw |
-        Mn::Shaders::PhongGL::Flag::UniformBuffers |
+        Mn::Shaders::PhongGL::Flag::ShaderStorageBuffers |
         Mn::Shaders::PhongGL::Flag::NoSpecular |
         Mn::Shaders::PhongGL::Flag::LightCulling;
     if (!(state_->flags >= RendererFlag::NoTextures)) {
