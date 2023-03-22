@@ -80,10 +80,21 @@ ClassicReplayRenderer::ClassicReplayRenderer(
 
   // OpenGL context and renderer
   {
-    // TODO make this more robust regarding the standalone option (assuming
-    //  a context is there if standalone, assuming it's not if not)
-    if (!Magnum::GL::Context::hasCurrent()) {
+    if (config_.standalone) {
+      ESP_CHECK(
+          !Magnum::GL::Context::hasCurrent(),
+          "ClassicReplayRenderer::ClassicReplayRenderer: Unable to create a "
+          "standalone renderer because a context already exists. If the "
+          "application is intended to run within another window, make sure "
+          "that the standalone config flag is disabled.");
       context_ = gfx::WindowlessContext::create_unique(config_.gpuDeviceId);
+    } else {
+      ESP_CHECK(
+          Magnum::GL::Context::hasCurrent(),
+          "ClassicReplayRenderer::ClassicReplayRenderer: Unable to create a "
+          "non-standalone renderer because no context exists. If the "
+          "application is intended to run by itself and create its own "
+          "context, make sure that the standalone config flag is enabled.");
     }
 
     gfx::Renderer::Flags flags;
