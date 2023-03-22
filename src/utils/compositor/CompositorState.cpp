@@ -11,6 +11,7 @@
 #include <Corrade/Utility/Algorithms.h>
 #include <Corrade/Utility/Configuration.h>
 #include <Corrade/Utility/Format.h>
+#include <Corrade/Utility/Path.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix3.h>
@@ -71,6 +72,9 @@ CompositorState::CompositorState(const Corrade::Containers::StringView output) {
   /* To prevent the file from being opened by unsuspecting libraries */
   converter->configuration().addValue("extensionUsed", "MAGNUMX_mesh_views");
   converter->configuration().addValue("extensionRequired", "MAGNUMX_mesh_views");
+
+  /* Create the output directory if it doesn't exist yet */
+  CORRADE_INTERNAL_ASSERT(Cr::Utility::Path::make(Cr::Utility::Path::split(output).first()));
 
   /* Begin file conversion */
   converter->beginFile(output);
