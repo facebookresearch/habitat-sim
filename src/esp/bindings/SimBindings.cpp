@@ -429,9 +429,10 @@ void initSimBindings(py::module& m) {
              std::vector<Mn::MutableImageView2D> depthImageViews) {
             self.render(colorImageViews, depthImageViews);
           },
-          R"(TODO Render color sensors into the specified image vector (one per environment).
-          The images are required to be pre-allocated.
-          Blocks the thread during the GPU-to-CPU memory transfer operation.)")
+          R"(Render sensors into the specified image vectors (one per environment).
+          Blocks the thread during the GPU-to-CPU memory transfer operation.
+          Empty lists can be supplied to skip the copying render targets.
+          The images are required to be pre-allocated.)")
       .def(
           "set_sensor_transforms_from_keyframe",
           &AbstractReplayRenderer::setSensorTransformsFromKeyframe,

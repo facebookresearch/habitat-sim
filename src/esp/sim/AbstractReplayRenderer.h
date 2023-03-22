@@ -95,7 +95,8 @@ class AbstractReplayRenderer {
   void setSensorTransformsFromKeyframe(unsigned envIndex,
                                        const std::string& prefix);
 
-  // TODO Renders and waits for the render to finish
+  // Renders into the specified CPU-resident image view arrays (one image per
+  // environment). Waits for the render to finish.
   void render(Corrade::Containers::ArrayView<const Magnum::MutableImageView2D>
                   colorImageViews,
               Corrade::Containers::ArrayView<const Magnum::MutableImageView2D>
