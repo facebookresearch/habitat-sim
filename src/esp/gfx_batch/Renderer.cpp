@@ -762,7 +762,7 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
       Mn::UnsignedInt offset = meshViewOffset;
       for (Mn::UnsignedLong root : scene->childrenFor(-1)) {
         Cr::Containers::Array<Mn::UnsignedLong> children =
-            scene->childrenFor(root);
+            scene->childrenFor(root); // TODO ugh slow AF
 
         Cr::Containers::String name = importer->objectName(root);
         if (!name) {
