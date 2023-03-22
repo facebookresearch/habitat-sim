@@ -69,6 +69,7 @@ struct CompositorDataState {
   Magnum::Trade::MeshData finalizeMesh() const;
 
   Magnum::Trade::ImageData3D finalizeImage(Corrade::Containers::ArrayView<Magnum::Trade::MaterialData> inputMaterials) const;
+  Magnum::Trade::ImageData3D finalizeImage(Corrade::Containers::ArrayView<Magnum::Trade::MaterialData> inputMaterials, Magnum::Int layerCountLimit) const;
 
   Magnum::Trade::TextureData finalizeTexture() const;
 

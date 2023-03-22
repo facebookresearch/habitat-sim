@@ -73,3 +73,16 @@ target_link_libraries(compositor-fetch PRIVATE
   MagnumPlugins::StbResizeImageConverter
   MagnumPlugins::KtxImageConverter
   MagnumPlugins::GltfSceneConverter)
+
+add_executable(compositor-floorplanner compositor-floorplanner.cpp $<TARGET_OBJECTS:CompositorObjects>)
+target_link_libraries(compositor-floorplanner PRIVATE
+  Magnum::MaterialTools
+  Magnum::MeshTools
+  Magnum::SceneTools
+  Magnum::TextureTools
+  Magnum::Trade
+  Magnum::AnySceneImporter
+  MagnumPlugins::GltfImporter
+  MagnumPlugins::StbImageImporter
+  MagnumPlugins::KtxImageConverter
+  MagnumPlugins::GltfSceneConverter)

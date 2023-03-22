@@ -54,16 +54,19 @@ CompositorState::CompositorState(const Corrade::Containers::StringView output) {
     importerManager.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
 
   /* Use StbImageImporter because for it we can override channel count */
-  // TODO implement a SIMD-infused tool for this instead, or maybe add options
-  //  inside PngImporter itself? tho it might not be the fastest, as the
-  //  benchmarks at https://github.com/randy408/libspng#performance show
+  // TODO channel count option on (S)PngImporter itself, some have just 1 channel (ffs)
   // TODO what about transparent things?
   {
+  #if 1
     Cr::PluginManager::PluginMetadata* m = importerManager.metadata("StbImageImporter");
     CORRADE_INTERNAL_ASSERT(m);
     m->configuration().setValue("forceChannelCount", 3);
     importerManager.setPreferredPlugins("PngImporter", {"StbImageImporter"});
     importerManager.setPreferredPlugins("JpegImporter", {"StbImageImporter"});
+#else
+    importerManager.setPreferredPlugins("PngImporter", {"SpngImporter"});
+#endif
+
   }
 
   // TODO configurable?
@@ -124,24 +127,43 @@ Mn::Trade::SceneData CompositorSceneState::finalizeScene() const {
 
 CompositorDataState::CompositorDataState(const Mn::Vector2i& textureAtlasSize): textureAtlasSize{textureAtlasSize} {
   constexpr Mn::Color3ub WhitePixel[]{0xffffff_rgb};
+#if 0
   arrayAppend(inputImages, Mn::Trade::ImageData2D{
     Mn::PixelStorage{}.setAlignment(1),
     Mn::PixelFormat::RGB8Unorm, {1, 1},
     Mn::Trade::DataFlags{}, WhitePixel});
+
+#else
+
+  // TODO figure out why the above doesn't work with zero scale for repeated textures
+  // TODO abiity to switch between one and the other
+  Cr::Containers::Array<char> data{Cr::NoInit, std::size_t(textureAtlasSize.product())*sizeof(Mn::Color3ub)};
+  Cr::Utility::copy(
+    // TODO conversion of Vector2i to Size/Stride
+    Cr::Containers::StridedArrayView2D<const Mn::Color3ub>{WhitePixel,
+      {std::size_t(textureAtlasSize.y()), std::size_t(textureAtlasSize.x())},
+      {0, 0}},
+    Cr::Containers::StridedArrayView2D<Mn::Color3ub>{Cr::Containers::arrayCast<Mn::Color3ub>(data), {std::size_t(textureAtlasSize.y()), std::size_t(textureAtlasSize.x())}});
+  arrayAppend(inputImages, Mn::Trade::ImageData2D{
+    Mn::PixelStorage{}.setAlignment(1),
+    Mn::PixelFormat::RGB8Unorm, textureAtlasSize,
+    std::move(data)});
+#endif
 
   arrayAppend(inputMaterials, Mn::Trade::MaterialData{Mn::Trade::MaterialType::PbrMetallicRoughness, {
     {Mn::Trade::MaterialAttribute::BaseColorTexture, 0u},
     /* The layer ID and matrix translation get updated based on where the 1x1
        image ends up being in the atlas */
     {Mn::Trade::MaterialAttribute::BaseColorTextureLayer, 0u},
-    {Mn::Trade::MaterialAttribute::BaseColorTextureMatrix,
-      Mn::Matrix3::scaling(Mn::Vector2{1.0f}/Mn::Vector2(textureAtlasSize))}
+    // {Mn::Trade::MaterialAttribute::BaseColorTextureMatrix,
+    //   Mn::Matrix3::scaling(Mn::Vector2{1.0f}/Mn::Vector2(textureAtlasSize))}
   }});
 }
 
 Mn::Trade::MeshData CompositorDataState::finalizeMesh() const {
   /* Target layout for the mesh. So far just normals, no tangents for normal
      mapping. */
+  // TODO pack normals to 16bit and texcoords to half-floats(gltf extension?)
   Mn::Trade::MeshData mesh{Mn::MeshPrimitive::Triangles, nullptr, {
     Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Position, Mn::VertexFormat::Vector3, nullptr},
     Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Normal, Mn::VertexFormat::Vector3, nullptr},
@@ -155,6 +177,12 @@ Mn::Trade::MeshData CompositorDataState::finalizeMesh() const {
 }
 
 Mn::Trade::ImageData3D CompositorDataState::finalizeImage(const Cr::Containers::ArrayView<Mn::Trade::MaterialData> inputMaterials) const {
+  /* Just set the limit to the total image count -- that'll make all reference
+     a single texture */
+  return finalizeImage(inputMaterials, inputImages.size());
+}
+
+Mn::Trade::ImageData3D CompositorDataState::finalizeImage(const Cr::Containers::ArrayView<Mn::Trade::MaterialData> inputMaterials, Mn::Int layerCountLimit) const {
   /* Pack input images into an atlas */
   Cr::Containers::Pair<Mn::Int, Cr::Containers::Array<Mn::Vector3i>> layerCountOffsets =
     Mn::TextureTools::atlasArrayPowerOfTwo(textureAtlasSize, stridedArrayView(inputImages).slice(&Mn::Trade::ImageData2D::size));
@@ -169,9 +197,19 @@ Mn::Trade::ImageData3D CompositorDataState::finalizeImage(const Cr::Containers::
   std::size_t inputImageArea = 0;
   for(std::size_t i = 0; i != inputImages.size(); ++i) {
     inputImageArea += inputImages[i].size().product();
-    /* This should have been ensured at the import time already */
-    CORRADE_INTERNAL_ASSERT(inputImages[i].format() == Mn::PixelFormat::RGB8Unorm);
-    Cr::Utility::copy(inputImages[i].pixels(),
+    /* This should have been ensured at the import time already, RGBA is for
+       Basis (sigh) */
+    CORRADE_ASSERT(
+      inputImages[i].format() == Mn::PixelFormat::RGB8Unorm ||
+      inputImages[i].format() == Mn::PixelFormat::RGB8Srgb ||
+      inputImages[i].format() == Mn::PixelFormat::RGBA8Unorm ||
+      inputImages[i].format() == Mn::PixelFormat::RGBA8Srgb,
+      "Unexpected" << inputImages[i].format() << "in image" << i, (Mn::Trade::ImageData3D{Mn::PixelFormat::R8I, {}, nullptr}));
+    Cr::Utility::copy(inputImages[i].pixels().prefix({
+      std::size_t(inputImages[i].size().y()),
+      std::size_t(inputImages[i].size().x()),
+      3 /* to strip off the alpha channel if present */
+    }),
       // TODO have implicit conversion of Vector to StridedDimensions, FINALLY
       image.mutablePixels()[layerCountOffsets.second()[i].z()].sliceSize({
         std::size_t(layerCountOffsets.second()[i].y()),
@@ -180,7 +218,7 @@ Mn::Trade::ImageData3D CompositorDataState::finalizeImage(const Cr::Containers::
       }, {
         std::size_t(inputImages[i].size().y()),
         std::size_t(inputImages[i].size().x()),
-        std::size_t(inputImages[i].pixelSize())
+        std::size_t(3)
       }));
 
     /* Free the input image right after the copy to reduce peak memory use */
@@ -191,10 +229,15 @@ Mn::Trade::ImageData3D CompositorDataState::finalizeImage(const Cr::Containers::
 
   /* Update layer and offset info in the materials */
   for(Mn::Trade::MaterialData& inputMaterial: inputMaterials) {
+    Mn::UnsignedInt& texture = inputMaterial.mutableAttribute<Mn::UnsignedInt>(Mn::Trade::MaterialAttribute::BaseColorTexture);
     Mn::UnsignedInt& layer = inputMaterial.mutableAttribute<Mn::UnsignedInt>(Mn::Trade::MaterialAttribute::BaseColorTextureLayer);
     const Mn::UnsignedInt imageId = layer;
 
-    layer = layerCountOffsets.second()[imageId].z();
+    // TODO the separation to textures would probably make more sense done
+    //  spatially, i.e. meshes rendered together being in the same layer .. but
+    //  who cares for now
+    texture = layerCountOffsets.second()[imageId].z()/layerCountLimit;
+    layer = layerCountOffsets.second()[imageId].z()%layerCountLimit;
 
     /* If the material has a texture matrix (textures that are same as atlas
        layer size don't have it), update the offset there */
