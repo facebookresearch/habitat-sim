@@ -1571,8 +1571,7 @@ void GfxBatchRendererTest::singleMesh() {
   /* Check that texture coordinates, image data or whatever else didn't get
      flipped -- there should be a red pixel on the bottom left and grey pixel
      on the top left. */
-  CORRADE_COMPARE_WITH(
-      renderer.colorImage(),
+  CORRADE_COMPARE_WITH(color,
       Cr::Utility::Path::join(TEST_ASSETS,
                               "screenshots/GfxBatchRendererTestSingleMesh.png"),
       (Mn::DebugTools::CompareImageToFile{data.maxThreshold,
@@ -1638,8 +1637,7 @@ void GfxBatchRendererTest::meshHierarchy() {
 
   /* The square at bottom left should be the usual checkerboard, square at
      bottom right should be cyan, top left magenta and top right yellow */
-  CORRADE_COMPARE_AS(
-      renderer.colorImage(),
+  CORRADE_COMPARE_AS(color,
       Cr::Utility::Path::join({TEST_ASSETS, "screenshots", data.filename}),
       Mn::DebugTools::CompareImageToFile);
   CORRADE_COMPARE(color.size(), (Mn::Vector2i{128, 96}));
@@ -1701,8 +1699,7 @@ void GfxBatchRendererTest::multipleMeshes() {
 
   /* Square should be the usual checkerboard, circle should be cyan, triangle
      magenta */
-  CORRADE_COMPARE_WITH(
-      renderer.colorImage(),
+  CORRADE_COMPARE_WITH(color,
       Cr::Utility::Path::join(
           TEST_ASSETS, "screenshots/GfxBatchRendererTestMultipleMeshes.png"),
       (Mn::DebugTools::CompareImageToFile{data.maxThreshold,
@@ -1801,8 +1798,7 @@ void GfxBatchRendererTest::multipleScenes() {
 
   /* Just a visual test, the texture transformation and material aspects were
      tested well enough above */
-  CORRADE_COMPARE_WITH(
-      renderer.colorImage(),
+  CORRADE_COMPARE_WITH(color,
       Cr::Utility::Path::join(
           TEST_ASSETS, "screenshots/GfxBatchRendererTestMultipleScenes.png"),
       (Mn::DebugTools::CompareImageToFile{data.maxThreshold,
