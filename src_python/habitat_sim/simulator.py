@@ -600,6 +600,7 @@ class Simulator(SimulatorBackend):
         return agent
 
     def start_async_render(self, agent_ids: Union[int, List[int]] = 0):
+        assert not self.config.enable_batch_renderer
         if self._async_draw_agent_ids is not None:
             raise RuntimeError(
                 "start_async_render_and_step_physics was already called.  "
@@ -626,6 +627,8 @@ class Simulator(SimulatorBackend):
     def get_sensor_observations_async_finish(
         self,
     ) -> Union[Dict[str, SensorObservation], Dict[int, Dict[str, SensorObservation]],]:
+        assert not self.config.enable_batch_renderer
+
         if self._async_draw_agent_ids is None:
             raise RuntimeError(
                 "get_sensor_observations_async_finish was called before calling start_async_render_and_step_physics."
@@ -673,11 +676,16 @@ class Simulator(SimulatorBackend):
         else:
             return_single = False
 
-        # draw observation to render target
-        for agent_id in agent_ids:
-            agent_sensor_dict = self.__sensors[agent_id]
-            for sensor in agent_sensor_dict.values():
-                self.draw_observation(sensor)
+        # Draw observations (for classic non-batched renderer).
+        if not self.config.enable_batch_renderer:
+            for agent_id in agent_ids:
+                agent_sensor_dict = self.__sensors[agent_id]
+                for sensor in agent_sensor_dict.values():
+                    self.draw_observation(sensor)
+        else:
+            # The batch renderer draws observations from external code.
+            # Sensors are only used as data containers.
+            pass
 
         # As backport. All Dicts are ordered in Python >= 3.7
         per_agent_observations: Dict[int, Dict[str, SensorObservation]] = OrderedDict()
@@ -817,6 +825,10 @@ class Simulator(SimulatorBackend):
         if sensor_spec.sensor_type == SensorType.AUDIO:
             return self._get_audio_observation(sensor, agent_id)
 
+        # Placeholder until batch renderer emplaces the final value.
+        if self._sim.config.enable_batch_renderer:
+            return None
+
         assert self.renderer is not None
         tgt = sensor.render_target
 
@@ -899,6 +911,9 @@ class Simulator(SimulatorBackend):
         return observation
 
     def draw_observation(self, sensor: Sensor) -> None:
+        # Batch rendering happens elsewhere.
+        assert not self._sim.config.enable_batch_renderer
+
         if sensor.specification().sensor_type == SensorType.AUDIO:
             # do nothing in draw observation, get_observation will be called after this
             # run the simulation there
@@ -919,6 +934,9 @@ class Simulator(SimulatorBackend):
         sensor: Sensor,
         agent_id: Optional[int] = 0,  # TODO change this to None eventually
     ) -> None:
+        # Batch rendering happens elsewhere.
+        assert not self._sim.config.enable_batch_renderer
+
         sensor_spec = sensor.specification()
         if sensor_spec.sensor_type == SensorType.AUDIO:
             # do nothing in draw observation, get_observation will be called after this
