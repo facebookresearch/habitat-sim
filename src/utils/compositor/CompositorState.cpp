@@ -148,6 +148,7 @@ Mn::Trade::MeshData CompositorDataState::finalizeMesh() const {
     Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::TextureCoordinates, Mn::VertexFormat::Vector2, nullptr},
   }};
   // TODO generate normals for meshes that don't have them if there are any
+  // TODO this should have been gradual to avoid too high peak mem usage
   Mn::MeshTools::concatenateInto(mesh, inputMeshes);
 
   return mesh;
@@ -159,7 +160,8 @@ Mn::Trade::ImageData3D CompositorDataState::finalizeImage(const Cr::Containers::
     Mn::TextureTools::atlasArrayPowerOfTwo(textureAtlasSize, stridedArrayView(inputImages).slice(&Mn::Trade::ImageData2D::size));
 
   /* A combined 2D array image */
-  Mn::Trade::ImageData3D image{Mn::PixelFormat::RGB8Unorm,
+  // TODO document why the alignemnt
+  Mn::Trade::ImageData3D image{Mn::PixelStorage{}.setAlignment(1), Mn::PixelFormat::RGB8Unorm,
     {textureAtlasSize, layerCountOffsets.first()},
     Cr::Containers::Array<char>{Cr::NoInit, std::size_t(textureAtlasSize.product()*layerCountOffsets.first()*3)}, Mn::ImageFlag3D::Array};
   /* Copy the images to their respective locations, calculate waste ratio
@@ -180,6 +182,9 @@ Mn::Trade::ImageData3D CompositorDataState::finalizeImage(const Cr::Containers::
         std::size_t(inputImages[i].size().x()),
         std::size_t(inputImages[i].pixelSize())
       }));
+
+    /* Free the input image right after the copy to reduce peak memory use */
+    // inputImages[i] = Mn::Trade::ImageData3D{Mn::PixelFormat::RGB8Unorm, {}, nullptr};
   }
 
   Mn::Debug{} << inputImages.size() << "images packed to" << layerCountOffsets.first() << "layers," << Cr::Utility::format("{:.2f}", 100.0f - 100.0f*inputImageArea/(textureAtlasSize.product()*layerCountOffsets.first())) << Mn::Debug::nospace << "% area wasted";

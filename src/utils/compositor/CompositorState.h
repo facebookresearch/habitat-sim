@@ -76,7 +76,9 @@ struct CompositorDataState {
 
   Corrade::Containers::Array<Magnum::Trade::MeshData> inputMeshes;
   /* There's one implicit 1x1 white image for textureless materials */
-  // TODO what if nothing needs it?
+  // TODO what if nothing needs it? it may cause an extra texture layer with
+  //  nothing but a single pixel, which is wasteful -- maybe just drop it if
+  //  not referenced? or add it only if needed and remember the index?
   Corrade::Containers::Array<Magnum::Trade::ImageData2D> inputImages;
 
   /* As textures get packed into an atlas, the materials will need to be
