@@ -216,3 +216,4 @@ endif()
 
 # TODO some options? reuse BUILD_DATATOOL?
 add_subdirectory(utils/compositor)
+add_subdirectory(utils/importer)
