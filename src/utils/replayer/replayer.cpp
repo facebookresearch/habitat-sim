@@ -225,7 +225,7 @@ void Replayer::drawEvent() {
                                -0.5f, 1.f),
           {0.f, 1.f, 0.f});
       transform =
-        Mn::Matrix4::translation(Mn::Vector3::yAxis(20.0f))*
+        Mn::Matrix4::translation(Mn::Vector3::yAxis(2.0f))*
         Mn::Matrix4::rotationX(-90.0_degf);
       replayRenderer_->setSensorTransform(envIndex, "my_rgb", transform);
     }
