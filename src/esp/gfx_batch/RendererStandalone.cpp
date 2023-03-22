@@ -135,8 +135,8 @@ RendererStandalone::RendererStandalone(
 }
 
 RendererStandalone::~RendererStandalone() {
-  /* Yup, shitty, but as we hold the GL context we can't let any GL resources
-     to be destructed after our destructor. Better ideas? */
+  /* As we hold the GL context, GL resources have to be destructed before this
+   * destructor. */
   Renderer::destroy();
 }
 

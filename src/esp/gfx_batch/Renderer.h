@@ -447,7 +447,7 @@ class Renderer {
     create(configuration);
   }
 
-  ~Renderer();
+  virtual ~Renderer();
 
   /**
    * @brief Global renderer flags
