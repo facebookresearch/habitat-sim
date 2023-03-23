@@ -4,7 +4,6 @@
 
 #include "BatchReplayRenderer.h"
 
-#include "esp/core/Logging.h"
 #include "esp/sensor/CameraSensor.h"
 
 #include <Corrade/Containers/GrowableArray.h>
