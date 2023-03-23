@@ -24,8 +24,12 @@ py::object getObjectForConfigValue(const ConfigValue& value) {
       return py::cast(value.get<double>());
     case ConfigStoredType::String:
       return py::cast(value.get<std::string>());
+    case ConfigStoredType::MagnumVec2:
+      return py::cast(value.get<Mn::Vector2>());
     case ConfigStoredType::MagnumVec3:
       return py::cast(value.get<Mn::Vector3>());
+    case ConfigStoredType::MagnumVec4:
+      return py::cast(value.get<Mn::Vector4>());
     case ConfigStoredType::MagnumMat3:
       return py::cast(value.get<Mn::Matrix3>());
     case ConfigStoredType::MagnumQuat:
@@ -43,7 +47,9 @@ void initConfigBindings(py::module& m) {
       .value("Integer", ConfigStoredType::Integer)
       .value("Float", ConfigStoredType::Double)
       .value("String", ConfigStoredType::String)
+      .value("MagnumVec2", ConfigStoredType::MagnumVec2)
       .value("MagnumVec3", ConfigStoredType::MagnumVec3)
+      .value("MagnumVec4", ConfigStoredType::MagnumVec4)
       .value("MagnumMat3", ConfigStoredType::MagnumMat3)
       .value("MagnumQuat", ConfigStoredType::MagnumQuat)
       .value("MagnumRad", ConfigStoredType::MagnumRad);
@@ -101,8 +107,20 @@ void initConfigBindings(py::module& m) {
       .def(
           "set",
           [](Configuration& self, const std::string& key,
+             const Magnum::Vector2& val) { self.set(key, val); },
+          R"(Set the value specified by given string key to be specified Magnum::Vector2 value)",
+          "key"_a, "value"_a)
+      .def(
+          "set",
+          [](Configuration& self, const std::string& key,
              const Magnum::Vector3& val) { self.set(key, val); },
           R"(Set the value specified by given string key to be specified Magnum::Vector3 value)",
+          "key"_a, "value"_a)
+      .def(
+          "set",
+          [](Configuration& self, const std::string& key,
+             const Magnum::Vector4& val) { self.set(key, val); },
+          R"(Set the value specified by given string key to be specified Magnum::Vector4 value)",
           "key"_a, "value"_a)
       .def(
           "set",
