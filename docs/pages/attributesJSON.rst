@@ -538,6 +538,7 @@ false                   boolean
 ======================= =========================== ===================
 
 1 - If a length-4 numeric vector's tag contains as a substring 'quat', 'orient' or 'rotat', case-insensitive, the object will be loaded and processed as a Magnum::Quaternion (w,x,y,z) by the parser. Otherwise, it will be loaded as a Magnum::Vector4.
+
 2 - A length-9 numeric vector will be mapped into a Magnum Matrix3 in column-major order.
 
 Object Instance User Data
