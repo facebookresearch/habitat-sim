@@ -1,3 +1,4 @@
+# Copyright (c) Meta Platforms, Inc. All Rights Reserved
 find_package(MagnumIntegration REQUIRED Bullet)
 find_package(Bullet REQUIRED Dynamics)
 
