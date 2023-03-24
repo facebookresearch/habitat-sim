@@ -904,6 +904,9 @@ class CollisionProxyOptimizer:
                 "gt": {"results": gt_raycast_results}
             }
 
+            # setup data cache entries for physics test info
+            self.gt_data[obj_handle]["physics_test_info"] = {}
+
     def clean_obj_gt(self, obj_handle: str) -> None:
         """
         Cleans the global object cache to better manage process memory.
@@ -1283,6 +1286,8 @@ class CollisionProxyOptimizer:
                 obj = rom.add_object_by_template_handle(obj_handle)
                 support_obj_ids = [obj.object_id]
                 assert obj.is_alive, "Object was not added correctly."
+                # need to make the object STATIC so it doesn't move
+                obj.motion_type = habitat_sim.physics.MotionType.STATIC
                 # when evaluating multiple proxy shapes, need unique ids:
                 shape_id = f"pr{self.gt_data[obj_handle]['next_proxy_id']-1}"
 
@@ -1364,6 +1369,293 @@ class CollisionProxyOptimizer:
                 )
                 # TODO: visualize this error
                 # TODO: record results for later processing
+
+    def run_physics_settle_test(self, obj_handle):
+        """
+        Drops the object on a plane and waits for it to sleep.
+        Provides a heuristic measure of dynamic stability. If the object jitters, bounces, or oscillates it won't sleep.
+        """
+
+        cfg = self.get_cfg_with_mm()
+        with habitat_sim.Simulator(cfg) as sim:
+            rom = sim.get_rigid_object_manager()
+            obj = rom.add_object_by_template_handle(obj_handle)
+            assert obj.is_alive, "Object was not added correctly."
+
+            # when evaluating multiple proxy shapes, need unique ids:
+            shape_id = f"pr{self.gt_data[obj_handle]['next_proxy_id']-1}"
+
+            # add a plane
+            otm = sim.get_object_template_manager()
+            cube_plane_handle = "cubePlaneSolid"
+            if not otm.get_library_has_handle(cube_plane_handle):
+                cube_prim_handle = otm.get_template_handles("cubeSolid")[0]
+                cube_template = otm.get_template_by_handle(cube_prim_handle)
+                cube_template.scale = mn.Vector3(20, 0.05, 20)
+                otm.register_template(cube_template, cube_plane_handle)
+                assert otm.get_library_has_handle(cube_plane_handle)
+            plane_obj = rom.add_object_by_template_handle(cube_plane_handle)
+            assert plane_obj.is_alive, "Plane object was not added correctly."
+            plane_obj.motion_type = habitat_sim.physics.MotionType.STATIC
+
+            # use DebugVisualizer to get 6-axis view of the object
+            dvb = hab_debug_vis.DebugVisualizer(
+                sim=sim,
+                output_path=self.output_directory,
+                default_sensor_uuid="color_sensor",
+            )
+            dvb.peek_rigid_object(
+                obj, peek_all_axis=True, additional_savefile_prefix="plane_snap_"
+            )
+
+            # snap the object to the plane
+            obj.translation = mn.Vector3(0, 0.6, 0)
+            success = snap_down(sim, obj, support_obj_ids=[plane_obj.object_id])
+
+            if not success:
+                print("Failed to snap object to plane...")
+                return
+
+            # simulate for settling
+            max_sim_time = 5.0
+            dt = 0.25
+            real_start_time = time.time()
+            object_is_stable = False
+            start_time = sim.get_world_time()
+            while sim.get_world_time() - start_time < max_sim_time:
+                sim.step_world(dt)
+                dvb.peek_rigid_object(
+                    obj,
+                    peek_all_axis=True,
+                    additional_savefile_prefix=f"plane_snap_{sim.get_world_time() - start_time}_",
+                )
+
+                if not obj.awake:
+                    object_is_stable = True
+                    # the object has settled, no need to continue simulating
+                    break
+            real_test_time = time.time() - real_start_time
+            sim_settle_time = sim.get_world_time() - start_time
+            print(f"Physics Settle Time Report: '{obj_handle}'")
+            if object_is_stable:
+                print(f"    Settled in {sim_settle_time} sim seconds.")
+            else:
+                print(f"    Failed to settle in {max_sim_time} sim seconds.")
+            print(f"    Test completed in {real_test_time} seconds.")
+
+            if "settle_report" not in self.gt_data[obj_handle]["physics_test_info"]:
+                self.gt_data[obj_handle]["physics_test_info"]["settle_report"] = {}
+
+            assert (
+                shape_id
+                not in self.gt_data[obj_handle]["physics_test_info"]["settle_report"]
+            ), f"Duplicate settle report entry for shape_id {shape_id}."
+
+            self.gt_data[obj_handle]["physics_test_info"]["settle_report"][shape_id] = {
+                "success": object_is_stable,
+                "realtime": real_test_time,
+                "max_time": max_sim_time,
+                "settle_time": sim_settle_time,
+            }
+
+    def compute_grid_collision_times(self, obj_handle, subdivisions=0, use_gt=False):
+        """
+        Runs a collision test over a subdivided grid of box shapes within the object's AABB.
+        Measures discrete collision check efficiency.
+
+        "param subdivisions": number of recursive subdivisions to create the grid. E.g. 0 is the bb, 1 is 8 box of 1/2 bb size, etc...
+        """
+
+        scene_name = "NONE"
+        if use_gt:
+            scene_name = self.gt_data[obj_handle]["stage_template_name"]
+        cfg = self.get_cfg_with_mm(scene=scene_name)
+        with habitat_sim.Simulator(cfg) as sim:
+            rom = sim.get_rigid_object_manager()
+            shape_id = "gt"
+            shape_bb = None
+            if not use_gt:
+                obj = rom.add_object_by_template_handle(obj_handle)
+                assert obj.is_alive, "Object was not added correctly."
+                # need to make the object STATIC so it doesn't move
+                obj.motion_type = habitat_sim.physics.MotionType.STATIC
+                # when evaluating multiple proxy shapes, need unique ids:
+                shape_id = f"pr{self.gt_data[obj_handle]['next_proxy_id']-1}"
+                shape_bb = obj.root_scene_node.cumulative_bb
+            else:
+                shape_bb = sim.get_active_scene_graph().get_root_node().cumulative_bb
+
+            # add the collision box
+            otm = sim.get_object_template_manager()
+            cube_prim_handle = otm.get_template_handles("cubeSolid")[0]
+            cube_template = otm.get_template_by_handle(cube_prim_handle)
+            num_segments = 2**subdivisions
+            subdivision_scale = 1.0 / (num_segments)
+            cube_template.scale = shape_bb.size() * subdivision_scale
+            # TODO: test this scale
+            otm.register_template(cube_template, "cubeTestSolid")
+
+            test_obj = rom.add_object_by_template_handle("cubeTestSolid")
+            assert test_obj.is_alive, "Test box object was not added correctly."
+
+            cell_scale = cube_template.scale
+            # run the grid test
+            test_start_time = time.time()
+            max_col_time = 0
+            for x in range(num_segments):
+                for y in range(num_segments):
+                    for z in range(num_segments):
+                        box_center = (
+                            shape_bb.min
+                            + mn.Vector3.x_axis(cell_scale[0]) * x
+                            + mn.Vector3.y_axis(cell_scale[1]) * y
+                            + mn.Vector3.z_axis(cell_scale[2]) * z
+                            + cell_scale / 2.0
+                        )
+                        test_obj.translation = box_center
+                        col_start = time.time()
+                        test_obj.contact_test()
+                        col_time = time.time() - col_start
+                        max_col_time = max(max_col_time, col_time)
+            total_test_time = time.time() - test_start_time
+            avg_test_time = total_test_time / (num_segments**3)
+
+            print(
+                f"Physics grid collision test report: {obj_handle}. {subdivisions} subdivisions."
+            )
+            print(
+                f"    Test took {total_test_time} seconds for {num_segments**3} collision tests."
+            )
+
+            # TODO: test this
+
+            if (
+                "collision_grid_report"
+                not in self.gt_data[obj_handle]["physics_test_info"]
+            ):
+                self.gt_data[obj_handle]["physics_test_info"][
+                    "collision_grid_report"
+                ] = {}
+
+            if (
+                shape_id
+                not in self.gt_data[obj_handle]["physics_test_info"][
+                    "collision_grid_report"
+                ]
+            ):
+                self.gt_data[obj_handle]["physics_test_info"]["collision_grid_report"][
+                    shape_id
+                ] = {}
+
+            self.gt_data[obj_handle]["physics_test_info"]["collision_grid_report"][
+                shape_id
+            ][subdivisions] = {
+                "total_col_time": total_test_time,
+                "avg_col_time": avg_test_time,
+                "max_col_time": max_col_time,
+            }
+
+    def run_physics_sphere_shake_test(self, obj_handle):
+        """
+        Places the DYNAMIC object in a sphere with other primitives and varies gravity to mix the objects.
+        Per-frame physics compute time serves as a metric for dynamic simulation efficiency.
+        """
+
+        # prepare a sphere stage
+        sphere_radius = self.gt_data[obj_handle]["scene_bb"].size().length() * 1.5
+        sphere_stage_handle = "sphereTestStage"
+        stm = self.mm.stage_template_manager
+        sphere_template = stm.create_new_template(sphere_stage_handle)
+        sphere_template.render_asset_handle = "data/test_assets/objects/sphere.glb"
+        sphere_template.scale = mn.Vector3(sphere_radius * 2.0)  # glb is radius 0.5
+        stm.register_template(sphere_template, sphere_stage_handle)
+
+        # prepare the test sphere object
+        otm = self.mm.object_template_manager
+        sphere_test_handle = "sphereTestCollisionObject"
+        sphere_prim_handle = otm.get_template_handles("sphereSolid")[0]
+        sphere_template = otm.get_template_by_handle(sphere_prim_handle)
+        test_sphere_radius = sphere_radius / 100.0
+        sphere_template.scale = mn.Vector3(test_sphere_radius)
+        otm.register_template(sphere_template, sphere_test_handle)
+        assert otm.get_library_has_handle(sphere_test_handle)
+
+        shape_id = f"pr{self.gt_data[obj_handle]['next_proxy_id']-1}"
+
+        cfg = self.get_cfg_with_mm(scene=sphere_stage_handle)
+        with habitat_sim.Simulator(cfg) as sim:
+            rom = sim.get_rigid_object_manager()
+            obj = rom.add_object_by_template_handle(obj_handle)
+            assert obj.is_alive, "Object was not added correctly."
+
+            # fill the remaining space with small spheres
+            num_spheres = 0
+            while num_spheres < 100:
+                sphere_obj = rom.add_object_by_template_handle(sphere_test_handle)
+                assert sphere_obj.is_alive, "Object was not added correctly."
+                num_tries = 0
+                while num_tries < 50:
+                    num_tries += 1
+                    # sample point
+                    new_point = mn.Vector3(np.random.random(3) * 2.0 - np.ones(1))
+                    while new_point.length() >= 0.99:
+                        new_point = mn.Vector3(np.random.random(3) * 2.0 - np.ones(1))
+                    sphere_obj.translation = new_point
+                    if not sphere_obj.contact_test():
+                        num_spheres += 1
+                        break
+                if num_tries == 50:
+                    # we hit our max, so end the search
+                    rom.remove_object_by_handle(sphere_obj.handle)
+                    break
+
+            # run the simulation for timing
+            gravity = sim.get_gravity()
+            grav_rotation_rate = 0.5  # revolutions per second
+            max_sim_time = 10.0
+            dt = 0.25
+            real_start_time = time.time()
+            start_time = sim.get_world_time()
+            while sim.get_world_time() - start_time < max_sim_time:
+                sim.step_world(dt)
+                # change gravity
+                cur_time = sim.get_world_time() - start_time
+                grav_revolutions = grav_rotation_rate * cur_time
+                # rotate the gravity vector around the Z axis
+                g_quat = mn.Quaternion.rotation(
+                    mn.Rad(grav_revolutions * mn.math.pi * 2), mn.Vector3(0, 0, 1)
+                )
+                sim.set_gravity(g_quat.transform_vector(gravity))
+
+            real_test_time = time.time() - real_start_time
+
+            print(f"Physics 'sphere shake' report: {obj_handle}")
+            print(
+                f"    {num_spheres} spheres took {real_test_time} seconds for {max_sim_time} sim seconds."
+            )
+
+            if (
+                "sphere_shake_report"
+                not in self.gt_data[obj_handle]["physics_test_info"]
+            ):
+                self.gt_data[obj_handle]["physics_test_info"][
+                    "sphere_shake_report"
+                ] = {}
+
+            assert (
+                shape_id
+                not in self.gt_data[obj_handle]["physics_test_info"][
+                    "sphere_shake_report"
+                ]
+            ), f"Duplicate sphere shake report entry for shape_id {shape_id}."
+
+            self.gt_data[obj_handle]["physics_test_info"]["sphere_shake_report"][
+                shape_id
+            ] = {
+                "realtime": real_test_time,
+                "sim_time": max_sim_time,
+                "num_spheres": num_spheres,
+            }
 
     def compute_gt_errors(self, obj_handle: str) -> None:
         """
@@ -1675,8 +1967,17 @@ class CollisionProxyOptimizer:
             print(f"Computing metric for `{obj_h}`, {obix}|{len(obj_handles)}")
             print("-------------------------------")
             self.setup_obj_gt(obj_h)
-            self.compute_baseline_metrics(obj_h)
-            self.compute_proxy_metrics(obj_h)
+            # self.compute_baseline_metrics(obj_h)
+            # self.compute_proxy_metrics(obj_h)
+
+            # physics tests
+            # self.run_physics_settle_test(obj_h)
+            # self.run_physics_sphere_shake_test(obj_h)
+            # self.compute_grid_collision_times(obj_h, subdivisions=0)
+            # self.compute_grid_collision_times(obj_h, subdivisions=1)
+            # self.compute_grid_collision_times(obj_h, subdivisions=2)
+            # exit()
+
             # receptacle metrics:
             if self.compute_receptacle_useability_metrics:
                 self.compute_receptacle_stability(obj_h, use_gt=True)
