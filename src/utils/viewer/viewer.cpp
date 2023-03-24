@@ -712,10 +712,13 @@ Viewer::Viewer(const Arguments& arguments)
       .addOption("agent-transform-filepath")
       .setHelp("agent-transform-filepath",
                "Specify path to load camera transform from.")
-      .addBooleanOption("do-gala-kinematic-preprocess")
-      .setHelp("do-gala-kinematic-preprocess",
-               "Generate ../replays/myscene.replay.json and "
-               "../columngrids/myscene.k.columngrid files and then exit.")
+      .addBooleanOption("gala-write-scene-gfx-replay")
+      .setHelp("gala-write-scene-gfx-replay",
+               "Generate ../replays/myscene.replay.json files and then exit.")
+      .addBooleanOption("gala-generate-column-grids")
+      .setHelp(
+          "gala-generate-column-grids",
+          "Generate ../columngrids/myscene.k.columngrid files and then exit.")
       .parse(arguments.argc, arguments.argv);
 
   const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
@@ -886,71 +889,71 @@ Viewer::Viewer(const Arguments& arguments)
   // Per frame profiler will average measurements taken over previous 50 frames
   profiler_.setup(profilerValues, 50);
 
-  if (args.isSet("do-gala-kinematic-preprocess")) {
+  bool doExitAfterStartup = false;
+  if (args.isSet("gala-write-scene-gfx-replay")) {
+    // write replay file
+    const auto recorder = simulator_->getGfxReplayManager()->getRecorder();
+    ESP_CHECK(recorder, "need replay recorder");
+
+    const std::string baseName =
+        Cr::Utility::Directory::splitExtension(
+            Cr::Utility::Directory::splitExtension(
+                Cr::Utility::Directory::filename(simConfig_.activeSceneName))
+                .first)
+            .first;
+
+    recorder->saveKeyframe();
+    const std::string filepath = "../data/replays/" + baseName + ".replay.json";
+
+    ESP_DEBUG() << "Writing " << filepath;
+    recorder->writeSavedKeyframesToFile(filepath);
+
+    doExitAfterStartup = true;
+  }
+
+  if (args.isSet("gala-generate-column-grids")) {
+    // write columngrid files
+#ifndef NDEBUG
+    ESP_WARNING() << "--gala-generate-column-grids is compute-heavy and "
+                     "you are not running a release build.";
+#endif
     ESP_CHECK(args.isSet("enable-physics"),
-              "For --do-gala-kinematic-preprocess, you should also set "
+              "For --gala-generate-column-grids, you should also set "
               "--enable-physics");
 
-    // write replay file
-    {
-      const auto recorder = simulator_->getGfxReplayManager()->getRecorder();
-      ESP_CHECK(recorder, "need replay recorder");
+    const std::string baseName =
+        Cr::Utility::Directory::splitExtension(
+            Cr::Utility::Directory::splitExtension(
+                Cr::Utility::Directory::filename(simConfig_.activeSceneName))
+                .first)
+            .first;
 
-      const std::string baseName =
-          Cr::Utility::Directory::splitExtension(
-              Cr::Utility::Directory::splitExtension(
-                  Cr::Utility::Directory::filename(simConfig_.activeSceneName))
-                  .first)
-              .first;
+    std::array<float, 3> sphereRadii = {0.015, 0.05, 0.12};
+    for (int i = 0; i < sphereRadii.size(); i++) {
+      const std::string filepath = "../data/columngrids/" + baseName + "." +
+                                   std::to_string(i) + ".columngrid";
 
-      recorder->saveKeyframe();
-      const std::string filepath =
-          "../data/replays/" + baseName + ".replay.json";
+      if (Cr::Utility::Directory::exists(filepath)) {
+        ESP_WARNING() << "skipping " << filepath
+                      << " because it already exists.";
+      } else {
+        ESP_DEBUG() << "building ColumnGrid...";
+        const auto extents = simulator_->getCollisionExtents();
+        const float sphereRadius = sphereRadii[i];
+        constexpr float gridSpacing = 0.03;
+        ColumnGridBuilder builder;
+        columnGrid_ = builder.build(*simulator_.get(), extents, sphereRadius,
+                                    gridSpacing);
 
-      ESP_DEBUG() << "Writing " << filepath;
-      recorder->writeSavedKeyframesToFile(filepath);
-    }
-
-    // write columngrid files
-    {
-#ifndef NDEBUG
-      ESP_WARNING() << "--do-gala-kinematic-preprocess is compute-heavy and "
-                       "you are not running a release build.";
-#endif
-
-      const std::string baseName =
-          Cr::Utility::Directory::splitExtension(
-              Cr::Utility::Directory::splitExtension(
-                  Cr::Utility::Directory::filename(simConfig_.activeSceneName))
-                  .first)
-              .first;
-
-      std::array<float, 3> sphereRadii = {0.015, 0.05, 0.12};
-      for (int i = 0; i < sphereRadii.size(); i++) {
-        const std::string filepath = "../data/columngrids/" + baseName + "." +
-                                     std::to_string(i) + ".columngrid";
-
-        if (Cr::Utility::Directory::exists(filepath)) {
-          ESP_WARNING() << "skipping " << filepath
-                        << " because it already exists.";
-          // ESP_DEBUG() << "loading ColumnGrid from " << filepath;
-          // columnGrid_.load(filepath);
-        } else {
-          ESP_DEBUG() << "building ColumnGrid...";
-          const auto extents = simulator_->getCollisionExtents();
-          const float sphereRadius = sphereRadii[i];
-          constexpr float gridSpacing = 0.03;
-          ColumnGridBuilder builder;
-          columnGrid_ = builder.build(*simulator_.get(), extents, sphereRadius,
-                                      gridSpacing);
-
-          ESP_DEBUG() << "Done. Saving ColumnGrid to " << filepath;
-          columnGrid_.save(filepath);
-        }
+        ESP_DEBUG() << "Done. Saving ColumnGrid to " << filepath;
+        columnGrid_.save(filepath);
       }
     }
 
-    // exit after preprocessing
+    doExitAfterStartup = true;
+  }
+
+  if (doExitAfterStartup) {
     exit(0);
   } else {
     printHelpText();
