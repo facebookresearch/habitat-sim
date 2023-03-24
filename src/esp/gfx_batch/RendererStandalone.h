@@ -128,7 +128,7 @@ class RendererStandalone : public Renderer {
       const RendererConfiguration& configuration,
       const RendererStandaloneConfiguration& standaloneConfiguration);
 
-  ~RendererStandalone();
+  ~RendererStandalone() override;
 
   /**
    * @brief Global standalone renderer flags

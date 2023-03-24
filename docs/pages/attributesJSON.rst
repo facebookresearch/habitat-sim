@@ -25,13 +25,13 @@ All necessary configuration can be done as a pre-process via the JSON configurat
 .. figure:: images/scenedataset_documentation_diagram.svg
     :width: 100em
 
-    A *SceneDataset* system diagram illustrating the correspondance between JSON configs and programmatic structures. Note that the *Simulator* controls instatiation of objects by accessing data cached within its internal *MetadataMediator*.
+    A *SceneDataset* system diagram illustrating the correspondence between JSON configs and programmatic structures. Note that the *Simulator* controls instantiation of objects by accessing data cached within its internal *MetadataMediator*.
 
 Programmatically, a *SceneDataset* consists of sets of *Attributes* objects detailing the configuration of individual objects, stages, scenes etc... which can be modified via C++ and python APIs (:ref:`habitat_sim.attributes`) and managed by *AttributeManager* APIs (:ref:`habitat_sim.attributes_managers`).
 
-These *Attributes* objects are improted from their corresponding .json files. See `ReplicaCAD <https://aihabitat.org/datasets/replica_cad/index.html>`_ for an example of a complete SceneDataset JSON config structure.
+These *Attributes* objects are imported from their corresponding .json files. See `ReplicaCAD <https://aihabitat.org/datasets/replica_cad/index.html>`_ for an example of a complete SceneDataset JSON config structure.
 
-The :ref:`MetadataMediator` aggregates all *AttributesManagers* and provides an API for swapping the active *SceneDataset*. It can exist independant of a :ref:`Simulator` object for programmatic metadata management and can be passed into the constructor via the :ref:`SimulatorConfiguration`.
+The :ref:`MetadataMediator` aggregates all *AttributesManagers* and provides an API for swapping the active *SceneDataset*. It can exist independent of a :ref:`Simulator` object for programmatic metadata management and can be passed into the constructor via the :ref:`SimulatorConfiguration`.
 
 The remaining documentation on this page details the *SceneDataset* JSON configuration options available at this time.
 
@@ -52,17 +52,17 @@ Configuring Child Attributes
 Stages, Objects, Lights, and Scenes can be linked from .json, created directly from assets (e.g. .glb) or configured directly in this file's configuration nodes via the syntax below:
 
 "stages" \| "objects" \| "articulated_objects" \| "light_setups" \| "scene_instances"
-    - json object
+    - JSON object
     - Configuration pertaining to the specified attribute type.
 
     - "default_attributes"
-        - json object
-        - Set default attributes for all like objects in the dataset. Individual objects can override these values. See StageAttributes, ObjectAttributes, etc... below.
+        - JSON object
+        - Set default attributes for all like objects in the dataset. Individual JSON instances can override these values. See StageAttributes, ObjectAttributes, etc... below.
     - "paths"
-        - json object
+        - JSON object
         - keyed by file extension to search for. Value is a list of paths relative to this file to search for the designated filetype.
     - "configs"
-        - list of json objects
+        - list of JSON objects
         - Define modified copies or completely new Attributes objects directly in the SceneDatasetAttributes. See StageAttributes, ObjectAttributes, etc... below.
             - "original_file"
                 - string
@@ -71,11 +71,11 @@ Stages, Objects, Lights, and Scenes can be linked from .json, created directly f
                 - string
                 - Handle/name for the new *Attributes*. Used to reference it withing its *AttributesManager*.
             -  "attributes"
-                - json object
+                - JSON object
                 - Attribute configuration to override defaults or copied values.
 
 "semantic_scene_descriptor_instances" \| "navmesh_instances"
-    - json object
+    - JSON object
     - key\|value pairs link handles to relative filepaths for all Semantic Scene Descriptor (SSD) and NavMesh files. These can then be referenced by name within `SceneInstanceAttributes`.
 
 `SceneInstanceAttributes`_
@@ -142,7 +142,7 @@ Stage Instance
 --------------
 
 "stage_instance"
-    - json object
+    - JSON object
     - Each scene can support one stage instance.
         - "template_name"
             - string
@@ -169,7 +169,7 @@ Object Instances
 All rigid and articulated objects instanced in the scene during initialization should be listed and configured here.
 
 "object_instances"
-    - list of json objects
+    - list of JSON objects
     - List all rigid object instances within the scene.
         - "template_name"
             - string
@@ -194,7 +194,7 @@ All rigid and articulated objects instanced in the scene during initialization s
             - One of ('COM', 'asset_local'). Defines whether the translation provided for this object instance is applied in render asset local space or center of mass (COM) aligned space. All rigid object translations within Habitat-sim are in COM space, but external translations (e.g. exported from Blender) may not be.
 
 "articulated_object_instances"
-    - list of json objects
+    - list of JSON objects
     - List of all articulated object instances within the scene.
         - "template_name"
             - string
@@ -227,10 +227,10 @@ All rigid and articulated objects instanced in the scene during initialization s
             - string
             - One of ('COM', 'asset_local'). Defines whether the translation provided for this object instance is applied in render asset local space or center of mass (COM) aligned space.
         - "initial_joint_pose"
-            - json object or list
+            - JSON object or list
             - The initial joint state of the articulated object. If a list, should be the full set of joint positions as floats. If an object, key\|value pairs map individual joint names to positions.
         - "initial_joint_velocities"
-            - json object or list
+            - JSON object or list
             - The initial joint velocity state of the articulated object. If a list, should be the full set of joint velocities as floats. If an object, key\|value pairs map individual joint names to velocities.
 
 Other Features
@@ -318,6 +318,9 @@ Below are stage-specific physical and object-related quantities.  These values w
 "is_collidable"
     - boolean
     - Whether the stage should be added to the collision and physics simulation world upon instancing.
+"force_flat_shading"
+    - boolean
+    - Whether the stage should be rendered with a flat shader. If this is set to true, it will override any shader_type specifications.
 "shader_type"
     - string (one of "material", "flat", "phong", "pbr")
     - The shader to be used to render the stage. 'material' uses the render asset's specified material, other values force specified shader regardless of asset specification.
@@ -399,6 +402,9 @@ Below are object-specific physical quantities.  These values will override simil
 "units_to_meters"
     - double
     - The conversion of given units to meters.
+"force_flat_shading"
+    - boolean
+    - Whether the object should be rendered with a flat shader. If this is set to true, it will override any shader_type specifications.
 "shader_type"
     - string (one of "material", "flat", "phong", "pbr")
     - The shader to be used to render the object. 'material' uses the render asset's specified material, other values force specified shader regardless of asset specification.
@@ -487,8 +493,9 @@ Below are the supported JSON tags for Physics Manager Attributes templates, and 
 `User Defined Attributes`_
 ==========================
 
-For all Attributes objects, the "user_defined" tag is reserved for a json configuration node which can be filled with user data. There are no limitations on the depth of this subtree (i.e., you can stack JSON objects to arbitrary depth) and Habitat-sim functioanlity will not depend on any specific metadata under this tag.
-You can use this tag to cache object information for your specific use cases or track simulation properties over time in user code.
+For all Attributes objects and their source JSON files, the "user_defined" tag is reserved for a JSON configuration node which can be filled with user data. Objects bearing this tag can be placed
+anywhere in a JSON configuration file; there are no limitations on the depth of this subtree (i.e., you can stack JSON objects to arbitrary depth) and Habitat-sim functionality will neither depend on
+nor process any specific metadata under this tag. You can use this tag to cache object information for your specific use cases or track simulation properties over time in user code.
 
 For example, :ref:`ObjectAttributes.get_user_config` returns the configuration object containing all metadata from this tag within a *.object_config.json* file:
 
@@ -502,11 +509,37 @@ For example, :ref:`ObjectAttributes.get_user_config` returns the configuration o
                 "can open"
             ],
             "custom_object_properties":{
-                "is_gripped": "false",
+                "is_gripped": false,
                 "temperature": 10.0,
             },
         }
     }
+
+The attributes parser interprets the type of the data in the user-defined json fields based on each field's data and layout, with a few exceptions, as illustrated below:
+
+User-Defined JSON Field type mappings
+-------------------------------------
+
+.. class:: m-table m-fullwidth
+
+======================= =========================== ===================
+JSON field data example Habitat-Sim internal type   Notes
+======================= =========================== ===================
+10.0                    double
+7                       integer
+"can grip"              string
+false                   boolean
+[0,1]                   Magnum Vector2 (float)
+[0,1,2]                 Magnum Vector3 (float)
+[0,1,3,4]               Magnum Vector4 (float)      1
+[0,1,2,3]               Magnum Quaternion (float)   1
+[1,2,3,4,5,6,7,8,9]     Magnum Matrix3 (float)      2
+
+======================= =========================== ===================
+
+1 - If a length-4 numeric vector's tag contains as a substring 'quat', 'orient' or 'rotat', case-insensitive, the object will be loaded and processed as a Magnum::Quaternion (w,x,y,z) by the parser. Otherwise, it will be loaded as a Magnum::Vector4.
+
+2 - A length-9 numeric vector will be mapped into a Magnum Matrix3 in column-major order.
 
 Object Instance User Data
 -------------------------
@@ -516,4 +549,4 @@ User data can also be tied to specific instances of an object. When an object is
 ArticulatedObject User Data
 ---------------------------
 
-While *ArticulatedObjects* are completely defined by their URDF files and parsing parameters. However, Habitat-sim does support importing of additional user metadata via an accompanying *<urdf_name>.ao_config.json* file. See `ReplicaCAD <https://aihabitat.org/datasets/replica_cad/index.html>`_ for an example.
+While *ArticulatedObjects* are completely defined by their URDF files and parsing parameters, Habitat-sim does support importing additional user metadata via an accompanying *<urdf_name>.ao_config.json* file. See `ReplicaCAD <https://aihabitat.org/datasets/replica_cad/index.html>`_ for an example.

@@ -1,0 +1,35 @@
+{
+	"render_asset": "simple_room.glb",
+    "up": [0,0,1],
+    "front": [0,1,0],
+    "shader_type": "pbr",
+	"user_defined": {
+        "receptacle_aabb_simpleroom_test": {
+            "name": "receptacle_aabb_simpleroom_test",
+            "position": [
+                2.36945,
+                -1.3934,
+                2.61652
+            ],
+            "scale": [
+                1.0,
+                1.0,
+                0.39171
+            ]
+        },
+        "receptacle_mesh_simpleroom_test": {
+            "name": "receptacle_mesh_simpleroom_test",
+            "position": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "scale": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "mesh_filepath": "receptacle_mesh_simple_room_table.ply"
+        }
+    }
+}

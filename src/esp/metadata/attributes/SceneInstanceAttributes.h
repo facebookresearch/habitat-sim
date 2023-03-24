@@ -39,16 +39,14 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
    * @brief Set the translation from the origin of the described
    * stage/object instance.
    */
-  void setTranslation(const Magnum::Vector3& translation) {
+  void setTranslation(const Mn::Vector3& translation) {
     set("translation", translation);
   }
   /**
    * @brief Get the translation from the origin of the described
    * stage/object instance.
    */
-  Magnum::Vector3 getTranslation() const {
-    return get<Magnum::Vector3>("translation");
-  }
+  Mn::Vector3 getTranslation() const { return get<Mn::Vector3>("translation"); }
 
   /**
    * @brief Set a value representing the mechanism used to create this scene
@@ -92,15 +90,13 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
   /**
    * @brief Set the rotation of the object
    */
-  void setRotation(const Magnum::Quaternion& rotation) {
+  void setRotation(const Mn::Quaternion& rotation) {
     set("rotation", rotation);
   }
   /**
    * @brief Get the rotation of the object
    */
-  Magnum::Quaternion getRotation() const {
-    return get<Magnum::Quaternion>("rotation");
-  }
+  Mn::Quaternion getRotation() const { return get<Mn::Quaternion>("rotation"); }
 
   /**
    * @brief If not visible can add dynamic non-rendered object into a scene
@@ -111,6 +107,7 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
     set("is_instance_visible", (isVisible ? 1 : 0));
   }
   int getIsInstanceVisible() const { return get<int>("is_instance_visible"); }
+  void clearIsInstanceVisible() { set("is_instance_visible", ID_UNDEFINED); }
 
   /**
    * @brief Set the motion type for the object.  Ignored for stage instances.
@@ -180,25 +177,22 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
    * @brief Get the non-uniform scale vector of the described stage/object
    * instance.
    */
-  Magnum::Vector3 getNonUniformScale() const {
-    return get<Magnum::Vector3>("non_uniform_scale");
+  Mn::Vector3 getNonUniformScale() const {
+    return get<Mn::Vector3>("non_uniform_scale");
   }
 
   /**
    * @brief Set the non-uniform scale vector of the described stage/object
    * instance.
    */
-  void setNonUniformScale(const Magnum::Vector3& non_uniform_scale) {
+  void setNonUniformScale(const Mn::Vector3& non_uniform_scale) {
     set("non_uniform_scale", non_uniform_scale);
   }
 
   /**
-   * @brief Get or set the mass scaling of the instanced object.  Want this
-   * to be a float for consumption in instance creation
+   * @brief Get or set the mass scaling of the instanced object.
    */
-  float getMassScale() const {
-    return static_cast<float>(get<double>("mass_scale"));
-  }
+  double getMassScale() const { return get<double>("mass_scale"); }
   void setMassScale(double mass_scale) { set("mass_scale", mass_scale); }
 
   /**

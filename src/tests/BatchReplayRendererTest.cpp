@@ -4,6 +4,7 @@
 
 #include "Corrade/Utility/Assert.h"
 #include "Magnum/DebugTools/Screenshot.h"
+#include "Magnum/GL/Context.h"
 #include "Magnum/Magnum.h"
 #include "Magnum/Trade/AbstractImageConverter.h"
 #include "configure.h"
@@ -157,55 +158,62 @@ void BatchReplayRendererTest::testIntegration() {
   ReplayRendererConfiguration batchRendererConfig;
   batchRendererConfig.sensorSpecifications = std::move(sensorSpecifications);
   batchRendererConfig.numEnvironments = numEnvs;
-  Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer> renderer =
-      data.create(batchRendererConfig);
+  {
+    Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer> renderer =
+        data.create(batchRendererConfig);
 
-  std::vector<std::vector<char>> buffers(numEnvs);
-  std::vector<Mn::MutableImageView2D> imageViews;
+    // Check that the context is properly created
+    CORRADE_VERIFY(Mn::GL::Context::hasCurrent());
 
-  for (int envIndex = 0; envIndex < numEnvs; envIndex++) {
-    // TODO pass size as a Vector2i; use an Image instead of a std::vector
-    //  once there's Iterable<MutableImageView2D> that can be implicitly
-    //  converted from a list of Image2D.
-    imageViews.emplace_back(getRGBView(renderer->sensorSize(envIndex).x(),
-                                       renderer->sensorSize(envIndex).y(),
-                                       buffers[envIndex]));
-  }
+    std::vector<std::vector<char>> buffers(numEnvs);
+    std::vector<Mn::MutableImageView2D> imageViews;
 
-  for (int envIndex = 0; envIndex < numEnvs; envIndex++) {
-    renderer->setEnvironmentKeyframe(envIndex, serKeyframes[envIndex]);
-    renderer->setSensorTransformsFromKeyframe(envIndex, userPrefix);
-  }
+    for (int envIndex = 0; envIndex < numEnvs; envIndex++) {
+      // TODO pass size as a Vector2i; use an Image instead of a std::vector
+      //  once there's Iterable<MutableImageView2D> that can be implicitly
+      //  converted from a list of Image2D.
+      imageViews.emplace_back(getRGBView(renderer->sensorSize(envIndex).x(),
+                                         renderer->sensorSize(envIndex).y(),
+                                         buffers[envIndex]));
+    }
 
-  renderer->render(imageViews);
+    for (int envIndex = 0; envIndex < numEnvs; envIndex++) {
+      renderer->setEnvironmentKeyframe(envIndex, serKeyframes[envIndex]);
+      renderer->setSensorTransformsFromKeyframe(envIndex, userPrefix);
+    }
 
-  for (int envIndex = 0; envIndex < numEnvs; envIndex++) {
-    CORRADE_ITERATION(envIndex);
-    std::string groundTruthImageFile =
-        screenshotPrefix + std::to_string(envIndex) + screenshotExtension;
-    CORRADE_COMPARE_WITH(
-        Mn::ImageView2D{imageViews[envIndex]},
-        Cr::Utility::Path::join(screenshotDir, groundTruthImageFile),
-        (Mn::DebugTools::CompareImageToFile{maxThreshold, meanThreshold}));
-  }
+    renderer->render(imageViews);
 
-  const auto colorPtr = renderer->getCudaColorBufferDevicePointer();
-  const auto depthPtr = renderer->getCudaDepthBufferDevicePointer();
-  bool isBatchRenderer =
-      dynamic_cast<esp::sim::BatchReplayRenderer*>(renderer.get());
+    for (int envIndex = 0; envIndex < numEnvs; envIndex++) {
+      CORRADE_ITERATION(envIndex);
+      std::string groundTruthImageFile =
+          screenshotPrefix + std::to_string(envIndex) + screenshotExtension;
+      CORRADE_COMPARE_WITH(
+          Mn::ImageView2D{imageViews[envIndex]},
+          Cr::Utility::Path::join(screenshotDir, groundTruthImageFile),
+          (Mn::DebugTools::CompareImageToFile{maxThreshold, meanThreshold}));
+    }
+
+    const auto colorPtr = renderer->getCudaColorBufferDevicePointer();
+    const auto depthPtr = renderer->getCudaDepthBufferDevicePointer();
+    bool isBatchRenderer =
+        dynamic_cast<esp::sim::BatchReplayRenderer*>(renderer.get());
 #ifdef ESP_BUILD_WITH_CUDA
-  if (isBatchRenderer) {
-    CORRADE_VERIFY(colorPtr);
-    CORRADE_VERIFY(depthPtr);
-  } else {
-    // Not implemented in ClassicReplayRenderer
+    if (isBatchRenderer) {
+      CORRADE_VERIFY(colorPtr);
+      CORRADE_VERIFY(depthPtr);
+    } else {
+      // Not implemented in ClassicReplayRenderer
+      CORRADE_VERIFY(!colorPtr);
+      CORRADE_VERIFY(!depthPtr);
+    }
+#else
     CORRADE_VERIFY(!colorPtr);
     CORRADE_VERIFY(!depthPtr);
-  }
-#else
-  CORRADE_VERIFY(!colorPtr);
-  CORRADE_VERIFY(!depthPtr);
 #endif
+  }
+  // Check that the context is properly deleted
+  CORRADE_VERIFY(!Mn::GL::Context::hasCurrent());
 }
 
 }  // namespace

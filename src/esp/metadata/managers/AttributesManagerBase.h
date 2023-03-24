@@ -431,7 +431,7 @@ bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
       int numConfigSettings = subGroupPtr->loadFromJson(jsonObj);
 
       // save as user_defined subgroup configuration
-      attribs->setSubconfigPtr("user_defined", subGroupPtr);
+      attribs->setSubconfigPtr(subGroupName, subGroupPtr);
 
       return (numConfigSettings > 0);
     }

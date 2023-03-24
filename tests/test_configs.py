@@ -40,10 +40,20 @@ def test_core_configuration():
     config.set("py_float", my_float)
     assert config.get("py_float") == my_float
 
+    # Magnum::Vector2 (float)
+    my_vec2 = np.array([1.12345, 2.0])
+    config.set("vec2", my_vec2)
+    assert config.get("vec2") == my_vec2
+
     # Magnum::Vector3 (float)
     my_vec3 = np.array([1.12345, 2.0, -3.0])
     config.set("vec3", my_vec3)
     assert config.get("vec3") == my_vec3
+
+    # Magnum::Vector4 (float)
+    my_vec4 = np.array([1.12345, 2.0, -3.0, 4.32])
+    config.set("vec4", my_vec4)
+    assert config.get("vec4") == my_vec4
 
     # Magnum::Matrix3 (3x3)
     my_mat3x3 = mn.Matrix3((1.1, 2.2, -3.3), (4.4, 5.0, -6.6), (7.7, 8.0, -9.9))

@@ -35,7 +35,9 @@ enum class ConfigStoredType {
   Boolean,
   Integer,
   Double,
+  MagnumVec2,
   MagnumVec3,
+  MagnumVec4,
   MagnumMat3,
   MagnumQuat,
   MagnumRad,
@@ -89,8 +91,24 @@ constexpr ConfigStoredType configStoredTypeFor<std::string>() {
   return ConfigStoredType::String;
 }
 template <>
+constexpr ConfigStoredType configStoredTypeFor<Mn::Vector2>() {
+  return ConfigStoredType::MagnumVec2;
+}
+template <>
 constexpr ConfigStoredType configStoredTypeFor<Mn::Vector3>() {
   return ConfigStoredType::MagnumVec3;
+}
+template <>
+constexpr ConfigStoredType configStoredTypeFor<Mn::Color3>() {
+  return ConfigStoredType::MagnumVec3;
+}
+template <>
+constexpr ConfigStoredType configStoredTypeFor<Mn::Vector4>() {
+  return ConfigStoredType::MagnumVec4;
+}
+template <>
+constexpr ConfigStoredType configStoredTypeFor<Mn::Color4>() {
+  return ConfigStoredType::MagnumVec4;
 }
 template <>
 constexpr ConfigStoredType configStoredTypeFor<Mn::Matrix3>() {
