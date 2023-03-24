@@ -1,3 +1,4 @@
+# Copyright (c) Meta Platforms, Inc. All Rights Reserved
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED 17)
 

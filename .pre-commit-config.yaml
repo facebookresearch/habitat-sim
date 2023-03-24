@@ -1,3 +1,4 @@
+# Copyright (c) Meta Platforms, Inc. All Rights Reserved
 exclude: '^(build|data/datasets|data/scene_datasets|node_modules/|src/deps|src/obsolete)'
 
 default_language_version:

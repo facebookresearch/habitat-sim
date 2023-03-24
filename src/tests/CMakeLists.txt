@@ -1,3 +1,4 @@
+# Copyright (c) Meta Platforms, Inc. All Rights Reserved
 find_package(Magnum REQUIRED DebugTools AnyImageConverter)
 find_package(MagnumPlugins REQUIRED StbImageImporter)
 

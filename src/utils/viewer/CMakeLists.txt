@@ -1,3 +1,4 @@
+# Copyright (c) Meta Platforms, Inc. All Rights Reserved
 find_package(Magnum REQUIRED DebugTools)
 
 find_package(MagnumIntegration REQUIRED ImGui)

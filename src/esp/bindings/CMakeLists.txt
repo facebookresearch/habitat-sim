@@ -1,3 +1,4 @@
+# Copyright (c) Meta Platforms, Inc. All Rights Reserved
 find_package(MagnumBindings REQUIRED Python)
 
 set(CMAKE_CXX_STANDARD 17)
