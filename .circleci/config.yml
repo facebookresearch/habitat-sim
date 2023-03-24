@@ -119,11 +119,11 @@ commands:
                 bash ~/miniconda.sh -b -p $HOME/miniconda
                 rm ~/miniconda.sh
                 export PATH=$HOME/miniconda/bin:$PATH
-                conda create -y -n habitat python=3.7
+                conda create -y -n habitat python=3.9
                 . activate habitat
                 # For whatever reason we have to install pytorch first. If it isn't
                 # it installs the 1.4 cpuonly version. Which is no good.
-                conda install -y pytorch==1.12.1=py3.7_cuda11.3_cudnn8.3.2_0 torchvision==0.13.1=py37_cu113 cudatoolkit=11.3 -c pytorch -c nvidia
+                conda install -y pytorch==1.12.1=py3.9_cuda11.3_cudnn8.3.2_0 torchvision==0.13.1=py39_cu113 cudatoolkit=11.3 -c pytorch -c nvidia
                 conda install -y -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis pytest-mock
                 pip install pytest-sugar pytest-xdist pytest-benchmark opencv-python cython mock
               fi
@@ -186,7 +186,7 @@ commands:
 jobs:
   python_lint:
     docker:
-      - image: cimg/python:3.7
+      - image: cimg/python:3.9.16
     steps:
       - checkout
       - run:
@@ -246,7 +246,7 @@ jobs:
 
   pre-commit:
     docker:
-      - image: cimg/python:3.7
+      - image: cimg/python:3.9.16
     working_directory: ~/repo/
 
     steps:
@@ -293,7 +293,7 @@ jobs:
           type: string
           default: "AIHABITAT_CONDA_PWD"
     macos:
-      xcode: 13.0.0
+      xcode: 14.2.0
     steps:
       - checkout:
           path: ./habitat-sim
@@ -316,11 +316,15 @@ jobs:
             conda install -y anaconda-client ccache cmake git ninja conda-build pip
             echo $(which -a python)
             pip install gitpython
+            cd habitat-sim
+            git submodule update --init --recursive --jobs 8
+            pip install .
+            pip uninstall -y habitat-sim
+            rm -rf build
             (yes || true) | anaconda login --username << parameters.AIHABITAT_CONDA_CHN >>  --password $<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >> --hostname "aihabitat-conda-ci-builder-macos"
             <<^ parameters.CI_TEST>>
             conda config --set anaconda_upload yes <</ parameters.CI_TEST>>
-            cd habitat-sim/conda-build
-            git submodule update --init --recursive --jobs 8
+            cd conda-build
             export PYTHONIOENCODING="utf-8"
             python matrix_builder.py <<# parameters.CI_TEST>> --ci_test <</ parameters.CI_TEST>>  <<^ parameters.CI_TEST >> --conda_upload <<# parameters.nightly>> --nightly <</ parameters.nightly>> <</ parameters.CI_TEST >>
 
@@ -373,8 +377,9 @@ jobs:
       - run:
           name: pip install
           command: |
-            pyenv install 3.7.10
-            pyenv global 3.7.10
+            cd /opt/circleci/.pyenv/plugins/python-build/../.. && git fetch --tags && git checkout v2.3.15 && cd -
+            pyenv install 3.9.16
+            pyenv global 3.9.16
             python3 -m pip install -U pip
             python3 -m pip install . -v
             cd ../ && python3 -c "import habitat_sim"
@@ -677,7 +682,7 @@ jobs:
               docker run -it --ipc=host --rm -v $(pwd)/../../:/remote \
                   <<^ parameters.CI_TEST >> --env << parameters.AIHABITAT_CONDA_CHN_PWD_VAR >> <</ parameters.CI_TEST >> \
                   hsim_condabuild_dcontainer \
-                  /bin/bash -c "source ~/.bashrc && conda activate py37 \
+                  /bin/bash -c "source ~/.bashrc && conda activate py39 \
                                 && cd /remote/habitat-sim/conda-build \
                                 <<^ parameters.CI_TEST >> && yes | anaconda login --username << parameters.AIHABITAT_CONDA_CHN >> --password \${<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >>} <</ parameters.CI_TEST >> --hostname "aihabitat-conda-ci-builder-linux" \
                                 && python matrix_builder.py \
