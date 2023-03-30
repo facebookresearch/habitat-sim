@@ -6,7 +6,7 @@
 
 import builtins
 
-__version__ = "0.2.3"
+__version__ = "0.2.4"
 
 if not getattr(builtins, "__HSIM_SETUP__", False):
     # TODO: kept only for compatibility with existing code. Please gradually remove
