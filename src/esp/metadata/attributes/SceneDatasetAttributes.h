@@ -284,7 +284,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
   void setArticulatedObjectModelFilename(const std::string& key,
                                          const std::string& val) {
     auto artObjPathIter = articulatedObjPaths.find(key);
-    if (artObjPathIter == articulatedObjPaths.end()) {
+    if (artObjPathIter != articulatedObjPaths.end()) {
       ESP_WARNING() << "Articulated model filepath named" << key
                     << "already exists (" << artObjPathIter->second
                     << "), so this is being overwritten by" << val << ".";
