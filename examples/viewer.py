@@ -53,9 +53,21 @@ class HabitatSimInteractiveViewer(Application):
         )
 
         # Compute environment camera resolution based on the number of environments to render in the window.
-        surface_size: tuple(int, int) = (
+        window_size: tuple(int, int) = (
             self.sim_settings["window_width"],
             self.sim_settings["window_height"],
+        )
+
+        configuration = self.Configuration()
+        configuration.title = "Habitat Sim Interactive Viewer"
+        configuration.size = window_size
+        Application.__init__(self, configuration)
+        self.fps: float = 60.0
+
+        # Compute environment camera resolution based on the number of environments to render in the window.
+        surface_size: tuple(int, int) = (
+            mn.gl.default_framebuffer.viewport.size()[0],
+            mn.gl.default_framebuffer.viewport.size()[1],
         )
         grid_size: tuple(int, int) = ReplayRenderer.environment_grid_size(self.num_env)
         camera_resolution: tuple(int, int) = (
@@ -64,12 +76,6 @@ class HabitatSimInteractiveViewer(Application):
         )
         self.sim_settings["width"] = camera_resolution[0]
         self.sim_settings["height"] = camera_resolution[1]
-
-        configuration = self.Configuration()
-        configuration.title = "Habitat Sim Interactive Viewer"
-        configuration.size = surface_size
-        Application.__init__(self, configuration)
-        self.fps: float = 60.0
 
         # draw Bullet debug line visualizations (e.g. collision meshes)
         self.debug_bullet_draw = False
