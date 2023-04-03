@@ -55,6 +55,33 @@ BatchReplayRenderer::BatchReplayRenderer(
         : renderer_{renderer}, sceneId_{sceneId} {}
 
    private:
+    bool isSupportedRenderAsset(
+        const Corrade::Containers::StringView& filepath) {
+      // Primitives aren't directly supported in the Magnum batch renderer. See
+      // https://docs.google.com/document/d/1ngA73cXl3YRaPfFyICSUHONZN44C-XvieS7kwyQDbkI/edit#bookmark=id.yq39718gqbwz
+
+      const std::array<Corrade::Containers::StringView, 12> primNamePrefixes = {
+          "capsule3DSolid",     "capsule3DWireframe", "coneSolid",
+          "coneWireframe",      "cubeSolid",          "cubeWireframe",
+          "cylinderSolid",      "cylinderWireframe",  "icosphereSolid",
+          "icosphereWireframe", "uvSphereSolid",      "uvSphereWireframe"};
+
+      // primitive render asset filepaths start with one of the above prefixes.
+      // Examples: icosphereSolid_subdivs_1
+      // capsule3DSolid_hemiRings_4_cylRings_1_segments_12_halfLen_3.25_useTexCoords_false_useTangents_false
+      for (const auto& primNamePrefix : primNamePrefixes) {
+        if (filepath.size() < primNamePrefix.size()) {
+          continue;
+        }
+
+        if (filepath.prefix(primNamePrefix.size()) == primNamePrefix) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
     gfx::replay::NodeHandle loadAndCreateRenderAssetInstance(
         const esp::assets::AssetInfo& assetInfo,
         const esp::assets::RenderAssetInstanceCreationInfo& creation) override {
@@ -62,16 +89,22 @@ BatchReplayRenderer::BatchReplayRenderer(
       // TODO is creation.lightSetupKey actually mapping to anything in the
       //  replay file?
 
+      if (!isSupportedRenderAsset(creation.filepath)) {
+        ESP_WARNING() << "Unsupported render asset: " << creation.filepath;
+        return nullptr;
+      }
+
       /* If no such name is known yet, add as a file */
       if (!renderer_.hasNodeHierarchy(creation.filepath)) {
         ESP_WARNING()
             << creation.filepath
             << "not found in any composite file, loading from the filesystem";
-        // TODO asserts might be TOO BRUTAL?
-        CORRADE_INTERNAL_ASSERT_OUTPUT(
+
+        ESP_CHECK(
             renderer_.addFile(creation.filepath,
                               gfx_batch::RendererFileFlag::Whole |
-                                  gfx_batch::RendererFileFlag::GenerateMipmap));
+                                  gfx_batch::RendererFileFlag::GenerateMipmap),
+            "addFile failed for " << creation.filepath);
         CORRADE_INTERNAL_ASSERT(renderer_.hasNodeHierarchy(creation.filepath));
       }
 
