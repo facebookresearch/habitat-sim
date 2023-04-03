@@ -454,7 +454,11 @@ void initSimBindings(py::module& m) {
           [](AbstractReplayRenderer& self) {
             return py::capsule(self.getCudaColorBufferDevicePointer());
           },
-          R"(Retrieve the depth buffer as a CUDA device pointer.)");
+          R"(Retrieve the depth buffer as a CUDA device pointer.)")
+      .def("debug_line_render", &AbstractReplayRenderer::getDebugLineRender,
+           R"(Get visualization helper for rendering lines.)")
+      .def("unproject", &AbstractReplayRenderer::unproject,
+           R"(Unproject a screen-space point to a world-space ray.)");
 }
 
 }  // namespace sim
