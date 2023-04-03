@@ -2,6 +2,7 @@ exclude: '^(build|data/datasets|data/scene_datasets|node_modules/|src/deps|src/o
 
 default_language_version:
     python: python3
+    node: system
 
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
