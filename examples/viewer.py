@@ -14,6 +14,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
+import habitat.datasets.rearrange.samplers.receptacle as hab_receptacle
 import magnum as mn
 import numpy as np
 from magnum import shaders, text
@@ -183,6 +184,9 @@ class HabitatSimInteractiveViewer(Application):
         self.mouse_cast_results = None
         self.debug_draw_raycasts = True
 
+        self.debug_draw_receptacles = True
+        self.object_receptacles = []
+
         # toggle a single simulation step at the next opportunity if not
         # simulating continuously.
         self.simulate_single_step = False
@@ -323,6 +327,24 @@ class HabitatSimInteractiveViewer(Application):
                         radius=0.005,
                         color=mn.Color4.magenta(),
                     )
+
+        if self.debug_draw_receptacles and self.collision_proxy_obj is not None:
+            # parse any receptacles defined for the object
+            if len(self.object_receptacles) == 0:
+                source_template_file = (
+                    self.collision_proxy_obj.creation_attributes.file_directory
+                )
+                user_attr = self.collision_proxy_obj.user_attributes
+                self.object_receptacles = (
+                    hab_receptacle.parse_receptacles_from_user_config(
+                        user_attr,
+                        parent_object_handle=self.collision_proxy_obj.handle,
+                        parent_template_directory=source_template_file,
+                    )
+                )
+            # draw any receptacles for the object
+            for receptacle in self.object_receptacles:
+                receptacle.debug_draw(self.sim, color=mn.Color4.green())
 
     def draw_event(
         self,
