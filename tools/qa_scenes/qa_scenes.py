@@ -47,8 +47,7 @@ DATA_PATH = os.path.join(DIR_PATH, "data")
 # get the output directory
 OUTPUT_DIRECTORY = "./tools/qa_scenes/qa_scenes_output/"  # @param {type:"string"}
 OUTPUT_PATH_BASE = os.path.join(DIR_PATH, OUTPUT_DIRECTORY)
-if not os.path.exists(OUTPUT_PATH_BASE):
-    os.mkdir(OUTPUT_PATH_BASE)
+os.makedirs(OUTPUT_PATH_BASE, exist_ok=True)
 # build subpaths for stage and scene output
 
 OUTPUT_PATH_DICT = {}
@@ -56,14 +55,12 @@ OUTPUT_PATH_DICT["base"] = OUTPUT_PATH_BASE
 for subdir in ["stage", "scene"]:
     tmp_path = os.path.join(OUTPUT_PATH_BASE, subdir + "/")
     OUTPUT_PATH_DICT[subdir] = tmp_path
-    if not os.path.exists(tmp_path):
-        os.mkdir(tmp_path)
+    os.makedirs(tmp_path, exist_ok=True)
 
 # if there are no "scene_instance.json" files in this dataset, create default scenes
 # in this folder using the stages in the dataset instead.
 DEFAULT_SCENE_DIR = os.path.join(DATA_PATH, "default_qa_scenes")
-if not os.path.exists(DEFAULT_SCENE_DIR):
-    os.mkdir(DEFAULT_SCENE_DIR)
+os.makedirs(DEFAULT_SCENE_DIR, exist_ok=True)
 
 MAX_TEST_TIME = sys.float_info.max
 
