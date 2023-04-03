@@ -103,7 +103,30 @@ icosphere_points_subdiv_3 = [
 
 
 def get_scaled_hemisphere_vectors(scale: float):
+    """
+    Scales the icosphere_points for use with raycasting applications.
+    """
     return [v * scale for v in icosphere_points_subdiv_3]
+
+
+def print_dict_structure(input_dict: Dict[Any, Any], whitespace: str = "") -> None:
+    """
+    Quick structure investigation for dictionary.
+    Prints dict key->type recursively with incremental whitespace formatting.
+    """
+    if whitespace == "":
+        print("-----------------------------------")
+        print("Print Dict Structure Results:")
+    for key in input_dict.keys():
+        if isinstance(input_dict[key], Dict):
+            print(whitespace + f"{key}:-")
+            print_dict_structure(
+                input_dict=input_dict[key], whitespace=whitespace + " "
+            )
+        else:
+            print(whitespace + f"{key}: {type(input_dict[key])}")
+    if whitespace == "":
+        print("-----------------------------------")
 
 
 # =======================================================================
@@ -1083,12 +1106,12 @@ class CollisionProxyOptimizer:
 
             # collect hemisphere raycast samples for all receptacle sample points
             for receptacle_name in obj_rec_data.keys():
-                if "results" not in obj_rec_data[receptacle_name]:
-                    obj_rec_data[receptacle_name]["results"] = {}
+                if "access_results" not in obj_rec_data[receptacle_name]:
+                    obj_rec_data[receptacle_name]["access_results"] = {}
                 assert (
-                    shape_id not in obj_rec_data[receptacle_name]["results"]
+                    shape_id not in obj_rec_data[receptacle_name]["access_results"]
                 ), f" overwriting results for {shape_id}"
-                obj_rec_data[receptacle_name]["results"][shape_id] = {}
+                obj_rec_data[receptacle_name]["access_results"][shape_id] = {}
                 sample_point_ray_results: List[
                     List[habitat_sim.physics.RaycastResults]
                 ] = []
@@ -1126,13 +1149,13 @@ class CollisionProxyOptimizer:
                 receptacle_access_score /= len(sample_points)
                 receptacle_access_rate /= len(sample_points)
 
-                obj_rec_data[receptacle_name]["results"][shape_id][
+                obj_rec_data[receptacle_name]["access_results"][shape_id][
                     "sample_point_ray_results"
                 ] = sample_point_ray_results
-                obj_rec_data[receptacle_name]["results"][shape_id][
+                obj_rec_data[receptacle_name]["access_results"][shape_id][
                     "receptacle_access_score"
                 ] = receptacle_access_score
-                obj_rec_data[receptacle_name]["results"][shape_id][
+                obj_rec_data[receptacle_name]["access_results"][shape_id][
                     "receptacle_access_rate"
                 ] = receptacle_access_rate
                 print(f" receptacle_name = {receptacle_name}")
@@ -1143,7 +1166,7 @@ class CollisionProxyOptimizer:
                     # generate receptacle access debug images
                     # 1a Show missed rays vs 1b hit rays
                     debug_lines = []
-                    for ray_results in obj_rec_data[receptacle_name]["results"][
+                    for ray_results in obj_rec_data[receptacle_name]["access_results"][
                         shape_id
                     ]["sample_point_ray_results"]:
                         for hit_record in ray_results:
@@ -1368,7 +1391,20 @@ class CollisionProxyOptimizer:
                     f"     failed_snap = {failed_snap}|failed_by_distance = {failed_by_distance}|failed_unstable={failed_unstable}|total={len(sample_points)}"
                 )
                 # TODO: visualize this error
-                # TODO: record results for later processing
+
+                # write results to cache
+                if "stability_results" not in rec_data[rec_name]:
+                    rec_data[rec_name]["stability_results"] = {}
+                assert (
+                    shape_id not in rec_data[rec_name]["stability_results"]
+                ), f" overwriting results for {shape_id}"
+                rec_data[rec_name]["stability_results"][shape_id] = {
+                    "success_ratio": success_ratio,
+                    "failed_snap": failed_snap,
+                    "failed_by_distance": failed_by_distance,
+                    "failed_unstable": failed_unstable,
+                    "total": len(sample_points),
+                }
 
     def run_physics_settle_test(self, obj_handle):
         """
@@ -1828,11 +1864,13 @@ class CollisionProxyOptimizer:
                 # cache the receptacle access metrics for CSV save
                 for rec_key in self.gt_data[obj_handle]["receptacles"].keys():
                     self.results[obj_handle]["receptacle_info"][rec_key] = {}
+
                     assert (
-                        "results" in self.gt_data[obj_handle]["receptacles"][rec_key]
+                        "access_results"
+                        in self.gt_data[obj_handle]["receptacles"][rec_key]
                     ), "Must run 'compute_receptacle_access_metrics' before caching global receptacle data."
                     rec_results = self.gt_data[obj_handle]["receptacles"][rec_key][
-                        "results"
+                        "access_results"
                     ]
 
                     # access rate and score
@@ -1967,15 +2005,15 @@ class CollisionProxyOptimizer:
             print(f"Computing metric for `{obj_h}`, {obix}|{len(obj_handles)}")
             print("-------------------------------")
             self.setup_obj_gt(obj_h)
-            # self.compute_baseline_metrics(obj_h)
-            # self.compute_proxy_metrics(obj_h)
+            self.compute_baseline_metrics(obj_h)
+            self.compute_proxy_metrics(obj_h)
 
             # physics tests
-            # self.run_physics_settle_test(obj_h)
-            # self.run_physics_sphere_shake_test(obj_h)
-            # self.compute_grid_collision_times(obj_h, subdivisions=0)
-            # self.compute_grid_collision_times(obj_h, subdivisions=1)
-            # self.compute_grid_collision_times(obj_h, subdivisions=2)
+            self.run_physics_settle_test(obj_h)
+            self.run_physics_sphere_shake_test(obj_h)
+            self.compute_grid_collision_times(obj_h, subdivisions=0)
+            self.compute_grid_collision_times(obj_h, subdivisions=1)
+            self.compute_grid_collision_times(obj_h, subdivisions=2)
             # exit()
 
             # receptacle metrics:
@@ -1986,13 +2024,16 @@ class CollisionProxyOptimizer:
                 self.compute_receptacle_access_metrics(obj_h, use_gt=True)
                 print(" PR Receptacle Metrics:")
                 self.compute_receptacle_access_metrics(obj_h, use_gt=False)
-            self.grid_search_vhacd_params(obj_h)
+            # self.grid_search_vhacd_params(obj_h)
             self.compute_gt_errors(obj_h)
-            self.cache_global_results()
+            self.cache_global_results2()
+            print_dict_structure(self.gt_data)
+            print_dict_structure(self.results)
+            # exit()
             self.clean_obj_gt(obj_h)
 
         # then save results to file
-        self.save_results_to_csv(output_filename)
+        self.save_results_to_csv2(output_filename)
 
 
 def object_has_receptacles(
@@ -2016,6 +2057,29 @@ def object_has_receptacles(
         sub_config_key.startswith(receptacle_prefix_string)
         for sub_config_key in user_cfg.get_subconfig_keys()
     )
+
+
+def get_objects_in_scene(
+    dataset_path: str, scene_handle: str, mm: habitat_sim.metadata.MetadataMediator
+) -> List[str]:
+    """
+    Load a scene and return a list of object template handles for all instantiated objects.
+    """
+    sim_settings = default_sim_settings.copy()
+    sim_settings["scene_dataset_config_file"] = dataset_path
+    sim_settings["scene"] = scene_handle
+
+    cfg = make_cfg(sim_settings)
+    cfg.metadata_mediator = mm
+
+    with habitat_sim.Simulator(cfg) as sim:
+        scene_object_template_handles = []
+        rom = sim.get_rigid_object_manager()
+        live_objects = rom.get_objects_by_handle_substring()
+        for _obj_handle, obj in live_objects.items():
+            if obj.creation_attributes.handle not in scene_object_template_handles:
+                scene_object_template_handles.append(obj.creation_attributes.handle)
+        return scene_object_template_handles
 
 
 def main():
@@ -2048,10 +2112,23 @@ def main():
     # use the CollisionProxyOptimizer to compute metrics for multiple objects
     cpo = CollisionProxyOptimizer(sim_settings, output_directory=args.output_dir)
     cpo.generate_debug_images = True
-
-    # get all object handles
     otm = cpo.mm.object_template_manager
-    all_handles = otm.get_file_template_handles()
+
+    # ----------------------------------------------------
+    # get object handles from a specific scene
+    scene_of_interest = "107734119_175999932"
+    objects_in_scene = get_objects_in_scene(
+        dataset_path=args.dataset, scene_handle=scene_of_interest, mm=cpo.mm
+    )
+    all_handles = objects_in_scene
+    # ----------------------------------------------------
+
+    # ----------------------------------------------------
+    # get all object handles
+    # all_handles = otm.get_file_template_handles()
+    # ----------------------------------------------------
+
+    # ----------------------------------------------------
     # get a subset with receptacles defined
     all_handles = [
         all_handles[i]
@@ -2059,32 +2136,32 @@ def main():
         if object_has_receptacles(all_handles[i], otm)
     ]
     print(f"Number of objects with receptacles = {len(all_handles)}")
+    # ----------------------------------------------------
 
+    # ----------------------------------------------------
     # NOTE: select objects for testing VHACD pipeline
-    target_object_handles = [
-        "01be253cbfd14b947e9dbe09d0b1959e97d72122",  # desk
-        "01b65339d622bb9f89eb8fdd753a76cffc7eb8d6",  # shelves,
-        "00ea83bf1b2544df87f6d52d02382c0bb75598c6",  # bookcase
-        "00e388a751b3654216f2109ee073dc44f1241eee",  # counter
-        "01d9fff2f701af7d5d40a7a5adad5bf40d4c49c8",  # round table
-        "03c328fccef4975310314838e42b6dff06709b06",  # shelves
-        "0110c7ff0e787bf98c9da923554ddea1484e4a3d",  # wood table
-        "00366b86401aa16b702c21de49fd59b75ab9c57b",  # ratan sofa
-    ]
-    all_handles = [
-        h for h in all_handles if any([t in h for t in target_object_handles])
-    ]
+    # target_object_handles = [
+    #     "01be253cbfd14b947e9dbe09d0b1959e97d72122",  # desk
+    #     "01b65339d622bb9f89eb8fdd753a76cffc7eb8d6",  # shelves,
+    #     "00ea83bf1b2544df87f6d52d02382c0bb75598c6",  # bookcase
+    #     "00e388a751b3654216f2109ee073dc44f1241eee",  # counter
+    #     "01d9fff2f701af7d5d40a7a5adad5bf40d4c49c8",  # round table
+    #     "03c328fccef4975310314838e42b6dff06709b06",  # shelves
+    #     "0110c7ff0e787bf98c9da923554ddea1484e4a3d",  # wood table
+    #     "00366b86401aa16b702c21de49fd59b75ab9c57b",  # ratan sofa
+    # ]
+    # all_handles = [
+    #     h for h in all_handles if any([t in h for t in target_object_handles])
+    # ]
+    # ----------------------------------------------------
 
+    # ----------------------------------------------------
     # indexed subset of the objects
     # all_handles = all_handles[1:2]
+    # ----------------------------------------------------
 
     # print(all_handles)
     cpo.compute_and_save_results_for_objects(all_handles)
-
-    # testing objects
-    # obj_handle1 = "0a5e809804911e71de6a4ef89f2c8fef5b9291b3"
-    # obj_handle2 = "d1d1e0cdaba797ee70882e63f66055675c3f1e7f"
-    # cpo.compute_and_save_results_for_objects([obj_handle1, obj_handle2])
 
 
 if __name__ == "__main__":
