@@ -232,8 +232,8 @@ std::string Recorder::writeSavedKeyframesToString() {
   return esp::io::jsonToString(document);
 }
 
-std::vector<std::string> Recorder::writeSavedKeyframesToStringArray(
-    bool incremental) {
+std::vector<std::string>
+Recorder::writeIncrementalSavedKeyframesToStringArray() {
   std::vector<std::string> results;
   results.reserve(savedKeyframes_.size());
 
@@ -241,11 +241,12 @@ std::vector<std::string> Recorder::writeSavedKeyframesToStringArray(
     results.emplace_back(keyframeToString(keyframe));
   }
 
-  if (incremental) {
-    savedKeyframes_.clear();
-  } else {
-    consolidateSavedKeyframes();
-  }
+  // note we don't call consolidateSavedKeyframes. Use this function if you are
+  // using keyframes incrementally, e.g. repeated calls to this function and
+  // feeding them to a renderer. Contrast with writeSavedKeyframesToFile, which
+  // "consolidates" before discarding old keyframes to avoid losing state
+  // information.
+  savedKeyframes_.clear();
 
   return results;
 }
