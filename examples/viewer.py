@@ -65,10 +65,9 @@ class HabitatSimInteractiveViewer(Application):
         self.fps: float = 60.0
 
         # Compute environment camera resolution based on the number of environments to render in the window.
-        grid_size: tuple(int, int) = ReplayRenderer.environment_grid_size(self.num_env)
-        camera_resolution: mn.Vector2 = (
-            self.framebuffer_size[0] / grid_size[0],
-            self.framebuffer_size[1] / grid_size[1],
+        grid_size: mn.Vector2i = ReplayRenderer.environment_grid_size(self.num_env)
+        camera_resolution: mn.Vector2 = mn.Vector2(self.framebuffer_size) / mn.Vector2(
+            grid_size
         )
         self.sim_settings["width"] = camera_resolution[0]
         self.sim_settings["height"] = camera_resolution[1]
@@ -142,11 +141,10 @@ class HabitatSimInteractiveViewer(Application):
         self.window_text_transform = mn.Matrix3.projection(
             self.framebuffer_size
         ) @ mn.Matrix3.translation(
-            mn.Vector2(
-                self.framebuffer_size[0]
-                * -HabitatSimInteractiveViewer.TEXT_DELTA_FROM_CENTER,
-                self.framebuffer_size[1]
-                * HabitatSimInteractiveViewer.TEXT_DELTA_FROM_CENTER,
+            mn.Vector2(self.framebuffer_size)
+            * mn.Vector2(
+                -HabitatSimInteractiveViewer.TEXT_DELTA_FROM_CENTER,
+                HabitatSimInteractiveViewer.TEXT_DELTA_FROM_CENTER,
             )
         )
         self.shader = shaders.VectorGL2D()
