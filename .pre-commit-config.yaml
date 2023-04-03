@@ -136,6 +136,7 @@ repos:
     hooks:
     -   id: eslint
         args: [--fix, --ext .html,.js]
+        language_version: 14.21.3
         additional_dependencies:
         - eslint@6.4.0
         - eslint-config-prettier@6.3.0
