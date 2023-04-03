@@ -53,7 +53,7 @@ class HabitatSimInteractiveViewer(Application):
         )
 
         # Compute environment camera resolution based on the number of environments to render in the window.
-        window_size: tuple(int, int) = (
+        window_size: mn.Vector2 = (
             self.sim_settings["window_width"],
             self.sim_settings["window_height"],
         )
@@ -65,14 +65,10 @@ class HabitatSimInteractiveViewer(Application):
         self.fps: float = 60.0
 
         # Compute environment camera resolution based on the number of environments to render in the window.
-        surface_size: tuple(int, int) = (
-            mn.gl.default_framebuffer.viewport.size()[0],
-            mn.gl.default_framebuffer.viewport.size()[1],
-        )
         grid_size: tuple(int, int) = ReplayRenderer.environment_grid_size(self.num_env)
-        camera_resolution: tuple(int, int) = (
-            surface_size[0] / grid_size[0],
-            surface_size[1] / grid_size[1],
+        camera_resolution: mn.Vector2 = (
+            self.framebuffer_size[0] / grid_size[0],
+            self.framebuffer_size[1] / grid_size[1],
         )
         self.sim_settings["width"] = camera_resolution[0]
         self.sim_settings["height"] = camera_resolution[1]
@@ -144,11 +140,13 @@ class HabitatSimInteractiveViewer(Application):
         # text object transform in window space is Projection matrix times Translation Matrix
         # put text in top left of window
         self.window_text_transform = mn.Matrix3.projection(
-            mn.Vector2(surface_size)
+            self.framebuffer_size
         ) @ mn.Matrix3.translation(
             mn.Vector2(
-                surface_size[0] * -HabitatSimInteractiveViewer.TEXT_DELTA_FROM_CENTER,
-                surface_size[1] * HabitatSimInteractiveViewer.TEXT_DELTA_FROM_CENTER,
+                self.framebuffer_size[0]
+                * -HabitatSimInteractiveViewer.TEXT_DELTA_FROM_CENTER,
+                self.framebuffer_size[1]
+                * HabitatSimInteractiveViewer.TEXT_DELTA_FROM_CENTER,
             )
         )
         self.shader = shaders.VectorGL2D()
