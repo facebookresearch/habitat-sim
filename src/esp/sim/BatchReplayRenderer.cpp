@@ -99,11 +99,12 @@ BatchReplayRenderer::BatchReplayRenderer(
         ESP_WARNING()
             << creation.filepath
             << "not found in any composite file, loading from the filesystem";
-        // TODO asserts might be TOO BRUTAL?
-        CORRADE_INTERNAL_ASSERT_OUTPUT(
+
+        ESP_CHECK(
             renderer_.addFile(creation.filepath,
                               gfx_batch::RendererFileFlag::Whole |
-                                  gfx_batch::RendererFileFlag::GenerateMipmap));
+                                  gfx_batch::RendererFileFlag::GenerateMipmap),
+            "addFile failed for " << creation.filepath);
         CORRADE_INTERNAL_ASSERT(renderer_.hasNodeHierarchy(creation.filepath));
       }
 

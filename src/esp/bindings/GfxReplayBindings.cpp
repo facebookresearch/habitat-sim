@@ -110,6 +110,19 @@ void initGfxReplayBindings(py::module& m) {
           },
           R"(Write all saved keyframes to a string, then discard the keyframes.)")
 
+      .def(
+          "write_incremental_saved_keyframes_to_string_array",
+          [](ReplayManager& self) {
+            if (!self.getRecorder()) {
+              throw std::runtime_error(
+                  "replay save not enabled. See "
+                  "SimulatorConfiguration.enable_gfx_replay_save.");
+            }
+            return self.getRecorder()
+                ->writeIncrementalSavedKeyframesToStringArray();
+          },
+          R"(Write all saved keyframes to individual strings. See Recorder.h for details.)")
+
       .def("read_keyframes_from_file", &ReplayManager::readKeyframesFromFile,
            R"(Create a Player object from a replay file.)");
 }
