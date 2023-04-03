@@ -288,13 +288,14 @@ void BatchReplayRenderer::doRender(
 }
 
 esp::geo::Ray BatchReplayRenderer::doUnproject(
-    unsigned envIndex,
+    CORRADE_UNUSED unsigned envIndex,
     const Mn::Vector2i& viewportPosition) {
   // temp stub implementation: produce a placeholder ray that varies with
   // viewportPosition
   return esp::geo::Ray(
-      {(float)viewportPosition.x() / renderer_->tileSize().x(), 0.5f,
-       (float)viewportPosition.y() / renderer_->tileSize().y()},
+      {static_cast<float>(viewportPosition.x()) / renderer_->tileSize().x(),
+       0.5f,
+       static_cast<float>(viewportPosition.y()) / renderer_->tileSize().y()},
       {0.f, -1.f, 0.f});
 }
 
