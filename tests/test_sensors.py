@@ -56,12 +56,12 @@ def _render_and_load_gt(sim, scene, sensor_type, gpu2gpu):
     obs = _render_scene(sim, scene, sensor_type, gpu2gpu)
 
     # now that sensors are constructed, test some getter/setters
-    if hasattr(sim.get_agent(0)._sensors[sensor_type], "fov"):
-        sim.get_agent(0)._sensors[sensor_type].fov = mn.Deg(80)
-        assert sim.get_agent(0)._sensors[sensor_type].fov == mn.Deg(
+    if hasattr(sim.get_agent(0).sensors[sensor_type], "fov"):
+        sim.get_agent(0).sensors[sensor_type].fov = mn.Deg(80)
+        assert sim.get_agent(0).sensors[sensor_type].fov == mn.Deg(
             80
         ), "fov not set correctly"
-        assert sim.get_agent(0)._sensors[sensor_type].hfov == mn.Deg(
+        assert sim.get_agent(0).sensors[sensor_type].hfov == mn.Deg(
             80
         ), "hfov not set correctly"
     gt_obs_file = osp.abspath(
@@ -215,7 +215,8 @@ def test_sensors(
             obs: Dict[str, Any] = sim.reset()
             assert len(obs) == 1, "Other sensors were not removed"
             for sensor_spec in additional_sensors:
-                sim.add_sensor(sensor_spec)
+                agent_id = 0
+                sim.add_sensor(sensor_spec, agent_id)
         if sensor_type not in all_base_sensor_types:
             obs = _render_scene(sim, scene, sensor_type, gpu2gpu)
             # Smoke Test.
@@ -228,6 +229,44 @@ def test_sensors(
         assert np.linalg.norm(
             obs[sensor_type].astype(float) - gt.astype(float)
         ) < 9.0e-2 * np.linalg.norm(gt.astype(float)), f"Incorrect {sensor_type} output"
+
+
+@pytest.mark.parametrize(
+    "scene_and_dataset, sensor_type",
+    list(itertools.product(_semantic_scenes, all_base_sensor_types))
+    + list(itertools.product(_non_semantic_scenes, all_base_sensor_types[0:2])),
+)
+def test_duplicate_sensors(
+    scene_and_dataset,
+    sensor_type,
+    make_cfg_settings,
+):
+    scene = scene_and_dataset[0]
+    if not osp.exists(scene):
+        pytest.skip("Skipping {}".format(scene))
+    scene_dataset_config = scene_and_dataset[1]
+
+    make_cfg_settings[sensor_type] = True
+    make_cfg_settings["scene"] = scene
+    make_cfg_settings["scene_dataset_config_file"] = scene_dataset_config
+
+    cfg = make_cfg(make_cfg_settings)
+    agent_id = 0
+    additional_sensors = cfg.agents[agent_id].sensor_specifications
+
+    with habitat_sim.Simulator(cfg) as sim:
+        for sensor_spec in additional_sensors:
+            try:
+                sim.add_sensor(sensor_spec)
+            except AssertionError as err_msg:
+                print(f"Skipping: {sensor_spec.uuid} is duplicate sensor : {err_msg}")
+
+            try:
+                sim.add_sensor(sensor_spec, agent_id)
+            except AssertionError as err_msg:
+                print(
+                    f"Skipping: {sensor_spec.uuid} for agent {agent_id} is duplicate sensor : {err_msg}"
+                )
 
 
 @pytest.mark.gfxtest
@@ -328,7 +367,7 @@ def test_initial_hfov(scene_and_dataset, sensor_type, make_cfg_settings):
         pytest.skip("Skipping {}".format(scene))
     make_cfg_settings["hfov"] = 70
     with habitat_sim.Simulator(make_cfg(make_cfg_settings)) as sim:
-        assert sim.agents[0]._sensors[sensor_type].hfov == mn.Deg(
+        assert sim.agents[0].sensors[sensor_type].hfov == mn.Deg(
             70
         ), "HFOV was not properly set"
 

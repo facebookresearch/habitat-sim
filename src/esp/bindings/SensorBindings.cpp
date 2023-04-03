@@ -160,6 +160,7 @@ void initSensorBindings(py::module& m) {
       .def("delete_sensor", &SensorFactory::deleteSensor)
       .def("delete_subtree_sensor", &SensorFactory::deleteSubtreeSensor);
 
+  // TODO: probably remove this as we are deprecating SensorSuites
   // ==== SensorSuite ====
   py::class_<SensorSuite, Magnum::SceneGraph::PyFeature<SensorSuite>,
              Magnum::SceneGraph::AbstractFeature3D,
@@ -171,15 +172,13 @@ void initSensorBindings(py::module& m) {
       .def("clear", &SensorSuite::clear)
       .def("get", &SensorSuite::get)
       .def("get_sensors",
-           py::overload_cast<>(&SensorSuite::getSensors, py::const_))
-      .def_property_readonly("node", nodeGetter<Sensor>,
-                             "Node this object is attached to")
-      .def_property_readonly("object", nodeGetter<Sensor>, "Alias to node");
+           py::overload_cast<>(&SensorSuite::getSensors, py::const_));
 
   // ==== Sensor ====
   py::class_<Sensor, Magnum::SceneGraph::PyFeature<Sensor>,
              Magnum::SceneGraph::AbstractFeature3D,
-             Magnum::SceneGraph::PyFeatureHolder<Sensor>>(m, "Sensor")
+             Magnum::SceneGraph::PyFeatureHolder<Sensor>>(m, "Sensor",
+                                                          py::dynamic_attr())
       .def("specification", &Sensor::specification)
       .def("set_transformation_from_spec", &Sensor::setTransformationFromSpec)
       .def("is_visual_sensor", &Sensor::isVisualSensor)
@@ -192,6 +191,10 @@ void initSensorBindings(py::module& m) {
   py::class_<VisualSensor, Magnum::SceneGraph::PyFeature<VisualSensor>, Sensor,
              Magnum::SceneGraph::PyFeatureHolder<VisualSensor>>(m,
                                                                 "VisualSensor")
+      .def(
+          "draw_observation", &VisualSensor::drawObservation,
+          R"(Draw an observation to the frame buffer using simulator's renderer)")
+      .def("has_render_target", &VisualSensor::hasRenderTarget)
       .def_property_readonly(
           "render_camera", &VisualSensor::getRenderCamera,
           R"(Get the RenderCamera in the sensor (if there is one) for rendering PYTHON DOES NOT GET OWNERSHIP)",

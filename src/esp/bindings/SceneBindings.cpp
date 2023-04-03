@@ -74,9 +74,11 @@ void initSceneBindings(py::module& m) {
       .def_property_readonly(
           "absolute_translation",
           py::overload_cast<>(&SceneNode::absoluteTranslation, py::const_))
+      // TODO remove
       .def_property_readonly("node_sensor_suite",
                              &SceneNode::getNodeSensorSuite,
                              R"(Get node SensorSuite of this SceneNode)")
+      // TODO remove
       .def_property_readonly("subtree_sensor_suite",
                              &SceneNode::getSubtreeSensorSuite,
                              R"(Get subtree SensorSuite of this SceneNode)")

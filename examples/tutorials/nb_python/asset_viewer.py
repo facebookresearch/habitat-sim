@@ -764,10 +764,17 @@ clip_short_name = object_to_view_path.split("/")[-1].split(".")[0]
 
 # check if desired object actually exists
 if os.path.exists(object_to_view_path) and os.path.isfile(object_to_view_path):
+    # initialize an agent and set its intial state
+    agent_id = sim_settings["default_agent"]
+    agent = sim.initialize_agent(agent_id)
+    agent_state = habitat_sim.AgentState()
+    agent_state.position = np.array([0.0, 0.0, 0.0])  # in world space
+    agent.set_state(agent_state)
+
     # Acquire the sensor being used
-    visual_sensor = sim._sensors["color_sensor_3rd_person"]
-    initial_sensor_position = np.array(visual_sensor._spec.position)
-    initial_sensor_orientation = np.array(visual_sensor._spec.orientation)
+    visual_sensor = sim.get_sensor("color_sensor_3rd_person", agent_id)
+    initial_sensor_position = np.array(visual_sensor.specification().position)
+    initial_sensor_orientation = np.array(visual_sensor.specification().orientation)
 
     # load an object template and instantiate an object to view
     object_template = obj_attr_mgr.create_new_template(str(object_to_view_path), False)
@@ -797,17 +804,11 @@ if os.path.exists(object_to_view_path) and os.path.isfile(object_to_view_path):
     # set object to be static
     obj.motion_type = habitat_sim.physics.MotionType.STATIC
 
-    # initialize an agent and set its intial state
-    agent = sim.initialize_agent(sim_settings["default_agent"])
-    agent_state = habitat_sim.AgentState()
-    agent_state.position = np.array([0.0, 0.0, 0.0])  # in world space
-    agent.set_state(agent_state)
-
     # set the sensor to be behind and above the agent's initial loc
     # distance is scaled by size of largest object dimension
-    visual_sensor._spec.position = agent_state.position + sensor_pos
-    visual_sensor._spec.orientation = np.array([-0.5, 0, 0])
-    visual_sensor._sensor_object.set_transformation_from_spec()
+    visual_sensor.specification().position = agent_state.position + sensor_pos
+    visual_sensor.specification().orientation = np.array([-0.5, 0, 0])
+    visual_sensor.set_transformation_from_spec()
 
     # Create observations array
     observations = []
@@ -844,9 +845,9 @@ if os.path.exists(object_to_view_path) and os.path.isfile(object_to_view_path):
         )
 
     # reset the sensor state for other examples
-    visual_sensor._spec.position = initial_sensor_position
-    visual_sensor._spec.orientation = initial_sensor_orientation
-    visual_sensor._sensor_object.set_transformation_from_spec()
+    visual_sensor.specification().position = initial_sensor_position
+    visual_sensor.specification().orientation = initial_sensor_orientation
+    visual_sensor.set_transformation_from_spec()
 
     # remove added objects
     rigid_obj_mgr.remove_all_objects()

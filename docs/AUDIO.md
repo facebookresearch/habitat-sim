@@ -136,7 +136,7 @@ Relevant APIs on the Simulator object
 
 |APIs for the Habitat Simulator object|notes|
 |------|-----|
-| sim.add_sensor(audio_sensor_spec)| Add the audio sensor. This is similar to adding any other sensors|
+| sim.add_sensor(audio_sensor_spec, agent_id)| Add the audio sensor. This is similar to adding any other sensors|
 |obs = sim.get_sensor_observations()["audio_sensor"]|Get the impulse response. obs is a n-d array where n = channel count|
 
 

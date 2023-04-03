@@ -18,32 +18,15 @@ import magnum as mn
 import numpy as np
 from magnum import shaders, text
 from magnum.platform.glfw import Application
+from viewer_settings import default_sim_settings, make_cfg
 
 import habitat_sim
 from habitat_sim import ReplayRenderer, ReplayRendererConfiguration, physics
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.common import quat_from_angle_axis
-from habitat_sim.utils.settings import default_sim_settings, make_cfg
 
 
 class HabitatSimInteractiveViewer(Application):
-    # the maximum number of chars displayable in the app window
-    # using the magnum text module. These chars are used to
-    # display the CPU/GPU usage data
-    MAX_DISPLAY_TEXT_CHARS = 256
-
-    # how much to displace window text relative to the center of the
-    # app window (e.g if you want the display text in the top left of
-    # the app window, you will displace the text
-    # window width * -TEXT_DELTA_FROM_CENTER in the x axis and
-    # window height * TEXT_DELTA_FROM_CENTER in the y axis, as the text
-    # position defaults to the middle of the app window)
-    TEXT_DELTA_FROM_CENTER = 0.49
-
-    # font size of the magnum in-window display text that displays
-    # CPU and GPU usage info
-    DISPLAY_FONT_SIZE = 16.0
-
     def __init__(self, sim_settings: Dict[str, Any]) -> None:
         self.sim_settings: Dict[str:Any] = sim_settings
 
@@ -72,11 +55,11 @@ class HabitatSimInteractiveViewer(Application):
         self.fps: float = 60.0
 
         # draw Bullet debug line visualizations (e.g. collision meshes)
-        self.debug_bullet_draw = False
+        self.debug_bullet_draw = sim_settings["debug_bullet_draw"]
         # draw active contact point debug line visualizations
-        self.contact_debug_draw = False
+        self.debug_contact_draw = sim_settings["debug_contact_draw"]
         # cache most recently loaded URDF file for quick-reload
-        self.cached_urdf = ""
+        self.cached_urdf = sim_settings["cached_urdf"]
 
         # set up our movement map
         key = Application.KeyEvent.Key
@@ -109,10 +92,11 @@ class HabitatSimInteractiveViewer(Application):
         }
 
         # Load a TrueTypeFont plugin and open the font file
-        self.display_font = text.FontManager().load_and_instantiate("TrueTypeFont")
-        relative_path_to_font = "../data/fonts/ProggyClean.ttf"
+        self.display_font = text.FontManager().load_and_instantiate(
+            sim_settings["display_font"]
+        )
         self.display_font.open_file(
-            os.path.join(os.path.dirname(__file__), relative_path_to_font),
+            os.path.join(os.path.dirname(__file__), sim_settings["font_relative_path"]),
             13,
         )
 
@@ -130,10 +114,10 @@ class HabitatSimInteractiveViewer(Application):
         self.window_text = text.Renderer2D(
             self.display_font,
             self.glyph_cache,
-            HabitatSimInteractiveViewer.DISPLAY_FONT_SIZE,
+            sim_settings["display_font_size"],
             text.Alignment.TOP_LEFT,
         )
-        self.window_text.reserve(HabitatSimInteractiveViewer.MAX_DISPLAY_TEXT_CHARS)
+        self.window_text.reserve(sim_settings["max_display_text_chars"])
 
         # text object transform in window space is Projection matrix times Translation Matrix
         # put text in top left of window
@@ -141,8 +125,8 @@ class HabitatSimInteractiveViewer(Application):
             mn.Vector2(surface_size)
         ) @ mn.Matrix3.translation(
             mn.Vector2(
-                surface_size[0] * -HabitatSimInteractiveViewer.TEXT_DELTA_FROM_CENTER,
-                surface_size[1] * HabitatSimInteractiveViewer.TEXT_DELTA_FROM_CENTER,
+                surface_size[0] * -sim_settings["text_delta_from_center"],
+                surface_size[1] * sim_settings["text_delta_from_center"],
             )
         )
         self.shader = shaders.VectorGL2D()
@@ -158,7 +142,7 @@ class HabitatSimInteractiveViewer(Application):
         )
 
         # variables that track app data and CPU/GPU usage
-        self.num_frames_to_track = 60
+        self.num_frames_to_track = sim_settings["num_frames_to_track"]
 
         # Cycle mouse utilities
         self.mouse_interaction = MouseMode.LOOK
@@ -166,7 +150,7 @@ class HabitatSimInteractiveViewer(Application):
         self.previous_mouse_point = None
 
         # toggle physics simulation on/off
-        self.simulating = True
+        self.simulating = sim_settings["simulating"]
 
         # toggle a single simulation step at the next opportunity if not
         # simulating continuously.
@@ -201,7 +185,7 @@ class HabitatSimInteractiveViewer(Application):
         red = mn.Color4.red()
         cps = self.sim.get_physics_contact_points()
         self.sim.get_debug_line_render().set_line_width(1.5)
-        camera_position = self.render_camera.render_camera.node.absolute_translation
+        camera_position = self.camera_sensor.render_camera.node.absolute_translation
         # only showing active contacts
         active_contacts = (x for x in cps if x.is_active)
         for cp in active_contacts:
@@ -231,10 +215,12 @@ class HabitatSimInteractiveViewer(Application):
         Additional draw commands to be called during draw_event.
         """
         if self.debug_bullet_draw:
-            render_cam = self.render_camera.render_camera
-            proj_mat = render_cam.projection_matrix.__matmul__(render_cam.camera_matrix)
+            render_camera = self.camera_sensor.render_camera
+            proj_mat = render_camera.projection_matrix.__matmul__(
+                render_camera.camera_matrix
+            )
             self.sim.physics_debug_draw(proj_mat)
-        if self.contact_debug_draw:
+        if self.debug_contact_draw:
             self.draw_contact_debug()
 
     def draw_event(
@@ -273,20 +259,27 @@ class HabitatSimInteractiveViewer(Application):
                 self.time_since_last_simulation, 1.0 / self.fps
             )
 
-        keys = active_agent_id_and_sensor_name
+        # Get agent id and sensor uuid
+        agent_id = active_agent_id_and_sensor_name[0]
+        sensor_uuid = active_agent_id_and_sensor_name[1]
 
         if self.enable_batch_renderer:
             self.render_batch()
         else:
-            self.sim._Simulator__sensors[keys[0]][keys[1]].draw_observation()
-            agent = self.sim.get_agent(keys[0])
-            self.render_camera = agent.scene_node.node_sensor_suite.get(keys[1])
+            # Get agent id and sensor uuid
+            agent_id = active_agent_id_and_sensor_name[0]
+            sensor_uuid = active_agent_id_and_sensor_name[1]
+
+            # get specified sensor, then call get_sensor_observations, which also
+            # renders them
+            self.camera_sensor = self.sim.get_sensor(sensor_uuid, agent_id)
+            self.sim.get_sensor_observations(agent_id)
             self.debug_draw()
-            self.render_camera.render_target.blit_rgba_to_default()
+            self.camera_sensor.render_target.blit_rgba_to_default()
 
         # draw CPU/GPU usage data and other info to the app window
         mn.gl.default_framebuffer.bind()
-        self.draw_text(self.render_camera.specification())
+        self.draw_text(self.camera_sensor.specification())
 
         self.swap_buffers()
         Timer.next_frame()
@@ -375,9 +368,7 @@ class HabitatSimInteractiveViewer(Application):
 
         # post reconfigure
         self.default_agent = self.sim.get_agent(self.agent_id)
-        self.render_camera = self.default_agent.scene_node.node_sensor_suite.get(
-            "color_sensor"
-        )
+        self.camera_sensor = self.default_agent.sensors["color_sensor"]
 
         # set sim_settings scene name as actual loaded scene
         self.sim_settings["scene"] = self.sim.curr_scene_name
@@ -528,9 +519,9 @@ class HabitatSimInteractiveViewer(Application):
 
         elif key == pressed.C:
             if shift_pressed:
-                self.contact_debug_draw = not self.contact_debug_draw
+                self.debug_contact_draw = not self.debug_contact_draw
                 logger.info(
-                    f"Command: toggle contact debug draw: {self.contact_debug_draw}"
+                    f"Command: toggle contact debug draw: {self.debug_contact_draw}"
                 )
             else:
                 # perform a discrete collision detection pass and enable contact debug drawing to visualize the results
@@ -538,7 +529,7 @@ class HabitatSimInteractiveViewer(Application):
                     "Command: perform discrete collision detection and visualize active contacts."
                 )
                 self.sim.perform_discrete_collision_detection()
-                self.contact_debug_draw = True
+                self.debug_contact_draw = True
                 # TODO: add a nice log message with concise contact pair naming.
 
         elif key == pressed.T:
@@ -645,8 +636,11 @@ class HabitatSimInteractiveViewer(Application):
 
             # up/down on cameras' scene nodes
             action = habitat_sim.agent.ObjectControls()
-            sensors = list(self.default_agent.scene_node.subtree_sensors.values())
-            [action(s.object, "look_down", act_spec(delta.y), False) for s in sensors]
+            sensors = self.default_agent.sensors
+            [
+                action(s.node, "look_down", act_spec(delta.y), False)
+                for s in sensors.values()
+            ]
 
         # if interactive mode is TRUE -> GRAB MODE
         elif self.mouse_interaction == MouseMode.GRAB and self.mouse_grabber:
@@ -667,7 +661,7 @@ class HabitatSimInteractiveViewer(Application):
 
         # if interactive mode is True -> GRAB MODE
         if self.mouse_interaction == MouseMode.GRAB and physics_enabled:
-            render_camera = self.render_camera.render_camera
+            render_camera = self.camera_sensor.render_camera
             ray = render_camera.unproject(self.get_mouse_position(event.position))
             raycast_results = self.sim.cast_ray(ray=ray)
 
@@ -778,7 +772,7 @@ class HabitatSimInteractiveViewer(Application):
             # use shift for fine-grained zooming
             mod_val = 1.01 if shift_pressed else 1.1
             mod = mod_val if scroll_mod_val > 0 else 1.0 / mod_val
-            cam = self.render_camera
+            cam = self.camera_sensor
             cam.zoom(mod)
             self.redraw()
 
@@ -824,7 +818,7 @@ class HabitatSimInteractiveViewer(Application):
         if not self.mouse_grabber:
             return
 
-        render_camera = self.render_camera.render_camera
+        render_camera = self.camera_sensor.render_camera
         ray = render_camera.unproject(point)
 
         rotation: mn.Matrix3x3 = self.default_agent.scene_node.rotation.to_matrix()
@@ -869,16 +863,6 @@ class HabitatSimInteractiveViewer(Application):
             include_static_objects=True,
         )
 
-    def exit_event(self, event: Application.ExitEvent):
-        """
-        Overrides exit_event to properly close the Simulator before exiting the
-        application.
-        """
-        for i in range(self.num_env):
-            self.tiled_sims[i].close(destroy=True)
-            event.accepted = True
-        exit(0)
-
     def draw_text(self, sensor_spec):
         self.shader.bind_vector_texture(self.glyph_cache.texture)
         self.shader.transformation_projection_matrix = self.window_text_transform
@@ -886,9 +870,8 @@ class HabitatSimInteractiveViewer(Application):
 
         sensor_type_string = str(sensor_spec.sensor_type.name)
         sensor_subtype_string = str(sensor_spec.sensor_subtype.name)
-        if self.mouse_interaction == MouseMode.LOOK:
-            mouse_mode_string = "LOOK"
-        elif self.mouse_interaction == MouseMode.GRAB:
+        mouse_mode_string = "LOOK"
+        if self.mouse_interaction == MouseMode.GRAB:
             mouse_mode_string = "GRAB"
         self.window_text.render(
             f"""
@@ -916,7 +899,6 @@ In LOOK mode (default):
         Click and drag to rotate the agent and look up/down.
     WHEEL:
         Modify orthographic camera zoom/perspective camera FOV (+SHIFT for fine grained control)
-
 In GRAB mode (with 'enable-physics'):
     LEFT:
         Click and drag to pickup and move an object with a point-to-point constraint (e.g. ball joint).
@@ -928,19 +910,15 @@ In GRAB mode (with 'enable-physics'):
         (+CTRL) rotate object fixed constraint frame (pitch)
         (+ALT+CTRL) rotate object fixed constraint frame (roll)
         (+SHIFT) amplify scroll magnitude
-
-
 Key Commands:
 -------------
     esc:        Exit the application.
     'h':        Display this help message.
     'm':        Cycle mouse interaction modes.
-
     Agent Controls:
     'wasd':     Move the agent's body forward/backward and left/right.
     'zx':       Move the agent's body up/down.
     arrow keys: Turn the agent's body left/right and camera look up/down.
-
     Utilities:
     'r':        Reset the simulator with the most recently loaded scene.
     'n':        Show/hide NavMesh wireframe.
@@ -949,7 +927,6 @@ Key Commands:
     ',':        Render a Bullet collision shape debug wireframe overlay (white=active, green=sleeping, blue=wants sleeping, red=can't sleep).
     'c':        Run a discrete collision detection pass and render a debug wireframe overlay showing active contact points and normals (yellow=fixed length normals, red=collision distances).
                 (+SHIFT) Toggle the contact point debug render overlay on/off.
-
     Object Interactions:
     SPACE:      Toggle physics simulation on/off.
     '.':        Take a single simulation step if not simulating continuously.
@@ -960,6 +937,15 @@ Key Commands:
 =====================================================
 """
         )
+
+    def exit_event(self, event: Application.ExitEvent):
+        """
+        Overrides exit_event to properly close the Simulator before exiting the
+        application.
+        """
+        self.sim.close(destroy=True)
+        event.accepted = True
+        exit(0)
 
 
 class MouseMode(Enum):

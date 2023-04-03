@@ -55,10 +55,11 @@ def main():
         audio_sensor_spec.channelLayout = channel_layout
 
         # add the audio sensor
-        sim.add_sensor(audio_sensor_spec)
+        agent_id = 0
+        sim.add_sensor(audio_sensor_spec, agent_id)
 
         # Get the audio sensor object
-        audio_sensor = sim.get_agent(0)._sensors["audio_sensor"]
+        audio_sensor = sim._sensors["audio_sensor"]
 
         # set audio source location, no need to set the agent location, will be set implicitly
         audio_sensor.setAudioSourceTransform(np.array([3.1035, 1.57245, -4.15972]))
