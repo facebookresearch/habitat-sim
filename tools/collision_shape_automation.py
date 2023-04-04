@@ -735,6 +735,25 @@ class CollisionProxyOptimizer:
         # cache global results to be written to csv.
         self.results: Dict[str, Dict[str, Any]] = {}
 
+    def get_proxy_index(self, obj_handle: str) -> int:
+        """
+        Get the current proxy index for an object.
+        """
+        return self.gt_data[obj_handle]["proxy_index"]
+
+    def increment_proxy_index(self, obj_handle: str) -> int:
+        """
+        Increment the current proxy index.
+        Only do this after all processing for the current proxy is complete.
+        """
+        self.gt_data[obj_handle]["proxy_index"] += 1
+
+    def get_proxy_shape_id(self, obj_handle: str) -> str:
+        """
+        Get a string representation of the current proxy shape.
+        """
+        return f"pr{self.get_proxy_index(obj_handle)}"
+
     def get_cfg_with_mm(
         self, scene: str = "NONE"
     ) -> habitat_sim.simulator.Configuration:
@@ -768,8 +787,25 @@ class CollisionProxyOptimizer:
         obj_template = otm.get_template_by_handle(obj_handle)
         assert obj_template is not None, f"Could not find object handle `{obj_handle}`"
 
-        self.gt_data[obj_handle] = {}
-        self.gt_data[obj_handle]["next_proxy_id"] = 0
+        # create a stage template with the object's render mesh as a "ground truth" for metrics
+        stm = self.mm.stage_template_manager
+        stage_template_name = obj_handle + "_as_stage"
+        new_stage_template = stm.create_new_template(handle=stage_template_name)
+        new_stage_template.render_asset_handle = obj_template.render_asset_handle
+        stm.register_template(
+            template=new_stage_template, specified_handle=stage_template_name
+        )
+
+        # initialize the object's runtime data cache
+        self.gt_data[obj_handle] = {
+            "proxy_index": 0,  # used to recover and increment `shape_id` during optimization and evaluation
+            "stage_template_name": stage_template_name,
+            "receptacles": {},  # sub-cache for receptacle metric data and results
+            "raycasts": {},  # subcache for shape raycasting metric data
+            "shape_test_results": {
+                "gt": {}
+            },  # subcache for shape and physics metric results
+        }
 
         # correct now for any COM automation
         obj_template.compute_COM_from_shape = False
@@ -797,7 +833,6 @@ class CollisionProxyOptimizer:
                     )
 
                     # sample test points on the receptacles
-                    self.gt_data[obj_handle]["receptacles"] = {}
                     for receptacle in obj_receptacles:
                         if type(receptacle) == hab_receptacle.TriangleMeshReceptacle:
                             rec_test_points = []
@@ -819,7 +854,8 @@ class CollisionProxyOptimizer:
                             #        )
                             #    )
                             self.gt_data[obj_handle]["receptacles"][receptacle.name] = {
-                                "sample_points": rec_test_points
+                                "sample_points": rec_test_points,
+                                "shape_id_results": {},
                             }
                             if self.generate_debug_images:
                                 debug_lines = []
@@ -875,14 +911,6 @@ class CollisionProxyOptimizer:
                     )
 
         # load a simulator instance with this object as the stage
-        stm = self.mm.stage_template_manager
-        stage_template_name = obj_handle + "_as_stage"
-        self.gt_data[obj_handle]["stage_template_name"] = stage_template_name
-        new_stage_template = stm.create_new_template(handle=stage_template_name)
-        new_stage_template.render_asset_handle = obj_template.render_asset_handle
-        stm.register_template(
-            template=new_stage_template, specified_handle=stage_template_name
-        )
         cfg = self.get_cfg_with_mm(scene=stage_template_name)
         with habitat_sim.Simulator(cfg) as sim:
             # get test points from bounding box info:
@@ -923,12 +951,7 @@ class CollisionProxyOptimizer:
 
             # compute and cache "ground truth" raycast on object as stage
             gt_raycast_results = run_pairwise_raycasts(test_points, sim)
-            self.gt_data[obj_handle]["raycasts"] = {
-                "gt": {"results": gt_raycast_results}
-            }
-
-            # setup data cache entries for physics test info
-            self.gt_data[obj_handle]["physics_test_info"] = {}
+            self.gt_data[obj_handle]["raycasts"]["gt"] = gt_raycast_results
 
     def clean_obj_gt(self, obj_handle: str) -> None:
         """
@@ -956,9 +979,7 @@ class CollisionProxyOptimizer:
             empty_raycast_results = run_pairwise_raycasts(
                 self.gt_data[obj_handle]["test_points"], sim
             )
-            self.gt_data[obj_handle]["raycasts"]["empty"] = {
-                "results": empty_raycast_results
-            }
+            self.gt_data[obj_handle]["raycasts"]["empty"] = empty_raycast_results
 
         cfg = self.get_cfg_with_mm()
         with habitat_sim.Simulator(cfg) as sim:
@@ -980,7 +1001,7 @@ class CollisionProxyOptimizer:
             bb_raycast_results = run_pairwise_raycasts(
                 self.gt_data[obj_handle]["test_points"], sim
             )
-            self.gt_data[obj_handle]["raycasts"]["bb"] = {"results": bb_raycast_results}
+            self.gt_data[obj_handle]["raycasts"]["bb"] = bb_raycast_results
 
             # un-modify the template
             obj_template.bounding_box_collisions = False
@@ -995,8 +1016,7 @@ class CollisionProxyOptimizer:
         ), f"`{obj_handle}` does not have any entry in gt_data: {self.gt_data.keys()}. Call to `setup_obj_gt(obj_handle)` required."
 
         # when evaluating multiple proxy shapes, need unique ids:
-        pr_id = f"pr{self.gt_data[obj_handle]['next_proxy_id']}"
-        self.gt_data[obj_handle]["next_proxy_id"] += 1
+        pr_id = self.get_proxy_shape_id(obj_handle)
 
         # start with empty scene
         cfg = self.get_cfg_with_mm()
@@ -1037,9 +1057,7 @@ class CollisionProxyOptimizer:
             pr_raycast_results = run_pairwise_raycasts(
                 self.gt_data[obj_handle]["test_points"], sim
             )
-            self.gt_data[obj_handle]["raycasts"][pr_id] = {
-                "results": pr_raycast_results
-            }
+            self.gt_data[obj_handle]["raycasts"][pr_id] = pr_raycast_results
 
             # undo template modification
             obj_template.render_asset_handle = render_asset
@@ -1088,7 +1106,7 @@ class CollisionProxyOptimizer:
                 assert obj.is_alive, "Object was not added correctly."
 
                 # when evaluating multiple proxy shapes, need unique ids:
-                shape_id = f"pr{self.gt_data[obj_handle]['next_proxy_id']-1}"
+                shape_id = self.get_proxy_shape_id(obj_handle)
 
             # gather hemisphere rays scaled to object's size
             # NOTE: because the receptacle points can be located anywhere in the bounding box, raycast radius must be bb diagonal length
@@ -1106,12 +1124,6 @@ class CollisionProxyOptimizer:
 
             # collect hemisphere raycast samples for all receptacle sample points
             for receptacle_name in obj_rec_data.keys():
-                if "access_results" not in obj_rec_data[receptacle_name]:
-                    obj_rec_data[receptacle_name]["access_results"] = {}
-                assert (
-                    shape_id not in obj_rec_data[receptacle_name]["access_results"]
-                ), f" overwriting results for {shape_id}"
-                obj_rec_data[receptacle_name]["access_results"][shape_id] = {}
                 sample_point_ray_results: List[
                     List[habitat_sim.physics.RaycastResults]
                 ] = []
@@ -1149,15 +1161,23 @@ class CollisionProxyOptimizer:
                 receptacle_access_score /= len(sample_points)
                 receptacle_access_rate /= len(sample_points)
 
-                obj_rec_data[receptacle_name]["access_results"][shape_id][
-                    "sample_point_ray_results"
-                ] = sample_point_ray_results
-                obj_rec_data[receptacle_name]["access_results"][shape_id][
-                    "receptacle_access_score"
-                ] = receptacle_access_score
-                obj_rec_data[receptacle_name]["access_results"][shape_id][
-                    "receptacle_access_rate"
-                ] = receptacle_access_rate
+                if shape_id not in obj_rec_data[receptacle_name]["shape_id_results"]:
+                    obj_rec_data[receptacle_name]["shape_id_results"][shape_id] = {}
+                assert (
+                    "access_results"
+                    not in obj_rec_data[receptacle_name]["shape_id_results"][shape_id]
+                ), f"Overwriting existing 'access_results' data for '{receptacle_name}'|'{shape_id}'."
+                obj_rec_data[receptacle_name]["shape_id_results"][shape_id][
+                    "access_results"
+                ] = {
+                    "sample_point_ray_results": sample_point_ray_results,
+                    "receptacle_access_score": receptacle_access_score,
+                    "receptacle_access_rate": receptacle_access_rate,
+                }
+                access_results = obj_rec_data[receptacle_name]["shape_id_results"][
+                    shape_id
+                ]["access_results"]
+
                 print(f" receptacle_name = {receptacle_name}")
                 print(f" receptacle_access_score = {receptacle_access_score}")
                 print(f" receptacle_access_rate = {receptacle_access_rate}")
@@ -1166,9 +1186,7 @@ class CollisionProxyOptimizer:
                     # generate receptacle access debug images
                     # 1a Show missed rays vs 1b hit rays
                     debug_lines = []
-                    for ray_results in obj_rec_data[receptacle_name]["access_results"][
-                        shape_id
-                    ]["sample_point_ray_results"]:
+                    for ray_results in access_results["sample_point_ray_results"]:
                         for hit_record in ray_results:
                             if not hit_record.has_hits():
                                 debug_lines.append(
@@ -1312,7 +1330,7 @@ class CollisionProxyOptimizer:
                 # need to make the object STATIC so it doesn't move
                 obj.motion_type = habitat_sim.physics.MotionType.STATIC
                 # when evaluating multiple proxy shapes, need unique ids:
-                shape_id = f"pr{self.gt_data[obj_handle]['next_proxy_id']-1}"
+                shape_id = self.get_proxy_shape_id(obj_handle)
 
             # add the test object
             cyl_test_obj = rom.add_object_by_template_handle(constructed_cyl_obj_handle)
@@ -1393,18 +1411,32 @@ class CollisionProxyOptimizer:
                 # TODO: visualize this error
 
                 # write results to cache
-                if "stability_results" not in rec_data[rec_name]:
-                    rec_data[rec_name]["stability_results"] = {}
+                if shape_id not in rec_data[rec_name]["shape_id_results"]:
+                    rec_data[rec_name]["shape_id_results"][shape_id] = {}
                 assert (
-                    shape_id not in rec_data[rec_name]["stability_results"]
-                ), f" overwriting results for {shape_id}"
-                rec_data[rec_name]["stability_results"][shape_id] = {
+                    "stability_results"
+                    not in rec_data[rec_name]["shape_id_results"][shape_id]
+                ), f"Overwriting existing 'stability_results' data for '{rec_name}'|'{shape_id}'."
+                rec_data[rec_name]["shape_id_results"][shape_id][
+                    "stability_results"
+                ] = {
                     "success_ratio": success_ratio,
                     "failed_snap": failed_snap,
                     "failed_by_distance": failed_by_distance,
                     "failed_unstable": failed_unstable,
                     "total": len(sample_points),
                 }
+
+    def setup_shape_test_results_cache(self, obj_handle: str, shape_id: str) -> None:
+        """
+        Ensure the 'shape_test_results' sub-cache is initialized for a 'shape_id'.
+        """
+        if shape_id not in self.gt_data[obj_handle]["shape_test_results"]:
+            self.gt_data[obj_handle]["shape_test_results"][shape_id] = {
+                "settle_report": {},
+                "sphere_shake_report": {},
+                "collision_grid_report": {},
+            }
 
     def run_physics_settle_test(self, obj_handle):
         """
@@ -1419,7 +1451,8 @@ class CollisionProxyOptimizer:
             assert obj.is_alive, "Object was not added correctly."
 
             # when evaluating multiple proxy shapes, need unique ids:
-            shape_id = f"pr{self.gt_data[obj_handle]['next_proxy_id']-1}"
+            shape_id = self.get_proxy_shape_id(obj_handle)
+            self.setup_shape_test_results_cache(obj_handle, shape_id)
 
             # add a plane
             otm = sim.get_object_template_manager()
@@ -1450,6 +1483,14 @@ class CollisionProxyOptimizer:
 
             if not success:
                 print("Failed to snap object to plane...")
+                self.gt_data[obj_handle]["shape_test_results"][shape_id][
+                    "settle_report"
+                ] = {
+                    "success": False,
+                    "realtime": "NA",
+                    "max_time": "NA",
+                    "settle_time": "NA",
+                }
                 return
 
             # simulate for settling
@@ -1479,15 +1520,9 @@ class CollisionProxyOptimizer:
                 print(f"    Failed to settle in {max_sim_time} sim seconds.")
             print(f"    Test completed in {real_test_time} seconds.")
 
-            if "settle_report" not in self.gt_data[obj_handle]["physics_test_info"]:
-                self.gt_data[obj_handle]["physics_test_info"]["settle_report"] = {}
-
-            assert (
-                shape_id
-                not in self.gt_data[obj_handle]["physics_test_info"]["settle_report"]
-            ), f"Duplicate settle report entry for shape_id {shape_id}."
-
-            self.gt_data[obj_handle]["physics_test_info"]["settle_report"][shape_id] = {
+            self.gt_data[obj_handle]["shape_test_results"][shape_id][
+                "settle_report"
+            ] = {
                 "success": object_is_stable,
                 "realtime": real_test_time,
                 "max_time": max_sim_time,
@@ -1516,10 +1551,12 @@ class CollisionProxyOptimizer:
                 # need to make the object STATIC so it doesn't move
                 obj.motion_type = habitat_sim.physics.MotionType.STATIC
                 # when evaluating multiple proxy shapes, need unique ids:
-                shape_id = f"pr{self.gt_data[obj_handle]['next_proxy_id']-1}"
+                shape_id = self.get_proxy_shape_id(obj_handle)
                 shape_bb = obj.root_scene_node.cumulative_bb
             else:
                 shape_bb = sim.get_active_scene_graph().get_root_node().cumulative_bb
+
+            self.setup_shape_test_results_cache(obj_handle, shape_id)
 
             # add the collision box
             otm = sim.get_object_template_manager()
@@ -1565,26 +1602,8 @@ class CollisionProxyOptimizer:
 
             # TODO: test this
 
-            if (
+            self.gt_data[obj_handle]["shape_test_results"][shape_id][
                 "collision_grid_report"
-                not in self.gt_data[obj_handle]["physics_test_info"]
-            ):
-                self.gt_data[obj_handle]["physics_test_info"][
-                    "collision_grid_report"
-                ] = {}
-
-            if (
-                shape_id
-                not in self.gt_data[obj_handle]["physics_test_info"][
-                    "collision_grid_report"
-                ]
-            ):
-                self.gt_data[obj_handle]["physics_test_info"]["collision_grid_report"][
-                    shape_id
-                ] = {}
-
-            self.gt_data[obj_handle]["physics_test_info"]["collision_grid_report"][
-                shape_id
             ][subdivisions] = {
                 "total_col_time": total_test_time,
                 "avg_col_time": avg_test_time,
@@ -1616,7 +1635,8 @@ class CollisionProxyOptimizer:
         otm.register_template(sphere_template, sphere_test_handle)
         assert otm.get_library_has_handle(sphere_test_handle)
 
-        shape_id = f"pr{self.gt_data[obj_handle]['next_proxy_id']-1}"
+        shape_id = self.get_proxy_shape_id(obj_handle)
+        self.setup_shape_test_results_cache(obj_handle, shape_id)
 
         cfg = self.get_cfg_with_mm(scene=sphere_stage_handle)
         with habitat_sim.Simulator(cfg) as sim:
@@ -1670,23 +1690,8 @@ class CollisionProxyOptimizer:
                 f"    {num_spheres} spheres took {real_test_time} seconds for {max_sim_time} sim seconds."
             )
 
-            if (
+            self.gt_data[obj_handle]["shape_test_results"][shape_id][
                 "sphere_shake_report"
-                not in self.gt_data[obj_handle]["physics_test_info"]
-            ):
-                self.gt_data[obj_handle]["physics_test_info"][
-                    "sphere_shake_report"
-                ] = {}
-
-            assert (
-                shape_id
-                not in self.gt_data[obj_handle]["physics_test_info"][
-                    "sphere_shake_report"
-                ]
-            ), f"Duplicate sphere shake report entry for shape_id {shape_id}."
-
-            self.gt_data[obj_handle]["physics_test_info"]["sphere_shake_report"][
-                shape_id
             ] = {
                 "realtime": real_test_time,
                 "sim_time": max_sim_time,
@@ -1710,17 +1715,19 @@ class CollisionProxyOptimizer:
             "gt" in self.gt_data[obj_handle]["raycasts"]
         ), "Must have a ground truth to compare against. Should be generated in `setup_obj_gt(obj_handle)`."
 
-        for key in self.gt_data[obj_handle]["raycasts"].keys():
+        for shape_id in self.gt_data[obj_handle]["raycasts"].keys():
+            self.setup_shape_test_results_cache(obj_handle, shape_id)
             if (
-                key != "gt"
-                and "normalized_errors" not in self.gt_data[obj_handle]["raycasts"][key]
+                shape_id != "gt"
+                and "normalized_raycast_error"
+                not in self.gt_data[obj_handle]["shape_test_results"][shape_id]
             ):
                 normalized_error = get_raycast_results_cumulative_error_metric(
-                    self.gt_data[obj_handle]["raycasts"]["gt"]["results"],
-                    self.gt_data[obj_handle]["raycasts"][key]["results"],
+                    self.gt_data[obj_handle]["raycasts"]["gt"],
+                    self.gt_data[obj_handle]["raycasts"][shape_id],
                 )
-                self.gt_data[obj_handle]["raycasts"][key][
-                    "normalized_errors"
+                self.gt_data[obj_handle]["shape_test_results"][shape_id][
+                    "normalized_raycast_error"
                 ] = normalized_error
 
     def grid_search_vhacd_params(self, obj_template_handle: str):
@@ -1782,26 +1789,36 @@ class CollisionProxyOptimizer:
                 setattr(vhacd_params, attr, val)
                 setting_string += f" '{attr}'={val}"
             vhacd_iteration_time = time.time()
+            # create new shape and increment shape id
             self.compute_vhacd_col_shape(obj_template_handle, vhacd_params)
+            self.increment_proxy_index(obj_template_handle)
 
-            self.compute_proxy_metrics(obj_template_handle)
-            proxy_id = f"pr{self.gt_data[obj_template_handle]['next_proxy_id']-1}"
+            # cache vhacd settings
+            shape_id = self.get_proxy_shape_id(obj_template_handle)
             if "vhacd_settings" not in self.gt_data[obj_template_handle]:
                 self.gt_data[obj_template_handle]["vhacd_settings"] = {}
             self.gt_data[obj_template_handle]["vhacd_settings"][
-                proxy_id
+                shape_id
             ] = setting_string
 
+            # compute shape level metrics:
+            self.compute_proxy_metrics(obj_template_handle)
+            self.compute_grid_collision_times(obj_template_handle, subdivisions=1)
+            self.run_physics_settle_test(obj_template_handle)
+            self.run_physics_sphere_shake_test(obj_template_handle)
+
+            # compute receptacle metrics
             if self.compute_receptacle_useability_metrics:
                 self.compute_receptacle_access_metrics(obj_handle=obj_template_handle)
-            vhacd_iteration_times[proxy_id] = time.time() - vhacd_iteration_time
+                self.compute_receptacle_stability(obj_handle=obj_template_handle)
+            vhacd_iteration_times[shape_id] = time.time() - vhacd_iteration_time
 
         print(f"Total VHACD time = {time.time()-vhacd_start_time}")
         print("    Iteration times = ")
-        for proxy_id, settings in self.gt_data[obj_template_handle][
+        for shape_id, settings in self.gt_data[obj_template_handle][
             "vhacd_settings"
         ].items():
-            print(f"     {proxy_id} - {settings} - {vhacd_iteration_times[proxy_id]}")
+            print(f"     {shape_id} - {settings} - {vhacd_iteration_times[shape_id]}")
 
     def compute_vhacd_col_shape(
         self, obj_template_handle: str, vhacd_params: habitat_sim.VHACDParameters
@@ -1846,48 +1863,81 @@ class CollisionProxyOptimizer:
         """
 
         for obj_handle in self.gt_data.keys():
+            # populate the high-level sub-cache definitions
             if obj_handle not in self.results:
-                self.results[obj_handle] = {}
-            for key in self.gt_data[obj_handle]["raycasts"].keys():
-                if (
-                    key != "gt"
-                    and "normalized_errors" in self.gt_data[obj_handle]["raycasts"][key]
-                ):
-                    if "normalized_errors" not in self.results[obj_handle]:
-                        self.results[obj_handle]["normalized_errors"] = {}
-                    self.results[obj_handle]["normalized_errors"][key] = self.gt_data[
-                        obj_handle
-                    ]["raycasts"][key]["normalized_errors"]
-
-            if self.compute_receptacle_useability_metrics:
-                self.results[obj_handle]["receptacle_info"] = {}
-                # cache the receptacle access metrics for CSV save
-                for rec_key in self.gt_data[obj_handle]["receptacles"].keys():
-                    self.results[obj_handle]["receptacle_info"][rec_key] = {}
-
-                    assert (
-                        "access_results"
-                        in self.gt_data[obj_handle]["receptacles"][rec_key]
-                    ), "Must run 'compute_receptacle_access_metrics' before caching global receptacle data."
-                    rec_results = self.gt_data[obj_handle]["receptacles"][rec_key][
-                        "access_results"
+                self.results[obj_handle] = {
+                    "shape_metrics": {},
+                    "receptacle_metrics": {},
+                }
+            # populate the per-shape metric sub-cache
+            for shape_id, shape_results in self.gt_data[obj_handle][
+                "shape_test_results"
+            ].items():
+                if shape_id == "gt":
+                    continue
+                self.results[obj_handle]["shape_metrics"][shape_id] = {"col_grid": {}}
+                sm = self.results[obj_handle]["shape_metrics"][shape_id]
+                if "normalized_raycast_error" in shape_results:
+                    sm["normalized_raycast_error"] = shape_results[
+                        "normalized_raycast_error"
                     ]
-
-                    # access rate and score
-                    for metric in ["receptacle_access_score", "receptacle_access_rate"]:
-                        for shape_id in rec_results.keys():
-                            if (
-                                metric
-                                not in self.results[obj_handle]["receptacle_info"][
-                                    rec_key
-                                ]
-                            ):
-                                self.results[obj_handle]["receptacle_info"][rec_key][
-                                    metric
-                                ] = {}
-                            self.results[obj_handle]["receptacle_info"][rec_key][
-                                metric
-                            ][shape_id] = rec_results[shape_id][metric]
+                if len(shape_results["settle_report"]) > 0:
+                    sm["settle_success"] = shape_results["settle_report"]["success"]
+                    sm["settle_time"] = shape_results["settle_report"]["settle_time"]
+                    sm["settle_max_step_time"] = shape_results["settle_report"][
+                        "max_time"
+                    ]
+                    sm["settle_realtime"] = shape_results["settle_report"]["realtime"]
+                if len(shape_results["sphere_shake_report"]) > 0:
+                    sm["shake_simtime"] = shape_results["sphere_shake_report"][
+                        "sim_time"
+                    ]
+                    sm["shake_realtime"] = shape_results["sphere_shake_report"][
+                        "realtime"
+                    ]
+                    sm["shake_num_spheres"] = shape_results["sphere_shake_report"][
+                        "num_spheres"
+                    ]
+                if len(shape_results["collision_grid_report"]) > 0:
+                    for subdiv, col_subdiv_results in shape_results[
+                        "collision_grid_report"
+                    ].items():
+                        sm["col_grid"][subdiv] = {
+                            "total_time": col_subdiv_results["total_col_time"],
+                            "avg_time": col_subdiv_results["avg_col_time"],
+                            "max_time": col_subdiv_results["max_col_time"],
+                        }
+            # populate the receptacle metric sub-cache
+            for rec_name, rec_data in self.gt_data[obj_handle]["receptacles"].items():
+                self.results[obj_handle]["receptacle_metrics"][rec_name] = {}
+                for shape_id, shape_data in rec_data["shape_id_results"].items():
+                    self.results[obj_handle]["receptacle_metrics"][rec_name][
+                        shape_id
+                    ] = {}
+                    rsm = self.results[obj_handle]["receptacle_metrics"][rec_name][
+                        shape_id
+                    ]
+                    if "stability_results" in shape_data:
+                        rsm["stability_success_ratio"] = shape_data[
+                            "stability_results"
+                        ]["success_ratio"]
+                        rsm["failed_snap"] = shape_data["stability_results"][
+                            "failed_snap"
+                        ]
+                        rsm["failed_by_distance"] = shape_data["stability_results"][
+                            "failed_by_distance"
+                        ]
+                        rsm["failed_unstable"] = shape_data["stability_results"][
+                            "failed_unstable"
+                        ]
+                        rsm["total"] = shape_data["stability_results"]["total"]
+                    if "access_results" in shape_data:
+                        rsm["receptacle_access_score"] = shape_data["access_results"][
+                            "receptacle_access_score"
+                        ]
+                        rsm["receptacle_access_rate"] = shape_data["access_results"][
+                            "receptacle_access_rate"
+                        ]
 
     def save_results_to_csv(self, filename: str) -> None:
         """
@@ -1900,41 +1950,67 @@ class CollisionProxyOptimizer:
 
         filepath = os.path.join(self.output_directory, filename)
 
-        # save normalized error csv
+        # first collect all active metrics to log
+        active_subdivs = []
+        active_shape_metrics = []
+        for _obj_handle, obj_results in self.results.items():
+            for _shape_id, shape_results in obj_results["shape_metrics"].items():
+                for metric in shape_results.keys():
+                    if metric == "col_grid":
+                        for subdiv in shape_results["col_grid"].keys():
+                            if subdiv not in active_subdivs:
+                                active_subdivs.append(subdiv)
+                    else:
+                        if metric not in active_shape_metrics:
+                            active_shape_metrics.append(metric)
+        active_subdivs = sorted(active_subdivs)
+
+        # save shape metric csv
         with open(filepath + ".csv", "w") as f:
             writer = csv.writer(f, quoting=csv.QUOTE_ALL)
-            # first collect all column names:
-            existing_cols = []
-            for obj_handle in self.results.keys():
-                if "normalized_errors" in self.results[obj_handle]:
-                    for key in self.results[obj_handle]["normalized_errors"]:
-                        if key not in existing_cols:
-                            existing_cols.append(key)
-            # put the baselines first
-            ordered_cols = ["object_handle"]
-            if "empty" in existing_cols:
-                ordered_cols.append("empty")
-            if "bb" in existing_cols:
-                ordered_cols.append("bb")
-            for key in existing_cols:
-                if key not in ordered_cols:
-                    ordered_cols.append(key)
+            # first collect all column names (metrics):
+            existing_cols = ["object_handle|shape_id"]
+            existing_cols.extend(active_shape_metrics)
+            for subdiv in active_subdivs:
+                existing_cols.append(f"col_grid_{subdiv}_total_time")
+                existing_cols.append(f"col_grid_{subdiv}_avg_time")
+                existing_cols.append(f"col_grid_{subdiv}_max_time")
             # write column names row
-            writer.writerow(ordered_cols)
+            writer.writerow(existing_cols)
 
             # write results rows
-            for obj_handle in self.results.keys():
-                row_data = [obj_handle]
-                if "normalized_errors" in self.results[obj_handle]:
-                    for key in ordered_cols:
-                        if key != "object_handle":
-                            if key in self.results[obj_handle]["normalized_errors"]:
-                                row_data.append(
-                                    self.results[obj_handle]["normalized_errors"][key]
-                                )
-                            else:
+            for obj_handle, obj_results in self.results.items():
+                for shape_id, shape_results in obj_results["shape_metrics"].items():
+                    row_data = [obj_handle + "|" + shape_id]
+                    for metric_key in active_shape_metrics:
+                        if metric_key in shape_results:
+                            row_data.append(shape_results[metric_key])
+                        else:
+                            row_data.append("")
+                    for subdiv in active_subdivs:
+                        if subdiv in shape_results["col_grid"]:
+                            row_data.append(
+                                shape_results["col_grid"][subdiv]["total_time"]
+                            )
+                            row_data.append(
+                                shape_results["col_grid"][subdiv]["avg_time"]
+                            )
+                            row_data.append(
+                                shape_results["col_grid"][subdiv]["max_time"]
+                            )
+                        else:
+                            for _ in range(3):
                                 row_data.append("")
-                writer.writerow(row_data)
+                    writer.writerow(row_data)
+
+        # collect active receptacle metrics
+        active_rec_metrics = []
+        for _obj_handle, obj_results in self.results.items():
+            for _rec_name, rec_results in obj_results["receptacle_metrics"].items():
+                for _shape_id, shape_results in rec_results.items():
+                    for metric in shape_results.keys():
+                        if metric not in active_rec_metrics:
+                            active_rec_metrics.append(metric)
 
         # export receptacle metrics to CSV
         if self.compute_receptacle_useability_metrics:
@@ -1942,46 +2018,26 @@ class CollisionProxyOptimizer:
             with open(rec_filepath + ".csv", "w") as f:
                 writer = csv.writer(f, quoting=csv.QUOTE_ALL)
                 # first collect all column names:
-                existing_cols = ["receptacle"]
-                shape_ids = []
-                metrics = []
-                for obj_handle in self.results.keys():
-                    if "receptacle_info" in self.results[obj_handle]:
-                        for rec_key in self.results[obj_handle]["receptacle_info"]:
-                            for metric in self.results[obj_handle]["receptacle_info"][
-                                rec_key
-                            ].keys():
-                                if metric not in metrics:
-                                    metrics.append(metric)
-                                for shape_id in self.results[obj_handle][
-                                    "receptacle_info"
-                                ][rec_key][metric].keys():
-                                    if shape_id not in shape_ids:
-                                        shape_ids.append(shape_id)
-                                    if shape_id + "-" + metric not in existing_cols:
-                                        existing_cols.append(shape_id + "-" + metric)
+                existing_cols = ["obj_handle|receptacle|shape_id"]
+                existing_cols.extend(active_rec_metrics)
+
                 # write column names row
                 writer.writerow(existing_cols)
 
                 # write results rows
-                for obj_handle in self.results.keys():
-                    if "receptacle_info" in self.results[obj_handle]:
-                        for rec_key in self.results[obj_handle]["receptacle_info"]:
-                            rec_info = self.results[obj_handle]["receptacle_info"][
-                                rec_key
-                            ]
-                            row_data = [obj_handle + "_" + rec_key]
-                            for metric in metrics:
-                                for shape_id in shape_ids:
-                                    if (
-                                        metric in rec_info
-                                        and shape_id in rec_info[metric]
-                                    ):
-                                        row_data.append(rec_info[metric][shape_id])
-                                    else:
-                                        row_data.append("")
+                for obj_handle, obj_results in self.results.items():
+                    for rec_name, rec_results in obj_results[
+                        "receptacle_metrics"
+                    ].items():
+                        for shape_id, shape_results in rec_results.items():
+                            row_data = [obj_handle + "|" + rec_name + "|" + shape_id]
+                            for metric_key in active_rec_metrics:
+                                if metric_key in shape_results:
+                                    row_data.append(shape_results[metric_key])
+                                else:
+                                    row_data.append("")
+                            # write row data
                             writer.writerow(row_data)
-        # TODO: add receptacle stability reporting
 
     def compute_and_save_results_for_objects(
         self, obj_handle_substrings: List[str], output_filename: str = "cpo_out"
@@ -2014,7 +2070,6 @@ class CollisionProxyOptimizer:
             self.compute_grid_collision_times(obj_h, subdivisions=0)
             self.compute_grid_collision_times(obj_h, subdivisions=1)
             self.compute_grid_collision_times(obj_h, subdivisions=2)
-            # exit()
 
             # receptacle metrics:
             if self.compute_receptacle_useability_metrics:
@@ -2026,14 +2081,13 @@ class CollisionProxyOptimizer:
                 self.compute_receptacle_access_metrics(obj_h, use_gt=False)
             # self.grid_search_vhacd_params(obj_h)
             self.compute_gt_errors(obj_h)
-            self.cache_global_results2()
             print_dict_structure(self.gt_data)
+            self.cache_global_results()
             print_dict_structure(self.results)
-            # exit()
             self.clean_obj_gt(obj_h)
 
         # then save results to file
-        self.save_results_to_csv2(output_filename)
+        self.save_results_to_csv(output_filename)
 
 
 def object_has_receptacles(
@@ -2136,6 +2190,7 @@ def main():
         if object_has_receptacles(all_handles[i], otm)
     ]
     print(f"Number of objects with receptacles = {len(all_handles)}")
+
     # ----------------------------------------------------
 
     # ----------------------------------------------------
