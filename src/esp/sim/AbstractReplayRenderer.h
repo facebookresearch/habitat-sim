@@ -116,6 +116,14 @@ class AbstractReplayRenderer {
   std::shared_ptr<esp::gfx::DebugLineRender> getDebugLineRender(
       unsigned envIndex);
 
+  /**
+   * @brief Unproject a 2D viewport point to a 3D ray with origin at camera
+   * position. Ray direction is normalized.
+   *
+   * @param envIndex
+   * @param viewportPosition The 2D point on the viewport to unproject
+   * ([0,width], [0,height]).
+   */
   esp::geo::Ray unproject(unsigned envIndex,
                           const Magnum::Vector2i& viewportPosition);
 
