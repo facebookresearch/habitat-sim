@@ -8,6 +8,7 @@
 
 #include <Corrade/Containers/GrowableArray.h>
 #include <Corrade/Utility/Algorithms.h>
+#include <Magnum/GL/AbstractFramebuffer.h>
 #include <Magnum/GL/Context.h>
 #include <Magnum/Image.h>
 #include <Magnum/ImageView.h>
@@ -257,6 +258,9 @@ void BatchReplayRenderer::doRender(
                  "with a standalone renderer", );
   static_cast<gfx_batch::RendererStandalone&>(*renderer_).draw();
 
+  // todo: integrate debugLineRender_->flushLines
+  CORRADE_INTERNAL_ASSERT(!debugLineRender_);
+
   for (int envIndex = 0; envIndex != envs_.size(); ++envIndex) {
     const auto rectangle = Mn::Range2Di::fromSize(
         renderer_->tileSize() *
@@ -275,6 +279,25 @@ void BatchReplayRenderer::doRender(
                  "a standalone renderer", );
 
   renderer_->draw(framebuffer);
+
+  if (debugLineRender_) {
+    framebuffer.bind();
+    constexpr unsigned envIndex = 0;
+    auto projCamMatrix = renderer_->camera(envIndex);
+    debugLineRender_->flushLines(projCamMatrix, renderer_->tileSize());
+  }
+}
+
+esp::geo::Ray BatchReplayRenderer::doUnproject(
+    CORRADE_UNUSED unsigned envIndex,
+    const Mn::Vector2i& viewportPosition) {
+  // temp stub implementation: produce a placeholder ray that varies with
+  // viewportPosition
+  return esp::geo::Ray(
+      {static_cast<float>(viewportPosition.x()) / renderer_->tileSize().x(),
+       0.5f,
+       static_cast<float>(viewportPosition.y()) / renderer_->tileSize().y()},
+      {0.f, -1.f, 0.f});
 }
 
 const void* BatchReplayRenderer::getCudaColorBufferDevicePointer() {
