@@ -125,7 +125,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
       .setProjectionMatrix(camera.projectionMatrix())
       .setViewMatrix(camera.cameraMatrix())
       .setModelMatrix(modelMatrix)  // NOT modelview matrix!
-      .setNormalMatrix(modelMatrix.normalMatrix())
+      .setNormalMatrix(modelMatrix.rotationScaling().inverted().transposed())
       .setCameraWorldPosition(
           camera.object().absoluteTransformationMatrix().translation())
       .setBaseColor(materialData_->baseColor)

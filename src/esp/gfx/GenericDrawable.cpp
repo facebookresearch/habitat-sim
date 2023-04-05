@@ -143,7 +143,8 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
               : node_.getSemanticId())
       .setTransformationMatrix(transformationMatrix)
       .setProjectionMatrix(camera.projectionMatrix())
-      .setNormalMatrix(transformationMatrix.normalMatrix());
+      .setNormalMatrix(
+          transformationMatrix.rotationScaling().inverted().transposed());
 
   if ((flags_ & Mn::Shaders::PhongGL::Flag::TextureTransformation) &&
       materialData_->textureMatrix != Mn::Matrix3{}) {

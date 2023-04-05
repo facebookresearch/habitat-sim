@@ -1206,7 +1206,9 @@ void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
           .drawsSorted[i]
           /* Extract normal matrix */
           .setNormalMatrix(state_->absoluteTransformationsSorted[i]
-                               .transformationMatrix.normalMatrix())
+                               .transformationMatrix.rotationScaling()
+                               .inverted()
+                               .transposed())
           // TODO light culling should happen here
           .setLightOffsetCount(0, scene.lights.size());
     }
