@@ -1474,11 +1474,14 @@ class CollisionProxyOptimizer:
                 default_sensor_uuid="color_sensor",
             )
             dvb.peek_rigid_object(
-                obj, peek_all_axis=True, additional_savefile_prefix="plane_snap_"
+                obj,
+                peek_all_axis=True,
+                additional_savefile_prefix=f"plane_snap_{shape_id}_",
             )
 
             # snap the object to the plane
-            obj.translation = mn.Vector3(0, 0.6, 0)
+            obj_col_bb = obj.collision_shape_aabb
+            obj.translation = mn.Vector3(0, obj_col_bb.max[1] - obj_col_bb.min[1], 0)
             success = snap_down(sim, obj, support_obj_ids=[plane_obj.object_id])
 
             if not success:
@@ -1501,11 +1504,11 @@ class CollisionProxyOptimizer:
             start_time = sim.get_world_time()
             while sim.get_world_time() - start_time < max_sim_time:
                 sim.step_world(dt)
-                dvb.peek_rigid_object(
-                    obj,
-                    peek_all_axis=True,
-                    additional_savefile_prefix=f"plane_snap_{sim.get_world_time() - start_time}_",
-                )
+                # dvb.peek_rigid_object(
+                #    obj,
+                #    peek_all_axis=True,
+                #    additional_savefile_prefix=f"plane_snap_{sim.get_world_time() - start_time}_",
+                # )
 
                 if not obj.awake:
                     object_is_stable = True
@@ -2079,7 +2082,7 @@ class CollisionProxyOptimizer:
                 self.compute_receptacle_access_metrics(obj_h, use_gt=True)
                 print(" PR Receptacle Metrics:")
                 self.compute_receptacle_access_metrics(obj_h, use_gt=False)
-            # self.grid_search_vhacd_params(obj_h)
+            self.grid_search_vhacd_params(obj_h)
             self.compute_gt_errors(obj_h)
             print_dict_structure(self.gt_data)
             self.cache_global_results()
@@ -2189,6 +2192,7 @@ def main():
         for i in range(len(all_handles))
         if object_has_receptacles(all_handles[i], otm)
     ]
+    # all_handles = [all_handles[0]]
     print(f"Number of objects with receptacles = {len(all_handles)}")
 
     # ----------------------------------------------------
