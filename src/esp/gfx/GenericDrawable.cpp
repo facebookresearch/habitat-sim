@@ -6,6 +6,7 @@
 
 #include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/Utility/FormatStl.h>
+#include <Magnum/GL/Renderer.h>
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix3.h>
 
@@ -132,6 +133,16 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
 
   updateShaderLightingParameters(transformationMatrix, camera);
 
+  // Find determinant to calculate backface culling winding dir
+  auto rotScale = transformationMatrix.rotationScaling();
+  const float normalDet = rotScale.determinant();
+  auto invNormalMat = rotScale.comatrix().transposed() / normalDet;
+
+  // Flip winding direction to correct handle backface culling
+  if (normalDet < 0) {
+    Mn::GL::Renderer::setFrontFace(Mn::GL::Renderer::FrontFace::ClockWise);
+  }
+
   (*shader_)
       // e.g., semantic mesh has its own per vertex annotation, which has been
       // uploaded to GPU so simply pass 0 to the uniform "objectId" in the
@@ -143,8 +154,7 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
               : node_.getSemanticId())
       .setTransformationMatrix(transformationMatrix)
       .setProjectionMatrix(camera.projectionMatrix())
-      .setNormalMatrix(
-          transformationMatrix.rotationScaling().inverted().transposed());
+      .setNormalMatrix(invNormalMat.transposed());
 
   if ((flags_ & Mn::Shaders::PhongGL::Flag::TextureTransformation) &&
       materialData_->textureMatrix != Mn::Matrix3{}) {
@@ -168,6 +178,12 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
   }
 
   shader_->draw(getMesh());
+
+  // Reset winding direction
+  if (normalDet < 0) {
+    Mn::GL::Renderer::setFrontFace(
+        Mn::GL::Renderer::FrontFace::CounterClockWise);
+  }
 }
 
 void GenericDrawable::updateShader() {

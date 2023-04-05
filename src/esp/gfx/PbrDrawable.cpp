@@ -114,10 +114,20 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   Mn::Matrix4 modelMatrix =
       camera.cameraMatrix().inverted() * transformationMatrix;
 
+  // Find determinant to calculate backface culling winding dir
+  auto rotScale = modelMatrix.rotationScaling();
+  const float normalDet = rotScale.determinant();
+  auto invNormalMat = rotScale.comatrix().transposed() / normalDet;
+
+  // Flip winding direction to correct handle backface culling
+  if (normalDet < 0) {
+    Mn::GL::Renderer::setFrontFace(Mn::GL::Renderer::FrontFace::ClockWise);
+  }
+
   (*shader_)
-      // e.g., semantic mesh has its own per vertex annotation, which has been
-      // uploaded to GPU so simply pass 0 to the uniform "objectId" in the
-      // fragment shader
+      // e.g., semantic mesh has its own per vertex annotation, which has
+      // been uploaded to GPU so simply pass 0 to the uniform "objectId" in
+      // the fragment shader
       .setObjectId(
           static_cast<RenderCamera&>(camera).useDrawableIds()
               ? drawableId_
@@ -125,7 +135,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
       .setProjectionMatrix(camera.projectionMatrix())
       .setViewMatrix(camera.cameraMatrix())
       .setModelMatrix(modelMatrix)  // NOT modelview matrix!
-      .setNormalMatrix(modelMatrix.rotationScaling().inverted().transposed())
+      .setNormalMatrix(invNormalMat.transposed())
       .setCameraWorldPosition(
           camera.object().absoluteTransformationMatrix().translation())
       .setBaseColor(materialData_->baseColor)
@@ -204,6 +214,12 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   }
 
   shader_->draw(getMesh());
+
+  // Reset winding direction
+  if (normalDet < 0) {
+    Mn::GL::Renderer::setFrontFace(
+        Mn::GL::Renderer::FrontFace::CounterClockWise);
+  }
 
   // WE stopped supporting doubleSided material due to lighting artifacts on
   // hard edges. See comments at the beginning of this function.
