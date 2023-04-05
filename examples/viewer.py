@@ -17,6 +17,7 @@ sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 import habitat.datasets.rearrange.samplers.receptacle as hab_receptacle
 import magnum as mn
 import numpy as np
+from habitat.sims.habitat_simulator.sim_utilities import snap_down
 from magnum import shaders, text
 from magnum.platform.glfw import Application
 
@@ -289,6 +290,9 @@ class HabitatSimInteractiveViewer(Application):
                         obj_temp_handle
                     )
                 )
+                self.collision_proxy_obj.motion_type = (
+                    habitat_sim.physics.MotionType.KINEMATIC
+                )
 
             csa.debug_draw_raycast_results(
                 self.sim, gt_raycast_results, pr_raycast_results, seed=self.sample_seed
@@ -456,6 +460,8 @@ class HabitatSimInteractiveViewer(Application):
         stage_template_name = "obj_as_stage_template"
         new_stage_template = stm.create_new_template(handle=stage_template_name)
         new_stage_template.render_asset_handle = obj_template.render_asset_handle
+        # margin must be 0 for snapping to work on overlapped gt/proxy
+        new_stage_template.margin = 0.0
         stm.register_template(
             template=new_stage_template, specified_handle=stage_template_name
         )
@@ -786,6 +792,47 @@ class HabitatSimInteractiveViewer(Application):
         self.redraw()
         event.accepted = True
 
+    def construct_cylinder_object(
+        self,
+        cyl_radius: float = 0.04,
+        cyl_height: float = 0.15,
+    ):
+        constructed_cyl_obj_handle = f"cylinder_test_obj_r{cyl_radius}_h{cyl_height}"
+
+        otm = self.sim.metadata_mediator.object_template_manager
+        if not otm.get_library_has_handle(constructed_cyl_obj_handle):
+            # ensure that a correctly sized asset mesh is available
+            atm = self.sim.metadata_mediator.asset_template_manager
+            half_length = (cyl_height / 2.0) / cyl_radius
+            custom_prim_name = f"cylinderSolid_rings_1_segments_12_halfLen_{half_length}_useTexCoords_false_useTangents_false_capEnds_true"
+
+            if not atm.get_library_has_handle(custom_prim_name):
+                # build the primitive template
+                cylinder_prim_handle = atm.get_template_handles("cylinderSolid")[0]
+                cyl_template = atm.get_template_by_handle(cylinder_prim_handle)
+                # default radius==1, so we modify the half-length
+                cyl_template.half_length = half_length
+                atm.register_template(cyl_template)
+
+            assert atm.get_library_has_handle(
+                custom_prim_name
+            ), "primitive asset creation bug."
+
+            if not otm.get_library_has_handle(constructed_cyl_obj_handle):
+                default_cyl_template_handle = otm.get_synth_template_handles(
+                    "cylinderSolid"
+                )[0]
+                default_cyl_template = otm.get_template_by_handle(
+                    default_cyl_template_handle
+                )
+                default_cyl_template.render_asset_handle = custom_prim_name
+                default_cyl_template.collision_asset_handle = custom_prim_name
+                # our prim asset has unit radius, so scale the object by desired radius
+                default_cyl_template.scale = mn.Vector3(cyl_radius)
+                otm.register_template(default_cyl_template, constructed_cyl_obj_handle)
+                assert otm.get_library_has_handle(constructed_cyl_obj_handle)
+        return constructed_cyl_obj_handle
+
     def mouse_press_event(self, event: Application.MouseEvent) -> None:
         """
         Handles `Application.MouseEvent`. When in GRAB mode, click on
@@ -878,6 +925,38 @@ class HabitatSimInteractiveViewer(Application):
                 # end if didn't hit the scene
             # end has raycast hit
         # end has physics enabled
+        elif (
+            self.mouse_interaction == MouseMode.LOOK
+            and physics_enabled
+            and self.mouse_cast_results is not None
+            and self.mouse_cast_results.has_hits()
+            and event.button == button.RIGHT
+        ):
+            constructed_cyl_obj_handle = self.construct_cylinder_object()
+            # try to place an object
+            if (
+                mn.math.dot(
+                    self.mouse_cast_results.hits[0].normal.normalized(),
+                    mn.Vector3(0, 1, 0),
+                )
+                > 0.5
+            ):
+                rom = self.sim.get_rigid_object_manager()
+                cyl_test_obj = rom.add_object_by_template_handle(
+                    constructed_cyl_obj_handle
+                )
+                assert cyl_test_obj is not None
+                cyl_test_obj.translation = self.mouse_cast_results.hits[
+                    0
+                ].point + mn.Vector3(0, 0.04, 0)
+                success = snap_down(
+                    self.sim,
+                    cyl_test_obj,
+                    support_obj_ids=[-1, self.collision_proxy_obj.object_id],
+                )
+                print(success)
+                if not success:
+                    rom.remove_object_by_handle(cyl_test_obj.handle)
 
         self.previous_mouse_point = self.get_mouse_position(event.position)
         self.redraw()
@@ -1284,6 +1363,7 @@ if __name__ == "__main__":
     sim_settings["composite_files"] = args.composite_files
     sim_settings["window_width"] = args.width
     sim_settings["window_height"] = args.height
+    sim_settings["clear_color"] = mn.Color4.magenta()
 
     obj_name = "d1d1e0cdaba797ee70882e63f66055675c3f1e7f"
 
