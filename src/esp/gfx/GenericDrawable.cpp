@@ -133,10 +133,16 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
 
   updateShaderLightingParameters(transformationMatrix, camera);
 
+  Mn::Matrix3x3 rotScale = transformationMatrix.rotationScaling();
   // Find determinant to calculate backface culling winding dir
-  auto rotScale = transformationMatrix.rotationScaling();
   const float normalDet = rotScale.determinant();
-  auto invNormalMat = rotScale.comatrix().transposed() / normalDet;
+  // Normal matrix is calculated as `m.inverted().transposed()`, and
+  // `m.inverted()` is the same as `m.comatrix().transposed()/m.determinant()`.
+  // We need the determinant to figure out the winding direction as well, thus
+  // we calculate it separately and then do
+  // `(m.comatrix().transposed()/determinant).transposed()`, which is the same
+  // as `m.comatrix()/determinant`.
+  Mn::Matrix3x3 invTransNormalMat = rotScale.comatrix() / normalDet;
 
   // Flip winding direction to correct handle backface culling
   if (normalDet < 0) {
@@ -154,7 +160,7 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
               : node_.getSemanticId())
       .setTransformationMatrix(transformationMatrix)
       .setProjectionMatrix(camera.projectionMatrix())
-      .setNormalMatrix(invNormalMat.transposed());
+      .setNormalMatrix(invTransNormalMat);
 
   if ((flags_ & Mn::Shaders::PhongGL::Flag::TextureTransformation) &&
       materialData_->textureMatrix != Mn::Matrix3{}) {

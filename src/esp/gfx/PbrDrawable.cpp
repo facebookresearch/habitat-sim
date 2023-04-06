@@ -114,10 +114,16 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   Mn::Matrix4 modelMatrix =
       camera.cameraMatrix().inverted() * transformationMatrix;
 
+  Mn::Matrix3x3 rotScale = modelMatrix.rotationScaling();
   // Find determinant to calculate backface culling winding dir
-  auto rotScale = modelMatrix.rotationScaling();
   const float normalDet = rotScale.determinant();
-  auto invNormalMat = rotScale.comatrix().transposed() / normalDet;
+  // Normal matrix is calculated as `m.inverted().transposed()`, and
+  // `m.inverted()` is the same as `m.comatrix().transposed()/m.determinant()`.
+  // We need the determinant to figure out the winding direction as well, thus
+  // we calculate it separately and then do
+  // `(m.comatrix().transposed()/determinant).transposed()`, which is the same
+  // as `m.comatrix()/determinant`.
+  Mn::Matrix3x3 invTransNormalMat = rotScale.comatrix() / normalDet;
 
   // Flip winding direction to correct handle backface culling
   if (normalDet < 0) {
@@ -135,7 +141,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
       .setProjectionMatrix(camera.projectionMatrix())
       .setViewMatrix(camera.cameraMatrix())
       .setModelMatrix(modelMatrix)  // NOT modelview matrix!
-      .setNormalMatrix(invNormalMat.transposed())
+      .setNormalMatrix(invTransNormalMat)
       .setCameraWorldPosition(
           camera.object().absoluteTransformationMatrix().translation())
       .setBaseColor(materialData_->baseColor)
