@@ -726,7 +726,7 @@ class CollisionProxyOptimizer:
         # option to use Receptacle annotations to compute an additional accuracy metric
         self.compute_receptacle_useability_metrics = True
         # add a vertical epsilon offset to the receptacle points for analysis. This is added directly to the sampled points.
-        self.rec_point_vertical_offset = 0.02
+        self.rec_point_vertical_offset = 0.041
 
         # cache of test points, rays, distances, etc... for use by active processes
         # NOTE: entries created by `setup_obj_gt` and cleaned by `clean_obj_gt` for memory efficiency.
@@ -1251,13 +1251,27 @@ class CollisionProxyOptimizer:
                         )
                     # obj_rec_data[receptacle_name]["results"][shape_id]["sample_point_ray_results"]
 
+    def construct_cylinder_object(
+        self,
+        mm: habitat_sim.metadata.MetadataMediator,
+        cyl_radius: float = 0.04,
+        cyl_height: float = 0.15,
+    ):
+        constructed_cyl_temp_name = "scaled_cyl_template"
+        otm = mm.object_template_manager
+        cyl_temp_handle = otm.get_synth_template_handles("cylinder")[0]
+        cyl_temp = otm.get_template_by_handle(cyl_temp_handle)
+        cyl_temp.scale = mn.Vector3(cyl_radius, cyl_height / 2.0, cyl_radius)
+        otm.register_template(cyl_temp, constructed_cyl_temp_name)
+        return constructed_cyl_temp_name
+
     def compute_receptacle_stability(
         self,
         obj_handle: str,
         use_gt: bool = False,
         cyl_radius: float = 0.04,
         cyl_height: float = 0.15,
-        accepted_height_error: float = 0.02,
+        accepted_height_error: float = 0.05,
     ):
         """
         Try to place a dynamic cylinder on the receptacle points. Record snap error and physical stability.
@@ -1266,42 +1280,12 @@ class CollisionProxyOptimizer:
         :param use_gt: Compute the metric for the ground truth shape instead of the currently active collision proxy (default)
         :param cyl_radius: Radius of the test cylinder object (default similar to food can)
         :param cyl_height: Height of the test cylinder object (default similar to food can)
-        :param accepted_height_error: The acceptacle distance from sample point to snapped point considered successful (meters)
+        :param accepted_height_error: The acceptacle distance from receptacle to snapped point considered successful (meters)
         """
 
-        constructed_cyl_obj_handle = f"cylinder_test_obj_r{cyl_radius}_h{cyl_height}"
-        otm = self.mm.object_template_manager
-        if not otm.get_library_has_handle(constructed_cyl_obj_handle):
-            # ensure that a correctly sized asset mesh is available
-            atm = self.mm.asset_template_manager
-            half_length = (cyl_height / 2.0) / cyl_radius
-            custom_prim_name = f"cylinderSolid_rings_1_segments_12_halfLen_{half_length}_useTexCoords_false_useTangents_false_capEnds_true"
-
-            if not atm.get_library_has_handle(custom_prim_name):
-                # build the primitive template
-                cylinder_prim_handle = atm.get_template_handles("cylinderSolid")[0]
-                cyl_template = atm.get_template_by_handle(cylinder_prim_handle)
-                # default radius==1, so we modify the half-length
-                cyl_template.half_length = half_length
-                atm.register_template(cyl_template)
-
-            assert atm.get_library_has_handle(
-                custom_prim_name
-            ), "primitive asset creation bug."
-
-            if not otm.get_library_has_handle(constructed_cyl_obj_handle):
-                default_cyl_template_handle = otm.get_synth_template_handles(
-                    "cylinderSolid"
-                )[0]
-                default_cyl_template = otm.get_template_by_handle(
-                    default_cyl_template_handle
-                )
-                default_cyl_template.render_asset_handle = custom_prim_name
-                default_cyl_template.collision_asset_handle = custom_prim_name
-                # our prim asset has unit radius, so scale the object by desired radius
-                default_cyl_template.scale = mn.Vector3(cyl_radius)
-                otm.register_template(default_cyl_template, constructed_cyl_obj_handle)
-                assert otm.get_library_has_handle(constructed_cyl_obj_handle)
+        constructed_cyl_obj_handle = self.construct_cylinder_object(
+            self.mm, cyl_radius, cyl_height
+        )
 
         assert (
             len(self.gt_data[obj_handle]["receptacles"].keys()) > 0
@@ -1337,6 +1321,11 @@ class CollisionProxyOptimizer:
             cyl_test_obj_com_height = cyl_test_obj.root_scene_node.cumulative_bb.max[1]
             assert cyl_test_obj.is_alive, "Test object was not added correctly."
 
+            # we sample above the receptacle to account for margin, but we compare distance to the actual receptacle height
+            receptacle_sample_height_correction = mn.Vector3(
+                0, -self.rec_point_vertical_offset, 0
+            )
+
             # evaluation the sample points for each receptacle
             rec_data = self.gt_data[obj_handle]["receptacles"]
             for rec_name in rec_data.keys():
@@ -1354,7 +1343,10 @@ class CollisionProxyOptimizer:
                     )
                     if success:
                         expected_height_error = abs(
-                            (cyl_test_obj.translation - sample_point).length()
+                            (
+                                cyl_test_obj.translation
+                                - (sample_point + receptacle_sample_height_correction)
+                            ).length()
                             - cyl_test_obj_com_height
                         )
                         if expected_height_error > accepted_height_error:
