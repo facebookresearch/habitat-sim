@@ -793,45 +793,15 @@ class HabitatSimInteractiveViewer(Application):
         event.accepted = True
 
     def construct_cylinder_object(
-        self,
-        cyl_radius: float = 0.04,
-        cyl_height: float = 0.15,
+        self, cyl_radius: float = 0.04, cyl_height: float = 0.15
     ):
-        constructed_cyl_obj_handle = f"cylinder_test_obj_r{cyl_radius}_h{cyl_height}"
-
+        constructed_cyl_temp_name = "scaled_cyl_template"
         otm = self.sim.metadata_mediator.object_template_manager
-        if not otm.get_library_has_handle(constructed_cyl_obj_handle):
-            # ensure that a correctly sized asset mesh is available
-            atm = self.sim.metadata_mediator.asset_template_manager
-            half_length = (cyl_height / 2.0) / cyl_radius
-            custom_prim_name = f"cylinderSolid_rings_1_segments_12_halfLen_{half_length}_useTexCoords_false_useTangents_false_capEnds_true"
-
-            if not atm.get_library_has_handle(custom_prim_name):
-                # build the primitive template
-                cylinder_prim_handle = atm.get_template_handles("cylinderSolid")[0]
-                cyl_template = atm.get_template_by_handle(cylinder_prim_handle)
-                # default radius==1, so we modify the half-length
-                cyl_template.half_length = half_length
-                atm.register_template(cyl_template)
-
-            assert atm.get_library_has_handle(
-                custom_prim_name
-            ), "primitive asset creation bug."
-
-            if not otm.get_library_has_handle(constructed_cyl_obj_handle):
-                default_cyl_template_handle = otm.get_synth_template_handles(
-                    "cylinderSolid"
-                )[0]
-                default_cyl_template = otm.get_template_by_handle(
-                    default_cyl_template_handle
-                )
-                default_cyl_template.render_asset_handle = custom_prim_name
-                default_cyl_template.collision_asset_handle = custom_prim_name
-                # our prim asset has unit radius, so scale the object by desired radius
-                default_cyl_template.scale = mn.Vector3(cyl_radius)
-                otm.register_template(default_cyl_template, constructed_cyl_obj_handle)
-                assert otm.get_library_has_handle(constructed_cyl_obj_handle)
-        return constructed_cyl_obj_handle
+        cyl_temp_handle = otm.get_synth_template_handles("cylinder")[0]
+        cyl_temp = otm.get_template_by_handle(cyl_temp_handle)
+        cyl_temp.scale = mn.Vector3(cyl_radius, cyl_height / 2.0, cyl_radius)
+        otm.register_template(cyl_temp, constructed_cyl_temp_name)
+        return constructed_cyl_temp_name
 
     def mouse_press_event(self, event: Application.MouseEvent) -> None:
         """
@@ -932,7 +902,7 @@ class HabitatSimInteractiveViewer(Application):
             and self.mouse_cast_results.has_hits()
             and event.button == button.RIGHT
         ):
-            constructed_cyl_obj_handle = self.construct_cylinder_object()
+            constructed_cyl_obj_handle = self.construct_cylinder_object2()
             # try to place an object
             if (
                 mn.math.dot(
