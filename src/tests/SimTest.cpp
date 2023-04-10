@@ -740,11 +740,13 @@ void SimTest::addObjectsTakeObservation(Simulator& sim,
   ESP_DEBUG() << "addObjectsTakeObservation : adding 2 objects with name "
               << objTmpltHandle;
   auto rigidObjMgr = sim.getRigidObjectManager();
-  auto obj = rigidObjMgr->addObjectByHandle(objTmpltHandle);
-  obj->setTranslation({0.0f, 0.5f, -1.5f});
+  auto obj = rigidObjMgr->addObjectByHandle(objTmpltHandle, nullptr,
+                                            "custom_lighting_1");
+  obj->setTranslation({0.0f, 1.5f, 0.5f});
 
-  auto otherObj = rigidObjMgr->addObjectByHandle(objTmpltHandle);
-  otherObj->setTranslation({2.0f, 0.5f, -1.5f});
+  auto otherObj = rigidObjMgr->addObjectByHandle(objTmpltHandle, nullptr,
+                                                 "custom_lighting_1");
+  otherObj->setTranslation({2.0f, 1.5f, 0.5f});
 
   // Take observation
   sim.getAgentObservation(0, pinholeCameraSpec.uuid, observation);
@@ -764,7 +766,7 @@ void SimTest::addObjectInvertedScale() {
   auto pinholeCameraSpec = CameraSensorSpec::create();
   pinholeCameraSpec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
   pinholeCameraSpec->sensorType = SensorType::Color;
-  pinholeCameraSpec->position = {1.0f, 1.5f, 1.0f};
+  pinholeCameraSpec->position = {0.0f, 0.0f, 0.0f};
   pinholeCameraSpec->resolution = {128, 128};
 
   AgentConfiguration agentConfig{};
