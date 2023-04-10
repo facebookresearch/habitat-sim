@@ -142,7 +142,7 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
   // we calculate it separately and then do
   // `(m.comatrix().transposed()/determinant).transposed()`, which is the same
   // as `m.comatrix()/determinant`.
-  Mn::Matrix3x3 invTransNormalMat = rotScale.comatrix() / normalDet;
+  Mn::Matrix3x3 normalMatrix = rotScale.comatrix() / normalDet;
 
   // Flip winding direction to correct handle backface culling
   if (normalDet < 0) {
@@ -160,7 +160,7 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
               : node_.getSemanticId())
       .setTransformationMatrix(transformationMatrix)
       .setProjectionMatrix(camera.projectionMatrix())
-      .setNormalMatrix(invTransNormalMat);
+      .setNormalMatrix(normalMatrix);
 
   if ((flags_ & Mn::Shaders::PhongGL::Flag::TextureTransformation) &&
       materialData_->textureMatrix != Mn::Matrix3{}) {

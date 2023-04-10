@@ -123,7 +123,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   // we calculate it separately and then do
   // `(m.comatrix().transposed()/determinant).transposed()`, which is the same
   // as `m.comatrix()/determinant`.
-  Mn::Matrix3x3 invTransNormalMat = rotScale.comatrix() / normalDet;
+  Mn::Matrix3x3 normalMatrix = rotScale.comatrix() / normalDet;
 
   // Flip winding direction to correct handle backface culling
   if (normalDet < 0) {
@@ -141,7 +141,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
       .setProjectionMatrix(camera.projectionMatrix())
       .setViewMatrix(camera.cameraMatrix())
       .setModelMatrix(modelMatrix)  // NOT modelview matrix!
-      .setNormalMatrix(invTransNormalMat)
+      .setNormalMatrix(normalMatrix)
       .setCameraWorldPosition(
           camera.object().absoluteTransformationMatrix().translation())
       .setBaseColor(materialData_->baseColor)
