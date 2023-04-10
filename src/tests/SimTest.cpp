@@ -171,8 +171,8 @@ SimTest::SimTest() {
             &SimTest::loadingObjectTemplates,
             &SimTest::buildingPrimAssetObjectTemplates,
             &SimTest::addObjectByHandle,
-            &SimTest::addSensorToObject,
-            &SimTest::createMagnumRenderingOff}, Cr::Containers::arraySize(SimulatorBuilder) );
+            &SimTest::addSensorToObject}, Cr::Containers::arraySize(SimulatorBuilder) );
+  addTests({&SimTest::createMagnumRenderingOff});
   // clang-format on
 }
 void SimTest::basic() {
@@ -271,11 +271,9 @@ void SimTest::checkPinholeCameraRGBAObservation(
 void SimTest::getSceneRGBAObservation() {
   ESP_DEBUG() << "Starting Test : getSceneRGBAObservation";
   setTestCaseName(CORRADE_FUNCTION);
-  ESP_DEBUG() << "About to build simulator";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
-  ESP_DEBUG() << "Built simulator";
   checkPinholeCameraRGBAObservation(*simulator, "SimTestExpectedScene.png",
                                     maxThreshold, 0.75f);
 }
