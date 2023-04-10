@@ -114,6 +114,11 @@ struct SimTest : Cr::TestSuite::Tester {
       Magnum::Float maxThreshold,
       Magnum::Float meanThreshold);
 
+  void addObjectsTakeObservation(Simulator& sim,
+                                 const std::string& objTmpltHandle,
+                                 CameraSensorSpec& pinholeCameraSpec,
+                                 Observation& baseObservation);
+
   void basic();
   void reconfigure();
   void reset();
@@ -128,6 +133,8 @@ struct SimTest : Cr::TestSuite::Tester {
   void loadingObjectTemplates();
   void buildingPrimAssetObjectTemplates();
   void addObjectByHandle();
+  void addObjectInvertedScale();
+
   void addSensorToObject();
   void createMagnumRenderingOff();
 
@@ -171,6 +178,7 @@ SimTest::SimTest() {
             &SimTest::loadingObjectTemplates,
             &SimTest::buildingPrimAssetObjectTemplates,
             &SimTest::addObjectByHandle,
+            &SimTest::addObjectInvertedScale,
             &SimTest::addSensorToObject}, Cr::Containers::arraySize(SimulatorBuilder) );
   addTests({&SimTest::createMagnumRenderingOff});
   // clang-format on
@@ -724,6 +732,92 @@ void SimTest::addObjectByHandle() {
   CORRADE_VERIFY(obj->isAlive());
   CORRADE_VERIFY(obj->getID() != esp::ID_UNDEFINED);
 }
+
+void SimTest::addObjectsTakeObservation(Simulator& sim,
+                                        const std::string& objTmpltHandle,
+                                        CameraSensorSpec& pinholeCameraSpec,
+                                        Observation& observation) {
+  ESP_DEBUG() << "addObjectsTakeObservation : adding 2 objects with name "
+              << objTmpltHandle;
+  auto rigidObjMgr = sim.getRigidObjectManager();
+  auto obj = rigidObjMgr->addObjectByHandle(objTmpltHandle);
+  obj->setTranslation({0.0f, 0.5f, -1.5f});
+
+  auto otherObj = rigidObjMgr->addObjectByHandle(objTmpltHandle);
+  otherObj->setTranslation({2.0f, 0.5f, -1.5f});
+
+  // Take observation
+  sim.getAgentObservation(0, pinholeCameraSpec.uuid, observation);
+  // Remove objects
+  rigidObjMgr->removePhysObjectByHandle(obj->getHandle());
+  rigidObjMgr->removePhysObjectByHandle(otherObj->getHandle());
+}
+
+void SimTest::addObjectInvertedScale() {
+  ESP_DEBUG() << "Starting Test : addObjectInvertedScale";
+  auto&& data = SimulatorBuilder[testCaseInstanceId()];
+  setTestCaseDescription(data.name);
+  auto simulator = data.creator(*this, planeStage, esp::NO_LIGHT_KEY);
+  auto rigidObjMgr = simulator->getRigidObjectManager();
+  auto objAttrMgr = simulator->getObjectAttributesManager();
+  // Add agent to take image
+  auto pinholeCameraSpec = CameraSensorSpec::create();
+  pinholeCameraSpec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
+  pinholeCameraSpec->sensorType = SensorType::Color;
+  pinholeCameraSpec->position = {1.0f, 1.5f, 1.0f};
+  pinholeCameraSpec->resolution = {128, 128};
+
+  AgentConfiguration agentConfig{};
+  agentConfig.sensorSpecifications = {pinholeCameraSpec};
+  Agent::ptr agent = simulator->addAgent(agentConfig);
+  agent->setInitialState(AgentState{});
+
+  // Add 2 objects and take initial non-negative scaled observation
+  const auto objHandle = Cr::Utility::Path::join(
+      TEST_ASSETS, "objects/nested_box.object_config.json");
+
+  Observation baseObservation;
+  addObjectsTakeObservation(*simulator, objHandle, *pinholeCameraSpec,
+                            baseObservation);
+
+  // Create and test observations with scale negative in each of x, y and z
+  // directions
+  Cr::Containers::StringView testAxis[3] = {"X axis", "Y axis", "Z axis"};
+  CORRADE_ITERATION(testAxis);
+  for (int i = 0; i < 3; ++i) {
+    ObjectAttributes::ptr newObjAttr =
+        objAttrMgr->getObjectCopyByHandle(objHandle);
+
+    Mn::Vector3 scale = newObjAttr->getScale();
+    // change x, y, or z scale to be negative
+    scale[i] *= -1.0f;
+
+    // Set modified scale
+    newObjAttr->setScale(scale);
+    // Register new object attributes with negative scale along a single axis
+    // using a new name
+    const std::string newObjHandle =
+        Cr::Utility::formatString("scale_{}_{}", i, objHandle);
+    objAttrMgr->registerObject(newObjAttr, newObjHandle);
+
+    // Take observation of inv X scale
+    Observation newObservation;
+    addObjectsTakeObservation(*simulator, newObjHandle, *pinholeCameraSpec,
+                              newObservation);
+    CORRADE_ITERATION(testAxis[i]);
+    // Verify observations
+    CORRADE_COMPARE_WITH((Mn::ImageView2D{Mn::PixelFormat::RGBA8Unorm,
+                                          {pinholeCameraSpec->resolution[0],
+                                           pinholeCameraSpec->resolution[1]},
+                                          baseObservation.buffer->data}),
+                         (Mn::ImageView2D{Mn::PixelFormat::RGBA8Unorm,
+                                          {pinholeCameraSpec->resolution[0],
+                                           pinholeCameraSpec->resolution[1]},
+                                          newObservation.buffer->data}),
+                         (Mn::DebugTools::CompareImage{maxThreshold, 0.01f}));
+  }
+
+}  // SimTest::addObjectInvertedScale
 
 void SimTest::addSensorToObject() {
   ESP_DEBUG() << "Starting Test : addSensorToObject";
