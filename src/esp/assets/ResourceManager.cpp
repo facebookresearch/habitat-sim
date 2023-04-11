@@ -2910,6 +2910,12 @@ void ResourceManager::createDrawable(Mn::GL::Mesh* mesh,
                              : nullptr);  // pbr image based lighting
       break;
   }
+
+  drawableCountAndNumFaces_.first += 1;
+  if (mesh) {
+    drawableCountAndNumFaces_.second += mesh->count() / 3;
+  }
+
 }  // ResourceManager::createDrawable
 
 void ResourceManager::initDefaultLightSetups() {
