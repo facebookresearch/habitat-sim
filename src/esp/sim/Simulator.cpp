@@ -133,6 +133,8 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     resourceManager_->setMetadataMediator(metadataMediator_);
   }
 
+  // reset this count and number here because we are resetting (clearing) the
+  // scene
   resourceManager_->resetDrawableCountAndNumFaces();
 
   if (!sceneManager_) {
@@ -1358,7 +1360,6 @@ std::vector<float> Simulator::getRuntimePerfStatValues() {
   runtimePerfStatValues_.push_back(physicsManager_->getNumRigidObjects());
   runtimePerfStatValues_.push_back(physicsManager_->checkActiveObjects());
   runtimePerfStatValues_.push_back(physicsManager_->getNumArticulatedObjects());
-  // todo: num articulated links and num active articulated links
   runtimePerfStatValues_.push_back(
       physicsManager_->getNumActiveOverlappingPairs());
   runtimePerfStatValues_.push_back(

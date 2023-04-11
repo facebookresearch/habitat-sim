@@ -362,7 +362,7 @@ void initSimBindings(py::module& m) {
           R"(Runtime perf stats are various scalars helpful for troubleshooting runtime perf. This can be called once at startup. See also get_runtime_perf_stat_values.)")
       .def(
           "get_runtime_perf_stat_values", &Simulator::getRuntimePerfStatValues,
-          R"(Runtime perf stats are various scalars helpful for troubleshooting runtime perf. These values generally change after every sim step. See also get_runtime_perf_stat_values.)")
+          R"(Runtime perf stats are various scalars helpful for troubleshooting runtime perf. These values generally change after every sim step. See also get_runtime_perf_stat_names.)")
       .def("get_debug_line_render", &Simulator::getDebugLineRender,
            pybind11::return_value_policy::reference,
            R"(Get visualization helper for rendering lines.)");
