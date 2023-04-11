@@ -742,11 +742,11 @@ void SimTest::addObjectsTakeObservation(Simulator& sim,
   auto rigidObjMgr = sim.getRigidObjectManager();
   auto obj = rigidObjMgr->addObjectByHandle(objTmpltHandle, nullptr,
                                             "custom_lighting_1");
-  obj->setTranslation({0.0f, 1.5f, 0.5f});
+  obj->setTranslation({-1.0f, 1.5f, -2.5f});
 
   auto otherObj = rigidObjMgr->addObjectByHandle(objTmpltHandle, nullptr,
-                                                 "custom_lighting_1");
-  otherObj->setTranslation({2.0f, 1.5f, 0.5f});
+                                                 "custom_lighting_2");
+  otherObj->setTranslation({1.0f, 1.5f, -2.5f});
 
   // Take observation
   sim.getAgentObservation(0, pinholeCameraSpec.uuid, observation);
@@ -759,7 +759,7 @@ void SimTest::addObjectInvertedScale() {
   ESP_DEBUG() << "Starting Test : addObjectInvertedScale";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
-  auto simulator = data.creator(*this, planeStage, esp::NO_LIGHT_KEY);
+  auto simulator = data.creator(*this, planeStage, esp::DEFAULT_LIGHTING_KEY);
   auto rigidObjMgr = simulator->getRigidObjectManager();
   auto objAttrMgr = simulator->getObjectAttributesManager();
   // Add agent to take image
