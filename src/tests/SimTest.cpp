@@ -5,6 +5,7 @@
 #include <Corrade/Containers/StridedArrayView.h>
 #include <Corrade/TestSuite/Compare/Numeric.h>
 #include <Corrade/TestSuite/Tester.h>
+#include <Corrade/Utility/Algorithms.h>
 #include <Corrade/Utility/Path.h>
 #include <Magnum/DebugTools/CompareImage.h>
 #include <Magnum/EigenIntegration/Integration.h>
@@ -783,14 +784,20 @@ void SimTest::addObjectInvertedScale() {
   addObjectsAndMakeObservation(*simulator, *pinholeCameraSpec, objHandle,
                                expectedObservation);
 
+  // Make aa copy of observation buffer so future observations don't overwrite
+  // this one
+  Cr::Containers::Array<uint8_t> obsCopy{
+      Cr::NoInit, expectedObservation.buffer->data.size()};
+  Cr::Utility::copy(expectedObservation.buffer->data, obsCopy);
+
   // File name of expected image for un-inverted and each axis-inverted image
   const auto expectedScreenshotFile = Cr::Utility::Path::join(
       screenshotDir, "SimTestInvertScaleImageExpected.png");
-
+  // Make a ground truth image based on a copy of the observation buffer
   const Mn::ImageView2D expectedImage{
       Mn::PixelFormat::RGBA8Unorm,
       {pinholeCameraSpec->resolution[0], pinholeCameraSpec->resolution[1]},
-      expectedObservation.buffer->data};
+      obsCopy};
 
   // Verify non-negative scale scene is as expected
   CORRADE_COMPARE_WITH(
@@ -808,6 +815,7 @@ void SimTest::addObjectInvertedScale() {
     Mn::Vector3 scale = newObjAttr->getScale();
     // change x, y, or z scale to be negative
     scale[i] *= -1.0f;
+
     // Set modified scale
     newObjAttr->setScale(scale);
     // Register new object attributes with negative scale along a single axis
@@ -825,15 +833,15 @@ void SimTest::addObjectInvertedScale() {
         Mn::PixelFormat::RGBA8Unorm,
         {pinholeCameraSpec->resolution[0], pinholeCameraSpec->resolution[1]},
         newObservation.buffer->data};
-    // Verify inverted scale scene is as expected
+
+    // Verify inverted scale scene is as expected compared to file.
     CORRADE_COMPARE_WITH(
         newImage, expectedScreenshotFile,
         (Mn::DebugTools::CompareImageToFile{maxThreshold, 0.01f}));
 
-    // Doesn't seem to fail when it should. TODO verify this
-    // CORRADE_COMPARE_WITH(newImage, expectedImage,
-    //                      (Mn::DebugTools::CompareImage{maxThreshold,
-    //                      0.01f}));
+    // Needed to make a buffer copy into the comparison image
+    CORRADE_COMPARE_WITH(newImage, expectedImage,
+                         (Mn::DebugTools::CompareImage{maxThreshold, 0.01f}));
   }
 
 }  // SimTest::addObjectInvertedScale
