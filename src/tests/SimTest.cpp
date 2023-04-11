@@ -114,10 +114,10 @@ struct SimTest : Cr::TestSuite::Tester {
       Magnum::Float maxThreshold,
       Magnum::Float meanThreshold);
 
-  void addObjectsTakeObservation(Simulator& sim,
-                                 const std::string& objTmpltHandle,
-                                 CameraSensorSpec& pinholeCameraSpec,
-                                 Observation& baseObservation);
+  void addObjectsAndMakeObservation(Simulator& sim,
+                                    esp::sensor::CameraSensorSpec& cameraSpec,
+                                    const std::string& objTmpltHandle,
+                                    Observation& observation);
 
   void basic();
   void reconfigure();
@@ -733,40 +733,43 @@ void SimTest::addObjectByHandle() {
   CORRADE_VERIFY(obj->getID() != esp::ID_UNDEFINED);
 }
 
-void SimTest::addObjectsTakeObservation(Simulator& sim,
-                                        const std::string& objTmpltHandle,
-                                        CameraSensorSpec& pinholeCameraSpec,
-                                        Observation& observation) {
-  ESP_DEBUG() << "addObjectsTakeObservation : adding 2 objects with name "
-              << objTmpltHandle;
+void SimTest::addObjectsAndMakeObservation(
+    Simulator& sim,
+    esp::sensor::CameraSensorSpec& cameraSpec,
+    const std::string& objTmpltHandle,
+    Observation& observation) {
   auto rigidObjMgr = sim.getRigidObjectManager();
+  // remove any existing objects
+  rigidObjMgr->removeAllObjects();
+  ESP_DEBUG() << "addObjectsAndMakeObservation : adding 2 objects with name "
+              << objTmpltHandle;
+  // add and place first object
   auto obj = rigidObjMgr->addObjectByHandle(objTmpltHandle, nullptr,
                                             "custom_lighting_1");
-  obj->setTranslation({-1.0f, 1.5f, -2.5f});
+  obj->setTranslation({-1.0f, 0.5f, -2.5f});
 
+  // add and place second object
   auto otherObj = rigidObjMgr->addObjectByHandle(objTmpltHandle, nullptr,
                                                  "custom_lighting_2");
-  otherObj->setTranslation({1.0f, 1.5f, -2.5f});
+  otherObj->setTranslation({1.0f, 0.5f, -2.5f});
 
-  // Take observation
-  sim.getAgentObservation(0, pinholeCameraSpec.uuid, observation);
-  // Remove objects
-  rigidObjMgr->removePhysObjectByHandle(obj->getHandle());
-  rigidObjMgr->removePhysObjectByHandle(otherObj->getHandle());
-}
+  // Make Observation of constructed scene
+  CORRADE_VERIFY(sim.getAgentObservation(0, cameraSpec.uuid, observation));
+
+}  // SimTest::addObjectsAndMakeObservation
 
 void SimTest::addObjectInvertedScale() {
   ESP_DEBUG() << "Starting Test : addObjectInvertedScale";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
-  auto simulator = data.creator(*this, planeStage, esp::DEFAULT_LIGHTING_KEY);
+  auto simulator = data.creator(*this, planeStage, esp::NO_LIGHT_KEY);
   auto rigidObjMgr = simulator->getRigidObjectManager();
   auto objAttrMgr = simulator->getObjectAttributesManager();
   // Add agent to take image
   auto pinholeCameraSpec = CameraSensorSpec::create();
   pinholeCameraSpec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
   pinholeCameraSpec->sensorType = SensorType::Color;
-  pinholeCameraSpec->position = {0.0f, 0.0f, 0.0f};
+  pinholeCameraSpec->position = {0.0f, 1.5f, 0.0f};
   pinholeCameraSpec->resolution = {128, 128};
 
   AgentConfiguration agentConfig{};
@@ -778,22 +781,35 @@ void SimTest::addObjectInvertedScale() {
   const auto objHandle = Cr::Utility::Path::join(
       TEST_ASSETS, "objects/nested_box.object_config.json");
 
-  Observation baseObservation;
-  addObjectsTakeObservation(*simulator, objHandle, *pinholeCameraSpec,
-                            baseObservation);
+  Observation expectedObservation;
+  addObjectsAndMakeObservation(*simulator, *pinholeCameraSpec, objHandle,
+                               expectedObservation);
+
+  // File comparator for all image file comparisons
+  Mn::DebugTools::CompareImageToFile fileComparator{maxThreshold, 0.01f};
+
+  // File name of expected image for un-inverted and each axis-inverted image
+  const auto expectedScreenshotFile = Cr::Utility::Path::join(
+      screenshotDir, "SimTestInvertScaleImageExpected.png");
+
+  // Verify non-negative scale scene is as expected
+  CORRADE_COMPARE_WITH((Mn::ImageView2D{Mn::PixelFormat::RGBA8Unorm,
+                                        {pinholeCameraSpec->resolution[0],
+                                         pinholeCameraSpec->resolution[1]},
+                                        expectedObservation.buffer->data}),
+                       expectedScreenshotFile, fileComparator);
 
   // Create and test observations with scale negative in each of x, y and z
   // directions
-  Cr::Containers::StringView testAxis[3] = {"X axis", "Y axis", "Z axis"};
-  CORRADE_ITERATION(testAxis);
+  Cr::Containers::StringView testAxis[3]{"X_axis", "Y_axis", "Z_axis"};
   for (int i = 0; i < 3; ++i) {
+    CORRADE_ITERATION(testAxis[i]);
     ObjectAttributes::ptr newObjAttr =
         objAttrMgr->getObjectCopyByHandle(objHandle);
 
     Mn::Vector3 scale = newObjAttr->getScale();
     // change x, y, or z scale to be negative
     scale[i] *= -1.0f;
-
     // Set modified scale
     newObjAttr->setScale(scale);
     // Register new object attributes with negative scale along a single axis
@@ -802,21 +818,16 @@ void SimTest::addObjectInvertedScale() {
         Cr::Utility::formatString("scale_{}_{}", i, objHandle);
     objAttrMgr->registerObject(newObjAttr, newObjHandle);
 
-    // Take observation of inv X scale
+    // Build object layout and retrieve observation
     Observation newObservation;
-    addObjectsTakeObservation(*simulator, newObjHandle, *pinholeCameraSpec,
-                              newObservation);
-    CORRADE_ITERATION(testAxis[i]);
-    // Verify observations
+    addObjectsAndMakeObservation(*simulator, *pinholeCameraSpec, newObjHandle,
+                                 newObservation);
+    // Verify inverted scale scene is as expected
     CORRADE_COMPARE_WITH((Mn::ImageView2D{Mn::PixelFormat::RGBA8Unorm,
                                           {pinholeCameraSpec->resolution[0],
                                            pinholeCameraSpec->resolution[1]},
-                                          baseObservation.buffer->data}),
-                         (Mn::ImageView2D{Mn::PixelFormat::RGBA8Unorm,
-                                          {pinholeCameraSpec->resolution[0],
-                                           pinholeCameraSpec->resolution[1]},
                                           newObservation.buffer->data}),
-                         (Mn::DebugTools::CompareImage{maxThreshold, 0.01f}));
+                         expectedScreenshotFile, fileComparator);
   }
 
 }  // SimTest::addObjectInvertedScale
