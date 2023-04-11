@@ -741,8 +741,6 @@ void SimTest::addObjectsAndMakeObservation(
   auto rigidObjMgr = sim.getRigidObjectManager();
   // remove any existing objects
   rigidObjMgr->removeAllObjects();
-  ESP_DEBUG() << "addObjectsAndMakeObservation : adding 2 objects with name "
-              << objTmpltHandle;
   // add and place first object
   auto obj = rigidObjMgr->addObjectByHandle(objTmpltHandle, nullptr,
                                             "custom_lighting_1");
@@ -785,19 +783,19 @@ void SimTest::addObjectInvertedScale() {
   addObjectsAndMakeObservation(*simulator, *pinholeCameraSpec, objHandle,
                                expectedObservation);
 
-  // File comparator for all image file comparisons
-  Mn::DebugTools::CompareImageToFile fileComparator{maxThreshold, 0.01f};
-
   // File name of expected image for un-inverted and each axis-inverted image
   const auto expectedScreenshotFile = Cr::Utility::Path::join(
       screenshotDir, "SimTestInvertScaleImageExpected.png");
 
+  const Mn::ImageView2D expectedImage{
+      Mn::PixelFormat::RGBA8Unorm,
+      {pinholeCameraSpec->resolution[0], pinholeCameraSpec->resolution[1]},
+      expectedObservation.buffer->data};
+
   // Verify non-negative scale scene is as expected
-  CORRADE_COMPARE_WITH((Mn::ImageView2D{Mn::PixelFormat::RGBA8Unorm,
-                                        {pinholeCameraSpec->resolution[0],
-                                         pinholeCameraSpec->resolution[1]},
-                                        expectedObservation.buffer->data}),
-                       expectedScreenshotFile, fileComparator);
+  CORRADE_COMPARE_WITH(
+      expectedImage, expectedScreenshotFile,
+      (Mn::DebugTools::CompareImageToFile{maxThreshold, 0.01f}));
 
   // Create and test observations with scale negative in each of x, y and z
   // directions
@@ -822,12 +820,18 @@ void SimTest::addObjectInvertedScale() {
     Observation newObservation;
     addObjectsAndMakeObservation(*simulator, *pinholeCameraSpec, newObjHandle,
                                  newObservation);
+
+    const Mn::ImageView2D newImage{
+        Mn::PixelFormat::RGBA8Unorm,
+        {pinholeCameraSpec->resolution[0], pinholeCameraSpec->resolution[1]},
+        newObservation.buffer->data};
     // Verify inverted scale scene is as expected
-    CORRADE_COMPARE_WITH((Mn::ImageView2D{Mn::PixelFormat::RGBA8Unorm,
-                                          {pinholeCameraSpec->resolution[0],
-                                           pinholeCameraSpec->resolution[1]},
-                                          newObservation.buffer->data}),
-                         expectedScreenshotFile, fileComparator);
+    CORRADE_COMPARE_WITH(
+        newImage, expectedScreenshotFile,
+        (Mn::DebugTools::CompareImageToFile{maxThreshold, 0.01f}));
+
+    CORRADE_COMPARE_WITH(newImage, expectedImage,
+                         (Mn::DebugTools::CompareImage{maxThreshold, 0.01f}));
   }
 
 }  // SimTest::addObjectInvertedScale
