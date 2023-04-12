@@ -39,6 +39,7 @@
 #  PngImporter                  - PNG importer
 #  PrimitiveImporter            - Primitive importer
 #  SpirvToolsShaderConverter    - SPIR-V Tools shader converter
+#  SpngImporter                 - PNG importer using libspng
 #  StanfordImporter             - Stanford PLY importer
 #  StanfordSceneConverter       - Stanford PLY converter
 #  StbDxtImageConverter         - BC1/BC3 image compressor using stb_dxt
@@ -168,10 +169,10 @@ set(_MAGNUMPLUGINS_PLUGIN_COMPONENTS
     JpegImporter KtxImageConverter KtxImporter MeshOptimizerSceneConverter
     MiniExrImageConverter OpenExrImageConverter OpenExrImporter
     OpenGexImporter PngImageConverter PngImporter PrimitiveImporter
-    SpirvToolsShaderConverter StanfordImporter StanfordSceneConverter
-    StbDxtImageConverter StbImageConverter StbImageImporter
-    StbResizeImageConverter StbTrueTypeFont StbVorbisAudioImporter StlImporter
-    UfbxImporter WebPImporter)
+    SpirvToolsShaderConverter SpngImporter StanfordImporter
+    StanfordSceneConverter StbDxtImageConverter StbImageConverter
+    StbImageImporter StbResizeImageConverter StbTrueTypeFont
+    StbVorbisAudioImporter StlImporter UfbxImporter WebPImporter)
 # Nothing is enabled by default right now
 set(_MAGNUMPLUGINS_IMPLICITLY_ENABLED_COMPONENTS )
 
@@ -470,6 +471,12 @@ foreach(_component ${MagnumPlugins_FIND_COMPONENTS})
             find_package(SpirvTools REQUIRED)
             set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
                 INTERFACE_LINK_LIBRARIES SpirvTools::SpirvTools SpirvTools::Opt)
+
+        # SpngImporter plugin dependencies
+        elseif(_component STREQUAL SpngImporter)
+            find_package(Spng REQUIRED)
+            set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
+                INTERFACE_LINK_LIBRARIES Spng::Spng)
 
         # StanfordImporter has no dependencies
         # StanfordSceneConverter has no dependencies

@@ -6,6 +6,7 @@
 
 #include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/Utility/FormatStl.h>
+#include <Magnum/GL/Renderer.h>
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix3.h>
 
@@ -132,6 +133,22 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
 
   updateShaderLightingParameters(transformationMatrix, camera);
 
+  Mn::Matrix3x3 rotScale = transformationMatrix.rotationScaling();
+  // Find determinant to calculate backface culling winding dir
+  const float normalDet = rotScale.determinant();
+  // Normal matrix is calculated as `m.inverted().transposed()`, and
+  // `m.inverted()` is the same as `m.comatrix().transposed()/m.determinant()`.
+  // We need the determinant to figure out the winding direction as well, thus
+  // we calculate it separately and then do
+  // `(m.comatrix().transposed()/determinant).transposed()`, which is the same
+  // as `m.comatrix()/determinant`.
+  Mn::Matrix3x3 normalMatrix = rotScale.comatrix() / normalDet;
+
+  // Flip winding direction to correct handle backface culling
+  if (normalDet < 0) {
+    Mn::GL::Renderer::setFrontFace(Mn::GL::Renderer::FrontFace::ClockWise);
+  }
+
   (*shader_)
       // e.g., semantic mesh has its own per vertex annotation, which has been
       // uploaded to GPU so simply pass 0 to the uniform "objectId" in the
@@ -143,7 +160,7 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
               : node_.getSemanticId())
       .setTransformationMatrix(transformationMatrix)
       .setProjectionMatrix(camera.projectionMatrix())
-      .setNormalMatrix(transformationMatrix.normalMatrix());
+      .setNormalMatrix(normalMatrix);
 
   if ((flags_ & Mn::Shaders::PhongGL::Flag::TextureTransformation) &&
       materialData_->textureMatrix != Mn::Matrix3{}) {
@@ -167,6 +184,12 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
   }
 
   shader_->draw(getMesh());
+
+  // Reset winding direction
+  if (normalDet < 0) {
+    Mn::GL::Renderer::setFrontFace(
+        Mn::GL::Renderer::FrontFace::CounterClockWise);
+  }
 }
 
 void GenericDrawable::updateShader() {
