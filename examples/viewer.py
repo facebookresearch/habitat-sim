@@ -24,7 +24,7 @@ from magnum.platform.glfw import Application
 import habitat_sim
 from habitat_sim import ReplayRenderer, ReplayRendererConfiguration, physics
 from habitat_sim.logging import LoggingContext, logger
-from habitat_sim.utils.common import quat_from_angle_axis
+from habitat_sim.utils.common import d3_40_colors_rgb, quat_from_angle_axis
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
 
 # add tools directory so I can import things to try them in the viewer
@@ -324,8 +324,10 @@ class HabitatSimInteractiveViewer(Application):
                     )
                 )
             # draw any receptacles for the object
-            for receptacle in self.object_receptacles:
-                receptacle.debug_draw(self.sim, color=mn.Color4.green())
+            for rix, receptacle in enumerate(self.object_receptacles):
+                c = d3_40_colors_rgb[rix]
+                rec_color = mn.Vector3(c[0], c[1], c[2]) / 256.0
+                receptacle.debug_draw(self.sim, color=mn.Color4.from_xyz(rec_color))
 
     def draw_event(
         self,
