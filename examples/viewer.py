@@ -455,6 +455,22 @@ class HabitatSimInteractiveViewer(Application):
         self.cfg.metadata_mediator.active_dataset = self.sim_settings[
             "scene_dataset_config_file"
         ]
+        if args.reorient_object:
+            obj_handle = (
+                self.cfg.metadata_mediator.object_template_manager.get_template_handles(
+                    args.scene
+                )[0]
+            )
+            fp_models_metadata_file = (
+                "/home/alexclegg/Documents/dev/fphab/fpModels_metadata.csv"
+            )
+            obj_orientations = csa.parse_object_orientations_from_metadata_csv(
+                fp_models_metadata_file
+            )
+            csa.correct_object_orientations(
+                [obj_handle], obj_orientations, self.cfg.metadata_mediator
+            )
+
         otm = self.cfg.metadata_mediator.object_template_manager
         obj_template = otm.get_template_by_handle(obj_temp_handle)
         obj_template.compute_COM_from_shape = False
@@ -464,6 +480,9 @@ class HabitatSimInteractiveViewer(Application):
         stage_template_name = "obj_as_stage_template"
         new_stage_template = stm.create_new_template(handle=stage_template_name)
         new_stage_template.render_asset_handle = obj_template.render_asset_handle
+        new_stage_template.orient_up = obj_template.orient_up
+        new_stage_template.orient_front = obj_template.orient_front
+
         # margin must be 0 for snapping to work on overlapped gt/proxy
         new_stage_template.margin = 0.0
         stm.register_template(
@@ -1280,6 +1299,11 @@ if __name__ == "__main__":
         "--disable-physics",
         action="store_true",
         help="disable physics simulation (default: False)",
+    )
+    parser.add_argument(
+        "--reorient-object",
+        action="store_true",
+        help="reorient the object based on the values in the config file.",
     )
     parser.add_argument(
         "--stage-requires-lighting",

@@ -3,6 +3,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import argparse
+import csv
 import math
 import os
 import random
@@ -616,6 +617,8 @@ def evaluate_collision_shape(
         stage_template_name = "obj_as_stage_template"
         new_stage_template = stm.create_new_template(handle=stage_template_name)
         new_stage_template.render_asset_handle = obj_template.render_asset_handle
+        new_stage_template.orient_up = obj_template.orient_up
+        new_stage_template.orient_front = obj_template.orient_front
         stm.register_template(
             template=new_stage_template, specified_handle=stage_template_name
         )
@@ -792,6 +795,8 @@ class CollisionProxyOptimizer:
         stage_template_name = obj_handle + "_as_stage"
         new_stage_template = stm.create_new_template(handle=stage_template_name)
         new_stage_template.render_asset_handle = obj_template.render_asset_handle
+        new_stage_template.orient_up = obj_template.orient_up
+        new_stage_template.orient_front = obj_template.orient_front
         stm.register_template(
             template=new_stage_template, specified_handle=stage_template_name
         )
@@ -859,11 +864,8 @@ class CollisionProxyOptimizer:
                             }
                             if self.generate_debug_images:
                                 debug_lines = []
-                                assert (
-                                    len(receptacle.mesh_data[1]) % 3 == 0
-                                ), "must be triangles"
                                 for face in range(
-                                    int(len(receptacle.mesh_data[1]) / 3)
+                                    int(len(receptacle.mesh_data.indices) / 3)
                                 ):
                                     verts = receptacle.get_face_verts(f_ix=face)
                                     for edge in range(3):
@@ -2056,15 +2058,15 @@ class CollisionProxyOptimizer:
             print(f"Computing metric for `{obj_h}`, {obix}|{len(obj_handles)}")
             print("-------------------------------")
             self.setup_obj_gt(obj_h)
-            self.compute_baseline_metrics(obj_h)
+            # self.compute_baseline_metrics(obj_h)
             self.compute_proxy_metrics(obj_h)
 
             # physics tests
             self.run_physics_settle_test(obj_h)
             self.run_physics_sphere_shake_test(obj_h)
-            self.compute_grid_collision_times(obj_h, subdivisions=0)
-            self.compute_grid_collision_times(obj_h, subdivisions=1)
-            self.compute_grid_collision_times(obj_h, subdivisions=2)
+            # self.compute_grid_collision_times(obj_h, subdivisions=0)
+            # self.compute_grid_collision_times(obj_h, subdivisions=1)
+            # self.compute_grid_collision_times(obj_h, subdivisions=2)
 
             # receptacle metrics:
             if self.compute_receptacle_useability_metrics:
@@ -2074,7 +2076,7 @@ class CollisionProxyOptimizer:
                 self.compute_receptacle_access_metrics(obj_h, use_gt=True)
                 print(" PR Receptacle Metrics:")
                 self.compute_receptacle_access_metrics(obj_h, use_gt=False)
-            self.grid_search_vhacd_params(obj_h)
+            # self.grid_search_vhacd_params(obj_h)
             self.compute_gt_errors(obj_h)
             print_dict_structure(self.gt_data)
             self.cache_global_results()
@@ -2129,6 +2131,77 @@ def get_objects_in_scene(
             if obj.creation_attributes.handle not in scene_object_template_handles:
                 scene_object_template_handles.append(obj.creation_attributes.handle)
         return scene_object_template_handles
+
+
+def parse_object_orientations_from_metadata_csv(
+    metadata_csv: str,
+) -> Dict[str, Tuple[mn.Vector3, mn.Vector3]]:
+    """
+    Parse the 'up' and 'front' vectors of objects from a csv metadata file.
+
+    :param metadata_csv: The absolute filepath of the metadata CSV.
+
+    :return: A Dict mapping object ids to a Tuple of up, front vectors.
+    """
+
+    def str_to_vec(vec_str: str) -> mn.Vector3:
+        """
+        Convert a list of 3 comma separated strings into a Vector3.
+        """
+        elem_str = [float(x) for x in vec_str.split(",")]
+        assert len(elem_str) == 3, f"string '{vec_str}' must be a 3 vec."
+        return mn.Vector3(tuple(elem_str))
+
+    orientations = {}
+
+    with open(metadata_csv, newline="") as csvfile:
+        reader = csv.reader(csvfile, delimiter=",")
+        id_row_ix = -1
+        up_row_ix = -1
+        front_row_ix = -1
+        for rix, data_row in enumerate(reader):
+            if rix == 0:
+                id_row_ix = data_row.index("id")
+                up_row_ix = data_row.index("up")
+                front_row_ix = data_row.index("front")
+            else:
+                up = data_row[up_row_ix]
+                front = data_row[front_row_ix]
+                if len(up) == 0 or len(front) == 0:
+                    # both must be set or neither
+                    assert len(up) == 0
+                    assert len(front) == 0
+                else:
+                    orientations[data_row[id_row_ix]] = (
+                        str_to_vec(up),
+                        str_to_vec(front),
+                    )
+
+    return orientations
+
+
+def correct_object_orientations(
+    obj_handles: List[str],
+    obj_orientations: Dict[str, Tuple[mn.Vector3, mn.Vector3]],
+    mm: habitat_sim.metadata.MetadataMediator,
+) -> None:
+    """
+    Correct the orientations for all object templates in 'obj_handles' as specified by 'obj_orientations'.
+
+    :param obj_handles: A list of object template handles.
+    :param obj_orientations: A dict mapping object names (abridged, not handles) to Tuple of (up,front) orientation vectors.
+    """
+    obj_handle_to_orientation = {}
+    for obj_name in obj_orientations.keys():
+        for obj_handle in obj_handles:
+            if obj_name in obj_handle:
+                obj_handle_to_orientation[obj_handle] = obj_orientations[obj_name]
+    print(f"obj_handle_to_orientation = {obj_handle_to_orientation}")
+    for obj_handle, orientation in obj_handle_to_orientation.items():
+        obj_template = mm.object_template_manager.get_template_by_handle(obj_handle)
+        obj_template.orient_up = orientation[0]
+        obj_template.orient_front = orientation[1]
+        mm.object_template_manager.register_template(obj_template)
 
 
 def main():
@@ -2186,6 +2259,21 @@ def main():
     ]
     # all_handles = [all_handles[0]]
     print(f"Number of objects with receptacles = {len(all_handles)}")
+
+    # ----------------------------------------------------
+    # load object orientation metadata
+    reorient_objects = False
+    if reorient_objects:
+        fp_models_metadata_file = (
+            "/home/alexclegg/Documents/dev/fphab/fpModels_metadata.csv"
+        )
+        obj_orientations = parse_object_orientations_from_metadata_csv(
+            fp_models_metadata_file
+        )
+        correct_object_orientations(all_handles, obj_orientations, cpo.mm)
+    # ----------------------------------------------------
+
+    print(f"all_handles[0] = {all_handles[0]}")
 
     # ----------------------------------------------------
 
