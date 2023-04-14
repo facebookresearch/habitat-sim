@@ -731,6 +731,12 @@ class CollisionProxyOptimizer:
         # add a vertical epsilon offset to the receptacle points for analysis. This is added directly to the sampled points.
         self.rec_point_vertical_offset = 0.041
 
+        self.init_caches()
+
+    def init_caches(self):
+        """
+        Re-initialize all internal data caches to prepare for re-use.
+        """
         # cache of test points, rays, distances, etc... for use by active processes
         # NOTE: entries created by `setup_obj_gt` and cleaned by `clean_obj_gt` for memory efficiency.
         self.gt_data: Dict[str, Dict[str, Any]] = {}
@@ -2062,8 +2068,8 @@ class CollisionProxyOptimizer:
             self.compute_proxy_metrics(obj_h)
 
             # physics tests
-            self.run_physics_settle_test(obj_h)
-            self.run_physics_sphere_shake_test(obj_h)
+            # self.run_physics_settle_test(obj_h)
+            # self.run_physics_sphere_shake_test(obj_h)
             # self.compute_grid_collision_times(obj_h, subdivisions=0)
             # self.compute_grid_collision_times(obj_h, subdivisions=1)
             # self.compute_grid_collision_times(obj_h, subdivisions=2)
@@ -2215,9 +2221,6 @@ def main():
         default="collision_shape_automation/",
         help="output directory for saved csv and images. Default = `./collision_shape_automation/`.",
     )
-    # parser.add_argument(
-    #    "--object-handle", type=str, help="handle identifying the object to evaluate."
-    # )
     args = parser.parse_args()
 
     sim_settings = default_sim_settings.copy()
@@ -2237,70 +2240,57 @@ def main():
     otm = cpo.mm.object_template_manager
 
     # ----------------------------------------------------
-    # get object handles from a specific scene
-    scene_of_interest = "107734119_175999932"
-    objects_in_scene = get_objects_in_scene(
-        dataset_path=args.dataset, scene_handle=scene_of_interest, mm=cpo.mm
-    )
-    all_handles = objects_in_scene
-    # ----------------------------------------------------
-
-    # ----------------------------------------------------
     # get all object handles
     # all_handles = otm.get_file_template_handles()
+    # cpo.compute_and_save_results_for_objects(all_handles)
     # ----------------------------------------------------
 
     # ----------------------------------------------------
-    # get a subset with receptacles defined
-    all_handles = [
-        all_handles[i]
-        for i in range(len(all_handles))
-        if object_has_receptacles(all_handles[i], otm)
+    # run the pipeline for a set of scenes with separate output files for each
+    scenes_of_interest = []
+    # get all scenes from the mm
+    scenes_of_interest = [
+        handle.split(".scene_instance.json")[0].split("/")[-1]
+        for handle in cpo.mm.get_scene_handles()
     ]
-    # all_handles = [all_handles[0]]
-    print(f"Number of objects with receptacles = {len(all_handles)}")
 
-    # ----------------------------------------------------
-    # load object orientation metadata
-    reorient_objects = False
-    if reorient_objects:
-        fp_models_metadata_file = (
-            "/home/alexclegg/Documents/dev/fphab/fpModels_metadata.csv"
+    for scene_of_interest in scenes_of_interest:
+        cpo.init_caches()
+        # ----------------------------------------------------
+        # get object handles from a specific scene
+        objects_in_scene = get_objects_in_scene(
+            dataset_path=args.dataset, scene_handle=scene_of_interest, mm=cpo.mm
         )
-        obj_orientations = parse_object_orientations_from_metadata_csv(
-            fp_models_metadata_file
+        all_handles = objects_in_scene
+        # ----------------------------------------------------
+
+        # ----------------------------------------------------
+        # get a subset with receptacles defined
+        all_handles = [
+            all_handles[i]
+            for i in range(len(all_handles))
+            if object_has_receptacles(all_handles[i], otm)
+        ]
+        # all_handles = [all_handles[0]]
+        print(f"Number of objects with receptacles = {len(all_handles)}")
+        # ----------------------------------------------------
+
+        # ----------------------------------------------------
+        # load object orientation metadata
+        reorient_objects = False
+        if reorient_objects:
+            fp_models_metadata_file = (
+                "/home/alexclegg/Documents/dev/fphab/fpModels_metadata.csv"
+            )
+            obj_orientations = parse_object_orientations_from_metadata_csv(
+                fp_models_metadata_file
+            )
+            correct_object_orientations(all_handles, obj_orientations, cpo.mm)
+        # ----------------------------------------------------
+
+        cpo.compute_and_save_results_for_objects(
+            all_handles, output_filename=scene_of_interest + "_cpo_out"
         )
-        correct_object_orientations(all_handles, obj_orientations, cpo.mm)
-    # ----------------------------------------------------
-
-    print(f"all_handles[0] = {all_handles[0]}")
-
-    # ----------------------------------------------------
-
-    # ----------------------------------------------------
-    # NOTE: select objects for testing VHACD pipeline
-    # target_object_handles = [
-    #     "01be253cbfd14b947e9dbe09d0b1959e97d72122",  # desk
-    #     "01b65339d622bb9f89eb8fdd753a76cffc7eb8d6",  # shelves,
-    #     "00ea83bf1b2544df87f6d52d02382c0bb75598c6",  # bookcase
-    #     "00e388a751b3654216f2109ee073dc44f1241eee",  # counter
-    #     "01d9fff2f701af7d5d40a7a5adad5bf40d4c49c8",  # round table
-    #     "03c328fccef4975310314838e42b6dff06709b06",  # shelves
-    #     "0110c7ff0e787bf98c9da923554ddea1484e4a3d",  # wood table
-    #     "00366b86401aa16b702c21de49fd59b75ab9c57b",  # ratan sofa
-    # ]
-    # all_handles = [
-    #     h for h in all_handles if any([t in h for t in target_object_handles])
-    # ]
-    # ----------------------------------------------------
-
-    # ----------------------------------------------------
-    # indexed subset of the objects
-    # all_handles = all_handles[1:2]
-    # ----------------------------------------------------
-
-    # print(all_handles)
-    cpo.compute_and_save_results_for_objects(all_handles)
 
 
 if __name__ == "__main__":
