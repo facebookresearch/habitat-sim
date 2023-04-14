@@ -17,14 +17,25 @@ sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 import habitat.datasets.rearrange.samplers.receptacle as hab_receptacle
 import magnum as mn
 import numpy as np
+from habitat.sims.habitat_simulator.sim_utilities import snap_down
 from magnum import shaders, text
 from magnum.platform.glfw import Application
 
 import habitat_sim
 from habitat_sim import ReplayRenderer, ReplayRendererConfiguration, physics
 from habitat_sim.logging import LoggingContext, logger
-from habitat_sim.utils.common import quat_from_angle_axis
+from habitat_sim.utils.common import d3_40_colors_rgb, quat_from_angle_axis
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
+
+# add tools directory so I can import things to try them in the viewer
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../tools"))
+print(sys.path)
+import collision_shape_automation as csa
+
+gt_raycast_results = None
+pr_raycast_results = None
+obj_temp_handle = None
+test_points = None
 
 
 class HabitatSimInteractiveViewer(Application):
@@ -170,12 +181,13 @@ class HabitatSimInteractiveViewer(Application):
 
         # toggle physics simulation on/off
         self.simulating = False
-        self.receptacles = None
-        self.display_receptacles = False
-        self.col_proxy_objs = None
-        self.col_proxies_visible = True
-        self.original_objs_visible = True
-        self.proxy_obj_postfix = "_collision_stand-in"
+        self.sample_seed = 0
+        self.collision_proxy_obj = None
+        self.mouse_cast_results = None
+        self.debug_draw_raycasts = True
+
+        self.debug_draw_receptacles = True
+        self.object_receptacles = []
 
         # toggle a single simulation step at the next opportunity if not
         # simulating continuously.
@@ -189,42 +201,20 @@ class HabitatSimInteractiveViewer(Application):
         self.replay_renderer: Optional[ReplayRenderer] = None
         self.reconfigure_sim()
 
+        if self.sim.pathfinder.is_loaded:
+            self.sim.pathfinder = habitat_sim.nav.PathFinder()
+
         # compute NavMesh if not already loaded by the scene.
-        if (
-            not self.sim.pathfinder.is_loaded
-            and self.cfg.sim_cfg.scene_id.lower() != "none"
-        ):
-            self.navmesh_config_and_recompute()
+        # if (
+        #     not self.sim.pathfinder.is_loaded
+        #     and self.cfg.sim_cfg.scene_id.lower() != "none"
+        # ):
+        #     self.navmesh_config_and_recompute()
 
         self.time_since_last_simulation = 0.0
         LoggingContext.reinitialize_from_env()
         logger.setLevel("INFO")
         self.print_help_text()
-
-    def add_col_proxy_object(
-        self, obj_instance: habitat_sim.physics.ManagedRigidObject
-    ) -> habitat_sim.physics.ManagedRigidObject:
-        """
-        Add a collision object visualization proxy to the scene overlapping with the given object.
-        Return the new proxy object.
-        """
-        # replace the object with a collision_object
-        obj_temp_handle = obj_instance.creation_attributes.handle
-        otm = self.sim.get_object_template_manager()
-        object_template = otm.get_template_by_handle(obj_temp_handle)
-        object_template.scale = obj_instance.scale + np.ones(3) * 0.01
-        object_template.render_asset_handle = object_template.collision_asset_handle
-        reg_id = otm.register_template(
-            object_template,
-            object_template.handle + self.proxy_obj_postfix,
-        )
-        ro_mngr = self.sim.get_rigid_object_manager()
-        new_obj = ro_mngr.add_object_by_template_id(reg_id)
-        new_obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
-        new_obj.translation = obj_instance.translation
-        new_obj.rotation = obj_instance.rotation
-        self.sim.set_object_bb_draw(True, new_obj.object_id)
-        return new_obj
 
     def draw_contact_debug(self):
         """
@@ -270,19 +260,72 @@ class HabitatSimInteractiveViewer(Application):
             self.sim.physics_debug_draw(proj_mat)
         if self.contact_debug_draw:
             self.draw_contact_debug()
-        if self.receptacles is not None and self.display_receptacles:
-            for receptacle in self.receptacles:
-                r_pos = receptacle.get_global_transform(self.sim).translation
-                c_pos = self.render_camera.node.absolute_translation
-                c_to_r = r_pos - c_pos
-                if c_to_r.length() < 4:
-                    c_forward = self.render_camera.node.absolute_transformation().transform_vector(
-                        mn.Vector3(0, 0, -1)
+
+        # mouse raycast circle
+        white = mn.Color4(mn.Vector3(1.0), 1.0)
+        if self.mouse_cast_results is not None and self.mouse_cast_results.has_hits():
+            m_ray = self.mouse_cast_results.ray
+            self.sim.get_debug_line_render().draw_circle(
+                translation=m_ray.origin
+                + m_ray.direction
+                * self.mouse_cast_results.hits[0].ray_distance
+                * m_ray.direction.length(),
+                radius=0.005,
+                color=white,
+                normal=self.mouse_cast_results.hits[0].normal,
+            )
+
+        if gt_raycast_results is not None and self.debug_draw_raycasts:
+            scene_bb = self.sim.get_active_scene_graph().get_root_node().cumulative_bb
+            inflated_scene_bb = scene_bb.scaled(mn.Vector3(1.25))
+            inflated_scene_bb = mn.Range3D.from_center(
+                scene_bb.center(), inflated_scene_bb.size() / 2.0
+            )
+            self.sim.get_debug_line_render().draw_box(
+                inflated_scene_bb.min, inflated_scene_bb.max, white
+            )
+            if self.sim.get_rigid_object_manager().get_num_objects() == 0:
+                self.collision_proxy_obj = (
+                    self.sim.get_rigid_object_manager().add_object_by_template_handle(
+                        obj_temp_handle
                     )
-                    # only display receptacles within 4 meters
-                    if mn.math.dot((c_to_r).normalized(), c_forward) > 0.75:
-                        # only display receptacles centered in view
-                        receptacle.debug_draw(self.sim)
+                )
+                self.collision_proxy_obj.motion_type = (
+                    habitat_sim.physics.MotionType.KINEMATIC
+                )
+
+            csa.debug_draw_raycast_results(
+                self.sim, gt_raycast_results, pr_raycast_results, seed=self.sample_seed
+            )
+
+            # draw test points
+            for side in test_points:
+                for p in side:
+                    self.sim.get_debug_line_render().draw_circle(
+                        translation=p,
+                        radius=0.005,
+                        color=mn.Color4.magenta(),
+                    )
+
+        if self.debug_draw_receptacles and self.collision_proxy_obj is not None:
+            # parse any receptacles defined for the object
+            if len(self.object_receptacles) == 0:
+                source_template_file = (
+                    self.collision_proxy_obj.creation_attributes.file_directory
+                )
+                user_attr = self.collision_proxy_obj.user_attributes
+                self.object_receptacles = (
+                    hab_receptacle.parse_receptacles_from_user_config(
+                        user_attr,
+                        parent_object_handle=self.collision_proxy_obj.handle,
+                        parent_template_directory=source_template_file,
+                    )
+                )
+            # draw any receptacles for the object
+            for rix, receptacle in enumerate(self.object_receptacles):
+                c = d3_40_colors_rgb[rix]
+                rec_color = mn.Vector3(c[0], c[1], c[2]) / 256.0
+                receptacle.debug_draw(self.sim, color=mn.Color4(rec_color))
 
     def draw_event(
         self,
@@ -404,6 +447,49 @@ class HabitatSimInteractiveViewer(Application):
             logger.info("Setting synthetic lighting override for stage.")
             self.cfg.sim_cfg.override_scene_light_defaults = True
             self.cfg.sim_cfg.scene_light_setup = habitat_sim.gfx.DEFAULT_LIGHTING_KEY
+
+        # create custom stage from object
+        self.cfg.metadata_mediator = habitat_sim.metadata.MetadataMediator()
+        self.cfg.metadata_mediator.active_dataset = self.sim_settings[
+            "scene_dataset_config_file"
+        ]
+        if args.reorient_object:
+            obj_handle = (
+                self.cfg.metadata_mediator.object_template_manager.get_template_handles(
+                    args.scene
+                )[0]
+            )
+            fp_models_metadata_file = (
+                "/home/alexclegg/Documents/dev/fphab/fpModels_metadata.csv"
+            )
+            obj_orientations = csa.parse_object_orientations_from_metadata_csv(
+                fp_models_metadata_file
+            )
+            csa.correct_object_orientations(
+                [obj_handle], obj_orientations, self.cfg.metadata_mediator
+            )
+
+        otm = self.cfg.metadata_mediator.object_template_manager
+        obj_template = otm.get_template_by_handle(obj_temp_handle)
+        obj_template.compute_COM_from_shape = False
+        obj_template.com = mn.Vector3(0)
+        otm.register_template(obj_template)
+        stm = self.cfg.metadata_mediator.stage_template_manager
+        stage_template_name = "obj_as_stage_template"
+        new_stage_template = stm.create_new_template(handle=stage_template_name)
+        new_stage_template.render_asset_handle = obj_template.render_asset_handle
+        new_stage_template.orient_up = obj_template.orient_up
+        new_stage_template.orient_front = obj_template.orient_front
+
+        # margin must be 0 for snapping to work on overlapped gt/proxy
+        new_stage_template.margin = 0.0
+        stm.register_template(
+            template=new_stage_template, specified_handle=stage_template_name
+        )
+        self.cfg.sim_cfg.scene_id = stage_template_name
+        # visualize the object as its collision shape
+        obj_template.render_asset_handle = obj_template.collision_asset_handle
+        otm.register_template(obj_template)
 
         if self.sim is None:
             self.tiled_sims = []
@@ -588,7 +674,25 @@ class HabitatSimInteractiveViewer(Application):
                 self.contact_debug_draw = True
                 # TODO: add a nice log message with concise contact pair naming.
 
+        elif key == pressed.O:
+            # move the object in/out of the frame
+            if self.collision_proxy_obj is not None:
+                if self.collision_proxy_obj.translation == mn.Vector3(0):
+                    self.collision_proxy_obj.translation = mn.Vector3(100)
+                else:
+                    self.collision_proxy_obj.translation = mn.Vector3(0)
+
         elif key == pressed.T:
+            if alt_pressed:
+                self.debug_draw_raycasts = not self.debug_draw_raycasts
+                print(f"Toggled self.debug_draw_raycasts: {self.debug_draw_raycasts}")
+            elif shift_pressed:
+                self.sample_seed -= 1
+            else:
+                self.sample_seed += 1
+
+            event.accepted = True
+            return
             # load URDF
             fixed_base = alt_pressed
             urdf_file_path = ""
@@ -620,59 +724,8 @@ class HabitatSimInteractiveViewer(Application):
             logger.info(f"Command: mouse mode set to {self.mouse_interaction}")
 
         elif key == pressed.V:
-            if self.receptacles is None:
-                self.receptacles = hab_receptacle.find_receptacles(self.sim)
-            self.display_receptacles = not self.display_receptacles
-            print(f"self.display_receptacles = {self.display_receptacles}")
-
-        elif key == pressed.O:
-            if shift_pressed:
-                # move non-proxy objects in/out of visible space
-                self.original_objs_visible = not self.original_objs_visible
-                print(f"self.original_objs_visible = {self.original_objs_visible}")
-                if not self.original_objs_visible:
-                    for _obj_handle, obj in (
-                        self.sim.get_rigid_object_manager()
-                        .get_objects_by_handle_substring()
-                        .items()
-                    ):
-                        if self.proxy_obj_postfix not in obj.creation_attributes.handle:
-                            obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
-                            obj.translation = obj.translation + mn.Vector3(200, 0, 0)
-                            obj.motion_type = habitat_sim.physics.MotionType.STATIC
-                else:
-                    for _obj_handle, obj in (
-                        self.sim.get_rigid_object_manager()
-                        .get_objects_by_handle_substring()
-                        .items()
-                    ):
-                        if self.proxy_obj_postfix not in obj.creation_attributes.handle:
-                            obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
-                            obj.translation = obj.translation - mn.Vector3(200, 0, 0)
-                            obj.motion_type = habitat_sim.physics.MotionType.STATIC
-
-            else:
-                if self.col_proxy_objs is None:
-                    self.col_proxy_objs = []
-                    for _obj_handle, obj in (
-                        self.sim.get_rigid_object_manager()
-                        .get_objects_by_handle_substring()
-                        .items()
-                    ):
-                        if self.proxy_obj_postfix not in obj.creation_attributes.handle:
-                            # add a new proxy object
-                            self.col_proxy_objs.append(self.add_col_proxy_object(obj))
-                else:
-                    self.col_proxies_visible = not self.col_proxies_visible
-                    print(f"self.col_proxies_visible = {self.col_proxies_visible}")
-
-                    # make the proxies visible or not by moving them
-                    if not self.col_proxies_visible:
-                        for obj in self.col_proxy_objs:
-                            obj.translation = obj.translation + mn.Vector3(200, 0, 0)
-                    else:
-                        for obj in self.col_proxy_objs:
-                            obj.translation = obj.translation - mn.Vector3(200, 0, 0)
+            self.invert_gravity()
+            logger.info("Command: gravity inverted")
 
         elif key == pressed.N:
             # (default) - toggle navmesh visualization
@@ -730,6 +783,11 @@ class HabitatSimInteractiveViewer(Application):
         mouse button to steer the agent's facing direction. When in GRAB mode,
         continues to update the grabber's object position with our agents position.
         """
+
+        render_camera = self.render_camera.render_camera
+        ray = render_camera.unproject(self.get_mouse_position(event.position))
+        self.mouse_cast_results = self.sim.cast_ray(ray=ray)
+
         button = Application.MouseMoveEvent.Buttons
         # if interactive mode -> LOOK MODE
         if event.buttons == button.LEFT and self.mouse_interaction == MouseMode.LOOK:
@@ -754,6 +812,17 @@ class HabitatSimInteractiveViewer(Application):
         self.previous_mouse_point = self.get_mouse_position(event.position)
         self.redraw()
         event.accepted = True
+
+    def construct_cylinder_object(
+        self, cyl_radius: float = 0.04, cyl_height: float = 0.15
+    ):
+        constructed_cyl_temp_name = "scaled_cyl_template"
+        otm = self.sim.metadata_mediator.object_template_manager
+        cyl_temp_handle = otm.get_synth_template_handles("cylinder")[0]
+        cyl_temp = otm.get_template_by_handle(cyl_temp_handle)
+        cyl_temp.scale = mn.Vector3(cyl_radius, cyl_height / 2.0, cyl_radius)
+        otm.register_template(cyl_temp, constructed_cyl_temp_name)
+        return constructed_cyl_temp_name
 
     def mouse_press_event(self, event: Application.MouseEvent) -> None:
         """
@@ -847,6 +916,38 @@ class HabitatSimInteractiveViewer(Application):
                 # end if didn't hit the scene
             # end has raycast hit
         # end has physics enabled
+        elif (
+            self.mouse_interaction == MouseMode.LOOK
+            and physics_enabled
+            and self.mouse_cast_results is not None
+            and self.mouse_cast_results.has_hits()
+            and event.button == button.RIGHT
+        ):
+            constructed_cyl_obj_handle = self.construct_cylinder_object2()
+            # try to place an object
+            if (
+                mn.math.dot(
+                    self.mouse_cast_results.hits[0].normal.normalized(),
+                    mn.Vector3(0, 1, 0),
+                )
+                > 0.5
+            ):
+                rom = self.sim.get_rigid_object_manager()
+                cyl_test_obj = rom.add_object_by_template_handle(
+                    constructed_cyl_obj_handle
+                )
+                assert cyl_test_obj is not None
+                cyl_test_obj.translation = self.mouse_cast_results.hits[
+                    0
+                ].point + mn.Vector3(0, 0.04, 0)
+                success = snap_down(
+                    self.sim,
+                    cyl_test_obj,
+                    support_obj_ids=[-1, self.collision_proxy_obj.object_id],
+                )
+                print(success)
+                if not success:
+                    rom.remove_object_by_handle(cyl_test_obj.handle)
 
         self.previous_mouse_point = self.get_mouse_position(event.position)
         self.redraw()
@@ -1198,6 +1299,11 @@ if __name__ == "__main__":
         help="disable physics simulation (default: False)",
     )
     parser.add_argument(
+        "--reorient-object",
+        action="store_true",
+        help="reorient the object based on the values in the config file.",
+    )
+    parser.add_argument(
         "--stage-requires-lighting",
         action="store_true",
         help="Override configured lighting to use synthetic lighting for the stage.",
@@ -1243,7 +1349,8 @@ if __name__ == "__main__":
 
     # Setting up sim_settings
     sim_settings: Dict[str, Any] = default_sim_settings
-    sim_settings["scene"] = args.scene
+    # sim_settings["scene"] = args.scene
+    sim_settings["scene"] = "NONE"
     sim_settings["scene_dataset_config_file"] = args.dataset
     sim_settings["enable_physics"] = not args.disable_physics
     sim_settings["stage_requires_lighting"] = args.stage_requires_lighting
@@ -1252,6 +1359,26 @@ if __name__ == "__main__":
     sim_settings["composite_files"] = args.composite_files
     sim_settings["window_width"] = args.width
     sim_settings["window_height"] = args.height
+    sim_settings["clear_color"] = mn.Color4.magenta()
+
+    obj_name = "d1d1e0cdaba797ee70882e63f66055675c3f1e7f"
+
+    # check against default
+    if args.scene != "./data/test_assets/scenes/simple_room.glb":
+        obj_name = args.scene
+
+    # load JSON once instead of repeating
+    mm = habitat_sim.metadata.MetadataMediator()
+    mm.active_dataset = sim_settings["scene_dataset_config_file"]
+
+    cpo = csa.CollisionProxyOptimizer(sim_settings)
+    obj_temp_handle = mm.object_template_manager.get_file_template_handles(obj_name)[0]
+    cpo.setup_obj_gt(obj_temp_handle)
+    cpo.compute_proxy_metrics(obj_temp_handle)
+    # setup globals for debug drawing
+    test_points = cpo.gt_data[obj_temp_handle]["test_points"]
+    pr_raycast_results = cpo.gt_data[obj_temp_handle]["raycasts"]["pr0"]
+    gt_raycast_results = cpo.gt_data[obj_temp_handle]["raycasts"]["gt"]
 
     # start the application
     HabitatSimInteractiveViewer(sim_settings).exec()
