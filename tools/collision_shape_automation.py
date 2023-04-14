@@ -8,7 +8,7 @@ import math
 import os
 import random
 import time
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 # imports from Habitat-lab
 # NOTE: requires PR 1108 branch: rearrange-gen-improvements (https://github.com/facebookresearch/habitat-lab/pull/1108)
@@ -561,147 +561,6 @@ def get_raycast_results_cumulative_error_metric(
     return normalized_error
 
 
-def evaluate_collision_shape(
-    object_handle: str,
-    sim_settings: Dict[str, Any],
-    sample_shape="sphere",
-    mm=None,
-    num_point_samples=100,
-) -> None:
-    """
-    Runs in-engine evaluation of collision shape accuracy for a single object.
-    Uses a raycast from a bounding shape to approximate surface error between a proxy shape and ground truth (the render shape).
-    Returns:
-      ground_truth and proxy raw raycast results,
-      the object's template handle,
-      all test points used for the raycast,
-      scalar error metrics
-    1. initializes a simulator with the object render shape as a stage collision mesh.
-    2. uses the scene bouding box to sample points on a configured bounding shape (e.g. inflated AABB or sphere).
-    3. raycasts between sampled point pairs on both ground truth and collision proxy shapes to heuristicall measure error.
-    4. computes scalar error metrics
-
-    :param object_handle: The object to evaluate.
-    :param sim_settings: Any simulator settings for initialization (should be physics enabled and point to correct dataset).
-    :param sample_shape: The desired bounding shape for raycast: "sphere" or "aabb", "jittered_aabb".
-    :param mm: A pre-configured MetadataMediator may be provided to reduce initialization time. Should have the correct dataset already configured.
-    """
-    profile_metrics = {}
-    start_time = time.time()
-    check_time = time.time()
-    cfg = make_cfg(sim_settings)
-    if mm is not None:
-        cfg.metadata_mediator = mm
-    with habitat_sim.Simulator(cfg) as sim:
-        profile_metrics["init0"] = time.time() - check_time
-        check_time = time.time()
-        # evaluate the collision shape defined in an object's template
-        # 1. get the template from MM
-        matching_templates = sim.get_object_template_manager().get_template_handles(
-            object_handle
-        )
-        assert (
-            len(matching_templates) == 1
-        ), f"Multiple or no template matches for handle '{object_handle}': ({matching_templates})"
-        obj_template_handle = matching_templates[0]
-        obj_template = sim.get_object_template_manager().get_template_by_handle(
-            obj_template_handle
-        )
-        obj_template.compute_COM_from_shape = False
-        obj_template.com = mn.Vector3(0)
-        # obj_template.bounding_box_collisions = True
-        # obj_template.is_collidable = False
-        sim.get_object_template_manager().register_template(obj_template)
-        # 2. Setup a stage from the object's render mesh
-        stm = sim.get_stage_template_manager()
-        stage_template_name = "obj_as_stage_template"
-        new_stage_template = stm.create_new_template(handle=stage_template_name)
-        new_stage_template.render_asset_handle = obj_template.render_asset_handle
-        new_stage_template.orient_up = obj_template.orient_up
-        new_stage_template.orient_front = obj_template.orient_front
-        stm.register_template(
-            template=new_stage_template, specified_handle=stage_template_name
-        )
-        # 3. Initialize the simulator for the stage
-        new_settings = sim_settings.copy()
-        new_settings["scene"] = stage_template_name
-        new_config = make_cfg(new_settings)
-        sim.reconfigure(new_config)
-        profile_metrics["init_stage"] = time.time() - check_time
-        check_time = time.time()
-
-        # 4. compute initial metric baselines
-        scene_bb = sim.get_active_scene_graph().get_root_node().cumulative_bb
-        inflated_scene_bb = scene_bb.scaled(mn.Vector3(1.25))
-        inflated_scene_bb = mn.Range3D.from_center(
-            scene_bb.center(), inflated_scene_bb.size() / 2.0
-        )
-        test_points = None
-        if sample_shape == "aabb":
-            # bounding box sample
-            test_points = sample_points_from_range3d(
-                range3d=inflated_scene_bb, num_points=num_point_samples
-            )
-        elif sample_shape == "jittered_aabb":
-            # bounding box sample
-            test_points = sample_jittered_points_from_range3d(
-                range3d=inflated_scene_bb, num_points=num_point_samples
-            )
-        elif sample_shape == "sphere":
-            # bounding sphere sample
-            half_diagonal = (scene_bb.max - scene_bb.min).length() / 2.0
-            test_points = sample_points_from_sphere(
-                center=inflated_scene_bb.center(),
-                radius=half_diagonal,
-                num_points=num_point_samples,
-            )
-        else:
-            raise NotImplementedError(
-                f"sample_shape == `{sample_shape}` is not implemented. Use `sphere` or `aabb`."
-            )
-        profile_metrics["sample_points"] = time.time() - check_time
-        check_time = time.time()
-
-        print("GT raycast:")
-        gt_raycast_results = run_pairwise_raycasts(test_points, sim)
-        profile_metrics["raycast_stage"] = time.time() - check_time
-        check_time = time.time()
-
-        # 5. load the object with proxy (in NONE stage)
-        new_settings = sim_settings.copy()
-        new_config = make_cfg(new_settings)
-        sim.reconfigure(new_config)
-        obj = sim.get_rigid_object_manager().add_object_by_template_handle(
-            obj_template_handle
-        )
-        obj.translation = obj.com
-        profile_metrics["init_object"] = time.time() - check_time
-        check_time = time.time()
-
-        # 6. compute the metric for proxy object
-        print("PR raycast:")
-        pr_raycast_results = run_pairwise_raycasts(test_points, sim)
-        profile_metrics["raycast_object"] = time.time() - check_time
-        check_time = time.time()
-
-        # 7. compare metrics
-        normalized_error = get_raycast_results_cumulative_error_metric(
-            gt_raycast_results, pr_raycast_results
-        )
-        profile_metrics["compute_metrics"] = time.time() - check_time
-        check_time = time.time()
-        profile_metrics["total"] = time.time() - start_time
-
-        return (
-            gt_raycast_results,
-            pr_raycast_results,
-            obj_template_handle,
-            test_points,
-            normalized_error,
-            profile_metrics,
-        )
-
-
 # ===================================================================
 # CollisionProxyOptimizer class provides a stateful API for
 # configurable evaluation and optimization of collision proxy shapes.
@@ -713,15 +572,21 @@ class CollisionProxyOptimizer:
     Stateful control flow for using Habitat-sim to evaluate and optimize collision proxy shapes.
     """
 
-    def __init__(self, sim_settings: Dict[str, Any], output_directory="") -> None:
+    def __init__(
+        self,
+        sim_settings: Dict[str, Any],
+        output_directory: Optional[str] = None,
+        mm: Optional[habitat_sim.metadata.MetadataMediator] = None,
+    ) -> None:
         # load the dataset into a persistent, shared MetadataMediator instance.
-        self.mm = habitat_sim.metadata.MetadataMediator()
+        self.mm = mm if mm is not None else habitat_sim.metadata.MetadataMediator()
         self.mm.active_dataset = sim_settings["scene_dataset_config_file"]
         self.sim_settings = sim_settings.copy()
 
         # path to the desired output directory for images/csv
         self.output_directory = output_directory
-        os.makedirs(self.output_directory, exist_ok=True)
+        if output_directory is not None:
+            os.makedirs(self.output_directory, exist_ok=True)
 
         # if true, render and save debug images in self.output_directory
         self.generate_debug_images = False
@@ -893,21 +758,22 @@ class CollisionProxyOptimizer:
                                             )
                                         )
                                     )
-                                # use DebugVisualizer to get 6-axis view of the object
-                                dvb = hab_debug_vis.DebugVisualizer(
-                                    sim=sim,
-                                    output_path=self.output_directory,
-                                    default_sensor_uuid="color_sensor",
-                                )
-                                dvb.peek_rigid_object(
-                                    obj,
-                                    peek_all_axis=True,
-                                    additional_savefile_prefix=f"{receptacle.name}_",
-                                    debug_lines=debug_lines,
-                                    debug_circles=debug_circles,
-                                )
+                                if self.output_directory is not None:
+                                    # use DebugVisualizer to get 6-axis view of the object
+                                    dvb = hab_debug_vis.DebugVisualizer(
+                                        sim=sim,
+                                        output_path=self.output_directory,
+                                        default_sensor_uuid="color_sensor",
+                                    )
+                                    dvb.peek_rigid_object(
+                                        obj,
+                                        peek_all_axis=True,
+                                        additional_savefile_prefix=f"{receptacle.name}_",
+                                        debug_lines=debug_lines,
+                                        debug_circles=debug_circles,
+                                    )
 
-                if self.generate_debug_images:
+                if self.generate_debug_images and self.output_directory is not None:
                     # use DebugVisualizer to get 6-axis view of the object
                     dvb = hab_debug_vis.DebugVisualizer(
                         sim=sim,
@@ -1050,7 +916,7 @@ class CollisionProxyOptimizer:
                 col_bb.max
             ), f"Inflated bounding box does not contain the collision shape. (Object `{obj_handle}`)"
 
-            if self.generate_debug_images:
+            if self.generate_debug_images and self.output_directory is not None:
                 # use DebugVisualizer to get 6-axis view of the object
                 dvb = hab_debug_vis.DebugVisualizer(
                     sim=sim,
@@ -1124,11 +990,13 @@ class CollisionProxyOptimizer:
 
             # save a list of point accessibility scores for debugging and visualization
             receptacle_point_access_scores = {}
-            dvb = hab_debug_vis.DebugVisualizer(
-                sim=sim,
-                output_path=self.output_directory,
-                default_sensor_uuid="color_sensor",
-            )
+            dvb: Optional[hab_debug_vis.DebugVisualizer] = None
+            if self.output_directory is not None:
+                dvb = hab_debug_vis.DebugVisualizer(
+                    sim=sim,
+                    output_path=self.output_directory,
+                    default_sensor_uuid="color_sensor",
+                )
 
             # collect hemisphere raycast samples for all receptacle sample points
             for receptacle_name in obj_rec_data.keys():
@@ -1190,7 +1058,7 @@ class CollisionProxyOptimizer:
                 print(f" receptacle_access_score = {receptacle_access_score}")
                 print(f" receptacle_access_rate = {receptacle_access_rate}")
 
-                if self.generate_debug_images:
+                if self.generate_debug_images and dvb is not None:
                     # generate receptacle access debug images
                     # 1a Show missed rays vs 1b hit rays
                     debug_lines = []
@@ -1305,11 +1173,13 @@ class CollisionProxyOptimizer:
             scene_name = self.gt_data[obj_handle]["stage_template_name"]
         cfg = self.get_cfg_with_mm(scene=scene_name)
         with habitat_sim.Simulator(cfg) as sim:
-            dvb = hab_debug_vis.DebugVisualizer(
-                sim=sim,
-                output_path=self.output_directory,
-                default_sensor_uuid="color_sensor",
-            )
+            dvb: Optional[hab_debug_vis.DebugVisualizer] = None
+            if self.output_directory is not None:
+                dvb = hab_debug_vis.DebugVisualizer(
+                    sim=sim,
+                    output_path=self.output_directory,
+                    default_sensor_uuid="color_sensor",
+                )
             # load the object
             rom = sim.get_rigid_object_manager()
             obj = None
@@ -1468,16 +1338,18 @@ class CollisionProxyOptimizer:
             plane_obj.motion_type = habitat_sim.physics.MotionType.STATIC
 
             # use DebugVisualizer to get 6-axis view of the object
-            dvb = hab_debug_vis.DebugVisualizer(
-                sim=sim,
-                output_path=self.output_directory,
-                default_sensor_uuid="color_sensor",
-            )
-            dvb.peek_rigid_object(
-                obj,
-                peek_all_axis=True,
-                additional_savefile_prefix=f"plane_snap_{shape_id}_",
-            )
+            dvb: Optional[hab_debug_vis.DebugVisualizer] = None
+            if self.output_directory is not None:
+                dvb = hab_debug_vis.DebugVisualizer(
+                    sim=sim,
+                    output_path=self.output_directory,
+                    default_sensor_uuid="color_sensor",
+                )
+                dvb.peek_rigid_object(
+                    obj,
+                    peek_all_axis=True,
+                    additional_savefile_prefix=f"plane_snap_{shape_id}_",
+                )
 
             # snap the object to the plane
             obj_col_bb = obj.collision_shape_aabb
@@ -1948,6 +1820,10 @@ class CollisionProxyOptimizer:
         """
 
         assert len(self.results) > 0, "There must be results to save."
+
+        assert (
+            self.output_directory is not None
+        ), "Must have an output directory to save."
 
         import csv
 

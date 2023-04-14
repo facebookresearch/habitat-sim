@@ -36,7 +36,6 @@ gt_raycast_results = None
 pr_raycast_results = None
 obj_temp_handle = None
 test_points = None
-normalized_error = 0
 
 
 class HabitatSimInteractiveViewer(Application):
@@ -215,7 +214,6 @@ class HabitatSimInteractiveViewer(Application):
         LoggingContext.reinitialize_from_env()
         logger.setLevel("INFO")
         self.print_help_text()
-        print(f"Normalized Error = {normalized_error}")
 
     def draw_contact_debug(self, debug_line_render: Any):
         """
@@ -1436,46 +1434,14 @@ if __name__ == "__main__":
     mm = habitat_sim.metadata.MetadataMediator()
     mm.active_dataset = sim_settings["scene_dataset_config_file"]
 
-    num_point_samples = 100
-    sample_metrics = []
-    avg_metric = 0
-    avg_profile_metrics = {}
-    for _sample in range(10):
-        (
-            gt_raycast_results,
-            pr_raycast_results,
-            obj_temp_handle,
-            test_points,
-            normalized_error,
-            profile_metrics,
-        ) = csa.evaluate_collision_shape(
-            obj_name,
-            sim_settings,
-            sample_shape="jittered_aabb",
-            mm=mm,
-            num_point_samples=num_point_samples,
-        )
-        for key in list(profile_metrics.keys()):
-            if key not in avg_profile_metrics:
-                avg_profile_metrics[key] = profile_metrics[key]
-            else:
-                avg_profile_metrics[key] += profile_metrics[key]
-
-        sample_metrics.append(normalized_error)
-        avg_metric += normalized_error
-    for key in list(avg_profile_metrics.keys()):
-        avg_profile_metrics[key] = avg_profile_metrics[key] / len(sample_metrics)
-    avg_metric /= len(sample_metrics)
-    print(f"sample_metrics ({len(sample_metrics)} samples) = {sample_metrics}")
-    print(f"avg_metric = {avg_metric}")
-    variance = 0
-    for metric in sample_metrics:
-        variance += (metric - avg_metric) ** 2
-    variance /= len(sample_metrics) - 1
-    print(f"variance = {variance}")
-    print(f"std = {math.sqrt(variance)}")
-    print(f"avg_profile_metrics = {avg_profile_metrics}")
-    # exit()
+    cpo = csa.CollisionProxyOptimizer(sim_settings)
+    obj_temp_handle = mm.object_template_manager.get_file_template_handles(obj_name)[0]
+    cpo.setup_obj_gt(obj_temp_handle)
+    cpo.compute_proxy_metrics(obj_temp_handle)
+    # setup globals for debug drawing
+    test_points = cpo.gt_data[obj_temp_handle]["test_points"]
+    pr_raycast_results = cpo.gt_data[obj_temp_handle]["raycasts"]["pr0"]
+    gt_raycast_results = cpo.gt_data[obj_temp_handle]["raycasts"]["gt"]
 
     # start the application
     HabitatSimInteractiveViewer(sim_settings).exec()
