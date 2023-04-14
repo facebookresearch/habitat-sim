@@ -121,6 +121,9 @@ int PhysicsManager::addObjectInstance(
   auto objAttributes =
       resourceManager_.getObjectAttributesManager()->getObjectCopyByHandle(
           attributesHandle);
+  // Make its semantic id to be the instance id
+  objAttributes->setInstanceId(objInstAttributes->getID());
+
   // check if an object is being set to be not visible for a particular
   // instance.
   int visSet = objInstAttributes->getIsInstanceVisible();

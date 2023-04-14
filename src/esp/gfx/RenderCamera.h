@@ -214,6 +214,11 @@ class RenderCamera : public MagnumCamera {
   size_t filterTransforms(DrawableTransforms& drawableTransforms,
                           Flags flags = {});
 
+
+  void setIsInstanceId(bool isInstanceId) { isInstanceId_ = isInstanceId; }
+
+  bool getIsInstanceId() const { return isInstanceId_; }
+
   /**
    * @brief if the "immediate" following rendering pass is to use drawable ids
    * as the object ids.
@@ -245,6 +250,7 @@ class RenderCamera : public MagnumCamera {
  protected:
   size_t previousNumVisibleDrawables_ = 0;
   bool useDrawableIds_ = false;
+  bool isInstanceId_ = false;
   ESP_SMART_POINTERS(RenderCamera)
 };
 

@@ -33,6 +33,7 @@ enum class SensorType : int32_t {
   Tensor,
   Text,
   Audio,
+  Instance,
   SensorTypeCount,  // add new type above this term!!
 };
 

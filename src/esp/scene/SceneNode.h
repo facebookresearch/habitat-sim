@@ -127,6 +127,12 @@ class SceneNode : public MagnumObject,
   //! Sets node semanticId
   virtual void setSemanticId(int semanticId) { semanticId_ = semanticId; }
 
+  //! Returns node instanceId
+  virtual int getInstanceId() const { return instanceId_; }
+
+  //! Sets node instanceId
+  virtual void setInstanceId(int instanceId) { instanceId_ = instanceId; }
+
   Magnum::Vector3 absoluteTranslation() const;
 
   Magnum::Vector3 absoluteTranslation();
@@ -234,6 +240,7 @@ class SceneNode : public MagnumObject,
   //! The semantic category of this node. Used to render attached Drawables with
   //! Semantic sensor when no perVertexObjectIds are present.
   uint32_t semanticId_ = 0;
+  uint32_t instanceId_ = 0;
 
   //! the local bounding box for meshes stored at this node
   Magnum::Range3D meshBB_;

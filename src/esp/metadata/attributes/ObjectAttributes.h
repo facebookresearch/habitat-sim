@@ -367,6 +367,10 @@ class ObjectAttributes : public AbstractObjectAttributes {
 
   uint32_t getSemanticId() const { return get<int>("semantic_id"); }
 
+  void setInstanceId(int instance_id) { set("instance_id", instance_id); }
+
+  uint32_t getInstanceId() const { return get<int>("instance_id"); }
+
  protected:
   /**
    * @brief Write object-specific values to json object

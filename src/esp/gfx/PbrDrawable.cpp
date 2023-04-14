@@ -114,6 +114,14 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   Mn::Matrix4 modelMatrix =
       camera.cameraMatrix().inverted() * transformationMatrix;
 
+  int specificID = 0;
+  if(static_cast<RenderCamera&>(camera).getIsInstanceId()) {
+    specificID = node_.getInstanceId();
+  }
+  else {
+    specificID = node_.getSemanticId();
+  }
+
   (*shader_)
       // e.g., semantic mesh has its own per vertex annotation, which has been
       // uploaded to GPU so simply pass 0 to the uniform "objectId" in the
@@ -121,7 +129,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
       .setObjectId(
           static_cast<RenderCamera&>(camera).useDrawableIds()
               ? drawableId_
-              : (materialData_->perVertexObjectId ? 0 : node_.getSemanticId()))
+              : (materialData_->perVertexObjectId ? 0 : specificID))
       .setProjectionMatrix(camera.projectionMatrix())
       .setViewMatrix(camera.cameraMatrix())
       .setModelMatrix(modelMatrix)  // NOT modelview matrix!

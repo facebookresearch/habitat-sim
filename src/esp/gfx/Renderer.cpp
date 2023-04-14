@@ -87,7 +87,8 @@ struct Renderer::Impl {
   void draw(sensor::VisualSensor& visualSensor, sim::Simulator& sim) {
     acquireGlContext();
     if (visualSensor.specification()->sensorType ==
-        sensor::SensorType::Semantic) {
+        sensor::SensorType::Semantic || visualSensor.specification()->sensorType ==
+        sensor::SensorType::Instance) {
       ESP_CHECK(sim.semanticSceneGraphExists(),
                 "Renderer::Impl::draw(): SemanticSensor observation requested "
                 "but no SemanticSceneGraph is loaded");
@@ -101,7 +102,7 @@ struct Renderer::Impl {
     acquireGlContext();
     sensor::SensorType& type = visualSensor.specification()->sensorType;
     if (type == sensor::SensorType::Depth ||
-        type == sensor::SensorType::Semantic) {
+        type == sensor::SensorType::Semantic || type == sensor::SensorType::Instance) {
       Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::DepthTest);
       gfx::RenderTarget& tgt = visualSensor.renderTarget();
       if (!mesh_) {
@@ -112,7 +113,7 @@ struct Renderer::Impl {
       esp::gfx::Renderer::Impl::RendererShaderType rendererShaderType =
           esp::gfx::Renderer::Impl::RendererShaderType::DepthTextureVisualizer;
 
-      if (type == sensor::SensorType::Semantic) {
+      if (type == sensor::SensorType::Semantic || type == sensor::SensorType::Instance) {
         rendererShaderType =
             gfx::Renderer::Impl::RendererShaderType::ObjectIdTextureVisualizer;
       }
@@ -160,7 +161,7 @@ struct Renderer::Impl {
         shader->bindDepthTexture(tgt.getDepthTexture());
 #endif
         shader->setDepthUnprojection(*visualSensor.depthUnprojection());
-      } else if (type == sensor::SensorType::Semantic) {
+      } else if (type == sensor::SensorType::Semantic || type == sensor::SensorType::Instance) {
         shader->bindObjectIdTexture(tgt.getObjectIdTexture());
       }
       if ((colorMapOffset >= 0) && (colorMapScale >= 0)) {
@@ -359,6 +360,13 @@ struct Renderer::Impl {
         break;
 
       case sensor::SensorType::Semantic:
+        if (bindingFlags & Flag::VisualizeTexture) {
+          renderTargetFlags |= RenderTarget::Flag::RgbaAttachment;
+        }
+        renderTargetFlags |= RenderTarget::Flag::ObjectIdAttachment;
+        break;
+
+      case sensor::SensorType::Instance:
         if (bindingFlags & Flag::VisualizeTexture) {
           renderTargetFlags |= RenderTarget::Flag::RgbaAttachment;
         }

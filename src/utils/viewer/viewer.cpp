@@ -645,6 +645,7 @@ Key Commands:
     RGBA = 0,
     Depth,
     Semantic,
+    Instance,
     VisualizeModeCount,
   };
   VisualizeMode visualizeMode_ = VisualizeMode::RGBA;
@@ -701,7 +702,8 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig, bool isOrtho) {
                                   : esp::sensor::SensorSubType::Pinhole;
     spec->sensorType = sensorType;
     if (sensorType == esp::sensor::SensorType::Depth ||
-        sensorType == esp::sensor::SensorType::Semantic) {
+        sensorType == esp::sensor::SensorType::Semantic ||
+        sensorType == esp::sensor::SensorType::Instance) {
       spec->channels = 1;
     }
     spec->position = {0.0f, rgbSensorHeight, 0.0f};
@@ -715,6 +717,8 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig, bool isOrtho) {
   addCameraSensor("depth_camera", esp::sensor::SensorType::Depth);
   // add the camera semantic sensor
   addCameraSensor("semantic_camera", esp::sensor::SensorType::Semantic);
+  // add the camera instance sensor
+  addCameraSensor("instance_camera", esp::sensor::SensorType::Instance);
 
   auto addFisheyeSensor = [&](const std::string& uuid,
                               esp::sensor::SensorType sensorType,
@@ -730,7 +734,8 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig, bool isOrtho) {
     spec->uuid = uuid;
     spec->sensorType = sensorType;
     if (sensorType == esp::sensor::SensorType::Depth ||
-        sensorType == esp::sensor::SensorType::Semantic) {
+        sensorType == esp::sensor::SensorType::Semantic ||
+        sensorType == esp::sensor::SensorType::Instance) {
       spec->channels = 1;
     }
     spec->sensorSubType = esp::sensor::SensorSubType::Fisheye;
@@ -766,6 +771,9 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig, bool isOrtho) {
   // add the fisheye semantic sensor
   addFisheyeSensor("semantic_fisheye", esp::sensor::SensorType::Semantic,
                    esp::sensor::FisheyeSensorModelType::DoubleSphere);
+  // add the fisheye instance sensor
+  addFisheyeSensor("instance_fisheye", esp::sensor::SensorType::Instance,
+                   esp::sensor::FisheyeSensorModelType::DoubleSphere);
 
   auto addEquirectangularSensor = [&](const std::string& uuid,
                                       esp::sensor::SensorType sensorType) {
@@ -776,7 +784,8 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig, bool isOrtho) {
     spec->uuid = uuid;
     spec->sensorType = sensorType;
     if (sensorType == esp::sensor::SensorType::Depth ||
-        sensorType == esp::sensor::SensorType::Semantic) {
+        sensorType == esp::sensor::SensorType::Semantic ||
+        sensorType == esp::sensor::SensorType::Instance) {
       spec->channels = 1;
     }
     spec->sensorSubType = esp::sensor::SensorSubType::Equirectangular;
@@ -791,6 +800,9 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig, bool isOrtho) {
   // add the equirectangular semantic sensor
   addEquirectangularSensor("semantic_equirectangular",
                            esp::sensor::SensorType::Semantic);
+  // add the equirectangular instance sensor
+  addEquirectangularSensor("instance_equirectangular",
+                           esp::sensor::SensorType::Instance);
 
 // add audio sensor
 #ifdef ESP_BUILD_WITH_AUDIO
@@ -1636,6 +1648,10 @@ void Viewer::setSensorVisID() {
       prefix = "semantic";
       break;
     }
+    case VisualizeMode::Instance: {
+      prefix = "instance";
+      break;
+    }
     default:
       CORRADE_INTERNAL_ASSERT_UNREACHABLE();
   }  // switch on visualize mode
@@ -1750,7 +1766,7 @@ void Viewer::drawEvent() {
     }
     sensorRenderTarget->blitRgbaToDefault();
   } else {
-    // Depth Or Semantic, or Non-pinhole RGBA
+    // Depth Or Semantic Or Instance, or Non-pinhole RGBA
     simulator_->drawObservation(defaultAgentId_, sensorVisID_);
 
     esp::gfx::RenderTarget* sensorRenderTarget =
@@ -1763,7 +1779,8 @@ void Viewer::drawEvent() {
       simulator_->visualizeObservation(defaultAgentId_, sensorVisID_,
                                        1.0f / 512.0f,  // colorMapOffset
                                        1.0f / 12.0f);  // colorMapScale
-    } else if (visualizeMode_ == VisualizeMode::Semantic) {
+    } else if (visualizeMode_ == VisualizeMode::Semantic ||
+               visualizeMode_ == VisualizeMode::Instance) {
       Mn::GL::defaultFramebuffer.clear(Mn::GL::FramebufferClear::Color |
                                        Mn::GL::FramebufferClear::Depth);
       simulator_->visualizeObservation(defaultAgentId_, sensorVisID_);
@@ -1925,7 +1942,8 @@ void Viewer::bindRenderTarget() {
       esp::sensor::VisualSensor& visualSensor =
           static_cast<esp::sensor::VisualSensor&>(it.second.get());
       if (visualizeMode_ == VisualizeMode::Depth ||
-          visualizeMode_ == VisualizeMode::Semantic) {
+          visualizeMode_ == VisualizeMode::Semantic ||
+          visualizeMode_ == VisualizeMode::Instance) {
         simulator_->getRenderer()->bindRenderTarget(
             visualSensor, {esp::gfx::Renderer::Flag::VisualizeTexture});
       } else {
