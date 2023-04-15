@@ -239,6 +239,9 @@ class HabitatSimInteractiveViewer(Application):
         # map receptacle to parent objects
         self.rec_to_poh: Dict[hab_receptacle.Receptacle, str] = {}
 
+        # display stability samples for selected object w/ receptacle
+        self.display_selected_stability_samples = True
+
         # collision proxy visualization
         self.col_proxy_objs = None
         self.col_proxies_visible = True
@@ -247,6 +250,8 @@ class HabitatSimInteractiveViewer(Application):
 
         # mouse raycast visualization
         self.mouse_cast_results = None
+        # last clicked or None for stage
+        self.selected_object = None
 
         # toggle a single simulation step at the next opportunity if not
         # simulating continuously.
@@ -385,19 +390,54 @@ class HabitatSimInteractiveViewer(Application):
                         .creation_attributes.handle
                     )
                     self.rec_to_poh[receptacle] = po_handle
+                rec_dat = self._cpo.gt_data[self.rec_to_poh[receptacle]]["receptacles"][
+                    receptacle.name
+                ]
                 # filter out ground truth inaccessable receptacles
                 if self.filter_rec_by_access and self.cpo_initialized:
-                    rec_data = self._cpo.gt_data[self.rec_to_poh[receptacle]][
-                        "receptacles"
-                    ][receptacle.name]["shape_id_results"]["gt"]
+                    rec_shape_data = rec_dat["shape_id_results"]["gt"]
                     if (
-                        "access_results" in rec_data
-                        and rec_data["access_results"]["receptacle_access_score"]
+                        "access_results" in rec_shape_data
+                        and rec_shape_data["access_results"]["receptacle_access_score"]
                         < self.rec_access_filter_threshold
                     ):
                         continue
 
-                r_pos = receptacle.get_global_transform(self.sim).translation
+                r_trans = receptacle.get_global_transform(self.sim)
+                if (
+                    self.display_selected_stability_samples
+                    and self.selected_object is not None
+                    and self.selected_object.handle == receptacle.parent_object_handle
+                ):
+                    # display colored circles for stability samples on the selected object
+                    point_metric_dat = rec_dat["shape_id_results"]["gt"][
+                        "access_results"
+                    ]["receptacle_point_access_scores"]
+                    if self.rec_color_mode == RecColorMode.GT_STABILITY:
+                        point_metric_dat = rec_dat["shape_id_results"]["gt"][
+                            "stability_results"
+                        ]["point_stabilities"]
+                    elif self.rec_color_mode == RecColorMode.PR_STABILITY:
+                        point_metric_dat = rec_dat["shape_id_results"]["pr0"][
+                            "stability_results"
+                        ]["point_stabilities"]
+                    elif self.rec_color_mode == RecColorMode.PR_ACCESS:
+                        point_metric_dat = rec_dat["shape_id_results"]["pr0"][
+                            "access_results"
+                        ]["receptacle_point_access_scores"]
+
+                    for point_metric, point in zip(
+                        point_metric_dat,
+                        rec_dat["sample_points"],
+                    ):
+                        self.sim.get_debug_line_render().draw_circle(
+                            translation=r_trans.transform_point(point),
+                            radius=0.02,
+                            normal=mn.Vector3(0, 1, 0),
+                            color=rg_lerp.at(point_metric),
+                            num_segments=12,
+                        )
+                r_pos = r_trans.translation
                 c_pos = self.render_camera.node.absolute_translation
                 c_to_r = r_pos - c_pos
                 # only display receptacles within 4 meters
@@ -415,43 +455,27 @@ class HabitatSimInteractiveViewer(Application):
                         ):
                             if self.rec_color_mode == RecColorMode.GT_STABILITY:
                                 rec_color = rg_lerp.at(
-                                    self._cpo.gt_data[self.rec_to_poh[receptacle]][
-                                        "receptacles"
-                                    ][receptacle.name]["shape_id_results"]["gt"][
+                                    rec_dat["shape_id_results"]["gt"][
                                         "stability_results"
-                                    ][
-                                        "success_ratio"
-                                    ]
+                                    ]["success_ratio"]
                                 )
                             elif self.rec_color_mode == RecColorMode.GT_ACCESS:
                                 rec_color = rg_lerp.at(
-                                    self._cpo.gt_data[self.rec_to_poh[receptacle]][
-                                        "receptacles"
-                                    ][receptacle.name]["shape_id_results"]["gt"][
-                                        "access_results"
-                                    ][
+                                    rec_dat["shape_id_results"]["gt"]["access_results"][
                                         "receptacle_access_score"
                                     ]
                                 )
                             elif self.rec_color_mode == RecColorMode.PR_STABILITY:
                                 rec_color = rg_lerp.at(
-                                    self._cpo.gt_data[self.rec_to_poh[receptacle]][
-                                        "receptacles"
-                                    ][receptacle.name]["shape_id_results"]["pr0"][
+                                    rec_dat["shape_id_results"]["pr0"][
                                         "stability_results"
-                                    ][
-                                        "success_ratio"
-                                    ]
+                                    ]["success_ratio"]
                                 )
                             elif self.rec_color_mode == RecColorMode.PR_ACCESS:
                                 rec_color = rg_lerp.at(
-                                    self._cpo.gt_data[self.rec_to_poh[receptacle]][
-                                        "receptacles"
-                                    ][receptacle.name]["shape_id_results"]["pr0"][
+                                    rec_dat["shape_id_results"]["pr0"][
                                         "access_results"
-                                    ][
-                                        "receptacle_access_score"
-                                    ]
+                                    ]["receptacle_access_score"]
                                 )
 
                         receptacle.debug_draw(self.sim, color=rec_color)
@@ -1057,6 +1081,7 @@ class HabitatSimInteractiveViewer(Application):
             and self.mouse_cast_results.has_hits()
             and event.button == button.RIGHT
         ):
+            self.selected_object = None
             hit_id = self.mouse_cast_results.hits[0].object_id
             rom = self.sim.get_rigid_object_manager()
             # right click in look mode to print object information
@@ -1064,6 +1089,7 @@ class HabitatSimInteractiveViewer(Application):
                 print("This is the stage.")
             elif rom.get_library_has_id(hit_id):
                 ro = rom.get_object_by_id(hit_id)
+                self.selected_object = ro
                 print(f"Rigid Object: {ro.handle}")
                 if self.receptacles is not None:
                     for rec in self.receptacles:
