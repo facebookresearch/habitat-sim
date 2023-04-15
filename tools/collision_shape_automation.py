@@ -1046,6 +1046,9 @@ class CollisionProxyOptimizer:
                 obj_rec_data[receptacle_name]["shape_id_results"][shape_id][
                     "access_results"
                 ] = {
+                    "receptacle_point_access_scores": receptacle_point_access_scores[
+                        receptacle_name
+                    ],
                     "sample_point_ray_results": sample_point_ray_results,
                     "receptacle_access_score": receptacle_access_score,
                     "receptacle_access_rate": receptacle_access_rate,
@@ -1212,6 +1215,7 @@ class CollisionProxyOptimizer:
                 failed_snap = 0
                 failed_by_distance = 0
                 failed_unstable = 0
+                point_stabilities = []
                 for sample_point in sample_points:
                     cyl_test_obj.translation = sample_point
                     cyl_test_obj.rotation = mn.Quaternion.identity_init()
@@ -1229,6 +1233,7 @@ class CollisionProxyOptimizer:
                         )
                         if expected_height_error > accepted_height_error:
                             failed_by_distance += 1
+                            point_stabilities.append(False)
                             continue
 
                         # physical stability analysis
@@ -1262,8 +1267,12 @@ class CollisionProxyOptimizer:
                         # NOTE: we assume that if the object has not moved past the threshold in 'max_sim_time', then it must be stabel enough
                         if not object_is_stable:
                             failed_unstable += 1
+                            point_stabilities.append(False)
+                        else:
+                            point_stabilities.append(True)
                     else:
                         failed_snap += 1
+                        point_stabilities.append(False)
 
                 successful_points = (
                     len(sample_points)
@@ -1295,6 +1304,7 @@ class CollisionProxyOptimizer:
                     "failed_by_distance": failed_by_distance,
                     "failed_unstable": failed_unstable,
                     "total": len(sample_points),
+                    "point_stabilities": point_stabilities,
                 }
 
     def setup_shape_test_results_cache(self, obj_handle: str, shape_id: str) -> None:
