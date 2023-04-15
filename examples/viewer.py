@@ -170,12 +170,19 @@ class HabitatSimInteractiveViewer(Application):
 
         # toggle physics simulation on/off
         self.simulating = False
+
+        # receptacle visualization
         self.receptacles = None
         self.display_receptacles = False
+
+        # collision proxy visualization
         self.col_proxy_objs = None
         self.col_proxies_visible = True
         self.original_objs_visible = True
         self.proxy_obj_postfix = "_collision_stand-in"
+
+        # mouse raycast visualization
+        self.mouse_cast_results = None
 
         # toggle a single simulation step at the next opportunity if not
         # simulating continuously.
@@ -280,9 +287,19 @@ class HabitatSimInteractiveViewer(Application):
                         mn.Vector3(0, 0, -1)
                     )
                     # only display receptacles within 4 meters
-                    if mn.math.dot((c_to_r).normalized(), c_forward) > 0.75:
+                    if mn.math.dot((c_to_r).normalized(), c_forward) > 0.7:
                         # only display receptacles centered in view
                         receptacle.debug_draw(self.sim)
+
+        # mouse raycast circle
+        white = mn.Color4(mn.Vector3(1.0), 1.0)
+        if self.mouse_cast_results is not None and self.mouse_cast_results.has_hits():
+            self.sim.get_debug_line_render().draw_circle(
+                translation=self.mouse_cast_results.hits[0].point,
+                radius=0.005,
+                color=white,
+                normal=self.mouse_cast_results.hits[0].normal,
+            )
 
     def draw_event(
         self,
@@ -730,6 +747,11 @@ class HabitatSimInteractiveViewer(Application):
         mouse button to steer the agent's facing direction. When in GRAB mode,
         continues to update the grabber's object position with our agents position.
         """
+
+        render_camera = self.render_camera.render_camera
+        ray = render_camera.unproject(self.get_mouse_position(event.position))
+        self.mouse_cast_results = self.sim.cast_ray(ray=ray)
+
         button = Application.MouseMoveEvent.Buttons
         # if interactive mode -> LOOK MODE
         if event.buttons == button.LEFT and self.mouse_interaction == MouseMode.LOOK:
@@ -847,6 +869,25 @@ class HabitatSimInteractiveViewer(Application):
                 # end if didn't hit the scene
             # end has raycast hit
         # end has physics enabled
+        elif (
+            self.mouse_interaction == MouseMode.LOOK
+            and physics_enabled
+            and self.mouse_cast_results is not None
+            and self.mouse_cast_results.has_hits()
+            and event.button == button.RIGHT
+        ):
+            hit_id = self.mouse_cast_results.hits[0].object_id
+            rom = self.sim.get_rigid_object_manager()
+            # right click in look mode to print object information
+            if hit_id == -1:
+                print("This is the stage.")
+            elif rom.get_library_has_id(hit_id):
+                ro = rom.get_object_by_id(hit_id)
+                print(f"Rigid Object: {ro.handle}")
+                if self.receptacles is not None:
+                    for rec in self.receptacles:
+                        if rec.parent_object_handle == ro.handle:
+                            print(f"    - Receptacle: {rec.name}")
 
         self.previous_mouse_point = self.get_mouse_position(event.position)
         self.redraw()
