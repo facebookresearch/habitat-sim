@@ -1371,7 +1371,7 @@ if __name__ == "__main__":
     mm = habitat_sim.metadata.MetadataMediator()
     mm.active_dataset = sim_settings["scene_dataset_config_file"]
 
-    cpo = csa.CollisionProxyOptimizer(sim_settings)
+    cpo = csa.CollisionProxyOptimizer(sim_settings, None, mm)
     obj_temp_handle = mm.object_template_manager.get_file_template_handles(obj_name)[0]
     cpo.setup_obj_gt(obj_temp_handle)
     cpo.compute_proxy_metrics(obj_temp_handle)
