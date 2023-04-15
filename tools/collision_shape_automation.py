@@ -2123,12 +2123,12 @@ def main():
 
     # ----------------------------------------------------
     # run the pipeline for a set of scenes with separate output files for each
-    scenes_of_interest = []
+    scenes_of_interest = ["102816036"]
     # get all scenes from the mm
-    scenes_of_interest = [
-        handle.split(".scene_instance.json")[0].split("/")[-1]
-        for handle in cpo.mm.get_scene_handles()
-    ]
+    # scenes_of_interest = [
+    #     handle.split(".scene_instance.json")[0].split("/")[-1]
+    #     for handle in cpo.mm.get_scene_handles()
+    # ]
 
     for scene_of_interest in scenes_of_interest:
         cpo.init_caches()

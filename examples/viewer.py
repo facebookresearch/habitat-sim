@@ -26,6 +26,58 @@ from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.common import quat_from_angle_axis
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
 
+# add tools directory so I can import things to try them in the viewer
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../tools"))
+print(sys.path)
+import collision_shape_automation as csa
+
+# CollisionProxyOptimizer initialized before the application
+_cpo: Optional[csa.CollisionProxyOptimizer] = None
+_cpo_threads = []
+
+
+def _cpo_initialized():
+    global _cpo
+    global _cpo_threads
+    if _cpo is None:
+        return False
+    return all(not thread.is_alive() for thread in _cpo_threads)
+
+
+class RecColorMode(Enum):
+    """
+    Defines the coloring mode for receptacle debug drawing.
+    """
+
+    DEFAULT = 0  # all magenta
+    GT_ACCESS = 1  # red to green
+    GT_STABILITY = 2
+    PR_ACCESS = 3
+    PR_STABILITY = 4
+
+
+class ColorLERP:
+    """
+    xyz lerp between two colors.
+    """
+
+    def __init__(self, c0: mn.Color4, c1: mn.Color4):
+        self.c0 = c0.to_xyz()
+        self.c1 = c1.to_xyz()
+        self.delta = self.c1 - self.c0
+
+    def at(self, t: float) -> mn.Color4:
+        """
+        Compute the LERP at time t [0,1].
+        """
+        assert t >= 0 and t <= 1, "Extrapolation not recommended in color space."
+        t_color_xyz = self.c0 + self.delta * t
+        return mn.Color4.from_xyz(t_color_xyz)
+
+
+# red to green lerp for heatmaps
+rg_lerp = ColorLERP(mn.Color4.red(), mn.Color4.green())
+
 
 class HabitatSimInteractiveViewer(Application):
     # the maximum number of chars displayable in the app window
@@ -45,7 +97,11 @@ class HabitatSimInteractiveViewer(Application):
     # CPU and GPU usage info
     DISPLAY_FONT_SIZE = 16.0
 
-    def __init__(self, sim_settings: Dict[str, Any]) -> None:
+    def __init__(
+        self,
+        sim_settings: Dict[str, Any],
+        mm: Optional[habitat_sim.metadata.MetadataMediator] = None,
+    ) -> None:
         self.sim_settings: Dict[str:Any] = sim_settings
 
         self.enable_batch_renderer: bool = self.sim_settings["enable_batch_renderer"]
@@ -172,6 +228,14 @@ class HabitatSimInteractiveViewer(Application):
         # receptacle visualization
         self.receptacles = None
         self.display_receptacles = False
+        global _cpo
+        self._cpo = _cpo
+        self.cpo_initialized = False
+        self.filter_rec_by_access = False
+        self.rec_access_filter_threshold = 0.12  # empirically chosen
+        self.rec_color_mode = RecColorMode.DEFAULT
+        # map receptacle to parent objects
+        self.rec_to_poh: Dict[hab_receptacle.Receptacle, str] = {}
 
         # collision proxy visualization
         self.col_proxy_objs = None
@@ -206,6 +270,41 @@ class HabitatSimInteractiveViewer(Application):
         LoggingContext.reinitialize_from_env()
         logger.setLevel("INFO")
         self.print_help_text()
+
+    def modify_param_from_term(self):
+        """
+        Prompts the user to enter an attribute name and new value.
+        Attempts to fulfill the user's request.
+        """
+        # first get an attribute
+        user_attr = input("++++++++++++\nProvide an attribute to edit: ")
+        if not hasattr(self, user_attr):
+            print(f" The '{user_attr}' attribute does not exist.")
+            return
+
+        # then get a value
+        user_val = input(f"Now provide a value for '{user_attr}': ")
+        cur_attr_val = getattr(self, user_attr)
+        if cur_attr_val is not None:
+            try:
+                # try type conversion
+                new_val = type(cur_attr_val)(user_val)
+
+                # special handling for bool because all strings become True with cast
+                if isinstance(cur_attr_val, bool):
+                    if user_val.lower() == "false":
+                        new_val = False
+                    elif user_val.lower() == "true":
+                        new_val = True
+
+                setattr(self, user_attr, new_val)
+                print(
+                    f"attr '{user_attr}' set to '{getattr(self, user_attr)}' (type={type(new_val)})."
+                )
+            except Exception:
+                print(f"Failed to cast '{user_val}' to {type(cur_attr_val)}.")
+        else:
+            print("That attribute is unset, so I don't know the type.")
 
     def add_col_proxy_object(
         self, obj_instance: habitat_sim.physics.ManagedRigidObject
@@ -331,8 +430,54 @@ class HabitatSimInteractiveViewer(Application):
                     )
                     # only display receptacles within 4 meters
                     if mn.math.dot((c_to_r).normalized(), c_forward) > 0.7:
-                        # only display receptacles centered in view
-                        receptacle.debug_draw(self.sim)
+                        # handle coloring
+                        rec_color = None
+                        if (
+                            self.cpo_initialized
+                            and self.rec_color_mode != RecColorMode.DEFAULT
+                        ):
+                            if self.rec_color_mode == RecColorMode.GT_STABILITY:
+                                rec_color = rg_lerp.at(
+                                    self._cpo.gt_data[self.rec_to_poh[receptacle]][
+                                        "receptacles"
+                                    ][receptacle.name]["shape_id_results"]["gt"][
+                                        "stability_results"
+                                    ][
+                                        "success_ratio"
+                                    ]
+                                )
+                            elif self.rec_color_mode == RecColorMode.GT_ACCESS:
+                                rec_color = rg_lerp.at(
+                                    self._cpo.gt_data[self.rec_to_poh[receptacle]][
+                                        "receptacles"
+                                    ][receptacle.name]["shape_id_results"]["gt"][
+                                        "access_results"
+                                    ][
+                                        "receptacle_access_score"
+                                    ]
+                                )
+                            elif self.rec_color_mode == RecColorMode.PR_STABILITY:
+                                rec_color = rg_lerp.at(
+                                    self._cpo.gt_data[self.rec_to_poh[receptacle]][
+                                        "receptacles"
+                                    ][receptacle.name]["shape_id_results"]["pr0"][
+                                        "stability_results"
+                                    ][
+                                        "success_ratio"
+                                    ]
+                                )
+                            elif self.rec_color_mode == RecColorMode.PR_ACCESS:
+                                rec_color = rg_lerp.at(
+                                    self._cpo.gt_data[self.rec_to_poh[receptacle]][
+                                        "receptacles"
+                                    ][receptacle.name]["shape_id_results"]["pr0"][
+                                        "access_results"
+                                    ][
+                                        "receptacle_access_score"
+                                    ]
+                                )
+
+                        receptacle.debug_draw(self.sim, color=rec_color)
 
         # mouse raycast circle
         white = mn.Color4(mn.Vector3(1.0), 1.0)
@@ -354,6 +499,10 @@ class HabitatSimInteractiveViewer(Application):
         Calls continuously to re-render frames and swap the two frame buffers
         at a fixed rate.
         """
+        # until cpo initialization is finished, keep checking
+        if not self.cpo_initialized:
+            self.cpo_initialized = _cpo_initialized()
+
         agent_acts_per_sec = self.fps
 
         mn.gl.default_framebuffer.clear(
@@ -444,7 +593,9 @@ class HabitatSimInteractiveViewer(Application):
         )
         return agent_config
 
-    def reconfigure_sim(self) -> None:
+    def reconfigure_sim(
+        self, mm: Optional[habitat_sim.metadata.MetadataMediator] = None
+    ) -> None:
         """
         Utilizes the current `self.sim_settings` to configure and set up a new
         `habitat_sim.Simulator`, and then either starts a simulation instance, or replaces
@@ -452,6 +603,7 @@ class HabitatSimInteractiveViewer(Application):
         """
         # configure our sim_settings but then set the agent to our default
         self.cfg = make_cfg(self.sim_settings)
+        self.cfg.metadata_mediator = mm
         self.agent_id: int = self.sim_settings["default_agent"]
         self.cfg.agents[self.agent_id] = self.default_agent_config()
 
@@ -655,13 +807,15 @@ class HabitatSimInteractiveViewer(Application):
                 # TODO: add a nice log message with concise contact pair naming.
 
         elif key == pressed.T:
+            self.modify_param_from_term()
+
             # load URDF
-            fixed_base = alt_pressed
-            urdf_file_path = ""
-            if shift_pressed and self.cached_urdf:
-                urdf_file_path = self.cached_urdf
-            else:
-                urdf_file_path = input("Load URDF: provide a URDF filepath:").strip()
+            # fixed_base = alt_pressed
+            # urdf_file_path = ""
+            # if shift_pressed and self.cached_urdf:
+            #     urdf_file_path = self.cached_urdf
+            # else:
+            #     urdf_file_path = input("Load URDF: provide a URDF filepath:").strip()
 
             if not urdf_file_path:
                 logger.warn("Load URDF: no input provided. Aborting.")
@@ -1239,6 +1393,45 @@ class Timer:
         Timer.prev_frame_time = time.time()
 
 
+def init_cpo_for_scene(sim_settings, mm: habitat_sim.metadata.MetadataMediator):
+    """
+    Initialize and run th CPO for all objects in the scene.
+    """
+    global _cpo
+    global _cpo_threads
+
+    _cpo = csa.CollisionProxyOptimizer(sim_settings, None, mm)
+
+    # get object handles from a specific scene
+    objects_in_scene = csa.get_objects_in_scene(
+        dataset_path=sim_settings["scene_dataset_config_file"],
+        scene_handle=sim_settings["scene"],
+        mm=_cpo.mm,
+    )
+    # get a subset with receptacles defined
+    objects_in_scene = [
+        objects_in_scene[i]
+        for i in range(len(objects_in_scene))
+        if csa.object_has_receptacles(objects_in_scene[i], mm.object_template_manager)
+    ]
+
+    def run_cpo_for_obj(obj_handle):
+        _cpo.setup_obj_gt(obj_handle)
+        _cpo.compute_receptacle_stability(obj_handle, use_gt=True)
+        _cpo.compute_receptacle_stability(obj_handle)
+        _cpo.compute_receptacle_access_metrics(obj_handle, use_gt=True)
+        _cpo.compute_receptacle_access_metrics(obj_handle, use_gt=False)
+
+    # run CPO initialization multi-threaded to unblock viewer initialization and use
+    import threading
+
+    threads = []
+    for obj_handle in objects_in_scene:
+        threads.append(threading.Thread(target=run_cpo_for_obj, args=(obj_handle,)))
+    for thread in threads:
+        thread.start()
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -1257,6 +1450,11 @@ if __name__ == "__main__":
         type=str,
         metavar="DATASET",
         help='dataset configuration file to use (default: "default")',
+    )
+    parser.add_argument(
+        "--init-cpo",
+        action="store_true",
+        help="Initialize and run the CPO for the current scene.",
     )
     parser.add_argument(
         "--disable-physics",
@@ -1332,5 +1530,13 @@ if __name__ == "__main__":
     sim_settings["enable_hbao"] = args.hbao
     sim_settings["clear_color"] = mn.Color4.magenta()
 
+    mm = habitat_sim.metadata.MetadataMediator()
+    mm.active_dataset = sim_settings["scene_dataset_config_file"]
+
+    # initialize the CPO.
+    # this will be done in parallel to viewer setup via multithreading
+    if args.init_cpo:
+        init_cpo_for_scene(sim_settings, mm)
+
     # start the application
-    HabitatSimInteractiveViewer(sim_settings).exec()
+    HabitatSimInteractiveViewer(sim_settings, mm).exec()
