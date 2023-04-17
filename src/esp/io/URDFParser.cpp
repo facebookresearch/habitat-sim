@@ -125,10 +125,28 @@ bool Model::loadJsonAttributes(const std::string& filename) {
   // convert doc to const Json Generic val
   const io::JsonGenericValue jsonConfig = docConfig->GetObject();
 
+  // check for render asset
+  const std::string renderAssetAttributeName = "render_asset";
+  const char* ra_cstr = renderAssetAttributeName.c_str();
+
+  bool hasRenderAsset = false;
+  if (jsonConfig.HasMember(ra_cstr)) {
+    if (!jsonConfig[ra_cstr].IsString()) {
+      ESP_WARNING() << "<Model> : Json Config file specifies a render_asset "
+                       "attribute but "
+                       "it is not a string. Skipping render_asset config load.";
+      return false;
+    } else {
+      const std::string renderAssetPath{jsonConfig[ra_cstr].GetString()};
+      m_renderAsset = renderAssetPath;
+      hasRenderAsset = true;
+    }
+  }
+
+  // check for user defined attributes and verify it is an object
   const std::string subGroupName = "user_defined";
   const char* sg_cstr = subGroupName.c_str();
 
-  // check for user defined attributes and verify it is an object
   if (jsonConfig.HasMember(sg_cstr)) {
     if (!jsonConfig[sg_cstr].IsObject()) {
       ESP_WARNING()
@@ -153,8 +171,12 @@ bool Model::loadJsonAttributes(const std::string& filename) {
 
     return (numConfigSettings > 0);
   }  // if has user_defined tag
-  ESP_WARNING() << "<Model> : Json Config file exists but \"" << subGroupName
-                << "\" tag not found within file.";
+
+  if (!hasRenderAsset) {
+    ESP_WARNING() << "<Model> : Json Config file exists but \"" << subGroupName
+                  << "\" and \"" << renderAssetAttributeName
+                  << "\" tags not found within file.";
+  }
   return false;
 }  // Model::loadJsonAttributes
 
