@@ -131,7 +131,7 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
     bool maintainLinkOrder,
     const std::string& lightSetup) {
   if (simulator_ != nullptr) {
-    // aquire context if available
+    // acquire context if available
     simulator_->getRenderGLContext();
   }
   ESP_CHECK(
@@ -163,6 +163,20 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
   u2b->initURDF2BulletCache();
 
   articulatedObject->initializeFromURDF(*urdfImporter_, {}, physicsNode_);
+
+  // if the URDF model specifies a render asset, load and link it
+  auto renderAssetPath = u2b->getModel()->getRenderAsset();
+  if (renderAssetPath) {
+    // load associated skinned mesh
+    assets::AssetInfo assetInfo = assets::AssetInfo::fromPath(*renderAssetPath);
+    assets::RenderAssetInstanceCreationInfo creationInfo;
+    creationInfo.filepath = *renderAssetPath;
+    creationInfo.lightSetupKey = lightSetup;
+    creationInfo.scale = globalScale * Mn::Vector3(1.f, 1.f, 1.f);
+    creationInfo.rig = articulatedObject;
+    resourceManager_.loadAndCreateRenderAssetInstance(assetInfo, creationInfo,
+                                                      objectNode, drawables);
+  }
 
   // allocate ids for links
   for (int linkIx = 0; linkIx < articulatedObject->btMultiBody_->getNumLinks();
@@ -579,7 +593,7 @@ std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {
       pt.positionOnAInWS = Mn::Vector3(srcPt.getPositionWorldOnA());
       pt.positionOnBInWS = Mn::Vector3(srcPt.getPositionWorldOnB());
 
-      // convert impulses to forces w/ recent physics timstep
+      // convert impulses to forces w/ recent physics timestep
       pt.normalForce =
           static_cast<double>(srcPt.getAppliedImpulse()) / recentTimeStep_;
 
@@ -732,7 +746,7 @@ int BulletPhysicsManager::createRigidConstraint(
     }
   }
 
-  // link objects to their consraints for later deactivation/removal logic
+  // link objects to their constraints for later deactivation/removal logic
   objectConstraints_[settings.objectIdA].push_back(nextConstraintId_);
   if (settings.objectIdB != ID_UNDEFINED) {
     objectConstraints_[settings.objectIdB].push_back(nextConstraintId_);
