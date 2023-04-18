@@ -44,6 +44,7 @@
 #include <Magnum/Trade/PbrMetallicRoughnessMaterialData.h>
 #include <Magnum/Trade/PhongMaterialData.h>
 #include <Magnum/Trade/SceneData.h>
+#include <Magnum/Trade/SkinData.h>
 #include <Magnum/Trade/TextureData.h>
 #include <Magnum/VertexFormat.h>
 
@@ -59,6 +60,7 @@
 #include "esp/gfx/GenericDrawable.h"
 #include "esp/gfx/MaterialUtil.h"
 #include "esp/gfx/PbrDrawable.h"
+#include "esp/gfx/SkinData.h"
 #include "esp/gfx/replay/Recorder.h"
 #include "esp/io/Json.h"
 #include "esp/io/URDFParser.h"
@@ -1756,6 +1758,8 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
     loadMaterials(*fileImporter_, loadedAssetData);
   }
   loadMeshes(*fileImporter_, loadedAssetData);
+  loadSkins(*fileImporter_, loadedAssetData);
+
   auto inserted = resourceDict_.emplace(filename, std::move(loadedAssetData));
   MeshMetaData& meshMetaData = inserted.first->second.meshMetaData;
 
@@ -1881,6 +1885,23 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
                                       : scene::SceneNodeType::OBJECT;
   bool computeAbsoluteAABBs = creation.isStatic();
 
+  // If the object has a skin and a rig (articulated object), link them together
+  // such as the model bones are driven by the articulated object links.
+  std::shared_ptr<gfx::InstanceSkinData> instanceSkinData = nullptr;
+  if (creation.rig &&
+      loadedAssetData.meshMetaData.skinIndex.first != ID_UNDEFINED) {
+    ESP_CHECK(
+        !skins_.empty(),
+        "Cannot instantiate skinned model because no skin data is imported.");
+    const auto& skinData = skins_[loadedAssetData.meshMetaData.skinIndex.first];
+    instanceSkinData = std::make_shared<gfx::InstanceSkinData>(skinData);
+    mapSkinnedModelToArticulatedObject(loadedAssetData.meshMetaData.root,
+                                       creation, newNode.scaling(),
+                                       instanceSkinData);
+    ESP_CHECK(instanceSkinData->rootJointId != ID_UNDEFINED,
+              "Could not map skinned model to articulated object.");
+  }
+
   addComponent(loadedAssetData.meshMetaData,       // mesh metadata
                newNode,                            // parent scene node
                creation.lightSetupKey,             // lightSetup key
@@ -1888,7 +1909,8 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
                loadedAssetData.meshMetaData.root,  // mesh transform node
                visNodeCache,  // a vector of scene nodes, the visNodeCache
                computeAbsoluteAABBs,  // compute absolute AABBs
-               staticDrawableInfo);   // a vector of static drawable info
+               staticDrawableInfo,    // a vector of static drawable info
+               instanceSkinData);     // instance skinning data
 
   if (computeAbsoluteAABBs) {
     // now compute aabbs by constructed staticDrawableInfo
@@ -2446,6 +2468,34 @@ void ResourceManager::loadMeshes(Importer& importer,
   }
 }  // ResourceManager::loadMeshes
 
+void ResourceManager::loadSkins(Importer& importer,
+                                LoadedAssetData& loadedAssetData) {
+  if (importer.skin3DCount() == 0)
+    return;
+
+  int skinStart = nextSkinID_;
+  int skinEnd = skinStart + importer.skin3DCount() - 1;
+  nextSkinID_ = skinEnd + 1;
+  loadedAssetData.meshMetaData.setSkinIndices(skinStart, skinEnd);
+
+  for (int iSkin = 0; iSkin < importer.skin3DCount(); ++iSkin) {
+    auto skinData = std::make_shared<gfx::SkinData>();
+
+    Cr::Containers::Optional<Mn::Trade::SkinData3D> skin =
+        importer.skin3D(iSkin);
+    CORRADE_INTERNAL_ASSERT(skin);
+
+    // Cache bone names for later association with instance transforms
+    for (auto jointIt : skin->joints()) {
+      const auto gfxBoneName = fileImporter_->objectName(jointIt);
+      skinData->boneNameJointIdMap[gfxBoneName] = jointIt;
+    }
+
+    skinData->skin = std::make_shared<Mn::Trade::SkinData3D>(std::move(*skin));
+    skins_.emplace(skinStart + iSkin, std::move(skinData));
+  }
+}  // ResourceManager::loadSkins
+
 Mn::Image2D ResourceManager::convertRGBToSemanticId(
     const Mn::ImageView2D& srcImage,
     Cr::Containers::Array<Mn::UnsignedShort>& clrToSemanticId) {
@@ -2787,7 +2837,8 @@ void ResourceManager::addComponent(
     const MeshTransformNode& meshTransformNode,
     std::vector<scene::SceneNode*>& visNodeCache,
     bool computeAbsoluteAABBs,
-    std::vector<StaticDrawableInfo>& staticDrawableInfo) {
+    std::vector<StaticDrawableInfo>& staticDrawableInfo,
+    const std::shared_ptr<gfx::InstanceSkinData>& skinData /* = nullptr */) {
   // Add the object to the scene and set its transformation
   scene::SceneNode& node = parent.createChild();
   visNodeCache.push_back(&node);
@@ -2832,7 +2883,8 @@ void ResourceManager::addComponent(
                    node,                // scene node
                    lightSetupKey,       // lightSetup Key
                    materialKey,         // material key
-                   drawables);          // drawable group
+                   drawables,           // drawable group
+                   skinData);           // instance skinning data
 
     // compute the bounding box for the mesh we are adding
     if (computeAbsoluteAABBs) {
@@ -2851,9 +2903,60 @@ void ResourceManager::addComponent(
                  child,          // mesh transform node
                  visNodeCache,   // a vector of scene nodes, the visNodeCache
                  computeAbsoluteAABBs,  // compute absolute aabbs
-                 staticDrawableInfo);   // a vector of static drawable info
+                 staticDrawableInfo,    // a vector of static drawable info
+                 skinData);             // instance skinning data
   }
 }  // addComponent
+
+void ResourceManager::mapSkinnedModelToArticulatedObject(
+    const MeshTransformNode& meshTransformNode,
+    const RenderAssetInstanceCreationInfo& creationInfo,
+    Mn::Vector3 cumulativeScale,
+    const std::shared_ptr<gfx::InstanceSkinData>& skinData) {
+  cumulativeScale /= meshTransformNode.transformFromLocalToParent.scaling();
+
+  // Find skin joint ID that matches the node
+  const auto& gfxBoneName = meshTransformNode.name;
+  const auto& boneNameJointIdMap = skinData->skinData->boneNameJointIdMap;
+  auto jointIt = boneNameJointIdMap.find(gfxBoneName);
+  if (jointIt != boneNameJointIdMap.end()) {
+    int jointId = jointIt->second;
+
+    // Find articulated object link ID that matches the node
+    const auto& linkIds = creationInfo.rig->getLinkIdsWithBase();
+    auto linkId = std::find_if(linkIds.begin(), linkIds.end(), [&](int i) {
+      return gfxBoneName == creationInfo.rig->getLinkName(i);
+    });
+
+    // Map the articulated object link associated with the skin joint
+    if (linkId != linkIds.end()) {
+      auto articulatedObjectNode =
+          &creationInfo.rig->getLink(*linkId.base()).node();
+      skinData->jointIdToArticulatedObjectNode[jointId] = articulatedObjectNode;
+
+      // Articulated object nodes aren't scaled.
+      // Create a child node that carries the scale component.
+      // This node will be used for rendering.
+      auto& scaledNode = articulatedObjectNode->createChild();
+      scaledNode.setScaling(cumulativeScale);
+
+      // Mapping
+      skinData->jointIdToTransformNode[jointId] = &scaledNode;
+      skinData->localTransforms[jointId] =
+          meshTransformNode.transformFromLocalToParent;
+
+      // First node found is the root
+      if (skinData->rootJointId == ID_UNDEFINED) {
+        skinData->rootJointId = jointId;
+      }
+    }
+  }
+
+  for (const auto& child : meshTransformNode.children) {
+    mapSkinnedModelToArticulatedObject(child, creationInfo, cumulativeScale,
+                                       skinData);
+  }
+}  // mapSkinnedModelToArticulatedObject
 
 void ResourceManager::addPrimitiveToDrawables(int primitiveID,
                                               scene::SceneNode& node,
@@ -2879,12 +2982,14 @@ void ResourceManager::removePrimitiveMesh(int primitiveID) {
   primitive_meshes_.erase(primMeshIter);
 }
 
-void ResourceManager::createDrawable(Mn::GL::Mesh* mesh,
-                                     gfx::Drawable::Flags& meshAttributeFlags,
-                                     scene::SceneNode& node,
-                                     const Mn::ResourceKey& lightSetupKey,
-                                     const Mn::ResourceKey& materialKey,
-                                     DrawableGroup* group /* = nullptr */) {
+void ResourceManager::createDrawable(
+    Mn::GL::Mesh* mesh,
+    gfx::Drawable::Flags& meshAttributeFlags,
+    scene::SceneNode& node,
+    const Mn::ResourceKey& lightSetupKey,
+    const Mn::ResourceKey& materialKey,
+    DrawableGroup* group /* = nullptr */,
+    const std::shared_ptr<gfx::InstanceSkinData>& skinData /* = nullptr */) {
   const auto& materialDataType =
       shaderManager_.get<gfx::MaterialData>(materialKey)->type;
   switch (materialDataType) {
@@ -2898,7 +3003,8 @@ void ResourceManager::createDrawable(Mn::GL::Mesh* mesh,
           shaderManager_,      // shader manager
           lightSetupKey,       // lightSetup key
           materialKey,         // material key
-          group);              // drawable group
+          group,               // drawable group
+          skinData);           // instance skinning data
       break;
     case gfx::MaterialDataType::Pbr:
       node.addFeature<gfx::PbrDrawable>(
@@ -2910,6 +3016,7 @@ void ResourceManager::createDrawable(Mn::GL::Mesh* mesh,
           group,               // drawable group
           activePbrIbl_ >= 0 ? pbrImageBasedLightings_[activePbrIbl_].get()
                              : nullptr);  // pbr image based lighting
+      // TODO: Carry skinData to PbrDrawable.
       break;
   }
 

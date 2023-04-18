@@ -10,6 +10,7 @@
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix3.h>
 
+#include "esp/gfx/SkinData.h"
 #include "esp/scene/SceneNode.h"
 
 namespace Mn = Magnum;
@@ -17,18 +18,21 @@ namespace Mn = Magnum;
 namespace esp {
 namespace gfx {
 
-GenericDrawable::GenericDrawable(scene::SceneNode& node,
-                                 Mn::GL::Mesh* mesh,
-                                 Drawable::Flags& meshAttributeFlags,
-                                 ShaderManager& shaderManager,
-                                 const Mn::ResourceKey& lightSetupKey,
-                                 const Mn::ResourceKey& materialDataKey,
-                                 DrawableGroup* group /* = nullptr */)
+GenericDrawable::GenericDrawable(
+    scene::SceneNode& node,
+    Mn::GL::Mesh* mesh,
+    Drawable::Flags& meshAttributeFlags,
+    ShaderManager& shaderManager,
+    const Mn::ResourceKey& lightSetupKey,
+    const Mn::ResourceKey& materialDataKey,
+    DrawableGroup* group /* = nullptr */,
+    const std::shared_ptr<InstanceSkinData>& skinData /* = nullptr */)
     : Drawable{node, mesh, DrawableType::Generic, group},
       shaderManager_{shaderManager},
       lightSetup_{shaderManager.get<LightSetup>(lightSetupKey)},
       materialData_{
-          shaderManager.get<MaterialData, PhongMaterialData>(materialDataKey)} {
+          shaderManager.get<MaterialData, PhongMaterialData>(materialDataKey)},
+      skinData_(skinData) {
   flags_ = Mn::Shaders::PhongGL::Flag::ObjectId;
 
   /* If texture transformation is specified, enable it only if the material is
@@ -183,6 +187,39 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
     shader_->bindObjectIdTexture(*(materialData_->objectIdTexture));
   }
 
+  if (skinData_) {
+    // Gather joint transformations
+    auto& skin = skinData_->skinData->skin;
+    auto& jointIdToArticulatedObjectNodes =
+        skinData_->jointIdToArticulatedObjectNode;
+    auto& transformNodes = skinData_->jointIdToTransformNode;
+    Cr::Containers::Array<Mn::Matrix4> jointTransformations{
+        Cr::NoInit, skin->joints().size()};
+
+    // Undo root node transform so that the model origin matches the root
+    // articulated object link.
+    auto invRootTransform =
+        jointIdToArticulatedObjectNodes[skinData_->rootJointId]
+            ->absoluteTransformationMatrix()
+            .inverted();
+
+    Mn::Matrix4 lastTransform = Mn::Matrix4{Magnum::Math::IdentityInit};
+    for (std::size_t i = 0; i != jointTransformations.size(); ++i) {
+      auto jointNodeIt = transformNodes.find(skin->joints()[i]);
+      if (jointNodeIt != transformNodes.end()) {
+        jointTransformations[i] =
+            invRootTransform *
+            jointNodeIt->second->absoluteTransformationMatrix() *
+            skin->inverseBindMatrices()[i];
+        lastTransform = jointTransformations[i];
+      } else {
+        // Joint not found - use last transform.
+        jointTransformations[i] = lastTransform;
+      }
+    }
+    shader_->setJointMatrices(jointTransformations);
+  }
+
   shader_->draw(getMesh());
 
   // Reset winding direction
@@ -194,6 +231,10 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
 
 void GenericDrawable::updateShader() {
   Mn::UnsignedInt lightCount = lightSetup_->size();
+  Mn::UnsignedInt jointCount =
+      skinData_ ? skinData_->skinData->skin->joints().size() : 0;
+  Mn::UnsignedInt perVertexJointCount =
+      skinData_ ? skinData_->skinData->perVertexJointCount : 0;
 
   if (!shader_ || shader_->lightCount() != lightCount ||
       shader_->flags() != flags_) {
@@ -207,9 +248,11 @@ void GenericDrawable::updateShader() {
     if (!shader_) {
       shaderManager_.set<Mn::GL::AbstractShaderProgram>(
           shader_.key(),
-          new Mn::Shaders::PhongGL{Mn::Shaders::PhongGL::Configuration{}
-                                       .setFlags(flags_)
-                                       .setLightCount(lightCount)},
+          new Mn::Shaders::PhongGL{
+              Mn::Shaders::PhongGL::Configuration{}
+                  .setFlags(flags_)
+                  .setLightCount(lightCount)
+                  .setJointCount(jointCount, perVertexJointCount)},
           Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
     }
 
