@@ -1794,6 +1794,8 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
        scene->parentsAsArray()) {
     nodes[parent.first()].emplace();
     nodes[parent.first()]->componentID = parent.first();
+    nodes[parent.first()]->name =
+        fileImporter_->objectName(nodes[parent.first()]->componentID);
   }
 
   // Set transformations. Objects that are not part of the hierarchy are

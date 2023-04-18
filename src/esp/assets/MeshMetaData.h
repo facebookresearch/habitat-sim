@@ -45,6 +45,9 @@ struct MeshTransformNode {
 
   /** @brief Default constructor. */
   MeshTransformNode() = default;
+
+  /** @brief Node name in the original file. */
+  std::string name{};
 };
 
 /**
