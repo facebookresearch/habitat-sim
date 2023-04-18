@@ -366,7 +366,7 @@ class Model {
    * @brief Set the path to the render asset to attach to this URDF model.
    */
   void setRenderAsset(Cr::Containers::Optional<std::string> renderAsset) {
-    m_renderAsset = renderAsset;
+    m_renderAsset = std::move(renderAsset);
   }
 
   /**

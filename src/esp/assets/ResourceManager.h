@@ -863,14 +863,12 @@ class ResourceManager {
    * @param meshTransformNode The @ref MeshTransformNode being traversed.
    * @param creationInfo Creation information for the instance which contains
    * the rig.
-   * @param cumulativeScale TODO
    * @param skinData Structure holding the skin and rig configuration for the
    * instance
    */
   void mapSkinnedModelToArticulatedObject(
       const MeshTransformNode& meshTransformNode,
       const RenderAssetInstanceCreationInfo& creationInfo,
-      Mn::Vector3 cumulativeScale,
       const std::shared_ptr<gfx::InstanceSkinData>& skinData);
 
   /**

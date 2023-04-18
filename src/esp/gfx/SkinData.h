@@ -40,7 +40,7 @@ struct InstanceSkinData {
 
   std::unordered_map<int, Magnum::Matrix4> localTransforms;
 
-  InstanceSkinData(const std::shared_ptr<SkinData>& skinData)
+  explicit InstanceSkinData(const std::shared_ptr<SkinData>& skinData)
       : skinData(skinData){};
 };
 }  // namespace gfx
