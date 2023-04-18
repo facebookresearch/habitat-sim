@@ -4,11 +4,19 @@
 
 import argparse
 import csv
+import ctypes
 import math
 import os
 import random
+import sys
 import time
 from typing import Any, Dict, List, Optional, Tuple
+
+# not adding this causes some failures in mesh import
+flags = sys.getdlopenflags()
+sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
+
+from collections import defaultdict
 
 # imports from Habitat-lab
 # NOTE: requires PR 1108 branch: rearrange-gen-improvements (https://github.com/facebookresearch/habitat-lab/pull/1108)
@@ -1639,12 +1647,13 @@ class CollisionProxyOptimizer:
             # "pca": (0,1), #pca seems worse, no speed improvement
             # "mode": (0,1), #tetrahedral mode seems worse
             "alpha": (0.05, 0.1),
+            # "alpha": (0.05,),
             "beta": (0.05, 0.1),
-            "plane_downsampling": [2],
-            "convex_hull_downsampling": [2],
-            "max_num_vertices_per_ch": (16, 32),
-            # "max_convex_hulls": (8,16,32,64),
-            "max_convex_hulls": (16, 32, 64),
+            "plane_downsampling": [1],
+            "convex_hull_downsampling": [1],
+            # "max_num_vertices_per_ch": (16, 32),
+            "max_convex_hulls": (64, 128),
+            # "max_convex_hulls": (500,),
             "resolution": [200000],
         }
 
@@ -1682,20 +1691,25 @@ class CollisionProxyOptimizer:
             shape_id = self.get_proxy_shape_id(obj_template_handle)
             if "vhacd_settings" not in self.gt_data[obj_template_handle]:
                 self.gt_data[obj_template_handle]["vhacd_settings"] = {}
-            self.gt_data[obj_template_handle]["vhacd_settings"][
-                shape_id
-            ] = setting_string
+            self.gt_data[obj_template_handle]["vhacd_settings"][shape_id] = (
+                vhacd_params,
+                setting_string,
+            )
 
             # compute shape level metrics:
             self.compute_proxy_metrics(obj_template_handle)
-            self.compute_grid_collision_times(obj_template_handle, subdivisions=1)
-            self.run_physics_settle_test(obj_template_handle)
-            self.run_physics_sphere_shake_test(obj_template_handle)
+            # self.compute_grid_collision_times(obj_template_handle, subdivisions=1)
+            # self.run_physics_settle_test(obj_template_handle)
+            # self.run_physics_sphere_shake_test(obj_template_handle)
 
             # compute receptacle metrics
             if self.compute_receptacle_useability_metrics:
-                self.compute_receptacle_access_metrics(obj_handle=obj_template_handle)
-                self.compute_receptacle_stability(obj_handle=obj_template_handle)
+                self.compute_receptacle_access_metrics(
+                    obj_handle=obj_template_handle, use_gt=False
+                )
+                self.compute_receptacle_stability(
+                    obj_handle=obj_template_handle, use_gt=False
+                )
             vhacd_iteration_times[shape_id] = time.time() - vhacd_iteration_time
 
         print(f"Total VHACD time = {time.time()-vhacd_start_time}")
@@ -1703,7 +1717,141 @@ class CollisionProxyOptimizer:
         for shape_id, settings in self.gt_data[obj_template_handle][
             "vhacd_settings"
         ].items():
-            print(f"     {shape_id} - {settings} - {vhacd_iteration_times[shape_id]}")
+            print(
+                f"     {shape_id} - {settings[1]} - {vhacd_iteration_times[shape_id]}"
+            )
+
+    def optimize_object_col_shape_vhacd(self, obj_h: str, col_shape_dir: str):
+        """
+        Run VHACD optimization for a specific object.
+        Identify the optimal collision shape and save the result as the new default.
+
+        :return: Tuple(best_shape_id, best_shape_score, original_shape_score) if best_shape_id == "pr0", then optimization didn't change anything.
+        """
+        otm = self.mm.object_template_manager
+        obj_temp = otm.get_template_by_handle(obj_h)
+        cur_col_shape_path = os.path.abspath(obj_temp.collision_asset_handle)
+        self.setup_obj_gt(obj_h)
+        self.compute_proxy_metrics(obj_h)
+        self.compute_receptacle_stability(obj_h, use_gt=True)
+        self.compute_receptacle_stability(obj_h)
+        self.compute_receptacle_access_metrics(obj_h, use_gt=True)
+        self.compute_receptacle_access_metrics(obj_h, use_gt=False)
+        self.grid_search_vhacd_params(obj_h)
+        self.compute_gt_errors(obj_h)
+
+        # time to select the best version
+        best_shape_id = "pr0"
+        pr0_shape_score = (
+            1.0
+            - self.gt_data[obj_h]["shape_test_results"]["pr0"][
+                "normalized_raycast_error"
+            ]
+        )
+        best_shape_score = pr0_shape_score
+        shape_scores = {}
+        access_scores = {"gt": {}, "pr0": {}}
+        stab_ratios = {"gt": {}, "pr0": {}}
+        rel_access_scores = defaultdict(dict)
+        rel_stab_scores = defaultdict(dict)
+        for shape_id in self.gt_data[obj_h]["vhacd_settings"].keys():
+            # compare shape metric
+            if (
+                self.gt_data[obj_h]["shape_test_results"][shape_id][
+                    "normalized_raycast_error"
+                ]
+                > self.gt_data[obj_h]["shape_test_results"]["pr0"][
+                    "normalized_raycast_error"
+                ]
+            ):
+                # worse metric performance than the default, skip it.
+                continue
+
+            shape_score = (
+                1.0
+                - self.gt_data[obj_h]["shape_test_results"][shape_id][
+                    "normalized_raycast_error"
+                ]
+            )
+
+            # compare rec metrics
+            for rec_name, rec_data in self.gt_data[obj_h]["receptacles"].items():
+                for orig_shape_id in access_scores.keys():
+                    if rec_name not in access_scores[orig_shape_id]:
+                        access_scores[orig_shape_id][rec_name] = rec_data[
+                            "shape_id_results"
+                        ][orig_shape_id]["access_results"]["receptacle_access_score"]
+                    if rec_name not in stab_ratios[orig_shape_id]:
+                        stab_ratios[orig_shape_id][rec_name] = rec_data[
+                            "shape_id_results"
+                        ][orig_shape_id]["stability_results"]["success_ratio"]
+
+                sh_rec_dat = rec_data["shape_id_results"][shape_id]
+                rel_access_scores[shape_id][rec_name] = (
+                    access_scores["gt"][rec_name]
+                    - sh_rec_dat["access_results"]["receptacle_access_score"]
+                )
+                rel_stab_scores[shape_id][rec_name] = (
+                    stab_ratios["gt"][rec_name]
+                    - sh_rec_dat["stability_results"]["success_ratio"]
+                )
+
+                if (
+                    access_scores["gt"][rec_name] < 0.15
+                    or stab_ratios["gt"][rec_name] < 0.5
+                ):
+                    "this receptacle is not good anyway, so skip it"
+                    continue
+
+                if rec_name not in rel_access_scores["pr0"]:
+                    rel_access_scores["pr0"][rec_name] = (
+                        access_scores["gt"][rec_name] - access_scores["pr0"][rec_name]
+                    )
+                    pr0_shape_score += rel_access_scores["pr0"][rec_name]
+                    if best_shape_id == "pr0":
+                        best_shape_score = pr0_shape_score
+                if rec_name not in rel_stab_scores["pr0"]:
+                    rel_stab_scores["pr0"][rec_name] = (
+                        stab_ratios["gt"][rec_name] - stab_ratios["pr0"][rec_name]
+                    )
+                    pr0_shape_score += rel_stab_scores["pr0"][rec_name]
+                    if best_shape_id == "pr0":
+                        best_shape_score = pr0_shape_score
+
+                # TODO: weight these up?
+                shape_score += rel_stab_scores[shape_id][rec_name]
+                shape_score += rel_access_scores[shape_id][rec_name]
+
+            shape_scores[shape_id] = shape_score
+            if shape_score > best_shape_score:
+                best_shape_id = shape_id
+                best_shape_score = shape_score
+
+        print(self.gt_data[obj_h]["vhacd_settings"])
+        print(shape_scores)
+
+        if best_shape_id != "pr0":
+            # re-save the best version
+            print(
+                f"Best shape_id = {best_shape_id} with shape score {best_shape_score} better than 'pr0' with shape score {pr0_shape_score}."
+            )
+            self.compute_vhacd_col_shape(
+                obj_h, self.gt_data[obj_h]["vhacd_settings"][best_shape_id][0]
+            )
+            # copy the collision asset into the correct directory
+            obj_name = obj_h.split(".object_config.json")[0].split("/")[-1]
+            col_shape_path = os.path.join(col_shape_dir, obj_name + ".obj")
+            os.system(f"obj2gltf -i {col_shape_path} -o {cur_col_shape_path}")
+        else:
+            print(
+                f"Best shape_id = {best_shape_id} with shape score {best_shape_score}."
+            )
+
+        best_shape_params = None
+        if best_shape_id != "pr0":
+            best_shape_params = self.gt_data[obj_h]["vhacd_settings"][best_shape_id]
+        self.clean_obj_gt(obj_h)
+        return (best_shape_id, best_shape_score, pr0_shape_score, best_shape_params)
 
     def compute_vhacd_col_shape(
         self, obj_template_handle: str, vhacd_params: habitat_sim.VHACDParameters
@@ -1737,8 +1885,16 @@ class CollisionProxyOptimizer:
 
         vhacd_template = otm.get_template_by_handle(matching_vhacd_handles[0])
 
-        obj_template.collision_asset_handle = vhacd_template.collision_asset_handle
+        # copy the file to glb
+        new_filename = vhacd_template.collision_asset_handle.split(".obj")[0] + ".glb"
+        command = (
+            f"obj2gltf -i {vhacd_template.collision_asset_handle} -o {new_filename}"
+        )
 
+        os.system(command)
+        print(command)
+
+        obj_template.collision_asset_handle = new_filename
         otm.register_template(obj_template)
 
     def cache_global_results(self) -> None:
@@ -2132,6 +2288,19 @@ def main():
     # ----------------------------------------------------
 
     # ----------------------------------------------------
+    # specific object handle
+    # 163cdd355d2d228880dd6ed6f3fc5b49f7ba538a
+    # 174ea8cf2a80b38b2ce4dbbda6de2fee33d3870b
+    # 5277bce5d54fba0ab5ee869ed623932b447457d4
+    # obj_of_interest = "163cdd355d2d228880dd6ed6f3fc5b49f7ba538a"
+    # obj_of_interest = "174ea8cf2a80b38b2ce4dbbda6de2fee33d3870b"
+    # obj_h = otm.get_file_template_handles(obj_of_interest)[0]
+    # results = cpo.optimize_object_col_shape_vhacd(obj_h,col_shape_dir="~/Documents/dev2/habitat-sim/data/VHACD_outputs/")
+    # print(f"opt_results = {results}")
+    # exit()
+    # ----------------------------------------------------
+
+    # ----------------------------------------------------
     # run the pipeline for a set of scenes with separate output files for each
     scenes_of_interest = ["102816036"]
     # get all scenes from the mm
@@ -2174,9 +2343,23 @@ def main():
             correct_object_orientations(all_handles, obj_orientations, cpo.mm)
         # ----------------------------------------------------
 
-        cpo.compute_and_save_results_for_objects(
-            all_handles, output_filename=scene_of_interest + "_cpo_out"
-        )
+        # run VHACD opt for all shapes
+        results = []
+        for obj_h in all_handles:
+            results.append(
+                cpo.optimize_object_col_shape_vhacd(
+                    obj_h,
+                    col_shape_dir="~/Documents/dev2/habitat-sim/data/VHACD_outputs/",
+                )
+            )
+
+        print("Finished all objects in the scene!")
+        for oix, obj_h in enumerate(all_handles):
+            print(f"    Object Handle = {obj_h}:")
+            print(f"        results = {results[oix]}")
+        # cpo.compute_and_save_results_for_objects(
+        #    all_handles, output_filename=scene_of_interest + "_cpo_out"
+        # )
 
 
 if __name__ == "__main__":
