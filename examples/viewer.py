@@ -3,6 +3,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import ctypes
+import json
 import math
 import os
 import string
@@ -54,6 +55,7 @@ class RecColorMode(Enum):
     GT_STABILITY = 2
     PR_ACCESS = 3
     PR_STABILITY = 4
+    FILTERING = 5  # colored by filter status (green=active, yellow=manually filtered, red=automatically filtered (access), magenta=automatically filtered (access), blue=automatically filtered (height))
 
 
 class ColorLERP:
@@ -231,11 +233,14 @@ class HabitatSimInteractiveViewer(Application):
         global _cpo
         self._cpo = _cpo
         self.cpo_initialized = False
-        self.filter_rec_by_access = False
+        self.show_filtered = True
         self.rec_access_filter_threshold = 0.12  # empirically chosen
         self.rec_color_mode = RecColorMode.DEFAULT
         # map receptacle to parent objects
         self.rec_to_poh: Dict[hab_receptacle.Receptacle, str] = {}
+        # contains filtering metadata and classification of meshes filtered automatically and manually
+        self.rec_filter_data = None
+        self.rec_filter_path = self.sim_settings["rec_filter_file"]
 
         # display stability samples for selected object w/ receptacle
         self.display_selected_stability_samples = True
@@ -250,6 +255,7 @@ class HabitatSimInteractiveViewer(Application):
         self.mouse_cast_results = None
         # last clicked or None for stage
         self.selected_object = None
+        self.selected_rec = None
 
         # toggle a single simulation step at the next opportunity if not
         # simulating continuously.
@@ -310,6 +316,157 @@ class HabitatSimInteractiveViewer(Application):
                 print(f"Failed to cast '{user_val}' to {type(cur_attr_val)}.")
         else:
             print("That attribute is unset, so I don't know the type.")
+
+    def get_rec_instance_name(self, receptacle: hab_receptacle.Receptacle) -> str:
+        """
+        Gets a unique string name for the Receptacle instance.
+        Multiple Receptacles can share a name (e.g. if the object has multiple instances in the scene).
+        The unique name is constructed as '<object instance name>|<receptacle name>'.
+        """
+        rec_unique_name = receptacle.parent_object_handle + "|" + receptacle.name
+        return rec_unique_name
+
+    def get_closest_tri_receptacle(
+        self, pos: mn.Vector3, max_dist: float = 3.5
+    ) -> Optional[hab_receptacle.TriangleMeshReceptacle]:
+        """
+        Return the closest receptacle to the given position or None.
+
+        :param pos: The point to compare with receptacle verts.
+        :param max_dist: The maximum allowable distance to the receptacle to count.
+
+        :return: None if failed or closest receptacle.
+        """
+        if self.receptacles is None or not self.display_receptacles:
+            return None
+        closest_rec = None
+        closest_rec_dist = max_dist
+        for receptacle in self.receptacles:
+            g_trans = receptacle.get_global_transform(self.sim)
+            # transform the query point once instead of all verts
+            local_point = g_trans.inverted().transform_point(pos)
+            if (g_trans.translation - pos).length() < max_dist:
+                # receptacles object transform should be close to the point
+                for vert in receptacle.mesh_data.attribute(
+                    mn.trade.MeshAttribute.POSITION
+                ):
+                    v_dist = (local_point - vert).length()
+                    if v_dist < closest_rec_dist:
+                        closest_rec_dist = v_dist
+                        closest_rec = receptacle
+        return closest_rec
+
+    def compute_rec_filter_state(
+        self,
+        access_threshold: float = 0.12,
+        stab_threshold: float = 0.5,
+        filter_shape: str = "pr0",
+    ) -> None:
+        """
+        Check all receptacles against automated filters to fill the
+
+        :param access_threshold: Access threshold for filtering. Roughly % of sample points with some raycast access.
+        :param stab_threshold: Stability threshold for filtering. Roughly % of sample points with stable object support.
+        :param filter_shape: Which shape metrics to use for filter. Choices typically "gt"(ground truth) or "pr0"(proxy shape).
+        """
+        # load receptacles if not done
+        if self.receptacles is None:
+            self.load_receptacles()
+        assert (
+            self._cpo is not None
+        ), "Must initialize the CPO before automatic filtering. Re-run with '--init-cpo'."
+
+        # initialize if necessary
+        if self.rec_filter_data is None:
+            self.rec_filter_data = {
+                "active": [],
+                "manually_filtered": [],
+                "access_filtered": [],
+                "access_threshold": access_threshold,  # set in filter procedure
+                "stability_filtered": [],
+                "stability threshold": stab_threshold,  # set in filter procedure
+                # TODO:
+                "height_filtered": [],
+                "max_height": 0,
+                "min_height": 0,
+            }
+
+        for rec in self.receptacles:
+            rec_unique_name = self.get_rec_instance_name(rec)
+            # respect already marked receptacles
+            if rec_unique_name not in self.rec_filter_data["manually_filtered"]:
+                rec_dat = self._cpo.gt_data[self.rec_to_poh[rec]]["receptacles"][
+                    rec.name
+                ]
+                rec_shape_data = rec_dat["shape_id_results"][filter_shape]
+                # filter by access
+                if (
+                    "access_results" in rec_shape_data
+                    and rec_shape_data["access_results"]["receptacle_access_score"]
+                    < access_threshold
+                ):
+                    self.rec_filter_data["access_filtered"].append(rec_unique_name)
+                # filter by stability
+                elif (
+                    "stability_results" in rec_shape_data
+                    and rec_shape_data["stability_results"]["success_ratio"]
+                    < stab_threshold
+                ):
+                    self.rec_filter_data["stability_filtered"].append(rec_unique_name)
+                # TODO: add more filters
+                # TODO: 1. filter by height relative to the floor
+                # TODO: 2. filter outdoor (raycast up)
+                # TODO: 3/4: filter by access/stability in scene context (relative to other objects)
+                # remaining receptacles are active
+                else:
+                    self.rec_filter_data["active"].append(rec_unique_name)
+
+    def export_filtered_recs(self, filepath: Optional[str] = None) -> None:
+        """
+        Save a JSON with filtering metadata and filtered Receptacles for a scene.
+
+        :param filepath: Defines the output filename for this JSON. If omitted, defaults to "./rec_filter_data.json".
+        """
+        if filepath is None:
+            filepath = "rec_filter_data.json"
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        with open(filepath, "w") as f:
+            f.write(json.dumps(self.rec_filter_data, indent=2))
+
+    def load_filtered_recs(self, filepath: Optional[str] = None) -> None:
+        """
+        Load a Receptacle filtering metadata JSON to visualize the state of the scene.
+
+        :param filepath: Defines the input filename for this JSON. If omitted, defaults to "./rec_filter_data.json".
+        """
+        if filepath is None:
+            filepath = "rec_filter_data.json"
+        if not os.path.exists(filepath):
+            print(f"Filtered rec metadata file {filepath} does not exist. Cannot load.")
+            return
+        with open(filepath, "r") as f:
+            self.rec_filter_data = json.load(f)
+
+        # assert the format is correct
+        assert "active" in self.rec_filter_data
+        assert "manually_filtered" in self.rec_filter_data
+        assert "access_filtered" in self.rec_filter_data
+        assert "stability_filtered" in self.rec_filter_data
+        assert "height_filtered" in self.rec_filter_data
+
+    def load_receptacles(self):
+        """
+        Load all receptacle data and setup helper datastructures.
+        """
+        self.receptacles = hab_receptacle.find_receptacles(self.sim)
+        for receptacle in self.receptacles:
+            if receptacle not in self.rec_to_poh:
+                po_handle = (
+                    self.sim.get_rigid_object_manager()
+                    .get_object_by_handle(receptacle.parent_object_handle)
+                    .creation_attributes.handle
+                )
+                self.rec_to_poh[receptacle] = po_handle
 
     def add_col_proxy_object(
         self, obj_instance: habitat_sim.physics.ManagedRigidObject
@@ -437,7 +594,10 @@ class HabitatSimInteractiveViewer(Application):
                     if mn.math.dot((c_to_r).normalized(), c_forward) > 0.7:
                         # handle coloring
                         rec_color = None
-                        if (
+                        if self.selected_rec == receptacle:
+                            # white
+                            rec_color = mn.Color4.cyan()
+                        elif (
                             self.cpo_initialized
                             and self.rec_color_mode != RecColorMode.DEFAULT
                         ):
@@ -465,6 +625,29 @@ class HabitatSimInteractiveViewer(Application):
                                         "access_results"
                                     ]["receptacle_access_score"]
                                 )
+                            elif self.rec_color_mode == RecColorMode.FILTERING:
+                                if rec_unique_name in self.rec_filter_data["active"]:
+                                    rec_color = mn.Color4.green()
+                                elif (
+                                    rec_unique_name
+                                    in self.rec_filter_data["manually_filtered"]
+                                ):
+                                    rec_color = mn.Color4.yellow()
+                                elif (
+                                    rec_unique_name
+                                    in self.rec_filter_data["access_filtered"]
+                                ):
+                                    rec_color = mn.Color4.red()
+                                elif (
+                                    rec_unique_name
+                                    in self.rec_filter_data["stability_filtered"]
+                                ):
+                                    rec_color = mn.Color4.magenta()
+                                elif (
+                                    rec_unique_name
+                                    in self.rec_filter_data["height_filtered"]
+                                ):
+                                    rec_color = mn.Color4.blue()
 
                         receptacle.debug_draw(self.sim, color=rec_color)
 
@@ -942,6 +1125,9 @@ class HabitatSimInteractiveViewer(Application):
         """
         button = Application.MouseEvent.Button
         physics_enabled = self.sim.get_physics_simulation_library()
+        mod = Application.InputEvent.Modifier
+        shift_pressed = bool(event.modifiers & mod.SHIFT)
+        alt_pressed = bool(event.modifiers & mod.ALT)
 
         # if interactive mode is True -> GRAB MODE
         if self.mouse_interaction == MouseMode.GRAB and physics_enabled:
@@ -1035,6 +1221,7 @@ class HabitatSimInteractiveViewer(Application):
             and event.button == button.RIGHT
         ):
             self.selected_object = None
+            self.selected_rec = None
             hit_id = self.mouse_cast_results.hits[0].object_id
             rom = self.sim.get_rigid_object_manager()
             # right click in look mode to print object information
@@ -1048,6 +1235,57 @@ class HabitatSimInteractiveViewer(Application):
                     for rec in self.receptacles:
                         if rec.parent_object_handle == ro.handle:
                             print(f"    - Receptacle: {rec.name}")
+                if shift_pressed:
+                    self.selected_rec = self.get_closest_tri_receptacle(
+                        self.mouse_cast_results.hits[0].point
+                    )
+                    if self.selected_rec is not None:
+                        print(f"Selected Receptacle: {self.selected_rec.name}")
+                elif alt_pressed:
+                    filtered_rec = self.get_closest_tri_receptacle(
+                        self.mouse_cast_results.hits[0].point
+                    )
+                    if filtered_rec is not None:
+                        filtered_rec_name = self.get_rec_instance_name(filtered_rec)
+                        print(f"Modified Receptacle Filter State: {filtered_rec_name}")
+                        if (
+                            filtered_rec_name
+                            in self.rec_filter_data["manually_filtered"]
+                        ):
+                            print(" remove from manual filter")
+                            # this was manually filtered, remove it and try to make active
+                            self.rec_filter_data["manually_filtered"].remove(
+                                filtered_rec_name
+                            )
+                            add_to_active = True
+                            for other_out_set in [
+                                "access_filtered",
+                                "stability_filtered",
+                                "height_filtered",
+                            ]:
+                                if (
+                                    filtered_rec_name
+                                    in self.rec_filter_data[other_out_set]
+                                ):
+                                    print(f"     is in {other_out_set}")
+                                    add_to_active = False
+                                    break
+                            if add_to_active:
+                                print("     is active")
+                                self.rec_filter_data["active"].append(filtered_rec_name)
+                        elif filtered_rec_name in self.rec_filter_data["active"]:
+                            print(" remove from active, add manual filter")
+                            # this was active, remove it and mark manually filtered
+                            self.rec_filter_data["active"].remove(filtered_rec_name)
+                            self.rec_filter_data["manually_filtered"].append(
+                                filtered_rec_name
+                            )
+                        else:
+                            print(" add to manual filter, but has other filter")
+                            # this is already filtered, but add it to manual filters
+                            self.rec_filter_data["manually_filtered"].append(
+                                filtered_rec_name
+                            )
 
         self.previous_mouse_point = self.get_mouse_position(event.position)
         self.redraw()
@@ -1441,6 +1679,12 @@ if __name__ == "__main__":
         type=str,
         metavar="DATASET",
         help='dataset configuration file to use (default: "default")',
+    )
+    parser.add_argument(
+        "--rec-filter-file",
+        default="./rec_filter_data.json",
+        type=str,
+        help='Receptacle filtering metadata (default: "./rec_filter_data.json")',
     )
     parser.add_argument(
         "--init-cpo",
