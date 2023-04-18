@@ -56,8 +56,13 @@ class HabitatSimInteractiveViewer(Application):
     # CPU and GPU usage info
     DISPLAY_FONT_SIZE = 16.0
 
-    def __init__(self, sim_settings: Dict[str, Any]) -> None:
+    def __init__(
+        self,
+        sim_settings: Dict[str, Any],
+        mm: Optional[habitat_sim.metadata.MetadataMediator] = None,
+    ) -> None:
         self.sim_settings: Dict[str:Any] = sim_settings
+        self.mm = mm
 
         self.enable_batch_renderer: bool = self.sim_settings["enable_batch_renderer"]
         self.num_env: int = (
@@ -435,6 +440,7 @@ class HabitatSimInteractiveViewer(Application):
         """
         # configure our sim_settings but then set the agent to our default
         self.cfg = make_cfg(self.sim_settings)
+        self.cfg.metadata_mediator = mm
         self.agent_id: int = self.sim_settings["default_agent"]
         self.cfg.agents[self.agent_id] = self.default_agent_config()
 
@@ -449,14 +455,15 @@ class HabitatSimInteractiveViewer(Application):
             self.cfg.sim_cfg.scene_light_setup = habitat_sim.gfx.DEFAULT_LIGHTING_KEY
 
         # create custom stage from object
-        self.cfg.metadata_mediator = habitat_sim.metadata.MetadataMediator()
+        if self.cfg.metadata_mediator is None:
+            self.cfg.metadata_mediator = habitat_sim.metadata.MetadataMediator()
         self.cfg.metadata_mediator.active_dataset = self.sim_settings[
             "scene_dataset_config_file"
         ]
         if args.reorient_object:
             obj_handle = (
                 self.cfg.metadata_mediator.object_template_manager.get_template_handles(
-                    args.scene
+                    args.target_object
                 )[0]
             )
             fp_models_metadata_file = (
@@ -489,6 +496,10 @@ class HabitatSimInteractiveViewer(Application):
         self.cfg.sim_cfg.scene_id = stage_template_name
         # visualize the object as its collision shape
         obj_template.render_asset_handle = obj_template.collision_asset_handle
+        print(f"obj_template.render_asset_handle = {obj_template.render_asset_handle}")
+        print(
+            f"obj_template.collision_asset_handle = {obj_template.collision_asset_handle}"
+        )
         otm.register_template(obj_template)
 
         if self.sim is None:
@@ -923,7 +934,7 @@ class HabitatSimInteractiveViewer(Application):
             and self.mouse_cast_results.has_hits()
             and event.button == button.RIGHT
         ):
-            constructed_cyl_obj_handle = self.construct_cylinder_object2()
+            constructed_cyl_obj_handle = self.construct_cylinder_object()
             # try to place an object
             if (
                 mn.math.dot(
@@ -1281,10 +1292,15 @@ if __name__ == "__main__":
 
     # optional arguments
     parser.add_argument(
-        "--scene",
-        default="./data/test_assets/scenes/simple_room.glb",
+        "--target-object",
         type=str,
-        help='scene/stage file to load (default: "./data/test_assets/scenes/simple_room.glb")',
+        help="object file to load.",
+    )
+    parser.add_argument(
+        "--col-obj",
+        default=None,
+        type=str,
+        help="Collision object file to use.",
     )
     parser.add_argument(
         "--dataset",
@@ -1349,7 +1365,7 @@ if __name__ == "__main__":
 
     # Setting up sim_settings
     sim_settings: Dict[str, Any] = default_sim_settings
-    # sim_settings["scene"] = args.scene
+    # sim_settings["scene"] = args.target_object
     sim_settings["scene"] = "NONE"
     sim_settings["scene_dataset_config_file"] = args.dataset
     sim_settings["enable_physics"] = not args.disable_physics
@@ -1361,18 +1377,21 @@ if __name__ == "__main__":
     sim_settings["window_height"] = args.height
     sim_settings["clear_color"] = mn.Color4.magenta()
 
-    obj_name = "d1d1e0cdaba797ee70882e63f66055675c3f1e7f"
-
-    # check against default
-    if args.scene != "./data/test_assets/scenes/simple_room.glb":
-        obj_name = args.scene
+    obj_name = args.target_object
 
     # load JSON once instead of repeating
     mm = habitat_sim.metadata.MetadataMediator()
     mm.active_dataset = sim_settings["scene_dataset_config_file"]
 
-    cpo = csa.CollisionProxyOptimizer(sim_settings, None, mm)
     obj_temp_handle = mm.object_template_manager.get_file_template_handles(obj_name)[0]
+
+    # set a custom collision asset
+    if args.col_obj is not None:
+        obj_temp = mm.object_template_manager.get_template_by_handle(obj_temp_handle)
+        obj_temp.collision_asset_handle = args.col_obj
+        mm.object_template_manager.register_template(obj_temp)
+
+    cpo = csa.CollisionProxyOptimizer(sim_settings, None, mm)
     cpo.setup_obj_gt(obj_temp_handle)
     cpo.compute_proxy_metrics(obj_temp_handle)
     # setup globals for debug drawing
@@ -1381,4 +1400,4 @@ if __name__ == "__main__":
     gt_raycast_results = cpo.gt_data[obj_temp_handle]["raycasts"]["gt"]
 
     # start the application
-    HabitatSimInteractiveViewer(sim_settings).exec()
+    HabitatSimInteractiveViewer(sim_settings, mm).exec()
