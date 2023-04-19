@@ -183,8 +183,9 @@ SimTest::SimTest() {
             &SimTest::addObjectByHandle,
             &SimTest::addObjectInvertedScale,
             &SimTest::addSensorToObject}, Cr::Containers::arraySize(SimulatorBuilder) );
-  addTests({&SimTest::createMagnumRenderingOff});
-  addTests({&SimTest::getRuntimePerfStats});
+  addTests({
+    &SimTest::createMagnumRenderingOff,
+    &SimTest::getRuntimePerfStats});
   // clang-format on
 }
 void SimTest::basic() {
@@ -1029,8 +1030,8 @@ void SimTest::getRuntimePerfStats() {
   constexpr auto drawCountIdx = 5;
   constexpr auto drawFacesIdx = 6;
   CORRADE_COMPARE(statNames[numRigidIdx], "num rigid");
-  CORRADE_COMPARE(statNames[drawCountIdx], "draw count");
-  CORRADE_COMPARE(statNames[drawFacesIdx], "draw faces");
+  CORRADE_COMPARE(statNames[drawCountIdx], "num drawables");
+  CORRADE_COMPARE(statNames[drawFacesIdx], "num faces");
 
   auto statValues = simulator->getRuntimePerfStatValues();
 
