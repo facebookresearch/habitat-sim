@@ -1345,14 +1345,18 @@ int Simulator::getAgentObservationSpaces(
 }
 
 std::vector<std::string> Simulator::getRuntimePerfStatNames() {
-  return {"num rigid",           "num active rigid",    "num artic",
-          "num active overlaps", "num active contacts", "draw count",
-          "draw faces"};
+  return {"num rigid",
+          "num active rigid",
+          "num artic",
+          "num active overlaps",
+          "num active contacts",
+          "num drawables",
+          "num faces"};
 }
 
 std::vector<float> Simulator::getRuntimePerfStatValues() {
-  int drawableCount;
-  int drawableNumFaces;
+  int drawableCount = 0;
+  int drawableNumFaces = 0;
   std::tie(drawableCount, drawableNumFaces) =
       resourceManager_->getDrawableCountAndNumFaces();
 
