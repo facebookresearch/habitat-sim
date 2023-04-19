@@ -1925,7 +1925,9 @@ class CollisionProxyOptimizer:
 
         return shape_score
 
-    def optimize_object_col_shape(self, obj_h: str, col_shape_dir: str, method="coacd"):
+    def optimize_object_col_shape(
+        self, obj_h: str, col_shape_dir: Optional[str] = None, method="coacd"
+    ):
         """
         Run VHACD optimization for a specific object.
         Identify the optimal collision shape and save the result as the new default.
@@ -1942,6 +1944,9 @@ class CollisionProxyOptimizer:
         self.compute_receptacle_access_metrics(obj_h, use_gt=True)
         self.compute_receptacle_access_metrics(obj_h, use_gt=False)
         if method == "vhacd":
+            assert (
+                col_shape_dir is not None
+            ), "Must provide the directory of the VHACD collision shape output."
             self.grid_search_vhacd_params(obj_h)
         elif method == "coacd":
             self.run_coacd_grid_search(obj_h)
@@ -2405,11 +2410,23 @@ def main():
         description="Automate collision shape creation and validation."
     )
     parser.add_argument("--dataset", type=str, help="path to SceneDataset.")
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument(
+        "--scenes", type=str, nargs="+", help="one or more scenes to optimize."
+    )
+    group.add_argument(
+        "--objects", type=str, nargs="+", help="one or more objects to optimize."
+    )
     parser.add_argument(
         "--output-dir",
         type=str,
         default="collision_shape_automation/",
         help="output directory for saved csv and images. Default = `./collision_shape_automation/`.",
+    )
+    parser.add_argument(
+        "--debug-images",
+        action="store_true",
+        help="turns on debug image output.",
     )
     args = parser.parse_args()
 
@@ -2421,98 +2438,119 @@ def main():
     sim_settings["height"] = 720
     sim_settings["clear_color"] = mn.Color4.magenta() * 0.5
 
-    # one-off single object logic:
-    # evaluate_collision_shape(args.object_handle, sim_settings)
-
     # use the CollisionProxyOptimizer to compute metrics for multiple objects
     cpo = CollisionProxyOptimizer(sim_settings, output_directory=args.output_dir)
-    cpo.generate_debug_images = True
+    cpo.generate_debug_images = args.debug_images
     otm = cpo.mm.object_template_manager
 
     # ----------------------------------------------------
-    # get all object handles
-    # all_handles = otm.get_file_template_handles()
-    # cpo.compute_and_save_results_for_objects(all_handles)
-    # ----------------------------------------------------
+    # specific object handle provided
+    if args.objects:
+        # deduplicate the list
+        unique_objects = list(dict.fromkeys(args.objects))
 
-    # ----------------------------------------------------
-    # specific object handle
-    # 392e00c6db2728b11495753fc32bb9df67e89acb
-    # 3c0114990e89b0c6a978793245301a99285e503a
-    # b0929827deff77bee9b5a1120d31b29ecc26ae1f
-    # c2ac5a249ca5897894ae36b08376d35fde7914a3
-    # 827df9acf75c5a4ab0384b7c32c230a61fbcc9f6
-    # obj_of_interest = "c2ac5a249ca5897894ae36b08376d35fde7914a3"
-    # obj_of_interest = "95f30d803f3373b011b8f10a0614c210b7c8bbe2"
-    # obj_h = otm.get_file_template_handles(obj_of_interest)[0]
-    # #results = cpo.optimize_object_col_shape_vhacd(obj_h,col_shape_dir="~/Documents/dev2/habitat-sim/data/VHACD_outputs/")
-    # cpo.output_directory = None
-    # results = cpo.optimize_object_col_shape(obj_h,col_shape_dir="~/Documents/dev2/habitat-sim/data/VHACD_outputs/",method="coacd")
-    # print(f"opt_results = {results}")
-    # exit()
-    # ----------------------------------------------------
+        # validate the object handles
+        object_handles = []
+        for object_name in unique_objects:
+            matching_templates = otm.get_file_template_handles(object_name)
+            assert (
+                len(matching_templates) > 0
+            ), f"No matching templates in the dataset for '{object_name}'"
+            assert (
+                len(matching_templates) == 1
+            ), f"More than one matching template in the dataset for '{object_name}': {matching_templates}"
+            object_handles.append(matching_templates[0])
 
-    # ----------------------------------------------------
-    # run the pipeline for a set of scenes with separate output files for each
-    scenes_of_interest = ["102816036"]
-    # get all scenes from the mm
-    # scenes_of_interest = [
-    #     handle.split(".scene_instance.json")[0].split("/")[-1]
-    #     for handle in cpo.mm.get_scene_handles()
-    # ]
-
-    for scene_of_interest in scenes_of_interest:
-        cpo.init_caches()
-        # ----------------------------------------------------
-        # get object handles from a specific scene
-        objects_in_scene = get_objects_in_scene(
-            dataset_path=args.dataset, scene_handle=scene_of_interest, mm=cpo.mm
-        )
-        all_handles = objects_in_scene
-        # ----------------------------------------------------
-
-        # ----------------------------------------------------
-        # get a subset with receptacles defined
-        all_handles = [
-            all_handles[i]
-            for i in range(len(all_handles))
-            if object_has_receptacles(all_handles[i], otm)
-        ]
-        # all_handles = [all_handles[0]]
-        print(f"Number of objects with receptacles = {len(all_handles)}")
-        # ----------------------------------------------------
-
-        # ----------------------------------------------------
-        # load object orientation metadata
-        reorient_objects = False
-        if reorient_objects:
-            fp_models_metadata_file = (
-                "/home/alexclegg/Documents/dev/fphab/fpModels_metadata.csv"
-            )
-            obj_orientations = parse_object_orientations_from_metadata_csv(
-                fp_models_metadata_file
-            )
-            correct_object_orientations(all_handles, obj_orientations, cpo.mm)
-        # ----------------------------------------------------
-
-        # run shape opt for all shapes
+        # optimize the objects
         results = []
-        for obj_h in all_handles:
-            results.append(
-                cpo.optimize_object_col_shape(
-                    obj_h,
-                    col_shape_dir="~/Documents/dev2/habitat-sim/data/VHACD_outputs/",
-                    method="coacd",
-                )
-            )
+        for obj_h in object_handles:
+            results.append(cpo.optimize_object_col_shape(obj_h, method="coacd"))
 
-        print("Finished all objects in the scene!")
-        for oix, obj_h in enumerate(all_handles):
-            print(f"    Object Handle = {obj_h}:")
-            print(f"        results = {results[oix]}")
-        # cpo.compute_and_save_results_for_objects(
-        #    all_handles, output_filename=scene_of_interest + "_cpo_out"
-        # )
+        # display results
+        print("Object Optimization Results:")
+        for obj_h, obj_result in zip(object_handles, results):
+            print(f"    {obj_h}: {obj_result}")
+    # ----------------------------------------------------
+
+    # ----------------------------------------------------
+    # run the pipeline for a set of object parsed from a scene
+    if args.scenes:
+        scene_object_handles: Dict[str, List[str]] = {}
+
+        # deduplicate the list
+        unique_scenes = list(dict.fromkeys(args.scenes))
+
+        # first validate the scene names have a unique match
+        scene_handles = cpo.mm.get_scene_handles()
+        for scene_name in unique_scenes:
+            matching_scenes = [h for h in scene_handles if scene_name in h]
+            assert (
+                len(matching_scenes) > 0
+            ), f"No scenes found matching provided scene name '{scene_name}'."
+            assert (
+                len(matching_scenes) == 1
+            ), f"More than one scenes found matching provided scene name '{scene_name}': {matching_scenes}."
+
+        # collect all the objects for all the scenes in advance
+        for scene_name in unique_scenes:
+            objects_in_scene = get_objects_in_scene(
+                dataset_path=args.dataset, scene_handle=scene_name, mm=cpo.mm
+            )
+            assert (
+                len(objects_in_scene) > 0
+            ), f"No objects found in scene '{scene_name}'. Are you sure this is a valid scene?"
+            scene_object_handles[scene_name] = objects_in_scene
+
+        # optimize each scene
+        all_scene_results: Dict[
+            str, Dict[str, List[Tuple[str, float, float, Any]]]
+        ] = {}
+        for scene, objects_in_scene in scene_object_handles.items():
+            # clear and re-initialize the caches between scenes to prevent memory overflow on large batches.
+            cpo.init_caches()
+
+            # ----------------------------------------------------
+            # get a subset of objects with receptacles defined
+            rec_obj_in_scene = [
+                objects_in_scene[i]
+                for i in range(len(objects_in_scene))
+                if object_has_receptacles(objects_in_scene[i], otm)
+            ]
+            print(
+                f"Number of objects in scene '{scene}' with receptacles = {len(rec_obj_in_scene)}"
+            )
+            # ----------------------------------------------------
+
+            # ----------------------------------------------------
+            # load object orientation metadata
+            # BUG: Receptacles are not re-oriented by internal re-orientation transforms. Need to fix this...
+            # reorient_objects = False
+            # if reorient_objects:
+            #     fp_models_metadata_file = (
+            #         "/home/alexclegg/Documents/dev/fphab/fpModels_metadata.csv"
+            #     )
+            #     obj_orientations = parse_object_orientations_from_metadata_csv(
+            #         fp_models_metadata_file
+            #     )
+            #     correct_object_orientations(all_handles, obj_orientations, cpo.mm)
+            # ----------------------------------------------------
+
+            # run shape opt for all objects in the scene
+            scene_results: Dict[str, List[Tuple[str, float, float, Any]]] = {}
+            for obj_h in rec_obj_in_scene:
+                scene_results[obj_h] = cpo.optimize_object_col_shape(
+                    obj_h, method="coacd"
+                )
+
+            all_scene_results[scene] = scene_results
+
+            print("------------------------------------")
+            print(f"Finished optimization of scene '{scene}': \n    {scene_results}")
+            print("------------------------------------")
+
+        print("==========================================")
+        print(f"Finished optimization of all scenes: \n {all_scene_results}")
+        print("==========================================")
 
 
 if __name__ == "__main__":
