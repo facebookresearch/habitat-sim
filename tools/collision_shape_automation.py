@@ -1680,7 +1680,7 @@ class CollisionProxyOptimizer:
 
         return permutations
 
-    def run_coacd_grid_search(self, obj_template_handle: str):
+    def run_coacd_grid_search(self, obj_template_handle: str) -> None:
         """
         Run grid search on relevant COACD params for an object.
         """
@@ -1704,25 +1704,32 @@ class CollisionProxyOptimizer:
                 setattr(coacd_param, attr, val)
                 setting_string += f" '{attr}'={val}"
 
+                self.increment_proxy_index(obj_template_handle)
+                shape_id = self.get_proxy_shape_id(obj_template_handle)
+
                 coacd_iteration_time = time.time()
                 output_file, num_hulls = self.run_coacd(
                     obj_template_handle, coacd_param
                 )
+
                 # setup the proxy
                 otm = self.mm.object_template_manager
                 obj_template = otm.get_template_by_handle(obj_template_handle)
                 obj_template.collision_asset_handle = output_file
                 otm.register_template(obj_template)
 
-                self.increment_proxy_index(obj_template_handle)
-
-                shape_id = self.get_proxy_shape_id(obj_template_handle)
                 if "coacd_settings" not in self.gt_data[obj_template_handle]:
                     self.gt_data[obj_template_handle]["coacd_settings"] = {}
                 self.gt_data[obj_template_handle]["coacd_settings"][shape_id] = (
                     coacd_param,
                     setting_string,
                 )
+                # store the asset file for this shape_id
+                if "coacd_output_files" not in self.gt_data[obj_template_handle]:
+                    self.gt_data[obj_template_handle]["coacd_output_files"] = {}
+                self.gt_data[obj_template_handle]["coacd_output_files"][
+                    shape_id
+                ] = output_file
 
                 self.compute_proxy_metrics(obj_template_handle)
                 # self.compute_grid_collision_times(obj_template_handle, subdivisions=1)
@@ -1746,7 +1753,6 @@ class CollisionProxyOptimizer:
             print(
                 f"     {shape_id} - {settings[1]} - {coacd_iteration_times[shape_id]}"
             )
-        print(coacd_num_hulls)
 
     def run_coacd(
         self,
@@ -1762,7 +1768,13 @@ class CollisionProxyOptimizer:
             obj_name = obj_template_handle.split(".object_config.json")[0].split("/")[
                 -1
             ]
-            output_file = "COACD_output/" + obj_name + ".glb"
+            output_file = (
+                "COACD_output/"
+                + obj_name
+                + "_"
+                + self.get_proxy_shape_id(obj_template_handle)
+                + ".glb"
+            )
             os.makedirs(os.path.dirname(output_file), exist_ok=True)
         input_filepath = self.get_obj_render_mesh_filepath(obj_template_handle)
         # TODO: this seems dirty, maybe refactor:
@@ -1977,20 +1989,17 @@ class CollisionProxyOptimizer:
             print(
                 f"Best shape_id = {best_shape_id} with shape score {best_shape_score} better than 'pr0' with shape score {pr0_shape_score}."
             )
+            # copy the collision asset into the dataset directory
             if method == "vhacd":
                 self.compute_vhacd_col_shape(
                     obj_h, self.gt_data[obj_h][settings_key][best_shape_id][0]
                 )
-                # copy the collision asset into the correct directory
                 obj_name = obj_h.split(".object_config.json")[0].split("/")[-1]
                 col_shape_path = os.path.join(col_shape_dir, obj_name + ".obj")
                 os.system(f"obj2gltf -i {col_shape_path} -o {cur_col_shape_path}")
             elif method == "coacd":
-                asset_file, num_hulls = self.run_coacd(
-                    obj_h, self.gt_data[obj_h][settings_key][best_shape_id][0]
-                )
+                asset_file = self.gt_data[obj_h]["coacd_output_files"][best_shape_id]
                 os.system(f"cp {asset_file} {cur_col_shape_path}")
-
         else:
             print(
                 f"Best shape_id = {best_shape_id} with shape score {best_shape_score}."
