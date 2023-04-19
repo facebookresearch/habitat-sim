@@ -790,7 +790,10 @@ class CollisionProxyOptimizer:
                                             )
                                         )
                                     )
-                                if self.output_directory is not None:
+                                if (
+                                    self.generate_debug_images
+                                    and self.output_directory is not None
+                                ):
                                     # use DebugVisualizer to get 6-axis view of the object
                                     dvb = hab_debug_vis.DebugVisualizer(
                                         sim=sim,
@@ -1209,7 +1212,7 @@ class CollisionProxyOptimizer:
         cfg = self.get_cfg_with_mm(scene=scene_name)
         with habitat_sim.Simulator(cfg) as sim:
             dvb: Optional[hab_debug_vis.DebugVisualizer] = None
-            if self.output_directory is not None:
+            if self.generate_debug_images and self.output_directory is not None:
                 dvb = hab_debug_vis.DebugVisualizer(
                     sim=sim,
                     output_path=self.output_directory,
@@ -1381,7 +1384,7 @@ class CollisionProxyOptimizer:
 
             # use DebugVisualizer to get 6-axis view of the object
             dvb: Optional[hab_debug_vis.DebugVisualizer] = None
-            if self.output_directory is not None:
+            if self.generate_debug_images and self.output_directory is not None:
                 dvb = hab_debug_vis.DebugVisualizer(
                     sim=sim,
                     output_path=self.output_directory,
