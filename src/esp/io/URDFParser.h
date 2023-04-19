@@ -377,6 +377,20 @@ class Model {
   }
 
   /**
+   * @brief Set hint to render articulated object primitives even if a render
+   * asset is present.
+   */
+  void setDebugRenderPrimitives(bool debugRenderPrimitives) {
+    m_debugRenderPrimitives = debugRenderPrimitives;
+  }
+
+  /**
+   * @brief Get hint to render articulated object primitives even if a render
+   * asset is present.
+   */
+  bool getDebugRenderPrimitives() const { return m_debugRenderPrimitives; }
+
+  /**
    * @brief This function conditionally loads configuration data from a Json
    * file for this Articulated Model, should an appropriate file exist. This
    * configuration file must meet the following criteria to be loaded :
@@ -423,6 +437,9 @@ class Model {
 
   //! Path to a render asset associated with this articulated object.
   Cr::Containers::Optional<std::string> m_renderAsset = Cr::Containers::NullOpt;
+
+  //! Forces link primitives to be rendered even if a render asset is present.
+  bool m_debugRenderPrimitives = false;
 
   //! Scale the transformation and parameters of a Shape
   void scaleShape(Shape& shape, float scale);

@@ -126,20 +126,32 @@ bool Model::loadJsonAttributes(const std::string& filename) {
   const io::JsonGenericValue jsonConfig = docConfig->GetObject();
 
   // check for render asset
-  const std::string renderAssetAttributeName = "render_asset";
-  const char* ra_cstr = renderAssetAttributeName.c_str();
+  const char* attrRenderAsset = "render_asset";
+  const char* attrDebugRenderPrimitives = "debug_render_primitives";
 
   bool hasRenderAsset = false;
-  if (jsonConfig.HasMember(ra_cstr)) {
-    if (!jsonConfig[ra_cstr].IsString()) {
+  if (jsonConfig.HasMember(attrRenderAsset)) {
+    if (!jsonConfig[attrRenderAsset].IsString()) {
       ESP_WARNING() << "<Model> : Json Config file specifies a render_asset "
                        "attribute but "
                        "it is not a string. Skipping render_asset config load.";
       return false;
     } else {
-      const std::string renderAssetPath{jsonConfig[ra_cstr].GetString()};
+      const std::string renderAssetPath{
+          jsonConfig[attrRenderAsset].GetString()};
       m_renderAsset = renderAssetPath;
       hasRenderAsset = true;
+    }
+  }
+  if (jsonConfig.HasMember(attrDebugRenderPrimitives)) {
+    if (!jsonConfig[attrDebugRenderPrimitives].IsBool()) {
+      ESP_WARNING()
+          << "<Model> : Json Config file specifies debug_render_primitives "
+             "attribute but it is not a bool. Skipping debug_render_primitives "
+             "config load.";
+      return false;
+    } else {
+      m_debugRenderPrimitives = jsonConfig[attrDebugRenderPrimitives].GetBool();
     }
   }
 
@@ -174,7 +186,7 @@ bool Model::loadJsonAttributes(const std::string& filename) {
 
   if (!hasRenderAsset) {
     ESP_WARNING() << "<Model> : Json Config file exists but \"" << subGroupName
-                  << "\" and \"" << renderAssetAttributeName
+                  << "\" and \"" << attrRenderAsset
                   << "\" tags not found within file.";
   }
   return false;

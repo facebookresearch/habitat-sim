@@ -163,9 +163,10 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
   u2b->initURDF2BulletCache();
 
   articulatedObject->initializeFromURDF(*urdfImporter_, {}, physicsNode_);
+  auto model = u2b->getModel();
 
   // if the URDF model specifies a render asset, load and link it
-  auto renderAssetPath = u2b->getModel()->getRenderAsset();
+  auto renderAssetPath = model->getRenderAsset();
   if (renderAssetPath) {
     // load associated skinned mesh
     assets::AssetInfo assetInfo = assets::AssetInfo::fromPath(*renderAssetPath);
@@ -187,20 +188,24 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
         articulatedObject->btMultiBody_->getLinkCollider(linkIx), linkObjectId);
   }
 
-  // attach link visual shapes
-  for (size_t urdfLinkIx = 0; urdfLinkIx < u2b->getModel()->m_links.size();
-       ++urdfLinkIx) {
-    auto urdfLink = u2b->getModel()->getLink(urdfLinkIx);
-    if (!urdfLink->m_visualArray.empty()) {
-      int bulletLinkIx =
-          u2b->cache->m_urdfLinkIndices2BulletLinkIndices[urdfLinkIx];
-      ArticulatedLink& linkObject = articulatedObject->getLink(bulletLinkIx);
-      ESP_CHECK(
-          attachLinkGeometry(&linkObject, urdfLink, drawables, lightSetup),
-          "BulletPhysicsManager::addArticulatedObjectFromURDF(): Failed to "
-          "instance render asset (attachGeometry) for link"
-              << urdfLinkIx << ".");
-      linkObject.node().computeCumulativeBB();
+  bool renderVisualShapes =
+      !renderAssetPath || model->getDebugRenderPrimitives();
+  if (renderVisualShapes) {
+    // attach link visual shapes
+    for (size_t urdfLinkIx = 0; urdfLinkIx < model->m_links.size();
+         ++urdfLinkIx) {
+      auto urdfLink = model->getLink(urdfLinkIx);
+      if (!urdfLink->m_visualArray.empty()) {
+        int bulletLinkIx =
+            u2b->cache->m_urdfLinkIndices2BulletLinkIndices[urdfLinkIx];
+        ArticulatedLink& linkObject = articulatedObject->getLink(bulletLinkIx);
+        ESP_CHECK(
+            attachLinkGeometry(&linkObject, urdfLink, drawables, lightSetup),
+            "BulletPhysicsManager::addArticulatedObjectFromURDF(): Failed to "
+            "instance render asset (attachGeometry) for link"
+                << urdfLinkIx << ".");
+        linkObject.node().computeCumulativeBB();
+      }
     }
   }
 
