@@ -403,7 +403,7 @@ void AttributesConfigsTest::testLightAttrVals(
 
   CORRADE_COMPARE(lightAttr0->getIntensity(), -0.1);
   CORRADE_COMPARE(static_cast<int>(lightAttr0->getType()),
-                  static_cast<int>(Mn::Trade::LightData::Type::Directional));
+                  static_cast<int>(esp::gfx::LightType::Directional));
   CORRADE_COMPARE(static_cast<int>(lightAttr0->getPositionModel()),
                   static_cast<int>(esp::gfx::LightPositionModel::Camera));
   CORRADE_COMPARE(lightAttr0->getInnerConeAngle(), 0.25_radf);
@@ -418,7 +418,7 @@ void AttributesConfigsTest::testLightAttrVals(
 
   CORRADE_COMPARE(lightAttr1->getIntensity(), -1.2);
   CORRADE_COMPARE(static_cast<int>(lightAttr1->getType()),
-                  static_cast<int>(Mn::Trade::LightData::Type::Point));
+                  static_cast<int>(esp::gfx::LightType::Point));
   CORRADE_COMPARE(static_cast<int>(lightAttr1->getPositionModel()),
                   static_cast<int>(esp::gfx::LightPositionModel::Global));
   CORRADE_COMPARE(lightAttr1->getInnerConeAngle(), -0.75_radf);

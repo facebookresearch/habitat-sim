@@ -163,7 +163,7 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
     lightAttribs->setPositionModel(posMdleVal);
   }  // position model
 
-  // type of light - should map to enum values in Mn::Trade::LightData::Type
+  // type of light - should map to enum values in esp::gfx::LightType
   std::string specifiedTypeVal = "point";
   std::string tmpTypeVal = "";
   if (io::readMember<std::string>(jsonConfig, "type", tmpTypeVal)) {
@@ -172,7 +172,7 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
       // TODO remove this if block to support spot lights
       ESP_WARNING()
           << "Type spotlight specified in JSON not currently supported, so "
-             "defaulting LightInfo type to Mn::Trade::LightData::Type::Point.";
+             "defaulting LightInfo type to esp::gfx::LightType::Point.";
     } else if (attributes::LightTypeNamesMap.count(strToLookFor) != 0u) {
       specifiedTypeVal = std::move(tmpTypeVal);
     } else {
@@ -180,17 +180,17 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
           << "Type Value in JSON : `" << tmpTypeVal
           << "` does not map to a valid "
              "attributes::LightTypeNamesMap value, so "
-             "defaulting LightInfo type to Mn::Trade::LightData::Type::Point.";
+             "defaulting LightInfo type to esp::gfx::LightType::Point.";
     }
     lightAttribs->setType(specifiedTypeVal);
   } else if (posIsSet) {
     // if no value found in attributes, attempt to infer desired type based on
     // whether position or direction were set from JSON.
     lightAttribs->setType(
-        attributes::getLightTypeName(Mn::Trade::LightData::Type::Point));
+        attributes::getLightTypeName(esp::gfx::LightType::Point));
   } else if (dirIsSet) {
     lightAttribs->setType(
-        attributes::getLightTypeName(Mn::Trade::LightData::Type::Directional));
+        attributes::getLightTypeName(esp::gfx::LightType::Directional));
   }  // if nothing set by here, will default to constructor defaults
 
   // if the user specifies a type, we will assume that type overrides any
@@ -198,12 +198,12 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
   // vector provided does not match the type specified, we copy the vector into
   // the appropriate location.
   if ((specifiedTypeVal ==
-       attributes::getLightTypeName(Mn::Trade::LightData::Type::Directional)) &&
+       attributes::getLightTypeName(esp::gfx::LightType::Directional)) &&
       (posIsSet) && !(dirIsSet)) {
     // position set, direction absent, but directional type explicitly specified
     lightAttribs->setDirection(lightAttribs->getPosition());
-  } else if ((specifiedTypeVal == attributes::getLightTypeName(
-                                      Mn::Trade::LightData::Type::Point)) &&
+  } else if ((specifiedTypeVal ==
+              attributes::getLightTypeName(esp::gfx::LightType::Point)) &&
              (dirIsSet) && !(posIsSet)) {
     // direction set, position absent, but point type explicitly specified
     lightAttribs->setPosition(lightAttribs->getDirection());
@@ -288,7 +288,7 @@ gfx::LightSetup LightLayoutAttributesManager::createLightSetupFromAttributes(
     } else {
       auto lightInstances = lightLayoutAttributes->getLightInstances();
       for (const LightInstanceAttributes::cptr& lightAttr : lightInstances) {
-        const Mn::Trade::LightData::Type typeEnum = lightAttr->getType();
+        const gfx::LightType typeEnum = lightAttr->getType();
         const gfx::LightPositionModel posModelEnum =
             lightAttr->getPositionModel();
         const Magnum::Color3 color =
@@ -298,19 +298,19 @@ gfx::LightSetup LightLayoutAttributesManager::createLightSetupFromAttributes(
             lightAttr->getIntensity();
         Magnum::Vector4 lightVector;
         switch (typeEnum) {
-          case Mn::Trade::LightData::Type::Point: {
+          case gfx::LightType::Point: {
             lightVector = {lightAttr->getPosition(), 1.0f};
             break;
           }
-          case Mn::Trade::LightData::Type::Directional: {
+          case gfx::LightType::Directional: {
             lightVector = {lightAttr->getDirection(), 0.0f};
             break;
           }
           default: {
-            ESP_DEBUG() << "Enum Mn::Trade::LightData::Type with val"
+            ESP_DEBUG() << "Enum gfx::LightType with val"
                         << attributes::getLightTypeName(typeEnum)
                         << "is not supported, so defaulting to "
-                           "Mn::Trade::LightData::Type::Point";
+                           "gfx::LightType::Point";
             lightVector = {lightAttr->getPosition(), 1.0f};
           }
         }  // switch on type
