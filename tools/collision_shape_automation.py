@@ -12,11 +12,13 @@ import sys
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
+import coacd
+import trimesh
+
 # not adding this causes some failures in mesh import
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
-from collections import defaultdict
 
 # imports from Habitat-lab
 # NOTE: requires PR 1108 branch: rearrange-gen-improvements (https://github.com/facebookresearch/habitat-lab/pull/1108)
@@ -116,6 +118,28 @@ def get_scaled_hemisphere_vectors(scale: float):
     Scales the icosphere_points for use with raycasting applications.
     """
     return [v * scale for v in icosphere_points_subdiv_3]
+
+
+class COACDParams:
+    def __init__(
+        self,
+    ) -> None:
+        # Parameter tuning tricks from https://github.com/SarahWeiii/CoACD:
+
+        # The default parameters are fast versions. If you care less about running time but more about the number of components, try to increase searching depth, searching node, and searching iteration for better cutting strategies.
+        self.threshold = 0.05  # adjust the threshold (0.01~1) to balance the level of detail and the number of decomposed components. A higher value gives coarser results, and a lower value gives finer-grained results. You can refer to Fig. 14 in our paper for more details.
+        self.max_convex_hull = -1
+        self.preprocess = True  # ensure input mesh is 2-manifold solid if you want to skip pre-process. Skipping manifold pre-processing can better preserve input details, but can crash or fail otherwise if input is not manifold.
+        self.preprocess_resolution = 30  # controls the quality of manifold preprocessing. A larger value can make the preprocessed mesh closer to the original mesh but also lead to more triangles and longer runtime.
+        self.mcts_nodes = 20
+        self.mcts_iterations = 150
+        self.mcts_max_depth = 3
+        self.pca = False
+        self.merge = True
+        self.seed = 0
+
+    def __str__(self) -> str:
+        return f"COACDParams(threshold={self.threshold} | max_convex_hull={self.max_convex_hull} | preprocess={self.preprocess} | preprocess_resolution={self.preprocess_resolution} | mcts_nodes={self.mcts_nodes} | mcts_iterations={self.mcts_iterations} | mcts_max_depth={self.mcts_max_depth} | pca={self.pca} | merge={self.merge} | seed={self.seed})"
 
 
 def print_dict_structure(input_dict: Dict[Any, Any], whitespace: str = "") -> None:
@@ -1623,6 +1647,163 @@ class CollisionProxyOptimizer:
                     "normalized_raycast_error"
                 ] = normalized_error
 
+    def get_obj_render_mesh_filepath(self, obj_template_handle: str):
+        """
+        Return the filepath of the render mesh for an object.
+        """
+        otm = self.mm.object_template_manager
+        obj_template = otm.get_template_by_handle(obj_template_handle)
+        assert obj_template is not None, "Object template is not registerd."
+        return os.path.abspath(obj_template.render_asset_handle)
+
+    def permute_param_variations(
+        self, param_ranges: Dict[str, List[Any]]
+    ) -> List[List[Any]]:
+        """
+        Generate a list of all permutations of the provided parameter ranges defined in a Dict.
+        """
+        permutations = [[]]
+
+        # permute variations
+        for attr, values in param_ranges.items():
+            new_permutations = []
+            for v in values:
+                for permutation in permutations:
+                    extended_permutation = [(attr, v)]
+                    for setting in permutation:
+                        extended_permutation.append(setting)
+                    new_permutations.append(extended_permutation)
+            permutations = new_permutations
+        print(f"Parameter permutations = {len(permutations)}")
+        for setting in permutations:
+            print(f"    {setting}")
+
+        return permutations
+
+    def run_coacd_grid_search(self, obj_template_handle: str):
+        """
+        Run grid search on relevant COACD params for an object.
+        """
+
+        # Parameter tuning tricks from https://github.com/SarahWeiii/CoACD in definition of COACDParams.
+
+        param_ranges = {
+            "threshold": [0.04, 0.01],
+        }
+
+        permutations = self.permute_param_variations(param_ranges)
+
+        coacd_start_time = time.time()
+        coacd_iteration_times = {}
+        coacd_num_hulls = {}
+        # evaluate COACD settings
+        for setting in permutations:
+            coacd_param = COACDParams()
+            setting_string = ""
+            for attr, val in setting:
+                setattr(coacd_param, attr, val)
+                setting_string += f" '{attr}'={val}"
+
+                coacd_iteration_time = time.time()
+                output_file, num_hulls = self.run_coacd(
+                    obj_template_handle, coacd_param
+                )
+                # setup the proxy
+                otm = self.mm.object_template_manager
+                obj_template = otm.get_template_by_handle(obj_template_handle)
+                obj_template.collision_asset_handle = output_file
+                otm.register_template(obj_template)
+
+                self.increment_proxy_index(obj_template_handle)
+
+                shape_id = self.get_proxy_shape_id(obj_template_handle)
+                if "coacd_settings" not in self.gt_data[obj_template_handle]:
+                    self.gt_data[obj_template_handle]["coacd_settings"] = {}
+                self.gt_data[obj_template_handle]["coacd_settings"][shape_id] = (
+                    coacd_param,
+                    setting_string,
+                )
+
+                self.compute_proxy_metrics(obj_template_handle)
+                # self.compute_grid_collision_times(obj_template_handle, subdivisions=1)
+                # self.run_physics_settle_test(obj_template_handle)
+                # self.run_physics_sphere_shake_test(obj_template_handle)
+                if self.compute_receptacle_useability_metrics:
+                    self.compute_receptacle_access_metrics(
+                        obj_handle=obj_template_handle, use_gt=False
+                    )
+                    self.compute_receptacle_stability(
+                        obj_handle=obj_template_handle, use_gt=False
+                    )
+                coacd_iteration_times[shape_id] = time.time() - coacd_iteration_time
+                coacd_num_hulls[shape_id] = num_hulls
+
+        print(f"Total CAOCD time = {time.time()-coacd_start_time}")
+        print("    Iteration times = ")
+        for shape_id, settings in self.gt_data[obj_template_handle][
+            "coacd_settings"
+        ].items():
+            print(
+                f"     {shape_id} - {settings[1]} - {coacd_iteration_times[shape_id]}"
+            )
+        print(coacd_num_hulls)
+
+    def run_coacd(
+        self,
+        obj_template_handle: str,
+        params: COACDParams,
+        output_file: Optional[str] = None,
+    ) -> str:
+        """
+        Run COACD on an object given a set of parameters producing a file.
+        If output_file is not provided, defaults to "COACD_output/obj_name.glb" where obj_name is truncated handle (filename, no path or file ending).
+        """
+        if output_file is None:
+            obj_name = obj_template_handle.split(".object_config.json")[0].split("/")[
+                -1
+            ]
+            output_file = "COACD_output/" + obj_name + ".glb"
+            os.makedirs(os.path.dirname(output_file), exist_ok=True)
+        input_filepath = self.get_obj_render_mesh_filepath(obj_template_handle)
+        # TODO: this seems dirty, maybe refactor:
+        tris = trimesh.load(input_filepath).triangles
+        verts = []
+        indices = []
+        v_counter = 0
+        for tri in tris:
+            indices.append([v_counter, v_counter + 1, v_counter + 2])
+            v_counter += 3
+            for vert in tri:
+                verts.append(vert)
+        imesh = coacd.Mesh()
+        imesh.vertices = verts
+        imesh.indices = indices
+        parts = coacd.run_coacd(
+            imesh,
+            threshold=params.threshold,
+            max_convex_hull=params.max_convex_hull,
+            preprocess=params.preprocess,
+            preprocess_resolution=params.preprocess_resolution,
+            mcts_nodes=params.mcts_nodes,
+            mcts_iterations=params.mcts_iterations,
+            mcts_max_depth=params.mcts_max_depth,
+            pca=params.pca,
+            merge=params.merge,
+            seed=params.seed,
+        )
+        mesh_parts = [
+            trimesh.Trimesh(np.array(p.vertices), np.array(p.indices).reshape((-1, 3)))
+            for p in parts
+        ]
+        scene = trimesh.Scene()
+
+        np.random.seed(0)
+        for p in mesh_parts:
+            p.visual.vertex_colors[:, :3] = (np.random.rand(3) * 255).astype(np.uint8)
+            scene.add_geometry(p)
+        scene.export(output_file)
+        return output_file, len(parts)
+
     def grid_search_vhacd_params(self, obj_template_handle: str):
         """
         For a specified set of search parameters, try all combinations by:
@@ -1657,21 +1838,7 @@ class CollisionProxyOptimizer:
             "resolution": [200000],
         }
 
-        permutations = [[]]
-
-        # permute variations
-        for attr, values in param_ranges.items():
-            new_permutations = []
-            for v in values:
-                for permutation in permutations:
-                    extended_permutation = [(attr, v)]
-                    for setting in permutation:
-                        extended_permutation.append(setting)
-                    new_permutations.append(extended_permutation)
-            permutations = new_permutations
-        print(f"Parameter permutations = {len(permutations)}")
-        for setting in permutations:
-            print(f"    {setting}")
+        permutations = self.permute_param_variations(param_ranges)
 
         vhacd_start_time = time.time()
         vhacd_iteration_times = {}
@@ -1721,7 +1888,44 @@ class CollisionProxyOptimizer:
                 f"     {shape_id} - {settings[1]} - {vhacd_iteration_times[shape_id]}"
             )
 
-    def optimize_object_col_shape_vhacd(self, obj_h: str, col_shape_dir: str):
+    def compute_shape_score(self, obj_h: str, shape_id: str) -> float:
+        """
+        Compute the shape score for the given object and shape_id.
+        Higher shape score is better performance on the metrics.
+        """
+        shape_score = 0
+
+        # start with normalized error
+        normalized_error = self.gt_data[obj_h]["shape_test_results"][shape_id][
+            "normalized_raycast_error"
+        ]
+        shape_score -= normalized_error
+
+        # sum up scores for al receptacles
+        for _rec_name, rec_data in self.gt_data[obj_h]["receptacles"].items():
+            sh_rec_dat = rec_data["shape_id_results"][shape_id]
+            gt_rec_dat = rec_data["shape_id_results"]["gt"]
+            gt_access = gt_rec_dat["access_results"]["receptacle_access_score"]
+            gt_stability = gt_rec_dat["stability_results"]["success_ratio"]
+
+            # filter out generally bad receptacles from the score
+            if gt_access < 0.15 or gt_stability < 0.5:
+                "this receptacle is not good anyway, so skip it"
+                continue
+
+            # penalize different acces than ground truth (more access than gt is also bad as it implies worse overall shape matching)
+            rel_access_score = abs(
+                gt_access - sh_rec_dat["access_results"]["receptacle_access_score"]
+            )
+            shape_score -= rel_access_score
+
+            # penalize stability directly (more stability than ground truth is not a problem)
+            stability_ratio = sh_rec_dat["stability_results"]["success_ratio"]
+            shape_score += stability_ratio
+
+        return shape_score
+
+    def optimize_object_col_shape(self, obj_h: str, col_shape_dir: str, method="coacd"):
         """
         Run VHACD optimization for a specific object.
         Identify the optimal collision shape and save the result as the new default.
@@ -1737,97 +1941,30 @@ class CollisionProxyOptimizer:
         self.compute_receptacle_stability(obj_h)
         self.compute_receptacle_access_metrics(obj_h, use_gt=True)
         self.compute_receptacle_access_metrics(obj_h, use_gt=False)
-        self.grid_search_vhacd_params(obj_h)
+        if method == "vhacd":
+            self.grid_search_vhacd_params(obj_h)
+        elif method == "coacd":
+            self.run_coacd_grid_search(obj_h)
         self.compute_gt_errors(obj_h)
 
         # time to select the best version
         best_shape_id = "pr0"
-        pr0_shape_score = (
-            1.0
-            - self.gt_data[obj_h]["shape_test_results"]["pr0"][
-                "normalized_raycast_error"
-            ]
-        )
+        pr0_shape_score = self.compute_shape_score(obj_h, "pr0")
+        settings_key = method + "_settings"
         best_shape_score = pr0_shape_score
         shape_scores = {}
-        access_scores = {"gt": {}, "pr0": {}}
-        stab_ratios = {"gt": {}, "pr0": {}}
-        rel_access_scores = defaultdict(dict)
-        rel_stab_scores = defaultdict(dict)
-        for shape_id in self.gt_data[obj_h]["vhacd_settings"].keys():
-            # compare shape metric
-            if (
-                self.gt_data[obj_h]["shape_test_results"][shape_id][
-                    "normalized_raycast_error"
-                ]
-                > self.gt_data[obj_h]["shape_test_results"]["pr0"][
-                    "normalized_raycast_error"
-                ]
-            ):
-                # worse metric performance than the default, skip it.
-                continue
-
-            shape_score = (
-                1.0
-                - self.gt_data[obj_h]["shape_test_results"][shape_id][
-                    "normalized_raycast_error"
-                ]
-            )
-
-            # compare rec metrics
-            for rec_name, rec_data in self.gt_data[obj_h]["receptacles"].items():
-                for orig_shape_id in access_scores.keys():
-                    if rec_name not in access_scores[orig_shape_id]:
-                        access_scores[orig_shape_id][rec_name] = rec_data[
-                            "shape_id_results"
-                        ][orig_shape_id]["access_results"]["receptacle_access_score"]
-                    if rec_name not in stab_ratios[orig_shape_id]:
-                        stab_ratios[orig_shape_id][rec_name] = rec_data[
-                            "shape_id_results"
-                        ][orig_shape_id]["stability_results"]["success_ratio"]
-
-                sh_rec_dat = rec_data["shape_id_results"][shape_id]
-                rel_access_scores[shape_id][rec_name] = (
-                    access_scores["gt"][rec_name]
-                    - sh_rec_dat["access_results"]["receptacle_access_score"]
-                )
-                rel_stab_scores[shape_id][rec_name] = (
-                    stab_ratios["gt"][rec_name]
-                    - sh_rec_dat["stability_results"]["success_ratio"]
-                )
-
-                if (
-                    access_scores["gt"][rec_name] < 0.15
-                    or stab_ratios["gt"][rec_name] < 0.5
-                ):
-                    "this receptacle is not good anyway, so skip it"
-                    continue
-
-                if rec_name not in rel_access_scores["pr0"]:
-                    rel_access_scores["pr0"][rec_name] = (
-                        access_scores["gt"][rec_name] - access_scores["pr0"][rec_name]
-                    )
-                    pr0_shape_score += rel_access_scores["pr0"][rec_name]
-                    if best_shape_id == "pr0":
-                        best_shape_score = pr0_shape_score
-                if rec_name not in rel_stab_scores["pr0"]:
-                    rel_stab_scores["pr0"][rec_name] = (
-                        stab_ratios["gt"][rec_name] - stab_ratios["pr0"][rec_name]
-                    )
-                    pr0_shape_score += rel_stab_scores["pr0"][rec_name]
-                    if best_shape_id == "pr0":
-                        best_shape_score = pr0_shape_score
-
-                # TODO: weight these up?
-                shape_score += rel_stab_scores[shape_id][rec_name]
-                shape_score += rel_access_scores[shape_id][rec_name]
-
+        for shape_id in self.gt_data[obj_h][settings_key].keys():
+            shape_score = self.compute_shape_score(obj_h, shape_id)
             shape_scores[shape_id] = shape_score
-            if shape_score > best_shape_score:
+            # we only want significantly better shapes (10% or 0.1 score better threshold)
+            if (
+                shape_score > (best_shape_score + abs(best_shape_score) * 0.1)
+                and shape_score - best_shape_score > 0.1
+            ):
                 best_shape_id = shape_id
                 best_shape_score = shape_score
 
-        print(self.gt_data[obj_h]["vhacd_settings"])
+        print(self.gt_data[obj_h][settings_key])
         print(shape_scores)
 
         if best_shape_id != "pr0":
@@ -1835,13 +1972,20 @@ class CollisionProxyOptimizer:
             print(
                 f"Best shape_id = {best_shape_id} with shape score {best_shape_score} better than 'pr0' with shape score {pr0_shape_score}."
             )
-            self.compute_vhacd_col_shape(
-                obj_h, self.gt_data[obj_h]["vhacd_settings"][best_shape_id][0]
-            )
-            # copy the collision asset into the correct directory
-            obj_name = obj_h.split(".object_config.json")[0].split("/")[-1]
-            col_shape_path = os.path.join(col_shape_dir, obj_name + ".obj")
-            os.system(f"obj2gltf -i {col_shape_path} -o {cur_col_shape_path}")
+            if method == "vhacd":
+                self.compute_vhacd_col_shape(
+                    obj_h, self.gt_data[obj_h][settings_key][best_shape_id][0]
+                )
+                # copy the collision asset into the correct directory
+                obj_name = obj_h.split(".object_config.json")[0].split("/")[-1]
+                col_shape_path = os.path.join(col_shape_dir, obj_name + ".obj")
+                os.system(f"obj2gltf -i {col_shape_path} -o {cur_col_shape_path}")
+            elif method == "coacd":
+                asset_file, num_hulls = self.run_coacd(
+                    obj_h, self.gt_data[obj_h][settings_key][best_shape_id][0]
+                )
+                os.system(f"cp {asset_file} {cur_col_shape_path}")
+
         else:
             print(
                 f"Best shape_id = {best_shape_id} with shape score {best_shape_score}."
@@ -1849,8 +1993,12 @@ class CollisionProxyOptimizer:
 
         best_shape_params = None
         if best_shape_id != "pr0":
-            best_shape_params = self.gt_data[obj_h]["vhacd_settings"][best_shape_id]
+            best_shape_params = self.gt_data[obj_h][settings_key][best_shape_id]
+
+        # self.cache_global_results()
         self.clean_obj_gt(obj_h)
+        # then save results to file
+        # self.save_results_to_csv("cpo_out")
         return (best_shape_id, best_shape_score, pr0_shape_score, best_shape_params)
 
     def compute_vhacd_col_shape(
@@ -2289,13 +2437,17 @@ def main():
 
     # ----------------------------------------------------
     # specific object handle
-    # 163cdd355d2d228880dd6ed6f3fc5b49f7ba538a
-    # 174ea8cf2a80b38b2ce4dbbda6de2fee33d3870b
-    # 5277bce5d54fba0ab5ee869ed623932b447457d4
-    # obj_of_interest = "163cdd355d2d228880dd6ed6f3fc5b49f7ba538a"
-    # obj_of_interest = "174ea8cf2a80b38b2ce4dbbda6de2fee33d3870b"
+    # 392e00c6db2728b11495753fc32bb9df67e89acb
+    # 3c0114990e89b0c6a978793245301a99285e503a
+    # b0929827deff77bee9b5a1120d31b29ecc26ae1f
+    # c2ac5a249ca5897894ae36b08376d35fde7914a3
+    # 827df9acf75c5a4ab0384b7c32c230a61fbcc9f6
+    # obj_of_interest = "c2ac5a249ca5897894ae36b08376d35fde7914a3"
+    # obj_of_interest = "95f30d803f3373b011b8f10a0614c210b7c8bbe2"
     # obj_h = otm.get_file_template_handles(obj_of_interest)[0]
-    # results = cpo.optimize_object_col_shape_vhacd(obj_h,col_shape_dir="~/Documents/dev2/habitat-sim/data/VHACD_outputs/")
+    # #results = cpo.optimize_object_col_shape_vhacd(obj_h,col_shape_dir="~/Documents/dev2/habitat-sim/data/VHACD_outputs/")
+    # cpo.output_directory = None
+    # results = cpo.optimize_object_col_shape(obj_h,col_shape_dir="~/Documents/dev2/habitat-sim/data/VHACD_outputs/",method="coacd")
     # print(f"opt_results = {results}")
     # exit()
     # ----------------------------------------------------
@@ -2343,13 +2495,14 @@ def main():
             correct_object_orientations(all_handles, obj_orientations, cpo.mm)
         # ----------------------------------------------------
 
-        # run VHACD opt for all shapes
+        # run shape opt for all shapes
         results = []
         for obj_h in all_handles:
             results.append(
-                cpo.optimize_object_col_shape_vhacd(
+                cpo.optimize_object_col_shape(
                     obj_h,
                     col_shape_dir="~/Documents/dev2/habitat-sim/data/VHACD_outputs/",
+                    method="coacd",
                 )
             )
 

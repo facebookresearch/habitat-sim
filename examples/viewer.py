@@ -460,6 +460,11 @@ class HabitatSimInteractiveViewer(Application):
         Load all receptacle data and setup helper datastructures.
         """
         self.receptacles = hab_receptacle.find_receptacles(self.sim)
+        self.receptacles = [
+            rec
+            for rec in self.receptacles
+            if "collision_stand-in" not in rec.parent_object_handle
+        ]
         for receptacle in self.receptacles:
             if receptacle not in self.rec_to_poh:
                 po_handle = (
@@ -482,6 +487,7 @@ class HabitatSimInteractiveViewer(Application):
         object_template = otm.get_template_by_handle(obj_temp_handle)
         object_template.scale = obj_instance.scale + np.ones(3) * 0.01
         object_template.render_asset_handle = object_template.collision_asset_handle
+        object_template.is_collidable = False
         reg_id = otm.register_template(
             object_template,
             object_template.handle + self.proxy_obj_postfix,
@@ -1509,7 +1515,10 @@ In LOOK mode (default):
         Click and drag to rotate the agent and look up/down.
     WHEEL:
         Modify orthographic camera zoom/perspective camera FOV (+SHIFT for fine grained control)
-
+    RIGHT:
+        Click an object to select the object. Prints object name and attached receptacle names. Selected object displays sample points when cpo is initialized.
+        (+SHIFT) select a receptacle.
+        (+ALT) add or remove a receptacle from the "manual filter set".
 In GRAB mode (with 'enable-physics'):
     LEFT:
         Click and drag to pickup and move an object with a point-to-point constraint (e.g. ball joint).
@@ -1546,10 +1555,17 @@ Key Commands:
     Object Interactions:
     SPACE:      Toggle physics simulation on/off.
     '.':        Take a single simulation step if not simulating continuously.
-    'v':        (physics) Invert gravity.
-    't':        Load URDF from filepath
-                (+SHIFT) quick re-load the previously specified URDF
-                (+ALT) load the URDF with fixed base
+
+    Receptacle Evaluation Tool UI:
+    'v':        Load all Receptacles for the scene and toggle Receptacle visibility.
+                (+SHIFT) Iterate through receptacle color modes.
+    'f':        Toggle Receptacle view filtering. When on, only non-filtered Receptacles are visible.
+                (+SHIFT) Export current filter metadata to file.
+                (+ALT) Import filter metadata from file.
+    'o':        Toggle display of collision proxy shapes for the scene.
+                (+SHIFT) Toggle display of original render shapes (and Receptacles).
+    't':        CLI for modifying un-bound viewer parameters during runtime.
+
 =====================================================
 """
         )
