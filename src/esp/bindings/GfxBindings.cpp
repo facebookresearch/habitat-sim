@@ -185,10 +185,10 @@ void initGfxBindings(py::module& m) {
       .value("Global", LightPositionModel::Global)
       .value("Object", LightPositionModel::Object);
 
-  py::enum_<LightType>(
+  py::enum_<Mn::Trade::LightData::Type>(
       m, "LightType", R"(Defines the type of light described by the LightInfo)")
-      .value("Point", LightType::Point)
-      .value("Directional", LightType::Directional);
+      .value("Point", Mn::Trade::LightData::Type::Point)
+      .value("Directional", Mn::Trade::LightData::Type::Directional);
 
   py::class_<LightInfo>(
       m, "LightInfo",

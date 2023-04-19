@@ -5,8 +5,11 @@
 #include "LightLayoutAttributes.h"
 
 #include <utility>
-using Magnum::Math::Literals::operator""_radf;
-using Magnum::Math::Literals::operator""_degf;
+
+namespace Mn = Magnum;
+
+using Mn::Math::Literals::operator""_radf;
+using Mn::Math::Literals::operator""_degf;
 
 namespace esp {
 namespace metadata {
@@ -17,7 +20,7 @@ LightInstanceAttributes::LightInstanceAttributes(const std::string& handle)
   setDirection({0.0, -1.0, 0.0});
   setColor({1.0, 1.0, 1.0});
   setIntensity(1.0);
-  setType(getLightTypeName(gfx::LightType::Point));
+  setType(getLightTypeName(Mn::Trade::LightData::Type::Point));
   setPositionModel(getLightPositionModelName(gfx::LightPositionModel::Global));
   // ignored for all but spot lights
   setInnerConeAngle(0.0_radf);
@@ -27,11 +30,12 @@ LightInstanceAttributes::LightInstanceAttributes(const std::string& handle)
 void LightInstanceAttributes::writeValuesToJson(
     io::JsonGenericValue& jsonObj,
     io::JsonAllocator& allocator) const {
-  gfx::LightType lightType = getType();
-  if (lightType == gfx::LightType::Directional) {
+  Mn::Trade::LightData::Type lightType = getType();
+  if (lightType == Mn::Trade::LightData::Type::Directional) {
     writeValueToJson("direction", jsonObj, allocator);
-  } else {
+  } else if (lightType == Mn::Trade::LightData::Type::Point) {
     writeValueToJson("position", jsonObj, allocator);
+  } else {
   };
   writeValueToJson("type", jsonObj, allocator);
   writeValueToJson("color", jsonObj, allocator);

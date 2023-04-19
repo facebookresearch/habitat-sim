@@ -10,17 +10,18 @@ namespace metadata {
 namespace attributes {
 
 // All keys must be lowercase
-const std::map<std::string, esp::gfx::LightType> LightTypeNamesMap = {
-    {"point", esp::gfx::LightType::Point},
-    {"directional", esp::gfx::LightType::Directional},
-    {"spot", esp::gfx::LightType::Spot}};
+const std::map<std::string, Magnum::Trade::LightData::Type> LightTypeNamesMap =
+    {{"ambient", Magnum::Trade::LightData::Type::Ambient},
+     {"directional", Magnum::Trade::LightData::Type::Directional},
+     {"point", Magnum::Trade::LightData::Type::Point},
+     {"spot", Magnum::Trade::LightData::Type::Spot}};
 
-std::string getLightTypeName(esp::gfx::LightType lightTypeEnum) {
+std::string getLightTypeName(Magnum::Trade::LightData::Type lightTypeEnum) {
   // this verifies that enum value being checked is supported by string-keyed
   // map. The values below should be the minimum and maximum enums supported by
   // LightTypeNamesMap
-  if (lightTypeEnum < esp::gfx::LightType::Point ||
-      lightTypeEnum > esp::gfx::LightType::Spot) {
+  if (lightTypeEnum < Magnum::Trade::LightData::Type::Ambient ||
+      lightTypeEnum > Magnum::Trade::LightData::Type::Spot) {
     return "point";
   }
   // Must always be valid value

@@ -66,7 +66,7 @@ class LightInstanceAttributes : public AbstractAttributes {
   }
 
   /** @brief Get the type of the light */
-  gfx::LightType getType() const {
+  Magnum::Trade::LightData::Type getType() const {
     const std::string val =
         Cr::Utility::String::lowercase(get<std::string>("type"));
     auto mapIter = LightTypeNamesMap.find(val);
@@ -75,7 +75,7 @@ class LightInstanceAttributes : public AbstractAttributes {
     }
     // point is default value - should never be returned since setter verifies
     // value
-    return gfx::LightType::Point;
+    return Magnum::Trade::LightData::Type::Point;
   }
 
   /**

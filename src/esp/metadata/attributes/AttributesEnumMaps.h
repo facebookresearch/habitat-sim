@@ -5,6 +5,7 @@
 #ifndef ESP_METADATA_ATTRIBUTES_ATTRIBUTESENUMMAPS_H_
 #define ESP_METADATA_ATTRIBUTES_ATTRIBUTESENUMMAPS_H_
 
+#include <Magnum/Trade/LightData.h>
 #include "esp/core/Esp.h"
 #include "esp/gfx/LightSetup.h"
 namespace esp {
@@ -116,16 +117,17 @@ std::string getTranslationOriginName(
 
 /**
  * @brief Constant static map to provide mappings from string tags to @ref
- * esp::gfx::LightType values.  This will be used to map values set in json
- * for light type to @ref esp::gfx::LightType.  Keys must be lowercase - will
+ * Magnum::Trade::LightData::Type values.  This will be used to map values set
+ * in json for light type to @ref Magnum::Trade::LightData::Type.  Keys must be lowercase - will
  * support any case values in JSON.
  */
-const extern std::map<std::string, esp::gfx::LightType> LightTypeNamesMap;
+const extern std::map<std::string, Magnum::Trade::LightData::Type>
+    LightTypeNamesMap;
 /**
- * @brief This method will convert a @ref esp::gfx::LightType value to the
+ * @brief This method will convert a @ref Magnum::Trade::LightData::Type value to the
  * string key it maps to in the LightTypeNamesMap
  */
-std::string getLightTypeName(esp::gfx::LightType lightTypeEnum);
+std::string getLightTypeName(Magnum::Trade::LightData::Type lightTypeEnum);
 
 /**
  * @brief Constant static map to provide mappings from string tags to @ref
