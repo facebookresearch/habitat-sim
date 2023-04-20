@@ -14,6 +14,7 @@
 #include <Magnum/PixelFormat.h>
 #include <string>
 
+#include "esp/assets/Asset.h"
 #include "esp/assets/ResourceManager.h"
 #include "esp/metadata/MetadataMediator.h"
 #include "esp/physics/RigidObject.h"
@@ -138,6 +139,7 @@ struct SimTest : Cr::TestSuite::Tester {
 
   void addSensorToObject();
   void createMagnumRenderingOff();
+  void getRuntimePerfStats();
 
   esp::logging::LoggingContext loggingContext_;
   // TODO: remove outlier pixels from image and lower maxThreshold
@@ -181,7 +183,9 @@ SimTest::SimTest() {
             &SimTest::addObjectByHandle,
             &SimTest::addObjectInvertedScale,
             &SimTest::addSensorToObject}, Cr::Containers::arraySize(SimulatorBuilder) );
-  addTests({&SimTest::createMagnumRenderingOff});
+  addTests({
+    &SimTest::createMagnumRenderingOff,
+    &SimTest::getRuntimePerfStats});
   // clang-format on
 }
 void SimTest::basic() {
@@ -1009,6 +1013,59 @@ void SimTest::createMagnumRenderingOff() {
   // check that there is no renderer
   CORRADE_VERIFY(!simulator->getRenderer());
   CORRADE_VERIFY(!cameraSensor.getObservation(*simulator, observation));
+}
+
+void SimTest::getRuntimePerfStats() {
+  // create a simulator
+  SimulatorConfiguration simConfig{};
+  simConfig.activeSceneName = vangogh;
+  simConfig.enablePhysics = true;
+  simConfig.physicsConfigFile = physicsConfigFile;
+  simConfig.overrideSceneLightDefaults = true;
+  auto simulator = Simulator::create_unique(simConfig);
+
+  auto statNames = simulator->getRuntimePerfStatNames();
+
+  constexpr auto numRigidIdx = 0;
+  constexpr auto drawCountIdx = 5;
+  constexpr auto drawFacesIdx = 6;
+  CORRADE_COMPARE(statNames[numRigidIdx], "num rigid");
+  CORRADE_COMPARE(statNames[drawCountIdx], "num drawables");
+  CORRADE_COMPARE(statNames[drawFacesIdx], "num faces");
+
+  auto statValues = simulator->getRuntimePerfStatValues();
+
+  CORRADE_COMPARE(statValues[numRigidIdx], 0);
+  // magic numbers here correspond to the contents of the vangogh 3D asset
+  CORRADE_COMPARE(statValues[drawCountIdx], 15);
+  CORRADE_COMPARE(statValues[drawFacesIdx], 11272);
+
+  {
+    auto objAttrMgr = simulator->getObjectAttributesManager();
+    objAttrMgr->loadAllJSONConfigsFromPath(
+        Cr::Utility::Path::join(TEST_ASSETS, "objects/nested_box"), true);
+    auto rigidObjMgr = simulator->getRigidObjectManager();
+    auto objs = objAttrMgr->getObjectHandlesBySubstring("nested_box");
+    rigidObjMgr->addObjectByHandle(objs[0]);
+  }
+
+  statNames = simulator->getRuntimePerfStatNames();
+  statValues = simulator->getRuntimePerfStatValues();
+
+  CORRADE_COMPARE(statValues[numRigidIdx], 1);
+  // magic numbers here correspond to the contents of the vangogh and nested_box
+  // 3D assets
+  CORRADE_COMPARE(statValues[drawCountIdx], 17);
+  CORRADE_COMPARE(statValues[drawFacesIdx], 11296);
+
+  simConfig.activeSceneName = esp::assets::EMPTY_SCENE;
+  simulator->reconfigure(simConfig);
+
+  statValues = simulator->getRuntimePerfStatValues();
+
+  CORRADE_COMPARE(statValues[numRigidIdx], 0);
+  CORRADE_COMPARE(statValues[drawCountIdx], 0);
+  CORRADE_COMPARE(statValues[drawFacesIdx], 0);
 }
 
 }  // namespace
