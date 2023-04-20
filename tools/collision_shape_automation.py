@@ -2436,6 +2436,12 @@ def main():
         help="one or more objects to exclude from optimization (e.g. if it inspires a crash in COACD).",
     )
     parser.add_argument(
+        "--exclude_files",
+        type=str,
+        nargs="+",
+        help="provide one or more files with objects to exclude from optimization (NOTE: txt file with one id on each line, object names may include prefix 'fpModel.' which will be stripped.).",
+    )
+    parser.add_argument(
         "--output-dir",
         type=str,
         default="collision_shape_automation/",
@@ -2445,6 +2451,12 @@ def main():
         "--debug-images",
         action="store_true",
         help="turns on debug image output.",
+    )
+    parser.add_argument(
+        "--export-fp-model-ids",
+        type=str,
+        default="fp_model_ids.txt",
+        help="Intercept optimization to output a txt file with model ids for online model categorizer view.",
     )
     args = parser.parse_args()
 
@@ -2464,10 +2476,20 @@ def main():
     excluded_object_strings = []
     if args.exclude:
         excluded_object_strings = args.exclude
+    if args.exclude_files:
+        for filepath in args.exclude_files:
+            assert os.path.exists(filepath)
+            with open(filepath, "r") as f:
+                lines = [line.strip().split("fpModel.")[-1] for line in f.readlines()]
+                excluded_object_strings.extend(lines)
+    excluded_object_strings = list(dict.fromkeys(excluded_object_strings))
 
     # ----------------------------------------------------
     # specific object handle provided
     if args.objects:
+        assert (
+            not args.export_fp_model_ids
+        ), "Feature not available for objects, only for scenes."
         # deduplicate the list
         unique_objects = list(dict.fromkeys(args.objects))
 
@@ -2545,6 +2567,26 @@ def main():
                 if not exclude_object:
                     included_objects.append(obj_h)
             scene_object_handles[scene_name] = included_objects
+
+        if args.export_fp_model_ids:
+            # intercept optimization to instead export a txt file with model ids for import into the model categorizer tool
+            with open(args.export_fp_model_ids, "w") as f:
+                aggregated_object_ids = []
+                for _, scene_objects in scene_object_handles.items():
+                    rec_obj_in_scene = [
+                        scene_objects[i]
+                        for i in range(len(scene_objects))
+                        if object_has_receptacles(scene_objects[i], otm)
+                    ]
+                    aggregated_object_ids.extend(rec_obj_in_scene)
+                aggregated_object_ids = list(dict.fromkeys(aggregated_object_ids))
+                for obj_h in aggregated_object_ids:
+                    obj_name = obj_h.split(".object_config.json")[0].split("/")[-1]
+                    # TODO: this will change once the Model Categorizer supports these
+                    if "_part_" not in obj_name:
+                        f.write("fpModel." + obj_name + "\n")
+            print(f"Export fpModel ids to {args.export_fp_model_ids}")
+            exit()
 
         # optimize each scene
         all_scene_results: Dict[
