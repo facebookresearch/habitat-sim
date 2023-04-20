@@ -72,6 +72,7 @@ class CCSemanticObject;
 struct SceneConfiguration;
 }  // namespace scene
 namespace physics {
+class ArticulatedObject;
 class PhysicsManager;
 class RigidObject;
 }  // namespace physics
@@ -868,7 +869,7 @@ class ResourceManager {
    */
   void mapSkinnedModelToArticulatedObject(
       const MeshTransformNode& meshTransformNode,
-      const RenderAssetInstanceCreationInfo& creationInfo,
+      const std::shared_ptr<physics::ArticulatedObject>& rig,
       const std::shared_ptr<gfx::InstanceSkinData>& skinData);
 
   /**

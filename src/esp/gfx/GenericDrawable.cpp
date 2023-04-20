@@ -10,6 +10,7 @@
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix3.h>
 
+#include "esp/core/Check.h"
 #include "esp/gfx/SkinData.h"
 #include "esp/scene/SceneNode.h"
 
@@ -32,7 +33,8 @@ GenericDrawable::GenericDrawable(
       lightSetup_{shaderManager.get<LightSetup>(lightSetupKey)},
       materialData_{
           shaderManager.get<MaterialData, PhongMaterialData>(materialDataKey)},
-      skinData_(skinData) {
+      skinData_(skinData),
+      jointTransformations_() {
   flags_ = Mn::Shaders::PhongGL::Flag::ObjectId;
 
   /* If texture transformation is specified, enable it only if the material is
@@ -193,8 +195,9 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
     auto& jointIdToArticulatedObjectNodes =
         skinData_->jointIdToArticulatedObjectNode;
     auto& transformNodes = skinData_->jointIdToTransformNode;
-    Cr::Containers::Array<Mn::Matrix4> jointTransformations{
-        Cr::NoInit, skin->joints().size()};
+
+    ESP_CHECK(jointTransformations_.size() == skin->joints().size(),
+              "Joint transformation count doesn't match bone count.");
 
     // Undo root node transform so that the model origin matches the root
     // articulated object link.
@@ -204,20 +207,20 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
             .inverted();
 
     Mn::Matrix4 lastTransform = Mn::Matrix4{Magnum::Math::IdentityInit};
-    for (std::size_t i = 0; i != jointTransformations.size(); ++i) {
+    for (std::size_t i = 0; i != jointTransformations_.size(); ++i) {
       auto jointNodeIt = transformNodes.find(skin->joints()[i]);
       if (jointNodeIt != transformNodes.end()) {
-        jointTransformations[i] =
+        jointTransformations_[i] =
             invRootTransform *
             jointNodeIt->second->absoluteTransformationMatrix() *
             skin->inverseBindMatrices()[i];
-        lastTransform = jointTransformations[i];
+        lastTransform = jointTransformations_[i];
       } else {
         // Joint not found - use last transform.
-        jointTransformations[i] = lastTransform;
+        jointTransformations_[i] = lastTransform;
       }
     }
-    shader_->setJointMatrices(jointTransformations);
+    shader_->setJointMatrices(jointTransformations_);
   }
 
   shader_->draw(getMesh());
@@ -235,6 +238,11 @@ void GenericDrawable::updateShader() {
       skinData_ ? skinData_->skinData->skin->joints().size() : 0;
   Mn::UnsignedInt perVertexJointCount =
       skinData_ ? skinData_->skinData->perVertexJointCount : 0;
+
+  if (skinData_) {
+    jointTransformations_ = Cr::Containers::Array<Mn::Matrix4>{
+        Cr::NoInit, skinData_->skinData->skin->joints().size()};
+  }
 
   if (!shader_ || shader_->lightCount() != lightCount ||
       shader_->flags() != flags_) {

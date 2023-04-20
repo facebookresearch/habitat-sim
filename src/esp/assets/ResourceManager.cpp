@@ -1896,7 +1896,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
     const auto& skinData = skins_[loadedAssetData.meshMetaData.skinIndex.first];
     instanceSkinData = std::make_shared<gfx::InstanceSkinData>(skinData);
     mapSkinnedModelToArticulatedObject(loadedAssetData.meshMetaData.root,
-                                       creation, instanceSkinData);
+                                       creation.rig, instanceSkinData);
     ESP_CHECK(instanceSkinData->rootJointId != ID_UNDEFINED,
               "Could not map skinned model to articulated object.");
   }
@@ -2909,7 +2909,7 @@ void ResourceManager::addComponent(
 
 void ResourceManager::mapSkinnedModelToArticulatedObject(
     const MeshTransformNode& meshTransformNode,
-    const RenderAssetInstanceCreationInfo& creationInfo,
+    const std::shared_ptr<physics::ArticulatedObject>& rig,
     const std::shared_ptr<gfx::InstanceSkinData>& skinData) {
   // Find skin joint ID that matches the node
   const auto& gfxBoneName = meshTransformNode.name;
@@ -2919,15 +2919,14 @@ void ResourceManager::mapSkinnedModelToArticulatedObject(
     int jointId = jointIt->second;
 
     // Find articulated object link ID that matches the node
-    const auto& linkIds = creationInfo.rig->getLinkIdsWithBase();
+    const auto& linkIds = rig->getLinkIdsWithBase();
     auto linkId = std::find_if(linkIds.begin(), linkIds.end(), [&](int i) {
-      return gfxBoneName == creationInfo.rig->getLinkName(i);
+      return gfxBoneName == rig->getLinkName(i);
     });
 
     // Map the articulated object link associated with the skin joint
     if (linkId != linkIds.end()) {
-      auto* articulatedObjectNode =
-          &creationInfo.rig->getLink(*linkId.base()).node();
+      auto* articulatedObjectNode = &rig->getLink(*linkId.base()).node();
       skinData->jointIdToArticulatedObjectNode[jointId] = articulatedObjectNode;
 
       // This node will be used for rendering.
@@ -2946,7 +2945,7 @@ void ResourceManager::mapSkinnedModelToArticulatedObject(
   }
 
   for (const auto& child : meshTransformNode.children) {
-    mapSkinnedModelToArticulatedObject(child, creationInfo, skinData);
+    mapSkinnedModelToArticulatedObject(child, rig, skinData);
   }
 }  // mapSkinnedModelToArticulatedObject
 

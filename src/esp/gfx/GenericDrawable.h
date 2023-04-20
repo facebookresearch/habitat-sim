@@ -53,6 +53,7 @@ class GenericDrawable : public Drawable {
   Magnum::Resource<LightSetup> lightSetup_;
   Magnum::Shaders::PhongGL::Flags flags_;
   std::shared_ptr<InstanceSkinData> skinData_;
+  Cr::Containers::Array<Mn::Matrix4> jointTransformations_;
 };
 
 }  // namespace gfx
