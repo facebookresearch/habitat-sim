@@ -2430,6 +2430,12 @@ def main():
         "--objects", type=str, nargs="+", help="one or more objects to optimize."
     )
     parser.add_argument(
+        "--exclude",
+        type=str,
+        nargs="+",
+        help="one or more objects to exclude from optimization (e.g. if it inspires a crash in COACD).",
+    )
+    parser.add_argument(
         "--output-dir",
         type=str,
         default="collision_shape_automation/",
@@ -2455,6 +2461,10 @@ def main():
     cpo.generate_debug_images = args.debug_images
     otm = cpo.mm.object_template_manager
 
+    excluded_object_strings = []
+    if args.exclude:
+        excluded_object_strings = args.exclude
+
     # ----------------------------------------------------
     # specific object handle provided
     if args.objects:
@@ -2464,6 +2474,7 @@ def main():
         # validate the object handles
         object_handles = []
         for object_name in unique_objects:
+            # get templates matches
             matching_templates = otm.get_file_template_handles(object_name)
             assert (
                 len(matching_templates) > 0
@@ -2471,7 +2482,17 @@ def main():
             assert (
                 len(matching_templates) == 1
             ), f"More than one matching template in the dataset for '{object_name}': {matching_templates}"
-            object_handles.append(matching_templates[0])
+            obj_h = matching_templates[0]
+
+            # skip excluded objects
+            exclude_object = False
+            for ex_obj in excluded_object_strings:
+                if ex_obj in obj_h:
+                    print(f"Excluding object {object_name}.")
+                    exclude_object = True
+                    break
+            if not exclude_object:
+                object_handles.append(obj_h)
 
         # optimize the objects
         results = []
@@ -2511,7 +2532,19 @@ def main():
             assert (
                 len(objects_in_scene) > 0
             ), f"No objects found in scene '{scene_name}'. Are you sure this is a valid scene?"
-            scene_object_handles[scene_name] = objects_in_scene
+
+            # skip excluded objects
+            included_objects = []
+            for obj_h in objects_in_scene:
+                exclude_object = False
+                for ex_obj in excluded_object_strings:
+                    if ex_obj in obj_h:
+                        exclude_object = True
+                        print(f"Excluding object {obj_h}.")
+                        break
+                if not exclude_object:
+                    included_objects.append(obj_h)
+            scene_object_handles[scene_name] = included_objects
 
         # optimize each scene
         all_scene_results: Dict[
