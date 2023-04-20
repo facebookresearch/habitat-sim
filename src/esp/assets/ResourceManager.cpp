@@ -1474,8 +1474,8 @@ ResourceManager::flattenImportedMeshAndBuildSemantic(Importer& fileImporter,
         Mn::SceneTools::flattenTransformationHierarchy3D(
             *scene, Mn::Trade::SceneField::Mesh, reframeTransform);
 
-    Cr::Containers::Array<Mn::Trade::MeshData> flattenedMeshes{
-        Cr::NoInit, meshesMaterials.size()};
+    Cr::Containers::Array<Mn::Trade::MeshData> flattenedMeshes;
+    Cr::Containers::arrayReserve(flattenedMeshes, meshesMaterials.size());
 
     for (std::size_t i = 0; i != meshesMaterials.size(); ++i) {
       Mn::UnsignedInt iMesh = meshesMaterials[i].second().first();
