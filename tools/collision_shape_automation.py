@@ -1683,7 +1683,11 @@ class CollisionProxyOptimizer:
 
         return permutations
 
-    def run_coacd_grid_search(self, obj_template_handle: str) -> None:
+    def run_coacd_grid_search(
+        self,
+        obj_template_handle: str,
+        param_range_override: Optional[Dict[str, List[Any]]] = None,
+    ) -> None:
         """
         Run grid search on relevant COACD params for an object.
         """
@@ -1693,6 +1697,9 @@ class CollisionProxyOptimizer:
         param_ranges = {
             "threshold": [0.04, 0.01],
         }
+
+        if param_range_override is not None:
+            param_ranges = param_range_override
 
         permutations = self.permute_param_variations(param_ranges)
 
@@ -1941,7 +1948,11 @@ class CollisionProxyOptimizer:
         return shape_score
 
     def optimize_object_col_shape(
-        self, obj_h: str, col_shape_dir: Optional[str] = None, method="coacd"
+        self,
+        obj_h: str,
+        col_shape_dir: Optional[str] = None,
+        method="coacd",
+        param_range_override: Optional[Dict[str, List[Any]]] = None,
     ):
         """
         Run VHACD optimization for a specific object.
@@ -1964,7 +1975,7 @@ class CollisionProxyOptimizer:
             ), "Must provide the directory of the VHACD collision shape output."
             self.grid_search_vhacd_params(obj_h)
         elif method == "coacd":
-            self.run_coacd_grid_search(obj_h)
+            self.run_coacd_grid_search(obj_h, param_range_override)
         self.compute_gt_errors(obj_h)
 
         # time to select the best version
@@ -2455,10 +2466,21 @@ def main():
     parser.add_argument(
         "--export-fp-model-ids",
         type=str,
-        default="fp_model_ids.txt",
         help="Intercept optimization to output a txt file with model ids for online model categorizer view.",
     )
+    parser.add_argument(
+        "--coacd-thresholds",
+        type=float,
+        nargs="+",
+        help="one or more coacd thresholds [0-1] (lower is more detailed) to search. If not provided, default are [0.04, 0.01].",
+    )
     args = parser.parse_args()
+
+    param_range_overrides = None
+    if args.coacd_thresholds:
+        param_range_overrides = {
+            "threshold": args.coacd_thresholds,
+        }
 
     sim_settings = default_sim_settings.copy()
     sim_settings["scene_dataset_config_file"] = args.dataset
@@ -2519,7 +2541,11 @@ def main():
         # optimize the objects
         results = []
         for obj_h in object_handles:
-            results.append(cpo.optimize_object_col_shape(obj_h, method="coacd"))
+            results.append(
+                cpo.optimize_object_col_shape(
+                    obj_h, method="coacd", param_range_override=param_range_overrides
+                )
+            )
 
         # display results
         print("Object Optimization Results:")
@@ -2626,7 +2652,7 @@ def main():
             scene_results: Dict[str, List[Tuple[str, float, float, Any]]] = {}
             for obj_h in rec_obj_in_scene:
                 scene_results[obj_h] = cpo.optimize_object_col_shape(
-                    obj_h, method="coacd"
+                    obj_h, method="coacd", param_range_override=param_range_overrides
                 )
 
             all_scene_results[scene] = scene_results
