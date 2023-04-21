@@ -91,6 +91,11 @@ void DebugLineRender::setLineWidth(float lineWidth) {
 void DebugLineRender::flushLines(const Magnum::Matrix4& camMatrix,
                                  const Magnum::Matrix4& projMatrix,
                                  const Magnum::Vector2i& viewport) {
+  flushLines(projMatrix * camMatrix, viewport);
+}
+
+void DebugLineRender::flushLines(const Magnum::Matrix4& projCamMatrix,
+                                 const Magnum::Vector2i& viewport) {
   CORRADE_ASSERT(_glResources,
                  "DebugLineRender::flushLines: no GL resources; see "
                  "also releaseGLResources", );
@@ -134,7 +139,7 @@ void DebugLineRender::flushLines(const Magnum::Matrix4& camMatrix,
                                  Mn::Vector3(0, x * sqrtOfTwo, 0),
                                  Mn::Vector3(0, -x * sqrtOfTwo, 0)};
 
-  Mn::Matrix4 projCam = projMatrix * camMatrix;
+  const auto& projCam = projCamMatrix;
 
   auto submitLinesWithOffsets = [&]() {
     for (const auto& offset : offsets) {

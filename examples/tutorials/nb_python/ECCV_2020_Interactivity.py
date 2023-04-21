@@ -339,6 +339,7 @@ def sample_object_state(
 # @markdown (double click to show code)
 # @markdown - display_sample
 
+
 # Change to do something like this maybe: https://stackoverflow.com/a/41432704
 def display_sample(
     rgb_obs, semantic_obs=np.array([]), depth_obs=np.array([]), key_points=None
@@ -396,6 +397,7 @@ else:
 # %%
 # @title Define Colab GUI Utility Functions { display-mode: "form" }
 # @markdown (double click to show code)
+
 
 # Event handler for dropdowns displaying file-based object handles
 def on_file_obj_ddl_change(ddl_values):

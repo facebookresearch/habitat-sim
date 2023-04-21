@@ -53,7 +53,6 @@ def _render_scene(sim, scene, sensor_type, gpu2gpu):
 
 
 def _render_and_load_gt(sim, scene, sensor_type, gpu2gpu):
-
     obs = _render_scene(sim, scene, sensor_type, gpu2gpu)
 
     # now that sensors are constructed, test some getter/setters
@@ -277,7 +276,6 @@ def test_smoke_no_sensors(make_cfg_settings):
         if not osp.exists(scene):
             continue
         scene_dataset_config = scene_and_dataset[1]
-        make_cfg_settings = {k: v for k, v in make_cfg_settings.items()}
         make_cfg_settings["semantic_sensor"] = False
         make_cfg_settings["scene"] = scene
         make_cfg_settings["scene_dataset_config_file"] = scene_dataset_config

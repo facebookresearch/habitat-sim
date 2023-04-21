@@ -568,6 +568,20 @@ def test_raycast():
             sim.set_stage_is_collidable(False)
             raycast_results = sim.cast_ray(test_ray_1)
             assert not raycast_results.has_hits()
+            sim.set_stage_is_collidable(True)
+
+            # test non-unit ray direction
+            test_ray_1.direction = mn.Vector3(0.5, 0, 0)
+            raycast_results = sim.cast_ray(test_ray_1)
+            assert raycast_results.has_hits()
+            assert len(raycast_results.hits) == 3
+            assert (
+                raycast_results.hits[0].point
+                - (
+                    test_ray_1.origin
+                    + test_ray_1.direction * raycast_results.hits[0].ray_distance
+                )
+            ).length() < 0.001
 
 
 @pytest.mark.skipif(
@@ -1899,7 +1913,6 @@ def test_bullet_collision_helper():
     hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
 
     with habitat_sim.Simulator(hab_cfg) as sim:
-
         obj_template_mgr = sim.get_object_template_manager()
         cube_prim_handle = obj_template_mgr.get_template_handles("cube")[0]
         rigid_obj_mgr = sim.get_rigid_object_manager()

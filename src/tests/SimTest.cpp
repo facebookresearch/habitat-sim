@@ -5,6 +5,7 @@
 #include <Corrade/Containers/StridedArrayView.h>
 #include <Corrade/TestSuite/Compare/Numeric.h>
 #include <Corrade/TestSuite/Tester.h>
+#include <Corrade/Utility/Algorithms.h>
 #include <Corrade/Utility/Path.h>
 #include <Magnum/DebugTools/CompareImage.h>
 #include <Magnum/EigenIntegration/Integration.h>
@@ -13,6 +14,7 @@
 #include <Magnum/PixelFormat.h>
 #include <string>
 
+#include "esp/assets/Asset.h"
 #include "esp/assets/ResourceManager.h"
 #include "esp/metadata/MetadataMediator.h"
 #include "esp/physics/RigidObject.h"
@@ -114,6 +116,11 @@ struct SimTest : Cr::TestSuite::Tester {
       Magnum::Float maxThreshold,
       Magnum::Float meanThreshold);
 
+  void addObjectsAndMakeObservation(Simulator& sim,
+                                    esp::sensor::CameraSensorSpec& cameraSpec,
+                                    const std::string& objTmpltHandle,
+                                    Observation& observation);
+
   void basic();
   void reconfigure();
   void reset();
@@ -128,8 +135,11 @@ struct SimTest : Cr::TestSuite::Tester {
   void loadingObjectTemplates();
   void buildingPrimAssetObjectTemplates();
   void addObjectByHandle();
+  void addObjectInvertedScale();
+
   void addSensorToObject();
   void createMagnumRenderingOff();
+  void getRuntimePerfStats();
 
   esp::logging::LoggingContext loggingContext_;
   // TODO: remove outlier pixels from image and lower maxThreshold
@@ -171,8 +181,11 @@ SimTest::SimTest() {
             &SimTest::loadingObjectTemplates,
             &SimTest::buildingPrimAssetObjectTemplates,
             &SimTest::addObjectByHandle,
-            &SimTest::addSensorToObject,
-            &SimTest::createMagnumRenderingOff}, Cr::Containers::arraySize(SimulatorBuilder) );
+            &SimTest::addObjectInvertedScale,
+            &SimTest::addSensorToObject}, Cr::Containers::arraySize(SimulatorBuilder) );
+  addTests({
+    &SimTest::createMagnumRenderingOff,
+    &SimTest::getRuntimePerfStats});
   // clang-format on
 }
 void SimTest::basic() {
@@ -271,11 +284,9 @@ void SimTest::checkPinholeCameraRGBAObservation(
 void SimTest::getSceneRGBAObservation() {
   ESP_DEBUG() << "Starting Test : getSceneRGBAObservation";
   setTestCaseName(CORRADE_FUNCTION);
-  ESP_DEBUG() << "About to build simulator";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
-  ESP_DEBUG() << "Built simulator";
   checkPinholeCameraRGBAObservation(*simulator, "SimTestExpectedScene.png",
                                     maxThreshold, 0.75f);
 }
@@ -727,6 +738,118 @@ void SimTest::addObjectByHandle() {
   CORRADE_VERIFY(obj->getID() != esp::ID_UNDEFINED);
 }
 
+void SimTest::addObjectsAndMakeObservation(
+    Simulator& sim,
+    esp::sensor::CameraSensorSpec& cameraSpec,
+    const std::string& objTmpltHandle,
+    Observation& observation) {
+  auto rigidObjMgr = sim.getRigidObjectManager();
+  // remove any existing objects
+  rigidObjMgr->removeAllObjects();
+  // add and place first object
+  auto obj = rigidObjMgr->addObjectByHandle(objTmpltHandle, nullptr,
+                                            "custom_lighting_1");
+  obj->setTranslation({-1.0f, 0.5f, -2.5f});
+
+  // add and place second object
+  auto otherObj = rigidObjMgr->addObjectByHandle(objTmpltHandle, nullptr,
+                                                 "custom_lighting_2");
+  otherObj->setTranslation({1.0f, 0.5f, -2.5f});
+
+  // Make Observation of constructed scene
+  CORRADE_VERIFY(sim.getAgentObservation(0, cameraSpec.uuid, observation));
+
+}  // SimTest::addObjectsAndMakeObservation
+
+void SimTest::addObjectInvertedScale() {
+  ESP_DEBUG() << "Starting Test : addObjectInvertedScale";
+  auto&& data = SimulatorBuilder[testCaseInstanceId()];
+  setTestCaseDescription(data.name);
+  auto simulator = data.creator(*this, planeStage, esp::NO_LIGHT_KEY);
+  auto rigidObjMgr = simulator->getRigidObjectManager();
+  auto objAttrMgr = simulator->getObjectAttributesManager();
+  // Add agent to take image
+  auto pinholeCameraSpec = CameraSensorSpec::create();
+  pinholeCameraSpec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
+  pinholeCameraSpec->sensorType = SensorType::Color;
+  pinholeCameraSpec->position = {0.0f, 1.5f, 0.0f};
+  pinholeCameraSpec->resolution = {128, 128};
+
+  AgentConfiguration agentConfig{};
+  agentConfig.sensorSpecifications = {pinholeCameraSpec};
+  Agent::ptr agent = simulator->addAgent(agentConfig);
+  agent->setInitialState(AgentState{});
+
+  // Add 2 objects and take initial non-negative scaled observation
+  const auto objHandle = Cr::Utility::Path::join(
+      TEST_ASSETS, "objects/nested_box.object_config.json");
+
+  Observation expectedObservation;
+  addObjectsAndMakeObservation(*simulator, *pinholeCameraSpec, objHandle,
+                               expectedObservation);
+
+  // Make aa copy of observation buffer so future observations don't overwrite
+  // this one
+  Cr::Containers::Array<uint8_t> obsCopy{
+      Cr::NoInit, expectedObservation.buffer->data.size()};
+  Cr::Utility::copy(expectedObservation.buffer->data, obsCopy);
+
+  // File name of expected image for un-inverted and each axis-inverted image
+  const auto expectedScreenshotFile = Cr::Utility::Path::join(
+      screenshotDir, "SimTestInvertScaleImageExpected.png");
+  // Make a ground truth image based on a copy of the observation buffer
+  const Mn::ImageView2D expectedImage{
+      Mn::PixelFormat::RGBA8Unorm,
+      {pinholeCameraSpec->resolution[0], pinholeCameraSpec->resolution[1]},
+      obsCopy};
+
+  // Verify non-negative scale scene is as expected
+  CORRADE_COMPARE_WITH(
+      expectedImage, expectedScreenshotFile,
+      (Mn::DebugTools::CompareImageToFile{maxThreshold, 0.01f}));
+
+  // Create and test observations with scale negative in each of x, y and z
+  // directions
+  Cr::Containers::StringView testAxis[3]{"X_axis", "Y_axis", "Z_axis"};
+  for (int i = 0; i < 3; ++i) {
+    CORRADE_ITERATION(testAxis[i]);
+    ObjectAttributes::ptr newObjAttr =
+        objAttrMgr->getObjectCopyByHandle(objHandle);
+
+    Mn::Vector3 scale = newObjAttr->getScale();
+    // change x, y, or z scale to be negative
+    scale[i] *= -1.0f;
+
+    // Set modified scale
+    newObjAttr->setScale(scale);
+    // Register new object attributes with negative scale along a single axis
+    // using a new name
+    const std::string newObjHandle =
+        Cr::Utility::formatString("scale_{}_{}", i, objHandle);
+    objAttrMgr->registerObject(newObjAttr, newObjHandle);
+
+    // Build object layout and retrieve observation
+    Observation newObservation;
+    addObjectsAndMakeObservation(*simulator, *pinholeCameraSpec, newObjHandle,
+                                 newObservation);
+
+    const Mn::ImageView2D newImage{
+        Mn::PixelFormat::RGBA8Unorm,
+        {pinholeCameraSpec->resolution[0], pinholeCameraSpec->resolution[1]},
+        newObservation.buffer->data};
+
+    // Verify inverted scale scene is as expected compared to file.
+    CORRADE_COMPARE_WITH(
+        newImage, expectedScreenshotFile,
+        (Mn::DebugTools::CompareImageToFile{maxThreshold, 0.01f}));
+
+    // Needed to make a buffer copy into the comparison image
+    CORRADE_COMPARE_WITH(newImage, expectedImage,
+                         (Mn::DebugTools::CompareImage{maxThreshold, 0.01f}));
+  }
+
+}  // SimTest::addObjectInvertedScale
+
 void SimTest::addSensorToObject() {
   ESP_DEBUG() << "Starting Test : addSensorToObject";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
@@ -890,6 +1013,59 @@ void SimTest::createMagnumRenderingOff() {
   // check that there is no renderer
   CORRADE_VERIFY(!simulator->getRenderer());
   CORRADE_VERIFY(!cameraSensor.getObservation(*simulator, observation));
+}
+
+void SimTest::getRuntimePerfStats() {
+  // create a simulator
+  SimulatorConfiguration simConfig{};
+  simConfig.activeSceneName = vangogh;
+  simConfig.enablePhysics = true;
+  simConfig.physicsConfigFile = physicsConfigFile;
+  simConfig.overrideSceneLightDefaults = true;
+  auto simulator = Simulator::create_unique(simConfig);
+
+  auto statNames = simulator->getRuntimePerfStatNames();
+
+  constexpr auto numRigidIdx = 0;
+  constexpr auto drawCountIdx = 5;
+  constexpr auto drawFacesIdx = 6;
+  CORRADE_COMPARE(statNames[numRigidIdx], "num rigid");
+  CORRADE_COMPARE(statNames[drawCountIdx], "num drawables");
+  CORRADE_COMPARE(statNames[drawFacesIdx], "num faces");
+
+  auto statValues = simulator->getRuntimePerfStatValues();
+
+  CORRADE_COMPARE(statValues[numRigidIdx], 0);
+  // magic numbers here correspond to the contents of the vangogh 3D asset
+  CORRADE_COMPARE(statValues[drawCountIdx], 15);
+  CORRADE_COMPARE(statValues[drawFacesIdx], 11272);
+
+  {
+    auto objAttrMgr = simulator->getObjectAttributesManager();
+    objAttrMgr->loadAllJSONConfigsFromPath(
+        Cr::Utility::Path::join(TEST_ASSETS, "objects/nested_box"), true);
+    auto rigidObjMgr = simulator->getRigidObjectManager();
+    auto objs = objAttrMgr->getObjectHandlesBySubstring("nested_box");
+    rigidObjMgr->addObjectByHandle(objs[0]);
+  }
+
+  statNames = simulator->getRuntimePerfStatNames();
+  statValues = simulator->getRuntimePerfStatValues();
+
+  CORRADE_COMPARE(statValues[numRigidIdx], 1);
+  // magic numbers here correspond to the contents of the vangogh and nested_box
+  // 3D assets
+  CORRADE_COMPARE(statValues[drawCountIdx], 17);
+  CORRADE_COMPARE(statValues[drawFacesIdx], 11296);
+
+  simConfig.activeSceneName = esp::assets::EMPTY_SCENE;
+  simulator->reconfigure(simConfig);
+
+  statValues = simulator->getRuntimePerfStatValues();
+
+  CORRADE_COMPARE(statValues[numRigidIdx], 0);
+  CORRADE_COMPARE(statValues[drawCountIdx], 0);
+  CORRADE_COMPARE(statValues[drawFacesIdx], 0);
 }
 
 }  // namespace

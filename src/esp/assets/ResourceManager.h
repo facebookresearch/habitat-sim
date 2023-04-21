@@ -727,6 +727,19 @@ class ResourceManager {
       const std::shared_ptr<metadata::attributes::StageAttributes>&
           stageAttributes);
 
+  /**
+   * @brief Get the count of Drawables and the total face count across all
+   * Drawables in the scene. This is helpful for troubleshooting runtime perf.
+   * See also resetDrawableCountAndNumFaces.
+   */
+  auto getDrawableCountAndNumFaces() { return drawableCountAndNumFaces_; }
+
+  /**
+   * @brief Reset this count and this number. See also
+   * getDrawableCountAndNumFaces.
+   */
+  void resetDrawableCountAndNumFaces() { drawableCountAndNumFaces_ = {0, 0}; }
+
  private:
   /**
    * @brief Load the requested mesh info into @ref meshInfo corresponding to
@@ -1196,6 +1209,7 @@ class ResourceManager {
    * @brief The mesh data for loaded assets.
    */
   std::map<int, std::shared_ptr<BaseMesh>> meshes_;
+  std::pair<int, int> drawableCountAndNumFaces_{0, 0};
 
   /**
    * @brief The next available unique ID for loaded textures

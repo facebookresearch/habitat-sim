@@ -38,7 +38,6 @@ def test_semantic_scene(scene, make_cfg_settings):
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
 
-    make_cfg_settings = {k: v for k, v in make_cfg_settings.items()}
     make_cfg_settings["semantic_sensor"] = False
     make_cfg_settings["scene"] = scene
     cfg = make_cfg(make_cfg_settings)

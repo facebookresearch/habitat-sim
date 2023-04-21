@@ -15,7 +15,6 @@ from habitat_sim.utils import compare_profiles
 # profiling events. Verify compare_profiles functionality including creating and
 # printing a timing summary.
 def test_compare_profiles():
-
     c = sqlite3.connect(":memory:")
 
     # Parse a sqlite database which is missing the expected table.

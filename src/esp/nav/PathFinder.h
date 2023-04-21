@@ -105,6 +105,14 @@ struct MultiGoalShortestPath {
    */
   float geodesicDistance{};
 
+  /**
+   * @brief The index of the closest end point corresponding to end of the
+   * shortest path.
+   *
+   * Will be -1 if no path exists.
+   */
+  int closestEndPointIndex{};
+
   friend class PathFinder;
 
   ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(MultiGoalShortestPath)

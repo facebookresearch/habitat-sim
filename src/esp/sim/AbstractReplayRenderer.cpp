@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -102,6 +102,38 @@ void AbstractReplayRenderer::render(
 void AbstractReplayRenderer::render(
     Magnum::GL::AbstractFramebuffer& framebuffer) {
   return doRender(framebuffer);
+}
+
+const void* AbstractReplayRenderer::getCudaColorBufferDevicePointer() {
+  ESP_ERROR() << "CUDA device pointer only available with the batch renderer.";
+  return nullptr;
+}
+
+const void* AbstractReplayRenderer::getCudaDepthBufferDevicePointer() {
+  ESP_ERROR() << "CUDA device pointer only available with the batch renderer.";
+  return nullptr;
+}
+
+std::shared_ptr<esp::gfx::DebugLineRender>
+AbstractReplayRenderer::getDebugLineRender(unsigned envIndex) {
+  ESP_CHECK(envIndex == 0, "getDebugLineRender is only available for env 0");
+  // We only create this if/when used (lazy creation)
+  if (!debugLineRender_) {
+    debugLineRender_ = std::make_shared<esp::gfx::DebugLineRender>();
+  }
+  return debugLineRender_;
+}
+
+esp::geo::Ray AbstractReplayRenderer::unproject(
+    unsigned envIndex,
+    const Mn::Vector2i& viewportPosition) {
+  checkEnvIndex(envIndex);
+  return doUnproject(envIndex, viewportPosition);
+}
+
+void AbstractReplayRenderer::checkEnvIndex(unsigned envIndex) {
+  ESP_CHECK(envIndex < doEnvironmentCount(),
+            "envIndex " << envIndex << " is out of range");
 }
 
 }  // namespace sim

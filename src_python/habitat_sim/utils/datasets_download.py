@@ -133,10 +133,10 @@ def initialize_test_data_sources(data_path):
             "version": "1.0",
         },
         "hab_spot_arm": {
-            "source": "http://dl.fbaipublicfiles.com/habitat/robots/hab_spot_arm_v1.0.zip",
-            "package_name": "hab_spot_arm_v1.0.zip",
+            "source": "http://dl.fbaipublicfiles.com/habitat/robots/hab_spot_arm_v2.0.zip",
+            "package_name": "hab_spot_arm_v2.0.zip",
             "link": data_path + "robots/hab_spot_arm",
-            "version": "1.0",
+            "version": "2.0",
         },
         "hab_stretch": {
             "source": "http://dl.fbaipublicfiles.com/habitat/robots/hab_stretch_v1.0.zip",
@@ -149,6 +149,12 @@ def initialize_test_data_sources(data_path):
             "package_name": "hab_fetch_v2.0.zip",
             "link": data_path + "robots/hab_fetch",
             "version": "2.0",
+        },
+        "humanoid_data": {
+            "source": "http://dl.fbaipublicfiles.com/habitat/humanoids/humanoid_data_v0.1.zip",
+            "package_name": "humanoid_data_v0.1.zip",
+            "link": data_path + "humanoids/humanoid_data",
+            "version": "0.1",
         },
         "rearrange_pick_dataset_v0": {
             "source": "https://dl.fbaipublicfiles.com/habitat/data/datasets/rearrange_pick/replica_cad/v0/rearrange_pick_replica_cad_v0.zip",
@@ -697,33 +703,35 @@ def main(args):
     args = parser.parse_args(args)
     replace = args.replace
 
-    # get a default data_path "./data/"
-    data_path = args.data_path
-    if not data_path:
-        try:
-            data_path = os.path.abspath("./data/")
+    default_data_path = "./data"
+    data_path = os.path.realpath(
+        args.data_path if args.data_path else default_data_path
+    )
+    if not args.data_path:
+        print(
+            f"No data-path provided, defaults to: {default_data_path}. Use '--data-path' to specify another location."
+        )
+        if os.path.islink(default_data_path):
             print(
-                f"No data-path provided, default to: {data_path}. Use '--data-path' to specify another location."
+                f"Note, {default_data_path} is a symbolic link that points to {data_path}."
             )
-            if not os.path.exists(data_path):
-                os.makedirs(data_path)
-        except Exception:
-            traceback.print_exc(file=sys.stdout)
-            print("----------------------------------------------------------------")
-            print(
-                "Aborting download, failed to create default data_path and none provided."
-            )
-            print("Try providing --data-path (e.g. '/path/to/habitat-sim/data/')")
-            print("----------------------------------------------------------------")
-            parser.print_help()
-            exit(2)
+
+    try:
+        os.makedirs(data_path, exist_ok=True)
+    except OSError:
+        traceback.print_exc(file=sys.stdout)
+        print("----------------------------------------------------------------")
+        print("Aborting download, failed to create data_path.")
+        print("Try providing --data-path (e.g. '/path/to/habitat-sim/data/')")
+        print("----------------------------------------------------------------")
+        parser.print_help()
+        exit(2)
 
     # initialize data_sources and data_groups with test and example assets
-    os.makedirs(data_path, exist_ok=True)
     data_path = os.path.abspath(data_path) + "/"
     initialize_test_data_sources(data_path=data_path)
 
-    # validatation: ids are unique between groups and sources
+    # validation: ids are unique between groups and sources
     for key in data_groups:
         assert key not in data_sources, "Duplicate key: " + key
 

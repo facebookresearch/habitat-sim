@@ -121,7 +121,16 @@ int PhysicsManager::addObjectInstance(
   auto objAttributes =
       resourceManager_.getObjectAttributesManager()->getObjectCopyByHandle(
           attributesHandle);
-  // Make its semantic id to be the instance id
+
+  if (!objAttributes) {
+    ESP_ERROR() << "Missing/improperly configured objectAttributes"
+                << attributesHandle << ", whose handle contains"
+                << objInstAttributes->getHandle()
+                << "as specified in object instance attributes.";
+    return 0;
+  }
+
+  // Set the instance id of the object
   objAttributes->setInstanceId(objInstAttributes->getID());
 
   // check if an object is being set to be not visible for a particular
@@ -132,13 +141,6 @@ int PhysicsManager::addObjectInstance(
     objAttributes->setIsVisible(visSet == 1);
   }
 
-  if (!objAttributes) {
-    ESP_ERROR() << "Missing/improperly configured objectAttributes"
-                << attributesHandle << ", whose handle contains"
-                << objInstAttributes->getHandle()
-                << "as specified in object instance attributes.";
-    return 0;
-  }
   // set shader type to use for object instance, which may override shadertype
   // specified in object attributes.
   const auto objShaderType = objInstAttributes->getShaderType();
@@ -155,6 +157,9 @@ int PhysicsManager::addObjectInstance(
   // scaling
   objAttributes->setScale(objAttributes->getScale() *
                           objInstAttributes->getNonUniformScale());
+  // set scaled mass
+  objAttributes->setMass(objAttributes->getMass() *
+                         objInstAttributes->getMassScale());
 
   // adding object using provided object attributes
   int objID =
@@ -326,8 +331,9 @@ int PhysicsManager::addArticulatedObjectInstance(
   // managers)
   int aObjID = this->addArticulatedObjectFromURDF(
       filepath, &drawables, aObjInstAttributes->getFixedBase(),
-      aObjInstAttributes->getUniformScale(), aObjInstAttributes->getMassScale(),
-      false, false, lightSetup);
+      aObjInstAttributes->getUniformScale(),
+      static_cast<float>(aObjInstAttributes->getMassScale()), false, false,
+      lightSetup);
   if (aObjID == ID_UNDEFINED) {
     // instancing failed for some reason.
     ESP_ERROR() << "Articulated Object create failed for model filepath"

@@ -18,6 +18,27 @@ namespace esp {
 namespace gfx {
 namespace replay {
 
+namespace {
+
+// At recording time, material overrides gets stringified and appended to the
+// filepath. See ResourceManager::createModifiedAssetName.
+// AbstractSceneGraphPlayerImplementation doesn't support parsing this material
+// info. More info at
+// https://docs.google.com/document/d/1ngA73cXl3YRaPfFyICSUHONZN44C-XvieS7kwyQDbkI/edit#bookmark=id.aoe7xgsro2r7
+std::string removeMaterialOverrideFromFilepathAndWarn(const std::string& src) {
+  auto pos = src.find('?');
+  if (pos != std::string::npos) {
+    ESP_WARNING(Mn::Debug::Flag::NoSpace)
+        << "Ignoring material-override for [" << src << "]";
+
+    return src.substr(0, pos);
+  } else {
+    return src;
+  }
+}
+
+}  // namespace
+
 static_assert(std::is_nothrow_move_constructible<Player>::value, "");
 
 void AbstractPlayerImplementation::setNodeSemanticId(NodeHandle, unsigned) {}
@@ -154,31 +175,47 @@ void Player::clearFrame() {
 
 void Player::applyKeyframe(const Keyframe& keyframe) {
   for (const auto& assetInfo : keyframe.loads) {
-    CORRADE_INTERNAL_ASSERT(assetInfos_.count(assetInfo.filepath) == 0);
     if (failedFilepaths_.count(assetInfo.filepath) != 0u) {
       continue;
     }
+    // TODO: This overwrites the previous AssetInfo. This is not ideal. Consider
+    // including AssetInfo in creations rather than using keyframe loads.
     assetInfos_[assetInfo.filepath] = assetInfo;
+  }
+
+  // If all current instances are being deleted, clear the frame. This enables
+  // the implementation to clear its memory and optimize its internals.
+  bool frameCleared = keyframe.deletions.size() > 0 &&
+                      createdInstances_.size() == keyframe.deletions.size();
+  if (frameCleared) {
+    implementation_->deleteAssetInstances(createdInstances_);
+    createdInstances_.clear();
   }
 
   for (const auto& pair : keyframe.creations) {
     const auto& creation = pair.second;
-    if (assetInfos_.count(creation.filepath) == 0u) {
-      if (failedFilepaths_.count(creation.filepath) == 0u) {
+
+    auto adjustedFilepath =
+        removeMaterialOverrideFromFilepathAndWarn(creation.filepath);
+
+    if (assetInfos_.count(adjustedFilepath) == 0u) {
+      if (failedFilepaths_.count(adjustedFilepath) == 0u) {
         ESP_WARNING(Mn::Debug::Flag::NoSpace)
-            << "Missing asset info for [" << creation.filepath << "]";
-        failedFilepaths_.insert(creation.filepath);
+            << "Missing asset info for [" << adjustedFilepath << "]";
+        failedFilepaths_.insert(adjustedFilepath);
       }
       continue;
     }
-    CORRADE_INTERNAL_ASSERT(assetInfos_.count(creation.filepath));
+    CORRADE_INTERNAL_ASSERT(assetInfos_.count(adjustedFilepath));
+    auto adjustedCreation = creation;
+    adjustedCreation.filepath = adjustedFilepath;
     auto* node = implementation_->loadAndCreateRenderAssetInstance(
-        assetInfos_[creation.filepath], creation);
+        assetInfos_[adjustedFilepath], adjustedCreation);
     if (!node) {
-      if (failedFilepaths_.count(creation.filepath) == 0u) {
+      if (failedFilepaths_.count(adjustedFilepath) == 0u) {
         ESP_WARNING(Mn::Debug::Flag::NoSpace)
-            << "Load failed for asset [" << creation.filepath << "]";
-        failedFilepaths_.insert(creation.filepath);
+            << "Load failed for asset [" << adjustedFilepath << "]";
+        failedFilepaths_.insert(adjustedFilepath);
       }
       continue;
     }
@@ -188,16 +225,18 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     createdInstances_[instanceKey] = node;
   }
 
-  for (const auto& deletionInstanceKey : keyframe.deletions) {
-    const auto& it = createdInstances_.find(deletionInstanceKey);
-    if (it == createdInstances_.end()) {
-      // missing instance for this key, probably due to a failed instance
-      // creation
-      continue;
-    }
+  if (!frameCleared) {
+    for (const auto& deletionInstanceKey : keyframe.deletions) {
+      const auto& it = createdInstances_.find(deletionInstanceKey);
+      if (it == createdInstances_.end()) {
+        // missing instance for this key, probably due to a failed instance
+        // creation
+        continue;
+      }
 
-    implementation_->deleteAssetInstance(it->second);
-    createdInstances_.erase(deletionInstanceKey);
+      implementation_->deleteAssetInstance(it->second);
+      createdInstances_.erase(deletionInstanceKey);
+    }
   }
 
   for (const auto& pair : keyframe.stateUpdates) {

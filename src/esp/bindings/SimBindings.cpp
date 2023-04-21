@@ -357,6 +357,12 @@ void initSimBindings(py::module& m) {
            R"(Get a copy of the settings for an existing rigid constraint.)")
       .def("remove_rigid_constraint", &Simulator::removeRigidConstraint,
            "constraint_id"_a, R"(Remove a rigid constraint by id.)")
+      .def(
+          "get_runtime_perf_stat_names", &Simulator::getRuntimePerfStatNames,
+          R"(Runtime perf stats are various scalars helpful for troubleshooting runtime perf. This can be called once at startup. See also get_runtime_perf_stat_values.)")
+      .def(
+          "get_runtime_perf_stat_values", &Simulator::getRuntimePerfStatValues,
+          R"(Runtime perf stats are various scalars helpful for troubleshooting runtime perf. These values generally change after every sim step. See also get_runtime_perf_stat_names.)")
       .def("get_debug_line_render", &Simulator::getDebugLineRender,
            pybind11::return_value_policy::reference,
            R"(Get visualization helper for rendering lines.)");
@@ -409,9 +415,10 @@ void initSimBindings(py::module& m) {
           [](AbstractReplayRenderer& self, const std::string& filePath) {
             self.preloadFile(filePath);
           },
-          R"(Load an composite file that the renderer will use in-place of simulation assets to improve memory usage and performance.)")
-      .def("environment_count", &AbstractReplayRenderer::environmentCount,
-           "Get the batch size.")
+          R"(Load a composite file that the renderer will use in-place of simulation assets to improve memory usage and performance.)")
+      .def_property_readonly("environment_count",
+                             &AbstractReplayRenderer::environmentCount,
+                             "Get the batch size.")
       .def("sensor_size", &AbstractReplayRenderer::sensorSize,
            "Get the resolution of a sensor.")
       .def("clear_environment", &AbstractReplayRenderer::clearEnvironment,
@@ -420,7 +427,16 @@ void initSimBindings(py::module& m) {
            static_cast<void (AbstractReplayRenderer::*)(
                Magnum::GL::AbstractFramebuffer&)>(
                &AbstractReplayRenderer::render),
-           R"(Render all sensors onto the main framebuffer.)")
+           R"(Render all sensors onto the specified framebuffer.)")
+      .def(
+          "render",
+          [](AbstractReplayRenderer& self,
+             std::vector<Mn::MutableImageView2D> images) {
+            self.render(images);
+          },
+          R"(Render color sensors into the specified image vector (one per environment).
+          The images are required to be pre-allocated.
+          Blocks the thread during the GPU-to-CPU memory transfer operation.)")
       .def(
           "set_sensor_transforms_from_keyframe",
           &AbstractReplayRenderer::setSensorTransformsFromKeyframe,
@@ -430,9 +446,25 @@ void initSimBindings(py::module& m) {
       .def("set_environment_keyframe",
            &AbstractReplayRenderer::setEnvironmentKeyframe,
            R"(Set the keyframe for a specific environment.)")
-      .def_static("environment_grid_size",
-                  &AbstractReplayRenderer::environmentGridSize,
-                  R"(Dimensions of the environment grid.)");
+      .def_static(
+          "environment_grid_size", &AbstractReplayRenderer::environmentGridSize,
+          R"(Get the dimensions (tile counts) of the environment grid.)")
+      .def(
+          "cuda_color_buffer_device_pointer",
+          [](AbstractReplayRenderer& self) {
+            return py::capsule(self.getCudaColorBufferDevicePointer());
+          },
+          R"(Retrieve the color buffer as a CUDA device pointer.)")
+      .def(
+          "cuda_depth_buffer_device_pointer",
+          [](AbstractReplayRenderer& self) {
+            return py::capsule(self.getCudaColorBufferDevicePointer());
+          },
+          R"(Retrieve the depth buffer as a CUDA device pointer.)")
+      .def("debug_line_render", &AbstractReplayRenderer::getDebugLineRender,
+           R"(Get visualization helper for rendering lines.)")
+      .def("unproject", &AbstractReplayRenderer::unproject,
+           R"(Unproject a screen-space point to a world-space ray.)");
 }
 
 }  // namespace sim

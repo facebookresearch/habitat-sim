@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -8,7 +8,12 @@
 #include <Magnum/GL/GL.h>
 #include <Magnum/Magnum.h>
 
+#include "esp/core/Check.h"
 #include "esp/core/Esp.h"
+#include "esp/geo/Geo.h"
+#include "esp/gfx/DebugLineRender.h"
+
+#include <memory>
 
 namespace esp {
 
@@ -102,6 +107,31 @@ class AbstractReplayRenderer {
   // Assumes the framebuffer color & depth is cleared
   void render(Magnum::GL::AbstractFramebuffer& framebuffer);
 
+  // Retrieve the color buffer as a CUDA device pointer. */
+  virtual const void* getCudaColorBufferDevicePointer();
+
+  // Retrieve the depth buffer as a CUDA device pointer. */
+  virtual const void* getCudaDepthBufferDevicePointer();
+
+  std::shared_ptr<esp::gfx::DebugLineRender> getDebugLineRender(
+      unsigned envIndex);
+
+  /**
+   * @brief Unproject a 2D viewport point to a 3D ray with origin at camera
+   * position. Ray direction is normalized.
+   *
+   * @param envIndex
+   * @param viewportPosition The 2D point on the viewport to unproject
+   * ([0,width], [0,height]).
+   */
+  esp::geo::Ray unproject(unsigned envIndex,
+                          const Magnum::Vector2i& viewportPosition);
+
+ protected:
+  void checkEnvIndex(unsigned envIndex);
+
+  std::shared_ptr<esp::gfx::DebugLineRender> debugLineRender_;
+
  private:
   /* Implementation of all public API is in the private do*() functions,
      similarly to how e.g. Magnum plugin interfaces work. The public API does
@@ -137,6 +167,9 @@ class AbstractReplayRenderer {
           imageViews) = 0;
 
   virtual void doRender(Magnum::GL::AbstractFramebuffer& framebuffer) = 0;
+
+  virtual esp::geo::Ray doUnproject(unsigned envIndex,
+                                    const Mn::Vector2i& viewportPosition) = 0;
 
   ESP_SMART_POINTERS(AbstractReplayRenderer)
 };

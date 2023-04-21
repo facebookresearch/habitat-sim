@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -14,9 +14,19 @@ namespace sim {
 
 class BatchReplayRenderer : public AbstractReplayRenderer {
  public:
-  explicit BatchReplayRenderer(const ReplayRendererConfiguration& cfg);
+  // TODO figure out a better way how to abstract this so i don't need to
+  //  propagate each and every batch-renderer-specific option through all these
+  //  layers like an animal
+  explicit BatchReplayRenderer(
+      const ReplayRendererConfiguration& cfg,
+      gfx_batch::RendererConfiguration&& batchRendererConfiguration =
+          gfx_batch::RendererConfiguration{});
 
   ~BatchReplayRenderer() override;
+
+  const void* getCudaColorBufferDevicePointer() override;
+
+  const void* getCudaDepthBufferDevicePointer() override;
 
  private:
   void doPreloadFile(Corrade::Containers::StringView filename) override;
@@ -38,6 +48,9 @@ class BatchReplayRenderer : public AbstractReplayRenderer {
                     imageViews) override;
 
   void doRender(Magnum::GL::AbstractFramebuffer& framebuffer) override;
+
+  esp::geo::Ray doUnproject(unsigned envIndex,
+                            const Mn::Vector2i& viewportPosition) override;
 
   /* If standalone_ is true, renderer_ contains a RendererStandalone. Has to be
      before the EnvironmentRecord array because Player calls
