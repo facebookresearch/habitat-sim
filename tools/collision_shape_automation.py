@@ -2440,6 +2440,11 @@ def main():
     group.add_argument(
         "--objects", type=str, nargs="+", help="one or more objects to optimize."
     )
+    group.add_argument(
+        "--all-rec-objects",
+        action="store_true",
+        help="Optimize all objects in the dataset with receptacles.",
+    )
     parser.add_argument(
         "--exclude",
         type=str,
@@ -2447,7 +2452,7 @@ def main():
         help="one or more objects to exclude from optimization (e.g. if it inspires a crash in COACD).",
     )
     parser.add_argument(
-        "--exclude_files",
+        "--exclude-files",
         type=str,
         nargs="+",
         help="provide one or more files with objects to exclude from optimization (NOTE: txt file with one id on each line, object names may include prefix 'fpModel.' which will be stripped.).",
@@ -2508,12 +2513,27 @@ def main():
 
     # ----------------------------------------------------
     # specific object handle provided
-    if args.objects:
+    if args.objects or args.all_rec_objects:
         assert (
             not args.export_fp_model_ids
         ), "Feature not available for objects, only for scenes."
-        # deduplicate the list
-        unique_objects = list(dict.fromkeys(args.objects))
+
+        unique_objects = None
+
+        if args.objects:
+            # deduplicate the list
+            unique_objects = list(dict.fromkeys(args.objects))
+        elif args.all_rec_objects:
+            objects_in_dataset = otm.get_file_template_handles()
+            rec_obj_in_dataset = [
+                objects_in_dataset[i]
+                for i in range(len(objects_in_dataset))
+                if object_has_receptacles(objects_in_dataset[i], otm)
+            ]
+            print(
+                f"Number of objects in dataset with receptacles = {len(rec_obj_in_dataset)}"
+            )
+            unique_objects = rec_obj_in_dataset
 
         # validate the object handles
         object_handles = []
@@ -2540,12 +2560,18 @@ def main():
 
         # optimize the objects
         results = []
+        obj_counter = 0
         for obj_h in object_handles:
+            print("+++++++++++++++++++++++++")
+            print("+++++++++++++++++++++++++")
+            print(f"Optimizing '{obj_h}' : {obj_counter} of {len(object_handles)}")
+            print("+++++++++++++++++++++++++")
             results.append(
                 cpo.optimize_object_col_shape(
                     obj_h, method="coacd", param_range_override=param_range_overrides
                 )
             )
+            obj_counter += 1
 
         # display results
         print("Object Optimization Results:")
