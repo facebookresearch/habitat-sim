@@ -37,7 +37,7 @@
 #include <Magnum/MeshTools/Transform.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/SceneGraph/Object.h>
-#include <Magnum/SceneTools/FlattenMeshHierarchy.h>
+#include <Magnum/SceneTools/FlattenTransformationHierarchy.h>
 #include <Magnum/Trade/AbstractImporter.h>
 #include <Magnum/Trade/FlatMaterialData.h>
 #include <Magnum/Trade/ImageData.h>
@@ -1464,16 +1464,25 @@ ResourceManager::flattenImportedMeshAndBuildSemantic(Importer& fileImporter,
     Cr::Containers::Optional<Mn::Trade::SceneData> scene =
         fileImporter.scene(sceneID);
 
+    // To access the mesh id
+    Cr::Containers::Array<Cr::Containers::Pair<
+        Mn::UnsignedInt, Cr::Containers::Pair<Mn::UnsignedInt, Mn::Int>>>
+        meshesMaterials = scene->meshesMaterialsAsArray();
+    // All the transformations, flattened and indexed by mesh id, with
+    // reframeTransform applied to each
+    Cr::Containers::Array<Mn::Matrix4> transformations =
+        Mn::SceneTools::flattenTransformationHierarchy3D(
+            *scene, Mn::Trade::SceneField::Mesh, reframeTransform);
+
     Cr::Containers::Array<Mn::Trade::MeshData> flattenedMeshes;
-    for (const Cr::Containers::Triple<Mn::UnsignedInt, Mn::Int, Mn::Matrix4>&
-             meshTransformation :
-         Mn::SceneTools::flattenMeshHierarchy3D(*scene)) {
-      int iMesh = meshTransformation.first();
+    Cr::Containers::arrayReserve(flattenedMeshes, meshesMaterials.size());
+
+    for (std::size_t i = 0; i != meshesMaterials.size(); ++i) {
+      Mn::UnsignedInt iMesh = meshesMaterials[i].second().first();
       if (Cr::Containers::Optional<Mn::Trade::MeshData> mesh =
               fileImporter.mesh(iMesh)) {
-        const auto transform = reframeTransform * meshTransformation.third();
         arrayAppend(flattenedMeshes,
-                    Mn::MeshTools::transform3D(*mesh, transform));
+                    Mn::MeshTools::transform3D(*mesh, transformations[i]));
       }
     }
 
