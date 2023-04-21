@@ -1078,7 +1078,8 @@ void SimTest::getRuntimePerfStats() {
 void SimTest::testArticulatedObjectSkinned() {
   ESP_DEBUG() << "Starting Test : testArticulatedObjectSkinned";
 
-  const std::string urdfFile = "data/test_assets/urdf/skinned_prism.urdf";
+  const std::string urdfFile =
+      Cr::Utility::Path::join(TEST_ASSETS, "urdf/skinned_prism.urdf");
 
   // create a simulator
   SimulatorConfiguration simConfig{};

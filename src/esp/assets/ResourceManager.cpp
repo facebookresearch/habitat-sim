@@ -1798,8 +1798,7 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
        scene->parentsAsArray()) {
     nodes[parent.first()].emplace();
     nodes[parent.first()]->componentID = parent.first();
-    nodes[parent.first()]->name =
-        fileImporter_->objectName(nodes[parent.first()]->componentID);
+    nodes[parent.first()]->name = fileImporter_->objectName(parent.first());
   }
 
   // Set transformations. Objects that are not part of the hierarchy are
@@ -1888,24 +1887,24 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
   // If the object has a skin and a rig (articulated object), link them together
   // such as the model bones are driven by the articulated object links.
   std::shared_ptr<gfx::InstanceSkinData> instanceSkinData = nullptr;
-  if (creation.rig &&
-      loadedAssetData.meshMetaData.skinIndex.first != ID_UNDEFINED) {
+  const auto& meshMetaData = loadedAssetData.meshMetaData;
+  if (creation.rig && meshMetaData.skinIndex.first != ID_UNDEFINED) {
     ESP_CHECK(
         !skins_.empty(),
         "Cannot instantiate skinned model because no skin data is imported.");
-    const auto& skinData = skins_[loadedAssetData.meshMetaData.skinIndex.first];
+    const auto& skinData = skins_[meshMetaData.skinIndex.first];
     instanceSkinData = std::make_shared<gfx::InstanceSkinData>(skinData);
-    mapSkinnedModelToArticulatedObject(loadedAssetData.meshMetaData.root,
-                                       creation.rig, instanceSkinData);
+    mapSkinnedModelToArticulatedObject(meshMetaData.root, creation.rig,
+                                       instanceSkinData);
     ESP_CHECK(instanceSkinData->rootJointId != ID_UNDEFINED,
               "Could not map skinned model to articulated object.");
   }
 
-  addComponent(loadedAssetData.meshMetaData,       // mesh metadata
-               newNode,                            // parent scene node
-               creation.lightSetupKey,             // lightSetup key
-               drawables,                          // drawable group
-               loadedAssetData.meshMetaData.root,  // mesh transform node
+  addComponent(meshMetaData,            // mesh metadata
+               newNode,                 // parent scene node
+               creation.lightSetupKey,  // lightSetup key
+               drawables,               // drawable group
+               meshMetaData.root,       // mesh transform node
                visNodeCache,  // a vector of scene nodes, the visNodeCache
                computeAbsoluteAABBs,  // compute absolute AABBs
                staticDrawableInfo,    // a vector of static drawable info
@@ -2472,8 +2471,8 @@ void ResourceManager::loadSkins(Importer& importer,
   if (importer.skin3DCount() == 0)
     return;
 
-  int skinStart = nextSkinID_;
-  int skinEnd = skinStart + importer.skin3DCount() - 1;
+  const int skinStart = nextSkinID_;
+  const int skinEnd = skinStart + importer.skin3DCount() - 1;
   nextSkinID_ = skinEnd + 1;
   loadedAssetData.meshMetaData.setSkinIndices(skinStart, skinEnd);
 
@@ -2914,15 +2913,15 @@ void ResourceManager::mapSkinnedModelToArticulatedObject(
   // Find skin joint ID that matches the node
   const auto& gfxBoneName = meshTransformNode.name;
   const auto& boneNameJointIdMap = skinData->skinData->boneNameJointIdMap;
-  auto jointIt = boneNameJointIdMap.find(gfxBoneName);
+  const auto jointIt = boneNameJointIdMap.find(gfxBoneName);
   if (jointIt != boneNameJointIdMap.end()) {
     int jointId = jointIt->second;
 
     // Find articulated object link ID that matches the node
     const auto& linkIds = rig->getLinkIdsWithBase();
-    auto linkId = std::find_if(linkIds.begin(), linkIds.end(), [&](int i) {
-      return gfxBoneName == rig->getLinkName(i);
-    });
+    const auto linkId =
+        std::find_if(linkIds.begin(), linkIds.end(),
+                     [&](int i) { return gfxBoneName == rig->getLinkName(i); });
 
     // Map the articulated object link associated with the skin joint
     if (linkId != linkIds.end()) {

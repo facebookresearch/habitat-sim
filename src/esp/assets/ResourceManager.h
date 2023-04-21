@@ -856,7 +856,7 @@ class ResourceManager {
       const std::shared_ptr<gfx::InstanceSkinData>& skinData = nullptr);
 
   /**
-   * @brief Recursive construction of instance skin and rig data.
+   * @brief Recursive construction of instance skinning data.
    *
    * Fills the fields of a @ref InstanceSkinData to enable skinned mesh rendering
    * by associating each bone to a corresponding articulated object link.
@@ -865,7 +865,7 @@ class ResourceManager {
    * @param creationInfo Creation information for the instance which contains
    * the rig.
    * @param skinData Structure holding the skin and rig configuration for the
-   * instance
+   * instance.
    */
   void mapSkinnedModelToArticulatedObject(
       const MeshTransformNode& meshTransformNode,

@@ -191,24 +191,24 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
 
   if (skinData_) {
     // Gather joint transformations
-    auto& skin = skinData_->skinData->skin;
+    const auto& skin = skinData_->skinData->skin;
+    const auto& transformNodes = skinData_->jointIdToTransformNode;
     auto& jointIdToArticulatedObjectNodes =
         skinData_->jointIdToArticulatedObjectNode;
-    auto& transformNodes = skinData_->jointIdToTransformNode;
 
     ESP_CHECK(jointTransformations_.size() == skin->joints().size(),
               "Joint transformation count doesn't match bone count.");
 
     // Undo root node transform so that the model origin matches the root
     // articulated object link.
-    auto invRootTransform =
+    const auto invRootTransform =
         jointIdToArticulatedObjectNodes[skinData_->rootJointId]
             ->absoluteTransformationMatrix()
             .inverted();
 
-    Mn::Matrix4 lastTransform = Mn::Matrix4{Magnum::Math::IdentityInit};
+    auto lastTransform = Mn::Matrix4{Magnum::Math::IdentityInit};
     for (std::size_t i = 0; i != jointTransformations_.size(); ++i) {
-      auto jointNodeIt = transformNodes.find(skin->joints()[i]);
+      const auto jointNodeIt = transformNodes.find(skin->joints()[i]);
       if (jointNodeIt != transformNodes.end()) {
         jointTransformations_[i] =
             invRootTransform *
@@ -233,10 +233,10 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
 }
 
 void GenericDrawable::updateShader() {
-  Mn::UnsignedInt lightCount = lightSetup_->size();
-  Mn::UnsignedInt jointCount =
+  const Mn::UnsignedInt lightCount = lightSetup_->size();
+  const Mn::UnsignedInt jointCount =
       skinData_ ? skinData_->skinData->skin->joints().size() : 0;
-  Mn::UnsignedInt perVertexJointCount =
+  const Mn::UnsignedInt perVertexJointCount =
       skinData_ ? skinData_->skinData->perVertexJointCount : 0;
 
   if (skinData_) {
