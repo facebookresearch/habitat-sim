@@ -10,6 +10,10 @@
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix3.h>
 
+#include "Corrade/Containers/GrowableArray.h"
+#include "Magnum/Types.h"
+#include "esp/core/Check.h"
+#include "esp/gfx/SkinData.h"
 #include "esp/scene/SceneNode.h"
 
 namespace Mn = Magnum;
@@ -17,18 +21,22 @@ namespace Mn = Magnum;
 namespace esp {
 namespace gfx {
 
-GenericDrawable::GenericDrawable(scene::SceneNode& node,
-                                 Mn::GL::Mesh* mesh,
-                                 Drawable::Flags& meshAttributeFlags,
-                                 ShaderManager& shaderManager,
-                                 const Mn::ResourceKey& lightSetupKey,
-                                 const Mn::ResourceKey& materialDataKey,
-                                 DrawableGroup* group /* = nullptr */)
+GenericDrawable::GenericDrawable(
+    scene::SceneNode& node,
+    Mn::GL::Mesh* mesh,
+    Drawable::Flags& meshAttributeFlags,
+    ShaderManager& shaderManager,
+    const Mn::ResourceKey& lightSetupKey,
+    const Mn::ResourceKey& materialDataKey,
+    DrawableGroup* group /* = nullptr */,
+    const std::shared_ptr<InstanceSkinData>& skinData /* = nullptr */)
     : Drawable{node, mesh, DrawableType::Generic, group},
       shaderManager_{shaderManager},
       lightSetup_{shaderManager.get<LightSetup>(lightSetupKey)},
       materialData_{
-          shaderManager.get<MaterialData, PhongMaterialData>(materialDataKey)} {
+          shaderManager.get<MaterialData, PhongMaterialData>(materialDataKey)},
+      skinData_(skinData),
+      jointTransformations_() {
   flags_ = Mn::Shaders::PhongGL::Flag::ObjectId;
 
   /* If texture transformation is specified, enable it only if the material is
@@ -183,6 +191,35 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
     shader_->bindObjectIdTexture(*(materialData_->objectIdTexture));
   }
 
+  if (skinData_) {
+    // Gather joint transformations
+    const auto& skin = skinData_->skinData->skin;
+    const auto& transformNodes = skinData_->jointIdToTransformNode;
+
+    ESP_CHECK(jointTransformations_.size() == skin->joints().size(),
+              "Joint transformation count doesn't match bone count.");
+
+    // Undo root node transform so that the model origin matches the root
+    // articulated object link.
+    const auto invRootTransform =
+        skinData_->rootArticulatedObjectNode->absoluteTransformationMatrix()
+            .inverted();
+
+    for (std::size_t i = 0; i != jointTransformations_.size(); ++i) {
+      const auto jointNodeIt = transformNodes.find(skin->joints()[i]);
+      if (jointNodeIt != transformNodes.end()) {
+        jointTransformations_[i] =
+            invRootTransform *
+            jointNodeIt->second->absoluteTransformationMatrix() *
+            skin->inverseBindMatrices()[i];
+      } else {
+        // Joint not found, use placeholder matrix.
+        jointTransformations_[i] = Mn::Matrix4{Magnum::Math::IdentityInit};
+      }
+    }
+    shader_->setJointMatrices(jointTransformations_);
+  }
+
   shader_->draw(getMesh());
 
   // Reset winding direction
@@ -193,7 +230,16 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
 }
 
 void GenericDrawable::updateShader() {
-  Mn::UnsignedInt lightCount = lightSetup_->size();
+  const Mn::UnsignedInt lightCount = lightSetup_->size();
+  const Mn::UnsignedInt jointCount =
+      skinData_ ? skinData_->skinData->skin->joints().size() : 0;
+  const Mn::UnsignedInt perVertexJointCount =
+      skinData_ ? skinData_->skinData->perVertexJointCount : 0;
+
+  if (skinData_) {
+    Corrade::Containers::arrayResize(
+        jointTransformations_, skinData_->skinData->skin->joints().size());
+  }
 
   if (!shader_ || shader_->lightCount() != lightCount ||
       shader_->flags() != flags_) {
@@ -201,15 +247,17 @@ void GenericDrawable::updateShader() {
     // compatible shader
     shader_ =
         shaderManager_.get<Mn::GL::AbstractShaderProgram, Mn::Shaders::PhongGL>(
-            getShaderKey(lightCount, flags_));
+            getShaderKey(lightCount, flags_, jointCount));
 
     // if no shader with desired number of lights and flags exists, create one
     if (!shader_) {
       shaderManager_.set<Mn::GL::AbstractShaderProgram>(
           shader_.key(),
-          new Mn::Shaders::PhongGL{Mn::Shaders::PhongGL::Configuration{}
-                                       .setFlags(flags_)
-                                       .setLightCount(lightCount)},
+          new Mn::Shaders::PhongGL{
+              Mn::Shaders::PhongGL::Configuration{}
+                  .setFlags(flags_)
+                  .setLightCount(lightCount)
+                  .setJointCount(jointCount, perVertexJointCount)},
           Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
     }
 
@@ -220,10 +268,12 @@ void GenericDrawable::updateShader() {
 
 Mn::ResourceKey GenericDrawable::getShaderKey(
     Mn::UnsignedInt lightCount,
-    Mn::Shaders::PhongGL::Flags flags) const {
+    Mn::Shaders::PhongGL::Flags flags,
+    Mn::UnsignedInt jointCount) const {
   return Corrade::Utility::formatString(
       SHADER_KEY_TEMPLATE, lightCount,
-      static_cast<Mn::Shaders::PhongGL::Flags::UnderlyingType>(flags));
+      static_cast<Mn::Shaders::PhongGL::Flags::UnderlyingType>(flags),
+      jointCount);
 }
 
 }  // namespace gfx

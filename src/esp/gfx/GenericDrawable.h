@@ -6,28 +6,33 @@
 #define ESP_GFX_GENERICDRAWABLE_H_
 
 #include <Magnum/Shaders/PhongGL.h>
+#include <memory>
 
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/ShaderManager.h"
 
 namespace esp {
 namespace gfx {
+struct InstanceSkinData;
 
 class GenericDrawable : public Drawable {
  public:
   //! Create a GenericDrawable for the given object using shader and mesh.
   //! Adds drawable to given group and uses provided texture, and
   //! color for textured buffer and color shader output respectively
-  explicit GenericDrawable(scene::SceneNode& node,
-                           Magnum::GL::Mesh* mesh,
-                           Drawable::Flags& meshAttributeFlags,
-                           ShaderManager& shaderManager,
-                           const Magnum::ResourceKey& lightSetupKey,
-                           const Magnum::ResourceKey& materialDataKey,
-                           DrawableGroup* group = nullptr);
+  explicit GenericDrawable(
+      scene::SceneNode& node,
+      Magnum::GL::Mesh* mesh,
+      Drawable::Flags& meshAttributeFlags,
+      ShaderManager& shaderManager,
+      const Magnum::ResourceKey& lightSetupKey,
+      const Magnum::ResourceKey& materialDataKey,
+      DrawableGroup* group = nullptr,
+      const std::shared_ptr<InstanceSkinData>& skinData = nullptr);
 
   void setLightSetup(const Magnum::ResourceKey& lightSetupKey) override;
-  static constexpr const char* SHADER_KEY_TEMPLATE = "Phong-lights={}-flags={}";
+  static constexpr const char* SHADER_KEY_TEMPLATE =
+      "Phong-lights={}-flags={}-joints={}";
 
  protected:
   void draw(const Magnum::Matrix4& transformationMatrix,
@@ -39,7 +44,8 @@ class GenericDrawable : public Drawable {
       Magnum::SceneGraph::Camera3D& camera);
 
   Magnum::ResourceKey getShaderKey(Magnum::UnsignedInt lightCount,
-                                   Magnum::Shaders::PhongGL::Flags flags) const;
+                                   Magnum::Shaders::PhongGL::Flags flags,
+                                   Mn::UnsignedInt jointCount) const;
 
   // shader parameters
   ShaderManager& shaderManager_;
@@ -47,8 +53,9 @@ class GenericDrawable : public Drawable {
       shader_;
   Magnum::Resource<MaterialData, PhongMaterialData> materialData_;
   Magnum::Resource<LightSetup> lightSetup_;
-
   Magnum::Shaders::PhongGL::Flags flags_;
+  std::shared_ptr<InstanceSkinData> skinData_;
+  Cr::Containers::Array<Mn::Matrix4> jointTransformations_;
 };
 
 }  // namespace gfx

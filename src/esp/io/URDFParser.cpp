@@ -11,6 +11,7 @@
 #include <Magnum/Math/Quaternion.h>
 #include <iostream>
 
+#include "Corrade/Containers/Containers.h"
 #include "URDFParser.h"
 #include "esp/core/Logging.h"
 #include "esp/io/Json.h"
@@ -125,10 +126,48 @@ bool Model::loadJsonAttributes(const std::string& filename) {
   // convert doc to const Json Generic val
   const io::JsonGenericValue jsonConfig = docConfig->GetObject();
 
+  // check for render asset
+  const char* attrRenderAsset = "render_asset";
+  const char* attrDebugRenderPrimitives = "debug_render_primitives";
+
+  bool hasRenderAsset = false;
+  if (jsonConfig.HasMember(attrRenderAsset)) {
+    if (!jsonConfig[attrRenderAsset].IsString()) {
+      ESP_WARNING() << "<Model> : Json Config file specifies a render_asset "
+                       "attribute but "
+                       "it is not a string. Skipping render_asset config load.";
+      return false;
+    } else {
+      const std::string renderAssetRelativePath{
+          jsonConfig[attrRenderAsset].GetString()};
+      // render_asset path is relative to the urdf path.
+      auto fileDir = CrUt::Path::split(filename).first();
+      auto renderAssetPath = CrUt::Path::join(fileDir, renderAssetRelativePath);
+      if (!CrUt::Path::exists(renderAssetPath)) {
+        ESP_WARNING() << "<Model> : render_asset defined in \"" << jsonName
+                      << "\" could not be found. The path is relative to the "
+                         "ao_config.json file.";
+      }
+      m_renderAsset = std::string(renderAssetPath.data());
+      hasRenderAsset = true;
+    }
+  }
+  if (jsonConfig.HasMember(attrDebugRenderPrimitives)) {
+    if (!jsonConfig[attrDebugRenderPrimitives].IsBool()) {
+      ESP_WARNING()
+          << "<Model> : Json Config file specifies debug_render_primitives "
+             "attribute but it is not a bool. Skipping debug_render_primitives "
+             "config load.";
+      return false;
+    } else {
+      m_debugRenderPrimitives = jsonConfig[attrDebugRenderPrimitives].GetBool();
+    }
+  }
+
+  // check for user defined attributes and verify it is an object
   const std::string subGroupName = "user_defined";
   const char* sg_cstr = subGroupName.c_str();
 
-  // check for user defined attributes and verify it is an object
   if (jsonConfig.HasMember(sg_cstr)) {
     if (!jsonConfig[sg_cstr].IsObject()) {
       ESP_WARNING()
@@ -153,8 +192,12 @@ bool Model::loadJsonAttributes(const std::string& filename) {
 
     return (numConfigSettings > 0);
   }  // if has user_defined tag
-  ESP_WARNING() << "<Model> : Json Config file exists but \"" << subGroupName
-                << "\" tag not found within file.";
+
+  if (!hasRenderAsset) {
+    ESP_WARNING() << "<Model> : Json Config file exists but \"" << subGroupName
+                  << "\" and \"" << attrRenderAsset
+                  << "\" tags not found within file.";
+  }
   return false;
 }  // Model::loadJsonAttributes
 

@@ -1,0 +1,107 @@
+<?xml version="1.0" ?>
+<robot name="skinned_prism">
+  <material name="mat">
+    <color rgba="1.0 1.0 1.0 1.0"/>
+  </material>
+
+  <link name="A">
+    <visual>
+      <material name="mat"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.05 0.05 0.05"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.05 0.05 0.05"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="B">
+    <visual>
+      <material name="mat"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.05 0.05 0.05"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.05 0.05 0.05"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="C">
+    <visual>
+      <material name="mat"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.05 0.05 0.05"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.05 0.05 0.05"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="D">
+    <visual>
+      <material name="mat"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.05 0.05 0.05"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.05 0.05 0.05"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="E">
+    <visual>
+      <material name="mat"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.05 0.05 0.05"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.05 0.05 0.05"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="B" type="spherical">
+    <parent link="A"/>
+    <child link="B"/>
+    <origin xyz="0 0 1.5" rpy="0 0 0"/>
+  </joint>
+  <joint name="C" type="spherical">
+    <parent link="B"/>
+    <child link="C"/>
+    <origin xyz="0 0 3" rpy="0 0 0"/>
+  </joint>
+  <joint name="D" type="spherical">
+    <parent link="C"/>
+    <child link="D"/>
+    <origin xyz="0 0 4.5" rpy="0 0 0"/>
+  </joint>
+  <joint name="E" type="spherical">
+    <parent link="D"/>
+    <child link="E"/>
+    <origin xyz="0 0 6" rpy="0 0 0"/>
+  </joint>
+</robot>
