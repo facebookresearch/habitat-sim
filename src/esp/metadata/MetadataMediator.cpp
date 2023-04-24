@@ -386,8 +386,7 @@ MetadataMediator::getSceneInstanceUserConfiguration(
     ESP_ERROR() << "No dataset specified/exists.  Aborting.";
     return nullptr;
   }
-  // directory to look for attributes for this dataset
-  const std::string dsDir = datasetAttr->getFileDirectory();
+
   // get scene instance attribute manager
   managers::SceneInstanceAttributesManager::ptr dsSceneAttrMgr =
       datasetAttr->getSceneInstanceAttributesManager();
@@ -395,7 +394,8 @@ MetadataMediator::getSceneInstanceUserConfiguration(
   attributes::SceneInstanceAttributes::ptr sceneInstanceAttributes = nullptr;
   // get list of scene attributes handles that contain sceneName as a substring
   auto sceneList = dsSceneAttrMgr->getObjectHandlesBySubstring(curSceneName);
-  // sceneName can legally match any one of the following conditions :
+  // returned list of scene names must not be empty, otherwise display error
+  // message and return nullptr
   if (!sceneList.empty()) {
     // Scene instance exists with given name, registered SceneInstanceAttributes
     // in current active dataset.
