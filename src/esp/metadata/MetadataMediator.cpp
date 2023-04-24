@@ -376,6 +376,19 @@ MetadataMediator::makeSceneAndReferenceStage(
   return sceneInstanceAttributes;
 }  // MetadataMediator::makeSceneAndReferenceStage
 
+std::shared_ptr<esp::core::config::Configuration>
+MetadataMediator::getSceneInstanceUserConfiguration(
+    const std::string& curSceneName) {
+  auto curScene = getSceneInstanceAttributesByName(curSceneName);
+  if (curScene == nullptr) {
+    ESP_ERROR() << "No scene instance specified/exists with name"
+                << curSceneName << ", so Aborting.";
+    return nullptr;
+  }
+  return curScene->getUserConfiguration();
+
+}  // MetadataMediator::getSceneInstanceUserConfiguration
+
 std::string MetadataMediator::getFilePathForHandle(
     const std::string& assetHandle,
     const std::map<std::string, std::string>& assetMapping,
