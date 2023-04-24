@@ -2428,6 +2428,17 @@ def correct_object_orientations(
         mm.object_template_manager.register_template(obj_template)
 
 
+def write_failure_ids(
+    failures: List[Tuple[int, str, str]], filename="failures_out.txt"
+) -> None:
+    """
+    Write handles from failure tuples to file for use as exclusion or for follow-up investigation.
+    """
+    with open(filename, "w") as file:
+        for f in failures:
+            file.write(f[1])
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Automate collision shape creation and validation."
@@ -2444,6 +2455,18 @@ def main():
         "--all-rec-objects",
         action="store_true",
         help="Optimize all objects in the dataset with receptacles.",
+    )
+    parser.add_argument(
+        "--start-ix",
+        default=-1,
+        type=int,
+        help="If optimizing all assets, provide a start index.",
+    )
+    parser.add_argument(
+        "--end-ix",
+        default=-1,
+        type=int,
+        help="If optimizing all assets, provide an end index.",
     )
     parser.add_argument(
         "--exclude",
@@ -2480,6 +2503,14 @@ def main():
         help="one or more coacd thresholds [0-1] (lower is more detailed) to search. If not provided, default are [0.04, 0.01].",
     )
     args = parser.parse_args()
+
+    if not args.all_rec_objects:
+        assert (
+            args.start_ix == -1
+        ), "Can only provide start index for all objects optimization."
+        assert (
+            args.end_ix == -1
+        ), "Can only provide end index for all objects optimization."
 
     param_range_overrides = None
     if args.coacd_thresholds:
@@ -2560,23 +2591,35 @@ def main():
 
         # optimize the objects
         results = []
-        obj_counter = 0
-        for obj_h in object_handles:
+        failures = []
+        start = args.start_ix if args.start_ix >= 0 else 0
+        end = args.end_ix if args.end_ix >= 0 else len(object_handles)
+        assert end >= start, f"Start index ({start}) is lower than end index ({end})."
+        for obj_ix in range(start, end):
+            obj_h = object_handles[obj_ix]
             print("+++++++++++++++++++++++++")
             print("+++++++++++++++++++++++++")
-            print(f"Optimizing '{obj_h}' : {obj_counter} of {len(object_handles)}")
+            print(f"Optimizing '{obj_h}' : {obj_ix} of {len(object_handles)}")
             print("+++++++++++++++++++++++++")
-            results.append(
-                cpo.optimize_object_col_shape(
-                    obj_h, method="coacd", param_range_override=param_range_overrides
+            try:
+                results.append(
+                    cpo.optimize_object_col_shape(
+                        obj_h,
+                        method="coacd",
+                        param_range_override=param_range_overrides,
+                    )
                 )
-            )
-            obj_counter += 1
+            except Exception as err:
+                failures.append((obj_ix, obj_h, err))
 
         # display results
         print("Object Optimization Results:")
         for obj_h, obj_result in zip(object_handles, results):
             print(f"    {obj_h}: {obj_result}")
+        print("Failures:")
+        for f in failures:
+            print(f" {f}")
+        write_failure_ids(failures)
     # ----------------------------------------------------
 
     # ----------------------------------------------------
