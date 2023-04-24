@@ -545,126 +545,134 @@ class HabitatSimInteractiveViewer(Application):
         if self.contact_debug_draw:
             self.draw_contact_debug()
         if self.receptacles is not None and self.display_receptacles:
-            if self.rec_filter_data is None:
-                self.compute_rec_filter_state(
-                    access_threshold=self.rec_access_filter_threshold
-                )
-            for receptacle in self.receptacles:
-                rec_unique_name = self.get_rec_instance_name(receptacle)
-                # filter all non-active receptacles
-                if (
-                    not self.show_filtered
-                    and rec_unique_name not in self.rec_filter_data["active"]
-                ):
-                    continue
+            if not self.cpo_initialized:
+                for receptacle in self.receptacles:
+                    receptacle.debug_draw(self.sim)
+            else:
+                if self.rec_filter_data is None:
+                    self.compute_rec_filter_state(
+                        access_threshold=self.rec_access_filter_threshold
+                    )
+                for receptacle in self.receptacles:
+                    rec_unique_name = self.get_rec_instance_name(receptacle)
+                    # filter all non-active receptacles
+                    if (
+                        not self.show_filtered
+                        and rec_unique_name not in self.rec_filter_data["active"]
+                    ):
+                        continue
 
-                rec_dat = self._cpo.gt_data[self.rec_to_poh[receptacle]]["receptacles"][
-                    receptacle.name
-                ]
+                    rec_dat = self._cpo.gt_data[self.rec_to_poh[receptacle]][
+                        "receptacles"
+                    ][receptacle.name]
 
-                r_trans = receptacle.get_global_transform(self.sim)
-                # display point samples for selected object
-                if (
-                    self.display_selected_stability_samples
-                    and self.selected_object is not None
-                    and self.selected_object.handle == receptacle.parent_object_handle
-                ):
-                    # display colored circles for stability samples on the selected object
-                    point_metric_dat = rec_dat["shape_id_results"]["gt"][
-                        "access_results"
-                    ]["receptacle_point_access_scores"]
-                    if self.rec_color_mode == RecColorMode.GT_STABILITY:
+                    r_trans = receptacle.get_global_transform(self.sim)
+                    # display point samples for selected object
+                    if (
+                        self.display_selected_stability_samples
+                        and self.selected_object is not None
+                        and self.selected_object.handle
+                        == receptacle.parent_object_handle
+                    ):
+                        # display colored circles for stability samples on the selected object
                         point_metric_dat = rec_dat["shape_id_results"]["gt"][
-                            "stability_results"
-                        ]["point_stabilities"]
-                    elif self.rec_color_mode == RecColorMode.PR_STABILITY:
-                        point_metric_dat = rec_dat["shape_id_results"]["pr0"][
-                            "stability_results"
-                        ]["point_stabilities"]
-                    elif self.rec_color_mode == RecColorMode.PR_ACCESS:
-                        point_metric_dat = rec_dat["shape_id_results"]["pr0"][
                             "access_results"
                         ]["receptacle_point_access_scores"]
+                        if self.rec_color_mode == RecColorMode.GT_STABILITY:
+                            point_metric_dat = rec_dat["shape_id_results"]["gt"][
+                                "stability_results"
+                            ]["point_stabilities"]
+                        elif self.rec_color_mode == RecColorMode.PR_STABILITY:
+                            point_metric_dat = rec_dat["shape_id_results"]["pr0"][
+                                "stability_results"
+                            ]["point_stabilities"]
+                        elif self.rec_color_mode == RecColorMode.PR_ACCESS:
+                            point_metric_dat = rec_dat["shape_id_results"]["pr0"][
+                                "access_results"
+                            ]["receptacle_point_access_scores"]
 
-                    for point_metric, point in zip(
-                        point_metric_dat,
-                        rec_dat["sample_points"],
-                    ):
-                        self.sim.get_debug_line_render().draw_circle(
-                            translation=r_trans.transform_point(point),
-                            radius=0.02,
-                            normal=mn.Vector3(0, 1, 0),
-                            color=rg_lerp.at(point_metric),
-                            num_segments=12,
-                        )
-                r_pos = r_trans.translation
-                c_pos = self.render_camera.node.absolute_translation
-                c_to_r = r_pos - c_pos
-                # only display receptacles within 4 meters
-                if c_to_r.length() < 4:
-                    c_forward = self.render_camera.node.absolute_transformation().transform_vector(
-                        mn.Vector3(0, 0, -1)
-                    )
-                    # only display receptacles centered in view
-                    if mn.math.dot((c_to_r).normalized(), c_forward) > 0.7:
-                        # handle coloring
-                        rec_color = None
-                        if self.selected_rec == receptacle:
-                            # white
-                            rec_color = mn.Color4.cyan()
-                        elif (
-                            self.cpo_initialized
-                            and self.rec_color_mode != RecColorMode.DEFAULT
+                        for point_metric, point in zip(
+                            point_metric_dat,
+                            rec_dat["sample_points"],
                         ):
-                            if self.rec_color_mode == RecColorMode.GT_STABILITY:
-                                rec_color = rg_lerp.at(
-                                    rec_dat["shape_id_results"]["gt"][
-                                        "stability_results"
-                                    ]["success_ratio"]
-                                )
-                            elif self.rec_color_mode == RecColorMode.GT_ACCESS:
-                                rec_color = rg_lerp.at(
-                                    rec_dat["shape_id_results"]["gt"]["access_results"][
-                                        "receptacle_access_score"
-                                    ]
-                                )
-                            elif self.rec_color_mode == RecColorMode.PR_STABILITY:
-                                rec_color = rg_lerp.at(
-                                    rec_dat["shape_id_results"]["pr0"][
-                                        "stability_results"
-                                    ]["success_ratio"]
-                                )
-                            elif self.rec_color_mode == RecColorMode.PR_ACCESS:
-                                rec_color = rg_lerp.at(
-                                    rec_dat["shape_id_results"]["pr0"][
-                                        "access_results"
-                                    ]["receptacle_access_score"]
-                                )
-                            elif self.rec_color_mode == RecColorMode.FILTERING:
-                                if rec_unique_name in self.rec_filter_data["active"]:
-                                    rec_color = mn.Color4.green()
-                                elif (
-                                    rec_unique_name
-                                    in self.rec_filter_data["manually_filtered"]
-                                ):
-                                    rec_color = mn.Color4.yellow()
-                                elif (
-                                    rec_unique_name
-                                    in self.rec_filter_data["access_filtered"]
-                                ):
-                                    rec_color = mn.Color4.red()
-                                elif (
-                                    rec_unique_name
-                                    in self.rec_filter_data["stability_filtered"]
-                                ):
-                                    rec_color = mn.Color4.magenta()
-                                elif (
-                                    rec_unique_name
-                                    in self.rec_filter_data["height_filtered"]
-                                ):
-                                    rec_color = mn.Color4.blue()
+                            self.sim.get_debug_line_render().draw_circle(
+                                translation=r_trans.transform_point(point),
+                                radius=0.02,
+                                normal=mn.Vector3(0, 1, 0),
+                                color=rg_lerp.at(point_metric),
+                                num_segments=12,
+                            )
+                    r_pos = r_trans.translation
+                    c_pos = self.render_camera.node.absolute_translation
+                    c_to_r = r_pos - c_pos
+                    # only display receptacles within 4 meters
+                    if c_to_r.length() < 4:
+                        c_forward = self.render_camera.node.absolute_transformation().transform_vector(
+                            mn.Vector3(0, 0, -1)
+                        )
+                        # only display receptacles centered in view
+                        if mn.math.dot((c_to_r).normalized(), c_forward) > 0.7:
+                            # handle coloring
+                            rec_color = None
+                            if self.selected_rec == receptacle:
+                                # white
+                                rec_color = mn.Color4.cyan()
+                            elif (
+                                self.cpo_initialized
+                                and self.rec_color_mode != RecColorMode.DEFAULT
+                            ):
+                                if self.rec_color_mode == RecColorMode.GT_STABILITY:
+                                    rec_color = rg_lerp.at(
+                                        rec_dat["shape_id_results"]["gt"][
+                                            "stability_results"
+                                        ]["success_ratio"]
+                                    )
+                                elif self.rec_color_mode == RecColorMode.GT_ACCESS:
+                                    rec_color = rg_lerp.at(
+                                        rec_dat["shape_id_results"]["gt"][
+                                            "access_results"
+                                        ]["receptacle_access_score"]
+                                    )
+                                elif self.rec_color_mode == RecColorMode.PR_STABILITY:
+                                    rec_color = rg_lerp.at(
+                                        rec_dat["shape_id_results"]["pr0"][
+                                            "stability_results"
+                                        ]["success_ratio"]
+                                    )
+                                elif self.rec_color_mode == RecColorMode.PR_ACCESS:
+                                    rec_color = rg_lerp.at(
+                                        rec_dat["shape_id_results"]["pr0"][
+                                            "access_results"
+                                        ]["receptacle_access_score"]
+                                    )
+                                elif self.rec_color_mode == RecColorMode.FILTERING:
+                                    if (
+                                        rec_unique_name
+                                        in self.rec_filter_data["active"]
+                                    ):
+                                        rec_color = mn.Color4.green()
+                                    elif (
+                                        rec_unique_name
+                                        in self.rec_filter_data["manually_filtered"]
+                                    ):
+                                        rec_color = mn.Color4.yellow()
+                                    elif (
+                                        rec_unique_name
+                                        in self.rec_filter_data["access_filtered"]
+                                    ):
+                                        rec_color = mn.Color4.red()
+                                    elif (
+                                        rec_unique_name
+                                        in self.rec_filter_data["stability_filtered"]
+                                    ):
+                                        rec_color = mn.Color4.magenta()
+                                    elif (
+                                        rec_unique_name
+                                        in self.rec_filter_data["height_filtered"]
+                                    ):
+                                        rec_color = mn.Color4.blue()
 
-                        receptacle.debug_draw(self.sim, color=rec_color)
+                            receptacle.debug_draw(self.sim, color=rec_color)
 
         # mouse raycast circle
         white = mn.Color4(mn.Vector3(1.0), 1.0)
