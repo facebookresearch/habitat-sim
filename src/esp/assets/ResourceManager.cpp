@@ -1896,7 +1896,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
     instanceSkinData = std::make_shared<gfx::InstanceSkinData>(skinData);
     mapSkinnedModelToArticulatedObject(meshMetaData.root, creation.rig,
                                        instanceSkinData);
-    ESP_CHECK(instanceSkinData->rootJointId != ID_UNDEFINED,
+    ESP_CHECK(instanceSkinData->rootArticulatedObjectNode,
               "Could not map skinned model to articulated object.");
   }
 
@@ -2918,7 +2918,7 @@ void ResourceManager::mapSkinnedModelToArticulatedObject(
     int jointId = jointIt->second;
 
     // Find articulated object link ID that matches the node
-    const auto& linkIds = rig->getLinkIdsWithBase();
+    const auto linkIds = rig->getLinkIdsWithBase();
     const auto linkId =
         std::find_if(linkIds.begin(), linkIds.end(),
                      [&](int i) { return gfxBoneName == rig->getLinkName(i); });
@@ -2926,19 +2926,14 @@ void ResourceManager::mapSkinnedModelToArticulatedObject(
     // Map the articulated object link associated with the skin joint
     if (linkId != linkIds.end()) {
       auto* articulatedObjectNode = &rig->getLink(*linkId.base()).node();
-      skinData->jointIdToArticulatedObjectNode[jointId] = articulatedObjectNode;
 
       // This node will be used for rendering.
       auto& transformNode = articulatedObjectNode->createChild();
-
-      // Mapping
       skinData->jointIdToTransformNode[jointId] = &transformNode;
-      skinData->localTransforms[jointId] =
-          meshTransformNode.transformFromLocalToParent;
 
       // First node found is the root
-      if (skinData->rootJointId == ID_UNDEFINED) {
-        skinData->rootJointId = jointId;
+      if (!skinData->rootArticulatedObjectNode) {
+        skinData->rootArticulatedObjectNode = articulatedObjectNode;
       }
     }
   }

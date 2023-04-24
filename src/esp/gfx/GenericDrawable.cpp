@@ -10,6 +10,8 @@
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix3.h>
 
+#include "Corrade/Containers/GrowableArray.h"
+#include "Magnum/Types.h"
 #include "esp/core/Check.h"
 #include "esp/gfx/SkinData.h"
 #include "esp/scene/SceneNode.h"
@@ -193,8 +195,6 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
     // Gather joint transformations
     const auto& skin = skinData_->skinData->skin;
     const auto& transformNodes = skinData_->jointIdToTransformNode;
-    auto& jointIdToArticulatedObjectNodes =
-        skinData_->jointIdToArticulatedObjectNode;
 
     ESP_CHECK(jointTransformations_.size() == skin->joints().size(),
               "Joint transformation count doesn't match bone count.");
@@ -202,11 +202,9 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
     // Undo root node transform so that the model origin matches the root
     // articulated object link.
     const auto invRootTransform =
-        jointIdToArticulatedObjectNodes[skinData_->rootJointId]
-            ->absoluteTransformationMatrix()
+        skinData_->rootArticulatedObjectNode->absoluteTransformationMatrix()
             .inverted();
 
-    auto lastTransform = Mn::Matrix4{Magnum::Math::IdentityInit};
     for (std::size_t i = 0; i != jointTransformations_.size(); ++i) {
       const auto jointNodeIt = transformNodes.find(skin->joints()[i]);
       if (jointNodeIt != transformNodes.end()) {
@@ -214,10 +212,9 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
             invRootTransform *
             jointNodeIt->second->absoluteTransformationMatrix() *
             skin->inverseBindMatrices()[i];
-        lastTransform = jointTransformations_[i];
       } else {
-        // Joint not found - use last transform.
-        jointTransformations_[i] = lastTransform;
+        // Joint not found, use placeholder matrix.
+        jointTransformations_[i] = Mn::Matrix4{Magnum::Math::IdentityInit};
       }
     }
     shader_->setJointMatrices(jointTransformations_);
@@ -240,8 +237,8 @@ void GenericDrawable::updateShader() {
       skinData_ ? skinData_->skinData->perVertexJointCount : 0;
 
   if (skinData_) {
-    jointTransformations_ = Cr::Containers::Array<Mn::Matrix4>{
-        Cr::NoInit, skinData_->skinData->skin->joints().size()};
+    Corrade::Containers::arrayResize(
+        jointTransformations_, skinData_->skinData->skin->joints().size());
   }
 
   if (!shader_ || shader_->lightCount() != lightCount ||
@@ -250,7 +247,7 @@ void GenericDrawable::updateShader() {
     // compatible shader
     shader_ =
         shaderManager_.get<Mn::GL::AbstractShaderProgram, Mn::Shaders::PhongGL>(
-            getShaderKey(lightCount, flags_));
+            getShaderKey(lightCount, flags_, jointCount));
 
     // if no shader with desired number of lights and flags exists, create one
     if (!shader_) {
@@ -271,10 +268,12 @@ void GenericDrawable::updateShader() {
 
 Mn::ResourceKey GenericDrawable::getShaderKey(
     Mn::UnsignedInt lightCount,
-    Mn::Shaders::PhongGL::Flags flags) const {
+    Mn::Shaders::PhongGL::Flags flags,
+    Mn::UnsignedInt jointCount) const {
   return Corrade::Utility::formatString(
       SHADER_KEY_TEMPLATE, lightCount,
-      static_cast<Mn::Shaders::PhongGL::Flags::UnderlyingType>(flags));
+      static_cast<Mn::Shaders::PhongGL::Flags::UnderlyingType>(flags),
+      jointCount);
 }
 
 }  // namespace gfx

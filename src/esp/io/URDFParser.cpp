@@ -11,6 +11,7 @@
 #include <Magnum/Math/Quaternion.h>
 #include <iostream>
 
+#include "Corrade/Containers/Containers.h"
 #include "URDFParser.h"
 #include "esp/core/Logging.h"
 #include "esp/io/Json.h"
@@ -137,9 +138,17 @@ bool Model::loadJsonAttributes(const std::string& filename) {
                        "it is not a string. Skipping render_asset config load.";
       return false;
     } else {
-      const std::string renderAssetPath{
+      const std::string renderAssetRelativePath{
           jsonConfig[attrRenderAsset].GetString()};
-      m_renderAsset = renderAssetPath;
+      // render_asset path is relative to the urdf path.
+      auto fileDir = CrUt::Path::split(filename).first();
+      auto renderAssetPath = CrUt::Path::join(fileDir, renderAssetRelativePath);
+      if (!CrUt::Path::exists(renderAssetPath)) {
+        ESP_WARNING() << "<Model> : render_asset defined in \"" << jsonName
+                      << "\" could not be found. The path is relative to the "
+                         "ao_config.json file.";
+      }
+      m_renderAsset = std::string(renderAssetPath.data());
       hasRenderAsset = true;
     }
   }

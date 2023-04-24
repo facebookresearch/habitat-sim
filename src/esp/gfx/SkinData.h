@@ -1,4 +1,9 @@
-#pragma once
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
+#ifndef ESP_GFX_SKINDATA_H_
+#define ESP_GFX_SKINDATA_H_
 
 #include <Magnum/Magnum.h>
 #include <Magnum/Trade/SkinData.h>
@@ -28,20 +33,17 @@ struct SkinData {
  */
 struct InstanceSkinData {
   /** @brief Pointer to loaded skin data for the instance. */
-  const std::shared_ptr<SkinData>& skinData;
-  /** @brief Map between skin joint IDs and articulated object nodes. */
-  std::unordered_map<int, const scene::SceneNode*>
-      jointIdToArticulatedObjectNode{};
+  const std::shared_ptr<SkinData>& skinData = nullptr;
+  /** @brief Root articulated object node. */
+  scene::SceneNode* rootArticulatedObjectNode = nullptr;
   /** @brief Map between skin joint IDs and scaled articulated object transform
    * nodes. */
   std::unordered_map<int, const scene::SceneNode*> jointIdToTransformNode{};
-  /** @brief Skin joint ID of the root node. */
-  int rootJointId{ID_UNDEFINED};
-
-  std::unordered_map<int, Magnum::Matrix4> localTransforms;
 
   explicit InstanceSkinData(const std::shared_ptr<SkinData>& skinData)
       : skinData(skinData){};
 };
 }  // namespace gfx
 }  // namespace esp
+
+#endif

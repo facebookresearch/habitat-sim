@@ -31,7 +31,8 @@ class GenericDrawable : public Drawable {
       const std::shared_ptr<InstanceSkinData>& skinData = nullptr);
 
   void setLightSetup(const Magnum::ResourceKey& lightSetupKey) override;
-  static constexpr const char* SHADER_KEY_TEMPLATE = "Phong-lights={}-flags={}";
+  static constexpr const char* SHADER_KEY_TEMPLATE =
+      "Phong-lights={}-flags={}-joints={}";
 
  protected:
   void draw(const Magnum::Matrix4& transformationMatrix,
@@ -43,7 +44,8 @@ class GenericDrawable : public Drawable {
       Magnum::SceneGraph::Camera3D& camera);
 
   Magnum::ResourceKey getShaderKey(Magnum::UnsignedInt lightCount,
-                                   Magnum::Shaders::PhongGL::Flags flags) const;
+                                   Magnum::Shaders::PhongGL::Flags flags,
+                                   Mn::UnsignedInt jointCount) const;
 
   // shader parameters
   ShaderManager& shaderManager_;
