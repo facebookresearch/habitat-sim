@@ -379,13 +379,40 @@ MetadataMediator::makeSceneAndReferenceStage(
 std::shared_ptr<esp::core::config::Configuration>
 MetadataMediator::getSceneInstanceUserConfiguration(
     const std::string& curSceneName) {
-  auto curScene = getSceneInstanceAttributesByName(curSceneName);
-  if (curScene == nullptr) {
+  // get current dataset attributes
+  attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
+  // this should never happen
+  if (datasetAttr == nullptr) {
+    ESP_ERROR() << "No dataset specified/exists.  Aborting.";
+    return nullptr;
+  }
+  // directory to look for attributes for this dataset
+  const std::string dsDir = datasetAttr->getFileDirectory();
+  // get scene instance attribute manager
+  managers::SceneInstanceAttributesManager::ptr dsSceneAttrMgr =
+      datasetAttr->getSceneInstanceAttributesManager();
+
+  attributes::SceneInstanceAttributes::ptr sceneInstanceAttributes = nullptr;
+  // get list of scene attributes handles that contain sceneName as a substring
+  auto sceneList = dsSceneAttrMgr->getObjectHandlesBySubstring(curSceneName);
+  // sceneName can legally match any one of the following conditions :
+  if (!sceneList.empty()) {
+    // Scene instance exists with given name, registered SceneInstanceAttributes
+    // in current active dataset.
+    //    In this case the SceneInstanceAttributes is returned.
+    ESP_DEBUG() << "Query dataset :" << activeSceneDataset_
+                << "for SceneInstanceAttributes named :" << curSceneName
+                << "yields" << sceneList.size() << "candidates.  Using"
+                << sceneList[0] << Mn::Debug::nospace << ".";
+    sceneInstanceAttributes =
+        dsSceneAttrMgr->getObjectCopyByHandle(sceneList[0]);
+  } else {
     ESP_ERROR() << "No scene instance specified/exists with name"
                 << curSceneName << ", so Aborting.";
     return nullptr;
   }
-  return curScene->getUserConfiguration();
+
+  return sceneInstanceAttributes->getUserConfiguration();
 
 }  // MetadataMediator::getSceneInstanceUserConfiguration
 
