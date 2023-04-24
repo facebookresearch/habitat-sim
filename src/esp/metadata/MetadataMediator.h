@@ -424,7 +424,7 @@ class MetadataMediator {
   /**
    * @brief Return the root-level user defined attributes configuration for the
    * specified scene instance.
-   * @param sceneName The scene name in the currently loaded
+   * @param sceneName The scene name in the currently loaded SceneDataset.
    * @return The scene instance user-defined configuration.
    */
   std::shared_ptr<esp::core::config::Configuration>
