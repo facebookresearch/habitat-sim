@@ -13,10 +13,13 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/PixelFormat.h>
 #include <string>
+#include <vector>
 
+#include "esp/assets/Asset.h"
 #include "esp/assets/ResourceManager.h"
 #include "esp/metadata/MetadataMediator.h"
 #include "esp/physics/RigidObject.h"
+#include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/sensor/CameraSensor.h"
 #include "esp/sim/Simulator.h"
@@ -135,9 +138,10 @@ struct SimTest : Cr::TestSuite::Tester {
   void buildingPrimAssetObjectTemplates();
   void addObjectByHandle();
   void addObjectInvertedScale();
-
   void addSensorToObject();
   void createMagnumRenderingOff();
+  void getRuntimePerfStats();
+  void testArticulatedObjectSkinned();
 
   esp::logging::LoggingContext loggingContext_;
   // TODO: remove outlier pixels from image and lower maxThreshold
@@ -181,7 +185,12 @@ SimTest::SimTest() {
             &SimTest::addObjectByHandle,
             &SimTest::addObjectInvertedScale,
             &SimTest::addSensorToObject}, Cr::Containers::arraySize(SimulatorBuilder) );
-  addTests({&SimTest::createMagnumRenderingOff});
+  addTests({
+    &SimTest::createMagnumRenderingOff,
+    &SimTest::getRuntimePerfStats});
+#ifdef ESP_BUILD_WITH_BULLET
+  addTests({&SimTest::testArticulatedObjectSkinned});
+#endif
   // clang-format on
 }
 void SimTest::basic() {
@@ -661,7 +670,7 @@ void SimTest::buildingPrimAssetObjectTemplates() {
 
     CORRADE_COMPARE_AS(newHandle, origCylinderHandle,
                        Cr::TestSuite::Compare::NotEqual);
-    // set bogus file directory, to validate that copy is reggistered
+    // set bogus file directory, to validate that copy is registered
     primAttr->setFileDirectory("test0");
     // register new attributes
     int idx = assetAttribsMgr->registerObject(primAttr);
@@ -1011,6 +1020,119 @@ void SimTest::createMagnumRenderingOff() {
   CORRADE_VERIFY(!cameraSensor.getObservation(*simulator, observation));
 }
 
+void SimTest::getRuntimePerfStats() {
+  // create a simulator
+  SimulatorConfiguration simConfig{};
+  simConfig.activeSceneName = vangogh;
+  simConfig.enablePhysics = true;
+  simConfig.physicsConfigFile = physicsConfigFile;
+  simConfig.overrideSceneLightDefaults = true;
+  auto simulator = Simulator::create_unique(simConfig);
+
+  auto statNames = simulator->getRuntimePerfStatNames();
+
+  constexpr auto numRigidIdx = 0;
+  constexpr auto drawCountIdx = 5;
+  constexpr auto drawFacesIdx = 6;
+  CORRADE_COMPARE(statNames[numRigidIdx], "num rigid");
+  CORRADE_COMPARE(statNames[drawCountIdx], "num drawables");
+  CORRADE_COMPARE(statNames[drawFacesIdx], "num faces");
+
+  auto statValues = simulator->getRuntimePerfStatValues();
+
+  CORRADE_COMPARE(statValues[numRigidIdx], 0);
+  // magic numbers here correspond to the contents of the vangogh 3D asset
+  CORRADE_COMPARE(statValues[drawCountIdx], 15);
+  CORRADE_COMPARE(statValues[drawFacesIdx], 11272);
+
+  {
+    auto objAttrMgr = simulator->getObjectAttributesManager();
+    objAttrMgr->loadAllJSONConfigsFromPath(
+        Cr::Utility::Path::join(TEST_ASSETS, "objects/nested_box"), true);
+    auto rigidObjMgr = simulator->getRigidObjectManager();
+    auto objs = objAttrMgr->getObjectHandlesBySubstring("nested_box");
+    rigidObjMgr->addObjectByHandle(objs[0]);
+  }
+
+  statNames = simulator->getRuntimePerfStatNames();
+  statValues = simulator->getRuntimePerfStatValues();
+
+  CORRADE_COMPARE(statValues[numRigidIdx], 1);
+  // magic numbers here correspond to the contents of the vangogh and nested_box
+  // 3D assets
+  CORRADE_COMPARE(statValues[drawCountIdx], 17);
+  CORRADE_COMPARE(statValues[drawFacesIdx], 11296);
+
+  simConfig.activeSceneName = esp::assets::EMPTY_SCENE;
+  simulator->reconfigure(simConfig);
+
+  statValues = simulator->getRuntimePerfStatValues();
+
+  CORRADE_COMPARE(statValues[numRigidIdx], 0);
+  CORRADE_COMPARE(statValues[drawCountIdx], 0);
+  CORRADE_COMPARE(statValues[drawFacesIdx], 0);
+}
+
 }  // namespace
+
+void SimTest::testArticulatedObjectSkinned() {
+  ESP_DEBUG() << "Starting Test : testArticulatedObjectSkinned";
+
+  const std::string urdfFile =
+      Cr::Utility::Path::join(TEST_ASSETS, "urdf/skinned_prism.urdf");
+
+  // create a simulator
+  SimulatorConfiguration simConfig{};
+  simConfig.activeSceneName = "";
+  simConfig.enablePhysics = true;
+  simConfig.physicsConfigFile = physicsConfigFile;
+  simConfig.createRenderer = true;
+  auto simulator = Simulator::create_unique(simConfig);
+  auto aoManager = simulator->getArticulatedObjectManager();
+
+  CORRADE_COMPARE(aoManager->getNumObjects(), 0);
+  auto ao = aoManager->addArticulatedObjectFromURDF(urdfFile);
+  CORRADE_COMPARE(aoManager->getNumObjects(), 1);
+
+  CORRADE_VERIFY(ao);
+  CORRADE_COMPARE(ao->getNumLinks(), 4);
+
+  const auto linkIds = ao->getLinkIdsWithBase();
+
+  auto linkA = ao->getLink(linkIds[0]);
+  CORRADE_VERIFY(linkA->linkName == "A");
+  auto linkB = ao->getLink(linkIds[1]);
+  CORRADE_VERIFY(linkB->linkName == "B");
+  auto linkC = ao->getLink(linkIds[2]);
+  CORRADE_VERIFY(linkC->linkName == "C");
+  auto linkD = ao->getLink(linkIds[3]);
+  CORRADE_VERIFY(linkD->linkName == "D");
+  auto linkE = ao->getLink(linkIds[4]);
+  CORRADE_VERIFY(linkE->linkName == "E");
+
+  ao->setTranslation({1.f, -3.f, -6.f});
+
+  checkPinholeCameraRGBAObservation(
+      *simulator, "SimTestSkinnedAOInitialPose.png", maxThreshold, 0.71f);
+
+  const auto rot = Mn::Quaternion::rotation(
+      Mn::Deg(25.f), Mn::Vector3(0.f, 1.f, 0.f).normalized());
+  std::vector<float> jointPos{};
+  for (int i = 0; i < 4; ++i) {
+    const auto rotData = rot.data();
+    jointPos.push_back(rotData[0]);  // x
+    jointPos.push_back(rotData[1]);  // y
+    jointPos.push_back(rotData[2]);  // z
+    jointPos.push_back(rotData[3]);  // w
+  }
+  ao->setJointPositions(jointPos);
+
+  checkPinholeCameraRGBAObservation(*simulator, "SimTestSkinnedAOPose.png",
+                                    maxThreshold, 0.71f);
+
+  aoManager->removeAllObjects();
+  CORRADE_COMPARE(aoManager->getNumObjects(), 0);
+
+}  // SimTest::testArticulatedObjectSkinned
 
 CORRADE_TEST_MAIN(SimTest)

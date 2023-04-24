@@ -209,7 +209,7 @@ class BulletPhysicsManager : public PhysicsManager {
 
   /** @brief Get the current coefficient of restitution for the stage
    * collision geometry. This determines the ratio of initial to final relative
-   * velocity between the stage and collidiing object. See @ref
+   * velocity between the stage and colliding object. See @ref
    * staticStageObject_ and BulletRigidObject::getRestitutionCoefficient.
    * @return The scalar coefficient of restitution for the stage geometry.
    */

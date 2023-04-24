@@ -21,6 +21,10 @@
 
 namespace esp {
 
+namespace core {
+class Configuration;
+}
+
 namespace sim {
 struct SimulatorConfiguration;
 }
@@ -416,6 +420,15 @@ class MetadataMediator {
    * @return Comma-separated string of data describing the desired dataset.
    */
   std::string createDatasetReport(const std::string& sceneDataset = "") const;
+
+  /**
+   * @brief Return the root-level user defined attributes configuration for the
+   * specified scene instance.
+   * @param sceneName The scene name in the currently loaded SceneDataset.
+   * @return The scene instance user-defined configuration.
+   */
+  std::shared_ptr<esp::core::config::Configuration>
+  getSceneInstanceUserConfiguration(const std::string& curSceneName);
 
  protected:
   /**

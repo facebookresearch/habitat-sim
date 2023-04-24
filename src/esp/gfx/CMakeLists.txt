@@ -14,6 +14,7 @@ set(
   DrawableGroup.h
   GenericDrawable.cpp
   GenericDrawable.h
+  SkinData.h
   MeshVisualizerDrawable.cpp
   MeshVisualizerDrawable.h
   LightSetup.cpp

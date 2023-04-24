@@ -454,7 +454,7 @@ void MetadataMediatorTest::testDataset1() {
   ESP_WARNING() << "Starting testDataset1 : test LoadStages";
   const auto& stageAttributesMgr = MM_->getStageAttributesManager();
   int numStageHandles = stageAttributesMgr->getNumObjects();
-  // shoudld be 6 : one for default NONE stage, glob lookup yields 2 stages +
+  // should be 6 : one for default NONE stage, glob lookup yields 2 stages +
   // 2 modified and 1 new stage in scene dataset config
   CORRADE_COMPARE(numStageHandles, 6);
   // end test LoadStages
@@ -493,16 +493,16 @@ void MetadataMediatorTest::testDataset1() {
   ESP_WARNING() << "Starting test LoadArticulatedObjects";
 
   namespace Dir = Cr::Utility::Path;
-  // verify # of urdf filepaths loaded - should be 6;
+  // verify # of urdf filepaths loaded - should be 7;
   const std::map<std::string, std::string>& urdfTestFilenames =
       MM_->getArticulatedObjectModelFilenames();
-  CORRADE_COMPARE(urdfTestFilenames.size(), 6);
+  CORRADE_COMPARE(urdfTestFilenames.size(), 7);
   // test that each stub name key corresponds to the actual file name passed
   // through the key making process
   for (std::map<std::string, std::string>::const_iterator iter =
            urdfTestFilenames.begin();
        iter != urdfTestFilenames.end(); ++iter) {
-    // TODO replace when model intherits from AbstractManagedObject and
+    // TODO replace when model inherits from AbstractManagedObject and
     // instances proper key synth methods.
     const std::string shortHandle =
         Dir::splitExtension(
@@ -553,7 +553,7 @@ void MetadataMediatorTest::testDatasetDelete() {
   // verify not nullptr
   CORRADE_VERIFY(stageAttrMgr_DS1);
 
-  // load datsaet 0 and make active
+  // load dataset 0 and make active
   initDataset0();
   // get new active dataset
   const std::string nameDS0 = MM_->getActiveSceneDatasetName();
