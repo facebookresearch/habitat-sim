@@ -25,6 +25,7 @@
 #include <Magnum/GL/TextureFormat.h>
 #include <Magnum/Image.h>
 #include <Magnum/ImageView.h>
+#include <Magnum/MaterialTools/Merge.h>
 #include <Magnum/Math/FunctionsBatch.h>
 #include <Magnum/Math/Range.h>
 #include <Magnum/Math/Tags.h>
@@ -726,15 +727,20 @@ esp::geo::CoordinateFrame ResourceManager::buildFrameFromAttributes(
 
 std::string ResourceManager::createColorMaterial(
     const esp::assets::PhongMaterialColor& materialColor) {
-  std::ostringstream matHandleStream;
-  matHandleStream << "phong_amb_" << materialColor.ambientColor.toSrgbAlphaInt()
-                  << "_dif_" << materialColor.diffuseColor.toSrgbAlphaInt()
-                  << "_spec_" << materialColor.specularColor.toSrgbAlphaInt();
-  std::string newMaterialID = matHandleStream.str();
+  std::string newMaterialID =
+      Cr::Utility::formatString("phong_amb_{}_dif_{}_spec_{}",
+                                materialColor.ambientColor.toSrgbAlphaInt(),
+                                materialColor.diffuseColor.toSrgbAlphaInt(),
+                                materialColor.specularColor.toSrgbAlphaInt());
+
   auto materialResource = shaderManager_.get<gfx::MaterialData>(newMaterialID);
+
   if (materialResource.state() == Mn::ResourceState::NotLoadedFallback) {
     gfx::PhongMaterialData::uptr phongMaterial =
         gfx::PhongMaterialData::create_unique();
+
+    // material todo here;
+
     phongMaterial->ambientColor = materialColor.ambientColor;
     // NOTE: This multiplication is a hack to roughly balance the Phong and PBR
     // light intensity reactions.
@@ -1284,12 +1290,22 @@ void ResourceManager::buildPrimitiveAssetData(
   MeshMetaData meshMetaData{meshStart, meshEnd};
 
   meshes_.emplace(meshStart, std::move(primMeshData));
+  meshMetaData.root.materialID = std::to_string(nextMaterialID_++);
 
   // default material for now
   std::unique_ptr<gfx::PhongMaterialData> phongMaterial =
       gfx::PhongMaterialData::create_unique();
 
-  meshMetaData.root.materialID = std::to_string(nextMaterialID_++);
+  // material todo here;
+  // Default phong settings
+  // Magnum::Float shininess = 80.f;
+  // Magnum::Color4 ambientColor{0.1};
+  // // NOTE: This multiplication is a hack to roughly balance the Phong and
+  // PBR
+  // // light intensity reactions.
+  // Magnum::Color4 diffuseColor{0.7 * 0.175};
+  // Magnum::Color4 specularColor{0.2 * 0.175};
+
   shaderManager_.set(meshMetaData.root.materialID,
                      static_cast<gfx::MaterialData*>(phongMaterial.release()));
   meshMetaData.root.meshIDLocal = 0;
@@ -1995,6 +2011,9 @@ bool ResourceManager::buildTrajectoryVisualization(
 
   // default material for now
   auto phongMaterial = gfx::PhongMaterialData::create_unique();
+
+  // material todo here;
+
   phongMaterial->specularColor = {1.0, 1.0, 1.0, 1.0};
   phongMaterial->shininess = 160.f;
   phongMaterial->ambientColor = {1.0, 1.0, 1.0, 1.0};
@@ -2142,6 +2161,7 @@ void ResourceManager::loadMaterials(Importer& importer,
     // TODO: Verify this is correct process for building individual materials
     // for each semantic int texture.
     for (int iMaterial = 0; iMaterial < numMaterials; ++iMaterial) {
+      std::string materialKey = std::to_string(nextMaterialID_++);
       Cr::Containers::Optional<Mn::Trade::MaterialData> materialData =
           importer.material(iMaterial);
 
@@ -2151,6 +2171,7 @@ void ResourceManager::loadMaterials(Importer& importer,
                     << ".";
         continue;
       }
+
       // Semantic texture-based
       std::unique_ptr<gfx::PhongMaterialData> finalMaterial =
           gfx::PhongMaterialData::create_unique();
@@ -2163,16 +2184,31 @@ void ResourceManager::loadMaterials(Importer& importer,
       finalMaterial->shaderTypeSpec =
           static_cast<int>(ObjectInstanceShaderType::Flat);
       // has texture-based semantic annotations
-      finalMaterial->textureObjectId = true;
+      finalMaterial->hasObjectIdTexture = true;
       // get semantic int texture
       finalMaterial->objectIdTexture =
           textures_.at(textureBaseIndex + iMaterial).get();
 
-      shaderManager_.set<gfx::MaterialData>(std::to_string(nextMaterialID_++),
+      shaderManager_.set<gfx::MaterialData>(materialKey,
                                             finalMaterial.release());
+
+      // material todo here;
+
+      // // Set up custom attributes
+      // Mn::Trade::MaterialData newMaterialData{
+      //     materialData->types(),
+      //     {{"objectIdTexture",
+      //       textures_.at(textureBaseIndex + iMaterial).get()}}};
+      // // Merge in existing material data attributes
+      // Mn::MaterialTools::merge(newMaterialData, *materialData);
+      // // Assign to shaderManager @ materialKey
+      // shaderManager_.set<Mn::Trade::MaterialData>(materialKey,
+      //                                             std::move(newMaterialData));
     }
   } else {
     for (int iMaterial = 0; iMaterial < numMaterials; ++iMaterial) {
+      std::string materialKey = std::to_string(nextMaterialID_++);
+
       // TODO:
       // it seems we have a way to just load the material once in this case,
       // as long as the materialName includes the full path to the material
@@ -2185,10 +2221,14 @@ void ResourceManager::loadMaterials(Importer& importer,
                     << ".";
         continue;
       }
+      // // get source attributes from original material
+      // Cr::Containers::Array<Mn::Trade::MaterialAttributeData> newAttributes;
+      // newAttributes = Mn::MaterialTools::merge(newAttributes, *materialData);
 
-      std::unique_ptr<gfx::MaterialData> finalMaterial;
-      std::string debugStr =
-          Cr::Utility::formatString("Idx {:.02d}:", iMaterial);
+      // get layer count
+      auto layerCount = materialData->layerCount();
+      std::string debugStr = Cr::Utility::formatString(
+          "Idx {:.02d} has {:.02} layers:", iMaterial, layerCount);
 
       int textureBaseIndex = loadedAssetData.meshMetaData.textureIndex.first;
       // If we are not using the material's native shadertype, or flat (Which
@@ -2204,6 +2244,12 @@ void ResourceManager::loadMaterials(Importer& importer,
             metadata::attributes::getShaderTypeName(shaderTypeToUse));
         materialData = esp::gfx::createUniversalMaterial(*materialData);
       }
+      // Cr::Containers::Array<Mn::Trade::MaterialAttributeData> newAttributes;
+      // // get source attributes from original material
+      // arrayAppend(newAttributes, materialData->attributeData());
+      // // append new attributes
+
+      std::unique_ptr<gfx::MaterialData> finalMaterial;
 
       // pbr shader spec, of material-specified and material specifies pbr
       if (checkForPassedShaderType(
@@ -2238,11 +2284,14 @@ void ResourceManager::loadMaterials(Importer& importer,
                 metadata::attributes::getShaderTypeName(shaderTypeToUse),
                 iMaterial, assetName));
       }
+
       ESP_DEBUG() << debugStr;
       // for now, just use unique ID for material key. This may change if we
       // expose materials to user for post-load modification
-      shaderManager_.set(std::to_string(nextMaterialID_++),
-                         finalMaterial.release());
+      shaderManager_.set(materialKey, finalMaterial.release());
+
+      // shaderManager_.set<Mn::Trade::MaterialData>(
+      //     materialKey, std::move(*materialData));
     }
   }
 }  // ResourceManager::loadMaterials

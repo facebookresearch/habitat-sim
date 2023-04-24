@@ -43,8 +43,7 @@ GenericDrawable::GenericDrawable(
      actually textured -- it's an error otherwise */
   if (materialData_->textureMatrix != Mn::Matrix3{} &&
       (materialData_->ambientTexture || materialData_->diffuseTexture ||
-       materialData_->specularTexture || materialData_->specularTexture ||
-       materialData_->textureObjectId)) {
+       materialData_->specularTexture || materialData_->hasObjectIdTexture)) {
     flags_ |= Mn::Shaders::PhongGL::Flag::TextureTransformation;
   }
   if (materialData_->ambientTexture) {
@@ -71,7 +70,7 @@ GenericDrawable::GenericDrawable(
   if (materialData_->perVertexObjectId) {
     flags_ |= Mn::Shaders::PhongGL::Flag::InstancedObjectId;
   }
-  if (materialData_->textureObjectId) {
+  if (materialData_->hasObjectIdTexture) {
     flags_ |= Mn::Shaders::PhongGL::Flag::ObjectIdTexture;
   }
   if (meshAttributeFlags & Drawable::Flag::HasVertexColor) {
@@ -161,11 +160,12 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
       // e.g., semantic mesh has its own per vertex annotation, which has been
       // uploaded to GPU so simply pass 0 to the uniform "objectId" in the
       // fragment shader
-      .setObjectId(
-          static_cast<RenderCamera&>(camera).useDrawableIds() ? drawableId_
-          : (materialData_->perVertexObjectId || materialData_->textureObjectId)
-              ? 0
-              : node_.getSemanticId())
+      .setObjectId(static_cast<RenderCamera&>(camera).useDrawableIds()
+                       ? drawableId_
+                   : (materialData_->perVertexObjectId ||
+                      materialData_->hasObjectIdTexture)
+                       ? 0
+                       : node_.getSemanticId())
       .setTransformationMatrix(transformationMatrix)
       .setProjectionMatrix(camera.projectionMatrix())
       .setNormalMatrix(normalMatrix);

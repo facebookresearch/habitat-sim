@@ -33,7 +33,7 @@ struct MaterialData {
   bool perVertexObjectId = false;
 
   // This denotes a material with texture-based annotations
-  bool textureObjectId = false;
+  bool hasObjectIdTexture = false;
 
   // This references the texture of ObjectID values
   Magnum::GL::Texture2D* objectIdTexture = nullptr;
