@@ -386,12 +386,9 @@ MetadataMediator::getSceneInstanceUserConfiguration(
     ESP_ERROR() << "No dataset specified/exists.  Aborting.";
     return nullptr;
   }
-
   // get scene instance attribute manager
   managers::SceneInstanceAttributesManager::ptr dsSceneAttrMgr =
       datasetAttr->getSceneInstanceAttributesManager();
-
-  attributes::SceneInstanceAttributes::ptr sceneInstanceAttributes = nullptr;
   // get list of scene attributes handles that contain sceneName as a substring
   auto sceneList = dsSceneAttrMgr->getObjectHandlesBySubstring(curSceneName);
   // returned list of scene names must not be empty, otherwise display error
@@ -404,15 +401,12 @@ MetadataMediator::getSceneInstanceUserConfiguration(
                 << "for SceneInstanceAttributes named :" << curSceneName
                 << "yields" << sceneList.size() << "candidates.  Using"
                 << sceneList[0] << Mn::Debug::nospace << ".";
-    sceneInstanceAttributes =
-        dsSceneAttrMgr->getObjectCopyByHandle(sceneList[0]);
-  } else {
-    ESP_ERROR() << "No scene instance specified/exists with name"
-                << curSceneName << ", so Aborting.";
-    return nullptr;
+    return dsSceneAttrMgr->getObjectCopyByHandle(sceneList[0])
+        ->getUserConfiguration();
   }
-
-  return sceneInstanceAttributes->getUserConfiguration();
+  ESP_ERROR() << "No scene instance specified/exists with name" << curSceneName
+              << ", so Aborting.";
+  return nullptr;
 
 }  // MetadataMediator::getSceneInstanceUserConfiguration
 
