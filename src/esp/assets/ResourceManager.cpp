@@ -2422,8 +2422,14 @@ void ResourceManager::initDefaultMaterials() {
 
   shaderManager_.set<Mn::Trade::MaterialData>(PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
                                               std::move(vertIdMaterialData));
+
+  auto fallBackMaterial = buildDefaultPhongMaterial();
+  // Set expected user-defined attributes
+  setDefaultMaterialUserAttributes(fallBackMaterial,
+                                   ObjectInstanceShaderType::Phong);
+
   shaderManager_.setFallback<Mn::Trade::MaterialData>(
-      std::move(buildDefaultPhongMaterial()));
+      std::move(fallBackMaterial));
 }  // ResourceManager::initDefaultMaterials
 
 void ResourceManager::loadMaterials(Importer& importer,
