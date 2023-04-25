@@ -90,7 +90,7 @@ bool VisualSensor::getObservationSpace(ObservationSpace& space) {
                  static_cast<size_t>(visualSensorSpec_->resolution[1]),
                  static_cast<size_t>(visualSensorSpec_->channels)};
   space.dataType = core::DataType::DT_UINT8;
-  if (visualSensorSpec_->sensorType == SensorType::Semantic or visualSensorSpec_->sensorType == SensorType::Instance) {
+  if (visualSensorSpec_->sensorType == SensorType::Semantic || visualSensorSpec_->sensorType == SensorType::Instance) {
     space.dataType = core::DataType::DT_UINT32;
   } else if (visualSensorSpec_->sensorType == SensorType::Depth) {
     space.dataType = core::DataType::DT_FLOAT;
@@ -110,7 +110,7 @@ void VisualSensor::readObservation(Observation& obs) {
 
   // TODO: have different classes for the different types of sensors
   // TODO: do we need to flip axis?
-  if (visualSensorSpec_->sensorType == SensorType::Semantic or visualSensorSpec_->sensorType == SensorType::Instance) {
+  if (visualSensorSpec_->sensorType == SensorType::Semantic || visualSensorSpec_->sensorType == SensorType::Instance) {
     renderTarget().readFrameObjectId(Magnum::MutableImageView2D{
         Magnum::PixelFormat::R32UI, renderTarget().framebufferSize(),
         obs.buffer->data});
@@ -189,7 +189,7 @@ VisualSensor::MoveSemanticSensorNodeHelper::MoveSemanticSensorNodeHelper(
 
 VisualSensor::MoveSemanticSensorNodeHelper::~MoveSemanticSensorNodeHelper() {
   CORRADE_INTERNAL_ASSERT(visualSensor_.specification()->sensorType ==
-                          SensorType::Semantic or visualSensor_.specification()->sensorType == SensorType::Instance);
+                          SensorType::Semantic || visualSensor_.specification()->sensorType == SensorType::Instance);
 
   scene::SceneNode& node = visualSensor_.node();
   CORRADE_ASSERT(
