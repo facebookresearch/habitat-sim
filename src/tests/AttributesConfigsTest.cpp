@@ -34,6 +34,7 @@ using Attrs::PhysicsManagerAttributes;
 using Attrs::SceneInstanceAttributes;
 using Attrs::StageAttributes;
 using Attrs::UVSpherePrimitiveAttributes;
+using Mn::Trade::LightData;
 
 namespace {
 
