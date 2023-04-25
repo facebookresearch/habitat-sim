@@ -6,6 +6,7 @@ import ctypes
 import json
 import math
 import os
+import random
 import string
 import sys
 import time
@@ -269,6 +270,23 @@ class HabitatSimInteractiveViewer(Application):
         self.replay_renderer: Optional[ReplayRenderer] = None
         self.reconfigure_sim()
         self.debug_semantic_colors = {}
+
+        self.clutter_object_set = [
+            "002_master_chef_can",
+            "003_cracker_box",
+            "004_sugar_box",
+            "005_tomato_soup_can",
+            "007_tuna_fish_can",
+            "008_pudding_box",
+            "009_gelatin_box",
+            "010_potted_meat_can",
+            "024_bowl",
+        ]
+        self.clutter_object_instances = []
+        # add some clutter objects to the MM
+        self.sim.metadata_mediator.object_template_manager.load_configs(
+            "data/objects/ycb/configs/"
+        )
 
         # compute NavMesh if not already loaded by the scene.
         if (
