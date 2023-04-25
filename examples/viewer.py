@@ -6,6 +6,7 @@ import ctypes
 import json
 import math
 import os
+import random
 import string
 import sys
 import time
@@ -270,6 +271,23 @@ class HabitatSimInteractiveViewer(Application):
         self.replay_renderer_cfg: Optional[ReplayRendererConfiguration] = None
         self.replay_renderer: Optional[ReplayRenderer] = None
         self.reconfigure_sim(mm)
+
+        self.clutter_object_set = [
+            "002_master_chef_can",
+            "003_cracker_box",
+            "004_sugar_box",
+            "005_tomato_soup_can",
+            "007_tuna_fish_can",
+            "008_pudding_box",
+            "009_gelatin_box",
+            "010_potted_meat_can",
+            "024_bowl",
+        ]
+        self.clutter_object_instances = []
+        # add some clutter objects to the MM
+        self.sim.metadata_mediator.object_template_manager.load_configs(
+            "data/objects/ycb/configs/"
+        )
 
         # compute NavMesh if not already loaded by the scene.
         if (
@@ -547,7 +565,11 @@ class HabitatSimInteractiveViewer(Application):
         if self.receptacles is not None and self.display_receptacles:
             if not self.cpo_initialized:
                 for receptacle in self.receptacles:
-                    receptacle.debug_draw(self.sim)
+                    rec_color = None
+                    if self.selected_rec == receptacle:
+                        # white
+                        rec_color = mn.Color4.cyan()
+                    receptacle.debug_draw(self.sim, rec_color)
             else:
                 if self.rec_filter_data is None:
                     self.compute_rec_filter_state(
@@ -1052,6 +1074,57 @@ class HabitatSimInteractiveViewer(Application):
             else:
                 self.show_filtered = not self.show_filtered
                 print(f"self.show_filtered = {self.show_filtered}")
+
+        elif key == pressed.U:
+            rom = self.sim.get_rigid_object_manager()
+            # add objects to the selected receptacle or remove al objects
+            if shift_pressed:
+                # remove all
+                print(f"Removing {len(self.clutter_object_instances)} clutter objects.")
+                for obj in self.clutter_object_instances:
+                    rom.remove_object_by_handle(obj.handle)
+            else:
+                # try to sample an object from the selected object receptacles
+                rec_set = None
+                if self.selected_rec is not None:
+                    rec_set = [self.selected_rec]
+                elif self.selected_object is not None:
+                    rec_set = [
+                        rec
+                        for rec in self.receptacles
+                        if self.selected_object.handle == rec.parent_object_handle
+                    ]
+                if rec_set is not None:
+                    # sample an object on the selected receptacle
+                    candidate_obj_handle = random.choice(self.clutter_object_set)
+                    matching_handles = self.sim.metadata_mediator.object_template_manager.get_template_handles(
+                        candidate_obj_handle
+                    )
+                    assert (
+                        len(matching_handles) > 0
+                    ), f"No matching template for '{candidate_obj_handle}' in the dataset."
+                    from habitat.datasets.rearrange.samplers.object_sampler import (
+                        ObjectSampler,
+                    )
+
+                    rec_set_unique_names = [rec.unique_name for rec in rec_set]
+                    obj_samp = ObjectSampler([matching_handles[0]], ["rec set"])
+                    rec_set_obj = hab_receptacle.ReceptacleSet(
+                        "rec set", [""], [], rec_set_unique_names, []
+                    )
+                    obj_count_dict = {rec.unique_name: 1 for rec in rec_set}
+                    recep_tracker = hab_receptacle.ReceptacleTracker(
+                        obj_count_dict,
+                        {"rec set": rec_set_obj},
+                    )
+                    new_objs = obj_samp.sample(
+                        self.sim, recep_tracker, [], snap_down=True
+                    )
+                    for obj, rec in new_objs:
+                        self.clutter_object_instances.append(obj)
+                        print(f"Sampled '{obj.handle}' in '{rec.unique_name}'")
+                else:
+                    print("No object selected, cannot sample clutter.")
 
         elif key == pressed.O:
             if shift_pressed:
