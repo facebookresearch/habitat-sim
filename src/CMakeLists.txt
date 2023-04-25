@@ -4,8 +4,6 @@
 
 cmake_minimum_required(VERSION 3.12)
 
-set(CMAKE_CUDA_COMPILER "/usr/local/cuda/bin/nvcc")
-
 option(BUILD_WITH_CUDA "Build Habitat-Sim with CUDA features enabled -- Requires CUDA"
        OFF
 )
