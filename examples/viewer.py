@@ -1537,6 +1537,8 @@ Key Commands:
     'o':        Toggle display of collision proxy shapes for the scene.
                 (+SHIFT) Toggle display of original render shapes (and Receptacles).
     't':        CLI for modifying un-bound viewer parameters during runtime.
+    'u':        Sample an object placement from the currently selected object or receptacle.
+                (+SHIFT) Remove all previously sampled objects.
 
 =====================================================
 """

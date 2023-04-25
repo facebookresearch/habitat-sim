@@ -2609,9 +2609,11 @@ def main():
                         param_range_override=param_range_overrides,
                     )
                 )
+                print(
+                    f"Completed optimization of '{obj_h}' : {obj_ix} of {len(object_handles)}"
+                )
             except Exception as err:
                 failures.append((obj_ix, obj_h, err))
-
         # display results
         print("Object Optimization Results:")
         for obj_h, obj_result in zip(object_handles, results):
