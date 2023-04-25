@@ -19,9 +19,6 @@ set(
   MeshVisualizerDrawable.h
   LightSetup.cpp
   LightSetup.h
-  MaterialData.h
-  MaterialUtil.cpp
-  MaterialUtil.h
   magnum.h
   RenderCamera.cpp
   RenderCamera.h

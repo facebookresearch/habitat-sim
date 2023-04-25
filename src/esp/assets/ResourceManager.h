@@ -774,6 +774,43 @@ class ResourceManager {
   void buildPrimitiveAssetData(const std::string& primTemplateHandle);
 
   /**
+   * @brief this will build a Phong @ref Magnum::Trade::MaterialData using
+   * default attributes from deprecated/removed esp::gfx::PhongMaterialData,
+   * if values are not specified.
+   * @param amb The ambient color
+   * @param diff The diffuse color
+   * @param spec The specular color
+   * @param shininess The shininess coefficient/exponent
+   * @return The new phong color
+   */
+  Mn::Trade::MaterialData buildDefaultPhongMaterial(
+      Mn::Color4 amb = Mn::Color4{0.1},
+      Mn::Color4 diff = Mn::Color4{0.7 * 0.175},
+      Mn::Color4 spec = Mn::Color4{0.2 * 0.175},
+      float shininess = 80.0f);
+
+  /**
+   * @brief Define and set the passed @ref Magnum::Trade::MaterialData with the
+   * user-defined attributes that Habitat-Sim expects.
+   * @param material The material to initialize with the expected
+   * Habitat-specific user-defined attributes.
+   * @param shaderTypeToUse What shader to use to render the objects with this
+   * material. May not be the same as the material type.
+   * @param hasVertObjID Whether or not the material has vertex-based object ids
+   * for semantics.
+   * @param hasTxtrObjID Whether or not the material has texture-based object
+   * ids for semantics.
+   * @param txtrIdx The absolute index in the @ref textures_ store for the semantic
+   * annotation texture.
+   */
+  void setDefaultMaterialUserAttributes(
+      Mn::Trade::MaterialData& material,
+      ObjectInstanceShaderType shaderTypeToUse,
+      bool hasVertObjID = false,
+      bool hasTxtrObjID = false,
+      int txtrIdx = -1);
+
+  /**
    * @brief Configure the importerManager_ GL Extensions appropriately based on
    * compilation flags, before any general assets are imported.  This should
    * only occur if a gl context exists.
@@ -975,43 +1012,6 @@ class ResourceManager {
       const Mn::Trade::MaterialData& materialData,
       ObjectInstanceShaderType verificationType,
       Mn::Trade::MaterialType mnVerificationType) const;
-
-  /**
-   * @brief Build a @ref PhongMaterialData for use with flat shading
-   *
-   * Textures must already be loaded for the asset this material belongs to
-   *
-   * @param material Material data with texture IDs
-   * @param textureBaseIndex Base index of the assets textures in textures_
-   */
-  gfx::PhongMaterialData::uptr buildFlatShadedMaterialData(
-      const Mn::Trade::MaterialData& materialData,
-      int textureBaseIndex);
-
-  /**
-   * @brief Build a @ref PhongMaterialData for use with phong shading
-   *
-   * Textures must already be loaded for the asset this material belongs to
-   *
-   * @param material Material data with texture IDs
-   * @param textureBaseIndex Base index of the assets textures in textures_
-
-   */
-  gfx::PhongMaterialData::uptr buildPhongShadedMaterialData(
-      const Mn::Trade::MaterialData& material,
-      int textureBaseIndex) const;
-
-  /**
-   * @brief Build a @ref PbrMaterialData for use with PBR shading
-   *
-   * Textures must already be loaded for the asset this material belongs to
-   *
-   * @param material Material data with texture IDs
-   * @param textureBaseIndex Base index of the assets textures in textures_
-   */
-  gfx::PbrMaterialData::uptr buildPbrShadedMaterialData(
-      const Mn::Trade::MaterialData& material,
-      int textureBaseIndex) const;
 
   /**
    * @brief Load a mesh describing some scene asset based on the passed

@@ -9,6 +9,8 @@
 #include <Magnum/GL/Renderer.h>
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix3.h>
+#include <Magnum/Trade/MaterialData.h>
+#include <Magnum/Trade/PhongMaterialData.h>
 
 #include "Corrade/Containers/GrowableArray.h"
 #include "Magnum/Types.h"
@@ -34,29 +36,31 @@ GenericDrawable::GenericDrawable(
       shaderManager_{shaderManager},
       lightSetup_{shaderManager.get<LightSetup>(lightSetupKey)},
       materialData_{
-          shaderManager.get<MaterialData, PhongMaterialData>(materialDataKey)},
+          shaderManager.get<Mn::Trade::MaterialData,
+                            Mn::Trade::PhongMaterialData>(materialDataKey)},
       skinData_(skinData),
       jointTransformations_() {
   flags_ = Mn::Shaders::PhongGL::Flag::ObjectId;
 
   /* If texture transformation is specified, enable it only if the material is
      actually textured -- it's an error otherwise */
-  if (materialData_->textureMatrix != Mn::Matrix3{} &&
-      (materialData_->ambientTexture || materialData_->diffuseTexture ||
-       materialData_->specularTexture || materialData_->hasObjectIdTexture)) {
+  if (materialData_->commonTextureMatrix() != Mn::Matrix3{} &&
+      (materialData_->ambientTexture() || materialData_->diffuseTexture() ||
+       materialData_->specularTexture() ||
+       materialData_->attribute<bool>("hasObjectIdTexture"))) {
     flags_ |= Mn::Shaders::PhongGL::Flag::TextureTransformation;
   }
-  if (materialData_->ambientTexture) {
+  if (materialData_->ambientTexture()) {
     flags_ |= Mn::Shaders::PhongGL::Flag::AmbientTexture;
   }
-  if (materialData_->diffuseTexture) {
+  if (materialData_->diffuseTexture()) {
     flags_ |= Mn::Shaders::PhongGL::Flag::DiffuseTexture;
   }
-  if (materialData_->specularTexture) {
+  if (materialData_->specularTexture()) {
     flags_ |= Mn::Shaders::PhongGL::Flag::SpecularTexture;
   }
 
-  if (materialData_->normalTexture) {
+  if (materialData_->normalTexture()) {
     if (meshAttributeFlags & Drawable::Flag::HasTangent) {
       flags_ |= Mn::Shaders::PhongGL::Flag::NormalTexture;
       if (meshAttributeFlags & Drawable::Flag::HasSeparateBitangent) {
@@ -67,10 +71,10 @@ GenericDrawable::GenericDrawable(
                        "them yet, ignoring a normal map";
     }
   }
-  if (materialData_->perVertexObjectId) {
+  if (materialData_->attribute<bool>("hasPerVertexObjectId")) {
     flags_ |= Mn::Shaders::PhongGL::Flag::InstancedObjectId;
   }
-  if (materialData_->hasObjectIdTexture) {
+  if (materialData_->attribute<bool>("hasObjectIdTexture")) {
     flags_ |= Mn::Shaders::PhongGL::Flag::ObjectIdTexture;
   }
   if (meshAttributeFlags & Drawable::Flag::HasVertexColor) {
@@ -122,10 +126,10 @@ void GenericDrawable::updateShaderLightingParameters(
 
   // See documentation in src/deps/magnum/src/Magnum/Shaders/Phong.h
   (*shader_)
-      .setAmbientColor(materialData_->ambientColor * ambientLightColor)
-      .setDiffuseColor(materialData_->diffuseColor)
-      .setSpecularColor(materialData_->specularColor)
-      .setShininess(materialData_->shininess)
+      .setAmbientColor(materialData_->ambientColor() * ambientLightColor)
+      .setDiffuseColor(materialData_->diffuseColor())
+      .setSpecularColor(materialData_->specularColor())
+      .setShininess(materialData_->shininess())
       .setLightPositions(lightPositions)
       .setLightColors(lightColors)
       .setLightRanges(lightRanges);
@@ -162,8 +166,8 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
       // fragment shader
       .setObjectId(static_cast<RenderCamera&>(camera).useDrawableIds()
                        ? drawableId_
-                   : (materialData_->perVertexObjectId ||
-                      materialData_->hasObjectIdTexture)
+                   : (materialData_->attribute<bool>("hasPerVertexObjectId") ||
+                      (materialData_->attribute<bool>("hasObjectIdTexture")))
                        ? 0
                        : node_.getSemanticId())
       .setTransformationMatrix(transformationMatrix)
@@ -171,24 +175,29 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
       .setNormalMatrix(normalMatrix);
 
   if ((flags_ & Mn::Shaders::PhongGL::Flag::TextureTransformation) &&
-      materialData_->textureMatrix != Mn::Matrix3{}) {
-    shader_->setTextureMatrix(materialData_->textureMatrix);
+      materialData_->commonTextureMatrix() != Mn::Matrix3{}) {
+    shader_->setTextureMatrix(materialData_->commonTextureMatrix());
   }
 
   if (flags_ & Mn::Shaders::PhongGL::Flag::AmbientTexture) {
-    shader_->bindAmbientTexture(*(materialData_->ambientTexture));
+    shader_->bindAmbientTexture(
+        *(materialData_->attribute<Mn::GL::Texture2D*>("ambientTexture")));
   }
   if (flags_ & Mn::Shaders::PhongGL::Flag::DiffuseTexture) {
-    shader_->bindDiffuseTexture(*(materialData_->diffuseTexture));
+    shader_->bindDiffuseTexture(
+        *(materialData_->attribute<Mn::GL::Texture2D*>("diffuseTexture")));
   }
   if (flags_ & Mn::Shaders::PhongGL::Flag::SpecularTexture) {
-    shader_->bindSpecularTexture(*(materialData_->specularTexture));
+    shader_->bindSpecularTexture(
+        *(materialData_->attribute<Mn::GL::Texture2D*>("specularTexture")));
   }
   if (flags_ & Mn::Shaders::PhongGL::Flag::NormalTexture) {
-    shader_->bindNormalTexture(*(materialData_->normalTexture));
+    shader_->bindNormalTexture(
+        *(materialData_->attribute<Mn::GL::Texture2D*>("normalTexture")));
   }
   if (flags_ >= Mn::Shaders::PhongGL::Flag::ObjectIdTexture) {
-    shader_->bindObjectIdTexture(*(materialData_->objectIdTexture));
+    shader_->bindObjectIdTexture(
+        *(materialData_->attribute<Mn::GL::Texture2D*>("objectIdTexture")));
   }
 
   if (skinData_) {
@@ -214,7 +223,7 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
             skin->inverseBindMatrices()[i];
       } else {
         // Joint not found, use placeholder matrix.
-        jointTransformations_[i] = Mn::Matrix4{Magnum::Math::IdentityInit};
+        jointTransformations_[i] = Mn::Matrix4{Mn::Math::IdentityInit};
       }
     }
     shader_->setJointMatrices(jointTransformations_);

@@ -5,6 +5,7 @@
 #include "ResourceManager.h"
 
 #include <Corrade/Containers/ArrayViewStl.h>
+#include <Corrade/Containers/BitArray.h>
 #include <Corrade/Containers/GrowableArray.h>
 #include <Corrade/Containers/Pair.h>
 #include <Corrade/Containers/PointerStl.h>
@@ -59,7 +60,6 @@
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/geo/Geo.h"
 #include "esp/gfx/GenericDrawable.h"
-#include "esp/gfx/MaterialUtil.h"
 #include "esp/gfx/PbrDrawable.h"
 #include "esp/gfx/SkinData.h"
 #include "esp/gfx/replay/Recorder.h"
@@ -725,34 +725,6 @@ esp::geo::CoordinateFrame ResourceManager::buildFrameFromAttributes(
   }
 }  // ResourceManager::buildFrameFromAttributes
 
-std::string ResourceManager::createColorMaterial(
-    const esp::assets::PhongMaterialColor& materialColor) {
-  std::string newMaterialID =
-      Cr::Utility::formatString("phong_amb_{}_dif_{}_spec_{}",
-                                materialColor.ambientColor.toSrgbAlphaInt(),
-                                materialColor.diffuseColor.toSrgbAlphaInt(),
-                                materialColor.specularColor.toSrgbAlphaInt());
-
-  auto materialResource = shaderManager_.get<gfx::MaterialData>(newMaterialID);
-
-  if (materialResource.state() == Mn::ResourceState::NotLoadedFallback) {
-    gfx::PhongMaterialData::uptr phongMaterial =
-        gfx::PhongMaterialData::create_unique();
-
-    // material todo here;
-
-    phongMaterial->ambientColor = materialColor.ambientColor;
-    // NOTE: This multiplication is a hack to roughly balance the Phong and PBR
-    // light intensity reactions.
-    phongMaterial->diffuseColor = materialColor.diffuseColor * 0.175;
-    phongMaterial->specularColor = materialColor.specularColor * 0.175;
-
-    shaderManager_.set(newMaterialID, static_cast<gfx::MaterialData*>(
-                                          phongMaterial.release()));
-  }
-  return newMaterialID;
-}  // ResourceManager::createColorMaterial
-
 scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
     const AssetInfo& assetInfo,
     const RenderAssetInstanceCreationInfo& creation,
@@ -1293,21 +1265,16 @@ void ResourceManager::buildPrimitiveAssetData(
   meshMetaData.root.materialID = std::to_string(nextMaterialID_++);
 
   // default material for now
-  std::unique_ptr<gfx::PhongMaterialData> phongMaterial =
-      gfx::PhongMaterialData::create_unique();
+  // Populate with defaults from sim's gfx::PhongMaterialData
+  Mn::Trade::MaterialData materialData = buildDefaultPhongMaterial();
 
-  // material todo here;
-  // Default phong settings
-  // Magnum::Float shininess = 80.f;
-  // Magnum::Color4 ambientColor{0.1};
-  // // NOTE: This multiplication is a hack to roughly balance the Phong and
-  // PBR
-  // // light intensity reactions.
-  // Magnum::Color4 diffuseColor{0.7 * 0.175};
-  // Magnum::Color4 specularColor{0.2 * 0.175};
+  // Set expected user-defined attributes
+  setDefaultMaterialUserAttributes(materialData,
+                                   ObjectInstanceShaderType::Phong);
 
-  shaderManager_.set(meshMetaData.root.materialID,
-                     static_cast<gfx::MaterialData*>(phongMaterial.release()));
+  shaderManager_.set<Mn::Trade::MaterialData>(meshMetaData.root.materialID,
+                                              std::move(materialData));
+
   meshMetaData.root.meshIDLocal = 0;
   meshMetaData.root.componentID = 0;
 
@@ -2010,18 +1977,16 @@ bool ResourceManager::buildTrajectoryVisualization(
   meshes_.emplace(meshStart, std::move(visMeshData));
 
   // default material for now
-  auto phongMaterial = gfx::PhongMaterialData::create_unique();
+  // Populate with defaults from sim's gfx::PhongMaterialData
+  Mn::Trade::MaterialData materialData = buildDefaultPhongMaterial(
+      Mn::Color4{1.0}, Mn::Color4{0.7 * 0.175}, Mn::Color4{1.0}, 160.0f);
 
-  // material todo here;
+  // Set expected user-defined attributes
+  setDefaultMaterialUserAttributes(materialData,
+                                   ObjectInstanceShaderType::Phong, true);
 
-  phongMaterial->specularColor = {1.0, 1.0, 1.0, 1.0};
-  phongMaterial->shininess = 160.f;
-  phongMaterial->ambientColor = {1.0, 1.0, 1.0, 1.0};
-  phongMaterial->perVertexObjectId = true;
-
-  meshMetaData.root.materialID = std::to_string(nextMaterialID_++);
-  shaderManager_.set(meshMetaData.root.materialID,
-                     static_cast<gfx::MaterialData*>(phongMaterial.release()));
+  shaderManager_.set<Mn::Trade::MaterialData>(meshMetaData.root.materialID,
+                                              std::move(materialData));
 
   meshMetaData.root.meshIDLocal = 0;
   meshMetaData.root.componentID = 0;
@@ -2140,7 +2105,326 @@ bool compareShaderTypeToMnMatType(const ObjectInstanceShaderType typeToCheck,
   }
 }  // compareShaderTypeToMnMatType
 
+/**
+ * @brief Make sure we do not add an attribute that already exists in source
+ * material - doing this will cause an assertion.
+ * @tparam the type of the value to be added
+ * @param material Source material for new attributes array
+ * @param newAttributes The array of attributes to be used to build a new
+ * Mn::Trade::MaterialData.
+ * @param matAttr The Mn::Trade::MaterialAttribute tag describing the attribute
+ * to add
+ * @param value A reference to the value to add.
+ */
+template <typename T>
+void appendIfNotPresent(
+    const Mn::Trade::MaterialData& material,
+    Cr::Containers::Array<Mn::Trade::MaterialAttributeData>& newAttributes,
+    const MaterialAttribute& matAttr,
+    const T& value) {
+  if (!material.hasAttribute(matAttr)) {
+    arrayAppend(newAttributes, {matAttr, value});
+  }
+}
+
+Mn::Trade::MaterialData createUniversalMaterial(
+    const Mn::Trade::MaterialData& origMaterialData) {
+  // create a material, based on the passed material, that will have reasonable
+  // attributes to support any possible shader type. should only be called if
+  // we are not using the Material's natively specified shaderType
+
+  // NOLINTNEXTLINE(google-build-using-namespace)
+  using namespace Mn::Math::Literals;
+
+  // get source attributes from original material
+  Cr::Containers::Array<Mn::Trade::MaterialAttributeData> newAttributes;
+  arrayAppend(newAttributes, origMaterialData.attributeData());
+
+  const auto origMatTypes = origMaterialData.types();
+  // add appropriate attributes based on what is missing
+  // flat material already recognizes Phong and pbr, so don't have to do
+  // anything
+
+  // multiplicative magic number for scaling from PBR to phong,
+  // hacky method to attempt to balance Phong and PBR light intensity reactions
+  const float magicPhongScaling = 1.5f;
+
+  // whether the MaterialAttribute::TextureMatrix has been set already
+  bool setTexMatrix = false;
+  if (!(origMatTypes & Mn::Trade::MaterialType::Phong)) {
+    // add appropriate values for expected attributes to support Phong from
+    // PbrMetallicRoughnessMaterialData
+
+    const auto& pbrMaterial =
+        origMaterialData.as<Mn::Trade::PbrMetallicRoughnessMaterialData>();
+
+    /////////////////
+    // calculate Phong values from PBR material values
+    ////////////////
+
+    // derive ambient color from pbr baseColor
+    const Mn::Color4 ambientColor = pbrMaterial.baseColor();
+
+    // If there's a roughness texture, we have no way to use it here. The safest
+    // fallback is to assume roughness == 1, thus producing no spec highlights.
+    // If pbrMaterial does not have a roughness value, it returns a 1 by
+    // default.
+    const float roughness =
+        pbrMaterial.hasRoughnessTexture() ? 1.0f : pbrMaterial.roughness();
+
+    // If there's a metalness texture, we have no way to use it here.
+    // The safest fallback is to assume non-metal.
+    const float metalness =
+        pbrMaterial.hasMetalnessTexture() ? 0.0f : pbrMaterial.metalness();
+
+    // Heuristic to map roughness to spec power.
+    // Higher exponent makes the spec highlight larger (lower power)
+    // example calc :
+    // https://www.wolframalpha.com/input/?i=1.1+%2B+%281+-+x%29%5E4.5+*+180.0+for+x+from+0+to+1
+    // lower power for metal
+    const float maxShininess = Mn::Math::lerp(250.0f, 120.0f, metalness);
+    const float shininess =
+        1.1f + Mn::Math::pow(1.0f - roughness, 4.5f) * maxShininess;
+
+    // increase spec intensity for metal
+    // example calc :
+    // https://www.wolframalpha.com/input/?i=1.0+%2B+10*%28x%5E1.7%29++from+0+to+1
+    const float specIntensityScale =
+        (metalness > 0.0f
+             ? (metalness < 1.0f
+                    ? (1.0f + 10.0f * Mn::Math::pow(metalness, 1.7f))
+                    : 11.0f)
+             : 1.0f);
+    // Heuristic to map roughness to spec intensity.
+    // higher exponent decreases intensity.
+    // example calc :
+    // https://www.wolframalpha.com/input/?i=1.4+*+%281-x%29%5E2.5++from+0+to+1
+    const float specIntensity =
+        Mn::Math::pow(1.0f - roughness, 2.5f) * 1.4f * specIntensityScale;
+
+    // NOTE: The magic-number multiplication at the end is a hack to
+    // roughly balance the Phong and PBR light intensity reactions
+    const Mn::Color4 diffuseColor = ambientColor * magicPhongScaling;
+
+    // Set spec base color to white or material base color, depending on
+    // metalness.
+    const Mn::Color4 specBaseColor =
+        (metalness > 0.0f
+             ? (metalness < 1.0f
+                    ? Mn::Math::lerp(0xffffffff_rgbaf, ambientColor,
+                                     Mn::Math::pow(metalness, 0.5f))
+                    : ambientColor)
+             : 0xffffffff_rgbaf);
+    // NOTE: The magic-number multiplication at the end is a hack to
+    // roughly balance the Phong and PBR light intensity reactions
+    const Mn::Color4 specColor =
+        specBaseColor * specIntensity * magicPhongScaling;
+
+    /////////////////
+    // set Phong attributes appropriately from precalculated value
+    ////////////////
+    // normal mapping is already present in copied array if present in
+    // original material.
+
+    // make sure not to re-add values that already exist in array, or
+    // new color creation will assert.
+    appendIfNotPresent(origMaterialData, newAttributes,
+                       MaterialAttribute::Shininess, shininess);
+    appendIfNotPresent(origMaterialData, newAttributes,
+                       MaterialAttribute::AmbientColor, ambientColor);
+    appendIfNotPresent(origMaterialData, newAttributes,
+                       MaterialAttribute::DiffuseColor, diffuseColor);
+    appendIfNotPresent(origMaterialData, newAttributes,
+                       MaterialAttribute::SpecularColor, specColor);
+
+    // texture transforms, if there's none the returned matrix is an
+    // identity only copy if we don't already have TextureMatrix
+    // attribute (if original pbrMaterial does not have that specific
+    // matrix)
+    if (!setTexMatrix &&
+        (!pbrMaterial.hasAttribute(MaterialAttribute::TextureMatrix))) {
+      arrayAppend(newAttributes, {MaterialAttribute::TextureMatrix,
+                                  pbrMaterial.commonTextureMatrix()});
+      setTexMatrix = true;
+    }
+
+    if (pbrMaterial.hasAttribute(MaterialAttribute::BaseColorTexture)) {
+      // only provide texture indices if BaseColorTexture attribute
+      // exists
+      const Mn::UnsignedInt BCTexture = pbrMaterial.baseColorTexture();
+      appendIfNotPresent(origMaterialData, newAttributes,
+                         MaterialAttribute::AmbientTexture, BCTexture);
+      appendIfNotPresent(origMaterialData, newAttributes,
+                         MaterialAttribute::DiffuseTexture, BCTexture);
+      if (metalness >= 0.5) {
+        appendIfNotPresent(origMaterialData, newAttributes,
+                           MaterialAttribute::SpecularTexture, BCTexture);
+      }
+    }
+  }  // if no phong material support exists in material
+
+  if (!(origMatTypes & Mn::Trade::MaterialType::PbrMetallicRoughness)) {
+    // add appropriate values for expected attributes for PbrMetallicRoughness
+    // derived from Phong attributes
+    const auto& phongMaterial =
+        origMaterialData.as<Mn::Trade::PhongMaterialData>();
+
+    /////////////////
+    // calculate PBR values from Phong material values
+    ////////////////
+
+    // derive base color from Phong diffuse or ambient color, depending on which
+    // is present.  set to white if neither is present
+    const Mn::Color4 baseColor = phongMaterial.diffuseColor();
+
+    // Experimental metalness heuristic using saturation of spec color
+    // to derive approximation of metalness
+    const Mn::Color4 specColor = phongMaterial.specularColor();
+
+    // if specColor alpha == 0 then no metalness
+    float metalness = 0.0f;
+    // otherwise, this hacky heuristic will derive a value for metalness based
+    // on how non-grayscale the specular color is (HSV Saturation).
+    if (specColor.a() != 0.0f) {
+      metalness = specColor.saturation();
+    }
+
+    /////////////////
+    // set PbrMetallicRoughness attributes appropriately from precalculated
+    // values
+    ////////////////
+
+    // normal mapping is already present in copied array if present in
+    // original material.
+    appendIfNotPresent(origMaterialData, newAttributes,
+                       MaterialAttribute::BaseColor, baseColor);
+    appendIfNotPresent(origMaterialData, newAttributes,
+                       MaterialAttribute::Metalness, metalness);
+
+    // if diffuse texture is present, use as base color texture in pbr.
+    if (phongMaterial.hasAttribute(MaterialAttribute::DiffuseTexture)) {
+      uint32_t bcTextureVal = phongMaterial.diffuseTexture();
+      appendIfNotPresent(origMaterialData, newAttributes,
+                         MaterialAttribute::BaseColorTexture, bcTextureVal);
+    }
+    // texture transforms, if there's none the returned matrix is an
+    // identity Only copy if we don't already have TextureMatrix attribute
+    // (if original phongMaterial does not have that specific attribute)
+    if (!setTexMatrix &&
+        (!phongMaterial.hasAttribute(MaterialAttribute::TextureMatrix))) {
+      arrayAppend(newAttributes, {MaterialAttribute::TextureMatrix,
+                                  phongMaterial.commonTextureMatrix()});
+      // setTexMatrix = true;
+    }
+
+    // base texture
+
+  }  // if no PbrMetallicRoughness material support exists in material
+
+  // build flags to support all materials
+  constexpr auto flags = Mn::Trade::MaterialType::Flat |
+                         Mn::Trade::MaterialType::Phong |
+                         Mn::Trade::MaterialType::PbrMetallicRoughness;
+
+  // create new material from attributes array
+  Mn::Trade::MaterialData newMaterialData{flags, std::move(newAttributes)};
+
+  return newMaterialData;
+}  // ResourceManager::createUniversalMaterial
+
 }  // namespace
+
+Mn::Trade::MaterialData ResourceManager::buildDefaultPhongMaterial(
+    Mn::Color4 amb,   // = Mn::Color4{0.1},
+    Mn::Color4 diff,  // = Mn::Color4{0.7 * 0.175},
+    Mn::Color4 spec,  // = Mn::Color4{0.2 * 0.175},
+    float shininess /*= 80.0f*/) {
+  Mn::Trade::MaterialData materialData{
+      Mn::Trade::MaterialType::Phong,
+      {{Mn::Trade::MaterialAttribute::AmbientColor, amb},
+       {Mn::Trade::MaterialAttribute::DiffuseColor, diff},
+       {Mn::Trade::MaterialAttribute::SpecularColor, spec},
+       {Mn::Trade::MaterialAttribute::Shininess, shininess}}};
+  return materialData;
+}
+
+void ResourceManager::setDefaultMaterialUserAttributes(
+    Mn::Trade::MaterialData& material,
+    ObjectInstanceShaderType shaderTypeToUse,
+    bool hasVertObjID,
+    bool hasTxtrObjID,
+    int txtrIdx) {
+  // Specify which shader to use to render this material.
+  material.mutableAttribute<int>("shaderTypeToUse") =
+      static_cast<int>(shaderTypeToUse);
+  // Specify this material has per-vertex object id annotations
+  material.mutableAttribute<bool>("hasPerVertexObjectId") = hasVertObjID;
+  // specify this material has texture-based annotations
+  material.mutableAttribute<bool>("hasObjectIdTexture") = hasTxtrObjID;
+  if (hasTxtrObjID) {
+    // specify this material's annotation texture
+    material.mutableAttribute<Mn::GL::Texture2D*>("objectIdTexture") =
+        textures_.at(txtrIdx).get();
+  }
+
+}  // setDefaultMaterialUserAttributes
+
+std::string ResourceManager::createColorMaterial(
+    const esp::assets::PhongMaterialColor& materialColor) {
+  std::string newMaterialID =
+      Cr::Utility::formatString("phong_amb_{}_dif_{}_spec_{}",
+                                materialColor.ambientColor.toSrgbAlphaInt(),
+                                materialColor.diffuseColor.toSrgbAlphaInt(),
+                                materialColor.specularColor.toSrgbAlphaInt());
+
+  auto materialResource =
+      shaderManager_.get<Mn::Trade::MaterialData>(newMaterialID);
+
+  if (materialResource.state() == Mn::ResourceState::NotLoadedFallback) {
+    // Build a new default phong material
+    Mn::Trade::MaterialData materialData = buildDefaultPhongMaterial(
+        materialColor.ambientColor, materialColor.diffuseColor * 0.175,
+        materialColor.specularColor * 0.175);
+    // Set expected user-defined attributes
+    setDefaultMaterialUserAttributes(materialData,
+                                     ObjectInstanceShaderType::Phong);
+    shaderManager_.set<Mn::Trade::MaterialData>(newMaterialID,
+                                                std::move(materialData));
+  }
+  return newMaterialID;
+}  // ResourceManager::createColorMaterial
+
+void ResourceManager::initDefaultMaterials() {
+  // Build default phong color
+  Mn::Trade::MaterialData dfltMaterialData = buildDefaultPhongMaterial();
+
+  // Set expected user-defined attributes
+  setDefaultMaterialUserAttributes(dfltMaterialData,
+                                   ObjectInstanceShaderType::Phong);
+  shaderManager_.set<Mn::Trade::MaterialData>(DEFAULT_MATERIAL_KEY,
+                                              std::move(dfltMaterialData));
+
+  Mn::Trade::MaterialData whiteMaterialData =
+      buildDefaultPhongMaterial(Mn::Color4{1.0});
+
+  // Set expected user-defined attributes
+  setDefaultMaterialUserAttributes(whiteMaterialData,
+                                   ObjectInstanceShaderType::Phong);
+  shaderManager_.set<Mn::Trade::MaterialData>(WHITE_MATERIAL_KEY,
+                                              std::move(whiteMaterialData));
+
+  Mn::Trade::MaterialData vertIdMaterialData =
+      buildDefaultPhongMaterial(Mn::Color4{1.0});
+
+  // Set expected user-defined attributes
+  setDefaultMaterialUserAttributes(vertIdMaterialData,
+                                   ObjectInstanceShaderType::Phong, true);
+
+  shaderManager_.set<Mn::Trade::MaterialData>(PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
+                                              std::move(vertIdMaterialData));
+  shaderManager_.setFallback<Mn::Trade::MaterialData>(
+      std::move(buildDefaultPhongMaterial()));
+}  // ResourceManager::initDefaultMaterials
 
 void ResourceManager::loadMaterials(Importer& importer,
                                     LoadedAssetData& loadedAssetData) {
@@ -2156,12 +2440,14 @@ void ResourceManager::loadMaterials(Importer& importer,
       << "Building " << numMaterials << " materials for asset named '"
       << assetName << "' : ";
 
+  // starting index for all textures corresponding to this material
+  int textureBaseIndex = loadedAssetData.meshMetaData.textureIndex.first;
+
   if (loadedAssetData.assetInfo.hasSemanticTextures) {
-    int textureBaseIndex = loadedAssetData.meshMetaData.textureIndex.first;
-    // TODO: Verify this is correct process for building individual materials
-    // for each semantic int texture.
     for (int iMaterial = 0; iMaterial < numMaterials; ++iMaterial) {
+      // Build material key
       std::string materialKey = std::to_string(nextMaterialID_++);
+      // Retrieving the material just to verify it exists
       Cr::Containers::Optional<Mn::Trade::MaterialData> materialData =
           importer.material(iMaterial);
 
@@ -2171,47 +2457,29 @@ void ResourceManager::loadMaterials(Importer& importer,
                     << ".";
         continue;
       }
-
       // Semantic texture-based
-      std::unique_ptr<gfx::PhongMaterialData> finalMaterial =
-          gfx::PhongMaterialData::create_unique();
 
-      // const auto& material = materialData->as<Mn::Trade::FlatMaterialData>();
+      // Build a phong material for semantics.  TODO: Should this be a
+      // FlatMaterialData? Populate with defaults from deprecated
+      // gfx::PhongMaterialData
 
-      finalMaterial->ambientColor = Mn::Color4{1.0};
-      finalMaterial->diffuseColor = Mn::Color4{};
-      finalMaterial->specularColor = Mn::Color4{};
-      finalMaterial->shaderTypeSpec =
-          static_cast<int>(ObjectInstanceShaderType::Flat);
-      // has texture-based semantic annotations
-      finalMaterial->hasObjectIdTexture = true;
-      // get semantic int texture
-      finalMaterial->objectIdTexture =
-          textures_.at(textureBaseIndex + iMaterial).get();
+      Mn::Trade::MaterialData newMaterialData = buildDefaultPhongMaterial(
+          Mn::Color4{1.0}, Mn::Color4{}, Mn::Color4{});
 
-      shaderManager_.set<gfx::MaterialData>(materialKey,
-                                            finalMaterial.release());
+      // Set expected user-defined attributes - force to use phong shader for
+      // semantics
+      setDefaultMaterialUserAttributes(newMaterialData,
+                                       ObjectInstanceShaderType::Phong, false,
+                                       true, textureBaseIndex + iMaterial);
 
-      // material todo here;
-
-      // // Set up custom attributes
-      // Mn::Trade::MaterialData newMaterialData{
-      //     materialData->types(),
-      //     {{"objectIdTexture",
-      //       textures_.at(textureBaseIndex + iMaterial).get()}}};
-      // // Merge in existing material data attributes
-      // Mn::MaterialTools::merge(newMaterialData, *materialData);
-      // // Assign to shaderManager @ materialKey
-      // shaderManager_.set<Mn::Trade::MaterialData>(materialKey,
-      //                                             std::move(newMaterialData));
+      shaderManager_.set<Mn::Trade::MaterialData>(materialKey,
+                                                  std::move(newMaterialData));
     }
   } else {
     for (int iMaterial = 0; iMaterial < numMaterials; ++iMaterial) {
+      // Build material key
       std::string materialKey = std::to_string(nextMaterialID_++);
 
-      // TODO:
-      // it seems we have a way to just load the material once in this case,
-      // as long as the materialName includes the full path to the material
       Cr::Containers::Optional<Mn::Trade::MaterialData> materialData =
           importer.material(iMaterial);
 
@@ -2221,16 +2489,11 @@ void ResourceManager::loadMaterials(Importer& importer,
                     << ".";
         continue;
       }
-      // // get source attributes from original material
-      // Cr::Containers::Array<Mn::Trade::MaterialAttributeData> newAttributes;
-      // newAttributes = Mn::MaterialTools::merge(newAttributes, *materialData);
 
-      // get layer count
-      auto layerCount = materialData->layerCount();
-      std::string debugStr = Cr::Utility::formatString(
-          "Idx {:.02d} has {:.02} layers:", iMaterial, layerCount);
+      std::string debugStr =
+          Cr::Utility::formatString("Idx {:.02d} has {:.02} layers:", iMaterial,
+                                    materialData->layerCount());
 
-      int textureBaseIndex = loadedAssetData.meshMetaData.textureIndex.first;
       // If we are not using the material's native shadertype, or flat (Which
       // all materials already support), expand the Mn::Trade::MaterialData with
       // appropriate data for all possible shadertypes
@@ -2242,38 +2505,62 @@ void ResourceManager::loadMaterials(Importer& importer,
             "(Expanding existing materialData to support requested shaderType `"
             "{}`) ",
             metadata::attributes::getShaderTypeName(shaderTypeToUse));
-        materialData = esp::gfx::createUniversalMaterial(*materialData);
+        materialData = createUniversalMaterial(*materialData);
       }
-      // Cr::Containers::Array<Mn::Trade::MaterialAttributeData> newAttributes;
-      // // get source attributes from original material
-      // arrayAppend(newAttributes, materialData->attributeData());
-      // // append new attributes
+      // list of all this material's attributes
+      const Cr::Containers::ArrayView<const Mn::Trade::MaterialAttributeData>
+          materialAttributes = materialData->attributeData();
 
-      std::unique_ptr<gfx::MaterialData> finalMaterial;
+      // New material's attributes
+      Cr::Containers::Array<Mn::Trade::MaterialAttributeData> newAttributes;
+      // Add all material texture pointers into new attributes
+      for (const Mn::Trade::MaterialAttributeData& materialAttribute :
+           materialAttributes) {
+        auto matName = materialAttribute.name();
+        const auto matType = materialAttribute.type();
+        // Find textures and add them to newAttributes
+        // bool found = (std::string::npos != key.find(strToLookFor));
+        if ((matType == Mn::Trade::MaterialAttributeType::UnsignedInt) &&
+            matName.contains("Texture") && !matName.contains("Scale")) {
+          // texture index, copy texture pointer into newAttributes
+          const Mn::UnsignedInt txtrIdx =
+              materialAttribute.value<Mn::UnsignedInt>();
+          // copy texture into new attributes tagged with lowercase material
+          // name
+          arrayAppend(newAttributes,
+                      {Cr::Utility::String::lowercase(matName),
+                       textures_.at(textureBaseIndex + txtrIdx).get()});
+        }
+      }
 
+      // Desired shader to use
+      ObjectInstanceShaderType actualShaderUsed =
+          ObjectInstanceShaderType::Phong;
+
+      // Build based on desired shader to use
       // pbr shader spec, of material-specified and material specifies pbr
       if (checkForPassedShaderType(
               shaderTypeToUse, *materialData, ObjectInstanceShaderType::PBR,
               Mn::Trade::MaterialType::PbrMetallicRoughness)) {
         Cr::Utility::formatInto(debugStr, debugStr.size(), "PBR.");
-        finalMaterial =
-            buildPbrShadedMaterialData(*materialData, textureBaseIndex);
+
+        actualShaderUsed = ObjectInstanceShaderType::PBR;
 
         // phong shader spec, of material-specified and material specifies phong
       } else if (checkForPassedShaderType(shaderTypeToUse, *materialData,
                                           ObjectInstanceShaderType::Phong,
                                           Mn::Trade::MaterialType::Phong)) {
         Cr::Utility::formatInto(debugStr, debugStr.size(), "Phong.");
-        finalMaterial =
-            buildPhongShadedMaterialData(*materialData, textureBaseIndex);
 
+        actualShaderUsed = ObjectInstanceShaderType::Phong;
         // flat shader spec or material-specified and material specifies flat
       } else if (checkForPassedShaderType(shaderTypeToUse, *materialData,
                                           ObjectInstanceShaderType::Flat,
                                           Mn::Trade::MaterialType::Flat)) {
         Cr::Utility::formatInto(debugStr, debugStr.size(), "Flat.");
-        finalMaterial =
-            buildFlatShadedMaterialData(*materialData, textureBaseIndex);
+
+        // use phong shader for flat shading
+        actualShaderUsed = ObjectInstanceShaderType::Phong;
 
       } else {
         ESP_CHECK(
@@ -2284,17 +2571,24 @@ void ResourceManager::loadMaterials(Importer& importer,
                 metadata::attributes::getShaderTypeName(shaderTypeToUse),
                 iMaterial, assetName));
       }
+      // Merge all attributes with original material for final material
+      Cr::Containers::Optional<Mn::Trade::MaterialData> finalMaterial =
+          Mn::MaterialTools::merge(
+              *materialData, Mn::Trade::MaterialData{
+                                 {}, Mn::Trade::DataFlags{}, newAttributes});
+
+      // set default, expected user attributes for the final material
+      setDefaultMaterialUserAttributes(*finalMaterial, actualShaderUsed);
 
       ESP_DEBUG() << debugStr;
       // for now, just use unique ID for material key. This may change if we
       // expose materials to user for post-load modification
-      shaderManager_.set(materialKey, finalMaterial.release());
 
-      // shaderManager_.set<Mn::Trade::MaterialData>(
-      //     materialKey, std::move(*materialData));
+      shaderManager_.set<Mn::Trade::MaterialData>(materialKey,
+                                                  std::move(*finalMaterial));
     }
   }
-}  // ResourceManager::loadMaterials
+}  // namespace assets
 
 ObjectInstanceShaderType ResourceManager::getMaterialShaderType(
     const AssetInfo& info) const {
@@ -2327,180 +2621,180 @@ bool ResourceManager::checkForPassedShaderType(
        ((materialData.types() & mnVerificationType) == mnVerificationType)));
 }
 
-gfx::PhongMaterialData::uptr ResourceManager::buildFlatShadedMaterialData(
-    const Mn::Trade::MaterialData& materialData,
-    int textureBaseIndex) {
-  // NOLINTNEXTLINE(google-build-using-namespace)
-  using namespace Mn::Math::Literals;
+// Mn::Trade::MaterialData ResourceManager::buildFlatShadedMaterialData(
+//     const Mn::Trade::MaterialData& materialData,
+//     int textureBaseIndex) {
+//   // NOLINTNEXTLINE(google-build-using-namespace)
+//   using namespace Mn::Math::Literals;
 
-  const auto& material = materialData.as<Mn::Trade::FlatMaterialData>();
+//   const auto& material = materialData.as<Mn::Trade::FlatMaterialData>();
 
-  // To save on shader switching, a Phong shader with zero lights is used for
-  // flat materials
-  auto finalMaterial = gfx::PhongMaterialData::create_unique();
+//   // To save on shader switching, a Phong shader with zero lights is used for
+//   // flat materials
+//   auto finalMaterial = gfx::PhongMaterialData::create_unique();
 
-  // texture transform, if the material has a texture; if there's none the
-  // matrix is an identity
-  // TODO this check shouldn't be needed, remove when this no longer asserts
-  // in magnum for untextured materials
-  if (material.hasTexture()) {
-    finalMaterial->textureMatrix = material.textureMatrix();
-  }
+//   // texture transform, if the material has a texture; if there's none the
+//   // matrix is an identity
+//   // TODO this check shouldn't be needed, remove when this no longer asserts
+//   // in magnum for untextured materials
+//   if (material.hasTexture()) {
+//     finalMaterial->textureMatrix = material.textureMatrix();
+//   }
 
-  finalMaterial->ambientColor = material.color();
-  if (material.hasTexture()) {
-    finalMaterial->ambientTexture =
-        textures_.at(textureBaseIndex + material.texture()).get();
-  }
-  finalMaterial->diffuseColor = 0x00000000_rgbaf;
-  finalMaterial->specularColor = 0x00000000_rgbaf;
+//   finalMaterial->ambientColor = material.color();
+//   if (material.hasTexture()) {
+//     finalMaterial->ambientTexture =
+//         textures_.at(textureBaseIndex + material.texture()).get();
+//   }
+//   finalMaterial->diffuseColor = 0x00000000_rgbaf;
+//   finalMaterial->specularColor = 0x00000000_rgbaf;
 
-  finalMaterial->shaderTypeSpec =
-      static_cast<int>(ObjectInstanceShaderType::Flat);
+//   finalMaterial->shaderTypeSpec =
+//       static_cast<int>(ObjectInstanceShaderType::Flat);
 
-  return finalMaterial;
-}  // ResourceManager::buildFlatShadedMaterialData
+//   return finalMaterial;
+// }  // ResourceManager::buildFlatShadedMaterialData
 
-gfx::PhongMaterialData::uptr ResourceManager::buildPhongShadedMaterialData(
-    const Mn::Trade::MaterialData& materialData,
-    int textureBaseIndex) const {
-  // NOLINTNEXTLINE(google-build-using-namespace)
-  using namespace Mn::Math::Literals;
-  const auto& material = materialData.as<Mn::Trade::PhongMaterialData>();
+// Mn::Trade::MaterialData ResourceManager::buildPhongShadedMaterialData(
+//     const Mn::Trade::MaterialData& materialData,
+//     int textureBaseIndex) const {
+//   // NOLINTNEXTLINE(google-build-using-namespace)
+//   using namespace Mn::Math::Literals;
+//   const auto& material = materialData.as<Mn::Trade::PhongMaterialData>();
 
-  auto finalMaterial = gfx::PhongMaterialData::create_unique();
-  finalMaterial->shininess = material.shininess();
+//   auto finalMaterial = gfx::PhongMaterialData::create_unique();
+//   finalMaterial->shininess = material.shininess();
 
-  // texture transform, if there's none the matrix is an identity
-  finalMaterial->textureMatrix = material.commonTextureMatrix();
+//   // texture transform, if there's none the matrix is an identity
+//   finalMaterial->textureMatrix = material.commonTextureMatrix();
 
-  // ambient material properties
-  finalMaterial->ambientColor = material.ambientColor();
-  if (material.hasAttribute(MaterialAttribute::AmbientTexture)) {
-    finalMaterial->ambientTexture =
-        textures_.at(textureBaseIndex + material.ambientTexture()).get();
-  }
+//   // ambient material properties
+//   finalMaterial->ambientColor = material.ambientColor();
+//   if (material.hasAttribute(MaterialAttribute::AmbientTexture)) {
+//     finalMaterial->ambientTexture =
+//         textures_.at(textureBaseIndex + material.ambientTexture()).get();
+//   }
 
-  // diffuse material properties
-  finalMaterial->diffuseColor = material.diffuseColor();
-  if (material.hasAttribute(MaterialAttribute::DiffuseTexture)) {
-    finalMaterial->diffuseTexture =
-        textures_.at(textureBaseIndex + material.diffuseTexture()).get();
-  }
+//   // diffuse material properties
+//   finalMaterial->diffuseColor = material.diffuseColor();
+//   if (material.hasAttribute(MaterialAttribute::DiffuseTexture)) {
+//     finalMaterial->diffuseTexture =
+//         textures_.at(textureBaseIndex + material.diffuseTexture()).get();
+//   }
 
-  // specular material properties
-  finalMaterial->specularColor = material.specularColor();
-  if (material.hasSpecularTexture()) {
-    finalMaterial->specularTexture =
-        textures_.at(textureBaseIndex + material.specularTexture()).get();
-  }
+//   // specular material properties
+//   finalMaterial->specularColor = material.specularColor();
+//   if (material.hasSpecularTexture()) {
+//     finalMaterial->specularTexture =
+//         textures_.at(textureBaseIndex + material.specularTexture()).get();
+//   }
 
-  // normal mapping
-  if (material.hasAttribute(MaterialAttribute::NormalTexture)) {
-    finalMaterial->normalTexture =
-        textures_.at(textureBaseIndex + material.normalTexture()).get();
-  }
+//   // normal mapping
+//   if (material.hasAttribute(MaterialAttribute::NormalTexture)) {
+//     finalMaterial->normalTexture =
+//         textures_.at(textureBaseIndex + material.normalTexture()).get();
+//   }
 
-  finalMaterial->shaderTypeSpec =
-      static_cast<int>(ObjectInstanceShaderType::Phong);
+//   finalMaterial->shaderTypeSpec =
+//       static_cast<int>(ObjectInstanceShaderType::Phong);
 
-  return finalMaterial;
-}  // ResourceManager::buildPhongShadedMaterialData
+//   return finalMaterial;
+// }  // ResourceManager::buildPhongShadedMaterialData
 
-gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
-    const Mn::Trade::MaterialData& materialData,
-    int textureBaseIndex) const {
-  // NOLINTNEXTLINE(google-build-using-namespace)
-  using namespace Mn::Math::Literals;
-  const auto& material =
-      materialData.as<Mn::Trade::PbrMetallicRoughnessMaterialData>();
+// Mn::Trade::MaterialData ResourceManager::buildPbrShadedMaterialData(
+//     const Mn::Trade::MaterialData& materialData,
+//     int textureBaseIndex) const {
+//   // NOLINTNEXTLINE(google-build-using-namespace)
+//   using namespace Mn::Math::Literals;
+//   const auto& material =
+//       materialData.as<Mn::Trade::PbrMetallicRoughnessMaterialData>();
 
-  auto finalMaterial = gfx::PbrMaterialData::create_unique();
+//   auto finalMaterial = gfx::PbrMaterialData::create_unique();
 
-  // texture transform, if there's none the matrix is an identity
-  finalMaterial->textureMatrix = material.commonTextureMatrix();
+//   // texture transform, if there's none the matrix is an identity
+//   finalMaterial->textureMatrix = material.commonTextureMatrix();
 
-  // base color (albedo)
-  finalMaterial->baseColor = material.baseColor();
-  if (material.hasAttribute(MaterialAttribute::BaseColorTexture)) {
-    finalMaterial->baseColorTexture =
-        textures_.at(textureBaseIndex + material.baseColorTexture()).get();
-  }
+//   // base color (albedo)
+//   finalMaterial->baseColor = material.baseColor();
+//   if (material.hasAttribute(MaterialAttribute::BaseColorTexture)) {
+//     finalMaterial->baseColorTexture =
+//         textures_.at(textureBaseIndex + material.baseColorTexture()).get();
+//   }
 
-  // normal map
-  if (material.hasAttribute(MaterialAttribute::NormalTexture)) {
-    // must be inside the if clause otherwise assertion fails if no normal
-    // texture is presented
-    finalMaterial->normalTextureScale = material.normalTextureScale();
+//   // normal map
+//   if (material.hasAttribute(MaterialAttribute::NormalTexture)) {
+//     // must be inside the if clause otherwise assertion fails if no normal
+//     // texture is presented
+//     finalMaterial->normalTextureScale = material.normalTextureScale();
 
-    finalMaterial->normalTexture =
-        textures_.at(textureBaseIndex + material.normalTexture()).get();
-  }
+//     finalMaterial->normalTexture =
+//         textures_.at(textureBaseIndex + material.normalTexture()).get();
+//   }
 
-  // emission
-  finalMaterial->emissiveColor = material.emissiveColor();
-  if (material.hasAttribute(MaterialAttribute::EmissiveTexture)) {
-    finalMaterial->emissiveTexture =
-        textures_.at(textureBaseIndex + material.emissiveTexture()).get();
-    if (!material.hasAttribute(MaterialAttribute::EmissiveColor)) {
-      finalMaterial->emissiveColor = Mn::Vector3{1.0f};
-    }
-  }
+//   // emission
+//   finalMaterial->emissiveColor = material.emissiveColor();
+//   if (material.hasAttribute(MaterialAttribute::EmissiveTexture)) {
+//     finalMaterial->emissiveTexture =
+//         textures_.at(textureBaseIndex + material.emissiveTexture()).get();
+//     if (!material.hasAttribute(MaterialAttribute::EmissiveColor)) {
+//       finalMaterial->emissiveColor = Mn::Vector3{1.0f};
+//     }
+//   }
 
-  // roughness
-  finalMaterial->roughness = material.roughness();
-  if (material.hasRoughnessTexture()) {
-    finalMaterial->roughnessTexture =
-        textures_.at(textureBaseIndex + material.roughnessTexture()).get();
-  }
+//   // roughness
+//   finalMaterial->roughness = material.roughness();
+//   if (material.hasRoughnessTexture()) {
+//     finalMaterial->roughnessTexture =
+//         textures_.at(textureBaseIndex + material.roughnessTexture()).get();
+//   }
 
-  // metallic
-  finalMaterial->metallic = material.metalness();
-  if (material.hasMetalnessTexture()) {
-    finalMaterial->metallicTexture =
-        textures_.at(textureBaseIndex + material.metalnessTexture()).get();
-  }
+//   // metallic
+//   finalMaterial->metallic = material.metalness();
+//   if (material.hasMetalnessTexture()) {
+//     finalMaterial->metallicTexture =
+//         textures_.at(textureBaseIndex + material.metalnessTexture()).get();
+//   }
 
-  // sanity check when both metallic and roughness materials are presented
-  if (material.hasMetalnessTexture() && material.hasRoughnessTexture()) {
-    /*
-       sanity check using hasNoneRoughnessMetallicTexture() to ensure that:
-        - both use the same texture coordinate attribute,
-        - both have the same texture transformation, and
-        - the metalness is in B and roughness is in G
+//   // sanity check when both metallic and roughness materials are presented
+//   if (material.hasMetalnessTexture() && material.hasRoughnessTexture()) {
+//     /*
+//        sanity check using hasNoneRoughnessMetallicTexture() to ensure that:
+//         - both use the same texture coordinate attribute,
+//         - both have the same texture transformation, and
+//         - the metalness is in B and roughness is in G
 
-       It checks for a subset of hasOcclusionRoughnessMetallicTexture(),
-       so hasOcclusionRoughnessMetallicTexture() is not needed here.
+//        It checks for a subset of hasOcclusionRoughnessMetallicTexture(),
+//        so hasOcclusionRoughnessMetallicTexture() is not needed here.
 
-       The normal/roughness/metallic is a totally different packing (in BA
-       instead of GB), and it is NOT supported in the current version.
-       so hasNormalRoughnessMetallicTexture() is not needed here.
+//        The normal/roughness/metallic is a totally different packing (in BA
+//        instead of GB), and it is NOT supported in the current version.
+//        so hasNormalRoughnessMetallicTexture() is not needed here.
 
-    */
-    CORRADE_ASSERT(material.hasNoneRoughnessMetallicTexture(),
-                   "::buildPbrShadedMaterialData(): if both the metallic "
-                   "and roughness texture exist, they must be packed in the "
-                   "same texture "
-                   "based on glTF 2.0 Spec.",
-                   finalMaterial);
-  }
+//     */
+//     CORRADE_ASSERT(material.hasNoneRoughnessMetallicTexture(),
+//                    "::buildPbrShadedMaterialData(): if both the metallic "
+//                    "and roughness texture exist, they must be packed in the "
+//                    "same texture "
+//                    "based on glTF 2.0 Spec.",
+//                    finalMaterial);
+//   }
 
-  // TODO:
-  // Support NormalRoughnessMetallicTexture packing
-  CORRADE_ASSERT(!material.hasNormalRoughnessMetallicTexture(),
-                 "::buildPbrShadedMaterialData(): "
-                 "Sorry. NormalRoughnessMetallicTexture is not supported in "
-                 "the current version. We will work on it.",
-                 finalMaterial);
+//   // TODO:
+//   // Support NormalRoughnessMetallicTexture packing
+//   CORRADE_ASSERT(!material.hasNormalRoughnessMetallicTexture(),
+//                  "::buildPbrShadedMaterialData(): "
+//                  "Sorry. NormalRoughnessMetallicTexture is not supported in "
+//                  "the current version. We will work on it.",
+//                  finalMaterial);
 
-  // double-sided
-  finalMaterial->doubleSided = material.isDoubleSided();
+//   // double-sided
+//   finalMaterial->doubleSided = material.isDoubleSided();
 
-  finalMaterial->shaderTypeSpec =
-      static_cast<int>(ObjectInstanceShaderType::PBR);
+//   finalMaterial->shaderTypeSpec =
+//       static_cast<int>(ObjectInstanceShaderType::PBR);
 
-  return finalMaterial;
-}  // ResourceManager::buildPbrShadedMaterialData
+//   return finalMaterial;
+// }  // ResourceManager::buildPbrShadedMaterialData
 
 void ResourceManager::loadMeshes(Importer& importer,
                                  LoadedAssetData& loadedAssetData) {
@@ -3033,13 +3327,25 @@ void ResourceManager::createDrawable(
     const Mn::ResourceKey& materialKey,
     DrawableGroup* group /* = nullptr */,
     const std::shared_ptr<gfx::InstanceSkinData>& skinData /* = nullptr */) {
-  const auto& materialDataType =
-      shaderManager_.get<gfx::MaterialData>(materialKey)->type;
+  ObjectInstanceShaderType materialDataType =
+      static_cast<ObjectInstanceShaderType>(
+          shaderManager_.get<Mn::Trade::MaterialData>(materialKey)
+              ->attribute<int>("shaderTypeToUse"));
+  // If shader type to use has not been explicitly specified, use best shader
+  // supported by material
+  if ((materialDataType < ObjectInstanceShaderType::Flat) ||
+      (materialDataType > ObjectInstanceShaderType::PBR)) {
+    const auto types =
+        shaderManager_.get<Mn::Trade::MaterialData>(materialKey)->types();
+    if (types >= Mn::Trade::MaterialType::PbrMetallicRoughness) {
+      materialDataType = ObjectInstanceShaderType::PBR;
+    } else {
+      materialDataType = ObjectInstanceShaderType::Phong;
+    }
+  }
   switch (materialDataType) {
-    case gfx::MaterialDataType::None:
-      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
-      break;
-    case gfx::MaterialDataType::Phong:
+    case ObjectInstanceShaderType::Flat:
+    case ObjectInstanceShaderType::Phong:
       node.addFeature<gfx::GenericDrawable>(
           mesh,                // render mesh
           meshAttributeFlags,  // mesh attribute flags
@@ -3049,7 +3355,7 @@ void ResourceManager::createDrawable(
           group,               // drawable group
           skinData);           // instance skinning data
       break;
-    case gfx::MaterialDataType::Pbr:
+    case ObjectInstanceShaderType::PBR:
       node.addFeature<gfx::PbrDrawable>(
           mesh,                // render mesh
           meshAttributeFlags,  // mesh attribute flags
@@ -3061,6 +3367,8 @@ void ResourceManager::createDrawable(
                              : nullptr);  // pbr image based lighting
       // TODO: Carry skinData to PbrDrawable.
       break;
+    default:
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
   }
 
   drawableCountAndNumFaces_.first += 1;
@@ -3089,20 +3397,6 @@ void ResourceManager::initPbrImageBasedLighting(
               gfx::PbrImageBasedLighting::Flag::UseLDRImages,
           shaderManager_, hdriImageFilename));
   activePbrIbl_ = 0;
-}
-
-void ResourceManager::initDefaultMaterials() {
-  shaderManager_.set<gfx::MaterialData>(DEFAULT_MATERIAL_KEY,
-                                        new gfx::PhongMaterialData{});
-  auto* whiteMaterialData = new gfx::PhongMaterialData;
-  whiteMaterialData->ambientColor = Mn::Color4{1.0};
-  shaderManager_.set<gfx::MaterialData>(WHITE_MATERIAL_KEY, whiteMaterialData);
-  auto* perVertexObjectId = new gfx::PhongMaterialData{};
-  perVertexObjectId->perVertexObjectId = true;
-  perVertexObjectId->ambientColor = Mn::Color4{1.0};
-  shaderManager_.set<gfx::MaterialData>(PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
-                                        perVertexObjectId);
-  shaderManager_.setFallback<gfx::MaterialData>(new gfx::PhongMaterialData{});
 }
 
 bool ResourceManager::isLightSetupCompatible(
@@ -3156,7 +3450,7 @@ void ResourceManager::joinSemanticHierarchy(
     const MeshMetaData& metaData,
     const MeshTransformNode& node,
     const Mn::Matrix4& transformFromParentToWorld) const {
-  Magnum::Matrix4 transformFromLocalToWorld =
+  Mn::Matrix4 transformFromLocalToWorld =
       transformFromParentToWorld * node.transformFromLocalToParent;
 
   // If the mesh local id is not -1, populate the mesh data.
@@ -3182,7 +3476,7 @@ void ResourceManager::joinSemanticHierarchy(
 
     // Save the vertices
     for (const auto& pos : vertices) {
-      mesh.vbo.push_back(Magnum::EigenIntegration::cast<vec3f>(
+      mesh.vbo.push_back(Mn::EigenIntegration::cast<vec3f>(
           transformFromLocalToWorld.transformPoint(pos)));
     }
 
@@ -3239,7 +3533,7 @@ std::unique_ptr<MeshData> ResourceManager::createJoinedSemanticCollisionMesh(
 
   const MeshMetaData& metaData = getMeshMetaData(filename);
 
-  Magnum::Matrix4 identity;
+  Mn::Matrix4 identity;
   joinSemanticHierarchy(*mesh, objectIds, metaData, metaData.root, identity);
 
   return mesh;

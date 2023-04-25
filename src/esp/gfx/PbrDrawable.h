@@ -97,7 +97,8 @@ class PbrDrawable : public Drawable {
   PbrShader::Flags flags_;
   ShaderManager& shaderManager_;
   Magnum::Resource<Magnum::GL::AbstractShaderProgram, PbrShader> shader_;
-  Magnum::Resource<MaterialData, PbrMaterialData> materialData_;
+  Magnum::Resource<Magnum::Trade::MaterialData, Magnum::Trade::MaterialData>
+      materialData_;
   Magnum::Resource<LightSetup> lightSetup_;
   PbrImageBasedLighting* pbrIbl_ = nullptr;
   ShadowMapManager* shadowMapManger_ = nullptr;

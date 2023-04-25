@@ -51,7 +51,9 @@ class GenericDrawable : public Drawable {
   ShaderManager& shaderManager_;
   Magnum::Resource<Magnum::GL::AbstractShaderProgram, Magnum::Shaders::PhongGL>
       shader_;
-  Magnum::Resource<MaterialData, PhongMaterialData> materialData_;
+  Magnum::Resource<Magnum::Trade::MaterialData,
+                   Magnum::Trade::PhongMaterialData>
+      materialData_;
   Magnum::Resource<LightSetup> lightSetup_;
   Magnum::Shaders::PhongGL::Flags flags_;
   std::shared_ptr<InstanceSkinData> skinData_;

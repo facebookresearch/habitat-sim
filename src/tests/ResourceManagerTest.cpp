@@ -10,6 +10,7 @@
 #include <Corrade/Utility/Path.h>
 #include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/Math/Range.h>
+#include <Magnum/Trade/MaterialData.h>
 #include <string>
 
 #include "esp/assets/MeshData.h"
@@ -229,7 +230,7 @@ void buildMaterialIDs(const esp::assets::MeshTransformNode& root,
  * ResourceManager.  We need to rebuild every test so that we force reload of
  * assets.
  */
-void testAssetTypeMatch(int specifiedAssetType,
+void testAssetTypeMatch(ObjectInstanceShaderType specifiedAssetType,
                         const esp::assets::AssetInfo& info,
                         std::shared_ptr<esp::metadata::MetadataMediator> MM) {
   ResourceManager resourceManager(MM);
@@ -247,16 +248,18 @@ void testAssetTypeMatch(int specifiedAssetType,
   ESP_DEBUG() << "# Materials specified in asset:" << matIDs.size();
   CORRADE_COMPARE(matIDs.size(), 3);
 
+  int specifiedAssetTypeInt = static_cast<int>(specifiedAssetType);
   // get shaderManager from RM and check material @ material ID
   auto& shaderManager = resourceManager.getShaderManager();
   // all materials specified in the hierarchy should match the material for the
   // desired shadertype.
   for (const std::string id : matIDs) {
     int shaderTypeSpec =
-        shaderManager.get<esp::gfx::MaterialData>(id)->shaderTypeSpec;
+        shaderManager.get<Mn::Trade::MaterialData>(id)->attribute<int>(
+            "shaderTypeToUse");
     ESP_DEBUG() << "mat ID : " << id << "type spec in mat :" << shaderTypeSpec
-                << " | spec in asset :" << specifiedAssetType;
-    CORRADE_COMPARE(shaderTypeSpec, specifiedAssetType);
+                << " | spec in asset :" << specifiedAssetTypeInt;
+    CORRADE_COMPARE(shaderTypeSpec, specifiedAssetTypeInt);
   }
 }  // testAssetTypeMatch
 
@@ -278,32 +281,29 @@ void ResourceManagerTest::testShaderTypeSpecification() {
   // force flat shading
   info.forceFlatShading = true;
   // object's material type is flat
-  testAssetTypeMatch(static_cast<int>(ObjectInstanceShaderType::Flat), info,
-                     MM);
+  testAssetTypeMatch(ObjectInstanceShaderType::Flat, info, MM);
   ESP_DEBUG() << "Testing Material type, which is PBR for this asset.";
 
   // enable lightig and use material type
   info.forceFlatShading = false;
   info.shaderTypeToUse = ObjectInstanceShaderType::Material;
   // object's material type is PBR
-  testAssetTypeMatch(static_cast<int>(ObjectInstanceShaderType::PBR), info, MM);
+  testAssetTypeMatch(ObjectInstanceShaderType::PBR, info, MM);
 
   ESP_DEBUG() << "Testing PBR explicitly being set.";
   // force pbr
   info.shaderTypeToUse = ObjectInstanceShaderType::PBR;
-  testAssetTypeMatch(static_cast<int>(ObjectInstanceShaderType::PBR), info, MM);
+  testAssetTypeMatch(ObjectInstanceShaderType::PBR, info, MM);
 
   ESP_DEBUG() << "Testing Phong explicitly being set.";
   // force phong
   info.shaderTypeToUse = ObjectInstanceShaderType::Phong;
-  testAssetTypeMatch(static_cast<int>(ObjectInstanceShaderType::Phong), info,
-                     MM);
+  testAssetTypeMatch(ObjectInstanceShaderType::Phong, info, MM);
 
   ESP_DEBUG() << "Testing Flat explicitly being set.";
   // force flat via shadertype
   info.shaderTypeToUse = ObjectInstanceShaderType::Flat;
-  testAssetTypeMatch(static_cast<int>(ObjectInstanceShaderType::Flat), info,
-                     MM);
+  testAssetTypeMatch(ObjectInstanceShaderType::Flat, info, MM);
 
 }  // ResourceManagerTest::testFlatShaderTypeSpecification
 
