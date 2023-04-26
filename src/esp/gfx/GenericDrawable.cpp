@@ -52,8 +52,7 @@ GenericDrawable::GenericDrawable(
        materialData_->hasAttribute("objectIdTexture"))) {
     flags_ |= Mn::Shaders::PhongGL::Flag::TextureTransformation;
   }
-  if ((materialData_->hasAttribute("ambientTexture")) ||
-      (materialData_->hasAttribute("baseColorTexture"))) {
+  if (materialData_->hasAttribute("ambientTexture")) {
     flags_ |= Mn::Shaders::PhongGL::Flag::AmbientTexture;
   }
   if (materialData_->hasAttribute("diffuseTexture")) {

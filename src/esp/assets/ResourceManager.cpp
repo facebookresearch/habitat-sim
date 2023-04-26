@@ -2334,6 +2334,7 @@ Mn::Trade::MaterialData createUniversalMaterial(
 
 }  // namespace
 
+// Specifically for building materials that relied on old defaults
 Mn::Trade::MaterialData ResourceManager::buildDefaultPhongMaterial(
     Mn::Color4 amb,   // = Mn::Color4{0.1},
     Mn::Color4 diff,  // = Mn::Color4{0.7 * 0.175},
@@ -2686,7 +2687,7 @@ Mn::Trade::MaterialData ResourceManager::buildCustomAttributeFlatMaterial(
 
 Mn::Trade::MaterialData ResourceManager::buildCustomAttributePhongMaterial(
     const Mn::Trade::MaterialData& materialData,
-    int textureBaseIndex) const {
+    CORRADE_UNUSED int textureBaseIndex) const {
   // Custom/remapped attributes for material, to match required Phong shader
   // mapping.
   Cr::Containers::Array<Mn::Trade::MaterialAttributeData> custAttributes;
@@ -2713,7 +2714,7 @@ Mn::Trade::MaterialData ResourceManager::buildCustomAttributePhongMaterial(
 
 Mn::Trade::MaterialData ResourceManager::buildCustomAttributePbrMaterial(
     const Mn::Trade::MaterialData& materialData,
-    int textureBaseIndex) const {
+    CORRADE_UNUSED int textureBaseIndex) const {
   // Custom/remapped attributes for material, to match required PBR shader
   // mapping.
   Cr::Containers::Array<Mn::Trade::MaterialAttributeData> custAttributes;
