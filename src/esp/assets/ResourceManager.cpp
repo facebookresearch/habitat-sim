@@ -2502,10 +2502,9 @@ void ResourceManager::loadMaterials(Importer& importer,
                     << ".";
         continue;
       }
-
-      std::string debugStr =
-          Cr::Utility::formatString("Idx {:.02d} has {:.02} layers:", iMaterial,
-                                    materialData->layerCount());
+      Mn::UnsignedInt numLayers = materialData->layerCount();
+      std::string debugStr = Cr::Utility::formatString(
+          "Idx {:.02d} has {:.02} layers:", iMaterial, numLayers);
 
       // If we are not using the material's native shadertype, or flat (Which
       // all materials already support), expand the Mn::Trade::MaterialData with
@@ -2540,9 +2539,13 @@ void ResourceManager::loadMaterials(Importer& importer,
               materialAttribute.value<Mn::UnsignedInt>();
           // copy texture into new attributes tagged with lowercase material
           // name
-          arrayAppend(newAttributes,
-                      {Cr::Utility::String::lowercase(matName),
-                       textures_.at(textureBaseIndex + txtrIdx).get()});
+          auto newMatName = Cr::Utility::formatString(
+              "{}{}", Cr::Utility::String::lowercase(matName.slice(0, 1)),
+              matName.slice(1, matName.size()));
+
+          arrayAppend(
+              newAttributes,
+              {newMatName, textures_.at(textureBaseIndex + txtrIdx).get()});
         }
       }
 
