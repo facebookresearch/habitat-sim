@@ -1269,8 +1269,8 @@ void ResourceManager::buildPrimitiveAssetData(
   Mn::Trade::MaterialData materialData = buildDefaultPhongMaterial();
 
   // Set expected user-defined attributes
-  setDefaultMaterialUserAttributes(materialData,
-                                   ObjectInstanceShaderType::Phong);
+  materialData = setDefaultMaterialUserAttributes(
+      materialData, ObjectInstanceShaderType::Phong);
 
   shaderManager_.set<Mn::Trade::MaterialData>(meshMetaData.root.materialID,
                                               std::move(materialData));
@@ -1982,8 +1982,8 @@ bool ResourceManager::buildTrajectoryVisualization(
       Mn::Color4{1.0}, Mn::Color4{0.7 * 0.175}, Mn::Color4{1.0}, 160.0f);
 
   // Set expected user-defined attributes
-  setDefaultMaterialUserAttributes(materialData,
-                                   ObjectInstanceShaderType::Phong, true);
+  materialData = setDefaultMaterialUserAttributes(
+      materialData, ObjectInstanceShaderType::Phong, true);
 
   shaderManager_.set<Mn::Trade::MaterialData>(meshMetaData.root.materialID,
                                               std::move(materialData));
@@ -2354,7 +2354,6 @@ Mn::Trade::MaterialData ResourceManager::setDefaultMaterialUserAttributes(
     bool hasVertObjID,
     bool hasTxtrObjID,
     int txtrIdx) {
-  ESP_WARNING() << "Attempt to set shadertype to use for material";
   // New material's attributes
   Cr::Containers::Array<Mn::Trade::MaterialAttributeData> newAttributes;
   arrayAppend(newAttributes, Cr::InPlaceInit, "hasObjectIdTexture",
@@ -2374,16 +2373,6 @@ Mn::Trade::MaterialData ResourceManager::setDefaultMaterialUserAttributes(
           material,
           Mn::Trade::MaterialData{{}, Mn::Trade::DataFlags{}, newAttributes});
 
-  ESP_WARNING() << "Successfully set shadertype to use for material";
-  // // Specify this material has per-vertex object id annotations
-  // material.mutableAttribute<bool>("hasPerVertexObjectId") = hasVertObjID;
-  // // specify this material has texture-based annotations
-  // material.mutableAttribute<bool>("hasObjectIdTexture") = hasTxtrObjID;
-  // if (hasTxtrObjID) {
-  //   // specify this material's annotation texture
-  //   material.mutableAttribute<Mn::GL::Texture2D*>("objectIdTexture") =
-  //       textures_.at(txtrIdx).get();
-  // }
   return std::move(*finalMaterial);
 }  // setDefaultMaterialUserAttributes
 
@@ -3177,15 +3166,12 @@ void ResourceManager::createDrawable(
     const Mn::ResourceKey& materialKey,
     DrawableGroup* group /* = nullptr */,
     const std::shared_ptr<gfx::InstanceSkinData>& skinData /* = nullptr */) {
-  ESP_WARNING() << "Create Drawable for material key" << materialKey;
-
   auto material = shaderManager_.get<Mn::Trade::MaterialData>(materialKey);
 
   ObjectInstanceShaderType materialDataType =
       static_cast<ObjectInstanceShaderType>(
           material->mutableAttribute<int>("shaderTypeToUse"));
 
-  ESP_WARNING() << "Shader type acquired for material" << materialKey;
   // If shader type to use has not been explicitly specified, use best shader
   // supported by material
   if ((materialDataType < ObjectInstanceShaderType::Flat) ||
