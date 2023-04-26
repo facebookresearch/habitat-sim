@@ -128,9 +128,10 @@ bool Model::loadJsonAttributes(const std::string& filename) {
 
   // check for render asset
   const char* attrRenderAsset = "render_asset";
+  const char* attrSemanticId = "semantic_id";
   const char* attrDebugRenderPrimitives = "debug_render_primitives";
 
-  bool hasRenderAsset = false;
+  // Parse render_asset
   if (jsonConfig.HasMember(attrRenderAsset)) {
     if (!jsonConfig[attrRenderAsset].IsString()) {
       ESP_WARNING() << "<Model> : Json Config file specifies a render_asset "
@@ -149,9 +150,22 @@ bool Model::loadJsonAttributes(const std::string& filename) {
                          "ao_config.json file.";
       }
       m_renderAsset = std::string(renderAssetPath.data());
-      hasRenderAsset = true;
     }
   }
+
+  // Parse semantic_id
+  if (jsonConfig.HasMember(attrSemanticId)) {
+    if (!jsonConfig[attrSemanticId].IsInt()) {
+      ESP_WARNING() << "<Model> : Json Config file specifies semantic_id "
+                       "attribute but it is not an it. Skipping semantic_id "
+                       "config load.";
+      return false;
+    } else {
+      m_semanticId = jsonConfig[attrSemanticId].GetInt();
+    }
+  }
+
+  // Parse debug_render_primitives
   if (jsonConfig.HasMember(attrDebugRenderPrimitives)) {
     if (!jsonConfig[attrDebugRenderPrimitives].IsBool()) {
       ESP_WARNING()
@@ -193,11 +207,6 @@ bool Model::loadJsonAttributes(const std::string& filename) {
     return (numConfigSettings > 0);
   }  // if has user_defined tag
 
-  if (!hasRenderAsset) {
-    ESP_WARNING() << "<Model> : Json Config file exists but \"" << subGroupName
-                  << "\" and \"" << attrRenderAsset
-                  << "\" tags not found within file.";
-  }
   return false;
 }  // Model::loadJsonAttributes
 
