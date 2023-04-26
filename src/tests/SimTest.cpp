@@ -1094,6 +1094,8 @@ void SimTest::testArticulatedObjectSkinned() {
   auto ao = aoManager->addArticulatedObjectFromURDF(urdfFile);
   CORRADE_COMPARE(aoManager->getNumObjects(), 1);
 
+  CORRADE_COMPARE(ao->getSceneNode()->getSemanticId(), 100);
+
   CORRADE_VERIFY(ao);
   CORRADE_COMPARE(ao->getNumLinks(), 4);
 

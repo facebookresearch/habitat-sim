@@ -166,7 +166,6 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
 
   articulatedObject->initializeFromURDF(*urdfImporter_, {}, physicsNode_);
   auto model = u2b->getModel();
-  const int semanticId = articulatedObject->node().getSemanticId();
 
   // if the URDF model specifies a render asset, load and link it
   const auto renderAssetPath = model->getRenderAsset();
