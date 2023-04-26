@@ -46,25 +46,34 @@ GenericDrawable::GenericDrawable(
      actually textured -- it's an error otherwise */
   if (materialData_->commonTextureMatrix() != Mn::Matrix3{} &&
       (materialData_->hasAttribute("ambientTexture") ||
+       materialData_->hasAttribute("baseColorTexture") ||
        materialData_->hasAttribute("diffuseTexture") ||
        materialData_->hasAttribute("specularTexture") ||
        materialData_->attribute<bool>("hasObjectIdTexture"))) {
+    ESP_WARNING() << "Drawable has texture transformation";
     flags_ |= Mn::Shaders::PhongGL::Flag::TextureTransformation;
   }
-  if (materialData_->hasAttribute("ambientTexture")) {
+  if ((materialData_->hasAttribute("ambientTexture")) ||
+      (materialData_->hasAttribute("baseColorTexture"))) {
+    ESP_WARNING() << "Drawable has ambientTexture/baseColorTexture";
     flags_ |= Mn::Shaders::PhongGL::Flag::AmbientTexture;
   }
   if (materialData_->hasAttribute("diffuseTexture")) {
+    ESP_WARNING() << "Drawable has diffuseTexture";
     flags_ |= Mn::Shaders::PhongGL::Flag::DiffuseTexture;
   }
   if (materialData_->hasAttribute("specularTexture")) {
+    ESP_WARNING() << "Drawable has specularTexture";
     flags_ |= Mn::Shaders::PhongGL::Flag::SpecularTexture;
   }
 
   if (materialData_->hasAttribute("normalTexture")) {
+    ESP_WARNING() << "Drawable has normalTexture";
     if (meshAttributeFlags & Drawable::Flag::HasTangent) {
+      ESP_WARNING() << "Drawable has HasTangent";
       flags_ |= Mn::Shaders::PhongGL::Flag::NormalTexture;
       if (meshAttributeFlags & Drawable::Flag::HasSeparateBitangent) {
+        ESP_WARNING() << "Drawable has HasSeparateBitangent";
         flags_ |= Mn::Shaders::PhongGL::Flag::Bitangent;
       }
     } else {
@@ -73,12 +82,15 @@ GenericDrawable::GenericDrawable(
     }
   }
   if (materialData_->attribute<bool>("hasPerVertexObjectId")) {
+    ESP_WARNING() << "Drawable has hasPerVertexObjectId";
     flags_ |= Mn::Shaders::PhongGL::Flag::InstancedObjectId;
   }
   if (materialData_->attribute<bool>("hasObjectIdTexture")) {
+    ESP_WARNING() << "Drawable has hasObjectIdTexture";
     flags_ |= Mn::Shaders::PhongGL::Flag::ObjectIdTexture;
   }
   if (meshAttributeFlags & Drawable::Flag::HasVertexColor) {
+    ESP_WARNING() << "Drawable has HasVertexColor";
     flags_ |= Mn::Shaders::PhongGL::Flag::VertexColor;
   }
 

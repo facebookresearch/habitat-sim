@@ -2519,35 +2519,9 @@ void ResourceManager::loadMaterials(Importer& importer,
             metadata::attributes::getShaderTypeName(shaderTypeToUse));
         materialData = createUniversalMaterial(*materialData);
       }
-      // list of all this material's attributes
-      const Cr::Containers::ArrayView<const Mn::Trade::MaterialAttributeData>
-          materialAttributes = materialData->attributeData();
 
       // New material's attributes
       Cr::Containers::Array<Mn::Trade::MaterialAttributeData> newAttributes;
-      // Add all material texture pointers into new attributes
-      for (const Mn::Trade::MaterialAttributeData& materialAttribute :
-           materialAttributes) {
-        auto matName = materialAttribute.name();
-        const auto matType = materialAttribute.type();
-        // Find textures and add them to newAttributes
-        // bool found = (std::string::npos != key.find(strToLookFor));
-        if ((matType == Mn::Trade::MaterialAttributeType::UnsignedInt) &&
-            matName.contains("Texture") && !matName.contains("Scale")) {
-          // texture index, copy texture pointer into newAttributes
-          const Mn::UnsignedInt txtrIdx =
-              materialAttribute.value<Mn::UnsignedInt>();
-          // copy texture into new attributes tagged with lowercase material
-          // name
-          auto newMatName = Cr::Utility::formatString(
-              "{}{}", Cr::Utility::String::lowercase(matName.slice(0, 1)),
-              matName.slice(1, matName.size()));
-
-          arrayAppend(
-              newAttributes,
-              {newMatName, textures_.at(textureBaseIndex + txtrIdx).get()});
-        }
-      }
 
       // Desired shader to use
       ObjectInstanceShaderType actualShaderUsed =
@@ -2574,9 +2548,21 @@ void ResourceManager::loadMaterials(Importer& importer,
                                           ObjectInstanceShaderType::Flat,
                                           Mn::Trade::MaterialType::Flat)) {
         Cr::Utility::formatInto(debugStr, debugStr.size(), "Flat.");
+        const auto& flatMat = materialData->as<Mn::Trade::FlatMaterialData>();
+        // Populate base/diffuse color and texture (if present) into flat
+        // material array
+        arrayAppend(newAttributes, {Mn::Trade::MaterialAttribute::AmbientColor,
+                                    flatMat.color()});
+
+        if (flatMat.hasTexture()) {
+          arrayAppend(
+              newAttributes,
+              {"ambientTexture",
+               textures_.at(textureBaseIndex + flatMat.texture()).get()});
+        }
 
         // use phong shader for flat shading
-        actualShaderUsed = ObjectInstanceShaderType::Phong;
+        actualShaderUsed = ObjectInstanceShaderType::Flat;
 
       } else {
         ESP_CHECK(
@@ -2587,11 +2573,46 @@ void ResourceManager::loadMaterials(Importer& importer,
                 metadata::attributes::getShaderTypeName(shaderTypeToUse),
                 iMaterial, assetName));
       }
+      // Copy all texture pointers into array
+      // list of all this material's attributes
+      const Cr::Containers::ArrayView<const Mn::Trade::MaterialAttributeData>
+          materialAttributes = materialData->attributeData();
+
+      // Add all material texture pointers into new attributes
+      for (const Mn::Trade::MaterialAttributeData& materialAttribute :
+           materialAttributes) {
+        auto matName = materialAttribute.name();
+        const auto matType = materialAttribute.type();
+        // Find textures and add them to newAttributes
+        // bool found = (std::string::npos != key.find(strToLookFor));
+        if ((matType == Mn::Trade::MaterialAttributeType::UnsignedInt) &&
+            matName.contains("Texture") && !matName.contains("Scale")) {
+          // texture index, copy texture pointer into newAttributes
+          const Mn::UnsignedInt txtrIdx =
+              materialAttribute.value<Mn::UnsignedInt>();
+          // copy texture into new attributes tagged with lowercase material
+          // name
+          auto newMatName = Cr::Utility::formatString(
+              "{}{}", Cr::Utility::String::lowercase(matName.slice(0, 1)),
+              matName.slice(1, matName.size()));
+
+          Cr::Utility::formatInto(debugStr, debugStr.size(),
+                                  "| txtr ptr name:{} | idx :{} ", newMatName,
+                                  (textureBaseIndex + txtrIdx));
+
+          arrayAppend(
+              newAttributes,
+              {newMatName, textures_.at(textureBaseIndex + txtrIdx).get()});
+        }
+      }
+
       // Merge all attributes with original material for final material
       Cr::Containers::Optional<Mn::Trade::MaterialData> finalMaterial =
           Mn::MaterialTools::merge(
-              *materialData, Mn::Trade::MaterialData{
-                                 {}, Mn::Trade::DataFlags{}, newAttributes});
+              Mn::Trade::MaterialData{
+                  {}, Mn::Trade::DataFlags{}, newAttributes},
+              *materialData,
+              Mn::MaterialTools::MergeConflicts::KeepFirstIgnoreType);
 
       // set default, expected user attributes for the final material
       auto tempMaterial =
@@ -2605,7 +2626,7 @@ void ResourceManager::loadMaterials(Importer& importer,
                                                   std::move(tempMaterial));
     }
   }
-}  // namespace assets
+}  // ResourceManager::loadMaterials
 
 ObjectInstanceShaderType ResourceManager::getMaterialShaderType(
     const AssetInfo& info) const {
