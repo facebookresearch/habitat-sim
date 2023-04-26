@@ -2349,20 +2349,20 @@ Mn::Trade::MaterialData ResourceManager::buildDefaultPhongMaterial(
 }
 
 Mn::Trade::MaterialData ResourceManager::setDefaultMaterialUserAttributes(
-    Mn::Trade::MaterialData& material,
+    const Mn::Trade::MaterialData& material,
     ObjectInstanceShaderType shaderTypeToUse,
     bool hasVertObjID,
     bool hasTxtrObjID,
-    int txtrIdx) {
+    int txtrIdx) const {
   // New material's attributes
   Cr::Containers::Array<Mn::Trade::MaterialAttributeData> newAttributes;
-  arrayAppend(newAttributes, Cr::InPlaceInit, "hasObjectIdTexture",
-              hasTxtrObjID);
   arrayAppend(newAttributes, Cr::InPlaceInit, "hasPerVertexObjectId",
               hasVertObjID);
+  arrayAppend(newAttributes, Cr::InPlaceInit, "hasTextureObjectId",
+              hasTxtrObjID);
 
   if (hasTxtrObjID) {
-    arrayAppend(newAttributes, Cr::InPlaceInit, "objectIdTexture",
+    arrayAppend(newAttributes, Cr::InPlaceInit, "objectIdTexturePtr",
                 textures_.at(txtrIdx).get());
   }
   arrayAppend(newAttributes, Cr::InPlaceInit, "shaderTypeToUse",
@@ -2470,12 +2470,11 @@ void ResourceManager::loadMaterials(Importer& importer,
                     << ".";
         continue;
       }
-      // Semantic texture-based
+      // Semantic texture-based mapping
 
       // Build a phong material for semantics.  TODO: Should this be a
       // FlatMaterialData? Populate with defaults from deprecated
       // gfx::PhongMaterialData
-
       Mn::Trade::MaterialData newMaterialData = buildDefaultPhongMaterial(
           Mn::Color4{1.0}, Mn::Color4{}, Mn::Color4{});
 
@@ -2502,9 +2501,10 @@ void ResourceManager::loadMaterials(Importer& importer,
                     << ".";
         continue;
       }
-      Mn::UnsignedInt numLayers = materialData->layerCount();
+
+      int numMaterialLayers = materialData->layerCount();
       std::string debugStr = Cr::Utility::formatString(
-          "Idx {:.02d} has {:.02} layers:", iMaterial, numLayers);
+          "Idx {:.02d} has {:.02} layers:", iMaterial, numMaterialLayers);
 
       // If we are not using the material's native shadertype, or flat (Which
       // all materials already support), expand the Mn::Trade::MaterialData with
@@ -2520,12 +2520,10 @@ void ResourceManager::loadMaterials(Importer& importer,
         materialData = createUniversalMaterial(*materialData);
       }
 
-      // New material's attributes
-      Cr::Containers::Array<Mn::Trade::MaterialAttributeData> newAttributes;
-
-      // Desired shader to use
-      ObjectInstanceShaderType actualShaderUsed =
-          ObjectInstanceShaderType::Phong;
+      // This material data has any per-shader as well as global custom
+      // user-defined attributes set excluding texture pointer mappings
+      Corrade::Containers::Optional<Magnum::Trade::MaterialData>
+          custMaterialData;
 
       // Build based on desired shader to use
       // pbr shader spec, of material-specified and material specifies pbr
@@ -2534,7 +2532,9 @@ void ResourceManager::loadMaterials(Importer& importer,
               Mn::Trade::MaterialType::PbrMetallicRoughness)) {
         Cr::Utility::formatInto(debugStr, debugStr.size(), "PBR.");
 
-        actualShaderUsed = ObjectInstanceShaderType::PBR;
+        // Material with custom settings appropriately set for PBR material
+        custMaterialData =
+            buildCustomAttributePbrMaterial(*materialData, textureBaseIndex);
 
         // phong shader spec, of material-specified and material specifies phong
       } else if (checkForPassedShaderType(shaderTypeToUse, *materialData,
@@ -2542,27 +2542,20 @@ void ResourceManager::loadMaterials(Importer& importer,
                                           Mn::Trade::MaterialType::Phong)) {
         Cr::Utility::formatInto(debugStr, debugStr.size(), "Phong.");
 
-        actualShaderUsed = ObjectInstanceShaderType::Phong;
+        // Material with custom settings appropriately set for Phong material
+        custMaterialData =
+            buildCustomAttributePhongMaterial(*materialData, textureBaseIndex);
+
         // flat shader spec or material-specified and material specifies flat
       } else if (checkForPassedShaderType(shaderTypeToUse, *materialData,
                                           ObjectInstanceShaderType::Flat,
                                           Mn::Trade::MaterialType::Flat)) {
         Cr::Utility::formatInto(debugStr, debugStr.size(), "Flat.");
-        const auto& flatMat = materialData->as<Mn::Trade::FlatMaterialData>();
-        // Populate base/diffuse color and texture (if present) into flat
-        // material array
-        arrayAppend(newAttributes, {Mn::Trade::MaterialAttribute::AmbientColor,
-                                    flatMat.color()});
 
-        if (flatMat.hasTexture()) {
-          arrayAppend(
-              newAttributes,
-              {"ambientTexture",
-               textures_.at(textureBaseIndex + flatMat.texture()).get()});
-        }
-
-        // use phong shader for flat shading
-        actualShaderUsed = ObjectInstanceShaderType::Flat;
+        // Material with custom settings appropriately set for Flat materials to
+        // be used in our Phong shader
+        custMaterialData =
+            buildCustomAttributeFlatMaterial(*materialData, textureBaseIndex);
 
       } else {
         ESP_CHECK(
@@ -2573,6 +2566,22 @@ void ResourceManager::loadMaterials(Importer& importer,
                 metadata::attributes::getShaderTypeName(shaderTypeToUse),
                 iMaterial, assetName));
       }
+
+      // Merge all custom attribute except remapped texture pointers with
+      // original material for final material. custMaterialData should never be
+      // Cr::Containers::NullOpt since every non-error branch is covered.
+      // custMaterialData needs to have fewer or equal layers than materialData
+      // or the rest will be
+      Cr::Containers::Optional<Mn::Trade::MaterialData> mergedCustomMaterial =
+          Mn::MaterialTools::merge(
+              *custMaterialData, *materialData,
+              Mn::MaterialTools::MergeConflicts::KeepFirstIgnoreType);
+
+      // Now build texture pointer array, with appropriate layers based on
+      // number of layers in original material
+
+      // New material's attributes
+      Cr::Containers::Array<Mn::Trade::MaterialAttributeData> newAttributes;
       // Copy all texture pointers into array
       // list of all this material's attributes
       const Cr::Containers::ArrayView<const Mn::Trade::MaterialAttributeData>
@@ -2593,7 +2602,7 @@ void ResourceManager::loadMaterials(Importer& importer,
           // copy texture into new attributes tagged with lowercase material
           // name
           auto newMatName = Cr::Utility::formatString(
-              "{}{}", Cr::Utility::String::lowercase(matName.slice(0, 1)),
+              "{}{}Ptr", Cr::Utility::String::lowercase(matName.slice(0, 1)),
               matName.slice(1, matName.size()));
 
           Cr::Utility::formatInto(debugStr, debugStr.size(),
@@ -2606,27 +2615,113 @@ void ResourceManager::loadMaterials(Importer& importer,
         }
       }
 
-      // Merge all attributes with original material for final material
+      // Merge all texture-pointer custom attributes with material holding
+      // original attributes + non-texture-pointer custom attributes for final
+      // material
       Cr::Containers::Optional<Mn::Trade::MaterialData> finalMaterial =
           Mn::MaterialTools::merge(
+              *mergedCustomMaterial,
               Mn::Trade::MaterialData{
-                  {}, Mn::Trade::DataFlags{}, newAttributes},
-              *materialData,
-              Mn::MaterialTools::MergeConflicts::KeepFirstIgnoreType);
-
-      // set default, expected user attributes for the final material
-      auto tempMaterial =
-          setDefaultMaterialUserAttributes(*finalMaterial, actualShaderUsed);
+                  {}, Mn::Trade::DataFlags{}, newAttributes});
 
       ESP_DEBUG() << debugStr;
       // for now, just use unique ID for material key. This may change if we
       // expose materials to user for post-load modification
 
       shaderManager_.set<Mn::Trade::MaterialData>(materialKey,
-                                                  std::move(tempMaterial));
+                                                  std::move(*finalMaterial));
     }
   }
 }  // ResourceManager::loadMaterials
+
+Mn::Trade::MaterialData ResourceManager::buildCustomAttributeFlatMaterial(
+    const Mn::Trade::MaterialData& materialData,
+    int textureBaseIndex) {
+  // NOLINTNEXTLINE(google-build-using-namespace)
+  using namespace Mn::Math::Literals;
+  // Custom/remapped attributes for material, to match required Phong shader
+  // mapping.
+  Cr::Containers::Array<Mn::Trade::MaterialAttributeData> custAttributes;
+
+  // To save on shader switching, a Phong shader with zero lights is used for
+  // flat materials. This requires custom mapping of material quantities so that
+  // the Phong shader can find what it is looking for.
+  const auto& flatMat = materialData.as<Mn::Trade::FlatMaterialData>();
+  // Populate base/diffuse color and texture (if present) into flat
+  // material array
+  arrayAppend(custAttributes,
+              {Mn::Trade::MaterialAttribute::AmbientColor, flatMat.color()});
+  // Clear out diffuse and specular colors for flat material
+  arrayAppend(custAttributes,
+              {Mn::Trade::MaterialAttribute::DiffuseColor, 0x00000000_rgbaf});
+  // No default shininess in Magnum materials
+  arrayAppend(custAttributes, {Mn::Trade::MaterialAttribute::Shininess, 80.0f});
+  arrayAppend(custAttributes,
+              {Mn::Trade::MaterialAttribute::SpecularColor, 0x00000000_rgbaf});
+  // Only populate into ambient texture if present in original material
+  if (flatMat.hasTexture()) {
+    arrayAppend(custAttributes,
+                {"ambientTexturePtr",
+                 textures_.at(textureBaseIndex + flatMat.texture()).get()});
+  }
+  // Merge new attributes with those specified in original material
+  // overridding original ambient, diffuse and specular colors
+  auto finalMaterial = Mn::MaterialTools::merge(
+      Mn::Trade::MaterialData{{}, Mn::Trade::DataFlags{}, custAttributes},
+      materialData, Mn::MaterialTools::MergeConflicts::KeepFirstIgnoreType);
+
+  // Set default, expected user attributes for the final material and return
+  return setDefaultMaterialUserAttributes(*finalMaterial,
+                                          ObjectInstanceShaderType::Flat);
+}  // ResourceManager::buildFlatShadedMaterialData
+
+Mn::Trade::MaterialData ResourceManager::buildCustomAttributePhongMaterial(
+    const Mn::Trade::MaterialData& materialData,
+    int textureBaseIndex) const {
+  // Custom/remapped attributes for material, to match required Phong shader
+  // mapping.
+  Cr::Containers::Array<Mn::Trade::MaterialAttributeData> custAttributes;
+
+  // TODO : specify custom non-texture pointer mappings for Phong materials
+  // here.
+
+  // Merge new attributes with those specified in original material
+  // overridding original ambient, diffuse and specular colors
+  auto finalMaterial = Mn::MaterialTools::merge(
+      Mn::Trade::MaterialData{{}, Mn::Trade::DataFlags{}, custAttributes},
+      materialData, Mn::MaterialTools::MergeConflicts::KeepFirstIgnoreType);
+
+  // Set default, expected user attributes for the final material and return
+  return setDefaultMaterialUserAttributes(*finalMaterial,
+                                          ObjectInstanceShaderType::Phong);
+
+}  // ResourceManager::buildPhongShadedMaterialData
+
+Mn::Trade::MaterialData ResourceManager::buildCustomAttributePbrMaterial(
+    const Mn::Trade::MaterialData& materialData,
+    int textureBaseIndex) const {
+  // Custom/remapped attributes for material, to match required PBR shader
+  // mapping.
+  Cr::Containers::Array<Mn::Trade::MaterialAttributeData> custAttributes;
+
+  // TODO : specify custom non-texture pointer mappings for PBR materials
+  // here.
+
+  // Merge new attributes with those specified in original material
+  // overridding original ambient, diffuse and specular colors
+
+  if (custAttributes.size() > 0) {
+    auto finalMaterial = Mn::MaterialTools::merge(
+        Mn::Trade::MaterialData{{}, Mn::Trade::DataFlags{}, custAttributes},
+        materialData, Mn::MaterialTools::MergeConflicts::KeepFirstIgnoreType);
+
+    // Set default, expected user attributes for the final material and return
+    return setDefaultMaterialUserAttributes(*finalMaterial,
+                                            ObjectInstanceShaderType::PBR);
+  }
+  return setDefaultMaterialUserAttributes(materialData,
+                                          ObjectInstanceShaderType::PBR);
+}  // ResourceManager::buildPbrShadedMaterialData
 
 ObjectInstanceShaderType ResourceManager::getMaterialShaderType(
     const AssetInfo& info) const {

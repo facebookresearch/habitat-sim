@@ -805,11 +805,11 @@ class ResourceManager {
    * @return the updated material
    */
   Mn::Trade::MaterialData setDefaultMaterialUserAttributes(
-      Mn::Trade::MaterialData& material,
+      const Mn::Trade::MaterialData& material,
       ObjectInstanceShaderType shaderTypeToUse,
       bool hasVertObjID = false,
       bool hasTxtrObjID = false,
-      int txtrIdx = -1);
+      int txtrIdx = -1) const;
 
   /**
    * @brief Configure the importerManager_ GL Extensions appropriately based on
@@ -1013,6 +1013,49 @@ class ResourceManager {
       const Mn::Trade::MaterialData& materialData,
       ObjectInstanceShaderType verificationType,
       Mn::Trade::MaterialType mnVerificationType) const;
+
+  /**
+   * @brief Build a @ref Magnum::Trade::MaterialData for use with Flat shading
+   * that holds all custom attributes except texture pointers.
+   * Note : habitat-sim currentl uses the Phong shader for Flat materials.
+   *
+   * Textures must already be loaded for the asset this material belongs to
+   *
+   * @param material Material data with texture IDs
+   * @param textureBaseIndex Base index of the assets textures in @ref textures_
+   * store
+   */
+  Mn::Trade::MaterialData buildCustomAttributeFlatMaterial(
+      const Mn::Trade::MaterialData& materialData,
+      int textureBaseIndex);
+
+  /**
+   * @brief Build a @ref Magnum::Trade::MaterialData for use with Phong shading
+   * that holds all custom attributes except texture pointers.
+   *
+   * Textures must already be loaded for the asset this material belongs to
+   *
+   * @param material Material data with texture IDs
+   * @param textureBaseIndex Base index of the assets textures in @ref textures_
+   * store
+   */
+  Mn::Trade::MaterialData buildCustomAttributePhongMaterial(
+      const Mn::Trade::MaterialData& material,
+      int textureBaseIndex) const;
+
+  /**
+   * @brief Build a @ref Magnum::Trade::MaterialData for use with PBR shading
+   * that holds all custom attributes except texture pointers.
+   *
+   * Textures must already be loaded for the asset this material belongs to
+   *
+   * @param material Material data with texture IDs
+   * @param textureBaseIndex Base index of the assets textures in @ref textures_
+   * store
+   */
+  Mn::Trade::MaterialData buildCustomAttributePbrMaterial(
+      const Mn::Trade::MaterialData& material,
+      int textureBaseIndex) const;
 
   /**
    * @brief Load a mesh describing some scene asset based on the passed
