@@ -565,16 +565,6 @@ def process_dataset(
     if end_index > len(sim.obj_template_handles):
         end_index = len(sim.obj_template_handles)
 
-    # create variables to store if we are writing to a csv and which data we are
-    # collecting, and/or if we are recording a video and which tasks we are recording
-    sim.write_csv = sim.sim_settings["outputs"].get("csv")
-    sim.record_video = sim.sim_settings["outputs"].get("video")
-    sim.record_physics = (
-        sim.sim_settings["video_vars"].get("tasks").get("record_physics")
-    )
-    sim.csv_data_to_collect = sim.sim_settings["csv_data_to_collect"]
-    sim.collect_physics_data = sim.csv_data_to_collect.get("physics_data")
-
     # calculate average RAM used over "num_samples" if config requests it
     num_samples: int = 1
     ram_usages: List[float] = [0.0] * (end_index - start_index)
@@ -590,13 +580,19 @@ def process_dataset(
     # Init vars to store the list of rows formatted for a csv file, as well as a
     # trade.AbstractImporter to assess the memory usage of the assets
     csv_rows: List[List[str]] = []
-    importer = trade.ImporterManager().load_and_instantiate("AnySceneImporter")
+    # importer = trade.ImporterManager().load_and_instantiate("AnySceneImporter")
+    importer_manager = trade.ImporterManager()
+    importer_manager.metadata("BasisImporter").configuration["format"] = "Bc7RGBA"
+
+    # It's important to reuse the above plugin manager instance here
+    importer = importer_manager.load_and_instantiate("AnySceneImporter")
+
 
     # TODO: maybe remove, not sure if threading is needed
     sim.video_thread = None
-    if sim.record_video:
-        # TODO: maybe remove, as this is done conditionally in viz_utils.py
-        os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
+    # if sim.record_video:
+    #     # TODO: maybe remove, as this is done conditionally in viz_utils.py
+    #     os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
 
     # loop over each asset we are considering in the dataset and process it,
     # i.e. study its memory usage and run it through some physics simulations,

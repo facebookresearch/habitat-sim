@@ -572,7 +572,7 @@ def make_video(
     writer = imageio.get_writer(
         video_file,
         fps=fps,
-        codec="h264_nvenc",
+        codec="h264_videotoolbox",
         mode="I",
         bitrate="1000k",
         format="FFMPEG",  # type: ignore[arg-type]
@@ -683,10 +683,25 @@ def configure_sim(sim_settings: Dict[str, Any]):
     the agent
     """
     cfg = make_cfg(sim_settings)
+
+    cfg.sim_cfg.override_scene_light_defaults = True
+    cfg.sim_cfg.scene_light_setup = hsim.gfx.DEFAULT_LIGHTING_KEY
+    cfg.agents[0].sensor_specifications[0].clear_color = mn.Color4(0.5, 0.5, 0.5, 1)
+
     sim = DatasetProcessorSim(cfg)
     sim.sim_settings = sim_settings
     sim.silent = sim_settings["silent"]
     sim.debug_print = sim_settings["debug_print"]
+
+    # create variables to store if we are writing to a csv and which data we are
+    # collecting, and/or if we are recording a video and which tasks we are recording
+    sim.write_csv = sim_settings["outputs"].get("csv")
+    sim.record_video = sim_settings["outputs"].get("video")
+    sim.record_physics = (
+        sim_settings["video_vars"].get("tasks").get("record_physics")
+    )
+    sim.csv_data_to_collect = sim_settings["csv_data_to_collect"]
+    sim.collect_physics_data = sim.csv_data_to_collect.get("physics_data")
 
     # init agent
     agent_state = hsim.AgentState()
