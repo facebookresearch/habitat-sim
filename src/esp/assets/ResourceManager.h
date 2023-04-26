@@ -1041,7 +1041,7 @@ class ResourceManager {
    */
   Mn::Trade::MaterialData buildCustomAttributePhongMaterial(
       const Mn::Trade::MaterialData& material,
-      int textureBaseIndex) const;
+      CORRADE_UNUSED int textureBaseIndex) const;
 
   /**
    * @brief Build a @ref Magnum::Trade::MaterialData for use with PBR shading
@@ -1055,7 +1055,7 @@ class ResourceManager {
    */
   Mn::Trade::MaterialData buildCustomAttributePbrMaterial(
       const Mn::Trade::MaterialData& material,
-      int textureBaseIndex) const;
+      CORRADE_UNUSED int textureBaseIndex) const;
 
   /**
    * @brief Load a mesh describing some scene asset based on the passed
