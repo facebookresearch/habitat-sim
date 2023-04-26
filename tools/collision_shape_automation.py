@@ -2456,6 +2456,11 @@ def main():
         action="store_true",
         help="Optimize all objects in the dataset with receptacles.",
     )
+    group.add_argument(
+        "--objects-file",
+        type=str,
+        help="optimize objects from a file containing object names separated by newline characters.",
+    )
     parser.add_argument(
         "--start-ix",
         default=-1,
@@ -2467,6 +2472,11 @@ def main():
         default=-1,
         type=int,
         help="If optimizing all assets, provide an end index.",
+    )
+    parser.add_argument(
+        "--parts-only",
+        action="store_true",
+        help="culls all objects without _part_ in the name.",
     )
     parser.add_argument(
         "--exclude",
@@ -2544,7 +2554,7 @@ def main():
 
     # ----------------------------------------------------
     # specific object handle provided
-    if args.objects or args.all_rec_objects:
+    if args.objects or args.all_rec_objects or args.objects_file:
         assert (
             not args.export_fp_model_ids
         ), "Feature not available for objects, only for scenes."
@@ -2554,6 +2564,11 @@ def main():
         if args.objects:
             # deduplicate the list
             unique_objects = list(dict.fromkeys(args.objects))
+        elif args.objects_file:
+            assert os.path.exists(args.objects_file)
+            with open(args.objects_file, "r") as f:
+                lines = [line.strip() for line in f.readlines()]
+                unique_objects = list(dict.fromkeys(lines))
         elif args.all_rec_objects:
             objects_in_dataset = otm.get_file_template_handles()
             rec_obj_in_dataset = [
@@ -2588,6 +2603,10 @@ def main():
                     break
             if not exclude_object:
                 object_handles.append(obj_h)
+
+        if args.parts_only:
+            object_handles = [obj_h for obj_h in object_handles if "_part_" in obj_h]
+            print(f"part objects only = {object_handles}")
 
         # optimize the objects
         results = []
