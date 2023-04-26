@@ -23,11 +23,11 @@ class PbrDrawable : public Drawable {
    * and color for textured buffer and color shader output respectively
    */
   explicit PbrDrawable(scene::SceneNode& node,
-                       Magnum::GL::Mesh* mesh,
+                       Mn::GL::Mesh* mesh,
                        gfx::Drawable::Flags& meshAttributeFlags,
                        ShaderManager& shaderManager,
-                       const Magnum::ResourceKey& lightSetupKey,
-                       const Magnum::ResourceKey& materialDataKey,
+                       const Mn::ResourceKey& lightSetupKey,
+                       const Mn::ResourceKey& materialDataKey,
                        DrawableGroup* group = nullptr,
                        PbrImageBasedLighting* pbrIbl = nullptr);
 
@@ -35,7 +35,7 @@ class PbrDrawable : public Drawable {
    *  @brief Set the light info
    *  @param lightSetupKey the key value for the light resource
    */
-  void setLightSetup(const Magnum::ResourceKey& lightSetupKey) override;
+  void setLightSetup(const Mn::ResourceKey& lightSetupKey) override;
 
   /**
    * @brief Set the shadow map info
@@ -57,8 +57,8 @@ class PbrDrawable : public Drawable {
    * the drawable is attached) relative to camera
    * @param camera the camera that views and renders the world
    */
-  void draw(const Magnum::Matrix4& transformationMatrix,
-            Magnum::SceneGraph::Camera3D& camera) override;
+  void draw(const Mn::Matrix4& transformationMatrix,
+            Mn::SceneGraph::Camera3D& camera) override;
 
   /**
    *  @brief Update the shader so it can correcly handle the current material,
@@ -82,24 +82,23 @@ class PbrDrawable : public Drawable {
    *  @return Reference to self (for method chaining)
    */
   PbrDrawable& updateShaderLightDirectionParameters(
-      const Magnum::Matrix4& transformationMatrix,
-      Magnum::SceneGraph::Camera3D& camera);
+      const Mn::Matrix4& transformationMatrix,
+      Mn::SceneGraph::Camera3D& camera);
 
   /**
    * @brief get the key for the shader
    * @param lightCount the number of the lights;
    * @param flags flags that defines the shader features
    */
-  Magnum::ResourceKey getShaderKey(Magnum::UnsignedInt lightCount,
-                                   PbrShader::Flags flags) const;
+  Mn::ResourceKey getShaderKey(Mn::UnsignedInt lightCount,
+                               PbrShader::Flags flags) const;
 
   // shader parameters
   PbrShader::Flags flags_;
   ShaderManager& shaderManager_;
-  Magnum::Resource<Magnum::GL::AbstractShaderProgram, PbrShader> shader_;
-  Magnum::Resource<Magnum::Trade::MaterialData, Magnum::Trade::MaterialData>
-      materialData_;
-  Magnum::Resource<LightSetup> lightSetup_;
+  Mn::Resource<Mn::GL::AbstractShaderProgram, PbrShader> shader_;
+  Mn::Resource<Mn::Trade::MaterialData, Mn::Trade::MaterialData> materialData_;
+  Mn::Resource<LightSetup> lightSetup_;
   PbrImageBasedLighting* pbrIbl_ = nullptr;
   ShadowMapManager* shadowMapManger_ = nullptr;
   ShadowMapKeys* shadowMapKeys_ = nullptr;

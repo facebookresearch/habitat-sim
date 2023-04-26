@@ -2358,11 +2358,8 @@ Mn::Trade::MaterialData ResourceManager::setDefaultMaterialUserAttributes(
   Cr::Containers::Array<Mn::Trade::MaterialAttributeData> newAttributes;
   arrayAppend(newAttributes, Cr::InPlaceInit, "hasPerVertexObjectId",
               hasVertObjID);
-  arrayAppend(newAttributes, Cr::InPlaceInit, "hasTextureObjectId",
-              hasTxtrObjID);
-
   if (hasTxtrObjID) {
-    arrayAppend(newAttributes, Cr::InPlaceInit, "objectIdTexturePtr",
+    arrayAppend(newAttributes, Cr::InPlaceInit, "objectIdTexture",
                 textures_.at(txtrIdx).get());
   }
   arrayAppend(newAttributes, Cr::InPlaceInit, "shaderTypeToUse",
@@ -2569,12 +2566,10 @@ void ResourceManager::loadMaterials(Importer& importer,
       // Merge all custom attribute except remapped texture pointers with
       // original material for final material. custMaterialData should never be
       // Cr::Containers::NullOpt since every non-error branch is covered.
-      // custMaterialData needs to have fewer or equal layers than materialData
-      // or the rest will be
       Cr::Containers::Optional<Mn::Trade::MaterialData> mergedCustomMaterial =
           Mn::MaterialTools::merge(
               *custMaterialData, *materialData,
-              Mn::MaterialTools::MergeConflicts::KeepFirstIgnoreType);
+              Mn::MaterialTools::MergeConflicts::KeepFirstIfSameType);
 
       // Now build texture pointer array, with appropriate layers based on
       // number of layers in original material
@@ -2591,35 +2586,36 @@ void ResourceManager::loadMaterials(Importer& importer,
       // Returns nullptr if has no attributes
       if (materialAttributes != nullptr) {
         // Idxs in materialAttributes corresponding to each layer
-        const Cr::Containers::ArrayView<const Mn::UnsignedInt> layerIdxs =
+        const Cr::Containers::ArrayView<const Mn::UnsignedInt> layersFromMat =
             materialData->layerData();
 
+        int layerIdx = 0;
         // Add all material texture pointers into new attributes
-        for (int i = 0; i < materialAttributes.size(); ++i) {
+        for (int mIdx = 0; mIdx < materialAttributes.size(); ++mIdx) {
           const Mn::Trade::MaterialAttributeData& materialAttribute =
-              materialAttributes[i];
-          auto matName = materialAttribute.name();
+              materialAttributes[mIdx];
+          auto attrName = materialAttribute.name();
           const auto matType = materialAttribute.type();
           // Find textures and add them to newAttributes
           // bool found = (std::string::npos != key.find(strToLookFor));
           if ((matType == Mn::Trade::MaterialAttributeType::UnsignedInt) &&
-              matName.contains("Texture") && !matName.contains("Scale")) {
+              attrName.contains("Texture") && !attrName.contains("Scale")) {
             // texture index, copy texture pointer into newAttributes
             const Mn::UnsignedInt txtrIdx =
                 materialAttribute.value<Mn::UnsignedInt>();
             // copy texture into new attributes tagged with lowercase material
             // name
-            auto newMatName = Cr::Utility::formatString(
-                "{}{}Ptr", Cr::Utility::String::lowercase(matName.slice(0, 1)),
-                matName.slice(1, matName.size()));
-
+            auto newAttrName = Cr::Utility::formatString(
+                "{}{}", Cr::Utility::String::lowercase(attrName.slice(0, 1)),
+                attrName.slice(1, attrName.size()));
+            // Temporary debug message
             Cr::Utility::formatInto(debugStr, debugStr.size(),
-                                    "| txtr ptr name:{} | idx :{} ", newMatName,
-                                    (textureBaseIndex + txtrIdx));
-
+                                    "| txtr ptr name:{} | idx :{}  Layer {}",
+                                    newAttrName, (textureBaseIndex + txtrIdx),
+                                    layerIdx);
             arrayAppend(
                 newAttributes,
-                {newMatName, textures_.at(textureBaseIndex + txtrIdx).get()});
+                {newAttrName, textures_.at(textureBaseIndex + txtrIdx).get()});
           }
         }
       }  // if has attributes
@@ -2657,29 +2653,33 @@ Mn::Trade::MaterialData ResourceManager::buildCustomAttributeFlatMaterial(
   const auto& flatMat = materialData.as<Mn::Trade::FlatMaterialData>();
   // Populate base/diffuse color and texture (if present) into flat
   // material array
-  arrayAppend(custAttributes,
-              {Mn::Trade::MaterialAttribute::AmbientColor, flatMat.color()});
-  // Clear out diffuse and specular colors for flat material
-  arrayAppend(custAttributes,
-              {Mn::Trade::MaterialAttribute::DiffuseColor, 0x00000000_rgbaf});
-  // No default shininess in Magnum materials
-  arrayAppend(custAttributes, {Mn::Trade::MaterialAttribute::Shininess, 80.0f});
-  arrayAppend(custAttributes,
-              {Mn::Trade::MaterialAttribute::SpecularColor, 0x00000000_rgbaf});
-  // Only populate into ambient texture if present in original material
+  arrayAppend(
+      custAttributes,
+      {// Set ambient color from flat material's base/diffuse color
+       {Mn::Trade::MaterialAttribute::AmbientColor, flatMat.color()},
+       // Clear out diffuse and specular colors for flat material
+       {Mn::Trade::MaterialAttribute::DiffuseColor, 0x00000000_rgbaf},
+       // No default shininess in Magnum materials
+       {Mn::Trade::MaterialAttribute::Shininess, 80.0f},
+
+       {Mn::Trade::MaterialAttribute::SpecularColor, 0x00000000_rgbaf}});
+  // Only populate into ambient texture if present in original
+  // material
   if (flatMat.hasTexture()) {
     arrayAppend(custAttributes,
-                {"ambientTexturePtr",
+                {"ambientTexture",
                  textures_.at(textureBaseIndex + flatMat.texture()).get()});
   }
   // Merge new attributes with those specified in original material
   // overridding original ambient, diffuse and specular colors
-  // Using owning MaterialData constructor to handle potential layers
+  // Using owning MaterialData constructor to handle potential
+  // layers
   auto finalMaterial = Mn::MaterialTools::merge(
       Mn::Trade::MaterialData{{}, std::move(custAttributes), {}}, materialData,
-      Mn::MaterialTools::MergeConflicts::KeepFirstIgnoreType);
+      Mn::MaterialTools::MergeConflicts::KeepFirstIfSameType);
 
-  // Set default, expected user attributes for the final material and return
+  // Set default, expected user attributes for the final material
+  // and return
   return setDefaultMaterialUserAttributes(*finalMaterial,
                                           ObjectInstanceShaderType::Flat);
 }  // ResourceManager::buildFlatShadedMaterialData
@@ -2700,7 +2700,7 @@ Mn::Trade::MaterialData ResourceManager::buildCustomAttributePhongMaterial(
     // Using owning MaterialData constructor to handle potential layers
     auto finalMaterial = Mn::MaterialTools::merge(
         Mn::Trade::MaterialData{{}, std::move(custAttributes), {}},
-        materialData, Mn::MaterialTools::MergeConflicts::KeepFirstIgnoreType);
+        materialData, Mn::MaterialTools::MergeConflicts::KeepFirstIfSameType);
 
     // Set default, expected user attributes for the final material and return
     return setDefaultMaterialUserAttributes(*finalMaterial,
@@ -2728,7 +2728,7 @@ Mn::Trade::MaterialData ResourceManager::buildCustomAttributePbrMaterial(
     // Using owning MaterialData constructor to handle potential layers
     auto finalMaterial = Mn::MaterialTools::merge(
         Mn::Trade::MaterialData{{}, std::move(custAttributes), {}},
-        materialData, Mn::MaterialTools::MergeConflicts::KeepFirstIgnoreType);
+        materialData, Mn::MaterialTools::MergeConflicts::KeepFirstIfSameType);
 
     // Set default, expected user attributes for the final material and return
     return setDefaultMaterialUserAttributes(*finalMaterial,

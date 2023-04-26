@@ -22,40 +22,37 @@ class GenericDrawable : public Drawable {
   //! color for textured buffer and color shader output respectively
   explicit GenericDrawable(
       scene::SceneNode& node,
-      Magnum::GL::Mesh* mesh,
+      Mn::GL::Mesh* mesh,
       Drawable::Flags& meshAttributeFlags,
       ShaderManager& shaderManager,
-      const Magnum::ResourceKey& lightSetupKey,
-      const Magnum::ResourceKey& materialDataKey,
+      const Mn::ResourceKey& lightSetupKey,
+      const Mn::ResourceKey& materialDataKey,
       DrawableGroup* group = nullptr,
       const std::shared_ptr<InstanceSkinData>& skinData = nullptr);
 
-  void setLightSetup(const Magnum::ResourceKey& lightSetupKey) override;
+  void setLightSetup(const Mn::ResourceKey& lightSetupKey) override;
   static constexpr const char* SHADER_KEY_TEMPLATE =
       "Phong-lights={}-flags={}-joints={}";
 
  protected:
-  void draw(const Magnum::Matrix4& transformationMatrix,
-            Magnum::SceneGraph::Camera3D& camera) override;
+  void draw(const Mn::Matrix4& transformationMatrix,
+            Mn::SceneGraph::Camera3D& camera) override;
 
   void updateShader();
-  void updateShaderLightingParameters(
-      const Magnum::Matrix4& transformationMatrix,
-      Magnum::SceneGraph::Camera3D& camera);
+  void updateShaderLightingParameters(const Mn::Matrix4& transformationMatrix,
+                                      Mn::SceneGraph::Camera3D& camera);
 
-  Magnum::ResourceKey getShaderKey(Magnum::UnsignedInt lightCount,
-                                   Magnum::Shaders::PhongGL::Flags flags,
-                                   Mn::UnsignedInt jointCount) const;
+  Mn::ResourceKey getShaderKey(Mn::UnsignedInt lightCount,
+                               Mn::Shaders::PhongGL::Flags flags,
+                               Mn::UnsignedInt jointCount) const;
 
   // shader parameters
   ShaderManager& shaderManager_;
-  Magnum::Resource<Magnum::GL::AbstractShaderProgram, Magnum::Shaders::PhongGL>
-      shader_;
-  Magnum::Resource<Magnum::Trade::MaterialData,
-                   Magnum::Trade::PhongMaterialData>
+  Mn::Resource<Mn::GL::AbstractShaderProgram, Mn::Shaders::PhongGL> shader_;
+  Mn::Resource<Mn::Trade::MaterialData, Mn::Trade::PhongMaterialData>
       materialData_;
-  Magnum::Resource<LightSetup> lightSetup_;
-  Magnum::Shaders::PhongGL::Flags flags_;
+  Mn::Resource<LightSetup> lightSetup_;
+  Mn::Shaders::PhongGL::Flags flags_;
   std::shared_ptr<InstanceSkinData> skinData_;
   Cr::Containers::Array<Mn::Matrix4> jointTransformations_;
 };
