@@ -30,11 +30,11 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
       materialData_{
           shaderManager.get<Mn::Trade::MaterialData>(materialDataKey)},
       pbrIbl_(pbrIbl) {
-  if (materialData_->hasAttribute("metallicTexture") &&
-      materialData_->hasAttribute("roughnessTexture")) {
+  if (materialData_->hasAttribute("metallicTexturePtr") &&
+      materialData_->hasAttribute("roughnessTexturePtr")) {
     CORRADE_ASSERT(
-        materialData_->attribute<Mn::GL::Texture2D*>("metallicTexture") ==
-            materialData_->attribute<Mn::GL::Texture2D*>("roughnessTexture"),
+        materialData_->attribute<Mn::GL::Texture2D*>("metallicTexturePtr") ==
+            materialData_->attribute<Mn::GL::Texture2D*>("roughnessTexturePtr"),
         "PbrDrawable::PbrDrawable(): if both the metallic and roughness "
         "texture exist, they must be packed in the same texture based on glTF "
         "2.0 Spec.", );
@@ -46,16 +46,16 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
   if (tmpMaterialData.commonTextureMatrix() != Mn::Matrix3{}) {
     flags_ |= PbrShader::Flag::TextureTransformation;
   }
-  if (materialData_->hasAttribute("baseColorTexture")) {
+  if (materialData_->hasAttribute("baseColorTexturePtr")) {
     flags_ |= PbrShader::Flag::BaseColorTexture;
   }
-  if (materialData_->hasAttribute("roughnessTexture")) {
+  if (materialData_->hasAttribute("roughnessTexturePtr")) {
     flags_ |= PbrShader::Flag::RoughnessTexture;
   }
-  if (materialData_->hasAttribute("metallicTexture")) {
+  if (materialData_->hasAttribute("metallicTexturePtr")) {
     flags_ |= PbrShader::Flag::MetallicTexture;
   }
-  if (materialData_->hasAttribute("normalTexture")) {
+  if (materialData_->hasAttribute("normalTexturePtr")) {
     flags_ |= PbrShader::Flag::NormalTexture;
     if (meshAttributeFlags & gfx::Drawable::Flag::HasTangent) {
       flags_ |= PbrShader::Flag::PrecomputedTangent;
@@ -67,7 +67,7 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
                      "must be positive.", );
     }
   }
-  if (materialData_->hasAttribute("emissiveTexture")) {
+  if (materialData_->hasAttribute("emissiveTexturePtr")) {
     flags_ |= PbrShader::Flag::EmissiveTexture;
   }
   if (materialData_->attribute<bool>("hasPerVertexObjectId")) {
@@ -165,19 +165,19 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   // just in case user would like to do so during the run-time.
 
   if ((flags_ & PbrShader::Flag::BaseColorTexture) &&
-      (materialData_->attribute<Mn::GL::Texture2D*>("baseColorTexture") !=
+      (materialData_->attribute<Mn::GL::Texture2D*>("baseColorTexturePtr") !=
        nullptr)) {
     shader_->bindBaseColorTexture(
-        *materialData_->attribute<Mn::GL::Texture2D*>("baseColorTexture"));
+        *materialData_->attribute<Mn::GL::Texture2D*>("baseColorTexturePtr"));
   }
 
   if (flags_ &
       (PbrShader::Flag::RoughnessTexture | PbrShader::Flag::MetallicTexture)) {
     Mn::GL::Texture2D* metallicRoughnessTexture =
-        materialData_->attribute<Mn::GL::Texture2D*>("roughnessTexture");
+        materialData_->attribute<Mn::GL::Texture2D*>("roughnessTexturePtr");
     if (!metallicRoughnessTexture) {
       metallicRoughnessTexture =
-          materialData_->attribute<Mn::GL::Texture2D*>("metallicTexture");
+          materialData_->attribute<Mn::GL::Texture2D*>("metallicTexturePtr");
     }
     CORRADE_ASSERT(metallicRoughnessTexture,
                    "PbrDrawable::draw(): texture pointer cannot be nullptr if "
@@ -186,17 +186,17 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   }
 
   if ((flags_ & PbrShader::Flag::NormalTexture) &&
-      (materialData_->attribute<Mn::GL::Texture2D*>("normalTexture") !=
+      (materialData_->attribute<Mn::GL::Texture2D*>("normalTexturePtr") !=
        nullptr)) {
     shader_->bindNormalTexture(
-        *materialData_->attribute<Mn::GL::Texture2D*>("normalTexture"));
+        *materialData_->attribute<Mn::GL::Texture2D*>("normalTexturePtr"));
   }
 
   if ((flags_ & PbrShader::Flag::EmissiveTexture) &&
-      (materialData_->attribute<Mn::GL::Texture2D*>("emissiveTexture") !=
+      (materialData_->attribute<Mn::GL::Texture2D*>("emissiveTexturePtr") !=
        nullptr)) {
     shader_->bindEmissiveTexture(
-        *materialData_->attribute<Mn::GL::Texture2D*>("emissiveTexture"));
+        *materialData_->attribute<Mn::GL::Texture2D*>("emissiveTexturePtr"));
   }
 
   if ((flags_ & PbrShader::Flag::TextureTransformation) &&

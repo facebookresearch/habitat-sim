@@ -2360,7 +2360,7 @@ Mn::Trade::MaterialData ResourceManager::setDefaultMaterialUserAttributes(
   arrayAppend(newAttributes, Cr::InPlaceInit, "hasPerVertexObjectId",
               hasVertObjID);
   if (hasTxtrObjID) {
-    arrayAppend(newAttributes, Cr::InPlaceInit, "objectIdTexture",
+    arrayAppend(newAttributes, Cr::InPlaceInit, "objectIdTexturePtr",
                 textures_.at(txtrIdx).get());
   }
   arrayAppend(newAttributes, Cr::InPlaceInit, "shaderTypeToUse",
@@ -2608,7 +2608,8 @@ void ResourceManager::loadMaterials(Importer& importer,
               // copy texture into new attributes tagged with lowercase material
               // name
               auto newAttrName = Cr::Utility::formatString(
-                  "{}{}", Cr::Utility::String::lowercase(attrName.slice(0, 1)),
+                  "{}{}Ptr",
+                  Cr::Utility::String::lowercase(attrName.slice(0, 1)),
                   attrName.slice(1, attrName.size()));
               // Temporary debug message
               Cr::Utility::formatInto(debugStr, debugStr.size(),
@@ -2673,7 +2674,7 @@ Mn::Trade::MaterialData ResourceManager::buildCustomAttributeFlatMaterial(
   // material
   if (flatMat.hasTexture()) {
     arrayAppend(custAttributes,
-                {"ambientTexture",
+                {"ambientTexturePtr",
                  textures_.at(textureBaseIndex + flatMat.texture()).get()});
   }
   // Merge new attributes with those specified in original material

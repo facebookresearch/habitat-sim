@@ -45,24 +45,24 @@ GenericDrawable::GenericDrawable(
   /* If texture transformation is specified, enable it only if the material is
      actually textured -- it's an error otherwise */
   if (materialData_->commonTextureMatrix() != Mn::Matrix3{} &&
-      (materialData_->hasAttribute("ambientTexture") ||
-       materialData_->hasAttribute("baseColorTexture") ||
-       materialData_->hasAttribute("diffuseTexture") ||
-       materialData_->hasAttribute("specularTexture") ||
-       materialData_->hasAttribute("objectIdTexture"))) {
+      (materialData_->hasAttribute("ambientTexturePtr") ||
+       materialData_->hasAttribute("baseColorTexturePtr") ||
+       materialData_->hasAttribute("diffuseTexturePtr") ||
+       materialData_->hasAttribute("specularTexturePtr") ||
+       materialData_->hasAttribute("objectIdTexturePtr"))) {
     flags_ |= Mn::Shaders::PhongGL::Flag::TextureTransformation;
   }
-  if (materialData_->hasAttribute("ambientTexture")) {
+  if (materialData_->hasAttribute("ambientTexturePtr")) {
     flags_ |= Mn::Shaders::PhongGL::Flag::AmbientTexture;
   }
-  if (materialData_->hasAttribute("diffuseTexture")) {
+  if (materialData_->hasAttribute("diffuseTexturePtr")) {
     flags_ |= Mn::Shaders::PhongGL::Flag::DiffuseTexture;
   }
-  if (materialData_->hasAttribute("specularTexture")) {
+  if (materialData_->hasAttribute("specularTexturePtr")) {
     flags_ |= Mn::Shaders::PhongGL::Flag::SpecularTexture;
   }
 
-  if (materialData_->hasAttribute("normalTexture")) {
+  if (materialData_->hasAttribute("normalTexturePtr")) {
     if (meshAttributeFlags & Drawable::Flag::HasTangent) {
       flags_ |= Mn::Shaders::PhongGL::Flag::NormalTexture;
       if (meshAttributeFlags & Drawable::Flag::HasSeparateBitangent) {
@@ -76,7 +76,7 @@ GenericDrawable::GenericDrawable(
   if (materialData_->attribute<bool>("hasPerVertexObjectId")) {
     flags_ |= Mn::Shaders::PhongGL::Flag::InstancedObjectId;
   }
-  if (materialData_->hasAttribute("objectIdTexture")) {
+  if (materialData_->hasAttribute("objectIdTexturePtr")) {
     flags_ |= Mn::Shaders::PhongGL::Flag::ObjectIdTexture;
   }
   if (meshAttributeFlags & Drawable::Flag::HasVertexColor) {
@@ -184,23 +184,23 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
 
   if (flags_ & Mn::Shaders::PhongGL::Flag::AmbientTexture) {
     shader_->bindAmbientTexture(
-        *(materialData_->attribute<Mn::GL::Texture2D*>("ambientTexture")));
+        *(materialData_->attribute<Mn::GL::Texture2D*>("ambientTexturePtr")));
   }
   if (flags_ & Mn::Shaders::PhongGL::Flag::DiffuseTexture) {
     shader_->bindDiffuseTexture(
-        *(materialData_->attribute<Mn::GL::Texture2D*>("diffuseTexture")));
+        *(materialData_->attribute<Mn::GL::Texture2D*>("diffuseTexturePtr")));
   }
   if (flags_ & Mn::Shaders::PhongGL::Flag::SpecularTexture) {
     shader_->bindSpecularTexture(
-        *(materialData_->attribute<Mn::GL::Texture2D*>("specularTexture")));
+        *(materialData_->attribute<Mn::GL::Texture2D*>("specularTexturePtr")));
   }
   if (flags_ & Mn::Shaders::PhongGL::Flag::NormalTexture) {
     shader_->bindNormalTexture(
-        *(materialData_->attribute<Mn::GL::Texture2D*>("normalTexture")));
+        *(materialData_->attribute<Mn::GL::Texture2D*>("normalTexturePtr")));
   }
   if (flags_ >= Mn::Shaders::PhongGL::Flag::ObjectIdTexture) {
     shader_->bindObjectIdTexture(
-        *(materialData_->attribute<Mn::GL::Texture2D*>("objectIdTexture")));
+        *(materialData_->attribute<Mn::GL::Texture2D*>("objectIdTexturePtr")));
   }
 
   if (skinData_) {
