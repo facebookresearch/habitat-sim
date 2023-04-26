@@ -60,14 +60,11 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
     if (meshAttributeFlags & gfx::Drawable::Flag::HasTangent) {
       flags_ |= PbrShader::Flag::PrecomputedTangent;
     }
-    if (tmpMaterialData.attribute<float>(
-            Mn::Trade::MaterialAttribute::NormalTextureScale) != 1.0f) {
+    if (tmpMaterialData.normalTextureScale() != 1.0f) {
       flags_ |= PbrShader::Flag::NormalTextureScale;
-      CORRADE_ASSERT(
-          tmpMaterialData.attribute<float>(
-              Mn::Trade::MaterialAttribute::NormalTextureScale) > 0.0f,
-          "PbrDrawable::PbrDrawable(): the normal texture scale "
-          "must be positive.", );
+      CORRADE_ASSERT(tmpMaterialData.normalTextureScale() > 0.0f,
+                     "PbrDrawable::PbrDrawable(): the normal texture scale "
+                     "must be positive.", );
     }
   }
   if (materialData_->hasAttribute("emissiveTexture")) {

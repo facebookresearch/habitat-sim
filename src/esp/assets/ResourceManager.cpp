@@ -2586,40 +2586,44 @@ void ResourceManager::loadMaterials(Importer& importer,
           materialAttributes = materialData->attributeData();
       // Returns nullptr if has no attributes
       if (materialAttributes != nullptr) {
-        // Idxs in materialAttributes corresponding to each layer
-        const Cr::Containers::ArrayView<const Mn::UnsignedInt> layersFromMat =
-            materialData->layerData();
+        // For all layers
+        for (int layerIdx = 0; layerIdx < numMaterialLayers; ++layerIdx) {
+          // Add all material texture pointers into new attributes
+          // find start and end idxs for each layer
+          int stIdx = materialData->attributeDataOffset(layerIdx);
+          int endIdx = materialData->attributeDataOffset(layerIdx + 1);
 
-        int layerIdx = 0;
-        // Add all material texture pointers into new attributes
-        for (int mIdx = 0; mIdx < materialAttributes.size(); ++mIdx) {
-          const Mn::Trade::MaterialAttributeData& materialAttribute =
-              materialAttributes[mIdx];
-          auto attrName = materialAttribute.name();
-          const auto matType = materialAttribute.type();
-          // Find textures and add them to newAttributes
-          // bool found = (std::string::npos != key.find(strToLookFor));
-          if ((matType == Mn::Trade::MaterialAttributeType::UnsignedInt) &&
-              attrName.contains("Texture") && !attrName.contains("Scale")) {
-            // texture index, copy texture pointer into newAttributes
-            const Mn::UnsignedInt txtrIdx =
-                materialAttribute.value<Mn::UnsignedInt>();
-            // copy texture into new attributes tagged with lowercase material
-            // name
-            auto newAttrName = Cr::Utility::formatString(
-                "{}{}", Cr::Utility::String::lowercase(attrName.slice(0, 1)),
-                attrName.slice(1, attrName.size()));
-            // Temporary debug message
-            Cr::Utility::formatInto(debugStr, debugStr.size(),
-                                    "| txtr ptr name:{} | idx :{}  Layer {}",
-                                    newAttrName, (textureBaseIndex + txtrIdx),
-                                    layerIdx);
-            arrayAppend(
-                newAttributes,
-                {newAttrName, textures_.at(textureBaseIndex + txtrIdx).get()});
-          }
-        }
-      }  // if has attributes
+          for (int mIdx = stIdx; mIdx < endIdx; ++mIdx) {
+            const Mn::Trade::MaterialAttributeData& materialAttribute =
+                materialAttributes[mIdx];
+            auto attrName = materialAttribute.name();
+            const auto matType = materialAttribute.type();
+            // Find textures and add them to newAttributes
+            // bool found = (std::string::npos != key.find(strToLookFor));
+            if ((matType == Mn::Trade::MaterialAttributeType::UnsignedInt) &&
+                attrName.hasSuffix("Texture")) {
+              // texture index, copy texture pointer into newAttributes
+              const Mn::UnsignedInt txtrIdx =
+                  materialAttribute.value<Mn::UnsignedInt>();
+              // copy texture into new attributes tagged with lowercase material
+              // name
+              auto newAttrName = Cr::Utility::formatString(
+                  "{}{}", Cr::Utility::String::lowercase(attrName.slice(0, 1)),
+                  attrName.slice(1, attrName.size()));
+              // Temporary debug message
+              Cr::Utility::formatInto(debugStr, debugStr.size(),
+                                      "| txtr ptr name:{} | idx :{}  Layer {}",
+                                      newAttrName, (textureBaseIndex + txtrIdx),
+                                      layerIdx);
+              arrayAppend(newAttributes,
+                          {newAttrName,
+                           textures_.at(textureBaseIndex + txtrIdx).get()});
+            }  // if texture found
+          }    // for each material attribute in layer
+          // Save this layer's offset
+          arrayAppend(newLayers, newAttributes.size());
+        }  // for each layer
+      }    // if material has attributes
 
       // Merge all texture-pointer custom attributes with material holding
       // original attributes + non-texture-pointer custom attributes for final
@@ -2627,7 +2631,8 @@ void ResourceManager::loadMaterials(Importer& importer,
       Cr::Containers::Optional<Mn::Trade::MaterialData> finalMaterial =
           Mn::MaterialTools::merge(
               *mergedCustomMaterial,
-              Mn::Trade::MaterialData{{}, std::move(newAttributes), newLayers});
+              Mn::Trade::MaterialData{
+                  {}, std::move(newAttributes), std::move(newLayers)});
 
       ESP_DEBUG() << debugStr;
       // for now, just use unique ID for material key. This may change if we
