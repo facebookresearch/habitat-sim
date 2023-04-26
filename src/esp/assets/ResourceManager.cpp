@@ -2370,8 +2370,7 @@ Mn::Trade::MaterialData ResourceManager::setDefaultMaterialUserAttributes(
 
   Cr::Containers::Optional<Mn::Trade::MaterialData> finalMaterial =
       Mn::MaterialTools::merge(
-          material,
-          Mn::Trade::MaterialData{{}, Mn::Trade::DataFlags{}, newAttributes});
+          material, Mn::Trade::MaterialData{{}, std::move(newAttributes), {}});
 
   return std::move(*finalMaterial);
 }  // setDefaultMaterialUserAttributes
@@ -2580,40 +2579,50 @@ void ResourceManager::loadMaterials(Importer& importer,
       // Now build texture pointer array, with appropriate layers based on
       // number of layers in original material
 
-      // New material's attributes
-      Cr::Containers::Array<Mn::Trade::MaterialAttributeData> newAttributes;
+      // New txtrptr-holding material's attributes
+      Cr::Containers::Array<Mn::Trade::MaterialAttributeData> newAttributes{};
+      // New txtrptr-holding material's layers
+      Cr::Containers::Array<Mn::UnsignedInt> newLayers{};
+
       // Copy all texture pointers into array
       // list of all this material's attributes
       const Cr::Containers::ArrayView<const Mn::Trade::MaterialAttributeData>
           materialAttributes = materialData->attributeData();
+      // Returns nullptr if has no attributes
+      if (materialAttributes != nullptr) {
+        // Idxs in materialAttributes corresponding to each layer
+        const Cr::Containers::ArrayView<const Mn::UnsignedInt> layerIdxs =
+            materialData->layerData();
 
-      // Add all material texture pointers into new attributes
-      for (const Mn::Trade::MaterialAttributeData& materialAttribute :
-           materialAttributes) {
-        auto matName = materialAttribute.name();
-        const auto matType = materialAttribute.type();
-        // Find textures and add them to newAttributes
-        // bool found = (std::string::npos != key.find(strToLookFor));
-        if ((matType == Mn::Trade::MaterialAttributeType::UnsignedInt) &&
-            matName.contains("Texture") && !matName.contains("Scale")) {
-          // texture index, copy texture pointer into newAttributes
-          const Mn::UnsignedInt txtrIdx =
-              materialAttribute.value<Mn::UnsignedInt>();
-          // copy texture into new attributes tagged with lowercase material
-          // name
-          auto newMatName = Cr::Utility::formatString(
-              "{}{}Ptr", Cr::Utility::String::lowercase(matName.slice(0, 1)),
-              matName.slice(1, matName.size()));
+        // Add all material texture pointers into new attributes
+        for (int i = 0; i < materialAttributes.size(); ++i) {
+          const Mn::Trade::MaterialAttributeData& materialAttribute =
+              materialAttributes[i];
+          auto matName = materialAttribute.name();
+          const auto matType = materialAttribute.type();
+          // Find textures and add them to newAttributes
+          // bool found = (std::string::npos != key.find(strToLookFor));
+          if ((matType == Mn::Trade::MaterialAttributeType::UnsignedInt) &&
+              matName.contains("Texture") && !matName.contains("Scale")) {
+            // texture index, copy texture pointer into newAttributes
+            const Mn::UnsignedInt txtrIdx =
+                materialAttribute.value<Mn::UnsignedInt>();
+            // copy texture into new attributes tagged with lowercase material
+            // name
+            auto newMatName = Cr::Utility::formatString(
+                "{}{}Ptr", Cr::Utility::String::lowercase(matName.slice(0, 1)),
+                matName.slice(1, matName.size()));
 
-          Cr::Utility::formatInto(debugStr, debugStr.size(),
-                                  "| txtr ptr name:{} | idx :{} ", newMatName,
-                                  (textureBaseIndex + txtrIdx));
+            Cr::Utility::formatInto(debugStr, debugStr.size(),
+                                    "| txtr ptr name:{} | idx :{} ", newMatName,
+                                    (textureBaseIndex + txtrIdx));
 
-          arrayAppend(
-              newAttributes,
-              {newMatName, textures_.at(textureBaseIndex + txtrIdx).get()});
+            arrayAppend(
+                newAttributes,
+                {newMatName, textures_.at(textureBaseIndex + txtrIdx).get()});
+          }
         }
-      }
+      }  // if has attributes
 
       // Merge all texture-pointer custom attributes with material holding
       // original attributes + non-texture-pointer custom attributes for final
@@ -2621,8 +2630,7 @@ void ResourceManager::loadMaterials(Importer& importer,
       Cr::Containers::Optional<Mn::Trade::MaterialData> finalMaterial =
           Mn::MaterialTools::merge(
               *mergedCustomMaterial,
-              Mn::Trade::MaterialData{
-                  {}, Mn::Trade::DataFlags{}, newAttributes});
+              Mn::Trade::MaterialData{{}, std::move(newAttributes), newLayers});
 
       ESP_DEBUG() << debugStr;
       // for now, just use unique ID for material key. This may change if we
@@ -2666,9 +2674,10 @@ Mn::Trade::MaterialData ResourceManager::buildCustomAttributeFlatMaterial(
   }
   // Merge new attributes with those specified in original material
   // overridding original ambient, diffuse and specular colors
+  // Using owning MaterialData constructor to handle potential layers
   auto finalMaterial = Mn::MaterialTools::merge(
-      Mn::Trade::MaterialData{{}, Mn::Trade::DataFlags{}, custAttributes},
-      materialData, Mn::MaterialTools::MergeConflicts::KeepFirstIgnoreType);
+      Mn::Trade::MaterialData{{}, std::move(custAttributes), {}}, materialData,
+      Mn::MaterialTools::MergeConflicts::KeepFirstIgnoreType);
 
   // Set default, expected user attributes for the final material and return
   return setDefaultMaterialUserAttributes(*finalMaterial,
@@ -2687,12 +2696,17 @@ Mn::Trade::MaterialData ResourceManager::buildCustomAttributePhongMaterial(
 
   // Merge new attributes with those specified in original material
   // overridding original ambient, diffuse and specular colors
-  auto finalMaterial = Mn::MaterialTools::merge(
-      Mn::Trade::MaterialData{{}, Mn::Trade::DataFlags{}, custAttributes},
-      materialData, Mn::MaterialTools::MergeConflicts::KeepFirstIgnoreType);
+  if (custAttributes.size() > 0) {
+    // Using owning MaterialData constructor to handle potential layers
+    auto finalMaterial = Mn::MaterialTools::merge(
+        Mn::Trade::MaterialData{{}, std::move(custAttributes), {}},
+        materialData, Mn::MaterialTools::MergeConflicts::KeepFirstIgnoreType);
 
-  // Set default, expected user attributes for the final material and return
-  return setDefaultMaterialUserAttributes(*finalMaterial,
+    // Set default, expected user attributes for the final material and return
+    return setDefaultMaterialUserAttributes(*finalMaterial,
+                                            ObjectInstanceShaderType::Phong);
+  }
+  return setDefaultMaterialUserAttributes(materialData,
                                           ObjectInstanceShaderType::Phong);
 
 }  // ResourceManager::buildPhongShadedMaterialData
@@ -2711,8 +2725,9 @@ Mn::Trade::MaterialData ResourceManager::buildCustomAttributePbrMaterial(
   // overridding original ambient, diffuse and specular colors
 
   if (custAttributes.size() > 0) {
+    // Using owning MaterialData constructor to handle potential layers
     auto finalMaterial = Mn::MaterialTools::merge(
-        Mn::Trade::MaterialData{{}, Mn::Trade::DataFlags{}, custAttributes},
+        Mn::Trade::MaterialData{{}, std::move(custAttributes), {}},
         materialData, Mn::MaterialTools::MergeConflicts::KeepFirstIgnoreType);
 
     // Set default, expected user attributes for the final material and return
