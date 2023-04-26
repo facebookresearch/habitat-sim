@@ -12,10 +12,12 @@
 #include "BulletDynamics/Featherstone/btMultiBodyLinkCollider.h"
 #include "BulletRigidObject.h"
 #include "BulletURDFImporter.h"
+#include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/assets/ResourceManager.h"
 #include "esp/metadata/attributes/PhysicsManagerAttributes.h"
 #include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
+#include "esp/scene/SceneNode.h"
 #include "esp/sim/Simulator.h"
 
 namespace esp {
@@ -164,9 +166,10 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
 
   articulatedObject->initializeFromURDF(*urdfImporter_, {}, physicsNode_);
   auto model = u2b->getModel();
+  const int semanticId = articulatedObject->node().getSemanticId();
 
   // if the URDF model specifies a render asset, load and link it
-  auto renderAssetPath = model->getRenderAsset();
+  const auto renderAssetPath = model->getRenderAsset();
   if (renderAssetPath) {
     // load associated skinned mesh
     assets::AssetInfo assetInfo = assets::AssetInfo::fromPath(*renderAssetPath);
@@ -175,8 +178,15 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
     creationInfo.lightSetupKey = lightSetup;
     creationInfo.scale = globalScale * Mn::Vector3(1.f, 1.f, 1.f);
     creationInfo.rig = articulatedObject;
-    resourceManager_.loadAndCreateRenderAssetInstance(assetInfo, creationInfo,
-                                                      objectNode, drawables);
+    esp::assets::RenderAssetInstanceCreationInfo::Flags flags;
+    flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsRGBD;
+    flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsSemantic;
+    creationInfo.flags = flags;
+    auto gfxNode = resourceManager_.loadAndCreateRenderAssetInstance(
+        assetInfo, creationInfo, objectNode, drawables);
+    // Propagate the semantic ID to the graphics subtree
+    esp::scene::setSemanticIdForSubtree(
+        gfxNode, articulatedObject->node().getSemanticId());
   }
 
   // allocate ids for links
