@@ -790,8 +790,8 @@ class ResourceManager {
       float shininess = 80.0f);
 
   /**
-   * @brief Define and set the passed @ref Magnum::Trade::MaterialData with the
-   * user-defined attributes that Habitat-Sim expects.
+   * @brief Define and set user-defined attributes for the passed
+   * @ref Magnum::Trade::MaterialData.
    * @param material The material to initialize with the expected
    * Habitat-specific user-defined attributes.
    * @param shaderTypeToUse What shader to use to render the objects with this
@@ -802,8 +802,9 @@ class ResourceManager {
    * ids for semantics.
    * @param txtrIdx The absolute index in the @ref textures_ store for the semantic
    * annotation texture.
+   * @return the updated material
    */
-  void setDefaultMaterialUserAttributes(
+  Mn::Trade::MaterialData setDefaultMaterialUserAttributes(
       Mn::Trade::MaterialData& material,
       ObjectInstanceShaderType shaderTypeToUse,
       bool hasVertObjID = false,

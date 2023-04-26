@@ -30,8 +30,8 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
       materialData_{
           shaderManager.get<Magnum::Trade::MaterialData>(materialDataKey)},
       pbrIbl_(pbrIbl) {
-  if (materialData_->attribute<Mn::GL::Texture2D*>("metallicTexture") &&
-      materialData_->attribute<Mn::GL::Texture2D*>("roughnessTexture")) {
+  if (materialData_->hasAttribute("metallicTexture") &&
+      materialData_->hasAttribute("roughnessTexture")) {
     CORRADE_ASSERT(
         materialData_->attribute<Mn::GL::Texture2D*>("metallicTexture") ==
             materialData_->attribute<Mn::GL::Texture2D*>("roughnessTexture"),
@@ -46,31 +46,31 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
   if (tmpMaterialData.commonTextureMatrix() != Mn::Matrix3{}) {
     flags_ |= PbrShader::Flag::TextureTransformation;
   }
-  if (materialData_->attribute<Mn::GL::Texture2D*>("baseColorTexture")) {
+  if (materialData_->hasAttribute("baseColorTexture")) {
     flags_ |= PbrShader::Flag::BaseColorTexture;
   }
-  if (materialData_->attribute<Mn::GL::Texture2D*>("roughnessTexture")) {
+  if (materialData_->hasAttribute("roughnessTexture")) {
     flags_ |= PbrShader::Flag::RoughnessTexture;
   }
-  if (materialData_->attribute<Mn::GL::Texture2D*>("metallicTexture")) {
+  if (materialData_->hasAttribute("metallicTexture")) {
     flags_ |= PbrShader::Flag::MetallicTexture;
   }
-  if (materialData_->attribute<Mn::GL::Texture2D*>("normalTexture")) {
+  if (materialData_->hasAttribute("normalTexture")) {
     flags_ |= PbrShader::Flag::NormalTexture;
     if (meshAttributeFlags & gfx::Drawable::Flag::HasTangent) {
       flags_ |= PbrShader::Flag::PrecomputedTangent;
     }
-    if (materialData_->attribute<float>(
+    if (tmpMaterialData.attribute<float>(
             Mn::Trade::MaterialAttribute::NormalTextureScale) != 1.0f) {
       flags_ |= PbrShader::Flag::NormalTextureScale;
       CORRADE_ASSERT(
-          materialData_->attribute<float>(
+          tmpMaterialData.attribute<float>(
               Mn::Trade::MaterialAttribute::NormalTextureScale) > 0.0f,
           "PbrDrawable::PbrDrawable(): the normal texture scale "
           "must be positive.", );
     }
   }
-  if (materialData_->attribute<Mn::GL::Texture2D*>("emissiveTexture")) {
+  if (materialData_->hasAttribute("emissiveTexture")) {
     flags_ |= PbrShader::Flag::EmissiveTexture;
   }
   if (materialData_->attribute<bool>("hasPerVertexObjectId")) {

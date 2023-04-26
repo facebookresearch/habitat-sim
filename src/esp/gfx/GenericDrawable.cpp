@@ -45,22 +45,23 @@ GenericDrawable::GenericDrawable(
   /* If texture transformation is specified, enable it only if the material is
      actually textured -- it's an error otherwise */
   if (materialData_->commonTextureMatrix() != Mn::Matrix3{} &&
-      (materialData_->ambientTexture() || materialData_->diffuseTexture() ||
-       materialData_->specularTexture() ||
+      (materialData_->hasAttribute("ambientTexture") ||
+       materialData_->hasAttribute("diffuseTexture") ||
+       materialData_->hasAttribute("specularTexture") ||
        materialData_->attribute<bool>("hasObjectIdTexture"))) {
     flags_ |= Mn::Shaders::PhongGL::Flag::TextureTransformation;
   }
-  if (materialData_->ambientTexture()) {
+  if (materialData_->hasAttribute("ambientTexture")) {
     flags_ |= Mn::Shaders::PhongGL::Flag::AmbientTexture;
   }
-  if (materialData_->diffuseTexture()) {
+  if (materialData_->hasAttribute("diffuseTexture")) {
     flags_ |= Mn::Shaders::PhongGL::Flag::DiffuseTexture;
   }
-  if (materialData_->specularTexture()) {
+  if (materialData_->hasAttribute("specularTexture")) {
     flags_ |= Mn::Shaders::PhongGL::Flag::SpecularTexture;
   }
 
-  if (materialData_->normalTexture()) {
+  if (materialData_->hasAttribute("normalTexture")) {
     if (meshAttributeFlags & Drawable::Flag::HasTangent) {
       flags_ |= Mn::Shaders::PhongGL::Flag::NormalTexture;
       if (meshAttributeFlags & Drawable::Flag::HasSeparateBitangent) {
