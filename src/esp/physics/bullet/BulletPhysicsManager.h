@@ -145,7 +145,8 @@ class BulletPhysicsManager : public PhysicsManager {
   bool attachLinkGeometry(ArticulatedLink* linkObject,
                           const std::shared_ptr<io::URDF::Link>& link,
                           gfx::DrawableGroup* drawables,
-                          const std::string& lightSetup);
+                          const std::string& lightSetup,
+                          int semanticId);
 
   /**
    * @brief Override of @ref PhysicsManager::removeObject to also remove any

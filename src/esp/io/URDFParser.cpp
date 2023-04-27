@@ -121,6 +121,7 @@ bool Model::loadJsonAttributes(const std::string& filename) {
     ESP_ERROR() << "<Model> : Failed to parse" << jsonName << "as JSON.";
     return false;
   }
+
   // JSON file exists and has been loaded; use to build this model's
   // configuration attributes
   // convert doc to const Json Generic val
@@ -157,7 +158,7 @@ bool Model::loadJsonAttributes(const std::string& filename) {
   if (jsonConfig.HasMember(attrSemanticId)) {
     if (!jsonConfig[attrSemanticId].IsInt()) {
       ESP_WARNING() << "<Model> : Json Config file specifies semantic_id "
-                       "attribute but it is not an it. Skipping semantic_id "
+                       "attribute but it is not an int. Skipping semantic_id "
                        "config load.";
       return false;
     } else {
