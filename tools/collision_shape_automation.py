@@ -1836,90 +1836,6 @@ class CollisionProxyOptimizer:
         scene.export(output_file)
         return output_file, len(parts)
 
-    def grid_search_vhacd_params(self, obj_template_handle: str):
-        """
-        For a specified set of search parameters, try all combinations by:
-        1. computing new proxy shape
-        2. evaluating new proxy shape across various metrics
-        """
-
-        # vhacd_test_params = habitat_sim.VHACDParameters()
-
-        # vhacd_test_params.max_num_vertices_per_ch = 64
-        # vhacd_test_params.max_convex_hulls = 1024
-        # vhacd_test_params.plane_downsampling = 4 #1-16
-        # vhacd_test_params.convex_hull_downsampling = 4 #1-16
-
-        # vhacd_test_params.alpha = 0.05 #bias towards symmetry [0-1]
-        # vhacd_test_params.beta = 0.05 #bias toward revolution axes [0-1]
-
-        # vhacd_test_params.mode = 0 #0=voxel, 1=tetrahedral
-        # vhacd_test_params.pca = 0 #1=use PCA normalization
-
-        param_ranges = {
-            # "pca": (0,1), #pca seems worse, no speed improvement
-            # "mode": (0,1), #tetrahedral mode seems worse
-            "alpha": (0.05, 0.1),
-            # "alpha": (0.05,),
-            "beta": (0.05, 0.1),
-            "plane_downsampling": [1],
-            "convex_hull_downsampling": [1],
-            # "max_num_vertices_per_ch": (16, 32),
-            "max_convex_hulls": (64, 128),
-            # "max_convex_hulls": (500,),
-            "resolution": [200000],
-        }
-
-        permutations = self.permute_param_variations(param_ranges)
-
-        vhacd_start_time = time.time()
-        vhacd_iteration_times = {}
-        # evaluate VHACD settings
-        for setting in permutations:
-            vhacd_params = habitat_sim.VHACDParameters()
-            setting_string = ""
-            for attr, val in setting:
-                setattr(vhacd_params, attr, val)
-                setting_string += f" '{attr}'={val}"
-            vhacd_iteration_time = time.time()
-            # create new shape and increment shape id
-            self.compute_vhacd_col_shape(obj_template_handle, vhacd_params)
-            self.increment_proxy_index(obj_template_handle)
-
-            # cache vhacd settings
-            shape_id = self.get_proxy_shape_id(obj_template_handle)
-            if "vhacd_settings" not in self.gt_data[obj_template_handle]:
-                self.gt_data[obj_template_handle]["vhacd_settings"] = {}
-            self.gt_data[obj_template_handle]["vhacd_settings"][shape_id] = (
-                vhacd_params,
-                setting_string,
-            )
-
-            # compute shape level metrics:
-            self.compute_proxy_metrics(obj_template_handle)
-            # self.compute_grid_collision_times(obj_template_handle, subdivisions=1)
-            # self.run_physics_settle_test(obj_template_handle)
-            # self.run_physics_sphere_shake_test(obj_template_handle)
-
-            # compute receptacle metrics
-            if self.compute_receptacle_useability_metrics:
-                self.compute_receptacle_access_metrics(
-                    obj_handle=obj_template_handle, use_gt=False
-                )
-                self.compute_receptacle_stability(
-                    obj_handle=obj_template_handle, use_gt=False
-                )
-            vhacd_iteration_times[shape_id] = time.time() - vhacd_iteration_time
-
-        print(f"Total VHACD time = {time.time()-vhacd_start_time}")
-        print("    Iteration times = ")
-        for shape_id, settings in self.gt_data[obj_template_handle][
-            "vhacd_settings"
-        ].items():
-            print(
-                f"     {shape_id} - {settings[1]} - {vhacd_iteration_times[shape_id]}"
-            )
-
     def compute_shape_score(self, obj_h: str, shape_id: str) -> float:
         """
         Compute the shape score for the given object and shape_id.
@@ -1965,7 +1881,7 @@ class CollisionProxyOptimizer:
         param_range_override: Optional[Dict[str, List[Any]]] = None,
     ):
         """
-        Run VHACD optimization for a specific object.
+        Run COACD optimization for a specific object.
         Identify the optimal collision shape and save the result as the new default.
 
         :return: Tuple(best_shape_id, best_shape_score, original_shape_score) if best_shape_id == "pr0", then optimization didn't change anything.
@@ -1979,12 +1895,7 @@ class CollisionProxyOptimizer:
         self.compute_receptacle_stability(obj_h)
         self.compute_receptacle_access_metrics(obj_h, use_gt=True)
         self.compute_receptacle_access_metrics(obj_h, use_gt=False)
-        if method == "vhacd":
-            assert (
-                col_shape_dir is not None
-            ), "Must provide the directory of the VHACD collision shape output."
-            self.grid_search_vhacd_params(obj_h)
-        elif method == "coacd":
+        if method == "coacd":
             self.run_coacd_grid_search(obj_h, param_range_override)
         self.compute_gt_errors(obj_h)
 
@@ -2014,14 +1925,7 @@ class CollisionProxyOptimizer:
                 f"Best shape_id = {best_shape_id} with shape score {best_shape_score} better than 'pr0' with shape score {pr0_shape_score}."
             )
             # copy the collision asset into the dataset directory
-            if method == "vhacd":
-                self.compute_vhacd_col_shape(
-                    obj_h, self.gt_data[obj_h][settings_key][best_shape_id][0]
-                )
-                obj_name = obj_h.split(".object_config.json")[0].split("/")[-1]
-                col_shape_path = os.path.join(col_shape_dir, obj_name + ".obj")
-                os.system(f"obj2gltf -i {col_shape_path} -o {cur_col_shape_path}")
-            elif method == "coacd":
+            if method == "coacd":
                 asset_file = self.gt_data[obj_h]["coacd_output_files"][best_shape_id]
                 os.system(f"cp {asset_file} {cur_col_shape_path}")
         else:
@@ -2038,50 +1942,6 @@ class CollisionProxyOptimizer:
         # then save results to file
         # self.save_results_to_csv("cpo_out")
         return (best_shape_id, best_shape_score, pr0_shape_score, best_shape_params)
-
-    def compute_vhacd_col_shape(
-        self, obj_template_handle: str, vhacd_params: habitat_sim.VHACDParameters
-    ) -> None:
-        """
-        Compute a new VHACD convex decomposition for the object and set it as the active collision proxy.
-        """
-
-        new_template_handle = None
-
-        otm = self.mm.object_template_manager
-        matching_obj_handles = otm.get_file_template_handles(obj_template_handle)
-        assert (
-            len(matching_obj_handles) == 1
-        ), f"None or many matching handles to substring `{obj_template_handle}`: {matching_obj_handles}"
-        obj_template = otm.get_template_by_handle(matching_obj_handles[0])
-        render_asset = obj_template.render_asset_handle
-        render_asset_path = os.path.abspath(render_asset)
-
-        cfg = self.get_cfg_with_mm()
-        with habitat_sim.Simulator(cfg) as sim:
-            new_template_handle = sim.apply_convex_hull_decomposition(
-                render_asset_path, vhacd_params, save_chd_to_obj=True
-            )
-
-        # set the collision asset
-        matching_vhacd_handles = otm.get_file_template_handles(new_template_handle)
-        assert (
-            len(matching_vhacd_handles) == 1
-        ), f"None or many matching VHACD handles to substring `{new_template_handle}`: {matching_vhacd_handles}"
-
-        vhacd_template = otm.get_template_by_handle(matching_vhacd_handles[0])
-
-        # copy the file to glb
-        new_filename = vhacd_template.collision_asset_handle.split(".obj")[0] + ".glb"
-        command = (
-            f"obj2gltf -i {vhacd_template.collision_asset_handle} -o {new_filename}"
-        )
-
-        os.system(command)
-        print(command)
-
-        obj_template.collision_asset_handle = new_filename
-        otm.register_template(obj_template)
 
     def cache_global_results(self) -> None:
         """
@@ -2310,7 +2170,6 @@ class CollisionProxyOptimizer:
                 self.compute_receptacle_access_metrics(obj_h, use_gt=True)
                 print(" PR Receptacle Metrics:")
                 self.compute_receptacle_access_metrics(obj_h, use_gt=False)
-            # self.grid_search_vhacd_params(obj_h)
             self.compute_gt_errors(obj_h)
             print_dict_structure(self.gt_data)
             self.cache_global_results()
