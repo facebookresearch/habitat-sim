@@ -12,7 +12,14 @@ import sys
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
-import coacd
+coacd_imported = False
+try:
+    import coacd
+
+    coacd_imported = True
+except Exception:
+    coacd_imported = False
+    print("Failed to import coacd, is it installed? Linux only: 'pip install coacd'")
 import trimesh
 
 # not adding this causes some failures in mesh import
@@ -1774,6 +1781,9 @@ class CollisionProxyOptimizer:
         Run COACD on an object given a set of parameters producing a file.
         If output_file is not provided, defaults to "COACD_output/obj_name.glb" where obj_name is truncated handle (filename, no path or file ending).
         """
+        assert (
+            coacd_imported
+        ), "coacd is not installed. Linux only: 'pip install coacd'."
         if output_file is None:
             obj_name = obj_template_handle.split(".object_config.json")[0].split("/")[
                 -1

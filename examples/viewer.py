@@ -673,7 +673,7 @@ class HabitatSimInteractiveViewer(Application):
                                 ):
                                     rec_color = mn.Color4.blue()
 
-                            receptacle.debug_draw(self.sim, color=rec_color)
+                        receptacle.debug_draw(self.sim, color=rec_color)
 
         # mouse raycast circle
         white = mn.Color4(mn.Vector3(1.0), 1.0)
