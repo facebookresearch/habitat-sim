@@ -6,7 +6,6 @@ import ctypes
 import json
 import math
 import os
-import random
 import string
 import sys
 import time
@@ -19,6 +18,7 @@ sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 import habitat.datasets.rearrange.samplers.receptacle as hab_receptacle
 import magnum as mn
 import numpy as np
+from habitat.datasets.rearrange.samplers.object_sampler import ObjectSampler
 from magnum import shaders, text
 from magnum.platform.glfw import Application
 
@@ -282,6 +282,7 @@ class HabitatSimInteractiveViewer(Application):
             "010_potted_meat_can",
             "024_bowl",
         ]
+        self.clutter_object_handles = []
         self.clutter_object_instances = []
         # add some clutter objects to the MM
         self.sim.metadata_mediator.object_template_manager.load_configs(
