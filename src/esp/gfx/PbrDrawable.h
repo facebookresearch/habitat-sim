@@ -18,6 +18,35 @@ namespace gfx {
 class PbrDrawable : public Drawable {
  public:
   /**
+   * This cache holds all the material quantities and attributes from the
+   * Magnum MaterialData to speed up access in draw.
+   */
+  struct PBRMaterialCache {
+    Mn::Color4 baseColor{1.0f};
+    float roughness = 1.0f;
+    float metalness = 1.0f;
+    Mn::Color3 emissiveColor{};
+    Mn::Matrix3 textureMatrix{};
+
+    Mn::GL::Texture2D* baseColorTexture = nullptr;
+
+    bool hasAnyMetallicRoughnessTexture = false;
+
+    Mn::GL::Texture2D* useMetallicRoughnessTexture = nullptr;
+    /**
+     * Currently we only support a single NoneMetalnessRoughness texture for
+     * both metalness and roughness.  Separate textures will be stored, but only
+     * the useMetallicRoughnessTexture should be sent to the shader
+     */
+    Mn::GL::Texture2D* noneRoughnessMetallicTexture = nullptr;
+    Mn::GL::Texture2D* roughnessTexture = nullptr;
+    Mn::GL::Texture2D* metallicTexture = nullptr;
+
+    Mn::GL::Texture2D* normalTexture = nullptr;
+    Mn::GL::Texture2D* emissiveTexture = nullptr;
+  };
+
+  /**
    * @brief Constructor, to create a PbrDrawable for the given object using
    * shader and mesh. Adds drawable to given group and uses provided texture,
    * and color for textured buffer and color shader output respectively
@@ -48,6 +77,26 @@ class PbrDrawable : public Drawable {
                      PbrShader::Flag shadowFlag);
 
   static constexpr const char* SHADER_KEY_TEMPLATE = "PBR-lights={}-flags={}";
+
+  /**
+   * Set or change this drawable's @ref Magnum::Trade::MaterialData values from passed material.
+   * This is only pertinent for material-equipped drawables.
+   * @param material
+   */
+  void setMaterialValues(
+      const Mn::Resource<Mn::Trade::MaterialData, Mn::Trade::MaterialData>&
+          material) override {
+    setMaterialValuesInternal(material);
+  }
+
+ private:
+  /**
+   * @brief Internal implementation of material setting, so that it can be
+   * called from constructor without virtual dispatch issues
+   */
+  void setMaterialValuesInternal(
+      const Mn::Resource<Mn::Trade::MaterialData, Mn::Trade::MaterialData>&
+          material);
 
  protected:
   /**
@@ -97,9 +146,21 @@ class PbrDrawable : public Drawable {
   PbrShader::Flags flags_;
   ShaderManager& shaderManager_;
   Mn::Resource<Mn::GL::AbstractShaderProgram, PbrShader> shader_;
-  Mn::Resource<Mn::Trade::MaterialData, Mn::Trade::MaterialData> materialData_;
   Mn::Resource<LightSetup> lightSetup_;
   PbrImageBasedLighting* pbrIbl_ = nullptr;
+
+  /**
+   * Local cache of material quantities to speed up access in draw
+   */
+  PBRMaterialCache matCache{};
+  /**
+   * Creation attributes of this drawable
+   */
+  const gfx::Drawable::Flags meshAttributeFlags_;
+  /**
+   * Material to use to render this PBR drawawble
+   */
+  Mn::Resource<Mn::Trade::MaterialData, Mn::Trade::MaterialData> materialData_;
   ShadowMapManager* shadowMapManger_ = nullptr;
   ShadowMapKeys* shadowMapKeys_ = nullptr;
 };

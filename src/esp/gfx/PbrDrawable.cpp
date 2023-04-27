@@ -27,57 +27,11 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
     : Drawable{node, mesh, DrawableType::Pbr, group},
       shaderManager_{shaderManager},
       lightSetup_{shaderManager.get<LightSetup>(lightSetupKey)},
-      materialData_{
-          shaderManager.get<Mn::Trade::MaterialData>(materialDataKey)},
+      meshAttributeFlags_{meshAttributeFlags},
       pbrIbl_(pbrIbl) {
-  if (materialData_->hasAttribute("metallicTexturePtr") &&
-      materialData_->hasAttribute("roughnessTexturePtr")) {
-    CORRADE_ASSERT(
-        materialData_->attribute<Mn::GL::Texture2D*>("metallicTexturePtr") ==
-            materialData_->attribute<Mn::GL::Texture2D*>("roughnessTexturePtr"),
-        "PbrDrawable::PbrDrawable(): if both the metallic and roughness "
-        "texture exist, they must be packed in the same texture based on glTF "
-        "2.0 Spec.", );
-  }
-  const auto& tmpMaterialData =
-      materialData_->as<Mn::Trade::PbrMetallicRoughnessMaterialData>();
-  flags_ = PbrShader::Flag::ObjectId;
-  if (tmpMaterialData.commonTextureMatrix() != Mn::Matrix3{}) {
-    flags_ |= PbrShader::Flag::TextureTransformation;
-  }
-  if (materialData_->hasAttribute("noneRoughnessMetallicTexturePtr")) {
-    flags_ |= PbrShader::Flag::NoneRoughnessMetallicTexture;
-  }
-  if (materialData_->hasAttribute("baseColorTexturePtr")) {
-    flags_ |= PbrShader::Flag::BaseColorTexture;
-  }
-  if (materialData_->hasAttribute("roughnessTexturePtr")) {
-    flags_ |= PbrShader::Flag::RoughnessTexture;
-  }
-  if (materialData_->hasAttribute("metallicTexturePtr")) {
-    flags_ |= PbrShader::Flag::MetallicTexture;
-  }
-  if (materialData_->hasAttribute("normalTexturePtr")) {
-    flags_ |= PbrShader::Flag::NormalTexture;
-    if (meshAttributeFlags & gfx::Drawable::Flag::HasTangent) {
-      flags_ |= PbrShader::Flag::PrecomputedTangent;
-    }
-    if (tmpMaterialData.normalTextureScale() != 1.0f) {
-      flags_ |= PbrShader::Flag::NormalTextureScale;
-      CORRADE_ASSERT(tmpMaterialData.normalTextureScale() > 0.0f,
-                     "PbrDrawable::PbrDrawable(): the normal texture scale "
-                     "must be positive.", );
-    }
-  }
-  if (materialData_->hasAttribute("emissiveTexturePtr")) {
-    flags_ |= PbrShader::Flag::EmissiveTexture;
-  }
-  if (materialData_->attribute<bool>("hasPerVertexObjectId")) {
-    flags_ |= PbrShader::Flag::ObjectId;
-  }
-  if (materialData_->isDoubleSided()) {
-    flags_ |= PbrShader::Flag::DoubleSided;
-  }
+  setMaterialValuesInternal(
+      shaderManager.get<Mn::Trade::MaterialData>(materialDataKey));
+
   if (pbrIbl_) {
     flags_ |= PbrShader::Flag::ImageBasedLighting;
   }
@@ -87,6 +41,108 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
   // construction in this case.
   // updateShader().updateShaderLightParameters();
 }
+
+void PbrDrawable::setMaterialValuesInternal(
+    const Mn::Resource<Mn::Trade::MaterialData, Mn::Trade::MaterialData>&
+        material) {
+  materialData_ = material;
+
+  const auto& tmpMaterialData =
+      materialData_->as<Mn::Trade::PbrMetallicRoughnessMaterialData>();
+  flags_ = PbrShader::Flag::ObjectId;
+
+  matCache.baseColor = tmpMaterialData.baseColor();
+  matCache.roughness = tmpMaterialData.roughness();
+  matCache.metalness = tmpMaterialData.metalness();
+  matCache.emissiveColor = tmpMaterialData.emissiveColor();
+
+  if (materialData_->hasAttribute("metallicTexturePointer") &&
+      materialData_->hasAttribute("roughnessTexturePointer")) {
+    CORRADE_ASSERT(
+        materialData_->attribute<Mn::GL::Texture2D*>(
+            "metallicTexturePointer") ==
+            materialData_->attribute<Mn::GL::Texture2D*>(
+                "roughnessTexturePointer"),
+        "PbrDrawable::setMaterialValuesInternal(): if both the metallic and "
+        "roughness "
+        "texture exist, they must be packed in the same texture based on glTF "
+        "2.0 Spec.", );
+  }
+  if (tmpMaterialData.commonTextureMatrix() != Mn::Matrix3{}) {
+    flags_ |= PbrShader::Flag::TextureTransformation;
+    matCache.textureMatrix = tmpMaterialData.commonTextureMatrix();
+  }
+  if (materialData_->hasAttribute("baseColorTexturePointer")) {
+    flags_ |= PbrShader::Flag::BaseColorTexture;
+    matCache.baseColorTexture =
+        materialData_->attribute<Mn::GL::Texture2D*>("baseColorTexturePointer");
+  }
+
+  matCache.hasAnyMetallicRoughnessTexture = false;
+  matCache.useMetallicRoughnessTexture = nullptr;
+  // noneRoughnessMetallic takes precdence, but currently all are
+  // treated the same way
+  if (materialData_->hasAttribute("noneRoughnessMetallicTexturePointer")) {
+    flags_ |= PbrShader::Flag::NoneRoughnessMetallicTexture;
+    matCache.noneRoughnessMetallicTexture =
+        materialData_->attribute<Mn::GL::Texture2D*>(
+            "noneRoughnessMetallicTexturePointer");
+    matCache.hasAnyMetallicRoughnessTexture = true;
+    matCache.useMetallicRoughnessTexture =
+        matCache.noneRoughnessMetallicTexture;
+  }
+  if (materialData_->hasAttribute("roughnessTexturePointer")) {
+    flags_ |= PbrShader::Flag::RoughnessTexture;
+    matCache.roughnessTexture =
+        materialData_->attribute<Mn::GL::Texture2D*>("roughnessTexturePointer");
+    if (!matCache.hasAnyMetallicRoughnessTexture) {
+      matCache.useMetallicRoughnessTexture = matCache.roughnessTexture;
+    }
+    matCache.hasAnyMetallicRoughnessTexture = true;
+  }
+  if (materialData_->hasAttribute("metallicTexturePointer")) {
+    flags_ |= PbrShader::Flag::MetallicTexture;
+    matCache.metallicTexture =
+        materialData_->attribute<Mn::GL::Texture2D*>("metallicTexturePointer");
+
+    if (!matCache.hasAnyMetallicRoughnessTexture) {
+      matCache.useMetallicRoughnessTexture = matCache.metallicTexture;
+    }
+    matCache.hasAnyMetallicRoughnessTexture = true;
+  }
+
+  CORRADE_ASSERT(((matCache.useMetallicRoughnessTexture != nullptr) ==
+                  matCache.hasAnyMetallicRoughnessTexture),
+                 "PbrDrawable::setMaterialValuesInternal(): Error assigning "
+                 "proper Metallic/Roughness texture pointers - either a "
+                 "texture is expected but not present or vice versa.", );
+
+  if (materialData_->hasAttribute("normalTexturePointer")) {
+    flags_ |= PbrShader::Flag::NormalTexture;
+    matCache.normalTexture =
+        materialData_->attribute<Mn::GL::Texture2D*>("normalTexturePointer");
+    if (meshAttributeFlags_ & gfx::Drawable::Flag::HasTangent) {
+      flags_ |= PbrShader::Flag::PrecomputedTangent;
+    }
+    if (tmpMaterialData.normalTextureScale() != 1.0f) {
+      flags_ |= PbrShader::Flag::NormalTextureScale;
+      CORRADE_ASSERT(tmpMaterialData.normalTextureScale() > 0.0f,
+                     "PbrDrawable::PbrDrawable(): the normal texture scale "
+                     "must be positive.", );
+    }
+  }
+  if (materialData_->hasAttribute("emissiveTexturePointer")) {
+    flags_ |= PbrShader::Flag::EmissiveTexture;
+    matCache.emissiveTexture =
+        materialData_->attribute<Mn::GL::Texture2D*>("emissiveTexturePointer");
+  }
+  if (materialData_->attribute<bool>("hasPerVertexObjectId")) {
+    flags_ |= PbrShader::Flag::ObjectId;
+  }
+  if (materialData_->isDoubleSided()) {
+    flags_ |= PbrShader::Flag::DoubleSided;
+  }
+}  // PbrDrawable::setMaterialValuesInternal
 
 void PbrDrawable::setLightSetup(const Mn::ResourceKey& lightSetupKey) {
   lightSetup_ = shaderManager_.get<LightSetup>(lightSetupKey);
@@ -103,17 +159,17 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
 
   // ABOUT PbrShader::Flag::DoubleSided:
   //
-  // "Specifies whether the material is double sided. When this value is false,
-  // back-face culling is enabled. When this value is true, back-face culling is
-  // disabled and double sided lighting is enabled. The back-face must have its
-  // normals reversed before the lighting equation is evaluated."
-  // See here:
+  // "Specifies whether the material is double sided. When this value is
+  // false, back-face culling is enabled. When this value is true, back-face
+  // culling is disabled and double sided lighting is enabled. The back-face
+  // must have its normals reversed before the lighting equation is
+  // evaluated." See here:
   // https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/schema/material.schema.json
 
   // HOWEVER, WE CANNOT DISABLE BACK FACE CULLING (that is why the following
-  // code is commented out) since it causes lighting artifacts ("dashed lines")
-  // on hard edges. (maybe due to potential numerical issues? we do not know
-  // yet.)
+  // code is commented out) since it causes lighting artifacts ("dashed
+  // lines") on hard edges. (maybe due to potential numerical issues? we do
+  // not know yet.)
   /*
   if ((flags_ & PbrShader::Flag::DoubleSided) && glIsEnabled(GL_CULL_FACE)) {
     Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::FaceCulling);
@@ -126,9 +182,10 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   // Find determinant to calculate backface culling winding dir
   const float normalDet = rotScale.determinant();
   // Normal matrix is calculated as `m.inverted().transposed()`, and
-  // `m.inverted()` is the same as `m.comatrix().transposed()/m.determinant()`.
-  // We need the determinant to figure out the winding direction as well, thus
-  // we calculate it separately and then do
+  // `m.inverted()` is the same as
+  // `m.comatrix().transposed()/m.determinant()`. We need the determinant to
+  // figure out the winding direction as well, thus we calculate it separately
+  // and then do
   // `(m.comatrix().transposed()/determinant).transposed()`, which is the same
   // as `m.comatrix()/determinant`.
   Mn::Matrix3x3 normalMatrix = rotScale.comatrix() / normalDet;
@@ -137,8 +194,6 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   if (normalDet < 0) {
     Mn::GL::Renderer::setFrontFace(Mn::GL::Renderer::FrontFace::ClockWise);
   }
-  const auto& tmpMaterialData =
-      materialData_->as<Mn::Trade::PbrMetallicRoughnessMaterialData>();
 
   (*shader_)
       // e.g., semantic mesh has its own per vertex annotation, which has
@@ -155,10 +210,10 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
       .setNormalMatrix(normalMatrix)
       .setCameraWorldPosition(
           camera.object().absoluteTransformationMatrix().translation())
-      .setBaseColor(tmpMaterialData.baseColor())
-      .setRoughness(tmpMaterialData.roughness())
-      .setMetallic(tmpMaterialData.metalness())
-      .setEmissiveColor(tmpMaterialData.emissiveColor());
+      .setBaseColor(matCache.baseColor)
+      .setRoughness(matCache.roughness)
+      .setMetallic(matCache.metalness)
+      .setEmissiveColor(matCache.emissiveColor);
 
   // TODO:
   // IN PbrShader class, we set the resonable defaults for the
@@ -166,40 +221,24 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   // just in case user would like to do so during the run-time.
 
   if (flags_ & PbrShader::Flag::BaseColorTexture) {
-    shader_->bindBaseColorTexture(
-        *materialData_->attribute<Mn::GL::Texture2D*>("baseColorTexturePtr"));
+    shader_->bindBaseColorTexture(*matCache.baseColorTexture);
   }
-  if (flags_ & PbrShader::Flag::NoneRoughnessMetallicTexture) {
-    Mn::GL::Texture2D* metallicRoughnessTexture =
-        materialData_->attribute<Mn::GL::Texture2D*>(
-            "noneRoughnessMetallicTexturePtr");
-    shader_->bindMetallicRoughnessTexture(*metallicRoughnessTexture);
-  } else if (flags_ & (PbrShader::Flag::RoughnessTexture |
-                       PbrShader::Flag::MetallicTexture)) {
-    Mn::GL::Texture2D* metallicRoughnessTexture =
-        materialData_->attribute<Mn::GL::Texture2D*>("roughnessTexturePtr");
-    if (!metallicRoughnessTexture) {
-      metallicRoughnessTexture =
-          materialData_->attribute<Mn::GL::Texture2D*>("metallicTexturePtr");
-    }
-    CORRADE_ASSERT(metallicRoughnessTexture,
-                   "PbrDrawable::draw(): texture pointer cannot be nullptr if "
-                   "RoughnessTexture or MetallicTexture is enabled.", );
-    shader_->bindMetallicRoughnessTexture(*metallicRoughnessTexture);
+
+  if (matCache.hasAnyMetallicRoughnessTexture) {
+    shader_->bindMetallicRoughnessTexture(
+        *matCache.useMetallicRoughnessTexture);
   }
 
   if (flags_ & PbrShader::Flag::NormalTexture) {
-    shader_->bindNormalTexture(
-        *materialData_->attribute<Mn::GL::Texture2D*>("normalTexturePtr"));
+    shader_->bindNormalTexture(*matCache.normalTexture);
   }
 
   if (flags_ & PbrShader::Flag::EmissiveTexture) {
-    shader_->bindEmissiveTexture(
-        *materialData_->attribute<Mn::GL::Texture2D*>("emissiveTexturePtr"));
+    shader_->bindEmissiveTexture(*matCache.emissiveTexture);
   }
 
   if (flags_ & PbrShader::Flag::TextureTransformation) {
-    shader_->setTextureMatrix(tmpMaterialData.commonTextureMatrix());
+    shader_->setTextureMatrix(matCache.textureMatrix);
   }
 
   // setup image based lighting for the shader
