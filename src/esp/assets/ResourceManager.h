@@ -795,7 +795,7 @@ class ResourceManager {
    * annotation texture.
    * @return the updated material
    */
-  Mn::Trade::MaterialData setDefaultMaterialUserAttributes(
+  Mn::Trade::MaterialData setMaterialDefaultUserAttributes(
       const Mn::Trade::MaterialData& material,
       ObjectInstanceShaderType shaderTypeToUse,
       bool hasVertObjID = false,
