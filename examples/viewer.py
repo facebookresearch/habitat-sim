@@ -6,7 +6,6 @@ import ctypes
 import json
 import math
 import os
-import random
 import string
 import sys
 import time
@@ -19,6 +18,7 @@ sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 import habitat.datasets.rearrange.samplers.receptacle as hab_receptacle
 import magnum as mn
 import numpy as np
+from habitat.datasets.rearrange.samplers.object_sampler import ObjectSampler
 from magnum import shaders, text
 from magnum.platform.glfw import Application
 
@@ -283,6 +283,7 @@ class HabitatSimInteractiveViewer(Application):
             "010_potted_meat_can",
             "024_bowl",
         ]
+        self.clutter_object_handles = []
         self.clutter_object_instances = []
         # add some clutter objects to the MM
         self.sim.metadata_mediator.object_template_manager.load_configs(
@@ -1087,20 +1088,22 @@ class HabitatSimInteractiveViewer(Application):
                         if self.selected_object.handle == rec.parent_object_handle
                     ]
                 if rec_set is not None:
-                    # sample an object on the selected receptacle
-                    candidate_obj_handle = random.choice(self.clutter_object_set)
-                    matching_handles = self.sim.metadata_mediator.object_template_manager.get_template_handles(
-                        candidate_obj_handle
-                    )
-                    assert (
-                        len(matching_handles) > 0
-                    ), f"No matching template for '{candidate_obj_handle}' in the dataset."
-                    from habitat.datasets.rearrange.samplers.object_sampler import (
-                        ObjectSampler,
-                    )
+                    if len(self.clutter_object_handles) == 0:
+                        for obj_name in self.clutter_object_set:
+                            matching_handles = self.sim.metadata_mediator.object_template_manager.get_template_handles(
+                                obj_name
+                            )
+                            assert (
+                                len(matching_handles) > 0
+                            ), f"No matching template for '{obj_name}' in the dataset."
+                            self.clutter_object_handles.append(matching_handles[0])
 
                     rec_set_unique_names = [rec.unique_name for rec in rec_set]
-                    obj_samp = ObjectSampler([matching_handles[0]], ["rec set"])
+                    obj_samp = ObjectSampler(
+                        self.clutter_object_handles,
+                        ["rec set"],
+                        orientation_sample="up",
+                    )
                     rec_set_obj = hab_receptacle.ReceptacleSet(
                         "rec set", [""], [], rec_set_unique_names, []
                     )
