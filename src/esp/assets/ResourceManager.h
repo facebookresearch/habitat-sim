@@ -1008,7 +1008,7 @@ class ResourceManager {
   /**
    * @brief Build a @ref Magnum::Trade::MaterialData for use with Flat shading
    * that holds all custom attributes except texture pointers.
-   * Note : habitat-sim currentl uses the Phong shader for Flat materials.
+   * Note : habitat-sim currently uses the Phong shader for Flat materials.
    *
    * Textures must already be loaded for the asset this material belongs to
    *
