@@ -1978,9 +1978,14 @@ bool ResourceManager::buildTrajectoryVisualization(
 
   // default material for now
   // Populate with defaults from sim's gfx::PhongMaterialData
-  Mn::Trade::MaterialData materialData = buildDefaultPhongMaterial(
-      Mn::Color4{1.0}, Mn::Color4{0.7 * 0.175}, Mn::Color4{1.0}, 160.0f);
-
+  Mn::Trade::MaterialData materialData = buildDefaultPhongMaterial();
+  // Override default values
+  materialData.mutableAttribute<Mn::Color4>(
+      Mn::Trade::MaterialAttribute::AmbientColor) = Mn::Color4{1.0};
+  materialData.mutableAttribute<Mn::Color4>(
+      Mn::Trade::MaterialAttribute::SpecularColor) = Mn::Color4{1.0};
+  materialData.mutableAttribute<Mn::Float>(
+      Mn::Trade::MaterialAttribute::Shininess) = 160.0f;
   // Set expected user-defined attributes
   materialData = setDefaultMaterialUserAttributes(
       materialData, ObjectInstanceShaderType::Phong, true);
@@ -2106,27 +2111,15 @@ bool compareShaderTypeToMnMatType(const ObjectInstanceShaderType typeToCheck,
 }  // compareShaderTypeToMnMatType
 
 /**
- * @brief Make sure we do not add an attribute that already exists in source
- * material - doing this will cause an assertion.
- * @tparam the type of the value to be added
- * @param material Source material for new attributes array
- * @param newAttributes The array of attributes to be used to build a new
- * Mn::Trade::MaterialData.
- * @param matAttr The Mn::Trade::MaterialAttribute tag describing the attribute
- * to add
- * @param value A reference to the value to add.
+ * @brief This function will take an existing @ref Mn::Trade::MaterialData and add
+ * the missing attributes for the types it does not support, so that it will
+ * have attributes for all habitat-supported shader types. This should only be
+ * called if the user has specified a desired shader type that the material does
+ * not natively support.
+ * @param origMaterialData The original material from the importer
+ * @return The new material with attribute support for all supported shader
+ * types.
  */
-template <typename T>
-void appendIfNotPresent(
-    const Mn::Trade::MaterialData& material,
-    Cr::Containers::Array<Mn::Trade::MaterialAttributeData>& newAttributes,
-    const MaterialAttribute& matAttr,
-    const T& value) {
-  if (!material.hasAttribute(matAttr)) {
-    arrayAppend(newAttributes, {matAttr, value});
-  }
-}
-
 Mn::Trade::MaterialData createUniversalMaterial(
     const Mn::Trade::MaterialData& origMaterialData) {
   // create a material, based on the passed material, that will have reasonable
@@ -2138,7 +2131,6 @@ Mn::Trade::MaterialData createUniversalMaterial(
 
   // get source attributes from original material
   Cr::Containers::Array<Mn::Trade::MaterialAttributeData> newAttributes;
-  arrayAppend(newAttributes, origMaterialData.attributeData());
 
   const auto origMatTypes = origMaterialData.types();
   // add appropriate attributes based on what is missing
@@ -2226,17 +2218,10 @@ Mn::Trade::MaterialData createUniversalMaterial(
     // normal mapping is already present in copied array if present in
     // original material.
 
-    // make sure not to re-add values that already exist in array, or
-    // new color creation will assert.
-    appendIfNotPresent(origMaterialData, newAttributes,
-                       MaterialAttribute::Shininess, shininess);
-    appendIfNotPresent(origMaterialData, newAttributes,
-                       MaterialAttribute::AmbientColor, ambientColor);
-    appendIfNotPresent(origMaterialData, newAttributes,
-                       MaterialAttribute::DiffuseColor, diffuseColor);
-    appendIfNotPresent(origMaterialData, newAttributes,
-                       MaterialAttribute::SpecularColor, specColor);
-
+    arrayAppend(newAttributes, {{MaterialAttribute::Shininess, shininess},
+                                {MaterialAttribute::AmbientColor, ambientColor},
+                                {MaterialAttribute::DiffuseColor, diffuseColor},
+                                {MaterialAttribute::SpecularColor, specColor}});
     // texture transforms, if there's none the returned matrix is an
     // identity only copy if we don't already have TextureMatrix
     // attribute (if original pbrMaterial does not have that specific
@@ -2252,13 +2237,12 @@ Mn::Trade::MaterialData createUniversalMaterial(
       // only provide texture indices if BaseColorTexture attribute
       // exists
       const Mn::UnsignedInt BCTexture = pbrMaterial.baseColorTexture();
-      appendIfNotPresent(origMaterialData, newAttributes,
-                         MaterialAttribute::AmbientTexture, BCTexture);
-      appendIfNotPresent(origMaterialData, newAttributes,
-                         MaterialAttribute::DiffuseTexture, BCTexture);
+      arrayAppend(newAttributes,
+                  {{MaterialAttribute::AmbientTexture, BCTexture},
+                   {MaterialAttribute::DiffuseTexture, BCTexture}});
       if (metalness >= 0.5) {
-        appendIfNotPresent(origMaterialData, newAttributes,
-                           MaterialAttribute::SpecularTexture, BCTexture);
+        arrayAppend(newAttributes,
+                    {MaterialAttribute::SpecularTexture, BCTexture});
       }
     }
   }  // if no phong material support exists in material
@@ -2296,16 +2280,14 @@ Mn::Trade::MaterialData createUniversalMaterial(
 
     // normal mapping is already present in copied array if present in
     // original material.
-    appendIfNotPresent(origMaterialData, newAttributes,
-                       MaterialAttribute::BaseColor, baseColor);
-    appendIfNotPresent(origMaterialData, newAttributes,
-                       MaterialAttribute::Metalness, metalness);
+    arrayAppend(newAttributes, {{MaterialAttribute::BaseColor, baseColor},
+                                {MaterialAttribute::Metalness, metalness}});
 
     // if diffuse texture is present, use as base color texture in pbr.
     if (phongMaterial.hasAttribute(MaterialAttribute::DiffuseTexture)) {
       uint32_t bcTextureVal = phongMaterial.diffuseTexture();
-      appendIfNotPresent(origMaterialData, newAttributes,
-                         MaterialAttribute::BaseColorTexture, bcTextureVal);
+      arrayAppend(newAttributes,
+                  {MaterialAttribute::BaseColorTexture, bcTextureVal});
     }
     // texture transforms, if there's none the returned matrix is an
     // identity Only copy if we don't already have TextureMatrix attribute
@@ -2330,24 +2312,20 @@ Mn::Trade::MaterialData createUniversalMaterial(
   Mn::Trade::MaterialData newMaterialData{flags, std::move(newAttributes)};
 
   return newMaterialData;
-}  // ResourceManager::createUniversalMaterial
+}  // namespace
 
 }  // namespace
 
 // Specifically for building materials that relied on old defaults
-Mn::Trade::MaterialData ResourceManager::buildDefaultPhongMaterial(
-    Mn::Color4 amb,   // = Mn::Color4{0.1},
-    Mn::Color4 diff,  // = Mn::Color4{0.7 * 0.175},
-    Mn::Color4 spec,  // = Mn::Color4{0.2 * 0.175},
-    float shininess /*= 80.0f*/) {
+Mn::Trade::MaterialData ResourceManager::buildDefaultPhongMaterial() {
   Mn::Trade::MaterialData materialData{
       Mn::Trade::MaterialType::Phong,
-      {{Mn::Trade::MaterialAttribute::AmbientColor, amb},
-       {Mn::Trade::MaterialAttribute::DiffuseColor, diff},
-       {Mn::Trade::MaterialAttribute::SpecularColor, spec},
-       {Mn::Trade::MaterialAttribute::Shininess, shininess}}};
+      {{Mn::Trade::MaterialAttribute::AmbientColor, Mn::Color4{0.1}},
+       {Mn::Trade::MaterialAttribute::DiffuseColor, Mn::Color4{0.7 * 0.175}},
+       {Mn::Trade::MaterialAttribute::SpecularColor, Mn::Color4{0.2 * 0.175}},
+       {Mn::Trade::MaterialAttribute::Shininess, 80.0f}}};
   return materialData;
-}
+}  // ResourceManager::buildDefaultPhongMaterial
 
 Mn::Trade::MaterialData ResourceManager::setDefaultMaterialUserAttributes(
     const Mn::Trade::MaterialData& material,
@@ -2386,9 +2364,17 @@ std::string ResourceManager::createColorMaterial(
 
   if (materialResource.state() == Mn::ResourceState::NotLoadedFallback) {
     // Build a new default phong material
-    Mn::Trade::MaterialData materialData = buildDefaultPhongMaterial(
-        materialColor.ambientColor, materialColor.diffuseColor * 0.175,
-        materialColor.specularColor * 0.175);
+    Mn::Trade::MaterialData materialData = buildDefaultPhongMaterial();
+    materialData.mutableAttribute<Mn::Color4>(
+        Mn::Trade::MaterialAttribute::AmbientColor) =
+        materialColor.ambientColor;
+    materialData.mutableAttribute<Mn::Color4>(
+        Mn::Trade::MaterialAttribute::DiffuseColor) =
+        materialColor.diffuseColor * 0.175;
+    materialData.mutableAttribute<Mn::Color4>(
+        Mn::Trade::MaterialAttribute::SpecularColor) =
+        materialColor.specularColor * 0.175;
+
     // Set expected user-defined attributes
     materialData = setDefaultMaterialUserAttributes(
         materialData, ObjectInstanceShaderType::Phong);
@@ -2399,39 +2385,41 @@ std::string ResourceManager::createColorMaterial(
 }  // ResourceManager::createColorMaterial
 
 void ResourceManager::initDefaultMaterials() {
-  // Build default phong color
+  // Build default phong materials
   Mn::Trade::MaterialData dfltMaterialData = buildDefaultPhongMaterial();
-
   // Set expected user-defined attributes
   dfltMaterialData = setDefaultMaterialUserAttributes(
       dfltMaterialData, ObjectInstanceShaderType::Phong);
+  // Add to shaderManager at specified key location
   shaderManager_.set<Mn::Trade::MaterialData>(DEFAULT_MATERIAL_KEY,
                                               std::move(dfltMaterialData));
-
-  Mn::Trade::MaterialData whiteMaterialData =
-      buildDefaultPhongMaterial(Mn::Color4{1.0});
-
+  // Build white material
+  Mn::Trade::MaterialData whiteMaterialData = buildDefaultPhongMaterial();
+  whiteMaterialData.mutableAttribute<Mn::Color4>(
+      Mn::Trade::MaterialAttribute::AmbientColor) = Mn::Color4{1.0};
   // Set expected user-defined attributes
   whiteMaterialData = setDefaultMaterialUserAttributes(
       whiteMaterialData, ObjectInstanceShaderType::Phong);
+  // Add to shaderManager at specified key location
   shaderManager_.set<Mn::Trade::MaterialData>(WHITE_MATERIAL_KEY,
                                               std::move(whiteMaterialData));
-
-  Mn::Trade::MaterialData vertIdMaterialData =
-      buildDefaultPhongMaterial(Mn::Color4{1.0});
-
+  // Buiild white vertex ID material
+  Mn::Trade::MaterialData vertIdMaterialData = buildDefaultPhongMaterial();
+  vertIdMaterialData.mutableAttribute<Mn::Color4>(
+      Mn::Trade::MaterialAttribute::AmbientColor) = Mn::Color4{1.0};
   // Set expected user-defined attributes
   vertIdMaterialData = setDefaultMaterialUserAttributes(
       vertIdMaterialData, ObjectInstanceShaderType::Phong, true);
-
+  // Add to shaderManager at specified key location
   shaderManager_.set<Mn::Trade::MaterialData>(PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
                                               std::move(vertIdMaterialData));
 
+  // Build default material for fallback material
   auto fallBackMaterial = buildDefaultPhongMaterial();
   // Set expected user-defined attributes
   fallBackMaterial = setDefaultMaterialUserAttributes(
       fallBackMaterial, ObjectInstanceShaderType::Phong);
-
+  // Add to shaderManager as fallback material
   shaderManager_.setFallback<Mn::Trade::MaterialData>(
       std::move(fallBackMaterial));
 }  // ResourceManager::initDefaultMaterials
@@ -2472,8 +2460,14 @@ void ResourceManager::loadMaterials(Importer& importer,
       // Build a phong material for semantics.  TODO: Should this be a
       // FlatMaterialData? Populate with defaults from deprecated
       // gfx::PhongMaterialData
-      Mn::Trade::MaterialData newMaterialData = buildDefaultPhongMaterial(
-          Mn::Color4{1.0}, Mn::Color4{}, Mn::Color4{});
+      Mn::Trade::MaterialData newMaterialData = buildDefaultPhongMaterial();
+      // Override default values
+      newMaterialData.mutableAttribute<Mn::Color4>(
+          Mn::Trade::MaterialAttribute::AmbientColor) = Mn::Color4{1.0};
+      newMaterialData.mutableAttribute<Mn::Color4>(
+          Mn::Trade::MaterialAttribute::DiffuseColor) = Mn::Color4{};
+      newMaterialData.mutableAttribute<Mn::Color4>(
+          Mn::Trade::MaterialAttribute::SpecularColor) = Mn::Color4{};
 
       // Set expected user-defined attributes - force to use phong shader for
       // semantics

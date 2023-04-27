@@ -775,19 +775,10 @@ class ResourceManager {
 
   /**
    * @brief this will build a Phong @ref Magnum::Trade::MaterialData using
-   * default attributes from deprecated/removed esp::gfx::PhongMaterialData,
-   * if values are not specified.
-   * @param amb The ambient color
-   * @param diff The diffuse color
-   * @param spec The specular color
-   * @param shininess The shininess coefficient/exponent
-   * @return The new phong color
+   * default attributes from deprecated/removed esp::gfx::PhongMaterialData.
+   * @return The new phong color populated with default values
    */
-  Mn::Trade::MaterialData buildDefaultPhongMaterial(
-      Mn::Color4 amb = Mn::Color4{0.1},
-      Mn::Color4 diff = Mn::Color4{0.7 * 0.175},
-      Mn::Color4 spec = Mn::Color4{0.2 * 0.175},
-      float shininess = 80.0f);
+  Mn::Trade::MaterialData buildDefaultPhongMaterial();
 
   /**
    * @brief Define and set user-defined attributes for the passed
