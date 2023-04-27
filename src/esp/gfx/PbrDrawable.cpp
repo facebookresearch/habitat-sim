@@ -164,9 +164,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   // PbrShader::PbrEquationScales. Here we need a smart way to reset it
   // just in case user would like to do so during the run-time.
 
-  if ((flags_ & PbrShader::Flag::BaseColorTexture) &&
-      (materialData_->attribute<Mn::GL::Texture2D*>("baseColorTexturePtr") !=
-       nullptr)) {
+  if (flags_ & PbrShader::Flag::BaseColorTexture) {
     shader_->bindBaseColorTexture(
         *materialData_->attribute<Mn::GL::Texture2D*>("baseColorTexturePtr"));
   }
@@ -185,22 +183,17 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
     shader_->bindMetallicRoughnessTexture(*metallicRoughnessTexture);
   }
 
-  if ((flags_ & PbrShader::Flag::NormalTexture) &&
-      (materialData_->attribute<Mn::GL::Texture2D*>("normalTexturePtr") !=
-       nullptr)) {
+  if (flags_ & PbrShader::Flag::NormalTexture) {
     shader_->bindNormalTexture(
         *materialData_->attribute<Mn::GL::Texture2D*>("normalTexturePtr"));
   }
 
-  if ((flags_ & PbrShader::Flag::EmissiveTexture) &&
-      (materialData_->attribute<Mn::GL::Texture2D*>("emissiveTexturePtr") !=
-       nullptr)) {
+  if (flags_ & PbrShader::Flag::EmissiveTexture) {
     shader_->bindEmissiveTexture(
         *materialData_->attribute<Mn::GL::Texture2D*>("emissiveTexturePtr"));
   }
 
-  if ((flags_ & PbrShader::Flag::TextureTransformation) &&
-      (tmpMaterialData.commonTextureMatrix() != Mn::Matrix3{})) {
+  if (flags_ & PbrShader::Flag::TextureTransformation) {
     shader_->setTextureMatrix(tmpMaterialData.commonTextureMatrix());
   }
 
