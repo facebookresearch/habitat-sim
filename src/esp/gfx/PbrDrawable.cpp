@@ -45,6 +45,9 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
   if (tmpMaterialData.commonTextureMatrix() != Mn::Matrix3{}) {
     flags_ |= PbrShader::Flag::TextureTransformation;
   }
+  if (materialData_->hasAttribute("noneRoughnessMetallicTexturePtr")) {
+    flags_ |= PbrShader::Flag::NoneRoughnessMetallicTexture;
+  }
   if (materialData_->hasAttribute("baseColorTexturePtr")) {
     flags_ |= PbrShader::Flag::BaseColorTexture;
   }
@@ -69,13 +72,9 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
   if (materialData_->hasAttribute("emissiveTexturePtr")) {
     flags_ |= PbrShader::Flag::EmissiveTexture;
   }
-  if (materialData_->attribute<bool>("hasPerVertexObjectId")) {
-    // TODO: may be supported in the future
-  }
   if (materialData_->isDoubleSided()) {
     flags_ |= PbrShader::Flag::DoubleSided;
   }
-
   if (pbrIbl_) {
     flags_ |= PbrShader::Flag::ImageBasedLighting;
   }
@@ -167,9 +166,13 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
     shader_->bindBaseColorTexture(
         *materialData_->attribute<Mn::GL::Texture2D*>("baseColorTexturePtr"));
   }
-
-  if (flags_ &
-      (PbrShader::Flag::RoughnessTexture | PbrShader::Flag::MetallicTexture)) {
+  if (flags_ & PbrShader::Flag::NoneRoughnessMetallicTexture) {
+    Mn::GL::Texture2D* metallicRoughnessTexture =
+        materialData_->attribute<Mn::GL::Texture2D*>(
+            "noneRoughnessMetallicTexturePtr");
+    shader_->bindMetallicRoughnessTexture(*metallicRoughnessTexture);
+  } else if (flags_ & (PbrShader::Flag::RoughnessTexture |
+                       PbrShader::Flag::MetallicTexture)) {
     Mn::GL::Texture2D* metallicRoughnessTexture =
         materialData_->attribute<Mn::GL::Texture2D*>("roughnessTexturePtr");
     if (!metallicRoughnessTexture) {
