@@ -762,7 +762,7 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
       Mn::UnsignedInt offset = meshViewOffset;
       for (Mn::UnsignedLong root : scene->childrenFor(-1)) {
         Cr::Containers::Array<Mn::UnsignedLong> children =
-            scene->childrenFor(root);
+            scene->childrenFor(root); // TODO ugh slow AF
 
         Cr::Containers::String name = importer->objectName(root);
         if (!name) {
@@ -819,7 +819,7 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
        {{}, Mn::Shaders::PhongGL::Flag::VertexColor}) {
     Mn::Shaders::PhongGL::Flags shaderFlags =
         extraFlags | Mn::Shaders::PhongGL::Flag::MultiDraw |
-        Mn::Shaders::PhongGL::Flag::UniformBuffers |
+        Mn::Shaders::PhongGL::Flag::ShaderStorageBuffers |
         Mn::Shaders::PhongGL::Flag::NoSpecular |
         Mn::Shaders::PhongGL::Flag::LightCulling;
     if (!(state_->flags >= RendererFlag::NoTextures)) {

@@ -199,13 +199,11 @@ if(NOT USE_SYSTEM_MAGNUM)
 
   # These are enabled by default but we don't need them for anything yet
   set(MAGNUM_WITH_SHADERTOOLS OFF CACHE BOOL "" FORCE)
-  set(MAGNUM_WITH_MATERIALTOOLS OFF CACHE BOOL "" FORCE)
 
   # These are enabled by default but we don't need them if not building GUI
   # viewers -- disabling for slightly faster builds. If you need any of these
   # always, simply delete a line.
   set(MAGNUM_WITH_TEXT OFF CACHE BOOL "" FORCE)
-  set(MAGNUM_WITH_TEXTURETOOLS OFF CACHE BOOL "" FORCE)
   set(MAGNUM_WITH_STBTRUETYPEFONT OFF CACHE BOOL "" FORCE)
 
   # These are not enabled by default but we need them
@@ -224,10 +222,6 @@ if(NOT USE_SYSTEM_MAGNUM)
   set(MAGNUM_WITH_EMSCRIPTENAPPLICATION OFF CACHE BOOL "" FORCE)
   set(MAGNUM_WITH_GLFWAPPLICATION OFF CACHE BOOL "" FORCE)
   set(MAGNUM_WITH_EIGEN ON CACHE BOOL "" FORCE) # Eigen integration
-  # GltfSceneConverter and KtxImageConverter are needed only by
-  # BatchRendererTest and are optional
-  #set(MAGNUM_WITH_GLTFSCENECONVERTER ON CACHE BOOL "" FORCE)
-  #set(MAGNUM_WITH_KTXIMAGECONVERTER ON CACHE BOOL "" FORCE)
   if(BUILD_PYTHON_BINDINGS)
     set(MAGNUM_WITH_PYTHON ON CACHE BOOL "" FORCE) # Python bindings
   endif()
@@ -238,6 +232,18 @@ if(NOT USE_SYSTEM_MAGNUM)
   if(BUILD_TEST)
     set(MAGNUM_WITH_OPENGLTESTER ON CACHE BOOL "" FORCE)
   endif()
+
+  # GltfSceneConverter and KtxImageConverter are needed by BatchRendererTest
+  # and composite file creating scripts
+  # TODO have an option for this? or enable always?
+  set(MAGNUM_WITH_GLTFSCENECONVERTER ON CACHE BOOL "" FORCE)
+  set(MAGNUM_WITH_KTXIMAGECONVERTER ON CACHE BOOL "" FORCE)
+  # These are needed by composite file creating scripts
+  # TODO build only if those utils are built
+  set(MAGNUM_WITH_MATERIALTOOLS ON CACHE BOOL "" FORCE)
+  set(MAGNUM_WITH_TEXTURETOOLS ON CACHE BOOL "" FORCE)
+  set(MAGNUM_WITH_STLIMPORTER ON CACHE BOOL "" FORCE)
+  set(MAGNUM_WITH_STBRESIZEIMAGECONVERTER ON CACHE BOOL "" FORCE)
 
   # Basis Universal. The repo is extremely huge and so instead of a Git
   # submodule we bundle just the transcoder files, and only a subset of the
