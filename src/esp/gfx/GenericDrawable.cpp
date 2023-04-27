@@ -89,17 +89,17 @@ void GenericDrawable::setMaterialValuesInternal(
   }
 
   if (materialData_->hasAttribute("normalTexturePointer")) {
+    matCache.normalTexture =
+        materialData_->attribute<Mn::GL::Texture2D*>("normalTexturePointer");
     if (meshAttributeFlags_ & Drawable::Flag::HasTangent) {
       flags_ |= Mn::Shaders::PhongGL::Flag::NormalTexture;
-      matCache.normalTexture =
-          materialData_->attribute<Mn::GL::Texture2D*>("normalTexturePointer");
 
       if (meshAttributeFlags_ & Drawable::Flag::HasSeparateBitangent) {
         flags_ |= Mn::Shaders::PhongGL::Flag::Bitangent;
       }
     } else {
-      ESP_WARNING() << "Mesh does not have tangents and Magnum cannot generate "
-                       "them yet, ignoring a normal map";
+      ESP_DEBUG() << "Mesh does not have tangents and Magnum cannot generate "
+                     "them yet, ignoring a normal map";
     }
   }
   if (materialData_->attribute<bool>("hasPerVertexObjectId")) {
