@@ -80,7 +80,6 @@ GenericDrawable::GenericDrawable(
     flags_ |= Mn::Shaders::PhongGL::Flag::ObjectIdTexture;
   }
   if (meshAttributeFlags & Drawable::Flag::HasVertexColor) {
-    ESP_WARNING() << "Drawable has HasVertexColor";
     flags_ |= Mn::Shaders::PhongGL::Flag::VertexColor;
   }
 

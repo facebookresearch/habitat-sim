@@ -41,7 +41,6 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
   }
   const auto& tmpMaterialData =
       materialData_->as<Mn::Trade::PbrMetallicRoughnessMaterialData>();
-
   flags_ = PbrShader::Flag::ObjectId;
   if (tmpMaterialData.commonTextureMatrix() != Mn::Matrix3{}) {
     flags_ |= PbrShader::Flag::TextureTransformation;
