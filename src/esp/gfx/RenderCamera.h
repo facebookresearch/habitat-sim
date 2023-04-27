@@ -215,9 +215,18 @@ class RenderCamera : public MagnumCamera {
   size_t filterTransforms(DrawableTransforms& drawableTransforms,
                           Flags flags = {});
 
-
+  /**
+   * @brief Set the flag to infer if the camera should pick semantic id or instance id for the object.
+   *
+   * @param isInstanceId true if picking instance id, false if picking semantic id.
+   */
   void setIsInstanceId(bool isInstanceId) { isInstanceId_ = isInstanceId; }
 
+  /**
+   * @brief Get the flag of whether the camera should pick semantic id or instance id for the object.
+   *
+   * @return true if picking instance id, false if picking semantic id.
+   */
   bool getIsInstanceId() const { return isInstanceId_; }
 
   /**

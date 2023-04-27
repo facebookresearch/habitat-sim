@@ -367,8 +367,18 @@ class ObjectAttributes : public AbstractObjectAttributes {
 
   uint32_t getSemanticId() const { return get<int>("semantic_id"); }
 
+  /**
+   * @brief Set the instance id for the object. The instance id should be unique in each scene for the object.
+   *
+   * @param instance_id the id for the object in the scene (can be the implicit index of the object in the scene config)
+   */
   void setInstanceId(int instance_id) { set("instance_id", instance_id); }
 
+  /**
+   * @brief Get the instance id for the object.
+   *
+   * @return instance_id the id for the object in the scene
+   */
   uint32_t getInstanceId() const { return get<int>("instance_id"); }
 
  protected:
