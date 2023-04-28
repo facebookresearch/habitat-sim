@@ -80,7 +80,7 @@ void PbrDrawable::setMaterialValuesInternal(
 
   matCache.hasAnyMetallicRoughnessTexture = false;
   matCache.useMetallicRoughnessTexture = nullptr;
-  // noneRoughnessMetallic takes precdence, but currently all are
+  // noneRoughnessMetallic takes precedence, but currently all are
   // treated the same way
   if (materialData_->hasAttribute("noneRoughnessMetallicTexturePointer")) {
     flags_ |= PbrShader::Flag::NoneRoughnessMetallicTexture;
