@@ -9,6 +9,8 @@
 #include <Magnum/GL/Renderer.h>
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix3.h>
+#include <Magnum/Trade/MaterialData.h>
+#include <Magnum/Trade/PhongMaterialData.h>
 
 #include "Corrade/Containers/GrowableArray.h"
 #include "Magnum/Types.h"
@@ -33,56 +35,85 @@ GenericDrawable::GenericDrawable(
     : Drawable{node, mesh, DrawableType::Generic, group},
       shaderManager_{shaderManager},
       lightSetup_{shaderManager.get<LightSetup>(lightSetupKey)},
-      materialData_{
-          shaderManager.get<MaterialData, PhongMaterialData>(materialDataKey)},
       skinData_(skinData),
-      jointTransformations_() {
-  flags_ = Mn::Shaders::PhongGL::Flag::ObjectId;
-
-  /* If texture transformation is specified, enable it only if the material is
-     actually textured -- it's an error otherwise */
-  if (materialData_->textureMatrix != Mn::Matrix3{} &&
-      (materialData_->ambientTexture || materialData_->diffuseTexture ||
-       materialData_->specularTexture || materialData_->specularTexture ||
-       materialData_->textureObjectId)) {
-    flags_ |= Mn::Shaders::PhongGL::Flag::TextureTransformation;
-  }
-  if (materialData_->ambientTexture) {
-    flags_ |= Mn::Shaders::PhongGL::Flag::AmbientTexture;
-  }
-  if (materialData_->diffuseTexture) {
-    flags_ |= Mn::Shaders::PhongGL::Flag::DiffuseTexture;
-  }
-  if (materialData_->specularTexture) {
-    flags_ |= Mn::Shaders::PhongGL::Flag::SpecularTexture;
-  }
-
-  if (materialData_->normalTexture) {
-    if (meshAttributeFlags & Drawable::Flag::HasTangent) {
-      flags_ |= Mn::Shaders::PhongGL::Flag::NormalTexture;
-      if (meshAttributeFlags & Drawable::Flag::HasSeparateBitangent) {
-        flags_ |= Mn::Shaders::PhongGL::Flag::Bitangent;
-      }
-    } else {
-      ESP_WARNING() << "Mesh does not have tangents and Magnum cannot generate "
-                       "them yet, ignoring a normal map";
-    }
-  }
-  if (materialData_->perVertexObjectId) {
-    flags_ |= Mn::Shaders::PhongGL::Flag::InstancedObjectId;
-  }
-  if (materialData_->textureObjectId) {
-    flags_ |= Mn::Shaders::PhongGL::Flag::ObjectIdTexture;
-  }
-  if (meshAttributeFlags & Drawable::Flag::HasVertexColor) {
-    flags_ |= Mn::Shaders::PhongGL::Flag::VertexColor;
-  }
+      jointTransformations_(),
+      meshAttributeFlags_{meshAttributeFlags} {
+  setMaterialValuesInternal(
+      shaderManager.get<Mn::Trade::MaterialData, Mn::Trade::MaterialData>(
+          materialDataKey));
 
   // update the shader early here to to avoid doing it during the render loop
   if (glMeshExists()) {
     updateShader();
   }
 }
+
+void GenericDrawable::setMaterialValuesInternal(
+    const Mn::Resource<Mn::Trade::MaterialData, Mn::Trade::MaterialData>&
+        material) {
+  materialData_ = material;
+
+  flags_ = Mn::Shaders::PhongGL::Flag::ObjectId;
+  const auto& tmpMaterial = materialData_->as<Mn::Trade::PhongMaterialData>();
+
+  matCache.ambientColor = tmpMaterial.ambientColor();
+  matCache.diffuseColor = tmpMaterial.diffuseColor();
+  matCache.specularColor = tmpMaterial.specularColor();
+  matCache.shininess = tmpMaterial.shininess();
+
+  /* If texture transformation is specified, enable it only if the material is
+     actually textured -- it's an error otherwise */
+  if (tmpMaterial.commonTextureMatrix() != Mn::Matrix3{} &&
+      (materialData_->hasAttribute("ambientTexturePointer") ||
+       materialData_->hasAttribute("baseColorTexturePointer") ||
+       materialData_->hasAttribute("diffuseTexturePointer") ||
+       materialData_->hasAttribute("specularTexturePointer") ||
+       materialData_->hasAttribute("objectIdTexturePointer"))) {
+    flags_ |= Mn::Shaders::PhongGL::Flag::TextureTransformation;
+    matCache.textureMatrix = tmpMaterial.commonTextureMatrix();
+  }
+  if (materialData_->hasAttribute("ambientTexturePointer")) {
+    flags_ |= Mn::Shaders::PhongGL::Flag::AmbientTexture;
+    matCache.ambientTexture =
+        materialData_->attribute<Mn::GL::Texture2D*>("ambientTexturePointer");
+  }
+  if (materialData_->hasAttribute("diffuseTexturePointer")) {
+    flags_ |= Mn::Shaders::PhongGL::Flag::DiffuseTexture;
+    matCache.diffuseTexture =
+        materialData_->attribute<Mn::GL::Texture2D*>("diffuseTexturePointer");
+  }
+  if (materialData_->hasAttribute("specularTexturePointer")) {
+    flags_ |= Mn::Shaders::PhongGL::Flag::SpecularTexture;
+    matCache.specularTexture =
+        materialData_->attribute<Mn::GL::Texture2D*>("specularTexturePointer");
+  }
+
+  if (materialData_->hasAttribute("normalTexturePointer")) {
+    matCache.normalTexture =
+        materialData_->attribute<Mn::GL::Texture2D*>("normalTexturePointer");
+    if (meshAttributeFlags_ & Drawable::Flag::HasTangent) {
+      flags_ |= Mn::Shaders::PhongGL::Flag::NormalTexture;
+
+      if (meshAttributeFlags_ & Drawable::Flag::HasSeparateBitangent) {
+        flags_ |= Mn::Shaders::PhongGL::Flag::Bitangent;
+      }
+    } else {
+      ESP_DEBUG() << "Mesh does not have tangents and Magnum cannot generate "
+                     "them yet, ignoring a normal map";
+    }
+  }
+  if (materialData_->attribute<bool>("hasPerVertexObjectId")) {
+    flags_ |= Mn::Shaders::PhongGL::Flag::InstancedObjectId;
+  }
+  if (materialData_->hasAttribute("objectIdTexturePointer")) {
+    flags_ |= Mn::Shaders::PhongGL::Flag::ObjectIdTexture;
+    matCache.objectIdTexture =
+        materialData_->attribute<Mn::GL::Texture2D*>("objectIdTexturePointer");
+  }
+  if (meshAttributeFlags_ & Drawable::Flag::HasVertexColor) {
+    flags_ |= Mn::Shaders::PhongGL::Flag::VertexColor;
+  }
+}  // GenericDrawable::setMaterialValuesInternal
 
 void GenericDrawable::setLightSetup(const Mn::ResourceKey& resourceKey) {
   lightSetup_ = shaderManager_.get<LightSetup>(resourceKey);
@@ -123,10 +154,10 @@ void GenericDrawable::updateShaderLightingParameters(
 
   // See documentation in src/deps/magnum/src/Magnum/Shaders/Phong.h
   (*shader_)
-      .setAmbientColor(materialData_->ambientColor * ambientLightColor)
-      .setDiffuseColor(materialData_->diffuseColor)
-      .setSpecularColor(materialData_->specularColor)
-      .setShininess(materialData_->shininess)
+      .setAmbientColor(matCache.ambientColor * ambientLightColor)
+      .setDiffuseColor(matCache.diffuseColor)
+      .setSpecularColor(matCache.specularColor)
+      .setShininess(matCache.shininess)
       .setLightPositions(lightPositions)
       .setLightColors(lightColors)
       .setLightRanges(lightRanges);
@@ -161,34 +192,34 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
       // e.g., semantic mesh has its own per vertex annotation, which has been
       // uploaded to GPU so simply pass 0 to the uniform "objectId" in the
       // fragment shader
-      .setObjectId(
-          static_cast<RenderCamera&>(camera).useDrawableIds() ? drawableId_
-          : (materialData_->perVertexObjectId || materialData_->textureObjectId)
-              ? 0
-              : node_.getSemanticId())
+      .setObjectId(static_cast<RenderCamera&>(camera).useDrawableIds()
+                       ? drawableId_
+                   : ((flags_ & Mn::Shaders::PhongGL::Flag::InstancedObjectId ||
+                       (flags_ & Mn::Shaders::PhongGL::Flag::ObjectIdTexture)))
+                       ? 0
+                       : node_.getSemanticId())
       .setTransformationMatrix(transformationMatrix)
       .setProjectionMatrix(camera.projectionMatrix())
       .setNormalMatrix(normalMatrix);
 
-  if ((flags_ & Mn::Shaders::PhongGL::Flag::TextureTransformation) &&
-      materialData_->textureMatrix != Mn::Matrix3{}) {
-    shader_->setTextureMatrix(materialData_->textureMatrix);
+  if (flags_ & Mn::Shaders::PhongGL::Flag::TextureTransformation) {
+    shader_->setTextureMatrix(matCache.textureMatrix);
   }
 
   if (flags_ & Mn::Shaders::PhongGL::Flag::AmbientTexture) {
-    shader_->bindAmbientTexture(*(materialData_->ambientTexture));
+    shader_->bindAmbientTexture(*(matCache.ambientTexture));
   }
   if (flags_ & Mn::Shaders::PhongGL::Flag::DiffuseTexture) {
-    shader_->bindDiffuseTexture(*(materialData_->diffuseTexture));
+    shader_->bindDiffuseTexture(*(matCache.diffuseTexture));
   }
   if (flags_ & Mn::Shaders::PhongGL::Flag::SpecularTexture) {
-    shader_->bindSpecularTexture(*(materialData_->specularTexture));
+    shader_->bindSpecularTexture(*(matCache.specularTexture));
   }
   if (flags_ & Mn::Shaders::PhongGL::Flag::NormalTexture) {
-    shader_->bindNormalTexture(*(materialData_->normalTexture));
+    shader_->bindNormalTexture(*(matCache.normalTexture));
   }
   if (flags_ >= Mn::Shaders::PhongGL::Flag::ObjectIdTexture) {
-    shader_->bindObjectIdTexture(*(materialData_->objectIdTexture));
+    shader_->bindObjectIdTexture(*(matCache.objectIdTexture));
   }
 
   if (skinData_) {
@@ -214,7 +245,7 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
             skin->inverseBindMatrices()[i];
       } else {
         // Joint not found, use placeholder matrix.
-        jointTransformations_[i] = Mn::Matrix4{Magnum::Math::IdentityInit};
+        jointTransformations_[i] = Mn::Matrix4{Mn::Math::IdentityInit};
       }
     }
     shader_->setJointMatrices(jointTransformations_);

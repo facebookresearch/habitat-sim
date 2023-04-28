@@ -17,45 +17,94 @@ struct InstanceSkinData;
 
 class GenericDrawable : public Drawable {
  public:
+  /**
+   * This config holds all the material quantities and attributes from the
+   * Magnum MaterialData to speed up access in draw.
+   */
+  struct GenericMaterialCache {
+    Mn::Color4 ambientColor{};
+    Mn::Color4 diffuseColor{};
+    Mn::Color4 specularColor{};
+    float shininess = 80.0f;
+    Mn::Matrix3 textureMatrix{};
+    Mn::GL::Texture2D* ambientTexture = nullptr;
+    Mn::GL::Texture2D* diffuseTexture = nullptr;
+    Mn::GL::Texture2D* specularTexture = nullptr;
+    Mn::GL::Texture2D* normalTexture = nullptr;
+    Mn::GL::Texture2D* objectIdTexture = nullptr;
+
+  };  // GenericMaterialCache
+
   //! Create a GenericDrawable for the given object using shader and mesh.
   //! Adds drawable to given group and uses provided texture, and
   //! color for textured buffer and color shader output respectively
   explicit GenericDrawable(
       scene::SceneNode& node,
-      Magnum::GL::Mesh* mesh,
+      Mn::GL::Mesh* mesh,
       Drawable::Flags& meshAttributeFlags,
       ShaderManager& shaderManager,
-      const Magnum::ResourceKey& lightSetupKey,
-      const Magnum::ResourceKey& materialDataKey,
+      const Mn::ResourceKey& lightSetupKey,
+      const Mn::ResourceKey& materialDataKey,
       DrawableGroup* group = nullptr,
       const std::shared_ptr<InstanceSkinData>& skinData = nullptr);
 
-  void setLightSetup(const Magnum::ResourceKey& lightSetupKey) override;
+  void setLightSetup(const Mn::ResourceKey& lightSetupKey) override;
   static constexpr const char* SHADER_KEY_TEMPLATE =
       "Phong-lights={}-flags={}-joints={}";
 
+  /**
+   * Set or change this drawable's @ref Magnum::Trade::MaterialData values from passed material.
+   * This is only pertinent for material-equipped drawables.
+   * @param material
+   */
+  void setMaterialValues(
+      const Mn::Resource<Mn::Trade::MaterialData, Mn::Trade::MaterialData>&
+          material) override {
+    setMaterialValuesInternal(material);
+  }
+
+ private:
+  /**
+   * @brief Internal implementation of material setting, so that it can be
+   * called from constructor without virtual dispatch issues
+   */
+  void setMaterialValuesInternal(
+      const Mn::Resource<Mn::Trade::MaterialData, Mn::Trade::MaterialData>&
+          material);
+
  protected:
-  void draw(const Magnum::Matrix4& transformationMatrix,
-            Magnum::SceneGraph::Camera3D& camera) override;
+  void draw(const Mn::Matrix4& transformationMatrix,
+            Mn::SceneGraph::Camera3D& camera) override;
 
   void updateShader();
-  void updateShaderLightingParameters(
-      const Magnum::Matrix4& transformationMatrix,
-      Magnum::SceneGraph::Camera3D& camera);
+  void updateShaderLightingParameters(const Mn::Matrix4& transformationMatrix,
+                                      Mn::SceneGraph::Camera3D& camera);
 
-  Magnum::ResourceKey getShaderKey(Magnum::UnsignedInt lightCount,
-                                   Magnum::Shaders::PhongGL::Flags flags,
-                                   Mn::UnsignedInt jointCount) const;
+  Mn::ResourceKey getShaderKey(Mn::UnsignedInt lightCount,
+                               Mn::Shaders::PhongGL::Flags flags,
+                               Mn::UnsignedInt jointCount) const;
 
   // shader parameters
+
+  Mn::Shaders::PhongGL::Flags flags_;
   ShaderManager& shaderManager_;
-  Magnum::Resource<Magnum::GL::AbstractShaderProgram, Magnum::Shaders::PhongGL>
-      shader_;
-  Magnum::Resource<MaterialData, PhongMaterialData> materialData_;
-  Magnum::Resource<LightSetup> lightSetup_;
-  Magnum::Shaders::PhongGL::Flags flags_;
+  Mn::Resource<Mn::GL::AbstractShaderProgram, Mn::Shaders::PhongGL> shader_;
+  Mn::Resource<LightSetup> lightSetup_;
   std::shared_ptr<InstanceSkinData> skinData_;
   Cr::Containers::Array<Mn::Matrix4> jointTransformations_;
+
+  /**
+   * Local cache of material quantities to speed up access in draw
+   */
+  GenericMaterialCache matCache{};
+  /**
+   * Creation attributes of this drawable
+   */
+  const gfx::Drawable::Flags meshAttributeFlags_;
+  /**
+   * Material to use to render this Phong drawawble
+   */
+  Mn::Resource<Mn::Trade::MaterialData, Mn::Trade::MaterialData> materialData_;
 };
 
 }  // namespace gfx

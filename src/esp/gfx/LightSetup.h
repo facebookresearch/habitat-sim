@@ -91,7 +91,7 @@ LightSetup getLightsAtBoxCorners(
 LightSetup getDefaultLights();
 
 /**
- * @brief Get get a single, combined ambient light color for use with the Phong
+ * @brief Get a single, combined ambient light color for use with the Phong
  * lighting model.
  */
 Magnum::Color3 getAmbientLightColor(const LightSetup& lightSetup);

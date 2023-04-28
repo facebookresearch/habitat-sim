@@ -12,7 +12,6 @@
 #include <cstdint>
 #include <map>
 #include <memory>
-#include <string>
 #include <utility>
 #include <vector>
 
@@ -775,6 +774,35 @@ class ResourceManager {
   void buildPrimitiveAssetData(const std::string& primTemplateHandle);
 
   /**
+   * @brief this will build a Phong @ref Magnum::Trade::MaterialData using
+   * default attributes from deprecated/removed esp::gfx::PhongMaterialData.
+   * @return The new phong color populated with default values
+   */
+  Mn::Trade::MaterialData buildDefaultPhongMaterial();
+
+  /**
+   * @brief Define and set user-defined attributes for the passed
+   * @ref Magnum::Trade::MaterialData.
+   * @param material The material to initialize with the expected
+   * Habitat-specific user-defined attributes.
+   * @param shaderTypeToUse What shader to use to render the objects with this
+   * material. May not be the same as the material type.
+   * @param hasVertObjID Whether or not the material has vertex-based object ids
+   * for semantics.
+   * @param hasTxtrObjID Whether or not the material has texture-based object
+   * ids for semantics.
+   * @param txtrIdx The absolute index in the @ref textures_ store for the semantic
+   * annotation texture.
+   * @return the updated material
+   */
+  Mn::Trade::MaterialData setMaterialDefaultUserAttributes(
+      const Mn::Trade::MaterialData& material,
+      ObjectInstanceShaderType shaderTypeToUse,
+      bool hasVertObjID = false,
+      bool hasTxtrObjID = false,
+      int txtrIdx = -1) const;
+
+  /**
    * @brief Configure the importerManager_ GL Extensions appropriately based on
    * compilation flags, before any general assets are imported.  This should
    * only occur if a gl context exists.
@@ -978,39 +1006,45 @@ class ResourceManager {
       Mn::Trade::MaterialType mnVerificationType) const;
 
   /**
-   * @brief Build a @ref PhongMaterialData for use with flat shading
+   * @brief Build a @ref Magnum::Trade::MaterialData for use with Flat shading
+   * that holds all custom attributes except texture pointers.
+   * Note : habitat-sim currently uses the Phong shader for Flat materials.
    *
    * Textures must already be loaded for the asset this material belongs to
    *
    * @param material Material data with texture IDs
-   * @param textureBaseIndex Base index of the assets textures in textures_
+   * @param textureBaseIndex Base index of the assets textures in @ref textures_
+   * store
    */
-  gfx::PhongMaterialData::uptr buildFlatShadedMaterialData(
+  Mn::Trade::MaterialData buildCustomAttributeFlatMaterial(
       const Mn::Trade::MaterialData& materialData,
       int textureBaseIndex);
 
   /**
-   * @brief Build a @ref PhongMaterialData for use with phong shading
+   * @brief Build a @ref Magnum::Trade::MaterialData for use with Phong shading
+   * that holds all custom attributes except texture pointers.
    *
    * Textures must already be loaded for the asset this material belongs to
    *
    * @param material Material data with texture IDs
-   * @param textureBaseIndex Base index of the assets textures in textures_
-
+   * @param textureBaseIndex Base index of the assets textures in @ref textures_
+   * store
    */
-  gfx::PhongMaterialData::uptr buildPhongShadedMaterialData(
+  Mn::Trade::MaterialData buildCustomAttributePhongMaterial(
       const Mn::Trade::MaterialData& material,
       int textureBaseIndex) const;
 
   /**
-   * @brief Build a @ref PbrMaterialData for use with PBR shading
+   * @brief Build a @ref Magnum::Trade::MaterialData for use with PBR shading
+   * that holds all custom attributes except texture pointers.
    *
    * Textures must already be loaded for the asset this material belongs to
    *
    * @param material Material data with texture IDs
-   * @param textureBaseIndex Base index of the assets textures in textures_
+   * @param textureBaseIndex Base index of the assets textures in @ref textures_
+   * store
    */
-  gfx::PbrMaterialData::uptr buildPbrShadedMaterialData(
+  Mn::Trade::MaterialData buildCustomAttributePbrMaterial(
       const Mn::Trade::MaterialData& material,
       int textureBaseIndex) const;
 
