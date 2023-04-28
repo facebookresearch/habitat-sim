@@ -271,6 +271,8 @@ class HabitatSimInteractiveViewer(Application):
         self.reconfigure_sim()
         self.debug_semantic_colors = {}
 
+        # -----------------------------------------
+        # Clutter Generation Integration:
         self.clutter_object_set = [
             "002_master_chef_can",
             "003_cracker_box",
@@ -284,10 +286,14 @@ class HabitatSimInteractiveViewer(Application):
         ]
         self.clutter_object_handles = []
         self.clutter_object_instances = []
+        # cache initial states for classification of unstable objects
+        self.clutter_object_initial_states = []
+        self.num_unstable_objects = 0
         # add some clutter objects to the MM
         self.sim.metadata_mediator.object_template_manager.load_configs(
             "data/objects/ycb/configs/"
         )
+        # -----------------------------------------
 
         # compute NavMesh if not already loaded by the scene.
         if (
@@ -718,6 +724,17 @@ class HabitatSimInteractiveViewer(Application):
                 self.simulate_single_step = False
                 if simulation_call is not None:
                     simulation_call()
+                # compute object stability after physics step
+                self.num_unstable_objects = 0
+                for obj_initial_state, obj in zip(
+                    self.clutter_object_initial_states, self.clutter_object_instances
+                ):
+                    translation_error = (
+                        obj_initial_state[0] - obj.translation
+                    ).length()
+                    if translation_error > 0.1:
+                        self.num_unstable_objects += 1
+
             if global_call is not None:
                 global_call()
 
@@ -1464,6 +1481,7 @@ class HabitatSimInteractiveViewer(Application):
 Sensor Type: {sensor_type_string}
 Sensor Subtype: {sensor_subtype_string}
 Mouse Interaction Mode: {mouse_mode_string}
+Unstable Objects: {self.num_unstable_objects} of {len(self.clutter_object_instances)}
             """
         )
         self.shader.draw(self.window_text.mesh)
@@ -1540,6 +1558,7 @@ Key Commands:
     't':        CLI for modifying un-bound viewer parameters during runtime.
     'u':        Sample an object placement from the currently selected object or receptacle.
                 (+SHIFT) Remove all previously sampled objects.
+                (+ALT) Sample from all "active" unfiltered Receptacles.
 
 =====================================================
 """
