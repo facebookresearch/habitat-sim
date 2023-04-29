@@ -324,15 +324,11 @@ class HabitatSimInteractiveViewer(Application):
     def place_spot(self):
         if self.sim.pathfinder.is_loaded:
             valid_spot_point = None
-            robot_turn_radius = 0.7
             max_attempts = 1000
             attempt = 0
             while valid_spot_point is None and attempt < max_attempts:
                 spot_point = self.sim.pathfinder.get_random_navigable_point()
-                if (
-                    self.sim.pathfinder.distance_to_closest_obstacle(spot_point)
-                    >= robot_turn_radius
-                ):
+                if self.sim.pathfinder.distance_to_closest_obstacle(spot_point) >= 0.25:
                     valid_spot_point = spot_point
                 attempt += 1
             if valid_spot_point is not None:
@@ -763,7 +759,7 @@ class HabitatSimInteractiveViewer(Application):
         if event.buttons == button.LEFT:
             self.camera_angles[0] -= float(event.relative_position[1]) * 0.01
             self.camera_angles[1] -= float(event.relative_position[0]) * 0.01
-            self.camera_angles[0] = max(-3.13, min(0.5, self.camera_angles[0]))
+            self.camera_angles[0] = max(-1.55, min(0.5, self.camera_angles[0]))
             self.camera_angles[1] = math.fmod(self.camera_angles[1], math.pi * 2)
 
         self.previous_mouse_point = self.get_mouse_position(event.position)
