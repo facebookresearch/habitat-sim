@@ -295,6 +295,7 @@ class HabitatSimInteractiveViewer(Application):
         self.modified_objects_buffer: Dict[
             habitat_sim.physics.ManagedRigidObject, mn.Matrix4
         ] = {}
+        self.removed_clutter = []
         self.translation_speed = 0.05
         self.rotation_speed = 0.1
 
@@ -752,21 +753,6 @@ class HabitatSimInteractiveViewer(Application):
             self.debug_bullet_draw = not self.debug_bullet_draw
             logger.info(f"Command: toggle Bullet debug draw: {self.debug_bullet_draw}")
 
-        elif key == pressed.C:
-            if shift_pressed:
-                self.contact_debug_draw = not self.contact_debug_draw
-                logger.info(
-                    f"Command: toggle contact debug draw: {self.contact_debug_draw}"
-                )
-            else:
-                # perform a discrete collision detection pass and enable contact debug drawing to visualize the results
-                logger.info(
-                    "Command: perform discrete collision detection and visualize active contacts."
-                )
-                self.sim.perform_discrete_collision_detection()
-                self.contact_debug_draw = True
-                # TODO: add a nice log message with concise contact pair naming.
-
         elif key == pressed.LEFT:
             if alt_pressed:
                 self.move_selected_object(
@@ -807,8 +793,11 @@ class HabitatSimInteractiveViewer(Application):
                 self.move_selected_object(
                     translation=-mn.Vector3.z_axis() * obj_translation_speed
                 )
-        elif key == pressed.BACKSPACE:
+        elif key == pressed.BACKSPACE or key == pressed.C:
             if self.selected_object is not None:
+                if key == pressed.C:
+                    obj_name = self.selected_object.handle.split("/")[-1].split("_:")[0]
+                    self.removed_clutter.append(obj_name)
                 print(f"Removed {self.selected_object.handle}")
                 self.sim.get_rigid_object_manager().remove_object_by_handle(
                     self.selected_object.handle
@@ -827,6 +816,11 @@ class HabitatSimInteractiveViewer(Application):
             print(
                 "Saved modified scene instance JSON to original location. Look for '<scene_name> (copy:0000)' or similar."
             )
+            # de-duplicate and save clutter list
+            self.removed_clutter = list(dict.fromkeys(self.removed_clutter))
+            with open("removed_clutter.txt", "a") as f:
+                for obj_name in self.removed_clutter:
+                    f.write(obj_name + "\n")
             exit()
 
         elif key == pressed.T:
@@ -1040,7 +1034,8 @@ Key Commands:
             - UP/DOWN arrow keys: move the object along global Z axis.
                 (+ALT): move the object up/down (global Y axis)
             - BACKSPACE: delete the selected object
-    'i': save the current, modified, scene_instance file and close the viewer.
+            - 'c': delete the selected object and record it as clutter.
+    'i': save the current, modified, scene_instance file and close the viewer. Also save removed_clutter.txt containing object names of all removed clutter objects.
 
     Utilities:
     'r':        Reset the simulator with the most recently loaded scene.
@@ -1048,8 +1043,6 @@ Key Commands:
                 (+SHIFT) Recompute NavMesh with Spot settings (already done).
                 (+ALT) Re-sample Spot's position from the NavMesh.
     ',':        Render a Bullet collision shape debug wireframe overlay (white=active, green=sleeping, blue=wants sleeping, red=can't sleep).
-    'c':        Run a discrete collision detection pass and render a debug wireframe overlay showing active contact points and normals (yellow=fixed length normals, red=collision distances).
-                (+SHIFT) Toggle the contact point debug render overlay on/off.
 
     Object Interactions:
     SPACE:      Toggle physics simulation on/off.
