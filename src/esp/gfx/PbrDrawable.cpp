@@ -7,6 +7,7 @@
 #include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/Utility/FormatStl.h>
 #include <Magnum/Trade/MaterialData.h>
+#include <Magnum/Trade/PbrClearCoatMaterialData.h>
 #include <Magnum/Trade/PbrMetallicRoughnessMaterialData.h>
 
 #include <Magnum/GL/Renderer.h>
@@ -126,6 +127,7 @@ void PbrDrawable::setMaterialValuesInternal(
     }
     if (tmpMaterialData.normalTextureScale() != 1.0f) {
       flags_ |= PbrShader::Flag::NormalTextureScale;
+      matCache.normalTextureScale = tmpMaterialData.normalTextureScale();
       CORRADE_ASSERT(tmpMaterialData.normalTextureScale() > 0.0f,
                      "PbrDrawable::PbrDrawable(): the normal texture scale "
                      "must be positive.", );
@@ -142,6 +144,178 @@ void PbrDrawable::setMaterialValuesInternal(
   if (materialData_->isDoubleSided()) {
     flags_ |= PbrShader::Flag::DoubleSided;
   }
+
+  std::string debugStr = "";
+  ////////////////
+  // ClearCoat layer
+  if (materialData_->hasLayer(Mn::Trade::MaterialLayer::ClearCoat)) {
+    const auto& ccLayer =
+        materialData_->as<Mn::Trade::PbrClearCoatMaterialData>();
+    float cc_LayerFactor = ccLayer.layerFactor();
+    if (cc_LayerFactor > 0.0f) {
+      // has non-trivial clearcoat layer
+      flags_ |= PbrShader::Flag::ClearCoatLayer;
+      //
+      matCache.cc_ClearCoatFactor = cc_LayerFactor;
+      matCache.cc_Roughness = ccLayer.roughness();
+
+      if (ccLayer.hasAttribute("layerFactorTexturePointer")) {
+        flags_ |= PbrShader::Flag::CCLayer_CCTexture;
+        matCache.cc_ClearCoatTexture =
+            ccLayer.attribute<Mn::GL::Texture2D*>("layerFactorTexturePointer");
+      }
+
+      if (ccLayer.hasAttribute("roughnessTexturePointer")) {
+        flags_ |= PbrShader::Flag::CCLayer_RoughnessTexture;
+        matCache.cc_RoughnessTexture =
+            ccLayer.attribute<Mn::GL::Texture2D*>("roughnessTexturePointer");
+        matCache.cc_Roughness_Texture_Swizzle =
+            ccLayer.roughnessTextureSwizzle();
+      }
+
+      if (ccLayer.hasAttribute("normalTexturePointer")) {
+        flags_ |= PbrShader::Flag::CCLayer_NormalTexture;
+        matCache.cc_NormalTexture =
+            ccLayer.attribute<Mn::GL::Texture2D*>("normalTexturePointer");
+        // TODO : do we really need to verify if scale
+        matCache.cc_NormalTextureScale = ccLayer.normalTextureScale();
+      }
+      Cr::Utility::formatInto(
+          debugStr, debugStr.size(),
+          " ClearCoat layer with factor : {} Roughness : {}", cc_LayerFactor,
+          matCache.cc_Roughness);
+
+    }  // non-zero layer factor
+  }    // has clearcoat layer
+
+  ////////////////
+  // KHR_materials_ior
+  if (materialData_->hasLayer("#KHR_materials_ior")) {
+    // Read in custom material index of refraction
+    if (materialData_->hasAttribute("#KHR_materials_ior", "ior")) {
+      matCache.ior_Index =
+          materialData_->attribute<float>("#KHR_materials_ior", "ior");
+      Cr::Utility::formatInto(debugStr, debugStr.size(),
+                              " | IOR layer w/IOR = {}", matCache.ior_Index);
+    }
+
+  }  // has KHR_materials_ior layer
+
+  ////////////////
+  // KHR_materials_specular layer
+  if (materialData_->hasLayer("#KHR_materials_specular")) {
+    flags_ |= PbrShader::Flag::SpecularLayer;
+    /**
+     * The strength of the specular reflection. Defaults to 1.0f
+     */
+    if (materialData_->hasAttribute("#KHR_materials_specular",
+                                    "specularFactor")) {
+      matCache.spec_SpecularFactor = materialData_->attribute<float>(
+          "#KHR_materials_specular", "specularFactor");
+    }
+
+    /**
+     * A texture that defines the strength of the specular reflection, stored in
+     * the alpha (A) channel. This will be multiplied by specularFactor.
+     */
+    if (materialData_->hasAttribute("#KHR_materials_specular",
+                                    "specularTexturePointer")) {
+      flags_ |= PbrShader::Flag::SpecLayer_SpecTexture;
+      matCache.spec_SpecularTexture =
+          materialData_->attribute<Mn::GL::Texture2D*>(
+              "#KHR_materials_specular", "specularTexturePointer");
+    }
+    /**
+     * The F0 color of the specular reflection (linear RGB).
+     */
+    if (materialData_->hasAttribute("#KHR_materials_specular",
+                                    "specularColorFactor")) {
+      matCache.spec_SpecularColorFactor = materialData_->attribute<Mn::Color3>(
+          "#KHR_materials_specular", "specularColorFactor");
+    }
+    /**
+     * A texture that defines the F0 color of the specular reflection,
+     * stored in the RGB channels and encoded in sRGB. This texture will be
+     * multiplied by specularColorFactor.
+     */
+    if (materialData_->hasAttribute("#KHR_materials_specular",
+                                    "specularColorTexturePointer")) {
+      flags_ |= PbrShader::Flag::SpecLayer_SpecColorTexture;
+      matCache.spec_SpecularColorTexture =
+          materialData_->attribute<Mn::GL::Texture2D*>(
+              "#KHR_materials_specular", "specularColorTexturePointer");
+    }
+
+    Cr::Utility::formatInto(
+        debugStr, debugStr.size(),
+        " | Specular layer with factor : {} spec clr : [{},{}.{}]",
+        matCache.spec_SpecularFactor, matCache.spec_SpecularColorFactor.r(),
+        matCache.spec_SpecularColorFactor.g(),
+        matCache.spec_SpecularColorFactor.b());
+  }  // has KHR_materials_specular layer
+
+  ////////////////
+  // KHR_materials_transmission
+  if (materialData_->hasLayer("#KHR_materials_transmission")) {
+    flags_ |= PbrShader::Flag::TransmissionLayer;
+    // transmissionFactor
+    if (materialData_->hasAttribute("#KHR_materials_transmission",
+                                    "transmissionFactor")) {
+      matCache.trns_TransmissionFactor = materialData_->attribute<float>(
+          "#KHR_materials_transmission", "transmissionFactor");
+    }
+    // transmissionTexturePointer
+
+    if (materialData_->hasAttribute("#KHR_materials_transmission",
+                                    "transmissionTexturePointer")) {
+      flags_ |= PbrShader::Flag::TransLayer_TransmissionTexture;
+      matCache.trns_TransmissionTexture =
+          materialData_->attribute<Mn::GL::Texture2D*>(
+              "#KHR_materials_transmission", "transmissionTexturePointer");
+    }
+
+    Cr::Utility::formatInto(debugStr, debugStr.size(), " | Transmission layer");
+  }  // has KHR_materials_transmission layer
+  ////////////////
+  // KHR_materials_volume
+  if (materialData_->hasLayer("#KHR_materials_volume")) {
+    Cr::Utility::formatInto(debugStr, debugStr.size(), " | Volume layer");
+    flags_ |= PbrShader::Flag::VolumeLayer;
+
+    if (materialData_->hasAttribute("#KHR_materials_volume",
+                                    "thicknessFactor")) {
+      matCache.vol_ThicknessFactor = materialData_->attribute<float>(
+          "#KHR_materials_volume", "thicknessFactor");
+    }
+
+    if (materialData_->hasAttribute("#KHR_materials_volume",
+                                    "thicknessTexturePointer")) {
+      flags_ |= PbrShader::Flag::VolLayer_ThicknessTexture;
+      matCache.vol_ThicknessTexture =
+          materialData_->attribute<Mn::GL::Texture2D*>(
+              "#KHR_materials_volume", "thicknessTexturePointer");
+    }
+
+    if (materialData_->hasAttribute("#KHR_materials_volume",
+                                    "attenuationDistance")) {
+      float attDist = materialData_->attribute<float>("#KHR_materials_volume",
+                                                      "attenuationDistance");
+      if (attDist > 0.0f) {
+        // Can't be 0 or inf
+        matCache.vol_AttenuationDist = attDist;
+      }
+    }
+
+    if (materialData_->hasAttribute("#KHR_materials_volume",
+                                    "attenuationColor")) {
+      matCache.vol_AttenuationColor = materialData_->attribute<Mn::Color3>(
+          "#KHR_materials_volume", "attenuationColor");
+    }
+  }  // has KHR_materials_volume layer
+  if (debugStr.length() > 0) {
+    ESP_WARNING() << "PBR Material:" << debugStr;
+  }
+
 }  // PbrDrawable::setMaterialValuesInternal
 
 void PbrDrawable::setLightSetup(const Mn::ResourceKey& lightSetupKey) {

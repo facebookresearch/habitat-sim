@@ -22,6 +22,8 @@ class PbrDrawable : public Drawable {
    * Magnum MaterialData to speed up access in draw.
    */
   struct PBRMaterialCache {
+    ////////////////
+    // Base layer
     Mn::Color4 baseColor{1.0f};
     float roughness = 1.0f;
     float metalness = 1.0f;
@@ -42,8 +44,99 @@ class PbrDrawable : public Drawable {
     Mn::GL::Texture2D* roughnessTexture = nullptr;
     Mn::GL::Texture2D* metallicTexture = nullptr;
 
-    Mn::GL::Texture2D* normalTexture = nullptr;
     Mn::GL::Texture2D* emissiveTexture = nullptr;
+
+    Mn::GL::Texture2D* normalTexture = nullptr;
+
+    float normalTextureScale = 1.0f;
+
+    ////////////////
+    // ClearCoat layer
+    float cc_ClearCoatFactor = 0.0f;
+    Mn::GL::Texture2D* cc_ClearCoatTexture = nullptr;
+    float cc_Roughness = 0.0f;
+    Mn::GL::Texture2D* cc_RoughnessTexture = nullptr;
+
+    // TODO: is this going to be needed?
+    Mn::Trade::MaterialTextureSwizzle cc_Roughness_Texture_Swizzle =
+        Mn::Trade::MaterialTextureSwizzle::G;
+    float cc_NormalTextureScale = 1.0f;
+    Mn::GL::Texture2D* cc_NormalTexture = nullptr;
+
+    ////////////////
+    // KHR_materials_ior
+
+    /**
+     * Index of refraction of material. Generally between 1-2, although values
+     * higher than 2 are possible. Defaults to 1.5.
+     *
+     * dielectricSpecular = ((ior - 1)/(ior + 1))^2
+     * default ior value evaluates to dielectricSpecular = 0.04
+     */
+    float ior_Index = 1.5;
+
+    ////////////////
+    // KHR_materials_specular layer
+
+    /**
+     * The strength of the specular reflection.
+     */
+    float spec_SpecularFactor = 1.0f;
+
+    /**
+     * A texture that defines the strength of the specular reflection, stored in
+     * the alpha (A) channel. This will be multiplied by specularFactor.
+     */
+    Mn::GL::Texture2D* spec_SpecularTexture = nullptr;
+
+    /**
+     * The F0 color of the specular reflection (linear RGB).
+     */
+    Mn::Color3 spec_SpecularColorFactor{1.0f};
+
+    /**
+     * A texture that defines the F0 color of the specular reflection,
+     * stored in the RGB channels and encoded in sRGB. This texture will be
+     * multiplied by specularColorFactor.
+     */
+    Mn::GL::Texture2D* spec_SpecularColorTexture = nullptr;
+
+    ////////////////
+    // KHR_materials_transmission
+    float trns_TransmissionFactor = 0.0f;
+
+    Mn::GL::Texture2D* trns_TransmissionTexture = nullptr;
+
+    ////////////////
+    // KHR_materials_volume
+
+    /**
+     * The thickness of the volume beneath the surface. The value is given in
+     * the coordinate space of the mesh. If the value is 0 the material is
+     * thin-walled. Otherwise the material is a volume boundary. The doubleSided
+     * property has no effect on volume boundaries. Range is [0, +inf).
+     */
+    float vol_ThicknessFactor = 0.0f;
+
+    /**
+     * A texture that defines the thickness, stored in the G channel. This will
+     * be multiplied by thicknessFactor. Range is [0, 1]
+     */
+    Mn::GL::Texture2D* vol_ThicknessTexture = nullptr;
+
+    /**
+     * Density of the medium given as the average distance that light travels in
+     * the medium before interacting with a particle. The value is given in
+     * world space. Range is (0, +inf). Default is inf (treat -1).
+     */
+    float vol_AttenuationDist = -1.0f;
+
+    /**
+     * The color that white light turns into due to absorption when reaching
+     * the attenuation distance.
+     */
+
+    Mn::Color3 vol_AttenuationColor{1.0f};
   };
 
   /**

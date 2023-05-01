@@ -185,28 +185,84 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * will use the node's semantic ID
      */
     InstancedObjectId = (1 << 12) | ObjectId,
+
+    /**
+     * Has ClearCoat layer.
+     */
+    ClearCoatLayer = 1 << 13,
+
+    /**
+     * Has ClearCoat Texture in ClearCoat layer
+     */
+    CCLayer_CCTexture = (1 << 14) | ClearCoatLayer,
+    /**
+     * Has Roughness Texture in ClearCoat layer
+     */
+    CCLayer_RoughnessTexture = (1 << 15) | ClearCoatLayer,
+    /**
+     * Has Normal Texture in ClearCoat layer
+     */
+    CCLayer_NormalTexture = (1 << 16) | ClearCoatLayer,
+
+    CCLayer_NormalTextureScale = (1 << 17) | ClearCoatLayer,
+
+    /**
+     * Has KHR_materials_specular layer
+     */
+    SpecularLayer = 1 << 18,
+
+    /**
+     * Has Specular Texture in KHR_materials_specular layer
+     */
+    SpecLayer_SpecTexture = (1 << 19) | SpecularLayer,
+
+    /**
+     * Has Specular Color Texture in KHR_materials_specular layer
+     */
+    SpecLayer_SpecColorTexture = (1 << 20) | SpecularLayer,
+
+    /**
+     * Has KHR_materials_transmission layer
+     */
+    TransmissionLayer = 1 << 21,
+
+    /**
+     * Has transmission texture in KHR_materials_transmission layer
+     */
+    TransLayer_TransmissionTexture = (1 << 22) | TransmissionLayer,
+
+    /**
+     * Has KHR_materials_volume layer
+     */
+    VolumeLayer = 1 << 23,
+
+    /**
+     * Has Thickness texture in  KHR_materials_volume layer
+     */
+    VolLayer_ThicknessTexture = (1 << 24) | VolumeLayer,
+
     /**
      * Enable double-sided rendering.
      * (Temporarily STOP supporting this functionality. See comments in
      * the PbrDrawable::draw() function)
      */
-    DoubleSided = 1 << 13,
+    DoubleSided = 1 << 25,
 
     /**
      * Enable image based lighting
      */
-    ImageBasedLighting = 1 << 14,
+    ImageBasedLighting = 1 << 26,
 
     /**
      * render point light shadows using variance shadow map (VSM)
      */
-    ShadowsVSM = 1 << 15,
+    ShadowsVSM = 1 << 27,
 
     /**
      * Enable shader debug mode. Then developer can set the uniform
      * PbrDebugDisplay in the fragment shader for debugging
      */
-    DebugDisplay = 1 << 16,
+    DebugDisplay = 1 << 28,
     /*
      * TODO: alphaMask
      */
