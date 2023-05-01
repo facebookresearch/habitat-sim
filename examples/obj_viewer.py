@@ -547,6 +547,9 @@ class HabitatSimInteractiveViewer(Application):
                 for composite_file in sim_settings["composite_files"]:
                     self.replay_renderer.preload_file(composite_file)
 
+        otm = self.sim.metadata_mediator.object_template_manager
+        otm.load_configs("data/objects/ycb/configs/")
+
         Timer.start()
         self.step = -1
 
@@ -824,7 +827,7 @@ class HabitatSimInteractiveViewer(Application):
         self.redraw()
         event.accepted = True
 
-    def construct_cylinder_object(
+    def construct_cylinder_object2(
         self, cyl_radius: float = 0.04, cyl_height: float = 0.15
     ):
         constructed_cyl_temp_name = "scaled_cyl_template"
@@ -834,6 +837,13 @@ class HabitatSimInteractiveViewer(Application):
         cyl_temp.scale = mn.Vector3(cyl_radius, cyl_height / 2.0, cyl_radius)
         otm.register_template(cyl_temp, constructed_cyl_temp_name)
         return constructed_cyl_temp_name
+
+    def construct_cylinder_object(
+        self, cyl_radius: float = 0.04, cyl_height: float = 0.15
+    ):
+        otm = self.sim.metadata_mediator.object_template_manager
+        cyl_temp_handle = otm.get_template_handles("chef")[0]
+        return cyl_temp_handle
 
     def mouse_press_event(self, event: Application.MouseEvent) -> None:
         """
@@ -934,7 +944,14 @@ class HabitatSimInteractiveViewer(Application):
             and self.mouse_cast_results.has_hits()
             and event.button == button.RIGHT
         ):
-            constructed_cyl_obj_handle = self.construct_cylinder_object()
+            constructed_cyl_obj_handle = None
+            import random
+
+            r = random.randint(0, 1)
+            if r == 0:
+                constructed_cyl_obj_handle = self.construct_cylinder_object()
+            else:
+                constructed_cyl_obj_handle = self.construct_cylinder_object2()
             # try to place an object
             if (
                 mn.math.dot(
