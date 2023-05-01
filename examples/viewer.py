@@ -19,6 +19,7 @@ import habitat.datasets.rearrange.samplers.receptacle as hab_receptacle
 import magnum as mn
 import numpy as np
 from habitat.datasets.rearrange.samplers.object_sampler import ObjectSampler
+from habitat.sims.habitat_simulator.sim_utilities import get_bb_corners
 from magnum import shaders, text
 from magnum.platform.glfw import Application
 
@@ -457,6 +458,7 @@ class HabitatSimInteractiveViewer(Application):
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         with open(filepath, "w") as f:
             f.write(json.dumps(self.rec_filter_data, indent=2))
+        print(f"Exported filter annotations to {filepath}.")
 
     def load_filtered_recs(self, filepath: Optional[str] = None) -> None:
         """
@@ -478,6 +480,7 @@ class HabitatSimInteractiveViewer(Application):
         assert "access_filtered" in self.rec_filter_data
         assert "stability_filtered" in self.rec_filter_data
         assert "height_filtered" in self.rec_filter_data
+        print(f"Loaded filter annotations from {filepath}")
 
     def load_receptacles(self):
         """
@@ -576,6 +579,7 @@ class HabitatSimInteractiveViewer(Application):
         """
         Additional draw commands to be called during draw_event.
         """
+        rom = self.sim.get_rigid_object_manager()
         if self.debug_bullet_draw:
             render_cam = self.render_camera.render_camera
             proj_mat = render_cam.projection_matrix.__matmul__(render_cam.camera_matrix)
@@ -680,7 +684,82 @@ class HabitatSimInteractiveViewer(Application):
                                 ):
                                     rec_color = mn.Color4.blue()
 
-                        receptacle.debug_draw(self.sim, color=rec_color)
+                rec_obj = rom.get_object_by_handle(receptacle.parent_object_handle)
+                key_points = [r_trans.translation]
+                key_points.extend(get_bb_corners(rec_obj.root_scene_node.cumulative_bb))
+
+                in_view = False
+                for ix, key_point in enumerate(key_points):
+                    r_pos = key_point
+                    if ix > 0:
+                        r_pos = rec_obj.transformation.transform_point(key_point)
+                    c_to_r = r_pos - c_pos
+                    # only display receptacles within 4 meters centered in view
+                    if (
+                        c_to_r.length() < 4
+                        and mn.math.dot((c_to_r).normalized(), c_forward) > 0.7
+                    ):
+                        in_view = True
+                        break
+                if in_view:
+                    # handle coloring
+                    rec_color = None
+                    if self.selected_rec == receptacle:
+                        # white
+                        rec_color = mn.Color4.cyan()
+                    elif (
+                        self.cpo_initialized
+                        and self.rec_color_mode != RecColorMode.DEFAULT
+                    ):
+                        if self.rec_color_mode == RecColorMode.GT_STABILITY:
+                            rec_color = rg_lerp.at(
+                                rec_dat["shape_id_results"]["gt"]["stability_results"][
+                                    "success_ratio"
+                                ]
+                            )
+                        elif self.rec_color_mode == RecColorMode.GT_ACCESS:
+                            rec_color = rg_lerp.at(
+                                rec_dat["shape_id_results"]["gt"]["access_results"][
+                                    "receptacle_access_score"
+                                ]
+                            )
+                        elif self.rec_color_mode == RecColorMode.PR_STABILITY:
+                            rec_color = rg_lerp.at(
+                                rec_dat["shape_id_results"]["pr0"]["stability_results"][
+                                    "success_ratio"
+                                ]
+                            )
+                        elif self.rec_color_mode == RecColorMode.PR_ACCESS:
+                            rec_color = rg_lerp.at(
+                                rec_dat["shape_id_results"]["pr0"]["access_results"][
+                                    "receptacle_access_score"
+                                ]
+                            )
+                        elif self.rec_color_mode == RecColorMode.FILTERING:
+                            if rec_unique_name in self.rec_filter_data["active"]:
+                                rec_color = mn.Color4.green()
+                            elif (
+                                rec_unique_name
+                                in self.rec_filter_data["manually_filtered"]
+                            ):
+                                rec_color = mn.Color4.yellow()
+                            elif (
+                                rec_unique_name
+                                in self.rec_filter_data["access_filtered"]
+                            ):
+                                rec_color = mn.Color4.red()
+                            elif (
+                                rec_unique_name
+                                in self.rec_filter_data["stability_filtered"]
+                            ):
+                                rec_color = mn.Color4.magenta()
+                            elif (
+                                rec_unique_name
+                                in self.rec_filter_data["height_filtered"]
+                            ):
+                                rec_color = mn.Color4.blue()
+
+                    receptacle.debug_draw(self.sim, color=rec_color)
 
         # mouse raycast circle
         white = mn.Color4(mn.Vector3(1.0), 1.0)
