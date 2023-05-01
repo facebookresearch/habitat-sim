@@ -175,32 +175,38 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
     PrecomputedTangent = 1 << 10,
 
     /**
-     * Enable object ID output.
+     * Enable object ID output for this shader.
      */
     ObjectId = 1 << 11,
 
+    /**
+     * Support Instanced object ID. Retrieves a per-instance / per-vertex
+     * object ID from the @ref ObjectId attribute. If this is false, the shader
+     * will use the node's semantic ID
+     */
+    InstancedObjectId = (1 << 12) | ObjectId,
     /**
      * Enable double-sided rendering.
      * (Temporarily STOP supporting this functionality. See comments in
      * the PbrDrawable::draw() function)
      */
-    DoubleSided = 1 << 12,
+    DoubleSided = 1 << 13,
 
     /**
      * Enable image based lighting
      */
-    ImageBasedLighting = 1 << 13,
+    ImageBasedLighting = 1 << 14,
 
     /**
      * render point light shadows using variance shadow map (VSM)
      */
-    ShadowsVSM = 1 << 14,
+    ShadowsVSM = 1 << 15,
 
     /**
      * Enable shader debug mode. Then developer can set the uniform
      * PbrDebugDisplay in the fragment shader for debugging
      */
-    DebugDisplay = 1 << 15,
+    DebugDisplay = 1 << 16,
     /*
      * TODO: alphaMask
      */

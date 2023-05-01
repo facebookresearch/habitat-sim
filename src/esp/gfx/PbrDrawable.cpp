@@ -137,7 +137,7 @@ void PbrDrawable::setMaterialValuesInternal(
         materialData_->attribute<Mn::GL::Texture2D*>("emissiveTexturePointer");
   }
   if (materialData_->attribute<bool>("hasPerVertexObjectId")) {
-    flags_ |= PbrShader::Flag::ObjectId;
+    flags_ |= PbrShader::Flag::InstancedObjectId;
   }
   if (materialData_->isDoubleSided()) {
     flags_ |= PbrShader::Flag::DoubleSided;
@@ -201,7 +201,8 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
       // the fragment shader
       .setObjectId(static_cast<RenderCamera&>(camera).useDrawableIds()
                        ? drawableId_
-                       : (flags_ & PbrShader::Flag::ObjectId
+                       : ((flags_ & PbrShader::Flag::InstancedObjectId) ==
+                                  PbrShader::Flag::InstancedObjectId
                               ? 0
                               : node_.getSemanticId()))
       .setProjectionMatrix(camera.projectionMatrix())
