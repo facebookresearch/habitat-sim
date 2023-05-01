@@ -1192,7 +1192,7 @@ class CollisionProxyOptimizer:
         use_gt: bool = False,
         cyl_radius: float = 0.04,
         cyl_height: float = 0.15,
-        accepted_height_error: float = 0.05,
+        accepted_height_error: float = 0.1,
     ):
         """
         Try to place a dynamic cylinder on the receptacle points. Record snap error and physical stability.
