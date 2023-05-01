@@ -3216,6 +3216,7 @@ void ResourceManager::addComponent(
 
     gfx::Drawable::Flags meshAttributeFlags{};
     const auto& meshData = meshes_.at(meshID)->getMeshData();
+    Mn::Range3D* pbb = nullptr;
     if (meshData != Cr::Containers::NullOpt) {
       if (meshData->hasAttribute(Mn::Trade::MeshAttribute::Tangent)) {
         meshAttributeFlags |= gfx::Drawable::Flag::HasTangent;
@@ -3229,22 +3230,64 @@ void ResourceManager::addComponent(
       if (meshData->hasAttribute(Mn::Trade::MeshAttribute::Color)) {
         meshAttributeFlags |= gfx::Drawable::Flag::HasVertexColor;
       }
+
+      GenericMeshData& gltfMeshData =
+          dynamic_cast<GenericMeshData&>(*meshes_.at(meshID).get());
+      pbb = &gltfMeshData.BB;
     }
 
-    createDrawable(mesh,                // render mesh
-                   meshAttributeFlags,  // mesh attribute flags
-                   node,                // scene node
-                   lightSetupKey,       // lightSetup Key
-                   materialKey,         // material key
-                   drawables,           // drawable group
-                   skinData);           // instance skinning data
+    bool doUsePlaceholderMesh = false;
+    if (mesh) {
+      static int numRequestedDrawables = 0;
+      static int numHidDrawables = 0;
+      numRequestedDrawables++;
+
+      constexpr float halfSize = 0.1f;
+      Mn::Range3D defaultBB({-halfSize, -halfSize, -halfSize},
+                            {halfSize, halfSize, halfSize});
+      if (!pbb) {
+        pbb = &defaultBB;
+      }
+
+      // float bbArea = (bb.sizeX() * bb.sizeY()) + (bb.sizeX() * bb.sizeZ())
+      //   + (bb.sizeY() * bb.sizeZ());
+      // const CollisionMeshData& meshData =
+      // gltfMeshData.getCollisionMeshData();
+      int numVerts = mesh->count();
+      constexpr int threshold = 5000;  // todo: expose to Python as tuning var
+      // if (float(numVerts) / bbArea > threshold)
+      if (numVerts > threshold) {
+        const auto& bb = *pbb;
+        Magnum::Vector3 scale = bb.size() / 2.0;
+        auto& bbNode = node.createChild();
+        bbNode.MagnumObject::setScaling(scale);
+        bbNode.MagnumObject::setTranslation(bb.center());
+        addPrimitiveToDrawables(0, bbNode, drawables);
+        doUsePlaceholderMesh = true;
+        numHidDrawables++;
+        ESP_WARNING() << "hid " << std::to_string(numHidDrawables) << "/"
+                      << std::to_string(numRequestedDrawables) << " drawables";
+      }
+    }
+
+    if (!doUsePlaceholderMesh) {
+      createDrawable(mesh,                // render mesh
+                     meshAttributeFlags,  // mesh attribute flags
+                     node,                // scene node
+                     lightSetupKey,       // lightSetup Key
+                     materialKey,         // material key
+                     drawables,           // drawable group
+                     skinData);           // instance skinning data
+    }
 
     // compute the bounding box for the mesh we are adding
     if (computeAbsoluteAABBs) {
       staticDrawableInfo.emplace_back(StaticDrawableInfo{node, meshID});
     }
     BaseMesh* meshBB = meshes_.at(meshID).get();
-    node.setMeshBB(computeMeshBB(meshBB));
+    auto bb = computeMeshBB(meshBB);
+    CORRADE_INTERNAL_ASSERT(!pbb || *pbb == bb);
+    node.setMeshBB(bb);
   }
 
   // Recursively add children

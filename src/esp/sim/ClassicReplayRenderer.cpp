@@ -34,6 +34,8 @@ ClassicReplayRenderer::ClassicReplayRenderer(
   resourceManager_->getShaderManager().setFallback(
       esp::gfx::getDefaultLights());
 
+  resourceManager_->initDefaultPrimAttributes();  // needed for wireframeCube
+
   sceneManager_ = scene::SceneManager::create_unique();
 
   class SceneGraphPlayerImplementation
