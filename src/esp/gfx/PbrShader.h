@@ -400,6 +400,11 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   PbrShader& setMetallic(float metallic);
 
   /**
+   * @brief Set index of refraction.
+   */
+  PbrShader& setIndexOfRefraction(float ior);
+
+  /**
    *  @brief Set object id to the uniform on GPU
    *  @return Reference to self (for method chaining)
    */
@@ -577,6 +582,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   int baseColorUniform_ = ID_UNDEFINED;  // diffuse color
   int roughnessUniform_ = ID_UNDEFINED;  // roughness of a surface
   int metallicUniform_ = ID_UNDEFINED;
+  int iorUniform_ = ID_UNDEFINED;
   int emissiveColorUniform_ = ID_UNDEFINED;
   int objectIdUniform_ = ID_UNDEFINED;
   int textureMatrixUniform_ = ID_UNDEFINED;
