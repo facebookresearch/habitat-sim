@@ -45,6 +45,9 @@ struct MeshTransformNode {
 
   /** @brief Default constructor. */
   MeshTransformNode() = default;
+
+  /** @brief Node name in the original file. */
+  std::string name{};
 };
 
 /**
@@ -73,6 +76,10 @@ struct MeshMetaData {
    * asset datastructure. */
   std::pair<start, end> textureIndex =
       std::make_pair(ID_UNDEFINED, ID_UNDEFINED);
+
+  /** @brief Index range (inclusive) of skin data for the asset in the global
+   * asset datastructure. */
+  std::pair<start, end> skinIndex = std::make_pair(ID_UNDEFINED, ID_UNDEFINED);
 
   /** @brief The root of the mesh component transformation hierarchy tree which
    * stores the relationship between components of the asset.*/
@@ -114,6 +121,19 @@ struct MeshMetaData {
   void setTextureIndices(int textureStart, int textureEnd) {
     textureIndex.first = textureStart;
     textureIndex.second = textureEnd;
+  }
+
+  /**
+   * @brief Sets the skin indices for the asset. See @ref
+   * ResourceManager::skins_.
+   * @param skinStart First index for asset skin data in the global
+   * skin datastructure.
+   * @param skinEnd Final index for asset skin data in the global skin
+   * datastructure.
+   */
+  void setSkinIndices(int skinStart, int skinEnd) {
+    skinIndex.first = skinStart;
+    skinIndex.second = skinEnd;
   }
 
   /**

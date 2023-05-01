@@ -72,6 +72,11 @@ void initMetadataMediatorBindings(py::module& m) {
       .def(
           "get_scene_handles", &MetadataMediator::getAllSceneInstanceHandles,
           R"(Returns a list the names of all the available scene instances in the currently active dataset.)")
+      .def(
+          "get_scene_user_defined",
+          &MetadataMediator::getSceneInstanceUserConfiguration,
+          R"(Returns the user_defined attributes for the scene instance specified by scene_name)",
+          "scene_name"_a)
       .def_property_readonly(
           "summary", &MetadataMediator::getDatasetsOverview,
           R"(This provides a summary of the datasets currently loaded.)")

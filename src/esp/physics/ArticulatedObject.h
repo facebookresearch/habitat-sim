@@ -426,6 +426,21 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   }
 
   /**
+   * @brief Get a list of link ids including the base (-1).
+   *
+   * @return A list of link ids for this object.
+   */
+  std::vector<int> getLinkIdsWithBase() const {
+    std::vector<int> ids;
+    ids.reserve(links_.size() + 1);
+    ids.push_back(-1);
+    for (auto it = links_.begin(); it != links_.end(); ++it) {
+      ids.push_back(it->first);
+    }
+    return ids;
+  }
+
+  /**
    * @brief Get a map of object ids to link ids.
    *
    * @return A a map of Habitat object ids to link ids for this AO's links.

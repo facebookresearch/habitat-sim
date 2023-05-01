@@ -7,16 +7,16 @@
 
 #include <Magnum/GL/AbstractShaderProgram.h>
 #include <Magnum/ResourceManager.h>
+#include <Magnum/Trade/MaterialData.h>
 
 #include "esp/gfx/LightSetup.h"
-#include "esp/gfx/MaterialData.h"
 
 namespace esp {
 namespace gfx {
 
 using ShaderManager = Magnum::ResourceManager<Magnum::GL::AbstractShaderProgram,
                                               gfx::LightSetup,
-                                              gfx::MaterialData>;
+                                              Magnum::Trade::MaterialData>;
 
 /**
  * @brief Set the light setup for a subtree
