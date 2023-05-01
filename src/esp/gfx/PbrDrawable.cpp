@@ -390,6 +390,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
       .setBaseColor(matCache.baseColor)
       .setRoughness(matCache.roughness)
       .setMetallic(matCache.metalness)
+      .setIndexOfRefraction(matCache.ior_Index)
       .setEmissiveColor(matCache.emissiveColor);
 
   // TODO:

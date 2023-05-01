@@ -43,12 +43,14 @@ uniform vec4 LightDirections[LIGHT_COUNT];
 
 // -------------- material, textures ------------------
 struct MaterialData {
-  vec4 baseColor;      // diffuse color, if BaseColorTexture exists,
-                       // multiply it with the BaseColorTexture
-  float roughness;     // roughness of a surface, if roughness texture exists,
-                       // multiply it with the MetallicRoughnessTexture
-  float metallic;      // metalness of a surface, if metallic texture exists,
-                       // multiply it the MetallicRoughnessTexture
+  vec4 baseColor;   // diffuse color, if BaseColorTexture exists,
+                    // multiply it with the BaseColorTexture
+  float roughness;  // roughness of a surface, if roughness texture exists,
+                    // multiply it with the MetallicRoughnessTexture
+  float metallic;   // metalness of a surface, if metallic texture exists,
+                    // multiply it the MetallicRoughnessTexture
+  float ior;  // index of refraction.  Default 1.5 gives DielectricSpecular
+              // value 0.04
   vec3 emissiveColor;  // emissiveColor, if emissive texture exists,
                        // multiply it the EmissiveTexture
 };
@@ -180,7 +182,7 @@ vec3 getNormalFromNormalMap() {
 // PI is defined in the pbrCommon.glsl
 const float INV_PI = 1.0 / PI;
 const float Epsilon = 0.0001;
-const float DielectricSpecular = 0.04;
+// const float DielectricSpecular = 0.04;
 
 // helper function to compute the Specular G
 float geometrySchlickGGX(float dotProd, float roughness) {
@@ -299,6 +301,8 @@ vec3 computeIBLSpecular(float roughness,
 
 void main() {
   vec3 emissiveColor = Material.emissiveColor;
+  float iorRatio = ((Material.ior - 1) / (Material.ior + 1));
+  float DielectricSpecular = iorRatio * iorRatio;
 #if defined(EMISSIVE_TEXTURE)
   emissiveColor *= texture(EmissiveTexture, texCoord).rgb;
 #endif
