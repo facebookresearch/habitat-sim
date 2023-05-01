@@ -291,6 +291,12 @@ class HabitatSimInteractiveViewer(Application):
 
         # object selection and manipulation interface
         self.selected_object = None
+        # cache modified states of any objects moved by the interface.
+        self.modified_objects_buffer: Dict[
+            habitat_sim.physics.ManagedRigidObject, mn.Matrix4
+        ] = {}
+        self.translation_speed = 0.05
+        self.rotation_speed = 0.1
 
         # configure our simulator
         self.cfg: Optional[habitat_sim.simulator.Configuration] = None
@@ -368,6 +374,41 @@ class HabitatSimInteractiveViewer(Application):
             self.sim.physics_debug_draw(proj_mat)
         if self.contact_debug_draw:
             self.draw_contact_debug()
+        if self.selected_object is not None:
+            aabb = self.selected_object.collision_shape_aabb
+            dblr = self.sim.get_debug_line_render()
+            dblr.push_transform(self.selected_object.transformation)
+            dblr.draw_box(aabb.min, aabb.max, mn.Color4.magenta())
+            dblr.pop_transform()
+            ot = self.selected_object.translation
+            # draw global coordinate axis
+            dblr.draw_transformed_line(
+                ot - mn.Vector3.x_axis(), ot + mn.Vector3.x_axis(), mn.Color4.red()
+            )
+            dblr.draw_transformed_line(
+                ot - mn.Vector3.y_axis(), ot + mn.Vector3.y_axis(), mn.Color4.green()
+            )
+            dblr.draw_transformed_line(
+                ot - mn.Vector3.z_axis(), ot + mn.Vector3.z_axis(), mn.Color4.blue()
+            )
+            dblr.draw_circle(
+                ot + mn.Vector3.x_axis() * 0.95,
+                radius=0.05,
+                color=mn.Color4.red(),
+                normal=mn.Vector3.x_axis(),
+            )
+            dblr.draw_circle(
+                ot + mn.Vector3.y_axis() * 0.95,
+                radius=0.05,
+                color=mn.Color4.green(),
+                normal=mn.Vector3.y_axis(),
+            )
+            dblr.draw_circle(
+                ot + mn.Vector3.z_axis() * 0.95,
+                radius=0.05,
+                color=mn.Color4.blue(),
+                normal=mn.Vector3.z_axis(),
+            )
 
     def draw_event(
         self,
@@ -595,9 +636,9 @@ class HabitatSimInteractiveViewer(Application):
         inc = 0.02
         min_val = 0.1
 
-        if (press[key.UP] or press[key.W]) and not (press[key.DOWN] or press[key.S]):
+        if press[key.W] and not press[key.S]:
             self.spot_forward = max(min_val, self.spot_forward + inc)
-        elif not (press[key.UP] or press[key.W]) and (press[key.DOWN] or press[key.S]):
+        elif press[key.S] and not press[key.W]:
             self.spot_forward = min(-min_val, self.spot_forward - inc)
         else:
             self.spot_forward /= 2.0
@@ -636,6 +677,29 @@ class HabitatSimInteractiveViewer(Application):
         gravity: mn.Vector3 = self.sim.get_gravity() * -1
         self.sim.set_gravity(gravity)
 
+    def move_selected_object(
+        self,
+        translation: Optional[mn.Vector3] = None,
+        rotation: Optional[mn.Quaternion] = None,
+    ):
+        """
+        Move the selected object with a given modification and save the resulting state to the buffer.
+        """
+        modify_buffer = translation is not None or rotation is not None
+        if self.selected_object is not None and modify_buffer:
+            self.selected_object.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+            if translation is not None:
+                self.selected_object.translation = (
+                    self.selected_object.translation + translation
+                )
+            if rotation is not None:
+                self.selected_object.rotation = rotation * self.selected_object.rotation
+            self.selected_object.motion_type = habitat_sim.physics.MotionType.STATIC
+            self.navmesh_config_and_recompute()
+            self.modified_objects_buffer[
+                self.selected_object
+            ] = self.selected_object.transformation
+
     def key_press_event(self, event: Application.KeyEvent) -> None:
         """
         Handles `Application.KeyEvent` on a key press by performing the corresponding functions.
@@ -649,6 +713,15 @@ class HabitatSimInteractiveViewer(Application):
         shift_pressed = bool(event.modifiers & mod.SHIFT)
         alt_pressed = bool(event.modifiers & mod.ALT)
         # warning: ctrl doesn't always pass through with other key-presses
+
+        obj_translation_speed = (
+            self.translation_speed
+            if not shift_pressed
+            else self.translation_speed * 2.0
+        )
+        obj_rotation_speed = (
+            self.rotation_speed if not shift_pressed else self.rotation_speed * 2.0
+        )
 
         if key == pressed.ESC:
             event.accepted = True
@@ -693,6 +766,68 @@ class HabitatSimInteractiveViewer(Application):
                 self.sim.perform_discrete_collision_detection()
                 self.contact_debug_draw = True
                 # TODO: add a nice log message with concise contact pair naming.
+
+        elif key == pressed.LEFT:
+            if alt_pressed:
+                self.move_selected_object(
+                    rotation=mn.Quaternion.rotation(
+                        mn.Rad(obj_rotation_speed), mn.Vector3.y_axis()
+                    )
+                )
+            else:
+                self.move_selected_object(
+                    translation=mn.Vector3.x_axis() * obj_translation_speed
+                )
+        elif key == pressed.RIGHT:
+            if alt_pressed:
+                self.move_selected_object(
+                    rotation=mn.Quaternion.rotation(
+                        -mn.Rad(obj_rotation_speed), mn.Vector3.y_axis()
+                    )
+                )
+            else:
+                self.move_selected_object(
+                    translation=-mn.Vector3.x_axis() * obj_translation_speed
+                )
+        elif key == pressed.UP:
+            if alt_pressed:
+                self.move_selected_object(
+                    translation=mn.Vector3.y_axis() * obj_translation_speed
+                )
+            else:
+                self.move_selected_object(
+                    translation=mn.Vector3.z_axis() * obj_translation_speed
+                )
+        elif key == pressed.DOWN:
+            if alt_pressed:
+                self.move_selected_object(
+                    translation=-mn.Vector3.y_axis() * obj_translation_speed
+                )
+            else:
+                self.move_selected_object(
+                    translation=-mn.Vector3.z_axis() * obj_translation_speed
+                )
+        elif key == pressed.BACKSPACE:
+            if self.selected_object is not None:
+                print(f"Removed {self.selected_object.handle}")
+                self.sim.get_rigid_object_manager().remove_object_by_handle(
+                    self.selected_object.handle
+                )
+                self.selected_object = None
+                self.navmesh_config_and_recompute()
+
+        elif key == pressed.I:
+            # dump the modified object states buffer to JSON.
+            # print(f"Writing modified_objects_buffer to 'scene_mod_buffer.json': {self.modified_objects_buffer}")
+            # with open("scene_mod_buffer.json", "w") as f:
+            #    f.write(json.dumps(self.modified_objects_buffer, indent=2))
+            aom = self.sim.get_articulated_object_manager()
+            aom.remove_all_objects()
+            self.sim.save_current_scene_config()
+            print(
+                "Saved modified scene instance JSON to original location. Look for '<scene_name> (copy:0000)' or similar."
+            )
+            exit()
 
         elif key == pressed.T:
             pass
@@ -768,6 +903,7 @@ class HabitatSimInteractiveViewer(Application):
 
         # select an object with Shift+RIGHT-click
         if physics_enabled and event.button == button.RIGHT and shift_pressed:
+            self.selected_object = None
             render_camera = self.render_camera.render_camera
             ray = render_camera.unproject(self.get_mouse_position(event.position))
             mouse_cast_results = self.sim.cast_ray(ray=ray)
@@ -892,9 +1028,19 @@ Key Commands:
     esc:        Exit the application.
     'h':        Display this help message.
 
-    Agent Controls:
+    Spot Controls:
     'wasd':     Move Spot's body forward/backward and rotate left/right.
     'qe':       Move Spot's body in strafe left/right.
+
+    Scene Object Modification UI:
+    'SHIFT+right-click': Select an object to modify.
+        - With an object selected:
+            - LEFT/RIGHT arrow keys: move the object along global X axis.
+                (+ALT): rotate the object around Y axis
+            - UP/DOWN arrow keys: move the object along global Z axis.
+                (+ALT): move the object up/down (global Y axis)
+            - BACKSPACE: delete the selected object
+    'i': save the current, modified, scene_instance file and close the viewer.
 
     Utilities:
     'r':        Reset the simulator with the most recently loaded scene.
