@@ -215,21 +215,8 @@ class HabitatSimInteractiveViewer(Application):
             key.W: False,
             key.X: False,
             key.Z: False,
-        }
-
-        # set up our movement key bindings map
-        key = Application.KeyEvent.Key
-        self.key_to_action = {
-            key.UP: "look_up",
-            key.DOWN: "look_down",
-            key.LEFT: "turn_left",
-            key.RIGHT: "turn_right",
-            key.A: "move_left",
-            key.D: "move_right",
-            key.S: "move_backward",
-            key.W: "move_forward",
-            key.X: "move_down",
-            key.Z: "move_up",
+            key.Q: False,
+            key.E: False,
         }
 
         # Load a TrueTypeFont plugin and open the font file
@@ -301,6 +288,9 @@ class HabitatSimInteractiveViewer(Application):
         self.spot_angular = 0
         self.camera_distance = 2.0
         self.camera_angles = mn.Vector2()
+
+        # object selection and manipulation interface
+        self.selected_object = None
 
         # configure our simulator
         self.cfg: Optional[habitat_sim.simulator.Configuration] = None
@@ -614,9 +604,9 @@ class HabitatSimInteractiveViewer(Application):
             if abs(self.spot_forward) < min_val:
                 self.spot_forward = 0
 
-        if press[key.LEFT] and not press[key.RIGHT]:
+        if press[key.Q] and not press[key.E]:
             self.spot_lateral = max(min_val, self.spot_lateral + inc)
-        elif press[key.RIGHT] and not press[key.LEFT]:
+        elif press[key.E] and not press[key.Q]:
             self.spot_lateral = min(-min_val, self.spot_lateral - inc)
         else:
             self.spot_lateral /= 2.0
@@ -771,8 +761,24 @@ class HabitatSimInteractiveViewer(Application):
         Handles `Application.MouseEvent`. When in GRAB mode, click on
         objects to drag their position. (right-click for fixed constraints)
         """
-        # button = Application.MouseEvent.Button
-        # physics_enabled = self.sim.get_physics_simulation_library()
+        button = Application.MouseEvent.Button
+        physics_enabled = self.sim.get_physics_simulation_library()
+        mod = Application.InputEvent.Modifier
+        shift_pressed = bool(event.modifiers & mod.SHIFT)
+
+        # select an object with Shift+RIGHT-click
+        if physics_enabled and event.button == button.RIGHT and shift_pressed:
+            render_camera = self.render_camera.render_camera
+            ray = render_camera.unproject(self.get_mouse_position(event.position))
+            mouse_cast_results = self.sim.cast_ray(ray=ray)
+            hit_id = mouse_cast_results.hits[0].object_id
+            rom = self.sim.get_rigid_object_manager()
+            if hit_id == -1:
+                print("This is the stage.")
+            elif rom.get_library_has_id(hit_id):
+                ro = rom.get_object_by_id(hit_id)
+                self.selected_object = ro
+                print(f"Rigid Object: {ro.handle}")
 
         self.previous_mouse_point = self.get_mouse_position(event.position)
         self.redraw()
@@ -888,7 +894,7 @@ Key Commands:
 
     Agent Controls:
     'wasd':     Move Spot's body forward/backward and rotate left/right.
-    arrow keys: Move Spot's body forward/backwards and strafe left/right.
+    'qe':       Move Spot's body in strafe left/right.
 
     Utilities:
     'r':        Reset the simulator with the most recently loaded scene.
