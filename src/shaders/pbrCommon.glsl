@@ -51,9 +51,8 @@ vec3 hemisphereSample_cos(float u, float v) {
 // n_dot_h: dot product of normal vector and the halfVector (half vector of
 // light and view)
 //          usually n_dot_h = clamp(dot(normal, halfVector), 0.0, 1.0);
-float normalDistributionGGX(float n_dot_h, float roughness) {
-  float a = roughness * roughness;
-  float a2 = a * a;
+float normalDistributionGGX(float n_dot_h, float alphaRoughness) {
+  float a2 = alphaRoughness * alphaRoughness;
 
   float d = n_dot_h * n_dot_h * (a2 - 1.0) + 1.0;
   d = PI * d * d;

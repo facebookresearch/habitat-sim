@@ -53,6 +53,8 @@ void PbrDrawable::setMaterialValuesInternal(
       materialData_->as<Mn::Trade::PbrMetallicRoughnessMaterialData>();
   flags_ = PbrShader::Flag::ObjectId;
 
+  std::string debugStr = "";
+
   matCache.baseColor = tmpMaterialData.baseColor();
   matCache.roughness = tmpMaterialData.roughness();
   matCache.metalness = tmpMaterialData.metalness();
