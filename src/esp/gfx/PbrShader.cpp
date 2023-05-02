@@ -118,9 +118,9 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
                      ? "#define PRECOMPUTED_TANGENT\n"
                      : "")
       .addSource(flags_ & Flag::ImageBasedLighting
-                     ? "#define IMAGE_BASED_LIGHTING\n"
+                     ? "#define IMAGE_BASED_LIGHTING\n#define TONE_MAP\n"
                      : "")
-      .addSource(flags_ & Flag::ImageBasedLighting ? "#define TONE_MAP\n" : "")
+
       .addSource(flags_ & Flag::DebugDisplay ? "#define PBR_DEBUG_DISPLAY\n"
                                              : "")
       .addSource(
@@ -237,8 +237,8 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   setProjectionMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
   if (lightingIsEnabled()) {
     setBaseColor(Magnum::Color4{0.7f});
-    setRoughness(0.9f);
-    setMetallic(0.1f);
+    setRoughness(0.1f);
+    setMetallic(0.9f);
     setIndexOfRefraction(1.5);
     if (flags_ & Flag::NormalTexture) {
       setNormalTextureScale(1.0f);
@@ -275,7 +275,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   if (flags_ & Flag::DebugDisplay) {
     setDebugDisplay(PbrDebugDisplay::None);
   }
-}
+}  // namespace gfx
 
 // Note: the texture binding points are explicitly specified above.
 // Cannot use "explicit uniform location" directly in shader since
