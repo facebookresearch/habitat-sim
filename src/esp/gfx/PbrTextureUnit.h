@@ -9,9 +9,12 @@
 #include <Corrade/Containers/EnumSet.h>
 
 namespace esp {
+typedef unsigned char uint8_t;
 namespace gfx {
-
 namespace pbrTextureUnitSpace {
+
+// The order of the samplers in the frag shader that specific textures should be
+// mapped to
 enum TextureUnit : uint8_t {
   BaseColor = 0,
   MetallicRoughness = 1,

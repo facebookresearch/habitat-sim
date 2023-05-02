@@ -133,6 +133,10 @@ vec3 Uncharted2Tonemap(vec3 color) {
 const float exposure = 4.5f;
 const float gamma = 2.2f;
 
+// PI is defined in the pbrCommon.glsl
+const float INV_PI = 1.0 / PI;
+const float epsilon = 0.0001;
+
 // The following function tonemap is based on:
 // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/data/shaders/pbr_khr.frag
 // Tone mapping is to take a wide dynamic range of values and compressing them
@@ -179,11 +183,6 @@ vec3 getNormalFromNormalMap() {
 }
 #endif
 
-// PI is defined in the pbrCommon.glsl
-const float INV_PI = 1.0 / PI;
-const float Epsilon = 0.0001;
-// const float DielectricSpecular = 0.04;
-
 // helper function to compute the Specular G
 float geometrySchlickGGX(float dotProd, float roughness) {
   float r = (roughness + 1.0);
@@ -201,36 +200,72 @@ float geometrySchlickGGX(float dotProd, float roughness) {
 //     view: camera direction, aka light outgoing direction
 float specularGeometricAttenuation(float n_dot_l,
                                    float n_dot_v,
-                                   float roughness) {
-  float ggx1 = geometrySchlickGGX(n_dot_l, roughness);
-  float ggx2 = geometrySchlickGGX(n_dot_v, roughness);
+                                   float alphaRoughness) {
+  float ggx1 = geometrySchlickGGX(n_dot_l, alphaRoughness);
+  float ggx2 = geometrySchlickGGX(n_dot_v, alphaRoughness);
 
   return ggx1 * ggx2;
 }
 
+// Smith Joint GGX
+// Note: Vis = G / (4 * n_dot_l * n_dot_v)
+// see Eric Heitz. 2014. Understanding the Masking-Shadowing Function in
+// Microfacet-Based BRDFs. Journal of Computer Graphics Techniques, 3 see
+// Real-Time Rendering. Page 331 to 336. see
+// https://google.github.io/filament/Filament.md.html#materialsystem/specularbrdf/geometricshadowing(specularg)
+float V_GGX(float n_dot_l, float n_dot_v, float alphaRoughness) {
+  float alphaRoughnessSq = alphaRoughness * alphaRoughness;
+
+  float GGXV = n_dot_l * sqrt(n_dot_v * n_dot_v * (1.0 - alphaRoughnessSq) +
+                              alphaRoughnessSq);
+  float GGXL = n_dot_v * sqrt(n_dot_l * n_dot_l * (1.0 - alphaRoughnessSq) +
+                              alphaRoughnessSq);
+
+  float GGX = GGXV + GGXL;
+  if (GGX > 0.0) {
+    return 0.5 / GGX;
+  }
+  return 0.0;
+}
+
+// The following equation(s) model the distribution of microfacet normals across
+// the area being drawn (aka D()) Implementation from "Average Irregularity
+// Representation of a Roughened Surface for Ray Reflection" by T. S.
+// Trowbridge, and K. P. Reitz Follows the distribution function recommended in
+// the SIGGRAPH 2013 course notes from EPIC Games [1], Equation 3.
+float D_GGX(float n_dot_h, float alphaRoughness) {
+  float alphaRoughnessSq = alphaRoughness * alphaRoughness;
+  float f = (n_dot_h * n_dot_h) * (alphaRoughnessSq - 1.0) + 1.0;
+  return alphaRoughnessSq / (PI * f * f);
+}
+
 // Specular F, aka Fresnel, use Schlick's approximation
-// specularReflectance: specular reflectance at normal incidence
+// f0 : base color reflectance at normal incidence
+//     for nonmetal, using DielectricSpecular
 // v_dot_h: <view, halfVector>
 //          view: camera direction, aka light outgoing direction
 //          halfVector: half vector of light and view
-vec3 fresnelSchlick(vec3 specularReflectance, float v_dot_h) {
+vec3 fresnelSchlick(vec3 f0, float v_dot_h) {
   // https://github.com/SaschaWillems/Vulkan-glTF-PBR
   // For typical incident reflectance range (between 4% to 100%)
   // set the grazing reflectance to 100% for typical fresnel effect.
   // For very low reflectance range on highly diffuse objects (below 4%),
   // incrementally reduce grazing reflecance to 0%.
-  float reflectance = max(max(specularReflectance.r, specularReflectance.g),
-                          specularReflectance.b);
-  float reflectance90 = clamp(reflectance * 25.0, 0.0, 1.0);
-  return specularReflectance +
-         (vec3(reflectance90) - specularReflectance) * pow(1.0 - v_dot_h, 5.0);
+  // float reflectance = max(max(f0.r, f0.g), f0.b);
+  // float reflectance90 = clamp(reflectance * 25.0, 0.0, 1.0);
+  // return f0 + (vec3(reflectance90) - f0) * pow(1.0 - v_dot_h, 5.0);
+
+  // Anything less than 2% is physically impossible and is instead considered to
+  // be shadowing. Compare to "Real-Time-Rendering" 4th editon on page 325.
+  vec3 f90 = vec3(1.0);
+  return f0 + (f90 - f0) * pow(clamp(1.0 - v_dot_h, 0.0, 1.0), 5.0);
 }
 
-// specularReflectance: specular reflectance at normal incidence
-//     for nonmetal, using constant 0.04
+// f0 : base color reflectance at normal incidence
+//     for nonmetal, using DielectricSpecular
 // c_diff: diffuse color
 // metallic: metalness of the surface
-// roughness: roughness of the surface
+// alphaRoughness: roughness of the surface (perceived roughness squared)
 // v_dot_h: <view, halfVector>
 // n_dot_l: <normal, light>
 // n_dot_v: <normal, view>
@@ -240,14 +275,14 @@ vec3 fresnelSchlick(vec3 specularReflectance, float v_dot_h) {
 //     view: camera direction, aka light outgoing direction
 //     halfVector: half vector of light and view
 // lightRadiance: the radiance of the light,
-//                which equals to intensity * attenuation
+//                which equals to color * attenuation
 // output:
 // diffuseContrib: the contribution of the direct diffuse
 // specularContrib: the contribution of the direct specular
-void microfacetModel(vec3 specularReflectance,
+void microfacetModel(vec3 f0,
                      vec3 c_diff,
                      float metallic,
-                     float roughness,
+                     float alphaRoughness,
                      float v_dot_h,
                      float n_dot_l,
                      float n_dot_v,
@@ -255,20 +290,19 @@ void microfacetModel(vec3 specularReflectance,
                      vec3 lightRadiance,
                      out vec3 diffuseContrib,
                      out vec3 specularContrib) {
-  vec3 Fresnel = fresnelSchlick(specularReflectance, v_dot_h);
-  // Diffuse BRDF
+  vec3 Fresnel = fresnelSchlick(f0, v_dot_h);
+  // Lambertion/Diffuse BRDF
   // NOTE: energy conservation requires
   // diffuse + specular <= 1.0, where specular = Fresnel
   vec3 diffuse = (vec3(1.0) - Fresnel) * c_diff * INV_PI;
 
   // Specular BRDF
-  float temp = max(4.0 * n_dot_l * n_dot_v, Epsilon);
-  vec3 specular = Fresnel *
-                  specularGeometricAttenuation(n_dot_l, n_dot_v, roughness) *
+  float temp = max(4.0 * n_dot_l * n_dot_v, epsilon);
+  vec3 specular = Fresnel * V_GGX(n_dot_l, n_dot_v, alphaRoughness) *
                   // normalDistributionGGX is defined in the pbrCommon.glsl
                   // Specular D, normal distribution function (NDF),
                   // also known as ggxDistribution
-                  normalDistributionGGX(n_dot_h, roughness) / temp;
+                  D_GGX(n_dot_h, alphaRoughness);
 
   vec3 tempVec = lightRadiance * n_dot_l;
   diffuseContrib = diffuse * tempVec;
@@ -300,9 +334,12 @@ vec3 computeIBLSpecular(float roughness,
 #endif
 
 void main() {
+  // DielectricSpecular == 0.04 <--> ior == 1.5
+  float DielectricSpecular = 0.04;
+  if (Material.ior != 1.5) {
+    DielectricSpecular = pow(((Material.ior - 1) / (Material.ior + 1)), 2);
+  }
   vec3 emissiveColor = Material.emissiveColor;
-  float iorRatio = ((Material.ior - 1) / (Material.ior + 1));
-  float DielectricSpecular = iorRatio * iorRatio;
 #if defined(EMISSIVE_TEXTURE)
   emissiveColor *= texture(EmissiveTexture, texCoord).rgb;
 #endif
@@ -314,10 +351,13 @@ void main() {
   baseColor *= texture(BaseColorTexture, texCoord);
 #endif
 
-  float roughness = Material.roughness;
+  float perceivedRoughness = Material.roughness;
 #if defined(NONE_ROUGHNESS_METALLIC_TEXTURE)
-  roughness *= texture(MetallicRoughnessTexture, texCoord).g;
+  perceivedRoughness *= texture(MetallicRoughnessTexture, texCoord).g;
 #endif
+  // Roughness is authored as perceptual roughness; as is convention,
+  // convert to material roughness by squaring the perceptual roughness.
+  float alphaRoughness = perceivedRoughness * perceivedRoughness;
 
   float metallic = Material.metallic;
 #if defined(NONE_ROUGHNESS_METALLIC_TEXTURE)
@@ -344,48 +384,62 @@ void main() {
   // in *world space*
   vec3 view = normalize(CameraWorldPos - position);
 
-  // compute specularReflectance, specular reflectance at normal incidence
-  // for nonmetal, using constant 0.04
-  vec3 specularReflectance =
-      mix(vec3(DielectricSpecular), baseColor.rgb, metallic);
+  // compute base color reflectance at normal incidence
+  // for nonmetal, using index of refraction
+  vec3 f0 = mix(vec3(DielectricSpecular), baseColor.rgb, metallic);
 
   // diffuse color (c_diff in gltf 2.0 spec:
   // https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/README.md#metal-brdf-and-dielectric-brdf)
   // c_diff = lerp(baseColor.rgb * (1 - dielectricSpecular), black, metallic)
-  vec3 c_diff = baseColor.rgb * (1.0 - DielectricSpecular) * (1.0 - metallic);
+  // vec3 c_diff = baseColor.rgb * (1.0 - DielectricSpecular) * (1.0 -
+  // metallic);
+  vec3 c_diff = mix(baseColor.rgb, vec3(0), metallic);
   float n_dot_v = clamp(dot(n, view), 0.001, 1.0);
 
   vec3 diffuseContrib = vec3(0.0, 0.0, 0.0);
   vec3 specularContrib = vec3(0.0, 0.0, 0.0);
 
   const int maxShadowNum = 3;
+
   // compute contribution of each light using the microfacet model
   // the following part of the code is inspired by the Phong.frag in Magnum
   // library (https://magnum.graphics/)
+
   for (int iLight = 0; iLight < LIGHT_COUNT; ++iLight) {
     // Attenuation. Directional lights have the .w component set to 0, use
     // that to make the distance zero -- which will then ensure the
     // attenuation is always 1.0
-    highp float dist = length(LightDirections[iLight].xyz - position) *
-                       LightDirections[iLight].w;
-    // If range is 0 for whatever reason, clamp it to a small value to
-    // avoid a NaN when dist is 0 as well (which is the case for
-    // directional lights).
-    highp float attenuation = clamp(
-        1.0 - pow(dist / max(LightRanges[iLight], 0.0001), 4.0), 0.0, 1.0);
-    attenuation = attenuation * attenuation / (1.0 + dist * dist);
+    highp float dist = 0.0f;
+    // Default attenuation is 1
+    highp float attenuation = 1.0f;
+    // light source direction: a vector from the shading location to the light
+    vec3 light;
+    if (LightDirections[iLight].w != 0) {
+      dist = length(LightDirections[iLight].xyz - position);
+      highp float sqDist = pow(dist, 2.0);
+      // If range is 0 for whatever reason, clamp it to a small value to
+      // avoid a NaN when dist is 0 as well (which is the case for
+      // directional lights)
+      // https://github.com/KhronosGroup/glTF/blob/master/extensions/2.0/Khronos/KHR_lights_punctual/README.md#range-property
+      if (LightRanges[iLight] > 0.0f) {
+        attenuation = clamp(1 - pow(dist / LightRanges[iLight], 4.0), 0.0, 1.0);
+      }
+      attenuation = attenuation / sqDist;
 
+      // light source direction: a vector from the shading location to the light
+      light = normalize(LightDirections[iLight].xyz - position);
+    } else {
+      // light source direction: a vector from the shading location to the light
+      light = normalize(LightDirections[iLight].xyz);
+    }
     // radiance
     vec3 lightRadiance = LightColors[iLight] * attenuation;
 
-    // light source direction: a vector from the shading location to the light
-    vec3 light = normalize(LightDirections[iLight].xyz -
-                           position * LightDirections[iLight].w);
     /*
-    void microfacetModel(vec3 specularReflectance,
+    void microfacetModel(vec3 f0,
                          vec3 c_diff,
                          float metallic,
-                         float roughness,
+                         float alphaRoughness,
                          float v_dot_h,
                          float n_dot_l,
                          float n_dot_v,
@@ -400,21 +454,22 @@ void main() {
     float n_dot_h = clamp(dot(n, halfVector), 0.0, 1.0);
     vec3 currentDiffuseContrib = vec3(0.0, 0.0, 0.0);
     vec3 currentSpecularContrib = vec3(0.0, 0.0, 0.0);
-    microfacetModel(specularReflectance, c_diff, metallic, roughness, v_dot_h,
-                    n_dot_l, n_dot_v, n_dot_h, lightRadiance,
-                    currentDiffuseContrib, currentSpecularContrib);
+
+    microfacetModel(f0, c_diff, metallic, alphaRoughness, v_dot_h, n_dot_l,
+                    n_dot_v, n_dot_h, lightRadiance, currentDiffuseContrib,
+                    currentSpecularContrib);
 
 #if defined(SHADOWS_VSM)
     float shadow =
         (iLight < maxShadowNum
              ? computeShadowVSM(iLight, position, LightDirections[iLight].xyz)
              : 1.0f);
-#else
-    float shadow = 1.0f;
+    currentDiffuseContrib = shadow * currentDiffuseContrib;
+    currentSpecularContrib = shadow * currentSpecularContrib;
 #endif
 
-    diffuseContrib += shadow * currentDiffuseContrib;
-    specularContrib += shadow * currentSpecularContrib;
+    diffuseContrib += currentDiffuseContrib;
+    specularContrib += currentSpecularContrib;
   }  // for lights
 
   diffuseContrib *= ComponentScales[DirectDiffuse];
@@ -430,15 +485,15 @@ void main() {
 
   vec3 reflection = normalize(reflect(-view, n));
   vec3 iblSpecularContrib =
-      computeIBLSpecular(roughness, n_dot_v, specularReflectance, reflection);
+      computeIBLSpecular(perceivedRoughness, n_dot_v, f0, reflection);
   fragmentColor.rgb += iblSpecularContrib;
 #endif  // IMAGE_BASED_LIGHTING
 
 #if defined(OBJECT_ID)
   fragmentObjectId = ObjectId;
 #endif
-  // PBR equation debug
-  // "none", "Diff (l,n)", "F (l,h)", "G (l,v,h)", "D (h)", "Specular"
+// PBR equation debug
+// "none", "Diff (l,n)", "F (l,h)", "G (l,v,h)", "D (h)", "Specular"
 #if defined(PBR_DEBUG_DISPLAY)
   if (PbrDebugDisplay > 0) {
     switch (PbrDebugDisplay) {
@@ -464,11 +519,11 @@ void main() {
       case 6:
         // TODO: Shadows
         /*
-#if defined(SHADOWS_VSM)
+  #if defined(SHADOWS_VSM)
         fragmentColor.rgb =
             visualizePointShadowMap(1, position, LightDirections[1].xyz);
-#endif
-*/
+  #endif
+  */
         break;
     }  // switch
   }
