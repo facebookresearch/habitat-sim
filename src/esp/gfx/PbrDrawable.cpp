@@ -375,8 +375,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
       // the fragment shader
       .setObjectId(static_cast<RenderCamera&>(camera).useDrawableIds()
                        ? drawableId_
-                       : ((flags_ & PbrShader::Flag::InstancedObjectId) ==
-                                  PbrShader::Flag::InstancedObjectId
+                       : (flags_ >= PbrShader::Flag::InstancedObjectId
                               ? 0
                               : node_.getSemanticId()))
       .setProjectionMatrix(camera.projectionMatrix())
