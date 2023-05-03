@@ -276,7 +276,6 @@ vec3 BRDF_DisneyDiffuse(vec3 c_diff,
 //  AppendixB
 // fresnel : Schlick approximation of Fresnel
 // alphaRoughness: roughness of the surface (perceived roughness squared)
-// v_dot_h: <view, halfVector>
 // n_dot_l: <normal, light>
 // n_dot_v: <normal, view>
 // n_dot_h: <normal, halfVector>
@@ -286,7 +285,6 @@ vec3 BRDF_DisneyDiffuse(vec3 c_diff,
 //     halfVector: half vector of light and view
 vec3 BRDF_specular(vec3 fresnel,
                    float alphaRoughness,
-                   float v_dot_h,
                    float n_dot_l,
                    float n_dot_v,
                    float n_dot_h,
@@ -448,7 +446,7 @@ void main() {
       vec3 fresnel = fresnelSchlick(f0, v_dot_h);
 
       // currentDiffuseContrib =
-      //     projLightRadiance * BRDF_lambertian(Fresnel, c_diff,
+      //     projLightRadiance * BRDF_lambertian(fresnel, c_diff,
       //     specularWeight);
 
       currentDiffuseContrib =
@@ -456,9 +454,8 @@ void main() {
                                                  l_dot_h, perceivedRoughness);
 
       currentSpecularContrib =
-          projLightRadiance * BRDF_specular(fresnel, alphaRoughness, v_dot_h,
-                                            n_dot_l, n_dot_v, n_dot_h,
-                                            specularWeight);
+          projLightRadiance * BRDF_specular(fresnel, alphaRoughness, n_dot_l,
+                                            n_dot_v, n_dot_h, specularWeight);
 
 #if defined(SHADOWS_VSM)
       float shadow =
@@ -470,6 +467,7 @@ void main() {
 #endif
     }  // for lights with non-transmissive surfaces
 
+    // Transmission here
     diffuseContrib += currentDiffuseContrib;
     specularContrib += currentSpecularContrib;
 
