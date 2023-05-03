@@ -139,8 +139,12 @@ void GenericDrawable::updateShaderLightingParameters(
 
   for (Mn::UnsignedInt i = 0; i < lightSetup_->size(); ++i) {
     const auto& lightInfo = (*lightSetup_)[i];
-    lightPositions.emplace_back(getLightPositionRelativeToCamera(
-        lightInfo, transformationMatrix, cameraMatrix));
+    Mn::Vector4 pos = getLightPositionRelativeToCamera(
+        lightInfo, transformationMatrix, cameraMatrix);
+    // flip directional lights to faciliate faster, non-forking calc in
+    // shader.  Leave non-directional lights unchanged
+    pos *= (pos[3] * 2) - 1;
+    lightPositions.emplace_back(pos);
 
     const auto& lightColor = (*lightSetup_)[i].color;
     lightColors.emplace_back(lightColor);
