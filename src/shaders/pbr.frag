@@ -450,13 +450,13 @@ void main() {
     //     specularWeight);
 
     currentDiffuseContrib =
-        projLightRadiance * BRDF_DisneyDiffuse(c_diff, n_dot_v, n_dot_l,
-                                               v_dot_h, specularWeight,
-                                               perceivedRoughness);
+        projLightRadiance * INV_PI *
+        BRDF_DisneyDiffuse(c_diff, n_dot_v, n_dot_l, v_dot_h, specularWeight,
+                           perceivedRoughness);
     // Specular microfacet
-    currentSpecularContrib =
-        projLightRadiance * BRDF_specular(fresnel, alphaRoughness, n_dot_l,
-                                          n_dot_v, n_dot_h, specularWeight);
+    currentSpecularContrib = projLightRadiance * INV_PI *
+                             BRDF_specular(fresnel, alphaRoughness, n_dot_l,
+                                           n_dot_v, n_dot_h, specularWeight);
 
 #if defined(SHADOWS_VSM)
     float shadow =
@@ -476,9 +476,6 @@ void main() {
 
   diffuseContrib *= ComponentScales[DirectDiffuse];
   specularContrib *= ComponentScales[DirectSpecular];
-  // Scale by PI for area
-  diffuseContrib *= INV_PI;
-  specularContrib *= INV_PI;
 
   // TODO: use ALPHA_MASK to discard fragments
   fragmentColor += vec4(diffuseContrib + specularContrib, baseColor.a);
