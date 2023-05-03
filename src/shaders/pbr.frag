@@ -135,7 +135,7 @@ const float gamma = 2.2f;
 
 // PI is defined in the pbrCommon.glsl
 const float INV_PI = 1.0 / PI;
-const float epsilon = 0.0001;
+const float epsilon = 0.000001;
 
 const int maxShadowNum = 3;
 
@@ -422,51 +422,53 @@ void main() {
     // light source direction: a vector from the shading location to the
     // light
     vec3 light = normalize(diff);
-    // halfway between the light and view vector
-    vec3 halfVector = normalize(light + view);
     // projection of normal to light
     float n_dot_l = clamp(dot(n, light), 0.0, 1.0);
-    // projection of view on halfway vector
-    float v_dot_h = clamp(dot(view, halfVector), 0.0, 1.0);
-    // project of normal on halfway vector
-    float n_dot_h = clamp(dot(n, halfVector), 0.0, 1.0);
-    // light projected on halfway vector
-    float l_dot_h = clamp(dot(light, halfVector), 0.0, 1.0);
 
     vec3 currentDiffuseContrib = vec3(0.0, 0.0, 0.0);
     vec3 currentSpecularContrib = vec3(0.0, 0.0, 0.0);
-    // radiant intensity
-    vec3 lightRadiance = LightColors[iLight] * attenuation;
 
-    // if (n_dot_l > 0.0) {
-    // if light can hit location
-    // Radiance scaled by incident angle cosine
-    vec3 projLightRadiance = lightRadiance * n_dot_l;
-    // Calculate the Schlick approximation of the Fresnel coefficient
-    vec3 Fresnel = fresnelSchlick(f0, v_dot_h);
+    if (n_dot_l > 0.0) {
+      // halfway between the light and view vector
+      vec3 halfVector = normalize(light + view);
+      // projection of view on halfway vector
+      float v_dot_h = clamp(dot(view, halfVector), 0.0, 1.0);
+      // project of normal on halfway vector
+      float n_dot_h = clamp(dot(n, halfVector), 0.0, 1.0);
+      // light projected on halfway vector
+      float l_dot_h = clamp(dot(light, halfVector), 0.0, 1.0);
 
-    // currentDiffuseContrib =
-    //     projLightRadiance * BRDF_lambertian(Fresnel, c_diff,
-    //     specularWeight);
+      // radiant intensity
+      vec3 lightRadiance = LightColors[iLight] * attenuation;
 
-    currentDiffuseContrib =
-        projLightRadiance * BRDF_DisneyDiffuse(c_diff, n_dot_v, n_dot_l,
-                                               l_dot_h, perceivedRoughness);
+      // if light can hit location
+      // Radiance scaled by incident angle cosine
+      vec3 projLightRadiance = lightRadiance * n_dot_l;
+      // Calculate the Schlick approximation of the Fresnel coefficient
+      vec3 fresnel = fresnelSchlick(f0, v_dot_h);
 
-    currentSpecularContrib =
-        projLightRadiance * BRDF_specular(Fresnel, alphaRoughness, v_dot_h,
-                                          n_dot_l, n_dot_v, n_dot_h,
-                                          specularWeight);
+      // currentDiffuseContrib =
+      //     projLightRadiance * BRDF_lambertian(Fresnel, c_diff,
+      //     specularWeight);
+
+      currentDiffuseContrib =
+          projLightRadiance * BRDF_DisneyDiffuse(c_diff, n_dot_v, n_dot_l,
+                                                 l_dot_h, perceivedRoughness);
+
+      currentSpecularContrib =
+          projLightRadiance * BRDF_specular(fresnel, alphaRoughness, v_dot_h,
+                                            n_dot_l, n_dot_v, n_dot_h,
+                                            specularWeight);
 
 #if defined(SHADOWS_VSM)
-    float shadow =
-        (iLight < maxShadowNum
-             ? computeShadowVSM(iLight, position, LightDirections[iLight].xyz)
-             : 1.0f);
-    currentDiffuseContrib *= shadow;
-    currentSpecularContrib *= shadow;
+      float shadow =
+          (iLight < maxShadowNum
+               ? computeShadowVSM(iLight, position, LightDirections[iLight].xyz)
+               : 1.0f);
+      currentDiffuseContrib *= shadow;
+      currentSpecularContrib *= shadow;
 #endif
-    //}  // for lights with non-transmissive surfaces
+    }  // for lights with non-transmissive surfaces
 
     diffuseContrib += currentDiffuseContrib;
     specularContrib += currentSpecularContrib;
