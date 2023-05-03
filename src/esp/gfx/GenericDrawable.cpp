@@ -144,7 +144,7 @@ void GenericDrawable::updateShaderLightingParameters(
     // flip directional lights to faciliate faster, non-forking calc in
     // shader.  Leave non-directional lights unchanged
     pos *= (pos[3] * 2) - 1;
-    lightPositions.emplace_back(std::move(pos));
+    lightPositions.emplace_back(pos);
 
     const auto& lightColor = (*lightSetup_)[i].color;
     lightColors.emplace_back(lightColor);
