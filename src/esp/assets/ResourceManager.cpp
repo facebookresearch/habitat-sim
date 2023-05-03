@@ -2039,20 +2039,23 @@ namespace {
  * congruent with the specified shader type.
  */
 bool compareShaderTypeToMnMatType(const ObjectInstanceShaderType typeToCheck,
-                                  const Mn::Trade::MaterialData& materialData) {
+                                  const Mn::Trade::MaterialData& materialData,
+                                  std::string& debugStr) {
   switch (typeToCheck) {
     case ObjectInstanceShaderType::Phong: {
       bool compRes =
           bool(materialData.types() & Mn::Trade::MaterialType::Phong);
-      ESP_DEBUG() << "Forcing to Phong | Material currently"
-                  << (compRes ? "supports" : "does not support") << "Phong";
+      Cr::Utility::formatInto(debugStr, debugStr.size(),
+                              "Forcing to Phong | Material currently {} Phong",
+                              (compRes ? "supports" : "does not support"));
       return compRes;
     }
     case ObjectInstanceShaderType::PBR: {
       bool compRes = bool(materialData.types() &
                           Mn::Trade::MaterialType::PbrMetallicRoughness);
-      ESP_DEBUG() << "Forcing to PBR | Material currently"
-                  << (compRes ? "supports" : "does not support") << "PBR";
+      Cr::Utility::formatInto(debugStr, debugStr.size(),
+                              "Forcing to PBR | Material currently {} PBR",
+                              (compRes ? "supports" : "does not support"));
       return compRes;
     }
     default: {
@@ -2453,7 +2456,8 @@ void ResourceManager::loadMaterials(Importer& importer,
       // appropriate data for all possible shadertypes
       if ((shaderTypeToUse != ObjectInstanceShaderType::Material) &&
           (shaderTypeToUse != ObjectInstanceShaderType::Flat) &&
-          !(compareShaderTypeToMnMatType(shaderTypeToUse, *materialData))) {
+          !(compareShaderTypeToMnMatType(shaderTypeToUse, *materialData,
+                                         debugStr))) {
         Cr::Utility::formatInto(
             debugStr, debugStr.size(),
             "(Expanding existing materialData to support requested shaderType `"
