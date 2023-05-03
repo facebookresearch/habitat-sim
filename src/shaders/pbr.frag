@@ -207,7 +207,7 @@ float V_GGX(float n_dot_l, float n_dot_v, float arSq) {
 // the SIGGRAPH 2013 course notes from EPIC Games [1], Equation 3.
 float D_GGX(float n_dot_h, float arSq) {
   float f = (n_dot_h * n_dot_h) * (arSq - 1.0) + 1.0;
-  return arSq / (PI * f * f);
+  return arSq / (f * f);
 }
 
 // Fresnel
@@ -251,7 +251,7 @@ vec3 fresnelSchlick(vec3 f0, float f90s, float v_dot_h) {
 // c_diff : diffuse color
 // specularWeight : weight of KHR_material_specular contribution TODO
 vec3 BRDF_lambertian(vec3 fresnel, vec3 c_diff, float specularWeight) {
-  return (vec3(1.0) - specularWeight * fresnel) * c_diff * INV_PI;
+  return (vec3(1.0) - specularWeight * fresnel) * c_diff;
 }
 
 // Disney diffuse BRDF, from
@@ -259,16 +259,18 @@ vec3 BRDF_lambertian(vec3 fresnel, vec3 c_diff, float specularWeight) {
 vec3 BRDF_DisneyDiffuse(vec3 c_diff,
                         float n_dot_v,
                         float n_dot_l,
-                        float l_dot_h,
+                        float v_dot_h,
+                        float specularWeight,
                         float perceptualRoughness) {
-  float energyBias = mix(0.0, 0.5, perceptualRoughness);
+  float energyBias = mix(0.0, 0.75, perceptualRoughness);
   float energyFactor = mix(1.0, 1.0 / 1.51, perceptualRoughness);
-  float fd90 = energyBias + 2.0 * l_dot_h * l_dot_h * perceptualRoughness;
+  float fd90 = energyBias + 2.0 * v_dot_h * v_dot_h * perceptualRoughness;
   vec3 f0 = vec3(1.0f);
   float lightScatter = fresnelSchlick(f0, fd90, n_dot_l).r;
   float viewScatter = fresnelSchlick(f0, fd90, n_dot_v).r;
-  vec3 retVal = vec3(lightScatter * viewScatter * energyFactor);
-  return retVal * c_diff * INV_PI;
+  vec3 retVal =
+      vec3(lightScatter * viewScatter * energyFactor * specularWeight);
+  return retVal * c_diff;
 }
 
 // Calculate the specular contribution
@@ -291,7 +293,7 @@ vec3 BRDF_specular(vec3 fresnel,
                    float specularWeight) {
   float arSq = alphaRoughness * alphaRoughness;
   vec3 specular = fresnel *
-                  // Specular G/vis
+                  // Specular G/Vis - Smith Correlated visibility function
                   V_GGX(n_dot_l, n_dot_v, arSq) *
                   // Specular D, normal distribution function (NDF),
                   // also known as ggxDistribution
@@ -345,7 +347,7 @@ void main() {
 #endif
   // Roughness is authored as perceptual roughness; as is convention,
   // convert to material roughness by squaring the perceptual roughness.
-  float alphaRoughness = perceivedRoughness * perceivedRoughness;
+  float alphaRoughness = perceivedRoughness;  /// * perceivedRoughness;
 
   float metallic = Material.metallic;
 #if defined(NONE_ROUGHNESS_METALLIC_TEXTURE)
@@ -384,7 +386,7 @@ void main() {
   // for nonmetal, using index of refraction-derived reflectance
   vec3 f0 = mix(vec3(DielectricSpecular), baseColor.rgb, metallic);
 
-  float n_dot_v = abs(dot(n, view)) + epsilon;
+  float n_dot_v = abs(dot(n, view));  /// + epsilon;
 
   vec3 diffuseContrib = vec3(0.0, 0.0, 0.0);
   vec3 specularContrib = vec3(0.0, 0.0, 0.0);
@@ -421,51 +423,50 @@ void main() {
     // light
     vec3 light = normalize(diff);
     // projection of normal to light
-    float n_dot_l = clamp(dot(n, light), 0.0, 1.0);
+    float n_dot_l = clamp(dot(n, light), epsilon, 1.0);
 
     vec3 currentDiffuseContrib = vec3(0.0, 0.0, 0.0);
     vec3 currentSpecularContrib = vec3(0.0, 0.0, 0.0);
 
-    if (n_dot_l > 0.0) {
-      // halfway between the light and view vector
-      vec3 halfVector = normalize(light + view);
-      // projection of view on halfway vector
-      float v_dot_h = clamp(dot(view, halfVector), 0.0, 1.0);
-      // project of normal on halfway vector
-      float n_dot_h = clamp(dot(n, halfVector), 0.0, 1.0);
-      // light projected on halfway vector
-      float l_dot_h = clamp(dot(light, halfVector), 0.0, 1.0);
+    // if (n_dot_l > 0.0) {
+    // halfway between the light and view vector
+    vec3 halfVector = normalize(light + view);
+    // projection of view on halfway vector
+    float v_dot_h = clamp(dot(view, halfVector), 0.0, 1.0);
+    // project of normal on halfway vector
+    float n_dot_h = clamp(dot(n, halfVector), 0.0, 1.0);
 
-      // radiant intensity
-      vec3 lightRadiance = LightColors[iLight] * attenuation;
+    // radiant intensity
+    vec3 lightRadiance = LightColors[iLight] * attenuation;
 
-      // if light can hit location
-      // Radiance scaled by incident angle cosine
-      vec3 projLightRadiance = lightRadiance * n_dot_l;
-      // Calculate the Schlick approximation of the Fresnel coefficient
-      vec3 fresnel = fresnelSchlick(f0, v_dot_h);
+    // if light can hit location
+    // Radiance scaled by incident angle cosine
+    vec3 projLightRadiance = lightRadiance * n_dot_l;
+    // Calculate the Schlick approximation of the Fresnel coefficient
+    vec3 fresnel = fresnelSchlick(f0, v_dot_h);
 
-      // currentDiffuseContrib =
-      //     projLightRadiance * BRDF_lambertian(fresnel, c_diff,
-      //     specularWeight);
+    // currentDiffuseContrib =
+    //     projLightRadiance * BRDF_lambertian(fresnel, c_diff,
+    //     specularWeight);
 
-      currentDiffuseContrib =
-          projLightRadiance * BRDF_DisneyDiffuse(c_diff, n_dot_v, n_dot_l,
-                                                 l_dot_h, perceivedRoughness);
-
-      currentSpecularContrib =
-          projLightRadiance * BRDF_specular(fresnel, alphaRoughness, n_dot_l,
-                                            n_dot_v, n_dot_h, specularWeight);
+    currentDiffuseContrib =
+        projLightRadiance * BRDF_DisneyDiffuse(c_diff, n_dot_v, n_dot_l,
+                                               v_dot_h, specularWeight,
+                                               perceivedRoughness);
+    // Specular microfacet
+    currentSpecularContrib =
+        projLightRadiance * BRDF_specular(fresnel, alphaRoughness, n_dot_l,
+                                          n_dot_v, n_dot_h, specularWeight);
 
 #if defined(SHADOWS_VSM)
-      float shadow =
-          (iLight < maxShadowNum
-               ? computeShadowVSM(iLight, position, LightDirections[iLight].xyz)
-               : 1.0f);
-      currentDiffuseContrib *= shadow;
-      currentSpecularContrib *= shadow;
+    float shadow =
+        (iLight < maxShadowNum
+             ? computeShadowVSM(iLight, position, LightDirections[iLight].xyz)
+             : 1.0f);
+    currentDiffuseContrib *= shadow;
+    currentSpecularContrib *= shadow;
 #endif
-    }  // for lights with non-transmissive surfaces
+    //}  // for lights with non-transmissive surfaces
 
     // Transmission here
     diffuseContrib += currentDiffuseContrib;
@@ -475,6 +476,9 @@ void main() {
 
   diffuseContrib *= ComponentScales[DirectDiffuse];
   specularContrib *= ComponentScales[DirectSpecular];
+  // Scale by PI for area
+  diffuseContrib *= INV_PI;
+  specularContrib *= INV_PI;
 
   // TODO: use ALPHA_MASK to discard fragments
   fragmentColor += vec4(diffuseContrib + specularContrib, baseColor.a);
