@@ -352,7 +352,7 @@ PbrDrawable& PbrDrawable::updateShaderLightDirectionParameters(
     // flip directional lights to faciliate faster, non-forking calc in
     // shader.  Leave non-directional lights unchanged
     pos *= (pos[3] * 2) - 1;
-    lightPositions.emplace_back(pos);
+    lightPositions.emplace_back(std::move(pos));
   }
 
   shader_->setLightVectors(lightPositions);
