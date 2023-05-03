@@ -237,8 +237,8 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   setProjectionMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
   if (lightingIsEnabled()) {
     setBaseColor(Magnum::Color4{0.7f});
-    setRoughness(0.1f);
-    setMetallic(0.9f);
+    setRoughness(0.0f);
+    setMetallic(1.0f);
     setIndexOfRefraction(1.5);
     if (flags_ & Flag::NormalTexture) {
       setNormalTextureScale(1.0f);
