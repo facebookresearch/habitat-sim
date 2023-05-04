@@ -5,6 +5,7 @@
 precision highp float;
 
 const float PI = 3.14159265358979;
+const float TWO_PI = 2.0f * PI;
 
 // Use the Hammersley point set in 2D for fast and practical generation of
 // hemisphere directions in a shader program. See here:
@@ -29,15 +30,15 @@ vec2 hammersley2d(uint i, uint N) {
 
 // uniform distributed direction (z-up) from the hammersley point
 vec3 hemisphereSample_uniform(float u, float v) {
-  float phi = v * 2.0 * PI;
+  float phi = v * TWO_PI;
   float cosTheta = 1.0 - u;
   float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
   return vec3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
 }
 
-// cosinus distributed direction (z-up) from the hammersley point
+// cosines distributed direction (z-up) from the hammersley point
 vec3 hemisphereSample_cos(float u, float v) {
-  float phi = v * 2.0 * PI;
+  float phi = v * TWO_PI;
   float cosTheta = sqrt(1.0 - u);
   float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
   return vec3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);

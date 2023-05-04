@@ -248,29 +248,27 @@ vec3 fresnelSchlick(vec3 f0, float f90s, float v_dot_h) {
 
 // Calculate the lambertian/diffuse contribution.
 // fresnel : Schlick approximation of Fresnel
-// c_diff : diffuse color
+// diffuseColor : diffuse color
 // specularWeight : weight of KHR_material_specular contribution TODO
-vec3 BRDF_lambertian(vec3 fresnel, vec3 c_diff, float specularWeight) {
-  return (vec3(1.0) - specularWeight * fresnel) * c_diff;
+vec3 BRDF_lambertian(vec3 fresnel, vec3 diffuseColor, float specularWeight) {
+  return (vec3(1.0) - (specularWeight * fresnel)) * diffuseColor;
 }
 
 // Disney diffuse BRDF, from
 // https://www.ea.com/frostbite/news/moving-frostbite-to-pb
-vec3 BRDF_DisneyDiffuse(vec3 c_diff,
+vec3 BRDF_DisneyDiffuse(vec3 diffuseColor,
                         float n_dot_v,
                         float n_dot_l,
                         float v_dot_h,
                         float specularWeight,
                         float perceptualRoughness) {
   float energyBias = mix(0.0, 0.75, perceptualRoughness);
-  float energyFactor = mix(1.0, 1.0 / 1.51, perceptualRoughness);
-  float fd90 = energyBias + 2.0 * v_dot_h * v_dot_h * perceptualRoughness;
+  float fd90 = energyBias + (2.0 * v_dot_h * v_dot_h * perceptualRoughness);
   vec3 f0 = vec3(1.0f);
-  float lightScatter = fresnelSchlick(f0, fd90, n_dot_l).r;
-  float viewScatter = fresnelSchlick(f0, fd90, n_dot_v).r;
-  vec3 retVal =
-      vec3(lightScatter * viewScatter * energyFactor * specularWeight);
-  return retVal * c_diff;
+  vec3 lightScatter = fresnelSchlick(f0, fd90, n_dot_l);
+  vec3 viewScatter = fresnelSchlick(f0, fd90, n_dot_v);
+  vec3 retVal = lightScatter * viewScatter * specularWeight;
+  return retVal * diffuseColor;
 }
 
 // Calculate the specular contribution
@@ -302,12 +300,12 @@ vec3 BRDF_specular(vec3 fresnel,
 }
 
 #if defined(IMAGE_BASED_LIGHTING)
-// c_diff: diffuse color
+// diffuseColor: diffuse color
 // n: normal on shading location in world space
-vec3 computeIBLDiffuse(vec3 c_diff, vec3 n) {
-  // diffuse part = c_diff * irradiance
-  // return c_diff * texture(IrradianceMap, n).rgb * Scales.iblDiffuse;
-  return c_diff * tonemap(texture(IrradianceMap, n)).rgb *
+vec3 computeIBLDiffuse(vec3 diffuseColor, vec3 n) {
+  // diffuse part = diffuseColor * irradiance
+  // return diffuseColor * texture(IrradianceMap, n).rgb * Scales.iblDiffuse;
+  return diffuseColor * tonemap(texture(IrradianceMap, n)).rgb *
          ComponentScales[IblDiffuse];
 }
 
@@ -379,9 +377,9 @@ void main() {
   // in *world space*
   vec3 view = normalize(CameraWorldPos - position);
 
-  // diffuse color (c_diff in gltf 2.0 spec:
+  // diffuse color (diffuseColor in gltf 2.0 spec:
   // https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/README.md#metal-brdf-and-dielectric-brdf)
-  vec3 c_diff = (1 - metallic) * baseColor.rgb;
+  vec3 diffuseColor =  baseColor.rgb * (1 - metallic);
   // compute base color reflectance at normal incidence
   // for nonmetal, using index of refraction-derived reflectance
   vec3 f0 = mix(vec3(DielectricSpecular), baseColor.rgb, metallic);
@@ -446,12 +444,12 @@ void main() {
     vec3 fresnel = fresnelSchlick(f0, v_dot_h);
 
     // currentDiffuseContrib =
-    //     projLightRadiance * BRDF_lambertian(fresnel, c_diff,
+    //     projLightRadiance * INV_PI * BRDF_lambertian(fresnel, diffuseColor,
     //     specularWeight);
 
     currentDiffuseContrib =
         projLightRadiance * INV_PI *
-        BRDF_DisneyDiffuse(c_diff, n_dot_v, n_dot_l, v_dot_h, specularWeight,
+        BRDF_DisneyDiffuse(diffuseColor, n_dot_v, n_dot_l, v_dot_h, specularWeight,
                            perceivedRoughness);
     // Specular microfacet
     currentSpecularContrib = projLightRadiance * INV_PI *
@@ -482,7 +480,7 @@ void main() {
 #endif  // if LIGHT_COUNT > 0
 
 #if defined(IMAGE_BASED_LIGHTING)
-  vec3 iblDiffuseContrib = computeIBLDiffuse(c_diff, n);
+  vec3 iblDiffuseContrib = computeIBLDiffuse(diffuseColor, n);
   fragmentColor.rgb += iblDiffuseContrib;
 
   vec3 reflection = normalize(reflect(-view, n));
