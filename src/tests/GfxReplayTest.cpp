@@ -522,7 +522,7 @@ void GfxReplayTest::testLightIntegration() {
   const LightInfo pointLight2{
       {0.0f, 1.2f, -4.0f, 1.0f}, {4.0, 4.0, 4.0}, LightPositionModel::Object};
   const LightInfo dirLight{
-      {0.1f, 0.2f, -0.3f, 0.0f}, {0.0, 0.0, 1.0}, LightPositionModel::Global};
+      {-0.1f, -0.2f, 0.3f, 0.0f}, {0.0, 0.0, 1.0}, LightPositionModel::Global};
   const LightSetup lightSetup0{pointLight0, pointLight1};
   const LightSetup lightSetup1{pointLight2};
   const LightSetup lightSetup2{dirLight};

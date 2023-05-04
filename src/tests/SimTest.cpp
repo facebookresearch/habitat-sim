@@ -147,10 +147,10 @@ struct SimTest : Cr::TestSuite::Tester {
   // TODO: remove outlier pixels from image and lower maxThreshold
   const Magnum::Float maxThreshold = 255.f;
 
-  LightSetup lightSetup1{{Magnum::Vector4{1.0f, 1.5f, 0.5f, 0.0f},
+  LightSetup lightSetup1{{Magnum::Vector4{-1.0f, -1.5f, -0.5f, 0.0f},
                           {5.0, 5.0, 0.0},
                           LightPositionModel::Camera}};
-  LightSetup lightSetup2{{Magnum::Vector4{0.0f, 0.5f, 1.0f, 0.0f},
+  LightSetup lightSetup2{{Magnum::Vector4{0.0f, -0.5f, -1.0f, 0.0f},
                           {0.0, 5.0, 5.0},
                           LightPositionModel::Camera}};
 };  // struct SimTest
