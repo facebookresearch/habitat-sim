@@ -213,10 +213,10 @@ void ClassicReplayRenderer::doRender(
       auto& sceneGraph = getSceneGraph(envIndex);
 
 #ifdef ESP_BUILD_WITH_BACKGROUND_RENDERER
-      // todo: investigate flags (frustum culling?)
-      renderer_->enqueueAsyncDrawJob(visualSensor, sceneGraph,
-                                     imageViews[envIndex],
-                                     esp::gfx::RenderCamera::Flags{});
+      renderer_->enqueueAsyncDrawJob(
+          visualSensor, sceneGraph, imageViews[envIndex],
+          esp::gfx::RenderCamera::Flags{
+              gfx::RenderCamera::Flag::FrustumCulling});
 #else
       // TODO what am I supposed to do here?
       CORRADE_ASSERT_UNREACHABLE("Not implemented yet, sorry.", );
@@ -244,8 +244,9 @@ void ClassicReplayRenderer::doRender(
     visualSensor.renderTarget().renderEnter();
 
     auto& sceneGraph = getSceneGraph(envIndex);
-    renderer_->draw(*visualSensor.getRenderCamera(), sceneGraph,
-                    esp::gfx::RenderCamera::Flags{});
+    renderer_->draw(
+        *visualSensor.getRenderCamera(), sceneGraph,
+        esp::gfx::RenderCamera::Flags{gfx::RenderCamera::Flag::FrustumCulling});
 
     if (envIndex == 0 && debugLineRender_) {
       auto* camera = visualSensor.getRenderCamera();
