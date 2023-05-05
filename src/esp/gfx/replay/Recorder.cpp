@@ -86,12 +86,12 @@ void Recorder::onCreateRenderAssetInstance(
       node, instanceKey, Corrade::Containers::NullOpt, deletionHelper});
 }
 
-void Recorder::onCreateRigInstance(const InstanceSkinData& instanceSkinData, int rigId)
-{
+void Recorder::onCreateRigInstance(const InstanceSkinData& instanceSkinData,
+                                   int rigId) {
   // Create record for rig
   std::unordered_map<int, const scene::SceneNode*> rigBoneTransforms{};
-  for (const auto& jointIdTransformNodePair : instanceSkinData.jointIdToTransformNode)
-  {
+  for (const auto& jointIdTransformNodePair :
+       instanceSkinData.jointIdToTransformNode) {
     rigBoneTransforms.emplace(jointIdTransformNodePair);
   }
   rigs_[rigId] = std::move(rigBoneTransforms);
@@ -99,12 +99,11 @@ void Recorder::onCreateRigInstance(const InstanceSkinData& instanceSkinData, int
 
   // Create creation info for rig
   std::vector<BoneCreation> bones{};
-  for (const auto& jointIdToNamePair : instanceSkinData.jointIdToName)
-  {
+  for (const auto& jointIdToNamePair : instanceSkinData.jointIdToName) {
     BoneCreation bone{};
     bone.rigId = rigId;
-    bone.boneId =jointIdToNamePair.first;
-    bone.boneName =jointIdToNamePair.second;
+    bone.boneId = jointIdToNamePair.first;
+    bone.boneName = jointIdToNamePair.second;
     bones.emplace_back(std::move(bone));
   }
   currKeyframe_.boneCreations = std::move(bones);
@@ -252,19 +251,20 @@ void Recorder::updateInstanceStates() {
     int rigId = rigItr.first;
 
     {
-    RigUpdate rigUpdate{};
-      const auto rootTransformMat = rigRootNodes_[rigId]->absoluteTransformation();
+      RigUpdate rigUpdate{};
+      const auto rootTransformMat =
+          rigRootNodes_[rigId]->absoluteTransformation();
       auto rotationShear = rootTransformMat.rotationShear();
-      // Remove reflection (negative scaling) from the matrix. We assume constant
-      // node scaling for the node's lifetime. It is baked into instance-creation so
-      // it doesn't need to be saved into RenderAssetInstanceState. See also
-      // onCreateRenderAssetInstance.
+      // Remove reflection (negative scaling) from the matrix. We assume
+      // constant node scaling for the node's lifetime. It is baked into
+      // instance-creation so it doesn't need to be saved into
+      // RenderAssetInstanceState. See also onCreateRenderAssetInstance.
       if (rotationShear.determinant() < 0.0f) {
         rotationShear[0] *= -1.f;
       }
 
       Transform rootTransform{rootTransformMat.translation(),
-                            Magnum::Quaternion::fromMatrix(rotationShear)};
+                              Magnum::Quaternion::fromMatrix(rotationShear)};
       rigUpdate.rootTransform = std::move(rootTransform);
       rigUpdate.rigId = rigId;
       currKeyframe_.rigUpdates.emplace_back(std::move(rigUpdate));
@@ -272,18 +272,19 @@ void Recorder::updateInstanceStates() {
 
     for (const auto& rigIdNodePair : rigItr.second) {
       BoneState state{};
-      const auto absTransformMat = rigIdNodePair.second->absoluteTransformation();
+      const auto absTransformMat =
+          rigIdNodePair.second->absoluteTransformation();
       auto rotationShear = absTransformMat.rotationShear();
-      // Remove reflection (negative scaling) from the matrix. We assume constant
-      // node scaling for the node's lifetime. It is baked into instance-creation so
-      // it doesn't need to be saved into RenderAssetInstanceState. See also
-      // onCreateRenderAssetInstance.
+      // Remove reflection (negative scaling) from the matrix. We assume
+      // constant node scaling for the node's lifetime. It is baked into
+      // instance-creation so it doesn't need to be saved into
+      // RenderAssetInstanceState. See also onCreateRenderAssetInstance.
       if (rotationShear.determinant() < 0.0f) {
         rotationShear[0] *= -1.f;
       }
 
       Transform absTransform{absTransformMat.translation(),
-                            Magnum::Quaternion::fromMatrix(rotationShear)};
+                             Magnum::Quaternion::fromMatrix(rotationShear)};
       state.absTransform = std::move(absTransform);
 
       state.rigId = rigId;

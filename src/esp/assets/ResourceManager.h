@@ -745,7 +745,8 @@ class ResourceManager {
    */
   void resetDrawableCountAndNumFaces() { drawableCountAndNumFaces_ = {0, 0}; }
 
-  void registerRigInstance(const std::shared_ptr<physics::ArticulatedObject>& rig);
+  void registerRigInstance(
+      const std::shared_ptr<physics::ArticulatedObject>& rig);
 
  private:
   /**
@@ -1403,7 +1404,8 @@ class ResourceManager {
    */
   std::shared_ptr<esp::gfx::replay::Recorder> gfxReplayRecorder_;
 
-  std::unordered_map<int, std::shared_ptr<esp::physics::ArticulatedObject>> rigInstanceMap_{};
+  std::unordered_map<int, std::shared_ptr<esp::physics::ArticulatedObject>>
+      rigInstanceMap_{};
 
   /**
    * @brief The imaged based lighting for PBR, each is a collection of

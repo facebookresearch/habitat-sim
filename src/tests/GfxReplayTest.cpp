@@ -273,8 +273,8 @@ void GfxReplayTest::testPlayer() {
       semanticId};
 
   // keyframe #1: a state update
-  keyframes.emplace_back(
-      esp::gfx::replay::Keyframe{{}, {}, {}, {}, {{instanceKey, stateUpdate}}, {}, {}});
+  keyframes.emplace_back(esp::gfx::replay::Keyframe{
+      {}, {}, {}, {}, {{instanceKey, stateUpdate}}, {}, {}});
 
   // keyframe #2: delete instance
   keyframes.emplace_back(

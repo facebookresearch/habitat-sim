@@ -314,8 +314,8 @@ std::vector<std::string> ResourceManager::buildVertexColorMapReport(
       semanticScene_);
 }  // ResourceManager::buildVertexColorMapReport
 
-void ResourceManager::registerRigInstance(const std::shared_ptr<physics::ArticulatedObject>& rig)
-{
+void ResourceManager::registerRigInstance(
+    const std::shared_ptr<physics::ArticulatedObject>& rig) {
   rigInstanceMap_[rig->getObjectID()] = rig;
 }
 
@@ -1900,18 +1900,20 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
   // such as the model bones are driven by the articulated object links.
   std::shared_ptr<gfx::InstanceSkinData> instanceSkinData = nullptr;
   const auto& meshMetaData = loadedAssetData.meshMetaData;
-  if (creation.rigId != ID_UNDEFINED && meshMetaData.skinIndex.first != ID_UNDEFINED) {
+  if (creation.rigId != ID_UNDEFINED &&
+      meshMetaData.skinIndex.first != ID_UNDEFINED) {
     ESP_CHECK(
         !skins_.empty(),
         "Cannot instantiate skinned model because no skin data is imported.");
     const auto& skinData = skins_[meshMetaData.skinIndex.first];
     instanceSkinData = std::make_shared<gfx::InstanceSkinData>(skinData);
-    mapSkinnedModelToArticulatedObject(meshMetaData.root, rigInstanceMap_[creation.rigId],
-                                       instanceSkinData);
+    mapSkinnedModelToArticulatedObject(
+        meshMetaData.root, rigInstanceMap_[creation.rigId], instanceSkinData);
     ESP_CHECK(instanceSkinData->rootArticulatedObjectNode,
               "Could not map skinned model to articulated object.");
     if (gfxReplayRecorder_) {
-      gfxReplayRecorder_->onCreateRigInstance(*(instanceSkinData.get()), creation.rigId);
+      gfxReplayRecorder_->onCreateRigInstance(*(instanceSkinData.get()),
+                                              creation.rigId);
     }
   }
 

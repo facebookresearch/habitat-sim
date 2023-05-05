@@ -42,21 +42,18 @@ struct RenderAssetInstanceState {
   }
 };
 
-struct RigUpdate
-{
+struct RigUpdate {
   int rigId = ID_UNDEFINED;
   Transform rootTransform;
 };
 
-struct BoneCreation
-{
+struct BoneCreation {
   int rigId = ID_UNDEFINED;
   int boneId = ID_UNDEFINED;
   std::string boneName;
 };
 
-struct BoneState
-{
+struct BoneState {
   int rigId = ID_UNDEFINED;
   int boneId = ID_UNDEFINED;
   Transform absTransform;  // localToWorld

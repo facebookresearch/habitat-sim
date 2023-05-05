@@ -82,9 +82,8 @@ inline bool fromJsonValue(const JsonGenericValue& obj,
   return success;
 }
 
-inline JsonGenericValue toJsonValue(
-    const gfx::replay::RigUpdate& x,
-    JsonAllocator& allocator) {
+inline JsonGenericValue toJsonValue(const gfx::replay::RigUpdate& x,
+                                    JsonAllocator& allocator) {
   JsonGenericValue obj(rapidjson::kObjectType);
   addMember(obj, "rigId", x.rigId, allocator);
   addMember(obj, "rootTransform", x.rootTransform, allocator);
@@ -93,15 +92,15 @@ inline JsonGenericValue toJsonValue(
 
 inline bool fromJsonValue(const JsonGenericValue& obj,
                           gfx::replay::RigUpdate& x) {
-  bool success = true;;
+  bool success = true;
+  ;
   success &= readMember(obj, "rigId", x.rigId);
   success &= readMember(obj, "rootTransform", x.rootTransform);
   return success;
 }
 
-inline JsonGenericValue toJsonValue(
-    const gfx::replay::BoneCreation& x,
-    JsonAllocator& allocator) {
+inline JsonGenericValue toJsonValue(const gfx::replay::BoneCreation& x,
+                                    JsonAllocator& allocator) {
   JsonGenericValue obj(rapidjson::kObjectType);
   addMember(obj, "rigId", x.rigId, allocator);
   addMember(obj, "id", x.boneId, allocator);
@@ -111,16 +110,16 @@ inline JsonGenericValue toJsonValue(
 
 inline bool fromJsonValue(const JsonGenericValue& obj,
                           gfx::replay::BoneCreation& x) {
-  bool success = true;;
+  bool success = true;
+  ;
   success &= readMember(obj, "rigId", x.rigId);
   success &= readMember(obj, "id", x.boneId);
   success &= readMember(obj, "name", x.boneName);
   return success;
 }
 
-inline JsonGenericValue toJsonValue(
-    const gfx::replay::BoneState& x,
-    JsonAllocator& allocator) {
+inline JsonGenericValue toJsonValue(const gfx::replay::BoneState& x,
+                                    JsonAllocator& allocator) {
   JsonGenericValue obj(rapidjson::kObjectType);
   addMember(obj, "rigId", x.rigId, allocator);
   addMember(obj, "boneId", x.boneId, allocator);
