@@ -58,6 +58,7 @@
 #include "esp/assets/GenericSemanticMeshData.h"
 #include "esp/assets/MeshMetaData.h"
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
+#include "esp/core/Esp.h"
 #include "esp/geo/Geo.h"
 #include "esp/gfx/GenericDrawable.h"
 #include "esp/gfx/PbrDrawable.h"
@@ -67,6 +68,7 @@
 #include "esp/io/URDFParser.h"
 #include "esp/metadata/MetadataMediator.h"
 #include "esp/physics/PhysicsManager.h"
+#include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/scene/SceneGraph.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SemanticScene.h"
@@ -311,6 +313,11 @@ std::vector<std::string> ResourceManager::buildVertexColorMapReport(
       Cr::Utility::Path::split(filename).second(), semanticColorMapBeingUsed_,
       semanticScene_);
 }  // ResourceManager::buildVertexColorMapReport
+
+void ResourceManager::registerRigInstance(const std::shared_ptr<physics::ArticulatedObject>& rig)
+{
+  rigInstanceMap_[rig->getObjectID()] = rig;
+}
 
 bool ResourceManager::loadSemanticSceneDescriptor(
     const std::string& ssdFilename,
@@ -1893,16 +1900,19 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
   // such as the model bones are driven by the articulated object links.
   std::shared_ptr<gfx::InstanceSkinData> instanceSkinData = nullptr;
   const auto& meshMetaData = loadedAssetData.meshMetaData;
-  if (creation.rig && meshMetaData.skinIndex.first != ID_UNDEFINED) {
+  if (creation.rigId != ID_UNDEFINED && meshMetaData.skinIndex.first != ID_UNDEFINED) {
     ESP_CHECK(
         !skins_.empty(),
         "Cannot instantiate skinned model because no skin data is imported.");
     const auto& skinData = skins_[meshMetaData.skinIndex.first];
     instanceSkinData = std::make_shared<gfx::InstanceSkinData>(skinData);
-    mapSkinnedModelToArticulatedObject(meshMetaData.root, creation.rig,
+    mapSkinnedModelToArticulatedObject(meshMetaData.root, rigInstanceMap_[creation.rigId],
                                        instanceSkinData);
     ESP_CHECK(instanceSkinData->rootArticulatedObjectNode,
               "Could not map skinned model to articulated object.");
+    if (gfxReplayRecorder_) {
+      gfxReplayRecorder_->onCreateRigInstance(*(instanceSkinData.get()), creation.rigId);
+    }
   }
 
   addComponent(meshMetaData,            // mesh metadata
@@ -2416,7 +2426,7 @@ void ResourceManager::initDefaultMaterials() {
   // Add to shaderManager at specified key location
   shaderManager_.set<Mn::Trade::MaterialData>(WHITE_MATERIAL_KEY,
                                               std::move(whiteMaterialData));
-  // Buiild white vertex ID material
+  // Build white vertex ID material
   Mn::Trade::MaterialData vertIdMaterialData = buildDefaultPhongMaterial();
   vertIdMaterialData.mutableAttribute<Mn::Color4>(
       Mn::Trade::MaterialAttribute::AmbientColor) = Mn::Color4{1.0};
@@ -2685,7 +2695,7 @@ Mn::Trade::MaterialData ResourceManager::buildCustomAttributeFlatMaterial(
                  textures_.at(textureBaseIndex + flatMat.texture()).get()});
   }
   // Merge new attributes with those specified in original material
-  // overridding original ambient, diffuse and specular colors
+  // overriding original ambient, diffuse and specular colors
   // Using owning MaterialData constructor to handle potential
   // layers
   auto finalMaterial = Mn::MaterialTools::merge(
@@ -2709,7 +2719,7 @@ Mn::Trade::MaterialData ResourceManager::buildCustomAttributePhongMaterial(
   // here.
 
   // Merge new attributes with those specified in original material
-  // overridding original ambient, diffuse and specular colors
+  // overriding original ambient, diffuse and specular colors
   if (custAttributes.size() > 0) {
     // Using owning MaterialData constructor to handle potential layers
     auto finalMaterial = Mn::MaterialTools::merge(
@@ -2736,7 +2746,7 @@ Mn::Trade::MaterialData ResourceManager::buildCustomAttributePbrMaterial(
   // here.
 
   // Merge new attributes with those specified in original material
-  // overridding original ambient, diffuse and specular colors
+  // overriding original ambient, diffuse and specular colors
 
   if (custAttributes.size() > 0) {
     // Using owning MaterialData constructor to handle potential layers
@@ -3292,6 +3302,7 @@ void ResourceManager::mapSkinnedModelToArticulatedObject(
       // This node will be used for rendering.
       auto& transformNode = articulatedObjectNode->createChild();
       skinData->jointIdToTransformNode[jointId] = &transformNode;
+      skinData->jointIdToName[jointId] = gfxBoneName;
 
       // First node found is the root
       if (!skinData->rootArticulatedObjectNode) {

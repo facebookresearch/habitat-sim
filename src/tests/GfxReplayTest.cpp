@@ -265,7 +265,7 @@ void GfxReplayTest::testPlayer() {
 
   // keyframe #0: load a render asset and create a render asset instance
   keyframes.emplace_back(esp::gfx::replay::Keyframe{
-      {info}, {{instanceKey, creation}}, {}, {}, {}});
+      {info}, {}, {{instanceKey, creation}}, {}, {}, {}, {}});
 
   constexpr int semanticId = 4;
   esp::gfx::replay::RenderAssetInstanceState stateUpdate{
@@ -274,15 +274,17 @@ void GfxReplayTest::testPlayer() {
 
   // keyframe #1: a state update
   keyframes.emplace_back(
-      esp::gfx::replay::Keyframe{{}, {}, {}, {{instanceKey, stateUpdate}}, {}});
+      esp::gfx::replay::Keyframe{{}, {}, {}, {}, {{instanceKey, stateUpdate}}, {}, {}});
 
   // keyframe #2: delete instance
   keyframes.emplace_back(
-      esp::gfx::replay::Keyframe{{}, {}, {instanceKey}, {}, {}});
+      esp::gfx::replay::Keyframe{{}, {}, {}, {instanceKey}, {}, {}, {}});
 
   // keyframe #3: include a user transform
   keyframes.emplace_back(
       esp::gfx::replay::Keyframe{{},
+                                 {},
+                                 {},
                                  {},
                                  {},
                                  {},

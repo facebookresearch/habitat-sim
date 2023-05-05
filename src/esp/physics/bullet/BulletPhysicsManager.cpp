@@ -181,11 +181,12 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
     creationInfo.filepath = *renderAssetPath;
     creationInfo.lightSetupKey = lightSetup;
     creationInfo.scale = globalScale * Mn::Vector3(1.f, 1.f, 1.f);
-    creationInfo.rig = articulatedObject;
+    creationInfo.rigId = articulatedObjectID;
     esp::assets::RenderAssetInstanceCreationInfo::Flags flags;
     flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsRGBD;
     flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsSemantic;
     creationInfo.flags = flags;
+    resourceManager_.registerRigInstance(articulatedObject);
     auto* gfxNode = resourceManager_.loadAndCreateRenderAssetInstance(
         assetInfo, creationInfo, objectNode, drawables);
     // Propagate the semantic ID to the graphics subtree

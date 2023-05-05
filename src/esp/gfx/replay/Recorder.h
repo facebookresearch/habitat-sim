@@ -6,10 +6,13 @@
 #define ESP_GFX_REPLAY_RECORDER_H_
 
 #include "Keyframe.h"
+#include "esp/gfx/SkinData.h"
 
 #include <rapidjson/document.h>
 
+#include <memory>
 #include <string>
+#include <unordered_map>
 
 namespace esp {
 namespace assets {
@@ -21,6 +24,7 @@ class SceneNode;
 class SceneGraph;
 }  // namespace scene
 namespace gfx {
+struct InstanceSkinData;
 namespace replay {
 
 class NodeDeletionHelper;
@@ -57,6 +61,8 @@ class Recorder {
    * @param assetInfo The asset that was loaded.
    */
   void onLoadRenderAsset(const esp::assets::AssetInfo& assetInfo);
+
+  void onCreateRigInstance(const InstanceSkinData& instanceSkinData, int rigId);
 
   /**
    * @brief Record deletion of all render instances in a scene graph.
@@ -186,6 +192,7 @@ class Recorder {
   Keyframe currKeyframe_;
   std::vector<Keyframe> savedKeyframes_;
   RenderAssetInstanceKey nextInstanceKey_ = 0;
+  std::unordered_map<int, std::unordered_map<int, const scene::SceneNode*>> rigs_ = {};
 
   ESP_SMART_POINTERS(Recorder)
 };

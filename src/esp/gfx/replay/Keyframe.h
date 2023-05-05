@@ -5,8 +5,11 @@
 #ifndef ESP_GFX_REPLAY_KEYFRAME_H_
 #define ESP_GFX_REPLAY_KEYFRAME_H_
 
+#include <unordered_map>
+#include <vector>
 #include "esp/assets/Asset.h"
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
+#include "esp/core/Esp.h"
 
 namespace esp {
 namespace gfx {
@@ -39,18 +42,34 @@ struct RenderAssetInstanceState {
   }
 };
 
+struct BoneCreation
+{
+  int rigId = ID_UNDEFINED;
+  int boneId = ID_UNDEFINED;
+  std::string boneName;
+};
+
+struct BoneState
+{
+  int rigId = ID_UNDEFINED;
+  int boneId = ID_UNDEFINED;
+  Transform absTransform;  // localToWorld
+};
+
 /**
  * @brief A serialization/replay-friendly render keyframe class. See @ref
  * Recorder.
  */
 struct Keyframe {
   std::vector<esp::assets::AssetInfo> loads;
+  std::vector<BoneCreation> boneCreations;
   std::vector<std::pair<RenderAssetInstanceKey,
                         esp::assets::RenderAssetInstanceCreationInfo>>
       creations;
   std::vector<RenderAssetInstanceKey> deletions;
   std::vector<std::pair<RenderAssetInstanceKey, RenderAssetInstanceState>>
       stateUpdates;
+  std::vector<BoneState> boneUpdates;
   std::unordered_map<std::string, Transform> userTransforms;
   std::vector<LightInfo> lights;
   bool lightsChanged = false;

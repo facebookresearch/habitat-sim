@@ -208,6 +208,7 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     }
     CORRADE_INTERNAL_ASSERT(assetInfos_.count(adjustedFilepath));
     auto adjustedCreation = creation;
+    if (creation.rigId != ID_UNDEFINED) adjustedCreation.rigId = ID_UNDEFINED; // TODO: Disable skinning for now.
     adjustedCreation.filepath = adjustedFilepath;
     auto* node = implementation_->loadAndCreateRenderAssetInstance(
         assetInfos_[adjustedFilepath], adjustedCreation);

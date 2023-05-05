@@ -12,6 +12,7 @@
 
 #include <memory>
 #include <string>
+#include "esp/core/Esp.h"
 
 namespace esp {
 namespace physics {
@@ -49,7 +50,7 @@ struct RenderAssetInstanceCreationInfo {
   Corrade::Containers::Optional<Magnum::Vector3> scale;
   Flags flags;
   std::string lightSetupKey;
-  std::shared_ptr<physics::ArticulatedObject> rig;
+  int rigId = ID_UNDEFINED;
 };
 
 }  // namespace assets

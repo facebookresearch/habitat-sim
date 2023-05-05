@@ -39,6 +39,7 @@ struct InstanceSkinData {
   /** @brief Map between skin joint IDs and scaled articulated object transform
    * nodes. */
   std::unordered_map<int, const scene::SceneNode*> jointIdToTransformNode{};
+  std::unordered_map<int, std::string> jointIdToName{};
 
   explicit InstanceSkinData(const std::shared_ptr<SkinData>& skinData)
       : skinData(skinData){};

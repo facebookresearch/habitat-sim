@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -744,6 +745,8 @@ class ResourceManager {
    */
   void resetDrawableCountAndNumFaces() { drawableCountAndNumFaces_ = {0, 0}; }
 
+  void registerRigInstance(const std::shared_ptr<physics::ArticulatedObject>& rig);
+
  private:
   /**
    * @brief Load the requested mesh info into @ref meshInfo corresponding to
@@ -1399,6 +1402,8 @@ class ResourceManager {
    * @brief See @ref setRecorder.
    */
   std::shared_ptr<esp::gfx::replay::Recorder> gfxReplayRecorder_;
+
+  std::unordered_map<int, std::shared_ptr<esp::physics::ArticulatedObject>> rigInstanceMap_{};
 
   /**
    * @brief The imaged based lighting for PBR, each is a collection of
