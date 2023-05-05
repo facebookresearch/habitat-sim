@@ -42,6 +42,12 @@ struct RenderAssetInstanceState {
   }
 };
 
+struct RigUpdate
+{
+  int rigId = ID_UNDEFINED;
+  Transform rootTransform;
+};
+
 struct BoneCreation
 {
   int rigId = ID_UNDEFINED;
@@ -62,6 +68,7 @@ struct BoneState
  */
 struct Keyframe {
   std::vector<esp::assets::AssetInfo> loads;
+  std::vector<RigUpdate> rigUpdates;
   std::vector<BoneCreation> boneCreations;
   std::vector<std::pair<RenderAssetInstanceKey,
                         esp::assets::RenderAssetInstanceCreationInfo>>

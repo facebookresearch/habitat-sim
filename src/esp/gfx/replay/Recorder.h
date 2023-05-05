@@ -193,6 +193,7 @@ class Recorder {
   std::vector<Keyframe> savedKeyframes_;
   RenderAssetInstanceKey nextInstanceKey_ = 0;
   std::unordered_map<int, std::unordered_map<int, const scene::SceneNode*>> rigs_ = {};
+  std::unordered_map<int, const scene::SceneNode*> rigRootNodes_ = {};
 
   ESP_SMART_POINTERS(Recorder)
 };

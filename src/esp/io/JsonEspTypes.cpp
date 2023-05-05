@@ -41,6 +41,7 @@ JsonGenericValue toJsonValue(const gfx::replay::Keyframe& keyframe,
     io::addMember(obj, "stateUpdates", stateUpdatesArray, allocator);
   }
 
+  io::addMember(obj, "rigUpdates", keyframe.rigUpdates, allocator);
   io::addMember(obj, "boneUpdates", keyframe.boneUpdates, allocator);
 
   if (!keyframe.userTransforms.empty()) {
@@ -98,6 +99,7 @@ bool fromJsonValue(const JsonGenericValue& obj,
     }
   }
 
+  io::readMember(obj, "rigUpdates", keyframe.rigUpdates);
   io::readMember(obj, "boneUpdates", keyframe.boneUpdates);
 
   itr = obj.FindMember("userTransforms");

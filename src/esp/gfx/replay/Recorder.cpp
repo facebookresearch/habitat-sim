@@ -95,6 +95,7 @@ void Recorder::onCreateRigInstance(const InstanceSkinData& instanceSkinData, int
     rigBoneTransforms.emplace(jointIdTransformNodePair);
   }
   rigs_[rigId] = std::move(rigBoneTransforms);
+  rigRootNodes_[rigId] = instanceSkinData.rootArticulatedObjectNode;
 
   // Create creation info for rig
   std::vector<BoneCreation> bones{};
@@ -249,6 +250,26 @@ void Recorder::updateInstanceStates() {
   // Update rig states
   for (const auto& rigItr : rigs_) {
     int rigId = rigItr.first;
+
+    {
+    RigUpdate rigUpdate{};
+      const auto rootTransformMat = rigRootNodes_[rigId]->absoluteTransformation();
+      auto rotationShear = rootTransformMat.rotationShear();
+      // Remove reflection (negative scaling) from the matrix. We assume constant
+      // node scaling for the node's lifetime. It is baked into instance-creation so
+      // it doesn't need to be saved into RenderAssetInstanceState. See also
+      // onCreateRenderAssetInstance.
+      if (rotationShear.determinant() < 0.0f) {
+        rotationShear[0] *= -1.f;
+      }
+
+      Transform rootTransform{rootTransformMat.translation(),
+                            Magnum::Quaternion::fromMatrix(rotationShear)};
+      rigUpdate.rootTransform = std::move(rootTransform);
+      rigUpdate.rigId = rigId;
+      currKeyframe_.rigUpdates.emplace_back(std::move(rigUpdate));
+    }
+
     for (const auto& rigIdNodePair : rigItr.second) {
       BoneState state{};
       const auto absTransformMat = rigIdNodePair.second->absoluteTransformation();

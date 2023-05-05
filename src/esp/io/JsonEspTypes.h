@@ -83,6 +83,23 @@ inline bool fromJsonValue(const JsonGenericValue& obj,
 }
 
 inline JsonGenericValue toJsonValue(
+    const gfx::replay::RigUpdate& x,
+    JsonAllocator& allocator) {
+  JsonGenericValue obj(rapidjson::kObjectType);
+  addMember(obj, "rigId", x.rigId, allocator);
+  addMember(obj, "rootTransform", x.rootTransform, allocator);
+  return obj;
+}
+
+inline bool fromJsonValue(const JsonGenericValue& obj,
+                          gfx::replay::RigUpdate& x) {
+  bool success = true;;
+  success &= readMember(obj, "rigId", x.rigId);
+  success &= readMember(obj, "rootTransform", x.rootTransform);
+  return success;
+}
+
+inline JsonGenericValue toJsonValue(
     const gfx::replay::BoneCreation& x,
     JsonAllocator& allocator) {
   JsonGenericValue obj(rapidjson::kObjectType);
