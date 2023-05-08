@@ -279,7 +279,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   if (flags_ & Flag::DebugDisplay) {
     setDebugDisplay(PbrDebugDisplay::None);
   }
-}  // namespace gfx
+}
 
 // Note: the texture binding points are explicitly specified above.
 // Cannot use "explicit uniform location" directly in shader since
