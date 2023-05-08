@@ -78,12 +78,12 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
             (Flag::BaseColorTexture | Flag::RoughnessTexture |
              Flag::NoneRoughnessMetallicTexture | Flag::MetallicTexture |
              Flag::NormalTexture | Flag::EmissiveTexture))) ||
+      (flags_ >= (Flag::ClearCoatTexture | (Flag::ClearCoatRoughnessTexture |
+                                            Flag::ClearCoatNormalTexture))) ||
       (flags_ >=
-       (Flag::CCLayer_RoughnessTexture | Flag::CCLayer_NormalTexture)) ||
-      (flags_ >=
-       (Flag::SpecLayer_SpecTexture | Flag::SpecLayer_SpecColorTexture)) ||
-      (flags_ >= Flag::TransLayer_TransmissionTexture) ||
-      (flags_ >= Flag::VolLayer_ThicknessTexture);
+       (Flag::SpecularLayerTexture | Flag::SpecularLayerColorTexture)) ||
+      (flags_ >= Flag::TransmissionLayerTexture) ||
+      (flags_ >= Flag::VolumeLayerThicknessTexture);
 
   if (isTextured) {
     attributeLocationsStream
