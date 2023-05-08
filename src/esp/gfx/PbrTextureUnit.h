@@ -20,13 +20,16 @@ enum TextureUnit : uint8_t {
   MetallicRoughness = 1,
   Normal = 2,
   Emissive = 3,
-  EnvironmentMap = 4,
-  IrradianceMap = 5,
-  BrdfLUT = 6,
-  PrefilteredMap = 7,
-  ShadowMap0 = 8,
-  ShadowMap1 = 9,
-  ShadowMap2 = 10,  // We support at most 3 shadows currently
+  ClearCoatFactor = 4,
+  ClearCoatRoughenss = 5,
+  ClearCoatNormal = 6,
+  EnvironmentMap = 7,
+  IrradianceMap = 8,
+  BrdfLUT = 9,
+  PrefilteredMap = 10,
+  ShadowMap0 = 11,
+  ShadowMap1 = 12,
+  ShadowMap2 = 13,  // We support at most 3 shadows currently
 };
 }  // namespace pbrTextureUnitSpace
 }  // namespace gfx

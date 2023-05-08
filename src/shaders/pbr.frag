@@ -56,6 +56,14 @@ struct MaterialData {
 };
 uniform MaterialData Material;
 
+//Clearcoat layer support
+struct ClearCoatData{
+  float factor;   //clear coat factor/intensity
+  float roughness;  //clear coat perceived roughness
+};
+uniform ClearCoatData clearCoatData;
+
+
 #if defined(BASECOLOR_TEXTURE)
 uniform sampler2D BaseColorTexture;
 #endif
@@ -71,11 +79,25 @@ uniform sampler2D NormalTexture;
 uniform sampler2D EmissiveTexture;
 #endif
 
+
+#if defined(CLEAR_COAT_TEXTURE)
+uniform sampler2D ClearCoatTexture;
+#endif
+
+#if defined(CLEAR_COAT_ROUGHNESS_TEXTURE)
+uniform sampler2D ClearCoatRoughnessTexture;
+#endif
+
+#if defined(CLEAR_COAT_NORMAL_TEXTURE)
+uniform sampler2D ClearCoatNormalTexture;
+#endif
+
 #if defined(IMAGE_BASED_LIGHTING)
 uniform samplerCube IrradianceMap;
 uniform sampler2D BrdfLUT;
 uniform samplerCube PrefilteredMap;
 #endif
+
 
 // -------------- uniforms ----------------
 #if defined(OBJECT_ID)
@@ -468,6 +490,11 @@ void main() {
 
   float metallic = clamp(Material.metallic, 0.0, 1.0);
 
+  //TODO clear coat implementation
+  float clearCoatStrength = 0.0f;
+  float clearCoatPerceivedRoughness = 0.0;
+  float clearCoatCoating_f0 = 0.4;
+
 
 #if defined(BASECOLOR_TEXTURE)
   baseColor *= texture(BaseColorTexture, texCoord);
@@ -476,7 +503,9 @@ void main() {
 #if defined(NONE_ROUGHNESS_METALLIC_TEXTURE)
   perceivedRoughness *= texture(MetallicRoughnessTexture, texCoord).g;
 #endif
-  // Roughness is authored as perceptual roughness; as is convention,
+  // clamp to avoid div by zero ?
+  // perceivedRoughness = clamp(perceivedRoughness, 0.045, 1.0);
+
   // Roughness is authored as perceptual roughness by convention,
   // convert to more linear roughness mapping by squaring the perceptual roughness.
   float alphaRoughness = perceivedRoughness * perceivedRoughness;
@@ -484,6 +513,12 @@ void main() {
 #if defined(NONE_ROUGHNESS_METALLIC_TEXTURE)
   metallic *= texture(MetallicRoughnessTexture, texCoord).b;
 #endif
+
+#if defined(CLEAR_COAT)
+
+#endif
+float clearCoatRoughness = clearCoatPerceivedRoughness * clearCoatPerceivedRoughness;
+
 
 // normal map will only work if both normal texture and the tangents exist.
 // if only normal texture is set, normal mapping will be safely ignored.
@@ -596,6 +631,9 @@ void main() {
     vec3 currentSpecularContrib = projLightRadiance * INV_PI *
                              BRDF_Specular(fresnel, alphaRoughness, n_dot_l,
                                            n_dot_v, n_dot_h);
+    // scalar clearcoat contribution
+    float ccFesnel = fresnelSchlick(clearCoatCoating_f0, v_dot_h) * clearCoatStrength;
+
 
 #if defined(SHADOWS_VSM)
     float shadow =

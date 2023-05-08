@@ -123,6 +123,16 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
       .addSource(flags_ & Flag::ObjectId ? "#define OBJECT_ID\n" : "")
       // Clearcoat layer
       .addSource(flags_ & Flag::ClearCoatLayer ? "#define CLEAR_COAT\n" : "")
+      .addSource(flags_ >= Flag::ClearCoatTexture
+                     ? "#define CLEAR_COAT_TEXTURE\n"
+                     : "")
+      .addSource(flags_ >= Flag::ClearCoatRoughnessTexture
+                     ? "#define CLEAR_COAT_ROUGHNESS_TEXTURE\n"
+                     : "")
+      .addSource(flags_ >= Flag::ClearCoatNormalTexture
+                     ? "#define CLEAR_COAT_NORMAL_TEXTURE\n"
+                     : "")
+
       // Specular Layer
       .addSource(flags_ & Flag::SpecularLayer ? "#define SPECULAR_LAYER\n" : "")
 
@@ -216,6 +226,25 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   iorUniform_ = uniformLocation("Material.ior");
   emissiveColorUniform_ = uniformLocation("Material.emissiveColor");
 
+  // clearcoat data
+
+  if (flags_ & Flag::ClearCoatLayer) {
+    clearCoatFactorUniform_ = uniformLocation("clearCoatData.factor");
+    clearCoatRoughnessUniform_ = uniformLocation("clearCoatData.roughness");
+    if (flags_ >= Flag::ClearCoatTexture) {
+      setUniform(uniformLocation("ClearCoatTexture"),
+                 pbrTextureUnitSpace::TextureUnit::ClearCoatFactor);
+    }
+    if (flags_ >= Flag::ClearCoatRoughnessTexture) {
+      setUniform(uniformLocation("ClearCoatRoughnessTexture"),
+                 pbrTextureUnitSpace::TextureUnit::ClearCoatRoughenss);
+    }
+    if (flags_ >= Flag::ClearCoatNormalTexture) {
+      setUniform(uniformLocation("ClearCoatNormalTexture"),
+                 pbrTextureUnitSpace::TextureUnit::ClearCoatNormal);
+    }
+  }
+
   // lights
   if (lightCount_ != 0u) {
     lightRangesUniform_ = uniformLocation("LightRanges");
@@ -256,6 +285,10 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
       setNormalTextureScale(1.0f);
     }
     setNormalMatrix(Mn::Matrix3x3{Mn::Math::IdentityInit});
+  }
+  if (flags_ & Flag::ClearCoatLayer) {
+    setClearCoatFactor(0.0f);
+    setClearCoatRoughness(0.0f);
   }
 
   if (lightCount_ != 0u) {
@@ -333,6 +366,54 @@ PbrShader& PbrShader::bindEmissiveTexture(Mn::GL::Texture2D& texture) {
                  *this);
   // emissive texture does not depend on lights
   texture.bind(pbrTextureUnitSpace::TextureUnit::Emissive);
+  return *this;
+}
+
+/**
+ * @brief Bind the clearcoat factor texture
+ * @return Reference to self (for method chaining)
+ */
+PbrShader& PbrShader::bindClearCoatFactorTexture(
+    Magnum::GL::Texture2D& texture) {
+  CORRADE_ASSERT(flags_ >= Flag::ClearCoatTexture,
+                 "PbrShader::bindClearCoatFactorTexture(): the shader was not "
+                 "created with clearcoat factor texture enabled",
+                 *this);
+  if (lightingIsEnabled()) {
+    texture.bind(pbrTextureUnitSpace::TextureUnit::ClearCoatFactor);
+  }
+  return *this;
+}
+/**
+ * @brief Bind the clearcoat roughness texture
+ * @return Reference to self (for method chaining)
+ */
+PbrShader& PbrShader::bindClearCoatRoughnessTexture(
+    Magnum::GL::Texture2D& texture) {
+  CORRADE_ASSERT(
+      flags_ >= Flag::ClearCoatRoughnessTexture,
+      "PbrShader::bindClearCoatRoughnessTexture(): the shader was not "
+      "created with clearcoat roughness texture enabled",
+      *this);
+  if (lightingIsEnabled()) {
+    texture.bind(pbrTextureUnitSpace::TextureUnit::ClearCoatRoughenss);
+  }
+  return *this;
+}
+
+/**
+ * @brief Bind the clearcoat normal texture
+ * @return Reference to self (for method chaining)
+ */
+PbrShader& PbrShader::bindClearCoatNormalTexture(
+    Magnum::GL::Texture2D& texture) {
+  CORRADE_ASSERT(flags_ >= Flag::ClearCoatNormalTexture,
+                 "PbrShader::bindClearCoatNormalTexture(): the shader was not "
+                 "created with clearcoat normal texture enabled",
+                 *this);
+  if (lightingIsEnabled()) {
+    texture.bind(pbrTextureUnitSpace::TextureUnit::ClearCoatNormal);
+  }
   return *this;
 }
 
@@ -441,6 +522,28 @@ PbrShader& PbrShader::setMetallic(float metallic) {
 PbrShader& PbrShader::setIndexOfRefraction(float ior) {
   if (lightingIsEnabled()) {
     setUniform(iorUniform_, ior);
+  }
+  return *this;
+}
+
+/**
+ * @brief Set clearcoat intensity/factor
+ * @return Reference to self (for method chaining)
+ */
+PbrShader& PbrShader::setClearCoatFactor(float ccFactor) {
+  if (lightingIsEnabled()) {
+    setUniform(clearCoatFactorUniform_, ccFactor);
+  }
+  return *this;
+}
+
+/**
+ * @brief Set clearcoat roughness
+ * @return Reference to self (for method chaining)
+ */
+PbrShader& PbrShader::setClearCoatRoughness(float ccRoughness) {
+  if (lightingIsEnabled()) {
+    setUniform(clearCoatRoughnessUniform_, ccRoughness);
   }
   return *this;
 }

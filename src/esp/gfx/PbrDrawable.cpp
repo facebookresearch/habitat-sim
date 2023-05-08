@@ -420,6 +420,24 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
     shader_->setTextureMatrix(matCache.textureMatrix);
   }
 
+  // clearcoat data
+
+  if (flags_ & PbrShader::Flag::ClearCoatLayer) {
+    (*shader_)
+        .setClearCoatFactor(matCache.clearCoat.factor)
+        .setClearCoatRoughness(matCache.clearCoat.roughnessFactor);
+    if (flags_ >= PbrShader::Flag::ClearCoatTexture) {
+      shader_->bindClearCoatFactorTexture(*matCache.clearCoat.texture);
+    }
+    if (flags_ >= PbrShader::Flag::ClearCoatRoughnessTexture) {
+      shader_->bindClearCoatRoughnessTexture(
+          *matCache.clearCoat.roughnessTexture);
+    }
+    if (flags_ >= PbrShader::Flag::ClearCoatNormalTexture) {
+      shader_->bindClearCoatNormalTexture(*matCache.clearCoat.normalTexture);
+    }
+  }
+
   // setup image based lighting for the shader
   if (flags_ & PbrShader::Flag::ImageBasedLighting) {
     CORRADE_INTERNAL_ASSERT(pbrIbl_);
