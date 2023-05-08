@@ -120,22 +120,22 @@ uniform int PbrDebugDisplay;
 //   Convenience structure to hold pertinent values to make communication with functions easier
 // */
 // struct PBRInfo{
-//     vec3 n;                                // normal at surface point
-//     vec3 v;                                // view vector : from surface point to camera
+//     vec3 n;                       // normal at surface point
+//     vec3 v;                       // view vector : from surface point to camera
+//     vec3 dielectricF0;            // dielectric Fresnel specular/reflectance color based on IOR
+//     vec3 reflectance0;            // full reflectance color (normal incidence angle)
+//     vec3 reflectance90;           // reflectance color at grazing angle
 //     float perceptualRoughness;    // roughness value, as authored by the model creator (input to shader)
 //     float NdotL;                  // cos angle between normal and light direction
 //     float NdotV;                  // cos angle between normal and view direction
 //     float NdotH;                  // cos angle between normal and half vector
 //     float LdotH;                  // cos angle between light direction and half vector
 //     float VdotH;                  // cos angle between view direction and half vector
-//     vec3 dielectricF0;            // dielectric specular/reflectance color based on IOR
-//     vec3 reflectance0;            // full reflectance color (normal incidence angle)
-//     vec3 reflectance90;           // reflectance color at grazing angle
 //     float alphaRoughness;         // roughness mapped to a more linear change in the roughness
+
 //     vec3 diffuseColor;            // color contribution from diffuse lighting
 //     vec3 specularColor;           // color contribution from specular lighting
-//   vec3 emissiveColor;           // color contribution from emissive color/texture
-
+//     vec3 emissiveColor;           // color contribution from emissive color/texture
 // };
 
 // The following function Uncharted2Tonemap is based on:
@@ -227,11 +227,18 @@ float V_GGX(float n_dot_l, float n_dot_v, float arSq) {
 
 // Approximation - mathematically wrong but faster without sqrt
 // all the sqrt terms are <= 1
+//https://google.github.io/filament/Filament.md.html#listing_approximatedspecularv
 float V_GGXFast(float n_dot_l, float n_dot_v, float ar) {
     float oneMAr = (1.0 - ar);
     float GGXL = n_dot_v * (n_dot_l * oneMAr + ar);
     float GGXV = n_dot_l * (n_dot_v * oneMAr + ar);
     return 0.5 / max(GGXV + GGXL, epsilon);
+}
+
+// Approximation for clearcoat from Kelemen et al
+// http://www.hungrycat.hu/microfacet.pdf
+float V_Kelemen(float v_dot_h){
+  return .25 / (v_dot_h * v_dot_h);
 }
 
 // The following equation models the distribution of microfacet normals across
@@ -244,17 +251,15 @@ float D_GGX(float n_dot_h, float arSq) {
   return arSq / (f * f);
 }
 
-// Fresnel
-//
+// Fresnel specular coefficient at view angle using Schlick approx
 // http://graphicrants.blogspot.com/2013/08/specular-brdf-reference.html
 // https://github.com/wdas/brdf/tree/master/src/brdfs
 // https://google.github.io/filament/Filament.md.html
 //
 // The following equation models the Fresnel reflectance term of the spec
 // equation (aka F())
-// f0 : diffuse color reflectance at normal incidence
-//     for nonmetal, using DielectricSpecular
-// v_dot_h: <view, halfVector>
+// f0 : specular color reflectance at normal incidence
+// v_dot_h: <view, halfVector> view projected on half vector
 //          view: camera direction, aka light outgoing direction
 //          halfVector: half vector of light and view
 vec3 fresnelSchlick(vec3 f0, float v_dot_h) {
@@ -266,21 +271,39 @@ vec3 fresnelSchlick(vec3 f0, float f90s, float v_dot_h) {
 }
 
 
-const float nrgInterpMax = 1.0/1.51;
 
-// Burley/Disney diffuse BRDF, modified for better energy conservation from
+//Empirically derived max energy correcting factor, based on perceptual roughness
+const float NRG_INTERP_MAX = 1.0/1.51;
+//Disney Diffuse scales by diffuse color after scatter contributions are calculated
+const vec3 DIS_DIFF_F0 = vec3(1.0f);
+
+// Burley/Disney diffuse BRDF, from here :
+// http://blog.selfshadow.com/publications/s2012-shading-course/burley/s2012_pbs_disney_brdf_notes_v3.pdf
+vec3 BRDF_BurleyDiffuse(vec3 diffuseColor,
+                        float n_dot_v,
+                        float n_dot_l,
+                        float v_dot_h,    // == l_dot_h
+                        float perceptualRoughness) {
+  float fd90 = 0.5f + (2.0 * v_dot_h * v_dot_h * perceptualRoughness);
+  vec3 lightScatter = fresnelSchlick(DIS_DIFF_F0, fd90, n_dot_l);
+  vec3 viewScatter = fresnelSchlick(DIS_DIFF_F0, fd90, n_dot_v);
+  return lightScatter * viewScatter * diffuseColor;
+}
+
+// Burley/Disney diffuse BRDF, from here :
+// http://blog.selfshadow.com/publications/s2012-shading-course/burley/s2012_pbs_disney_brdf_notes_v3.pdf
+// renormalized for better energy conservation from
 // https://media.contentapi.ea.com/content/dam/eacom/frostbite/files/course-notes-moving-frostbite-to-pbr-v32.pdf
-vec3 BRDF_DisneyDiffuse(vec3 diffuseColor,
+vec3 BRDF_BurleyDiffuseRenorm(vec3 diffuseColor,
                         float n_dot_v,
                         float n_dot_l,
                         float v_dot_h,    // == l_dot_h
                         float perceptualRoughness) {
   float energyBias = mix(0.0, 0.75, perceptualRoughness);
-  float energyFactor = mix(1.0, nrgInterpMax, perceptualRoughness);
+  float energyFactor = mix(1.0, NRG_INTERP_MAX, perceptualRoughness);
   float fd90 = energyBias + (2.0 * v_dot_h * v_dot_h * perceptualRoughness);
-  vec3 f0 = vec3(1.0f);
-  vec3 lightScatter = fresnelSchlick(f0, fd90, n_dot_l);
-  vec3 viewScatter = fresnelSchlick(f0, fd90, n_dot_v);
+  vec3 lightScatter = fresnelSchlick(DIS_DIFF_F0, fd90, n_dot_l);
+  vec3 viewScatter = fresnelSchlick(DIS_DIFF_F0, fd90, n_dot_v);
   return lightScatter * viewScatter * energyFactor * diffuseColor;
 }
 
@@ -296,7 +319,7 @@ vec3 BRDF_DisneyDiffuse(vec3 diffuseColor,
 //     light: light source direction
 //     view: camera direction, aka light outgoing direction
 //     halfVector: half vector of light and view
-vec3 BRDF_specular(vec3 fresnel,
+vec3 BRDF_Specular(vec3 fresnel,
                    float alphaRoughness,
                    float n_dot_l,
                    float n_dot_v,
@@ -382,7 +405,8 @@ void main() {
 
   // DielectricSpecular == 0.04 <--> ior == 1.5
   float DielectricSpecular = pow(((Material.ior - 1) / (Material.ior + 1)), 2);
-  // dielectric material f0
+  // Achromatic dielectric material f0 : fresnel reflectance at normal incidence
+  // based on given IOR
   vec3 dielectricF0 = vec3(DielectricSpecular);
 
   vec3 emissiveColor = Material.emissiveColor;
@@ -431,13 +455,13 @@ void main() {
 #endif
 
 
-  // diffuse color (diffuseColor in gltf 2.0 spec:
-  // https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/README.md#metal-brdf-and-dielectric-brdf)
+  // diffuse color remapping based on metallic value
+  // https://google.github.io/filament/Filament.md.html#listing_basecolortodiffuse
   vec3 diffuseColor =  baseColor.rgb * (1 - metallic);
 
-  // compute base color reflectance at normal incidence
-  // for nonmetal or metallic, using IOR-derived reflectance
-  vec3 specularColor = mix(dielectricF0, baseColor.rgb, metallic);
+  // compute specular reflectance at normal incidence
+  // for nonmetal or metallic, using IOR-derived fresnel reflectance
+  vec3 specularColor_f0 = mix(dielectricF0, baseColor.rgb, metallic);
 
 
   /////////////////
@@ -512,7 +536,8 @@ void main() {
     // Radiance scaled by incident angle cosine, per area
     vec3 projLightRadiance = lightRadiance * n_dot_l;
     // Calculate the Schlick approximation of the Fresnel coefficient
-    vec3 fresnel = fresnelSchlick(specularColor, v_dot_h);
+    // Fresnel Specular color at view angle == Schlick approx using view angle
+    vec3 fresnel = fresnelSchlick(specularColor_f0, v_dot_h);
     // Lambeertian diffuse contribution
     // currentDiffuseContrib =
     //     projLightRadiance * INV_PI * diffuseColor;
@@ -520,11 +545,11 @@ void main() {
     // Burley/Disney diffuse contribution
     currentDiffuseContrib =
         projLightRadiance * INV_PI *
-        BRDF_DisneyDiffuse(diffuseColor, n_dot_v, n_dot_l, v_dot_h,
-                           perceivedRoughness);
+        BRDF_BurleyDiffuse(diffuseColor, n_dot_v, n_dot_l, v_dot_h,
+                           alphaRoughness);
     // Specular microfacet - 1/pi from specular D normal dist function
     currentSpecularContrib = projLightRadiance * INV_PI *
-                             BRDF_specular(fresnel, alphaRoughness, n_dot_l,
+                             BRDF_Specular(fresnel, alphaRoughness, n_dot_l,
                                            n_dot_v, n_dot_h);
 
 #if defined(SHADOWS_VSM)
