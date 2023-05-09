@@ -334,6 +334,18 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   PbrShader& bindClearCoatNormalTexture(Magnum::GL::Texture2D& texture);
 
   /**
+   * @brief Bind the specular layer texture
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& bindSpecularLayerTexture(Magnum::GL::Texture2D& texture);
+
+  /**
+   * @brief Bind the specular layer color texture
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& bindSpecularLayerColorTexture(Magnum::GL::Texture2D& texture);
+
+  /**
    * @brief Bind the irradiance cubemap texture
    * @return Reference to self (for method chaining)
    */
@@ -433,7 +445,25 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    * @brief Set clearcoat roughness
    * @return Reference to self (for method chaining)
    */
-  PbrShader& setClearCoatRoughness(float ior);
+  PbrShader& setClearCoatRoughness(float ccRoughness);
+
+  /**
+   * @brief Set clearcoat normal texture scale
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& setClearCoatNormalTextureScale(float ccTextureScale);
+
+  /**
+   * @brief Set specular layer factor
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& setSpecularLayerFactor(float specLayerFactor);
+
+  /**
+   * @brief Set specular layer color factor
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& setSpecularLayerColorFactor(const Magnum::Color3& color);
 
   /**
    *  @brief Set object id to the uniform on GPU
@@ -633,7 +663,14 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   // Clearcoat layer
   int clearCoatFactorUniform_ = ID_UNDEFINED;
 
+  int clearCoatTextureScaleUniform_ = ID_UNDEFINED;
+
   int clearCoatRoughnessUniform_ = ID_UNDEFINED;
+
+  // Specular Layer
+  int specularLayerFactorUniform_ = ID_UNDEFINED;
+
+  int specularLayerColorFactorUniform_ = ID_UNDEFINED;
 
   // scales
   int componentScalesUniform_ = ID_UNDEFINED;
