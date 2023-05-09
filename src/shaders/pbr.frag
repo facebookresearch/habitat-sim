@@ -55,13 +55,33 @@ struct MaterialData {
                        // multiply it the EmissiveTexture
 };
 uniform MaterialData Material;
-
+/////////////////
 //Clearcoat layer support
+#if defined(CLEAR_COAT)
 struct ClearCoatData{
-  float factor;   //clear coat factor/intensity
-  float roughness;  //clear coat perceived roughness
+  float factor;             // clearcoat factor/intensity. If ClearCoatTexture exists,
+                            // multiply it by this factor. If this is 0 the layer is
+                            // ignored, as per standard.
+  float roughness;          // clearcoat perceived roughness. If ClearCoatRoughnessTexture
+                            // exists, multiply it by this roughness value
+  float normalTextureScale; // xy scale value for clearcoat normal texture. Multiply
+                            // the x,y channels of ClearCoatNormalTexture if exists.
 };
-uniform ClearCoatData clearCoatData;
+uniform ClearCoatData ClearCoat;
+#endif //CLEAR_COAT
+
+/////////////////
+//Specular layer support
+#if defined(SPECULAR_LAYER)
+struct SpecularLayerData{
+  float factor;     // The strength of the specular reflection.
+                    // If SpecularLayerTexture exists, multiply it with this value.
+  vec3 colorFactor; // The F0 (Fresnel reflectance at normal incidence) color of
+                    // the specular reflection (linear RGB). If SpecularLayerColorTexture exists,
+                    // multiply it with this value.
+};
+uniform SpecularLayerData SpecularLayer;
+#endif // SPECULAR_LAYER
 
 
 #if defined(BASECOLOR_TEXTURE)
@@ -79,7 +99,6 @@ uniform sampler2D NormalTexture;
 uniform sampler2D EmissiveTexture;
 #endif
 
-
 #if defined(CLEAR_COAT_TEXTURE)
 uniform sampler2D ClearCoatTexture;
 #endif
@@ -92,6 +111,17 @@ uniform sampler2D ClearCoatRoughnessTexture;
 uniform sampler2D ClearCoatNormalTexture;
 #endif
 
+#if defined(SPECULAR_LAYER_TEXTURE)
+uniform sampler2D SpecularLayerTexture;
+#endif
+
+#if defined(SPECULAR_LAYER_COLOR_TEXTURE)
+uniform sampler2D SpecularLayerColorTexture;
+#endif
+
+
+/////////////////
+//IBL Support
 #if defined(IMAGE_BASED_LIGHTING)
 uniform samplerCube IrradianceMap;
 uniform sampler2D BrdfLUT;
@@ -135,30 +165,6 @@ uniform uint PrefilteredMapMipLevels;
 uniform int PbrDebugDisplay;
 
 // -------------- shader ------------------
-
-
-
-// /**
-//   Convenience structure to hold pertinent values to make communication with functions easier
-// */
-// struct PBRInfo{
-//     vec3 n;                       // normal at surface point
-//     vec3 v;                       // view vector : from surface point to camera
-//     vec3 dielectricF0;            // dielectric Fresnel specular/reflectance color based on IOR
-//     vec3 reflectance0;            // full reflectance color (normal incidence angle)
-//     vec3 reflectance90;           // reflectance color at grazing angle
-//     float perceptualRoughness;    // roughness value, as authored by the model creator (input to shader)
-//     float NdotL;                  // cos angle between normal and light direction
-//     float NdotV;                  // cos angle between normal and view direction
-//     float NdotH;                  // cos angle between normal and half vector
-//     float LdotH;                  // cos angle between light direction and half vector
-//     float VdotH;                  // cos angle between view direction and half vector
-//     float alphaRoughness;         // roughness mapped to a more linear change in the roughness
-
-//     vec3 diffuseColor;            // color contribution from diffuse lighting
-//     vec3 specularColor;           // color contribution from specular lighting
-//     vec3 emissiveColor;           // color contribution from emissive color/texture
-// };
 
 // The following function Uncharted2Tonemap is based on:
 // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/data/shaders/pbr_khr.frag
@@ -370,6 +376,8 @@ vec3 BRDF_Specular(vec3 fresnel,
   return specular;
 }//BRDF_Specular
 
+
+#if defined(CLEAR_COAT)
 // Calculate clearcoat specular contribution
 // ccFresnel : clearCoat-scaled specular f0 contribution of polyurethane coating
 // clearCoatRoughness : clearCoatPerceptualRoughness squared
@@ -395,6 +403,7 @@ vec3 BRDF_ClearCoatSpecular(vec3 ccFresnel,
                   D_GGX(cc_n_do_h, ccRSq);
   return ccSpecular;
 }//BRDF_ClearCoatSpecular
+#endif // clearcoat support
 
 
 #if defined(IMAGE_BASED_LIGHTING)
@@ -421,59 +430,26 @@ vec3 computeIBLSpecular(float roughness,
 }
 #endif
 
-/**
-  Build struct to pass to various functions
-
-struct PBRInfo{
-    vec3 n;                                // normal at surface point
-    vec3 v;                                // view vector : from surface point to camera
-    float perceptualRoughness;    // roughness value, as authored by the model creator (input to shader)
-    float NdotL;                  // cos angle between normal and light direction
-    float NdotV;                  // cos angle between normal and view direction
-    float NdotH;                  // cos angle between normal and half vector
-    float LdotH;                  // cos angle between light direction and half vector
-    float VdotH;                  // cos angle between view direction and half vector
-    vec3 dielectricF0;            // dielectric specular/reflectance color based on IOR
-    vec3 reflectance0;            // full reflectance color (normal incidence angle)
-    vec3 reflectance90;           // reflectance color at grazing angle
-    float alphaRoughness;         // roughness mapped to a more linear change in the roughness
-    vec3 diffuseColor;            // color contribution from diffuse lighting
-    vec3 specularColor;           // color contribution from specular lighting
-  vec3 emissiveColor;           // color contribution from emissive color/texture
-};
-
-
-
-*/
-
-// PBRInfo buildMetallicRoughnessPBRInfo(MaterialData Material){
-
-//   PBRInfo pbrData;
-
-//   // DielectricSpecular == 0.04 <--> ior == 1.5
-//   float DielectricSpecular = pow(((Material.ior - 1) / (Material.ior + 1)), 2);
-//   // dielectric material f0
-//   pbrData.dielectricF0 = vec3(DielectricSpecular);
-
-//   return pbrData;
-// }// buildMetallicRoughnessPBRInfo
-
-
 
 void main() {
-  // // BUild structure used to hold data for various calculations, for simplification.
-  // PBRInfo pbrData = buildPBRInfo(Material, pbrData);
+///////////////////////
 
-  // DielectricSpecular == 0.04 <--> ior == 1.5
-  float DielectricSpecular = pow(((Material.ior - 1) / (Material.ior + 1)), 2);
-  //Calculate clear coat contributions based on an IOR_cc == 1.5
+// normal map will only work if both normal texture and the tangents exist.
+// if only normal texture is set, normal mapping will be safely ignored.
+// n is the normal in *world* space, NOT camera space
+#if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENT)
+  // normal is now in the camera space
+  vec3 n = getNormalFromNormalMap();
+#else
+  vec3 n = normalize(normal);
+  // This means backface culling is disabled,
+  // which implies it is rendering with the "double sided" material.
+  // Based on glTF 2.0 Spec, the normal must be reversed for back faces
+  if (gl_FrontFacing == false) {
+    n *= -1.0;
+  }
+#endif
 
-
-
-
-  // Achromatic dielectric material f0 : fresnel reflectance at normal incidence
-  // based on given IOR
-  vec3 dielectricF0 = vec3(DielectricSpecular);
 
   vec3 emissiveColor = Material.emissiveColor;
 #if defined(EMISSIVE_TEXTURE)
@@ -482,12 +458,6 @@ void main() {
   //TODO : emissive color is darkened by clearcoat.
   //https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_clearcoat
   fragmentColor = vec4(emissiveColor, 0.0);
-
-
-  //TODO clear coat implementation
-  float clearCoatStrength = 0.0f;
-  float clearCoatPerceivedRoughness = 0.0;
-  float clearCoatCoating_f0 = 0.4;
 
 #if (LIGHT_COUNT > 0)
   vec4 baseColor = Material.baseColor;
@@ -508,27 +478,77 @@ float metallic = Material.metallic;
   metallic *= texture(MetallicRoughnessTexture, texCoord).b;
 #endif
 
+
+/////////////////
+//Clearcoat layer support
+
 #if defined(CLEAR_COAT)
-
+  //TODO if clearCoatStrength is 0 then ignore clearcoat
+  float clearCoatStrength = ClearCoat.factor;
+#if defined(CLEAR_COAT_TEXTURE)
+  clearCoatStrength *= texture(ClearCoatTexture, texCoord).r;
 #endif
-float clearCoatRoughness = clearCoatPerceivedRoughness * clearCoatPerceivedRoughness;
 
-
-// normal map will only work if both normal texture and the tangents exist.
-// if only normal texture is set, normal mapping will be safely ignored.
-// n is the normal in *world* space, NOT camera space
-#if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENT)
-  // normal is now in the camera space
-  vec3 n = getNormalFromNormalMap();
-#else
-  vec3 n = normalize(normal);
-  // This means backface culling is disabled,
-  // which implies it is rendering with the "double sided" material.
-  // Based on glTF 2.0 Spec, the normal must be reversed for back faces
-  if (gl_FrontFacing == false) {
-    n *= -1.0;
-  }
+  float clearCoatPerceivedRoughness = ClearCoat.roughness;
+#if defined(CLEAR_COAT_ROUGHNESS_TEXTURE)
+  clearCoatPerceivedRoughness *= texture(ClearCoatRoughnessTexture, texCoord).g;
 #endif
+
+  float clearCoatRoughness = clearCoatPerceivedRoughness * clearCoatPerceivedRoughness;
+
+  //
+  // If clearcoatNormalTexture is not given, no normal mapping is applied to the clear
+  // coat layer, even if normal mapping is applied to the base material. Otherwise,
+  // clearcoatNormalTexture may be a reference to the same normal map used by the
+  // base material, or any other compatible normal map.
+
+  vec3 clearCoatNormal = n;
+  // TODO Need to explore this
+#if defined(CLEAR_COAT_NORMAL_TEXTURE)
+    // // NEED tangent frame
+  // vec3 clearcoatMapN =
+  //  normalize((texture(ClearCoatNormalTexture, texCoord).xyz * 2.0 - 1.0) *
+  //               vec3(ClearCoat.normalTextureScale, ClearCoat.normalTextureScale, 1.0));
+    // clearcoatNormal = normalize( tbn * clearcoatMapN );
+#endif
+
+  // Assuming dielectric reflectance of 0.4, which corresponds to
+  // polyurethane coating
+  float clearCoatCoating_f0 = 0.4;
+  // TODO : need to use this to modify the base dielectric reflectance,
+  // since it darkens the reflectance of the underlying material
+
+#endif // CLEAR_COAT
+
+
+
+/////////////////
+//Specular layer support
+#if defined(SPECULAR_LAYER)
+
+  float specularLayerStrength = SpecularLayer.factor;
+#if defined(SPECULAR_LAYER_TEXTURE)
+  specularLayerStrength *= texture(SpecularLayerTexture, texCoord).a;
+#endif
+  // The F0 color of the specular reflection (linear RGB)
+  vec3 specularLayerColorFactor = SpecularLayer.colorFactor;
+
+#if defined(SPECULAR_LAYER_COLOR_TEXTURE)
+//TODO SpecularLayerColorTexture is in sRGB
+  specularLayerColorFactor *= texture(SpecularLayerColorTexture, texCoord).rgb;
+#endif
+
+#endif // SPECULAR_LAYER
+
+
+  // DielectricSpecular == 0.04 <--> ior == 1.5
+  float DielectricSpecular = pow(((Material.ior - 1) / (Material.ior + 1)), 2);
+  //Calculate clearcoat contributions based on an IOR_cc == 1.5
+
+
+  // Achromatic dielectric material f0 : fresnel reflectance at normal incidence
+  // based on given IOR
+  vec3 dielectricF0 = vec3(DielectricSpecular);
 
 
   // diffuse color remapping based on metallic value
@@ -547,8 +567,9 @@ float clearCoatRoughness = clearCoatPerceivedRoughness * clearCoatPerceivedRough
   vec3 view = normalize(CameraWorldPos - position);
 
   // view projected on normal
-  float n_dot_v = abs(dot(n, view));  /// + epsilon;
+  float n_dot_v = abs(dot(n, view));
 
+  //Contributions for diffuse and specular
   vec3 diffuseContrib = vec3(0.0, 0.0, 0.0);
   vec3 specularContrib = vec3(0.0, 0.0, 0.0);
 
@@ -563,14 +584,14 @@ float clearCoatRoughness = clearCoatPerceivedRoughness * clearCoatPerceivedRough
     // Incident light vector - directions have been flipped for directional
     // lights before being fed to uniform so we can use the same function for both
     // kinds of lights without a condition check
-    vec3 inLightVec =
+    vec3 toLightVec =
           LightDirections[iLight].xyz - (position * LightDirections[iLight].w);
-    // either the length of the inLightVec vector or 0 (for directional
+    // either the length of the toLightVec vector or 0 (for directional
     // lights, to enable attenuation calc to stay 1)
-    highp float dist = length(inLightVec) * LightDirections[iLight].w;
-    // either the squared length of the inLightVec vector or 1 (for
+    highp float dist = length(toLightVec) * LightDirections[iLight].w;
+    // either the squared length of the toLightVec vector or 1 (for
     // directional lights, to prevent divide by 0)
-    highp float sqDist = ((pow(dist, 2.0) - 1) * LightDirections[iLight].w) + 1;
+    highp float sqDist = (((dist * dist) - 1) * LightDirections[iLight].w) + 1;
 
     // If LightRanges is 0 for whatever reason, clamp it to a small value to
     // avoid a NaN when dist is 0 as well (which is the case for
@@ -582,19 +603,19 @@ float clearCoatRoughness = clearCoatPerceivedRoughness * clearCoatPerceivedRough
         clamp(1 - pow(dist / max(LightRanges[iLight], epsilon), 4.0), 0.0, 1.0) /
         sqDist;
 
-    // radiant intensity
-    vec3 lightRadiance = LightColors[iLight] * attenuation;
     //if color is not visible, skip contribution
-    if (lightRadiance == vec3(0.0)){
+    if (attenuation == 0){
       continue;
     }
+    // radiant intensity
+    vec3 lightRadiance = LightColors[iLight] * attenuation;
 
     // light source direction: a vector from the shading location to the
     // light
-    vec3 light = normalize(inLightVec);
+    vec3 light = normalize(toLightVec);
     // projection of normal to light
     // clamp to small epsilon
-    float n_dot_l = clamp(dot(n, light), epsilon, 1.0);
+    float n_dot_l = clamp(dot(n, light), 0.0, 1.0);
 
     // if (n_dot_l > 0.0) {
     // halfway between the light and view vector
@@ -625,9 +646,12 @@ float clearCoatRoughness = clearCoatPerceivedRoughness * clearCoatPerceivedRough
     vec3 currentSpecularContrib = projLightRadiance * INV_PI *
                              BRDF_Specular(fresnel, alphaRoughness, n_dot_l,
                                            n_dot_v, n_dot_h);
-    // scalar clearcoat contribution
-    float ccFesnel = fresnelSchlick(clearCoatCoating_f0, v_dot_h) * clearCoatStrength;
 
+#if defined(CLEAR_COAT)
+    // scalar clearcoat contribution
+
+    float ccFesnel = fresnelSchlick(clearCoatCoating_f0, v_dot_h) * clearCoatStrength;
+#endif // CLEAR_COAT
 
 #if defined(SHADOWS_VSM)
     float shadow =
@@ -665,6 +689,8 @@ float clearCoatRoughness = clearCoatPerceivedRoughness * clearCoatPerceivedRough
 #if defined(OBJECT_ID)
   fragmentObjectId = ObjectId;
 #endif
+
+
 // PBR equation debug
 // "none", "Diff (l,n)", "F (l,h)", "G (l,v,h)", "D (h)", "Specular"
 #if defined(PBR_DEBUG_DISPLAY)

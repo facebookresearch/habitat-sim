@@ -73,9 +73,22 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
         "#define ATTRIBUTE_LOCATION_TANGENT4 {}\n", Tangent4::Location);
   }
   // TODO: Occlusion texture to be added.
-  const bool isTextured = bool(
-      flags_ & (Flag::BaseColorTexture | Flag::NoneRoughnessMetallicTexture |
-                Flag::NormalTexture | Flag::EmissiveTexture));
+  const bool isTextured =
+      bool((flags_ &
+            (Flag::BaseColorTexture | Flag::RoughnessTexture |
+             Flag::NoneRoughnessMetallicTexture | Flag::MetallicTexture |
+             Flag::NormalTexture | Flag::EmissiveTexture))) ||
+      // clear coat
+      ((flags_ >= Flag::ClearCoatTexture) ||
+       (flags_ >= Flag::ClearCoatRoughnessTexture) ||
+       (flags_ >= Flag::ClearCoatNormalTexture)) ||
+      // specular layer
+      ((flags_ >= Flag::SpecularLayerTexture) ||
+       (flags_ >= Flag::SpecularLayerColorTexture)) ||
+      // transmission layer
+      (flags_ >= Flag::TransmissionLayerTexture) ||
+      // volume layer
+      (flags_ >= Flag::VolumeLayerThicknessTexture);
 
   if (isTextured) {
     attributeLocationsStream
@@ -127,6 +140,12 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
 
       // Specular Layer
       .addSource(flags_ & Flag::SpecularLayer ? "#define SPECULAR_LAYER\n" : "")
+      .addSource(flags_ >= Flag::SpecularLayerTexture
+                     ? "#define SPECULAR_LAYER_TEXTURE\n"
+                     : "")
+      .addSource(flags_ >= Flag::SpecularLayerColorTexture
+                     ? "#define SPECULAR_LAYER_COLOR_TEXTURE\n"
+                     : "")
 
       .addSource(flags_ & Flag::PrecomputedTangent
                      ? "#define PRECOMPUTED_TANGENT\n"
@@ -218,24 +237,41 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   iorUniform_ = uniformLocation("Material.ior");
   emissiveColorUniform_ = uniformLocation("Material.emissiveColor");
 
-  // clearcoat data
-
-  if (flags_ & Flag::ClearCoatLayer) {
-    clearCoatFactorUniform_ = uniformLocation("clearCoatData.factor");
-    clearCoatRoughnessUniform_ = uniformLocation("clearCoatData.roughness");
-    if (flags_ >= Flag::ClearCoatTexture) {
-      setUniform(uniformLocation("ClearCoatTexture"),
-                 pbrTextureUnitSpace::TextureUnit::ClearCoatFactor);
+  // clearcoat and specular layer data and textures
+  if (lightingIsEnabled()) {
+    if (flags_ & Flag::ClearCoatLayer) {
+      clearCoatFactorUniform_ = uniformLocation("ClearCoat.factor");
+      clearCoatRoughnessUniform_ = uniformLocation("ClearCoat.roughness");
+      clearCoatTextureScaleUniform_ =
+          uniformLocation("ClearCoat.normalTextureScale");
+      if (flags_ >= Flag::ClearCoatTexture) {
+        setUniform(uniformLocation("ClearCoatTexture"),
+                   pbrTextureUnitSpace::TextureUnit::ClearCoatFactor);
+      }
+      if (flags_ >= Flag::ClearCoatRoughnessTexture) {
+        setUniform(uniformLocation("ClearCoatRoughnessTexture"),
+                   pbrTextureUnitSpace::TextureUnit::ClearCoatRoughenss);
+      }
+      if (flags_ >= Flag::ClearCoatNormalTexture) {
+        setUniform(uniformLocation("ClearCoatNormalTexture"),
+                   pbrTextureUnitSpace::TextureUnit::ClearCoatNormal);
+      }
     }
-    if (flags_ >= Flag::ClearCoatRoughnessTexture) {
-      setUniform(uniformLocation("ClearCoatRoughnessTexture"),
-                 pbrTextureUnitSpace::TextureUnit::ClearCoatRoughenss);
+    // specular layer data and textures
+    if (flags_ & Flag::SpecularLayer) {
+      specularLayerFactorUniform_ = uniformLocation("SpecularLayer.factor");
+      specularLayerColorFactorUniform_ =
+          uniformLocation("SpecularLayer.colorFactor");
+      if (flags_ >= Flag::SpecularLayerTexture) {
+        setUniform(uniformLocation("SpecularLayerTexture"),
+                   pbrTextureUnitSpace::TextureUnit::SpecularLayer);
+      }
+      if (flags_ >= Flag::SpecularLayerColorTexture) {
+        setUniform(uniformLocation("SpecularLayerColorTexture"),
+                   pbrTextureUnitSpace::TextureUnit::SpecularLayerColor);
+      }
     }
-    if (flags_ >= Flag::ClearCoatNormalTexture) {
-      setUniform(uniformLocation("ClearCoatNormalTexture"),
-                 pbrTextureUnitSpace::TextureUnit::ClearCoatNormal);
-    }
-  }
+  }  // if lighting is enabled
 
   // lights
   if (lightCount_ != 0u) {
@@ -269,7 +305,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   setModelMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
   setProjectionMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
   if (lightingIsEnabled()) {
-    setBaseColor(Magnum::Color4{0.7f});
+    setBaseColor(Mn::Color4{0.7f});
     setRoughness(0.0f);
     setMetallic(1.0f);
     setIndexOfRefraction(1.5);
@@ -277,10 +313,15 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
       setNormalTextureScale(1.0f);
     }
     setNormalMatrix(Mn::Matrix3x3{Mn::Math::IdentityInit});
-  }
-  if (flags_ & Flag::ClearCoatLayer) {
-    setClearCoatFactor(0.0f);
-    setClearCoatRoughness(0.0f);
+    if (flags_ & Flag::ClearCoatLayer) {
+      setClearCoatFactor(0.0f);
+      setClearCoatRoughness(0.0f);
+      setClearCoatNormalTextureScale(1.0f);
+    }
+    if (flags_ & Flag::SpecularLayer) {
+      setSpecularLayerFactor(1.0f);
+      setSpecularLayerColorFactor(Mn::Color3{1.0f});
+    }
   }
 
   if (lightCount_ != 0u) {
@@ -296,7 +337,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
                                                     Mn::Constants::inf()});
   }
 
-  setEmissiveColor(Magnum::Color3{0.0f});
+  setEmissiveColor(Mn::Color3{0.0f});
   PbrShader::PbrEquationScales scales;
   if (flags_ & Flag::ImageBasedLighting) {
     // These are empirical numbers. Discount the diffuse light from IBL so the
@@ -361,12 +402,7 @@ PbrShader& PbrShader::bindEmissiveTexture(Mn::GL::Texture2D& texture) {
   return *this;
 }
 
-/**
- * @brief Bind the clearcoat factor texture
- * @return Reference to self (for method chaining)
- */
-PbrShader& PbrShader::bindClearCoatFactorTexture(
-    Magnum::GL::Texture2D& texture) {
+PbrShader& PbrShader::bindClearCoatFactorTexture(Mn::GL::Texture2D& texture) {
   CORRADE_ASSERT(flags_ >= Flag::ClearCoatTexture,
                  "PbrShader::bindClearCoatFactorTexture(): the shader was not "
                  "created with clearcoat factor texture enabled",
@@ -376,12 +412,9 @@ PbrShader& PbrShader::bindClearCoatFactorTexture(
   }
   return *this;
 }
-/**
- * @brief Bind the clearcoat roughness texture
- * @return Reference to self (for method chaining)
- */
+
 PbrShader& PbrShader::bindClearCoatRoughnessTexture(
-    Magnum::GL::Texture2D& texture) {
+    Mn::GL::Texture2D& texture) {
   CORRADE_ASSERT(
       flags_ >= Flag::ClearCoatRoughnessTexture,
       "PbrShader::bindClearCoatRoughnessTexture(): the shader was not "
@@ -393,18 +426,37 @@ PbrShader& PbrShader::bindClearCoatRoughnessTexture(
   return *this;
 }
 
-/**
- * @brief Bind the clearcoat normal texture
- * @return Reference to self (for method chaining)
- */
-PbrShader& PbrShader::bindClearCoatNormalTexture(
-    Magnum::GL::Texture2D& texture) {
+PbrShader& PbrShader::bindClearCoatNormalTexture(Mn::GL::Texture2D& texture) {
   CORRADE_ASSERT(flags_ >= Flag::ClearCoatNormalTexture,
                  "PbrShader::bindClearCoatNormalTexture(): the shader was not "
                  "created with clearcoat normal texture enabled",
                  *this);
   if (lightingIsEnabled()) {
     texture.bind(pbrTextureUnitSpace::TextureUnit::ClearCoatNormal);
+  }
+  return *this;
+}
+
+PbrShader& PbrShader::bindSpecularLayerTexture(Mn::GL::Texture2D& texture) {
+  CORRADE_ASSERT(flags_ >= Flag::SpecularLayerTexture,
+                 "PbrShader::bindSpecularLayerTexture(): the shader was not "
+                 "created with specular layer texture enabled",
+                 *this);
+  if (lightingIsEnabled()) {
+    texture.bind(pbrTextureUnitSpace::TextureUnit::SpecularLayer);
+  }
+  return *this;
+}
+
+PbrShader& PbrShader::bindSpecularLayerColorTexture(
+    Mn::GL::Texture2D& texture) {
+  CORRADE_ASSERT(
+      flags_ >= Flag::SpecularLayerColorTexture,
+      "PbrShader::bindSpecularLayerColorTexture(): the shader was not "
+      "created with specular layer color texture enabled",
+      *this);
+  if (lightingIsEnabled()) {
+    texture.bind(pbrTextureUnitSpace::TextureUnit::SpecularLayerColor);
   }
   return *this;
 }
@@ -427,7 +479,7 @@ PbrShader& PbrShader::bindBrdfLUT(Mn::GL::Texture2D& texture) {
   return *this;
 }
 
-PbrShader& PbrShader::bindPrefilteredMap(Magnum::GL::CubeMapTexture& texture) {
+PbrShader& PbrShader::bindPrefilteredMap(Mn::GL::CubeMapTexture& texture) {
   CORRADE_ASSERT(flags_ & Flag::ImageBasedLighting,
                  "PbrShader::bindPrefilteredMap(): the shader was not "
                  "created with image based lighting enabled",
@@ -437,7 +489,7 @@ PbrShader& PbrShader::bindPrefilteredMap(Magnum::GL::CubeMapTexture& texture) {
 }
 
 PbrShader& PbrShader::bindPointShadowMap(int index,
-                                         Magnum::GL::CubeMapTexture& texture) {
+                                         Mn::GL::CubeMapTexture& texture) {
   CORRADE_ASSERT(
       index >= 0 && index < 3,
       "PbrShader::bindPointShadowMap(): the texture index was illegal.", *this);
@@ -492,7 +544,7 @@ PbrShader& PbrShader::setBaseColor(const Mn::Color4& color) {
   return *this;
 }
 
-PbrShader& PbrShader::setEmissiveColor(const Magnum::Color3& color) {
+PbrShader& PbrShader::setEmissiveColor(const Mn::Color3& color) {
   setUniform(emissiveColorUniform_, color);
   return *this;
 }
@@ -518,10 +570,6 @@ PbrShader& PbrShader::setIndexOfRefraction(float ior) {
   return *this;
 }
 
-/**
- * @brief Set clearcoat intensity/factor
- * @return Reference to self (for method chaining)
- */
 PbrShader& PbrShader::setClearCoatFactor(float ccFactor) {
   if (lightingIsEnabled()) {
     setUniform(clearCoatFactorUniform_, ccFactor);
@@ -529,10 +577,6 @@ PbrShader& PbrShader::setClearCoatFactor(float ccFactor) {
   return *this;
 }
 
-/**
- * @brief Set clearcoat roughness
- * @return Reference to self (for method chaining)
- */
 PbrShader& PbrShader::setClearCoatRoughness(float ccRoughness) {
   if (lightingIsEnabled()) {
     setUniform(clearCoatRoughnessUniform_, ccRoughness);
@@ -540,6 +584,27 @@ PbrShader& PbrShader::setClearCoatRoughness(float ccRoughness) {
   return *this;
 }
 
+PbrShader& PbrShader::setClearCoatNormalTextureScale(float ccTextureScale) {
+  if (lightingIsEnabled()) {
+    setUniform(clearCoatTextureScaleUniform_, ccTextureScale);
+  }
+  return *this;
+}
+
+PbrShader& PbrShader::setSpecularLayerFactor(float specLayerFactor) {
+  if (lightingIsEnabled()) {
+    setUniform(specularLayerFactorUniform_, specLayerFactor);
+  }
+  return *this;
+}
+
+PbrShader& PbrShader::setSpecularLayerColorFactor(
+    const Mn::Color3& specLayerColorFactor) {
+  if (lightingIsEnabled()) {
+    setUniform(specularLayerColorFactorUniform_, specLayerColorFactor);
+  }
+  return *this;
+}
 PbrShader& PbrShader::setPbrEquationScales(const PbrEquationScales& scales) {
   Mn::Vector4 componentScales{scales.directDiffuse, scales.directSpecular,
                               scales.iblDiffuse, scales.iblSpecular};
@@ -557,7 +622,7 @@ PbrShader& PbrShader::setDebugDisplay(PbrDebugDisplay index) {
 }
 
 PbrShader& PbrShader::setCameraWorldPosition(
-    const Magnum::Vector3& cameraWorldPos) {
+    const Mn::Vector3& cameraWorldPos) {
   setUniform(cameraWorldPosUniform_, cameraWorldPos);
   return *this;
 }

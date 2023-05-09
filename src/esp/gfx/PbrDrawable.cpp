@@ -425,7 +425,8 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   if (flags_ & PbrShader::Flag::ClearCoatLayer) {
     (*shader_)
         .setClearCoatFactor(matCache.clearCoat.factor)
-        .setClearCoatRoughness(matCache.clearCoat.roughnessFactor);
+        .setClearCoatRoughness(matCache.clearCoat.roughnessFactor)
+        .setClearCoatNormalTextureScale(matCache.clearCoat.normalTextureScale);
     if (flags_ >= PbrShader::Flag::ClearCoatTexture) {
       shader_->bindClearCoatFactorTexture(*matCache.clearCoat.texture);
     }
@@ -435,6 +436,21 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
     }
     if (flags_ >= PbrShader::Flag::ClearCoatNormalTexture) {
       shader_->bindClearCoatNormalTexture(*matCache.clearCoat.normalTexture);
+    }
+  }
+
+  // specular layer data
+  if (flags_ & PbrShader::Flag::SpecularLayer) {
+    (*shader_)
+        .setSpecularLayerFactor(matCache.specularLayer.factor)
+        .setSpecularLayerColorFactor(matCache.specularLayer.colorFactor);
+
+    if (flags_ >= PbrShader::Flag::SpecularLayerTexture) {
+      shader_->bindSpecularLayerTexture(*matCache.specularLayer.texture);
+    }
+    if (flags_ >= PbrShader::Flag::SpecularLayerColorTexture) {
+      shader_->bindSpecularLayerColorTexture(
+          *matCache.specularLayer.colorTexture);
     }
   }
 
