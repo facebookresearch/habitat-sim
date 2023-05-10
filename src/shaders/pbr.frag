@@ -244,6 +244,9 @@ vec3 getNormalFromNormalMap() {
 // https://jcgt.org/published/0003/02/03/paper.pdf
 // See also
 // https://google.github.io/filament/Filament.md.html#materialsystem/specularbrdf/geometricshadowing(specularg)
+// n_dot_l : light projected on normal
+// n_dot_v : view projected on normal
+// arSq : alphaRoughness squared
 float V_GGX(float n_dot_l, float n_dot_v, float arSq) {
   float oneMArSq = (1.0 - arSq);
 
@@ -256,6 +259,7 @@ float V_GGX(float n_dot_l, float n_dot_v, float arSq) {
 // Approximation - mathematically wrong but faster without sqrt
 // all the sqrt terms are <= 1
 //https://google.github.io/filament/Filament.md.html#listing_approximatedspecularv
+// NOTE the argument here is alphaRoughness not alphaRoughness squared
 float V_GGXFast(float n_dot_l, float n_dot_v, float ar) {
     float oneMAr = (1.0 - ar);
     float GGXL = n_dot_v * (n_dot_l * oneMAr + ar);
@@ -274,11 +278,20 @@ float V_Kelemen(float v_dot_h){
 // Representation of a Roughened Surface for Ray Reflection" by T. S.
 // Trowbridge, and K. P. Reitz Follows the distribution function recommended in
 // the SIGGRAPH 2013 course notes from EPIC Games [1], Equation 3.
-float D_GGX(float n_dot_h, float arSq) {
-  float f = max(epsilon, (n_dot_h * n_dot_h) * (arSq - 1.0) + 1.0);
+// n_dot_h : half vector projected on normal
+// ar : alphaRoughness
+float D_GGX(float n_dot_h, float ar) {
+  float arNdotH = ar * n_dot_h;
+  float k = ar/(1-(n_dot_h * n_dot_h) + (arNdotH*arNdotH));
+  //division by Pi performed later
+  return k * k;
+}
+//Above should be more accurate, with less chance of underflow
+float D_GGX_old(float n_dot_h, float ar) {
+  float f = (n_dot_h * n_dot_h) * ((ar*ar) - 1.0) + 1.0;
+  //division by Pi performed later
   return arSq / (f * f);
 }
-
 // Fresnel specular coefficient at view angle using Schlick approx
 // http://graphicrants.blogspot.com/2013/08/specular-brdf-reference.html
 // https://github.com/wdas/brdf/tree/master/src/brdfs
@@ -364,15 +377,14 @@ vec3 BRDF_Specular(vec3 fresnel,
                    float n_dot_l,
                    float n_dot_v,
                    float n_dot_h) {
-  float arSq = alphaRoughness * alphaRoughness;
   vec3 specular = fresnel *
                   // Visibility function == G()/4(n_dot_l)(n_dot_v).
                   // Smith Height-Correlated visibility/occlusion function
                   // https://jcgt.org/published/0003/02/03/paper.pdf
-                  V_GGX(n_dot_l, n_dot_v, arSq) *
+                  V_GGX(n_dot_l, n_dot_v, alphaRoughness * alphaRoughness) *
                   // Specular D, normal distribution function (NDF),
                   // also known as ggxDistribution
-                  D_GGX(n_dot_h, arSq);
+                  D_GGX(n_dot_h, alphaRoughness);
   return specular;
 }//BRDF_Specular
 
@@ -391,7 +403,6 @@ vec3 BRDF_ClearCoatSpecular(vec3 ccFresnel,
                     float clearCoatRoughness,
                     float v_dot_h,
                    float cc_n_do_h) {
-  float ccRSq = clearCoatRoughness * clearCoatRoughness;
   //ccFresnel term is using polyurethane f0 = vec3(0.4)
   vec3 ccSpecular = ccFresnel *
                   // Visibility function == G()/4(n_dot_l)(n_dot_v).
@@ -400,7 +411,7 @@ vec3 BRDF_ClearCoatSpecular(vec3 ccFresnel,
                    V_Kelemen(v_dot_h) *
                   // Specular D, normal distribution function (NDF),
                   // also known as ggxDistribution, using clearcoat roughness
-                  D_GGX(cc_n_do_h, ccRSq);
+                  D_GGX(cc_n_do_h, clearCoatRoughness);
   return ccSpecular;
 }//BRDF_ClearCoatSpecular
 #endif // clearcoat support
