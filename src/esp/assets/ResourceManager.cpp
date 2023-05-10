@@ -2962,6 +2962,16 @@ void ResourceManager::loadTextures(Importer& importer,
           format = Mn::GL::textureFormat(image->compressedFormat());
         } else {
           format = Mn::GL::textureFormat(image->format());
+          // Modify swizzle for single channel textures so that they are
+          // greyscale
+          if (pixelFormatSize(image->format()) == 1) {
+#ifdef MAGNUM_TARGET_WEBGL
+            ESP_WARNING() << "Single Channel Texture ID" << iTexture
+                          << "Loaded as RGB";
+#else
+            currentTexture->setSwizzle<'r', 'r', 'r', '1'>();
+#endif
+          }
         }
 
         // For the very first level, allocate the texture
