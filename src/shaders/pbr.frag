@@ -292,6 +292,13 @@ float D_GGX_old(float n_dot_h, float ar) {
   //division by Pi performed later
   return arSq / (f * f);
 }
+
+// Approx 2.5 speedup over pow
+float fastPow5(float v){
+  float v2 = v * v;
+  return v2 * v2 * v;
+}
+
 // Fresnel specular coefficient at view angle using Schlick approx
 // http://graphicrants.blogspot.com/2013/08/specular-brdf-reference.html
 // https://github.com/wdas/brdf/tree/master/src/brdfs
@@ -303,11 +310,11 @@ float D_GGX_old(float n_dot_h, float ar) {
 // v_dot_h: <view, halfVector> view projected on half vector
 //          view: camera direction, aka light outgoing direction
 //          halfVector: half vector of light and view
-vec3 fresnelSchlick(vec3 f0, float v_dot_h) {
-  return f0 + (vec3(1.0) - f0) * pow(1.0 - v_dot_h, 5.0);
+vec3 fresnelSchlick(vec3 f0, float f90, float v_dot_h) {
+  return f0 + (vec3(f90) - f0) * fastPow5(1.0 - v_dot_h);
 }
 float fresnelSchlick(float f0, float f90s, float v_dot_h) {
-  return f0 + (f90s - f0) * pow(1.0 - v_dot_h, 5.0);
+  return f0 + (f90s - f0) * fastPow5(1.0 - v_dot_h);
 }
 float fresnelSchlick(float f0, float v_dot_h) {
   return fresnelSchlick(f0, 1.0, v_dot_h);
@@ -337,7 +344,7 @@ vec3 BRDF_BurleyDiffuse(vec3 diffuseColor,
 
 
 // Empirically derived max energy correcting factor, based on perceptual roughness - see Frostbite engine doc
-const float NRG_INTERP_MAX = 1.0/1.51;
+const float NRG_INTERP_MAX = 0.662251656;//1.0/1.51;
 // Burley/Disney diffuse BRDF, from here :
 // http://blog.selfshadow.com/publications/s2012-shading-course/burley/s2012_pbs_disney_brdf_notes_v3.pdf
 // renormalized for better energy conservation from
@@ -442,6 +449,10 @@ vec3 computeIBLSpecular(float roughness,
 #endif
 
 
+
+
+
+
 void main() {
 ///////////////////////
 
@@ -466,8 +477,6 @@ void main() {
 #if defined(EMISSIVE_TEXTURE)
   emissiveColor *= texture(EmissiveTexture, texCoord).rgb;
 #endif
-  //TODO : emissive color is darkened by clearcoat.
-  //https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_clearcoat
   fragmentColor = vec4(emissiveColor, 0.0);
 
 #if (LIGHT_COUNT > 0)
@@ -476,19 +485,44 @@ void main() {
   baseColor *= texture(BaseColorTexture, texCoord);
 #endif
 
-float perceivedRoughness = Material.roughness;
+/////////////////
+// Initialization\
+  // Index of refraction 1.5 yields 0.04 dielectric fresnel reflectance at normal incidence
+  float ior = Material.ior;
+
+/////////////////
+//Roughness calc
+
+  float perceivedRoughness = Material.roughness;
 #if defined(NONE_ROUGHNESS_METALLIC_TEXTURE)
   perceivedRoughness *= texture(MetallicRoughnessTexture, texCoord).g;
 #endif
+  // clamp roughness to prevent dennormals in distribution function calc
+  perceivedRoughness = clamp(perceivedRoughness, 0.045, 1.0);
   // Roughness is authored as perceptual roughness by convention,
   // convert to more linear roughness mapping by squaring the perceptual roughness.
   float alphaRoughness = perceivedRoughness * perceivedRoughness;
+
+
+/////////////////
+//Metalness calc
 
 float metallic = Material.metallic;
 #if defined(NONE_ROUGHNESS_METALLIC_TEXTURE)
   metallic *= texture(MetallicRoughnessTexture, texCoord).b;
 #endif
 
+/////////////////
+// Diffuse color calc
+
+  // diffuse color remapping based on metallic value (aka c_diff)
+  // https://google.github.io/filament/Filament.md.html#listing_basecolortodiffuse
+  vec3 diffuseColor =  baseColor.rgb * (1 - metallic);
+
+
+
+  //TODO : diffuse color is darkened by clearcoat.
+  //https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_clearcoat
 
 /////////////////
 //Clearcoat layer support
@@ -504,8 +538,14 @@ float metallic = Material.metallic;
 #if defined(CLEAR_COAT_ROUGHNESS_TEXTURE)
   clearCoatPerceivedRoughness *= texture(ClearCoatRoughnessTexture, texCoord).g;
 #endif
-
+  // clamp clearcoat roughness to prevent dennormals in distribution function calc
+  clearCoatPerceivedRoughness = clamp(clearCoatPerceivedRoughness, 0.045, 1.0);
   float clearCoatRoughness = clearCoatPerceivedRoughness * clearCoatPerceivedRoughness;
+
+
+  // TODO
+  //Calculate clearcoat contributions based on an IOR_cc == 1.5
+  //since clearcoat affects underlying diffuse material
 
   //
   // If clearcoatNormalTexture is not given, no normal mapping is applied to the clear
@@ -535,44 +575,48 @@ float metallic = Material.metallic;
 
 /////////////////
 //Specular layer support
-#if defined(SPECULAR_LAYER)
-
-  float specularLayerStrength = SpecularLayer.factor;
-#if defined(SPECULAR_LAYER_TEXTURE)
-  specularLayerStrength *= texture(SpecularLayerTexture, texCoord).a;
-#endif
-  // The F0 color of the specular reflection (linear RGB)
-  vec3 specularLayerColorFactor = SpecularLayer.colorFactor;
-
-#if defined(SPECULAR_LAYER_COLOR_TEXTURE)
-//TODO SpecularLayerColorTexture is in sRGB
-  specularLayerColorFactor *= texture(SpecularLayerColorTexture, texCoord).rgb;
-#endif
-
-#endif // SPECULAR_LAYER
-
+  //Modifies fresnel terms
 
   // DielectricSpecular == 0.04 <--> ior == 1.5
-  float DielectricSpecular = pow(((Material.ior - 1) / (Material.ior + 1)), 2);
-  //Calculate clearcoat contributions based on an IOR_cc == 1.5
-
+  // If clearcoat is present, may modify IOR
+  float DielectricSpecular = pow(((ior - 1) / (ior + 1)), 2);
 
   // Achromatic dielectric material f0 : fresnel reflectance at normal incidence
   // based on given IOR
-  vec3 dielectricF0 = vec3(DielectricSpecular);
+  vec3 dielectric_f0 = vec3(DielectricSpecular);
+
+  // glancing incidence specular reflectance
+  float specularColor_f90 = 1.0;
+
+#if defined(SPECULAR_LAYER)
+
+  float specularWeight = SpecularLayer.factor;
+#if defined(SPECULAR_LAYER_TEXTURE)
+  specularWeight *= texture(SpecularLayerTexture, texCoord).a;
+#endif
+  // The F0 color of the specular reflection (linear RGB)
+  vec3 specularLayerColor = SpecularLayer.colorFactor;
+
+#if defined(SPECULAR_LAYER_COLOR_TEXTURE)
+  //TODO SpecularLayerColorTexture is in sRGB
+  specularLayerColor *= texture(SpecularLayerColorTexture, texCoord).rgb;
+#endif
+  // Recalculate specularColor_f0 and specularColor_f90 based on passed quantities
+  // see https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_specular
+  dielectric_f0 = min(dielectric_f0 *specularLayerColor, vec3(1.0)) * specularWeight;
+
+  specularColor_f90 = mix(specularWeight, 1.0, metallic);
+
+#endif // SPECULAR_LAYER
+  // compute specular reflectance (fresnel) at normal incidence
+  // for dielectric or metallic, using IOR-derived fresnel reflectance
+  // accounting for specular layers
+  vec3 specularColor_f0 = mix(dielectric_f0, baseColor.rgb, metallic);
 
 
-  // diffuse color remapping based on metallic value
-  // https://google.github.io/filament/Filament.md.html#listing_basecolortodiffuse
-  vec3 diffuseColor =  baseColor.rgb * (1 - metallic);
 
-  // compute specular reflectance at normal incidence
-  // for nonmetal or metallic, using IOR-derived fresnel reflectance
-  vec3 specularColor_f0 = mix(dielectricF0, baseColor.rgb, metallic);
-
-
-  /////////////////
-  // vectors
+/////////////////
+// vectors
   // View is the normalized vector from the shading location to the camera
   // in *world space*
   vec3 view = normalize(CameraWorldPos - position);
@@ -642,7 +686,7 @@ float metallic = Material.metallic;
     vec3 projLightRadiance = lightRadiance * n_dot_l;
     // Calculate the Schlick approximation of the Fresnel coefficient
     // Fresnel Specular color at view angle == Schlick approx using view angle
-    vec3 fresnel = fresnelSchlick(specularColor_f0, v_dot_h);
+    vec3 fresnel = fresnelSchlick(specularColor_f0, specularColor_f90, v_dot_h);
 
     // Lambertian diffuse contribution
     // currentDiffuseContrib =
@@ -660,8 +704,10 @@ float metallic = Material.metallic;
 
 #if defined(CLEAR_COAT)
     // scalar clearcoat contribution
-
     float ccFesnel = fresnelSchlick(clearCoatCoating_f0, v_dot_h) * clearCoatStrength;
+
+
+
 #endif // CLEAR_COAT
 
 #if defined(SHADOWS_VSM)
@@ -700,8 +746,28 @@ float metallic = Material.metallic;
 #if defined(OBJECT_ID)
   fragmentObjectId = ObjectId;
 #endif
+// float specCCBlue = 0.0f;
+// #if defined(CLEAR_COAT_ROUGHNESS_TEXTURE) && defined(CLEAR_COAT_TEXTURE)
+//   specCCBlue = 1.0f;
+//   if (((int(10 * texCoord.x)) % 2) == ((int(10 * texCoord.y)) % 2 )){
+//   fragmentColor = vec4(texture(ClearCoatTexture, texCoord).r, 0.0, 0.0, 1.0);
 
+//   }  else {
+//   fragmentColor = vec4(0.0, texture(ClearCoatRoughnessTexture, texCoord).g, 0.0, 1.0);
 
+//   }
+//   //fragmentColor = vec4(0.0, texture(ClearCoatRoughnessTexture, texCoord).g, 0.0, 1.0);
+// #endif
+
+// #if defined(SPECULAR_LAYER_TEXTURE) && defined(SPECULAR_LAYER_COLOR_TEXTURE)
+//   if (((int(10 * texCoord.x)) % 2) == ((int(10 * texCoord.y)) % 2 )){
+//   fragmentColor = vec4(texture(SpecularLayerTexture, texCoord).a, 0.0, specCCBlue, 1.0);
+
+//   }  else {
+//   fragmentColor = vec4(texture(SpecularLayerColorTexture, texCoord).rgb, 1.0);
+
+//   }
+// #endif
 // PBR equation debug
 // "none", "Diff (l,n)", "F (l,h)", "G (l,v,h)", "D (h)", "Specular"
 #if defined(PBR_DEBUG_DISPLAY)
