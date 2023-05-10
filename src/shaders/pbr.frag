@@ -749,7 +749,7 @@ float metallic = Material.metallic;
 
   vec3 reflection = normalize(reflect(-view, n));
   vec3 iblSpecularContrib =
-      computeIBLSpecular(perceivedRoughness, n_dot_v, specularColor_f0, reflection);
+      computeIBLSpecular(alphaRoughness, n_dot_v, specularColor_f0, reflection);
   fragmentColor.rgb += iblSpecularContrib;
 #endif  // IMAGE_BASED_LIGHTING
 
