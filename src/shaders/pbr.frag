@@ -288,15 +288,25 @@ float D_GGX(float n_dot_h, float ar) {
 }
 //Above should be more accurate, with less chance of underflow
 float D_GGX_old(float n_dot_h, float ar) {
-  float f = (n_dot_h * n_dot_h) * ((ar*ar) - 1.0) + 1.0;
+  float arSq = ar * ar;
+  float f = (n_dot_h * n_dot_h) * (arSq - 1.0) + 1.0;
   //division by Pi performed later
   return arSq / (f * f);
 }
 
 // Approx 2.5 speedup over pow
-float fastPow5(float v){
+float pow5(float v){
   float v2 = v * v;
   return v2 * v2 * v;
+}
+
+float pow4(float v){
+  float v2 = v * v;
+  return v2 * v2;
+}
+
+float pow2(float v){
+  return v * v;
 }
 
 // Fresnel specular coefficient at view angle using Schlick approx
@@ -311,10 +321,10 @@ float fastPow5(float v){
 //          view: camera direction, aka light outgoing direction
 //          halfVector: half vector of light and view
 vec3 fresnelSchlick(vec3 f0, float f90, float v_dot_h) {
-  return f0 + (vec3(f90) - f0) * fastPow5(1.0 - v_dot_h);
+  return f0 + (vec3(f90) - f0) * pow5(1.0 - v_dot_h);
 }
 float fresnelSchlick(float f0, float f90s, float v_dot_h) {
-  return f0 + (f90s - f0) * fastPow5(1.0 - v_dot_h);
+  return f0 + (f90s - f0) * pow5(1.0 - v_dot_h);
 }
 float fresnelSchlick(float f0, float v_dot_h) {
   return fresnelSchlick(f0, 1.0, v_dot_h);
@@ -579,7 +589,7 @@ float metallic = Material.metallic;
 
   // DielectricSpecular == 0.04 <--> ior == 1.5
   // If clearcoat is present, may modify IOR
-  float DielectricSpecular = pow(((ior - 1) / (ior + 1)), 2);
+  float DielectricSpecular = pow2((ior - 1) / (ior + 1));
 
   // Achromatic dielectric material f0 : fresnel reflectance at normal incidence
   // based on given IOR
@@ -655,7 +665,7 @@ float metallic = Material.metallic;
     // Attenuation is 1 for directional lights, governed by inverse square law
     // otherwise
     highp float attenuation =
-        clamp(1 - pow(dist / max(LightRanges[iLight], epsilon), 4.0), 0.0, 1.0) /
+        clamp(1 - pow4(dist / (LightRanges[iLight] + epsilon)), 0.0, 1.0) /
         sqDist;
 
     //if color is not visible, skip contribution
