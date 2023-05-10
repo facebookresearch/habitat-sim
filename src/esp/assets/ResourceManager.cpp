@@ -2961,15 +2961,27 @@ void ResourceManager::loadTextures(Importer& importer,
         if (image->isCompressed()) {
           format = Mn::GL::textureFormat(image->compressedFormat());
         } else {
-          format = Mn::GL::textureFormat(image->format());
+          const auto pixelFormat = image->format();
+          format = Mn::GL::textureFormat(pixelFormat);
           // Modify swizzle for single channel textures so that they are
           // greyscale
-          if (pixelFormatSize(image->format()) == 1) {
+          if (pixelFormatChannelCount(pixelFormat) == 1) {
 #ifdef MAGNUM_TARGET_WEBGL
-            ESP_WARNING() << "Single Channel Texture ID" << iTexture
-                          << "Loaded as RGB";
+            ESP_WARNING() << "Single Channel Greyscale Texture : ID" << iTexture
+                          << "incorrecting displays as red instead of "
+                             "greyscale due to greyscale expansion"
+                             "not yet supported in WebGL.";
 #else
             currentTexture->setSwizzle<'r', 'r', 'r', '1'>();
+#endif
+          } else if (pixelFormatChannelCount(pixelFormat) == 2) {
+#ifdef MAGNUM_TARGET_WEBGL
+            ESP_WARNING() << "Two Channel Greyscale + Alpha Texture : ID"
+                          << iTexture
+                          << "incorrecting displays due to greyscale expansion"
+                             "not yet supported in WebGL.";
+#else
+            currentTexture->setSwizzle<'r', 'r', 'r', 'g'>();
 #endif
           }
         }
