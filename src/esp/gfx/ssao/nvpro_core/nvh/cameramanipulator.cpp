@@ -530,9 +530,9 @@ void CameraManipulator::fit(const nvmath::vec3f& boxMin,
       {
         // Keep the largest offset to see that vertex
         offset = std::max(
-            fabs(vct.y) / tan(nv_to_rad * yfov * 0.5f) + fabs(vct.z), offset);
+            fabs(vct.y) / tan(nv_to_rad * yfov * 0.5f) + fabs(vct.z), double(offset));
         offset = std::max(
-            fabs(vct.x) / tan(nv_to_rad * xfov * 0.5f) + fabs(vct.z), offset);
+            fabs(vct.x) / tan(nv_to_rad * xfov * 0.5f) + fabs(vct.z), double(offset));
       }
     }
   }
