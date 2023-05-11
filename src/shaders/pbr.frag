@@ -413,32 +413,23 @@ vec3 BRDF_Specular(vec3 fresnel,
 #if defined(CLEAR_COAT)
 // Calculate clearcoat specular contribution
 // ccFresnel : clearCoat-scaled specular f0 contribution of polyurethane coating
+// cc_l : LightInfo structure describing current light using CC normal.
 // clearCoatRoughness : clearCoatPerceptualRoughness squared
-// v_dot_h: <view, halfVector> view projected on half vector
-// cc_n_do_h : clearcoat normal vector dotted to half vector
-//     normal: normal direction
-//     light: light source direction
-//     view: camera direction, aka light outgoing direction
-//     halfVector: half vector of light and view
 vec3 BRDF_ClearCoatSpecular(vec3 ccFresnel,
-                    float clearCoatRoughness,
-                    float v_dot_h,
-                   float cc_n_do_h) {
+                  LightInfo cc_l,
+                    float clearCoatRoughness) {
   //ccFresnel term is using polyurethane f0 = vec3(0.4)
   vec3 ccSpecular = ccFresnel *
                   // Visibility function == G()/4(n_dot_l)(n_dot_v).
                   // Smith Height-Correlated visibility/occlusion function
                   // https://jcgt.org/published/0003/02/03/paper.pdf
-                   V_Kelemen(v_dot_h) *
+                   V_Kelemen(cc_l.v_dot_h) *
                   // Specular D, normal distribution function (NDF),
                   // also known as ggxDistribution, using clearcoat roughness
-                  D_GGX(cc_n_do_h, clearCoatRoughness);
+                  D_GGX(cc_l.n_dot_h, clearCoatRoughness);
   return ccSpecular;
 }//BRDF_ClearCoatSpecular
 #endif // clearcoat support
-
-
-
 
 #if defined(IMAGE_BASED_LIGHTING)
 // diffuseColor: diffuse color
@@ -446,8 +437,7 @@ vec3 BRDF_ClearCoatSpecular(vec3 ccFresnel,
 vec3 computeIBLDiffuse(vec3 diffuseColor, vec3 n) {
   // diffuse part = diffuseColor * irradiance
   // return diffuseColor * texture(IrradianceMap, n).rgb * Scales.iblDiffuse;
-  return diffuseColor * tonemap(texture(IrradianceMap, n)).rgb *
-         ComponentScales[IblDiffuse];
+  return diffuseColor * tonemap(texture(IrradianceMap, n)).rgb;
 }
 
 vec3 computeIBLSpecular(float roughness,
@@ -459,13 +449,33 @@ vec3 computeIBLSpecular(float roughness,
   vec3 prefilteredColor =
       tonemap(textureLod(PrefilteredMap, reflectionDir, lod)).rgb;
 
-  return prefilteredColor * (specularReflectance * brdf.x + brdf.y) *
-         ComponentScales[IblSpecular];
+  return prefilteredColor * (specularReflectance * brdf.x + brdf.y);
 }
 #endif // IMAGE_BASED_LIGHTING
 
-
-
+// Configure a LightInfo object
+// light : normalized point to light vector
+// lightRadiance : distance-attenuated light radiance color
+// n : normal
+// view : normalized view vector (point to camera)
+// n_dot_v : cos angle between n and view
+// (out) l : LightInfo structure being popualted
+void configureLightInfo(
+  vec3 light,
+  vec3 lightRadiance,
+  vec3 n,
+  vec3 view,
+  float n_dot_v,
+  out LightInfo l){
+    l.light = light;
+    l.lightRadiance = lightRadiance;
+    l.n_dot_v = n_dot_v;
+    l.n_dot_l = clamp(dot(n, light), 0.0, 1.0);
+    l.halfVector = normalize(light + view);
+    l.v_dot_h = clamp(dot(view, l.halfVector), 0.0, 1.0),
+    l.n_dot_h = clamp(dot(n, l.halfVector), 0.0, 1.0),
+    l.projLightRadiance = lightRadiance * l.n_dot_l;
+}//configureLightInfo
 
 
 
@@ -489,17 +499,19 @@ void main() {
 #endif
 
 
-  vec3 emissiveColor = Material.emissiveColor;
-#if defined(EMISSIVE_TEXTURE)
-  emissiveColor *= texture(EmissiveTexture, texCoord).rgb;
-#endif
-  fragmentColor = vec4(emissiveColor, 0.0);
-
 #if (LIGHT_COUNT > 0)
   vec4 baseColor = Material.baseColor;
 #if defined(BASECOLOR_TEXTURE)
   baseColor *= texture(BaseColorTexture, texCoord);
 #endif
+
+
+  vec3 emissiveColor = Material.emissiveColor;
+#if defined(EMISSIVE_TEXTURE)
+  emissiveColor *= texture(EmissiveTexture, texCoord).rgb;
+#endif
+  fragmentColor = vec4(emissiveColor, baseColor.a);
+
 
 /////////////////
 // Initialization
@@ -580,20 +592,20 @@ float metallic = Material.metallic;
   // clearcoatNormalTexture may be a reference to the same normal map used by the
   // base material, or any other compatible normal map.
 
-  vec3 clearCoatNormal = n;
+  vec3 cc_Normal = n;
   // TODO Need to explore this
 #if defined(CLEAR_COAT_NORMAL_TEXTURE)
     // // NEED tangent frame
   // vec3 clearcoatMapN =
   //  normalize((texture(ClearCoatNormalTexture, texCoord).xyz * 2.0 - 1.0) *
   //               vec3(ClearCoat.normalTextureScale, ClearCoat.normalTextureScale, 1.0));
-    // clearcoatNormal = normalize( tbn * clearcoatMapN );
+    // cc_Normal = normalize( tbn * clearcoatMapN );
 #endif
-
+  float cc_n_dot_v = abs(dot(cc_Normal, view));
   // Assuming dielectric reflectance of 0.4, which corresponds to
   // polyurethane coating with IOR == 1.5
-  float clearCoatCoating_f0 = 0.4;
-  float clearCoatCoating_f90 = 1.0;
+  vec3 clearCoatCoating_f0 = vec3(0.4);
+  vec3 clearCoatCoating_f90 = vec3(1.0);
   // We need to use this to modify the base dielectric reflectance,
   // since the clearcoat, adjacent to the material, is not air,
   // and it darkens the reflectance of the underlying material
@@ -647,9 +659,20 @@ float metallic = Material.metallic;
 /////////////////
 // lights
 
-  //Contributions for diffuse and specular
+  // Contributions for diffuse, specular, clearcoat
+  // for direct and image-based lighting
   vec3 diffuseContrib = vec3(0.0, 0.0, 0.0);
   vec3 specularContrib = vec3(0.0, 0.0, 0.0);
+#if defined(CLEAR_COAT)
+  vec3 clearCoatContrib = vec3(0.0, 0.0, 0.0);
+#endif // Clearcoat
+
+  vec3 iblDiffuseContrib = vec3(0.0, 0.0, 0.0);
+  vec3 iblSpecularContrib  = vec3(0.0, 0.0, 0.0);
+#if defined(CLEAR_COAT)
+  vec3 iblClearCoatContrib = vec3(0.0, 0.0, 0.0);
+#endif // Clearcoat
+
 
   // compute contribution of each light using the microfacet model
   // the following part of the code is inspired by the Phong.frag in Magnum
@@ -688,14 +711,8 @@ float metallic = Material.metallic;
 
     //Build a light info for this light
     LightInfo l;
-    l.light = normalize(toLightVec);
-    l.lightRadiance = LightColors[iLight] * attenuation;
-    l.n_dot_v = n_dot_v;
-    l.n_dot_l = clamp(dot(n, l.light), 0.0, 1.0);
-    l.halfVector = normalize(l.light + view);
-    l.v_dot_h = clamp(dot(view, l.halfVector), 0.0, 1.0),
-    l.n_dot_h = clamp(dot(n, l.halfVector), 0.0, 1.0),
-    l.projLightRadiance = l.lightRadiance * l.n_dot_l;
+    configureLightInfo(normalize(toLightVec), LightColors[iLight] * attenuation, n, view, n_dot_v, l);
+
 
     // Calculate the Schlick approximation of the Fresnel coefficient
     // Fresnel Specular color at view angle == Schlick approx using view angle
@@ -715,11 +732,14 @@ float metallic = Material.metallic;
                              BRDF_Specular(fresnel, l, alphaRoughness);
 
 #if defined(CLEAR_COAT)
+    LightInfo cc_l;
+    //build a clearcoat normal-based light info
+    configureLightInfo(l.light, l.lightRadiance, cc_Normal, view, cc_n_dot_v, cc_l);
     // scalar clearcoat contribution
     // RECALCULATE LIGHT for clearcoat normal
-    float ccFesnel = fresnelSchlick(clearCoatCoating_f0, clearCoatCoating_f90, l.v_dot_h) * clearCoatStrength;
-
-#else
+    vec3 ccFresnel = fresnelSchlick(clearCoatCoating_f0, clearCoatCoating_f90, cc_l.v_dot_h);
+        //
+    vec3 currentClearCoatContrib = cc_l.projLightRadiance * INV_PI * BRDF_ClearCoatSpecular(ccFresnel, cc_l, clearCoatRoughness);
 
 #endif // CLEAR_COAT
 
@@ -730,31 +750,64 @@ float metallic = Material.metallic;
              : 1.0f);
     currentDiffuseContrib *= shadow;
     currentSpecularContrib *= shadow;
+#if defined(CLEAR_COAT)
+    currentClearCoatContrib *= shadow;
+#endif // CLEAR_COAT
 #endif
-    //}  // for lights with non-transmissive surfaces
 
-    // Transmission here
+    // TODO Transmission here
     diffuseContrib += currentDiffuseContrib;
     specularContrib += currentSpecularContrib;
+#if defined(CLEAR_COAT)
+    clearCoatContrib += currentClearCoatContrib;
+#endif// CLEAR_COAT
 
   }  // for lights
 
   diffuseContrib *= ComponentScales[DirectDiffuse];
   specularContrib *= ComponentScales[DirectSpecular];
+  //TODO different scaling factor for clear coat?
+#if defined(CLEAR_COAT)
+    clearCoatContrib *= ComponentScales[DirectSpecular];
+#endif// CLEAR_COAT
 
   // TODO: use ALPHA_MASK to discard fragments
-  fragmentColor += vec4(diffuseContrib + specularContrib, baseColor.a);
+  fragmentColor.rgb += vec3(diffuseContrib + specularContrib);
 #endif  // if (LIGHT_COUNT > 0)
 
 #if defined(IMAGE_BASED_LIGHTING)
-  vec3 iblDiffuseContrib = computeIBLDiffuse(diffuseColor, n);
-  fragmentColor.rgb += iblDiffuseContrib;
+  iblDiffuseContrib = computeIBLDiffuse(diffuseColor, n) * ComponentScales[IblDiffuse];
 
   vec3 reflection = normalize(reflect(-view, n));
-  vec3 iblSpecularContrib =
-      computeIBLSpecular(alphaRoughness, n_dot_v, specularColor_f0, reflection);
-  fragmentColor.rgb += iblSpecularContrib;
+  iblSpecularContrib =
+      computeIBLSpecular(alphaRoughness, n_dot_v, specularColor_f0, reflection) *
+         ComponentScales[IblSpecular];
+
+  fragmentColor.rgb += vec3(iblDiffuseContrib + iblSpecularContrib);
+
+#if defined(CLEAR_COAT)
+  vec3 cc_reflection = normalize(reflect(-view, cc_Normal));
+  //TODO different scaling factor for clear coat?
+  iblClearCoatContrib =
+        computeIBLSpecular(clearCoatRoughness, cc_n_dot_v, clearCoatCoating_f0, cc_reflection) *
+        ComponentScales[IblSpecular];
+
+  // aggregate total clear coat contribution
+  clearCoatContrib += iblClearCoatContrib;
+#endif // CLEAR_COAT
+
 #endif  // IMAGE_BASED_LIGHTING
+
+#if defined(CLEAR_COAT)
+  // scale by clearcoat strength
+  clearCoatContrib *= clearCoatStrength;
+
+  //Get glgl fresnel contribution
+  vec3 ccFresnelGlbl = fresnelSchlick(clearCoatCoating_f0, clearCoatCoating_f90, cc_n_dot_v) * clearCoatStrength;
+
+  fragmentColor.rgb = (fragmentColor.rgb * (1-ccFresnelGlbl)) + clearCoatContrib;
+
+#endif // CLEAR_COAT
 
 #if defined(OBJECT_ID)
   fragmentObjectId = ObjectId;
