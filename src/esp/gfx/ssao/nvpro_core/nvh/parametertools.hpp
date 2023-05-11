@@ -150,11 +150,11 @@ class ParameterList {
     uint32_t readLength = 0;
     uint32_t writeLength = 0;
     union {
-      uint32_t u32;
+      uint32_t u32 = 0;
       int32_t s32;
       float f32;
       bool b;
-    } minmax[2] = {0, 0};
+    } minmax[2];
     union {
       uint32_t* u32;
       int32_t* s32;
