@@ -2965,21 +2965,22 @@ void ResourceManager::loadTextures(Importer& importer,
           format = Mn::GL::textureFormat(pixelFormat);
           // Modify swizzle for single channel textures so that they are
           // greyscale
-          if (pixelFormatChannelCount(pixelFormat) == 1) {
+          Mn::UnsignedInt pixelCount = pixelFormatChannelCount(pixelFormat);
+          if (pixelCount == 1) {
 #ifdef MAGNUM_TARGET_WEBGL
             ESP_WARNING() << "Single Channel Greyscale Texture : ID" << iTexture
-                          << "incorrecting displays as red instead of "
+                          << "incorrectly displays as red instead of "
                              "greyscale due to greyscale expansion"
-                             "not yet supported in WebGL.";
+                             "not yet implemented in WebGL.";
 #else
             currentTexture->setSwizzle<'r', 'r', 'r', '1'>();
 #endif
-          } else if (pixelFormatChannelCount(pixelFormat) == 2) {
+          } else if (pixelCount == 2) {
 #ifdef MAGNUM_TARGET_WEBGL
             ESP_WARNING() << "Two Channel Greyscale + Alpha Texture : ID"
                           << iTexture
-                          << "incorrecting displays due to greyscale expansion"
-                             "not yet supported in WebGL.";
+                          << "incorrectly displays due to greyscale expansion"
+                             "not yet implemented in WebGL.";
 #else
             currentTexture->setSwizzle<'r', 'r', 'r', 'g'>();
 #endif
