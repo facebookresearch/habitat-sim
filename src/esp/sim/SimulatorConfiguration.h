@@ -28,6 +28,8 @@ struct SimulatorConfiguration {
   bool createRenderer = true;
   //! Whether or not the agent can slide on NavMesh collisions.
   bool allowSliding = true;
+  //! Whether or not static objects will be included in the constructed NavMesh.
+  bool includeStaticObjectsInNavmesh = false;
   //! Enable or disable the frustum culling optimisation
   bool frustumCulling = true;
   /**

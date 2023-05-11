@@ -248,7 +248,11 @@ class Simulator(SimulatorBackend):
                 f"Recomputing navmesh for agent's height {default_agent_config.height} and radius"
                 f" {default_agent_config.radius}."
             )
-            self.recompute_navmesh(self.pathfinder, needed_settings)
+            self.recompute_navmesh(
+                self.pathfinder,
+                needed_settings,
+                include_static_objects=self.config.sim_cfg.include_static_objects_in_navmesh,
+            )
 
         self.pathfinder.seed(config.sim_cfg.random_seed)
 
