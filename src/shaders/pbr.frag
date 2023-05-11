@@ -237,6 +237,68 @@ vec3 getNormalFromNormalMap() {
 }
 #endif  // if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENT)
 
+
+
+
+// Structure holding light information to facilitate passing as
+// function arguments
+struct LightInfo{
+  // normalize vector to light from illumination point
+  vec3 light;
+  // distance-attenuated light color vector
+  vec3 lightRadiance;
+  // cos angle between normal and view
+  float n_dot_v;
+  // cos angle between normal and light
+  float n_dot_l;
+  // normalized vector halfway between the light and view vector
+  vec3 halfVector;
+  // cos angle between view and halfway vector
+  float v_dot_h;
+  // cos angle between normal and halfway vector
+  float n_dot_h;
+  // Radiance scaled by incident angle cosine
+  vec3 projLightRadiance;
+};
+
+
+// Approx 2.5 speedup over pow
+float pow5(float v){
+  float v2 = v * v;
+  return v2 * v2 * v;
+}
+
+float pow4(float v){
+  float v2 = v * v;
+  return v2 * v2;
+}
+
+float pow2(float v){
+  return v * v;
+}
+
+// Fresnel specular coefficient at view angle using Schlick approx
+// http://graphicrants.blogspot.com/2013/08/specular-brdf-reference.html
+// https://github.com/wdas/brdf/tree/master/src/brdfs
+// https://google.github.io/filament/Filament.md.html
+//
+// The following equation models the Fresnel reflectance term of the spec
+// equation (aka F())
+// f0 : specular color reflectance at normal incidence
+// v_dot_h: <view, halfVector> view projected on half vector
+//          view: camera direction, aka light outgoing direction
+//          halfVector: half vector of light and view
+vec3 fresnelSchlick(vec3 f0, vec3 f90, float v_dot_h) {
+  return f0 + (f90 - f0) * pow5(1.0 - v_dot_h);
+}
+float fresnelSchlick(float f0, float f90s, float v_dot_h) {
+  return f0 + (f90s - f0) * pow5(1.0 - v_dot_h);
+}
+float fresnelSchlick(float f0, float v_dot_h) {
+  return fresnelSchlick(f0, 1.0, v_dot_h);
+}
+
+
 // Smith Joint GGX visibility function
 // Note: Vis = G / (4 * n_dot_l * n_dot_v)
 // see Eric Heitz. 2014. Understanding the Masking-Shadowing Function in
@@ -244,26 +306,26 @@ vec3 getNormalFromNormalMap() {
 // https://jcgt.org/published/0003/02/03/paper.pdf
 // See also
 // https://google.github.io/filament/Filament.md.html#materialsystem/specularbrdf/geometricshadowing(specularg)
-// n_dot_l : light projected on normal
-// n_dot_v : view projected on normal
+// l : LightInfo structure describing current light
 // arSq : alphaRoughness squared
-float V_GGX(float n_dot_l, float n_dot_v, float arSq) {
+float V_GGX(LightInfo l, float arSq) {
   float oneMArSq = (1.0 - arSq);
 
-  float GGXL = n_dot_v * sqrt(n_dot_l * n_dot_l * oneMArSq + arSq);
-  float GGXV = n_dot_l * sqrt(n_dot_v * n_dot_v * oneMArSq + arSq);
+  float GGXL = l.n_dot_v * sqrt(l.n_dot_l * l.n_dot_l * oneMArSq + arSq);
+  float GGXV = l.n_dot_l * sqrt(l.n_dot_v * l.n_dot_v * oneMArSq + arSq);
 
-  return 0.5 / (GGXV + GGXL);
+  return 0.5 / max(GGXV + GGXL, epsilon);
 }
 
 // Approximation - mathematically wrong but faster without sqrt
 // all the sqrt terms are <= 1
 //https://google.github.io/filament/Filament.md.html#listing_approximatedspecularv
 // NOTE the argument here is alphaRoughness not alphaRoughness squared
-float V_GGXFast(float n_dot_l, float n_dot_v, float ar) {
+// l : LightInfo structure describing current light
+float V_GGXFast(LightInfo l, float ar) {
     float oneMAr = (1.0 - ar);
-    float GGXL = n_dot_v * (n_dot_l * oneMAr + ar);
-    float GGXV = n_dot_l * (n_dot_v * oneMAr + ar);
+    float GGXL = l.n_dot_v * (l.n_dot_l * oneMAr + ar);
+    float GGXV = l.n_dot_l * (l.n_dot_v * oneMAr + ar);
     return 0.5 / max(GGXV + GGXL, epsilon);
 }
 
@@ -294,62 +356,18 @@ float D_GGX_old(float n_dot_h, float ar) {
   return arSq / (f * f);
 }
 
-// Approx 2.5 speedup over pow
-float pow5(float v){
-  float v2 = v * v;
-  return v2 * v2 * v;
-}
-
-float pow4(float v){
-  float v2 = v * v;
-  return v2 * v2;
-}
-
-float pow2(float v){
-  return v * v;
-}
-
-// Fresnel specular coefficient at view angle using Schlick approx
-// http://graphicrants.blogspot.com/2013/08/specular-brdf-reference.html
-// https://github.com/wdas/brdf/tree/master/src/brdfs
-// https://google.github.io/filament/Filament.md.html
-//
-// The following equation models the Fresnel reflectance term of the spec
-// equation (aka F())
-// f0 : specular color reflectance at normal incidence
-// v_dot_h: <view, halfVector> view projected on half vector
-//          view: camera direction, aka light outgoing direction
-//          halfVector: half vector of light and view
-vec3 fresnelSchlick(vec3 f0, float f90, float v_dot_h) {
-  return f0 + (vec3(f90) - f0) * pow5(1.0 - v_dot_h);
-}
-float fresnelSchlick(float f0, float f90s, float v_dot_h) {
-  return f0 + (f90s - f0) * pow5(1.0 - v_dot_h);
-}
-float fresnelSchlick(float f0, float v_dot_h) {
-  return fresnelSchlick(f0, 1.0, v_dot_h);
-}
-
-
-
 //Burley diffuse contribution is scaled by diffuse color f0 after scatter contributions are calculated
 const float BUR_DIFF_F0 = 1.0f;
 // Burley/Disney diffuse BRDF, from here :
 // http://blog.selfshadow.com/publications/s2012-shading-course/burley/s2012_pbs_disney_brdf_notes_v3.pdf
-// n_dot_v: <normal, view>
-// n_dot_l: <normal, light>
-// v_dot_h: <view, halfVector>
-//     normal: normal direction
-//     light: light source direction
-//     view: camera direction, aka light outgoing direction
-//     halfVector: half vector of light and view
+// diffuseColor : metallness-scaled basedcolor
+// l : LightInfo structure describing current light
+// alphaRoughness : roughness (perceived roughness squared)
 vec3 BRDF_BurleyDiffuse(vec3 diffuseColor,
-                        float n_dot_v,
-                        float n_dot_l,
-                        float v_dot_h,    // == l_dot_h
+                        LightInfo l,
                         float alphaRoughness) {
-  float fd90 = 0.5f + (2.0 * v_dot_h * v_dot_h * alphaRoughness);
-  return fresnelSchlick(BUR_DIFF_F0, fd90, n_dot_l) * fresnelSchlick(BUR_DIFF_F0, fd90, n_dot_v) * diffuseColor;
+  float fd90 = 0.5f + (2.0 * l.v_dot_h * l.v_dot_h * alphaRoughness);
+  return fresnelSchlick(BUR_DIFF_F0, fd90, l.n_dot_l) * fresnelSchlick(BUR_DIFF_F0, fd90, l.n_dot_v) * diffuseColor;
 }//BRDF_BurleyDiffuse
 
 
@@ -359,49 +377,35 @@ const float NRG_INTERP_MAX = 0.662251656;//1.0/1.51;
 // http://blog.selfshadow.com/publications/s2012-shading-course/burley/s2012_pbs_disney_brdf_notes_v3.pdf
 // renormalized for better energy conservation from
 // https://media.contentapi.ea.com/content/dam/eacom/frostbite/files/course-notes-moving-frostbite-to-pbr-v32.pdf
-// n_dot_v: <normal, view>
-// n_dot_l: <normal, light>
-// v_dot_h: <view, halfVector>
-//     normal: normal direction
-//     light: light source direction
-//     view: camera direction, aka light outgoing direction
-//     halfVector: half vector of light and view
+// diffuseColor : metallness-scaled basedcolor
+// l : LightInfo structure describing current light
+// alphaRoughness : roughness (perceived roughness squared)
 vec3 BRDF_BurleyDiffuseRenorm(vec3 diffuseColor,
-                        float n_dot_v,
-                        float n_dot_l,
-                        float v_dot_h,    // == l_dot_h
+                        LightInfo l,
                         float alphaRoughness) {
   float energyBias = mix(0.0, 0.5, alphaRoughness);
   float energyFactor = mix(1.0, NRG_INTERP_MAX, alphaRoughness);
-  float fd90 = energyBias + (2.0 * v_dot_h * v_dot_h * alphaRoughness);
-  return fresnelSchlick(BUR_DIFF_F0, fd90, n_dot_l) * fresnelSchlick(BUR_DIFF_F0, fd90, n_dot_v) * energyFactor * diffuseColor;
+  float fd90 = energyBias + (2.0 * l.v_dot_h * l.v_dot_h * alphaRoughness);
+  return fresnelSchlick(BUR_DIFF_F0, fd90, l.n_dot_l) * fresnelSchlick(BUR_DIFF_F0, fd90, l.n_dot_v) * energyFactor * diffuseColor;
 }//BRDF_BurleyDiffuseRenorm
 
 // Calculate the specular contribution
 //  https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#acknowledgments
 //  AppendixB
 // fresnel : Schlick approximation of Fresnel coefficient
+// l : LightInfo structure describing current light
 // alphaRoughness: roughness of the surface (perceived roughness squared)
-// n_dot_l: <normal, light>
-// n_dot_v: <normal, view>
-// n_dot_h: <normal, halfVector>
-//     normal: normal direction
-//     light: light source direction
-//     view: camera direction, aka light outgoing direction
-//     halfVector: half vector of light and view
 vec3 BRDF_Specular(vec3 fresnel,
-                   float alphaRoughness,
-                   float n_dot_l,
-                   float n_dot_v,
-                   float n_dot_h) {
+                  LightInfo l,
+                   float alphaRoughness) {
   vec3 specular = fresnel *
                   // Visibility function == G()/4(n_dot_l)(n_dot_v).
                   // Smith Height-Correlated visibility/occlusion function
                   // https://jcgt.org/published/0003/02/03/paper.pdf
-                  V_GGX(n_dot_l, n_dot_v, alphaRoughness * alphaRoughness) *
+                  V_GGX(l, alphaRoughness * alphaRoughness) *
                   // Specular D, normal distribution function (NDF),
                   // also known as ggxDistribution
-                  D_GGX(n_dot_h, alphaRoughness);
+                  D_GGX(l.n_dot_h, alphaRoughness);
   return specular;
 }//BRDF_Specular
 
@@ -434,6 +438,8 @@ vec3 BRDF_ClearCoatSpecular(vec3 ccFresnel,
 #endif // clearcoat support
 
 
+
+
 #if defined(IMAGE_BASED_LIGHTING)
 // diffuseColor: diffuse color
 // n: normal on shading location in world space
@@ -456,7 +462,7 @@ vec3 computeIBLSpecular(float roughness,
   return prefilteredColor * (specularReflectance * brdf.x + brdf.y) *
          ComponentScales[IblSpecular];
 }
-#endif
+#endif // IMAGE_BASED_LIGHTING
 
 
 
@@ -496,9 +502,25 @@ void main() {
 #endif
 
 /////////////////
-// Initialization\
+// Initialization
+// Scalars
   // Index of refraction 1.5 yields 0.04 dielectric fresnel reflectance at normal incidence
   float ior = Material.ior;
+  // Index of refraction of adjacent material (air unless clearcoat is present)
+  float ior_adj = 1.0;
+
+
+
+
+/////////////////
+// vectors
+  // View is the normalized vector from the shading location to the camera
+  // in *world space*
+  vec3 view = normalize(CameraWorldPos - position);
+
+  // view projected on normal
+  float n_dot_v = abs(dot(n, view));
+
 
 /////////////////
 //Roughness calc
@@ -552,11 +574,6 @@ float metallic = Material.metallic;
   clearCoatPerceivedRoughness = clamp(clearCoatPerceivedRoughness, 0.045, 1.0);
   float clearCoatRoughness = clearCoatPerceivedRoughness * clearCoatPerceivedRoughness;
 
-
-  // TODO
-  //Calculate clearcoat contributions based on an IOR_cc == 1.5
-  //since clearcoat affects underlying diffuse material
-
   //
   // If clearcoatNormalTexture is not given, no normal mapping is applied to the clear
   // coat layer, even if normal mapping is applied to the base material. Otherwise,
@@ -574,10 +591,13 @@ float metallic = Material.metallic;
 #endif
 
   // Assuming dielectric reflectance of 0.4, which corresponds to
-  // polyurethane coating
+  // polyurethane coating with IOR == 1.5
   float clearCoatCoating_f0 = 0.4;
-  // TODO : need to use this to modify the base dielectric reflectance,
-  // since it darkens the reflectance of the underlying material
+  float clearCoatCoating_f90 = 1.0;
+  // We need to use this to modify the base dielectric reflectance,
+  // since the clearcoat, adjacent to the material, is not air,
+  // and it darkens the reflectance of the underlying material
+  ior_adj = 1.5;
 
 #endif // CLEAR_COAT
 
@@ -589,14 +609,14 @@ float metallic = Material.metallic;
 
   // DielectricSpecular == 0.04 <--> ior == 1.5
   // If clearcoat is present, may modify IOR
-  float DielectricSpecular = pow2((ior - 1) / (ior + 1));
+  float DielectricSpecular = pow2((ior - ior_adj) / (ior + ior_adj));
 
   // Achromatic dielectric material f0 : fresnel reflectance at normal incidence
   // based on given IOR
   vec3 dielectric_f0 = vec3(DielectricSpecular);
 
   // glancing incidence specular reflectance
-  float specularColor_f90 = 1.0;
+  vec3 specularColor_f90 = vec3(1.0);
 
 #if defined(SPECULAR_LAYER)
 
@@ -611,11 +631,11 @@ float metallic = Material.metallic;
   //TODO SpecularLayerColorTexture is in sRGB
   specularLayerColor *= texture(SpecularLayerColorTexture, texCoord).rgb;
 #endif
-  // Recalculate specularColor_f0 and specularColor_f90 based on passed quantities
+  // Recalculate dielectric_f0 and specularColor_f90 based on passed specular layer quantities
   // see https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_specular
   dielectric_f0 = min(dielectric_f0 *specularLayerColor, vec3(1.0)) * specularWeight;
 
-  specularColor_f90 = mix(specularWeight, 1.0, metallic);
+  specularColor_f90 = mix(vec3(specularWeight), specularColor_f90, metallic);
 
 #endif // SPECULAR_LAYER
   // compute specular reflectance (fresnel) at normal incidence
@@ -624,15 +644,8 @@ float metallic = Material.metallic;
   vec3 specularColor_f0 = mix(dielectric_f0, baseColor.rgb, metallic);
 
 
-
 /////////////////
-// vectors
-  // View is the normalized vector from the shading location to the camera
-  // in *world space*
-  vec3 view = normalize(CameraWorldPos - position);
-
-  // view projected on normal
-  float n_dot_v = abs(dot(n, view));
+// lights
 
   //Contributions for diffuse and specular
   vec3 diffuseContrib = vec3(0.0, 0.0, 0.0);
@@ -672,31 +685,21 @@ float metallic = Material.metallic;
     if (attenuation == 0){
       continue;
     }
-    // radiant intensity
-    vec3 lightRadiance = LightColors[iLight] * attenuation;
 
-    // light source direction: a vector from the shading location to the
-    // light
-    vec3 light = normalize(toLightVec);
-    // projection of normal to light
-    // clamp to small epsilon
-    float n_dot_l = clamp(dot(n, light), 0.0, 1.0);
+    //Build a light info for this light
+    LightInfo l;
+    l.light = normalize(toLightVec);
+    l.lightRadiance = LightColors[iLight] * attenuation;
+    l.n_dot_v = n_dot_v;
+    l.n_dot_l = clamp(dot(n, l.light), 0.0, 1.0);
+    l.halfVector = normalize(l.light + view);
+    l.v_dot_h = clamp(dot(view, l.halfVector), 0.0, 1.0),
+    l.n_dot_h = clamp(dot(n, l.halfVector), 0.0, 1.0),
+    l.projLightRadiance = l.lightRadiance * l.n_dot_l;
 
-    // if (n_dot_l > 0.0) {
-    // halfway between the light and view vector
-    vec3 halfVector = normalize(light + view);
-    // projection of view on halfway vector
-    float v_dot_h = clamp(dot(view, halfVector), 0.0, 1.0);
-    // project of normal on halfway vector
-    float n_dot_h = clamp(dot(n, halfVector), 0.0, 1.0);
-
-
-    // if light can hit location
-    // Radiance scaled by incident angle cosine, per area
-    vec3 projLightRadiance = lightRadiance * n_dot_l;
     // Calculate the Schlick approximation of the Fresnel coefficient
     // Fresnel Specular color at view angle == Schlick approx using view angle
-    vec3 fresnel = fresnelSchlick(specularColor_f0, specularColor_f90, v_dot_h);
+    vec3 fresnel = fresnelSchlick(specularColor_f0, specularColor_f90, l.v_dot_h);
 
     // Lambertian diffuse contribution
     // currentDiffuseContrib =
@@ -704,19 +707,19 @@ float metallic = Material.metallic;
 
     // Burley/Disney diffuse contribution
     vec3 currentDiffuseContrib =
-        projLightRadiance * INV_PI *
-        BRDF_BurleyDiffuse(diffuseColor, n_dot_v, n_dot_l, v_dot_h,
+        l.projLightRadiance * INV_PI *
+        BRDF_BurleyDiffuse(diffuseColor, l,
                            alphaRoughness);
     // Specular microfacet - 1/pi from specular D normal dist function
-    vec3 currentSpecularContrib = projLightRadiance * INV_PI *
-                             BRDF_Specular(fresnel, alphaRoughness, n_dot_l,
-                                           n_dot_v, n_dot_h);
+    vec3 currentSpecularContrib = l.projLightRadiance * INV_PI *
+                             BRDF_Specular(fresnel, l, alphaRoughness);
 
 #if defined(CLEAR_COAT)
     // scalar clearcoat contribution
-    float ccFesnel = fresnelSchlick(clearCoatCoating_f0, v_dot_h) * clearCoatStrength;
+    // RECALCULATE LIGHT for clearcoat normal
+    float ccFesnel = fresnelSchlick(clearCoatCoating_f0, clearCoatCoating_f90, l.v_dot_h) * clearCoatStrength;
 
-
+#else
 
 #endif // CLEAR_COAT
 
