@@ -577,6 +577,7 @@ float metallic = Material.metallic;
 #if defined(CLEAR_COAT_TEXTURE)
   clearCoatStrength *= texture(ClearCoatTexture, texCoord).r;
 #endif
+  clearCoatStrength = clamp(clearCoatStrength, 0.0, 1.0);
 
   float clearCoatPerceivedRoughness = ClearCoat.roughness;
 #if defined(CLEAR_COAT_ROUGHNESS_TEXTURE)
@@ -601,7 +602,7 @@ float metallic = Material.metallic;
   //               vec3(ClearCoat.normalTextureScale, ClearCoat.normalTextureScale, 1.0));
     // cc_Normal = normalize( tbn * clearcoatMapN );
 #endif
-  float cc_n_dot_v = abs(dot(cc_Normal, view));
+  float cc_n_dot_v = dot(cc_Normal, view);
   // Assuming dielectric reflectance of 0.4, which corresponds to
   // polyurethane coating with IOR == 1.5
   vec3 clearCoatCoating_f0 = vec3(0.4);
@@ -737,10 +738,11 @@ float metallic = Material.metallic;
     configureLightInfo(l.light, l.lightRadiance, cc_Normal, view, cc_n_dot_v, cc_l);
     // scalar clearcoat contribution
     // RECALCULATE LIGHT for clearcoat normal
-    vec3 ccFresnel = fresnelSchlick(clearCoatCoating_f0, clearCoatCoating_f90, cc_l.v_dot_h);
-        //
+    vec3 ccFresnel = fresnelSchlick(clearCoatCoating_f0, clearCoatCoating_f90, cc_l.v_dot_h) * clearCoatStrength;
+    // get clearcoat contribution
     vec3 currentClearCoatContrib = cc_l.projLightRadiance * INV_PI * BRDF_ClearCoatSpecular(ccFresnel, cc_l, clearCoatRoughness);
-
+    // Scale specular by fresnel
+    currentSpecularContrib *= (1-ccFresnel);
 #endif // CLEAR_COAT
 
 #if defined(SHADOWS_VSM)
@@ -761,18 +763,21 @@ float metallic = Material.metallic;
 #if defined(CLEAR_COAT)
     clearCoatContrib += currentClearCoatContrib;
 #endif// CLEAR_COAT
-
-  }  // for lights
+  }  // for each light
 
   diffuseContrib *= ComponentScales[DirectDiffuse];
   specularContrib *= ComponentScales[DirectSpecular];
   //TODO different scaling factor for clear coat?
 #if defined(CLEAR_COAT)
-    clearCoatContrib *= ComponentScales[DirectSpecular];
+
+  clearCoatContrib *= ComponentScales[DirectSpecular];
+  //Get glbl fresnel contribution
+  vec3 ccFresnelGlbl = fresnelSchlick(clearCoatCoating_f0, clearCoatCoating_f90, cc_n_dot_v) * clearCoatStrength;
+
 #endif// CLEAR_COAT
 
   // TODO: use ALPHA_MASK to discard fragments
-  fragmentColor.rgb += vec3(diffuseContrib + specularContrib);
+  //fragmentColor.rgb += vec3(diffuseContrib + specularContrib);
 #endif  // if (LIGHT_COUNT > 0)
 
 #if defined(IMAGE_BASED_LIGHTING)
@@ -783,29 +788,32 @@ float metallic = Material.metallic;
       computeIBLSpecular(alphaRoughness, n_dot_v, specularColor_f0, reflection) *
          ComponentScales[IblSpecular];
 
-  fragmentColor.rgb += vec3(iblDiffuseContrib + iblSpecularContrib);
-
 #if defined(CLEAR_COAT)
+
   vec3 cc_reflection = normalize(reflect(-view, cc_Normal));
   //TODO different scaling factor for clear coat?
   iblClearCoatContrib =
         computeIBLSpecular(clearCoatRoughness, cc_n_dot_v, clearCoatCoating_f0, cc_reflection) *
         ComponentScales[IblSpecular];
-
+  //Scale specular by fresnel
+  iblSpecularContrib *= (1-ccFresnelGlbl);
   // aggregate total clear coat contribution
   clearCoatContrib += iblClearCoatContrib;
 #endif // CLEAR_COAT
 
 #endif  // IMAGE_BASED_LIGHTING
+vec3 ttlDiffuseContrib = diffuseContrib + iblDiffuseContrib;
+vec3 ttlSpecularContrib = specularContrib +  iblSpecularContrib;
+
+
+fragmentColor.rgb += vec3(ttlDiffuseContrib + ttlSpecularContrib);
+
+
 
 #if defined(CLEAR_COAT)
   // scale by clearcoat strength
-  clearCoatContrib *= clearCoatStrength;
-
-  //Get glgl fresnel contribution
-  vec3 ccFresnelGlbl = fresnelSchlick(clearCoatCoating_f0, clearCoatCoating_f90, cc_n_dot_v) * clearCoatStrength;
-
-  fragmentColor.rgb = (fragmentColor.rgb * (1-ccFresnelGlbl)) + clearCoatContrib;
+  vec3 ttlClearCoatContrib = (clearCoatContrib + iblClearCoatContrib) * clearCoatStrength;
+  fragmentColor.rgb = (fragmentColor.rgb * (1-ccFresnelGlbl)) + ttlClearCoatContrib;
 
 #endif // CLEAR_COAT
 
