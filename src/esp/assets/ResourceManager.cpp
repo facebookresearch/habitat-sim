@@ -2965,8 +2965,8 @@ void ResourceManager::loadTextures(Importer& importer,
           format = Mn::GL::textureFormat(pixelFormat);
           // Modify swizzle for single channel textures so that they are
           // greyscale
-          Mn::UnsignedInt pixelCount = pixelFormatChannelCount(pixelFormat);
-          if (pixelCount == 1) {
+          Mn::UnsignedInt channelCount = pixelFormatChannelCount(pixelFormat);
+          if (channelCount == 1) {
 #ifdef MAGNUM_TARGET_WEBGL
             ESP_WARNING() << "Single Channel Greyscale Texture : ID" << iTexture
                           << "incorrectly displays as red instead of "
@@ -2975,7 +2975,7 @@ void ResourceManager::loadTextures(Importer& importer,
 #else
             currentTexture->setSwizzle<'r', 'r', 'r', '1'>();
 #endif
-          } else if (pixelCount == 2) {
+          } else if (channelCount == 2) {
 #ifdef MAGNUM_TARGET_WEBGL
             ESP_WARNING() << "Two Channel Greyscale + Alpha Texture : ID"
                           << iTexture
