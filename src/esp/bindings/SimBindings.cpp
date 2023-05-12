@@ -55,7 +55,8 @@ void initSimBindings(py::module& m) {
           "allow_sliding", &SimulatorConfiguration::allowSliding,
           R"(Whether or not the agent can slide on NavMesh collisions.)")
       .def_readwrite(
-          "include_static_objects_in_navmesh", &SimulatorConfiguration::includeStaticObjectsInNavmesh,
+          "include_static_objects_in_navmesh",
+          &SimulatorConfiguration::includeStaticObjectsInNavmesh,
           R"(Whether or not static objects will be included in the constructed NavMesh.)")
       .def_readwrite(
           "create_renderer", &SimulatorConfiguration::createRenderer,
