@@ -96,9 +96,9 @@ void initSimBindings(py::module& m) {
       .def_readwrite(
           "requires_textures", &SimulatorConfiguration::requiresTextures,
           R"(Whether or not to load textures for the meshes. This MUST be true for RGB rendering.)")
-      .def_readwrite(
-          "hbao_visual_effects", &SimulatorConfiguration::horizonBasedAmbientOcclusion,
-          R"(Whether or not to enable HBAO visual effects.)")
+      .def_readwrite("hbao_visual_effects",
+                     &SimulatorConfiguration::horizonBasedAmbientOcclusion,
+                     R"(Whether or not to enable HBAO visual effects.)")
       .def(py::self == py::self)
       .def(py::self != py::self);
 
