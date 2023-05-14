@@ -4,6 +4,7 @@
    1. [Habitat test scenes](#habitat-test-scenes)
    1. [Habitat-Matterport 3D Research Dataset (HM3D)](#habitat-matterport-3d-research-dataset-hm3d)
    1. [Habitat Synthetic Scenes Dataset (HSSD)](#habitat-synthetic-scene-dataset-hssd)
+   1. [AI2-THOR (Habitat)](#ai2-thor-habitat)
    1. [Matterport3D (MP3D) dataset](#matterport3d-mp3d-dataset)
    1. [Gibson and 3DSceneGraph datasets](#gibson-and-3dscenegraph-datasets)
    1. [Replica Dataset](#replica-dataset)
@@ -128,7 +129,15 @@ Note that if you are using the RL environment from habitat-lab, `SIMULATOR.SCENE
 
 ## Habitat Synthetic Scene Dataset (HSSD)
 
-<------>
+Details: [https://3dlg-hcvc.github.io/hssd/](https://3dlg-hcvc.github.io/hssd/).
+
+You can download the dataset manually from the above website.
+
+## AI2-THOR (Habitat)
+
+Details: [https://3dlg-hcvc.github.io/hssd/](https://3dlg-hcvc.github.io/hssd/).
+
+You can download the dataset manually from the above website.
 
 ## Matterport3D (MP3D) dataset
 
