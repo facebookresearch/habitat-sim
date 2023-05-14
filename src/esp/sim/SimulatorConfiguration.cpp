@@ -28,6 +28,7 @@ bool operator==(const SimulatorConfiguration& a,
          a.overrideSceneLightDefaults == b.overrideSceneLightDefaults &&
          a.pbrImageBasedLighting == b.pbrImageBasedLighting &&
          a.sceneLightSetupKey == b.sceneLightSetupKey &&
+         a.horizonBasedAmbientOcclusion == b.horizonBasedAmbientOcclusion &&
          a.navMeshSettings == b.navMeshSettings;
 }
 
