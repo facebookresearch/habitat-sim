@@ -27,6 +27,7 @@ bool operator==(const SimulatorConfiguration& a,
          a.physicsConfigFile == b.physicsConfigFile &&
          a.overrideSceneLightDefaults == b.overrideSceneLightDefaults &&
          a.sceneLightSetupKey == b.sceneLightSetupKey;
+         a.horizonBasedAmbientOcclusion == b.horizonBasedAmbientOcclusion;
 }
 
 bool operator!=(const SimulatorConfiguration& a,
