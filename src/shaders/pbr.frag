@@ -206,36 +206,43 @@ vec4 tonemap(vec4 color) {
 #endif
 }
 
-#if (defined(CLEAR_COAT_NORMAL_TEXTURE) || defined(NORMAL_TEXTURE)) && defined(PRECOMPUTED_TANGENT)
-vec3 getNormalFromNormalMap(vec3 normTextureSample, float normalTextureScale) {
-  vec3 tangentNormal = normalize((normTextureSample * 2.0 - 1.0) *
-                vec3(normalTextureScale, normalTextureScale, 1.0));
-
+// Build TBN matrix
+// Using local gradient of position and UV coords to derive tangent if not provided
+// See https://jcgt.org/published/0009/03/04/paper.pdf Section 3.3
+#if (defined(NORMAL_TEXTURE) || defined(CLEAR_COAT_NORMAL_TEXTURE))
+mat3 buildTBN(){
+  vec3 N = normalize(normal);
 #if defined(PRECOMPUTED_TANGENT)
   vec3 T = normalize(tangent);
   vec3 B = normalize(biTangent);
-  vec3 N = normalize(normal);
 #else
-// TODO:
-// explore robust screen-space normal mapping withOUT precomputed tangents
-#error Normal mapping requires precomputed tangents.
-#endif
+  vec3 posDx = dFdx(position);
+    vec3 posDy = dFdy(position);
+    vec3 uvDx  = dFdx(vec3(texCoord, 0.0));
+    vec3 uvDy  = dFdy(vec3(texCoord, 0.0));
+    vec3 T      = (uvDy.t * posDx - uvDx.t * posDy) / (uvDx.s * uvDy.t - uvDy.s * uvDx.t);
+  // Gram–Schmidt re-ortho
+    T = normalize(T - N * dot(N, T));
+    vec3 B = normalize(cross(N, T));
+#endif // if defined(PRECOMPUTED_TANGENT)
   // negate the TBN matrix for back-facing primitives
   if (gl_FrontFacing == false) {
     T *= -1.0;
     B *= -1.0;
     N *= -1.0;
   }
-  mat3 TBN = mat3(T, B, N);
+  return mat3(T, B, N);
+}
 
+vec3 getNormalFromNormalMap(vec3 normTextureSample, float normalTextureScale, mat3 TBN) {
+  vec3 tangentNormal = normalize((normTextureSample * 2.0 - 1.0) *
+                vec3(normalTextureScale, normalTextureScale, 1.0));
   // TBN transforms tangentNormal from tangent space to world space
   return normalize(TBN * tangentNormal);
 }
-#endif  // if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENT)
+#endif  // if (defined(NORMAL_TEXTURE) || defined(CLEAR_COAT_NORMAL_TEXTURE))
 
-
-
-
+/////////////////////
 // Structure holding light information to facilitate passing as
 // function arguments
 struct LightInfo{
@@ -256,7 +263,6 @@ struct LightInfo{
   // Radiance scaled by incident angle cosine
   vec3 projLightRadiance;
 };
-
 
 // Approx 2.5 speedup over pow
 float pow5(float v){
@@ -476,14 +482,20 @@ void configureLightInfo(
 
 
 void main() {
-///////////////////////
 
-// normal map will only work if both normal texture and the tangents exist.
-// if only normal texture is set, normal mapping will be safely ignored.
-// n is the normal in *world* space, NOT camera space
-#if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENT)
+///////////////////////
+// If normal texture or clearcoat normal texture is provided but no precomputed tangent, the TBN frame will
+// be built using local gradients of position and uv coordinates based on following paper
+// See https://jcgt.org/published/0009/03/04/paper.pdf Section 3.3
+
+// TODO verify this is acceptable performance
+#if defined(NORMAL_TEXTURE) || defined(CLEAR_COAT_NORMAL_TEXTURE)
+  mat3 TBN = buildTBN();
+#endif
+
+#if defined(NORMAL_TEXTURE) //&& defined(PRECOMPUTED_TANGENT)
   // normal is now in the camera space
-  vec3 n = getNormalFromNormalMap(texture(NormalTexture, texCoord).xyz, NormalTextureScale);
+  vec3 n = getNormalFromNormalMap(texture(NormalTexture, texCoord).xyz, NormalTextureScale, TBN);
 #else
   vec3 n = normalize(normal);
   // This means backface culling is disabled,
@@ -588,8 +600,8 @@ float metallic = Material.metallic;
 
   vec3 cc_Normal = n;
   // TODO Need to explore this
-#if defined(CLEAR_COAT_NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENT)
-  cc_Normal = getNormalFromNormalMap(texture(ClearCoatNormalTexture, texCoord).xyz, ClearCoat.normalTextureScale);
+#if defined(CLEAR_COAT_NORMAL_TEXTURE) //&& defined(PRECOMPUTED_TANGENT)
+  cc_Normal = getNormalFromNormalMap(texture(ClearCoatNormalTexture, texCoord).xyz, ClearCoat.normalTextureScale, TBN);
     // // NEED tangent frame
   // vec3 clearcoatMapN =
   //  normalize((texture(ClearCoatNormalTexture, texCoord).xyz * 2.0 - 1.0) *
