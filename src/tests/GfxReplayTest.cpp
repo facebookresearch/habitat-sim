@@ -570,7 +570,7 @@ void GfxReplayTest::testLightIntegration() {
     const auto& keyframes = player->debugGetKeyframes();
     CORRADE_COMPARE(keyframes.size(), player->getNumKeyframes());
 
-    CORRADE_COMPARE(sim->getLightSetup().size(), 5);  // 5 default lights
+    CORRADE_COMPARE(sim->getLightSetup().size(), 6);  // 6 default lights
 
     player->setKeyframeIndex(0);
     CORRADE_COMPARE(sim->getLightSetup().size(), lightSetup0.size());
