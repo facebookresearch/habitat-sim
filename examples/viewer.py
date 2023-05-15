@@ -560,13 +560,31 @@ class HabitatSimInteractiveViewer(Application):
                 self.cached_urdf = urdf_file_path
                 aom = self.sim.get_articulated_object_manager()
                 ao = aom.add_articulated_object_from_urdf(
-                    urdf_file_path, fixed_base, 1.0, 1.0, True
+                    urdf_file_path,
+                    fixed_base,
+                    1.0,
+                    1.0,
+                    True,
+                    maintain_link_order=False,
+                    intertia_from_urdf=False,
                 )
                 ao.translation = (
                     self.default_agent.scene_node.transformation.transform_point(
                         [0.0, 1.0, -1.5]
                     )
                 )
+                # check removal and auto-creation
+                joint_motor_settings = habitat_sim.physics.JointMotorSettings(
+                    position_target=0.0,
+                    position_gain=1.0,
+                    velocity_target=0.0,
+                    velocity_gain=1.0,
+                    max_impulse=1000.0,
+                )
+                existing_motor_ids = ao.existing_joint_motor_ids
+                for motor_id in existing_motor_ids:
+                    ao.remove_joint_motor(motor_id)
+                ao.create_all_motors(joint_motor_settings)
             else:
                 logger.warn("Load URDF: input file not found. Aborting.")
 

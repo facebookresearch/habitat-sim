@@ -116,11 +116,12 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
     float massScale,
     bool forceReload,
     bool maintainLinkOrder,
+    bool intertiaFromURDF,
     const std::string& lightSetup) {
   auto& drawables = simulator_->getDrawableGroup();
-  return addArticulatedObjectFromURDF(filepath, &drawables, fixedBase,
-                                      globalScale, massScale, forceReload,
-                                      maintainLinkOrder, lightSetup);
+  return addArticulatedObjectFromURDF(
+      filepath, &drawables, fixedBase, globalScale, massScale, forceReload,
+      maintainLinkOrder, intertiaFromURDF, lightSetup);
 }
 
 int BulletPhysicsManager::addArticulatedObjectFromURDF(
@@ -131,6 +132,7 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
     float massScale,
     bool forceReload,
     bool maintainLinkOrder,
+    bool inertiaFromURDF,
     const std::string& lightSetup) {
   if (simulator_ != nullptr) {
     // acquire context if available
@@ -161,6 +163,9 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
   u2b->flags = 0;
   if (maintainLinkOrder) {
     u2b->flags |= CUF_MAINTAIN_LINK_ORDER;
+  }
+  if (inertiaFromURDF) {
+    u2b->flags |= CUF_USE_URDF_INERTIA;
   }
   u2b->initURDF2BulletCache();
 
