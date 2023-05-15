@@ -292,8 +292,11 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
         uniformLocation("PrefilteredMapMipLevels");
   }
 
-  // pbr equation scales
-  componentScalesUniform_ = uniformLocation("ComponentScales");
+  if ((lightCount_ != 0u) && (flags_ & Flag::ImageBasedLighting)) {
+    // ply scale if -both- lights and IBL are enabled
+    // pbr equation scales - use to mix IBL and direct lighting
+    componentScalesUniform_ = uniformLocation("ComponentScales");
+  }
 
   // for debug info
   if (flags_ & Flag::DebugDisplay) {
@@ -338,8 +341,10 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   }
 
   setEmissiveColor(Mn::Color3{0.0f});
+
   PbrShader::PbrEquationScales scales;
-  if (flags_ & Flag::ImageBasedLighting) {
+  // Set mix if both lights and IBL are enabled
+  if ((lightCount_ != 0u) && (flags_ & Flag::ImageBasedLighting)) {
     // These are empirical numbers. Discount the diffuse light from IBL so the
     // ambient light will not be too strong. Also keeping the IBL specular
     // component relatively low can guarantee the super glossy surface would

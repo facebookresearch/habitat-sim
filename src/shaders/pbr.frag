@@ -150,13 +150,14 @@ uniform highp vec3 CameraWorldPos;
 // [1] = direct specular
 // [2] = ibl diffuse
 // [3] = ibl specular
+
+#if defined(IMAGE_BASED_LIGHTING) && (LIGHT_COUNT > 0)
 const int DirectDiffuse = 0;
 const int DirectSpecular = 1;
-#if defined(IMAGE_BASED_LIGHTING)
 const int IblDiffuse = 2;
 const int IblSpecular = 3;
-#endif
 uniform highp vec4 ComponentScales;
+#endif
 
 #if defined(IMAGE_BASED_LIGHTING)
 uniform uint PrefilteredMapMipLevels;
@@ -493,21 +494,6 @@ void main() {
   }
 #endif
 
-
-#if (LIGHT_COUNT > 0)
-  vec4 baseColor = Material.baseColor;
-#if defined(BASECOLOR_TEXTURE)
-  baseColor *= texture(BaseColorTexture, texCoord);
-#endif
-
-
-  vec3 emissiveColor = Material.emissiveColor;
-#if defined(EMISSIVE_TEXTURE)
-  emissiveColor *= texture(EmissiveTexture, texCoord).rgb;
-#endif
-  fragmentColor = vec4(emissiveColor, baseColor.a);
-
-
 /////////////////
 // Initialization
 // Scalars
@@ -515,9 +501,6 @@ void main() {
   float ior = Material.ior;
   // Index of refraction of adjacent material (air unless clearcoat is present)
   float ior_adj = 1.0;
-
-
-
 
 /////////////////
 // vectors
@@ -527,6 +510,21 @@ void main() {
 
   // view projected on normal
   float n_dot_v = abs(dot(n, view));
+
+
+//////////////////////
+// colors
+  vec4 baseColor = Material.baseColor;
+#if defined(BASECOLOR_TEXTURE)
+  baseColor *= texture(BaseColorTexture, texCoord);
+#endif
+
+  vec3 emissiveColor = Material.emissiveColor;
+#if defined(EMISSIVE_TEXTURE)
+  emissiveColor *= texture(EmissiveTexture, texCoord).rgb;
+#endif
+  fragmentColor = vec4(emissiveColor, baseColor.a);
+
 
 
 /////////////////
@@ -608,8 +606,9 @@ float metallic = Material.metallic;
   // and it darkens the reflectance of the underlying material
   ior_adj = 1.5;
 
+  //Get glbl fresnel contribution for IBL and for clear-coat contrib
+  vec3 OneM_ccFresnelGlbl = 1-(fresnelSchlick(clearCoatCoating_f0, clearCoatCoating_f90, cc_n_dot_v) * clearCoatStrength);
 #endif // CLEAR_COAT
-
 
 
 /////////////////
@@ -670,6 +669,9 @@ float metallic = Material.metallic;
   vec3 iblClearCoatContrib = vec3(0.0, 0.0, 0.0);
 #endif // Clearcoat
 
+/////////////////
+// Direct lighting
+#if (LIGHT_COUNT > 0)
 
   // compute contribution of each light using the microfacet model
   // the following part of the code is inspired by the Phong.frag in Magnum
@@ -721,7 +723,7 @@ float metallic = Material.metallic;
     // Burley/Disney diffuse contribution
     vec3 currentDiffuseContrib =
         l.projLightRadiance * INV_PI *
-        BRDF_BurleyDiffuse(diffuseColor, l,
+        BRDF_BurleyDiffuseRenorm(diffuseColor, l,
                            alphaRoughness);
     // Specular microfacet - 1/pi from specular D normal dist function
     vec3 currentSpecularContrib = l.projLightRadiance * INV_PI *
@@ -736,7 +738,7 @@ float metallic = Material.metallic;
     vec3 ccFresnel = fresnelSchlick(clearCoatCoating_f0, clearCoatCoating_f90, cc_l.v_dot_h) * clearCoatStrength;
     // get clearcoat contribution
     vec3 currentClearCoatContrib = cc_l.projLightRadiance * INV_PI * BRDF_ClearCoatSpecular(ccFresnel, cc_l, clearCoatRoughness);
-    // Scale substrate specular by fresnel to account for coating
+    // Scale substrate specular by 1-ccfresnel to account for coating
     currentSpecularContrib *= (1-ccFresnel);
 #endif // CLEAR_COAT
 
@@ -760,22 +762,11 @@ float metallic = Material.metallic;
 #endif// CLEAR_COAT
   }  // for each light
 
-  diffuseContrib *= ComponentScales[DirectDiffuse];
-  specularContrib *= ComponentScales[DirectSpecular];
-#if defined(CLEAR_COAT)
-  //TODO provide custom scaling factor for Direct lit clear coat?
-  clearCoatContrib *= ComponentScales[DirectSpecular];
-  //Get glbl fresnel contribution for IBL and for clear-coat contrib
-  vec3 OneM_ccFresnelGlbl = 1-fresnelSchlick(clearCoatCoating_f0, clearCoatCoating_f90, cc_n_dot_v) * clearCoatStrength;
-
-#endif// CLEAR_COAT
-
-  // TODO: use ALPHA_MASK to discard fragments
-  //fragmentColor.rgb += vec3(diffuseContrib + specularContrib);
 #endif  // if (LIGHT_COUNT > 0)
 
 #if defined(IMAGE_BASED_LIGHTING)
-  iblDiffuseContrib = computeIBLDiffuse(diffuseColor, n) * ComponentScales[IblDiffuse];
+
+  iblDiffuseContrib = computeIBLDiffuse(diffuseColor, n);
 
   vec3 reflection = normalize(reflect(-view, n));
   iblSpecularContrib =
@@ -783,24 +774,47 @@ float metallic = Material.metallic;
          ComponentScales[IblSpecular];
 
 #if defined(CLEAR_COAT)
-
+  //Clear coat reflection
   vec3 cc_reflection = normalize(reflect(-view, cc_Normal));
-  //TODO provide custom scaling factor for IBL clear coat?
+  //Clear coat reflection contribution
   iblClearCoatContrib =
-        computeIBLSpecular(clearCoatRoughness, cc_n_dot_v, clearCoatCoating_f0, cc_reflection) *
-        ComponentScales[IblSpecular];
-  // Scale substrate specular by fresnel to account for coating
+        computeIBLSpecular(clearCoatRoughness, cc_n_dot_v, clearCoatCoating_f0, cc_reflection);
+  // Scale substrate specular by 1-cc_fresnel to account for coating
   iblSpecularContrib *= (OneM_ccFresnelGlbl);
 #endif // CLEAR_COAT
 
 #endif  // IMAGE_BASED_LIGHTING
+
+////////////////////
+// Scale if both direct lighting and ibl are enabled
+#if defined(IMAGE_BASED_LIGHTING) && (LIGHT_COUNT > 0)
+
+  // Only scale direct lighting contribution if also using IBL
+  diffuseContrib *= ComponentScales[DirectDiffuse];
+  specularContrib *= ComponentScales[DirectSpecular];
+
+  //Only scale IBL if also using direct lighting
+  iblDiffuseContrib *= ComponentScales[IblDiffuse];
+  iblSpecularContrib *= ComponentScales[IblSpecular];
+#if defined(CLEAR_COAT)
+  //TODO provide custom scaling factor for Direct lit clear coat?
+  clearCoatContrib *= ComponentScales[DirectSpecular];
+  iblClearCoatContrib *= ComponentScales[IblSpecular];
+#endif// CLEAR_COAT
+
+#endif// Component scaling if both types of lighting exist
+
+
+///////////
+// Total contributions
+
 vec3 ttlDiffuseContrib = diffuseContrib + iblDiffuseContrib;
 vec3 ttlSpecularContrib = specularContrib +  iblSpecularContrib;
 
 fragmentColor.rgb += vec3(ttlDiffuseContrib + ttlSpecularContrib);
 
 #if defined(CLEAR_COAT)
-  // scale by clearcoat strength - already scaled by ComponentScales
+  // scale by clearcoat strength
   vec3 ttlClearCoatContrib = (clearCoatContrib + iblClearCoatContrib) * clearCoatStrength;
   // Scale entire contribution from substrate -again- by 1-clearCoatFresnel
   // https://google.github.io/filament/Filament.md.html#figure_clearcoat
