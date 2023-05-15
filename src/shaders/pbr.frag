@@ -134,7 +134,7 @@ uniform samplerCube PrefilteredMap;
 uniform highp uint ObjectId;
 #endif
 
-#if defined(NORMAL_TEXTURE) && defined(NORMAL_TEXTURE_SCALE)
+#if defined(NORMAL_TEXTURE)
 uniform mediump float NormalTextureScale
 #ifndef GL_ES
     = 1.0
@@ -205,15 +205,10 @@ vec4 tonemap(vec4 color) {
 #endif
 }
 
-#if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENT)
-vec3 getNormalFromNormalMap() {
-  vec3 tangentNormal =
-#if defined(NORMAL_TEXTURE_SCALE)
-      normalize((texture(NormalTexture, texCoord).xyz * 2.0 - 1.0) *
-                vec3(NormalTextureScale, NormalTextureScale, 1.0));
-#else
-      texture(NormalTexture, texCoord).xyz * 2.0 - 1.0;
-#endif
+#if (defined(CLEAR_COAT_NORMAL_TEXTURE) || defined(NORMAL_TEXTURE)) && defined(PRECOMPUTED_TANGENT)
+vec3 getNormalFromNormalMap(vec3 normTextureSample, float normalTextureScale) {
+  vec3 tangentNormal = normalize((normTextureSample * 2.0 - 1.0) *
+                vec3(normalTextureScale, normalTextureScale, 1.0));
 
 #if defined(PRECOMPUTED_TANGENT)
   vec3 T = normalize(tangent);
@@ -487,7 +482,7 @@ void main() {
 // n is the normal in *world* space, NOT camera space
 #if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENT)
   // normal is now in the camera space
-  vec3 n = getNormalFromNormalMap();
+  vec3 n = getNormalFromNormalMap(texture(NormalTexture, texCoord).xyz, NormalTextureScale);
 #else
   vec3 n = normalize(normal);
   // This means backface culling is disabled,
@@ -595,7 +590,8 @@ float metallic = Material.metallic;
 
   vec3 cc_Normal = n;
   // TODO Need to explore this
-#if defined(CLEAR_COAT_NORMAL_TEXTURE)
+#if defined(CLEAR_COAT_NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENT)
+  cc_Normal = getNormalFromNormalMap(texture(ClearCoatNormalTexture, texCoord).xyz, ClearCoat.normalTextureScale);
     // // NEED tangent frame
   // vec3 clearcoatMapN =
   //  normalize((texture(ClearCoatNormalTexture, texCoord).xyz * 2.0 - 1.0) *
