@@ -541,7 +541,7 @@ void main() {
 #if defined(NONE_ROUGHNESS_METALLIC_TEXTURE)
   perceivedRoughness *= texture(MetallicRoughnessTexture, texCoord).g;
 #endif
-  // clamp roughness to prevent dennormals in distribution function calc
+  // clamp roughness to prevent denormals in distribution function calc
   perceivedRoughness = clamp(perceivedRoughness, 0.045, 1.0);
   // Roughness is authored as perceptual roughness by convention,
   // convert to more linear roughness mapping by squaring the perceptual roughness.
@@ -583,7 +583,7 @@ float metallic = Material.metallic;
 #if defined(CLEAR_COAT_ROUGHNESS_TEXTURE)
   clearCoatPerceivedRoughness *= texture(ClearCoatRoughnessTexture, texCoord).g;
 #endif
-  // clamp clearcoat roughness to prevent dennormals in distribution function calc
+  // clamp clearcoat roughness to prevent denormals in distribution function calc
   clearCoatPerceivedRoughness = clamp(clearCoatPerceivedRoughness, 0.045, 1.0);
   float clearCoatRoughness = clearCoatPerceivedRoughness * clearCoatPerceivedRoughness;
 
@@ -696,11 +696,10 @@ float metallic = Material.metallic;
     highp float sqDist = (((dist * dist) - 1) * LightDirections[iLight].w) + 1;
 
     // If LightRanges is 0 for whatever reason, clamp it to a small value to
-    // avoid a NaN when dist is 0 as well (which is the case for
-    // directional lights)
+    // avoid a NaN when dist is 0 as well (which is the case for directional lights)
     // https://github.com/KhronosGroup/glTF/blob/master/extensions/2.0/Khronos/KHR_lights_punctual/README.md#range-property
     // Attenuation is 1 for directional lights, governed by inverse square law
-    // otherwise
+    // otherwise if no range is given
     highp float attenuation =
         clamp(1 - pow4(dist / (LightRanges[iLight] + epsilon)), 0.0, 1.0) /
         sqDist;
@@ -721,7 +720,7 @@ float metallic = Material.metallic;
 
     // Lambertian diffuse contribution
     // currentDiffuseContrib =
-    //     projLightRadiance * INV_PI * diffuseColor;
+    //     l.projLightRadiance * INV_PI * diffuseColor;
 
     // Burley/Disney diffuse contribution
     vec3 currentDiffuseContrib =
@@ -741,7 +740,7 @@ float metallic = Material.metallic;
     vec3 ccFresnel = fresnelSchlick(clearCoatCoating_f0, clearCoatCoating_f90, cc_l.v_dot_h) * clearCoatStrength;
     // get clearcoat contribution
     vec3 currentClearCoatContrib = cc_l.projLightRadiance * INV_PI * BRDF_ClearCoatSpecular(ccFresnel, cc_l, clearCoatRoughness);
-    // Scale specular by fresnel
+    // Scale substrate specular by fresnel to account for coating
     currentSpecularContrib *= (1-ccFresnel);
 #endif // CLEAR_COAT
 
@@ -767,12 +766,11 @@ float metallic = Material.metallic;
 
   diffuseContrib *= ComponentScales[DirectDiffuse];
   specularContrib *= ComponentScales[DirectSpecular];
-  //TODO different scaling factor for clear coat?
 #if defined(CLEAR_COAT)
-
+  //TODO provide custom scaling factor for Direct lit clear coat?
   clearCoatContrib *= ComponentScales[DirectSpecular];
-  //Get glbl fresnel contribution
-  vec3 ccFresnelGlbl = fresnelSchlick(clearCoatCoating_f0, clearCoatCoating_f90, cc_n_dot_v) * clearCoatStrength;
+  //Get glbl fresnel contribution for IBL and for clear-coat contrib
+  vec3 OneM_ccFresnelGlbl = 1-fresnelSchlick(clearCoatCoating_f0, clearCoatCoating_f90, cc_n_dot_v) * clearCoatStrength;
 
 #endif// CLEAR_COAT
 
@@ -791,14 +789,12 @@ float metallic = Material.metallic;
 #if defined(CLEAR_COAT)
 
   vec3 cc_reflection = normalize(reflect(-view, cc_Normal));
-  //TODO different scaling factor for clear coat?
+  //TODO provide custom scaling factor for IBL clear coat?
   iblClearCoatContrib =
         computeIBLSpecular(clearCoatRoughness, cc_n_dot_v, clearCoatCoating_f0, cc_reflection) *
         ComponentScales[IblSpecular];
-  //Scale specular by fresnel
-  iblSpecularContrib *= (1-ccFresnelGlbl);
-  // aggregate total clear coat contribution
-  clearCoatContrib += iblClearCoatContrib;
+  // Scale substrate specular by fresnel to account for coating
+  iblSpecularContrib *= (OneM_ccFresnelGlbl);
 #endif // CLEAR_COAT
 
 #endif  // IMAGE_BASED_LIGHTING
@@ -808,12 +804,12 @@ vec3 ttlSpecularContrib = specularContrib +  iblSpecularContrib;
 
 fragmentColor.rgb += vec3(ttlDiffuseContrib + ttlSpecularContrib);
 
-
-
 #if defined(CLEAR_COAT)
   // scale by clearcoat strength
   vec3 ttlClearCoatContrib = (clearCoatContrib + iblClearCoatContrib) * clearCoatStrength;
-  fragmentColor.rgb = (fragmentColor.rgb * (1-ccFresnelGlbl)) + ttlClearCoatContrib;
+  // Scale entire contribution from substrate -again- by 1-clearCoatFresnel
+  // https://google.github.io/filament/Filament.md.html#figure_clearcoat
+  fragmentColor.rgb = (fragmentColor.rgb * (OneM_ccFresnelGlbl)) + ttlClearCoatContrib;
 
 #endif // CLEAR_COAT
 
