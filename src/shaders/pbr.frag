@@ -801,11 +801,10 @@ float metallic = Material.metallic;
 vec3 ttlDiffuseContrib = diffuseContrib + iblDiffuseContrib;
 vec3 ttlSpecularContrib = specularContrib +  iblSpecularContrib;
 
-
 fragmentColor.rgb += vec3(ttlDiffuseContrib + ttlSpecularContrib);
 
 #if defined(CLEAR_COAT)
-  // scale by clearcoat strength
+  // scale by clearcoat strength - already scaled by ComponentScales
   vec3 ttlClearCoatContrib = (clearCoatContrib + iblClearCoatContrib) * clearCoatStrength;
   // Scale entire contribution from substrate -again- by 1-clearCoatFresnel
   // https://google.github.io/filament/Filament.md.html#figure_clearcoat
@@ -816,28 +815,8 @@ fragmentColor.rgb += vec3(ttlDiffuseContrib + ttlSpecularContrib);
 #if defined(OBJECT_ID)
   fragmentObjectId = ObjectId;
 #endif
-// float specCCBlue = 0.0f;
-// #if defined(CLEAR_COAT_ROUGHNESS_TEXTURE) && defined(CLEAR_COAT_TEXTURE)
-//   specCCBlue = 1.0f;
-//   if (((int(10 * texCoord.x)) % 2) == ((int(10 * texCoord.y)) % 2 )){
-//   fragmentColor = vec4(texture(ClearCoatTexture, texCoord).r, 0.0, 0.0, 1.0);
 
-//   }  else {
-//   fragmentColor = vec4(0.0, texture(ClearCoatRoughnessTexture, texCoord).g, 0.0, 1.0);
 
-//   }
-//   //fragmentColor = vec4(0.0, texture(ClearCoatRoughnessTexture, texCoord).g, 0.0, 1.0);
-// #endif
-
-// #if defined(SPECULAR_LAYER_TEXTURE) && defined(SPECULAR_LAYER_COLOR_TEXTURE)
-//   if (((int(10 * texCoord.x)) % 2) == ((int(10 * texCoord.y)) % 2 )){
-//   fragmentColor = vec4(texture(SpecularLayerTexture, texCoord).a, 0.0, specCCBlue, 1.0);
-
-//   }  else {
-//   fragmentColor = vec4(texture(SpecularLayerColorTexture, texCoord).rgb, 1.0);
-
-//   }
-// #endif
 // PBR equation debug
 // "none", "Diff (l,n)", "F (l,h)", "G (l,v,h)", "D (h)", "Specular"
 #if defined(PBR_DEBUG_DISPLAY)
