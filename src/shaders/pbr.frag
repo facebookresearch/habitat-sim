@@ -228,7 +228,7 @@ vec4 tonemap(vec4 color) {
 // Build TBN matrix
 // Using local gradient of position and UV coords to derive tangent if not provided
 // See https://jcgt.org/published/0009/03/04/paper.pdf Section 3.3
-#if (defined(NORMAL_TEXTURE) || defined(CLEAR_COAT_NORMAL_TEXTURE) || defined(ANISOTROPY_LAYER))
+#if ((defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENT)) || defined(CLEAR_COAT_NORMAL_TEXTURE) || defined(ANISOTROPY_LAYER))
 mat3 buildTBN(){
   vec3 N = normalize(normal);
 #if defined(PRECOMPUTED_TANGENT)
@@ -651,11 +651,12 @@ void main() {
 // See https://jcgt.org/published/0009/03/04/paper.pdf Section 3.3
 
 // TODO verify this is acceptable performance
-#if defined(NORMAL_TEXTURE) || defined(CLEAR_COAT_NORMAL_TEXTURE) || defined(ANISOTROPY_LAYER)
+
+#if ((defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENT)) || defined(CLEAR_COAT_NORMAL_TEXTURE) || defined(ANISOTROPY_LAYER))
   mat3 TBN = buildTBN();
 #endif
 
-#if defined(NORMAL_TEXTURE) //&& defined(PRECOMPUTED_TANGENT)
+#if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENT)
   // normal is now in the camera space
   vec3 n = getNormalFromNormalMap(texture(NormalTexture, texCoord).xyz, NormalTextureScale, TBN);
 #else
