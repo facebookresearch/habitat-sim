@@ -242,7 +242,6 @@ class Simulator(SimulatorBackend):
             or (
                 not self.pathfinder.is_loaded
                 and config.sim_cfg.scene_id.lower() != "none"
-                and config.sim_cfg.create_renderer
             )
         ):
             logger.info(

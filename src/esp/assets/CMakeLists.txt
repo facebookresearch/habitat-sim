@@ -31,6 +31,7 @@ find_package(
   AnyImageImporter
   AnySceneImporter
   GL
+  MaterialTools
   MeshTools
   SceneGraph
   SceneTools
@@ -82,7 +83,7 @@ target_link_libraries(
          MagnumPlugins::StanfordImporter
          MagnumPlugins::StbImageImporter
          MagnumPlugins::StbImageConverter
-  PRIVATE geo io
+  PRIVATE geo io Magnum::MaterialTools
 )
 
 if(BUILD_WITH_VHACD)

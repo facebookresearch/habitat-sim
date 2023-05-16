@@ -56,6 +56,9 @@ class ClassicReplayRenderer : public AbstractReplayRenderer {
   std::map<std::string, std::reference_wrapper<esp::sensor::Sensor>>&
   getEnvironmentSensors(unsigned envIndex);
 
+  esp::geo::Ray doUnproject(unsigned envIndex,
+                            const Mn::Vector2i& viewportPosition) override;
+
  private:
   unsigned doEnvironmentCount() const override;
 

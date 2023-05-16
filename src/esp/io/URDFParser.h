@@ -14,6 +14,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "Corrade/Containers/Optional.h"
 #include "esp/core/Configuration.h"
 
 /** @file
@@ -246,7 +247,7 @@ struct Link {
   //! list of all link children of this link
   std::vector<std::weak_ptr<Joint>> m_childJoints;
   //! joints attaching this link to each of its children (with index
-  //! correspondance to m_childJoints)
+  //! correspondence to m_childJoints)
   std::vector<std::weak_ptr<Link>> m_childLinks;
 
   //! the index of this link in the overall articulated object
@@ -362,15 +363,54 @@ class Model {
   float getMassScaling() const { return m_massScaling; }
 
   /**
+   * @brief Set the path to the render asset to attach to this URDF model.
+   */
+  void setRenderAsset(Cr::Containers::Optional<std::string> renderAsset) {
+    m_renderAsset = std::move(renderAsset);
+  }
+
+  /**
+   * @brief Get the path to the render asset to attach to this URDF model.
+   */
+  Cr::Containers::Optional<std::string> getRenderAsset() const {
+    return m_renderAsset;
+  }
+
+  /**
+   * @brief Set the semantic ID of the URDF model.
+   */
+  void setSemanticId(int semanticId) { m_semanticId = semanticId; }
+
+  /**
+   * @brief Get the semantic ID of this URDF model.
+   */
+  int getSemanticId() const { return m_semanticId; }
+
+  /**
+   * @brief Set hint to render articulated object primitives even if a render
+   * asset is present.
+   */
+  void setDebugRenderPrimitives(bool debugRenderPrimitives) {
+    m_debugRenderPrimitives = debugRenderPrimitives;
+  }
+
+  /**
+   * @brief Get hint to render articulated object primitives even if a render
+   * asset is present.
+   */
+  bool getDebugRenderPrimitives() const { return m_debugRenderPrimitives; }
+
+  /**
    * @brief This function conditionally loads configuration data from a Json
    * file for this Articulated Model, should an appropriate file exist. This
    * configuration file must meet the following criteria to be loaded :
-   * --Exist in the same directory as thsi model's source URDF/XML file.
+   * - Exist in the same directory as this model's source URDF/XML file.
    * - Have the same root name as this model's source URDF/XML file.
    * - Have '.ao_config.json' as an extension.
    *
    * This method will construct a name candidate from the passed @p filename and
    * attempt to load this file into this model's @ref jsonAttributes_ variable.
+   * This also loads the render asset path from the json file.
    * @param filename The filename for the URDF?XML file describing this model.
    * @return Whether successful or not.
    */
@@ -390,7 +430,7 @@ class Model {
  protected:
   /**
    * @brief Json-based attributes defining characteristics of this model not
-   * specified in the source XML/URDF. Primarly to support defaultt user-defined
+   * specified in the source XML/URDF. Primarily to support default user-defined
    * attributes. This data is read in from a json file with the same base name
    * as the source XML/URDF for this model but the extension ".ao_config.json".
    */
@@ -404,6 +444,15 @@ class Model {
 
   //! Mass scaling of the model's Link inertias.
   float m_massScaling = 1.0;
+
+  //! Path to a render asset associated with this articulated object.
+  Cr::Containers::Optional<std::string> m_renderAsset = Cr::Containers::NullOpt;
+
+  //! Semantic ID of this model.
+  int m_semanticId = 0;
+
+  //! Forces link primitives to be rendered even if a render asset is present.
+  bool m_debugRenderPrimitives = false;
 
   //! Scale the transformation and parameters of a Shape
   void scaleShape(Shape& shape, float scale);

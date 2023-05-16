@@ -205,7 +205,7 @@ BulletRigidObject::buildPrimitiveCollisionObject(int primTypeVal,
     case metadata::PrimObjTypes::CYLINDER_WF: {
       // use bullet cylinder shape :btCylinderShape (const btVector3&
       // halfExtents);
-      btVector3 dim(1.0, 1.0, 1.0);
+      btVector3 dim(1.0, halfLength, 1.0);
       obj = std::make_unique<btCylinderShape>(dim);
       break;
     }

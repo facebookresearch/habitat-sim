@@ -18,16 +18,45 @@ namespace gfx {
 class PbrDrawable : public Drawable {
  public:
   /**
+   * This cache holds all the material quantities and attributes from the
+   * Magnum MaterialData to speed up access in draw.
+   */
+  struct PBRMaterialCache {
+    Mn::Color4 baseColor{1.0f};
+    float roughness = 1.0f;
+    float metalness = 1.0f;
+    Mn::Color3 emissiveColor{};
+    Mn::Matrix3 textureMatrix{};
+
+    Mn::GL::Texture2D* baseColorTexture = nullptr;
+
+    bool hasAnyMetallicRoughnessTexture = false;
+
+    Mn::GL::Texture2D* useMetallicRoughnessTexture = nullptr;
+    /**
+     * Currently we only support a single NoneMetalnessRoughness texture for
+     * both metalness and roughness.  Separate textures will be stored, but only
+     * the useMetallicRoughnessTexture should be sent to the shader
+     */
+    Mn::GL::Texture2D* noneRoughnessMetallicTexture = nullptr;
+    Mn::GL::Texture2D* roughnessTexture = nullptr;
+    Mn::GL::Texture2D* metallicTexture = nullptr;
+
+    Mn::GL::Texture2D* normalTexture = nullptr;
+    Mn::GL::Texture2D* emissiveTexture = nullptr;
+  };
+
+  /**
    * @brief Constructor, to create a PbrDrawable for the given object using
    * shader and mesh. Adds drawable to given group and uses provided texture,
    * and color for textured buffer and color shader output respectively
    */
   explicit PbrDrawable(scene::SceneNode& node,
-                       Magnum::GL::Mesh* mesh,
+                       Mn::GL::Mesh* mesh,
                        gfx::Drawable::Flags& meshAttributeFlags,
                        ShaderManager& shaderManager,
-                       const Magnum::ResourceKey& lightSetupKey,
-                       const Magnum::ResourceKey& materialDataKey,
+                       const Mn::ResourceKey& lightSetupKey,
+                       const Mn::ResourceKey& materialDataKey,
                        DrawableGroup* group = nullptr,
                        PbrImageBasedLighting* pbrIbl = nullptr);
 
@@ -35,7 +64,7 @@ class PbrDrawable : public Drawable {
    *  @brief Set the light info
    *  @param lightSetupKey the key value for the light resource
    */
-  void setLightSetup(const Magnum::ResourceKey& lightSetupKey) override;
+  void setLightSetup(const Mn::ResourceKey& lightSetupKey) override;
 
   /**
    * @brief Set the shadow map info
@@ -49,6 +78,26 @@ class PbrDrawable : public Drawable {
 
   static constexpr const char* SHADER_KEY_TEMPLATE = "PBR-lights={}-flags={}";
 
+  /**
+   * Set or change this drawable's @ref Magnum::Trade::MaterialData values from passed material.
+   * This is only pertinent for material-equipped drawables.
+   * @param material
+   */
+  void setMaterialValues(
+      const Mn::Resource<Mn::Trade::MaterialData, Mn::Trade::MaterialData>&
+          material) override {
+    setMaterialValuesInternal(material);
+  }
+
+ private:
+  /**
+   * @brief Internal implementation of material setting, so that it can be
+   * called from constructor without virtual dispatch issues
+   */
+  void setMaterialValuesInternal(
+      const Mn::Resource<Mn::Trade::MaterialData, Mn::Trade::MaterialData>&
+          material);
+
  protected:
   /**
    * @brief overload draw function, see here for more details:
@@ -57,8 +106,8 @@ class PbrDrawable : public Drawable {
    * the drawable is attached) relative to camera
    * @param camera the camera that views and renders the world
    */
-  void draw(const Magnum::Matrix4& transformationMatrix,
-            Magnum::SceneGraph::Camera3D& camera) override;
+  void draw(const Mn::Matrix4& transformationMatrix,
+            Mn::SceneGraph::Camera3D& camera) override;
 
   /**
    *  @brief Update the shader so it can correcly handle the current material,
@@ -82,24 +131,36 @@ class PbrDrawable : public Drawable {
    *  @return Reference to self (for method chaining)
    */
   PbrDrawable& updateShaderLightDirectionParameters(
-      const Magnum::Matrix4& transformationMatrix,
-      Magnum::SceneGraph::Camera3D& camera);
+      const Mn::Matrix4& transformationMatrix,
+      Mn::SceneGraph::Camera3D& camera);
 
   /**
    * @brief get the key for the shader
    * @param lightCount the number of the lights;
    * @param flags flags that defines the shader features
    */
-  Magnum::ResourceKey getShaderKey(Magnum::UnsignedInt lightCount,
-                                   PbrShader::Flags flags) const;
+  Mn::ResourceKey getShaderKey(Mn::UnsignedInt lightCount,
+                               PbrShader::Flags flags) const;
 
   // shader parameters
   PbrShader::Flags flags_;
   ShaderManager& shaderManager_;
-  Magnum::Resource<Magnum::GL::AbstractShaderProgram, PbrShader> shader_;
-  Magnum::Resource<MaterialData, PbrMaterialData> materialData_;
-  Magnum::Resource<LightSetup> lightSetup_;
+  Mn::Resource<Mn::GL::AbstractShaderProgram, PbrShader> shader_;
+  Mn::Resource<LightSetup> lightSetup_;
   PbrImageBasedLighting* pbrIbl_ = nullptr;
+
+  /**
+   * Local cache of material quantities to speed up access in draw
+   */
+  PBRMaterialCache matCache{};
+  /**
+   * Creation attributes of this drawable
+   */
+  const gfx::Drawable::Flags meshAttributeFlags_;
+  /**
+   * Material to use to render this PBR drawawble
+   */
+  Mn::Resource<Mn::Trade::MaterialData, Mn::Trade::MaterialData> materialData_;
   ShadowMapManager* shadowMapManger_ = nullptr;
   ShadowMapKeys* shadowMapKeys_ = nullptr;
 };

@@ -58,8 +58,11 @@ void Recorder::onCreateRenderAssetInstance(
 
   auto adjustedCreation = creation;
 
-  // bake node scale into creation
+  // We assume constant node scaling over the node's lifetime. Bake node scale
+  // into creation.
   auto nodeScale = node->absoluteTransformation().scaling();
+  // todo: check for reflection (rotationShear.determinant() < 0.0f) and bake
+  // into scaling (negate X scale).
   if (nodeScale != Mn::Vector3(1.f, 1.f, 1.f)) {
     adjustedCreation.scale = adjustedCreation.scale
                                  ? *adjustedCreation.scale * nodeScale
@@ -189,9 +192,17 @@ int Recorder::findInstance(const scene::SceneNode* queryNode) {
 RenderAssetInstanceState Recorder::getInstanceState(
     const scene::SceneNode* node) {
   const auto absTransformMat = node->absoluteTransformation();
-  Transform absTransform{
-      absTransformMat.translation(),
-      Magnum::Quaternion::fromMatrix(absTransformMat.rotationShear())};
+  auto rotationShear = absTransformMat.rotationShear();
+  // Remove reflection (negative scaling) from the matrix. We assume constant
+  // node scaling for the node's lifetime. It is baked into instance-creation so
+  // it doesn't need to be saved into RenderAssetInstanceState. See also
+  // onCreateRenderAssetInstance.
+  if (rotationShear.determinant() < 0.0f) {
+    rotationShear[0] *= -1.f;
+  }
+
+  Transform absTransform{absTransformMat.translation(),
+                         Magnum::Quaternion::fromMatrix(rotationShear)};
 
   return RenderAssetInstanceState{absTransform, node->getSemanticId()};
 }
@@ -230,6 +241,25 @@ std::string Recorder::writeSavedKeyframesToString() {
   consolidateSavedKeyframes();
 
   return esp::io::jsonToString(document);
+}
+
+std::vector<std::string>
+Recorder::writeIncrementalSavedKeyframesToStringArray() {
+  std::vector<std::string> results;
+  results.reserve(savedKeyframes_.size());
+
+  for (const auto& keyframe : savedKeyframes_) {
+    results.emplace_back(keyframeToString(keyframe));
+  }
+
+  // note we don't call consolidateSavedKeyframes. Use this function if you are
+  // using keyframes incrementally, e.g. repeated calls to this function and
+  // feeding them to a renderer. Contrast with writeSavedKeyframesToFile, which
+  // "consolidates" before discarding old keyframes to avoid losing state
+  // information.
+  savedKeyframes_.clear();
+
+  return results;
 }
 
 std::string Recorder::keyframeToString(const Keyframe& keyframe) {

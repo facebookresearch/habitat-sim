@@ -78,6 +78,9 @@ class DebugLineRender {
                   const Magnum::Matrix4& projMatrix,
                   const Magnum::Vector2i& viewport);
 
+  void flushLines(const Magnum::Matrix4& projCamMatrix,
+                  const Magnum::Vector2i& viewport);
+
   /**
    * @brief Push (multiply) a transform onto the transform stack, affecting all
    * line-drawing until popped. Must be paired with popTransform(). For example,
