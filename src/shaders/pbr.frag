@@ -235,20 +235,46 @@ mat3 buildTBN(){
   vec3 T = normalize(tangent);
   vec3 B = normalize(biTangent);
 #else
+  vec3 T;
+  vec3 B;
   vec3 posDx = dFdx(position);
   vec3 posDy = dFdy(position);
-  vec3 uvDx  = dFdx(vec3(texCoord, 0.0));
-  vec3 uvDy  = dFdy(vec3(texCoord, 0.0));
-  vec3 T      = (uvDy.t * posDx - uvDx.t * posDy) / (uvDx.s * uvDy.t - uvDy.s * uvDx.t);
-  // Gram–Schmidt re-ortho
-  T = normalize(T - N * dot(N, T));
-  vec3 B = normalize(cross(N, T));
+  vec2 uvDx2  = dFdx(texCoord);
+  vec2 uvDy2  = dFdy(texCoord);
+// {
+//   // From paper See https://jcgt.org/published/0009/03/04/paper.pdf Section 3.3
+//   if (gl_FrontFacing == false) {
+//     N *= -1.0;
+//   }
+//   vec3 sigmaX = posDx - dot(posDx, N) * N;
+//   vec3 sigmaY = posDy - dot(posDy, N) * N;
+//   float flip_sign = dot(posDy, cross(N, posDx)) < 0 ? -1.0 : 1.0;
+
+//   vec2 uvDy2Inv = vec2(uvDy2.t, -uvDy2.s);
+//   float det = dot(uvDx2, uvDy2Inv);
+//   float sign_det = det < 0.0 ? -1.0 : 1.0;
+
+//   vec2 invC0 = sign_det * uvDy2Inv;
+//   T = normalize(sigmaX * invC0.x + sigmaY * invC0.y);
+
+//   B = (sign_det * flip_sign) * normalize(cross(N, T));
+// }
+  // Alternate method, may be cheaper, better performing
+  // from https://github.com/KhronosGroup/Vulkan-Samples/blob/main/shaders/pbr.frag
+{
+  T = (uvDy2.t * posDx - uvDx2.t * posDy) / (uvDx2.s * uvDy2.t - uvDy2.s * uvDx2.t);
+  //Gramm-Schmidt renorm
+    T = normalize(T - N * dot(N, T));
+    B = normalize(cross(N, T));
+  if (gl_FrontFacing == false) {
+    N *= -1.0;
+  }
+}
 #endif // if defined(PRECOMPUTED_TANGENT)
   // negate the TBN matrix for back-facing primitives
   if (gl_FrontFacing == false) {
     T *= -1.0;
     B *= -1.0;
-    N *= -1.0;
   }
   return mat3(T, B, N);
 }
