@@ -553,7 +553,7 @@ jobs:
               conda list                  | tee -a $CONDA_ENV_DUMP
               echo "###########"          | tee -a $CONDA_ENV_DUMP
               echo "habitat-sim commit"   | tee -a $CONDA_ENV_DUMP
-              cat ./hsim_sha              | tee -a $CONDA_ENV_DUMP
+              cat ./hablab_sha            | tee -a $CONDA_ENV_DUMP
       - store_artifacts:
           path: conda_env_dump.log  # This is the list of modules in conda and pip
       - run:
