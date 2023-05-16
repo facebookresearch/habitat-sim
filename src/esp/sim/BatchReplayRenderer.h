@@ -49,6 +49,9 @@ class BatchReplayRenderer : public AbstractReplayRenderer {
 
   void doRender(Magnum::GL::AbstractFramebuffer& framebuffer) override;
 
+  esp::geo::Ray doUnproject(unsigned envIndex,
+                            const Mn::Vector2i& viewportPosition) override;
+
   /* If standalone_ is true, renderer_ contains a RendererStandalone. Has to be
      before the EnvironmentRecord array because Player calls
      gfx_batch::Renderer::clear() on destruction. */

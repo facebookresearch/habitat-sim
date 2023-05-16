@@ -75,10 +75,10 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
         "#define ATTRIBUTE_LOCATION_TANGENT4 {}\n", Tangent4::Location);
   }
   // TODO: Occlusion texture to be added.
-  const bool isTextured =
-      bool(flags_ & (Flag::BaseColorTexture | Flag::RoughnessTexture |
-                     Flag::MetallicTexture | Flag::NormalTexture |
-                     Flag::EmissiveTexture));
+  const bool isTextured = bool(
+      flags_ & (Flag::BaseColorTexture | Flag::RoughnessTexture |
+                Flag::NoneRoughnessMetallicTexture | Flag::MetallicTexture |
+                Flag::NormalTexture | Flag::EmissiveTexture));
 
   if (isTextured) {
     attributeLocationsStream
@@ -115,6 +115,9 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
                                                  : "")
       .addSource(flags_ & Flag::MetallicTexture ? "#define METALLIC_TEXTURE\n"
                                                 : "")
+      .addSource(flags_ & Flag::NoneRoughnessMetallicTexture
+                     ? "#define NONE_ROUGHNESS_METALLIC_TEXTURE\n"
+                     : "")
       .addSource(flags_ & Flag::NormalTexture ? "#define NORMAL_TEXTURE\n" : "")
       .addSource(flags_ & Flag::NormalTextureScale
                      ? "#define NORMAL_TEXTURE_SCALE\n"
@@ -150,7 +153,8 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
       setUniform(uniformLocation("BaseColorTexture"),
                  pbrTextureUnitSpace::TextureUnit::BaseColor);
     }
-    if (flags_ & (Flag::RoughnessTexture | Flag::MetallicTexture)) {
+    if (flags_ & (Flag::RoughnessTexture | Flag::MetallicTexture |
+                  Flag::NoneRoughnessMetallicTexture)) {
       setUniform(uniformLocation("MetallicRoughnessTexture"),
                  pbrTextureUnitSpace::TextureUnit::MetallicRoughness);
     }
@@ -256,7 +260,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
         Cr::DirectInit, lightCount_,
         // a single directional "fill" light, coming from the center of the
         // camera.
-        Mn::Vector4{0.0f, 0.0f, 1.0f, 0.0f}});
+        Mn::Vector4{0.0f, 0.0f, -1.0f, 0.0f}});
     Cr::Containers::Array<Mn::Color3> colors{Cr::DirectInit, lightCount_,
                                              Mn::Color3{1.0f}};
     setLightColors(colors);
@@ -296,7 +300,8 @@ PbrShader& PbrShader::bindBaseColorTexture(Mn::GL::Texture2D& texture) {
 
 PbrShader& PbrShader::bindMetallicRoughnessTexture(Mn::GL::Texture2D& texture) {
   CORRADE_ASSERT(
-      flags_ & (Flag::RoughnessTexture | Flag::MetallicTexture),
+      flags_ & (Flag::RoughnessTexture | Flag::MetallicTexture |
+                Flag::NoneRoughnessMetallicTexture),
       "PbrShader::bindMetallicRoughnessTexture(): the shader was not "
       "created with metallicRoughness texture enabled.",
       *this);

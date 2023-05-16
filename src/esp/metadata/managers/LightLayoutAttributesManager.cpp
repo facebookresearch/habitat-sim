@@ -279,10 +279,10 @@ gfx::LightSetup LightLayoutAttributesManager::createLightSetupFromAttributes(
     if (numLightInstances == 0) {
       // setup default LightInfo instances - lifted from LightSetup.cpp.
       // TODO create default attributes describing these lights?
-      return gfx::LightSetup{{.vector = {1.0, 1.0, 0.0, 0.0},
+      return gfx::LightSetup{{.vector = {-1.0, -1.0, 0.0, 0.0},
                               .color = {0.75, 0.75, 0.75},
                               .model = gfx::LightPositionModel::Global},
-                             {.vector = {-0.5, 0.0, 1.0, 0.0},
+                             {.vector = {0.5, 0.0, -1.0, 0.0},
                               .color = {0.4, 0.4, 0.4},
                               .model = gfx::LightPositionModel::Global}};
     } else {

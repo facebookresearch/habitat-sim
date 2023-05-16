@@ -38,6 +38,8 @@ class ArticulatedObjectManager
    * cached model.
    * @param maintainLinkOrder If true, maintain the order of link definitions
    * from the URDF file as the link indices.
+   * @param intertiaFromURDF If true, load the link inertia matrices from the
+   * URDF file instead of computing automatically from collision shapes.
    * @param lightSetup The string name of the desired lighting setup to use.
    *
    * @return A reference to the created ArticulatedObject
@@ -49,6 +51,7 @@ class ArticulatedObjectManager
       float massScale = 1.0,
       bool forceReload = false,
       bool maintainLinkOrder = false,
+      bool intertiaFromURDF = false,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
 
   /**
@@ -67,6 +70,8 @@ class ArticulatedObjectManager
    * cached model.
    * @param maintainLinkOrder If true, maintain the order of link definitions
    * from the URDF file as the link indices.
+   * @param intertiaFromURDF If true, load the link inertia matrices from the
+   * URDF file instead of computing automatically from collision shapes.
    * @param lightSetup The string name of the desired lighting setup to use.
    *
    * @return A reference to the created ArticulatedObject
@@ -78,11 +83,12 @@ class ArticulatedObjectManager
       float massScale = 1.0,
       bool forceReload = false,
       bool maintainLinkOrder = false,
+      bool intertiaFromURDF = false,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
     std::shared_ptr<ManagedArticulatedObject> objPtr =
         addArticulatedObjectFromURDF(filepath, fixedBase, globalScale,
                                      massScale, forceReload, maintainLinkOrder,
-                                     lightSetup);
+                                     intertiaFromURDF, lightSetup);
 
     if (std::shared_ptr<ManagedBulletArticulatedObject> castObjPtr =
             std::dynamic_pointer_cast<ManagedBulletArticulatedObject>(objPtr)) {
@@ -108,6 +114,8 @@ class ArticulatedObjectManager
    * the cached model.
    * @param maintainLinkOrder If true, maintain the order of link definitions
    * from the URDF file as the link indices.
+   * @param intertiaFromURDF If true, load the link inertia matrices from the
+   * URDF file instead of computing automatically from collision shapes.
    * @param lightSetup The string name of the desired lighting setup to use.
    *
    * @return A reference to the created ArticulatedObject
@@ -121,6 +129,7 @@ class ArticulatedObjectManager
       float massScale = 1.0,
       bool forceReload = false,
       bool maintainLinkOrder = false,
+      bool intertiaFromURDF = false,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
 
  protected:

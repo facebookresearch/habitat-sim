@@ -959,6 +959,24 @@ class Simulator {
    */
   void setShadowMapsToDrawables();
 
+  /**
+   * @brief Runtime perf stats are various scalars helpful for troubleshooting
+   * runtime perf.
+   *
+   * @return A vector of stat names; currently, this is constant so it can be
+   * called once at startup. See also getRuntimePerfStatValues.
+   */
+  std::vector<std::string> getRuntimePerfStatNames();
+
+  /**
+   * @brief Runtime perf stats are various scalars helpful for troubleshooting
+   * runtime perf.
+   *
+   * @return a vector of stat values. Stat values generally change after every
+   * physics step. See also getRuntimePerfStatNames.
+   */
+  std::vector<float> getRuntimePerfStatValues();
+
  protected:
   Simulator() = default;
 
@@ -1137,6 +1155,8 @@ class Simulator {
   Corrade::Containers::Optional<bool> requiresTextures_;
 
   std::shared_ptr<esp::gfx::DebugLineRender> debugLineRender_;
+
+  std::vector<float> runtimePerfStatValues_;
 
   ESP_SMART_POINTERS(Simulator)
 };

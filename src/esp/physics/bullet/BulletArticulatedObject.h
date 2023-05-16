@@ -95,11 +95,11 @@ class BulletArticulatedObject : public ArticulatedObject {
                           scene::SceneNode* physicsNode) override;
 
   /**
-   * @brief Cosntruct a Static btRigidObject to act as a proxy collision object
+   * @brief Construct a Static btRigidObject to act as a proxy collision object
    * for the fixed base.
    *
    * This optimization reduces the collision island size for articulated objects
-   * with heavy branching (e.g. a counter with many drawers) resuling in better
+   * with heavy branching (e.g. a counter with many drawers) resulting in better
    * sleeping behavior (e.g. contact with the countertop should not activate all
    * drawers and contained objects).
    *
@@ -409,7 +409,7 @@ class BulletArticulatedObject : public ArticulatedObject {
    *
    * By default, state is interpreted as position targets unless `velocities` is
    * specified. Expected input is the full length position or velocity array for
-   * this object. This function will safely skip states for jointa which don't
+   * this object. This function will safely skip states for joints which don't
    * support JointMotors.
    *
    * Note: No base implementation. See @ref bullet::BulletArticulatedObject.
@@ -457,7 +457,7 @@ class BulletArticulatedObject : public ArticulatedObject {
   //! maps local link id to parent joint's limit constraint
   std::unordered_map<int, JointLimitConstraintInfo> jointLimitConstraints;
 
-  // scratch datastrcutures for updateKinematicState
+  // scratch data structures for updateKinematicState
   btAlignedObjectArray<btQuaternion> scratch_q_;
   btAlignedObjectArray<btVector3> scratch_m_;
 
