@@ -126,6 +126,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
                      : "")
       .addSource(flags_ & Flag::NormalTexture ? "#define NORMAL_TEXTURE\n" : "")
       .addSource(flags_ & Flag::ObjectId ? "#define OBJECT_ID\n" : "")
+
       // Clearcoat layer
       .addSource(flags_ & Flag::ClearCoatLayer ? "#define CLEAR_COAT\n" : "")
       .addSource(flags_ >= Flag::ClearCoatTexture
@@ -145,6 +146,13 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
                      : "")
       .addSource(flags_ >= Flag::SpecularLayerColorTexture
                      ? "#define SPECULAR_LAYER_COLOR_TEXTURE\n"
+                     : "")
+
+      // Anisotropy Layer
+      .addSource(flags_ & Flag::AnisotropyLayer ? "#define ANISOTROPY_LAYER\n"
+                                                : "")
+      .addSource(flags_ >= Flag::AnisotropyLayerTexture
+                     ? "#define ANISOTROPY_LAYER_TEXTURE\n"
                      : "")
 
       .addSource(flags_ & Flag::PrecomputedTangent
@@ -271,6 +279,19 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
                    pbrTextureUnitSpace::TextureUnit::SpecularLayerColor);
       }
     }
+
+    // anisotropy layer data and texture
+
+    if (flags_ & Flag::AnisotropyLayer) {
+      anisotropyLayerFactorUniform_ = uniformLocation("AnisotropyLayer.factor");
+      anisotropyLayerRotationUniform_ =
+          uniformLocation("AnisotropyLayer.rotation");
+      if (flags_ >= Flag::AnisotropyLayerTexture) {
+        setUniform(uniformLocation("AnisotropyLayerTexture"),
+                   pbrTextureUnitSpace::TextureUnit::AnisotropyLayer);
+      }
+    }
+
   }  // if lighting is enabled
 
   // lights
@@ -466,6 +487,17 @@ PbrShader& PbrShader::bindSpecularLayerColorTexture(
   return *this;
 }
 
+PbrShader& PbrShader::bindAnisotropyLayerTexture(Mn::GL::Texture2D& texture) {
+  CORRADE_ASSERT(flags_ >= Flag::AnisotropyLayerTexture,
+                 "PbrShader::bindAnisotropyLayerTexture(): the shader was not "
+                 "created with anisotropy layer texture enabled",
+                 *this);
+  if (lightingIsEnabled()) {
+    texture.bind(pbrTextureUnitSpace::TextureUnit::AnisotropyLayer);
+  }
+  return *this;
+}
+
 PbrShader& PbrShader::bindIrradianceCubeMap(Mn::GL::CubeMapTexture& texture) {
   CORRADE_ASSERT(flags_ & Flag::ImageBasedLighting,
                  "PbrShader::bindIrradianceCubeMap(): the shader was not "
@@ -599,6 +631,20 @@ PbrShader& PbrShader::setClearCoatNormalTextureScale(float ccTextureScale) {
 PbrShader& PbrShader::setSpecularLayerFactor(float specLayerFactor) {
   if (lightingIsEnabled()) {
     setUniform(specularLayerFactorUniform_, specLayerFactor);
+  }
+  return *this;
+}
+
+PbrShader& PbrShader::setAnisotropyLayerFactor(float anisoLayerFactor) {
+  if (lightingIsEnabled()) {
+    setUniform(anisotropyLayerFactorUniform_, anisoLayerFactor);
+  }
+  return *this;
+}
+
+PbrShader& PbrShader::setAnisotropyLayerRotation(float anisoLayerRotation) {
+  if (lightingIsEnabled()) {
+    setUniform(anisotropyLayerRotationUniform_, anisoLayerRotation);
   }
   return *this;
 }

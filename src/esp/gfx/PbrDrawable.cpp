@@ -421,7 +421,6 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   }
 
   // clearcoat data
-
   if (flags_ & PbrShader::Flag::ClearCoatLayer) {
     (*shader_)
         .setClearCoatFactor(matCache.clearCoat.factor)
@@ -451,6 +450,17 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
     if (flags_ >= PbrShader::Flag::SpecularLayerColorTexture) {
       shader_->bindSpecularLayerColorTexture(
           *matCache.specularLayer.colorTexture);
+    }
+  }
+
+  // anisotropy layer data
+  if (flags_ & PbrShader::Flag::AnisotropyLayer) {
+    (*shader_)
+        .setAnisotropyLayerFactor(matCache.anisotropyLayer.factor)
+        .setAnisotropyLayerRotation(matCache.anisotropyLayer.rotation);
+
+    if (flags_ >= PbrShader::Flag::AnisotropyLayerTexture) {
+      shader_->bindAnisotropyLayerTexture(*matCache.anisotropyLayer.texture);
     }
   }
 
