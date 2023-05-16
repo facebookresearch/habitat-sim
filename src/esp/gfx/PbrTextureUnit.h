@@ -25,13 +25,14 @@ enum TextureUnit : uint8_t {
   ClearCoatNormal = 6,
   SpecularLayer = 7,
   SpecularLayerColor = 8,
-  EnvironmentMap = 9,
-  IrradianceMap = 10,
-  BrdfLUT = 11,
-  PrefilteredMap = 12,
-  ShadowMap0 = 13,
-  ShadowMap1 = 14,
-  ShadowMap2 = 15,  // We support at most 3 shadows currently
+  AnisotropyLayer = 9,
+  EnvironmentMap = 10,
+  IrradianceMap = 11,
+  BrdfLUT = 12,
+  PrefilteredMap = 13,
+  ShadowMap0 = 14,
+  ShadowMap1 = 15,
+  ShadowMap2 = 16,  // We support at most 3 shadows currently
 };
 }  // namespace pbrTextureUnitSpace
 }  // namespace gfx

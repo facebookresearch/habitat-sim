@@ -346,6 +346,12 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   PbrShader& bindSpecularLayerColorTexture(Magnum::GL::Texture2D& texture);
 
   /**
+   * @brief Bind the anisotropy layer texture
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& bindAnisotropyLayerTexture(Magnum::GL::Texture2D& texture);
+
+  /**
    * @brief Bind the irradiance cubemap texture
    * @return Reference to self (for method chaining)
    */
@@ -464,6 +470,18 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    * @return Reference to self (for method chaining)
    */
   PbrShader& setSpecularLayerColorFactor(const Magnum::Color3& color);
+
+  /**
+   * @brief Set anisotropy layer factor
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& setAnisotropyLayerFactor(float anisoLayerFactor);
+
+  /**
+   * @brief Set anisotropy layer rotation
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& setAnisotropyLayerRotation(float anisoLayerRotation);
 
   /**
    *  @brief Set object id to the uniform on GPU
@@ -671,6 +689,10 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   int specularLayerFactorUniform_ = ID_UNDEFINED;
 
   int specularLayerColorFactorUniform_ = ID_UNDEFINED;
+
+  int anisotropyLayerFactorUniform_ = ID_UNDEFINED;
+
+  int anisotropyLayerRotationUniform_ = ID_UNDEFINED;
 
   // scales
   int componentScalesUniform_ = ID_UNDEFINED;

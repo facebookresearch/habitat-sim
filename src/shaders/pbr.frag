@@ -83,6 +83,19 @@ struct SpecularLayerData{
 uniform SpecularLayerData SpecularLayer;
 #endif // SPECULAR_LAYER
 
+#if defined(ANISOTROPY_LAYER)
+struct AnisotropyLayerData{
+  float factor;             // The anisotropy strength. When anisotropyTexture is
+                            // present, this value is multiplied by the blue channel.
+  float rotation;           // The rotation of the anisotropy in tangent, bitangent
+                            // space, measured in radians counter-clockwise from the
+                            // tangent. When anisotropyTexture is present,
+                            // anisotropyRotation provides additional rotation to
+                            // the vectors in the texture.
+};
+uniform AnisotropyLayerData AnisotropyLayer;
+#endif // ANISOTROPY_LAYER
+
 
 #if defined(BASECOLOR_TEXTURE)
 uniform sampler2D BaseColorTexture;
@@ -119,6 +132,9 @@ uniform sampler2D SpecularLayerTexture;
 uniform sampler2D SpecularLayerColorTexture;
 #endif
 
+#if defined(ANISOTROPY_LAYER_TEXTURE)
+uniform sampler2D AnisotropyLayerTexture;
+#endif
 
 /////////////////
 //IBL Support
@@ -217,13 +233,13 @@ mat3 buildTBN(){
   vec3 B = normalize(biTangent);
 #else
   vec3 posDx = dFdx(position);
-    vec3 posDy = dFdy(position);
-    vec3 uvDx  = dFdx(vec3(texCoord, 0.0));
-    vec3 uvDy  = dFdy(vec3(texCoord, 0.0));
-    vec3 T      = (uvDy.t * posDx - uvDx.t * posDy) / (uvDx.s * uvDy.t - uvDy.s * uvDx.t);
+  vec3 posDy = dFdy(position);
+  vec3 uvDx  = dFdx(vec3(texCoord, 0.0));
+  vec3 uvDy  = dFdy(vec3(texCoord, 0.0));
+  vec3 T      = (uvDy.t * posDx - uvDx.t * posDy) / (uvDx.s * uvDy.t - uvDy.s * uvDx.t);
   // Gram–Schmidt re-ortho
-    T = normalize(T - N * dot(N, T));
-    vec3 B = normalize(cross(N, T));
+  T = normalize(T - N * dot(N, T));
+  vec3 B = normalize(cross(N, T));
 #endif // if defined(PRECOMPUTED_TANGENT)
   // negate the TBN matrix for back-facing primitives
   if (gl_FrontFacing == false) {
