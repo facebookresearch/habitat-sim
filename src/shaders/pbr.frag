@@ -64,8 +64,10 @@ struct ClearCoatData{
                             // ignored, as per standard.
   float roughness;          // clearcoat perceived roughness. If ClearCoatRoughnessTexture
                             // exists, multiply it by this roughness value
+#if defined(CLEAR_COAT_NORMAL_TEXTURE)
   float normalTextureScale; // xy scale value for clearcoat normal texture. Multiply
                             // the x,y channels of ClearCoatNormalTexture if exists.
+#endif // if defined(CLEAR_COAT_NORMAL_TEXTURE)
 };
 uniform ClearCoatData ClearCoat;
 #endif //CLEAR_COAT
