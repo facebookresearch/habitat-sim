@@ -458,7 +458,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   if (flags_ & PbrShader::Flag::AnisotropyLayer) {
     (*shader_)
         .setAnisotropyLayerFactor(matCache.anisotropyLayer.factor)
-        .setAnisotropyLayerRotation(matCache.anisotropyLayer.rotation);
+        .setAnisotropyLayerDirection(matCache.anisotropyLayer.direction);
 
     if (flags_ >= PbrShader::Flag::AnisotropyLayerTexture) {
       shader_->bindAnisotropyLayerTexture(*matCache.anisotropyLayer.texture);

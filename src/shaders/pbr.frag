@@ -87,13 +87,14 @@ uniform SpecularLayerData SpecularLayer;
 
 #if defined(ANISOTROPY_LAYER)
 struct AnisotropyLayerData{
-  float factor;             // The anisotropy strength. When anisotropyTexture is
-                            // present, this value is multiplied by the blue channel.
-  float rotation;           // The rotation of the anisotropy in tangent, bitangent
-                            // space, measured in radians counter-clockwise from the
-                            // tangent. When anisotropyTexture is present,
-                            // anisotropyRotation provides additional rotation to
-                            // the vectors in the texture.
+  float factor;       // The anisotropy strength. When anisotropyTexture is
+                      // present, this value is multiplied by the blue channel.
+  vec2 direction;     // [ cos(anisotropyRotation), sin(anisotropyRotation) ]
+                      // Built from the rotation of the anisotropy in tangent, bitangent
+                      // space, measured in radians counter-clockwise from the
+                      // tangent. When anisotropyTexture is present,
+                      // anisotropyRotation provides additional rotation to
+                      // the vectors in the texture.
 };
 uniform AnisotropyLayerData AnisotropyLayer;
 #endif // ANISOTROPY_LAYER
@@ -680,6 +681,10 @@ float metallic = Material.metallic;
   // for dielectric or metallic, using IOR-derived fresnel reflectance
   // accounting for specular layers
   vec3 specularColor_f0 = mix(dielectric_f0, baseColor.rgb, metallic);
+
+
+////////////////////
+// Anisotropy Layer support
 
 
 /////////////////
