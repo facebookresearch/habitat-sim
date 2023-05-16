@@ -419,11 +419,9 @@ float V_Kelemen(float v_dot_h){
 // l : LightInfo structure describing current light
 // anisoInfo : AnisotropyInfo structure describing tangentspace anisotropic quantities
 float V_GGX_anisotropic(LightInfo l, AnisotropyInfo anisoInfo){
-
-    float GGXV = l.n_dot_l * length(vec3(anisoInfo.aT * anisoInfo.t_dot_v, anisoInfo.aB * anisoInfo.b_dot_v, l.n_dot_v));
     float GGXL = l.n_dot_v * length(vec3(anisoInfo.aT * anisoInfo.t_dot_l, anisoInfo.aB * anisoInfo.b_dot_l, l.n_dot_l));
-    float v = 0.5 / max(GGXV + GGXL, epsilon);
-    return clamp(v, 0.0, 1.0);
+    float GGXV = l.n_dot_l * length(vec3(anisoInfo.aT * anisoInfo.t_dot_v, anisoInfo.aB * anisoInfo.b_dot_v, l.n_dot_v));
+    return 0.5 / max(GGXV + GGXL, epsilon);
 }
 // Anisotropic microfacet distribution model
 // l : LightInfo structure describing current light
@@ -609,7 +607,7 @@ vec3 computeIBLSpecular(float roughness,
                         float n_dot_v,
                         vec3 specularReflectance,
                         vec3 reflectionDir) {
-  vec3 brdf = texture(BrdfLUT, vec2(max(n_dot_v, 0.0), 1.0 - roughness)).rgb;
+  vec3 brdf = texture(BrdfLUT, vec2(n_dot_v, 1.0 - roughness)).rgb;
   float lod = roughness * float(PrefilteredMapMipLevels);
   vec3 prefilteredColor =
       tonemap(textureLod(PrefilteredMap, reflectionDir, lod)).rgb;
@@ -700,8 +698,6 @@ void main() {
 #endif
   fragmentColor = vec4(emissiveColor, baseColor.a);
 
-
-
 /////////////////
 //Roughness calc
 
@@ -758,7 +754,7 @@ float metallic = Material.metallic;
 
   vec3 cc_Normal = n;
   // TODO Need to explore this
-#if defined(CLEAR_COAT_NORMAL_TEXTURE) //&& defined(PRECOMPUTED_TANGENT)
+#if defined(CLEAR_COAT_NORMAL_TEXTURE)
   cc_Normal = getNormalFromNormalMap(texture(ClearCoatNormalTexture, texCoord).xyz, ClearCoat.normalTextureScale, TBN);
     // // NEED tangent frame
   // vec3 clearcoatMapN =
@@ -839,7 +835,7 @@ float metallic = Material.metallic;
 #endif // ANISOTROPY_LAYER_TEXTURE
 
   //Tangent and bitangent
-  vec3 anisotropicT = normalize(TBN * vec3(anisotropyDir, 0.0));
+  vec3 anisotropicT = cross(normalize(TBN * vec3(anisotropyDir, 0.0)), view);
   vec3 anisotropicB = normalize(cross(n, anisotropicT));
 
 #endif // ANISOTROPY_LAYER
@@ -919,19 +915,20 @@ float metallic = Material.metallic;
         BRDF_BurleyDiffuseRenorm(diffuseColor, l,
                            alphaRoughness);
 
-  #if defined(ANISOTROPY_LAYER)
-    // Specular microfacet for anisotropic layer
-    AnisotropyInfo info;
-    configureAnisotropyInfo(anisotropyDir, anisotropy, anisotropicT, anisotropicB, l, view, alphaRoughness, info);
+  // #if defined(ANISOTROPY_LAYER)
+  //   // Specular microfacet for anisotropic layer
+  //   AnisotropyInfo info;
+  //   configureAnisotropyInfo(anisotropyDir, anisotropy, anisotropicT, anisotropicB, l, view, alphaRoughness, info);
 
-    // Anisotropic specular contribution
-    vec3 currentSpecularContrib = l.projLightRadiance * INV_PI * BRDF_specularAnisotropicGGX(fresnel, l, info);
+  //   // Anisotropic specular contribution
+  //   vec3 currentSpecularContrib = l.projLightRadiance * INV_PI *
+  //               BRDF_specularAnisotropicGGX(fresnel, l, info);
 
-  #else
+  // #else
     // Specular microfacet - 1/pi from specular D normal dist function
     vec3 currentSpecularContrib = l.projLightRadiance * INV_PI *
                              BRDF_Specular(fresnel, l, alphaRoughness);
-  #endif // Anisotropy else isotropy
+  //#endif // Anisotropy else isotropy
 #if defined(CLEAR_COAT)
     LightInfo cc_l;
     //build a clearcoat normal-based light info
@@ -971,10 +968,22 @@ float metallic = Material.metallic;
 
   iblDiffuseContrib = computeIBLDiffuse(diffuseColor, n);
 
+// #if defined(ANISOTROPY_LAYER)
+//   //Derive bent normal for reflection
+//   vec3 bentNormal = cross(anisotropicB, view);
+//   bentNormal = normalize(cross(bentNormal, anisotropicB));
+//   // This heuristic can probably be improved upon
+//   float a = pow4(1.0 - anisotropy * (1.0 - alphaRoughness));
+//   bentNormal = normalize(mix(bentNormal, n, a));
+//   float ibl_n_dot_v = abs(dot(bentNormal, view));
+//   vec3 reflection = normalize(reflect(-view, bentNormal));
+// #else
+  float ibl_n_dot_v =  n_dot_v;
   vec3 reflection = normalize(reflect(-view, n));
+//#endif //if ANISOTROPY else
+
   iblSpecularContrib =
-      computeIBLSpecular(alphaRoughness, n_dot_v, specularColor_f0, reflection) *
-         ComponentScales[IblSpecular];
+      computeIBLSpecular(alphaRoughness, ibl_n_dot_v, specularColor_f0, reflection);
 
 #if defined(CLEAR_COAT)
   //Clear coat reflection
@@ -1029,6 +1038,9 @@ fragmentColor.rgb += vec3(ttlDiffuseContrib + ttlSpecularContrib);
   fragmentObjectId = ObjectId;
 #endif
 
+// #if defined(ANISOTROPY_LAYER)
+//   fragmentColor = vec4(1,0,0,1);
+// #endif
 
 // PBR equation debug
 // "none", "Diff (l,n)", "F (l,h)", "G (l,v,h)", "D (h)", "Specular"
