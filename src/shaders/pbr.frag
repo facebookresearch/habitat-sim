@@ -228,7 +228,7 @@ vec4 tonemap(vec4 color) {
 // Build TBN matrix
 // Using local gradient of position and UV coords to derive tangent if not provided
 // See https://jcgt.org/published/0009/03/04/paper.pdf Section 3.3
-#if (defined(NORMAL_TEXTURE) || defined(CLEAR_COAT_NORMAL_TEXTURE))
+#if (defined(NORMAL_TEXTURE) || defined(CLEAR_COAT_NORMAL_TEXTURE) || defined(ANISOTROPY_LAYER))
 mat3 buildTBN(){
   vec3 N = normalize(normal);
 #if defined(PRECOMPUTED_TANGENT)
@@ -309,6 +309,37 @@ struct LightInfo{
   vec3 projLightRadiance;
 };
 
+#if defined(ANISOTROPY_LAYER)
+//////////////////////////
+// Structure holding anisotropy info to faciliate passing as function arguments
+struct AnisotropyInfo{
+  // Tangent-space direction of anisotropy
+  vec2 dir;
+  // Strength of anisotropy
+  float anisotropy;
+  // anisotropic roughness value along tangent direction
+  float aT;
+  // anisotropic roughness value along bitangent direction
+  float aB;
+  // Tangent vector in world
+  vec3 anisotropyT;
+  // Bitangent vector in world
+  vec3 anisotropyB;
+  // cos angle between tangent and light
+  float t_dot_l;
+  // cos angle between tangent and halfvector
+  float t_dot_h;
+  // cos angle between tangent and view
+  float t_dot_v;
+  // cos angle between bitangent and light
+  float b_dot_l;
+  // cos angle between bitangent and halfvector
+  float b_dot_h;
+  // cos angle between bitangent and view
+  float b_dot_v;
+};
+#endif //ANISOTROPY_LAYER
+
 // Approx 2.5 speedup over pow
 float pow5(float v){
   float v2 = v * v;
@@ -382,12 +413,38 @@ float V_Kelemen(float v_dot_h){
   return .25 / (v_dot_h * v_dot_h);
 }
 
+
+#if defined(ANISOTROPY_LAYER)
+// Anisotropic Visibility function
+// l : LightInfo structure describing current light
+// anisoInfo : AnisotropyInfo structure describing tangentspace anisotropic quantities
+float V_GGX_anisotropic(LightInfo l, AnisotropyInfo anisoInfo){
+
+    float GGXV = l.n_dot_l * length(vec3(anisoInfo.aT * anisoInfo.t_dot_v, anisoInfo.aB * anisoInfo.b_dot_v, l.n_dot_v));
+    float GGXL = l.n_dot_v * length(vec3(anisoInfo.aT * anisoInfo.t_dot_l, anisoInfo.aB * anisoInfo.b_dot_l, l.n_dot_l));
+    float v = 0.5 / max(GGXV + GGXL, epsilon);
+    return clamp(v, 0.0, 1.0);
+}
+// Anisotropic microfacet distribution model
+// l : LightInfo structure describing current light
+// anisoInfo : AnisotropyInfo structure describing tangentspace anisotropic quantities
+float D_GGX_anisotropic(LightInfo l, AnisotropyInfo anisoInfo){
+    float a2 = anisoInfo.aT * anisoInfo.aB;
+    vec3 f = vec3(anisoInfo.aB * anisoInfo.t_dot_h, anisoInfo.aT * anisoInfo.b_dot_h, a2 * l.n_dot_h);
+    float w2 = a2 / dot(f, f);
+    //division by Pi performed later
+    return a2 * w2 * w2;
+}
+
+#endif //ANISOTROPY_LAYER
+
+
 // The following equation models the distribution of microfacet normals across
 // the area being drawn (aka D()) Implementation from "Average Irregularity
 // Representation of a Roughened Surface for Ray Reflection" by T. S.
 // Trowbridge, and K. P. Reitz Follows the distribution function recommended in
 // the SIGGRAPH 2013 course notes from EPIC Games [1], Equation 3.
-// n_dot_h : half vector projected on normal
+// n_dot_h : cos angle between half vector and normal
 // ar : alphaRoughness
 float D_GGX(float n_dot_h, float ar) {
   float arNdotH = ar * n_dot_h;
@@ -402,6 +459,7 @@ float D_GGX_old(float n_dot_h, float ar) {
   //division by Pi performed later
   return arSq / (f * f);
 }
+
 
 //Burley diffuse contribution is scaled by diffuse color f0 after scatter contributions are calculated
 const float BUR_DIFF_F0 = 1.0f;
@@ -444,7 +502,7 @@ vec3 BRDF_BurleyDiffuseRenorm(vec3 diffuseColor,
 // alphaRoughness: roughness of the surface (perceived roughness squared)
 vec3 BRDF_Specular(vec3 fresnel,
                   LightInfo l,
-                   float alphaRoughness) {
+                  float alphaRoughness) {
   vec3 specular = fresnel *
                   // Visibility function == G()/4(n_dot_l)(n_dot_v).
                   // Smith Height-Correlated visibility/occlusion function
@@ -464,7 +522,7 @@ vec3 BRDF_Specular(vec3 fresnel,
 // clearCoatRoughness : clearCoatPerceptualRoughness squared
 vec3 BRDF_ClearCoatSpecular(vec3 ccFresnel,
                   LightInfo cc_l,
-                    float clearCoatRoughness) {
+                  float clearCoatRoughness) {
   //ccFresnel term is using polyurethane f0 = vec3(0.4)
   vec3 ccSpecular = ccFresnel *
                   // Visibility function == G()/4(n_dot_l)(n_dot_v).
@@ -477,6 +535,66 @@ vec3 BRDF_ClearCoatSpecular(vec3 ccFresnel,
   return ccSpecular;
 }//BRDF_ClearCoatSpecular
 #endif // clearcoat support
+
+#if defined(ANISOTROPY_LAYER)
+// Specular BRDF for anisotropic layer
+// fresnel : Schlick approximation of Fresnel coefficient
+// l : LightInfo structure describing current light
+// anisoInfo : AnisotropyInfo structure
+vec3 BRDF_specularAnisotropicGGX(
+      vec3 fresnel,
+      LightInfo l,
+      AnisotropyInfo anisoInfo){
+    // Using base material fresnel
+    vec3 anisoSpecular = fresnel *
+            //Visibility term
+            V_GGX_anisotropic(l, anisoInfo) *
+            //microfacet normal distribution
+            D_GGX_anisotropic(l, anisoInfo);
+
+    return anisoSpecular;
+}
+
+// Configure an AnisotropyInfo object
+// dir : the tangent-space direction of the anisotropy
+// anisotropy : strength of anisotropy
+// anisotropyT : world space tangent
+// anisotropyB : world space bitangent
+// l : current light's LightInfo
+// view : view vector
+// alphaRoughness : linearized material roughness (perceived roughness squared)
+// info : AnisotropyInfo structure to be populated
+void configureAnisotropyInfo(
+  vec2 dir,
+  float anisotropy,
+  vec3 anisotropyT,
+  vec3 anisotropyB,
+  LightInfo l,
+  vec3 view,
+  float alphaRoughness,
+  out AnisotropyInfo info){
+    info.dir = dir;
+    info.anisotropy = anisotropy;
+    // Derive roughness in each direction
+    // From standard https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_anisotropy#implementation
+    // info.aT = mix(alphaRoughness, 1.0, anisotropy*anisotropy);
+    // info.aB = alphaRoughness;
+    // From https://google.github.io/filament/Filament.md.html#materialsystem/anisotropicmodel/anisotropicspecularbrdf
+    info.aT = max(alphaRoughness * (1.0 + anisotropy), epsilon);
+    info.aB = max(alphaRoughness * (1.0 - anisotropy), epsilon);
+
+    info.anisotropyT = anisotropyT;
+    info.anisotropyB = anisotropyB;
+    info.t_dot_l = dot(anisotropyT, l.light);
+    info.b_dot_l = dot(anisotropyB, l.light);
+    info.t_dot_h = dot(anisotropyT, l.halfVector);
+    info.b_dot_h = dot(anisotropyB, l.halfVector);
+    info.t_dot_v = dot(anisotropyT, view);
+    info.b_dot_v = dot(anisotropyB, view);
+
+} // configureAnisotropyInfo
+
+#endif // ANISOTROPY_LAYER
 
 #if defined(IMAGE_BASED_LIGHTING)
 // diffuseColor: diffuse color
@@ -522,8 +640,7 @@ void configureLightInfo(
     l.v_dot_h = clamp(dot(view, l.halfVector), 0.0, 1.0),
     l.n_dot_h = clamp(dot(n, l.halfVector), 0.0, 1.0),
     l.projLightRadiance = lightRadiance * l.n_dot_l;
-}//configureLightInfo
-
+} // configureLightInfo
 
 
 void main() {
@@ -534,7 +651,7 @@ void main() {
 // See https://jcgt.org/published/0009/03/04/paper.pdf Section 3.3
 
 // TODO verify this is acceptable performance
-#if defined(NORMAL_TEXTURE) || defined(CLEAR_COAT_NORMAL_TEXTURE)
+#if defined(NORMAL_TEXTURE) || defined(CLEAR_COAT_NORMAL_TEXTURE) || defined(ANISOTROPY_LAYER)
   mat3 TBN = buildTBN();
 #endif
 
@@ -612,11 +729,6 @@ float metallic = Material.metallic;
   // diffuse color remapping based on metallic value (aka c_diff)
   // https://google.github.io/filament/Filament.md.html#listing_basecolortodiffuse
   vec3 diffuseColor =  baseColor.rgb * (1 - metallic);
-
-
-
-  //TODO : diffuse color is darkened by clearcoat.
-  //https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_clearcoat
 
 /////////////////
 //Clearcoat layer support
@@ -712,6 +824,25 @@ float metallic = Material.metallic;
 ////////////////////
 // Anisotropy Layer support
 
+// init from here
+// https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_anisotropy#individual-lights
+#if defined(ANISOTROPY_LAYER)
+  float anisotropy = AnisotropyLayer.factor;
+  vec2 anisotropyDir = AnisotropyLayer.direction;
+
+#if defined(ANISOTROPY_LAYER_TEXTURE)
+  vec3 anisotropyTex = texture(AnisotropyLayerTexture, texCoord).rgb;
+  anisotropyDir = anisotropyTex.rg * 2.0 - vec2(1.0);
+  anisotropyDir = mat2(AnisotropyLayer.direction.x, AnisotropyLayer.direction.y, -AnisotropyLayer.direction.y, AnisotropyLayer.direction.x) * normalize(anisotropyDir);
+  anisotropy *= anisotropyTex.b;
+#endif // ANISOTROPY_LAYER_TEXTURE
+
+  //Tangent and bitangent
+  vec3 anisotropicT = normalize(TBN * vec3(anisotropyDir, 0.0));
+  vec3 anisotropicB = normalize(cross(n, anisotropicT));
+
+#endif // ANISOTROPY_LAYER
+
 
 /////////////////
 // lights
@@ -786,10 +917,20 @@ float metallic = Material.metallic;
         l.projLightRadiance * INV_PI *
         BRDF_BurleyDiffuseRenorm(diffuseColor, l,
                            alphaRoughness);
+
+  #if defined(ANISOTROPY_LAYER)
+    // Specular microfacet for anisotropic layer
+    AnisotropyInfo info;
+    configureAnisotropyInfo(anisotropyDir, anisotropy, anisotropicT, anisotropicB, l, view, alphaRoughness, info);
+
+    // Anisotropic specular contribution
+    vec3 currentSpecularContrib = l.projLightRadiance * INV_PI * BRDF_specularAnisotropicGGX(fresnel, l, info);
+
+  #else
     // Specular microfacet - 1/pi from specular D normal dist function
     vec3 currentSpecularContrib = l.projLightRadiance * INV_PI *
                              BRDF_Specular(fresnel, l, alphaRoughness);
-
+  #endif // Anisotropy else isotropy
 #if defined(CLEAR_COAT)
     LightInfo cc_l;
     //build a clearcoat normal-based light info
