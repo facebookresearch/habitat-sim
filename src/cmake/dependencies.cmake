@@ -349,16 +349,24 @@ if(NOT USE_SYSTEM_MAGNUM)
     # Make Magnum text rendering plugins (used by the native viewer) available
     # for Python as well; and reset that back to strange build procedures that
     # turn some features off again later can still work.
+    set(
+      common_plugins
+      Magnum::AnyImageConverter
+      Magnum::AnyImageImporter
+      Magnum::AnySceneImporter
+      MagnumPlugins::AssimpImporter
+      MagnumPlugins::BasisImporter
+      MagnumPlugins::GltfImporter
+      MagnumPlugins::StbImageConverter
+      MagnumPlugins::StbImageImporter
+    )
     if(BUILD_GUI_VIEWERS)
-      set(MAGNUM_PYTHON_BINDINGS_STATIC_PLUGINS
-          MagnumPlugins::StbTrueTypeFont Magnum::AnySceneImporter
-          MagnumPlugins::AssimpImporter CACHE STRING "" FORCE
-      )
-    else()
-      set(MAGNUM_PYTHON_BINDINGS_STATIC_PLUGINS Magnum::AnySceneImporter
-                                                MagnumPlugins::AssimpImporter
+      set(MAGNUM_PYTHON_BINDINGS_STATIC_PLUGINS ${common_plugins}
+                                                MagnumPlugins::StbTrueTypeFont
           CACHE STRING "" FORCE
       )
+    else()
+      set(MAGNUM_PYTHON_BINDINGS_STATIC_PLUGINS ${common_plugins} CACHE STRING "" FORCE)
     endif()
     add_subdirectory("${DEPS_DIR}/magnum-bindings")
   endif()
