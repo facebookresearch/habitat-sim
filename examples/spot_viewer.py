@@ -298,6 +298,7 @@ class HabitatSimInteractiveViewer(Application):
         self.removed_clutter = []
         self.translation_speed = 0.05
         self.rotation_speed = 0.1
+        self.navmesh_dirty = False
 
         # configure our simulator
         self.cfg: Optional[habitat_sim.simulator.Configuration] = None
@@ -441,6 +442,9 @@ class HabitatSimInteractiveViewer(Application):
                     simulation_call()
             if global_call is not None:
                 global_call()
+            if self.navmesh_dirty:
+                self.navmesh_config_and_recompute()
+                self.navmesh_dirty = False
 
             # reset time_since_last_simulation, accounting for potential overflow
             self.time_since_last_simulation = math.fmod(
@@ -696,7 +700,7 @@ class HabitatSimInteractiveViewer(Application):
             if rotation is not None:
                 self.selected_object.rotation = rotation * self.selected_object.rotation
             self.selected_object.motion_type = habitat_sim.physics.MotionType.STATIC
-            self.navmesh_config_and_recompute()
+            self.navmesh_dirty = True
             self.modified_objects_buffer[
                 self.selected_object
             ] = self.selected_object.transformation
@@ -812,7 +816,7 @@ class HabitatSimInteractiveViewer(Application):
             #    f.write(json.dumps(self.modified_objects_buffer, indent=2))
             aom = self.sim.get_articulated_object_manager()
             aom.remove_all_objects()
-            self.sim.save_current_scene_config()
+            self.sim.save_current_scene_config(overwrite=True)
             print(
                 "Saved modified scene instance JSON to original location. Look for '<scene_name> (copy:0000)' or similar."
             )
