@@ -281,11 +281,10 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     }
 
     // anisotropy layer data and texture
-
     if (flags_ & Flag::AnisotropyLayer) {
       anisotropyLayerFactorUniform_ = uniformLocation("AnisotropyLayer.factor");
-      anisotropyLayerRotationUniform_ =
-          uniformLocation("AnisotropyLayer.rotation");
+      anisotropyLayerDirectionUniform_ =
+          uniformLocation("AnisotropyLayer.direction");
       if (flags_ >= Flag::AnisotropyLayerTexture) {
         setUniform(uniformLocation("AnisotropyLayerTexture"),
                    pbrTextureUnitSpace::TextureUnit::AnisotropyLayer);
@@ -347,6 +346,11 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     if (flags_ & Flag::SpecularLayer) {
       setSpecularLayerFactor(1.0f);
       setSpecularLayerColorFactor(Mn::Color3{1.0f});
+    }
+    if (flags_ & Flag::AnisotropyLayer) {
+      setAnisotropyLayerFactor(0.0f);
+      // Default to 0 rotation
+      setAnisotropyLayerDirection({1.0f, 0.0f});
     }
   }
 
@@ -644,9 +648,10 @@ PbrShader& PbrShader::setAnisotropyLayerFactor(float anisoLayerFactor) {
   return *this;
 }
 
-PbrShader& PbrShader::setAnisotropyLayerRotation(float anisoLayerRotation) {
+PbrShader& PbrShader::setAnisotropyLayerDirection(
+    const Magnum::Vector2& anisoLayerDirection) {
   if (lightingIsEnabled()) {
-    setUniform(anisotropyLayerRotationUniform_, anisoLayerRotation);
+    setUniform(anisotropyLayerDirectionUniform_, anisoLayerDirection);
   }
   return *this;
 }

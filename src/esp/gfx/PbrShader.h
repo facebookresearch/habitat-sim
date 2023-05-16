@@ -478,10 +478,11 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   PbrShader& setAnisotropyLayerFactor(float anisoLayerFactor);
 
   /**
-   * @brief Set anisotropy layer rotation
+   * @brief Set anisotropy layer direction 2d vector
    * @return Reference to self (for method chaining)
    */
-  PbrShader& setAnisotropyLayerRotation(float anisoLayerRotation);
+  PbrShader& setAnisotropyLayerDirection(
+      const Magnum::Vector2& anisoLayerDirection);
 
   /**
    *  @brief Set object id to the uniform on GPU
@@ -692,7 +693,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   int anisotropyLayerFactorUniform_ = ID_UNDEFINED;
 
-  int anisotropyLayerRotationUniform_ = ID_UNDEFINED;
+  int anisotropyLayerDirectionUniform_ = ID_UNDEFINED;
 
   // scales
   int componentScalesUniform_ = ID_UNDEFINED;
