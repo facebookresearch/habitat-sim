@@ -424,8 +424,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   if (flags_ & PbrShader::Flag::ClearCoatLayer) {
     (*shader_)
         .setClearCoatFactor(matCache.clearCoat.factor)
-        .setClearCoatRoughness(matCache.clearCoat.roughnessFactor)
-        .setClearCoatNormalTextureScale(matCache.clearCoat.normalTextureScale);
+        .setClearCoatRoughness(matCache.clearCoat.roughnessFactor);
     if (flags_ >= PbrShader::Flag::ClearCoatTexture) {
       shader_->bindClearCoatFactorTexture(*matCache.clearCoat.texture);
     }
@@ -434,7 +433,9 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
           *matCache.clearCoat.roughnessTexture);
     }
     if (flags_ >= PbrShader::Flag::ClearCoatNormalTexture) {
-      shader_->bindClearCoatNormalTexture(*matCache.clearCoat.normalTexture);
+      (*shader_)
+          .setClearCoatNormalTextureScale(matCache.clearCoat.normalTextureScale)
+          .bindClearCoatNormalTexture(*matCache.clearCoat.normalTexture);
     }
   }
 
