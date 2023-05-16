@@ -357,7 +357,6 @@ if(NOT USE_SYSTEM_MAGNUM)
       MagnumPlugins::AssimpImporter
       MagnumPlugins::BasisImporter
       MagnumPlugins::GltfImporter
-      MagnumPlugins::StanfordImporter
       MagnumPlugins::StbImageConverter
       MagnumPlugins::StbImageImporter
     )
