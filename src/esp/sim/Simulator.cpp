@@ -896,9 +896,9 @@ double Simulator::getPhysicsTimeStep() {
 }
 
 bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
-                                 const nav::NavMeshSettings& navMeshSettings,
-                                 const bool includeStaticObjects) {
-  assets::MeshData::ptr joinedMesh = getJoinedMesh(includeStaticObjects);
+                                 const nav::NavMeshSettings& navMeshSettings) {
+  assets::MeshData::ptr joinedMesh =
+      getJoinedMesh(navMeshSettings.includeStaticObjects);
 
   if (!pathfinder.build(navMeshSettings, *joinedMesh)) {
     ESP_ERROR() << "Failed to build navmesh";

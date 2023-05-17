@@ -265,8 +265,8 @@ void initSimBindings(py::module& m) {
            R"(Enable or disable bounding box visualization for an object.)")
       .def(
           "recompute_navmesh", &Simulator::recomputeNavMesh, "pathfinder"_a,
-          "navmesh_settings"_a, "include_static_objects"_a = false,
-          R"(Recompute the NavMesh for a given PathFinder instance using configured NavMeshSettings. Optionally include all MotionType::STATIC objects in the navigability constraints.)")
+          "navmesh_settings"_a,
+          R"(Recompute the NavMesh for a given PathFinder instance using configured NavMeshSettings.)")
 #ifdef ESP_BUILD_WITH_VHACD
       .def(
           "apply_convex_hull_decomposition",

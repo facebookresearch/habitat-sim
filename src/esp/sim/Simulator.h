@@ -590,8 +590,7 @@ class Simulator {
    * @return Whether or not the navmesh recomputation succeeded.
    */
   bool recomputeNavMesh(nav::PathFinder& pathfinder,
-                        const nav::NavMeshSettings& navMeshSettings,
-                        bool includeStaticObjects = false);
+                        const nav::NavMeshSettings& navMeshSettings);
 
   /**
    * @brief Get the joined mesh data for all objects in the scene

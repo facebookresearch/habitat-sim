@@ -474,13 +474,15 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
       simulator->getPathFinder()->isNavigable({randomNavPoint}, 0.1));
 
   // recompute with object
+  navMeshSettings.includeStaticObjects = true;
   simulator->recomputeNavMesh(*simulator->getPathFinder().get(),
-                              navMeshSettings, true);
+                              navMeshSettings);
   CORRADE_VERIFY(!simulator->getPathFinder()->isNavigable(randomNavPoint, 0.1));
 
   // recompute without again
+  navMeshSettings.includeStaticObjects = false;
   simulator->recomputeNavMesh(*simulator->getPathFinder().get(),
-                              navMeshSettings, false);
+                              navMeshSettings);
   CORRADE_VERIFY(simulator->getPathFinder()->isNavigable(randomNavPoint, 0.1));
 
   rigidObjMgr->removePhysObjectByHandle(obj->getHandle());
@@ -499,8 +501,9 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
   CORRADE_VERIFY(
       simulator->getPathFinder()->isNavigable(randomNavPoint + offset, 0.2));
   // recompute with object
+  navMeshSettings.includeStaticObjects = true;
   simulator->recomputeNavMesh(*simulator->getPathFinder().get(),
-                              navMeshSettings, true);
+                              navMeshSettings);
   CORRADE_VERIFY(!simulator->getPathFinder()->isNavigable(randomNavPoint, 0.1));
   CORRADE_VERIFY(
       simulator->getPathFinder()->isNavigable(randomNavPoint + offset, 0.2));
