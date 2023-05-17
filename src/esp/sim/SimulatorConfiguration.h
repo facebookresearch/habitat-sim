@@ -9,15 +9,12 @@
 #include <string>
 
 #include "esp/core/Esp.h"
+#include "esp/nav/PathFinder.h"
 #include "esp/physics/configure.h"
 
 namespace Cr = Corrade;
 
 namespace esp {
-
-namespace nav {
-struct NavMeshSettings;
-}
 
 namespace sim {
 struct SimulatorConfiguration {

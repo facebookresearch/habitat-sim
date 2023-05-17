@@ -26,7 +26,8 @@ bool operator==(const SimulatorConfiguration& a,
          a.sceneDatasetConfigFile == b.sceneDatasetConfigFile &&
          a.physicsConfigFile == b.physicsConfigFile &&
          a.overrideSceneLightDefaults == b.overrideSceneLightDefaults &&
-         a.sceneLightSetupKey == b.sceneLightSetupKey;
+         a.sceneLightSetupKey == b.sceneLightSetupKey &&
+         a.navMeshSettings == b.navMeshSettings;
 }
 
 bool operator!=(const SimulatorConfiguration& a,

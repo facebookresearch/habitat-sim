@@ -252,7 +252,7 @@ void initShortestPathBindings(py::module& m) {
            "pt"_a, "max_y_delta"_a = 0.5)
       .def_property_readonly("nav_mesh_settings",
                              &PathFinder::getNavMeshSettings,
-                             R"(The  settings for the current nav mesh)");
+                             R"(The settings for the current NavMesh.)");
 
   // this enum is used by GreedyGeodesicFollowerImpl so it needs to be defined
   // before it
