@@ -192,7 +192,8 @@ void main() {
 
   float perceivedRoughness = Material.roughness;
 #if defined(NONE_ROUGHNESS_METALLIC_TEXTURE)
-  perceivedRoughness *= texture(MetallicRoughnessTexture, texCoord).g;
+  vec3 RoughnessMetallicSample = texture(MetallicRoughnessTexture, texCoord).rgb;
+  perceivedRoughness *= RoughnessMetallicSample.g;
 #endif
   // clamp roughness to prevent denormals in distribution function calc
   perceivedRoughness = clamp(perceivedRoughness, 0.045, 1.0);
@@ -206,7 +207,7 @@ void main() {
 
 float metallic = Material.metallic;
 #if defined(NONE_ROUGHNESS_METALLIC_TEXTURE)
-  metallic *= texture(MetallicRoughnessTexture, texCoord).b;
+  metallic *= RoughnessMetallicSample.b;
 #endif
 
 /////////////////

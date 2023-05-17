@@ -194,12 +194,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
       setUniform(uniformLocation("MetallicRoughnessTexture"),
                  pbrTextureUnitSpace::TextureUnit::MetallicRoughness);
     }
-    // TODO: explore the normal mapping without the precomputed tangent.
-    // see http://www.thetenthplanet.de/archives/1180
-    // also:
-    // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/data/shaders/pbr_khr.frag
-    if (flags_ &
-        Flag::NormalTexture) {  //&& (flags_ & Flag::PrecomputedTangent)) {
+    if (flags_ & Flag::NormalTexture) {
       setUniform(uniformLocation("NormalTexture"),
                  pbrTextureUnitSpace::TextureUnit::Normal);
     }
