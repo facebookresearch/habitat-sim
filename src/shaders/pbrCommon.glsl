@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
-// LICENSE file in the root directory of this source tre
+// LICENSE file in the root directory of this source tree.
 
 precision highp float;
 
@@ -58,4 +58,19 @@ float normalDistributionGGX(float n_dot_h, float alphaRoughness) {
   d = PI * d * d;
 
   return a2 / d;
+}
+
+// Approx 2.5 speedup over pow with integer coeffs
+float pow5(float v){
+  float v2 = v * v;
+  return v2 * v2 * v;
+}
+
+float pow4(float v){
+  float v2 = v * v;
+  return v2 * v2;
+}
+
+float pow2(float v){
+  return v * v;
 }
