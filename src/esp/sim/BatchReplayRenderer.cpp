@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -8,6 +8,7 @@
 
 #include <Corrade/Containers/GrowableArray.h>
 #include <Corrade/Utility/Algorithms.h>
+#include <Magnum/GL/AbstractFramebuffer.h>
 #include <Magnum/GL/Context.h>
 #include <Magnum/Image.h>
 #include <Magnum/ImageView.h>
@@ -55,6 +56,33 @@ BatchReplayRenderer::BatchReplayRenderer(
         : renderer_{renderer}, sceneId_{sceneId} {}
 
    private:
+    bool isSupportedRenderAsset(
+        const Corrade::Containers::StringView& filepath) {
+      // Primitives aren't directly supported in the Magnum batch renderer. See
+      // https://docs.google.com/document/d/1ngA73cXl3YRaPfFyICSUHONZN44C-XvieS7kwyQDbkI/edit#bookmark=id.yq39718gqbwz
+
+      const std::array<Corrade::Containers::StringView, 12> primNamePrefixes = {
+          "capsule3DSolid",     "capsule3DWireframe", "coneSolid",
+          "coneWireframe",      "cubeSolid",          "cubeWireframe",
+          "cylinderSolid",      "cylinderWireframe",  "icosphereSolid",
+          "icosphereWireframe", "uvSphereSolid",      "uvSphereWireframe"};
+
+      // primitive render asset filepaths start with one of the above prefixes.
+      // Examples: icosphereSolid_subdivs_1
+      // capsule3DSolid_hemiRings_4_cylRings_1_segments_12_halfLen_3.25_useTexCoords_false_useTangents_false
+      for (const auto& primNamePrefix : primNamePrefixes) {
+        if (filepath.size() < primNamePrefix.size()) {
+          continue;
+        }
+
+        if (filepath.prefix(primNamePrefix.size()) == primNamePrefix) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
     gfx::replay::NodeHandle loadAndCreateRenderAssetInstance(
         const esp::assets::AssetInfo& assetInfo,
         const esp::assets::RenderAssetInstanceCreationInfo& creation) override {
@@ -62,16 +90,22 @@ BatchReplayRenderer::BatchReplayRenderer(
       // TODO is creation.lightSetupKey actually mapping to anything in the
       //  replay file?
 
+      if (!isSupportedRenderAsset(creation.filepath)) {
+        ESP_WARNING() << "Unsupported render asset: " << creation.filepath;
+        return nullptr;
+      }
+
       /* If no such name is known yet, add as a file */
       if (!renderer_.hasNodeHierarchy(creation.filepath)) {
         ESP_WARNING()
             << creation.filepath
             << "not found in any composite file, loading from the filesystem";
-        // TODO asserts might be TOO BRUTAL?
-        CORRADE_INTERNAL_ASSERT_OUTPUT(
+
+        ESP_CHECK(
             renderer_.addFile(creation.filepath,
                               gfx_batch::RendererFileFlag::Whole |
-                                  gfx_batch::RendererFileFlag::GenerateMipmap));
+                                  gfx_batch::RendererFileFlag::GenerateMipmap),
+            "addFile failed for " << creation.filepath);
         CORRADE_INTERNAL_ASSERT(renderer_.hasNodeHierarchy(creation.filepath));
       }
 
@@ -224,6 +258,9 @@ void BatchReplayRenderer::doRender(
                  "with a standalone renderer", );
   static_cast<gfx_batch::RendererStandalone&>(*renderer_).draw();
 
+  // todo: integrate debugLineRender_->flushLines
+  CORRADE_INTERNAL_ASSERT(!debugLineRender_);
+
   for (int envIndex = 0; envIndex != envs_.size(); ++envIndex) {
     const auto rectangle = Mn::Range2Di::fromSize(
         renderer_->tileSize() *
@@ -242,7 +279,57 @@ void BatchReplayRenderer::doRender(
                  "a standalone renderer", );
 
   renderer_->draw(framebuffer);
+
+  if (debugLineRender_) {
+    framebuffer.bind();
+    constexpr unsigned envIndex = 0;
+    auto projCamMatrix = renderer_->camera(envIndex);
+    debugLineRender_->flushLines(projCamMatrix, renderer_->tileSize());
+  }
 }
 
+esp::geo::Ray BatchReplayRenderer::doUnproject(
+    CORRADE_UNUSED unsigned envIndex,
+    const Mn::Vector2i& viewportPosition) {
+  // temp stub implementation: produce a placeholder ray that varies with
+  // viewportPosition
+  return esp::geo::Ray(
+      {static_cast<float>(viewportPosition.x()) / renderer_->tileSize().x(),
+       0.5f,
+       static_cast<float>(viewportPosition.y()) / renderer_->tileSize().y()},
+      {0.f, -1.f, 0.f});
+}
+
+const void* BatchReplayRenderer::getCudaColorBufferDevicePointer() {
+#ifdef ESP_BUILD_WITH_CUDA
+  CORRADE_ASSERT(standalone_,
+                 "ReplayBatchRenderer::colorCudaBufferDevicePointer(): can use "
+                 "this function only "
+                 "with a standalone renderer",
+                 nullptr);
+  return static_cast<gfx_batch::RendererStandalone&>(*renderer_)
+      .colorCudaBufferDevicePointer();
+#else
+  ESP_ERROR() << "Failed to retrieve device pointer because CUDA is not "
+                 "available in this build.";
+  return nullptr;
+#endif
+}
+
+const void* BatchReplayRenderer::getCudaDepthBufferDevicePointer() {
+#ifdef ESP_BUILD_WITH_CUDA
+  CORRADE_ASSERT(standalone_,
+                 "ReplayBatchRenderer::getCudaDepthBufferDevicePointer(): can "
+                 "use this function only "
+                 "with a standalone renderer",
+                 nullptr);
+  return static_cast<gfx_batch::RendererStandalone&>(*renderer_)
+      .depthCudaBufferDevicePointer();
+#else
+  ESP_ERROR() << "Failed to retrieve device pointer because CUDA is not "
+                 "available in this build.";
+  return nullptr;
+#endif
+}
 }  // namespace sim
 }  // namespace esp

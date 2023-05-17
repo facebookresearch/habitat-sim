@@ -35,7 +35,9 @@ const std::unordered_map<ConfigStoredType, std::string, ConfigStoredTypeHash>
                           {ConfigStoredType::Boolean, "bool"},
                           {ConfigStoredType::Integer, "int"},
                           {ConfigStoredType::Double, "double"},
+                          {ConfigStoredType::MagnumVec2, "Mn::Vector2"},
                           {ConfigStoredType::MagnumVec3, "Mn::Vector3"},
+                          {ConfigStoredType::MagnumVec4, "Mn::Vector4"},
                           {ConfigStoredType::MagnumMat3, "Mn::Matrix3"},
                           {ConfigStoredType::MagnumQuat, "Mn::Quaternion"},
                           {ConfigStoredType::MagnumRad, "Mn::Rad"},
@@ -180,9 +182,19 @@ std::string ConfigValue::getAsString() const {
     case ConfigStoredType::String: {
       return get<std::string>();
     }
+
+    case ConfigStoredType::MagnumVec2: {
+      auto v = get<Mn::Vector2>();
+      return Cr::Utility::formatString("[{} {}]", v.x(), v.y());
+    }
     case ConfigStoredType::MagnumVec3: {
       auto v = get<Mn::Vector3>();
       return Cr::Utility::formatString("[{} {} {}]", v.x(), v.y(), v.z());
+    }
+    case ConfigStoredType::MagnumVec4: {
+      auto v = get<Mn::Vector4>();
+      return Cr::Utility::formatString("[{} {} {} {}]", v.x(), v.y(), v.z(),
+                                       v.w());
     }
     case ConfigStoredType::MagnumMat3: {
       auto m = get<Mn::Matrix3>();
@@ -224,8 +236,14 @@ io::JsonGenericValue ConfigValue::writeToJsonObject(
     case ConfigStoredType::Double: {
       return io::toJsonValue(get<double>(), allocator);
     }
+    case ConfigStoredType::MagnumVec2: {
+      return io::toJsonValue(get<Mn::Vector2>(), allocator);
+    }
     case ConfigStoredType::MagnumVec3: {
       return io::toJsonValue(get<Mn::Vector3>(), allocator);
+    }
+    case ConfigStoredType::MagnumVec4: {
+      return io::toJsonValue(get<Mn::Vector4>(), allocator);
     }
     case ConfigStoredType::MagnumMat3: {
       return io::toJsonValue(get<Mn::Matrix3>(), allocator);
@@ -260,8 +278,12 @@ bool ConfigValue::putValueInConfigGroup(
       return cfg.setValue(key, get<double>());
     case ConfigStoredType::String:
       return cfg.setValue(key, get<std::string>());
+    case ConfigStoredType::MagnumVec2:
+      return cfg.setValue(key, get<Mn::Vector2>());
     case ConfigStoredType::MagnumVec3:
       return cfg.setValue(key, get<Mn::Vector3>());
+    case ConfigStoredType::MagnumVec4:
+      return cfg.setValue(key, get<Mn::Vector4>());
     case ConfigStoredType::MagnumMat3:
       return cfg.setValue(key, get<Mn::Matrix3>());
     case ConfigStoredType::MagnumQuat:
@@ -286,7 +308,6 @@ Mn::Debug& operator<<(Mn::Debug& debug, const ConfigValue& value) {
 
 int Configuration::loadFromJson(const io::JsonGenericValue& jsonObj) {
   // count number of valid user config settings found
-
   int numConfigSettings = 0;
   for (rapidjson::Value::ConstMemberIterator it = jsonObj.MemberBegin();
        it != jsonObj.MemberEnd(); ++it) {
@@ -305,19 +326,82 @@ int Configuration::loadFromJson(const io::JsonGenericValue& jsonObj) {
     } else if (obj.IsBool()) {
       set(key, obj.GetBool());
     } else if (obj.IsArray() && obj.Size() > 0) {
-      // non-empty array of values
+      // non-empty array of numeric values
       if (obj[0].IsNumber()) {
-        // numeric vector or quaternion
-        if (obj.Size() == 3) {
+        // numeric vector, quaternion or matrix
+        if (obj.Size() == 2) {
+          // All size 2 numeric arrays are mapped to Mn::Vector2
+          Mn::Vector2 val{};
+          if (io::fromJsonValue(obj, val)) {
+            set(key, val);
+          }
+        } else if (obj.Size() == 3) {
+          // All size 3 numeric arrays are mapped to Mn::Vector3
           Mn::Vector3 val{};
           if (io::fromJsonValue(obj, val)) {
             set(key, val);
           }
         } else if (obj.Size() == 4) {
-          // assume is quaternion
-          Mn::Quaternion val{};
-          if (io::fromJsonValue(obj, val)) {
-            set(key, val);
+          // JSON numeric array of size 4 can be either vector4, quaternion or
+          // color4, so must get type of object that exists with key
+          // NOTE : to properly make use of vector4 and color4 configValues
+          // loaded from JSON, the owning Configuration must be
+          // pre-initialized in its constructor with a default value at the
+          // target key. Otherwise for backwards compatibility, we default to
+          // reading a quaternion
+
+          // Check if this configuration has pre-defined field with given key
+          if (hasValue(key)) {
+            ConfigStoredType valType = get(key).getType();
+            if (valType == ConfigStoredType::MagnumQuat) {
+              // if predefined object is neither
+              Mn::Quaternion val{};
+              if (io::fromJsonValue(obj, val)) {
+                set(key, val);
+              }
+            } else if (valType == ConfigStoredType::MagnumVec4) {
+              // if object exists already @ key and its type is Vector4
+              Mn::Vector4 val{};
+              if (io::fromJsonValue(obj, val)) {
+                set(key, val);
+              }
+            } else {
+              // unknown predefined type of config of size 4
+              // this indicates incomplete implementation of size 4
+              // configuration type.
+              // decrement count for key:obj due to not being handled vector
+              --numConfigSettings;
+
+              ESP_WARNING()
+                  << "Config cell in JSON document contains key" << key
+                  << "referencing an existing configuration element of size "
+                     "4 of unknown type:"
+                  << getNameForStoredType(valType) << "so skipping.";
+            }
+          } else {
+            // This supports fields that do not yet exist.
+            // Check if label contains substrings inferring expected type,
+            // otherwise assume this field is a mn::Vector4
+
+            auto lcaseKey = Cr::Utility::String::lowercase(key);
+            // labels denoting quaternions
+            if ((lcaseKey.find("quat") != std::string::npos) ||
+                (lcaseKey.find("rotat") != std::string::npos) ||
+                (lcaseKey.find("orient") != std::string::npos)) {
+              // object label contains quaternion tag, treat as a
+              // Mn::Quaternion
+              Mn::Quaternion val{};
+              if (io::fromJsonValue(obj, val)) {
+                set(key, val);
+              }
+            } else {
+              // if unrecognized label for user-defined field, default the
+              // value to be treated as a Mn::Vector4
+              Mn::Vector4 val{};
+              if (io::fromJsonValue(obj, val)) {
+                set(key, val);
+              }
+            }
           }
         } else if (obj.Size() == 9) {
           // assume is 3x3 matrix
@@ -334,14 +418,31 @@ int Configuration::loadFromJson(const io::JsonGenericValue& jsonObj) {
               << "referencing an unsupported numeric array of length :"
               << obj.Size() << "so skipping.";
         }
-      } else {
-        // decrement count for key:obj due to not being handled vector or matrix
-        --numConfigSettings;
-        // TODO support numeric array in JSON
-        ESP_WARNING() << "Config cell in JSON document contains key" << key
-                      << "referencing an unsupported array of non-numeric, "
-                         "non-array type of length :"
-                      << obj.Size() << "so skipping.";
+      } else if (obj[0].IsString()) {
+        // Array of strings
+
+        // create a new subgroup
+        std::shared_ptr<core::config::Configuration> subGroupPtr =
+            getSubconfigCopy<core::config::Configuration>(key);
+
+        for (size_t i = 0; i < obj.Size(); ++i) {
+          std::string dest;
+          if (!io::fromJsonValue(obj[i], dest)) {
+            ESP_ERROR() << "Failed to parse array element" << i
+                        << "in non-numeric list of values keyed by" << key
+                        << "so skipping this value.";
+          } else {
+            const std::string subKey =
+                Cr::Utility::formatString("{}_{:.02d}", key, i);
+            subGroupPtr->set(subKey, dest);
+            // Increment for each sub-config object
+            ++numConfigSettings;
+          }
+        }
+
+        // Incremented numConfigSettings for this config already.
+        // save subgroup's subgroup configuration in original config
+        setSubconfigPtr<core::config::Configuration>(key, subGroupPtr);
       }
     } else if (obj.IsObject()) {
       // support nested objects
@@ -368,7 +469,9 @@ void Configuration::writeValueToJson(const char* key,
                                      const char* jsonName,
                                      io::JsonGenericValue& jsonObj,
                                      io::JsonAllocator& allocator) const {
-  rapidjson::GenericStringRef<char> name{jsonName};
+  // Create Generic value for key, using allocator, to make sure its a copy
+  // and lives long enough
+  io::JsonGenericValue name{jsonName, allocator};
   auto jsonVal = get(key).writeToJsonObject(allocator);
   jsonObj.AddMember(name, jsonVal, allocator);
 }
@@ -383,8 +486,9 @@ void Configuration::writeValuesToJson(io::JsonGenericValue& jsonObj,
   for (auto& valIter = valIterPair.first; valIter != valIterPair.second;
        ++valIter) {
     if (valIter->second.isValid()) {
-      // make sure value is legal
-      rapidjson::GenericStringRef<char> name{valIter->first.c_str()};
+      // Create Generic value for key, using allocator, to make sure its a copy
+      // and lives long enough
+      io::JsonGenericValue name{valIter->first.c_str(), allocator};
       auto jsonVal = valIter->second.writeToJsonObject(allocator);
       jsonObj.AddMember(name, jsonVal, allocator);
     } else {
@@ -405,7 +509,9 @@ void Configuration::writeSubconfigsToJson(io::JsonGenericValue& jsonObj,
        ++cfgIter) {
     // only save if subconfig has entries
     if (cfgIter->second->getNumEntries() > 0) {
-      rapidjson::GenericStringRef<char> name{cfgIter->first.c_str()};
+      // Create Generic value for key, using allocator, to make sure its a copy
+      // and lives long enough
+      io::JsonGenericValue name{cfgIter->first.c_str(), allocator};
       io::JsonGenericValue subObj =
           cfgIter->second->writeToJsonObject(allocator);
       jsonObj.AddMember(name, subObj, allocator);
@@ -422,8 +528,8 @@ void Configuration::writeSubconfigsToJson(io::JsonGenericValue& jsonObj,
 io::JsonGenericValue Configuration::writeToJsonObject(
     io::JsonAllocator& allocator) const {
   io::JsonGenericValue jsonObj(rapidjson::kObjectType);
-  // iterate through all values - always call base version - this will only ever
-  // be called from subconfigs.
+  // iterate through all values - always call base version - this will only
+  // ever be called from subconfigs.
   writeValuesToJson(jsonObj, allocator);
   // iterate through subconfigs
   writeSubconfigsToJson(jsonObj, allocator);

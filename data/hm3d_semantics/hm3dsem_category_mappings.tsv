@@ -1,0 +1,2368 @@
+raw_category	category	mpcat40
+,1	unknown	unlabeled
+,4	unknown	unlabeled
+,5	unknown	unlabeled
+,6	unknown	unlabeled
+/unknown/ probably decoration	unknown	unlabeled
+acoustic panel	acoustic panel	misc
+advertisement	advertisement	misc
+aemchair	armchair	chair
+affice chair	office chair	chair
+air conditioner	air conditioner	objects
+air conditioning	air conditioning	objects
+air duct	air duct	misc
+air freshener	air freshener	objects
+air heater	air heater	misc
+air hockey	air hockey	objects
+air purifier	air purifier	objects
+air refresher	air refresher	objects
+air vent	air vent	misc
+air vent fan	air vent fan	objects
+air vent installation	air vent installation	misc
+aisle frame	aisle frame	misc
+alarm	alarm	objects
+alarm clock	alarm clock	objects
+alarm control	alarm control	misc
+alarm controller	alarm controller	misc
+album	album	objects
+albums	albums	objects
+alcohol bottles	alcohol bottles	objects
+american flag	american flag	misc
+amp	amplifier	objects
+amplifier	amplifier	objects
+antique clock	antique clock	objects
+antique telehone	antique telephone	objects
+antique telephone	antique telephone	objects
+antlers	antlers	misc
+apple	apple	objects
+appliance	appliance	misc
+apron	apron	misc
+aquarium	aquarium	misc
+arcade	arcade	misc
+arcade game	arcade game	misc
+arch	arch	misc
+archway	archway	door
+arm chair	armchair	chair
+armchair	armchair	chair
+armchir	armchair	chair
+art	picture	picture
+art frame	art frame	misc
+art piece	art piece	misc
+art work	artwork	picture
+art/clutter	art/clutter	misc
+art/muscle shell	art/muscle shell	misc
+art/statue	art/statue	misc
+artframe	art frame	misc
+artwork	artwork	picture
+artwork frame	artwork frame	misc
+ashtray	ashtray	objects
+attic door	attic door	misc
+attic entrance	attic entrance	misc
+attic hatch	attic hatch	misc
+audio cable	audio cable	misc
+audio cables	audio cables	misc
+audio player	audio player	objects
+axe	axe	objects
+baby chair	baby chair	misc
+baby changing station	baby changing station	misc
+baby changing table	baby changing table	misc
+baby seat	baby seat	misc
+backpack	backpack	objects
+backrest	backrest	objects
+backsplash	backsplash	misc
+bad	unknown	unlabeled
+badside cabinet	bedside cabinet	chest_of_drawers
+bag	bag	objects
+bag with sheets	bag with sheets	objects
+bag with something	bag with something	objects
+bags	bags	objects
+balcony	balcony	misc
+balcony railing	balcony railing	misc
+balcony reiling	balcony railing	misc
+balk	ball	misc
+ball	ball	misc
+ball chair	ball chair	chair
+ball pool	ball pool	objects
+ball pouffe	ball pouffe	seating
+balustrade	balustrade	railing
+banister	banister	railing
+banner	banner	misc
+bar	bar	objects
+bar cabinet	bar cabinet	cabinet
+bar chair	bar chair	chair
+bar soap	bar soap	misc
+barbecue	barbecue	misc
+barbell	barbell	gym_equipment
+barrel	barrel	misc
+bascet	basket	objects
+base	base	misc
+baseball bat	baseball bat	objects
+baseball cap	baseball cap	objects
+baseboard	baseboard	wall
+basin	basin	sink
+basin faucet	basin faucet	objects
+basket	basket	objects
+basket /w books	basket with books	objects
+basket of fruits	basket of fruits	objects
+basket of something	basket of something	misc
+basket of towels	basket of towels	misc
+basket with clothes	basket with clothes	objects
+basket wqith clothes	basket with clothes	objects
+basketball hoop	basketball hoop	gym_equipment
+basketballs	basketballs	objects
+baskets	baskets	objects
+bat tube	bath tub	bathtub
+bath	bath	bathtub
+bath bar	bath bar	misc
+bath cabinet	bath cabinet	cabinet
+bath carpet	bath carpet	floor
+bath cosmetics	bath cosmetics	objects
+bath curtain	bath curtain	curtain
+bath curtain bar	bath curtain bar	misc
+bath dial	bath dial	misc
+bath door	bath door	door
+bath door frame	bath door frame	door
+bath faucet	bath faucet	objects
+bath floor	bath floor	floor
+bath grab bar	bath grab bar	misc
+bath hanger	bath hanger	objects
+bath mat	bath mat	floor
+bath shelf	bath shelf	shelving
+bath shower	bath shower	shower
+bath side table	bath side table	table
+bath sink	bath sink	misc
+bath tap	bath tap	objects
+bath towel	bath towel	towel
+bath towels	bath towels	towel
+bath tub	bath tub	bathtub
+bath tube	bath tub	bathtub
+bath utensil	bath utensil	misc
+bath wall	bath wall	misc
+bathmat	bathmat	floor
+bathrobe	bathrobe	clothes
+bathroom  mat	bathroom mat	floor
+bathroom accessory	bathroom accessory	clothes
+bathroom art	bathroom art	objects
+bathroom cabinet	bathroom cabinet	cabinet
+bathroom cabinet door	bathroom cabinet door	misc
+bathroom cabinet drawer	bathroom cabinet drawer	chest_of_drawers
+bathroom cabint	bathroom cabinet	cabinet
+bathroom counter	bathroom counter	counter
+bathroom floor	bathroom floor	floor
+bathroom glass	bathroom glass	objects
+bathroom mat	bathroom mat	floor
+bathroom mirror	mirror	mirror
+bathroom rug	bathroom rug	floor
+bathroom shelf	bathroom shelf	shelving
+bathroom stuff	bathroom stuff	objects
+bathroom towel	bathroom towel	towel
+bathroom utencills	bathroom utensils	objects
+bathroom utencils	bathroom utensil	objects
+bathroom utensil	bathroom utensil	objects
+bathroom wall	bathroom wall	wall
+bathroom window	bathroom window	window
+bathtub	bathtub	bathtub
+bathtub knob	bathtub knob	misc
+bathtub platform	bathtub platform	misc
+bathtub tap	bathtub tap	objects
+bathtub utensil	bathtub utensil	misc
+bathtube	bathtub	bathtub
+batroom art	bathroom art	objects
+beam	beam	beam
+bean bag chair	bean bag chair	chair
+beanbag	beanbag	chair
+beanbag chair	beanbag chair	chair
+bed	bed	bed
+bed base	bed base	bed
+bed cabinet	bed cabinet	chest_of_drawers
+bed cabinet lamp	bed cabinet lamp	lighting
+bed comforter	bed comforter	misc
+bed curtain	bed curtain	misc
+bed for pet	bed for pet	misc
+bed frame	bedframe	bed
+bed ladder	bed ladder	stairs
+bed lamp	bedside lamp	lighting
+bed light	bed light	misc
+bed sheet	bed sheet	bed
+bed small	bed small	misc
+bed stand	bed stand	misc
+bed table	bed table	table
+bedding	bedding	objects
+bedframe	bedframe	bed
+bedpost	bedpost	bed
+bedroom ceiling	bedroom ceiling	misc
+bedroom table	bedroom table	chest_of_drawers
+bedside cabinet	bedside cabinet	chest_of_drawers
+bedside cabinet door	bedside cabinet door	misc
+bedside cabinet drawer	bedside cabinet drawer	chest_of_drawers
+bedside lamp	bedside lamp	lighting
+bedside table	bedside table	chest_of_drawers
+beer crate	beer crate	misc
+bell	bell	misc
+belt	belt	misc
+bench	bench	seating
+beside table	bedside table	chest_of_drawers
+bicycle	bicycle	objects
+bicycle helmet	bicycle helmet	objects
+bicycle helmets	bicycle helmets	objects
+bidet	bidet	toilet
+big bag	big bag	objects
+bike	bicycle	objects
+billiard balls	billiard balls	objects
+billiard cue	billiard cue	objects
+billiard cues	billiard cues	objects
+bin	bin	objects
+binder	binder	misc
+binders	binders	misc
+birdhouse	birdhouse	misc
+brackboard	blackboard	objects
+blackboard	blackboard	objects
+blanket	blanket	objects
+blanket basket	blanket basket	objects
+blankets	blankets	objects
+blind	blinds	blinds
+blinder	blinds	blinds
+blinds	blinds	blinds
+blouse	blouse	clothes
+board	board	board_panel
+board game	board game	misc
+board games	board games	misc
+board with keys	board with keys	objects
+boards	boards	board_panel
+boat model	boat model	misc
+boiler	boiler	misc
+bojler	boiler	misc
+bonsai tree	bonsai tree	misc
+book	book	objects
+book cabinet	book cabinet	cabinet
+book display	book display	misc
+book rack	book rack	misc
+book shape	bookshelf	shelving
+book shelf	bookshelf	shelving
+bookcase	bookshelf	shelving
+books	book	objects
+bookshelf	bookshelf	shelving
+bookstand	bookstand	shelving
+bootles	bottles	objects
+boots	boots	objects
+bottle	bottle	objects
+bottle dispenser	bottle dispenser	objects
+bottle of  soap	bottle of soap	misc
+bottle of detergent	bottle of detergent	misc
+bottle of soap	bottle of soap	misc
+bottle of water	bottle of water	objects
+bottle of wine	bottle of wine	objects
+bottle opener	bottle opener	misc
+bottlels	bottles	objects
+bottles	bottles	objects
+bottles of water	bottles of water	objects
+bottles of wine	bottles of wine	misc
+bottom of stairs	bottom of stairs	misc
+bouquet	bouquet	objects
+bowl	bowl	objects
+bowl of fruit	bowl of fruit	objects
+bowl of fruits	bowl of fruits	objects
+bowl of sweets	bowl of sweets	objects
+bowl with sweets	bowl with sweets	objects
+bowls	bowls	objects
+box	box	objects
+box with books	box with books	misc
+box /w books	box with books	misc
+box /w shoes	box with shoes	misc
+box /w toys	box with toys	misc
+box of  tissues	box of tissues	misc
+box of food	box of food	misc
+box of fruit	box of fruit	misc
+box of paper	box of paper	misc
+box of something	box of something	misc
+box of tissue	box of tissue	misc
+box of tissues	box of tissues	misc
+box pen	box pen	misc
+box tissues	box of tissues	misc
+box with jewellery	box with jewelry	misc
+box with photos	box with photos	misc
+box with tea	box with tea	misc
+boxes	boxes	objects
+boxes /w books	boxes with books	misc
+boxing ring	boxing ring	objects
+bread	bread	misc
+bread bin	bread bin	misc
+bread box	bread box	misc
+breadbox	breadbox	misc
+breifcase	briefcase	objects
+bricks	bricks	misc
+bridge	bridge	misc
+briefcase	briefcase	objects
+brochure	brochure	objects
+brochures	brochures	objects
+broom	broom	objects
+broom stick	broomstick	misc
+broomstick	broomstick	misc
+brtochure	brochure	objects
+brush	brush	objects
+brushes	brushes	objects
+bucket	bucket	objects
+buckets	buckets	objects
+buffet	buffet	counter
+bulletin board	bulletin board	tv_monitor
+bunk bed	bunk bed	bed
+bureau	bureau	chest_of_drawers
+bust	bust	objects
+button	button	misc
+cabidet	cabinet	cabinet
+cabient	cabinet	cabinet
+cabiinet	cabinet	cabinet
+cabinet	cabinet	cabinet
+cabinet  door	cabinet door	misc
+cabinet /otherroom	cabinet /otherroom	cabinet
+cabinet /w clutter	cabinet /w clutter	cabinet
+cabinet /w cluttered art	cabinet /w cluttered art	misc
+cabinet clutter	cabinet clutter	misc
+cabinet counter	cabinet counter	misc
+cabinet door	cabinet door	misc
+cabinet drawer	cabinet drawer	cabinet
+cabinet kitchen	cabinet kitchen	cabinet
+cabinet mirror	cabinet mirror	cabinet
+cabinet parts	cabinet parts	cabinet
+cabinet table	cabinet table	table
+cable	cable	misc
+cables	cables	misc
+cage	cage	objects
+cailing lamp	ceiling lamp	lighting
+cair	chair	chair
+cake	cake	misc
+calander	calendar	misc
+calculator	calculator	appliances
+calendar	calendar	misc
+camera	camera	objects
+camping chair	camping chair	chair
+can	can	objects
+can of paint	can of paint	misc
+canal	canal	misc
+candel	candle	objects
+candelabra	candelabra	objects
+candle	candle	objects
+candle holder	candle holder	objects
+candle stand	candle stand	objects
+candles	candle	objects
+candlestick	candlestick	objects
+canister	canister	misc
+canoe	canoe	objects
+canopy	canopy	misc
+cans	cans	objects
+cans of paint	cans of paint	objects
+canvas	canvas	misc
+cap	cap	clothes
+car	car	objects
+car model	car model	objects
+carboard box	cardboard box	misc
+card	card	misc
+cardboard	cardboard	misc
+cardboard box	cardboard box	misc
+cardboardbox	cardboard box	misc
+carpet	carpet	floor
+carpet roll	carpet roll	misc
+cart	cart	objects
+cartboard	cardboard	misc
+case	case	misc
+cases	cases	misc
+cash register	cash register	objects
+casket	casket	misc
+cat	cat	misc
+cat bed	cat bed	bed
+cat food	cat food	misc
+cat food bag	cat food bag	misc
+cat litter box	cat litter box	toilet
+cat tree	cat tree	objects
+cats toilet	cat toilet	toilet
+cd	cd	objects
+cd player	cd player	appliances
+cd's	cds	objects
+cds	cds	objects
+cebinet	cabinet	cabinet
+ceiiling	ceiling	ceiling
+ceiling balk	unknown	unlabeled
+ceiilng	ceiling	ceiling
+ceiliing	ceiling	ceiling
+ceiliing lamp	ceiling lamp	lighting
+ceiling	ceiling	ceiling
+ceiling  lamp	ceiling lamp	lighting
+ceiling  light	ceiling light	lighting
+ceiling  vent	ceiling vent	misc
+ceiling /otheroom	ceiling	ceiling
+ceiling /otherroom	ceiling	ceiling
+ceiling air vent	ceiling vent	misc
+ceiling arch	ceiling arch	ceiling
+ceiling bedroom	ceiling bedroom	misc
+ceiling boarder	ceiling boarder	misc
+ceiling border	ceiling border	ceiling
+ceiling chasis	ceiling chassis	ceiling
+ceiling corridor	ceiling corridor	misc
+ceiling decorative lamp	ceiling decorative lamp	lighting
+ceiling dome	ceiling dome	misc
+ceiling door	ceiling door	misc
+ceiling duck	ceiling duct	ceiling
+ceiling duct	ceiling duct	ceiling
+ceiling fan	ceiling fan	objects
+ceiling fan lamp	ceiling fan lamp	lighting
+ceiling fan vent	ceiling fan vent	misc
+ceiling fire detector	ceiling fire detector	objects
+ceiling fixture	ceiling fixture	misc
+ceiling floor	ceiling floor	floor
+ceiling hanger	ceiling hanger	objects
+ceiling ladder	ceiling ladder	objects
+ceiling lamp	ceiling lamp	lighting
+ceiling lamp hanger	ceiling lamp hanger	lighting
+ceiling lamp rail	ceiling lamp rail	lighting
+ceiling lan	ceiling fan	objects
+ceiling light	ceiling light	lighting
+ceiling light fixture connection	ceiling light fixture connection	misc
+ceiling llower	ceiling lower	misc
+ceiling lower	ceiling lower	misc
+ceiling molding	ceiling molding	misc
+ceiling panel	ceiling panel	ceiling
+ceiling pipe	ceiling pipe	ceiling
+ceiling pipes	ceiling pipe	ceiling
+ceiling support	ceiling support	ceiling
+ceiling under staircase	ceiling under staircase	misc
+ceiling under stairs	ceiling under stairs	misc
+ceiling vent	ceiling vent	misc
+ceiling wall	ceiling wall	misc
+ceiling window	ceiling window	misc
+ceiling/ wall west	ceiling/west wall	misc
+ceiling/ west wall	ceiling/west wall	misc
+ceiling/west wall	ceiling/west wall	misc
+ceilling	ceiling	ceiling
+ceilling lamp	ceiling lamp	lighting
+celing	ceiling	ceiling
+celing lamp	ceiling lamp	lighting
+celing lower	ceiling lower	misc
+central heating furnace	central heating furnace	appliances
+ceramics	ceramics	objects
+cerpet	carpet	floor
+certain	curtain	curtain
+chain	chain	objects
+chair	chair	chair
+chair /otherroom	chair	chair
+chair /w clutter	chair /w clutter	chair
+chair stand	chair stand	misc
+chaise	chaise	chair
+chaise longue	chaise longue	sofa
+chamber pot	chamber pot	toilet
+chandelier	chandelier	lighting
+changing table	changing table	table
+charger	charger	objects
+chasis	chassis	objects
+chess	chess	misc
+chest	chest	misc
+chest bench	chest bench	misc
+chest drawer	chest drawer	misc
+chest drawers	chest of drawers	chest_of_drawers
+chest of drawer	chest of drawer	chest_of_drawers
+chest of drawers	chest of drawers	chest_of_drawers
+chest of drawres	chest of drawers	chest_of_drawers
+chest of dreawers	chest of drawers	chest_of_drawers
+chiar	chair	chair
+child car seat	child car seat	objects
+chimney	chimney	misc
+christmas tree	christmas tree	misc
+cieling	ceiling	ceiling
+circular sofa	circular sofa	sofa
+clarinet	clarinet	objects
+cleaner	cleaner	objects
+cleaner bottle	cleaner bottle	objects
+cleaner brush	cleaner brush	objects
+cleaning clutter	cleaning clutter	misc
+cleaning fluid	cleaning fluid	objects
+cleaning liquid	cleaning liquid	objects
+cleaning paper	cleaning paper	objects
+cleaning paste	cleaning paste	objects
+cleaning powders/ liquids	cleaning powders/ liquids	objects
+cleaning sponge	cleaning sponge	objects
+cleaning spray	cleaning spray	objects
+clock	clock	objects
+closet	closet	cabinet
+closet area for hanging clothes	closet area for hanging clothes	misc
+closet door	closet door	door
+closet floor	closet floor	misc
+closet mirror wall	closet mirror wall	misc
+closet rod	closet rod	objects
+closet shelf	closet shelf	shelving
+closet shelving	closet shelving	misc
+closet storage area	closet storage area	misc
+clotes dryer	clothes dryer	appliances
+cloth	cloth	objects
+cloth dryer	cloth dryer	appliances
+cloth hanger	cloth hanger	objects
+cloth hangers	cloth hangers	objects
+cloth holder	cloth holder	objects
+clothes	clothes	clothes
+clothes  rack	clothes rack	misc
+clothes bag	clothes bag	misc
+clothes container	clothes container	misc
+clothes dryer	clothes dryer	appliances
+clothes hamper	clothes hamper	objects
+clothes hanger	clothes hanger	objects
+clothes hanger rod	clothes hanger rod	objects
+clothes on shelf	clothes on shelf	clothes
+clothes rack	clothes rack	misc
+clothing stand	clothing stand	misc
+clutter	clutter	misc
+coach	coach	misc
+coaster	coaster	objects
+coat	coat	clothes
+coat hanger	coat hanger	objects
+coat rack	coat rack	misc
+cofee table	coffee machine	appliances
+coffe machine	coffee machine	appliances
+coffe table	coffee table	table
+coffee machine	coffee machine	appliances
+coffee maker	coffee maker	appliances
+coffee mug	coffee mug	objects
+coffee table	coffee table	table
+coffie machine	coffee machine	appliances
+coffiee machine	coffee machine	appliances
+coffiee table	coffee table	table
+coffy table	coffee table	table
+column	column	misc
+compound wall	compound wall	misc
+compressor	compressor	appliances
+computer	computer	objects
+computer chair	computer chair	chair
+computer desk	computer desk	table
+computer equipment	computer equipment	misc
+computer mouse	computer mouse	objects
+computer tower	computer tower	objects
+condensation furnace	condensation furnace	objects
+condiment	condiment	misc
+cone	cone	misc
+conference phone	conference phone	appliances
+console	console	objects
+console pad	console pad	objects
+console pad charger	console pad charger	misc
+construction stuff	construction stuff	misc
+container	container	objects
+containers	containers	objects
+control	control	objects
+control panel	control panel	objects
+controller	controller	objects
+coocker	cooker	objects
+cooffe machine	coffee machine	appliances
+cookbook	cook book	objects
+cooker	cooker	objects
+cooker hood	cooker hood	appliances
+cookies	cookies	misc
+copier	copier	objects
+copier machine	copier machine	misc
+cork board	cork board	objects
+cornice	cornice	misc
+cosmetic	cosmetic	objects
+cosmetics	cosmetics	objects
+couch	couch	sofa
+counter	counter	counter
+counter desk	counter desk	table
+counter door	counter door	misc
+countertop	countertop	counter
+countertop /otherroom	countertop /otherroom	counter
+countertop item	countertop item	misc
+courtain	curtain	curtain
+cover	cover	misc
+cradle	cradle	bed
+crate	crate	objects
+crayon	crayon	objects
+crib	crib	misc
+cross	cross	objects
+cross-trainer	cross-trainer	gym_equipment
+crutches	crutches	objects
+cuddly toy	cuddly toy	misc
+cup	cup	objects
+cupboard	cabinet	cabinet
+cups	cups	objects
+curatin	curtain	curtain
+curb	curb	objects
+curtain	curtain	curtain
+curtain  rod	curtain rod	curtain
+curtain /otheroom	curtain	curtain
+curtain bar	curtain bar	curtain
+curtain box	curtain box	curtain
+curtain hanger	curtain hanger	curtain
+curtain rail	curtain rail	misc
+curtain rod	curtain rod	curtain
+curtain rod cover	curtain rod cover	curtain
+curtain valence	curtain valence	curtain
+curtains	curtain	curtain
+cushiom	cushion	cushion
+cushion	cushion	cushion
+cutlery	cutlery	objects
+cutting board	cutting board	objects
+cutting boards	cutting board	objects
+cyp	cyp	misc
+dacorative plant	decorative plant	plant
+dartboard	dartboard	objects
+deccoration	decoration	objects
+deck chair	deck chair	chair
+decoartive plate	decorative plate	misc
+decoder	decoder	misc
+decooration	decoration	objects
+decor	decor	objects
+decor plate	decorative plate	misc
+decoratinon	decoration	objects
+decoratiom	decoration	objects
+decoration	decoration	objects
+decoration bowl	decorative bowl	objects
+decoration plan	decorative plant	misc
+decoration plant	decorative plant	misc
+decoration window	decorative window	misc
+decorations	decoration	objects
+decorative bottle	decorative bottle	objects
+decorative bowl	decorative bowl	objects
+decorative ceramic	decorative ceramic	objects
+decorative cloth	decorative cloth	objects
+decorative dinnerware	decorative dinnerware	objects
+decorative frame	decorative frame	objects
+decorative lamp	decorative lamp	objects
+decorative lantern	decorative lantern	objects
+decorative mask	decorative mask	objects
+decorative pl;ant	decorative plant	misc
+decorative plant	decorative plant	misc
+decorative plants	decorative plant	misc
+decorative plate	decorative plate	misc
+decorative quilt	decorative quilt	misc
+decorative tray	decorative tray	objects
+decorative vase	decorative vase	objects
+decorative vessel	decorative vessel	objects
+decoratrion	decoration	objects
+decoratrive plant	decorative plant	misc
+decorayion	decoration	objects
+decotarion	decoration	objects
+decration	decoration	objects
+dehumidifier	dehumidifier	objects
+den	den	misc
+desk	desk	table
+desk cabinet	desk cabinet	cabinet
+desk chair	desk chair	chair
+desk clutter	desk clutter	misc
+desk door	desk door	cabinet
+desk lamp	desk lamp	lighting
+desk organizer	desk organizer	objects
+detergent bottle	detergent bottle	objects
+detergent bottles	detergent bottle	objects
+detergents	detergent	misc
+device	device	misc
+device/ probably paper shredder	device	misc
+dining chair	dining chair	chair
+dining table	dining table	table
+dinner chair	dinner chair	chair
+dinner table	dinner table	table
+dinnerware	dinnerware	objects
+dinnerware decoration	decorative dinnerware	objects
+diplom	diploma	misc
+diploma	diploma	misc
+dirt ground	dirt ground	misc
+dish	dish	objects
+dish cabinet	dish cabinet	cabinet
+dish dryer	dish dryer	appliances
+dish rack	dish rack	objects
+dish washer	dishwasher	appliances
+dish with food	dish	objects
+dishawasher	dishwasher	appliances
+dishes	dishes	objects
+dishes dryer	dish dryer	appliances
+dishrag	dishrag	objects
+dishwasher	dishwasher	appliances
+dishwasher machine	dishwasher	appliances
+disk	dish	objects
+dispenser	dispenser	objects
+display	display	tv_monitor
+display cabinet	display cabinet	cabinet
+display case	display case	objects
+display of pictures	display of pictures	picture
+display table	display table	table
+document	document	misc
+document holder	document holder	objects
+documents	document	misc
+dog bed	dog bed	bed
+dog leash	dog leash	misc
+dog toy	dog toy	objects
+doile	doily	misc
+doily	doily	misc
+doll	doll	objects
+dool	doll	objects
+door	door	door
+door  frame	door frame	door
+door  hinge	door hinge	misc
+door /otherroom	door /otherroom	door
+door cabinet	door cabinet	cabinet
+door drame	door frame	door
+door f	door frame	door
+door fame	door frame	door
+door fframe	door frame	door
+door frame	door frame	door
+door framr	door frame	door
+door handle	door handle	misc
+door hanger	door handle	misc
+door hine	door hinge	misc
+door hinge	door hinge	misc
+door kinge	door hinge	misc
+door knob	door knob	misc
+door mat	doormat	floor
+door rame	door frame	door
+door slide	sliding door	door
+door stoper	door stopper	misc
+door stopper	door stopper	misc
+door stoppper	door stopper	misc
+door window	door window	misc
+door/window	door/window	misc
+door/window frame	door/window frame	misc
+doorbell	doorbell	misc
+doorf rame	door frame	door
+doorframe	door frame	door
+doormat	doormat	floor
+doorpost	doorpost	objects
+doors	door	door
+doorstep	doorstep	objects
+doorway	doorway	door
+dorr	door	door
+double armchair	double armchair	chair
+drain	drain	objects
+drainage	drainage	misc
+drainpipe	drainpipe	objects
+draw	draw	objects
+drawer	drawer	chest_of_drawers
+drawer cabinet	drawer cabinet	cabinet
+drawer cart	drawer cart	objects
+drawer desk	drawer desk	misc
+drawer sink table	drawer sink table	misc
+drawers	drawers	chest_of_drawers
+drawers for clothes	drawers for clothes	misc
+drawing	drawing	misc
+dreser	dresser	chest_of_drawers
+dress	dress	clothes
+dresser	dresser	chest_of_drawers
+dressing table	dressing table	table
+dried flowers	dried flowers	objects
+drill	drill	misc
+drum	drum	objects
+drums	drum	objects
+dryer	clothes dryer	appliances
+drywall board	drywall board	misc
+drywall boards	drywall board	misc
+duct	duct	misc
+dumb bell	dumbbell	gym_equipment
+dumb-bells	dumbbell	gym_equipment
+dumbbel	dumbbell	gym_equipment
+dumbbell	dumbbell	gym_equipment
+dumbbell handles	dumbbell	gym_equipment
+dumbbells	dumbbell	gym_equipment
+dust bin	dustbin	objects
+dustbin	dustbin	objects
+dustpan	dustpan	objects
+duvet	duvet	misc
+dvd	dvd	objects
+dvd movies	dvd	objects
+dvd player	dvd player	objects
+dvds	dvd	objects
+easel	easel	shelving
+easels	easel	shelving
+easy chair	easy chair	chair
+electric box	electric box	misc
+electric cable	electric cable	misc
+electric cord	electric cord	misc
+electric device	electric device	misc
+electric drums	electric drum	objects
+electric freshener	electric freshener	appliances
+electric guitar	electric guitar	objects
+electric guitar pack	electric guitar	objects
+electric heater	electric heater	appliances
+electric hub	electric hub	objects
+electric installation	electric installation	misc
+electric kettle	electric kettle	appliances
+electric outlet	electric outlet	objects
+electric percussion	electric percussion	appliances
+electric plug	electric plug	objects
+electric toothbrush	electric toothbrush	appliances
+electric wire	electric wire	misc
+electric wire casing	electric wire casing	misc
+electrical box	electrical box	objects
+electrical controller	electrical controller	misc
+electrical device	electrical device	misc
+electrical installation	electrical installation	misc
+electrical switchboard	electrical switchboard	misc
+electricity box	electricity box	misc
+electronics	electronics	misc
+elephant sculpture	elephant sculpture	misc
+elevator	elevator	misc
+elevator door	elevator door	door
+emergency sign	emergency sign	misc
+end table	end table	table
+entertainment set	entertainment set	misc
+entrance arch	entrance arch	misc
+entry phone	entry phone	objects
+excercise mat	exercise mat	gym_equipment
+excersie ball	exercise ball	gym_equipment
+excersie equipment	exercise equipment	gym_equipment
+exercise ball	exercise ball	gym_equipment
+exercise bike	exercise bike	gym_equipment
+exercise equipment	exercise equipment	gym_equipment
+exercise ladder	exercise ladder	gym_equipment
+exercise machine	exercise machine	misc
+exercise mat	exercise mat	gym_equipment
+exercise mat roll	exercise mat roll	misc
+exercising blocks	exercising blocks	gym_equipment
+exhaust pipe	exhaust pipe	misc
+exhibition panel	exhibition panel	misc
+exhibition picture	exhibition picture	picture
+exhibition table	exhibition table	table
+exhibition window	exhibition window	window
+exhibition window frame	exhibition window frame	window
+exit sign	exit sign	misc
+extension cord	extension cord	misc
+extension lead	extension lead	misc
+extinguisher	fire extinguisher	objects
+extractor	extractor	misc
+extractor hood	extractor hood	misc
+eyeglasses	eyeglasses	objects
+fan	fan	objects
+fan-coil	fan coil	objects
+fan air vent	fan air vent	misc
+fans	fan	objects
+faucet	faucet	objects
+fence	fence	misc
+fframe	frame	misc
+figure	figure	misc
+figurine	figurine	misc
+file	file	misc
+file binder	file binder	misc
+file cabinet	file cabinet	cabinet
+files	file	misc
+fire alarm	fire alarm	objects
+fire detector	fire detector	objects
+fire etenguisher	fire extinguisher	objects
+fire extinguisher	fire extinguisher	objects
+fire pit	fire pit	objects
+fire screen	fire screen	objects
+fire sprinkler	fire sprinkler	misc
+firebox	firebox	objects
+fireplace	fireplace	fireplace
+fireplace brush	fireplace brush	misc
+fireplace floor	fireplace floor	misc
+fireplace mirror	fireplace mirror	misc
+fireplace sconce	fireplace sconce	misc
+fireplace shelf	fireplace shelf	misc
+fireplace tool set	fireplace tool set	misc
+fireplace utensil	fireplace utensil	misc
+fireplace wall	fireplace wall	misc
+firewood	firewood	misc
+firewood bag	firewood bag	misc
+firewood chest	firewood chest	misc
+firewood holder	firewood holder	misc
+fish tank	fish tank	misc
+fishing pole	fishing pole	misc
+fishing rod	fishing rod	misc
+fitness ball	fitness ball	gym_equipment
+flag	flag	misc
+flashlight	flashlight	objects
+floer	floor	floor
+floor	floor	floor
+floor  lamp	floor lamp	lighting
+floor  mat	floor mat	floor
+floor  vent	floor vent	misc
+floor /otherroom	floor /otherroom	floor
+floor /outside	floor /outside	floor
+floor lamp	floor lamp	lighting
+floor mat	floor mat	floor
+floor stand	floor stand	misc
+floor vent	floor vent	misc
+floormat	floor mat	floor
+florr	floor	floor
+flower	flower	plant
+flower  vase	flower vase	objects
+flower pot	flowerpot	objects
+flower stand	flower stand	misc
+flower vase	flower vase	objects
+flowerbed	flowerbed	objects
+flowerpot	flowerpot	objects
+flowers	flowers	plant
+flowers in vase	flower vase	objects
+fluorescent light	fluorescent light	misc
+flush	flush	misc
+flush button	flush button	misc
+flush buttons	flush button	misc
+flush push	flush push	misc
+folded chair	folded chair	chair
+folded chairs	folded chair	chair
+folded table	folded table	table
+folder	folder	objects
+folders	folder	objects
+folding chair	folding chair	chair
+folding stand	folding stand	misc
+food	food	misc
+food processor	food processor	appliances
+food stand	food stand	misc
+food tray	food tray	objects
+foor frame	floor frame	floor
+foor lamp	floor lamp	lighting
+foosball game table	foosball game table	table
+foosball table	foosball table	table
+foot rest	footrest	stool
+foot spa	foot spa	misc
+foot stand	foot stand	misc
+football	football	objects
+footrest	footrest	stool
+footstool	footstool	stool
+fork	fork	objects
+frame	frame	misc
+frame door	frame	misc
+frame part	frame	misc
+framed document	document	misc
+framed mirror	mirror	mirror
+framed photo	photo	picture
+framed photos	photos	picture
+framed picture	picture	picture
+framed pictures	pictures	picture
+framed text	framed text	misc
+freezer	freezer	appliances
+fridge	refrigerator	appliances
+fruit	fruit	objects
+fruit bowl	fruit bowl	objects
+fruits	fruit	objects
+frying pan	frying pan	objects
+fume cupboard	fume cupboard	misc
+fur	fur	misc
+fur carpet	fur carpet	floor
+furnace	furnace	misc
+furniture	furniture	furniture
+furniture parts	furniture	furniture
+fuse box	fuse box	misc
+fuse panel	fuse panel	misc
+game board	game board	objects
+game console	game console	objects
+gap	gap	objects
+garage door	garage door	door
+garage door frame	garage door frame	misc
+garage door motor	garage door motor	misc
+garage door opener	garage door opener	misc
+garage door opener bar	garage door opener bar	misc
+garage door opener motor	garage door opener motor	misc
+garage door opener railing	garage door opener railing	misc
+garage door railing	garage door railing	misc
+garage light	garage light	misc
+garden bench	garden bench	seating
+garden chair	garden chair	chair
+garden deck	garden deck	misc
+garden hose	hose	misc
+garden swing	swing	objects
+gas box	gas box	objects
+gas container	gas container	objects
+gas furnace	gas furnace	appliances
+gas meter	gas meter	misc
+gate	gate	misc
+gauge	gauge	misc
+gift	gift	misc
+glass	glass	objects
+glass bottle	bottle	objects
+glass container	glass container	objects
+glass door	glass door	door
+glass pane	glass pane	misc
+glasses	glasses	objects
+globe	globe	misc
+globe stand	globe stand	misc
+glove	gloves	objects
+gloves	gloves	objects
+glue	glue	objects
+goal	goalpost	objects
+golf sticks	golf sticks	objects
+grab bar	grab bar	misc
+gramophone	gramophone	objects
+grandfather clock	grandfather clock	objects
+grass	grass	plant
+grate	grate	misc
+gravel	gravel	floor
+grill	grill	misc
+groceries	groceries	objects
+guitar	guitar	objects
+guitar amp	amplifier	objects
+guitar amplifier	amplifier	objects
+guitar box	amplifier	objects
+guitar case	guitar case	objects
+guitar case suit	guitar case cover	objects
+guitar cases	guitar cases	objects
+guitar frame	guitar frame	objects
+guitar pedals	guitar pedals	objects
+guitar stand	guitar stand	objects
+guitar straps	guitar straps	objects
+gun	gun	objects
+gutter	gutter	misc
+gym equipment	gym equipment	gym_equipment
+gym mat	gym mat	floor
+gym rope	gym rope	objects
+gym stepper	gym stepper	objects
+gym-equipment	gym equipment	gym_equipment
+hair dryer	hair dryer	objects
+hairbrush	hair brush	objects
+hairdryer	hair dryer	objects
+hammer	hammer	objects
+hammock	hammock	bed
+hand cart	handcart	objects
+hand cloth	hand cloth	misc
+hand drier	hand dryer	objects
+hand soap	hand soap	objects
+hand towel	hand towel	objects
+handbag	handbag	objects
+handkerchiefs	handkerchiefs	objects
+handle	handle	objects
+handrail	handrail	railing
+handhold	handrail	railing
+handshower	showerhead	shower
+hanger	hanger	objects
+hangers	hanger	objects
+hanging clothes	hanging clothes	clothes
+hat	hat	clothes
+hatch	hatch	misc
+hats	hats	objects
+headboard	headboard	bed
+headphones	headphones	objects
+headset	headset	objects
+hearth	hearth	misc
+heat vent	vent	misc
+heater	heater	objects
+heater  piping	heater piping	misc
+heater piping	heater piping	misc
+heating furnace part	furnace	misc
+heating vent	vent	misc
+herb basket	basket	objects
+hi hat	hi-hat	objects
+hi hat stand	hi-hat stand	objects
+high chair	highchair	chair
+high shelf	high shelf	misc
+highchair	highchair	chair
+highchairs	highchair	chair
+holder	holder	objects
+holy cross	holy cross	misc
+hood	range hood	objects
+hook	hook	misc
+hose	hose	misc
+hot drinks machine	beverage dispenser	objects
+hot water/cold water knob	hot water/cold water knob	misc
+hourglass	hourglass	objects
+hoverboard	hoverboard	objects
+hunting trophy	hunting trophy	misc
+hutch	hutch	misc
+ice maker	ice maker	objects
+icebox	icebox	appliances
+identifier	identifier	misc
+image	picture	picture
+indow curtain	window curtain	curtain
+induction hob	stovetop	misc
+information	information	misc
+insect door	door screen	door
+door screen	door screen	door
+installation	installation	objects
+instrument	instrument	objects
+iron	iron	objects
+iron board	iron board	misc
+ironing board	ironing board	objects
+island	island	counter
+jacket	jacket	clothes
+jacuzzi	jacuzzi	misc
+jar	jar	objects
+jars	jars	objects
+jewellery	jewelry	objects
+jewellery ehibition	jewelry	objects
+jewellery exhibition	jewelry	objects
+jewellery exposition	jewelry	objects
+jewelry	jewelry	objects
+jewelry box	jewelry box	misc
+jewlery box	jewelry box	misc
+joga mat	yoga mat	misc
+jug	jug	objects
+junk	junk	objects
+keg	keg	objects
+kegerator	keg	objects
+kettle	kettle	objects
+keyboard	keyboard	objects
+keyboard box	keyboard box	objects
+keyboard case suit	keyboard cover	objects
+keyboard piano	keyboard piano	objects
+keyboard stand	keyboard stand	objects
+keys	keys	objects
+kitchen appliance	kitchen appliance	appliances
+kitchen board	cutting board	objects
+kitchen cabinet	kitchen cabinet	cabinet
+kitchen cabinet door	kitchen cabinet door	cabinet
+kitchen cabinet drawer	kitchen cabinet drawer	cabinet
+kitchen cabinet lower	kitchen cabinet lower	cabinet
+kitchen ceiling	kitchen ceiling	ceiling
+kitchen chair	kitchen chair	chair
+kitchen coocking cabinet	kitchen cabinet	cabinet
+kitchen counter	kitchen counter	counter
+kitchen counter support	kitchen counter support	misc
+kitchen countertop	kitchen counter	counter
+kitchen countertop item	kitchen countertop item	misc
+kitchen countertop items	kitchen countertop items	misc
+kitchen coutertop item	kitchen counter item	objects
+kitchen decoration	kitchen decoration	objects
+kitchen extractor	kitchen extractor	misc
+kitchen glowes	kitchen gloves	objects
+kitchen handle	kitchen handle	objects
+kitchen hood	range hood	objects
+kitchen island	kitchen island	counter
+kitchen knife set	kitchen knife set	objects
+kitchen lower cabinet	kitchen lower cabinet	cabinet
+kitchen lower shelf	kitchen lower shelf	shelving
+kitchen shelf	kitchen shelf	shelving
+kitchen sink	kitchen sink	sink
+kitchen sink cabinet	kitchen sink cabinet	cabinet
+kitchen sitting	kitchen seating	seating
+kitchen stuff	clutter	misc
+kitchen table	kitchen table	table
+kitchen tools	kitchen utensils	objects
+kitchen top	kitchen top	counter
+kitchen towel	kitchen towel	objects
+kitchen untensils	kitchen utensils	objects
+kitchen upper cabinet	kitchen cabinet	cabinet
+kitchen utensil	kitchen utensil	objects
+kitchen utensils	kitchen utensils	objects
+kitchen wall	kitchen wall	wall
+kitchen walll	kitchen wall	wall
+kitchenware	kitchenware	objects
+kitchhen cabinet door	kitchen cabinet door	cabinet
+kitcyhen cabinet	kitchen cabinet	cabinet
+knife	knife	objects
+knife holder	knife holder	misc
+knife set	knife set	objects
+knife stand	knife stand	objects
+knob	knob	misc
+knofe set	knife set	objects
+l-shaped sofa	l-shaped sofa	sofa
+lace doily	lace doily	objects
+lacy doily	lace doily	objects
+ladder	ladder	stairs
+lamp	lamp	lighting
+lamp ceiling	ceiling lamp	lighting
+lamp desk	desk lamp	lighting
+lamp shade	lamp shade	lighting
+lamp stand	lamp stand	misc
+lamp table	lamp table	table
+lamps	lamp	lighting
+lampshade	lampshade	lighting
+landing	landing	floor
+lantern	lantern	lighting
+laptop	laptop	objects
+laundry	laundry	clothes
+laundry bag	laundry bag	misc
+laundry basket	laundry basket	objects
+laundry machine	laundry machine	misc
+launger	lounger	seating
+lawn	lawn	floor
+lawn mower	lawn mower	objects
+lawnmower	lawn mower	objects
+leaflet	leaflets	objects
+leaflets	leaflets	objects
+led  tv	led tv	misc
+led tv	led tv	misc
+ledge	ledge	objects
+ledtv	led tv	misc
+leg rest	leg rest	misc
+letter	document	misc
+level	level	objects
+lid	lid	misc
+lids	lid	misc
+light	light	lighting
+light fixture	light fixture	lighting
+light switch	light switch	objects
+lighter	lighter	objects
+lighting fixture	lighting fixture	objects
+lighting grid	lighting fixture	objects
+lights	light	lighting
+liquid	liquid	misc
+liquid container	liquid container	objects
+liquid cleaner	liquid cleaner	objects
+liquid soap	liquid soap	misc
+lmap	lamp	lighting
+locker	locker	misc
+loft hatch	hatch	misc
+logs	firewood	misc
+lounge chair	lounge chair	chair
+lounger	lounger	seating
+lower cabinet	lower cabinet	cabinet
+luggage	luggage	objects
+lundry basket	laundry basket	objects
+machine	machine	objects
+magazine	magazine	objects
+magazine rack	magazine rack	misc
+magazines	magazines	objects
+magazines, albums	magazines	objects
+magazines, albums, bookshelf	magazines	objects
+magazines, books and albums	magazines	objects
+magic marker	magic marker	objects
+magic marker box	magic marker box	objects
+mail	mail	objects
+mailbox	mailbox	objects
+make up accesories	makeup accessories	objects
+mannequin	mannequin	objects
+mantel	mantel	fireplace
+mantle	mantle	fireplace
+map	map	objects
+mascot	mascot	objects
+mascots	mascots	objects
+mask decoration	decoration	objects
+massage bed	massage bed	bed
+mat	mat	floor
+mat floor	mat	floor
+material	material	misc
+mattress	bed	bed
+measuring tape	measuring tape	objects
+medal	medal	objects
+medal collection	medal collection	objects
+media console	media console	misc
+medical lamp	medical lamp	lighting
+medical object	medical object	objects
+menu	menu	objects
+menu board	menu board	objects
+meshwork	meshwork	misc
+meter	meter	misc
+microphone	microphone	objects
+microphone accesory	microphone accessory	objects
+microvawe	microwave	appliances
+microwave	microwave	appliances
+microweave	microwave	appliances
+midi keyboard	keyboard piano	objects
+mini fridge	mini fridge	appliances
+miocrowave	microwave	appliances
+mircowave	microwave	appliances
+miror	mirror	mirror
+mirror	mirror	mirror
+mirror /otherroom	mirror /otherroom	mirror
+mirror door	mirror door	misc
+mirror frame	mirror frame	mirror
+mirror stand	mirror	mirror
+mixer	mixer	misc
+mobile	mobile	objects
+model	model	objects
+modem	modem	objects
+molding	molding	wall
+monitor	monitor	tv_monitor
+moose head/sculpture/hunting trophy	moose head/sculpture/hunting trophy	misc
+mop	mop	objects
+mortar	mortar	misc
+motion detector	motion detector	misc
+motion sensor	motion detector	misc
+motorcycle	motorcycle	objects
+mouse	mouse	objects
+mousepad	mousepad	objects
+mug	mug	objects
+multi-gym	gym equipment	gym_equipment
+music album shelf	music album shelf	shelving
+music player	music player	objects
+music stand	music equipment stand	objects
+musical equipment	music equipment	objects
+napkin	napkin	objects
+napkins	napkins	objects
+newspaper	newspaper	misc
+newspaper basket	newspaper basket	objects
+niche	niche	wall
+nighstand	nightstand	chest_of_drawers
+night lamp	night lamp	lighting
+night stand	nightstand	chest_of_drawers
+night table	nightstand	chest_of_drawers
+nightsand	nightstand	chest_of_drawers
+nightstand	nightstand	chest_of_drawers
+nigtstand	nightstand	chest_of_drawers
+note	note	objects
+notebook	notebook	objects
+notebooks	notebooks	objects
+notes	notes	objects
+noticeboard	note board	objects
+oar	oar	objects
+object	object	objects
+objects	objects	objects
+office chair	office chair	chair
+office wall	office wall	wall
+office drawer	drawers	chest_of_drawers
+office phone	phone	objects
+office stuff	stationery	objects
+office table	office table	table
+office utensils	utensil	objects
+oil lamp	oil lamp	lighting
+organizer drawers	drawers	chest_of_drawers
+ornament	ornament	objects
+ornament flower	flower	plant
+ornament plant	plant	plant
+ornamental plant	plant	plant
+ornamental plate	plate	objects
+ornaments	ornament	objects
+ottoman	ottoman	stool
+outflow	unknown	unlabeled
+outlet	outlet	objects
+outside	unknown	unlabeled
+oven	oven	appliances
+oven and stove	oven and stove	misc
+oven hood	range hood	objects
+oven vent	oven vent	misc
+overhang	overhang	misc
+overlay	unknown	unlabeled
+package	package	objects
+pad	pad	misc
+painiting	painting	objects
+paint	unknown	unlabeled
+painting	painting	objects
+painting  frame	painting frame	misc
+painting /otherroom	painting /otherroom	objects
+painting frame	painting frame	misc
+painting roll	painting roll	objects
+painting rolls	painting rolls	objects
+painting stuff	painting stuff	objects
+painting tray	painting tray	objects
+paintng	painting	objects
+paintning	painting	objects
+pair of shoes	shoes	objects
+paiting	painting	objects
+pan	pan	objects
+panel	panel	board_panel
+panel screen	panel screen	misc
+panel wall	wall panel	wall
+paneling	paneling	wall
+pantry	pantry	misc
+paper	paper	objects
+paper holder	paper holder	objects
+paper shelf	shelf	shelving
+paper storage	paper storage	misc
+paper towel	paper towel	towel
+paper towel dispenser	paper towel dispenser	misc
+paper towel holder	paper towel holder	objects
+paper towels	paper towels	towel
+papers	papers	objects
+parapet	parapet	misc
+partial	partial	misc
+partition	partition	misc
+patio	patio	misc
+patio chair	patio chair	chair
+patio floor	patio floor	misc
+pavement	pavement	floor
+paving	pavement	floor
+payment terminal	payment terminal	objects
+pc mouse	mouse	objects
+pc tower	pc tower	misc
+pedestal	pedestal	misc
+peinting	painting	objects
+pen	pen	objects
+pen cup	pen cup	objects
+pencil	pencil	objects
+pencil case	pencil case	objects
+pencil holder	pencil holder	objects
+pendant	pendant	objects
+pendrive	pen drive	objects
+perfume	perfume	objects
+pet bed	pet bed	objects
+pet bowl	pet bowl	objects
+phillar	pillar	column
+phone	phone	objects
+photo	photo	picture
+photo mount	photo mount	misc
+photo mounts	photo mounts	misc
+photo stand	photo stand	objects
+photography	photo	picture
+photos	photos	picture
+piano	piano	objects
+piano bench	piano bench	seating
+piano lower part	piano	objects
+piano stool	piano stool	stool
+pictrure	picture	picture
+picture	picture	picture
+picture  frame	picture frame	picture
+picture frame	picture frame	picture
+pictured frame	picture frame	picture
+pictures	pictures	picture
+picure	picture	picture
+piillow	pillow	cushion
+pile of boxes	boxes	objects
+pile of cups	cups	objects
+pile of clothes	clothes	clothes
+pile of magazines	pile of magazines	misc
+pile of papers	papers	objects
+pile of stuff	unknown	unlabeled
+pillar	pillar	column
+pilllow	pillow	cushion
+pillow	pillow	cushion
+pillow seat	pillow seat	seating
+pillows	pillow	cushion
+ping pong table	ping pong table	table
+pipe	pipe	misc
+pipe part	pipe	misc
+pipes	pipe	misc
+piping	pipe	misc
+pitcher	pitcher	objects
+pitchfork	pitchfork	objects
+place mat	place mat	objects
+plane	plane	misc
+plank	plank	misc
+planner	planner	misc
+plant	plant	plant
+plant ornament	plant ornament	misc
+planter	pot	objects
+plants	plant	plant
+plasma tv	tv	tv_monitor
+plastic bag	plastic bag	objects
+plate	plate	objects
+plate of food	plate of food	misc
+plates	plates	objects
+platform	platform	misc
+platter	platter	misc
+player	music player	objects
+playpen	playpen	misc
+plenum box	plenum box	misc
+pliers	pliers	objects
+plstes	plates	objects
+plug	plug	misc
+plunger	plunger	objects
+plush toy	plush toy	objects
+podest	podium	objects
+podium	podium	objects
+pole	pole	objects
+poles	poles	objects
+pomp	pump	objects
+pool	pool	misc
+pool stick	pool stick	objects
+pool table	pool table	table
+porcelain	porcelain	objects
+portrait	portrait	picture
+post	post	column
+poster	poster	picture
+poster figure	poster	picture
+pot	pot	objects
+pot lid	pot lid	objects
+poto mount	photo mount	misc
+pots	pot	objects
+potty	potty	objects
+pouches	pouches	objects
+poufe	pouffe	seating
+pouffe	pouffe	seating
+powder soap	powder soap	objects
+power breaker box	power breaker box	misc
+power cord	power cord	objects
+power outlet	outlet	objects
+power strip	power strip	objects
+prduct box	product box	objects
+press	press	objects
+pressure washer	pressure washer	objects
+price tag	price tag	objects
+printer	printer	objects
+product	product	objects
+product box	product box	objects
+product boxes	product boxes	objects
+products	products	objects
+projector	projector	objects
+projector screen	projector screen	misc
+prop	prop	misc
+psinting	painting	objects
+public tap	drinking fountain	misc
+pump	pump	objects
+punchbag	punchbag	objects
+puncher	hole puncher	objects
+puppet	puppet	objects
+puppet cat	puppet	objects
+purse	purse	objects
+purses	purse	objects
+rack	rack	shelving
+rack of weights	rack of weights	misc
+rack with shoes	rack with shoes	shelving
+radfiator	radiator	objects
+radiator	radiator	objects
+radio	radio	misc
+rafter	rafter	beam
+rag	rag	objects
+ragdoll	ragdoll	objects
+ragdoll cat	ragdoll cat	objects
+rail	rail	railing
+railing	railing	railing
+rain shower	showerhead	shower
+rake	rake	objects
+range hood	range hood	objects
+receipt printer	receipt printer	objects
+receipt spike	receipt spike	objects
+recessed cubby	recessed cubby	misc
+recessed shelving	recessed shelving	shelving
+recessed wall	recessed wall	misc
+recliner	recliner	chair
+record player	record player	objects
+records	records	objects
+recuperator	recuperator	objects
+recycle bin	recycle bin	misc
+refridgerator	refrigerator	appliances
+refrigearator	refrigerator	appliances
+refrigerator	refrigerator	appliances
+refrigerator cabinet	refrigerator cabinet	cabinet
+relief	relief	wall
+remote	remote control	objects
+remote control	remote control	objects
+remote controller	remote control	objects
+rice cooker	rice cooker	objects
+riser	riser	misc
+robe	robe	clothes
+rock	rock	objects
+rocking chair	rocking chair	chair
+rocking horse	rocking horse	objects
+rocks	rock	objects
+rod	rod	objects
+rods	rods	objects
+roll	roll	objects
+rolled carpet	rolled carpet	objects
+roller blind	blinds	blinds
+rolling pin	rolling pin	objects
+rolls of toilet paper	toilet paper	objects
+roof	roof	ceiling
+roomba	roomba	misc
+rope	rope	objects
+round chair	round chair	chair
+round cushion	round cushion	misc
+router	router	objects
+row of theater chairs	row of theater chairs	misc
+rug	rug	floor
+ruler	ruler	objects
+safe	safe	objects
+salt and pepper	salt and pepper	objects
+salt and pepper grinder	salt and pepper grinder	objects
+salt pepper	salt and pepper	objects
+salver	salver	objects
+sandals	sandals	objects
+saturator	saturator	appliances
+sauna	sauna	appliances
+sauna bowl	sauna bowl	objects
+sauna ceiling	ceiling	ceiling
+sauna floor	floor	floor
+sauna heat rocks	sauna heat rocks	misc
+sauna heater	sauna heater	misc
+sauna oven	sauna oven	appliances
+sauna seat	sauna seat	seating
+sauna support	sauna support	misc
+sauna wall	wall	wall
+saw	saw	objects
+saxophone	saxophone	objects
+scale	scale	objects
+scales	scale	objects
+scanner	scanner	objects
+scarf	scarf	clothes
+schedule	schedule	misc
+schoe	shoe	objects
+sconce	sconce	lighting
+scoop	scoop	objects
+screen	screen	curtain
+screen frame	screen frame	misc
+screw box	screw box	objects
+screwdriver	screwdriver	objects
+sculpture	sculpture	objects
+seat	seat	seating
+secretary	secretary	misc
+security camera	security camera	objects
+self-closing mechanism	self-closing mechanism	misc
+sensor	sensor	objects
+separator	separator	objects
+set of armchairs	set of armchairs	misc
+set of boxes	set of boxes	misc
+set of cosmetics	set of cosmetics	objects
+set of hangers	set of hangers	objects
+set of knives	set of knives	misc
+set of pictures	set of pictures	picture
+set of towels	set of towels	towel
+set of valves	set of valves	appliances
+sewing box	sewing box	appliances
+sewing machine	sewing machine	appliances
+sewing set	sewing set	appliances
+sewing tools	sewing tools	appliances
+shade	shade	objects
+shade rail	shade rail	misc
+shades	shades	blinds
+shalf	shelf	shelving
+shampoo	shampoo	objects
+shedule	schedule	misc
+sheet	sheet	misc
+sheet music	sheet music	objects
+sheet music stand	sheet music stand	objects
+sheets	sheets	misc
+sheets/ clothes	sheets / clothes	clothes
+shelf	shelf	shelving
+shelf /w art	shelf with art	shelving
+shelf /w clutter	shelf with clutter	shelving
+shelf clutter	shelf clutter	shelving
+shelf cubby	shelf cubby	misc
+shelf with cosmetics	shelf with cosmetics	shelving
+shelf with shoes	shelf with shoes	shelving
+shelf/cabinet	shelf / cabinet	misc
+shelve	shelf	shelving
+shelves	shelving	shelving
+shelving	shelving	shelving
+ship model	ship model	objects
+ship toy	ship toy	objects
+shirt	shirt	clothes
+shisha	shisha	appliances
+shlef	shelf	shelving
+shoe	shoe	objects
+shoe cabinet	shoe cabinet	cabinet
+shoe case	shoe case	cabinet
+shoe rack	shoe rack	shelving
+shoe shelf	shoe shelf	shelving
+shoehorn	shoehorn	objects
+shoes	shoes	objects
+shoes on shelf	shoes on shelf	shelving
+shoes rack	shoes rack	shelving
+shop shelf	shop shelf	shelving
+shoulder bag	shoulder bag	objects
+shovel	shovel	misc
+shower	shower	shower
+shower  floor	shower floor	shower
+shower  knob	shower knob	misc
+shower  wall	shower wall	shower
+shower bar	shower bar	misc
+shower base	shower base	shower
+shower battery	shower battery	misc
+shower bench	shower bench	seating
+shower cabin	shower cabin	misc
+shower cabinet	shower cabinet	cabinet
+shower caddy	shower caddy	misc
+shower case	shower case	misc
+shower ceiling	shower ceiling	shower
+shower ceiling lamp	shower ceiling lamp	lighting
+shower cockpit	shower cockpit	shower
+shower cosmetics	shower cosmetics	objects
+shower curtain	shower curtain	curtain
+shower curtain bar	shower curtain bar	misc
+shower curtain rod	shower curtain rod	curtain
+shower dial	shower dial	misc
+shower door	shower door	shower
+shower door frame	shower door frame	shower
+shower door knob	shower door knob	misc
+shower floor	shower floor	shower
+shower frame	shower frame	shower
+shower glass	shower glass	misc
+shower grab bar	shower grab bar	misc
+shower handle	shower handle	misc
+shower handrail	shower handrail	railing
+shower hanger	shower hanger	misc
+shower head	showerhead	shower
+shower hose	shower hose	misc
+shower hose/head	shower hose/head	misc
+shower knob	shower knob	misc
+shower mat	shower mat	floor
+shower mirror	shower mirror	mirror
+shower pipe	shower pipe	misc
+shower rail	shower rail	misc
+shower rod	shower rod	curtain
+shower seat	shower seat	misc
+shower shelf	shower shelf	shelving
+shower soap shelf	shower soap shelf	misc
+shower stall	shower stall	misc
+shower step	shower step	shower
+shower tap	shower tap	misc
+shower tray	shower tray	shower
+shower tub	shower tub	bathtub
+shower utensill	shower utensil	objects
+shower valve	shower valve	misc
+shower wall	shower wall	shower
+shower wall cubby	shower wall cubby	shower
+shower window frame	shower window frame	window
+shower-bath cabinet	shower-bath cabinet	cabinet
+showerhead	showerhead	shower
+shredder	shredder	appliances
+shutter	shutter	blinds
+shutters	shutters	blinds
+side table	side table	table
+sideboard	sideboard	misc
+sign	sign	misc
+silicone gun	silicone gun	objects
+silicone tube	silicone tube	objects
+sink	sink	sink
+sink cabinet	sink cabinet	cabinet
+sink pipe	sink pipe	misc
+sink table	sink table	table
+sink tap	sink tap	misc
+sink/basin	sink/basin	misc
+sitting bench	sitting bench	seating
+skateboard	skateboard	objects
+skates	skates	objects
+ski	ski	objects
+skirting board	skirting board	wall
+sky	sky	misc
+skylight	skylight	window
+slab	slab	objects
+sled	sled	objects
+sledge	sledge	objects
+sleeping bag	sleeping bag	objects
+sliding door	sliding door	door
+sliding glass door	sliding glass door	misc
+slippers	slippers	objects
+small table	table	table
+small table/stand	small table/stand	misc
+smoke alarm	smoke alarm	objects
+smoke detector	smoke detector	misc
+snack	snack	objects
+soap	soap	objects
+soap bottle	soap bottle	objects
+soap dish	soap dish	objects
+soap dish cubby	soap dish cubby	misc
+soap dispenser	soap dispenser	objects
+soap dispenser shelf in shower	soap dispenser shelf in shower	misc
+soap tray	soap tray	objects
+soapbox	soapbox	misc
+socket	socket	objects
+socks	socks	clothes
+sofa	sofa	sofa
+sofa chair	sofa chair	chair
+sofa seat	sofa seat	misc
+sofa set	sofa set	sofa
+soft chair	soft chair	chair
+solarium	solarium	misc
+solarium door	solarium door	door
+sombrero	sombrero	objects
+sopp bottle	soap bottle	objects
+sound bar	soundbar	appliances
+soundbar	soundbar	appliances
+spa armchair	spa armchair	chair
+spa bathtub	spa bathtub	bathtub
+spa bench	spa bench	seating
+spatula	spatula	objects
+speaker	speaker	objects
+speaker stand	speaker stand	cabinet
+spice boxes	spice boxes	objects
+spice rack	spice rack	shelving
+spices	spices	objects
+spirit level	spirit level	objects
+sponge	sponge	objects
+spoon	spoon	objects
+spray	spray	objects
+spray can	spray can	objects
+sprinkler	sprinkler	objects
+square	square	objects
+stack	stack	misc
+stack of albums	stack of albums	objects
+stack of bags	stack of bags	objects
+stack of binders	stack of binders	objects
+stack of blankets	stack of blankets	objects
+stack of book	stack of books	objects
+stack of books	stack of books	objects
+stack of books/ papers	stack of books / papers	objects
+stack of boxes	stack of boxes	objects
+stack of cd's	stack of cds	objects
+stack of cds	stack of cds	objects
+stack of chairs	stack of chairs	chair
+stack of clothes	stack of clothes	clothes
+stack of files	stack of files	objects
+stack of jackets	stack of jackets	clothes
+stack of magazines	stack of magazines	objects
+stack of music stands	stack of music stands	misc
+stack of paper	stack of papers	misc
+stack of papers	stack of papers	misc
+stack of pillows	stack of pillows	cushion
+stack of plates	stack of plates	objects
+stack of pots	stack of pots	objects
+stack of product boxes	stack of product boxes	objects
+stack of shoes	stack of shoes	objects
+stack of stuff	stack of stuff	misc
+stack of t shirts	stack of t-shirts	clothes
+stack of towels	stack of towels	towel
+stack of trays	stack of trays	objects
+stack of yarns	stack of yarns	clothes
+stacked chair	stacked chair	chair
+stacked chairs	stacked chair	chair
+stage	stage	misc
+stained glass	stained glass	window
+stair	stair	stairs
+stair frame	stair frame	misc
+stair handle	stair handle	railing
+stair railing	banister	railing
+stair step	stair step	misc
+stair wall	stair wall	misc
+staircaise handrail	staircase handrail	misc
+staircase	staircase	stairs
+staircase handrail	staircase handrail	misc
+staircase handrair	staircase handrail	misc
+staircase trim	staircase trim	misc
+staircase wall	staircase wall	wall
+stairs	stairs	stairs
+stairs railing	stairs railing	misc
+stairs skirt	stairs skirt	misc
+stairs trim	stairs trim	stairs
+stairs wall	stairs wall	wall
+stairwell	stairwell	stairs
+stampler	stapler	objects
+stand	stand	table
+stand/small table	stand/small table	table
+stapler	stapler	objects
+star	star	objects
+stationary	stationery	objects
+stationery	stationery	objects
+statue	statue	objects
+statue/art	statue/art	misc
+steel plate	steel plate	objects
+step	step	stairs
+step stool	step stool	stool
+stereo	stereo	appliances
+stereo set	stereo set	appliances
+stick	stick	misc
+sticker book	sticker book	objects
+sticky notes	sticky notes	objects
+stoll	stole	clothes
+stone	stone	objects
+stone bench	stone bench	seating
+stone support structure	stone support structure	misc
+stones	stones	misc
+stonework	stonework	misc
+stoo	stool	stool
+stool	stool	stool
+stools	stools	stool
+storage	storage	objects
+storage bin	storage bin	misc
+storage box	storage box	misc
+storage cabinet	storage cabinet	cabinet
+storage shelving	storage shelving	shelving
+storage space	storage space	misc
+storage unit	storage unit	furniture
+stove	stove	appliances
+stove and oven	oven	appliances
+stove door	door	door
+stove utensil	utensil	objects
+stove utensils	utensil	objects
+stovetop	stovetop	misc
+strands	strings	misc
+stricker book	book	objects
+strings	strings	misc
+stripes	decoration	objects
+stroke	stroke	misc
+strongbox	strongbox	objects
+stuffed animal	stuffed animal	objects
+stuffed duck	stuffed animal	objects
+subwoofer	subwoofer	objects
+suitcase	luggage	objects
+sunbed	sunbed	furniture
+support	support	misc
+support beam	support beam	beam
+support stand	stand	table
+supporting beam	support beam	beam
+supporting structure	support	misc
+surface	surface	counter
+surfboard	surfboard	objects
+sweets bowl	bowl	objects
+swing	swing	objects
+switch	switch	objects
+switches	switch	objects
+swivel chair	swivel chair	chair
+t shirt	t-shirt	clothes
+table	table	table
+table /w books	table	table
+table chair	chair	chair
+table cloth	table cloth	table
+table clutter	clutter	misc
+table lamp	table lamp	lighting
+table on wheels	table	table
+table pad	table pad	table
+table plant	plant	plant
+table shelf	shelf	shelving
+table stand	table stand	misc
+table tennis table	table tennis table	table
+table top	table	table
+table tray	tray	objects
+table vase	vase	objects
+table border	unknown	unlabeled
+tablecloth	table cloth	table
+tablet	tablet	table
+tabletop	table	table
+tabletop box	box	objects
+tabletop games	game	objects
+tabletop trinket	trinket	objects
+tableware	flatware	objects
+tailet	toilet	toilet
+tambourine	tambourine	objects
+tank	tank	misc
+tap	tap	objects
+tap dial	knob	misc
+tap/ water source	tap	objects
+tapestry	tapestry	objects
+tea box	box	objects
+tea boxes	boxes	objects
+teapot	teapot	objects
+teaset	tea set	objects
+teddy bear	stuffed animal	objects
+teepee	toilet paper	objects
+telephone	telephone	objects
+telephpne	telephone	objects
+telescope	telescope	objects
+temperature control	thermostat	objects
+tennis racket	tennis racket	objects
+tent	tent	objects
+terrace	terrace	misc
+terrace door	door	door
+therapeutic chair	chair	chair
+thermal mug	mug	objects
+thermometer	thermometer	objects
+thermostat	thermostat	objects
+threadmill	treadmill	gym_equipment
+three	three	misc
+throw blanket	throw blanket	misc
+tile	tile	objects
+tiled floor	floor	floor
+tiled wall	wall	wall
+tiles	tiles	misc
+tiling	tiles	misc
+tin	box	objects
+tire	tire	objects
+tisse box	tissue box	objects
+tissue	tissue	misc
+tissue box	tissue box	objects
+tissues	tissue	misc
+title	title	misc
+toaster	toaster	appliances
+toaster oven	toaster oven	appliances
+toester	toaster	appliances
+toiled	toilet	toilet
+toiled paper	toilet paper	objects
+toilet	toilet	toilet
+toilet bin	trash can	objects
+toilet bowl brush holder	toilet brush holder	misc
+toilet brush	toilet brush	misc
+toilet brush holder	toilet brush holder	misc
+toilet cabinet	cabinet	cabinet
+toilet cleaner	toilet cleaner	misc
+toilet counter	counter	counter
+toilet flush	handle	objects
+toilet handle	handle	objects
+toilet holder	toilet brush holder	misc
+toilet paper	toilet paper	objects
+toilet paper dispenser	toilet paper dispenser	misc
+toilet paper holder	toilet paper dispenser	misc
+toilet paper stand	toilet paper dispenser	misc
+toilet plunger	plunger	objects
+toilet seat	toilet seat	toilet
+toilet sink	sink	sink
+toilet sliding door	door	door
+toilet utensil	utensil	objects
+toilete	toilet	toilet
+toilete brush	toilet brush	misc
+toilete paper holder	toilet paper dispenser	misc
+toiletry	toiletry	objects
+toiletry bag	toiletry bag	objects
+toliet	toilet	toilet
+tolilet	toilet	toilet
+tool	tool	objects
+tool board	tool rack	wall
+tool box	tool box	objects
+tool rack	tool rack	wall
+toolbox	tool box	objects
+tools	tool	objects
+toothbrush	toothbrush	objects
+toothbrush cup	cup	objects
+toothbrush holder	cup	objects
+toothpaste	toothpaste	objects
+torch	torch	objects
+toster	toaster	appliances
+towel	towel	towel
+towel bar	towel bar	objects
+towel bar shelf	shelf	shelving
+towel basket	basket	objects
+towel box	box	objects
+towel hang	towel bar	objects
+towel hanger	towel bar	objects
+towel holder	towel bar	objects
+towel paper dispenser	toilet paper dispenser	misc
+towel paper holder	toilet paper dispenser	misc
+towel rack	towel bar	objects
+towel rail	towel bar	objects
+towel ring	towel ring	objects
+towel rod	towel bar	objects
+towel shelf	shelf	shelving
+towell	towel	towel
+towels	towel	towel
+towels in a basket	basket	objects
+toy	toy	objects
+toy /otherroom	toy	objects
+toy mickey mouse	toy	objects
+toy airplane	toy	objects
+toy car	toy	objects
+toy cars	toy	objects
+toy duck	toy	objects
+toy trailer	toy	objects
+toy train	toy	objects
+toys	toy	objects
+track	toy	objects
+traffic cone	traffic cone	objects
+training bench	weight bench	gym_equipment
+training mat	training mat	gym_equipment
+trampoline	trampoline	gym_equipment
+trascan	trash can	objects
+trash	trash can	objects
+trash  bin	trash can	objects
+trash bag	trash bag	misc
+trash bin	trash can	objects
+trash can	trash can	objects
+trashcan	trash can	objects
+tray	tray	objects
+treadmill	treadmill	gym_equipment
+tree	tree	plant
+tree branch	tree branch	objects
+trimmer	trimmer	objects
+trinket	trinket	objects
+tripod	tripod	shelving
+trofeum	trophy	misc
+troley	trolley	objects
+trolley	trolley	objects
+trombone	trombone	objects
+trophies	trophy	misc
+trophy	trophy	misc
+trough	trough	misc
+trumpet	trumpet	objects
+trumpet stand	stand	table
+tub	bathtub	bathtub
+tube	tv	tv_monitor
+tv	tv	tv_monitor
+tv cabinet	tv stand	furniture
+tv decoder	tv remote	objects
+tv led	tv	tv_monitor
+tv remote	tv remote	objects
+tv remote control	tv remote	objects
+tv stand	tv stand	furniture
+tv stand door	door	door
+tv table	tv stand	furniture
+twigs in vase	plant	plant
+typewriter	typewriter	objects
+ubnknown/ probably clothes	clothes	clothes
+uknknown	unknown	unlabeled
+uknown	unknown	unlabeled
+uknown device	unknown	unlabeled
+ukulele	ukulele	objects
+umbrella	umbrella	objects
+umbrella stand	umbrella stand	furniture
+umbrellas	umbrella	objects
+umknown	unknown	unlabeled
+unkknown	unknown	unlabeled
+unknaown	unknown	unlabeled
+unknnown	unknown	unlabeled
+unknon	unknown	unlabeled
+unknow	unknown	unlabeled
+unknowm	unknown	unlabeled
+unknown	unknown	unlabeled
+unknown /otherroom	unknown	unlabeled
+unknown /outside	unknown	unlabeled
+unknown /probably cup	cup	objects
+unknown cluter	clutter	misc
+unknown clutter	clutter	misc
+unknown countertop item	unknown	unlabeled
+unknown device	unknown	unlabeled
+unknown facility	unknown	unlabeled
+unknown kitchen appliance	kitchen appliance	appliances
+unknown kitchen stuff	unknown	unlabeled
+unknown machines	appliance	misc
+unknown office stuff	unknown	unlabeled
+unknown picture/window	picture	picture
+unknown stuff	unknown	unlabeled
+unknown wall	wall	wall
+unknown/	unknown	unlabeled
+unknown/ a pie?	food	misc
+unknown/ bin?	bin	objects
+unknown/ pile of something	clutter	misc
+unknown/ proably cup	cup	objects
+unknown/ probably a book	book	objects
+unknown/ probably advertisement	magazine	objects
+unknown/ probably air refresher	air freshener	objects
+unknown/ probably air vent	vent	misc
+unknown/ probably air vent fan	fan	objects
+unknown/ probably albums	album	objects
+unknown/ probably attic entrance	door	door
+unknown/ probably bag	bag	objects
+unknown/ probably basket	basket	objects
+unknown/ probably bin	bin	objects
+unknown/ probably board	board	board_panel
+unknown/ probably board games	game	objects
+unknown/ probably boiler	boiler	misc
+unknown/ probably book	book	objects
+unknown/ probably books	book	objects
+unknown/ probably books or albums	book	objects
+unknown/ probably bottle	bottle	objects
+unknown/ probably bowl	bowl	objects
+unknown/ probably box	box	objects
+unknown/probably cabinet	cabinet	cabinet
+unknown/ probably cabinet	cabinet	cabinet
+unknown/ probably calculator	calculator	appliances
+unknown/ probably candle	candle	objects
+unknown/ probably candle stand	candle	objects
+unknown/ probably candles	candle	objects
+unknown/ probably canopy	canopy	misc
+unknown/ probably casket	casket	misc
+unknown/ probably charger	charger	objects
+unknown/ probably clock	clock	objects
+unknown/ probably clothes	clothes	clothes
+unknown/ probably coffee machine	coffee machine	appliances
+unknown/ probably computer	computer	objects
+unknown/ probably coocking books	book	objects
+unknown/ probably cookies	food	misc
+unknown/ probably cosmetic	cosmetics	objects
+unknown/ probably cosmetics	cosmetics	objects
+unknown/ probably cups	cups	objects
+unknown/ probably decoration	decoration	objects
+unknown/ probably decorative plant	decorative plant	plant
+unknown/ probably desk or box	box	objects
+unknown/ probably dinnerware	flatware	objects
+unknown/ probably dishwasher	dishwasher	appliances
+unknown/ probably drum	drum	objects
+unknown/ probably drums	drum	objects
+unknown/ probably fan vent	fan	objects
+unknown/ probably fire alarm	fire alarm	objects
+unknown/ probably fire detector	smoke detector	misc
+unknown/ probably fire sprinkler	sprinkler	objects
+unknown/ probably foam	foam	misc
+unknown/ probably folded table	table	table
+unknown/ probably frame	frame	misc
+unknown/ probably framed picture	picture	picture
+unknown/ probably fridge	refrigerator	appliances
+unknown/ probably glasses	glasses	objects
+unknown/ probably hand grab	unknown	unlabeled
+unknown/ probably hat	hat	clothes
+unknown/ probably heater	heater	objects
+unknown/ probably home theater player	tv	tv_monitor
+unknown/ probably jar	jar	objects
+unknown/ probably lamp	lamp	lighting
+unknown/ probably letters	papers	objects
+unknown/ probably liquid soap	soap	objects
+unknown/ probably magazine	magazine	objects
+unknown/ probably monitor	monitor	tv_monitor
+unknown/ probably napkins	napkins	objects
+unknown/ probably notebook	notebook	objects
+unknown/ probably paper towel dispenser	paper towels	towel
+unknown/ probably paper towel holder	paper towels	towel
+unknown/ probably pipe	pipe	misc
+unknown/ probably plate	plate	objects
+unknown/ probably pot	pot	objects
+unknown/ probably printer	printer	objects
+unknown/ probably radio	radio	misc
+unknown/ probably rug	rug	floor
+unknown/ probably scarf	scarf	clothes
+unknown/ probably security detector	security detector	misc
+unknown/ probably shampoo	shampoo	objects
+unknown/ probably sheet	sheet	misc
+unknown/ probably sheets	sheet	misc
+unknown/ probably shelf	shelf	shelving
+unknown/ probably shower cabine	shower	shower
+unknown/ probably shower gel	shampoo	objects
+unknown/ probably sitting pillow	pillow	cushion
+unknown/ probably soap	soap	objects
+unknown/ probably sofa	sofa	sofa
+unknown/ probably solarium chair	chair	chair
+unknown/ probably stand	stand	table
+unknown/ probably table lamp	table lamp	lighting
+unknown/ probably tank	tank	misc
+unknown/ probably telephone	telephone	objects
+unknown/ probably tissue dispenser	tissue	misc
+unknown/ probably wall lamp	wall lamp	lighting
+unknown/ probably washing powder	washing powder	misc
+unknown/ probably washing soap	soap	objects
+unknown/ probaby albums	albums	objects
+unknown// probably fire sprinkler	fire sprinkler	misc
+unknown/probably decoration	decoration	objects
+unknown/remove	unknown/remove	misc
+unknwn	unknown	unlabeled
+unknwom	unknown	unlabeled
+unknwon	unknown	unlabeled
+unkown	unknown	unlabeled
+unkown clutter	clutter	misc
+unknown"	unknown	unlabeled
+	unknown	unlabeled
+ups	unknown	unlabeled
+urinal	urinal	objects
+utensil	utensil	objects
+vaccum cleaner	vacuum cleaner	appliances
+vacuum cleaner	vacuum cleaner	appliances
+valve	plumbing	objects
+vanity	vanity	table
+vanity table	vanity	table
+vase	vase	objects
+vase with flower	flower	plant
+vegetables	vegetables	objects
+vegetation	plant	plant
+vent	vent	misc
+vent pipe	pipe	misc
+ventialtion	ventilation	objects
+ventilation	ventilation	objects
+ventilation hood	ventilation hood	misc
+ventilation pipe	pipe	misc
+ventilator	ventilation	objects
+vese	vessel	objects
+vessel	vessel	objects
+vessel sink	vessel sink	misc
+vice	unknown	unlabeled
+video cassette	cassette	objects
+vinyl records	vinyl records	objects
+violin	violin	objects
+violin case	violin case	objects
+wadrobe	wardrobe	furniture
+waffle iron	waffle iron	appliances
+wal	wall	wall
+wal hanging decoration	decoration	objects
+wall	wall	wall
+wall outside	wall outside	wall
+wall  clock	wall clock	objects
+wall  lamp	wall lamp	lighting
+wall /otheroom	wall	wall
+wall /outside	wall /outside	wall
+wall balk	wall	wall
+wall balks	wall	wall
+wall beam	wall beam	misc
+wall board	wall board	misc
+wall cabinet	wall cabinet	cabinet
+wall clock	wall clock	objects
+wall control	wall control	misc
+wall controll	wall control	misc
+wall controller	wall control	misc
+wall coping	wall	wall
+wall corridor	wall	wall
+wall cubby	wall cubby	misc
+wall decoration	picture	picture
+wall detail	wall detail	misc
+wall device	wall electronics	misc
+wall electronic	wall electronics	misc
+wall electronics	wall electronics	misc
+wall frame	picture	picture
+wall hanger	wall hanger	objects
+wall hanging decoration	wall hanging decoration	misc
+wall hanging organizer	wall hanger	objects
+wall indent	wall indent	misc
+wall lamp	wall lamp	lighting
+wall light	wall lamp	lighting
+wall lmap	wall lamp	lighting
+wall niche	wall hanging decoration	misc
+wall of green	wall	wall
+wall painting	painting	objects
+wall panel	wall panel	wall
+wall panel frame	wall panel frame	wall
+wall post	wall post	misc
+wall shelf	wall shelf	shelving
+wall sign	wall sign	misc
+wall sing	wall sign	misc
+wall soap shelf	wall soap shelf	misc
+wall statue	wall statue	misc
+wall sticker	decoration	objects
+wall toilet paper	wall toilet paper	misc
+wall top	wall top	misc
+wall tv	wall tv	misc
+wall vent	vent	misc
+wallkitchen island	wall	wall
+walll	wall	wall
+wardeobe	wardrobe	furniture
+wardeobe door	wardrobe	furniture
+warderobe	wardrobe	furniture
+wardobe	wardrobe	furniture
+wardrobe	wardrobe	furniture
+wardrobe accesories	wardrobe	furniture
+wardrobe door	wardrobe	furniture
+wardrobe door frame	wardrobe	furniture
+wardrobe drawer	drawer	chest_of_drawers
+wardrobe mirror	mirror	mirror
+wardrobe shelf	shelf	shelving
+wardrobe sliding door	sliding door	door
+wash basin	washbasin	sink
+wash basin cabinet	wash cabinet	cabinet
+wash cabinet	wash cabinet	cabinet
+washbasin	washbasin	sink
+washbasin cabinet	wash cabinet	cabinet
+washbasin counter	washbasin counter	counter
+washbasin countertop	washbasin counter	counter
+washbasin table	washbasin counter	counter
+washcloth	washcloth	objects
+washdisher machine	dishwasher	appliances
+washer dryer	washer-dryer	misc
+washer-dryer	washer-dryer	misc
+washing container	container	objects
+washing liquid	detergent	misc
+washing machine	washing machine	appliances
+washing machine and dryer	washing machine and dryer	appliances
+washing powder	washing powder	misc
+washing stuff	washing stuff	misc
+watch	watch	objects
+water basin	water basin	misc
+water bottle	bottle	objects
+water dispenser	water dispenser	objects
+water fountain	water fountain	misc
+water heater	water heater	objects
+water meter	water meter	objects
+water outlet	water outlet	objects
+water pump	water pump	objects
+water tank	water tank	objects
+watering can	watering can	objects
+weight	weight	gym_equipment
+weight bench	weight bench	gym_equipment
+weights	weights	gym_equipment
+wheel	wheel	objects
+wheelbarrow	wheelbarrow	objects
+whine shelf	whine shelf	misc
+whiteboard	whiteboard	tv_monitor
+widnow frame	window frame	window
+wifi repeater	wifi router	objects
+wifi router	wifi router	objects
+wifi transmitter	wifi router	objects
+wind chime	decoration	objects
+windo	window	window
+windoe frame	window frame	window
+windoow shade	window shade	blinds
+windor	window	window
+window	window	window
+window  curtain	window curtain	curtain
+window  frame	window frame	window
+window  glass	window glass	objects
+window  shade	window shade	blinds
+window /otherroom	window /otherroom	window
+window /outside	window /outside	window
+window /wall	window	window
+window bars	window	window
+window behind shutters	window	window
+window blinds	blinds	blinds
+window curtain	window curtain	curtain
+window curtain bar	window curtain	curtain
+window fame	window frame	window
+window fram	window frame	window
+window frame	window frame	window
+window frame /otherroom	window frame /otherroom	window
+window glass	window glass	objects
+window glass /outside	window	window
+window pane	window	window
+window panel	window	window
+window panes	window	window
+window place	window	window
+window rame	window	window
+window seat	window seat	seating
+window shade	window shade	blinds
+window shades	window shade	blinds
+window shutter	window shutter	objects
+window shutters	window shutters	objects
+window sill	window frame	window
+window valence	window valence	curtain
+window/door	window/door	misc
+windowframe	window frame	window
+windown frame	window frame	window
+windows	window	window
+windows frame	window frame	window
+windowsil	window frame	window
+windowsill	window frame	window
+windw frame	window frame	window
+wine	wine	misc
+wine bottle	wine bottle	objects
+wine cabinet	wine cabinet	cabinet
+wine rack	wine rack	misc
+wine refrigerator	refrigerator	appliances
+wine storage	wine storage	shelving
+winndow	window	window
+winndow  frame	window frame	window
+wire	wire	misc
+wood	wood	misc
+wood burner	fireplace	fireplace
+wood frame	frame	misc
+wooden balk	wood	misc
+wooden panel	panel	board_panel
+wool	cloth	objects
+woor frame	frame	misc
+workout bike	workout bike	misc
+workout weight	weights	gym_equipment
+workstation	workstation	objects
+worktop	worktop	misc
+wreath	wreath	objects
+wrench	wrench	misc
+yoga mat	yoga mat	misc
+~aper	unknown	unlabeled
+łamp	lamp	lighting
+śign	sign	misc

@@ -9,9 +9,14 @@
 #include <Corrade/Containers/Optional.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Vector3.h>
+
+#include <memory>
 #include <string>
 
 namespace esp {
+namespace physics {
+class ArticulatedObject;
+}
 namespace assets {
 
 // parameters to control how a render asset instance is created
@@ -44,6 +49,7 @@ struct RenderAssetInstanceCreationInfo {
   Corrade::Containers::Optional<Magnum::Vector3> scale;
   Flags flags;
   std::string lightSetupKey;
+  std::shared_ptr<physics::ArticulatedObject> rig;
 };
 
 }  // namespace assets

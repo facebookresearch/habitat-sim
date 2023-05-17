@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
@@ -55,6 +55,9 @@ class ClassicReplayRenderer : public AbstractReplayRenderer {
       unsigned envIndex) const;
   std::map<std::string, std::reference_wrapper<esp::sensor::Sensor>>&
   getEnvironmentSensors(unsigned envIndex);
+
+  esp::geo::Ray doUnproject(unsigned envIndex,
+                            const Mn::Vector2i& viewportPosition) override;
 
  private:
   unsigned doEnvironmentCount() const override;

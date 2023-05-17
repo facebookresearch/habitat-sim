@@ -13,7 +13,7 @@
   to start the compilation process. To quickly compile the latest main, run `pip install git+https://github.com/facebookresearch/habitat-sim`.
 
 - Since pip out of tree by default, this process will copy quite a lot of data to your TMPDIR. You can change this location by modifying the TMPDIR env variable.
-  It will also not cache previous builds effectively and therefore will be slow. For active develeopment, building using `python setup.py install...` is recommended.
+  It will also not cache previous builds effectively and therefore will be slow. For active development, building using `python setup.py install...` is recommended.
 
 - Most compilation options can be accessed by either modifying the relevant ENV\_VARS (WITH\_BULLET, WITH\_CUDA, HEADLESS) etc or by passing the args through pip's `--global-option` and `--build-option` arguments.
 
@@ -22,7 +22,7 @@
 
 ## Build from Source
 
-We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/distribution/#download-section) environment (note: python>=3.7 is required). Once you have Anaconda installed, here are the instructions.
+We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/distribution/#download-section) environment (note: python>=3.9 is required). Once you have Anaconda installed, here are the instructions.
 
 
 1. Clone this github repository.
@@ -40,8 +40,8 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
     Common
 
    ```bash
-   # We require python>=3.7 and cmake>=3.10
-   conda create -n habitat python=3.7 cmake=3.14.0
+   # We require python>=3.9 and cmake>=3.10
+   conda create -n habitat python=3.9 cmake=3.14.0
    conda activate habitat
    pip install -r requirements.txt
    ```

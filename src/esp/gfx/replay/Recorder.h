@@ -126,9 +126,20 @@ class Recorder {
                                  bool usePrettyWriter = false);
 
   /**
-   * @brief write saved keyframes to string.
+   * @brief write saved keyframes to string. '{"keyframes": [{...},{...},...]}'
    */
   std::string writeSavedKeyframesToString();
+
+  /**
+   * @brief write saved keyframes as individual strings ['{"keyframe": ...}',
+   * '{"keyframe": ...}', ...]
+   *
+   * Use this function if you are using keyframes incrementally, e.g.
+   * repeated calls to this function and feeding them to a renderer. Contrast
+   * with writeSavedKeyframesToFile, which "consolidates" before discarding old
+   * keyframes to avoid losing state information.
+   */
+  std::vector<std::string> writeIncrementalSavedKeyframesToStringArray();
 
   /**
    * @brief returns JSONized version of given keyframe.

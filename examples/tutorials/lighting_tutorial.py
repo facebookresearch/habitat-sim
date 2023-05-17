@@ -73,6 +73,7 @@ def make_configuration():
 
 # [/setup]
 
+
 # This is wrapped such that it can be added to a unit test
 def main(show_imgs=True, save_imgs=False):
     if save_imgs and not os.path.exists(output_path):
@@ -148,7 +149,7 @@ def main(show_imgs=True, save_imgs=False):
 
     # create a custom light setup
     my_default_lighting = [
-        LightInfo(vector=[2.0, 2.0, 1.0, 0.0], model=LightPositionModel.Camera)
+        LightInfo(vector=[-2.0, -2.0, -1.0, 0.0], model=LightPositionModel.Camera)
     ]
     # overwrite the default DEFAULT_LIGHTING_KEY light setup
     sim.set_light_setup(my_default_lighting)
@@ -207,7 +208,7 @@ def main(show_imgs=True, save_imgs=False):
     # create a new setup with an additional light
     new_light_setup = existing_light_setup + [
         LightInfo(
-            vector=[0.0, 0.0, 1.0, 0.0],
+            vector=[0.0, 0.0, -1.0, 0.0],
             color=[1.6, 1.6, 1.4],
             model=LightPositionModel.Camera,
         )

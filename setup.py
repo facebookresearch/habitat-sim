@@ -106,7 +106,7 @@ Use "HEADLESS=True pip install ." to build in headless mode with pip""",
         "--cmake-args",
         type=str,
         default=os.environ.get("CMAKE_ARGS", ""),
-        help="""Additional arguements to be passed to cmake.
+        help="""Additional arguments to be passed to cmake.
 Note that you will need to do `--cmake-args="..."` as `--cmake-args "..."`
 will generally not be parsed correctly
 You may need to use --force-cmake to ensure cmake is rerun with new args.
@@ -142,7 +142,7 @@ Use "CMAKE_ARGS="..." pip install ." to set cmake args with pip""",
         "--cache-args",
         dest="cache_args",
         action="store_true",
-        help="""Caches the arguements sent to setup.py
+        help="""Caches the arguments sent to setup.py
         and reloads them on the next invocation.  This argument is not cached""",
     )
 
@@ -408,7 +408,6 @@ class CMakeBuild(build_ext):
                 # Strip +D
                 k = k[2:]
                 for l in cache_contents:
-
                     match = cache_parser.match(l)
                     if match is None:
                         continue
@@ -450,7 +449,7 @@ class CMakeBuild(build_ext):
 if __name__ == "__main__":
     assert StrictVersion(
         "{}.{}".format(sys.version_info[0], sys.version_info[1])
-    ) >= StrictVersion("3.7"), "Must use python3.7 or newer"
+    ) >= StrictVersion("3.9"), "Must use python 3.9 or newer"
     with open("./requirements.txt", "r") as f:
         requirements = [l.strip() for l in f.readlines() if len(l.strip()) > 0]
 
@@ -467,7 +466,7 @@ if __name__ == "__main__":
         package_dir={"": "src_python"},
         install_requires=requirements,
         tests_require=["hypothesis", "pytest-benchmark", "pytest"],
-        python_requires=">=3.7",
+        python_requires=">=3.9",
         # add extension module
         ext_modules=[CMakeExtension("habitat_sim._ext.habitat_sim_bindings", "src")],
         # add custom build_ext command

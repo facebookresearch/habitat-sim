@@ -39,6 +39,7 @@
 #  PngImporter                  - PNG importer
 #  PrimitiveImporter            - Primitive importer
 #  SpirvToolsShaderConverter    - SPIR-V Tools shader converter
+#  SpngImporter                 - PNG importer using libspng
 #  StanfordImporter             - Stanford PLY importer
 #  StanfordSceneConverter       - Stanford PLY converter
 #  StbDxtImageConverter         - BC1/BC3 image compressor using stb_dxt
@@ -48,6 +49,7 @@
 #  StbTrueTypeFont              - TrueType font using stb_truetype
 #  StbVorbisAudioImporter       - OGG audio importer using stb_vorbis
 #  StlImporter                  - STL importer
+#  UfbxImporter                 - FBX and OBJ importer using ufbx
 #  WebPImporter                 - WebP importer
 #
 # If Magnum is built with MAGNUM_BUILD_DEPRECATED enabled, these additional
@@ -140,6 +142,8 @@ foreach(_component ${MagnumPlugins_FIND_COMPONENTS})
         list(APPEND _MAGNUMPLUGINS_${_component}_MAGNUM_DEPENDENCIES MeshTools)
     elseif(_component STREQUAL StanfordSceneConverter)
         list(APPEND _MAGNUMPLUGINS_${_component}_MAGNUM_DEPENDENCIES MeshTools)
+    elseif(_component STREQUAL UfbxImporter)
+        list(APPEND _MAGNUMPLUGINS_${_component}_MAGNUM_DEPENDENCIES AnyImageImporter)
     elseif(_component STREQUAL TinyGltfImporter)
         # TODO remove when the deprecated plugin is gone
         list(APPEND _MAGNUMPLUGINS_${_component}_MAGNUM_DEPENDENCIES AnyImageImporter)
@@ -165,10 +169,10 @@ set(_MAGNUMPLUGINS_PLUGIN_COMPONENTS
     JpegImporter KtxImageConverter KtxImporter MeshOptimizerSceneConverter
     MiniExrImageConverter OpenExrImageConverter OpenExrImporter
     OpenGexImporter PngImageConverter PngImporter PrimitiveImporter
-    SpirvToolsShaderConverter StanfordImporter StanfordSceneConverter
-    StbDxtImageConverter StbImageConverter StbImageImporter
-    StbResizeImageConverter StbTrueTypeFont StbVorbisAudioImporter StlImporter
-    WebPImporter)
+    SpirvToolsShaderConverter SpngImporter StanfordImporter
+    StanfordSceneConverter StbDxtImageConverter StbImageConverter
+    StbImageImporter StbResizeImageConverter StbTrueTypeFont
+    StbVorbisAudioImporter StlImporter UfbxImporter WebPImporter)
 # Nothing is enabled by default right now
 set(_MAGNUMPLUGINS_IMPLICITLY_ENABLED_COMPONENTS )
 
@@ -468,6 +472,12 @@ foreach(_component ${MagnumPlugins_FIND_COMPONENTS})
             set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
                 INTERFACE_LINK_LIBRARIES SpirvTools::SpirvTools SpirvTools::Opt)
 
+        # SpngImporter plugin dependencies
+        elseif(_component STREQUAL SpngImporter)
+            find_package(Spng REQUIRED)
+            set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
+                INTERFACE_LINK_LIBRARIES Spng::Spng)
+
         # StanfordImporter has no dependencies
         # StanfordSceneConverter has no dependencies
         # StbDxtImageConverter has no dependencies
@@ -477,6 +487,7 @@ foreach(_component ${MagnumPlugins_FIND_COMPONENTS})
         # StbTrueTypeFont has no dependencies
         # StbVorbisAudioImporter has no dependencies
         # StlImporter has no dependencies
+        # UfbxImporter has no dependencies
         # TinyGltfImporter has no dependencies
 
         # WebPImporter plugin dependencies

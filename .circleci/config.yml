@@ -17,6 +17,7 @@ commands:
           # OpenEXR requires CMake 3.12. We also download CMake 3.20, which
           # we'll use later for the JS build only.
           command: |
+              echo $(date +%F) > ./date
               echo $(git ls-remote https://github.com/facebookresearch/habitat-lab.git HEAD | awk '{ print $1}') > ./hablab_sha
               cat ./hablab_sha
               wget https://cmake.org/files/v3.12/cmake-3.12.4-Linux-x86_64.sh
@@ -107,7 +108,7 @@ commands:
               if command -v nvidia-smi; then nvidia-smi; fi
       - restore_cache:
           keys:
-            - conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
+            - conda-{{ checksum "habitat-sim/.circleci/config.yml" }}-{{ checksum "./date" }}
       - run: &install_conda
           name: Install conda and dependencies
           no_output_timeout: 20m
@@ -119,11 +120,11 @@ commands:
                 bash ~/miniconda.sh -b -p $HOME/miniconda
                 rm ~/miniconda.sh
                 export PATH=$HOME/miniconda/bin:$PATH
-                conda create -y -n habitat python=3.7
+                conda create -y -n habitat python=3.9
                 . activate habitat
                 # For whatever reason we have to install pytorch first. If it isn't
                 # it installs the 1.4 cpuonly version. Which is no good.
-                conda install -y pytorch==1.12.1=py3.7_cuda11.3_cudnn8.3.2_0 torchvision==0.13.1=py37_cu113 cudatoolkit=11.3 -c pytorch -c nvidia
+                conda install -y pytorch==1.12.1=py3.9_cuda11.3_cudnn8.3.2_0 torchvision==0.13.1=py39_cu113 cudatoolkit=11.3 -c pytorch -c nvidia
                 conda install -y -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis pytest-mock
                 pip install pytest-sugar pytest-xdist pytest-benchmark opencv-python cython mock
               fi
@@ -186,7 +187,7 @@ commands:
 jobs:
   python_lint:
     docker:
-      - image: cimg/python:3.7
+      - image: cimg/python:3.9.16
     steps:
       - checkout
       - run:
@@ -194,7 +195,7 @@ jobs:
           command: |
               pip install -U pip
               pip install -U --prefer-binary \
-                black \
+                black==23.1.0 \
                 flake8 \
                 flake8-bugbear==22.6.22 \
                 flake8-builtins \
@@ -202,7 +203,7 @@ jobs:
                 flake8-return \
                 flake8-simplify \
                 hypothesis==6.29.3 \
-                isort \
+                isort==5.11.5 \
                 mypy \
                 numpy \
                 pytest \
@@ -246,7 +247,7 @@ jobs:
 
   pre-commit:
     docker:
-      - image: cimg/python:3.7
+      - image: cimg/python:3.9.16
     working_directory: ~/repo/
 
     steps:
@@ -254,11 +255,12 @@ jobs:
       - run:
           name: Combine precommit config and python versions for caching
           command: |
+            echo $(date +%F) > ./date
             cat .pre-commit-config.yaml > pre-commit-deps.txt
             python -VV >> pre-commit-deps.txt
       - restore_cache:
           keys:
-          - v1-precommit-deps-{{ checksum "pre-commit-deps.txt" }}
+          - v1-precommit-deps-{{ checksum "pre-commit-deps.txt" }}-{{ checksum "./date" }}
 
       - run:
           name: Install Dependencies
@@ -270,7 +272,7 @@ jobs:
       - save_cache:
           paths:
             - ~/.cache/pre-commit
-          key: v1-precommit-deps-{{ checksum "pre-commit-deps.txt" }}
+          key: v1-precommit-deps-{{ checksum "pre-commit-deps.txt" }}-{{ checksum "./date" }}
       - run:
           name: Check Code Style using pre-commit
           command: |
@@ -293,7 +295,7 @@ jobs:
           type: string
           default: "AIHABITAT_CONDA_PWD"
     macos:
-      xcode: 13.0.0
+      xcode: 14.2.0
     steps:
       - checkout:
           path: ./habitat-sim
@@ -316,11 +318,15 @@ jobs:
             conda install -y anaconda-client ccache cmake git ninja conda-build pip
             echo $(which -a python)
             pip install gitpython
+            cd habitat-sim
+            git submodule update --init --recursive --jobs 8
+            pip install .
+            pip uninstall -y habitat-sim
+            rm -rf build
             (yes || true) | anaconda login --username << parameters.AIHABITAT_CONDA_CHN >>  --password $<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >> --hostname "aihabitat-conda-ci-builder-macos"
             <<^ parameters.CI_TEST>>
             conda config --set anaconda_upload yes <</ parameters.CI_TEST>>
-            cd habitat-sim/conda-build
-            git submodule update --init --recursive --jobs 8
+            cd conda-build
             export PYTHONIOENCODING="utf-8"
             python matrix_builder.py <<# parameters.CI_TEST>> --ci_test <</ parameters.CI_TEST>>  <<^ parameters.CI_TEST >> --conda_upload <<# parameters.nightly>> --nightly <</ parameters.nightly>> <</ parameters.CI_TEST >>
 
@@ -373,8 +379,9 @@ jobs:
       - run:
           name: pip install
           command: |
-            pyenv install 3.7.10
-            pyenv global 3.7.10
+            cd /opt/circleci/.pyenv/plugins/python-build/../.. && git fetch --tags && git checkout v2.3.15 && cd -
+            pyenv install 3.9.16
+            pyenv global 3.9.16
             python3 -m pip install -U pip
             python3 -m pip install . -v
             cd ../ && python3 -c "import habitat_sim"
@@ -429,6 +436,7 @@ jobs:
       - run:
           name: Install Habitat Sim and Habitat Lab
           command: |
+              echo $(date +%F) > ./date
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat;
               cd habitat-sim
@@ -455,7 +463,7 @@ jobs:
               export MULTI_PROC_OFFSET=0 && export MAGNUM_LOG=quiet && export HABITAT_SIM_LOG=quiet
               python -m pytest
       - save_cache:
-          key: habitat-lab-{{ checksum "./hablab_sha" }}
+          key: habitat-lab-{{ checksum "./hablab_sha" }}-{{ checksum "./date" }}
           background: true
           paths:
             - ./habitat-lab
@@ -473,7 +481,7 @@ jobs:
               conda install -y  jinja2 pygments docutils
               ./build-public.sh
       - save_cache:
-          key: conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
+          key: conda-{{ checksum "habitat-sim/.circleci/config.yml" }}-{{ checksum "./date" }}
           background: true
           paths:
             - ~/miniconda
@@ -531,6 +539,23 @@ jobs:
               # switch back to cmake 3.12
               sudo rm /usr/local/bin/cmake
               sudo ln -s /opt/cmake312/bin/cmake /usr/local/bin/cmake
+      - run:
+          name: Display dependency versions
+          no_output_timeout: 20m
+          command: |
+              export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+              . activate habitat
+              export CONDA_ENV_DUMP=conda_env_dump.log
+              echo "pip freeze"           | tee -a $CONDA_ENV_DUMP
+              pip freeze                  | tee -a $CONDA_ENV_DUMP
+              echo "###########"          | tee -a $CONDA_ENV_DUMP
+              echo "conda list"           | tee -a $CONDA_ENV_DUMP
+              conda list                  | tee -a $CONDA_ENV_DUMP
+              echo "###########"          | tee -a $CONDA_ENV_DUMP
+              echo "habitat-sim commit"   | tee -a $CONDA_ENV_DUMP
+              cat ./hablab_sha            | tee -a $CONDA_ENV_DUMP
+      - store_artifacts:
+          path: conda_env_dump.log  # This is the list of modules in conda and pip
       - run:
           name: Run sim benchmark
           command: |
@@ -677,7 +702,7 @@ jobs:
               docker run -it --ipc=host --rm -v $(pwd)/../../:/remote \
                   <<^ parameters.CI_TEST >> --env << parameters.AIHABITAT_CONDA_CHN_PWD_VAR >> <</ parameters.CI_TEST >> \
                   hsim_condabuild_dcontainer \
-                  /bin/bash -c "source ~/.bashrc && conda activate py37 \
+                  /bin/bash -c "source ~/.bashrc && conda activate py39 \
                                 && cd /remote/habitat-sim/conda-build \
                                 <<^ parameters.CI_TEST >> && yes | anaconda login --username << parameters.AIHABITAT_CONDA_CHN >> --password \${<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >>} <</ parameters.CI_TEST >> --hostname "aihabitat-conda-ci-builder-linux" \
                                 && python matrix_builder.py \

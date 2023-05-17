@@ -1076,9 +1076,12 @@ Cr::Containers::StridedArrayView1D<Mn::Float> Renderer::lightRanges(
 }
 
 void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
-  // TODO allow this (currently addFile() sets up shader limits)
-  CORRADE_ASSERT(!state_->meshes.isEmpty(),
-                 "Renderer::draw(): no file was added", );
+  /* If addFile() was not called, we don't have the shaders set up yet. In that
+     case there should be no meshes to render from either, so nothing to do. */
+  if (state_->shaders.empty()) {
+    CORRADE_INTERNAL_ASSERT(state_->meshes.isEmpty());
+    return;
+  }
 
   /* Process scenes that are marked as dirty */
   // TODO this could be a separate step to allow the user to control when it

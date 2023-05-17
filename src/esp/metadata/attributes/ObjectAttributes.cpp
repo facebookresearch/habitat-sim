@@ -91,7 +91,7 @@ ObjectAttributes::ObjectAttributes(const std::string& handle)
   setComputeCOMFromShape(true);
 
   setBoundingBoxCollisions(false);
-  setJoinCollisionMeshes(true);
+  setJoinCollisionMeshes(false);
   // default to use material-derived shader unless otherwise specified in config
   // or instance config
   setShaderType(getShaderTypeName(ObjectInstanceShaderType::Material));
@@ -132,6 +132,7 @@ StageAttributes::StageAttributes(const std::string& handle)
   // setting defaults for semantic frame will have changed this to false. change
   // to true so that only used if actually changed.
   setUseFrameForAllOrientation(true);
+
   // setting default for semantic assets having semantically painted textures to
   // false
   setHasSemanticTextures(false);
@@ -172,7 +173,7 @@ std::string StageAttributes::getAbstractObjectInfoHeaderInternal() const {
   std::string res = "Gravity XYZ,Origin XYZ,";
   if (!getUseFrameForAllOrientation()) {
     Cr::Utility::formatInto(res, res.length(), "{}",
-                            "Semantic Up XYZ,Semantic Front XYZ");
+                            "Semantic Up XYZ,Semantic Front XYZ,");
   }
 
   Cr::Utility::formatInto(
@@ -187,7 +188,7 @@ std::string StageAttributes::getAbstractObjectInfoInternal() const {
                                               getAsString("origin"));
 
   if (!getUseFrameForAllOrientation()) {
-    Cr::Utility::formatInto(res, res.length(), "{},{}",
+    Cr::Utility::formatInto(res, res.length(), "{},{},",
                             getAsString("semantic_orient_up"),
                             getAsString("semantic_orient_front"));
   }

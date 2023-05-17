@@ -290,6 +290,13 @@ void SceneInstanceAttributesManager::loadAbstractObjectAttributesFromJson(
         instanceAttrs->setNonUniformScale(non_uniform_scale);
       });
 
+  // whether particular instance is visible or not - only modify if actually
+  // present in instance json
+  io::jsonIntoSetter<bool>(
+      jCell, "is_instance_visible", [instanceAttrs](bool is_instance_visible) {
+        instanceAttrs->setIsInstanceVisible(is_instance_visible);
+      });
+
   // mass scaling for instance
   io::jsonIntoSetter<double>(jCell, "mass_scale",
                              [instanceAttrs](double mass_scale) {
@@ -320,7 +327,8 @@ std::string SceneInstanceAttributesManager::getTranslationOriginVal(
       ESP_WARNING(Mn::Debug::Flag::NoSpace)
           << ": translation_origin value in json :`" << tmpTransOriginVal
           << "`|`" << strToLookFor
-          << "` does not map to a valid SceneInstanceTranslationOrigin value, "
+          << "` does not map to a valid SceneInstanceTranslationOrigin "
+             "value, "
              "so defaulting translation origin to "
              "SceneInstanceTranslationOrigin::Unknown.";
     }
@@ -333,8 +341,8 @@ int SceneInstanceAttributesManager::registerObjectFinalize(
     const std::string& sceneInstanceAttributesHandle,
     bool) {
   // adds template to library, and returns either the ID of the existing
-  // template referenced by sceneInstanceAttributesHandle, or the next available
-  // ID if not found.
+  // template referenced by sceneInstanceAttributesHandle, or the next
+  // available ID if not found.
   int datasetTemplateID = this->addObjectToLibrary(
       std::move(sceneInstanceAttributes), sceneInstanceAttributesHandle);
   return datasetTemplateID;

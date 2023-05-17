@@ -128,12 +128,18 @@ Note that if you are using the RL environment from habitat-lab, `SIMULATOR.SCENE
 
 ## Matterport3D (MP3D) dataset
 
-Details: [https://niessner.github.io/Matterport/](https://niessner.github.io/Matterport/).
 
+Details: [https://niessner.github.io/Matterport/](https://niessner.github.io/Matterport/).
 Github: [https://github.com/niessner/Matterport](https://github.com/niessner/Matterport)
 
-MP3D dataset for use with Habitat can be downloaded using the official [Matterport3D](https://niessner.github.io/Matterport/) download script as follows: `python download_mp.py --task habitat -o path/to/download/`.
-Note that this download script requires python 2.7 to run.
+We provide 1 example scene from MP3D for performing unit tests in habitat-sim. This can be programmatically downloaded via Habitat's data download utility.
+
+```
+python -m habitat_sim.utils.datasets_download --uids mp3d_example_scene --data-path data/
+```
+
+
+The full MP3D dataset for use with Habitat can be downloaded using the official [Matterport3D](https://niessner.github.io/Matterport/) download script as follows: `python download_mp.py --task habitat -o path/to/download/`. Note that this download script requires python 2.7 to run.
 
 You only need the habitat zip archive and not the entire Matterport3D dataset.
 

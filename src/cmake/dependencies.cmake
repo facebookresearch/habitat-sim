@@ -82,7 +82,7 @@ endif()
 if(BUILD_WITH_VHACD)
   set(NO_OPENCL ON CACHE BOOL "NO_OPENCL" FORCE)
   set(NO_OPENMP ON CACHE BOOL "NO_OPENMP" FORCE)
-  # adding /src/VHACD_Lib instead of /src since /src contains unneccesary test files
+  # adding /src/VHACD_Lib instead of /src since /src contains unnecessary test files
   add_subdirectory("${DEPS_DIR}/v-hacd/src/VHACD_Lib")
 endif()
 
@@ -122,7 +122,7 @@ if(BUILD_PYTHON_BINDINGS)
 
   # Let the Find module do proper version checks on what we found (it uses the
   # same PYTHON_EXECUTABLE variable, will pick it up from the cache)
-  find_package(PythonInterp 3.7 REQUIRED)
+  find_package(PythonInterp 3.9 REQUIRED)
 
   message(STATUS "Bindings being generated for python at ${PYTHON_EXECUTABLE}")
 
@@ -136,7 +136,7 @@ if(BUILD_PYTHON_BINDINGS)
 endif()
 
 if(BUILD_WITH_BULLET AND NOT USE_SYSTEM_BULLET)
-  # The below block except for the visiblity patch verbatim copied from
+  # The below block except for the visibility patch verbatim copied from
   # https://doc.magnum.graphics/magnum/namespaceMagnum_1_1BulletIntegration.html
 
   # Disable Bullet tests and demos
@@ -172,8 +172,8 @@ if(BUILD_WITH_BULLET AND NOT USE_SYSTEM_BULLET)
     # shared libs)
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
   endif()
-  ## Bullet Optimisation Bug
-  # We need to define this macro for bullet to bypass an early-out optimisation that
+  ## Bullet Optimization Bug
+  # We need to define this macro for bullet to bypass an early-out optimization that
   # was added to bullet via this PR https://github.com/bulletphysics/bullet3/pull/4190 ,
   # specifically here :
   #      https://github.com/erwincoumans/bullet3/blob/28b951c128b53e1dcf26271dd47b88776148a940/src/BulletCollision/CollisionDispatch/btConvexConcaveCollisionAlgorithm.cpp#L106
@@ -199,7 +199,9 @@ if(NOT USE_SYSTEM_MAGNUM)
 
   # These are enabled by default but we don't need them for anything yet
   set(MAGNUM_WITH_SHADERTOOLS OFF CACHE BOOL "" FORCE)
-  set(MAGNUM_WITH_MATERIALTOOLS OFF CACHE BOOL "" FORCE)
+  # These used to be disabled here but now aren't, explicitly enable them to
+  # update options in existing builds
+  set(MAGNUM_WITH_MATERIALTOOLS ON CACHE BOOL "" FORCE)
 
   # These are enabled by default but we don't need them if not building GUI
   # viewers -- disabling for slightly faster builds. If you need any of these
@@ -347,12 +349,24 @@ if(NOT USE_SYSTEM_MAGNUM)
     # Make Magnum text rendering plugins (used by the native viewer) available
     # for Python as well; and reset that back to strange build procedures that
     # turn some features off again later can still work.
+    set(
+      common_plugins
+      Magnum::AnyImageConverter
+      Magnum::AnyImageImporter
+      Magnum::AnySceneImporter
+      MagnumPlugins::AssimpImporter
+      MagnumPlugins::BasisImporter
+      MagnumPlugins::GltfImporter
+      MagnumPlugins::StbImageConverter
+      MagnumPlugins::StbImageImporter
+    )
     if(BUILD_GUI_VIEWERS)
-      set(MAGNUM_PYTHON_BINDINGS_STATIC_PLUGINS MagnumPlugins::StbTrueTypeFont
+      set(MAGNUM_PYTHON_BINDINGS_STATIC_PLUGINS ${common_plugins}
+                                                MagnumPlugins::StbTrueTypeFont
           CACHE STRING "" FORCE
       )
     else()
-      set(MAGNUM_PYTHON_BINDINGS_STATIC_PLUGINS "" CACHE STRING "" FORCE)
+      set(MAGNUM_PYTHON_BINDINGS_STATIC_PLUGINS ${common_plugins} CACHE STRING "" FORCE)
     endif()
     add_subdirectory("${DEPS_DIR}/magnum-bindings")
   endif()

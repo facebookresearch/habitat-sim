@@ -222,28 +222,22 @@ void IOTest::testJson() {
 // esp::io::addMember/esp::io::readMember and assert equality.
 void IOTest::testJsonBuiltinTypes() {
   rapidjson::Document d(rapidjson::kObjectType);
-  rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
+  // specify this as the test
+  CORRADE_VERIFY(true);
 
-  int x0{std::numeric_limits<int>::lowest()};
-  _testJsonReadWrite(x0, "myint", d);
+  _testJsonReadWrite(std::numeric_limits<int>::lowest(), "myint", d);
 
-  unsigned x1{std::numeric_limits<unsigned>::max()};
-  _testJsonReadWrite(x1, "myunsigned", d);
+  _testJsonReadWrite(std::numeric_limits<unsigned>::max(), "myunsigned", d);
 
-  int64_t x2{std::numeric_limits<int64_t>::lowest()};
-  _testJsonReadWrite(x2, "myint64_t", d);
+  _testJsonReadWrite(std::numeric_limits<int64_t>::lowest(), "myint64_t", d);
 
-  uint64_t x3{std::numeric_limits<uint64_t>::max()};
-  _testJsonReadWrite(x3, "myuint64_t", d);
+  _testJsonReadWrite(std::numeric_limits<uint64_t>::max(), "myuint64_t", d);
 
-  float x4{1.0 / 7};
-  _testJsonReadWrite(x4, "myfloat", d);
+  _testJsonReadWrite(1.0f / 7.0f, "myfloat", d);
 
-  double x5{1.0 / 13};
-  _testJsonReadWrite(x5, "mydouble", d);
+  _testJsonReadWrite(double{1.0 / 13}, "mydouble", d);
 
-  bool xb{true};
-  _testJsonReadWrite(xb, "mybool", d);
+  _testJsonReadWrite(bool{true}, "mybool", d);
 
   // verify failure to read bool into int
   int x_err{0};
@@ -270,12 +264,10 @@ void IOTest::testJsonStlTypes() {
   CORRADE_COMPARE(pair2, pair);
 
   // test a vector of ints
-  std::vector<int> vec{3, 4, 5, 6};
-  _testJsonReadWrite(vec, "vec", d);
+  _testJsonReadWrite(std::vector<int>{3, 4, 5, 6}, "vec", d);
 
   // test an empty vector
-  std::vector<float> emptyVec{};
-  _testJsonReadWrite(emptyVec, "emptyVec", d);
+  _testJsonReadWrite(std::vector<float>{}, "emptyVec", d);
 
   // test reading a vector of wrong type
   std::vector<std::string> vec3;
@@ -288,15 +280,15 @@ void IOTest::testJsonStlTypes() {
 void IOTest::testJsonMagnumTypes() {
   rapidjson::Document d(rapidjson::kObjectType);
   rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
+  // specify this as the test
+  CORRADE_VERIFY(true);
 
-  Magnum::Vector3 vec{1, 2, 3};
-  _testJsonReadWrite(vec, "myvec", d);
+  _testJsonReadWrite(Magnum::Vector3{1, 2, 3}, "myvec", d);
 
-  Magnum::Quaternion quat{{1, 2, 3}, 4};
-  _testJsonReadWrite(quat, "myquat", d);
+  _testJsonReadWrite(Magnum::Quaternion{{1, 2, 3}, 4}, "myquat", d);
 
-  Magnum::Matrix3 mat{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
-  _testJsonReadWrite(mat, "mymat", d);
+  _testJsonReadWrite(Magnum::Matrix3{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}, "mymat",
+                     d);
 
   // test reading the wrong type (wrong number of fields)
   Magnum::Quaternion quat3;
@@ -317,11 +309,12 @@ void IOTest::testJsonMagnumTypes() {
 void IOTest::testJsonEspTypes() {
   rapidjson::Document d(rapidjson::kObjectType);
   rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
+  // specify this as the test
+  CORRADE_VERIFY(true);
 
   {
     // vec3f
-    esp::vec3f vec{1, 2, 3};
-    _testJsonReadWrite(vec, "myvec3f", d);
+    _testJsonReadWrite(esp::vec3f{1, 2, 3}, "myvec3f", d);
 
     // test reading the wrong type (wrong number of fields)
     std::vector<float> wrongNumFieldsVec{1, 3, 4, 4};
@@ -364,6 +357,7 @@ void IOTest::testJsonEspTypes() {
     esp::io::addMember(d, "assetInfo", assetInfo, allocator);
     esp::assets::AssetInfo assetInfo2;
     CORRADE_VERIFY(esp::io::readMember(d, "assetInfo", assetInfo2));
+
     CORRADE_VERIFY(assetInfo2.type == assetInfo.type);
     CORRADE_COMPARE(assetInfo2.filepath, assetInfo.filepath);
     CORRADE_VERIFY(assetInfo2.frame.up().isApprox(assetInfo.frame.up()));

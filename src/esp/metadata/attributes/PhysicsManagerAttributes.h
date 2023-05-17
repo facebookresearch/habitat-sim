@@ -44,7 +44,13 @@ class PhysicsManagerAttributes : public AbstractAttributes {
    */
   double getTimestep() const { return get<double>("timestep"); }
 
+  /**
+   * @brief Currently not supported.
+   */
   void setMaxSubsteps(int maxSubsteps) { set("max_substeps", maxSubsteps); }
+  /**
+   * @brief Currently not supported.
+   */
   int getMaxSubsteps() const { return get<int>("max_substeps"); }
 
   /**

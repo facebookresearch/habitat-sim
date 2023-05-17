@@ -14,7 +14,6 @@ from habitat_sim.sensors.noise_models.sensor_noise_model import SensorNoiseModel
 
 
 def _simulate(image: ndarray) -> ndarray:
-
     image = image / 255.0
 
     values = len(np.unique(image))

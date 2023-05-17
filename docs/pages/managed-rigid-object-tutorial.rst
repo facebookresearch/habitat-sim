@@ -13,9 +13,9 @@ Interactive Rigid Objects via PhysicsObjectManager
 .. contents::
     :class: m-block m-default
 
-The example code below is available on `Collab`_, or runnable via:
+The example code below is available on `Colab`_, or runnable via:
 
-.. _Collab: <https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/managed_rigid_object_tutorial.ipynb>
+.. _Colab: https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/managed_rigid_object_tutorial.ipynb
 
 .. code:: shell-session
 
