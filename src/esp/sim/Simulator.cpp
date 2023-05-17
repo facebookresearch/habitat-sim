@@ -141,14 +141,15 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     sceneManager_ = scene::SceneManager::create_unique();
   }
 
+  // This is a check to make sure that pathfinder_ is not null after
+  // a reconfigure. We check to see if it's null so that an existing
+  // one isn't overwritten.
+  if (!pathfinder_) {
+    pathfinder_ = nav::PathFinder::create();
+  }
+
   // if configuration is unchanged, just reset and return
   if (cfg == config_) {
-    // This is a check to make sure that pathfinder_ is not null after
-    // a reconfigure. We check to see if it's null so that an existing
-    // one isn't overwritten.
-    if (!pathfinder_) {
-      pathfinder_ = nav::PathFinder::create();
-    }
     reset();
     return;
   }
@@ -208,6 +209,22 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
               << (success ? "true" : "false")
               << "for active scene name :" << config_.activeSceneName
               << (config_.createRenderer ? " with" : " without") << "renderer.";
+
+  // Handle the NavMesh configuration
+  if (config_.navMeshSettings != Cr::Containers::NullOpt) {
+    bool recomputeNavmesh = false;
+    // If the NavMesh is unloaded or does not match the requested configuration
+    // then recompute it.
+    if (!pathfinder_->isLoaded()) {
+      recomputeNavmesh = true;
+    } else if (pathfinder_->getNavMeshSettings() != config_.navMeshSettings) {
+      recomputeNavmesh = true;
+    }
+    if (recomputeNavmesh) {
+      ESP_DEBUG() << "NavMesh recompute was necessary.";
+      recomputeNavMesh(*pathfinder_, *config_.navMeshSettings);
+    }
+  }
 
 }  // Simulator::reconfigure
 

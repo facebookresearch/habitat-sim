@@ -5,12 +5,19 @@
 #ifndef ESP_SIM_SIMULATORCONFIGURATION_H_
 #define ESP_SIM_SIMULATORCONFIGURATION_H_
 
+#include <Corrade/Containers/Optional.h>
 #include <string>
 
 #include "esp/core/Esp.h"
 #include "esp/physics/configure.h"
 
+namespace Cr = Corrade;
+
 namespace esp {
+
+namespace nav {
+struct NavMeshSettings;
+}
 
 namespace sim {
 struct SimulatorConfiguration {
@@ -91,6 +98,15 @@ struct SimulatorConfiguration {
    * them.
    */
   bool useSemanticTexturesIfFound = true;
+
+  /**
+   * @brief Optionally provide a pre-configured NavMeshSettings. If provided,
+   * the NavMesh will be recomputed with the provided settings if A. no NavMesh
+   * was loaded, or B. the loaded NavMesh's settings differ from the configured
+   * settings. If not provided, no NavMesh recompute will be done automatically.
+   */
+  Cr::Containers::Optional<nav::NavMeshSettings> navMeshSettings =
+      Cr::Containers::NullOpt;
 
   ESP_SMART_POINTERS(SimulatorConfiguration)
 };
