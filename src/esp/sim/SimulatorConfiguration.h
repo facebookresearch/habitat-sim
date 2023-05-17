@@ -102,8 +102,7 @@ struct SimulatorConfiguration {
    * was loaded, or B. the loaded NavMesh's settings differ from the configured
    * settings. If not provided, no NavMesh recompute will be done automatically.
    */
-  Cr::Containers::Optional<nav::NavMeshSettings> navMeshSettings =
-      Cr::Containers::NullOpt;
+  nav::NavMeshSettings::ptr navMeshSettings = nullptr;
 
   ESP_SMART_POINTERS(SimulatorConfiguration)
 };

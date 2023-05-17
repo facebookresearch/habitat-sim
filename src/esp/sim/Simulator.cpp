@@ -211,13 +211,13 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
               << (config_.createRenderer ? " with" : " without") << "renderer.";
 
   // Handle the NavMesh configuration
-  if (config_.navMeshSettings != Cr::Containers::NullOpt) {
+  if (config_.navMeshSettings != nullptr) {
     bool recomputeNavmesh = false;
     // If the NavMesh is unloaded or does not match the requested configuration
     // then recompute it.
     if (!pathfinder_->isLoaded()) {
       recomputeNavmesh = true;
-    } else if (pathfinder_->getNavMeshSettings() != config_.navMeshSettings) {
+    } else if (pathfinder_->getNavMeshSettings() != *config_.navMeshSettings) {
       recomputeNavmesh = true;
     }
     if (recomputeNavmesh) {
