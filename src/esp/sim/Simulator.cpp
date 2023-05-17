@@ -213,15 +213,10 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // Handle the NavMesh configuration
   if (config_.navMeshSettings != nullptr &&
       Cr::Utility::String::lowercase(config_.activeSceneName) != "none") {
-    bool recomputeNavmesh = false;
     // If the NavMesh is unloaded or does not match the requested configuration
     // then recompute it.
-    if (!pathfinder_->isLoaded()) {
-      recomputeNavmesh = true;
-    } else if (pathfinder_->getNavMeshSettings() != *config_.navMeshSettings) {
-      recomputeNavmesh = true;
-    }
-    if (recomputeNavmesh) {
+    if (!pathfinder_->isLoaded() ||
+        (pathfinder_->getNavMeshSettings() != *config_.navMeshSettings)) {
       ESP_DEBUG() << "NavMesh recompute was necessary.";
       recomputeNavMesh(*pathfinder_, *config_.navMeshSettings);
     }
