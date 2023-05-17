@@ -211,7 +211,8 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
               << (config_.createRenderer ? " with" : " without") << "renderer.";
 
   // Handle the NavMesh configuration
-  if (config_.navMeshSettings != nullptr) {
+  if (config_.navMeshSettings != nullptr &&
+      Cr::Utility::String::lowercase(config_.activeSceneName) != "none") {
     bool recomputeNavmesh = false;
     // If the NavMesh is unloaded or does not match the requested configuration
     // then recompute it.
