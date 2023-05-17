@@ -172,6 +172,9 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
                      ? rs.getString("shadowsVSM.glsl") + "\n"
                      : "")
       .addSource(rs.getString("pbrCommon.glsl") + "\n")
+      .addSource(rs.getString("pbrLighting.glsl") + "\n")
+      .addSource(rs.getString("pbrBRDF.glsl") + "\n")
+      .addSource(rs.getString("pbrMaterials.glsl") + "\n")
       .addSource(rs.getString("pbr.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(vert.compile() && frag.compile());
@@ -195,7 +198,8 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     // see http://www.thetenthplanet.de/archives/1180
     // also:
     // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/data/shaders/pbr_khr.frag
-    if ((flags_ & Flag::NormalTexture) && (flags_ & Flag::PrecomputedTangent)) {
+    if (flags_ &
+        Flag::NormalTexture) {  //&& (flags_ & Flag::PrecomputedTangent)) {
       setUniform(uniformLocation("NormalTexture"),
                  pbrTextureUnitSpace::TextureUnit::Normal);
     }
@@ -768,7 +772,8 @@ PbrShader& PbrShader::setLightColor(unsigned int lightIndex,
       lightIndex < lightCount_,
       "PbrShader::setLightColor: lightIndex" << lightIndex << "is illegal.",
       *this);
-  Mn::Vector3 finalColor = intensity * PBR_LIGHT_SCALE * color;
+  Mn::Vector3 finalColor = intensity * color;
+  // finalColor *= PBR_LIGHT_SCALE;
   setUniform(lightColorsUniform_ + lightIndex, finalColor);
   return *this;
 }

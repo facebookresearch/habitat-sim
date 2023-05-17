@@ -5,6 +5,9 @@
 precision highp float;
 
 const float PI = 3.14159265358979;
+#ifndef epsilon
+const float epsilon = 0.000001;
+#endif
 
 // Use the Hammersley point set in 2D for fast and practical generation of
 // hemisphere directions in a shader program. See here:
