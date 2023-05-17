@@ -12,10 +12,12 @@
 #include "BulletDynamics/Featherstone/btMultiBodyLinkCollider.h"
 #include "BulletRigidObject.h"
 #include "BulletURDFImporter.h"
+#include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/assets/ResourceManager.h"
 #include "esp/metadata/attributes/PhysicsManagerAttributes.h"
 #include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
+#include "esp/scene/SceneNode.h"
 #include "esp/sim/Simulator.h"
 
 namespace esp {
@@ -114,11 +116,12 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
     float massScale,
     bool forceReload,
     bool maintainLinkOrder,
+    bool intertiaFromURDF,
     const std::string& lightSetup) {
   auto& drawables = simulator_->getDrawableGroup();
-  return addArticulatedObjectFromURDF(filepath, &drawables, fixedBase,
-                                      globalScale, massScale, forceReload,
-                                      maintainLinkOrder, lightSetup);
+  return addArticulatedObjectFromURDF(
+      filepath, &drawables, fixedBase, globalScale, massScale, forceReload,
+      maintainLinkOrder, intertiaFromURDF, lightSetup);
 }
 
 int BulletPhysicsManager::addArticulatedObjectFromURDF(
@@ -129,6 +132,7 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
     float massScale,
     bool forceReload,
     bool maintainLinkOrder,
+    bool inertiaFromURDF,
     const std::string& lightSetup) {
   if (simulator_ != nullptr) {
     // acquire context if available
@@ -160,13 +164,16 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
   if (maintainLinkOrder) {
     u2b->flags |= CUF_MAINTAIN_LINK_ORDER;
   }
+  if (inertiaFromURDF) {
+    u2b->flags |= CUF_USE_URDF_INERTIA;
+  }
   u2b->initURDF2BulletCache();
 
   articulatedObject->initializeFromURDF(*urdfImporter_, {}, physicsNode_);
   auto model = u2b->getModel();
 
   // if the URDF model specifies a render asset, load and link it
-  auto renderAssetPath = model->getRenderAsset();
+  const auto renderAssetPath = model->getRenderAsset();
   if (renderAssetPath) {
     // load associated skinned mesh
     assets::AssetInfo assetInfo = assets::AssetInfo::fromPath(*renderAssetPath);
@@ -175,8 +182,15 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
     creationInfo.lightSetupKey = lightSetup;
     creationInfo.scale = globalScale * Mn::Vector3(1.f, 1.f, 1.f);
     creationInfo.rig = articulatedObject;
-    resourceManager_.loadAndCreateRenderAssetInstance(assetInfo, creationInfo,
-                                                      objectNode, drawables);
+    esp::assets::RenderAssetInstanceCreationInfo::Flags flags;
+    flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsRGBD;
+    flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsSemantic;
+    creationInfo.flags = flags;
+    auto* gfxNode = resourceManager_.loadAndCreateRenderAssetInstance(
+        assetInfo, creationInfo, objectNode, drawables);
+    // Propagate the semantic ID to the graphics subtree
+    esp::scene::setSemanticIdForSubtree(
+        gfxNode, articulatedObject->node().getSemanticId());
   }
 
   // allocate ids for links
@@ -202,7 +216,8 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
             u2b->cache->m_urdfLinkIndices2BulletLinkIndices[urdfLinkIx];
         ArticulatedLink& linkObject = articulatedObject->getLink(bulletLinkIx);
         ESP_CHECK(
-            attachLinkGeometry(&linkObject, urdfLink, drawables, lightSetup),
+            attachLinkGeometry(&linkObject, urdfLink, drawables, lightSetup,
+                               articulatedObject->node().getSemanticId()),
             "BulletPhysicsManager::addArticulatedObjectFromURDF(): Failed to "
             "instance render asset (attachGeometry) for link"
                 << urdfLinkIx << ".");
@@ -269,9 +284,9 @@ bool BulletPhysicsManager::attachLinkGeometry(
     ArticulatedLink* linkObject,
     const std::shared_ptr<io::URDF::Link>& link,
     gfx::DrawableGroup* drawables,
-    const std::string& lightSetup) {
+    const std::string& lightSetup,
+    int semanticId) {
   const bool forceFlatShading = (lightSetup == esp::NO_LIGHT_KEY);
-  bool geomSuccess = false;
 
   for (auto& visual : link->m_visualArray) {
     bool visualSetupSuccess = true;
@@ -365,19 +380,22 @@ bool BulletPhysicsManager::attachLinkGeometry(
       assets::RenderAssetInstanceCreationInfo creation(
           visualMeshInfo.filepath, Mn::Vector3{1}, flags, lightSetup);
 
-      geomSuccess = resourceManager_.loadAndCreateRenderAssetInstance(
-                        visualMeshInfo, creation, &visualGeomComponent,
-                        drawables, &linkObject->visualNodes_) != nullptr;
+      auto* geomNode = resourceManager_.loadAndCreateRenderAssetInstance(
+          visualMeshInfo, creation, &visualGeomComponent, drawables,
+          &linkObject->visualNodes_);
 
-      // cache the visual component for later query
-      if (geomSuccess) {
+      if (geomNode) {
+        // Propagate the semantic ID to the graphics subtree
+        esp::scene::setSemanticIdForSubtree(&visualGeomComponent, semanticId);
+        // cache the visual component for later query
         linkObject->visualAttachments_.emplace_back(
             &visualGeomComponent, visual.m_geometry.m_meshFileName);
+        return true;
       }
     }
   }
 
-  return geomSuccess;
+  return false;
 }
 
 void BulletPhysicsManager::setGravity(const Magnum::Vector3& gravity) {

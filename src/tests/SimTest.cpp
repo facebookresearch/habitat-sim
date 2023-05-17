@@ -147,10 +147,10 @@ struct SimTest : Cr::TestSuite::Tester {
   // TODO: remove outlier pixels from image and lower maxThreshold
   const Magnum::Float maxThreshold = 255.f;
 
-  LightSetup lightSetup1{{Magnum::Vector4{1.0f, 1.5f, 0.5f, 0.0f},
+  LightSetup lightSetup1{{Magnum::Vector4{-1.0f, -1.5f, -0.5f, 0.0f},
                           {5.0, 5.0, 0.0},
                           LightPositionModel::Camera}};
-  LightSetup lightSetup2{{Magnum::Vector4{0.0f, 0.5f, 1.0f, 0.0f},
+  LightSetup lightSetup2{{Magnum::Vector4{0.0f, -0.5f, -1.0f, 0.0f},
                           {0.0, 5.0, 5.0},
                           LightPositionModel::Camera}};
 };  // struct SimTest
@@ -1093,6 +1093,8 @@ void SimTest::testArticulatedObjectSkinned() {
   CORRADE_COMPARE(aoManager->getNumObjects(), 0);
   auto ao = aoManager->addArticulatedObjectFromURDF(urdfFile);
   CORRADE_COMPARE(aoManager->getNumObjects(), 1);
+
+  CORRADE_COMPARE(ao->getSceneNode()->getSemanticId(), 100);
 
   CORRADE_VERIFY(ao);
   CORRADE_COMPARE(ao->getNumLinks(), 4);

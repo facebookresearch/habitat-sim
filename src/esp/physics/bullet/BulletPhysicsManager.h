@@ -82,6 +82,8 @@ class BulletPhysicsManager : public PhysicsManager {
    * cached model.
    * @param maintainLinkOrder If true, maintain the order of link definitions
    * from the URDF file as the link indices.
+   * @param intertiaFromURDF If true, load the link inertia matrices from the
+   * URDF file instead of computing automatically from collision shapes.
    * @param lightSetup The string name of the desired lighting setup to use.
    *
    * @return A unique id for the @ref ArticulatedObject, allocated from the same
@@ -94,6 +96,7 @@ class BulletPhysicsManager : public PhysicsManager {
       float massScale = 1.0,
       bool forceReload = false,
       bool maintainLinkOrder = false,
+      bool intertiaFromURDF = false,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY) override;
 
   /**
@@ -113,6 +116,8 @@ class BulletPhysicsManager : public PhysicsManager {
    * cached model.
    * @param maintainLinkOrder If true, maintain the order of link definitions
    * from the URDF file as the link indices.
+   * @param intertiaFromURDF If true, load the link inertia matrices from the
+   * URDF file instead of computing automatically from collision shapes.
    * @param lightSetup The string name of the desired lighting setup to use.
    *
    * @return A unique id for the @ref ArticulatedObject, allocated from the same
@@ -126,6 +131,7 @@ class BulletPhysicsManager : public PhysicsManager {
       float massScale = 1.0,
       bool forceReload = false,
       bool maintainLinkOrder = false,
+      bool intertiaFromURDF = false,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY) override;
 
   /**
@@ -145,7 +151,8 @@ class BulletPhysicsManager : public PhysicsManager {
   bool attachLinkGeometry(ArticulatedLink* linkObject,
                           const std::shared_ptr<io::URDF::Link>& link,
                           gfx::DrawableGroup* drawables,
-                          const std::string& lightSetup);
+                          const std::string& lightSetup,
+                          int semanticId);
 
   /**
    * @brief Override of @ref PhysicsManager::removeObject to also remove any

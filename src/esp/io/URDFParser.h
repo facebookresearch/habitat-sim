@@ -377,6 +377,16 @@ class Model {
   }
 
   /**
+   * @brief Set the semantic ID of the URDF model.
+   */
+  void setSemanticId(int semanticId) { m_semanticId = semanticId; }
+
+  /**
+   * @brief Get the semantic ID of this URDF model.
+   */
+  int getSemanticId() const { return m_semanticId; }
+
+  /**
    * @brief Set hint to render articulated object primitives even if a render
    * asset is present.
    */
@@ -437,6 +447,9 @@ class Model {
 
   //! Path to a render asset associated with this articulated object.
   Cr::Containers::Optional<std::string> m_renderAsset = Cr::Containers::NullOpt;
+
+  //! Semantic ID of this model.
+  int m_semanticId = 0;
 
   //! Forces link primitives to be rendered even if a render asset is present.
   bool m_debugRenderPrimitives = false;

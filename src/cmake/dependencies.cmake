@@ -199,7 +199,9 @@ if(NOT USE_SYSTEM_MAGNUM)
 
   # These are enabled by default but we don't need them for anything yet
   set(MAGNUM_WITH_SHADERTOOLS OFF CACHE BOOL "" FORCE)
-  set(MAGNUM_WITH_MATERIALTOOLS OFF CACHE BOOL "" FORCE)
+  # These used to be disabled here but now aren't, explicitly enable them to
+  # update options in existing builds
+  set(MAGNUM_WITH_MATERIALTOOLS ON CACHE BOOL "" FORCE)
 
   # These are enabled by default but we don't need them if not building GUI
   # viewers -- disabling for slightly faster builds. If you need any of these
@@ -355,7 +357,6 @@ if(NOT USE_SYSTEM_MAGNUM)
       MagnumPlugins::AssimpImporter
       MagnumPlugins::BasisImporter
       MagnumPlugins::GltfImporter
-      MagnumPlugins::StanfordImporter
       MagnumPlugins::StbImageConverter
       MagnumPlugins::StbImageImporter
     )
