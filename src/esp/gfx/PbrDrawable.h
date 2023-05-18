@@ -63,8 +63,8 @@ class PbrDrawable : public Drawable {
       float factor = 0.0f;
 
       /**
-       * Texture defining clearcoat intensity in R, G, or B channels.Multiplied
-       * by scalar if both are present.
+       * Texture defining clearcoat intensity in R channel. Multiplied by scalar
+       * if both are present.
        */
       Mn::GL::Texture2D* texture = nullptr;
 
@@ -74,10 +74,15 @@ class PbrDrawable : public Drawable {
       float roughnessFactor = 0.0f;
 
       /**
-       * Texture describing clear coat roughness in R, G, or B channels.
-       * Multiplied by scalar if both are present.
+       * Texture describing clear coat roughness in G channel. Multiplied by
+       * scalar if both are present.
        */
       Mn::GL::Texture2D* roughnessTexture = nullptr;
+
+      /**
+       * Scale value for clearcoat normal texture
+       */
+      float normalTextureScale = 1.0f;
 
       /**
        * Clearcoat Normal map texture, in RGB channels.
