@@ -70,10 +70,12 @@ void initGeoBindings(py::module& m) {
           [](const OBB& self) { return self.worldToLocal().matrix(); },
           R"(Transform from world coordinates to local [0,1]^3 coordinates.)");
 
-  geo.def("compute_gravity_aligned_MOBB", &geo::computeGravityAlignedMOBB,
-          R"()");
-  geo.def("get_transformed_bb", &geo::getTransformedBB, "range"_a, "xform"_a,
-          R"()");
+  geo.def(
+      "compute_gravity_aligned_MOBB", &geo::computeGravityAlignedMOBB,
+      R"(Compute a minimum area OBB containing given points, and constrained to have -Z axis along given gravity orientation.)");
+  geo.def(
+      "get_transformed_bb", &geo::getTransformedBB, "range"_a, "xform"_a,
+      R"(Compute the axis-aligned bounding box which results from applying a transform to an existing bounding box.)");
 
   // ==== Ray ====
   py::class_<Ray>(m, "Ray")
