@@ -75,8 +75,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   // TODO: Occlusion texture to be added.
   const bool isTextured =
       bool((flags_ &
-            (Flag::BaseColorTexture | Flag::RoughnessTexture |
-             Flag::NoneRoughnessMetallicTexture | Flag::MetallicTexture |
+            (Flag::BaseColorTexture | Flag::NoneRoughnessMetallicTexture |
              Flag::NormalTexture | Flag::EmissiveTexture))) ||
       // clear coat
       ((flags_ >= Flag::ClearCoatTexture) ||

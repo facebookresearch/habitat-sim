@@ -65,8 +65,7 @@ uniform AnisotropyLayerData AnisotropyLayer;
 #if defined(BASECOLOR_TEXTURE)
 uniform sampler2D BaseColorTexture;
 #endif
-#if defined(METALLIC_TEXTURE) || defined(ROUGHNESS_TEXTURE) || \
-    defined(NONE_ROUGHNESS_METALLIC_TEXTURE)
+#if defined(NONE_ROUGHNESS_METALLIC_TEXTURE)
 uniform sampler2D MetallicRoughnessTexture;
 #endif
 #if defined(NORMAL_TEXTURE)
