@@ -86,9 +86,6 @@ void PbrDrawable::setMaterialValuesInternal(
     }
     // normal texture scale
     matCache.normalTextureScale = tmpMaterialData.normalTextureScale();
-    ESP_CHECK(abs(matCache.normalTextureScale) > 0.0f,
-              "::setMaterialValuesInternal) : the normal texture scale "
-              "must be non-zero.");
   }
 
   if (const auto emissiveTexturePtr =
