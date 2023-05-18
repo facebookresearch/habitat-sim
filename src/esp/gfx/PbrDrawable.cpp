@@ -58,22 +58,6 @@ void PbrDrawable::setMaterialValuesInternal(
   matCache.metalness = tmpMaterialData.metalness();
   matCache.emissiveColor = tmpMaterialData.emissiveColor();
 
-  const Cr::Containers::Optional<Mn::GL::Texture2D*> metallicTexturePtr =
-      materialData_->findAttribute<Mn::GL::Texture2D*>(
-          "metallicTexturePointer");
-
-  const Cr::Containers::Optional<Mn::GL::Texture2D*> roughnessTexturePtr =
-      materialData_->findAttribute<Mn::GL::Texture2D*>(
-          "roughnessTexturePointer");
-
-  if (metallicTexturePtr && roughnessTexturePtr) {
-    CORRADE_ASSERT(
-        *metallicTexturePtr == *roughnessTexturePtr,
-        "PbrDrawable::setMaterialValuesInternal(): if both the metallic and "
-        "roughness "
-        "texture exist, they must be packed in the same texture based on glTF "
-        "2.0 Spec.", );
-  }
   if (tmpMaterialData.commonTextureMatrix() != Mn::Matrix3{}) {
     flags_ |= PbrShader::Flag::TextureTransformation;
     matCache.textureMatrix = tmpMaterialData.commonTextureMatrix();
@@ -85,42 +69,12 @@ void PbrDrawable::setMaterialValuesInternal(
     matCache.baseColorTexture = *baseColorTexturePtr;
   }
 
-  matCache.hasAnyMetallicRoughnessTexture = false;
-  matCache.useMetallicRoughnessTexture = nullptr;
-  // noneRoughnessMetallic takes precedence, but currently all are
-  // treated the same way
   if (const auto noneRoughMetalTexturePtr =
           materialData_->findAttribute<Mn::GL::Texture2D*>(
               "noneRoughnessMetallicTexturePointer")) {
     flags_ |= PbrShader::Flag::NoneRoughnessMetallicTexture;
     matCache.noneRoughnessMetallicTexture = *noneRoughMetalTexturePtr;
-    matCache.hasAnyMetallicRoughnessTexture = true;
-    matCache.useMetallicRoughnessTexture =
-        matCache.noneRoughnessMetallicTexture;
   }
-  if (roughnessTexturePtr) {
-    flags_ |= PbrShader::Flag::RoughnessTexture;
-    matCache.roughnessTexture = *roughnessTexturePtr;
-    if (!matCache.hasAnyMetallicRoughnessTexture) {
-      matCache.useMetallicRoughnessTexture = matCache.roughnessTexture;
-    }
-    matCache.hasAnyMetallicRoughnessTexture = true;
-  }
-  if (metallicTexturePtr) {
-    flags_ |= PbrShader::Flag::MetallicTexture;
-    matCache.metallicTexture = *metallicTexturePtr;
-
-    if (!matCache.hasAnyMetallicRoughnessTexture) {
-      matCache.useMetallicRoughnessTexture = matCache.metallicTexture;
-    }
-    matCache.hasAnyMetallicRoughnessTexture = true;
-  }
-
-  CORRADE_ASSERT(((matCache.useMetallicRoughnessTexture != nullptr) ==
-                  matCache.hasAnyMetallicRoughnessTexture),
-                 "PbrDrawable::setMaterialValuesInternal(): Error assigning "
-                 "proper Metallic/Roughness texture pointers - either a "
-                 "texture is expected but not present or vice versa.", );
 
   if (const auto normalTexturePtr =
           materialData_->findAttribute<Mn::GL::Texture2D*>(
@@ -450,9 +404,9 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
     shader_->bindBaseColorTexture(*matCache.baseColorTexture);
   }
 
-  if (matCache.hasAnyMetallicRoughnessTexture) {
+  if (flags_ & PbrShader::Flag::NoneRoughnessMetallicTexture) {
     shader_->bindMetallicRoughnessTexture(
-        *matCache.useMetallicRoughnessTexture);
+        *matCache.noneRoughnessMetallicTexture);
   }
 
   if (flags_ & PbrShader::Flag::NormalTexture) {

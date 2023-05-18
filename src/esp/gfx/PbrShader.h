@@ -82,59 +82,30 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
     BaseColorTexture = 1 << 0,
 
     /**
-     * Multiply roughness with the roughness texture.
-     * This flag term means the roughness texture is independent, and
-     * "roughness" is stored in the R channel of it.
-     * NOTE:
-     * if NoneRoughnessMetallicTexture or OcclusionRoughnessMetallicTexture are
-     * presented, this texture will be ignored.
-     * @see @ref setRoughness(), @ref bindRoughnessTexture()
-     */
-    RoughnessTexture = 1 << 1,
-
-    /**
-     * Multiply metallic with the metallic texture.
-     * This flag term means the metallic texture is independent, and "metalness"
-     * is stored in the B channel of it.
-     * NOTE:
-     * if NoneRoughnessMetallicTexture or OcclusionRoughnessMetallicTexture are
-     * presented, this texture will be ignored.
-     * @see @ref setMetallic(), @ref bindMetallicTexture()
-     */
-    MetallicTexture = 1 << 2,
-
-    /**
      * This flag term means the NoneRoughnessMetallic texture is present, with
      * the Roughness in G channel and metalness in B channel (R and Alpha
      * channels are not used).
      * @see @ref setMetallic(), @ref bindMetallicTexture()
      */
-    NoneRoughnessMetallicTexture = 1 << 3,
+    NoneRoughnessMetallicTexture = 1 << 1,
 
     /*
-     * The occlusion map texture.
+     * The occlusion map texture is present.
      * The occlusion, Roughness and Metalness are packed together in one
      * texture, with Occlusion in R channel, Roughness in G channel and
      * metalness in B channel (Alpha channels is not used).
      */
-    PackedOcclusionTexture = 1 << 4,
-
-    /*
-     * The occlusion map texture.
-     * The occlusion map texture is separate from the metallicRoughness texture.
-     * The values are sampled from the R channel.
-     */
-    SeparateOcclusionTexture = 1 << 5,
+    OcclusionTexture = 1 << 2,
 
     /**
      * Modify normals according to a texture.
      */
-    NormalTexture = 1 << 6,
+    NormalTexture = 1 << 3,
 
     /**
      * emissive texture
      */
-    EmissiveTexture = 1 << 7,
+    EmissiveTexture = 1 << 4,
 
     /**
      * Enable texture coordinate transformation. If this flag is set,
@@ -146,10 +117,10 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * @ref Flag::OcclusionRoughnessMetallicTexture is enabled as well.
      * @see @ref setTextureMatrix()
      */
-    TextureTransformation = 1 << 8,
+    TextureTransformation = 1 << 5,
 
     /**
-     * TODO: Do we need instanced object? (instanced texture, istanced id etc.)
+     * TODO: Do we need instanced object? (instanced texture, instanced id etc.)
      */
 
     /**
@@ -164,102 +135,102 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * see PBR fragment shader code for more details
      * Requires the @ref Tangent4 attribute to be present.
      */
-    PrecomputedTangent = 1 << 9,
+    PrecomputedTangent = 1 << 6,
 
     /**
      * Enable object ID output for this shader.
      */
-    ObjectId = 1 << 10,
+    ObjectId = 1 << 7,
 
     /**
      * Support Instanced object ID. Retrieves a per-instance / per-vertex
      * object ID from the @ref ObjectId attribute. If this is false, the shader
      * will use the node's semantic ID
      */
-    InstancedObjectId = (1 << 11) | ObjectId,
+    InstancedObjectId = (1 << 8) | ObjectId,
 
     /**
      * Has ClearCoat layer.
      */
-    ClearCoatLayer = 1 << 12,
+    ClearCoatLayer = 1 << 9,
     /**
      * Has ClearCoat Texture in ClearCoat layer
      */
-    ClearCoatTexture = (1 << 13) | ClearCoatLayer,
+    ClearCoatTexture = (1 << 10) | ClearCoatLayer,
     /**
      * Has Roughness Texture in ClearCoat layer
      */
-    ClearCoatRoughnessTexture = (1 << 14) | ClearCoatLayer,
+    ClearCoatRoughnessTexture = (1 << 11) | ClearCoatLayer,
     /**
      * Has Normal Texture in ClearCoat layer
      */
-    ClearCoatNormalTexture = (1 << 15) | ClearCoatLayer,
+    ClearCoatNormalTexture = (1 << 12) | ClearCoatLayer,
 
     /**
      * Has KHR_materials_specular layer
      */
-    SpecularLayer = 1 << 16,
+    SpecularLayer = 1 << 13,
     /**
      * Has Specular Texture in KHR_materials_specular layer
      */
-    SpecularLayerTexture = (1 << 17) | SpecularLayer,
+    SpecularLayerTexture = (1 << 14) | SpecularLayer,
 
     /**
      * Has Specular Color Texture in KHR_materials_specular layer
      */
-    SpecularLayerColorTexture = (1 << 18) | SpecularLayer,
+    SpecularLayerColorTexture = (1 << 15) | SpecularLayer,
 
     /**
      * Has KHR_materials_anisotropy layer
      */
-    AnisotropyLayer = 1 << 19,
+    AnisotropyLayer = 1 << 16,
 
     /**
      * Has Anisotropy Texture in KHR_materials_anisotropy layer
      */
-    AnisotropyLayerTexture = (1 << 20) | AnisotropyLayer,
+    AnisotropyLayerTexture = (1 << 17) | AnisotropyLayer,
 
     /**
      * Has KHR_materials_transmission layer
      */
-    TransmissionLayer = 1 << 21,
+    TransmissionLayer = 1 << 18,
     /**
      * Has transmission texture in KHR_materials_transmission layer
      */
-    TransmissionLayerTexture = (1 << 22) | TransmissionLayer,
+    TransmissionLayerTexture = (1 << 19) | TransmissionLayer,
 
     /**
      * Has KHR_materials_volume layer
      */
-    VolumeLayer = 1 << 23,
+    VolumeLayer = 1 << 20,
 
     /**
      * Has Thickness texture in  KHR_materials_volume layer
      */
-    VolumeLayerThicknessTexture = (1 << 24) | VolumeLayer,
+    VolumeLayerThicknessTexture = (1 << 21) | VolumeLayer,
 
     /**
      * Enable double-sided rendering.
      * (Temporarily STOP supporting this functionality. See comments in
      * the PbrDrawable::draw() function)
      */
-    DoubleSided = 1 << 25,
+    DoubleSided = 1 << 22,
 
     /**
      * Enable image based lighting
      */
-    ImageBasedLighting = 1 << 26,
+    ImageBasedLighting = 1 << 23,
 
     /**
      * render point light shadows using variance shadow map (VSM)
      */
-    ShadowsVSM = 1 << 27,
+    ShadowsVSM = 1 << 24,
 
     /**
      * Enable shader debug mode. Then developer can set the uniform
      * PbrDebugDisplay in the fragment shader for debugging
      */
-    DebugDisplay = 1 << 28,
+    DebugDisplay = 1 << 25,
     /*
      * TODO: alphaMask
      */

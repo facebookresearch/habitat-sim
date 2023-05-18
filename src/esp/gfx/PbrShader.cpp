@@ -76,8 +76,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   }
   // TODO: Occlusion texture to be added.
   const bool isTextured = bool(
-      flags_ & (Flag::BaseColorTexture | Flag::RoughnessTexture |
-                Flag::NoneRoughnessMetallicTexture | Flag::MetallicTexture |
+      flags_ & (Flag::BaseColorTexture | Flag::NoneRoughnessMetallicTexture |
                 Flag::NormalTexture | Flag::EmissiveTexture));
 
   if (isTextured) {
@@ -110,10 +109,6 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
       .addSource(flags_ & Flag::BaseColorTexture ? "#define BASECOLOR_TEXTURE\n"
                                                  : "")
       .addSource(flags_ & Flag::EmissiveTexture ? "#define EMISSIVE_TEXTURE\n"
-                                                : "")
-      .addSource(flags_ & Flag::RoughnessTexture ? "#define ROUGHNESS_TEXTURE\n"
-                                                 : "")
-      .addSource(flags_ & Flag::MetallicTexture ? "#define METALLIC_TEXTURE\n"
                                                 : "")
       .addSource(flags_ & Flag::NoneRoughnessMetallicTexture
                      ? "#define NONE_ROUGHNESS_METALLIC_TEXTURE\n"
@@ -151,8 +146,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
       setUniform(uniformLocation("BaseColorTexture"),
                  pbrTextureUnitSpace::TextureUnit::BaseColor);
     }
-    if (flags_ & (Flag::RoughnessTexture | Flag::MetallicTexture |
-                  Flag::NoneRoughnessMetallicTexture)) {
+    if (flags_ & Flag::NoneRoughnessMetallicTexture) {
       setUniform(uniformLocation("MetallicRoughnessTexture"),
                  pbrTextureUnitSpace::TextureUnit::MetallicRoughness);
     }
@@ -297,8 +291,7 @@ PbrShader& PbrShader::bindBaseColorTexture(Mn::GL::Texture2D& texture) {
 
 PbrShader& PbrShader::bindMetallicRoughnessTexture(Mn::GL::Texture2D& texture) {
   CORRADE_ASSERT(
-      flags_ & (Flag::RoughnessTexture | Flag::MetallicTexture |
-                Flag::NoneRoughnessMetallicTexture),
+      flags_ & (Flag::NoneRoughnessMetallicTexture),
       "PbrShader::bindMetallicRoughnessTexture(): the shader was not "
       "created with metallicRoughness texture enabled.",
       *this);

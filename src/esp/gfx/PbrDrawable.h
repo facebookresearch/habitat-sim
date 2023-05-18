@@ -32,17 +32,11 @@ class PbrDrawable : public Drawable {
 
     Mn::GL::Texture2D* baseColorTexture = nullptr;
 
-    bool hasAnyMetallicRoughnessTexture = false;
-
-    Mn::GL::Texture2D* useMetallicRoughnessTexture = nullptr;
     /**
-     * Currently we only support a single NoneMetalnessRoughness texture for
-     * both metalness and roughness.  Separate textures will be stored, but only
-     * the useMetallicRoughnessTexture should be sent to the shader
+     * Currently we only support a single noneRoughnessMetallicTexture texture
+     * for both metalness and roughness.
      */
     Mn::GL::Texture2D* noneRoughnessMetallicTexture = nullptr;
-    Mn::GL::Texture2D* roughnessTexture = nullptr;
-    Mn::GL::Texture2D* metallicTexture = nullptr;
 
     Mn::GL::Texture2D* emissiveTexture = nullptr;
 
