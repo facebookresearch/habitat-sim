@@ -119,9 +119,6 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
                      ? "#define NONE_ROUGHNESS_METALLIC_TEXTURE\n"
                      : "")
       .addSource(flags_ & Flag::NormalTexture ? "#define NORMAL_TEXTURE\n" : "")
-      .addSource(flags_ & Flag::NormalTextureScale
-                     ? "#define NORMAL_TEXTURE_SCALE\n"
-                     : "")
       .addSource(flags_ & Flag::ObjectId ? "#define OBJECT_ID\n" : "")
       .addSource(flags_ & Flag::ClearCoatLayer ? "#define CLEAR_COAT\n" : "")
       .addSource(flags_ & Flag::PrecomputedTangent
@@ -221,8 +218,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     lightDirectionsUniform_ = uniformLocation("LightDirections");
   }
 
-  if ((flags_ & Flag::NormalTexture) && (flags_ & Flag::NormalTextureScale) &&
-      lightingIsEnabled()) {
+  if ((flags_ & Flag::NormalTexture) && lightingIsEnabled()) {
     normalTextureScaleUniform_ = uniformLocation("NormalTextureScale");
   }
 
@@ -563,7 +559,7 @@ PbrShader& PbrShader::setNormalTextureScale(float scale) {
                  "PbrShader::setNormalTextureScale(): the shader was not "
                  "created with normal texture enabled",
                  *this);
-  if ((flags_ & Flag::NormalTextureScale) && lightingIsEnabled()) {
+  if (lightingIsEnabled()) {
     setUniform(normalTextureScaleUniform_, scale);
   }
   return *this;

@@ -130,13 +130,11 @@ void PbrDrawable::setMaterialValuesInternal(
     if (meshAttributeFlags_ & gfx::Drawable::Flag::HasTangent) {
       flags_ |= PbrShader::Flag::PrecomputedTangent;
     }
-    if (tmpMaterialData.normalTextureScale() != 1.0f) {
-      flags_ |= PbrShader::Flag::NormalTextureScale;
-      matCache.normalTextureScale = tmpMaterialData.normalTextureScale();
-      CORRADE_ASSERT(tmpMaterialData.normalTextureScale() > 0.0f,
-                     "PbrDrawable::PbrDrawable(): the normal texture scale "
-                     "must be positive.", );
-    }
+    // normal texture scale
+    matCache.normalTextureScale = tmpMaterialData.normalTextureScale();
+    CORRADE_ASSERT(tmpMaterialData.normalTextureScale() > 0.0f,
+                   "PbrDrawable::PbrDrawable(): the normal texture scale "
+                   "must be positive.", );
   }
 
   if (const Cr::Containers::Optional<Mn::GL::Texture2D*> emissiveTexturePtr =
@@ -401,6 +399,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
 
   if (flags_ & PbrShader::Flag::NormalTexture) {
     shader_->bindNormalTexture(*matCache.normalTexture);
+    shader_->setNormalTextureScale(matCache.normalTextureScale);
   }
 
   if (flags_ & PbrShader::Flag::EmissiveTexture) {

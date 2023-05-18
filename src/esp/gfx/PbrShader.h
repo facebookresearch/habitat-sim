@@ -132,17 +132,9 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
     NormalTexture = 1 << 6,
 
     /**
-     * Enable normal texture scale
-     * the shader expects that
-     * @ref Flag::NormalTexture is enabled as well.
-     * @see @ref setNormalTextureScale
-     */
-    NormalTextureScale = 1 << 7,
-
-    /**
      * emissive texture
      */
-    EmissiveTexture = 1 << 8,
+    EmissiveTexture = 1 << 7,
 
     /**
      * Enable texture coordinate transformation. If this flag is set,
@@ -154,7 +146,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * @ref Flag::OcclusionRoughnessMetallicTexture is enabled as well.
      * @see @ref setTextureMatrix()
      */
-    TextureTransformation = 1 << 9,
+    TextureTransformation = 1 << 8,
 
     /**
      * TODO: Do we need instanced object? (instanced texture, istanced id etc.)
@@ -172,92 +164,92 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * see PBR fragment shader code for more details
      * Requires the @ref Tangent4 attribute to be present.
      */
-    PrecomputedTangent = 1 << 10,
+    PrecomputedTangent = 1 << 9,
 
     /**
      * Enable object ID output for this shader.
      */
-    ObjectId = 1 << 11,
+    ObjectId = 1 << 10,
 
     /**
      * Support Instanced object ID. Retrieves a per-instance / per-vertex
      * object ID from the @ref ObjectId attribute. If this is false, the shader
      * will use the node's semantic ID
      */
-    InstancedObjectId = (1 << 12) | ObjectId,
+    InstancedObjectId = (1 << 11) | ObjectId,
 
     /**
      * Has ClearCoat layer.
      */
-    ClearCoatLayer = 1 << 13,
+    ClearCoatLayer = 1 << 12,
     /**
      * Has ClearCoat Texture in ClearCoat layer
      */
-    ClearCoatTexture = (1 << 14) | ClearCoatLayer,
+    ClearCoatTexture = (1 << 13) | ClearCoatLayer,
     /**
      * Has Roughness Texture in ClearCoat layer
      */
-    ClearCoatRoughnessTexture = (1 << 15) | ClearCoatLayer,
+    ClearCoatRoughnessTexture = (1 << 14) | ClearCoatLayer,
     /**
      * Has Normal Texture in ClearCoat layer
      */
-    ClearCoatNormalTexture = (1 << 16) | ClearCoatLayer,
+    ClearCoatNormalTexture = (1 << 15) | ClearCoatLayer,
 
     /**
      * Has KHR_materials_specular layer
      */
-    SpecularLayer = 1 << 17,
+    SpecularLayer = 1 << 16,
     /**
      * Has Specular Texture in KHR_materials_specular layer
      */
-    SpecularLayerTexture = (1 << 18) | SpecularLayer,
+    SpecularLayerTexture = (1 << 17) | SpecularLayer,
 
     /**
      * Has Specular Color Texture in KHR_materials_specular layer
      */
-    SpecularLayerColorTexture = (1 << 19) | SpecularLayer,
+    SpecularLayerColorTexture = (1 << 18) | SpecularLayer,
 
     /**
      * Has KHR_materials_transmission layer
      */
-    TransmissionLayer = 1 << 20,
+    TransmissionLayer = 1 << 19,
     /**
      * Has transmission texture in KHR_materials_transmission layer
      */
-    TransmissionLayerTexture = (1 << 21) | TransmissionLayer,
+    TransmissionLayerTexture = (1 << 20) | TransmissionLayer,
 
     /**
      * Has KHR_materials_volume layer
      */
-    VolumeLayer = 1 << 22,
+    VolumeLayer = 1 << 21,
 
     /**
      * Has Thickness texture in  KHR_materials_volume layer
      */
-    VolumeLayerThicknessTexture = (1 << 23) | VolumeLayer,
+    VolumeLayerThicknessTexture = (1 << 22) | VolumeLayer,
 
     /**
      * Enable double-sided rendering.
      * (Temporarily STOP supporting this functionality. See comments in
      * the PbrDrawable::draw() function)
      */
-    DoubleSided = 1 << 24,
+    DoubleSided = 1 << 23,
 
     /**
      * Enable image based lighting
      */
-    ImageBasedLighting = 1 << 25,
+    ImageBasedLighting = 1 << 24,
 
     /**
      * render point light shadows using variance shadow map (VSM)
      */
-    ShadowsVSM = 1 << 26,
+    ShadowsVSM = 1 << 25,
 
     /**
      * Enable shader debug mode. Then developer can set the uniform
      * PbrDebugDisplay in the fragment shader for debugging
      */
-    DebugDisplay = 1 << 27,
+    DebugDisplay = 1 << 26,
     /*
      * TODO: alphaMask
      */
