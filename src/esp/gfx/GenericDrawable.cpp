@@ -198,10 +198,8 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
       // fragment shader
       .setObjectId(
           static_cast<RenderCamera&>(camera).useDrawableIds() ? drawableId_
-          : ((((flags_ & Mn::Shaders::PhongGL::Flag::InstancedObjectId) ==
-               Mn::Shaders::PhongGL::Flag::InstancedObjectId) ||
-              ((flags_ & Mn::Shaders::PhongGL::Flag::ObjectIdTexture)) ==
-                  Mn::Shaders::PhongGL::Flag::ObjectIdTexture))
+          : (((flags_ >= Mn::Shaders::PhongGL::Flag::InstancedObjectId) ||
+              (flags_ >= Mn::Shaders::PhongGL::Flag::ObjectIdTexture)))
               ? 0
               : node_.getSemanticId())
       .setTransformationMatrix(transformationMatrix)
