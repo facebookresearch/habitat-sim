@@ -78,7 +78,7 @@ void PbrDrawable::setMaterialValuesInternal(
     flags_ |= PbrShader::Flag::TextureTransformation;
     matCache.textureMatrix = tmpMaterialData.commonTextureMatrix();
   }
-  if (const Cr::Containers::Optional<Mn::GL::Texture2D*> baseColorTexturePtr =
+  if (const auto baseColorTexturePtr =
           materialData_->findAttribute<Mn::GL::Texture2D*>(
               "baseColorTexturePointer")) {
     flags_ |= PbrShader::Flag::BaseColorTexture;
@@ -89,10 +89,9 @@ void PbrDrawable::setMaterialValuesInternal(
   matCache.useMetallicRoughnessTexture = nullptr;
   // noneRoughnessMetallic takes precedence, but currently all are
   // treated the same way
-  if (const Cr::Containers::Optional<Mn::GL::Texture2D*>
-          noneRoughMetalTexturePtr =
-              materialData_->findAttribute<Mn::GL::Texture2D*>(
-                  "noneRoughnessMetallicTexturePointer")) {
+  if (const auto noneRoughMetalTexturePtr =
+          materialData_->findAttribute<Mn::GL::Texture2D*>(
+              "noneRoughnessMetallicTexturePointer")) {
     flags_ |= PbrShader::Flag::NoneRoughnessMetallicTexture;
     matCache.noneRoughnessMetallicTexture = *noneRoughMetalTexturePtr;
     matCache.hasAnyMetallicRoughnessTexture = true;
@@ -123,7 +122,7 @@ void PbrDrawable::setMaterialValuesInternal(
                  "proper Metallic/Roughness texture pointers - either a "
                  "texture is expected but not present or vice versa.", );
 
-  if (const Cr::Containers::Optional<Mn::GL::Texture2D*> normalTexturePtr =
+  if (const auto normalTexturePtr =
           materialData_->findAttribute<Mn::GL::Texture2D*>(
               "normalTexturePointer")) {
     flags_ |= PbrShader::Flag::NormalTexture;
@@ -133,12 +132,12 @@ void PbrDrawable::setMaterialValuesInternal(
     }
     // normal texture scale
     matCache.normalTextureScale = tmpMaterialData.normalTextureScale();
-    CORRADE_ASSERT(tmpMaterialData.normalTextureScale() > 0.0f,
-                   "PbrDrawable::PbrDrawable(): the normal texture scale "
-                   "must be positive.", );
+    ESP_CHECK(abs(matCache.normalTextureScale) > 0.0f,
+              "::setMaterialValuesInternal) : the normal texture scale "
+              "must be non-zero.");
   }
 
-  if (const Cr::Containers::Optional<Mn::GL::Texture2D*> emissiveTexturePtr =
+  if (const auto emissiveTexturePtr =
           materialData_->findAttribute<Mn::GL::Texture2D*>(
               "emissiveTexturePointer")) {
     flags_ |= PbrShader::Flag::EmissiveTexture;
@@ -151,7 +150,6 @@ void PbrDrawable::setMaterialValuesInternal(
     flags_ |= PbrShader::Flag::DoubleSided;
   }
 
-  std::string debugStr = "";
   ////////////////
   // ClearCoat layer
   if (materialData_->hasLayer(Mn::Trade::MaterialLayer::ClearCoat)) {
@@ -167,21 +165,21 @@ void PbrDrawable::setMaterialValuesInternal(
       //
       matCache.clearCoat.factor = cc_LayerFactor;
       matCache.clearCoat.roughnessFactor = ccLayer.roughness();
-      if (const Cr::Containers::Optional<Mn::GL::Texture2D*> layerTexturePtr =
+      if (const auto layerTexturePtr =
               ccLayer.findAttribute<Mn::GL::Texture2D*>(
                   "layerFactorTexturePointer")) {
         flags_ |= PbrShader::Flag::ClearCoatTexture;
         matCache.clearCoat.texture = *layerTexturePtr;
       }
 
-      if (const Cr::Containers::Optional<Mn::GL::Texture2D*>
-              roughnessTexturePtr = ccLayer.findAttribute<Mn::GL::Texture2D*>(
+      if (const auto roughnessTexturePtr =
+              ccLayer.findAttribute<Mn::GL::Texture2D*>(
                   "roughnessTexturePointer")) {
         flags_ |= PbrShader::Flag::ClearCoatRoughnessTexture;
         matCache.clearCoat.roughnessTexture = *roughnessTexturePtr;
       }
 
-      if (const Cr::Containers::Optional<Mn::GL::Texture2D*> normalTexturePtr =
+      if (const auto normalTexturePtr =
               ccLayer.findAttribute<Mn::GL::Texture2D*>(
                   "normalTexturePointer")) {
         flags_ |= PbrShader::Flag::ClearCoatNormalTexture;
@@ -194,10 +192,10 @@ void PbrDrawable::setMaterialValuesInternal(
 
   ////////////////
   // KHR_materials_ior
-  if (const Cr::Containers::Optional<Mn::UnsignedInt> iorLayerID =
+  if (const auto iorLayerID =
           materialData_->findLayerId("#KHR_materials_ior")) {
     // Read in custom material index of refraction
-    if (const Cr::Containers::Optional<Mn::Float> ior =
+    if (const auto ior =
             materialData_->findAttribute<Mn::Float>(*iorLayerID, "ior")) {
       // ior should be >= 1 or 0 (which gives full weight to specular layer
       // independent of view angle)
@@ -208,15 +206,14 @@ void PbrDrawable::setMaterialValuesInternal(
 
   ////////////////
   // KHR_materials_specular layer
-  if (const Cr::Containers::Optional<Mn::UnsignedInt> specularLayerID =
+  if (const auto specularLayerID =
           materialData_->findLayerId("#KHR_materials_specular")) {
     flags_ |= PbrShader::Flag::SpecularLayer;
     /**
      * The strength of the specular reflection. Defaults to 1.0f
      */
-    if (const Cr::Containers::Optional<Mn::Float> specularFactor =
-            materialData_->findAttribute<Mn::Float>(*specularLayerID,
-                                                    "specularFactor")) {
+    if (const auto specularFactor = materialData_->findAttribute<Mn::Float>(
+            *specularLayerID, "specularFactor")) {
       matCache.specularLayer.factor =
           Mn::Math::clamp(*specularFactor, 0.0f, 1.0f);
     }
@@ -226,17 +223,16 @@ void PbrDrawable::setMaterialValuesInternal(
      * reflection, stored in the alpha (A) channel. This will be
      * multiplied by specularFactor.
      */
-    if (const Cr::Containers::Optional<Mn::GL::Texture2D*>
-            specularFactorTexture =
-                materialData_->findAttribute<Mn::GL::Texture2D*>(
-                    *specularLayerID, "specularTexturePointer")) {
+    if (const auto specularFactorTexture =
+            materialData_->findAttribute<Mn::GL::Texture2D*>(
+                *specularLayerID, "specularTexturePointer")) {
       flags_ |= PbrShader::Flag::SpecularLayerTexture;
       matCache.specularLayer.texture = *specularFactorTexture;
     }
     /**
      * The F0 color of the specular reflection (linear RGB).
      */
-    if (const Cr::Containers::Optional<Mn::Color3> specularColorFactor =
+    if (const auto specularColorFactor =
             materialData_->findAttribute<Mn::Color3>(*specularLayerID,
                                                      "specularColorFactor")) {
       matCache.specularLayer.colorFactor = *specularColorFactor;
@@ -247,10 +243,9 @@ void PbrDrawable::setMaterialValuesInternal(
      * sRGB. This texture will be multiplied by
      * specularColorFactor.
      */
-    if (const Cr::Containers::Optional<Mn::GL::Texture2D*>
-            specularColorTexture =
-                materialData_->findAttribute<Mn::GL::Texture2D*>(
-                    *specularLayerID, "specularColorTexturePointer")) {
+    if (const auto specularColorTexture =
+            materialData_->findAttribute<Mn::GL::Texture2D*>(
+                *specularLayerID, "specularColorTexturePointer")) {
       flags_ |= PbrShader::Flag::SpecularLayerColorTexture;
       matCache.specularLayer.colorTexture = *specularColorTexture;
     }
@@ -258,22 +253,21 @@ void PbrDrawable::setMaterialValuesInternal(
 
   ///////////////
   // KHR_materials_anisotropy
-  if (const Cr::Containers::Optional<Mn::UnsignedInt> anisotropyLayerID =
+  if (const auto anisotropyLayerID =
           materialData_->findLayerId("#KHR_materials_anisotropy")) {
     /**
      * The anisotropy strength. When anisotropyTexture is present, this value is
      * multiplied by the blue channel. Default is 0.0f
      */
-    if (const Cr::Containers::Optional<Mn::Float> anisotropyStrength =
-            materialData_->findAttribute<Mn::Float>(*anisotropyLayerID,
-                                                    "anisotropyStrength")) {
+    if (const auto anisotropyStrength = materialData_->findAttribute<Mn::Float>(
+            *anisotropyLayerID, "anisotropyStrength")) {
       if (Mn::Math::abs(*anisotropyStrength) > 0.0) {
         flags_ |= PbrShader::Flag::AnisotropyLayer;
         matCache.anisotropyLayer.factor =
             Mn::Math::clamp(*anisotropyStrength, -1.0f, 1.0f);
       }
       // Early adopters used anisotropy to mean strength
-    } else if (const Cr::Containers::Optional<Mn::Float> anisotropyStrength =
+    } else if (const auto anisotropyStrength =
                    materialData_->findAttribute<Mn::Float>(*anisotropyLayerID,
                                                            "anisotropy")) {
       if (Mn::Math::abs(*anisotropyStrength) > 0.0) {
@@ -288,24 +282,23 @@ void PbrDrawable::setMaterialValuesInternal(
      * present, anisotropyRotation provides additional rotation to the vectors
      * in the texture. Default is 0.0f
      */
-    if (const Cr::Containers::Optional<Mn::Float> anisotropyRotation =
-            materialData_->findAttribute<Mn::Float>(*anisotropyLayerID,
-                                                    "anisotropyRotation")) {
+    if (const auto anisotropyRotation = materialData_->findAttribute<Mn::Float>(
+            *anisotropyLayerID, "anisotropyRotation")) {
       if (*anisotropyRotation != 0.0) {
         flags_ |= PbrShader::Flag::AnisotropyLayer;
         Mn::Rad rotAngle = Mn::Rad{*anisotropyRotation};
         matCache.anisotropyLayer.direction =
-            Mn::Vector2{Mn::Math::cos(rotAngle), Mn::Math::sin(rotAngle)};
+            Mn::Vector2{Mn::Complex::rotation(rotAngle)};
       }
       // Early adopters used anisotropyDirection
-    } else if (const Cr::Containers::Optional<Mn::Float> anisotropyRotation =
+    } else if (const auto anisotropyRotation =
                    materialData_->findAttribute<Mn::Float>(
                        *anisotropyLayerID, "anisotropyDirection")) {
       if (*anisotropyRotation != 0.0) {
         flags_ |= PbrShader::Flag::AnisotropyLayer;
         Mn::Rad rotAngle = Mn::Rad{*anisotropyRotation};
         matCache.anisotropyLayer.direction =
-            Mn::Vector2{Mn::Math::cos(rotAngle), Mn::Math::sin(rotAngle)};
+            Mn::Vector2{Mn::Complex::rotation(rotAngle)};
       }
     }
 
@@ -316,10 +309,9 @@ void PbrDrawable::setMaterialValuesInternal(
      * channel contains strength as [0, 1] to be multiplied by
      * anisotropyStrength.
      */
-    if (const Cr::Containers::Optional<Mn::GL::Texture2D*>
-            anisotropyLayerTexture =
-                materialData_->findAttribute<Mn::GL::Texture2D*>(
-                    *anisotropyLayerID, "anisotropyTexturePointer")) {
+    if (const auto anisotropyLayerTexture =
+            materialData_->findAttribute<Mn::GL::Texture2D*>(
+                *anisotropyLayerID, "anisotropyTexturePointer")) {
       // also covers flags_ |= PbrShader::Flag::AnisotropyLayer;
       flags_ |= PbrShader::Flag::AnisotropyLayerTexture;
       matCache.anisotropyLayer.texture = *anisotropyLayerTexture;
@@ -328,20 +320,18 @@ void PbrDrawable::setMaterialValuesInternal(
 
   ////////////////
   // KHR_materials_transmission
-  if (const Cr::Containers::Optional<Mn::UnsignedInt> transmissionLayerID =
+  if (const auto transmissionLayerID =
           materialData_->findLayerId("#KHR_materials_transmission")) {
     flags_ |= PbrShader::Flag::TransmissionLayer;
     // transmissionFactor
-    if (const Cr::Containers::Optional<Mn::Float> transmissionFactor =
-            materialData_->findAttribute<Mn::Float>(*transmissionLayerID,
-                                                    "transmissionFactor")) {
+    if (const auto transmissionFactor = materialData_->findAttribute<Mn::Float>(
+            *transmissionLayerID, "transmissionFactor")) {
       matCache.transmissionLayer.factor = *transmissionFactor;
     }
     // transmissionTexturePointer
-    if (const Cr::Containers::Optional<Mn::GL::Texture2D*>
-            transmissionTexturePointer =
-                materialData_->findAttribute<Mn::GL::Texture2D*>(
-                    *transmissionLayerID, "transmissionTexturePointer")) {
+    if (const auto transmissionTexturePointer =
+            materialData_->findAttribute<Mn::GL::Texture2D*>(
+                *transmissionLayerID, "transmissionTexturePointer")) {
       flags_ |= PbrShader::Flag::TransmissionLayerTexture;
       matCache.transmissionLayer.texture = *transmissionTexturePointer;
     }
@@ -349,36 +339,32 @@ void PbrDrawable::setMaterialValuesInternal(
 
   ////////////////
   // KHR_materials_volume
-  if (const Cr::Containers::Optional<Mn::UnsignedInt> volumeLayerID =
+  if (const auto volumeLayerID =
           materialData_->findLayerId("#KHR_materials_volume")) {
     flags_ |= PbrShader::Flag::VolumeLayer;
 
-    if (const Cr::Containers::Optional<Mn::Float> thicknessFactor =
-            materialData_->findAttribute<Mn::Float>(*volumeLayerID,
-                                                    "thicknessFactor")) {
+    if (const auto thicknessFactor = materialData_->findAttribute<Mn::Float>(
+            *volumeLayerID, "thicknessFactor")) {
       matCache.volumeLayer.thicknessFactor = *thicknessFactor;
     }
 
-    if (const Cr::Containers::Optional<Mn::GL::Texture2D*>
-            thicknessTexturePointer =
-                materialData_->findAttribute<Mn::GL::Texture2D*>(
-                    *volumeLayerID, "thicknessTexturePointer")) {
+    if (const auto thicknessTexturePointer =
+            materialData_->findAttribute<Mn::GL::Texture2D*>(
+                *volumeLayerID, "thicknessTexturePointer")) {
       flags_ |= PbrShader::Flag::VolumeLayerThicknessTexture;
       matCache.volumeLayer.thicknessTexture = *thicknessTexturePointer;
     }
 
-    if (const Cr::Containers::Optional<Mn::Float> attDist =
-            materialData_->findAttribute<Mn::Float>(*volumeLayerID,
-                                                    "attenuationDistance")) {
+    if (const auto attDist = materialData_->findAttribute<Mn::Float>(
+            *volumeLayerID, "attenuationDistance")) {
       if (*attDist > 0.0f) {
         // Can't be 0 or inf
         matCache.volumeLayer.attenuationDist = *attDist;
       }
     }
 
-    if (const Cr::Containers::Optional<Mn::Color3> attenuationColor =
-            materialData_->findAttribute<Mn::Color3>(*volumeLayerID,
-                                                     "attenuationColor")) {
+    if (const auto attenuationColor = materialData_->findAttribute<Mn::Color3>(
+            *volumeLayerID, "attenuationColor")) {
       matCache.volumeLayer.attenuationColor = *attenuationColor;
     }
   }  // has KHR_materials_volume layer
