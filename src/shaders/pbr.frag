@@ -188,12 +188,15 @@ void main() {
 #endif
 
 /////////////////
-//Roughness calc
+//Metalness and Roughness calc
 
   float perceivedRoughness = Material.roughness;
+  float metallic = Material.metallic;
 #if defined(NONE_ROUGHNESS_METALLIC_TEXTURE)
   vec3 RoughnessMetallicSample = texture(MetallicRoughnessTexture, texCoord).rgb;
+
   perceivedRoughness *= RoughnessMetallicSample.g;
+  metallic *= RoughnessMetallicSample.b;
 #endif
   // clamp roughness to prevent denormals in distribution function calc
   perceivedRoughness = clamp(perceivedRoughness, 0.045, 1.0);
@@ -201,14 +204,6 @@ void main() {
   // convert to more linear roughness mapping by squaring the perceptual roughness.
   float alphaRoughness = perceivedRoughness * perceivedRoughness;
 
-
-/////////////////
-//Metalness calc
-
-float metallic = Material.metallic;
-#if defined(NONE_ROUGHNESS_METALLIC_TEXTURE)
-  metallic *= RoughnessMetallicSample.b;
-#endif
 
 /////////////////
 // Diffuse color calc
