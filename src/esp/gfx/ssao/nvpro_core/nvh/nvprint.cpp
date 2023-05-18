@@ -33,7 +33,9 @@ static char* s_strBuffer = nullptr;
 static FILE* s_fd = nullptr;
 static bool s_bLogReady = false;
 static bool s_bPrintLogging = true;
-static uint32_t s_bPrintFileLogging = ~0;
+
+// Disable file writing
+static uint32_t s_bPrintFileLogging = 0;
 static int s_printLevel = -1;  // <0 mean no level prefix
 static PFN_NVPRINTCALLBACK s_printCallback = nullptr;
 static std::mutex s_mutex;
