@@ -210,46 +210,56 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
     SpecularLayerColorTexture = (1 << 18) | SpecularLayer,
 
     /**
+     * Has KHR_materials_anisotropy layer
+     */
+    AnisotropyLayer = 1 << 19,
+
+    /**
+     * Has Anisotropy Texture in KHR_materials_anisotropy layer
+     */
+    AnisotropyLayerTexture = (1 << 20) | AnisotropyLayer,
+
+    /**
      * Has KHR_materials_transmission layer
      */
-    TransmissionLayer = 1 << 19,
+    TransmissionLayer = 1 << 21,
     /**
      * Has transmission texture in KHR_materials_transmission layer
      */
-    TransmissionLayerTexture = (1 << 20) | TransmissionLayer,
+    TransmissionLayerTexture = (1 << 22) | TransmissionLayer,
 
     /**
      * Has KHR_materials_volume layer
      */
-    VolumeLayer = 1 << 21,
+    VolumeLayer = 1 << 23,
 
     /**
      * Has Thickness texture in  KHR_materials_volume layer
      */
-    VolumeLayerThicknessTexture = (1 << 22) | VolumeLayer,
+    VolumeLayerThicknessTexture = (1 << 24) | VolumeLayer,
 
     /**
      * Enable double-sided rendering.
      * (Temporarily STOP supporting this functionality. See comments in
      * the PbrDrawable::draw() function)
      */
-    DoubleSided = 1 << 23,
+    DoubleSided = 1 << 25,
 
     /**
      * Enable image based lighting
      */
-    ImageBasedLighting = 1 << 24,
+    ImageBasedLighting = 1 << 26,
 
     /**
      * render point light shadows using variance shadow map (VSM)
      */
-    ShadowsVSM = 1 << 25,
+    ShadowsVSM = 1 << 27,
 
     /**
      * Enable shader debug mode. Then developer can set the uniform
      * PbrDebugDisplay in the fragment shader for debugging
      */
-    DebugDisplay = 1 << 26,
+    DebugDisplay = 1 << 28,
     /*
      * TODO: alphaMask
      */

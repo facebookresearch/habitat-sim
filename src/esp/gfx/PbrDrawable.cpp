@@ -12,6 +12,7 @@
 
 #include <Magnum/GL/Renderer.h>
 
+using Magnum::Math::Literals::operator""_radf;
 namespace Mn = Magnum;
 
 namespace esp {
@@ -216,7 +217,8 @@ void PbrDrawable::setMaterialValuesInternal(
     if (const Cr::Containers::Optional<Mn::Float> specularFactor =
             materialData_->findAttribute<Mn::Float>(*specularLayerID,
                                                     "specularFactor")) {
-      matCache.specularLayer.factor = *specularFactor;
+      matCache.specularLayer.factor =
+          Mn::Math::clamp(*specularFactor, 0.0f, 1.0f);
     }
 
     /**
@@ -253,6 +255,76 @@ void PbrDrawable::setMaterialValuesInternal(
       matCache.specularLayer.colorTexture = *specularColorTexture;
     }
   }  // has KHR_materials_specular layer
+
+  ///////////////
+  // KHR_materials_anisotropy
+  if (const Cr::Containers::Optional<Mn::UnsignedInt> anisotropyLayerID =
+          materialData_->findLayerId("#KHR_materials_anisotropy")) {
+    /**
+     * The anisotropy strength. When anisotropyTexture is present, this value is
+     * multiplied by the blue channel. Default is 0.0f
+     */
+    if (const Cr::Containers::Optional<Mn::Float> anisotropyStrength =
+            materialData_->findAttribute<Mn::Float>(*anisotropyLayerID,
+                                                    "anisotropyStrength")) {
+      if (Mn::Math::abs(*anisotropyStrength) > 0.0) {
+        flags_ |= PbrShader::Flag::AnisotropyLayer;
+        matCache.anisotropyLayer.factor =
+            Mn::Math::clamp(*anisotropyStrength, -1.0f, 1.0f);
+      }
+      // Early adopters used anisotropy to mean strength
+    } else if (const Cr::Containers::Optional<Mn::Float> anisotropyStrength =
+                   materialData_->findAttribute<Mn::Float>(*anisotropyLayerID,
+                                                           "anisotropy")) {
+      if (Mn::Math::abs(*anisotropyStrength) > 0.0) {
+        flags_ |= PbrShader::Flag::AnisotropyLayer;
+        matCache.anisotropyLayer.factor =
+            Mn::Math::clamp(*anisotropyStrength, -1.0f, 1.0f);
+      }
+    }
+    /**
+     * The rotation of the anisotropy in tangent, bitangent space, measured in
+     * radians counter-clockwise from the tangent. When anisotropyTexture is
+     * present, anisotropyRotation provides additional rotation to the vectors
+     * in the texture. Default is 0.0f
+     */
+    if (const Cr::Containers::Optional<Mn::Float> anisotropyRotation =
+            materialData_->findAttribute<Mn::Float>(*anisotropyLayerID,
+                                                    "anisotropyRotation")) {
+      if (*anisotropyRotation != 0.0) {
+        flags_ |= PbrShader::Flag::AnisotropyLayer;
+        Mn::Rad rotAngle = Mn::Rad{*anisotropyRotation};
+        matCache.anisotropyLayer.direction =
+            Mn::Vector2{Mn::Math::cos(rotAngle), Mn::Math::sin(rotAngle)};
+      }
+      // Early adopters used anisotropyDirection
+    } else if (const Cr::Containers::Optional<Mn::Float> anisotropyRotation =
+                   materialData_->findAttribute<Mn::Float>(
+                       *anisotropyLayerID, "anisotropyDirection")) {
+      if (*anisotropyRotation != 0.0) {
+        flags_ |= PbrShader::Flag::AnisotropyLayer;
+        Mn::Rad rotAngle = Mn::Rad{*anisotropyRotation};
+        matCache.anisotropyLayer.direction =
+            Mn::Vector2{Mn::Math::cos(rotAngle), Mn::Math::sin(rotAngle)};
+      }
+    }
+
+    /**
+     * A texture that defines the anisotropy of the material. Red and green
+     * channels represent the anisotropy direction in [-1, 1] tangent,
+     * bitangent space, to be rotated by anisotropyRotation. The blue
+     * channel contains strength as [0, 1] to be multiplied by
+     * anisotropyStrength.
+     */
+    if (const Cr::Containers::Optional<Mn::GL::Texture2D*>
+            anisotropyLayerTexture =
+                materialData_->findAttribute<Mn::GL::Texture2D*>(
+                    *anisotropyLayerID, "anisotropyTexturePointer")) {
+      // also covers flags_ |= PbrShader::Flag::AnisotropyLayer;
+      flags_ |= PbrShader::Flag::AnisotropyLayerTexture;
+      matCache.anisotropyLayer.texture = *anisotropyLayerTexture;
+    }
+  }  // has KHR_materials_anisotropy
 
   ////////////////
   // KHR_materials_transmission
@@ -339,8 +411,8 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   // lines") on hard edges. (maybe due to potential numerical issues? we do
   // not know yet.)
   /*
-  if ((flags_ & PbrShader::Flag::DoubleSided) && glIsEnabled(GL_CULL_FACE)) {
-    Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::FaceCulling);
+  if ((flags_ & PbrShader::Flag::DoubleSided) && glIsEnabled(GL_CULL_FACE))
+  { Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::FaceCulling);
   }
   */
   Mn::Matrix4 modelMatrix =
@@ -352,10 +424,10 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   // Normal matrix is calculated as `m.inverted().transposed()`, and
   // `m.inverted()` is the same as
   // `m.comatrix().transposed()/m.determinant()`. We need the determinant to
-  // figure out the winding direction as well, thus we calculate it separately
-  // and then do
-  // `(m.comatrix().transposed()/determinant).transposed()`, which is the same
-  // as `m.comatrix()/determinant`.
+  // figure out the winding direction as well, thus we calculate it
+  // separately and then do
+  // `(m.comatrix().transposed()/determinant).transposed()`, which is the
+  // same as `m.comatrix()/determinant`.
   Mn::Matrix3x3 normalMatrix = rotScale.comatrix() / normalDet;
 
   // Flip winding direction to correct handle backface culling
@@ -410,40 +482,6 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
     shader_->setTextureMatrix(matCache.textureMatrix);
   }
 
-  // clearcoat data
-
-  if (flags_ & PbrShader::Flag::ClearCoatLayer) {
-    (*shader_)
-        .setClearCoatFactor(matCache.clearCoat.factor)
-        .setClearCoatRoughness(matCache.clearCoat.roughnessFactor)
-        .setClearCoatNormalTextureScale(matCache.clearCoat.normalTextureScale);
-    if (flags_ >= PbrShader::Flag::ClearCoatTexture) {
-      shader_->bindClearCoatFactorTexture(*matCache.clearCoat.texture);
-    }
-    if (flags_ >= PbrShader::Flag::ClearCoatRoughnessTexture) {
-      shader_->bindClearCoatRoughnessTexture(
-          *matCache.clearCoat.roughnessTexture);
-    }
-    if (flags_ >= PbrShader::Flag::ClearCoatNormalTexture) {
-      shader_->bindClearCoatNormalTexture(*matCache.clearCoat.normalTexture);
-    }
-  }
-
-  // specular layer data
-  if (flags_ & PbrShader::Flag::SpecularLayer) {
-    (*shader_)
-        .setSpecularLayerFactor(matCache.specularLayer.factor)
-        .setSpecularLayerColorFactor(matCache.specularLayer.colorFactor);
-
-    if (flags_ >= PbrShader::Flag::SpecularLayerTexture) {
-      shader_->bindSpecularLayerTexture(*matCache.specularLayer.texture);
-    }
-    if (flags_ >= PbrShader::Flag::SpecularLayerColorTexture) {
-      shader_->bindSpecularLayerColorTexture(
-          *matCache.specularLayer.colorTexture);
-    }
-  }
-
   // setup image based lighting for the shader
   if (flags_ & PbrShader::Flag::ImageBasedLighting) {
     CORRADE_INTERNAL_ASSERT(pbrIbl_);
@@ -487,8 +525,8 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   // WE stopped supporting doubleSided material due to lighting artifacts on
   // hard edges. See comments at the beginning of this function.
   /*
-  if ((flags_ & PbrShader::Flag::DoubleSided) && !glIsEnabled(GL_CULL_FACE)) {
-    Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
+  if ((flags_ & PbrShader::Flag::DoubleSided) && !glIsEnabled(GL_CULL_FACE))
+  { Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
   }
   */
 }  // namespace gfx
@@ -509,7 +547,8 @@ PbrDrawable& PbrDrawable::updateShader() {
     shader_ = shaderManager_.get<Mn::GL::AbstractShaderProgram, PbrShader>(
         getShaderKey(lightCount, flags_));
 
-    // if no shader with desired number of lights and flags exists, create one
+    // if no shader with desired number of lights and flags exists, create
+    // one
     if (!shader_) {
       shaderManager_.set<Mn::GL::AbstractShaderProgram>(
           shader_.key(), new PbrShader{flags_, lightCount},

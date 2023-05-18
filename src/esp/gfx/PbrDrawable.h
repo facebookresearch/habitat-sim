@@ -135,6 +135,37 @@ class PbrDrawable : public Drawable {
 
     } specularLayer;
 
+    ///////////////
+    // KHR_materials_anisotropy layer
+    /**
+     * Structure holdijng anisotropy layer values
+     */
+    struct AnisotropyLayer {
+      /**
+       * The anisotropy strength. When anisotropyTexture is present, this value
+       * is multiplied by the blue channel.
+       */
+      float factor = 0.0f;
+
+      /**
+       * [cos(rotation), sin(rotation)] : Built from the rotation of the
+       * anisotropy in tangent, bitangent space, measured in radians
+       * counter-clockwise from the tangent. When anisotropyTexture is present,
+       * anisotropyRotation provides additional rotation to the vectors in the
+       * texture.
+       */
+      Mn::Vector2 direction{1.0f, 0.0f};
+
+      /**
+       * A texture that defines the strength and orientation of the anisotropy
+       * of the material. Red and green channels represent the anisotropy
+       * direction in [-1, 1] tangent, bitangent space, to be rotated by
+       * anisotropyRotation. The blue channel contains strength as [0, 1] to be
+       * multiplied by anisotropyStrength
+       */
+      Mn::GL::Texture2D* texture = nullptr;
+    } anisotropyLayer;
+
     ////////////////
     // KHR_materials_transmission
 
