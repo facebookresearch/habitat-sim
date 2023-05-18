@@ -156,29 +156,25 @@ void PbrDrawable::setMaterialValuesInternal(
       // has non-trivial clearcoat layer
       flags_ |= PbrShader::Flag::ClearCoatLayer;
       //
-      matCache.cc_ClearCoatFactor = cc_LayerFactor;
-      matCache.cc_Roughness = ccLayer.roughness();
+      matCache.clearCoat.factor = cc_LayerFactor;
+      matCache.clearCoat.roughnessFactor = ccLayer.roughness();
 
       if (ccLayer.hasAttribute("layerFactorTexturePointer")) {
-        flags_ |= PbrShader::Flag::CCLayer_CCTexture;
-        matCache.cc_ClearCoatTexture =
+        flags_ |= PbrShader::Flag::ClearCoatTexture;
+        matCache.clearCoat.texture =
             ccLayer.attribute<Mn::GL::Texture2D*>("layerFactorTexturePointer");
       }
 
       if (ccLayer.hasAttribute("roughnessTexturePointer")) {
-        flags_ |= PbrShader::Flag::CCLayer_RoughnessTexture;
-        matCache.cc_RoughnessTexture =
+        flags_ |= PbrShader::Flag::ClearCoatRoughnessTexture;
+        matCache.clearCoat.roughnessTexture =
             ccLayer.attribute<Mn::GL::Texture2D*>("roughnessTexturePointer");
-        matCache.cc_Roughness_Texture_Swizzle =
-            ccLayer.roughnessTextureSwizzle();
       }
 
       if (ccLayer.hasAttribute("normalTexturePointer")) {
-        flags_ |= PbrShader::Flag::CCLayer_NormalTexture;
-        matCache.cc_NormalTexture =
+        flags_ |= PbrShader::Flag::ClearCoatNormalTexture;
+        matCache.clearCoat.normalTexture =
             ccLayer.attribute<Mn::GL::Texture2D*>("normalTexturePointer");
-        // TODO : do we really need to verify if scale
-        matCache.cc_NormalTextureScale = ccLayer.normalTextureScale();
       }
 
     }  // non-zero layer factor
@@ -204,7 +200,7 @@ void PbrDrawable::setMaterialValuesInternal(
      */
     if (materialData_->hasAttribute("#KHR_materials_specular",
                                     "specularFactor")) {
-      matCache.spec_SpecularFactor = materialData_->attribute<float>(
+      matCache.specularLayer.factor = materialData_->attribute<float>(
           "#KHR_materials_specular", "specularFactor");
     }
 
@@ -214,8 +210,8 @@ void PbrDrawable::setMaterialValuesInternal(
      */
     if (materialData_->hasAttribute("#KHR_materials_specular",
                                     "specularTexturePointer")) {
-      flags_ |= PbrShader::Flag::SpecLayer_SpecTexture;
-      matCache.spec_SpecularTexture =
+      flags_ |= PbrShader::Flag::SpecularLayerTexture;
+      matCache.specularLayer.texture =
           materialData_->attribute<Mn::GL::Texture2D*>(
               "#KHR_materials_specular", "specularTexturePointer");
     }
@@ -224,7 +220,7 @@ void PbrDrawable::setMaterialValuesInternal(
      */
     if (materialData_->hasAttribute("#KHR_materials_specular",
                                     "specularColorFactor")) {
-      matCache.spec_SpecularColorFactor = materialData_->attribute<Mn::Color3>(
+      matCache.specularLayer.colorFactor = materialData_->attribute<Mn::Color3>(
           "#KHR_materials_specular", "specularColorFactor");
     }
     /**
@@ -234,8 +230,8 @@ void PbrDrawable::setMaterialValuesInternal(
      */
     if (materialData_->hasAttribute("#KHR_materials_specular",
                                     "specularColorTexturePointer")) {
-      flags_ |= PbrShader::Flag::SpecLayer_SpecColorTexture;
-      matCache.spec_SpecularColorTexture =
+      flags_ |= PbrShader::Flag::SpecularLayerColorTexture;
+      matCache.specularLayer.colorTexture =
           materialData_->attribute<Mn::GL::Texture2D*>(
               "#KHR_materials_specular", "specularColorTexturePointer");
     }
@@ -248,15 +244,15 @@ void PbrDrawable::setMaterialValuesInternal(
     // transmissionFactor
     if (materialData_->hasAttribute("#KHR_materials_transmission",
                                     "transmissionFactor")) {
-      matCache.trns_TransmissionFactor = materialData_->attribute<float>(
+      matCache.transmissionLayer.factor = materialData_->attribute<float>(
           "#KHR_materials_transmission", "transmissionFactor");
     }
     // transmissionTexturePointer
 
     if (materialData_->hasAttribute("#KHR_materials_transmission",
                                     "transmissionTexturePointer")) {
-      flags_ |= PbrShader::Flag::TransLayer_TransmissionTexture;
-      matCache.trns_TransmissionTexture =
+      flags_ |= PbrShader::Flag::TransmissionLayerTexture;
+      matCache.transmissionLayer.texture =
           materialData_->attribute<Mn::GL::Texture2D*>(
               "#KHR_materials_transmission", "transmissionTexturePointer");
     }
@@ -268,14 +264,14 @@ void PbrDrawable::setMaterialValuesInternal(
 
     if (materialData_->hasAttribute("#KHR_materials_volume",
                                     "thicknessFactor")) {
-      matCache.vol_ThicknessFactor = materialData_->attribute<float>(
+      matCache.volumeLayer.thicknessFactor = materialData_->attribute<float>(
           "#KHR_materials_volume", "thicknessFactor");
     }
 
     if (materialData_->hasAttribute("#KHR_materials_volume",
                                     "thicknessTexturePointer")) {
-      flags_ |= PbrShader::Flag::VolLayer_ThicknessTexture;
-      matCache.vol_ThicknessTexture =
+      flags_ |= PbrShader::Flag::VolumeLayerThicknessTexture;
+      matCache.volumeLayer.thicknessTexture =
           materialData_->attribute<Mn::GL::Texture2D*>(
               "#KHR_materials_volume", "thicknessTexturePointer");
     }
@@ -286,14 +282,15 @@ void PbrDrawable::setMaterialValuesInternal(
                                                       "attenuationDistance");
       if (attDist > 0.0f) {
         // Can't be 0 or inf
-        matCache.vol_AttenuationDist = attDist;
+        matCache.volumeLayer.attenuationDist = attDist;
       }
     }
 
     if (materialData_->hasAttribute("#KHR_materials_volume",
                                     "attenuationColor")) {
-      matCache.vol_AttenuationColor = materialData_->attribute<Mn::Color3>(
-          "#KHR_materials_volume", "attenuationColor");
+      matCache.volumeLayer.attenuationColor =
+          materialData_->attribute<Mn::Color3>("#KHR_materials_volume",
+                                               "attenuationColor");
     }
   }  // has KHR_materials_volume layer
 }  // PbrDrawable::setMaterialValuesInternal

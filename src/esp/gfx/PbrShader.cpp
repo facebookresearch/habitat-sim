@@ -123,6 +123,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
                      ? "#define NORMAL_TEXTURE_SCALE\n"
                      : "")
       .addSource(flags_ & Flag::ObjectId ? "#define OBJECT_ID\n" : "")
+      .addSource(flags_ & Flag::ClearCoatLayer ? "#define CLEAR_COAT\n" : "")
       .addSource(flags_ & Flag::PrecomputedTangent
                      ? "#define PRECOMPUTED_TANGENT\n"
                      : "")

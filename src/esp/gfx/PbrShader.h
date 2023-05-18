@@ -190,79 +190,74 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * Has ClearCoat layer.
      */
     ClearCoatLayer = 1 << 13,
-
     /**
      * Has ClearCoat Texture in ClearCoat layer
      */
-    CCLayer_CCTexture = (1 << 14) | ClearCoatLayer,
+    ClearCoatTexture = (1 << 14) | ClearCoatLayer,
     /**
      * Has Roughness Texture in ClearCoat layer
      */
-    CCLayer_RoughnessTexture = (1 << 15) | ClearCoatLayer,
+    ClearCoatRoughnessTexture = (1 << 15) | ClearCoatLayer,
     /**
      * Has Normal Texture in ClearCoat layer
      */
-    CCLayer_NormalTexture = (1 << 16) | ClearCoatLayer,
-
-    CCLayer_NormalTextureScale = (1 << 17) | ClearCoatLayer,
+    ClearCoatNormalTexture = (1 << 16) | ClearCoatLayer,
 
     /**
      * Has KHR_materials_specular layer
      */
-    SpecularLayer = 1 << 18,
-
+    SpecularLayer = 1 << 17,
     /**
      * Has Specular Texture in KHR_materials_specular layer
      */
-    SpecLayer_SpecTexture = (1 << 19) | SpecularLayer,
+    SpecularLayerTexture = (1 << 18) | SpecularLayer,
 
     /**
      * Has Specular Color Texture in KHR_materials_specular layer
      */
-    SpecLayer_SpecColorTexture = (1 << 20) | SpecularLayer,
+    SpecularLayerColorTexture = (1 << 19) | SpecularLayer,
 
     /**
      * Has KHR_materials_transmission layer
      */
-    TransmissionLayer = 1 << 21,
-
+    TransmissionLayer = 1 << 20,
     /**
      * Has transmission texture in KHR_materials_transmission layer
      */
-    TransLayer_TransmissionTexture = (1 << 22) | TransmissionLayer,
+    TransmissionLayerTexture = (1 << 21) | TransmissionLayer,
 
     /**
      * Has KHR_materials_volume layer
      */
-    VolumeLayer = 1 << 23,
+    VolumeLayer = 1 << 22,
 
     /**
      * Has Thickness texture in  KHR_materials_volume layer
      */
-    VolLayer_ThicknessTexture = (1 << 24) | VolumeLayer,
+    VolumeLayerThicknessTexture = (1 << 23) | VolumeLayer,
 
     /**
      * Enable double-sided rendering.
      * (Temporarily STOP supporting this functionality. See comments in
      * the PbrDrawable::draw() function)
      */
-    DoubleSided = 1 << 25,
+    DoubleSided = 1 << 24,
 
     /**
      * Enable image based lighting
      */
-    ImageBasedLighting = 1 << 26,
+    ImageBasedLighting = 1 << 25,
 
     /**
      * render point light shadows using variance shadow map (VSM)
      */
-    ShadowsVSM = 1 << 27,
+    ShadowsVSM = 1 << 26,
 
     /**
      * Enable shader debug mode. Then developer can set the uniform
      * PbrDebugDisplay in the fragment shader for debugging
      */
-    DebugDisplay = 1 << 28,
+    DebugDisplay = 1 << 27,
     /*
      * TODO: alphaMask
      */

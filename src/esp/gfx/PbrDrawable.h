@@ -52,16 +52,39 @@ class PbrDrawable : public Drawable {
 
     ////////////////
     // ClearCoat layer
-    float cc_ClearCoatFactor = 0.0f;
-    Mn::GL::Texture2D* cc_ClearCoatTexture = nullptr;
-    float cc_Roughness = 0.0f;
-    Mn::GL::Texture2D* cc_RoughnessTexture = nullptr;
 
-    // TODO: is this going to be needed?
-    Mn::Trade::MaterialTextureSwizzle cc_Roughness_Texture_Swizzle =
-        Mn::Trade::MaterialTextureSwizzle::G;
-    float cc_NormalTextureScale = 1.0f;
-    Mn::GL::Texture2D* cc_NormalTexture = nullptr;
+    /**
+     * Structure holding clearcoat layer values
+     */
+    struct ClearCoat {
+      /**
+       * Clear coat layer intensity
+       */
+      float factor = 0.0f;
+
+      /**
+       * Texture defining clearcoat intensity in R, G, or B channels.Multiplied
+       * by scalar if both are present.
+       */
+      Mn::GL::Texture2D* texture = nullptr;
+
+      /**
+       * Clearcoat layer roughness.
+       */
+      float roughnessFactor = 0.0f;
+
+      /**
+       * Texture describing clear coat roughness in R, G, or B channels.
+       * Multiplied by scalar if both are present.
+       */
+      Mn::GL::Texture2D* roughnessTexture = nullptr;
+
+      /**
+       * Clearcoat Normal map texture, in RGB channels.
+       */
+      Mn::GL::Texture2D* normalTexture = nullptr;
+
+    } clearCoat;
 
     ////////////////
     // KHR_materials_ior
@@ -79,64 +102,89 @@ class PbrDrawable : public Drawable {
     // KHR_materials_specular layer
 
     /**
-     * The strength of the specular reflection.
+     * Structure holdling specular layer values
      */
-    float spec_SpecularFactor = 1.0f;
+    struct SpecularLayer {
+      /**
+       * The strength of the specular reflection.
+       */
+      float factor = 1.0f;
 
-    /**
-     * A texture that defines the strength of the specular reflection, stored in
-     * the alpha (A) channel. This will be multiplied by specularFactor.
-     */
-    Mn::GL::Texture2D* spec_SpecularTexture = nullptr;
+      /**
+       * A texture that defines the strength of the specular reflection, stored
+       * in the alpha (A) channel. This will be multiplied by specularFactor.
+       */
+      Mn::GL::Texture2D* texture = nullptr;
 
-    /**
-     * The F0 color of the specular reflection (linear RGB).
-     */
-    Mn::Color3 spec_SpecularColorFactor{1.0f};
+      /**
+       * The F0 color of the specular reflection (linear RGB).
+       */
+      Mn::Color3 colorFactor{1.0f};
 
-    /**
-     * A texture that defines the F0 color of the specular reflection,
-     * stored in the RGB channels and encoded in sRGB. This texture will be
-     * multiplied by specularColorFactor.
-     */
-    Mn::GL::Texture2D* spec_SpecularColorTexture = nullptr;
+      /**
+       * A texture that defines the F0 color of the specular reflection,
+       * stored in the RGB channels and encoded in sRGB. This texture will be
+       * multiplied by specularColorFactor.
+       */
+      Mn::GL::Texture2D* colorTexture = nullptr;
+
+    } specularLayer;
 
     ////////////////
     // KHR_materials_transmission
-    float trns_TransmissionFactor = 0.0f;
 
-    Mn::GL::Texture2D* trns_TransmissionTexture = nullptr;
+    /**
+     * Structure holding transmission layer values
+     */
+    struct TransmissionLayer {
+      /**
+       * The base percentage of light that is transmitted through the surface.
+       */
+      float factor = 0.0f;
+      /**
+       * A texture that defines the transmission percentage of the surface,
+       * stored in the R channel. This will be multiplied by transmissionFactor.
+       */
+      Mn::GL::Texture2D* texture = nullptr;
+    } transmissionLayer;
 
     ////////////////
     // KHR_materials_volume
 
     /**
-     * The thickness of the volume beneath the surface. The value is given in
-     * the coordinate space of the mesh. If the value is 0 the material is
-     * thin-walled. Otherwise the material is a volume boundary. The doubleSided
-     * property has no effect on volume boundaries. Range is [0, +inf).
+     * Structure holding volume-layer values
      */
-    float vol_ThicknessFactor = 0.0f;
+    struct VolumeLayer {
+      /**
+       * The thickness of the volume beneath the surface. The value is given in
+       * the coordinate space of the mesh. If the value is 0 the material is
+       * thin-walled. Otherwise the material is a volume boundary. The
+       * doubleSided property has no effect on volume boundaries. Range is [0,
+       * +inf).
+       */
+      float thicknessFactor = 0.0f;
 
-    /**
-     * A texture that defines the thickness, stored in the G channel. This will
-     * be multiplied by thicknessFactor. Range is [0, 1]
-     */
-    Mn::GL::Texture2D* vol_ThicknessTexture = nullptr;
+      /**
+       * A texture that defines the thickness, stored in the G channel. This
+       * will be multiplied by thicknessFactor. Range is [0, 1]
+       */
+      Mn::GL::Texture2D* thicknessTexture = nullptr;
 
-    /**
-     * Density of the medium given as the average distance that light travels in
-     * the medium before interacting with a particle. The value is given in
-     * world space. Range is (0, +inf). Default is inf (treat -1).
-     */
-    float vol_AttenuationDist = -1.0f;
+      /**
+       * Density of the medium given as the average distance that light travels
+       * in the medium before interacting with a particle. The value is given in
+       * world space. Range is (0, +inf). Default is inf (treat -1).
+       */
+      float attenuationDist = -1.0f;
 
-    /**
-     * The color that white light turns into due to absorption when reaching
-     * the attenuation distance.
-     */
+      /**
+       * The color that white light turns into due to absorption when reaching
+       * the attenuation distance.
+       */
 
-    Mn::Color3 vol_AttenuationColor{1.0f};
+      Mn::Color3 attenuationColor{1.0f};
+
+    } volumeLayer;
   };
 
   /**
