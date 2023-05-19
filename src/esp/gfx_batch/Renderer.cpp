@@ -30,7 +30,7 @@
 #include <Magnum/MeshTools/Duplicate.h>
 #include <Magnum/MeshTools/RemoveDuplicates.h>
 #include <Magnum/PixelFormat.h>
-#include <Magnum/SceneTools/FlattenMeshHierarchy.h>
+#include <Magnum/SceneTools/Hierarchy.h>
 #include <Magnum/Shaders/Generic.h>
 #include <Magnum/Shaders/Phong.h>
 #include <Magnum/Shaders/PhongGL.h>
@@ -786,24 +786,25 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
       /* Files treated as a whole have their hierarchy flattened and added under
          a single name, which is the filename */
     } else {
-      Cr::Containers::Array<
-          Cr::Containers::Triple<Mn::UnsignedInt, Mn::Int, Mn::Matrix4>>
-          flattened = Mn::SceneTools::flattenMeshHierarchy3D(*scene);
-      for (std::size_t i = 0; i != flattened.size(); ++i) {
-        meshViews[i].transformation = flattened[i].third();
+      /* The returned transformations are in the same order as the Mesh field,
+         which is the same order as the meshViews array */
+      Cr::Containers::Array<Mn::Matrix4>
+          transformations = Mn::SceneTools::absoluteFieldTransformations3D(*scene, Mn::Trade::SceneField::Mesh);
+      for (std::size_t i = 0; i != transformations.size(); ++i) {
+        meshViews[i].transformation = transformations[i];
       }
       /* If no name is specified, the full filename is used */
       const Cr::Containers::StringView usedName = name ? name : filename;
       if (!state_->meshViewRangeForName
                .insert({usedName,
                         {meshViewOffset,
-                         meshViewOffset + Mn::UnsignedInt(flattened.size())}})
+                         meshViewOffset + Mn::UnsignedInt(transformations.size())}})
                .second) {
         Mn::Error{} << "Renderer::addFile(): node name" << usedName
                     << "already exists";
         return {};
       }
-      CORRADE_INTERNAL_ASSERT(meshViewOffset + flattened.size() ==
+      CORRADE_INTERNAL_ASSERT(meshViewOffset + transformations.size() ==
                               state_->meshViews.size());
     }
   }
