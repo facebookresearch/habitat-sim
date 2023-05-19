@@ -121,7 +121,7 @@ void nvprintf2(va_list& vlist, const char* fmt, int level) {
   if (s_printCallback) {
     s_printCallback(level, s_strBuffer);
   }
-  ::printf("%s", s_strBuffer);
+  //::printf("%s", s_strBuffer);
 }
 void nvprintf(
 #ifdef _MSC_VER
