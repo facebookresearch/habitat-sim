@@ -5,7 +5,8 @@
 find_package(Magnum REQUIRED DebugTools Text)
 find_package(MagnumPlugins REQUIRED StbTrueTypeFont)
 
-set(viewer_SOURCES viewer.cpp ObjectPickingHelper.cpp ObjectPickingHelper.h)
+# set(viewer_SOURCES viewer.cpp ObjectPickingHelper.cpp ObjectPickingHelper.h)
+set(viewer_SOURCES minimal_glfw.cpp)
 
 corrade_add_resource(viewer_RESOURCES resources.conf)
 
