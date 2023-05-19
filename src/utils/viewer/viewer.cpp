@@ -966,7 +966,7 @@ Viewer::Viewer(const Arguments& arguments)
   simConfig_.activeSceneName = args.value("scene");
   simConfig_.sceneDatasetConfigFile = args.value("dataset");
   simConfig_.enablePhysics = args.isSet("enable-physics");
-  simConfig_.horizonBasedAmbientOcclusion = true;  // args.isSet("hbao");
+  simConfig_.horizonBasedAmbientOcclusion = args.isSet("hbao");
   simConfig_.frustumCulling = true;
   simConfig_.requiresTextures = true;
   simConfig_.enableGfxReplaySave = !gfxReplayRecordFilepath_.empty();
