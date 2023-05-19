@@ -11,7 +11,10 @@ class MyApplication : public Magnum::Platform::Application {
             arguments,
             Configuration{}.setTitle("MyApplication").setSize({400, 300})} {}
 
-  void drawEvent() override {}
+  void drawEvent() override {
+    printf("drawEvent\n");
+    redraw();
+  }
 };
 
 MAGNUM_APPLICATION_MAIN(MyApplication)
