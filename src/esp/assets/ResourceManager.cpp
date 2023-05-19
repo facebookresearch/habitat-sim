@@ -156,12 +156,20 @@ void ResourceManager::buildImporters() {
   CORRADE_INTERNAL_ASSERT_OUTPUT(
       primitiveImporter_ =
           importerManager_.loadAndInstantiate("PrimitiveImporter"));
-  // necessary for importer to be usable
-  primitiveImporter_->openData("");
 
   // instantiate importer for file load
   CORRADE_INTERNAL_ASSERT_OUTPUT(
       fileImporter_ = importerManager_.loadAndInstantiate("AnySceneImporter"));
+
+  // set quiet importer flags if asset logging is quieted
+  if (!isLevelEnabled(logging::Subsystem::assets,
+                      logging::LoggingLevel::Debug)) {
+    fileImporter_->addFlags(Mn::Trade::ImporterFlag::Quiet);
+    primitiveImporter_->addFlags(Mn::Trade::ImporterFlag::Quiet);
+  }
+
+  // necessary for importer to be usable
+  primitiveImporter_->openData("");
 }  // buildImporters
 
 bool ResourceManager::getCreateRenderer() const {

@@ -403,6 +403,10 @@ bool CubeMap::saveTexture(TextureType type,
   if (!(converter = manager.loadAndInstantiate("AnyImageConverter"))) {
     return false;
   }
+  // set image converter flags if gfx logging is quieted
+  if (!isLevelEnabled(logging::Subsystem::gfx, logging::LoggingLevel::Debug)) {
+    converter->addFlags(Magnum::Trade::ImageConverterFlag::Quiet);
+  }
 
   const char* coordStrings[6] = {"+X", "-X", "+Y", "-Y", "+Z", "-Z"};
   for (int iFace = 0; iFace < 6; ++iFace) {

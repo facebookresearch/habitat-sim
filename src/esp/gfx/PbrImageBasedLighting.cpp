@@ -128,6 +128,10 @@ void PbrImageBasedLighting::convertEquirectangularToCubeMap(
   Cr::Containers::Pointer<Mn::Trade::AbstractImporter> importer =
       manager.loadAndInstantiate(importerName);
   CORRADE_INTERNAL_ASSERT(importer);
+  // set importer flags if gfx logging is quieted
+  if (!isLevelEnabled(logging::Subsystem::gfx, logging::LoggingLevel::Debug)) {
+    importer->addFlags(Magnum::Trade::ImporterFlag::Quiet);
+  }
 
   const Cr::Utility::Resource rs{"pbr-images"};
   importer->openData(rs.getRaw(hdriImageFilename));
@@ -247,6 +251,10 @@ void PbrImageBasedLighting::loadBrdfLookUpTable() {
   Cr::Containers::Pointer<Mn::Trade::AbstractImporter> importer =
       manager.loadAndInstantiate(importerName);
   CORRADE_INTERNAL_ASSERT(importer);
+  // set importer flags if gfx logging is quieted
+  if (!isLevelEnabled(logging::Subsystem::gfx, logging::LoggingLevel::Debug)) {
+    importer->addFlags(Magnum::Trade::ImporterFlag::Quiet);
+  }
 
   // TODO: HDR, No LDR in the future!
   // temporarily using the brdflut from here:
