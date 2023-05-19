@@ -4,6 +4,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+# must call this before importing habitat or magnum! avoids EGL_BAD_ACCESS error on some platforms
+import sys
+import ctypes
+flags = sys.getdlopenflags()
+sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
+
 # import magnum as mn
 from magnum.platform.glfw import Application
 
