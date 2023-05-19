@@ -10,7 +10,7 @@ import ctypes
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
-# import magnum as mn
+import magnum as mn
 from magnum.platform.glfw import Application
 
 
