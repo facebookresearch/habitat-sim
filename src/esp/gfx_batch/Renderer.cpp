@@ -788,17 +788,19 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
     } else {
       /* The returned transformations are in the same order as the Mesh field,
          which is the same order as the meshViews array */
-      Cr::Containers::Array<Mn::Matrix4>
-          transformations = Mn::SceneTools::absoluteFieldTransformations3D(*scene, Mn::Trade::SceneField::Mesh);
+      Cr::Containers::Array<Mn::Matrix4> transformations =
+          Mn::SceneTools::absoluteFieldTransformations3D(
+              *scene, Mn::Trade::SceneField::Mesh);
       for (std::size_t i = 0; i != transformations.size(); ++i) {
         meshViews[i].transformation = transformations[i];
       }
       /* If no name is specified, the full filename is used */
       const Cr::Containers::StringView usedName = name ? name : filename;
       if (!state_->meshViewRangeForName
-               .insert({usedName,
-                        {meshViewOffset,
-                         meshViewOffset + Mn::UnsignedInt(transformations.size())}})
+               .insert(
+                   {usedName,
+                    {meshViewOffset,
+                     meshViewOffset + Mn::UnsignedInt(transformations.size())}})
                .second) {
         Mn::Error{} << "Renderer::addFile(): node name" << usedName
                     << "already exists";

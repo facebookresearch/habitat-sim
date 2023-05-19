@@ -1405,15 +1405,18 @@ void GfxBatchRendererTest::generateTestDataFourSquares() {
     const Mn::Trade::MeshData squares[]{
         Mn::MeshTools::generateIndices(Mn::Primitives::planeSolid(
             Mn::Primitives::PlaneFlag::TextureCoordinates))};
-    Cr::Containers::Array<Cr::Containers::Pair<Mn::UnsignedInt, Cr::Containers::Pair<Mn::UnsignedInt, Mn::Int>>>
+    Cr::Containers::Array<Cr::Containers::Pair<
+        Mn::UnsignedInt, Cr::Containers::Pair<Mn::UnsignedInt, Mn::Int>>>
         meshesMaterials = sceneData.meshesMaterialsAsArray();
     Cr::Containers::Array<Mn::Matrix4> transformations =
-      Mn::SceneTools::absoluteFieldTransformations3D(sceneData, Mn::Trade::SceneField::Mesh);
+        Mn::SceneTools::absoluteFieldTransformations3D(
+            sceneData, Mn::Trade::SceneField::Mesh);
     Cr::Containers::Array<Mn::Trade::MeshData> flattenedMeshes;
     for (std::size_t i = 0; i != meshesMaterials.size(); ++i) {
-      arrayAppend(flattenedMeshes, Mn::MeshTools::transform3D(
-                                       squares[meshesMaterials[i].second().first()],
-                                       transformations[i]));
+      arrayAppend(flattenedMeshes,
+                  Mn::MeshTools::transform3D(
+                      squares[meshesMaterials[i].second().first()],
+                      transformations[i]));
     }
     const Mn::Trade::MeshData squaresJoined =
         Mn::MeshTools::concatenate(flattenedMeshes);
