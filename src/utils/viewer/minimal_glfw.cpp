@@ -42,6 +42,12 @@ int main(int argc, char** argv) {
   if (!glfwInit())
     return -1;
 
+  auto myErrorFun = [](int errorCode, const char* msg) {
+    printf("error: %s\n", msg);
+  };
+
+  glfwSetErrorCallback(myErrorFun);
+
   /* Create a windowed mode window and its OpenGL context */
   GLFWwindow* const window = glfwCreateWindow(
       800, 600, "Magnum Plain GLFW Triangle Example", nullptr, nullptr);
