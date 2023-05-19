@@ -48,6 +48,8 @@ int main(int argc, char** argv) {
 
   glfwSetErrorCallback(myErrorFun);
 
+  glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
+
   /* Create a windowed mode window and its OpenGL context */
   GLFWwindow* const window = glfwCreateWindow(
       800, 600, "Magnum Plain GLFW Triangle Example", nullptr, nullptr);
