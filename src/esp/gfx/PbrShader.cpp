@@ -171,7 +171,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
                      : "")
       .addSource(rs.getString("pbrCommon.glsl") + "\n")
       .addSource(rs.getString("pbrLighting.glsl") + "\n")
-      .addSource(rs.getString("pbrBRDF.glsl") + "\n")
+      .addSource(rs.getString("pbrBSDF.glsl") + "\n")
       .addSource(rs.getString("pbrMaterials.glsl") + "\n")
       .addSource(rs.getString("pbr.frag"));
 
