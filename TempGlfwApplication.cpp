@@ -448,61 +448,63 @@ bool GlfwApplication::tryCreate(const Configuration& configuration, const GLConf
     // glfwWindowHint(GLFW_STEREO, glFlags >= GLConfiguration::Flag::Stereo);
 
     /* Set context version, if requested */
-    if(false) { // glConfiguration.version() != GL::Version::None) {
-        Int major, minor;
-        std::tie(major, minor) = version(glConfiguration.version());
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor);
-        #ifndef MAGNUM_TARGET_GLES
-        if(glConfiguration.version() >= GL::Version::GL320) {
-            glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-            glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, glFlags >= GLConfiguration::Flag::ForwardCompatible);
-        }
-        #else
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
-        #endif
-        #ifdef MAGNUM_TARGET_EGL /* Force EGL if desired */
-        glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
-        #endif
+    // if(false) { // glConfiguration.version() != GL::Version::None) {
+    //     Int major, minor;
+    //     std::tie(major, minor) = version(glConfiguration.version());
+    //     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major);
+    //     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor);
+    //     #ifndef MAGNUM_TARGET_GLES
+    //     if(glConfiguration.version() >= GL::Version::GL320) {
+    //         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    //         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, glFlags >= GLConfiguration::Flag::ForwardCompatible);
+    //     }
+    //     #else
+    //     glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+    //     #endif
+    //     #ifdef MAGNUM_TARGET_EGL /* Force EGL if desired */
+    //     glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
+    //     #endif
 
-    /* Request usable version otherwise */
-    } else {
-        #ifndef MAGNUM_TARGET_GLES
-        /* First try to create core context. This is needed mainly on macOS and
-           Mesa, as support for recent OpenGL versions isn't implemented in
-           compatibility contexts (which are the default). Unlike SDL2, GLFW
-           requires at least version 3.2 to be able to request a core profile. */
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, glFlags >= GLConfiguration::Flag::ForwardCompatible);
-        #else
-        /* For ES the major context version is compile-time constant */
-        #ifdef MAGNUM_TARGET_GLES3
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-        #elif defined(MAGNUM_TARGET_GLES2)
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-        #else
-        #error unsupported OpenGL ES version
-        #endif
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
-        #endif
-        #ifdef MAGNUM_TARGET_EGL /* Force EGL if desired */
-        glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
-        #endif
-    }
+    // /* Request usable version otherwise */
+    // } else {
+    //     #ifndef MAGNUM_TARGET_GLES
+    //     /* First try to create core context. This is needed mainly on macOS and
+    //        Mesa, as support for recent OpenGL versions isn't implemented in
+    //        compatibility contexts (which are the default). Unlike SDL2, GLFW
+    //        requires at least version 3.2 to be able to request a core profile. */
+    //     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    //     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+    //     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    //     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, glFlags >= GLConfiguration::Flag::ForwardCompatible);
+    //     #else
+    //     /* For ES the major context version is compile-time constant */
+    //     #ifdef MAGNUM_TARGET_GLES3
+    //     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    //     #elif defined(MAGNUM_TARGET_GLES2)
+    //     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+    //     #else
+    //     #error unsupported OpenGL ES version
+    //     #endif
+    //     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    //     glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+    //     #endif
+    //     #ifdef MAGNUM_TARGET_EGL /* Force EGL if desired */
+    //     glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
+    //     #endif
+    // }
+
+    glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
 
     /* Create window. Hide it by default so we don't have distracting window
        blinking in case we have to destroy it again right away. If the creation
        succeeds, make the context current so we can query GL_VENDOR below.
        If we are on Wayland, this is causing a segfault; a blinking window is
        acceptable in this case. */
-    if(std::getenv("XDG_SESSION_TYPE") != "wayland"_s)
-        glfwWindowHint(GLFW_VISIBLE, false);
-    else if(_verboseLog)
-        Warning{} << "Platform::GlfwApplication: Wayland detected, GL context has to be created with the window visible and may cause flicker on startup";
-    CORRADE_INTERNAL_ASSERT(configuration.title().flags() & Containers::StringViewFlag::NullTerminated);
+    // if(std::getenv("XDG_SESSION_TYPE") != "wayland"_s)
+    //     glfwWindowHint(GLFW_VISIBLE, false);
+    // else if(_verboseLog)
+    //     Warning{} << "Platform::GlfwApplication: Wayland detected, GL context has to be created with the window visible and may cause flicker on startup";
+    // CORRADE_INTERNAL_ASSERT(configuration.title().flags() & Containers::StringViewFlag::NullTerminated);
     if((_window = glfwCreateWindow(scaledWindowSize.x(), scaledWindowSize.y(), configuration.title().data(), monitor, nullptr)))
         glfwMakeContextCurrent(_window);
 
