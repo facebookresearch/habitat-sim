@@ -905,14 +905,15 @@ class HabitatSimInteractiveViewer(Application):
             render_camera = self.render_camera.render_camera
             ray = render_camera.unproject(self.get_mouse_position(event.position))
             mouse_cast_results = self.sim.cast_ray(ray=ray)
-            hit_id = mouse_cast_results.hits[0].object_id
-            rom = self.sim.get_rigid_object_manager()
-            if hit_id == -1:
-                print("This is the stage.")
-            elif rom.get_library_has_id(hit_id):
-                ro = rom.get_object_by_id(hit_id)
-                self.selected_object = ro
-                print(f"Rigid Object: {ro.handle}")
+            if mouse_cast_results.has_hits():
+                hit_id = mouse_cast_results.hits[0].object_id
+                rom = self.sim.get_rigid_object_manager()
+                if hit_id == -1:
+                    print("This is the stage.")
+                elif rom.get_library_has_id(hit_id):
+                    ro = rom.get_object_by_id(hit_id)
+                    self.selected_object = ro
+                    print(f"Rigid Object: {ro.handle}")
 
         self.previous_mouse_point = self.get_mouse_position(event.position)
         self.redraw()
