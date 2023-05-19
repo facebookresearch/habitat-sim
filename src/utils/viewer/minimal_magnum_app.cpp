@@ -5,6 +5,7 @@
 #include <Magnum/GL/Buffer.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Mesh.h>
+#include <Magnum/GL/Renderer.h>
 #include <Magnum/Math/Color.h>
 #include <Magnum/Platform/GLContext.h>
 #include <Magnum/Platform/GlfwApplication.h>
@@ -43,6 +44,7 @@ class MyApplication : public Magnum::Platform::Application {
 
   void drawEvent() override {
     /* Render here */
+    Magnum::GL::Renderer::setClearColor(Magnum::Color4(1, 0, 0, 1));
     Magnum::GL::defaultFramebuffer.clear(Magnum::GL::FramebufferClear::Color);
     _shader.draw(_mesh);
 
