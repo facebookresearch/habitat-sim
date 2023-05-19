@@ -67,7 +67,7 @@ void main() {
   float imageSize = float(textureSize(EnvironmentMap, 0).s);
   // solid angle of 1 pixel across all cube faces
   float solidAnglePixel = 4.0 * PI / (6.0 * imageSize * imageSize);
-
+  // fewer samples due to filtered importance sampling
   const uint sampleCounts = 32;
   float invSampleCounts = 1.0f / float(sampleCounts);
 
@@ -83,8 +83,8 @@ void main() {
       float v_dot_h = clamp(dot(v, h), 0.00001, 1.0);
 
       // Probability Distribution Function
-      float pdf = normalDistributionGGX(n_dot_h, Roughness) * n_dot_h /
-                      (4.0 * v_dot_h);
+      float pdf =
+          normalDistributionGGX(n_dot_h, Roughness) * n_dot_h / (4.0 * v_dot_h);
 
       // Solid angle for the current sample point
       float solidAngle = invSampleCounts / pdf;

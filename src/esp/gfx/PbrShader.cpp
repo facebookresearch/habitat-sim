@@ -185,107 +185,108 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   // see PBR vertex, fragment shader code for details
   if (lightingIsEnabled_) {
     if (flags_ & Flag::BaseColorTexture) {
-      setUniform(uniformLocation("BaseColorTexture"),
+      setUniform(uniformLocation("uBaseColorTexture"),
                  pbrTextureUnitSpace::TextureUnit::BaseColor);
     }
     if (flags_ & Flag::NoneRoughnessMetallicTexture) {
-      setUniform(uniformLocation("MetallicRoughnessTexture"),
+      setUniform(uniformLocation("uMetallicRoughnessTexture"),
                  pbrTextureUnitSpace::TextureUnit::MetallicRoughness);
     }
     if (flags_ & Flag::NormalTexture) {
-      setUniform(uniformLocation("NormalTexture"),
+      setUniform(uniformLocation("uNormalTexture"),
                  pbrTextureUnitSpace::TextureUnit::Normal);
     }
     // TODO occlusion texture
   }
   // emissive texture does not depend on lights
   if (flags_ & Flag::EmissiveTexture) {
-    setUniform(uniformLocation("EmissiveTexture"),
+    setUniform(uniformLocation("uEmissiveTexture"),
                pbrTextureUnitSpace::TextureUnit::Emissive);
   }
 
   // IBL related textures
   if (flags_ & Flag::ImageBasedLighting) {
-    setUniform(uniformLocation("IrradianceMap"),
+    setUniform(uniformLocation("uIrradianceMap"),
                pbrTextureUnitSpace::TextureUnit::IrradianceMap);
-    setUniform(uniformLocation("BrdfLUT"),
+    setUniform(uniformLocation("uBrdfLUT"),
                pbrTextureUnitSpace::TextureUnit::BrdfLUT);
-    setUniform(uniformLocation("PrefilteredMap"),
+    setUniform(uniformLocation("uPrefilteredMap"),
                pbrTextureUnitSpace::TextureUnit::PrefilteredMap);
   }
 
   // VSM shadows
   if (flags_ & Flag::ShadowsVSM) {
-    setUniform(uniformLocation("ShadowMap[0]"),
+    setUniform(uniformLocation("uShadowMap[0]"),
                pbrTextureUnitSpace::TextureUnit::ShadowMap0);
-    setUniform(uniformLocation("ShadowMap[1]"),
+    setUniform(uniformLocation("uShadowMap[1]"),
                pbrTextureUnitSpace::TextureUnit::ShadowMap1);
-    setUniform(uniformLocation("ShadowMap[2]"),
+    setUniform(uniformLocation("uShadowMap[2]"),
                pbrTextureUnitSpace::TextureUnit::ShadowMap2);
   }
 
   // cache the uniform locations
-  viewMatrixUniform_ = uniformLocation("ViewMatrix");
-  modelMatrixUniform_ = uniformLocation("ModelMatrix");
-  normalMatrixUniform_ = uniformLocation("NormalMatrix");
-  projMatrixUniform_ = uniformLocation("ProjectionMatrix");
+  viewMatrixUniform_ = uniformLocation("uViewMatrix");
+  modelMatrixUniform_ = uniformLocation("uModelMatrix");
+  normalMatrixUniform_ = uniformLocation("uNormalMatrix");
+  projMatrixUniform_ = uniformLocation("uProjectionMatrix");
 
   if (flags_ & Flag::ObjectId) {
-    objectIdUniform_ = uniformLocation("ObjectId");
+    objectIdUniform_ = uniformLocation("uObjectId");
   }
   if (isTextured_ && (flags_ & Flag::TextureTransformation)) {
-    textureMatrixUniform_ = uniformLocation("TextureMatrix");
+    textureMatrixUniform_ = uniformLocation("uTextureMatrix");
   }
 
   // materials
-  baseColorUniform_ = uniformLocation("Material.baseColor");
-  roughnessUniform_ = uniformLocation("Material.roughness");
-  metallicUniform_ = uniformLocation("Material.metallic");
-  iorUniform_ = uniformLocation("Material.ior");
-  emissiveColorUniform_ = uniformLocation("Material.emissiveColor");
+  baseColorUniform_ = uniformLocation("uMaterial.baseColor");
+  roughnessUniform_ = uniformLocation("uMaterial.roughness");
+  metallicUniform_ = uniformLocation("uMaterial.metallic");
+  iorUniform_ = uniformLocation("uMaterial.ior");
+  emissiveColorUniform_ = uniformLocation("uMaterial.emissiveColor");
 
   // clearcoat, specular and anisotropy layer data and textures
   if (lightingIsEnabled_) {
     if (flags_ & Flag::ClearCoatLayer) {
-      clearCoatFactorUniform_ = uniformLocation("ClearCoat.factor");
-      clearCoatRoughnessUniform_ = uniformLocation("ClearCoat.roughness");
+      clearCoatFactorUniform_ = uniformLocation("uClearCoat.factor");
+      clearCoatRoughnessUniform_ = uniformLocation("uClearCoat.roughness");
       if (flags_ >= Flag::ClearCoatTexture) {
-        setUniform(uniformLocation("ClearCoatTexture"),
+        setUniform(uniformLocation("uClearCoatTexture"),
                    pbrTextureUnitSpace::TextureUnit::ClearCoatFactor);
       }
       if (flags_ >= Flag::ClearCoatRoughnessTexture) {
-        setUniform(uniformLocation("ClearCoatRoughnessTexture"),
+        setUniform(uniformLocation("uClearCoatRoughnessTexture"),
                    pbrTextureUnitSpace::TextureUnit::ClearCoatRoughenss);
       }
       if (flags_ >= Flag::ClearCoatNormalTexture) {
         clearCoatTextureScaleUniform_ =
-            uniformLocation("ClearCoat.normalTextureScale");
-        setUniform(uniformLocation("ClearCoatNormalTexture"),
+            uniformLocation("uClearCoat.normalTextureScale");
+        setUniform(uniformLocation("uClearCoatNormalTexture"),
                    pbrTextureUnitSpace::TextureUnit::ClearCoatNormal);
       }
     }
     // specular layer data and textures
     if (flags_ & Flag::SpecularLayer) {
-      specularLayerFactorUniform_ = uniformLocation("SpecularLayer.factor");
+      specularLayerFactorUniform_ = uniformLocation("uSpecularLayer.factor");
       specularLayerColorFactorUniform_ =
-          uniformLocation("SpecularLayer.colorFactor");
+          uniformLocation("uSpecularLayer.colorFactor");
       if (flags_ >= Flag::SpecularLayerTexture) {
-        setUniform(uniformLocation("SpecularLayerTexture"),
+        setUniform(uniformLocation("uSpecularLayerTexture"),
                    pbrTextureUnitSpace::TextureUnit::SpecularLayer);
       }
       if (flags_ >= Flag::SpecularLayerColorTexture) {
-        setUniform(uniformLocation("SpecularLayerColorTexture"),
+        setUniform(uniformLocation("uSpecularLayerColorTexture"),
                    pbrTextureUnitSpace::TextureUnit::SpecularLayerColor);
       }
     }
 
     // anisotropy layer data and texture
     if (flags_ & Flag::AnisotropyLayer) {
-      anisotropyLayerFactorUniform_ = uniformLocation("AnisotropyLayer.factor");
+      anisotropyLayerFactorUniform_ =
+          uniformLocation("uAnisotropyLayer.factor");
       anisotropyLayerDirectionUniform_ =
-          uniformLocation("AnisotropyLayer.direction");
+          uniformLocation("uAnisotropyLayer.direction");
       if (flags_ >= Flag::AnisotropyLayerTexture) {
-        setUniform(uniformLocation("AnisotropyLayerTexture"),
+        setUniform(uniformLocation("uAnisotropyLayerTexture"),
                    pbrTextureUnitSpace::TextureUnit::AnisotropyLayer);
       }
     }
@@ -294,32 +295,32 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
 
   // lights
   if (lightCount_ != 0u) {
-    lightRangesUniform_ = uniformLocation("LightRanges");
-    lightColorsUniform_ = uniformLocation("LightColors");
-    lightDirectionsUniform_ = uniformLocation("LightDirections");
+    lightRangesUniform_ = uniformLocation("uLightRanges");
+    lightColorsUniform_ = uniformLocation("uLightColors");
+    lightDirectionsUniform_ = uniformLocation("uLightDirections");
   }
 
   if ((flags_ & Flag::NormalTexture) && lightingIsEnabled_) {
-    normalTextureScaleUniform_ = uniformLocation("NormalTextureScale");
+    normalTextureScaleUniform_ = uniformLocation("uNormalTextureScale");
   }
 
-  cameraWorldPosUniform_ = uniformLocation("CameraWorldPos");
+  cameraWorldPosUniform_ = uniformLocation("uCameraWorldPos");
 
   // IBL related uniform
   if (flags_ & Flag::ImageBasedLighting) {
     prefilteredMapMipLevelsUniform_ =
-        uniformLocation("PrefilteredMapMipLevels");
+        uniformLocation("uPrefilteredMapMipLevels");
   }
 
   if ((lightCount_ != 0u) && (flags_ & Flag::ImageBasedLighting)) {
     // Apply scaleing if -both- lights and IBL are enabled
     // pbr equation scales - use to mix IBL and direct lighting
-    componentScalesUniform_ = uniformLocation("ComponentScales");
+    componentScalesUniform_ = uniformLocation("uComponentScales");
   }
 
   // for debug info
   if (flags_ & Flag::DebugDisplay) {
-    pbrDebugDisplayUniform_ = uniformLocation("PbrDebugDisplay");
+    pbrDebugDisplayUniform_ = uniformLocation("uPbrDebugDisplay");
   }
 
   // initialize the shader with some "reasonable defaults"
