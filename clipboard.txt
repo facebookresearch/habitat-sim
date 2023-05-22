@@ -1,7 +1,7 @@
 python -m habitat_sim.utils.datasets_download --uids replica_cad_dataset
 
 /mnt/users/siro/habitat-sim/build/utils/viewer/viewer \
-/mnt/users/siro/habitat-lab/data/replica_cad/replicaCAD.scene_dataset_config.json -- \
+/mnt/users/siro/habitat-lab/data/replica_cad/replicaCAD.scene_dataset_config.json \
 v3_sc0_staging_00.scene_instance.json
 
 
