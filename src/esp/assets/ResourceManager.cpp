@@ -163,9 +163,14 @@ void ResourceManager::buildImporters() {
 
   // set quiet importer flags if asset logging is quieted
   if (!isLevelEnabled(logging::Subsystem::assets,
-                      logging::LoggingLevel::Debug)) {
+                      logging::LoggingLevel::Warning)) {
     fileImporter_->addFlags(Mn::Trade::ImporterFlag::Quiet);
     primitiveImporter_->addFlags(Mn::Trade::ImporterFlag::Quiet);
+  } else if (isLevelEnabled(logging::Subsystem::assets,
+                            logging::LoggingLevel::VeryVerbose)) {
+    // set verbose flags if necessary
+    fileImporter_->addFlags(Mn::Trade::ImporterFlag::Verbose);
+    primitiveImporter_->addFlags(Mn::Trade::ImporterFlag::Verbose);
   }
 
   // necessary for importer to be usable

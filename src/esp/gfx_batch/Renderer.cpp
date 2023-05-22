@@ -359,7 +359,11 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
   // is quieted if(!isLevelEnabled(logging::Subsystem::gfx_batch,
   // logging::LoggingLevel::Debug)){
   //   importer->addFlags(Magnum::Trade::ImporterFlag::Quiet);
-  // }
+  // }else if (isLevelEnabled(logging::Subsystem::gfx_batch,
+  //                    logging::LoggingLevel::VeryVerbose)){
+  //  //set verbose flags if necessary
+  //  importer->addFlags(Mn::Trade::ImporterFlag::Verbose);
+  //}
 
   /* Set up options for glTF import. We can also import any other files (such
      as serialized magnum blobs or BPS files), assume these don't need any
