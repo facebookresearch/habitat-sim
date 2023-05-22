@@ -8,8 +8,9 @@ sudo sh NVIDIA-Linux-x86_64-$DRIVER_VERSION.run
 python -m habitat_sim.utils.datasets_download --uids replica_cad_dataset
 
 /mnt/users/siro/habitat-sim/build/utils/viewer/viewer \
-/mnt/users/siro/habitat-lab/data/replica_cad/replicaCAD.scene_dataset_config.json \
 v3_sc0_staging_00.scene_instance.json
+--dataset /mnt/users/siro/habitat-lab/data/replica_cad/replicaCAD.scene_dataset_config.json
+
 
 
 habitat-viewer --enable-physics --dataset /path/to/data/fpss/fphab/fphab.scene_dataset_config.json -- 108294897_176710602.scene_instance.json 
