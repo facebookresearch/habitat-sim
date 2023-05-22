@@ -131,13 +131,13 @@ Note that if you are using the RL environment from habitat-lab, `SIMULATOR.SCENE
 
 Details: [https://3dlg-hcvc.github.io/hssd/](https://3dlg-hcvc.github.io/hssd/).
 
-You can download the dataset manually from the above website.
+You can download the HSSD dataset from instructions provided in the above website.
 
 ## AI2-THOR (Habitat)
 
 Details: [https://3dlg-hcvc.github.io/hssd/](https://3dlg-hcvc.github.io/hssd/).
 
-You can download the dataset manually from the above website.
+You can download Habitat-compatible versions of the iTHOR, RoboTHOR, and ProcTHOR scene datasets from instructions provided in the above website.
 
 ## Matterport3D (MP3D) dataset
 
