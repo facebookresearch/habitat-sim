@@ -268,14 +268,18 @@ vec3 BRDF_ClearCoatSpecular(vec3 ccFresnel,
                             LightInfo cc_l,
                             float clearCoatRoughness) {
   // ccFresnel term is using polyurethane f0 = vec3(0.4)
-  vec3 ccSpecular = ccFresnel *
-                    // Visibility function == G()/4(n_dot_l)(n_dot_v).
-                    // Smith Height-Correlated visibility/occlusion function
-                    // https://jcgt.org/published/0003/02/03/paper.pdf
-                    V_Kelemen(cc_l.v_dot_h) *
-                    // Specular D, normal distribution function (NDF),
-                    // also known as ggxDistribution, using clearcoat roughness
-                    D_GGX(cc_l.n_dot_h, clearCoatRoughness);
+  vec3 ccSpecular =
+      ccFresnel *
+      // Visibility function == G()/4(n_dot_l)(n_dot_v).
+      // Smith Height-Correlated visibility/occlusion function
+      // https://jcgt.org/published/0003/02/03/paper.pdf
+      // V_GGX(cc_l, clearCoatRoughness * clearCoatRoughness) *
+      // Non-physical approximation for speed concerns, suggested by
+      // https://google.github.io/filament/Filament.md.html#materialsystem/clearcoatmodel/clearcoatspecularbrdf
+      V_Kelemen(cc_l.v_dot_h) *
+      // Specular D, normal distribution function (NDF),
+      // also known as ggxDistribution, using clearcoat roughness
+      D_GGX(cc_l.n_dot_h, clearCoatRoughness);
   return ccSpecular;
 }  // BRDF_ClearCoatSpecular
 #endif  // clearcoat support
