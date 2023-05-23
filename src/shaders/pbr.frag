@@ -165,7 +165,7 @@ void main() {
   mat3 TBN = buildTBN();
 #endif
 
-#if defined(NORMAL_TEXTURE) && !defined(NORMAL_TEXTURE)
+#if defined(NORMAL_TEXTURE) && !defined(DBG_SKIP_NORMAL_TEXTURE)
   // normal is now in the camera space
   vec3 n = getNormalFromNormalMap(texture(uNormalTexture, texCoord).xyz,
                                   uNormalTextureScale, TBN);
@@ -196,7 +196,7 @@ void main() {
   vec3 view = normalize(uCameraWorldPos - position);
 
   // cos angle between view and normal
-  float n_dot_v = abs(dot(n, view));
+  float n_dot_v = (dot(n, view));
 
   //////////////////////
   // colors
@@ -273,10 +273,10 @@ void main() {
                              uClearCoat.normalTextureScale, TBN);
 #endif
   // Clearcoat cos angle between clearcoat normal and view
-  float cc_n_dot_v = dot(cc_Normal, view);
-  // Assuming dielectric reflectance of 0.4, which corresponds to
+  float cc_n_dot_v = (dot(cc_Normal, view));
+  // Assuming dielectric reflectance of 0.04, which corresponds to
   // polyurethane coating with IOR == 1.5
-  vec3 clearCoatCoating_f0 = vec3(0.4);
+  vec3 clearCoatCoating_f0 = vec3(0.04);
   // Glancing angle reflectance
   vec3 clearCoatCoating_f90 = vec3(1.0);
   // We need to use this to modify the base dielectric reflectance,
@@ -578,10 +578,6 @@ void main() {
 #if defined(OBJECT_ID)
   fragmentObjectId = uObjectId;
 #endif
-
-// #if defined(ANISOTROPY_LAYER)
-//   fragmentColor = vec4(1,0,0,1);
-// #endif
 
 // PBR equation debug
 // "none", "Diff (l,n)", "F (l,h)", "G (l,v,h)", "D (h)", "Specular"
