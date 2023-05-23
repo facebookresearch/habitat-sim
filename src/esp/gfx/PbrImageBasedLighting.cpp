@@ -128,6 +128,15 @@ void PbrImageBasedLighting::convertEquirectangularToCubeMap(
   Cr::Containers::Pointer<Mn::Trade::AbstractImporter> importer =
       manager.loadAndInstantiate(importerName);
   CORRADE_INTERNAL_ASSERT(importer);
+  // set importer flags if gfx logging is quieted
+  if (!isLevelEnabled(logging::Subsystem::gfx,
+                      logging::LoggingLevel::Warning)) {
+    importer->addFlags(Magnum::Trade::ImporterFlag::Quiet);
+  } else if (isLevelEnabled(logging::Subsystem::gfx,
+                            logging::LoggingLevel::VeryVerbose)) {
+    // set verbose flags if necessary
+    importer->addFlags(Mn::Trade::ImporterFlag::Verbose);
+  }
 
   const Cr::Utility::Resource rs{"pbr-images"};
   importer->openData(rs.getRaw(hdriImageFilename));
@@ -247,6 +256,15 @@ void PbrImageBasedLighting::loadBrdfLookUpTable() {
   Cr::Containers::Pointer<Mn::Trade::AbstractImporter> importer =
       manager.loadAndInstantiate(importerName);
   CORRADE_INTERNAL_ASSERT(importer);
+  // set importer flags if gfx logging is quieted
+  if (!isLevelEnabled(logging::Subsystem::gfx,
+                      logging::LoggingLevel::Warning)) {
+    importer->addFlags(Magnum::Trade::ImporterFlag::Quiet);
+  } else if (isLevelEnabled(logging::Subsystem::gfx,
+                            logging::LoggingLevel::VeryVerbose)) {
+    // set verbose flags if necessary
+    importer->addFlags(Mn::Trade::ImporterFlag::Verbose);
+  }
 
   // TODO: HDR, No LDR in the future!
   // temporarily using the brdflut from here:
