@@ -79,11 +79,12 @@ void BulletArticulatedObject::initializeFromURDF(
 
   auto urdfModel = u2b.getModel();
 
+  node().setSemanticId(urdfModel->getSemanticId());
+
   // cache the global scaling from the source model
   globalScale_ = urdfModel->getGlobalScaling();
 
   int urdfLinkIndex = u2b.getRootLinkIndex();
-  // int rootIndex = u2b.getRootLinkIndex();
 
   bool recursive = (u2b.flags & CUF_MAINTAIN_LINK_ORDER) == 0;
 

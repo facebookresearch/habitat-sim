@@ -403,6 +403,15 @@ bool CubeMap::saveTexture(TextureType type,
   if (!(converter = manager.loadAndInstantiate("AnyImageConverter"))) {
     return false;
   }
+  // set image converter flags if gfx logging is quieted
+  if (!isLevelEnabled(logging::Subsystem::gfx,
+                      logging::LoggingLevel::Warning)) {
+    converter->addFlags(Mn::Trade::ImageConverterFlag::Quiet);
+  } else if (isLevelEnabled(logging::Subsystem::gfx,
+                            logging::LoggingLevel::VeryVerbose)) {
+    // set verbose flags if necessary
+    converter->addFlags(Mn::Trade::ImageConverterFlag::Verbose);
+  }
 
   const char* coordStrings[6] = {"+X", "-X", "+Y", "-Y", "+Z", "-Z"};
   for (int iFace = 0; iFace < 6; ++iFace) {

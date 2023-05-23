@@ -329,7 +329,7 @@ int PhysicsManager::addArticulatedObjectInstance(
       filepath, &drawables, aObjInstAttributes->getFixedBase(),
       aObjInstAttributes->getUniformScale(),
       static_cast<float>(aObjInstAttributes->getMassScale()), false, false,
-      lightSetup);
+      false, lightSetup);
   if (aObjID == ID_UNDEFINED) {
     // instancing failed for some reason.
     ESP_ERROR() << "Articulated Object create failed for model filepath"

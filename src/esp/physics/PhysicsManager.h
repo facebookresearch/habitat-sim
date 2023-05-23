@@ -472,6 +472,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * cached model.
    * @param maintainLinkOrder If true, maintain the order of link definitions
    * from the URDF file as the link indices.
+   * @param intertiaFromURDF If true, load the link inertia matrices from the
+   * URDF file instead of computing automatically from collision shapes.
    * @param lightSetup The string name of the desired lighting setup to use.
    *
    * @return A unique id for the @ref BulletArticulatedObject, allocated from
@@ -484,6 +486,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
       CORRADE_UNUSED float massScale = 1.0,
       CORRADE_UNUSED bool forceReload = false,
       CORRADE_UNUSED bool maintainLinkOrder = false,
+      CORRADE_UNUSED bool intertiaFromURDF = false,
       CORRADE_UNUSED const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
     ESP_DEBUG() << "Not implemented in base PhysicsManager.";
     return ID_UNDEFINED;
@@ -508,6 +511,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * cached model.
    * @param maintainLinkOrder If true, maintain the order of link definitions
    * from the URDF file as the link indices.
+   * @param intertiaFromURDF If true, load the link inertia matrices from the
+   * URDF file instead of computing automatically from collision shapes.
    * @param lightSetup The string name of the desired lighting setup to use.
    *
    * @return A unique id for the @ref ArticulatedObject, allocated from the same
@@ -521,6 +526,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
       CORRADE_UNUSED float massScale = 1.0,
       CORRADE_UNUSED bool forceReload = false,
       CORRADE_UNUSED bool maintainLinkOrder = false,
+      CORRADE_UNUSED bool intertiaFromURDF = false,
       CORRADE_UNUSED const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
     ESP_DEBUG() << "Not implemented in base PhysicsManager.";
     return ID_UNDEFINED;

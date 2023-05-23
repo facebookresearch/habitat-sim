@@ -376,6 +376,40 @@ MetadataMediator::makeSceneAndReferenceStage(
   return sceneInstanceAttributes;
 }  // MetadataMediator::makeSceneAndReferenceStage
 
+std::shared_ptr<esp::core::config::Configuration>
+MetadataMediator::getSceneInstanceUserConfiguration(
+    const std::string& curSceneName) {
+  // get current dataset attributes
+  attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
+  // this should never happen
+  if (datasetAttr == nullptr) {
+    ESP_ERROR() << "No dataset specified/exists.  Aborting.";
+    return nullptr;
+  }
+  // get scene instance attribute manager
+  managers::SceneInstanceAttributesManager::ptr dsSceneAttrMgr =
+      datasetAttr->getSceneInstanceAttributesManager();
+  // get list of scene attributes handles that contain sceneName as a substring
+  auto sceneList = dsSceneAttrMgr->getObjectHandlesBySubstring(curSceneName);
+  // returned list of scene names must not be empty, otherwise display error
+  // message and return nullptr
+  if (!sceneList.empty()) {
+    // Scene instance exists with given name, registered SceneInstanceAttributes
+    // in current active dataset.
+    //    In this case the SceneInstanceAttributes is returned.
+    ESP_DEBUG() << "Query dataset :" << activeSceneDataset_
+                << "for SceneInstanceAttributes named :" << curSceneName
+                << "yields" << sceneList.size() << "candidates.  Using"
+                << sceneList[0] << Mn::Debug::nospace << ".";
+    return dsSceneAttrMgr->getObjectCopyByHandle(sceneList[0])
+        ->getUserConfiguration();
+  }
+  ESP_ERROR() << "No scene instance specified/exists with name" << curSceneName
+              << ", so Aborting.";
+  return nullptr;
+
+}  // MetadataMediator::getSceneInstanceUserConfiguration
+
 std::string MetadataMediator::getFilePathForHandle(
     const std::string& assetHandle,
     const std::map<std::string, std::string>& assetMapping,

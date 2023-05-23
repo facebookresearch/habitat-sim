@@ -1,0 +1,5 @@
+{
+    "render_asset": "../objects/skinned_prism.glb",
+    "semantic_id": 100,
+    "debug_render_primitives": false
+}

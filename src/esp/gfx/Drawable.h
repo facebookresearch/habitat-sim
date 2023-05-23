@@ -9,7 +9,7 @@
 #include <Corrade/Utility/Assert.h>
 #include <Magnum/GL/GL.h>
 #include <Magnum/SceneGraph/Drawable.h>
-
+#include <Magnum/Trade/MaterialData.h>
 #include "esp/core/Esp.h"
 
 namespace esp {
@@ -126,6 +126,16 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
     CORRADE_INTERNAL_ASSERT(mesh_ != nullptr);
     return *mesh_;
   }
+
+  /**
+   * Set or change this drawable's @ref Magnum::Trade::MaterialData values from passed material.
+   * This is only pertinent for material-equipped drawables.
+   * @param material
+   */
+  virtual void setMaterialValues(
+      CORRADE_UNUSED const Magnum::Resource<Magnum::Trade::MaterialData,
+                                            Magnum::Trade::MaterialData>&
+          material) {}
 
  protected:
   /**
