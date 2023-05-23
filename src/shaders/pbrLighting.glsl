@@ -31,7 +31,7 @@ struct LightInfo {
   // normalize vector to light from illumination point
   vec3 light;
   // distance-attenuated light color vector
-  vec3 lightRadiance;
+  vec3 lightIrradiance;
   // cos angle between normal and view
   float n_dot_v;
   // cos angle between normal and light
@@ -43,30 +43,30 @@ struct LightInfo {
   // cos angle between normal and halfway vector
   float n_dot_h;
   // Radiance scaled by incident angle cosine
-  vec3 projLightRadiance;
+  vec3 projLightIrradiance;
 };
 
 // Configure a LightInfo object
 // light : normalized point to light vector
-// lightRadiance : distance-attenuated light radiance color
+// lightIrradiance : distance-attenuated light intensity/irradiance color
 // n : normal
 // view : normalized view vector (point to camera)
 // n_dot_v : cos angle between n and view
 // (out) l : LightInfo structure being popualted
 void configureLightInfo(vec3 light,
-                        vec3 lightRadiance,
+                        vec3 lightIrradiance,
                         vec3 n,
                         vec3 view,
                         float n_dot_v,
                         out LightInfo l) {
   l.light = light;
-  l.lightRadiance = lightRadiance;
+  l.lightIrradiance = lightIrradiance;
   l.n_dot_v = n_dot_v;
   l.n_dot_l = clamp(dot(n, light), 0.0, 1.0);
   l.halfVector = normalize(light + view);
-  l.v_dot_h = clamp(dot(view, l.halfVector), 0.0, 1.0),
-  l.n_dot_h = clamp(dot(n, l.halfVector), 0.0, 1.0),
-  l.projLightRadiance = lightRadiance * l.n_dot_l;
+  l.v_dot_h = clamp(dot(view, l.halfVector), 0.0, 1.0);  // == l_dot_h
+  l.n_dot_h = clamp(dot(n, l.halfVector), 0.0, 1.0);
+  l.projLightIrradiance = lightIrradiance * l.n_dot_l;
 }  // configureLightInfo
 #endif  // (LIGHT_COUNT > 0)
 
