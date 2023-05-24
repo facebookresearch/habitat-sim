@@ -76,25 +76,34 @@ LightSetup getLightsAtBoxCorners(const Magnum::Range3D& box,
                     {{box.backBottomLeft(), w}, lightColor},
                     {{box.backBottomRight(), w}, lightColor}};
 }
+
 LightSetup getDefaultLights() {
-  return LightSetup{{{0.0, -0.1, -1.0, 0.0},
-                     {0.7, 0.7, 0.7},
-                     LightPositionModel::Camera},  // forward
-                    {{0.0, -0.1, 1.0, 0.0},
-                     {0.7, 0.7, 0.7},
-                     LightPositionModel::Camera},  // backward
-                    {{1.0, -0.1, 0.0, 0.0},
-                     {0.7, 0.7, 0.7},
-                     LightPositionModel::Camera},  // right
-                    {{-1.0, -0.1, 0.0, 0.0},
-                     {0.7, 0.7, 0.7},
-                     LightPositionModel::Camera},  // left
-                    {{0.0, -1.0, 0.0, 0.0},
-                     {0.7, 0.7, 0.7},
-                     LightPositionModel::Camera},  // down
-                    {{0.0, 1.0, 0.0, 0.0},
-                     {0.7, 0.7, 0.7},
-                     LightPositionModel::Camera}};  // up
+  return LightSetup{
+      {{0.0, -0.1, -1.0, 0.0},
+       {0.5, 0.5, 0.5},
+       LightPositionModel::Global},  // -z
+      {{0.0, -0.1, 1.0, 0.0},
+       {0.5, 0.5, 0.5},
+       LightPositionModel::Global},  // +z
+      {{-1.0, -0.1, 0.0, 0.0},
+       {0.5, 0.5, 0.5},
+       LightPositionModel::Global},  // -x
+      {{+1.0, -0.1, -1.0, 0.0},
+       {0.5, 0.5, 0.5},
+       LightPositionModel::Global},  // +x
+      {{0.0, -1.0, 0.0, 0.0},
+       {0.6, 0.6, 0.6},
+       LightPositionModel::Global},  // downward
+
+      // camera-relative
+      {{0.0, -0.1, -1.0, 0.0},
+       {0.5, 0.5, 0.5},
+       LightPositionModel::Camera},  // forward
+      {{0.0, -0.3, 1.0, 0.0},
+       {0.5, 0.5, 0.5},
+       LightPositionModel::Camera},  // backward (for glancing speculars)
+
+  };
 }
 
 Magnum::Color3 getAmbientLightColor(const LightSetup& lightSetup) {

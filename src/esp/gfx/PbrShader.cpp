@@ -266,10 +266,10 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     // ambient light will not be too strong. Also keeping the IBL specular
     // component relatively low can guarantee the super glossy surface would
     // not reflect the environment like a mirror.
-    scales.iblDiffuse = 0.6;
-    scales.iblSpecular = 0.6;
-    scales.directDiffuse = 0.4;
-    scales.directSpecular = 0.4;
+    scales.iblDiffuse = 0.5;
+    scales.iblSpecular = 0.5;
+    scales.directDiffuse = 0.5;
+    scales.directSpecular = 0.5;
   }
   setPbrEquationScales(scales);
   if (flags_ & Flag::DebugDisplay) {
