@@ -66,8 +66,11 @@ uniform int uPbrDebugDisplay;
 
 //#define USE_MIKKELSEN_TBN
 
-// REMOVED INV_PI so we don't have to increase the luminance by PI for
-// lights in c++ const float INV_PI = 1.0 / PI;
+// REMOVED INV_PI so we don't have to increase the intensity for
+// lights in c++ . This way phong and pbr are reasonably equivalent
+// brightness with the same lights.
+
+// const float INV_PI = 1.0 / PI;
 
 const int maxShadowNum = 3;
 
@@ -112,12 +115,12 @@ mat3 buildTBN() {
 
   B = (sign_det * flip_sign) * normalize(cross(N, T));
 #else
-  // Simplified method, may be cheaper/better performing from
+  // Simplified method, may be cheaper/better performing, from
   // https://github.com/KhronosGroup/Vulkan-Samples/blob/main/shaders/pbr.frag
 
   T = (uvDy2.t * posDx - uvDx2.t * posDy) /
       (uvDx2.s * uvDy2.t - uvDy2.s * uvDx2.t);
-  // Gramm-Schmidt renorm
+  // Gramm-Schmidt orthonormalization step
   T = normalize(T - N * dot(N, T));
   B = cross(N, T);
   if (gl_FrontFacing == false) {
@@ -196,7 +199,7 @@ void main() {
   vec3 view = normalize(uCameraWorldPos - position);
 
   // cos angle between view and normal
-  float n_dot_v = (dot(n, view));
+  float n_dot_v = abs(dot(n, view));
 
   //////////////////////
   // colors
@@ -273,7 +276,7 @@ void main() {
                              uClearCoat.normalTextureScale, TBN);
 #endif
   // Clearcoat cos angle between clearcoat normal and view
-  float cc_n_dot_v = (dot(cc_Normal, view));
+  float cc_n_dot_v = abs(dot(cc_Normal, view));
   // Assuming dielectric reflectance of 0.04, which corresponds to
   // polyurethane coating with IOR == 1.5
   vec3 clearCoatCoating_f0 = vec3(0.04);
@@ -291,6 +294,10 @@ void main() {
       1 -
       (fresnelSchlick(clearCoatCoating_f0, clearCoatCoating_f90, cc_n_dot_v) *
        clearCoatStrength);
+
+  // Clearcoat is on top of emissive layer, so emissive layer is darkened by
+  // clearcoat
+  emissiveColor *= OneM_ccFresnelGlbl;
 #endif  // CLEAR_COAT
 
   // DielectricReflectance == 0.04 <--> ior == 1.5
@@ -553,7 +560,7 @@ void main() {
   ///////////
   // Total contributions
 
-  // TODO verify if this is how we want to handle emissive color
+  // TODO expand emissiveColor handling
   fragmentColor = vec4(emissiveColor, baseColor.a);
 
   // Aggregate total contributions from direct and indirect lighting
@@ -566,7 +573,7 @@ void main() {
   // scale by clearcoat strength
   vec3 ttlClearCoatContrib =
       (clearCoatContrib + iblClearCoatContrib) * clearCoatStrength;
-  // Scale entire contribution from substrate -again- by 1-clearCoatFresnel
+  // Scale entire contribution from substrate by 1-clearCoatFresnel
   // to account for energy loss in base layer due to coating and add coating
   // contribution
   // https://google.github.io/filament/Filament.md.html#figure_clearcoat

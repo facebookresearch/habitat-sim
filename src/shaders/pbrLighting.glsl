@@ -24,28 +24,6 @@ uniform float uLightRanges[LIGHT_COUNT];
 // so it is computed in the vertex shader.
 uniform vec4 uLightDirections[LIGHT_COUNT];
 
-/////////////////////
-// Structure holding light information to facilitate passing as
-// function arguments
-struct LightInfo {
-  // normalize vector to light from illumination point
-  vec3 light;
-  // distance-attenuated light color vector
-  vec3 lightIrradiance;
-  // cos angle between normal and view
-  float n_dot_v;
-  // cos angle between normal and light
-  float n_dot_l;
-  // normalized vector halfway between the light and view vector
-  vec3 halfVector;
-  // cos angle between view and halfway vector
-  float v_dot_h;
-  // cos angle between normal and halfway vector
-  float n_dot_h;
-  // Radiance scaled by incident angle cosine
-  vec3 projLightIrradiance;
-};
-
 // Configure a LightInfo object
 // light : normalized point to light vector
 // lightIrradiance : distance-attenuated light intensity/irradiance color
@@ -76,6 +54,7 @@ void configureLightInfo(vec3 light,
 uniform samplerCube uIrradianceMap;
 uniform sampler2D uBrdfLUT;
 uniform samplerCube uPrefilteredMap;
+uniform uint uPrefilteredMapMipLevels;
 #endif
 
 // scales for components in the PBR equation - only necessary if -both- lighting
@@ -89,10 +68,6 @@ const int DirectSpecular = 1;
 const int IblDiffuse = 2;
 const int IblSpecular = 3;
 uniform highp vec4 uComponentScales;
-#endif
-
-#if defined(IMAGE_BASED_LIGHTING)
-uniform uint uPrefilteredMapMipLevels;
 #endif
 
 // The following function Uncharted2Tonemap is based on:
@@ -138,7 +113,7 @@ vec3 computeIBLSpecular(float roughness,
                         vec3 specularReflectance,
                         vec3 reflectionDir) {
   vec3 brdf = texture(uBrdfLUT, vec2(n_dot_v, roughness)).rgb;
-  float lod = roughness * float(uPrefilteredMapMipLevels - 1);
+  float lod = roughness * float(uPrefilteredMapMipLevels - 1u);
   vec3 prefilteredColor =
       tonemap(textureLod(uPrefilteredMap, reflectionDir, lod)).rgb;
 

@@ -25,63 +25,26 @@ float fresnelSchlick(float f0, float v_dot_h) {
   return fresnelSchlick(f0, 1.0, v_dot_h);
 }
 
-#if defined(ANISOTROPY_LAYER)
-//////////////////////////
-// Structure holding anisotropy info to faciliate passing as function arguments
-struct AnisotropyInfo {
-  // Tangent-space direction of anisotropy
-  vec2 dir;
-  // Strength of anisotropy
-  float anisotropy;
-  // anisotropic roughness value along tangent direction
-  float aT;
-  // anisotropic roughness value along bitangent direction
-  float aB;
-  // Tangent vector in world
-  vec3 anisotropicT;
-  // Bitangent vector in world
-  vec3 anisotropicB;
-  // cos angle between tangent and view
-  float t_dot_v;
-  // cos angle between bitangent and view
-  float b_dot_v;
-};
-// Configure an AnisotropyInfo object
-// dir : the tangent-space direction of the anisotropy
-// anisotropy : strength of anisotropy
-// anisotropicT : world space tangent
-// anisotropicB : world space bitangent
-// view : view vector
-// alphaRoughness : linearized material roughness (perceived roughness squared)
-// info : AnisotropyInfo structure to be populated
-void configureAnisotropyInfo(vec2 dir,
-                             float anisotropy,
-                             vec3 anisotropicT,
-                             vec3 anisotropicB,
-                             vec3 view,
-                             float alphaRoughness,
-                             out AnisotropyInfo info) {
-  info.dir = dir;
-  info.anisotropy = anisotropy;
-  // Derive roughness in each direction
-  // From standard
-  // https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_anisotropy#implementation
-  // info.aT = mix(alphaRoughness, 1.0, anisotropy*anisotropy);
-  // info.aB = alphaRoughness;
-  // From
-  // https://google.github.io/filament/Filament.md.html#materialsystem/anisotropicmodel/anisotropicspecularbrdf
-  // If anisotropy == 0 then just alpharoughness in each direction
-  info.aT = max(alphaRoughness * (1.0 + anisotropy), epsilon);
-  info.aB = max(alphaRoughness * (1.0 - anisotropy), epsilon);
-
-  info.anisotropicT = anisotropicT;
-  info.anisotropicB = anisotropicB;
-  info.t_dot_v = dot(anisotropicT, view);
-  info.b_dot_v = dot(anisotropicB, view);
-
-}  // configureAnisotropyInfo
-
-#endif
+// The following equation models the distribution of microfacet normals across
+// the area being drawn (aka D()) Implementation from "Average Irregularity
+// Representation of a Roughened Surface for Ray Reflection" by T. S.
+// Trowbridge, and K. P. Reitz Follows the distribution function recommended in
+// the SIGGRAPH 2013 course notes from EPIC Games [1], Equation 3.
+// n_dot_h : cos angle between half vector and normal
+// ar : alphaRoughness
+float D_GGX(float n_dot_h, float ar) {
+  float arNdotH = ar * n_dot_h;
+  float k = ar / (1 - (n_dot_h * n_dot_h) + (arNdotH * arNdotH));
+  // division by Pi performed later
+  return k * k;
+}
+// Above should be more accurate, with less chance of underflow
+float D_GGX_old(float n_dot_h, float ar) {
+  float arSq = ar * ar;
+  float f = (n_dot_h * n_dot_h) * (arSq - 1.0) + 1.0;
+  // division by Pi performed later
+  return arSq / (f * f);
+}
 
 #if (LIGHT_COUNT > 0)
 
@@ -121,91 +84,6 @@ float V_Kelemen(float v_dot_h) {
   return .25 / (v_dot_h * v_dot_h);
 }
 
-#if defined(ANISOTROPY_LAYER)
-//////////////////////////
-// Structure holding anisotropy-related lighting info to faciliate passing as
-// function args
-struct AnistropyDirectLight {
-  // cos angle between tangent and light
-  float t_dot_l;
-  // cos angle between tangent and halfvector
-  float t_dot_h;
-  // cos angle between bitangent and light
-  float b_dot_l;
-  // cos angle between bitangent and halfvector
-  float b_dot_h;
-};
-
-// Configure a light-dependent AnistropyDirectLight object
-// aInfo : AnisotropyInfo object for current material
-// l : LightInfo structure for current light
-// (out) info : AnisotropyInfo structure to be populated
-void configureAnisotropyLightInfo(LightInfo l,
-                                  AnisotropyInfo aInfo,
-                                  out AnistropyDirectLight info) {
-  info.t_dot_l = dot(aInfo.anisotropicT, l.light);
-  info.b_dot_l = dot(aInfo.anisotropicB, l.light);
-  info.t_dot_h = dot(aInfo.anisotropicT, l.halfVector);
-  info.b_dot_h = dot(aInfo.anisotropicB, l.halfVector);
-
-}  // configureAnisotropyLightInfo
-
-// Anisotropic Visibility function
-// l : LightInfo structure describing current light
-// anisoInfo : AnisotropyInfo structure for material
-// anisoLightInfo : Light-specific anisotropic tangent and bitangent cosines
-float V_GGX_anisotropic(LightInfo l,
-                        AnisotropyInfo anisoInfo,
-                        AnistropyDirectLight anisoLightInfo) {
-  float GGXL = l.n_dot_v *
-               length(vec3(anisoInfo.aT * anisoLightInfo.t_dot_l,
-                           anisoInfo.aB * anisoLightInfo.b_dot_l, l.n_dot_l));
-  float GGXV =
-      l.n_dot_l * length(vec3(anisoInfo.aT * anisoInfo.t_dot_v,
-                              anisoInfo.aB * anisoInfo.b_dot_v, l.n_dot_v));
-  return 0.5 / max(GGXV + GGXL, epsilon);
-}
-// Anisotropic microfacet distribution model
-// l : LightInfo structure describing current light
-// anisoInfo : AnisotropyInfo structure for material
-// anisoLightInfo : Light-specific anisotropic tangent and bitangent cosines
-float D_GGX_anisotropic(LightInfo l,
-                        AnisotropyInfo anisoInfo,
-                        AnistropyDirectLight anisoLightInfo) {
-  float a2 = anisoInfo.aT * anisoInfo.aB;
-  vec3 f = vec3(anisoInfo.aB * anisoLightInfo.t_dot_h,
-                anisoInfo.aT * anisoLightInfo.b_dot_h, a2 * l.n_dot_h);
-  float w2 = a2 / dot(f, f);
-  // division by Pi performed later
-  return a2 * w2 * w2;
-}
-
-#endif  // ANISOTROPY_LAYER
-
-#endif  //(LIGHT_COUNT > 0)
-
-// The following equation models the distribution of microfacet normals across
-// the area being drawn (aka D()) Implementation from "Average Irregularity
-// Representation of a Roughened Surface for Ray Reflection" by T. S.
-// Trowbridge, and K. P. Reitz Follows the distribution function recommended in
-// the SIGGRAPH 2013 course notes from EPIC Games [1], Equation 3.
-// n_dot_h : cos angle between half vector and normal
-// ar : alphaRoughness
-float D_GGX(float n_dot_h, float ar) {
-  float arNdotH = ar * n_dot_h;
-  float k = ar / (1 - (n_dot_h * n_dot_h) + (arNdotH * arNdotH));
-  // division by Pi performed later
-  return k * k;
-}
-// Above should be more accurate, with less chance of underflow
-float D_GGX_old(float n_dot_h, float ar) {
-  float arSq = ar * ar;
-  float f = (n_dot_h * n_dot_h) * (arSq - 1.0) + 1.0;
-  // division by Pi performed later
-  return arSq / (f * f);
-}
-
-#if (LIGHT_COUNT > 0)
 // Burley diffuse contribution is scaled by diffuse color f0 after scatter
 // contributions are calculated
 const float BUR_DIFF_F0 = 1.0f;
@@ -282,9 +160,40 @@ vec3 BRDF_ClearCoatSpecular(vec3 ccFresnel,
       D_GGX(cc_l.n_dot_h, clearCoatRoughness);
   return ccSpecular;
 }  // BRDF_ClearCoatSpecular
-#endif  // clearcoat support
+#endif  // CLEAR_COAT
 
 #if defined(ANISOTROPY_LAYER)
+
+// Anisotropic Visibility function
+// l : LightInfo structure describing current light
+// anisoInfo : AnisotropyInfo structure for material
+// anisoLightInfo : Light-specific anisotropic tangent and bitangent cosines
+float V_GGX_anisotropic(LightInfo l,
+                        AnisotropyInfo anisoInfo,
+                        AnistropyDirectLight anisoLightInfo) {
+  float GGXL = l.n_dot_v *
+               length(vec3(anisoInfo.aT * anisoLightInfo.t_dot_l,
+                           anisoInfo.aB * anisoLightInfo.b_dot_l, l.n_dot_l));
+  float GGXV =
+      l.n_dot_l * length(vec3(anisoInfo.aT * anisoInfo.t_dot_v,
+                              anisoInfo.aB * anisoInfo.b_dot_v, l.n_dot_v));
+  return 0.5 / max(GGXV + GGXL, epsilon);
+}
+// Anisotropic microfacet distribution model
+// l : LightInfo structure describing current light
+// anisoInfo : AnisotropyInfo structure for material
+// anisoLightInfo : Light-specific anisotropic tangent and bitangent cosines
+float D_GGX_anisotropic(LightInfo l,
+                        AnisotropyInfo anisoInfo,
+                        AnistropyDirectLight anisoLightInfo) {
+  float a2 = anisoInfo.aT * anisoInfo.aB;
+  vec3 f = vec3(anisoInfo.aB * anisoLightInfo.t_dot_h,
+                anisoInfo.aT * anisoLightInfo.b_dot_h, a2 * l.n_dot_h);
+  float w2 = a2 / dot(f, f);
+  // division by Pi performed later
+  return a2 * w2 * w2;
+}
+
 // Specular BRDF for anisotropic layer
 // fresnel : Schlick approximation of Fresnel coefficient
 // l : LightInfo structure describing current light

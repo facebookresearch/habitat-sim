@@ -5,65 +5,8 @@
 precision highp float;
 
 // -------------- uniforms for material and textures ------------------
-struct MaterialData {
-  vec4 baseColor;   // diffuse color, if BaseColorTexture exists,
-                    // multiply it with the BaseColorTexture
-  float roughness;  // roughness of a surface, if roughness texture exists,
-                    // multiply it with the MetallicRoughnessTexture
-  float metallic;   // metalness of a surface, if metallic texture exists,
-                    // multiply it the MetallicRoughnessTexture
-  float ior;  // index of refraction.  Default 1.5 gives DielectricReflectance
-              // value 0.04
-  vec3 emissiveColor;  // emissiveColor, if emissive texture exists,
-                       // multiply it the EmissiveTexture
-};
+
 uniform MaterialData uMaterial;
-/////////////////
-// Clearcoat layer support
-#if defined(CLEAR_COAT)
-struct ClearCoatData {
-  float factor;  // clearcoat factor/intensity. If ClearCoatTexture exists,
-                 // multiply it by this factor. If this is 0 the layer is
-                 // ignored, as per standard.
-  float
-      roughness;  // clearcoat perceived roughness. If ClearCoatRoughnessTexture
-                  // exists, multiply it by this roughness value
-#if defined(CLEAR_COAT_NORMAL_TEXTURE)
-  float normalTextureScale;  // xy scale value for clearcoat normal texture.
-                             // Multiply the x,y channels of
-                             // ClearCoatNormalTexture if exists.
-#endif                       // if defined(CLEAR_COAT_NORMAL_TEXTURE)
-};
-uniform ClearCoatData uClearCoat;
-#endif  // CLEAR_COAT
-
-/////////////////
-// Specular layer support
-#if defined(SPECULAR_LAYER)
-struct SpecularLayerData {
-  float factor;  // The strength of the specular reflection.
-                 // If SpecularLayerTexture exists, multiply it with this value.
-  vec3 colorFactor;  // The F0 (Fresnel reflectance at normal incidence) color
-                     // of the specular reflection (linear RGB). If
-                     // SpecularLayerColorTexture exists, multiply it with this
-                     // value.
-};
-uniform SpecularLayerData uSpecularLayer;
-#endif  // SPECULAR_LAYER
-
-#if defined(ANISOTROPY_LAYER)
-struct AnisotropyLayerData {
-  float factor;    // The anisotropy strength. When anisotropyTexture is
-                   // present, this value is multiplied by the blue channel.
-  vec2 direction;  // [ cos(anisotropyRotation), sin(anisotropyRotation) ]
-                   // Built from the rotation of the anisotropy in tangent,
-                   // bitangent space, measured in radians counter-clockwise
-                   // from the tangent. When anisotropyTexture is present,
-                   // anisotropyRotation provides additional rotation to
-                   // the vectors in the texture.
-};
-uniform AnisotropyLayerData uAnisotropyLayer;
-#endif  // ANISOTROPY_LAYER
 
 #if defined(BASECOLOR_TEXTURE)
 uniform sampler2D uBaseColorTexture;
@@ -80,26 +23,99 @@ uniform sampler2D uNormalTexture;
 uniform sampler2D uEmissiveTexture;
 #endif
 
+#if defined(CLEAR_COAT)
+uniform ClearCoatData uClearCoat;
+
 #if defined(CLEAR_COAT_TEXTURE)
 uniform sampler2D uClearCoatTexture;
-#endif
+#endif  // CLEAR_COAT_TEXTURE
 
 #if defined(CLEAR_COAT_ROUGHNESS_TEXTURE)
 uniform sampler2D uClearCoatRoughnessTexture;
-#endif
+#endif  // CLEAR_COAT_TEXTURE
 
 #if defined(CLEAR_COAT_NORMAL_TEXTURE)
 uniform sampler2D uClearCoatNormalTexture;
-#endif
+#endif  // CLEAR_COAT_NORMAL_TEXTURE
+
+#endif  // CLEAR_COAT
+
+#if defined(SPECULAR_LAYER)
+uniform SpecularLayerData uSpecularLayer;
 
 #if defined(SPECULAR_LAYER_TEXTURE)
 uniform sampler2D uSpecularLayerTexture;
-#endif
+#endif  // SPECULAR_LAYER_TEXTURE
 
 #if defined(SPECULAR_LAYER_COLOR_TEXTURE)
 uniform sampler2D uSpecularLayerColorTexture;
-#endif
+#endif  // SPECULAR_LAYER_COLOR_TEXTURE
+
+#endif  // SPECULAR_LAYER
+
+#if defined(ANISOTROPY_LAYER)
+uniform AnisotropyLayerData uAnisotropyLayer;
 
 #if defined(ANISOTROPY_LAYER_TEXTURE)
 uniform sampler2D uAnisotropyLayerTexture;
-#endif
+#endif  // ANISOTROPY_LAYER_TEXTURE
+
+#endif  // ANISOTROPY_LAYER
+
+// ------------------ Utility Functions for materials/config ------------------
+#if defined(ANISOTROPY_LAYER)
+
+// Configure an AnisotropyInfo object for direct or indirect lighting
+// dir : the tangent-space direction of the anisotropy
+// anisotropy : strength of anisotropy
+// anisotropicT : world space tangent
+// anisotropicB : world space bitangent
+// view : view vector
+// alphaRoughness : linearized material roughness (perceived roughness squared)
+// info : AnisotropyInfo structure to be populated
+void configureAnisotropyInfo(vec2 dir,
+                             float anisotropy,
+                             vec3 anisotropicT,
+                             vec3 anisotropicB,
+                             vec3 view,
+                             float alphaRoughness,
+                             out AnisotropyInfo info) {
+  info.dir = dir;
+  info.anisotropy = anisotropy;
+  // Derive roughness in each direction
+  // From standard
+  // https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_anisotropy#implementation
+  // info.aT = mix(alphaRoughness, 1.0, anisotropy*anisotropy);
+  // info.aB = alphaRoughness;
+  // From
+  // https://google.github.io/filament/Filament.md.html#materialsystem/anisotropicmodel/anisotropicspecularbrdf
+  // If anisotropy == 0 then just alpharoughness in each direction
+  info.aT = max(alphaRoughness * (1.0 + anisotropy), epsilon);
+  info.aB = max(alphaRoughness * (1.0 - anisotropy), epsilon);
+
+  info.anisotropicT = anisotropicT;
+  info.anisotropicB = anisotropicB;
+  info.t_dot_v = dot(anisotropicT, view);
+  info.b_dot_v = dot(anisotropicB, view);
+
+}  // configureAnisotropyInfo
+
+#if (LIGHT_COUNT > 0)
+
+// Configure a light-dependent AnistropyDirectLight object
+// aInfo : AnisotropyInfo object for current material
+// l : LightInfo structure for current light
+// (out) info : AnisotropyInfo structure to be populated
+void configureAnisotropyLightInfo(LightInfo l,
+                                  AnisotropyInfo aInfo,
+                                  out AnistropyDirectLight info) {
+  info.t_dot_l = dot(aInfo.anisotropicT, l.light);
+  info.b_dot_l = dot(aInfo.anisotropicB, l.light);
+  info.t_dot_h = dot(aInfo.anisotropicT, l.halfVector);
+  info.b_dot_h = dot(aInfo.anisotropicB, l.halfVector);
+
+}  // configureAnisotropyLightInfo
+
+#endif  // (LIGHT_COUNT > 0)
+
+#endif  // ANISOTROPY_LAYER

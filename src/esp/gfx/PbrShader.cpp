@@ -170,9 +170,10 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
                      ? rs.getString("shadowsVSM.glsl") + "\n"
                      : "")
       .addSource(rs.getString("pbrCommon.glsl") + "\n")
+      .addSource(rs.getString("pbrStructs.glsl") + "\n")
+      .addSource(rs.getString("pbrMaterials.glsl") + "\n")
       .addSource(rs.getString("pbrLighting.glsl") + "\n")
       .addSource(rs.getString("pbrBSDF.glsl") + "\n")
-      .addSource(rs.getString("pbrMaterials.glsl") + "\n")
       .addSource(rs.getString("pbr.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(vert.compile() && frag.compile());
