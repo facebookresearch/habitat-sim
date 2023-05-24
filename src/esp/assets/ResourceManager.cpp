@@ -32,14 +32,14 @@
 #include <Magnum/Math/Tags.h>
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/MeshTools/Concatenate.h>
+#include <Magnum/MeshTools/Copy.h>
 #include <Magnum/MeshTools/FilterAttributes.h>
 #include <Magnum/MeshTools/Interleave.h>
-#include <Magnum/MeshTools/Reference.h>
 #include <Magnum/MeshTools/RemoveDuplicates.h>
 #include <Magnum/MeshTools/Transform.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/SceneGraph/Object.h>
-#include <Magnum/SceneTools/FlattenTransformationHierarchy.h>
+#include <Magnum/SceneTools/Hierarchy.h>
 #include <Magnum/Trade/AbstractImporter.h>
 #include <Magnum/Trade/FlatMaterialData.h>
 #include <Magnum/Trade/ImageData.h>
@@ -1469,7 +1469,7 @@ ResourceManager::flattenImportedMeshAndBuildSemantic(Importer& fileImporter,
     // All the transformations, flattened and indexed by mesh id, with
     // reframeTransform applied to each
     Cr::Containers::Array<Mn::Matrix4> transformations =
-        Mn::SceneTools::flattenTransformationHierarchy3D(
+        Mn::SceneTools::absoluteFieldTransformations3D(
             *scene, Mn::Trade::SceneField::Mesh, reframeTransform);
 
     Cr::Containers::Array<Mn::Trade::MeshData> flattenedMeshes;
@@ -3663,7 +3663,7 @@ void ResourceManager::createConvexHullDecomposition(
         ch.m_triangles, ch.m_nTriangles * 3};
 
     // create an owned MeshData
-    Cr::Containers::Optional<Mn::Trade::MeshData> CHMesh = Mn::MeshTools::owned(
+    Cr::Containers::Optional<Mn::Trade::MeshData> CHMesh = Mn::MeshTools::copy(
         Mn::Trade::MeshData{Mn::MeshPrimitive::Triangles,
                             {},
                             indices,

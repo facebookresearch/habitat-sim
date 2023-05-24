@@ -25,7 +25,7 @@
 #include <Magnum/Primitives/Circle.h>
 #include <Magnum/Primitives/Plane.h>
 #include <Magnum/Primitives/UVSphere.h>
-#include <Magnum/SceneTools/FlattenMeshHierarchy.h>
+#include <Magnum/SceneTools/Hierarchy.h>
 #include <Magnum/Trade/AbstractImageConverter.h>
 #include <Magnum/Trade/AbstractSceneConverter.h>
 #include <Magnum/Trade/MaterialData.h>
@@ -1405,13 +1405,18 @@ void GfxBatchRendererTest::generateTestDataFourSquares() {
     const Mn::Trade::MeshData squares[]{
         Mn::MeshTools::generateIndices(Mn::Primitives::planeSolid(
             Mn::Primitives::PlaneFlag::TextureCoordinates))};
+    Cr::Containers::Array<Cr::Containers::Pair<
+        Mn::UnsignedInt, Cr::Containers::Pair<Mn::UnsignedInt, Mn::Int>>>
+        meshesMaterials = sceneData.meshesMaterialsAsArray();
+    Cr::Containers::Array<Mn::Matrix4> transformations =
+        Mn::SceneTools::absoluteFieldTransformations3D(
+            sceneData, Mn::Trade::SceneField::Mesh);
     Cr::Containers::Array<Mn::Trade::MeshData> flattenedMeshes;
-    for (const Cr::Containers::Triple<Mn::UnsignedInt, Mn::Int, Mn::Matrix4>&
-             meshTransformation :
-         Mn::SceneTools::flattenMeshHierarchy3D(sceneData)) {
-      arrayAppend(flattenedMeshes, Mn::MeshTools::transform3D(
-                                       squares[meshTransformation.first()],
-                                       meshTransformation.third()));
+    for (std::size_t i = 0; i != meshesMaterials.size(); ++i) {
+      arrayAppend(flattenedMeshes,
+                  Mn::MeshTools::transform3D(
+                      squares[meshesMaterials[i].second().first()],
+                      transformations[i]));
     }
     const Mn::Trade::MeshData squaresJoined =
         Mn::MeshTools::concatenate(flattenedMeshes);

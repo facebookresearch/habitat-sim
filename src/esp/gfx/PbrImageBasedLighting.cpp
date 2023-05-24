@@ -15,8 +15,8 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Angle.h>
 #include <Magnum/MeshTools/Compile.h>
+#include <Magnum/MeshTools/Copy.h>
 #include <Magnum/MeshTools/FlipNormals.h>
-#include <Magnum/MeshTools/Reference.h>
 #include <Magnum/Primitives/Cube.h>
 #include <Magnum/Trade/AbstractImporter.h>
 #include <Magnum/Trade/ImageData.h>
@@ -322,7 +322,7 @@ void PbrImageBasedLighting::computePrecomputedMap(PrecomputedMapType type) {
 
   // prepare a cube
   Mn::Trade::MeshData cubeData =
-      Mn::MeshTools::owned(Mn::Primitives::cubeSolid());
+      Mn::MeshTools::copy(Mn::Primitives::cubeSolid());
   // camera is now inside the cube, must flip the face winding, otherwise all
   // the faces are culled
   Mn::MeshTools::flipFaceWindingInPlace(cubeData.mutableIndices());
