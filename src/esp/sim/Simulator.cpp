@@ -120,12 +120,8 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
   // assign MM to RM on create or reconfigure
   if (!resourceManager_) {
-    assets::ResourceManager::Flags flags{};
-    if (cfg.pbrImageBasedLighting) {
-      flags |= assets::ResourceManager::Flag::PbrImageBasedLighting;
-    }
     resourceManager_ =
-        std::make_unique<assets::ResourceManager>(metadataMediator_, flags);
+        std::make_unique<assets::ResourceManager>(metadataMediator_);
     // needs to be called after ResourceManager exists but before any assets
     // have been loaded
     reconfigureReplayManager(cfg.enableGfxReplaySave);
@@ -200,6 +196,11 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     flextGLInit(Magnum::GL::Context::current());
 #endif
     renderer_->acquireGlContext();
+  }
+  // load IBL assets if appropriate and not loaded already
+  // TODO : So many things.  Needs to be config driven, for one.
+  if (cfg.pbrImageBasedLighting) {
+    resourceManager_->initPbrImageBasedLighting("lythwood_room_4k.jpg");
   }
 
   // (re) create scene instance

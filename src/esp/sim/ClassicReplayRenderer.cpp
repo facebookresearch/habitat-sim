@@ -27,9 +27,8 @@ ClassicReplayRenderer::ClassicReplayRenderer(
   SimulatorConfiguration simConfig;
   simConfig.createRenderer = true;
   auto metadataMediator = metadata::MetadataMediator::create(simConfig);
-  assets::ResourceManager::Flags flags{};
   resourceManager_ =
-      std::make_unique<assets::ResourceManager>(metadataMediator, flags);
+      std::make_unique<assets::ResourceManager>(metadataMediator);
 
   // hack to get ReplicCAD non-baked stages to render correctly
   resourceManager_->getShaderManager().setFallback(

@@ -109,10 +109,8 @@ using Mn::Trade::MaterialAttribute;
 namespace assets {
 
 ResourceManager::ResourceManager(
-    metadata::MetadataMediator::ptr _metadataMediator,
-    Flags _flags)
-    : flags_(_flags),
-      metadataMediator_(std::move(_metadataMediator))
+    metadata::MetadataMediator::ptr _metadataMediator)
+    : metadataMediator_(std::move(_metadataMediator))
 #ifdef MAGNUM_BUILD_STATIC
       ,
       // avoid using plugins that might depend on different library versions
@@ -128,11 +126,6 @@ ResourceManager::ResourceManager(
   initDefaultMaterials();
   // appropriately configure importerManager_ based on compilation flags
   buildImporters();
-
-  if (flags_ & Flag::PbrImageBasedLighting) {
-    // TODO: HDRi image name should be config based
-    initPbrImageBasedLighting("lythwood_room_4k.jpg");
-  }
 }
 
 ResourceManager::~ResourceManager() {
@@ -3401,6 +3394,12 @@ void ResourceManager::initPbrImageBasedLighting(
   // different PBR IBLs at different positions in the scene.
 
   // TODO: HDR Image!
+
+  // Don't reload if already active set to 0
+  if (activePbrIbl_ != ID_UNDEFINED) {
+    return;
+  }
+
   pbrImageBasedLightings_.emplace_back(
       std::make_unique<gfx::PbrImageBasedLighting>(
           gfx::PbrImageBasedLighting::Flag::IndirectDiffuse |
