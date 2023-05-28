@@ -528,7 +528,7 @@ class Simulator(SimulatorBackend):
     def make_greedy_follower(
         self,
         agent_id: Optional[int] = None,
-        goal_radius: float = None,
+        goal_radius: Optional[float] = None,
         *,
         stop_key: Optional[Any] = None,
         forward_key: Optional[Any] = None,
