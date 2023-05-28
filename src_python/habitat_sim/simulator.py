@@ -171,7 +171,7 @@ class Simulator(SimulatorBackend):
         ...
 
     def reset(
-        self, agent_ids: Union[Optional[int], List[int]] = None
+        self, agent_ids: Optional[Union[Optional[int], List[int]]] = None
     ) -> Union[ObservationDict, Dict[int, ObservationDict],]:
         super().reset()
         for i in range(len(self.agents)):
@@ -528,7 +528,7 @@ class Simulator(SimulatorBackend):
     def make_greedy_follower(
         self,
         agent_id: Optional[int] = None,
-        goal_radius: float = None,
+        goal_radius: Optional[float] = None,
         *,
         stop_key: Optional[Any] = None,
         forward_key: Optional[Any] = None,
