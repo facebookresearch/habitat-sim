@@ -527,7 +527,7 @@ PbrShader& PbrShader::setLightColor(unsigned int lightIndex,
       lightIndex < lightCount_,
       "PbrShader::setLightColor: lightIndex" << lightIndex << "is illegal.",
       *this);
-  Mn::Vector3 finalColor = intensity * color;
+  Mn::Vector3 finalColor = intensity * PBR_LIGHT_SCALE * color;
   setUniform(lightColorsUniform_ + lightIndex, finalColor);
   return *this;
 }
@@ -538,8 +538,10 @@ PbrShader& PbrShader::setLightColors(
                  "PbrShader::setLightColors(): expected"
                      << lightCount_ << "items but got" << colors.size(),
                  *this);
-
-  setUniform(lightColorsUniform_, colors);
+  for (int i = 0; i < colors.size(); ++i) {
+    setLightColor(i, colors[i]);
+  }
+  // setUniform(lightColorsUniform_, colors);
   return *this;
 }
 

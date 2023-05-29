@@ -20,6 +20,11 @@ namespace gfx {
 
 class PbrShader : public Magnum::GL::AbstractShaderProgram {
  public:
+  // ===== Light Scaling =====
+  /**
+   * This field is so we can scale the PBR lights without ruining phong display
+   */
+  static constexpr float PBR_LIGHT_SCALE = 3.8f;
   // ==== Attribute definitions ====
   /**
    * @brief vertex positions
