@@ -15,7 +15,7 @@ uniform float Roughness;
 layout(location = OUTPUT_ATTRIBUTE_LOCATION_COLOR) out highp vec4 fragmentColor;
 
 // ------------ shader -----------------------
-// PI is defined in the pbrCommon.glsl
+// PI is defined in pbrCommon.glsl
 const float TWO_PI = 2.0 * PI;
 
 // Compute a halfway vector that is biased towards the preferred alignment
@@ -68,7 +68,7 @@ void main() {
   // solid angle of 1 pixel across all cube faces
   float solidAnglePixel = 4.0 * PI / (6.0 * imageSize * imageSize);
   // fewer samples due to filtered importance sampling
-  const uint sampleCounts = 32;
+  const uint sampleCounts = 32u;
   float invSampleCounts = 1.0f / float(sampleCounts);
 
   for (uint iPoint = 0u; iPoint < sampleCounts; ++iPoint) {
