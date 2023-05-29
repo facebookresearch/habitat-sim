@@ -112,7 +112,8 @@ vec3 computeIBLSpecular(float roughness,
                         float n_dot_v,
                         vec3 specularReflectance,
                         vec3 reflectionDir) {
-  vec3 brdf = texture(uBrdfLUT, vec2(n_dot_v, roughness)).rgb;
+  vec3 brdf = texture(uBrdfLUT, vec2(n_dot_v, 1 - roughness)).rgb;
+  // LOD roughness scaled by 1- mip levels
   float lod = roughness * float(uPrefilteredMapMipLevels - 1u);
   vec3 prefilteredColor =
       tonemap(textureLod(uPrefilteredMap, reflectionDir, lod)).rgb;
