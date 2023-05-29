@@ -18,7 +18,7 @@ uniform uint CubeSideIndex;
 #ifdef EXPLICIT_ATTRIB_LOCATION
 layout(location = OUTPUT_ATTRIBUTE_LOCATION_COLOR)
 #endif
-out highp vec4 fragmentColor;
+    out highp vec4 fragmentColor;
 
 //------------- shader ----------------------
 const float INV_PI = 1.0f / 3.14159265359f;
@@ -36,23 +36,23 @@ vec3 uvToXYZ(vec2 uv) {
   // Otherwise it gives you warning
   // "Unreachable statement in switch body"
   switch (CubeSideIndex) {
-    case 0:
-        return vec3( 1.0f,  uv.y, -uv.x);
+    case 0u:
+      return vec3(1.0f, uv.y, -uv.x);
 
-    case 1:
-        return vec3(-1.0f,  uv.y,  uv.x);
+    case 1u:
+      return vec3(-1.0f, uv.y, uv.x);
 
-    case 2:
-        return vec3( uv.x, -1.0f,  uv.y);
+    case 2u:
+      return vec3(uv.x, -1.0f, uv.y);
 
-    case 3:
-        return vec3( uv.x,  1.0f, -uv.y);
+    case 3u:
+      return vec3(uv.x, 1.0f, -uv.y);
 
-    case 4:
-        return vec3( uv.x,  uv.y,  1.0f);
+    case 4u:
+      return vec3(uv.x, uv.y, 1.0f);
 
-    case 5:
-    return vec3(-uv.x, +uv.y, -1.0f);
+    case 5u:
+      return vec3(-uv.x, +uv.y, -1.0f);
   }
 }
 // The effect of uvToXYZFlipped is equivalant to
@@ -68,32 +68,31 @@ vec3 uvToXYZFlipped(vec2 uv) {
   // Otherwise it gives you warning
   // "Unreachable statement in switch body"
   switch (CubeSideIndex) {
-    case 0:
-      return vec3( 1.0f,  uv.y, -uv.x);
+    case 0u:
+      return vec3(1.0f, uv.y, -uv.x);
 
-    case 1:
-      return vec3(-1.0f,  uv.y,  uv.x);
+    case 1u:
+      return vec3(-1.0f, uv.y, uv.x);
 
-    case 2:
-    // CAREFUL: py and ny are also switched
-      return vec3( uv.x,  1.0f, -uv.y);
+    case 2u:
+      // CAREFUL: py and ny are also switched
+      return vec3(uv.x, 1.0f, -uv.y);
 
-    case 3:
-      return vec3( uv.x, -1.0f,  uv.y);
+    case 3u:
+      return vec3(uv.x, -1.0f, uv.y);
 
-    case 4:
-      return vec3( uv.x,  uv.y,  1.0f);
+    case 4u:
+      return vec3(uv.x, uv.y, 1.0f);
 
-    case 5:
-    return vec3(-uv.x, +uv.y, -1.0f);
+    case 5u:
+      return vec3(-uv.x, +uv.y, -1.0f);
   }
 }
 
 // Give a light direction, convert it to the spherical coordinates
 vec2 dirToUV(vec3 dir) {
-  return vec2(
-        0.5f + 0.5f * atan(dir.z, dir.x) * INV_PI,
-        1.0f - acos(dir.y) * INV_PI);
+  return vec2(0.5f + 0.5f * atan(dir.z, dir.x) * INV_PI,
+              1.0f - acos(dir.y) * INV_PI);
 }
 
 vec3 equirectangularToCubeMap() {
@@ -103,8 +102,7 @@ vec3 equirectangularToCubeMap() {
   vec3 direction = normalize(uvToXYZFlipped(textureCoordinates));
   vec2 equirectangularTextureUV = dirToUV(direction);
 
-  return  texture(EquirectangularTexture,
-                  equirectangularTextureUV).rgb;
+  return texture(EquirectangularTexture, equirectangularTextureUV).rgb;
 }
 
 void main(void) {
