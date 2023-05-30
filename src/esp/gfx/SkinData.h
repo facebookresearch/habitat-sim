@@ -10,6 +10,7 @@
 #include <esp/scene/SceneNode.h>
 #include <memory>
 #include <unordered_map>
+#include "esp/gfx/replay/Player.h"
 
 namespace esp {
 namespace gfx {
@@ -43,6 +44,18 @@ struct InstanceSkinData {
 
   explicit InstanceSkinData(const std::shared_ptr<SkinData>& skinData)
       : skinData(skinData){};
+};
+
+/**
+ * @brief Contains the articulation nodes of a skinned model.
+ */
+struct Rig {  // TODO: Move out of file?
+  // TODO: De-duplicate info with InstanceSkinData
+  std::vector<gfx::replay::NodeHandle>
+      bones;  // TODO: Use generic scene node type for batch renderer compat
+  gfx::replay::NodeHandle parent;  // TODO: Remove!
+  std::unordered_map<std::string, int> boneNames;
+  std::unordered_map<int, int> boneIds;
 };
 }  // namespace gfx
 }  // namespace esp

@@ -8,7 +8,6 @@
 #include <Magnum/GL/GL.h>
 #include <Magnum/Magnum.h>
 
-#include "esp/core/Check.h"
 #include "esp/core/Esp.h"
 #include "esp/geo/Geo.h"
 #include "esp/gfx/DebugLineRender.h"

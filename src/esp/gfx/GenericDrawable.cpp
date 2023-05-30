@@ -13,6 +13,8 @@
 #include <Magnum/Trade/PhongMaterialData.h>
 
 #include "Corrade/Containers/GrowableArray.h"
+#include "Magnum/Magnum.h"
+#include "Magnum/Math/Tags.h"
 #include "Magnum/Types.h"
 #include "esp/core/Check.h"
 #include "esp/gfx/SkinData.h"
@@ -236,9 +238,11 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
 
     // Undo root node transform so that the model origin matches the root
     // articulated object link.
-    const auto invRootTransform =
-        skinData_->rootArticulatedObjectNode->absoluteTransformationMatrix()
-            .inverted();
+    const auto invRootTransform = skinData_->rootArticulatedObjectNode
+                                      ? skinData_->rootArticulatedObjectNode
+                                            ->absoluteTransformationMatrix()
+                                            .inverted()
+                                      : Mn::Matrix4(Mn::Math::IdentityInit);
 
     for (std::size_t i = 0; i != jointTransformations_.size(); ++i) {
       const auto jointNodeIt = transformNodes.find(skin->joints()[i]);

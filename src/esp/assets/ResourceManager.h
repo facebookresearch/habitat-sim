@@ -45,6 +45,7 @@ class Drawable;
 class PbrImageBasedLighting;
 struct SkinData;
 struct InstanceSkinData;
+struct Rig;
 namespace replay {
 class Recorder;
 }
@@ -745,8 +746,9 @@ class ResourceManager {
    */
   void resetDrawableCountAndNumFaces() { drawableCountAndNumFaces_ = {0, 0}; }
 
-  void registerRigInstance(
-      const std::shared_ptr<physics::ArticulatedObject>& rig);
+  void registerRigInstance(int id, gfx::Rig&& rig);
+  bool rigInstanceExists(int id);
+  gfx::Rig& getRigInstance(int id);
 
  private:
   /**
@@ -899,9 +901,9 @@ class ResourceManager {
    * @param skinData Structure holding the skin and rig configuration for the
    * instance.
    */
-  void mapSkinnedModelToArticulatedObject(
+  void mapSkinnedModelToRig(
       const MeshTransformNode& meshTransformNode,
-      const std::shared_ptr<physics::ArticulatedObject>& rig,
+      const gfx::Rig& rig,
       const std::shared_ptr<gfx::InstanceSkinData>& skinData);
 
   /**
@@ -1404,8 +1406,8 @@ class ResourceManager {
    */
   std::shared_ptr<esp::gfx::replay::Recorder> gfxReplayRecorder_;
 
-  std::unordered_map<int, std::shared_ptr<esp::physics::ArticulatedObject>>
-      rigInstanceMap_{};
+  std::unordered_map<int, int> rigIds_;
+  std::vector<gfx::Rig> rigs_;
 
   /**
    * @brief The imaged based lighting for PBR, each is a collection of

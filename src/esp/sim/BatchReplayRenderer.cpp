@@ -4,6 +4,7 @@
 
 #include "BatchReplayRenderer.h"
 
+#include "esp/gfx/replay/Player.h"
 #include "esp/sensor/CameraSensor.h"
 
 #include <Corrade/Containers/GrowableArray.h>
@@ -194,6 +195,20 @@ BatchReplayRenderer::BatchReplayRenderer(
         //  RendererConfiguration::setAmbientFactor())
         // TODO range, once Habitat has that
       }
+    }
+
+    void createBone(unsigned envIndex,
+                    int rigId,
+                    int boneId,
+                    const std::string& boneName) override {
+      // not implemented
+    }
+
+    gfx::replay::NodeHandle getBone(unsigned envIndex,
+                                    int rigId,
+                                    int boneId) override {
+      // not implemented
+      return 0;
     }
 
     gfx_batch::Renderer& renderer_;

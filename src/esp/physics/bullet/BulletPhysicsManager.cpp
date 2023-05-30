@@ -8,12 +8,15 @@
 #include "BulletPhysicsManager.h"
 
 #include <utility>
+#include <vector>
 #include "BulletArticulatedObject.h"
 #include "BulletDynamics/Featherstone/btMultiBodyLinkCollider.h"
 #include "BulletRigidObject.h"
 #include "BulletURDFImporter.h"
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/assets/ResourceManager.h"
+#include "esp/gfx/SkinData.h"
+#include "esp/gfx/replay/Player.h"
 #include "esp/metadata/attributes/PhysicsManagerAttributes.h"
 #include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
@@ -186,7 +189,23 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
     flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsRGBD;
     flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsSemantic;
     creationInfo.flags = flags;
-    resourceManager_.registerRigInstance(articulatedObject);
+
+    // Create nodes to transform skinned mesh articulations
+    // The nodes are parented to the articulated object links for driving the
+    // animation
+    esp::gfx::Rig rig{};
+    // TODO: Root bone may be needed to undo AO root offset
+    auto* parentNode = &articulatedObject->getLink(-1).node();
+    rig.parent = reinterpret_cast<gfx::replay::NodeHandle>(parentNode);
+    for (int linkId : articulatedObject->getLinkIdsWithBase()) {
+      auto& link = articulatedObject->getLink(linkId);
+      rig.boneNames[link.linkName] = rig.bones.size();
+      auto* linkNode = &link.node().createChild();
+      rig.bones.push_back(reinterpret_cast<gfx::replay::NodeHandle>(linkNode));
+    }
+    resourceManager_.registerRigInstance(articulatedObject->getObjectID(),
+                                         std::move(rig));
+
     auto* gfxNode = resourceManager_.loadAndCreateRenderAssetInstance(
         assetInfo, creationInfo, objectNode, drawables);
     // Propagate the semantic ID to the graphics subtree

@@ -109,6 +109,15 @@ class AbstractPlayerImplementation {
    * Default implementation does nothing.
    */
   virtual void changeLightSetup(const LightSetup& lights);
+
+  virtual void createBone(unsigned envIndex,
+                          int rigId,
+                          int boneId,
+                          const std::string& boneName);
+
+  virtual gfx::replay::NodeHandle getBone(unsigned envIndex,
+                                          int rigId,
+                                          int boneId);
 };
 
 /**

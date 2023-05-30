@@ -314,9 +314,18 @@ std::vector<std::string> ResourceManager::buildVertexColorMapReport(
       semanticScene_);
 }  // ResourceManager::buildVertexColorMapReport
 
-void ResourceManager::registerRigInstance(
-    const std::shared_ptr<physics::ArticulatedObject>& rig) {
-  rigInstanceMap_[rig->getObjectID()] = rig;
+void ResourceManager::registerRigInstance(int id, gfx::Rig&& rig) {
+  rigIds_[id] = rigs_.size();
+  rigs_.emplace_back(rig);
+}
+
+bool ResourceManager::rigInstanceExists(int id) /*TODO: const*/ {
+  return rigIds_.find(id) != rigIds_.end();
+}
+
+gfx::Rig& ResourceManager::getRigInstance(int id) /*TODO: const*/ {
+  ESP_CHECK(rigInstanceExists(id), "Unknown rig ID.");
+  return rigs_[rigIds_[id]];
 }
 
 bool ResourceManager::loadSemanticSceneDescriptor(
@@ -1907,9 +1916,10 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
         "Cannot instantiate skinned model because no skin data is imported.");
     const auto& skinData = skins_[meshMetaData.skinIndex.first];
     instanceSkinData = std::make_shared<gfx::InstanceSkinData>(skinData);
-    mapSkinnedModelToArticulatedObject(
-        meshMetaData.root, rigInstanceMap_[creation.rigId], instanceSkinData);
-    ESP_CHECK(instanceSkinData->rootArticulatedObjectNode,
+    mapSkinnedModelToRig(meshMetaData.root, rigs_[rigIds_[creation.rigId]],
+                         instanceSkinData);
+    ESP_CHECK(!instanceSkinData->jointIdToName.empty() &&
+                  !instanceSkinData->jointIdToTransformNode.empty(),
               "Could not map skinned model to articulated object.");
     if (gfxReplayRecorder_) {
       gfxReplayRecorder_->onCreateRigInstance(*(instanceSkinData.get()),
@@ -3280,9 +3290,9 @@ void ResourceManager::addComponent(
   }
 }  // addComponent
 
-void ResourceManager::mapSkinnedModelToArticulatedObject(
+void ResourceManager::mapSkinnedModelToRig(
     const MeshTransformNode& meshTransformNode,
-    const std::shared_ptr<physics::ArticulatedObject>& rig,
+    const gfx::Rig& rig,
     const std::shared_ptr<gfx::InstanceSkinData>& skinData) {
   // Find skin joint ID that matches the node
   const auto& gfxBoneName = meshTransformNode.name;
@@ -3291,30 +3301,25 @@ void ResourceManager::mapSkinnedModelToArticulatedObject(
   if (jointIt != boneNameJointIdMap.end()) {
     int jointId = jointIt->second;
 
-    // Find articulated object link ID that matches the node
-    const auto linkIds = rig->getLinkIdsWithBase();
-    const auto linkId =
-        std::find_if(linkIds.begin(), linkIds.end(),
-                     [&](int i) { return gfxBoneName == rig->getLinkName(i); });
+    // Find rig node
+    const auto& boneNameIt = rig.boneNames.find(gfxBoneName);
+    if (boneNameIt != rig.boneNames.end()) {
+      auto* bone = rig.bones[boneNameIt->second];
 
-    // Map the articulated object link associated with the skin joint
-    if (linkId != linkIds.end()) {
-      auto* articulatedObjectNode = &rig->getLink(*linkId.base()).node();
-
-      // This node will be used for rendering.
-      auto& transformNode = articulatedObjectNode->createChild();
-      skinData->jointIdToTransformNode[jointId] = &transformNode;
+      skinData->jointIdToTransformNode[jointId] =
+          reinterpret_cast<scene::SceneNode*>(bone);
       skinData->jointIdToName[jointId] = gfxBoneName;
 
-      // First node found is the root
-      if (!skinData->rootArticulatedObjectNode) {
-        skinData->rootArticulatedObjectNode = articulatedObjectNode;
-      }
+      if (!skinData->rootArticulatedObjectNode)
+        skinData->rootArticulatedObjectNode =
+            reinterpret_cast<scene::SceneNode*>(bone);
     }
   }
+  // skinData->rootArticulatedObjectNode =
+  // reinterpret_cast<scene::SceneNode*>(rig.parent);
 
   for (const auto& child : meshTransformNode.children) {
-    mapSkinnedModelToArticulatedObject(child, rig, skinData);
+    mapSkinnedModelToRig(child, rig, skinData);
   }
 }  // mapSkinnedModelToArticulatedObject
 

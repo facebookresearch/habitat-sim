@@ -6,11 +6,12 @@
 
 #include <Corrade/Utility/Path.h>
 
-#include "esp/assets/ResourceManager.h"
+#include "esp/core/Check.h"
 #include "esp/core/Esp.h"
 #include "esp/gfx/replay/Keyframe.h"
 #include "esp/io/Json.h"
 #include "esp/io/JsonAllTypes.h"
+#include "esp/sim/ClassicReplayRenderer.h"
 
 #include <rapidjson/document.h>
 
@@ -73,6 +74,18 @@ void AbstractSceneGraphPlayerImplementation::setNodeSemanticId(
     const NodeHandle node,
     const unsigned id) {
   setSemanticIdForSubtree(reinterpret_cast<scene::SceneNode*>(node), id);
+}
+
+void AbstractPlayerImplementation::createBone(unsigned envIndex,
+                                              int rigId,
+                                              int boneId,
+                                              const std::string& boneName) {}
+
+gfx::replay::NodeHandle AbstractPlayerImplementation::getBone(unsigned envIndex,
+                                                              int rigId,
+                                                              int boneId) {
+  ESP_CHECK(false, "NOT IMPLEMENTED!");
+  return nullptr;
 }
 
 void Player::readKeyframesFromJsonDocument(const rapidjson::Document& d) {
@@ -183,6 +196,11 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     assetInfos_[assetInfo.filepath] = assetInfo;
   }
 
+  for (const auto& boneCreation : keyframe.boneCreations) {
+    implementation_->createBone(0 /*TODO*/, boneCreation.rigId,
+                                boneCreation.boneId, boneCreation.boneName);
+  }
+
   // If all current instances are being deleted, clear the frame. This enables
   // the implementation to clear its memory and optimize its internals.
   bool frameCleared = keyframe.deletions.size() > 0 &&
@@ -198,6 +216,10 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     auto adjustedFilepath =
         removeMaterialOverrideFromFilepathAndWarn(creation.filepath);
 
+    if (pair.second.rigId != ID_UNDEFINED) {
+      // ESP_CHECK(condition, ...)
+    }
+
     if (assetInfos_.count(adjustedFilepath) == 0u) {
       if (failedFilepaths_.count(adjustedFilepath) == 0u) {
         ESP_WARNING(Mn::Debug::Flag::NoSpace)
@@ -208,8 +230,6 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     }
     CORRADE_INTERNAL_ASSERT(assetInfos_.count(adjustedFilepath));
     auto adjustedCreation = creation;
-    if (creation.rigId != ID_UNDEFINED)
-      adjustedCreation.rigId = ID_UNDEFINED;  // TODO: Disable skinning for now.
     adjustedCreation.filepath = adjustedFilepath;
     auto* node = implementation_->loadAndCreateRenderAssetInstance(
         assetInfos_[adjustedFilepath], adjustedCreation);
@@ -253,6 +273,14 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     implementation_->setNodeTransform(node, state.absTransform.translation,
                                       state.absTransform.rotation);
     implementation_->setNodeSemanticId(node, state.semanticId);
+  }
+
+  for (const auto& boneUpdate : keyframe.boneUpdates) {
+    auto* bone = implementation_->getBone(0 /*TODO*/, boneUpdate.rigId,
+                                          boneUpdate.boneId);
+    implementation_->setNodeTransform(reinterpret_cast<NodeHandle>(bone),
+                                      boneUpdate.absTransform.translation,
+                                      boneUpdate.absTransform.rotation);
   }
 
   if (keyframe.lightsChanged) {
