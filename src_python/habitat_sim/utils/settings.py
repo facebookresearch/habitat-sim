@@ -9,14 +9,24 @@ import habitat_sim.agent
 
 # [default_sim_settings]
 default_sim_settings = {
+    # path to .scene_dataset.json file
     "scene_dataset_config_file": "default",
+    # name of an existing scene in the dataset, a scene, stage, or asset filepath, or "NONE" for an empty scene
     "scene": "NONE",
+    # camera sensor parameters
     "width": 640,
     "height": 480,
-    "default_agent": 0,
-    "sensor_height": 1.5,
+    # horizontal field of view in degrees
     "hfov": 90,
+    # far clipping plane
     "zfar": 1000.0,
+    # vertical offset of the camera from the agent's root position (e.g. height of eyes)
+    "sensor_height": 1.5,
+    # defaul agent ix
+    "default_agent": 0,
+    # radius of the agent cylinder approximation for navmesh
+    "agent_radius": 0.1,
+    # pick sensors to use
     "color_sensor": True,
     "semantic_sensor": False,
     "depth_sensor": False,
@@ -29,9 +39,16 @@ default_sim_settings = {
     "equirect_rgba_sensor": False,
     "equirect_depth_sensor": False,
     "equirect_semantic_sensor": False,
+    # random seed
     "seed": 1,
+    # path to .physics_config.json file
     "physics_config_file": "data/default.physics_config.json",
+    # use bullet physics for dyanimcs or not
     "enable_physics": True,
+    # ensure or create compatible navmesh for agent paramters
+    "default_agent_navmesh": True,
+    # if configuring a navmesh, should STATIC MotionType objects be included
+    "navmesh_include_static_objects": False,
 }
 # [/default_sim_settings]
 
@@ -214,6 +231,8 @@ def make_cfg(settings: Dict[str, Any]):
 
     # create agent specifications
     agent_cfg = habitat_sim.agent.AgentConfiguration()
+    agent_cfg.height = settings["sensor_height"]
+    agent_cfg.radius = settings["agent_radius"]
     agent_cfg.sensor_specifications = sensor_specs
     agent_cfg.action_space = {
         "move_forward": habitat_sim.agent.ActionSpec(
@@ -226,5 +245,15 @@ def make_cfg(settings: Dict[str, Any]):
             "turn_right", habitat_sim.agent.ActuationSpec(amount=10.0)
         ),
     }
+
+    # construct a NavMeshSettings from default agent paramters for SimulatorConfiguration
+    if settings["default_agent_navmesh"]:
+        sim_cfg.navmesh_settings = habitat_sim.nav.NavMeshSettings()
+        sim_cfg.navmesh_settings.set_defaults()
+        sim_cfg.navmesh_settings.agent_radius = agent_cfg.radius
+        sim_cfg.navmesh_settings.agent_height = agent_cfg.height
+        sim_cfg.navmesh_settings.include_static_objects = settings[
+            "navmesh_include_static_objects"
+        ]
 
     return habitat_sim.Configuration(sim_cfg, [agent_cfg])

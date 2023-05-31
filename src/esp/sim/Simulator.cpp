@@ -141,14 +141,15 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     sceneManager_ = scene::SceneManager::create_unique();
   }
 
+  // This is a check to make sure that pathfinder_ is not null after
+  // a reconfigure. We check to see if it's null so that an existing
+  // one isn't overwritten.
+  if (!pathfinder_) {
+    pathfinder_ = nav::PathFinder::create();
+  }
+
   // if configuration is unchanged, just reset and return
   if (cfg == config_) {
-    // This is a check to make sure that pathfinder_ is not null after
-    // a reconfigure. We check to see if it's null so that an existing
-    // one isn't overwritten.
-    if (!pathfinder_) {
-      pathfinder_ = nav::PathFinder::create();
-    }
     reset();
     return;
   }
@@ -208,6 +209,18 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
               << (success ? "true" : "false")
               << "for active scene name :" << config_.activeSceneName
               << (config_.createRenderer ? " with" : " without") << "renderer.";
+
+  // Handle the NavMesh configuration
+  if (config_.navMeshSettings != nullptr &&
+      Cr::Utility::String::lowercase(config_.activeSceneName) != "none") {
+    // If the NavMesh is unloaded or does not match the requested configuration
+    // then recompute it.
+    if (!pathfinder_->isLoaded() ||
+        (pathfinder_->getNavMeshSettings() != *config_.navMeshSettings)) {
+      ESP_DEBUG() << "NavMesh recompute was necessary.";
+      recomputeNavMesh(*pathfinder_, *config_.navMeshSettings);
+    }
+  }
 
 }  // Simulator::reconfigure
 
@@ -896,9 +909,9 @@ double Simulator::getPhysicsTimeStep() {
 }
 
 bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
-                                 const nav::NavMeshSettings& navMeshSettings,
-                                 const bool includeStaticObjects) {
-  assets::MeshData::ptr joinedMesh = getJoinedMesh(includeStaticObjects);
+                                 const nav::NavMeshSettings& navMeshSettings) {
+  assets::MeshData::ptr joinedMesh =
+      getJoinedMesh(navMeshSettings.includeStaticObjects);
 
   if (!pathfinder.build(navMeshSettings, *joinedMesh)) {
     ESP_ERROR() << "Failed to build navmesh";

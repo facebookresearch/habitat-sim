@@ -97,6 +97,9 @@ void initSimBindings(py::module& m) {
           "requires_textures", &SimulatorConfiguration::requiresTextures,
           R"(Whether or not to load textures for the meshes. This MUST be true for RGB rendering.)")
       .def_readwrite(
+          "navmesh_settings", &SimulatorConfiguration::navMeshSettings,
+          R"(Optionally provide a pre-configured NavMeshSettings. If provided, the NavMesh will be recomputed with the provided settings if: A. no NavMesh was loaded, or B. the loaded NavMesh's settings differ from the configured settings. If not provided, no NavMesh recompute will be done automatically.)")
+      .def_readwrite(
           "PBR_image_based_lighting",
           &SimulatorConfiguration::pbrImageBasedLighting,
           R"(Whether or not to enable image based lighting in the PBR shader.)")
@@ -269,8 +272,8 @@ void initSimBindings(py::module& m) {
            R"(Enable or disable bounding box visualization for an object.)")
       .def(
           "recompute_navmesh", &Simulator::recomputeNavMesh, "pathfinder"_a,
-          "navmesh_settings"_a, "include_static_objects"_a = false,
-          R"(Recompute the NavMesh for a given PathFinder instance using configured NavMeshSettings. Optionally include all MotionType::STATIC objects in the navigability constraints.)")
+          "navmesh_settings"_a,
+          R"(Recompute the NavMesh for a given PathFinder instance using configured NavMeshSettings.)")
 #ifdef ESP_BUILD_WITH_VHACD
       .def(
           "apply_convex_hull_decomposition",
