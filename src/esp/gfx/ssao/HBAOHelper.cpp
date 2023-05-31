@@ -480,6 +480,11 @@ void HBAOHelper::drawHbaoClassic(const Projection& projection,
                                  int sampleIdx,
                                  GLuint scene_depthstencil,
                                  GLuint fbo_scene) {
+  // // Save magnum gl context state so it doesn't get corrupted
+  // Must be specified by Caller
+  // Magnum::GL::Context::current().resetState(
+  //     Magnum::GL::Context::State::EnterExternal);
+
   prepareHbaoData(projection, width, height);
 
   drawLinearDepth(projection, width, height, sampleIdx, scene_depthstencil);
@@ -528,6 +533,11 @@ void HBAOHelper::drawHbaoClassic(const Projection& projection,
   nvgl::bindMultiTexture(GL_TEXTURE1, GL_TEXTURE_2D, 0);
 
   glUseProgram(0);
+
+  // // restore context state tracking
+  // // Must be specified by Caller
+  // Magnum::GL::Context::current().resetState(
+  //     Magnum::GL::Context::State::ExitExternal);
 }
 
 void HBAOHelper::drawHbaoCacheAware(const Projection& projection,
