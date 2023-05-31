@@ -32,14 +32,14 @@
 #include <Magnum/Math/Tags.h>
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/MeshTools/Concatenate.h>
+#include <Magnum/MeshTools/Copy.h>
 #include <Magnum/MeshTools/FilterAttributes.h>
 #include <Magnum/MeshTools/Interleave.h>
-#include <Magnum/MeshTools/Reference.h>
 #include <Magnum/MeshTools/RemoveDuplicates.h>
 #include <Magnum/MeshTools/Transform.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/SceneGraph/Object.h>
-#include <Magnum/SceneTools/FlattenTransformationHierarchy.h>
+#include <Magnum/SceneTools/Hierarchy.h>
 #include <Magnum/Trade/AbstractImporter.h>
 #include <Magnum/Trade/FlatMaterialData.h>
 #include <Magnum/Trade/ImageData.h>
@@ -156,12 +156,25 @@ void ResourceManager::buildImporters() {
   CORRADE_INTERNAL_ASSERT_OUTPUT(
       primitiveImporter_ =
           importerManager_.loadAndInstantiate("PrimitiveImporter"));
-  // necessary for importer to be usable
-  primitiveImporter_->openData("");
 
   // instantiate importer for file load
   CORRADE_INTERNAL_ASSERT_OUTPUT(
       fileImporter_ = importerManager_.loadAndInstantiate("AnySceneImporter"));
+
+  // set quiet importer flags if asset logging is quieted
+  if (!isLevelEnabled(logging::Subsystem::assets,
+                      logging::LoggingLevel::Warning)) {
+    fileImporter_->addFlags(Mn::Trade::ImporterFlag::Quiet);
+    primitiveImporter_->addFlags(Mn::Trade::ImporterFlag::Quiet);
+  } else if (isLevelEnabled(logging::Subsystem::assets,
+                            logging::LoggingLevel::VeryVerbose)) {
+    // set verbose flags if necessary
+    fileImporter_->addFlags(Mn::Trade::ImporterFlag::Verbose);
+    primitiveImporter_->addFlags(Mn::Trade::ImporterFlag::Verbose);
+  }
+
+  // necessary for importer to be usable
+  primitiveImporter_->openData("");
 }  // buildImporters
 
 bool ResourceManager::getCreateRenderer() const {
@@ -1456,7 +1469,7 @@ ResourceManager::flattenImportedMeshAndBuildSemantic(Importer& fileImporter,
     // All the transformations, flattened and indexed by mesh id, with
     // reframeTransform applied to each
     Cr::Containers::Array<Mn::Matrix4> transformations =
-        Mn::SceneTools::flattenTransformationHierarchy3D(
+        Mn::SceneTools::absoluteFieldTransformations3D(
             *scene, Mn::Trade::SceneField::Mesh, reframeTransform);
 
     Cr::Containers::Array<Mn::Trade::MeshData> flattenedMeshes;
@@ -3650,7 +3663,7 @@ std::string ResourceManager::createConvexHullDecomposition(
         ch.m_triangles, ch.m_nTriangles * 3};
 
     // create an owned MeshData
-    Cr::Containers::Optional<Mn::Trade::MeshData> CHMesh = Mn::MeshTools::owned(
+    Cr::Containers::Optional<Mn::Trade::MeshData> CHMesh = Mn::MeshTools::copy(
         Mn::Trade::MeshData{Mn::MeshPrimitive::Triangles,
                             {},
                             indices,
