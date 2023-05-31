@@ -25,6 +25,8 @@ JsonGenericValue toJsonValue(const gfx::replay::Keyframe& keyframe,
     io::addMember(obj, "creations", creationsArray, allocator);
   }
 
+  io::addMember(obj, "boneCreations", keyframe.boneCreations, allocator);
+
   io::addMember(obj, "deletions", keyframe.deletions, allocator);
 
   if (!keyframe.stateUpdates.empty()) {
@@ -37,6 +39,8 @@ JsonGenericValue toJsonValue(const gfx::replay::Keyframe& keyframe,
     }
     io::addMember(obj, "stateUpdates", stateUpdatesArray, allocator);
   }
+
+  io::addMember(obj, "boneUpdates", keyframe.boneUpdates, allocator);
 
   if (!keyframe.userTransforms.empty()) {
     JsonGenericValue userTransformsArray(rapidjson::kArrayType);
@@ -75,6 +79,8 @@ bool fromJsonValue(const JsonGenericValue& obj,
     }
   }
 
+  io::readMember(obj, "boneCreations", keyframe.boneCreations);
+
   io::readMember(obj, "deletions", keyframe.deletions);
 
   itr = obj.FindMember("stateUpdates");
@@ -90,6 +96,8 @@ bool fromJsonValue(const JsonGenericValue& obj,
       keyframe.stateUpdates.emplace_back(std::move(pair));
     }
   }
+
+  io::readMember(obj, "boneUpdates", keyframe.boneUpdates);
 
   itr = obj.FindMember("userTransforms");
   if (itr != obj.MemberEnd()) {
@@ -150,9 +158,9 @@ bool fromJsonValue(const JsonGenericValue& obj,
                    metadata::attributes::ObjectInstanceShaderType& x) {
   std::string shaderTypeToUseString;
   // read as string
-  bool shaderTypeSucceess = fromJsonValue(obj, shaderTypeToUseString);
+  bool shaderTypeSuccess = fromJsonValue(obj, shaderTypeToUseString);
   // convert to enum
-  if (shaderTypeSucceess) {
+  if (shaderTypeSuccess) {
     const std::string shaderTypeLC =
         Cr::Utility::String::lowercase(shaderTypeToUseString);
     auto mapIter = metadata::attributes::ShaderTypeNamesMap.find(shaderTypeLC);
@@ -164,7 +172,7 @@ bool fromJsonValue(const JsonGenericValue& obj,
                      "Aborting.");
     x = mapIter->second;
   }
-  return shaderTypeSucceess;
+  return shaderTypeSuccess;
 }
 
 JsonGenericValue toJsonValue(const esp::gfx::LightPositionModel& x,

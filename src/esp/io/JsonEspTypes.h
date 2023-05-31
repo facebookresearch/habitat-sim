@@ -105,6 +105,7 @@ inline JsonGenericValue toJsonValue(
   addMember(obj, "isSemantic", x.isSemantic(), allocator);
   addMember(obj, "isTextureSemantic", x.isTextureBasedSemantic(), allocator);
   addMember(obj, "lightSetupKey", x.lightSetupKey, allocator);
+  addMember(obj, "rigId", x.rigId, allocator);
   return obj;
 }
 
@@ -135,6 +136,7 @@ inline bool fromJsonValue(const JsonGenericValue& obj,
   }
 
   readMember(obj, "lightSetupKey", x.lightSetupKey);
+  readMember(obj, "rigId", x.rigId);
   return true;
 }
 
@@ -168,6 +170,43 @@ inline bool fromJsonValue(const JsonGenericValue& obj,
   readMember(obj, "absTransform", x.absTransform);
   readMember(obj, "semanticId", x.semanticId);
   return true;
+}
+
+inline JsonGenericValue toJsonValue(const gfx::replay::BoneCreation& x,
+                                    JsonAllocator& allocator) {
+  JsonGenericValue obj(rapidjson::kObjectType);
+  addMember(obj, "rigId", x.rigId, allocator);
+  addMember(obj, "id", x.boneId, allocator);
+  addMember(obj, "name", x.boneName, allocator);
+  return obj;
+}
+
+inline bool fromJsonValue(const JsonGenericValue& obj,
+                          gfx::replay::BoneCreation& x) {
+  bool success = true;
+  ;
+  success &= readMember(obj, "rigId", x.rigId);
+  success &= readMember(obj, "id", x.boneId);
+  success &= readMember(obj, "name", x.boneName);
+  return success;
+}
+
+inline JsonGenericValue toJsonValue(const gfx::replay::BoneState& x,
+                                    JsonAllocator& allocator) {
+  JsonGenericValue obj(rapidjson::kObjectType);
+  addMember(obj, "rigId", x.rigId, allocator);
+  addMember(obj, "boneId", x.boneId, allocator);
+  addMember(obj, "absTransform", x.absTransform, allocator);
+  return obj;
+}
+
+inline bool fromJsonValue(const JsonGenericValue& obj,
+                          gfx::replay::BoneState& x) {
+  bool success = true;
+  success &= readMember(obj, "rigId", x.rigId);
+  success &= readMember(obj, "boneId", x.boneId);
+  success &= readMember(obj, "absTransform", x.absTransform);
+  return success;
 }
 
 inline JsonGenericValue toJsonValue(const esp::gfx::LightInfo& x,

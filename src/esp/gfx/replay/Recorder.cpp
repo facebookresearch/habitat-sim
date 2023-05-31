@@ -7,6 +7,7 @@
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/core/Check.h"
 #include "esp/gfx/Drawable.h"
+#include "esp/gfx/SkinData.h"
 #include "esp/io/Json.h"
 #include "esp/io/JsonAllTypes.h"
 #include "esp/scene/SceneNode.h"
@@ -28,6 +29,7 @@ class NodeDeletionHelper : public Magnum::SceneGraph::AbstractFeature3D {
 
   ~NodeDeletionHelper() override {
     recorder_->onDeleteRenderAssetInstance(node);
+    // TODO: Delete matching rig record if applicable
   }
 
  private:
@@ -79,6 +81,26 @@ void Recorder::onCreateRenderAssetInstance(
 
   instanceRecords_.emplace_back(InstanceRecord{
       node, instanceKey, Corrade::Containers::NullOpt, deletionHelper});
+}
+
+void Recorder::onCreateRigInstance(int rigId, const Rig& rig) {
+  // Create record for rig
+  std::vector<const scene::SceneNode*> rigBoneTransforms{};
+  for (const auto& bone : rig.bones) {
+    rigBoneTransforms.push_back(bone);
+  }
+  rigs_[rigId] = std::move(rigBoneTransforms);
+
+  // Create creation info for rig
+  std::vector<BoneCreation> bones{};
+  for (const auto& boneNamePair : rig.boneNames) {
+    BoneCreation bone{};
+    bone.rigId = rigId;
+    bone.boneId = boneNamePair.second;
+    bone.boneName = boneNamePair.first;
+    bones.emplace_back(std::move(bone));
+  }
+  currKeyframe_.boneCreations = std::move(bones);
 }
 
 void Recorder::onHideSceneGraph(const esp::scene::SceneGraph& sceneGraph) {
@@ -208,12 +230,40 @@ RenderAssetInstanceState Recorder::getInstanceState(
 }
 
 void Recorder::updateInstanceStates() {
+  // Update instance states
   for (auto& instanceRecord : instanceRecords_) {
     auto state = getInstanceState(instanceRecord.node);
     if (!instanceRecord.recentState || state != instanceRecord.recentState) {
       getKeyframe().stateUpdates.emplace_back(instanceRecord.instanceKey,
                                               state);
       instanceRecord.recentState = state;
+    }
+  }
+
+  // Update rig states
+  for (const auto& rigItr : rigs_) {
+    int rigId = rigItr.first;
+    for (int boneIdx = 0; boneIdx < rigItr.second.size(); ++boneIdx) {
+      BoneState boneUpdate{};
+      auto* bone = rigItr.second[boneIdx];
+      const auto absTransformMat = bone->absoluteTransformation();
+      auto rotationShear = absTransformMat.rotationShear();
+      // Remove reflection (negative scaling) from the matrix. We assume
+      // constant node scaling for the node's lifetime. It is baked into
+      // instance-creation so it doesn't need to be saved into
+      // RenderAssetInstanceState. See also onCreateRenderAssetInstance.
+      if (rotationShear.determinant() < 0.0f) {
+        rotationShear[0] *= -1.f;
+      }
+
+      Transform absTransform{absTransformMat.translation(),
+                             Magnum::Quaternion::fromMatrix(rotationShear)};
+      boneUpdate.absTransform = std::move(absTransform);
+
+      boneUpdate.rigId = rigId;
+      boneUpdate.boneId = boneIdx;
+
+      currKeyframe_.boneUpdates.emplace_back(std::move(boneUpdate));
     }
   }
 }

@@ -109,6 +109,25 @@ class AbstractPlayerImplementation {
    * Default implementation does nothing.
    */
   virtual void changeLightSetup(const LightSetup& lights);
+
+  /**
+   * @brief Register a bone to a rig.
+   *
+   * Default implementation does nothing.
+   */
+  virtual void createBone(unsigned envIndex,
+                          int rigId,
+                          int boneId,
+                          const std::string& boneName);
+
+  /**
+   * @brief Get a registered bone from a rig.
+   *
+   * Default implementation does nothing.
+   */
+  virtual gfx::replay::NodeHandle getBone(unsigned envIndex,
+                                          int rigId,
+                                          int boneId);
 };
 
 /**

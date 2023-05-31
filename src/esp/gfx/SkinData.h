@@ -49,7 +49,7 @@ struct InstanceSkinData {
  * @brief Contains the articulation nodes of a skinned model instance.
  */
 struct Rig {
-  std::vector<gfx::replay::NodeHandle> bones;
+  std::vector<scene::SceneNode*> bones;
   std::unordered_map<std::string, int> boneNames;
   std::unordered_map<int, int> boneIds;
 };

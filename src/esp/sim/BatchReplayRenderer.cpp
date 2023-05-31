@@ -196,6 +196,20 @@ BatchReplayRenderer::BatchReplayRenderer(
       }
     }
 
+    void createBone(unsigned envIndex,
+                    int rigId,
+                    int boneId,
+                    const std::string& boneName) override {
+      // not implemented
+    }
+
+    gfx::replay::NodeHandle getBone(unsigned envIndex,
+                                    int rigId,
+                                    int boneId) override {
+      // not implemented
+      return 0;
+    }
+
     gfx_batch::Renderer& renderer_;
     Mn::UnsignedInt sceneId_;
   };

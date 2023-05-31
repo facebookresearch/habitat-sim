@@ -196,7 +196,7 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
       auto& link = articulatedObject->getLink(linkId);
       rig.boneNames[link.linkName] = rig.bones.size();
       auto* linkNode = &link.node().createChild();
-      rig.bones.push_back(reinterpret_cast<gfx::replay::NodeHandle>(linkNode));
+      rig.bones.push_back(linkNode);
     }
     resourceManager_.registerRigInstance(articulatedObject->getObjectID(),
                                          std::move(rig));

@@ -1894,13 +1894,16 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
         !skins_.empty(),
         "Cannot instantiate skinned model because no skin data is imported.");
     const auto& skinData = skins_[meshMetaData.skinIndex.first];
+    const auto& rig = rigs_[rigIds_[creation.rigId]];
     instanceSkinData = std::make_shared<gfx::InstanceSkinData>(skinData);
     mapSkinnedModelToRig(meshMetaData.root, rigs_[rigIds_[creation.rigId]],
                          instanceSkinData);
     ESP_CHECK(instanceSkinData->rootArticulatedObjectNode &&
                   !instanceSkinData->jointIdToTransformNode.empty(),
               "Could not map skinned model to articulated object.");
-    // TODO: Record rig creation here
+    if (gfxReplayRecorder_) {
+      gfxReplayRecorder_->onCreateRigInstance(creation.rigId, rig);
+    }
   }
 
   addComponent(meshMetaData,            // mesh metadata

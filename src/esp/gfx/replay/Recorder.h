@@ -21,6 +21,7 @@ class SceneNode;
 class SceneGraph;
 }  // namespace scene
 namespace gfx {
+struct Rig;
 namespace replay {
 
 class NodeDeletionHelper;
@@ -57,6 +58,9 @@ class Recorder {
    * @param assetInfo The asset that was loaded.
    */
   void onLoadRenderAsset(const esp::assets::AssetInfo& assetInfo);
+
+  // TODO
+  void onCreateRigInstance(int rigId, const Rig& rig);
 
   /**
    * @brief Record deletion of all render instances in a scene graph.
@@ -186,6 +190,8 @@ class Recorder {
   Keyframe currKeyframe_;
   std::vector<Keyframe> savedKeyframes_;
   RenderAssetInstanceKey nextInstanceKey_ = 0;
+  // TODO: directly store rig
+  std::unordered_map<int, std::vector<const scene::SceneNode*>> rigs_ = {};
 
   ESP_SMART_POINTERS(Recorder)
 };

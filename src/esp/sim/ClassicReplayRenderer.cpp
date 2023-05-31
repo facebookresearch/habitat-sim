@@ -7,7 +7,9 @@
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/Renderer.h"
+#include "esp/gfx/SkinData.h"
 #include "esp/metadata/MetadataMediator.h"
+#include "esp/scene/SceneNode.h"
 #include "esp/sensor/SensorFactory.h"
 #include "esp/sim/SimulatorConfiguration.h"
 
@@ -30,7 +32,7 @@ ClassicReplayRenderer::ClassicReplayRenderer(
   resourceManager_ =
       std::make_unique<assets::ResourceManager>(std::move(metadataMediator));
 
-  // hack to get ReplicCAD non-baked stages to render correctly
+  // hack to get ReplicaCAD non-baked stages to render correctly
   resourceManager_->getShaderManager().setFallback(
       esp::gfx::getDefaultLights());
 
@@ -51,6 +53,38 @@ ClassicReplayRenderer::ClassicReplayRenderer(
     }
     void changeLightSetup(const gfx::LightSetup& lights) override {
       return self_.resourceManager_->setLightSetup(lights);
+    }
+
+    void createBone(unsigned envIndex,
+                    int rigId,
+                    int boneId,
+                    const std::string& boneName) override {
+      if (!self_.resourceManager_->rigInstanceExists(rigId)) {
+        self_.resourceManager_->registerRigInstance(rigId,
+                                                    std::move(gfx::Rig{}));
+      }
+      auto& rig = self_.resourceManager_->getRigInstance(
+          rigId);  // TODO: support multi-env
+      rig.boneNames[boneName] = rig.bones.size();
+      rig.boneIds[boneId] = rig.bones.size();
+
+      // Create nodes to transform skinned mesh articulations
+      // The nodes are parented to the articulated object links for driving the
+      // animation
+      CORRADE_INTERNAL_ASSERT(envIndex >= 0 && envIndex < self_.envs_.size());
+      const auto& env = self_.envs_[envIndex];
+      auto& rootNode =
+          self_.sceneManager_->getSceneGraph(env.sceneID_).getRootNode();
+      auto* boneNode = &rootNode.createChild();
+      rig.bones.push_back(boneNode);
+    }
+
+    gfx::replay::NodeHandle getBone(unsigned envIndex,
+                                    int rigId,
+                                    int boneId) override {
+      auto& rig = self_.resourceManager_->getRigInstance(rigId);
+      return reinterpret_cast<gfx::replay::NodeHandle>(
+          rig.bones[rig.boneIds[boneId]]);
     }
 
     ClassicReplayRenderer& self_;

@@ -75,6 +75,17 @@ void AbstractSceneGraphPlayerImplementation::setNodeSemanticId(
   setSemanticIdForSubtree(reinterpret_cast<scene::SceneNode*>(node), id);
 }
 
+void AbstractPlayerImplementation::createBone(unsigned envIndex,
+                                              int rigId,
+                                              int boneId,
+                                              const std::string& boneName) {}
+
+gfx::replay::NodeHandle AbstractPlayerImplementation::getBone(unsigned envIndex,
+                                                              int rigId,
+                                                              int boneId) {
+  return nullptr;
+}
+
 void Player::readKeyframesFromJsonDocument(const rapidjson::Document& d) {
   CORRADE_INTERNAL_ASSERT(keyframes_.empty());
   esp::io::readMember(d, "keyframes", keyframes_);
@@ -183,6 +194,11 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     assetInfos_[assetInfo.filepath] = assetInfo;
   }
 
+  for (const auto& boneCreation : keyframe.boneCreations) {
+    implementation_->createBone(0 /*TODO*/, boneCreation.rigId,
+                                boneCreation.boneId, boneCreation.boneName);
+  }
+
   // If all current instances are being deleted, clear the frame. This enables
   // the implementation to clear its memory and optimize its internals.
   bool frameCleared = keyframe.deletions.size() > 0 &&
@@ -251,6 +267,14 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     implementation_->setNodeTransform(node, state.absTransform.translation,
                                       state.absTransform.rotation);
     implementation_->setNodeSemanticId(node, state.semanticId);
+  }
+
+  for (const auto& boneUpdate : keyframe.boneUpdates) {
+    auto* bone = implementation_->getBone(0 /*TODO*/, boneUpdate.rigId,
+                                          boneUpdate.boneId);
+    implementation_->setNodeTransform(reinterpret_cast<NodeHandle>(bone),
+                                      boneUpdate.absTransform.translation,
+                                      boneUpdate.absTransform.rotation);
   }
 
   if (keyframe.lightsChanged) {
