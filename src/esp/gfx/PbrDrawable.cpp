@@ -7,10 +7,12 @@
 #include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/Utility/FormatStl.h>
 #include <Magnum/Trade/MaterialData.h>
+#include <Magnum/Trade/PbrClearCoatMaterialData.h>
 #include <Magnum/Trade/PbrMetallicRoughnessMaterialData.h>
 
 #include <Magnum/GL/Renderer.h>
 
+using Magnum::Math::Literals::operator""_radf;
 namespace Mn = Magnum;
 
 namespace esp {
@@ -56,85 +58,41 @@ void PbrDrawable::setMaterialValuesInternal(
   matCache.metalness = tmpMaterialData.metalness();
   matCache.emissiveColor = tmpMaterialData.emissiveColor();
 
-  if (materialData_->hasAttribute("metallicTexturePointer") &&
-      materialData_->hasAttribute("roughnessTexturePointer")) {
-    CORRADE_ASSERT(
-        materialData_->attribute<Mn::GL::Texture2D*>(
-            "metallicTexturePointer") ==
-            materialData_->attribute<Mn::GL::Texture2D*>(
-                "roughnessTexturePointer"),
-        "PbrDrawable::setMaterialValuesInternal(): if both the metallic and "
-        "roughness "
-        "texture exist, they must be packed in the same texture based on glTF "
-        "2.0 Spec.", );
-  }
   if (tmpMaterialData.commonTextureMatrix() != Mn::Matrix3{}) {
     flags_ |= PbrShader::Flag::TextureTransformation;
     matCache.textureMatrix = tmpMaterialData.commonTextureMatrix();
   }
-  if (materialData_->hasAttribute("baseColorTexturePointer")) {
+  if (const auto baseColorTexturePtr =
+          materialData_->findAttribute<Mn::GL::Texture2D*>(
+              "baseColorTexturePointer")) {
     flags_ |= PbrShader::Flag::BaseColorTexture;
-    matCache.baseColorTexture =
-        materialData_->attribute<Mn::GL::Texture2D*>("baseColorTexturePointer");
+    matCache.baseColorTexture = *baseColorTexturePtr;
   }
 
-  matCache.hasAnyMetallicRoughnessTexture = false;
-  matCache.useMetallicRoughnessTexture = nullptr;
-  // noneRoughnessMetallic takes precedence, but currently all are
-  // treated the same way
-  if (materialData_->hasAttribute("noneRoughnessMetallicTexturePointer")) {
+  if (const auto noneRoughMetalTexturePtr =
+          materialData_->findAttribute<Mn::GL::Texture2D*>(
+              "noneRoughnessMetallicTexturePointer")) {
     flags_ |= PbrShader::Flag::NoneRoughnessMetallicTexture;
-    matCache.noneRoughnessMetallicTexture =
-        materialData_->attribute<Mn::GL::Texture2D*>(
-            "noneRoughnessMetallicTexturePointer");
-    matCache.hasAnyMetallicRoughnessTexture = true;
-    matCache.useMetallicRoughnessTexture =
-        matCache.noneRoughnessMetallicTexture;
-  }
-  if (materialData_->hasAttribute("roughnessTexturePointer")) {
-    flags_ |= PbrShader::Flag::RoughnessTexture;
-    matCache.roughnessTexture =
-        materialData_->attribute<Mn::GL::Texture2D*>("roughnessTexturePointer");
-    if (!matCache.hasAnyMetallicRoughnessTexture) {
-      matCache.useMetallicRoughnessTexture = matCache.roughnessTexture;
-    }
-    matCache.hasAnyMetallicRoughnessTexture = true;
-  }
-  if (materialData_->hasAttribute("metallicTexturePointer")) {
-    flags_ |= PbrShader::Flag::MetallicTexture;
-    matCache.metallicTexture =
-        materialData_->attribute<Mn::GL::Texture2D*>("metallicTexturePointer");
-
-    if (!matCache.hasAnyMetallicRoughnessTexture) {
-      matCache.useMetallicRoughnessTexture = matCache.metallicTexture;
-    }
-    matCache.hasAnyMetallicRoughnessTexture = true;
+    matCache.noneRoughnessMetallicTexture = *noneRoughMetalTexturePtr;
   }
 
-  CORRADE_ASSERT(((matCache.useMetallicRoughnessTexture != nullptr) ==
-                  matCache.hasAnyMetallicRoughnessTexture),
-                 "PbrDrawable::setMaterialValuesInternal(): Error assigning "
-                 "proper Metallic/Roughness texture pointers - either a "
-                 "texture is expected but not present or vice versa.", );
-
-  if (materialData_->hasAttribute("normalTexturePointer")) {
+  if (const auto normalTexturePtr =
+          materialData_->findAttribute<Mn::GL::Texture2D*>(
+              "normalTexturePointer")) {
     flags_ |= PbrShader::Flag::NormalTexture;
-    matCache.normalTexture =
-        materialData_->attribute<Mn::GL::Texture2D*>("normalTexturePointer");
+    matCache.normalTexture = *normalTexturePtr;
     if (meshAttributeFlags_ & gfx::Drawable::Flag::HasTangent) {
       flags_ |= PbrShader::Flag::PrecomputedTangent;
     }
-    if (tmpMaterialData.normalTextureScale() != 1.0f) {
-      flags_ |= PbrShader::Flag::NormalTextureScale;
-      CORRADE_ASSERT(tmpMaterialData.normalTextureScale() > 0.0f,
-                     "PbrDrawable::PbrDrawable(): the normal texture scale "
-                     "must be positive.", );
-    }
+    // normal texture scale
+    matCache.normalTextureScale = tmpMaterialData.normalTextureScale();
   }
-  if (materialData_->hasAttribute("emissiveTexturePointer")) {
+
+  if (const auto emissiveTexturePtr =
+          materialData_->findAttribute<Mn::GL::Texture2D*>(
+              "emissiveTexturePointer")) {
     flags_ |= PbrShader::Flag::EmissiveTexture;
-    matCache.emissiveTexture =
-        materialData_->attribute<Mn::GL::Texture2D*>("emissiveTexturePointer");
+    matCache.emissiveTexture = *emissiveTexturePtr;
   }
   if (materialData_->attribute<bool>("hasPerVertexObjectId")) {
     flags_ |= PbrShader::Flag::InstancedObjectId;
@@ -142,6 +100,225 @@ void PbrDrawable::setMaterialValuesInternal(
   if (materialData_->isDoubleSided()) {
     flags_ |= PbrShader::Flag::DoubleSided;
   }
+
+  ////////////////
+  // ClearCoat layer
+  if (materialData_->hasLayer(Mn::Trade::MaterialLayer::ClearCoat)) {
+    const auto& ccLayer =
+        materialData_->as<Mn::Trade::PbrClearCoatMaterialData>();
+    float cc_LayerFactor = ccLayer.layerFactor();
+    // As per
+    // https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_clearcoat
+    // if layer is 0 entire layer is disabled/ignored.
+    if (cc_LayerFactor > 0.0f) {
+      // has non-trivial clearcoat layer
+      flags_ |= PbrShader::Flag::ClearCoatLayer;
+      //
+      matCache.clearCoat.factor = cc_LayerFactor;
+      matCache.clearCoat.roughnessFactor = ccLayer.roughness();
+      if (const auto layerTexturePtr =
+              ccLayer.findAttribute<Mn::GL::Texture2D*>(
+                  "layerFactorTexturePointer")) {
+        flags_ |= PbrShader::Flag::ClearCoatTexture;
+        matCache.clearCoat.texture = *layerTexturePtr;
+      }
+
+      if (const auto roughnessTexturePtr =
+              ccLayer.findAttribute<Mn::GL::Texture2D*>(
+                  "roughnessTexturePointer")) {
+        flags_ |= PbrShader::Flag::ClearCoatRoughnessTexture;
+        matCache.clearCoat.roughnessTexture = *roughnessTexturePtr;
+      }
+
+      if (const auto normalTexturePtr =
+              ccLayer.findAttribute<Mn::GL::Texture2D*>(
+                  "normalTexturePointer")) {
+        flags_ |= PbrShader::Flag::ClearCoatNormalTexture;
+        matCache.clearCoat.normalTexture = *normalTexturePtr;
+        matCache.clearCoat.normalTextureScale = ccLayer.normalTextureScale();
+      }
+
+    }  // non-zero layer factor
+  }    // has clearcoat layer
+
+  ////////////////
+  // KHR_materials_ior
+  if (const auto iorLayerID =
+          materialData_->findLayerId("#KHR_materials_ior")) {
+    // Read in custom material index of refraction
+    if (const auto ior =
+            materialData_->findAttribute<Mn::Float>(*iorLayerID, "ior")) {
+      // ior should be >= 1 or 0 (which gives full weight to specular layer
+      // independent of view angle)
+      matCache.ior_Index = *ior;
+    }
+
+  }  // has KHR_materials_ior layer
+
+  ////////////////
+  // KHR_materials_specular layer
+  if (const auto specularLayerID =
+          materialData_->findLayerId("#KHR_materials_specular")) {
+    flags_ |= PbrShader::Flag::SpecularLayer;
+    /**
+     * The strength of the specular reflection. Defaults to 1.0f
+     */
+    if (const auto specularFactor = materialData_->findAttribute<Mn::Float>(
+            *specularLayerID, "specularFactor")) {
+      matCache.specularLayer.factor =
+          Mn::Math::clamp(*specularFactor, 0.0f, 1.0f);
+    }
+
+    /**
+     * A texture that defines the strength of the specular
+     * reflection, stored in the alpha (A) channel. This will be
+     * multiplied by specularFactor.
+     */
+    if (const auto specularFactorTexture =
+            materialData_->findAttribute<Mn::GL::Texture2D*>(
+                *specularLayerID, "specularTexturePointer")) {
+      flags_ |= PbrShader::Flag::SpecularLayerTexture;
+      matCache.specularLayer.texture = *specularFactorTexture;
+    }
+    /**
+     * The F0 color of the specular reflection (linear RGB).
+     */
+    if (const auto specularColorFactor =
+            materialData_->findAttribute<Mn::Color3>(*specularLayerID,
+                                                     "specularColorFactor")) {
+      matCache.specularLayer.colorFactor = *specularColorFactor;
+    }
+    /**
+     * A texture that defines the F0 color of the specular
+     * reflection, stored in the RGB channels and encoded in
+     * sRGB. This texture will be multiplied by
+     * specularColorFactor.
+     */
+    if (const auto specularColorTexture =
+            materialData_->findAttribute<Mn::GL::Texture2D*>(
+                *specularLayerID, "specularColorTexturePointer")) {
+      flags_ |= PbrShader::Flag::SpecularLayerColorTexture;
+      matCache.specularLayer.colorTexture = *specularColorTexture;
+    }
+  }  // has KHR_materials_specular layer
+
+  ///////////////
+  // KHR_materials_anisotropy
+  if (const auto anisotropyLayerID =
+          materialData_->findLayerId("#KHR_materials_anisotropy")) {
+    /**
+     * The anisotropy strength. When anisotropyTexture is present, this value is
+     * multiplied by the blue channel. Default is 0.0f
+     */
+    if (const auto anisotropyStrength = materialData_->findAttribute<Mn::Float>(
+            *anisotropyLayerID, "anisotropyStrength")) {
+      if (Mn::Math::abs(*anisotropyStrength) > 0.0) {
+        flags_ |= PbrShader::Flag::AnisotropyLayer;
+        matCache.anisotropyLayer.factor =
+            Mn::Math::clamp(*anisotropyStrength, -1.0f, 1.0f);
+      }
+      // Early adopters used anisotropy to mean strength
+    } else if (const auto anisotropyStrength =
+                   materialData_->findAttribute<Mn::Float>(*anisotropyLayerID,
+                                                           "anisotropy")) {
+      if (Mn::Math::abs(*anisotropyStrength) > 0.0) {
+        flags_ |= PbrShader::Flag::AnisotropyLayer;
+        matCache.anisotropyLayer.factor =
+            Mn::Math::clamp(*anisotropyStrength, -1.0f, 1.0f);
+      }
+    }
+    /**
+     * The rotation of the anisotropy in tangent, bitangent space, measured in
+     * radians counter-clockwise from the tangent. When anisotropyTexture is
+     * present, anisotropyRotation provides additional rotation to the vectors
+     * in the texture. Default is 0.0f
+     */
+    if (const auto anisotropyRotation = materialData_->findAttribute<Mn::Float>(
+            *anisotropyLayerID, "anisotropyRotation")) {
+      if (*anisotropyRotation != 0.0) {
+        flags_ |= PbrShader::Flag::AnisotropyLayer;
+        Mn::Rad rotAngle = Mn::Rad{*anisotropyRotation};
+        matCache.anisotropyLayer.direction =
+            Mn::Vector2{Mn::Complex::rotation(rotAngle)};
+      }
+      // Early adopters used anisotropyDirection
+    } else if (const auto anisotropyRotation =
+                   materialData_->findAttribute<Mn::Float>(
+                       *anisotropyLayerID, "anisotropyDirection")) {
+      if (*anisotropyRotation != 0.0) {
+        flags_ |= PbrShader::Flag::AnisotropyLayer;
+        Mn::Rad rotAngle = Mn::Rad{*anisotropyRotation};
+        matCache.anisotropyLayer.direction =
+            Mn::Vector2{Mn::Complex::rotation(rotAngle)};
+      }
+    }
+
+    /**
+     * A texture that defines the anisotropy of the material. Red and green
+     * channels represent the anisotropy direction in [-1, 1] tangent,
+     * bitangent space, to be rotated by anisotropyRotation. The blue
+     * channel contains strength as [0, 1] to be multiplied by
+     * anisotropyStrength.
+     */
+    if (const auto anisotropyLayerTexture =
+            materialData_->findAttribute<Mn::GL::Texture2D*>(
+                *anisotropyLayerID, "anisotropyTexturePointer")) {
+      // also covers flags_ |= PbrShader::Flag::AnisotropyLayer;
+      flags_ |= PbrShader::Flag::AnisotropyLayerTexture;
+      matCache.anisotropyLayer.texture = *anisotropyLayerTexture;
+    }
+  }  // has KHR_materials_anisotropy
+
+  ////////////////
+  // KHR_materials_transmission
+  if (const auto transmissionLayerID =
+          materialData_->findLayerId("#KHR_materials_transmission")) {
+    flags_ |= PbrShader::Flag::TransmissionLayer;
+    // transmissionFactor
+    if (const auto transmissionFactor = materialData_->findAttribute<Mn::Float>(
+            *transmissionLayerID, "transmissionFactor")) {
+      matCache.transmissionLayer.factor = *transmissionFactor;
+    }
+    // transmissionTexturePointer
+    if (const auto transmissionTexturePointer =
+            materialData_->findAttribute<Mn::GL::Texture2D*>(
+                *transmissionLayerID, "transmissionTexturePointer")) {
+      flags_ |= PbrShader::Flag::TransmissionLayerTexture;
+      matCache.transmissionLayer.texture = *transmissionTexturePointer;
+    }
+  }  // has KHR_materials_transmission layer
+
+  ////////////////
+  // KHR_materials_volume
+  if (const auto volumeLayerID =
+          materialData_->findLayerId("#KHR_materials_volume")) {
+    flags_ |= PbrShader::Flag::VolumeLayer;
+
+    if (const auto thicknessFactor = materialData_->findAttribute<Mn::Float>(
+            *volumeLayerID, "thicknessFactor")) {
+      matCache.volumeLayer.thicknessFactor = *thicknessFactor;
+    }
+
+    if (const auto thicknessTexturePointer =
+            materialData_->findAttribute<Mn::GL::Texture2D*>(
+                *volumeLayerID, "thicknessTexturePointer")) {
+      flags_ |= PbrShader::Flag::VolumeLayerThicknessTexture;
+      matCache.volumeLayer.thicknessTexture = *thicknessTexturePointer;
+    }
+
+    if (const auto attDist = materialData_->findAttribute<Mn::Float>(
+            *volumeLayerID, "attenuationDistance")) {
+      if (*attDist > 0.0f) {
+        // Can't be 0 or inf
+        matCache.volumeLayer.attenuationDist = *attDist;
+      }
+    }
+
+    if (const auto attenuationColor = materialData_->findAttribute<Mn::Color3>(
+            *volumeLayerID, "attenuationColor")) {
+      matCache.volumeLayer.attenuationColor = *attenuationColor;
+    }
+  }  // has KHR_materials_volume layer
 }  // PbrDrawable::setMaterialValuesInternal
 
 void PbrDrawable::setLightSetup(const Mn::ResourceKey& lightSetupKey) {
@@ -171,8 +348,8 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   // lines") on hard edges. (maybe due to potential numerical issues? we do
   // not know yet.)
   /*
-  if ((flags_ & PbrShader::Flag::DoubleSided) && glIsEnabled(GL_CULL_FACE)) {
-    Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::FaceCulling);
+  if ((flags_ & PbrShader::Flag::DoubleSided) && glIsEnabled(GL_CULL_FACE))
+  { Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::FaceCulling);
   }
   */
   Mn::Matrix4 modelMatrix =
@@ -184,10 +361,10 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   // Normal matrix is calculated as `m.inverted().transposed()`, and
   // `m.inverted()` is the same as
   // `m.comatrix().transposed()/m.determinant()`. We need the determinant to
-  // figure out the winding direction as well, thus we calculate it separately
-  // and then do
-  // `(m.comatrix().transposed()/determinant).transposed()`, which is the same
-  // as `m.comatrix()/determinant`.
+  // figure out the winding direction as well, thus we calculate it
+  // separately and then do
+  // `(m.comatrix().transposed()/determinant).transposed()`, which is the
+  // same as `m.comatrix()/determinant`.
   Mn::Matrix3x3 normalMatrix = rotScale.comatrix() / normalDet;
 
   // Flip winding direction to correct handle backface culling
@@ -201,8 +378,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
       // the fragment shader
       .setObjectId(static_cast<RenderCamera&>(camera).useDrawableIds()
                        ? drawableId_
-                       : ((flags_ & PbrShader::Flag::InstancedObjectId) ==
-                                  PbrShader::Flag::InstancedObjectId
+                       : (flags_ >= PbrShader::Flag::InstancedObjectId
                               ? 0
                               : node_.getSemanticId()))
       .setProjectionMatrix(camera.projectionMatrix())
@@ -225,13 +401,14 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
     shader_->bindBaseColorTexture(*matCache.baseColorTexture);
   }
 
-  if (matCache.hasAnyMetallicRoughnessTexture) {
+  if (flags_ & PbrShader::Flag::NoneRoughnessMetallicTexture) {
     shader_->bindMetallicRoughnessTexture(
-        *matCache.useMetallicRoughnessTexture);
+        *matCache.noneRoughnessMetallicTexture);
   }
 
   if (flags_ & PbrShader::Flag::NormalTexture) {
     shader_->bindNormalTexture(*matCache.normalTexture);
+    shader_->setNormalTextureScale(matCache.normalTextureScale);
   }
 
   if (flags_ & PbrShader::Flag::EmissiveTexture) {
@@ -285,8 +462,8 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   // WE stopped supporting doubleSided material due to lighting artifacts on
   // hard edges. See comments at the beginning of this function.
   /*
-  if ((flags_ & PbrShader::Flag::DoubleSided) && !glIsEnabled(GL_CULL_FACE)) {
-    Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
+  if ((flags_ & PbrShader::Flag::DoubleSided) && !glIsEnabled(GL_CULL_FACE))
+  { Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
   }
   */
 }  // namespace gfx
@@ -307,7 +484,8 @@ PbrDrawable& PbrDrawable::updateShader() {
     shader_ = shaderManager_.get<Mn::GL::AbstractShaderProgram, PbrShader>(
         getShaderKey(lightCount, flags_));
 
-    // if no shader with desired number of lights and flags exists, create one
+    // if no shader with desired number of lights and flags exists, create
+    // one
     if (!shader_) {
       shaderManager_.set<Mn::GL::AbstractShaderProgram>(
           shader_.key(), new PbrShader{flags_, lightCount},
