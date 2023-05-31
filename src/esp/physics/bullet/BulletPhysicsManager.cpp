@@ -14,6 +14,7 @@
 #include "BulletURDFImporter.h"
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/assets/ResourceManager.h"
+#include "esp/gfx/SkinData.h"
 #include "esp/metadata/attributes/PhysicsManagerAttributes.h"
 #include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
@@ -181,11 +182,25 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
     creationInfo.filepath = *renderAssetPath;
     creationInfo.lightSetupKey = lightSetup;
     creationInfo.scale = globalScale * Mn::Vector3(1.f, 1.f, 1.f);
-    creationInfo.rig = articulatedObject;
+    creationInfo.rigId = articulatedObjectID;
     esp::assets::RenderAssetInstanceCreationInfo::Flags flags;
     flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsRGBD;
     flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsSemantic;
     creationInfo.flags = flags;
+
+    // Instantiate rig articulation nodes.
+    // The nodes are parented to the articulated object links to couple the pose
+    // to the articulated object.
+    esp::gfx::Rig rig{};
+    for (int linkId : articulatedObject->getLinkIdsWithBase()) {
+      auto& link = articulatedObject->getLink(linkId);
+      rig.boneNames[link.linkName] = rig.bones.size();
+      auto* linkNode = &link.node().createChild();
+      rig.bones.push_back(reinterpret_cast<gfx::replay::NodeHandle>(linkNode));
+    }
+    resourceManager_.registerRigInstance(articulatedObject->getObjectID(),
+                                         std::move(rig));
+
     auto* gfxNode = resourceManager_.loadAndCreateRenderAssetInstance(
         assetInfo, creationInfo, objectNode, drawables);
     // Propagate the semantic ID to the graphics subtree

@@ -44,6 +44,7 @@ class Drawable;
 class PbrImageBasedLighting;
 struct SkinData;
 struct InstanceSkinData;
+struct Rig;
 namespace replay {
 class Recorder;
 }
@@ -397,6 +398,11 @@ class ResourceManager {
   void setLightSetup(gfx::LightSetup setup,
                      const Mn::ResourceKey& key = Mn::ResourceKey{
                          DEFAULT_LIGHTING_KEY});
+
+  // TODO
+  void registerRigInstance(int id, gfx::Rig&& rig);
+  bool rigInstanceExists(int id) const;
+  gfx::Rig& getRigInstance(int id);
 
   /**
    * @brief Construct a unified @ref MeshData from a loaded asset's collision
@@ -893,9 +899,9 @@ class ResourceManager {
    * @param skinData Structure holding the skin and rig configuration for the
    * instance.
    */
-  void mapSkinnedModelToArticulatedObject(
+  void mapSkinnedModelToRig(
       const MeshTransformNode& meshTransformNode,
-      const std::shared_ptr<physics::ArticulatedObject>& rig,
+      const gfx::Rig& rig,
       const std::shared_ptr<gfx::InstanceSkinData>& skinData);
 
   /**
@@ -1286,6 +1292,10 @@ class ResourceManager {
    * @brief The skin data for loaded assets.
    */
   std::map<int, std::shared_ptr<gfx::SkinData>> skins_;
+
+  // TODO
+  std::unordered_map<int, int> rigIds_;
+  std::vector<gfx::Rig> rigs_;
 
   /**
    * @brief Storage for precomputed voxel grids. Useful for when multiple

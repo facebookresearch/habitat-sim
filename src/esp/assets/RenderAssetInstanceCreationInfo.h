@@ -12,6 +12,7 @@
 
 #include <memory>
 #include <string>
+#include "esp/core/Esp.h"
 
 namespace esp {
 namespace physics {
@@ -36,7 +37,8 @@ struct RenderAssetInstanceCreationInfo {
       const std::string& _filepath,
       const Corrade::Containers::Optional<Magnum::Vector3>& _scale,
       const Flags& _flags,
-      const std::string& _lightSetupKey);
+      const std::string& _lightSetupKey,
+      const int _rigId = ID_UNDEFINED);
 
   bool isStatic() const { return bool(flags & Flag::IsStatic); }
   bool isRGBD() const { return bool(flags & Flag::IsRGBD); }
@@ -49,7 +51,7 @@ struct RenderAssetInstanceCreationInfo {
   Corrade::Containers::Optional<Magnum::Vector3> scale;
   Flags flags;
   std::string lightSetupKey;
-  std::shared_ptr<physics::ArticulatedObject> rig;
+  int rigId;
 };
 
 }  // namespace assets

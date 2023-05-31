@@ -58,6 +58,7 @@
 #include "esp/assets/GenericSemanticMeshData.h"
 #include "esp/assets/MeshMetaData.h"
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
+#include "esp/core/Esp.h"
 #include "esp/geo/Geo.h"
 #include "esp/gfx/GenericDrawable.h"
 #include "esp/gfx/PbrDrawable.h"
@@ -1886,16 +1887,20 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
   // such as the model bones are driven by the articulated object links.
   std::shared_ptr<gfx::InstanceSkinData> instanceSkinData = nullptr;
   const auto& meshMetaData = loadedAssetData.meshMetaData;
-  if (creation.rig && meshMetaData.skinIndex.first != ID_UNDEFINED) {
+  if (creation.rigId != ID_UNDEFINED &&
+      meshMetaData.skinIndex.first != ID_UNDEFINED &&
+      rigInstanceExists(creation.rigId)) {
     ESP_CHECK(
         !skins_.empty(),
         "Cannot instantiate skinned model because no skin data is imported.");
     const auto& skinData = skins_[meshMetaData.skinIndex.first];
     instanceSkinData = std::make_shared<gfx::InstanceSkinData>(skinData);
-    mapSkinnedModelToArticulatedObject(meshMetaData.root, creation.rig,
-                                       instanceSkinData);
-    ESP_CHECK(instanceSkinData->rootArticulatedObjectNode,
+    mapSkinnedModelToRig(meshMetaData.root, rigs_[rigIds_[creation.rigId]],
+                         instanceSkinData);
+    ESP_CHECK(instanceSkinData->rootArticulatedObjectNode &&
+                  !instanceSkinData->jointIdToTransformNode.empty(),
               "Could not map skinned model to articulated object.");
+    // TODO: Record rig creation here
   }
 
   addComponent(meshMetaData,            // mesh metadata
@@ -2409,7 +2414,7 @@ void ResourceManager::initDefaultMaterials() {
   // Add to shaderManager at specified key location
   shaderManager_.set<Mn::Trade::MaterialData>(WHITE_MATERIAL_KEY,
                                               std::move(whiteMaterialData));
-  // Buiild white vertex ID material
+  // Build white vertex ID material
   Mn::Trade::MaterialData vertIdMaterialData = buildDefaultPhongMaterial();
   vertIdMaterialData.mutableAttribute<Mn::Color4>(
       Mn::Trade::MaterialAttribute::AmbientColor) = Mn::Color4{1.0};
@@ -2678,7 +2683,7 @@ Mn::Trade::MaterialData ResourceManager::buildCustomAttributeFlatMaterial(
                  textures_.at(textureBaseIndex + flatMat.texture()).get()});
   }
   // Merge new attributes with those specified in original material
-  // overridding original ambient, diffuse and specular colors
+  // overriding original ambient, diffuse and specular colors
   // Using owning MaterialData constructor to handle potential
   // layers
   auto finalMaterial = Mn::MaterialTools::merge(
@@ -2702,7 +2707,7 @@ Mn::Trade::MaterialData ResourceManager::buildCustomAttributePhongMaterial(
   // here.
 
   // Merge new attributes with those specified in original material
-  // overridding original ambient, diffuse and specular colors
+  // overriding original ambient, diffuse and specular colors
   if (custAttributes.size() > 0) {
     // Using owning MaterialData constructor to handle potential layers
     auto finalMaterial = Mn::MaterialTools::merge(
@@ -2729,7 +2734,7 @@ Mn::Trade::MaterialData ResourceManager::buildCustomAttributePbrMaterial(
   // here.
 
   // Merge new attributes with those specified in original material
-  // overridding original ambient, diffuse and specular colors
+  // overriding original ambient, diffuse and specular colors
 
   if (custAttributes.size() > 0) {
     // Using owning MaterialData constructor to handle potential layers
@@ -3261,9 +3266,9 @@ void ResourceManager::addComponent(
   }
 }  // addComponent
 
-void ResourceManager::mapSkinnedModelToArticulatedObject(
+void ResourceManager::mapSkinnedModelToRig(
     const MeshTransformNode& meshTransformNode,
-    const std::shared_ptr<physics::ArticulatedObject>& rig,
+    const gfx::Rig& rig,
     const std::shared_ptr<gfx::InstanceSkinData>& skinData) {
   // Find skin joint ID that matches the node
   const auto& gfxBoneName = meshTransformNode.name;
@@ -3272,31 +3277,26 @@ void ResourceManager::mapSkinnedModelToArticulatedObject(
   if (jointIt != boneNameJointIdMap.end()) {
     int jointId = jointIt->second;
 
-    // Find articulated object link ID that matches the node
-    const auto linkIds = rig->getLinkIdsWithBase();
-    const auto linkId =
-        std::find_if(linkIds.begin(), linkIds.end(),
-                     [&](int i) { return gfxBoneName == rig->getLinkName(i); });
+    // Find rig articulation node matching the bone name
+    const auto& boneNameIt = rig.boneNames.find(gfxBoneName);
+    if (boneNameIt != rig.boneNames.end()) {
+      auto* bone = rig.bones[boneNameIt->second];
 
-    // Map the articulated object link associated with the skin joint
-    if (linkId != linkIds.end()) {
-      auto* articulatedObjectNode = &rig->getLink(*linkId.base()).node();
-
-      // This node will be used for rendering.
-      auto& transformNode = articulatedObjectNode->createChild();
-      skinData->jointIdToTransformNode[jointId] = &transformNode;
+      skinData->jointIdToTransformNode[jointId] =
+          reinterpret_cast<scene::SceneNode*>(bone);
 
       // First node found is the root
       if (!skinData->rootArticulatedObjectNode) {
-        skinData->rootArticulatedObjectNode = articulatedObjectNode;
+        skinData->rootArticulatedObjectNode =
+            reinterpret_cast<scene::SceneNode*>(bone);
       }
     }
   }
 
   for (const auto& child : meshTransformNode.children) {
-    mapSkinnedModelToArticulatedObject(child, rig, skinData);
+    mapSkinnedModelToRig(child, rig, skinData);
   }
-}  // mapSkinnedModelToArticulatedObject
+}  // mapSkinnedModelToRig
 
 void ResourceManager::addPrimitiveToDrawables(int primitiveID,
                                               scene::SceneNode& node,
@@ -3520,6 +3520,20 @@ void ResourceManager::setLightSetup(gfx::LightSetup setup,
 
   shaderManager_.set(key, std::move(setup), Mn::ResourceDataState::Mutable,
                      Mn::ResourcePolicy::Manual);
+}
+
+void ResourceManager::registerRigInstance(int id, gfx::Rig&& rig) {
+  rigIds_[id] = rigs_.size();
+  rigs_.emplace_back(rig);
+}
+
+bool ResourceManager::rigInstanceExists(int id) const {
+  return rigIds_.find(id) != rigIds_.end();
+}
+
+gfx::Rig& ResourceManager::getRigInstance(int id) {
+  ESP_CHECK(rigInstanceExists(id), "Unknown rig ID.");
+  return rigs_[rigIds_[id]];
 }
 
 std::unique_ptr<MeshData> ResourceManager::createJoinedCollisionMesh(
