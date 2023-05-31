@@ -4,6 +4,7 @@
 
 #include <Magnum/GL/Buffer.h>
 #include <Magnum/GL/BufferImage.h>
+#include <Magnum/GL/Context.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Framebuffer.h>
 #include <Magnum/GL/Mesh.h>
@@ -123,8 +124,11 @@ struct RenderTarget::Impl {
       // depth texture is required for HBAO
       CORRADE_INTERNAL_ASSERT(flags_ & Flag::DepthTextureAttachment);
       m_hbaoHelper = std::make_unique<ssao::HBAOHelper>();
-      // todo: get rid of init and use constructor
+      Magnum::GL::Context::current().resetState(
+          Magnum::GL::Context::State::EnterExternal);
       m_hbaoHelper->init(size.x(), size.y());
+      Magnum::GL::Context::current().resetState(
+          Magnum::GL::Context::State::ExitExternal);
     }
   }
 
@@ -209,10 +213,13 @@ struct RenderTarget::Impl {
 
     // auto frameBuffer = Mn::GL::defaultFramebuffer._id;
     // GLuint frameBuffer = 0; // target._id // temp hack
+    Mn::GL::Context::current().resetState(
+        Mn::GL::Context::State::EnterExternal);
 
     m_hbaoHelper->drawHbaoCacheAware(projection, width, height, samples,
                                      depthRenderTexture_.id(),
                                      framebuffer_.id());
+    Mn::GL::Context::current().resetState(Mn::GL::Context::State::ExitExternal);
   }
 
   void blitRgbaTo(Mn::GL::AbstractFramebuffer& target,
