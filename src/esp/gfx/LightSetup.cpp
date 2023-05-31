@@ -79,21 +79,18 @@ LightSetup getLightsAtBoxCorners(const Magnum::Range3D& box,
 
 LightSetup getDefaultLights() {
   return LightSetup{
-      {{0.0, -0.1, -1.0, 0.0},
+      {{0.0, -0.5, -0.5, 0.0},
        {0.5, 0.5, 0.5},
        LightPositionModel::Global},  // -z
-      {{0.0, -0.1, 1.0, 0.0},
+      {{0.0, -0.5, 0.5, 0.0},
        {0.5, 0.5, 0.5},
        LightPositionModel::Global},  // +z
-      {{-1.0, -0.1, 0.0, 0.0},
+      {{-0.5, -0.5, 0.0, 0.0},
        {0.5, 0.5, 0.5},
        LightPositionModel::Global},  // -x
-      {{1.0, -0.1, 0.0, 0.0},
+      {{0.5, -0.5, 0.0, 0.0},
        {0.5, 0.5, 0.5},
        LightPositionModel::Global},  // +x
-      {{0.0, -1.0, 0.0, 0.0},
-       {0.6, 0.6, 0.6},
-       LightPositionModel::Global},  // downward
   };
 }
 
