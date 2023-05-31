@@ -5,7 +5,6 @@
 #ifndef ESP_SIM_SIMULATORCONFIGURATION_H_
 #define ESP_SIM_SIMULATORCONFIGURATION_H_
 
-#include <Corrade/Containers/Optional.h>
 #include <string>
 
 #include "esp/core/Esp.h"
