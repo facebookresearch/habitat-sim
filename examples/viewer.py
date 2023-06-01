@@ -1895,6 +1895,9 @@ if __name__ == "__main__":
     sim_settings["enable_hbao"] = args.hbao
     sim_settings["clear_color"] = mn.Color4.magenta()
 
+    # don't need auto-navmesh
+    sim_settings["default_agent_navmesh"] = False
+
     mm = habitat_sim.metadata.MetadataMediator()
     mm.active_dataset = sim_settings["scene_dataset_config_file"]
 
