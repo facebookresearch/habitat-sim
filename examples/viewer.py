@@ -237,7 +237,7 @@ class HabitatSimInteractiveViewer(Application):
         self.cpo_initialized = False
         self.show_filtered = True
         self.rec_access_filter_threshold = 0.12  # empirically chosen
-        self.rec_color_mode = RecColorMode.DEFAULT
+        self.rec_color_mode = RecColorMode.FILTERING
         # map receptacle to parent objects
         self.rec_to_poh: Dict[hab_receptacle.Receptacle, str] = {}
         # contains filtering metadata and classification of meshes filtered automatically and manually
@@ -708,6 +708,24 @@ class HabitatSimInteractiveViewer(Application):
                         # white
                         rec_color = mn.Color4.cyan()
                     elif (
+                        self.rec_filter_data is not None
+                    ) and self.rec_color_mode == RecColorMode.FILTERING:
+                        if rec_unique_name in self.rec_filter_data["active"]:
+                            rec_color = mn.Color4.green()
+                        elif (
+                            rec_unique_name in self.rec_filter_data["manually_filtered"]
+                        ):
+                            rec_color = mn.Color4.yellow()
+                        elif rec_unique_name in self.rec_filter_data["access_filtered"]:
+                            rec_color = mn.Color4.red()
+                        elif (
+                            rec_unique_name
+                            in self.rec_filter_data["stability_filtered"]
+                        ):
+                            rec_color = mn.Color4.magenta()
+                        elif rec_unique_name in self.rec_filter_data["height_filtered"]:
+                            rec_color = mn.Color4.blue()
+                    elif (
                         self.cpo_initialized
                         and self.rec_color_mode != RecColorMode.DEFAULT
                     ):
@@ -735,29 +753,6 @@ class HabitatSimInteractiveViewer(Application):
                                     "receptacle_access_score"
                                 ]
                             )
-                        elif self.rec_color_mode == RecColorMode.FILTERING:
-                            if rec_unique_name in self.rec_filter_data["active"]:
-                                rec_color = mn.Color4.green()
-                            elif (
-                                rec_unique_name
-                                in self.rec_filter_data["manually_filtered"]
-                            ):
-                                rec_color = mn.Color4.yellow()
-                            elif (
-                                rec_unique_name
-                                in self.rec_filter_data["access_filtered"]
-                            ):
-                                rec_color = mn.Color4.red()
-                            elif (
-                                rec_unique_name
-                                in self.rec_filter_data["stability_filtered"]
-                            ):
-                                rec_color = mn.Color4.magenta()
-                            elif (
-                                rec_unique_name
-                                in self.rec_filter_data["height_filtered"]
-                            ):
-                                rec_color = mn.Color4.blue()
 
                     receptacle.debug_draw(self.sim, color=rec_color)
 
