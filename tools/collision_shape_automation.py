@@ -2212,6 +2212,7 @@ def get_objects_in_scene(
     sim_settings = default_sim_settings.copy()
     sim_settings["scene_dataset_config_file"] = dataset_path
     sim_settings["scene"] = scene_handle
+    sim_settings["default_agent_navmesh"] = False
 
     cfg = make_cfg(sim_settings)
     cfg.metadata_mediator = mm
@@ -2404,6 +2405,7 @@ def main():
     sim_settings["width"] = 720
     sim_settings["height"] = 720
     sim_settings["clear_color"] = mn.Color4.magenta() * 0.5
+    sim_settings["default_agent_navmesh"] = False
 
     # use the CollisionProxyOptimizer to compute metrics for multiple objects
     cpo = CollisionProxyOptimizer(sim_settings, output_directory=args.output_dir)
