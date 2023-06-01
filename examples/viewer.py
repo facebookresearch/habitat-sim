@@ -1961,6 +1961,9 @@ if __name__ == "__main__":
     sim_settings["rec_filter_file"] = args.rec_filter_file
     sim_settings["pbr_image_based_lighting"] = args.ibl
 
+    # don't need auto-navmesh
+    sim_settings["default_agent_navmesh"] = False
+
     mm = habitat_sim.metadata.MetadataMediator()
     mm.active_dataset = sim_settings["scene_dataset_config_file"]
 
