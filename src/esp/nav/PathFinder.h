@@ -257,6 +257,12 @@ struct NavMeshSettings {
    */
   bool filterWalkableLowHeightSpans{};
 
+  /**
+   * @brief Whether or not to include STATIC RigidObjects as NavMesh
+   * constraints. Note: Used in Simulator recomputeNavMesh pre-process.
+   */
+  bool includeStaticObjects{};
+
   void setDefaults() {
     cellSize = 0.05f;
     cellHeight = 0.2f;
@@ -274,6 +280,7 @@ struct NavMeshSettings {
     filterLowHangingObstacles = true;
     filterLedgeSpans = true;
     filterWalkableLowHeightSpans = true;
+    includeStaticObjects = false;
   }
 
   //! Load the settings from a JSON file

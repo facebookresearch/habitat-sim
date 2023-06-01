@@ -264,10 +264,12 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   if (flags_ & Flag::ImageBasedLighting) {
     // These are empirical numbers. Discount the diffuse light from IBL so the
     // ambient light will not be too strong. Also keeping the IBL specular
-    // component relatively low can guarantee the super glossy surface would not
-    // reflect the environment like a mirror.
-    scales.iblDiffuse = 0.8;
-    scales.iblSpecular = 0.3;
+    // component relatively low can guarantee the super glossy surface would
+    // not reflect the environment like a mirror.
+    scales.iblDiffuse = 0.5;
+    scales.iblSpecular = 0.5;
+    scales.directDiffuse = 0.5;
+    scales.directSpecular = 0.5;
   }
   setPbrEquationScales(scales);
   if (flags_ & Flag::DebugDisplay) {
@@ -527,7 +529,7 @@ PbrShader& PbrShader::setLightColor(unsigned int lightIndex,
       lightIndex < lightCount_,
       "PbrShader::setLightColor: lightIndex" << lightIndex << "is illegal.",
       *this);
-  Mn::Vector3 finalColor = intensity * color;
+  Mn::Vector3 finalColor = intensity * PBR_LIGHT_SCALE * color;
   setUniform(lightColorsUniform_ + lightIndex, finalColor);
   return *this;
 }
@@ -538,8 +540,10 @@ PbrShader& PbrShader::setLightColors(
                  "PbrShader::setLightColors(): expected"
                      << lightCount_ << "items but got" << colors.size(),
                  *this);
-
-  setUniform(lightColorsUniform_, colors);
+  for (int i = 0; i < colors.size(); ++i) {
+    setLightColor(i, colors[i]);
+  }
+  // setUniform(lightColorsUniform_, colors);
   return *this;
 }
 

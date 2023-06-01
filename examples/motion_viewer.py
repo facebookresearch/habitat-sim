@@ -584,10 +584,10 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         self.navmesh_settings = habitat_sim.NavMeshSettings()
         self.navmesh_settings.set_defaults()
         self.navmesh_settings.agent_radius = 0.30
+        self.navmesh_settings.include_static_objects = True
         self.sim.recompute_navmesh(
             self.sim.pathfinder,
             self.navmesh_settings,
-            include_static_objects=True,
         )
 
         # Set all articulated objects back to original motion_type

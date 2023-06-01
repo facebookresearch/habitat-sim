@@ -948,9 +948,8 @@ print("Placement fails = " + str(fails) + "/" + str(num_objects))
 # recompute the NavMesh with STATIC objects
 navmesh_settings = habitat_sim.NavMeshSettings()
 navmesh_settings.set_defaults()
-navmesh_success = sim.recompute_navmesh(
-    sim.pathfinder, navmesh_settings, include_static_objects=True
-)
+navmesh_settings.include_static_objects = True
+navmesh_success = sim.recompute_navmesh(sim.pathfinder, navmesh_settings)
 
 # simulate and collect observations
 example_type = "clutter generation"

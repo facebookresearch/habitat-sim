@@ -1126,8 +1126,9 @@ void Viewer::initSimPostReconfigure() {
     esp::nav::NavMeshSettings navMeshSettings;
     navMeshSettings.agentHeight = agentConfig_.height;
     navMeshSettings.agentRadius = agentConfig_.radius;
+    navMeshSettings.includeStaticObjects = true;
     simulator_->recomputeNavMesh(*simulator_->getPathFinder().get(),
-                                 navMeshSettings, true);
+                                 navMeshSettings);
   } else if (!navmeshFilename_.empty()) {
     std::string navmeshFile = Cr::Utility::Path::join(
         *Corrade::Utility::Path::currentDirectory(), navmeshFilename_);

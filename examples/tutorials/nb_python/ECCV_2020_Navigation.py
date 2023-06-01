@@ -838,9 +838,12 @@ if use_custom_settings:
     # default = 1.0
     # fmt: on
 
-navmesh_success = sim.recompute_navmesh(
-    sim.pathfinder, navmesh_settings, include_static_objects=False
-)
+    # @markdown **Include STATIC Objects**:
+    # @markdown Optionally include all instanced RigidObjects with STATIC MotionType as NavMesh constraints.
+    navmesh_settings.include_static_objects = True  # @param {type:"boolean"}
+    # default = False
+
+navmesh_success = sim.recompute_navmesh(sim.pathfinder, navmesh_settings)
 
 if not navmesh_success:
     print("Failed to build the navmesh! Try different parameters?")

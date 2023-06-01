@@ -1598,11 +1598,10 @@ class HabitatSimInteractiveViewer(Application):
         self.navmesh_settings.set_defaults()
         self.navmesh_settings.agent_height = self.cfg.agents[self.agent_id].height
         self.navmesh_settings.agent_radius = self.cfg.agents[self.agent_id].radius
-
+        self.navmesh_settings.include_static_objects = True
         self.sim.recompute_navmesh(
             self.sim.pathfinder,
             self.navmesh_settings,
-            include_static_objects=True,
         )
 
     def exit_event(self, event: Application.ExitEvent):
@@ -1905,6 +1904,11 @@ if __name__ == "__main__":
         help="Override configured lighting to use synthetic lighting for the stage.",
     )
     parser.add_argument(
+        "--ibl",
+        action="store_true",
+        help="Enable image-based lighting. Only applicable to scenes built with PBR materials.",
+    )
+    parser.add_argument(
         "--enable-batch-renderer",
         action="store_true",
         help="Enable batch rendering mode. The number of concurrent environments is specified with the num-environments parameter.",
@@ -1955,6 +1959,7 @@ if __name__ == "__main__":
     sim_settings["window_width"] = args.width
     sim_settings["window_height"] = args.height
     sim_settings["rec_filter_file"] = args.rec_filter_file
+    sim_settings["pbr_image_based_lighting"] = args.ibl
 
     mm = habitat_sim.metadata.MetadataMediator()
     mm.active_dataset = sim_settings["scene_dataset_config_file"]
