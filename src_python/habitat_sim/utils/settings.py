@@ -49,6 +49,7 @@ default_sim_settings = {
     "default_agent_navmesh": True,
     # if configuring a navmesh, should STATIC MotionType objects be included
     "navmesh_include_static_objects": False,
+    "pbr_image_based_lighting": False,
 }
 # [/default_sim_settings]
 
@@ -75,7 +76,9 @@ def make_cfg(settings: Dict[str, Any]):
         sim_cfg.physics_config_file = settings["physics_config_file"]
     if "scene_light_setup" in settings:
         sim_cfg.scene_light_setup = settings["scene_light_setup"]
+    sim_cfg.pbr_image_based_lighting = settings.get("pbr_image_based_lighting", False)
     sim_cfg.gpu_device_id = 0
+
     if not hasattr(sim_cfg, "scene_id"):
         raise RuntimeError(
             "Error: Please upgrade habitat-sim. SimulatorConfig API version mismatch"

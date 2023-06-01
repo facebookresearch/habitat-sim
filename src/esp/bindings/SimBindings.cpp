@@ -100,7 +100,7 @@ void initSimBindings(py::module& m) {
           "navmesh_settings", &SimulatorConfiguration::navMeshSettings,
           R"(Optionally provide a pre-configured NavMeshSettings. If provided, the NavMesh will be recomputed with the provided settings if: A. no NavMesh was loaded, or B. the loaded NavMesh's settings differ from the configured settings. If not provided, no NavMesh recompute will be done automatically.)")
       .def_readwrite(
-          "PBR_image_based_lighting",
+          "pbr_image_based_lighting",
           &SimulatorConfiguration::pbrImageBasedLighting,
           R"(Whether or not to enable image based lighting in the PBR shader.)")
       .def(py::self == py::self)
