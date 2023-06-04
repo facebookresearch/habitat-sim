@@ -55,33 +55,39 @@ ClassicReplayRenderer::ClassicReplayRenderer(
       return self_.resourceManager_->setLightSetup(lights);
     }
 
-    void createBone(unsigned envIndex,
-                    int rigId,
-                    int boneId,
-                    const std::string& boneName) override {
-      if (!self_.resourceManager_->rigInstanceExists(rigId)) {
-        self_.resourceManager_->registerRigInstance(rigId,
-                                                    std::move(gfx::Rig{}));
-      }
-      auto& rig = self_.resourceManager_->getRigInstance(
-          rigId);  // TODO: support multi-env
-      rig.boneNames[boneName] = rig.bones.size();
-      rig.boneIds[boneId] = rig.bones.size();
+    void createRigInstance(int rigId,
+                           const std::vector<std::pair<int, std::string>>&
+                               boneIdNamePairs) override {
+      ESP_CHECK(!self_.resourceManager_->rigInstanceExists(rigId),
+                "A rig instance with the specified ID already exists.");
 
-      // Create nodes to transform skinned mesh articulations
-      // The nodes are parented to the articulated object links for driving the
-      // animation
-      CORRADE_INTERNAL_ASSERT(envIndex >= 0 && envIndex < self_.envs_.size());
-      const auto& env = self_.envs_[envIndex];
-      auto& rootNode =
-          self_.sceneManager_->getSceneGraph(env.sceneID_).getRootNode();
-      auto* boneNode = &rootNode.createChild();
-      rig.bones.push_back(boneNode);
+      gfx::Rig rig{};
+      for (const auto& boneIdNamePair : boneIdNamePairs) {
+        rig.boneIds[boneIdNamePair.first] = rig.bones.size();
+        rig.boneNames[boneIdNamePair.second] = rig.bones.size();
+
+        // Create the nodes that control the pose of the rigged object.
+        const auto& env = self_.envs_[envIdx_];
+        auto& rootNode =
+            self_.sceneManager_->getSceneGraph(env.sceneID_).getRootNode();
+        auto* boneNode = &rootNode.createChild();
+        rig.bones.push_back(boneNode);
+      }
+
+      self_.resourceManager_->registerRigInstance(rigId, std::move(rig));
     }
 
-    gfx::replay::NodeHandle getBone(unsigned envIndex,
-                                    int rigId,
-                                    int boneId) override {
+    void deleteRigInstance(int rigId) override {
+      // Delete the nodes that control the pose of the rigged object.
+      const auto rig = self_.resourceManager_->getRigInstance(rigId);
+      for (auto boneNode : rig.bones) {
+        delete boneNode;
+      }
+
+      self_.resourceManager_->unregisterRigInstance(rigId);
+    }
+
+    gfx::replay::NodeHandle getBone(int rigId, int boneId) override {
       auto& rig = self_.resourceManager_->getRigInstance(rigId);
       return reinterpret_cast<gfx::replay::NodeHandle>(
           rig.bones[rig.boneIds[boneId]]);

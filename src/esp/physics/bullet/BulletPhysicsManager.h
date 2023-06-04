@@ -27,6 +27,7 @@
 #include "BulletRigidObject.h"
 #include "BulletRigidStage.h"
 #include "esp/physics/PhysicsManager.h"
+#include "esp/physics/bullet/BulletArticulatedObject.h"
 #include "esp/physics/bullet/BulletRigidObject.h"
 
 namespace esp {
@@ -467,6 +468,26 @@ class BulletPhysicsManager : public PhysicsManager {
       objectConstraints_.erase(objectId);
     }
   };
+
+  /**
+   * @brief Helper function for instantiating a skinned model associated to the
+   * articulated object. The model bones are driven by parenting them to their
+   * associated articulated object links by string-matching.
+   *
+   * @param ao Articulated object upon which the skinned model instance is
+   * attached.
+   * @param renderAssetPath Path of the skinned model.
+   * @param parentNode Scene node that will be the parent of the skinned model
+   * instance.
+   * @param drawables Drawable group associated with the skinned model instance.
+   * @param lightSetupKey Light setup associated with the skinned model
+   * instance.
+   */
+  void instantiateSkinnedModel(BulletArticulatedObject::ptr ao,
+                               const std::string& renderAssetPath,
+                               scene::SceneNode* parentNode,
+                               DrawableGroup* drawables,
+                               const std::string& lightSetupKey);
 
  public:
   ESP_SMART_POINTERS(BulletPhysicsManager)

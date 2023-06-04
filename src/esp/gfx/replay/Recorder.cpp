@@ -6,6 +6,7 @@
 
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/core/Check.h"
+#include "esp/core/Esp.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/SkinData.h"
 #include "esp/io/Json.h"
@@ -29,7 +30,6 @@ class NodeDeletionHelper : public Magnum::SceneGraph::AbstractFeature3D {
 
   ~NodeDeletionHelper() override {
     recorder_->onDeleteRenderAssetInstance(node);
-    // TODO: Delete matching rig record if applicable
   }
 
  private:
@@ -79,28 +79,24 @@ void Recorder::onCreateRenderAssetInstance(
   // manually later if necessary.
   NodeDeletionHelper* deletionHelper = new NodeDeletionHelper{*node, this};
 
-  instanceRecords_.emplace_back(InstanceRecord{
-      node, instanceKey, Corrade::Containers::NullOpt, deletionHelper});
+  instanceRecords_.emplace_back(InstanceRecord{node, instanceKey,
+                                               Corrade::Containers::NullOpt,
+                                               deletionHelper, creation.rigId});
 }
 
 void Recorder::onCreateRigInstance(int rigId, const Rig& rig) {
-  // Create record for rig
-  std::vector<const scene::SceneNode*> rigBoneTransforms{};
-  for (const auto& bone : rig.bones) {
-    rigBoneTransforms.push_back(bone);
-  }
-  rigs_[rigId] = std::move(rigBoneTransforms);
+  rigNodes_[rigId] = rig.bones;
 
   // Create creation info for rig
-  std::vector<BoneCreation> bones{};
+  std::vector<BoneCreation> boneCreations{};
   for (const auto& boneNamePair : rig.boneNames) {
     BoneCreation bone{};
     bone.rigId = rigId;
     bone.boneId = boneNamePair.second;
     bone.boneName = boneNamePair.first;
-    bones.emplace_back(std::move(bone));
+    boneCreations.emplace_back(std::move(bone));
   }
-  currKeyframe_.boneCreations = std::move(bones);
+  currKeyframe_.boneCreations = std::move(boneCreations);
 }
 
 void Recorder::onHideSceneGraph(const esp::scene::SceneGraph& sceneGraph) {
@@ -185,11 +181,14 @@ void Recorder::onDeleteRenderAssetInstance(const scene::SceneNode* node) {
   int index = findInstance(node);
   CORRADE_INTERNAL_ASSERT(index != ID_UNDEFINED);
 
-  auto instanceKey = instanceRecords_[index].instanceKey;
+  const auto& instanceRecord = instanceRecords_[index];
+  const auto& instanceKey = instanceRecord.instanceKey;
+  const auto& rigId = instanceRecord.rigId;
 
   checkAndAddDeletion(&getKeyframe(), instanceKey);
 
   instanceRecords_.erase(instanceRecords_.begin() + index);
+  rigNodes_.erase(rigId);
 }
 
 Keyframe& Recorder::getKeyframe() {
@@ -241,7 +240,7 @@ void Recorder::updateInstanceStates() {
   }
 
   // Update rig states
-  for (const auto& rigItr : rigs_) {
+  for (const auto& rigItr : rigNodes_) {
     int rigId = rigItr.first;
     for (int boneIdx = 0; boneIdx < rigItr.second.size(); ++boneIdx) {
       BoneState boneUpdate{};

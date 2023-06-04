@@ -6,6 +6,7 @@
 #define ESP_GFX_REPLAY_RECORDER_H_
 
 #include "Keyframe.h"
+#include "esp/core/Esp.h"
 
 #include <rapidjson/document.h>
 
@@ -167,6 +168,7 @@ class Recorder {
     RenderAssetInstanceKey instanceKey = ID_UNDEFINED;
     Corrade::Containers::Optional<RenderAssetInstanceState> recentState;
     NodeDeletionHelper* deletionHelper = nullptr;
+    int rigId = ID_UNDEFINED;
   };
 
   using KeyframeIterator = std::vector<Keyframe>::const_iterator;
@@ -190,8 +192,7 @@ class Recorder {
   Keyframe currKeyframe_;
   std::vector<Keyframe> savedKeyframes_;
   RenderAssetInstanceKey nextInstanceKey_ = 0;
-  // TODO: directly store rig
-  std::unordered_map<int, std::vector<const scene::SceneNode*>> rigs_ = {};
+  std::unordered_map<int, std::vector<scene::SceneNode*>> rigNodes_ = {};
 
   ESP_SMART_POINTERS(Recorder)
 };

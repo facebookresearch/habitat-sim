@@ -201,7 +201,7 @@ int PhysicsManager::addObjectQueryDrawables(
     const std::string& lightSetup) {
   // attributes exist, get drawables if valid simulator accessible
   if (simulator_ != nullptr) {
-    // aquire context if available
+    // acquire context if available
     simulator_->getRenderGLContext();
     auto& drawables = simulator_->getDrawableGroup();
     return addObject(objectAttributes, &drawables, attachmentNode, lightSetup);
@@ -309,7 +309,7 @@ int PhysicsManager::addArticulatedObjectInstance(
     return ID_UNDEFINED;
   }
 
-  // aquire context if available
+  // acquire context if available
   simulator_->getRenderGLContext();
   // Get drawables from simulator. TODO: Support non-existent simulator?
   auto& drawables = simulator_->getDrawableGroup();
@@ -389,7 +389,7 @@ int PhysicsManager::addTrajectoryObject(const std::string& trajVisName,
                                         bool smooth,
                                         int numInterp) {
   if (simulator_ != nullptr) {
-    // aquire context if available
+    // acquire context if available
     simulator_->getRenderGLContext();
   }
   // 0. Deduplicate sequential points
@@ -454,7 +454,7 @@ void PhysicsManager::removeObject(const int objectId,
                                   bool deleteObjectNode,
                                   bool deleteVisualNode) {
   if (simulator_ != nullptr) {
-    // aquire context if available
+    // acquire context if available
     simulator_->getRenderGLContext();
   }
   auto existingObjIter = getRigidObjIteratorOrAssert(objectId);
@@ -486,7 +486,7 @@ void PhysicsManager::removeObject(const int objectId,
 
 void PhysicsManager::removeArticulatedObject(int objectId) {
   if (simulator_ != nullptr) {
-    // aquire context if available
+    // acquire context if available
     simulator_->getRenderGLContext();
   }
   auto existingAOIter = getArticulatedObjIteratorOrAssert(objectId);

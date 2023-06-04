@@ -12,7 +12,7 @@ RenderAssetInstanceCreationInfo::RenderAssetInstanceCreationInfo(
     const Corrade::Containers::Optional<Magnum::Vector3>& _scale,
     const Flags& _flags,
     const std::string& _lightSetupKey,
-    const int _rigId)
+    int _rigId)
     : filepath(_filepath),
       scale(_scale),
       flags(_flags),

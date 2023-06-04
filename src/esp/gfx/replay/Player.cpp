@@ -4,15 +4,17 @@
 
 #include "Player.h"
 
+#include <Corrade/Containers/StringStl.h>
 #include <Corrade/Utility/Path.h>
 
-#include "esp/assets/ResourceManager.h"
 #include "esp/core/Esp.h"
 #include "esp/gfx/replay/Keyframe.h"
 #include "esp/io/Json.h"
 #include "esp/io/JsonAllTypes.h"
 
 #include <rapidjson/document.h>
+#include <unordered_map>
+#include <utility>
 
 namespace esp {
 namespace gfx {
@@ -75,13 +77,13 @@ void AbstractSceneGraphPlayerImplementation::setNodeSemanticId(
   setSemanticIdForSubtree(reinterpret_cast<scene::SceneNode*>(node), id);
 }
 
-void AbstractPlayerImplementation::createBone(unsigned envIndex,
-                                              int rigId,
-                                              int boneId,
-                                              const std::string& boneName) {}
+void AbstractPlayerImplementation::createRigInstance(
+    int rigId,
+    const std::vector<std::pair<int, std::string>>& boneIdNamePairs) {}
 
-gfx::replay::NodeHandle AbstractPlayerImplementation::getBone(unsigned envIndex,
-                                                              int rigId,
+void AbstractPlayerImplementation::deleteRigInstance(int rigId) {}
+
+gfx::replay::NodeHandle AbstractPlayerImplementation::getBone(int rigId,
                                                               int boneId) {
   return nullptr;
 }
@@ -194,9 +196,14 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     assetInfos_[assetInfo.filepath] = assetInfo;
   }
 
+  std::unordered_map<int, std::vector<std::pair<int, std::string>>>
+      boneCreations{};
   for (const auto& boneCreation : keyframe.boneCreations) {
-    implementation_->createBone(0 /*TODO*/, boneCreation.rigId,
-                                boneCreation.boneId, boneCreation.boneName);
+    boneCreations[boneCreation.rigId].emplace_back(
+        std::make_pair(boneCreation.boneId, boneCreation.boneName));
+  }
+  for (const auto& boneCreation : boneCreations) {
+    implementation_->createRigInstance(boneCreation.first, boneCreation.second);
   }
 
   // If all current instances are being deleted, clear the frame. This enables
@@ -206,6 +213,10 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
   if (frameCleared) {
     implementation_->deleteAssetInstances(createdInstances_);
     createdInstances_.clear();
+    for (auto& rig : createdRigs_) {
+      implementation_->deleteRigInstance(rig.second);
+    }
+    createdRigs_.clear();
   }
 
   for (const auto& pair : keyframe.creations) {
@@ -239,18 +250,28 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     const auto& instanceKey = pair.first;
     CORRADE_INTERNAL_ASSERT(createdInstances_.count(instanceKey) == 0);
     createdInstances_[instanceKey] = node;
+
+    if (creation.rigId != ID_UNDEFINED) {
+      createdRigs_[instanceKey] = creation.rigId;
+    }
   }
 
   if (!frameCleared) {
     for (const auto& deletionInstanceKey : keyframe.deletions) {
-      const auto& it = createdInstances_.find(deletionInstanceKey);
-      if (it == createdInstances_.end()) {
+      const auto& rigIt = createdRigs_.find(deletionInstanceKey);
+      if (rigIt != createdRigs_.end()) {
+        implementation_->deleteRigInstance(rigIt->second);
+        createdRigs_.erase(rigIt);
+      }
+
+      const auto& instanceIt = createdInstances_.find(deletionInstanceKey);
+      if (instanceIt == createdInstances_.end()) {
         // missing instance for this key, probably due to a failed instance
         // creation
         continue;
       }
 
-      implementation_->deleteAssetInstance(it->second);
+      implementation_->deleteAssetInstance(instanceIt->second);
       createdInstances_.erase(deletionInstanceKey);
     }
   }
@@ -270,10 +291,8 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
   }
 
   for (const auto& boneUpdate : keyframe.boneUpdates) {
-    auto* bone = implementation_->getBone(0 /*TODO*/, boneUpdate.rigId,
-                                          boneUpdate.boneId);
-    implementation_->setNodeTransform(reinterpret_cast<NodeHandle>(bone),
-                                      boneUpdate.absTransform.translation,
+    auto* bone = implementation_->getBone(boneUpdate.rigId, boneUpdate.boneId);
+    implementation_->setNodeTransform(bone, boneUpdate.absTransform.translation,
                                       boneUpdate.absTransform.rotation);
   }
 

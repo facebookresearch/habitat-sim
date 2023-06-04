@@ -399,10 +399,37 @@ class ResourceManager {
                      const Mn::ResourceKey& key = Mn::ResourceKey{
                          DEFAULT_LIGHTING_KEY});
 
-  // TODO
-  void registerRigInstance(int id, gfx::Rig&& rig);
-  bool rigInstanceExists(int id) const;
-  gfx::Rig& getRigInstance(int id);
+  /**
+   * @brief Registers a rig instance.
+   *
+   * @param rigId ID of the rig.
+   * @param rig Instantiated rig to register.
+   */
+  void registerRigInstance(int rigId, gfx::Rig&& rig);
+
+  /**
+   * @brief Unregisters a rig instance.
+   *
+   * @param rigId ID of the rig.
+   */
+  void unregisterRigInstance(int rigId);
+
+  /**
+   * @brief Checks if the specified rig ID has been registered to the resource
+   * manager.
+   *
+   * @param rigId ID of the rig.
+   * @return Whether the rig is registered to the resource manager.
+   */
+  bool rigInstanceExists(int rigId) const;
+
+  /**
+   * @brief Get a reference to a registered rig instance.
+   *
+   * @param rigId ID of the rig.
+   * @return Reference to a registered rig instance.
+   */
+  gfx::Rig& getRigInstance(int rigId);
 
   /**
    * @brief Construct a unified @ref MeshData from a loaded asset's collision

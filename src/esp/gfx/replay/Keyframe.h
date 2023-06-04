@@ -42,6 +42,8 @@ struct RenderAssetInstanceState {
 /**
  * @brief Registration of a rigged bone.
  */
+// TODO: Serializer doesn't support collections in nested types. Therefore,
+// rigId is duplicated for each bone.
 struct BoneCreation {
   int rigId = ID_UNDEFINED;
   int boneId = ID_UNDEFINED;
@@ -52,6 +54,8 @@ struct BoneCreation {
  * @brief The dynamic state of a rigged object bone that is tracked by the
  * replay system every frame.
  */
+// TODO: Serializer doesn't support collections in nested types. Therefore,
+// rigId is duplicated for each bone.
 struct BoneState {
   int rigId = ID_UNDEFINED;
   int boneId = ID_UNDEFINED;

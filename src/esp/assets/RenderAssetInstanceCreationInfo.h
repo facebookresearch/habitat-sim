@@ -38,7 +38,7 @@ struct RenderAssetInstanceCreationInfo {
       const Corrade::Containers::Optional<Magnum::Vector3>& _scale,
       const Flags& _flags,
       const std::string& _lightSetupKey,
-      const int _rigId = ID_UNDEFINED);
+      int _rigId = ID_UNDEFINED);
 
   bool isStatic() const { return bool(flags & Flag::IsStatic); }
   bool isRGBD() const { return bool(flags & Flag::IsRGBD); }

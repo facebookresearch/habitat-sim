@@ -3525,18 +3525,28 @@ void ResourceManager::setLightSetup(gfx::LightSetup setup,
                      Mn::ResourcePolicy::Manual);
 }
 
-void ResourceManager::registerRigInstance(int id, gfx::Rig&& rig) {
-  rigIds_[id] = rigs_.size();
+void ResourceManager::registerRigInstance(int rigId, gfx::Rig&& rig) {
+  // TODO: Articulated objects are leaking when changing scene
+  // ESP_CHECK(!rigInstanceExists(rigId),
+  //          "A rig instance was already registered with the specified ID.");
+  rigIds_[rigId] = rigs_.size();
   rigs_.emplace_back(rig);
 }
 
-bool ResourceManager::rigInstanceExists(int id) const {
-  return rigIds_.find(id) != rigIds_.end();
+void ResourceManager::unregisterRigInstance(int rigId) {
+  const auto& rigIt = rigIds_.find(rigId);
+  ESP_CHECK(rigIt != rigIds_.end(), "Unknown rig ID.");
+  rigIds_.erase(rigIt);
 }
 
-gfx::Rig& ResourceManager::getRigInstance(int id) {
-  ESP_CHECK(rigInstanceExists(id), "Unknown rig ID.");
-  return rigs_[rigIds_[id]];
+bool ResourceManager::rigInstanceExists(int rigId) const {
+  return rigIds_.find(rigId) != rigIds_.end();
+}
+
+gfx::Rig& ResourceManager::getRigInstance(int rigId) {
+  const auto& rigIt = rigIds_.find(rigId);
+  ESP_CHECK(rigIt != rigIds_.end(), "Unknown rig ID.");
+  return rigs_[rigIt->second];
 }
 
 std::unique_ptr<MeshData> ResourceManager::createJoinedCollisionMesh(
