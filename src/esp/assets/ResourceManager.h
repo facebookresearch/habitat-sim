@@ -42,9 +42,9 @@ class VoxelGrid;
 namespace gfx {
 class Drawable;
 class PbrImageBasedLighting;
-struct SkinData;
 struct InstanceSkinData;
 struct Rig;
+struct SkinData;
 namespace replay {
 class Recorder;
 }
@@ -400,19 +400,29 @@ class ResourceManager {
                          DEFAULT_LIGHTING_KEY});
 
   /**
-   * @brief Registers a rig instance.
+   * @brief Registers a rig instance. This gives ownership of the rig to the resource manager. Use @ref deleteRigInstance to dispose of the rig.
    *
-   * @param rigId ID of the rig.
+   * @param rig Instantiated rig to register.
+   * @return Unique id of the rig.
+   */
+  int registerRigInstance(gfx::Rig&& rig);
+
+  /**
+   * @brief Registers a rig instance. This gives ownership of the rig to the resource manager. Use @ref deleteRigInstance to dispose of the rig.
+   * This variant assumes that the rig id comes from gfx-replay, so id
+   * management can be skipped.
+   *
+   * @param rigId Unique id for the rig.
    * @param rig Instantiated rig to register.
    */
   void registerRigInstance(int rigId, gfx::Rig&& rig);
 
   /**
-   * @brief Unregisters a rig instance.
+   * @brief Unregisters a rig instance and deletes its bone nodes.
    *
    * @param rigId ID of the rig.
    */
-  void unregisterRigInstance(int rigId);
+  void deleteRigInstance(int rigId);
 
   /**
    * @brief Checks if the specified rig ID has been registered to the resource
@@ -1320,9 +1330,15 @@ class ResourceManager {
    */
   std::map<int, std::shared_ptr<gfx::SkinData>> skins_;
 
-  // TODO
-  std::unordered_map<int, int> rigIds_;
-  std::vector<gfx::Rig> rigs_;
+  /**
+   * @brief The next available unique ID for instantiated rigs.
+   */
+  int nextRigInstanceID_ = 0;
+
+  /**
+   * @brief The rigs for instantiated skinned assets.
+   */
+  std::unordered_map<int, gfx::Rig> rigInstances_;
 
   /**
    * @brief Storage for precomputed voxel grids. Useful for when multiple

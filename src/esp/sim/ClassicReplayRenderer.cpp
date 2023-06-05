@@ -78,13 +78,7 @@ ClassicReplayRenderer::ClassicReplayRenderer(
     }
 
     void deleteRigInstance(int rigId) override {
-      // Delete the nodes that control the pose of the rigged object.
-      const auto rig = self_.resourceManager_->getRigInstance(rigId);
-      for (auto boneNode : rig.bones) {
-        delete boneNode;
-      }
-
-      self_.resourceManager_->unregisterRigInstance(rigId);
+      self_.resourceManager_->deleteRigInstance(rigId);
     }
 
     gfx::replay::NodeHandle getBone(int rigId, int boneId) override {

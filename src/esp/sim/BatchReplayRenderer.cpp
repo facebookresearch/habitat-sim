@@ -207,7 +207,7 @@ BatchReplayRenderer::BatchReplayRenderer(
 
     gfx::replay::NodeHandle getBone(int, int) override {
       // not implemented
-      return 0;
+      return nullptr;
     }
 
     gfx_batch::Renderer& renderer_;

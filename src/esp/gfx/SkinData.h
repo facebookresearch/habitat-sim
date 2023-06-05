@@ -37,8 +37,8 @@ struct InstanceSkinData {
   const std::shared_ptr<SkinData>& skinData = nullptr;
   /** @brief Root articulated object node. */
   scene::SceneNode* rootArticulatedObjectNode = nullptr;
-  /** @brief Map between skin joint IDs and scaled articulated object transform
-   * nodes. */
+  /** @brief Map between skin joint IDs and articulated object transform nodes.
+   */
   std::unordered_map<int, const scene::SceneNode*> jointIdToTransformNode{};
 
   explicit InstanceSkinData(const std::shared_ptr<SkinData>& skinData)
@@ -46,11 +46,16 @@ struct InstanceSkinData {
 };
 
 /**
- * @brief Contains the articulation nodes of a skinned model instance.
+ * @brief Contains the nodes that control the articulations of a skinned model
+ * instance.
  */
 struct Rig {
+  /** @brief Nodes that control the articulations of a skinned model instance.
+   */
   std::vector<scene::SceneNode*> bones;
+  /** @brief Bone name to 'bones' index map. */
   std::unordered_map<std::string, int> boneNames;
+  /** @brief Bone id to 'bones' index map. */
   std::unordered_map<int, int> boneIds;
 };
 }  // namespace gfx

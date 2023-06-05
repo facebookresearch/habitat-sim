@@ -39,14 +39,6 @@ BulletPhysicsManager::BulletPhysicsManager(
 
 BulletPhysicsManager::~BulletPhysicsManager() {
   ESP_DEBUG() << "Deconstructing BulletPhysicsManager";
-
-  for (const auto& pair : existingArticulatedObjects_) {
-    removeArticulatedObject(pair.first);
-  }
-  for (const auto& pair : existingObjects_) {
-    removeObject(pair.first);
-  }
-
   existingObjects_.clear();
   existingArticulatedObjects_.clear();
   staticStageObject_.reset();
@@ -60,12 +52,9 @@ void BulletPhysicsManager::removeObject(const int objectId,
 }
 
 void BulletPhysicsManager::removeArticulatedObject(int objectId) {
-  // Unregister rig from resource manager
+  // Unregister skinned articulated object's rig from resource manager
   if (resourceManager_.rigInstanceExists(objectId)) {
-    for (auto* bone : resourceManager_.getRigInstance(objectId).bones) {
-      delete bone;
-    }
-    resourceManager_.unregisterRigInstance(objectId);
+    resourceManager_.deleteRigInstance(objectId);
   }
 
   removeObjectRigidConstraints(objectId);
@@ -959,7 +948,6 @@ void BulletPhysicsManager::instantiateSkinnedModel(
   creationInfo.filepath = renderAssetPath;
   creationInfo.lightSetupKey = lightSetupKey;
   creationInfo.scale = ao->getGlobalScale() * Mn::Vector3(1.f, 1.f, 1.f);
-  creationInfo.rigId = ao->getObjectID();
   esp::assets::RenderAssetInstanceCreationInfo::Flags flags;
   flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsRGBD;
   flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsSemantic;
@@ -975,7 +963,7 @@ void BulletPhysicsManager::instantiateSkinnedModel(
     auto* linkNode = &link.node().createChild();
     rig.bones.push_back(linkNode);
   }
-  resourceManager_.registerRigInstance(ao->getObjectID(), std::move(rig));
+  creationInfo.rigId = resourceManager_.registerRigInstance(std::move(rig));
 
   auto* gfxNode = resourceManager_.loadAndCreateRenderAssetInstance(
       assetInfo, creationInfo, parentNode, drawables);

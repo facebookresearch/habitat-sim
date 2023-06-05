@@ -13,8 +13,6 @@
 #include "esp/io/JsonAllTypes.h"
 
 #include <rapidjson/document.h>
-#include <unordered_map>
-#include <utility>
 
 namespace esp {
 namespace gfx {
