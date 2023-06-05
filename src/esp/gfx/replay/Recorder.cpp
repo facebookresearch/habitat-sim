@@ -257,12 +257,12 @@ void Recorder::updateInstanceStates() {
 
       Transform absTransform{absTransformMat.translation(),
                              Magnum::Quaternion::fromMatrix(rotationShear)};
-      boneUpdate.absTransform = std::move(absTransform);
+      boneUpdate.absTransform = absTransform;
 
       boneUpdate.rigId = rigId;
       boneUpdate.boneId = boneIdx;
 
-      currKeyframe_.boneUpdates.emplace_back(std::move(boneUpdate));
+      currKeyframe_.boneUpdates.emplace_back(boneUpdate);
     }
   }
 }

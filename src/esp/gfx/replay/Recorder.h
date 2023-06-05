@@ -60,7 +60,12 @@ class Recorder {
    */
   void onLoadRenderAsset(const esp::assets::AssetInfo& assetInfo);
 
-  // TODO
+  /**
+   * @brief User code should call this upon instantiating a skinned asset rig to
+   * inform Recorder about it.
+   * @param rigId Id of the rig that was instantiated.
+   * @param rig Rig that was instantiated.
+   */
   void onCreateRigInstance(int rigId, const Rig& rig);
 
   /**

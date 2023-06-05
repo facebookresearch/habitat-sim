@@ -196,17 +196,16 @@ BatchReplayRenderer::BatchReplayRenderer(
       }
     }
 
-    void createRigInstance(int rigId,
-                           const std::vector<std::pair<int, std::string>>&
-                               boneIdNamePairs) override {
+    void createRigInstance(int, const std::vector<std::pair<int, std::string>>&)
+        override {
       // Not implemented.
     }
 
-    void deleteRigInstance(int rigId) override {
+    void deleteRigInstance(int) override {
       // Not implemented.
     }
 
-    gfx::replay::NodeHandle getBone(int rigId, int boneId) override {
+    gfx::replay::NodeHandle getBone(int, int) override {
       // not implemented
       return 0;
     }

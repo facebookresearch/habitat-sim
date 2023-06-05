@@ -78,13 +78,12 @@ void AbstractSceneGraphPlayerImplementation::setNodeSemanticId(
 }
 
 void AbstractPlayerImplementation::createRigInstance(
-    int rigId,
-    const std::vector<std::pair<int, std::string>>& boneIdNamePairs) {}
+    int,
+    const std::vector<std::pair<int, std::string>>&) {}
 
-void AbstractPlayerImplementation::deleteRigInstance(int rigId) {}
+void AbstractPlayerImplementation::deleteRigInstance(int) {}
 
-gfx::replay::NodeHandle AbstractPlayerImplementation::getBone(int rigId,
-                                                              int boneId) {
+gfx::replay::NodeHandle AbstractPlayerImplementation::getBone(int, int) {
   return nullptr;
 }
 

@@ -483,7 +483,7 @@ class BulletPhysicsManager : public PhysicsManager {
    * @param lightSetupKey Light setup associated with the skinned model
    * instance.
    */
-  void instantiateSkinnedModel(BulletArticulatedObject::ptr ao,
+  void instantiateSkinnedModel(const BulletArticulatedObject::ptr& ao,
                                const std::string& renderAssetPath,
                                scene::SceneNode* parentNode,
                                DrawableGroup* drawables,

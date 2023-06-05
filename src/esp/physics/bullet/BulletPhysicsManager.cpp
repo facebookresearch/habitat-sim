@@ -40,6 +40,13 @@ BulletPhysicsManager::BulletPhysicsManager(
 BulletPhysicsManager::~BulletPhysicsManager() {
   ESP_DEBUG() << "Deconstructing BulletPhysicsManager";
 
+  for (const auto& pair : existingArticulatedObjects_) {
+    removeArticulatedObject(pair.first);
+  }
+  for (const auto& pair : existingObjects_) {
+    removeObject(pair.first);
+  }
+
   existingObjects_.clear();
   existingArticulatedObjects_.clear();
   staticStageObject_.reset();
@@ -53,6 +60,14 @@ void BulletPhysicsManager::removeObject(const int objectId,
 }
 
 void BulletPhysicsManager::removeArticulatedObject(int objectId) {
+  // Unregister rig from resource manager
+  if (resourceManager_.rigInstanceExists(objectId)) {
+    for (auto* bone : resourceManager_.getRigInstance(objectId).bones) {
+      delete bone;
+    }
+    resourceManager_.unregisterRigInstance(objectId);
+  }
+
   removeObjectRigidConstraints(objectId);
   PhysicsManager::removeArticulatedObject(objectId);
 }
@@ -933,7 +948,7 @@ void BulletPhysicsManager::removeRigidConstraint(int constraintId) {
 }
 
 void BulletPhysicsManager::instantiateSkinnedModel(
-    BulletArticulatedObject::ptr ao,
+    const BulletArticulatedObject::ptr& ao,
     const std::string& renderAssetPath,
     scene::SceneNode* parentNode,
     DrawableGroup* drawables,

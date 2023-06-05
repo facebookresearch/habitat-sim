@@ -3526,9 +3526,8 @@ void ResourceManager::setLightSetup(gfx::LightSetup setup,
 }
 
 void ResourceManager::registerRigInstance(int rigId, gfx::Rig&& rig) {
-  // TODO: Articulated objects are leaking when changing scene
-  // ESP_CHECK(!rigInstanceExists(rigId),
-  //          "A rig instance was already registered with the specified ID.");
+  ESP_CHECK(!rigInstanceExists(rigId),
+            "A rig instance was already registered with the specified ID.");
   rigIds_[rigId] = rigs_.size();
   rigs_.emplace_back(rig);
 }
@@ -3536,6 +3535,7 @@ void ResourceManager::registerRigInstance(int rigId, gfx::Rig&& rig) {
 void ResourceManager::unregisterRigInstance(int rigId) {
   const auto& rigIt = rigIds_.find(rigId);
   ESP_CHECK(rigIt != rigIds_.end(), "Unknown rig ID.");
+  rigs_.erase(rigs_.begin() + rigIt->second);
   rigIds_.erase(rigIt);
 }
 
