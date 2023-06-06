@@ -22,6 +22,7 @@
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/ShaderManager.h"
 #include "esp/gfx/ShadowMapManager.h"
+#include "esp/gfx/SkinData.h"
 #include "esp/physics/configure.h"
 
 #include "esp/metadata/attributes/AttributesEnumMaps.h"
@@ -42,9 +43,6 @@ class VoxelGrid;
 namespace gfx {
 class Drawable;
 class PbrImageBasedLighting;
-struct InstanceSkinData;
-struct Rig;
-struct SkinData;
 namespace replay {
 class Recorder;
 }

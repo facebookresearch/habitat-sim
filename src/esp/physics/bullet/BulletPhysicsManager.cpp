@@ -16,6 +16,8 @@
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/SkinData.h"
 #include "esp/metadata/attributes/PhysicsManagerAttributes.h"
+#include "esp/physics/bullet/BulletRigidObject.h"
+#include "esp/physics/bullet/BulletRigidStage.h"
 #include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/scene/SceneNode.h"

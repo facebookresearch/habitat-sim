@@ -7,9 +7,7 @@
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/Renderer.h"
-#include "esp/gfx/SkinData.h"
 #include "esp/metadata/MetadataMediator.h"
-#include "esp/scene/SceneNode.h"
 #include "esp/sensor/SensorFactory.h"
 #include "esp/sim/SimulatorConfiguration.h"
 

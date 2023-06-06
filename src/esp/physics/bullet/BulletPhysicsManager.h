@@ -19,19 +19,16 @@
 #include "BulletDynamics/ConstraintSolver/btPoint2PointConstraint.h"
 #include "BulletDynamics/Featherstone/btMultiBodyConstraintSolver.h"
 #include "BulletDynamics/Featherstone/btMultiBodyFixedConstraint.h"
-#include "BulletDynamics/Featherstone/btMultiBodyJointMotor.h"
 #include "BulletDynamics/Featherstone/btMultiBodyPoint2Point.h"
 
 #include "BulletCollisionHelper.h"
 #include "BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h"
-#include "BulletRigidObject.h"
-#include "BulletRigidStage.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/physics/bullet/BulletArticulatedObject.h"
-#include "esp/physics/bullet/BulletRigidObject.h"
 
 namespace esp {
 namespace physics {
+class BulletArticulatedObject;
 
 /**
 @brief Dynamic stage and object manager interfacing with Bullet physics
@@ -483,11 +480,12 @@ class BulletPhysicsManager : public PhysicsManager {
    * @param lightSetupKey Light setup associated with the skinned model
    * instance.
    */
-  void instantiateSkinnedModel(const BulletArticulatedObject::ptr& ao,
-                               const std::string& renderAssetPath,
-                               scene::SceneNode* parentNode,
-                               DrawableGroup* drawables,
-                               const std::string& lightSetupKey);
+  void instantiateSkinnedModel(
+      const std::shared_ptr<BulletArticulatedObject>& ao,
+      const std::string& renderAssetPath,
+      scene::SceneNode* parentNode,
+      DrawableGroup* drawables,
+      const std::string& lightSetupKey);
 
  public:
   ESP_SMART_POINTERS(BulletPhysicsManager)

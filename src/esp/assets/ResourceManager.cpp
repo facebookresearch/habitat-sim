@@ -46,7 +46,6 @@
 #include <Magnum/Trade/PbrMetallicRoughnessMaterialData.h>
 #include <Magnum/Trade/PhongMaterialData.h>
 #include <Magnum/Trade/SceneData.h>
-#include <Magnum/Trade/SkinData.h>
 #include <Magnum/Trade/TextureData.h>
 #include <Magnum/VertexFormat.h>
 
@@ -58,7 +57,6 @@
 #include "esp/assets/GenericSemanticMeshData.h"
 #include "esp/assets/MeshMetaData.h"
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
-#include "esp/core/Esp.h"
 #include "esp/geo/Geo.h"
 #include "esp/gfx/GenericDrawable.h"
 #include "esp/gfx/PbrDrawable.h"

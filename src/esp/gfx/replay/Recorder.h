@@ -6,7 +6,6 @@
 #define ESP_GFX_REPLAY_RECORDER_H_
 
 #include "Keyframe.h"
-#include "esp/core/Esp.h"
 
 #include <rapidjson/document.h>
 

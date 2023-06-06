@@ -6,7 +6,6 @@
 
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/core/Check.h"
-#include "esp/core/Esp.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/SkinData.h"
 #include "esp/io/Json.h"

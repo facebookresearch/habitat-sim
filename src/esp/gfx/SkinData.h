@@ -5,12 +5,9 @@
 #ifndef ESP_GFX_SKINDATA_H_
 #define ESP_GFX_SKINDATA_H_
 
-#include <Magnum/Magnum.h>
 #include <Magnum/Trade/SkinData.h>
 #include <esp/scene/SceneNode.h>
-#include <memory>
 #include <unordered_map>
-#include "esp/gfx/replay/Player.h"
 
 namespace esp {
 namespace gfx {
