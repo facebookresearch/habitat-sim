@@ -96,6 +96,10 @@ void initSimBindings(py::module& m) {
       .def_readwrite(
           "requires_textures", &SimulatorConfiguration::requiresTextures,
           R"(Whether or not to load textures for the meshes. This MUST be true for RGB rendering.)")
+      .def_readwrite(
+          "PBR_image_based_lighting",
+          &SimulatorConfiguration::pbrImageBasedLighting,
+          R"(Whether or not to enable image based lighting in the PBR shader.)")
       .def(py::self == py::self)
       .def(py::self != py::self);
 
@@ -357,6 +361,12 @@ void initSimBindings(py::module& m) {
            R"(Get a copy of the settings for an existing rigid constraint.)")
       .def("remove_rigid_constraint", &Simulator::removeRigidConstraint,
            "constraint_id"_a, R"(Remove a rigid constraint by id.)")
+      .def(
+          "get_runtime_perf_stat_names", &Simulator::getRuntimePerfStatNames,
+          R"(Runtime perf stats are various scalars helpful for troubleshooting runtime perf. This can be called once at startup. See also get_runtime_perf_stat_values.)")
+      .def(
+          "get_runtime_perf_stat_values", &Simulator::getRuntimePerfStatValues,
+          R"(Runtime perf stats are various scalars helpful for troubleshooting runtime perf. These values generally change after every sim step. See also get_runtime_perf_stat_names.)")
       .def("get_debug_line_render", &Simulator::getDebugLineRender,
            pybind11::return_value_policy::reference,
            R"(Get visualization helper for rendering lines.)");
@@ -456,7 +466,11 @@ void initSimBindings(py::module& m) {
           [](AbstractReplayRenderer& self) {
             return py::capsule(self.getCudaColorBufferDevicePointer());
           },
-          R"(Retrieve the depth buffer as a CUDA device pointer.)");
+          R"(Retrieve the depth buffer as a CUDA device pointer.)")
+      .def("debug_line_render", &AbstractReplayRenderer::getDebugLineRender,
+           R"(Get visualization helper for rendering lines.)")
+      .def("unproject", &AbstractReplayRenderer::unproject,
+           R"(Unproject a screen-space point to a world-space ray.)");
 }
 
 }  // namespace sim

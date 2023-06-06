@@ -135,6 +135,13 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
   void testSceneInstanceAttrVals(
       std::shared_ptr<esp::metadata::attributes::SceneInstanceAttributes>
           sceneInstAttr);
+
+  /**
+   * @brief This test will verify that the root-level scene instance user
+   * defined attribute values are as expected.
+   */
+  void testSceneInstanceRootUserDefinedAttrVals(
+      std::shared_ptr<esp::core::config::Configuration> userAttrs);
   /**
    * @brief This test will verify that the Stage attributes' managers' JSON
    * loading process is working as expected.
@@ -165,6 +172,7 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
 
   // test member vars
 
+  esp::metadata::MetadataMediator::uptr MM = nullptr;
   esp::logging::LoggingContext loggingContext_;
   AttrMgrs::LightLayoutAttributesManager::ptr lightLayoutAttributesManager_ =
       nullptr;
@@ -179,7 +187,7 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
 AttributesConfigsTest::AttributesConfigsTest() {
   // set up a default simulation config to initialize MM
   auto cfg = esp::sim::SimulatorConfiguration{};
-  auto MM = MetadataMediator::create(cfg);
+  MM = MetadataMediator::create_unique(cfg);
   // get attributes managers for default dataset
   lightLayoutAttributesManager_ = MM->getLightLayoutAttributesManager();
   objectAttributesManager_ = MM->getObjectAttributesManager();
@@ -518,6 +526,16 @@ void AttributesConfigsTest::testLightJSONLoad() {
 
 }  // AttributesManagers_LightJSONLoadTest
 
+void AttributesConfigsTest::testSceneInstanceRootUserDefinedAttrVals(
+    std::shared_ptr<esp::core::config::Configuration> userAttrs) {
+  // test scene instance attributes-level user config vals
+  testUserDefinedConfigVals(userAttrs, 4, "scene instance defined string", true,
+                            99, 9.1, Mn::Vector2(1.3f, 2.4f),
+                            Mn::Vector3(12.3, 32.5, 25.07),
+                            Mn::Quaternion({3.2f, 2.6f, 5.1f}, 0.3f),
+                            Mn::Vector4(13.5f, 14.6f, 15.7f, 16.9f));
+}  // AttributesConfigsTest::testSceneInstanceRootUserDefinedAttrVals
+
 void AttributesConfigsTest::testSceneInstanceAttrVals(
     std::shared_ptr<esp::metadata::attributes::SceneInstanceAttributes>
         sceneAttr) {
@@ -532,11 +550,12 @@ void AttributesConfigsTest::testSceneInstanceAttrVals(
   CORRADE_COMPARE(sceneAttr->getSemanticSceneHandle(),
                   "test_semantic_descriptor_path1");
   // test scene instance attributes-level user config vals
-  testUserDefinedConfigVals(
-      sceneAttr->getUserConfiguration(), 4, "scene instance defined string",
-      true, 99, 9.1, Mn::Vector2(1.3f, 2.4f), Mn::Vector3(12.3, 32.5, 25.07),
-      Mn::Quaternion({3.2f, 2.6f, 5.1f}, 0.3f),
-      Mn::Vector4(13.5f, 14.6f, 15.7f, 16.9f));
+  testSceneInstanceRootUserDefinedAttrVals(sceneAttr->getUserConfiguration());
+
+  // test scene instanct attributes-level user config vals retrieved from MM
+  // directly
+  testSceneInstanceRootUserDefinedAttrVals(
+      MM->getSceneInstanceUserConfiguration(sceneAttr->getHandle()));
 
   // verify objects
   auto objectInstanceList = sceneAttr->getObjectInstances();

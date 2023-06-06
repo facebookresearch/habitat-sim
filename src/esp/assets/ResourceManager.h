@@ -12,7 +12,6 @@
 #include <cstdint>
 #include <map>
 #include <memory>
-#include <string>
 #include <utility>
 #include <vector>
 
@@ -43,6 +42,8 @@ class VoxelGrid;
 namespace gfx {
 class Drawable;
 class PbrImageBasedLighting;
+struct SkinData;
+struct InstanceSkinData;
 namespace replay {
 class Recorder;
 }
@@ -70,6 +71,7 @@ class CCSemanticObject;
 struct SceneConfiguration;
 }  // namespace scene
 namespace physics {
+class ArticulatedObject;
 class PhysicsManager;
 class RigidObject;
 }  // namespace physics
@@ -536,12 +538,14 @@ class ResourceManager {
    * gfx::Drawable.
    */
 
-  void createDrawable(Mn::GL::Mesh* mesh,
-                      gfx::Drawable::Flags& meshAttributeFlags,
-                      scene::SceneNode& node,
-                      const Mn::ResourceKey& lightSetupKey,
-                      const Mn::ResourceKey& materialKey,
-                      DrawableGroup* group = nullptr);
+  void createDrawable(
+      Mn::GL::Mesh* mesh,
+      gfx::Drawable::Flags& meshAttributeFlags,
+      scene::SceneNode& node,
+      const Mn::ResourceKey& lightSetupKey,
+      const Mn::ResourceKey& materialKey,
+      DrawableGroup* group = nullptr,
+      const std::shared_ptr<gfx::InstanceSkinData>& skinData = nullptr);
 
   /**
    * @brief Remove the specified primitive mesh.
@@ -720,12 +724,25 @@ class ResourceManager {
   /**
    * @brief Build data for a report for vertex color mapping to semantic scene
    * objects - this list of strings will disclose which colors are found in
-   * vertices but not in semantic scene descirptors, and which semantic objects
+   * vertices but not in semantic scene descriptors, and which semantic objects
    * do not have their colors mapped in mesh verts.
    */
   std::vector<std::string> buildVertexColorMapReport(
       const std::shared_ptr<metadata::attributes::StageAttributes>&
           stageAttributes);
+
+  /**
+   * @brief Get the count of Drawables and the total face count across all
+   * Drawables in the scene. This is helpful for troubleshooting runtime perf.
+   * See also resetDrawableCountAndNumFaces.
+   */
+  auto getDrawableCountAndNumFaces() { return drawableCountAndNumFaces_; }
+
+  /**
+   * @brief Reset this count and this number. See also
+   * getDrawableCountAndNumFaces.
+   */
+  void resetDrawableCountAndNumFaces() { drawableCountAndNumFaces_ = {0, 0}; }
 
  private:
   /**
@@ -755,6 +772,35 @@ class ResourceManager {
    * primitive to instantiate
    */
   void buildPrimitiveAssetData(const std::string& primTemplateHandle);
+
+  /**
+   * @brief this will build a Phong @ref Magnum::Trade::MaterialData using
+   * default attributes from deprecated/removed esp::gfx::PhongMaterialData.
+   * @return The new phong color populated with default values
+   */
+  Mn::Trade::MaterialData buildDefaultPhongMaterial();
+
+  /**
+   * @brief Define and set user-defined attributes for the passed
+   * @ref Magnum::Trade::MaterialData.
+   * @param material The material to initialize with the expected
+   * Habitat-specific user-defined attributes.
+   * @param shaderTypeToUse What shader to use to render the objects with this
+   * material. May not be the same as the material type.
+   * @param hasVertObjID Whether or not the material has vertex-based object ids
+   * for semantics.
+   * @param hasTxtrObjID Whether or not the material has texture-based object
+   * ids for semantics.
+   * @param txtrIdx The absolute index in the @ref textures_ store for the semantic
+   * annotation texture.
+   * @return the updated material
+   */
+  Mn::Trade::MaterialData setMaterialDefaultUserAttributes(
+      const Mn::Trade::MaterialData& material,
+      ObjectInstanceShaderType shaderTypeToUse,
+      bool hasVertObjID = false,
+      bool hasTxtrObjID = false,
+      int txtrIdx = -1) const;
 
   /**
    * @brief Configure the importerManager_ GL Extensions appropriately based on
@@ -801,6 +847,7 @@ class ResourceManager {
   inline bool isRenderAssetGeneral(AssetType type) {
     return type == AssetType::MP3D_MESH || type == AssetType::UNKNOWN;
   }
+
   /**
    * @brief Recursive construction of scene nodes for an asset.
    *
@@ -822,15 +869,36 @@ class ResourceManager {
    * @param computeAbsoluteAABBs whether absolute bounding boxes should be
    * computed
    * @param staticDrawableInfo structure holding the drawable infos for aabbs
+   * @param skinData structure holding the skin and rig configuration for the
+   * instance
    */
-  void addComponent(const MeshMetaData& metaData,
-                    scene::SceneNode& parent,
-                    const Mn::ResourceKey& lightSetupKey,
-                    DrawableGroup* drawables,
-                    const MeshTransformNode& meshTransformNode,
-                    std::vector<scene::SceneNode*>& visNodeCache,
-                    bool computeAbsoluteAABBs,
-                    std::vector<StaticDrawableInfo>& staticDrawableInfo);
+  void addComponent(
+      const MeshMetaData& metaData,
+      scene::SceneNode& parent,
+      const Mn::ResourceKey& lightSetupKey,
+      DrawableGroup* drawables,
+      const MeshTransformNode& meshTransformNode,
+      std::vector<scene::SceneNode*>& visNodeCache,
+      bool computeAbsoluteAABBs,
+      std::vector<StaticDrawableInfo>& staticDrawableInfo,
+      const std::shared_ptr<gfx::InstanceSkinData>& skinData = nullptr);
+
+  /**
+   * @brief Recursive construction of instance skinning data.
+   *
+   * Fills the fields of a @ref InstanceSkinData to enable skinned mesh rendering
+   * by associating each bone to a corresponding articulated object link.
+   *
+   * @param meshTransformNode The @ref MeshTransformNode being traversed.
+   * @param creationInfo Creation information for the instance which contains
+   * the rig.
+   * @param skinData Structure holding the skin and rig configuration for the
+   * instance.
+   */
+  void mapSkinnedModelToArticulatedObject(
+      const MeshTransformNode& meshTransformNode,
+      const std::shared_ptr<physics::ArticulatedObject>& rig,
+      const std::shared_ptr<gfx::InstanceSkinData>& skinData);
 
   /**
    * @brief Load textures from importer into assets, and update metaData for
@@ -852,6 +920,15 @@ class ResourceManager {
    * @param loadedAssetData The asset's @ref LoadedAssetData object.
    */
   void loadMeshes(Importer& importer, LoadedAssetData& loadedAssetData);
+
+  /**
+   * @brief Load skins from importer into assets.
+   *
+   * @param importer The importer already loaded with information for the
+   * asset.
+   * @param loadedAssetData The asset's @ref LoadedAssetData object.
+   */
+  void loadSkins(Importer& importer, LoadedAssetData& loadedAssetData);
 
   /**
    * @brief Recursively build a unified @ref MeshData from loaded assets via a
@@ -913,7 +990,7 @@ class ResourceManager {
   /**
    * @brief Boolean check if @p typeToCheck aligns with passed types explicitly
    * specified, or type in material
-   * @param typeToCheck The ObjectInstanceShaderType value beign queried for.
+   * @param typeToCheck The ObjectInstanceShaderType value being queried for.
    * @param materialData The material whose type we are verifying against
    * @param verificationType The ObjectInstanceShaderType we are verifying
    * against
@@ -929,39 +1006,45 @@ class ResourceManager {
       Mn::Trade::MaterialType mnVerificationType) const;
 
   /**
-   * @brief Build a @ref PhongMaterialData for use with flat shading
+   * @brief Build a @ref Magnum::Trade::MaterialData for use with Flat shading
+   * that holds all custom attributes except texture pointers.
+   * Note : habitat-sim currently uses the Phong shader for Flat materials.
    *
    * Textures must already be loaded for the asset this material belongs to
    *
    * @param material Material data with texture IDs
-   * @param textureBaseIndex Base index of the assets textures in textures_
+   * @param textureBaseIndex Base index of the assets textures in @ref textures_
+   * store
    */
-  gfx::PhongMaterialData::uptr buildFlatShadedMaterialData(
+  Mn::Trade::MaterialData buildCustomAttributeFlatMaterial(
       const Mn::Trade::MaterialData& materialData,
       int textureBaseIndex);
 
   /**
-   * @brief Build a @ref PhongMaterialData for use with phong shading
+   * @brief Build a @ref Magnum::Trade::MaterialData for use with Phong shading
+   * that holds all custom attributes except texture pointers.
    *
    * Textures must already be loaded for the asset this material belongs to
    *
    * @param material Material data with texture IDs
-   * @param textureBaseIndex Base index of the assets textures in textures_
-
+   * @param textureBaseIndex Base index of the assets textures in @ref textures_
+   * store
    */
-  gfx::PhongMaterialData::uptr buildPhongShadedMaterialData(
+  Mn::Trade::MaterialData buildCustomAttributePhongMaterial(
       const Mn::Trade::MaterialData& material,
       int textureBaseIndex) const;
 
   /**
-   * @brief Build a @ref PbrMaterialData for use with PBR shading
+   * @brief Build a @ref Magnum::Trade::MaterialData for use with PBR shading
+   * that holds all custom attributes except texture pointers.
    *
    * Textures must already be loaded for the asset this material belongs to
    *
    * @param material Material data with texture IDs
-   * @param textureBaseIndex Base index of the assets textures in textures_
+   * @param textureBaseIndex Base index of the assets textures in @ref textures_
+   * store
    */
-  gfx::PbrMaterialData::uptr buildPbrShadedMaterialData(
+  Mn::Trade::MaterialData buildCustomAttributePbrMaterial(
       const Mn::Trade::MaterialData& material,
       int textureBaseIndex) const;
 
@@ -1172,7 +1255,7 @@ class ResourceManager {
       const std::vector<StaticDrawableInfo>& staticDrawableInfo);
 
   /**
-   * @brief Compute absolute transformations of all drwables stored in
+   * @brief Compute absolute transformations of all drawables stored in
    * staticDrawableInfo_
    */
   std::vector<Mn::Matrix4> computeAbsoluteTransformations(
@@ -1196,6 +1279,7 @@ class ResourceManager {
    * @brief The mesh data for loaded assets.
    */
   std::map<int, std::shared_ptr<BaseMesh>> meshes_;
+  std::pair<int, int> drawableCountAndNumFaces_{0, 0};
 
   /**
    * @brief The next available unique ID for loaded textures
@@ -1213,8 +1297,18 @@ class ResourceManager {
   int nextMaterialID_ = 0;
 
   /**
-   * @brief Storage for precomuted voxel grids. Useful for when multiple objects
-   * in a scene are using the same VoxelGrid.
+   * @brief The next available unique ID for loaded skins
+   */
+  int nextSkinID_ = 0;
+
+  /**
+   * @brief The skin data for loaded assets.
+   */
+  std::map<int, std::shared_ptr<gfx::SkinData>> skins_;
+
+  /**
+   * @brief Storage for precomputed voxel grids. Useful for when multiple
+   * objects in a scene are using the same VoxelGrid.
    *
    * Maps absolute path keys to VoxelGrid.
    */
@@ -1309,7 +1403,7 @@ class ResourceManager {
   /**
    * @brief The imaged based lighting for PBR, each is a collection of
    * an environment map, an irradiance map, a BRDF lookup table (2D texture),
-   * and a pre-fitered map
+   * and a pre-filtered map
    */
   std::vector<std::unique_ptr<esp::gfx::PbrImageBasedLighting>>
       pbrImageBasedLightings_;

@@ -133,6 +133,10 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     resourceManager_->setMetadataMediator(metadataMediator_);
   }
 
+  // reset this count and number here because we are resetting (clearing) the
+  // scene
+  resourceManager_->resetDrawableCountAndNumFaces();
+
   if (!sceneManager_) {
     sceneManager_ = scene::SceneManager::create_unique();
   }
@@ -1339,5 +1343,36 @@ int Simulator::getAgentObservationSpaces(
   }
   return spaces.size();
 }
+
+std::vector<std::string> Simulator::getRuntimePerfStatNames() {
+  return {"num rigid",
+          "num active rigid",
+          "num artic",
+          "num active overlaps",
+          "num active contacts",
+          "num drawables",
+          "num faces"};
+}
+
+std::vector<float> Simulator::getRuntimePerfStatValues() {
+  int drawableCount = 0;
+  int drawableNumFaces = 0;
+  std::tie(drawableCount, drawableNumFaces) =
+      resourceManager_->getDrawableCountAndNumFaces();
+
+  runtimePerfStatValues_.clear();
+  runtimePerfStatValues_.push_back(physicsManager_->getNumRigidObjects());
+  runtimePerfStatValues_.push_back(physicsManager_->checkActiveObjects());
+  runtimePerfStatValues_.push_back(physicsManager_->getNumArticulatedObjects());
+  runtimePerfStatValues_.push_back(
+      physicsManager_->getNumActiveOverlappingPairs());
+  runtimePerfStatValues_.push_back(
+      physicsManager_->getNumActiveContactPoints());
+  runtimePerfStatValues_.push_back(drawableCount);
+  runtimePerfStatValues_.push_back(drawableNumFaces);
+
+  return runtimePerfStatValues_;
+}
+
 }  // namespace sim
 }  // namespace esp

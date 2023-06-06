@@ -32,6 +32,10 @@ ClassicReplayRenderer::ClassicReplayRenderer(
   resourceManager_ =
       std::make_unique<assets::ResourceManager>(metadataMediator, flags);
 
+  // hack to get ReplicCAD non-baked stages to render correctly
+  resourceManager_->getShaderManager().setFallback(
+      esp::gfx::getDefaultLights());
+
   sceneManager_ = scene::SceneManager::create_unique();
 
   class SceneGraphPlayerImplementation
@@ -232,7 +236,8 @@ void ClassicReplayRenderer::doRender(
       if (imageViews != nullptr) {
         renderer_->enqueueAsyncDrawJob(visualSensor, sceneGraph,
                                        imageViews[envIndex],
-                                       esp::gfx::RenderCamera::Flags{});
+                                       esp::gfx::RenderCamera::Flags{
+              gfx::RenderCamera::Flag::FrustumCulling});
       }
 #else
       // TODO what am I supposed to do here?
@@ -261,8 +266,16 @@ void ClassicReplayRenderer::doRender(
     visualSensor.renderTarget().renderEnter();
 
     auto& sceneGraph = getSceneGraph(envIndex);
-    renderer_->draw(*visualSensor.getRenderCamera(), sceneGraph,
-                    esp::gfx::RenderCamera::Flags{});
+    renderer_->draw(
+        *visualSensor.getRenderCamera(), sceneGraph,
+        esp::gfx::RenderCamera::Flags{gfx::RenderCamera::Flag::FrustumCulling});
+
+    if (envIndex == 0 && debugLineRender_) {
+      auto* camera = visualSensor.getRenderCamera();
+      debugLineRender_->flushLines(camera->cameraMatrix(),
+                                   camera->projectionMatrix(),
+                                   camera->viewport());
+    }
 
     visualSensor.renderTarget().renderExit();
 
@@ -289,6 +302,19 @@ ClassicReplayRenderer::getEnvironmentSensors(unsigned envIndex) {
   CORRADE_INTERNAL_ASSERT(envIndex < envs_.size());
   auto& env = envs_[envIndex];
   return env.sensorMap_;
+}
+
+esp::geo::Ray ClassicReplayRenderer::doUnproject(
+    unsigned envIndex,
+    const Mn::Vector2i& viewportPosition) {
+  auto& sensorMap = getEnvironmentSensors(envIndex);
+  CORRADE_INTERNAL_ASSERT(sensorMap.size() == 1);
+  CORRADE_INTERNAL_ASSERT(sensorMap.begin()->second.get().isVisualSensor());
+  auto& visualSensor =
+      static_cast<esp::sensor::VisualSensor&>(sensorMap.begin()->second.get());
+
+  return visualSensor.getRenderCamera()->unproject(viewportPosition,
+                                                   /*normalized*/ true);
 }
 
 esp::scene::SceneGraph& ClassicReplayRenderer::getSceneGraph(

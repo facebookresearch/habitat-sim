@@ -14,13 +14,11 @@ set(
   DrawableGroup.h
   GenericDrawable.cpp
   GenericDrawable.h
+  SkinData.h
   MeshVisualizerDrawable.cpp
   MeshVisualizerDrawable.h
   LightSetup.cpp
   LightSetup.h
-  MaterialData.h
-  MaterialUtil.cpp
-  MaterialUtil.h
   magnum.h
   RenderCamera.cpp
   RenderCamera.h
