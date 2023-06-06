@@ -202,10 +202,8 @@ void ClassicReplayRenderer::doSetSensorTransformsFromKeyframe(
 }
 
 void ClassicReplayRenderer::doRender(
-    Corrade::Containers::ArrayView<const Magnum::MutableImageView2D>
-        colorImageViews,
-    Corrade::Containers::ArrayView<const Magnum::MutableImageView2D>
-        depthImageViews) {
+    Cr::Containers::ArrayView<const Mn::MutableImageView2D> colorImageViews,
+    Cr::Containers::ArrayView<const Mn::MutableImageView2D> depthImageViews) {
   for (int envIndex = 0; envIndex < config_.numEnvironments; envIndex++) {
     auto& sensorMap = getEnvironmentSensors(envIndex);
     CORRADE_INTERNAL_ASSERT(sensorMap.size() == 1);
@@ -217,8 +215,7 @@ void ClassicReplayRenderer::doRender(
       auto& sceneGraph = getSceneGraph(envIndex);
 
       auto& sensorType = visualSensor.specification()->sensorType;
-      Corrade::Containers::ArrayView<const Magnum::MutableImageView2D>
-          imageViews;
+      Cr::Containers::ArrayView<const Mn::MutableImageView2D> imageViews;
       switch (sensorType) {
         case esp::sensor::SensorType::Color:
           imageViews = colorImageViews;

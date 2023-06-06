@@ -91,10 +91,8 @@ void AbstractReplayRenderer::setSensorTransformsFromKeyframe(
 }
 
 void AbstractReplayRenderer::render(
-    Corrade::Containers::ArrayView<const Magnum::MutableImageView2D>
-        colorImageViews,
-    Corrade::Containers::ArrayView<const Magnum::MutableImageView2D>
-        depthImageViews) {
+    Cr::Containers::ArrayView<const Mn::MutableImageView2D> colorImageViews,
+    Cr::Containers::ArrayView<const Mn::MutableImageView2D> depthImageViews) {
   if (colorImageViews != nullptr) {
     ESP_CHECK(colorImageViews.size() == doEnvironmentCount(),
               "ReplayRenderer::render(): expected"

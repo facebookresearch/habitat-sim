@@ -252,10 +252,8 @@ void BatchReplayRenderer::doSetSensorTransformsFromKeyframe(
 }
 
 void BatchReplayRenderer::doRender(
-    Corrade::Containers::ArrayView<const Magnum::MutableImageView2D>
-        colorImageViews,
-    Corrade::Containers::ArrayView<const Magnum::MutableImageView2D>
-        depthImageViews) {
+    Cr::Containers::ArrayView<const Mn::MutableImageView2D> colorImageViews,
+    Cr::Containers::ArrayView<const Mn::MutableImageView2D> depthImageViews) {
   CORRADE_ASSERT(standalone_,
                  "BatchReplayRenderer::render(): can use this function only "
                  "with a standalone renderer", );
