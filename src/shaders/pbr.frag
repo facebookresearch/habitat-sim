@@ -86,7 +86,6 @@ void main() {
         BRDF_BurleyDiffuseRenorm(pbrInfo.diffuseColor, l,
                                  pbrInfo.alphaRoughness);
 
-// TODO get rid of skip when implementation is ready
 #if defined(ANISOTROPY_LAYER) && !defined(SKIP_CALC_ANISOTROPY_LAYER)
     // Specular microfacet for anisotropic layer
     // calculate light-specific anisotropic layer cosines
