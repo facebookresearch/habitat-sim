@@ -234,10 +234,10 @@ void ClassicReplayRenderer::doRender(
 #ifdef ESP_BUILD_WITH_BACKGROUND_RENDERER
       // todo: investigate flags (frustum culling?)
       if (imageViews != nullptr) {
-        renderer_->enqueueAsyncDrawJob(visualSensor, sceneGraph,
-                                       imageViews[envIndex],
-                                       esp::gfx::RenderCamera::Flags{
-              gfx::RenderCamera::Flag::FrustumCulling});
+        renderer_->enqueueAsyncDrawJob(
+            visualSensor, sceneGraph, imageViews[envIndex],
+            esp::gfx::RenderCamera::Flags{
+                gfx::RenderCamera::Flag::FrustumCulling});
       }
 #else
       // TODO what am I supposed to do here?
