@@ -166,29 +166,31 @@ vec3 BRDF_ClearCoatSpecular(vec3 ccFresnel,
 
 // Anisotropic Visibility function
 // l : LightInfo structure describing current light
-// anisoInfo : AnisotropyInfo structure for material
+// PBRData pbrInfo : structure populated with precalculated material values
+// including anisotropy values
 // anisoLightInfo : Light-specific anisotropic tangent and bitangent cosines
 float V_GGX_anisotropic(LightInfo l,
-                        AnisotropyInfo anisoInfo,
+                        PBRData pbrInfo,
                         AnistropyDirectLight anisoLightInfo) {
-  float GGXL = l.n_dot_v *
-               length(vec3(anisoInfo.aT * anisoLightInfo.t_dot_l,
-                           anisoInfo.aB * anisoLightInfo.b_dot_l, l.n_dot_l));
+  float GGXL =
+      l.n_dot_v * length(vec3(pbrInfo.aT * anisoLightInfo.t_dot_l,
+                              pbrInfo.aB * anisoLightInfo.b_dot_l, l.n_dot_l));
   float GGXV =
-      l.n_dot_l * length(vec3(anisoInfo.aT * anisoInfo.t_dot_v,
-                              anisoInfo.aB * anisoInfo.b_dot_v, l.n_dot_v));
+      l.n_dot_l * length(vec3(pbrInfo.aT * pbrInfo.t_dot_v,
+                              pbrInfo.aB * pbrInfo.b_dot_v, l.n_dot_v));
   return 0.5 / max(GGXV + GGXL, epsilon);
 }
 // Anisotropic microfacet distribution model
 // l : LightInfo structure describing current light
-// anisoInfo : AnisotropyInfo structure for material
+// PBRData pbrInfo : structure populated with precalculated material values
+// including anisotropy values
 // anisoLightInfo : Light-specific anisotropic tangent and bitangent cosines
 float D_GGX_anisotropic(LightInfo l,
-                        AnisotropyInfo anisoInfo,
+                        PBRData pbrInfo,
                         AnistropyDirectLight anisoLightInfo) {
-  float a2 = anisoInfo.aT * anisoInfo.aB;
-  vec3 f = vec3(anisoInfo.aB * anisoLightInfo.t_dot_h,
-                anisoInfo.aT * anisoLightInfo.b_dot_h, a2 * l.n_dot_h);
+  float a2 = pbrInfo.aT * pbrInfo.aB;
+  vec3 f = vec3(pbrInfo.aB * anisoLightInfo.t_dot_h,
+                pbrInfo.aT * anisoLightInfo.b_dot_h, a2 * l.n_dot_h);
   float w2 = a2 / dot(f, f);
   // division by Pi performed later
   return a2 * w2 * w2;
@@ -197,18 +199,19 @@ float D_GGX_anisotropic(LightInfo l,
 // Specular BRDF for anisotropic layer
 // fresnel : Schlick approximation of Fresnel coefficient
 // l : LightInfo structure describing current light
-// anisoInfo : AnisotropyInfo structure for material
+// PBRData pbrInfo : structure populated with precalculated material values
+// including anisotropy values
 // anisoLightInfo : Light-specific anisotropic tangent and bitangent cosines
 vec3 BRDF_specularAnisotropicGGX(vec3 fresnel,
                                  LightInfo l,
-                                 AnisotropyInfo anisoInfo,
+                                 PBRData pbrInfo,
                                  AnistropyDirectLight anisoLightInfo) {
   // Using base material fresnel
   vec3 anisoSpecular = fresnel *
                        // Visibility term
-                       V_GGX_anisotropic(l, anisoInfo, anisoLightInfo) *
+                       V_GGX_anisotropic(l, pbrInfo, anisoLightInfo) *
                        // microfacet normal distribution
-                       D_GGX_anisotropic(l, anisoInfo, anisoLightInfo);
+                       D_GGX_anisotropic(l, pbrInfo, anisoLightInfo);
 
   return anisoSpecular;
 }  // BRDF_specularAnisotropicGGX

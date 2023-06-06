@@ -12,18 +12,6 @@ const float gamma = 2.2f;
 const float invGamma = 1.0f / gamma;
 
 #if (LIGHT_COUNT > 0)
-// -------------- lights -------------------
-// NOTE: In this shader, the light intensity is considered in the lightColor!!
-uniform vec3 uLightColors[LIGHT_COUNT];
-uniform float uLightRanges[LIGHT_COUNT];
-
-// lights in world space!
-// if .w == 0, it means it is a directional light, .xyz is the direction;
-// if .w == 1, it means it is a point light, .xyz is the light position;
-// it is NOT put in the Light Structure, simply because we may modify the code
-// so it is computed in the vertex shader.
-uniform vec4 uLightDirections[LIGHT_COUNT];
-
 // Configure a LightInfo object
 // light : normalized point to light vector
 // lightIrradiance : distance-attenuated light intensity/irradiance color
@@ -46,29 +34,29 @@ void configureLightInfo(vec3 light,
   l.n_dot_h = clamp(dot(n, l.halfVector), 0.0, 1.0);
   l.projLightIrradiance = lightIrradiance * l.n_dot_l;
 }  // configureLightInfo
+
+#if defined(ANISOTROPY_LAYER)
+
+// Configure a light-dependent AnistropyDirectLight object
+// aInfo : AnisotropyInfo object for current material
+// l : LightInfo structure for current light
+// (out) info : AnisotropyInfo structure to be populated
+void configureAnisotropyLightInfo(LightInfo l,
+                                  PBRData pbrInfo,
+                                  out AnistropyDirectLight info) {
+  info.t_dot_l = dot(pbrInfo.anisotropicT, l.light);
+  info.b_dot_l = dot(pbrInfo.anisotropicB, l.light);
+  info.t_dot_h = dot(pbrInfo.anisotropicT, l.halfVector);
+  info.b_dot_h = dot(pbrInfo.anisotropicB, l.halfVector);
+
+}  // configureAnisotropyLightInfo
+
+#endif  // ANISOTROPY_LAYER
+
 #endif  // (LIGHT_COUNT > 0)
 
 /////////////////
 // IBL Support
-#if defined(IMAGE_BASED_LIGHTING)
-uniform samplerCube uIrradianceMap;
-uniform sampler2D uBrdfLUT;
-uniform samplerCube uPrefilteredMap;
-uniform uint uPrefilteredMapMipLevels;
-#endif
-
-// scales for components in the PBR equation - only necessary if -both- lighting
-// types are present.
-// [0] = direct diffuse [1] = direct specular [2] = ibl
-// diffuse [3] = ibl specular
-
-#if defined(IMAGE_BASED_LIGHTING) && (LIGHT_COUNT > 0)
-const int DirectDiffuse = 0;
-const int DirectSpecular = 1;
-const int IblDiffuse = 2;
-const int IblSpecular = 3;
-uniform highp vec4 uComponentScales;
-#endif
 
 // The following function Uncharted2Tonemap is based on:
 // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/data/shaders/pbr_khr.frag

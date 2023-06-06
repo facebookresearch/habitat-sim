@@ -15,8 +15,6 @@ uniform float Roughness;
 layout(location = OUTPUT_ATTRIBUTE_LOCATION_COLOR) out highp vec4 fragmentColor;
 
 // ------------ shader -----------------------
-// PI is defined in pbrCommon.glsl
-const float TWO_PI = 2.0 * PI;
 
 // Compute a halfway vector that is biased towards the preferred alignment
 // direction (importance sampling). The implementation is based on: Křivánek J,

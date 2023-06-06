@@ -5,6 +5,7 @@
 precision highp float;
 
 const float PI = 3.14159265358979;
+const float TWO_PI = 2.0 * PI;
 #ifndef epsilon
 const float epsilon = 0.000001;
 #endif
@@ -32,7 +33,7 @@ vec2 hammersley2d(uint i, uint N) {
 
 // uniform distributed direction (z-up) from the hammersley point
 vec3 hemisphereSample_uniform(float u, float v) {
-  float phi = v * 2 * PI;
+  float phi = v * TWO_PI;
   float cosTheta = 1.0 - u;
   float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
   return vec3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
@@ -40,7 +41,7 @@ vec3 hemisphereSample_uniform(float u, float v) {
 
 // cosines distributed direction (z-up) from the hammersley point
 vec3 hemisphereSample_cos(float u, float v) {
-  float phi = v * 2 * PI;
+  float phi = v * TWO_PI;
   float cosTheta = sqrt(1.0 - u);
   float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
   return vec3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
@@ -64,16 +65,16 @@ float normalDistributionGGX(float n_dot_h, float alphaRoughness) {
 }
 
 // Approx 2.5 speedup over pow with integer coeffs
-float pow5(float v){
+float pow5(float v) {
   float v2 = v * v;
   return v2 * v2 * v;
 }
 
-float pow4(float v){
+float pow4(float v) {
   float v2 = v * v;
   return v2 * v2;
 }
 
-float pow2(float v){
+float pow2(float v) {
   return v * v;
 }
