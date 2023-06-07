@@ -72,20 +72,21 @@ void main() {
                                   pbrInfo.specularColor_f90, l.v_dot_h);
 
     // NOTE : REMOVED INV_PI scaling of direct lights so we don't have to
-    // increase the intensity for PBR lights in c++ . This way phong and pbr are
-    // reasonably equivalent brightness with the same light setup.
+    // increase the intensity (which was done previously using an empirically
+    // chosen value close to PI) for PBR lights in c++ . This way lights in
+    // phong and in pbr are reasonably equivalent in brightness
 
-    // Lambertian diffuse contribution
-    // currentDiffuseContrib =
-    //     l.projLightIrradiance * //INV_PI *
-    //      pbrInfo.diffuseColor;
-
+#if defined(SIMPLE_LAMBERTIAN_DIFFUSE)
+    // Lambertian diffuse contribution (simpler calc)
+    vec3 currentDiffuseContrib = l.projLightIrradiance *  // INV_PI *
+                                 pbrInfo.diffuseColor;
+#else
     // Burley/Disney diffuse contribution
     vec3 currentDiffuseContrib =
         l.projLightIrradiance *  // INV_PI *
         BRDF_BurleyDiffuseRenorm(pbrInfo.diffuseColor, l,
                                  pbrInfo.alphaRoughness);
-
+#endif
 #if defined(ANISOTROPY_LAYER) && !defined(SKIP_CALC_ANISOTROPY_LAYER)
     // Specular microfacet for anisotropic layer
     // calculate light-specific anisotropic layer cosines
@@ -132,7 +133,7 @@ void main() {
 #if defined(CLEAR_COAT) && !defined(SKIP_CALC_CLEAR_COAT)
     currentClearCoatContrib *= shadow;
 #endif  // CLEAR_COAT
-#endif
+#endif  // SHADOWS_VSM
 
     // TODO Transmission here
 
@@ -152,16 +153,8 @@ void main() {
       computeIBLDiffuse(pbrInfo.diffuseColor, pbrInfo.n);
 
 #if defined(ANISOTROPY_LAYER) && !defined(SKIP_CALC_ANISOTROPY_LAYER)
-  // Derive bent normal for reflection
-  vec3 bentNormal = cross(pbrInfo.anisotropicB, pbrInfo.view);
-  bentNormal = normalize(cross(bentNormal, pbrInfo.anisotropicB));
-  // This heuristic can probably be improved upon
-  float a = pow4(1.0 - pbrInfo.anisotropy * (1.0 - pbrInfo.perceivedRoughness));
-  bentNormal = normalize(mix(bentNormal, pbrInfo.n, a));
-  // float ibl_n_dot_v = abs(dot(bentNormal, pbrInfo.view));
-  vec3 reflection = normalize(reflect(-pbrInfo.view, bentNormal));
+  vec3 reflection = normalize(reflect(-pbrInfo.view, pbrInfo.bentNormal));
 #else
-  // float ibl_n_dot_v =  n_dot_v;
   vec3 reflection = normalize(reflect(-pbrInfo.view, pbrInfo.n));
 #endif  // if ANISOTROPY else
 
