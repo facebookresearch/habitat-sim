@@ -270,32 +270,52 @@ PBRData buildPBRData() {
 // init from here
 // https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_anisotropy#individual-lights
 #if defined(ANISOTROPY_LAYER)
-  // Strength of effect
+  // Strength of effect - negative directs in bitangent direction
   pbrInfo.anisotropy = uAnisotropyLayer.factor;
   // Direction of anisotropy, as a 2d rotation in Tangentspace plane, measured
   // from tangent
-  pbrInfo.anisotropyDir = uAnisotropyLayer.direction;
+  vec2 anisotropyDir = uAnisotropyLayer.direction;
 
 #if defined(ANISOTROPY_LAYER_TEXTURE)
   vec3 anisotropyTex = texture(uAnisotropyLayerTexture, texCoord).rgb;
-  pbrInfo.anisotropyDir = anisotropyTex.rg * 2.0 - vec2(1.0);
-  pbrInfo.anisotropyDir =
+  anisotropyDir = anisotropyTex.rg * 2.0 - vec2(1.0);
+  anisotropyDir =
       mat2(uAnisotropyLayer.direction.x, uAnisotropyLayer.direction.y,
            -uAnisotropyLayer.direction.y, uAnisotropyLayer.direction.x) *
-      normalize(pbrInfo.anisotropyDir);
+      normalize(anisotropyDir);
   pbrInfo.anisotropy *= anisotropyTex.b;
 #endif  // ANISOTROPY_LAYER_TEXTURE
 
   // Tangent and bitangent
-  pbrInfo.anisotropicT =
-      normalize(pbrInfo.TBN * vec3(pbrInfo.anisotropyDir, 0.0));
+  // aniso tangent and bitangent are TBN rotated by anistropy dir
+  pbrInfo.anisotropicT = normalize(pbrInfo.TBN * vec3(anisotropyDir, 0.0));
   pbrInfo.anisotropicB = normalize(cross(pbrInfo.n, pbrInfo.anisotropicT));
 
+#if defined(IMAGE_BASED_LIGHTING)
+  // Precalc bent normal for reflection
+  // Allow for negative anisotropy
+  // From Filament
+  // https://github.com/google/filament/blob/5ffb52a17d1c9d710140f263ca82b8ab23cae59e/shaders/src/common_lighting.fs#L90
+
+  vec3 TBNAnisoDir =
+      (pbrInfo.anisotropy >= 0.0 ? pbrInfo.anisotropicB : pbrInfo.anisotropicT);
+  vec3 anisoTan = cross(TBNAnisoDir, pbrInfo.view);
+  vec3 bentNormal = normalize(cross(anisoTan, TBNAnisoDir));
+  // From KHR standard description
+  // https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_anisotropy#implementation
+  float a = (pow4(1.0 - abs(pbrInfo.anisotropy) *
+                            (1.0 - pbrInfo.perceivedRoughness)));
+  pbrInfo.bentNormal = normalize(mix(bentNormal, pbrInfo.n, a));
+
+#endif  // IMAGE_BASED_LIGHTING
+
   // Derive roughness in each direction
-  // From standard
+  // Below from standard
   // https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_anisotropy#implementation
   // pbrInfo.aT = mix( pbrInfo.alphaRoughness, 1.0,  pbrInfo.anisotropy*
-  // pbrInfo.anisotropy); pbrInfo.aB =  pbrInfo.alphaRoughness; From
+  // pbrInfo.anisotropy);
+  // pbrInfo.aB =  pbrInfo.alphaRoughness;
+  // Below from
   // https://google.github.io/filament/Filament.md.html#materialsystem/anisotropicmodel/anisotropicspecularbrdf
   // If anisotropy == 0 then just alpharoughness in each direction
   pbrInfo.aT =

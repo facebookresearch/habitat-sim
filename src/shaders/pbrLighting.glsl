@@ -28,6 +28,7 @@ void configureLightInfo(vec3 light,
   l.light = light;
   l.lightIrradiance = lightIrradiance;
   l.n_dot_v = n_dot_v;
+  // if n dot l is negative we should never see this light's contribution
   l.n_dot_l = clamp(dot(n, light), 0.0, 1.0);
   l.halfVector = normalize(light + view);
   l.v_dot_h = clamp(dot(view, l.halfVector), 0.0, 1.0);  // == l_dot_h
@@ -38,8 +39,8 @@ void configureLightInfo(vec3 light,
 #if defined(ANISOTROPY_LAYER)
 
 // Configure a light-dependent AnistropyDirectLight object
-// aInfo : AnisotropyInfo object for current material
 // l : LightInfo structure for current light
+// PBRData pbrInfo : structure populated with precalculated material values
 // (out) info : AnisotropyInfo structure to be populated
 void configureAnisotropyLightInfo(LightInfo l,
                                   PBRData pbrInfo,
@@ -75,7 +76,7 @@ vec3 Uncharted2Tonemap(vec3 color) {
 
 // The following function tonemap is based on:
 // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/data/shaders/pbr_khr.frag
-// Tone mapping is to take a wide dynamic range of values and compressing them
+// Tone mapping takes a wide dynamic range of values and compresses them
 // into a smaller range that is appropriate for the output device.
 vec4 tonemap(vec4 color) {
 #ifdef TONE_MAP
