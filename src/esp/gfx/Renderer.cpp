@@ -22,10 +22,10 @@
 #include <Magnum/ResourceManager.h>
 
 #include "esp/core/Check.h"
-#include "esp/gfx/DepthUnprojection.h"
 #include "esp/gfx/GaussianFilterShader.h"
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/TextureVisualizerShader.h"
+#include "esp/gfx_batch/DepthUnprojection.h"
 #include "esp/sensor/VisualSensor.h"
 #include "esp/sim/Simulator.h"
 
@@ -336,8 +336,8 @@ struct Renderer::Impl {
                    "depthUnprojection matrix", );
 
     if (!depthShader_) {
-      depthShader_ = std::make_unique<DepthShader>(
-          DepthShader::Flag::UnprojectExistingDepth);
+      depthShader_ = std::make_unique<gfx_batch::DepthShader>(
+          gfx_batch::DepthShader::Flag::UnprojectExistingDepth);
     }
 
     RenderTarget::Flags renderTargetFlags = {};
@@ -381,7 +381,7 @@ struct Renderer::Impl {
   WindowlessContext* context_;
   bool contextIsOwned_ = true;
   // TODO: shall we use shader resource manager from now?
-  std::unique_ptr<DepthShader> depthShader_;
+  std::unique_ptr<gfx_batch::DepthShader> depthShader_;
   const Flags flags_;
 #ifdef ESP_BUILD_WITH_BACKGROUND_RENDERER
   std::unique_ptr<BackgroundRenderer> backgroundRenderer_ = nullptr;
@@ -431,7 +431,8 @@ struct Renderer::Impl {
       if (type == RendererShaderType::DepthShader) {
         shaderManager_.set<Mn::GL::AbstractShaderProgram>(
             shader.key(),
-            new DepthShader{DepthShader::Flag::UnprojectExistingDepth},
+            new gfx_batch::DepthShader{
+                gfx_batch::DepthShader::Flag::UnprojectExistingDepth},
             Mn::ResourceDataState::Final, Mn::ResourcePolicy::Resident);
       } else if (type == RendererShaderType::DepthTextureVisualizer) {
         shaderManager_.set<Mn::GL::AbstractShaderProgram>(

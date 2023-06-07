@@ -11,8 +11,14 @@ find_package(
   Trade
 )
 
-set(gfx_batch_SOURCES Renderer.cpp Renderer.h RendererStandalone.cpp
-                      RendererStandalone.h
+set(
+  gfx_batch_SOURCES
+  DepthUnprojection.cpp
+  DepthUnprojection.h
+  Renderer.cpp
+  Renderer.h
+  RendererStandalone.cpp
+  RendererStandalone.h
 )
 
 add_library(

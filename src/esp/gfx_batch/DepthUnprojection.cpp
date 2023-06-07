@@ -21,7 +21,7 @@ static void importShaderResources() {
 }
 
 namespace esp {
-namespace gfx {
+namespace gfx_batch {
 
 namespace {
 enum { DepthTextureUnit = 1 };
@@ -127,5 +127,5 @@ void unprojectDepth(const Mn::Vector2& unprojection,
   }
 }
 
-}  // namespace gfx
+}  // namespace gfx_batch
 }  // namespace esp

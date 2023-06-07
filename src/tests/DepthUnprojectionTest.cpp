@@ -19,7 +19,7 @@
 #include <Magnum/Primitives/Plane.h>
 #include <Magnum/Trade/MeshData.h>
 
-#include "esp/gfx/DepthUnprojection.h"
+#include "esp/gfx_batch/DepthUnprojection.h"
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
@@ -28,7 +28,7 @@ using Mn::Math::Literals::operator""_degf;
 using Mn::Math::Literals::operator""_rgbf;
 
 namespace {
-using namespace esp::gfx;
+using namespace esp::gfx_batch;
 
 struct DepthUnprojectionTest : Mn::GL::OpenGLTester {
   explicit DepthUnprojectionTest();

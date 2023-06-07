@@ -9,7 +9,7 @@
 #include <Magnum/GL/AbstractShaderProgram.h>
 
 namespace esp {
-namespace gfx {
+namespace gfx_batch {
 
 /**
 @brief Depth-only shader
@@ -151,7 +151,7 @@ consumers expect zeros for things that are too far.
 void unprojectDepth(const Magnum::Vector2& unprojection,
                     Corrade::Containers::ArrayView<Magnum::Float> depth);
 
-}  // namespace gfx
+}  // namespace gfx_batch
 }  // namespace esp
 
 #endif  // ESP_GFX_DEPTHUNPROJECTION_H_

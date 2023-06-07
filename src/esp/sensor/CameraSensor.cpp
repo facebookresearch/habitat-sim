@@ -10,7 +10,7 @@
 #include <cmath>
 
 #include "CameraSensor.h"
-#include "esp/gfx/DepthUnprojection.h"
+#include "esp/gfx_batch/DepthUnprojection.h"
 #include "esp/sim/Simulator.h"
 
 namespace esp {
@@ -175,7 +175,7 @@ Corrade::Containers::Optional<Magnum::Vector2> CameraSensor::depthUnprojection()
     const {
   // projectionMatrix_ is managed by implementation class and is set whenever
   // quantities change.
-  return {gfx::calculateDepthUnprojection(projectionMatrix_)};
+  return {gfx_batch::calculateDepthUnprojection(projectionMatrix_)};
 }  // CameraSensor::depthUnprojection
 
 }  // namespace sensor

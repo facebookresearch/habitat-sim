@@ -58,7 +58,7 @@ endif()
 
 corrade_add_test(CoreTest CoreTest.cpp LIBRARIES core io)
 
-corrade_add_test(CullingTest CullingTest.cpp LIBRARIES gfx)
+corrade_add_test(CullingTest CullingTest.cpp LIBRARIES gfx gfx_batch)
 target_include_directories(CullingTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(
@@ -66,6 +66,7 @@ corrade_add_test(
   DepthUnprojectionTest.cpp
   LIBRARIES
   gfx
+  gfx_batch
   Magnum::MeshTools
   Magnum::OpenGLTester
   Magnum::Trade

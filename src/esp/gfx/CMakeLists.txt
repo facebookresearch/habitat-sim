@@ -6,8 +6,6 @@ set(
   gfx_SOURCES
   CubeMap.cpp
   CubeMap.h
-  DepthUnprojection.cpp
-  DepthUnprojection.h
   Drawable.cpp
   Drawable.h
   DrawableGroup.cpp
@@ -122,9 +120,6 @@ add_library(
 )
 
 if(BUILD_WITH_CUDA)
-  # We currently don't directly depend on gfx_batch for anything, just taking
-  # the header-only CUDA helpers from there, so gfx_batch isn't in
-  # target_link_libraries().
   target_include_directories(
     gfx PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
                 ${CMAKE_CURRENT_LIST_DIR}/../gfx_batch/cuda_helpers
@@ -138,6 +133,7 @@ target_link_libraries(
   PUBLIC assets
          core
          io
+         gfx_batch
          physics
          Magnum::AnyImageImporter
          Magnum::AnySceneImporter
