@@ -253,11 +253,12 @@ class PbrDrawable : public Drawable {
    * Set or change this drawable's @ref Magnum::Trade::MaterialData values from passed material.
    * This is only pertinent for material-equipped drawables.
    * @param material
+   * @param reset whether to reset material cache or to write over existing
    */
-  void setMaterialValues(
-      const Mn::Resource<Mn::Trade::MaterialData, Mn::Trade::MaterialData>&
-          material) override {
-    setMaterialValuesInternal(material);
+  void setMaterialValues(const Mn::Resource<Mn::Trade::MaterialData,
+                                            Mn::Trade::MaterialData>& material,
+                         bool reset) override {
+    setMaterialValuesInternal(material, reset);
   }
 
  private:
@@ -267,7 +268,8 @@ class PbrDrawable : public Drawable {
    */
   void setMaterialValuesInternal(
       const Mn::Resource<Mn::Trade::MaterialData, Mn::Trade::MaterialData>&
-          material);
+          material,
+      bool reset);
 
  protected:
   /**

@@ -130,12 +130,13 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
   /**
    * Set or change this drawable's @ref Magnum::Trade::MaterialData values from passed material.
    * This is only pertinent for material-equipped drawables.
-   * @param material
+   * @param material material values to set
+   * @param reset whether to reset underlying material or to write over it
    */
-  virtual void setMaterialValues(
-      CORRADE_UNUSED const Magnum::Resource<Magnum::Trade::MaterialData,
-                                            Magnum::Trade::MaterialData>&
-          material) {}
+  virtual void setMaterialValues(CORRADE_UNUSED const Magnum::Resource<
+                                     Magnum::Trade::MaterialData,
+                                     Magnum::Trade::MaterialData>& material,
+                                 CORRADE_UNUSED bool reset) {}
 
  protected:
   /**
