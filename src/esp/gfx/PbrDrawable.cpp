@@ -32,7 +32,7 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
       pbrIbl_(pbrIbl),
       meshAttributeFlags_{meshAttributeFlags} {
   setMaterialValuesInternal(
-      shaderManager.get<Mn::Trade::MaterialData>(materialDataKey));
+      shaderManager.get<Mn::Trade::MaterialData>(materialDataKey), false);
 
   if (pbrIbl_) {
     flags_ |= PbrShader::Flag::ImageBasedLighting;
@@ -46,14 +46,18 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
 
 void PbrDrawable::setMaterialValuesInternal(
     const Mn::Resource<Mn::Trade::MaterialData, Mn::Trade::MaterialData>&
-        material) {
+        material,
+    bool reset) {
   materialData_ = material;
 
   const auto& tmpMaterialData =
       materialData_->as<Mn::Trade::PbrMetallicRoughnessMaterialData>();
   flags_ = PbrShader::Flag::ObjectId;
-
-  matCache.baseColor = tmpMaterialData.baseColor();
+  if (reset) {
+    matCache = {tmpMaterialData.baseColor()};  // baseColor;
+  } else {
+    matCache.baseColor = tmpMaterialData.baseColor();
+  }
   matCache.roughness = tmpMaterialData.roughness();
   matCache.metalness = tmpMaterialData.metalness();
   matCache.emissiveColor = tmpMaterialData.emissiveColor();

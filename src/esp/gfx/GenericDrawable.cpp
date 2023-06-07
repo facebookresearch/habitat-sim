@@ -40,7 +40,8 @@ GenericDrawable::GenericDrawable(
       meshAttributeFlags_{meshAttributeFlags} {
   setMaterialValuesInternal(
       shaderManager.get<Mn::Trade::MaterialData, Mn::Trade::MaterialData>(
-          materialDataKey));
+          materialDataKey),
+      false);
 
   // update the shader early here to to avoid doing it during the render loop
   if (glMeshExists()) {
@@ -50,13 +51,17 @@ GenericDrawable::GenericDrawable(
 
 void GenericDrawable::setMaterialValuesInternal(
     const Mn::Resource<Mn::Trade::MaterialData, Mn::Trade::MaterialData>&
-        material) {
+        material,
+    bool reset) {
   materialData_ = material;
 
   flags_ = Mn::Shaders::PhongGL::Flag::ObjectId;
   const auto& tmpMaterial = materialData_->as<Mn::Trade::PhongMaterialData>();
-
-  matCache.ambientColor = tmpMaterial.ambientColor();
+  if (reset) {
+    matCache = {tmpMaterial.ambientColor()};  // ambient color
+  } else {
+    matCache.ambientColor = tmpMaterial.ambientColor();
+  }
   matCache.diffuseColor = tmpMaterial.diffuseColor();
   matCache.specularColor = tmpMaterial.specularColor();
   matCache.shininess = tmpMaterial.shininess();
