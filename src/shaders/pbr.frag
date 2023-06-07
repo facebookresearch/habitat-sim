@@ -40,10 +40,10 @@ void main() {
         uLightDirections[iLight].xyz - (position * uLightDirections[iLight].w);
     // either the length of the toLightVec vector or 0 (for directional
     // lights, to enable attenuation calc to stay 1)
-    highp float dist = length(toLightVec) * uLightDirections[iLight].w;
+    float dist = length(toLightVec) * uLightDirections[iLight].w;
     // either the squared length of the toLightVec vector or 1 (for
     // directional lights, to prevent divide by 0)
-    highp float sqDist = (((dist * dist) - 1) * uLightDirections[iLight].w) + 1;
+    float sqDist = (((dist * dist) - 1) * uLightDirections[iLight].w) + 1;
 
     // If uLightRanges is 0 for whatever reason, clamp it to a small value to
     // avoid a NaN when dist is 0 as well (which is the case for directional
@@ -51,8 +51,8 @@ void main() {
     // https://github.com/KhronosGroup/glTF/blob/master/extensions/2.0/Khronos/KHR_lights_punctual/README.md#range-property
     // Attenuation is 1 for directional lights, governed by inverse square law
     // otherwise if no range is given
-    highp float attenuation =
-        clamp(1 - pow4(dist / (uLightRanges[iLight] + epsilon)), 0.0, 1.0) /
+    float attenuation =
+        clamp(1 - pow4(dist / (uLightRanges[iLight] + EPSILON)), 0.0, 1.0) /
         sqDist;
 
     // if color is not visible, skip contribution
@@ -78,12 +78,11 @@ void main() {
 
 #if defined(SIMPLE_LAMBERTIAN_DIFFUSE)
     // Lambertian diffuse contribution (simpler calc)
-    vec3 currentDiffuseContrib = l.projLightIrradiance *  // INV_PI *
-                                 pbrInfo.diffuseColor;
+    vec3 currentDiffuseContrib = l.projLightIrradiance * pbrInfo.diffuseColor;
 #else
     // Burley/Disney diffuse contribution
     vec3 currentDiffuseContrib =
-        l.projLightIrradiance *  // INV_PI *
+        l.projLightIrradiance *
         BRDF_BurleyDiffuseRenorm(pbrInfo.diffuseColor, l,
                                  pbrInfo.alphaRoughness);
 #endif
@@ -95,13 +94,13 @@ void main() {
 
     // Anisotropic specular contribution
     vec3 currentSpecularContrib =
-        l.projLightIrradiance *  // INV_PI *
+        l.projLightIrradiance *
         BRDF_specularAnisotropicGGX(fresnel, l, pbrInfo, anisoLightInfo);
 
 #else
-    // Specular microfacet - 1/pi from specular D normal dist function
+    // Specular microfacet
     vec3 currentSpecularContrib =
-        l.projLightIrradiance *  // INV_PI *
+        l.projLightIrradiance *
         BRDF_Specular(fresnel, l, pbrInfo.alphaRoughness);
 #endif  // Anisotropy else isotropy
 #if defined(CLEAR_COAT) && !defined(SKIP_CALC_CLEAR_COAT)
@@ -109,15 +108,14 @@ void main() {
     // build a clearcoat normal-based light info
     configureLightInfo(l.light, l.lightIrradiance, pbrInfo.clearCoatNormal,
                        pbrInfo.view, pbrInfo.cc_n_dot_v, cc_l);
-    // scalar clearcoat contribution
-    // RECALCULATE LIGHT for clearcoat normal
+    // scalar clearcoat fresnel, scaled by strength
     vec3 ccFresnel =
         fresnelSchlick(pbrInfo.clearCoatCoating_f0,
                        pbrInfo.clearCoatCoating_f90, cc_l.v_dot_h) *
         pbrInfo.clearCoatStrength;
     // get clearcoat contribution
     vec3 currentClearCoatContrib =
-        cc_l.projLightIrradiance *  // INV_PI *
+        cc_l.projLightIrradiance *
         BRDF_ClearCoatSpecular(ccFresnel, cc_l, pbrInfo.clearCoatRoughness);
     // Scale substrate specular by 1-ccfresnel to account for coating
     currentSpecularContrib *= (1 - ccFresnel);
@@ -145,6 +143,13 @@ void main() {
 #endif  // CLEAR_COAT
   }     // for each light
 
+  // TODO: When we correctly support sRGB textures, scale direct-lit
+  // contribution values by 1/pi
+
+  // pbrInfo.diffuseContrib *= INV_PI;
+  // pbrInfo.specularContrib *= INV_PI;
+  // pbrInfo.clearCoatContrib *= INV_PI;
+
 #endif  // if (LIGHT_COUNT > 0)
 
 #if defined(IMAGE_BASED_LIGHTING)
@@ -163,13 +168,18 @@ void main() {
                          pbrInfo.specularColor_f0, reflection);
 
 #if defined(CLEAR_COAT) && !defined(SKIP_CALC_CLEAR_COAT)
-  // Clear coat reflection
+// Clear coat reflection
+#if defined(ANISOTROPY_LAYER) && !defined(SKIP_CALC_ANISOTROPY_LAYER)
+  vec3 cc_reflection = normalize(reflect(-pbrInfo.view, pbrInfo.cc_BentNormal));
+#else
   vec3 cc_reflection =
       normalize(reflect(-pbrInfo.view, pbrInfo.clearCoatNormal));
+#endif
   // Clear coat reflection contribution
   pbrInfo.iblClearCoatContrib =
       computeIBLSpecular(pbrInfo.clearCoatRoughness, pbrInfo.cc_n_dot_v,
-                         pbrInfo.clearCoatCoating_f0, cc_reflection);
+                         pbrInfo.clearCoatCoating_f0, cc_reflection) *
+      pbrInfo.clearCoatStrength;
   // Scale substrate specular by 1-cc_fresnel to account for coating
   pbrInfo.iblSpecularContrib *= (pbrInfo.OneM_ccFresnelGlbl);
 #endif  // CLEAR_COAT
@@ -197,8 +207,8 @@ void main() {
 
   ///////////
   // Total contributions
-
   // TODO expand emissiveColor handling
+  // TODO alpha masking?
   fragmentColor = vec4(pbrInfo.emissiveColor, pbrInfo.baseColor.a);
 
   // Aggregate total contributions from direct and indirect lighting
@@ -206,21 +216,24 @@ void main() {
   vec3 ttlSpecularContrib =
       pbrInfo.specularContrib + pbrInfo.iblSpecularContrib;
 
-  fragmentColor.rgb += vec3(ttlDiffuseContrib + ttlSpecularContrib);
+  // Aggregate direct and indirect diffuse and specular
+  vec3 finalColor = vec3(ttlDiffuseContrib + ttlSpecularContrib);
 
 #if defined(CLEAR_COAT) && !defined(SKIP_CALC_CLEAR_COAT)
-  // scale by clearcoat strength
+  // Total clearcoat contribution
   vec3 ttlClearCoatContrib =
-      (pbrInfo.clearCoatContrib + pbrInfo.iblClearCoatContrib) *
-      pbrInfo.clearCoatStrength;
+      (pbrInfo.clearCoatContrib + pbrInfo.iblClearCoatContrib);
   // Scale entire contribution from substrate by 1-clearCoatFresnel
   // to account for energy loss in base layer due to coating and add coating
   // contribution
   // https://google.github.io/filament/Filament.md.html#figure_clearcoat
-  fragmentColor.rgb =
-      (fragmentColor.rgb * (pbrInfo.OneM_ccFresnelGlbl)) + ttlClearCoatContrib;
+  finalColor =
+      (finalColor * (pbrInfo.OneM_ccFresnelGlbl)) + ttlClearCoatContrib;
 
 #endif  // CLEAR_COAT
+
+  // final aggregation
+  fragmentColor.rgb += finalColor;
 
 #if defined(OBJECT_ID)
   fragmentObjectId = uObjectId;

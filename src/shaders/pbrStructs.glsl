@@ -171,7 +171,6 @@ struct PBRData {
   vec3 clearCoatCoating_f0;
   // Glancing angle reflectance
   vec3 clearCoatCoating_f90;
-
   // Global normal-based clearcoat fresnel contribution for IBL and aggregate
   // direct lit clearcoat contribution
   // https://google.github.io/filament/Filament.md.html#toc5.3.5
@@ -189,11 +188,17 @@ struct PBRData {
 #if defined(IMAGE_BASED_LIGHTING)
   // Precalc bent normal for reflection
   vec3 bentNormal;
-#endif
+#if defined(CLEAR_COAT)
+  // Precalc clearcoat bent normal for reflection of clearcoat with anisotropy
+  vec3 cc_BentNormal;
+#endif  // CLEAR_COAT
+#endif  // IMAGE_BASED_LIGHTING
   // anisotropic roughness value along tangent direction
   float aT;
   // anisotropic roughness value along bitangent direction
   float aB;
+  // anisotropic roughness sq for microfacet dist model
+  float aSqr;
   // cos angle between tangent and view
   float t_dot_v;
   // cos angle between bitangent and view

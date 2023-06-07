@@ -624,7 +624,8 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   PbrShader& setNormalTextureScale(float scale);
 
   /**
-   * Toggles that control contributions from different components
+   * Toggles that control contributions from different components - should
+   * never be set to 0 or will cause warnings when the shader executes
    */
   struct PbrEquationScales {
     float directDiffuse = 1.0f;
