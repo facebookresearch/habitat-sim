@@ -194,6 +194,8 @@ struct PBRData {
   float aT;
   // anisotropic roughness value along bitangent direction
   float aB;
+  // anisotropic roughness sq for microfacet dist model
+  float aSqr;
   // cos angle between tangent and view
   float t_dot_v;
   // cos angle between bitangent and view

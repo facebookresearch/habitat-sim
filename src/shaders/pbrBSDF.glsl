@@ -188,12 +188,11 @@ float V_GGX_anisotropic(LightInfo l,
 float D_GGX_anisotropic(LightInfo l,
                         PBRData pbrInfo,
                         AnistropyDirectLight anisoLightInfo) {
-  float a2 = pbrInfo.aT * pbrInfo.aB;
   vec3 f = vec3(pbrInfo.aB * anisoLightInfo.t_dot_h,
-                pbrInfo.aT * anisoLightInfo.b_dot_h, a2 * l.n_dot_h);
-  float w2 = a2 / dot(f, f);
-  // division by Pi performed later
-  return a2 * w2 * w2;
+                pbrInfo.aT * anisoLightInfo.b_dot_h, pbrInfo.aSqr * l.n_dot_h);
+  float w2 = pbrInfo.aSqr / dot(f, f);
+
+  return pbrInfo.aSqr * w2 * w2;
 }
 
 // Specular BRDF for anisotropic layer

@@ -322,6 +322,7 @@ PBRData buildPBRData() {
       max(pbrInfo.alphaRoughness * (1.0 + pbrInfo.anisotropy), epsilon);
   pbrInfo.aB =
       max(pbrInfo.alphaRoughness * (1.0 - pbrInfo.anisotropy), epsilon);
+  pbrInfo.aSqr = pbrInfo.aT * pbrInfo.aB;
 
   pbrInfo.t_dot_v = dot(pbrInfo.anisotropicT, pbrInfo.view);
   pbrInfo.b_dot_v = dot(pbrInfo.anisotropicB, pbrInfo.view);
