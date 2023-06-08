@@ -17,7 +17,7 @@ namespace Cr = Corrade;
 namespace Mn = Magnum;
 
 static void importShaderResources() {
-  CORRADE_RESOURCE_INITIALIZE(ShaderResources)
+  CORRADE_RESOURCE_INITIALIZE(GfxBatchShaderResources)
 }
 
 namespace esp {
@@ -28,11 +28,10 @@ enum { DepthTextureUnit = 1 };
 }
 
 DepthShader::DepthShader(Flags flags) : flags_{flags} {
-  if (!Corrade::Utility::Resource::hasGroup("default-shaders")) {
+  if (!Corrade::Utility::Resource::hasGroup("gfx-batch-shaders")) {
     importShaderResources();
   }
-
-  const Corrade::Utility::Resource rs{"default-shaders"};
+  const Corrade::Utility::Resource rs{"gfx-batch-shaders"};
 
 #ifdef MAGNUM_TARGET_WEBGL
   Mn::GL::Version glVersion = Mn::GL::Version::GLES300;

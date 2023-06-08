@@ -18,7 +18,7 @@ namespace Cr = Corrade;
 namespace Mn = Magnum;
 
 static void importShaderResources() {
-  CORRADE_RESOURCE_INITIALIZE(ShaderResources)
+  CORRADE_RESOURCE_INITIALIZE(GfxShaderResources)
 }
 
 namespace esp {
@@ -42,11 +42,11 @@ TextureVisualizerShader::TextureVisualizerShader(Flags flags) : flags_(flags) {
                  "Flag::DepthTexture and "
                  "Flag::ObjectIdTexture are mutually exclusive.", );
 
-  if (!Corrade::Utility::Resource::hasGroup("default-shaders")) {
+  if (!Corrade::Utility::Resource::hasGroup("gfx-shaders")) {
     importShaderResources();
   }
 
-  const Corrade::Utility::Resource rs{"default-shaders"};
+  const Corrade::Utility::Resource rs{"gfx-shaders"};
 
 #ifdef MAGNUM_TARGET_WEBGL
   Mn::GL::Version glVersion = Mn::GL::Version::GLES300;

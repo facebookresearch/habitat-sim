@@ -20,7 +20,7 @@
 // compiled into static library, it must be explicitly initialized via this
 // macro, and should be called // *outside* of any namespace.
 static void importShaderResources() {
-  CORRADE_RESOURCE_INITIALIZE(ShaderResources)
+  CORRADE_RESOURCE_INITIALIZE(GfxShaderResources)
 }
 
 namespace Mn = Magnum;
@@ -40,12 +40,12 @@ enum TextureBindingPointIndex : uint8_t {
 PTexMeshShader::PTexMeshShader() {
   MAGNUM_ASSERT_GL_VERSION_SUPPORTED(Mn::GL::Version::GL410);
 
-  if (!Corrade::Utility::Resource::hasGroup("default-shaders")) {
+  if (!Corrade::Utility::Resource::hasGroup("gfx-shaders")) {
     importShaderResources();
   }
 
   // this is not the file name, but the group name in the config file
-  const Corrade::Utility::Resource rs{"default-shaders"};
+  const Corrade::Utility::Resource rs{"gfx-shaders"};
 
   Mn::GL::Shader vert{Mn::GL::Version::GL410, Mn::GL::Shader::Type::Vertex};
   Mn::GL::Shader geom{Mn::GL::Version::GL410, Mn::GL::Shader::Type::Geometry};

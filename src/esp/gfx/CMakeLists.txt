@@ -106,10 +106,9 @@ find_package(MagnumPlugins REQUIRED GltfImporter StbImageImporter StbImageConver
 find_package(MagnumIntegration REQUIRED Eigen)
 
 find_package(Corrade REQUIRED Utility)
-# TODO: enable the following flag and fix the compilation warnings
-# set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
-corrade_add_resource(ShaderResources ../../shaders/Shaders.conf)
-list(APPEND gfx_SOURCES ${ShaderResources})
+set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
+corrade_add_resource(GfxShaderResources ../../shaders/gfx/Shaders.conf)
+list(APPEND gfx_SOURCES ${GfxShaderResources})
 
 corrade_add_resource(PbrImageResources ../../../data/pbr/PbrImages.conf)
 list(APPEND gfx_SOURCES ${PbrImageResources})

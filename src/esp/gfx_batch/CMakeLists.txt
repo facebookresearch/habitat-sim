@@ -10,6 +10,7 @@ find_package(
   Shaders
   Trade
 )
+find_package(Corrade REQUIRED Utility)
 
 set(
   gfx_batch_SOURCES
@@ -20,6 +21,10 @@ set(
   RendererStandalone.cpp
   RendererStandalone.h
 )
+
+set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
+corrade_add_resource(GfxBatchShaderResources ../../shaders/gfx_batch/Shaders.conf)
+list(APPEND gfx_batch_SOURCES ${GfxBatchShaderResources})
 
 add_library(
   gfx_batch STATIC
@@ -59,7 +64,8 @@ target_link_libraries(
   # libraries, and it should be kept as such. Only Magnum libraries are an
   # allowed dependency. See the original PR for discussion:
   # https://github.com/facebookresearch/habitat-sim/pull/1798#discussion_r911398937
-  PUBLIC Magnum::GL
+  PUBLIC Corrade::Utility
+         Magnum::GL
          Magnum::Magnum
          Magnum::SceneTools
          Magnum::Shaders

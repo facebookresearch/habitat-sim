@@ -17,7 +17,7 @@
 // compiled into static library, it must be explicitly initialized via this
 // macro, and should be called *outside* of any namespace.
 static void importShaderResources() {
-  CORRADE_RESOURCE_INITIALIZE(ShaderResources)
+  CORRADE_RESOURCE_INITIALIZE(GfxShaderResources)
 }
 
 namespace Mn = Magnum;
@@ -28,7 +28,7 @@ namespace gfx {
 DoubleSphereCameraShader::DoubleSphereCameraShader(
     CubeMapShaderBase::Flags flags)
     : CubeMapShaderBase(flags) {
-  if (!Cr::Utility::Resource::hasGroup("default-shaders")) {
+  if (!Cr::Utility::Resource::hasGroup("gfx-shaders")) {
     importShaderResources();
   }
 
@@ -40,7 +40,7 @@ DoubleSphereCameraShader::DoubleSphereCameraShader(
 
   // this is not the file name, but the group name in the config file
   // see Shaders.conf in the shaders folder
-  const Cr::Utility::Resource rs{"default-shaders"};
+  const Cr::Utility::Resource rs{"gfx-shaders"};
 
   Mn::GL::Shader vert{glVersion, Mn::GL::Shader::Type::Vertex};
   Mn::GL::Shader frag{glVersion, Mn::GL::Shader::Type::Fragment};
