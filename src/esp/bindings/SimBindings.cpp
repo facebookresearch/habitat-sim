@@ -445,7 +445,9 @@ void initSimBindings(py::module& m) {
           R"(Render sensors into the specified image vectors (one per environment).
           Blocks the thread during the GPU-to-CPU memory transfer operation.
           Empty lists can be supplied to skip the copying render targets.
-          The images are required to be pre-allocated.)")
+          The images are required to be pre-allocated.)",
+          py::arg("color_images") = std::vector<Mn::MutableImageView2D>{},
+          py::arg("depth_images") = std::vector<Mn::MutableImageView2D>{})
       .def(
           "set_sensor_transforms_from_keyframe",
           &AbstractReplayRenderer::setSensorTransformsFromKeyframe,
