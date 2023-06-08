@@ -5,11 +5,12 @@
 precision highp float;
 
 // TODO : make exposure a uniform?
-const highp float exposure = 4.5f;
+const float exposure = 4.5f;
 // TODO : make gamma a uniform?
 const float gamma = 2.2f;
 
-const float invGamma = 1.0f / gamma;
+const float INV_GAMMA = 1.0f / gamma;
+const vec3 INV_GAMMA_VEC = vec3(INV_GAMMA);
 
 #if (LIGHT_COUNT > 0)
 // Configure a LightInfo object
@@ -56,11 +57,8 @@ void configureAnisotropyLightInfo(LightInfo l,
 
 #endif  // (LIGHT_COUNT > 0)
 
-/////////////////
-// IBL Support
-
-#if defined(TONE_MAP)
-// The following function Uncharted2Tonemap is based on:
+//#if defined(TONE_MAP)
+// The following function Uncharted2toneMap is based on:
 // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/data/shaders/pbr_khr.frag
 vec3 Uncharted2Tonemap(vec3 color) {
   float A = 0.15;
@@ -74,17 +72,30 @@ vec3 Uncharted2Tonemap(vec3 color) {
           (color * (A * color + B) + D * F)) -
          E / F;
 }
-
-// The following function tonemap is based on:
+//(1.0f / Uncharted2Tonemap(vec3(11.2f)));
+const vec3 toneMapUC2Denom = vec3(1.1962848297213622);
+// The following function toneMap is based on:
 // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/data/shaders/pbr_khr.frag
 // Tone mapping takes a wide dynamic range of values and compresses them
 // into a smaller range that is appropriate for the output device.
-vec4 tonemap(vec4 color) {
-  vec3 outcol = Uncharted2Tonemap(color.rgb * exposure);
-  outcol = outcol * (1.0f / Uncharted2Tonemap(vec3(11.2f)));
-  return vec4(pow(outcol, vec3(invGamma)), color.a);
+vec4 toneMapToSRGB(vec4 color) {
+  vec3 outcol = Uncharted2Tonemap(color.rgb * exposure) * toneMapUC2Denom;
+  return vec4(pow(outcol.rgb, INV_GAMMA_VEC), color.a);
 }
-#endif  // TONE_MAP
+// Tone map without linear-to-srgb mapping
+vec4 toneMap(vec4 color) {
+  vec3 outcol = Uncharted2Tonemap(color.rgb * exposure) * toneMapUC2Denom;
+  return vec4(outcol, color.a);
+}
+// Approximation mapping
+vec4 linearToSRGB(vec4 color) {
+  return vec4(pow(color.rgb, INV_GAMMA_VEC), color.a);
+}
+
+//#endif  // TONE_MAP
+
+/////////////////
+// IBL Support
 
 #if defined(IMAGE_BASED_LIGHTING)
 // diffuseColor: diffuse color
@@ -92,8 +103,11 @@ vec4 tonemap(vec4 color) {
 vec3 computeIBLDiffuse(vec3 diffuseColor, vec3 n) {
   // diffuse part = diffuseColor * irradiance
   vec4 IBLDiffuseIrradiance = texture(uIrradianceMap, n);
+  // texture assumed to be sRGB
 #if defined(TONE_MAP)
-  IBLDiffuseIrradiance = tonemap(IBLDiffuseIrradiance);
+  IBLDiffuseIrradiance = toneMapToSRGB(IBLDiffuseIrradiance);
+#else
+  IBLDiffuseIrradiance = linearToSRGB(IBLDiffuseIrradiance);
 #endif
   return diffuseColor * IBLDiffuseIrradiance.rgb;
 }
@@ -108,8 +122,11 @@ vec3 computeIBLSpecular(float roughness,
   // LOD roughness scaled by mip levels -1
   float lod = roughness * float(uPrefilteredMapMipLevels - 1u);
   vec4 IBLSpecIrradiance = textureLod(uPrefilteredMap, reflectionDir, lod);
+  // texture assumed to be sRGB
 #if defined(TONE_MAP)
-  IBLSpecIrradiance = tonemap(IBLSpecIrradiance);
+  IBLSpecIrradiance = toneMapToSRGB(IBLSpecIrradiance);
+#else
+  IBLSpecIrradiance = linearToSRGB(IBLSpecIrradiance);
 #endif
 
   return (specularReflectance * brdf.x + brdf.y) * IBLSpecIrradiance.rgb;

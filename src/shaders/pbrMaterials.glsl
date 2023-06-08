@@ -6,14 +6,14 @@ precision highp float;
 
 // -------------- process uniforms and derive data ------------------
 
-// This macro uses a more expensive calculation to derive the TBN frame
-// From paper See https://jcgt.org/published/0009/03/04/paper.pdf section 3.3
-// but it might be more accurate
+// #define USE_MIKKELSEN_TBN
+// Specifying this macro uses a more expensive calculation to derive the TBN
+// frame From paper See https://jcgt.org/published/0009/03/04/paper.pdf
+// section 3.3 but it might be more accurate
 //
-// Otherwise a simpler method is used that seems to yield similar results, from
+// Otherwise a simpler method is used that seems to yield equivalent results,
+// from
 // https://github.com/KhronosGroup/Vulkan-Samples/blob/main/shaders/pbr.frag
-
-//    #define USE_MIKKELSEN_TBN
 
 // Build TBN matrix
 // Using local gradient of position and UV coords to derive tangent if
@@ -33,7 +33,7 @@ mat3 buildTBN() {
   vec3 posDy = dFdy(position);
   vec2 uvDx2 = dFdx(texCoord);
   vec2 uvDy2 = dFdy(texCoord);
-  if (length(uvDx2) + length(uvDy2) < epsilon) {
+  if (length(uvDx2) + length(uvDy2) < EPSILON) {
     uvDx2 = vec2(1.0, 0.0);
     uvDy2 = vec2(0.0, 1.0);
   }
@@ -107,9 +107,6 @@ PBRData buildPBRData() {
   // on following paper See https://jcgt.org/published/0009/03/04/paper.pdf
   // Section 3.3
 
-  // TODO verify this is acceptable performance for synthesizing TBN frame if
-  // no precomputed normal provided
-
 #if (defined(NORMAL_TEXTURE) || defined(CLEAR_COAT_NORMAL_TEXTURE) || \
      defined(ANISOTROPY_LAYER))
   pbrInfo.TBN = buildTBN();
@@ -129,9 +126,6 @@ PBRData buildPBRData() {
   }
 #endif
 
-  /////////////////
-  // Initialization
-  // Scalars
   // Index of refraction 1.5 yields 0.04 dielectric fresnel reflectance at
   // normal incidence
   pbrInfo.ior = uMaterial.ior;
@@ -146,8 +140,6 @@ PBRData buildPBRData() {
       1.0f;
 #endif  // if defined(CLEAR_COAT) else
 
-  /////////////////
-  // vectors
   // View is the normalized vector from the shading location to the camera
   // in *world space*
   pbrInfo.view = normalize(uCameraWorldPos - position);
@@ -323,9 +315,9 @@ PBRData buildPBRData() {
   // https://google.github.io/filament/Filament.md.html#materialsystem/anisotropicmodel/anisotropicspecularbrdf
   // If anisotropy == 0 then just alpharoughness in each direction
   pbrInfo.aT =
-      max(pbrInfo.alphaRoughness * (1.0 + pbrInfo.anisotropy), epsilon);
+      max(pbrInfo.alphaRoughness * (1.0 + pbrInfo.anisotropy), EPSILON);
   pbrInfo.aB =
-      max(pbrInfo.alphaRoughness * (1.0 - pbrInfo.anisotropy), epsilon);
+      max(pbrInfo.alphaRoughness * (1.0 - pbrInfo.anisotropy), EPSILON);
   pbrInfo.aSqr = pbrInfo.aT * pbrInfo.aB;
   // precompute known cos thetas
   pbrInfo.t_dot_v = dot(pbrInfo.anisotropicT, pbrInfo.view);

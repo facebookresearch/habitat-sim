@@ -317,6 +317,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   if ((lightCount_ != 0u) && (flags_ & Flag::ImageBasedLighting)) {
     // Apply scaleing if -both- lights and IBL are enabled
     // pbr equation scales - use to mix IBL and direct lighting
+    // Should never be set to 0 or will cause warnings to occur in shader
     componentScalesUniform_ = uniformLocation("uComponentScales");
   }
 
@@ -373,6 +374,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
 
   PbrShader::PbrEquationScales scales;
   // Set mix if both lights and IBL are enabled
+  // Should never be 0 or will cause shader warnings
   if ((lightCount_ != 0u) && (flags_ & Flag::ImageBasedLighting)) {
     // These are empirical numbers. Discount the diffuse light from IBL so the
     // ambient light will not be too strong. Also keeping the IBL specular

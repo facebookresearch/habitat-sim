@@ -63,7 +63,7 @@ float V_GGX(LightInfo l, float arSq) {
   float GGXL = l.n_dot_v * sqrt(l.n_dot_l * l.n_dot_l * oneMArSq + arSq);
   float GGXV = l.n_dot_l * sqrt(l.n_dot_v * l.n_dot_v * oneMArSq + arSq);
 
-  return 0.5 / max(GGXV + GGXL, epsilon);
+  return 0.5 / max(GGXV + GGXL, EPSILON);
 }
 
 // Approximation - mathematically wrong but faster without sqrt
@@ -75,7 +75,7 @@ float V_GGXFast(LightInfo l, float ar) {
   float oneMAr = (1.0 - ar);
   float GGXL = l.n_dot_v * (l.n_dot_l * oneMAr + ar);
   float GGXV = l.n_dot_l * (l.n_dot_v * oneMAr + ar);
-  return 0.5 / max(GGXV + GGXL, epsilon);
+  return 0.5 / max(GGXV + GGXL, EPSILON);
 }
 
 // Approximation for clearcoat visibility from Kelemen et al
@@ -178,7 +178,7 @@ float V_GGX_anisotropic(LightInfo l,
   float GGXV =
       l.n_dot_l * length(vec3(pbrInfo.aT * pbrInfo.t_dot_v,
                               pbrInfo.aB * pbrInfo.b_dot_v, l.n_dot_v));
-  return 0.5 / max(GGXV + GGXL, epsilon);
+  return 0.5 / max(GGXV + GGXL, EPSILON);
 }
 // Anisotropic microfacet distribution model
 // l : LightInfo structure describing current light
@@ -188,10 +188,9 @@ float V_GGX_anisotropic(LightInfo l,
 float D_GGX_anisotropic(LightInfo l,
                         PBRData pbrInfo,
                         AnistropyDirectLight anisoLightInfo) {
-  highp vec3 f =
-      vec3(pbrInfo.aB * anisoLightInfo.t_dot_h,
-           pbrInfo.aT * anisoLightInfo.b_dot_h, pbrInfo.aSqr * l.n_dot_h);
-  highp float fdotf = dot(f, f);
+  vec3 f = vec3(pbrInfo.aB * anisoLightInfo.t_dot_h,
+                pbrInfo.aT * anisoLightInfo.b_dot_h, pbrInfo.aSqr * l.n_dot_h);
+  float fdotf = dot(f, f);
   float w2 = pbrInfo.aSqr / fdotf;
 
   return pbrInfo.aSqr * w2 * w2;
