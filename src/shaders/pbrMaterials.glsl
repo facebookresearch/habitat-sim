@@ -306,7 +306,10 @@ PBRData buildPBRData() {
   float a = (pow4(1.0 - abs(pbrInfo.anisotropy) *
                             (1.0 - pbrInfo.perceivedRoughness)));
   pbrInfo.bentNormal = normalize(mix(bentNormal, pbrInfo.n, a));
-
+#if defined(CLEAR_COAT)
+  pbrInfo.cc_BentNormal =
+      normalize(mix(bentNormal, pbrInfo.clearCoatNormal, a));
+#endif  // ANISOTROPY_LAYER
 #endif  // IMAGE_BASED_LIGHTING
 
   // Derive roughness in each direction
@@ -315,6 +318,7 @@ PBRData buildPBRData() {
   // pbrInfo.aT = mix( pbrInfo.alphaRoughness, 1.0,  pbrInfo.anisotropy*
   // pbrInfo.anisotropy);
   // pbrInfo.aB =  pbrInfo.alphaRoughness;
+
   // Below from
   // https://google.github.io/filament/Filament.md.html#materialsystem/anisotropicmodel/anisotropicspecularbrdf
   // If anisotropy == 0 then just alpharoughness in each direction
@@ -323,7 +327,7 @@ PBRData buildPBRData() {
   pbrInfo.aB =
       max(pbrInfo.alphaRoughness * (1.0 - pbrInfo.anisotropy), epsilon);
   pbrInfo.aSqr = pbrInfo.aT * pbrInfo.aB;
-
+  // precompute known cos thetas
   pbrInfo.t_dot_v = dot(pbrInfo.anisotropicT, pbrInfo.view);
   pbrInfo.b_dot_v = dot(pbrInfo.anisotropicB, pbrInfo.view);
 

@@ -188,9 +188,11 @@ float V_GGX_anisotropic(LightInfo l,
 float D_GGX_anisotropic(LightInfo l,
                         PBRData pbrInfo,
                         AnistropyDirectLight anisoLightInfo) {
-  vec3 f = vec3(pbrInfo.aB * anisoLightInfo.t_dot_h,
-                pbrInfo.aT * anisoLightInfo.b_dot_h, pbrInfo.aSqr * l.n_dot_h);
-  float w2 = pbrInfo.aSqr / dot(f, f);
+  highp vec3 f =
+      vec3(pbrInfo.aB * anisoLightInfo.t_dot_h,
+           pbrInfo.aT * anisoLightInfo.b_dot_h, pbrInfo.aSqr * l.n_dot_h);
+  highp float fdotf = dot(f, f);
+  float w2 = pbrInfo.aSqr / fdotf;
 
   return pbrInfo.aSqr * w2 * w2;
 }

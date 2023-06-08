@@ -163,9 +163,13 @@ void main() {
                          pbrInfo.specularColor_f0, reflection);
 
 #if defined(CLEAR_COAT) && !defined(SKIP_CALC_CLEAR_COAT)
-  // Clear coat reflection
+// Clear coat reflection
+#if defined(ANISOTROPY_LAYER) && !defined(SKIP_CALC_ANISOTROPY_LAYER)
+  vec3 cc_reflection = normalize(reflect(-pbrInfo.view, pbrInfo.cc_BentNormal));
+#else
   vec3 cc_reflection =
       normalize(reflect(-pbrInfo.view, pbrInfo.clearCoatNormal));
+#endif
   // Clear coat reflection contribution
   pbrInfo.iblClearCoatContrib =
       computeIBLSpecular(pbrInfo.clearCoatRoughness, pbrInfo.cc_n_dot_v,
