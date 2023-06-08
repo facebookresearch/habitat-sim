@@ -8,7 +8,10 @@
 #include <string>
 
 #include "esp/core/Esp.h"
+#include "esp/nav/PathFinder.h"
 #include "esp/physics/configure.h"
+
+namespace Cr = Corrade;
 
 namespace esp {
 
@@ -91,6 +94,14 @@ struct SimulatorConfiguration {
    * them.
    */
   bool useSemanticTexturesIfFound = true;
+
+  /**
+   * @brief Optionally provide a pre-configured NavMeshSettings. If provided,
+   * the NavMesh will be recomputed with the provided settings if A. no NavMesh
+   * was loaded, or B. the loaded NavMesh's settings differ from the configured
+   * settings. If not provided, no NavMesh recompute will be done automatically.
+   */
+  nav::NavMeshSettings::ptr navMeshSettings = nullptr;
 
   ESP_SMART_POINTERS(SimulatorConfiguration)
 };

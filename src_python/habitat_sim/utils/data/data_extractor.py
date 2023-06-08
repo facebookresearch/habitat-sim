@@ -2,7 +2,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Callable, List, Union
+from typing import Callable, List, Optional, Union
 
 import numpy as np
 
@@ -64,9 +64,9 @@ class ImageExtractor:
     def __init__(
         self,
         scene_filepath: Union[str, List[str]],
-        labels: List[float] = None,
+        labels: Optional[List[float]] = None,
         img_size: tuple = (512, 512),
-        output: List[str] = None,
+        output: Optional[List[str]] = None,
         pose_extractor_name: str = "closest_point_extractor",
         sim=None,
         shuffle: bool = True,
