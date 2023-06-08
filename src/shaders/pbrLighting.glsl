@@ -59,6 +59,7 @@ void configureAnisotropyLightInfo(LightInfo l,
 /////////////////
 // IBL Support
 
+#if defined(TONE_MAP)
 // The following function Uncharted2Tonemap is based on:
 // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/data/shaders/pbr_khr.frag
 vec3 Uncharted2Tonemap(vec3 color) {
@@ -79,34 +80,38 @@ vec3 Uncharted2Tonemap(vec3 color) {
 // Tone mapping takes a wide dynamic range of values and compresses them
 // into a smaller range that is appropriate for the output device.
 vec4 tonemap(vec4 color) {
-#ifdef TONE_MAP
   vec3 outcol = Uncharted2Tonemap(color.rgb * exposure);
   outcol = outcol * (1.0f / Uncharted2Tonemap(vec3(11.2f)));
   return vec4(pow(outcol, vec3(invGamma)), color.a);
-#else
-  return color;
-#endif
 }
+#endif  // TONE_MAP
 
 #if defined(IMAGE_BASED_LIGHTING)
 // diffuseColor: diffuse color
 // n: normal on shading location in world space
 vec3 computeIBLDiffuse(vec3 diffuseColor, vec3 n) {
   // diffuse part = diffuseColor * irradiance
-  // return diffuseColor * texture(uIrradianceMap, n).rgb * Scales.iblDiffuse;
-  return diffuseColor * tonemap(texture(uIrradianceMap, n)).rgb;
+  vec4 IBLDiffuseIrradiance = texture(uIrradianceMap, n);
+#if defined(TONE_MAP)
+  IBLDiffuseIrradiance = tonemap(IBLDiffuseIrradiance);
+#endif
+  return diffuseColor * IBLDiffuseIrradiance.rgb;
 }
 
 vec3 computeIBLSpecular(float roughness,
                         float n_dot_v,
                         vec3 specularReflectance,
                         vec3 reflectionDir) {
-  vec3 brdf = texture(uBrdfLUT, vec2(n_dot_v, 1 - roughness)).rgb;
-  // LOD roughness scaled by 1- mip levels
+  vec2 brdfSamplePt =
+      clamp(vec2(n_dot_v, 1.0 - roughness), vec2(0.0, 0.0), vec2(1.0, 1.0));
+  vec3 brdf = texture(uBrdfLUT, brdfSamplePt).rgb;
+  // LOD roughness scaled by mip levels -1
   float lod = roughness * float(uPrefilteredMapMipLevels - 1u);
-  vec3 prefilteredColor =
-      tonemap(textureLod(uPrefilteredMap, reflectionDir, lod)).rgb;
+  vec4 IBLSpecIrradiance = textureLod(uPrefilteredMap, reflectionDir, lod);
+#if defined(TONE_MAP)
+  IBLSpecIrradiance = tonemap(IBLSpecIrradiance);
+#endif
 
-  return prefilteredColor * (specularReflectance * brdf.x + brdf.y);
+  return (specularReflectance * brdf.x + brdf.y) * IBLSpecIrradiance.rgb;
 }
 #endif  // IMAGE_BASED_LIGHTING
