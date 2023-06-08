@@ -1179,6 +1179,7 @@ if __name__ == "__main__":
     sim_settings["window_width"] = args.width
     sim_settings["window_height"] = args.height
     sim_settings["pbr_image_based_lighting"] = args.ibl
+    sim_settings["default_agent_navmesh"] = False
 
     # start the application
     HabitatSimInteractiveViewer(sim_settings).exec()
