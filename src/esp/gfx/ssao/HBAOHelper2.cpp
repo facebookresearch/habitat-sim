@@ -670,6 +670,9 @@ struct HBAOHelper2::Impl {
       fbos.depthlinear.bind();
 
     } else if (name == "programs.depth_linearize") {
+      // You need to make a local hack change to Magnum to have this WIP code
+      // compile. See https://github.com/facebookresearch/habitat-sim/pull/1997
+      // "Building and Testing".
       programs.depth_linearize.use();
     } else if (name == "programs.depth_linearize_msaa") {
       programs.depth_linearize_msaa.use();
