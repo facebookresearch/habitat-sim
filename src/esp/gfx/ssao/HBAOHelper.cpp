@@ -21,13 +21,17 @@ namespace ssao {
 #define AO_LAYERED_IMAGE 1
 #define AO_LAYERED_GS 2
 
-#define USE_AO_LAYERED_SINGLEPASS AO_LAYERED_GS
+// temp turn this off
+// #define USE_AO_LAYERED_SINGLEPASS AO_LAYERED_GS
+#define USE_AO_LAYERED_SINGLEPASS AO_LAYERED_OFF
 
 static const int NUM_MRT = 8;
 
 using namespace nvmath;
 
 void HBAOHelper::init(int width, int height) {
+  m_config.blur = false;  // temp turn this off
+
   constexpr int samples = 1;
   initPrograms();
   initFramebuffers(width, height, samples);
@@ -401,16 +405,20 @@ void HBAOHelper::prepareHbaoData(const Projection& projection,
 #endif
 }
 
+#if 0  // for reference
 void HBAOHelper::drawLinearDepth(const Projection& projection,
                                  int width,
                                  int height,
                                  int sampleIdx,
                                  GLuint scene_depthstencil) {
   // NV_PROFILE_GL_SECTION("linearize");
-  glBindFramebuffer(GL_FRAMEBUFFER, fbos.depthlinear);
+  // glBindFramebuffer(GL_FRAMEBUFFER, fbos.depthlinear);
+  m_helper2.tempCall("fbos.depthlinear");
 
   if (m_config.samples > 1) {
-    glUseProgram(m_progManager.get(programs.depth_linearize_msaa));
+    // glUseProgram(m_progManager.get(programs.depth_linearize_msaa));
+    m_helper2.tempCall("programs.depth_linearize_msaa");
+
     glUniform4f(0, projection.nearplane * projection.farplane,
                 projection.nearplane - projection.farplane, projection.farplane,
                 projection.ortho ? 0.0f : 1.0f);
@@ -418,19 +426,23 @@ void HBAOHelper::drawLinearDepth(const Projection& projection,
 
     nvgl::bindMultiTexture(GL_TEXTURE0, GL_TEXTURE_2D_MULTISAMPLE,
                            scene_depthstencil);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    // glDrawArrays(GL_TRIANGLES, 0, 3);
+    m_helper2.tempCall("programs.depth_linearize_msaa draw");
     nvgl::bindMultiTexture(GL_TEXTURE0, GL_TEXTURE_2D_MULTISAMPLE, 0);
   } else {
-    glUseProgram(m_progManager.get(programs.depth_linearize));
+    // glUseProgram(m_progManager.get(programs.depth_linearize));
+    m_helper2.tempCall("programs.depth_linearize");
     glUniform4f(0, projection.nearplane * projection.farplane,
                 projection.nearplane - projection.farplane, projection.farplane,
                 projection.ortho ? 0.0f : 1.0f);
 
     nvgl::bindMultiTexture(GL_TEXTURE0, GL_TEXTURE_2D, scene_depthstencil);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    //glDrawArrays(GL_TRIANGLES, 0, 3);
+    m_helper2.tempCall("programs.depth_linearize draw");
     nvgl::bindMultiTexture(GL_TEXTURE0, GL_TEXTURE_2D, 0);
   }
 }
+#endif
 
 void HBAOHelper::drawHbaoBlur(const Projection& projection,
                               int width,
@@ -441,10 +453,15 @@ void HBAOHelper::drawHbaoBlur(const Projection& projection,
 
   float meters2viewspace = 1.0f;
 
-  glUseProgram(m_progManager.get(USE_AO_SPECIALBLUR ? programs.hbao_blur
-                                                    : programs.bilateralblur));
-  nvgl::bindMultiTexture(GL_TEXTURE1, GL_TEXTURE_2D,
-                         textures.scene_depthlinear);
+  // glUseProgram(m_progManager.get(USE_AO_SPECIALBLUR ? programs.hbao_blur
+  //                                                   :
+  //                                                   programs.bilateralblur));
+  m_helper2.tempCall(USE_AO_SPECIALBLUR ? "programs.hbao_blur"
+                                        : "programs.bilateralblur");
+
+  // nvgl::bindMultiTexture(GL_TEXTURE1, GL_TEXTURE_2D,
+  //                        textures.scene_depthlinear);
+  m_helper2.tempCall("textures.scene_depthlinear 1");
 
   glUniform1f(0, m_config.blurSharpness / meters2viewspace);
 
@@ -465,7 +482,8 @@ void HBAOHelper::drawHbaoBlur(const Projection& projection,
   }
 
 #if USE_AO_SPECIALBLUR
-  glUseProgram(m_progManager.get(programs.hbao_blur2));
+  // glUseProgram(m_progManager.get(programs.hbao_blur2));
+  m_helper2.tempCall("programs.hbao_blur2");
   glUniform1f(0, m_config.blurSharpness / meters2viewspace);
 #endif
 
@@ -480,6 +498,8 @@ void HBAOHelper::drawHbaoClassic(const Projection& projection,
                                  int sampleIdx,
                                  GLuint scene_depthstencil,
                                  GLuint fbo_scene) {
+  CORRADE_ASSERT_UNREACHABLE("not ported yet", {});
+#if 0
   prepareHbaoData(projection, width, height);
 
   drawLinearDepth(projection, width, height, sampleIdx, scene_depthstencil);
@@ -528,6 +548,7 @@ void HBAOHelper::drawHbaoClassic(const Projection& projection,
   nvgl::bindMultiTexture(GL_TEXTURE1, GL_TEXTURE_2D, 0);
 
   glUseProgram(0);
+#endif
 }
 
 void HBAOHelper::drawHbaoCacheAware(const Projection& projection,
@@ -556,20 +577,24 @@ void HBAOHelper::drawHbaoCacheAware(const Projection& projection,
 
   prepareHbaoData(projection, width, height);
 
-  drawLinearDepth(projection, width, height, sampleIdx, scene_depthstencil);
+  // drawLinearDepth(projection, width, height, sampleIdx, scene_depthstencil);
+  m_helper2.tempDrawLinearDepth(projection.nearplane, projection.farplane,
+                                projection.ortho, width, height, sampleIdx);
 
   {
     // NV_PROFILE_GL_SECTION("viewnormal");
     glBindFramebuffer(GL_FRAMEBUFFER, fbos.viewnormal);
 
-    glUseProgram(m_progManager.get(programs.viewnormal));
+    // glUseProgram(m_progManager.get(programs.viewnormal));
+    m_helper2.tempCall("programs.viewnormal");
 
     glUniform4fv(0, 1, m_hbaoUbo.projInfo.get_value());
     glUniform1i(1, m_hbaoUbo.projOrtho);
     glUniform2fv(2, 1, m_hbaoUbo.InvFullResolution.get_value());
 
-    nvgl::bindMultiTexture(GL_TEXTURE0, GL_TEXTURE_2D,
-                           textures.scene_depthlinear);
+    // nvgl::bindMultiTexture(GL_TEXTURE0, GL_TEXTURE_2D,
+    //                        textures.scene_depthlinear);
+    m_helper2.tempCall("textures.scene_depthlinear 0");
     glDrawArrays(GL_TRIANGLES, 0, 3);
     nvgl::bindMultiTexture(GL_TEXTURE0, GL_TEXTURE_2D, 0);
   }
@@ -579,9 +604,12 @@ void HBAOHelper::drawHbaoCacheAware(const Projection& projection,
     glBindFramebuffer(GL_FRAMEBUFFER, fbos.hbao2_deinterleave);
     glViewport(0, 0, quarterWidth, quarterHeight);
 
-    glUseProgram(m_progManager.get(programs.hbao2_deinterleave));
-    nvgl::bindMultiTexture(GL_TEXTURE0, GL_TEXTURE_2D,
-                           textures.scene_depthlinear);
+    // glUseProgram(m_progManager.get(programs.hbao2_deinterleave));
+    m_helper2.tempCall("programs.hbao2_deinterleave");
+
+    // nvgl::bindMultiTexture(GL_TEXTURE0, GL_TEXTURE_2D,
+    //                        textures.scene_depthlinear);
+    m_helper2.tempCall("textures.scene_depthlinear 0");
 
     for (int i = 0; i < HBAO_RANDOM_ELEMENTS; i += NUM_MRT) {
       glUniform4f(0, float(i % 4) + 0.5f, float(i / 4) + 0.5f,
@@ -601,9 +629,13 @@ void HBAOHelper::drawHbaoCacheAware(const Projection& projection,
     glBindFramebuffer(GL_FRAMEBUFFER, fbos.hbao2_calc);
     glViewport(0, 0, quarterWidth, quarterHeight);
 
-    glUseProgram(m_progManager.get(USE_AO_SPECIALBLUR && m_config.blur
-                                       ? programs.hbao2_calc_blur
-                                       : programs.hbao2_calc));
+    // glUseProgram(m_progManager.get(USE_AO_SPECIALBLUR && m_config.blur
+    //                                    ? programs.hbao2_calc_blur
+    //                                    : programs.hbao2_calc));
+    m_helper2.tempCall(USE_AO_SPECIALBLUR && m_config.blur
+                           ? "programs.hbao2_calc_blur"
+                           : "programs.hbao2_calc");
+
     nvgl::bindMultiTexture(GL_TEXTURE1, GL_TEXTURE_2D,
                            textures.scene_viewnormal);
 
@@ -659,9 +691,12 @@ void HBAOHelper::drawHbaoCacheAware(const Projection& projection,
     }
     glViewport(0, 0, width, height);
 
-    glUseProgram(m_progManager.get(USE_AO_SPECIALBLUR && m_config.blur
-                                       ? programs.hbao2_reinterleave_blur
-                                       : programs.hbao2_reinterleave));
+    // glUseProgram(m_progManager.get(USE_AO_SPECIALBLUR && m_config.blur
+    //                                    ? programs.hbao2_reinterleave_blur
+    //                                    : programs.hbao2_reinterleave));
+    m_helper2.tempCall(USE_AO_SPECIALBLUR && m_config.blur
+                           ? "programs.hbao2_reinterleave_blur"
+                           : "programs.hbao2_reinterleave");
 
     nvgl::bindMultiTexture(GL_TEXTURE0, GL_TEXTURE_2D_ARRAY,
                            textures.hbao2_resultarray);

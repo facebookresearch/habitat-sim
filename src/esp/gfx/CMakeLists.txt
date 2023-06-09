@@ -73,6 +73,8 @@ set(
   VarianceShadowMapDrawable.cpp
   GaussianFilterShader.h
   GaussianFilterShader.cpp
+  ssao/HBAOHelper2.cpp
+  ssao/HBAOHelper2.h
   ssao/HBAOHelper.cpp
   ssao/HBAOHelper.h
   # temp: nvpro helpers used by HBAO

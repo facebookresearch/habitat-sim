@@ -123,6 +123,7 @@ struct RenderTarget::Impl {
       m_hbaoHelper = std::make_unique<ssao::HBAOHelper>();
       // todo: get rid of init and use constructor
       m_hbaoHelper->init(size.x(), size.y());
+      m_hbaoHelper->tempGetHelper2().init(&depthRenderTexture_, &framebuffer_);
     }
   }
 

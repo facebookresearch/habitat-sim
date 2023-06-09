@@ -8,6 +8,8 @@
 #ifndef HBAOHELPER_H_
 #define HBAOHELPER_H_
 
+#include "HBAOHelper2.h"
+
 #include <algorithm>  // hack to avoid nvpro_core compile problems
 
 // todo before PR merge: get rid of all nvpro dependencies
@@ -88,6 +90,8 @@ class HBAOHelper {
                           GLuint scene_depthstencil,
                           GLuint fbo_scene);
 
+  HBAOHelper2& tempGetHelper2() { return m_helper2; }
+
   Config m_config;
 
  private:
@@ -131,6 +135,8 @@ class HBAOHelper {
   nvmath::vec4f m_hbaoRandom[HBAO_RANDOM_ELEMENTS * MAX_SAMPLES];
   nvgl::ProgramManager m_progManager;
   GLuint scene_depthstencil = 0;  // not owned
+
+  HBAOHelper2 m_helper2;
 };
 
 }  // namespace ssao
