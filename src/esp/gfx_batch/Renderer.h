@@ -219,7 +219,7 @@ initial transformation and returns an ID of the node added into the scene. The
 ID can then be used to subsequently update its transformation via
 @ref transformations(), for example in respose to a physics simulation or an
 animation. Each scene also has an associated camera and its combined projection
-and transformation matrix can be updated using @ref camera().
+and transformation matrix can be updated using @ref updateCamera().
 
 Finally, the @ref draw() function renders the grid of scenes into a provided
 framebuffer.
@@ -239,7 +239,7 @@ implemented in @ref shaders-usage-multidraw "Magnum shaders".
   added to a *draw list*. The draw list is
   @ref gfx_batch-Renderer-workflow-draw-list "further detailed below".
 - For each @ref draw() and each non-empty scene, the following is done:
-  - The @ref camera() transformation is uploaded to a uniform buffer.
+  - The @ref updateCamera() transformation is uploaded to a uniform buffer.
   - The renderer calculates hierarchical transformations for all nodes based on
     the matrices supplied via @ref transformations(). Each item in the draw
     list is then assigned a corresponding calculated absolute transformation,
@@ -485,7 +485,7 @@ class Renderer {
   /**
    * @brief Max light count
    *
-   * By default there's zero lights, i.e. flat-shaded renderering.
+   * By default there's zero lights, i.e. flat-shaded rendering.
    * @see @ref RendererConfiguration::setMaxLightCount()
    */
   Magnum::UnsignedInt maxLightCount() const;
@@ -640,13 +640,24 @@ class Renderer {
   void clearLights(Magnum::UnsignedInt sceneId);
 
   /**
-   * @brief Combined camera projection and transformation matrix
-   * @param sceneId   Scene ID, expected to be less than @ref sceneCount()
-   *
-   * Modifications to the transformation are taken into account in the next
-   * @ref draw().
+   * @brief Get the combined projection and view matrices of a camera
+   * (read-only)
+   * @param sceneId Scene ID, expected to be less than @ref sceneCount()
    */
-  Magnum::Matrix4& camera(Magnum::UnsignedInt sceneId);
+  const Magnum::Matrix4& camera(Magnum::UnsignedInt sceneId) const;
+
+  /**
+   * @brief Set the camera projection and view matrices
+   * @param sceneId Scene ID, expected to be less than @ref sceneCount()
+   * @param view View matrix of the camera (inverse transform)
+   * @param projection Projection matrix of the camera
+   *
+   * Also computes the camera unprojection.
+   * Modifications to the transformation are taken into account in the next @ref draw().
+   */
+  void updateCamera(Magnum::UnsignedInt sceneId,
+                    const Magnum::Matrix4& projection,
+                    const Magnum::Matrix4& view);
 
   /**
    * @brief Transformations of all nodes in the scene
@@ -702,6 +713,16 @@ class Renderer {
    * product of @ref tileSize() and @ref tileCount().
    */
   void draw(Magnum::GL::AbstractFramebuffer& framebuffer);
+
+  /**
+   * @brief Unprojects depth onto the provided image.
+   * Produces an image that contains the distance of each pixels, in meters.
+   *
+   * @param sceneId Scene ID, expected to be less than @ref sceneCount()
+   * @param view View on raw depth of scene corresponding to the specified
+   * sceneId.
+   */
+  void unprojectDepth(int sceneId, const Magnum::MutableImageView2D& view);
 
   /**
    * @brief Scene stats

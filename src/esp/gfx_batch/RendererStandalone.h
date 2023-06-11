@@ -29,7 +29,7 @@ enum class RendererStandaloneFlag {
    * @m_class{m-note m-warning}
    *
    * @par
-   *    **Not recommmended** to be enabled in end-user applications, as the log
+   *    **Not recommended** to be enabled in end-user applications, as the log
    *    contains vital information for debugging platform-specific issues.
    */
   QuietLog = 1 << 0
@@ -189,16 +189,20 @@ class RendererStandalone : public Renderer {
                       const Magnum::MutableImageView2D& image);
 
   /**
-   * @brief Retrieve the rendered depth output
+   * @brief Retrieve the raw rendered depth output.
+   * This returns the depth buffer as-is. To unproject, use @ref unprojectDepth().
    *
    * Stalls the CPU until the GPU finishes the last @ref draw() and then
    * returns an image in @ref depthFramebufferFormat() and with size being
    * @ref tileSize() multiplied by @ref tileCount().
+   *
    */
   Magnum::Image2D depthImage();
 
   /**
-   * @brief Retrieve the rendered depth output into a pre-allocated location
+   * @brief Retrieve the raw rendered depth output into a pre-allocated
+   * location.
+   * This returns the depth buffer as-is. To unproject, use @ref unprojectDepth().
    *
    * Expects that @p rectangle is contained in a size defined
    * by @ref tileSize() multiplied by @ref tileCount(), that @p image

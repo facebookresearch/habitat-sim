@@ -4,6 +4,8 @@
 
 #include "BatchReplayRenderer.h"
 
+#include "Magnum/GL/PixelFormat.h"
+#include "Magnum/PixelFormat.h"
 #include "esp/sensor/CameraSensor.h"
 
 #include <Corrade/Containers/GrowableArray.h>
@@ -232,7 +234,8 @@ void BatchReplayRenderer::doSetSensorTransform(
     // TODO assumes there's just one sensor per env
     const std::string&,
     const Mn::Matrix4& transform) {
-  renderer_->camera(envIndex) = theOnlySensorProjection_ * transform.inverted();
+  renderer_->updateCamera(envIndex, theOnlySensorProjection_,
+                          transform.inverted());
 }
 
 void BatchReplayRenderer::doSetSensorTransformsFromKeyframe(
@@ -246,9 +249,9 @@ void BatchReplayRenderer::doSetSensorTransformsFromKeyframe(
   ESP_CHECK(found,
             "setSensorTransformsFromKeyframe: couldn't find user transform \""
                 << userName << "\" for environment " << envIndex << ".");
-  renderer_->camera(envIndex) =
-      theOnlySensorProjection_ *
-      Mn::Matrix4::from(rotation.toMatrix(), translation).inverted();
+  renderer_->updateCamera(
+      envIndex, theOnlySensorProjection_,
+      Mn::Matrix4::from(rotation.toMatrix(), translation).inverted());
 }
 
 void BatchReplayRenderer::doRender(
@@ -274,8 +277,32 @@ void BatchReplayRenderer::doRender(
           .colorImageInto(rectangle, colorImageViews[envIndex]);
     }
     if (depthImageViews) {
+      Mn::MutableImageView2D depthBufferView{
+          Mn::GL::PixelFormat::DepthComponent, Mn::GL::PixelType::Float,
+          depthImageViews[envIndex].size(), depthImageViews[envIndex].data()};
       static_cast<gfx_batch::RendererStandalone&>(*renderer_)
-          .depthImageInto(rectangle, depthImageViews[envIndex]);
+          .depthImageInto(rectangle, depthBufferView);
+      renderer_->unprojectDepth(envIndex, depthBufferView);
+      /*
+      auto& depthImageView = depthImageViews[envIndex];
+      // Input is R32F. A new view is created to fetch Depth32F buffer.
+      auto depthBufferImageView = Mn::MutableImageView2D{
+        depthImageView.storage(),
+        Magnum::PixelFormat::Depth32F,
+        depthImageView.formatExtra(),
+        depthImageView.pixelSize(),
+        depthImageView.size(),
+        depthImageView.data(),
+        depthImageView.flags()};
+
+      // Depth32F op
+      static_cast<gfx_batch::RendererStandalone&>(*renderer_)
+          .depthImageInto(rectangle, depthBufferImageView);
+
+      // R32F op
+      // TODO: If enableDepthUnprojection:
+      renderer_->unprojectDepth(depthImageView);
+      */
     }
   }
 }
