@@ -4,8 +4,13 @@
 
 find_package(Magnum REQUIRED DebugTools AnyImageConverter AnySceneImporter)
 find_package(
-  MagnumPlugins REQUIRED GltfImporter StbImageImporter KtxImporter
-  OPTIONAL_COMPONENTS GltfSceneConverter KtxImageConverter
+  MagnumPlugins
+  REQUIRED
+  GltfImporter
+  StbImageImporter
+  KtxImporter
+  OpenExrImporter
+  OPTIONAL_COMPONENTS GltfSceneConverter KtxImageConverter OpenExrImageConverter
 )
 
 configure_file(
@@ -38,6 +43,7 @@ corrade_add_test(
   LIBRARIES
   gfx_batch
   Magnum::DebugTools
+  Magnum::AnyImageConverter
   Magnum::AnySceneImporter
   MagnumPlugins::GltfImporter
   MagnumPlugins::KtxImporter
@@ -58,7 +64,7 @@ endif()
 
 corrade_add_test(CoreTest CoreTest.cpp LIBRARIES core io)
 
-corrade_add_test(CullingTest CullingTest.cpp LIBRARIES gfx gfx_batch)
+corrade_add_test(CullingTest CullingTest.cpp LIBRARIES gfx)
 target_include_directories(CullingTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(
@@ -66,7 +72,6 @@ corrade_add_test(
   DepthUnprojectionTest.cpp
   LIBRARIES
   gfx
-  gfx_batch
   Magnum::MeshTools
   Magnum::OpenGLTester
   Magnum::Trade
@@ -97,6 +102,9 @@ if(BUILD_WITH_BACKGROUND_RENDERER)
     gfx
     gfx_batch
     sim
+    # TODO: Make optional
+    MagnumPlugins::OpenExrImageConverter
+    MagnumPlugins::OpenExrImporter
   )
   target_include_directories(
     BatchReplayRendererTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
