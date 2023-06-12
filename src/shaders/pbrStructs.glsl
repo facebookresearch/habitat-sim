@@ -70,7 +70,7 @@ struct AnisotropyLayerData {
 //////////////////////////
 // Structure holding per-light anisotropy-related lighting info to faciliate
 // passing as function args
-struct AnistropyDirectLight {
+struct AnisotropyDirectLight {
   // cos angle between tangent and light
   float t_dot_l;
   // cos angle between tangent and halfvector
@@ -150,7 +150,7 @@ struct PBRData {
   // incidence based on given IOR. Specular layer data modfies this
   vec3 specularColor_f0;
   // glancing incidence dielectric/metallic reflectance. Specular layer data
-  // modfies this
+  // modifies this
   vec3 specularColor_f90;
 
 // Clearcoat layer quantities used in shader

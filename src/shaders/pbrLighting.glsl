@@ -19,7 +19,7 @@ const vec3 INV_GAMMA_VEC = vec3(INV_GAMMA);
 // n : normal
 // view : normalized view vector (point to camera)
 // n_dot_v : cos angle between n and view
-// (out) l : LightInfo structure being popualted
+// (out) l : LightInfo structure being populated
 void configureLightInfo(vec3 light,
                         vec3 lightIrradiance,
                         vec3 n,
@@ -39,13 +39,13 @@ void configureLightInfo(vec3 light,
 
 #if defined(ANISOTROPY_LAYER)
 
-// Configure a light-dependent AnistropyDirectLight object
+// Configure a light-dependent AnisotropyDirectLight object
 // l : LightInfo structure for current light
 // PBRData pbrInfo : structure populated with precalculated material values
 // (out) info : AnisotropyInfo structure to be populated
 void configureAnisotropyLightInfo(LightInfo l,
                                   PBRData pbrInfo,
-                                  out AnistropyDirectLight info) {
+                                  out AnisotropyDirectLight info) {
   info.t_dot_l = dot(pbrInfo.anisotropicT, l.light);
   info.b_dot_l = dot(pbrInfo.anisotropicB, l.light);
   info.t_dot_h = dot(pbrInfo.anisotropicT, l.halfVector);

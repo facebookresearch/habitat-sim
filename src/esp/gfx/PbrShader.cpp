@@ -195,6 +195,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
                  pbrTextureUnitSpace::TextureUnit::MetallicRoughness);
     }
     if (flags_ & Flag::NormalTexture) {
+      normalTextureScaleUniform_ = uniformLocation("uNormalTextureScale");
       setUniform(uniformLocation("uNormalTexture"),
                  pbrTextureUnitSpace::TextureUnit::Normal);
     }
@@ -302,10 +303,6 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     lightDirectionsUniform_ = uniformLocation("uLightDirections");
   }
 
-  if ((flags_ & Flag::NormalTexture) && lightingIsEnabled_) {
-    normalTextureScaleUniform_ = uniformLocation("uNormalTextureScale");
-  }
-
   cameraWorldPosUniform_ = uniformLocation("uCameraWorldPos");
 
   // IBL related uniform
@@ -315,7 +312,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   }
 
   if ((lightCount_ != 0u) && (flags_ & Flag::ImageBasedLighting)) {
-    // Apply scaleing if -both- lights and IBL are enabled
+    // Apply scaling if -both- lights and IBL are enabled
     // pbr equation scales - use to mix IBL and direct lighting
     // Should never be set to 0 or will cause warnings to occur in shader
     componentScalesUniform_ = uniformLocation("uComponentScales");
@@ -773,7 +770,6 @@ PbrShader& PbrShader::setLightColor(unsigned int lightIndex,
       "PbrShader::setLightColor: lightIndex" << lightIndex << "is illegal.",
       *this);
   Mn::Vector3 finalColor = intensity * color;
-  // finalColor *= PBR_LIGHT_SCALE;
   setUniform(lightColorsUniform_ + lightIndex, finalColor);
   return *this;
 }

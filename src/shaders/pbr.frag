@@ -89,7 +89,7 @@ void main() {
 #if defined(ANISOTROPY_LAYER) && !defined(SKIP_CALC_ANISOTROPY_LAYER)
     // Specular microfacet for anisotropic layer
     // calculate light-specific anisotropic layer cosines
-    AnistropyDirectLight anisoLightInfo;
+    AnisotropyDirectLight anisoLightInfo;
     configureAnisotropyLightInfo(l, pbrInfo, anisoLightInfo);
 
     // Anisotropic specular contribution
