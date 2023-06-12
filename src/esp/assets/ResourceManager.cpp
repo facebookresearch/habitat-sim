@@ -123,6 +123,8 @@ ResourceManager::ResourceManager(
   buildImporters();
 }
 
+ResourceManager::~ResourceManager() = default;
+
 void ResourceManager::buildImporters() {
   // Preferred plugins, Basis target GPU format
 #ifdef ESP_BUILD_ASSIMP_SUPPORT

@@ -32,9 +32,6 @@ namespace esp {
 namespace assets {
 struct PhongMaterialColor;
 }
-namespace geo {
-class VoxelGrid;
-}
 namespace gfx {
 class Drawable;
 class PbrImageBasedLighting;
@@ -105,6 +102,9 @@ class ResourceManager {
   /** @brief Constructor */
   explicit ResourceManager(
       std::shared_ptr<metadata::MetadataMediator> _metadataMediator);
+
+  /** @brief Destructor */
+  ~ResourceManager();
 
   /**
    * @brief This function will build the various @ref Importers used by the
@@ -310,46 +310,6 @@ class ResourceManager {
    * @return The asset's @ref MeshMetaData object.
    */
   const MeshMetaData& getMeshMetaData(const std::string& metaDataName) const;
-
-  /**
-   * @brief check to see if a particular voxel grid has been created &
-   * registered or not.
-   * @param voxelGridName The key identifying the asset in @ref resourceDict_.
-   * Typically the filepath of file-based assets.
-   * @return Whether or not the specified grid exists.
-   */
-  bool voxelGridExists(const std::string& voxelGridName) const {
-    return voxelGridDict_.count(voxelGridName) > 0;
-  }
-
-  /**
-   * @brief Retrieve a VoxelGrid given a particular voxel grid handle.
-   * @param voxelGridName The key identifying the asset in @ref resourceDict_.
-   * Typically the filepath of file-based assets.
-   * @return The specified VoxelGrid.
-   */
-  std::shared_ptr<esp::geo::VoxelGrid> getVoxelGrid(
-      const std::string& voxelGridName) const {
-    auto voxGridIter = voxelGridDict_.find(voxelGridName);
-    CORRADE_INTERNAL_ASSERT(voxGridIter != voxelGridDict_.end());
-    return voxGridIter->second;
-  }
-
-  /**
-   * @brief Registers a given VoxelGrid pointer under the given handle in the
-   * voxelGridDict_ if no such VoxelGrid has been registered.
-   * @param voxelGridHandle The key to register the VoxelGrid under.
-   * @param VoxelGridPtr The pointer to the VoxelGrid
-   * @return Whether or not the registration succeeded.
-   */
-  bool registerVoxelGrid(
-      const std::string& voxelGridHandle,
-      const std::shared_ptr<esp::geo::VoxelGrid>& VoxelGridPtr) {
-    auto voxGridEmplaceIter =
-        voxelGridDict_.emplace(voxelGridHandle, VoxelGridPtr);
-    // return whether placed or not;
-    return voxGridEmplaceIter.second;
-  }
 
   /**
    * @brief Get a named @ref LightSetup
@@ -1227,14 +1187,6 @@ class ResourceManager {
    * @brief The skin data for loaded assets.
    */
   std::map<int, std::shared_ptr<gfx::SkinData>> skins_;
-
-  /**
-   * @brief Storage for precomputed voxel grids. Useful for when multiple
-   * objects in a scene are using the same VoxelGrid.
-   *
-   * Maps absolute path keys to VoxelGrid.
-   */
-  std::map<std::string, std::shared_ptr<esp::geo::VoxelGrid>> voxelGridDict_;
 
   /**
    * @brief Asset metadata linking meshes, textures, materials, and the

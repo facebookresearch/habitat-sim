@@ -342,8 +342,6 @@ In LOOK mode (default):
     Read Semantic ID and tag of clicked object (Currently only HM3D);
   SHIFT-RIGHT:
     Click a mesh to highlight it.
-  CTRL-RIGHT:
-    (physics) Click on an object to voxelize it and display the voxelization.
   WHEEL:
     Modify orthographic camera zoom/perspective camera FOV (+SHIFT for fine grained control)
 In GRAB mode (with 'enable-physics'):
@@ -400,8 +398,6 @@ Key Commands:
   'b': Toggle display of object bounding boxes.
   'p': Save current simulation state to SceneInstanceAttributes JSON file (with non-colliding filename).
   'v': (physics) Invert gravity.
-  'g': (physics) Display a stage's signed distance gradient vector field.
-  'k': (physics) Iterate through different ranges of the stage's voxelized signed distance field.
 
   Additional Utilities:
   'r': Write a replay of the recent simulated frames to a file specified by --gfx-replay-record-filepath.

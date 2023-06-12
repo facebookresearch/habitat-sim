@@ -9,7 +9,6 @@
 #include "esp/assets/BaseMesh.h"
 #include "esp/assets/GenericSemanticMeshData.h"
 #include "esp/core/Esp.h"
-#include "esp/geo/VoxelWrapper.h"
 #include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/metadata/attributes/ObjectAttributes.h"
 #include "esp/physics/PhysicsObjectBase.h"
@@ -394,24 +393,11 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
     return visualNodes_;
   }
 
-  /** @brief Get the VoxelWrapper for the object.
-   * @return The voxel wrapper for the object.
-   */
-  std::shared_ptr<esp::geo::VoxelWrapper> getVoxelization() const {
-    return voxelWrapper;
-  }
-
   /**
    * @brief The @ref SceneNode of a bounding box debug drawable. If nullptr, BB
    * drawing is off. See @ref setObjectBBDraw().
    */
   scene::SceneNode* BBNode_ = nullptr;
-
-  /**
-   * @brief  The @ref SceneNode of the voxel drawable. If nullptr, Voxel drawing
-   * is off. See @ref setObjectVoxelizationDraw().
-   */
-  scene::SceneNode* VoxelNode_ = nullptr;
 
   /**
    * @brief All Drawable components are children of this node.
@@ -426,11 +412,6 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
    * SceneGraph
    */
   std::vector<esp::scene::SceneNode*> visualNodes_;
-
-  /**
-   * @brief ptr to the VoxelWrapper associated with this RigidBase
-   */
-  std::shared_ptr<esp::geo::VoxelWrapper> voxelWrapper = nullptr;
 
  protected:
   /**

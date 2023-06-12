@@ -301,64 +301,6 @@ class Simulator {
     }
   }
 
-  //===============================================================================//
-  // Voxel Field API
-
-  /**
-   * @brief Turn on/off rendering for the voxel grid of the object's visual
-   * component.
-   *
-   * If a voxel grid for the object has not been created, it will make one with
-   * default arguments using @ref createObjectVoxelization().
-   *
-   * @param drawV Whether or not the render the voxel grid.
-   * @param objectId The object ID and key identifying the object in @ref
-   * esp::physics::PhysicsManager::existingObjects_.
-   * @param gridName The name of the voxel grid to be visualized.
-   */
-  void setObjectVoxelizationDraw(bool drawV,
-                                 int objectId,
-                                 const std::string& gridName = "Boundary") {
-    auto& drawables = getDrawableGroup();
-    physicsManager_->setObjectVoxelizationDraw(objectId, gridName, &drawables,
-                                               drawV);
-  }
-
-  /**
-   * @brief Returns the VoxelWrapper for a particular object.
-   *
-   * @param objectId The object ID and key identifying the object in @ref
-   * esp::physics::PhysicsManager::existingObjects_.
-   * @return A shared ptr to the object's VoxelWrapper .
-   */
-  std::shared_ptr<esp::geo::VoxelWrapper> getObjectVoxelization(int objectId) {
-    return physicsManager_->getObjectVoxelization(objectId);
-  }
-
-  /**
-   * @brief Turn on/off rendering for the voxel grid of the scene's visual
-   * component.
-   *
-   * If a voxel grid for the scene has not been created, it will make one with
-   * default arguments using @ref createStageVoxelization().
-   *
-   * @param drawV Whether or not the render the voxel grid.
-   * @param gridName The name of the voxel grid to be visualized.
-   */
-  void setStageVoxelizationDraw(bool drawV,
-                                const std::string& gridName = "Boundary") {
-    auto& drawables = getDrawableGroup();
-    physicsManager_->setStageVoxelizationDraw(gridName, &drawables, drawV);
-  }
-
-  /**
-   * @brief Returns the VoxelWrapper for a particular object.
-   * @return A shared ptr to the object's VoxelWrapper .
-   */
-  std::shared_ptr<esp::geo::VoxelWrapper> getStageVoxelization() {
-    return physicsManager_->getStageVoxelization();
-  }
-
   /**
    * @brief Discrete collision check for contact between an object and the
    * collision world.
