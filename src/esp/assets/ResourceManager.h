@@ -106,9 +106,6 @@ class ResourceManager {
   explicit ResourceManager(
       std::shared_ptr<metadata::MetadataMediator> _metadataMediator);
 
-  /** @brief Destructor */
-  ~ResourceManager();
-
   /**
    * @brief This function will build the various @ref Importers used by the
    * system.
