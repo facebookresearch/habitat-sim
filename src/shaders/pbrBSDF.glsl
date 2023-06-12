@@ -171,7 +171,7 @@ vec3 BRDF_ClearCoatSpecular(vec3 ccFresnel,
 // anisoLightInfo : Light-specific anisotropic tangent and bitangent cosines
 float V_GGX_anisotropic(LightInfo l,
                         PBRData pbrInfo,
-                        AnistropyDirectLight anisoLightInfo) {
+                        AnisotropyDirectLight anisoLightInfo) {
   float GGXL =
       l.n_dot_v * length(vec3(pbrInfo.aT * anisoLightInfo.t_dot_l,
                               pbrInfo.aB * anisoLightInfo.b_dot_l, l.n_dot_l));
@@ -187,7 +187,7 @@ float V_GGX_anisotropic(LightInfo l,
 // anisoLightInfo : Light-specific anisotropic tangent and bitangent cosines
 float D_GGX_anisotropic(LightInfo l,
                         PBRData pbrInfo,
-                        AnistropyDirectLight anisoLightInfo) {
+                        AnisotropyDirectLight anisoLightInfo) {
   vec3 f = vec3(pbrInfo.aB * anisoLightInfo.t_dot_h,
                 pbrInfo.aT * anisoLightInfo.b_dot_h, pbrInfo.aSqr * l.n_dot_h);
   float fdotf = dot(f, f);
@@ -205,7 +205,7 @@ float D_GGX_anisotropic(LightInfo l,
 vec3 BRDF_specularAnisotropicGGX(vec3 fresnel,
                                  LightInfo l,
                                  PBRData pbrInfo,
-                                 AnistropyDirectLight anisoLightInfo) {
+                                 AnisotropyDirectLight anisoLightInfo) {
   // Using base material fresnel
   vec3 anisoSpecular = fresnel *
                        // Visibility term

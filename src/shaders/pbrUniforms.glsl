@@ -22,14 +22,6 @@ in highp vec3 biTangent;
 uniform highp uint uObjectId;
 #endif
 
-#if defined(NORMAL_TEXTURE)
-uniform mediump float uNormalTextureScale
-#ifndef GL_ES
-    = 1.0
-#endif
-    ;
-#endif
-
 // camera position in world space
 uniform highp vec3 uCameraWorldPos;
 
@@ -58,7 +50,7 @@ const int maxShadowNum = 3;
 #endif
 
 // -------------- uniforms for material and textures ------------------
-
+// MaterialData defined in pbrMaterials.glsl
 uniform MaterialData uMaterial;
 
 #if defined(BASECOLOR_TEXTURE)
@@ -68,6 +60,7 @@ uniform sampler2D uBaseColorTexture;
 uniform sampler2D uMetallicRoughnessTexture;
 #endif
 #if defined(NORMAL_TEXTURE)
+uniform float uNormalTextureScale;
 uniform sampler2D uNormalTexture;
 #endif
 // TODO: separate occlusion texture
@@ -77,6 +70,7 @@ uniform sampler2D uEmissiveTexture;
 #endif
 
 #if defined(CLEAR_COAT)
+// ClearCoatData defined in pbrMaterials.glsl
 uniform ClearCoatData uClearCoat;
 
 #if defined(CLEAR_COAT_TEXTURE)
@@ -94,6 +88,7 @@ uniform sampler2D uClearCoatNormalTexture;
 #endif  // CLEAR_COAT
 
 #if defined(SPECULAR_LAYER)
+// SpecularLayerData defined in pbrMaterials.glsl
 uniform SpecularLayerData uSpecularLayer;
 
 #if defined(SPECULAR_LAYER_TEXTURE)
@@ -107,6 +102,7 @@ uniform sampler2D uSpecularLayerColorTexture;
 #endif  // SPECULAR_LAYER
 
 #if defined(ANISOTROPY_LAYER)
+// AnisotropyLayerData defined in pbrMaterials.glsl
 uniform AnisotropyLayerData uAnisotropyLayer;
 
 #if defined(ANISOTROPY_LAYER_TEXTURE)
@@ -147,6 +143,6 @@ const int DirectDiffuse = 0;
 const int DirectSpecular = 1;
 const int IblDiffuse = 2;
 const int IblSpecular = 3;
-uniform highp vec4 uComponentScales;
+uniform vec4 uComponentScales;
 #endif  // (LIGHT_COUNT > 0)
 #endif  // IMAGE_BASED_LIGHTING
