@@ -45,7 +45,6 @@ def pytest_report_header(config):
         "audio_enabled",
         "built_with_bullet",
         "cuda_enabled",
-        "vhacd_enabled",
     ]:
         output.append(f"--{setting}: {getattr(habitat_sim, setting)}")
     return output
