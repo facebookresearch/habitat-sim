@@ -272,11 +272,11 @@ void BatchReplayRenderer::doRender(
                          envIndex / renderer_->tileCount().x()},
         renderer_->tileSize());
 
-    if (colorImageViews) {
+    if (colorImageViews.size() > 0) {
       static_cast<gfx_batch::RendererStandalone&>(*renderer_)
           .colorImageInto(rectangle, colorImageViews[envIndex]);
     }
-    if (depthImageViews) {
+    if (depthImageViews.size() > 0) {
       Mn::MutableImageView2D depthBufferView{
           Mn::GL::PixelFormat::DepthComponent, Mn::GL::PixelType::Float,
           depthImageViews[envIndex].size(), depthImageViews[envIndex].data()};

@@ -223,12 +223,10 @@ void ClassicReplayRenderer::doRender(
           imageViews = depthImageViews;
           break;
         default:
-          imageViews = nullptr;
           break;
       }
 
 #ifdef ESP_BUILD_WITH_BACKGROUND_RENDERER
-      // todo: investigate flags (frustum culling?)
       if (imageViews != nullptr) {
         renderer_->enqueueAsyncDrawJob(
             visualSensor, sceneGraph, imageViews[envIndex],
