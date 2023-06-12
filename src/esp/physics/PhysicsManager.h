@@ -631,24 +631,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   virtual void setStageRestitutionCoefficient(
       CORRADE_UNUSED const double restitutionCoefficient) {}
 
-#ifdef ESP_BUILD_WITH_VHACD
-  /** @brief Initializes a new VoxelWrapper with a boundary voxelization using
-   * VHACD's voxelization library and assigns it to a rigid body.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param resolution Represents the approximate number of voxels in the new
-   * voxelization.
-   */
-  void generateVoxelization(int physObjectID, int resolution = 1000000);
-
-  /** @brief Initializes a new VoxelWrapper with a boundary voxelization using
-   * VHACD's voxelization library and assigns it to the stage's rigid body.
-   * @param resolution Represents the approximate number of voxels in the new
-   * voxelization.
-   */
-  void generateStageVoxelization(int resolution = 1000000);
-#endif
-
   /** @brief Gets the VoxelWrapper associated with a rigid object.
    * @param physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.

@@ -401,27 +401,6 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
     return voxelWrapper;
   }
 
-#ifdef ESP_BUILD_WITH_VHACD
-
-  /** @brief Initializes a new VoxelWrapper with a specified resolution. Creates
-   * a boundary voxelization (registered under the key "Boundary" in the
-   * VoxelGrid) using VHACD.
-   * @param resourceManager_ A reference to the current resource manager, used
-   * for registering the newly created voxel grid within the resource manager's
-   * VoxelGrid dictionary.
-   * @param resolution Represents the approximate number of voxels in the new
-   * voxelization.
-   */
-  void generateVoxelization(esp::assets::ResourceManager& resourceManager_,
-                            int resolution = 1000000) {
-    std::string renderAssetHandle =
-        initializationAttributes_->getRenderAssetHandle();
-    voxelWrapper =
-        std::make_shared<esp::geo::VoxelWrapper>(esp::geo::VoxelWrapper(
-            renderAssetHandle, &node(), resourceManager_, resolution));
-  }
-#endif
-
   /**
    * @brief The @ref SceneNode of a bounding box debug drawable. If nullptr, BB
    * drawing is off. See @ref setObjectBBDraw().

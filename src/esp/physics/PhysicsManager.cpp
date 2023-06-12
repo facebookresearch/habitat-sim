@@ -615,18 +615,6 @@ int PhysicsManager::checkActiveObjects() {
   return numActive;
 }
 
-#ifdef ESP_BUILD_WITH_VHACD
-void PhysicsManager::generateVoxelization(const int physObjectID,
-                                          const int resolution) {
-  auto objIter = getRigidObjIteratorOrAssert(physObjectID);
-  objIter->second->generateVoxelization(resourceManager_, resolution);
-}
-
-void PhysicsManager::generateStageVoxelization(const int resolution) {
-  staticStageObject_->generateVoxelization(resourceManager_, resolution);
-}
-#endif
-
 std::shared_ptr<esp::geo::VoxelWrapper> PhysicsManager::getObjectVoxelization(
     const int physObjectID) const {
   auto objIter = getConstRigidObjIteratorOrAssert(physObjectID);
@@ -710,7 +698,7 @@ void PhysicsManager::setVoxelizationDraw(const std::string& gridName,
 
     // If the RigidBase is a stage, need to set the BB to make culling work.
     if (dynamic_cast<esp::physics::RigidStage*>(rigidBase) != nullptr) {
-      // set bounding box for the node to be the bb computed by vhacd
+      // set bounding box for the node
       Mn::Range3D bb{rigidBase->voxelWrapper->getVoxelGrid()->getOffset(),
                      rigidBase->voxelWrapper->getVoxelGrid()->getMaxOffset()};
       rigidBase->VoxelNode_->setMeshBB(bb);

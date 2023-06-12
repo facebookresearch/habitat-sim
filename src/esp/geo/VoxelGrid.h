@@ -20,10 +20,6 @@
 #include "esp/geo/Geo.h"
 #include "esp/gfx/Drawable.h"
 
-#ifdef ESP_BUILD_WITH_VHACD
-#include "VHACD.h"
-#endif
-
 namespace esp {
 namespace geo {
 
@@ -44,19 +40,6 @@ class VoxelGrid {
   };
 
  public:
-#ifdef ESP_BUILD_WITH_VHACD
-  /**
-   * @brief Generates a Boundary voxel grid using VHACD's voxelization
-   * framework.
-   * @param meshData The mesh that will be voxelized
-   * @param renderAssetHandle The handle for the render asset.
-   * @param resolution The approximate number of voxels in the voxel grid.
-   */
-  VoxelGrid(const assets::MeshData& meshData,
-            const std::string& renderAssetHandle,
-            int resolution);
-#endif
-
   /**
    * @brief Generates an empty voxel grid given some voxel size and voxel
    * dimensions..

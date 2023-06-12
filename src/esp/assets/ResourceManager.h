@@ -26,10 +26,6 @@
 
 #include "esp/metadata/attributes/AttributesEnumMaps.h"
 
-#ifdef ESP_BUILD_WITH_VHACD
-#include <VHACD.h>
-#endif
-
 namespace Mn = Magnum;
 
 namespace esp {
@@ -105,22 +101,6 @@ class ResourceManager {
   using DrawableGroup = gfx::DrawableGroup;
   /** @brief Convenience typedef for Importer class */
   using Importer = Mn::Trade::AbstractImporter;
-
-#ifdef ESP_BUILD_WITH_VHACD
-  /**
-   * @brief Simple struct interface for creating and managing VHACD parameters.
-   * These parameters are passed into VHACD and specify how convex hull
-   * decomposition is ran.
-   */
-  struct VHACDParameters : VHACD::IVHACD::Parameters {
-    VHACDParameters() {
-      m_oclAcceleration = 0u;  // OCL Acceleration does not work on VHACD
-    }
-    ESP_SMART_POINTERS(VHACDParameters)
-  };
-
-  VHACD::IVHACD* interfaceVHACD;
-#endif
 
   /** @brief Constructor */
   explicit ResourceManager(
@@ -425,42 +405,6 @@ class ResourceManager {
       std::vector<std::uint16_t>& objectIds,
       const std::string& filename) const;
 
-#ifdef ESP_BUILD_WITH_VHACD
-  /**
-   * @brief Converts a MeshMetaData into a obj file.
-   *
-   * @param filename The MeshMetaData filename to be converted to obj.
-   * @param new_filename The name of the file that will be created.
-   * @param filepath The file path, including new file name, for the obj file.
-   */
-  bool outputMeshMetaDataToObj(const std::string& filename,
-                               const std::string& new_filename,
-                               const std::string& filepath) const;
-
-  /**
-   * @brief Returns the number of resources registered under a given resource
-   * name.
-   *
-   * @param resourceName The name of the resource.
-   */
-  bool isAssetDataRegistered(const std::string& resourceName) const;
-
-  /**
-   * @brief Runs convex hull decomposition on a specified file.
-   *
-   * @param filename The MeshMetaData filename to be converted.
-   * @param chdFilename The new filename for the chd collision mesh.
-   * @param params VHACD params that specify resolution, vertices per convex
-   * hull, etc.
-   * @param saveChdToObj Specifies whether or not to save the newly created
-   * convex hull asset to an obj file.
-   */
-  void createConvexHullDecomposition(
-      const std::string& filename,
-      const std::string& chdFilename,
-      const VHACDParameters& params = VHACDParameters(),
-      bool saveChdToObj = false);
-#endif
   /**
    * @brief Add an object from a specified object template handle to the
    * specified @ref DrawableGroup as a child of the specified @ref

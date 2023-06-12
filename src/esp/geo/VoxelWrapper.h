@@ -30,22 +30,6 @@ class VoxelWrapper {
   std::shared_ptr<VoxelGrid> voxelGrid;
 
  public:
-#ifdef ESP_BUILD_WITH_VHACD
-  /**
-   * @brief Generates (using VHACD's voxelization functionality) or retrieves a
-   * voxelization of a render asset mesh depending on whether it exists or not.
-   * @param renderAssetHandle The handle for the render asset to which the voxel
-   * grid corresponds.
-   * @param sceneNode The scene node the voxel wrapper will be pointing to.
-   * @param resourceManager Used for retrieving or registering the voxel grid.
-   * @param resolution The approximate number of voxels for the voxelization.
-   */
-  VoxelWrapper(const std::string& renderAssetHandle,
-               esp::scene::SceneNode* sceneNode,
-               esp::assets::ResourceManager& resourceManager,
-               int resolution);
-#endif
-
   /**
    * @brief Generates a voxelization with a specified size and dimensions. The
    * voxelization is corner aligned with the object's cumulative bounding box's

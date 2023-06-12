@@ -57,10 +57,6 @@
 #include "esp/gfx/Drawable.h"
 #include "esp/scene/SemanticScene.h"
 
-#ifdef ESP_BUILD_WITH_VHACD
-#include "esp/geo/VoxelUtils.h"
-#endif
-
 #ifdef ESP_BUILD_WITH_AUDIO
 #include "esp/sensor/AudioSensor.h"
 #endif  // ESP_BUILD_WITH_AUDIO
@@ -296,19 +292,6 @@ class Viewer : public Mn::Platform::Application {
   int addPrimitiveObject();
   void removeLastObject();
   void invertGravity();
-
-#ifdef ESP_BUILD_WITH_VHACD
-  void displayStageDistanceGradientField();
-
-  void iterateAndDisplaySignedDistanceField();
-
-  void displayVoxelField(int objectID);
-
-  int objectDisplayed = -1;
-
-  //! The slice of the grid's SDF to visualize.
-  int voxelDistance = 0;
-#endif
 
   /**
    * @brief Toggle between ortho and perspective camera
@@ -1483,98 +1466,6 @@ void Viewer::invertGravity() {
   const Mn::Vector3 invGravity = -1 * gravity;
   simulator_->setGravity(invGravity);
 }
-#ifdef ESP_BUILD_WITH_VHACD
-
-void Viewer::displayStageDistanceGradientField() {
-  // Temporary key event used for testing & visualizing Voxel Grid framework
-  std::shared_ptr<esp::geo::VoxelWrapper> stageVoxelization;
-  stageVoxelization = simulator_->getStageVoxelization();
-
-  // if the object hasn't been voxelized, do that and generate an SDF as
-  // well
-  !ESP_DEBUG();
-  if (stageVoxelization == nullptr) {
-    simulator_->createStageVoxelization(2000000);
-    stageVoxelization = simulator_->getStageVoxelization();
-    esp::geo::generateEuclideanDistanceSDF(stageVoxelization,
-                                           "ESignedDistanceField");
-  }
-  !ESP_DEBUG();
-
-  // generate a vector field for the SDF gradient
-  esp::geo::generateScalarGradientField(
-      stageVoxelization, "ESignedDistanceField", "GradientField");
-  // generate a mesh of the vector field with boolean isVectorField set to
-  // true
-  !ESP_DEBUG();
-
-  stageVoxelization->generateMesh("GradientField");
-
-  // draw the vector field
-  simulator_->setStageVoxelizationDraw(true, "GradientField");
-}
-
-void Viewer::iterateAndDisplaySignedDistanceField() {
-  // Temporary key event used for testing & visualizing Voxel Grid framework
-  std::shared_ptr<esp::geo::VoxelWrapper> stageVoxelization;
-  stageVoxelization = simulator_->getStageVoxelization();
-
-  // if the object hasn't been voxelized, do that and generate an SDF as
-  // well
-  if (stageVoxelization == nullptr) {
-    simulator_->createStageVoxelization(2000000);
-    stageVoxelization = simulator_->getStageVoxelization();
-    esp::geo::generateEuclideanDistanceSDF(stageVoxelization,
-                                           "ESignedDistanceField");
-  }
-
-  // Set the range of distances to render, and generate a mesh for this (18
-  // is set to be the max distance)
-  Mn::Vector3i dims = stageVoxelization->getVoxelGridDimensions();
-  int curDistanceVisualization = (voxelDistance % dims[0]);
-  /*sceneVoxelization->generateBoolGridFromFloatGrid("ESignedDistanceField",
-     "SDFSubset", curDistanceVisualization, curDistanceVisualization + 1);*/
-  stageVoxelization->generateSliceMesh("ESignedDistanceField",
-                                       curDistanceVisualization, -15.0f, 0.0f);
-  // Draw the voxel grid's slice
-  simulator_->setStageVoxelizationDraw(true, "ESignedDistanceField");
-}
-
-void Viewer::displayVoxelField(int objectID) {
-  // create a voxelization and get a pointer to the underlying VoxelWrapper
-  // class
-  unsigned int resolution = 2000000;
-  std::shared_ptr<esp::geo::VoxelWrapper> voxelWrapper;
-  if (objectID == -1) {
-    simulator_->createStageVoxelization(resolution);
-    voxelWrapper = simulator_->getStageVoxelization();
-  } else {
-    simulator_->createObjectVoxelization(objectID, resolution);
-    voxelWrapper = simulator_->getObjectVoxelization(objectID);
-  }
-
-  // turn off the voxel grid visualization for the last voxelized object
-  if (objectDisplayed == -1) {
-    simulator_->setStageVoxelizationDraw(false, "Boundary");
-  } else if (objectDisplayed >= 0) {
-    simulator_->setObjectVoxelizationDraw(false, objectDisplayed, "Boundary");
-  }
-
-  // Generate the mesh for the boundary voxel grid
-  voxelWrapper->generateMesh("Boundary");
-
-  esp::geo::generateEuclideanDistanceSDF(voxelWrapper, "ESignedDistanceField");
-
-  // visualizes the Boundary voxel grid
-  if (objectID == -1) {
-    simulator_->setStageVoxelizationDraw(true, "Boundary");
-  } else {
-    simulator_->setObjectVoxelizationDraw(true, objectID, "Boundary");
-  }
-
-  objectDisplayed = objectID;
-}
-#endif
 
 // generate random direction vectors:
 Mn::Vector3 Viewer::randomDirection() {
@@ -2055,15 +1946,6 @@ void Viewer::mousePressEvent(MouseEvent& event) {
         esp::physics::RaycastResults raycastResults = simulator_->castRay(ray);
 
         if (raycastResults.hasHits()) {
-          // If VHACD is enabled, and Ctrl + Right Click is used, voxelized
-          // the object clicked on.
-#ifdef ESP_BUILD_WITH_VHACD
-          if (event.modifiers() & MouseEvent::Modifier::Ctrl) {
-            auto objID = raycastResults.hits[0].objectId;
-            displayVoxelField(objID);
-            return;
-          }
-#endif
           addPrimitiveObject();
 
           auto existingObjectIDs = simulator_->getExistingObjectIDs();
@@ -2526,49 +2408,35 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::V:
       invertGravity();
       break;
-    case KeyEvent::Key::K: {
-#ifdef ESP_BUILD_WITH_VHACD
-      iterateAndDisplaySignedDistanceField();
-      // Increase the distance visualized for next time (Pressing L
-      // repeatedly will visualize different distances)
-      voxelDistance++;
-#endif
-      break;
-    }
-    case KeyEvent::Key::G: {
-#ifdef ESP_BUILD_WITH_VHACD
-      displayStageDistanceGradientField();
-#endif
-      break;
-    }
-    case KeyEvent::Key::F: {
-#ifdef ESP_BUILD_WITH_AUDIO
-      // Add an audio source
-      addAudioSource();
-#else
-      ESP_DEBUG() << "[Audio] ESP_BUILD_WITH_AUDIO is not set, skipping adding "
-                     "audio source";
-#endif  // ESP_BUILD_WITH_AUDIO
-      break;
-    }
-    case KeyEvent::Key::Zero: {
-#ifdef ESP_BUILD_WITH_AUDIO
-      // Run audio simulation
-      runAudioSimulation();
-#else
-      ESP_DEBUG() << "[Audio] ESP_BUILD_WITH_AUDIO is not set, skipping "
-                     "running audio simulation";
-#endif  // ESP_BUILD_WITH_AUDIO
-      break;
-    }
   }
+  case KeyEvent::Key::F: {
+#ifdef ESP_BUILD_WITH_AUDIO
+    // Add an audio source
+    addAudioSource();
+#else
+    ESP_DEBUG() << "[Audio] ESP_BUILD_WITH_AUDIO is not set, skipping adding "
+                   "audio source";
+#endif  // ESP_BUILD_WITH_AUDIO
+    break;
+  }
+  case KeyEvent::Key::Zero: {
+#ifdef ESP_BUILD_WITH_AUDIO
+    // Run audio simulation
+    runAudioSimulation();
+#else
+    ESP_DEBUG() << "[Audio] ESP_BUILD_WITH_AUDIO is not set, skipping "
+                   "running audio simulation";
+#endif  // ESP_BUILD_WITH_AUDIO
+    break;
+  }
+}
 
-  // Update map of moving/looking keys which are currently pressed
-  auto keyPressedIter = keysPressed.find(key);
-  if (keyPressedIter != keysPressed.end()) {
-    keyPressedIter->second = true;
-  }
-  redraw();
+// Update map of moving/looking keys which are currently pressed
+auto keyPressedIter = keysPressed.find(key);
+if (keyPressedIter != keysPressed.end()) {
+  keyPressedIter->second = true;
+}
+redraw();
 }
 
 void Viewer::keyReleaseEvent(KeyEvent& event) {

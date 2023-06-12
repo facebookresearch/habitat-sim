@@ -25,59 +25,6 @@ namespace Cr = Corrade;
 namespace esp {
 namespace geo {
 
-#ifdef ESP_BUILD_WITH_VHACD
-VoxelGrid::VoxelGrid(const assets::MeshData& meshData,
-                     const std::string& renderAssetHandle,
-                     int resolution)
-    : m_renderAssetHandle(renderAssetHandle) {
-  VHACD::IVHACD* interfaceVHACD = VHACD::CreateVHACD();
-
-  ESP_DEBUG() << "Voxelizing mesh..";
-
-  // run VHACD
-  interfaceVHACD->computeVoxelField(&meshData.vbo[0][0], meshData.vbo.size(),
-                                    &meshData.ibo[0], meshData.ibo.size() / 3,
-                                    resolution);
-
-  // get VHACD volume, set scale and dimensions
-  VHACD::Volume* vhacdVolume = interfaceVHACD->getVoxelField();
-  double scale = vhacdVolume->getScale();
-  m_voxelSize = Mn::Vector3(scale, scale, scale);
-  const size_t* dims = vhacdVolume->getDimensions();
-  m_voxelGridDimensions = Mn::Vector3i(dims[0], dims[1], dims[2]);
-
-  VHACD::Vec3<double> center = vhacdVolume->getCenter();
-
-  // VHACD computes a axis-aligned bounding box; we need to offset the voxelgrid
-  // by the minimum corner of the AABB
-  VHACD::Vec3<double> minBB = vhacdVolume->getMinBB();
-  m_offset = Mn::Vector3(minBB[0], minBB[1], minBB[2]);
-  m_BBMaxOffset = m_offset + Mn::Vector3(m_voxelGridDimensions) * scale;
-
-  // create empty VoxelGrid
-  addGrid<bool>("Boundary");
-  Cr::Containers::StridedArrayView3D<bool> boundaryGrid =
-      getGrid<bool>("Boundary");
-
-  int num_filled = 0;
-  // Transfer data from Volume to VoxelGrid
-  for (int i = 0; i < dims[0]; ++i) {
-    for (int j = 0; j < dims[1]; ++j) {
-      for (int k = 0; k < dims[2]; ++k) {
-        if (vhacdVolume->GetVoxel(i, j, k) >= 2) {
-          num_filled++;
-          boundaryGrid[i][j][k] = true;
-        }
-      }
-    }
-  }
-  if (num_filled == dims[0] * dims[1] * dims[2]) {
-    // When VHACD is given too low of a resolution
-    ESP_DEBUG() << "VOXELIZATION FAILED";
-  }
-}
-#endif
-
 VoxelGrid::VoxelGrid(const Mn::Vector3& voxelSize,
                      const Mn::Vector3i& voxelGridDimensions)
     : m_voxelSize(voxelSize),
