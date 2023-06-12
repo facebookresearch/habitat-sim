@@ -143,6 +143,6 @@ const int DirectDiffuse = 0;
 const int DirectSpecular = 1;
 const int IblDiffuse = 2;
 const int IblSpecular = 3;
-uniform highp vec4 uComponentScales;
+uniform vec4 uComponentScales;
 #endif  // (LIGHT_COUNT > 0)
 #endif  // IMAGE_BASED_LIGHTING
