@@ -145,7 +145,9 @@ PBRData buildPBRData() {
   pbrInfo.view = normalize(uCameraWorldPos - position);
 
   // cos angle between view and normal
-  pbrInfo.n_dot_v = abs(dot(pbrInfo.n, pbrInfo.view));
+  // clamp to ensure range adherence, abs instead of epsilon to avoid errors at
+  // clancing angles
+  pbrInfo.n_dot_v = clamp(dot(pbrInfo.n, pbrInfo.view), 0.0, 1.0);
   //////////////////////
   // colors
   pbrInfo.baseColor = uMaterial.baseColor;
@@ -240,7 +242,8 @@ PBRData buildPBRData() {
                              uClearCoat.normalTextureScale, pbrInfo.TBN);
 #endif  // CLEAR_COAT_NORMAL_TEXTURE
   // Clearcoat cos angle between clearcoat normal and view
-  pbrInfo.cc_n_dot_v = abs(dot(pbrInfo.clearCoatNormal, pbrInfo.view));
+  pbrInfo.cc_n_dot_v =
+      clamp(dot(pbrInfo.clearCoatNormal, pbrInfo.view), 0.0, 1.0);
 
   // Get glbl normal-based clearcoat fresnel contribution for IBL
   // and direct lit clear-coat contrib calc
