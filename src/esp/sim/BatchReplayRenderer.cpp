@@ -269,11 +269,11 @@ void BatchReplayRenderer::doRender(
                          envIndex / renderer_->tileCount().x()},
         renderer_->tileSize());
 
-    if (colorImageViews) {
+    if (colorImageViews.size() > 0) {
       static_cast<gfx_batch::RendererStandalone&>(*renderer_)
           .colorImageInto(rectangle, colorImageViews[envIndex]);
     }
-    if (depthImageViews) {
+    if (depthImageViews.size() > 0) {
       static_cast<gfx_batch::RendererStandalone&>(*renderer_)
           .depthImageInto(rectangle, depthImageViews[envIndex]);
     }
