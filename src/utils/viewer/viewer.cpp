@@ -2408,35 +2408,34 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::V:
       invertGravity();
       break;
-  }
-  case KeyEvent::Key::F: {
+    case KeyEvent::Key::F: {
 #ifdef ESP_BUILD_WITH_AUDIO
-    // Add an audio source
-    addAudioSource();
+      // Add an audio source
+      addAudioSource();
 #else
-    ESP_DEBUG() << "[Audio] ESP_BUILD_WITH_AUDIO is not set, skipping adding "
-                   "audio source";
+      ESP_DEBUG() << "[Audio] ESP_BUILD_WITH_AUDIO is not set, skipping adding "
+                     "audio source";
 #endif  // ESP_BUILD_WITH_AUDIO
-    break;
-  }
-  case KeyEvent::Key::Zero: {
+      break;
+    }
+    case KeyEvent::Key::Zero: {
 #ifdef ESP_BUILD_WITH_AUDIO
-    // Run audio simulation
-    runAudioSimulation();
+      // Run audio simulation
+      runAudioSimulation();
 #else
-    ESP_DEBUG() << "[Audio] ESP_BUILD_WITH_AUDIO is not set, skipping "
-                   "running audio simulation";
+      ESP_DEBUG() << "[Audio] ESP_BUILD_WITH_AUDIO is not set, skipping "
+                     "running audio simulation";
 #endif  // ESP_BUILD_WITH_AUDIO
-    break;
+      break;
+    }
   }
-}
 
-// Update map of moving/looking keys which are currently pressed
-auto keyPressedIter = keysPressed.find(key);
-if (keyPressedIter != keysPressed.end()) {
-  keyPressedIter->second = true;
-}
-redraw();
+  // Update map of moving/looking keys which are currently pressed
+  auto keyPressedIter = keysPressed.find(key);
+  if (keyPressedIter != keysPressed.end()) {
+    keyPressedIter->second = true;
+  }
+  redraw();
 }
 
 void Viewer::keyReleaseEvent(KeyEvent& event) {
