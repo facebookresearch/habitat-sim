@@ -54,7 +54,7 @@ bool operator==(const NavMeshSettings& a, const NavMeshSettings& b) {
          CLOSE(edgeMaxError) && CLOSE(vertsPerPoly) &&
          CLOSE(detailSampleDist) && CLOSE(detailSampleMaxError) &&
          EQ(filterLowHangingObstacles) && EQ(filterLedgeSpans) &&
-         EQ(filterWalkableLowHeightSpans);
+         EQ(filterWalkableLowHeightSpans) && EQ(includeStaticObjects);
 
 #undef CLOSE
 #undef EQ

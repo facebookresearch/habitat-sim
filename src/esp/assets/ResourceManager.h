@@ -122,27 +122,9 @@ class ResourceManager {
   VHACD::IVHACD* interfaceVHACD;
 #endif
 
-  /**
-   * @brief Flag
-   *
-   * @see @ref Flags, @ref flags()
-   */
-  enum class Flag : Magnum::UnsignedShort {
-    /**
-     * use pbr image based lighting
-     */
-    PbrImageBasedLighting = 1 << 0,
-  };
-
-  /**
-   * @brief Flags
-   */
-  typedef Corrade::Containers::EnumSet<Flag> Flags;
-
   /** @brief Constructor */
   explicit ResourceManager(
-      std::shared_ptr<metadata::MetadataMediator> _metadataMediator,
-      Flags flags = {});
+      std::shared_ptr<metadata::MetadataMediator> _metadataMediator);
 
   /** @brief Destructor */
   ~ResourceManager();
@@ -744,6 +726,22 @@ class ResourceManager {
    */
   void resetDrawableCountAndNumFaces() { drawableCountAndNumFaces_ = {0, 0}; }
 
+  /**
+   * @brief initialize pbr image based lighting
+   * @param[in] hdriImageFilename, the name of the
+   * HDRi image (an equirectangular image), that will be converted to a
+   * environment cube map
+   * NOTE!!! Such an image MUST be SPECIFIED in the
+   * ~/habitat-sim/data/pbr/PbrImages.conf
+   * and be put in that folder.
+   * example image:
+   * ~/habitat-sim/data/pbr/lythwood_room_4k.png
+   *
+   * TODO: this will be replaced by config-driven IBL asset loading and
+   * registration
+   */
+  void initPbrImageBasedLighting(const std::string& hdriImageFilename);
+
  private:
   /**
    * @brief Load the requested mesh info into @ref meshInfo corresponding to
@@ -1196,19 +1194,6 @@ class ResourceManager {
   void initDefaultLightSetups();
 
   /**
-   * @brief initialize pbr image based lighting
-   * @param[in] hdriImageFilename, the name of the
-   * HDRi image (an equirectangular image), that will be converted to a
-   * environment cube map
-   * NOTE!!! Such an image MUST be SPECIFIED in the
-   * ~/habitat-sim/data/pbr/PbrImages.conf
-   * and be put in that folder.
-   * example image:
-   * ~/habitat-sim/data/pbr/lythwood_room_4k.png
-   */
-  void initPbrImageBasedLighting(const std::string& hdriImageFilename);
-
-  /**
    * @brief initialize default material setups in the current ShaderManager
    */
   void initDefaultMaterials();
@@ -1260,10 +1245,6 @@ class ResourceManager {
    */
   std::vector<Mn::Matrix4> computeAbsoluteTransformations(
       const std::vector<StaticDrawableInfo>& staticDrawableInfo);
-
-  // ======== Rendering Utility Functions ========
-
-  Flags flags_;
 
   // ======== General geometry data ========
   // shared_ptr is used here, instead of Corrade::Containers::Optional, or
@@ -1417,9 +1398,7 @@ class ResourceManager {
   gfx::ShadowMapManager shadowManager_;
   // scene graph id -> keys for the shadow maps
   std::map<int, std::vector<Magnum::ResourceKey>> shadowMapKeys_;
-};  // namespace assets
-
-CORRADE_ENUMSET_OPERATORS(ResourceManager::Flags)
+};  // class ResourceManager
 
 }  // namespace assets
 }  // namespace esp

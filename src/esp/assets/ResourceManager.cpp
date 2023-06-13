@@ -109,10 +109,8 @@ using Mn::Trade::MaterialAttribute;
 namespace assets {
 
 ResourceManager::ResourceManager(
-    metadata::MetadataMediator::ptr _metadataMediator,
-    Flags _flags)
-    : flags_(_flags),
-      metadataMediator_(std::move(_metadataMediator))
+    metadata::MetadataMediator::ptr _metadataMediator)
+    : metadataMediator_(std::move(_metadataMediator))
 #ifdef MAGNUM_BUILD_STATIC
       ,
       // avoid using plugins that might depend on different library versions
@@ -128,11 +126,6 @@ ResourceManager::ResourceManager(
   initDefaultMaterials();
   // appropriately configure importerManager_ based on compilation flags
   buildImporters();
-
-  if (flags_ & Flag::PbrImageBasedLighting) {
-    // TODO: HDRi image name should be config based
-    initPbrImageBasedLighting("lythwood_room_4k.jpg");
-  }
 }
 
 ResourceManager::~ResourceManager() {
@@ -1651,74 +1644,29 @@ void ResourceManager::configureImporterManagerGLExtensions() {
     return;
 
   Mn::GL::Context& context = Mn::GL::Context::current();
+  /* This is reduced to formats that Magnum currently can Y-flip. More formats
+     will get added back with new additions to Magnum/Math/ColorBatch.h. */
 #ifdef MAGNUM_TARGET_WEBGL
   if (context.isExtensionSupported<
-          Mn::GL::Extensions::WEBGL::compressed_texture_astc>())
-#else
-  if (context.isExtensionSupported<
-          Mn::GL::Extensions::KHR::texture_compression_astc_ldr>())
-#endif
-  {
-    ESP_DEBUG() << "Importing Basis files as ASTC 4x4.";
-    metadata->configuration().setValue("format", "Astc4x4RGBA");
-  }
-#ifdef MAGNUM_TARGET_GLES
-  else if (context.isExtensionSupported<
-               Mn::GL::Extensions::EXT::texture_compression_bptc>())
-#else
-  else if (context.isExtensionSupported<
-               Mn::GL::Extensions::ARB::texture_compression_bptc>())
-#endif
-  {
-    ESP_DEBUG() << "Importing Basis files as BC7.";
-    metadata->configuration().setValue("format", "Bc7RGBA");
-  }
-#ifdef MAGNUM_TARGET_WEBGL
-  else if (context.isExtensionSupported<
-               Mn::GL::Extensions::WEBGL::compressed_texture_s3tc>())
+          Mn::GL::Extensions::WEBGL::compressed_texture_s3tc>())
 #elif defined(MAGNUM_TARGET_GLES)
-  else if (context.isExtensionSupported<
-               Mn::GL::Extensions::EXT::texture_compression_s3tc>() ||
-           context.isExtensionSupported<
-               Mn::GL::Extensions::ANGLE::texture_compression_dxt5>())
+  if (context.isExtensionSupported<
+          Mn::GL::Extensions::EXT::texture_compression_s3tc>() ||
+      context.isExtensionSupported<
+          Mn::GL::Extensions::ANGLE::texture_compression_dxt5>())
 #else
-  else if (context.isExtensionSupported<
-               Mn::GL::Extensions::EXT::texture_compression_s3tc>())
+  if (context.isExtensionSupported<
+          Mn::GL::Extensions::EXT::texture_compression_s3tc>())
 #endif
   {
     ESP_DEBUG() << "Importing Basis files as BC3.";
     metadata->configuration().setValue("format", "Bc3RGBA");
-  }
-#ifndef MAGNUM_TARGET_GLES2
-  else
-#ifndef MAGNUM_TARGET_GLES
-      if (context.isExtensionSupported<
-              Mn::GL::Extensions::ARB::ES3_compatibility>())
-#endif
-  {
-    ESP_DEBUG() << "Importing Basis files as ETC2.";
-    metadata->configuration().setValue("format", "Etc2RGBA");
-  }
-#else /* For ES2, fall back to PVRTC as ETC2 is not available */
-  else
-#ifdef MAGNUM_TARGET_WEBGL
-      if (context.isExtensionSupported<Mn::WEBGL::compressed_texture_pvrtc>())
-#else
-      if (context.isExtensionSupported<Mn::IMG::texture_compression_pvrtc>())
-#endif
-  {
-    ESP_DEBUG() << "Importing Basis files as PVRTC 4bpp.";
-    metadata->configuration().setValue("format", "PvrtcRGBA4bpp");
-  }
-#endif
-#if defined(MAGNUM_TARGET_GLES2) || !defined(MAGNUM_TARGET_GLES)
-  else /* ES3 has ETC2 always */
-  {
-    ESP_WARNING() << "No supported GPU compressed texture format detected, "
-                     "Basis images will get imported as RGBA8.";
+  } else {
+    ESP_WARNING()
+        << "No GPU compressed texture format with Y-flip support detected, "
+           "Basis images will get imported as RGBA8.";
     metadata->configuration().setValue("format", "RGBA8");
   }
-#endif
 
 }  // ResourceManager::configureImporterManagerGLExtensions
 
@@ -3401,6 +3349,12 @@ void ResourceManager::initPbrImageBasedLighting(
   // different PBR IBLs at different positions in the scene.
 
   // TODO: HDR Image!
+
+  // Don't reload if already active set to 0
+  if (activePbrIbl_ != ID_UNDEFINED) {
+    return;
+  }
+
   pbrImageBasedLightings_.emplace_back(
       std::make_unique<gfx::PbrImageBasedLighting>(
           gfx::PbrImageBasedLighting::Flag::IndirectDiffuse |

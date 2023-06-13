@@ -7,7 +7,6 @@
 import time
 from collections import OrderedDict
 from collections.abc import MutableMapping
-from os import path as osp
 from typing import Any, Dict, List
 from typing import MutableMapping as MutableMapping_T
 from typing import Optional, Union, cast, overload
@@ -31,7 +30,7 @@ from habitat_sim.agent.agent import Agent, AgentConfiguration, AgentState
 from habitat_sim.bindings import cuda_enabled
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.metadata import MetadataMediator
-from habitat_sim.nav import GreedyGeodesicFollower, NavMeshSettings
+from habitat_sim.nav import GreedyGeodesicFollower
 from habitat_sim.sensor import SensorSpec, SensorType
 from habitat_sim.sensors.noise_models import make_sensor_noise_model
 from habitat_sim.sim import SimulatorBackend, SimulatorConfiguration
@@ -210,52 +209,11 @@ class Simulator(SimulatorBackend):
         ]
 
     def _config_pathfinder(self, config: Configuration) -> None:
-        scene_basename = osp.basename(config.sim_cfg.scene_id)
-        # "mesh.ply" is identified as a replica model, whose navmesh
-        # is named as "mesh_semantic.navmesh" and is placed in the
-        # subfolder called "habitat" (a level deeper than the "mesh.ply")
-        if scene_basename == "mesh.ply":
-            scene_dir = osp.dirname(config.sim_cfg.scene_id)
-            navmesh_filename = osp.join(scene_dir, "habitat", "mesh_semantic.navmesh")
-        else:
-            navmesh_filename = osp.splitext(config.sim_cfg.scene_id)[0] + ".navmesh"
-
-        if osp.exists(navmesh_filename) and not self.pathfinder.is_loaded:
-            self.pathfinder.load_nav_mesh(navmesh_filename)
-            logger.info(f"Loaded navmesh {navmesh_filename}")
-
-        # NOTE: this recomputed NavMesh does not include STATIC objects.
-        needed_settings = NavMeshSettings()
-        default_agent_config = config.agents[config.sim_cfg.default_agent_id]
-        needed_settings.agent_radius = default_agent_config.radius
-        needed_settings.agent_height = default_agent_config.height
-        if (
-            # If we loaded a navmesh and we need one with different settings,
-            # always try and recompute
-            (
-                self.pathfinder.is_loaded
-                and self.pathfinder.nav_mesh_settings != needed_settings
-            )
-            # If we didn't load a navmesh, only try to recompute one if we can.
-            # This allows for use cases where we just want to view a single
-            # object or similar.
-            or (
-                not self.pathfinder.is_loaded
-                and config.sim_cfg.scene_id.lower() != "none"
-            )
-        ):
-            logger.info(
-                f"Recomputing navmesh for agent's height {default_agent_config.height} and radius"
-                f" {default_agent_config.radius}."
-            )
-            self.recompute_navmesh(self.pathfinder, needed_settings)
-
         self.pathfinder.seed(config.sim_cfg.random_seed)
 
-        if not self.pathfinder.is_loaded:
+        if self.pathfinder is None or not self.pathfinder.is_loaded:
             logger.warning(
-                "Could not find a navmesh nor could one be computed, "
-                "no collision checking will be done"
+                "Navmesh not loaded or computed, no collision checking will be done."
             )
 
     def reconfigure(self, config: Configuration) -> None:
@@ -528,7 +486,7 @@ class Simulator(SimulatorBackend):
     def make_greedy_follower(
         self,
         agent_id: Optional[int] = None,
-        goal_radius: float = None,
+        goal_radius: Optional[float] = None,
         *,
         stop_key: Optional[Any] = None,
         forward_key: Optional[Any] = None,
