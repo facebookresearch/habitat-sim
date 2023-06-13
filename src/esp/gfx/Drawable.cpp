@@ -17,8 +17,8 @@ Drawable::Drawable(scene::SceneNode& node,
     : Magnum::SceneGraph::Drawable3D{node, group},
       type_(type),
       node_(node),
-      mesh_(mesh),
-      drawableId_(drawableIdCounter++) {
+      drawableId_(drawableIdCounter++),
+      mesh_(mesh) {
   if (group) {
     group->registerDrawable(*this);
   }

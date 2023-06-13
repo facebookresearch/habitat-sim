@@ -47,7 +47,8 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   typedef Magnum::Shaders::GenericGL3D::TextureCoordinates TextureCoordinates;
 
   /**
-   * @brief Tangent direction with the fourth component indicating the handness.
+   * @brief Tangent direction with the fourth component indicating the
+   * handedness.
    *
    * T = Tangent, B = BiTangent, N = Normal
    *
@@ -444,7 +445,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    *              when vec.w == 1, it means vec.xyz is the light position;
    *  @return Reference to self (for method chaining)
    *  Note:
-   *  If the light was a directional (point) light, it will be overrided as a
+   *  If the light was a directional (point) light, it will be overridden as a
    *  point (directional) light
    */
   PbrShader& setLightVector(unsigned int lightIndex,
@@ -457,7 +458,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    *  @param pos the position of the light in *camera* space
    *  @return Reference to self (for method chaining)
    *  Note:
-   *  If the light was a directional light, it will be overrided as a point
+   *  If the light was a directional light, it will be overridden as a point
    *  light;
    */
   PbrShader& setLightPosition(unsigned int lightIndex,
@@ -470,7 +471,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    *  @param dir the direction of the light in *camera* space
    *  @return Reference to self (for method chaining)
    *  NOTE:
-   *  If the light was a point light, it will be overrided as a direction
+   *  If the light was a point light, it will be overridden as a direction
    * light;
    */
   PbrShader& setLightDirection(unsigned int lightIndex,
@@ -541,7 +542,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   };
 
   /**
-   *  @brief Set the scales for differenct components in the pbr equation
+   *  @brief Set the scales for different components in the pbr equation
    *  @param scales
    *  @return Reference to self (for method chaining)
    */

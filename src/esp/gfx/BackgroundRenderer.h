@@ -9,10 +9,8 @@
 
 #ifdef ESP_BUILD_WITH_BACKGROUND_RENDERER
 
-#include <atomic>
 #include <thread>
 
-#include "esp/core/Esp.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/WindowlessContext.h"
