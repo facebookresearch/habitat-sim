@@ -120,6 +120,12 @@ def initialize_test_data_sources(data_path):
             "link": data_path + "replica_cad_baked_lighting",
             "version": "1.6",
         },
+        "replica_cad_hf": {
+            "source": "https://huggingface.co/datasets/ai-habitat/ReplicaCAD.git",
+            "link": data_path + "replica_cad_hf",
+            "version": "main",
+            "requires_auth": True,
+        },
         "ycb": {
             "source": "https://dl.fbaipublicfiles.com/habitat/ycb/hab_ycb_v1.2.zip",
             "package_name": "hab_ycb_v1.2.zip",
@@ -556,69 +562,96 @@ def download_and_place(
             password is not None
         ), "Password is required, please enter with --password"
 
-    use_curl = data_sources[uid].get("use_curl", False)
-    if use_curl:
+    if data_sources[uid]["source"].endswith(".git"):
+        # git dataset, clone it
+        clone_command = " git clone "
         if requires_auth:
-            download_pre_args = f"{download_pre_args} --user {username}:{password}"
+            adjusted_password = password.replace(" ", "%20")
+            url_split = data_sources[uid]["source"].split("https://")[-1]
+            # NOTE: The username and password are stored in .git/config. Should we post-process this out?
+            clone_command += f'"https://{username}:{adjusted_password}@{url_split}"'
+        else:
+            clone_command += f"\"{data_sources[uid]['source']}\""
 
-        download_command = (
-            "curl --continue-at - "
-            + download_pre_args
-            + " "
-            + data_sources[uid]["source"]
-            + " -o "
-            + os.path.join(data_path, data_sources[uid]["package_name"])
-            + download_post_args
-        )
+        # place the output in the specified directory
+        # NOTE: currently this will pull repo `main`. TODO: use `version` to indicate a tag to checkout?
+        clone_command += f" {version_dir}"
+
+        print(f"{clone_command}")
+        subprocess.check_call(shlex.split(clone_command))
+
+        # prune the repo to reduced wasted memory consumption
+        prune_command = "git lfs prune -f --recent"
+        subprocess.check_call(shlex.split(prune_command), cwd=version_dir)
+
     else:
-        if requires_auth:
-            download_pre_args = (
-                f"{download_pre_args} --user {username} --password {password}"
+        # zip based dataset, download and unzip it
+        use_curl = data_sources[uid].get("use_curl", False)
+        if use_curl:
+            if requires_auth:
+                download_pre_args = f"{download_pre_args} --user {username}:{password}"
+
+            download_command = (
+                "curl --continue-at - "
+                + download_pre_args
+                + " "
+                + data_sources[uid]["source"]
+                + " -o "
+                + os.path.join(data_path, data_sources[uid]["package_name"])
+                + download_post_args
             )
+        else:
+            if requires_auth:
+                download_pre_args = (
+                    f"{download_pre_args} --user {username} --password {password}"
+                )
 
-        download_command = (
-            "wget --continue "
-            + download_pre_args
-            + data_sources[uid]["source"]
-            + " -P "
-            + data_path
-            + download_post_args
-        )
-    #  print(download_command)
-    subprocess.check_call(shlex.split(download_command))
-    assert os.path.exists(
-        os.path.join(data_path, data_sources[uid]["package_name"])
-    ), "Download failed, no package found."
+            download_command = (
+                "wget --continue "
+                + download_pre_args
+                + data_sources[uid]["source"]
+                + " -P "
+                + data_path
+                + download_post_args
+            )
+        #  print(download_command)
+        subprocess.check_call(shlex.split(download_command))
+        assert os.path.exists(
+            os.path.join(data_path, data_sources[uid]["package_name"])
+        ), "Download failed, no package found."
 
-    # unpack
-    package_name = data_sources[uid]["package_name"]
-    extract_postfix = data_sources[uid].get("extract_postfix", "")
-    extract_dir = os.path.join(version_dir, extract_postfix)
-    if package_name.endswith(".zip"):
-        with zipfile.ZipFile(data_path + package_name, "r") as zip_ref:
-            zip_ref.extractall(extract_dir)
-            package_files = zip_ref.namelist()
-    elif package_name.count(".tar") == 1:
-        with tarfile.open(data_path + package_name, "r:*") as tar_ref:
-            tar_ref.extractall(extract_dir)
-            package_files = tar_ref.getnames()
-    else:
-        # TODO: support more compression types as necessary
-        print(f"Data unpack failed for {uid}. Unsupported filetype: {package_name}")
-        return
+        # unpack
+        package_name = data_sources[uid]["package_name"]
+        extract_postfix = data_sources[uid].get("extract_postfix", "")
+        extract_dir = os.path.join(version_dir, extract_postfix)
+        if package_name.endswith(".zip"):
+            with zipfile.ZipFile(data_path + package_name, "r") as zip_ref:
+                zip_ref.extractall(extract_dir)
+                package_files = zip_ref.namelist()
+        elif package_name.count(".tar") == 1:
+            with tarfile.open(data_path + package_name, "r:*") as tar_ref:
+                tar_ref.extractall(extract_dir)
+                package_files = tar_ref.getnames()
+        else:
+            # TODO: support more compression types as necessary
+            print(f"Data unpack failed for {uid}. Unsupported filetype: {package_name}")
+            return
 
-    assert os.path.exists(version_dir), "Unpacking failed, no version directory."
-    package_files = [os.path.join(extract_dir, fname) for fname in package_files]
+        assert os.path.exists(version_dir), "Unpacking failed, no version directory."
+        package_files = [os.path.join(extract_dir, fname) for fname in package_files]
 
-    post_extract_fn = data_sources[uid].get("post_extract_fn", None)
-    if post_extract_fn is not None:
-        result = post_extract_fn(extract_dir)
-        if result is not None:
-            package_files = result + package_files
+        post_extract_fn = data_sources[uid].get("post_extract_fn", None)
+        if post_extract_fn is not None:
+            result = post_extract_fn(extract_dir)
+            if result is not None:
+                package_files = result + package_files
 
-    if downloaded_file_list is not None:
-        with gzip.open(downloaded_file_list, "wt") as f:
-            json.dump([extract_dir] + package_files, f)
+        if downloaded_file_list is not None:
+            with gzip.open(downloaded_file_list, "wt") as f:
+                json.dump([extract_dir] + package_files, f)
+
+        # clean-up
+        os.remove(data_path + package_name)
 
     # create a symlink to the new versioned data
     if link_path.exists():
@@ -628,9 +661,6 @@ def download_and_place(
     os.symlink(src=version_dir, dst=link_path, target_is_directory=True)
 
     assert link_path.exists(), "Unpacking failed, no symlink generated."
-
-    # clean-up
-    os.remove(data_path + package_name)
 
     print("=======================================================")
     print(f"Dataset ({uid}) successfully downloaded.")
