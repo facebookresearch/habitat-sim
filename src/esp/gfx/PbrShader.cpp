@@ -24,8 +24,6 @@
 #include <Magnum/Math/Matrix4.h>
 #include <Magnum/PixelFormat.h>
 
-#include "esp/core/Esp.h"
-
 #include <sstream>
 
 // This is to import the "resources" at runtime. When the resource is
@@ -150,7 +148,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
       setUniform(uniformLocation("MetallicRoughnessTexture"),
                  pbrTextureUnitSpace::TextureUnit::MetallicRoughness);
     }
-    // TODO: explore the normal mapping without the precomputer tangent.
+    // TODO: explore the normal mapping without the precomputed tangent.
     // see http://www.thetenthplanet.de/archives/1180
     // also:
     // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/data/shaders/pbr_khr.frag
@@ -540,7 +538,7 @@ PbrShader& PbrShader::setLightColors(
                  "PbrShader::setLightColors(): expected"
                      << lightCount_ << "items but got" << colors.size(),
                  *this);
-  for (int i = 0; i < colors.size(); ++i) {
+  for (size_t i = 0; i < colors.size(); ++i) {
     setLightColor(i, colors[i]);
   }
   // setUniform(lightColorsUniform_, colors);
