@@ -283,26 +283,6 @@ void BatchReplayRenderer::doRender(
       static_cast<gfx_batch::RendererStandalone&>(*renderer_)
           .depthImageInto(rectangle, depthBufferView);
       renderer_->unprojectDepth(envIndex, depthBufferView);
-      /*
-      auto& depthImageView = depthImageViews[envIndex];
-      // Input is R32F. A new view is created to fetch Depth32F buffer.
-      auto depthBufferImageView = Mn::MutableImageView2D{
-        depthImageView.storage(),
-        Magnum::PixelFormat::Depth32F,
-        depthImageView.formatExtra(),
-        depthImageView.pixelSize(),
-        depthImageView.size(),
-        depthImageView.data(),
-        depthImageView.flags()};
-
-      // Depth32F op
-      static_cast<gfx_batch::RendererStandalone&>(*renderer_)
-          .depthImageInto(rectangle, depthBufferImageView);
-
-      // R32F op
-      // TODO: If enableDepthUnprojection:
-      renderer_->unprojectDepth(depthImageView);
-      */
     }
   }
 }

@@ -78,7 +78,6 @@ Mn::MutableImageView2D getDepthView(int width,
 
   buffer.resize(std::size_t(width * height * pixelSize));
 
-  // BEWARE: Classic replay renderer requires R32F, not Depth32F.
   auto view = Mn::MutableImageView2D(Mn::PixelFormat::R32F, size, buffer);
 
   return view;
@@ -112,22 +111,40 @@ std::vector<esp::sensor::SensorSpec::ptr> getDefaultSensorSpecs(
 
 const struct {
   const char* name;
-  TestFlags testFlags;
   Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer> (*create)(
       const ReplayRendererConfiguration& configuration);
-} TestIntegrationData[]{
-    //{"rgb - classic", TestFlag::Color, [](const ReplayRendererConfiguration&
-    // configuration) {
-    //   return Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer>{
-    //       new esp::sim::ClassicReplayRenderer{configuration}};
-    // }
-    //},
-    //{"rgb - batch", TestFlag::Color, [](const ReplayRendererConfiguration&
-    // configuration) {
+} TestUnprojectData[]{
+    {"classic",
+     [](const ReplayRendererConfiguration& configuration) {
+       return Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer>{
+           new esp::sim::ClassicReplayRenderer{configuration}};
+     }},
+    // temp only enable testUnproject for classic
+    //{"batch", [](const ReplayRendererConfiguration& configuration) {
     //   return Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer>{
     //       new esp::sim::BatchReplayRenderer{configuration}};
     // }
     //},
+};
+
+const struct {
+  const char* name;
+  TestFlags testFlags;
+  Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer> (*create)(
+      const ReplayRendererConfiguration& configuration);
+} TestIntegrationData[]{
+    {"rgb - classic", TestFlag::Color, [](const ReplayRendererConfiguration&
+     configuration) {
+       return Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer>{
+           new esp::sim::ClassicReplayRenderer{configuration}};
+     }
+    },
+    {"rgb - batch", TestFlag::Color, [](const ReplayRendererConfiguration&
+     configuration) {
+       return Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer>{
+           new esp::sim::BatchReplayRenderer{configuration}};
+     }
+    },
     {"depth - classic", TestFlag::Depth,
      [](const ReplayRendererConfiguration& configuration) {
        return Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer>{
@@ -141,13 +158,11 @@ const struct {
 };
 
 BatchReplayRendererTest::BatchReplayRendererTest() {
+  addInstancedTests({&BatchReplayRendererTest::testUnproject},
+                    Cr::Containers::arraySize(TestUnprojectData));
+
   addInstancedTests({&BatchReplayRendererTest::testIntegration},
                     Cr::Containers::arraySize(TestIntegrationData));
-
-  // temp only enable testUnproject for classic
-  // addInstancedTests({&BatchReplayRendererTest::testUnproject}, 1);
-  // addInstancedTests({&BatchReplayRendererTest::testUnproject},
-  //                    Cr::Containers::arraySize(TestIntegrationData));
 }  // ctor
 
 // test recording and playback through the simulator interface
