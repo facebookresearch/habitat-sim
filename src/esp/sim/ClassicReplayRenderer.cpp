@@ -8,6 +8,7 @@
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/metadata/MetadataMediator.h"
+#include "esp/sensor/Sensor.h"
 #include "esp/sensor/SensorFactory.h"
 #include "esp/sim/SimulatorConfiguration.h"
 
@@ -200,7 +201,8 @@ void ClassicReplayRenderer::doSetSensorTransformsFromKeyframe(
 }
 
 void ClassicReplayRenderer::doRender(
-    Cr::Containers::ArrayView<const Mn::MutableImageView2D> imageViews) {
+    Cr::Containers::ArrayView<const Mn::MutableImageView2D> colorImageViews,
+    Cr::Containers::ArrayView<const Mn::MutableImageView2D> depthImageViews) {
   for (int envIndex = 0; envIndex < config_.numEnvironments; envIndex++) {
     auto& sensorMap = getEnvironmentSensors(envIndex);
     CORRADE_INTERNAL_ASSERT(sensorMap.size() == 1);
@@ -211,11 +213,26 @@ void ClassicReplayRenderer::doRender(
 
       auto& sceneGraph = getSceneGraph(envIndex);
 
+      auto& sensorType = visualSensor.specification()->sensorType;
+      Cr::Containers::ArrayView<const Mn::MutableImageView2D> imageViews;
+      switch (sensorType) {
+        case esp::sensor::SensorType::Color:
+          imageViews = colorImageViews;
+          break;
+        case esp::sensor::SensorType::Depth:
+          imageViews = depthImageViews;
+          break;
+        default:
+          break;
+      }
+
 #ifdef ESP_BUILD_WITH_BACKGROUND_RENDERER
-      renderer_->enqueueAsyncDrawJob(
-          visualSensor, sceneGraph, imageViews[envIndex],
-          esp::gfx::RenderCamera::Flags{
-              gfx::RenderCamera::Flag::FrustumCulling});
+      if (imageViews != nullptr) {
+        renderer_->enqueueAsyncDrawJob(
+            visualSensor, sceneGraph, imageViews[envIndex],
+            esp::gfx::RenderCamera::Flags{
+                gfx::RenderCamera::Flag::FrustumCulling});
+      }
 #else
       // TODO what am I supposed to do here?
       CORRADE_ASSERT_UNREACHABLE("Not implemented yet, sorry.", );

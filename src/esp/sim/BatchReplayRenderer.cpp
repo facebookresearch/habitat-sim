@@ -252,7 +252,8 @@ void BatchReplayRenderer::doSetSensorTransformsFromKeyframe(
 }
 
 void BatchReplayRenderer::doRender(
-    Cr::Containers::ArrayView<const Mn::MutableImageView2D> imageViews) {
+    Cr::Containers::ArrayView<const Mn::MutableImageView2D> colorImageViews,
+    Cr::Containers::ArrayView<const Mn::MutableImageView2D> depthImageViews) {
   CORRADE_ASSERT(standalone_,
                  "BatchReplayRenderer::render(): can use this function only "
                  "with a standalone renderer", );
@@ -267,8 +268,15 @@ void BatchReplayRenderer::doRender(
             Mn::Vector2i{envIndex % renderer_->tileCount().x(),
                          envIndex / renderer_->tileCount().x()},
         renderer_->tileSize());
-    static_cast<gfx_batch::RendererStandalone&>(*renderer_)
-        .colorImageInto(rectangle, imageViews[envIndex]);
+
+    if (colorImageViews.size() > 0) {
+      static_cast<gfx_batch::RendererStandalone&>(*renderer_)
+          .colorImageInto(rectangle, colorImageViews[envIndex]);
+    }
+    if (depthImageViews.size() > 0) {
+      static_cast<gfx_batch::RendererStandalone&>(*renderer_)
+          .depthImageInto(rectangle, depthImageViews[envIndex]);
+    }
   }
 }
 

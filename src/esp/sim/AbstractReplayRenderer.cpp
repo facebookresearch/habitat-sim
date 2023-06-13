@@ -91,12 +91,21 @@ void AbstractReplayRenderer::setSensorTransformsFromKeyframe(
 }
 
 void AbstractReplayRenderer::render(
-    Cr::Containers::ArrayView<const Mn::MutableImageView2D> imageViews) {
-  CORRADE_ASSERT(imageViews.size() == doEnvironmentCount(),
-                 "ReplayRenderer::render(): expected" << doEnvironmentCount()
-                                                      << "image views but got"
-                                                      << imageViews.size(), );
-  return doRender(imageViews);
+    Cr::Containers::ArrayView<const Mn::MutableImageView2D> colorImageViews,
+    Cr::Containers::ArrayView<const Mn::MutableImageView2D> depthImageViews) {
+  if (colorImageViews.size() > 0) {
+    ESP_CHECK(colorImageViews.size() == doEnvironmentCount(),
+              "ReplayRenderer::render(): expected"
+                  << doEnvironmentCount() << "color image views but got"
+                  << colorImageViews.size());
+  }
+  if (depthImageViews.size() > 0) {
+    ESP_CHECK(depthImageViews.size() == doEnvironmentCount(),
+              "ReplayRenderer::render(): expected"
+                  << doEnvironmentCount() << "depth image views but got"
+                  << depthImageViews.size());
+  }
+  return doRender(colorImageViews, depthImageViews);
 }
 
 void AbstractReplayRenderer::render(
