@@ -2282,10 +2282,11 @@ void GfxBatchRendererTest::cudaInterop() {
   /* Mostly the same as singleMesh() */
   CORRADE_VERIFY(renderer.addFile(
       Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch.gltf")));
-  renderer.camera(0) =
+  renderer.updateCamera(
+      0,
       Mn::Matrix4::orthographicProjection(2.0f * Mn::Vector2{4.0f / 3.0f, 1.0f},
-                                          0.1f, 10.0f) *
-      Mn::Matrix4::translation(Mn::Vector3::zAxis(1.0f)).inverted();
+                                          0.1f, 10.0f),
+      Mn::Matrix4::translation(Mn::Vector3::zAxis(1.0f)).inverted());
   renderer.addNodeHierarchy(0, "square");
   renderer.transformations(0)[0] = Mn::Matrix4::scaling(Mn::Vector3{0.8f});
   renderer.draw();
