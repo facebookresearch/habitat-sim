@@ -9,8 +9,6 @@
 #include <Magnum/Math/Intersection.h>
 #include <Magnum/Math/Range.h>
 #include <Magnum/SceneGraph/Drawable.h>
-#include "esp/gfx/Drawable.h"
-#include "esp/gfx/DrawableGroup.h"
 #include "esp/scene/SceneGraph.h"
 
 namespace Mn = Magnum;
@@ -25,7 +23,7 @@ namespace gfx {
  * @param frustum, the frustum
  * @param frustumPlaneIndex, the frustum plane in last frame that culled the
  * aabb (default: 0)
- * @return NullOpt if aabb intersects the frustum, otherwise the fustum plane
+ * @return NullOpt if aabb intersects the frustum, otherwise the frustum plane
  * that culls the aabb
  */
 Cr::Containers::Optional<int> rangeFrustum(const Mn::Range3D& range,
@@ -42,7 +40,7 @@ Cr::Containers::Optional<int> rangeFrustum(const Mn::Range3D& range,
 
     const float d = Mn::Math::dot(center, plane.xyz());
     const float r = Mn::Math::dot(extent, absPlaneNormal);
-    if (d + r < -2.0 * plane.w())
+    if (d + r < -2.0f * plane.w())
       return Cr::Containers::Optional<int>{index};
   }
 

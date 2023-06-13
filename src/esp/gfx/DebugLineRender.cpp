@@ -280,7 +280,7 @@ void DebugLineRender::drawPathWithEndpointCircles(
   drawCircle(end1, radius, color, numSegments, normal);
 
   Mn::Vector3 prevPos;
-  for (int i = 0; i < points.size(); ++i) {
+  for (size_t i = 0; i < points.size(); ++i) {
     const auto& pos = points[i];
     if (i > 0) {
       if ((prevPos - end0).length() > radius &&
