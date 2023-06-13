@@ -227,7 +227,7 @@ void ClassicReplayRenderer::doRender(
       }
 
 #ifdef ESP_BUILD_WITH_BACKGROUND_RENDERER
-      if (imageViews != nullptr) {
+      if (imageViews.size() > 0) {
         renderer_->enqueueAsyncDrawJob(
             visualSensor, sceneGraph, imageViews[envIndex],
             esp::gfx::RenderCamera::Flags{

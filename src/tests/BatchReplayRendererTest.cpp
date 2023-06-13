@@ -133,18 +133,16 @@ const struct {
   Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer> (*create)(
       const ReplayRendererConfiguration& configuration);
 } TestIntegrationData[]{
-    {"rgb - classic", TestFlag::Color, [](const ReplayRendererConfiguration&
-     configuration) {
+    {"rgb - classic", TestFlag::Color,
+     [](const ReplayRendererConfiguration& configuration) {
        return Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer>{
            new esp::sim::ClassicReplayRenderer{configuration}};
-     }
-    },
-    {"rgb - batch", TestFlag::Color, [](const ReplayRendererConfiguration&
-     configuration) {
+     }},
+    {"rgb - batch", TestFlag::Color,
+     [](const ReplayRendererConfiguration& configuration) {
        return Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer>{
            new esp::sim::BatchReplayRenderer{configuration}};
-     }
-    },
+     }},
     {"depth - classic", TestFlag::Depth,
      [](const ReplayRendererConfiguration& configuration) {
        return Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer>{

@@ -102,7 +102,6 @@ if(BUILD_WITH_BACKGROUND_RENDERER)
     gfx
     gfx_batch
     sim
-    # TODO: Make optional
     MagnumPlugins::OpenExrImageConverter
     MagnumPlugins::OpenExrImporter
   )
