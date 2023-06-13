@@ -21,7 +21,7 @@ enum TextureUnit : uint8_t {
   Normal = 2,
   Emissive = 3,
   ClearCoatFactor = 4,
-  ClearCoatRoughenss = 5,
+  ClearCoatRoughness = 5,
   ClearCoatNormal = 6,
   SpecularLayer = 7,
   SpecularLayerColor = 8,

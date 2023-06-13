@@ -258,7 +258,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
       }
       if (flags_ >= Flag::ClearCoatRoughnessTexture) {
         setUniform(uniformLocation("uClearCoatRoughnessTexture"),
-                   pbrTextureUnitSpace::TextureUnit::ClearCoatRoughenss);
+                   pbrTextureUnitSpace::TextureUnit::ClearCoatRoughness);
       }
       if (flags_ >= Flag::ClearCoatNormalTexture) {
         clearCoatTextureScaleUniform_ =
@@ -454,7 +454,7 @@ PbrShader& PbrShader::bindClearCoatRoughnessTexture(
       "created with clearcoat roughness texture enabled",
       *this);
   if (lightingIsEnabled_) {
-    texture.bind(pbrTextureUnitSpace::TextureUnit::ClearCoatRoughenss);
+    texture.bind(pbrTextureUnitSpace::TextureUnit::ClearCoatRoughness);
   }
   return *this;
 }
