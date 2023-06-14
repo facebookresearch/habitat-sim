@@ -435,6 +435,9 @@ def prompt_yes_no(message):
 
 
 def get_version_dir(uid, data_path):
+    """
+    Constructs to the versioned_data directory path for the data source.
+    """
     version_tag = data_sources[uid]["version"]
     if "version_dir" in data_sources[uid]:
         version_dir = os.path.join(
@@ -449,7 +452,10 @@ def get_version_dir(uid, data_path):
     return version_dir
 
 
-def get_downloaded_file_list(uid, data_path):
+def get_downloaded_file_list(uid: str, data_path: str) -> Optional[str]:
+    """
+    Get the downloaded file list path configured for the data source.
+    """
     version_tag = data_sources[uid]["version"]
     downloaded_file_list = None
     if "downloaded_file_list" in data_sources[uid]:
@@ -505,9 +511,125 @@ def clean_data(uid, data_path):
             os.rmdir(meta_dir)
 
 
+def clone_repo_source(
+    uid: str,
+    version_dir: str,
+    requires_auth: bool,
+    username: Optional[str] = None,
+    password: Optional[str] = None,
+):
+    """
+    Clones an processes a datasource hosted on a git repo (e.g. HuggingFace Dataset).
+    Handles authentication for gated sources.
+    Automatically prunes the resulting repo to reduce memory overhead.
+    """
+    clone_command = " git clone "
+    if requires_auth:
+        adjusted_password = password.replace(" ", "%20")
+        url_split = data_sources[uid]["source"].split("https://")[-1]
+        # NOTE: The username and password are stored in .git/config. Should we post-process this out?
+        clone_command += f'"https://{username}:{adjusted_password}@{url_split}"'
+    else:
+        clone_command += f"\"{data_sources[uid]['source']}\""
+
+    # place the output in the specified directory
+    # NOTE: currently this will pull repo `main`. TODO: use `version` to indicate a tag to checkout?
+    clone_command += f" {version_dir}"
+
+    print(f"{clone_command}")
+    subprocess.check_call(shlex.split(clone_command))
+
+    # prune the repo to reduced wasted memory consumption
+    prune_command = "git lfs prune -f --recent"
+    subprocess.check_call(shlex.split(prune_command), cwd=version_dir)
+
+
+def get_and_place_compressed_package(
+    uid: str,
+    data_path: str,
+    version_dir: str,
+    downloaded_file_list: Optional[str],
+    requires_auth: bool,
+    username: Optional[str] = None,
+    password: Optional[str] = None,
+):
+    """
+    Downloads and unpacks a datasource hosted as a compressed package at a URL.
+    Handles authentication for gated sources.
+    """
+    download_pre_args = data_sources[uid].get("download_pre_args", "")
+    download_post_args = data_sources[uid].get("download_post_args", "")
+    use_curl = data_sources[uid].get("use_curl", False)
+    if use_curl:
+        if requires_auth:
+            download_pre_args = f"{download_pre_args} --user {username}:{password}"
+
+        download_command = (
+            "curl --continue-at - "
+            + download_pre_args
+            + " "
+            + data_sources[uid]["source"]
+            + " -o "
+            + os.path.join(data_path, data_sources[uid]["package_name"])
+            + download_post_args
+        )
+    else:
+        if requires_auth:
+            download_pre_args = (
+                f"{download_pre_args} --user {username} --password {password}"
+            )
+
+        download_command = (
+            "wget --continue "
+            + download_pre_args
+            + data_sources[uid]["source"]
+            + " -P "
+            + data_path
+            + download_post_args
+        )
+    #  print(download_command)
+    subprocess.check_call(shlex.split(download_command))
+    assert os.path.exists(
+        os.path.join(data_path, data_sources[uid]["package_name"])
+    ), "Download failed, no package found."
+
+    # unpack
+    package_name = data_sources[uid]["package_name"]
+    extract_postfix = data_sources[uid].get("extract_postfix", "")
+    extract_dir = os.path.join(version_dir, extract_postfix)
+    if package_name.endswith(".zip"):
+        with zipfile.ZipFile(data_path + package_name, "r") as zip_ref:
+            zip_ref.extractall(extract_dir)
+            package_files = zip_ref.namelist()
+    elif package_name.count(".tar") == 1:
+        with tarfile.open(data_path + package_name, "r:*") as tar_ref:
+            tar_ref.extractall(extract_dir)
+            package_files = tar_ref.getnames()
+    else:
+        # TODO: support more compression types as necessary
+        print(f"Data unpack failed for {uid}. Unsupported filetype: {package_name}")
+        return
+
+    assert os.path.exists(version_dir), "Unpacking failed, no version directory."
+    package_files = [os.path.join(extract_dir, fname) for fname in package_files]
+
+    post_extract_fn = data_sources[uid].get("post_extract_fn", None)
+    if post_extract_fn is not None:
+        result = post_extract_fn(extract_dir)
+        if result is not None:
+            package_files = result + package_files
+
+    if downloaded_file_list is not None:
+        with gzip.open(downloaded_file_list, "wt") as f:
+            json.dump([extract_dir] + package_files, f)
+
+    # clean-up
+    os.remove(data_path + package_name)
+
+
 def download_and_place(
-    uid,
-    data_path,
+    uid: str,
+    data_path: str,
     username: Optional[str] = None,
     password: Optional[str] = None,
     replace: Optional[bool] = None,
@@ -553,8 +675,6 @@ def download_and_place(
             return
 
     # download new version
-    download_pre_args = data_sources[uid].get("download_pre_args", "")
-    download_post_args = data_sources[uid].get("download_post_args", "")
     requires_auth = data_sources[uid].get("requires_auth", False)
     if requires_auth:
         assert username is not None, "Usename required, please enter with --username"
@@ -564,94 +684,18 @@ def download_and_place(
 
     if data_sources[uid]["source"].endswith(".git"):
         # git dataset, clone it
-        clone_command = " git clone "
-        if requires_auth:
-            adjusted_password = password.replace(" ", "%20")
-            url_split = data_sources[uid]["source"].split("https://")[-1]
-            # NOTE: The username and password are stored in .git/config. Should we post-process this out?
-            clone_command += f'"https://{username}:{adjusted_password}@{url_split}"'
-        else:
-            clone_command += f"\"{data_sources[uid]['source']}\""
-
-        # place the output in the specified directory
-        # NOTE: currently this will pull repo `main`. TODO: use `version` to indicate a tag to checkout?
-        clone_command += f" {version_dir}"
-
-        print(f"{clone_command}")
-        subprocess.check_call(shlex.split(clone_command))
-
-        # prune the repo to reduced wasted memory consumption
-        prune_command = "git lfs prune -f --recent"
-        subprocess.check_call(shlex.split(prune_command), cwd=version_dir)
-
+        clone_repo_source(uid, version_dir, requires_auth, username, password)
     else:
-        # zip based dataset, download and unzip it
-        use_curl = data_sources[uid].get("use_curl", False)
-        if use_curl:
-            if requires_auth:
-                download_pre_args = f"{download_pre_args} --user {username}:{password}"
-
-            download_command = (
-                "curl --continue-at - "
-                + download_pre_args
-                + " "
-                + data_sources[uid]["source"]
-                + " -o "
-                + os.path.join(data_path, data_sources[uid]["package_name"])
-                + download_post_args
-            )
-        else:
-            if requires_auth:
-                download_pre_args = (
-                    f"{download_pre_args} --user {username} --password {password}"
-                )
-
-            download_command = (
-                "wget --continue "
-                + download_pre_args
-                + data_sources[uid]["source"]
-                + " -P "
-                + data_path
-                + download_post_args
-            )
-        #  print(download_command)
-        subprocess.check_call(shlex.split(download_command))
-        assert os.path.exists(
-            os.path.join(data_path, data_sources[uid]["package_name"])
-        ), "Download failed, no package found."
-
-        # unpack
-        package_name = data_sources[uid]["package_name"]
-        extract_postfix = data_sources[uid].get("extract_postfix", "")
-        extract_dir = os.path.join(version_dir, extract_postfix)
-        if package_name.endswith(".zip"):
-            with zipfile.ZipFile(data_path + package_name, "r") as zip_ref:
-                zip_ref.extractall(extract_dir)
-                package_files = zip_ref.namelist()
-        elif package_name.count(".tar") == 1:
-            with tarfile.open(data_path + package_name, "r:*") as tar_ref:
-                tar_ref.extractall(extract_dir)
-                package_files = tar_ref.getnames()
-        else:
-            # TODO: support more compression types as necessary
-            print(f"Data unpack failed for {uid}. Unsupported filetype: {package_name}")
-            return
-
-        assert os.path.exists(version_dir), "Unpacking failed, no version directory."
-        package_files = [os.path.join(extract_dir, fname) for fname in package_files]
-
-        post_extract_fn = data_sources[uid].get("post_extract_fn", None)
-        if post_extract_fn is not None:
-            result = post_extract_fn(extract_dir)
-            if result is not None:
-                package_files = result + package_files
-
-        if downloaded_file_list is not None:
-            with gzip.open(downloaded_file_list, "wt") as f:
-                json.dump([extract_dir] + package_files, f)
-
-        # clean-up
-        os.remove(data_path + package_name)
+        # compressed package dataset (e.g. .zip or .tar), download and unpack it
+        get_and_place_compressed_package(
+            uid,
+            data_path,
+            version_dir,
+            downloaded_file_list,
+            requires_auth,
+            username,
+            password,
+        )
 
     # create a symlink to the new versioned data
     if link_path.exists():
