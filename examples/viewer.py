@@ -663,6 +663,8 @@ class HabitatSimInteractiveViewer(Application):
                     elif (
                         self.rec_filter_data is not None
                     ) and self.rec_color_mode == RecColorMode.FILTERING:
+                        # blue indicates no filter data for the receptacle, it may be newer than the filter file.
+                        rec_color = mn.Color4.blue()
                         if rec_unique_name in self.rec_filter_data["active"]:
                             rec_color = mn.Color4.green()
                         elif (
@@ -708,7 +710,14 @@ class HabitatSimInteractiveViewer(Application):
                             )
 
                     receptacle.debug_draw(self.sim, color=rec_color)
-
+                    if True:
+                        dblr = self.sim.get_debug_line_render()
+                        t_form = receptacle.get_global_transform(self.sim)
+                        dblr.push_transform(t_form)
+                        dblr.draw_transformed_line(
+                            mn.Vector3(0), receptacle.up, mn.Color4.cyan()
+                        )
+                        dblr.pop_transform()
         # mouse raycast circle
         white = mn.Color4(mn.Vector3(1.0), 1.0)
         if self.mouse_cast_results is not None and self.mouse_cast_results.has_hits():
