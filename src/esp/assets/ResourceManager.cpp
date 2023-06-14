@@ -2452,7 +2452,7 @@ void ResourceManager::loadMaterials(Importer& importer,
           (shaderTypeToUse != ObjectInstanceShaderType::Flat) &&
           !(compareShaderTypeToMnMatType(shaderTypeToUse, *materialData))) {
         // Only create this string if veryverbose logging is enabled
-        if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::VeryVerbose)) {
+        if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::Debug)) {
           materialExpandStr = Cr::Utility::formatString(
               "Forcing to {} shader (material requires expansion to support it "
               "via createUniversalMaterial)",
@@ -2466,16 +2466,19 @@ void ResourceManager::loadMaterials(Importer& importer,
       // user-defined attributes set excluding texture pointer mappings
       Corrade::Containers::Optional<Magnum::Trade::MaterialData>
           custMaterialData;
-
+      std::string shaderBeingUsed;
       // Build based on desired shader to use
       // pbr shader spec, of material-specified and material specifies pbr
-      if (checkForPassedShaderType(
+      if ((checkForPassedShaderType(
               shaderTypeToUse, *materialData, ObjectInstanceShaderType::PBR,
-              Mn::Trade::MaterialType::PbrMetallicRoughness)) {
+              Mn::Trade::MaterialType::PbrMetallicRoughness)) ||
+          (checkForPassedShaderType(shaderTypeToUse, *materialData,
+                                    ObjectInstanceShaderType::PBR,
+                                    Mn::Trade::MaterialType::PbrClearCoat))) {
         // Material with custom settings appropriately set for PBR material
         custMaterialData =
             buildCustomAttributePbrMaterial(*materialData, textureBaseIndex);
-
+        shaderBeingUsed = "PBR";
         // phong shader spec, of material-specified and material specifies phong
       } else if (checkForPassedShaderType(shaderTypeToUse, *materialData,
                                           ObjectInstanceShaderType::Phong,
@@ -2483,7 +2486,7 @@ void ResourceManager::loadMaterials(Importer& importer,
         // Material with custom settings appropriately set for Phong material
         custMaterialData =
             buildCustomAttributePhongMaterial(*materialData, textureBaseIndex);
-
+        shaderBeingUsed = "Phong";
         // flat shader spec or material-specified and material specifies flat
       } else if (checkForPassedShaderType(shaderTypeToUse, *materialData,
                                           ObjectInstanceShaderType::Flat,
@@ -2492,7 +2495,7 @@ void ResourceManager::loadMaterials(Importer& importer,
         // be used in our Phong shader
         custMaterialData =
             buildCustomAttributeFlatMaterial(*materialData, textureBaseIndex);
-
+        shaderBeingUsed = "Flat";
       } else {
         ESP_CHECK(
             false,
@@ -2502,10 +2505,12 @@ void ResourceManager::loadMaterials(Importer& importer,
                 shaderTypeToUseName, iMaterial, assetName));
       }
 
-      std::string debugStr = Cr::Utility::formatString(
-          "Idx {:.02d} has {:.02} layers: {}.", iMaterial, numMaterialLayers,
-          materialExpandStr);
-
+      std::string debugStr;
+      if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::Debug)) {
+        debugStr = Cr::Utility::formatString(
+            "Idx {:.02d} has {:.02} layers| shader being used: {} for: {}.",
+            iMaterial, numMaterialLayers, shaderBeingUsed, materialExpandStr);
+      }
       // Merge all custom attribute except remapped texture pointers with
       // original material for final material. custMaterialData should never be
       // Cr::Containers::NullOpt since every non-error branch is covered.
@@ -2555,7 +2560,7 @@ void ResourceManager::loadMaterials(Importer& importer,
                   attrName.slice(1, attrName.size()));
 
               // Debug display of layer pointers
-              if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::VeryVerbose)) {
+              if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::Debug)) {
                 Cr::Utility::formatInto(debugStr, debugStr.size(),
                                         "| txtr ptr name:{} | idx :{} Layer {}",
                                         newAttrName,
@@ -2580,7 +2585,7 @@ void ResourceManager::loadMaterials(Importer& importer,
               Mn::Trade::MaterialData{
                   {}, std::move(newAttributes), std::move(newLayers)});
 
-      ESP_VERY_VERBOSE() << debugStr;
+      ESP_DEBUG() << debugStr;
       // for now, just use unique ID for material key. This may change if we
       // expose materials to user for post-load modification
 
