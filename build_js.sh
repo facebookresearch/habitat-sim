@@ -27,7 +27,6 @@ cmake ../src \
     -DBUILD_PYTHON_BINDINGS=OFF \
     -DBUILD_ASSIMP_SUPPORT=OFF \
     -DBUILD_DATATOOL=OFF \
-    -DBUILD_PTEX_SUPPORT=OFF
 cmake --build . --target corrade-rc --
 popd
 
@@ -42,7 +41,6 @@ cmake ../src \
     -DBUILD_PYTHON_BINDINGS=OFF \
     -DBUILD_ASSIMP_SUPPORT=OFF \
     -DBUILD_DATATOOL=OFF \
-    -DBUILD_PTEX_SUPPORT=OFF \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_PREFIX_PATH="$EMSCRIPTEN" \
     -DCMAKE_TOOLCHAIN_FILE="../src/deps/corrade/toolchains/generic/Emscripten-wasm.cmake" \

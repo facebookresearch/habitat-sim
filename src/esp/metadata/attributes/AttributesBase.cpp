@@ -14,7 +14,6 @@ const std::map<std::string, esp::assets::AssetType> AssetTypeNamesMap = {
     {"unknown", esp::assets::AssetType::UNKNOWN},
     {"mp3d", esp::assets::AssetType::MP3D_MESH},
     {"semantic", esp::assets::AssetType::INSTANCE_MESH},
-    {"ptex", esp::assets::AssetType::FRL_PTEX_MESH},
     {"navmesh", esp::assets::AssetType::NAVMESH},
 };
 

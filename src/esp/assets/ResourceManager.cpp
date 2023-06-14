@@ -82,12 +82,6 @@
 #include "GenericSemanticMeshData.h"
 #include "MeshData.h"
 
-#ifdef ESP_BUILD_PTEX_SUPPORT
-#include "PTexMeshData.h"
-#include "esp/gfx/PTexMeshDrawable.h"
-#include "esp/gfx/PTexMeshShader.h"
-#endif
-
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 
@@ -596,12 +590,6 @@ bool ResourceManager::buildMeshGroups(
       colMeshGroupSuccess = buildStageCollisionMeshGroup<GenericMeshData>(
           info.filepath, meshGroup);
     }
-#ifdef ESP_BUILD_PTEX_SUPPORT
-    else if (info.type == AssetType::FRL_PTEX_MESH) {
-      colMeshGroupSuccess =
-          buildStageCollisionMeshGroup<PTexMeshData>(info.filepath, meshGroup);
-    }
-#endif
 
     // failure during build of collision mesh group
     if (!colMeshGroupSuccess) {
@@ -832,9 +820,6 @@ bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
       ESP_DEBUG() << "Building Prim named:" << info.filepath;
       buildPrimitiveAssetData(info.filepath);
       meshSuccess = true;
-    } else if (info.type == AssetType::FRL_PTEX_MESH) {
-      ESP_DEBUG() << "Loading PTEX asset named:" << info.filepath;
-      meshSuccess = loadRenderAssetPTex(defaultInfo);
     } else if (info.type == AssetType::INSTANCE_MESH) {
       ESP_DEBUG() << "Loading Semantic Mesh asset named:" << info.filepath;
       meshSuccess = loadSemanticRenderAsset(defaultInfo);
@@ -924,12 +909,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstance(
 
   const auto& info = loadedAssetData.assetInfo;
   scene::SceneNode* newNode = nullptr;
-  if (info.type == AssetType::FRL_PTEX_MESH) {
-    CORRADE_ASSERT(!visNodeCache,
-                   "createRenderAssetInstancePTex doesn't support this",
-                   nullptr);
-    newNode = createRenderAssetInstancePTex(creation, parent, drawables);
-  } else if (info.type == AssetType::INSTANCE_MESH) {
+  if (info.type == AssetType::INSTANCE_MESH) {
     CORRADE_ASSERT(!visNodeCache,
                    "createRenderAssetInstanceVertSemantic doesn't support this",
                    nullptr);
@@ -1055,37 +1035,6 @@ Mn::Range3D ResourceManager::computeMeshBB(BaseMesh* meshDataGL) {
   CollisionMeshData& meshData = meshDataGL->getCollisionMeshData();
   return Mn::Math::minmax(meshData.positions);
 }
-
-#ifdef ESP_BUILD_PTEX_SUPPORT
-void ResourceManager::computePTexMeshAbsoluteAABBs(
-    BaseMesh& baseMesh,
-    const std::vector<StaticDrawableInfo>& staticDrawableInfo) {
-  std::vector<Mn::Matrix4> absTransforms =
-      computeAbsoluteTransformations(staticDrawableInfo);
-
-  CORRADE_ASSERT(
-      absTransforms.size() == staticDrawableInfo.size(),
-      "::computePTexMeshAbsoluteAABBs: number of "
-      "transformations does not match number of drawables. Aborting.", );
-
-  // obtain the sub-meshes within the ptex mesh
-  PTexMeshData& ptexMeshData = dynamic_cast<PTexMeshData&>(baseMesh);
-  const std::vector<PTexMeshData::MeshData>& submeshes = ptexMeshData.meshes();
-
-  for (uint32_t iEntry = 0; iEntry < absTransforms.size(); ++iEntry) {
-    // convert std::vector<vec3f> to std::vector<Mn::Vector3>
-    const PTexMeshData::MeshData& submesh =
-        submeshes[staticDrawableInfo[iEntry].meshID];
-    std::vector<Mn::Vector3> pos{submesh.vbo.begin(), submesh.vbo.end()};
-
-    // transform the vertex positions to the world space
-    Mn::MeshTools::transformPointsInPlace(absTransforms[iEntry], pos);
-
-    scene::SceneNode& node = staticDrawableInfo[iEntry].node;
-    node.setAbsoluteAABB(Mn::Math::minmax(pos));
-  }
-}  // ResourceManager::computePTexMeshAbsoluteAABBs
-#endif
 
 void ResourceManager::computeGeneralMeshAbsoluteAABBs(
     const std::vector<StaticDrawableInfo>& staticDrawableInfo) {
@@ -1288,112 +1237,6 @@ void ResourceManager::buildPrimitiveAssetData(
               << conf.hasGroup(primClassName);
 
 }  // ResourceManager::buildPrimitiveAssetData
-
-bool ResourceManager::loadRenderAssetPTex(const AssetInfo& info) {
-  CORRADE_INTERNAL_ASSERT(info.type == AssetType::FRL_PTEX_MESH);
-
-#ifdef ESP_BUILD_PTEX_SUPPORT
-  // if this is a new file, load it and add it to the dictionary
-  const std::string& filename = info.filepath;
-  CORRADE_INTERNAL_ASSERT(resourceDict_.count(filename) == 0);
-
-  const auto atlasDir = Cr::Utility::Path::join(
-      Cr::Utility::Path::split(filename).first(), "textures");
-
-  int index = nextMeshID_++;
-  meshes_.emplace(index, std::make_unique<PTexMeshData>());
-
-  auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_.at(index).get());
-  pTexMeshData->load(filename, atlasDir);
-
-  // update the dictionary
-  auto inserted =
-      resourceDict_.emplace(filename, LoadedAssetData{info, {index, index}});
-  MeshMetaData& meshMetaData = inserted.first->second.meshMetaData;
-  meshMetaData.root.meshIDLocal = 0;
-  meshMetaData.root.componentID = 0;
-
-  // set the root rotation to world frame upon load
-  meshMetaData.setRootFrameOrientation(info.frame);
-
-  CORRADE_ASSERT(meshMetaData.meshIndex.first == meshMetaData.meshIndex.second,
-                 "::loadRenderAssetPTex: ptex mesh is not loaded "
-                 "correctly. Aborting.",
-                 false);
-
-  return true;
-#else
-  ESP_ERROR()
-      << "PTex support not enabled. Enable the BUILD_PTEX_SUPPORT CMake "
-         "option when building.";
-  return false;
-#endif
-}  // ResourceManager::loadRenderAssetPTex
-
-scene::SceneNode* ResourceManager::createRenderAssetInstancePTex(
-    const RenderAssetInstanceCreationInfo& creation,
-    scene::SceneNode* parent,
-    DrawableGroup* drawables) {
-#ifdef ESP_BUILD_PTEX_SUPPORT
-  CORRADE_INTERNAL_ASSERT(!creation.scale);  // PTex doesn't support scale
-  CORRADE_INTERNAL_ASSERT(creation.lightSetupKey ==
-                          NO_LIGHT_KEY);  // PTex doesn't support
-                                          // lighting
-
-  const std::string& filename = creation.filepath;
-  auto resDictIter = resourceDict_.find(filename);
-  CORRADE_INTERNAL_ASSERT(resDictIter != resourceDict_.end());
-  const LoadedAssetData& loadedAssetData = resDictIter->second;
-  const MeshMetaData& metaData = getMeshMetaData(filename);
-  const auto& info = loadedAssetData.assetInfo;
-  auto indexPair = metaData.meshIndex;
-  int start = indexPair.first;
-  int end = indexPair.second;
-  std::vector<StaticDrawableInfo> staticDrawableInfo;
-
-  scene::SceneNode* instanceRoot = &parent->createChild();
-  if (getCreateRenderer()) {
-    for (int iMesh = start; iMesh <= end; ++iMesh) {
-      auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_.at(iMesh).get());
-      pTexMeshData->uploadBuffersToGPU(false);
-      for (int jSubmesh = 0; jSubmesh < pTexMeshData->getSize(); ++jSubmesh) {
-        scene::SceneNode& node = instanceRoot->createChild();
-        const quatf transform = info.frame.rotationFrameToWorld();
-        node.setRotation(Mn::Quaternion(transform));
-        node.addFeature<gfx::PTexMeshDrawable>(*pTexMeshData, jSubmesh,
-                                               shaderManager_, drawables);
-        staticDrawableInfo.emplace_back(StaticDrawableInfo{node, jSubmesh});
-      }
-    }
-  } else {
-    // don't push to gpu if not creating renderer
-    for (int iMesh = start; iMesh <= end; ++iMesh) {
-      auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_.at(iMesh).get());
-      for (int jSubmesh = 0; jSubmesh < pTexMeshData->getSize(); ++jSubmesh) {
-        scene::SceneNode& node = instanceRoot->createChild();
-        const quatf transform = info.frame.rotationFrameToWorld();
-        node.setRotation(Mn::Quaternion(transform));
-        node.addFeature<gfx::PTexMeshDrawable>(*pTexMeshData, jSubmesh,
-                                               shaderManager_, drawables);
-        staticDrawableInfo.emplace_back(StaticDrawableInfo{node, jSubmesh});
-      }
-    }
-  }
-  // we assume a ptex mesh is only used as static
-  CORRADE_INTERNAL_ASSERT(creation.isStatic());
-  CORRADE_INTERNAL_ASSERT(metaData.meshIndex.first ==
-                          metaData.meshIndex.second);
-
-  computePTexMeshAbsoluteAABBs(*meshes_.at(metaData.meshIndex.first),
-                               staticDrawableInfo);
-  return instanceRoot;
-#else
-  ESP_ERROR()
-      << "PTex support not enabled. Enable the BUILD_PTEX_SUPPORT CMake "
-         "option when building.";
-  return nullptr;
-#endif
-}  // ResourceManager::createRenderAssetInstancePTex
 
 bool ResourceManager::loadSemanticRenderAsset(const AssetInfo& info) {
   if (info.hasSemanticTextures) {

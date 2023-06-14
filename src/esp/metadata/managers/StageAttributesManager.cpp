@@ -339,10 +339,6 @@ void StageAttributesManager::setDefaultAssetNameBasedAttributes(
   fwd = fwd1;
   if (endsWith(fileName, "_semantic.ply")) {
     assetTypeSetter(static_cast<int>(AssetType::INSTANCE_MESH));
-  } else if (endsWith(fileName, "mesh.ply")) {
-    assetTypeSetter(static_cast<int>(AssetType::FRL_PTEX_MESH));
-    up = up2;
-    fwd = fwd2;
   } else if (endsWith(fileName, ".glb")) {
     // assumes MP3D glb with gravity = -Z
     assetTypeSetter(static_cast<int>(AssetType::MP3D_MESH));

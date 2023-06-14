@@ -746,8 +746,6 @@ void Simulator::updateShadowMapDrawableGroup() {
     const gfx::Drawable& currentDrawable =
         static_cast<const gfx::Drawable&>(sourceGroup[iDrawable]);
     gfx::DrawableType type = currentDrawable.getDrawableType();
-    // So far no support for the PTex (lighting-baked mesh)
-    // SKIP!!!
     if ((type != gfx::DrawableType::Generic) &&
         (type != gfx::DrawableType::Pbr)) {
       continue;
