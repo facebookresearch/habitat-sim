@@ -117,23 +117,13 @@ ResourceManager::ResourceManager(
       importerManager_("nonexistent")
 #endif
 {
-#ifdef ESP_BUILD_WITH_VHACD
-  // Destructor is protected, using Clean() and Release() to destruct interface
-  // (this is how it is used VHACD examples.)
-  interfaceVHACD = VHACD::CreateVHACD();
-#endif
   initDefaultLightSetups();
   initDefaultMaterials();
   // appropriately configure importerManager_ based on compilation flags
   buildImporters();
 }
 
-ResourceManager::~ResourceManager() {
-#ifdef ESP_BUILD_WITH_VHACD
-  interfaceVHACD->Clean();
-  interfaceVHACD->Release();
-#endif
-}
+ResourceManager::~ResourceManager() = default;
 
 void ResourceManager::buildImporters() {
   // Preferred plugins, Basis target GPU format
@@ -1644,74 +1634,29 @@ void ResourceManager::configureImporterManagerGLExtensions() {
     return;
 
   Mn::GL::Context& context = Mn::GL::Context::current();
+  /* This is reduced to formats that Magnum currently can Y-flip. More formats
+     will get added back with new additions to Magnum/Math/ColorBatch.h. */
 #ifdef MAGNUM_TARGET_WEBGL
   if (context.isExtensionSupported<
-          Mn::GL::Extensions::WEBGL::compressed_texture_astc>())
-#else
-  if (context.isExtensionSupported<
-          Mn::GL::Extensions::KHR::texture_compression_astc_ldr>())
-#endif
-  {
-    ESP_DEBUG() << "Importing Basis files as ASTC 4x4.";
-    metadata->configuration().setValue("format", "Astc4x4RGBA");
-  }
-#ifdef MAGNUM_TARGET_GLES
-  else if (context.isExtensionSupported<
-               Mn::GL::Extensions::EXT::texture_compression_bptc>())
-#else
-  else if (context.isExtensionSupported<
-               Mn::GL::Extensions::ARB::texture_compression_bptc>())
-#endif
-  {
-    ESP_DEBUG() << "Importing Basis files as BC7.";
-    metadata->configuration().setValue("format", "Bc7RGBA");
-  }
-#ifdef MAGNUM_TARGET_WEBGL
-  else if (context.isExtensionSupported<
-               Mn::GL::Extensions::WEBGL::compressed_texture_s3tc>())
+          Mn::GL::Extensions::WEBGL::compressed_texture_s3tc>())
 #elif defined(MAGNUM_TARGET_GLES)
-  else if (context.isExtensionSupported<
-               Mn::GL::Extensions::EXT::texture_compression_s3tc>() ||
-           context.isExtensionSupported<
-               Mn::GL::Extensions::ANGLE::texture_compression_dxt5>())
+  if (context.isExtensionSupported<
+          Mn::GL::Extensions::EXT::texture_compression_s3tc>() ||
+      context.isExtensionSupported<
+          Mn::GL::Extensions::ANGLE::texture_compression_dxt5>())
 #else
-  else if (context.isExtensionSupported<
-               Mn::GL::Extensions::EXT::texture_compression_s3tc>())
+  if (context.isExtensionSupported<
+          Mn::GL::Extensions::EXT::texture_compression_s3tc>())
 #endif
   {
     ESP_DEBUG() << "Importing Basis files as BC3.";
     metadata->configuration().setValue("format", "Bc3RGBA");
-  }
-#ifndef MAGNUM_TARGET_GLES2
-  else
-#ifndef MAGNUM_TARGET_GLES
-      if (context.isExtensionSupported<
-              Mn::GL::Extensions::ARB::ES3_compatibility>())
-#endif
-  {
-    ESP_DEBUG() << "Importing Basis files as ETC2.";
-    metadata->configuration().setValue("format", "Etc2RGBA");
-  }
-#else /* For ES2, fall back to PVRTC as ETC2 is not available */
-  else
-#ifdef MAGNUM_TARGET_WEBGL
-      if (context.isExtensionSupported<Mn::WEBGL::compressed_texture_pvrtc>())
-#else
-      if (context.isExtensionSupported<Mn::IMG::texture_compression_pvrtc>())
-#endif
-  {
-    ESP_DEBUG() << "Importing Basis files as PVRTC 4bpp.";
-    metadata->configuration().setValue("format", "PvrtcRGBA4bpp");
-  }
-#endif
-#if defined(MAGNUM_TARGET_GLES2) || !defined(MAGNUM_TARGET_GLES)
-  else /* ES3 has ETC2 always */
-  {
-    ESP_WARNING() << "No supported GPU compressed texture format detected, "
-                     "Basis images will get imported as RGBA8.";
+  } else {
+    ESP_WARNING()
+        << "No GPU compressed texture format with Y-flip support detected, "
+           "Basis images will get imported as RGBA8.";
     metadata->configuration().setValue("format", "RGBA8");
   }
-#endif
 
 }  // ResourceManager::configureImporterManagerGLExtensions
 
@@ -3548,187 +3493,6 @@ std::unique_ptr<MeshData> ResourceManager::createJoinedSemanticCollisionMesh(
 
   return mesh;
 }
-
-#ifdef ESP_BUILD_WITH_VHACD
-bool ResourceManager::outputMeshMetaDataToObj(
-    const std::string& MeshMetaDataFile,
-    const std::string& new_filename,
-    const std::string& filepath) const {
-  bool success = Cr::Utility::Path::make(filepath);
-
-  const MeshMetaData& metaData = getMeshMetaData(MeshMetaDataFile);
-  std::string out = "# chd Mesh group \n";
-
-  // write vertex info to file
-  int numVertices = 0;
-  for (const MeshTransformNode& node : metaData.root.children) {
-    CollisionMeshData& meshData =
-        meshes_.at(node.meshIDLocal + metaData.meshIndex.first)
-            ->getCollisionMeshData();
-    for (auto& pos : meshData.positions) {
-      Mn::Utility::formatInto(out, out.size(), "{0} {1} {2} {3}{4}", "v",
-                              pos[0], pos[1], pos[2], "\n");
-      numVertices++;
-    }
-  }
-
-  Mn::Utility::formatInto(out, out.size(), "{0} {1} {2}",
-                          "# Number of vertices", numVertices, "\n\n");
-
-  // Now do second pass to write indices for each group (node)
-  int globalVertexNum = 1;
-  int numParts = 1;
-  for (const MeshTransformNode& node : metaData.root.children) {
-    CollisionMeshData& meshData =
-        meshes_.at(node.meshIDLocal + metaData.meshIndex.first)
-            ->getCollisionMeshData();
-    Mn::Utility::formatInto(out, out.size(), "{0}{1} {2}", "g part_", numParts,
-                            "mesh\n");
-    for (int ix = 0; ix < meshData.indices.size(); ix += 3) {
-      Mn::Utility::formatInto(out, out.size(), "{0} {1} {2} {3}{4}", "f",
-                              meshData.indices[ix] + globalVertexNum,
-                              meshData.indices[ix + 1] + globalVertexNum,
-                              meshData.indices[ix + 2] + globalVertexNum, "\n");
-    }
-    numParts++;
-    globalVertexNum += meshData.positions.size();
-  }
-  Cr::Utility::Path::write(Cr::Utility::Path::join(filepath, new_filename),
-                           Cr::Containers::StringView{out});
-
-  return success;
-}  // ResourceManager::outputMeshMetaDataToObj
-
-bool ResourceManager::isAssetDataRegistered(
-    const std::string& resourceName) const {
-  return (resourceDict_.count(resourceName) > 0);
-}
-
-std::string ResourceManager::createConvexHullDecomposition(
-    const std::string& filename,
-    const std::string& chdFilename,
-    const VHACDParameters& params,
-    const bool saveChdToObj) {
-  if (resourceDict_.count(filename) == 0) {
-    // retrieve existing, or create new, object attributes corresponding to
-    // passed filename
-    auto objAttributes =
-        getObjectAttributesManager()->getObjectCopyByHandle(filename);
-    if (objAttributes == nullptr) {
-      objAttributes =
-          getObjectAttributesManager()->createObject(filename, false);
-    }
-
-    // load/check for render MeshMetaData and load assets
-    loadObjectMeshDataFromFile(filename, objAttributes, "render", true);
-
-  }  // if no render asset exists
-
-  // get joined mesh data
-  assets::MeshData::uptr joinedMesh = assets::MeshData::create_unique();
-  joinedMesh = createJoinedCollisionMesh(filename);
-
-  // use VHACD
-  interfaceVHACD->Compute(&joinedMesh->vbo[0][0], joinedMesh->vbo.size(),
-                          &joinedMesh->ibo[0], joinedMesh->ibo.size() / 3,
-                          params);
-
-  ESP_DEBUG() << "== VHACD ran ==";
-
-  // convert convex hulls into MeshDatas, CollisionMeshDatas
-  int meshStart = meshes_.size();
-  std::vector<CollisionMeshData> collisionMeshGroup;
-  int nConvexHulls = interfaceVHACD->GetNConvexHulls();
-  ESP_DEBUG() << "Num Convex Hulls:" << nConvexHulls;
-  ESP_DEBUG() << "Resolution:" << params.m_resolution;
-  VHACD::IVHACD::ConvexHull ch{};
-  std::unique_ptr<GenericMeshData> genCHMeshData;
-  for (unsigned int p = 0; p < nConvexHulls; ++p) {
-    // for each convex hull, transfer the data to a newly created  MeshData
-    interfaceVHACD->GetConvexHull(p, ch);
-
-    std::vector<Mn::Vector3> positions;
-
-    // add the vertices
-    positions.resize(ch.m_nPoints);
-    for (size_t vix = 0; vix < ch.m_nPoints; ++vix) {
-      positions[vix] =
-          Mn::Vector3(ch.m_points[vix * 3], ch.m_points[vix * 3 + 1],
-                      ch.m_points[vix * 3 + 2]);
-    }
-
-    // add indices
-    Cr::Containers::ArrayView<const Mn::UnsignedInt> indices{
-        ch.m_triangles, ch.m_nTriangles * 3};
-
-    // create an owned MeshData
-    Cr::Containers::Optional<Mn::Trade::MeshData> CHMesh = Mn::MeshTools::copy(
-        Mn::Trade::MeshData{Mn::MeshPrimitive::Triangles,
-                            {},
-                            indices,
-                            Mn::Trade::MeshIndexData{indices},
-                            {},
-                            positions,
-                            {Mn::Trade::MeshAttributeData{
-                                Mn::Trade::MeshAttribute::Position,
-                                Cr::Containers::arrayView(positions)}}});
-
-    // Create a GenericMeshData (needsNormals_ = true and uploadBuffersToGPU
-    // in order to render the collision asset)
-    genCHMeshData = std::make_unique<GenericMeshData>(true);
-    genCHMeshData->setMeshData(*std::move(CHMesh));
-    genCHMeshData->BB = computeMeshBB(genCHMeshData.get());
-    genCHMeshData->uploadBuffersToGPU(true);
-
-    // Create CollisionMeshData and add to collisionMeshGroup vector
-    CollisionMeshData CHCollisionMesh = genCHMeshData->getCollisionMeshData();
-    collisionMeshGroup.push_back(CHCollisionMesh);
-
-    // register GenericMeshData in meshes_ dict
-    meshes_.emplace(meshes_.size(), std::move(genCHMeshData));
-  }
-  // make MeshMetaData
-  int meshEnd = meshes_.size() - 1;
-  MeshMetaData meshMetaData{meshStart, meshEnd};
-
-  // get original componentID (REVISIT)
-  int componentID = getMeshMetaData(filename).root.componentID;
-
-  // populate MeshMetaData root children
-  for (unsigned int p = 0; p < nConvexHulls; ++p) {
-    MeshTransformNode transformNode;
-    transformNode.meshIDLocal = p;
-    transformNode.componentID = componentID;
-    meshMetaData.root.children.push_back(transformNode);
-  }
-
-  // make assetInfo
-  AssetInfo info{AssetType::PRIMITIVE};
-  info.forceFlatShading = false;
-
-  // make LoadedAssetData corresponding to this asset
-  LoadedAssetData loadedAssetData{info, meshMetaData};
-
-  // Register collision mesh group
-  auto insertedCollisionMeshGroup =
-      collisionMeshGroups_.emplace(chdFilename, std::move(collisionMeshGroup));
-  // insert MeshMetaData into resourceDict_
-  auto insertedResourceDict =
-      resourceDict_.emplace(chdFilename, std::move(loadedAssetData));
-  if (saveChdToObj) {
-    std::string objDirectory = Cr::Utility::Path::join(
-        *Cr::Utility::Path::currentDirectory(), "data/VHACD_outputs");
-    std::string new_filename =
-        Cr::Utility::Path::split(
-            Cr::Utility::Path::splitExtension(chdFilename).first())
-            .second() +
-        ".obj";
-    outputMeshMetaDataToObj(chdFilename, new_filename, objDirectory);
-    return Cr::Utility::Path::join(objDirectory, new_filename);
-  }
-  return "";
-}
-#endif
 
 }  // namespace assets
 }  // namespace esp

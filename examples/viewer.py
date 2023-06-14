@@ -1969,6 +1969,7 @@ if __name__ == "__main__":
     sim_settings["window_height"] = args.height
     sim_settings["rec_filter_file"] = args.rec_filter_file
     sim_settings["pbr_image_based_lighting"] = args.ibl
+    sim_settings["default_agent_navmesh"] = False
 
     # don't need auto-navmesh
     sim_settings["default_agent_navmesh"] = False

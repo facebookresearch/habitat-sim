@@ -274,14 +274,6 @@ void initSimBindings(py::module& m) {
           "recompute_navmesh", &Simulator::recomputeNavMesh, "pathfinder"_a,
           "navmesh_settings"_a,
           R"(Recompute the NavMesh for a given PathFinder instance using configured NavMeshSettings.)")
-#ifdef ESP_BUILD_WITH_VHACD
-      .def(
-          "apply_convex_hull_decomposition",
-          &Simulator::convexHullDecomposition, "filename"_a,
-          "vhacd_params"_a = assets::ResourceManager::VHACDParameters(),
-          "render_chd_result"_a = false, "save_chd_to_obj"_a = false,
-          R"(Decomposite an object into its constituent convex hulls with specified VHACD parameters.)")
-#endif
 
       .def(
           "add_trajectory_object",
@@ -438,12 +430,16 @@ void initSimBindings(py::module& m) {
       .def(
           "render",
           [](AbstractReplayRenderer& self,
-             std::vector<Mn::MutableImageView2D> images) {
-            self.render(images);
+             std::vector<Mn::MutableImageView2D> colorImageViews,
+             std::vector<Mn::MutableImageView2D> depthImageViews) {
+            self.render(colorImageViews, depthImageViews);
           },
-          R"(Render color sensors into the specified image vector (one per environment).
-          The images are required to be pre-allocated.
-          Blocks the thread during the GPU-to-CPU memory transfer operation.)")
+          R"(Render sensors into the specified image vectors (one per environment).
+          Blocks the thread during the GPU-to-CPU memory transfer operation.
+          Empty lists can be supplied to skip the copying render targets.
+          The images are required to be pre-allocated.)",
+          py::arg("color_images") = std::vector<Mn::MutableImageView2D>{},
+          py::arg("depth_images") = std::vector<Mn::MutableImageView2D>{})
       .def(
           "set_sensor_transforms_from_keyframe",
           &AbstractReplayRenderer::setSensorTransformsFromKeyframe,

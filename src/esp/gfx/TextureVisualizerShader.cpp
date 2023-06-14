@@ -132,11 +132,11 @@ TextureVisualizerShader& TextureVisualizerShader::rebindColorMapTexture() {
 TextureVisualizerShader& TextureVisualizerShader::setColorMapTransformation(
     float offset,
     float scale) {
-  CORRADE_ASSERT(offset >= 0.0,
+  CORRADE_ASSERT(offset >= 0.0f,
                  "TextureVisualizerShader::setColorMapTransformation(): offset"
                      << offset << "is illegal.",
                  *this);
-  CORRADE_ASSERT(scale >= 0.0,
+  CORRADE_ASSERT(scale >= 0.0f,
                  "TextureVisualizerShader::setColorMapTransformation(): scale"
                      << scale << "is illegal.",
                  *this);

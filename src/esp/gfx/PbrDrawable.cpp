@@ -29,8 +29,8 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
     : Drawable{node, mesh, DrawableType::Pbr, group},
       shaderManager_{shaderManager},
       lightSetup_{shaderManager.get<LightSetup>(lightSetupKey)},
-      meshAttributeFlags_{meshAttributeFlags},
-      pbrIbl_(pbrIbl) {
+      pbrIbl_(pbrIbl),
+      meshAttributeFlags_{meshAttributeFlags} {
   setMaterialValuesInternal(
       shaderManager.get<Mn::Trade::MaterialData>(materialDataKey));
 
@@ -212,7 +212,7 @@ void PbrDrawable::setMaterialValuesInternal(
      */
     if (const auto anisotropyStrength = materialData_->findAttribute<Mn::Float>(
             *anisotropyLayerID, "anisotropyStrength")) {
-      if (Mn::Math::abs(*anisotropyStrength) > 0.0) {
+      if (Mn::Math::abs(*anisotropyStrength) > 0.0f) {
         flags_ |= PbrShader::Flag::AnisotropyLayer;
         matCache.anisotropyLayer.factor =
             Mn::Math::clamp(*anisotropyStrength, -1.0f, 1.0f);
@@ -221,7 +221,7 @@ void PbrDrawable::setMaterialValuesInternal(
     } else if (const auto anisotropyStrength =
                    materialData_->findAttribute<Mn::Float>(*anisotropyLayerID,
                                                            "anisotropy")) {
-      if (Mn::Math::abs(*anisotropyStrength) > 0.0) {
+      if (Mn::Math::abs(*anisotropyStrength) > 0.0f) {
         flags_ |= PbrShader::Flag::AnisotropyLayer;
         matCache.anisotropyLayer.factor =
             Mn::Math::clamp(*anisotropyStrength, -1.0f, 1.0f);
@@ -235,7 +235,7 @@ void PbrDrawable::setMaterialValuesInternal(
      */
     if (const auto anisotropyRotation = materialData_->findAttribute<Mn::Float>(
             *anisotropyLayerID, "anisotropyRotation")) {
-      if (*anisotropyRotation != 0.0) {
+      if (*anisotropyRotation != 0.0f) {
         flags_ |= PbrShader::Flag::AnisotropyLayer;
         Mn::Rad rotAngle = Mn::Rad{*anisotropyRotation};
         matCache.anisotropyLayer.direction =
@@ -245,7 +245,7 @@ void PbrDrawable::setMaterialValuesInternal(
     } else if (const auto anisotropyRotation =
                    materialData_->findAttribute<Mn::Float>(
                        *anisotropyLayerID, "anisotropyDirection")) {
-      if (*anisotropyRotation != 0.0) {
+      if (*anisotropyRotation != 0.0f) {
         flags_ |= PbrShader::Flag::AnisotropyLayer;
         Mn::Rad rotAngle = Mn::Rad{*anisotropyRotation};
         matCache.anisotropyLayer.direction =
@@ -393,7 +393,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
       .setEmissiveColor(matCache.emissiveColor);
 
   // TODO:
-  // IN PbrShader class, we set the resonable defaults for the
+  // IN PbrShader class, we set the reasonable defaults for the
   // PbrShader::PbrEquationScales. Here we need a smart way to reset it
   // just in case user would like to do so during the run-time.
 
@@ -437,7 +437,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
     CORRADE_ASSERT(shadowMapKeys_->size() <= 3,
                    "PbrDrawable::draw: the number of shadow maps exceeds the "
                    "maximum (current it is 3).", );
-    for (int iShadow = 0; iShadow < shadowMapKeys_->size(); ++iShadow) {
+    for (size_t iShadow = 0; iShadow < shadowMapKeys_->size(); ++iShadow) {
       Mn::Resource<CubeMap> shadowMap =
           (*shadowMapManger_).get<CubeMap>((*shadowMapKeys_)[iShadow]);
 
@@ -527,7 +527,7 @@ PbrDrawable& PbrDrawable::updateShaderLightDirectionParameters(
     const auto& lightInfo = (*lightSetup_)[iLight];
     Mn::Vector4 pos = getLightPositionRelativeToWorld(
         lightInfo, transformationMatrix, cameraMatrix);
-    // flip directional lights to faciliate faster, non-forking calc in
+    // flip directional lights to facilitate faster, non-forking calc in
     // shader.  Leave non-directional lights unchanged
     pos *= (pos[3] * 2) - 1;
     lightPositions.emplace_back(pos);
