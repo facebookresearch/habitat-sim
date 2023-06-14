@@ -26,18 +26,11 @@
 
 #include "esp/metadata/attributes/AttributesEnumMaps.h"
 
-#ifdef ESP_BUILD_WITH_VHACD
-#include <VHACD.h>
-#endif
-
 namespace Mn = Magnum;
 
 namespace esp {
 namespace assets {
 struct PhongMaterialColor;
-}
-namespace geo {
-class VoxelGrid;
 }
 namespace gfx {
 class Drawable;
@@ -105,22 +98,6 @@ class ResourceManager {
   using DrawableGroup = gfx::DrawableGroup;
   /** @brief Convenience typedef for Importer class */
   using Importer = Mn::Trade::AbstractImporter;
-
-#ifdef ESP_BUILD_WITH_VHACD
-  /**
-   * @brief Simple struct interface for creating and managing VHACD parameters.
-   * These parameters are passed into VHACD and specify how convex hull
-   * decomposition is ran.
-   */
-  struct VHACDParameters : VHACD::IVHACD::Parameters {
-    VHACDParameters() {
-      m_oclAcceleration = 0u;  // OCL Acceleration does not work on VHACD
-    }
-    ESP_SMART_POINTERS(VHACDParameters)
-  };
-
-  VHACD::IVHACD* interfaceVHACD;
-#endif
 
   /** @brief Constructor */
   explicit ResourceManager(
@@ -335,46 +312,6 @@ class ResourceManager {
   const MeshMetaData& getMeshMetaData(const std::string& metaDataName) const;
 
   /**
-   * @brief check to see if a particular voxel grid has been created &
-   * registered or not.
-   * @param voxelGridName The key identifying the asset in @ref resourceDict_.
-   * Typically the filepath of file-based assets.
-   * @return Whether or not the specified grid exists.
-   */
-  bool voxelGridExists(const std::string& voxelGridName) const {
-    return voxelGridDict_.count(voxelGridName) > 0;
-  }
-
-  /**
-   * @brief Retrieve a VoxelGrid given a particular voxel grid handle.
-   * @param voxelGridName The key identifying the asset in @ref resourceDict_.
-   * Typically the filepath of file-based assets.
-   * @return The specified VoxelGrid.
-   */
-  std::shared_ptr<esp::geo::VoxelGrid> getVoxelGrid(
-      const std::string& voxelGridName) const {
-    auto voxGridIter = voxelGridDict_.find(voxelGridName);
-    CORRADE_INTERNAL_ASSERT(voxGridIter != voxelGridDict_.end());
-    return voxGridIter->second;
-  }
-
-  /**
-   * @brief Registers a given VoxelGrid pointer under the given handle in the
-   * voxelGridDict_ if no such VoxelGrid has been registered.
-   * @param voxelGridHandle The key to register the VoxelGrid under.
-   * @param VoxelGridPtr The pointer to the VoxelGrid
-   * @return Whether or not the registration succeeded.
-   */
-  bool registerVoxelGrid(
-      const std::string& voxelGridHandle,
-      const std::shared_ptr<esp::geo::VoxelGrid>& VoxelGridPtr) {
-    auto voxGridEmplaceIter =
-        voxelGridDict_.emplace(voxelGridHandle, VoxelGridPtr);
-    // return whether placed or not;
-    return voxGridEmplaceIter.second;
-  }
-
-  /**
    * @brief Get a named @ref LightSetup
    *
    * @param key The key identifying the light setup in shaderManager_.
@@ -425,42 +362,6 @@ class ResourceManager {
       std::vector<std::uint16_t>& objectIds,
       const std::string& filename) const;
 
-#ifdef ESP_BUILD_WITH_VHACD
-  /**
-   * @brief Converts a MeshMetaData into a obj file.
-   *
-   * @param filename The MeshMetaData filename to be converted to obj.
-   * @param new_filename The name of the file that will be created.
-   * @param filepath The file path, including new file name, for the obj file.
-   */
-  bool outputMeshMetaDataToObj(const std::string& filename,
-                               const std::string& new_filename,
-                               const std::string& filepath) const;
-
-  /**
-   * @brief Returns the number of resources registered under a given resource
-   * name.
-   *
-   * @param resourceName The name of the resource.
-   */
-  bool isAssetDataRegistered(const std::string& resourceName) const;
-
-  /**
-   * @brief Runs convex hull decomposition on a specified file.
-   *
-   * @param filename The MeshMetaData filename to be converted.
-   * @param chdFilename The new filename for the chd collision mesh.
-   * @param params VHACD params that specify resolution, vertices per convex
-   * hull, etc.
-   * @param saveChdToObj Specifies whether or not to save the newly created
-   * convex hull asset to an obj file.
-   */
-  void createConvexHullDecomposition(
-      const std::string& filename,
-      const std::string& chdFilename,
-      const VHACDParameters& params = VHACDParameters(),
-      bool saveChdToObj = false);
-#endif
   /**
    * @brief Add an object from a specified object template handle to the
    * specified @ref DrawableGroup as a child of the specified @ref
@@ -1286,14 +1187,6 @@ class ResourceManager {
    * @brief The skin data for loaded assets.
    */
   std::map<int, std::shared_ptr<gfx::SkinData>> skins_;
-
-  /**
-   * @brief Storage for precomputed voxel grids. Useful for when multiple
-   * objects in a scene are using the same VoxelGrid.
-   *
-   * Maps absolute path keys to VoxelGrid.
-   */
-  std::map<std::string, std::shared_ptr<esp::geo::VoxelGrid>> voxelGridDict_;
 
   /**
    * @brief Asset metadata linking meshes, textures, materials, and the

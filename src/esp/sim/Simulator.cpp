@@ -1119,56 +1119,6 @@ scene::SceneNode* Simulator::loadAndCreateRenderAssetInstance(
       assetInfo, creation, sceneManager_.get(), tempIDs);
 }
 
-#ifdef ESP_BUILD_WITH_VHACD
-std::string Simulator::convexHullDecomposition(
-    const std::string& filename,
-    const assets::ResourceManager::VHACDParameters& params,
-    const bool renderChd,
-    const bool saveChdToObj) {
-  ESP_DEBUG() << "VHACD PARAMS RESOLUTION:" << params.m_resolution;
-
-  // generate a unique filename
-  std::string chdFilename =
-      Cr::Utility::Path::splitExtension(filename).first() + ".chd";
-  if (resourceManager_->isAssetDataRegistered(chdFilename)) {
-    int nameAttempt = 1;
-    chdFilename += "_";
-    // Iterate until a unique filename is found.
-    while (resourceManager_->isAssetDataRegistered(
-        chdFilename + std::to_string(nameAttempt))) {
-      ++nameAttempt;
-    }
-    chdFilename += std::to_string(nameAttempt);
-  }
-
-  // run VHACD on the given filename mesh with the given params, store the
-  // results in the resourceDict_ registered under chdFilename
-  resourceManager_->createConvexHullDecomposition(filename, chdFilename, params,
-                                                  saveChdToObj);
-
-  // create object attributes for the new chd object
-  auto objAttrMgr = metadataMediator_->getObjectAttributesManager();
-  auto chdObjAttr = objAttrMgr->createObject(chdFilename, false);
-
-  // specify collision asset handle & other attributes
-  chdObjAttr->setCollisionAssetHandle(chdFilename);
-  chdObjAttr->setIsCollidable(true);
-  chdObjAttr->setCollisionAssetIsPrimitive(false);
-  chdObjAttr->setJoinCollisionMeshes(false);
-
-  // if the renderChd flag is set to true, set the convex hull decomposition
-  // to be the render asset (useful for testing)
-
-  chdObjAttr->setRenderAssetHandle(renderChd ? chdFilename : filename);
-
-  chdObjAttr->setRenderAssetIsPrimitive(false);
-
-  // register object and return handle
-  objAttrMgr->registerObject(chdObjAttr, chdFilename, true);
-  return chdObjAttr->getHandle();
-}
-#endif
-
 agent::Agent::ptr Simulator::addAgent(
     const agent::AgentConfiguration& agentConfig,
     scene::SceneNode& agentParentNode) {

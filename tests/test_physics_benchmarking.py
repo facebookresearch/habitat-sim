@@ -8,23 +8,6 @@ import pytest
 
 import habitat_sim
 import habitat_sim.utils.settings
-import utils
-
-
-@pytest.mark.skipif(not habitat_sim.vhacd_enabled, reason="Test requires vhacd")
-@pytest.mark.parametrize(
-    "args",
-    [
-        (
-            "examples/tutorials/physics_benchmarking.py",
-            "--no-make-video",
-            "--no-show-video",
-        ),
-    ],
-    ids=str,
-)
-def test_example_modules(args):
-    utils.run_main_subproc(args)
 
 
 # benchmark adding/removing articulated objects from URDF files

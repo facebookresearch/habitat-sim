@@ -43,11 +43,6 @@ option(
   ON
 )
 option(
-  BUILD_WITH_VHACD
-  "Build Habitat-Sim with VHACD convex hull decomposition and voxelization engine enabled -- Requires VHACD"
-  OFF
-)
-option(
   BUILD_WITH_BACKGROUND_RENDERER
   "Build Habitat-Sim with async rendering support.  This will be forced to OFF when building emscripten"
   ON

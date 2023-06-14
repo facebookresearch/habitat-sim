@@ -301,92 +301,6 @@ class Simulator {
     }
   }
 
-  //===============================================================================//
-  // Voxel Field API
-
-#ifdef ESP_BUILD_WITH_VHACD
-  /**
-   * @brief Creates a voxelization for a particular object. Initializes the
-   * voxelization with a boundary voxel grid using VHACD's voxelization library.
-   *
-   * @param objectId The object ID and key identifying the object in @ref
-   * esp::physics::PhysicsManager::existingObjects_.
-   * @param resolution The approximate number of voxels for the voxel grid that
-   * is created.
-   */
-  void createObjectVoxelization(int objectId, int resolution = 1000000) {
-    physicsManager_->generateVoxelization(objectId, resolution);
-  }
-#endif
-
-  /**
-   * @brief Turn on/off rendering for the voxel grid of the object's visual
-   * component.
-   *
-   * If a voxel grid for the object has not been created, it will make one with
-   * default arguments using @ref createObjectVoxelization().
-   *
-   * @param drawV Whether or not the render the voxel grid.
-   * @param objectId The object ID and key identifying the object in @ref
-   * esp::physics::PhysicsManager::existingObjects_.
-   * @param gridName The name of the voxel grid to be visualized.
-   */
-  void setObjectVoxelizationDraw(bool drawV,
-                                 int objectId,
-                                 const std::string& gridName = "Boundary") {
-    auto& drawables = getDrawableGroup();
-    physicsManager_->setObjectVoxelizationDraw(objectId, gridName, &drawables,
-                                               drawV);
-  }
-
-  /**
-   * @brief Returns the VoxelWrapper for a particular object.
-   *
-   * @param objectId The object ID and key identifying the object in @ref
-   * esp::physics::PhysicsManager::existingObjects_.
-   * @return A shared ptr to the object's VoxelWrapper .
-   */
-  std::shared_ptr<esp::geo::VoxelWrapper> getObjectVoxelization(int objectId) {
-    return physicsManager_->getObjectVoxelization(objectId);
-  }
-
-#ifdef ESP_BUILD_WITH_VHACD
-  /**
-   * @brief Creates a voxelization for the scene. Initializes the voxelization
-   * with a boundary voxel grid using VHACD's voxelization library.
-   *
-   * @param resolution The approximate number of voxels for the voxel grid that
-   * is created.
-   */
-  void createStageVoxelization(int resolution = 1000000) {
-    physicsManager_->generateStageVoxelization(resolution);
-  }
-#endif
-
-  /**
-   * @brief Turn on/off rendering for the voxel grid of the scene's visual
-   * component.
-   *
-   * If a voxel grid for the scene has not been created, it will make one with
-   * default arguments using @ref createStageVoxelization().
-   *
-   * @param drawV Whether or not the render the voxel grid.
-   * @param gridName The name of the voxel grid to be visualized.
-   */
-  void setStageVoxelizationDraw(bool drawV,
-                                const std::string& gridName = "Boundary") {
-    auto& drawables = getDrawableGroup();
-    physicsManager_->setStageVoxelizationDraw(gridName, &drawables, drawV);
-  }
-
-  /**
-   * @brief Returns the VoxelWrapper for a particular object.
-   * @return A shared ptr to the object's VoxelWrapper .
-   */
-  std::shared_ptr<esp::geo::VoxelWrapper> getStageVoxelization() {
-    return physicsManager_->getStageVoxelization();
-  }
-
   /**
    * @brief Discrete collision check for contact between an object and the
    * collision world.
@@ -919,29 +833,6 @@ class Simulator {
   scene::SceneNode* loadAndCreateRenderAssetInstance(
       const assets::AssetInfo& assetInfo,
       const assets::RenderAssetInstanceCreationInfo& creation);
-
-#ifdef ESP_BUILD_WITH_VHACD
-  /**
-   * @brief Runs convex hull decomposition on a specified file. Creates an
-   * object attributes referencing a newly created convex hull asset, and
-   * returns the attribute's handle.
-   *
-   * @param filename The MeshMetaData filename to be converted.
-   * @param params VHACD params that specify resolution, vertices per convex
-   * hull, etc.
-   * @param renderChd Specifies whether or not to render the coinvex hull asset,
-   * or to render the original render asset.
-   * @param saveChdToObj Specifies whether or not to save the newly created
-   * convex hull asset to an obj file.
-   * @return The handle of the newly created object attributes.
-   */
-  std::string convexHullDecomposition(
-      const std::string& filename,
-      const assets::ResourceManager::VHACDParameters& params =
-          assets::ResourceManager::VHACDParameters(),
-      bool renderChd = false,
-      bool saveChdToObj = false);
-#endif
 
   /**
    * @brief For the current active scene, update the shaow map drawable group

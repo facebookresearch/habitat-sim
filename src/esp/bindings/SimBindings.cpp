@@ -274,14 +274,6 @@ void initSimBindings(py::module& m) {
           "recompute_navmesh", &Simulator::recomputeNavMesh, "pathfinder"_a,
           "navmesh_settings"_a,
           R"(Recompute the NavMesh for a given PathFinder instance using configured NavMeshSettings.)")
-#ifdef ESP_BUILD_WITH_VHACD
-      .def(
-          "apply_convex_hull_decomposition",
-          &Simulator::convexHullDecomposition, "filename"_a,
-          "vhacd_params"_a = assets::ResourceManager::VHACDParameters(),
-          "render_chd_result"_a = false, "save_chd_to_obj"_a = false,
-          R"(Decomposite an object into its constituent convex hulls with specified VHACD parameters.)")
-#endif
 
       .def(
           "add_trajectory_object",
