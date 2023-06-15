@@ -138,9 +138,9 @@ def main():
         build_string += f"{get_platform_string()}"
 
         # including the commit hash in conda build string
-        repo = git.Repo(search_parent_directories=True)
-        sha = repo.head.object.hexsha
-        build_string += "_" + sha
+        #repo = git.Repo(search_parent_directories=True)
+        #sha = repo.head.object.hexsha
+        #build_string += "_" + sha
 
         env["HSIM_BUILD_STRING"] = build_string
 
