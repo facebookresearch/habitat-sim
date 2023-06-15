@@ -1956,10 +1956,6 @@ Mn::Trade::MaterialData createUniversalMaterial(
   // flat material already recognizes Phong and pbr, so don't have to do
   // anything
 
-  // multiplicative magic number for scaling from PBR to phong,
-  // hacky method to attempt to balance Phong and PBR light intensity reactions
-  const float magicPhongScaling = 1.5f;
-
   // whether the MaterialAttribute::TextureMatrix has been set already
   bool setTexMatrix = false;
   if (!(origMatTypes & Mn::Trade::MaterialType::Phong)) {
@@ -2013,9 +2009,7 @@ Mn::Trade::MaterialData createUniversalMaterial(
     const float specIntensity =
         Mn::Math::pow(1.0f - roughness, 2.5f) * 1.4f * specIntensityScale;
 
-    // NOTE: The magic-number multiplication at the end is a hack to
-    // roughly balance the Phong and PBR light intensity reactions
-    const Mn::Color4 diffuseColor = ambientColor * magicPhongScaling;
+    const Mn::Color4 diffuseColor = ambientColor;
 
     // Set spec base color to white or material base color, depending on
     // metalness.
@@ -2026,10 +2020,8 @@ Mn::Trade::MaterialData createUniversalMaterial(
                                      Mn::Math::pow(metalness, 0.5f))
                     : ambientColor)
              : 0xffffffff_rgbaf);
-    // NOTE: The magic-number multiplication at the end is a hack to
-    // roughly balance the Phong and PBR light intensity reactions
-    const Mn::Color4 specColor =
-        specBaseColor * specIntensity * magicPhongScaling;
+
+    const Mn::Color4 specColor = specBaseColor * specIntensity;
 
     /////////////////
     // set Phong attributes appropriately from precalculated value
@@ -2140,8 +2132,8 @@ Mn::Trade::MaterialData ResourceManager::buildDefaultPhongMaterial() {
   Mn::Trade::MaterialData materialData{
       Mn::Trade::MaterialType::Phong,
       {{Mn::Trade::MaterialAttribute::AmbientColor, Mn::Color4{0.1}},
-       {Mn::Trade::MaterialAttribute::DiffuseColor, Mn::Color4{0.7 * 0.175}},
-       {Mn::Trade::MaterialAttribute::SpecularColor, Mn::Color4{0.2 * 0.175}},
+       {Mn::Trade::MaterialAttribute::DiffuseColor, Mn::Color4{0.7}},
+       {Mn::Trade::MaterialAttribute::SpecularColor, Mn::Color4{0.2}},
        {Mn::Trade::MaterialAttribute::Shininess, 80.0f}}};
   return materialData;
 }  // ResourceManager::buildDefaultPhongMaterial
