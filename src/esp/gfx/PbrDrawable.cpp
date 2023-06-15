@@ -352,7 +352,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   // lines") on hard edges. (maybe due to potential numerical issues? we do
   // not know yet.)
   /*
-  if ((flags_ & PbrShader::Flag::DoubleSided) && glIsEnabled(GL_CULL_FACE))
+  if ((flags_ >= PbrShader::Flag::DoubleSided) && glIsEnabled(GL_CULL_FACE))
   { Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::FaceCulling);
   }
   */
@@ -402,30 +402,30 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   // PbrShader::PbrEquationScales. Here we need a smart way to reset it
   // just in case user would like to do so during the run-time.
 
-  if (flags_ & PbrShader::Flag::BaseColorTexture) {
+  if (flags_ >= PbrShader::Flag::BaseColorTexture) {
     shader_->bindBaseColorTexture(*matCache.baseColorTexture);
   }
 
-  if (flags_ & PbrShader::Flag::NoneRoughnessMetallicTexture) {
+  if (flags_ >= PbrShader::Flag::NoneRoughnessMetallicTexture) {
     shader_->bindMetallicRoughnessTexture(
         *matCache.noneRoughnessMetallicTexture);
   }
 
-  if (flags_ & PbrShader::Flag::NormalTexture) {
+  if (flags_ >= PbrShader::Flag::NormalTexture) {
     shader_->bindNormalTexture(*matCache.normalTexture);
     shader_->setNormalTextureScale(matCache.normalTextureScale);
   }
 
-  if (flags_ & PbrShader::Flag::EmissiveTexture) {
+  if (flags_ >= PbrShader::Flag::EmissiveTexture) {
     shader_->bindEmissiveTexture(*matCache.emissiveTexture);
   }
 
-  if (flags_ & PbrShader::Flag::TextureTransformation) {
+  if (flags_ >= PbrShader::Flag::TextureTransformation) {
     shader_->setTextureMatrix(matCache.textureMatrix);
   }
 
   // clearcoat data
-  if (flags_ & PbrShader::Flag::ClearCoatLayer) {
+  if (flags_ >= PbrShader::Flag::ClearCoatLayer) {
     (*shader_)
         .setClearCoatFactor(matCache.clearCoat.factor)
         .setClearCoatRoughness(matCache.clearCoat.roughnessFactor);
@@ -444,7 +444,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   }
 
   // specular layer data
-  if (flags_ & PbrShader::Flag::SpecularLayer) {
+  if (flags_ >= PbrShader::Flag::SpecularLayer) {
     (*shader_)
         .setSpecularLayerFactor(matCache.specularLayer.factor)
         .setSpecularLayerColorFactor(matCache.specularLayer.colorFactor);
@@ -459,7 +459,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   }
 
   // anisotropy layer data
-  if (flags_ & PbrShader::Flag::AnisotropyLayer) {
+  if (flags_ >= PbrShader::Flag::AnisotropyLayer) {
     (*shader_)
         .setAnisotropyLayerFactor(matCache.anisotropyLayer.factor)
         .setAnisotropyLayerDirection(matCache.anisotropyLayer.direction);
@@ -470,7 +470,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   }
 
   // setup image based lighting for the shader
-  if (flags_ & PbrShader::Flag::ImageBasedLighting) {
+  if (flags_ >= PbrShader::Flag::ImageBasedLighting) {
     CORRADE_INTERNAL_ASSERT(pbrIbl_);
     shader_->bindIrradianceCubeMap(  // TODO: HDR Color
         pbrIbl_->getIrradianceMap().getTexture(CubeMap::TextureType::Color));
@@ -482,7 +482,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
         pbrIbl_->getPrefilteredMap().getMipmapLevels());
   }
 
-  if (flags_ & PbrShader::Flag::ShadowsVSM) {
+  if (flags_ >= PbrShader::Flag::ShadowsVSM) {
     CORRADE_INTERNAL_ASSERT(shadowMapManger_ && shadowMapKeys_);
     CORRADE_ASSERT(shadowMapKeys_->size() <= 3,
                    "PbrDrawable::draw: the number of shadow maps exceeds the "
@@ -493,7 +493,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
 
       CORRADE_INTERNAL_ASSERT(shadowMap);
 
-      if (flags_ & PbrShader::Flag::ShadowsVSM) {
+      if (flags_ >= PbrShader::Flag::ShadowsVSM) {
         shader_->bindPointShadowMap(
             iShadow,
             shadowMap->getTexture(CubeMap::TextureType::VarianceShadowMap));
@@ -512,7 +512,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   // WE stopped supporting doubleSided material due to lighting artifacts on
   // hard edges. See comments at the beginning of this function.
   /*
-  if ((flags_ & PbrShader::Flag::DoubleSided) && !glIsEnabled(GL_CULL_FACE))
+  if ((flags_ >= PbrShader::Flag::DoubleSided) && !glIsEnabled(GL_CULL_FACE))
   { Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
   }
   */
