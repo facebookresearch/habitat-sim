@@ -159,7 +159,8 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
                      ? "#define PRECOMPUTED_TANGENT\n"
                      : "")
       .addSource(flags_ & Flag::ImageBasedLighting
-                     ? "#define IMAGE_BASED_LIGHTING\n#define TONE_MAP\n"
+                     ? "#define IMAGE_BASED_LIGHTING\n"
+                       "#define TONE_MAP\n"
                      : "")
 
       .addSource(flags_ & Flag::DebugDisplay ? "#define PBR_DEBUG_DISPLAY\n"

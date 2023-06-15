@@ -2466,7 +2466,7 @@ void ResourceManager::loadMaterials(Importer& importer,
       // user-defined attributes set excluding texture pointer mappings
       Corrade::Containers::Optional<Magnum::Trade::MaterialData>
           custMaterialData;
-      std::string shaderBeingUsed;
+      Cr::Containers::StringView shaderBeingUsed;
       // Build based on desired shader to use
       // pbr shader spec, of material-specified and material specifies pbr
       if ((checkForPassedShaderType(
