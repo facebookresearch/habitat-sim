@@ -31,8 +31,8 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
       lightSetup_{shaderManager.get<LightSetup>(lightSetupKey)},
       pbrIbl_(pbrIbl),
       meshAttributeFlags_{meshAttributeFlags} {
-  setMaterialValuesInternal(
-      shaderManager.get<Mn::Trade::MaterialData>(materialDataKey), false);
+  setMaterialValues(
+      shaderManager.get<Mn::Trade::MaterialData>(materialDataKey));
 
   if (pbrIbl_) {
     flags_ |= PbrShader::Flag::ImageBasedLighting;

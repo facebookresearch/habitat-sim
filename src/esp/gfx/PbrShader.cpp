@@ -166,15 +166,14 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
                                              : "")
       .addSource(
           Cr::Utility::formatString("#define LIGHT_COUNT {}\n", lightCount_))
-      .addSource(flags_ & Flag::ShadowsVSM
-                     ? rs.getString("shadowsVSM.glsl") + "\n"
-                     : "")
-      .addSource(rs.getString("pbrCommon.glsl") + "\n")
-      .addSource(rs.getString("pbrStructs.glsl") + "\n")
-      .addSource(rs.getString("pbrUniforms.glsl") + "\n")
-      .addSource(rs.getString("pbrBSDF.glsl") + "\n")
-      .addSource(rs.getString("pbrMaterials.glsl") + "\n")
-      .addSource(rs.getString("pbrLighting.glsl") + "\n")
+      .addSource(flags_ >= Flag::ShadowsVSM ? rs.getString("shadowsVSM.glsl")
+                                            : "")
+      .addSource(rs.getString("pbrCommon.glsl"))
+      .addSource(rs.getString("pbrStructs.glsl"))
+      .addSource(rs.getString("pbrUniforms.glsl"))
+      .addSource(rs.getString("pbrLighting.glsl"))
+      .addSource(rs.getString("pbrBSDF.glsl"))
+      .addSource(rs.getString("pbrMaterials.glsl"))
       .addSource(rs.getString("pbr.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(vert.compile() && frag.compile());

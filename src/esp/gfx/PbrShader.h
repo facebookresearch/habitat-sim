@@ -582,7 +582,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    */
   PbrShader& setLightColor(unsigned int lightIndex,
                            const Magnum::Vector3& color,
-                           float intensity = 1);
+                           float intensity = 1.0f);
 
   /**
    *  @brief Set the colors of the lights

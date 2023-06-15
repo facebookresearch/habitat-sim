@@ -7,9 +7,9 @@
 #define ESP_GFX_PBR_TEXTURE_UNIT_H_
 
 #include <Corrade/Containers/EnumSet.h>
+#include <cstdint>
 
 namespace esp {
-typedef unsigned char uint8_t;
 namespace gfx {
 namespace pbrTextureUnitSpace {
 

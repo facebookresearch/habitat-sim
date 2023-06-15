@@ -38,10 +38,9 @@ GenericDrawable::GenericDrawable(
       skinData_(skinData),
       jointTransformations_(),
       meshAttributeFlags_{meshAttributeFlags} {
-  setMaterialValuesInternal(
+  setMaterialValues(
       shaderManager.get<Mn::Trade::MaterialData, Mn::Trade::MaterialData>(
-          materialDataKey),
-      false);
+          materialDataKey));
 
   // update the shader early here to to avoid doing it during the render loop
   if (glMeshExists()) {
