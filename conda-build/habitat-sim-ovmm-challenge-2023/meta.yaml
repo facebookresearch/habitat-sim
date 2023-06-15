@@ -13,7 +13,7 @@
 
 
 package:
-  name: habitat-sim
+  name: habitat-sim-ovmm-challenge-2023
   version: "{{ environ.get('VERSION') }}"
 
 source:
