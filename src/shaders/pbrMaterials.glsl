@@ -124,7 +124,7 @@ PBRData buildPBRData() {
   if (gl_FrontFacing == false) {
     pbrInfo.n *= -1.0;
   }
-#endif
+#endif  // defined(NORMAL_TEXTURE) && !defined(SKIP_CALC_NORMAL_TEXTURE)
 
   // Index of refraction 1.5 yields 0.04 dielectric fresnel reflectance at
   // normal incidence
@@ -363,29 +363,6 @@ PBRData buildPBRData() {
   // accounting for specular layer contribution if any is present
   pbrInfo.specularColor_f0 =
       mix(pbrInfo.dielectric_f0, pbrInfo.baseColor.rgb, pbrInfo.metallic);
-
-  ///////////
-  // Lighting contributions
-
-  // Initialize contributions for diffuse, specular, clearcoat
-  // for direct and image-based lighting
-  // Aggregate direct lighting contribution for diffuse color
-  pbrInfo.diffuseContrib = vec3(0.0, 0.0, 0.0);
-  // Aggregate direct lighting contribution for specular color
-  pbrInfo.specularContrib = vec3(0.0, 0.0, 0.0);
-#if defined(CLEAR_COAT)
-  // Aggregate direct lighting contribution for clearCoat
-  pbrInfo.clearCoatContrib = vec3(0.0, 0.0, 0.0);
-#endif  // Clearcoat
-
-  // Aggregate image-basedlighting contribution for diffuse color
-  pbrInfo.iblDiffuseContrib = vec3(0.0, 0.0, 0.0);
-  // Aggregate image-basedlighting contribution for specular color
-  pbrInfo.iblSpecularContrib = vec3(0.0, 0.0, 0.0);
-#if defined(CLEAR_COAT)
-  // Aggregate image-basedlighting contribution for clearCoat
-  pbrInfo.iblClearCoatContrib = vec3(0.0, 0.0, 0.0);
-#endif  // Clearcoat
 
   return pbrInfo;
 }  // buildBasePBRData

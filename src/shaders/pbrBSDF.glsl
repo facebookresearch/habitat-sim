@@ -4,6 +4,35 @@
 
 precision highp float;
 
+// Build a PBRResult struct, to hold the aggregated results of all the direct
+// and indirect lighting calculations
+PBRResultData buildBaseColorResults() {
+  PBRResultData colorVals;
+  ///////////
+  // Lighting contributions
+
+  // Initialize contributions for diffuse, specular, clearcoat
+  // for direct and image-based lighting
+  // Aggregate direct lighting contribution for diffuse color
+  colorVals.diffuseContrib = vec3(0.0, 0.0, 0.0);
+  // Aggregate direct lighting contribution for specular color
+  colorVals.specularContrib = vec3(0.0, 0.0, 0.0);
+#if defined(CLEAR_COAT)
+  // Aggregate direct lighting contribution for clearCoat
+  colorVals.clearCoatContrib = vec3(0.0, 0.0, 0.0);
+#endif  // CLEAR_COAT
+
+  // Aggregate image-basedlighting contribution for diffuse color
+  colorVals.iblDiffuseContrib = vec3(0.0, 0.0, 0.0);
+  // Aggregate image-basedlighting contribution for specular color
+  colorVals.iblSpecularContrib = vec3(0.0, 0.0, 0.0);
+#if defined(CLEAR_COAT)
+  // Aggregate image-basedlighting contribution for clearCoat
+  colorVals.iblClearCoatContrib = vec3(0.0, 0.0, 0.0);
+#endif  // CLEAR_COAT
+  return colorVals;
+}  // buildBaseColorResults
+
 // Fresnel specular coefficient at view angle using Schlick approx
 // http://graphicrants.blogspot.com/2013/08/specular-brdf-reference.html
 // https://github.com/wdas/brdf/tree/master/src/brdfs
@@ -166,7 +195,7 @@ vec3 BRDF_ClearCoatSpecular(vec3 ccFresnel,
 
 // Anisotropic Visibility function
 // l : LightInfo structure describing current light
-// PBRData pbrInfo : structure populated with precalculated material values
+// pbrInfo : PBRData structure populated with precalculated material values
 // including anisotropy values
 // anisoLightInfo : Light-specific anisotropic tangent and bitangent cosines
 float V_GGX_anisotropic(LightInfo l,
@@ -182,7 +211,7 @@ float V_GGX_anisotropic(LightInfo l,
 }
 // Anisotropic microfacet distribution model
 // l : LightInfo structure describing current light
-// PBRData pbrInfo : structure populated with precalculated material values
+// pbrInfo : PBRData structure populated with precalculated material values
 // including anisotropy values
 // anisoLightInfo : Light-specific anisotropic tangent and bitangent cosines
 float D_GGX_anisotropic(LightInfo l,
@@ -199,7 +228,7 @@ float D_GGX_anisotropic(LightInfo l,
 // Specular BRDF for anisotropic layer
 // fresnel : Schlick approximation of Fresnel coefficient
 // l : LightInfo structure describing current light
-// PBRData pbrInfo : structure populated with precalculated material values
+// pbrInfo : PBRData structure populated with precalculated material values
 // including anisotropy values
 // anisoLightInfo : Light-specific anisotropic tangent and bitangent cosines
 vec3 BRDF_specularAnisotropicGGX(vec3 fresnel,

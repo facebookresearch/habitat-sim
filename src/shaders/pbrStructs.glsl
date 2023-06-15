@@ -214,9 +214,12 @@ struct PBRData {
   // NOTE : specular layer texture is specified in standard as sRGB
   vec3 specularLayerColor;
 
-#endif  // if defined(SPECULAR_LAYER)
-        // Lighting contirbution
+#endif  // SPECULAR_LAYER
 
+};  // PBRData struct
+
+// Structure holding the result of direct and indirect lighting calculations
+struct PBRResultData {
   // Contributions for diffuse, specular, clearcoat
   // for direct and image-based lighting
   // Aggregate direct lighting contribution for diffuse color
@@ -236,5 +239,4 @@ struct PBRData {
   // Aggregate image-basedlighting contribution for clearCoat
   vec3 iblClearCoatContrib;
 #endif  // Clearcoat
-
-};  // PBRData struct
+};      // PBRResultData

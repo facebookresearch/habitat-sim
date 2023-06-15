@@ -19,6 +19,10 @@ void main() {
   // for lighting calcs
   PBRData pbrInfo = buildPBRData();
 
+  // Build a structure to hold the results of the direct and indirect (IBL)
+  // lighting calcs
+  PBRResultData colorVals = buildBaseColorResults();
+
   /////////////////
   // direct lights
 
@@ -30,51 +34,23 @@ void main() {
   // the following part of the code is inspired by the Phong.frag in Magnum
   // library (https://magnum.graphics/)
   for (int iLight = 0; iLight < LIGHT_COUNT; ++iLight) {
-    // Directional lights have the .w component set to 0
-    // Non-directional lights (i.e. point) have w == 1
-
-    // Incident light vector - directions have been flipped for directional
-    // lights before being fed to uniform so we can use the same function for
-    // both kinds of lights without a condition check
-    vec3 toLightVec =
-        uLightDirections[iLight].xyz - (position * uLightDirections[iLight].w);
-    // either the length of the toLightVec vector or 0 (for directional
-    // lights, to enable attenuation calc to stay 1)
-    float dist = length(toLightVec) * uLightDirections[iLight].w;
-    // either the squared length of the toLightVec vector or 1 (for
-    // directional lights, to prevent divide by 0)
-    float sqDist = (((dist * dist) - 1) * uLightDirections[iLight].w) + 1;
-
-    // If uLightRanges is 0 for whatever reason, clamp it to a small value to
-    // avoid a NaN when dist is 0 as well (which is the case for directional
-    // lights)
-    // https://github.com/KhronosGroup/glTF/blob/master/extensions/2.0/Khronos/KHR_lights_punctual/README.md#range-property
-    // Attenuation is 1 for directional lights, governed by inverse square law
-    // otherwise if no range is given
-    float attenuation =
-        clamp(1 - pow4(dist / (uLightRanges[iLight] + EPSILON)), 0.0, 1.0) /
-        sqDist;
-
-    // if color is not visible, skip contribution
-    if (attenuation == 0) {
+    // Build a light info for this light
+    LightInfo l;
+    if (!buildLightInfoFromLightIdx(iLight, pbrInfo, l)) {
       continue;
     }
 
-    // Build a light info for this light
-    LightInfo l;
-    configureLightInfo(normalize(toLightVec),
-                       uLightColors[iLight] * attenuation, pbrInfo.n,
-                       pbrInfo.view, pbrInfo.n_dot_v, l);
-
     // Calculate the Schlick approximation of the Fresnel coefficient
-    // Fresnel Specular color at view angle == Schlick approx using view angle
+    // Fresnel Specular color at view angle == Schlick approx using view
+    //     angle
     vec3 fresnel = fresnelSchlick(pbrInfo.specularColor_f0,
                                   pbrInfo.specularColor_f90, l.v_dot_h);
 
     // NOTE : REMOVED INV_PI scaling of direct lights so we don't have to
-    // increase the intensity (which was done previously using an empirically
-    // chosen value close to PI) for PBR lights in c++ . This way lights in
-    // phong and in pbr are reasonably equivalent in brightness
+    // increase the intensity (which was done previously using an
+    // empirically chosen value close to PI) for PBR lights in c++.
+    // This way lights in phong and in pbr are reasonably equivalent in
+    // brightness
 
 #if defined(SIMPLE_LAMBERTIAN_DIFFUSE)
     // Lambertian diffuse contribution (simpler calc)
@@ -96,13 +72,13 @@ void main() {
     vec3 currentSpecularContrib =
         l.projLightIrradiance *
         BRDF_specularAnisotropicGGX(fresnel, l, pbrInfo, anisoLightInfo);
-
 #else
     // Specular microfacet
     vec3 currentSpecularContrib =
         l.projLightIrradiance *
         BRDF_Specular(fresnel, l, pbrInfo.alphaRoughness);
-#endif  // Anisotropy else isotropy
+#endif  // ANISOTROPY_LAYER else isotropy
+
 #if defined(CLEAR_COAT) && !defined(SKIP_CALC_CLEAR_COAT)
     LightInfo cc_l;
     // build a clearcoat normal-based light info
@@ -136,25 +112,27 @@ void main() {
     // TODO Transmission here
 
     // aggregate contributions for each light
-    pbrInfo.diffuseContrib += currentDiffuseContrib;
-    pbrInfo.specularContrib += currentSpecularContrib;
+    colorVals.diffuseContrib += currentDiffuseContrib;
+    colorVals.specularContrib += currentSpecularContrib;
 #if defined(CLEAR_COAT) && !defined(SKIP_CALC_CLEAR_COAT)
-    pbrInfo.clearCoatContrib += currentClearCoatContrib;
+    colorVals.clearCoatContrib += currentClearCoatContrib;
 #endif  // CLEAR_COAT
-  }     // for each light
+
+  }  // for each light
 
   // TODO: When we correctly support sRGB textures, scale direct-lit
   // contribution values by 1/pi
 
-  // pbrInfo.diffuseContrib *= INV_PI;
-  // pbrInfo.specularContrib *= INV_PI;
-  // pbrInfo.clearCoatContrib *= INV_PI;
-
+//   colorVals.diffuseContrib *= INV_PI;
+//   colorVals.specularContrib *= INV_PI;
+// #if defined(CLEAR_COAT) && !defined(SKIP_CALC_CLEAR_COAT)
+//   colorVals.clearCoatContrib *= INV_PI;
+// #endif  // CLEAR_COAT
 #endif  // if (LIGHT_COUNT > 0)
 
 #if defined(IMAGE_BASED_LIGHTING)
 
-  pbrInfo.iblDiffuseContrib =
+  colorVals.iblDiffuseContrib =
       computeIBLDiffuse(pbrInfo.diffuseColor, pbrInfo.n);
 
 #if defined(ANISOTROPY_LAYER) && !defined(SKIP_CALC_ANISOTROPY_LAYER)
@@ -163,7 +141,7 @@ void main() {
   vec3 reflection = normalize(reflect(-pbrInfo.view, pbrInfo.n));
 #endif  // if ANISOTROPY else
 
-  pbrInfo.iblSpecularContrib =
+  colorVals.iblSpecularContrib =
       computeIBLSpecular(pbrInfo.perceivedRoughness, pbrInfo.n_dot_v,
                          pbrInfo.specularColor_f0, reflection);
 
@@ -176,12 +154,12 @@ void main() {
       normalize(reflect(-pbrInfo.view, pbrInfo.clearCoatNormal));
 #endif
   // Clear coat reflection contribution
-  pbrInfo.iblClearCoatContrib =
+  colorVals.iblClearCoatContrib =
       computeIBLSpecular(pbrInfo.clearCoatRoughness, pbrInfo.cc_n_dot_v,
                          pbrInfo.clearCoatCoating_f0, cc_reflection) *
       pbrInfo.clearCoatStrength;
   // Scale substrate specular by 1-cc_fresnel to account for coating
-  pbrInfo.iblSpecularContrib *= (pbrInfo.OneM_ccFresnelGlbl);
+  colorVals.iblSpecularContrib *= (pbrInfo.OneM_ccFresnelGlbl);
 #endif  // CLEAR_COAT
 
 #endif  // IMAGE_BASED_LIGHTING
@@ -191,38 +169,38 @@ void main() {
 #if defined(IMAGE_BASED_LIGHTING) && (LIGHT_COUNT > 0)
 
   // Only scale direct lighting contribution if also using IBL
-  pbrInfo.diffuseContrib *= uComponentScales[DirectDiffuse];
-  pbrInfo.specularContrib *= uComponentScales[DirectSpecular];
+  colorVals.diffuseContrib *= uComponentScales[DirectDiffuse];
+  colorVals.specularContrib *= uComponentScales[DirectSpecular];
 
   // Only scale IBL if also using direct lighting
-  pbrInfo.iblDiffuseContrib *= uComponentScales[IblDiffuse];
-  pbrInfo.iblSpecularContrib *= uComponentScales[IblSpecular];
+  colorVals.iblDiffuseContrib *= uComponentScales[IblDiffuse];
+  colorVals.iblSpecularContrib *= uComponentScales[IblSpecular];
 #if defined(CLEAR_COAT) && !defined(SKIP_CALC_CLEAR_COAT)
   // TODO provide custom scaling factor for Direct lit clear coat?
-  pbrInfo.clearCoatContrib *= uComponentScales[DirectSpecular];
-  pbrInfo.iblClearCoatContrib *= uComponentScales[IblSpecular];
+  colorVals.clearCoatContrib *= uComponentScales[DirectSpecular];
+  colorVals.iblClearCoatContrib *= uComponentScales[IblSpecular];
 #endif  // CLEAR_COAT
 
 #endif  // Component scaling if both types of lighting exist
 
   ///////////
   // Total contributions
-  // TODO expand emissiveColor handling
-  // TODO alpha masking?
-  fragmentColor = vec4(pbrInfo.emissiveColor, pbrInfo.baseColor.a);
 
   // Aggregate total contributions from direct and indirect lighting
-  vec3 ttlDiffuseContrib = pbrInfo.diffuseContrib + pbrInfo.iblDiffuseContrib;
+  vec3 ttlDiffuseContrib =
+      colorVals.diffuseContrib + colorVals.iblDiffuseContrib;
   vec3 ttlSpecularContrib =
-      pbrInfo.specularContrib + pbrInfo.iblSpecularContrib;
+      colorVals.specularContrib + colorVals.iblSpecularContrib;
 
-  // Aggregate direct and indirect diffuse and specular
-  vec3 finalColor = vec3(ttlDiffuseContrib + ttlSpecularContrib);
+  // Aggregate direct and indirect diffuse and specular with emissive color
+  // TODO expand emissiveColor handling
+  vec3 finalColor =
+      vec3(ttlDiffuseContrib + ttlSpecularContrib + pbrInfo.emissiveColor);
 
 #if defined(CLEAR_COAT) && !defined(SKIP_CALC_CLEAR_COAT)
   // Total clearcoat contribution
   vec3 ttlClearCoatContrib =
-      (pbrInfo.clearCoatContrib + pbrInfo.iblClearCoatContrib);
+      (colorVals.clearCoatContrib + colorVals.iblClearCoatContrib);
   // Scale entire contribution from substrate by 1-clearCoatFresnel
   // to account for energy loss in base layer due to coating and add coating
   // contribution
@@ -233,7 +211,8 @@ void main() {
 #endif  // CLEAR_COAT
 
   // final aggregation
-  fragmentColor.rgb += finalColor;
+  // TODO alpha masking?
+  fragmentColor = vec4(finalColor, pbrInfo.baseColor.a);
 
 #if defined(OBJECT_ID)
   fragmentObjectId = uObjectId;
@@ -245,19 +224,19 @@ void main() {
   if (uPbrDebugDisplay > 0) {
     switch (uPbrDebugDisplay) {
       case 1:
-        fragmentColor.rgb = pbrInfo.diffuseContrib;  // direct diffuse
+        fragmentColor.rgb = colorVals.diffuseContrib;  // direct diffuse
         break;
       case 2:
-        fragmentColor.rgb = pbrInfo.specularContrib;  // direct specular
+        fragmentColor.rgb = colorVals.specularContrib;  // direct specular
         break;
       case 3:
 #if defined(IMAGE_BASED_LIGHTING)
-        fragmentColor.rgb = pbrInfo.iblDiffuseContrib;  // ibl diffuse
+        fragmentColor.rgb = colorVals.iblDiffuseContrib;  // ibl diffuse
 #endif
         break;
       case 4:
 #if defined(IMAGE_BASED_LIGHTING)
-        fragmentColor.rgb = pbrInfo.iblSpecularContrib;  // ibl specular
+        fragmentColor.rgb = colorVals.iblSpecularContrib;  // ibl specular
 #endif
         break;
       case 5:
