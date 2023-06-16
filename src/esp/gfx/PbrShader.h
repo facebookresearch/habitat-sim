@@ -611,6 +611,15 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   PbrShader& setLightRanges(std::initializer_list<float> ranges);
 
   /**
+   * @brief Set the global lighting intensity applied equally across all lights
+   * for direct lighting.
+   *  @param lightIntensity config-driven global intensity knob to easily
+   * control the intensity of the entire scene by a single field
+   *  @return Reference to self (for method chaining)
+   */
+  PbrShader& setGlobalLightIntensity(float lightIntensity);
+
+  /**
    *  @brief Set the scale of the normal texture
    *  @param scale
    *  @return Reference to self (for method chaining)
@@ -683,7 +692,8 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   // when w == 0, it means .xyz is the light direction;
   // when w == 1, it means it is the light position, NOT the direction;
   int lightDirectionsUniform_ = ID_UNDEFINED;
-
+  // TODO : global, config-driven knob to control lighting intensity
+  int globalLightingIntensityUniform_ = ID_UNDEFINED;
   int cameraWorldPosUniform_ = ID_UNDEFINED;
   int prefilteredMapMipLevelsUniform_ = ID_UNDEFINED;
 

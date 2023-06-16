@@ -305,6 +305,8 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     lightRangesUniform_ = uniformLocation("uLightRanges");
     lightColorsUniform_ = uniformLocation("uLightColors");
     lightDirectionsUniform_ = uniformLocation("uLightDirections");
+    // global light intensity across all direct lights
+    globalLightingIntensityUniform_ = uniformLocation("uGlobalLightIntensity");
   }
 
   cameraWorldPosUniform_ = uniformLocation("uCameraWorldPos");
@@ -369,6 +371,8 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     setLightColors(colors);
     setLightRanges(Cr::Containers::Array<Mn::Float>{Cr::DirectInit, lightCount_,
                                                     Mn::Constants::inf()});
+    // initialize global, config-driven light intensity
+    setGlobalLightIntensity(1.0f);
   }
 
   setEmissiveColor(Mn::Color3{0.0f});
@@ -819,6 +823,13 @@ PbrShader& PbrShader::setLightRanges(
 
 PbrShader& PbrShader::setLightRanges(std::initializer_list<float> ranges) {
   return setLightRanges(Cr::Containers::arrayView(ranges));
+}
+
+PbrShader& PbrShader::setGlobalLightIntensity(float lightIntensity) {
+  if (lightingIsEnabled_) {
+    setUniform(globalLightingIntensityUniform_, lightIntensity);
+  }
+  return *this;
 }
 
 }  // namespace gfx

@@ -46,12 +46,6 @@ void main() {
     vec3 fresnel = fresnelSchlick(pbrInfo.specularColor_f0,
                                   pbrInfo.specularColor_f90, l.v_dot_h);
 
-    // NOTE : REMOVED INV_PI scaling of direct lights so we don't have to
-    // increase the intensity (which was done previously using an
-    // empirically chosen value close to PI) for PBR lights in c++.
-    // This way lights in phong and in pbr are reasonably equivalent in
-    // brightness
-
 #if defined(SIMPLE_LAMBERTIAN_DIFFUSE)
     // Lambertian diffuse contribution (simpler calc)
     vec3 currentDiffuseContrib = l.projLightIrradiance * pbrInfo.diffuseColor;
@@ -62,6 +56,7 @@ void main() {
         BRDF_BurleyDiffuseRenorm(pbrInfo.diffuseColor, l,
                                  pbrInfo.alphaRoughness);
 #endif
+
 #if defined(ANISOTROPY_LAYER) && !defined(SKIP_CALC_ANISOTROPY_LAYER)
     // Specular microfacet for anisotropic layer
     // calculate light-specific anisotropic layer cosines
@@ -120,14 +115,13 @@ void main() {
 
   }  // for each light
 
-  // TODO: When we correctly support sRGB textures, scale direct-lit
-  // contribution values by 1/pi
+  float colorContribScale = uGlobalLightIntensity;
+  colorVals.diffuseContrib *= colorContribScale;
+  colorVals.specularContrib *= colorContribScale;
+#if defined(CLEAR_COAT) && !defined(SKIP_CALC_CLEAR_COAT)
+  colorVals.clearCoatContrib *= colorContribScale;
+#endif  // CLEAR_COAT
 
-//   colorVals.diffuseContrib *= INV_PI;
-//   colorVals.specularContrib *= INV_PI;
-// #if defined(CLEAR_COAT) && !defined(SKIP_CALC_CLEAR_COAT)
-//   colorVals.clearCoatContrib *= INV_PI;
-// #endif  // CLEAR_COAT
 #endif  // if (LIGHT_COUNT > 0)
 
 #if defined(IMAGE_BASED_LIGHTING)

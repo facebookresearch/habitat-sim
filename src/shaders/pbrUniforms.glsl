@@ -125,6 +125,10 @@ uniform float uLightRanges[LIGHT_COUNT];
 // it is NOT put in the Light Structure, simply because we may modify the code
 // so it is computed in the vertex shader.
 uniform vec4 uLightDirections[LIGHT_COUNT];
+
+// Config driven overall direct lighting intensity
+uniform float uGlobalLightIntensity;
+
 #endif  //(LIGHT_COUNT > 0)
 
 #if defined(IMAGE_BASED_LIGHTING)
