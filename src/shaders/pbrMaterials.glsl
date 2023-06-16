@@ -152,13 +152,25 @@ PBRData buildPBRData() {
   // colors
   pbrInfo.baseColor = uMaterial.baseColor;
 #if defined(BASECOLOR_TEXTURE)
+
+#if defined(REMAP_COLORS_TO_LINEAR)
+  pbrInfo.baseColor *= sRGBToLinear(texture(uBaseColorTexture, texCoord));
+#else
   pbrInfo.baseColor *= texture(uBaseColorTexture, texCoord);
-#endif
+#endif  // REMAP_COLORS_TO_LINEAR
+#endif  // BASECOLOR_TEXTURE
 
   pbrInfo.emissiveColor = uMaterial.emissiveColor;
 #if defined(EMISSIVE_TEXTURE)
+
+#if defined(REMAP_COLORS_TO_LINEAR)
+  pbrInfo.emissiveColor *=
+      sRGBToLinear(texture(uEmissiveTexture, texCoord).rgb);
+#else
   pbrInfo.emissiveColor *= texture(uEmissiveTexture, texCoord).rgb;
-#endif
+
+#endif  // REMAP_COLORS_TO_LINEAR
+#endif  // EMISSIVE_TEXTURE
 
   /////////////////
   // Metalness and Roughness calc
@@ -341,8 +353,15 @@ PBRData buildPBRData() {
 
 #if defined(SPECULAR_LAYER_COLOR_TEXTURE)
   // TODO uSpecularLayerColorTexture is in sRGB
+
+#if defined(REMAP_COLORS_TO_LINEAR)
+  pbrInfo.specularLayerColor *=
+      sRGBToLinear(texture(uSpecularLayerColorTexture, texCoord).rgb);
+#else
   pbrInfo.specularLayerColor *=
       texture(uSpecularLayerColorTexture, texCoord).rgb;
+#endif  // REMAP_COLORS_TO_LINEAR
+
 #endif  // SPECULAR_LAYER_COLOR_TEXTURE
 #ifndef SKIP_CALC_SPECULAR_LAYER
   // Recalculate dielectric_f0 and specularColor_f90 based on passed specular

@@ -131,6 +131,10 @@ uniform float uGlobalLightIntensity;
 
 #endif  //(LIGHT_COUNT > 0)
 
+// Whether or not to remap the colors from sRGB to linear and then back again
+// TODO provide config support for this field
+// #define REMAP_COLORS_TO_LINEAR
+
 #if defined(IMAGE_BASED_LIGHTING)
 uniform samplerCube uIrradianceMap;
 uniform sampler2D uBrdfLUT;

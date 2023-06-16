@@ -116,6 +116,12 @@ void main() {
   }  // for each light
 
   float colorContribScale = uGlobalLightIntensity;
+#if defined(REMAP_COLORS_TO_LINEAR)
+  // TODO once global intensity is implemented, this should be available all the
+  // time
+  colorContribScale *= INV_PI;
+#endif  // REMAP_COLORS_TO_LINEAR
+
   colorVals.diffuseContrib *= colorContribScale;
   colorVals.specularContrib *= colorContribScale;
 #if defined(CLEAR_COAT) && !defined(SKIP_CALC_CLEAR_COAT)
@@ -136,7 +142,7 @@ void main() {
 #endif  // if ANISOTROPY else
 
   colorVals.iblSpecularContrib =
-      computeIBLSpecular(pbrInfo.perceivedRoughness, pbrInfo.n_dot_v,
+      computeIBLSpecular(pbrInfo.alphaRoughness, pbrInfo.n_dot_v,
                          pbrInfo.specularColor_f0, reflection);
 
 #if defined(CLEAR_COAT) && !defined(SKIP_CALC_CLEAR_COAT)
@@ -204,9 +210,13 @@ void main() {
 
 #endif  // CLEAR_COAT
 
-  // final aggregation
-  // TODO alpha masking?
+// final aggregation
+// TODO alpha masking?
+#if defined(REMAP_COLORS_TO_LINEAR)
+  fragmentColor = vec4(linearToSRGB(finalColor), pbrInfo.baseColor.a);
+#else
   fragmentColor = vec4(finalColor, pbrInfo.baseColor.a);
+#endif  // REMAP_COLORS_TO_LINEAR
 
 #if defined(OBJECT_ID)
   fragmentObjectId = uObjectId;

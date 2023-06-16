@@ -164,13 +164,22 @@ vec3 computeIBLDiffuse(vec3 diffuseColor, vec3 n) {
   // diffuse part = diffuseColor * irradiance
   vec4 IBLDiffuseIrradiance = texture(uIrradianceMap, n);
   // texture assumed to be sRGB
+#if defined(REMAP_COLORS_TO_LINEAR)
+// If using remapping, final result is remapped to sRGB so don't do it here
+#if defined(TONE_MAP)
+  IBLDiffuseIrradiance = toneMap(IBLDiffuseIrradiance);
+#endif  // TONE_MAP
+#else   // not REMAP_COLORS_TO_LINEAR
+// If not using remapping, make sure we still remap IBL image
 #if defined(TONE_MAP)
   IBLDiffuseIrradiance = toneMapToSRGB(IBLDiffuseIrradiance);
 #else
   IBLDiffuseIrradiance = linearToSRGB(IBLDiffuseIrradiance);
-#endif
+#endif  // TONE_MAP
+#endif  // REMAP_COLORS_TO_LINEAR
+
   return diffuseColor * IBLDiffuseIrradiance.rgb;
-}
+}  // computeIBLDiffuse
 
 vec3 computeIBLSpecular(float roughness,
                         float n_dot_v,
@@ -183,12 +192,21 @@ vec3 computeIBLSpecular(float roughness,
   float lod = roughness * float(uPrefilteredMapMipLevels - 1u);
   vec4 IBLSpecIrradiance = textureLod(uPrefilteredMap, reflectionDir, lod);
   // texture assumed to be sRGB
+
+#if defined(REMAP_COLORS_TO_LINEAR)
+// If using remapping, final result is remapped to sRGB so don't do it here
+#if defined(TONE_MAP)
+  IBLSpecIrradiance = toneMap(IBLSpecIrradiance);
+#endif  // TONE_MAP
+#else   // not REMAP_COLORS_TO_LINEAR
+// If not using remapping, make sure we still remap IBL image
 #if defined(TONE_MAP)
   IBLSpecIrradiance = toneMapToSRGB(IBLSpecIrradiance);
 #else
   IBLSpecIrradiance = linearToSRGB(IBLSpecIrradiance);
-#endif
+#endif  // TONE_MAP
+#endif  // REMAP_COLORS_TO_LINEAR
 
   return (specularReflectance * brdf.x + brdf.y) * IBLSpecIrradiance.rgb;
-}
+}  // computeIBLSpecular
 #endif  // IMAGE_BASED_LIGHTING
