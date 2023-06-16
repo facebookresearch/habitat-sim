@@ -1,10 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
-// LICENSE file in the root directory of this source tre
+// LICENSE file in the root directory of this source tree.
 
 precision highp float;
 
 const float PI = 3.14159265358979;
+const float INV_PI = 1.0 / PI;
+const float TWO_PI = 2.0 * PI;
+const float EPSILON = 0.000001;
 
 // Use the Hammersley point set in 2D for fast and practical generation of
 // hemisphere directions in a shader program. See here:
@@ -29,15 +32,15 @@ vec2 hammersley2d(uint i, uint N) {
 
 // uniform distributed direction (z-up) from the hammersley point
 vec3 hemisphereSample_uniform(float u, float v) {
-  float phi = v * 2.0 * PI;
+  float phi = v * TWO_PI;
   float cosTheta = 1.0 - u;
   float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
   return vec3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
 }
 
-// cosinus distributed direction (z-up) from the hammersley point
+// cosines distributed direction (z-up) from the hammersley point
 vec3 hemisphereSample_cos(float u, float v) {
-  float phi = v * 2.0 * PI;
+  float phi = v * TWO_PI;
   float cosTheta = sqrt(1.0 - u);
   float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
   return vec3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
@@ -51,12 +54,26 @@ vec3 hemisphereSample_cos(float u, float v) {
 // n_dot_h: dot product of normal vector and the halfVector (half vector of
 // light and view)
 //          usually n_dot_h = clamp(dot(normal, halfVector), 0.0, 1.0);
-float normalDistributionGGX(float n_dot_h, float roughness) {
-  float a = roughness * roughness;
-  float a2 = a * a;
+float normalDistributionGGX(float n_dot_h, float alphaRoughness) {
+  float a2 = alphaRoughness * alphaRoughness;
 
   float d = n_dot_h * n_dot_h * (a2 - 1.0) + 1.0;
   d = PI * d * d;
 
   return a2 / d;
+}
+
+// Approx 2.5 speedup over pow with integer coeffs
+float pow5(float v) {
+  float v2 = v * v;
+  return v2 * v2 * v;
+}
+
+float pow4(float v) {
+  float v2 = v * v;
+  return v2 * v2;
+}
+
+float pow2(float v) {
+  return v * v;
 }

@@ -829,6 +829,9 @@ Viewer::Viewer(const Arguments& arguments)
       .setHelp("dataset", "dataset configuration file to use")
       .addBooleanOption("enable-physics")
       .setHelp("enable-physics", "Enable Bullet physics.")
+      .addBooleanOption("hbao")
+      .setHelp("hbao",
+               "NOT YET SUPPORTED : Enable Horizon-based Ambient Occlusion.")
       .addBooleanOption("stage-requires-lighting")
       .setHelp("stage-requires-lighting",
                "Stage asset should be lit with Phong shading.")
@@ -964,6 +967,9 @@ Viewer::Viewer(const Arguments& arguments)
   simConfig_.activeSceneName = args.value("scene");
   simConfig_.sceneDatasetConfigFile = args.value("dataset");
   simConfig_.enablePhysics = args.isSet("enable-physics");
+  if (args.isSet("hbao")) {
+    ESP_WARNING() << "HBAO NOT YET SUPPORTED. Ignoring flag setting.";
+  }
   simConfig_.frustumCulling = true;
   simConfig_.requiresTextures = true;
   simConfig_.enableGfxReplaySave = !gfxReplayRecordFilepath_.empty();
