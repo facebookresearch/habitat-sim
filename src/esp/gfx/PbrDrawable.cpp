@@ -54,10 +54,9 @@ void PbrDrawable::setMaterialValuesInternal(
       materialData_->as<Mn::Trade::PbrMetallicRoughnessMaterialData>();
   flags_ = PbrShader::Flag::ObjectId;
   if (reset) {
-    matCache = {tmpMaterialData.baseColor()};  // baseColor;
-  } else {
-    matCache.baseColor = tmpMaterialData.baseColor();
+    matCache = {};
   }
+  matCache.baseColor = tmpMaterialData.baseColor();
   matCache.roughness = tmpMaterialData.roughness();
   matCache.metalness = tmpMaterialData.metalness();
   matCache.emissiveColor = tmpMaterialData.emissiveColor();
