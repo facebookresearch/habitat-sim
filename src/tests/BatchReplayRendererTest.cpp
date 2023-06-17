@@ -225,8 +225,6 @@ void BatchReplayRendererTest::testIntegration() {
   constexpr int numEnvs = 4;
   const std::string userPrefix = "sensor_";
   const std::string screenshotPrefix = "ReplayBatchRendererTest_env";
-  const std::string screenshotExtensionColor = ".png";
-  const std::string screenshotExtensionDepth = ".exr";
 
   std::vector<std::string> serKeyframes;
   for (int envIndex = 0; envIndex < numEnvs; envIndex++) {
@@ -312,16 +310,12 @@ void BatchReplayRendererTest::testIntegration() {
 
     renderer->render(colorImageViews, depthImageViews);
 
-    bool isClassicRenderer = dynamic_cast<esp::sim::ClassicReplayRenderer*>(
-                                 renderer.get()) != nullptr;
-
     for (int envIndex = 0; envIndex < numEnvs; envIndex++) {
       CORRADE_ITERATION(envIndex);
       // Test color output
       if (data.testFlags & TestFlag::Color) {
-        std::string groundTruthImageFile = screenshotPrefix +
-                                           std::to_string(envIndex) +
-                                           screenshotExtensionColor;
+        std::string groundTruthImageFile =
+            screenshotPrefix + std::to_string(envIndex) + ".png";
         CORRADE_COMPARE_WITH(
             Mn::ImageView2D{colorImageViews[envIndex]},
             Cr::Utility::Path::join(screenshotDir, groundTruthImageFile),
@@ -330,9 +324,8 @@ void BatchReplayRendererTest::testIntegration() {
       // Test depth output
       if (data.testFlags & TestFlag::Depth) {
         const auto depth = depthImageViews[envIndex];
-        std::string groundTruthImageFile = screenshotPrefix +
-                                           std::to_string(envIndex) +
-                                           screenshotExtensionDepth;
+        std::string groundTruthImageFile =
+            screenshotPrefix + std::to_string(envIndex) + ".exr";
         CORRADE_COMPARE_WITH(
             Mn::ImageView2D{depthImageViews[envIndex]},
             Cr::Utility::Path::join(screenshotDir, groundTruthImageFile),

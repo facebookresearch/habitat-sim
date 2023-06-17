@@ -64,8 +64,7 @@ target_link_libraries(
   # libraries, and it should be kept as such. Only Magnum libraries are an
   # allowed dependency. See the original PR for discussion:
   # https://github.com/facebookresearch/habitat-sim/pull/1798#discussion_r911398937
-  PUBLIC Corrade::Utility
-         Magnum::GL
+  PUBLIC Magnum::GL
          Magnum::Magnum
          Magnum::SceneTools
          Magnum::Shaders

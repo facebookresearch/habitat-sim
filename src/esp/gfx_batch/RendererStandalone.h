@@ -190,18 +190,19 @@ class RendererStandalone : public Renderer {
 
   /**
    * @brief Retrieve the raw rendered depth output.
+   *
    * This returns the depth buffer as-is. To unproject, use @ref unprojectDepth().
    *
    * Stalls the CPU until the GPU finishes the last @ref draw() and then
    * returns an image in @ref depthFramebufferFormat() and with size being
    * @ref tileSize() multiplied by @ref tileCount().
-   *
    */
   Magnum::Image2D depthImage();
 
   /**
    * @brief Retrieve the raw rendered depth output into a pre-allocated
    * location.
+   *
    * This returns the depth buffer as-is. To unproject, use @ref unprojectDepth().
    *
    * Expects that @p rectangle is contained in a size defined

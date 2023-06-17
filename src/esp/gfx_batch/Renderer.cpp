@@ -44,7 +44,6 @@
 #include <Magnum/Trade/TextureData.h>
 #include <esp/gfx_batch/DepthUnprojection.h>
 #include <unordered_map>
-#include "esp/core/Check.h"
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;

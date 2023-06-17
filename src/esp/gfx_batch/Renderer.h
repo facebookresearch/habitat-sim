@@ -239,7 +239,7 @@ implemented in @ref shaders-usage-multidraw "Magnum shaders".
   added to a *draw list*. The draw list is
   @ref gfx_batch-Renderer-workflow-draw-list "further detailed below".
 - For each @ref draw() and each non-empty scene, the following is done:
-  - The @ref updateCamera() transformation is uploaded to a uniform buffer.
+  - The @ref cameraMatrices transformations are uploaded to a uniform buffer.
   - The renderer calculates hierarchical transformations for all nodes based on
     the matrices supplied via @ref transformations(). Each item in the draw
     list is then assigned a corresponding calculated absolute transformation,
@@ -648,12 +648,13 @@ class Renderer {
 
   /**
    * @brief Set the camera projection and view matrices
-   * @param sceneId Scene ID, expected to be less than @ref sceneCount()
-   * @param view View matrix of the camera (inverse transform)
-   * @param projection Projection matrix of the camera
+   * @param sceneId     Scene ID, expected to be less than @ref sceneCount()
+   * @param view        View matrix of the camera (inverse transform)
+   * @param projection  Projection matrix of the camera
    *
    * Also computes the camera unprojection.
-   * Modifications to the transformation are taken into account in the next @ref draw().
+   * Modifications to the transformation are taken into account in the next
+   * @ref draw().
    */
   void updateCamera(Magnum::UnsignedInt sceneId,
                     const Magnum::Matrix4& projection,

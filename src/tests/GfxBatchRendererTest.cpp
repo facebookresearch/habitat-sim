@@ -32,8 +32,9 @@
 #include <Magnum/Trade/MeshData.h>
 #include <Magnum/Trade/SceneData.h>
 #include <Magnum/Trade/TextureData.h>
-#include <iostream>
 
+#include "Corrade/TestSuite/Comparator.h"
+#include "Corrade/TestSuite/Compare/Numeric.h"
 #include "esp/gfx_batch/RendererStandalone.h"
 
 #ifdef ESP_BUILD_WITH_CUDA
@@ -2181,11 +2182,12 @@ void GfxBatchRendererTest::depthUnprojection() {
   constexpr int envCount = tileCountX * tileCountY;
   constexpr float near = 0.001f;
   constexpr float far = 10.0f;
+  constexpr Mn::Vector2i tileSize(64, 64);
 
   // clang-format off
   esp::gfx_batch::RendererStandalone renderer{
       esp::gfx_batch::RendererConfiguration{}
-          .setTileSizeCount({64, 64}, {tileCountX, tileCountY}),
+          .setTileSizeCount(tileSize, {tileCountX, tileCountY}),
       esp::gfx_batch::RendererStandaloneConfiguration{}
           .setFlags(esp::gfx_batch::RendererStandaloneFlag::QuietLog)
   };
@@ -2222,11 +2224,9 @@ void GfxBatchRendererTest::depthUnprojection() {
   MAGNUM_VERIFY_NO_GL_ERROR();
 
   // Unproject each scene.
-  Mn::MutableImageView2D depthBufferView{Mn::PixelFormat::Depth32F,
-                                         depth.size(), depth.data()};
   const size_t subBufferDataSize = depth.data().size() / envCount;
-  const auto subBufferSize = Mn::VectorTypeFor<2, int>{
-      depth.size().x() / tileCountX, depth.size().y() / tileCountY};
+  const auto subBufferSize = Mn::Vector2i{depth.size().x() / tileCountX,
+                                          depth.size().y() / tileCountY};
   for (int i = 0; i < envCount; ++i) {
     Mn::MutableImageView2D depthSubBufferView{
         Mn::PixelFormat::Depth32F, subBufferSize,
@@ -2237,19 +2237,15 @@ void GfxBatchRendererTest::depthUnprojection() {
   // Unprojected depth should read the distance between the cameras and the
   // plane, in meters. For each environment, the center pixel is compared with
   // the camera distance from origin.
-  constexpr float epsilon = 0.01f;
+  auto errorMargin = Corrade::TestSuite::Compare::around(0.01f);
   // Target 0 is at 2.5 meters from the camera
-  CORRADE_VERIFY(Mn::Math::abs(depthBufferView.pixels<Mn::Float>()[32][32] -
-                               2.5f) < epsilon);
+  CORRADE_COMPARE_WITH(depth.pixels<Mn::Float>()[32][32], 2.5f, errorMargin);
   // Target 1 is at 5.0 meters from the camera
-  CORRADE_VERIFY(Mn::Math::abs(depthBufferView.pixels<Mn::Float>()[32][96] -
-                               5.0f) < epsilon);
+  CORRADE_COMPARE_WITH(depth.pixels<Mn::Float>()[32][96], 5.0f, errorMargin);
   // Target 2 is at 7.5 meters from the camera
-  CORRADE_VERIFY(Mn::Math::abs(depthBufferView.pixels<Mn::Float>()[96][32] -
-                               7.5f) < epsilon);
-  // Target 3 is beyond the far plane. In this case, unprojected depth is set to
-  // 0.
-  CORRADE_COMPARE(depthBufferView.pixels<Mn::Float>()[96][96], 0.0f);
+  CORRADE_COMPARE_WITH(depth.pixels<Mn::Float>()[96][32], 7.5f, errorMargin);
+  // Target 3 is beyond the far plane. Here, unprojected depth is set to 0.
+  CORRADE_COMPARE(depth.pixels<Mn::Float>()[96][96], 0.0f);
 }
 
 void GfxBatchRendererTest::cudaInterop() {
