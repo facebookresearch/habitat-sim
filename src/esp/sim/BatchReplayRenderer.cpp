@@ -4,8 +4,6 @@
 
 #include "BatchReplayRenderer.h"
 
-#include "Magnum/GL/PixelFormat.h"
-#include "Magnum/PixelFormat.h"
 #include "esp/sensor/CameraSensor.h"
 
 #include <Corrade/Containers/GrowableArray.h>
@@ -260,7 +258,8 @@ void BatchReplayRenderer::doRender(
   CORRADE_ASSERT(standalone_,
                  "BatchReplayRenderer::render(): can use this function only "
                  "with a standalone renderer", );
-  static_cast<gfx_batch::RendererStandalone&>(*renderer_).draw();
+  auto& standalone = static_cast<gfx_batch::RendererStandalone&>(*renderer_);
+  standalone.draw();
 
   // todo: integrate debugLineRender_->flushLines
   CORRADE_INTERNAL_ASSERT(!debugLineRender_);
@@ -273,15 +272,13 @@ void BatchReplayRenderer::doRender(
         renderer_->tileSize());
 
     if (colorImageViews.size() > 0) {
-      static_cast<gfx_batch::RendererStandalone&>(*renderer_)
-          .colorImageInto(rectangle, colorImageViews[envIndex]);
+      standalone.colorImageInto(rectangle, colorImageViews[envIndex]);
     }
     if (depthImageViews.size() > 0) {
       Mn::MutableImageView2D depthBufferView{
-          Mn::GL::PixelFormat::DepthComponent, Mn::GL::PixelType::Float,
-          depthImageViews[envIndex].size(), depthImageViews[envIndex].data()};
-      static_cast<gfx_batch::RendererStandalone&>(*renderer_)
-          .depthImageInto(rectangle, depthBufferView);
+          standalone.depthFramebufferFormat(), depthImageViews[envIndex].size(),
+          depthImageViews[envIndex].data()};
+      standalone.depthImageInto(rectangle, depthBufferView);
       renderer_->unprojectDepth(envIndex, depthBufferView);
     }
   }
