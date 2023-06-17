@@ -101,7 +101,7 @@ class PbrDrawable : public Drawable {
     // KHR_materials_specular layer
 
     /**
-     * Structure holdling specular layer values
+     * Structure holding specular layer values
      */
     struct SpecularLayer {
       /**
@@ -132,7 +132,7 @@ class PbrDrawable : public Drawable {
     ///////////////
     // KHR_materials_anisotropy layer
     /**
-     * Structure holdijng anisotropy layer values
+     * Structure holding anisotropy layer values
      */
     struct AnisotropyLayer {
       /**
@@ -271,7 +271,7 @@ class PbrDrawable : public Drawable {
             Mn::SceneGraph::Camera3D& camera) override;
 
   /**
-   *  @brief Update the shader so it can correcly handle the current material,
+   *  @brief Update the shader so it can correctly handle the current material,
    *         light setup
    *  @return Reference to self (for method chaining)
    */
@@ -286,7 +286,7 @@ class PbrDrawable : public Drawable {
   /**
    *  @brief Update light direction (or position) in *camera* space to the
    * shader
-   *  @param transformationMatrix describes a tansformation from object
+   *  @param transformationMatrix describes a transformation from object
    * (model) space to camera space
    *  @param camera the camera, which views and renders the world
    *  @return Reference to self (for method chaining)
@@ -319,7 +319,7 @@ class PbrDrawable : public Drawable {
    */
   const gfx::Drawable::Flags meshAttributeFlags_;
   /**
-   * Material to use to render this PBR drawawble
+   * Material to use to render this PBR drawable
    */
   Mn::Resource<Mn::Trade::MaterialData, Mn::Trade::MaterialData> materialData_;
   ShadowMapManager* shadowMapManger_ = nullptr;
