@@ -2042,18 +2042,11 @@ bool compareShaderTypeToMnMatType(const ObjectInstanceShaderType typeToCheck,
                                   const Mn::Trade::MaterialData& materialData) {
   switch (typeToCheck) {
     case ObjectInstanceShaderType::Phong: {
-      bool compRes =
-          bool(materialData.types() & Mn::Trade::MaterialType::Phong);
-      ESP_DEBUG() << "Forcing to Phong | Material currently"
-                  << (compRes ? "supports" : "does not support") << "Phong";
-      return compRes;
+      return bool(materialData.types() & Mn::Trade::MaterialType::Phong);
     }
     case ObjectInstanceShaderType::PBR: {
-      bool compRes = bool(materialData.types() &
-                          Mn::Trade::MaterialType::PbrMetallicRoughness);
-      ESP_DEBUG() << "Forcing to PBR | Material currently"
-                  << (compRes ? "supports" : "does not support") << "PBR";
-      return compRes;
+      return bool(materialData.types() &
+                  Mn::Trade::MaterialType::PbrMetallicRoughness);
     }
     default: {
       return false;
@@ -2381,6 +2374,9 @@ void ResourceManager::loadMaterials(Importer& importer,
   ObjectInstanceShaderType shaderTypeToUse =
       getMaterialShaderType(loadedAssetData.assetInfo);
 
+  const std::string shaderTypeToUseName =
+      metadata::attributes::getShaderTypeName(shaderTypeToUse);
+
   // name of asset, for debugging purposes
   const std::string assetName =
       Cr::Utility::Path::split(loadedAssetData.assetInfo.filepath).second();
@@ -2445,20 +2441,24 @@ void ResourceManager::loadMaterials(Importer& importer,
       }
 
       int numMaterialLayers = materialData->layerCount();
-      std::string debugStr = Cr::Utility::formatString(
-          "Idx {:.02d} has {:.02} layers:", iMaterial, numMaterialLayers);
 
-      // If we are not using the material's native shadertype, or flat (Which
-      // all materials already support), expand the Mn::Trade::MaterialData with
-      // appropriate data for all possible shadertypes
+      // If we are not using the material's native shadertype, or flat
+      // (Which all materials already support), expand the
+      // Mn::Trade::MaterialData with appropriate data for all possible
+      // shadertypes
+
+      std::string materialExpandStr = shaderTypeToUseName;
       if ((shaderTypeToUse != ObjectInstanceShaderType::Material) &&
           (shaderTypeToUse != ObjectInstanceShaderType::Flat) &&
           !(compareShaderTypeToMnMatType(shaderTypeToUse, *materialData))) {
-        Cr::Utility::formatInto(
-            debugStr, debugStr.size(),
-            "(Expanding existing materialData to support requested shaderType `"
-            "{}`) ",
-            metadata::attributes::getShaderTypeName(shaderTypeToUse));
+        // Only create this string if veryverbose logging is enabled
+        if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::Debug)) {
+          materialExpandStr = Cr::Utility::formatString(
+              "Forcing to {} shader (material requires expansion to support it "
+              "via createUniversalMaterial)",
+              shaderTypeToUseName);
+        }
+
         materialData = createUniversalMaterial(*materialData);
       }
 
@@ -2466,49 +2466,51 @@ void ResourceManager::loadMaterials(Importer& importer,
       // user-defined attributes set excluding texture pointer mappings
       Corrade::Containers::Optional<Magnum::Trade::MaterialData>
           custMaterialData;
-
+      Cr::Containers::StringView shaderBeingUsed;
       // Build based on desired shader to use
       // pbr shader spec, of material-specified and material specifies pbr
-      if (checkForPassedShaderType(
+      if ((checkForPassedShaderType(
               shaderTypeToUse, *materialData, ObjectInstanceShaderType::PBR,
-              Mn::Trade::MaterialType::PbrMetallicRoughness)) {
-        Cr::Utility::formatInto(debugStr, debugStr.size(), "PBR.");
-
+              Mn::Trade::MaterialType::PbrMetallicRoughness)) ||
+          (checkForPassedShaderType(shaderTypeToUse, *materialData,
+                                    ObjectInstanceShaderType::PBR,
+                                    Mn::Trade::MaterialType::PbrClearCoat))) {
         // Material with custom settings appropriately set for PBR material
         custMaterialData =
             buildCustomAttributePbrMaterial(*materialData, textureBaseIndex);
-
+        shaderBeingUsed = "PBR";
         // phong shader spec, of material-specified and material specifies phong
       } else if (checkForPassedShaderType(shaderTypeToUse, *materialData,
                                           ObjectInstanceShaderType::Phong,
                                           Mn::Trade::MaterialType::Phong)) {
-        Cr::Utility::formatInto(debugStr, debugStr.size(), "Phong.");
-
         // Material with custom settings appropriately set for Phong material
         custMaterialData =
             buildCustomAttributePhongMaterial(*materialData, textureBaseIndex);
-
+        shaderBeingUsed = "Phong";
         // flat shader spec or material-specified and material specifies flat
       } else if (checkForPassedShaderType(shaderTypeToUse, *materialData,
                                           ObjectInstanceShaderType::Flat,
                                           Mn::Trade::MaterialType::Flat)) {
-        Cr::Utility::formatInto(debugStr, debugStr.size(), "Flat.");
-
         // Material with custom settings appropriately set for Flat materials to
         // be used in our Phong shader
         custMaterialData =
             buildCustomAttributeFlatMaterial(*materialData, textureBaseIndex);
-
+        shaderBeingUsed = "Flat";
       } else {
         ESP_CHECK(
             false,
             Cr::Utility::formatString(
                 "Unhandled ShaderType specification : {} and/or unmanaged "
                 "type specified in material @ idx: {} for asset {}.",
-                metadata::attributes::getShaderTypeName(shaderTypeToUse),
-                iMaterial, assetName));
+                shaderTypeToUseName, iMaterial, assetName));
       }
 
+      std::string debugStr;
+      if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::Debug)) {
+        debugStr = Cr::Utility::formatString(
+            "Idx {:.02d} has {:.02} layers| shader being used: {} for: {}.",
+            iMaterial, numMaterialLayers, shaderBeingUsed, materialExpandStr);
+      }
       // Merge all custom attribute except remapped texture pointers with
       // original material for final material. custMaterialData should never be
       // Cr::Containers::NullOpt since every non-error branch is covered.
@@ -2556,11 +2558,14 @@ void ResourceManager::loadMaterials(Importer& importer,
                   "{}{}Pointer",
                   Cr::Utility::String::lowercase(attrName.slice(0, 1)),
                   attrName.slice(1, attrName.size()));
+
               // Debug display of layer pointers
-              Cr::Utility::formatInto(debugStr, debugStr.size(),
-                                      "| txtr ptr name:{} | idx :{} Layer {}",
-                                      newAttrName, (textureBaseIndex + txtrIdx),
-                                      layerIdx);
+              if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::Debug)) {
+                Cr::Utility::formatInto(debugStr, debugStr.size(),
+                                        "| txtr ptr name:{} | idx :{} Layer {}",
+                                        newAttrName,
+                                        (textureBaseIndex + txtrIdx), layerIdx);
+              }
               arrayAppend(newAttributes,
                           {newAttrName,
                            textures_.at(textureBaseIndex + txtrIdx).get()});

@@ -4,7 +4,7 @@
 
 #if defined(SHADOWS_VSM)
 precision highp float;
-uniform samplerCube ShadowMap[3];
+uniform samplerCube uShadowMap[3];
 const float vsmBias = 0.008f;
 
 float computeShadowUpperBound(vec2 moments, float fragLinearDepth) {
@@ -33,7 +33,7 @@ float computeShadowVSM(int idx, vec3 fragPos, vec3 lightPos) {
   vec3 lightToFrag = fragPos - lightPos;
   float d = length(lightToFrag);
 
-  vec2 moments = texture(ShadowMap[idx], normalize(lightToFrag)).xy;
+  vec2 moments = texture(uShadowMap[idx], normalize(lightToFrag)).xy;
   // moments.x is the mean value while moments.y equals to depth * depth
   return computeShadowUpperBound(moments, d);
 }
@@ -42,7 +42,7 @@ vec3 visualizePointShadowMap(int idx, vec3 fragPos, vec3 lightPos) {
   // get vector between fragment position and light position
   vec3 lightToFrag = fragPos - lightPos;
   // use the fragment to light vector to sample from the depth map
-  float depth = texture(ShadowMap[idx], normalize(lightToFrag)).r;
+  float depth = texture(uShadowMap[idx], normalize(lightToFrag)).r;
   const float lightFar = 20.0f;  // can be a uniform in the future
   float d = depth / lightFar;
   return vec3(0.0, 0.0, d);

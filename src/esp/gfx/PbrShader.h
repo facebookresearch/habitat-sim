@@ -20,12 +20,6 @@ namespace gfx {
 
 class PbrShader : public Magnum::GL::AbstractShaderProgram {
  public:
-  // ===== Light Scaling =====
-  /**
-   * This field is so we can scale the PBR lights without ruining phong display
-   * TODO : This is removed by full PBR 2.0 shader refactor PR
-   */
-  static constexpr float PBR_LIGHT_SCALE = 3.14159265359f;
   // ==== Attribute definitions ====
   /**
    * @brief vertex positions
@@ -287,6 +281,13 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    */
   unsigned int lightCount() const { return lightCount_; }
 
+  /** @brief whether this shader has any lighting enabled, either direct or
+   * indirect/IBL.*/
+  bool lightingIsEnabled() const { return lightingIsEnabled_; }
+
+  /** @brief whether any textures are present in this shader.*/
+  bool isTextured() const { return isTextured_; }
+
   /** @brief Flags */
   Flags flags() const { return flags_; }
 
@@ -314,6 +315,42 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    * @return Reference to self (for method chaining)
    */
   PbrShader& bindEmissiveTexture(Magnum::GL::Texture2D& texture);
+
+  /**
+   * @brief Bind the clearcoat factor texture
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& bindClearCoatFactorTexture(Magnum::GL::Texture2D& texture);
+
+  /**
+   * @brief Bind the clearcoat roughness texture
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& bindClearCoatRoughnessTexture(Magnum::GL::Texture2D& texture);
+
+  /**
+   * @brief Bind the clearcoat normal texture
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& bindClearCoatNormalTexture(Magnum::GL::Texture2D& texture);
+
+  /**
+   * @brief Bind the specular layer texture
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& bindSpecularLayerTexture(Magnum::GL::Texture2D& texture);
+
+  /**
+   * @brief Bind the specular layer color texture
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& bindSpecularLayerColorTexture(Magnum::GL::Texture2D& texture);
+
+  /**
+   * @brief Bind the anisotropy layer texture
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& bindAnisotropyLayerTexture(Magnum::GL::Texture2D& texture);
 
   /**
    * @brief Bind the irradiance cubemap texture
@@ -398,6 +435,55 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    *  @return Reference to self (for method chaining)
    */
   PbrShader& setMetallic(float metallic);
+
+  /**
+   * @brief Set index of refraction.
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& setIndexOfRefraction(float ior);
+
+  /**
+   * @brief Set clearcoat intensity/factor
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& setClearCoatFactor(float ccFactor);
+
+  /**
+   * @brief Set clearcoat roughness
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& setClearCoatRoughness(float ccRoughness);
+
+  /**
+   * @brief Set clearcoat normal texture scale
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& setClearCoatNormalTextureScale(float ccTextureScale);
+
+  /**
+   * @brief Set specular layer factor
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& setSpecularLayerFactor(float specLayerFactor);
+
+  /**
+   * @brief Set specular layer color factor
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& setSpecularLayerColorFactor(const Magnum::Color3& color);
+
+  /**
+   * @brief Set anisotropy layer factor
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& setAnisotropyLayerFactor(float anisoLayerFactor);
+
+  /**
+   * @brief Set anisotropy layer direction 2d vector
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& setAnisotropyLayerDirection(
+      const Magnum::Vector2& anisoLayerDirection);
 
   /**
    *  @brief Set object id to the uniform on GPU
@@ -496,7 +582,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    */
   PbrShader& setLightColor(unsigned int lightIndex,
                            const Magnum::Vector3& color,
-                           float intensity = 1.0);
+                           float intensity = 1.0f);
 
   /**
    *  @brief Set the colors of the lights
@@ -525,6 +611,15 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   PbrShader& setLightRanges(std::initializer_list<float> ranges);
 
   /**
+   * @brief Set the global lighting intensity applied equally across all lights
+   * for direct lighting.
+   *  @param lightIntensity config-driven global intensity knob to easily
+   * control the intensity of the entire scene by a single field
+   *  @return Reference to self (for method chaining)
+   */
+  PbrShader& setGlobalLightIntensity(float lightIntensity);
+
+  /**
    *  @brief Set the scale of the normal texture
    *  @param scale
    *  @return Reference to self (for method chaining)
@@ -532,7 +627,8 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   PbrShader& setNormalTextureScale(float scale);
 
   /**
-   * Toggles that control contributions from different components
+   * Toggles that control contributions from different components - should
+   * never be set to 0 or will cause warnings when the shader executes
    */
   struct PbrEquationScales {
     float directDiffuse = 1.0f;
@@ -566,6 +662,12 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   Flags flags_;
   unsigned int lightCount_;
 
+  // whether or not this shader uses any textures
+  bool isTextured_ = false;
+  // whether or not there is lighting - either direct or indirect - used by this
+  // shader
+  bool lightingIsEnabled_ = false;
+
   // ======= uniforms =======
   // it hurts the performance to call glGetUniformLocation() every frame due
   // to string operations. therefore, cache the locations in the constructor
@@ -577,7 +679,9 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   int baseColorUniform_ = ID_UNDEFINED;  // diffuse color
   int roughnessUniform_ = ID_UNDEFINED;  // roughness of a surface
   int metallicUniform_ = ID_UNDEFINED;
+  int iorUniform_ = ID_UNDEFINED;
   int emissiveColorUniform_ = ID_UNDEFINED;
+
   int objectIdUniform_ = ID_UNDEFINED;
   int textureMatrixUniform_ = ID_UNDEFINED;
   int normalTextureScaleUniform_ = ID_UNDEFINED;
@@ -588,18 +692,32 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   // when w == 0, it means .xyz is the light direction;
   // when w == 1, it means it is the light position, NOT the direction;
   int lightDirectionsUniform_ = ID_UNDEFINED;
-
+  // TODO : global, config-driven knob to control lighting intensity
+  int globalLightingIntensityUniform_ = ID_UNDEFINED;
   int cameraWorldPosUniform_ = ID_UNDEFINED;
   int prefilteredMapMipLevelsUniform_ = ID_UNDEFINED;
+
+  // Clearcoat layer
+  int clearCoatFactorUniform_ = ID_UNDEFINED;
+
+  int clearCoatTextureScaleUniform_ = ID_UNDEFINED;
+
+  int clearCoatRoughnessUniform_ = ID_UNDEFINED;
+
+  // Specular Layer
+  int specularLayerFactorUniform_ = ID_UNDEFINED;
+
+  int specularLayerColorFactorUniform_ = ID_UNDEFINED;
+
+  int anisotropyLayerFactorUniform_ = ID_UNDEFINED;
+
+  int anisotropyLayerDirectionUniform_ = ID_UNDEFINED;
 
   // scales
   int componentScalesUniform_ = ID_UNDEFINED;
 
   // pbr debug info
   int pbrDebugDisplayUniform_ = ID_UNDEFINED;
-
-  /** @brief return true if direct lights or image based lighting is enabled. */
-  inline bool lightingIsEnabled() const;
 };
 
 CORRADE_ENUMSET_OPERATORS(PbrShader::Flags)
