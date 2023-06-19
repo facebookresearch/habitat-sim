@@ -4,14 +4,13 @@
 
 find_package(Magnum REQUIRED DebugTools AnyImageConverter AnySceneImporter)
 find_package(
-  MagnumPlugins
-  REQUIRED
-  GltfImporter
-  StbImageImporter
-  KtxImporter
-  OpenExrImporter
-  OPTIONAL_COMPONENTS GltfSceneConverter KtxImageConverter OpenExrImageConverter
+  MagnumPlugins REQUIRED GltfImporter StbImageImporter KtxImporter
+  OPTIONAL_COMPONENTS GltfSceneConverter KtxImageConverter
 )
+
+if(BUILD_WITH_BACKGROUND_RENDERER)
+  find_package(OpenExrImporter OPTIONAL_COMPONENTS OpenExrImageConverter)
+endif()
 
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/configure.h
