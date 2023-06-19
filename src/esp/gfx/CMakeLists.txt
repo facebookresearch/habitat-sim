@@ -106,7 +106,6 @@ find_package(MagnumPlugins REQUIRED GltfImporter StbImageImporter StbImageConver
 find_package(MagnumIntegration REQUIRED Eigen)
 
 find_package(Corrade REQUIRED Utility)
-set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
 corrade_add_resource(GfxShaderResources ../../shaders/gfx/Shaders.conf)
 list(APPEND gfx_SOURCES ${GfxShaderResources})
 
