@@ -66,11 +66,11 @@ PbrEquiRectangularToCubeMapShader::PbrEquiRectangularToCubeMapShader() {
   CORRADE_INTERNAL_ASSERT_OUTPUT(link());
 
   // setup texture binding point
-  setUniform(uniformLocation("EquirectangularTexture"),
+  setUniform(uniformLocation("uEquirectangularTexture"),
              EquirectangularTextureUnit);
 
   // setup uniforms
-  cubeSideIndexUniform_ = uniformLocation("CubeSideIndex");
+  cubeSideIndexUniform_ = uniformLocation("uCubeSideIndex");
 }
 
 PbrEquiRectangularToCubeMapShader&
