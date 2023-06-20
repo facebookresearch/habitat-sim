@@ -3,20 +3,13 @@
 // LICENSE file in the root directory of this source tree.
 
 precision highp float;
-// TODO Make this an actual uniform
-const float uExposure = 4.5f;
 
-// TODO Make this an actual uniform
-const float uGamma = 2.2f;
-const vec3 GAMMA_VEC = vec3(uGamma);
-
-const float INV_GAMMA = 1.0f / uGamma;
-const vec3 INV_GAMMA_VEC = vec3(INV_GAMMA);
+#if (LIGHT_COUNT > 0) || defined(IMAGE_BASED_LIGHTING)
 
 // linear to sRGB approximation
 // see http://chilliant.blogspot.com/2012/08/srgb-approximations-for-hlsl.html
 vec3 linearToSRGB(vec3 color) {
-  return pow(color, INV_GAMMA_VEC);
+  return pow(color, vec3(1.0f / uGamma));
 }
 
 // Approximation mapping
@@ -27,12 +20,13 @@ vec4 linearToSRGB(vec4 color) {
 // sRGB to linear approximation
 // see http://chilliant.blogspot.com/2012/08/srgb-approximations-for-hlsl.html
 vec3 sRGBToLinear(vec3 srgbIn) {
-  return vec3(pow(srgbIn.xyz, GAMMA_VEC));
+  return vec3(pow(srgbIn.xyz, vec3(uGamma)));
 }
 
 vec4 sRGBToLinear(vec4 srgbIn) {
   return vec4(sRGBToLinear(srgbIn.xyz), srgbIn.w);
 }
+#endif  //(LIGHT_COUNT > 0) || defined(IMAGE_BASED_LIGHTING)
 
 #if (LIGHT_COUNT > 0)
 // Configure a LightInfo object

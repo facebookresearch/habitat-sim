@@ -111,6 +111,13 @@ uniform sampler2D uAnisotropyLayerTexture;
 #endif  // ANISOTROPY_LAYER
 
 // -------------- lights and IBL -------------------
+#if (LIGHT_COUNT > 0) || defined(IMAGE_BASED_LIGHTING)
+uniform float uExposure;
+
+uniform float uGamma;
+
+#endif
+
 #if (LIGHT_COUNT > 0)
 
 // NOTE: In this shader, the light intensity is already combined with the color
@@ -135,6 +142,7 @@ uniform float uGlobalLightIntensity;
 // #define REMAP_COLORS_TO_LINEAR
 
 #if defined(IMAGE_BASED_LIGHTING)
+
 uniform samplerCube uIrradianceMap;
 uniform sampler2D uBrdfLUT;
 uniform samplerCube uPrefilteredMap;

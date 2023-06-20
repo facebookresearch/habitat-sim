@@ -71,7 +71,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   };
 
   /**
-   * @brief Flag
+   * @brief Flags enums describing various features present in shader
    *
    * @see @ref Flags, @ref flags()
    */
@@ -606,6 +606,19 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   PbrShader& setGlobalLightIntensity(float lightIntensity);
 
   /**
+   * @brief Set the gamma value used for remapping sRGB to linear approximations
+   *  @return Reference to self (for method chaining)
+   */
+  PbrShader& setGamma(float gamma);
+
+  /**
+   * @brief Set the IBL exposure value.
+   *  @param exposure config-driven exposure value for IBL calculations.
+   *  @return Reference to self (for method chaining)
+   */
+  PbrShader& setTonemapExposure(float exposure);
+
+  /**
    *  @brief Set the scale of the normal texture
    *  @param scale
    *  @return Reference to self (for method chaining)
@@ -680,8 +693,15 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   // when w == 0, it means .xyz is the light direction;
   // when w == 1, it means it is the light position, NOT the direction;
   int lightDirectionsUniform_ = ID_UNDEFINED;
-  // TODO : global, config-driven knob to control lighting intensity
+  // Global, config-driven knob to control lighting intensity
   int globalLightingIntensityUniform_ = ID_UNDEFINED;
+
+  // Global, config-driven knob to control IBL exposure
+  int tonemapExposureUniform_ = ID_UNDEFINED;
+
+  // Gamma value for sRGB mapping approx
+  int gammaUniform_ = ID_UNDEFINED;
+
   int cameraWorldPosUniform_ = ID_UNDEFINED;
   int prefilteredMapMipLevelsUniform_ = ID_UNDEFINED;
 

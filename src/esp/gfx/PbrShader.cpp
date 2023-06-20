@@ -298,6 +298,10 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
 
   cameraWorldPosUniform_ = uniformLocation("uCameraWorldPos");
 
+  tonemapExposureUniform_ = uniformLocation("uExposure");
+
+  gammaUniform_ = uniformLocation("uGamma");
+
   // IBL related uniform
   if (flags_ >= Flag::ImageBasedLighting) {
     prefilteredMapMipLevelsUniform_ =
@@ -360,6 +364,14 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
                                                     Mn::Constants::inf()});
     // initialize global, config-driven light intensity
     setGlobalLightIntensity(1.0f);
+    // initialize tonemap exposure
+  }
+
+  if (lightingIsEnabled_) {
+    // TODO : gate this based on whether tonemapping is being used.
+    setTonemapExposure(4.5f);
+
+    setGamma(2.2f);
   }
 
   setEmissiveColor(Mn::Color3{0.0f});
@@ -378,6 +390,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     scales.directSpecular = 0.5;
   }
   setPbrEquationScales(scales);
+
   if (flags_ >= Flag::DebugDisplay) {
     setDebugDisplay(PbrDebugDisplay::None);
   }
@@ -806,5 +819,18 @@ PbrShader& PbrShader::setGlobalLightIntensity(float lightIntensity) {
   return *this;
 }
 
+PbrShader& PbrShader::setGamma(float gamma) {
+  if (lightingIsEnabled_) {
+    setUniform(gammaUniform_, gamma);
+  }
+  return *this;
+}
+
+PbrShader& PbrShader::setTonemapExposure(float exposure) {
+  if (lightingIsEnabled_) {
+    setUniform(tonemapExposureUniform_, exposure);
+  }
+  return *this;
+}
 }  // namespace gfx
 }  // namespace esp
