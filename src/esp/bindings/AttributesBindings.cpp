@@ -10,6 +10,7 @@
 #include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/metadata/attributes/LightLayoutAttributes.h"
 #include "esp/metadata/attributes/ObjectAttributes.h"
+#include "esp/metadata/attributes/PbrShaderAttributes.h"
 #include "esp/metadata/attributes/PhysicsManagerAttributes.h"
 #include "esp/metadata/attributes/PrimitiveAssetAttributes.h"
 #include "esp/metadata/attributes/SceneInstanceAttributes.h"
@@ -29,6 +30,7 @@ using Attrs::IcospherePrimitiveAttributes;
 using Attrs::LightInstanceAttributes;
 using Attrs::LightLayoutAttributes;
 using Attrs::ObjectAttributes;
+using Attrs::PbrShaderAttributes;
 using Attrs::PhysicsManagerAttributes;
 using Attrs::StageAttributes;
 using Attrs::UVSpherePrimitiveAttributes;
@@ -429,11 +431,95 @@ void initAttributesBindings(py::module& m) {
 
   // TODO : LightLayoutAttributes
 
+  // ==== PbrShaderAttributes ====
+  py::class_<PbrShaderAttributes, AbstractAttributes, PbrShaderAttributes::ptr>(
+      m, "PbrShaderAttributes",
+      R"(A metadata template for PBR shader creation and control values and multipliers,
+      such as enabling Image Based Lighting and controlling the mix of direct and indrect
+      lighting contributions. Can be imported from .pbr_config.json files.)")
+      .def(py::init(&PbrShaderAttributes::create<>))
+      .def(py::init(&PbrShaderAttributes::create<const std::string&>))
+      .def_property(
+          "enable_direct_lights", &PbrShaderAttributes::getEnableDirectLighting,
+          &PbrShaderAttributes::setEnableDirectLighting,
+          R"(Whether the specified direct lights are used to illuminate the scene.)")
+      .def_property(
+          "enable_ibl", &PbrShaderAttributes::getEnableIBL,
+          &PbrShaderAttributes::setEnableIBL,
+          R"(Whether Image-based Lighting is used to illuminate the scene.)")
+      .def_property(
+          "direct_light_intensity",
+          &PbrShaderAttributes::getDirectLightIntensity,
+          &PbrShaderAttributes::setDirectLightIntensity,
+          R"(Sets the global direct lighting multiplier to control overall direct light
+          brightness.)")
+      .def_property(
+          "skip_calc_missing_tbn", &PbrShaderAttributes::getSkipCalcMissingTBN,
+          &PbrShaderAttributes::setSkipCalcMissingTBN,
+          R"(Whether the fragment shader should skip the tangent frame calculation if preccomputed
+          tangents are not provided. This calculation provides a tangent frame to be used for
+          normal textures and anisotropy calculations. If precomputed tangents are missing and
+          this calculation is not enabled, any normal textures will be ignored, which will adversely
+          affect visual fidelity.)")
+      .def_property("use_mikkelsen_tbn_calc",
+                    &PbrShaderAttributes::getUseMikkelsenTBN,
+                    &PbrShaderAttributes::setUseMikkelsenTBN,
+                    R"(Whether the more expensive calculation by Mikkelsen from
+          https://jcgt.org/published/0009/03/04/paper.pdf should be used for the TBN calc. If
+          false, a less expensive method that gives reasonable results based on
+          https://github.com/KhronosGroup/Vulkan-Samples/blob/main/shaders/pbr.frag
+          will be used instead.)")
+      .def_property(
+          "use_srgb_remapping", &PbrShaderAttributes::getUseSRGBRemapping,
+          &PbrShaderAttributes::setUseSRGBRemapping,
+          R"(Whether we should use shader-based srgb<->linear approx remapping of applicable
+                    color textures in PBR rendering. This field should be removed/ignored when Magnum
+                    fully supports sRGB conversion on texture load and we paint the shader output to
+                    the appropriate framebuffer.)")
+      .def_property(
+          "use_direct_tonemap", &PbrShaderAttributes::getUseDirectLightTonemap,
+          &PbrShaderAttributes::setUseDirectLightTonemap,
+          R"(Whether tonemapping is enabled for direct lighting results, remapping the colors
+          to a slightly different colorspace.)")
+      .def_property(
+          "use_lambertian_diffuse",
+          &PbrShaderAttributes::getUseLambertianDiffuse,
+          &PbrShaderAttributes::setUseLambertianDiffuse,
+          R"(Whether Lambertian color calculation is used for direct light contribution. If false (the
+          default value), the PBR shader uses a diffuse calculation based on Burley, modified to be
+          more energy conserving.
+          https://media.disneyanimation.com/uploads/production/publication_asset/48/asset/s2012_pbs_disney_brdf_notes_v3.pdf
+          Lambertian is simpler and quicker to calculate but may not look as nice.)")
+      .def_property(
+          "skip_clearcoat_calc", &PbrShaderAttributes::getSkipCalcCleacoatLayer,
+          &PbrShaderAttributes::setSkipCalcCleacoatLayer,
+          R"(Whether the clearcoat layer calculations should be skipped. If true, disables calcs
+          regardless of material setting. Note this will not require a rebuild of the shader
+          since only the calculations are disabled.)")
+      .def_property(
+          "skip_specular_layer_calc",
+          &PbrShaderAttributes::getSkipCalcSpecularLayer,
+          &PbrShaderAttributes::setSkipCalcSpecularLayer,
+          R"(Whether the specular layer calculations should be skipped. If true, disables calcs
+          regardless of material setting. Note this will not require a rebuild of the shader
+          since only the calculations are disabled.)")
+      .def_property(
+          "skip_anisotropy_layer_calc",
+          &PbrShaderAttributes::getSkipCalcAnisotropyLayer,
+          &PbrShaderAttributes::setSkipCalcAnisotropyLayer,
+          R"(Whether the anisotropy layer calculations should be skipped. If true, disables calcs
+          regardless of material setting. Note this will not require a rebuild of the shader
+          since only the calculations are disabled.)")
+
+      ;
+
   // ==== PhysicsManagerAttributes ====
   py::class_<PhysicsManagerAttributes, AbstractAttributes,
              PhysicsManagerAttributes::ptr>(
       m, "PhysicsManagerAttributes",
-      R"(A metadata template for Simulation parameters (e.g. timestep, simulation backend, default gravity direction) and defaults. Consumed to instace a Simualtor object. Can be imported from .physics_config.json files.)")
+      R"(A metadata template for Simulation parameters (e.g. timestep, simulation backend,
+      default gravity direction) and defaults. Consumed to instace a Simualtor object.
+      Can be imported from .physics_config.json files.)")
       .def(py::init(&PhysicsManagerAttributes::create<>))
       .def(py::init(&PhysicsManagerAttributes::create<const std::string&>))
       .def_property_readonly(

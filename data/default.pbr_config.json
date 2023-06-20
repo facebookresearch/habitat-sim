@@ -1,0 +1,22 @@
+{
+  "enable_direct_lights": true,
+  "enable_ibl": true,
+  "ibl_blut_filename": "brdflut_ldr_512x512.png",
+  "ibl_envmap_filename": "lythwood_room_1k.hdr",
+  "light_intensity": 1.0,
+  "skip_missing_tbn_calc": false,
+  "use_mikkelsen_tbn": false,
+  "use_srgb_remapping": false,
+  "use_direct_tonemap": false,
+  "use_ibl_tonemap": true,
+  "use_lambertian": false,
+  "skip_clearcoat_calc": false,
+  "skip_specular_layer_calc": false,
+  "skip_anisotropy_layer_calc": false,
+  "direct_diffuse_scale": 0.5,
+  "direct_specular_scale": 0.5,
+  "ibl_diffuse_scale": 0.5,
+  "ibl_specular_scale": 0.5,
+  "tonemap_exposure": 4.5,
+  "gamma": 2.2
+}

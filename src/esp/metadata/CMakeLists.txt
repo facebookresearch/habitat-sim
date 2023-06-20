@@ -14,6 +14,8 @@ set(
   attributes/ObjectAttributes.cpp
   attributes/PhysicsManagerAttributes.h
   attributes/PhysicsManagerAttributes.cpp
+  attributes/PbrShaderAttributes.h
+  attributes/PbrShaderAttributes.cpp
   attributes/PrimitiveAssetAttributes.h
   attributes/PrimitiveAssetAttributes.cpp
   attributes/SceneInstanceAttributes.h
@@ -28,6 +30,8 @@ set(
   managers/LightLayoutAttributesManager.cpp
   managers/ObjectAttributesManager.h
   managers/ObjectAttributesManager.cpp
+  managers/PbrShaderAttributesManager.h
+  managers/PbrShaderAttributesManager.cpp
   managers/PhysicsAttributesManager.h
   managers/PhysicsAttributesManager.cpp
   managers/SceneInstanceAttributesManager.h

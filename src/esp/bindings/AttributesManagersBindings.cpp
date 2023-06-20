@@ -15,6 +15,7 @@
 #include "esp/metadata/managers/AttributesManagerBase.h"
 #include "esp/metadata/managers/LightLayoutAttributesManager.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
+#include "esp/metadata/managers/PbrShaderAttributesManager.h"
 #include "esp/metadata/managers/PhysicsAttributesManager.h"
 #include "esp/metadata/managers/StageAttributesManager.h"
 
@@ -26,6 +27,7 @@ using Attrs::AbstractObjectAttributes;
 using Attrs::AbstractPrimitiveAttributes;
 using Attrs::LightLayoutAttributes;
 using Attrs::ObjectAttributes;
+using Attrs::PbrShaderAttributes;
 using Attrs::PhysicsManagerAttributes;
 using Attrs::StageAttributes;
 using esp::core::managedContainers::ManagedObjectAccess;
@@ -356,6 +358,7 @@ void initAttributesManagersBindings(py::module& m) {
       LightLayoutAttributesManager,
       AttributesManager<LightLayoutAttributes, ManagedObjectAccess::Copy>,
       LightLayoutAttributesManager::ptr>(m, "LightLayoutAttributesManager");
+
   // ==== Object Attributes Template manager ====
   declareBaseAttributesManager<ObjectAttributes, ManagedObjectAccess::Copy>(
       m, "ObjectAttributes", "BaseObject");
@@ -422,7 +425,8 @@ void initAttributesManagersBindings(py::module& m) {
              AttributesManager<StageAttributes, ManagedObjectAccess::Copy>,
              StageAttributesManager::ptr>(
       m, "StageAttributesManager",
-      R"(Manages StageAttributes which define metadata for stages (i.e. static background mesh such as architectural elements) pre-instantiation. Can import .stage_config.json files.)");
+      R"(Manages StageAttributes which define metadata for stages (i.e. static background mesh such
+      as architectural elements) pre-instantiation. Can import .stage_config.json files.)");
 
   // ==== Physics World/Manager Template manager ====
 
@@ -435,7 +439,19 @@ void initAttributesManagersBindings(py::module& m) {
       AttributesManager<PhysicsManagerAttributes, ManagedObjectAccess::Copy>,
       PhysicsAttributesManager::ptr>(
       m, "PhysicsAttributesManager",
-      R"(Manages PhysicsManagerAttributes which define global Simulation parameters such as timestep. Can import .physics_config.json files.)");
+      R"(Manages PhysicsManagerAttributes which define global Simulation parameters
+      such as timestep. Can import .physics_config.json files.)");
+
+  // ==== Pbr Shader configuration Template manager ====
+  declareBaseAttributesManager<PbrShaderAttributes, ManagedObjectAccess::Copy>(
+      m, "PbrShaderAttributes", "BasePbrConfig");
+  // NOLINTNEXTLINE(bugprone-unused-raii)
+  py::class_<PbrShaderAttributesManager,
+             AttributesManager<PbrShaderAttributes, ManagedObjectAccess::Copy>,
+             PbrShaderAttributesManager::ptr>(
+      m, "PbrShaderAttributesManager",
+      R"(Manages PbrShaderAttributess which define PBR shader calculation control values, such as
+      enabling IBL or specifying direct and indirect lighting balance. Can import .pbr_config.json files.)");
 
 }  // initAttributesManagersBindings
 }  // namespace managers
