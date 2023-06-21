@@ -85,14 +85,31 @@ class AbstractPlayerImplementation {
           instances) = 0;
 
   /**
-   * @brief Set node transform
+   * @brief Set node transform from translation and rotation components.
    *
    * The @p handle is expected to be returned from an earlier call to
    * @ref loadAndCreateRenderAssetInstance() on the same instance.
    */
-  virtual void setNodeTransform(NodeHandle node,
+  virtual void setNodeTransform(const NodeHandle node,
                                 const Magnum::Vector3& translation,
                                 const Magnum::Quaternion& rotation) = 0;
+
+  /**
+   * @brief Set node transform.
+   *
+   * The @p handle is expected to be returned from an earlier call to
+   * @ref loadAndCreateRenderAssetInstance() on the same instance.
+   */
+  virtual void setNodeTransform(const NodeHandle node,
+                                const Mn::Matrix4& transform) = 0;
+
+  /**
+   * @brief Get node transform.
+   *
+   * The @p handle is expected to be returned from an earlier call to
+   * @ref loadAndCreateRenderAssetInstance() on the same instance.
+   */
+  virtual const Mn::Matrix4 getNodeTransform(const NodeHandle node) const = 0;
 
   /**
    * @brief Set node semantic ID
@@ -127,9 +144,14 @@ class AbstractSceneGraphPlayerImplementation
       const std::unordered_map<RenderAssetInstanceKey, NodeHandle>& instances)
       override;
 
-  void setNodeTransform(NodeHandle node,
+  void setNodeTransform(const NodeHandle node,
                         const Magnum::Vector3& translation,
                         const Magnum::Quaternion& rotation) override;
+
+  void setNodeTransform(const NodeHandle node,
+                        const Mn::Matrix4& transform) override;
+
+  const Mn::Matrix4 getNodeTransform(const NodeHandle node) const override;
 
   void setNodeSemanticId(NodeHandle node, unsigned id) override;
 };
@@ -258,6 +280,9 @@ class Player {
   std::vector<Keyframe> keyframes_;
   std::unordered_map<std::string, esp::assets::AssetInfo> assetInfos_;
   std::unordered_map<RenderAssetInstanceKey, NodeHandle> createdInstances_;
+  std::unordered_map<RenderAssetInstanceKey,
+                     assets::RenderAssetInstanceCreationInfo>
+      creationInfos_;
   std::set<std::string> failedFilepaths_;
 
   ESP_SMART_POINTERS(Player)
