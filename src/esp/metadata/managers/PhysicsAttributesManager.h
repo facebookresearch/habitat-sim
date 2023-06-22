@@ -2,8 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_METADATA_MANAGERS_PHYSICSATTRIBUTEMANAGER_H_
-#define ESP_METADATA_MANAGERS_PHYSICSATTRIBUTEMANAGER_H_
+#ifndef ESP_METADATA_MANAGERS_PHYSICSATTRIBUTESMANAGER_H_
+#define ESP_METADATA_MANAGERS_PHYSICSATTRIBUTESMANAGER_H_
 
 #include <utility>
 
@@ -17,8 +17,6 @@ namespace Cr = Corrade;
 namespace esp {
 namespace metadata {
 namespace managers {
-using core::managedContainers::ManagedFileBasedContainer;
-using core::managedContainers::ManagedObjectAccess;
 
 class PhysicsAttributesManager
     : public AttributesManager<attributes::PhysicsManagerAttributes,
@@ -145,4 +143,4 @@ class PhysicsAttributesManager
 }  // namespace metadata
 }  // namespace esp
 
-#endif  // ESP_METADATA_MANAGERS_PHYSICSATTRIBUTEMANAGER_H_
+#endif  // ESP_METADATA_MANAGERS_PHYSICSATTRIBUTESMANAGER_H_

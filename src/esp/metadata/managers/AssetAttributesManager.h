@@ -75,8 +75,6 @@ enum class PrimObjTypes : uint32_t {
   END_PRIM_OBJ_TYPES
 };
 namespace managers {
-using core::managedContainers::ManagedFileBasedContainer;
-using core::managedContainers::ManagedObjectAccess;
 
 class AssetAttributesManager
     : public AttributesManager<attributes::AbstractPrimitiveAttributes,

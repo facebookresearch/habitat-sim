@@ -16,9 +16,6 @@ namespace esp {
 namespace metadata {
 namespace managers {
 
-using core::managedContainers::ManagedFileBasedContainer;
-using core::managedContainers::ManagedObjectAccess;
-
 class LightLayoutAttributesManager
     : public AttributesManager<attributes::LightLayoutAttributes,
                                ManagedObjectAccess::Copy> {
