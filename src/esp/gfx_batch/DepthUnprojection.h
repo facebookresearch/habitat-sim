@@ -151,6 +151,21 @@ consumers expect zeros for things that are too far.
 void unprojectDepth(const Magnum::Vector2& unprojection,
                     Corrade::Containers::ArrayView<Magnum::Float> depth);
 
+/**
+@brief Unproject depth values
+@param[in] unprojection Unprojection coefficients from
+    @ref calculateDepthUnprojection()
+@param[in,out] depth    Depth values in range @f$ [ 0 ; 1 ] @f$
+
+See @ref calculateDepthUnprojection() for the full algorithm explanation.
+Additionally to applying that calculation, if the input depth is at the far
+plane (of value @cpp 1.0f @ce), it's set to @cpp 0.0f @ce on output as
+consumers expect zeros for things that are too far.
+*/
+void unprojectDepth(
+    const Magnum::Vector2& unprojection,
+    const Corrade::Containers::StridedArrayView2D<Magnum::Float>& depth);
+
 }  // namespace gfx_batch
 }  // namespace esp
 

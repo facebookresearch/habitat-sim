@@ -1062,6 +1062,11 @@ const Magnum::Matrix4& Renderer::camera(Magnum::UnsignedInt sceneId) const {
   return state_->cameraMatrices[sceneId].projectionMatrix;
 }
 
+const Magnum::Vector2& Renderer::cameraDepthUnprojection(
+    Magnum::UnsignedInt sceneId) const {
+  return state_->cameraUnprojections[sceneId];
+}
+
 void Renderer::updateCamera(Magnum::UnsignedInt sceneId,
                             const Magnum::Matrix4& projection,
                             const Magnum::Matrix4& view) {
@@ -1333,12 +1338,6 @@ void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
   }
 
   framebuffer.setViewport(previousViewport);
-}
-
-void Renderer::unprojectDepth(int sceneId, const Mn::MutableImageView2D& view) {
-  // TODO: Add GPU depth unprojection support.
-  gfx_batch::unprojectDepth(state_->cameraUnprojections[sceneId],
-                            Cr::Containers::arrayCast<Mn::Float>(view.data()));
 }
 
 SceneStats Renderer::sceneStats(Mn::UnsignedInt sceneId) const {

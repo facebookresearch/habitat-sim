@@ -35,8 +35,8 @@ add_library(
 target_include_directories(gfx_batch PUBLIC ${PROJECT_BINARY_DIR})
 if(BUILD_WITH_CUDA)
   target_include_directories(
-    gfx_batch PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
-                      ${CMAKE_CURRENT_LIST_DIR}/cuda_helpers
+    gfx_batch PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
+                     ${CMAKE_CURRENT_LIST_DIR}/cuda_helpers
   )
 
   target_link_libraries(gfx_batch PUBLIC ${CUDART_LIBRARY})

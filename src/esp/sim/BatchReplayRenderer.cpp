@@ -4,6 +4,7 @@
 
 #include "BatchReplayRenderer.h"
 
+#include <esp/gfx_batch/DepthUnprojection.h>
 #include "esp/sensor/CameraSensor.h"
 
 #include <Corrade/Containers/GrowableArray.h>
@@ -279,7 +280,11 @@ void BatchReplayRenderer::doRender(
           standalone.depthFramebufferFormat(), depthImageViews[envIndex].size(),
           depthImageViews[envIndex].data()};
       standalone.depthImageInto(rectangle, depthBufferView);
-      renderer_->unprojectDepth(envIndex, depthBufferView);
+
+      // TODO: Add GPU depth unprojection support.
+      gfx_batch::unprojectDepth(
+          renderer_->cameraDepthUnprojection(envIndex),
+          Cr::Containers::arrayCast<Mn::Float>(depthBufferView.data()));
     }
   }
 }

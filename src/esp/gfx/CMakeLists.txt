@@ -118,11 +118,6 @@ add_library(
 )
 
 if(BUILD_WITH_CUDA)
-  target_include_directories(
-    gfx PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
-                ${CMAKE_CURRENT_LIST_DIR}/../gfx_batch/cuda_helpers
-  )
-
   target_link_libraries(gfx PUBLIC ${CUDART_LIBRARY})
 endif()
 

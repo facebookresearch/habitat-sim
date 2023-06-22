@@ -239,7 +239,7 @@ implemented in @ref shaders-usage-multidraw "Magnum shaders".
   added to a *draw list*. The draw list is
   @ref gfx_batch-Renderer-workflow-draw-list "further detailed below".
 - For each @ref draw() and each non-empty scene, the following is done:
-  - The @ref cameraMatrices transformations are uploaded to a uniform buffer.
+  - The transformation passed to @ref updateCamera() is uploaded to a uniform buffer.
   - The renderer calculates hierarchical transformations for all nodes based on
     the matrices supplied via @ref transformations(). Each item in the draw
     list is then assigned a corresponding calculated absolute transformation,
@@ -647,6 +647,13 @@ class Renderer {
   const Magnum::Matrix4& camera(Magnum::UnsignedInt sceneId) const;
 
   /**
+   * @brief Get the depth unprojection parameters of a camera (read-only)
+   * @param sceneId Scene ID, expected to be less than @ref sceneCount()
+   */
+  const Magnum::Vector2& cameraDepthUnprojection(
+      Magnum::UnsignedInt sceneId) const;
+
+  /**
    * @brief Set the camera projection and view matrices
    * @param sceneId     Scene ID, expected to be less than @ref sceneCount()
    * @param view        View matrix of the camera (inverse transform)
@@ -714,16 +721,6 @@ class Renderer {
    * product of @ref tileSize() and @ref tileCount().
    */
   void draw(Magnum::GL::AbstractFramebuffer& framebuffer);
-
-  /**
-   * @brief Unprojects depth onto the provided image.
-   * Produces an image that contains the distance of each pixels, in meters.
-   *
-   * @param sceneId Scene ID, expected to be less than @ref sceneCount()
-   * @param view View on raw depth of scene corresponding to the specified
-   * sceneId.
-   */
-  void unprojectDepth(int sceneId, const Magnum::MutableImageView2D& view);
 
   /**
    * @brief Scene stats

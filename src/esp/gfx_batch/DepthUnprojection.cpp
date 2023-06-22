@@ -6,6 +6,7 @@
 
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/Reference.h>
+#include <Corrade/Containers/StridedArrayView.h>
 #include <Corrade/Utility/Resource.h>
 #include <Magnum/GL/Shader.h>
 #include <Magnum/GL/Texture.h>
@@ -123,6 +124,30 @@ void unprojectDepth(const Mn::Vector2& unprojection,
        result should be bit-exact. */
     if (d == farDepth)
       d = 0.0f;
+  }
+}
+
+void unprojectDepth(
+    const Mn::Vector2& unprojection,
+    const Cr::Containers::StridedArrayView2D<Mn::Float>& depth) {
+  for (Cr::Containers::StridedArrayView1D<Mn::Float> row : depth) {
+    for (Mn::Float& d : row) {
+      d = unprojection[1] / (d + unprojection[0]);
+    }
+  }
+
+  /* Change pixels on the far plane to be 0. Done in a separate loop to allow
+     the optimizer to vectorize the above better.  */
+  const Mn::Float farDepth = unprojection[1] / (1.0f + unprojection[0]);
+  for (Cr::Containers::StridedArrayView1D<Mn::Float> row : depth) {
+    for (Mn::Float& d : row) {
+      /* We can afford using == for comparison as 1.0f has an exact
+         representation, the depth was cleared to exactly this value and the
+         calculation is done exactly the same way in both cases -- thus the
+         result should be bit-exact. */
+      if (d == farDepth)
+        d = 0.0f;
+    }
   }
 }
 

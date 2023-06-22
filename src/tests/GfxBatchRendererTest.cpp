@@ -2,9 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include <Corrade/Containers/StridedArrayView.h>
 #include <Corrade/Containers/Triple.h>
-#include <Corrade/PluginManager/Manager.h>
 #include <Corrade/PluginManager/PluginMetadata.h>
 #include <Corrade/TestSuite/Compare/File.h>
 #include <Corrade/TestSuite/Tester.h>
@@ -15,8 +13,6 @@
 #include <Magnum/Image.h>
 #include <Magnum/ImageView.h>
 #include <Magnum/Math/Color.h>
-#include <Magnum/Math/Matrix3.h>
-#include <Magnum/Math/Matrix4.h>
 #include <Magnum/Math/Range.h>
 #include <Magnum/MeshTools/Combine.h>
 #include <Magnum/MeshTools/Concatenate.h>
@@ -33,7 +29,7 @@
 #include <Magnum/Trade/SceneData.h>
 #include <Magnum/Trade/TextureData.h>
 
-#include "Corrade/TestSuite/Comparator.h"
+#include <esp/gfx_batch/DepthUnprojection.h>
 #include "Corrade/TestSuite/Compare/Numeric.h"
 #include "esp/gfx_batch/RendererStandalone.h"
 
@@ -2177,9 +2173,7 @@ void GfxBatchRendererTest::imageInto() {
 }
 
 void GfxBatchRendererTest::depthUnprojection() {
-  constexpr int tileCountX = 2;
-  constexpr int tileCountY = 2;
-  constexpr int envCount = tileCountX * tileCountY;
+  constexpr Mn::Vector2i tileCount{2, 2};
   constexpr float near = 0.001f;
   constexpr float far = 10.0f;
   constexpr Mn::Vector2i tileSize(64, 64);
@@ -2187,7 +2181,7 @@ void GfxBatchRendererTest::depthUnprojection() {
   // clang-format off
   esp::gfx_batch::RendererStandalone renderer{
       esp::gfx_batch::RendererConfiguration{}
-          .setTileSizeCount(tileSize, {tileCountX, tileCountY}),
+          .setTileSizeCount(tileSize, tileCount),
       esp::gfx_batch::RendererStandaloneConfiguration{}
           .setFlags(esp::gfx_batch::RendererStandaloneFlag::QuietLog)
   };
@@ -2214,7 +2208,7 @@ void GfxBatchRendererTest::depthUnprojection() {
 
   // Spawn a plane in each environment, at origin, facing the camera.
   CORRADE_VERIFY(renderer.hasNodeHierarchy("square"));
-  for (int i = 0; i < envCount; ++i) {
+  for (int i = 0; i < tileCount.product(); ++i) {
     CORRADE_COMPARE(renderer.addNodeHierarchy(i, "square"), 0);
   }
 
@@ -2224,26 +2218,29 @@ void GfxBatchRendererTest::depthUnprojection() {
   MAGNUM_VERIFY_NO_GL_ERROR();
 
   // Unproject each scene.
-  const size_t subBufferDataSize = depth.data().size() / envCount;
-  const auto subBufferSize = Mn::Vector2i{depth.size().x() / tileCountX,
-                                          depth.size().y() / tileCountY};
-  for (int i = 0; i < envCount; ++i) {
-    Mn::MutableImageView2D depthSubBufferView{
-        Mn::PixelFormat::Depth32F, subBufferSize,
-        depth.data().sliceSize(i * subBufferDataSize, subBufferDataSize)};
-    renderer.unprojectDepth(i, depthSubBufferView);
+  for (int y = 0; y != tileCount.y(); ++y) {
+    for (int x = 0; x != tileCount.x(); ++x) {
+      const std::size_t sceneId = y * tileCount.x() + x;
+      const Mn::Containers::Size2D offset(x * tileSize.x(), y * tileSize.y());
+      const Mn::Containers::Size2D size(tileSize.x(), tileSize.y());
+      esp::gfx_batch::unprojectDepth(
+          renderer.cameraDepthUnprojection(sceneId),
+          depth.pixels<Mn::Float>().sliceSize(offset, size));
+    }
   }
 
   // Unprojected depth should read the distance between the cameras and the
   // plane, in meters. For each environment, the center pixel is compared with
   // the camera distance from origin.
-  auto errorMargin = Corrade::TestSuite::Compare::around(0.01f);
   // Target 0 is at 2.5 meters from the camera
-  CORRADE_COMPARE_WITH(depth.pixels<Mn::Float>()[32][32], 2.5f, errorMargin);
+  CORRADE_COMPARE_WITH(depth.pixels<Mn::Float>()[32][32], 2.5f,
+                       Corrade::TestSuite::Compare::around(0.01f));
   // Target 1 is at 5.0 meters from the camera
-  CORRADE_COMPARE_WITH(depth.pixels<Mn::Float>()[32][96], 5.0f, errorMargin);
+  CORRADE_COMPARE_WITH(depth.pixels<Mn::Float>()[32][96], 5.0f,
+                       Corrade::TestSuite::Compare::around(0.01f));
   // Target 2 is at 7.5 meters from the camera
-  CORRADE_COMPARE_WITH(depth.pixels<Mn::Float>()[96][32], 7.5f, errorMargin);
+  CORRADE_COMPARE_WITH(depth.pixels<Mn::Float>()[96][32], 7.5f,
+                       Corrade::TestSuite::Compare::around(0.01f));
   // Target 3 is beyond the far plane. Here, unprojected depth is set to 0.
   CORRADE_COMPARE(depth.pixels<Mn::Float>()[96][96], 0.0f);
 }
