@@ -91,10 +91,6 @@ class GenericDrawable : public Drawable {
    * Creation attributes of this drawable
    */
   const gfx::Drawable::Flags meshAttributeFlags_;
-  /**
-   * Material to use to render this Phong drawawble
-   */
-  Mn::Resource<Mn::Trade::MaterialData, Mn::Trade::MaterialData> materialData_;
 };
 
 }  // namespace gfx

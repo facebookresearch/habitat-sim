@@ -38,7 +38,7 @@ GenericDrawable::GenericDrawable(
       skinData_(skinData),
       jointTransformations_(),
       meshAttributeFlags_{meshAttributeFlags} {
-  setMaterialValues(
+  resetMaterialValues(
       shaderManager.get<Mn::Trade::MaterialData, Mn::Trade::MaterialData>(
           materialDataKey));
 
@@ -52,15 +52,26 @@ void GenericDrawable::setMaterialValuesInternal(
     const Mn::Resource<Mn::Trade::MaterialData, Mn::Trade::MaterialData>&
         material,
     bool reset) {
-  materialData_ = material;
+  // copy the resource to nonconst so that it can be appropriately accessed
+  auto materialData = material;
+  // reset == true is intended for changing what actual shader features are
+  // supported and will probably require a shader (re)build.
 
-  flags_ = Mn::Shaders::PhongGL::Flag::ObjectId;
-  const auto& tmpMaterial = materialData_->as<Mn::Trade::PhongMaterialData>();
+  // reset == false is specifically for changing existing values only, and
+  // therefore should never require a shader rebuild. This is specifically
+  // intended to support domain randomization in an efficient manner.
+
+  // Use oldFlags to reset the flags_ after the material is repopulated (i.e. if
+  // reset == false)
+  Mn::Shaders::PhongGL::Flags oldFlags{flags_};
+
   if (reset) {
-    matCache = {tmpMaterial.ambientColor()};  // ambient color
-  } else {
-    matCache.ambientColor = tmpMaterial.ambientColor();
+    matCache = {};
   }
+  flags_ = Mn::Shaders::PhongGL::Flag::ObjectId;
+
+  const auto& tmpMaterial = materialData->as<Mn::Trade::PhongMaterialData>();
+  matCache.ambientColor = tmpMaterial.ambientColor();
   matCache.diffuseColor = tmpMaterial.diffuseColor();
   matCache.specularColor = tmpMaterial.specularColor();
   matCache.shininess = tmpMaterial.shininess();
@@ -68,33 +79,33 @@ void GenericDrawable::setMaterialValuesInternal(
   /* If texture transformation is specified, enable it only if the material is
      actually textured -- it's an error otherwise */
   if (tmpMaterial.commonTextureMatrix() != Mn::Matrix3{} &&
-      (materialData_->hasAttribute("ambientTexturePointer") ||
-       materialData_->hasAttribute("baseColorTexturePointer") ||
-       materialData_->hasAttribute("diffuseTexturePointer") ||
-       materialData_->hasAttribute("specularTexturePointer") ||
-       materialData_->hasAttribute("objectIdTexturePointer"))) {
+      (materialData->hasAttribute("ambientTexturePointer") ||
+       materialData->hasAttribute("baseColorTexturePointer") ||
+       materialData->hasAttribute("diffuseTexturePointer") ||
+       materialData->hasAttribute("specularTexturePointer") ||
+       materialData->hasAttribute("objectIdTexturePointer"))) {
     flags_ |= Mn::Shaders::PhongGL::Flag::TextureTransformation;
     matCache.textureMatrix = tmpMaterial.commonTextureMatrix();
   }
-  if (materialData_->hasAttribute("ambientTexturePointer")) {
+  if (materialData->hasAttribute("ambientTexturePointer")) {
     flags_ |= Mn::Shaders::PhongGL::Flag::AmbientTexture;
     matCache.ambientTexture =
-        materialData_->attribute<Mn::GL::Texture2D*>("ambientTexturePointer");
+        materialData->attribute<Mn::GL::Texture2D*>("ambientTexturePointer");
   }
-  if (materialData_->hasAttribute("diffuseTexturePointer")) {
+  if (materialData->hasAttribute("diffuseTexturePointer")) {
     flags_ |= Mn::Shaders::PhongGL::Flag::DiffuseTexture;
     matCache.diffuseTexture =
-        materialData_->attribute<Mn::GL::Texture2D*>("diffuseTexturePointer");
+        materialData->attribute<Mn::GL::Texture2D*>("diffuseTexturePointer");
   }
-  if (materialData_->hasAttribute("specularTexturePointer")) {
+  if (materialData->hasAttribute("specularTexturePointer")) {
     flags_ |= Mn::Shaders::PhongGL::Flag::SpecularTexture;
     matCache.specularTexture =
-        materialData_->attribute<Mn::GL::Texture2D*>("specularTexturePointer");
+        materialData->attribute<Mn::GL::Texture2D*>("specularTexturePointer");
   }
 
-  if (materialData_->hasAttribute("normalTexturePointer")) {
+  if (materialData->hasAttribute("normalTexturePointer")) {
     matCache.normalTexture =
-        materialData_->attribute<Mn::GL::Texture2D*>("normalTexturePointer");
+        materialData->attribute<Mn::GL::Texture2D*>("normalTexturePointer");
     if (meshAttributeFlags_ & Drawable::Flag::HasTangent) {
       flags_ |= Mn::Shaders::PhongGL::Flag::NormalTexture;
 
@@ -106,17 +117,22 @@ void GenericDrawable::setMaterialValuesInternal(
                      "them yet, ignoring a normal map";
     }
   }
-  if (materialData_->attribute<bool>("hasPerVertexObjectId")) {
+  if (materialData->attribute<bool>("hasPerVertexObjectId")) {
     flags_ |= Mn::Shaders::PhongGL::Flag::InstancedObjectId;
   }
-  if (materialData_->hasAttribute("objectIdTexturePointer")) {
+  if (materialData->hasAttribute("objectIdTexturePointer")) {
     flags_ |= Mn::Shaders::PhongGL::Flag::ObjectIdTexture;
     matCache.objectIdTexture =
-        materialData_->attribute<Mn::GL::Texture2D*>("objectIdTexturePointer");
+        materialData->attribute<Mn::GL::Texture2D*>("objectIdTexturePointer");
   }
   if (meshAttributeFlags_ & Drawable::Flag::HasVertexColor) {
     flags_ |= Mn::Shaders::PhongGL::Flag::VertexColor;
   }
+  // If not reset then make sure the same shader is used
+  if (!reset) {
+    flags_ = oldFlags;
+  }
+
 }  // GenericDrawable::setMaterialValuesInternal
 
 void GenericDrawable::setLightSetup(const Mn::ResourceKey& resourceKey) {
