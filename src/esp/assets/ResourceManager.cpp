@@ -3222,10 +3222,9 @@ void ResourceManager::initPbrImageBasedLighting(
   pbrImageBasedLightings_.emplace_back(
       std::make_unique<gfx::PbrImageBasedLighting>(
           gfx::PbrImageBasedLighting::Flag::IndirectDiffuse |
-              gfx::PbrImageBasedLighting::Flag::IndirectSpecular |
-              gfx::PbrImageBasedLighting::Flag::UseLDRImages,
+              gfx::PbrImageBasedLighting::Flag::IndirectSpecular,
           shaderManager_, hdriImageFilename));
-  activePbrIbl_ = 0;
+  activePbrIbl_ = pbrImageBasedLightings_.size() - 1;
 }
 
 bool ResourceManager::isLightSetupCompatible(

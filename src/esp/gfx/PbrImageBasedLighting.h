@@ -34,12 +34,6 @@ class PbrImageBasedLighting {
      * enable indirect specular part of the lighting equation
      */
     IndirectSpecular = 1 << 1,
-
-    /**
-     * use LDR images for irradiance cube map, brdf lookup table, pre-fitered
-     * cube map
-     */
-    UseLDRImages = 1 << 2,
   };
 
   /**
@@ -79,21 +73,37 @@ class PbrImageBasedLighting {
    */
   Magnum::GL::Texture2D& getBrdfLookupTable();
 
+ private:
   /**
-   * @brief get the brdf lookup table
-   * @param[in] equirectangularImageFilename, the name (path included) of the
-   * equirectangular image, that will be converted to a environment cube map
+   * @brief load the equirectangular env map and convert it to an environmental
+   * cube map
+   * @param[in] imageData The loaded equirectangular image, which will be
+   * converted to an environment cube map
    */
   void convertEquirectangularToCubeMap(
-      const std::string& equirectangularImageFilename);
+      const Cr::Containers::Optional<Mn::Trade::ImageData2D>& imageData);
 
- private:
+  /**
+   * @brief load the brdf LUT from the disk
+   * @param[in] imageData The loaded image for the brdf lut.
+   */
+  void loadBrdfLookUpTable(
+      const Cr::Containers::Optional<Mn::Trade::ImageData2D>& imageData);
+
   Flags flags_;
 
   /**
    * @brief the environment map (e.g., a sky box)
    */
   Cr::Containers::Optional<CubeMap> environmentMap_;
+  /**
+   * @brief 2D BRDF lookup table, an HDR image (16-bits per channel) that
+   * contains BRDF values for roughness and view angle. This is for the indirect
+   * specular.
+   * See: Karis, Brian. “Real Shading in Unreal Engine 4” (2013).
+   */
+  Cr::Containers::Optional<Magnum::GL::Texture2D> brdfLUT_;
+
   /**
    * @brief irradiance cube map (default size of each face: 64 x 64 pixels),
    * that stores light radiated from the environment. This is for the
@@ -107,24 +117,8 @@ class PbrImageBasedLighting {
    * This is sampled for the indirect specular.
    */
   Cr::Containers::Optional<CubeMap> prefilteredMap_;
-  /**
-   * @brief 2D BRDF lookup table, an HDR image (16-bits per channel) that
-   * contains BRDF values for roughness and view angle. This is for the indirect
-   * specular.
-   * See: Karis, Brian. “Real Shading in Unreal Engine 4” (2013).
-   */
-  Cr::Containers::Optional<Magnum::GL::Texture2D> brdfLUT_;
 
   ShaderManager& shaderManager_;
-  /**
-   * @brief recreate brdf lookup table, irradiance map, prefiltered environment
-   * map
-   */
-  void recreateTextures();
-
-  /** @brief load the brdf LUT from the disk */
-  // TODO: HDR
-  void loadBrdfLookUpTable();
 
   enum class PrecomputedMapType : uint8_t {
     IrradianceMap = 0,
@@ -132,10 +126,16 @@ class PbrImageBasedLighting {
   };
 
   /**
-   * @brief precompute the irradiance map, prefiltered environment map
-   * @param[in] type, see @ref PrecomputedMapType
+   * @brief precompute the irradiance map
+   * @param[in] envCubeMap cube map of environment
    */
-  void computePrecomputedMap(PrecomputedMapType type);
+  void computeIrradianceMap(Magnum::GL::CubeMapTexture& envCubeMap);
+
+  /**
+   * @brief precompute the prefiltered environment map
+   * @param[in] envCubeMap cube map of environment
+   */
+  void computePrefilteredEnvMap(Magnum::GL::CubeMapTexture& envCubeMap);
 
   enum class PbrIblShaderType : uint8_t {
     IrradianceMap = 0,
