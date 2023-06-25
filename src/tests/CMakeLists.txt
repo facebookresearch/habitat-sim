@@ -70,7 +70,7 @@ corrade_add_test(
   DepthUnprojectionTest
   DepthUnprojectionTest.cpp
   LIBRARIES
-  gfx
+  gfx_batch
   Magnum::MeshTools
   Magnum::OpenGLTester
   Magnum::Trade
