@@ -152,6 +152,9 @@ Mn::UnsignedInt drawBatchId(
 }
 
 struct Scene {
+  /* Camera unprojection. Updated from updateCamera(). */
+  Mn::Vector2 cameraUnprojection;
+
   /* Node parents and transformations. Appended to with add(). Some of these
      (but not all) are referenced from the transformationIds array below. */
   Cr::Containers::Array<Mn::Int> parents; /* parents[i] < i, always */
@@ -249,8 +252,6 @@ struct Renderer::State {
   Mn::GL::Buffer materialUniform;
   /* Combined view and projection matrices. Updated from updateCamera() */
   Cr::Containers::Array<ProjectionPadded> cameraMatrices;
-  /* Unprojection for cameras. Updated from updateCamera() */
-  Cr::Containers::Array<Mn::Vector2> cameraUnprojections;
   /* Updated from draw() every frame */
   Mn::GL::Buffer projectionUniform;
 
@@ -281,8 +282,6 @@ void Renderer::create(const RendererConfiguration& configurationWrapper) {
   state_->ambientFactor = configuration.ambientFactor;
   const std::size_t sceneCount = configuration.tileCount.product();
   state_->cameraMatrices = Cr::Containers::Array<ProjectionPadded>{sceneCount};
-  state_->cameraUnprojections =
-      Cr::Containers::Array<Magnum::Vector2>{sceneCount};
   state_->scenes = Cr::Containers::Array<Scene>{sceneCount};
 
   /* Texture 0 is reserved as a white pixel */
@@ -629,8 +628,6 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
   /* Fill initial projection data for each view. Will be uploaded afresh every
      draw. */
   state_->cameraMatrices = Cr::Containers::Array<ProjectionPadded>{
-      Cr::DefaultInit, std::size_t(state_->tileCount.product())};
-  state_->cameraUnprojections = Cr::Containers::Array<Magnum::Vector2>{
       Cr::DefaultInit, std::size_t(state_->tileCount.product())};
   // TODO (mutable) buffer storage
 
@@ -1064,14 +1061,15 @@ const Magnum::Matrix4& Renderer::camera(Magnum::UnsignedInt sceneId) const {
 
 const Magnum::Vector2& Renderer::cameraDepthUnprojection(
     Magnum::UnsignedInt sceneId) const {
-  return state_->cameraUnprojections[sceneId];
+  return state_->scenes[sceneId].cameraUnprojection;
 }
 
 void Renderer::updateCamera(Magnum::UnsignedInt sceneId,
                             const Magnum::Matrix4& projection,
                             const Magnum::Matrix4& view) {
   state_->cameraMatrices[sceneId].projectionMatrix = projection * view;
-  state_->cameraUnprojections[sceneId] = calculateDepthUnprojection(projection);
+  state_->scenes[sceneId].cameraUnprojection =
+      calculateDepthUnprojection(projection);
 }
 
 Cr::Containers::StridedArrayView1D<Mn::Matrix4> Renderer::transformations(
