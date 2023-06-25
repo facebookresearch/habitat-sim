@@ -4,9 +4,6 @@
 
 #include "AbstractReplayRenderer.h"
 
-#include <Magnum/Math/Functions.h>
-#include <Magnum/Math/Vector2.h>
-
 #include "esp/gfx/replay/Player.h"
 
 namespace esp {

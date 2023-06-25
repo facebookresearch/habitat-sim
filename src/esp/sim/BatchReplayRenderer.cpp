@@ -8,10 +8,8 @@
 #include "esp/sensor/CameraSensor.h"
 
 #include <Corrade/Containers/GrowableArray.h>
-#include <Corrade/Utility/Algorithms.h>
 #include <Magnum/GL/AbstractFramebuffer.h>
 #include <Magnum/GL/Context.h>
-#include <Magnum/Image.h>
 #include <Magnum/ImageView.h>
 
 namespace esp {

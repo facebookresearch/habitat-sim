@@ -6,11 +6,8 @@
 
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/RenderTarget.h"
-#include "esp/gfx/Renderer.h"
 #include "esp/metadata/MetadataMediator.h"
-#include "esp/sensor/Sensor.h"
 #include "esp/sensor/SensorFactory.h"
-#include "esp/sim/SimulatorConfiguration.h"
 
 #include <Magnum/GL/Context.h>
 #include <Magnum/ImageView.h>
@@ -31,7 +28,7 @@ ClassicReplayRenderer::ClassicReplayRenderer(
   resourceManager_ =
       std::make_unique<assets::ResourceManager>(std::move(metadataMediator));
 
-  // hack to get ReplicCAD non-baked stages to render correctly
+  // hack to get ReplicaCAD non-baked stages to render correctly
   resourceManager_->getShaderManager().setFallback(
       esp::gfx::getDefaultLights());
 

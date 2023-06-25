@@ -4,15 +4,10 @@
 
 #include "Player.h"
 
+#include <Corrade/Containers/StringStl.h>
 #include <Corrade/Utility/Path.h>
 
-#include "esp/assets/ResourceManager.h"
-#include "esp/core/Esp.h"
-#include "esp/gfx/replay/Keyframe.h"
 #include "esp/io/Json.h"
-#include "esp/io/JsonAllTypes.h"
-
-#include <rapidjson/document.h>
 
 namespace esp {
 namespace gfx {

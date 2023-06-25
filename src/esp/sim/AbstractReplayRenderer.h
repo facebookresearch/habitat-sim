@@ -5,15 +5,8 @@
 #ifndef ESP_SIM_ABSTRACTREPLAYRENDERER_H_
 #define ESP_SIM_ABSTRACTREPLAYRENDERER_H_
 
-#include <Magnum/GL/GL.h>
-#include <Magnum/Magnum.h>
-
-#include "esp/core/Check.h"
-#include "esp/core/Esp.h"
 #include "esp/geo/Geo.h"
 #include "esp/gfx/DebugLineRender.h"
-
-#include <memory>
 
 namespace esp {
 
