@@ -108,25 +108,6 @@ Mn::Vector2 calculateDepthUnprojection(const Mn::Matrix4& projectionMatrix) {
 #if defined(CORRADE_TARGET_X86) && defined(__GNUC__) && __GNUC__ >= 6
 __attribute__((target_clones("default", "sse4.2", "avx2")))
 #endif
-void unprojectDepth(const Mn::Vector2& unprojection,
-                    Cr::Containers::ArrayView<Mn::Float> depth) {
-  for (Mn::Float& d : depth) {
-    d = unprojection[1] / (d + unprojection[0]);
-  }
-
-  /* Change pixels on the far plane to be 0. Done in a separate loop to allow
-     the optimizer to vectorize the above better.  */
-  const Mn::Float farDepth = unprojection[1] / (1.0f + unprojection[0]);
-  for (Mn::Float& d : depth) {
-    /* We can afford using == for comparison as 1.0f has an exact
-       representation, the depth was cleared to exactly this value and the
-       calculation is done exactly the same way in both cases -- thus the
-       result should be bit-exact. */
-    if (d == farDepth)
-      d = 0.0f;
-  }
-}
-
 void unprojectDepth(
     const Mn::Vector2& unprojection,
     const Cr::Containers::StridedArrayView2D<Mn::Float>& depth) {

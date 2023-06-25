@@ -221,9 +221,7 @@ struct RenderTarget::Impl {
           Mn::GL::PixelFormat::DepthComponent, Mn::GL::PixelType::Float,
           view.size(), view.data()};
       framebuffer_.read(framebuffer_.viewport(), depthBufferView);
-      gfx_batch::unprojectDepth(
-          depthUnprojection_,
-          Cr::Containers::arrayCast<Mn::Float>(view.data()));
+      gfx_batch::unprojectDepth(depthUnprojection_, view.pixels<Mn::Float>());
     }
   }
 

@@ -282,9 +282,8 @@ void BatchReplayRenderer::doRender(
       standalone.depthImageInto(rectangle, depthBufferView);
 
       // TODO: Add GPU depth unprojection support.
-      gfx_batch::unprojectDepth(
-          renderer_->cameraDepthUnprojection(envIndex),
-          Cr::Containers::arrayCast<Mn::Float>(depthBufferView.data()));
+      gfx_batch::unprojectDepth(renderer_->cameraDepthUnprojection(envIndex),
+                                depthBufferView.pixels<Mn::Float>());
     }
   }
 }
