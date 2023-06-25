@@ -145,6 +145,18 @@ BatchReplayRenderer::BatchReplayRenderer(
           Mn::Matrix4::from(rotation.toMatrix(), translation);
     }
 
+    void setNodeTransform(const gfx::replay::NodeHandle node,
+                          const Mn::Matrix4& transform) override {
+      renderer_.transformations(
+          sceneId_)[reinterpret_cast<std::size_t>(node) - 1] = transform;
+    }
+
+    const Mn::Matrix4 getNodeTransform(
+        const gfx::replay::NodeHandle node) const override {
+      return renderer_.transformations(
+          sceneId_)[reinterpret_cast<std::size_t>(node) - 1];
+    }
+
     void changeLightSetup(const esp::gfx::LightSetup& lights) override {
       if (!renderer_.maxLightCount()) {
         ESP_WARNING() << "Attempted to change" << lights.size()
