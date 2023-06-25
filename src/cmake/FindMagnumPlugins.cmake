@@ -446,7 +446,7 @@ foreach(_component ${MagnumPlugins_FIND_COMPONENTS})
             # config if appropriate
             find_package(OpenEXR REQUIRED MODULE)
             set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
-                INTERFACE_LINK_LIBRARIES OpenEXR::IlmImf)
+                INTERFACE_LINK_LIBRARIES OpenEXR::OpenEXR)
 
         # No special setup for the OpenDdl library
         # OpenGexImporter has no dependencies

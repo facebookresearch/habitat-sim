@@ -9,7 +9,7 @@ find_package(
 )
 
 if(BUILD_WITH_BACKGROUND_RENDERER)
-  find_package(OpenExrImporter OPTIONAL_COMPONENTS OpenExrImageConverter)
+  find_package(MagnumPlugins REQUIRED OpenExrImporter OpenExrImageConverter)
 endif()
 
 configure_file(
