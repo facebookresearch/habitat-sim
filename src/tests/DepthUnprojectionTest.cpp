@@ -149,7 +149,7 @@ DepthUnprojectionTest::DepthUnprojectionTest() {
        &DepthUnprojectionTest::testGpuUnprojectExisting},
       Cr::Containers::arraySize(TestData));
 
-  addInstancedBenchmarks({&DepthUnprojectionTest::benchmarkBaseline}, 50,
+  addInstancedBenchmarks({&DepthUnprojectionTest::benchmarkBaseline}, 10,
                          Cr::Containers::arraySize(UnprojectBenchmarkData));
 
   addInstancedBenchmarks({&DepthUnprojectionTest::benchmarkCpu}, 50,
