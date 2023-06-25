@@ -19,7 +19,7 @@
 #include <Magnum/Primitives/Plane.h>
 #include <Magnum/Trade/MeshData.h>
 
-#include "esp/gfx/DepthUnprojection.h"
+#include "esp/gfx_batch/DepthUnprojection.h"
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
@@ -28,7 +28,7 @@ using Mn::Math::Literals::operator""_degf;
 using Mn::Math::Literals::operator""_rgbf;
 
 namespace {
-using namespace esp::gfx;
+using namespace esp::gfx_batch;
 
 struct DepthUnprojectionTest : Mn::GL::OpenGLTester {
   explicit DepthUnprojectionTest();
@@ -90,13 +90,15 @@ __attribute__((target_clones("default", "sse4.2", "avx2")))
 #endif
 CORRADE_NEVER_INLINE void
 unprojectBaseline(const Mn::Matrix4& unprojection,
-                  Cr::Containers::ArrayView<float> depth) {
-  for (float& d : depth) {
-    if (d == 1.0f) {
-      d = 0.0f;
-      continue;
+                  const Cr::Containers::StridedArrayView2D<float>& depth) {
+  for (const Cr::Containers::StridedArrayView1D<float> row : depth) {
+    for (float& d : row) {
+      if (d == 1.0f) {
+        d = 0.0f;
+        continue;
+      }
+      d = -unprojection.transformPoint(Mn::Vector3::zAxis(-d)).z();
     }
-    d = -unprojection.transformPoint(Mn::Vector3::zAxis(-d)).z();
   }
 }
 
@@ -104,10 +106,13 @@ unprojectBaseline(const Mn::Matrix4& unprojection,
 __attribute__((target_clones("default", "sse4.2", "avx2")))
 #endif
 CORRADE_NEVER_INLINE void
-unprojectBaselineNoBranch(const Mn::Matrix4& unprojection,
-                          Cr::Containers::ArrayView<float> depth) {
-  for (float& d : depth) {
-    d = -unprojection.transformPoint(Mn::Vector3::zAxis(-d)).z();
+unprojectBaselineNoBranch(
+    const Mn::Matrix4& unprojection,
+    const Cr::Containers::StridedArrayView2D<float>& depth) {
+  for (const Cr::Containers::StridedArrayView1D<float> row : depth) {
+    for (float& d : row) {
+      d = -unprojection.transformPoint(Mn::Vector3::zAxis(-d)).z();
+    }
   }
 }
 
@@ -116,17 +121,21 @@ __attribute__((target_clones("default", "sse4.2", "avx2")))
 #endif
 CORRADE_NEVER_INLINE void
 unprojectDepthNoBranch(const Mn::Vector2& unprojection,
-                       Cr::Containers::ArrayView<Mn::Float> depth) {
-  for (float& d : depth) {
-    d = unprojection[1] / (d + unprojection[0]);
+                       const Cr::Containers::StridedArrayView2D<float>& depth) {
+  for (const Cr::Containers::StridedArrayView1D<float> row : depth) {
+    for (float& d : row) {
+      d = unprojection[1] / (d + unprojection[0]);
+    }
   }
 }
 
 const struct {
   const char* name;
-  void (*unprojectorFull)(const Mn::Matrix4&, Cr::Containers::ArrayView<float>);
-  void (*unprojectorOptimized)(const Mn::Vector2&,
-                               Cr::Containers::ArrayView<float>);
+  void (*unprojectorFull)(const Mn::Matrix4&,
+                          const Cr::Containers::StridedArrayView2D<float>&);
+  void (*unprojectorOptimized)(
+      const Mn::Vector2&,
+      const Cr::Containers::StridedArrayView2D<float>&);
   DepthShader::Flags flags;
 } UnprojectBenchmarkData[]{
     {"", unprojectBaseline, unprojectDepth, {}},
@@ -140,7 +149,7 @@ DepthUnprojectionTest::DepthUnprojectionTest() {
        &DepthUnprojectionTest::testGpuUnprojectExisting},
       Cr::Containers::arraySize(TestData));
 
-  addInstancedBenchmarks({&DepthUnprojectionTest::benchmarkBaseline}, 50,
+  addInstancedBenchmarks({&DepthUnprojectionTest::benchmarkBaseline}, 10,
                          Cr::Containers::arraySize(UnprojectBenchmarkData));
 
   addInstancedBenchmarks({&DepthUnprojectionTest::benchmarkCpu}, 50,
@@ -166,7 +175,8 @@ void DepthUnprojectionTest::testCpu() {
       Cr::TestSuite::Compare::around(data.depth * 0.0006f));
 
   float depth[] = {Mn::Math::lerpInverted(-1.0f, 1.0f, projected.z())};
-  unprojectDepth(calculateDepthUnprojection(data.projection), depth);
+  unprojectDepth(calculateDepthUnprojection(data.projection),
+                 Cr::Containers::stridedArrayView(depth));
   CORRADE_COMPARE_WITH(depth[0], data.expected,
                        Cr::TestSuite::Compare::around(data.depth * 0.0002f));
 }
@@ -279,7 +289,9 @@ void DepthUnprojectionTest::benchmarkBaseline() {
   for (std::size_t i = 0; i != depth.size(); ++i)
     depth[i] = float(2 * (i % 10000)) / float(10000) - 1.0f;
 
-  CORRADE_BENCHMARK(1) { data.unprojectorFull(unprojection, depth); }
+  CORRADE_BENCHMARK(1) {
+    data.unprojectorFull(unprojection, stridedArrayView(depth));
+  }
 
   CORRADE_COMPARE_AS(Mn::Math::max<float>(depth), 9.0f,
                      Cr::TestSuite::Compare::Greater);
@@ -297,7 +309,9 @@ void DepthUnprojectionTest::benchmarkCpu() {
   for (std::size_t i = 0; i != depth.size(); ++i)
     depth[i] = float(i % 10000) / float(10000);
 
-  CORRADE_BENCHMARK(1) { data.unprojectorOptimized(unprojection, depth); }
+  CORRADE_BENCHMARK(1) {
+    data.unprojectorOptimized(unprojection, stridedArrayView(depth));
+  }
 
   CORRADE_COMPARE_AS(Mn::Math::max<float>(depth), 9.0f,
                      Cr::TestSuite::Compare::Greater);

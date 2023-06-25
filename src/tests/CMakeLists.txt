@@ -8,6 +8,10 @@ find_package(
   OPTIONAL_COMPONENTS GltfSceneConverter KtxImageConverter
 )
 
+if(BUILD_WITH_BACKGROUND_RENDERER)
+  find_package(MagnumPlugins REQUIRED OpenExrImporter OpenExrImageConverter)
+endif()
+
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/configure.h
 )
@@ -38,6 +42,7 @@ corrade_add_test(
   LIBRARIES
   gfx_batch
   Magnum::DebugTools
+  Magnum::AnyImageConverter
   Magnum::AnySceneImporter
   MagnumPlugins::GltfImporter
   MagnumPlugins::KtxImporter
@@ -65,7 +70,7 @@ corrade_add_test(
   DepthUnprojectionTest
   DepthUnprojectionTest.cpp
   LIBRARIES
-  gfx
+  gfx_batch
   Magnum::MeshTools
   Magnum::OpenGLTester
   Magnum::Trade
@@ -96,6 +101,8 @@ if(BUILD_WITH_BACKGROUND_RENDERER)
     gfx
     gfx_batch
     sim
+    MagnumPlugins::OpenExrImageConverter
+    MagnumPlugins::OpenExrImporter
   )
   target_include_directories(
     BatchReplayRendererTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR}

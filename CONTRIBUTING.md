@@ -55,7 +55,7 @@ We also use pre-commit hooks to ensure linting and style enforcement. Install th
 
 ## Documentation
 - Our documentation style is based on Magnum / Corrade and uses [a similar build system](https://mcss.mosra.cz/documentation/doxygen/).
-- A good example of the documentation style is in esp::gfx::DepthUnprojection (DepthUnprojection.h).
+- The gfx_batch library is a good example of the documentation style.
 - Documentation of PRs is highly encouraged!
 
 ## Development Tips

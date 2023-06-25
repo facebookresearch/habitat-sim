@@ -4,6 +4,7 @@
 
 #include "BatchReplayRenderer.h"
 
+#include <esp/gfx_batch/DepthUnprojection.h>
 #include "esp/sensor/CameraSensor.h"
 
 #include <Corrade/Containers/GrowableArray.h>
@@ -232,7 +233,8 @@ void BatchReplayRenderer::doSetSensorTransform(
     // TODO assumes there's just one sensor per env
     const std::string&,
     const Mn::Matrix4& transform) {
-  renderer_->camera(envIndex) = theOnlySensorProjection_ * transform.inverted();
+  renderer_->updateCamera(envIndex, theOnlySensorProjection_,
+                          transform.inverted());
 }
 
 void BatchReplayRenderer::doSetSensorTransformsFromKeyframe(
@@ -246,9 +248,9 @@ void BatchReplayRenderer::doSetSensorTransformsFromKeyframe(
   ESP_CHECK(found,
             "setSensorTransformsFromKeyframe: couldn't find user transform \""
                 << userName << "\" for environment " << envIndex << ".");
-  renderer_->camera(envIndex) =
-      theOnlySensorProjection_ *
-      Mn::Matrix4::from(rotation.toMatrix(), translation).inverted();
+  renderer_->updateCamera(
+      envIndex, theOnlySensorProjection_,
+      Mn::Matrix4::from(rotation.toMatrix(), translation).inverted());
 }
 
 void BatchReplayRenderer::doRender(
@@ -257,7 +259,8 @@ void BatchReplayRenderer::doRender(
   CORRADE_ASSERT(standalone_,
                  "BatchReplayRenderer::render(): can use this function only "
                  "with a standalone renderer", );
-  static_cast<gfx_batch::RendererStandalone&>(*renderer_).draw();
+  auto& standalone = static_cast<gfx_batch::RendererStandalone&>(*renderer_);
+  standalone.draw();
 
   // todo: integrate debugLineRender_->flushLines
   CORRADE_INTERNAL_ASSERT(!debugLineRender_);
@@ -270,12 +273,17 @@ void BatchReplayRenderer::doRender(
         renderer_->tileSize());
 
     if (colorImageViews.size() > 0) {
-      static_cast<gfx_batch::RendererStandalone&>(*renderer_)
-          .colorImageInto(rectangle, colorImageViews[envIndex]);
+      standalone.colorImageInto(rectangle, colorImageViews[envIndex]);
     }
     if (depthImageViews.size() > 0) {
-      static_cast<gfx_batch::RendererStandalone&>(*renderer_)
-          .depthImageInto(rectangle, depthImageViews[envIndex]);
+      Mn::MutableImageView2D depthBufferView{
+          standalone.depthFramebufferFormat(), depthImageViews[envIndex].size(),
+          depthImageViews[envIndex].data()};
+      standalone.depthImageInto(rectangle, depthBufferView);
+
+      // TODO: Add GPU depth unprojection support.
+      gfx_batch::unprojectDepth(renderer_->cameraDepthUnprojection(envIndex),
+                                depthBufferView.pixels<Mn::Float>());
     }
   }
 }

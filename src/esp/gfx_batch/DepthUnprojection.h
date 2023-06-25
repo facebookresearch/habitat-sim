@@ -9,7 +9,7 @@
 #include <Magnum/GL/AbstractShaderProgram.h>
 
 namespace esp {
-namespace gfx {
+namespace gfx_batch {
 
 /**
 @brief Depth-only shader
@@ -148,10 +148,11 @@ Additionally to applying that calculation, if the input depth is at the far
 plane (of value @cpp 1.0f @ce), it's set to @cpp 0.0f @ce on output as
 consumers expect zeros for things that are too far.
 */
-void unprojectDepth(const Magnum::Vector2& unprojection,
-                    Corrade::Containers::ArrayView<Magnum::Float> depth);
+void unprojectDepth(
+    const Magnum::Vector2& unprojection,
+    const Corrade::Containers::StridedArrayView2D<Magnum::Float>& depth);
 
-}  // namespace gfx
+}  // namespace gfx_batch
 }  // namespace esp
 
 #endif  // ESP_GFX_DEPTHUNPROJECTION_H_

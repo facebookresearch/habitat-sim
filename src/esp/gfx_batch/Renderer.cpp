@@ -30,6 +30,7 @@
 #include <Magnum/MeshTools/Duplicate.h>
 #include <Magnum/MeshTools/RemoveDuplicates.h>
 #include <Magnum/PixelFormat.h>
+#include <Magnum/PixelStorage.h>
 #include <Magnum/SceneTools/Hierarchy.h>
 #include <Magnum/Shaders/Generic.h>
 #include <Magnum/Shaders/Phong.h>
@@ -41,6 +42,7 @@
 #include <Magnum/Trade/PhongMaterialData.h>
 #include <Magnum/Trade/SceneData.h>
 #include <Magnum/Trade/TextureData.h>
+#include <esp/gfx_batch/DepthUnprojection.h>
 #include <unordered_map>
 
 namespace Cr = Corrade;
@@ -150,6 +152,9 @@ Mn::UnsignedInt drawBatchId(
 }
 
 struct Scene {
+  /* Camera unprojection. Updated from updateCamera(). */
+  Mn::Vector2 cameraUnprojection;
+
   /* Node parents and transformations. Appended to with add(). Some of these
      (but not all) are referenced from the transformationIds array below. */
   Cr::Containers::Array<Mn::Int> parents; /* parents[i] < i, always */
@@ -245,8 +250,8 @@ struct Renderer::State {
 
   /* Updated from addFile() */
   Mn::GL::Buffer materialUniform;
-  /* Updated from camera() */
-  Cr::Containers::Array<ProjectionPadded> projections;
+  /* Combined view and projection matrices. Updated from updateCamera() */
+  Cr::Containers::Array<ProjectionPadded> cameraMatrices;
   /* Updated from draw() every frame */
   Mn::GL::Buffer projectionUniform;
 
@@ -276,7 +281,7 @@ void Renderer::create(const RendererConfiguration& configurationWrapper) {
   state_->maxLightCount = configuration.maxLightCount;
   state_->ambientFactor = configuration.ambientFactor;
   const std::size_t sceneCount = configuration.tileCount.product();
-  state_->projections = Cr::Containers::Array<ProjectionPadded>{sceneCount};
+  state_->cameraMatrices = Cr::Containers::Array<ProjectionPadded>{sceneCount};
   state_->scenes = Cr::Containers::Array<Scene>{sceneCount};
 
   /* Texture 0 is reserved as a white pixel */
@@ -622,7 +627,7 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
 
   /* Fill initial projection data for each view. Will be uploaded afresh every
      draw. */
-  state_->projections = Cr::Containers::Array<ProjectionPadded>{
+  state_->cameraMatrices = Cr::Containers::Array<ProjectionPadded>{
       Cr::DefaultInit, std::size_t(state_->tileCount.product())};
   // TODO (mutable) buffer storage
 
@@ -745,7 +750,7 @@ bool Renderer::addFile(const Cr::Containers::StringView filename,
        "named templates" to be referenced from addNodeHierarchy(). */
     if (!(flags & RendererFileFlag::Whole)) {
       /* Transformations of all objects in the scene. Objects that don't have
-         this field default to an indentity transform. */
+         this field default to an identity transform. */
       Cr::Containers::Array<Mn::Matrix4> transformations{
           std::size_t(scene->mappingBound())};
       for (Cr::Containers::Pair<Mn::UnsignedInt, Mn::Matrix4> transformation :
@@ -1050,8 +1055,38 @@ void Renderer::clearLights(const Mn::UnsignedInt sceneId) {
      transformations every frame anyway */
 }
 
-Mn::Matrix4& Renderer::camera(const Mn::UnsignedInt scene) {
-  return state_->projections[scene].projectionMatrix;
+Magnum::Matrix4 Renderer::camera(Magnum::UnsignedInt sceneId) const {
+  CORRADE_ASSERT(sceneId < state_->scenes.size(),
+                 "Renderer::camera(): index" << sceneId << "out of range for"
+                                             << state_->scenes.size()
+                                             << "scenes",
+                 {});
+
+  return state_->cameraMatrices[sceneId].projectionMatrix;
+}
+
+Magnum::Vector2 Renderer::cameraDepthUnprojection(
+    Magnum::UnsignedInt sceneId) const {
+  CORRADE_ASSERT(sceneId < state_->scenes.size(),
+                 "Renderer::cameraDepthUnprojection(): index"
+                     << sceneId << "out of range for" << state_->scenes.size()
+                     << "scenes",
+                 {});
+
+  return state_->scenes[sceneId].cameraUnprojection;
+}
+
+void Renderer::updateCamera(Magnum::UnsignedInt sceneId,
+                            const Magnum::Matrix4& projection,
+                            const Magnum::Matrix4& view) {
+  CORRADE_ASSERT(sceneId < state_->scenes.size(),
+                 "Renderer::updateCamera(): index"
+                     << sceneId << "out of range for" << state_->scenes.size()
+                     << "scenes", );
+
+  state_->cameraMatrices[sceneId].projectionMatrix = projection * view;
+  state_->scenes[sceneId].cameraUnprojection =
+      calculateDepthUnprojection(projection);
 }
 
 Cr::Containers::StridedArrayView1D<Mn::Matrix4> Renderer::transformations(
@@ -1165,7 +1200,7 @@ void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
 
   /* Upload projection uniform, assuming it changes every frame. Do it early to
      minimize stalls. */
-  state_->projectionUniform.setData(state_->projections);
+  state_->projectionUniform.setData(state_->cameraMatrices);
 
   /* Calculate absolute transformations */
   for (std::size_t sceneId = 0; sceneId != state_->scenes.size(); ++sceneId) {

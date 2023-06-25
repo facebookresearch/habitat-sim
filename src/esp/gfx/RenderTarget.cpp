@@ -22,7 +22,7 @@
 #include "RenderTarget.h"
 #include "esp/sensor/VisualSensor.h"
 
-#include "esp/gfx/DepthUnprojection.h"
+#include "esp/gfx_batch/DepthUnprojection.h"
 
 #ifdef ESP_BUILD_WITH_CUDA
 #include <cuda_gl_interop.h>
@@ -46,7 +46,7 @@ const Mn::GL::Framebuffer::ColorAttachment UnprojectedDepthBufferAttachment =
 struct RenderTarget::Impl {
   Impl(const Mn::Vector2i& size,
        const Mn::Vector2& depthUnprojection,
-       DepthShader* depthShader,
+       gfx_batch::DepthShader* depthShader,
        Flags flags,
        const sensor::VisualSensor* visualSensor)
       : colorBuffer_{},
@@ -61,8 +61,9 @@ struct RenderTarget::Impl {
         flags_{flags},
         visualSensor_{visualSensor} {
     if (depthShader_) {
-      CORRADE_INTERNAL_ASSERT(depthShader_->flags() &
-                              DepthShader::Flag::UnprojectExistingDepth);
+      CORRADE_INTERNAL_ASSERT(
+          depthShader_->flags() &
+          gfx_batch::DepthShader::Flag::UnprojectExistingDepth);
     }
 
     if (flags_ & Flag::RgbaAttachment) {
@@ -148,7 +149,7 @@ struct RenderTarget::Impl {
     CORRADE_INTERNAL_ASSERT(depthShader_ != nullptr);
     CORRADE_ASSERT(
         flags_ & Flag::DepthTextureAttachment,
-        "RenderTarget::Impl::unporojectDepthGPU(): this render target "
+        "RenderTarget::Impl::unprojectDepthGPU(): this render target "
         "was not created with depth texture enabled.", );
     initDepthUnprojector();
 
@@ -220,8 +221,7 @@ struct RenderTarget::Impl {
           Mn::GL::PixelFormat::DepthComponent, Mn::GL::PixelType::Float,
           view.size(), view.data()};
       framebuffer_.read(framebuffer_.viewport(), depthBufferView);
-      unprojectDepth(depthUnprojection_,
-                     Cr::Containers::arrayCast<Mn::Float>(view.data()));
+      gfx_batch::unprojectDepth(depthUnprojection_, view.pixels<Mn::Float>());
     }
   }
 
@@ -353,7 +353,7 @@ struct RenderTarget::Impl {
   Mn::GL::Framebuffer framebuffer_;
 
   Mn::Vector2 depthUnprojection_;
-  DepthShader* depthShader_;
+  gfx_batch::DepthShader* depthShader_;
   Mn::GL::Renderbuffer unprojectedDepth_;
   Mn::GL::Mesh depthUnprojectionMesh_;
   Mn::GL::Framebuffer depthUnprojectionFrameBuffer_;
@@ -371,7 +371,7 @@ struct RenderTarget::Impl {
 
 RenderTarget::RenderTarget(const Mn::Vector2i& size,
                            const Mn::Vector2& depthUnprojection,
-                           DepthShader* depthShader,
+                           gfx_batch::DepthShader* depthShader,
                            Flags flags,
                            const sensor::VisualSensor* visualSensor)
     : pimpl_(spimpl::make_unique_impl<Impl>(size,

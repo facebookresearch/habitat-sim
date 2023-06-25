@@ -72,18 +72,13 @@ Mn::MutableImageView2D getRGBView(int width,
 
 Mn::MutableImageView2D getDepthView(int width,
                                     int height,
-                                    std::vector<char>& buffer,
-                                    bool classic) {
+                                    std::vector<char>& buffer) {
   Mn::Vector2i size(width, height);
   constexpr int pixelSize = 4;
 
   buffer.resize(std::size_t(width * height * pixelSize));
 
-  // BEWARE: Classic renderer requires R32F because the depth is unprojected.
-  //         Batch renderer directly returns the depth buffer at the moment.
-  auto pixelFormat =
-      classic ? Mn::PixelFormat::R32F : Mn::PixelFormat::Depth32F;
-  auto view = Mn::MutableImageView2D(pixelFormat, size, buffer);
+  auto view = Mn::MutableImageView2D(Mn::PixelFormat::R32F, size, buffer);
 
   return view;
 }
@@ -230,7 +225,6 @@ void BatchReplayRendererTest::testIntegration() {
   constexpr int numEnvs = 4;
   const std::string userPrefix = "sensor_";
   const std::string screenshotPrefix = "ReplayBatchRendererTest_env";
-  const std::string screenshotExtension = ".png";
 
   std::vector<std::string> serKeyframes;
   for (int envIndex = 0; envIndex < numEnvs; envIndex++) {
@@ -287,8 +281,6 @@ void BatchReplayRendererTest::testIntegration() {
   {
     Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer> renderer =
         data.create(batchRendererConfig);
-    bool isClassicRenderer = dynamic_cast<esp::sim::ClassicReplayRenderer*>(
-                                 renderer.get()) != nullptr;
 
     // Check that the context is properly created
     CORRADE_VERIFY(Mn::GL::Context::hasCurrent());
@@ -305,10 +297,9 @@ void BatchReplayRendererTest::testIntegration() {
             renderer->sensorSize(envIndex).y(), colorBuffers[envIndex]));
       }
       if (data.testFlags & TestFlag::Depth) {
-        depthImageViews.emplace_back(
-            getDepthView(renderer->sensorSize(envIndex).x(),
-                         renderer->sensorSize(envIndex).y(),
-                         depthBuffers[envIndex], isClassicRenderer));
+        depthImageViews.emplace_back(getDepthView(
+            renderer->sensorSize(envIndex).x(),
+            renderer->sensorSize(envIndex).y(), depthBuffers[envIndex]));
       }
     }
 
@@ -324,7 +315,7 @@ void BatchReplayRendererTest::testIntegration() {
       // Test color output
       if (data.testFlags & TestFlag::Color) {
         std::string groundTruthImageFile =
-            screenshotPrefix + std::to_string(envIndex) + screenshotExtension;
+            screenshotPrefix + std::to_string(envIndex) + ".png";
         CORRADE_COMPARE_WITH(
             Mn::ImageView2D{colorImageViews[envIndex]},
             Cr::Utility::Path::join(screenshotDir, groundTruthImageFile),
@@ -333,10 +324,12 @@ void BatchReplayRendererTest::testIntegration() {
       // Test depth output
       if (data.testFlags & TestFlag::Depth) {
         const auto depth = depthImageViews[envIndex];
-        float pixelA = depth.pixels<Mn::Float>()[32][32];
-        float pixelB = depth.pixels<Mn::Float>()[64][64];
-        CORRADE_VERIFY(pixelA > 0.0f);
-        CORRADE_VERIFY(pixelA != pixelB);
+        std::string groundTruthImageFile =
+            screenshotPrefix + std::to_string(envIndex) + ".exr";
+        CORRADE_COMPARE_WITH(
+            Mn::ImageView2D{depthImageViews[envIndex]},
+            Cr::Utility::Path::join(screenshotDir, groundTruthImageFile),
+            (Mn::DebugTools::CompareImageToFile{maxThreshold, meanThreshold}));
       }
     }
 
