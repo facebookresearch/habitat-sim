@@ -644,14 +644,13 @@ class Renderer {
    * (read-only)
    * @param sceneId Scene ID, expected to be less than @ref sceneCount()
    */
-  const Magnum::Matrix4& camera(Magnum::UnsignedInt sceneId) const;
+  Magnum::Matrix4 camera(Magnum::UnsignedInt sceneId) const;
 
   /**
    * @brief Get the depth unprojection parameters of a camera (read-only)
    * @param sceneId Scene ID, expected to be less than @ref sceneCount()
    */
-  const Magnum::Vector2& cameraDepthUnprojection(
-      Magnum::UnsignedInt sceneId) const;
+  Magnum::Vector2 cameraDepthUnprojection(Magnum::UnsignedInt sceneId) const;
 
   /**
    * @brief Set the camera projection and view matrices

@@ -1055,18 +1055,35 @@ void Renderer::clearLights(const Mn::UnsignedInt sceneId) {
      transformations every frame anyway */
 }
 
-const Magnum::Matrix4& Renderer::camera(Magnum::UnsignedInt sceneId) const {
+Magnum::Matrix4 Renderer::camera(Magnum::UnsignedInt sceneId) const {
+  CORRADE_ASSERT(sceneId < state_->scenes.size(),
+                 "Renderer::camera(): index" << sceneId << "out of range for"
+                                             << state_->scenes.size()
+                                             << "scenes",
+                 {});
+
   return state_->cameraMatrices[sceneId].projectionMatrix;
 }
 
-const Magnum::Vector2& Renderer::cameraDepthUnprojection(
+Magnum::Vector2 Renderer::cameraDepthUnprojection(
     Magnum::UnsignedInt sceneId) const {
+  CORRADE_ASSERT(sceneId < state_->scenes.size(),
+                 "Renderer::cameraDepthUnprojection(): index"
+                     << sceneId << "out of range for" << state_->scenes.size()
+                     << "scenes",
+                 {});
+
   return state_->scenes[sceneId].cameraUnprojection;
 }
 
 void Renderer::updateCamera(Magnum::UnsignedInt sceneId,
                             const Magnum::Matrix4& projection,
                             const Magnum::Matrix4& view) {
+  CORRADE_ASSERT(sceneId < state_->scenes.size(),
+                 "Renderer::updateCamera(): index"
+                     << sceneId << "out of range for" << state_->scenes.size()
+                     << "scenes", );
+
   state_->cameraMatrices[sceneId].projectionMatrix = projection * view;
   state_->scenes[sceneId].cameraUnprojection =
       calculateDepthUnprojection(projection);
