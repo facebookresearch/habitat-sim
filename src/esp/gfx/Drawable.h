@@ -24,9 +24,8 @@ enum class DrawableType : uint8_t {
   None = 0,
   Generic = 1,
   Pbr = 2,
-  PTexMesh = 3,
-  MeshVisualizer = 4,
-  VarianceShadowMap = 6,
+  MeshVisualizer = 3,
+  VarianceShadowMap = 4,
 };
 
 /**
@@ -120,7 +119,7 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
    *
    * @return mesh_ by default.
    * NOTE: sub-class should override this function if the "visualizer mesh" is
-   * different from mesh_ (check the example in the PTexMeshDrawable class)
+   * different from mesh_
    */
   virtual Magnum::GL::Mesh& getVisualizerMesh() {
     CORRADE_INTERNAL_ASSERT(mesh_ != nullptr);

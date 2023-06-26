@@ -723,13 +723,8 @@ class ResourceManager {
   /**
    * node: drawable's scene node
    *
-   * meshID:
-   * -) for non-ptex mesh:
-   * meshID is the global key into meshes_.
+   * meshID: The global key into meshes_, where
    * meshes_[meshID] is the BaseMesh corresponding to the drawable;
-   *
-   * -) for ptex mesh:
-   * meshID is the index of the submesh corresponding to the drawable;
    */
   struct StaticDrawableInfo {
     esp::scene::SceneNode& node;
@@ -998,11 +993,6 @@ class ResourceManager {
       bool createSemanticInfo);
 
   /**
-   * @brief PTex Mesh backend for loadRenderAsset
-   */
-  bool loadRenderAssetPTex(const AssetInfo& info);
-
-  /**
    * @brief Build @ref GenericSemanticMeshData from a single, flattened Magnum
    * Meshdata, built from the meshes provided by the importer, preserving all
    * transformations.  This building process will also synthesize bounding boxes
@@ -1049,14 +1039,6 @@ class ResourceManager {
       scene::SceneNode* parent,
       DrawableGroup* drawables,
       std::vector<scene::SceneNode*>* visNodeCache = nullptr);
-
-  /**
-   * @brief PTex Mesh backend for createRenderAssetInstance
-   */
-  scene::SceneNode* createRenderAssetInstancePTex(
-      const RenderAssetInstanceCreationInfo& creation,
-      scene::SceneNode* parent,
-      DrawableGroup* drawables);
 
   /**
    * @brief Semantic Mesh backend creation. Either use
@@ -1114,17 +1096,6 @@ class ResourceManager {
    * @return The mesh bounding box.
    */
   Mn::Range3D computeMeshBB(BaseMesh* meshDataGL);
-
-#ifdef ESP_BUILD_PTEX_SUPPORT
-  /**
-   * @brief Compute the absolute AABBs for drawables in PTex mesh in world
-   * space
-   * @param baseMesh ptex mesh
-   */
-  void computePTexMeshAbsoluteAABBs(
-      BaseMesh& baseMesh,
-      const std::vector<StaticDrawableInfo>& staticDrawableInfo);
-#endif
 
   /**
    * @brief Compute the absolute AABBs for drawables in general mesh (e.g.,

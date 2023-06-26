@@ -55,9 +55,8 @@ struct MeshTransformNode {
  * materials, textures, and a hierarchy of component transform relationships.
  *
  * As each type of data may contain a few items, we save the start index, and
- * the end index (of each type) as a pair. In current implementation: ptex mesh:
- * meshes_ (1 item), textures_ (0 item), materials_ (0 item); instance mesh:
- * meshes_ (1 item), textures_ (0 item), materials_ (0 item); gltf_mesh,
+ * the end index (of each type) as a pair. In current implementation: instance
+ * mesh: meshes_ (1 item), textures_ (0 item), materials_ (0 item); gltf_mesh,
  * glb_mesh: meshes_ (i items), textures (j items), materials_ (k items), i, j,
  * k = 0, 1, 2 ...
  */

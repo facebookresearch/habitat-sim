@@ -71,18 +71,6 @@ set(
   GaussianFilterShader.cpp
 )
 
-# If ptex support is enabled add relevant source files
-if(BUILD_PTEX_SUPPORT)
-  list(
-    APPEND
-    gfx_SOURCES
-    PTexMeshDrawable.cpp
-    PTexMeshDrawable.h
-    PTexMeshShader.cpp
-    PTexMeshShader.h
-  )
-endif()
-
 if(BUILD_WITH_BACKGROUND_RENDERER)
   list(APPEND gfx_SOURCES BackgroundRenderer.h BackgroundRenderer.cpp)
 endif()

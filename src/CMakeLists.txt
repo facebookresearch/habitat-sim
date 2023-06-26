@@ -32,7 +32,6 @@ set(TEST_ASSETS ${CMAKE_CURRENT_SOURCE_DIR}/../data/test_assets)
 option(BUILD_ASSIMP_SUPPORT "Whether to build assimp import library support" ON)
 option(BUILD_PYTHON_BINDINGS "Whether to build python bindings" ON)
 option(BUILD_DATATOOL "Whether to build datatool utility binary" ON)
-option(BUILD_PTEX_SUPPORT "Whether to build ptex mesh support" ON)
 option(BUILD_GUI_VIEWERS "Whether to build GUI viewer utility binary" OFF)
 option(BUILD_WITH_BULLET
        "Build Habitat-Sim with Bullet physics enabled -- Requires Bullet" OFF
@@ -154,10 +153,6 @@ include_directories(${PROJECT_SOURCE_DIR})
 
 # Physics
 add_definitions(-DBT_ENABLE_PROFILE)
-# compiler define for enabling ptex support
-if(BUILD_PTEX_SUPPORT)
-  message("Building with ptex support")
-endif()
 
 if(CORRADE_TARGET_EMSCRIPTEN)
   if(BUILD_WITH_BACKGROUND_RENDERER)
