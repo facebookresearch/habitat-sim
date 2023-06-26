@@ -239,54 +239,8 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
       implementation_->deleteAssetInstance(it->second);
       createdInstances_.erase(deletionInstanceKey);
     }
-    // The batch renderer can only clear the scene entirely; it cannot delete
-    // individual objects. To process deletions, all instances are deleted,
-    // remaining instances are re-created and latest transform updates are
-    // re-applied.
-  } else if (keyframe.deletions.size() > 0) {
-    // Cache latest transforms
-    std::unordered_map<RenderAssetInstanceKey, Mn::Matrix4> latestTransforms{};
-    for (const auto& pair : this->createdInstances_) {
-      const RenderAssetInstanceKey key = pair.first;
-      latestTransforms[key] = implementation_->getNodeTransform(pair.second);
-    }
-
-    // Delete all instances
-    implementation_->deleteAssetInstances(createdInstances_);
-
-    // Remove deleted instances from records
-    for (const auto& deletion : keyframe.deletions) {
-      const auto& createInstanceIt = createdInstances_.find(deletion);
-      if (createInstanceIt == createdInstances_.end()) {
-        // Missing instance for this key due to a failed instance creation
-        continue;
-      }
-      createdInstances_.erase(createInstanceIt);
-      const auto& creationInfoIt = creationInfos_.find(deletion);
-      if (creationInfoIt == creationInfos_.end()) {
-        // Missing instance for this key due to a failed instance creation
-        continue;
-      }
-      creationInfos_.erase(creationInfoIt);
-    }
-
-    for (const auto& pair : createdInstances_) {
-      const RenderAssetInstanceKey key = pair.first;
-      const auto& creationInfoIt = creationInfos_.find(key);
-      if (creationInfoIt == creationInfos_.end()) {
-        // Missing instance for this key due to a failed instance creation
-        continue;
-      }
-      const auto& creationInfo = creationInfoIt->second;
-      auto instance = implementation_->loadAndCreateRenderAssetInstance(
-          assetInfos_[creationInfo.filepath], creationInfo);
-
-      // Replace dangling reference
-      createdInstances_[key] = instance;
-
-      // Re-apply latest transform updates
-      implementation_->setNodeTransform(instance, latestTransforms[key]);
-    }
+  } else {
+    processBatchRendererDeletions(keyframe);
   }
 
   for (const auto& pair : keyframe.stateUpdates) {
@@ -304,6 +258,60 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
 
   if (keyframe.lightsChanged) {
     implementation_->changeLightSetup(keyframe.lights);
+  }
+}
+
+void Player::processBatchRendererDeletions(const Keyframe& keyframe) {
+  // The batch renderer can only clear the scene entirely; it cannot delete
+  // individual objects. To process deletions, all instances are deleted,
+  // remaining instances are re-created and latest transform updates are
+  // re-applied.
+  if (keyframe.deletions.size() > 0) {
+    return;
+  }
+
+  // Cache latest transforms
+  std::unordered_map<RenderAssetInstanceKey, Mn::Matrix4> latestTransforms{};
+  for (const auto& pair : this->createdInstances_) {
+    const RenderAssetInstanceKey key = pair.first;
+    latestTransforms[key] = implementation_->getNodeTransform(pair.second);
+  }
+
+  // Delete all instances
+  implementation_->deleteAssetInstances(createdInstances_);
+
+  // Remove deleted instances from records
+  for (const auto& deletion : keyframe.deletions) {
+    const auto& createInstanceIt = createdInstances_.find(deletion);
+    if (createInstanceIt == createdInstances_.end()) {
+      // Missing instance for this key due to a failed instance creation
+      continue;
+    }
+    createdInstances_.erase(createInstanceIt);
+    const auto& creationInfoIt = creationInfos_.find(deletion);
+    if (creationInfoIt == creationInfos_.end()) {
+      // Missing instance for this key due to a failed instance creation
+      continue;
+    }
+    creationInfos_.erase(creationInfoIt);
+  }
+
+  for (const auto& pair : createdInstances_) {
+    const RenderAssetInstanceKey key = pair.first;
+    const auto& creationInfoIt = creationInfos_.find(key);
+    if (creationInfoIt == creationInfos_.end()) {
+      // Missing instance for this key due to a failed instance creation
+      continue;
+    }
+    const auto& creationInfo = creationInfoIt->second;
+    auto instance = implementation_->loadAndCreateRenderAssetInstance(
+        assetInfos_[creationInfo.filepath], creationInfo);
+
+    // Replace dangling reference
+    createdInstances_[key] = instance;
+
+    // Re-apply latest transform updates
+    implementation_->setNodeTransform(instance, latestTransforms[key]);
   }
 }
 
