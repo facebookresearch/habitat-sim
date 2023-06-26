@@ -272,7 +272,7 @@ class Player {
   void applyKeyframe(const Keyframe& keyframe);
   void readKeyframesFromJsonDocument(const rapidjson::Document& d);
   void clearFrame();
-  void hackProcessBatchRendererDeletions(const Keyframe& keyframe);
+  void hackProcessDeletions(const Keyframe& keyframe);
 
   std::shared_ptr<AbstractPlayerImplementation> implementation_;
 

@@ -224,24 +224,7 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     creationInfos_[instanceKey] = adjustedCreation;
   }
 
-  // TODO: Move the code below into renderer-specific implementations.
-  bool isClassicReplayRenderer =
-      dynamic_cast<AbstractSceneGraphPlayerImplementation*>(
-          implementation_.get()) != nullptr;
-  if (isClassicReplayRenderer) {
-    for (const auto& deletionInstanceKey : keyframe.deletions) {
-      const auto& it = createdInstances_.find(deletionInstanceKey);
-      if (it == createdInstances_.end()) {
-        // Missing instance for this key due to a failed instance creation
-        continue;
-      }
-
-      implementation_->deleteAssetInstance(it->second);
-      createdInstances_.erase(deletionInstanceKey);
-    }
-  } else {
-    hackProcessBatchRendererDeletions(keyframe);
-  }
+  hackProcessDeletions(keyframe);
 
   for (const auto& pair : keyframe.stateUpdates) {
     const auto& it = createdInstances_.find(pair.first);
@@ -261,47 +244,60 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
   }
 }
 
-void Player::hackProcessBatchRendererDeletions(const Keyframe& keyframe) {
+void Player::hackProcessDeletions(const Keyframe& keyframe) {
+  // HACK: Classic and batch renderers currently handle deletions differently.
   // The batch renderer can only clear the scene entirely; it cannot delete
   // individual objects. To process deletions, all instances are deleted,
   // remaining instances are re-created and latest transform updates are
   // re-applied.
-  if (keyframe.deletions.size() > 0) {
-    return;
-  }
+  bool isClassicReplayRenderer =
+      dynamic_cast<AbstractSceneGraphPlayerImplementation*>(
+          implementation_.get()) != nullptr;
+  if (isClassicReplayRenderer) {
+    for (const auto& deletionInstanceKey : keyframe.deletions) {
+      const auto& it = createdInstances_.find(deletionInstanceKey);
+      if (it == createdInstances_.end()) {
+        // Missing instance for this key due to a failed instance creation
+        continue;
+      }
 
-  // Cache latest transforms
-  for (const auto& pair : this->createdInstances_) {
-    const RenderAssetInstanceKey key = pair.first;
-    latestTransformCache_[key] =
-        implementation_->hackGetNodeTransform(pair.second);
-  }
-
-  // Delete all instances
-  implementation_->deleteAssetInstances(createdInstances_);
-
-  // Remove deleted instances from records
-  for (const auto& deletion : keyframe.deletions) {
-    const auto& createInstanceIt = createdInstances_.find(deletion);
-    if (createInstanceIt == createdInstances_.end()) {
-      // Missing instance for this key due to a failed instance creation
-      continue;
+      implementation_->deleteAssetInstance(it->second);
+      createdInstances_.erase(deletionInstanceKey);
     }
-    createdInstances_.erase(createInstanceIt);
-    creationInfos_.erase(deletion);
-  }
+  } else if (keyframe.deletions.size() > 0) {
+    // Cache latest transforms
+    for (const auto& pair : this->createdInstances_) {
+      const RenderAssetInstanceKey key = pair.first;
+      latestTransformCache_[key] =
+          implementation_->hackGetNodeTransform(pair.second);
+    }
 
-  for (const auto& pair : createdInstances_) {
-    const auto key = pair.first;
-    const auto& creationInfo = creationInfos_[key];
-    auto* instance = implementation_->loadAndCreateRenderAssetInstance(
-        assetInfos_[creationInfo.filepath], creationInfo);
+    // Delete all instances
+    implementation_->deleteAssetInstances(createdInstances_);
 
-    // Replace dangling reference
-    createdInstances_[key] = instance;
+    // Remove deleted instances from records
+    for (const auto& deletion : keyframe.deletions) {
+      const auto& createInstanceIt = createdInstances_.find(deletion);
+      if (createInstanceIt == createdInstances_.end()) {
+        // Missing instance for this key due to a failed instance creation
+        continue;
+      }
+      createdInstances_.erase(createInstanceIt);
+      creationInfos_.erase(deletion);
+    }
 
-    // Re-apply latest transform updates
-    implementation_->setNodeTransform(instance, latestTransformCache_[key]);
+    for (const auto& pair : createdInstances_) {
+      const auto key = pair.first;
+      const auto& creationInfo = creationInfos_[key];
+      auto* instance = implementation_->loadAndCreateRenderAssetInstance(
+          assetInfos_[creationInfo.filepath], creationInfo);
+
+      // Replace dangling reference
+      createdInstances_[key] = instance;
+
+      // Re-apply latest transform updates
+      implementation_->setNodeTransform(instance, latestTransformCache_[key]);
+    }
   }
 }
 
