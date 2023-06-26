@@ -26,7 +26,7 @@ cmake ../src \
     -DBUILD_GUI_VIEWERS=OFF \
     -DBUILD_PYTHON_BINDINGS=OFF \
     -DBUILD_ASSIMP_SUPPORT=OFF \
-    -DBUILD_DATATOOL=OFF \
+    -DBUILD_DATATOOL=OFF
 cmake --build . --target corrade-rc --
 popd
 
