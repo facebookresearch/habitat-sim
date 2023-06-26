@@ -266,6 +266,7 @@ void Player::hackProcessDeletions(const Keyframe& keyframe) {
     }
   } else if (keyframe.deletions.size() > 0) {
     // Cache latest transforms
+    latestTransformCache_.clear();
     for (const auto& pair : this->createdInstances_) {
       const RenderAssetInstanceKey key = pair.first;
       latestTransformCache_[key] =
