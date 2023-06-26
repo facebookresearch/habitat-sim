@@ -151,7 +151,7 @@ BatchReplayRenderer::BatchReplayRenderer(
           sceneId_)[reinterpret_cast<std::size_t>(node) - 1] = transform;
     }
 
-    const Mn::Matrix4 getNodeTransform(
+    Mn::Matrix4 hackGetNodeTransform(
         const gfx::replay::NodeHandle node) const override {
       return renderer_.transformations(
           sceneId_)[reinterpret_cast<std::size_t>(node) - 1];

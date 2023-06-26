@@ -70,7 +70,7 @@ void AbstractSceneGraphPlayerImplementation::setNodeTransform(
   (*reinterpret_cast<scene::SceneNode*>(node)).setTransformation(transform);
 }
 
-const Mn::Matrix4 AbstractSceneGraphPlayerImplementation::getNodeTransform(
+Mn::Matrix4 AbstractSceneGraphPlayerImplementation::hackGetNodeTransform(
     const NodeHandle node) const {
   return (*reinterpret_cast<scene::SceneNode*>(node)).transformation();
 }
@@ -240,7 +240,7 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
       createdInstances_.erase(deletionInstanceKey);
     }
   } else {
-    processBatchRendererDeletions(keyframe);
+    hackProcessBatchRendererDeletions(keyframe);
   }
 
   for (const auto& pair : keyframe.stateUpdates) {
@@ -261,7 +261,7 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
   }
 }
 
-void Player::processBatchRendererDeletions(const Keyframe& keyframe) {
+void Player::hackProcessBatchRendererDeletions(const Keyframe& keyframe) {
   // The batch renderer can only clear the scene entirely; it cannot delete
   // individual objects. To process deletions, all instances are deleted,
   // remaining instances are re-created and latest transform updates are
@@ -271,10 +271,10 @@ void Player::processBatchRendererDeletions(const Keyframe& keyframe) {
   }
 
   // Cache latest transforms
-  std::unordered_map<RenderAssetInstanceKey, Mn::Matrix4> latestTransforms{};
   for (const auto& pair : this->createdInstances_) {
     const RenderAssetInstanceKey key = pair.first;
-    latestTransforms[key] = implementation_->getNodeTransform(pair.second);
+    latestTransformCache_[key] =
+        implementation_->hackGetNodeTransform(pair.second);
   }
 
   // Delete all instances
@@ -288,30 +288,20 @@ void Player::processBatchRendererDeletions(const Keyframe& keyframe) {
       continue;
     }
     createdInstances_.erase(createInstanceIt);
-    const auto& creationInfoIt = creationInfos_.find(deletion);
-    if (creationInfoIt == creationInfos_.end()) {
-      // Missing instance for this key due to a failed instance creation
-      continue;
-    }
-    creationInfos_.erase(creationInfoIt);
+    creationInfos_.erase(deletion);
   }
 
   for (const auto& pair : createdInstances_) {
-    const RenderAssetInstanceKey key = pair.first;
-    const auto& creationInfoIt = creationInfos_.find(key);
-    if (creationInfoIt == creationInfos_.end()) {
-      // Missing instance for this key due to a failed instance creation
-      continue;
-    }
-    const auto& creationInfo = creationInfoIt->second;
-    auto instance = implementation_->loadAndCreateRenderAssetInstance(
+    const auto key = pair.first;
+    const auto& creationInfo = creationInfos_[key];
+    auto* instance = implementation_->loadAndCreateRenderAssetInstance(
         assetInfos_[creationInfo.filepath], creationInfo);
 
     // Replace dangling reference
     createdInstances_[key] = instance;
 
     // Re-apply latest transform updates
-    implementation_->setNodeTransform(instance, latestTransforms[key]);
+    implementation_->setNodeTransform(instance, latestTransformCache_[key]);
   }
 }
 

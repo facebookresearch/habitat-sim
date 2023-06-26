@@ -90,7 +90,7 @@ class AbstractPlayerImplementation {
    * The @p handle is expected to be returned from an earlier call to
    * @ref loadAndCreateRenderAssetInstance() on the same instance.
    */
-  virtual void setNodeTransform(const NodeHandle node,
+  virtual void setNodeTransform(NodeHandle node,
                                 const Magnum::Vector3& translation,
                                 const Magnum::Quaternion& rotation) = 0;
 
@@ -100,7 +100,7 @@ class AbstractPlayerImplementation {
    * The @p handle is expected to be returned from an earlier call to
    * @ref loadAndCreateRenderAssetInstance() on the same instance.
    */
-  virtual void setNodeTransform(const NodeHandle node,
+  virtual void setNodeTransform(NodeHandle node,
                                 const Mn::Matrix4& transform) = 0;
 
   /**
@@ -109,7 +109,7 @@ class AbstractPlayerImplementation {
    * The @p handle is expected to be returned from an earlier call to
    * @ref loadAndCreateRenderAssetInstance() on the same instance.
    */
-  virtual const Mn::Matrix4 getNodeTransform(const NodeHandle node) const = 0;
+  virtual Mn::Matrix4 hackGetNodeTransform(NodeHandle node) const = 0;
 
   /**
    * @brief Set node semantic ID
@@ -144,14 +144,13 @@ class AbstractSceneGraphPlayerImplementation
       const std::unordered_map<RenderAssetInstanceKey, NodeHandle>& instances)
       override;
 
-  void setNodeTransform(const NodeHandle node,
+  void setNodeTransform(NodeHandle node,
                         const Magnum::Vector3& translation,
                         const Magnum::Quaternion& rotation) override;
 
-  void setNodeTransform(const NodeHandle node,
-                        const Mn::Matrix4& transform) override;
+  void setNodeTransform(NodeHandle node, const Mn::Matrix4& transform) override;
 
-  const Mn::Matrix4 getNodeTransform(const NodeHandle node) const override;
+  Mn::Matrix4 hackGetNodeTransform(NodeHandle node) const override;
 
   void setNodeSemanticId(NodeHandle node, unsigned id) override;
 };
@@ -273,7 +272,7 @@ class Player {
   void applyKeyframe(const Keyframe& keyframe);
   void readKeyframesFromJsonDocument(const rapidjson::Document& d);
   void clearFrame();
-  void processBatchRendererDeletions(const Keyframe& keyframe);
+  void hackProcessBatchRendererDeletions(const Keyframe& keyframe);
 
   std::shared_ptr<AbstractPlayerImplementation> implementation_;
 
@@ -284,6 +283,8 @@ class Player {
   std::unordered_map<RenderAssetInstanceKey,
                      assets::RenderAssetInstanceCreationInfo>
       creationInfos_;
+  std::unordered_map<RenderAssetInstanceKey, Mn::Matrix4>
+      latestTransformCache_{};
   std::set<std::string> failedFilepaths_;
 
   ESP_SMART_POINTERS(Player)
