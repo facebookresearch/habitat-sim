@@ -2386,8 +2386,9 @@ void Viewer::keyPressEvent(KeyEvent& event) {
         // cache the file for quick-reload with SHIFT-T
         cachedURDF_ = urdfFilepath;
         auto aom = simulator_->getArticulatedObjectManager();
-        auto ao = aom->addArticulatedObjectFromURDF(urdfFilepath, fixedBase,
-                                                    1.0, 1.0, true);
+        auto ao = aom->addArticulatedObjectFromURDF(
+            urdfFilepath, fixedBase, 1.0, 1.0, true, false, false,
+            simConfig_.sceneLightSetupKey);
         ao->setTranslation(
             defaultAgent_->node().transformation().transformPoint(
                 {0, 1.0, -1.5}));
