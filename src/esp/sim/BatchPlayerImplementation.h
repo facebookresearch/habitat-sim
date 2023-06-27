@@ -24,21 +24,20 @@ class BatchPlayerImplementation
       const esp::assets::AssetInfo& assetInfo,
       const esp::assets::RenderAssetInstanceCreationInfo& creation) override;
 
-  void deleteAssetInstance(const gfx::replay::NodeHandle node) override;
+  void deleteAssetInstance(gfx::replay::NodeHandle node) override;
 
   void deleteAssetInstances(
       const std::unordered_map<gfx::replay::RenderAssetInstanceKey,
                                gfx::replay::NodeHandle>&) override;
 
-  void setNodeTransform(const gfx::replay::NodeHandle node,
+  void setNodeTransform(gfx::replay::NodeHandle node,
                         const Mn::Vector3& translation,
                         const Mn::Quaternion& rotation) override;
 
-  void setNodeTransform(const gfx::replay::NodeHandle node,
+  void setNodeTransform(gfx::replay::NodeHandle node,
                         const Mn::Matrix4& transform) override;
 
-  Mn::Matrix4 hackGetNodeTransform(
-      const gfx::replay::NodeHandle node) const override;
+  Mn::Matrix4 hackGetNodeTransform(gfx::replay::NodeHandle node) const override;
 
   void changeLightSetup(const esp::gfx::LightSetup& lights) override;
 
