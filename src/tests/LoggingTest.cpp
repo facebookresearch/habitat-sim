@@ -59,7 +59,7 @@ constexpr const struct {
   const char* gfxDebug;
   const char* gfxWarning;
 } EnvVarTestData[]{
-    {nullptr, "[Default] LoggingTest.cpp(103)::envVarTest : DebugDefault\n",
+    {"verbose", "[Default] LoggingTest.cpp(103)::envVarTest : DebugDefault\n",
      "[Default] LoggingTest.cpp(107)::envVarTest : WarningDefault\n",
      "[Sim] LoggingTest.cpp(23)::debug : DebugSim\n",
      "[Sim] LoggingTest.cpp(26)::warning : WarningSim\n",
