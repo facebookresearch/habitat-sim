@@ -3,11 +3,8 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "Corrade/Containers/EnumSet.h"
-#include "Corrade/Utility/Assert.h"
-#include "Magnum/DebugTools/Screenshot.h"
+#include "Corrade/Containers/StridedArrayView.h"
 #include "Magnum/GL/Context.h"
-#include "Magnum/Magnum.h"
-#include "Magnum/Trade/AbstractImageConverter.h"
 #include "configure.h"
 
 #include "esp/gfx/replay/Recorder.h"
@@ -20,6 +17,9 @@
 #include "esp/sim/BatchReplayRenderer.h"
 #include "esp/sim/ClassicReplayRenderer.h"
 #include "esp/sim/Simulator.h"
+
+#include <esp/gfx_batch/RendererStandalone.h>
+#include <esp/sim/BatchPlayerImplementation.h>
 
 #include <Corrade/TestSuite/Compare/Numeric.h>
 #include <Corrade/TestSuite/Tester.h>
@@ -49,6 +49,7 @@ struct BatchReplayRendererTest : Cr::TestSuite::Tester {
 
   void testIntegration();
   void testUnproject();
+  void testBatchPlayerDeletion();
 
   const Magnum::Float maxThreshold = 255.f;
   const Magnum::Float meanThreshold = 0.75f;
@@ -161,6 +162,8 @@ BatchReplayRendererTest::BatchReplayRendererTest() {
 
   addInstancedTests({&BatchReplayRendererTest::testIntegration},
                     Cr::Containers::arraySize(TestIntegrationData));
+
+  addTests({&BatchReplayRendererTest::testBatchPlayerDeletion});
 }  // ctor
 
 // test recording and playback through the simulator interface
@@ -353,6 +356,97 @@ void BatchReplayRendererTest::testIntegration() {
   }
   // Check that the context is properly deleted
   CORRADE_VERIFY(!Mn::GL::Context::hasCurrent());
+}
+
+// test batch replay renderer node deletion
+void BatchReplayRendererTest::testBatchPlayerDeletion() {
+  const std::string assetPath =
+      Cr::Utility::Path::join(TEST_ASSETS, "objects/sphere.glb");
+  const auto assetInfo = esp::assets::AssetInfo::fromPath(assetPath);
+
+  esp::assets::RenderAssetInstanceCreationInfo::Flags flags;
+  flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsRGBD;
+  flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsSemantic;
+  auto creationInfo = esp::assets::RenderAssetInstanceCreationInfo();
+  creationInfo.filepath = assetPath;
+  creationInfo.flags = flags;
+
+  std::vector<esp::gfx::replay::Keyframe> keyframes;
+
+  // Record sequence
+  {
+    SimulatorConfiguration simConfig{};
+    simConfig.enableGfxReplaySave = true;
+    simConfig.createRenderer = false;
+    auto sim = Simulator::create_unique(simConfig);
+    auto& sceneRoot = sim->getActiveSceneGraph().getRootNode();
+    auto& recorder = *sim->getGfxReplayManager()->getRecorder();
+
+    {
+      // Frame 0
+      auto* sphereX =
+          sim->loadAndCreateRenderAssetInstance(assetInfo, creationInfo);
+      auto* sphereY =
+          sim->loadAndCreateRenderAssetInstance(assetInfo, creationInfo);
+      CORRADE_VERIFY(sphereX);
+      CORRADE_VERIFY(sphereY);
+      sphereX->setTranslation(Mn::Vector3(1.0f, 0.0f, 0.0f));
+      sphereY->setTranslation(Mn::Vector3(0.0f, 1.0f, 0.0f));
+      keyframes.emplace_back(std::move(recorder.extractKeyframe()));
+
+      // Frame 1
+      delete sphereX;
+      auto sphereZ =
+          sim->loadAndCreateRenderAssetInstance(assetInfo, creationInfo);
+      CORRADE_VERIFY(sphereZ);
+      sphereZ->setTranslation(Mn::Vector3(0.0f, 0.0f, 1.0f));
+      delete sphereZ;
+      keyframes.emplace_back(std::move(recorder.extractKeyframe()));
+
+      // Frame 2
+      delete sphereY;
+      keyframes.emplace_back(std::move(recorder.extractKeyframe()));
+    }
+  }
+  CORRADE_COMPARE(keyframes.size(), 3);
+
+  // Play sequence
+  {
+    // clang-format off
+    esp::gfx_batch::RendererStandalone renderer{
+        esp::gfx_batch::RendererConfiguration{}
+            .setTileSizeCount({16, 16}, {1, 1}),
+        esp::gfx_batch::RendererStandaloneConfiguration{}
+            .setFlags(esp::gfx_batch::RendererStandaloneFlag::QuietLog)
+    };
+    // clang-format on
+    auto batchPlayer =
+        std::make_shared<esp::sim::BatchPlayerImplementation>(renderer, 0);
+    esp::gfx::replay::Player player(batchPlayer);
+    player.debugSetKeyframes(std::move(keyframes));
+    CORRADE_COMPARE(player.getNumKeyframes(), 3);
+    constexpr size_t transformsPerInstance = 2;
+
+    // Frame 0
+    player.setKeyframeIndex(0);
+    CORRADE_COMPARE(renderer.transformations(0).size(),
+                    2 * transformsPerInstance);
+    CORRADE_COMPARE(renderer.transformations(0)[0],
+                    Mn::Matrix4::translation(Mn::Vector3(1.0f, 0.0f, 0.0f)));
+    CORRADE_COMPARE(renderer.transformations(0)[1 * transformsPerInstance],
+                    Mn::Matrix4::translation(Mn::Vector3(0.0f, 1.0f, 0.0f)));
+
+    // Frame 2
+    player.setKeyframeIndex(1);
+    CORRADE_COMPARE(renderer.transformations(0).size(),
+                    1 * transformsPerInstance);
+    CORRADE_COMPARE(renderer.transformations(0)[0],
+                    Mn::Matrix4::translation(Mn::Vector3(0.0f, 1.0f, 0.0f)));
+
+    // Frame 2
+    player.setKeyframeIndex(2);
+    CORRADE_COMPARE(renderer.transformations(0).size(), 0);
+  }
 }
 
 }  // namespace
