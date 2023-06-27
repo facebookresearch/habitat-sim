@@ -21,7 +21,6 @@
 #include "esp/gfx/PbrDrawable.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
-#include "esp/gfx/VarianceShadowMapDrawable.h"
 #include "esp/gfx/replay/Recorder.h"
 #include "esp/gfx/replay/ReplayManager.h"
 #include "esp/metadata/MetadataMediator.h"
@@ -45,14 +44,6 @@ using metadata::attributes::PhysicsManagerAttributes;
 using metadata::attributes::SceneAOInstanceAttributes;
 using metadata::attributes::SceneObjectInstanceAttributes;
 using metadata::attributes::StageAttributes;
-
-namespace {
-constexpr const char* shadowMapDrawableGroupName = "static-shadow-map";
-constexpr const char* defaultRenderingGroupName = "";
-const int shadowMapSize = 1024;
-const int maxNumShadowMaps = 3;  // the max number of point shadow maps
-
-};  // namespace
 
 Simulator::Simulator(const SimulatorConfiguration& cfg,
                      metadata::MetadataMediator::ptr _metadataMediator)
@@ -740,151 +731,6 @@ void Simulator::reconfigureReplayManager(bool enableGfxReplaySave) {
   };
   gfxReplayMgr_->setPlayerImplementation(
       std::make_shared<SceneGraphPlayerImplementation>(*this));
-}
-
-void Simulator::updateShadowMapDrawableGroup() {
-  scene::SceneGraph& sg = getActiveSceneGraph();
-  // currently the method is naive: destroy the existing group, and recreate one
-  sg.deleteDrawableGroup(shadowMapDrawableGroupName);
-  sg.createDrawableGroup(shadowMapDrawableGroupName);
-  const gfx::DrawableGroup& sourceGroup = sg.getDrawables();
-  gfx::DrawableGroup* shadowMapGroup =
-      sg.getDrawableGroup(shadowMapDrawableGroupName);
-  CORRADE_INTERNAL_ASSERT(shadowMapGroup);
-
-  for (size_t iDrawable = 0; iDrawable < sourceGroup.size(); ++iDrawable) {
-    const gfx::Drawable& currentDrawable =
-        static_cast<const gfx::Drawable&>(sourceGroup[iDrawable]);
-    gfx::DrawableType type = currentDrawable.getDrawableType();
-    if ((type != gfx::DrawableType::Generic) &&
-        (type != gfx::DrawableType::Pbr)) {
-      continue;
-    }
-
-    esp::scene::SceneNode& node = currentDrawable.getSceneNode();
-    node.addFeature<gfx::VarianceShadowMapDrawable>(
-        &currentDrawable.getMesh(), resourceManager_->getShaderManager(),
-        shadowMapGroup);
-  }
-}
-
-void Simulator::computeShadowMaps(float lightNearPlane, float lightFarPlane) {
-  scene::SceneGraph& sg = getActiveSceneGraph();
-  auto& shadowManager = resourceManager_->getShadowMapManger();
-  auto& shadowMapKeys = resourceManager_->getShadowMapKeys();
-  std::vector<Mn::ResourceKey>& keys = shadowMapKeys[activeSceneID_];
-
-  // TODO:
-  // current implementation is for static lights for static scenes
-  // We will have to refactor the code so that in the future dynamic lights and
-  // dynamic scenes can be handled.
-
-  // construct the lights from scene dataset config
-  esp::gfx::LightSetup lightingSetup =
-      metadataMediator_->getLightLayoutAttributesManager()
-          ->createLightSetupFromAttributes(config_.sceneLightSetupKey);
-
-  scene::SceneNode& lightNode = sg.getRootNode().createChild();
-  gfx::CubeMapCamera camera{lightNode};
-
-  int actualShadowMaps = maxNumShadowMaps <= lightingSetup.size()
-                             ? maxNumShadowMaps
-                             : lightingSetup.size();
-  for (int iLight = 0; iLight < actualShadowMaps; ++iLight) {
-    // sanity checks
-    CORRADE_ASSERT(
-        lightingSetup[iLight].model == esp::gfx::LightPositionModel::Global,
-        "Simulator::computeShadowMaps: To compute the shadow map, the light"
-            << iLight << "should be in `global` mode.", );
-    CORRADE_ASSERT(lightingSetup[iLight].vector.w() == 1,
-                   "Simulator::computeShadowMaps: Only point light shadow is "
-                   "supported. However, the light"
-                       << iLight << "is a directional light.", );
-    Mn::Vector3 lightPos = Mn::Vector3{lightingSetup[iLight].vector.xyz()};
-
-    Mn::ResourceKey key(Corrade::Utility::formatString(
-        assets::ResourceManager::SHADOW_MAP_KEY_TEMPLATE, activeSceneID_,
-        iLight));
-
-    // insert the key to the data base
-    keys.push_back(key);
-
-    // create the resource if there is not one
-    Mn::Resource<gfx::CubeMap> pointShadowMap =
-        shadowManager.get<gfx::CubeMap>(key);
-    if (!pointShadowMap) {
-      shadowManager.set<gfx::CubeMap>(
-          pointShadowMap.key(),
-          new gfx::CubeMap{
-              shadowMapSize,
-              {gfx::CubeMap::Flag::VarianceShadowMapTexture |
-               // gfx::CubeMap::Flag::ColorTexture | // for future visualization
-               gfx::CubeMap::Flag::AutoBuildMipmap}},
-          Mn::ResourceDataState::Final, Mn::ResourcePolicy::Resident);
-
-      CORRADE_INTERNAL_ASSERT(pointShadowMap && pointShadowMap.key() == key);
-    }
-    if (pointShadowMap->getCubeMapSize() != shadowMapSize) {
-      pointShadowMap->reset(shadowMapSize);
-    }
-
-    // setup a CubeMapCamera in the root of scene graph, and set its position to
-    // light global position
-    lightNode.setTranslation(lightPos);
-
-    camera.setProjectionMatrix(shadowMapSize,   // width of the square
-                               lightNearPlane,  // near plane
-                               lightFarPlane);  // far plane
-    pointShadowMap->renderToTexture(camera, sg, shadowMapDrawableGroupName,
-                                    {gfx::RenderCamera::Flag::FrustumCulling |
-                                     gfx::RenderCamera::Flag::ClearDepth});
-
-    Mn::ResourceKey helperKey("helper-shadow-cubemap");
-    Mn::Resource<gfx::CubeMap> helperShadowMap =
-        shadowManager.get<gfx::CubeMap>(helperKey);
-    if (!helperShadowMap) {
-      shadowManager.set<gfx::CubeMap>(
-          helperShadowMap.key(),
-          new gfx::CubeMap{shadowMapSize,
-                           {gfx::CubeMap::Flag::VarianceShadowMapTexture |
-                            gfx::CubeMap::Flag::AutoBuildMipmap}},
-          Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
-
-      CORRADE_INTERNAL_ASSERT(helperShadowMap &&
-                              helperShadowMap.key() == helperKey);
-    }
-
-    // for VSM only !!!
-    renderer_->applyGaussianFiltering(
-        *pointShadowMap, *helperShadowMap,
-        gfx::CubeMap::TextureType::VarianceShadowMap);
-  }
-}
-
-void Simulator::setShadowMapsToDrawables() {
-  scene::SceneGraph& sg = getActiveSceneGraph();
-  gfx::DrawableGroup& defaultRenderingGroup = sg.getDrawables();
-  auto& shadowManager = resourceManager_->getShadowMapManger();
-  auto& shadowMapKeys = resourceManager_->getShadowMapKeys();
-
-  for (size_t iDrawable = 0; iDrawable < defaultRenderingGroup.size();
-       ++iDrawable) {
-    const gfx::Drawable& currentDrawable =
-        static_cast<const gfx::Drawable&>(defaultRenderingGroup[iDrawable]);
-    gfx::DrawableType type = currentDrawable.getDrawableType();
-    // So far only pbr drawables support shadow
-    // SKIP!!!
-    if (type != gfx::DrawableType::Pbr) {
-      continue;
-    }
-    auto& pbrDrawable = const_cast<gfx::PbrDrawable&>(
-        static_cast<const gfx::PbrDrawable&>(currentDrawable));
-    CORRADE_ASSERT(shadowMapKeys[activeSceneID_].size(),
-                   "Simulator::setShadowMapsToDrawables(): there are no shadow "
-                   "maps for the current active scene graph.", );
-    pbrDrawable.setShadowData(shadowManager, shadowMapKeys[activeSceneID_],
-                              esp::gfx::PbrShader::Flag::ShadowsVSM);
-  }
 }
 
 // === Physics Simulator Functions ===

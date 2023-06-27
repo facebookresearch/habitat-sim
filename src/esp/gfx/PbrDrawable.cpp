@@ -481,25 +481,6 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
         pbrIbl_->getPrefilteredMap().getMipmapLevels());
   }
 
-  if (flags_ >= PbrShader::Flag::ShadowsVSM) {
-    CORRADE_INTERNAL_ASSERT(shadowMapManger_ && shadowMapKeys_);
-    CORRADE_ASSERT(shadowMapKeys_->size() <= 3,
-                   "PbrDrawable::draw: the number of shadow maps exceeds the "
-                   "maximum (current it is 3).", );
-    for (size_t iShadow = 0; iShadow < shadowMapKeys_->size(); ++iShadow) {
-      Mn::Resource<CubeMap> shadowMap =
-          (*shadowMapManger_).get<CubeMap>((*shadowMapKeys_)[iShadow]);
-
-      CORRADE_INTERNAL_ASSERT(shadowMap);
-
-      if (flags_ >= PbrShader::Flag::ShadowsVSM) {
-        shader_->bindPointShadowMap(
-            iShadow,
-            shadowMap->getTexture(CubeMap::TextureType::VarianceShadowMap));
-      }
-    }
-  }
-
   shader_->draw(getMesh());
 
   // Reset winding direction
@@ -585,19 +566,6 @@ PbrDrawable& PbrDrawable::updateShaderLightDirectionParameters(
   shader_->setLightVectors(lightPositions);
 
   return *this;
-}
-
-void PbrDrawable::setShadowData(ShadowMapManager& manager,
-                                ShadowMapKeys& keys,
-                                PbrShader::Flag shadowFlag) {
-  // sanity check first
-  CORRADE_ASSERT(shadowFlag == PbrShader::Flag::ShadowsVSM,
-                 "PbrDrawable::setShadowData(): the shadow flag can only be "
-                 "ShadowsVSM.", );
-
-  shadowMapManger_ = &manager;
-  shadowMapKeys_ = &keys;
-  flags_ |= shadowFlag;
 }
 
 }  // namespace gfx

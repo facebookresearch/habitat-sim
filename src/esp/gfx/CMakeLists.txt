@@ -62,11 +62,6 @@ set(
   PbrTextureUnit.h
   DepthMapDrawableBase.cpp
   DepthMapDrawableBase.h
-  ShadowMapManager.h
-  VarianceShadowMapShader.h
-  VarianceShadowMapShader.cpp
-  VarianceShadowMapDrawable.h
-  VarianceShadowMapDrawable.cpp
   GaussianFilterShader.h
   GaussianFilterShader.cpp
 )

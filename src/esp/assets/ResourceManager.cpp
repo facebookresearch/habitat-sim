@@ -33,7 +33,7 @@
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/MeshTools/Concatenate.h>
 #include <Magnum/MeshTools/Copy.h>
-#include <Magnum/MeshTools/FilterAttributes.h>
+#include <Magnum/MeshTools/Filter.h>
 #include <Magnum/MeshTools/Interleave.h>
 #include <Magnum/MeshTools/RemoveDuplicates.h>
 #include <Magnum/MeshTools/Transform.h>
