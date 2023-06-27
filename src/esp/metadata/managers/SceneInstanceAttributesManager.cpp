@@ -82,8 +82,8 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
         }
       }
     } else {
-      ESP_WARNING() << "No Objects specified for scene" << attribsDispName
-                    << ", or specification error.";
+      ESP_DEBUG() << "No Objects specified for scene" << attribsDispName
+                  << ", or specification error.";
     }
   }
 
@@ -104,8 +104,8 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
       }
     }
   } else {
-    ESP_WARNING() << "No Articulated Objects specified for scene"
-                  << attribsDispName << ", or specification error.";
+    ESP_DEBUG() << "No Articulated Objects specified for scene"
+                << attribsDispName << ", or specification error.";
   }
 
   std::string dfltLighting = "";
@@ -114,8 +114,8 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
     // if "default lighting" is specified in scene json set value.
     attribs->setLightingHandle(dfltLighting);
   } else {
-    ESP_WARNING() << "No default_lighting specified for scene"
-                  << attribsDispName << ".";
+    ESP_DEBUG() << "No default_lighting specified for scene" << attribsDispName
+                << ".";
   }
 
   std::string navmeshName = "";
@@ -124,8 +124,8 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
     // if "navmesh_instance" is specified in scene json set value.
     attribs->setNavmeshHandle(navmeshName);
   } else {
-    ESP_WARNING() << "No navmesh_instance specified for scene"
-                  << attribsDispName << ".";
+    ESP_DEBUG() << "No navmesh_instance specified for scene" << attribsDispName
+                << ".";
   }
 
   std::string semanticDesc = "";
@@ -134,8 +134,8 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
     // if "semantic scene instance" is specified in scene json set value.
     attribs->setSemanticSceneHandle(semanticDesc);
   } else {
-    ESP_WARNING() << "No semantic_scene_instance specified for scene"
-                  << attribsDispName << ".";
+    ESP_DEBUG() << "No semantic_scene_instance specified for scene"
+                << attribsDispName << ".";
   }
   // check for user defined attributes
   this->parseUserDefinedJsonVals(attribs, jsonConfig);

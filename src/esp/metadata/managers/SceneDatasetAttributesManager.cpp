@@ -80,7 +80,7 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
   if (jsonConfig.HasMember(tag)) {
     namespace Dir = Cr::Utility::Path;
     if (!jsonConfig[tag].IsObject()) {
-      ESP_WARNING()
+      ESP_DEBUG()
           << "\"" << tag
           << "\" cell in JSON config not appropriately configured. Skipping.";
     } else {
@@ -125,9 +125,8 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
                   for (const auto& globPath : globPaths) {
                     // load all object templates available as configs in
                     // absolutePath
-                    ESP_WARNING()
-                        << "(Articulated Object) : Glob path result for"
-                        << absolutePath << ":" << globPath;
+                    ESP_DEBUG() << "(Articulated Object) : Glob path result for"
+                                << absolutePath << ":" << globPath;
                     // each globPath entry represents real unique entry on disk
 
                     //****replaces call to loadAllConfigsFromPath in AOManager
@@ -307,7 +306,7 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
           } else {
             // set attributes as defaultObject_ in attrMgr.
             attrMgr->setDefaultObject(attr);
-            ESP_WARNING(Mn::Debug::Flag::NoSpace)
+            ESP_DEBUG(Mn::Debug::Flag::NoSpace)
                 << "\"" << tag
                 << ".default_attributes\" set in Attributes Manager from JSON.";
           }

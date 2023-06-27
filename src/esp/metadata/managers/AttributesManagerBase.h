@@ -349,12 +349,14 @@ void AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad(
     if (globPaths.size() > 0) {
       for (const auto& globPath : globPaths) {
         // load all object templates available as configs in absolutePath
-        ESP_WARNING() << "Glob path result for" << absolutePath << ":"
-                      << globPath;
+        ESP_DEBUG() << "<" << this->objectType_ << "> : Glob path result for"
+                    << absolutePath << ":" << globPath;
         this->loadAllTemplatesFromPathAndExt(globPath, extType, true);
       }
     } else {
-      ESP_WARNING() << "No Glob path result for" << absolutePath;
+      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+          << "<" << this->objectType_ << "> : No Glob path result for "
+          << absolutePath;
     }
   }
   ESP_DEBUG(Mn::Debug::Flag::NoSpace)
