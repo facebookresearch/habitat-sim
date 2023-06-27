@@ -55,6 +55,7 @@ LoggingLevel levelFromName(const Corrade::Containers::StringView name) {
   CASE(VeryVerbose, veryverbose);
   CASE(Verbose, verbose);
   CASE(Debug, debug);
+  CASE(Default, default);
   CASE(Warning, warning);
   CASE(Quiet, quiet);
   CASE(Error, error);

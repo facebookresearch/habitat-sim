@@ -122,27 +122,43 @@ namespace logging {
  * greater than or equal to the logging level within that subsystem, the log
  * will be printed.
  *
- * The convience levels, @ref Verbose and @ref Quiet are the primary user facing
- * options.  @ref Quiet turns off logging and @ref Verbose is the default and
- * shows things that are generally useful.  These names exist such that logging
- * levels can be added and removed without users needed to change what they set
- * logging to.
+ * The convience levels, @ref Verbose, @ref Default and @ref Quiet are the primary user facing
+ * options.  @ref Quiet turns off logging for all but errors, @ref Default is the default and
+ * shows warnings and errors, while @ref Verbose gives debug messages along with warnings and
+ * errors. These names exist such that logging levels can be added and removed
+ * without users needing to change what they set logging to.
  */
 enum class LoggingLevel : uint8_t {
+  /**
+   * Logging level to be used to provide in depth information about a process
+   * and its result.
+   */
   VeryVerbose,
+
+  /**
+   * Logging level to be used to specify the result of some process.
+   */
   Debug,
+  /**
+   * Logging level to be used to denote that some process has yielded a result
+   * that may not be appropriate or expected.
+   */
   Warning,
+  /**
+   * Logging level to be used to denote that some process has failed.
+   */
   Error,
 
   /**
-   * The default logging level.  Enables all logging except for the most verbose
-   * statements. Habitat-Sim will be fairly verbose in this setting, but not
-   * overly so.
-   *
-   * Note: If you add another level that is lower priority than Debug but should
-   * be on by default or Debug is removed/renamed, this will need to be updated.
+   * Enables all logging except for the most verbose statements. Habitat-Sim
+   * will be fairly verbose in this setting, but not overly so.
    */
   Verbose = Debug,
+  /**
+   * The default logging level. Enables all warning and error messages but hides
+   * debug and verbose messages.
+   */
+  Default = Warning,
   /**
    * Turns of all non-critical logging messages, i.e. those that indicate that
    * something has gone wrong.
@@ -165,7 +181,7 @@ LoggingLevel levelFromName(Corrade::Containers::StringView name);
 class LoggingContext {
  public:
   constexpr static const char* LOGGING_ENV_VAR_NAME = "HABITAT_SIM_LOG";
-  constexpr static LoggingLevel DEFAULT_LEVEL = LoggingLevel::Verbose;
+  constexpr static LoggingLevel DEFAULT_LEVEL = LoggingLevel::Default;
 
   /**
    * @brief Convenience constructor that grabs the configuration string from the
