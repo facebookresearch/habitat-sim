@@ -35,8 +35,9 @@ LightLayoutAttributes::ptr LightLayoutAttributesManager::createObject(
       this->createFromJsonOrDefaultInternal(lightConfigName, msg, doRegister);
 
   if (nullptr != attrs) {
-    ESP_DEBUG() << msg << "light layout attributes created"
-                << (doRegister ? "and registered." : ".");
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << msg << " light layout attributes created"
+        << (doRegister ? " and registered." : ".");
   }
   return attrs;
 }  // PhysicsAttributesManager::createObject
@@ -97,10 +98,11 @@ void LightLayoutAttributesManager::setValsFromJSONDoc(
       lightAttribs->addLightInstance(std::move(lightInstanceAttribs));
       ++count;
     }
-    ESP_DEBUG() << "" << count
-                << "LightInstanceAttributes created successfully and added to "
-                   "LightLayoutAttributes"
-                << layoutName << ".";
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << "" << count
+        << " LightInstanceAttributes created successfully and added to "
+           "LightLayoutAttributes `"
+        << layoutName << "`.";
   }
   // check for user defined attributes at main attributes level
   bool hasUserConfig = this->parseUserDefinedJsonVals(lightAttribs, jsonConfig);
@@ -109,10 +111,11 @@ void LightLayoutAttributesManager::setValsFromJSONDoc(
     // register if anything worth registering was found
     this->postCreateRegister(std::move(lightAttribs), true);
   } else {
-    ESP_WARNING() << layoutName
-                  << "does not contain a \"lights\" object or a valid "
-                     "\"user_defined\" object and so no parsing was "
-                     "done and this attributes is not being saved.";
+    ESP_WARNING(Mn::Debug::Flag::NoSpace)
+        << "`" << layoutName
+        << "` does not contain a \"lights\" object or a valid "
+           "\"user_defined\" object and so no parsing was "
+           "done and this attributes is not being saved.";
   }
 }  // LightLayoutAttributesManager::setValsFromJSONDoc
 
@@ -154,11 +157,12 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
     if (attributes::LightPositionNamesMap.count(strToLookFor) != 0u) {
       posMdleVal = std::move(tmpPosMdleVal);
     } else {
-      ESP_WARNING() << "'position_model' Value in JSON : `" << posMdleVal
-                    << "` does not map to a valid "
-                       "attributes::LightPositionNamesMap value, so "
-                       "defaulting LightInfo position model to "
-                       "esp::gfx::LightPositionModel::Global.";
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << "'position_model' Value in JSON : `" << posMdleVal
+          << "` does not map to a valid "
+             "attributes::LightPositionNamesMap value, so "
+             "defaulting LightInfo position model to "
+             "esp::gfx::LightPositionModel::Global.";
     }
     lightAttribs->setPositionModel(posMdleVal);
   }  // position model
@@ -176,7 +180,7 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
     } else if (attributes::LightTypeNamesMap.count(strToLookFor) != 0u) {
       specifiedTypeVal = std::move(tmpTypeVal);
     } else {
-      ESP_WARNING()
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
           << "Type Value in JSON : `" << tmpTypeVal
           << "` does not map to a valid "
              "attributes::LightTypeNamesMap value, so "

@@ -328,7 +328,7 @@ MetadataMediator::makeSceneAndReferenceStage(
   ESP_CHECK(datasetAttr != nullptr && stageAttributes != nullptr &&
                 dsSceneAttrMgr != nullptr,
             "Missing (at least) one of scene dataset attributes, stage "
-            "attributes, or dataset scene attributes for scene '"
+            "attributes, or scene instance attributes for scene '"
                 << Mn::Debug::nospace << sceneName << Mn::Debug::nospace
                 << "'.  Likely an invalid scene name.");
   // create scene attributes with passed name
