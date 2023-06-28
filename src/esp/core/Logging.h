@@ -338,7 +338,7 @@ class LogMessageVoidify {
       espLoggingSubsystem(), esp::logging::LoggingLevel::VeryVerbose,    \
       (Corrade::Utility::Debug{Corrade::Utility::Debug::defaultOutput(), \
                                __VA_ARGS__}),                            \
-      "Message")
+      "Verbose")
 /**
  * @brief Debug level logging macro.
  */
