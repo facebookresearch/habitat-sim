@@ -247,21 +247,31 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
           activeSceneName));
 
   // 2. Load navmesh specified in current scene instance attributes.
-  const std::string& navmeshFileLoc = metadataMediator_->getNavmeshPathByHandle(
-      curSceneInstanceAttributes_->getNavmeshHandle());
 
-  ESP_DEBUG() << "Navmesh file location in scene instance :" << navmeshFileLoc;
-  // Get name of navmesh and use to create pathfinder and load navmesh
+  const std::string& navmeshFileHandle =
+      curSceneInstanceAttributes_->getNavmeshHandle();
   // create pathfinder and load navmesh if available
   pathfinder_ = nav::PathFinder::create();
-  if (Cr::Utility::Path::exists(navmeshFileLoc)) {
-    ESP_DEBUG() << "Loading navmesh from" << navmeshFileLoc;
-    bool pfSuccess = pathfinder_->loadNavMesh(navmeshFileLoc);
-    ESP_DEBUG() << (pfSuccess ? "Navmesh Loaded." : "Navmesh load error.");
+  if (navmeshFileHandle.empty()) {
+    ESP_DEBUG() << "No navmesh file handle provided in scene instance.";
+
   } else {
-    ESP_WARNING(Mn::Debug::Flag::NoSpace)
-        << "Navmesh file not found, checked at filename : '" << navmeshFileLoc
-        << "'";
+    const std::string& navmeshFileLoc =
+        metadataMediator_->getNavmeshPathByHandle(navmeshFileHandle);
+    // Get name of navmesh and use to create pathfinder and load navmesh
+    if (navmeshFileLoc.empty()) {
+      ESP_DEBUG() << "No navmesh file location provided in scene dataset that "
+                     "maps to handle :"
+                  << navmeshFileHandle;
+    } else if (Cr::Utility::Path::exists(navmeshFileLoc)) {
+      ESP_DEBUG() << "Loading navmesh from" << navmeshFileLoc;
+      bool pfSuccess = pathfinder_->loadNavMesh(navmeshFileLoc);
+      ESP_DEBUG() << (pfSuccess ? "Navmesh Loaded." : "Navmesh load error.");
+    } else {
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << "Navmesh file not found, checked at filename : '" << navmeshFileLoc
+          << "'";
+    }
   }
   // Calling to seeding needs to be done after the pathfinder creation but
   // before anything else.
@@ -493,9 +503,9 @@ bool Simulator::instanceStageForSceneAttributes(
         semanticSceneMeshLoaded_ = false;
         // TODO: programmatic generation of semantic meshes when no
         // annotations are provided.
-        ESP_WARNING() << "\n---\nThe active scene does not contain semantic "
+        ESP_WARNING() << "The active scene does not contain semantic "
                          "annotations : activeSemanticSceneID_ ="
-                      << activeSemanticSceneID_ << " \n---";
+                      << activeSemanticSceneID_;
       }
     }
   }  // if ID has changed - needs to be reset

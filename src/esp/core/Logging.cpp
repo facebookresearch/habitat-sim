@@ -55,6 +55,7 @@ LoggingLevel levelFromName(const Corrade::Containers::StringView name) {
   CASE(VeryVerbose, veryverbose);
   CASE(Verbose, verbose);
   CASE(Debug, debug);
+  CASE(Default, default);
   CASE(Warning, warning);
   CASE(Quiet, quiet);
   CASE(Error, error);
@@ -137,6 +138,7 @@ bool isLevelEnabled(Subsystem subsystem, LoggingLevel level) {
 }
 
 Cr::Containers::String buildMessagePrefix(Subsystem subsystem,
+                                          const std::string& msgLevel,
                                           const std::string& filename,
                                           const std::string& function,
                                           int line) {
@@ -154,9 +156,10 @@ Cr::Containers::String buildMessagePrefix(Subsystem subsystem,
   std::tm timeNow = *std::localtime(&t);
 
   return Cr::Utility::formatString(
-      "[{:.02d}:{:.02d}:{:.02d}:{:.06d}]:[{}] {}({})::{} : ", timeNow.tm_hour,
-      timeNow.tm_min, timeNow.tm_sec, nowMicros.count(),
-      subsystemNames[uint8_t(subsystem)], baseFileName, line, function);
+      "[{:.02d}:{:.02d}:{:.02d}:{:.06d}]:[{}]:[{}] {}({})::{} : ",
+      timeNow.tm_hour, timeNow.tm_min, timeNow.tm_sec, nowMicros.count(),
+      msgLevel, subsystemNames[uint8_t(subsystem)], baseFileName, line,
+      function);
 }
 
 }  // namespace logging

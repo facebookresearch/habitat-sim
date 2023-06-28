@@ -35,8 +35,9 @@ LightLayoutAttributes::ptr LightLayoutAttributesManager::createObject(
       this->createFromJsonOrDefaultInternal(lightConfigName, msg, doRegister);
 
   if (nullptr != attrs) {
-    ESP_DEBUG() << msg << "light layout attributes created"
-                << (doRegister ? "and registered." : ".");
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << msg << " light layout attributes created"
+        << (doRegister ? " and registered." : ".");
   }
   return attrs;
 }  // PhysicsAttributesManager::createObject
@@ -97,10 +98,11 @@ void LightLayoutAttributesManager::setValsFromJSONDoc(
       lightAttribs->addLightInstance(std::move(lightInstanceAttribs));
       ++count;
     }
-    ESP_DEBUG() << "" << count
-                << "LightInstanceAttributes created successfully and added to "
-                   "LightLayoutAttributes"
-                << layoutName << ".";
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << "" << count
+        << " LightInstanceAttributes created successfully and added to "
+           "LightLayoutAttributes `"
+        << layoutName << "`.";
   }
   // check for user defined attributes at main attributes level
   bool hasUserConfig = this->parseUserDefinedJsonVals(lightAttribs, jsonConfig);
@@ -109,10 +111,11 @@ void LightLayoutAttributesManager::setValsFromJSONDoc(
     // register if anything worth registering was found
     this->postCreateRegister(std::move(lightAttribs), true);
   } else {
-    ESP_WARNING() << layoutName
-                  << "does not contain a \"lights\" object or a valid "
-                     "\"user_defined\" object and so no parsing was "
-                     "done and this attributes is not being saved.";
+    ESP_WARNING(Mn::Debug::Flag::NoSpace)
+        << "`" << layoutName
+        << "` does not contain a \"lights\" object or a valid "
+           "\"user_defined\" object and so no parsing was "
+           "done and this attributes is not being saved.";
   }
 }  // LightLayoutAttributesManager::setValsFromJSONDoc
 
@@ -154,11 +157,12 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
     if (attributes::LightPositionNamesMap.count(strToLookFor) != 0u) {
       posMdleVal = std::move(tmpPosMdleVal);
     } else {
-      ESP_WARNING() << "'position_model' Value in JSON : `" << posMdleVal
-                    << "` does not map to a valid "
-                       "attributes::LightPositionNamesMap value, so "
-                       "defaulting LightInfo position model to "
-                       "esp::gfx::LightPositionModel::Global.";
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << "'position_model' Value in JSON : `" << posMdleVal
+          << "` does not map to a valid "
+             "attributes::LightPositionNamesMap value, so "
+             "defaulting LightInfo position model to "
+             "esp::gfx::LightPositionModel::Global.";
     }
     lightAttribs->setPositionModel(posMdleVal);
   }  // position model
@@ -176,7 +180,7 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
     } else if (attributes::LightTypeNamesMap.count(strToLookFor) != 0u) {
       specifiedTypeVal = std::move(tmpTypeVal);
     } else {
-      ESP_WARNING()
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
           << "Type Value in JSON : `" << tmpTypeVal
           << "` does not map to a valid "
              "attributes::LightTypeNamesMap value, so "
@@ -267,6 +271,16 @@ int LightLayoutAttributesManager::registerObjectFinalize(
 
 gfx::LightSetup LightLayoutAttributesManager::createLightSetupFromAttributes(
     const std::string& lightConfigName) {
+  // if passing empty key, use default lights for light setup
+  if (lightConfigName == DEFAULT_LIGHTING_KEY) {
+    // Default lighting key is specified as the empty string. This would
+    // generate an error if the attributes manager was queried with an empty
+    // string
+    ESP_DEBUG() << "Default lighting key specified so using "
+                   "Habitat-Sim-specified default light setup.";
+    return gfx::getDefaultLights();
+  }
+
   gfx::LightSetup res{};
   attributes::LightLayoutAttributes::ptr lightLayoutAttributes =
       this->getObjectByHandle(lightConfigName);
@@ -278,13 +292,11 @@ gfx::LightSetup LightLayoutAttributesManager::createLightSetupFromAttributes(
     int numLightInstances = lightLayoutAttributes->getNumLightInstances();
     if (numLightInstances == 0) {
       // setup default LightInfo instances - lifted from LightSetup.cpp.
-      // TODO create default attributes describing these lights?
-      return gfx::LightSetup{{.vector = {-1.0, -1.0, 0.0, 0.0},
-                              .color = {0.75, 0.75, 0.75},
-                              .model = gfx::LightPositionModel::Global},
-                             {.vector = {0.5, 0.0, -1.0, 0.0},
-                              .color = {0.4, 0.4, 0.4},
-                              .model = gfx::LightPositionModel::Global}};
+      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+          << "Lighting configuration specified by key :`" << lightConfigName
+          << "` specifies no light instances so using Habitat-Sim-specified "
+             "default light setup.";
+      return gfx::getDefaultLights();
     } else {
       auto lightInstances = lightLayoutAttributes->getLightInstances();
       for (const LightInstanceAttributes::cptr& lightAttr : lightInstances) {
@@ -310,7 +322,7 @@ gfx::LightSetup LightLayoutAttributesManager::createLightSetupFromAttributes(
             ESP_DEBUG() << "Enum gfx::LightType with val"
                         << attributes::getLightTypeName(typeEnum)
                         << "is not supported, so defaulting to "
-                           "gfx::LightType::Point";
+                           "gfx::LightType::Point (point light)";
             lightVector = {lightAttr->getPosition(), 1.0f};
           }
         }  // switch on type

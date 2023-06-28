@@ -44,6 +44,13 @@ void warning(const Cr::Containers::StringView statement) {
 }  // namespace esp
 namespace {
 
+void debug(const Cr::Containers::StringView statement) {
+  ESP_DEBUG() << statement;
+}
+void warning(const Cr::Containers::StringView statement) {
+  ESP_WARNING() << statement;
+}
+
 struct LoggingTest : Cr::TestSuite::Tester {
   explicit LoggingTest();
 
@@ -59,30 +66,30 @@ constexpr const struct {
   const char* gfxDebug;
   const char* gfxWarning;
 } EnvVarTestData[]{
-    {nullptr, "[Default] LoggingTest.cpp(103)::envVarTest : DebugDefault\n",
-     "[Default] LoggingTest.cpp(107)::envVarTest : WarningDefault\n",
-     "[Sim] LoggingTest.cpp(23)::debug : DebugSim\n",
-     "[Sim] LoggingTest.cpp(26)::warning : WarningSim\n",
-     "[Gfx] LoggingTest.cpp(36)::debug : DebugGfx\n",
-     "[Gfx] LoggingTest.cpp(39)::warning : WarningGfx\n"},
-    {"debug", "[Default] LoggingTest.cpp(103)::envVarTest : DebugDefault\n",
-     "[Default] LoggingTest.cpp(107)::envVarTest : WarningDefault\n",
-     "[Sim] LoggingTest.cpp(23)::debug : DebugSim\n",
-     "[Sim] LoggingTest.cpp(26)::warning : WarningSim\n",
-     "[Gfx] LoggingTest.cpp(36)::debug : DebugGfx\n",
-     "[Gfx] LoggingTest.cpp(39)::warning : WarningGfx\n"},
+    {"verbose", "[Debug]:[Default] LoggingTest.cpp(48)::debug : DebugDefault\n",
+     "[Warning]:[Default] LoggingTest.cpp(51)::warning : WarningDefault\n",
+     "[Debug]:[Sim] LoggingTest.cpp(23)::debug : DebugSim\n",
+     "[Warning]:[Sim] LoggingTest.cpp(26)::warning : WarningSim\n",
+     "[Debug]:[Gfx] LoggingTest.cpp(36)::debug : DebugGfx\n",
+     "[Warning]:[Gfx] LoggingTest.cpp(39)::warning : WarningGfx\n"},
+    {"debug", "[Debug]:[Default] LoggingTest.cpp(48)::debug : DebugDefault\n",
+     "[Warning]:[Default] LoggingTest.cpp(51)::warning : WarningDefault\n",
+     "[Debug]:[Sim] LoggingTest.cpp(23)::debug : DebugSim\n",
+     "[Warning]:[Sim] LoggingTest.cpp(26)::warning : WarningSim\n",
+     "[Debug]:[Gfx] LoggingTest.cpp(36)::debug : DebugGfx\n",
+     "[Warning]:[Gfx] LoggingTest.cpp(39)::warning : WarningGfx\n"},
     {"quiet", "", "", "", "", "", ""},
     {"error", "", "", "", "", "", ""},
     {"quiet:Sim,Gfx=verbose", "", "",
-     "[Sim] LoggingTest.cpp(23)::debug : DebugSim\n",
-     "[Sim] LoggingTest.cpp(26)::warning : WarningSim\n",
-     "[Gfx] LoggingTest.cpp(36)::debug : DebugGfx\n",
-     "[Gfx] LoggingTest.cpp(39)::warning : WarningGfx\n"},
+     "[Debug]:[Sim] LoggingTest.cpp(23)::debug : DebugSim\n",
+     "[Warning]:[Sim] LoggingTest.cpp(26)::warning : WarningSim\n",
+     "[Debug]:[Gfx] LoggingTest.cpp(36)::debug : DebugGfx\n",
+     "[Warning]:[Gfx] LoggingTest.cpp(39)::warning : WarningGfx\n"},
     {"warning:Gfx=debug", "",
-     "[Default] LoggingTest.cpp(107)::envVarTest : WarningDefault\n", "",
-     "[Sim] LoggingTest.cpp(26)::warning : WarningSim\n",
-     "[Gfx] LoggingTest.cpp(36)::debug : DebugGfx\n",
-     "[Gfx] LoggingTest.cpp(39)::warning : WarningGfx\n"},
+     "[Warning]:[Default] LoggingTest.cpp(51)::warning : WarningDefault\n", "",
+     "[Warning]:[Sim] LoggingTest.cpp(26)::warning : WarningSim\n",
+     "[Debug]:[Gfx] LoggingTest.cpp(36)::debug : DebugGfx\n",
+     "[Warning]:[Gfx] LoggingTest.cpp(39)::warning : WarningGfx\n"},
 };  // EnvVarTestData
 
 LoggingTest::LoggingTest() {
@@ -98,16 +105,16 @@ void LoggingTest::envVarTest() {
   std::ostringstream out;
   Cr::Utility::Debug debugCapture{&out};
   Cr::Utility::Warning warnCapture{&out};
-  // use contains to bypass issue with timestamp
 
-  ESP_DEBUG() << "DebugDefault";
+  debug("DebugDefault");
   CORRADE_VERIFY(Cr::Containers::StringView{out.str()}.contains(
       Cr::Containers::StringView{data.defaultDebug}));
   out.str("");
-  ESP_WARNING() << "WarningDefault";
+  warning("WarningDefault");
   CORRADE_VERIFY(Cr::Containers::StringView{out.str()}.contains(
       Cr::Containers::StringView{data.defaultWarning}));
   out.str("");
+
   esp::sim::test::debug("DebugSim");
   CORRADE_VERIFY(Cr::Containers::StringView{out.str()}.contains(
       Cr::Containers::StringView{data.simDebug}));

@@ -122,27 +122,43 @@ namespace logging {
  * greater than or equal to the logging level within that subsystem, the log
  * will be printed.
  *
- * The convience levels, @ref Verbose and @ref Quiet are the primary user facing
- * options.  @ref Quiet turns off logging and @ref Verbose is the default and
- * shows things that are generally useful.  These names exist such that logging
- * levels can be added and removed without users needed to change what they set
- * logging to.
+ * The convenience levels, @ref Verbose, @ref Default and @ref Quiet are the primary user facing
+ * options.  @ref Quiet turns off logging for all but errors, @ref Default is the default and
+ * shows warnings and errors, while @ref Verbose gives debug messages along with warnings and
+ * errors. These names exist such that logging levels can be added and removed
+ * without users needing to change what they set logging to.
  */
 enum class LoggingLevel : uint8_t {
+  /**
+   * Logging level to be used to provide in depth information about a process
+   * and its result.
+   */
   VeryVerbose,
+
+  /**
+   * Logging level to be used to specify the result of some process.
+   */
   Debug,
+  /**
+   * Logging level to be used to denote that some process has yielded a result
+   * that may not be appropriate or expected.
+   */
   Warning,
+  /**
+   * Logging level to be used to denote that some process has failed.
+   */
   Error,
 
   /**
-   * The default logging level.  Enables all logging except for the most verbose
-   * statements. Habitat-Sim will be fairly verbose in this setting, but not
-   * overly so.
-   *
-   * Note: If you add another level that is lower priority than Debug but should
-   * be on by default or Debug is removed/renamed, this will need to be updated.
+   * Enables all logging except for the most verbose statements. Habitat-Sim
+   * will be fairly verbose in this setting, but not overly so.
    */
   Verbose = Debug,
+  /**
+   * The default logging level. Enables all warning and error messages but hides
+   * debug and verbose messages.
+   */
+  Default = Warning,
   /**
    * Turns of all non-critical logging messages, i.e. those that indicate that
    * something has gone wrong.
@@ -165,7 +181,7 @@ LoggingLevel levelFromName(Corrade::Containers::StringView name);
 class LoggingContext {
  public:
   constexpr static const char* LOGGING_ENV_VAR_NAME = "HABITAT_SIM_LOG";
-  constexpr static LoggingLevel DEFAULT_LEVEL = LoggingLevel::Verbose;
+  constexpr static LoggingLevel DEFAULT_LEVEL = LoggingLevel::Default;
 
   /**
    * @brief Convenience constructor that grabs the configuration string from the
@@ -246,6 +262,7 @@ bool isLevelEnabled(Subsystem subsystem, LoggingLevel level);
  * subsystem/namespace, file, line number and function name
  */
 Corrade::Containers::String buildMessagePrefix(Subsystem subsystem,
+                                               const std::string& msgLevel,
                                                const std::string& filename,
                                                const std::string& function,
                                                int line);
@@ -304,10 +321,10 @@ class LogMessageVoidify {
 
 // This ends with a nospace since the space is baked in to subsystemPrefix for
 // the case that the logger was created with a nospace flag.
-#define ESP_SUBSYS_LOG_IF(subsystem, level, output)                        \
-  ESP_LOG_IF(esp::logging::isLevelEnabled((subsystem), (level)), (output)) \
-      << esp::logging::buildMessagePrefix((subsystem), (__FILE__),         \
-                                          (__FUNCTION__), (__LINE__))      \
+#define ESP_SUBSYS_LOG_IF(subsystem, level, output, levelMsg)                  \
+  ESP_LOG_IF(esp::logging::isLevelEnabled((subsystem), (level)), (output))     \
+      << esp::logging::buildMessagePrefix((subsystem), (levelMsg), (__FILE__), \
+                                          (__FUNCTION__), (__LINE__))          \
       << Corrade::Utility::Debug::nospace
 
 #define ESP_LOG_LEVEL_ENABLED(level) \
@@ -320,25 +337,26 @@ class LogMessageVoidify {
   ESP_SUBSYS_LOG_IF(                                                     \
       espLoggingSubsystem(), esp::logging::LoggingLevel::VeryVerbose,    \
       (Corrade::Utility::Debug{Corrade::Utility::Debug::defaultOutput(), \
-                               __VA_ARGS__}))
+                               __VA_ARGS__}),                            \
+      "Verbose")
 /**
  * @brief Debug level logging macro.
  */
 #define ESP_DEBUG(...)                                                        \
   ESP_SUBSYS_LOG_IF(espLoggingSubsystem(), esp::logging::LoggingLevel::Debug, \
-                    Corrade::Utility::Debug{__VA_ARGS__})
+                    Corrade::Utility::Debug{__VA_ARGS__}, "Debug")
 /**
  * @brief Warning level logging macro.
  */
 #define ESP_WARNING(...)                                 \
   ESP_SUBSYS_LOG_IF(espLoggingSubsystem(),               \
                     esp::logging::LoggingLevel::Warning, \
-                    Corrade::Utility::Warning{__VA_ARGS__})
+                    Corrade::Utility::Warning{__VA_ARGS__}, "Warning")
 /**
  * @brief Error level logging macro.
  */
 #define ESP_ERROR(...)                                                        \
   ESP_SUBSYS_LOG_IF(espLoggingSubsystem(), esp::logging::LoggingLevel::Error, \
-                    Corrade::Utility::Error{__VA_ARGS__})
+                    Corrade::Utility::Error{__VA_ARGS__}, "Error")
 
 #endif  // ESP_CORE_LOGGING_H_
