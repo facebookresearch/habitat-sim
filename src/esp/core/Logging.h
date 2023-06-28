@@ -122,7 +122,7 @@ namespace logging {
  * greater than or equal to the logging level within that subsystem, the log
  * will be printed.
  *
- * The convience levels, @ref Verbose, @ref Default and @ref Quiet are the primary user facing
+ * The convenience levels, @ref Verbose, @ref Default and @ref Quiet are the primary user facing
  * options.  @ref Quiet turns off logging for all but errors, @ref Default is the default and
  * shows warnings and errors, while @ref Verbose gives debug messages along with warnings and
  * errors. These names exist such that logging levels can be added and removed
