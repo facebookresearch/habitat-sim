@@ -74,7 +74,7 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
   // should only be empty if not specified in scene instance config, or if scene
   // instance config is synthesized (i.e. when Simulator::reconfigure is called
   // with SimulatorConfiguration::activeSceneName being a stage)
-  if (lightHandle.length() == 0) {
+  if (lightHandle.empty()) {
     lightHandle = sceneInstanceName;
   }
 

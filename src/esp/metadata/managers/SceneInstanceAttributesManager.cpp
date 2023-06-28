@@ -59,17 +59,26 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
   attribs->setTranslationOrigin(getTranslationOriginVal(jsonConfig));
 
   // Check for stage instance existence
-  if ((jsonConfig.HasMember("stage_instance")) &&
-      (jsonConfig["stage_instance"].IsObject())) {
-    attribs->setStageInstance(
-        createInstanceAttributesFromJSON(jsonConfig["stage_instance"]));
+  if (jsonConfig.HasMember("stage_instance")) {
+    if (jsonConfig["stage_instance"].IsObject()) {
+      attribs->setStageInstance(
+          createInstanceAttributesFromJSON(jsonConfig["stage_instance"]));
+    } else {
+      // stage instance exists but is not a valid JSON Object
+      ESP_WARNING()
+          << "Stage instance issue in Scene Instance" << attribsDispName
+          << ": JSON cell `stage_instance` is not a valid JSON object.";
+    }
   } else {
-    ESP_WARNING() << "No Stage specified for scene" << attribsDispName
-                  << ", or specification error.";
+    // no stage instance exists. This should always at least be present
+    ESP_WARNING() << "No Stage instance specified in Scene Instance"
+                  << attribsDispName
+                  << ": JSON cell `stage_instance` does not exist.";
   }
 
   // Check for object instances existence
   if (jsonConfig.HasMember("object_instances")) {
+    // object_instances tag exists
     if (jsonConfig["object_instances"].IsArray()) {
       const auto& objectArray = jsonConfig["object_instances"];
       for (rapidjson::SizeType i = 0; i < objectArray.Size(); ++i) {
@@ -77,35 +86,63 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
         if (objCell.IsObject()) {
           attribs->addObjectInstance(createInstanceAttributesFromJSON(objCell));
         } else {
-          ESP_WARNING() << "Object specification error in scene"
-                        << attribsDispName << "at idx :" << i << ".";
+          ESP_WARNING()
+              << "Object instance issue in Scene Instance" << attribsDispName
+              << "at idx :" << i
+              << ": JSON cell within `object_instances` array is not a "
+                 "valid JSON object, so skipping entry.";
         }
       }
     } else {
-      ESP_DEBUG() << "No Objects specified for scene" << attribsDispName
-                  << ", or specification error.";
+      // object_instances tag exists but is not an array. should warn (perhaps
+      // error?)
+      ESP_WARNING() << "Object instances issue in Scene Instance"
+                    << attribsDispName
+                    << ": JSON cell `object_instances` is not a valid JSON "
+                       "array, so no object instances loaded.";
     }
+  } else {
+    // No object_instances tag exists in scene instance. Not necessarily a bad
+    // thing, not all datasets have objects
+    ESP_DEBUG() << "No Objects specified in Scene Instance" << attribsDispName
+                << ": JSON cell `object_instances` does not exist.";
   }
 
   // Check for articulated object instances existence
-  if ((jsonConfig.HasMember("articulated_object_instances")) &&
-      (jsonConfig["articulated_object_instances"].IsArray())) {
-    const auto& articulatedObjArray =
-        jsonConfig["articulated_object_instances"];
-    for (rapidjson::SizeType i = 0; i < articulatedObjArray.Size(); ++i) {
-      const auto& artObjCell = articulatedObjArray[i];
+  if (jsonConfig.HasMember("articulated_object_instances")) {
+    // articulated_object_instances tag exists
+    if (jsonConfig["articulated_object_instances"].IsArray()) {
+      const auto& articulatedObjArray =
+          jsonConfig["articulated_object_instances"];
+      for (rapidjson::SizeType i = 0; i < articulatedObjArray.Size(); ++i) {
+        const auto& artObjCell = articulatedObjArray[i];
 
-      if (artObjCell.IsObject()) {
-        attribs->addArticulatedObjectInstance(
-            createAOInstanceAttributesFromJSON(artObjCell));
-      } else {
-        ESP_WARNING() << "Articulated Object specification error in scene"
-                      << attribsDispName << "at idx :" << i << ".";
+        if (artObjCell.IsObject()) {
+          attribs->addArticulatedObjectInstance(
+              createAOInstanceAttributesFromJSON(artObjCell));
+        } else {
+          ESP_WARNING()
+              << "Articulated Object specification error in Scene Instance"
+              << attribsDispName << "at idx :" << i
+              << ": JSON cell within `articulated_object_instances` array is "
+                 "not a valid JSON object, so skipping entry.";
+        }
       }
+    } else {
+      // articulated_object_instances tag exists but is not an array. should
+      // warn (perhaps error?)
+      ESP_WARNING() << "Articulated Object instances issue in Scene Instance"
+                    << attribsDispName
+                    << ": JSON cell "
+                       "`articulated_object_instances` is not a valid JSON "
+                       "array, so no articulated object instances loaded.";
     }
   } else {
+    // No articulated_object_instances tag exists in scene instance. Not
+    // necessarily a bad thing, not all datasets have articulated objects
     ESP_DEBUG() << "No Articulated Objects specified for scene"
-                << attribsDispName << ", or specification error.";
+                << attribsDispName
+                << "JSON cell `articulated_object_instances` does not exist.";
   }
 
   std::string dfltLighting = "";
@@ -328,8 +365,7 @@ std::string SceneInstanceAttributesManager::getTranslationOriginVal(
           << ": translation_origin value in json :`" << tmpTransOriginVal
           << "`|`" << strToLookFor
           << "` does not map to a valid SceneInstanceTranslationOrigin "
-             "value, "
-             "so defaulting translation origin to "
+             "value, so defaulting translation origin to "
              "SceneInstanceTranslationOrigin::Unknown.";
     }
   }

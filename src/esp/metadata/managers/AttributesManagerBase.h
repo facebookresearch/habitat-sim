@@ -339,8 +339,9 @@ void AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad(
     const io::JsonGenericValue& filePaths) {
   for (rapidjson::SizeType i = 0; i < filePaths.Size(); ++i) {
     if (!filePaths[i].IsString()) {
-      ESP_ERROR() << "Invalid path value in file path array element @ idx" << i
-                  << ". Skipping.";
+      ESP_ERROR() << "<" << this->objectType_
+                  << "> : Invalid path value in file path array element @ idx"
+                  << i << ". Skipping.";
       continue;
     }
     std::string absolutePath =
@@ -354,9 +355,9 @@ void AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad(
         this->loadAllTemplatesFromPathAndExt(globPath, extType, true);
       }
     } else {
-      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
           << "<" << this->objectType_ << "> : No Glob path result for "
-          << absolutePath;
+          << absolutePath << " so unable to load templates.";
     }
   }
   ESP_DEBUG(Mn::Debug::Flag::NoSpace)
@@ -387,7 +388,9 @@ auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
   if (jsonFileExists) {
     // configuration file exists with requested name, use to build Attributes
     attrs = this->createObjectFromJSONFile(jsonAttrFileName, registerObj);
-    msg = "JSON Configuration File (" + jsonAttrFileName + ") based";
+    if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::Debug)) {
+      msg = "JSON Configuration File (" + jsonAttrFileName + ") based";
+    }
   } else {
     // An existing, valid configuration file could not be found using the
     // passed filename. Currently non-JSON filenames are used to create new,
@@ -397,12 +400,15 @@ auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
     bool fileExists = Cr::Utility::Path::exists(filename);
     // if filename passed is name of some kind of asset, or if it was not
     // found
-    if (fileExists) {
-      msg = "File (" + filename +
-            ") exists but is not a recognized config filename extension, so "
-            "new default";
-    } else {
-      msg = "File (" + filename + ") not found, so new default";
+    if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::Debug)) {
+      // only populate msg if appropriate logging level is enabled
+      if (fileExists) {
+        msg = "File (" + filename +
+              ") exists but is not a recognized config filename extension, so "
+              "new default";
+      } else {
+        msg = "File (" + filename + ") not found, so new default";
+      }
     }
   }
   return attrs;
