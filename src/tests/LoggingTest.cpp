@@ -44,6 +44,13 @@ void warning(const Cr::Containers::StringView statement) {
 }  // namespace esp
 namespace {
 
+void debug(const Cr::Containers::StringView statement) {
+  ESP_DEBUG() << statement;
+}
+void warning(const Cr::Containers::StringView statement) {
+  ESP_WARNING() << statement;
+}
+
 struct LoggingTest : Cr::TestSuite::Tester {
   explicit LoggingTest();
 
@@ -59,30 +66,30 @@ constexpr const struct {
   const char* gfxDebug;
   const char* gfxWarning;
 } EnvVarTestData[]{
-    {"verbose", "[D:Default] LoggingTest.cpp(104)::envVarTest : DebugDefault\n",
-     "[W:Default] LoggingTest.cpp(110)::envVarTest : WarningDefault\n",
-     "[D:Sim] LoggingTest.cpp(23)::debug : DebugSim\n",
-     "[W:Sim] LoggingTest.cpp(26)::warning : WarningSim\n",
-     "[D:Gfx] LoggingTest.cpp(36)::debug : DebugGfx\n",
-     "[W:Gfx] LoggingTest.cpp(39)::warning : WarningGfx\n"},
-    {"debug", "[D:Default] LoggingTest.cpp(104)::envVarTest : DebugDefault\n",
-     "[W:Default] LoggingTest.cpp(110)::envVarTest : WarningDefault\n",
-     "[D:Sim] LoggingTest.cpp(23)::debug : DebugSim\n",
-     "[W:Sim] LoggingTest.cpp(26)::warning : WarningSim\n",
-     "[D:Gfx] LoggingTest.cpp(36)::debug : DebugGfx\n",
-     "[W:Gfx] LoggingTest.cpp(39)::warning : WarningGfx\n"},
+    {"verbose", "[Debug]:[Default] LoggingTest.cpp(48)::debug : DebugDefault\n",
+     "[Warning]:[Default] LoggingTest.cpp(51)::warning : WarningDefault\n",
+     "[Debug]:[Sim] LoggingTest.cpp(23)::debug : DebugSim\n",
+     "[Warning]:[Sim] LoggingTest.cpp(26)::warning : WarningSim\n",
+     "[Debug]:[Gfx] LoggingTest.cpp(36)::debug : DebugGfx\n",
+     "[Warning]:[Gfx] LoggingTest.cpp(39)::warning : WarningGfx\n"},
+    {"debug", "[Debug]:[Default] LoggingTest.cpp(48)::debug : DebugDefault\n",
+     "[Warning]:[Default] LoggingTest.cpp(51)::warning : WarningDefault\n",
+     "[Debug]:[Sim] LoggingTest.cpp(23)::debug : DebugSim\n",
+     "[Warning]:[Sim] LoggingTest.cpp(26)::warning : WarningSim\n",
+     "[Debug]:[Gfx] LoggingTest.cpp(36)::debug : DebugGfx\n",
+     "[Warning]:[Gfx] LoggingTest.cpp(39)::warning : WarningGfx\n"},
     {"quiet", "", "", "", "", "", ""},
     {"error", "", "", "", "", "", ""},
     {"quiet:Sim,Gfx=verbose", "", "",
-     "[D:Sim] LoggingTest.cpp(23)::debug : DebugSim\n",
-     "[W:Sim] LoggingTest.cpp(26)::warning : WarningSim\n",
-     "[D:Gfx] LoggingTest.cpp(36)::debug : DebugGfx\n",
-     "[W:Gfx] LoggingTest.cpp(39)::warning : WarningGfx\n"},
+     "[Debug]:[Sim] LoggingTest.cpp(23)::debug : DebugSim\n",
+     "[Warning]:[Sim] LoggingTest.cpp(26)::warning : WarningSim\n",
+     "[Debug]:[Gfx] LoggingTest.cpp(36)::debug : DebugGfx\n",
+     "[Warning]:[Gfx] LoggingTest.cpp(39)::warning : WarningGfx\n"},
     {"warning:Gfx=debug", "",
-     "[W:Default] LoggingTest.cpp(110)::envVarTest : WarningDefault\n", "",
-     "[W:Sim] LoggingTest.cpp(26)::warning : WarningSim\n",
-     "[D:Gfx] LoggingTest.cpp(36)::debug : DebugGfx\n",
-     "[W:Gfx] LoggingTest.cpp(39)::warning : WarningGfx\n"},
+     "[Warning]:[Default] LoggingTest.cpp(51)::warning : WarningDefault\n", "",
+     "[Warning]:[Sim] LoggingTest.cpp(26)::warning : WarningSim\n",
+     "[Debug]:[Gfx] LoggingTest.cpp(36)::debug : DebugGfx\n",
+     "[Warning]:[Gfx] LoggingTest.cpp(39)::warning : WarningGfx\n"},
 };  // EnvVarTestData
 
 LoggingTest::LoggingTest() {
@@ -99,18 +106,15 @@ void LoggingTest::envVarTest() {
   Cr::Utility::Debug debugCapture{&out};
   Cr::Utility::Warning warnCapture{&out};
 
-  // Test string for defaultDebug needs the line number for
-  // this message :
-  ESP_DEBUG() << "DebugDefault";
+  debug("DebugDefault");
   CORRADE_VERIFY(Cr::Containers::StringView{out.str()}.contains(
       Cr::Containers::StringView{data.defaultDebug}));
   out.str("");
-  // Test string for defaultWarning needs the line number for
-  // this message :
-  ESP_WARNING() << "WarningDefault";
+  warning("WarningDefault");
   CORRADE_VERIFY(Cr::Containers::StringView{out.str()}.contains(
       Cr::Containers::StringView{data.defaultWarning}));
   out.str("");
+
   esp::sim::test::debug("DebugSim");
   CORRADE_VERIFY(Cr::Containers::StringView{out.str()}.contains(
       Cr::Containers::StringView{data.simDebug}));

@@ -138,7 +138,7 @@ bool isLevelEnabled(Subsystem subsystem, LoggingLevel level) {
 }
 
 Cr::Containers::String buildMessagePrefix(Subsystem subsystem,
-                                          char levelChar,
+                                          const std::string& msgLevel,
                                           const std::string& filename,
                                           const std::string& function,
                                           int line) {
@@ -156,9 +156,9 @@ Cr::Containers::String buildMessagePrefix(Subsystem subsystem,
   std::tm timeNow = *std::localtime(&t);
 
   return Cr::Utility::formatString(
-      "[{:.02d}:{:.02d}:{:.02d}:{:.06d}]:[{:c}:{}] {}({})::{} : ",
+      "[{:.02d}:{:.02d}:{:.02d}:{:.06d}]:[{}]:[{}] {}({})::{} : ",
       timeNow.tm_hour, timeNow.tm_min, timeNow.tm_sec, nowMicros.count(),
-      levelChar, subsystemNames[uint8_t(subsystem)], baseFileName, line,
+      msgLevel, subsystemNames[uint8_t(subsystem)], baseFileName, line,
       function);
 }
 

@@ -262,7 +262,7 @@ bool isLevelEnabled(Subsystem subsystem, LoggingLevel level);
  * subsystem/namespace, file, line number and function name
  */
 Corrade::Containers::String buildMessagePrefix(Subsystem subsystem,
-                                               char levelChar,
+                                               const std::string& msgLevel,
                                                const std::string& filename,
                                                const std::string& function,
                                                int line);
@@ -321,10 +321,10 @@ class LogMessageVoidify {
 
 // This ends with a nospace since the space is baked in to subsystemPrefix for
 // the case that the logger was created with a nospace flag.
-#define ESP_SUBSYS_LOG_IF(subsystem, level, output, levelChar)                 \
+#define ESP_SUBSYS_LOG_IF(subsystem, level, output, levelMsg)                  \
   ESP_LOG_IF(esp::logging::isLevelEnabled((subsystem), (level)), (output))     \
-      << esp::logging::buildMessagePrefix(                                     \
-             (subsystem), (levelChar), (__FILE__), (__FUNCTION__), (__LINE__)) \
+      << esp::logging::buildMessagePrefix((subsystem), (levelMsg), (__FILE__), \
+                                          (__FUNCTION__), (__LINE__))          \
       << Corrade::Utility::Debug::nospace
 
 #define ESP_LOG_LEVEL_ENABLED(level) \
@@ -338,25 +338,25 @@ class LogMessageVoidify {
       espLoggingSubsystem(), esp::logging::LoggingLevel::VeryVerbose,    \
       (Corrade::Utility::Debug{Corrade::Utility::Debug::defaultOutput(), \
                                __VA_ARGS__}),                            \
-      'V')
+      "Message")
 /**
  * @brief Debug level logging macro.
  */
 #define ESP_DEBUG(...)                                                        \
   ESP_SUBSYS_LOG_IF(espLoggingSubsystem(), esp::logging::LoggingLevel::Debug, \
-                    Corrade::Utility::Debug{__VA_ARGS__}, 'D')
+                    Corrade::Utility::Debug{__VA_ARGS__}, "Debug")
 /**
  * @brief Warning level logging macro.
  */
 #define ESP_WARNING(...)                                 \
   ESP_SUBSYS_LOG_IF(espLoggingSubsystem(),               \
                     esp::logging::LoggingLevel::Warning, \
-                    Corrade::Utility::Warning{__VA_ARGS__}, 'W')
+                    Corrade::Utility::Warning{__VA_ARGS__}, "Warning")
 /**
  * @brief Error level logging macro.
  */
 #define ESP_ERROR(...)                                                        \
   ESP_SUBSYS_LOG_IF(espLoggingSubsystem(), esp::logging::LoggingLevel::Error, \
-                    Corrade::Utility::Error{__VA_ARGS__}, 'E')
+                    Corrade::Utility::Error{__VA_ARGS__}, "Error")
 
 #endif  // ESP_CORE_LOGGING_H_
