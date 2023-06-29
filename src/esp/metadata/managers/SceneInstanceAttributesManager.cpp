@@ -71,7 +71,7 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
     } else {
       // stage instance exists but is not a valid JSON Object
       ESP_WARNING(Mn::Debug::Flag::NoSpace)
-          << "Stage instance issue in Scene Instance `" << attribsDispName
+          << "Stage Instance issue in Scene Instance `" << attribsDispName
           << "`: JSON cell `stage_instance` is not a valid JSON object.";
     }
   } else {

@@ -123,7 +123,7 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
           lightLayoutAttr);
 
   /**
-   * @brief This test will verify that the Scene Instance attributes' managers'
+   * @brief This test will verify that the Scene Instance Attributes' managers'
    * JSON loading process is working as expected.
    */
   void testSceneInstanceAttrVals(
@@ -645,7 +645,7 @@ void AttributesConfigsTest::testLightJSONLoad() {
 
 void AttributesConfigsTest::testSceneInstanceRootUserDefinedAttrVals(
     std::shared_ptr<esp::core::config::Configuration> userAttrs) {
-  // test scene instance attributes-level user config vals
+  // test Scene Instance Attributes-level user config vals
   testUserDefinedConfigVals(userAttrs, 4, "scene instance defined string", true,
                             99, 9.1, Mn::Vector2(1.3f, 2.4f),
                             Mn::Vector3(12.3, 32.5, 25.07),
@@ -666,7 +666,7 @@ void AttributesConfigsTest::testSceneInstanceAttrVals(
   CORRADE_COMPARE(sceneAttr->getNavmeshHandle(), "test_navmesh_path1");
   CORRADE_COMPARE(sceneAttr->getSemanticSceneHandle(),
                   "test_semantic_descriptor_path1");
-  // test scene instance attributes-level user config vals
+  // test Scene Instance Attributes-level user config vals
   testSceneInstanceRootUserDefinedAttrVals(sceneAttr->getUserConfiguration());
 
   // test scene instanct attributes-level user config vals retrieved from MM

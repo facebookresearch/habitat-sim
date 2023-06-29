@@ -86,7 +86,7 @@ struct PhysicsTest : Cr::TestSuite::Tester {
       stageAttributesMgr->setCurrPhysicsManagerAttributesHandle(
           physicsManagerAttributes->getHandle());
     }
-    // create scene instance attributes
+    // create Scene Instance Attributes
     esp::metadata::attributes::SceneInstanceAttributes::cptr
         curSceneInstanceAttributes =
             metadataMediator_->getSceneInstanceAttributesByName(stageFile);

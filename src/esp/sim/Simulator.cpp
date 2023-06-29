@@ -234,7 +234,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   // 1. initial setup for scene instancing - sets or creates the
   // current scene instance to correspond to the given name.
 
-  // Get scene instance attributes corresponding to passed active scene name
+  // Get Scene Instance Attributes corresponding to passed active scene name
   // This will retrieve, or construct, an appropriately configured scene
   // instance attributes, depending on what exists in the Scene Dataset library
   // for the current dataset.
@@ -249,7 +249,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
           "instance :{} failed due to scene instance not being found. Aborting",
           activeSceneName));
 
-  // 2. Load navmesh specified in current scene instance attributes.
+  // 2. Load navmesh specified in current Scene Instance Attributes.
 
   const std::string& navmeshFileHandle =
       curSceneInstanceAttributes_->getNavmeshHandle();
@@ -272,8 +272,8 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
       ESP_DEBUG() << (pfSuccess ? "Navmesh Loaded." : "Navmesh load error.");
     } else {
       ESP_WARNING(Mn::Debug::Flag::NoSpace)
-          << "Navmesh file not found, checked at filename : '" << navmeshFileLoc
-          << "'";
+          << "Requested navmesh file not found, checked at filename : '"
+          << navmeshFileLoc << "'";
     }
   }
   // Calling to seeding needs to be done after the pathfinder creation but
