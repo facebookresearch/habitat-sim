@@ -308,15 +308,13 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * be found via substring search, so the name is expected to be sufficiently
    * restrictive to have exactly 1 match in dataset.
    * @return the full attributes name corresponding to @p lightSetupName , or
-   * the empty string.
+   * predefined No-Light and Default_lighting key strings.
    */
   inline std::string getLightSetupFullHandle(
       const std::string& lightSetupName) {
-    if (lightSetupName == DEFAULT_LIGHTING_KEY) {
-      return DEFAULT_LIGHTING_KEY;
-    }
-    if (lightSetupName == NO_LIGHT_KEY) {
-      return NO_LIGHT_KEY;
+    if ((lightSetupName == DEFAULT_LIGHTING_KEY) ||
+        (lightSetupName == NO_LIGHT_KEY)) {
+      return lightSetupName;
     }
     return getFullAttrNameFromStr(lightSetupName,
                                   lightLayoutAttributesManager_);
