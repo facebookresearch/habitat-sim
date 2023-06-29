@@ -363,7 +363,7 @@ void StageAttributesManager::setDefaultAssetNameBasedAttributes(
 void StageAttributesManager::setValsFromJSONDoc(
     attributes::StageAttributes::ptr stageAttributes,
     const io::JsonGenericValue& jsonConfig) {
-  this->loadAbstractObjectAttributesFromJson(stageAttributes, jsonConfig);
+  this->setAbstractObjectAttributesFromJson(stageAttributes, jsonConfig);
 
   // directory location where stage files are found
   std::string stageLocFileDir = stageAttributes->getFileDirectory();

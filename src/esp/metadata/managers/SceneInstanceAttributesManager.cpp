@@ -210,7 +210,7 @@ SceneInstanceAttributesManager::createInstanceAttributesFromJSON(
   SceneObjectInstanceAttributes::ptr instanceAttrs =
       createEmptyInstanceAttributes("");
   // populate attributes
-  this->loadAbstractObjectAttributesFromJson(instanceAttrs, jCell);
+  this->setAbstractObjectAttributesFromJson(instanceAttrs, jCell);
   return instanceAttrs;
 }  // SceneInstanceAttributesManager::createInstanceAttributesFromJSON
 
@@ -220,7 +220,7 @@ SceneInstanceAttributesManager::createAOInstanceAttributesFromJSON(
   SceneAOInstanceAttributes::ptr instanceAttrs =
       createEmptyAOInstanceAttributes("");
   // populate attributes
-  this->loadAbstractObjectAttributesFromJson(instanceAttrs, jCell);
+  this->setAbstractObjectAttributesFromJson(instanceAttrs, jCell);
 
   // only used for articulated objects
   // fixed base
@@ -290,7 +290,7 @@ SceneInstanceAttributesManager::createAOInstanceAttributesFromJSON(
 
 }  // SceneInstanceAttributesManager::createAOInstanceAttributesFromJSON
 
-void SceneInstanceAttributesManager::loadAbstractObjectAttributesFromJson(
+void SceneInstanceAttributesManager::setAbstractObjectAttributesFromJson(
     const attributes::SceneObjectInstanceAttributes::ptr& instanceAttrs,
     const io::JsonGenericValue& jCell) const {
   // template handle describing stage/object instance
@@ -368,7 +368,7 @@ void SceneInstanceAttributesManager::loadAbstractObjectAttributesFromJson(
   // check for user defined attributes
   this->parseUserDefinedJsonVals(instanceAttrs, jCell);
 
-}  // SceneInstanceAttributesManager::loadAbstractObjectAttributesFromJson
+}  // SceneInstanceAttributesManager::setAbstractObjectAttributesFromJson
 
 std::string SceneInstanceAttributesManager::getTranslationOriginVal(
     const io::JsonGenericValue& jsonDoc) const {

@@ -77,7 +77,7 @@ void ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates() {
 void ObjectAttributesManager::setValsFromJSONDoc(
     attributes::ObjectAttributes::ptr objAttributes,
     const io::JsonGenericValue& jsonConfig) {
-  this->loadAbstractObjectAttributesFromJson(objAttributes, jsonConfig);
+  this->setAbstractObjectAttributesFromJson(objAttributes, jsonConfig);
 
   // Populate with object-specific fields found in json, if any are there.
   // object mass
