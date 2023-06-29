@@ -47,8 +47,15 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
 
   /* This function pointer is used by ESP_CHECK(). If it's null, it
      std::abort()s, if not, it calls it to cause a Python AssertionError */
-  esp::core::throwInPython = [](const char* const message) {
+  esp::core::throwAssertInPython = [](const char* const message) {
     PyErr_SetString(PyExc_AssertionError, message);
+    throw pybind11::error_already_set{};
+  };
+
+  /* This function pointer is used by ESP_FATAL(). If it's null, it
+     std::exit()s, if not, it calls it to cause a Python RuntimeError */
+  esp::core::throwRuntimeInPython = [](const char* const message) {
+    PyErr_SetString(PyExc_RuntimeError, message);
     throw pybind11::error_already_set{};
   };
 
