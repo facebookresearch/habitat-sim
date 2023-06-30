@@ -203,7 +203,8 @@ class ManagedContainerBase {
     auto objKeyByIDIter = objectLibKeyByID_.find(objectID);
     if (objKeyByIDIter == objectLibKeyByID_.end()) {
       ESP_ERROR() << "Unknown" << objectType_
-                  << "managed object ID:" << objectID << ". Aborting";
+                  << "managed object ID:" << objectID
+                  << ", so unable to retrieve handle.";
       // never will have registered object with registration handle == ""
       return "";
     }
@@ -326,8 +327,9 @@ class ManagedContainerBase {
   bool checkExistsWithMessage(const std::string& objectHandle,
                               const std::string& src) const {
     if (!getObjectLibHasHandle(objectHandle)) {
-      ESP_ERROR() << src << ": Unknown" << objectType_
-                  << "managed object handle :" << objectHandle << ". Aborting";
+      ESP_ERROR(Magnum::Debug::Flag::NoSpace)
+          << src << ":" << objectType_ << " managed object handle `"
+          << objectHandle << "` not found in ManagedContainer, so aborting.";
       return false;
     }
     return true;

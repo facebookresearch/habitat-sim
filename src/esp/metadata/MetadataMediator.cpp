@@ -88,9 +88,10 @@ bool MetadataMediator::createPhysicsManagerAttributes(
     if (physAttrs == nullptr) {
       // something failed during creation process.
       ESP_WARNING(Mn::Debug::Flag::NoSpace)
-          << "Unknown physics manager configuration file : `"
+          << "Unknown PhysicsManager Attributes configuration file : `"
           << _physicsManagerAttributesPath
-          << "` does not exist and is not able to be created. Aborting.";
+          << "` does not exist and no PhysicsManager Attributes is able to be "
+             "created for it, so creation failed.";
       return false;
     }
   }  // if dne then create
@@ -166,7 +167,7 @@ bool MetadataMediator::removeSceneDataset(const std::string& sceneDatasetName) {
     ESP_WARNING(Mn::Debug::Flag::NoSpace)
         << "SceneDatasetAttributes `" << sceneDatasetName
         << "` unable to be deleted, probably due to it being marked "
-           "undeleteable in manager. Aborting.";
+           "undeleteable in manager, so aborting dataset delete.";
     return false;
   }
   // Should always have a default dataset. Use this process to remove extraneous
@@ -449,7 +450,8 @@ MetadataMediator::getSceneInstanceUserConfiguration(
   attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
   // this should never happen
   if (datasetAttr == nullptr) {
-    ESP_ERROR() << "No active dataset specified/exists. Aborting.";
+    ESP_ERROR() << "No active dataset specified/exists, so aborting User "
+                   "Configuration retrieval.";
     return nullptr;
   }
   // get scene instance attribute manager
@@ -518,7 +520,8 @@ std::string MetadataMediator::createDatasetReport(
   } else {
     // unknown dataset
     ESP_ERROR() << "Dataset" << sceneDataset
-                << "is not found in the MetadataMediator. Aborting.";
+                << "is not found in the MetadataMediator, so unable to create "
+                   "Dataset Report.";
     return "Requeseted SceneDataset `" + sceneDataset + "` unknown.";
   }
   return Corrade::Utility::formatString(

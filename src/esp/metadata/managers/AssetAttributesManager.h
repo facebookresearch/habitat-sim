@@ -193,7 +193,8 @@ class AssetAttributesManager
       bool contains = true) const {
     if (primType == PrimObjTypes::END_PRIM_OBJ_TYPES) {
       ESP_ERROR() << "Illegal primtitive type "
-                     "name PrimObjTypes::END_PRIM_OBJ_TYPES. Aborting.";
+                     "name PrimObjTypes::END_PRIM_OBJ_TYPES, so no template "
+                     "handles exist to retrieve.";
       return {};
     }
     std::string subStr = PrimitiveNames3DMap.at(primType);
@@ -414,7 +415,7 @@ class AssetAttributesManager
       override {
     ESP_WARNING()
         << "Overriding default objects for PrimitiveAssetAttributes not "
-           "currently supported.  Aborting.";
+           "currently supported so default is set to nullptr.";
     this->defaultObj_ = nullptr;
   }  // AssetAttributesManager::setDefaultObject
 
@@ -495,7 +496,8 @@ class AssetAttributesManager
     auto primTypeCtorIter = primTypeConstructorMap_.find(primClassName);
     if (primTypeCtorIter == primTypeConstructorMap_.end()) {
       ESP_ERROR() << "No primitive class" << primClassName
-                  << "exists in Magnum::Primitives. Aborting.";
+                  << "exists in Magnum::Primitives, so unable to initialize "
+                     "new Primitive object.";
       return nullptr;
     }
     // these attributes ignore any default setttings.
@@ -513,7 +515,8 @@ class AssetAttributesManager
     if (primitiveType == PrimObjTypes::END_PRIM_OBJ_TYPES) {
       ESP_ERROR() << "Cannot instantiate "
                      "attributes::AbstractPrimitiveAttributes object for "
-                     "PrimObjTypes::END_PRIM_OBJ_TYPES. Aborting.";
+                     "PrimObjTypes::END_PRIM_OBJ_TYPES, so create Primitive "
+                     "Attributes failed.";
       return nullptr;
     }
     int idx = static_cast<int>(primitiveType);
