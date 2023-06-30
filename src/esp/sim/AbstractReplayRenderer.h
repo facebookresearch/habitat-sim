@@ -66,6 +66,8 @@ class AbstractReplayRenderer {
 
   virtual ~AbstractReplayRenderer();
 
+  void close();
+
   void preloadFile(Corrade::Containers::StringView filename);
 
   unsigned environmentCount() const;
@@ -137,6 +139,8 @@ class AbstractReplayRenderer {
 
   /* Default implementation does nothing */
   virtual void doPreloadFile(Corrade::Containers::StringView filename);
+
+  virtual void doClose() = 0;
 
   virtual unsigned doEnvironmentCount() const = 0;
 

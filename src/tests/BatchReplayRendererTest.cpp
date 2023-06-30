@@ -50,6 +50,7 @@ struct BatchReplayRendererTest : Cr::TestSuite::Tester {
   void testIntegration();
   void testUnproject();
   void testBatchPlayerDeletion();
+  void testClose();
 
   const Magnum::Float maxThreshold = 255.f;
   const Magnum::Float meanThreshold = 0.75f;
@@ -156,6 +157,23 @@ const struct {
      }},
 };
 
+const struct {
+  const char* name;
+  Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer> (*create)(
+      const ReplayRendererConfiguration& configuration);
+} TestCloseData[]{
+    {"classic",
+     [](const ReplayRendererConfiguration& configuration) {
+       return Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer>{
+           new esp::sim::ClassicReplayRenderer{configuration}};
+     }},
+    {"batch",
+     [](const ReplayRendererConfiguration& configuration) {
+       return Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer>{
+           new esp::sim::BatchReplayRenderer{configuration}};
+     }},
+};
+
 BatchReplayRendererTest::BatchReplayRendererTest() {
   addInstancedTests({&BatchReplayRendererTest::testUnproject},
                     Cr::Containers::arraySize(TestUnprojectData));
@@ -164,6 +182,9 @@ BatchReplayRendererTest::BatchReplayRendererTest() {
                     Cr::Containers::arraySize(TestIntegrationData));
 
   addTests({&BatchReplayRendererTest::testBatchPlayerDeletion});
+
+  addInstancedTests({&BatchReplayRendererTest::testClose},
+                    Cr::Containers::arraySize(TestCloseData));
 }  // ctor
 
 // test recording and playback through the simulator interface
@@ -447,6 +468,31 @@ void BatchReplayRendererTest::testBatchPlayerDeletion() {
     player.setKeyframeIndex(2);
     CORRADE_COMPARE(renderer.transformations(0).size(), 0);
   }
+}
+
+void BatchReplayRendererTest::testClose() {
+  auto&& data = TestIntegrationData[testCaseInstanceId()];
+  setTestCaseDescription(data.name);
+
+  auto sensorSpecifications = getDefaultSensorSpecs(TestFlag::Color);
+  ReplayRendererConfiguration batchRendererConfig;
+  batchRendererConfig.sensorSpecifications = std::move(sensorSpecifications);
+  batchRendererConfig.numEnvironments = 4;
+  batchRendererConfig.standalone = true;
+  Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer> renderer =
+      data.create(batchRendererConfig);
+
+  // Verify that a context exists.
+  CORRADE_VERIFY(renderer);
+  CORRADE_VERIFY(Mn::GL::Context::hasCurrent());
+
+  // Verify that the context is released.
+  renderer->close();
+  CORRADE_VERIFY(!Mn::GL::Context::hasCurrent());
+
+  // Verify that closing multiple times is safe.
+  renderer->close();
+  renderer.reset();
 }
 
 }  // namespace

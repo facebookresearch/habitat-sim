@@ -54,7 +54,21 @@ BatchReplayRenderer::BatchReplayRenderer(
   }
 }
 
-BatchReplayRenderer::~BatchReplayRenderer() = default;
+BatchReplayRenderer::~BatchReplayRenderer() {
+  doCloseImpl();
+}
+
+void BatchReplayRenderer::doClose() {
+  doCloseImpl();
+}
+
+void BatchReplayRenderer::doCloseImpl() {
+  for (int i = 0; i < envs_.size(); ++i) {
+    envs_[i].player_.close();
+  }
+  envs_ = {};
+  renderer_.reset();
+}
 
 void BatchReplayRenderer::doPreloadFile(Cr::Containers::StringView filename) {
   CORRADE_INTERNAL_ASSERT(renderer_->addFile(filename));
