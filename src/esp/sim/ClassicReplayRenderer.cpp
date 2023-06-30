@@ -144,6 +144,8 @@ void ClassicReplayRenderer::doClose() {
   }
   envs_.clear();
   resourceManager_.reset();
+  renderer_.reset();
+  context_.reset();
 }
 
 unsigned ClassicReplayRenderer::doEnvironmentCount() const {
