@@ -130,10 +130,14 @@ ClassicReplayRenderer::ClassicReplayRenderer(
 }
 
 ClassicReplayRenderer::~ClassicReplayRenderer() {
-  doClose();
+  doCloseImpl();
 }
 
 void ClassicReplayRenderer::doClose() {
+  doCloseImpl();
+}
+
+void ClassicReplayRenderer::doCloseImpl() {
   for (int envIdx = 0; envIdx < envs_.size(); ++envIdx) {
     envs_[envIdx].player_.close();
     auto& sensorMap = envs_[envIdx].sensorMap_;

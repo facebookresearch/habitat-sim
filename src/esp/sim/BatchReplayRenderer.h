@@ -31,6 +31,8 @@ class BatchReplayRenderer : public AbstractReplayRenderer {
  private:
   void doClose() override;
 
+  void doCloseImpl();
+
   void doPreloadFile(Corrade::Containers::StringView filename) override;
 
   unsigned doEnvironmentCount() const override;

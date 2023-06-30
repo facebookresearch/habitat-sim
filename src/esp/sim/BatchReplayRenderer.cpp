@@ -55,10 +55,14 @@ BatchReplayRenderer::BatchReplayRenderer(
 }
 
 BatchReplayRenderer::~BatchReplayRenderer() {
-  doClose();
+  doCloseImpl();
 }
 
 void BatchReplayRenderer::doClose() {
+  doCloseImpl();
+}
+
+void BatchReplayRenderer::doCloseImpl() {
   for (int i = 0; i < envs_.size(); ++i) {
     envs_[i].player_.close();
   }
