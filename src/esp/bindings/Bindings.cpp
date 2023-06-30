@@ -48,10 +48,12 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
 #endif
   m.attr("stage_id") = esp::RIGID_STAGE_ID;
 
-  /* This function pointer is used by ESP_CHECK(). If it's null, it
-     std::abort()s, if not, it calls it to cause a Python AssertionError */
-  esp::core::throwInPython = [](const char* const message) {
-    PyErr_SetString(PyExc_AssertionError, message);
+  /**
+   * This function pointer is used by ESP_CHECK(). If this is null, the macro
+   * std::exit(1)s, if not, the macro calls this to throw a Python RuntimeError
+   */
+  esp::core::throwRuntimeInPython = [](const char* const message) {
+    PyErr_SetString(PyExc_RuntimeError, message);
     throw pybind11::error_already_set{};
   };
 
