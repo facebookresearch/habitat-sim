@@ -29,7 +29,6 @@ void main(void) {
   const int samples = 3;
   float weight[samples] = float[](0.2270270270, 0.3162162162, 0.0702702703);
 
-  // If you see artifact, then tune the vsmBias in the shadowsVSM.glsl
   // const int samples = 5;
   // float weight[samples] = float[](0.2270270270, 0.1945945946, 0.1216216216,
   // 0.0540540541, 0.0162162162);

@@ -632,12 +632,16 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   enum class PbrDebugDisplay : uint8_t {
     None = 0,
+    // Direct Lighting Diffuse result
     DirectDiffuse = 1,
+    // Direct Lighting Specular result
     DirectSpecular = 2,
+    // IBL Diffuse result
     IblDiffuse = 3,
+    // IBL Specular result
     IblSpecular = 4,
+    // Normal vector
     Normal = 5,
-    Shadow0 = 6,
   };
   /**
    *@brief debug display visualization
@@ -667,11 +671,9 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   int metallicUniform_ = ID_UNDEFINED;
   int iorUniform_ = ID_UNDEFINED;
   int emissiveColorUniform_ = ID_UNDEFINED;
-
   int objectIdUniform_ = ID_UNDEFINED;
   int textureMatrixUniform_ = ID_UNDEFINED;
   int normalTextureScaleUniform_ = ID_UNDEFINED;
-
   int lightColorsUniform_ = ID_UNDEFINED;
   int lightRangesUniform_ = ID_UNDEFINED;
   // In the fragment shader, the "LightDirection" is a vec4.

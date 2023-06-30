@@ -25,10 +25,9 @@ uniform highp uint uObjectId;
 // camera position in world space
 uniform highp vec3 uCameraWorldPos;
 
+#if defined(PBR_DEBUG_DISPLAY)
 uniform int uPbrDebugDisplay;
-
-// TODO : Rework to be more flexible and uniform-driven
-const int maxShadowNum = 3;
+#endif
 
 /////////////////////
 // DEBUG - disable calcs only
