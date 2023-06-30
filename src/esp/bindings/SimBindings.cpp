@@ -409,6 +409,9 @@ void initSimBindings(py::module& m) {
             return std::make_shared<BatchReplayRenderer>(cfg);
           },
           R"(Create a replay renderer using the batch render pipeline.)")
+      .def("close", &AbstractReplayRenderer::close,
+           "Releases the graphics context and resources used by the replay "
+           "renderer.")
       .def(
           "preload_file",
           [](AbstractReplayRenderer& self, const std::string& filePath) {

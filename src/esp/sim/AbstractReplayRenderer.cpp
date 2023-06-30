@@ -32,6 +32,10 @@ Mn::Vector2i AbstractReplayRenderer::environmentGridSize(
 
 AbstractReplayRenderer::~AbstractReplayRenderer() = default;
 
+void AbstractReplayRenderer::close() {
+  doClose();
+}
+
 void AbstractReplayRenderer::preloadFile(Cr::Containers::StringView filename) {
   doPreloadFile(filename);
 }

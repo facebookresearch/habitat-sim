@@ -130,13 +130,19 @@ ClassicReplayRenderer::ClassicReplayRenderer(
 }
 
 ClassicReplayRenderer::~ClassicReplayRenderer() {
-  for (int envIdx = 0; envIdx < config_.numEnvironments; ++envIdx) {
+  doClose();
+}
+
+void ClassicReplayRenderer::doClose() {
+  for (int envIdx = 0; envIdx < envs_.size(); ++envIdx) {
     envs_[envIdx].player_.close();
     auto& sensorMap = envs_[envIdx].sensorMap_;
     for (auto& sensorPair : sensorMap) {
       sensor::SensorFactory::deleteSensor(sensorPair.second);
     }
+    envs_[envIdx].sensorMap_.clear();
   }
+  envs_.clear();
   resourceManager_.reset();
 }
 
