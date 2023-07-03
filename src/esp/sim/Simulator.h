@@ -835,21 +835,6 @@ class Simulator {
       const assets::RenderAssetInstanceCreationInfo& creation);
 
   /**
-   * @brief For the current active scene, update the shaow map drawable group
-   */
-  void updateShadowMapDrawableGroup();
-  /**
-   * @brief compute the shadow maps for the active scene graph, and store the
-   * results in the resource manager
-   */
-  void computeShadowMaps(float lightNearPlane, float lightFarPlane);
-  /**
-   * @brief propagate shadow maps to the drawables
-   * NOTE: so far only pbr drawable and shader support the shadow maps
-   */
-  void setShadowMapsToDrawables();
-
-  /**
    * @brief Runtime perf stats are various scalars helpful for troubleshooting
    * runtime perf.
    *

@@ -92,18 +92,6 @@ void main() {
     currentSpecularContrib *= (1 - ccFresnel);
 #endif  // CLEAR_COAT
 
-#if defined(SHADOWS_VSM)
-    float shadow =
-        (iLight < maxShadowNum
-             ? computeShadowVSM(iLight, position, uLightDirections[iLight].xyz)
-             : 1.0f);
-    currentDiffuseContrib *= shadow;
-    currentSpecularContrib *= shadow;
-#if defined(CLEAR_COAT) && !defined(SKIP_CALC_CLEAR_COAT)
-    currentClearCoatContrib *= shadow;
-#endif  // CLEAR_COAT
-#endif  // SHADOWS_VSM
-
     // TODO Transmission here
 
     // aggregate contributions for each light
@@ -246,14 +234,7 @@ void main() {
       case 5:
         fragmentColor.rgb = pbrInfo.n;  // normal
         break;
-      case 6:
-        // TODO: Shadows
-        /*
-  #if defined(SHADOWS_VSM)
-        fragmentColor.rgb =
-            visualizePointShadowMap(1, position, uLightDirections[1].xyz);
-  #endif
-  */
+      default:
         break;
     }  // switch
   }

@@ -24,8 +24,7 @@ enum class DrawableType : uint8_t {
   None = 0,
   Generic = 1,
   Pbr = 2,
-  MeshVisualizer = 3,
-  VarianceShadowMap = 4,
+  MeshVisualizer = 3
 };
 
 /**

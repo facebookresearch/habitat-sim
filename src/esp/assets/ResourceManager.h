@@ -16,12 +16,12 @@
 #include <vector>
 
 #include <Corrade/Containers/EnumSet.h>
+#include <Magnum/Trade/AbstractImporter.h>
 
 #include "Asset.h"
 #include "MeshMetaData.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/ShaderManager.h"
-#include "esp/gfx/ShadowMapManager.h"
 #include "esp/physics/configure.h"
 
 #include "esp/metadata/attributes/AttributesEnumMaps.h"
@@ -577,21 +577,6 @@ class ResourceManager {
    * @brief get the shader manager
    */
   gfx::ShaderManager& getShaderManager() { return shaderManager_; }
-
-  /**
-   * @brief get the shadow map manager
-   */
-  gfx::ShadowMapManager& getShadowMapManger() { return shadowManager_; }
-
-  /**
-   * @brief get the shadow map keys
-   */
-  std::map<int, std::vector<Magnum::ResourceKey>>& getShadowMapKeys() {
-    return shadowMapKeys_;
-  }
-
-  static constexpr const char* SHADOW_MAP_KEY_TEMPLATE =
-      "scene_id={}-light_id={}";
 
   /**
    * @brief Build data for a report for semantic mesh connected components based
@@ -1255,13 +1240,6 @@ class ResourceManager {
 
   int activePbrIbl_ = ID_UNDEFINED;
 
-  /**
-   * @brief shadow map for point lights
-   */
-  // TODO: directional light shadow maps
-  gfx::ShadowMapManager shadowManager_;
-  // scene graph id -> keys for the shadow maps
-  std::map<int, std::vector<Magnum::ResourceKey>> shadowMapKeys_;
 };  // class ResourceManager
 
 }  // namespace assets

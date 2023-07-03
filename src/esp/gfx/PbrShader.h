@@ -223,15 +223,10 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
     ImageBasedLighting = 1 << 23,
 
     /**
-     * render point light shadows using variance shadow map (VSM)
-     */
-    ShadowsVSM = 1 << 24,
-
-    /**
      * Enable shader debug mode. Then developer can set the uniform
      * PbrDebugDisplay in the fragment shader for debugging
      */
-    DebugDisplay = 1 << 25,
+    DebugDisplay = 1 << 24,
     /*
      * TODO: alphaMask
      */
@@ -371,15 +366,6 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    * @return Reference to self (for method chaining)
    */
   PbrShader& bindPrefilteredMap(Magnum::GL::CubeMapTexture& texture);
-
-  /**
-   * @brief Bind the point shadow map (cubemap texture)
-   * @param[in] idx, the index of the shadow map, can be 0, 1, or 2. (We allow
-   * at most 3 shadow maps.)
-   * NOTE: requires Flag::ShadowsPCF or Flag::ShadowsVSM is set
-   * @return Reference to self (for method chaining)
-   */
-  PbrShader& bindPointShadowMap(int idx, Magnum::GL::CubeMapTexture& texture);
 
   // ======== set uniforms ===========
   /**
@@ -646,12 +632,16 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   enum class PbrDebugDisplay : uint8_t {
     None = 0,
+    // Direct Lighting Diffuse result
     DirectDiffuse = 1,
+    // Direct Lighting Specular result
     DirectSpecular = 2,
+    // IBL Diffuse result
     IblDiffuse = 3,
+    // IBL Specular result
     IblSpecular = 4,
+    // Normal vector
     Normal = 5,
-    Shadow0 = 6,
   };
   /**
    *@brief debug display visualization
@@ -681,11 +671,9 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   int metallicUniform_ = ID_UNDEFINED;
   int iorUniform_ = ID_UNDEFINED;
   int emissiveColorUniform_ = ID_UNDEFINED;
-
   int objectIdUniform_ = ID_UNDEFINED;
   int textureMatrixUniform_ = ID_UNDEFINED;
   int normalTextureScaleUniform_ = ID_UNDEFINED;
-
   int lightColorsUniform_ = ID_UNDEFINED;
   int lightRangesUniform_ = ID_UNDEFINED;
   // In the fragment shader, the "LightDirection" is a vec4.

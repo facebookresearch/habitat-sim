@@ -30,9 +30,7 @@ enum TextureUnit : uint8_t {
   IrradianceMap = 11,
   BrdfLUT = 12,
   PrefilteredMap = 13,
-  ShadowMap0 = 14,
-  ShadowMap1 = 15,
-  ShadowMap2 = 16,  // We support at most 3 shadows currently
+
 };
 }  // namespace pbrTextureUnitSpace
 }  // namespace gfx

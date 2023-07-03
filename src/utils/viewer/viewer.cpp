@@ -862,8 +862,6 @@ Viewer::Viewer(const Arguments& arguments)
       .addOption("agent-transform-filepath")
       .setHelp("agent-transform-filepath",
                "Specify path to load camera transform from.")
-      .addBooleanOption("shadows")
-      .setHelp("shadows", "Rendering shadows. (only works with PBR rendering.")
       .addBooleanOption("ibl")
       .setHelp("ibl",
                "Image Based Lighting (it works only when PBR models exist in "
@@ -1080,14 +1078,6 @@ Viewer::Viewer(const Arguments& arguments)
 
   // Per frame profiler will average measurements taken over previous 50 frames
   profiler_.setup(profilerValues, 50);
-
-  // shadows
-  if (args.isSet("shadows")) {
-    simulator_->updateShadowMapDrawableGroup();
-    simulator_->computeShadowMaps(0.01f,   // lightNearPlane
-                                  20.0f);  // lightFarPlane
-    simulator_->setShadowMapsToDrawables();
-  }
 
   printHelpText();
 }  // end Viewer::Viewer

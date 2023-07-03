@@ -11,7 +11,6 @@
 #include "esp/gfx/PbrImageBasedLighting.h"
 #include "esp/gfx/PbrShader.h"
 #include "esp/gfx/ShaderManager.h"
-#include "esp/gfx/ShadowMapManager.h"
 namespace esp {
 namespace gfx {
 
@@ -217,6 +216,9 @@ class PbrDrawable : public Drawable {
     } volumeLayer;
   };
 
+  /// @brief Key template for entry in shader map
+  static constexpr const char* SHADER_KEY_TEMPLATE = "PBR-lights={}-flags={}";
+
   /**
    * @brief Constructor, to create a PbrDrawable for the given object using
    * shader and mesh. Adds drawable to given group and uses provided texture,
@@ -236,18 +238,6 @@ class PbrDrawable : public Drawable {
    *  @param lightSetupKey the key value for the light resource
    */
   void setLightSetup(const Mn::ResourceKey& lightSetupKey) override;
-
-  /**
-   * @brief Set the shadow map info
-   * @param[in] manager, stores the shadow maps
-   * @param[in] keys, keys to retrieve the shadow maps
-   * @param[in] shadowFlag, can only be either ShadowsPCF or ShadowsVSM
-   */
-  void setShadowData(ShadowMapManager& manager,
-                     ShadowMapKeys& keys,
-                     PbrShader::Flag shadowFlag);
-
-  static constexpr const char* SHADER_KEY_TEMPLATE = "PBR-lights={}-flags={}";
 
  private:
   /**
@@ -322,8 +312,6 @@ class PbrDrawable : public Drawable {
    * Material to use to render this PBR drawable
    */
   Mn::Resource<Mn::Trade::MaterialData, Mn::Trade::MaterialData> materialData_;
-  ShadowMapManager* shadowMapManger_ = nullptr;
-  ShadowMapKeys* shadowMapKeys_ = nullptr;
 };
 
 }  // namespace gfx

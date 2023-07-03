@@ -196,23 +196,14 @@ struct Renderer::Impl {
   void applyGaussianFiltering(CubeMap& target,
                               CubeMap& helper,
                               CubeMap::TextureType type) {
-    CORRADE_ASSERT((type == CubeMap::TextureType::Color) ||
-                       (type == CubeMap::TextureType::VarianceShadowMap),
+    CORRADE_ASSERT((type == CubeMap::TextureType::Color),
                    "Renderer::Impl::applyGaussianFiltering(): type can only be "
-                   "Color or VarianceShadowMap.", );
+                   "Color.", );
 
-    if (type == CubeMap::TextureType::Color) {
-      CORRADE_ASSERT((target.getFlags() & CubeMap::Flag::ColorTexture) &&
-                         (helper.getFlags() & CubeMap::Flag::ColorTexture),
-                     "Renderer::Impl::applyGaussianFiltering(): cubemap is not "
-                     "created with specified flag (ColorTexture) enabled.", );
-    } else if (type == CubeMap::TextureType::VarianceShadowMap) {
-      CORRADE_ASSERT(
-          (target.getFlags() & CubeMap::Flag::VarianceShadowMapTexture) &&
-              (helper.getFlags() & CubeMap::Flag::VarianceShadowMapTexture),
-          "Renderer::Impl::applyGaussianFiltering(): cubemap is not "
-          "created with specified flag (VarianceShadowMapTexture) enabled.", );
-    }
+    CORRADE_ASSERT((target.getFlags() & CubeMap::Flag::ColorTexture) &&
+                       (helper.getFlags() & CubeMap::Flag::ColorTexture),
+                   "Renderer::Impl::applyGaussianFiltering(): cubemap is not "
+                   "created with specified flag (ColorTexture) enabled.", );
 
     int imageSize = target.getCubeMapSize();
     if (helper.getCubeMapSize() != imageSize) {
