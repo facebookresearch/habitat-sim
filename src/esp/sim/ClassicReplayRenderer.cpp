@@ -6,11 +6,8 @@
 
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/RenderTarget.h"
-#include "esp/gfx/Renderer.h"
 #include "esp/metadata/MetadataMediator.h"
-#include "esp/sensor/Sensor.h"
 #include "esp/sensor/SensorFactory.h"
-#include "esp/sim/SimulatorConfiguration.h"
 
 #include <Magnum/GL/Context.h>
 #include <Magnum/ImageView.h>
@@ -31,7 +28,7 @@ ClassicReplayRenderer::ClassicReplayRenderer(
   resourceManager_ =
       std::make_unique<assets::ResourceManager>(std::move(metadataMediator));
 
-  // hack to get ReplicCAD non-baked stages to render correctly
+  // hack to get ReplicaCAD non-baked stages to render correctly
   resourceManager_->getShaderManager().setFallback(
       esp::gfx::getDefaultLights());
 
@@ -133,14 +130,26 @@ ClassicReplayRenderer::ClassicReplayRenderer(
 }
 
 ClassicReplayRenderer::~ClassicReplayRenderer() {
-  for (int envIdx = 0; envIdx < config_.numEnvironments; ++envIdx) {
+  doCloseImpl();
+}
+
+void ClassicReplayRenderer::doClose() {
+  doCloseImpl();
+}
+
+void ClassicReplayRenderer::doCloseImpl() {
+  for (int envIdx = 0; envIdx < envs_.size(); ++envIdx) {
     envs_[envIdx].player_.close();
     auto& sensorMap = envs_[envIdx].sensorMap_;
     for (auto& sensorPair : sensorMap) {
       sensor::SensorFactory::deleteSensor(sensorPair.second);
     }
+    envs_[envIdx].sensorMap_.clear();
   }
+  envs_.clear();
   resourceManager_.reset();
+  renderer_.reset();
+  context_.reset();
 }
 
 unsigned ClassicReplayRenderer::doEnvironmentCount() const {
@@ -227,7 +236,7 @@ void ClassicReplayRenderer::doRender(
       }
 
 #ifdef ESP_BUILD_WITH_BACKGROUND_RENDERER
-      if (imageViews != nullptr) {
+      if (imageViews.size() > 0) {
         renderer_->enqueueAsyncDrawJob(
             visualSensor, sceneGraph, imageViews[envIndex],
             esp::gfx::RenderCamera::Flags{

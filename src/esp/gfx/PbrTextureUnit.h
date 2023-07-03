@@ -7,23 +7,30 @@
 #define ESP_GFX_PBR_TEXTURE_UNIT_H_
 
 #include <Corrade/Containers/EnumSet.h>
+#include <cstdint>
 
 namespace esp {
 namespace gfx {
-
 namespace pbrTextureUnitSpace {
+
+// The order of the samplers in the frag shader that specific textures should be
+// mapped to
 enum TextureUnit : uint8_t {
   BaseColor = 0,
   MetallicRoughness = 1,
   Normal = 2,
   Emissive = 3,
-  EnvironmentMap = 4,
-  IrradianceMap = 5,
-  BrdfLUT = 6,
-  PrefilteredMap = 7,
-  ShadowMap0 = 8,
-  ShadowMap1 = 9,
-  ShadowMap2 = 10,  // We support at most 3 shadows currently
+  ClearCoatFactor = 4,
+  ClearCoatRoughness = 5,
+  ClearCoatNormal = 6,
+  SpecularLayer = 7,
+  SpecularLayerColor = 8,
+  AnisotropyLayer = 9,
+  EnvironmentMap = 10,
+  IrradianceMap = 11,
+  BrdfLUT = 12,
+  PrefilteredMap = 13,
+
 };
 }  // namespace pbrTextureUnitSpace
 }  // namespace gfx

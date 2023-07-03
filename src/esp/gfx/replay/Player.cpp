@@ -4,15 +4,10 @@
 
 #include "Player.h"
 
+#include <Corrade/Containers/StringStl.h>
 #include <Corrade/Utility/Path.h>
 
-#include "esp/assets/ResourceManager.h"
-#include "esp/core/Esp.h"
-#include "esp/gfx/replay/Keyframe.h"
 #include "esp/io/Json.h"
-#include "esp/io/JsonAllTypes.h"
-
-#include <rapidjson/document.h>
 
 namespace esp {
 namespace gfx {
@@ -67,6 +62,17 @@ void AbstractSceneGraphPlayerImplementation::setNodeTransform(
   (*reinterpret_cast<scene::SceneNode*>(node))
       .setTranslation(translation)
       .setRotation(rotation);
+}
+
+void AbstractSceneGraphPlayerImplementation::setNodeTransform(
+    const NodeHandle node,
+    const Mn::Matrix4& transform) {
+  (*reinterpret_cast<scene::SceneNode*>(node)).setTransformation(transform);
+}
+
+Mn::Matrix4 AbstractSceneGraphPlayerImplementation::hackGetNodeTransform(
+    const NodeHandle node) const {
+  return (*reinterpret_cast<scene::SceneNode*>(node)).transformation();
 }
 
 void AbstractSceneGraphPlayerImplementation::setNodeSemanticId(
@@ -170,6 +176,7 @@ void Player::clearFrame() {
     implementation_->deleteAssetInstances(createdInstances_);
   createdInstances_.clear();
   assetInfos_.clear();
+  creationInfos_.clear();
   frameIndex_ = -1;
 }
 
@@ -181,15 +188,6 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     // TODO: This overwrites the previous AssetInfo. This is not ideal. Consider
     // including AssetInfo in creations rather than using keyframe loads.
     assetInfos_[assetInfo.filepath] = assetInfo;
-  }
-
-  // If all current instances are being deleted, clear the frame. This enables
-  // the implementation to clear its memory and optimize its internals.
-  bool frameCleared = keyframe.deletions.size() > 0 &&
-                      createdInstances_.size() == keyframe.deletions.size();
-  if (frameCleared) {
-    implementation_->deleteAssetInstances(createdInstances_);
-    createdInstances_.clear();
   }
 
   for (const auto& pair : keyframe.creations) {
@@ -223,27 +221,15 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     const auto& instanceKey = pair.first;
     CORRADE_INTERNAL_ASSERT(createdInstances_.count(instanceKey) == 0);
     createdInstances_[instanceKey] = node;
+    creationInfos_[instanceKey] = adjustedCreation;
   }
 
-  if (!frameCleared) {
-    for (const auto& deletionInstanceKey : keyframe.deletions) {
-      const auto& it = createdInstances_.find(deletionInstanceKey);
-      if (it == createdInstances_.end()) {
-        // missing instance for this key, probably due to a failed instance
-        // creation
-        continue;
-      }
-
-      implementation_->deleteAssetInstance(it->second);
-      createdInstances_.erase(deletionInstanceKey);
-    }
-  }
+  hackProcessDeletions(keyframe);
 
   for (const auto& pair : keyframe.stateUpdates) {
     const auto& it = createdInstances_.find(pair.first);
     if (it == createdInstances_.end()) {
-      // missing instance for this key, probably due to a failed instance
-      // creation
+      // Missing instance for this key due to a failed instance creation
       continue;
     }
     auto* node = it->second;
@@ -255,6 +241,64 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
 
   if (keyframe.lightsChanged) {
     implementation_->changeLightSetup(keyframe.lights);
+  }
+}
+
+void Player::hackProcessDeletions(const Keyframe& keyframe) {
+  // HACK: Classic and batch renderers currently handle deletions differently.
+  // The batch renderer can only clear the scene entirely; it cannot delete
+  // individual objects. To process deletions, all instances are deleted,
+  // remaining instances are re-created and latest transform updates are
+  // re-applied.
+  bool isClassicReplayRenderer =
+      dynamic_cast<AbstractSceneGraphPlayerImplementation*>(
+          implementation_.get()) != nullptr;
+  if (isClassicReplayRenderer) {
+    for (const auto& deletionInstanceKey : keyframe.deletions) {
+      const auto& it = createdInstances_.find(deletionInstanceKey);
+      if (it == createdInstances_.end()) {
+        // Missing instance for this key due to a failed instance creation
+        continue;
+      }
+
+      implementation_->deleteAssetInstance(it->second);
+      createdInstances_.erase(deletionInstanceKey);
+    }
+  } else if (keyframe.deletions.size() > 0) {
+    // Cache latest transforms
+    latestTransformCache_.clear();
+    for (const auto& pair : this->createdInstances_) {
+      const RenderAssetInstanceKey key = pair.first;
+      latestTransformCache_[key] =
+          implementation_->hackGetNodeTransform(pair.second);
+    }
+
+    // Delete all instances
+    implementation_->deleteAssetInstances(createdInstances_);
+
+    // Remove deleted instances from records
+    for (const auto& deletion : keyframe.deletions) {
+      const auto& createInstanceIt = createdInstances_.find(deletion);
+      if (createInstanceIt == createdInstances_.end()) {
+        // Missing instance for this key due to a failed instance creation
+        continue;
+      }
+      createdInstances_.erase(createInstanceIt);
+      creationInfos_.erase(deletion);
+    }
+
+    for (const auto& pair : createdInstances_) {
+      const auto key = pair.first;
+      const auto& creationInfo = creationInfos_[key];
+      auto* instance = implementation_->loadAndCreateRenderAssetInstance(
+          assetInfos_[creationInfo.filepath], creationInfo);
+
+      // Replace dangling reference
+      createdInstances_[key] = instance;
+
+      // Re-apply latest transform updates
+      implementation_->setNodeTransform(instance, latestTransformCache_[key]);
+    }
   }
 }
 

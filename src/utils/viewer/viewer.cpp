@@ -829,6 +829,9 @@ Viewer::Viewer(const Arguments& arguments)
       .setHelp("dataset", "dataset configuration file to use")
       .addBooleanOption("enable-physics")
       .setHelp("enable-physics", "Enable Bullet physics.")
+      .addBooleanOption("hbao")
+      .setHelp("hbao",
+               "NOT YET SUPPORTED : Enable Horizon-based Ambient Occlusion.")
       .addBooleanOption("stage-requires-lighting")
       .setHelp("stage-requires-lighting",
                "Stage asset should be lit with Phong shading.")
@@ -859,8 +862,6 @@ Viewer::Viewer(const Arguments& arguments)
       .addOption("agent-transform-filepath")
       .setHelp("agent-transform-filepath",
                "Specify path to load camera transform from.")
-      .addBooleanOption("shadows")
-      .setHelp("shadows", "Rendering shadows. (only works with PBR rendering.")
       .addBooleanOption("ibl")
       .setHelp("ibl",
                "Image Based Lighting (it works only when PBR models exist in "
@@ -964,6 +965,9 @@ Viewer::Viewer(const Arguments& arguments)
   simConfig_.activeSceneName = args.value("scene");
   simConfig_.sceneDatasetConfigFile = args.value("dataset");
   simConfig_.enablePhysics = args.isSet("enable-physics");
+  if (args.isSet("hbao")) {
+    ESP_WARNING() << "HBAO NOT YET SUPPORTED. Ignoring flag setting.";
+  }
   simConfig_.frustumCulling = true;
   simConfig_.requiresTextures = true;
   simConfig_.enableGfxReplaySave = !gfxReplayRecordFilepath_.empty();
@@ -1074,14 +1078,6 @@ Viewer::Viewer(const Arguments& arguments)
 
   // Per frame profiler will average measurements taken over previous 50 frames
   profiler_.setup(profilerValues, 50);
-
-  // shadows
-  if (args.isSet("shadows")) {
-    simulator_->updateShadowMapDrawableGroup();
-    simulator_->computeShadowMaps(0.01f,   // lightNearPlane
-                                  20.0f);  // lightFarPlane
-    simulator_->setShadowMapsToDrawables();
-  }
 
   printHelpText();
 }  // end Viewer::Viewer
@@ -2380,8 +2376,9 @@ void Viewer::keyPressEvent(KeyEvent& event) {
         // cache the file for quick-reload with SHIFT-T
         cachedURDF_ = urdfFilepath;
         auto aom = simulator_->getArticulatedObjectManager();
-        auto ao = aom->addArticulatedObjectFromURDF(urdfFilepath, fixedBase,
-                                                    1.0, 1.0, true);
+        auto ao = aom->addArticulatedObjectFromURDF(
+            urdfFilepath, fixedBase, 1.0, 1.0, true, false, false,
+            simConfig_.sceneLightSetupKey);
         ao->setTranslation(
             defaultAgent_->node().transformation().transformPoint(
                 {0, 1.0, -1.5}));

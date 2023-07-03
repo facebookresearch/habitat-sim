@@ -174,15 +174,18 @@ auto AbstractObjectAttributesManager<T, Access>::createObject(
     // this is a primitive-based object we are building
     attrs = this->createPrimBasedAttributesTemplate(attributesTemplateHandle,
                                                     registerTemplate);
-    msg = "Primitive Asset (" + attributesTemplateHandle + ") Based";
+    if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::Debug)) {
+      msg = "Primitive Asset (" + attributesTemplateHandle + ") Based";
+    }
   } else {
     attrs = this->createFromJsonOrDefaultInternal(attributesTemplateHandle, msg,
                                                   registerTemplate);
 
   }  // if this is prim else
   if (nullptr != attrs) {
-    ESP_DEBUG() << msg << this->objectType_ << "attributes created"
-                << (registerTemplate ? "and registered." : ".");
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << msg << " " << this->objectType_ << " attributes created"
+        << (registerTemplate ? " and registered." : ".");
   }
   return attrs;
 

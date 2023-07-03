@@ -24,9 +24,7 @@ enum class DrawableType : uint8_t {
   None = 0,
   Generic = 1,
   Pbr = 2,
-  PTexMesh = 3,
-  MeshVisualizer = 4,
-  VarianceShadowMap = 6,
+  MeshVisualizer = 3
 };
 
 /**
@@ -120,7 +118,7 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
    *
    * @return mesh_ by default.
    * NOTE: sub-class should override this function if the "visualizer mesh" is
-   * different from mesh_ (check the example in the PTexMeshDrawable class)
+   * different from mesh_
    */
   virtual Magnum::GL::Mesh& getVisualizerMesh() {
     CORRADE_INTERNAL_ASSERT(mesh_ != nullptr);
@@ -128,14 +126,41 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
   }
 
   /**
+   * Change this drawable's @ref Magnum::Trade::MaterialData values from passed material, keeping existing values if not overwritten
+   * This is only pertinent for material-equipped drawables.
+   * @param material material values to set
+   */
+
+  void setMaterialValues(
+      const Magnum::Resource<Magnum::Trade::MaterialData,
+                             Magnum::Trade::MaterialData>& material) {
+    setMaterialValuesInternal(material, false);
+  }
+
+  /**
+   * Reset this drawable's @ref Magnum::Trade::MaterialData values from passed material, completely replacing the existing values
+   * This is only pertinent for material-equipped drawables.
+   * @param material material values to set
+   * @param reset whether to reset underlying material or to write over it
+   */
+  void resetMaterialValues(
+      const Magnum::Resource<Magnum::Trade::MaterialData,
+                             Magnum::Trade::MaterialData>& material) {
+    setMaterialValuesInternal(material, true);
+  }
+
+ private:
+  /**
    * Set or change this drawable's @ref Magnum::Trade::MaterialData values from passed material.
    * This is only pertinent for material-equipped drawables.
-   * @param material
+   * @param material material values to set
+   * @param reset whether to reset underlying material or to write over it
    */
-  virtual void setMaterialValues(
+  virtual void setMaterialValuesInternal(
       CORRADE_UNUSED const Magnum::Resource<Magnum::Trade::MaterialData,
                                             Magnum::Trade::MaterialData>&
-          material) {}
+          material,
+      CORRADE_UNUSED bool reset) {}
 
  protected:
   /**

@@ -39,7 +39,7 @@ enum SupportedMeshType {
    * format or loaded from an unknown format. Support for this type and behavior
    * is likely limited. Object type is likely @ref BaseMesh.
    */
-  NOT_DEFINED = -1,
+  NOT_DEFINED = ID_UNDEFINED,
 
   /**
    * Instance meshes loaded from sources including segmented object
@@ -48,23 +48,16 @@ enum SupportedMeshType {
    * type @ref GenericSemanticMeshData.
    */
   INSTANCE_MESH = 0,
-
-  /**
-   * Meshes loaded from Replica dataset. Object is likely type @ref
-   * PTexMeshData.
-   */
-  PTEX_MESH = 1,
-
   /**
    * Meshes loaded from gltf format (i.e. .glb file), or instances of Magnum
    * Primitives. Object is likely type @ref GenericMeshData.
    */
-  GENERIC_MESH = 2,
+  GENERIC_MESH = 1,
 
   /**
    * Number of enumerated supported types.
    */
-  NUM_SUPPORTED_MESH_TYPES = 3,
+  NUM_SUPPORTED_MESH_TYPES = 2,
 };
 
 /**

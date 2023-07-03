@@ -60,6 +60,10 @@ class ClassicReplayRenderer : public AbstractReplayRenderer {
                             const Mn::Vector2i& viewportPosition) override;
 
  private:
+  void doClose() override;
+
+  void doCloseImpl();
+
   unsigned doEnvironmentCount() const override;
 
   Magnum::Vector2i doSensorSize(unsigned envIndex) override;

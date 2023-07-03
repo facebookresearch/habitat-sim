@@ -6,8 +6,6 @@ set(
   gfx_SOURCES
   CubeMap.cpp
   CubeMap.h
-  DepthUnprojection.cpp
-  DepthUnprojection.h
   Drawable.cpp
   Drawable.h
   DrawableGroup.cpp
@@ -64,26 +62,9 @@ set(
   PbrTextureUnit.h
   DepthMapDrawableBase.cpp
   DepthMapDrawableBase.h
-  ShadowMapManager.h
-  VarianceShadowMapShader.h
-  VarianceShadowMapShader.cpp
-  VarianceShadowMapDrawable.h
-  VarianceShadowMapDrawable.cpp
   GaussianFilterShader.h
   GaussianFilterShader.cpp
 )
-
-# If ptex support is enabled add relevant source files
-if(BUILD_PTEX_SUPPORT)
-  list(
-    APPEND
-    gfx_SOURCES
-    PTexMeshDrawable.cpp
-    PTexMeshDrawable.h
-    PTexMeshShader.cpp
-    PTexMeshShader.h
-  )
-endif()
 
 if(BUILD_WITH_BACKGROUND_RENDERER)
   list(APPEND gfx_SOURCES BackgroundRenderer.h BackgroundRenderer.cpp)
@@ -108,10 +89,8 @@ find_package(MagnumPlugins REQUIRED GltfImporter StbImageImporter StbImageConver
 find_package(MagnumIntegration REQUIRED Eigen)
 
 find_package(Corrade REQUIRED Utility)
-# TODO: enable the following flag and fix the compilation warnings
-# set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
-corrade_add_resource(ShaderResources ../../shaders/Shaders.conf)
-list(APPEND gfx_SOURCES ${ShaderResources})
+corrade_add_resource(GfxShaderResources ../../shaders/gfx/Shaders.conf)
+list(APPEND gfx_SOURCES ${GfxShaderResources})
 
 corrade_add_resource(PbrImageResources ../../../data/pbr/PbrImages.conf)
 list(APPEND gfx_SOURCES ${PbrImageResources})
@@ -122,14 +101,6 @@ add_library(
 )
 
 if(BUILD_WITH_CUDA)
-  # We currently don't directly depend on gfx_batch for anything, just taking
-  # the header-only CUDA helpers from there, so gfx_batch isn't in
-  # target_link_libraries().
-  target_include_directories(
-    gfx PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
-                ${CMAKE_CURRENT_LIST_DIR}/../gfx_batch/cuda_helpers
-  )
-
   target_link_libraries(gfx PUBLIC ${CUDART_LIBRARY})
 endif()
 
@@ -138,6 +109,7 @@ target_link_libraries(
   PUBLIC assets
          core
          io
+         gfx_batch
          physics
          Magnum::AnyImageImporter
          Magnum::AnySceneImporter

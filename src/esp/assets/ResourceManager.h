@@ -16,12 +16,12 @@
 #include <vector>
 
 #include <Corrade/Containers/EnumSet.h>
+#include <Magnum/Trade/AbstractImporter.h>
 
 #include "Asset.h"
 #include "MeshMetaData.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/ShaderManager.h"
-#include "esp/gfx/ShadowMapManager.h"
 #include "esp/physics/configure.h"
 
 #include "esp/metadata/attributes/AttributesEnumMaps.h"
@@ -579,21 +579,6 @@ class ResourceManager {
   gfx::ShaderManager& getShaderManager() { return shaderManager_; }
 
   /**
-   * @brief get the shadow map manager
-   */
-  gfx::ShadowMapManager& getShadowMapManger() { return shadowManager_; }
-
-  /**
-   * @brief get the shadow map keys
-   */
-  std::map<int, std::vector<Magnum::ResourceKey>>& getShadowMapKeys() {
-    return shadowMapKeys_;
-  }
-
-  static constexpr const char* SHADOW_MAP_KEY_TEMPLATE =
-      "scene_id={}-light_id={}";
-
-  /**
    * @brief Build data for a report for semantic mesh connected components based
    * on color/id.  Returns map of data keyed by SemanticObject index in
    * SemanticObjs array.
@@ -723,13 +708,8 @@ class ResourceManager {
   /**
    * node: drawable's scene node
    *
-   * meshID:
-   * -) for non-ptex mesh:
-   * meshID is the global key into meshes_.
+   * meshID: The global key into meshes_, where
    * meshes_[meshID] is the BaseMesh corresponding to the drawable;
-   *
-   * -) for ptex mesh:
-   * meshID is the index of the submesh corresponding to the drawable;
    */
   struct StaticDrawableInfo {
     esp::scene::SceneNode& node;
@@ -998,11 +978,6 @@ class ResourceManager {
       bool createSemanticInfo);
 
   /**
-   * @brief PTex Mesh backend for loadRenderAsset
-   */
-  bool loadRenderAssetPTex(const AssetInfo& info);
-
-  /**
    * @brief Build @ref GenericSemanticMeshData from a single, flattened Magnum
    * Meshdata, built from the meshes provided by the importer, preserving all
    * transformations.  This building process will also synthesize bounding boxes
@@ -1049,14 +1024,6 @@ class ResourceManager {
       scene::SceneNode* parent,
       DrawableGroup* drawables,
       std::vector<scene::SceneNode*>* visNodeCache = nullptr);
-
-  /**
-   * @brief PTex Mesh backend for createRenderAssetInstance
-   */
-  scene::SceneNode* createRenderAssetInstancePTex(
-      const RenderAssetInstanceCreationInfo& creation,
-      scene::SceneNode* parent,
-      DrawableGroup* drawables);
 
   /**
    * @brief Semantic Mesh backend creation. Either use
@@ -1114,17 +1081,6 @@ class ResourceManager {
    * @return The mesh bounding box.
    */
   Mn::Range3D computeMeshBB(BaseMesh* meshDataGL);
-
-#ifdef ESP_BUILD_PTEX_SUPPORT
-  /**
-   * @brief Compute the absolute AABBs for drawables in PTex mesh in world
-   * space
-   * @param baseMesh ptex mesh
-   */
-  void computePTexMeshAbsoluteAABBs(
-      BaseMesh& baseMesh,
-      const std::vector<StaticDrawableInfo>& staticDrawableInfo);
-#endif
 
   /**
    * @brief Compute the absolute AABBs for drawables in general mesh (e.g.,
@@ -1284,13 +1240,6 @@ class ResourceManager {
 
   int activePbrIbl_ = ID_UNDEFINED;
 
-  /**
-   * @brief shadow map for point lights
-   */
-  // TODO: directional light shadow maps
-  gfx::ShadowMapManager shadowManager_;
-  // scene graph id -> keys for the shadow maps
-  std::map<int, std::vector<Magnum::ResourceKey>> shadowMapKeys_;
 };  // class ResourceManager
 
 }  // namespace assets

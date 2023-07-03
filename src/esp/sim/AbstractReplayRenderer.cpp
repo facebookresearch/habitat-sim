@@ -4,9 +4,6 @@
 
 #include "AbstractReplayRenderer.h"
 
-#include <Magnum/Math/Functions.h>
-#include <Magnum/Math/Vector2.h>
-
 #include "esp/gfx/replay/Player.h"
 
 namespace esp {
@@ -34,6 +31,10 @@ Mn::Vector2i AbstractReplayRenderer::environmentGridSize(
 }
 
 AbstractReplayRenderer::~AbstractReplayRenderer() = default;
+
+void AbstractReplayRenderer::close() {
+  doClose();
+}
 
 void AbstractReplayRenderer::preloadFile(Cr::Containers::StringView filename) {
   doPreloadFile(filename);

@@ -20,7 +20,6 @@ enum class AssetType {
   UNKNOWN,
   MP3D_MESH,
   INSTANCE_MESH,
-  FRL_PTEX_MESH,
   UNKNOWN2,
   NAVMESH,
   PRIMITIVE,

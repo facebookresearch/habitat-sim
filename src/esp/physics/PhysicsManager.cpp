@@ -282,8 +282,8 @@ int PhysicsManager::addObject(
   std::string simpleObjectHandle = objectAttributes->getSimplifiedHandle();
   std::string newObjectHandle =
       rigidObjectManager_->getUniqueHandleFromCandidate(simpleObjectHandle);
-  ESP_WARNING() << "Simplified template handle :" << simpleObjectHandle
-                << " | newObjectHandle :" << newObjectHandle;
+  ESP_DEBUG() << "Simplified template handle :" << simpleObjectHandle
+              << " | newObjectHandle :" << newObjectHandle;
 
   existingObjects_.at(nextObjectID_)->setObjectName(newObjectHandle);
 
