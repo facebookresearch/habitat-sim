@@ -702,6 +702,7 @@ jobs:
                   <<^ parameters.CI_TEST >> --env << parameters.AIHABITAT_CONDA_CHN_PWD_VAR >> <</ parameters.CI_TEST >> \
                   hsim_condabuild_dcontainer \
                   /bin/bash -c "source ~/.bashrc && conda activate py39 \
+                                && cd /remote/habitat-sim/ && git config --global --add safe.directory '*' \
                                 && cd /remote/habitat-sim/conda-build \
                                 <<^ parameters.CI_TEST >> && yes | anaconda login --username << parameters.AIHABITAT_CONDA_CHN >> --password \${<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >>} <</ parameters.CI_TEST >> --hostname "aihabitat-conda-ci-builder-linux" \
                                 && python matrix_builder.py \
