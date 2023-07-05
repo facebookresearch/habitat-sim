@@ -74,7 +74,7 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
     // No stage_instance specified in SceneInstance configuration.
     // We expect a scene instance to be present always, except for the default
     // Scene Dataset that is empty.
-    if (attribsDispName.compare("default_attributes") == 0) {
+    if (attribsDispName == "default_attributes") {
       // Default attributes is empty
       ESP_DEBUG(Mn::Debug::Flag::NoSpace)
           << "No Stage Instance specified in Default Scene Instance, so "
