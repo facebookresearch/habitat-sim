@@ -319,17 +319,28 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
     // SimulatorConfiguration set to override any dataset configuration specs
     // regarding lighting.
     lightSetupKey = config_.sceneLightSetupKey;
-    ESP_DEBUG() << "Using SimulatorConfiguration-specified Light key : -"
-                << lightSetupKey << "-";
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << "Using SimulatorConfiguration-specified Light Setup key : `"
+        // empty lightSetupKey denotes using the default
+        << (lightSetupKey == DEFAULT_LIGHTING_KEY ? "DEFAULT_LIGHTING_KEY"
+                                                  : lightSetupKey)
+        << "`.";
   } else {
-    // Get dataset/scene instance specified lighting
+    // Get scene instance specified lighting
     lightSetupKey = metadataMediator_->getLightSetupFullHandle(
         curSceneInstanceAttributes_->getLightingHandle());
-    ESP_DEBUG() << "Using scene instance-specified Light key : -"
-                << lightSetupKey << "-";
-    if (lightSetupKey != NO_LIGHT_KEY) {
-      // lighting attributes corresponding to this key should exist unless it
-      // is empty; if empty, the following does nothing.
+    ESP_DEBUG() << "Using scene instance-specified Light Setup key : `"
+                // empty lightSetupKey denotes using the default
+                << (lightSetupKey == DEFAULT_LIGHTING_KEY
+                        ? "DEFAULT_LIGHTING_KEY"
+                        : lightSetupKey)
+                << "`.";
+    // Do not query Scene Instance Attributes for lightsetup for these keys.
+    // Both should already be handled by ResourceManager
+    if ((lightSetupKey != NO_LIGHT_KEY) &&
+        (lightSetupKey != DEFAULT_LIGHTING_KEY)) {
+      // lighting attributes corresponding to this key should exist in
+      // LightLayoutAttributesManager.
       esp::gfx::LightSetup lightingSetup =
           metadataMediator_->getLightLayoutAttributesManager()
               ->createLightSetupFromAttributes(lightSetupKey);

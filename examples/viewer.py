@@ -1119,9 +1119,9 @@ if __name__ == "__main__":
         help="disable physics simulation (default: False)",
     )
     parser.add_argument(
-        "--stage-requires-lighting",
+        "--use-default-lighting",
         action="store_true",
-        help="Override configured lighting to use synthetic lighting for the stage.",
+        help="Override configured lighting to use default lighting for the stage.",
     )
     parser.add_argument(
         "--ibl",
