@@ -223,7 +223,7 @@ To quickly test in the viewer application:
 #from the habitat-sim directory
 # C++
 # ./build/viewer if compiling locally
-habitat-viewer --stage-requires-lighting --enable-physics --object-dir ""  --dataset data/objects/ycb/ycb.scene_dataset_config.json -- data/test_assets/scenes/simple_room.glb
+habitat-viewer --use-default-lighting --enable-physics --object-dir ""  --dataset data/objects/ycb/ycb.scene_dataset_config.json -- data/test_assets/scenes/simple_room.glb
 ```
 Then press `'o'` key to add random objects from the dataset.
 
