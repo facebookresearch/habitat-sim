@@ -67,11 +67,11 @@ class MetadataMediator {
                           bool overwrite = false);
 
   /**
-   * @brief Load a @ref esp::metadata::sttributes::PhysicsManagerAttributes
+   * @brief Load a @ref esp::metadata::attributes::PhysicsManagerAttributes
    * defined by passed string file path.
    * @param _physicsManagerAttributesPath The path to look for the physics
    * config file.
-   * @return Whether a @ref esp::metadata::sttributes::PhysicsManagerAttributes
+   * @return Whether a @ref esp::metadata::attributes::PhysicsManagerAttributes
    * exists based on the requested path, either new or pre-existing.
    */
   bool createPhysicsManagerAttributes(
@@ -98,7 +98,7 @@ class MetadataMediator {
   std::string getActiveSceneDatasetName() const { return activeSceneDataset_; }
 
   /**
-   * @brief Sets desired @ref esp::metadata::sttributes::PhysicsManagerAttributes
+   * @brief Sets desired @ref esp::metadata::attributes::PhysicsManagerAttributes
    * handle.  Will load if does not exist.
    * @param _physicsManagerAttributesPath The path to look for the physics
    * config file.
@@ -108,7 +108,7 @@ class MetadataMediator {
       const std::string& _physicsManagerAttributesPath);
   /**
    * @brief Returns the name of the currently used
-   * @ref esp::metadata::sttributes::PhysicsManagerAttributes
+   * @ref esp::metadata::attributes::PhysicsManagerAttributes
    */
   std::string getCurrPhysicsAttributesHandle() {
     return currPhysicsManagerAttributes_;
@@ -179,7 +179,7 @@ class MetadataMediator {
 
   /**
    * @brief Return a copy of the current
-   * @ref esp::metadata::sttributes::PhysicsManagerAttributes.
+   * @ref esp::metadata::attributes::PhysicsManagerAttributes.
    */
   attributes::PhysicsManagerAttributes::ptr
   getCurrentPhysicsManagerAttributes() {

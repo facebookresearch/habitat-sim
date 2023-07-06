@@ -131,8 +131,9 @@ bool MetadataMediator::createSceneDataset(const std::string& sceneDatasetName,
   // lock dataset to prevent accidental deletion
   // should only be removable via MetadataMediator::removeSceneDataset.
   sceneDatasetAttributesManager_->setLock(sceneDatasetName, true);
-  ESP_DEBUG(Mn::Debug::Flag::NoSpace) << "Dataset `" << sceneDatasetName
-                                      << "` successfully created and locked.";
+  ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+      << "Dataset `" << sceneDatasetName
+      << "` successfully created and locked.";
 
   return true;
 }  // namespace metadata
@@ -167,7 +168,7 @@ bool MetadataMediator::removeSceneDataset(const std::string& sceneDatasetName) {
     ESP_WARNING(Mn::Debug::Flag::NoSpace)
         << "SceneDatasetAttributes `" << sceneDatasetName
         << "` unable to be deleted, probably due to it being marked "
-           "undeleteable in manager, so aborting dataset delete.";
+           "undeletable in manager, so aborting dataset delete.";
     return false;
   }
   // Should always have a default dataset. Use this process to remove extraneous
@@ -177,7 +178,7 @@ bool MetadataMediator::removeSceneDataset(const std::string& sceneDatasetName) {
     // dataset.
     createSceneDataset("default", true);
   }
-  ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+  ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
       << "SceneDatasetAttributes `" << sceneDatasetName
       << "` successfully removed.";
   return true;
@@ -385,7 +386,7 @@ MetadataMediator::makeSceneAndReferenceStage(
           << Mn::Debug::nospace << activeSceneDataset_ << Mn::Debug::nospace
           << "` to load scene '" << Mn::Debug::nospace << sceneName
           << Mn::Debug::nospace
-          << "'. This would only occur due to an internaal Habitat-Sim error.");
+          << "'. This would only occur due to an internal Habitat-Sim error.");
 
   // Verify that a StageAttributes exists in SceneInstance for requested Scene
   ESP_CHECK(
@@ -486,7 +487,7 @@ std::string MetadataMediator::getFilePathForHandle(
       assetMapping.find(assetHandle);
   if (mapIter == assetMapping.end()) {
     ESP_WARNING() << msgString << ": Unable to find file path for"
-                  << assetHandle << ". Aborting.";
+                  << assetHandle << ", so returning empty string.";
     return "";
   }
   return mapIter->second;
@@ -522,7 +523,7 @@ std::string MetadataMediator::createDatasetReport(
     ESP_ERROR() << "Dataset" << sceneDataset
                 << "is not found in the MetadataMediator, so unable to create "
                    "Dataset Report.";
-    return "Requeseted SceneDataset `" + sceneDataset + "` unknown.";
+    return "Requested SceneDataset `" + sceneDataset + "` unknown.";
   }
   return Corrade::Utility::formatString(
       "Scene Dataset {}\n{}\n", ds->getObjectInfoHeader(), ds->getObjectInfo());

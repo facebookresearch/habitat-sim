@@ -96,7 +96,7 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
         << "<" << this->objectType_
         << "> : Failure loading attributes from document `" << filename
         << "` of unknown type `" << typeid(U).name()
-        << "` so unaable to build object.";
+        << "` so unable to build object.";
   }
   /**
    * @brief Method to load a Managed Object's data from a file.  This is the
