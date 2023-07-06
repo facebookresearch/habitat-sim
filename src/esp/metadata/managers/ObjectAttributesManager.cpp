@@ -31,8 +31,9 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
   // verify that a primitive asset with the given handle exists
   if (!this->isValidPrimitiveAttributes(primAttrTemplateHandle)) {
     ESP_ERROR(Mn::Debug::Flag::NoSpace)
-        << "No primitive with handle '" << primAttrTemplateHandle
-        << "' exists so cannot build physical object.  Aborting.";
+        << "No primitive with handle `" << primAttrTemplateHandle
+        << "` exists so cannot build physical object, so "
+           "createPrimBasedAttributesTemplate for object aborted.";
     return nullptr;
   }
 
@@ -76,7 +77,7 @@ void ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates() {
 void ObjectAttributesManager::setValsFromJSONDoc(
     attributes::ObjectAttributes::ptr objAttributes,
     const io::JsonGenericValue& jsonConfig) {
-  this->loadAbstractObjectAttributesFromJson(objAttributes, jsonConfig);
+  this->setAbstractObjectAttributesFromJson(objAttributes, jsonConfig);
 
   // Populate with object-specific fields found in json, if any are there.
   // object mass
@@ -217,7 +218,8 @@ int ObjectAttributesManager::registerObjectFinalize(
   if (objectTemplate->getRenderAssetHandle() == "") {
     ESP_ERROR(Mn::Debug::Flag::NoSpace)
         << "Attributes template named `" << objectTemplateHandle
-        << "` does not have a valid render asset handle specified. Aborting.";
+        << "` does not have a valid render asset handle specified, so "
+           "registration is aborted.";
     return ID_UNDEFINED;
   }
 
@@ -258,7 +260,7 @@ int ObjectAttributesManager::registerObjectFinalize(
         << "` specified in object template with handle : `"
         << objectTemplateHandle
         << "` does not correspond to any existing file or primitive render "
-           "asset.  Aborting.";
+           "asset, so registration is aborted.";
     return ID_UNDEFINED;
   }
 

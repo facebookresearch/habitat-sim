@@ -301,8 +301,8 @@ std::vector<int> AttributesManager<T, Access>::loadAllTemplatesFromPathAndExt(
   const bool dirExists = Dir::isDirectory(path);
   if (dirExists) {
     ESP_DEBUG(Mn::Debug::Flag::NoSpace)
-        << "Parsing " << this->objectType_
-        << " library directory: " + path + " for \'" + extType + "\' files";
+        << "Parsing " << this->objectType_ << " library directory: `" << path
+        << "` for `" << extType << "` files";
     for (auto& file : *Dir::list(path, Dir::ListFlag::SortAscending)) {
       std::string absoluteSubfilePath = Dir::join(path, file);
       if (Cr::Utility::String::endsWith(absoluteSubfilePath, extType)) {
@@ -319,9 +319,9 @@ std::vector<int> AttributesManager<T, Access>::loadAllTemplatesFromPathAndExt(
       paths.push_back(attributesFilepath);
     } else {  // neither a directory or a file
       ESP_WARNING(Mn::Debug::Flag::NoSpace)
-          << "<" << this->objectType_ << "> : Parsing" << this->objectType_
-          << ": Cannot find " << path << " as directory or "
-          << attributesFilepath << " as config file. Aborting parse.";
+          << "<" << this->objectType_ << "> : Parsing " << this->objectType_
+          << " files : Cannot find `" << path << "` as directory or `"
+          << attributesFilepath << "` as config file, so template load failed.";
       return templateIndices;
     }  // if fileExists else
   }    // if dirExists else
@@ -339,9 +339,9 @@ void AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad(
     const io::JsonGenericValue& filePaths) {
   for (rapidjson::SizeType i = 0; i < filePaths.Size(); ++i) {
     if (!filePaths[i].IsString()) {
-      ESP_ERROR() << "<" << this->objectType_
-                  << "> : Invalid path value in file path array element @ idx"
-                  << i << ". Skipping.";
+      ESP_WARNING() << "<" << this->objectType_
+                    << "> : Invalid path value in file path array element @ idx"
+                    << i << ". Skipping.";
       continue;
     }
     std::string absolutePath =
@@ -350,19 +350,21 @@ void AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad(
     if (globPaths.size() > 0) {
       for (const auto& globPath : globPaths) {
         // load all object templates available as configs in absolutePath
-        ESP_DEBUG() << "<" << this->objectType_ << "> : Glob path result for"
-                    << absolutePath << ":" << globPath;
+        ESP_VERY_VERBOSE() << "<" << this->objectType_
+                           << "> : Glob path result for" << absolutePath << ":"
+                           << globPath;
         this->loadAllTemplatesFromPathAndExt(globPath, extType, true);
       }
     } else {
       ESP_WARNING(Mn::Debug::Flag::NoSpace)
-          << "<" << this->objectType_ << "> : No Glob path result for "
-          << absolutePath << " so unable to load templates.";
+          << "<" << this->objectType_ << "> : No Glob path result found for `"
+          << absolutePath << "` so unable to load templates from that path.";
     }
   }
   ESP_DEBUG(Mn::Debug::Flag::NoSpace)
-      << "<" << this->objectType_ << ">:" << std::to_string(filePaths.Size())
-      << "paths specified in JSON doc for" << this->objectType_ << "templates.";
+      << "<" << this->objectType_ << "> : " << std::to_string(filePaths.Size())
+      << " paths specified in JSON doc for " << this->objectType_
+      << " configuration files.";
 }  // AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad
 
 template <class T, ManagedObjectAccess Access>
@@ -380,16 +382,15 @@ auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
   // Check if this configuration file exists and if so use it to build
   // attributes
   bool jsonFileExists = Cr::Utility::Path::exists(jsonAttrFileName);
-  ESP_DEBUG(Mn::Debug::Flag::NoSpace)
-      << "<" << this->objectType_
-      << ">: Proposing JSON name : " << jsonAttrFileName
-      << " from original name : " << filename << "| This file"
-      << (jsonFileExists ? " exists." : " does not exist.");
+  ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+      << "<" << this->objectType_ << ">: Proposing JSON name `"
+      << jsonAttrFileName << "` from original name `" << filename
+      << "`| This file" << (jsonFileExists ? " exists." : " does not exist.");
   if (jsonFileExists) {
     // configuration file exists with requested name, use to build Attributes
     attrs = this->createObjectFromJSONFile(jsonAttrFileName, registerObj);
     if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::Debug)) {
-      msg = "JSON Configuration File (" + jsonAttrFileName + ") based";
+      msg = "JSON Configuration File `" + jsonAttrFileName + "` based";
     }
   } else {
     // An existing, valid configuration file could not be found using the
@@ -403,11 +404,11 @@ auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
     if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::Debug)) {
       // only populate msg if appropriate logging level is enabled
       if (fileExists) {
-        msg = "File (" + filename +
-              ") exists but is not a recognized config filename extension, so "
+        msg = "File `" + filename +
+              "` exists but is not a recognized config filename extension, so "
               "new default";
       } else {
-        msg = "File (" + filename + ") not found, so new default";
+        msg = "File `" + filename + "` not found, so new default";
       }
     }
   }
@@ -424,8 +425,8 @@ bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
       ESP_WARNING(Mn::Debug::Flag::NoSpace)
           << "<" << this->objectType_
           << "> : " << attribs->getSimplifiedHandle()
-          << " attributes specifies user_defined attributes but they are not "
-             "of the correct format. Skipping.";
+          << " attributes specifies user_defined attributes but their format "
+             "is incorrect, so no user_defined attributes are loaded.";
       return false;
     } else {
       const std::string subGroupName = "user_defined";

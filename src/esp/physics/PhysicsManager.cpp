@@ -219,7 +219,7 @@ int PhysicsManager::addObject(
   if (!objectAttributes) {
     // should never run, but just in case
     ESP_ERROR() << "Object creation failed due to nonexistant "
-                   "objectAttributes";
+                   "objectAttributes, so addObject aborted.";
     return ID_UNDEFINED;
   }
   // verify whether necessary assets exist, and if not, instantiate them
@@ -228,7 +228,8 @@ int PhysicsManager::addObject(
       resourceManager_.instantiateAssetsOnDemand(objectAttributes);
   if (!objectSuccess) {
     ESP_ERROR() << "ResourceManager::instantiateAssetsOnDemand "
-                   "unsuccessful. Aborting.";
+                   "unsuccessful, so addObject `"
+                << objectAttributes->getHandle() << "` aborted.";
     return ID_UNDEFINED;
   }
 
@@ -247,8 +248,9 @@ int PhysicsManager::addObject(
     if (attachmentNode == nullptr) {
       delete objectNode;
     }
-    ESP_ERROR() << "PhysicsManager::makeRigidObject unsuccessful. "
-                   " Aborting.";
+    ESP_ERROR(Mn::Debug::Flag::NoSpace)
+        << "PhysicsManager::makeAndAddRigidObject unsuccessful, so addObject `"
+        << objectAttributes->getHandle() << "` aborted.";
     return ID_UNDEFINED;
   }
 
@@ -272,7 +274,8 @@ int PhysicsManager::addObject(
   if (!objectSuccess) {
     // if failed for some reason, remove and return
     removeObject(nextObjectID_, true, true);
-    ESP_ERROR() << "PhysicsManager::finalizeObject unsuccessful.  Aborting.";
+    ESP_ERROR() << "PhysicsManager::finalizeObject unsuccessful, so addObject `"
+                << objectAttributes->getHandle() << "` aborted.";
     return ID_UNDEFINED;
   }
   // Valid object exists by here.
@@ -332,10 +335,11 @@ int PhysicsManager::addArticulatedObjectInstance(
       false, lightSetup);
   if (aObjID == ID_UNDEFINED) {
     // instancing failed for some reason.
-    ESP_ERROR() << "Articulated Object create failed for model filepath"
-                << filepath << ", whose handle is"
-                << aObjInstAttributes->getHandle()
-                << "as specified in articulated object instance attributes.";
+    ESP_ERROR(Mn::Debug::Flag::NoSpace)
+        << "Articulated Object create failed for model filepath `" << filepath
+        << "`, whose handle is `" << aObjInstAttributes->getHandle()
+        << "` as specified in articulated object instance attributes, so "
+           "addArticulatedObjectInstance aborted.";
     return ID_UNDEFINED;
   }
 
@@ -406,7 +410,7 @@ int PhysicsManager::addTrajectoryObject(const std::string& trajVisName,
       trajVisName, uniquePts, colorVec, numSegments, radius, smooth, numInterp);
   if (!success) {
     ESP_ERROR() << "Failed to create Trajectory visualization mesh for"
-                << trajVisName;
+                << trajVisName << "so addTrajectoryObject aborted.";
     return ID_UNDEFINED;
   }
   // 2. create object attributes for the trajectory
@@ -422,7 +426,7 @@ int PhysicsManager::addTrajectoryObject(const std::string& trajVisName,
   if (trajVisID == ID_UNDEFINED) {
     // failed to add object - need to delete asset from resourceManager.
     ESP_ERROR() << "Failed to create Trajectory visualization object for"
-                << trajVisName;
+                << trajVisName << "so addTrajectoryObject aborted.";
     // TODO : support removing asset by removing from resourceDict_ properly
     // using trajVisName
     return ID_UNDEFINED;
