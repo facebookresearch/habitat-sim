@@ -41,7 +41,7 @@ def get_default_modes_and_vers():
     bullet_modes = [False, True]
     if platform.system() == "Darwin":
         return py_vers, bullet_modes, [False], [None]
-    elif platform.system() == "Linux":  # noqa: SIM106
+    elif platform.system() == "Linux":
         return py_vers, bullet_modes, [True, False], [None]
     else:
         raise RuntimeError(f"Unknown system: {platform.system()}")
@@ -50,7 +50,7 @@ def get_default_modes_and_vers():
 def get_platform_string() -> str:
     if platform.system() == "Darwin":
         return "macos"
-    elif platform.system() == "Linux":  # noqa: SIM106
+    elif platform.system() == "Linux":
         return "linux"
     else:
         raise RuntimeError(f"Unknown system: {platform.system()}")
@@ -59,7 +59,7 @@ def get_platform_string() -> str:
 def get_headless_mode_for_test() -> bool:
     if platform.system() == "Darwin":
         return False
-    elif platform.system() == "Linux":  # noqa: SIM106
+    elif platform.system() == "Linux":
         return True
     else:
         raise RuntimeError(f"Unknown system: {platform.system()}")
