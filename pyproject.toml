@@ -1,8 +1,8 @@
 [build-system]
 build-backend = "setuptools.build_meta"
 requires = [
-            "cmake",
-            "ninja",
+            "cmake==3.26.4",
+            "ninja==1.10.2",
             "pip",
             "setuptools",
             "wheel",

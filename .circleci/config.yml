@@ -194,21 +194,7 @@ jobs:
           name: setup
           command: |
               pip install -U pip
-              pip install -U --prefer-binary \
-                black==23.1.0 \
-                flake8 \
-                flake8-bugbear==22.6.22 \
-                flake8-builtins \
-                flake8-comprehensions \
-                flake8-return \
-                flake8-simplify \
-                hypothesis==6.29.3 \
-                isort==5.11.5 \
-                mypy \
-                numpy \
-                pytest \
-                sphinx \
-                tqdm
+              pip install -U --prefer-binary -r .circleci/requirements-python-lint.txt --progress-bar off
               pip install --prefer-binary -r requirements.txt torch --progress-bar off
       - run:
           name: run black
@@ -315,9 +301,8 @@ jobs:
             export PATH=$HOME/miniconda/bin:$PATH
             source ~/.bash_profile
             conda activate
-            conda install -y anaconda-client ccache cmake git ninja conda-build pip
+            conda install -y --file .circleci/requirements-conda-build.txt
             echo $(which -a python)
-            pip install gitpython
             cd habitat-sim
             git submodule update --init --recursive --jobs 8
             pip install .
@@ -418,9 +403,7 @@ jobs:
               cd habitat-sim
               git submodule update --init --recursive --jobs 8
               pip install -r requirements.txt --progress-bar off
-              pip install imageio imageio-ffmpeg
-              conda install -y -c conda-forge doxygen
-              conda install -y  jinja2 pygments docutils
+              conda install -y --file .circleci/requirements-conda-doc.txt
               while [ ! -f ~/cuda_installed ]; do sleep 2; done # wait for CUDA
               sudo apt install --allow-change-held-packages \
                   texlive-base \
@@ -472,13 +455,12 @@ jobs:
           command: |
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat; cd habitat-lab
-              # Install requirments first to avoid errors related to gym
+              # Install requirements first to avoid errors related to gym
               pip install -r habitat-lab/requirements.txt --progress-bar off
               pip install -e habitat-lab
 
               cd docs
-              conda install -y -c conda-forge doxygen
-              conda install -y  jinja2 pygments docutils
+              conda install -y --file .circleci/requirements-conda-doc.txt
               ./build-public.sh
       - save_cache:
           key: conda-{{ checksum "habitat-sim/.circleci/config.yml" }}-{{ checksum "./date" }}
@@ -509,7 +491,6 @@ jobs:
               . activate habitat;
               cd habitat-sim
               pip install -r requirements.txt --progress-bar off
-              pip install imageio imageio-ffmpeg
               git submodule update --init --recursive --jobs 8
               python -u setup.py install --build-type "Release" --lto --headless --bullet
       - run:
@@ -639,7 +620,6 @@ jobs:
               . activate habitat;
               cd habitat-sim
               pip install -r requirements.txt --progress-bar off
-              pip install imageio imageio-ffmpeg
               git submodule update --init --recursive --jobs 8
               python -u setup.py install --build-type "Release" --lto --headless --audio
               python examples/tutorials/audio_agent.py
