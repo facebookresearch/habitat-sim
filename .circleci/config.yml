@@ -203,7 +203,7 @@ jobs:
                 flake8-return \
                 flake8-simplify \
                 hypothesis==6.29.3 \
-                isort==5.11.5 \
+                isort==5.12.0 \
                 mypy \
                 numpy \
                 pytest \
