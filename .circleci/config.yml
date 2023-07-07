@@ -194,7 +194,7 @@ jobs:
           name: setup
           command: |
               pip install -U pip
-              pip install -U --prefer-binary -r .circleci/requirements-python-lint.txt --progress-bar off
+              pip install -U --prefer-binary -r .circleci/requirements_python_lint.txt --progress-bar off
               pip install --prefer-binary -r requirements.txt torch --progress-bar off
       - run:
           name: run black
@@ -300,10 +300,10 @@ jobs:
           command: |
             export PATH=$HOME/miniconda/bin:$PATH
             source ~/.bash_profile
-            conda activate
-            conda install -y --file .circleci/requirements-conda-build.txt
-            echo $(which -a python)
             cd habitat-sim
+            conda activate
+            conda install -y --file conda-build/common/requirements_conda_build.txt
+            echo $(which -a python)
             git submodule update --init --recursive --jobs 8
             pip install .
             pip uninstall -y habitat-sim
@@ -403,7 +403,7 @@ jobs:
               cd habitat-sim
               git submodule update --init --recursive --jobs 8
               pip install -r requirements.txt --progress-bar off
-              conda install -y --file .circleci/requirements-conda-doc.txt
+              conda install -y --file .circleci/requirements_conda_doc.txt
               while [ ! -f ~/cuda_installed ]; do sleep 2; done # wait for CUDA
               sudo apt install --allow-change-held-packages \
                   texlive-base \
@@ -454,13 +454,14 @@ jobs:
           name: Build Habitat Lab documentation
           command: |
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
-              . activate habitat; cd habitat-lab
+              . activate habitat
+              conda install -y --file habitat-sim/.circleci/requirements_conda_doc.txt
+              cd habitat-lab
               # Install requirements first to avoid errors related to gym
               pip install -r habitat-lab/requirements.txt --progress-bar off
               pip install -e habitat-lab
 
               cd docs
-              conda install -y --file .circleci/requirements-conda-doc.txt
               ./build-public.sh
       - save_cache:
           key: conda-{{ checksum "habitat-sim/.circleci/config.yml" }}-{{ checksum "./date" }}
