@@ -51,7 +51,7 @@ repos:
     -   id: python-check-blanket-type-ignore
 
 -   repo: https://github.com/timothycrosley/isort
-    rev: 5.11.5
+    rev: 5.12.0
     hooks:
     -   id: isort
         exclude: docs/
@@ -115,7 +115,7 @@ repos:
         additional_dependencies:
             - 'nbformat<=5.0.8'
             - black==23.1.0
-            - isort==5.11.5
+            - isort==5.12.0
 
 -   repo: https://github.com/pre-commit/mirrors-clang-format
     rev: v13.0.1
