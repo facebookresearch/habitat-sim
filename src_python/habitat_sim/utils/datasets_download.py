@@ -109,22 +109,14 @@ def initialize_test_data_sources(data_path):
             "version": "1.0",
         },
         "replica_cad_dataset": {
-            "source": "https://dl.fbaipublicfiles.com/habitat/ReplicaCAD/ReplicaCAD_dataset_v1.6.zip",
-            "package_name": "ReplicaCAD_dataset_v1.6.zip",
+            "source": "https://huggingface.co/datasets/ai-habitat/ReplicaCAD_dataset.git",
             "link": data_path + "replica_cad",
-            "version": "1.6",
+            "version": "v1.6",
         },
         "replica_cad_baked_lighting": {
-            "source": "https://dl.fbaipublicfiles.com/habitat/ReplicaCAD/ReplicaCAD_baked_lighting_v1.6.zip",
-            "package_name": "ReplicaCAD_baked_lighting_v1.6.zip",
+            "source": "https://huggingface.co/datasets/ai-habitat/ReplicaCAD_baked_lighting.git",
             "link": data_path + "replica_cad_baked_lighting",
-            "version": "1.6",
-        },
-        "replica_cad_hf": {
-            "source": "https://huggingface.co/datasets/ai-habitat/ReplicaCAD.git",
-            "link": data_path + "replica_cad_hf",
-            "version": "main",
-            "requires_auth": True,
+            "version": "v1.6",
         },
         "ycb": {
             "source": "https://dl.fbaipublicfiles.com/habitat/ycb/hab_ycb_v1.2.zip",
@@ -519,11 +511,12 @@ def clone_repo_source(
     password: Optional[str] = None,
 ):
     """
-    Clones an processes a datasource hosted on a git repo (e.g. HuggingFace Dataset).
+    Clones and processes a datasource hosted on a git repo (e.g. HuggingFace Dataset).
     Handles authentication for gated sources.
     Automatically prunes the resulting repo to reduce memory overhead.
     """
-    clone_command = " git clone "
+    version_tag = data_sources[uid]["version"]
+    clone_command = f" git clone --depth 1 --branch {version_tag} "
     if requires_auth:
         adjusted_password = password.replace(" ", "%20")
         url_split = data_sources[uid]["source"].split("https://")[-1]
