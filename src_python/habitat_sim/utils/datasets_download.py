@@ -111,7 +111,7 @@ def initialize_test_data_sources(data_path):
         "replica_cad_dataset": {
             "source": "https://huggingface.co/datasets/ai-habitat/ReplicaCAD_dataset.git",
             "link": data_path + "replica_cad",
-            "version": "v1.6",
+            "version": "main",
         },
         "replica_cad_baked_lighting": {
             "source": "https://huggingface.co/datasets/ai-habitat/ReplicaCAD_baked_lighting.git",
