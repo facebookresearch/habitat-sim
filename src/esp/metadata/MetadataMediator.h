@@ -14,6 +14,7 @@
 #include "esp/metadata/managers/AssetAttributesManager.h"
 #include "esp/metadata/managers/LightLayoutAttributesManager.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
+#include "esp/metadata/managers/PbrShaderAttributesManager.h"
 #include "esp/metadata/managers/PhysicsAttributesManager.h"
 #include "esp/metadata/managers/SceneDatasetAttributesManager.h"
 #include "esp/metadata/managers/StageAttributesManager.h"
@@ -78,6 +79,15 @@ class MetadataMediator {
       const std::string& _physicsManagerAttributesPath =
           ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH);
 
+  /**
+   * @brief Load PBR/IBL shader configuration attributes defined by file at
+   * passed path.
+   * @param _pbrConfigPath The path to look for the PBR/IBL shader config file
+   * @return Whether successfully created a new PBR/IBL shader configuration
+   * attributes or not.
+   */
+  bool createPbrAttributes(const std::string& _pbrConfigPath =
+                               ESP_DEFAULT_PBRSHADER_CONFIG_REL_PATH);
   //==================== Accessors ======================//
 
   /**
@@ -156,6 +166,14 @@ class MetadataMediator {
   }  // getPhysicsAttributesManager
 
   /**
+   * @brief Return manager for PBR and IBL lighting configuration settings.
+   */
+  const managers::PbrShaderAttributesManager::ptr&
+  getPbrShaderAttributesManager() const {
+    return pbrShaderAttributesManager_;
+  }  // getPbrShaderAttributesManager
+
+  /**
    * @brief Return manager for construction and access to
    * @ref esp::attributes::SceneInstanceAttributes for current dataset.
    * @return The current dataset's @ref
@@ -186,6 +204,15 @@ class MetadataMediator {
     return physicsAttributesManager_->getObjectCopyByHandle(
         currPhysicsManagerAttributes_);
   }  // getCurrentPhysicsManagerAttributes
+
+  /**
+   * @brief Return a copy of the currently specified PBR/IBL Shader
+   * configuration attributes.
+   */
+  attributes::PbrShaderAttributes::ptr getCurrentPbrConfiguration() {
+    return pbrShaderAttributesManager_->getObjectCopyByHandle(
+        currPbrConfigAttributes_);
+  }
 
   /**
    * @brief Get a list of all scene instances available in the currently active
@@ -523,10 +550,15 @@ class MetadataMediator {
   std::string activeSceneDataset_;
 
   /**
-   * @brief String name of current Physis Manager attributes
+   * @brief String name of current Physics Manager attributes
    */
   std::string currPhysicsManagerAttributes_;
 
+  /**
+   * @brief String name of current default PBR/IBL Shader configuration
+   * attributes.
+   */
+  std::string currPbrConfigAttributes_;
   /**
    * @brief Manages all construction and access to all scene dataset attributes.
    * Users should never directly access this, or it could inadvertently get in a
@@ -540,6 +572,13 @@ class MetadataMediator {
    * @brief Manages all construction and access to physics world attributes.
    */
   managers::PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
+
+  /**
+   * @brief Manages all PBR/IBL Shader configuration settings, independent of
+   * loaded datasets.
+   */
+  managers::PbrShaderAttributesManager::ptr pbrShaderAttributesManager_ =
+      nullptr;
 
  public:
   ESP_SMART_POINTERS(MetadataMediator)

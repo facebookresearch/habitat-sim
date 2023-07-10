@@ -16,10 +16,12 @@ using attributes::SceneDatasetAttributes;
 namespace managers {
 
 SceneDatasetAttributesManager::SceneDatasetAttributesManager(
-    PhysicsAttributesManager::ptr physicsAttributesMgr)
+    PhysicsAttributesManager::ptr physicsAttributesMgr,
+    PbrShaderAttributesManager::ptr pbrShaderAttributesMgr)
     : AttributesManager<SceneDatasetAttributes, ManagedObjectAccess::Share>::
           AttributesManager("Dataset", "scene_dataset_config.json"),
-      physicsAttributesManager_(std::move(physicsAttributesMgr)) {
+      physicsAttributesManager_(std::move(physicsAttributesMgr)),
+      pbrShaderAttributesManager_(std::move(pbrShaderAttributesMgr)) {
   // build this manager's copy ctor map
   this->copyConstructorMap_["SceneDatasetAttributes"] =
       &SceneDatasetAttributesManager::createObjectCopy<

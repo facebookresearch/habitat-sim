@@ -17,9 +17,11 @@ MetadataMediator::MetadataMediator(const sim::SimulatorConfiguration& cfg) {
 void MetadataMediator::buildAttributesManagers() {
   physicsAttributesManager_ = managers::PhysicsAttributesManager::create();
 
+  pbrShaderAttributesManager_ = managers::PbrShaderAttributesManager::create();
+
   sceneDatasetAttributesManager_ =
       managers::SceneDatasetAttributesManager::create(
-          physicsAttributesManager_);
+          physicsAttributesManager_, pbrShaderAttributesManager_);
 
   // should always have default dataset, but this is managed by MM instead of
   // made undeletable in SceneDatasetManager, so that it can be easily "reset"
@@ -27,6 +29,9 @@ void MetadataMediator::buildAttributesManagers() {
   createSceneDataset("default");
   // should always have default physicsManagerAttributesPath
   createPhysicsManagerAttributes(ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH);
+  // should always have default PBRConfig
+  createPbrAttributes(ESP_DEFAULT_PBRSHADER_CONFIG);
+
   // after this setSimulatorConfiguration will be called
 }  // MetadataMediator::buildAttributesManagers
 
@@ -97,6 +102,24 @@ bool MetadataMediator::createPhysicsManagerAttributes(
   }  // if dne then create
   return true;
 }  // MetadataMediator::createPhysicsManagerAttributes
+
+bool MetadataMediator::createPbrAttributes(const std::string& _pbrConfigPath) {
+  bool exists =
+      pbrShaderAttributesManager_->getObjectLibHasHandle(_pbrConfigPath);
+  if (!exists) {
+    auto pbrConfigs =
+        pbrShaderAttributesManager_->createObject(_pbrConfigPath, true);
+    if (pbrConfigs == nullptr) {
+      // something failed during creation process.
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << "Unknown PBR/IBL shader configuration file : `" << _pbrConfigPath
+          << "` does not exist and no PBRShaderConfiguration is able to be "
+             "created for it, so creation failed.";
+      return false;
+    }
+  }  // if dne then create
+  return true;
+}  // MetadataMediator::createPbrAttributes
 
 bool MetadataMediator::createSceneDataset(const std::string& sceneDatasetName,
                                           bool overwrite) {

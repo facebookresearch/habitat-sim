@@ -7,6 +7,7 @@
 
 #include <utility>
 
+#include "PbrShaderAttributesManager.h"
 #include "PhysicsAttributesManager.h"
 
 #include "AttributesManagerBase.h"
@@ -22,7 +23,8 @@ class SceneDatasetAttributesManager
                                ManagedObjectAccess::Share> {
  public:
   explicit SceneDatasetAttributesManager(
-      PhysicsAttributesManager::ptr physicsAttributesMgr);
+      PhysicsAttributesManager::ptr physicsAttributesMgr,
+      PbrShaderAttributesManager::ptr pbrShaderAttributesMgr);
   /**
    * @brief Creates an instance of a dataset template described by passed
    * string. For dataset templates, this a file name.
@@ -200,6 +202,12 @@ class SceneDatasetAttributesManager
    * Dataset.
    */
   PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
+
+  /**
+   * @brief Reference to the PbrShaderAttributesManager to give access to
+   * various PBR/IBL Shader configuration parameters and settings.
+   */
+  PbrShaderAttributesManager::ptr pbrShaderAttributesManager_ = nullptr;
 
  public:
   ESP_SMART_POINTERS(SceneDatasetAttributesManager)
