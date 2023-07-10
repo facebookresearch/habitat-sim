@@ -35,23 +35,25 @@ bool MetadataMediator::setSimulatorConfiguration(
   simConfig_ = cfg;
 
   // set current active dataset name - if unchanged, does nothing
-  bool success = setActiveSceneDatasetName(simConfig_.sceneDatasetConfigFile);
-  if (!success) {
-    // something failed about setting up active scene dataset
-    ESP_ERROR()
-        << "Some error prevented current scene dataset name to be changed to"
-        << simConfig_.sceneDatasetConfigFile;
-    return false;
-  }
-
+  ESP_CHECK(setActiveSceneDatasetName(simConfig_.sceneDatasetConfigFile),
+            // something failed about setting up active scene dataset
+            "Some error prevented currently active Scene Dataset `"
+                << Mn::Debug::nospace << activeSceneDataset_
+                << Mn::Debug::nospace << "` being changed to `"
+                << Mn::Debug::nospace << simConfig_.sceneDatasetConfigFile
+                << Mn::Debug::nospace
+                << "` as requested in the Simulator Configuration so aborting. "
+                   "Verify requested Scene Dataset file name in Simulator "
+                   "Configuration is correct.");
   // set active physics attributes handle - if unchanged, does nothing
-  success = setCurrPhysicsAttributesHandle(simConfig_.physicsConfigFile);
-  if (!success) {
-    // something failed about setting up physics attributes
-    ESP_ERROR() << "Some error prevented current physics attributes to"
-                << simConfig_.physicsConfigFile;
-    return false;
-  }
+  ESP_CHECK(setCurrPhysicsAttributesHandle(simConfig_.physicsConfigFile),
+            // something failed about setting up physics attributes
+            "Some error prevented changing current Physics Attributes to `"
+                << Mn::Debug::nospace << simConfig_.physicsConfigFile
+                << Mn::Debug::nospace
+                << "` as requested in the Simulator Configuration so aborting. "
+                   "Verify requested physics config filename in Simulator "
+                   "Configuration is correct.");
 
   // get a ref to current dataset attributes
   attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
@@ -60,15 +62,18 @@ bool MetadataMediator::setSimulatorConfiguration(
     datasetAttr->setCurrCfgVals(simConfig_.sceneLightSetupKey,
                                 simConfig_.frustumCulling);
   } else {
-    ESP_ERROR() << "No active dataset exists or has been specified. Aborting";
-    return false;
+    // No active dataset exists, so fail. Always should have an active dataset,
+    // even if it is default.
+    ESP_CHECK(false,
+              "No active dataset exists or has been specified. Aborting");
   }
-  ESP_DEBUG() << "Set new simulator config for scene/stage :"
-              << simConfig_.activeSceneName
-              << "and dataset :" << simConfig_.sceneDatasetConfigFile << "which"
-              << (activeSceneDataset_ == simConfig_.sceneDatasetConfigFile
-                      ? "is currently active dataset."
-                      : "is NOT active dataset (THIS IS PROBABLY AN ERROR.)");
+  ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+      << "Set new simulator config for scene/stage : `"
+      << simConfig_.activeSceneName << "` and dataset : `"
+      << simConfig_.sceneDatasetConfigFile << "` which "
+      << (activeSceneDataset_ == simConfig_.sceneDatasetConfigFile
+              ? "is currently active dataset."
+              : "is NOT active dataset (THIS IS PROBABLY AN ERROR.)");
   return true;
 }  // MetadataMediator::setSimulatorConfiguration
 
@@ -82,10 +87,11 @@ bool MetadataMediator::createPhysicsManagerAttributes(
 
     if (physAttrs == nullptr) {
       // something failed during creation process.
-      ESP_WARNING()
-          << "Unknown physics manager configuration file :"
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << "Unknown PhysicsManager Attributes configuration file : `"
           << _physicsManagerAttributesPath
-          << "does not exist and is not able to be created.  Aborting.";
+          << "` does not exist and no PhysicsManager Attributes is able to be "
+             "created for it, so creation failed.";
       return false;
     }
   }  // if dne then create
@@ -99,45 +105,55 @@ bool MetadataMediator::createSceneDataset(const std::string& sceneDatasetName,
   if (exists) {
     // check if not overwrite and exists already
     if (!overwrite) {
-      ESP_WARNING() << "Scene Dataset" << sceneDatasetName
-                    << "already exists.  To reload and overwrite existing "
-                       "data, set overwrite to true. Aborting.";
-      return false;
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << "Scene Dataset `" << sceneDatasetName
+          << "` already exists. To reload and overwrite existing "
+             "data, set overwrite to true. Using existing Scene Dataset.";
+      // Treat as if created, since it exists.
+      return true;
     }
     // overwrite specified, make sure not locked
     sceneDatasetAttributesManager_->setLock(sceneDatasetName, false);
   }
-  // by here dataset either does not exist or exists but is unlocked.
+  // by here dataset either does not exist or exists but is unlocked and
+  // overwrite is specified. attempt to create new/overwrite
   auto datasetAttribs =
       sceneDatasetAttributesManager_->createObject(sceneDatasetName, true);
-  if (datasetAttribs == nullptr) {
-    // not created, do not set name
-    ESP_WARNING() << "Unknown dataset" << sceneDatasetName
-                  << "does not exist and is not able to be created.  Aborting.";
-    return false;
-  }
+  // Failure here means some catastrophic error attempting to create the dataset
+  // attributes. Should fail code
+  ESP_CHECK(datasetAttribs,
+            "Scene Dataset `"
+                << Mn::Debug::nospace << sceneDatasetName << Mn::Debug::nospace
+                << "` does not exist and is unable to be "
+                   "created using that name. Verify the given file name.");
+
   // if not null then successfully created
-  ESP_DEBUG() << "Dataset" << sceneDatasetName << "successfully created.";
   // lock dataset to prevent accidental deletion
+  // should only be removable via MetadataMediator::removeSceneDataset.
   sceneDatasetAttributesManager_->setLock(sceneDatasetName, true);
+  ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+      << "Dataset `" << sceneDatasetName
+      << "` successfully created and locked.";
+
   return true;
-}  // MetadataMediator::createSceneDataset
+}  // namespace metadata
 
 bool MetadataMediator::removeSceneDataset(const std::string& sceneDatasetName) {
   // First check if SceneDatasetAttributes exists
   if (!sceneDatasetExists(sceneDatasetName)) {
     // DNE, do nothing
-    ESP_WARNING() << "SceneDatasetAttributes" << sceneDatasetName
-                  << "does not exist. Aborting.";
-    return false;
+    ESP_WARNING(Mn::Debug::Flag::NoSpace)
+        << "SceneDatasetAttributes `" << sceneDatasetName
+        << "` does not exist, so it cannot be removed.";
+
+    return true;
   }
 
   // Next check if is current activeSceneDataset_, and if so skip with warning
   if (sceneDatasetName == activeSceneDataset_) {
-    ESP_WARNING() << "Cannot remove "
-                     "active SceneDatasetAttributes"
-                  << sceneDatasetName
-                  << ".  Switch to another dataset before removing.";
+    ESP_WARNING(Mn::Debug::Flag::NoSpace)
+        << "Cannot remove currently active SceneDatasetAttributes `"
+        << sceneDatasetName << "`. Switch to another dataset before removing.";
     return false;
   }
 
@@ -147,10 +163,12 @@ bool MetadataMediator::removeSceneDataset(const std::string& sceneDatasetName) {
   auto delDataset =
       sceneDatasetAttributesManager_->removeObjectByHandle(sceneDatasetName);
   // if failed here, probably means SceneDatasetAttributes was set to
-  // undeletable, return message and false
+  // undeletable, give warning and return false
   if (delDataset == nullptr) {
-    ESP_WARNING() << "SceneDatasetAttributes" << sceneDatasetName
-                  << "unable to be deleted. Aborting.";
+    ESP_WARNING(Mn::Debug::Flag::NoSpace)
+        << "SceneDatasetAttributes `" << sceneDatasetName
+        << "` unable to be deleted, probably due to it being marked "
+           "undeletable in manager, so aborting dataset delete.";
     return false;
   }
   // Should always have a default dataset. Use this process to remove extraneous
@@ -158,10 +176,11 @@ bool MetadataMediator::removeSceneDataset(const std::string& sceneDatasetName) {
   if (sceneDatasetName == "default") {
     // removing default dataset should still create another, empty, default
     // dataset.
-    createSceneDataset("default");
+    createSceneDataset("default", true);
   }
-  ESP_DEBUG() << "SceneDatasetAttributes" << sceneDatasetName
-              << "successfully removed.";
+  ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+      << "SceneDatasetAttributes `" << sceneDatasetName
+      << "` successfully removed.";
   return true;
 
 }  // MetadataMediator::removeSceneDataset
@@ -172,9 +191,10 @@ bool MetadataMediator::setCurrPhysicsAttributesHandle(
   if (physicsAttributesManager_->getObjectLibHasHandle(
           _physicsManagerAttributesPath)) {
     if (currPhysicsManagerAttributes_ != _physicsManagerAttributesPath) {
-      ESP_DEBUG() << "Old physics manager attributes"
-                  << currPhysicsManagerAttributes_ << "changed to"
-                  << _physicsManagerAttributesPath << "successfully.";
+      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+          << "Old physics manager attributes `" << currPhysicsManagerAttributes_
+          << "` changed to `" << _physicsManagerAttributesPath
+          << "` successfully.";
       currPhysicsManagerAttributes_ = _physicsManagerAttributesPath;
     }
     sceneDatasetAttributesManager_->setCurrPhysicsManagerAttributesHandle(
@@ -182,6 +202,9 @@ bool MetadataMediator::setCurrPhysicsAttributesHandle(
     return true;
   }
   // if this handle does not exist, create the attributes for it.
+  ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+      << "Attempting to create new physics manager attributes `"
+      << _physicsManagerAttributesPath << "`.";
   bool success = createPhysicsManagerAttributes(_physicsManagerAttributesPath);
   // if successfully created, set default name to physics manager attributes in
   // SceneDatasetAttributesManager
@@ -191,6 +214,11 @@ bool MetadataMediator::setCurrPhysicsAttributesHandle(
         currPhysicsManagerAttributes_);
     /// setCurrPhysicsManagerAttributesHandle
   }
+  ESP_DEBUG() << "Attempt to create new  Physics Manager Attributes from `"
+              << _physicsManagerAttributesPath << "`"
+              << (success ? " succeeded." : " failed.")
+              << "Currently active Physics Manager Attributes :"
+              << currPhysicsManagerAttributes_;
   return success;
 
 }  // MetadataMediator::setCurrPhysicsAttributesHandle
@@ -200,23 +228,26 @@ bool MetadataMediator::setActiveSceneDatasetName(
   // first check if dataset exists/is loaded, if so then set as default
   if (sceneDatasetExists(sceneDatasetName)) {
     if (activeSceneDataset_ != sceneDatasetName) {
-      ESP_DEBUG() << "Previous active dataset" << activeSceneDataset_
-                  << "changed to" << sceneDatasetName << "successfully.";
+      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+          << "Previous active Scene Dataset `" << activeSceneDataset_
+          << "` changed to `" << sceneDatasetName << "` successfully.";
       activeSceneDataset_ = sceneDatasetName;
     }
     return true;
   }
   // if does not exist, attempt to create it
-  ESP_DEBUG() << "Attempting to create new dataset" << sceneDatasetName;
+  ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+      << "Attempting to create new dataset `" << sceneDatasetName << "`.";
   bool success = createSceneDataset(sceneDatasetName);
   // if successfully created, set default name to access dataset attributes in
   // SceneDatasetAttributesManager
   if (success) {
     activeSceneDataset_ = sceneDatasetName;
   }
-  ESP_DEBUG() << "Attempt to create new dataset" << sceneDatasetName << ""
-              << (success ? " succeeded." : " failed.")
-              << "Currently active dataset :" << activeSceneDataset_;
+  ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+      << "Attempt to create new Scene Dataset from `" << sceneDatasetName << "`"
+      << (success ? " succeeded." : " failed. ")
+      << "Currently active Scene Dataset : `" << activeSceneDataset_ << "`.";
   return success;
 }  // MetadataMediator::setActiveSceneDatasetName
 
@@ -225,11 +256,12 @@ MetadataMediator::getSceneInstanceAttributesByName(
     const std::string& sceneName) {
   // get current dataset attributes
   attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
-  // this should never happen
-  if (datasetAttr == nullptr) {
-    ESP_ERROR() << "No dataset specified/exists.";
-    return nullptr;
-  }
+
+  // this should never happen, and would indicate someone did an end-run around
+  // management code and inappropriately deleted the dataset without resetting
+  // the activeSceneDataset_ tag.
+  ESP_CHECK(datasetAttr, "No active Scene Dataset specified/exists.");
+
   // directory to look for attributes for this dataset
   const std::string dsDir = datasetAttr->getFileDirectory();
   // get appropriate attr managers for the current dataset
@@ -243,13 +275,14 @@ MetadataMediator::getSceneInstanceAttributesByName(
   auto sceneList = dsSceneAttrMgr->getObjectHandlesBySubstring(sceneName);
   // sceneName can legally match any one of the following conditions :
   if (!sceneList.empty()) {
-    // 1.  Existing, registered SceneInstanceAttributes in current active
+    // 1. Existing, registered SceneInstanceAttributes in current active
     // dataset.
     //    In this case the SceneInstanceAttributes is returned.
-    ESP_DEBUG() << "Query dataset :" << activeSceneDataset_
-                << "for SceneInstanceAttributes named :" << sceneName
-                << "yields" << sceneList.size() << "candidates.  Using"
-                << sceneList[0] << Mn::Debug::nospace << ".";
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << "Querying Scene Dataset : `" << activeSceneDataset_
+        << "` for Scene Instance Attributes named : `" << sceneName
+        << "` yielded " << sceneList.size() << " candidates. Using `"
+        << sceneList[0] << "` (first candidate).";
     sceneInstanceAttributes =
         dsSceneAttrMgr->getObjectCopyByHandle(sceneList[0]);
   } else {
@@ -257,14 +290,17 @@ MetadataMediator::getSceneInstanceAttributesByName(
         dsSceneAttrMgr->getFormattedJSONFileName(sceneName);
 
     if (Cr::Utility::Path::exists(sceneFilenameCandidate)) {
-      // 2.  Existing, valid SceneInstanceAttributes file on disk, but not in
+      // 2. Existing, valid SceneInstanceAttributes file on disk, but not in
       // dataset.
       //    If this is the case, then the SceneInstanceAttributes should be
       //    loaded, registered, added to the dataset and returned.
-      ESP_DEBUG() << "Dataset :" << activeSceneDataset_
-                  << "does not reference a SceneInstanceAttributes named"
-                  << sceneName << "but a SceneInstanceAttributes config named"
-                  << sceneFilenameCandidate << "was found on disk, so loading.";
+      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+          << "Scene Dataset : `" << activeSceneDataset_
+          << "` does not reference a Scene Instance Attributes named `"
+          << sceneName << "` but a Scene Instance Attributes config named `"
+          << sceneFilenameCandidate
+          << "` was found on disk, so this will be loaded and added to the "
+             "currently active Scene Dataset.";
       sceneInstanceAttributes = dsSceneAttrMgr->createObjectFromJSONFile(
           sceneFilenameCandidate, true);
     } else {
@@ -272,17 +308,19 @@ MetadataMediator::getSceneInstanceAttributesByName(
       // substring
       auto stageList = dsStageAttrMgr->getObjectHandlesBySubstring(sceneName);
       if (!stageList.empty()) {
-        // 3.  Existing, registered StageAttributes in current active dataset.
+        // 3. Existing, registered StageAttributes in current active dataset.
         //    In this case, a SceneInstanceAttributes is created amd registered
         //    using sceneName, referencing the StageAttributes of the same name;
         //    This sceneInstanceAttributes is returned.
-        ESP_DEBUG()
-            << "No existing scene instance attributes containing name"
-            << sceneName << "found in Dataset :" << activeSceneDataset_ << "but"
-            << stageList.size() << "StageAttributes found.  Using"
+        ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+            << "Scene Dataset : `" << activeSceneDataset_
+            << "` does not reference a Scene Instance Attributes named `"
+            << sceneName << "` but `" << stageList.size()
+            << " Stage Attributes were found with a similar name. Using `"
             << stageList[0]
-            << "as stage and to construct a SceneInstanceAttributes with same "
-               "name that will be added to Dataset.";
+            << "` (first entry) as stage and will construct a Scene Instance "
+               "Attributes with the same name that will be added to the "
+               "currently active Scene Dataset.";
         // create a new SceneInstanceAttributes, and give it a
         // SceneObjectInstanceAttributes for the stage with the same name.
         sceneInstanceAttributes = makeSceneAndReferenceStage(
@@ -290,17 +328,19 @@ MetadataMediator::getSceneInstanceAttributesByName(
             dsSceneAttrMgr, sceneName);
 
       } else {
-        // 4.  Either existing stage config/asset on disk, but not in current
+        // 4. Either existing stage config/asset on disk, but not in current
         // dataset, or no stage config/asset exists with passed name.
         //    In this case, a stage attributes is loaded/created and registered,
         //    then added to current dataset, and then 3. is performed.
-        ESP_DEBUG() << "Dataset :" << activeSceneDataset_
-                    << "has no preloaded SceneInstanceAttributes or "
-                       "StageAttributes named :"
-                    << sceneName
-                    << "so loading/creating a new StageAttributes with this "
-                       "name, and then creating a SceneInstanceAttributes with "
-                       "the same name that references this stage.";
+        ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+            << "Scene Dataset : `" << activeSceneDataset_
+            << "` does not reference a Scene Instance Attributes or Stage "
+               "Attributes named `"
+            << sceneName
+            << "` so loading/creating a new Stage Attributes with this "
+               "name, and then creating a Scene Instance Attributes with "
+               "the same name that references this stage, which will be added "
+               "to the currently active Scene Dataset.";
         // create and register stage attributes
         auto stageAttributes = dsStageAttrMgr->createObject(sceneName, true);
         // create a new SceneInstanceAttributes, and give it a
@@ -325,12 +365,40 @@ MetadataMediator::makeSceneAndReferenceStage(
     const attributes::StageAttributes::ptr& stageAttributes,
     const managers::SceneInstanceAttributesManager::ptr& dsSceneAttrMgr,
     const std::string& sceneName) {
-  ESP_CHECK(datasetAttr != nullptr && stageAttributes != nullptr &&
-                dsSceneAttrMgr != nullptr,
-            "Missing (at least) one of scene dataset attributes, stage "
-            "attributes, or dataset scene attributes for scene '"
-                << Mn::Debug::nospace << sceneName << Mn::Debug::nospace
-                << "'.  Likely an invalid scene name.");
+  // Verify that a Scene Dataset (possibly default) exists.
+  ESP_CHECK(
+      datasetAttr,
+      "No Scene Dataset Attributes exists for currently active Scene Dataset `"
+          << Mn::Debug::nospace << activeSceneDataset_ << Mn::Debug::nospace
+          << "` from which to load scene '" << Mn::Debug::nospace << sceneName
+          << Mn::Debug::nospace
+          << "'. Likely the Scene Dataset Configuration file requested was not "
+             "found and so an attempt to create a new, empty Scene Dataset was "
+             "made and failed somehow. Verify the Scene Dataset Configuration "
+             "file name used.");
+
+  // Verify that the Scene Instance Attributes manager exists
+  // This should never fire - there should always be a
+  // SceneInstanceAttributesManager
+  ESP_CHECK(
+      dsSceneAttrMgr,
+      "No Scene Instance Attributes Manager was created for Scene Dataset `"
+          << Mn::Debug::nospace << activeSceneDataset_ << Mn::Debug::nospace
+          << "` to load scene '" << Mn::Debug::nospace << sceneName
+          << Mn::Debug::nospace
+          << "'. This would only occur due to an internal Habitat-Sim error.");
+
+  // Verify that a StageAttributes exists in SceneInstance for requested Scene
+  ESP_CHECK(
+      stageAttributes,
+      "No Stage Attributes exists for requested scene '"
+          << Mn::Debug::nospace << sceneName << Mn::Debug::nospace
+          << "' in currently specified Scene Dataset `" << Mn::Debug::nospace
+          << activeSceneDataset_ << Mn::Debug::nospace
+          << "`. Likely the Scene Dataset Configuration requested was not "
+             "found and so a new, empty Scene Dataset was created. Verify the "
+             "Scene Dataset Configuration file name used.");
+
   // create scene attributes with passed name
   attributes::SceneInstanceAttributes::ptr sceneInstanceAttributes =
       dsSceneAttrMgr->createDefaultObject(sceneName, false);
@@ -346,20 +414,20 @@ MetadataMediator::makeSceneAndReferenceStage(
   // instance attributes only.
 
   // add a ref to the navmesh path from the stage attributes to scene
-  // attributes, giving it an appropriately obvious name.  This entails adding
+  // attributes, giving it an appropriately obvious name. This entails adding
   // the path itself to the dataset, if it does not already exist there, keyed
   // by the ref that the scene attributes will use.
   std::pair<std::string, std::string> navmeshEntry =
       datasetAttr->addNavmeshPathEntry(
           sceneName, stageAttributes->getNavmeshAssetHandle(), false);
   // navmeshEntry holds the navmesh key-value in the dataset to use by this
-  // scene instance.  NOTE : the key may have changed from what was passed if a
+  // scene instance. NOTE : the key may have changed from what was passed if a
   // collision occurred with same key but different value, so we need to add
-  // this key to the scene instance attributes.
+  // this key to the Scene Instance Attributes.
   sceneInstanceAttributes->setNavmeshHandle(navmeshEntry.first);
 
   // add a ref to semantic scene descriptor ("house file") from stage attributes
-  // to scene attributes, giving it an appropriately obvious name.  This entails
+  // to scene attributes, giving it an appropriately obvious name. This entails
   // adding the path itself to the dataset, if it does not already exist there,
   // keyed by the ref that the scene attributes will use.
   std::pair<std::string, std::string> ssdEntry =
@@ -368,7 +436,7 @@ MetadataMediator::makeSceneAndReferenceStage(
   // ssdEntry holds the ssd key in the dataset to use by this scene instance.
   // NOTE : the key may have changed from what was passed if a collision
   // occurred with same key but different value, so we need to add this key to
-  // the scene instance attributes.
+  // the Scene Instance Attributes.
   sceneInstanceAttributes->setSemanticSceneHandle(ssdEntry.first);
 
   // register SceneInstanceAttributes object
@@ -383,7 +451,8 @@ MetadataMediator::getSceneInstanceUserConfiguration(
   attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
   // this should never happen
   if (datasetAttr == nullptr) {
-    ESP_ERROR() << "No dataset specified/exists.  Aborting.";
+    ESP_ERROR() << "No active dataset specified/exists, so aborting User "
+                   "Configuration retrieval.";
     return nullptr;
   }
   // get scene instance attribute manager
@@ -399,7 +468,7 @@ MetadataMediator::getSceneInstanceUserConfiguration(
     //    In this case the SceneInstanceAttributes is returned.
     ESP_DEBUG() << "Query dataset :" << activeSceneDataset_
                 << "for SceneInstanceAttributes named :" << curSceneName
-                << "yields" << sceneList.size() << "candidates.  Using"
+                << "yields" << sceneList.size() << "candidates. Using"
                 << sceneList[0] << Mn::Debug::nospace << ".";
     return dsSceneAttrMgr->getObjectCopyByHandle(sceneList[0])
         ->getUserConfiguration();
@@ -418,7 +487,7 @@ std::string MetadataMediator::getFilePathForHandle(
       assetMapping.find(assetHandle);
   if (mapIter == assetMapping.end()) {
     ESP_WARNING() << msgString << ": Unable to find file path for"
-                  << assetHandle << ".  Aborting.";
+                  << assetHandle << ", so returning empty string.";
     return "";
   }
   return mapIter->second;
@@ -452,8 +521,9 @@ std::string MetadataMediator::createDatasetReport(
   } else {
     // unknown dataset
     ESP_ERROR() << "Dataset" << sceneDataset
-                << "is not found in the MetadataMediator.  Aborting.";
-    return "Requeseted SceneDataset `" + sceneDataset + "` unknown.";
+                << "is not found in the MetadataMediator, so unable to create "
+                   "Dataset Report.";
+    return "Requested SceneDataset `" + sceneDataset + "` unknown.";
   }
   return Corrade::Utility::formatString(
       "Scene Dataset {}\n{}\n", ds->getObjectInfoHeader(), ds->getObjectInfo());

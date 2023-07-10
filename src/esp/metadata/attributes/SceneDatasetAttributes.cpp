@@ -74,7 +74,7 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
   // should only be empty if not specified in scene instance config, or if scene
   // instance config is synthesized (i.e. when Simulator::reconfigure is called
   // with SimulatorConfiguration::activeSceneName being a stage)
-  if (lightHandle.length() == 0) {
+  if (lightHandle.empty()) {
     lightHandle = sceneInstanceName;
   }
 
@@ -132,16 +132,15 @@ std::pair<std::string, std::string> SceneDatasetAttributes::addNewValToMap(
         } while (map.count(newKey) > 0);
         ESP_WARNING(Mn::Debug::Flag::NoSpace)
             << descString << " : Provided key '" << key
-
-            << "' already references a different value in "
-               "map. Modifying key to be"
+            << "' already references a different value in map. Modifying key "
+               "to be '"
             << newKey
-            << ". Set overwrite to true to overwrite existing entries.";
+            << "'. Set overwrite to true to overwrite existing entries.";
       } else {  // overwrite entry
-        ESP_WARNING() << descString
-                      << ": Warning : Overwriting existing map entry"
-                      << map.at(newKey) << "at key" << newKey << "with value"
-                      << path << ".";
+        ESP_WARNING(Mn::Debug::Flag::NoSpace)
+            << descString << " : Overwriting existing map entry "
+            << map.at(newKey) << " at key '" << newKey << "' with value'"
+            << path << "'.";
       }  // overwrite or not
     }    // found entry is desired or not
   }      // key is found
@@ -152,9 +151,8 @@ std::pair<std::string, std::string> SceneDatasetAttributes::addNewValToMap(
 esp::gfx::LightSetup SceneDatasetAttributes::getNamedLightSetup(
     const std::string& lightSetupName) {
   auto lightLayoutAttrName = getLightSetupFullHandle(lightSetupName);
-  if (lightLayoutAttrName == NO_LIGHT_KEY) {
-    return esp::gfx::LightSetup{};
-  }
+  // lightLayoutAttrName == NO_LIGHT_KEY and DEFAULT_LIGHTING_KEY
+  // handled in lightLayoutAttributesManager_
   return lightLayoutAttributesManager_->createLightSetupFromAttributes(
       lightLayoutAttrName);
 

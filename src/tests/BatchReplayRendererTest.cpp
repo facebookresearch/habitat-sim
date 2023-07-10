@@ -3,11 +3,8 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "Corrade/Containers/EnumSet.h"
-#include "Corrade/Utility/Assert.h"
-#include "Magnum/DebugTools/Screenshot.h"
+#include "Corrade/Containers/StridedArrayView.h"
 #include "Magnum/GL/Context.h"
-#include "Magnum/Magnum.h"
-#include "Magnum/Trade/AbstractImageConverter.h"
 #include "configure.h"
 
 #include "esp/gfx/replay/Recorder.h"
@@ -20,6 +17,9 @@
 #include "esp/sim/BatchReplayRenderer.h"
 #include "esp/sim/ClassicReplayRenderer.h"
 #include "esp/sim/Simulator.h"
+
+#include <esp/gfx_batch/RendererStandalone.h>
+#include <esp/sim/BatchPlayerImplementation.h>
 
 #include <Corrade/TestSuite/Compare/Numeric.h>
 #include <Corrade/TestSuite/Tester.h>
@@ -49,6 +49,8 @@ struct BatchReplayRendererTest : Cr::TestSuite::Tester {
 
   void testIntegration();
   void testUnproject();
+  void testBatchPlayerDeletion();
+  void testClose();
 
   const Magnum::Float maxThreshold = 255.f;
   const Magnum::Float meanThreshold = 0.75f;
@@ -72,18 +74,13 @@ Mn::MutableImageView2D getRGBView(int width,
 
 Mn::MutableImageView2D getDepthView(int width,
                                     int height,
-                                    std::vector<char>& buffer,
-                                    bool classic) {
+                                    std::vector<char>& buffer) {
   Mn::Vector2i size(width, height);
   constexpr int pixelSize = 4;
 
   buffer.resize(std::size_t(width * height * pixelSize));
 
-  // BEWARE: Classic renderer requires R32F because the depth is unprojected.
-  //         Batch renderer directly returns the depth buffer at the moment.
-  auto pixelFormat =
-      classic ? Mn::PixelFormat::R32F : Mn::PixelFormat::Depth32F;
-  auto view = Mn::MutableImageView2D(pixelFormat, size, buffer);
+  auto view = Mn::MutableImageView2D(Mn::PixelFormat::R32F, size, buffer);
 
   return view;
 }
@@ -160,12 +157,34 @@ const struct {
      }},
 };
 
+const struct {
+  const char* name;
+  Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer> (*create)(
+      const ReplayRendererConfiguration& configuration);
+} TestCloseData[]{
+    {"classic",
+     [](const ReplayRendererConfiguration& configuration) {
+       return Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer>{
+           new esp::sim::ClassicReplayRenderer{configuration}};
+     }},
+    {"batch",
+     [](const ReplayRendererConfiguration& configuration) {
+       return Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer>{
+           new esp::sim::BatchReplayRenderer{configuration}};
+     }},
+};
+
 BatchReplayRendererTest::BatchReplayRendererTest() {
   addInstancedTests({&BatchReplayRendererTest::testUnproject},
                     Cr::Containers::arraySize(TestUnprojectData));
 
   addInstancedTests({&BatchReplayRendererTest::testIntegration},
                     Cr::Containers::arraySize(TestIntegrationData));
+
+  addTests({&BatchReplayRendererTest::testBatchPlayerDeletion});
+
+  addInstancedTests({&BatchReplayRendererTest::testClose},
+                    Cr::Containers::arraySize(TestCloseData));
 }  // ctor
 
 // test recording and playback through the simulator interface
@@ -230,7 +249,6 @@ void BatchReplayRendererTest::testIntegration() {
   constexpr int numEnvs = 4;
   const std::string userPrefix = "sensor_";
   const std::string screenshotPrefix = "ReplayBatchRendererTest_env";
-  const std::string screenshotExtension = ".png";
 
   std::vector<std::string> serKeyframes;
   for (int envIndex = 0; envIndex < numEnvs; envIndex++) {
@@ -287,8 +305,6 @@ void BatchReplayRendererTest::testIntegration() {
   {
     Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer> renderer =
         data.create(batchRendererConfig);
-    bool isClassicRenderer = dynamic_cast<esp::sim::ClassicReplayRenderer*>(
-                                 renderer.get()) != nullptr;
 
     // Check that the context is properly created
     CORRADE_VERIFY(Mn::GL::Context::hasCurrent());
@@ -305,10 +321,9 @@ void BatchReplayRendererTest::testIntegration() {
             renderer->sensorSize(envIndex).y(), colorBuffers[envIndex]));
       }
       if (data.testFlags & TestFlag::Depth) {
-        depthImageViews.emplace_back(
-            getDepthView(renderer->sensorSize(envIndex).x(),
-                         renderer->sensorSize(envIndex).y(),
-                         depthBuffers[envIndex], isClassicRenderer));
+        depthImageViews.emplace_back(getDepthView(
+            renderer->sensorSize(envIndex).x(),
+            renderer->sensorSize(envIndex).y(), depthBuffers[envIndex]));
       }
     }
 
@@ -324,7 +339,7 @@ void BatchReplayRendererTest::testIntegration() {
       // Test color output
       if (data.testFlags & TestFlag::Color) {
         std::string groundTruthImageFile =
-            screenshotPrefix + std::to_string(envIndex) + screenshotExtension;
+            screenshotPrefix + std::to_string(envIndex) + ".png";
         CORRADE_COMPARE_WITH(
             Mn::ImageView2D{colorImageViews[envIndex]},
             Cr::Utility::Path::join(screenshotDir, groundTruthImageFile),
@@ -333,10 +348,12 @@ void BatchReplayRendererTest::testIntegration() {
       // Test depth output
       if (data.testFlags & TestFlag::Depth) {
         const auto depth = depthImageViews[envIndex];
-        float pixelA = depth.pixels<Mn::Float>()[32][32];
-        float pixelB = depth.pixels<Mn::Float>()[64][64];
-        CORRADE_VERIFY(pixelA > 0.0f);
-        CORRADE_VERIFY(pixelA != pixelB);
+        std::string groundTruthImageFile =
+            screenshotPrefix + std::to_string(envIndex) + ".exr";
+        CORRADE_COMPARE_WITH(
+            Mn::ImageView2D{depthImageViews[envIndex]},
+            Cr::Utility::Path::join(screenshotDir, groundTruthImageFile),
+            (Mn::DebugTools::CompareImageToFile{maxThreshold, meanThreshold}));
       }
     }
 
@@ -360,6 +377,122 @@ void BatchReplayRendererTest::testIntegration() {
   }
   // Check that the context is properly deleted
   CORRADE_VERIFY(!Mn::GL::Context::hasCurrent());
+}
+
+// test batch replay renderer node deletion
+void BatchReplayRendererTest::testBatchPlayerDeletion() {
+  const std::string assetPath =
+      Cr::Utility::Path::join(TEST_ASSETS, "objects/sphere.glb");
+  const auto assetInfo = esp::assets::AssetInfo::fromPath(assetPath);
+
+  esp::assets::RenderAssetInstanceCreationInfo::Flags flags;
+  flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsRGBD;
+  flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsSemantic;
+  auto creationInfo = esp::assets::RenderAssetInstanceCreationInfo();
+  creationInfo.filepath = assetPath;
+  creationInfo.flags = flags;
+
+  std::vector<esp::gfx::replay::Keyframe> keyframes;
+
+  // Record sequence
+  {
+    SimulatorConfiguration simConfig{};
+    simConfig.enableGfxReplaySave = true;
+    simConfig.createRenderer = false;
+    auto sim = Simulator::create_unique(simConfig);
+    auto& sceneRoot = sim->getActiveSceneGraph().getRootNode();
+    auto& recorder = *sim->getGfxReplayManager()->getRecorder();
+
+    {
+      // Frame 0
+      auto* sphereX =
+          sim->loadAndCreateRenderAssetInstance(assetInfo, creationInfo);
+      auto* sphereY =
+          sim->loadAndCreateRenderAssetInstance(assetInfo, creationInfo);
+      CORRADE_VERIFY(sphereX);
+      CORRADE_VERIFY(sphereY);
+      sphereX->setTranslation(Mn::Vector3(1.0f, 0.0f, 0.0f));
+      sphereY->setTranslation(Mn::Vector3(0.0f, 1.0f, 0.0f));
+      keyframes.emplace_back(std::move(recorder.extractKeyframe()));
+
+      // Frame 1
+      delete sphereX;
+      auto sphereZ =
+          sim->loadAndCreateRenderAssetInstance(assetInfo, creationInfo);
+      CORRADE_VERIFY(sphereZ);
+      sphereZ->setTranslation(Mn::Vector3(0.0f, 0.0f, 1.0f));
+      delete sphereZ;
+      keyframes.emplace_back(std::move(recorder.extractKeyframe()));
+
+      // Frame 2
+      delete sphereY;
+      keyframes.emplace_back(std::move(recorder.extractKeyframe()));
+    }
+  }
+  CORRADE_COMPARE(keyframes.size(), 3);
+
+  // Play sequence
+  {
+    // clang-format off
+    esp::gfx_batch::RendererStandalone renderer{
+        esp::gfx_batch::RendererConfiguration{}
+            .setTileSizeCount({16, 16}, {1, 1}),
+        esp::gfx_batch::RendererStandaloneConfiguration{}
+            .setFlags(esp::gfx_batch::RendererStandaloneFlag::QuietLog)
+    };
+    // clang-format on
+    auto batchPlayer =
+        std::make_shared<esp::sim::BatchPlayerImplementation>(renderer, 0);
+    esp::gfx::replay::Player player(batchPlayer);
+    player.debugSetKeyframes(std::move(keyframes));
+    CORRADE_COMPARE(player.getNumKeyframes(), 3);
+    constexpr size_t transformsPerInstance = 2;
+
+    // Frame 0
+    player.setKeyframeIndex(0);
+    CORRADE_COMPARE(renderer.transformations(0).size(),
+                    2 * transformsPerInstance);
+    CORRADE_COMPARE(renderer.transformations(0)[0],
+                    Mn::Matrix4::translation(Mn::Vector3(1.0f, 0.0f, 0.0f)));
+    CORRADE_COMPARE(renderer.transformations(0)[1 * transformsPerInstance],
+                    Mn::Matrix4::translation(Mn::Vector3(0.0f, 1.0f, 0.0f)));
+
+    // Frame 2
+    player.setKeyframeIndex(1);
+    CORRADE_COMPARE(renderer.transformations(0).size(),
+                    1 * transformsPerInstance);
+    CORRADE_COMPARE(renderer.transformations(0)[0],
+                    Mn::Matrix4::translation(Mn::Vector3(0.0f, 1.0f, 0.0f)));
+
+    // Frame 2
+    player.setKeyframeIndex(2);
+    CORRADE_COMPARE(renderer.transformations(0).size(), 0);
+  }
+}
+
+void BatchReplayRendererTest::testClose() {
+  auto&& data = TestIntegrationData[testCaseInstanceId()];
+  setTestCaseDescription(data.name);
+
+  auto sensorSpecifications = getDefaultSensorSpecs(TestFlag::Color);
+  ReplayRendererConfiguration batchRendererConfig;
+  batchRendererConfig.sensorSpecifications = std::move(sensorSpecifications);
+  batchRendererConfig.numEnvironments = 4;
+  batchRendererConfig.standalone = true;
+  Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer> renderer =
+      data.create(batchRendererConfig);
+
+  // Verify that a context exists.
+  CORRADE_VERIFY(renderer);
+  CORRADE_VERIFY(Mn::GL::Context::hasCurrent());
+
+  // Verify that the context is released.
+  renderer->close();
+  CORRADE_VERIFY(!Mn::GL::Context::hasCurrent());
+
+  // Verify that closing multiple times is safe.
+  renderer->close();
+  renderer.reset();
 }
 
 }  // namespace

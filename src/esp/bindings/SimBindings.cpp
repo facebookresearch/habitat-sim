@@ -81,7 +81,7 @@ void initSimBindings(py::module& m) {
       .def_readwrite(
           "override_scene_light_defaults",
           &SimulatorConfiguration::overrideSceneLightDefaults,
-          R"(Override scene lighting setup to use with value specified below.)")
+          R"(Override scene lighting setup to use with value specified by `scene_light_setup`.)")
       .def_readwrite("scene_light_setup",
                      &SimulatorConfiguration::sceneLightSetupKey,
                      R"(Light setup key for the scene.)")
@@ -274,14 +274,6 @@ void initSimBindings(py::module& m) {
           "recompute_navmesh", &Simulator::recomputeNavMesh, "pathfinder"_a,
           "navmesh_settings"_a,
           R"(Recompute the NavMesh for a given PathFinder instance using configured NavMeshSettings.)")
-#ifdef ESP_BUILD_WITH_VHACD
-      .def(
-          "apply_convex_hull_decomposition",
-          &Simulator::convexHullDecomposition, "filename"_a,
-          "vhacd_params"_a = assets::ResourceManager::VHACDParameters(),
-          "render_chd_result"_a = false, "save_chd_to_obj"_a = false,
-          R"(Decomposite an object into its constituent convex hulls with specified VHACD parameters.)")
-#endif
 
       .def(
           "add_trajectory_object",
@@ -417,6 +409,9 @@ void initSimBindings(py::module& m) {
             return std::make_shared<BatchReplayRenderer>(cfg);
           },
           R"(Create a replay renderer using the batch render pipeline.)")
+      .def("close", &AbstractReplayRenderer::close,
+           "Releases the graphics context and resources used by the replay "
+           "renderer.")
       .def(
           "preload_file",
           [](AbstractReplayRenderer& self, const std::string& filePath) {

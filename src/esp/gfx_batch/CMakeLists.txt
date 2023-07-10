@@ -10,10 +10,21 @@ find_package(
   Shaders
   Trade
 )
+find_package(Corrade REQUIRED Utility)
 
-set(gfx_batch_SOURCES Renderer.cpp Renderer.h RendererStandalone.cpp
-                      RendererStandalone.h
+set(
+  gfx_batch_SOURCES
+  DepthUnprojection.cpp
+  DepthUnprojection.h
+  Renderer.cpp
+  Renderer.h
+  RendererStandalone.cpp
+  RendererStandalone.h
 )
+
+set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
+corrade_add_resource(GfxBatchShaderResources ../../shaders/gfx_batch/Shaders.conf)
+list(APPEND gfx_batch_SOURCES ${GfxBatchShaderResources})
 
 add_library(
   gfx_batch STATIC
@@ -24,8 +35,8 @@ add_library(
 target_include_directories(gfx_batch PUBLIC ${PROJECT_BINARY_DIR})
 if(BUILD_WITH_CUDA)
   target_include_directories(
-    gfx_batch PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
-                      ${CMAKE_CURRENT_LIST_DIR}/cuda_helpers
+    gfx_batch PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
+                     ${CMAKE_CURRENT_LIST_DIR}/cuda_helpers
   )
 
   target_link_libraries(gfx_batch PUBLIC ${CUDART_LIBRARY})

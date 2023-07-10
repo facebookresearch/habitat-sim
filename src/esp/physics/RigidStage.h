@@ -86,7 +86,8 @@ class RigidStage : public RigidBase {
    */
   void setMotionType(CORRADE_UNUSED MotionType mt) override {
     ESP_WARNING() << "Stages cannot have their "
-                     "motion type changed from MotionType::STATIC.  Aborting.";
+                     "motion type changed from MotionType::STATIC, so "
+                     "aborting; motion type is unchanged.";
   }
 
  public:

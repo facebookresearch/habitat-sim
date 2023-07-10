@@ -11,7 +11,6 @@
 #include <thread>
 
 #include "esp/core/Check.h"
-#include "esp/gfx/magnum.h"
 #include "esp/sensor/VisualSensor.h"
 
 namespace Mn = Magnum;
@@ -120,7 +119,7 @@ int BackgroundRenderer::threadRender() {
   std::vector<std::vector<RenderCamera::DrawableTransforms>> jobTransforms(
       jobs_.size());
 
-  for (int i = 0; i < jobs_.size(); ++i) {
+  for (size_t i = 0; i < jobs_.size(); ++i) {
     auto& job = jobs_[i];
     sensor::VisualSensor& sensor = std::get<0>(job);
     scene::SceneGraph& sg = std::get<1>(job);
@@ -140,7 +139,7 @@ int BackgroundRenderer::threadRender() {
   sgLock_.store(0, std::memory_order_release);
   cpp20::atomic_notify_all(&sgLock_);
 
-  for (int i = 0; i < jobs_.size(); ++i) {
+  for (size_t i = 0; i < jobs_.size(); ++i) {
     auto& job = jobs_[i];
     sensor::VisualSensor& sensor = std::get<0>(job);
     RenderCamera::Flags flags = std::get<3>(job);

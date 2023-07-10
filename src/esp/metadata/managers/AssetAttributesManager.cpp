@@ -110,7 +110,7 @@ AssetAttributesManager::AssetAttributesManager()
   }
 
   ESP_DEBUG() << "Built default primitive asset templates :"
-              << std::to_string(defaultPrimAttributeHandles_.size());
+              << defaultPrimAttributeHandles_.size();
 }  // AssetAttributesManager::ctor
 
 AbstractPrimitiveAttributes::ptr AssetAttributesManager::createObject(
@@ -137,16 +137,20 @@ AssetAttributesManager::createTemplateFromHandle(
   std::size_t nameEndLoc = templateHandle.find('_');
   if (nameEndLoc == std::string::npos) {
     // handle is of incorrect format
-    ESP_ERROR() << "Given template handle :" << templateHandle
-                << "is not the correct format for a primitive.  Aborting.";
+    ESP_ERROR(Mn::Debug::Flag::NoSpace)
+        << "Given template handle : `" << templateHandle
+        << "` is not the correct format for a primitive, so "
+           "createTemplateFromHandle aborting.";
     return nullptr;
   }
   std::string primClassName = templateHandle.substr(0, nameEndLoc);
   if (primTypeConstructorMap_.count(primClassName) == 0) {
     // handle does not have proper primitive tyep encoded
-    ESP_ERROR() << "Requested primitive type :" << primClassName
-                << "from given template handle :" << templateHandle
-                << "is not a valid Magnum::Primitives class.  Aborting.";
+    ESP_ERROR(Mn::Debug::Flag::NoSpace)
+        << "Requested primitive type : `" << primClassName
+        << "` from given template handle : `" << templateHandle
+        << "` is not a valid Magnum::Primitives class, so "
+           "createTemplateFromHandle aborting.";
     return nullptr;
   }
   // create but do not register template for this prim class, since it will be
@@ -156,12 +160,13 @@ AssetAttributesManager::createTemplateFromHandle(
   if (templateHandle.length() > 0) {
     bool success = primAssetAttributes->parseStringIntoConfig(templateHandle);
     if (!success) {
-      ESP_WARNING() << "Prim Asset Attributes :" << primClassName
-                    << "failed parsing config string : `" << templateHandle
-                    << "`.  Providing" << primClassName
-                    << "template configured as closely as possible with "
-                       "requested values, named"
-                    << primAssetAttributes->getHandle() << ".";
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << "Prim Asset Attributes : `" << primClassName
+          << "` failed parsing config string : `" << templateHandle
+          << "`. Providing `" << primClassName
+          << "` template configured as closely as possible with requested "
+             "values, named `"
+          << primAssetAttributes->getHandle() << "`.";
     }
   }
   return this->postCreateRegister(std::move(primAssetAttributes),
@@ -175,11 +180,11 @@ int AssetAttributesManager::registerObjectFinalize(
   std::string primAttributesHandle = primAttributesTemplate->getHandle();
   // verify that attributes has been edited in a legal manner
   if (!primAttributesTemplate->isValidTemplate()) {
-    ESP_ERROR() << "Primitive asset attributes template named"
-                << primAttributesHandle
-                << "is not configured properly for specified prmitive"
-                << primAttributesTemplate->getPrimObjClassName()
-                << ". Aborting.";
+    ESP_ERROR(Mn::Debug::Flag::NoSpace)
+        << "Primitive asset attributes template named `" << primAttributesHandle
+        << "` is not configured properly for specified prmitive `"
+        << primAttributesTemplate->getPrimObjClassName()
+        << "`, so Primitive asset attributes NOT registered.";
     return ID_UNDEFINED;
   }
 
@@ -204,8 +209,9 @@ AbstractPrimitiveAttributes::ptr AssetAttributesManager::buildObjectFromJSONDoc(
   // if not legal primitive asset attributes file name, have message and
   // return default sphere attributes.
   if (defaultPrimAttributeHandles_.count(primClassName) == 0) {
-    ESP_ERROR() << "Unknown primitive class type :" << primClassName
-                << "so returning default attributes for solid uvSphere.";
+    ESP_ERROR(Mn::Debug::Flag::NoSpace)
+        << "Unknown primitive class type : `" << primClassName
+        << "` so returning default attributes for solid uvSphere.";
     return this->getObjectCopyByHandle<attributes::UVSpherePrimitiveAttributes>(
         defaultPrimAttributeHandles_.at("uvSphereSolid"));
   }
@@ -213,10 +219,11 @@ AbstractPrimitiveAttributes::ptr AssetAttributesManager::buildObjectFromJSONDoc(
   // create attributes for the primitive described in the JSON file
   auto primAssetAttributes = this->initNewObjectInternal(primClassName, true);
   if (nullptr == primAssetAttributes) {
-    ESP_ERROR() << "Unable to create default primitive asset attributes from "
-                   "primClassName"
-                << primClassName
-                << "so returning default attributes for solid uvSphere.";
+    ESP_ERROR(Mn::Debug::Flag::NoSpace)
+        << "Unable to create default primitive asset attributes from "
+           "primClassName `"
+        << primClassName
+        << "` so returning default attributes for solid uvSphere.";
     return this->getObjectCopyByHandle<attributes::UVSpherePrimitiveAttributes>(
         defaultPrimAttributeHandles_.at("uvSphereSolid"));
   }

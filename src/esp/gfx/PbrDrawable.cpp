@@ -29,9 +29,9 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
     : Drawable{node, mesh, DrawableType::Pbr, group},
       shaderManager_{shaderManager},
       lightSetup_{shaderManager.get<LightSetup>(lightSetupKey)},
-      meshAttributeFlags_{meshAttributeFlags},
-      pbrIbl_(pbrIbl) {
-  setMaterialValuesInternal(
+      pbrIbl_(pbrIbl),
+      meshAttributeFlags_{meshAttributeFlags} {
+  setMaterialValues(
       shaderManager.get<Mn::Trade::MaterialData>(materialDataKey));
 
   if (pbrIbl_) {
@@ -46,13 +46,16 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
 
 void PbrDrawable::setMaterialValuesInternal(
     const Mn::Resource<Mn::Trade::MaterialData, Mn::Trade::MaterialData>&
-        material) {
+        material,
+    bool reset) {
   materialData_ = material;
 
   const auto& tmpMaterialData =
       materialData_->as<Mn::Trade::PbrMetallicRoughnessMaterialData>();
   flags_ = PbrShader::Flag::ObjectId;
-
+  if (reset) {
+    matCache = {};
+  }
   matCache.baseColor = tmpMaterialData.baseColor();
   matCache.roughness = tmpMaterialData.roughness();
   matCache.metalness = tmpMaterialData.metalness();
@@ -212,7 +215,7 @@ void PbrDrawable::setMaterialValuesInternal(
      */
     if (const auto anisotropyStrength = materialData_->findAttribute<Mn::Float>(
             *anisotropyLayerID, "anisotropyStrength")) {
-      if (Mn::Math::abs(*anisotropyStrength) > 0.0) {
+      if (Mn::Math::abs(*anisotropyStrength) > 0.0f) {
         flags_ |= PbrShader::Flag::AnisotropyLayer;
         matCache.anisotropyLayer.factor =
             Mn::Math::clamp(*anisotropyStrength, -1.0f, 1.0f);
@@ -221,7 +224,7 @@ void PbrDrawable::setMaterialValuesInternal(
     } else if (const auto anisotropyStrength =
                    materialData_->findAttribute<Mn::Float>(*anisotropyLayerID,
                                                            "anisotropy")) {
-      if (Mn::Math::abs(*anisotropyStrength) > 0.0) {
+      if (Mn::Math::abs(*anisotropyStrength) > 0.0f) {
         flags_ |= PbrShader::Flag::AnisotropyLayer;
         matCache.anisotropyLayer.factor =
             Mn::Math::clamp(*anisotropyStrength, -1.0f, 1.0f);
@@ -235,7 +238,7 @@ void PbrDrawable::setMaterialValuesInternal(
      */
     if (const auto anisotropyRotation = materialData_->findAttribute<Mn::Float>(
             *anisotropyLayerID, "anisotropyRotation")) {
-      if (*anisotropyRotation != 0.0) {
+      if (*anisotropyRotation != 0.0f) {
         flags_ |= PbrShader::Flag::AnisotropyLayer;
         Mn::Rad rotAngle = Mn::Rad{*anisotropyRotation};
         matCache.anisotropyLayer.direction =
@@ -245,7 +248,7 @@ void PbrDrawable::setMaterialValuesInternal(
     } else if (const auto anisotropyRotation =
                    materialData_->findAttribute<Mn::Float>(
                        *anisotropyLayerID, "anisotropyDirection")) {
-      if (*anisotropyRotation != 0.0) {
+      if (*anisotropyRotation != 0.0f) {
         flags_ |= PbrShader::Flag::AnisotropyLayer;
         Mn::Rad rotAngle = Mn::Rad{*anisotropyRotation};
         matCache.anisotropyLayer.direction =
@@ -348,7 +351,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   // lines") on hard edges. (maybe due to potential numerical issues? we do
   // not know yet.)
   /*
-  if ((flags_ & PbrShader::Flag::DoubleSided) && glIsEnabled(GL_CULL_FACE))
+  if ((flags_ >= PbrShader::Flag::DoubleSided) && glIsEnabled(GL_CULL_FACE))
   { Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::FaceCulling);
   }
   */
@@ -390,37 +393,83 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
       .setBaseColor(matCache.baseColor)
       .setRoughness(matCache.roughness)
       .setMetallic(matCache.metalness)
+      .setIndexOfRefraction(matCache.ior_Index)
       .setEmissiveColor(matCache.emissiveColor);
 
   // TODO:
-  // IN PbrShader class, we set the resonable defaults for the
+  // IN PbrShader class, we set the reasonable defaults for the
   // PbrShader::PbrEquationScales. Here we need a smart way to reset it
   // just in case user would like to do so during the run-time.
 
-  if (flags_ & PbrShader::Flag::BaseColorTexture) {
+  if (flags_ >= PbrShader::Flag::BaseColorTexture) {
     shader_->bindBaseColorTexture(*matCache.baseColorTexture);
   }
 
-  if (flags_ & PbrShader::Flag::NoneRoughnessMetallicTexture) {
+  if (flags_ >= PbrShader::Flag::NoneRoughnessMetallicTexture) {
     shader_->bindMetallicRoughnessTexture(
         *matCache.noneRoughnessMetallicTexture);
   }
 
-  if (flags_ & PbrShader::Flag::NormalTexture) {
+  if (flags_ >= PbrShader::Flag::NormalTexture) {
     shader_->bindNormalTexture(*matCache.normalTexture);
     shader_->setNormalTextureScale(matCache.normalTextureScale);
   }
 
-  if (flags_ & PbrShader::Flag::EmissiveTexture) {
+  if (flags_ >= PbrShader::Flag::EmissiveTexture) {
     shader_->bindEmissiveTexture(*matCache.emissiveTexture);
   }
 
-  if (flags_ & PbrShader::Flag::TextureTransformation) {
+  if (flags_ >= PbrShader::Flag::TextureTransformation) {
     shader_->setTextureMatrix(matCache.textureMatrix);
   }
 
+  // clearcoat data
+  if (flags_ >= PbrShader::Flag::ClearCoatLayer) {
+    (*shader_)
+        .setClearCoatFactor(matCache.clearCoat.factor)
+        .setClearCoatRoughness(matCache.clearCoat.roughnessFactor);
+    if (flags_ >= PbrShader::Flag::ClearCoatTexture) {
+      shader_->bindClearCoatFactorTexture(*matCache.clearCoat.texture);
+    }
+    if (flags_ >= PbrShader::Flag::ClearCoatRoughnessTexture) {
+      shader_->bindClearCoatRoughnessTexture(
+          *matCache.clearCoat.roughnessTexture);
+    }
+    if (flags_ >= PbrShader::Flag::ClearCoatNormalTexture) {
+      (*shader_)
+          .setClearCoatNormalTextureScale(matCache.clearCoat.normalTextureScale)
+          .bindClearCoatNormalTexture(*matCache.clearCoat.normalTexture);
+    }
+  }
+
+  // specular layer data
+  if (flags_ >= PbrShader::Flag::SpecularLayer) {
+    (*shader_)
+        .setSpecularLayerFactor(matCache.specularLayer.factor)
+        .setSpecularLayerColorFactor(matCache.specularLayer.colorFactor);
+
+    if (flags_ >= PbrShader::Flag::SpecularLayerTexture) {
+      shader_->bindSpecularLayerTexture(*matCache.specularLayer.texture);
+    }
+    if (flags_ >= PbrShader::Flag::SpecularLayerColorTexture) {
+      shader_->bindSpecularLayerColorTexture(
+          *matCache.specularLayer.colorTexture);
+    }
+  }
+
+  // anisotropy layer data
+  if (flags_ >= PbrShader::Flag::AnisotropyLayer) {
+    (*shader_)
+        .setAnisotropyLayerFactor(matCache.anisotropyLayer.factor)
+        .setAnisotropyLayerDirection(matCache.anisotropyLayer.direction);
+
+    if (flags_ >= PbrShader::Flag::AnisotropyLayerTexture) {
+      shader_->bindAnisotropyLayerTexture(*matCache.anisotropyLayer.texture);
+    }
+  }
+
   // setup image based lighting for the shader
-  if (flags_ & PbrShader::Flag::ImageBasedLighting) {
+  if (flags_ >= PbrShader::Flag::ImageBasedLighting) {
     CORRADE_INTERNAL_ASSERT(pbrIbl_);
     shader_->bindIrradianceCubeMap(  // TODO: HDR Color
         pbrIbl_->getIrradianceMap().getTexture(CubeMap::TextureType::Color));
@@ -430,25 +479,6 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
         pbrIbl_->getPrefilteredMap().getTexture(CubeMap::TextureType::Color));
     shader_->setPrefilteredMapMipLevels(
         pbrIbl_->getPrefilteredMap().getMipmapLevels());
-  }
-
-  if (flags_ & PbrShader::Flag::ShadowsVSM) {
-    CORRADE_INTERNAL_ASSERT(shadowMapManger_ && shadowMapKeys_);
-    CORRADE_ASSERT(shadowMapKeys_->size() <= 3,
-                   "PbrDrawable::draw: the number of shadow maps exceeds the "
-                   "maximum (current it is 3).", );
-    for (int iShadow = 0; iShadow < shadowMapKeys_->size(); ++iShadow) {
-      Mn::Resource<CubeMap> shadowMap =
-          (*shadowMapManger_).get<CubeMap>((*shadowMapKeys_)[iShadow]);
-
-      CORRADE_INTERNAL_ASSERT(shadowMap);
-
-      if (flags_ & PbrShader::Flag::ShadowsVSM) {
-        shader_->bindPointShadowMap(
-            iShadow,
-            shadowMap->getTexture(CubeMap::TextureType::VarianceShadowMap));
-      }
-    }
   }
 
   shader_->draw(getMesh());
@@ -462,7 +492,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   // WE stopped supporting doubleSided material due to lighting artifacts on
   // hard edges. See comments at the beginning of this function.
   /*
-  if ((flags_ & PbrShader::Flag::DoubleSided) && !glIsEnabled(GL_CULL_FACE))
+  if ((flags_ >= PbrShader::Flag::DoubleSided) && !glIsEnabled(GL_CULL_FACE))
   { Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
   }
   */
@@ -527,8 +557,8 @@ PbrDrawable& PbrDrawable::updateShaderLightDirectionParameters(
     const auto& lightInfo = (*lightSetup_)[iLight];
     Mn::Vector4 pos = getLightPositionRelativeToWorld(
         lightInfo, transformationMatrix, cameraMatrix);
-    // flip directional lights to faciliate faster, non-forking calc in
-    // shader.  Leave non-directional lights unchanged
+    // flip directional lights to facilitate faster, non-forking calc in
+    // shader.  Leave non-directional lights unchanged (w==1)
     pos *= (pos[3] * 2) - 1;
     lightPositions.emplace_back(pos);
   }
@@ -536,19 +566,6 @@ PbrDrawable& PbrDrawable::updateShaderLightDirectionParameters(
   shader_->setLightVectors(lightPositions);
 
   return *this;
-}
-
-void PbrDrawable::setShadowData(ShadowMapManager& manager,
-                                ShadowMapKeys& keys,
-                                PbrShader::Flag shadowFlag) {
-  // sanity check first
-  CORRADE_ASSERT(shadowFlag == PbrShader::Flag::ShadowsVSM,
-                 "PbrDrawable::setShadowData(): the shadow flag can only be "
-                 "ShadowsVSM.", );
-
-  shadowMapManger_ = &manager;
-  shadowMapKeys_ = &keys;
-  flags_ |= shadowFlag;
 }
 
 }  // namespace gfx

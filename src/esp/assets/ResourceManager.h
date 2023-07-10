@@ -16,28 +16,21 @@
 #include <vector>
 
 #include <Corrade/Containers/EnumSet.h>
+#include <Magnum/Trade/AbstractImporter.h>
 
 #include "Asset.h"
 #include "MeshMetaData.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/ShaderManager.h"
-#include "esp/gfx/ShadowMapManager.h"
 #include "esp/physics/configure.h"
 
 #include "esp/metadata/attributes/AttributesEnumMaps.h"
-
-#ifdef ESP_BUILD_WITH_VHACD
-#include <VHACD.h>
-#endif
 
 namespace Mn = Magnum;
 
 namespace esp {
 namespace assets {
 struct PhongMaterialColor;
-}
-namespace geo {
-class VoxelGrid;
 }
 namespace gfx {
 class Drawable;
@@ -105,22 +98,6 @@ class ResourceManager {
   using DrawableGroup = gfx::DrawableGroup;
   /** @brief Convenience typedef for Importer class */
   using Importer = Mn::Trade::AbstractImporter;
-
-#ifdef ESP_BUILD_WITH_VHACD
-  /**
-   * @brief Simple struct interface for creating and managing VHACD parameters.
-   * These parameters are passed into VHACD and specify how convex hull
-   * decomposition is ran.
-   */
-  struct VHACDParameters : VHACD::IVHACD::Parameters {
-    VHACDParameters() {
-      m_oclAcceleration = 0u;  // OCL Acceleration does not work on VHACD
-    }
-    ESP_SMART_POINTERS(VHACDParameters)
-  };
-
-  VHACD::IVHACD* interfaceVHACD;
-#endif
 
   /** @brief Constructor */
   explicit ResourceManager(
@@ -335,46 +312,6 @@ class ResourceManager {
   const MeshMetaData& getMeshMetaData(const std::string& metaDataName) const;
 
   /**
-   * @brief check to see if a particular voxel grid has been created &
-   * registered or not.
-   * @param voxelGridName The key identifying the asset in @ref resourceDict_.
-   * Typically the filepath of file-based assets.
-   * @return Whether or not the specified grid exists.
-   */
-  bool voxelGridExists(const std::string& voxelGridName) const {
-    return voxelGridDict_.count(voxelGridName) > 0;
-  }
-
-  /**
-   * @brief Retrieve a VoxelGrid given a particular voxel grid handle.
-   * @param voxelGridName The key identifying the asset in @ref resourceDict_.
-   * Typically the filepath of file-based assets.
-   * @return The specified VoxelGrid.
-   */
-  std::shared_ptr<esp::geo::VoxelGrid> getVoxelGrid(
-      const std::string& voxelGridName) const {
-    auto voxGridIter = voxelGridDict_.find(voxelGridName);
-    CORRADE_INTERNAL_ASSERT(voxGridIter != voxelGridDict_.end());
-    return voxGridIter->second;
-  }
-
-  /**
-   * @brief Registers a given VoxelGrid pointer under the given handle in the
-   * voxelGridDict_ if no such VoxelGrid has been registered.
-   * @param voxelGridHandle The key to register the VoxelGrid under.
-   * @param VoxelGridPtr The pointer to the VoxelGrid
-   * @return Whether or not the registration succeeded.
-   */
-  bool registerVoxelGrid(
-      const std::string& voxelGridHandle,
-      const std::shared_ptr<esp::geo::VoxelGrid>& VoxelGridPtr) {
-    auto voxGridEmplaceIter =
-        voxelGridDict_.emplace(voxelGridHandle, VoxelGridPtr);
-    // return whether placed or not;
-    return voxGridEmplaceIter.second;
-  }
-
-  /**
    * @brief Get a named @ref LightSetup
    *
    * @param key The key identifying the light setup in shaderManager_.
@@ -425,42 +362,6 @@ class ResourceManager {
       std::vector<std::uint16_t>& objectIds,
       const std::string& filename) const;
 
-#ifdef ESP_BUILD_WITH_VHACD
-  /**
-   * @brief Converts a MeshMetaData into a obj file.
-   *
-   * @param filename The MeshMetaData filename to be converted to obj.
-   * @param new_filename The name of the file that will be created.
-   * @param filepath The file path, including new file name, for the obj file.
-   */
-  bool outputMeshMetaDataToObj(const std::string& filename,
-                               const std::string& new_filename,
-                               const std::string& filepath) const;
-
-  /**
-   * @brief Returns the number of resources registered under a given resource
-   * name.
-   *
-   * @param resourceName The name of the resource.
-   */
-  bool isAssetDataRegistered(const std::string& resourceName) const;
-
-  /**
-   * @brief Runs convex hull decomposition on a specified file.
-   *
-   * @param filename The MeshMetaData filename to be converted.
-   * @param chdFilename The new filename for the chd collision mesh.
-   * @param params VHACD params that specify resolution, vertices per convex
-   * hull, etc.
-   * @param saveChdToObj Specifies whether or not to save the newly created
-   * convex hull asset to an obj file.
-   */
-  void createConvexHullDecomposition(
-      const std::string& filename,
-      const std::string& chdFilename,
-      const VHACDParameters& params = VHACDParameters(),
-      bool saveChdToObj = false);
-#endif
   /**
    * @brief Add an object from a specified object template handle to the
    * specified @ref DrawableGroup as a child of the specified @ref
@@ -678,21 +579,6 @@ class ResourceManager {
   gfx::ShaderManager& getShaderManager() { return shaderManager_; }
 
   /**
-   * @brief get the shadow map manager
-   */
-  gfx::ShadowMapManager& getShadowMapManger() { return shadowManager_; }
-
-  /**
-   * @brief get the shadow map keys
-   */
-  std::map<int, std::vector<Magnum::ResourceKey>>& getShadowMapKeys() {
-    return shadowMapKeys_;
-  }
-
-  static constexpr const char* SHADOW_MAP_KEY_TEMPLATE =
-      "scene_id={}-light_id={}";
-
-  /**
    * @brief Build data for a report for semantic mesh connected components based
    * on color/id.  Returns map of data keyed by SemanticObject index in
    * SemanticObjs array.
@@ -822,13 +708,8 @@ class ResourceManager {
   /**
    * node: drawable's scene node
    *
-   * meshID:
-   * -) for non-ptex mesh:
-   * meshID is the global key into meshes_.
+   * meshID: The global key into meshes_, where
    * meshes_[meshID] is the BaseMesh corresponding to the drawable;
-   *
-   * -) for ptex mesh:
-   * meshID is the index of the submesh corresponding to the drawable;
    */
   struct StaticDrawableInfo {
     esp::scene::SceneNode& node;
@@ -1097,11 +978,6 @@ class ResourceManager {
       bool createSemanticInfo);
 
   /**
-   * @brief PTex Mesh backend for loadRenderAsset
-   */
-  bool loadRenderAssetPTex(const AssetInfo& info);
-
-  /**
    * @brief Build @ref GenericSemanticMeshData from a single, flattened Magnum
    * Meshdata, built from the meshes provided by the importer, preserving all
    * transformations.  This building process will also synthesize bounding boxes
@@ -1148,14 +1024,6 @@ class ResourceManager {
       scene::SceneNode* parent,
       DrawableGroup* drawables,
       std::vector<scene::SceneNode*>* visNodeCache = nullptr);
-
-  /**
-   * @brief PTex Mesh backend for createRenderAssetInstance
-   */
-  scene::SceneNode* createRenderAssetInstancePTex(
-      const RenderAssetInstanceCreationInfo& creation,
-      scene::SceneNode* parent,
-      DrawableGroup* drawables);
 
   /**
    * @brief Semantic Mesh backend creation. Either use
@@ -1213,17 +1081,6 @@ class ResourceManager {
    * @return The mesh bounding box.
    */
   Mn::Range3D computeMeshBB(BaseMesh* meshDataGL);
-
-#ifdef ESP_BUILD_PTEX_SUPPORT
-  /**
-   * @brief Compute the absolute AABBs for drawables in PTex mesh in world
-   * space
-   * @param baseMesh ptex mesh
-   */
-  void computePTexMeshAbsoluteAABBs(
-      BaseMesh& baseMesh,
-      const std::vector<StaticDrawableInfo>& staticDrawableInfo);
-#endif
 
   /**
    * @brief Compute the absolute AABBs for drawables in general mesh (e.g.,
@@ -1286,14 +1143,6 @@ class ResourceManager {
    * @brief The skin data for loaded assets.
    */
   std::map<int, std::shared_ptr<gfx::SkinData>> skins_;
-
-  /**
-   * @brief Storage for precomputed voxel grids. Useful for when multiple
-   * objects in a scene are using the same VoxelGrid.
-   *
-   * Maps absolute path keys to VoxelGrid.
-   */
-  std::map<std::string, std::shared_ptr<esp::geo::VoxelGrid>> voxelGridDict_;
 
   /**
    * @brief Asset metadata linking meshes, textures, materials, and the
@@ -1391,13 +1240,6 @@ class ResourceManager {
 
   int activePbrIbl_ = ID_UNDEFINED;
 
-  /**
-   * @brief shadow map for point lights
-   */
-  // TODO: directional light shadow maps
-  gfx::ShadowMapManager shadowManager_;
-  // scene graph id -> keys for the shadow maps
-  std::map<int, std::vector<Magnum::ResourceKey>> shadowMapKeys_;
 };  // class ResourceManager
 
 }  // namespace assets

@@ -112,9 +112,9 @@ class SceneGraph {
 
   // ==== Drawables ====
   // for each scene node in a scene graph,
-  // we create a drawable object (e.g., PTexMeshDrawable, InstanceMeshDrawable,
-  // etc.) and add it to the drawable group of that scene. This is done on the
-  // fly when we build the scene graph
+  // we create a drawable object (e.g., InstanceMeshDrawable, etc.) and add it
+  // to the drawable group of that scene. This is done on the fly when we build
+  // the scene graph
 
   // drawable groups for this scene graph
   // This is a mapping from (groupID -> group of drawables).

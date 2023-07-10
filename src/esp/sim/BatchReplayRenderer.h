@@ -29,6 +29,10 @@ class BatchReplayRenderer : public AbstractReplayRenderer {
   const void* getCudaDepthBufferDevicePointer() override;
 
  private:
+  void doClose() override;
+
+  void doCloseImpl();
+
   void doPreloadFile(Corrade::Containers::StringView filename) override;
 
   unsigned doEnvironmentCount() const override;

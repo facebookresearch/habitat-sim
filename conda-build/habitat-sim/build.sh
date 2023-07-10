@@ -5,7 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 
 build_args=(--skip-install-magnum)
-build_args+=("--vhacd")
 if [ "${LTO}" == "1" ]; then
   build_args+=("--lto")
 fi

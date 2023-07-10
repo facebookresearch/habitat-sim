@@ -57,10 +57,6 @@
 #include "esp/gfx/Drawable.h"
 #include "esp/scene/SemanticScene.h"
 
-#ifdef ESP_BUILD_WITH_VHACD
-#include "esp/geo/VoxelUtils.h"
-#endif
-
 #ifdef ESP_BUILD_WITH_AUDIO
 #include "esp/sensor/AudioSensor.h"
 #endif  // ESP_BUILD_WITH_AUDIO
@@ -297,19 +293,6 @@ class Viewer : public Mn::Platform::Application {
   void removeLastObject();
   void invertGravity();
 
-#ifdef ESP_BUILD_WITH_VHACD
-  void displayStageDistanceGradientField();
-
-  void iterateAndDisplaySignedDistanceField();
-
-  void displayVoxelField(int objectID);
-
-  int objectDisplayed = -1;
-
-  //! The slice of the grid's SDF to visualize.
-  int voxelDistance = 0;
-#endif
-
   /**
    * @brief Toggle between ortho and perspective camera
    */
@@ -359,8 +342,6 @@ In LOOK mode (default):
     Read Semantic ID and tag of clicked object (Currently only HM3D);
   SHIFT-RIGHT:
     Click a mesh to highlight it.
-  CTRL-RIGHT:
-    (physics) Click on an object to voxelize it and display the voxelization.
   WHEEL:
     Modify orthographic camera zoom/perspective camera FOV (+SHIFT for fine grained control)
 In GRAB mode (with 'enable-physics'):
@@ -417,8 +398,6 @@ Key Commands:
   'b': Toggle display of object bounding boxes.
   'p': Save current simulation state to SceneInstanceAttributes JSON file (with non-colliding filename).
   'v': (physics) Invert gravity.
-  'g': (physics) Display a stage's signed distance gradient vector field.
-  'k': (physics) Iterate through different ranges of the stage's voxelized signed distance field.
 
   Additional Utilities:
   'r': Write a replay of the recent simulated frames to a file specified by --gfx-replay-record-filepath.
@@ -850,9 +829,12 @@ Viewer::Viewer(const Arguments& arguments)
       .setHelp("dataset", "dataset configuration file to use")
       .addBooleanOption("enable-physics")
       .setHelp("enable-physics", "Enable Bullet physics.")
-      .addBooleanOption("stage-requires-lighting")
-      .setHelp("stage-requires-lighting",
-               "Stage asset should be lit with Phong shading.")
+      .addBooleanOption("hbao")
+      .setHelp("hbao",
+               "NOT YET SUPPORTED : Enable Horizon-based Ambient Occlusion.")
+      .addBooleanOption("use-default-lighting")
+      .setHelp("use-default-lighting",
+               "Scene should be lit using the default lighting configuration.")
       .addBooleanOption("debug-bullet")
       .setHelp("debug-bullet", "Render Bullet physics debug wireframes.")
       .addOption("gfx-replay-record-filepath")
@@ -880,8 +862,6 @@ Viewer::Viewer(const Arguments& arguments)
       .addOption("agent-transform-filepath")
       .setHelp("agent-transform-filepath",
                "Specify path to load camera transform from.")
-      .addBooleanOption("shadows")
-      .setHelp("shadows", "Rendering shadows. (only works with PBR rendering.")
       .addBooleanOption("ibl")
       .setHelp("ibl",
                "Image Based Lighting (it works only when PBR models exist in "
@@ -985,12 +965,15 @@ Viewer::Viewer(const Arguments& arguments)
   simConfig_.activeSceneName = args.value("scene");
   simConfig_.sceneDatasetConfigFile = args.value("dataset");
   simConfig_.enablePhysics = args.isSet("enable-physics");
+  if (args.isSet("hbao")) {
+    ESP_WARNING() << "HBAO NOT YET SUPPORTED. Ignoring flag setting.";
+  }
   simConfig_.frustumCulling = true;
   simConfig_.requiresTextures = true;
   simConfig_.enableGfxReplaySave = !gfxReplayRecordFilepath_.empty();
   simConfig_.useSemanticTexturesIfFound = !args.isSet("no-semantic-textures");
-  if (args.isSet("stage-requires-lighting")) {
-    ESP_DEBUG() << "Stage using DEFAULT_LIGHTING_KEY";
+  if (args.isSet("use-default-lighting")) {
+    ESP_DEBUG() << "Scene lit using DEFAULT_LIGHTING_KEY";
     simConfig_.overrideSceneLightDefaults = true;
     simConfig_.sceneLightSetupKey = esp::DEFAULT_LIGHTING_KEY;
   }
@@ -1095,14 +1078,6 @@ Viewer::Viewer(const Arguments& arguments)
 
   // Per frame profiler will average measurements taken over previous 50 frames
   profiler_.setup(profilerValues, 50);
-
-  // shadows
-  if (args.isSet("shadows")) {
-    simulator_->updateShadowMapDrawableGroup();
-    simulator_->computeShadowMaps(0.01f,   // lightNearPlane
-                                  20.0f);  // lightFarPlane
-    simulator_->setShadowMapsToDrawables();
-  }
 
   printHelpText();
 }  // end Viewer::Viewer
@@ -1483,98 +1458,6 @@ void Viewer::invertGravity() {
   const Mn::Vector3 invGravity = -1 * gravity;
   simulator_->setGravity(invGravity);
 }
-#ifdef ESP_BUILD_WITH_VHACD
-
-void Viewer::displayStageDistanceGradientField() {
-  // Temporary key event used for testing & visualizing Voxel Grid framework
-  std::shared_ptr<esp::geo::VoxelWrapper> stageVoxelization;
-  stageVoxelization = simulator_->getStageVoxelization();
-
-  // if the object hasn't been voxelized, do that and generate an SDF as
-  // well
-  !ESP_DEBUG();
-  if (stageVoxelization == nullptr) {
-    simulator_->createStageVoxelization(2000000);
-    stageVoxelization = simulator_->getStageVoxelization();
-    esp::geo::generateEuclideanDistanceSDF(stageVoxelization,
-                                           "ESignedDistanceField");
-  }
-  !ESP_DEBUG();
-
-  // generate a vector field for the SDF gradient
-  esp::geo::generateScalarGradientField(
-      stageVoxelization, "ESignedDistanceField", "GradientField");
-  // generate a mesh of the vector field with boolean isVectorField set to
-  // true
-  !ESP_DEBUG();
-
-  stageVoxelization->generateMesh("GradientField");
-
-  // draw the vector field
-  simulator_->setStageVoxelizationDraw(true, "GradientField");
-}
-
-void Viewer::iterateAndDisplaySignedDistanceField() {
-  // Temporary key event used for testing & visualizing Voxel Grid framework
-  std::shared_ptr<esp::geo::VoxelWrapper> stageVoxelization;
-  stageVoxelization = simulator_->getStageVoxelization();
-
-  // if the object hasn't been voxelized, do that and generate an SDF as
-  // well
-  if (stageVoxelization == nullptr) {
-    simulator_->createStageVoxelization(2000000);
-    stageVoxelization = simulator_->getStageVoxelization();
-    esp::geo::generateEuclideanDistanceSDF(stageVoxelization,
-                                           "ESignedDistanceField");
-  }
-
-  // Set the range of distances to render, and generate a mesh for this (18
-  // is set to be the max distance)
-  Mn::Vector3i dims = stageVoxelization->getVoxelGridDimensions();
-  int curDistanceVisualization = (voxelDistance % dims[0]);
-  /*sceneVoxelization->generateBoolGridFromFloatGrid("ESignedDistanceField",
-     "SDFSubset", curDistanceVisualization, curDistanceVisualization + 1);*/
-  stageVoxelization->generateSliceMesh("ESignedDistanceField",
-                                       curDistanceVisualization, -15.0f, 0.0f);
-  // Draw the voxel grid's slice
-  simulator_->setStageVoxelizationDraw(true, "ESignedDistanceField");
-}
-
-void Viewer::displayVoxelField(int objectID) {
-  // create a voxelization and get a pointer to the underlying VoxelWrapper
-  // class
-  unsigned int resolution = 2000000;
-  std::shared_ptr<esp::geo::VoxelWrapper> voxelWrapper;
-  if (objectID == -1) {
-    simulator_->createStageVoxelization(resolution);
-    voxelWrapper = simulator_->getStageVoxelization();
-  } else {
-    simulator_->createObjectVoxelization(objectID, resolution);
-    voxelWrapper = simulator_->getObjectVoxelization(objectID);
-  }
-
-  // turn off the voxel grid visualization for the last voxelized object
-  if (objectDisplayed == -1) {
-    simulator_->setStageVoxelizationDraw(false, "Boundary");
-  } else if (objectDisplayed >= 0) {
-    simulator_->setObjectVoxelizationDraw(false, objectDisplayed, "Boundary");
-  }
-
-  // Generate the mesh for the boundary voxel grid
-  voxelWrapper->generateMesh("Boundary");
-
-  esp::geo::generateEuclideanDistanceSDF(voxelWrapper, "ESignedDistanceField");
-
-  // visualizes the Boundary voxel grid
-  if (objectID == -1) {
-    simulator_->setStageVoxelizationDraw(true, "Boundary");
-  } else {
-    simulator_->setObjectVoxelizationDraw(true, objectID, "Boundary");
-  }
-
-  objectDisplayed = objectID;
-}
-#endif
 
 // generate random direction vectors:
 Mn::Vector3 Viewer::randomDirection() {
@@ -2055,15 +1938,6 @@ void Viewer::mousePressEvent(MouseEvent& event) {
         esp::physics::RaycastResults raycastResults = simulator_->castRay(ray);
 
         if (raycastResults.hasHits()) {
-          // If VHACD is enabled, and Ctrl + Right Click is used, voxelized
-          // the object clicked on.
-#ifdef ESP_BUILD_WITH_VHACD
-          if (event.modifiers() & MouseEvent::Modifier::Ctrl) {
-            auto objID = raycastResults.hits[0].objectId;
-            displayVoxelField(objID);
-            return;
-          }
-#endif
           addPrimitiveObject();
 
           auto existingObjectIDs = simulator_->getExistingObjectIDs();
@@ -2502,8 +2376,9 @@ void Viewer::keyPressEvent(KeyEvent& event) {
         // cache the file for quick-reload with SHIFT-T
         cachedURDF_ = urdfFilepath;
         auto aom = simulator_->getArticulatedObjectManager();
-        auto ao = aom->addArticulatedObjectFromURDF(urdfFilepath, fixedBase,
-                                                    1.0, 1.0, true);
+        auto ao = aom->addArticulatedObjectFromURDF(
+            urdfFilepath, fixedBase, 1.0, 1.0, true, false, false,
+            simConfig_.sceneLightSetupKey);
         ao->setTranslation(
             defaultAgent_->node().transformation().transformPoint(
                 {0, 1.0, -1.5}));
@@ -2526,21 +2401,6 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::V:
       invertGravity();
       break;
-    case KeyEvent::Key::K: {
-#ifdef ESP_BUILD_WITH_VHACD
-      iterateAndDisplaySignedDistanceField();
-      // Increase the distance visualized for next time (Pressing L
-      // repeatedly will visualize different distances)
-      voxelDistance++;
-#endif
-      break;
-    }
-    case KeyEvent::Key::G: {
-#ifdef ESP_BUILD_WITH_VHACD
-      displayStageDistanceGradientField();
-#endif
-      break;
-    }
     case KeyEvent::Key::F: {
 #ifdef ESP_BUILD_WITH_AUDIO
       // Add an audio source

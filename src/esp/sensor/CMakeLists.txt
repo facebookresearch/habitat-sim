@@ -42,7 +42,7 @@ add_library(
 
 target_link_libraries(
   sensor
-  PUBLIC core gfx scene sim
+  PUBLIC core gfx gfx_batch scene sim
 )
 
 # ATTENTION developers !!!!!!!!!!!!!!!!!!!!

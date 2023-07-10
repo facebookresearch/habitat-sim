@@ -6,6 +6,8 @@ add_library(
   sim STATIC
   AbstractReplayRenderer.cpp
   AbstractReplayRenderer.h
+  BatchPlayerImplementation.cpp
+  BatchPlayerImplementation.h
   BatchReplayRenderer.cpp
   BatchReplayRenderer.h
   ClassicReplayRenderer.cpp

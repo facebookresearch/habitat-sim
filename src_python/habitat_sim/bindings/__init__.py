@@ -49,5 +49,4 @@ from habitat_sim._ext.habitat_sim_bindings import (
     audio_enabled,
     built_with_bullet,
     cuda_enabled,
-    vhacd_enabled,
 )

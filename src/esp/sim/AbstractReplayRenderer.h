@@ -5,15 +5,8 @@
 #ifndef ESP_SIM_ABSTRACTREPLAYRENDERER_H_
 #define ESP_SIM_ABSTRACTREPLAYRENDERER_H_
 
-#include <Magnum/GL/GL.h>
-#include <Magnum/Magnum.h>
-
-#include "esp/core/Check.h"
-#include "esp/core/Esp.h"
 #include "esp/geo/Geo.h"
 #include "esp/gfx/DebugLineRender.h"
-
-#include <memory>
 
 namespace esp {
 
@@ -72,6 +65,8 @@ class AbstractReplayRenderer {
   static Magnum::Vector2i environmentGridSize(int environmentCount);
 
   virtual ~AbstractReplayRenderer();
+
+  void close();
 
   void preloadFile(Corrade::Containers::StringView filename);
 
@@ -144,6 +139,8 @@ class AbstractReplayRenderer {
 
   /* Default implementation does nothing */
   virtual void doPreloadFile(Corrade::Containers::StringView filename);
+
+  virtual void doClose() = 0;
 
   virtual unsigned doEnvironmentCount() const = 0;
 
