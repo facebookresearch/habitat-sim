@@ -188,11 +188,6 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 #endif
     renderer_->acquireGlContext();
   }
-  // load IBL assets if appropriate and not loaded already
-  // TODO : So many things.  Needs to be config driven, for one.
-  if (cfg.pbrImageBasedLighting) {
-    resourceManager_->initPbrImageBasedLighting("lythwood_room_1k.hdr");
-  }
 
   // (re) create scene instance
   bool success = createSceneInstance(config_.activeSceneName);
@@ -228,6 +223,12 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   // for the current dataset.
   curSceneInstanceAttributes_ =
       metadataMediator_->getSceneInstanceAttributesByName(activeSceneName);
+
+  // load IBL assets if appropriate and not loaded already
+  // TODO : So many things.  Needs to be config driven, for one.
+  if (config_.pbrImageBasedLighting) {
+    resourceManager_->initPbrImageBasedLighting("lythwood_room_1k.hdr");
+  }
 
   // check if attributes is null - should not happen
   ESP_CHECK(
