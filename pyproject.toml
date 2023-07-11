@@ -57,6 +57,8 @@ ignore = [
     "RET504",
     "RET505",
     "SIM105",
+    "PERF2",
+    "PERF4",
 ]
 line-length = 88
 select = [
@@ -67,6 +69,7 @@ select = [
     "RET",
     "SIM",
     "W",
+    "PERF",
 ]
 
 [tool.ruff.per-file-ignores]
