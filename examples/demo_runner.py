@@ -394,7 +394,7 @@ class DemoRunner:
         ) as pool:
             perfs = pool.map(self._bench_target, range(nprocs))
 
-        res = {k: [] for k in perfs[0].keys()}
+        res = {k: [] for k in perfs[0]}
         for p in perfs:
             for k, v in p.items():
                 res[k] += [v]
