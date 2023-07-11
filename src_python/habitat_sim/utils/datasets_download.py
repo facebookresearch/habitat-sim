@@ -19,6 +19,8 @@ import traceback
 import zipfile
 from typing import List, Optional
 
+from git import Repo
+
 data_sources = {}
 data_groups = {}
 
@@ -111,7 +113,7 @@ def initialize_test_data_sources(data_path):
         "replica_cad_dataset": {
             "source": "https://huggingface.co/datasets/ai-habitat/ReplicaCAD_dataset.git",
             "link": data_path + "replica_cad",
-            "version": "main",
+            "version": "v1.6",
         },
         "replica_cad_baked_lighting": {
             "source": "https://huggingface.co/datasets/ai-habitat/ReplicaCAD_baked_lighting.git",
@@ -426,12 +428,15 @@ def prompt_yes_no(message):
         print("Invalid answer...")
 
 
-def get_version_dir(uid, data_path):
+def get_version_dir(uid, data_path, is_repo=False):
     """
     Constructs to the versioned_data directory path for the data source.
     """
     version_tag = data_sources[uid]["version"]
-    if "version_dir" in data_sources[uid]:
+    if is_repo:
+        # this is a git repo, so don't include version in the directory name
+        version_dir = os.path.join(data_path, "versioned_data/" + uid)
+    elif "version_dir" in data_sources[uid]:
         version_dir = os.path.join(
             data_path,
             "versioned_data",
@@ -465,15 +470,21 @@ def clean_data(uid, data_path):
         print(f"Data clean failed, no datasource named {uid}")
         return
     link_path = os.path.join(data_path, data_sources[uid]["link"])
-    version_dir = get_version_dir(uid, data_path)
+    is_repo = data_sources[uid]["source"].endswith(".git")
+    version_dir = get_version_dir(uid, data_path, is_repo)
+    if not os.path.exists(version_dir) and not os.path.islink(link_path):
+        print(f"Found nothing to clean for datasource ({uid}).")
+        return
     downloaded_file_list = get_downloaded_file_list(uid, data_path)
     print(
         f"Cleaning datasource ({uid}). Directory: '{version_dir}'. Symlink: '{link_path}'."
     )
     if downloaded_file_list is None:
         try:
-            shutil.rmtree(version_dir)
-            os.unlink(link_path)
+            if os.path.exists(version_dir):
+                shutil.rmtree(version_dir)
+            if os.path.islink(link_path):
+                os.unlink(link_path)
         except OSError:
             print("Removal error:")
             traceback.print_exc(file=sys.stdout)
@@ -526,7 +537,6 @@ def clone_repo_source(
         clone_command += f"\"{data_sources[uid]['source']}\""
 
     # place the output in the specified directory
-    # NOTE: currently this will pull repo `main`. TODO: use `version` to indicate a tag to checkout?
     clone_command += f" {version_dir}"
 
     print(f"{clone_command}")
@@ -535,6 +545,15 @@ def clone_repo_source(
     # prune the repo to reduced wasted memory consumption
     prune_command = "git lfs prune -f --recent"
     subprocess.check_call(shlex.split(prune_command), cwd=version_dir)
+
+
+def checkout_repo_tag(repo: Repo, tag: str):
+    """
+    Checkout the specified tag for an existing repo with git python API.
+    """
+    repo.remote().fetch(f"{tag}")
+    # using git commandline wrapper, so installed lfs should be used to pull
+    repo.git.checkout(f"{tag}")
 
 
 def get_and_place_compressed_package(
@@ -633,9 +652,10 @@ def download_and_place(
         return
 
     # link_path = os.path.join(data_path, data_sources[uid]["link"])
+    is_repo = data_sources[uid]["source"].endswith(".git")
     link_path = pathlib.Path(data_sources[uid]["link"])
     version_tag = data_sources[uid]["version"]
-    version_dir = get_version_dir(uid, data_path)
+    version_dir = get_version_dir(uid, data_path, is_repo)
     downloaded_file_list = get_downloaded_file_list(uid, data_path)
 
     # check for current version
@@ -645,6 +665,15 @@ def download_and_place(
         print(
             f"Existing data source ({uid}) version ({version_tag}) is current. Data located: '{version_dir}'. Symblink: '{link_path}'."
         )
+
+        # for existing repos, checkout the specified version
+        if is_repo:
+            print(f"Found the existing repo: {version_dir}")
+            repo = Repo(version_dir)
+            assert not repo.bare
+            checkout_repo_tag(repo, version_tag)
+            return
+
         replace_existing = (
             replace if replace is not None else prompt_yes_no("Replace versioned data?")
         )
