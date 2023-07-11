@@ -400,7 +400,12 @@ jobs:
       - run: &download_test_data
           name: Download test data
           command: |
+              git --version
+              sudo apt-get update
+              sudo apt install git
               sudo apt install git-lfs
+              git --version
+              git-lfs --version
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat;
               git lfs install
