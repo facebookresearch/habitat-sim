@@ -75,7 +75,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    *
    * @see @ref Flags, @ref flags()
    */
-  enum class Flag : Magnum::UnsignedInt {
+  enum class Flag : Magnum::UnsignedLong {
     /**
      * Multiply base color with the baseColor texture.
      * @see @ref setBaseColor(), @ref bindBaseColorTexture()

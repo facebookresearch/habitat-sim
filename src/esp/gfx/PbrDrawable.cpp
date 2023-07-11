@@ -26,7 +26,8 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
     : Drawable{node, mesh, DrawableType::Pbr, cfg.group_},
       shaderManager_{shaderManager},
       lightSetup_{shaderManager.get<LightSetup>(cfg.lightSetupKey_)},
-      pbrIbl_(cfg.getPbrIblData()),
+      pbrIbl_{cfg.getPbrIblData()},
+      pbrShaderConfig_{cfg.getPbrShaderConfig()},
       meshAttributeFlags_{meshAttributeFlags} {
   resetMaterialValues(
       shaderManager.get<Mn::Trade::MaterialData>(cfg.materialDataKey_));

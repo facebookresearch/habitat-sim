@@ -110,7 +110,9 @@ uniform sampler2D uAnisotropyLayerTexture;
 
 #endif  // ANISOTROPY_LAYER
 
-// -------------- lights and IBL -------------------
+// -------------- lights and/or IBL -------------------
+
+// TODO Specify if LIGHT_COUNT > 0 and tonemap/srgb
 #if (LIGHT_COUNT > 0) || defined(IMAGE_BASED_LIGHTING)
 uniform float uExposure;
 

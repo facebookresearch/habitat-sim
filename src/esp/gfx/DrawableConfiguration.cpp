@@ -15,13 +15,16 @@ DrawableConfiguration::DrawableConfiguration(
     esp::metadata::attributes::ObjectInstanceShaderType materialDataType,
     DrawableGroup* group,
     const std::shared_ptr<gfx::InstanceSkinData>& skinData,
-    const std::shared_ptr<PbrImageBasedLighting>& pbrIblData)
+    const std::shared_ptr<PbrImageBasedLighting>& pbrIblData,
+    const std::shared_ptr<metadata::attributes::PbrShaderAttributes>&
+        pbrShaderConfig)
     : lightSetupKey_{lightSetupKey},
       materialDataKey_{materialDataKey},
       materialDataType_{materialDataType},
       group_{group},
       skinData_{skinData},
-      pbrIblData_{pbrIblData} {}
+      pbrIblData_{pbrIblData},
+      pbrShaderConfig_{pbrShaderConfig} {}
 
 }  // namespace gfx
 }  // namespace esp

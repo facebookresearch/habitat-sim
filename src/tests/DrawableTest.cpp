@@ -86,9 +86,10 @@ void DrawableTest::addRemoveDrawables() {
       esp::NO_LIGHT_KEY,
       esp::PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
       esp::metadata::attributes::ObjectInstanceShaderType::Phong,
-      drawableGroup_,
-      nullptr,
-      nullptr};
+      drawableGroup_,  // DrawableGroup
+      nullptr,         // Skin
+      nullptr,         // PbrImageBasedLighting
+      nullptr};        // PbrShaderAttributes
   // add a toy box here!
   node.addFeature<esp::gfx::GenericDrawable>(
       &box, meshAttributeFlags, resourceManager_->getShaderManager(), cfg);
@@ -111,9 +112,10 @@ void DrawableTest::addRemoveDrawables() {
       esp::NO_LIGHT_KEY,
       esp::PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
       esp::metadata::attributes::ObjectInstanceShaderType::Phong,
-      nullptr,
-      nullptr,
-      nullptr};
+      nullptr,   // DrawableGroup
+      nullptr,   // Skin
+      nullptr,   // PbrImageBasedLighting
+      nullptr};  // PbrShaderAttributes
 
   // step 2: add a single drawable to a group
   dr = new esp::gfx::GenericDrawable{node, &box, meshAttributeFlags,

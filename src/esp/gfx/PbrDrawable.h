@@ -299,6 +299,12 @@ class PbrDrawable : public Drawable {
   std::shared_ptr<PbrImageBasedLighting> pbrIbl_ = nullptr;
 
   /**
+   * The attributes configuration to configure the PBR shader
+   */
+  std::shared_ptr<metadata::attributes::PbrShaderAttributes> pbrShaderConfig_ =
+      nullptr;
+
+  /**
    * Local cache of material quantities to speed up access in draw
    */
   PBRMaterialCache matCache{};

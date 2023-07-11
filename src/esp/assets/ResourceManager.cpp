@@ -1472,7 +1472,8 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceVertSemantic(
       ObjectInstanceShaderType::Phong,    // shader type to use
       drawables,                          // drawable group
       nullptr,                            // no skinning data
-      nullptr};                           // Not PBR so no IBL map
+      nullptr,                            // Not PBR so no IBL map
+      nullptr};                           // Not PBR so no PbrShaderAttributes
 
   for (int iMesh = start; iMesh <= end; ++iMesh) {
     scene::SceneNode& node = instanceRoot->createChild();
@@ -3085,8 +3086,8 @@ void ResourceManager::addComponent(
         materialDataType,  // shader type to use
         drawables,         // drawable group
         skinData,          // instance skinning data
-        pbrIblData_};      // PbrIBL configuration, if appropriate, nullptr
-                           // otherwise
+        pbrIblData_,       // PbrIBL configuration, if appropriate, nullptr
+        nullptr};          // PbrShaderAttributes
 
     createDrawable(mesh,                // render mesh
                    meshAttributeFlags,  // mesh attribute flags
@@ -3163,7 +3164,8 @@ void ResourceManager::addPrimitiveToDrawables(int primitiveID,
       ObjectInstanceShaderType::Flat,  // shader to use
       drawables,                       // DrawableGroup
       nullptr,                         // skinData
-      nullptr};                        // PBRImageBasedLighting
+      nullptr,                         // PbrImageBasedLighting
+      nullptr};                        // PbrShaderAttributes
   // TODO:
   // currently we assume the primitives does not have normal texture
   // so do not need to worry about the tangent or bitangent.
@@ -3195,10 +3197,6 @@ void ResourceManager::createDrawable(Mn::GL::Mesh* mesh,
           meshAttributeFlags,  // mesh attribute flags
           shaderManager_,      // shader manager
           drawableCfg);
-      // lightSetupKey,       // lightSetup key
-      // materialKey,         // material key
-      // group,               // drawable group
-      // skinData);           // instance skinning data
       break;
     case ObjectInstanceShaderType::PBR:
       node.addFeature<gfx::PbrDrawable>(
@@ -3206,11 +3204,6 @@ void ResourceManager::createDrawable(Mn::GL::Mesh* mesh,
           meshAttributeFlags,  // mesh attribute flags
           shaderManager_,      // shader manager
           drawableCfg);
-      // lightSetupKey,       // lightSetup key
-      // materialKey,         // material key
-      // group,               // drawable group
-      // activePbrIbl_ >= 0 ? pbrImageBasedLightings_[activePbrIbl_].get()
-      //                    : nullptr);  // pbr image based lighting
       break;
     default:
       CORRADE_INTERNAL_ASSERT_UNREACHABLE();

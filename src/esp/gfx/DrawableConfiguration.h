@@ -9,6 +9,7 @@
 #include "esp/gfx/PbrImageBasedLighting.h"
 #include "esp/gfx/SkinData.h"
 #include "esp/metadata/attributes/AttributesEnumMaps.h"
+#include "esp/metadata/attributes/PbrShaderAttributes.h"
 namespace esp {
 namespace gfx {
 class DrawableGroup;
@@ -25,10 +26,17 @@ class DrawableConfiguration {
       esp::metadata::attributes::ObjectInstanceShaderType materialDataType,
       DrawableGroup* group,
       const std::shared_ptr<gfx::InstanceSkinData>& skinData,
-      const std::shared_ptr<PbrImageBasedLighting>& pbrIblData);
+      const std::shared_ptr<PbrImageBasedLighting>& pbrIblData,
+      const std::shared_ptr<metadata::attributes::PbrShaderAttributes>&
+          pbrShaderConfig);
 
   std::shared_ptr<InstanceSkinData> getSkinData() { return skinData_; }
   std::shared_ptr<PbrImageBasedLighting> getPbrIblData() { return pbrIblData_; }
+
+  std::shared_ptr<metadata::attributes::PbrShaderAttributes>
+  getPbrShaderConfig() {
+    return pbrShaderConfig_;
+  }
 
   /**
    * Lighting key for this drawable
@@ -62,6 +70,12 @@ class DrawableConfiguration {
    * for PbrDrawables, ignored otherwise.
    */
   std::shared_ptr<PbrImageBasedLighting> pbrIblData_ = nullptr;
+
+  /**
+   * The attributes configuration to configure the PBR shader
+   */
+  std::shared_ptr<metadata::attributes::PbrShaderAttributes> pbrShaderConfig_ =
+      nullptr;
 };
 
 }  // namespace gfx
