@@ -52,17 +52,6 @@ class GenericDrawable : public Drawable {
   static constexpr const char* SHADER_KEY_TEMPLATE =
       "Phong-lights={}-flags={}-joints={}";
 
-  /**
-   * Set or change this drawable's @ref Magnum::Trade::MaterialData values from passed material.
-   * This is only pertinent for material-equipped drawables.
-   * @param material
-   */
-  void setMaterialValues(
-      const Mn::Resource<Mn::Trade::MaterialData, Mn::Trade::MaterialData>&
-          material) override {
-    setMaterialValuesInternal(material);
-  }
-
  private:
   /**
    * @brief Internal implementation of material setting, so that it can be
@@ -70,7 +59,8 @@ class GenericDrawable : public Drawable {
    */
   void setMaterialValuesInternal(
       const Mn::Resource<Mn::Trade::MaterialData, Mn::Trade::MaterialData>&
-          material);
+          material,
+      bool reset) override;
 
  protected:
   void draw(const Mn::Matrix4& transformationMatrix,

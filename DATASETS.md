@@ -3,6 +3,8 @@
 ## Table of contents
    1. [Habitat test scenes](#habitat-test-scenes)
    1. [Habitat-Matterport 3D Research Dataset (HM3D)](#habitat-matterport-3d-research-dataset-hm3d)
+   1. [Habitat Synthetic Scenes Dataset (HSSD)](#habitat-synthetic-scene-dataset-hssd)
+   1. [AI2-THOR (Habitat)](#ai2-thor-habitat)
    1. [Matterport3D (MP3D) dataset](#matterport3d-mp3d-dataset)
    1. [Gibson and 3DSceneGraph datasets](#gibson-and-3dscenegraph-datasets)
    1. [Replica Dataset](#replica-dataset)
@@ -125,6 +127,17 @@ To load semantic annotations in habitat-lab:
 
 Note that if you are using the RL environment from habitat-lab, `SIMULATOR.SCENE_DATASET` is overridden by the episode dataset (see [here](https://github.com/facebookresearch/habitat-lab/blob/e934b15c35233457cc3cb9c90ba0e207610dbd19/habitat/core/env.py#L94-L96)). Each episode in the episode dataset must point to the annotation config file (as done in the HM3D ObjectNav dataset [here](https://github.com/facebookresearch/habitat-lab)).
 
+## Habitat Synthetic Scene Dataset (HSSD)
+
+Details: [https://3dlg-hcvc.github.io/hssd/](https://3dlg-hcvc.github.io/hssd/).
+
+You can download the HSSD dataset from instructions provided in the above website.
+
+## AI2-THOR (Habitat)
+
+Details: [https://3dlg-hcvc.github.io/hssd/](https://3dlg-hcvc.github.io/hssd/).
+
+You can download Habitat-compatible versions of the iTHOR, RoboTHOR, and ProcTHOR scene datasets from instructions provided in the above website.
 
 ## Matterport3D (MP3D) dataset
 
@@ -210,7 +223,7 @@ To quickly test in the viewer application:
 #from the habitat-sim directory
 # C++
 # ./build/viewer if compiling locally
-habitat-viewer --stage-requires-lighting --enable-physics --object-dir ""  --dataset data/objects/ycb/ycb.scene_dataset_config.json -- data/test_assets/scenes/simple_room.glb
+habitat-viewer --use-default-lighting --enable-physics --object-dir ""  --dataset data/objects/ycb/ycb.scene_dataset_config.json -- data/test_assets/scenes/simple_room.glb
 ```
 Then press `'o'` key to add random objects from the dataset.
 

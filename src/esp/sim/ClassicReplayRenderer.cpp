@@ -6,10 +6,8 @@
 
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/RenderTarget.h"
-#include "esp/gfx/Renderer.h"
 #include "esp/metadata/MetadataMediator.h"
 #include "esp/sensor/SensorFactory.h"
-#include "esp/sim/SimulatorConfiguration.h"
 
 #include <Magnum/GL/Context.h>
 #include <Magnum/ImageView.h>
@@ -164,14 +162,26 @@ ClassicReplayRenderer::ClassicReplayRenderer(
 }
 
 ClassicReplayRenderer::~ClassicReplayRenderer() {
-  for (int envIdx = 0; envIdx < config_.numEnvironments; ++envIdx) {
+  doCloseImpl();
+}
+
+void ClassicReplayRenderer::doClose() {
+  doCloseImpl();
+}
+
+void ClassicReplayRenderer::doCloseImpl() {
+  for (int envIdx = 0; envIdx < envs_.size(); ++envIdx) {
     envs_[envIdx].player_.close();
     auto& sensorMap = envs_[envIdx].sensorMap_;
     for (auto& sensorPair : sensorMap) {
       sensor::SensorFactory::deleteSensor(sensorPair.second);
     }
+    envs_[envIdx].sensorMap_.clear();
   }
+  envs_.clear();
   resourceManager_.reset();
+  renderer_.reset();
+  context_.reset();
 }
 
 unsigned ClassicReplayRenderer::doEnvironmentCount() const {
@@ -232,7 +242,8 @@ void ClassicReplayRenderer::doSetSensorTransformsFromKeyframe(
 }
 
 void ClassicReplayRenderer::doRender(
-    Cr::Containers::ArrayView<const Mn::MutableImageView2D> imageViews) {
+    Cr::Containers::ArrayView<const Mn::MutableImageView2D> colorImageViews,
+    Cr::Containers::ArrayView<const Mn::MutableImageView2D> depthImageViews) {
   for (int envIndex = 0; envIndex < config_.numEnvironments; envIndex++) {
     auto& sensorMap = getEnvironmentSensors(envIndex);
     CORRADE_INTERNAL_ASSERT(sensorMap.size() == 1);
@@ -243,11 +254,26 @@ void ClassicReplayRenderer::doRender(
 
       auto& sceneGraph = getSceneGraph(envIndex);
 
+      auto& sensorType = visualSensor.specification()->sensorType;
+      Cr::Containers::ArrayView<const Mn::MutableImageView2D> imageViews;
+      switch (sensorType) {
+        case esp::sensor::SensorType::Color:
+          imageViews = colorImageViews;
+          break;
+        case esp::sensor::SensorType::Depth:
+          imageViews = depthImageViews;
+          break;
+        default:
+          break;
+      }
+
 #ifdef ESP_BUILD_WITH_BACKGROUND_RENDERER
-      renderer_->enqueueAsyncDrawJob(
-          visualSensor, sceneGraph, imageViews[envIndex],
-          esp::gfx::RenderCamera::Flags{
-              gfx::RenderCamera::Flag::FrustumCulling});
+      if (imageViews.size() > 0) {
+        renderer_->enqueueAsyncDrawJob(
+            visualSensor, sceneGraph, imageViews[envIndex],
+            esp::gfx::RenderCamera::Flags{
+                gfx::RenderCamera::Flag::FrustumCulling});
+      }
 #else
       // TODO what am I supposed to do here?
       CORRADE_ASSERT_UNREACHABLE("Not implemented yet, sorry.", );

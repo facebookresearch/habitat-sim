@@ -362,7 +362,7 @@ jobs:
               cd habitat-sim
               pip install -r requirements.txt --progress-bar off
               git submodule update --init --recursive --jobs 8
-              python -u setup.py install --build-type "Release" --no-lto --headless --vhacd --bullet
+              python -u setup.py install --build-type "Release" --no-lto --headless --bullet
       - run:
           name: run clang-tidy
           command: |
@@ -429,7 +429,7 @@ jobs:
                   texlive-fonts-recommended
 
               # Rebuild with all options enabled
-              ./build.sh --with-cuda --with-bullet --vhacd
+              ./build.sh --with-cuda --with-bullet
               cd docs
               git submodule update --init
               ./build-public.sh
@@ -441,7 +441,7 @@ jobs:
               . activate habitat;
               cd habitat-sim
               #Rebuild headless
-              python setup.py install --headless --with-bullet --with-cuda --vhacd
+              python setup.py install --headless --with-bullet --with-cuda
               cd ..
               if [ ! -d ./habitat-lab ]
               then
@@ -511,7 +511,7 @@ jobs:
               pip install -r requirements.txt --progress-bar off
               pip install imageio imageio-ffmpeg
               git submodule update --init --recursive --jobs 8
-              python -u setup.py install --build-type "Release" --lto --headless --vhacd --bullet
+              python -u setup.py install --build-type "Release" --lto --headless --bullet
       - run:
           name: Ccache stats
           when: always
@@ -587,7 +587,6 @@ jobs:
               # run tests with code coverage
               CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless \
                 --bullet \
-                --vhacd \
                 --with-cuda \
                 --build-datatool \
                 --run-tests \
@@ -703,6 +702,7 @@ jobs:
                   <<^ parameters.CI_TEST >> --env << parameters.AIHABITAT_CONDA_CHN_PWD_VAR >> <</ parameters.CI_TEST >> \
                   hsim_condabuild_dcontainer \
                   /bin/bash -c "source ~/.bashrc && conda activate py39 \
+                                && cd /remote/habitat-sim/ && git config --global --add safe.directory '*' \
                                 && cd /remote/habitat-sim/conda-build \
                                 <<^ parameters.CI_TEST >> && yes | anaconda login --username << parameters.AIHABITAT_CONDA_CHN >> --password \${<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >>} <</ parameters.CI_TEST >> --hostname "aihabitat-conda-ci-builder-linux" \
                                 && python matrix_builder.py \

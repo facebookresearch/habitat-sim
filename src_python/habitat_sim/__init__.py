@@ -30,11 +30,6 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
     )
     from habitat_sim._ext.habitat_sim_bindings import MapStringString
 
-    try:
-        from habitat_sim._ext.habitat_sim_bindings import VHACDParameters  # noqa: F401
-    except Exception:
-        pass
-
     # if getattr()
     from habitat_sim.agent.agent import (  # noqa: F401
         ActionSpec,
@@ -64,7 +59,6 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         audio_enabled,
         built_with_bullet,
         cuda_enabled,
-        vhacd_enabled,
     )
     from habitat_sim.nav import (  # noqa: F401
         GreedyFollowerCodes,

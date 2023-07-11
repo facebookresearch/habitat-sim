@@ -99,7 +99,7 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
    * @return an appropriately cast attributes pointer with base class fields
    * filled in.
    */
-  AbsObjAttrPtr loadAbstractObjectAttributesFromJson(
+  AbsObjAttrPtr setAbstractObjectAttributesFromJson(
       AbsObjAttrPtr attributes,
       const io::JsonGenericValue& jsonDoc);
 
@@ -174,15 +174,18 @@ auto AbstractObjectAttributesManager<T, Access>::createObject(
     // this is a primitive-based object we are building
     attrs = this->createPrimBasedAttributesTemplate(attributesTemplateHandle,
                                                     registerTemplate);
-    msg = "Primitive Asset (" + attributesTemplateHandle + ") Based";
+    if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::Debug)) {
+      msg = "Primitive Asset (" + attributesTemplateHandle + ") Based";
+    }
   } else {
     attrs = this->createFromJsonOrDefaultInternal(attributesTemplateHandle, msg,
                                                   registerTemplate);
 
   }  // if this is prim else
   if (nullptr != attrs) {
-    ESP_DEBUG() << msg << this->objectType_ << "attributes created"
-                << (registerTemplate ? "and registered." : ".");
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << msg << " " << this->objectType_ << " attributes created"
+        << (registerTemplate ? " and registered." : ".");
   }
   return attrs;
 
@@ -190,8 +193,8 @@ auto AbstractObjectAttributesManager<T, Access>::createObject(
 
 template <class T, ManagedObjectAccess Access>
 auto AbstractObjectAttributesManager<T, Access>::
-    loadAbstractObjectAttributesFromJson(AbsObjAttrPtr attributes,
-                                         const io::JsonGenericValue& jsonDoc)
+    setAbstractObjectAttributesFromJson(AbsObjAttrPtr attributes,
+                                        const io::JsonGenericValue& jsonDoc)
         -> AbsObjAttrPtr {
   // scale
   io::jsonIntoConstSetter<Magnum::Vector3>(
@@ -316,7 +319,7 @@ auto AbstractObjectAttributesManager<T, Access>::
   }
 
   return attributes;
-}  // AbstractObjectAttributesManager<AbsObjAttrPtr>::createObjectAttributesFromJson
+}  // AbstractObjectAttributesManager<AbsObjAttrPtr>::setAbstractObjectAttributesFromJson
 
 template <class T, ManagedObjectAccess Access>
 std::string

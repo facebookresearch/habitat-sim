@@ -5,15 +5,8 @@
 #ifndef ESP_SIM_ABSTRACTREPLAYRENDERER_H_
 #define ESP_SIM_ABSTRACTREPLAYRENDERER_H_
 
-#include <Magnum/GL/GL.h>
-#include <Magnum/Magnum.h>
-
-#include "esp/core/Check.h"
-#include "esp/core/Esp.h"
 #include "esp/geo/Geo.h"
 #include "esp/gfx/DebugLineRender.h"
-
-#include <memory>
 
 namespace esp {
 
@@ -73,6 +66,8 @@ class AbstractReplayRenderer {
 
   virtual ~AbstractReplayRenderer();
 
+  void close();
+
   void preloadFile(Corrade::Containers::StringView filename);
 
   unsigned environmentCount() const;
@@ -100,9 +95,12 @@ class AbstractReplayRenderer {
   void setSensorTransformsFromKeyframe(unsigned envIndex,
                                        const std::string& prefix);
 
-  // Renders and waits for the render to finish
+  // Renders into the specified CPU-resident image view arrays (one image per
+  // environment). Waits for the render to finish.
   void render(Corrade::Containers::ArrayView<const Magnum::MutableImageView2D>
-                  imageViews);
+                  colorImageViews,
+              Corrade::Containers::ArrayView<const Magnum::MutableImageView2D>
+                  depthImageViews);
 
   // Assumes the framebuffer color & depth is cleared
   void render(Magnum::GL::AbstractFramebuffer& framebuffer);
@@ -142,6 +140,8 @@ class AbstractReplayRenderer {
   /* Default implementation does nothing */
   virtual void doPreloadFile(Corrade::Containers::StringView filename);
 
+  virtual void doClose() = 0;
+
   virtual unsigned doEnvironmentCount() const = 0;
 
   /* Retrieves a player instance for given environment. Used by
@@ -164,7 +164,9 @@ class AbstractReplayRenderer {
   /* imageViews.size() is guaranteed to be same as doEnvironmentCount() */
   virtual void doRender(
       Corrade::Containers::ArrayView<const Magnum::MutableImageView2D>
-          imageViews) = 0;
+          colorImageViews,
+      Corrade::Containers::ArrayView<const Magnum::MutableImageView2D>
+          depthImageViews) = 0;
 
   virtual void doRender(Magnum::GL::AbstractFramebuffer& framebuffer) = 0;
 

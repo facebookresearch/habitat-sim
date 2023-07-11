@@ -17,6 +17,7 @@
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/WindowlessContext.h"
+#include "esp/gfx_batch/DepthUnprojection.h"
 #include "esp/metadata/MetadataMediator.h"
 #include "esp/scene/SceneManager.h"
 
@@ -191,7 +192,7 @@ void CullingTest::frustumCulling() {
   // create a render target
   Mn::Matrix4 projMtx = renderCamera.projectionMatrix();
   esp::gfx::RenderTarget::uptr target = esp::gfx::RenderTarget::create_unique(
-      frameBufferSize, esp::gfx::calculateDepthUnprojection(projMtx));
+      frameBufferSize, esp::gfx_batch::calculateDepthUnprojection(projMtx));
 
   // ============== Test 1 ==================
   // draw all the invisibles reported by cull()

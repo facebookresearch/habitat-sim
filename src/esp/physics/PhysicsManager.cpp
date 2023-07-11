@@ -219,7 +219,7 @@ int PhysicsManager::addObject(
   if (!objectAttributes) {
     // should never run, but just in case
     ESP_ERROR() << "Object creation failed due to nonexistant "
-                   "objectAttributes";
+                   "objectAttributes, so addObject aborted.";
     return ID_UNDEFINED;
   }
   // verify whether necessary assets exist, and if not, instantiate them
@@ -228,7 +228,8 @@ int PhysicsManager::addObject(
       resourceManager_.instantiateAssetsOnDemand(objectAttributes);
   if (!objectSuccess) {
     ESP_ERROR() << "ResourceManager::instantiateAssetsOnDemand "
-                   "unsuccessful. Aborting.";
+                   "unsuccessful, so addObject `"
+                << objectAttributes->getHandle() << "` aborted.";
     return ID_UNDEFINED;
   }
 
@@ -247,8 +248,9 @@ int PhysicsManager::addObject(
     if (attachmentNode == nullptr) {
       delete objectNode;
     }
-    ESP_ERROR() << "PhysicsManager::makeRigidObject unsuccessful. "
-                   " Aborting.";
+    ESP_ERROR(Mn::Debug::Flag::NoSpace)
+        << "PhysicsManager::makeAndAddRigidObject unsuccessful, so addObject `"
+        << objectAttributes->getHandle() << "` aborted.";
     return ID_UNDEFINED;
   }
 
@@ -272,7 +274,8 @@ int PhysicsManager::addObject(
   if (!objectSuccess) {
     // if failed for some reason, remove and return
     removeObject(nextObjectID_, true, true);
-    ESP_ERROR() << "PhysicsManager::finalizeObject unsuccessful.  Aborting.";
+    ESP_ERROR() << "PhysicsManager::finalizeObject unsuccessful, so addObject `"
+                << objectAttributes->getHandle() << "` aborted.";
     return ID_UNDEFINED;
   }
   // Valid object exists by here.
@@ -282,8 +285,8 @@ int PhysicsManager::addObject(
   std::string simpleObjectHandle = objectAttributes->getSimplifiedHandle();
   std::string newObjectHandle =
       rigidObjectManager_->getUniqueHandleFromCandidate(simpleObjectHandle);
-  ESP_WARNING() << "Simplified template handle :" << simpleObjectHandle
-                << " | newObjectHandle :" << newObjectHandle;
+  ESP_DEBUG() << "Simplified template handle :" << simpleObjectHandle
+              << " | newObjectHandle :" << newObjectHandle;
 
   existingObjects_.at(nextObjectID_)->setObjectName(newObjectHandle);
 
@@ -332,10 +335,11 @@ int PhysicsManager::addArticulatedObjectInstance(
       false, lightSetup);
   if (aObjID == ID_UNDEFINED) {
     // instancing failed for some reason.
-    ESP_ERROR() << "Articulated Object create failed for model filepath"
-                << filepath << ", whose handle is"
-                << aObjInstAttributes->getHandle()
-                << "as specified in articulated object instance attributes.";
+    ESP_ERROR(Mn::Debug::Flag::NoSpace)
+        << "Articulated Object create failed for model filepath `" << filepath
+        << "`, whose handle is `" << aObjInstAttributes->getHandle()
+        << "` as specified in articulated object instance attributes, so "
+           "addArticulatedObjectInstance aborted.";
     return ID_UNDEFINED;
   }
 
@@ -406,7 +410,7 @@ int PhysicsManager::addTrajectoryObject(const std::string& trajVisName,
       trajVisName, uniquePts, colorVec, numSegments, radius, smooth, numInterp);
   if (!success) {
     ESP_ERROR() << "Failed to create Trajectory visualization mesh for"
-                << trajVisName;
+                << trajVisName << "so addTrajectoryObject aborted.";
     return ID_UNDEFINED;
   }
   // 2. create object attributes for the trajectory
@@ -422,7 +426,7 @@ int PhysicsManager::addTrajectoryObject(const std::string& trajVisName,
   if (trajVisID == ID_UNDEFINED) {
     // failed to add object - need to delete asset from resourceManager.
     ESP_ERROR() << "Failed to create Trajectory visualization object for"
-                << trajVisName;
+                << trajVisName << "so addTrajectoryObject aborted.";
     // TODO : support removing asset by removing from resourceDict_ properly
     // using trajVisName
     return ID_UNDEFINED;
@@ -615,29 +619,6 @@ int PhysicsManager::checkActiveObjects() {
   return numActive;
 }
 
-#ifdef ESP_BUILD_WITH_VHACD
-void PhysicsManager::generateVoxelization(const int physObjectID,
-                                          const int resolution) {
-  auto objIter = getRigidObjIteratorOrAssert(physObjectID);
-  objIter->second->generateVoxelization(resourceManager_, resolution);
-}
-
-void PhysicsManager::generateStageVoxelization(const int resolution) {
-  staticStageObject_->generateVoxelization(resourceManager_, resolution);
-}
-#endif
-
-std::shared_ptr<esp::geo::VoxelWrapper> PhysicsManager::getObjectVoxelization(
-    const int physObjectID) const {
-  auto objIter = getConstRigidObjIteratorOrAssert(physObjectID);
-  return objIter->second->getVoxelization();
-}
-
-std::shared_ptr<esp::geo::VoxelWrapper> PhysicsManager::getStageVoxelization()
-    const {
-  return staticStageObject_->getVoxelization();
-}
-
 void PhysicsManager::setObjectBBDraw(int physObjectID,
                                      DrawableGroup* drawables,
                                      bool drawBB) {
@@ -661,63 +642,11 @@ void PhysicsManager::setObjectBBDraw(int physObjectID,
   }
 }
 
-void PhysicsManager::setObjectVoxelizationDraw(int physObjectID,
-                                               const std::string& gridName,
-                                               DrawableGroup* drawables,
-                                               bool drawVoxelization) {
-  auto objIter = getRigidObjIteratorOrAssert(physObjectID);
-  setVoxelizationDraw(
-      gridName, static_cast<esp::physics::RigidBase*>(objIter->second.get()),
-      drawables, drawVoxelization);
-}
-
-void PhysicsManager::setStageVoxelizationDraw(const std::string& gridName,
-                                              DrawableGroup* drawables,
-                                              bool drawVoxelization) {
-  setVoxelizationDraw(
-      gridName, static_cast<esp::physics::RigidBase*>(staticStageObject_.get()),
-      drawables, drawVoxelization);
-}
-
 metadata::attributes::PhysicsManagerAttributes::ptr
 PhysicsManager::getInitializationAttributes() const {
   return metadata::attributes::PhysicsManagerAttributes::create(
       *physicsManagerAttributes_);
 }
 
-void PhysicsManager::setVoxelizationDraw(const std::string& gridName,
-                                         esp::physics::RigidBase* rigidBase,
-                                         DrawableGroup* drawables,
-                                         bool drawVoxelization) {
-  if (rigidBase->VoxelNode_ && !drawVoxelization) {
-    // destroy the node
-    delete rigidBase->VoxelNode_;
-    rigidBase->VoxelNode_ = nullptr;
-
-  } else if (drawVoxelization && rigidBase->visualNode_) {
-    // if the VoxelNode is already rendering something, destroy it.
-    delete rigidBase->VoxelNode_;
-
-    // re-create the voxel node
-    rigidBase->VoxelNode_ = &rigidBase->visualNode_->createChild();
-
-    esp::geo::VoxelWrapper* voxelWrapper_ = rigidBase->voxelWrapper.get();
-    gfx::Drawable::Flags meshAttributeFlags{};
-    resourceManager_.createDrawable(
-        &voxelWrapper_->getVoxelGrid()->getMeshGL(gridName), meshAttributeFlags,
-        *rigidBase->VoxelNode_, DEFAULT_LIGHTING_KEY,
-        PER_VERTEX_OBJECT_ID_MATERIAL_KEY, drawables);
-
-    // If the RigidBase is a stage, need to set the BB to make culling work.
-    if (dynamic_cast<esp::physics::RigidStage*>(rigidBase) != nullptr) {
-      // set bounding box for the node to be the bb computed by vhacd
-      Mn::Range3D bb{rigidBase->voxelWrapper->getVoxelGrid()->getOffset(),
-                     rigidBase->voxelWrapper->getVoxelGrid()->getMaxOffset()};
-      rigidBase->VoxelNode_->setMeshBB(bb);
-      //
-      rigidBase->node().computeCumulativeBB();
-    }
-  }
-}
 }  // namespace physics
 }  // namespace esp

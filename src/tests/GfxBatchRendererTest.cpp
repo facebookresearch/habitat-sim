@@ -2,9 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include <Corrade/Containers/StridedArrayView.h>
 #include <Corrade/Containers/Triple.h>
-#include <Corrade/PluginManager/Manager.h>
 #include <Corrade/PluginManager/PluginMetadata.h>
 #include <Corrade/TestSuite/Compare/File.h>
 #include <Corrade/TestSuite/Tester.h>
@@ -15,8 +13,6 @@
 #include <Magnum/Image.h>
 #include <Magnum/ImageView.h>
 #include <Magnum/Math/Color.h>
-#include <Magnum/Math/Matrix3.h>
-#include <Magnum/Math/Matrix4.h>
 #include <Magnum/Math/Range.h>
 #include <Magnum/MeshTools/Combine.h>
 #include <Magnum/MeshTools/Concatenate.h>
@@ -33,6 +29,8 @@
 #include <Magnum/Trade/SceneData.h>
 #include <Magnum/Trade/TextureData.h>
 
+#include <esp/gfx_batch/DepthUnprojection.h>
+#include "Corrade/TestSuite/Compare/Numeric.h"
 #include "esp/gfx_batch/RendererStandalone.h"
 
 #ifdef ESP_BUILD_WITH_CUDA
@@ -71,6 +69,7 @@ struct GfxBatchRendererTest : Cr::TestSuite::Tester {
   void clearLights();
 
   void imageInto();
+  void depthUnprojection();
   void cudaInterop();
 };
 
@@ -297,6 +296,7 @@ GfxBatchRendererTest::GfxBatchRendererTest() {
 
   addTests({&GfxBatchRendererTest::clearLights,
             &GfxBatchRendererTest::imageInto,
+            &GfxBatchRendererTest::depthUnprojection,
             &GfxBatchRendererTest::cudaInterop});
   // clang-format on
 }
@@ -482,7 +482,7 @@ void GfxBatchRendererTest::generateTestData() {
     } meshes[11];
     struct Transformation {
       Mn::UnsignedInt object;
-      Mn::Matrix4 trasformation;
+      Mn::Matrix4 transformation;
     } transformations[4];
   } scene[]{{
     {{0, -1}, {1, 0}, /* square and its child mesh */
@@ -540,7 +540,7 @@ void GfxBatchRendererTest::generateTestData() {
       Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::meshViewMaterial)},
     Mn::Trade::SceneFieldData{Mn::Trade::SceneField::Transformation,
       Cr::Containers::stridedArrayView(scene->transformations).slice(&Scene::Transformation::object),
-      Cr::Containers::stridedArrayView(scene->transformations).slice(&Scene::Transformation::trasformation)},
+      Cr::Containers::stridedArrayView(scene->transformations).slice(&Scene::Transformation::transformation)},
   }}));
   // clang-format on
 
@@ -700,7 +700,7 @@ void GfxBatchRendererTest::generateTestDataMultipleMeshes() {
     } meshes[7];
     struct Transformation {
       Mn::UnsignedInt object;
-      Mn::Matrix4 trasformation;
+      Mn::Matrix4 transformation;
     } transformations[4];
   } scene[]{{
     {{0, -1}, {1, 0}, /* square and its child mesh */
@@ -740,7 +740,7 @@ void GfxBatchRendererTest::generateTestDataMultipleMeshes() {
       Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::meshMaterial)},
     Mn::Trade::SceneFieldData{Mn::Trade::SceneField::Transformation,
       Cr::Containers::stridedArrayView(scene->transformations).slice(&Scene::Transformation::object),
-      Cr::Containers::stridedArrayView(scene->transformations).slice(&Scene::Transformation::trasformation)},
+      Cr::Containers::stridedArrayView(scene->transformations).slice(&Scene::Transformation::transformation)},
   }}));
   // clang-format on
 
@@ -946,7 +946,7 @@ void GfxBatchRendererTest::generateTestDataMultipleTextures() {
     } meshes[7];
     struct Transformation {
       Mn::UnsignedInt object;
-      Mn::Matrix4 trasformation;
+      Mn::Matrix4 transformation;
     } transformations[4];
   } scene[]{{
     {{0, -1}, {1, 0}, /* square and its child mesh */
@@ -992,7 +992,7 @@ void GfxBatchRendererTest::generateTestDataMultipleTextures() {
       Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::meshViewMaterial)},
     Mn::Trade::SceneFieldData{Mn::Trade::SceneField::Transformation,
       Cr::Containers::stridedArrayView(scene->transformations).slice(&Scene::Transformation::object),
-      Cr::Containers::stridedArrayView(scene->transformations).slice(&Scene::Transformation::trasformation)},
+      Cr::Containers::stridedArrayView(scene->transformations).slice(&Scene::Transformation::transformation)},
   }}));
   // clang-format on
 
@@ -1333,7 +1333,7 @@ void GfxBatchRendererTest::generateTestDataFourSquares() {
     } meshes[4];
     struct Transformation {
       Mn::UnsignedInt object;
-      Mn::Matrix4 trasformation;
+      Mn::Matrix4 transformation;
     } transformations[4];
   } scene[]{{
     {{0, -1}, {1, 0}, {2, 0}, /* four squares */
@@ -1363,7 +1363,7 @@ void GfxBatchRendererTest::generateTestDataFourSquares() {
       Cr::Containers::stridedArrayView(scene->meshes).slice(&Scene::Mesh::meshMaterial)},
     Mn::Trade::SceneFieldData{Mn::Trade::SceneField::Transformation,
       Cr::Containers::stridedArrayView(scene->transformations).slice(&Scene::Transformation::object),
-      Cr::Containers::stridedArrayView(scene->transformations).slice(&Scene::Transformation::trasformation)},
+      Cr::Containers::stridedArrayView(scene->transformations).slice(&Scene::Transformation::transformation)},
   }};
   // clang-format on
 
@@ -1385,9 +1385,9 @@ void GfxBatchRendererTest::generateTestDataFourSquares() {
   if (data.sceneDeepHierarchy) {
     scene->parents[2].parent = 1;
     scene->parents[4].parent = 3;
-    scene->transformations[1].trasformation =
+    scene->transformations[1].transformation =
         Mn::Matrix4::translation(Mn::Vector3::xAxis(1.0f / 0.4f));
-    scene->transformations[3].trasformation =
+    scene->transformations[3].transformation =
         Mn::Matrix4::translation(Mn::Vector3::xAxis(1.0f / 0.4f));
   }
 
@@ -1540,10 +1540,11 @@ void GfxBatchRendererTest::singleMesh() {
         file.second(), file.third()));
 
   /* Undo the aspect ratio, move camera back */
-  renderer.camera(0) =
+  renderer.updateCamera(
+      0,
       Mn::Matrix4::orthographicProjection(2.0f * Mn::Vector2{4.0f / 3.0f, 1.0f},
-                                          0.1f, 10.0f) *
-      Mn::Matrix4::translation(Mn::Vector3::zAxis(1.0f)).inverted();
+                                          0.1f, 10.0f),
+      Mn::Matrix4::translation(Mn::Vector3::zAxis(1.0f)).inverted());
 
   CORRADE_VERIFY(renderer.hasNodeHierarchy("square"));
   CORRADE_VERIFY(!renderer.hasNodeHierarchy("squares"));
@@ -1618,10 +1619,11 @@ void GfxBatchRendererTest::meshHierarchy() {
         file.second(), file.third()));
 
   /* Undo the aspect ratio, move camera back */
-  renderer.camera(0) =
+  renderer.updateCamera(
+      0,
       Mn::Matrix4::orthographicProjection(2.0f * Mn::Vector2{4.0f / 3.0f, 1.0f},
-                                          0.1f, 10.0f) *
-      Mn::Matrix4::translation(Mn::Vector3::zAxis(1.0f)).inverted();
+                                          0.1f, 10.0f),
+      Mn::Matrix4::translation(Mn::Vector3::zAxis(1.0f)).inverted());
 
   CORRADE_COMPARE(renderer.addNodeHierarchy(0, "four squares"), 0);
 
@@ -1675,10 +1677,11 @@ void GfxBatchRendererTest::multipleMeshes() {
         Cr::Utility::Path::join({TEST_ASSETS, "scenes", file.first()}),
         file.second(), file.third()));
 
-  renderer.camera(0) =
+  renderer.updateCamera(
+      0,
       Mn::Matrix4::orthographicProjection(2.0f * Mn::Vector2{4.0f / 3.0f, 1.0f},
-                                          0.1f, 10.0f) *
-      Mn::Matrix4::translation(Mn::Vector3::zAxis(1.0f)).inverted();
+                                          0.1f, 10.0f),
+      Mn::Matrix4::translation(Mn::Vector3::zAxis(1.0f)).inverted());
 
   CORRADE_COMPARE(renderer.addNodeHierarchy(0, "square"), 0);
   renderer.transformations(0)[0] =
@@ -1750,10 +1753,11 @@ void GfxBatchRendererTest::multipleScenes() {
         Cr::Utility::Path::join({TEST_ASSETS, "scenes", file.first()}),
         file.second(), file.third()));
 
-  renderer.camera(0) =
+  renderer.updateCamera(
+      0,
       Mn::Matrix4::orthographicProjection(2.0f * Mn::Vector2{1.0f, 4.0f / 3.0f},
-                                          0.1f, 10.0f) *
-      Mn::Matrix4::translation(Mn::Vector3::zAxis(1.0f)).inverted();
+                                          0.1f, 10.0f),
+      Mn::Matrix4::translation(Mn::Vector3::zAxis(1.0f)).inverted());
 
   /* Scene 0 has one multi-mesh, scene 1 has two single-meshes, scene 2 is
      unused and scene 3 has a single triangle */
@@ -1784,10 +1788,13 @@ void GfxBatchRendererTest::multipleScenes() {
 
   /* Each camera is shifted differently on Y, each added mesh is shifted
      differently on X to test the right transformation is used each time */
-  renderer.camera(0) = Mn::Matrix4::translation({0.0f, 0.0f, 1.0f}).inverted();
+  const auto identity = Mn::Matrix4{Mn::Math::IdentityInit};
+  renderer.updateCamera(
+      0, identity, Mn::Matrix4::translation({0.0f, 0.0f, 1.0f}).inverted());
   renderer.transformations(0)[0] = Mn::Matrix4::translation({0.0f, 0.0f, 0.0f});
 
-  renderer.camera(1) = Mn::Matrix4::translation({0.0f, 0.5f, 1.0f}).inverted();
+  renderer.updateCamera(
+      1, identity, Mn::Matrix4::translation({0.0f, 0.5f, 1.0f}).inverted());
   renderer.transformations(1)[0] =
       Mn::Matrix4::translation({0.5f, 0.0f, 0.0f}) *
       Mn::Matrix4::scaling(Mn::Vector3{0.5f});
@@ -1795,7 +1802,8 @@ void GfxBatchRendererTest::multipleScenes() {
       Mn::Matrix4::translation({-0.5f, 1.0f, 0.0f}) *
       Mn::Matrix4::scaling(Mn::Vector3{0.5f});
 
-  renderer.camera(3) = Mn::Matrix4::translation({0.0f, -0.5f, 1.0f}).inverted();
+  renderer.updateCamera(
+      3, identity, Mn::Matrix4::translation({0.0f, -0.5f, 1.0f}).inverted());
   renderer.transformations(3)[0] =
       Mn::Matrix4::translation({0.5f, 0.0f, 0.0f}) *
       Mn::Matrix4::scaling(Mn::Vector3{0.5f});
@@ -1832,10 +1840,11 @@ void GfxBatchRendererTest::clearScene() {
         Cr::Utility::Path::join({TEST_ASSETS, "scenes", file.first()}),
         file.second(), file.third()));
 
-  renderer.camera(0) =
+  renderer.updateCamera(
+      0,
       Mn::Matrix4::orthographicProjection(2.0f * Mn::Vector2{1.0f, 4.0f / 3.0f},
-                                          0.1f, 10.0f) *
-      Mn::Matrix4::translation(Mn::Vector3::zAxis(1.0f)).inverted();
+                                          0.1f, 10.0f),
+      Mn::Matrix4::translation(Mn::Vector3::zAxis(1.0f)).inverted());
 
   /* Like in multipleScenes(), except in different order, there's more stuff
      added to scene 1 and it isn't transformed in any way */
@@ -1845,12 +1854,16 @@ void GfxBatchRendererTest::clearScene() {
   CORRADE_COMPARE(renderer.addNodeHierarchy(1, "triangle"), 4);
   CORRADE_COMPARE(renderer.addNodeHierarchy(0, "four squares"), 0);
 
-  renderer.camera(0) = Mn::Matrix4::translation({0.0f, 0.0f, 1.0f}).inverted();
+  const auto identity = Mn::Matrix4{Mn::Math::IdentityInit};
+  renderer.updateCamera(
+      0, identity, Mn::Matrix4::translation({0.0f, 0.0f, 1.0f}).inverted());
   renderer.transformations(0)[0] = Mn::Matrix4::translation({0.0f, 0.0f, 0.0f});
 
-  renderer.camera(1) = Mn::Matrix4::translation({0.0f, 0.5f, 1.0f}).inverted();
+  renderer.updateCamera(
+      1, identity, Mn::Matrix4::translation({0.0f, 0.5f, 1.0f}).inverted());
 
-  renderer.camera(3) = Mn::Matrix4::translation({0.0f, -0.5f, 1.0f}).inverted();
+  renderer.updateCamera(
+      3, identity, Mn::Matrix4::translation({0.0f, -0.5f, 1.0f}).inverted());
   renderer.transformations(3)[0] =
       Mn::Matrix4::translation({0.5f, 0.0f, 0.0f}) *
       Mn::Matrix4::scaling(Mn::Vector3{0.5f});
@@ -1910,9 +1923,10 @@ void GfxBatchRendererTest::lights() {
       Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch.gltf")));
 
   /* Undo the aspect ratio, move camera back */
-  renderer.camera(0) =
-      Mn::Matrix4::perspectiveProjection(60.0_degf, 4.0f / 3.0f, 0.1f, 10.0f) *
-      Mn::Matrix4::translation(Mn::Vector3::zAxis(5.0f)).inverted();
+  renderer.updateCamera(
+      0,
+      Mn::Matrix4::perspectiveProjection(60.0_degf, 4.0f / 3.0f, 0.1f, 10.0f),
+      Mn::Matrix4::translation(Mn::Vector3::zAxis(5.0f)).inverted());
 
   /* Add meshes, transform them in place */
   CORRADE_COMPARE(renderer.addNodeHierarchy(0, data.firstObject), 0);
@@ -1993,9 +2007,10 @@ void GfxBatchRendererTest::clearLights() {
       Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch.gltf")));
 
   /* Undo the aspect ratio, move camera back */
-  renderer.camera(0) =
-      Mn::Matrix4::perspectiveProjection(60.0_degf, 4.0f / 3.0f, 0.1f, 10.0f) *
-      Mn::Matrix4::translation(Mn::Vector3::zAxis(5.0f)).inverted();
+  renderer.updateCamera(
+      0,
+      Mn::Matrix4::perspectiveProjection(60.0_degf, 4.0f / 3.0f, 0.1f, 10.0f),
+      Mn::Matrix4::translation(Mn::Vector3::zAxis(5.0f)).inverted());
 
   /* Add the same scene as in lights() */
   CORRADE_COMPARE(renderer.addNodeHierarchy(0, "flat checkerboard sphere"), 0);
@@ -2118,10 +2133,11 @@ void GfxBatchRendererTest::imageInto() {
   /* Mostly the same as singleMesh() */
   CORRADE_VERIFY(renderer.addFile(
       Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch.gltf")));
-  renderer.camera(0) =
+  renderer.updateCamera(
+      0,
       Mn::Matrix4::orthographicProjection(2.0f * Mn::Vector2{4.0f / 3.0f, 1.0f},
-                                          0.1f, 10.0f) *
-      Mn::Matrix4::translation(Mn::Vector3::zAxis(1.0f)).inverted();
+                                          0.1f, 10.0f),
+      Mn::Matrix4::translation(Mn::Vector3::zAxis(1.0f)).inverted());
   renderer.addNodeHierarchy(0, "square",
                             Mn::Matrix4::scaling(Mn::Vector3{0.8f}));
   renderer.draw();
@@ -2156,6 +2172,79 @@ void GfxBatchRendererTest::imageInto() {
   CORRADE_COMPARE(depth.pixels<Mn::Float>()[64][48], 0.0909091f);
 }
 
+void GfxBatchRendererTest::depthUnprojection() {
+  constexpr Mn::Vector2i tileCount{2, 2};
+  constexpr float near = 0.001f;
+  constexpr float far = 10.0f;
+  constexpr Mn::Vector2i tileSize(64, 64);
+
+  // clang-format off
+  esp::gfx_batch::RendererStandalone renderer{
+      esp::gfx_batch::RendererConfiguration{}
+          .setTileSizeCount(tileSize, tileCount),
+      esp::gfx_batch::RendererStandaloneConfiguration{}
+          .setFlags(esp::gfx_batch::RendererStandaloneFlag::QuietLog)
+  };
+  // clang-format on
+
+  CORRADE_VERIFY(renderer.addFile(
+      Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch.gltf")));
+
+  // Place environment cameras at various distances from origin.
+  const auto& projection =
+      Mn::Matrix4::perspectiveProjection(60.0_degf, 1.0f, near, far);
+  renderer.updateCamera(
+      0, projection,
+      Mn::Matrix4::translation(Mn::Vector3::zAxis(2.5f)).inverted());
+  renderer.updateCamera(
+      1, projection,
+      Mn::Matrix4::translation(Mn::Vector3::zAxis(5.0f)).inverted());
+  renderer.updateCamera(
+      2, projection,
+      Mn::Matrix4::translation(Mn::Vector3::zAxis(7.5f)).inverted());
+  renderer.updateCamera(
+      3, projection,
+      Mn::Matrix4::translation(Mn::Vector3::zAxis(20.0f)).inverted());
+
+  // Spawn a plane in each environment, at origin, facing the camera.
+  CORRADE_VERIFY(renderer.hasNodeHierarchy("square"));
+  for (int i = 0; i < tileCount.product(); ++i) {
+    CORRADE_COMPARE(renderer.addNodeHierarchy(i, "square"), 0);
+  }
+
+  // Render.
+  renderer.draw();
+  Mn::Image2D depth = renderer.depthImage();
+  MAGNUM_VERIFY_NO_GL_ERROR();
+
+  // Unproject each scene.
+  for (int y = 0; y != tileCount.y(); ++y) {
+    for (int x = 0; x != tileCount.x(); ++x) {
+      const std::size_t sceneId = y * tileCount.x() + x;
+      const Mn::Containers::Size2D offset(x * tileSize.x(), y * tileSize.y());
+      const Mn::Containers::Size2D size(tileSize.x(), tileSize.y());
+      esp::gfx_batch::unprojectDepth(
+          renderer.cameraDepthUnprojection(sceneId),
+          depth.pixels<Mn::Float>().sliceSize(offset, size));
+    }
+  }
+
+  // Unprojected depth should read the distance between the cameras and the
+  // plane, in meters. For each environment, the center pixel is compared with
+  // the camera distance from origin.
+  // Target 0 is at 2.5 meters from the camera
+  CORRADE_COMPARE_WITH(depth.pixels<Mn::Float>()[32][32], 2.5f,
+                       Corrade::TestSuite::Compare::around(0.01f));
+  // Target 1 is at 5.0 meters from the camera
+  CORRADE_COMPARE_WITH(depth.pixels<Mn::Float>()[32][96], 5.0f,
+                       Corrade::TestSuite::Compare::around(0.01f));
+  // Target 2 is at 7.5 meters from the camera
+  CORRADE_COMPARE_WITH(depth.pixels<Mn::Float>()[96][32], 7.5f,
+                       Corrade::TestSuite::Compare::around(0.01f));
+  // Target 3 is beyond the far plane. Here, unprojected depth is set to 0.
+  CORRADE_COMPARE(depth.pixels<Mn::Float>()[96][96], 0.0f);
+}
+
 void GfxBatchRendererTest::cudaInterop() {
 #ifndef ESP_BUILD_WITH_CUDA
   CORRADE_SKIP("ESP_BUILD_WITH_CUDA is not enabled");
@@ -2186,10 +2275,11 @@ void GfxBatchRendererTest::cudaInterop() {
   /* Mostly the same as singleMesh() */
   CORRADE_VERIFY(renderer.addFile(
       Cr::Utility::Path::join(TEST_ASSETS, "scenes/batch.gltf")));
-  renderer.camera(0) =
+  renderer.updateCamera(
+      0,
       Mn::Matrix4::orthographicProjection(2.0f * Mn::Vector2{4.0f / 3.0f, 1.0f},
-                                          0.1f, 10.0f) *
-      Mn::Matrix4::translation(Mn::Vector3::zAxis(1.0f)).inverted();
+                                          0.1f, 10.0f),
+      Mn::Matrix4::translation(Mn::Vector3::zAxis(1.0f)).inverted());
   renderer.addNodeHierarchy(0, "square");
   renderer.transformations(0)[0] = Mn::Matrix4::scaling(Mn::Vector3{0.8f});
   renderer.draw();

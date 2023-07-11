@@ -33,7 +33,7 @@
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/MeshTools/Concatenate.h>
 #include <Magnum/MeshTools/Copy.h>
-#include <Magnum/MeshTools/FilterAttributes.h>
+#include <Magnum/MeshTools/Filter.h>
 #include <Magnum/MeshTools/Interleave.h>
 #include <Magnum/MeshTools/RemoveDuplicates.h>
 #include <Magnum/MeshTools/Transform.h>
@@ -81,12 +81,6 @@
 #include "GenericSemanticMeshData.h"
 #include "MeshData.h"
 
-#ifdef ESP_BUILD_PTEX_SUPPORT
-#include "PTexMeshData.h"
-#include "esp/gfx/PTexMeshDrawable.h"
-#include "esp/gfx/PTexMeshShader.h"
-#endif
-
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 
@@ -116,23 +110,13 @@ ResourceManager::ResourceManager(
       importerManager_("nonexistent")
 #endif
 {
-#ifdef ESP_BUILD_WITH_VHACD
-  // Destructor is protected, using Clean() and Release() to destruct interface
-  // (this is how it is used VHACD examples.)
-  interfaceVHACD = VHACD::CreateVHACD();
-#endif
   initDefaultLightSetups();
   initDefaultMaterials();
   // appropriately configure importerManager_ based on compilation flags
   buildImporters();
 }
 
-ResourceManager::~ResourceManager() {
-#ifdef ESP_BUILD_WITH_VHACD
-  interfaceVHACD->Clean();
-  interfaceVHACD->Release();
-#endif
-}
+ResourceManager::~ResourceManager() = default;
 
 void ResourceManager::buildImporters() {
   // Preferred plugins, Basis target GPU format
@@ -313,9 +297,10 @@ bool ResourceManager::loadSemanticSceneDescriptor(
     bool success = false;
     // semantic scene descriptor might not exist
     semanticScene_ = scene::SemanticScene::create();
-    ESP_DEBUG() << "SceneInstance :" << activeSceneName
-                << "proposed Semantic Scene Descriptor filename :"
-                << ssdFilename;
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << "SceneInstance : `" << activeSceneName
+        << "` proposed Semantic Scene Descriptor filename : `" << ssdFilename
+        << "`.";
 
     bool fileExists = FileUtil::exists(ssdFilename);
     if (fileExists) {
@@ -324,14 +309,16 @@ bool ResourceManager::loadSemanticSceneDescriptor(
       success = scene::SemanticScene::loadSemanticSceneDescriptor(
           ssdFilename, *semanticScene_);
       if (success) {
-        ESP_DEBUG() << "SSD with SceneInstanceAttributes-provided name "
-                    << ssdFilename << "successfully found and loaded";
+        ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+            << "SSD with SceneInstanceAttributes-provided name `" << ssdFilename
+            << "` successfully found and loaded.";
       } else {
         // here if provided file exists but does not correspond to appropriate
         // SSD
-        ESP_ERROR() << "SSD Load Failure! File with "
-                       "SceneInstanceAttributes-provided name "
-                    << ssdFilename << "exists but was unable to be loaded.";
+        ESP_ERROR(Mn::Debug::Flag::NoSpace)
+            << "SSD Load Failure! File with "
+               "SceneInstanceAttributes-provided name `"
+            << ssdFilename << "` exists but failed to load.";
       }
       return success;
       // if not success then try to construct a name
@@ -346,25 +333,27 @@ bool ResourceManager::loadSemanticSceneDescriptor(
         success = scene::SemanticScene::loadReplicaHouse(constructedFilename,
                                                          *semanticScene_);
         if (success) {
-          ESP_DEBUG() << "SSD for Replica using constructed file :"
-                      << constructedFilename << "in directory with"
-                      << ssdFilename << "loaded successfully";
+          ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+              << "SSD for Replica using constructed file : `"
+              << constructedFilename << "` in directory with `" << ssdFilename
+              << "` loaded successfully";
         } else {
           // here if constructed file exists but does not correspond to
           // appropriate SSD or some loading error occurred.
-          ESP_ERROR() << "SSD Load Failure! Replica file with constructed name "
-                      << ssdFilename << "exists but was unable to be loaded.";
+          ESP_ERROR(Mn::Debug::Flag::NoSpace)
+              << "SSD Load Failure! Replica file with constructed name `"
+              << ssdFilename << "` exists but failed to load.";
         }
         return success;
       } else {
         // neither provided non-empty filename nor constructed filename
         // exists. This is probably due to an incorrect naming in the
         // SceneInstanceAttributes
-        ESP_WARNING() << "SSD File Naming Issue! Neither "
-                         "SceneInstanceAttributes-provided name :"
-                      << ssdFilename
-                      << " nor constructed filename :" << constructedFilename
-                      << "exist on disk.";
+        ESP_WARNING(Mn::Debug::Flag::NoSpace)
+            << "SSD File Naming Issue! Neither "
+               "SceneInstanceAttributes-provided name : `"
+            << ssdFilename << "` nor constructed filename : `"
+            << constructedFilename << "` exist on disk.";
         return false;
       }
     }  // if given SSD file name specified exists
@@ -376,7 +365,7 @@ bool ResourceManager::loadSemanticSceneDescriptor(
 void ResourceManager::buildSemanticColorMap() {
   CORRADE_ASSERT(semanticScene_,
                  "Unable to build Semantic Color map due to no semanticScene "
-                 "being loaded.", );
+                 "existing/having been loaded.", );
 
   semanticColorMapBeingUsed_.clear();
   semanticColorAsInt_.clear();
@@ -387,7 +376,7 @@ void ResourceManager::buildSemanticColorMap() {
 
   // The color map was built with first maxSemanticID elements in proper order
   // to match provided semantic IDs (so that ID is IDX of semantic color in
-  // map).  Any overflow colors will be uniquely mapped 1-to-1 to unmapped
+  // map). Any overflow colors will be uniquely mapped 1-to-1 to unmapped
   // semantic IDs as their index.
   semanticColorMapBeingUsed_.assign(ssdClrMap.begin(), ssdClrMap.end());
   buildSemanticColorAsIntMap();
@@ -447,7 +436,8 @@ bool ResourceManager::loadStage(
     AssetInfo semanticInfo = semanticInfoIter->second;
     auto semanticStageFilename = semanticInfo.filepath;
     if (Cr::Utility::Path::exists(semanticStageFilename)) {
-      ESP_DEBUG() << "Loading Semantic Stage mesh :" << semanticStageFilename;
+      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+          << "Loading Semantic Stage mesh : `" << semanticStageFilename << "`.";
       activeSemanticSceneID = sceneManagerPtr->initSceneGraph();
 
       auto& semanticSceneGraph =
@@ -477,16 +467,19 @@ bool ResourceManager::loadStage(
       // regardless of load failure, original code still changed
       // activeSemanticSceneID_
       if (!semanticStageSuccess) {
-        ESP_ERROR() << "Semantic Stage mesh load failed.";
+        ESP_ERROR(Mn::Debug::Flag::NoSpace)
+            << "Load of Semantic Stage mesh : `" << semanticStageFilename
+            << "` failed.";
         return false;
       }
-      ESP_DEBUG() << "Semantic Stage mesh :" << semanticStageFilename
-                  << "loaded.";
+      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+          << "Semantic Stage mesh : `" << semanticStageFilename << "` loaded.";
 
-    } else if (semanticStageFilename !=
-               "") {  // semantic file name does not exist but house does
-      ESP_ERROR() << "Not loading semantic mesh with File Name :"
-                  << semanticStageFilename << "does not exist.";
+    } else if (semanticStageFilename != "") {
+      // semantic file name is not found on disk
+      ESP_ERROR(Mn::Debug::Flag::NoSpace)
+          << "Unable to load requested Semantic Stage mesh : `"
+          << semanticStageFilename << "` : File not found.";
     }
   } else {  // not wanting to create semantic mesh
     ESP_DEBUG() << "Not loading semantic mesh";
@@ -550,7 +543,7 @@ bool ResourceManager::loadStage(
                             nullptr);  // drawable group
 
       if (!collisionMeshSuccess) {
-        ESP_ERROR() << "Stage collision mesh load failed.  Aborting stage "
+        ESP_ERROR() << "Stage collision mesh load failed. Aborting stage "
                        "initialization.";
         return false;
       }
@@ -605,12 +598,6 @@ bool ResourceManager::buildMeshGroups(
       colMeshGroupSuccess = buildStageCollisionMeshGroup<GenericMeshData>(
           info.filepath, meshGroup);
     }
-#ifdef ESP_BUILD_PTEX_SUPPORT
-    else if (info.type == AssetType::FRL_PTEX_MESH) {
-      colMeshGroupSuccess =
-          buildStageCollisionMeshGroup<PTexMeshData>(info.filepath, meshGroup);
-    }
-#endif
 
     // failure during build of collision mesh group
     if (!colMeshGroupSuccess) {
@@ -649,10 +636,13 @@ ResourceManager::createStageAssetInfosFromAttributes(
       stageAttributes->getForceFlatShading()    // forceFlatShading
   };
   renderInfo.shaderTypeToUse = stageAttributes->getShaderType();
-  std::string debugStr = "Frame :";
-  Cr::Utility::formatInto(debugStr, debugStr.size(),
-                          "{} for render mesh named : {}",
-                          renderInfo.frame.toString(), renderInfo.filepath);
+  std::string debugStr{};
+  // Only construct debug string if debug logging level is enabled
+  if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::Debug)) {
+    Cr::Utility::formatInto(debugStr, debugStr.size(),
+                            "Frame : {} for Render mesh : `{}`",
+                            renderInfo.frame.toString(), renderInfo.filepath);
+  }
   resMap["render"] = renderInfo;
   if (createCollisionInfo) {
     // create collision asset info if requested
@@ -665,6 +655,13 @@ ResourceManager::createStageAssetInfosFromAttributes(
         virtualUnitToMeters,                         // virtualUnitToMeters
         true                                         // forceFlatShading
     };
+    // Only construct debug string if debug logging level is enabled
+    if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::Debug)) {
+      Cr::Utility::formatInto(debugStr, debugStr.size(),
+                              " and Collision mesh : `{}`",
+                              collisionInfo.filepath);
+    }
+
     resMap["collision"] = collisionInfo;
   }
   if (createSemanticInfo) {
@@ -694,18 +691,22 @@ ResourceManager::createStageAssetInfosFromAttributes(
     // dataset config) and if the  user has requested them (via
     // SimulatorConfiguration::useSemanticTexturesIfFound)
     semanticInfo.hasSemanticTextures = stageAttributes->useSemanticTextures();
-
-    Cr::Utility::formatInto(
-        debugStr, debugStr.size(),
-        "|{} for semantic mesh named : {} with type specified as {}|Semantic "
-        "Txtrs : {}",
-        frame.toString(), semanticInfo.filepath,
-        esp::metadata::attributes::getMeshTypeName(semanticInfo.type),
-        (semanticInfo.hasSemanticTextures ? "True" : "False"));
+    // Only construct debug string if debug logging level is enabled
+    if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::Debug)) {
+      Cr::Utility::formatInto(
+          debugStr, debugStr.size(),
+          "|{} for semantic mesh : `{}` of type `{}`|Semantic Txtrs : {}",
+          frame.toString(), semanticInfo.filepath,
+          esp::metadata::attributes::getMeshTypeName(semanticInfo.type),
+          (semanticInfo.hasSemanticTextures ? "True" : "False"));
+    }
     resMap["semantic"] = semanticInfo;
   } else {
-    Cr::Utility::formatInto(debugStr, debugStr.size(),
-                            "|No Semantic asset info specified.");
+    // Only construct debug string if debug logging level is enabled
+    if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::Debug)) {
+      Cr::Utility::formatInto(debugStr, debugStr.size(),
+                              "|No Semantic asset info specified.");
+    }
   }
   ESP_DEBUG() << debugStr;
   return resMap;
@@ -722,12 +723,12 @@ esp::geo::CoordinateFrame ResourceManager::buildFrameFromAttributes(
     const vec3f originEigen{Mn::EigenIntegration::cast<vec3f>(origin)};
     esp::geo::CoordinateFrame frame{upEigen, frontEigen, originEigen};
     return frame;
-  } else {
-    ESP_DEBUG() << "Specified frame in Attributes :" << attribName
-                << "is not orthogonal, so returning default frame.";
-    esp::geo::CoordinateFrame frame;
-    return frame;
   }
+  ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+      << "Specified frame in Attributes `" << attribName
+      << "` is not orthogonal, so returning default frame.";
+  esp::geo::CoordinateFrame frame;
+  return frame;
 }  // ResourceManager::buildFrameFromAttributes
 
 scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
@@ -743,8 +744,8 @@ scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
     // sensors.
     if (!(creation.isSemantic() && creation.isRGBD())) {
       ESP_WARNING(Mn::Debug::Flag::NoSpace)
-          << "Unsupported instance creation flags for asset ["
-          << assetInfo.filepath << "]";
+          << "Unsupported instance creation flags for asset `"
+          << assetInfo.filepath << "`.";
       return nullptr;
     }
     sceneID = activeSceneIDs[0];
@@ -754,9 +755,9 @@ scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
         // Because we have a separate semantic scene graph, we can't support a
         // static instance with both isSemantic and isRGBD.
         ESP_WARNING(Mn::Debug::Flag::NoSpace)
-            << "Unsupported instance creation flags for asset ["
+            << "Unsupported instance creation flags for asset `"
             << assetInfo.filepath
-            << "] with "
+            << "` with "
                "SimulatorConfiguration::forceSeparateSemanticSceneGraph=true.";
         return nullptr;
       }
@@ -766,9 +767,9 @@ scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
         // A separate semantic scene graph wasn't constructed, so we can't
         // support a Semantic-only (or RGBD-only) instance.
         ESP_WARNING(Mn::Debug::Flag::NoSpace)
-            << "Unsupported instance creation flags for asset ["
+            << "Unsupported instance creation flags for asset `"
             << assetInfo.filepath
-            << "] with "
+            << "` with "
                "SimulatorConfiguration::forceSeparateSemanticSceneGraph=false.";
         return nullptr;
       }
@@ -838,17 +839,17 @@ bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
     defaultInfo.overridePhongMaterial = Cr::Containers::NullOpt;
 
     if (info.type == AssetType::PRIMITIVE) {
-      ESP_DEBUG() << "Building Prim named:" << info.filepath;
+      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+          << "Building Prim named `" << info.filepath << "`.";
       buildPrimitiveAssetData(info.filepath);
       meshSuccess = true;
-    } else if (info.type == AssetType::FRL_PTEX_MESH) {
-      ESP_DEBUG() << "Loading PTEX asset named:" << info.filepath;
-      meshSuccess = loadRenderAssetPTex(defaultInfo);
     } else if (info.type == AssetType::INSTANCE_MESH) {
-      ESP_DEBUG() << "Loading Semantic Mesh asset named:" << info.filepath;
+      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+          << "Loading Semantic Mesh asset named `" << info.filepath << "`.";
       meshSuccess = loadSemanticRenderAsset(defaultInfo);
     } else if (isRenderAssetGeneral(info.type)) {
-      ESP_DEBUG() << "Loading general asset named:" << info.filepath;
+      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+          << "Loading general asset named `" << info.filepath << "`.";
       meshSuccess = loadRenderAssetGeneral(defaultInfo);
     } else {
       // loadRenderAsset doesn't yet support the requested asset type
@@ -924,21 +925,16 @@ scene::SceneNode* ResourceManager::createRenderAssetInstance(
 
   const LoadedAssetData& loadedAssetData = resourceDictIter->second;
   if (!isLightSetupCompatible(loadedAssetData, creation.lightSetupKey)) {
-    ESP_WARNING()
-        << "Instantiating render asset" << creation.filepath
-        << "with incompatible light setup, instance will not be correctly lit."
-           "For objects, please ensure 'requires lighting' is enabled in "
+    ESP_WARNING(Mn::Debug::Flag::NoSpace)
+        << "Instantiating render asset `" << creation.filepath
+        << "` with incompatible light setup, instance will not be correctly "
+           "lit. For objects, please ensure 'requires lighting' is enabled in "
            "object config file.";
   }
 
   const auto& info = loadedAssetData.assetInfo;
   scene::SceneNode* newNode = nullptr;
-  if (info.type == AssetType::FRL_PTEX_MESH) {
-    CORRADE_ASSERT(!visNodeCache,
-                   "createRenderAssetInstancePTex doesn't support this",
-                   nullptr);
-    newNode = createRenderAssetInstancePTex(creation, parent, drawables);
-  } else if (info.type == AssetType::INSTANCE_MESH) {
+  if (info.type == AssetType::INSTANCE_MESH) {
     CORRADE_ASSERT(!visNodeCache,
                    "createRenderAssetInstanceVertSemantic doesn't support this",
                    nullptr);
@@ -966,13 +962,14 @@ bool ResourceManager::loadStageInternal(
     DrawableGroup* drawables) {
   // scene mesh loading
   const std::string& filename = info.filepath;
-  ESP_DEBUG() << "Attempting to load stage" << filename << "";
+  ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+      << "Attempting to load stage" << filename << "";
   bool meshSuccess = true;
   if (filename != EMPTY_SCENE) {
     if (!Cr::Utility::Path::exists(filename)) {
       ESP_ERROR(Mn::Debug::Flag::NoSpace)
-          << "Attempting to load stage but cannot find specified asset file : '"
-          << filename << "'. Aborting.";
+          << "Attempting to load stage but cannot find specified asset file : `"
+          << filename << "`. Aborting load.";
       meshSuccess = false;
     } else {
       // load render asset if necessary
@@ -986,9 +983,10 @@ bool ResourceManager::loadStageInternal(
           // Right now, we only allow for an asset to be loaded with one
           // configuration, since generated mesh data may be invalid for a new
           // configuration
-          ESP_ERROR() << "Reloading asset" << filename
-                      << "with different configuration not currently supported."
-                      << "Asset may not be rendered correctly.";
+          ESP_ERROR(Mn::Debug::Flag::NoSpace)
+              << "Reloading asset `" << filename
+              << "` with different configuration not currently supported."
+              << "Asset may not be rendered correctly.";
         }
       }
       // create render asset instance if requested
@@ -999,8 +997,9 @@ bool ResourceManager::loadStageInternal(
       return true;
     }
   } else {
-    ESP_DEBUG() << "Loading empty scene since" << filename
-                << "specified as filename.";
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << "Loading empty scene since `" << filename
+        << "` specified as filename.";
     // EMPTY_SCENE (ie. "NONE") string indicates desire for an empty scene (no
     // scene mesh): welcome to the void
   }
@@ -1052,9 +1051,10 @@ bool ResourceManager::loadObjectMeshDataFromFile(
         objectAttributes->getOrientFront(), {0, 0, 0});
     success = loadRenderAsset(meshInfo);
     if (!success) {
-      ESP_ERROR() << "Failed to load a physical object ("
-                  << objectAttributes->getHandle() << ")'s" << meshType
-                  << "mesh from file :" << filename;
+      ESP_ERROR(Mn::Debug::Flag::NoSpace)
+          << "Failed to load a physical object `"
+          << objectAttributes->getHandle() << "`'s " << meshType
+          << " mesh from file : `" << filename << "`.";
     }
   }
   return success;
@@ -1064,37 +1064,6 @@ Mn::Range3D ResourceManager::computeMeshBB(BaseMesh* meshDataGL) {
   CollisionMeshData& meshData = meshDataGL->getCollisionMeshData();
   return Mn::Math::minmax(meshData.positions);
 }
-
-#ifdef ESP_BUILD_PTEX_SUPPORT
-void ResourceManager::computePTexMeshAbsoluteAABBs(
-    BaseMesh& baseMesh,
-    const std::vector<StaticDrawableInfo>& staticDrawableInfo) {
-  std::vector<Mn::Matrix4> absTransforms =
-      computeAbsoluteTransformations(staticDrawableInfo);
-
-  CORRADE_ASSERT(
-      absTransforms.size() == staticDrawableInfo.size(),
-      "::computePTexMeshAbsoluteAABBs: number of "
-      "transformations does not match number of drawables. Aborting.", );
-
-  // obtain the sub-meshes within the ptex mesh
-  PTexMeshData& ptexMeshData = dynamic_cast<PTexMeshData&>(baseMesh);
-  const std::vector<PTexMeshData::MeshData>& submeshes = ptexMeshData.meshes();
-
-  for (uint32_t iEntry = 0; iEntry < absTransforms.size(); ++iEntry) {
-    // convert std::vector<vec3f> to std::vector<Mn::Vector3>
-    const PTexMeshData::MeshData& submesh =
-        submeshes[staticDrawableInfo[iEntry].meshID];
-    std::vector<Mn::Vector3> pos{submesh.vbo.begin(), submesh.vbo.end()};
-
-    // transform the vertex positions to the world space
-    Mn::MeshTools::transformPointsInPlace(absTransforms[iEntry], pos);
-
-    scene::SceneNode& node = staticDrawableInfo[iEntry].node;
-    node.setAbsoluteAABB(Mn::Math::minmax(pos));
-  }
-}  // ResourceManager::computePTexMeshAbsoluteAABBs
-#endif
 
 void ResourceManager::computeGeneralMeshAbsoluteAABBs(
     const std::vector<StaticDrawableInfo>& staticDrawableInfo) {
@@ -1213,9 +1182,10 @@ void ResourceManager::buildPrimitiveAssetData(
         primTemplateHandle);
     // if still null, fail.
     if (newTemplate == nullptr) {
-      ESP_ERROR() << "Attempting to reference or build a "
-                     "primitive template from an unknown/malformed handle :"
-                  << primTemplateHandle << ".  Aborting";
+      ESP_ERROR(Mn::Debug::Flag::NoSpace)
+          << "Attempting to reference or build a "
+             "primitive template from an unknown/malformed handle : `"
+          << primTemplateHandle << "`, so aborting build.";
       return;
     }
     // we do not want a copy of the newly created template, but the actual
@@ -1227,7 +1197,8 @@ void ResourceManager::buildPrimitiveAssetData(
   // already - don't remake if so
   auto primAssetHandle = primTemplate->getHandle();
   if (resourceDict_.count(primAssetHandle) > 0) {
-    ESP_DEBUG() << "Primitive Asset exists already :" << primAssetHandle;
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << "Primitive Asset exists already : `" << primAssetHandle << "`.";
     return;
   }
 
@@ -1290,119 +1261,13 @@ void ResourceManager::buildPrimitiveAssetData(
   auto inserted =
       resourceDict_.emplace(primAssetHandle, std::move(loadedAssetData));
 
-  ESP_DEBUG() << "Primitive Asset Added : ID :" << primTemplate->getID()
-              << ": attr lib key :" << primTemplate->getHandle()
-              << "| instance class :" << primClassName
-              << "| Conf has group for this obj type :"
-              << conf.hasGroup(primClassName);
+  ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+      << "Primitive Asset Added : ID : " << primTemplate->getID()
+      << ": Attributes key : `" << primTemplate->getHandle() << "`| Class : `"
+      << primClassName << "` | Importer Conf has group for this obj type : "
+      << conf.hasGroup(primClassName);
 
 }  // ResourceManager::buildPrimitiveAssetData
-
-bool ResourceManager::loadRenderAssetPTex(const AssetInfo& info) {
-  CORRADE_INTERNAL_ASSERT(info.type == AssetType::FRL_PTEX_MESH);
-
-#ifdef ESP_BUILD_PTEX_SUPPORT
-  // if this is a new file, load it and add it to the dictionary
-  const std::string& filename = info.filepath;
-  CORRADE_INTERNAL_ASSERT(resourceDict_.count(filename) == 0);
-
-  const auto atlasDir = Cr::Utility::Path::join(
-      Cr::Utility::Path::split(filename).first(), "textures");
-
-  int index = nextMeshID_++;
-  meshes_.emplace(index, std::make_unique<PTexMeshData>());
-
-  auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_.at(index).get());
-  pTexMeshData->load(filename, atlasDir);
-
-  // update the dictionary
-  auto inserted =
-      resourceDict_.emplace(filename, LoadedAssetData{info, {index, index}});
-  MeshMetaData& meshMetaData = inserted.first->second.meshMetaData;
-  meshMetaData.root.meshIDLocal = 0;
-  meshMetaData.root.componentID = 0;
-
-  // set the root rotation to world frame upon load
-  meshMetaData.setRootFrameOrientation(info.frame);
-
-  CORRADE_ASSERT(meshMetaData.meshIndex.first == meshMetaData.meshIndex.second,
-                 "::loadRenderAssetPTex: ptex mesh is not loaded "
-                 "correctly. Aborting.",
-                 false);
-
-  return true;
-#else
-  ESP_ERROR()
-      << "PTex support not enabled. Enable the BUILD_PTEX_SUPPORT CMake "
-         "option when building.";
-  return false;
-#endif
-}  // ResourceManager::loadRenderAssetPTex
-
-scene::SceneNode* ResourceManager::createRenderAssetInstancePTex(
-    const RenderAssetInstanceCreationInfo& creation,
-    scene::SceneNode* parent,
-    DrawableGroup* drawables) {
-#ifdef ESP_BUILD_PTEX_SUPPORT
-  CORRADE_INTERNAL_ASSERT(!creation.scale);  // PTex doesn't support scale
-  CORRADE_INTERNAL_ASSERT(creation.lightSetupKey ==
-                          NO_LIGHT_KEY);  // PTex doesn't support
-                                          // lighting
-
-  const std::string& filename = creation.filepath;
-  auto resDictIter = resourceDict_.find(filename);
-  CORRADE_INTERNAL_ASSERT(resDictIter != resourceDict_.end());
-  const LoadedAssetData& loadedAssetData = resDictIter->second;
-  const MeshMetaData& metaData = getMeshMetaData(filename);
-  const auto& info = loadedAssetData.assetInfo;
-  auto indexPair = metaData.meshIndex;
-  int start = indexPair.first;
-  int end = indexPair.second;
-  std::vector<StaticDrawableInfo> staticDrawableInfo;
-
-  scene::SceneNode* instanceRoot = &parent->createChild();
-  if (getCreateRenderer()) {
-    for (int iMesh = start; iMesh <= end; ++iMesh) {
-      auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_.at(iMesh).get());
-      pTexMeshData->uploadBuffersToGPU(false);
-      for (int jSubmesh = 0; jSubmesh < pTexMeshData->getSize(); ++jSubmesh) {
-        scene::SceneNode& node = instanceRoot->createChild();
-        const quatf transform = info.frame.rotationFrameToWorld();
-        node.setRotation(Mn::Quaternion(transform));
-        node.addFeature<gfx::PTexMeshDrawable>(*pTexMeshData, jSubmesh,
-                                               shaderManager_, drawables);
-        staticDrawableInfo.emplace_back(StaticDrawableInfo{node, jSubmesh});
-      }
-    }
-  } else {
-    // don't push to gpu if not creating renderer
-    for (int iMesh = start; iMesh <= end; ++iMesh) {
-      auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_.at(iMesh).get());
-      for (int jSubmesh = 0; jSubmesh < pTexMeshData->getSize(); ++jSubmesh) {
-        scene::SceneNode& node = instanceRoot->createChild();
-        const quatf transform = info.frame.rotationFrameToWorld();
-        node.setRotation(Mn::Quaternion(transform));
-        node.addFeature<gfx::PTexMeshDrawable>(*pTexMeshData, jSubmesh,
-                                               shaderManager_, drawables);
-        staticDrawableInfo.emplace_back(StaticDrawableInfo{node, jSubmesh});
-      }
-    }
-  }
-  // we assume a ptex mesh is only used as static
-  CORRADE_INTERNAL_ASSERT(creation.isStatic());
-  CORRADE_INTERNAL_ASSERT(metaData.meshIndex.first ==
-                          metaData.meshIndex.second);
-
-  computePTexMeshAbsoluteAABBs(*meshes_.at(metaData.meshIndex.first),
-                               staticDrawableInfo);
-  return instanceRoot;
-#else
-  ESP_ERROR()
-      << "PTex support not enabled. Enable the BUILD_PTEX_SUPPORT CMake "
-         "option when building.";
-  return nullptr;
-#endif
-}  // ResourceManager::createRenderAssetInstancePTex
 
 bool ResourceManager::loadSemanticRenderAsset(const AssetInfo& info) {
   if (info.hasSemanticTextures) {
@@ -1643,74 +1508,29 @@ void ResourceManager::configureImporterManagerGLExtensions() {
     return;
 
   Mn::GL::Context& context = Mn::GL::Context::current();
+  /* This is reduced to formats that Magnum currently can Y-flip. More formats
+     will get added back with new additions to Magnum/Math/ColorBatch.h. */
 #ifdef MAGNUM_TARGET_WEBGL
   if (context.isExtensionSupported<
-          Mn::GL::Extensions::WEBGL::compressed_texture_astc>())
-#else
-  if (context.isExtensionSupported<
-          Mn::GL::Extensions::KHR::texture_compression_astc_ldr>())
-#endif
-  {
-    ESP_DEBUG() << "Importing Basis files as ASTC 4x4.";
-    metadata->configuration().setValue("format", "Astc4x4RGBA");
-  }
-#ifdef MAGNUM_TARGET_GLES
-  else if (context.isExtensionSupported<
-               Mn::GL::Extensions::EXT::texture_compression_bptc>())
-#else
-  else if (context.isExtensionSupported<
-               Mn::GL::Extensions::ARB::texture_compression_bptc>())
-#endif
-  {
-    ESP_DEBUG() << "Importing Basis files as BC7.";
-    metadata->configuration().setValue("format", "Bc7RGBA");
-  }
-#ifdef MAGNUM_TARGET_WEBGL
-  else if (context.isExtensionSupported<
-               Mn::GL::Extensions::WEBGL::compressed_texture_s3tc>())
+          Mn::GL::Extensions::WEBGL::compressed_texture_s3tc>())
 #elif defined(MAGNUM_TARGET_GLES)
-  else if (context.isExtensionSupported<
-               Mn::GL::Extensions::EXT::texture_compression_s3tc>() ||
-           context.isExtensionSupported<
-               Mn::GL::Extensions::ANGLE::texture_compression_dxt5>())
+  if (context.isExtensionSupported<
+          Mn::GL::Extensions::EXT::texture_compression_s3tc>() ||
+      context.isExtensionSupported<
+          Mn::GL::Extensions::ANGLE::texture_compression_dxt5>())
 #else
-  else if (context.isExtensionSupported<
-               Mn::GL::Extensions::EXT::texture_compression_s3tc>())
+  if (context.isExtensionSupported<
+          Mn::GL::Extensions::EXT::texture_compression_s3tc>())
 #endif
   {
     ESP_DEBUG() << "Importing Basis files as BC3.";
     metadata->configuration().setValue("format", "Bc3RGBA");
-  }
-#ifndef MAGNUM_TARGET_GLES2
-  else
-#ifndef MAGNUM_TARGET_GLES
-      if (context.isExtensionSupported<
-              Mn::GL::Extensions::ARB::ES3_compatibility>())
-#endif
-  {
-    ESP_DEBUG() << "Importing Basis files as ETC2.";
-    metadata->configuration().setValue("format", "Etc2RGBA");
-  }
-#else /* For ES2, fall back to PVRTC as ETC2 is not available */
-  else
-#ifdef MAGNUM_TARGET_WEBGL
-      if (context.isExtensionSupported<Mn::WEBGL::compressed_texture_pvrtc>())
-#else
-      if (context.isExtensionSupported<Mn::IMG::texture_compression_pvrtc>())
-#endif
-  {
-    ESP_DEBUG() << "Importing Basis files as PVRTC 4bpp.";
-    metadata->configuration().setValue("format", "PvrtcRGBA4bpp");
-  }
-#endif
-#if defined(MAGNUM_TARGET_GLES2) || !defined(MAGNUM_TARGET_GLES)
-  else /* ES3 has ETC2 always */
-  {
-    ESP_WARNING() << "No supported GPU compressed texture format detected, "
-                     "Basis images will get imported as RGBA8.";
+  } else {
+    ESP_WARNING()
+        << "No GPU compressed texture format with Y-flip support detected, "
+           "Basis images will get imported as RGBA8.";
     metadata->configuration().setValue("format", "RGBA8");
   }
-#endif
 
 }  // ResourceManager::configureImporterManagerGLExtensions
 
@@ -1949,22 +1769,22 @@ bool ResourceManager::buildTrajectoryVisualization(
     radius = .001;
   }
   if (pts.size() < 2) {
-    ESP_ERROR()
-        << "Cannot build a trajectory from fewer than 2 points. Aborting.";
+    ESP_ERROR() << "Cannot build a trajectory from fewer than 2 points, so "
+                   "trajectory build failed.";
     return false;
   }
 
-  ESP_DEBUG() << "Calling trajectoryTubeSolid to build a tube named :"
-              << trajVisName << "with" << pts.size()
-              << "points, building a tube of radius :" << radius << "using"
-              << numSegments << "circular segments and" << numInterp
-              << "interpolated points between each trajectory point.";
+  ESP_VERY_VERBOSE() << "Calling trajectoryTubeSolid to build a tube named"
+                     << trajVisName << "with tube radius" << radius << "using"
+                     << pts.size() << "points," << numSegments
+                     << "circular segments and" << numInterp
+                     << "interpolated points between each trajectory point.";
 
   // create mesh tube
   Cr::Containers::Optional<Mn::Trade::MeshData> trajTubeMesh =
       geo::buildTrajectoryTubeSolid(pts, colorVec, numSegments, radius, smooth,
                                     numInterp);
-  ESP_DEBUG() << "Successfully returned from trajectoryTubeSolid";
+  ESP_VERY_VERBOSE() << "Successfully returned from trajectoryTubeSolid";
 
   // make assetInfo
   AssetInfo info{AssetType::PRIMITIVE};
@@ -2102,18 +1922,11 @@ bool compareShaderTypeToMnMatType(const ObjectInstanceShaderType typeToCheck,
                                   const Mn::Trade::MaterialData& materialData) {
   switch (typeToCheck) {
     case ObjectInstanceShaderType::Phong: {
-      bool compRes =
-          bool(materialData.types() & Mn::Trade::MaterialType::Phong);
-      ESP_DEBUG() << "Forcing to Phong | Material currently"
-                  << (compRes ? "supports" : "does not support") << "Phong";
-      return compRes;
+      return bool(materialData.types() & Mn::Trade::MaterialType::Phong);
     }
     case ObjectInstanceShaderType::PBR: {
-      bool compRes = bool(materialData.types() &
-                          Mn::Trade::MaterialType::PbrMetallicRoughness);
-      ESP_DEBUG() << "Forcing to PBR | Material currently"
-                  << (compRes ? "supports" : "does not support") << "PBR";
-      return compRes;
+      return bool(materialData.types() &
+                  Mn::Trade::MaterialType::PbrMetallicRoughness);
     }
     default: {
       return false;
@@ -2441,6 +2254,9 @@ void ResourceManager::loadMaterials(Importer& importer,
   ObjectInstanceShaderType shaderTypeToUse =
       getMaterialShaderType(loadedAssetData.assetInfo);
 
+  const std::string shaderTypeToUseName =
+      metadata::attributes::getShaderTypeName(shaderTypeToUse);
+
   // name of asset, for debugging purposes
   const std::string assetName =
       Cr::Utility::Path::split(loadedAssetData.assetInfo.filepath).second();
@@ -2461,9 +2277,9 @@ void ResourceManager::loadMaterials(Importer& importer,
           importer.material(iMaterial);
 
       if (!materialData) {
-        ESP_ERROR() << "Material load failed for index" << iMaterial
-                    << "so skipping that material for asset" << assetName
-                    << ".";
+        ESP_ERROR(Mn::Debug::Flag::NoSpace)
+            << "Material load failed for index " << iMaterial
+            << " so skipping that material for asset `" << assetName << "`.";
         continue;
       }
       // Semantic texture-based mapping
@@ -2498,27 +2314,31 @@ void ResourceManager::loadMaterials(Importer& importer,
           importer.material(iMaterial);
 
       if (!materialData) {
-        ESP_ERROR() << "Material load failed for index" << iMaterial
-                    << "so skipping that material for asset" << assetName
-                    << ".";
+        ESP_ERROR(Mn::Debug::Flag::NoSpace)
+            << "Material load failed for index " << iMaterial
+            << " so skipping that material for asset `" << assetName << "`.";
         continue;
       }
 
       int numMaterialLayers = materialData->layerCount();
-      std::string debugStr = Cr::Utility::formatString(
-          "Idx {:.02d} has {:.02} layers:", iMaterial, numMaterialLayers);
 
-      // If we are not using the material's native shadertype, or flat (Which
-      // all materials already support), expand the Mn::Trade::MaterialData with
-      // appropriate data for all possible shadertypes
+      // If we are not using the material's native shadertype, or flat
+      // (Which all materials already support), expand the
+      // Mn::Trade::MaterialData with appropriate data for all possible
+      // shadertypes
+
+      std::string materialExpandStr = shaderTypeToUseName;
       if ((shaderTypeToUse != ObjectInstanceShaderType::Material) &&
           (shaderTypeToUse != ObjectInstanceShaderType::Flat) &&
           !(compareShaderTypeToMnMatType(shaderTypeToUse, *materialData))) {
-        Cr::Utility::formatInto(
-            debugStr, debugStr.size(),
-            "(Expanding existing materialData to support requested shaderType `"
-            "{}`) ",
-            metadata::attributes::getShaderTypeName(shaderTypeToUse));
+        // Only create this string if veryverbose logging is enabled
+        if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::Debug)) {
+          materialExpandStr = Cr::Utility::formatString(
+              "Forcing to {} shader (material requires expansion to support it "
+              "via createUniversalMaterial)",
+              shaderTypeToUseName);
+        }
+
         materialData = createUniversalMaterial(*materialData);
       }
 
@@ -2526,49 +2346,51 @@ void ResourceManager::loadMaterials(Importer& importer,
       // user-defined attributes set excluding texture pointer mappings
       Corrade::Containers::Optional<Magnum::Trade::MaterialData>
           custMaterialData;
-
+      Cr::Containers::StringView shaderBeingUsed;
       // Build based on desired shader to use
       // pbr shader spec, of material-specified and material specifies pbr
-      if (checkForPassedShaderType(
+      if ((checkForPassedShaderType(
               shaderTypeToUse, *materialData, ObjectInstanceShaderType::PBR,
-              Mn::Trade::MaterialType::PbrMetallicRoughness)) {
-        Cr::Utility::formatInto(debugStr, debugStr.size(), "PBR.");
-
+              Mn::Trade::MaterialType::PbrMetallicRoughness)) ||
+          (checkForPassedShaderType(shaderTypeToUse, *materialData,
+                                    ObjectInstanceShaderType::PBR,
+                                    Mn::Trade::MaterialType::PbrClearCoat))) {
         // Material with custom settings appropriately set for PBR material
         custMaterialData =
             buildCustomAttributePbrMaterial(*materialData, textureBaseIndex);
-
+        shaderBeingUsed = "PBR";
         // phong shader spec, of material-specified and material specifies phong
       } else if (checkForPassedShaderType(shaderTypeToUse, *materialData,
                                           ObjectInstanceShaderType::Phong,
                                           Mn::Trade::MaterialType::Phong)) {
-        Cr::Utility::formatInto(debugStr, debugStr.size(), "Phong.");
-
         // Material with custom settings appropriately set for Phong material
         custMaterialData =
             buildCustomAttributePhongMaterial(*materialData, textureBaseIndex);
-
+        shaderBeingUsed = "Phong";
         // flat shader spec or material-specified and material specifies flat
       } else if (checkForPassedShaderType(shaderTypeToUse, *materialData,
                                           ObjectInstanceShaderType::Flat,
                                           Mn::Trade::MaterialType::Flat)) {
-        Cr::Utility::formatInto(debugStr, debugStr.size(), "Flat.");
-
         // Material with custom settings appropriately set for Flat materials to
         // be used in our Phong shader
         custMaterialData =
             buildCustomAttributeFlatMaterial(*materialData, textureBaseIndex);
-
+        shaderBeingUsed = "Flat";
       } else {
         ESP_CHECK(
             false,
             Cr::Utility::formatString(
                 "Unhandled ShaderType specification : {} and/or unmanaged "
-                "type specified in material @ idx: {} for asset {}.",
-                metadata::attributes::getShaderTypeName(shaderTypeToUse),
-                iMaterial, assetName));
+                "type specified in material @ idx: {} for asset `{}`.",
+                shaderTypeToUseName, iMaterial, assetName));
       }
 
+      std::string debugStr;
+      if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::Debug)) {
+        debugStr = Cr::Utility::formatString(
+            "Idx {:.02d} has {:.02} layers| shader being used: {} for: {}.",
+            iMaterial, numMaterialLayers, shaderBeingUsed, materialExpandStr);
+      }
       // Merge all custom attribute except remapped texture pointers with
       // original material for final material. custMaterialData should never be
       // Cr::Containers::NullOpt since every non-error branch is covered.
@@ -2616,11 +2438,14 @@ void ResourceManager::loadMaterials(Importer& importer,
                   "{}{}Pointer",
                   Cr::Utility::String::lowercase(attrName.slice(0, 1)),
                   attrName.slice(1, attrName.size()));
+
               // Debug display of layer pointers
-              Cr::Utility::formatInto(debugStr, debugStr.size(),
-                                      "| txtr ptr name:{} | idx :{} Layer {}",
-                                      newAttrName, (textureBaseIndex + txtrIdx),
-                                      layerIdx);
+              if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::Debug)) {
+                Cr::Utility::formatInto(debugStr, debugStr.size(),
+                                        "| txtr ptr name:{} | idx :{} Layer {}",
+                                        newAttrName,
+                                        (textureBaseIndex + txtrIdx), layerIdx);
+              }
               arrayAppend(newAttributes,
                           {newAttrName,
                            textures_.at(textureBaseIndex + txtrIdx).get()});
@@ -2755,6 +2580,9 @@ ObjectInstanceShaderType ResourceManager::getMaterialShaderType(
   // if specified to be force-flat, then should be flat shaded, regardless of
   // material or other settings.
   if (info.forceFlatShading) {
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+        << "Asset `" << Cr::Utility::Path::split(info.filepath).second()
+        << "` is being forced to use Flat shader by configuration.";
     return ObjectInstanceShaderType::Flat;
   }
   ObjectInstanceShaderType infoSpecShaderType = info.shaderTypeToUse;
@@ -2763,10 +2591,10 @@ ObjectInstanceShaderType ResourceManager::getMaterialShaderType(
     // use the material's inherent shadertype
     infoSpecShaderType = ObjectInstanceShaderType::Material;
   }
-  ESP_DEBUG() << "Shadertype being used for file :"
-              << Cr::Utility::Path::split(info.filepath).second()
-              << "| shadertype name :"
-              << metadata::attributes::getShaderTypeName(infoSpecShaderType);
+  ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+      << "Asset `" << Cr::Utility::Path::split(info.filepath).second()
+      << "` is using shadertype `"
+      << metadata::attributes::getShaderTypeName(infoSpecShaderType) << "`.";
   return infoSpecShaderType;
 }  // ResourceManager::getMaterialShaderType
 
@@ -2902,7 +2730,7 @@ void ResourceManager::loadTextures(Importer& importer,
       auto textureData = importer.texture(iTexture);
       if (!textureData ||
           textureData->type() != Mn::Trade::TextureType::Texture2D) {
-        ESP_ERROR() << "Cannot load texture" << iTexture << "skipping";
+        ESP_ERROR() << "Cannot load texture" << iTexture << "so skipping";
         currentTexture = nullptr;
         continue;
       }
@@ -2915,7 +2743,7 @@ void ResourceManager::loadTextures(Importer& importer,
       Cr::Containers::Optional<Mn::Trade::ImageData2D> image =
           importer.image2D(textureData->image(), 0);
       if (!image) {
-        ESP_ERROR() << "Cannot load texture image, skipping";
+        ESP_ERROR() << "Cannot load semantic texture image, skipping";
         currentTexture = nullptr;
         continue;
       }
@@ -2938,7 +2766,7 @@ void ResourceManager::loadTextures(Importer& importer,
       auto textureData = importer.texture(iTexture);
       if (!textureData ||
           textureData->type() != Mn::Trade::TextureType::Texture2D) {
-        ESP_ERROR() << "Cannot load texture" << iTexture << "skipping";
+        ESP_ERROR() << "Cannot load texture" << iTexture << "so skipping";
         currentTexture = nullptr;
         continue;
       }
@@ -3047,12 +2875,11 @@ bool ResourceManager::instantiateAssetsOnDemand(
   // attributes for objects requires object rebuilding.
   if (objectAttributes->getIsDirty()) {
     CORRADE_ASSERT(
-        (ID_UNDEFINED != getObjectAttributesManager()->registerObject(
-                             objectAttributes, objectTemplateHandle)),
+        (getObjectAttributesManager()->registerObject(
+             objectAttributes, objectTemplateHandle) != ID_UNDEFINED),
         "::instantiateAssetsOnDemand : Unknown failure "
         "attempting to register modified template :"
-            << objectTemplateHandle
-            << "before asset instantiation.  Aborting. ",
+            << objectTemplateHandle << "before asset instantiation. Aborting. ",
         false);
   }
 
@@ -3071,8 +2898,8 @@ bool ResourceManager::instantiateAssetsOnDemand(
         // expected name.  should never happen
         ESP_ERROR() << "No primitive asset attributes exists with name :"
                     << renderAssetHandle
-                    << "so unable to instantiate primitive-based render "
-                       "object.  Aborting.";
+                    << "so instantiateAssetsOnDemand of primitive-based render "
+                       "object failed.";
         return false;
       }
       // build primitive asset for this object based on defined primitive
@@ -3434,8 +3261,9 @@ void ResourceManager::joinHierarchy(
             ->getCollisionMeshData();
     int lastIndex = mesh.vbo.size();
     if (meshData.primitive != Mn::MeshPrimitive::Triangles) {
-      ESP_WARNING() << "Unsupported mesh primitive in join: "
-                    << meshData.primitive << Mn::Debug::nospace << ", skipping";
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << "Unsupported mesh primitive in join: `" << meshData.primitive
+          << "` so skipping join.";
     } else {
       for (const auto& pos : meshData.positions) {
         mesh.vbo.push_back(Mn::EigenIntegration::cast<vec3f>(
@@ -3583,185 +3411,6 @@ std::unique_ptr<MeshData> ResourceManager::createJoinedSemanticCollisionMesh(
 
   return mesh;
 }
-
-#ifdef ESP_BUILD_WITH_VHACD
-bool ResourceManager::outputMeshMetaDataToObj(
-    const std::string& MeshMetaDataFile,
-    const std::string& new_filename,
-    const std::string& filepath) const {
-  bool success = Cr::Utility::Path::make(filepath);
-
-  const MeshMetaData& metaData = getMeshMetaData(MeshMetaDataFile);
-  std::string out = "# chd Mesh group \n";
-
-  // write vertex info to file
-  int numVertices = 0;
-  for (const MeshTransformNode& node : metaData.root.children) {
-    CollisionMeshData& meshData =
-        meshes_.at(node.meshIDLocal + metaData.meshIndex.first)
-            ->getCollisionMeshData();
-    for (auto& pos : meshData.positions) {
-      Mn::Utility::formatInto(out, out.size(), "{0} {1} {2} {3}{4}", "v",
-                              pos[0], pos[1], pos[2], "\n");
-      numVertices++;
-    }
-  }
-
-  Mn::Utility::formatInto(out, out.size(), "{0} {1} {2}",
-                          "# Number of vertices", numVertices, "\n\n");
-
-  // Now do second pass to write indices for each group (node)
-  int globalVertexNum = 1;
-  int numParts = 1;
-  for (const MeshTransformNode& node : metaData.root.children) {
-    CollisionMeshData& meshData =
-        meshes_.at(node.meshIDLocal + metaData.meshIndex.first)
-            ->getCollisionMeshData();
-    Mn::Utility::formatInto(out, out.size(), "{0}{1} {2}", "g part_", numParts,
-                            "mesh\n");
-    for (int ix = 0; ix < meshData.indices.size(); ix += 3) {
-      Mn::Utility::formatInto(out, out.size(), "{0} {1} {2} {3}{4}", "f",
-                              meshData.indices[ix] + globalVertexNum,
-                              meshData.indices[ix + 1] + globalVertexNum,
-                              meshData.indices[ix + 2] + globalVertexNum, "\n");
-    }
-    numParts++;
-    globalVertexNum += meshData.positions.size();
-  }
-  Cr::Utility::Path::write(Cr::Utility::Path::join(filepath, new_filename),
-                           Cr::Containers::StringView{out});
-
-  return success;
-}  // ResourceManager::outputMeshMetaDataToObj
-
-bool ResourceManager::isAssetDataRegistered(
-    const std::string& resourceName) const {
-  return (resourceDict_.count(resourceName) > 0);
-}
-
-void ResourceManager::createConvexHullDecomposition(
-    const std::string& filename,
-    const std::string& chdFilename,
-    const VHACDParameters& params,
-    const bool saveChdToObj) {
-  if (resourceDict_.count(filename) == 0) {
-    // retrieve existing, or create new, object attributes corresponding to
-    // passed filename
-    auto objAttributes =
-        getObjectAttributesManager()->getObjectCopyByHandle(filename);
-    if (objAttributes == nullptr) {
-      objAttributes =
-          getObjectAttributesManager()->createObject(filename, false);
-    }
-
-    // load/check for render MeshMetaData and load assets
-    loadObjectMeshDataFromFile(filename, objAttributes, "render", true);
-
-  }  // if no render asset exists
-
-  // get joined mesh data
-  assets::MeshData::uptr joinedMesh = assets::MeshData::create_unique();
-  joinedMesh = createJoinedCollisionMesh(filename);
-
-  // use VHACD
-  interfaceVHACD->Compute(&joinedMesh->vbo[0][0], joinedMesh->vbo.size(),
-                          &joinedMesh->ibo[0], joinedMesh->ibo.size() / 3,
-                          params);
-
-  ESP_DEBUG() << "== VHACD ran ==";
-
-  // convert convex hulls into MeshDatas, CollisionMeshDatas
-  int meshStart = meshes_.size();
-  std::vector<CollisionMeshData> collisionMeshGroup;
-  int nConvexHulls = interfaceVHACD->GetNConvexHulls();
-  ESP_DEBUG() << "Num Convex Hulls:" << nConvexHulls;
-  ESP_DEBUG() << "Resolution:" << params.m_resolution;
-  VHACD::IVHACD::ConvexHull ch{};
-  std::unique_ptr<GenericMeshData> genCHMeshData;
-  for (unsigned int p = 0; p < nConvexHulls; ++p) {
-    // for each convex hull, transfer the data to a newly created  MeshData
-    interfaceVHACD->GetConvexHull(p, ch);
-
-    std::vector<Mn::Vector3> positions;
-
-    // add the vertices
-    positions.resize(ch.m_nPoints);
-    for (size_t vix = 0; vix < ch.m_nPoints; ++vix) {
-      positions[vix] =
-          Mn::Vector3(ch.m_points[vix * 3], ch.m_points[vix * 3 + 1],
-                      ch.m_points[vix * 3 + 2]);
-    }
-
-    // add indices
-    Cr::Containers::ArrayView<const Mn::UnsignedInt> indices{
-        ch.m_triangles, ch.m_nTriangles * 3};
-
-    // create an owned MeshData
-    Cr::Containers::Optional<Mn::Trade::MeshData> CHMesh = Mn::MeshTools::copy(
-        Mn::Trade::MeshData{Mn::MeshPrimitive::Triangles,
-                            {},
-                            indices,
-                            Mn::Trade::MeshIndexData{indices},
-                            {},
-                            positions,
-                            {Mn::Trade::MeshAttributeData{
-                                Mn::Trade::MeshAttribute::Position,
-                                Cr::Containers::arrayView(positions)}}});
-
-    // Create a GenericMeshData (needsNormals_ = true and uploadBuffersToGPU
-    // in order to render the collision asset)
-    genCHMeshData = std::make_unique<GenericMeshData>(true);
-    genCHMeshData->setMeshData(*std::move(CHMesh));
-    genCHMeshData->BB = computeMeshBB(genCHMeshData.get());
-    genCHMeshData->uploadBuffersToGPU(true);
-
-    // Create CollisionMeshData and add to collisionMeshGroup vector
-    CollisionMeshData CHCollisionMesh = genCHMeshData->getCollisionMeshData();
-    collisionMeshGroup.push_back(CHCollisionMesh);
-
-    // register GenericMeshData in meshes_ dict
-    meshes_.emplace(meshes_.size(), std::move(genCHMeshData));
-  }
-  // make MeshMetaData
-  int meshEnd = meshes_.size() - 1;
-  MeshMetaData meshMetaData{meshStart, meshEnd};
-
-  // get original componentID (REVISIT)
-  int componentID = getMeshMetaData(filename).root.componentID;
-
-  // populate MeshMetaData root children
-  for (unsigned int p = 0; p < nConvexHulls; ++p) {
-    MeshTransformNode transformNode;
-    transformNode.meshIDLocal = p;
-    transformNode.componentID = componentID;
-    meshMetaData.root.children.push_back(transformNode);
-  }
-
-  // make assetInfo
-  AssetInfo info{AssetType::PRIMITIVE};
-  info.forceFlatShading = false;
-
-  // make LoadedAssetData corresponding to this asset
-  LoadedAssetData loadedAssetData{info, meshMetaData};
-
-  // Register collision mesh group
-  auto insertedCollisionMeshGroup =
-      collisionMeshGroups_.emplace(chdFilename, std::move(collisionMeshGroup));
-  // insert MeshMetaData into resourceDict_
-  auto insertedResourceDict =
-      resourceDict_.emplace(chdFilename, std::move(loadedAssetData));
-  if (saveChdToObj) {
-    std::string objDirectory = Cr::Utility::Path::join(
-        *Cr::Utility::Path::currentDirectory(), "data/VHACD_outputs");
-    std::string new_filename =
-        Cr::Utility::Path::split(
-            Cr::Utility::Path::splitExtension(chdFilename).first())
-            .second() +
-        ".obj";
-    outputMeshMetaDataToObj(chdFilename, new_filename, objDirectory);
-  }
-}
-#endif
 
 }  // namespace assets
 }  // namespace esp

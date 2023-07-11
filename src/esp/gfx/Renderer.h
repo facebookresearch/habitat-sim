@@ -174,7 +174,7 @@ class Renderer {
    * @param[in,out] helper, a helper cubemap with the same cube size, and
    * texture type (e.g., color, variance shadow map)
    * @param[in] type cubemap texture type, indicating which texture type the
-   * filtering would apply to. It can ONLY be Color, VarianceShadowMap
+   * filtering would apply to. It can ONLY be Color
    */
   void applyGaussianFiltering(CubeMap& target,
                               CubeMap& helper,

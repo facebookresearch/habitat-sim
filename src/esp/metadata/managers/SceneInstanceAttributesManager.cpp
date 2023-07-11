@@ -29,8 +29,9 @@ SceneInstanceAttributes::ptr SceneInstanceAttributesManager::createObject(
       sceneInstanceHandle, msg, registerTemplate);
 
   if (nullptr != attrs) {
-    ESP_DEBUG() << msg << "scene instance attributes created"
-                << (registerTemplate ? "and registered." : ".");
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << msg << " scene instance attributes created"
+        << (registerTemplate ? " and registered." : ".");
   }
   return attrs;
 }  // SceneInstanceAttributesManager::createObject
@@ -59,17 +60,44 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
   attribs->setTranslationOrigin(getTranslationOriginVal(jsonConfig));
 
   // Check for stage instance existence
-  if ((jsonConfig.HasMember("stage_instance")) &&
-      (jsonConfig["stage_instance"].IsObject())) {
-    attribs->setStageInstance(
-        createInstanceAttributesFromJSON(jsonConfig["stage_instance"]));
+  if (jsonConfig.HasMember("stage_instance")) {
+    if (jsonConfig["stage_instance"].IsObject()) {
+      attribs->setStageInstance(
+          createInstanceAttributesFromJSON(jsonConfig["stage_instance"]));
+    } else {
+      // stage instance exists but is not a valid JSON Object
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << "Stage instance issue in Scene Instance `" << attribsDispName
+          << "`: JSON cell `stage_instance` is not a valid JSON object.";
+    }
   } else {
-    ESP_WARNING() << "No Stage specified for scene" << attribsDispName
-                  << ", or specification error.";
+    // No stage_instance specified in SceneInstance configuration.
+    // We expect a scene instance to be present always, except for the default
+    // Scene Dataset that is empty.
+    if (attribsDispName == "default_attributes") {
+      // Default attributes is empty
+      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+          << "No Stage Instance specified in Default Scene Instance, so "
+             "setting empty/NONE Stage as Stage instance.";
+      SceneObjectInstanceAttributes::ptr instanceAttrs =
+          createEmptyInstanceAttributes("");
+      // Set to use none stage
+      instanceAttrs->setHandle("NONE");
+      attribs->setStageInstance(instanceAttrs);
+    } else {
+      // no stage instance exists in Scene Instance config JSON. This should not
+      // happen and would indicate an error in the dataset.
+      ESP_CHECK(false,
+                "No JSON cell `stage_instance` specified in Scene Instance `"
+                    << Mn::Debug::nospace << attribsDispName
+                    << Mn::Debug::nospace
+                    << "` so no Stage can be created for this Scene.");
+    }
   }
 
   // Check for object instances existence
   if (jsonConfig.HasMember("object_instances")) {
+    // object_instances tag exists
     if (jsonConfig["object_instances"].IsArray()) {
       const auto& objectArray = jsonConfig["object_instances"];
       for (rapidjson::SizeType i = 0; i < objectArray.Size(); ++i) {
@@ -77,35 +105,66 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
         if (objCell.IsObject()) {
           attribs->addObjectInstance(createInstanceAttributesFromJSON(objCell));
         } else {
-          ESP_WARNING() << "Object specification error in scene"
-                        << attribsDispName << "at idx :" << i << ".";
+          ESP_WARNING(Mn::Debug::Flag::NoSpace)
+              << "Object instance issue in Scene Instance `" << attribsDispName
+              << "` at idx : " << i
+              << " : JSON cell within `object_instances` array is not a "
+                 "valid JSON object, so skipping entry.";
         }
       }
     } else {
-      ESP_WARNING() << "No Objects specified for scene" << attribsDispName
-                    << ", or specification error.";
+      // object_instances tag exists but is not an array. should warn (perhaps
+      // error?)
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << "Object instances issue in Scene Instance `" << attribsDispName
+          << "`: JSON cell `object_instances` is not a valid JSON "
+             "array, so no object instances loaded.";
     }
+  } else {
+    // No object_instances tag exists in scene instance. Not necessarily a bad
+    // thing, not all datasets have objects
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << "No Objects specified in Scene Instance `" << attribsDispName
+        << "`: JSON cell `object_instances` does not exist.";
   }
 
   // Check for articulated object instances existence
-  if ((jsonConfig.HasMember("articulated_object_instances")) &&
-      (jsonConfig["articulated_object_instances"].IsArray())) {
-    const auto& articulatedObjArray =
-        jsonConfig["articulated_object_instances"];
-    for (rapidjson::SizeType i = 0; i < articulatedObjArray.Size(); ++i) {
-      const auto& artObjCell = articulatedObjArray[i];
+  if (jsonConfig.HasMember("articulated_object_instances")) {
+    // articulated_object_instances tag exists
+    if (jsonConfig["articulated_object_instances"].IsArray()) {
+      const auto& articulatedObjArray =
+          jsonConfig["articulated_object_instances"];
+      for (rapidjson::SizeType i = 0; i < articulatedObjArray.Size(); ++i) {
+        const auto& artObjCell = articulatedObjArray[i];
 
-      if (artObjCell.IsObject()) {
-        attribs->addArticulatedObjectInstance(
-            createAOInstanceAttributesFromJSON(artObjCell));
-      } else {
-        ESP_WARNING() << "Articulated Object specification error in scene"
-                      << attribsDispName << "at idx :" << i << ".";
+        if (artObjCell.IsObject()) {
+          attribs->addArticulatedObjectInstance(
+              createAOInstanceAttributesFromJSON(artObjCell));
+        } else {
+          ESP_WARNING(Mn::Debug::Flag::NoSpace)
+              << "Articulated Object specification error in Scene Instance `"
+              << attribsDispName << "` at idx : " << i
+              << ": JSON cell within `articulated_object_instances` array is "
+                 "not a valid JSON object, so skipping entry.";
+        }
       }
+    } else {
+      // articulated_object_instances tag exists but is not an array. should
+      // warn (perhaps error?)
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << "Articulated Object instances issue in Scene "
+             "InstanceScene Instance `"
+          << attribsDispName
+          << "`: JSON cell `articulated_object_instances` is not a valid JSON "
+             "array, so no articulated object instances loaded.";
     }
   } else {
-    ESP_WARNING() << "No Articulated Objects specified for scene"
-                  << attribsDispName << ", or specification error.";
+    // No articulated_object_instances tag exists in scene instance. Not
+    // necessarily a bad thing, not all datasets have articulated objects
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << "No Articulated Objects specified for sceneScene Instance `"
+        << attribsDispName
+        << "`: JSON cell `articulated_object_instances` does not exist.";
   }
 
   std::string dfltLighting = "";
@@ -114,8 +173,9 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
     // if "default lighting" is specified in scene json set value.
     attribs->setLightingHandle(dfltLighting);
   } else {
-    ESP_WARNING() << "No default_lighting specified for scene"
-                  << attribsDispName << ".";
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << "No default_lighting specified for Scene Instance `"
+        << attribsDispName << "`.";
   }
 
   std::string navmeshName = "";
@@ -124,8 +184,9 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
     // if "navmesh_instance" is specified in scene json set value.
     attribs->setNavmeshHandle(navmeshName);
   } else {
-    ESP_WARNING() << "No navmesh_instance specified for scene"
-                  << attribsDispName << ".";
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << "No navmesh_instance specified for Scene Instance `"
+        << attribsDispName << "`.";
   }
 
   std::string semanticDesc = "";
@@ -134,8 +195,9 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
     // if "semantic scene instance" is specified in scene json set value.
     attribs->setSemanticSceneHandle(semanticDesc);
   } else {
-    ESP_WARNING() << "No semantic_scene_instance specified for scene"
-                  << attribsDispName << ".";
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << "No semantic_scene_instance specified for Scene Instance `"
+        << attribsDispName << "`.";
   }
   // check for user defined attributes
   this->parseUserDefinedJsonVals(attribs, jsonConfig);
@@ -148,7 +210,7 @@ SceneInstanceAttributesManager::createInstanceAttributesFromJSON(
   SceneObjectInstanceAttributes::ptr instanceAttrs =
       createEmptyInstanceAttributes("");
   // populate attributes
-  this->loadAbstractObjectAttributesFromJson(instanceAttrs, jCell);
+  this->setAbstractObjectAttributesFromJson(instanceAttrs, jCell);
   return instanceAttrs;
 }  // SceneInstanceAttributesManager::createInstanceAttributesFromJSON
 
@@ -158,7 +220,7 @@ SceneInstanceAttributesManager::createAOInstanceAttributesFromJSON(
   SceneAOInstanceAttributes::ptr instanceAttrs =
       createEmptyAOInstanceAttributes("");
   // populate attributes
-  this->loadAbstractObjectAttributesFromJson(instanceAttrs, jCell);
+  this->setAbstractObjectAttributesFromJson(instanceAttrs, jCell);
 
   // only used for articulated objects
   // fixed base
@@ -228,7 +290,7 @@ SceneInstanceAttributesManager::createAOInstanceAttributesFromJSON(
 
 }  // SceneInstanceAttributesManager::createAOInstanceAttributesFromJSON
 
-void SceneInstanceAttributesManager::loadAbstractObjectAttributesFromJson(
+void SceneInstanceAttributesManager::setAbstractObjectAttributesFromJson(
     const attributes::SceneObjectInstanceAttributes::ptr& instanceAttrs,
     const io::JsonGenericValue& jCell) const {
   // template handle describing stage/object instance
@@ -306,7 +368,7 @@ void SceneInstanceAttributesManager::loadAbstractObjectAttributesFromJson(
   // check for user defined attributes
   this->parseUserDefinedJsonVals(instanceAttrs, jCell);
 
-}  // SceneInstanceAttributesManager::loadAbstractObjectAttributesFromJson
+}  // SceneInstanceAttributesManager::setAbstractObjectAttributesFromJson
 
 std::string SceneInstanceAttributesManager::getTranslationOriginVal(
     const io::JsonGenericValue& jsonDoc) const {
@@ -328,8 +390,7 @@ std::string SceneInstanceAttributesManager::getTranslationOriginVal(
           << ": translation_origin value in json :`" << tmpTransOriginVal
           << "`|`" << strToLookFor
           << "` does not map to a valid SceneInstanceTranslationOrigin "
-             "value, "
-             "so defaulting translation origin to "
+             "value, so defaulting translation origin to "
              "SceneInstanceTranslationOrigin::Unknown.";
     }
   }

@@ -24,15 +24,13 @@
 #include <Magnum/Math/Matrix4.h>
 #include <Magnum/PixelFormat.h>
 
-#include "esp/core/Esp.h"
-
 #include <sstream>
 
 // This is to import the "resources" at runtime. When the resource is
 // compiled into static library, it must be explicitly initialized via this
 // macro, and should be called *outside* of any namespace.
 static void importShaderResources() {
-  CORRADE_RESOURCE_INITIALIZE(ShaderResources)
+  CORRADE_RESOURCE_INITIALIZE(GfxShaderResources)
 }
 
 namespace Mn = Magnum;
@@ -41,13 +39,9 @@ namespace Cr = Corrade;
 namespace esp {
 namespace gfx {
 
-inline bool PbrShader::lightingIsEnabled() const {
-  return (lightCount_ != 0u || flags_ & Flag::ImageBasedLighting);
-}
-
 PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     : flags_(originalFlags), lightCount_(lightCount) {
-  if (!Cr::Utility::Resource::hasGroup("default-shaders")) {
+  if (!Cr::Utility::Resource::hasGroup("gfx-shaders")) {
     importShaderResources();
   }
 
@@ -57,9 +51,30 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   Mn::GL::Version glVersion = Mn::GL::Version::GL330;
 #endif
 
+  lightingIsEnabled_ =
+      (lightCount_ != 0u || flags_ >= Flag::ImageBasedLighting);
+
+  isTextured_ =
+      (((flags_ >= Flag::BaseColorTexture) ||
+        (flags_ >= Flag::NoneRoughnessMetallicTexture) ||
+        (flags_ >= Flag::NormalTexture) || (flags_ >= Flag::EmissiveTexture)) ||
+       // clear coat
+       ((flags_ >= Flag::ClearCoatTexture) ||
+        (flags_ >= Flag::ClearCoatRoughnessTexture) ||
+        (flags_ >= Flag::ClearCoatNormalTexture)) ||
+       // specular layer
+       ((flags_ >= Flag::SpecularLayerTexture) ||
+        (flags_ >= Flag::SpecularLayerColorTexture)) ||
+       // anisotropy - always needs texCoords to get tangentspace map
+       (flags_ >= Flag::AnisotropyLayer) ||
+       // transmission layer
+       (flags_ >= Flag::TransmissionLayerTexture) ||
+       // volume layer
+       (flags_ >= Flag::VolumeLayerThicknessTexture));
+
   // this is not the file name, but the group name in the config file
   // see Shaders.conf in the shaders folder
-  const Cr::Utility::Resource rs{"default-shaders"};
+  const Cr::Utility::Resource rs{"gfx-shaders"};
 
   Mn::GL::Shader vert{glVersion, Mn::GL::Shader::Type::Vertex};
   Mn::GL::Shader frag{glVersion, Mn::GL::Shader::Type::Fragment};
@@ -69,17 +84,14 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
       "#define ATTRIBUTE_LOCATION_POSITION {}\n", Position::Location);
   attributeLocationsStream << Cr::Utility::formatString(
       "#define ATTRIBUTE_LOCATION_NORMAL {}\n", Normal::Location);
-  if ((flags_ & Flag::NormalTexture) && (flags_ & Flag::PrecomputedTangent) &&
-      lightingIsEnabled()) {
+  if ((flags_ >= Flag::NormalTexture) && (flags_ >= Flag::PrecomputedTangent) &&
+      lightingIsEnabled_) {
     attributeLocationsStream << Cr::Utility::formatString(
         "#define ATTRIBUTE_LOCATION_TANGENT4 {}\n", Tangent4::Location);
   }
   // TODO: Occlusion texture to be added.
-  const bool isTextured = bool(
-      flags_ & (Flag::BaseColorTexture | Flag::NoneRoughnessMetallicTexture |
-                Flag::NormalTexture | Flag::EmissiveTexture));
 
-  if (isTextured) {
+  if (isTextured_) {
     attributeLocationsStream
         << Cr::Utility::formatString("#define ATTRIBUTE_LOCATION_TEXCOORD {}\n",
                                      TextureCoordinates::Location);
@@ -87,12 +99,13 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
 
   // Add macros
   vert.addSource(attributeLocationsStream.str())
-      .addSource(isTextured ? "#define TEXTURED\n" : "")
-      .addSource(flags_ & Flag::NormalTexture ? "#define NORMAL_TEXTURE\n" : "")
-      .addSource(flags_ & Flag::PrecomputedTangent
+      .addSource(isTextured_ ? "#define TEXTURED\n" : "")
+      .addSource(flags_ >= Flag::NormalTexture ? "#define NORMAL_TEXTURE\n"
+                                               : "")
+      .addSource(flags_ >= Flag::PrecomputedTangent
                      ? "#define PRECOMPUTED_TANGENT\n"
                      : "")
-      .addSource(flags_ & Flag::TextureTransformation
+      .addSource(isTextured_ && (flags_ >= Flag::TextureTransformation)
                      ? "#define TEXTURE_TRANSFORMATION\n"
                      : "")
       .addSource(rs.getString("pbr.vert"));
@@ -104,33 +117,65 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
       "#define OUTPUT_ATTRIBUTE_LOCATION_OBJECT_ID {}\n", ObjectIdOutput);
 
   frag.addSource(outputAttributeLocationsStream.str())
-      .addSource(flags_ & Flag::ShadowsVSM ? "#define SHADOWS_VSM\n" : "")
-      .addSource(isTextured ? "#define TEXTURED\n" : "")
-      .addSource(flags_ & Flag::BaseColorTexture ? "#define BASECOLOR_TEXTURE\n"
+      .addSource(isTextured_ ? "#define TEXTURED\n" : "")
+      .addSource(
+          flags_ >= Flag::BaseColorTexture ? "#define BASECOLOR_TEXTURE\n" : "")
+      .addSource(flags_ >= Flag::EmissiveTexture ? "#define EMISSIVE_TEXTURE\n"
                                                  : "")
-      .addSource(flags_ & Flag::EmissiveTexture ? "#define EMISSIVE_TEXTURE\n"
-                                                : "")
-      .addSource(flags_ & Flag::NoneRoughnessMetallicTexture
+      .addSource(flags_ >= Flag::NoneRoughnessMetallicTexture
                      ? "#define NONE_ROUGHNESS_METALLIC_TEXTURE\n"
                      : "")
-      .addSource(flags_ & Flag::NormalTexture ? "#define NORMAL_TEXTURE\n" : "")
-      .addSource(flags_ & Flag::ObjectId ? "#define OBJECT_ID\n" : "")
-      .addSource(flags_ & Flag::ClearCoatLayer ? "#define CLEAR_COAT\n" : "")
-      .addSource(flags_ & Flag::PrecomputedTangent
+      .addSource(flags_ >= Flag::NormalTexture ? "#define NORMAL_TEXTURE\n"
+                                               : "")
+      .addSource(flags_ >= Flag::ObjectId ? "#define OBJECT_ID\n" : "")
+
+      // Clearcoat layer
+      .addSource(flags_ >= Flag::ClearCoatLayer ? "#define CLEAR_COAT\n" : "")
+      .addSource(flags_ >= Flag::ClearCoatTexture
+                     ? "#define CLEAR_COAT_TEXTURE\n"
+                     : "")
+      .addSource(flags_ >= Flag::ClearCoatRoughnessTexture
+                     ? "#define CLEAR_COAT_ROUGHNESS_TEXTURE\n"
+                     : "")
+      .addSource(flags_ >= Flag::ClearCoatNormalTexture
+                     ? "#define CLEAR_COAT_NORMAL_TEXTURE\n"
+                     : "")
+
+      // Specular Layer
+      .addSource(flags_ >= Flag::SpecularLayer ? "#define SPECULAR_LAYER\n"
+                                               : "")
+      .addSource(flags_ >= Flag::SpecularLayerTexture
+                     ? "#define SPECULAR_LAYER_TEXTURE\n"
+                     : "")
+      .addSource(flags_ >= Flag::SpecularLayerColorTexture
+                     ? "#define SPECULAR_LAYER_COLOR_TEXTURE\n"
+                     : "")
+
+      // Anisotropy Layer
+      .addSource(flags_ >= Flag::AnisotropyLayer ? "#define ANISOTROPY_LAYER\n"
+                                                 : "")
+      .addSource(flags_ >= Flag::AnisotropyLayerTexture
+                     ? "#define ANISOTROPY_LAYER_TEXTURE\n"
+                     : "")
+
+      .addSource(flags_ >= Flag::PrecomputedTangent
                      ? "#define PRECOMPUTED_TANGENT\n"
                      : "")
-      .addSource(flags_ & Flag::ImageBasedLighting
+      .addSource(flags_ >= Flag::ImageBasedLighting
                      ? "#define IMAGE_BASED_LIGHTING\n"
+                       "#define TONE_MAP\n"
                      : "")
-      .addSource(flags_ & Flag::ImageBasedLighting ? "#define TONE_MAP\n" : "")
-      .addSource(flags_ & Flag::DebugDisplay ? "#define PBR_DEBUG_DISPLAY\n"
-                                             : "")
+
+      .addSource(flags_ >= Flag::DebugDisplay ? "#define PBR_DEBUG_DISPLAY\n"
+                                              : "")
       .addSource(
           Cr::Utility::formatString("#define LIGHT_COUNT {}\n", lightCount_))
-      .addSource(flags_ & Flag::ShadowsVSM
-                     ? rs.getString("shadowsVSM.glsl") + "\n"
-                     : "")
-      .addSource(rs.getString("pbrCommon.glsl") + "\n")
+      .addSource(rs.getString("pbrCommon.glsl"))
+      .addSource(rs.getString("pbrStructs.glsl"))
+      .addSource(rs.getString("pbrUniforms.glsl"))
+      .addSource(rs.getString("pbrLighting.glsl"))
+      .addSource(rs.getString("pbrBSDF.glsl"))
+      .addSource(rs.getString("pbrMaterials.glsl"))
       .addSource(rs.getString("pbr.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(vert.compile() && frag.compile());
@@ -141,109 +186,165 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
 
   // set texture binding points in the shader;
   // see PBR vertex, fragment shader code for details
-  if (lightingIsEnabled()) {
-    if (flags_ & Flag::BaseColorTexture) {
-      setUniform(uniformLocation("BaseColorTexture"),
+  if (lightingIsEnabled_) {
+    if (flags_ >= Flag::BaseColorTexture) {
+      setUniform(uniformLocation("uBaseColorTexture"),
                  pbrTextureUnitSpace::TextureUnit::BaseColor);
     }
-    if (flags_ & Flag::NoneRoughnessMetallicTexture) {
-      setUniform(uniformLocation("MetallicRoughnessTexture"),
+    if (flags_ >= Flag::NoneRoughnessMetallicTexture) {
+      setUniform(uniformLocation("uMetallicRoughnessTexture"),
                  pbrTextureUnitSpace::TextureUnit::MetallicRoughness);
     }
-    // TODO: explore the normal mapping without the precomputer tangent.
-    // see http://www.thetenthplanet.de/archives/1180
-    // also:
-    // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/data/shaders/pbr_khr.frag
-    if ((flags_ & Flag::NormalTexture) && (flags_ & Flag::PrecomputedTangent)) {
-      setUniform(uniformLocation("NormalTexture"),
+    if (flags_ >= Flag::NormalTexture) {
+      normalTextureScaleUniform_ = uniformLocation("uNormalTextureScale");
+      setUniform(uniformLocation("uNormalTexture"),
                  pbrTextureUnitSpace::TextureUnit::Normal);
     }
     // TODO occlusion texture
   }
   // emissive texture does not depend on lights
-  if (flags_ & Flag::EmissiveTexture) {
-    setUniform(uniformLocation("EmissiveTexture"),
+  if (flags_ >= Flag::EmissiveTexture) {
+    setUniform(uniformLocation("uEmissiveTexture"),
                pbrTextureUnitSpace::TextureUnit::Emissive);
   }
 
   // IBL related textures
-  if (flags_ & Flag::ImageBasedLighting) {
-    setUniform(uniformLocation("IrradianceMap"),
+  if (flags_ >= Flag::ImageBasedLighting) {
+    setUniform(uniformLocation("uIrradianceMap"),
                pbrTextureUnitSpace::TextureUnit::IrradianceMap);
-    setUniform(uniformLocation("BrdfLUT"),
+    setUniform(uniformLocation("uBrdfLUT"),
                pbrTextureUnitSpace::TextureUnit::BrdfLUT);
-    setUniform(uniformLocation("PrefilteredMap"),
+    setUniform(uniformLocation("uPrefilteredMap"),
                pbrTextureUnitSpace::TextureUnit::PrefilteredMap);
   }
 
-  // VSM shadows
-  if (flags_ & Flag::ShadowsVSM) {
-    setUniform(uniformLocation("ShadowMap[0]"),
-               pbrTextureUnitSpace::TextureUnit::ShadowMap0);
-    setUniform(uniformLocation("ShadowMap[1]"),
-               pbrTextureUnitSpace::TextureUnit::ShadowMap1);
-    setUniform(uniformLocation("ShadowMap[2]"),
-               pbrTextureUnitSpace::TextureUnit::ShadowMap2);
-  }
-
   // cache the uniform locations
-  viewMatrixUniform_ = uniformLocation("ViewMatrix");
-  modelMatrixUniform_ = uniformLocation("ModelMatrix");
-  normalMatrixUniform_ = uniformLocation("NormalMatrix");
-  projMatrixUniform_ = uniformLocation("ProjectionMatrix");
+  viewMatrixUniform_ = uniformLocation("uViewMatrix");
+  modelMatrixUniform_ = uniformLocation("uModelMatrix");
+  normalMatrixUniform_ = uniformLocation("uNormalMatrix");
+  projMatrixUniform_ = uniformLocation("uProjectionMatrix");
 
-  if (flags_ & Flag::ObjectId) {
-    objectIdUniform_ = uniformLocation("ObjectId");
+  if (flags_ >= Flag::ObjectId) {
+    objectIdUniform_ = uniformLocation("uObjectId");
   }
-  if (flags_ & Flag::TextureTransformation) {
-    textureMatrixUniform_ = uniformLocation("TextureMatrix");
+  if (isTextured_ && (flags_ >= Flag::TextureTransformation)) {
+    textureMatrixUniform_ = uniformLocation("uTextureMatrix");
   }
 
   // materials
-  baseColorUniform_ = uniformLocation("Material.baseColor");
-  roughnessUniform_ = uniformLocation("Material.roughness");
-  metallicUniform_ = uniformLocation("Material.metallic");
-  emissiveColorUniform_ = uniformLocation("Material.emissiveColor");
+  baseColorUniform_ = uniformLocation("uMaterial.baseColor");
+  roughnessUniform_ = uniformLocation("uMaterial.roughness");
+  metallicUniform_ = uniformLocation("uMaterial.metallic");
+  iorUniform_ = uniformLocation("uMaterial.ior");
+  emissiveColorUniform_ = uniformLocation("uMaterial.emissiveColor");
+
+  // clearcoat, specular and anisotropy layer data and textures
+  if (lightingIsEnabled_) {
+    if (flags_ >= Flag::ClearCoatLayer) {
+      clearCoatFactorUniform_ = uniformLocation("uClearCoat.factor");
+      clearCoatRoughnessUniform_ = uniformLocation("uClearCoat.roughness");
+      if (flags_ >= Flag::ClearCoatTexture) {
+        setUniform(uniformLocation("uClearCoatTexture"),
+                   pbrTextureUnitSpace::TextureUnit::ClearCoatFactor);
+      }
+      if (flags_ >= Flag::ClearCoatRoughnessTexture) {
+        setUniform(uniformLocation("uClearCoatRoughnessTexture"),
+                   pbrTextureUnitSpace::TextureUnit::ClearCoatRoughness);
+      }
+      if (flags_ >= Flag::ClearCoatNormalTexture) {
+        clearCoatTextureScaleUniform_ =
+            uniformLocation("uClearCoat.normalTextureScale");
+        setUniform(uniformLocation("uClearCoatNormalTexture"),
+                   pbrTextureUnitSpace::TextureUnit::ClearCoatNormal);
+      }
+    }
+    // specular layer data and textures
+    if (flags_ >= Flag::SpecularLayer) {
+      specularLayerFactorUniform_ = uniformLocation("uSpecularLayer.factor");
+      specularLayerColorFactorUniform_ =
+          uniformLocation("uSpecularLayer.colorFactor");
+      if (flags_ >= Flag::SpecularLayerTexture) {
+        setUniform(uniformLocation("uSpecularLayerTexture"),
+                   pbrTextureUnitSpace::TextureUnit::SpecularLayer);
+      }
+      if (flags_ >= Flag::SpecularLayerColorTexture) {
+        setUniform(uniformLocation("uSpecularLayerColorTexture"),
+                   pbrTextureUnitSpace::TextureUnit::SpecularLayerColor);
+      }
+    }
+
+    // anisotropy layer data and texture
+    if (flags_ >= Flag::AnisotropyLayer) {
+      anisotropyLayerFactorUniform_ =
+          uniformLocation("uAnisotropyLayer.factor");
+      anisotropyLayerDirectionUniform_ =
+          uniformLocation("uAnisotropyLayer.direction");
+      if (flags_ >= Flag::AnisotropyLayerTexture) {
+        setUniform(uniformLocation("uAnisotropyLayerTexture"),
+                   pbrTextureUnitSpace::TextureUnit::AnisotropyLayer);
+      }
+    }
+
+  }  // if lighting is enabled
 
   // lights
   if (lightCount_ != 0u) {
-    lightRangesUniform_ = uniformLocation("LightRanges");
-    lightColorsUniform_ = uniformLocation("LightColors");
-    lightDirectionsUniform_ = uniformLocation("LightDirections");
+    lightRangesUniform_ = uniformLocation("uLightRanges");
+    lightColorsUniform_ = uniformLocation("uLightColors");
+    lightDirectionsUniform_ = uniformLocation("uLightDirections");
+    // global light intensity across all direct lights
+    globalLightingIntensityUniform_ = uniformLocation("uGlobalLightIntensity");
   }
 
-  if ((flags_ & Flag::NormalTexture) && lightingIsEnabled()) {
-    normalTextureScaleUniform_ = uniformLocation("NormalTextureScale");
-  }
-
-  cameraWorldPosUniform_ = uniformLocation("CameraWorldPos");
+  cameraWorldPosUniform_ = uniformLocation("uCameraWorldPos");
 
   // IBL related uniform
-  if (flags_ & Flag::ImageBasedLighting) {
+  if (flags_ >= Flag::ImageBasedLighting) {
     prefilteredMapMipLevelsUniform_ =
-        uniformLocation("PrefilteredMapMipLevels");
+        uniformLocation("uPrefilteredMapMipLevels");
   }
 
-  // pbr equation scales
-  componentScalesUniform_ = uniformLocation("ComponentScales");
+  if ((lightCount_ != 0u) && (flags_ >= Flag::ImageBasedLighting)) {
+    // Apply scaling if -both- lights and IBL are enabled
+    // pbr equation scales - use to mix IBL and direct lighting
+    // Should never be set to 0 or will cause warnings to occur in shader
+    componentScalesUniform_ = uniformLocation("uComponentScales");
+  }
 
   // for debug info
-  if (flags_ & Flag::DebugDisplay) {
-    pbrDebugDisplayUniform_ = uniformLocation("PbrDebugDisplay");
+  if (flags_ >= Flag::DebugDisplay) {
+    pbrDebugDisplayUniform_ = uniformLocation("uPbrDebugDisplay");
   }
 
   // initialize the shader with some "reasonable defaults"
   setViewMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
   setModelMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
   setProjectionMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
-  if (lightingIsEnabled()) {
-    setBaseColor(Magnum::Color4{0.7f});
-    setRoughness(0.9f);
-    setMetallic(0.1f);
-    if (flags_ & Flag::NormalTexture) {
+  if (lightingIsEnabled_) {
+    setBaseColor(Mn::Color4{0.7f});
+    setRoughness(0.0f);
+    setMetallic(1.0f);
+    setIndexOfRefraction(1.5);
+    if (flags_ >= Flag::NormalTexture) {
       setNormalTextureScale(1.0f);
     }
     setNormalMatrix(Mn::Matrix3x3{Mn::Math::IdentityInit});
+    if (flags_ >= Flag::ClearCoatLayer) {
+      setClearCoatFactor(0.0f);
+      setClearCoatRoughness(0.0f);
+      if (flags_ >= Flag::ClearCoatNormalTexture) {
+        setClearCoatNormalTextureScale(1.0f);
+      }
+    }
+    if (flags_ >= Flag::SpecularLayer) {
+      setSpecularLayerFactor(1.0f);
+      setSpecularLayerColorFactor(Mn::Color3{1.0f});
+    }
+    if (flags_ >= Flag::AnisotropyLayer) {
+      setAnisotropyLayerFactor(0.0f);
+      // Default to 0 rotation
+      setAnisotropyLayerDirection({1.0f, 0.0f});
+    }
   }
 
   if (lightCount_ != 0u) {
@@ -257,11 +358,16 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     setLightColors(colors);
     setLightRanges(Cr::Containers::Array<Mn::Float>{Cr::DirectInit, lightCount_,
                                                     Mn::Constants::inf()});
+    // initialize global, config-driven light intensity
+    setGlobalLightIntensity(1.0f);
   }
 
-  setEmissiveColor(Magnum::Color3{0.0f});
+  setEmissiveColor(Mn::Color3{0.0f});
+
   PbrShader::PbrEquationScales scales;
-  if (flags_ & Flag::ImageBasedLighting) {
+  // Set mix if both lights and IBL are enabled
+  // Should never be 0 or will cause shader warnings
+  if ((lightCount_ != 0u) && (flags_ >= Flag::ImageBasedLighting)) {
     // These are empirical numbers. Discount the diffuse light from IBL so the
     // ambient light will not be too strong. Also keeping the IBL specular
     // component relatively low can guarantee the super glossy surface would
@@ -272,20 +378,20 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     scales.directSpecular = 0.5;
   }
   setPbrEquationScales(scales);
-  if (flags_ & Flag::DebugDisplay) {
+  if (flags_ >= Flag::DebugDisplay) {
     setDebugDisplay(PbrDebugDisplay::None);
   }
-}
+}  // constructor
 
 // Note: the texture binding points are explicitly specified above.
 // Cannot use "explicit uniform location" directly in shader since
 // it requires GL4.3 (We stick to GL4.1 for MacOS).
 PbrShader& PbrShader::bindBaseColorTexture(Mn::GL::Texture2D& texture) {
-  CORRADE_ASSERT(flags_ & Flag::BaseColorTexture,
+  CORRADE_ASSERT(flags_ >= Flag::BaseColorTexture,
                  "PbrShader::bindBaseColorTexture(): the shader was not "
                  "created with base color texture enabled",
                  *this);
-  if (lightingIsEnabled()) {
+  if (lightingIsEnabled_) {
     texture.bind(pbrTextureUnitSpace::TextureUnit::BaseColor);
   }
   return *this;
@@ -293,29 +399,29 @@ PbrShader& PbrShader::bindBaseColorTexture(Mn::GL::Texture2D& texture) {
 
 PbrShader& PbrShader::bindMetallicRoughnessTexture(Mn::GL::Texture2D& texture) {
   CORRADE_ASSERT(
-      flags_ & (Flag::NoneRoughnessMetallicTexture),
+      flags_ >= (Flag::NoneRoughnessMetallicTexture),
       "PbrShader::bindMetallicRoughnessTexture(): the shader was not "
       "created with metallicRoughness texture enabled.",
       *this);
-  if (lightingIsEnabled()) {
+  if (lightingIsEnabled_) {
     texture.bind(pbrTextureUnitSpace::TextureUnit::MetallicRoughness);
   }
   return *this;
 }
 
 PbrShader& PbrShader::bindNormalTexture(Mn::GL::Texture2D& texture) {
-  CORRADE_ASSERT(flags_ & Flag::NormalTexture,
+  CORRADE_ASSERT(flags_ >= Flag::NormalTexture,
                  "PbrShader::bindNormalTexture(): the shader was not "
                  "created with normal texture enabled",
                  *this);
-  if (lightingIsEnabled()) {
+  if (lightingIsEnabled_) {
     texture.bind(pbrTextureUnitSpace::TextureUnit::Normal);
   }
   return *this;
 }
 
 PbrShader& PbrShader::bindEmissiveTexture(Mn::GL::Texture2D& texture) {
-  CORRADE_ASSERT(flags_ & Flag::EmissiveTexture,
+  CORRADE_ASSERT(flags_ >= Flag::EmissiveTexture,
                  "PbrShader::bindEmissiveTexture(): the shader was not "
                  "created with emissive texture enabled",
                  *this);
@@ -324,8 +430,78 @@ PbrShader& PbrShader::bindEmissiveTexture(Mn::GL::Texture2D& texture) {
   return *this;
 }
 
+PbrShader& PbrShader::bindClearCoatFactorTexture(Mn::GL::Texture2D& texture) {
+  CORRADE_ASSERT(flags_ >= Flag::ClearCoatTexture,
+                 "PbrShader::bindClearCoatFactorTexture(): the shader was not "
+                 "created with clearcoat factor texture enabled",
+                 *this);
+  if (lightingIsEnabled_) {
+    texture.bind(pbrTextureUnitSpace::TextureUnit::ClearCoatFactor);
+  }
+  return *this;
+}
+
+PbrShader& PbrShader::bindClearCoatRoughnessTexture(
+    Mn::GL::Texture2D& texture) {
+  CORRADE_ASSERT(
+      flags_ >= Flag::ClearCoatRoughnessTexture,
+      "PbrShader::bindClearCoatRoughnessTexture(): the shader was not "
+      "created with clearcoat roughness texture enabled",
+      *this);
+  if (lightingIsEnabled_) {
+    texture.bind(pbrTextureUnitSpace::TextureUnit::ClearCoatRoughness);
+  }
+  return *this;
+}
+
+PbrShader& PbrShader::bindClearCoatNormalTexture(Mn::GL::Texture2D& texture) {
+  CORRADE_ASSERT(flags_ >= Flag::ClearCoatNormalTexture,
+                 "PbrShader::bindClearCoatNormalTexture(): the shader was not "
+                 "created with clearcoat normal texture enabled",
+                 *this);
+  if (lightingIsEnabled_) {
+    texture.bind(pbrTextureUnitSpace::TextureUnit::ClearCoatNormal);
+  }
+  return *this;
+}
+
+PbrShader& PbrShader::bindSpecularLayerTexture(Mn::GL::Texture2D& texture) {
+  CORRADE_ASSERT(flags_ >= Flag::SpecularLayerTexture,
+                 "PbrShader::bindSpecularLayerTexture(): the shader was not "
+                 "created with specular layer texture enabled",
+                 *this);
+  if (lightingIsEnabled_) {
+    texture.bind(pbrTextureUnitSpace::TextureUnit::SpecularLayer);
+  }
+  return *this;
+}
+
+PbrShader& PbrShader::bindSpecularLayerColorTexture(
+    Mn::GL::Texture2D& texture) {
+  CORRADE_ASSERT(
+      flags_ >= Flag::SpecularLayerColorTexture,
+      "PbrShader::bindSpecularLayerColorTexture(): the shader was not "
+      "created with specular layer color texture enabled",
+      *this);
+  if (lightingIsEnabled_) {
+    texture.bind(pbrTextureUnitSpace::TextureUnit::SpecularLayerColor);
+  }
+  return *this;
+}
+
+PbrShader& PbrShader::bindAnisotropyLayerTexture(Mn::GL::Texture2D& texture) {
+  CORRADE_ASSERT(flags_ >= Flag::AnisotropyLayerTexture,
+                 "PbrShader::bindAnisotropyLayerTexture(): the shader was not "
+                 "created with anisotropy layer texture enabled",
+                 *this);
+  if (lightingIsEnabled_) {
+    texture.bind(pbrTextureUnitSpace::TextureUnit::AnisotropyLayer);
+  }
+  return *this;
+}
+
 PbrShader& PbrShader::bindIrradianceCubeMap(Mn::GL::CubeMapTexture& texture) {
-  CORRADE_ASSERT(flags_ & Flag::ImageBasedLighting,
+  CORRADE_ASSERT(flags_ >= Flag::ImageBasedLighting,
                  "PbrShader::bindIrradianceCubeMap(): the shader was not "
                  "created with image based lighting enabled",
                  *this);
@@ -334,7 +510,7 @@ PbrShader& PbrShader::bindIrradianceCubeMap(Mn::GL::CubeMapTexture& texture) {
 }
 
 PbrShader& PbrShader::bindBrdfLUT(Mn::GL::Texture2D& texture) {
-  CORRADE_ASSERT(flags_ & Flag::ImageBasedLighting,
+  CORRADE_ASSERT(flags_ >= Flag::ImageBasedLighting,
                  "PbrShader::bindBrdfLUT(): the shader was not "
                  "created with image based lighting enabled",
                  *this);
@@ -342,25 +518,12 @@ PbrShader& PbrShader::bindBrdfLUT(Mn::GL::Texture2D& texture) {
   return *this;
 }
 
-PbrShader& PbrShader::bindPrefilteredMap(Magnum::GL::CubeMapTexture& texture) {
-  CORRADE_ASSERT(flags_ & Flag::ImageBasedLighting,
+PbrShader& PbrShader::bindPrefilteredMap(Mn::GL::CubeMapTexture& texture) {
+  CORRADE_ASSERT(flags_ >= Flag::ImageBasedLighting,
                  "PbrShader::bindPrefilteredMap(): the shader was not "
                  "created with image based lighting enabled",
                  *this);
   texture.bind(pbrTextureUnitSpace::TextureUnit::PrefilteredMap);
-  return *this;
-}
-
-PbrShader& PbrShader::bindPointShadowMap(int index,
-                                         Magnum::GL::CubeMapTexture& texture) {
-  CORRADE_ASSERT(
-      index >= 0 && index < 3,
-      "PbrShader::bindPointShadowMap(): the texture index was illegal.", *this);
-  CORRADE_ASSERT(flags_ & Flag::ShadowsVSM,
-                 "PbrShader::bindPointShadowMap(): the shader was not "
-                 "created with shadows enabled",
-                 *this);
-  texture.bind(pbrTextureUnitSpace::TextureUnit::ShadowMap0 + index);
   return *this;
 }
 
@@ -385,14 +548,14 @@ PbrShader& PbrShader::setModelMatrix(const Mn::Matrix4& matrix) {
 }
 
 PbrShader& PbrShader::setObjectId(unsigned int objectId) {
-  if (flags_ & Flag::ObjectId) {
+  if (flags_ >= Flag::ObjectId) {
     setUniform(objectIdUniform_, objectId);
   }
   return *this;
 }
 
 PbrShader& PbrShader::setPrefilteredMapMipLevels(unsigned int mipLevels) {
-  CORRADE_ASSERT(flags_ & Flag::ImageBasedLighting,
+  CORRADE_ASSERT(flags_ >= Flag::ImageBasedLighting,
                  "PbrShader::setPrefilteredMapMipLevels(): the shader was not "
                  "created with image based lighting enabled",
                  *this);
@@ -401,31 +564,88 @@ PbrShader& PbrShader::setPrefilteredMapMipLevels(unsigned int mipLevels) {
 }
 
 PbrShader& PbrShader::setBaseColor(const Mn::Color4& color) {
-  if (lightingIsEnabled()) {
+  if (lightingIsEnabled_) {
     setUniform(baseColorUniform_, color);
   }
   return *this;
 }
 
-PbrShader& PbrShader::setEmissiveColor(const Magnum::Color3& color) {
+PbrShader& PbrShader::setEmissiveColor(const Mn::Color3& color) {
   setUniform(emissiveColorUniform_, color);
   return *this;
 }
 
 PbrShader& PbrShader::setRoughness(float roughness) {
-  if (lightingIsEnabled()) {
+  if (lightingIsEnabled_) {
     setUniform(roughnessUniform_, roughness);
   }
   return *this;
 }
 
 PbrShader& PbrShader::setMetallic(float metallic) {
-  if (lightingIsEnabled()) {
+  if (lightingIsEnabled_) {
     setUniform(metallicUniform_, metallic);
   }
   return *this;
 }
 
+PbrShader& PbrShader::setIndexOfRefraction(float ior) {
+  if (lightingIsEnabled_) {
+    setUniform(iorUniform_, ior);
+  }
+  return *this;
+}
+
+PbrShader& PbrShader::setClearCoatFactor(float ccFactor) {
+  if (lightingIsEnabled_) {
+    setUniform(clearCoatFactorUniform_, ccFactor);
+  }
+  return *this;
+}
+
+PbrShader& PbrShader::setClearCoatRoughness(float ccRoughness) {
+  if (lightingIsEnabled_) {
+    setUniform(clearCoatRoughnessUniform_, ccRoughness);
+  }
+  return *this;
+}
+
+PbrShader& PbrShader::setClearCoatNormalTextureScale(float ccTextureScale) {
+  if (lightingIsEnabled_) {
+    setUniform(clearCoatTextureScaleUniform_, ccTextureScale);
+  }
+  return *this;
+}
+
+PbrShader& PbrShader::setSpecularLayerFactor(float specLayerFactor) {
+  if (lightingIsEnabled_) {
+    setUniform(specularLayerFactorUniform_, specLayerFactor);
+  }
+  return *this;
+}
+
+PbrShader& PbrShader::setAnisotropyLayerFactor(float anisoLayerFactor) {
+  if (lightingIsEnabled_) {
+    setUniform(anisotropyLayerFactorUniform_, anisoLayerFactor);
+  }
+  return *this;
+}
+
+PbrShader& PbrShader::setAnisotropyLayerDirection(
+    const Magnum::Vector2& anisoLayerDirection) {
+  if (lightingIsEnabled_) {
+    setUniform(anisotropyLayerDirectionUniform_, anisoLayerDirection);
+  }
+  return *this;
+}
+
+PbrShader& PbrShader::setSpecularLayerColorFactor(
+    const Mn::Color3& specLayerColorFactor) {
+  if (lightingIsEnabled_) {
+    setUniform(specularLayerColorFactorUniform_, specLayerColorFactor);
+  }
+  return *this;
+}
 PbrShader& PbrShader::setPbrEquationScales(const PbrEquationScales& scales) {
   Mn::Vector4 componentScales{scales.directDiffuse, scales.directSpecular,
                               scales.iblDiffuse, scales.iblSpecular};
@@ -434,7 +654,7 @@ PbrShader& PbrShader::setPbrEquationScales(const PbrEquationScales& scales) {
 }
 
 PbrShader& PbrShader::setDebugDisplay(PbrDebugDisplay index) {
-  CORRADE_ASSERT(flags_ & Flag::DebugDisplay,
+  CORRADE_ASSERT(flags_ >= Flag::DebugDisplay,
                  "PbrShader::setDebugDisplay(): the shader was not "
                  "created with DebugDisplay enabled",
                  *this);
@@ -443,19 +663,21 @@ PbrShader& PbrShader::setDebugDisplay(PbrDebugDisplay index) {
 }
 
 PbrShader& PbrShader::setCameraWorldPosition(
-    const Magnum::Vector3& cameraWorldPos) {
+    const Mn::Vector3& cameraWorldPos) {
   setUniform(cameraWorldPosUniform_, cameraWorldPos);
   return *this;
 }
 
 PbrShader& PbrShader::setTextureMatrix(const Mn::Matrix3& matrix) {
-  CORRADE_ASSERT(flags_ & Flag::TextureTransformation,
+  CORRADE_ASSERT(flags_ >= Flag::TextureTransformation,
                  "PbrShader::setTextureMatrix(): the shader was not "
                  "created with texture transformation enabled",
                  *this);
-
-  // since emissive texture may need it, so no if (lightCount_) here
-  setUniform(textureMatrixUniform_, matrix);
+  if (isTextured_) {
+    // Only required if textures are present (including emissive, which is
+    // independent of lighting)
+    setUniform(textureMatrixUniform_, matrix);
+  }
   return *this;
 }
 
@@ -529,7 +751,7 @@ PbrShader& PbrShader::setLightColor(unsigned int lightIndex,
       lightIndex < lightCount_,
       "PbrShader::setLightColor: lightIndex" << lightIndex << "is illegal.",
       *this);
-  Mn::Vector3 finalColor = intensity * PBR_LIGHT_SCALE * color;
+  Mn::Vector3 finalColor = intensity * color;
   setUniform(lightColorsUniform_ + lightIndex, finalColor);
   return *this;
 }
@@ -540,7 +762,7 @@ PbrShader& PbrShader::setLightColors(
                  "PbrShader::setLightColors(): expected"
                      << lightCount_ << "items but got" << colors.size(),
                  *this);
-  for (int i = 0; i < colors.size(); ++i) {
+  for (size_t i = 0; i < colors.size(); ++i) {
     setLightColor(i, colors[i]);
   }
   // setUniform(lightColorsUniform_, colors);
@@ -552,11 +774,11 @@ PbrShader& PbrShader::setLightColors(std::initializer_list<Mn::Color3> colors) {
 }
 
 PbrShader& PbrShader::setNormalTextureScale(float scale) {
-  CORRADE_ASSERT(flags_ & Flag::NormalTexture,
+  CORRADE_ASSERT(flags_ >= Flag::NormalTexture,
                  "PbrShader::setNormalTextureScale(): the shader was not "
                  "created with normal texture enabled",
                  *this);
-  if (lightingIsEnabled()) {
+  if (lightingIsEnabled_) {
     setUniform(normalTextureScaleUniform_, scale);
   }
   return *this;
@@ -575,6 +797,13 @@ PbrShader& PbrShader::setLightRanges(
 
 PbrShader& PbrShader::setLightRanges(std::initializer_list<float> ranges) {
   return setLightRanges(Cr::Containers::arrayView(ranges));
+}
+
+PbrShader& PbrShader::setGlobalLightIntensity(float lightIntensity) {
+  if (lightingIsEnabled_) {
+    setUniform(globalLightingIntensityUniform_, lightIntensity);
+  }
+  return *this;
 }
 
 }  // namespace gfx

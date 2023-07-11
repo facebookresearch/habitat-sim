@@ -16,11 +16,13 @@
 #  AstcImporter                 - ASTC importer
 #  BasisImageConverter          - Basis image converter
 #  BasisImporter                - Basis importer
+#  BcDecImageConverter          - BCn image decoder using bcdec
 #  DdsImporter                  - DDS importer
 #  DevIlImageImporter           - Image importer using DevIL
 #  DrFlacAudioImporter          - FLAC audio importer using dr_flac
 #  DrMp3AudioImporter           - MP3 audio importer using dr_mp3
 #  DrWavAudioImporter           - WAV audio importer using dr_wav
+#  EtcDecImageConverter         - ETC/EAC image decoder using etcdec
 #  Faad2AudioImporter           - AAC audio importer using FAAD2
 #  FreeTypeFont                 - FreeType font
 #  GlslangShaderConverter       - Glslang shader converter
@@ -162,11 +164,12 @@ mark_as_advanced(MAGNUMPLUGINS_INCLUDE_DIR)
 # components from other repositories)
 set(_MAGNUMPLUGINS_LIBRARY_COMPONENTS OpenDdl)
 set(_MAGNUMPLUGINS_PLUGIN_COMPONENTS
-    AssimpImporter AstcImporter BasisImageConverter BasisImporter DdsImporter
-    DevIlImageImporter DrFlacAudioImporter DrMp3AudioImporter
-    DrWavAudioImporter Faad2AudioImporter FreeTypeFont GlslangShaderConverter
-    GltfImporter GltfSceneConverter HarfBuzzFont IcoImporter JpegImageConverter
-    JpegImporter KtxImageConverter KtxImporter MeshOptimizerSceneConverter
+    AssimpImporter AstcImporter BasisImageConverter BasisImporter
+    BcDecImageConverter DdsImporter DevIlImageImporter DrFlacAudioImporter
+    DrMp3AudioImporter DrWavAudioImporter EtcDecImageConverter
+    Faad2AudioImporter FreeTypeFont GlslangShaderConverter GltfImporter
+    GltfSceneConverter HarfBuzzFont IcoImporter JpegImageConverter JpegImporter
+    KtxImageConverter KtxImporter MeshOptimizerSceneConverter
     MiniExrImageConverter OpenExrImageConverter OpenExrImporter
     OpenGexImporter PngImageConverter PngImporter PrimitiveImporter
     SpirvToolsShaderConverter SpngImporter StanfordImporter
@@ -344,6 +347,7 @@ foreach(_component ${MagnumPlugins_FIND_COMPONENTS})
                     INTERFACE_LINK_LIBRARIES basisu_transcoder)
             endif()
 
+        # BcDecImageConverter has no dependencies
         # CgltfImporter has no dependencies
         # DdsImporter has no dependencies
 
@@ -356,6 +360,7 @@ foreach(_component ${MagnumPlugins_FIND_COMPONENTS})
         # DrFlacAudioImporter has no dependencies
         # DrMp3AudioImporter has no dependencies
         # DrWavAudioImporter has no dependencies
+        # EtcDecImageConverter has no dependencies
 
         # Faad2AudioImporter plugin dependencies
         elseif(_component STREQUAL Faad2AudioImporter)
@@ -441,7 +446,7 @@ foreach(_component ${MagnumPlugins_FIND_COMPONENTS})
             # config if appropriate
             find_package(OpenEXR REQUIRED MODULE)
             set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
-                INTERFACE_LINK_LIBRARIES OpenEXR::IlmImf)
+                INTERFACE_LINK_LIBRARIES OpenEXR::OpenEXR)
 
         # No special setup for the OpenDdl library
         # OpenGexImporter has no dependencies

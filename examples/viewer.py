@@ -1119,9 +1119,9 @@ if __name__ == "__main__":
         help="disable physics simulation (default: False)",
     )
     parser.add_argument(
-        "--stage-requires-lighting",
+        "--use-default-lighting",
         action="store_true",
-        help="Override configured lighting to use synthetic lighting for the stage.",
+        help="Override configured lighting to use default lighting for the stage.",
     )
     parser.add_argument(
         "--ibl",
@@ -1179,6 +1179,7 @@ if __name__ == "__main__":
     sim_settings["window_width"] = args.width
     sim_settings["window_height"] = args.height
     sim_settings["pbr_image_based_lighting"] = args.ibl
+    sim_settings["default_agent_navmesh"] = False
 
     # start the application
     HabitatSimInteractiveViewer(sim_settings).exec()

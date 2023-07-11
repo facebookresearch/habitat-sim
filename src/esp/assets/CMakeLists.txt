@@ -21,10 +21,6 @@ set(
   ResourceManager.h
 )
 
-if(BUILD_PTEX_SUPPORT)
-  list(APPEND assets_SOURCES PTexMeshData.cpp PTexMeshData.h)
-endif()
-
 find_package(
   Magnum
   REQUIRED
@@ -85,10 +81,6 @@ target_link_libraries(
          MagnumPlugins::StbImageConverter
   PRIVATE geo io Magnum::MaterialTools
 )
-
-if(BUILD_WITH_VHACD)
-  target_link_libraries(assets PUBLIC vhacd)
-endif()
 
 if(BUILD_ASSIMP_SUPPORT)
   target_link_libraries(

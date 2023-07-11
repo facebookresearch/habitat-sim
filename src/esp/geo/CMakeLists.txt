@@ -10,12 +10,6 @@ add_library(
   Geo.h
   OBB.cpp
   OBB.h
-  VoxelGrid.cpp
-  VoxelGrid.h
-  VoxelUtils.cpp
-  VoxelUtils.h
-  VoxelWrapper.cpp
-  VoxelWrapper.h
 )
 
 target_link_libraries(

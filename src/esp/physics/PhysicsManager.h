@@ -631,37 +631,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   virtual void setStageRestitutionCoefficient(
       CORRADE_UNUSED const double restitutionCoefficient) {}
 
-#ifdef ESP_BUILD_WITH_VHACD
-  /** @brief Initializes a new VoxelWrapper with a boundary voxelization using
-   * VHACD's voxelization library and assigns it to a rigid body.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param resolution Represents the approximate number of voxels in the new
-   * voxelization.
-   */
-  void generateVoxelization(int physObjectID, int resolution = 1000000);
-
-  /** @brief Initializes a new VoxelWrapper with a boundary voxelization using
-   * VHACD's voxelization library and assigns it to the stage's rigid body.
-   * @param resolution Represents the approximate number of voxels in the new
-   * voxelization.
-   */
-  void generateStageVoxelization(int resolution = 1000000);
-#endif
-
-  /** @brief Gets the VoxelWrapper associated with a rigid object.
-   * @param physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @return A pointer to the object's Voxel Wrapper.
-   */
-  std::shared_ptr<esp::geo::VoxelWrapper> getObjectVoxelization(
-      int physObjectID) const;
-
-  /** @brief Gets the VoxelWrapper associated with the scene.
-   * @return A pointer to the scene's Voxel Wrapper.
-   */
-  std::shared_ptr<esp::geo::VoxelWrapper> getStageVoxelization() const;
-
   // =========== Debug functions ===========
 
   /** @brief Get the number of objects in @ref PhysicsManager::existingObjects_
@@ -678,27 +647,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @param drawBB Set rendering of the bounding box to true or false.
    */
   void setObjectBBDraw(int physObjectID, DrawableGroup* drawables, bool drawBB);
-
-  /** @brief Set the voxelization visualization for the object true or false.
-   * @param physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param gridName The voxel grid to be visualized.
-   * @param drawables The drawables group with which to render the voxelization.
-   * @param drawVoxelization Set rendering of the voxelization to true or false.
-   */
-  void setObjectVoxelizationDraw(int physObjectID,
-                                 const std::string& gridName,
-                                 DrawableGroup* drawables,
-                                 bool drawVoxelization);
-
-  /** @brief Set the voxelization visualization for the scene true or false.
-   * @param gridName The voxel grid to be visualized.
-   * @param drawables The drawables group with which to render the voxelization.
-   * @param drawVoxelization Set rendering of the voxelization to true or false.
-   */
-  void setStageVoxelizationDraw(const std::string& gridName,
-                                DrawableGroup* drawables,
-                                bool drawVoxelization);
 
   /**
    * @brief Get the root node of an object's visual SceneNode subtree.
@@ -1122,20 +1070,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
       int newObjectID,
       const esp::metadata::attributes::ObjectAttributes::ptr& objectAttributes,
       scene::SceneNode* objectNode);
-
-  /** @brief Set the voxelization visualization for a scene node to be true
-   * or false.
-   * @param gridName The name of the grid to be drawn.
-   * @param rigidBase The rigidBase of the object or scene.
-   * @param drawables The drawables group with which to render the
-   * voxelization.
-   * @param drawVoxelization Set rendering of the voxelization to true or
-   * false.
-   */
-  void setVoxelizationDraw(const std::string& gridName,
-                           RigidBase* rigidBase,
-                           DrawableGroup* drawables,
-                           bool drawVoxelization);
 
   /** @brief A reference to a @ref esp::assets::ResourceManager which holds
    * assets that can be accessed by this @ref PhysicsManager*/

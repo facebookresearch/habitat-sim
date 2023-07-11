@@ -23,8 +23,9 @@ PhysicsManagerAttributes::ptr PhysicsAttributesManager::createObject(
       physicsFilename, msg, registerTemplate);
 
   if (nullptr != attrs) {
-    ESP_DEBUG() << msg << "physics manager attributes created"
-                << (registerTemplate ? "and registered." : ".");
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << msg << " physics manager attributes created"
+        << (registerTemplate ? " and registered." : ".");
   }
   return attrs;
 }  // PhysicsAttributesManager::createObject

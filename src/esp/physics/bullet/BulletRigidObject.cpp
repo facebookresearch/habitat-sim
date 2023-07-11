@@ -262,8 +262,8 @@ void BulletRigidObject::setCollisionFromBB() {
 
 void BulletRigidObject::setMotionType(MotionType mt) {
   if (mt == MotionType::UNDEFINED) {
-    ESP_WARNING() << "Cannot set motion type "
-                     "to MotionType::UNDEFINED.  Aborting.";
+    ESP_WARNING() << "Cannot set motion type to MotionType::UNDEFINED, so "
+                     "aborting; motion type is unchanged.";
     return;
   }
   if (mt == objectMotionType_) {

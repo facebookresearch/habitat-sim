@@ -11,7 +11,6 @@
 #include "esp/gfx/PbrImageBasedLighting.h"
 #include "esp/gfx/PbrShader.h"
 #include "esp/gfx/ShaderManager.h"
-#include "esp/gfx/ShadowMapManager.h"
 namespace esp {
 namespace gfx {
 
@@ -101,7 +100,7 @@ class PbrDrawable : public Drawable {
     // KHR_materials_specular layer
 
     /**
-     * Structure holdling specular layer values
+     * Structure holding specular layer values
      */
     struct SpecularLayer {
       /**
@@ -132,7 +131,7 @@ class PbrDrawable : public Drawable {
     ///////////////
     // KHR_materials_anisotropy layer
     /**
-     * Structure holdijng anisotropy layer values
+     * Structure holding anisotropy layer values
      */
     struct AnisotropyLayer {
       /**
@@ -217,6 +216,9 @@ class PbrDrawable : public Drawable {
     } volumeLayer;
   };
 
+  /// @brief Key template for entry in shader map
+  static constexpr const char* SHADER_KEY_TEMPLATE = "PBR-lights={}-flags={}";
+
   /**
    * @brief Constructor, to create a PbrDrawable for the given object using
    * shader and mesh. Adds drawable to given group and uses provided texture,
@@ -237,29 +239,6 @@ class PbrDrawable : public Drawable {
    */
   void setLightSetup(const Mn::ResourceKey& lightSetupKey) override;
 
-  /**
-   * @brief Set the shadow map info
-   * @param[in] manager, stores the shadow maps
-   * @param[in] keys, keys to retrieve the shadow maps
-   * @param[in] shadowFlag, can only be either ShadowsPCF or ShadowsVSM
-   */
-  void setShadowData(ShadowMapManager& manager,
-                     ShadowMapKeys& keys,
-                     PbrShader::Flag shadowFlag);
-
-  static constexpr const char* SHADER_KEY_TEMPLATE = "PBR-lights={}-flags={}";
-
-  /**
-   * Set or change this drawable's @ref Magnum::Trade::MaterialData values from passed material.
-   * This is only pertinent for material-equipped drawables.
-   * @param material
-   */
-  void setMaterialValues(
-      const Mn::Resource<Mn::Trade::MaterialData, Mn::Trade::MaterialData>&
-          material) override {
-    setMaterialValuesInternal(material);
-  }
-
  private:
   /**
    * @brief Internal implementation of material setting, so that it can be
@@ -267,7 +246,8 @@ class PbrDrawable : public Drawable {
    */
   void setMaterialValuesInternal(
       const Mn::Resource<Mn::Trade::MaterialData, Mn::Trade::MaterialData>&
-          material);
+          material,
+      bool reset) override;
 
  protected:
   /**
@@ -281,7 +261,7 @@ class PbrDrawable : public Drawable {
             Mn::SceneGraph::Camera3D& camera) override;
 
   /**
-   *  @brief Update the shader so it can correcly handle the current material,
+   *  @brief Update the shader so it can correctly handle the current material,
    *         light setup
    *  @return Reference to self (for method chaining)
    */
@@ -296,7 +276,7 @@ class PbrDrawable : public Drawable {
   /**
    *  @brief Update light direction (or position) in *camera* space to the
    * shader
-   *  @param transformationMatrix describes a tansformation from object
+   *  @param transformationMatrix describes a transformation from object
    * (model) space to camera space
    *  @param camera the camera, which views and renders the world
    *  @return Reference to self (for method chaining)
@@ -329,11 +309,9 @@ class PbrDrawable : public Drawable {
    */
   const gfx::Drawable::Flags meshAttributeFlags_;
   /**
-   * Material to use to render this PBR drawawble
+   * Material to use to render this PBR drawable
    */
   Mn::Resource<Mn::Trade::MaterialData, Mn::Trade::MaterialData> materialData_;
-  ShadowMapManager* shadowMapManger_ = nullptr;
-  ShadowMapKeys* shadowMapKeys_ = nullptr;
 };
 
 }  // namespace gfx

@@ -24,8 +24,8 @@ class NodeDeletionHelper : public Magnum::SceneGraph::AbstractFeature3D {
  public:
   NodeDeletionHelper(scene::SceneNode& node_, Recorder* writer)
       : Magnum::SceneGraph::AbstractFeature3D(node_),
-        node(&node_),
-        recorder_(writer) {}
+        recorder_(writer),
+        node(&node_) {}
 
   ~NodeDeletionHelper() override {
     recorder_->onDeleteRenderAssetInstance(node);

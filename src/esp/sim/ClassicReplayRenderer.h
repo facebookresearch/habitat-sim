@@ -60,6 +60,10 @@ class ClassicReplayRenderer : public AbstractReplayRenderer {
                             const Mn::Vector2i& viewportPosition) override;
 
  private:
+  void doClose() override;
+
+  void doCloseImpl();
+
   unsigned doEnvironmentCount() const override;
 
   Magnum::Vector2i doSensorSize(unsigned envIndex) override;
@@ -74,7 +78,9 @@ class ClassicReplayRenderer : public AbstractReplayRenderer {
                                          const std::string& prefix) override;
 
   void doRender(Corrade::Containers::ArrayView<const Magnum::MutableImageView2D>
-                    imageViews) override;
+                    colorImageViews,
+                Corrade::Containers::ArrayView<const Magnum::MutableImageView2D>
+                    depthImageViews) override;
 
   void doRender(Magnum::GL::AbstractFramebuffer& framebuffer) override;
 

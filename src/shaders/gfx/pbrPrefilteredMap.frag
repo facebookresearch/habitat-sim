@@ -15,8 +15,6 @@ uniform float Roughness;
 layout(location = OUTPUT_ATTRIBUTE_LOCATION_COLOR) out highp vec4 fragmentColor;
 
 // ------------ shader -----------------------
-// PI is defined in the pbrCommon.glsl
-const float TWO_PI = 2.0 * PI;
 
 // Compute a halfway vector that is biased towards the preferred alignment
 // direction (importance sampling). The implementation is based on: Křivánek J,
@@ -67,8 +65,8 @@ void main() {
   float imageSize = float(textureSize(EnvironmentMap, 0).s);
   // solid angle of 1 pixel across all cube faces
   float solidAnglePixel = 4.0 * PI / (6.0 * imageSize * imageSize);
-
-  const uint sampleCounts = 4096u;
+  // fewer samples due to filtered importance sampling
+  const uint sampleCounts = 32u;
   float invSampleCounts = 1.0f / float(sampleCounts);
 
   for (uint iPoint = 0u; iPoint < sampleCounts; ++iPoint) {
@@ -80,12 +78,11 @@ void main() {
     float n_dot_l = clamp(dot(normal, l), 0.0, 1.0);
     if (n_dot_l > 0.0) {
       float n_dot_h = clamp(dot(normal, h), 0.0, 1.0);
-      float v_dot_h = clamp(dot(v, h), 0.0, 1.0);
+      float v_dot_h = clamp(dot(v, h), 0.00001, 1.0);
 
       // Probability Distribution Function
-      float pdf = normalDistributionGGX(n_dot_h, Roughness) * n_dot_h /
-                      (4.0 * v_dot_h) +
-                  0.0001;
+      float pdf =
+          normalDistributionGGX(n_dot_h, Roughness) * n_dot_h / (4.0 * v_dot_h);
 
       // Solid angle for the current sample point
       float solidAngle = invSampleCounts / pdf;

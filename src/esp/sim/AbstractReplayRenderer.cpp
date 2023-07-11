@@ -4,9 +4,6 @@
 
 #include "AbstractReplayRenderer.h"
 
-#include <Magnum/Math/Functions.h>
-#include <Magnum/Math/Vector2.h>
-
 #include "esp/gfx/replay/Player.h"
 
 namespace esp {
@@ -34,6 +31,10 @@ Mn::Vector2i AbstractReplayRenderer::environmentGridSize(
 }
 
 AbstractReplayRenderer::~AbstractReplayRenderer() = default;
+
+void AbstractReplayRenderer::close() {
+  doClose();
+}
 
 void AbstractReplayRenderer::preloadFile(Cr::Containers::StringView filename) {
   doPreloadFile(filename);
@@ -91,12 +92,21 @@ void AbstractReplayRenderer::setSensorTransformsFromKeyframe(
 }
 
 void AbstractReplayRenderer::render(
-    Cr::Containers::ArrayView<const Mn::MutableImageView2D> imageViews) {
-  CORRADE_ASSERT(imageViews.size() == doEnvironmentCount(),
-                 "ReplayRenderer::render(): expected" << doEnvironmentCount()
-                                                      << "image views but got"
-                                                      << imageViews.size(), );
-  return doRender(imageViews);
+    Cr::Containers::ArrayView<const Mn::MutableImageView2D> colorImageViews,
+    Cr::Containers::ArrayView<const Mn::MutableImageView2D> depthImageViews) {
+  if (colorImageViews.size() > 0) {
+    ESP_CHECK(colorImageViews.size() == doEnvironmentCount(),
+              "ReplayRenderer::render(): expected"
+                  << doEnvironmentCount() << "color image views but got"
+                  << colorImageViews.size());
+  }
+  if (depthImageViews.size() > 0) {
+    ESP_CHECK(depthImageViews.size() == doEnvironmentCount(),
+              "ReplayRenderer::render(): expected"
+                  << doEnvironmentCount() << "depth image views but got"
+                  << depthImageViews.size());
+  }
+  return doRender(colorImageViews, depthImageViews);
 }
 
 void AbstractReplayRenderer::render(
