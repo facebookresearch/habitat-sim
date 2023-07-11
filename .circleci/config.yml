@@ -400,6 +400,7 @@ jobs:
       - run: &download_test_data
           name: Download test data
           command: |
+              sudo apt install git-lfs
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat;
               git lfs install
@@ -428,7 +429,6 @@ jobs:
                   texlive-latex-extra \
                   texlive-fonts-extra \
                   texlive-fonts-recommended \
-                  git
 
               # Rebuild with all options enabled
               ./build.sh --with-cuda --with-bullet
