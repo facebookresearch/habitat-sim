@@ -60,8 +60,6 @@ set(
   PbrPrecomputedMapShader.cpp
   PbrPrecomputedMapShader.h
   PbrTextureUnit.h
-  DepthMapDrawableBase.cpp
-  DepthMapDrawableBase.h
   GaussianFilterShader.h
   GaussianFilterShader.cpp
 )
