@@ -34,6 +34,7 @@ struct PhongMaterialColor;
 }
 namespace gfx {
 class Drawable;
+class DrawableConfiguration;
 class PbrImageBasedLighting;
 struct SkinData;
 struct InstanceSkinData;
@@ -421,14 +422,15 @@ class ResourceManager {
    * gfx::Drawable.
    */
 
-  void createDrawable(
-      Mn::GL::Mesh* mesh,
-      gfx::Drawable::Flags& meshAttributeFlags,
-      scene::SceneNode& node,
-      const Mn::ResourceKey& lightSetupKey,
-      const Mn::ResourceKey& materialKey,
-      DrawableGroup* group = nullptr,
-      const std::shared_ptr<gfx::InstanceSkinData>& skinData = nullptr);
+  void createDrawable(Mn::GL::Mesh* mesh,
+                      gfx::Drawable::Flags& meshAttributeFlags,
+                      scene::SceneNode& node,
+                      gfx::DrawableConfiguration& drawableCfg);
+
+  // const Mn::ResourceKey& lightSetupKey,
+  // const Mn::ResourceKey& materialKey,
+  // DrawableGroup* group = nullptr,
+  // const std::shared_ptr<gfx::InstanceSkinData>& skinData = nullptr);
 
   /**
    * @brief Remove the specified primitive mesh.
@@ -1235,7 +1237,7 @@ class ResourceManager {
    * an environment map, an irradiance map, a BRDF lookup table (2D texture),
    * and a pre-filtered map
    */
-  std::vector<std::unique_ptr<esp::gfx::PbrImageBasedLighting>>
+  std::vector<std::shared_ptr<esp::gfx::PbrImageBasedLighting>>
       pbrImageBasedLightings_;
 
   int activePbrIbl_ = ID_UNDEFINED;

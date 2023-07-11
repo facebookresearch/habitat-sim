@@ -16,6 +16,8 @@ set(
   CubeMap.h
   Drawable.cpp
   Drawable.h
+  DrawableConfiguration.cpp
+  DrawableConfiguration.h
   DrawableGroup.cpp
   DrawableGroup.h
   GenericDrawable.cpp

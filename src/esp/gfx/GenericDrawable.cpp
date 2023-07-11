@@ -23,24 +23,20 @@ namespace Mn = Magnum;
 namespace esp {
 namespace gfx {
 
-GenericDrawable::GenericDrawable(
-    scene::SceneNode& node,
-    Mn::GL::Mesh* mesh,
-    Drawable::Flags& meshAttributeFlags,
-    ShaderManager& shaderManager,
-    const Mn::ResourceKey& lightSetupKey,
-    const Mn::ResourceKey& materialDataKey,
-    DrawableGroup* group /* = nullptr */,
-    const std::shared_ptr<InstanceSkinData>& skinData /* = nullptr */)
-    : Drawable{node, mesh, DrawableType::Generic, group},
+GenericDrawable::GenericDrawable(scene::SceneNode& node,
+                                 Mn::GL::Mesh* mesh,
+                                 Drawable::Flags& meshAttributeFlags,
+                                 ShaderManager& shaderManager,
+                                 DrawableConfiguration& cfg)
+    : Drawable{node, mesh, DrawableType::Generic, cfg.group_},
       shaderManager_{shaderManager},
-      lightSetup_{shaderManager.get<LightSetup>(lightSetupKey)},
-      skinData_(skinData),
+      lightSetup_{shaderManager.get<LightSetup>(cfg.lightSetupKey_)},
+      skinData_(cfg.getSkinData()),
       jointTransformations_(),
       meshAttributeFlags_{meshAttributeFlags} {
   resetMaterialValues(
       shaderManager.get<Mn::Trade::MaterialData, Mn::Trade::MaterialData>(
-          materialDataKey));
+          cfg.materialDataKey_));
 
   // update the shader early here to to avoid doing it during the render loop
   if (glMeshExists()) {

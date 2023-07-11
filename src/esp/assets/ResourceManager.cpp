@@ -59,6 +59,7 @@
 #include "esp/assets/MeshMetaData.h"
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/geo/Geo.h"
+#include "esp/gfx/DrawableConfiguration.h"
 #include "esp/gfx/GenericDrawable.h"
 #include "esp/gfx/PbrDrawable.h"
 #include "esp/gfx/SkinData.h"
@@ -1465,6 +1466,13 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceVertSemantic(
   // transform based on transformNode setting
   instanceRoot->MagnumObject::setTransformation(
       meshMetaData.root.transformFromLocalToParent);
+  gfx::DrawableConfiguration drawableConfig{
+      creation.lightSetupKey,             // lightSetup Key
+      PER_VERTEX_OBJECT_ID_MATERIAL_KEY,  // material key
+      ObjectInstanceShaderType::Phong,    // shader type to use
+      drawables,                          // drawable group
+      nullptr,                            // no skinning data
+      nullptr};                           // Not PBR so no IBL map
 
   for (int iMesh = start; iMesh <= end; ++iMesh) {
     scene::SceneNode& node = instanceRoot->createChild();
@@ -1480,11 +1488,9 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceVertSemantic(
     // meshes_.at(iMesh)->getMeshData()->hasAttribute(Mn::Trade::MeshAttribute::Tangent)
     // It will SEGFAULT!
     createDrawable(meshes_.at(iMesh)->getMagnumGLMesh(),  // render mesh
-                   meshAttributeFlags,                 // mesh attribute flags
-                   node,                               // scene node
-                   creation.lightSetupKey,             // lightSetup key
-                   PER_VERTEX_OBJECT_ID_MATERIAL_KEY,  // material key
-                   drawables);                         // drawable group
+                   meshAttributeFlags,  // mesh attribute flags
+                   node,                // scene node
+                   drawableConfig);
 
     if (computeAbsoluteAABBs) {
       staticDrawableInfo.emplace_back(StaticDrawableInfo{node, iMesh});
@@ -3050,13 +3056,42 @@ void ResourceManager::addComponent(
       }
     }
 
+    auto material = shaderManager_.get<Mn::Trade::MaterialData>(materialKey);
+
+    ObjectInstanceShaderType materialDataType =
+        static_cast<ObjectInstanceShaderType>(
+            material->mutableAttribute<int>("shaderTypeToUse"));
+
+    // If shader type to use has not been explicitly specified, use best shader
+    // supported by material
+    if ((materialDataType < ObjectInstanceShaderType::Flat) ||
+        (materialDataType > ObjectInstanceShaderType::PBR)) {
+      const auto types = material->types();
+      if (types >= Mn::Trade::MaterialType::PbrMetallicRoughness) {
+        materialDataType = ObjectInstanceShaderType::PBR;
+      } else {
+        materialDataType = ObjectInstanceShaderType::Phong;
+      }
+    }
+    // TODO : remake the pbrImageBasedLightings to be a map with config-driven
+    // access
+    std::shared_ptr<gfx::PbrImageBasedLighting> pbrIblData_ =
+        (activePbrIbl_ >= 0 ? pbrImageBasedLightings_[activePbrIbl_]
+                            : nullptr);  // pbr image based lighting
+
+    gfx::DrawableConfiguration drawableConfig{
+        lightSetupKey,     // lightSetup Key
+        materialKey,       // material key
+        materialDataType,  // shader type to use
+        drawables,         // drawable group
+        skinData,          // instance skinning data
+        pbrIblData_};      // PbrIBL configuration, if appropriate, nullptr
+                           // otherwise
+
     createDrawable(mesh,                // render mesh
                    meshAttributeFlags,  // mesh attribute flags
                    node,                // scene node
-                   lightSetupKey,       // lightSetup Key
-                   materialKey,         // material key
-                   drawables,           // drawable group
-                   skinData);           // instance skinning data
+                   drawableConfig);     // instance skinning data
 
     // compute the bounding box for the mesh we are adding
     if (computeAbsoluteAABBs) {
@@ -3122,17 +3157,24 @@ void ResourceManager::addPrimitiveToDrawables(int primitiveID,
                                               DrawableGroup* drawables) {
   auto primMeshIter = primitive_meshes_.find(primitiveID);
   CORRADE_INTERNAL_ASSERT(primMeshIter != primitive_meshes_.end());
+  gfx::DrawableConfiguration drawableConfig{
+      NO_LIGHT_KEY,                    // lightSetupKey
+      WHITE_MATERIAL_KEY,              // materialDataKey
+      ObjectInstanceShaderType::Flat,  // shader to use
+      drawables,                       // DrawableGroup
+      nullptr,                         // skinData
+      nullptr};                        // PBRImageBasedLighting
   // TODO:
   // currently we assume the primitives does not have normal texture
   // so do not need to worry about the tangent or bitangent.
   // it might be changed in the future.
+  // NOTE : TBN frame is synthesized in PBR shader if tangent frame is not
+  // provided, but not using Phong/Flat Shader.
   gfx::Drawable::Flags meshAttributeFlags{};
   createDrawable(primMeshIter->second.get(),  // render mesh
                  meshAttributeFlags,          // meshAttributeFlags
-                 node,                        // scene node
-                 NO_LIGHT_KEY,                // lightSetup key
-                 WHITE_MATERIAL_KEY,          // material key
-                 drawables);                  // drawable group
+                 node,                        // sceneNode
+                 drawableConfig);             // configuration for drawable
 }
 
 void ResourceManager::removePrimitiveMesh(int primitiveID) {
@@ -3141,54 +3183,34 @@ void ResourceManager::removePrimitiveMesh(int primitiveID) {
   primitive_meshes_.erase(primMeshIter);
 }
 
-void ResourceManager::createDrawable(
-    Mn::GL::Mesh* mesh,
-    gfx::Drawable::Flags& meshAttributeFlags,
-    scene::SceneNode& node,
-    const Mn::ResourceKey& lightSetupKey,
-    const Mn::ResourceKey& materialKey,
-    DrawableGroup* group /* = nullptr */,
-    const std::shared_ptr<gfx::InstanceSkinData>& skinData /* = nullptr */) {
-  auto material = shaderManager_.get<Mn::Trade::MaterialData>(materialKey);
-
-  ObjectInstanceShaderType materialDataType =
-      static_cast<ObjectInstanceShaderType>(
-          material->mutableAttribute<int>("shaderTypeToUse"));
-
-  // If shader type to use has not been explicitly specified, use best shader
-  // supported by material
-  if ((materialDataType < ObjectInstanceShaderType::Flat) ||
-      (materialDataType > ObjectInstanceShaderType::PBR)) {
-    const auto types = material->types();
-    if (types >= Mn::Trade::MaterialType::PbrMetallicRoughness) {
-      materialDataType = ObjectInstanceShaderType::PBR;
-    } else {
-      materialDataType = ObjectInstanceShaderType::Phong;
-    }
-  }
-  switch (materialDataType) {
+void ResourceManager::createDrawable(Mn::GL::Mesh* mesh,
+                                     gfx::Drawable::Flags& meshAttributeFlags,
+                                     scene::SceneNode& node,
+                                     gfx::DrawableConfiguration& drawableCfg) {
+  switch (drawableCfg.materialDataType_) {
     case ObjectInstanceShaderType::Flat:
     case ObjectInstanceShaderType::Phong:
       node.addFeature<gfx::GenericDrawable>(
           mesh,                // render mesh
           meshAttributeFlags,  // mesh attribute flags
           shaderManager_,      // shader manager
-          lightSetupKey,       // lightSetup key
-          materialKey,         // material key
-          group,               // drawable group
-          skinData);           // instance skinning data
+          drawableCfg);
+      // lightSetupKey,       // lightSetup key
+      // materialKey,         // material key
+      // group,               // drawable group
+      // skinData);           // instance skinning data
       break;
     case ObjectInstanceShaderType::PBR:
       node.addFeature<gfx::PbrDrawable>(
           mesh,                // render mesh
           meshAttributeFlags,  // mesh attribute flags
           shaderManager_,      // shader manager
-          lightSetupKey,       // lightSetup key
-          materialKey,         // material key
-          group,               // drawable group
-          activePbrIbl_ >= 0 ? pbrImageBasedLightings_[activePbrIbl_].get()
-                             : nullptr);  // pbr image based lighting
-      // TODO: Carry skinData to PbrDrawable.
+          drawableCfg);
+      // lightSetupKey,       // lightSetup key
+      // materialKey,         // material key
+      // group,               // drawable group
+      // activePbrIbl_ >= 0 ? pbrImageBasedLightings_[activePbrIbl_].get()
+      //                    : nullptr);  // pbr image based lighting
       break;
     default:
       CORRADE_INTERNAL_ASSERT_UNREACHABLE();
@@ -3212,15 +3234,13 @@ void ResourceManager::initPbrImageBasedLighting(
   // should work with the scene instance config, initialize
   // different PBR IBLs at different positions in the scene.
 
-  // TODO: HDR Image!
-
   // Don't reload if already active set to 0
   if (activePbrIbl_ != ID_UNDEFINED) {
     return;
   }
 
   pbrImageBasedLightings_.emplace_back(
-      std::make_unique<gfx::PbrImageBasedLighting>(
+      std::make_shared<gfx::PbrImageBasedLighting>(
           gfx::PbrImageBasedLighting::Flag::IndirectDiffuse |
               gfx::PbrImageBasedLighting::Flag::IndirectSpecular,
           shaderManager_, hdriImageFilename));

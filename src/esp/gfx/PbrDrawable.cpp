@@ -22,17 +22,14 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
                          Mn::GL::Mesh* mesh,
                          gfx::Drawable::Flags& meshAttributeFlags,
                          ShaderManager& shaderManager,
-                         const Mn::ResourceKey& lightSetupKey,
-                         const Mn::ResourceKey& materialDataKey,
-                         DrawableGroup* group,
-                         PbrImageBasedLighting* pbrIbl)
-    : Drawable{node, mesh, DrawableType::Pbr, group},
+                         DrawableConfiguration& cfg)
+    : Drawable{node, mesh, DrawableType::Pbr, cfg.group_},
       shaderManager_{shaderManager},
-      lightSetup_{shaderManager.get<LightSetup>(lightSetupKey)},
-      pbrIbl_(pbrIbl),
+      lightSetup_{shaderManager.get<LightSetup>(cfg.lightSetupKey_)},
+      pbrIbl_(cfg.getPbrIblData()),
       meshAttributeFlags_{meshAttributeFlags} {
   resetMaterialValues(
-      shaderManager.get<Mn::Trade::MaterialData>(materialDataKey));
+      shaderManager.get<Mn::Trade::MaterialData>(cfg.materialDataKey_));
 
   if (pbrIbl_) {
     flags_ |= PbrShader::Flag::ImageBasedLighting;

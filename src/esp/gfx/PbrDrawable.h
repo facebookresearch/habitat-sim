@@ -8,6 +8,7 @@
 #include <Corrade/Containers/Optional.h>
 
 #include "esp/gfx/Drawable.h"
+#include "esp/gfx/DrawableConfiguration.h"
 #include "esp/gfx/PbrImageBasedLighting.h"
 #include "esp/gfx/PbrShader.h"
 #include "esp/gfx/ShaderManager.h"
@@ -228,10 +229,7 @@ class PbrDrawable : public Drawable {
                        Mn::GL::Mesh* mesh,
                        gfx::Drawable::Flags& meshAttributeFlags,
                        ShaderManager& shaderManager,
-                       const Mn::ResourceKey& lightSetupKey,
-                       const Mn::ResourceKey& materialDataKey,
-                       DrawableGroup* group = nullptr,
-                       PbrImageBasedLighting* pbrIbl = nullptr);
+                       DrawableConfiguration& cfg);
 
   /**
    *  @brief Set the light info
@@ -298,7 +296,7 @@ class PbrDrawable : public Drawable {
   ShaderManager& shaderManager_;
   Mn::Resource<Mn::GL::AbstractShaderProgram, PbrShader> shader_;
   Mn::Resource<LightSetup> lightSetup_;
-  PbrImageBasedLighting* pbrIbl_ = nullptr;
+  std::shared_ptr<PbrImageBasedLighting> pbrIbl_ = nullptr;
 
   /**
    * Local cache of material quantities to speed up access in draw
@@ -308,7 +306,6 @@ class PbrDrawable : public Drawable {
    * Creation attributes of this drawable
    */
   const gfx::Drawable::Flags meshAttributeFlags_;
-
 };
 
 }  // namespace gfx

@@ -9,6 +9,7 @@
 #include <memory>
 
 #include "esp/gfx/Drawable.h"
+#include "esp/gfx/DrawableConfiguration.h"
 #include "esp/gfx/ShaderManager.h"
 
 namespace esp {
@@ -38,15 +39,11 @@ class GenericDrawable : public Drawable {
   //! Create a GenericDrawable for the given object using shader and mesh.
   //! Adds drawable to given group and uses provided texture, and
   //! color for textured buffer and color shader output respectively
-  explicit GenericDrawable(
-      scene::SceneNode& node,
-      Mn::GL::Mesh* mesh,
-      Drawable::Flags& meshAttributeFlags,
-      ShaderManager& shaderManager,
-      const Mn::ResourceKey& lightSetupKey,
-      const Mn::ResourceKey& materialDataKey,
-      DrawableGroup* group = nullptr,
-      const std::shared_ptr<InstanceSkinData>& skinData = nullptr);
+  explicit GenericDrawable(scene::SceneNode& node,
+                           Mn::GL::Mesh* mesh,
+                           Drawable::Flags& meshAttributeFlags,
+                           ShaderManager& shaderManager,
+                           DrawableConfiguration& cfg);
 
   void setLightSetup(const Mn::ResourceKey& lightSetupKey) override;
   static constexpr const char* SHADER_KEY_TEMPLATE =
