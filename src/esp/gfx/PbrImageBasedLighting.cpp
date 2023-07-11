@@ -69,7 +69,7 @@ Cr::Containers::Optional<Mn::Trade::ImageData2D> loadImageData(
 }  // loadImageData
 
 Mn::Matrix4 buildDfltPerspectiveMatrix() {
-  using namespace Mn::Math::Literals;
+  using Mn::Math::Literals::operator""_degf;
   return Mn::Matrix4::perspectiveProjection(
       90.0_degf,  // horizontal field of view angle
       1.0f,       // aspect ratio (width/height)
