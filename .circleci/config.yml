@@ -427,7 +427,8 @@ jobs:
                   texlive-base \
                   texlive-latex-extra \
                   texlive-fonts-extra \
-                  texlive-fonts-recommended
+                  texlive-fonts-recommended \
+                  git
 
               # Rebuild with all options enabled
               ./build.sh --with-cuda --with-bullet
