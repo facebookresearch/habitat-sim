@@ -355,8 +355,8 @@ class HabitatSimInteractiveViewer(Application):
             self.cfg.sim_cfg.create_renderer = False
             self.cfg.sim_cfg.enable_gfx_replay_save = True
 
-        if self.sim_settings["stage_requires_lighting"]:
-            logger.info("Setting synthetic lighting override for stage.")
+        if self.sim_settings["use_default_lighting"]:
+            logger.info("Setting default lighting override for scene.")
             self.cfg.sim_cfg.override_scene_light_defaults = True
             self.cfg.sim_cfg.scene_light_setup = habitat_sim.gfx.DEFAULT_LIGHTING_KEY
 
@@ -1172,7 +1172,7 @@ if __name__ == "__main__":
     sim_settings["scene"] = args.scene
     sim_settings["scene_dataset_config_file"] = args.dataset
     sim_settings["enable_physics"] = not args.disable_physics
-    sim_settings["stage_requires_lighting"] = args.stage_requires_lighting
+    sim_settings["use_default_lighting"] = args.use_default_lighting
     sim_settings["enable_batch_renderer"] = args.enable_batch_renderer
     sim_settings["num_environments"] = args.num_environments
     sim_settings["composite_files"] = args.composite_files
