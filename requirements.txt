@@ -1,5 +1,4 @@
 attrs>=19.1.0
-git-lfs
 gitpython
 imageio
 imageio-ffmpeg

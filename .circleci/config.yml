@@ -431,7 +431,7 @@ jobs:
                   texlive-base \
                   texlive-latex-extra \
                   texlive-fonts-extra \
-                  texlive-fonts-recommended \
+                  texlive-fonts-recommended
 
               # Rebuild with all options enabled
               ./build.sh --with-cuda --with-bullet
@@ -453,6 +453,10 @@ jobs:
                 git clone -q --depth 1 https://github.com/facebookresearch/habitat-lab.git
               fi
               cd habitat-lab
+
+              # test against the modified branch
+              git checkout --track origin/huggingface-data-migration
+
               pip install -r habitat-lab/requirements.txt --progress-bar off
               ln -s ../habitat-sim/data data
               touch ~/miniconda/pip_deps_installed
