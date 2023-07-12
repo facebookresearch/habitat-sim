@@ -9,8 +9,6 @@
 
 #include "AttributesManagerBase.h"
 
-#include "ObjectAttributesManager.h"
-
 #include "esp/gfx/configure.h"
 #include "esp/metadata/attributes/PbrShaderAttributes.h"
 
@@ -92,15 +90,7 @@ class PbrShaderAttributesManager
    */
   attributes::PbrShaderAttributes::ptr initNewObjectInternal(
       const std::string& handleName,
-      CORRADE_UNUSED bool builtFromConfig) override {
-    attributes::PbrShaderAttributes::ptr newAttributes =
-        this->constructFromDefault(handleName);
-    if (nullptr == newAttributes) {
-      newAttributes = attributes::PbrShaderAttributes::create(handleName);
-    }
-    this->setFileDirectoryFromHandle(newAttributes);
-    return newAttributes;
-  }  // PbrShaderAttributesManager::initNewObjectInternal
+      CORRADE_UNUSED bool builtFromConfig) override;
 
   /**
    * @brief This method will perform any necessary updating that is

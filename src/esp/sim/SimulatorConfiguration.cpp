@@ -25,6 +25,7 @@ bool operator==(const SimulatorConfiguration& a,
          a.useSemanticTexturesIfFound == b.useSemanticTexturesIfFound &&
          a.sceneDatasetConfigFile == b.sceneDatasetConfigFile &&
          a.physicsConfigFile == b.physicsConfigFile &&
+         a.defaultPbrIblConfigFile == b.defaultPbrIblConfigFile &&
          a.overrideSceneLightDefaults == b.overrideSceneLightDefaults &&
          a.pbrImageBasedLighting == b.pbrImageBasedLighting &&
          a.sceneLightSetupKey == b.sceneLightSetupKey &&

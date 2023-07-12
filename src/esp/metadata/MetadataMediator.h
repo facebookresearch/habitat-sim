@@ -110,18 +110,36 @@ class MetadataMediator {
   /**
    * @brief Sets desired @ref esp::metadata::attributes::PhysicsManagerAttributes
    * handle.  Will load if does not exist.
-   * @param _physicsManagerAttributesPath The path to look for the physics
+   * @param physicsManagerAttributesPath The path to look for the physics
    * config file.
    * @return whether successful or not
    */
   bool setCurrPhysicsAttributesHandle(
-      const std::string& _physicsManagerAttributesPath);
+      const std::string& physicsManagerAttributesPath);
   /**
    * @brief Returns the name of the currently used
    * @ref esp::metadata::attributes::PhysicsManagerAttributes
    */
-  std::string getCurrPhysicsAttributesHandle() {
+  std::string getCurrPhysicsAttributesHandle() const {
     return currPhysicsManagerAttributes_;
+  }
+
+  /**
+   * @brief Sets the handle of the desired default @ref esp::metadata::attributes::PbrShaderAttributes
+   * unless overridden in scene instances.  Will load if does not exist.
+   * @param pbrShaderAttributesPath The path to look for the physics
+   * config file.
+   * @return whether successful or not
+   */
+  bool setCurrDefaultPbrAttributesHandle(
+      const std::string& pbrShaderAttributesPath);
+  /**
+   * @brief Returns the name of the currently specified default
+   * @ref esp::metadata::attributes::PbrShaderAttributes.
+   * This can be overridden on a per-scene instance basis.
+   */
+  std::string getCurrDefaultPbrAttributesHandle() const {
+    return currDefaultPbrConfigAttributes_;
   }
 
   /**
@@ -211,7 +229,7 @@ class MetadataMediator {
    */
   attributes::PbrShaderAttributes::ptr getCurrentPbrConfiguration() {
     return pbrShaderAttributesManager_->getObjectCopyByHandle(
-        currPbrConfigAttributes_);
+        currDefaultPbrConfigAttributes_);
   }
 
   /**
@@ -466,6 +484,16 @@ class MetadataMediator {
   std::shared_ptr<esp::core::config::Configuration>
   getSceneInstanceUserConfiguration(const std::string& curSceneName);
 
+  /**
+   * @brief Retrieve all the PbrShaderAttributes currently defined. These will
+   * be used to pre-load/pre-derive any IBL cubemaps used once on dataset load.
+   */
+  std::unordered_map<std::string,
+                     esp::metadata::attributes::PbrShaderAttributes::ptr>
+  getAllPbrShaderRegionConfigs() {
+    return pbrShaderAttributesManager_->getObjectsByHandleSubstring("");
+  }
+
  protected:
   /**
    * @brief Return the file path corresponding to the passed handle in the
@@ -558,7 +586,7 @@ class MetadataMediator {
    * @brief String name of current default PBR/IBL Shader configuration
    * attributes.
    */
-  std::string currPbrConfigAttributes_;
+  std::string currDefaultPbrConfigAttributes_;
   /**
    * @brief Manages all construction and access to all scene dataset attributes.
    * Users should never directly access this, or it could inadvertently get in a

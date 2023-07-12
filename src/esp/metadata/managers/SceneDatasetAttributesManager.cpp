@@ -56,9 +56,11 @@ SceneDatasetAttributesManager::initNewObjectInternal(
   // set the attributes source filedirectory, from the attributes name
   this->setFileDirectoryFromHandle(newAttributes);
 
-  // set the handle of the physics manager that is used for this newly-made
-  // dataset
+  // set the handle of the physics manager and default Pbr/Ibl shader config
+  // that is used for this newly-made dataset
   newAttributes->setPhysicsManagerHandle(physicsManagerAttributesHandle_);
+  newAttributes->setDefaultPbrShaderAttrHandle(
+      defaultPbrShaderAttributesHandle_);
   // any internal default configuration here
   return newAttributes;
 }  // SceneDatasetAttributesManager::initNewObjectInternal
@@ -235,6 +237,11 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
   // process light setups - implement handling light setups
   readDatasetJSONCell(dsDir, "light_setups", jsonConfig,
                       dsAttribs->getLightLayoutAttributesManager());
+
+  // process PBR/IBL Shader configurations. Only will be relevant for
+  // PBR-rendered assets, will be available to all datasets that are loaded.
+  readDatasetJSONCell(dsDir, "pbr_ibl_configs", jsonConfig,
+                      pbrShaderAttributesManager_);
 
   // process scene instances - implement handling scene instances
   readDatasetJSONCell(dsDir, "scene_instances", jsonConfig,

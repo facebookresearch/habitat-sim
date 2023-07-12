@@ -74,6 +74,27 @@ class SceneDatasetAttributesManager
     }
   }  // SceneDatasetAttributesManager::setCurrPhysicsManagerAttributesHandle
 
+  /**
+   * @brief This will set the current default PBR/IBL Shader configuration
+   * attributes. This is used so that upon creation of new
+   * @ref esp::metadata::attributes::SceneDatasetAttributes, the default @ref
+   * esp::metadata::attributes::PbrShaderAttributes can be set in the
+   * @ref esp::metadata::attributes::SceneDatasetAttributes before any
+   * scene-specific values are set.
+   *
+   * @param pbrHandle The string handle referencing the @ref
+   * esp::metadata::attributes::PbrShaderAttributes used to configure the
+   * current PBR/IBL shader for all objects, unless overridden in Scene
+   * Instances.
+   */
+  void setDefaultPbrShaderAttributesHandle(const std::string& pbrHandle) {
+    defaultPbrShaderAttributesHandle_ = pbrHandle;
+    for (const auto& val : this->objectLibrary_) {
+      this->getObjectByHandle(val.first)->setDefaultPbrShaderAttrHandle(
+          pbrHandle);
+    }
+  }  // SceneDatasetAttributesManager::setDefaultPbrShaderAttributesHandle
+
  protected:
   /**
    * @brief This will load a dataset map with file location values from the
@@ -195,6 +216,10 @@ class SceneDatasetAttributesManager
    */
   std::string physicsManagerAttributesHandle_ = "";
 
+  /**
+   * @brief Name of currently used default PbrShaderAttributes
+   */
+  std::string defaultPbrShaderAttributesHandle_ = "";
   /**
    * @brief Reference to PhysicsAttributesManager to give access to default
    * physics manager attributes settings when

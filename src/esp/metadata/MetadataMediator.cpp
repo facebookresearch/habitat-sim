@@ -30,14 +30,27 @@ void MetadataMediator::buildAttributesManagers() {
   // should always have default physicsManagerAttributesPath
   createPhysicsManagerAttributes(ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH);
   // should always have default PBRConfig
-  createPbrAttributes(ESP_DEFAULT_PBRSHADER_CONFIG);
-
+  createPbrAttributes(ESP_DEFAULT_PBRSHADER_CONFIG_REL_PATH);
+  // set as default and current
+  setCurrDefaultPbrAttributesHandle(ESP_DEFAULT_PBRSHADER_CONFIG_REL_PATH);
   // after this setSimulatorConfiguration will be called
 }  // MetadataMediator::buildAttributesManagers
 
 bool MetadataMediator::setSimulatorConfiguration(
     const sim::SimulatorConfiguration& cfg) {
   simConfig_ = cfg;
+
+  // set active global default Pbr/Ibl configuration attributes handle - if
+  // unchanged, does nothing
+  ESP_CHECK(
+      setCurrDefaultPbrAttributesHandle(simConfig_.defaultPbrIblConfigFile),
+      // something failed about setting up physics attributes
+      "Some error prevented changing current Pbr/Ibl Shader Attributes to `"
+          << Mn::Debug::nospace << simConfig_.defaultPbrIblConfigFile
+          << Mn::Debug::nospace
+          << "` as requested in the Simulator Configuration so aborting. "
+             "Verify requested Pbr/Ibl Shader Attributes config filename in "
+             "Simulator Configuration is correct.");
 
   // set current active dataset name - if unchanged, does nothing
   ESP_CHECK(setActiveSceneDatasetName(simConfig_.sceneDatasetConfigFile),
@@ -159,7 +172,7 @@ bool MetadataMediator::createSceneDataset(const std::string& sceneDatasetName,
       << "` successfully created and locked.";
 
   return true;
-}  // namespace metadata
+}  // MetadataMediator::createSceneDataset
 
 bool MetadataMediator::removeSceneDataset(const std::string& sceneDatasetName) {
   // First check if SceneDatasetAttributes exists
@@ -245,6 +258,45 @@ bool MetadataMediator::setCurrPhysicsAttributesHandle(
   return success;
 
 }  // MetadataMediator::setCurrPhysicsAttributesHandle
+
+bool MetadataMediator::setCurrDefaultPbrAttributesHandle(
+    const std::string& pbrShaderAttributesPath) {
+  // first check if  Pbr/Ibl shader attributes exists, if so then set as current
+  if (pbrShaderAttributesManager_->getObjectLibHasHandle(
+          pbrShaderAttributesPath)) {
+    if (currDefaultPbrConfigAttributes_ != pbrShaderAttributesPath) {
+      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+          << "Old default Pbr/Ibl shader attributes `"
+          << currDefaultPbrConfigAttributes_ << "` changed to `"
+          << pbrShaderAttributesPath << "` successfully.";
+      currDefaultPbrConfigAttributes_ = pbrShaderAttributesPath;
+    }
+    sceneDatasetAttributesManager_->setDefaultPbrShaderAttributesHandle(
+        currDefaultPbrConfigAttributes_);
+    return true;
+  }
+  // if this handle does not exist, create the attributes for it.
+  ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+      << "Attempting to create new default Pbr/Ibl shader attributes `"
+      << pbrShaderAttributesPath << "`.";
+  bool success = createPbrAttributes(pbrShaderAttributesPath);
+  // if successfully created, set default name to  Pbr/Ibl shader attributes in
+  // SceneDatasetAttributesManager
+  if (success) {
+    currDefaultPbrConfigAttributes_ = pbrShaderAttributesPath;
+    sceneDatasetAttributesManager_->setDefaultPbrShaderAttributesHandle(
+        currDefaultPbrConfigAttributes_);
+    /// setDefaultPbrShaderAttributesHandle
+  }
+  ESP_DEBUG()
+      << "Attempt to create new default Pbr/Ibl shader attributes from `"
+      << pbrShaderAttributesPath << "`"
+      << (success ? " succeeded." : " failed.")
+      << "Currently active default Pbr/Ibl shader attributes :"
+      << currDefaultPbrConfigAttributes_;
+  return success;
+
+}  // MetadataMediator::setCurrDefaultPbrAttributesHandle
 
 bool MetadataMediator::setActiveSceneDatasetName(
     const std::string& sceneDatasetName) {
@@ -418,9 +470,13 @@ MetadataMediator::makeSceneAndReferenceStage(
           << Mn::Debug::nospace << sceneName << Mn::Debug::nospace
           << "' in currently specified Scene Dataset `" << Mn::Debug::nospace
           << activeSceneDataset_ << Mn::Debug::nospace
-          << "`. Likely the Scene Dataset Configuration requested was not "
-             "found and so a new, empty Scene Dataset was created. Verify the "
-             "Scene Dataset Configuration file name used.");
+          << "`. Likely cause is either the Scene Dataset Configuration "
+             "requested was not found, or the paths to the various dataset "
+             "component configuration files (i.e. "
+             "stage, object, scene instance, etc.) specified in the Scene "
+             "Dataset Configuration file cannot be found. Verify the paths and "
+             "filenames for the desired Scene Dataset Configuration file and "
+             "the paths specified within the file.");
 
   // create scene attributes with passed name
   attributes::SceneInstanceAttributes::ptr sceneInstanceAttributes =

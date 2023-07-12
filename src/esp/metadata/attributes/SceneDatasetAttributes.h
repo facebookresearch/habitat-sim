@@ -172,6 +172,24 @@ class SceneDatasetAttributes : public AbstractAttributes {
   }
 
   /**
+   * @brief Set the name of the attributes used for the default Pbr/Ibl shader
+   * configuration.
+   */
+  void setDefaultPbrShaderAttrHandle(
+      const std::string& dfltPbrShaderAttrHandle) {
+    set("defaultPbrShaderAttrHandle", dfltPbrShaderAttrHandle);
+    sceneInstanceAttributesManager_->setDefaultPbrShaderAttrHandle(
+        dfltPbrShaderAttrHandle);
+  }
+  /**
+   * @brief Get the name of the attributes used for the default Pbr/Ibl shader
+   * configuration.
+   */
+  std::string getDefaultPbrShaderAttrHandle() const {
+    return get<std::string>("defaultPbrShaderAttrHandle");
+  }
+
+  /**
    * @brief Add the passed @p sceneInstance to the dataset, verifying that all
    * the attributes and assets references in the scene instance exist, and if
    * so adding them.  This is to handle the addition of an existing

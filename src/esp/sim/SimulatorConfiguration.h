@@ -8,6 +8,7 @@
 #include <string>
 
 #include "esp/core/Esp.h"
+#include "esp/gfx/configure.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/physics/configure.h"
 
@@ -70,6 +71,12 @@ struct SimulatorConfiguration {
 
   //! Path to the physics parameter config file.
   std::string physicsConfigFile = ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH;
+
+  /**
+   * @Brief Path to global default PBR/IBL Shader Config file to use. Can be
+   * overridden in scene instances.
+   */
+  std::string defaultPbrIblConfigFile = ESP_DEFAULT_PBRSHADER_CONFIG_REL_PATH;
 
   /**
    * @brief File location for initial scene dataset to use.

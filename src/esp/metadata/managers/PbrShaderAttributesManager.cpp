@@ -194,6 +194,18 @@ void PbrShaderAttributesManager::setValsFromJSONDoc(
 
 }  // PbrShaderAttributesManager::createFileBasedAttributesTemplate
 
+PbrShaderAttributes::ptr PbrShaderAttributesManager::initNewObjectInternal(
+    const std::string& handleName,
+    bool) {
+  attributes::PbrShaderAttributes::ptr newAttributes =
+      this->constructFromDefault(handleName);
+  if (nullptr == newAttributes) {
+    newAttributes = attributes::PbrShaderAttributes::create(handleName);
+  }
+  this->setFileDirectoryFromHandle(newAttributes);
+  return newAttributes;
+}  // PbrShaderAttributesManager::initNewObjectInternal
+
 }  // namespace managers
 }  // namespace metadata
 }  // namespace esp
