@@ -69,7 +69,7 @@ Stages, Objects, Lights, and Scenes can be linked from .json, created directly f
                 - If provided, creates a duplicate of the linked *_config.json*
             - "template_handle"
                 - string
-                - Handle/name for the new *Attributes*. Used to reference it withing its *AttributesManager*.
+                - Handle/name for the new *Attributes*. Used to reference it within its *AttributesManager*.
             -  "attributes"
                 - JSON object
                 - Attribute configuration to override defaults or copied values.
