@@ -67,10 +67,9 @@ def initialize_test_data_sources(data_path):
         #   "version": data version tag
         # }
         "habitat_test_scenes": {
-            "source": "http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes_v1.0.zip",
-            "package_name": "habitat-test-scenes_v1.0.zip",
+            "source": "https://huggingface.co/datasets/ai-habitat/habitat_test_scenes.git",
             "link": data_path + "scene_datasets/habitat-test-scenes",
-            "version": "1.0",
+            "version": "v1.0",
         },
         "habitat_test_pointnav_dataset": {
             "source": "http://dl.fbaipublicfiles.com/habitat/habitat-test-pointnav-dataset_v1.0.zip",
@@ -121,10 +120,9 @@ def initialize_test_data_sources(data_path):
             "version": "v1.6",
         },
         "ycb": {
-            "source": "https://dl.fbaipublicfiles.com/habitat/ycb/hab_ycb_v1.2.zip",
-            "package_name": "hab_ycb_v1.2.zip",
+            "source": "https://huggingface.co/datasets/ai-habitat/ycb.git",
             "link": data_path + "objects/ycb",
-            "version": "1.2",
+            "version": "v1.2",
         },
         "franka_panda": {
             "source": "https://dl.fbaipublicfiles.com/polymetis/franka_panda.zip",
@@ -133,22 +131,19 @@ def initialize_test_data_sources(data_path):
             "version": "1.0",
         },
         "hab_spot_arm": {
-            "source": "http://dl.fbaipublicfiles.com/habitat/robots/hab_spot_arm_v2.0.zip",
-            "package_name": "hab_spot_arm_v2.0.zip",
+            "source": "https://huggingface.co/datasets/ai-habitat/hab_spot_arm.git",
             "link": data_path + "robots/hab_spot_arm",
-            "version": "2.0",
+            "version": "v2.0",
         },
         "hab_stretch": {
-            "source": "http://dl.fbaipublicfiles.com/habitat/robots/hab_stretch_v1.0.zip",
-            "package_name": "hab_stretch_v1.0.zip",
+            "source": "https://huggingface.co/datasets/ai-habitat/hab_stretch.git",
             "link": data_path + "robots/hab_stretch",
-            "version": "1.0",
+            "version": "v1.0",
         },
         "hab_fetch": {
-            "source": "http://dl.fbaipublicfiles.com/habitat/hab_fetch_v2.0.zip",
-            "package_name": "hab_fetch_v2.0.zip",
+            "source": "https://huggingface.co/datasets/ai-habitat/hab_fetch.git",
             "link": data_path + "robots/hab_fetch",
-            "version": "2.0",
+            "version": "v2.0",
         },
         "humanoid_data": {
             "source": "http://dl.fbaipublicfiles.com/habitat/humanoids/humanoid_data_v0.1.zip",
