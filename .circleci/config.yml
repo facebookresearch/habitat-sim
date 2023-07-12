@@ -400,9 +400,6 @@ jobs:
       - run: &download_test_data
           name: Download test data
           command: |
-              git --version
-              sudo apt-get update
-              sudo apt install git
               sudo apt install git-lfs
               git --version
               git-lfs --version
@@ -414,7 +411,7 @@ jobs:
               if [ ! -d ./data/scene_datasets/habitat-test-scenes/van-gogh-room.glb ]
               then
                 cd habitat-sim
-                python src_python/habitat_sim/utils/datasets_download.py --uids ci_test_assets --replace --data-path data/
+                python src_python/habitat_sim/utils/datasets_download.py --uids ci_test_assets --replace --data-path data/ --no-prune
               fi
 
       - run:

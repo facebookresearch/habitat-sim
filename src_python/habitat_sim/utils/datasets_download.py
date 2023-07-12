@@ -520,6 +520,7 @@ def clone_repo_source(
     requires_auth: bool,
     username: Optional[str] = None,
     password: Optional[str] = None,
+    prune_lfs: bool = True,
 ):
     """
     Clones and processes a datasource hosted on a git repo (e.g. HuggingFace Dataset).
@@ -542,9 +543,11 @@ def clone_repo_source(
     print(f"{clone_command}")
     subprocess.check_call(shlex.split(clone_command))
 
-    # prune the repo to reduced wasted memory consumption
-    prune_command = "git lfs prune -f --recent"
-    subprocess.check_call(shlex.split(prune_command), cwd=version_dir)
+    if prune_lfs:
+        # NOTE: we make this optional because older git versions don't support "-f --recent"
+        # prune the repo to reduce wasted memory consumption
+        prune_command = "git lfs prune -f --recent"
+        subprocess.check_call(shlex.split(prune_command), cwd=version_dir)
 
 
 def checkout_repo_tag(repo: Repo, tag: str):
@@ -645,6 +648,7 @@ def download_and_place(
     username: Optional[str] = None,
     password: Optional[str] = None,
     replace: Optional[bool] = None,
+    prune_lfs: bool = True,
 ):
     r"""Data-source download function. Validates uid, handles existing data version, downloads data, unpacks, writes version, cleans up."""
     if not data_sources.get(uid):
@@ -706,7 +710,9 @@ def download_and_place(
 
     if data_sources[uid]["source"].endswith(".git"):
         # git dataset, clone it
-        clone_repo_source(uid, version_dir, requires_auth, username, password)
+        clone_repo_source(
+            uid, version_dir, requires_auth, username, password, prune_lfs
+        )
     else:
         # compressed package dataset (e.g. .zip or .tar), download and unpack it
         get_and_place_compressed_package(
@@ -795,6 +801,11 @@ def main(args):
         default=None,
         help="Password to use for downloads that require authentication",
     )
+    parser.add_argument(
+        "--no-prune",
+        action="store_true",
+        help="Optionally disable pruning for git-lfs repo datasources. Use this if your system git version does not support forced pruning (e.g. Ubuntu 20.x).",
+    )
 
     args = parser.parse_args(args)
     replace = args.replace
@@ -860,7 +871,12 @@ def main(args):
                 clean_data(uid, data_path)
             else:
                 download_and_place(
-                    uid, data_path, args.username, args.password, replace
+                    uid,
+                    data_path,
+                    args.username,
+                    args.password,
+                    replace,
+                    prune_lfs=(not args.no_prune),
                 )
 
 
