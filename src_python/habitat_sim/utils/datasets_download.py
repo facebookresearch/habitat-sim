@@ -671,19 +671,18 @@ def download_and_place(
             repo = Repo(version_dir)
             assert not repo.bare
             checkout_repo_tag(repo, version_tag)
-            return
 
         replace_existing = (
             replace if replace is not None else prompt_yes_no("Replace versioned data?")
         )
 
-        if replace_existing:
+        if replace_existing and not is_repo:
             clean_data(uid, data_path)
         else:
             print("=======================================================")
-            print(
-                f"Not replacing data, generating symlink ({link_path}) and aborting download."
-            )
+            if not replace_existing:
+                print(f"Not replacing data, generating symlink ({link_path}).")
+            print(f"Generating symlink ({link_path}).")
             print("=======================================================")
 
             if link_path.exists():
