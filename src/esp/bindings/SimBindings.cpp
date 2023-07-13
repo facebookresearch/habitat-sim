@@ -81,7 +81,7 @@ void initSimBindings(py::module& m) {
       .def_readwrite(
           "override_scene_light_defaults",
           &SimulatorConfiguration::overrideSceneLightDefaults,
-          R"(Override scene lighting setup to use with value specified below.)")
+          R"(Override scene lighting setup to use with value specified by `scene_light_setup`.)")
       .def_readwrite("scene_light_setup",
                      &SimulatorConfiguration::sceneLightSetupKey,
                      R"(Light setup key for the scene.)")

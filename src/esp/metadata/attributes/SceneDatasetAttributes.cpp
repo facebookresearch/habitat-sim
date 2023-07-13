@@ -151,9 +151,8 @@ std::pair<std::string, std::string> SceneDatasetAttributes::addNewValToMap(
 esp::gfx::LightSetup SceneDatasetAttributes::getNamedLightSetup(
     const std::string& lightSetupName) {
   auto lightLayoutAttrName = getLightSetupFullHandle(lightSetupName);
-  if (lightLayoutAttrName == NO_LIGHT_KEY) {
-    return esp::gfx::LightSetup{};
-  }
+  // lightLayoutAttrName == NO_LIGHT_KEY and DEFAULT_LIGHTING_KEY
+  // handled in lightLayoutAttributesManager_
   return lightLayoutAttributesManager_->createLightSetupFromAttributes(
       lightLayoutAttrName);
 

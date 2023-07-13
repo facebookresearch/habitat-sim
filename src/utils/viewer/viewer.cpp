@@ -832,9 +832,9 @@ Viewer::Viewer(const Arguments& arguments)
       .addBooleanOption("hbao")
       .setHelp("hbao",
                "NOT YET SUPPORTED : Enable Horizon-based Ambient Occlusion.")
-      .addBooleanOption("stage-requires-lighting")
-      .setHelp("stage-requires-lighting",
-               "Stage asset should be lit with Phong shading.")
+      .addBooleanOption("use-default-lighting")
+      .setHelp("use-default-lighting",
+               "Scene should be lit using the default lighting configuration.")
       .addBooleanOption("debug-bullet")
       .setHelp("debug-bullet", "Render Bullet physics debug wireframes.")
       .addOption("gfx-replay-record-filepath")
@@ -972,8 +972,8 @@ Viewer::Viewer(const Arguments& arguments)
   simConfig_.requiresTextures = true;
   simConfig_.enableGfxReplaySave = !gfxReplayRecordFilepath_.empty();
   simConfig_.useSemanticTexturesIfFound = !args.isSet("no-semantic-textures");
-  if (args.isSet("stage-requires-lighting")) {
-    ESP_DEBUG() << "Stage using DEFAULT_LIGHTING_KEY";
+  if (args.isSet("use-default-lighting")) {
+    ESP_DEBUG() << "Scene lit using DEFAULT_LIGHTING_KEY";
     simConfig_.overrideSceneLightDefaults = true;
     simConfig_.sceneLightSetupKey = esp::DEFAULT_LIGHTING_KEY;
   }
