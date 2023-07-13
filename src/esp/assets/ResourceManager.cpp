@@ -116,6 +116,8 @@ ResourceManager::ResourceManager(
   initDefaultMaterials();
   // appropriately configure importerManager_ based on compilation flags
   buildImporters();
+  // Initialize any Ibl assets that may be specified in MM.
+  loadAndBuildAllIBLAssets();
 }
 
 ResourceManager::~ResourceManager() = default;
@@ -3167,11 +3169,11 @@ void ResourceManager::addPrimitiveToDrawables(int primitiveID,
       nullptr,                         // PbrImageBasedLighting
       nullptr};                        // PbrShaderAttributes
   // TODO:
-  // currently we assume the primitives does not have normal texture
+  // currently we assume the primitives do not have normal texture
   // so do not need to worry about the tangent or bitangent.
   // it might be changed in the future.
-  // NOTE : TBN frame is synthesized in PBR shader if tangent frame is not
-  // provided, but not using Phong/Flat Shader.
+  // NOTE : TBN frame is synthesized in PBR shader if precomputed tangent frame
+  // is not provided, but this is not done when using Phong/Flat Shader.
   gfx::Drawable::Flags meshAttributeFlags{};
   createDrawable(primMeshIter->second.get(),  // render mesh
                  meshAttributeFlags,          // meshAttributeFlags
@@ -3220,6 +3222,14 @@ void ResourceManager::initDefaultLightSetups() {
   shaderManager_.set(NO_LIGHT_KEY, gfx::LightSetup{});
   shaderManager_.setFallback(gfx::LightSetup{});
 }
+
+void ResourceManager::loadAndBuildAllIBLAssets() {
+  // Load BLUTs and Envmaps specified in scene dataset.
+
+  // map is keyed by config name, value is
+  auto mapOfPbrConfigs = metadataMediator_->getAllPbrShaderRegionConfigs();
+  //
+}  // ResourceManager::loadAndBuildAllIBLAssets
 
 void ResourceManager::initPbrImageBasedLighting(
     const std::string& hdriImageFilename) {

@@ -299,6 +299,7 @@ class ResourceManager {
    */
   void setMetadataMediator(std::shared_ptr<metadata::MetadataMediator> MM) {
     metadataMediator_ = std::move(MM);
+    loadAndBuildAllIBLAssets();
   }
 
   /**
@@ -631,6 +632,12 @@ class ResourceManager {
   void initPbrImageBasedLighting(const std::string& hdriImageFilename);
 
  private:
+  /**
+   * @brief called after MM is set or reset, go through and load/generate
+   * IBL assets that have not already been loaded.
+   */
+  void loadAndBuildAllIBLAssets();
+
   /**
    * @brief Load the requested mesh info into @ref meshInfo corresponding to
    * specified @p assetType used by object described by @p objectAttributes
