@@ -17,6 +17,7 @@ import sys
 import tarfile
 import traceback
 import zipfile
+from shutil import which
 from typing import List, Optional
 
 from git import Repo
@@ -540,18 +541,28 @@ def clone_repo_source(
 
     if prune_lfs:
         # NOTE: we make this optional because older git versions don't support "-f --recent"
+        assert (
+            which("git-lfs") is not None
+        ), "`git-lfs` is not installed, cannot prune and won't get lfs files, only links. Install and try again or re-run with `--no-prune`."
+
         # prune the repo to reduce wasted memory consumption
         prune_command = "git lfs prune -f --recent"
         subprocess.check_call(shlex.split(prune_command), cwd=version_dir)
 
 
-def checkout_repo_tag(repo: Repo, tag: str):
+def checkout_repo_tag(repo: Repo, version_dir: str, tag: str):
     """
     Checkout the specified tag for an existing repo with git python API.
     """
+    print(f" checking out {tag} and pulling changes from repo.")
     repo.remote().fetch(f"{tag}")
     # using git commandline wrapper, so installed lfs should be used to pull
     repo.git.checkout(f"{tag}")
+    if which("git-lfs") is None:
+        print(" WARNING: git-lfs is not installed, cannot pull lfs files from links.")
+    else:
+        # NOTE: repo.remote().pull() was not correctly using lfs, so calling it directly in case lfs was installed between runs.
+        subprocess.check_call(shlex.split("git lfs pull"), cwd=version_dir)
 
 
 def get_and_place_compressed_package(
@@ -651,6 +662,10 @@ def download_and_place(
         return
 
     is_repo = data_sources[uid]["source"].endswith(".git")
+    if is_repo and which("git-lfs") is None:
+        print(
+            "-\nWARNING: repo datasource detected and git-lfs is not installed. Download will be limited to lfs link files instead of full assets. \nTo address this, abort and clean datasources. Then install git lfs:\nWith Linux:\n `sudo apt install git-lfs`\n 'git lfs install'\n-"
+        )
     link_path = pathlib.Path(data_sources[uid]["link"])
     version_tag = data_sources[uid]["version"]
     version_dir = get_version_dir(uid, data_path, is_repo)
@@ -660,16 +675,16 @@ def download_and_place(
     if os.path.exists(version_dir) and (
         downloaded_file_list is None or os.path.exists(downloaded_file_list)
     ):
-        print(
-            f"Existing data source ({uid}) version ({version_tag}) is current. Data located: '{version_dir}'. Symblink: '{link_path}'."
-        )
-
         # for existing repos, checkout the specified version
         if is_repo:
-            print(f"Found the existing repo: {version_dir}")
+            print(f"Found the existing repo for ({uid}): {version_dir}")
             repo = Repo(version_dir)
             assert not repo.bare
-            checkout_repo_tag(repo, version_tag)
+            checkout_repo_tag(repo, version_dir, version_tag)
+        else:
+            print(
+                f"Existing data source ({uid}) version ({version_tag}) is current. Data located: '{version_dir}'. Symblink: '{link_path}'."
+            )
 
         replace_existing = (
             replace if replace is not None else prompt_yes_no("Replace versioned data?")
