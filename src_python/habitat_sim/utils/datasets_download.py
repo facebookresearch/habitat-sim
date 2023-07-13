@@ -650,7 +650,6 @@ def download_and_place(
         print(f"Data download failed, no datasource named {uid}")
         return
 
-    # link_path = os.path.join(data_path, data_sources[uid]["link"])
     is_repo = data_sources[uid]["source"].endswith(".git")
     link_path = pathlib.Path(data_sources[uid]["link"])
     version_tag = data_sources[uid]["version"]
@@ -697,7 +696,7 @@ def download_and_place(
     # download new version
     requires_auth = data_sources[uid].get("requires_auth", False)
     if requires_auth:
-        assert username is not None, "Usename required, please enter with --username"
+        assert username is not None, "Username required, please enter with --username"
         assert (
             password is not None
         ), "Password is required, please enter with --password"
