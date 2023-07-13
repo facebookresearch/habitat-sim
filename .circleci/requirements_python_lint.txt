@@ -8,7 +8,7 @@ flake8-comprehensions==3.13.0
 flake8-return==1.2.0
 flake8-simplify==0.20.0
 hypothesis==6.29.3
-isort==5.11.5
+isort==5.12.0
 mypy
 pytest
 tqdm==4.65.0

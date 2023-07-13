@@ -3,6 +3,6 @@ anaconda-client=1.11.3
 ccache=3.7.9
 cmake=3.26.4
 conda-build=3.25.0
-git
-gitpython
+git=2.40.1
+gitpython=3.1.30
 ninja=1.10.2
