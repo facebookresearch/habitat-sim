@@ -105,8 +105,8 @@ class PhysicsObjectBaseManager
         managedObjTypeConstructorMap_.find(objectTypeName);
     if (mgdObjTypeCtorMapIter == managedObjTypeConstructorMap_.end()) {
       ESP_ERROR(Mn::Debug::Flag::NoSpace)
-          << "<" << this->objectType_ << "> Unknown constructor type "
-          << objectTypeName << ", so initNewObject aborted.";
+          << "<" << this->objectType_ << "> Unknown constructor type"
+          << objectTypeName << ".  Aborting.";
       return nullptr;
     }
     auto newWrapper = (*this.*(mgdObjTypeCtorMapIter->second))();

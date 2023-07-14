@@ -185,7 +185,7 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
     std::size_t keyLoc = configStr.find(key);
     if (keyLoc == std::string::npos) {
       ESP_WARNING() << "Key" << key << "not found in configStr" << configStr
-                    << ", so retrieving empty string.";
+                    << ". Aborting.";
       return "";
     }
     std::size_t keyLen = key.length(), keyEnd = keyLoc + keyLen;

@@ -267,8 +267,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
     auto artObjPathIter = articulatedObjPaths.find(artObjModelName);
     if (artObjPathIter == articulatedObjPaths.end()) {
       ESP_ERROR() << "No Articulatd Model with name" << artObjModelName
-                  << "could be found, so getArticulatedObjModelFullHandle "
-                     "aborting and returning empty string.";
+                  << "could be found.  Aborting.";
       return "";
     }
     return artObjPathIter->second;

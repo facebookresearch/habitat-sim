@@ -34,8 +34,7 @@ std::string ManagedContainerBase::getRandomObjectHandlePerType(
   std::size_t numVals = mapOfHandles.size();
   if (numVals == 0) {
     ESP_ERROR() << "Attempting to get a random" << type << objectType_
-                << "managed object handle but none are loaded, so no handles "
-                   "will be returned.";
+                << "managed object handle but none are loaded; Aboring";
     return "";
   }
   int randIDX = rand() % numVals;
@@ -178,7 +177,7 @@ int ManagedContainerBase::getObjectIDByHandleOrNew(
     ESP_ERROR(Magnum::Debug::Flag::NoSpace)
         << "<" << this->objectType_ << "> : No " << objectType_
         << " managed object with handle " << objectHandle
-        << " exists, so aborting ID query.";
+        << " exists. Aborting.";
     return ID_UNDEFINED;
   }
   return getUnusedObjectID();

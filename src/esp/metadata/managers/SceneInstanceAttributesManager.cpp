@@ -71,28 +71,10 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
           << "`: JSON cell `stage_instance` is not a valid JSON object.";
     }
   } else {
-    // No stage_instance specified in SceneInstance configuration.
-    // We expect a scene instance to be present always, except for the default
-    // Scene Dataset that is empty.
-    if (attribsDispName == "default_attributes") {
-      // Default attributes is empty
-      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
-          << "No Stage Instance specified in Default Scene Instance, so "
-             "setting empty/NONE Stage as Stage instance.";
-      SceneObjectInstanceAttributes::ptr instanceAttrs =
-          createEmptyInstanceAttributes("");
-      // Set to use none stage
-      instanceAttrs->setHandle("NONE");
-      attribs->setStageInstance(instanceAttrs);
-    } else {
-      // no stage instance exists in Scene Instance config JSON. This should not
-      // happen and would indicate an error in the dataset.
-      ESP_CHECK(false,
-                "No JSON cell `stage_instance` specified in Scene Instance `"
-                    << Mn::Debug::nospace << attribsDispName
-                    << Mn::Debug::nospace
-                    << "` so no Stage can be created for this Scene.");
-    }
+    // no stage instance exists. This should always at least be present
+    ESP_WARNING(Mn::Debug::Flag::NoSpace)
+        << "No Stage instance specified in Scene Instance `" << attribsDispName
+        << "`: JSON cell `stage_instance` does not exist.";
   }
 
   // Check for object instances existence
@@ -210,7 +192,7 @@ SceneInstanceAttributesManager::createInstanceAttributesFromJSON(
   SceneObjectInstanceAttributes::ptr instanceAttrs =
       createEmptyInstanceAttributes("");
   // populate attributes
-  this->setAbstractObjectAttributesFromJson(instanceAttrs, jCell);
+  this->loadAbstractObjectAttributesFromJson(instanceAttrs, jCell);
   return instanceAttrs;
 }  // SceneInstanceAttributesManager::createInstanceAttributesFromJSON
 
@@ -220,7 +202,7 @@ SceneInstanceAttributesManager::createAOInstanceAttributesFromJSON(
   SceneAOInstanceAttributes::ptr instanceAttrs =
       createEmptyAOInstanceAttributes("");
   // populate attributes
-  this->setAbstractObjectAttributesFromJson(instanceAttrs, jCell);
+  this->loadAbstractObjectAttributesFromJson(instanceAttrs, jCell);
 
   // only used for articulated objects
   // fixed base
@@ -290,7 +272,7 @@ SceneInstanceAttributesManager::createAOInstanceAttributesFromJSON(
 
 }  // SceneInstanceAttributesManager::createAOInstanceAttributesFromJSON
 
-void SceneInstanceAttributesManager::setAbstractObjectAttributesFromJson(
+void SceneInstanceAttributesManager::loadAbstractObjectAttributesFromJson(
     const attributes::SceneObjectInstanceAttributes::ptr& instanceAttrs,
     const io::JsonGenericValue& jCell) const {
   // template handle describing stage/object instance
@@ -368,7 +350,7 @@ void SceneInstanceAttributesManager::setAbstractObjectAttributesFromJson(
   // check for user defined attributes
   this->parseUserDefinedJsonVals(instanceAttrs, jCell);
 
-}  // SceneInstanceAttributesManager::setAbstractObjectAttributesFromJson
+}  // SceneInstanceAttributesManager::loadAbstractObjectAttributesFromJson
 
 std::string SceneInstanceAttributesManager::getTranslationOriginVal(
     const io::JsonGenericValue& jsonDoc) const {

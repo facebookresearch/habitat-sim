@@ -56,23 +56,20 @@ class MetadataMediator {
   /**
    * @brief Creates a dataset attributes using @p sceneDatasetName, and
    * registers it. NOTE If an existing dataset attributes exists with this
-   * handle, then this will only overwrite this existing dataset if @p overwrite
-   * is set to true.
+   * handle, then this will exit with a message unless @p overwrite is true.
    * @param sceneDatasetName The name of the dataset to load or create.
    * @param overwrite Whether to overwrite an existing dataset or not
-   * @return Whether a dataset with @p sceneDatasetName exists (either new or
-   * pre-existing).
+   * @return Whether successfully created a new dataset or not.
    */
   bool createSceneDataset(const std::string& sceneDatasetName,
                           bool overwrite = false);
 
   /**
-   * @brief Load a @ref esp::metadata::attributes::PhysicsManagerAttributes
-   * defined by passed string file path.
+   * @brief Load a physics manager attributes defined by passed string file path
    * @param _physicsManagerAttributesPath The path to look for the physics
    * config file.
-   * @return Whether a @ref esp::metadata::attributes::PhysicsManagerAttributes
-   * exists based on the requested path, either new or pre-existing.
+   * @return Whether successfully created a new physics manager attributes or
+   * not.
    */
   bool createPhysicsManagerAttributes(
       const std::string& _physicsManagerAttributesPath =
@@ -98,8 +95,8 @@ class MetadataMediator {
   std::string getActiveSceneDatasetName() const { return activeSceneDataset_; }
 
   /**
-   * @brief Sets desired @ref esp::metadata::attributes::PhysicsManagerAttributes
-   * handle.  Will load if does not exist.
+   * @brief Sets desired physics manager attributes handle.  Will load if does
+   * not exist.
    * @param _physicsManagerAttributesPath The path to look for the physics
    * config file.
    * @return whether successful or not
@@ -107,8 +104,7 @@ class MetadataMediator {
   bool setCurrPhysicsAttributesHandle(
       const std::string& _physicsManagerAttributesPath);
   /**
-   * @brief Returns the name of the currently used
-   * @ref esp::metadata::attributes::PhysicsManagerAttributes
+   * @brief Returns the name of the currently used physics manager attributes
    */
   std::string getCurrPhysicsAttributesHandle() {
     return currPhysicsManagerAttributes_;
@@ -117,7 +113,7 @@ class MetadataMediator {
   /**
    * @brief Return manager for construction and access to asset attributes for
    * current dataset.
-   * @return The current dataset's @ref esp::metadata::managers::AssetAttributesManager::ptr,
+   * @return The current dataset's @ref managers::AssetAttributesManager::ptr,
    * or nullptr if no current dataset.
    */
   const managers::AssetAttributesManager::ptr& getAssetAttributesManager() {
@@ -139,7 +135,7 @@ class MetadataMediator {
   /**
    * @brief Return manager for construction and access to object attributes for
    * current dataset.
-   * @return The current dataset's @ref esp::metadata::managers::ObjectAttributesManager::ptr,
+   * @return The current dataset's @ref managers::ObjectAttributesManager::ptr,
    * or nullptr if no current dataset.
    */
   const managers::ObjectAttributesManager::ptr& getObjectAttributesManager() {
@@ -156,8 +152,8 @@ class MetadataMediator {
   }  // getPhysicsAttributesManager
 
   /**
-   * @brief Return manager for construction and access to
-   * @ref esp::attributes::SceneInstanceAttributes for current dataset.
+   * @brief Return manager for construction and access to scene instance
+   * attributes for current dataset.
    * @return The current dataset's @ref
    * managers::SceneInstanceAttributesManager::ptr, or nullptr if no current
    * dataset.
@@ -170,7 +166,7 @@ class MetadataMediator {
   /**
    * @brief Return manager for construction and access to stage attributes for
    * current dataset.
-   * @return The current dataset's @ref esp::metadata::managers::StageAttributesManager::ptr,
+   * @return The current dataset's @ref managers::StageAttributesManager::ptr,
    * or nullptr if no current dataset.
    */
   const managers::StageAttributesManager::ptr& getStageAttributesManager() {
@@ -178,8 +174,7 @@ class MetadataMediator {
   }  // MetadataMediator::getStageAttributesManager
 
   /**
-   * @brief Return a copy of the current
-   * @ref esp::metadata::attributes::PhysicsManagerAttributes.
+   * @brief Return a copy of the current physics manager attributes.
    */
   attributes::PhysicsManagerAttributes::ptr
   getCurrentPhysicsManagerAttributes() {
@@ -254,12 +249,10 @@ class MetadataMediator {
   }  // MetadataMediator::getNavMeshPathByHandle
 
   /**
-   * @brief Returns an appropriate @ref esp::metadata::attributes::SceneInstanceAttributes
-   * corresponding to the passed sceneID/name.  For back-compat, this function
-   * needs to manage various conditions pertaining to the passed name.  It will
-   * always return a valid SceneInstanceAttributes for the current active
-   * dataset.
-   *
+   * @brief Returns an appropriate scene instance attributes corresponding to
+   * the passed sceneID/name.  For back-compat, this function needs to manage
+   * various conditions pertaining to the passed name.  It will always return a
+   * valid SceneInstanceAttributes for the current active dataset.
    * @param sceneName A string representation of the desired
    * SceneInstanceAttributes.  May only correspond to a stage on disk, in which
    * case a new SceneInstanceAttributes will be constructed and properly
@@ -386,20 +379,18 @@ class MetadataMediator {
   /**
    * @brief Allow removal of the named @ref
    * esp::metadata::attributes::SceneDatasetAttributes.  Will silently force
-   * removal of locked attributes. If @p datasetName references @ref
+   * removal of locked attributes.  If @p datasetName references @ref
    * activeSceneDataset_ then will fail, returning false.
    *
-   * @param sceneDatasetName The name of the @ref esp::metadata::attributes::SceneDatasetAttributes
-   * to remove.
+   * @param sceneDatasetName The name of the SceneDatasetAttributes to remove.
    * @return whether successful or not.
    */
   bool removeSceneDataset(const std::string& sceneDatasetName);
 
   /**
    * @brief Checks if passed handle exists as scene dataset.
-   * @param sceneDatasetName The name of the @ref esp::metadata::attributes::SceneDatasetAttributes
-   * to check for.
-   * @return whether @ref esp::metadata::attributes::SceneDatasetAttributes exists.
+   * @param sceneDatasetName The name of the SceneDatasetAttributes to remove.
+   * @return whether successful or not.
    */
   inline bool sceneDatasetExists(const std::string& sceneDatasetName) const {
     return sceneDatasetAttributesManager_->getObjectLibHasHandle(
@@ -408,7 +399,7 @@ class MetadataMediator {
 
   /**
    * @brief Returns the createRenderer flag that was set in the associated
-   * @ref esp::sim::SimulatorConfiguration.
+   * SimulatorConfiguration.
    * @return the boolean flag.
    */
   bool getCreateRenderer() const { return simConfig_.createRenderer; }
@@ -455,13 +446,13 @@ class MetadataMediator {
       const std::string& msgString);
 
   /**
-   * @brief This will create a new, empty @ref esp::metadata::attributes::SceneInstanceAttributes
-   * with the passed name, and create a SceneObjectInstance for the stage also
-   * using the passed name. It is assuming that the dataset has the stage
-   * registered, and that the calling function will register the created
-   * SceneInstance with the dataset.  This method will also register navmesh and
-   * scene descriptor file paths that are synthesized for newly made
-   * SceneInstanceAttributes. TODO: get rid of these fields in stageAttributes.
+   * @brief This will create a new, empty @ref SceneInstanceAttributes with the
+   * passed name, and create a SceneObjectInstance for the stage also using the
+   * passed name. It is assuming that the dataset has the stage registered, and
+   * that the calling function will register the created SceneInstance with the
+   * dataset.  This method will also register navmesh and scene descriptor file
+   * paths that are synthesized for newly made SceneInstanceAttributes. TODO:
+   * get rid of these fields in stageAttributes.
    *
    * @param datasetAttr The current dataset attributes
    * @param stageAttributes Readonly version of stage to use to synthesize scene
@@ -480,8 +471,8 @@ class MetadataMediator {
       const std::string& sceneName);
 
   /**
-   * @brief This function will build the @ref esp::metadata::managers::PhysicsAttributesManager
-   * and @ref esp::metadata::managers::SceneDatasetAttributesManager this mediator will manage.
+   * @brief This function will build the @ref managers::PhysicsAttributesManager
+   * and @ref managers::SceneDatasetAttributesManager this mediator will manage.
    * This should only be called from constructor or reset (TODO).
    */
   void buildAttributesManagers();
@@ -494,13 +485,12 @@ class MetadataMediator {
     // do not get copy of dataset attributes
     auto datasetAttr =
         sceneDatasetAttributesManager_->getObjectByHandle(activeSceneDataset_);
-    // this should never happen - there should always be a dataset with the name
+    // this should never happen - there will always be a dataset with the name
     // activeSceneDataset_
     if (datasetAttr == nullptr) {
-      ESP_ERROR(Mn::Debug::Flag::NoSpace)
-          << "Unable to set active Scene Dataset due to unknown dataset named `"
-          << activeSceneDataset_
-          << "` so changing Scene Dataset  to `default`.";
+      ESP_ERROR() << "Unable to set active dataset due to Unknown dataset named"
+                  << activeSceneDataset_
+                  << "so changing dataset to \"default\".";
       activeSceneDataset_ = "default";
 
       datasetAttr = sceneDatasetAttributesManager_->getObjectByHandle(
@@ -521,17 +511,12 @@ class MetadataMediator {
    * @brief String name of current, default dataset.
    */
   std::string activeSceneDataset_;
-
   /**
    * @brief String name of current Physis Manager attributes
    */
   std::string currPhysicsManagerAttributes_;
-
   /**
    * @brief Manages all construction and access to all scene dataset attributes.
-   * Users should never directly access this, or it could inadvertently get in a
-   * broken and unrecoverable state.  All access to SceneDatasetAttributes
-   * should be currated/governed by MetadataMediator.
    */
   managers::SceneDatasetAttributesManager::ptr sceneDatasetAttributesManager_ =
       nullptr;

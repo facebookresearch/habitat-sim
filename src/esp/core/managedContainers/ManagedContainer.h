@@ -131,7 +131,7 @@ class ManagedContainer : public ManagedContainerBase {
       ESP_ERROR(Magnum::Debug::Flag::NoSpace)
           << "<" << this->objectType_
           << "> : Invalid (null) managed object passed to "
-             "registration, so registration aborted.";
+             "registration. Aborting.";
       return ID_UNDEFINED;
     }
     if ("" != objectHandle) {
@@ -142,8 +142,8 @@ class ManagedContainer : public ManagedContainerBase {
     if ("" == handleToSet) {
       ESP_ERROR(Magnum::Debug::Flag::NoSpace)
           << "<" << this->objectType_
-          << "> : No valid handle specified to register this managed object, "
-             "so registration aborted.";
+          << "> : No valid handle specified to register this "
+          << this->objectType_ << " managed object. Aborting.";
       return ID_UNDEFINED;
     }
     return registerObjectFinalize(std::move(managedObject), handleToSet,

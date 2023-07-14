@@ -49,10 +49,9 @@ int StageAttributesManager::registerObjectFinalize(
     const std::string& stageAttributesHandle,
     bool forceRegistration) {
   if (stageAttributes->getRenderAssetHandle() == "") {
-    ESP_ERROR(Mn::Debug::Flag::NoSpace)
-        << "Attributes template named `" << stageAttributesHandle
-        << "` does not have a valid render asset handle specified, so "
-           "StageAttributes registration is aborted.";
+    ESP_ERROR()
+        << "Attributes template named" << stageAttributesHandle
+        << "does not have a valid render asset handle specified. Aborting.";
     return ID_UNDEFINED;
   }
 
@@ -79,17 +78,16 @@ int StageAttributesManager::registerObjectFinalize(
   } else if (forceRegistration) {
     ESP_WARNING()
         << "Render asset template handle :" << renderAssetHandle
-        << "specified in stage template with handle `" << stageAttributesHandle
-        << "` does not correspond to any existing file or primitive render "
+        << "specified in stage template with handle :" << stageAttributesHandle
+        << "does not correspond to any existing file or primitive render "
            "asset. This attributes is not in a valid state.";
   } else {
     // If renderAssetHandle is not valid file name needs to  fail
-    ESP_ERROR(Mn::Debug::Flag::NoSpace)
-        << "Render asset template handle `" << renderAssetHandle
-        << "` specified in stage template with handle :"
-        << stageAttributesHandle
+    ESP_ERROR()
+        << "Render asset template handle :" << renderAssetHandle
+        << "specified in stage template with handle :" << stageAttributesHandle
         << "does not correspond to any existing file or primitive render "
-           "asset, so StageAttributes registration is aborted.";
+           "asset.  Aborting.";
     return ID_UNDEFINED;
   }
 
@@ -138,8 +136,7 @@ StageAttributes::ptr StageAttributesManager::createPrimBasedAttributesTemplate(
   if (!StageAttributesManager::isValidPrimitiveAttributes(primAssetHandle)) {
     ESP_ERROR(Mn::Debug::Flag::NoSpace)
         << "No primitive with handle '" << primAssetHandle
-        << "' exists so cannot build physical object, so "
-           "createPrimBasedAttributesTemplate for stage aborted.";
+        << "' exists so cannot build physical object.  Aborting.";
     return nullptr;
   }
 
@@ -363,7 +360,7 @@ void StageAttributesManager::setDefaultAssetNameBasedAttributes(
 void StageAttributesManager::setValsFromJSONDoc(
     attributes::StageAttributes::ptr stageAttributes,
     const io::JsonGenericValue& jsonConfig) {
-  this->setAbstractObjectAttributesFromJson(stageAttributes, jsonConfig);
+  this->loadAbstractObjectAttributesFromJson(stageAttributes, jsonConfig);
 
   // directory location where stage files are found
   std::string stageLocFileDir = stageAttributes->getFileDirectory();

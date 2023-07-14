@@ -70,8 +70,8 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
     if (!success) {
       ESP_ERROR(Mn::Debug::Flag::NoSpace)
           << "<" << this->objectType_
-          << "> : Failure reading document as JSON : `" << filename
-          << "`, so unable to create object.";
+          << "> : Failure reading document as JSON : " << filename
+          << ". Aborting.";
       return nullptr;
     }
     // convert doc to const value
@@ -94,9 +94,8 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
                                              CORRADE_UNUSED const U& config) {
     ESP_ERROR(Mn::Debug::Flag::NoSpace)
         << "<" << this->objectType_
-        << "> : Failure loading attributes from document `" << filename
-        << "` of unknown type `" << typeid(U).name()
-        << "` so unable to build object.";
+        << "> : Failure loading attributes from document :" << filename
+        << " of unknown type :" << typeid(U).name() << ". Aborting.";
   }
   /**
    * @brief Method to load a Managed Object's data from a file.  This is the
@@ -141,8 +140,9 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
     if (!this->getObjectLibHasHandle(objectHandle)) {
       // Object not found
       ESP_ERROR(Mn::Debug::Flag::NoSpace)
-          << "<" << this->objectType_ << "> : No object exists with handle `"
-          << objectHandle << "`, so aborting save to file.";
+          << "<" << this->objectType_
+          << ">::saveManagedObjectToFile : No object exists with handle "
+          << objectHandle << " to save as JSON. Aborting.";
       return false;
     }
     // Managed file-based object to save
@@ -179,8 +179,9 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
     if (!this->getObjectLibHasHandle(objectHandle)) {
       // Object not found
       ESP_ERROR(Mn::Debug::Flag::NoSpace)
-          << "<" << this->objectType_ << "> : No object exists with handle "
-          << objectHandle << "`, so aborting save to file.";
+          << "<" << this->objectType_
+          << ">::saveManagedObjectToFile : No object exists with handle "
+          << objectHandle << " to save as JSON. Aborting.";
       return false;
     }
 
@@ -220,11 +221,10 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
     if (!FileUtil::exists(fileDirectory)) {
       // output directory not found
       ESP_ERROR(Mn::Debug::Flag::NoSpace)
-          << "<" << this->objectType_ << "> : Destination directory `"
-          << fileDirectory << "` does not exist to save `"
+          << "<" << this->objectType_ << "> : Destination directory "
+          << fileDirectory << " does not exist to save "
           << managedObject->getSimplifiedHandle()
-          << "` object with requested filename `" << fileName
-          << "`, so aborting save to file.";
+          << " object with requested filename :" << fileName << ". Aborting.";
       return false;
     }
 
@@ -297,23 +297,19 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
     if (!doc.ObjectEmpty()) {
       // save to file if doc exists
       bool success = io::writeJsonToFile(doc, fullFilename, true, 7);
-      if (success) {
-        ESP_DEBUG(Mn::Debug::Flag::NoSpace)
-            << "<" << this->objectType_ << "> : Attempt to save to Filename `"
-            << fullFilename << "` Successful.";
-      } else {
-        ESP_ERROR(Mn::Debug::Flag::NoSpace)
-            << "<" << this->objectType_ << "> : Attempt to save to Filename `"
-            << fullFilename << "` Failed!";
-      }
+
+      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+          << "<" << this->objectType_
+          << "> : Attempt to save to Filename: " << fullFilename << " : "
+          << (success ? "Successful." : "Failed.");
 
       return success;
 
     } else {
-      ESP_ERROR(Mn::Debug::Flag::NoSpace)
-          << "<" << this->objectType_ << "> : Attempt to save to Filename `"
-          << fullFilename
-          << "` failed due to derived document describing object being empty.";
+      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+          << "<" << this->objectType_
+          << "> : Attempt to save to Filename: " << fullFilename
+          << " Failed due to derived document being empty.";
 
       // don't save an empty file/
       return false;
@@ -337,8 +333,9 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
                           CORRADE_UNUSED std::unique_ptr<U>& resDoc) {
     // by here always fail - means document type U is unsupported
     ESP_ERROR(Mn::Debug::Flag::NoSpace)
-        << "<" << this->objectType_ << "> : Load file `" << filename
-        << "` failed due to unsupported file type `" << typeid(U).name() << "`";
+        << "<" << this->objectType_ << "> : Load file : " << filename
+        << " failed due to unsupported file type : `" << typeid(U).name()
+        << "`";
     return false;
   }  // ManagedContainerBase::verifyLoadDocument
   /**
@@ -468,16 +465,16 @@ bool ManagedFileBasedContainer<T, Access>::verifyLoadDocument(
       jsonDoc = std::make_unique<io::JsonDocument>(io::parseJsonFile(filename));
     } catch (...) {
       ESP_ERROR(Mn::Debug::Flag::NoSpace)
-          << "<" << this->objectType_ << "> : Failed to parse `" << filename
-          << "` as JSON.";
+          << "<" << this->objectType_ << "> : Failed to parse " << filename
+          << " as JSON.";
       return false;
     }
     return true;
   } else {
     // by here always fail
     ESP_ERROR(Mn::Debug::Flag::NoSpace)
-        << "<" << this->objectType_ << "> : File `" << filename
-        << "` does not exist.";
+        << "<" << this->objectType_ << "> : File " << filename
+        << " does not exist";
     return false;
   }
 }  // ManagedFileBasedContainer<T, Access>::verifyLoadDocument
