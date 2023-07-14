@@ -35,7 +35,7 @@ class DrawableConfiguration {
     return pbrIblData_;
   }
   void setPbrIblData(const std::shared_ptr<PbrImageBasedLighting>& pbrIblData) {
-    pbrIblData_ = std::move(pbrIblData);
+    pbrIblData_ = pbrIblData;
   }
 
   std::shared_ptr<metadata::attributes::PbrShaderAttributes>
