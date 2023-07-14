@@ -239,7 +239,7 @@ Can't find the answer to your question? Try asking the developers and community 
 
 ## Datasets
 
-[Common datasets used with Habitat](DATASETS.md).
+[HowTo use common supported datasets with Habitat-Sim](DATASETS.md).
 
 
 ## External Contributions
