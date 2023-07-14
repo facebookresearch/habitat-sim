@@ -157,13 +157,13 @@ ConfigValue& ConfigValue::operator=(const ConfigValue& otr) {
     copyValueFrom(otr);
   }
   return *this;
-}  // namespace config
+}  // ConfigValue::operator=
 
 ConfigValue& ConfigValue::operator=(ConfigValue&& otr) noexcept {
   deleteCurrentValue();
   moveValueFrom(std::move(otr));
   return *this;
-}
+}  // ConfigValue::operator=
 
 std::string ConfigValue::getAsString() const {
   switch (_type) {
@@ -463,7 +463,7 @@ int Configuration::loadFromJson(const io::JsonGenericValue& jsonObj) {
     }
   }
   return numConfigSettings;
-}  // namespace config
+}  // Configuration::loadFromJson
 
 void Configuration::writeValueToJson(const char* key,
                                      const char* jsonName,
@@ -481,8 +481,6 @@ void Configuration::writeValuesToJson(io::JsonGenericValue& jsonObj,
   // iterate through all values
   // pair of begin/end const iterators to all values
   auto valIterPair = getValuesIterator();
-  auto valBegin = valIterPair.first;
-  auto valEnd = valIterPair.second;
   for (auto& valIter = valIterPair.first; valIter != valIterPair.second;
        ++valIter) {
     if (valIter->second.isValid()) {
@@ -626,6 +624,30 @@ Configuration& Configuration::operator=(const Configuration& otr) {
     }
   }
   return *this;
+}
+
+std::string Configuration::getAllValsAsString(
+    const std::string& newLineStr) const {
+  std::string res{};
+  if (getNumEntries() == 0) {
+    return newLineStr + "<empty>";
+  }
+
+  for (const auto& entry : valueMap_) {
+    Cr::Utility::formatInto(res, res.length(), "{}{}:{}", newLineStr,
+                            entry.first, entry.second.getAsString());
+  }
+  const std::string subCfgNewLineStr = newLineStr + "\t";
+  for (const auto& subConfig : configMap_) {
+    Cr::Utility::formatInto(
+        res, res.length(), "{}Subconfig {}:{}", newLineStr, subConfig.first,
+        subConfig.second->getAllValsAsString(subCfgNewLineStr));
+  }
+  return res;
+}  // Configuration::getAllValsAsString
+
+Mn::Debug& operator<<(Mn::Debug& debug, const Configuration& cfg) {
+  return debug << cfg.getAllValsAsString();
 }
 
 }  // namespace config
