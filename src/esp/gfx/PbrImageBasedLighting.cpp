@@ -82,7 +82,8 @@ Mn::Matrix4 buildDfltPerspectiveMatrix() {
 PbrImageBasedLighting::PbrImageBasedLighting(
     Flags flags,
     ShaderManager& shaderManager,
-    const std::string& envmapImageFilename)
+    const std::string& bLUTImageFilename,
+    const std::string& envMapImageFilename)
     : flags_(flags), shaderManager_(shaderManager) {
   // import the resources (URDF lookup texture, HDRi environment etc.)
   if (!Cr::Utility::Resource::hasGroup("pbr-images")) {
@@ -95,17 +96,17 @@ PbrImageBasedLighting::PbrImageBasedLighting(
   // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/screenshots/tex_brdflut.png
 
   Cr::Containers::Optional<Mn::Trade::ImageData2D> blutImageData =
-      loadImageData("brdflut_ldr_512x512.png");
-  // sanity checks
-  CORRADE_INTERNAL_ASSERT(blutImageData);
-
-  loadBrdfLookUpTable(blutImageData);
+      loadImageData(bLUTImageFilename);
 
   // ==== load the equirectangular texture ====
   Cr::Containers::Optional<Mn::Trade::ImageData2D> envMapImageData =
-      loadImageData(envmapImageFilename);
+      loadImageData(envMapImageFilename);
+
   // sanity checks
+  CORRADE_INTERNAL_ASSERT(blutImageData);
   CORRADE_INTERNAL_ASSERT(envMapImageData);
+
+  loadBrdfLookUpTable(blutImageData);
 
   // the image filename must be specified in the Resource
   convertEquirectangularToCubeMap(envMapImageData);

@@ -3076,20 +3076,30 @@ void ResourceManager::addComponent(
         materialDataType = ObjectInstanceShaderType::Phong;
       }
     }
-    // TODO : remake the pbrImageBasedLightings to be a map with config-driven
-    // access
-    std::shared_ptr<gfx::PbrImageBasedLighting> pbrIblData_ =
-        (activePbrIbl_ >= 0 ? pbrImageBasedLightings_[activePbrIbl_]
-                            : nullptr);  // pbr image based lighting
-
     gfx::DrawableConfiguration drawableConfig{
         lightSetupKey,     // lightSetup Key
         materialKey,       // material key
         materialDataType,  // shader type to use
         drawables,         // drawable group
         skinData,          // instance skinning data
-        pbrIblData_,       // PbrIBL configuration, if appropriate, nullptr
-        nullptr};          // PbrShaderAttributes
+        nullptr,           // PbrImageBasedLighting - set only if PBR
+        nullptr};          // PbrShaderAttributes - set only if PBR
+
+    if (materialDataType == ObjectInstanceShaderType::PBR) {
+      // TODO : Query which PbrShaderAttributes to use based on region of
+      // drawable.
+
+      // Currently always using default.
+      esp::metadata::attributes::PbrShaderAttributes::ptr pbrAttributesPtr =
+          metadataMediator_->getDefaultPbrShaderConfig();
+
+      std::shared_ptr<gfx::PbrImageBasedLighting> pbrIblData_ =
+          (activePbrIbl_ >= 0 ? pbrImageBasedLightings_[activePbrIbl_]
+                              : nullptr);  // pbr image based lighting
+
+      drawableConfig.setPbrIblData(pbrIblData_);
+      drawableConfig.setPbrShaderConfig(pbrAttributesPtr);
+    }  // if pbr, add appropriate config information
 
     createDrawable(mesh,                // render mesh
                    meshAttributeFlags,  // mesh attribute flags
@@ -3165,9 +3175,9 @@ void ResourceManager::addPrimitiveToDrawables(int primitiveID,
       WHITE_MATERIAL_KEY,              // materialDataKey
       ObjectInstanceShaderType::Flat,  // shader to use
       drawables,                       // DrawableGroup
-      nullptr,                         // skinData
-      nullptr,                         // PbrImageBasedLighting
-      nullptr};                        // PbrShaderAttributes
+      nullptr,                         // No skinData
+      nullptr,   // No PbrImageBasedLighting for flat/phong
+      nullptr};  // PbrShaderAttributes for flat/phong
   // TODO:
   // currently we assume the primitives do not have normal texture
   // so do not need to worry about the tangent or bitangent.
@@ -3224,7 +3234,7 @@ void ResourceManager::initDefaultLightSetups() {
 }
 
 void ResourceManager::loadAndBuildAllIBLAssets() {
-  // Load BLUTs and Envmaps specified in scene dataset.
+  // Load BLUTs and Envmaps specified in scene dataset
 
   // map is keyed by config name, value is
   auto mapOfPbrConfigs = metadataMediator_->getAllPbrShaderRegionConfigs();
@@ -3246,7 +3256,7 @@ void ResourceManager::initPbrImageBasedLighting(
       std::make_shared<gfx::PbrImageBasedLighting>(
           gfx::PbrImageBasedLighting::Flag::IndirectDiffuse |
               gfx::PbrImageBasedLighting::Flag::IndirectSpecular,
-          shaderManager_, hdriImageFilename));
+          shaderManager_, "brdflut_ldr_512x512.png", hdriImageFilename));
   activePbrIbl_ = pbrImageBasedLightings_.size() - 1;
 }
 

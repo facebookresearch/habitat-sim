@@ -43,11 +43,13 @@ class PbrImageBasedLighting {
 
   /**
    * @brief constructor
-   * @param[in] flags, flags that indicate settings
-   * @param[in] shaderManager, the shader manager that manages all the shaders
-   * @param[in] hdriImageFilename, the name of the
-   * HDRi image (an equirectangular image), that will be converted to a
-   * environment cube map
+   * @param[in] flags flags that indicate settings
+   * @param[in] shaderManager the shader manager that manages all the shaders
+   * @param[in] bLUTImageFilename the name of the brdf lookup table image being
+   * used.
+   * @param[in] envMapImageFilename the name of the
+   * HDRi image (an equirectangular image), that will be converted to
+   * environment cube maps
    * NOTE!!! Such an image MUST be SPECIFIED in the
    * ~/habitat-sim/data/pbr/PbrImages.conf
    * and be put in that folder.
@@ -56,7 +58,8 @@ class PbrImageBasedLighting {
    */
   explicit PbrImageBasedLighting(Flags flags,
                                  ShaderManager& shaderManager,
-                                 const std::string& hdriImageFilename);
+                                 const std::string& bLUTImageFilename,
+                                 const std::string& envMapImageFilename);
 
   /**
    * @brief get the irradiance cube map

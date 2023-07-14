@@ -30,12 +30,23 @@ class DrawableConfiguration {
       const std::shared_ptr<metadata::attributes::PbrShaderAttributes>&
           pbrShaderConfig);
 
-  std::shared_ptr<InstanceSkinData> getSkinData() { return skinData_; }
-  std::shared_ptr<PbrImageBasedLighting> getPbrIblData() { return pbrIblData_; }
+  std::shared_ptr<InstanceSkinData> getSkinData() const { return skinData_; }
+  std::shared_ptr<PbrImageBasedLighting> getPbrIblData() const {
+    return pbrIblData_;
+  }
+  void setPbrIblData(const std::shared_ptr<PbrImageBasedLighting>& pbrIblData) {
+    pbrIblData_ = std::move(pbrIblData);
+  }
 
   std::shared_ptr<metadata::attributes::PbrShaderAttributes>
-  getPbrShaderConfig() {
+  getPbrShaderConfig() const {
     return pbrShaderConfig_;
+  }
+
+  void setPbrShaderConfig(
+      const std::shared_ptr<metadata::attributes::PbrShaderAttributes>&
+          pbrShaderConfig) {
+    pbrShaderConfig_ = pbrShaderConfig;
   }
 
   /**

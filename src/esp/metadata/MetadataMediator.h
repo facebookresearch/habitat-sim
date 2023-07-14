@@ -485,13 +485,35 @@ class MetadataMediator {
   getSceneInstanceUserConfiguration(const std::string& curSceneName);
 
   /**
-   * @brief Retrieve all the PbrShaderAttributes currently defined. These will
-   * be used to pre-load/pre-derive any IBL cubemaps used once on dataset load.
+   * @brief Retrieve copies of all the @ref esp::metadata::attributes::PbrShaderAttributes
+   * currently defined. These will be used to pre-load/pre-derive any BLUTs and
+   * IBL cubemaps used once on dataset load.
    */
   std::unordered_map<std::string,
                      esp::metadata::attributes::PbrShaderAttributes::ptr>
-  getAllPbrShaderRegionConfigs() {
+  getAllPbrShaderRegionConfigs() const {
     return pbrShaderAttributesManager_->getObjectsByHandleSubstring("");
+  }
+
+  /**
+   * @brief Retrieve a copy of the named @ref esp::metadata::attributes::PbrShaderAttributes.
+   * @param handle the name of the config we wish to retrieve.
+   */
+  esp::metadata::attributes::PbrShaderAttributes::ptr getPbrShaderConfig(
+      const std::string& handle) const {
+    return pbrShaderAttributesManager_->getObjectsByHandleSubstring(handle).at(
+        handle);
+  }
+
+  /**
+   * @brief Retrieve a copy of the named @ref esp::metadata::attributes::PbrShaderAttributes.
+   * @param handle the name of the config we wish to retrieve.
+   */
+  esp::metadata::attributes::PbrShaderAttributes::ptr
+  getDefaultPbrShaderConfig() const {
+    return pbrShaderAttributesManager_
+        ->getObjectsByHandleSubstring(currDefaultPbrConfigAttributes_)
+        .at(currDefaultPbrConfigAttributes_);
   }
 
  protected:
@@ -514,18 +536,21 @@ class MetadataMediator {
    * with the passed name, and create a SceneObjectInstance for the stage also
    * using the passed name. It is assuming that the dataset has the stage
    * registered, and that the calling function will register the created
-   * SceneInstance with the dataset.  This method will also register navmesh and
-   * scene descriptor file paths that are synthesized for newly made
-   * SceneInstanceAttributes. TODO: get rid of these fields in stageAttributes.
+   * SceneInstance with the dataset.  This method will also register navmesh
+   * and scene descriptor file paths that are synthesized for newly made
+   * SceneInstanceAttributes. TODO: get rid of these fields in
+   * stageAttributes.
    *
    * @param datasetAttr The current dataset attributes
-   * @param stageAttributes Readonly version of stage to use to synthesize scene
-   * instance.
-   * @param dsSceneAttrMgr The current dataset's SceneInstanceAttributesManager
+   * @param stageAttributes Readonly version of stage to use to synthesize
+   * scene instance.
+   * @param dsSceneAttrMgr The current dataset's
+   * SceneInstanceAttributesManager
    * @param sceneName The name for the scene and also the stage within the
    * scene.
    * @return The created SceneInstanceAttributes, with the stage's
-   * SceneInstanceObject to be intialized to reference the stage also named with
+   * SceneInstanceObject to be intialized to reference the stage also named
+   * with
    * @p sceneName .
    */
   attributes::SceneInstanceAttributes::ptr makeSceneAndReferenceStage(
@@ -549,11 +574,12 @@ class MetadataMediator {
     // do not get copy of dataset attributes
     auto datasetAttr =
         sceneDatasetAttributesManager_->getObjectByHandle(activeSceneDataset_);
-    // this should never happen - there should always be a dataset with the name
-    // activeSceneDataset_
+    // this should never happen - there should always be a dataset with the
+    // name activeSceneDataset_
     if (datasetAttr == nullptr) {
       ESP_ERROR(Mn::Debug::Flag::NoSpace)
-          << "Unable to set active Scene Dataset due to unknown dataset named `"
+          << "Unable to set active Scene Dataset due to unknown dataset "
+             "named `"
           << activeSceneDataset_
           << "` so changing Scene Dataset  to `default`.";
       activeSceneDataset_ = "default";
@@ -588,10 +614,10 @@ class MetadataMediator {
    */
   std::string currDefaultPbrConfigAttributes_;
   /**
-   * @brief Manages all construction and access to all scene dataset attributes.
-   * Users should never directly access this, or it could inadvertently get in a
-   * broken and unrecoverable state.  All access to SceneDatasetAttributes
-   * should be currated/governed by MetadataMediator.
+   * @brief Manages all construction and access to all scene dataset
+   * attributes. Users should never directly access this, or it could
+   * inadvertently get in a broken and unrecoverable state.  All access to
+   * SceneDatasetAttributes should be currated/governed by MetadataMediator.
    */
   managers::SceneDatasetAttributesManager::ptr sceneDatasetAttributesManager_ =
       nullptr;
