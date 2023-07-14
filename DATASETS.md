@@ -215,13 +215,11 @@ Note: Depending on the configured radius and height of the agent, certain scans 
 ___
 
 ## YCB Benchmarks - Object and Model Set
-[🤗 Browse on Hugging Face 🤗](https://huggingface.co/datasets/ai-habitat/ycb)
+[🤗 Browse Habitat-ready asset dataset on Hugging Face 🤗](https://huggingface.co/datasets/ai-habitat/ycb)
 
 Details: [https://www.ycbbenchmarks.com/](https://www.ycbbenchmarks.com/).
 
 > YCB Object and Model Set is designed for facilitating benchmarking in robotic manipulation... The set is associated with a [model database](http://www.ycbbenchmarks.com/object-models/) which provides mesh models and high-resolution RGB-D scans of the objects for easy incorporation into manipulation and planning software platforms.
-
-Pre-processed, [Habitat-ready assets](https://dl.fbaipublicfiles.com/habitat/ycb/hab_ycb_v1.2.zip).
 
 Quick-start with the dataset_downloader utility:
 
