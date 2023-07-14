@@ -245,10 +245,8 @@ SceneInstanceAttributes::getRegionPbrShaderAttributesHandles() const {
   if (numValues == 0) {
     return {};
   }
+  // reserve enough space for all values. All should be strings anyway.
   res.reserve(numValues);
-  const std::vector<std::string> keys =
-      pbrShaderRegionConfigHandles_->getStoredKeys(
-          core::config::ConfigStoredType::String);
   // get begin/end pair of iterators for the values in the
   // pbrShaderRegionConfig
   auto pbrShdrRegionIter = pbrShaderRegionConfigHandles_->getValuesIterator();
@@ -256,7 +254,7 @@ SceneInstanceAttributes::getRegionPbrShaderAttributesHandles() const {
        objIter != pbrShdrRegionIter.second; ++objIter) {
     // verify only string values
     if (objIter->second.getType() == core::config::ConfigStoredType::String) {
-      res.push_back(
+      res.emplace_back(
           std::make_pair(objIter->first, objIter->second.getAsString()));
     }
   }

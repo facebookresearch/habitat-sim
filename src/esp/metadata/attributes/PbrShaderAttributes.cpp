@@ -11,9 +11,8 @@ namespace attributes {
 PbrShaderAttributes::PbrShaderAttributes(const std::string& handle)
     : AbstractAttributes("PbrShaderAttributes", handle) {
   setEnableDirectLighting(true);
+  setEnableIBL(true);
 
-  // Should IBL default to enabled?
-  setEnableIBL(false);
   setDirectLightIntensity(1.0f);
   setSkipCalcMissingTBN(false);
   setUseMikkelsenTBN(false);
