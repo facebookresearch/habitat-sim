@@ -400,13 +400,18 @@ jobs:
       - run: &download_test_data
           name: Download test data
           command: |
+              sudo apt install git-lfs
+              git --version
+              git-lfs --version
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat;
+              git lfs install
+              conda install -y gitpython
 
               if [ ! -d ./data/scene_datasets/habitat-test-scenes/van-gogh-room.glb ]
               then
                 cd habitat-sim
-                python src_python/habitat_sim/utils/datasets_download.py --uids ci_test_assets --replace --data-path data/
+                python src_python/habitat_sim/utils/datasets_download.py --uids ci_test_assets --replace --data-path data/ --no-prune
               fi
 
       - run:
