@@ -184,7 +184,9 @@ class Recorder {
   RenderAssetInstanceKey getNewInstanceKey();
   int findInstance(const scene::SceneNode* queryNode);
   RenderAssetInstanceState getInstanceState(const scene::SceneNode* node);
+  void updateStates();
   void updateInstanceStates();
+  void updateRigInstanceStates();
   void checkAndAddDeletion(Keyframe* keyframe,
                            RenderAssetInstanceKey instanceKey);
   void addLoadsCreationsDeletions(KeyframeIterator begin,
@@ -196,7 +198,7 @@ class Recorder {
   Keyframe currKeyframe_;
   std::vector<Keyframe> savedKeyframes_;
   RenderAssetInstanceKey nextInstanceKey_ = 0;
-  std::unordered_map<int, std::vector<scene::SceneNode*>> rigNodes_ = {};
+  std::unordered_map<int, std::vector<scene::SceneNode*>> rigNodes_;
 
   ESP_SMART_POINTERS(Recorder)
 };

@@ -12,6 +12,24 @@
 #include "esp/io/JsonAllTypes.h"
 #include "esp/scene/SceneNode.h"
 
+namespace {
+esp::gfx::replay::Transform createReplayTransform(
+    const Magnum::Matrix4& absTransformMat) {
+  auto rotationShear = absTransformMat.rotationShear();
+  // Remove reflection (negative scaling) from the matrix. We assume
+  // constant node scaling for the node's lifetime. It is baked into
+  // instance-creation so it doesn't need to be saved into
+  // RenderAssetInstanceState. See also onCreateRenderAssetInstance.
+  if (rotationShear.determinant() < 0.0f) {
+    rotationShear[0] *= -1.f;
+  }
+
+  return esp::gfx::replay::Transform{
+      absTransformMat.translation(),
+      Magnum::Quaternion::fromMatrix(rotationShear)};
+};
+}  // namespace
+
 namespace esp {
 namespace gfx {
 namespace replay {
@@ -110,12 +128,12 @@ void Recorder::onHideSceneGraph(const esp::scene::SceneGraph& sceneGraph) {
 }
 
 void Recorder::saveKeyframe() {
-  updateInstanceStates();
+  updateStates();
   advanceKeyframe();
 }
 
 Keyframe Recorder::extractKeyframe() {
-  updateInstanceStates();
+  updateStates();
   auto retVal = std::move(currKeyframe_);
   currKeyframe_ = Keyframe{};
   return retVal;
@@ -212,23 +230,16 @@ int Recorder::findInstance(const scene::SceneNode* queryNode) {
 RenderAssetInstanceState Recorder::getInstanceState(
     const scene::SceneNode* node) {
   const auto absTransformMat = node->absoluteTransformation();
-  auto rotationShear = absTransformMat.rotationShear();
-  // Remove reflection (negative scaling) from the matrix. We assume constant
-  // node scaling for the node's lifetime. It is baked into instance-creation so
-  // it doesn't need to be saved into RenderAssetInstanceState. See also
-  // onCreateRenderAssetInstance.
-  if (rotationShear.determinant() < 0.0f) {
-    rotationShear[0] *= -1.f;
-  }
+  const auto transform = ::createReplayTransform(absTransformMat);
+  return RenderAssetInstanceState{transform, node->getSemanticId()};
+}
 
-  Transform absTransform{absTransformMat.translation(),
-                         Magnum::Quaternion::fromMatrix(rotationShear)};
-
-  return RenderAssetInstanceState{absTransform, node->getSemanticId()};
+void Recorder::updateStates() {
+  updateInstanceStates();
+  updateRigInstanceStates();
 }
 
 void Recorder::updateInstanceStates() {
-  // Update instance states
   for (auto& instanceRecord : instanceRecords_) {
     auto state = getInstanceState(instanceRecord.node);
     if (!instanceRecord.recentState || state != instanceRecord.recentState) {
@@ -237,27 +248,16 @@ void Recorder::updateInstanceStates() {
       instanceRecord.recentState = state;
     }
   }
+}
 
-  // Update rig states
+void Recorder::updateRigInstanceStates() {
   for (const auto& rigItr : rigNodes_) {
     int rigId = rigItr.first;
     for (int boneIdx = 0; boneIdx < rigItr.second.size(); ++boneIdx) {
       BoneState boneUpdate{};
       auto* bone = rigItr.second[boneIdx];
       const auto absTransformMat = bone->absoluteTransformation();
-      auto rotationShear = absTransformMat.rotationShear();
-      // Remove reflection (negative scaling) from the matrix. We assume
-      // constant node scaling for the node's lifetime. It is baked into
-      // instance-creation so it doesn't need to be saved into
-      // RenderAssetInstanceState. See also onCreateRenderAssetInstance.
-      if (rotationShear.determinant() < 0.0f) {
-        rotationShear[0] *= -1.f;
-      }
-
-      Transform absTransform{absTransformMat.translation(),
-                             Magnum::Quaternion::fromMatrix(rotationShear)};
-      boneUpdate.absTransform = absTransform;
-
+      boneUpdate.absTransform = ::createReplayTransform(absTransformMat);
       boneUpdate.rigId = rigId;
       boneUpdate.boneId = boneIdx;
 

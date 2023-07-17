@@ -307,7 +307,6 @@ class Player {
   std::unordered_map<RenderAssetInstanceKey,
                      assets::RenderAssetInstanceCreationInfo>
       creationInfos_;
-  std::unordered_map<RenderAssetInstanceKey, int> createdRigs_;
   std::unordered_map<RenderAssetInstanceKey, Mn::Matrix4>
       latestTransformCache_{};
   std::set<std::string> failedFilepaths_;

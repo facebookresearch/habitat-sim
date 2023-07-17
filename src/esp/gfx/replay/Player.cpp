@@ -242,10 +242,6 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     CORRADE_INTERNAL_ASSERT(createdInstances_.count(instanceKey) == 0);
     createdInstances_[instanceKey] = node;
     creationInfos_[instanceKey] = adjustedCreation;
-
-    if (creation.rigId != ID_UNDEFINED) {
-      createdRigs_[instanceKey] = creation.rigId;
-    }
   }
 
   hackProcessDeletions(keyframe);
@@ -294,11 +290,11 @@ void Player::hackProcessDeletions(const Keyframe& keyframe) {
       implementation_->deleteAssetInstance(it->second);
       createdInstances_.erase(deletionInstanceKey);
 
-      const auto& rigIt = createdRigs_.find(deletionInstanceKey);
-      if (rigIt != createdRigs_.end()) {
-        implementation_->deleteRigInstance(rigIt->second);
-        createdRigs_.erase(rigIt);
+      int rigId = creationInfos_[deletionInstanceKey].rigId;
+      if (rigId != ID_UNDEFINED) {
+        implementation_->deleteRigInstance(rigId);
       }
+      creationInfos_.erase(deletionInstanceKey);
     }
   } else if (keyframe.deletions.size() > 0) {
     // Cache latest transforms
