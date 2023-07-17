@@ -35,3 +35,46 @@ skip_glob = ["*/deps/*", "*/build/*", "*/obselete/*"]
 known_first_party = ["habitat_sim"]
 profile = 'black'
 treat_comments_as_code = "# %%"
+
+[tool.ruff]
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "data",
+    "dist",
+    "docs",
+    "src/deps",
+    "tools/run-clang-tidy.py",
+]
+ignore = [
+    "A003",
+    "B018",
+    "B9",
+    "C401",
+    "C402",
+    "C408",
+    "RET504",
+    "RET505",
+    "SIM105",
+    "PERF2",
+    "PERF4",
+]
+line-length = 88
+select = [
+    "A",
+    "B",
+    "C4",
+    "F",
+    "RET",
+    "SIM",
+    "W",
+    "PERF",
+]
+
+[tool.ruff.per-file-ignores]
+"*/__init__.py" = ["F401"]
+"examples/tutorials/nb_python/*.py" = [
+    "B008",
+    "F841",
+]
