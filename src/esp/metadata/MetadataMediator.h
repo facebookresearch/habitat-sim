@@ -491,7 +491,7 @@ class MetadataMediator {
    */
   std::unordered_map<std::string,
                      esp::metadata::attributes::PbrShaderAttributes::ptr>
-  getAllPbrShaderRegionConfigs() const {
+  getAllPbrShaderConfigs() const {
     return pbrShaderAttributesManager_->getObjectsByHandleSubstring("");
   }
 

@@ -5,7 +5,6 @@
 #ifndef ESP_GFX_PBR_IBL_H_
 #define ESP_GFX_PBR_IBL_H_
 
-#include <Corrade/Containers/EnumSet.h>
 #include <Corrade/Containers/Optional.h>
 #include <Magnum/GL/Texture.h>
 
@@ -20,46 +19,16 @@ namespace gfx {
 class PbrImageBasedLighting {
  public:
   /**
-   * @brief Flag
-   *
-   * @see @ref Flags, @ref flags()
-   */
-  enum class Flag : Magnum::UnsignedShort {
-    /**
-     * enable indirect diffuse part of the lighting equation
-     */
-    IndirectDiffuse = 1 << 0,
-
-    /**
-     * enable indirect specular part of the lighting equation
-     */
-    IndirectSpecular = 1 << 1,
-  };
-
-  /**
-   * @brief Flags
-   */
-  typedef Corrade::Containers::EnumSet<Flag> Flags;
-
-  /**
    * @brief constructor
-   * @param[in] flags flags that indicate settings
    * @param[in] shaderManager the shader manager that manages all the shaders
-   * @param[in] bLUTImageFilename the name of the brdf lookup table image being
-   * used.
-   * @param[in] envMapImageFilename the name of the
-   * HDRi image (an equirectangular image), that will be converted to
-   * environment cube maps
-   * NOTE!!! Such an image MUST be SPECIFIED in the
-   * ~/habitat-sim/data/pbr/PbrImages.conf
-   * and be put in that folder.
-   * example image:
-   * ~/habitat-sim/data/pbr/lythwood_room_4k.png
+   * @param[in] brdfLUT the brdf lookup table texture being used.
+   * @param[in] envMapTexture the texture to use to build the environment cube
+   * maps.
    */
-  explicit PbrImageBasedLighting(Flags flags,
-                                 ShaderManager& shaderManager,
-                                 const std::string& bLUTImageFilename,
-                                 const std::string& envMapImageFilename);
+  explicit PbrImageBasedLighting(
+      ShaderManager& shaderManager,
+      const Cr::Containers::Optional<Mn::Trade::ImageData2D>& brdfLUTImageData,
+      const Cr::Containers::Optional<Mn::Trade::ImageData2D>& envMapImageData);
 
   /**
    * @brief get the irradiance cube map
@@ -80,7 +49,7 @@ class PbrImageBasedLighting {
   /**
    * @brief load the equirectangular env map and convert it to an environmental
    * cube map
-   * @param[in] imageData The loaded equirectangular image, which will be
+   * @param[in] envMapTexture The loaded equirectangular texture, which will be
    * converted to an environment cube map
    */
   void convertEquirectangularToCubeMap(
@@ -93,12 +62,6 @@ class PbrImageBasedLighting {
   void loadBrdfLookUpTable(
       const Cr::Containers::Optional<Mn::Trade::ImageData2D>& imageData);
 
-  Flags flags_;
-
-  /**
-   * @brief the environment map (e.g., a sky box)
-   */
-  Cr::Containers::Optional<CubeMap> environmentMap_;
   /**
    * @brief 2D BRDF lookup table, an HDR image (16-bits per channel) that
    * contains BRDF values for roughness and view angle. This is for the indirect
@@ -139,23 +102,7 @@ class PbrImageBasedLighting {
    * @param[in] envCubeMap cube map of environment
    */
   void computePrefilteredEnvMap(Magnum::GL::CubeMapTexture& envCubeMap);
-
-  enum class PbrIblShaderType : uint8_t {
-    IrradianceMap = 0,
-    PrefilteredMap = 1,
-    // BrdfLookupTable = 2, // TODO
-    EquirectangularToCubeMap = 3,
-  };
-  /**
-   * @brief get the shader based on the type
-   * @param[in] type, see @ref PbrIblShaderType
-   */
-  template <typename T>
-  Mn::Resource<Mn::GL::AbstractShaderProgram, T> getShader(
-      PbrIblShaderType type);
 };
-
-CORRADE_ENUMSET_OPERATORS(PbrImageBasedLighting::Flags)
 
 }  // namespace gfx
 }  // namespace esp

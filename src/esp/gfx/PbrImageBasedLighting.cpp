@@ -3,10 +3,6 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "PbrImageBasedLighting.h"
-
-#include <Corrade/PluginManager/Manager.h>
-#include <Corrade/Utility/Assert.h>
-#include <Corrade/Utility/Resource.h>
 #include <Magnum/GL/Mesh.h>
 #include <Magnum/GL/Texture.h>
 #include <Magnum/GL/TextureFormat.h>
@@ -24,13 +20,6 @@
 
 #include "CubeMapCamera.h"
 
-// This is to import the "resources" at runtime. When the resource is
-// compiled into static library, it must be explicitly initialized via this
-// macro, and should be called *outside* of any namespace.
-static void importPbrImageResources() {
-  CORRADE_RESOURCE_INITIALIZE(PbrImageResources)
-}
-
 namespace Mn = Magnum;
 namespace Cr = Corrade;
 
@@ -38,35 +27,10 @@ namespace esp {
 namespace gfx {
 
 namespace {
+// TODO: move to PbrShaderAttributes
 constexpr unsigned int environmentMapSize = 1024;
 constexpr unsigned int prefilteredMapSize = 1024;
 constexpr unsigned int irradianceMapSize = 128;
-
-Cr::Containers::Optional<Mn::Trade::ImageData2D> loadImageData(
-    const std::string& imageFilename) {  // loadImageData
-  // plugin manager used to instantiate importers which in turn are used
-  // to load image data
-  Cr::PluginManager::Manager<Mn::Trade::AbstractImporter> manager;
-  std::string importerName{"AnyImageImporter"};
-  Cr::Containers::Pointer<Mn::Trade::AbstractImporter> importer =
-      manager.loadAndInstantiate(importerName);
-  CORRADE_INTERNAL_ASSERT(importer);
-  // set importer flags if gfx logging is quieted
-  if (!isLevelEnabled(logging::Subsystem::gfx,
-                      logging::LoggingLevel::Warning)) {
-    importer->addFlags(Mn::Trade::ImporterFlag::Quiet);
-  } else if (isLevelEnabled(logging::Subsystem::gfx,
-                            logging::LoggingLevel::VeryVerbose)) {
-    // set verbose flags if necessary
-    importer->addFlags(Mn::Trade::ImporterFlag::Verbose);
-  }
-
-  const Cr::Utility::Resource rs{"pbr-images"};
-  importer->openData(rs.getRaw(imageFilename));
-  Cr::Containers::Optional<Mn::Trade::ImageData2D> imageData =
-      importer->image2D(0);
-  return imageData;
-}  // loadImageData
 
 Mn::Matrix4 buildDfltPerspectiveMatrix() {
   using Mn::Math::Literals::operator""_degf;
@@ -80,93 +44,17 @@ Mn::Matrix4 buildDfltPerspectiveMatrix() {
 }  // namespace
 
 PbrImageBasedLighting::PbrImageBasedLighting(
-    Flags flags,
     ShaderManager& shaderManager,
-    const std::string& bLUTImageFilename,
-    const std::string& envMapImageFilename)
-    : flags_(flags), shaderManager_(shaderManager) {
-  // import the resources (URDF lookup texture, HDRi environment etc.)
-  if (!Cr::Utility::Resource::hasGroup("pbr-images")) {
-    importPbrImageResources();
-  }
-  // load the BRDF lookup table (indirect specular part)
-  // TODO: should have the capability to compute it by the simulator
-
+    const Cr::Containers::Optional<Mn::Trade::ImageData2D>& brdfLUTImageData,
+    const Cr::Containers::Optional<Mn::Trade::ImageData2D>& envMapImageData)
+    : shaderManager_(shaderManager) {
   // using the brdflut from here:
   // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/screenshots/tex_brdflut.png
 
-  Cr::Containers::Optional<Mn::Trade::ImageData2D> blutImageData =
-      loadImageData(bLUTImageFilename);
+  loadBrdfLookUpTable(brdfLUTImageData);
 
-  // ==== load the equirectangular texture ====
-  Cr::Containers::Optional<Mn::Trade::ImageData2D> envMapImageData =
-      loadImageData(envMapImageFilename);
-
-  // sanity checks
-  CORRADE_INTERNAL_ASSERT(blutImageData);
-  CORRADE_INTERNAL_ASSERT(envMapImageData);
-
-  loadBrdfLookUpTable(blutImageData);
-
-  // the image filename must be specified in the Resource
+  // convert the loaded texture into a cubemap
   convertEquirectangularToCubeMap(envMapImageData);
-
-  auto& cubemapTexture =
-      environmentMap_->getTexture(CubeMap::TextureType::Color);
-
-  // compute the irradiance map for indirect diffuse part
-  computeIrradianceMap(cubemapTexture);
-
-  // compute the prefiltered environment map (indirect specular part)
-  computePrefilteredEnvMap(cubemapTexture);
-}
-
-template <typename T>
-Mn::Resource<Mn::GL::AbstractShaderProgram, T> PbrImageBasedLighting::getShader(
-    PbrIblShaderType type) {
-  Mn::ResourceKey key;
-  switch (type) {
-    case PbrIblShaderType::IrradianceMap:
-      key = Mn::ResourceKey{"irradianceMap"};
-      break;
-
-    case PbrIblShaderType::PrefilteredMap:
-      key = Mn::ResourceKey{"prefilteredMap"};
-      break;
-
-    case PbrIblShaderType::EquirectangularToCubeMap:
-      key = Mn::ResourceKey{"equirectangularToCubeMap"};
-      break;
-
-    default:
-      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
-      break;
-  }
-  Mn::Resource<Mn::GL::AbstractShaderProgram, T> shader =
-      shaderManager_.get<Mn::GL::AbstractShaderProgram, T>(key);
-
-  if (!shader) {
-    if (type == PbrIblShaderType::IrradianceMap) {
-      shaderManager_.set<Mn::GL::AbstractShaderProgram>(
-          shader.key(),
-          new PbrPrecomputedMapShader(PbrPrecomputedMapShader::Flags{
-              PbrPrecomputedMapShader::Flag::IrradianceMap}),
-          Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
-    } else if (type == PbrIblShaderType::EquirectangularToCubeMap) {
-      shaderManager_.set<Mn::GL::AbstractShaderProgram>(
-          shader.key(), new PbrEquiRectangularToCubeMapShader(),
-          Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
-    } else if (type == PbrIblShaderType::PrefilteredMap) {
-      shaderManager_.set<Mn::GL::AbstractShaderProgram>(
-          shader.key(),
-          new PbrPrecomputedMapShader(PbrPrecomputedMapShader::Flags{
-              PbrPrecomputedMapShader::Flag::PrefilteredMap}),
-          Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
-    }
-  }
-  CORRADE_INTERNAL_ASSERT(shader);
-
-  return shader;
 }
 
 void PbrImageBasedLighting::loadBrdfLookUpTable(
@@ -187,51 +75,81 @@ void PbrImageBasedLighting::loadBrdfLookUpTable(
 
 void PbrImageBasedLighting::convertEquirectangularToCubeMap(
     const Cr::Containers::Optional<Mn::Trade::ImageData2D>& imageData) {
-  Mn::GL::Texture2D tex = Mn::GL::Texture2D{};
-  tex.setMinificationFilter(Mn::GL::SamplerFilter::Linear)
+  Mn::GL::Texture2D envMapTexture = Mn::GL::Texture2D{};
+  envMapTexture.setMinificationFilter(Mn::GL::SamplerFilter::Linear)
       .setMagnificationFilter(Mn::GL::SamplerFilter::Linear)
       .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
       .setStorage(1, Mn::GL::textureFormat(imageData->format()),
                   imageData->size());
 
   if (!imageData->isCompressed()) {
-    tex.setSubImage(0, {}, *imageData);
+    envMapTexture.setSubImage(0, {}, *imageData);
   } else {
-    tex.setCompressedSubImage(0, {}, *imageData);
+    envMapTexture.setCompressedSubImage(0, {}, *imageData);
   }
   // prepare a mesh to be displayed
   Mn::GL::Mesh mesh = Mn::GL::Mesh{};
   mesh.setCount(3);
 
   // Initialize the base environment map
-  environmentMap_ =
+  Cr::Containers::Optional<CubeMap> environmentMap =
       CubeMap(environmentMapSize,
               CubeMap::Flag::ColorTexture | CubeMap::Flag::ManuallyBuildMipmap);
 
   // prepare the shader
   Mn::Resource<Mn::GL::AbstractShaderProgram, PbrEquiRectangularToCubeMapShader>
-      shader = getShader<PbrEquiRectangularToCubeMapShader>(
-          PbrIblShaderType::EquirectangularToCubeMap);
+      shader = shaderManager_.get<Mn::GL::AbstractShaderProgram,
+                                  PbrEquiRectangularToCubeMapShader>(
+          "equirectangularToCubeMap");
+  // If not found create
+  if (!shader) {
+    shaderManager_.set<Mn::GL::AbstractShaderProgram>(
+        shader.key(), new PbrEquiRectangularToCubeMapShader(),
+        Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
+  }
+  CORRADE_INTERNAL_ASSERT(shader);
 
   // bind the equirectangular texture
-  shader->bindEquirectangularTexture(tex);
+  shader->bindEquirectangularTexture(envMapTexture);
 
   // draw the 6 sides one by one
   for (unsigned int iSide = 0; iSide < 6; ++iSide) {
     // bind frambuffer, clear color and depth
-    environmentMap_->prepareToDraw(iSide);
+    environmentMap->prepareToDraw(iSide);
     shader->setCubeSideIndex(iSide);
     shader->draw(mesh);
   }
   // do NOT forget to populate to all the mip levels!
-  environmentMap_->getTexture(CubeMap::TextureType::Color).generateMipmap();
+
+  // environmentMap.getTexture(CubeMap::TextureType::Color).generateMipmap();
+  auto& cubemapTexture =
+      environmentMap->getTexture(CubeMap::TextureType::Color);
+  cubemapTexture.generateMipmap();
+  // compute the irradiance map for indirect diffuse part
+  computeIrradianceMap(cubemapTexture);
+
+  // compute the prefiltered environment map (indirect specular part)
+  computePrefilteredEnvMap(cubemapTexture);
 
 }  // convertEquirectangularToCubeMap
 
 void PbrImageBasedLighting::computeIrradianceMap(
     Mn::GL::CubeMapTexture& envCubeMap) {
+  // Prepare the shader for Irradiance Map
+
   Mn::Resource<Mn::GL::AbstractShaderProgram, PbrPrecomputedMapShader> shader =
-      getShader<PbrPrecomputedMapShader>(PbrIblShaderType::IrradianceMap);
+      shaderManager_
+          .get<Mn::GL::AbstractShaderProgram, PbrPrecomputedMapShader>(
+              "irradianceMap");
+
+  if (!shader) {
+    shaderManager_.set<Mn::GL::AbstractShaderProgram>(
+        shader.key(),
+        new PbrPrecomputedMapShader(PbrPrecomputedMapShader::Flags{
+            PbrPrecomputedMapShader::Flag::IrradianceMap}),
+        Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
+  }
+  CORRADE_INTERNAL_ASSERT(shader);
 
   shader->bindEnvironmentMap(envCubeMap);
   shader->setProjectionMatrix(buildDfltPerspectiveMatrix());
@@ -261,7 +179,17 @@ void PbrImageBasedLighting::computeIrradianceMap(
 void PbrImageBasedLighting::computePrefilteredEnvMap(
     Mn::GL::CubeMapTexture& envCubeMap) {
   Mn::Resource<Mn::GL::AbstractShaderProgram, PbrPrecomputedMapShader> shader =
-      getShader<PbrPrecomputedMapShader>(PbrIblShaderType::PrefilteredMap);
+      shaderManager_
+          .get<Mn::GL::AbstractShaderProgram, PbrPrecomputedMapShader>(
+              "prefilteredMap");
+
+  if (!shader) {
+    shaderManager_.set<Mn::GL::AbstractShaderProgram>(
+        shader.key(),
+        new PbrPrecomputedMapShader(PbrPrecomputedMapShader::Flags{
+            PbrPrecomputedMapShader::Flag::PrefilteredMap}),
+        Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
+  }
 
   shader->bindEnvironmentMap(envCubeMap);
   shader->setProjectionMatrix(buildDfltPerspectiveMatrix());
@@ -303,11 +231,6 @@ void PbrImageBasedLighting::computePrefilteredEnvMap(
 }  // computePrefilteredEnvMap
 
 CubeMap& PbrImageBasedLighting::getIrradianceMap() {
-  CORRADE_ASSERT(flags_ & Flag::IndirectDiffuse,
-                 "PbrImageBasedLighting::getIrradianceMap(): the instance is "
-                 "not created with indirect diffuse part enabled.",
-                 *irradianceMap_);
-
   CORRADE_ASSERT(
       irradianceMap_,
       "PbrImageBasedLighting::getIrradianceMap(): the irradiance map is empty. "
@@ -318,11 +241,6 @@ CubeMap& PbrImageBasedLighting::getIrradianceMap() {
 }
 
 CubeMap& PbrImageBasedLighting::getPrefilteredMap() {
-  CORRADE_ASSERT(flags_ & Flag::IndirectSpecular,
-                 "PbrImageBasedLighting::getPrefilteredMap(): the instance is "
-                 "not created with indirect specular part enabled.",
-                 *prefilteredMap_);
-
   CORRADE_ASSERT(prefilteredMap_,
                  "PbrImageBasedLighting::getPrefilteredMap(): the pre-filtered "
                  "cube map is empty."
@@ -332,11 +250,6 @@ CubeMap& PbrImageBasedLighting::getPrefilteredMap() {
 }
 
 Mn::GL::Texture2D& PbrImageBasedLighting::getBrdfLookupTable() {
-  CORRADE_ASSERT(flags_ & Flag::IndirectSpecular,
-                 "PbrImageBasedLighting::getBrdfLookupTable(): the instance is "
-                 "not created with indirect specular part enabled.",
-                 *brdfLUT_);
-
   CORRADE_ASSERT(brdfLUT_,
                  "PbrImageBasedLighting::getBrdfLookupTable(): the brdf lookup "
                  "table (a texture) is empty"

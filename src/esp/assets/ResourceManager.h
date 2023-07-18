@@ -630,9 +630,24 @@ class ResourceManager {
    * registration
    */
   void initPbrImageBasedLighting(const std::string& bLUTImageFilename,
-                                 const std::string& hdriImageFilename);
+                                 const std::string& envMapFilename);
 
  private:
+  /**
+   * @brief Load images by filename into a properly formatted texture. This
+   * function will either use the passed resource file to provide the requested
+   * image or will load the image from disk.
+   * @param imageFilename The image's filenaame, either fully qualified or else
+   * as it appears in the resource file.
+   * @param useImageTxtrFormat Whether to use the image's texture format or use
+   * RGBA8.
+   * @return An shared pointer to the 2d texture built from the loaded image.
+   */
+  Cr::Containers::Optional<Mn::Trade::ImageData2D> loadImage(
+      const std::string& imageFilename,
+      bool useImageTxtrFormat,
+      const Cr::Utility::Resource& rs);
+
   /**
    * @brief called after MM is set or reset, go through and load/generate
    * IBL assets that have not already been loaded.
@@ -1202,6 +1217,11 @@ class ResourceManager {
    * @brief Importer used to load generic mesh files (AnySceneImporter)
    */
   Corrade::Containers::Pointer<Importer> fileImporter_;
+
+  /**
+   * @brief Importer used to load images (AnyImageImporter)
+   */
+  Corrade::Containers::Pointer<Importer> imageImporter_;
 
   /**
    * @brief Reference to the currently loaded semanticScene Descriptor

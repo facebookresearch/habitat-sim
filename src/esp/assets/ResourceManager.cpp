@@ -18,6 +18,7 @@
 #include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/Path.h>
+#include <Corrade/Utility/Resource.h>
 #include <Corrade/Utility/String.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/EigenIntegration/Integration.h>
@@ -83,6 +84,13 @@
 #include "GenericSemanticMeshData.h"
 #include "MeshData.h"
 
+// This is to import the "resources" at runtime. When the resource is
+// compiled into static library, it must be explicitly initialized via this
+// macro, and should be called *outside* of any namespace.
+static void importPbrImageResources() {
+  CORRADE_RESOURCE_INITIALIZE(PbrIBlImageResources)
+}
+
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 
@@ -141,16 +149,22 @@ void ResourceManager::buildImporters() {
   CORRADE_INTERNAL_ASSERT_OUTPUT(
       fileImporter_ = importerManager_.loadAndInstantiate("AnySceneImporter"));
 
+  // instantiate importer for image load
+  CORRADE_INTERNAL_ASSERT_OUTPUT(
+      imageImporter_ = importerManager_.loadAndInstantiate("AnyImageImporter"));
+
   // set quiet importer flags if asset logging is quieted
   if (!isLevelEnabled(logging::Subsystem::assets,
                       logging::LoggingLevel::Warning)) {
     fileImporter_->addFlags(Mn::Trade::ImporterFlag::Quiet);
     primitiveImporter_->addFlags(Mn::Trade::ImporterFlag::Quiet);
+    imageImporter_->addFlags(Mn::Trade::ImporterFlag::Quiet);
   } else if (isLevelEnabled(logging::Subsystem::assets,
                             logging::LoggingLevel::VeryVerbose)) {
     // set verbose flags if necessary
     fileImporter_->addFlags(Mn::Trade::ImporterFlag::Verbose);
     primitiveImporter_->addFlags(Mn::Trade::ImporterFlag::Verbose);
+    imageImporter_->addFlags(Mn::Trade::ImporterFlag::Verbose);
   }
 
   // necessary for importer to be usable
@@ -2340,8 +2354,7 @@ void ResourceManager::loadMaterials(Importer& importer,
 
       // This material data has any per-shader as well as global custom
       // user-defined attributes set excluding texture pointer mappings
-      Corrade::Containers::Optional<Magnum::Trade::MaterialData>
-          custMaterialData;
+      Corrade::Containers::Optional<Mn::Trade::MaterialData> custMaterialData;
       Cr::Containers::StringView shaderBeingUsed;
       // Build based on desired shader to use
       // pbr shader spec, of material-specified and material specifies pbr
@@ -3033,8 +3046,7 @@ void ResourceManager::addComponent(
     const int meshID = metaData.meshIndex.first + meshIDLocal;
     Mn::GL::Mesh* mesh = meshes_.at(meshID)->getMagnumGLMesh();
     if (getCreateRenderer()) {
-      CORRADE_ASSERT(mesh,
-                     "::addComponent() : GL mesh expected but not found", );
+      CORRADE_ASSERT(mesh, "addComponent() : GL mesh expected but not found", );
     } else {
       CORRADE_ASSERT(!mesh,
                      "addComponent() : encountered unexpected GL mesh with "
@@ -3233,32 +3245,89 @@ void ResourceManager::initDefaultLightSetups() {
   shaderManager_.setFallback(gfx::LightSetup{});
 }
 
+Cr::Containers::Optional<Mn::Trade::ImageData2D> ResourceManager::loadImage(
+    const std::string& imageFilename,
+    bool useImageTxtrFormat,
+    const Cr::Utility::Resource& rs) {
+  // Not found, attempt to load
+  imageImporter_->openData(rs.getRaw(imageFilename));
+  Cr::Containers::Optional<Mn::Trade::ImageData2D> imageData =
+      imageImporter_->image2D(0);
+
+  // sanity check
+  CORRADE_INTERNAL_ASSERT(imageData);
+
+  return imageData;
+
+  // // brdfLUT should use RGBA, based on past work
+  // // envMap should use image format
+  // Mn::GL::TextureFormat textureFmtToUse =
+  //     useImageTxtrFormat ? Mn::GL::textureFormat(imageData->format())
+  //                        : Mn::GL::TextureFormat::RGBA;
+
+  // auto resTexture = std::make_shared<Mn::GL::Texture2D>();
+  // (*resTexture)
+  //     .setMinificationFilter(Mn::GL::SamplerFilter::Linear)
+  //     .setMagnificationFilter(Mn::GL::SamplerFilter::Linear)
+  //     .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
+  //     .setStorage(1, textureFmtToUse, imageData->size());
+
+  // if (!imageData->isCompressed()) {
+  //   resTexture->setSubImage(0, {}, *imageData);
+  // } else {
+  //   resTexture->setCompressedSubImage(0, {}, *imageData);
+  // }
+  // return resTexture;
+}  // ResourceManager::loadImage
+
 void ResourceManager::loadAndBuildAllIBLAssets() {
   // Load BLUTs and Envmaps specified in scene dataset
-
+  // First verify that pbr image resources is available
+  if (!Cr::Utility::Resource::hasGroup("pbr-images")) {
+    importPbrImageResources();
+  }
+  // const Cr::Utility::Resource rs{"pbr-images"};
   // map is keyed by config name, value is
-  auto mapOfPbrConfigs = metadataMediator_->getAllPbrShaderRegionConfigs();
+  auto mapOfPbrConfigs = metadataMediator_->getAllPbrShaderConfigs();
+  ESP_WARNING(Mn::Debug::Flag::NoSpace)
+      << "PBR/IBL files being loadded : " << mapOfPbrConfigs.size();
+  for (const auto& entry : mapOfPbrConfigs) {
+    ESP_WARNING(Mn::Debug::Flag::NoSpace)
+        << "\t`" << entry.first
+        << "` : \n\tBLUT Handle : " << entry.second->getIBLBrdfLUTAssetHandle()
+        << " | envMapHandle :  " << entry.second->getIBLEnvMapAssetHandle()
+        << "\n";
+
+    // initPbrImageBasedLighting(entry.second->getIBLBrdfLUTAssetHandle(),
+    //                           entry.second->getIBLEnvMapAssetHandle());
+  }
   //
 }  // ResourceManager::loadAndBuildAllIBLAssets
 
 void ResourceManager::initPbrImageBasedLighting(
     const std::string& bLUTImageFilename,
-    const std::string& envMapImageFilename) {
-  // TODO:
-  // should work with the scene instance config, initialize
-  // different PBR IBLs at different positions in the scene.
-
-  // Don't reload if already active set to 0
-  if (activePbrIbl_ != ID_UNDEFINED) {
-    return;
+    const std::string& envMapFilename) {
+  // Load BLUTs and Envmaps specified in scene dataset
+  // First verify that pbr image resources is available
+  if (!Cr::Utility::Resource::hasGroup("pbr-images")) {
+    importPbrImageResources();
   }
+  const Cr::Utility::Resource rs{"pbr-images"};
+
+  // ==== load the brdf lookup table texture ====
+
+  auto blutImage = loadImage(bLUTImageFilename, false, rs);
+
+  // ==== load the equirectangular texture ====
+  auto envMapImage = loadImage(envMapFilename, true, rs);
 
   pbrImageBasedLightings_.emplace_back(
-      std::make_shared<gfx::PbrImageBasedLighting>(
-          gfx::PbrImageBasedLighting::Flag::IndirectDiffuse |
-              gfx::PbrImageBasedLighting::Flag::IndirectSpecular,
-          shaderManager_, bLUTImageFilename, envMapImageFilename));
-  activePbrIbl_ = pbrImageBasedLightings_.size() - 1;
+      std::make_shared<gfx::PbrImageBasedLighting>(shaderManager_, blutImage,
+                                                   envMapImage));
+
+  if (activePbrIbl_ == ID_UNDEFINED) {
+    activePbrIbl_ = pbrImageBasedLightings_.size() - 1;
+  }
 }
 
 bool ResourceManager::isLightSetupCompatible(
