@@ -200,13 +200,12 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     assetInfos_[assetInfo.filepath] = assetInfo;
   }
 
-  std::unordered_map<int, std::vector<std::pair<int, std::string>>>
-      boneCreations{};
+  boneCreations_.clear();
   for (const auto& boneCreation : keyframe.boneCreations) {
-    boneCreations[boneCreation.rigId].emplace_back(
+    boneCreations_[boneCreation.rigId].emplace_back(
         std::make_pair(boneCreation.boneId, boneCreation.boneName));
   }
-  for (const auto& boneCreation : boneCreations) {
+  for (const auto& boneCreation : boneCreations_) {
     implementation_->createRigInstance(boneCreation.first, boneCreation.second);
   }
 

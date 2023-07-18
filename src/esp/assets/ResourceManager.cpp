@@ -1705,12 +1705,16 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
   // such as the model bones are driven by the articulated object links.
   std::shared_ptr<gfx::InstanceSkinData> instanceSkinData = nullptr;
   const auto& meshMetaData = loadedAssetData.meshMetaData;
-  if (creation.rigId != ID_UNDEFINED &&
-      meshMetaData.skinIndex.first != ID_UNDEFINED &&
-      rigInstanceExists(creation.rigId)) {
+  if (creation.rigId != ID_UNDEFINED) {
     ESP_CHECK(
         !skins_.empty(),
         "Cannot instantiate skinned model because no skin data is imported.");
+    ESP_CHECK(meshMetaData.skinIndex.first != ID_UNDEFINED,
+              "Cannot instantiate skinned model because skin data is "
+              "incorrectly imported.");
+    ESP_CHECK(rigInstanceExists(creation.rigId),
+              "Cannot instantiate skinned model because the rig was not "
+              "registered to the ResourceManager.");
     const auto& skinData = skins_[meshMetaData.skinIndex.first];
     const auto& rig = rigInstances_[creation.rigId];
     instanceSkinData = std::make_shared<gfx::InstanceSkinData>(skinData);
@@ -3104,7 +3108,8 @@ void ResourceManager::mapSkinnedModelToRig(
   if (jointIt != boneNameJointIdMap.end()) {
     int jointId = jointIt->second;
 
-    // Find rig articulation node matching the bone name
+    // Find rig link node matching the bone name.
+    // Note: The root and rigid bones may not have an associated link.
     const auto& boneNameIt = rig.boneNames.find(gfxBoneName);
     if (boneNameIt != rig.boneNames.end()) {
       auto* bone = rig.bones[boneNameIt->second];

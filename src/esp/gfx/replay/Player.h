@@ -307,8 +307,9 @@ class Player {
   std::unordered_map<RenderAssetInstanceKey,
                      assets::RenderAssetInstanceCreationInfo>
       creationInfos_;
-  std::unordered_map<RenderAssetInstanceKey, Mn::Matrix4>
-      latestTransformCache_{};
+  std::unordered_map<RenderAssetInstanceKey, Mn::Matrix4> latestTransformCache_;
+  std::unordered_map<int, std::vector<std::pair<int, std::string>>>
+      boneCreations_;
   std::set<std::string> failedFilepaths_;
 
   ESP_SMART_POINTERS(Player)
