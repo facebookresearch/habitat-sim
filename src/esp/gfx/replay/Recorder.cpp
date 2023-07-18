@@ -252,16 +252,25 @@ void Recorder::updateInstanceStates() {
 
 void Recorder::updateRigInstanceStates() {
   for (const auto& rigItr : rigNodes_) {
-    int rigId = rigItr.first;
-    for (int boneIdx = 0; boneIdx < rigItr.second.size(); ++boneIdx) {
-      BoneState boneUpdate{};
-      auto* bone = rigItr.second[boneIdx];
+    const int rigId = rigItr.first;
+    const int boneCount = rigItr.second.size();
+    for (int boneIdx = 0; boneIdx < boneCount; ++boneIdx) {
+      const auto* bone = rigItr.second[boneIdx];
       const auto absTransformMat = bone->absoluteTransformation();
-      boneUpdate.absTransform = ::createReplayTransform(absTransformMat);
-      boneUpdate.rigId = rigId;
-      boneUpdate.boneId = boneIdx;
 
-      currKeyframe_.boneUpdates.emplace_back(boneUpdate);
+      const auto cacheIt = rigNodeTransformCache_.find(rigId);
+      if (cacheIt == rigNodeTransformCache_.end()) {
+        rigNodeTransformCache_[rigId] = std::vector<Mn::Matrix4>(boneCount);
+      }
+      if (rigNodeTransformCache_[rigId][boneIdx] != absTransformMat) {
+        rigNodeTransformCache_[rigId][boneIdx] = absTransformMat;
+
+        BoneState boneUpdate{};
+        boneUpdate.absTransform = ::createReplayTransform(absTransformMat);
+        boneUpdate.rigId = rigId;
+        boneUpdate.boneId = boneIdx;
+        currKeyframe_.boneUpdates.emplace_back(boneUpdate);
+      }
     }
   }
 }

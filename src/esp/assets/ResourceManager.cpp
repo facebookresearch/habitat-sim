@@ -1116,7 +1116,7 @@ void ResourceManager::computeInstanceMeshAbsoluteAABBs(
       computeAbsoluteTransformations(staticDrawableInfo);
 
   CORRADE_ASSERT(absTransforms.size() == staticDrawableInfo.size(),
-                 "::computeInstancelMeshAbsoluteAABBs: Number of "
+                 "::computeInstanceMeshAbsoluteAABBs: Number of "
                  "transforms does not match number of drawables. Aborting.", );
 
   for (size_t iEntry = 0; iEntry < absTransforms.size(); ++iEntry) {
