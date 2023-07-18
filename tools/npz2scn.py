@@ -16,7 +16,7 @@ import numpy as np
 
 # Convert ndarrays to python lists so that we can serialize.
 def listify(entry: Dict[str, Any]) -> None:
-    for key in entry.keys():
+    for key in entry:
         if type(entry[key]) is np.ndarray:
             entry[key] = entry[key].tolist()
 

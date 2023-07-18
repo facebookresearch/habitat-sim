@@ -51,7 +51,7 @@ repos:
     -   id: python-check-blanket-type-ignore
 
 -   repo: https://github.com/timothycrosley/isort
-    rev: 5.11.5
+    rev: 5.12.0
     hooks:
     -   id: isort
         exclude: docs/
@@ -62,12 +62,13 @@ repos:
     -   id: black
         exclude: ^examples/tutorials/(nb_python|colabs)
 
--   repo: https://github.com/myint/autoflake
-    rev: v1.4
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version.
+    rev: v0.0.277
     hooks:
-    -   id: autoflake
-        args: ['--expand-star-imports', '--ignore-init-module-imports', '--in-place']
-        exclude: docs/
+    -   id: ruff
+        args: [--fix]
+        exclude: ^examples/tutorials/(nb_python|colabs)
 
 -   repo: https://github.com/pycqa/flake8
     rev: 5.0.4
@@ -115,7 +116,7 @@ repos:
         additional_dependencies:
             - 'nbformat<=5.0.8'
             - black==23.1.0
-            - isort==5.11.5
+            - isort==5.12.0
 
 -   repo: https://github.com/pre-commit/mirrors-clang-format
     rev: v13.0.1
