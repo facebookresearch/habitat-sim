@@ -629,7 +629,8 @@ class ResourceManager {
    * TODO: this will be replaced by config-driven IBL asset loading and
    * registration
    */
-  void initPbrImageBasedLighting(const std::string& hdriImageFilename);
+  void initPbrImageBasedLighting(const std::string& bLUTImageFilename,
+                                 const std::string& hdriImageFilename);
 
  private:
   /**

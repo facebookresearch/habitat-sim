@@ -232,7 +232,8 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
       curSceneInstanceAttributes_->getDefaultPbrShaderAttributesHandle());
 
   if (config_.pbrImageBasedLighting) {
-    resourceManager_->initPbrImageBasedLighting("lythwood_room_1k.hdr");
+    resourceManager_->initPbrImageBasedLighting("brdflut_ldr_512x512.png",
+                                                "lythwood_room_1k.hdr");
   }
 
   // check if attributes is null - should not happen

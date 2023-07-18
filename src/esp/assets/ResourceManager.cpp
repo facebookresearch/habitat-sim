@@ -3242,7 +3242,8 @@ void ResourceManager::loadAndBuildAllIBLAssets() {
 }  // ResourceManager::loadAndBuildAllIBLAssets
 
 void ResourceManager::initPbrImageBasedLighting(
-    const std::string& hdriImageFilename) {
+    const std::string& bLUTImageFilename,
+    const std::string& envMapImageFilename) {
   // TODO:
   // should work with the scene instance config, initialize
   // different PBR IBLs at different positions in the scene.
@@ -3256,7 +3257,7 @@ void ResourceManager::initPbrImageBasedLighting(
       std::make_shared<gfx::PbrImageBasedLighting>(
           gfx::PbrImageBasedLighting::Flag::IndirectDiffuse |
               gfx::PbrImageBasedLighting::Flag::IndirectSpecular,
-          shaderManager_, "brdflut_ldr_512x512.png", hdriImageFilename));
+          shaderManager_, bLUTImageFilename, envMapImageFilename));
   activePbrIbl_ = pbrImageBasedLightings_.size() - 1;
 }
 
