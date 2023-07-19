@@ -60,7 +60,7 @@ void PbrDrawable::setMaterialValuesInternal(
   // reset == false)
   PbrShader::Flags oldFlags(flags_);
   if (reset) {
-    matCache = {};
+    matCache = PBRMaterialCache();
   }
   flags_ = PbrShader::Flag::ObjectId;
 
@@ -485,11 +485,10 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   // setup image based lighting for the shader
   if (flags_ >= PbrShader::Flag::ImageBasedLighting) {
     CORRADE_INTERNAL_ASSERT(pbrIbl_);
-    shader_->bindIrradianceCubeMap(  // TODO: HDR Color
+    shader_->bindIrradianceCubeMap(
         pbrIbl_->getIrradianceMap().getTexture(CubeMap::TextureType::Color));
     shader_->bindBrdfLUT(pbrIbl_->getBrdfLookupTable());
     shader_->bindPrefilteredMap(
-        // TODO: HDR Color
         pbrIbl_->getPrefilteredMap().getTexture(CubeMap::TextureType::Color));
     shader_->setPrefilteredMapMipLevels(
         pbrIbl_->getPrefilteredMap().getMipmapLevels());
