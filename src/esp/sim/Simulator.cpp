@@ -224,18 +224,6 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   curSceneInstanceAttributes_ =
       metadataMediator_->getSceneInstanceAttributesByName(activeSceneName);
 
-  // load IBL assets if appropriate and not loaded already
-  // TODO : So many things.  Needs to be config driven, for one.
-  // Set the current default PBRShaderAttributes based on what is specified in
-  // the curSceneInstanceAttributes_
-  metadataMediator_->setCurrDefaultPbrAttributesHandle(
-      curSceneInstanceAttributes_->getDefaultPbrShaderAttributesHandle());
-
-  if (config_.pbrImageBasedLighting) {
-    resourceManager_->initPbrImageBasedLighting("brdflut_ldr_512x512.png",
-                                                "lythwood_room_1k.hdr");
-  }
-
   // check if attributes is null - should not happen
   ESP_CHECK(
       curSceneInstanceAttributes_,

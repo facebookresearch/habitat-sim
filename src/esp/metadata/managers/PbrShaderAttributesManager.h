@@ -66,6 +66,16 @@ class PbrShaderAttributesManager
   void setValsFromJSONDoc(attributes::PbrShaderAttributes::ptr attribs,
                           const io::JsonGenericValue& jsonConfig) override;
 
+  /**
+   * @brief This will set all the @ref metadata::attributes::PbrShaderAttributes
+   * to have IBL either on or off.
+   */
+  void setAllIBLEnabled(bool isIblEnabled) {
+    for (const auto& val : this->objectLibrary_) {
+      this->getObjectByHandle(val.first)->setEnableIBL(isIblEnabled);
+    }
+  }  // PbrShaderAttributesManager::setDefaultPbrShaderAttributesHandle
+
  protected:
   /**
    * @brief Pbr Attributes Manager Attributes has no reason to check this value

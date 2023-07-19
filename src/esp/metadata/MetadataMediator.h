@@ -516,6 +516,14 @@ class MetadataMediator {
         .at(currDefaultPbrConfigAttributes_);
   }
 
+  /**
+   * @brief This will set the IBL state for every configuration in the current
+   * pbrShaderAttributesManager_.
+   */
+  void setAllPbrShaderConfigIBLState(bool isIblEnabled) {
+    pbrShaderAttributesManager_->setAllIBLEnabled(isIblEnabled);
+  }
+
  protected:
   /**
    * @brief Return the file path corresponding to the passed handle in the
