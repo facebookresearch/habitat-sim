@@ -28,11 +28,22 @@ void MetadataMediator::buildAttributesManagers() {
   // by deleting and remaking.
   createSceneDataset("default");
   // should always have default physicsManagerAttributesPath
-  createPhysicsManagerAttributes(ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH);
+  bool success =
+      createPhysicsManagerAttributes(ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH);
+  // Lock this so it is always available
+  if (success) {
+    physicsAttributesManager_->setLock(ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH,
+                                       true);
+  }
   // should always have default PBRConfig
-  createPbrAttributes(ESP_DEFAULT_PBRSHADER_CONFIG_REL_PATH);
+  success = createPbrAttributes(ESP_DEFAULT_PBRSHADER_CONFIG_REL_PATH);
+  // Lock this so it is always available
+  pbrShaderAttributesManager_->setLock(ESP_DEFAULT_PBRSHADER_CONFIG_REL_PATH,
+                                       true);
   // set as default and current
-  setCurrDefaultPbrAttributesHandle(ESP_DEFAULT_PBRSHADER_CONFIG_REL_PATH);
+  if (success) {
+    setCurrDefaultPbrAttributesHandle(ESP_DEFAULT_PBRSHADER_CONFIG_REL_PATH);
+  }
   // after this setSimulatorConfiguration will be called
 }  // MetadataMediator::buildAttributesManagers
 
@@ -40,17 +51,20 @@ bool MetadataMediator::setSimulatorConfiguration(
     const sim::SimulatorConfiguration& cfg) {
   simConfig_ = cfg;
 
-  // set active global default Pbr/Ibl configuration attributes handle - if
-  // unchanged, does nothing
-  ESP_CHECK(
-      setCurrDefaultPbrAttributesHandle(simConfig_.defaultPbrIblConfigFile),
-      // something failed about setting up physics attributes
-      "Some error prevented changing current Pbr/Ibl Shader Attributes to `"
-          << Mn::Debug::nospace << simConfig_.defaultPbrIblConfigFile
-          << Mn::Debug::nospace
-          << "` as requested in the Simulator Configuration so aborting. "
-             "Verify requested Pbr/Ibl Shader Attributes config filename in "
-             "Simulator Configuration is correct.");
+  if (!setCurrDefaultPbrAttributesHandle(simConfig_.defaultPbrIblConfigFile)) {
+    // something failed about forcing the PbrShaderAttributes to the value in
+    // simConfig_
+    ESP_WARNING(Mn::Debug::Flag::NoSpace)
+        << "Some error prevented changing current Pbr/Ibl Shader Attributes to "
+           "`"
+        << simConfig_.defaultPbrIblConfigFile
+        << "` as requested in the SimulatorConfiguration so resetting to "
+           "default configuration located `"
+        << ESP_DEFAULT_PBRSHADER_CONFIG_REL_PATH
+        << "`. Verify requested Pbr/Ibl Shader Attributes config filename in "
+           "SimulatorConfiguration is correct.";
+    setCurrDefaultPbrAttributesHandle(ESP_DEFAULT_PBRSHADER_CONFIG_REL_PATH);
+  }
 
   // set current active dataset name - if unchanged, does nothing
   ESP_CHECK(setActiveSceneDatasetName(simConfig_.sceneDatasetConfigFile),
@@ -310,7 +324,7 @@ bool MetadataMediator::setActiveSceneDatasetName(
     }
     return true;
   }
-  // if does not exist, attempt to create it
+  // if does not exist, attempt to load/create it
   ESP_DEBUG(Mn::Debug::Flag::NoSpace)
       << "Attempting to create new dataset `" << sceneDatasetName << "`.";
   bool success = createSceneDataset(sceneDatasetName);
@@ -320,8 +334,8 @@ bool MetadataMediator::setActiveSceneDatasetName(
     activeSceneDataset_ = sceneDatasetName;
   }
   ESP_DEBUG(Mn::Debug::Flag::NoSpace)
-      << "Attempt to create new Scene Dataset from `" << sceneDatasetName << "`"
-      << (success ? " succeeded." : " failed. ")
+      << "Attempt to load/create new Scene Dataset from `" << sceneDatasetName
+      << "`" << (success ? " succeeded." : " failed. ")
       << "Currently active Scene Dataset : `" << activeSceneDataset_ << "`.";
   return success;
 }  // MetadataMediator::setActiveSceneDatasetName

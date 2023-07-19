@@ -72,9 +72,26 @@ class PbrShaderAttributesManager
    */
   void setAllIBLEnabled(bool isIblEnabled) {
     for (const auto& val : this->objectLibrary_) {
-      this->getObjectByHandle(val.first)->setEnableIBL(isIblEnabled);
+      // Don't change system default
+      if (val.first.find(ESP_DEFAULT_PBRSHADER_CONFIG_REL_PATH) ==
+          std::string::npos)
+        this->getObjectByHandle(val.first)->setEnableIBL(isIblEnabled);
     }
-  }  // PbrShaderAttributesManager::setDefaultPbrShaderAttributesHandle
+  }  // PbrShaderAttributesManager::setAllIBLEnabled
+
+  /**
+   * @brief This will set all the @ref metadata::attributes::PbrShaderAttributes
+   * to have Direct Ligthing either on or off.
+   */
+  void setAllDirectLightsEnabled(bool isDirLightEnabled) {
+    for (const auto& val : this->objectLibrary_) {
+      // Don't change system default
+      if (val.first.find(ESP_DEFAULT_PBRSHADER_CONFIG_REL_PATH) ==
+          std::string::npos)
+        this->getObjectByHandle(val.first)->setEnableDirectLighting(
+            isDirLightEnabled);
+    }
+  }  // PbrShaderAttributesManager::setAllDirectLightsEnabled
 
  protected:
   /**
