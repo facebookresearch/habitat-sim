@@ -3259,8 +3259,19 @@ std::shared_ptr<Mn::GL::Texture2D> ResourceManager::loadIBLImageIntoTexture(
     // If found don't reload
     resTexture = mapIter->second;
   } else {
-    // Not found, attempt to load
-    imageImporter_->openData(rs.getRaw(imageFilename));
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << "Checking if file is in resource `" << imageFilename << "`";
+    if (rs.hasFile(imageFilename)) {
+      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+          << "File is in resource `" << imageFilename << "`";
+      imageImporter_->openData(rs.getRaw(imageFilename));
+    } else {
+      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+          << "File not in resource `" << imageFilename
+          << "` so loading from disk.";
+      // TODO verify file exists on disk before attempting to load.
+      imageImporter_->openFile(imageFilename);
+    }
     Cr::Containers::Optional<Mn::Trade::ImageData2D> imageData =
         imageImporter_->image2D(0);
 
