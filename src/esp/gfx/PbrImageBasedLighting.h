@@ -27,8 +27,8 @@ class PbrImageBasedLighting {
    */
   explicit PbrImageBasedLighting(
       ShaderManager& shaderManager,
-      const Cr::Containers::Optional<Mn::Trade::ImageData2D>& brdfLUTImageData,
-      const Cr::Containers::Optional<Mn::Trade::ImageData2D>& envMapImageData);
+      const std::shared_ptr<Mn::GL::Texture2D>& brdfLUT,
+      const std::shared_ptr<Mn::GL::Texture2D>& envMapTexture);
 
   /**
    * @brief get the irradiance cube map
@@ -53,14 +53,7 @@ class PbrImageBasedLighting {
    * converted to an environment cube map
    */
   void convertEquirectangularToCubeMap(
-      const Cr::Containers::Optional<Mn::Trade::ImageData2D>& imageData);
-
-  /**
-   * @brief load the brdf LUT from the disk
-   * @param[in] imageData The loaded image for the brdf lut.
-   */
-  void loadBrdfLookUpTable(
-      const Cr::Containers::Optional<Mn::Trade::ImageData2D>& imageData);
+      const std::shared_ptr<Mn::GL::Texture2D>& envMapTexture);
 
   /**
    * @brief 2D BRDF lookup table, an HDR image (16-bits per channel) that
@@ -68,7 +61,7 @@ class PbrImageBasedLighting {
    * specular.
    * See: Karis, Brian. “Real Shading in Unreal Engine 4” (2013).
    */
-  Cr::Containers::Optional<Magnum::GL::Texture2D> brdfLUT_;
+  std::shared_ptr<Mn::GL::Texture2D> brdfLUT_;
 
   /**
    * @brief irradiance cube map (default size of each face: 64 x 64 pixels),

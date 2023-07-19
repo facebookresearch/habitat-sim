@@ -643,7 +643,7 @@ class ResourceManager {
    * RGBA8.
    * @return An shared pointer to the 2d texture built from the loaded image.
    */
-  Cr::Containers::Optional<Mn::Trade::ImageData2D> loadImage(
+  std::shared_ptr<Mn::GL::Texture2D> loadIBLImageIntoTexture(
       const std::string& imageFilename,
       bool useImageTxtrFormat,
       const Cr::Utility::Resource& rs);
@@ -1267,6 +1267,13 @@ class ResourceManager {
    */
   std::vector<std::shared_ptr<esp::gfx::PbrImageBasedLighting>>
       pbrImageBasedLightings_;
+
+  /**
+   * @brief Map of brdf Lookup tables and environment maps loaded already to be
+   * used for IBL.
+   */
+  std::unordered_map<std::string, std::shared_ptr<Mn::GL::Texture2D>>
+      iblBLUTsAndEnvMaps_{};
 
   int activePbrIbl_ = ID_UNDEFINED;
 

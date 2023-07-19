@@ -45,54 +45,26 @@ Mn::Matrix4 buildDfltPerspectiveMatrix() {
 
 PbrImageBasedLighting::PbrImageBasedLighting(
     ShaderManager& shaderManager,
-    const Cr::Containers::Optional<Mn::Trade::ImageData2D>& brdfLUTImageData,
-    const Cr::Containers::Optional<Mn::Trade::ImageData2D>& envMapImageData)
-    : shaderManager_(shaderManager) {
+    const std::shared_ptr<Mn::GL::Texture2D>& brdfLUT,
+    const std::shared_ptr<Mn::GL::Texture2D>& envMapTexture)
+    : shaderManager_(shaderManager), brdfLUT_(std::move(brdfLUT)) {
   // using the brdflut from here:
   // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/screenshots/tex_brdflut.png
 
-  loadBrdfLookUpTable(brdfLUTImageData);
+  // loadBrdfLookUpTable(blutImageData);
 
   // convert the loaded texture into a cubemap
-  convertEquirectangularToCubeMap(envMapImageData);
+  convertEquirectangularToCubeMap(envMapTexture);
 }
 
-void PbrImageBasedLighting::loadBrdfLookUpTable(
-    const Cr::Containers::Optional<Mn::Trade::ImageData2D>& imageData) {
-  brdfLUT_ = Mn::GL::Texture2D{};
-  (*brdfLUT_)
-      .setMinificationFilter(Mn::GL::SamplerFilter::Linear)
-      .setMagnificationFilter(Mn::GL::SamplerFilter::Linear)
-      .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
-      .setStorage(1, Mn::GL::TextureFormat::RGBA8, imageData->size());
-
-  if (!imageData->isCompressed()) {
-    brdfLUT_->setSubImage(0, {}, *imageData);
-  } else {
-    brdfLUT_->setCompressedSubImage(0, {}, *imageData);
-  }
-}  // loadBrdfLookUpTable
-
 void PbrImageBasedLighting::convertEquirectangularToCubeMap(
-    const Cr::Containers::Optional<Mn::Trade::ImageData2D>& imageData) {
-  Mn::GL::Texture2D envMapTexture = Mn::GL::Texture2D{};
-  envMapTexture.setMinificationFilter(Mn::GL::SamplerFilter::Linear)
-      .setMagnificationFilter(Mn::GL::SamplerFilter::Linear)
-      .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
-      .setStorage(1, Mn::GL::textureFormat(imageData->format()),
-                  imageData->size());
-
-  if (!imageData->isCompressed()) {
-    envMapTexture.setSubImage(0, {}, *imageData);
-  } else {
-    envMapTexture.setCompressedSubImage(0, {}, *imageData);
-  }
+    const std::shared_ptr<Mn::GL::Texture2D>& envMapTexture) {
   // prepare a mesh to be displayed
   Mn::GL::Mesh mesh = Mn::GL::Mesh{};
   mesh.setCount(3);
 
   // Initialize the base environment map
-  Cr::Containers::Optional<CubeMap> environmentMap =
+  auto environmentMap =
       CubeMap(environmentMapSize,
               CubeMap::Flag::ColorTexture | CubeMap::Flag::ManuallyBuildMipmap);
 
@@ -110,20 +82,19 @@ void PbrImageBasedLighting::convertEquirectangularToCubeMap(
   CORRADE_INTERNAL_ASSERT(shader);
 
   // bind the equirectangular texture
-  shader->bindEquirectangularTexture(envMapTexture);
+  shader->bindEquirectangularTexture(*envMapTexture);
 
   // draw the 6 sides one by one
   for (unsigned int iSide = 0; iSide < 6; ++iSide) {
     // bind frambuffer, clear color and depth
-    environmentMap->prepareToDraw(iSide);
+    environmentMap.prepareToDraw(iSide);
     shader->setCubeSideIndex(iSide);
     shader->draw(mesh);
   }
   // do NOT forget to populate to all the mip levels!
 
   // environmentMap.getTexture(CubeMap::TextureType::Color).generateMipmap();
-  auto& cubemapTexture =
-      environmentMap->getTexture(CubeMap::TextureType::Color);
+  auto& cubemapTexture = environmentMap.getTexture(CubeMap::TextureType::Color);
   cubemapTexture.generateMipmap();
   // compute the irradiance map for indirect diffuse part
   computeIrradianceMap(cubemapTexture);

@@ -3245,40 +3245,51 @@ void ResourceManager::initDefaultLightSetups() {
   shaderManager_.setFallback(gfx::LightSetup{});
 }
 
-Cr::Containers::Optional<Mn::Trade::ImageData2D> ResourceManager::loadImage(
+std::shared_ptr<Mn::GL::Texture2D> ResourceManager::loadIBLImageIntoTexture(
     const std::string& imageFilename,
     bool useImageTxtrFormat,
     const Cr::Utility::Resource& rs) {
-  // Not found, attempt to load
-  imageImporter_->openData(rs.getRaw(imageFilename));
-  Cr::Containers::Optional<Mn::Trade::ImageData2D> imageData =
-      imageImporter_->image2D(0);
+  // Try to find image in IBL texture library
+  std::unordered_map<
+      std::string, std::shared_ptr<Mn::GL::Texture2D>>::const_iterator mapIter =
+      iblBLUTsAndEnvMaps_.find(imageFilename);
 
-  // sanity check
-  CORRADE_INTERNAL_ASSERT(imageData);
+  std::shared_ptr<Mn::GL::Texture2D> resTexture;
+  if (mapIter != iblBLUTsAndEnvMaps_.end()) {
+    // If found don't reload
+    resTexture = mapIter->second;
+  } else {
+    // Not found, attempt to load
+    imageImporter_->openData(rs.getRaw(imageFilename));
+    Cr::Containers::Optional<Mn::Trade::ImageData2D> imageData =
+        imageImporter_->image2D(0);
 
-  return imageData;
+    // sanity check
+    CORRADE_INTERNAL_ASSERT(imageData);
 
-  // // brdfLUT should use RGBA, based on past work
-  // // envMap should use image format
-  // Mn::GL::TextureFormat textureFmtToUse =
-  //     useImageTxtrFormat ? Mn::GL::textureFormat(imageData->format())
-  //                        : Mn::GL::TextureFormat::RGBA;
+    // brdfLUT should use RGBA, based on past work
+    // envMap should use image format
+    Mn::GL::TextureFormat textureFmtToUse =
+        useImageTxtrFormat ? Mn::GL::textureFormat(imageData->format())
+                           : Mn::GL::TextureFormat::RGBA8;
 
-  // auto resTexture = std::make_shared<Mn::GL::Texture2D>();
-  // (*resTexture)
-  //     .setMinificationFilter(Mn::GL::SamplerFilter::Linear)
-  //     .setMagnificationFilter(Mn::GL::SamplerFilter::Linear)
-  //     .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
-  //     .setStorage(1, textureFmtToUse, imageData->size());
+    resTexture = std::make_shared<Mn::GL::Texture2D>();
+    (*resTexture)
+        .setMinificationFilter(Mn::GL::SamplerFilter::Linear)
+        .setMagnificationFilter(Mn::GL::SamplerFilter::Linear)
+        .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
+        .setStorage(1, textureFmtToUse, imageData->size());
 
-  // if (!imageData->isCompressed()) {
-  //   resTexture->setSubImage(0, {}, *imageData);
-  // } else {
-  //   resTexture->setCompressedSubImage(0, {}, *imageData);
-  // }
-  // return resTexture;
-}  // ResourceManager::loadImage
+    if (!imageData->isCompressed()) {
+      resTexture->setSubImage(0, {}, *imageData);
+    } else {
+      resTexture->setCompressedSubImage(0, {}, *imageData);
+    }
+    // add to IBL texture library
+    iblBLUTsAndEnvMaps_.emplace(imageFilename, resTexture);
+  }
+  return resTexture;
+}  // ResourceManager::loadIBLImageIntoTexture
 
 void ResourceManager::loadAndBuildAllIBLAssets() {
   // Load BLUTs and Envmaps specified in scene dataset
@@ -3286,7 +3297,7 @@ void ResourceManager::loadAndBuildAllIBLAssets() {
   if (!Cr::Utility::Resource::hasGroup("pbr-images")) {
     importPbrImageResources();
   }
-  // const Cr::Utility::Resource rs{"pbr-images"};
+  const Cr::Utility::Resource rs{"pbr-images"};
   // map is keyed by config name, value is
   auto mapOfPbrConfigs = metadataMediator_->getAllPbrShaderConfigs();
   ESP_WARNING(Mn::Debug::Flag::NoSpace)
@@ -3298,8 +3309,8 @@ void ResourceManager::loadAndBuildAllIBLAssets() {
         << " | envMapHandle :  " << entry.second->getIBLEnvMapAssetHandle()
         << "\n";
 
-    // initPbrImageBasedLighting(entry.second->getIBLBrdfLUTAssetHandle(),
-    //                           entry.second->getIBLEnvMapAssetHandle());
+    initPbrImageBasedLighting(entry.second->getIBLBrdfLUTAssetHandle(),
+                              entry.second->getIBLEnvMapAssetHandle());
   }
   //
 }  // ResourceManager::loadAndBuildAllIBLAssets
@@ -3316,14 +3327,14 @@ void ResourceManager::initPbrImageBasedLighting(
 
   // ==== load the brdf lookup table texture ====
 
-  auto blutImage = loadImage(bLUTImageFilename, false, rs);
+  auto blutTexture = loadIBLImageIntoTexture(bLUTImageFilename, false, rs);
 
   // ==== load the equirectangular texture ====
-  auto envMapImage = loadImage(envMapFilename, true, rs);
+  auto envMapTexture = loadIBLImageIntoTexture(envMapFilename, true, rs);
 
   pbrImageBasedLightings_.emplace_back(
-      std::make_shared<gfx::PbrImageBasedLighting>(shaderManager_, blutImage,
-                                                   envMapImage));
+      std::make_shared<gfx::PbrImageBasedLighting>(shaderManager_, blutTexture,
+                                                   envMapTexture));
 
   if (activePbrIbl_ == ID_UNDEFINED) {
     activePbrIbl_ = pbrImageBasedLightings_.size() - 1;
