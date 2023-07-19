@@ -3303,43 +3303,30 @@ void ResourceManager::loadAndBuildAllIBLAssets() {
   ESP_WARNING(Mn::Debug::Flag::NoSpace)
       << "PBR/IBL files being loadded : " << mapOfPbrConfigs.size();
   for (const auto& entry : mapOfPbrConfigs) {
+    auto bLUTImageFilename = entry.second->getIBLBrdfLUTAssetHandle();
+    auto envMapFilename = entry.second->getIBLEnvMapAssetHandle();
     ESP_WARNING(Mn::Debug::Flag::NoSpace)
-        << "\t`" << entry.first
-        << "` : \n\tBLUT Handle : " << entry.second->getIBLBrdfLUTAssetHandle()
-        << " | envMapHandle :  " << entry.second->getIBLEnvMapAssetHandle()
-        << "\n";
+        << "Handle :`" << entry.first << "` : brdfLUT Handle : `"
+        << bLUTImageFilename << "` | envMapHandle :  `" << envMapFilename
+        << "`";
 
-    initPbrImageBasedLighting(entry.second->getIBLBrdfLUTAssetHandle(),
-                              entry.second->getIBLEnvMapAssetHandle());
+    // ==== load the brdf lookup table texture ====
+
+    auto blutTexture = loadIBLImageIntoTexture(bLUTImageFilename, false, rs);
+
+    // ==== load the equirectangular texture ====
+    auto envMapTexture = loadIBLImageIntoTexture(envMapFilename, true, rs);
+
+    pbrImageBasedLightings_.emplace_back(
+        std::make_shared<gfx::PbrImageBasedLighting>(
+            shaderManager_, blutTexture, envMapTexture));
+
+    if (activePbrIbl_ == ID_UNDEFINED) {
+      activePbrIbl_ = pbrImageBasedLightings_.size() - 1;
+    }
   }
   //
 }  // ResourceManager::loadAndBuildAllIBLAssets
-
-void ResourceManager::initPbrImageBasedLighting(
-    const std::string& bLUTImageFilename,
-    const std::string& envMapFilename) {
-  // Load BLUTs and Envmaps specified in scene dataset
-  // First verify that pbr image resources is available
-  if (!Cr::Utility::Resource::hasGroup("pbr-images")) {
-    importPbrImageResources();
-  }
-  const Cr::Utility::Resource rs{"pbr-images"};
-
-  // ==== load the brdf lookup table texture ====
-
-  auto blutTexture = loadIBLImageIntoTexture(bLUTImageFilename, false, rs);
-
-  // ==== load the equirectangular texture ====
-  auto envMapTexture = loadIBLImageIntoTexture(envMapFilename, true, rs);
-
-  pbrImageBasedLightings_.emplace_back(
-      std::make_shared<gfx::PbrImageBasedLighting>(shaderManager_, blutTexture,
-                                                   envMapTexture));
-
-  if (activePbrIbl_ == ID_UNDEFINED) {
-    activePbrIbl_ = pbrImageBasedLightings_.size() - 1;
-  }
-}
 
 bool ResourceManager::isLightSetupCompatible(
     const LoadedAssetData& loadedAssetData,

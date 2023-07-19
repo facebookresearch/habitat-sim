@@ -615,23 +615,6 @@ class ResourceManager {
    */
   void resetDrawableCountAndNumFaces() { drawableCountAndNumFaces_ = {0, 0}; }
 
-  /**
-   * @brief initialize pbr image based lighting
-   * @param[in] hdriImageFilename, the name of the
-   * HDRi image (an equirectangular image), that will be converted to a
-   * environment cube map
-   * NOTE!!! Such an image MUST be SPECIFIED in the
-   * ~/habitat-sim/data/pbr/PbrImages.conf
-   * and be put in that folder.
-   * example image:
-   * ~/habitat-sim/data/pbr/lythwood_room_4k.png
-   *
-   * TODO: this will be replaced by config-driven IBL asset loading and
-   * registration
-   */
-  void initPbrImageBasedLighting(const std::string& bLUTImageFilename,
-                                 const std::string& envMapFilename);
-
  private:
   /**
    * @brief Load images by filename into a properly formatted texture. This
