@@ -16,7 +16,7 @@
 
 namespace esp {
 namespace gfx {
-class PbrImageBasedLighting {
+class PbrIBLHelper {
  public:
   /**
    * @brief constructor
@@ -25,7 +25,7 @@ class PbrImageBasedLighting {
    * @param[in] envMapTexture the texture to use to build the environment cube
    * maps.
    */
-  explicit PbrImageBasedLighting(
+  explicit PbrIBLHelper(
       ShaderManager& shaderManager,
       const std::shared_ptr<Mn::GL::Texture2D>& brdfLUT,
       const std::shared_ptr<Mn::GL::Texture2D>& envMapTexture);

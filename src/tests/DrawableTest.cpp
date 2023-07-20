@@ -88,7 +88,7 @@ void DrawableTest::addRemoveDrawables() {
       esp::metadata::attributes::ObjectInstanceShaderType::Phong,
       drawableGroup_,  // DrawableGroup
       nullptr,         // Skin
-      nullptr,         // PbrImageBasedLighting
+      nullptr,         // PbrIBLHelper
       nullptr};        // PbrShaderAttributes
   // add a toy box here!
   node.addFeature<esp::gfx::GenericDrawable>(
@@ -114,7 +114,7 @@ void DrawableTest::addRemoveDrawables() {
       esp::metadata::attributes::ObjectInstanceShaderType::Phong,
       nullptr,   // DrawableGroup
       nullptr,   // Skin
-      nullptr,   // PbrImageBasedLighting
+      nullptr,   // PbrIBLHelper
       nullptr};  // PbrShaderAttributes
 
   // step 2: add a single drawable to a group

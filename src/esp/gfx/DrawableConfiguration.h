@@ -6,7 +6,7 @@
 #define ESP_GFX_DRAWABLECONFIGURATION_H_
 
 #include <Magnum/Resource.h>
-#include "esp/gfx/PbrImageBasedLighting.h"
+#include "esp/gfx/PbrIBLHelper.h"
 #include "esp/gfx/SkinData.h"
 #include "esp/metadata/attributes/AttributesEnumMaps.h"
 #include "esp/metadata/attributes/PbrShaderAttributes.h"
@@ -26,15 +26,13 @@ class DrawableConfiguration {
       esp::metadata::attributes::ObjectInstanceShaderType materialDataType,
       DrawableGroup* group,
       const std::shared_ptr<gfx::InstanceSkinData>& skinData,
-      const std::shared_ptr<PbrImageBasedLighting>& pbrIblData,
+      const std::shared_ptr<PbrIBLHelper>& pbrIblData,
       const std::shared_ptr<metadata::attributes::PbrShaderAttributes>&
           pbrShaderConfig);
 
   std::shared_ptr<InstanceSkinData> getSkinData() const { return skinData_; }
-  std::shared_ptr<PbrImageBasedLighting> getPbrIblData() const {
-    return pbrIblData_;
-  }
-  void setPbrIblData(const std::shared_ptr<PbrImageBasedLighting>& pbrIblData) {
+  std::shared_ptr<PbrIBLHelper> getPbrIblData() const { return pbrIblData_; }
+  void setPbrIblData(const std::shared_ptr<PbrIBLHelper>& pbrIblData) {
     pbrIblData_ = pbrIblData;
   }
 
@@ -80,7 +78,7 @@ class DrawableConfiguration {
    * Configuration values for PBR shader to be used by this object. Only used
    * for PbrDrawables, ignored otherwise.
    */
-  std::shared_ptr<PbrImageBasedLighting> pbrIblData_ = nullptr;
+  std::shared_ptr<PbrIBLHelper> pbrIblData_ = nullptr;
 
   /**
    * The attributes configuration to configure the PBR shader

@@ -35,7 +35,7 @@ struct PhongMaterialColor;
 namespace gfx {
 class Drawable;
 class DrawableConfiguration;
-class PbrImageBasedLighting;
+class PbrIBLHelper;
 struct SkinData;
 struct InstanceSkinData;
 namespace replay {
@@ -299,7 +299,7 @@ class ResourceManager {
    */
   void setMetadataMediator(std::shared_ptr<metadata::MetadataMediator> MM) {
     metadataMediator_ = std::move(MM);
-    loadAndBuildAllIBLAssets();
+    loadAllIBLAssets();
   }
 
   /**
@@ -635,7 +635,13 @@ class ResourceManager {
    * @brief called after MM is set or reset, go through and load/generate
    * IBL assets that have not already been loaded.
    */
-  void loadAndBuildAllIBLAssets();
+  void loadAllIBLAssets();
+
+  /**
+   * @brief Build requested @ref esp::gfx::PbrIBLHelper which constructs
+   * the necessary IBL cubemaps for the scene, if it has not already been built.
+   */
+  // void buildPbrIblHelper(const)
 
   /**
    * @brief Load the requested mesh info into @ref meshInfo corresponding to
@@ -1248,8 +1254,7 @@ class ResourceManager {
    * an environment map, an irradiance map, a BRDF lookup table (2D texture),
    * and a pre-filtered map
    */
-  std::vector<std::shared_ptr<esp::gfx::PbrImageBasedLighting>>
-      pbrImageBasedLightings_;
+  std::vector<std::shared_ptr<esp::gfx::PbrIBLHelper>> pbrImageBasedLightings_;
 
   /**
    * @brief Map of brdf Lookup tables and environment maps loaded already to be

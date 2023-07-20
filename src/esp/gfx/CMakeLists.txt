@@ -63,8 +63,8 @@ set(
   DoubleSphereCameraShader.h
   EquirectangularShader.cpp
   EquirectangularShader.h
-  PbrImageBasedLighting.cpp
-  PbrImageBasedLighting.h
+  PbrIBLHelper.cpp
+  PbrIBLHelper.h
   PbrEquiRectangularToCubeMapShader.cpp
   PbrEquiRectangularToCubeMapShader.h
   PbrPrecomputedMapShader.cpp

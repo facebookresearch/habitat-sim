@@ -125,7 +125,7 @@ ResourceManager::ResourceManager(
   // appropriately configure importerManager_ based on compilation flags
   buildImporters();
   // Initialize any Ibl assets that may be specified in MM.
-  loadAndBuildAllIBLAssets();
+  loadAllIBLAssets();
 }
 
 ResourceManager::~ResourceManager() = default;
@@ -3094,7 +3094,7 @@ void ResourceManager::addComponent(
         materialDataType,  // shader type to use
         drawables,         // drawable group
         skinData,          // instance skinning data
-        nullptr,           // PbrImageBasedLighting - set only if PBR
+        nullptr,           // PbrIBLHelper - set only if PBR
         nullptr};          // PbrShaderAttributes - set only if PBR
 
     if (materialDataType == ObjectInstanceShaderType::PBR) {
@@ -3105,7 +3105,7 @@ void ResourceManager::addComponent(
       esp::metadata::attributes::PbrShaderAttributes::ptr pbrAttributesPtr =
           metadataMediator_->getDefaultPbrShaderConfig();
 
-      std::shared_ptr<gfx::PbrImageBasedLighting> pbrIblData_ =
+      std::shared_ptr<gfx::PbrIBLHelper> pbrIblData_ =
           (activePbrIbl_ >= 0 ? pbrImageBasedLightings_[activePbrIbl_]
                               : nullptr);  // pbr image based lighting
 
@@ -3188,8 +3188,8 @@ void ResourceManager::addPrimitiveToDrawables(int primitiveID,
       ObjectInstanceShaderType::Flat,  // shader to use
       drawables,                       // DrawableGroup
       nullptr,                         // No skinData
-      nullptr,   // No PbrImageBasedLighting for flat/phong
-      nullptr};  // PbrShaderAttributes for flat/phong
+      nullptr,                         // No PbrIBLHelper for flat/phong
+      nullptr};                        // PbrShaderAttributes for flat/phong
   // TODO:
   // currently we assume the primitives do not have normal texture
   // so do not need to worry about the tangent or bitangent.
@@ -3302,7 +3302,7 @@ std::shared_ptr<Mn::GL::Texture2D> ResourceManager::loadIBLImageIntoTexture(
   return resTexture;
 }  // ResourceManager::loadIBLImageIntoTexture
 
-void ResourceManager::loadAndBuildAllIBLAssets() {
+void ResourceManager::loadAllIBLAssets() {
   // Load BLUTs and Envmaps specified in scene dataset
   // First verify that pbr image resources is available
   if (!Cr::Utility::Resource::hasGroup("pbr-images")) {
@@ -3328,9 +3328,8 @@ void ResourceManager::loadAndBuildAllIBLAssets() {
     // ==== load the equirectangular texture ====
     auto envMapTexture = loadIBLImageIntoTexture(envMapFilename, true, rs);
 
-    pbrImageBasedLightings_.emplace_back(
-        std::make_shared<gfx::PbrImageBasedLighting>(
-            shaderManager_, blutTexture, envMapTexture));
+    pbrImageBasedLightings_.emplace_back(std::make_shared<gfx::PbrIBLHelper>(
+        shaderManager_, blutTexture, envMapTexture));
 
     if (activePbrIbl_ == ID_UNDEFINED) {
       activePbrIbl_ = pbrImageBasedLightings_.size() - 1;

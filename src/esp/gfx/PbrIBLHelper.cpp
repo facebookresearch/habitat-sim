@@ -2,7 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "PbrImageBasedLighting.h"
+#include "PbrIBLHelper.h"
 #include <Magnum/GL/Mesh.h>
 #include <Magnum/GL/Texture.h>
 #include <Magnum/GL/TextureFormat.h>
@@ -43,7 +43,7 @@ Mn::Matrix4 buildDfltPerspectiveMatrix() {
 
 }  // namespace
 
-PbrImageBasedLighting::PbrImageBasedLighting(
+PbrIBLHelper::PbrIBLHelper(
     ShaderManager& shaderManager,
     const std::shared_ptr<Mn::GL::Texture2D>& brdfLUT,
     const std::shared_ptr<Mn::GL::Texture2D>& envMapTexture)
@@ -57,7 +57,7 @@ PbrImageBasedLighting::PbrImageBasedLighting(
   convertEquirectangularToCubeMap(envMapTexture);
 }
 
-void PbrImageBasedLighting::convertEquirectangularToCubeMap(
+void PbrIBLHelper::convertEquirectangularToCubeMap(
     const std::shared_ptr<Mn::GL::Texture2D>& envMapTexture) {
   // prepare a mesh to be displayed
   Mn::GL::Mesh mesh = Mn::GL::Mesh{};
@@ -104,8 +104,7 @@ void PbrImageBasedLighting::convertEquirectangularToCubeMap(
 
 }  // convertEquirectangularToCubeMap
 
-void PbrImageBasedLighting::computeIrradianceMap(
-    Mn::GL::CubeMapTexture& envCubeMap) {
+void PbrIBLHelper::computeIrradianceMap(Mn::GL::CubeMapTexture& envCubeMap) {
   // Prepare the shader for Irradiance Map
 
   Mn::Resource<Mn::GL::AbstractShaderProgram, PbrPrecomputedMapShader> shader =
@@ -147,7 +146,7 @@ void PbrImageBasedLighting::computeIrradianceMap(
 
 }  // computeIrradianceMap
 
-void PbrImageBasedLighting::computePrefilteredEnvMap(
+void PbrIBLHelper::computePrefilteredEnvMap(
     Mn::GL::CubeMapTexture& envCubeMap) {
   Mn::Resource<Mn::GL::AbstractShaderProgram, PbrPrecomputedMapShader> shader =
       shaderManager_
@@ -201,28 +200,28 @@ void PbrImageBasedLighting::computePrefilteredEnvMap(
 
 }  // computePrefilteredEnvMap
 
-CubeMap& PbrImageBasedLighting::getIrradianceMap() {
+CubeMap& PbrIBLHelper::getIrradianceMap() {
   CORRADE_ASSERT(
       irradianceMap_,
-      "PbrImageBasedLighting::getIrradianceMap(): the irradiance map is empty. "
+      "PbrIBLHelper::getIrradianceMap(): the irradiance map is empty. "
       "Did you forget to load or compute it (from environment map)?",
       *irradianceMap_);
 
   return *irradianceMap_;
 }
 
-CubeMap& PbrImageBasedLighting::getPrefilteredMap() {
+CubeMap& PbrIBLHelper::getPrefilteredMap() {
   CORRADE_ASSERT(prefilteredMap_,
-                 "PbrImageBasedLighting::getPrefilteredMap(): the pre-filtered "
+                 "PbrIBLHelper::getPrefilteredMap(): the pre-filtered "
                  "cube map is empty."
                  "Did you forget to load or compute it (from environment map)?",
                  *prefilteredMap_);
   return *prefilteredMap_;
 }
 
-Mn::GL::Texture2D& PbrImageBasedLighting::getBrdfLookupTable() {
+Mn::GL::Texture2D& PbrIBLHelper::getBrdfLookupTable() {
   CORRADE_ASSERT(brdfLUT_,
-                 "PbrImageBasedLighting::getBrdfLookupTable(): the brdf lookup "
+                 "PbrIBLHelper::getBrdfLookupTable(): the brdf lookup "
                  "table (a texture) is empty"
                  "Did you forget to load or compute it (from environment map)?",
                  *brdfLUT_);

@@ -9,7 +9,7 @@
 
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/DrawableConfiguration.h"
-#include "esp/gfx/PbrImageBasedLighting.h"
+#include "esp/gfx/PbrIBLHelper.h"
 #include "esp/gfx/PbrShader.h"
 #include "esp/gfx/ShaderManager.h"
 namespace esp {
@@ -296,7 +296,7 @@ class PbrDrawable : public Drawable {
   ShaderManager& shaderManager_;
   Mn::Resource<Mn::GL::AbstractShaderProgram, PbrShader> shader_;
   Mn::Resource<LightSetup> lightSetup_;
-  std::shared_ptr<PbrImageBasedLighting> pbrIbl_ = nullptr;
+  std::shared_ptr<PbrIBLHelper> pbrIbl_ = nullptr;
 
   /**
    * The attributes configuration to configure the PBR shader
