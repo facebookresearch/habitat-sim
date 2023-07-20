@@ -137,6 +137,13 @@ class ResourceManager {
           physicsManagerAttributes);
 
   /**
+   * @brief called after MM is set or reset, go through and load/generate
+   * IBL assets that have not already been loaded. Will not reload assets
+   * already loaded.
+   */
+  void loadAllIBLAssets();
+
+  /**
    * @brief Return the currently loaded @ref esp::scene::SemanticScene .
    */
   std::shared_ptr<scene::SemanticScene> getSemanticScene() {
@@ -299,7 +306,6 @@ class ResourceManager {
    */
   void setMetadataMediator(std::shared_ptr<metadata::MetadataMediator> MM) {
     metadataMediator_ = std::move(MM);
-    loadAllIBLAssets();
   }
 
   /**
@@ -617,31 +623,28 @@ class ResourceManager {
 
  private:
   /**
-   * @brief Load images by filename into a properly formatted texture. This
-   * function will either use the passed resource file to provide the requested
-   * image or will load the image from disk.
+   * @brief Load images by filename into a properly formatted texture, cache
+   * them and return them. This function will retrieve a loaded texture
+   * constructed from the requested image given by @p imageFilename if it
+   * exists. If it does not exist, it will load the image, either using the
+   * passed resource file if it exists there or else loading the image from disk
+   * and then convert it to an appropriately configured texture, based on
+   * whether it is a brdf look-up table or an environment map, save this
+   * texture in @ref iblBLUTsAndEnvMaps_, and return it.
+   *
+   * Use this function to retrieve existing IBL bLUT/EnvMap textures as well as
+   * to create new ones.
+   *
    * @param imageFilename The image's filenaame, either fully qualified or else
    * as it appears in the resource file.
    * @param useImageTxtrFormat Whether to use the image's texture format or use
-   * RGBA8.
-   * @return An shared pointer to the 2d texture built from the loaded image.
+   * RGBA8 as the format (i.e. for brdfLUTs).
+   * @return A shared pointer to the 2d texture built from the loaded image.
    */
   std::shared_ptr<Mn::GL::Texture2D> loadIBLImageIntoTexture(
       const std::string& imageFilename,
       bool useImageTxtrFormat,
       const Cr::Utility::Resource& rs);
-
-  /**
-   * @brief called after MM is set or reset, go through and load/generate
-   * IBL assets that have not already been loaded.
-   */
-  void loadAllIBLAssets();
-
-  /**
-   * @brief Build requested @ref esp::gfx::PbrIBLHelper which constructs
-   * the necessary IBL cubemaps for the scene, if it has not already been built.
-   */
-  // void buildPbrIblHelper(const)
 
   /**
    * @brief Load the requested mesh info into @ref meshInfo corresponding to

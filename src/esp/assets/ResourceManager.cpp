@@ -124,8 +124,6 @@ ResourceManager::ResourceManager(
   initDefaultMaterials();
   // appropriately configure importerManager_ based on compilation flags
   buildImporters();
-  // Initialize any Ibl assets that may be specified in MM.
-  loadAllIBLAssets();
 }
 
 ResourceManager::~ResourceManager() = default;
@@ -3259,6 +3257,7 @@ std::shared_ptr<Mn::GL::Texture2D> ResourceManager::loadIBLImageIntoTexture(
     // If found don't reload
     resTexture = mapIter->second;
   } else {
+    // load image
     ESP_DEBUG(Mn::Debug::Flag::NoSpace)
         << "Checking if file is in resource `" << imageFilename << "`";
     if (rs.hasFile(imageFilename)) {
@@ -3278,12 +3277,12 @@ std::shared_ptr<Mn::GL::Texture2D> ResourceManager::loadIBLImageIntoTexture(
     // sanity check
     CORRADE_INTERNAL_ASSERT(imageData);
 
-    // brdfLUT should use RGBA, based on past work
-    // envMap should use image format
+    // brdfLUT should use RGBA8, based on past work
+    // envMap should use image's format
     Mn::GL::TextureFormat textureFmtToUse =
         useImageTxtrFormat ? Mn::GL::textureFormat(imageData->format())
                            : Mn::GL::TextureFormat::RGBA8;
-
+    // appropriately configure target texture and map image into it.
     resTexture = std::make_shared<Mn::GL::Texture2D>();
     (*resTexture)
         .setMinificationFilter(Mn::GL::SamplerFilter::Linear)
@@ -3303,36 +3302,46 @@ std::shared_ptr<Mn::GL::Texture2D> ResourceManager::loadIBLImageIntoTexture(
 }  // ResourceManager::loadIBLImageIntoTexture
 
 void ResourceManager::loadAllIBLAssets() {
-  // Load BLUTs and Envmaps specified in scene dataset
-  // First verify that pbr image resources is available
-  if (!Cr::Utility::Resource::hasGroup("pbr-images")) {
-    importPbrImageResources();
-  }
-  const Cr::Utility::Resource rs{"pbr-images"};
+  // Only load if rendering is enabled.
   // map is keyed by config name, value is
   auto mapOfPbrConfigs = metadataMediator_->getAllPbrShaderConfigs();
-  ESP_WARNING(Mn::Debug::Flag::NoSpace)
-      << "PBR/IBL files being loadded : " << mapOfPbrConfigs.size();
-  for (const auto& entry : mapOfPbrConfigs) {
-    auto bLUTImageFilename = entry.second->getIBLBrdfLUTAssetHandle();
-    auto envMapFilename = entry.second->getIBLEnvMapAssetHandle();
+  if (requiresTextures_) {
+    // Load BLUTs and Envmaps specified in scene dataset
+    // First verify that pbr image resources is available
+    if (!Cr::Utility::Resource::hasGroup("pbr-images")) {
+      importPbrImageResources();
+    }
+    const Cr::Utility::Resource rs{"pbr-images"};
+
     ESP_WARNING(Mn::Debug::Flag::NoSpace)
-        << "Handle :`" << entry.first << "` : brdfLUT Handle : `"
-        << bLUTImageFilename << "` | envMapHandle :  `" << envMapFilename
-        << "`";
+        << "PBR/IBL asset files being loadded : " << mapOfPbrConfigs.size();
+    for (const auto& entry : mapOfPbrConfigs) {
+      auto bLUTImageFilename = entry.second->getIBLBrdfLUTAssetHandle();
+      auto envMapFilename = entry.second->getIBLEnvMapAssetHandle();
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << "Handle :`" << entry.first << "` : brdfLUT Handle : `"
+          << bLUTImageFilename << "` | envMapHandle :  `" << envMapFilename
+          << "`";
 
-    // ==== load the brdf lookup table texture ====
+      // ==== load the brdf lookup table texture ====
+      auto blutTexture = loadIBLImageIntoTexture(bLUTImageFilename, false, rs);
 
-    auto blutTexture = loadIBLImageIntoTexture(bLUTImageFilename, false, rs);
+      // ==== load the equirectangular texture ====
+      auto envMapTexture = loadIBLImageIntoTexture(envMapFilename, true, rs);
 
-    // ==== load the equirectangular texture ====
-    auto envMapTexture = loadIBLImageIntoTexture(envMapFilename, true, rs);
+      pbrImageBasedLightings_.emplace_back(std::make_shared<gfx::PbrIBLHelper>(
+          shaderManager_, blutTexture, envMapTexture));
 
-    pbrImageBasedLightings_.emplace_back(std::make_shared<gfx::PbrIBLHelper>(
-        shaderManager_, blutTexture, envMapTexture));
-
-    if (activePbrIbl_ == ID_UNDEFINED) {
-      activePbrIbl_ = pbrImageBasedLightings_.size() - 1;
+      if (activePbrIbl_ == ID_UNDEFINED) {
+        activePbrIbl_ = pbrImageBasedLightings_.size() - 1;
+      }
+    }
+  } else {
+    if (mapOfPbrConfigs.size() > 1) {
+      // There will always be 1 config (default) but if more than 1 exist then
+      // perhaps having no renderer was not desired.
+      ESP_WARNING() << "Unable to load and convert" << mapOfPbrConfigs.size()
+                    << "PBR/IBL assets due to no renderer being instantiated.";
     }
   }
   //

@@ -350,6 +350,9 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
 
   // 7. Update MetadataMediator's copy of SimulatorConfiguration to be in sync.
   metadataMediator_->setSimulatorConfiguration(config_);
+  // Update ResourceManager's loaded Pbr/Ibl assets based on must up to date
+  // state of metadataMediator_'s currently active scene dataset.
+  resourceManager_->loadAllIBLAssets();
 
   // 8. Load stage specified by Scene Instance Attributes
   bool success = instanceStageForSceneAttributes(curSceneInstanceAttributes_);
