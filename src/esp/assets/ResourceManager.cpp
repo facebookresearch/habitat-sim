@@ -3103,9 +3103,11 @@ void ResourceManager::addComponent(
       esp::metadata::attributes::PbrShaderAttributes::ptr pbrAttributesPtr =
           metadataMediator_->getDefaultPbrShaderConfig();
 
+      // get the key to the pbrIblhelpers
+      const auto& pbrIblDataKey = pbrAttributesPtr->getPbrShaderHelperKey();
+      // get pointer to PbrIBL Helper
       std::shared_ptr<gfx::PbrIBLHelper> pbrIblData_ =
-          (activePbrIbl_ >= 0 ? pbrIBLHelpers_[activePbrIbl_]
-                              : nullptr);  // pbr image based lighting
+          pbrIBLHelpers_[pbrIblDataKey];
 
       drawableConfig.setPbrIblData(pbrIblData_);
       drawableConfig.setPbrShaderConfig(pbrAttributesPtr);
@@ -3323,21 +3325,28 @@ void ResourceManager::loadAllIBLAssets() {
           << bLUTImageFilename << "` | envMapHandle :  `" << envMapFilename
           << "`";
 
-      // ==== load the brdf lookup table texture ====
-      auto blutTexture = loadIBLImageIntoTexture(bLUTImageFilename, false, rs);
+      std::string helperKey =
+          Cr::Utility::formatString("{}_{}", bLUTImageFilename, envMapFilename);
+      if (pbrIBLHelpers_.count(helperKey) == 0) {
+        // ==== load the brdf lookup table texture ====
+        auto blutTexture =
+            loadIBLImageIntoTexture(bLUTImageFilename, false, rs);
 
-      // ==== load the equirectangular texture ====
-      auto envMapTexture = loadIBLImageIntoTexture(envMapFilename, true, rs);
+        // ==== load the equirectangular texture ====
+        auto envMapTexture = loadIBLImageIntoTexture(envMapFilename, true, rs);
 
-      // ==== build helpers if not present
+        // ==== build helpers if not present
 
-      pbrIBLHelpers_.emplace_back(
-          std::make_shared<gfx::PbrIBLHelper>(shaderManager_, envMapTexture));
-
-      if (activePbrIbl_ == ID_UNDEFINED) {
-        activePbrIbl_ = pbrIBLHelpers_.size() - 1;
+        pbrIBLHelpers_.emplace(helperKey,
+                               std::make_shared<gfx::PbrIBLHelper>(
+                                   shaderManager_, blutTexture, envMapTexture));
       }
     }
+    // TODO: With some slight modifications, we can clear the texture cache map
+    // after this loop, since the pbrIBLHelpers will hold the references to the
+    // IBL assets and the helpers are keyed by the names of the source textures.
+
+    // iblBLUTsAndEnvMaps_.clear();
   } else {
     if (mapOfPbrConfigs.size() > 1) {
       // There will always be 1 config (default) but if more than 1 exist then

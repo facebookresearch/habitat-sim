@@ -215,10 +215,14 @@ class PbrShaderAttributes : public AbstractAttributes {
 
   /**
    * @brief Set the filename for the brdf lookup table used by the IBL
-   * calculations.
+   * calculations.Also builds the PbrIBLHelper key to check/retrive helpers
+   * in map in ResourceManager.
    */
   void setIBLBrdfLUTAssetHandle(const std::string& brdfLUTAsset) {
     set("ibl_blut_filename", brdfLUTAsset);
+    set("pbr_ibl_helper_key",
+        Cr::Utility::formatString("{}_{}", brdfLUTAsset,
+                                  get<std::string>("ibl_envmap_filename")));
   }
   /**
    * @brief Set the filename for the brdf lookup table used by the IBL
@@ -230,11 +234,24 @@ class PbrShaderAttributes : public AbstractAttributes {
 
   /**
    * @brief Set the filename for the equirectangular environment map used by the
-   * IBL calculations.
+   * IBL calculations. Also builds the PbrIBLHelper key to check/retrive helpers
+   * in map in ResourceManager.
    */
   void setIBLEnvMapAssetHandle(const std::string& envMapAsset) {
     set("ibl_envmap_filename", envMapAsset);
+    set("pbr_ibl_helper_key",
+        Cr::Utility::formatString(
+            "{}_{}", get<std::string>("ibl_blut_filename"), envMapAsset));
   }
+
+  /**
+   * @brief Set internally when either bLUT or EnvMap asset names are set.
+   * Format is '<bLUT asset handle>_<envMap asset handle>'.
+   */
+  std::string getPbrShaderHelperKey() const {
+    return get<std::string>("pbr_ibl_helper_key");
+  }
+
   /**
    * @brief Set the filename for the equirectangular environment map used by the
    * calculations.

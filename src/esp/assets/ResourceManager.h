@@ -1257,7 +1257,8 @@ class ResourceManager {
    * an environment map, an irradiance map, a BRDF lookup table (2D texture),
    * and a pre-filtered map
    */
-  std::vector<std::shared_ptr<esp::gfx::PbrIBLHelper>> pbrIBLHelpers_;
+  std::unordered_map<std::string, std::shared_ptr<esp::gfx::PbrIBLHelper>>
+      pbrIBLHelpers_;
 
   /**
    * @brief Map of brdf Lookup table textures and environment map textures
@@ -1265,8 +1266,6 @@ class ResourceManager {
    */
   std::unordered_map<std::string, std::shared_ptr<Mn::GL::Texture2D>>
       iblBLUTsAndEnvMaps_{};
-
-  int activePbrIbl_ = ID_UNDEFINED;
 
 };  // class ResourceManager
 
