@@ -16,6 +16,13 @@
 
 namespace esp {
 namespace gfx {
+
+/**
+ * @brief This class performs 2 functions. It derives the Irradiance and
+ * Precomputed Cubemaps based on an Enironment map texture, and it provides
+ * references to all the assets that are then consumed by the PBR shader for IBL
+ * functionality.
+ */
 class PbrIBLHelper {
  public:
   /**
@@ -78,11 +85,6 @@ class PbrIBLHelper {
   Cr::Containers::Optional<CubeMap> prefilteredMap_;
 
   ShaderManager& shaderManager_;
-
-  enum class PrecomputedMapType : uint8_t {
-    IrradianceMap = 0,
-    PrefilteredMap = 1,
-  };
 
   /**
    * @brief precompute the irradiance map

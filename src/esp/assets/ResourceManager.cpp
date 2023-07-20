@@ -3104,7 +3104,7 @@ void ResourceManager::addComponent(
           metadataMediator_->getDefaultPbrShaderConfig();
 
       std::shared_ptr<gfx::PbrIBLHelper> pbrIblData_ =
-          (activePbrIbl_ >= 0 ? pbrImageBasedLightings_[activePbrIbl_]
+          (activePbrIbl_ >= 0 ? pbrIBLHelpers_[activePbrIbl_]
                               : nullptr);  // pbr image based lighting
 
       drawableConfig.setPbrIblData(pbrIblData_);
@@ -3329,11 +3329,13 @@ void ResourceManager::loadAllIBLAssets() {
       // ==== load the equirectangular texture ====
       auto envMapTexture = loadIBLImageIntoTexture(envMapFilename, true, rs);
 
-      pbrImageBasedLightings_.emplace_back(std::make_shared<gfx::PbrIBLHelper>(
-          shaderManager_, blutTexture, envMapTexture));
+      // ==== build helpers if not present
+
+      pbrIBLHelpers_.emplace_back(
+          std::make_shared<gfx::PbrIBLHelper>(shaderManager_, envMapTexture));
 
       if (activePbrIbl_ == ID_UNDEFINED) {
-        activePbrIbl_ = pbrImageBasedLightings_.size() - 1;
+        activePbrIbl_ = pbrIBLHelpers_.size() - 1;
       }
     }
   } else {

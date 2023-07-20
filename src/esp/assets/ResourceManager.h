@@ -1253,15 +1253,15 @@ class ResourceManager {
   std::shared_ptr<esp::gfx::replay::Recorder> gfxReplayRecorder_;
 
   /**
-   * @brief The imaged based lighting for PBR, each is a collection of
+   * @brief Helper objects that calculate and manage assets for IBL :
    * an environment map, an irradiance map, a BRDF lookup table (2D texture),
    * and a pre-filtered map
    */
-  std::vector<std::shared_ptr<esp::gfx::PbrIBLHelper>> pbrImageBasedLightings_;
+  std::vector<std::shared_ptr<esp::gfx::PbrIBLHelper>> pbrIBLHelpers_;
 
   /**
-   * @brief Map of brdf Lookup tables and environment maps loaded already to be
-   * used for IBL.
+   * @brief Map of brdf Lookup table textures and environment map textures
+   * loaded already to be used for IBL.
    */
   std::unordered_map<std::string, std::shared_ptr<Mn::GL::Texture2D>>
       iblBLUTsAndEnvMaps_{};
