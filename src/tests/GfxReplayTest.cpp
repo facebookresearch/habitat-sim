@@ -19,6 +19,7 @@
 #include "esp/gfx/replay/Recorder.h"
 #include "esp/gfx/replay/ReplayManager.h"
 #include "esp/metadata/MetadataMediator.h"
+#include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/sim/Simulator.h"
@@ -52,6 +53,7 @@ struct GfxReplayTest : Cr::TestSuite::Tester {
   void testSimulatorIntegration();
 
   void testLightIntegration();
+  void testSkinningIntegration();
 
   esp::logging::LoggingContext loggingContext;
 
@@ -67,11 +69,15 @@ int getNumberOfChildrenOfRoot(esp::scene::SceneNode& rootNode) {
 }
 
 GfxReplayTest::GfxReplayTest() {
-  addTests({&GfxReplayTest::testRecorder, &GfxReplayTest::testPlayer,
-            &GfxReplayTest::testPlayerReadMissingFile,
-            &GfxReplayTest::testPlayerReadInvalidFile,
-            &GfxReplayTest::testSimulatorIntegration,
-            &GfxReplayTest::testLightIntegration});
+  addTests({
+      &GfxReplayTest::testRecorder,
+      &GfxReplayTest::testPlayer,
+      &GfxReplayTest::testPlayerReadMissingFile,
+      &GfxReplayTest::testPlayerReadInvalidFile,
+      &GfxReplayTest::testSimulatorIntegration,
+      &GfxReplayTest::testLightIntegration,
+      &GfxReplayTest::testSkinningIntegration,
+  });
 }  // ctor
 
 // Manipulate the scene and save some keyframes using replay::Recorder
@@ -603,6 +609,102 @@ void GfxReplayTest::testLightIntegration() {
     CORRADE_COMPARE(keyframes[4].lights.size(), lightSetup3.size());
     compareLightSetups(sim->getLightSetup(), lightSetup3);
   }
+
+  // remove file created for this test
+  bool success = Corrade::Utility::Path::remove(testFilepath);
+  if (!success) {
+    ESP_WARNING() << "Unable to remove temporary test JSON file"
+                  << testFilepath;
+  }
+}
+
+void GfxReplayTest::testSkinningIntegration() {
+  const auto testFilepath =
+      Corrade::Utility::Path::join(DATA_DIR, "./gfx_replay_test.json");
+  const std::string urdfFile =
+      Cr::Utility::Path::join(TEST_ASSETS, "urdf/skinned_prism.urdf");
+
+  // record a playback file
+  std::vector<esp::gfx::replay::Keyframe> keyframes;
+  {
+    SimulatorConfiguration simConfig{};
+    simConfig.enableGfxReplaySave = true;
+    simConfig.createRenderer = false;
+    simConfig.enablePhysics = true;  // Required for articulated objects
+    auto sim = Simulator::create_unique(simConfig);
+    CORRADE_VERIFY(sim);
+    auto aoManager = sim->getArticulatedObjectManager();
+    CORRADE_VERIFY(aoManager);
+    const auto recorder = sim->getGfxReplayManager()->getRecorder();
+    CORRADE_VERIFY(recorder);
+    CORRADE_COMPARE(aoManager->getNumObjects(), 0);
+
+    // Frame 0: Add new rig
+    auto ao = aoManager->addArticulatedObjectFromURDF(urdfFile);
+    CORRADE_VERIFY(ao);
+    CORRADE_COMPARE(aoManager->getNumObjects(), 1);
+
+    const auto linkIds = ao->getLinkIdsWithBase();
+    CORRADE_COMPARE(linkIds.size(), 5);
+
+    keyframes.emplace_back(recorder->extractKeyframe());
+    // Frame 1: No change
+    keyframes.emplace_back(recorder->extractKeyframe());
+    // Frame 2: One translation
+    {
+      auto link = ao->getLink(-1);
+      link->node().translate(Mn::Vector3(1.0, 0.0, 0.0));
+      keyframes.emplace_back(recorder->extractKeyframe());
+    }
+    // Frame 3: One translations, add new rig
+    {
+      auto ao2 = aoManager->addArticulatedObjectFromURDF(urdfFile);
+      CORRADE_VERIFY(ao2);
+      CORRADE_COMPARE(aoManager->getNumObjects(), 2);
+      auto link = ao->getLink(linkIds[2]);
+      link->node().translate(Mn::Vector3(1.0, 0.0, 0.0));
+      keyframes.emplace_back(recorder->extractKeyframe());
+    }
+
+    recorder->writeSavedKeyframesToFile(testFilepath);
+    keyframes.emplace_back(recorder->extractKeyframe());
+  }
+
+  const auto getBoneIdFromName = [](const esp::gfx::replay::Keyframe& keyframe,
+                                    const std::string& boneName) -> int {
+    for (int i = 0; i < keyframe.boneCreations.size(); ++i) {
+      if (keyframe.boneCreations[i].boneName == boneName) {
+        return keyframe.boneCreations[i].boneId;
+      }
+    }
+    return esp::ID_UNDEFINED;
+  };
+
+  // Frame 0
+  CORRADE_COMPARE(keyframes[0].boneCreations.size(), 5);
+  CORRADE_VERIFY(getBoneIdFromName(keyframes[0], "A") != esp::ID_UNDEFINED);
+  CORRADE_VERIFY(getBoneIdFromName(keyframes[0], "B") != esp::ID_UNDEFINED);
+  CORRADE_VERIFY(getBoneIdFromName(keyframes[0], "C") != esp::ID_UNDEFINED);
+  CORRADE_VERIFY(getBoneIdFromName(keyframes[0], "D") != esp::ID_UNDEFINED);
+  CORRADE_VERIFY(getBoneIdFromName(keyframes[0], "E") != esp::ID_UNDEFINED);
+  CORRADE_COMPARE(keyframes[0].boneUpdates.size(), 4);
+
+  // Frame 1
+  CORRADE_COMPARE(keyframes[1].boneCreations.size(), 0);
+  CORRADE_COMPARE(keyframes[1].boneUpdates.size(), 0);
+
+  // Frame 2
+  CORRADE_COMPARE(keyframes[2].boneCreations.size(), 0);
+  CORRADE_COMPARE(keyframes[2].boneUpdates.size(), 1);
+
+  // Frame 3
+  CORRADE_COMPARE(keyframes[3].boneCreations.size(), 5);
+  CORRADE_VERIFY(getBoneIdFromName(keyframes[3], "A") != esp::ID_UNDEFINED);
+  CORRADE_VERIFY(getBoneIdFromName(keyframes[3], "B") != esp::ID_UNDEFINED);
+  CORRADE_VERIFY(getBoneIdFromName(keyframes[3], "C") != esp::ID_UNDEFINED);
+  CORRADE_VERIFY(getBoneIdFromName(keyframes[3], "D") != esp::ID_UNDEFINED);
+  CORRADE_VERIFY(getBoneIdFromName(keyframes[3], "E") != esp::ID_UNDEFINED);
+  CORRADE_COMPARE(keyframes[3].boneUpdates.size(), 5);
 
   // remove file created for this test
   bool success = Corrade::Utility::Path::remove(testFilepath);
