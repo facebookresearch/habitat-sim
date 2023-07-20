@@ -2202,10 +2202,10 @@ std::string ResourceManager::createColorMaterial(
         materialColor.ambientColor;
     materialData.mutableAttribute<Mn::Color4>(
         Mn::Trade::MaterialAttribute::DiffuseColor) =
-        materialColor.diffuseColor * 0.175;
+        materialColor.diffuseColor;
     materialData.mutableAttribute<Mn::Color4>(
         Mn::Trade::MaterialAttribute::SpecularColor) =
-        materialColor.specularColor * 0.175;
+        materialColor.specularColor;
 
     // Set expected user-defined attributes
     materialData = setMaterialDefaultUserAttributes(
