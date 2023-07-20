@@ -74,8 +74,9 @@ class PbrShaderAttributesManager
     for (const auto& val : this->objectLibrary_) {
       // Don't change system default
       if (val.first.find(ESP_DEFAULT_PBRSHADER_CONFIG_REL_PATH) ==
-          std::string::npos)
+          std::string::npos) {
         this->getObjectByHandle(val.first)->setEnableIBL(isIblEnabled);
+      }
     }
   }  // PbrShaderAttributesManager::setAllIBLEnabled
 
@@ -87,9 +88,10 @@ class PbrShaderAttributesManager
     for (const auto& val : this->objectLibrary_) {
       // Don't change system default
       if (val.first.find(ESP_DEFAULT_PBRSHADER_CONFIG_REL_PATH) ==
-          std::string::npos)
+          std::string::npos) {
         this->getObjectByHandle(val.first)->setEnableDirectLighting(
             isDirLightEnabled);
+      }
     }
   }  // PbrShaderAttributesManager::setAllDirectLightsEnabled
 

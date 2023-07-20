@@ -47,7 +47,7 @@ PbrIBLHelper::PbrIBLHelper(
     ShaderManager& shaderManager,
     const std::shared_ptr<Mn::GL::Texture2D>& brdfLUT,
     const std::shared_ptr<Mn::GL::Texture2D>& envMapTexture)
-    : shaderManager_(shaderManager), brdfLUT_(std::move(brdfLUT)) {
+    : shaderManager_(shaderManager), brdfLUT_(brdfLUT) {
   // using the brdflut from here:
   // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/screenshots/tex_brdflut.png
 
