@@ -115,7 +115,7 @@ void configureAnisotropyLightInfo(LightInfo l,
 
 #endif  //  DIRECT_LIGHTING
 
-//#if defined(TONE_MAP)
+#if defined(TONE_MAP)
 // The following function Uncharted2toneMap is based on:
 // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/data/shaders/pbr_khr.frag
 vec3 Uncharted2Tonemap(vec3 color) {
@@ -146,7 +146,7 @@ vec4 toneMap(vec4 color) {
   return vec4(outcol, color.a);
 }
 
-//#endif  // TONE_MAP
+#endif  // TONE_MAP - either IBL or Direct
 
 /////////////////
 // IBL Support
@@ -160,16 +160,16 @@ vec3 computeIBLDiffuse(vec3 diffuseColor, vec3 n) {
   // texture assumed to be sRGB
 #if defined(REMAP_COLORS_TO_LINEAR)
 // If using remapping, final result is remapped to sRGB so don't do it here
-#if defined(TONE_MAP)
+#if defined(IBL_TONE_MAP)
   IBLDiffuseIrradiance = toneMap(IBLDiffuseIrradiance);
-#endif  // TONE_MAP
+#endif  // IBL_TONE_MAP
 #else   // not REMAP_COLORS_TO_LINEAR
 // If not using remapping, make sure we still remap IBL image
-#if defined(TONE_MAP)
+#if defined(IBL_TONE_MAP)
   IBLDiffuseIrradiance = toneMapToSRGB(IBLDiffuseIrradiance);
 #else
   IBLDiffuseIrradiance = linearToSRGB(IBLDiffuseIrradiance);
-#endif  // TONE_MAP
+#endif  // IBL_TONE_MAP
 #endif  // REMAP_COLORS_TO_LINEAR
 
   return diffuseColor * IBLDiffuseIrradiance.rgb;
@@ -189,16 +189,16 @@ vec3 computeIBLSpecular(float roughness,
 
 #if defined(REMAP_COLORS_TO_LINEAR)
 // If using remapping, final result is remapped to sRGB so don't do it here
-#if defined(TONE_MAP)
+#if defined(IBL_TONE_MAP)
   IBLSpecIrradiance = toneMap(IBLSpecIrradiance);
-#endif  // TONE_MAP
+#endif  // IBL_TONE_MAP
 #else   // not REMAP_COLORS_TO_LINEAR
 // If not using remapping, make sure we still remap IBL image
-#if defined(TONE_MAP)
+#if defined(IBL_TONE_MAP)
   IBLSpecIrradiance = toneMapToSRGB(IBLSpecIrradiance);
 #else
   IBLSpecIrradiance = linearToSRGB(IBLSpecIrradiance);
-#endif  // TONE_MAP
+#endif  // IBL_TONE_MAP
 #endif  // REMAP_COLORS_TO_LINEAR
 
   return (specularReflectance * brdf.x + brdf.y) * IBLSpecIrradiance.rgb;
