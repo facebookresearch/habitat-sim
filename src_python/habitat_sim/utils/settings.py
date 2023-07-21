@@ -6,7 +6,7 @@ from typing import Any, Dict
 
 import magnum as mn
 
-black = mn.Color4.from_linear_rgb_int(0)
+BLACK = mn.Color4.from_linear_rgb_int(0)
 
 import habitat_sim
 import habitat_sim.agent
@@ -25,7 +25,7 @@ default_sim_settings: Dict[str, Any] = {
     # far clipping plane
     "zfar": 1000.0,
     # optional background color override for rgb sensors
-    "clear_color": black,
+    "clear_color": BLACK,
     # vertical offset of the camera from the agent's root position (e.g. height of eyes)
     "sensor_height": 1.5,
     # defaul agent ix
