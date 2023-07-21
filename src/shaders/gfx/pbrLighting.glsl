@@ -4,7 +4,7 @@
 
 precision highp float;
 
-#if (LIGHT_COUNT > 0) || defined(IMAGE_BASED_LIGHTING)
+#if defined(DIRECT_LIGHTING) || defined(IMAGE_BASED_LIGHTING)
 
 // linear to sRGB approximation
 // see http://chilliant.blogspot.com/2012/08/srgb-approximations-for-hlsl.html
@@ -26,9 +26,9 @@ vec3 sRGBToLinear(vec3 srgbIn) {
 vec4 sRGBToLinear(vec4 srgbIn) {
   return vec4(sRGBToLinear(srgbIn.xyz), srgbIn.w);
 }
-#endif  //(LIGHT_COUNT > 0) || defined(IMAGE_BASED_LIGHTING)
+#endif  // defined(DIRECT_LIGHTING) || defined(IMAGE_BASED_LIGHTING)
 
-#if (LIGHT_COUNT > 0)
+#if defined(DIRECT_LIGHTING)
 // Configure a LightInfo object
 // light : normalized point to light vector
 // lightIrradiance : distance-attenuated light intensity/irradiance color
@@ -113,7 +113,7 @@ void configureAnisotropyLightInfo(LightInfo l,
 
 #endif  // ANISOTROPY_LAYER
 
-#endif  // (LIGHT_COUNT > 0)
+#endif  //  DIRECT_LIGHTING
 
 //#if defined(TONE_MAP)
 // The following function Uncharted2toneMap is based on:

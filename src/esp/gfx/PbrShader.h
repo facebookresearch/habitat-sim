@@ -80,7 +80,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * Multiply base color with the baseColor texture.
      * @see @ref setBaseColor(), @ref bindBaseColorTexture()
      */
-    BaseColorTexture = 1 << 0,
+    BaseColorTexture = 1l << 0,
 
     /**
      * This flag term means the NoneRoughnessMetallic texture is present, with
@@ -88,7 +88,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * channels are not used).
      * @see @ref setMetallic(), @ref bindMetallicTexture()
      */
-    NoneRoughnessMetallicTexture = 1 << 1,
+    NoneRoughnessMetallicTexture = 1l << 1,
 
     /*
      * The occlusion map texture is present.
@@ -96,17 +96,17 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * texture, with Occlusion in R channel, Roughness in G channel and
      * metalness in B channel (Alpha channels is not used).
      */
-    OcclusionTexture = 1 << 2,
+    OcclusionTexture = 1l << 2,
 
     /**
      * Modify normals according to a texture.
      */
-    NormalTexture = 1 << 3,
+    NormalTexture = 1l << 3,
 
     /**
      * emissive texture
      */
-    EmissiveTexture = 1 << 4,
+    EmissiveTexture = 1l << 4,
 
     /**
      * Enable texture coordinate transformation. If this flag is set,
@@ -118,7 +118,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * @ref Flag::OcclusionRoughnessMetallicTexture is enabled as well.
      * @see @ref setTextureMatrix()
      */
-    TextureTransformation = 1 << 5,
+    TextureTransformation = 1l << 5,
 
     /**
      * TODO: Do we need instanced object? (instanced texture, instanced id etc.)
@@ -136,97 +136,171 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * see PBR fragment shader code for more details
      * Requires the @ref Tangent4 attribute to be present.
      */
-    PrecomputedTangent = 1 << 6,
+    PrecomputedTangent = 1l << 6,
 
     /**
      * Enable object ID output for this shader.
      */
-    ObjectId = 1 << 7,
+    ObjectId = 1l << 7,
 
     /**
      * Support Instanced object ID. Retrieves a per-instance / per-vertex
      * object ID from the @ref ObjectId attribute. If this is false, the shader
      * will use the node's semantic ID
      */
-    InstancedObjectId = (1 << 8) | ObjectId,
+    InstancedObjectId = (1l << 8) | ObjectId,
 
     /**
      * Has ClearCoat layer.
      */
-    ClearCoatLayer = 1 << 9,
+    ClearCoatLayer = 1l << 9,
     /**
      * Has ClearCoat Texture in ClearCoat layer
      */
-    ClearCoatTexture = (1 << 10) | ClearCoatLayer,
+    ClearCoatTexture = (1l << 10) | ClearCoatLayer,
     /**
      * Has Roughness Texture in ClearCoat layer
      */
-    ClearCoatRoughnessTexture = (1 << 11) | ClearCoatLayer,
+    ClearCoatRoughnessTexture = (1l << 11) | ClearCoatLayer,
     /**
      * Has Normal Texture in ClearCoat layer
      */
-    ClearCoatNormalTexture = (1 << 12) | ClearCoatLayer,
+    ClearCoatNormalTexture = (1l << 12) | ClearCoatLayer,
 
     /**
      * Has KHR_materials_specular layer
      */
-    SpecularLayer = 1 << 13,
+    SpecularLayer = 1l << 13,
     /**
      * Has Specular Texture in KHR_materials_specular layer
      */
-    SpecularLayerTexture = (1 << 14) | SpecularLayer,
+    SpecularLayerTexture = (1l << 14) | SpecularLayer,
 
     /**
      * Has Specular Color Texture in KHR_materials_specular layer
      */
-    SpecularLayerColorTexture = (1 << 15) | SpecularLayer,
+    SpecularLayerColorTexture = (1l << 15) | SpecularLayer,
 
     /**
      * Has KHR_materials_anisotropy layer
      */
-    AnisotropyLayer = 1 << 16,
+    AnisotropyLayer = 1l << 16,
 
     /**
      * Has Anisotropy Texture in KHR_materials_anisotropy layer
      */
-    AnisotropyLayerTexture = (1 << 17) | AnisotropyLayer,
+    AnisotropyLayerTexture = (1l << 17) | AnisotropyLayer,
 
     /**
      * Has KHR_materials_transmission layer
      */
-    TransmissionLayer = 1 << 18,
+    TransmissionLayer = 1l << 18,
     /**
      * Has transmission texture in KHR_materials_transmission layer
      */
-    TransmissionLayerTexture = (1 << 19) | TransmissionLayer,
+    TransmissionLayerTexture = (1l << 19) | TransmissionLayer,
 
     /**
      * Has KHR_materials_volume layer
      */
-    VolumeLayer = 1 << 20,
+    VolumeLayer = 1l << 20,
 
     /**
      * Has Thickness texture in  KHR_materials_volume layer
      */
-    VolumeLayerThicknessTexture = (1 << 21) | VolumeLayer,
+    VolumeLayerThicknessTexture = (1l << 21) | VolumeLayer,
 
     /**
      * Enable double-sided rendering.
      * (Temporarily STOP supporting this functionality. See comments in
      * the PbrDrawable::draw() function)
      */
-    DoubleSided = 1 << 22,
+    DoubleSided = 1l << 22,
+
+    ///////////////////////////////
+    // PbrShaderAttributes provides these values to configure the shader
+
+    /**
+     * If not set, disable direct lighting regardless of presence of lights.
+     * Ignored if no direct lights present.
+     */
+    DirectLighting = 1l << 23,
 
     /**
      * Enable image based lighting
      */
-    ImageBasedLighting = 1 << 23,
+    ImageBasedLighting = 1l << 24,
+
+    /**
+     * Whether or not the direct lighting diffuse calculation should use the
+     * Disney/Burley algorithm or the lambertian calculation. If set, the PBR
+     * shader uses a calc based on modified to be more energy conserving.
+     * https://media.disneyanimation.com/uploads/production/publication_asset/48/asset/s2012_pbs_disney_brdf_notes_v3.pdf
+     * Lambertian is simpler and quicker to calculate but may not look as 'nice'
+     */
+    UseBurleyDiffuse = 1l << 25,
+
+    /**
+     * If set, skip TBN frame calculation in fragment shader. This calculation
+     * enables normal textures and anisotropy when no precomputed tangents are
+     * provided.
+     * TODO : implement in shader.
+     */
+    SkipMissingTBNCalc = 1l << 26,
+
+    /**
+     * Use the Mikkelsen algorithm to calculate TBN, as per
+     * https://jcgt.org/published/0009/03/04/paper.pdf. If not set,
+     * a simplified, faster method will be used to calculate the TBN frame,
+     * based on
+     * https://github.com/KhronosGroup/Vulkan-Samples/blob/main/shaders/pbr.frag,
+     * which empirically seems to give equivalent results.
+     */
+    UseMikkelsenTBN = 1l << 27,
+
+    /**
+     * Whether to use shader-level srgb<->linear remapping of applicable color
+     * textures for direct lighting. This should be removed/ignored when Magnum
+     * fully supports sRGB texture conversion on load.
+     */
+    UseSRGBRemapping = 1l << 28,
+
+    /**
+     * Whether or not to use tonemappping for direct lighting.
+     */
+    UseDirectLightTonemap = 1l << 29,
+
+    /**
+     * Whether or not to use tonemappping for image-based lighting.
+     */
+    UseIBLTonemap = 1l << 30,
+
+    ////////////////
+    // Testing and debugging
+    /**
+     * Whether we should skip all clearcoat layer calcs. Values will still be
+     * sent to the shader, but no actual calcuations will be performed if this
+     * is set.
+     */
+    SkipClearCoatLayer = 1l << 31,
+    /**
+     * Whether we should skip all specular layer calcs. Values will still be
+     * sent to the shader, but no actual calcuations will be performed if this
+     * is set.
+     */
+    SkipSpecularLayer = 1l << 32,
+    /**
+     * Whether we should skip all anisotropy layer calcs. Values will still be
+     * sent to the shader, but no actual calcuations will be performed if this
+     * is set.
+     */
+    SkipAnisotropyLayer = 1l << 33,
 
     /**
      * Enable shader debug mode. Then developer can set the uniform
      * PbrDebugDisplay in the fragment shader for debugging
      */
-    DebugDisplay = 1 << 24,
+    DebugDisplay = 1l << 35,
     /*
      * TODO: alphaMask
      */
@@ -275,10 +349,16 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    * @brief Get number of lights
    */
   unsigned int lightCount() const { return lightCount_; }
+  /** @brief whether this shader as direct lighting enabled and there are lights
+   * defined.*/
+  bool directLightingIsEnabled() const { return directLightingIsEnabled_; }
 
   /** @brief whether this shader has any lighting enabled, either direct or
    * indirect/IBL.*/
   bool lightingIsEnabled() const { return lightingIsEnabled_; }
+
+  /** @brief whether this shader has both direct lighting and IBL enabled.*/
+  bool directAndIBLIsEnabled() const { return directAndIBLisEnabled_; }
 
   /** @brief whether any textures are present in this shader.*/
   bool isTextured() const { return isTextured_; }
@@ -603,7 +683,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    * control the intensity of the entire scene by a single field
    *  @return Reference to self (for method chaining)
    */
-  PbrShader& setGlobalLightIntensity(float lightIntensity);
+  PbrShader& setDirectLightIntensity(float lightIntensity);
 
   /**
    * @brief Set the gamma value used for remapping sRGB to linear approximations
@@ -630,10 +710,10 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    * never be set to 0 or will cause warnings when the shader executes
    */
   struct PbrEquationScales {
-    float directDiffuse = 1.0f;
-    float directSpecular = 1.0f;
-    float iblDiffuse = 1.0f;
-    float iblSpecular = 1.0f;
+    float directDiffuse = 0.5f;
+    float directSpecular = 0.5f;
+    float iblDiffuse = 0.5f;
+    float iblSpecular = 0.5f;
   };
 
   /**
@@ -667,9 +747,15 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   // whether or not this shader uses any textures
   bool isTextured_ = false;
-  // whether or not there is lighting - either direct or indirect - used by this
+  // Whether or not there is lighting - either direct or indirect - used by this
   // shader
   bool lightingIsEnabled_ = false;
+
+  // Whether direct lighting is enabled and there are direct lights defined
+  bool directLightingIsEnabled_ = false;
+
+  // Whether direct _AND_ indirect lighting is available
+  bool directAndIBLisEnabled_ = false;
 
   // ======= uniforms =======
   // it hurts the performance to call glGetUniformLocation() every frame due
@@ -693,8 +779,8 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   // when w == 0, it means .xyz is the light direction;
   // when w == 1, it means it is the light position, NOT the direction;
   int lightDirectionsUniform_ = ID_UNDEFINED;
-  // Global, config-driven knob to control lighting intensity
-  int globalLightingIntensityUniform_ = ID_UNDEFINED;
+  // Global, config-driven knob to control direct lighting intensity
+  int directLightingIntensityUniform_ = ID_UNDEFINED;
 
   // Global, config-driven knob to control IBL exposure
   int tonemapExposureUniform_ = ID_UNDEFINED;

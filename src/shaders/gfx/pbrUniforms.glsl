@@ -112,15 +112,15 @@ uniform sampler2D uAnisotropyLayerTexture;
 
 // -------------- lights and/or IBL -------------------
 
-// TODO Specify if LIGHT_COUNT > 0 and tonemap/srgb
-#if (LIGHT_COUNT > 0) || defined(IMAGE_BASED_LIGHTING)
+// TODO Specify if tonemap/srgb
+#if defined(DIRECT_LIGHTING) || defined(IMAGE_BASED_LIGHTING)
 uniform float uExposure;
 
 uniform float uGamma;
 
-#endif
+#endif  //  defined(DIRECT_LIGHTING) || defined(IMAGE_BASED_LIGHTING)
 
-#if (LIGHT_COUNT > 0)
+#if defined(DIRECT_LIGHTING)
 
 // NOTE: In this shader, the light intensity is already combined with the color
 // in each uLightColors vector;
@@ -135,9 +135,9 @@ uniform float uLightRanges[LIGHT_COUNT];
 uniform vec4 uLightDirections[LIGHT_COUNT];
 
 // Config driven overall direct lighting intensity
-uniform float uGlobalLightIntensity;
+uniform float uDirectLightIntensity;
 
-#endif  //(LIGHT_COUNT > 0)
+#endif  // DIRECT_LIGHTING
 
 // Whether or not to remap the colors from sRGB to linear and then back again
 // TODO provide config support for this field
@@ -155,11 +155,11 @@ uniform uint uPrefilteredMapMipLevels;
 // [0] = direct diffuse [1] = direct specular [2] = ibl
 // diffuse [3] = ibl specular
 
-#if (LIGHT_COUNT > 0)
+#if defined(DIRECT_LIGHTING)
 const int DirectDiffuse = 0;
 const int DirectSpecular = 1;
 const int IblDiffuse = 2;
 const int IblSpecular = 3;
 uniform vec4 uComponentScales;
-#endif  // (LIGHT_COUNT > 0)
+#endif  // DIRECT_LIGHTING
 #endif  // IMAGE_BASED_LIGHTING

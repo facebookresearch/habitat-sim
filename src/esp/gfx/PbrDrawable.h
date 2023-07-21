@@ -215,7 +215,40 @@ class PbrDrawable : public Drawable {
       Mn::Color3 attenuationColor{1.0f};
 
     } volumeLayer;
-  };
+  };  // struct PBRMaterialCache
+
+  /**
+   * This struct holds configuration values to be passed as uniforms to the PBR
+   * shader. These values are beyond what the material data can provide, are
+   * user provided, and can control, for example, light balance between direct
+   * and IBL lighting, or the intensity of the direct light.
+   */
+  struct PBRShaderConfig {
+    /**
+     * Control the direct lighting intensity.
+     */
+    float directLightingIntensity = 1.0f;
+    /**
+     * Controls the exposure level for the tonemapping function. Only used if
+     * tonemapping is enabled.
+     */
+    float tonemapExposure = 4.5f;
+    /**
+     * Controls the gamma value used in the sRGB<->linear approximation
+     * calculations. Only used if sRGB remapping is enabled.
+     */
+    float gamma = 2.2f;
+
+    /**
+     * Scales the contributions for each of the 4 given values - direct lighting
+     * diffuse and specular and ibl diffuse and specular. Only used both direct
+     * lighting and IBL are enabled, ignored otherwise.
+     */
+    PbrShader::PbrEquationScales eqScales{0.5f,   // directDiffuse
+                                          0.5f,   // directSpecular
+                                          0.5f,   // iblDiffuse
+                                          0.5f};  // iblSpecular
+  };                                              // struct PBRShaderConfig
 
   /// @brief Key template for entry in shader map
   static constexpr const char* SHADER_KEY_TEMPLATE = "PBR-lights={}-flags={}";
@@ -236,6 +269,16 @@ class PbrDrawable : public Drawable {
    *  @param lightSetupKey the key value for the light resource
    */
   void setLightSetup(const Mn::ResourceKey& lightSetupKey) override;
+
+  /**
+   * @brief Set the @ref ref::metadata::attributes::PbrShaderAttributes,
+   * which controls the program flow and functionality of the shader. NOTE :
+   * changing boolean values will require the shader to be rebuilt before
+   * rendering can occur.
+   */
+  void setShaderAttributesValues(
+      const std::shared_ptr<metadata::attributes::PbrShaderAttributes>&
+          _pbrShaderConfig);
 
  private:
   /**
@@ -299,15 +342,14 @@ class PbrDrawable : public Drawable {
   std::shared_ptr<PbrIBLHelper> pbrIbl_ = nullptr;
 
   /**
-   * The attributes configuration to configure the PBR shader
-   */
-  std::shared_ptr<metadata::attributes::PbrShaderAttributes> pbrShaderConfig_ =
-      nullptr;
-
-  /**
    * Local cache of material quantities to speed up access in draw
    */
   PBRMaterialCache matCache{};
+
+  /**
+   * Local cache of shader control values
+   */
+  PBRShaderConfig shaderConfig_{};
   /**
    * Creation attributes of this drawable
    */

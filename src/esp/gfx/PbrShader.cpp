@@ -50,9 +50,12 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
 #else
   Mn::GL::Version glVersion = Mn::GL::Version::GL330;
 #endif
-
+  directLightingIsEnabled_ =
+      (lightCount_ != 0u && flags_ >= Flag::DirectLighting);
   lightingIsEnabled_ =
-      (lightCount_ != 0u || flags_ >= Flag::ImageBasedLighting);
+      (directLightingIsEnabled_ || flags_ >= Flag::ImageBasedLighting);
+  directAndIBLisEnabled_ =
+      (directLightingIsEnabled_ && flags_ >= Flag::ImageBasedLighting);
 
   isTextured_ =
       (((flags_ >= Flag::BaseColorTexture) ||
@@ -163,11 +166,18 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
                      : "")
       .addSource(flags_ >= Flag::ImageBasedLighting
                      ? "#define IMAGE_BASED_LIGHTING\n"
-                       "#define TONE_MAP\n"
+                     : "")
+      // Lights exist and direct lighting is enabled
+      .addSource(directLightingIsEnabled_ ? "#define DIRECT_LIGHTING\n" : "")
+      // If any tonemap is available
+      .addSource((flags_ >= Flag::UseIBLTonemap) ||
+                         (flags_ >= Flag::UseDirectLightTonemap)
+                     ? "#define TONE_MAP\n"
                      : "")
 
       .addSource(flags_ >= Flag::DebugDisplay ? "#define PBR_DEBUG_DISPLAY\n"
                                               : "")
+
       .addSource(
           Cr::Utility::formatString("#define LIGHT_COUNT {}\n", lightCount_))
       .addSource(rs.getString("pbrCommon.glsl"))
@@ -288,12 +298,12 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   }  // if lighting is enabled
 
   // lights
-  if (lightCount_ != 0u) {
+  if (directLightingIsEnabled_) {
     lightRangesUniform_ = uniformLocation("uLightRanges");
     lightColorsUniform_ = uniformLocation("uLightColors");
     lightDirectionsUniform_ = uniformLocation("uLightDirections");
     // global light intensity across all direct lights
-    globalLightingIntensityUniform_ = uniformLocation("uGlobalLightIntensity");
+    directLightingIntensityUniform_ = uniformLocation("uDirectLightIntensity");
   }
 
   cameraWorldPosUniform_ = uniformLocation("uCameraWorldPos");
@@ -308,7 +318,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
         uniformLocation("uPrefilteredMapMipLevels");
   }
 
-  if ((lightCount_ != 0u) && (flags_ >= Flag::ImageBasedLighting)) {
+  if (directAndIBLisEnabled_) {
     // Apply scaling if -both- lights and IBL are enabled
     // pbr equation scales - use to mix IBL and direct lighting
     // Should never be set to 0 or will cause warnings to occur in shader
@@ -319,6 +329,9 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   if (flags_ >= Flag::DebugDisplay) {
     pbrDebugDisplayUniform_ = uniformLocation("uPbrDebugDisplay");
   }
+
+  /////////////////////////////
+  // Initializations
 
   // initialize the shader with some "reasonable defaults"
   setViewMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
@@ -363,7 +376,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     setLightRanges(Cr::Containers::Array<Mn::Float>{Cr::DirectInit, lightCount_,
                                                     Mn::Constants::inf()});
     // initialize global, config-driven light intensity
-    setGlobalLightIntensity(1.0f);
+    setDirectLightIntensity(1.0f);
     // initialize tonemap exposure
   }
 
@@ -379,7 +392,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   PbrShader::PbrEquationScales scales;
   // Set mix if both lights and IBL are enabled
   // Should never be 0 or will cause shader warnings
-  if ((lightCount_ != 0u) && (flags_ >= Flag::ImageBasedLighting)) {
+  if (directAndIBLisEnabled_) {
     // These are empirical numbers. Discount the diffuse light from IBL so the
     // ambient light will not be too strong. Also keeping the IBL specular
     // component relatively low can guarantee the super glossy surface would
@@ -812,9 +825,9 @@ PbrShader& PbrShader::setLightRanges(std::initializer_list<float> ranges) {
   return setLightRanges(Cr::Containers::arrayView(ranges));
 }
 
-PbrShader& PbrShader::setGlobalLightIntensity(float lightIntensity) {
+PbrShader& PbrShader::setDirectLightIntensity(float lightIntensity) {
   if (lightingIsEnabled_) {
-    setUniform(globalLightingIntensityUniform_, lightIntensity);
+    setUniform(directLightingIntensityUniform_, lightIntensity);
   }
   return *this;
 }

@@ -28,7 +28,7 @@ void main() {
 
 /////////////////
 // Direct lighting
-#if (LIGHT_COUNT > 0)
+#if defined(DIRECT_LIGHTING)
 
   // compute contribution of each light using the microfacet model
   // the following part of the code is inspired by the Phong.frag in Magnum
@@ -103,8 +103,9 @@ void main() {
 
   }  // for each light
 
-  float colorContribScale = uGlobalLightIntensity;
+  float colorContribScale = uDirectLightIntensity;
 #if defined(REMAP_COLORS_TO_LINEAR)
+  // Scale for area
   // TODO once global intensity is implemented, this should be available all the
   // time
   colorContribScale *= INV_PI;
@@ -116,7 +117,7 @@ void main() {
   colorVals.clearCoatContrib *= colorContribScale;
 #endif  // CLEAR_COAT
 
-#endif  // if (LIGHT_COUNT > 0)
+#endif  // if (DIRECT_LIGHTING)
 
 #if defined(IMAGE_BASED_LIGHTING)
 
@@ -154,7 +155,7 @@ void main() {
 
 ////////////////////
 // Scale if both direct lighting and ibl are enabled
-#if defined(IMAGE_BASED_LIGHTING) && (LIGHT_COUNT > 0)
+#if defined(IMAGE_BASED_LIGHTING) && defined(DIRECT_LIGHTING)
 
   // Only scale direct lighting contribution if also using IBL
   colorVals.diffuseContrib *= uComponentScales[DirectDiffuse];
@@ -200,6 +201,8 @@ void main() {
 
 // final aggregation
 // TODO alpha masking?
+
+// If remapping, IBL result was not remapped, so doing it here.
 #if defined(REMAP_COLORS_TO_LINEAR)
   fragmentColor = vec4(linearToSRGB(finalColor), pbrInfo.baseColor.a);
 #else

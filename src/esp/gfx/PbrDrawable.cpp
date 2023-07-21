@@ -27,12 +27,12 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
       shaderManager_{shaderManager},
       lightSetup_{shaderManager.get<LightSetup>(cfg.lightSetupKey_)},
       pbrIbl_(std::move(cfg.getPbrIblData())),
-      pbrShaderConfig_{cfg.getPbrShaderConfig()},
       meshAttributeFlags_{meshAttributeFlags} {
+  // Build material cache
   resetMaterialValues(
       shaderManager.get<Mn::Trade::MaterialData>(cfg.materialDataKey_));
   // Set shader config flags
-  // setShaderAttributesValues(cfg.getPbrShaderConfig());
+  setShaderAttributesValues(cfg.getPbrShaderConfig());
 
   // Defer the shader initialization because at this point, the lightSetup may
   // not be done in the Simulator. Simulator itself is currently under
@@ -335,6 +335,21 @@ void PbrDrawable::setMaterialValuesInternal(
   }
 
 }  // PbrDrawable::setMaterialValuesInternal
+
+void PbrDrawable::setShaderAttributesValues(
+    const std::shared_ptr<metadata::attributes::PbrShaderAttributes>&
+        pbrShaderConfig) {
+  // If direct light is enabled
+  pbrShaderConfig->getEnableDirectLighting()
+      ? flags_ |= PbrShader::Flag::DirectLighting
+      : flags_ &= ~PbrShader::Flag::DirectLighting;
+
+  // If IBL is enabled
+  pbrShaderConfig->getEnableIBL()
+      ? flags_ |= PbrShader::Flag::ImageBasedLighting
+      : flags_ &= ~PbrShader::Flag::ImageBasedLighting;
+
+}  // PbrDrawable::setShaderAttributesValues
 
 void PbrDrawable::setLightSetup(const Mn::ResourceKey& lightSetupKey) {
   lightSetup_ = shaderManager_.get<LightSetup>(lightSetupKey);
