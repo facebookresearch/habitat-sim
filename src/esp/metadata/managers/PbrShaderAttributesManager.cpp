@@ -51,7 +51,7 @@ void PbrShaderAttributesManager::setValsFromJSONDoc(
   io::jsonIntoConstSetter<bool>(
       jsonConfig, "use_burley_diffuse",
       [PbrShaderAttributes](bool useLambertian) {
-        PbrShaderAttributes->setUseDirectLightTonemap(useLambertian);
+        PbrShaderAttributes->setUseBurleyDiffuse(useLambertian);
       });
 
   // if TBN frame should be calculated if no precomputed tangent is present
@@ -86,6 +86,20 @@ void PbrShaderAttributesManager::setValsFromJSONDoc(
         PbrShaderAttributes->setUseDirectLightTonemap(useDirectTonemap);
       });
 
+  // direct light diffuse contirbution scaling.  Only used if both direct and
+  // indirect (IBL) lighting is enabled.
+  io::jsonIntoSetter<double>(
+      jsonConfig, "direct_diffuse_scale", [PbrShaderAttributes](double scale) {
+        PbrShaderAttributes->setDirectDiffuseScale(scale);
+      });
+
+  // direct light specular contirbution scaling.  Only used if both direct and
+  // indirect (IBL) lighting is enabled.
+  io::jsonIntoSetter<double>(
+      jsonConfig, "direct_specular_scale", [PbrShaderAttributes](double scale) {
+        PbrShaderAttributes->setDirectSpecularScale(scale);
+      });
+
   ////////////////////////////
   // Material Layer calculation settings
 
@@ -114,20 +128,6 @@ void PbrShaderAttributesManager::setValsFromJSONDoc(
       jsonConfig, "skip_anisotropy_layer_calc",
       [PbrShaderAttributes](bool skipCalcAnisotropy) {
         PbrShaderAttributes->setSkipCalcAnisotropyLayer(skipCalcAnisotropy);
-      });
-
-  // direct light diffuse contirbution scaling.  Only used if both direct and
-  // indirect (IBL) lighting is enabled.
-  io::jsonIntoSetter<double>(
-      jsonConfig, "direct_diffuse_scale", [PbrShaderAttributes](double scale) {
-        PbrShaderAttributes->setDirectDiffuseScale(scale);
-      });
-
-  // direct light specular contirbution scaling.  Only used if both direct and
-  // indirect (IBL) lighting is enabled.
-  io::jsonIntoSetter<double>(
-      jsonConfig, "direct_specular_scale", [PbrShaderAttributes](double scale) {
-        PbrShaderAttributes->setDirectSpecularScale(scale);
       });
 
   ////////////////////

@@ -9,7 +9,7 @@
   "use_srgb_remapping": false,
   "use_direct_tonemap": false,
   "use_ibl_tonemap": true,
-  "use_burley_diffuse": false,
+  "use_burley_diffuse": true,
   "skip_clearcoat_calc": false,
   "skip_specular_layer_calc": false,
   "skip_anisotropy_layer_calc": false,

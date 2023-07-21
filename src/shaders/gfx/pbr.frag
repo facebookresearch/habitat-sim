@@ -46,16 +46,17 @@ void main() {
     vec3 fresnel = fresnelSchlick(pbrInfo.specularColor_f0,
                                   pbrInfo.specularColor_f90, l.v_dot_h);
 
-#if defined(SIMPLE_LAMBERTIAN_DIFFUSE)
-    // Lambertian diffuse contribution (simpler calc)
-    vec3 currentDiffuseContrib = l.projLightIrradiance * pbrInfo.diffuseColor;
-#else
+#if defined(USE_BURLEY_DIFFUSE)
     // Burley/Disney diffuse contribution
     vec3 currentDiffuseContrib =
         l.projLightIrradiance *
         BRDF_BurleyDiffuseRenorm(pbrInfo.diffuseColor, l,
                                  pbrInfo.alphaRoughness);
-#endif
+#else
+    // Lambertian diffuse contribution (simpler calc)
+    vec3 currentDiffuseContrib = l.projLightIrradiance * pbrInfo.diffuseColor;
+
+#endif  // USE_BURLEY_DIFFUSE else use lambertian diffuse
 
 #if defined(ANISOTROPY_LAYER) && !defined(SKIP_CALC_ANISOTROPY_LAYER)
     // Specular microfacet for anisotropic layer
@@ -176,6 +177,12 @@ void main() {
       colorVals.diffuseContrib + colorVals.iblDiffuseContrib;
   vec3 ttlSpecularContrib =
       colorVals.specularContrib + colorVals.iblSpecularContrib;
+
+// If using direct lighting tone map
+#if defined(DIRECT_TONE_MAP)
+  ttlDiffuseContrib = toneMap(ttlDiffuseContrib);
+  ttlSpecularContrib = toneMap(ttlSpecularContrib);
+#endif  // DIRECT_TONE_MAP
 
   // Aggregate direct and indirect diffuse and specular with emissive color
   // TODO expand emissiveColor handling
