@@ -146,6 +146,15 @@ vec4 toneMap(vec4 color) {
   return vec4(outcol, color.a);
 }
 
+vec3 toneMapToSRGB(vec3 color) {
+  return linearToSRGB(Uncharted2Tonemap(color.rgb * uExposure) *
+                      toneMapUC2Denom);
+}
+// Tone map without linear-to-srgb mapping
+vec3 toneMap(vec3 color) {
+  return Uncharted2Tonemap(color.rgb * uExposure) * toneMapUC2Denom;
+}
+
 #endif  // TONE_MAP - either IBL or Direct
 
 /////////////////

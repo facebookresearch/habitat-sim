@@ -1,6 +1,6 @@
 {
   "enable_direct_lights": true,
-  "enable_ibl": false,
+  "enable_ibl": true,
   "ibl_blut_filename": "brdflut_ldr_512x512.png",
   "ibl_envmap_filename": "lythwood_room_1k.hdr",
   "direct_light_intensity": 3.14,
