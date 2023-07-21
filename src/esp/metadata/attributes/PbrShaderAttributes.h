@@ -38,6 +38,22 @@ class PbrShaderAttributes : public AbstractAttributes {
   }
 
   /**
+   * @brief Set the scene-wide direct lighting intensity for pbr shader. Applied
+   * to all direct lighting contributions equally.
+   */
+  void setDirectLightIntensity(double intensity) {
+    set("direct_light_intensity", intensity);
+  }
+
+  /**
+   * @brief Get the scene-wide lighting intensity for pbr shader. Applied to all
+   * direct lighting contributions equally.
+   */
+  float getDirectLightIntensity() const {
+    return static_cast<float>(get<double>("direct_light_intensity"));
+  }
+
+  /**
    * @brief Set if we should skip the calculation of a TBN frame in the fragment
    * shader if no precalculated TBN is provided. Without this frame normal
    * textures cannot be used, and anisotropy, if present, will not look
@@ -122,24 +138,26 @@ class PbrShaderAttributes : public AbstractAttributes {
   // Changing these values will require recompiling the shader
 
   /**
-   * @brief Set if we should use Lambertian calculation for direct lighting
-   * diffuse color under direct light. By default our PBR shader uses a diffuse
-   * calculation based on Burley, modified to be more energy conserving.
+   * @brief Set if we should use a diffuse calculation based on Burley, modified
+   * to be more energy conserving :
    * https://media.disneyanimation.com/uploads/production/publication_asset/48/asset/s2012_pbs_disney_brdf_notes_v3.pdf
-   * Lambertian is simpler and quicker to calculate but may not look as nice*
+   * instead of the default Lambertian calculation for direct lighting diffuse
+   * color under direct light. By default our PBR shader uses Lambertian, which
+   * is simpler and quicker to calculate but may not look as 'nice'
    */
-  void setUseLambertianDiffuse(bool useLambertian) {
-    set("use_lambertian", useLambertian);
+  void setUseBurleyDiffuse(bool useBurleyDiffuse) {
+    set("use_burley_diffuse", useBurleyDiffuse);
   }
 
   /**
-   * @brief Get if we should use Lambertian calculation for direct lighting
-   * diffuse color under direct light. By default our PBR shader uses a diffuse
-   * calculation based on Burley, modified to be more energy conserving.
+   * @brief Get if we should use a diffuse calculation based on Burley, modified
+   * to be more energy conserving :
    * https://media.disneyanimation.com/uploads/production/publication_asset/48/asset/s2012_pbs_disney_brdf_notes_v3.pdf
-   * Lambertian is simpler and quicker to calculate but may not look as nice*
+   * instead of the default Lambertian calculation for direct lighting diffuse
+   * color under direct light. By default our PBR shader uses Lambertian, which
+   * is simpler and quicker to calculate but may not look as 'nice'
    */
-  bool getUseLambertianDiffuse() const { return get<bool>("use_lambertian"); }
+  bool getUseBurleyDiffuse() const { return get<bool>("use_burley_diffuse"); }
 
   /**
    * @brief Set whether the clearcoat layer calculations should be skipped. If
@@ -225,7 +243,7 @@ class PbrShaderAttributes : public AbstractAttributes {
                                   get<std::string>("ibl_envmap_filename")));
   }
   /**
-   * @brief Set the filename for the brdf lookup table used by the IBL
+   * @brief Get the filename for the brdf lookup table used by the IBL
    * calculations.
    */
   std::string getIBLBrdfLUTAssetHandle() const {
@@ -245,15 +263,7 @@ class PbrShaderAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief Set internally when either bLUT or EnvMap asset names are set.
-   * Format is '<bLUT asset handle>_<envMap asset handle>'.
-   */
-  std::string getPbrShaderHelperKey() const {
-    return get<std::string>("pbr_ibl_helper_key");
-  }
-
-  /**
-   * @brief Set the filename for the equirectangular environment map used by the
+   * @brief Get the filename for the equirectangular environment map used by the
    * calculations.
    */
   std::string getIBLEnvMapAssetHandle() const {
@@ -261,9 +271,20 @@ class PbrShaderAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief Set if we should use tonemapping for IBL lighting.
-   * TODO : provide mechanism for specifying multiple tonemappings?  Each would
-   * be defined in the shader, and we could specify which to use by an enum.
+   * @brief Retrieve the handle for the PbrIBLHelper to be used for objects
+   * using this attributes. This value is set internally when either bLUT or
+   * EnvMap asset names are set. Format is '<bLUT asset handle>_<envMap asset
+   * handle>'.
+   */
+  std::string getPbrShaderHelperKey() const {
+    return get<std::string>("pbr_ibl_helper_key");
+  }
+
+  /**
+   * @brief set if we should use tonemapping for IBL lighting.
+   * TODO : Eventually provide mechanism for specifying multiple tonemappings?
+   * Each would be defined in the shader, and we could specify which to use by
+   * an enum.
    */
   void setUseIBLTonemap(bool useIBLTonemap) {
     set("use_ibl_tonemap", useIBLTonemap);
@@ -271,30 +292,15 @@ class PbrShaderAttributes : public AbstractAttributes {
 
   /**
    * @brief Get if we should use tonemapping for IBL lighting.
-   * TODO : provide mechanism for specifying multiple tonemappings?  Each would
-   * be defined in the shader, and we could specify which to use by an enum.
+   * TODO : Eventually provide mechanism for specifying multiple tonemappings?
+   * Each would be defined in the shader, and we could specify which to use by
+   * an enum.
    */
   bool getUseIBLTonemap() const { return get<bool>("use_ibl_tonemap"); }
 
   ///////////////////
   // Both Direct and IBL-related uniform quantities
   // Changing these values would not require shader rebuild
-
-  /**
-   * @brief Set the scene-wide direct lighting intensity for pbr shader. Applied
-   * to all direct lighting contributions equally.
-   */
-  void setDirectLightIntensity(double intensity) {
-    set("direct_light_intensity", intensity);
-  }
-
-  /**
-   * @brief Get the scene-wide lighting intensity for pbr shader. Applied to all
-   * direct lighting contributions equally.
-   */
-  double getDirectLightIntensity() const {
-    return get<double>("direct_light_intensity");
-  }
 
   /**
    * @brief Set the exposure value for tonemapping in the pbr shader. This value

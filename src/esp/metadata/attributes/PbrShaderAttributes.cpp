@@ -13,12 +13,12 @@ PbrShaderAttributes::PbrShaderAttributes(const std::string& handle)
   setEnableDirectLighting(true);
   setEnableIBL(true);
 
-  setDirectLightIntensity(1.0f);
+  setDirectLightIntensity(3.14f);
   setSkipCalcMissingTBN(false);
   setUseMikkelsenTBN(false);
   setUseSRGBRemapping(false);
   setUseDirectLightTonemap(false);
-  setUseLambertianDiffuse(false);
+  setUseBurleyDiffuse(false);
   // Layer calcs
   setSkipCalcCleacoatLayer(false);
   setSkipCalcSpecularLayer(false);
@@ -58,7 +58,7 @@ void PbrShaderAttributes::writeValuesToJson(
   writeValueToJson("use_mikkelsen_tbn", jsonObj, allocator);
   writeValueToJson("use_srgb_remapping", jsonObj, allocator);
   writeValueToJson("use_direct_tonemap", jsonObj, allocator);
-  writeValueToJson("use_lambertian", jsonObj, allocator);
+  writeValueToJson("use_burley_diffuse", jsonObj, allocator);
   writeValueToJson("skip_clearcoat_calc", jsonObj, allocator);
   writeValueToJson("skip_specular_layer_calc", jsonObj, allocator);
   writeValueToJson("skip_anisotropy_layer_calc", jsonObj, allocator);
@@ -77,7 +77,7 @@ void PbrShaderAttributes::writeValuesToJson(
 std::string PbrShaderAttributes::getObjectInfoHeaderInternal() const {
   return "Direct Lights On,IBL On,Global Direct Light Intensity,Calc "
          "Missing Tangent Frame,Use Mikkelsen TBN Calc,Use sRGB Color "
-         "Remapping,Use Lambertian Diffuse,Calc Clearcoat,Calc Spec "
+         "Remapping,Use Burley/Disney Diffuse,Calc Clearcoat,Calc Spec "
          "Layer,Calc Anisotropy,BRDF LUT Filename,Environment Map "
          "Filename,Scaling [Dir Diffuse|Dir Spec|IBL Diffuse|IBL "
          "Spec],Tonemap Exposure, Global Gamma";
@@ -97,7 +97,7 @@ std::string PbrShaderAttributes::getObjectInfoInternal() const {
       getAsString("enable_direct_lights"), getAsString("enable_ibl"),
       getAsString("light_intensity"), getAsString("skip_missing_tbn_calc"),
       getAsString("use_mikkelsen_tbn"), getAsString("use_srgb_remapping"),
-      getAsString("use_lambertian"), getAsString("skip_clearcoat_calc"),
+      getAsString("use_burley_diffuse"), getAsString("skip_clearcoat_calc"),
       getAsString("skip_specular_layer_calc"),
       getAsString("skip_anisotropy_layer_calc"),
       getAsString("ibl_blut_filename"), getAsString("ibl_envmap_filename"),

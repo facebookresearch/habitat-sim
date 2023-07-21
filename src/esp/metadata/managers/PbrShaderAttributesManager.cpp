@@ -46,6 +46,13 @@ void PbrShaderAttributesManager::setValsFromJSONDoc(
       [PbrShaderAttributes](double lightIntensity) {
         PbrShaderAttributes->setDirectLightIntensity(lightIntensity);
       });
+  // whether we use the burley/disney diffuse calculation or lambertian diffuse
+  // calculation for direct lighting.
+  io::jsonIntoConstSetter<bool>(
+      jsonConfig, "use_burley_diffuse",
+      [PbrShaderAttributes](bool useLambertian) {
+        PbrShaderAttributes->setUseDirectLightTonemap(useLambertian);
+      });
 
   // if TBN frame should be calculated if no precomputed tangent is present
   io::jsonIntoConstSetter<bool>(
@@ -81,12 +88,6 @@ void PbrShaderAttributesManager::setValsFromJSONDoc(
 
   ////////////////////////////
   // Material Layer calculation settings
-  // whether we use the lambertian diffuse calculation. If false we use the
-  // burley/disney mapping.
-  io::jsonIntoConstSetter<bool>(
-      jsonConfig, "use_lambertian", [PbrShaderAttributes](bool useLambertian) {
-        PbrShaderAttributes->setUseDirectLightTonemap(useLambertian);
-      });
 
   // whether clearcoat layer contributions should be calculated where they are
   // specified by the material.  Note this will not require a rebuild of the

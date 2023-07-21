@@ -8,7 +8,6 @@
 #include <Magnum/Resource.h>
 #include "esp/gfx/PbrIBLHelper.h"
 #include "esp/gfx/SkinData.h"
-#include "esp/metadata/attributes/AttributesEnumMaps.h"
 #include "esp/metadata/attributes/PbrShaderAttributes.h"
 namespace esp {
 namespace gfx {

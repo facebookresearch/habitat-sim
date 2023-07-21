@@ -482,14 +482,12 @@ void initAttributesBindings(py::module& m) {
           R"(Whether tonemapping is enabled for direct lighting results, remapping the colors
           to a slightly different colorspace.)")
       .def_property(
-          "use_lambertian_diffuse",
-          &PbrShaderAttributes::getUseLambertianDiffuse,
-          &PbrShaderAttributes::setUseLambertianDiffuse,
-          R"(Whether Lambertian color calculation is used for direct light contribution. If false (the
-          default value), the PBR shader uses a diffuse calculation based on Burley, modified to be
+          "use_burley_diffuse", &PbrShaderAttributes::getUseBurleyDiffuse,
+          &PbrShaderAttributes::setUseBurleyDiffuse,
+          R"(If tue, the PBR shader uses a diffuse calculation based on Burley, modified to be
           more energy conserving.
           https://media.disneyanimation.com/uploads/production/publication_asset/48/asset/s2012_pbs_disney_brdf_notes_v3.pdf
-          Lambertian is simpler and quicker to calculate but may not look as nice.)")
+          otherwise, the shader will use a standard Lambertian model, which is easier to calculate but doesn't look as nice.)")
       .def_property(
           "skip_clearcoat_calc", &PbrShaderAttributes::getSkipCalcCleacoatLayer,
           &PbrShaderAttributes::setSkipCalcCleacoatLayer,
