@@ -349,6 +349,75 @@ void PbrDrawable::setShaderAttributesValues(
       ? flags_ |= PbrShader::Flag::ImageBasedLighting
       : flags_ &= ~PbrShader::Flag::ImageBasedLighting;
 
+  // If using Burley/disney diffuse
+  pbrShaderConfig->getUseBurleyDiffuse()
+      ? flags_ |= PbrShader::Flag::UseBurleyDiffuse
+      : flags_ &= ~PbrShader::Flag::UseBurleyDiffuse;
+
+  // If should skip TBN Calculation
+  pbrShaderConfig->getSkipCalcMissingTBN()
+      ? flags_ |= PbrShader::Flag::SkipMissingTBNCalc
+      : flags_ &= ~PbrShader::Flag::SkipMissingTBNCalc;
+
+  // If should use Mikkelsen algorithm for TBN
+  pbrShaderConfig->getUseMikkelsenTBN()
+      ? flags_ |= PbrShader::Flag::UseMikkelsenTBN
+      : flags_ &= ~PbrShader::Flag::UseMikkelsenTBN;
+
+  // If should use sRGB <-> linear remapping on appropriate textures
+  pbrShaderConfig->getUseSRGBRemapping()
+      ? flags_ |= PbrShader::Flag::UseSRGBRemapping
+      : flags_ &= ~PbrShader::Flag::UseSRGBRemapping;
+
+  // If should use tonemapping for direct lighting results
+  pbrShaderConfig->getUseDirectLightTonemap()
+      ? flags_ |= PbrShader::Flag::UseDirectLightTonemap
+      : flags_ &= ~PbrShader::Flag::UseDirectLightTonemap;
+
+  // If should use tonemapping for IBL results
+  pbrShaderConfig->getUseIBLTonemap()
+      ? flags_ |= PbrShader::Flag::UseIBLTonemap
+      : flags_ &= ~PbrShader::Flag::UseIBLTonemap;
+
+  // If clear coat calculations should be skipped
+  pbrShaderConfig->getSkipCalcCleacoatLayer()
+      ? flags_ |= PbrShader::Flag::SkipClearCoatLayer
+      : flags_ &= ~PbrShader::Flag::SkipClearCoatLayer;
+
+  // If specular layer calculations should be skipped
+  pbrShaderConfig->getSkipCalcSpecularLayer()
+      ? flags_ |= PbrShader::Flag::SkipSpecularLayer
+      : flags_ &= ~PbrShader::Flag::SkipSpecularLayer;
+
+  // If anisotropy layer calculations should be skipped
+  pbrShaderConfig->getSkipCalcAnisotropyLayer()
+      ? flags_ |= PbrShader::Flag::SkipAnisotropyLayer
+      : flags_ &= ~PbrShader::Flag::SkipAnisotropyLayer;
+
+  // Only set values if actually going to use them
+  if (flags_ >= PbrShader::Flag::DirectLighting) {
+    // Intensity of direct lighting
+    shaderConfig_.directLightingIntensity =
+        pbrShaderConfig->getDirectLightIntensity();
+    if (flags_ >= PbrShader::Flag::ImageBasedLighting) {
+      // Scales contributions but only if both direct and IBL are being
+      // processed.
+      shaderConfig_.eqScales.directDiffuse =
+          pbrShaderConfig->getDirectDiffuseScale();
+      shaderConfig_.eqScales.directSpecular =
+          pbrShaderConfig->getDirectSpecularScale();
+      shaderConfig_.eqScales.iblDiffuse = pbrShaderConfig->getIBLDiffuseScale();
+      shaderConfig_.eqScales.iblSpecular =
+          pbrShaderConfig->getIBLSpecularScale();
+    }
+  }
+  if (flags_ >= (PbrShader::Flag::UseIBLTonemap) ||
+      flags_ >= (PbrShader::Flag::UseDirectLightTonemap)) {
+    shaderConfig_.tonemapExposure = pbrShaderConfig->getTonemapExposure();
+  }
+  if (flags_ >= PbrShader::Flag::UseSRGBRemapping) {
+    shaderConfig_.gamma = pbrShaderConfig->getGamma();
+  }
 }  // PbrDrawable::setShaderAttributesValues
 
 void PbrDrawable::setLightSetup(const Mn::ResourceKey& lightSetupKey) {
@@ -495,6 +564,24 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
     }
   }
 
+  // Set gamma value to use for srgb remapping
+  if (flags_ >= PbrShader::Flag::UseSRGBRemapping) {
+    shader_->setGamma(shaderConfig_.gamma);
+  }
+
+  // Tonemap exposure
+  if (flags_ >= (PbrShader::Flag::UseIBLTonemap) ||
+      flags_ >= (PbrShader::Flag::UseDirectLightTonemap)) {
+    shader_->setTonemapExposure(shaderConfig_.tonemapExposure);
+  }
+  if (flags_ >= PbrShader::Flag::DirectLighting) {
+    // Intensity of direct lighting
+    shader_->setDirectLightIntensity(shaderConfig_.directLightingIntensity);
+    if (flags_ >= PbrShader::Flag::ImageBasedLighting) {
+      shader_->setPbrEquationScales(shaderConfig_.eqScales);
+    }
+  }
+
   // setup image based lighting for the shader
   if (flags_ >= PbrShader::Flag::ImageBasedLighting) {
     CORRADE_INTERNAL_ASSERT(pbrIbl_);
@@ -518,8 +605,9 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   // WE stopped supporting doubleSided material due to lighting artifacts on
   // hard edges. See comments at the beginning of this function.
   /*
-  if ((flags_ >= PbrShader::Flag::DoubleSided) && !glIsEnabled(GL_CULL_FACE))
-  { Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
+  if ((flags_ >= PbrShader::Flag::DoubleSided) &&
+  !glIsEnabled(GL_CULL_FACE)) {
+  Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
   }
   */
 }  // PbrDrawable::draw

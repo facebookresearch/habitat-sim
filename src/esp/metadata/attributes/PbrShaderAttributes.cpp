@@ -53,7 +53,7 @@ void PbrShaderAttributes::writeValuesToJson(
     io::JsonAllocator& allocator) const {
   writeValueToJson("enable_direct_lights", jsonObj, allocator);
   writeValueToJson("enable_ibl", jsonObj, allocator);
-  writeValueToJson("light_intensity", jsonObj, allocator);
+  writeValueToJson("direct_light_intensity", jsonObj, allocator);
   writeValueToJson("skip_missing_tbn_calc", jsonObj, allocator);
   writeValueToJson("use_mikkelsen_tbn", jsonObj, allocator);
   writeValueToJson("use_srgb_remapping", jsonObj, allocator);
@@ -95,9 +95,10 @@ std::string PbrShaderAttributes::getObjectInfoInternal() const {
   return Cr::Utility::formatString(
       "{},{},{},{},{},{},{},{},{},{},{},{},{},",
       getAsString("enable_direct_lights"), getAsString("enable_ibl"),
-      getAsString("light_intensity"), getAsString("skip_missing_tbn_calc"),
-      getAsString("use_mikkelsen_tbn"), getAsString("use_srgb_remapping"),
-      getAsString("use_burley_diffuse"), getAsString("skip_clearcoat_calc"),
+      getAsString("direct_light_intensity"),
+      getAsString("skip_missing_tbn_calc"), getAsString("use_mikkelsen_tbn"),
+      getAsString("use_srgb_remapping"), getAsString("use_burley_diffuse"),
+      getAsString("skip_clearcoat_calc"),
       getAsString("skip_specular_layer_calc"),
       getAsString("skip_anisotropy_layer_calc"),
       getAsString("ibl_blut_filename"), getAsString("ibl_envmap_filename"),

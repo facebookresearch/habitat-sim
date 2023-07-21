@@ -104,12 +104,12 @@ void main() {
   }  // for each light
 
   float colorContribScale = uDirectLightIntensity;
-#if defined(REMAP_COLORS_TO_LINEAR)
+  //#if defined(REMAP_COLORS_TO_LINEAR)
   // Scale for area
   // TODO once global intensity is implemented, this should be available all the
   // time
   colorContribScale *= INV_PI;
-#endif  // REMAP_COLORS_TO_LINEAR
+  //#endif  // REMAP_COLORS_TO_LINEAR
 
   colorVals.diffuseContrib *= colorContribScale;
   colorVals.specularContrib *= colorContribScale;

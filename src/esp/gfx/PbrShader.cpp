@@ -51,7 +51,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   Mn::GL::Version glVersion = Mn::GL::Version::GL330;
 #endif
   directLightingIsEnabled_ =
-      (lightCount_ != 0u && flags_ >= Flag::DirectLighting);
+      ((lightCount_ != 0u) && flags_ >= Flag::DirectLighting);
   lightingIsEnabled_ =
       (directLightingIsEnabled_ || flags_ >= Flag::ImageBasedLighting);
   directAndIBLisEnabled_ =
@@ -169,6 +169,35 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
                      : "")
       // Lights exist and direct lighting is enabled
       .addSource(directLightingIsEnabled_ ? "#define DIRECT_LIGHTING\n" : "")
+      // Whether to skip the TBN calc if no precomputed tangents are provided.
+      // NOTE : This will disable normal textures if no precomp tangents, which
+      // will result in a severe degredation in quality.
+      // TODO : implement this in shader. This should only be done if the TBN
+      // calc negatively impacts shader performance too dramatically.
+      .addSource(flags_ >= Flag::SkipMissingTBNCalc ? "#define SKIP_TBN_CALC\n"
+                                                    : "")
+
+      // Whether to use Mikkelsen TBN Calc. Otherwise use faster simplification
+      .addSource(flags_ >= Flag::UseMikkelsenTBN ? "#define USE_MIKKELSEN_TBN\n"
+                                                 : "")
+      // Whether to use the Burley/Disney diffuse calculation, or simple
+      // lambertian
+      .addSource(flags_ >= Flag::UseBurleyDiffuse
+                     ? "#define USE_BURLEY_DIFFUSE\n"
+                     : "")
+      // Use the shader to approximate srgb<-> linear remapping on specific
+      // textures so that all color calcs take place in linear space. This is
+      // temporary until we can improve the cpu-side functionality (make sure
+      // all loaded textures are converted to linear space, and implement the
+      // framebuffer that can map back to sRGB)
+      .addSource(flags_ >= Flag::UseSRGBRemapping
+                     ? "#define REMAP_COLORS_TO_LINEAR\n"
+                     : "")
+
+      .addSource(flags_ >= Flag::UseDirectLightTonemap
+                     ? "#define DIRECT_TONE_MAP\n"
+                     : "")
+      .addSource(flags_ >= Flag::UseIBLTonemap ? "#define IBL_TONE_MAP\n" : "")
       // If any tonemap is available
       .addSource((flags_ >= Flag::UseIBLTonemap) ||
                          (flags_ >= Flag::UseDirectLightTonemap)
@@ -364,7 +393,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     }
   }
 
-  if (lightCount_ != 0u) {
+  if (directLightingIsEnabled_) {
     setLightVectors(Cr::Containers::Array<Mn::Vector4>{
         Cr::DirectInit, lightCount_,
         // a single directional "fill" light, coming from the center of the
@@ -673,9 +702,11 @@ PbrShader& PbrShader::setSpecularLayerColorFactor(
   return *this;
 }
 PbrShader& PbrShader::setPbrEquationScales(const PbrEquationScales& scales) {
-  Mn::Vector4 componentScales{scales.directDiffuse, scales.directSpecular,
-                              scales.iblDiffuse, scales.iblSpecular};
-  setUniform(componentScalesUniform_, componentScales);
+  if (directAndIBLisEnabled_) {
+    Mn::Vector4 componentScales{scales.directDiffuse, scales.directSpecular,
+                                scales.iblDiffuse, scales.iblSpecular};
+    setUniform(componentScalesUniform_, componentScales);
+  }
   return *this;
 }
 
