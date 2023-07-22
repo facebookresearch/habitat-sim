@@ -3097,7 +3097,7 @@ void ResourceManager::addComponent(
 
     if (materialDataType == ObjectInstanceShaderType::PBR) {
       // TODO : Query which PbrShaderAttributes to use based on region of
-      // drawable.
+      // drawable. Need to have some way of propagating region value.
 
       // Currently always using default PbrShaderAttributes for the current
       // Scene.
@@ -3250,6 +3250,14 @@ std::shared_ptr<Mn::GL::Texture2D> ResourceManager::loadIBLImageIntoTexture(
     const std::string& imageFilename,
     bool useImageTxtrFormat,
     const Cr::Utility::Resource& rs) {
+  if (imageFilename.empty()) {
+    ESP_ERROR(Mn::Debug::Flag::NoSpace)
+        << "Failed loading "
+        << (useImageTxtrFormat ? "Environment Map" : "BRDF Lookup Table")
+        << " image file due to empty name, so aborting.";
+    return nullptr;
+  }
+
   // Try to find image in IBL texture library
   std::unordered_map<
       std::string, std::shared_ptr<Mn::GL::Texture2D>>::const_iterator mapIter =
@@ -3261,26 +3269,35 @@ std::shared_ptr<Mn::GL::Texture2D> ResourceManager::loadIBLImageIntoTexture(
     resTexture = mapIter->second;
   } else {
     // load image
-    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
-        << "Checking if file is in resource `" << imageFilename << "`";
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+        << "Checking if IBL "
+        << (useImageTxtrFormat ? "Environment Map" : "BRDF Lookup Table")
+        << " image file `" << imageFilename << "` is in compiled resource.";
     if (rs.hasFile(imageFilename)) {
-      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
-          << "File is in resource `" << imageFilename << "`";
+      ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+          << "IBL "
+          << (useImageTxtrFormat ? "Environment Map" : "BRDF Lookup Table")
+          << " image file `" << imageFilename
+          << "` exists in compiled resource.";
       imageImporter_->openData(rs.getRaw(imageFilename));
     } else {
-      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
-          << "File not in resource `" << imageFilename
-          << "` so loading from disk.";
+      ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+          << "IBL "
+          << (useImageTxtrFormat ? "Environment Map" : "BRDF Lookup Table")
+          << " image file `" << imageFilename
+          << "` was not found in resource so loading from disk.";
       // TODO verify file exists on disk before attempting to load.
 
-      //<< Mn::Debug::nospace
-      ESP_CHECK(imageImporter_->openFile(imageFilename),
-                "Requested "
-                    << (useImageTxtrFormat ? "Environment Map"
-                                           : "BRDF Lookup Table")
-                    << "image file (required for IBL rendering) named `"
-                    << Mn::Debug::nospace << imageFilename << Mn::Debug::nospace
-                    << "` not found in resource file or on disk. Aborting.");
+      if (!imageImporter_->openFile(imageFilename)) {
+        // If unable to load then not found
+        ESP_ERROR(Mn::Debug::Flag::NoSpace)
+            << "Requested IBL "
+            << (useImageTxtrFormat ? "Environment Map" : "BRDF Lookup Table")
+            << " image file (required for IBL rendering) named `"
+            << imageFilename
+            << "` not found in resource file or on disk, so skipping load.";
+        return nullptr;
+      }
     }
     Cr::Containers::Optional<Mn::Trade::ImageData2D> imageData =
         imageImporter_->image2D(0);
@@ -3313,10 +3330,11 @@ std::shared_ptr<Mn::GL::Texture2D> ResourceManager::loadIBLImageIntoTexture(
 }  // ResourceManager::loadIBLImageIntoTexture
 
 void ResourceManager::loadAllIBLAssets() {
-  // Only load if rendering is enabled.
   // map is keyed by config name, value is PbrShaderAttributes, describing the
   // desired configuration of the PBR shader.
   auto mapOfPbrConfigs = metadataMediator_->getAllPbrShaderConfigs();
+
+  // Only load if rendering is enabled.
   if (requiresTextures_) {
     // Load BLUTs and Envmaps specified in scene dataset
     // First verify that pbr image resources is available
@@ -3325,36 +3343,52 @@ void ResourceManager::loadAllIBLAssets() {
     }
     const Cr::Utility::Resource rs{"pbr-images"};
 
-    ESP_WARNING(Mn::Debug::Flag::NoSpace)
-        << "PBR/IBL asset files being loadded : " << mapOfPbrConfigs.size();
+    ESP_DEBUG() << "PBR/IBL asset file sets (IBL brdf LUTs and environment "
+                   "maps) being loadded :"
+                << mapOfPbrConfigs.size();
     for (const auto& entry : mapOfPbrConfigs) {
-      auto bLUTImageFilename = entry.second->getIBLBrdfLUTAssetHandle();
-      auto envMapFilename = entry.second->getIBLEnvMapAssetHandle();
-      ESP_WARNING(Mn::Debug::Flag::NoSpace)
-          << "Handle :`" << entry.first << "` : brdfLUT Handle : `"
-          << bLUTImageFilename << "` | envMapHandle :  `" << envMapFilename
-          << "`";
-
-      std::string helperKey =
-          Cr::Utility::formatString("{}_{}", bLUTImageFilename, envMapFilename);
+      const auto pbrShaderAttr = entry.second;
+      auto helperKey = pbrShaderAttr->getPbrShaderHelperKey();
+      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+          << "Handle :`" << entry.first
+          << "` : PbrIBLHelper key : (brdfLUT Handle)_(envMap Handle) `"
+          << helperKey << "`";
+      std::shared_ptr<Mn::GL::Texture2D> blutTexture = nullptr;
+      std::shared_ptr<Mn::GL::Texture2D> envMapTexture = nullptr;
       if (pbrIBLHelpers_.count(helperKey) == 0) {
         // ==== load the brdf lookup table texture ====
-        auto blutTexture =
-            loadIBLImageIntoTexture(bLUTImageFilename, false, rs);
+        auto bLUTImageFilename = pbrShaderAttr->getIBLBrdfLUTAssetHandle();
+        if (!bLUTImageFilename.empty()) {
+          // Only loads if bLUTImageFilename hasn't been loaded already
+          blutTexture = loadIBLImageIntoTexture(bLUTImageFilename, false, rs);
+        }
 
         // ==== load the equirectangular texture ====
-        auto envMapTexture = loadIBLImageIntoTexture(envMapFilename, true, rs);
+        auto envMapFilename = pbrShaderAttr->getIBLEnvMapAssetHandle();
+        if (!envMapFilename.empty()) {
+          // Only loads if envMapFilename hasn't been loaded already
+          envMapTexture = loadIBLImageIntoTexture(envMapFilename, true, rs);
+        }
 
-        // ==== build helpers if not present
-
-        pbrIBLHelpers_.emplace(helperKey,
-                               std::make_shared<gfx::PbrIBLHelper>(
-                                   shaderManager_, blutTexture, envMapTexture));
+        // ==== build helper for these assets ====
+        // This helper uses shaders to perform the calculations required to
+        // convert the Environment Map equirectangular image into the Irradiance
+        // Map and Prefiltered Environment Map CubeMaps. Only build if both
+        // images were found and successfully converted into textures.
+        if (blutTexture && envMapTexture) {
+          pbrIBLHelpers_.emplace(
+              helperKey, std::make_shared<gfx::PbrIBLHelper>(
+                             shaderManager_, blutTexture, envMapTexture));
+        }
       }
     }
     // TODO: With some slight modifications, we can clear the texture cache map
     // after this loop, since the pbrIBLHelpers will hold the references to the
     // IBL assets and the helpers are keyed by the names of the source textures.
+    // Currently we want to keep this around in case a subsequent call requests
+    // one of the assets (bLUT or EnvMap) but not the other. So far we don't
+    // have that many assets, so this map isn't going to be that big, but if we
+    // ever support many Environment maps, cleaning this up might be beneficial.
 
     // iblBLUTsAndEnvMaps_.clear();
   } else {
@@ -3362,7 +3396,9 @@ void ResourceManager::loadAllIBLAssets() {
       // There will always be 1 config (default) but if more than 1 exist then
       // perhaps having no renderer was not desired.
       ESP_WARNING() << "Unable to load and convert" << mapOfPbrConfigs.size()
-                    << "PBR/IBL assets due to no renderer being instantiated.";
+                    << "PBR/IBL asset sets specified in the Scene Dataset due "
+                       "to no renderer being instantiated; "
+                       "simConfig.requiresTextures_ is false.";
     }
   }
   //

@@ -583,7 +583,16 @@ std::string MetadataMediator::getDatasetsOverview() const {
                ->getDatasetSummary();
     res += '\n';
   }
-
+  // Get summary of Pbr/Ibl shader configurations available
+  std::vector<std::string> pbrShaderConfigHandles =
+      pbrShaderAttributesManager_->getObjectHandlesBySubstring("");
+  int numPbrConfigs = pbrShaderConfigHandles.size();
+  if (numPbrConfigs > 0) {
+    Cr::Utility::formatInto(
+        res, res.length(),
+        "\nPbr/IBL Shader configurations available to all datasets :\n{}\n",
+        numPbrConfigs);
+  }
   return res;
 }  // MetadataMediator::getDatasetNames
 
