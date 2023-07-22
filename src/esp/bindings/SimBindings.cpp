@@ -102,7 +102,7 @@ void initSimBindings(py::module& m) {
       .def_readwrite(
           "pbr_image_based_lighting",
           &SimulatorConfiguration::pbrImageBasedLighting,
-          R"(Whether or not to enable image based lighting in the PBR shader.)")
+          R"(DEPRECATED : Use PbrShaderAttributes to specify whether IBL is enabled or disabled.)")
       .def(py::self == py::self)
       .def(py::self != py::self);
 

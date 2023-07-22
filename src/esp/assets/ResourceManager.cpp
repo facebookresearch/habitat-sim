@@ -3099,7 +3099,8 @@ void ResourceManager::addComponent(
       // TODO : Query which PbrShaderAttributes to use based on region of
       // drawable.
 
-      // Currently always using default.
+      // Currently always using default PbrShaderAttributes for the current
+      // Scene.
       esp::metadata::attributes::PbrShaderAttributes::ptr pbrAttributesPtr =
           metadataMediator_->getDefaultPbrShaderConfig();
 
@@ -3271,7 +3272,15 @@ std::shared_ptr<Mn::GL::Texture2D> ResourceManager::loadIBLImageIntoTexture(
           << "File not in resource `" << imageFilename
           << "` so loading from disk.";
       // TODO verify file exists on disk before attempting to load.
-      imageImporter_->openFile(imageFilename);
+
+      //<< Mn::Debug::nospace
+      ESP_CHECK(imageImporter_->openFile(imageFilename),
+                "Requested "
+                    << (useImageTxtrFormat ? "Environment Map"
+                                           : "BRDF Lookup Table")
+                    << "image file (required for IBL rendering) named `"
+                    << Mn::Debug::nospace << imageFilename << Mn::Debug::nospace
+                    << "` not found in resource file or on disk. Aborting.");
     }
     Cr::Containers::Optional<Mn::Trade::ImageData2D> imageData =
         imageImporter_->image2D(0);
@@ -3305,7 +3314,8 @@ std::shared_ptr<Mn::GL::Texture2D> ResourceManager::loadIBLImageIntoTexture(
 
 void ResourceManager::loadAllIBLAssets() {
   // Only load if rendering is enabled.
-  // map is keyed by config name, value is
+  // map is keyed by config name, value is PbrShaderAttributes, describing the
+  // desired configuration of the PBR shader.
   auto mapOfPbrConfigs = metadataMediator_->getAllPbrShaderConfigs();
   if (requiresTextures_) {
     // Load BLUTs and Envmaps specified in scene dataset

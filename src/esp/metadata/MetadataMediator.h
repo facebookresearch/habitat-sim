@@ -139,7 +139,7 @@ class MetadataMediator {
    * This can be overridden on a per-scene instance basis.
    */
   std::string getCurrDefaultPbrAttributesHandle() const {
-    return currDefaultPbrConfigAttributes_;
+    return currDefaultPbrAttributesHandle_;
   }
 
   /**
@@ -229,7 +229,7 @@ class MetadataMediator {
    */
   attributes::PbrShaderAttributes::ptr getCurrentPbrConfiguration() {
     return pbrShaderAttributesManager_->getObjectCopyByHandle(
-        currDefaultPbrConfigAttributes_);
+        currDefaultPbrAttributesHandle_);
   }
 
   /**
@@ -512,8 +512,8 @@ class MetadataMediator {
   esp::metadata::attributes::PbrShaderAttributes::ptr
   getDefaultPbrShaderConfig() const {
     return pbrShaderAttributesManager_
-        ->getObjectsByHandleSubstring(currDefaultPbrConfigAttributes_)
-        .at(currDefaultPbrConfigAttributes_);
+        ->getObjectsByHandleSubstring(currDefaultPbrAttributesHandle_)
+        .at(currDefaultPbrAttributesHandle_);
   }
 
   /**
@@ -620,7 +620,7 @@ class MetadataMediator {
    * @brief String name of current default PBR/IBL Shader configuration
    * attributes.
    */
-  std::string currDefaultPbrConfigAttributes_;
+  std::string currDefaultPbrAttributesHandle_;
   /**
    * @brief Manages all construction and access to all scene dataset
    * attributes. Users should never directly access this, or it could

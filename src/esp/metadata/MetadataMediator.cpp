@@ -51,21 +51,6 @@ bool MetadataMediator::setSimulatorConfiguration(
     const sim::SimulatorConfiguration& cfg) {
   simConfig_ = cfg;
 
-  if (!setCurrDefaultPbrAttributesHandle(simConfig_.defaultPbrIblConfigFile)) {
-    // something failed about forcing the PbrShaderAttributes to the value in
-    // simConfig_
-    ESP_WARNING(Mn::Debug::Flag::NoSpace)
-        << "Some error prevented changing current Pbr/Ibl Shader Attributes to "
-           "`"
-        << simConfig_.defaultPbrIblConfigFile
-        << "` as requested in the SimulatorConfiguration so resetting to "
-           "default configuration located `"
-        << ESP_DEFAULT_PBRSHADER_CONFIG_REL_PATH
-        << "`. Verify requested Pbr/Ibl Shader Attributes config filename in "
-           "SimulatorConfiguration is correct.";
-    setCurrDefaultPbrAttributesHandle(ESP_DEFAULT_PBRSHADER_CONFIG_REL_PATH);
-  }
-
   // set current active dataset name - if unchanged, does nothing
   ESP_CHECK(setActiveSceneDatasetName(simConfig_.sceneDatasetConfigFile),
             // something failed about setting up active scene dataset
@@ -278,15 +263,15 @@ bool MetadataMediator::setCurrDefaultPbrAttributesHandle(
   // first check if  Pbr/Ibl shader attributes exists, if so then set as current
   if (pbrShaderAttributesManager_->getObjectLibHasHandle(
           pbrShaderAttributesPath)) {
-    if (currDefaultPbrConfigAttributes_ != pbrShaderAttributesPath) {
+    if (currDefaultPbrAttributesHandle_ != pbrShaderAttributesPath) {
       ESP_DEBUG(Mn::Debug::Flag::NoSpace)
           << "Old default Pbr/Ibl shader attributes `"
-          << currDefaultPbrConfigAttributes_ << "` changed to `"
+          << currDefaultPbrAttributesHandle_ << "` changed to `"
           << pbrShaderAttributesPath << "` successfully.";
-      currDefaultPbrConfigAttributes_ = pbrShaderAttributesPath;
+      currDefaultPbrAttributesHandle_ = pbrShaderAttributesPath;
     }
     sceneDatasetAttributesManager_->setDefaultPbrShaderAttributesHandle(
-        currDefaultPbrConfigAttributes_);
+        currDefaultPbrAttributesHandle_);
     return true;
   }
   // if this handle does not exist, create the attributes for it.
@@ -297,9 +282,9 @@ bool MetadataMediator::setCurrDefaultPbrAttributesHandle(
   // if successfully created, set default name to  Pbr/Ibl shader attributes in
   // SceneDatasetAttributesManager
   if (success) {
-    currDefaultPbrConfigAttributes_ = pbrShaderAttributesPath;
+    currDefaultPbrAttributesHandle_ = pbrShaderAttributesPath;
     sceneDatasetAttributesManager_->setDefaultPbrShaderAttributesHandle(
-        currDefaultPbrConfigAttributes_);
+        currDefaultPbrAttributesHandle_);
     /// setDefaultPbrShaderAttributesHandle
   }
   ESP_DEBUG()
@@ -307,7 +292,7 @@ bool MetadataMediator::setCurrDefaultPbrAttributesHandle(
       << pbrShaderAttributesPath << "`"
       << (success ? " succeeded." : " failed.")
       << "Currently active default Pbr/Ibl shader attributes :"
-      << currDefaultPbrConfigAttributes_;
+      << currDefaultPbrAttributesHandle_;
   return success;
 
 }  // MetadataMediator::setCurrDefaultPbrAttributesHandle
