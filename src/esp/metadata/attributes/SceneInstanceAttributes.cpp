@@ -351,7 +351,7 @@ SceneInstanceAttributes& SceneInstanceAttributes::operator=(
     copySubconfigIntoMe<SceneAOInstanceAttributes>(otr.artObjInstConfig_,
                                                    artObjInstConfig_);
     // Don't need to copy into, since pbrShaderRegionConfigHandles_ is not a
-    // hierarchy
+    // hierarchy, but a flat subconfig
     pbrShaderRegionConfigHandles_ =
         editSubconfig<Configuration>("pbr_shader_region_configs");
   }

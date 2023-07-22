@@ -344,8 +344,8 @@ void PbrDrawable::setShaderAttributesValues(
       ? flags_ |= PbrShader::Flag::DirectLighting
       : flags_ &= ~PbrShader::Flag::DirectLighting;
 
-  // If IBL is enabled
-  pbrShaderConfig->getEnableIBL()
+  // If IBL is enabled and the pbrIbl_ helper exists
+  (pbrShaderConfig->getEnableIBL() && pbrIbl_)
       ? flags_ |= PbrShader::Flag::ImageBasedLighting
       : flags_ &= ~PbrShader::Flag::ImageBasedLighting;
 
