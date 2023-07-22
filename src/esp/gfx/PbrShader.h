@@ -80,7 +80,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * Multiply base color with the baseColor texture.
      * @see @ref setBaseColor(), @ref bindBaseColorTexture()
      */
-    BaseColorTexture = 1l << 0,
+    BaseColorTexture = 1ULL << 0,
 
     /**
      * This flag term means the NoneRoughnessMetallic texture is present, with
@@ -88,7 +88,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * channels are not used).
      * @see @ref setMetallic(), @ref bindMetallicTexture()
      */
-    NoneRoughnessMetallicTexture = 1l << 1,
+    NoneRoughnessMetallicTexture = 1ULL << 1,
 
     /*
      * The occlusion map texture is present.
@@ -96,17 +96,17 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * texture, with Occlusion in R channel, Roughness in G channel and
      * metalness in B channel (Alpha channels is not used).
      */
-    OcclusionTexture = 1l << 2,
+    OcclusionTexture = 1ULL << 2,
 
     /**
      * Modify normals according to a texture.
      */
-    NormalTexture = 1l << 3,
+    NormalTexture = 1ULL << 3,
 
     /**
      * emissive texture
      */
-    EmissiveTexture = 1l << 4,
+    EmissiveTexture = 1ULL << 4,
 
     /**
      * Enable texture coordinate transformation. If this flag is set,
@@ -118,7 +118,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * @ref Flag::OcclusionRoughnessMetallicTexture is enabled as well.
      * @see @ref setTextureMatrix()
      */
-    TextureTransformation = 1l << 5,
+    TextureTransformation = 1ULL << 5,
 
     /**
      * TODO: Do we need instanced object? (instanced texture, instanced id etc.)
@@ -136,86 +136,86 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * see PBR fragment shader code for more details
      * Requires the @ref Tangent4 attribute to be present.
      */
-    PrecomputedTangent = 1l << 6,
+    PrecomputedTangent = 1ULL << 6,
 
     /**
      * Enable object ID output for this shader.
      */
-    ObjectId = 1l << 7,
+    ObjectId = 1ULL << 7,
 
     /**
      * Support Instanced object ID. Retrieves a per-instance / per-vertex
      * object ID from the @ref ObjectId attribute. If this is false, the shader
      * will use the node's semantic ID
      */
-    InstancedObjectId = (1l << 8) | ObjectId,
+    InstancedObjectId = (1ULL << 8) | ObjectId,
 
     /**
      * Has ClearCoat layer.
      */
-    ClearCoatLayer = 1l << 9,
+    ClearCoatLayer = 1ULL << 9,
     /**
      * Has ClearCoat Texture in ClearCoat layer
      */
-    ClearCoatTexture = (1l << 10) | ClearCoatLayer,
+    ClearCoatTexture = (1ULL << 10) | ClearCoatLayer,
     /**
      * Has Roughness Texture in ClearCoat layer
      */
-    ClearCoatRoughnessTexture = (1l << 11) | ClearCoatLayer,
+    ClearCoatRoughnessTexture = (1ULL << 11) | ClearCoatLayer,
     /**
      * Has Normal Texture in ClearCoat layer
      */
-    ClearCoatNormalTexture = (1l << 12) | ClearCoatLayer,
+    ClearCoatNormalTexture = (1ULL << 12) | ClearCoatLayer,
 
     /**
      * Has KHR_materials_specular layer
      */
-    SpecularLayer = 1l << 13,
+    SpecularLayer = 1ULL << 13,
     /**
      * Has Specular Texture in KHR_materials_specular layer
      */
-    SpecularLayerTexture = (1l << 14) | SpecularLayer,
+    SpecularLayerTexture = (1ULL << 14) | SpecularLayer,
 
     /**
      * Has Specular Color Texture in KHR_materials_specular layer
      */
-    SpecularLayerColorTexture = (1l << 15) | SpecularLayer,
+    SpecularLayerColorTexture = (1ULL << 15) | SpecularLayer,
 
     /**
      * Has KHR_materials_anisotropy layer
      */
-    AnisotropyLayer = 1l << 16,
+    AnisotropyLayer = 1ULL << 16,
 
     /**
      * Has Anisotropy Texture in KHR_materials_anisotropy layer
      */
-    AnisotropyLayerTexture = (1l << 17) | AnisotropyLayer,
+    AnisotropyLayerTexture = (1ULL << 17) | AnisotropyLayer,
 
     /**
      * Has KHR_materials_transmission layer
      */
-    TransmissionLayer = 1l << 18,
+    TransmissionLayer = 1ULL << 18,
     /**
      * Has transmission texture in KHR_materials_transmission layer
      */
-    TransmissionLayerTexture = (1l << 19) | TransmissionLayer,
+    TransmissionLayerTexture = (1ULL << 19) | TransmissionLayer,
 
     /**
      * Has KHR_materials_volume layer
      */
-    VolumeLayer = 1l << 20,
+    VolumeLayer = 1ULL << 20,
 
     /**
      * Has Thickness texture in  KHR_materials_volume layer
      */
-    VolumeLayerThicknessTexture = (1l << 21) | VolumeLayer,
+    VolumeLayerThicknessTexture = (1ULL << 21) | VolumeLayer,
 
     /**
      * Enable double-sided rendering.
      * (Temporarily STOP supporting this functionality. See comments in
      * the PbrDrawable::draw() function)
      */
-    DoubleSided = 1l << 22,
+    DoubleSided = 1ULL << 22,
 
     ///////////////////////////////
     // PbrShaderAttributes provides these values to configure the shader
@@ -224,12 +224,12 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * If not set, disable direct lighting regardless of presence of lights.
      * Ignored if no direct lights present.
      */
-    DirectLighting = 1l << 23,
+    DirectLighting = 1ULL << 23,
 
     /**
      * Enable image based lighting
      */
-    ImageBasedLighting = 1l << 24,
+    ImageBasedLighting = 1ULL << 24,
 
     /**
      * Whether or not the direct lighting diffuse calculation should use the
@@ -238,7 +238,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * https://media.disneyanimation.com/uploads/production/publication_asset/48/asset/s2012_pbs_disney_brdf_notes_v3.pdf
      * Lambertian is simpler and quicker to calculate but may not look as 'nice'
      */
-    UseBurleyDiffuse = 1l << 25,
+    UseBurleyDiffuse = 1ULL << 25,
 
     /**
      * If set, skip TBN frame calculation in fragment shader. This calculation
@@ -246,7 +246,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * provided.
      * TODO : implement in shader.
      */
-    SkipMissingTBNCalc = 1l << 26,
+    SkipMissingTBNCalc = 1ULL << 26,
 
     /**
      * Use the Mikkelsen algorithm to calculate TBN, as per
@@ -256,24 +256,24 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * https://github.com/KhronosGroup/Vulkan-Samples/blob/main/shaders/pbr.frag,
      * which empirically seems to give equivalent results.
      */
-    UseMikkelsenTBN = 1l << 27,
+    UseMikkelsenTBN = 1ULL << 27,
 
     /**
      * Whether to use shader-level srgb<->linear remapping of applicable color
      * textures for direct lighting. This should be removed/ignored when Magnum
      * fully supports sRGB texture conversion on load.
      */
-    UseSRGBRemapping = 1l << 28,
+    UseSRGBRemapping = 1ULL << 28,
 
     /**
      * Whether or not to use tonemappping for direct lighting.
      */
-    UseDirectLightTonemap = 1l << 29,
+    UseDirectLightTonemap = 1ULL << 29,
 
     /**
      * Whether or not to use tonemappping for image-based lighting.
      */
-    UseIBLTonemap = 1l << 30,
+    UseIBLTonemap = 1ULL << 30,
 
     ////////////////
     // Testing and debugging
@@ -282,25 +282,25 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * sent to the shader, but no actual calcuations will be performed if this
      * is set.
      */
-    SkipClearCoatLayer = 1l << 31,
+    SkipClearCoatLayer = 1ULL << 31,
     /**
      * Whether we should skip all specular layer calcs. Values will still be
      * sent to the shader, but no actual calcuations will be performed if this
      * is set.
      */
-    SkipSpecularLayer = 1l << 32,
+    SkipSpecularLayer = 1ULL << 32,
     /**
      * Whether we should skip all anisotropy layer calcs. Values will still be
      * sent to the shader, but no actual calcuations will be performed if this
      * is set.
      */
-    SkipAnisotropyLayer = 1l << 33,
+    SkipAnisotropyLayer = 1ULL << 33,
 
     /**
      * Enable shader debug mode. Then developer can set the uniform
      * PbrDebugDisplay in the fragment shader for debugging
      */
-    DebugDisplay = 1l << 35,
+    DebugDisplay = 1ULL << 35,
     /*
      * TODO: alphaMask
      */
