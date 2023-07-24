@@ -10,6 +10,7 @@
 #include "esp/metadata/managers/AssetAttributesManager.h"
 #include "esp/metadata/managers/AttributesManagerBase.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
+#include "esp/metadata/managers/PbrShaderAttributesManager.h"
 #include "esp/metadata/managers/PhysicsAttributesManager.h"
 #include "esp/metadata/managers/StageAttributesManager.h"
 
@@ -33,6 +34,7 @@ using Attrs::CubePrimitiveAttributes;
 using Attrs::CylinderPrimitiveAttributes;
 using Attrs::IcospherePrimitiveAttributes;
 using Attrs::ObjectAttributes;
+using Attrs::PbrShaderAttributes;
 using Attrs::PhysicsManagerAttributes;
 using Attrs::SceneInstanceAttributes;
 using Attrs::StageAttributes;
@@ -43,6 +45,8 @@ const std::string physicsConfigFile =
     Cr::Utility::Path::join(DATA_DIR,
                             "test_assets/testing.physics_config.json");
 
+const std::string pbrShaderConfigFile =
+    Cr::Utility::Path::join(DATA_DIR, "test_assets/testing.pbr_config.json");
 /**
  * @brief Test attributesManagers' functionality via loading, creating, copying
  * and deleting Attributes.
@@ -91,10 +95,16 @@ struct AttributesManagersTest : Cr::TestSuite::Tester {
    * that registration won't fail.
    */
 
-  // specialization so we can ignore this for physics attributes
+  // specializations so we can ignore this for physics manager and pbr shader
+  // attributes
   void processTemplateRenderAsset(
       std::shared_ptr<AttrMgrs::PhysicsAttributesManager> mgr,
       std::shared_ptr<Attrs::PhysicsManagerAttributes> newAttrTemplate0,
+      const std::string& handle) {}
+
+  void processTemplateRenderAsset(
+      std::shared_ptr<AttrMgrs::PbrShaderAttributesManager> mgr,
+      std::shared_ptr<Attrs::PbrShaderAttributes> newAttrTemplate0,
       const std::string& handle) {}
 
   template <typename T, typename U>
@@ -167,6 +177,15 @@ struct AttributesManagersTest : Cr::TestSuite::Tester {
 
   /**
    * @brief This test will test creating, modifying, registering and deleting
+   * Attributes via the AttributesManager for PbrShaderAttributes. These
+   * tests should be consistent with most types of future attributes managers
+   * specializing the AttributesManager class template that follow the same
+   * expected behavior paths as extent attributes/attributesManagers.
+   */
+  void testPbrShaderAttributesManagersCreate();
+
+  /**
+   * @brief This test will test creating, modifying, registering and deleting
    * Attributes via the AttributesManager for StageAttributes.  These
    * tests should be consistent with most types of future attributes managers
    * specializing the AttributesManager class template that follow the same
@@ -207,6 +226,8 @@ struct AttributesManagersTest : Cr::TestSuite::Tester {
   AttrMgrs::LightLayoutAttributesManager::ptr lightLayoutAttributesManager_ =
       nullptr;
   AttrMgrs::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
+  AttrMgrs::PbrShaderAttributesManager::ptr pbrShaderAttributesManager_ =
+      nullptr;
   AttrMgrs::PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
   AttrMgrs::SceneInstanceAttributesManager::ptr
       sceneInstanceAttributesManager_ = nullptr;
@@ -222,12 +243,14 @@ AttributesManagersTest::AttributesManagersTest() {
   assetAttributesManager_ = MM->getAssetAttributesManager();
   lightLayoutAttributesManager_ = MM->getLightLayoutAttributesManager();
   objectAttributesManager_ = MM->getObjectAttributesManager();
+  pbrShaderAttributesManager_ = MM->getPbrShaderAttributesManager();
   physicsAttributesManager_ = MM->getPhysicsAttributesManager();
   sceneInstanceAttributesManager_ = MM->getSceneInstanceAttributesManager();
   stageAttributesManager_ = MM->getStageAttributesManager();
 
   addTests({
       &AttributesManagersTest::testPhysicsAttributesManagersCreate,
+      &AttributesManagersTest::testPbrShaderAttributesManagersCreate,
       &AttributesManagersTest::testStageAttributesManagersCreate,
       &AttributesManagersTest::testObjectAttributesManagersCreate,
       &AttributesManagersTest::testLightLayoutAttributesManager,
@@ -565,6 +588,20 @@ void AttributesManagersTest::testPhysicsAttributesManagersCreate() {
   testCreateAndRemoveDefault<AttrMgrs::PhysicsAttributesManager>(
       physicsAttributesManager_, physicsConfigFile, false);
 }  // AttributesManagersTest::PhysicsAttributesManagersCreate
+
+void AttributesManagersTest::testPbrShaderAttributesManagersCreate() {
+  CORRADE_INFO(
+      "Start Test : Create, Edit, Remove Attributes for "
+      "PbrShaderAttributesManager @"
+      << pbrShaderConfigFile);
+
+  // PBR/IBL shader attributes manager attributes verifcation
+  testCreateAndRemove<AttrMgrs::PbrShaderAttributesManager>(
+      pbrShaderAttributesManager_, pbrShaderConfigFile);
+  testCreateAndRemoveDefault<AttrMgrs::PbrShaderAttributesManager>(
+      pbrShaderAttributesManager_, pbrShaderConfigFile, false);
+
+}  // AttributesManagersTest::testPbrShaderAttributesManagersCreate
 
 void AttributesManagersTest::testStageAttributesManagersCreate() {
   std::string stageConfigFile =
