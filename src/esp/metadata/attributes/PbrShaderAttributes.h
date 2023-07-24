@@ -60,7 +60,7 @@ class PbrShaderAttributes : public AbstractAttributes {
    * appropriate.
    */
   void setSkipCalcMissingTBN(bool skipCalcMissingTBN) {
-    set("skip_missing_tbn", skipCalcMissingTBN);
+    set("skip_missing_tbn_calc", skipCalcMissingTBN);
   }
 
   /**
@@ -69,7 +69,9 @@ class PbrShaderAttributes : public AbstractAttributes {
    * textures cannot be used, and anisotropy, if present, will not look
    * appropriate.
    */
-  bool getSkipCalcMissingTBN() const { return get<bool>("skip_missing_tbn"); }
+  bool getSkipCalcMissingTBN() const {
+    return get<bool>("skip_missing_tbn_calc");
+  }
 
   /**
    * @brief Set if we should use the more expensive formulation for calculating

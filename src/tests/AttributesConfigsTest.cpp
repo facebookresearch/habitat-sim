@@ -9,6 +9,7 @@
 #include "esp/metadata/MetadataMediator.h"
 #include "esp/metadata/managers/AttributesManagerBase.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
+#include "esp/metadata/managers/PbrShaderAttributesManager.h"
 #include "esp/metadata/managers/PhysicsAttributesManager.h"
 #include "esp/metadata/managers/StageAttributesManager.h"
 
@@ -30,6 +31,7 @@ using esp::physics::MotionType;
 
 using AttrMgrs::AttributesManager;
 using Attrs::ObjectAttributes;
+using Attrs::PbrShaderAttributes;
 using Attrs::PhysicsManagerAttributes;
 using Attrs::SceneInstanceAttributes;
 using Attrs::StageAttributes;
@@ -120,6 +122,14 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
   void testPhysicsAttrVals(
       std::shared_ptr<esp::metadata::attributes::PhysicsManagerAttributes>
           physMgrAttr);
+
+  /**
+   * @brief This test will verify that the PBR/IBL shader config attributes'
+   * managers' JSON loading process is working as expected.
+   */
+  void testPbrShaderAttrVals(
+      std::shared_ptr<esp::metadata::attributes::PbrShaderAttributes>
+          pbrShaderAttr);
   /**
    * @brief This test will verify that the Light Attributes' managers' JSON
    * loading process is working as expected.
@@ -165,6 +175,7 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
   // and then reload the copy, to make sure the saving and loading process is
   // correct.
   void testPhysicsJSONLoad();
+  void testPbrShaderAttrJSONLoad();
   void testLightJSONLoad();
   void testSceneInstanceJSONLoad();
   void testStageJSONLoad();
@@ -177,6 +188,8 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
   AttrMgrs::LightLayoutAttributesManager::ptr lightLayoutAttributesManager_ =
       nullptr;
   AttrMgrs::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
+  AttrMgrs::PbrShaderAttributesManager::ptr pbrShaderAttributesManager_ =
+      nullptr;
   AttrMgrs::PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
   AttrMgrs::SceneInstanceAttributesManager::ptr
       sceneInstanceAttributesManager_ = nullptr;
@@ -192,11 +205,13 @@ AttributesConfigsTest::AttributesConfigsTest() {
   lightLayoutAttributesManager_ = MM->getLightLayoutAttributesManager();
   objectAttributesManager_ = MM->getObjectAttributesManager();
   physicsAttributesManager_ = MM->getPhysicsAttributesManager();
+  pbrShaderAttributesManager_ = MM->getPbrShaderAttributesManager();
   sceneInstanceAttributesManager_ = MM->getSceneInstanceAttributesManager();
   stageAttributesManager_ = MM->getStageAttributesManager();
 
   addTests({
       &AttributesConfigsTest::testPhysicsJSONLoad,
+      &AttributesConfigsTest::testPbrShaderAttrJSONLoad,
       &AttributesConfigsTest::testLightJSONLoad,
       &AttributesConfigsTest::testSceneInstanceJSONLoad,
       &AttributesConfigsTest::testStageJSONLoad,
@@ -378,7 +393,131 @@ void AttributesConfigsTest::testPhysicsJSONLoad() {
   // delete file-based config
   Cr::Utility::Path::remove(newAttrName);
 
-}  // AttributesManagers_PhysicsJSONLoadTest
+}  // AttributesConfigsTest::testPhysicsJSONLoad
+
+void AttributesConfigsTest::testPbrShaderAttrVals(
+    std::shared_ptr<esp::metadata::attributes::PbrShaderAttributes>
+        pbrShaderAttr) {
+  CORRADE_VERIFY(!pbrShaderAttr->getEnableDirectLighting());
+  CORRADE_VERIFY(!pbrShaderAttr->getEnableIBL());
+
+  CORRADE_COMPARE(pbrShaderAttr->getIBLBrdfLUTAssetHandle(),
+                  "brdflut_test_only_image.png");
+  CORRADE_COMPARE(pbrShaderAttr->getIBLEnvMapAssetHandle(),
+                  "envmap_test_only_image.hdr");
+
+  CORRADE_COMPARE(pbrShaderAttr->getDirectLightIntensity(), 1.23f);
+
+  CORRADE_VERIFY(pbrShaderAttr->getSkipCalcMissingTBN());
+  CORRADE_VERIFY(pbrShaderAttr->getUseMikkelsenTBN());
+  CORRADE_VERIFY(pbrShaderAttr->getUseSRGBRemapping());
+  CORRADE_VERIFY(pbrShaderAttr->getUseDirectLightTonemap());
+  CORRADE_VERIFY(!pbrShaderAttr->getUseIBLTonemap());
+  CORRADE_VERIFY(!pbrShaderAttr->getUseBurleyDiffuse());
+
+  // verify the layer skipping is present
+  CORRADE_VERIFY(pbrShaderAttr->getSkipCalcCleacoatLayer());
+  CORRADE_VERIFY(pbrShaderAttr->getSkipCalcSpecularLayer());
+  CORRADE_VERIFY(pbrShaderAttr->getSkipCalcAnisotropyLayer());
+
+  CORRADE_COMPARE(pbrShaderAttr->getDirectDiffuseScale(), 1.5f);
+  CORRADE_COMPARE(pbrShaderAttr->getDirectSpecularScale(), 2.5f);
+  CORRADE_COMPARE(pbrShaderAttr->getIBLDiffuseScale(), 3.5f);
+  CORRADE_COMPARE(pbrShaderAttr->getIBLSpecularScale(), 4.5f);
+
+  CORRADE_COMPARE(pbrShaderAttr->getTonemapExposure(), 6.7f);
+  CORRADE_COMPARE(pbrShaderAttr->getGamma(), 8.9f);
+
+  // test PBR/IBL Shader attributes-level user config vals
+  testUserDefinedConfigVals(pbrShaderAttr->getUserConfiguration(), 5,
+                            "pbr defined string", false, 11, 22.6,
+                            Mn::Vector2(3.0f, 4.0f), Mn::Vector3(5.4, 6.5, 7.1),
+                            Mn::Quaternion({6.7f, 7.8f, 8.9f}, 0.3f),
+                            Mn::Vector4(2.3f, 4.5f, 6.7f, 8.9f));
+  // remove added template
+  // remove json-string built attributes added for test
+  testRemoveAttributesBuiltByJSONString(pbrShaderAttributesManager_,
+                                        pbrShaderAttr->getHandle());
+
+}  // AttributesConfigsTest::testPbrShaderAttrVals
+
+void AttributesConfigsTest::testPbrShaderAttrJSONLoad() {
+  // build JSON sample config
+  // add dummy test so that test will run
+  CORRADE_VERIFY(true);
+  const std::string& jsonString = R"({
+  "enable_direct_lights": false,
+  "enable_ibl": false,
+  "ibl_blut_filename": "brdflut_test_only_image.png",
+  "ibl_envmap_filename": "envmap_test_only_image.hdr",
+  "direct_light_intensity": 1.23,
+  "skip_missing_tbn_calc": true,
+  "use_mikkelsen_tbn": true,
+  "use_srgb_remapping": true,
+  "use_direct_tonemap": true,
+  "use_ibl_tonemap": false,
+  "use_burley_diffuse": false,
+  "skip_clearcoat_calc": true,
+  "skip_specular_layer_calc": true,
+  "skip_anisotropy_layer_calc": true,
+  "direct_diffuse_scale": 1.5,
+  "direct_specular_scale": 2.5,
+  "ibl_diffuse_scale": 3.5,
+  "ibl_specular_scale": 4.5,
+  "tonemap_exposure": 6.7,
+  "gamma": 8.9,
+  "user_defined" : {
+      "user_str_array" : ["test_00", "test_01", "test_02", "test_03", "test_04"],
+      "user_string" : "pbr defined string",
+      "user_bool" : false,
+      "user_int" : 11,
+      "user_double" : 22.6,
+      "user_vec2" : [3.0, 4.0],
+      "user_vec3" : [5.4, 6.5, 7.1],
+      "user_quat" : [0.3, 6.7, 7.8, 8.9],
+      "user_vec4" : [2.3, 4.5, 6.7, 8.9]
+  }
+})";
+  auto pbrMgrAttr =
+      testBuildAttributesFromJSONString<AttrMgrs::PbrShaderAttributesManager,
+                                        Attrs::PbrShaderAttributes>(
+          pbrShaderAttributesManager_, jsonString, true);
+  // verify exists
+  CORRADE_VERIFY(pbrMgrAttr);
+
+  // before test, save attributes to disk with new name
+  std::string newAttrName = Cr::Utility::formatString(
+      "{}/testPbrShaderAttrConfig_saved_JSON.{}", testAttrSaveDir,
+      pbrShaderAttributesManager_->getJSONTypeExt());
+
+  bool success = pbrShaderAttributesManager_->saveManagedObjectToFile(
+      pbrMgrAttr->getHandle(), newAttrName);
+
+  ESP_DEBUG() << "About to test string-based pbrMgrAttr";
+  // test json string to verify format, this deletes pbrMgrAttr from registry
+  testPbrShaderAttrVals(pbrMgrAttr);
+  ESP_DEBUG() << "Tested pbrMgrAttr";
+
+  pbrMgrAttr = nullptr;
+
+  // load attributes from new name and retest
+  auto pbrMgrAttr2 =
+      pbrShaderAttributesManager_->createObjectFromJSONFile(newAttrName, true);
+
+  // verify file-based config exists
+  CORRADE_VERIFY(pbrMgrAttr2);
+
+  ESP_DEBUG() << "About to test saved pbrMgrAttr2 :"
+              << pbrMgrAttr2->getHandle();
+  // test json string to verify format, this deletes pbrMgrAttr2 from
+  // registry
+  testPbrShaderAttrVals(pbrMgrAttr2);
+  ESP_DEBUG() << "Tested pbrMgrAttr";
+
+  // delete file-based config
+  Cr::Utility::Path::remove(newAttrName);
+
+}  // AttributesConfigsTest::testPbrShaderAttrJSONLoad
 
 void AttributesConfigsTest::testLightAttrVals(
     std::shared_ptr<esp::metadata::attributes::LightLayoutAttributes>
@@ -524,7 +663,7 @@ void AttributesConfigsTest::testLightJSONLoad() {
   // delete file-based config
   Cr::Utility::Path::remove(newAttrName);
 
-}  // AttributesManagers_LightJSONLoadTest
+}  // AttributesConfigsTest::testLightJSONLoad
 
 void AttributesConfigsTest::testSceneInstanceRootUserDefinedAttrVals(
     std::shared_ptr<esp::core::config::Configuration> userAttrs) {
@@ -687,7 +826,7 @@ void AttributesConfigsTest::testSceneInstanceAttrVals(
   // remove json-string built attributes added for test
   testRemoveAttributesBuiltByJSONString(sceneInstanceAttributesManager_,
                                         sceneAttr->getHandle());
-}
+}  // AttributesConfigsTest::testSceneInstanceAttrVals
 
 void AttributesConfigsTest::testSceneInstanceJSONLoad() {
   // build JSON sample config
@@ -852,7 +991,7 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
   // delete file-based config
   Cr::Utility::Path::remove(newAttrName);
 
-}  // AttributesManagers_SceneInstanceJSONLoadTest
+}  // AttributesConfigsTest::testSceneInstanceJSONLoad
 
 void AttributesConfigsTest::testStageAttrVals(
     std::shared_ptr<esp::metadata::attributes::StageAttributes> stageAttr,
@@ -990,7 +1129,7 @@ void AttributesConfigsTest::testStageJSONLoad() {
   // delete file-based config
   Cr::Utility::Path::remove(newAttrName);
 
-}  // AttributesManagers_StageJSONLoadTest
+}  // AttributesConfigsTest::testStageJSONLoad(
 
 void AttributesConfigsTest::testObjectAttrVals(
     std::shared_ptr<esp::metadata::attributes::ObjectAttributes> objAttr,
