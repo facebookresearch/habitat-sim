@@ -340,7 +340,7 @@ class PbrShaderAttributes : public AbstractAttributes {
    * contributions. Only used if both direct and image-based lighting is
    * enabled.
    */
-  void setDirectToIBLDiffuseBalance(double balance) {
+  void setIBLToDirectDiffuseBalance(double balance) {
     balance = Mn::Math::clamp(balance, 0.0, 1.0);
     set("direct_diffuse_scale", 1.0 - balance);
     set("ibl_diffuse_scale", balance);
@@ -354,10 +354,36 @@ class PbrShaderAttributes : public AbstractAttributes {
    * contributions. Only used if both direct and image-based lighting is
    * enabled.
    */
-  void setDirectToIBLSpecularBalance(double balance) {
+  void setIBLToDirectSpecularBalance(double balance) {
     balance = Mn::Math::clamp(balance, 0.0, 1.0);
     set("direct_specular_scale", 1.0 - balance);
     set("ibl_specular_scale", balance);
+  }
+
+  /**
+   * @brief Convenience accessor to balance between direct diffuse and indirect
+   * diffuse. Retrieves a value from [0.1], with 0 meaning only direct lighting
+   * diffuse results, and 1 meaning only image-based lighting diffuse results.
+   * Only used if both direct and image-based lighting is enabled.
+   */
+  double getIBLToDirectDiffuseBalance() const {
+    auto direct = get<double>("direct_diffuse_scale");
+    auto ibl = get<double>("ibl_diffuse_scale");
+    auto sum = direct + ibl;
+    return ibl / sum;
+  }
+
+  /**
+   * @brief Convenience accessor to balance between direct specular and indirect
+   * specular. Retrieves a value from [0.1], with 0 meaning only direct
+   * lighting specular results, and 1 meaning only image-based lighting specular
+   * results. Only used if both direct and image-based lighting is enabled.
+   */
+  double getIBLToDirectSpecularBalance() const {
+    auto direct = get<double>("direct_specular_scale");
+    auto ibl = get<double>("ibl_specular_scale");
+    auto sum = direct + ibl;
+    return ibl / sum;
   }
 
   /**

@@ -41,8 +41,8 @@ PbrShaderAttributes::PbrShaderAttributes(const std::string& handle)
   setUseIBLTonemap(true);
   // Direct and IBL output scaling
   // Set balance between direct and IBL to be equal for diffuse and specular
-  setDirectToIBLDiffuseBalance(.5);
-  setDirectToIBLSpecularBalance(.5);
+  setIBLToDirectDiffuseBalance(.5);
+  setIBLToDirectSpecularBalance(.5);
 
   // For remapping
   setGamma(2.2f);

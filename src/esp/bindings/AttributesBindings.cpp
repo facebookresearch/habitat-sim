@@ -452,64 +452,130 @@ void initAttributesBindings(py::module& m) {
           &PbrShaderAttributes::getDirectLightIntensity,
           &PbrShaderAttributes::setDirectLightIntensity,
           R"(Sets the global direct lighting multiplier to control overall direct light
-          brightness.)")
+                brightness. This is used to balance PBR and Phong lighting of the same scene.
+                Default value is 3.14)")
       .def_property(
           "skip_calc_missing_tbn", &PbrShaderAttributes::getSkipCalcMissingTBN,
           &PbrShaderAttributes::setSkipCalcMissingTBN,
           R"(Whether the fragment shader should skip the tangent frame calculation if preccomputed
-          tangents are not provided. This calculation provides a tangent frame to be used for
-          normal textures and anisotropy calculations. If precomputed tangents are missing and
-          this calculation is not enabled, any normal textures will be ignored, which will adversely
-          affect visual fidelity.)")
+                tangents are not provided. This calculation provides a tangent frame to be used for
+                normal textures and anisotropy calculations. If precomputed tangents are missing and
+                this calculation is not enabled, any normal textures will be ignored, which will adversely
+                affect visual fidelity.)")
       .def_property("use_mikkelsen_tbn_calc",
                     &PbrShaderAttributes::getUseMikkelsenTBN,
                     &PbrShaderAttributes::setUseMikkelsenTBN,
                     R"(Whether the more expensive calculation by Mikkelsen from
-          https://jcgt.org/published/0009/03/04/paper.pdf should be used for the TBN calc. If
-          false, a less expensive method that gives reasonable results based on
-          https://github.com/KhronosGroup/Vulkan-Samples/blob/main/shaders/pbr.frag
-          will be used instead.)")
+                https://jcgt.org/published/0009/03/04/paper.pdf should be used for the TBN calc. If
+                false, a less expensive method based on
+                https://github.com/KhronosGroup/Vulkan-Samples/blob/main/shaders/pbr.frag that gives
+                empirically validated equivalent results will be used instead.)")
       .def_property(
           "use_srgb_remapping", &PbrShaderAttributes::getUseSRGBRemapping,
           &PbrShaderAttributes::setUseSRGBRemapping,
           R"(Whether we should use shader-based srgb<->linear approx remapping of applicable
-                    color textures in PBR rendering. This field should be removed/ignored when Magnum
-                    fully supports sRGB conversion on texture load and we paint the shader output to
-                    the appropriate framebuffer.)")
+                color textures in PBR rendering. This field should be removed/ignored when Magnum
+                fully supports sRGB conversion on texture load and we paint the shader output to
+                the appropriate framebuffer.)")
       .def_property(
           "use_direct_tonemap", &PbrShaderAttributes::getUseDirectLightTonemap,
           &PbrShaderAttributes::setUseDirectLightTonemap,
           R"(Whether tonemapping is enabled for direct lighting results, remapping the colors
-          to a slightly different colorspace.)")
+                to a slightly different colorspace.)")
+      .def_property_readonly(
+          "ibl_brdfLUT_filename",
+          &PbrShaderAttributes::getIBLBrdfLUTAssetHandle,
+          R"(The filename or resource handle for the BRDF Lookup Table used for by the consumers of
+                this config for image-based lighting.)")
+      .def_property_readonly(
+          "ibl_environment_map_filename",
+          &PbrShaderAttributes::getIBLEnvMapAssetHandle,
+          R"(The filename or resource handle for the Environment Map used by the
+                consumers of this config for image-based lighting.)")
+      .def_property(
+          "use_ibl_tonemap", &PbrShaderAttributes::getUseIBLTonemap,
+          &PbrShaderAttributes::setUseIBLTonemap,
+          R"(Whether tonemapping is enabled for image-based lighting results, remapping the colors
+                to a slightly different colorspace.)")
       .def_property(
           "use_burley_diffuse", &PbrShaderAttributes::getUseBurleyDiffuse,
           &PbrShaderAttributes::setUseBurleyDiffuse,
           R"(If tue, the PBR shader uses a diffuse calculation based on Burley, modified to be
-          more energy conserving.
+                more energy conserving.
           https://media.disneyanimation.com/uploads/production/publication_asset/48/asset/s2012_pbs_disney_brdf_notes_v3.pdf
-          otherwise, the shader will use a standard Lambertian model, which is easier to calculate but doesn't look as nice.)")
+                otherwise, the shader will use a standard Lambertian model, which is easier
+                to calculate but doesn't look as nice, and sometimes can appear washed out.)")
       .def_property(
           "skip_clearcoat_calc", &PbrShaderAttributes::getSkipCalcCleacoatLayer,
           &PbrShaderAttributes::setSkipCalcCleacoatLayer,
           R"(Whether the clearcoat layer calculations should be skipped. If true, disables calcs
-          regardless of material setting. Note this will not require a rebuild of the shader
-          since only the calculations are disabled.)")
+                regardless of material setting.)")
       .def_property(
           "skip_specular_layer_calc",
           &PbrShaderAttributes::getSkipCalcSpecularLayer,
           &PbrShaderAttributes::setSkipCalcSpecularLayer,
           R"(Whether the specular layer calculations should be skipped. If true, disables calcs
-          regardless of material setting. Note this will not require a rebuild of the shader
-          since only the calculations are disabled.)")
+                regardless of material setting.)")
       .def_property(
           "skip_anisotropy_layer_calc",
           &PbrShaderAttributes::getSkipCalcAnisotropyLayer,
           &PbrShaderAttributes::setSkipCalcAnisotropyLayer,
           R"(Whether the anisotropy layer calculations should be skipped. If true, disables calcs
-          regardless of material setting. Note this will not require a rebuild of the shader
-          since only the calculations are disabled.)")
-
-      ;
+                regardless of material setting.)")
+      .def_property(
+          "ibl_to_direct_diffuse_balance",
+          &PbrShaderAttributes::getIBLToDirectDiffuseBalance,
+          &PbrShaderAttributes::setIBLToDirectDiffuseBalance,
+          R"(The balanace between the direct lighting and image-based lighting diffuse
+                results, with value values of [0,1]. Any value <= 0 means only direct lighting diffuse
+                results are rendered, >=1 means only image-based lighting results are rendered. Only
+                used when both direct and image-basedlighting is present)")
+      .def_property(
+          "ibl_to_direct_specular_balance",
+          &PbrShaderAttributes::getIBLToDirectSpecularBalance,
+          &PbrShaderAttributes::setIBLToDirectSpecularBalance,
+          R"(The balanace between the direct lighting and image-based lighting specular
+                results, with value values of [0,1]. Any value <= 0 means only direct lighting specular
+                results are rendered, >=1 means only image-based lighting results are rendered. Only
+                used when both direct and image-basedlighting is present)")
+      .def_property(
+          "direct_diffuse_scale", &PbrShaderAttributes::getDirectDiffuseScale,
+          &PbrShaderAttributes::setDirectDiffuseScale,
+          R"(Directly manipulate the value of the direct lighting diffuse scale.
+                Note, no range checking is performed on this value, so irrational results are possible
+                if this value is set negative or greater than 1. Only used when both direct and
+                image-basedlighting is present)")
+      .def_property(
+          "direct_specular_scale", &PbrShaderAttributes::getDirectSpecularScale,
+          &PbrShaderAttributes::setDirectSpecularScale,
+          R"(Directly manipulate the value of the direct lighting specular scale.
+                Note, no range checking is performed on this value, so irrational results are possible
+                if this value is set negative or greater than 1. Only used when both direct and
+                image-basedlighting is present)")
+      .def_property(
+          "ibl_diffuse_scale", &PbrShaderAttributes::getIBLDiffuseScale,
+          &PbrShaderAttributes::setIBLDiffuseScale,
+          R"(Directly manipulate the value of the image-based lighting diffuse scale.
+                Note, no range checking is performed on this value, so irrational results are possible
+                if this value is set negative or greater than 1. Only used when both direct and
+                image-basedlighting is present)")
+      .def_property(
+          "ibl_specular_scale", &PbrShaderAttributes::getIBLSpecularScale,
+          &PbrShaderAttributes::setIBLSpecularScale,
+          R"(Directly manipulate the value of the image-based lighting specular scale.
+                Note, no range checking is performed on this value, so irrational results are possible
+                if this value is set negative or greater than 1. Only used when both direct and
+                image-basedlighting is present)")
+      .def_property(
+          "tonemap_exposure", &PbrShaderAttributes::getTonemapExposure,
+          &PbrShaderAttributes::setTonemapExposure,
+          R"(The exposure value for tonemapping in the pbr shader. This value scales the color before the
+                tonemapping is applied. Default value is 4.5)")
+      .def_property(
+          "gamma", &PbrShaderAttributes::getGamma,
+          &PbrShaderAttributes::setGamma,
+          R"(The gamma value for the pbr shader. This value is used for the approximation
+                mapping from sRGB to linear and back. Default value is 2.2)");
 
   // ==== PhysicsManagerAttributes ====
   py::class_<PhysicsManagerAttributes, AbstractAttributes,
