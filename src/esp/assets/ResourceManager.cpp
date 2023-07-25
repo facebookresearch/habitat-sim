@@ -3096,8 +3096,10 @@ void ResourceManager::addComponent(
         nullptr};          // PbrShaderAttributes - set only if PBR
 
     if (materialDataType == ObjectInstanceShaderType::PBR) {
-      // TODO : Query which PbrShaderAttributes to use based on region of
-      // drawable. Need to have some way of propagating region value.
+      // TODO : Query which PbrShaderAttributes to use based on `region` of
+      // drawable. Need to have some way of propagating region value - perhaps
+      // through scene node like semantic ID, although semantic ID of objects is
+      // not preesent yet.
 
       // Currently always using default PbrShaderAttributes for the current
       // Scene.
@@ -3281,22 +3283,35 @@ std::shared_ptr<Mn::GL::Texture2D> ResourceManager::loadIBLImageIntoTexture(
           << "` exists in compiled resource.";
       imageImporter_->openData(rs.getRaw(imageFilename));
     } else {
-      ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
-          << "IBL "
-          << (useImageTxtrFormat ? "Environment Map" : "BRDF Lookup Table")
-          << " image file `" << imageFilename
-          << "` was not found in resource so loading from disk.";
-      // TODO verify file exists on disk before attempting to load.
-
-      if (!imageImporter_->openFile(imageFilename)) {
-        // If unable to load then not found
-        ESP_ERROR(Mn::Debug::Flag::NoSpace)
-            << "Requested IBL "
+      // Not found as-is in resource, try with directory prefix and then search
+      // in filesystem
+      const std::string prefixedImageFilename = Cr::Utility::formatString(
+          "{}/{}", (useImageTxtrFormat ? "env_maps" : "bluts"), imageFilename);
+      if (rs.hasFile(prefixedImageFilename)) {
+        ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+            << "IBL "
             << (useImageTxtrFormat ? "Environment Map" : "BRDF Lookup Table")
-            << " image file (required for IBL rendering) named `"
-            << imageFilename
-            << "` not found in resource file or on disk, so skipping load.";
-        return nullptr;
+            << " image file `" << prefixedImageFilename
+            << "` exists in compiled resource.";
+        imageImporter_->openData(rs.getRaw(prefixedImageFilename));
+      } else {
+        ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+            << "IBL "
+            << (useImageTxtrFormat ? "Environment Map" : "BRDF Lookup Table")
+            << " image file `" << imageFilename
+            << "` was not found in resource so attempting to load from disk.";
+        // TODO verify file exists on disk before attempting to load.
+
+        if (!imageImporter_->openFile(imageFilename)) {
+          // If unable to load then not found
+          ESP_ERROR(Mn::Debug::Flag::NoSpace)
+              << "Requested IBL "
+              << (useImageTxtrFormat ? "Environment Map" : "BRDF Lookup Table")
+              << " image file (required for IBL rendering) named `"
+              << imageFilename
+              << "` not found in resource file or on disk, so skipping load.";
+          return nullptr;
+        }
       }
     }
     Cr::Containers::Optional<Mn::Trade::ImageData2D> imageData =
