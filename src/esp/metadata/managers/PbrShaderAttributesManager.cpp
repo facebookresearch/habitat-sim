@@ -30,35 +30,34 @@ PbrShaderAttributes::ptr PbrShaderAttributesManager::createObject(
 }  // PbrShaderAttributesManager::createObject
 
 void PbrShaderAttributesManager::setValsFromJSONDoc(
-    PbrShaderAttributes::ptr PbrShaderAttributes,
+    PbrShaderAttributes::ptr pbrShaderAttribs,
     const io::JsonGenericValue& jsonConfig) {
   ////////////////////////////
   // Direct lighting calculation settings
   // whether direct lighting should be enabled
   io::jsonIntoConstSetter<bool>(
       jsonConfig, "enable_direct_lights",
-      [PbrShaderAttributes](bool enableLights) {
-        PbrShaderAttributes->setEnableDirectLighting(enableLights);
+      [pbrShaderAttribs](bool enableLights) {
+        pbrShaderAttribs->setEnableDirectLighting(enableLights);
       });
   // direct light intensity scale
   io::jsonIntoSetter<double>(
       jsonConfig, "direct_light_intensity",
-      [PbrShaderAttributes](double lightIntensity) {
-        PbrShaderAttributes->setDirectLightIntensity(lightIntensity);
+      [pbrShaderAttribs](double lightIntensity) {
+        pbrShaderAttribs->setDirectLightIntensity(lightIntensity);
       });
   // whether we use the burley/disney diffuse calculation or lambertian diffuse
   // calculation for direct lighting.
   io::jsonIntoConstSetter<bool>(
-      jsonConfig, "use_burley_diffuse",
-      [PbrShaderAttributes](bool useLambertian) {
-        PbrShaderAttributes->setUseBurleyDiffuse(useLambertian);
+      jsonConfig, "use_burley_diffuse", [pbrShaderAttribs](bool useLambertian) {
+        pbrShaderAttribs->setUseBurleyDiffuse(useLambertian);
       });
 
   // if TBN frame should be calculated if no precomputed tangent is present
   io::jsonIntoConstSetter<bool>(
       jsonConfig, "skip_missing_tbn_calc",
-      [PbrShaderAttributes](bool calcMissingTBN) {
-        PbrShaderAttributes->setSkipCalcMissingTBN(calcMissingTBN);
+      [pbrShaderAttribs](bool calcMissingTBN) {
+        pbrShaderAttribs->setSkipCalcMissingTBN(calcMissingTBN);
       });
 
   // whether the Mikkelsen method should be used for the TBN calculation, or
@@ -66,8 +65,8 @@ void PbrShaderAttributesManager::setValsFromJSONDoc(
   // used.
   io::jsonIntoConstSetter<bool>(
       jsonConfig, "use_mikkelsen_tbn",
-      [PbrShaderAttributes](bool useMikkelsenTBN) {
-        PbrShaderAttributes->setUseMikkelsenTBN(useMikkelsenTBN);
+      [pbrShaderAttribs](bool useMikkelsenTBN) {
+        pbrShaderAttribs->setUseMikkelsenTBN(useMikkelsenTBN);
       });
 
   // whether the approximation sRGB<->linear mapping should be used in the
@@ -75,30 +74,30 @@ void PbrShaderAttributesManager::setValsFromJSONDoc(
   // on load.
   io::jsonIntoConstSetter<bool>(
       jsonConfig, "use_srgb_remapping",
-      [PbrShaderAttributes](bool useSRGBRemapping) {
-        PbrShaderAttributes->setUseSRGBRemapping(useSRGBRemapping);
+      [pbrShaderAttribs](bool useSRGBRemapping) {
+        pbrShaderAttribs->setUseSRGBRemapping(useSRGBRemapping);
       });
 
   // whether tonemapping should be used for direct lighting
   io::jsonIntoConstSetter<bool>(
       jsonConfig, "use_direct_tonemap",
-      [PbrShaderAttributes](bool useDirectTonemap) {
-        PbrShaderAttributes->setUseDirectLightTonemap(useDirectTonemap);
+      [pbrShaderAttribs](bool useDirectTonemap) {
+        pbrShaderAttribs->setUseDirectLightTonemap(useDirectTonemap);
       });
 
   // direct light diffuse contirbution scaling.  Only used if both direct and
   // indirect (IBL) lighting is enabled.
-  io::jsonIntoSetter<double>(
-      jsonConfig, "direct_diffuse_scale", [PbrShaderAttributes](double scale) {
-        PbrShaderAttributes->setDirectDiffuseScale(scale);
-      });
+  io::jsonIntoSetter<double>(jsonConfig, "direct_diffuse_scale",
+                             [pbrShaderAttribs](double scale) {
+                               pbrShaderAttribs->setDirectDiffuseScale(scale);
+                             });
 
   // direct light specular contirbution scaling.  Only used if both direct and
   // indirect (IBL) lighting is enabled.
-  io::jsonIntoSetter<double>(
-      jsonConfig, "direct_specular_scale", [PbrShaderAttributes](double scale) {
-        PbrShaderAttributes->setDirectSpecularScale(scale);
-      });
+  io::jsonIntoSetter<double>(jsonConfig, "direct_specular_scale",
+                             [pbrShaderAttribs](double scale) {
+                               pbrShaderAttribs->setDirectSpecularScale(scale);
+                             });
 
   ////////////////////////////
   // Material Layer calculation settings
@@ -108,8 +107,8 @@ void PbrShaderAttributesManager::setValsFromJSONDoc(
   // shader since only the calculations are disabled.
   io::jsonIntoConstSetter<bool>(
       jsonConfig, "skip_clearcoat_calc",
-      [PbrShaderAttributes](bool skipCalcClearCoat) {
-        PbrShaderAttributes->setSkipCalcCleacoatLayer(skipCalcClearCoat);
+      [pbrShaderAttribs](bool skipCalcClearCoat) {
+        pbrShaderAttribs->setSkipCalcCleacoatLayer(skipCalcClearCoat);
       });
 
   // whether speecular layer contributions should be calculated where they are
@@ -117,8 +116,8 @@ void PbrShaderAttributesManager::setValsFromJSONDoc(
   // shader since only the calculations are disabled.
   io::jsonIntoConstSetter<bool>(
       jsonConfig, "skip_specular_layer_calc",
-      [PbrShaderAttributes](bool skipCalcSpecular) {
-        PbrShaderAttributes->setSkipCalcSpecularLayer(skipCalcSpecular);
+      [pbrShaderAttribs](bool skipCalcSpecular) {
+        pbrShaderAttribs->setSkipCalcSpecularLayer(skipCalcSpecular);
       });
 
   // whether anisotropy layer contributions should be calculated where they are
@@ -126,51 +125,59 @@ void PbrShaderAttributesManager::setValsFromJSONDoc(
   // shader since only the calculations are disabled.
   io::jsonIntoConstSetter<bool>(
       jsonConfig, "skip_anisotropy_layer_calc",
-      [PbrShaderAttributes](bool skipCalcAnisotropy) {
-        PbrShaderAttributes->setSkipCalcAnisotropyLayer(skipCalcAnisotropy);
+      [pbrShaderAttribs](bool skipCalcAnisotropy) {
+        pbrShaderAttribs->setSkipCalcAnisotropyLayer(skipCalcAnisotropy);
       });
 
   ////////////////////
   // IBL-specific quantities
   // whether image-based lighting should be used in PBR shader
   io::jsonIntoConstSetter<bool>(jsonConfig, "enable_ibl",
-                                [PbrShaderAttributes](bool enableIBL) {
-                                  PbrShaderAttributes->setEnableIBL(enableIBL);
+                                [pbrShaderAttribs](bool enableIBL) {
+                                  pbrShaderAttribs->setEnableIBL(enableIBL);
                                 });
 
-  // the filename for the brdf lookup table used by the IBL calculations
+  // the filename for the brdf lookup table used by the IBL calculations. If
+  // empty retain default, which should always be in resource file.
   io::jsonIntoConstSetter<std::string>(
       jsonConfig, "ibl_blut_filename",
-      [PbrShaderAttributes](const std::string& brdfLUTAsset) {
-        PbrShaderAttributes->setIBLBrdfLUTAssetHandle(brdfLUTAsset);
+      [pbrShaderAttribs](const std::string& brdfLUTAsset) {
+        // If empty retain default filename
+        if (!brdfLUTAsset.empty()) {
+          pbrShaderAttribs->setIBLBrdfLUTAssetHandle(brdfLUTAsset);
+        }
       });
 
   // the filename for the equirectangular environment map used by the IBL
-  // calculations
+  // calculations. If empty retain default, which should always be in resource
+  // file.
   io::jsonIntoConstSetter<std::string>(
       jsonConfig, "ibl_envmap_filename",
-      [PbrShaderAttributes](const std::string& envMapAsset) {
-        PbrShaderAttributes->setIBLEnvMapAssetHandle(envMapAsset);
+      [pbrShaderAttribs](const std::string& envMapAsset) {
+        // If empty retain default filename
+        if (!envMapAsset.empty()) {
+          pbrShaderAttribs->setIBLEnvMapAssetHandle(envMapAsset);
+        }
       });
 
   // whether tonemapping should be used for IBL lighting calculations
   io::jsonIntoConstSetter<bool>(
-      jsonConfig, "use_ibl_tonemap", [PbrShaderAttributes](bool useIBLTonemap) {
-        PbrShaderAttributes->setUseIBLTonemap(useIBLTonemap);
+      jsonConfig, "use_ibl_tonemap", [pbrShaderAttribs](bool useIBLTonemap) {
+        pbrShaderAttribs->setUseIBLTonemap(useIBLTonemap);
       });
 
   // IBL diffuse contirbution scaling.  Only used if both direct and
   // indirect (IBL) lighting is enabled.
   io::jsonIntoSetter<double>(jsonConfig, "ibl_diffuse_scale",
-                             [PbrShaderAttributes](double scale) {
-                               PbrShaderAttributes->setIBLDiffuseScale(scale);
+                             [pbrShaderAttribs](double scale) {
+                               pbrShaderAttribs->setIBLDiffuseScale(scale);
                              });
 
   // IBL specular contirbution scaling.  Only used if both direct and
   // indirect (IBL) lighting is enabled.
   io::jsonIntoSetter<double>(jsonConfig, "ibl_specular_scale",
-                             [PbrShaderAttributes](double scale) {
-                               PbrShaderAttributes->setIBLSpecularScale(scale);
+                             [pbrShaderAttribs](double scale) {
+                               pbrShaderAttribs->setIBLSpecularScale(scale);
                              });
 
   ///////////////////
@@ -178,20 +185,19 @@ void PbrShaderAttributesManager::setValsFromJSONDoc(
 
   // tonemap exposure setting. This value scales the linear color before
   // tonemapping.
-  io::jsonIntoSetter<double>(
-      jsonConfig, "tonemap_exposure", [PbrShaderAttributes](double exposure) {
-        PbrShaderAttributes->setTonemapExposure(exposure);
-      });
+  io::jsonIntoSetter<double>(jsonConfig, "tonemap_exposure",
+                             [pbrShaderAttribs](double exposure) {
+                               pbrShaderAttribs->setTonemapExposure(exposure);
+                             });
 
   // the gamma value for the pbr shader. This value is used for the
   // approximation mapping from sRGB to linear and back.
-  io::jsonIntoSetter<double>(jsonConfig, "gamma",
-                             [PbrShaderAttributes](double gamma) {
-                               PbrShaderAttributes->setGamma(gamma);
-                             });
+  io::jsonIntoSetter<double>(
+      jsonConfig, "gamma",
+      [pbrShaderAttribs](double gamma) { pbrShaderAttribs->setGamma(gamma); });
 
   // check for user defined attributes
-  this->parseUserDefinedJsonVals(PbrShaderAttributes, jsonConfig);
+  this->parseUserDefinedJsonVals(pbrShaderAttribs, jsonConfig);
 
 }  // PbrShaderAttributesManager::createFileBasedAttributesTemplate
 
@@ -203,7 +209,9 @@ PbrShaderAttributes::ptr PbrShaderAttributesManager::initNewObjectInternal(
   if (nullptr == newAttributes) {
     newAttributes = attributes::PbrShaderAttributes::create(handleName);
   }
+  // set the attributes source filedirectory, from the attributes name
   this->setFileDirectoryFromHandle(newAttributes);
+
   return newAttributes;
 }  // PbrShaderAttributesManager::initNewObjectInternal
 

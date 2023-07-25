@@ -97,7 +97,7 @@ class PbrShaderAttributesManager
 
  protected:
   /**
-   * @brief Pbr Attributes Manager Attributes has no reason to check this value
+   * @brief PbrShaderAttributes will never be primitive-based
    * @param handle String name of primitive asset attributes desired
    * @return whether handle exists or not in asset attributes library
    */
