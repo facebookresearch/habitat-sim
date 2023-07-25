@@ -568,8 +568,8 @@ class SceneInstanceAttributes : public AbstractAttributes {
    * region name, and the second is the handle to the PbrShaderAttributes to
    * apply to that region.
    */
-  std::vector<std::pair<std::string, std::string>>
-  getRegionPbrShaderAttributesHandles() const;
+  std::map<std::string, std::string> getRegionPbrShaderAttributesHandles()
+      const;
 
   /**
    * @brief return how many PbrShaderAttributes handles have been found in the

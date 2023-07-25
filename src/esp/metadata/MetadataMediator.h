@@ -497,12 +497,37 @@ class MetadataMediator {
 
   /**
    * @brief Retrieve a copy of the named @ref esp::metadata::attributes::PbrShaderAttributes.
-   * @param handle the name of the config we wish to retrieve.
+   * @param handle the name of the config we wish to retrieve, or the default if
+   * not found
    */
   esp::metadata::attributes::PbrShaderAttributes::ptr getPbrShaderConfig(
       const std::string& handle) const {
-    return pbrShaderAttributesManager_->getObjectsByHandleSubstring(handle).at(
-        handle);
+    auto results =
+        pbrShaderAttributesManager_->getObjectsByHandleSubstring(handle);
+    if (results.size() > 0) {
+      return results.begin()->second;
+    } else {
+      ESP_WARNING() << "\t WARNING! No config for key :" << handle
+                    << "so returning default";
+      return getDefaultPbrShaderConfig();
+    }
+  }
+
+  esp::metadata::attributes::PbrShaderAttributes::ptr
+  getPbrShaderConfigByRegion(const std::string& region) {
+    std::string pbrConfigHandle =
+        getActiveDSAttribs()->getCurrPbrShaderHandleFromRegion(region);
+    return getPbrShaderConfig(pbrConfigHandle);
+  }
+
+  /**
+   * @brief Set the current scene's mapping from 'region' tags to
+   * PbrShaderAttributes handles.
+   */
+  void setCurrScenePbrShaderRegionMap(
+      std::map<std::string, std::string> mappings) {
+    getActiveDSAttribs()->setCurrScenePbrShaderAttrMappings(
+        std::move(mappings));
   }
 
   /**

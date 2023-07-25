@@ -236,17 +236,15 @@ SceneInstanceAttributes::SceneInstanceAttributes(
       editSubconfig<Configuration>("pbr_shader_region_configs");
 }
 
-std::vector<std::pair<std::string, std::string>>
+std::map<std::string, std::string>
 SceneInstanceAttributes::getRegionPbrShaderAttributesHandles() const {
   // iterate through subconfig entries, casting appropriately and adding to
   // map if cast successful
-  std::vector<std::pair<std::string, std::string>> res{};
+  std::map<std::string, std::string> res{};
   int numValues = pbrShaderRegionConfigHandles_->getNumValues();
   if (numValues == 0) {
-    return {};
+    return res;
   }
-  // reserve enough space for all values. All should be strings anyway.
-  res.reserve(numValues);
   // get begin/end pair of iterators for the values in the
   // pbrShaderRegionConfig
   auto pbrShdrRegionIter = pbrShaderRegionConfigHandles_->getValuesIterator();
@@ -254,7 +252,7 @@ SceneInstanceAttributes::getRegionPbrShaderAttributesHandles() const {
        objIter != pbrShdrRegionIter.second; ++objIter) {
     // verify only string values
     if (objIter->second.getType() == core::config::ConfigStoredType::String) {
-      res.emplace_back(
+      res.emplace(
           std::make_pair(objIter->first, objIter->second.getAsString()));
     }
   }

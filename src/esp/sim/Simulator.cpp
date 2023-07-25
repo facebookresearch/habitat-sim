@@ -356,6 +356,9 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   // Set default PbrShaderAttributes based on current scene instance
   metadataMediator_->setCurrDefaultPbrAttributesHandle(
       curSceneInstanceAttributes_->getDefaultPbrShaderAttributesHandle());
+  // Set the mappings from region tags to handles
+  metadataMediator_->setCurrScenePbrShaderRegionMap(
+      curSceneInstanceAttributes_->getRegionPbrShaderAttributesHandles());
 
   // Update ResourceManager's loaded Pbr/Ibl assets based on most up to date
   // state of metadataMediator_'s currently active scene dataset.

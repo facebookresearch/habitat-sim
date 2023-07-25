@@ -182,6 +182,30 @@ class SceneDatasetAttributes : public AbstractAttributes {
         dfltPbrShaderAttrHandle);
   }
   /**
+   * @brief Set the current scene's mapping from 'region' tags to
+   * PbrShaderAttributes handles.
+   */
+  void setCurrScenePbrShaderAttrMappings(
+      std::map<std::string, std::string> mappings) {
+    currPbrShaderAttrRegionMap_ = std::move(mappings);
+  }
+
+  /**
+   * @brief retrieve the handle to the PbrShaderAttributes that corresponds to
+   * the passed region handle defined in the SceneInstanceAttributes.
+   */
+  std::string getCurrPbrShaderHandleFromRegion(const std::string& region) {
+    if (currPbrShaderAttrRegionMap_.count(region) > 0) {
+      return currPbrShaderAttrRegionMap_.at(region);
+    } else {
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << "No region with handle `" << region
+          << "` so returning empty string";
+      return "";
+    }
+  }
+
+  /**
    * @brief Get the name of the attributes used for the default Pbr/Ibl shader
    * configuration.
    */
@@ -455,6 +479,11 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * scene descriptor files
    */
   std::map<std::string, std::string> semanticSceneDescrMap_;
+
+  /**
+   * list of key-value pairs of region names to PbrShaderConfigs
+   */
+  std::map<std::string, std::string> currPbrShaderAttrRegionMap_;
 
  public:
   ESP_SMART_POINTERS(SceneDatasetAttributes)
