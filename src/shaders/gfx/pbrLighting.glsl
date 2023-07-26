@@ -161,26 +161,51 @@ vec3 toneMap(vec3 color) {
 // IBL Support
 
 #if defined(IMAGE_BASED_LIGHTING)
-// diffuseColor: diffuse color
-// n: normal on shading location in world space
-vec3 computeIBLDiffuse(vec3 diffuseColor, vec3 n) {
-  // diffuse part = diffuseColor * irradiance
-  vec4 IBLDiffuseIrradiance = texture(uIrradianceMap, n);
+
+// Function to query uniform textures for Irradiance map.
+// TODO Use this function to support region-based env mapping on a per-fragment
+// level if we choose to go that route, by querying which map to use based on
+// position's region membership
+vec4 getDiffIrradiance(vec3 n) {
+  return texture(uIrradianceMap, n);
+}
+
+// Function to query uniform textures for Irradiance map.
+// TODO Use this function to support region-based env mapping on a per-fragment
+// level if we choose to go that route, by querying which map to use based on
+// position's region membership
+vec4 getSpecIrradiance(vec3 reflectionDir, float lod) {
+  return textureLod(uPrefilteredMap, reflectionDir, lod);
+}
+
+// Determine appropriate mapped result from irradiance calculation
+vec4 calcFinalIrradiance(vec4 IBLIrradiance) {
   // texture assumed to be sRGB
 #if defined(REMAP_COLORS_TO_LINEAR)
 // If using remapping, final result is remapped to sRGB so don't do it here
 #if defined(IBL_TONE_MAP)
-  IBLDiffuseIrradiance = toneMap(IBLDiffuseIrradiance);
+  IBLIrradiance = toneMap(IBLIrradiance);
 #endif  // IBL_TONE_MAP
 #else   // not REMAP_COLORS_TO_LINEAR
-// If not using remapping, make sure we still remap IBL image
+// If not using remapping in general, make sure we still remap IBL image
 #if defined(IBL_TONE_MAP)
-  IBLDiffuseIrradiance = toneMapToSRGB(IBLDiffuseIrradiance);
+  IBLIrradiance = toneMapToSRGB(IBLIrradiance);
 #else
-  IBLDiffuseIrradiance = linearToSRGB(IBLDiffuseIrradiance);
+  IBLIrradiance = linearToSRGB(IBLIrradiance);
 #endif  // IBL_TONE_MAP
 #endif  // REMAP_COLORS_TO_LINEAR
 
+  return IBLIrradiance;
+}  // calcFinalIrradiance
+
+// diffuseColor: diffuse color
+// n: normal on shading location in world space
+vec3 computeIBLDiffuse(vec3 diffuseColor, vec3 n) {
+  // diffuse part = diffuseColor * irradiance
+  // Query the IBL diffuse irradiance from the appropriate cubemap
+  vec4 IBLDiffuseIrradiance = calcFinalIrradiance(getDiffIrradiance(n));
+
+  // using simple diffuse calc : diffuse color * irradiance
   return diffuseColor * IBLDiffuseIrradiance.rgb;
 }  // computeIBLDiffuse
 
@@ -193,22 +218,9 @@ vec3 computeIBLSpecular(float roughness,
   vec3 brdf = texture(uBrdfLUT, brdfSamplePt).rgb;
   // LOD roughness scaled by mip levels -1
   float lod = roughness * float(uPrefilteredMapMipLevels - 1u);
-  vec4 IBLSpecIrradiance = textureLod(uPrefilteredMap, reflectionDir, lod);
-  // texture assumed to be sRGB
-
-#if defined(REMAP_COLORS_TO_LINEAR)
-// If using remapping, final result is remapped to sRGB so don't do it here
-#if defined(IBL_TONE_MAP)
-  IBLSpecIrradiance = toneMap(IBLSpecIrradiance);
-#endif  // IBL_TONE_MAP
-#else   // not REMAP_COLORS_TO_LINEAR
-// If not using remapping, make sure we still remap IBL image
-#if defined(IBL_TONE_MAP)
-  IBLSpecIrradiance = toneMapToSRGB(IBLSpecIrradiance);
-#else
-  IBLSpecIrradiance = linearToSRGB(IBLSpecIrradiance);
-#endif  // IBL_TONE_MAP
-#endif  // REMAP_COLORS_TO_LINEAR
+  // vec4 IBLSpecIrradiance = textureLod(uPrefilteredMap, reflectionDir, lod);
+  vec4 IBLSpecIrradiance =
+      calcFinalIrradiance(getSpecIrradiance(reflectionDir, lod));
 
   return (specularReflectance * brdf.x + brdf.y) * IBLSpecIrradiance.rgb;
 }  // computeIBLSpecular
