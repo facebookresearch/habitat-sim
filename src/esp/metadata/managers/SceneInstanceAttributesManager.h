@@ -119,7 +119,7 @@ class SceneInstanceAttributesManager
    * @param attributes the attributes to populate with JSON values
    * @param jCell JSON document to parse
    */
-  void loadAbstractObjectAttributesFromJson(
+  void setAbstractObjectAttributesFromJson(
       const attributes::SceneObjectInstanceAttributes::ptr& attributes,
       const io::JsonGenericValue& jCell) const;
 

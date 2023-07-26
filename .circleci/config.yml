@@ -203,7 +203,7 @@ jobs:
                 flake8-return \
                 flake8-simplify \
                 hypothesis==6.29.3 \
-                isort==5.11.5 \
+                isort==5.12.0 \
                 mypy \
                 numpy \
                 pytest \
@@ -400,13 +400,18 @@ jobs:
       - run: &download_test_data
           name: Download test data
           command: |
+              sudo apt install git-lfs
+              git --version
+              git-lfs --version
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat;
+              git lfs install
+              conda install -y gitpython
 
               if [ ! -d ./data/scene_datasets/habitat-test-scenes/van-gogh-room.glb ]
               then
                 cd habitat-sim
-                python src_python/habitat_sim/utils/datasets_download.py --uids ci_test_assets --replace --data-path data/
+                python src_python/habitat_sim/utils/datasets_download.py --uids ci_test_assets --replace --data-path data/ --no-prune
               fi
 
       - run:
@@ -419,7 +424,7 @@ jobs:
               git submodule update --init --recursive --jobs 8
               pip install -r requirements.txt --progress-bar off
               pip install imageio imageio-ffmpeg
-              conda install -y -c conda-forge doxygen
+              conda install -y -c conda-forge doxygen=1.9.5
               conda install -y  jinja2 pygments docutils
               while [ ! -f ~/cuda_installed ]; do sleep 2; done # wait for CUDA
               sudo apt install --allow-change-held-packages \
@@ -477,7 +482,7 @@ jobs:
               pip install -e habitat-lab
 
               cd docs
-              conda install -y -c conda-forge doxygen
+              conda install -y -c conda-forge doxygen=1.9.5
               conda install -y  jinja2 pygments docutils
               ./build-public.sh
       - save_cache:

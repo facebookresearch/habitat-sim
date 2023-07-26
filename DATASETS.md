@@ -1,4 +1,6 @@
-# Datasets commonly used with Habitat-Sim
+# HowTo Use Common Supported Datasets with Habitat-Sim
+
+🤗 View the open-source collection of Habitat-ready datasets and test assets on Hugging Face at https://huggingface.co/ai-habitat!
 
 ## Table of contents
    1. [Habitat test scenes](#habitat-test-scenes)
@@ -13,7 +15,10 @@
    1. [YCB Benchmarks - Object and Model Set](#ycb-benchmarks---object-and-model-set)
    1. [Previewing dataset assets using Habitat-Sim's viewers](#previewing-dataset-assets-using-habitat-sims-viewers)
 
+___
+
 ## Habitat test scenes
+[🤗 Browse on Hugging Face 🤗](https://huggingface.co/datasets/ai-habitat/habitat_test_scenes)
 
 We provide 3 example scenes for performing unit tests in habitat-sim. These can be programmatically downloaded via Habitat's data download utility.
 
@@ -26,6 +31,8 @@ We also provide PointNav episodes sampled from these scenes for performing unit 
 ```
 python -m habitat_sim.utils.datasets_download --uids habitat_test_pointnav_dataset --data-path data/
 ```
+
+___
 
 ## Habitat-Matterport 3D Research Dataset (HM3D)
 
@@ -127,17 +134,23 @@ To load semantic annotations in habitat-lab:
 
 Note that if you are using the RL environment from habitat-lab, `SIMULATOR.SCENE_DATASET` is overridden by the episode dataset (see [here](https://github.com/facebookresearch/habitat-lab/blob/e934b15c35233457cc3cb9c90ba0e207610dbd19/habitat/core/env.py#L94-L96)). Each episode in the episode dataset must point to the annotation config file (as done in the HM3D ObjectNav dataset [here](https://github.com/facebookresearch/habitat-lab)).
 
+___
+
 ## Habitat Synthetic Scene Dataset (HSSD)
 
 Details: [https://3dlg-hcvc.github.io/hssd/](https://3dlg-hcvc.github.io/hssd/).
 
 You can download the HSSD dataset from instructions provided in the above website.
 
+___
+
 ## AI2-THOR (Habitat)
 
 Details: [https://3dlg-hcvc.github.io/hssd/](https://3dlg-hcvc.github.io/hssd/).
 
 You can download Habitat-compatible versions of the iTHOR, RoboTHOR, and ProcTHOR scene datasets from instructions provided in the above website.
+
+___
 
 ## Matterport3D (MP3D) dataset
 
@@ -158,11 +171,13 @@ You only need the habitat zip archive and not the entire Matterport3D dataset.
 
 Once you have the habitat zip archive, you should download [this SceneDatasetConfig file](http://dl.fbaipublicfiles.com/habitat/mp3d/config_v1/mp3d.scene_dataset_config.json) and place it in the root directory for the Matterport3D dataset (e.g. Habitat-Sim/data/scene_datasets/mp3d/). This file should then be specified as [the scene dataset config in the SimulatorConfiguration structure](/examples/tutorials/nb_python/ReplicaCAD_quickstart.py#L145) like this example for the ReplicaCAD dataset.
 
+___
+
 ## Gibson and 3DSceneGraph datasets
 
-- The Gibson dataset for use with Habitat can be downloaded by agreeing to the terms of use in the [Gibson](https://github.com/StanfordVL/GibsonEnv#database) repository.
+The Gibson dataset for use with Habitat can be downloaded by agreeing to the terms of use in the [Gibson](https://github.com/StanfordVL/GibsonEnv#database) repository.
 
-- Semantic information for Gibson is available from the [3DSceneGraph](https://3dscenegraph.stanford.edu/) dataset. The semantic data will need to be converted before it can be used within Habitat:
+Semantic information for Gibson is available from the [3DSceneGraph](https://3dscenegraph.stanford.edu/) dataset. The semantic data will need to be converted before it can be used within Habitat:
    ```bash
    tools/gen_gibson_semantics.sh /path/to/3DSceneGraph_medium/automated_graph /path/to/GibsonDataset /path/to/output
    ```
@@ -170,13 +185,20 @@ Once you have the habitat zip archive, you should download [this SceneDatasetCon
 
    Once you have downloaded the Gibson dataset and converted the semantic data, you should download [this SceneDatasetConfig file](http://dl.fbaipublicfiles.com/habitat/gibson/config_v1/gibson_semantic.scene_dataset_config.json) and place it in the root directory for the Gibson dataset (e.g. Habitat-Sim/data/scene_datasets/gibson/). This file should then be specified as [the scene dataset config in the SimulatorConfiguration structure](/examples/tutorials/nb_python/ReplicaCAD_quickstart.py#L145) like this example for the ReplicaCAD dataset.
 
+___
+
 ## Replica Dataset
 
 Details and download isntructions: [https://github.com/facebookresearch/Replica-Dataset](https://github.com/facebookresearch/Replica-Dataset).
 
-## ReplicaCAD
+___
 
-Details and download instructions: [https://aihabitat.org/datasets/replica_cad/](https://aihabitat.org/datasets/replica_cad/).
+## ReplicaCAD
+🤗 Browse on Hugging Face ([interactive](https://huggingface.co/datasets/ai-habitat/ReplicaCAD_dataset), [baked_lighting](https://huggingface.co/datasets/ai-habitat/ReplicaCAD_baked_lighting)) 🤗
+
+Details and instructions: [https://aihabitat.org/datasets/replica_cad/](https://aihabitat.org/datasets/replica_cad/).
+
+___
 
 ## ScanNet
 
@@ -190,12 +212,14 @@ The exported `*.glb` files can directly be used with Habitat-Sim versions >= 2.0
 
 Note: Depending on the configured radius and height of the agent, certain scans may have no navigable locations on the navmesh (~200). These scenes can be filtered out by checking if `sim.pathfinder.is_loaded` is False.
 
+___
+
 ## YCB Benchmarks - Object and Model Set
+[🤗 Browse Habitat-ready asset dataset on Hugging Face 🤗](https://huggingface.co/datasets/ai-habitat/ycb)
+
 Details: [https://www.ycbbenchmarks.com/](https://www.ycbbenchmarks.com/).
 
 > YCB Object and Model Set is designed for facilitating benchmarking in robotic manipulation... The set is associated with a [model database](http://www.ycbbenchmarks.com/object-models/) which provides mesh models and high-resolution RGB-D scans of the objects for easy incorporation into manipulation and planning software platforms.
-
-Pre-processed, [Habitat-ready assets](https://dl.fbaipublicfiles.com/habitat/ycb/hab_ycb_v1.2.zip).
 
 Quick-start with the dataset_downloader utility:
 
@@ -223,9 +247,11 @@ To quickly test in the viewer application:
 #from the habitat-sim directory
 # C++
 # ./build/viewer if compiling locally
-habitat-viewer --stage-requires-lighting --enable-physics --object-dir ""  --dataset data/objects/ycb/ycb.scene_dataset_config.json -- data/test_assets/scenes/simple_room.glb
+habitat-viewer --use-default-lighting --enable-physics --object-dir ""  --dataset data/objects/ycb/ycb.scene_dataset_config.json -- data/test_assets/scenes/simple_room.glb
 ```
 Then press `'o'` key to add random objects from the dataset.
+
+___
 
 # Previewing dataset assets using  Habitat-Sim's viewers
 

@@ -99,7 +99,7 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
    * @return an appropriately cast attributes pointer with base class fields
    * filled in.
    */
-  AbsObjAttrPtr loadAbstractObjectAttributesFromJson(
+  AbsObjAttrPtr setAbstractObjectAttributesFromJson(
       AbsObjAttrPtr attributes,
       const io::JsonGenericValue& jsonDoc);
 
@@ -193,8 +193,8 @@ auto AbstractObjectAttributesManager<T, Access>::createObject(
 
 template <class T, ManagedObjectAccess Access>
 auto AbstractObjectAttributesManager<T, Access>::
-    loadAbstractObjectAttributesFromJson(AbsObjAttrPtr attributes,
-                                         const io::JsonGenericValue& jsonDoc)
+    setAbstractObjectAttributesFromJson(AbsObjAttrPtr attributes,
+                                        const io::JsonGenericValue& jsonDoc)
         -> AbsObjAttrPtr {
   // scale
   io::jsonIntoConstSetter<Magnum::Vector3>(
@@ -319,7 +319,7 @@ auto AbstractObjectAttributesManager<T, Access>::
   }
 
   return attributes;
-}  // AbstractObjectAttributesManager<AbsObjAttrPtr>::createObjectAttributesFromJson
+}  // AbstractObjectAttributesManager<AbsObjAttrPtr>::setAbstractObjectAttributesFromJson
 
 template <class T, ManagedObjectAccess Access>
 std::string

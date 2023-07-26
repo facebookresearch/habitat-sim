@@ -190,7 +190,7 @@ class Agent:
                 self.scene_node, action.name, action.actuation, apply_filter=True
             )
         else:
-            for _, v in self._sensors.items():
+            for v in self._sensors.values():
                 habitat_sim.errors.assert_obj_valid(v)
                 self.controls.action(
                     v.object, action.name, action.actuation, apply_filter=False
@@ -255,7 +255,7 @@ class Agent:
         self.body.object.rotation = quat_to_magnum(state.rotation)
 
         if reset_sensors:
-            for _, v in self._sensors.items():
+            for v in self._sensors.values():
                 v.set_transformation_from_spec()
 
         if not infer_sensor_states:

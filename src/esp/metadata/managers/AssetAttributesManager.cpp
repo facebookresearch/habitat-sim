@@ -139,7 +139,8 @@ AssetAttributesManager::createTemplateFromHandle(
     // handle is of incorrect format
     ESP_ERROR(Mn::Debug::Flag::NoSpace)
         << "Given template handle : `" << templateHandle
-        << "` is not the correct format for a primitive.  Aborting.";
+        << "` is not the correct format for a primitive, so "
+           "createTemplateFromHandle aborting.";
     return nullptr;
   }
   std::string primClassName = templateHandle.substr(0, nameEndLoc);
@@ -148,7 +149,8 @@ AssetAttributesManager::createTemplateFromHandle(
     ESP_ERROR(Mn::Debug::Flag::NoSpace)
         << "Requested primitive type : `" << primClassName
         << "` from given template handle : `" << templateHandle
-        << "` is not a valid Magnum::Primitives class.  Aborting.";
+        << "` is not a valid Magnum::Primitives class, so "
+           "createTemplateFromHandle aborting.";
     return nullptr;
   }
   // create but do not register template for this prim class, since it will be
@@ -181,7 +183,8 @@ int AssetAttributesManager::registerObjectFinalize(
     ESP_ERROR(Mn::Debug::Flag::NoSpace)
         << "Primitive asset attributes template named `" << primAttributesHandle
         << "` is not configured properly for specified prmitive `"
-        << primAttributesTemplate->getPrimObjClassName() << "`. Aborting.";
+        << primAttributesTemplate->getPrimObjClassName()
+        << "`, so Primitive asset attributes NOT registered.";
     return ID_UNDEFINED;
   }
 

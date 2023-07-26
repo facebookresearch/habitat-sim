@@ -271,13 +271,19 @@ int LightLayoutAttributesManager::registerObjectFinalize(
 
 gfx::LightSetup LightLayoutAttributesManager::createLightSetupFromAttributes(
     const std::string& lightConfigName) {
-  // if passing empty key, use default lights for light setup
+  // if passing no-lighting key, return empty light setup
+  if (lightConfigName == NO_LIGHT_KEY) {
+    ESP_VERY_VERBOSE()
+        << "`No-lights` lighting key specified so using empty light setup.";
+    return esp::gfx::LightSetup{};
+  }
+  // if passing DEFAULT_LIGHTING_KEY key, use default lights for light setup
   if (lightConfigName == DEFAULT_LIGHTING_KEY) {
-    // Default lighting key is specified as the empty string. This would
+    // DEFAULT_LIGHTING_KEY is specified as the empty string. This would
     // generate an error if the attributes manager was queried with an empty
     // string
-    ESP_DEBUG() << "Default lighting key specified so using "
-                   "Habitat-Sim-specified default light setup.";
+    ESP_VERY_VERBOSE() << "`Default-lighting` key specified so using "
+                          "Habitat-Sim-specified default light setup.";
     return gfx::getDefaultLights();
   }
 
