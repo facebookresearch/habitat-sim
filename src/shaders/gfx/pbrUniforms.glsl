@@ -112,13 +112,20 @@ uniform sampler2D uAnisotropyLayerTexture;
 
 // -------------- lights and/or IBL -------------------
 
-// TODO Specify if tonemap/srgb
-#if defined(DIRECT_LIGHTING) || defined(IMAGE_BASED_LIGHTING)
+// uExposure is used for any tonemapping, direct or IBL
+#if (defined(DIRECT_LIGHTING) && defined(DIRECT_TONE_MAP)) || \
+    (defined(IMAGE_BASED_LIGHTING) && defined(IBL_TONE_MAP))
 uniform float uExposure;
+#endif  // #if (defined(DIRECT_LIGHTING) && defined(DIRECT_TONE_MAP)) ||
+        // (defined(IMAGE_BASED_LIGHTING) && defined(IBL_TONE_MAP))
 
-uniform float uGamma;
-
-#endif  //  defined(DIRECT_LIGHTING) || defined(IMAGE_BASED_LIGHTING)
+// uGamma is used for any remapping
+#if defined(REMAP_COLORS_TO_LINEAR)
+uniform vec3 uGamma;
+#endif
+#if defined(REMAP_COLORS_TO_LINEAR) || defined(IMAGE_BASED_LIGHTING)
+uniform vec3 uInvGamma;
+#endif  // defined(REMAP_COLORS_TO_LINEAR) || defined(IMAGE_BASED_LIGHTING)
 
 #if defined(DIRECT_LIGHTING)
 

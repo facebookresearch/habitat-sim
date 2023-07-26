@@ -114,6 +114,15 @@ void main() {
   colorVals.clearCoatContrib *= colorContribScale;
 #endif  // CLEAR_COAT
 
+// If using direct lighting tone map
+#if defined(DIRECT_TONE_MAP)
+  colorVals.diffuseContrib = toneMap(colorVals.diffuseContrib);
+  colorVals.specularContrib = toneMap(colorVals.specularContrib);
+#if defined(CLEAR_COAT) && !defined(SKIP_CALC_CLEAR_COAT)
+  colorVals.clearCoatContrib toneMap(colorVals.clearCoatContrib);
+#endif  // CLEAR_COAT
+#endif  // DIRECT_TONE_MAP
+
 #endif  // if (DIRECT_LIGHTING)
 
 #if defined(IMAGE_BASED_LIGHTING)
@@ -178,12 +187,6 @@ void main() {
   vec3 ttlSpecularContrib =
       colorVals.specularContrib + colorVals.iblSpecularContrib;
 
-// If using direct lighting tone map
-#if defined(DIRECT_TONE_MAP)
-  ttlDiffuseContrib = toneMap(ttlDiffuseContrib);
-  ttlSpecularContrib = toneMap(ttlSpecularContrib);
-#endif  // DIRECT_TONE_MAP
-
   // Aggregate direct and indirect diffuse and specular with emissive color
   // TODO expand emissiveColor handling
   vec3 finalColor =
@@ -205,7 +208,7 @@ void main() {
 // final aggregation
 // TODO alpha masking?
 
-// If remapping, IBL result was not remapped, so doing it here.
+// If remapping, IBL result was not remapped, so remap back to SRGB here
 #if defined(REMAP_COLORS_TO_LINEAR)
   fragmentColor = vec4(linearToSRGB(finalColor), pbrInfo.baseColor.a);
 #else

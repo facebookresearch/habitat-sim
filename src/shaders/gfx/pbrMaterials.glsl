@@ -352,7 +352,6 @@ PBRData buildPBRData() {
   pbrInfo.specularLayerColor = uSpecularLayer.colorFactor;
 
 #if defined(SPECULAR_LAYER_COLOR_TEXTURE)
-  // TODO uSpecularLayerColorTexture is in sRGB
 
 #if defined(REMAP_COLORS_TO_LINEAR)
   pbrInfo.specularLayerColor *=

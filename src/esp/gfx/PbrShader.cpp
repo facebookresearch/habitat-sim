@@ -57,6 +57,11 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   directAndIBLisEnabled_ =
       (directLightingIsEnabled_ && flags_ >= Flag::ImageBasedLighting);
 
+  remapSRGB_ = (directLightingIsEnabled_ && flags_ >= Flag::UseSRGBRemapping &&
+                ((flags_ >= Flag::BaseColorTexture) ||
+                 (flags_ >= Flag::EmissiveTexture) ||
+                 (flags_ >= Flag::SpecularLayerColorTexture)));
+
   isTextured_ =
       (((flags_ >= Flag::BaseColorTexture) ||
         (flags_ >= Flag::NoneRoughnessMetallicTexture) ||
@@ -160,7 +165,6 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
       .addSource(flags_ >= Flag::AnisotropyLayerTexture
                      ? "#define ANISOTROPY_LAYER_TEXTURE\n"
                      : "")
-
       .addSource(flags_ >= Flag::PrecomputedTangent
                      ? "#define PRECOMPUTED_TANGENT\n"
                      : "")
@@ -190,19 +194,12 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
       // temporary until we can improve the cpu-side functionality (make sure
       // all loaded textures are converted to linear space, and implement the
       // framebuffer that can map back to sRGB)
-      .addSource(flags_ >= Flag::UseSRGBRemapping
-                     ? "#define REMAP_COLORS_TO_LINEAR\n"
-                     : "")
+      .addSource(remapSRGB_ ? "#define REMAP_COLORS_TO_LINEAR\n" : "")
 
       .addSource(flags_ >= Flag::UseDirectLightTonemap
                      ? "#define DIRECT_TONE_MAP\n"
                      : "")
       .addSource(flags_ >= Flag::UseIBLTonemap ? "#define IBL_TONE_MAP\n" : "")
-      // If any tonemap is available
-      .addSource((flags_ >= Flag::UseIBLTonemap) ||
-                         (flags_ >= Flag::UseDirectLightTonemap)
-                     ? "#define TONE_MAP\n"
-                     : "")
 
       .addSource(flags_ >= Flag::DebugDisplay ? "#define PBR_DEBUG_DISPLAY\n"
                                               : "")
@@ -337,9 +334,18 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
 
   cameraWorldPosUniform_ = uniformLocation("uCameraWorldPos");
 
-  tonemapExposureUniform_ = uniformLocation("uExposure");
+  if ((directLightingIsEnabled_ && flags_ >= Flag::UseDirectLightTonemap) ||
+      (flags_ >= Flag::ImageBasedLighting && flags_ >= Flag::UseIBLTonemap)) {
+    tonemapExposureUniform_ = uniformLocation("uExposure");
+  }
 
-  gammaUniform_ = uniformLocation("uGamma");
+  if (remapSRGB_) {
+    gammaUniform_ = uniformLocation("uGamma");
+  }
+
+  if (remapSRGB_ || flags_ >= Flag::ImageBasedLighting) {
+    invGammaUniform_ = uniformLocation("uInvGamma");
+  }
 
   // IBL related uniform
   if (flags_ >= Flag::ImageBasedLighting) {
@@ -412,9 +418,9 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   if (lightingIsEnabled_) {
     // TODO : gate this based on whether tonemapping is being used.
     setTonemapExposure(4.5f);
-
-    setGamma(2.2f);
   }
+
+  setGamma({2.2f, 2.2f, 2.2f});
 
   setEmissiveColor(Mn::Color3{0.0f});
 
@@ -863,9 +869,12 @@ PbrShader& PbrShader::setDirectLightIntensity(float lightIntensity) {
   return *this;
 }
 
-PbrShader& PbrShader::setGamma(float gamma) {
-  if (lightingIsEnabled_) {
+PbrShader& PbrShader::setGamma(const Mn::Vector3& gamma) {
+  if (remapSRGB_) {
     setUniform(gammaUniform_, gamma);
+  }
+  if (remapSRGB_ || flags_ >= Flag::ImageBasedLighting) {
+    setUniform(invGammaUniform_, 1.0f / gamma);
   }
   return *this;
 }

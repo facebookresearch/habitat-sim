@@ -4,29 +4,31 @@
 
 precision highp float;
 
-#if defined(DIRECT_LIGHTING) || defined(IMAGE_BASED_LIGHTING)
+#if defined(REMAP_COLORS_TO_LINEAR) || defined(IMAGE_BASED_LIGHTING)
 
 // linear to sRGB approximation
 // see http://chilliant.blogspot.com/2012/08/srgb-approximations-for-hlsl.html
 vec3 linearToSRGB(vec3 color) {
-  return pow(color, vec3(1.0f / uGamma));
+  return pow(color.rgb, uInvGamma);
 }
 
 // Approximation mapping
 vec4 linearToSRGB(vec4 color) {
   return vec4(linearToSRGB(color.rgb), color.a);
 }
+#endif  // defined(REMAP_COLORS_TO_LINEAR) || defined(IMAGE_BASED_LIGHTING)
 
+#if defined(REMAP_COLORS_TO_LINEAR)
 // sRGB to linear approximation
 // see http://chilliant.blogspot.com/2012/08/srgb-approximations-for-hlsl.html
 vec3 sRGBToLinear(vec3 srgbIn) {
-  return vec3(pow(srgbIn.xyz, vec3(uGamma)));
+  return vec3(pow(srgbIn.xyz, uGamma));
 }
 
 vec4 sRGBToLinear(vec4 srgbIn) {
   return vec4(sRGBToLinear(srgbIn.xyz), srgbIn.w);
 }
-#endif  // defined(DIRECT_LIGHTING) || defined(IMAGE_BASED_LIGHTING)
+#endif  // defined(REMAP_COLORS_TO_LINEAR)
 
 #if defined(DIRECT_LIGHTING)
 // Configure a LightInfo object
@@ -53,9 +55,11 @@ void configureLightInfo(vec3 light,
   l.projLightIrradiance = lightIrradiance * l.n_dot_l;
 }  // configureLightInfo
 
-// Build a lightInfo structure from the light represented by the light index
+// Build a lightInfo structure from the light represented by the light
+// index.
 // iLight : the index of the light
-// pbrInfo : the PBRData object that holds all the precalculated material data
+// pbrInfo : the PBRData object that holds all the precalculated material
+//           data
 // (out) l : LightInfo structure being populated
 bool buildLightInfoFromLightIdx(int iLight, PBRData pbrInfo, out LightInfo l) {
   // Directional lights have the .w component set to 0
@@ -74,12 +78,12 @@ bool buildLightInfoFromLightIdx(int iLight, PBRData pbrInfo, out LightInfo l) {
   // directional lights, to prevent divide by 0)
   float sqDist = (uLightDirections[iLight].w * ((dist * dist) - 1)) + 1;
 
-  // If uLightRanges[iLight] is 0 for whatever reason, clamp it to a small value
-  // to avoid a NaN when dist is 0 as well (which is the case for directional
+  // If uLightRanges[iLight] is 0 for whatever reason, clamp it to a small
+  // value to avoid a NaN when dist also 0 (which is the case for directional
   // lights)
   // https://github.com/KhronosGroup/glTF/blob/master/extensions/2.0/Khronos/KHR_lights_punctual/README.md#range-property
-  // Attenuation is 1 for directional lights, governed by inverse square law
-  // otherwise
+  // Attenuation is 1 for directional lights, governed by inverse square
+  // law otherwise
   float attenuation =
       clamp(1 - pow4(dist / (uLightRanges[iLight] + EPSILON)), 0.0, 1.0) /
       sqDist;
@@ -115,7 +119,8 @@ void configureAnisotropyLightInfo(LightInfo l,
 
 #endif  //  DIRECT_LIGHTING
 
-#if defined(TONE_MAP)
+#if (defined(DIRECT_LIGHTING) && defined(DIRECT_TONE_MAP)) || \
+    (defined(IMAGE_BASED_LIGHTING) && defined(IBL_TONE_MAP))
 // The following function Uncharted2toneMap is based on:
 // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/data/shaders/pbr_khr.frag
 vec3 Uncharted2Tonemap(vec3 color) {
@@ -136,26 +141,33 @@ const vec3 toneMapUC2Denom = vec3(1.1962848297213622);
 // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/data/shaders/pbr_khr.frag
 // Tone mapping takes a wide dynamic range of values and compresses them
 // into a smaller range that is appropriate for the output device.
+
+#if defined(IMAGE_BASED_LIGHTING)
+
 vec4 toneMapToSRGB(vec4 color) {
   vec3 outcol = Uncharted2Tonemap(color.rgb * uExposure) * toneMapUC2Denom;
   return vec4(linearToSRGB(outcol.rgb), color.a);
-}
-// Tone map without linear-to-srgb mapping
-vec4 toneMap(vec4 color) {
-  vec3 outcol = Uncharted2Tonemap(color.rgb * uExposure) * toneMapUC2Denom;
-  return vec4(outcol, color.a);
 }
 
 vec3 toneMapToSRGB(vec3 color) {
   return linearToSRGB(Uncharted2Tonemap(color.rgb * uExposure) *
                       toneMapUC2Denom);
 }
+#endif  // defined(IMAGE_BASED_LIGHTING)
+
+// Tone map without linear-to-srgb mapping
+vec4 toneMap(vec4 color) {
+  vec3 outcol = Uncharted2Tonemap(color.rgb * uExposure) * toneMapUC2Denom;
+  return vec4(outcol, color.a);
+}
+
 // Tone map without linear-to-srgb mapping
 vec3 toneMap(vec3 color) {
   return Uncharted2Tonemap(color.rgb * uExposure) * toneMapUC2Denom;
 }
 
-#endif  // TONE_MAP - either IBL or Direct
+#endif  //(defined(DIRECT_LIGHTING) && defined(DIRECT_TONE_MAP)) ||
+        //(defined(IMAGE_BASED_LIGHTING) && defined(IBL_TONE_MAP))
 
 /////////////////
 // IBL Support
@@ -163,17 +175,17 @@ vec3 toneMap(vec3 color) {
 #if defined(IMAGE_BASED_LIGHTING)
 
 // Function to query uniform textures for Irradiance map.
-// TODO Use this function to support region-based env mapping on a per-fragment
-// level if we choose to go that route, by querying which map to use based on
-// position's region membership
+// TODO Use this function to support region-based env mapping on a
+// per-fragment level if we choose to go that route, by querying which map
+// to use based on position's region membership
 vec4 getDiffIrradiance(vec3 n) {
   return texture(uIrradianceMap, n);
 }
 
 // Function to query uniform textures for Irradiance map.
-// TODO Use this function to support region-based env mapping on a per-fragment
-// level if we choose to go that route, by querying which map to use based on
-// position's region membership
+// TODO Use this function to support region-based env mapping on a
+// per-fragment level if we choose to go that route, by querying which map
+// to use based on position's region membership
 vec4 getSpecIrradiance(vec3 reflectionDir, float lod) {
   return textureLod(uPrefilteredMap, reflectionDir, lod);
 }
@@ -182,12 +194,12 @@ vec4 getSpecIrradiance(vec3 reflectionDir, float lod) {
 vec4 calcFinalIrradiance(vec4 IBLIrradiance) {
   // texture assumed to be sRGB
 #if defined(REMAP_COLORS_TO_LINEAR)
-// If using remapping, final result is remapped to sRGB so don't do it here
+// If using remapping, final result is remapped to sRGB so don't remap it here
 #if defined(IBL_TONE_MAP)
   IBLIrradiance = toneMap(IBLIrradiance);
 #endif  // IBL_TONE_MAP
 #else   // not REMAP_COLORS_TO_LINEAR
-// If not using remapping in general, make sure we still remap IBL image
+  // If not using remapping in general, make sure we still remap IBL image
 #if defined(IBL_TONE_MAP)
   IBLIrradiance = toneMapToSRGB(IBLIrradiance);
 #else
@@ -218,7 +230,8 @@ vec3 computeIBLSpecular(float roughness,
   vec3 brdf = texture(uBrdfLUT, brdfSamplePt).rgb;
   // LOD roughness scaled by mip levels -1
   float lod = roughness * float(uPrefilteredMapMipLevels - 1u);
-  // vec4 IBLSpecIrradiance = textureLod(uPrefilteredMap, reflectionDir, lod);
+  // Query the IBL specular irradiance from the appropriatte cubemap using the
+  // specified reflection direction and lod
   vec4 IBLSpecIrradiance =
       calcFinalIrradiance(getSpecIrradiance(reflectionDir, lod));
 

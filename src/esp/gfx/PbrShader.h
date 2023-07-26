@@ -689,7 +689,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    * @brief Set the gamma value used for remapping sRGB to linear approximations
    *  @return Reference to self (for method chaining)
    */
-  PbrShader& setGamma(float gamma);
+  PbrShader& setGamma(const Magnum::Vector3& gamma);
 
   /**
    * @brief Set the IBL exposure value.
@@ -757,6 +757,11 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   // Whether direct _AND_ indirect lighting is available
   bool directAndIBLisEnabled_ = false;
 
+  // Whether the appropriate incoming textures should be remapped from sRGB to
+  // linear for calculations, and then mapped back at the end of the
+  // calculation. This is temporary until the texture load process properly maps
+  // the textures.
+  bool remapSRGB_ = false;
   // ======= uniforms =======
   // it hurts the performance to call glGetUniformLocation() every frame due
   // to string operations. therefore, cache the locations in the constructor
@@ -785,8 +790,10 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   // Global, config-driven knob to control IBL exposure
   int tonemapExposureUniform_ = ID_UNDEFINED;
 
-  // Gamma value for sRGB mapping approx
+  // Gamma value for sRGB->linear mapping approx
   int gammaUniform_ = ID_UNDEFINED;
+  // invGamma value for linear->sRGB mapping approx
+  int invGammaUniform_ = ID_UNDEFINED;
 
   int cameraWorldPosUniform_ = ID_UNDEFINED;
   int prefilteredMapMipLevelsUniform_ = ID_UNDEFINED;

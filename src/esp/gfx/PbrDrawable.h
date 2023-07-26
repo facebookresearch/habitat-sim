@@ -237,7 +237,7 @@ class PbrDrawable : public Drawable {
      * Controls the gamma value used in the sRGB<->linear approximation
      * calculations. Only used if sRGB remapping is enabled.
      */
-    float gamma = 2.2f;
+    Magnum::Vector3 gamma = {2.2f, 2.2f, 2.2f};
 
     /**
      * Scales the contributions for each of the 4 given values - direct lighting

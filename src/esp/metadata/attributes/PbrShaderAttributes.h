@@ -322,9 +322,9 @@ class PbrShaderAttributes : public AbstractAttributes {
 
   /**
    * @brief Set the gamma value for the pbr shader. This value is used
-   * for the approximation mapping from sRGB to linear and back.
+   * for the approximation mapping from sRGB to linear and back. Cannot be <= 0.
    */
-  void setGamma(double gamma) { set("gamma", gamma); }
+  void setGamma(double gamma) { set("gamma", Mn::Math::max(gamma, 0.000001)); }
 
   /**
    * @brief Get the gamma value for the pbr shader. This value is used

@@ -416,7 +416,8 @@ void PbrDrawable::setShaderAttributesValues(
     shaderConfig_.tonemapExposure = pbrShaderConfig->getTonemapExposure();
   }
   if (flags_ >= PbrShader::Flag::UseSRGBRemapping) {
-    shaderConfig_.gamma = pbrShaderConfig->getGamma();
+    float gamma = pbrShaderConfig->getGamma();
+    shaderConfig_.gamma = Mn::Vector3{gamma, gamma, gamma};
   }
 }  // PbrDrawable::setShaderAttributesValues
 
@@ -564,10 +565,9 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
     }
   }
 
-  // Set gamma value to use for srgb remapping
-  if (flags_ >= PbrShader::Flag::UseSRGBRemapping) {
-    shader_->setGamma(shaderConfig_.gamma);
-  }
+  // Set gamma value to use for srgb remapping if being used
+  // Setter does checking
+  shader_->setGamma(shaderConfig_.gamma);
 
   // Tonemap exposure
   if (flags_ >= (PbrShader::Flag::UseIBLTonemap) ||
