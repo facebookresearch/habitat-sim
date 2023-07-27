@@ -67,10 +67,22 @@ def initialize_test_data_sources(data_path):
         #   "link": symlink to the data directory pointing to the active version directory
         #   "version": data version tag
         # }
-        "hssd-hab_scenes": {
+        "hssd-hab": {
             "source": "https://huggingface.co/datasets/hssd/hssd-hab.git",
             "link": data_path + "scene_datasets/hssd-hab",
             "version": "v0.2.3",
+            "requires_auth": True,
+        },
+        "hssd-raw": {
+            "source": "https://huggingface.co/datasets/hssd/hssd-scenes.git",
+            "link": data_path + "scene_datasets/hssd-scenes",
+            "version": "main",
+            "requires_auth": False,
+        },
+        "hssd-hab_internal": {
+            "source": "https://huggingface.co/datasets/fpss/fphab.git",
+            "link": data_path + "scene_datasets/fphab",
+            "version": "main",
             "requires_auth": True,
         },
         "hssd-hab_objectnav_dataset": {
@@ -79,7 +91,7 @@ def initialize_test_data_sources(data_path):
             "link": data_path + "datasets/objectnav/hssd-hab",
             "version": "v0.2.3",
         },
-        "ai2thor-hab_scenes": {
+        "ai2thor-hab": {
             "source": "https://huggingface.co/datasets/hssd/ai2thor-hab.git",
             "link": data_path + "scene_datasets/ai2thor-hab",
             "version": "main",
