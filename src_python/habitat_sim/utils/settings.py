@@ -4,11 +4,15 @@
 
 from typing import Any, Dict
 
+import magnum as mn
+
+BLACK = mn.Color4.from_linear_rgb_int(0)
+
 import habitat_sim
 import habitat_sim.agent
 
 # [default_sim_settings]
-default_sim_settings = {
+default_sim_settings: Dict[str, Any] = {
     # path to .scene_dataset.json file
     "scene_dataset_config_file": "default",
     # name of an existing scene in the dataset, a scene, stage, or asset filepath, or "NONE" for an empty scene
@@ -20,6 +24,8 @@ default_sim_settings = {
     "hfov": 90,
     # far clipping plane
     "zfar": 1000.0,
+    # optional background color override for rgb sensors
+    "clear_color": BLACK,
     # vertical offset of the camera from the agent's root position (e.g. height of eyes)
     "sensor_height": 1.5,
     # defaul agent ix
@@ -104,6 +110,7 @@ def make_cfg(settings: Dict[str, Any]):
             far=settings["zfar"],
             sensor_type=habitat_sim.SensorType.COLOR,
             sensor_subtype=habitat_sim.SensorSubType.PINHOLE,
+            clear_color=settings["clear_color"],
         )
         sensor_specs.append(color_sensor_spec)
 
@@ -135,6 +142,7 @@ def make_cfg(settings: Dict[str, Any]):
             far=settings["zfar"],
             sensor_type=habitat_sim.SensorType.COLOR,
             sensor_subtype=habitat_sim.SensorSubType.ORTHOGRAPHIC,
+            clear_color=settings["clear_color"],
         )
         sensor_specs.append(ortho_rgba_sensor_spec)
 
@@ -186,6 +194,7 @@ def make_cfg(settings: Dict[str, Any]):
 
     if settings["fisheye_rgba_sensor"]:
         fisheye_rgba_sensor_spec = create_fisheye_spec(uuid="fisheye_rgba_sensor")
+        fisheye_rgba_sensor_spec.clear_color = settings["clear_color"]
         sensor_specs.append(fisheye_rgba_sensor_spec)
     if settings["fisheye_depth_sensor"]:
         fisheye_depth_sensor_spec = create_fisheye_spec(
@@ -214,6 +223,7 @@ def make_cfg(settings: Dict[str, Any]):
 
     if settings["equirect_rgba_sensor"]:
         equirect_rgba_sensor_spec = create_equirect_spec(uuid="equirect_rgba_sensor")
+        equirect_rgba_sensor_spec.clear_color = settings["clear_color"]
         sensor_specs.append(equirect_rgba_sensor_spec)
 
     if settings["equirect_depth_sensor"]:
