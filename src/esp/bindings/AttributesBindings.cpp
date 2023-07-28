@@ -471,12 +471,20 @@ void initAttributesBindings(py::module& m) {
                 https://github.com/KhronosGroup/Vulkan-Samples/blob/main/shaders/pbr.frag that gives
                 empirically validated equivalent results will be used instead.)")
       .def_property(
-          "use_srgb_remapping", &PbrShaderAttributes::getUseSRGBRemapping,
-          &PbrShaderAttributes::setUseSRGBRemapping,
-          R"(Whether we should use shader-based srgb<->linear approx remapping of applicable
-                color textures in PBR rendering. This field should be removed/ignored when Magnum
-                fully supports sRGB conversion on texture load and we paint the shader output to
-                the appropriate framebuffer.)")
+          "map_mat_txtr_to_linear", &PbrShaderAttributes::getMapMatTxtrToLinear,
+          &PbrShaderAttributes::setMapMatTxtrToLinear,
+          R"(Whether we should use shader-based srgb->linear approximation remapping of applicable
+                color textures in PBR rendering.)")
+      .def_property(
+          "map_ibl_txtr_to_linear", &PbrShaderAttributes::getMapIBLTxtrToLinear,
+          &PbrShaderAttributes::setMapIBLTxtrToLinear,
+          R"(Whether we should use shader-based srgb->linear approximation remapping of environment map
+                textures used by IBL in PBR rendering.)")
+      .def_property(
+          "map_output_to_srgb", &PbrShaderAttributes::getMapOutputToSRGB,
+          &PbrShaderAttributes::setMapOutputToSRGB,
+          R"(Whether we should use shader-based linear->srgb approximation remapping of shader
+                output in PBR rendering.)")
       .def_property(
           "use_direct_tonemap", &PbrShaderAttributes::getUseDirectLightTonemap,
           &PbrShaderAttributes::setUseDirectLightTonemap,

@@ -120,12 +120,13 @@ uniform float uExposure;
         // (defined(IMAGE_BASED_LIGHTING) && defined(IBL_TONE_MAP))
 
 // uGamma is used for any remapping
-#if defined(REMAP_COLORS_TO_LINEAR)
+#if defined(MAP_MAT_TXTRS_TO_LINEAR) || defined(MAP_IBL_TXTRS_TO_LINEAR)
 uniform vec3 uGamma;
 #endif
-#if defined(REMAP_COLORS_TO_LINEAR) || defined(IMAGE_BASED_LIGHTING)
+
+#if defined(MAP_OUTPUT_TO_SRGB)
 uniform vec3 uInvGamma;
-#endif  // defined(REMAP_COLORS_TO_LINEAR) || defined(IMAGE_BASED_LIGHTING)
+#endif  // defined(MAP_OUTPUT_TO_SRGB)
 
 #if defined(DIRECT_LIGHTING)
 
@@ -145,10 +146,6 @@ uniform vec4 uLightDirections[LIGHT_COUNT];
 uniform float uDirectLightIntensity;
 
 #endif  // DIRECT_LIGHTING
-
-// Whether or not to remap the colors from sRGB to linear and then back again
-// TODO provide config support for this field
-// #define REMAP_COLORS_TO_LINEAR
 
 #if defined(IMAGE_BASED_LIGHTING)
 

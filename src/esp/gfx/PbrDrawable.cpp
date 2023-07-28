@@ -364,11 +364,6 @@ void PbrDrawable::setShaderAttributesValues(
       ? flags_ |= PbrShader::Flag::UseMikkelsenTBN
       : flags_ &= ~PbrShader::Flag::UseMikkelsenTBN;
 
-  // If should use sRGB <-> linear remapping on appropriate textures
-  pbrShaderConfig->getUseSRGBRemapping()
-      ? flags_ |= PbrShader::Flag::UseSRGBRemapping
-      : flags_ &= ~PbrShader::Flag::UseSRGBRemapping;
-
   // If should use tonemapping for direct lighting results
   pbrShaderConfig->getUseDirectLightTonemap()
       ? flags_ |= PbrShader::Flag::UseDirectLightTonemap
@@ -394,6 +389,19 @@ void PbrDrawable::setShaderAttributesValues(
       ? flags_ |= PbrShader::Flag::SkipAnisotropyLayer
       : flags_ &= ~PbrShader::Flag::SkipAnisotropyLayer;
 
+  // If should use linear->sRGB remapping on appropriate material textures
+  pbrShaderConfig->getMapMatTxtrToLinear()
+      ? flags_ |= PbrShader::Flag::MapMatTxtrToLinear
+      : flags_ &= ~PbrShader::Flag::MapMatTxtrToLinear;
+  // If should use linear->sRGB remapping on IBL environment map
+  pbrShaderConfig->getMapIBLTxtrToLinear()
+      ? flags_ |= PbrShader::Flag::MapIBLTxtrToLinear
+      : flags_ &= ~PbrShader::Flag::MapIBLTxtrToLinear;
+  // If should use sRGB -> linear remapping on shader output
+  pbrShaderConfig->getMapOutputToSRGB()
+      ? flags_ |= PbrShader::Flag::MapOutputToSRGB
+      : flags_ &= ~PbrShader::Flag::MapOutputToSRGB;
+
   // Only set values if actually going to use them
   if (flags_ >= PbrShader::Flag::DirectLighting) {
     // Intensity of direct lighting
@@ -415,7 +423,9 @@ void PbrDrawable::setShaderAttributesValues(
       flags_ >= (PbrShader::Flag::UseDirectLightTonemap)) {
     shaderConfig_.tonemapExposure = pbrShaderConfig->getTonemapExposure();
   }
-  if (flags_ >= PbrShader::Flag::UseSRGBRemapping) {
+  if (flags_ >= (PbrShader::Flag::MapMatTxtrToLinear) ||
+      flags_ >= (PbrShader::Flag::MapIBLTxtrToLinear) ||
+      flags_ >= (PbrShader::Flag::MapOutputToSRGB)) {
     float gamma = pbrShaderConfig->getGamma();
     shaderConfig_.gamma = Mn::Vector3{gamma, gamma, gamma};
   }
@@ -566,7 +576,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   }
 
   // Set gamma value to use for srgb remapping if being used
-  // Setter does checking
+  // Setter does appropriate checking
   shader_->setGamma(shaderConfig_.gamma);
 
   // Tonemap exposure

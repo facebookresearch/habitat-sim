@@ -410,7 +410,7 @@ void AttributesConfigsTest::testPbrShaderAttrVals(
 
   CORRADE_VERIFY(pbrShaderAttr->getSkipCalcMissingTBN());
   CORRADE_VERIFY(pbrShaderAttr->getUseMikkelsenTBN());
-  CORRADE_VERIFY(pbrShaderAttr->getUseSRGBRemapping());
+
   CORRADE_VERIFY(pbrShaderAttr->getUseDirectLightTonemap());
   CORRADE_VERIFY(!pbrShaderAttr->getUseIBLTonemap());
   CORRADE_VERIFY(!pbrShaderAttr->getUseBurleyDiffuse());
@@ -426,6 +426,10 @@ void AttributesConfigsTest::testPbrShaderAttrVals(
   CORRADE_COMPARE(pbrShaderAttr->getIBLSpecularScale(), 4.5f);
 
   CORRADE_COMPARE(pbrShaderAttr->getTonemapExposure(), 6.7f);
+
+  CORRADE_VERIFY(pbrShaderAttr->getMapMatTxtrToLinear());
+  CORRADE_VERIFY(pbrShaderAttr->getMapIBLTxtrToLinear());
+  CORRADE_VERIFY(pbrShaderAttr->getMapOutputToSRGB());
   CORRADE_COMPARE(pbrShaderAttr->getGamma(), 8.9f);
 
   // test PBR/IBL Shader attributes-level user config vals
@@ -453,7 +457,9 @@ void AttributesConfigsTest::testPbrShaderAttrJSONLoad() {
   "direct_light_intensity": 1.23,
   "skip_missing_tbn_calc": true,
   "use_mikkelsen_tbn": true,
-  "use_srgb_remapping": true,
+  "map_mat_txtr_to_linear": true,
+  "map_ibl_txtr_to_linear": true,
+  "map_output_to_srgb": true,
   "use_direct_tonemap": true,
   "use_ibl_tonemap": false,
   "use_burley_diffuse": false,

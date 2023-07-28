@@ -16,7 +16,6 @@ PbrShaderAttributes::PbrShaderAttributes(const std::string& handle)
   setDirectLightIntensity(3.14f);
   setSkipCalcMissingTBN(false);
   setUseMikkelsenTBN(false);
-  setUseSRGBRemapping(false);
   setUseDirectLightTonemap(false);
   setUseBurleyDiffuse(true);
   // Layer calcs
@@ -45,6 +44,9 @@ PbrShaderAttributes::PbrShaderAttributes(const std::string& handle)
   setIBLToDirectSpecularBalance(.5);
 
   // For remapping
+  setMapMatTxtrToLinear(false);
+  setMapIBLTxtrToLinear(false);
+  setMapOutputToSRGB(false);
   setGamma(2.2f);
 }  // PbrShaderAttributes ctor
 
@@ -56,7 +58,6 @@ void PbrShaderAttributes::writeValuesToJson(
   writeValueToJson("direct_light_intensity", jsonObj, allocator);
   writeValueToJson("skip_missing_tbn_calc", jsonObj, allocator);
   writeValueToJson("use_mikkelsen_tbn", jsonObj, allocator);
-  writeValueToJson("use_srgb_remapping", jsonObj, allocator);
   writeValueToJson("use_direct_tonemap", jsonObj, allocator);
   writeValueToJson("use_burley_diffuse", jsonObj, allocator);
   writeValueToJson("skip_clearcoat_calc", jsonObj, allocator);
@@ -70,17 +71,21 @@ void PbrShaderAttributes::writeValuesToJson(
   writeValueToJson("ibl_diffuse_scale", jsonObj, allocator);
   writeValueToJson("ibl_specular_scale", jsonObj, allocator);
   writeValueToJson("tonemap_exposure", jsonObj, allocator);
+
+  writeValueToJson("map_mat_txtr_to_linear", jsonObj, allocator);
+  writeValueToJson("map_ibl_txtr_to_linear", jsonObj, allocator);
+  writeValueToJson("map_output_to_srgb", jsonObj, allocator);
   writeValueToJson("gamma", jsonObj, allocator);
 
 }  // PbrShaderAttributes::writeValuesToJson
 
 std::string PbrShaderAttributes::getObjectInfoHeaderInternal() const {
   return "Direct Lights On,IBL On,Global Direct Light Intensity,Calc "
-         "Missing Tangent Frame,Use Mikkelsen TBN Calc,Use sRGB Color "
-         "Remapping,Use Burley/Disney Diffuse,Calc Clearcoat,Calc Spec "
-         "Layer,Calc Anisotropy,BRDF LUT Filename,Environment Map "
-         "Filename,Scaling [Dir Diffuse|Dir Spec|IBL Diffuse|IBL "
-         "Spec],Tonemap Exposure, Global Gamma";
+         "Missing Tangent Frame,Use Mikkelsen TBN Calc,Use Burley/Disney "
+         "Diffuse,Calc Clearcoat,Calc Spec Layer,Calc Anisotropy,BRDF LUT "
+         "Filename,Environment Map Filename,Scaling [Dir Diffuse|Dir Spec|IBL "
+         "Diffuse|IBL Spec],Tonemap Exposure,Map Material Txtrs to Linear,Map "
+         "IBL Txtrs to Linear,Map Output to SRGB,Global Gamma";
 }
 
 /**
@@ -93,16 +98,18 @@ std::string PbrShaderAttributes::getObjectInfoInternal() const {
       getAsString("direct_specular_scale"), getAsString("ibl_diffuse_scale"),
       getAsString("ibl_specular_scale"));
   return Cr::Utility::formatString(
-      "{},{},{},{},{},{},{},{},{},{},{},{},{},",
+      "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},",
       getAsString("enable_direct_lights"), getAsString("enable_ibl"),
       getAsString("direct_light_intensity"),
       getAsString("skip_missing_tbn_calc"), getAsString("use_mikkelsen_tbn"),
-      getAsString("use_srgb_remapping"), getAsString("use_burley_diffuse"),
-      getAsString("skip_clearcoat_calc"),
+      getAsString("use_burley_diffuse"), getAsString("skip_clearcoat_calc"),
       getAsString("skip_specular_layer_calc"),
       getAsString("skip_anisotropy_layer_calc"),
       getAsString("ibl_blut_filename"), getAsString("ibl_envmap_filename"),
-      contribScales, getAsString("tonemap_exposure"), getAsString("gamma"));
+      contribScales, getAsString("tonemap_exposure"),
+      getAsString("map_mat_txtr_to_linear"),
+      getAsString("map_ibl_txtr_to_linear"), getAsString("map_output_to_srgb"),
+      getAsString("gamma"));
 }
 
 }  // namespace attributes

@@ -69,15 +69,6 @@ void PbrShaderAttributesManager::setValsFromJSONDoc(
         pbrShaderAttribs->setUseMikkelsenTBN(useMikkelsenTBN);
       });
 
-  // whether the approximation sRGB<->linear mapping should be used in the
-  // shader. This will not be needed once the textures in question are converted
-  // on load.
-  io::jsonIntoConstSetter<bool>(
-      jsonConfig, "use_srgb_remapping",
-      [pbrShaderAttribs](bool useSRGBRemapping) {
-        pbrShaderAttribs->setUseSRGBRemapping(useSRGBRemapping);
-      });
-
   // whether tonemapping should be used for direct lighting
   io::jsonIntoConstSetter<bool>(
       jsonConfig, "use_direct_tonemap",
@@ -189,6 +180,34 @@ void PbrShaderAttributesManager::setValsFromJSONDoc(
                              [pbrShaderAttribs](double exposure) {
                                pbrShaderAttribs->setTonemapExposure(exposure);
                              });
+
+  // whether the approximation sRGB->linear mapping should be used in the
+  // shader on the appropriate textures (basecolor, emissivecolor,
+  // specularlayercolor) as described by GLTF standard. This will not be needed
+  // once the textures in question are converted on load.
+  io::jsonIntoConstSetter<bool>(
+      jsonConfig, "map_mat_txtr_to_linear",
+      [pbrShaderAttribs](bool useSRGBRemapping) {
+        pbrShaderAttribs->setMapMatTxtrToLinear(useSRGBRemapping);
+      });
+
+  // whether the approximation sRGB->linear mapping should be used in the
+  // shader on the environment map textures. This will not be needed once the
+  // textures in question are converted on load.
+  io::jsonIntoConstSetter<bool>(
+      jsonConfig, "map_ibl_txtr_to_linear",
+      [pbrShaderAttribs](bool useSRGBRemapping) {
+        pbrShaderAttribs->setMapIBLTxtrToLinear(useSRGBRemapping);
+      });
+
+  // whether the approximation linear->sRGB mapping should be used in the
+  // shader on the output. This will not be needed when we are using the
+  // appropriate framebuffer.
+  io::jsonIntoConstSetter<bool>(
+      jsonConfig, "map_output_to_srgb",
+      [pbrShaderAttribs](bool useSRGBRemapping) {
+        pbrShaderAttribs->setMapOutputToSRGB(useSRGBRemapping);
+      });
 
   // the gamma value for the pbr shader. This value is used for the
   // approximation mapping from sRGB to linear and back.

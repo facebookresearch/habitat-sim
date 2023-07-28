@@ -259,21 +259,38 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
     UseMikkelsenTBN = 1ULL << 27,
 
     /**
-     * Whether to use shader-level srgb<->linear remapping of applicable color
-     * textures for direct lighting. This should be removed/ignored when Magnum
-     * fully supports sRGB texture conversion on load.
+     * Whether we should use shader-based srgb->linear approx remapping of
+     * applicable material color textures in PBR rendering for direct lighting
+     * and IBL. This field should be removed/ignored when Magnum fully supports
+     * sRGB texture conversion on load.
      */
-    UseSRGBRemapping = 1ULL << 28,
+    MapMatTxtrToLinear = 1ULL << 28,
+
+    /**
+     * Whether we should use shader-based srgb->linear approx remapping of
+     * applicable IBL environment textures in PBR rendering for IBL
+     * calculations. This field should be removed/ignored when Magnum fully
+     * supports sRGB texture conversion on load.
+     */
+    MapIBLTxtrToLinear = 1ULL << 29,
+
+    /**
+     * Whether we should use shader-based linear->srgb approx remapping of
+     * color output in PBR rendering for direct lighting and IBL results. This
+     * field should be removed/ignored when an appropriate framebuffer is used
+     * for output to handle this conversion.
+     */
+    MapOutputToSRGB = 1ULL << 30,
 
     /**
      * Whether or not to use tonemappping for direct lighting.
      */
-    UseDirectLightTonemap = 1ULL << 29,
+    UseDirectLightTonemap = 1ULL << 31,
 
     /**
      * Whether or not to use tonemappping for image-based lighting.
      */
-    UseIBLTonemap = 1ULL << 30,
+    UseIBLTonemap = 1ULL << 32,
 
     ////////////////
     // Testing and debugging
@@ -282,25 +299,25 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * sent to the shader, but no actual calcuations will be performed if this
      * is set.
      */
-    SkipClearCoatLayer = 1ULL << 31,
+    SkipClearCoatLayer = 1ULL << 33,
     /**
      * Whether we should skip all specular layer calcs. Values will still be
      * sent to the shader, but no actual calcuations will be performed if this
      * is set.
      */
-    SkipSpecularLayer = 1ULL << 32,
+    SkipSpecularLayer = 1ULL << 34,
     /**
      * Whether we should skip all anisotropy layer calcs. Values will still be
      * sent to the shader, but no actual calcuations will be performed if this
      * is set.
      */
-    SkipAnisotropyLayer = 1ULL << 33,
+    SkipAnisotropyLayer = 1ULL << 35,
 
     /**
      * Enable shader debug mode. Then developer can set the uniform
      * PbrDebugDisplay in the fragment shader for debugging
      */
-    DebugDisplay = 1ULL << 35,
+    DebugDisplay = 1ULL << 36,
     /*
      * TODO: alphaMask
      */
@@ -757,11 +774,11 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   // Whether direct _AND_ indirect lighting is available
   bool directAndIBLisEnabled_ = false;
 
-  // Whether the appropriate incoming textures should be remapped from sRGB to
-  // linear for calculations, and then mapped back at the end of the
-  // calculation. This is temporary until the texture load process properly maps
-  // the textures.
-  bool remapSRGB_ = false;
+  // Whether the any incoming textures should be remapped from sRGB to
+  // linear for calculations. This will determine whether or not uGamma is
+  // populated
+  bool mapInputToLinear_ = false;
+
   // ======= uniforms =======
   // it hurts the performance to call glGetUniformLocation() every frame due
   // to string operations. therefore, cache the locations in the constructor

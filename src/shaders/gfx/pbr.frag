@@ -119,7 +119,7 @@ void main() {
   colorVals.diffuseContrib = toneMap(colorVals.diffuseContrib);
   colorVals.specularContrib = toneMap(colorVals.specularContrib);
 #if defined(CLEAR_COAT) && !defined(SKIP_CALC_CLEAR_COAT)
-  colorVals.clearCoatContrib toneMap(colorVals.clearCoatContrib);
+  colorVals.clearCoatContrib = toneMap(colorVals.clearCoatContrib);
 #endif  // CLEAR_COAT
 #endif  // DIRECT_TONE_MAP
 
@@ -208,12 +208,12 @@ void main() {
 // final aggregation
 // TODO alpha masking?
 
-// If remapping, IBL result was not remapped, so remap back to SRGB here
-#if defined(REMAP_COLORS_TO_LINEAR)
+// Whether to remap the output to sRGB or not
+#if defined(MAP_OUTPUT_TO_SRGB)
   fragmentColor = vec4(linearToSRGB(finalColor), pbrInfo.baseColor.a);
 #else
   fragmentColor = vec4(finalColor, pbrInfo.baseColor.a);
-#endif  // REMAP_COLORS_TO_LINEAR
+#endif  // MAP_OUTPUT_TO_SRGB
 
 #if defined(OBJECT_ID)
   fragmentObjectId = uObjectId;

@@ -100,22 +100,62 @@ class PbrShaderAttributes : public AbstractAttributes {
   bool getUseMikkelsenTBN() const { return get<bool>("use_mikkelsen_tbn"); }
 
   /**
-   * @brief Set if we should use shader-based srgb<->linear approx remapping of
-   * applicable color textures in PBR rendering for direct lighting. This field
-   * should be removed/ignored when Magnum fully supports sRGB texture
-   * conversion on load.
+   * @brief Set if we should use shader-based srgb->linear approx remapping of
+   * applicable material color textures in PBR rendering for direct lighting and
+   * IBL. This field should be removed/ignored when Magnum fully supports sRGB
+   * texture conversion on load.
    */
-  void setUseSRGBRemapping(bool useSRGBRemapping) {
-    set("use_srgb_remapping", useSRGBRemapping);
+  void setMapMatTxtrToLinear(bool mapMatTxtrToLinear) {
+    set("map_mat_txtr_to_linear", mapMatTxtrToLinear);
   }
 
   /**
-   * @brief Get if we should use shader-based srgb<->linear approx remapping of
-   * applicable color textures in PBR rendering for direct lighting. This field
-   * should be removed/ignored when Magnum fully supports sRGB texture
-   * conversion on load.
+   * @brief Get if we should use shader-based srgb->linear approx remapping of
+   * applicable material color textures in PBR rendering for direct lighting and
+   * IBL. This field should be removed/ignored when Magnum fully supports sRGB
+   * texture conversion on load.
    */
-  bool getUseSRGBRemapping() const { return get<bool>("use_srgb_remapping"); }
+  bool getMapMatTxtrToLinear() const {
+    return get<bool>("map_mat_txtr_to_linear");
+  }
+
+  /**
+   * @brief Set if we should use shader-based srgb->linear approx remapping of
+   * applicable IBL environment textures in PBR rendering for IBL calculations.
+   * This field should be removed/ignored when Magnum fully supports sRGB
+   * texture conversion on load.
+   */
+  void setMapIBLTxtrToLinear(bool mapIBLTxtrToLinear) {
+    set("map_ibl_txtr_to_linear", mapIBLTxtrToLinear);
+  }
+
+  /**
+   * @brief Get if we should use shader-based srgb->linear approx remapping of
+   * applicable IBL environment textures in PBR rendering for IBL calculations.
+   * This field should be removed/ignored when Magnum fully supports sRGB
+   * texture conversion on load.
+   */
+  bool getMapIBLTxtrToLinear() const {
+    return get<bool>("map_ibl_txtr_to_linear");
+  }
+
+  /**
+   * @brief Set if we should use shader-based linear->srgb approx remapping of
+   * color output in PBR rendering for direct lighting and IBL results. This
+   * field should be removed/ignored when an appropriate framebuffer is used for
+   * output to handle this conversion.
+   */
+  void setMapOutputToSRGB(bool mapOutToSRGB) {
+    set("map_output_to_srgb", mapOutToSRGB);
+  }
+
+  /**
+   * @brief Get if we should use shader-based linear->srgb approx remapping of
+   * color output in PBR rendering for direct lighting and IBL results. This
+   * field should be removed/ignored when an appropriate framebuffer is used for
+   * output to handle this conversion.
+   */
+  bool getMapOutputToSRGB() const { return get<bool>("map_output_to_srgb"); }
 
   /**
    * @brief Set if we should use tonemapping for direct lighting.

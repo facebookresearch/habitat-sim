@@ -57,10 +57,14 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   directAndIBLisEnabled_ =
       (directLightingIsEnabled_ && flags_ >= Flag::ImageBasedLighting);
 
-  remapSRGB_ = (directLightingIsEnabled_ && flags_ >= Flag::UseSRGBRemapping &&
-                ((flags_ >= Flag::BaseColorTexture) ||
-                 (flags_ >= Flag::EmissiveTexture) ||
-                 (flags_ >= Flag::SpecularLayerColorTexture)));
+  bool mapMatInToLinear = (flags_ >= Flag::MapMatTxtrToLinear &&
+                           ((flags_ >= Flag::BaseColorTexture) ||
+                            (flags_ >= Flag::EmissiveTexture) ||
+                            (flags_ >= Flag::SpecularLayerColorTexture)));
+  bool mapIBLInToLinear = ((flags_ >= Flag::ImageBasedLighting) &&
+                           (flags_ >= Flag::MapIBLTxtrToLinear));
+
+  mapInputToLinear_ = (mapMatInToLinear || mapIBLInToLinear);
 
   isTextured_ =
       (((flags_ >= Flag::BaseColorTexture) ||
@@ -194,7 +198,15 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
       // temporary until we can improve the cpu-side functionality (make sure
       // all loaded textures are converted to linear space, and implement the
       // framebuffer that can map back to sRGB)
-      .addSource(remapSRGB_ ? "#define REMAP_COLORS_TO_LINEAR\n" : "")
+      .addSource(mapMatInToLinear ? "#define MAP_MAT_TXTRS_TO_LINEAR\n" : "")
+
+      .addSource(mapIBLInToLinear ? "#define MAP_IBL_TXTRS_TO_LINEAR\n" : "")
+
+      // Whether we should map the output from linear space to SRGB. This will
+      // eventually be performed by a framebuffer instead of in the shader.
+      .addSource((flags_ >= Flag::MapOutputToSRGB)
+                     ? "#define MAP_OUTPUT_TO_SRGB\n"
+                     : "")
 
       .addSource(flags_ >= Flag::UseDirectLightTonemap
                      ? "#define DIRECT_TONE_MAP\n"
@@ -339,11 +351,11 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     tonemapExposureUniform_ = uniformLocation("uExposure");
   }
 
-  if (remapSRGB_) {
+  if (mapInputToLinear_) {
     gammaUniform_ = uniformLocation("uGamma");
   }
 
-  if (remapSRGB_ || flags_ >= Flag::ImageBasedLighting) {
+  if (flags_ >= Flag::MapOutputToSRGB) {
     invGammaUniform_ = uniformLocation("uInvGamma");
   }
 
@@ -870,10 +882,11 @@ PbrShader& PbrShader::setDirectLightIntensity(float lightIntensity) {
 }
 
 PbrShader& PbrShader::setGamma(const Mn::Vector3& gamma) {
-  if (remapSRGB_) {
+  // if any input values are mapped to linear, should set gamma uniform value
+  if (mapInputToLinear_) {
     setUniform(gammaUniform_, gamma);
   }
-  if (remapSRGB_ || flags_ >= Flag::ImageBasedLighting) {
+  if (flags_ >= Flag::MapOutputToSRGB) {
     setUniform(invGammaUniform_, 1.0f / gamma);
   }
   return *this;

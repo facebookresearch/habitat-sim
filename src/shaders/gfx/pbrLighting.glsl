@@ -4,9 +4,9 @@
 
 precision highp float;
 
-#if defined(REMAP_COLORS_TO_LINEAR) || defined(IMAGE_BASED_LIGHTING)
+#if defined(MAP_OUTPUT_TO_SRGB)
 
-// linear to sRGB approximation
+// linear to sRGB approximation on output
 // see http://chilliant.blogspot.com/2012/08/srgb-approximations-for-hlsl.html
 vec3 linearToSRGB(vec3 color) {
   return pow(color.rgb, uInvGamma);
@@ -16,9 +16,9 @@ vec3 linearToSRGB(vec3 color) {
 vec4 linearToSRGB(vec4 color) {
   return vec4(linearToSRGB(color.rgb), color.a);
 }
-#endif  // defined(REMAP_COLORS_TO_LINEAR) || defined(IMAGE_BASED_LIGHTING)
+#endif  // defined(MAP_OUTPUT_TO_SRGB)
 
-#if defined(REMAP_COLORS_TO_LINEAR)
+#if defined(MAP_MAT_TXTRS_TO_LINEAR) || defined(MAP_IBL_TXTRS_TO_LINEAR)
 // sRGB to linear approximation
 // see http://chilliant.blogspot.com/2012/08/srgb-approximations-for-hlsl.html
 vec3 sRGBToLinear(vec3 srgbIn) {
@@ -28,7 +28,7 @@ vec3 sRGBToLinear(vec3 srgbIn) {
 vec4 sRGBToLinear(vec4 srgbIn) {
   return vec4(sRGBToLinear(srgbIn.xyz), srgbIn.w);
 }
-#endif  // defined(REMAP_COLORS_TO_LINEAR)
+#endif  // defined(MAP_MAT_TXTRS_TO_LINEAR) || defined(MAP_IBL_TXTRS_TO_LINEAR)
 
 #if defined(DIRECT_LIGHTING)
 // Configure a LightInfo object
@@ -137,23 +137,10 @@ vec3 Uncharted2Tonemap(vec3 color) {
 }
 //(1.0f / Uncharted2Tonemap(vec3(11.2f)));
 const vec3 toneMapUC2Denom = vec3(1.1962848297213622);
-// The following function toneMap is based on:
+// The following function toneMap is loosely based on:
 // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/data/shaders/pbr_khr.frag
 // Tone mapping takes a wide dynamic range of values and compresses them
 // into a smaller range that is appropriate for the output device.
-
-#if defined(IMAGE_BASED_LIGHTING)
-
-vec4 toneMapToSRGB(vec4 color) {
-  vec3 outcol = Uncharted2Tonemap(color.rgb * uExposure) * toneMapUC2Denom;
-  return vec4(linearToSRGB(outcol.rgb), color.a);
-}
-
-vec3 toneMapToSRGB(vec3 color) {
-  return linearToSRGB(Uncharted2Tonemap(color.rgb * uExposure) *
-                      toneMapUC2Denom);
-}
-#endif  // defined(IMAGE_BASED_LIGHTING)
 
 // Tone map without linear-to-srgb mapping
 vec4 toneMap(vec4 color) {
@@ -192,20 +179,15 @@ vec4 getSpecIrradiance(vec3 reflectionDir, float lod) {
 
 // Determine appropriate mapped result from irradiance calculation
 vec4 calcFinalIrradiance(vec4 IBLIrradiance) {
-  // texture assumed to be sRGB
-#if defined(REMAP_COLORS_TO_LINEAR)
-// If using remapping, final result is remapped to sRGB so don't remap it here
+#if defined(MAP_IBL_TXTRS_TO_LINEAR)
+  // If texture is assumed to be sRGB, map it to linear space for
+  // calculations
+  IBLIrradiance = sRGBToLinear(IBLIrradiance);
+#endif  // MAP_IBL_TXTRS_TO_LINEAR
+// If using tonemap, perform tonemap after possible remapping
 #if defined(IBL_TONE_MAP)
   IBLIrradiance = toneMap(IBLIrradiance);
 #endif  // IBL_TONE_MAP
-#else   // not REMAP_COLORS_TO_LINEAR
-  // If not using remapping in general, make sure we still remap IBL image
-#if defined(IBL_TONE_MAP)
-  IBLIrradiance = toneMapToSRGB(IBLIrradiance);
-#else
-  IBLIrradiance = linearToSRGB(IBLIrradiance);
-#endif  // IBL_TONE_MAP
-#endif  // REMAP_COLORS_TO_LINEAR
 
   return IBLIrradiance;
 }  // calcFinalIrradiance
@@ -217,7 +199,8 @@ vec3 computeIBLDiffuse(vec3 diffuseColor, vec3 n) {
   // Query the IBL diffuse irradiance from the appropriate cubemap
   vec4 IBLDiffuseIrradiance = calcFinalIrradiance(getDiffIrradiance(n));
 
-  // using simple diffuse calc : diffuse color * irradiance
+  // using Lambertian diffuse calc : diffuse color * irradiance
+  // TODO : perhaps try Burley diffuse instead of Lambertian here
   return diffuseColor * IBLDiffuseIrradiance.rgb;
 }  // computeIBLDiffuse
 

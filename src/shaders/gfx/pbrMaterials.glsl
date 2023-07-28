@@ -153,23 +153,23 @@ PBRData buildPBRData() {
   pbrInfo.baseColor = uMaterial.baseColor;
 #if defined(BASECOLOR_TEXTURE)
 
-#if defined(REMAP_COLORS_TO_LINEAR)
+#if defined(MAP_MAT_TXTRS_TO_LINEAR)
   pbrInfo.baseColor *= sRGBToLinear(texture(uBaseColorTexture, texCoord));
 #else
   pbrInfo.baseColor *= texture(uBaseColorTexture, texCoord);
-#endif  // REMAP_COLORS_TO_LINEAR
+#endif  // MAP_MAT_TXTRS_TO_LINEAR
 #endif  // BASECOLOR_TEXTURE
 
   pbrInfo.emissiveColor = uMaterial.emissiveColor;
 #if defined(EMISSIVE_TEXTURE)
 
-#if defined(REMAP_COLORS_TO_LINEAR)
+#if defined(MAP_MAT_TXTRS_TO_LINEAR)
   pbrInfo.emissiveColor *=
       sRGBToLinear(texture(uEmissiveTexture, texCoord).rgb);
 #else
   pbrInfo.emissiveColor *= texture(uEmissiveTexture, texCoord).rgb;
 
-#endif  // REMAP_COLORS_TO_LINEAR
+#endif  // MAP_MAT_TXTRS_TO_LINEAR
 #endif  // EMISSIVE_TEXTURE
 
   /////////////////
@@ -353,13 +353,13 @@ PBRData buildPBRData() {
 
 #if defined(SPECULAR_LAYER_COLOR_TEXTURE)
 
-#if defined(REMAP_COLORS_TO_LINEAR)
+#if defined(MAP_MAT_TXTRS_TO_LINEAR)
   pbrInfo.specularLayerColor *=
       sRGBToLinear(texture(uSpecularLayerColorTexture, texCoord).rgb);
 #else
   pbrInfo.specularLayerColor *=
       texture(uSpecularLayerColorTexture, texCoord).rgb;
-#endif  // REMAP_COLORS_TO_LINEAR
+#endif  // MAP_MAT_TXTRS_TO_LINEAR
 
 #endif  // SPECULAR_LAYER_COLOR_TEXTURE
 #ifndef SKIP_CALC_SPECULAR_LAYER
