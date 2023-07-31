@@ -10,6 +10,8 @@ set(
   attributes/AttributesEnumMaps.cpp
   attributes/AbstractObjectAttributes.h
   attributes/AbstractObjectAttributes.cpp
+  attributes/ArticulatedObjectAttributes.h
+  attributes/ArticulatedObjectAttributes.cpp
   attributes/LightLayoutAttributes.h
   attributes/LightLayoutAttributes.cpp
   attributes/ObjectAttributes.h
