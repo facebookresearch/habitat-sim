@@ -109,8 +109,8 @@ struct RendererConfiguration {
    * there's no row stride to account for.
    *
    * Assigning of scenes to particular cameras is done in
-   * @ref setSceneCameraAssignment(). Tiles that are empty are not rendered at
-   * all, so it's fine to have unused tiles, they only occupy space in given
+   * @ref setSceneBatchCameras(). Tiles that are empty are not rendered at all,
+   * so it's fine to have unused tiles, they only occupy space in given
    * camera's framebuffer. For example, if you need a particular camera to
    * render 13 scenes, set its @ref RendererBatchCamera::tileCount to
    * @cpp {4, 4} @ce and ignore the last 3.
@@ -125,20 +125,20 @@ struct RendererConfiguration {
   RendererConfiguration& setBatchCameras(std::initializer_list<RendererBatchCamera> cameras);
 
   /**
-   * @brief Set scene count and camera assignment
+   * @brief Set scene count and scene to batch camera assignment
    *
    * Size of the first dimension is the total scene count, which will become
-   * @ref Renderer::sceneCount(). The second dimension is expected to be
-   * contiguous and have the same size as camera count passed to
-   * @ref setBatchCameras(). A bit set at position @cpp [i, j] @ce means scene
-   * `i` will be shown in camera `j`. The total count of bits set for a
-   * particular camera is expected to not exceed the total tile count set for
-   * that camera in @ref setBatchCameras().
+   * @ref Renderer::sceneCount(). The second dimension then becomes
+   * @ref Renderer::sceneBatchCameras(), is expected to be contiguous and have
+   * the same size as camera count passed to @ref setBatchCameras(). A bit set
+   * at position @cpp [i, j] @ce means scene `i` will be shown in camera `j`.
+   * The total count of bits set for a particular camera is expected to not
+   * exceed the total tile count set for that camera in @ref setBatchCameras().
    *
    * By default, each scene gets assigned to all cameras, i.e. as if this
    * function was called with @p assignment being all ones.
    */
-  RendererConfiguration& setSceneCameraAssignment(const Corrade::Containers::StridedBitArrayView2D& assignment);
+  RendererConfiguration& setSceneBatchCameras(const Corrade::Containers::StridedBitArrayView2D& cameras);
 
   /**
    * @brief Set max light count per draw
@@ -263,16 +263,17 @@ and framebuffer, the high-level usage is same for both.
   attached. It's referenced using a string identifier in a *composite file*,
   using a filename in a  model and using a numeric ID when added to a *scene*.
 - **Scene** is a set of *node hierarchies* added either from *model files* or
-  *composite files*.
+  *composite files*. A single scene can appear in multiple *batch cameras*,
+  rendered by multiple *cameras*.
 - **Batch camera** has a framebuffer with various *batch camera outputs*
   attached and renders a grid of *scenes* assigned to it. All tiles in the grid
   have the same size and each is a single *camera*.
 - **Batch camera output** is a color, depth or semantic buffer to which a
   *batch camera* renders.
-- **Camera** is associated with a particular *scene* and *batch camera*. Its
-  output size is given by the *batch camera*, contains a projection and a
-  transformation matrix and a mask of *node hierarchies* that it should render
-  for given *scene*.
+- **Camera** is what a *batch camera* uses to render a particular *scene*. Its
+  output size is given by the *batch camera* tile size, contains a projection
+  and a transformation matrix and a mask of *node hierarchies* that it should
+  render from given *scene*.
 
 @section gfx_batch-Renderer-usage Usage
 
