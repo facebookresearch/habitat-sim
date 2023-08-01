@@ -206,7 +206,7 @@ class PbrShaderAttributes : public AbstractAttributes {
    * true, disable calcs regardless of material setting. Note this will not
    * require a rebuild of the shader since only the calculations are disabled.
    */
-  void setSkipCalcCleacoatLayer(bool skipCalcClearCoat) {
+  void setSkipCalcClearcoatLayer(bool skipCalcClearCoat) {
     set("skip_clearcoat_calc", skipCalcClearCoat);
   }
 
@@ -215,7 +215,7 @@ class PbrShaderAttributes : public AbstractAttributes {
    * true, disable calcs regardless of material setting. Note this will not
    * require a rebuild of the shader since only the calculations are disabled.
    */
-  bool getSkipCalcCleacoatLayer() const {
+  bool getSkipCalcClearcoatLayer() const {
     return get<bool>("skip_clearcoat_calc");
   }
 

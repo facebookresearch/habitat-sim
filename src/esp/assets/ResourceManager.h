@@ -635,7 +635,7 @@ class ResourceManager {
    * Use this function to retrieve existing IBL bLUT/EnvMap textures as well as
    * to create new ones.
    *
-   * @param imageFilename The image's filenaame, either fully qualified or else
+   * @param imageFilename The image's filename, either fully qualified or else
    * as it appears in the resource file.
    * @param useImageTxtrFormat Whether to use the image's texture format or use
    * RGBA8 as the format (i.e. for brdfLUTs).

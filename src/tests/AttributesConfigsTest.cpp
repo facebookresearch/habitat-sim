@@ -416,7 +416,7 @@ void AttributesConfigsTest::testPbrShaderAttrVals(
   CORRADE_VERIFY(!pbrShaderAttr->getUseBurleyDiffuse());
 
   // verify the layer skipping is present
-  CORRADE_VERIFY(pbrShaderAttr->getSkipCalcCleacoatLayer());
+  CORRADE_VERIFY(pbrShaderAttr->getSkipCalcClearcoatLayer());
   CORRADE_VERIFY(pbrShaderAttr->getSkipCalcSpecularLayer());
   CORRADE_VERIFY(pbrShaderAttr->getSkipCalcAnisotropyLayer());
 

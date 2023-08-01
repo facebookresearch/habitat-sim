@@ -582,7 +582,7 @@ void AttributesManagersTest::testPhysicsAttributesManagersCreate() {
       "PhysicsAttributesManager @"
       << physicsConfigFile);
 
-  // physics attributes manager attributes verifcation
+  // physics attributes manager attributes verification
   testCreateAndRemove<AttrMgrs::PhysicsAttributesManager>(
       physicsAttributesManager_, physicsConfigFile);
   testCreateAndRemoveDefault<AttrMgrs::PhysicsAttributesManager>(
@@ -595,7 +595,7 @@ void AttributesManagersTest::testPbrShaderAttributesManagersCreate() {
       "PbrShaderAttributesManager @"
       << pbrShaderConfigFile);
 
-  // PBR/IBL shader attributes manager attributes verifcation
+  // PBR/IBL shader attributes manager attributes verification
   testCreateAndRemove<AttrMgrs::PbrShaderAttributesManager>(
       pbrShaderAttributesManager_, pbrShaderConfigFile);
   testCreateAndRemoveDefault<AttrMgrs::PbrShaderAttributesManager>(
@@ -612,7 +612,7 @@ void AttributesManagersTest::testStageAttributesManagersCreate() {
       "StageAttributesManager @"
       << stageConfigFile);
 
-  // scene attributes manager attributes verifcation
+  // scene attributes manager attributes verification
   testCreateAndRemove<AttrMgrs::StageAttributesManager>(stageAttributesManager_,
                                                         stageConfigFile);
   testCreateAndRemoveDefault<AttrMgrs::StageAttributesManager>(
@@ -632,7 +632,7 @@ void AttributesManagersTest::testObjectAttributesManagersCreate() {
   int origNumFileBased = objectAttributesManager_->getNumFileTemplateObjects();
   int origNumPrimBased = objectAttributesManager_->getNumSynthTemplateObjects();
 
-  // object attributes manager attributes verifcation
+  // object attributes manager attributes verification
   testCreateAndRemove<AttrMgrs::ObjectAttributesManager>(
       objectAttributesManager_, objectConfigFile);
   // verify that no new file-based and no new synth based template objects
@@ -669,7 +669,7 @@ void AttributesManagersTest::testLightLayoutAttributesManager() {
       "Start Test : Create, Edit, Remove Attributes for "
       "LightLayoutAttributesManager @"
       << lightConfigFile);
-  // light attributes manager attributes verifcation
+  // light attributes manager attributes verification
   testCreateAndRemoveLights(lightLayoutAttributesManager_, lightConfigFile);
 
 }  // AttributesManagersTest::LightLayoutAttributesManagerTest

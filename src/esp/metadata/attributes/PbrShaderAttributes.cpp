@@ -19,7 +19,7 @@ PbrShaderAttributes::PbrShaderAttributes(const std::string& handle)
   setUseDirectLightTonemap(false);
   setUseBurleyDiffuse(true);
   // Layer calcs
-  setSkipCalcCleacoatLayer(false);
+  setSkipCalcClearcoatLayer(false);
   setSkipCalcSpecularLayer(false);
   setSkipCalcAnisotropyLayer(false);
 

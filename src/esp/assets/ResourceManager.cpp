@@ -3099,7 +3099,7 @@ void ResourceManager::addComponent(
       // TODO : Query which PbrShaderAttributes to use based on `region` of
       // drawable. Need to have some way of propagating region value - perhaps
       // through scene node like semantic ID, although semantic ID of objects is
-      // not preesent yet.
+      // not present yet.
 
       // Currently always using default PbrShaderAttributes for the current
       // Scene.
@@ -3359,7 +3359,7 @@ void ResourceManager::loadAllIBLAssets() {
     const Cr::Utility::Resource rs{"pbr-images"};
 
     ESP_DEBUG() << "PBR/IBL asset file sets (IBL brdf LUTs and environment "
-                   "maps) being loadded :"
+                   "maps) being loaded :"
                 << mapOfPbrConfigs.size();
     for (const auto& entry : mapOfPbrConfigs) {
       const auto pbrShaderAttr = entry.second;

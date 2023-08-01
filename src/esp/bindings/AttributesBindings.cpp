@@ -435,7 +435,7 @@ void initAttributesBindings(py::module& m) {
   py::class_<PbrShaderAttributes, AbstractAttributes, PbrShaderAttributes::ptr>(
       m, "PbrShaderAttributes",
       R"(A metadata template for PBR shader creation and control values and multipliers,
-      such as enabling Image Based Lighting and controlling the mix of direct and indrect
+      such as enabling Image Based Lighting and controlling the mix of direct and indirect
       lighting contributions. Can be imported from .pbr_config.json files.)")
       .def(py::init(&PbrShaderAttributes::create<>))
       .def(py::init(&PbrShaderAttributes::create<const std::string&>))
@@ -457,7 +457,7 @@ void initAttributesBindings(py::module& m) {
       .def_property(
           "skip_calc_missing_tbn", &PbrShaderAttributes::getSkipCalcMissingTBN,
           &PbrShaderAttributes::setSkipCalcMissingTBN,
-          R"(Whether the fragment shader should skip the tangent frame calculation if preccomputed
+          R"(Whether the fragment shader should skip the tangent frame calculation if precomputed
                 tangents are not provided. This calculation provides a tangent frame to be used for
                 normal textures and anisotropy calculations. If precomputed tangents are missing and
                 this calculation is not enabled, any normal textures will be ignored, which will adversely
@@ -508,14 +508,15 @@ void initAttributesBindings(py::module& m) {
       .def_property(
           "use_burley_diffuse", &PbrShaderAttributes::getUseBurleyDiffuse,
           &PbrShaderAttributes::setUseBurleyDiffuse,
-          R"(If tue, the PBR shader uses a diffuse calculation based on Burley, modified to be
+          R"(If true, the PBR shader uses a diffuse calculation based on Burley, modified to be
                 more energy conserving.
           https://media.disneyanimation.com/uploads/production/publication_asset/48/asset/s2012_pbs_disney_brdf_notes_v3.pdf
                 otherwise, the shader will use a standard Lambertian model, which is easier
                 to calculate but doesn't look as nice, and sometimes can appear washed out.)")
       .def_property(
-          "skip_clearcoat_calc", &PbrShaderAttributes::getSkipCalcCleacoatLayer,
-          &PbrShaderAttributes::setSkipCalcCleacoatLayer,
+          "skip_clearcoat_calc",
+          &PbrShaderAttributes::getSkipCalcClearcoatLayer,
+          &PbrShaderAttributes::setSkipCalcClearcoatLayer,
           R"(Whether the clearcoat layer calculations should be skipped. If true, disables calcs
                 regardless of material setting.)")
       .def_property(
@@ -534,7 +535,7 @@ void initAttributesBindings(py::module& m) {
           "ibl_to_direct_diffuse_balance",
           &PbrShaderAttributes::getIBLToDirectDiffuseBalance,
           &PbrShaderAttributes::setIBLToDirectDiffuseBalance,
-          R"(The balanace between the direct lighting and image-based lighting diffuse
+          R"(The balance between the direct lighting and image-based lighting diffuse
                 results, with value values of [0,1]. Any value <= 0 means only direct lighting diffuse
                 results are rendered, >=1 means only image-based lighting results are rendered. Only
                 used when both direct and image-basedlighting is present)")
@@ -542,7 +543,7 @@ void initAttributesBindings(py::module& m) {
           "ibl_to_direct_specular_balance",
           &PbrShaderAttributes::getIBLToDirectSpecularBalance,
           &PbrShaderAttributes::setIBLToDirectSpecularBalance,
-          R"(The balanace between the direct lighting and image-based lighting specular
+          R"(The balance between the direct lighting and image-based lighting specular
                 results, with value values of [0,1]. Any value <= 0 means only direct lighting specular
                 results are rendered, >=1 means only image-based lighting results are rendered. Only
                 used when both direct and image-basedlighting is present)")
@@ -590,7 +591,7 @@ void initAttributesBindings(py::module& m) {
              PhysicsManagerAttributes::ptr>(
       m, "PhysicsManagerAttributes",
       R"(A metadata template for Simulation parameters (e.g. timestep, simulation backend,
-      default gravity direction) and defaults. Consumed to instace a Simualtor object.
+      default gravity direction) and defaults. Consumed to instace a Simulator object.
       Can be imported from .physics_config.json files.)")
       .def(py::init(&PhysicsManagerAttributes::create<>))
       .def(py::init(&PhysicsManagerAttributes::create<const std::string&>))

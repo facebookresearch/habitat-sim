@@ -99,7 +99,7 @@ void PbrShaderAttributesManager::setValsFromJSONDoc(
   io::jsonIntoConstSetter<bool>(
       jsonConfig, "skip_clearcoat_calc",
       [pbrShaderAttribs](bool skipCalcClearCoat) {
-        pbrShaderAttribs->setSkipCalcCleacoatLayer(skipCalcClearCoat);
+        pbrShaderAttribs->setSkipCalcClearcoatLayer(skipCalcClearCoat);
       });
 
   // whether speecular layer contributions should be calculated where they are

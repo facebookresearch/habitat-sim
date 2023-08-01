@@ -375,7 +375,7 @@ void PbrDrawable::setShaderAttributesValues(
       : flags_ &= ~PbrShader::Flag::UseIBLTonemap;
 
   // If clear coat calculations should be skipped
-  pbrShaderConfig->getSkipCalcCleacoatLayer()
+  pbrShaderConfig->getSkipCalcClearcoatLayer()
       ? flags_ |= PbrShader::Flag::SkipClearCoatLayer
       : flags_ &= ~PbrShader::Flag::SkipClearCoatLayer;
 
