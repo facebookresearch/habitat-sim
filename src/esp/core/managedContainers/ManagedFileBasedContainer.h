@@ -81,6 +81,35 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
   }  // ManagedFileBasedContainer::createObjectFromJSONFile
 
   /**
+   * @brief Creates an instance of a managed object from a JSON string.
+   *
+   * @param docName name of potential document to load
+   * @param docString string of data expected to be in the expected format.
+   * Assumes this is a valid JSON string, and fails if it is not.
+   * @param registerObject whether to add this managed object to the
+   * library. If the user is going to edit this managed object, this should be
+   * false - any subsequent editing will require re-registration. Defaults to
+   * true.
+   * @return a reference to the desired managed object, or nullptr if fails.
+   */
+  ManagedFileIOPtr createObjectFromJSONString(const std::string& docName,
+                                              const std::string& docString,
+                                              bool registerObject = true) {
+    std::unique_ptr<io::JsonDocument> docConfig{};
+    bool success = this->verifyParseDocString(docName, docString, docConfig);
+    if (!success) {
+      ESP_ERROR(Mn::Debug::Flag::NoSpace)
+          << "<" << this->objectType_ << "> : Failure parsing string named `"
+          << docName << "` into a JSON object, so unable to create object.";
+      return nullptr;
+    }
+    // convert doc to const value
+    const io::JsonGenericValue config = docConfig->GetObject();
+    ManagedFileIOPtr attr = this->buildManagedObjectFromDoc(docName, config);
+    return this->postCreateRegister(std::move(attr), registerObject);
+  }  // ManagedFileBasedContainer::createObjectFromJSONString
+
+  /**
    * @brief Method to load a Managed Object's data from a file.  If the file
    * type is not supported by specialization of this method, this method
    * executes and an error is thrown.
@@ -321,15 +350,15 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
   }
 
   /**
-   * @brief Verify passd @p filename is legal document of type T. Returns
+   * @brief Verify passd @p filename is legal document of type U. Returns
    * loaded document in passed argument if successful. This requires
-   * appropriate specialization for each type name, so if this method is
-   * executed it means no appropriate specialization exists for passed type of
-   * document.
+   * appropriate specialization for each type name, so if this speciric method
+   * is executed it means no appropriate specialization exists for passed type
+   * of document.
    *
-   * @tparam type of document
+   * @tparam type of document to load
    * @param filename name of potential document to load
-   * @param resDoc a reference to the document to be parsed.
+   * @param resDoc a reference to the document to be loaded into.
    * @return whether document has been loaded successfully or not
    */
   template <class U>
@@ -341,9 +370,10 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
         << "` failed due to unsupported file type `" << typeid(U).name() << "`";
     return false;
   }  // ManagedContainerBase::verifyLoadDocument
+
   /**
    * @brief Verify passed @p filename is legal json document, return loaded
-   * document or nullptr if fails
+   * document or nullptr if fails.
    *
    * @param filename name of potential json document to load
    * @param jsonDoc a reference to the json document to be parsed
@@ -351,6 +381,47 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
    */
   bool verifyLoadDocument(const std::string& filename,
                           std::unique_ptr<io::JsonDocument>& jsonDoc);
+
+  /**
+   * @brief Verify passd @p docString represents a legal document of type U.
+   * Returns parsed document in passed argument @p resDoc if successful. This
+   * requires appropriate specialization for each type name/type of destination
+   * document, so if this specific method is executed it means no appropriate
+   * specialization exists for passed type U of document.
+   *
+   * @tparam type of document to parse into
+   * @param docName name of potential document to load
+   * @param docString string of data expected to be in the expected format of
+   * documents of type U
+   * @param resDoc a reference to the document the @docString should be parsed
+   * into.
+   * @return whether document has been parsed successfully or not
+   */
+  template <class U>
+  bool verifyParseDocString(const std::string& docName,
+                            const std::string& docString,
+                            CORRADE_UNUSED std::unique_ptr<U>& resDoc) {
+    // by here always fail - means document type U is unsupported
+    ESP_ERROR(Mn::Debug::Flag::NoSpace)
+        << "<" << this->objectType_ << "> : Parse string named `" << docName
+        << "` failed due to unsupported parse destination document type `"
+        << typeid(U).name() << "`";
+    return false;
+  }  // ManagedContainerBase::verifyParseDocString
+
+  /**
+   * @brief Verify passed @p docString , referenced by @p docName is a valid
+   * json document, return parsed document or nullptr if fails.
+   *
+   * @param docName name of potential json document to parse from @p docString
+   * @param docString string of JSON to attempt to parse
+   * @param jsonDoc a reference to the json document to be parsed
+   * @return whether document has been loaded successfully or not
+   *
+   */
+  bool verifyParseDocString(const std::string& docName,
+                            const std::string& docString,
+                            std::unique_ptr<io::JsonDocument>& jsonDoc);
 
   /**
    * @brief Will build a new file name for @p filename by replacing the
@@ -481,6 +552,24 @@ bool ManagedFileBasedContainer<T, Access>::verifyLoadDocument(
     return false;
   }
 }  // ManagedFileBasedContainer<T, Access>::verifyLoadDocument
+
+template <class T, ManagedObjectAccess Access>
+bool ManagedFileBasedContainer<T, Access>::verifyParseDocString(
+    const std::string& docName,
+    const std::string& docString,
+    std::unique_ptr<io::JsonDocument>& jsonDoc) {
+  try {
+    jsonDoc =
+        std::make_unique<io::JsonDocument>(io::parseJsonString(docString));
+  } catch (...) {
+    ESP_ERROR(Mn::Debug::Flag::NoSpace)
+        << "<" << this->objectType_
+        << "> : Failed to parse string referenced by  `" << docName
+        << "` into JSON.";
+    return false;
+  }
+  return true;
+}  // ManagedFileBasedContainer<T, Access>::verifyParseDocString
 
 template <class T, ManagedObjectAccess Access>
 bool ManagedFileBasedContainer<T, Access>::saveManagedObjectToFile(

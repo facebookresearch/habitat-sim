@@ -55,24 +55,6 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
   // Test helper functions
 
   /**
-   * @brief Test saving and loading from JSON string
-   * @tparam T Class of attributes manager
-   * @tparam U Class of attributes
-   * @param mgr the Attributes Manager being tested
-   * @param jsonString the json to build the template from
-   * @param registerObject whether or not to register the Attributes constructed
-   * by the passed JSON string.
-   * @param tmpltName The name to give the template
-   * @return attributes template built from JSON parsed from string
-   */
-  template <typename T, typename U>
-  std::shared_ptr<U> testBuildAttributesFromJSONString(
-      std::shared_ptr<T> mgr,
-      const std::string& jsonString,
-      const bool registerObject,
-      const std::string& tmpltName = "new_template_from_json");
-
-  /**
    * @brief remove added template built from JSON string.
    * @param tmpltName name of template to remove.
    * @param mgr the Attributes Manager being tested
@@ -219,32 +201,6 @@ AttributesConfigsTest::AttributesConfigsTest() {
   });
 }
 
-template <typename T, typename U>
-std::shared_ptr<U> AttributesConfigsTest::testBuildAttributesFromJSONString(
-    std::shared_ptr<T> mgr,
-    const std::string& jsonString,
-    const bool registerObject,
-    const std::string& tmpltName) {  // create JSON document
-  try {
-    esp::io::JsonDocument tmp = esp::io::parseJsonString(jsonString);
-    // io::JsonGenericValue :
-    const esp::io::JsonGenericValue jsonDoc = tmp.GetObject();
-    // create an new template from jsonDoc
-    std::shared_ptr<U> attrTemplate1 =
-        mgr->buildManagedObjectFromDoc(tmpltName, jsonDoc);
-
-    // register attributes
-    if (registerObject) {
-      mgr->registerObject(attrTemplate1);
-    }
-    return attrTemplate1;
-  } catch (...) {
-    CORRADE_FAIL_IF(true, "testBuildAttributesFromJSONString : Failed to parse"
-                              << jsonString << "as JSON.");
-    return nullptr;
-  }
-}  // testBuildAttributesFromJSONString
-
 template <typename T>
 void AttributesConfigsTest::testRemoveAttributesBuiltByJSONString(
     std::shared_ptr<T> mgr,
@@ -354,10 +310,9 @@ void AttributesConfigsTest::testPhysicsJSONLoad() {
       "user_vec4" : [3.5, 4.6, 5.7, 6.9]
   }
 })";
-  auto physMgrAttr =
-      testBuildAttributesFromJSONString<AttrMgrs::PhysicsAttributesManager,
-                                        Attrs::PhysicsManagerAttributes>(
-          physicsAttributesManager_, jsonString, true);
+  // Build an attributes based on the above json string
+  auto physMgrAttr = physicsAttributesManager_->createObjectFromJSONString(
+      "new_template_from_json", jsonString, true);
   // verify exists
   CORRADE_VERIFY(physMgrAttr);
 
@@ -486,10 +441,10 @@ void AttributesConfigsTest::testPbrShaderAttrJSONLoad() {
       "user_vec4" : [2.3, 4.5, 6.7, 8.9]
   }
 })";
-  auto pbrMgrAttr =
-      testBuildAttributesFromJSONString<AttrMgrs::PbrShaderAttributesManager,
-                                        Attrs::PbrShaderAttributes>(
-          pbrShaderAttributesManager_, jsonString, true);
+
+  auto pbrMgrAttr = pbrShaderAttributesManager_->createObjectFromJSONString(
+      "new_template_from_json", jsonString, true);
+
   // verify exists
   CORRADE_VERIFY(pbrMgrAttr);
 
@@ -634,10 +589,10 @@ void AttributesConfigsTest::testLightJSONLoad() {
     "negative_intensity_scale" : 1.5
   })";
 
+  // Build an attributes based on the above json string
   auto lightLayoutAttr =
-      testBuildAttributesFromJSONString<AttrMgrs::LightLayoutAttributesManager,
-                                        Attrs::LightLayoutAttributes>(
-          lightLayoutAttributesManager_, jsonString, true);
+      lightLayoutAttributesManager_->createObjectFromJSONString(
+          "new_template_from_json", jsonString, true);
   // verify exists
   CORRADE_VERIFY(lightLayoutAttr);
   // before test, save attributes to disk with new name
@@ -963,9 +918,9 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
       }
      })";
 
-  auto sceneAttr = testBuildAttributesFromJSONString<
-      AttrMgrs::SceneInstanceAttributesManager, Attrs::SceneInstanceAttributes>(
-      sceneInstanceAttributesManager_, jsonString, true);
+  // Build an attributes based on the above json string
+  auto sceneAttr = sceneInstanceAttributesManager_->createObjectFromJSONString(
+      "new_template_from_json", jsonString, true);
   // verify exists
   CORRADE_VERIFY(sceneAttr);
 
@@ -1079,10 +1034,11 @@ void AttributesConfigsTest::testStageJSONLoad() {
         }
       })";
 
-  auto stageAttr =
-      testBuildAttributesFromJSONString<AttrMgrs::StageAttributesManager,
-                                        Attrs::StageAttributes>(
-          stageAttributesManager_, jsonString, false);
+  // Build an attributes based on the above json string
+  // Don't register - registration here verifies that the specified file handles
+  // in the attributes exist, or it will fail.
+  auto stageAttr = stageAttributesManager_->createObjectFromJSONString(
+      "new_template_from_json", jsonString, false);
   // verify exists
   CORRADE_VERIFY(stageAttr);
   // verify that we are set to use the render asset frame for all meshes.
@@ -1212,10 +1168,12 @@ void AttributesConfigsTest::testObjectJSONLoad() {
       "user_quat" : [0.7, 5.5, 6.6, 7.7]
   }
 })";
-  auto objAttr =
-      testBuildAttributesFromJSONString<AttrMgrs::ObjectAttributesManager,
-                                        Attrs::ObjectAttributes>(
-          objectAttributesManager_, jsonString, false);
+
+  // Build an attributes based on the above json string
+  // Don't register - registration here verifies that the specified file handles
+  // in the attributes exist, or it will fail.
+  auto objAttr = objectAttributesManager_->createObjectFromJSONString(
+      "new_template_from_json", jsonString, false);
   // verify exists
   CORRADE_VERIFY(objAttr);
   // now need to change the render and collision assets to make sure they are
