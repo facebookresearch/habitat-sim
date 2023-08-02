@@ -35,7 +35,7 @@ void PbrShaderAttributesManager::setValsFromJSONDoc(
   ////////////////////////////
   // Direct lighting calculation settings
   // whether direct lighting should be enabled
-  io::jsonIntoConstSetter<bool>(
+  io::jsonIntoSetter<bool>(
       jsonConfig, "enable_direct_lights",
       [pbrShaderAttribs](bool enableLights) {
         pbrShaderAttribs->setEnableDirectLighting(enableLights);
@@ -48,13 +48,13 @@ void PbrShaderAttributesManager::setValsFromJSONDoc(
       });
   // whether we use the burley/disney diffuse calculation or lambertian diffuse
   // calculation for direct lighting.
-  io::jsonIntoConstSetter<bool>(
+  io::jsonIntoSetter<bool>(
       jsonConfig, "use_burley_diffuse", [pbrShaderAttribs](bool useLambertian) {
         pbrShaderAttribs->setUseBurleyDiffuse(useLambertian);
       });
 
   // if TBN frame should be calculated if no precomputed tangent is present
-  io::jsonIntoConstSetter<bool>(
+  io::jsonIntoSetter<bool>(
       jsonConfig, "skip_missing_tbn_calc",
       [pbrShaderAttribs](bool calcMissingTBN) {
         pbrShaderAttribs->setSkipCalcMissingTBN(calcMissingTBN);
@@ -63,14 +63,14 @@ void PbrShaderAttributesManager::setValsFromJSONDoc(
   // whether the Mikkelsen method should be used for the TBN calculation, or
   // if a simplified calculation that seems to give equivalent results should be
   // used.
-  io::jsonIntoConstSetter<bool>(
+  io::jsonIntoSetter<bool>(
       jsonConfig, "use_mikkelsen_tbn",
       [pbrShaderAttribs](bool useMikkelsenTBN) {
         pbrShaderAttribs->setUseMikkelsenTBN(useMikkelsenTBN);
       });
 
   // whether tonemapping should be used for direct lighting
-  io::jsonIntoConstSetter<bool>(
+  io::jsonIntoSetter<bool>(
       jsonConfig, "use_direct_tonemap",
       [pbrShaderAttribs](bool useDirectTonemap) {
         pbrShaderAttribs->setUseDirectLightTonemap(useDirectTonemap);
@@ -96,7 +96,7 @@ void PbrShaderAttributesManager::setValsFromJSONDoc(
   // whether clearcoat layer contributions should be calculated where they are
   // specified by the material.  Note this will not require a rebuild of the
   // shader since only the calculations are disabled.
-  io::jsonIntoConstSetter<bool>(
+  io::jsonIntoSetter<bool>(
       jsonConfig, "skip_clearcoat_calc",
       [pbrShaderAttribs](bool skipCalcClearCoat) {
         pbrShaderAttribs->setSkipCalcClearcoatLayer(skipCalcClearCoat);
@@ -105,7 +105,7 @@ void PbrShaderAttributesManager::setValsFromJSONDoc(
   // whether speecular layer contributions should be calculated where they are
   // specified by the material.  Note this will not require a rebuild of the
   // shader since only the calculations are disabled.
-  io::jsonIntoConstSetter<bool>(
+  io::jsonIntoSetter<bool>(
       jsonConfig, "skip_specular_layer_calc",
       [pbrShaderAttribs](bool skipCalcSpecular) {
         pbrShaderAttribs->setSkipCalcSpecularLayer(skipCalcSpecular);
@@ -114,7 +114,7 @@ void PbrShaderAttributesManager::setValsFromJSONDoc(
   // whether anisotropy layer contributions should be calculated where they are
   // specified by the material.  Note this will not require a rebuild of the
   // shader since only the calculations are disabled.
-  io::jsonIntoConstSetter<bool>(
+  io::jsonIntoSetter<bool>(
       jsonConfig, "skip_anisotropy_layer_calc",
       [pbrShaderAttribs](bool skipCalcAnisotropy) {
         pbrShaderAttribs->setSkipCalcAnisotropyLayer(skipCalcAnisotropy);
@@ -123,10 +123,10 @@ void PbrShaderAttributesManager::setValsFromJSONDoc(
   ////////////////////
   // IBL-specific quantities
   // whether image-based lighting should be used in PBR shader
-  io::jsonIntoConstSetter<bool>(jsonConfig, "enable_ibl",
-                                [pbrShaderAttribs](bool enableIBL) {
-                                  pbrShaderAttribs->setEnableIBL(enableIBL);
-                                });
+  io::jsonIntoSetter<bool>(jsonConfig, "enable_ibl",
+                           [pbrShaderAttribs](bool enableIBL) {
+                             pbrShaderAttribs->setEnableIBL(enableIBL);
+                           });
 
   // the filename for the brdf lookup table used by the IBL calculations. If
   // empty retain default, which should always be in resource file.
@@ -152,10 +152,10 @@ void PbrShaderAttributesManager::setValsFromJSONDoc(
       });
 
   // whether tonemapping should be used for IBL lighting calculations
-  io::jsonIntoConstSetter<bool>(
-      jsonConfig, "use_ibl_tonemap", [pbrShaderAttribs](bool useIBLTonemap) {
-        pbrShaderAttribs->setUseIBLTonemap(useIBLTonemap);
-      });
+  io::jsonIntoSetter<bool>(jsonConfig, "use_ibl_tonemap",
+                           [pbrShaderAttribs](bool useIBLTonemap) {
+                             pbrShaderAttribs->setUseIBLTonemap(useIBLTonemap);
+                           });
 
   // IBL diffuse contirbution scaling.  Only used if both direct and
   // indirect (IBL) lighting is enabled.
@@ -185,7 +185,7 @@ void PbrShaderAttributesManager::setValsFromJSONDoc(
   // shader on the appropriate textures (basecolor, emissivecolor,
   // specularlayercolor) as described by GLTF standard. This will not be needed
   // once the textures in question are converted on load.
-  io::jsonIntoConstSetter<bool>(
+  io::jsonIntoSetter<bool>(
       jsonConfig, "map_mat_txtr_to_linear",
       [pbrShaderAttribs](bool useSRGBRemapping) {
         pbrShaderAttribs->setMapMatTxtrToLinear(useSRGBRemapping);
@@ -194,7 +194,7 @@ void PbrShaderAttributesManager::setValsFromJSONDoc(
   // whether the approximation sRGB->linear mapping should be used in the
   // shader on the environment map textures. This will not be needed once the
   // textures in question are converted on load.
-  io::jsonIntoConstSetter<bool>(
+  io::jsonIntoSetter<bool>(
       jsonConfig, "map_ibl_txtr_to_linear",
       [pbrShaderAttribs](bool useSRGBRemapping) {
         pbrShaderAttribs->setMapIBLTxtrToLinear(useSRGBRemapping);
@@ -203,7 +203,7 @@ void PbrShaderAttributesManager::setValsFromJSONDoc(
   // whether the approximation linear->sRGB mapping should be used in the
   // shader on the output. This will not be needed when we are using the
   // appropriate framebuffer.
-  io::jsonIntoConstSetter<bool>(
+  io::jsonIntoSetter<bool>(
       jsonConfig, "map_output_to_srgb",
       [pbrShaderAttribs](bool useSRGBRemapping) {
         pbrShaderAttribs->setMapOutputToSRGB(useSRGBRemapping);

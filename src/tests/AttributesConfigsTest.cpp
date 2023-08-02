@@ -405,6 +405,8 @@ void AttributesConfigsTest::testPbrShaderAttrVals(
                   "brdflut_test_only_image.png");
   CORRADE_COMPARE(pbrShaderAttr->getIBLEnvMapAssetHandle(),
                   "envmap_test_only_image.hdr");
+  CORRADE_COMPARE(pbrShaderAttr->getPbrShaderHelperKey(),
+                  "brdflut_test_only_image.png_envmap_test_only_image.hdr");
 
   CORRADE_COMPARE(pbrShaderAttr->getDirectLightIntensity(), 1.23f);
 
