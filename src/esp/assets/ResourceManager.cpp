@@ -3427,16 +3427,6 @@ void ResourceManager::loadAllIBLAssets() {
 
     }  // for each PbrShaderAttributes defined
 
-    // TODO: With some slight modifications, we can clear the texture cache
-    // map after this loop, since the pbrIBLHelpers will hold the references
-    // to the IBL assets and the helpers are keyed by the names of the source
-    // textures. Currently we want to keep this around in case a subsequent
-    // call requests one of the assets (bLUT or EnvMap) but not the other. So
-    // far we don't have that many assets, so this map isn't going to be that
-    // big, but if we ever support many Environment maps, cleaning this up
-    // might be beneficial.
-
-    // iblBLUTsAndEnvMaps_.clear();
   } else {
     if (mapOfPbrConfigs.size() > 1) {
       // There will always be 1 config (default) but if more than 1 exist then
