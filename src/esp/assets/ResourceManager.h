@@ -46,6 +46,7 @@ namespace metadata {
 class MetadataMediator;
 namespace attributes {
 class ObjectAttributes;
+class PbrShaderAttributes;
 class PhysicsManagerAttributes;
 class SceneObjectInstanceAttributes;
 class StageAttributes;
@@ -623,6 +624,21 @@ class ResourceManager {
 
  private:
   /**
+   * @brief Retrieve the appropriate @ref eps::gfx::PbrIBLHelper for the passed
+   * @p pbrShaderAAttributes , building it first if necessary. Loads the brdf
+   * LUT and envmap requested by @p pbrShaderAttr into textures if necessary
+   * (caching them if they have not already been loaded), use them to build
+   * a @ref eps::gfx::PbrIBLHelper and place this helper in the @p pbrIBLHelpers_
+   * map, and return it as well.
+   * @param pbrShaderAttr The PBR/IBL Shader configuration whose IBL components
+   * are being loaded.
+   * @return a shared pointer to the PbrIBLHelper requested
+   */
+  std::shared_ptr<gfx::PbrIBLHelper> getOrBuildPBRIBLHelper(
+      const std::shared_ptr<metadata::attributes::PbrShaderAttributes>&
+          pbrShaderAttr);
+
+  /**
    * @brief Load images by filename into a properly formatted texture, cache
    * them and return them. This function will retrieve a loaded texture
    * constructed from the requested image given by @p imageFilename if it
@@ -639,6 +655,8 @@ class ResourceManager {
    * as it appears in the resource file.
    * @param useImageTxtrFormat Whether to use the image's texture format or use
    * RGBA8 as the format (i.e. for brdfLUTs).
+   * @param rs A Corrade resource file holding the available precompiled image
+   * resources.
    * @return A shared pointer to the 2d texture built from the loaded image.
    */
   std::shared_ptr<Mn::GL::Texture2D> loadIBLImageIntoTexture(

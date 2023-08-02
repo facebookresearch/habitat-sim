@@ -3105,12 +3105,11 @@ void ResourceManager::addComponent(
       // Scene.
       esp::metadata::attributes::PbrShaderAttributes::ptr pbrAttributesPtr =
           metadataMediator_->getDefaultPbrShaderConfig();
-
-      // get the key to the pbrIblhelpers
-      const auto& pbrIblDataKey = pbrAttributesPtr->getPbrShaderHelperKey();
-      // get pointer to PbrIBL Helper
+      // get pointer to PbrIBL Helper for this attributes, creating the helper
+      // if it does not exist. Should always exist by here, unless a new or
+      // modified PbrShaderAttributes had been added to the library by the user.
       std::shared_ptr<gfx::PbrIBLHelper> pbrIblData_ =
-          pbrIBLHelpers_[pbrIblDataKey];
+          getOrBuildPBRIBLHelper(pbrAttributesPtr);
 
       drawableConfig.setPbrIblData(pbrIblData_);
       drawableConfig.setPbrShaderConfig(pbrAttributesPtr);
@@ -3248,6 +3247,67 @@ void ResourceManager::initDefaultLightSetups() {
   shaderManager_.setFallback(gfx::LightSetup{});
 }
 
+std::shared_ptr<gfx::PbrIBLHelper> ResourceManager::getOrBuildPBRIBLHelper(
+    const std::shared_ptr<esp::metadata::attributes::PbrShaderAttributes>&
+        pbrShaderAttr) {
+  auto helperKey = pbrShaderAttr->getPbrShaderHelperKey();
+
+  ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+      << "Handle :`" << pbrShaderAttr->getHandle()
+      << "` : PbrIBLHelper key : (brdfLUT Handle)_(envMap Handle) `"
+      << helperKey << "`";
+  // Try to find image in IBL texture library
+  std::unordered_map<
+      std::string, std::shared_ptr<gfx::PbrIBLHelper>>::const_iterator mapIter =
+      pbrIBLHelpers_.find(helperKey);
+
+  std::shared_ptr<gfx::PbrIBLHelper> pbrIBLHelper = nullptr;
+  if (mapIter != pbrIBLHelpers_.end()) {
+    // If found don't reload/remake
+    pbrIBLHelper = mapIter->second;
+  } else {
+    // PbrIBLHelper not found so build it.
+    // First verify that pbr image resources are available, and load if not
+    // TODO should we consider this resource as a method variable?
+    if (!Cr::Utility::Resource::hasGroup("pbr-images")) {
+      importPbrImageResources();
+    }
+    const Cr::Utility::Resource rs{"pbr-images"};
+
+    std::shared_ptr<Mn::GL::Texture2D> blutTexture = nullptr;
+    std::shared_ptr<Mn::GL::Texture2D> envMapTexture = nullptr;
+    // ==== load the brdf lookup table texture ====
+    auto bLUTImageFilename = pbrShaderAttr->getIBLBrdfLUTAssetHandle();
+    if (!bLUTImageFilename.empty()) {
+      // Only loads if bLUTImageFilename hasn't been loaded already.
+      // Also caches texture
+      blutTexture = loadIBLImageIntoTexture(bLUTImageFilename, false, rs);
+    }
+
+    // ==== load the equirectangular texture ====
+    auto envMapFilename = pbrShaderAttr->getIBLEnvMapAssetHandle();
+    if (!envMapFilename.empty()) {
+      // Only loads if envMapFilename hasn't been loaded already.
+      // Also caches texture
+      envMapTexture = loadIBLImageIntoTexture(envMapFilename, true, rs);
+    }
+
+    // ==== build helper for these assets ====
+    // This helper uses shaders to perform the calculations required to
+    // convert the Environment Map equirectangular image into the Irradiance
+    // Map and Prefiltered Environment Map CubeMaps. Only build if both
+    // images were found and successfully converted into textures.
+
+    if (blutTexture && envMapTexture) {
+      pbrIBLHelper = std::make_shared<gfx::PbrIBLHelper>(
+          shaderManager_, blutTexture, envMapTexture);
+      pbrIBLHelpers_.emplace(helperKey, pbrIBLHelper);
+    }
+  }  // if found else create
+  return pbrIBLHelper;
+
+}  // ResourceManager::buildPBRIBLHelper
+
 std::shared_ptr<Mn::GL::Texture2D> ResourceManager::loadIBLImageIntoTexture(
     const std::string& imageFilename,
     bool useImageTxtrFormat,
@@ -3283,8 +3343,8 @@ std::shared_ptr<Mn::GL::Texture2D> ResourceManager::loadIBLImageIntoTexture(
           << "` exists in compiled resource.";
       imageImporter_->openData(rs.getRaw(imageFilename));
     } else {
-      // Not found as-is in resource, try with directory prefix and then search
-      // in filesystem
+      // Not found as-is in resource, try with directory prefix and then
+      // search in filesystem
       const std::string prefixedImageFilename = Cr::Utility::formatString(
           "{}/{}", (useImageTxtrFormat ? "env_maps" : "bluts"), imageFilename);
       if (rs.hasFile(prefixedImageFilename)) {
@@ -3352,7 +3412,7 @@ void ResourceManager::loadAllIBLAssets() {
   // Only load if rendering is enabled.
   if (requiresTextures_) {
     // Load BLUTs and Envmaps specified in scene dataset
-    // First verify that pbr image resources is available
+    // First verify that pbr image resources are available, and load if not
     if (!Cr::Utility::Resource::hasGroup("pbr-images")) {
       importPbrImageResources();
     }
@@ -3362,48 +3422,19 @@ void ResourceManager::loadAllIBLAssets() {
                    "maps) being loaded :"
                 << mapOfPbrConfigs.size();
     for (const auto& entry : mapOfPbrConfigs) {
-      const auto pbrShaderAttr = entry.second;
-      auto helperKey = pbrShaderAttr->getPbrShaderHelperKey();
-      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
-          << "Handle :`" << entry.first
-          << "` : PbrIBLHelper key : (brdfLUT Handle)_(envMap Handle) `"
-          << helperKey << "`";
-      std::shared_ptr<Mn::GL::Texture2D> blutTexture = nullptr;
-      std::shared_ptr<Mn::GL::Texture2D> envMapTexture = nullptr;
-      if (pbrIBLHelpers_.count(helperKey) == 0) {
-        // ==== load the brdf lookup table texture ====
-        auto bLUTImageFilename = pbrShaderAttr->getIBLBrdfLUTAssetHandle();
-        if (!bLUTImageFilename.empty()) {
-          // Only loads if bLUTImageFilename hasn't been loaded already
-          blutTexture = loadIBLImageIntoTexture(bLUTImageFilename, false, rs);
-        }
+      // Build required pbrIBL Helpers
+      getOrBuildPBRIBLHelper(entry.second);
 
-        // ==== load the equirectangular texture ====
-        auto envMapFilename = pbrShaderAttr->getIBLEnvMapAssetHandle();
-        if (!envMapFilename.empty()) {
-          // Only loads if envMapFilename hasn't been loaded already
-          envMapTexture = loadIBLImageIntoTexture(envMapFilename, true, rs);
-        }
+    }  // for each PbrShaderAttributes defined
 
-        // ==== build helper for these assets ====
-        // This helper uses shaders to perform the calculations required to
-        // convert the Environment Map equirectangular image into the Irradiance
-        // Map and Prefiltered Environment Map CubeMaps. Only build if both
-        // images were found and successfully converted into textures.
-        if (blutTexture && envMapTexture) {
-          pbrIBLHelpers_.emplace(
-              helperKey, std::make_shared<gfx::PbrIBLHelper>(
-                             shaderManager_, blutTexture, envMapTexture));
-        }
-      }
-    }
-    // TODO: With some slight modifications, we can clear the texture cache map
-    // after this loop, since the pbrIBLHelpers will hold the references to the
-    // IBL assets and the helpers are keyed by the names of the source textures.
-    // Currently we want to keep this around in case a subsequent call requests
-    // one of the assets (bLUT or EnvMap) but not the other. So far we don't
-    // have that many assets, so this map isn't going to be that big, but if we
-    // ever support many Environment maps, cleaning this up might be beneficial.
+    // TODO: With some slight modifications, we can clear the texture cache
+    // map after this loop, since the pbrIBLHelpers will hold the references
+    // to the IBL assets and the helpers are keyed by the names of the source
+    // textures. Currently we want to keep this around in case a subsequent
+    // call requests one of the assets (bLUT or EnvMap) but not the other. So
+    // far we don't have that many assets, so this map isn't going to be that
+    // big, but if we ever support many Environment maps, cleaning this up
+    // might be beneficial.
 
     // iblBLUTsAndEnvMaps_.clear();
   } else {
