@@ -75,7 +75,7 @@ float D_GGX_old(float n_dot_h, float ar) {
   return arSq / (f * f);
 }
 
-#if (LIGHT_COUNT > 0)
+#if defined(DIRECT_LIGHTING)
 
 // Smith Joint GGX visibility function
 // Note: Vis = G / (4 * n_dot_l * n_dot_v)
@@ -247,4 +247,4 @@ vec3 BRDF_specularAnisotropicGGX(vec3 fresnel,
 
 #endif  // ANISOTROPY_LAYER
 
-#endif  // (LIGHT_COUNT > 0)
+#endif  // DIRECT_LIGHTING

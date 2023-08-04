@@ -172,6 +172,48 @@ class SceneDatasetAttributes : public AbstractAttributes {
   }
 
   /**
+   * @brief Set the name of the attributes used for the default Pbr/Ibl shader
+   * configuration.
+   */
+  void setDefaultPbrShaderAttrHandle(
+      const std::string& dfltPbrShaderAttrHandle) {
+    set("defaultPbrShaderAttrHandle", dfltPbrShaderAttrHandle);
+    sceneInstanceAttributesManager_->setDefaultPbrShaderAttrHandle(
+        dfltPbrShaderAttrHandle);
+  }
+  /**
+   * @brief Set the current scene's mapping from 'region' tags to
+   * PbrShaderAttributes handles.
+   */
+  void setCurrScenePbrShaderAttrMappings(
+      std::map<std::string, std::string> mappings) {
+    currPbrShaderAttrRegionMap_ = std::move(mappings);
+  }
+
+  /**
+   * @brief retrieve the handle to the PbrShaderAttributes that corresponds to
+   * the passed region handle defined in the SceneInstanceAttributes.
+   */
+  std::string getCurrPbrShaderHandleFromRegion(const std::string& region) {
+    if (currPbrShaderAttrRegionMap_.count(region) > 0) {
+      return currPbrShaderAttrRegionMap_.at(region);
+    } else {
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << "No region with handle `" << region
+          << "` so returning empty string";
+      return "";
+    }
+  }
+
+  /**
+   * @brief Get the name of the attributes used for the default Pbr/Ibl shader
+   * configuration.
+   */
+  std::string getDefaultPbrShaderAttrHandle() const {
+    return get<std::string>("defaultPbrShaderAttrHandle");
+  }
+
+  /**
    * @brief Add the passed @p sceneInstance to the dataset, verifying that all
    * the attributes and assets references in the scene instance exist, and if
    * so adding them.  This is to handle the addition of an existing
@@ -437,6 +479,11 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * scene descriptor files
    */
   std::map<std::string, std::string> semanticSceneDescrMap_;
+
+  /**
+   * list of key-value pairs of region names to PbrShaderConfigs
+   */
+  std::map<std::string, std::string> currPbrShaderAttrRegionMap_;
 
  public:
   ESP_SMART_POINTERS(SceneDatasetAttributes)

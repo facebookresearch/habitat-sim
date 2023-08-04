@@ -188,11 +188,6 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 #endif
     renderer_->acquireGlContext();
   }
-  // load IBL assets if appropriate and not loaded already
-  // TODO : So many things.  Needs to be config driven, for one.
-  if (cfg.pbrImageBasedLighting) {
-    resourceManager_->initPbrImageBasedLighting("lythwood_room_1k.hdr");
-  }
 
   // (re) create scene instance
   bool success = createSceneInstance(config_.activeSceneName);
@@ -353,8 +348,21 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   // key
   config_.sceneLightSetupKey = lightSetupKey;
 
-  // 7. Update MetadataMediator's copy of SimulatorConfiguration to be in sync.
+  // 7. Update MetadataMediator's copy of now-final SimulatorConfiguration to be
+  // in sync, and set default PbrShaderAttributes based on current scene
+  // instance
   metadataMediator_->setSimulatorConfiguration(config_);
+
+  // Set default PbrShaderAttributes based on current scene instance
+  metadataMediator_->setCurrDefaultPbrAttributesHandle(
+      curSceneInstanceAttributes_->getDefaultPbrShaderAttributesHandle());
+  // Set the mappings from region tags to handles
+  metadataMediator_->setCurrScenePbrShaderRegionMap(
+      curSceneInstanceAttributes_->getRegionPbrShaderAttributesHandles());
+
+  // Update ResourceManager's loaded Pbr/Ibl assets based on most up to date
+  // state of metadataMediator_'s currently active scene dataset.
+  resourceManager_->loadAllIBLAssets();
 
   // 8. Load stage specified by Scene Instance Attributes
   bool success = instanceStageForSceneAttributes(curSceneInstanceAttributes_);

@@ -47,6 +47,10 @@ find_package(
   StbImageConverter
 )
 
+find_package(Corrade REQUIRED Utility)
+corrade_add_resource(PbrIBlImageResources ../../../data/pbr/PbrImages.conf)
+list(APPEND assets_SOURCES ${PbrIBlImageResources})
+
 if(BUILD_ASSIMP_SUPPORT)
   find_package(MagnumPlugins REQUIRED AssimpImporter)
 endif()

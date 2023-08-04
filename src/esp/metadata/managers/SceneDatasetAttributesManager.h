@@ -7,6 +7,7 @@
 
 #include <utility>
 
+#include "PbrShaderAttributesManager.h"
 #include "PhysicsAttributesManager.h"
 
 #include "AttributesManagerBase.h"
@@ -22,7 +23,8 @@ class SceneDatasetAttributesManager
                                ManagedObjectAccess::Share> {
  public:
   explicit SceneDatasetAttributesManager(
-      PhysicsAttributesManager::ptr physicsAttributesMgr);
+      PhysicsAttributesManager::ptr physicsAttributesMgr,
+      PbrShaderAttributesManager::ptr pbrShaderAttributesMgr);
   /**
    * @brief Creates an instance of a dataset template described by passed
    * string. For dataset templates, this a file name.
@@ -71,6 +73,27 @@ class SceneDatasetAttributesManager
       this->getObjectByHandle(val.first)->setPhysicsManagerHandle(handle);
     }
   }  // SceneDatasetAttributesManager::setCurrPhysicsManagerAttributesHandle
+
+  /**
+   * @brief This will set the current default PBR/IBL Shader configuration
+   * attributes. This is used so that upon creation of new
+   * @ref esp::metadata::attributes::SceneDatasetAttributes, the default @ref
+   * esp::metadata::attributes::PbrShaderAttributes can be set in the
+   * @ref esp::metadata::attributes::SceneDatasetAttributes before any
+   * scene-specific values are set.
+   *
+   * @param pbrHandle The string handle referencing the @ref
+   * esp::metadata::attributes::PbrShaderAttributes used to configure the
+   * current PBR/IBL shader for all objects, unless overridden in Scene
+   * Instances.
+   */
+  void setDefaultPbrShaderAttributesHandle(const std::string& pbrHandle) {
+    defaultPbrShaderAttributesHandle_ = pbrHandle;
+    for (const auto& val : this->objectLibrary_) {
+      this->getObjectByHandle(val.first)->setDefaultPbrShaderAttrHandle(
+          pbrHandle);
+    }
+  }  // SceneDatasetAttributesManager::setDefaultPbrShaderAttributesHandle
 
  protected:
   /**
@@ -194,12 +217,22 @@ class SceneDatasetAttributesManager
   std::string physicsManagerAttributesHandle_ = "";
 
   /**
+   * @brief Name of currently used default PbrShaderAttributes
+   */
+  std::string defaultPbrShaderAttributesHandle_ = "";
+  /**
    * @brief Reference to PhysicsAttributesManager to give access to default
    * physics manager attributes settings when
    * esp::metadata::attributes::SceneDatasetAttributes are created within
    * Dataset.
    */
   PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
+
+  /**
+   * @brief Reference to the PbrShaderAttributesManager to give access to
+   * various PBR/IBL Shader configuration parameters and settings.
+   */
+  PbrShaderAttributesManager::ptr pbrShaderAttributesManager_ = nullptr;
 
  public:
   ESP_SMART_POINTERS(SceneDatasetAttributesManager)

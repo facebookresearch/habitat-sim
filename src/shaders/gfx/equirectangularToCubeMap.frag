@@ -11,8 +11,8 @@ precision highp float;
 in highp vec2 textureCoordinates;
 
 // ------------ uniforms --------------------
-uniform highp sampler2D EquirectangularTexture;
-uniform uint CubeSideIndex;
+uniform highp sampler2D uEquirectangularTexture;
+uniform uint uCubeSideIndex;
 
 //------------- output ----------------------
 #ifdef EXPLICIT_ATTRIB_LOCATION
@@ -35,7 +35,7 @@ vec3 uvToXYZ(vec2 uv) {
   // Do NOT add break here!
   // Otherwise it gives you warning
   // "Unreachable statement in switch body"
-  switch (CubeSideIndex) {
+  switch (uCubeSideIndex) {
     case 0u:
       return vec3(1.0f, uv.y, -uv.x);
 
@@ -67,7 +67,7 @@ vec3 uvToXYZFlipped(vec2 uv) {
   // Do NOT add break here!
   // Otherwise it gives you warning
   // "Unreachable statement in switch body"
-  switch (CubeSideIndex) {
+  switch (uCubeSideIndex) {
     case 0u:
       return vec3(1.0f, uv.y, -uv.x);
 
@@ -102,7 +102,7 @@ vec3 equirectangularToCubeMap() {
   vec3 direction = normalize(uvToXYZFlipped(textureCoordinates));
   vec2 equirectangularTextureUV = dirToUV(direction);
 
-  return texture(EquirectangularTexture, equirectangularTextureUV).rgb;
+  return texture(uEquirectangularTexture, equirectangularTextureUV).rgb;
 }
 
 void main(void) {

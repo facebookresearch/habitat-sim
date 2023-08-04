@@ -49,6 +49,14 @@ class SceneInstanceAttributesManager
       bool registerTemplate = true) override;
 
   /**
+   * @brief Set the curent default PbrShaderAttributes to use on all new scene
+   * instances. This can be overridden from within individual scene instances.
+   */
+  void setDefaultPbrShaderAttrHandle(const std::string& pbrHandle) {
+    defaultPbrShaderAttributesHandle_ = pbrHandle;
+  }
+
+  /**
    * @brief Method to take an existing attributes and set its values from passed
    * json config file.
    * @param attribs (out) an existing attributes to be modified.
@@ -187,6 +195,12 @@ class SceneInstanceAttributesManager
       CORRADE_UNUSED const std::string& handle) override {
     return false;
   }
+
+  /**
+   * @brief Name of the attributes used for the default Pbr/Ibl shader
+   * configuration. This can be overwritten by the SceneInstances.
+   */
+  std::string defaultPbrShaderAttributesHandle_ = "";
 
  public:
   ESP_SMART_POINTERS(SceneInstanceAttributesManager)
