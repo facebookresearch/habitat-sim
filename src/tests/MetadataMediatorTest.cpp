@@ -491,11 +491,14 @@ void MetadataMediatorTest::testDataset1() {
   // end test LoadSceneInstances
 
   ESP_WARNING() << "Starting test LoadArticulatedObjects";
-
-  namespace Dir = Cr::Utility::Path;
+  const auto& aoAttributedsMgr = MM_->getAOAttributesManager();
+  int numAOHandles = aoAttributedsMgr->getNumObjects();
   // verify # of urdf filepaths loaded - should be 7;
-  const std::map<std::string, std::string>& urdfTestFilenames =
-      MM_->getArticulatedObjectModelFilenames();
+  CORRADE_COMPARE(numAOHandles, 7);
+  namespace Dir = Cr::Utility::Path;
+
+  std::map<std::string, std::string> urdfTestFilenames =
+      aoAttributedsMgr->getArticulatedObjectModelFilenames();
   CORRADE_COMPARE(urdfTestFilenames.size(), 7);
   // test that each stub name key corresponds to the actual file name passed
   // through the key making process
