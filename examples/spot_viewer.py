@@ -291,6 +291,7 @@ class HabitatSimInteractiveViewer(Application):
 
         # object selection and manipulation interface
         self.selected_object = None
+        self.last_hit_details = None
         # cache modified states of any objects moved by the interface.
         self.modified_objects_buffer: Dict[
             habitat_sim.physics.ManagedRigidObject, mn.Matrix4
@@ -376,6 +377,14 @@ class HabitatSimInteractiveViewer(Application):
             self.sim.physics_debug_draw(proj_mat)
         if self.contact_debug_draw:
             self.draw_contact_debug()
+        if self.last_hit_details is not None:
+            self.sim.get_debug_line_render().draw_circle(
+                translation=self.last_hit_details.point,
+                radius=0.02,
+                normal=self.last_hit_details.normal,
+                color=mn.Color4.yellow(),
+                num_segments=12,
+            )
         if self.selected_object is not None:
             aabb = self.selected_object.collision_shape_aabb
             dblr = self.sim.get_debug_line_render()
@@ -906,6 +915,7 @@ class HabitatSimInteractiveViewer(Application):
             ray = render_camera.unproject(self.get_mouse_position(event.position))
             mouse_cast_results = self.sim.cast_ray(ray=ray)
             if mouse_cast_results.has_hits():
+                self.last_hit_details = mouse_cast_results.hits[0]
                 hit_id = mouse_cast_results.hits[0].object_id
                 rom = self.sim.get_rigid_object_manager()
                 if hit_id == -1:
