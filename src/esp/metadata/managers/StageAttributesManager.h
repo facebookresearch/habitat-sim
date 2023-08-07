@@ -5,7 +5,7 @@
 #ifndef ESP_METADATA_MANAGERS_STAGEATTRIBUTEMANAGER_H_
 #define ESP_METADATA_MANAGERS_STAGEATTRIBUTEMANAGER_H_
 
-#include "AbstractObjectAttributesManagerBase.h"
+#include "AbstractObjectAttributesManager.h"
 #include "esp/metadata/attributes/StageAttributes.h"
 
 #include "PhysicsAttributesManager.h"

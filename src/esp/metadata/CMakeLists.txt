@@ -27,7 +27,7 @@ set(
   attributes/StageAttributes.h
   attributes/StageAttributes.cpp
   managers/AttributesManagerBase.h
-  managers/AbstractObjectAttributesManagerBase.h
+  managers/AbstractObjectAttributesManager.h
   managers/AssetAttributesManager.h
   managers/AssetAttributesManager.cpp
   managers/LightLayoutAttributesManager.h

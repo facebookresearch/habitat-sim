@@ -6,7 +6,7 @@
 
 #include <utility>
 
-#include "AbstractObjectAttributesManagerBase.h"
+#include "AbstractObjectAttributesManager.h"
 #include "StageAttributesManager.h"
 
 #include "esp/assets/Asset.h"

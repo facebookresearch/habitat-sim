@@ -2,8 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_METADATA_MANAGERS_ABSTRACTOBJECTATTRIBUTESMANAGERBASE_H_
-#define ESP_METADATA_MANAGERS_ABSTRACTOBJECTATTRIBUTESMANAGERBASE_H_
+#ifndef ESP_METADATA_MANAGERS_ABSTRACTOBJECTATTRIBUTESMANAGER_H_
+#define ESP_METADATA_MANAGERS_ABSTRACTOBJECTATTRIBUTESMANAGER_H_
 
 /** @file
  * @brief Class Template @ref
@@ -365,7 +365,6 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
     const char* jsonMeshHandleTag,
     std::string& assetName,
     const std::function<void(int)>& meshTypeSetter) {
-  std::string propertiesFileDirectory = attributes->getFileDirectory();
   // save current file name
   std::string oldFName(assetName);
   // clear var to get new value - if returns true use this as new value
@@ -409,7 +408,8 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
                                          assetName, meshTypeSetter);
     } else {
       // is not valid primitive, assume valid file name
-      assetName = Cr::Utility::Path::join(propertiesFileDirectory, assetName);
+      assetName =
+          Cr::Utility::Path::join(attributes->getFileDirectory(), assetName);
       if ((typeVal == -1) && (oldFName != assetName)) {
         // if file name is different, and type val has not been specified,
         // perform name-specific mesh type config do not override orientation
@@ -427,4 +427,4 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
 }  // namespace managers
 }  // namespace metadata
 }  // namespace esp
-#endif  // ESP_METADATA_MANAGERS_ABSTRACTOBJECTATTRIBUTESMANAGERBASE_H_
+#endif  // ESP_METADATA_MANAGERS_ABSTRACTOBJECTATTRIBUTESMANAGER_H_

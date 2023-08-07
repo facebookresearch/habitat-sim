@@ -9,7 +9,7 @@
 
 #include <utility>
 
-#include "AbstractObjectAttributesManagerBase.h"
+#include "AbstractObjectAttributesManager.h"
 #include "esp/metadata/attributes/ObjectAttributes.h"
 
 namespace esp {
