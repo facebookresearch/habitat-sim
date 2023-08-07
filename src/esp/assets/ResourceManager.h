@@ -52,6 +52,7 @@ class SceneObjectInstanceAttributes;
 class StageAttributes;
 }  // namespace attributes
 namespace managers {
+class AOAttributesManager;
 class AssetAttributesManager;
 class LightLayoutAttributesManager;
 class ObjectAttributesManager;

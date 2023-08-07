@@ -135,7 +135,12 @@ class Simulator {
 
   // === Physics Simulator Functions ===
   // TODO: support multi-scene physics (default sceneID=0 currently).
-
+  /**
+   * @brief Return manager for construction and access to articulated object
+   * attributes for the current dataset.
+   */
+  const std::shared_ptr<metadata::managers::AOAttributesManager>&
+  getAOAttributesManager() const;
   /**
    * @brief Return manager for construction and access to asset attributes for
    * the current dataset.

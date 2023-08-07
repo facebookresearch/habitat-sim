@@ -96,12 +96,15 @@ namespace Mn = Magnum;
 
 namespace esp {
 
+using metadata::attributes::AbstractObjectAttributes;
+using metadata::attributes::ArticulatedObjectAttributes;
 using metadata::attributes::CubePrimitiveAttributes;
 using metadata::attributes::ObjectAttributes;
 using metadata::attributes::ObjectInstanceShaderType;
 using metadata::attributes::PhysicsManagerAttributes;
 using metadata::attributes::SceneObjectInstanceAttributes;
 using metadata::attributes::StageAttributes;
+using metadata::managers::AOAttributesManager;
 using metadata::managers::AssetAttributesManager;
 using metadata::managers::ObjectAttributesManager;
 using metadata::managers::PhysicsAttributesManager;
