@@ -30,6 +30,8 @@ set(
   attributes/StageAttributes.cpp
   managers/AttributesManagerBase.h
   managers/AbstractObjectAttributesManager.h
+  managers/AOAttributesManager.h
+  managers/AOAttributesManager.cpp
   managers/AssetAttributesManager.h
   managers/AssetAttributesManager.cpp
   managers/LightLayoutAttributesManager.h
