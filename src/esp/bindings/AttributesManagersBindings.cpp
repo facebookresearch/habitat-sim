@@ -8,8 +8,10 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/PythonBindings.h>
 
+#include "esp/metadata/attributes/AbstractObjectAttributes.h"
 #include "esp/metadata/attributes/LightLayoutAttributes.h"
 #include "esp/metadata/attributes/ObjectAttributes.h"
+#include "esp/metadata/attributes/StageAttributes.h"
 
 #include "esp/metadata/managers/AssetAttributesManager.h"
 #include "esp/metadata/managers/AttributesManagerBase.h"

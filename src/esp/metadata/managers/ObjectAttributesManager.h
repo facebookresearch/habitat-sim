@@ -10,7 +10,7 @@
 #include <utility>
 
 #include "AbstractObjectAttributesManagerBase.h"
-#include "AssetAttributesManager.h"
+#include "esp/metadata/attributes/ObjectAttributes.h"
 
 namespace esp {
 namespace metadata {
