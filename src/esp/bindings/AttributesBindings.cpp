@@ -8,6 +8,7 @@
 
 #include "esp/core/managedContainers/AbstractManagedObject.h"
 #include "esp/metadata/attributes/AbstractObjectAttributes.h"
+#include "esp/metadata/attributes/ArticulatedObjectAttributes.h"
 #include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/metadata/attributes/LightLayoutAttributes.h"
 #include "esp/metadata/attributes/ObjectAttributes.h"
@@ -24,6 +25,7 @@ namespace Attrs = esp::metadata::attributes;
 using Attrs::AbstractAttributes;
 using Attrs::AbstractObjectAttributes;
 using Attrs::AbstractPrimitiveAttributes;
+using Attrs::ArticulatedObjectAttributes;
 using Attrs::CapsulePrimitiveAttributes;
 using Attrs::ConePrimitiveAttributes;
 using Attrs::CubePrimitiveAttributes;
@@ -187,6 +189,29 @@ void initAttributesBindings(py::module& m) {
           "key"_a, "value"_a)
 
       ;
+  // ==== ArticulatedObjectAttributes ====
+  py::class_<ArticulatedObjectAttributes, AbstractAttributes,
+             ArticulatedObjectAttributes::ptr>(
+      m, "ArticulatedObjectAttributes",
+      R"(A metadata template for articulated object configurations. Can be imported from
+      .ao_config.json files.)")
+      .def(py::init(&ArticulatedObjectAttributes::create<>))
+      .def(py::init(&ArticulatedObjectAttributes::create<const std::string&>))
+      .def_property(
+          "render_asset_handle",
+          &ArticulatedObjectAttributes::getRenderAssetHandle,
+          &ArticulatedObjectAttributes::setRenderAssetHandle,
+          R"(Handle of the asset used to render constructions built from
+          this articulated object template.)")
+      .def_property(
+          "semantic_id", &ArticulatedObjectAttributes::getSemanticId,
+          &ArticulatedObjectAttributes::setSemanticId,
+          R"(The semantic ID for articulated objects constructed from this template.)")
+      .def_property("render_using_primitives",
+                    &ArticulatedObjectAttributes::getDebugRenderPrimitives,
+                    &ArticulatedObjectAttributes::setDebugRenderPrimitives,
+                    R"(Whether we should render using the articulated object
+          primitives, even if a render asset is present.)");
 
   // ==== AbstractObjectAttributes ====
   py::class_<AbstractObjectAttributes, AbstractAttributes,
@@ -300,7 +325,10 @@ void initAttributesBindings(py::module& m) {
   // ==== ObjectAttributes ====
   py::class_<ObjectAttributes, AbstractObjectAttributes, ObjectAttributes::ptr>(
       m, "ObjectAttributes",
-      R"(A metadata template for rigid objects pre-instantiation. Defines asset paths, physical properties, scale, semantic ids, shader type overrides, and user defined metadata. ManagedRigidObjects are instantiated from these blueprints. Can be imported from .object_config.json files.)")
+      R"(A metadata template for rigid objects pre-instantiation. Defines asset paths, physical
+      properties, scale, semantic ids, shader type overrides, and user defined metadata.
+      ManagedRigidObjects are instantiated from these blueprints. Can be imported from
+      .object_config.json files.)")
       .def(py::init(&ObjectAttributes::create<>))
       .def(py::init(&ObjectAttributes::create<const std::string&>))
       .def_property(
