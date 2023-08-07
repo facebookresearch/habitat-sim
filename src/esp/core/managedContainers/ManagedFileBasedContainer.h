@@ -352,7 +352,7 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
   /**
    * @brief Verify passd @p filename is legal document of type U. Returns
    * loaded document in passed argument if successful. This requires
-   * appropriate specialization for each type name, so if this speciric method
+   * appropriate specialization for each type name, so if this specific method
    * is executed it means no appropriate specialization exists for passed type
    * of document.
    *
