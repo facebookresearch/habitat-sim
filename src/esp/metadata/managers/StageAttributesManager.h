@@ -22,7 +22,7 @@ class StageAttributesManager
     : public AbstractObjectAttributesManager<attributes::StageAttributes,
                                              ManagedObjectAccess::Copy> {
  public:
-  StageAttributesManager(
+  explicit StageAttributesManager(
       PhysicsAttributesManager::ptr physicsAttributesManager);
 
   /**
