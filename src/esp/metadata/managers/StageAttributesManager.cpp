@@ -25,24 +25,26 @@ using attributes::StageAttributes;
 namespace managers {
 
 StageAttributesManager::StageAttributesManager(
-    ObjectAttributesManager::ptr objectAttributesMgr,
     PhysicsAttributesManager::ptr physicsAttributesManager)
     : AbstractObjectAttributesManager<StageAttributes,
                                       ManagedObjectAccess::Copy>::
           AbstractObjectAttributesManager("Stage", "stage_config.json"),
-      objectAttributesMgr_(std::move(objectAttributesMgr)),
       physicsAttributesManager_(std::move(physicsAttributesManager)),
       cfgLightSetup_(NO_LIGHT_KEY) {
   // build this manager's copy constructor map
   this->copyConstructorMap_["StageAttributes"] =
       &StageAttributesManager::createObjectCopy<attributes::StageAttributes>;
+
+}  // StageAttributesManager::ctor
+
+void StageAttributesManager::createDefaultPrimBasedAttributesTemplates() {
   // create none-type stage attributes and set as undeletable
   // based on default
   auto tmplt = this->postCreateRegister(
       StageAttributesManager::initNewObjectInternal("NONE", false), true);
   std::string tmpltHandle = tmplt->getHandle();
   this->undeletableObjectNames_.insert(std::move(tmpltHandle));
-}  // StageAttributesManager::ctor
+}  // StageAttributesManager::createDefaultPrimBasedAttributesTemplates
 
 int StageAttributesManager::registerObjectFinalize(
     StageAttributes::ptr stageAttributes,

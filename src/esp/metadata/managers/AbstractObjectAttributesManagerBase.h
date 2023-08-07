@@ -68,6 +68,19 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
                              bool registerTemplate = true) override;
 
   /**
+   * @brief Set a reference to the current
+   * @ref metadata::managers::AssetAttributesManager
+   * to use for primitive-based stages and objects. Also build any default
+   * object or stage attributes referencing primitives as render assets.
+   */
+  void setAssetAttributesManager(
+      AssetAttributesManager::cptr assetAttributesMgr) {
+    assetAttributesMgr_ = std::move(assetAttributesMgr);
+    // Create default primitive-based object attributess
+    createDefaultPrimBasedAttributesTemplates();
+  }
+
+  /**
    * @brief Creates an instance of an object or stage template described by
    * passed string, which should be a reference to an existing primitive asset
    * template to be used in the construction of the object or stage (as render
@@ -104,6 +117,22 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
       const io::JsonGenericValue& jsonDoc);
 
   //======== Internally accessed functions ========
+
+  /**
+   * @brief Create and save default primitive asset-based object templates,
+   * saving their handles as non-deletable default handles.
+   */
+  virtual void createDefaultPrimBasedAttributesTemplates() = 0;
+
+  /**
+   * @brief Check if currently configured primitive asset template library has
+   * passed handle.
+   * @param handle String name of primitive asset attributes desired
+   * @return whether handle exists or not in asset attributes library
+   */
+  bool isValidPrimitiveAttributes(const std::string& handle) {
+    return assetAttributesMgr_->getObjectLibHasHandle(handle);
+  }
 
   /**
    * @brief Only used by @ref
@@ -154,6 +183,12 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
       const std::function<void(int)>& meshTypeSetter) = 0;
 
   // ======== Typedefs and Instance Variables ========
+
+  /**
+   * @brief Reference to AssetAttributesManager to give access to primitive
+   * attributes for object construction
+   */
+  AssetAttributesManager::cptr assetAttributesMgr_ = nullptr;
 
  public:
   ESP_SMART_POINTERS(AbstractObjectAttributesManager<T, Access>)

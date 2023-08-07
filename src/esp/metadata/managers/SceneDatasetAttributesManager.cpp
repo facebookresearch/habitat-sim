@@ -334,7 +334,7 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
         if (!jCell["paths"].IsObject()) {
           ESP_WARNING(Mn::Debug::Flag::NoSpace)
               << "`" << tag
-              << ".paths` cell in JSON config unable to be parsed as "
+              << "`.paths` cell in JSON config unable to be parsed as "
                  "a JSON object to determine search paths so skipping.";
         } else {
           const auto& pathsObj = jCell["paths"];
