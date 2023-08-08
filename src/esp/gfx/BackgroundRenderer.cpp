@@ -190,8 +190,6 @@ void BackgroundRenderer::runLoopThread() {
 
   threadOwnsContext_ = true;
 
-  // Renderer::setupMagnumFeatures(); // TODO probably also for nothing, drop
-
   threadReleaseContext();
   done_.store(1, std::memory_order_release);
   cpp20::atomic_notify_all(&done_);
