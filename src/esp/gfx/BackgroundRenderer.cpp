@@ -111,8 +111,7 @@ void BackgroundRenderer::releaseContext() {
 int BackgroundRenderer::threadRender() {
   if (!threadOwnsContext_) {
     ESP_VERY_VERBOSE() << "Background thread acquired GL Context";
-    context_->makeCurrentPlatform();
-    Mn::GL::Context::makeCurrent(threadContext_.get());
+    context_->makeCurrent();
     threadOwnsContext_ = true;
   }
 
@@ -181,23 +180,17 @@ int BackgroundRenderer::threadRender() {
 
 void BackgroundRenderer::threadReleaseContext() {
   if (threadOwnsContext_) {
-    Mn::GL::Context::makeCurrent(nullptr);
-    context_->releasePlatform();
+    context_->release();
     threadOwnsContext_ = false;
   }
 }
 
 void BackgroundRenderer::runLoopThread() {
-  context_->makeCurrentPlatform();
-  threadContext_ =
-      Cr::Containers::pointer<Mn::Platform::GLContext>(Mn::NoCreate);
-  if (!threadContext_->tryCreate())
-    Mn::Fatal{} << "BackgroundRenderer: Failed to create OpenGL context";
+  context_->makeCurrent();
 
-  Mn::GL::Context::makeCurrent(threadContext_.get());
   threadOwnsContext_ = true;
 
-  Renderer::setupMagnumFeatures();
+  // Renderer::setupMagnumFeatures(); // TODO probably also for nothing, drop
 
   threadReleaseContext();
   done_.store(1, std::memory_order_release);
@@ -214,7 +207,6 @@ void BackgroundRenderer::runLoopThread() {
     switch (task_) {
       case Task::Exit:
         threadReleaseContext();
-        threadContext_ = nullptr;
         done = true;
         break;
       case Task::ReleaseContext:

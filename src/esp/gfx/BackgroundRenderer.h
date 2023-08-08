@@ -17,9 +17,6 @@
 #include "esp/scene/SceneGraph.h"
 #include "esp/sensor/VisualSensor.h"
 
-#include <Corrade/Containers/Pointer.h>
-#include <Magnum/Platform/GLContext.h>
-
 namespace esp {
 namespace gfx {
 class BackgroundRenderer {
@@ -60,7 +57,6 @@ class BackgroundRenderer {
   bool threadIsWorking_, threadInitialized_;
 
   bool threadOwnsContext_;
-  Corrade::Containers::Pointer<Magnum::Platform::GLContext> threadContext_;
   Task task_;
   std::vector<std::tuple<std::reference_wrapper<sensor::VisualSensor>,
                          std::reference_wrapper<scene::SceneGraph>,
