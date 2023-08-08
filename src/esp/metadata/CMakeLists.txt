@@ -8,6 +8,8 @@ set(
   attributes/AttributesBase.cpp
   attributes/AttributesEnumMaps.h
   attributes/AttributesEnumMaps.cpp
+  attributes/AbstractObjectAttributes.h
+  attributes/AbstractObjectAttributes.cpp
   attributes/LightLayoutAttributes.h
   attributes/LightLayoutAttributes.cpp
   attributes/ObjectAttributes.h
@@ -22,8 +24,10 @@ set(
   attributes/SceneInstanceAttributes.cpp
   attributes/SceneDatasetAttributes.h
   attributes/SceneDatasetAttributes.cpp
+  attributes/StageAttributes.h
+  attributes/StageAttributes.cpp
   managers/AttributesManagerBase.h
-  managers/AbstractObjectAttributesManagerBase.h
+  managers/AbstractObjectAttributesManager.h
   managers/AssetAttributesManager.h
   managers/AssetAttributesManager.cpp
   managers/LightLayoutAttributesManager.h

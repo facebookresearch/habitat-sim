@@ -187,16 +187,6 @@ class SceneInstanceAttributesManager
       CORRADE_UNUSED bool forceRegistration) override;
 
   /**
-   * @brief This function is meaningless for this manager's ManagedObjects.
-   * @param handle Ignored.
-   * @return false
-   */
-  bool isValidPrimitiveAttributes(
-      CORRADE_UNUSED const std::string& handle) override {
-    return false;
-  }
-
-  /**
    * @brief Name of the attributes used for the default Pbr/Ibl shader
    * configuration. This can be overwritten by the SceneInstances.
    */

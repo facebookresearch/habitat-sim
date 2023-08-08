@@ -96,7 +96,6 @@ namespace Mn = Magnum;
 
 namespace esp {
 
-using metadata::attributes::AbstractObjectAttributes;
 using metadata::attributes::CubePrimitiveAttributes;
 using metadata::attributes::ObjectAttributes;
 using metadata::attributes::ObjectInstanceShaderType;

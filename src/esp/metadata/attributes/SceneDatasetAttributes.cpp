@@ -20,8 +20,9 @@ SceneDatasetAttributes::SceneDatasetAttributes(
   objectAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
   sceneInstanceAttributesManager_ =
       managers::SceneInstanceAttributesManager::create();
-  stageAttributesManager_ = managers::StageAttributesManager::create(
-      objectAttributesManager_, physAttrMgr);
+  stageAttributesManager_ =
+      managers::StageAttributesManager::create(physAttrMgr);
+  stageAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
 }  // ctor
 
 bool SceneDatasetAttributes::addNewSceneInstanceToDataset(

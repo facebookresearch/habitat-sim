@@ -18,7 +18,6 @@
 
 namespace Cr = Corrade;
 
-using esp::metadata::attributes::AbstractObjectAttributes;
 using esp::metadata::attributes::ObjectAttributes;
 
 namespace {

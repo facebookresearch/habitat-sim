@@ -7,6 +7,7 @@
 #include <Magnum/PythonBindings.h>
 
 #include "esp/core/managedContainers/AbstractManagedObject.h"
+#include "esp/metadata/attributes/AbstractObjectAttributes.h"
 #include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/metadata/attributes/LightLayoutAttributes.h"
 #include "esp/metadata/attributes/ObjectAttributes.h"
@@ -14,6 +15,7 @@
 #include "esp/metadata/attributes/PhysicsManagerAttributes.h"
 #include "esp/metadata/attributes/PrimitiveAssetAttributes.h"
 #include "esp/metadata/attributes/SceneInstanceAttributes.h"
+#include "esp/metadata/attributes/StageAttributes.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;

@@ -9,8 +9,8 @@
 #include "esp/assets/BaseMesh.h"
 #include "esp/assets/GenericSemanticMeshData.h"
 #include "esp/core/Esp.h"
+#include "esp/metadata/attributes/AbstractObjectAttributes.h"
 #include "esp/metadata/attributes/AttributesBase.h"
-#include "esp/metadata/attributes/ObjectAttributes.h"
 #include "esp/physics/PhysicsObjectBase.h"
 
 /** @file

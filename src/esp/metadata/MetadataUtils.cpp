@@ -7,7 +7,7 @@
 #include <Corrade/Utility/String.h>
 
 #include "esp/io/Io.h"
-#include "esp/metadata/attributes/ObjectAttributes.h"
+#include "esp/metadata/attributes/AbstractObjectAttributes.h"
 
 namespace esp {
 namespace metadata {
