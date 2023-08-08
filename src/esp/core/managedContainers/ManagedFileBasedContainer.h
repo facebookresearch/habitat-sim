@@ -399,11 +399,12 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
    */
   template <class U>
   bool verifyParseDocString(const std::string& docName,
-                            const std::string& docString,
+                            CORRADE_UNUSED const std::string& docString,
                             CORRADE_UNUSED std::unique_ptr<U>& resDoc) {
     // by here always fail - means document type U is unsupported
     ESP_ERROR(Mn::Debug::Flag::NoSpace)
-        << "<" << this->objectType_ << "> : Parse string named `" << docName
+        << "<" << this->objectType_ << "> : Attempt to parse string named `"
+        << docName
         << "` failed due to unsupported parse destination document type `"
         << typeid(U).name() << "`";
     return false;
