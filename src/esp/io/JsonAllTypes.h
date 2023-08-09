@@ -57,11 +57,14 @@ void addMember(rapidjson::Value& value,
 
 template <typename T>
 bool readMember(const rapidjson::Value& value, const char* tag, T& x) {
-  if (!value.HasMember(tag)) {
+  JsonGenericValue::ConstMemberIterator jsonIter = value.FindMember(tag);
+
+  if (jsonIter == value.MemberEnd()) {
     // return false but don't log an error
     return false;
   }
-  if (!fromJsonValue(value[tag], x)) {
+
+  if (!fromJsonValue(jsonIter->value, x)) {
     ESP_ERROR() << "Failed to parse JSON tag \"" << tag << "\"";
     return false;
   }
