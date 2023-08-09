@@ -9,6 +9,14 @@
 [![Supports Bullet](https://img.shields.io/static/v1?label=supports&message=Bullet%20Physics&color=informational&link=https://opensource.google/projects/bullet3)](https://opensource.google/projects/bullet3)
 [![Twitter Follow](https://img.shields.io/twitter/follow/ai_habitat?style=social)](https://twitter.com/ai_habitat)
 
+## NOTE:
+This code is slightly modified from original [Habitat-Sim](https://github.com/facebookresearch/habitat-sim) to obtain camera poses as transformation matrix and images as equirectangular projection.
+Moreover, `skip` and `out_path` arguments are added to skip the frames and save outputs respectively. The modifications are made only for `examples/`.
+You may run this version of code as follows:
+```
+python3 examples/example.py --scene /path/to/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb --save_png --max_frames 25 --height 2048 --width 4096 --skip 5 --out_path /path/to/data/scene_datasets/habitat-test-scenes/skokloster-castle/
+```
+
 # Habitat-Sim
 
 A high-performance physics-enabled 3D simulator with support for:
