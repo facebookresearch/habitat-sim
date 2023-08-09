@@ -578,8 +578,6 @@ bool Simulator::instanceArticulatedObjectsForSceneAttributes(
   const std::vector<SceneAOInstanceAttributes::cptr> artObjInstances =
       curSceneInstanceAttributes_->getArticulatedObjectInstances();
 
-  // int aoID = 0;
-  auto& drawables = getDrawableGroup();
   // Iterate through instances, create object and implement initial
   // transformation.
   for (const auto& artObjInst : artObjInstances) {
