@@ -207,11 +207,16 @@ void initAttributesBindings(py::module& m) {
           "semantic_id", &ArticulatedObjectAttributes::getSemanticId,
           &ArticulatedObjectAttributes::setSemanticId,
           R"(The semantic ID for articulated objects constructed from this template.)")
-      .def_property("render_using_primitives",
-                    &ArticulatedObjectAttributes::getDebugRenderPrimitives,
-                    &ArticulatedObjectAttributes::setDebugRenderPrimitives,
-                    R"(Whether we should render using the articulated object
-          primitives, even if a render asset is present.)");
+      .def_property(
+          "shader_type", &ArticulatedObjectAttributes::getShaderType,
+          &ArticulatedObjectAttributes::setShaderType,
+          R"(The shader type [0=material, 1=flat, 2=phong, 3=pbr] to use for this construction.
+          Currently Articulated Objects only support Flat/Phong shading.)")
+      .def_property(
+          "render_mode", &ArticulatedObjectAttributes::getRenderMode,
+          &ArticulatedObjectAttributes::setRenderMode,
+          R"(Whether we should render using the articulated object, its skin,
+          primitives representing each link, both or none.)");
 
   // ==== AbstractObjectAttributes ====
   py::class_<AbstractObjectAttributes, AbstractAttributes,
