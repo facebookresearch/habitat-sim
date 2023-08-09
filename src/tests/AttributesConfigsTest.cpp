@@ -7,6 +7,7 @@
 #include <string>
 
 #include "esp/metadata/MetadataMediator.h"
+#include "esp/metadata/managers/AOAttributesManager.h"
 #include "esp/metadata/managers/AttributesManagerBase.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
 #include "esp/metadata/managers/PbrShaderAttributesManager.h"
@@ -30,6 +31,7 @@ using esp::metadata::PrimObjTypes;
 using esp::physics::MotionType;
 
 using AttrMgrs::AttributesManager;
+using Attrs::ArticulatedObjectAttributes;
 using Attrs::ObjectAttributes;
 using Attrs::PbrShaderAttributes;
 using Attrs::PhysicsManagerAttributes;
@@ -149,6 +151,15 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
   void testObjectAttrVals(
       std::shared_ptr<esp::metadata::attributes::ObjectAttributes> objAttr,
       const std::string& assetPath);
+  /**
+   * @brief This test will verify that the Articulated Object attributes'
+   * managers' JSON loading process is working as expected.
+   */
+  void testArticulatedObjectAttrVals(
+      std::shared_ptr<esp::metadata::attributes::ArticulatedObjectAttributes>
+          artObjAttr,
+      const std::string& assetPath,
+      const std::string& urdfPath);
 
   // actual test functions
   // These tests build strings containing legal JSON config data to use to build
@@ -162,6 +173,7 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
   void testSceneInstanceJSONLoad();
   void testStageJSONLoad();
   void testObjectJSONLoad();
+  void testArticulatedObjectJSONLoad();
 
   // test member vars
 
@@ -169,6 +181,7 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
   esp::logging::LoggingContext loggingContext_;
   AttrMgrs::LightLayoutAttributesManager::ptr lightLayoutAttributesManager_ =
       nullptr;
+  AttrMgrs::AOAttributesManager::ptr artObjAttributesManager_ = nullptr;
   AttrMgrs::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
   AttrMgrs::PbrShaderAttributesManager::ptr pbrShaderAttributesManager_ =
       nullptr;
@@ -185,6 +198,7 @@ AttributesConfigsTest::AttributesConfigsTest() {
   MM = MetadataMediator::create_unique(cfg);
   // get attributes managers for default dataset
   lightLayoutAttributesManager_ = MM->getLightLayoutAttributesManager();
+  artObjAttributesManager_ = MM->getAOAttributesManager();
   objectAttributesManager_ = MM->getObjectAttributesManager();
   physicsAttributesManager_ = MM->getPhysicsAttributesManager();
   pbrShaderAttributesManager_ = MM->getPbrShaderAttributesManager();
@@ -198,6 +212,7 @@ AttributesConfigsTest::AttributesConfigsTest() {
       &AttributesConfigsTest::testSceneInstanceJSONLoad,
       &AttributesConfigsTest::testStageJSONLoad,
       &AttributesConfigsTest::testObjectJSONLoad,
+      &AttributesConfigsTest::testArticulatedObjectJSONLoad,
   });
 }
 
@@ -1211,13 +1226,118 @@ void AttributesConfigsTest::testObjectJSONLoad() {
 
   // test json string to verify format, this deletes objAttr2 from
   // registry
-  ESP_DEBUG() << "About to test saved stageAttr2 :" << objAttr2->getHandle();
+  ESP_DEBUG() << "About to test saved objAttr2 :" << objAttr2->getHandle();
   testObjectAttrVals(objAttr2, objAssetFile);
-  ESP_DEBUG() << "Tested saved stageAttr2 :";
+  ESP_DEBUG() << "Tested saved objAttr2 :";
 
   // delete file-based config
   Cr::Utility::Path::remove(newAttrName);
 }  // AttributesConfigsTest::testObjectJSONLoadTest
+
+void AttributesConfigsTest::testArticulatedObjectAttrVals(
+    std::shared_ptr<esp::metadata::attributes::ArticulatedObjectAttributes>
+        artObjAttr,
+    const std::string& assetPath,
+    const std::string& urdfPath) {
+  // match values set in test JSON
+  CORRADE_COMPARE(artObjAttr->getURDFPath(), urdfPath);
+  CORRADE_COMPARE(artObjAttr->getRenderAssetHandle(), assetPath);
+  CORRADE_COMPARE(artObjAttr->getSemanticId(), 100);
+  CORRADE_COMPARE(static_cast<int>(artObjAttr->getShaderType()),
+                  static_cast<int>(Attrs::ObjectInstanceShaderType::PBR));
+
+  // test object attributes-level user config vals
+  testUserDefinedConfigVals(artObjAttr->getUserConfiguration(), 5,
+                            "articulated object defined string", true, 6, 3.6,
+                            Mn::Vector2(4.7f, 2.4f),
+                            Mn::Vector3(15.1, 17.6, 110.1),
+                            Mn::Quaternion({5.3f, 6.4f, 7.5f}, 0.8f),
+                            Mn::Vector4(1.6f, 1.2f, 6.3f, 7.4f));
+
+  // remove json-string built attributes added for test
+  testRemoveAttributesBuiltByJSONString(artObjAttributesManager_,
+                                        artObjAttr->getHandle());
+
+}  // AttributesConfigsTest::testArticulatedObjectAttrVals
+
+void AttributesConfigsTest::testArticulatedObjectJSONLoad() {
+  // build JSON sample config
+  const std::string& jsonString = R"({
+  "urdf_filepath": "urdf_test_file.urdf",
+  "render_asset": "testAO_JSONRenderAsset.glb",
+  "render_mode": "skin",
+  "semantic_id": 100,
+  "shader_type" : "pbr",
+  "user_defined" : {
+      "user_str_array" : ["test_00", "test_01", "test_02", "test_03", "test_04"],
+      "user_string" : "articulated object defined string",
+      "user_bool" : true,
+      "user_int" : 6,
+      "user_double" : 3.6,
+      "user_vec2" : [4.7, 2.4],
+      "user_vec3" : [15.1, 17.6, 110.1],
+      "user_vec4" : [1.6, 1.2, 6.3, 7.4],
+      "user_quat" : [0.8, 5.3, 6.4, 7.5]
+  }
+})";
+
+  // Build an attributes based on the above json string
+  // Don't register - registration here verifies that the URDF file handle
+  // specified in the attributes exist, or it will fail.
+  auto artObjAttr = artObjAttributesManager_->createObjectFromJSONString(
+      "new_template_from_json", jsonString, false);
+
+  // verify created attributes exists
+  CORRADE_VERIFY(artObjAttr);
+
+  // now need to change urdf filename and render asset file name to make sure
+  // they are legal so the test can proceed (needs to be actual existing file so
+  // it can be regsitered)
+  const std::string aoURDFFlle =
+      Cr::Utility::Path::join(testAttrSaveDir, "urdf/prim_chain.urdf");
+  const std::string aoRenderAssetName =
+      Cr::Utility::Path::join(testAttrSaveDir, "objects/skinned_prism.glb");
+
+  artObjAttr->setURDFPath(aoURDFFlle);
+  artObjAttr->setRenderAssetHandle(aoRenderAssetName);
+
+  // now register so can be saved to disk
+  artObjAttributesManager_->registerObject(artObjAttr);
+
+  // before test, save attributes to disk with new name
+  std::string newAttrName = Cr::Utility::formatString(
+      "{}/testArtObjectAttrConfig_saved_JSON.{}", testAttrSaveDir,
+      artObjAttributesManager_->getJSONTypeExt());
+
+  bool success = artObjAttributesManager_->saveManagedObjectToFile(
+      artObjAttr->getHandle(), newAttrName);
+
+  // test json string to verify format - this also deletes objAttr from
+  // manager
+
+  ESP_DEBUG() << "About to test string-based artObjAttr :";
+  testArticulatedObjectAttrVals(artObjAttr, aoRenderAssetName, aoURDFFlle);
+  ESP_DEBUG() << "Tested string-based artObjAttr :";
+  artObjAttr = nullptr;
+
+  // load attributes from new name and retest
+  auto artObjAttr2 =
+      artObjAttributesManager_->createObjectFromJSONFile(newAttrName);
+
+  // verify file-based config exists
+  CORRADE_VERIFY(artObjAttr2);
+
+  // test json string to verify format, this deletes objAttr2 from
+  // registry
+  ESP_DEBUG() << "About to test saved artObjAttr2 :"
+              << artObjAttr2->getHandle();
+  testArticulatedObjectAttrVals(artObjAttr2, aoRenderAssetName, aoURDFFlle);
+  ESP_DEBUG() << "Tested saved artObjAttr2 :";
+
+  // delete file-based config
+  Cr::Utility::Path::remove(newAttrName);
+
+}  // AttributesConfigsTest::testArticulatedObjectJSONLoad
 
 }  // namespace
 
