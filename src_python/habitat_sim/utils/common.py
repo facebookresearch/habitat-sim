@@ -167,7 +167,13 @@ def random_quaternion():
     )
     return mn.Quaternion(qAxis, math.sqrt(1 - u[0]) * math.sin(2 * math.pi * u[1]))
 
-
+def to_campose(q: qt.quaternion, t: np.ndarray):
+    R = qt.as_rotation_matrix(q)
+    T = np.eye(4)
+    T[:3, :3] = R
+    T[:3, 3] = t
+    return T
+    
 def download_and_unzip(file_url, local_directory):
     response = urlopen(file_url)
     zipfile = ZipFile(BytesIO(response.read()))
