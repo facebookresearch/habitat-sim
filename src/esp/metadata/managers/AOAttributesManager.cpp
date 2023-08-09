@@ -31,24 +31,29 @@ ArticulatedObjectAttributes::ptr AOAttributesManager::createObject(
 void AOAttributesManager::setValsFromJSONDoc(
     ArticulatedObjectAttributes::ptr aoAttr,
     const io::JsonGenericValue& jsonConfig) {
-  // load the urdf filepath
-  std::string urdfFName = "";
-
-  if (io::readMember<std::string>(jsonConfig, "urdf_filepath", urdfFName)) {
-    // If specified urdfFName is not found directly, prefix it with file
-    // directory
-    if (!Corrade::Utility::Path::exists(urdfFName)) {
-      urdfFName =
-          Cr::Utility::Path::join(aoAttr->getFileDirectory(), urdfFName);
+  std::string urdf_filepath = "";
+  // load the urdf filepath, prefixing with file path if not found
+  if (io::readMember<std::string>(jsonConfig, "urdf_filepath", urdf_filepath)) {
+    // If specified urdf_filepath is not found directly, prefix it with file
+    // directory where the configuration file was found.
+    if (!Corrade::Utility::Path::exists(urdf_filepath)) {
+      urdf_filepath =
+          Cr::Utility::Path::join(aoAttr->getFileDirectory(), urdf_filepath);
     }
-    aoAttr->setURDFPath(urdfFName);
+    aoAttr->setURDFPath(urdf_filepath);
   }
 
-  // load the render asset handle
-  io::jsonIntoConstSetter<std::string>(
-      jsonConfig, "render_asset", [aoAttr](const std::string& render_asset) {
-        aoAttr->setRenderAssetHandle(render_asset);
-      });
+  std::string render_asset = "";
+  // load the render asset handle, prefixing with file path if not found
+  if (io::readMember<std::string>(jsonConfig, "render_asset", render_asset)) {
+    // If specified render_asset is not found directly, prefix it with file
+    // directory where the configuration file was found.
+    if (!Corrade::Utility::Path::exists(render_asset)) {
+      render_asset =
+          Cr::Utility::Path::join(aoAttr->getFileDirectory(), render_asset);
+    }
+    aoAttr->setRenderAssetHandle(render_asset);
+  }
 
   // load the semantic id
   io::jsonIntoSetter<int>(jsonConfig, "semantic_id", [aoAttr](int semantic_id) {
