@@ -87,6 +87,10 @@ def save_poses(perfs, pose_file):
 
 settings = make_settings()
 
+if not os.path.exists(args.out_path):
+    print(f"{args.out_path} doesn't exist, so creating one.")
+    os.mkdir(args.out_path)
+    
 perfs = []
 for _i in range(1):
     demo_runner = dr.DemoRunner(settings, dr.DemoRunnerType.EXAMPLE, out_path=args.out_path)
@@ -104,10 +108,6 @@ for _i in range(1):
     #    "FPS is below regression threshold: %0.1f < %0.1f"
     #    % (perf["fps"], args.test_fps_regression)
     # )
-
-if not os.path.exists(args.out_path):
-    print(f"{args.out_path} doesn't exist, so creating one.")
-    os.mkdir(args.out_path)
 
 save_poses(perfs, os.path.join(args.out_path, "transformations.txt"))
 
