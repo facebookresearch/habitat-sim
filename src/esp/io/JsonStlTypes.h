@@ -106,9 +106,10 @@ template <>
 inline bool readMember(const JsonGenericValue& d,
                        const char* tag,
                        std::map<std::string, std::string>& val) {
-  if (d.HasMember(tag)) {
-    if (d[tag].IsObject()) {
-      const auto& jCell = d[tag];
+  JsonGenericValue::ConstMemberIterator jsonIter = d.FindMember(tag);
+  if (jsonIter != d.MemberEnd()) {
+    if (jsonIter->value.IsObject()) {
+      const auto& jCell = jsonIter->value;
       for (rapidjson::Value::ConstMemberIterator it = jCell.MemberBegin();
            it != jCell.MemberEnd(); ++it) {
         const std::string key = it->name.GetString();
@@ -146,9 +147,10 @@ template <>
 inline bool readMember(const JsonGenericValue& d,
                        const char* tag,
                        std::map<std::string, float>& val) {
-  if (d.HasMember(tag)) {
-    if (d[tag].IsObject()) {
-      const auto& jCell = d[tag];
+  JsonGenericValue::ConstMemberIterator jsonIter = d.FindMember(tag);
+  if (jsonIter != d.MemberEnd()) {
+    if (jsonIter->value.IsObject()) {
+      const auto& jCell = jsonIter->value;
       for (rapidjson::Value::ConstMemberIterator it = jCell.MemberBegin();
            it != jCell.MemberEnd(); ++it) {
         const std::string key = it->name.GetString();

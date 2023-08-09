@@ -292,27 +292,32 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
     const char* tag,
     const io::JsonGenericValue& jsonConfig,
     const U& attrMgr) {
-  if (jsonConfig.HasMember(tag)) {
-    if (!jsonConfig[tag].IsObject()) {
+  io::JsonGenericValue::ConstMemberIterator jsonIter =
+      jsonConfig.FindMember(tag);
+  if (jsonIter != jsonConfig.MemberEnd()) {
+    if (!jsonIter->value.IsObject()) {
       ESP_WARNING(Mn::Debug::Flag::NoSpace)
           << "`" << tag
           << "` cell in JSON config not appropriately configured. Skipping.";
 
     } else {
-      const auto& jCell = jsonConfig[tag];
+      const auto& jCell = jsonIter->value;
       // process JSON jCell here - this cell potentially holds :
       // 1. "default_attributes" : a single attributes default of the
       // specified type.
-      if (jCell.HasMember("default_attributes")) {
-        if (!jCell["default_attributes"].IsObject()) {
+      io::JsonGenericValue::ConstMemberIterator jsonDfltObjIter =
+          jCell.FindMember("default_attributes");
+
+      if (jsonDfltObjIter != jCell.MemberEnd()) {
+        if (!jsonDfltObjIter->value.IsObject()) {
           ESP_WARNING(Mn::Debug::Flag::NoSpace)
               << "`" << tag
               << ".default_attributes` cell in JSON config unable to "
                  "be parsed to set default attributes so skipping.";
         } else {
           // load attributes as default from file, do not register
-          auto attr = attrMgr->buildObjectFromJSONDoc(
-              "default_attributes", jCell["default_attributes"]);
+          auto attr = attrMgr->buildObjectFromJSONDoc("default_attributes",
+                                                      jsonDfltObjIter->value);
           if (nullptr == attr) {
             ESP_WARNING(Mn::Debug::Flag::NoSpace)
                 << "`" << tag
@@ -330,28 +335,32 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
 
       // 2. "paths" an array of paths to search for appropriately typed config
       // files.
-      if (jCell.HasMember("paths")) {
-        if (!jCell["paths"].IsObject()) {
+      io::JsonGenericValue::ConstMemberIterator jsonPathsIter =
+          jCell.FindMember("paths");
+      if (jsonPathsIter != jCell.MemberEnd()) {
+        if (!jsonPathsIter->value.IsObject()) {
           ESP_WARNING(Mn::Debug::Flag::NoSpace)
               << "`" << tag
               << "`.paths` cell in JSON config unable to be parsed as "
                  "a JSON object to determine search paths so skipping.";
         } else {
-          const auto& pathsObj = jCell["paths"];
+          const auto& pathsObj = jsonPathsIter->value;
           // iterate through all provided extensions
           for (rapidjson::Value::ConstMemberIterator it =
                    pathsObj.MemberBegin();
                it != pathsObj.MemberEnd(); ++it) {
             // for each key, assume it is an extension and attempt to parse
             const std::string ext{it->name.GetString()};
-            if (!pathsObj[ext.c_str()].IsArray()) {
+            io::JsonGenericValue::ConstMemberIterator pathsObjIter =
+                pathsObj.FindMember(ext.c_str());
+            if (!pathsObjIter->value.IsArray()) {
               ESP_WARNING(Mn::Debug::Flag::NoSpace)
                   << "`" << tag << ".paths`[" << ext
                   << "] cell in JSON config unable to be parsed as an array to "
                      "determine search paths for json configs so skipping.";
               continue;
             } else {
-              const auto& paths = pathsObj[ext.c_str()];
+              const auto& paths = pathsObjIter->value;
               if (ext.find(".json") != std::string::npos) {
                 attrMgr->buildJSONCfgPathsFromJSONAndLoad(dsDir, paths);
               } else {
@@ -361,16 +370,19 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
           }
         }  // if paths cell is an object
       }    // if has paths cell
+
       // 3. "configs" : an array of json cells defining customizations to
       // existing attributes.
-      if (jCell.HasMember("configs")) {
-        if (!jCell["configs"].IsArray()) {
+      io::JsonGenericValue::ConstMemberIterator jsonCfgsIter =
+          jCell.FindMember("configs");
+      if (jsonCfgsIter != jCell.MemberEnd()) {
+        if (!jsonCfgsIter->value.IsArray()) {
           ESP_WARNING(Mn::Debug::Flag::NoSpace)
               << "`" << tag
               << ".configs` cell in JSON config unable to be parsed "
                  "as an array to determine search paths so skipping.";
         } else {
-          const auto& configsAra = jCell["configs"];
+          const auto& configsAra = jsonCfgsIter->value;
           for (rapidjson::SizeType i = 0; i < configsAra.Size(); ++i) {
             const auto& configCell = configsAra[i];
             readDatasetConfigsJSONCell(dsDir, tag, configCell, attrMgr);
@@ -388,7 +400,10 @@ void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(
     const io::JsonGenericValue& jCell,
     const U& attrMgr) {
   // every cell within configs array must have an attributes tag
-  if ((!jCell.HasMember("attributes")) || (!jCell["attributes"].IsObject())) {
+  io::JsonGenericValue::ConstMemberIterator jsonAttrIter =
+      jCell.FindMember("attributes");
+  if ((jsonAttrIter == jCell.MemberEnd()) ||
+      (!jsonAttrIter->value.IsObject())) {
     ESP_WARNING(Mn::Debug::Flag::NoSpace)
         << "`" << tag
         << ".configs` cell element in JSON config lacks required data to "
@@ -476,7 +491,7 @@ void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(
     // set copied object's handle based on registration handle
     attr->setHandle(regHandle);
     // object is available now. Modify it using json tag data
-    attrMgr->setValsFromJSONDoc(attr, jCell["attributes"]);
+    attrMgr->setValsFromJSONDoc(attr, jsonAttrIter->value);
     // register object
     attrMgr->registerObject(std::move(attr), regHandle);
   } else {  // orig file name not specified, create a new object
@@ -495,7 +510,7 @@ void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(
     attr->setFileDirectory(dsDir);
 
     // default object is available now. Modify it using json tag data
-    attrMgr->setValsFromJSONDoc(attr, jCell["attributes"]);
+    attrMgr->setValsFromJSONDoc(attr, jsonAttrIter->value);
     // register object
     attrMgr->registerObject(std::move(attr), regHandle);
   }  // if original filename was specified else

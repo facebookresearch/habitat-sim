@@ -411,9 +411,12 @@ template <class T, ManagedObjectAccess Access>
 bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
     const attributes::AbstractAttributes::ptr& attribs,
     const io::JsonGenericValue& jsonConfig) const {
+  const std::string subGroupName = "user_defined";
   // check for user defined attributes and verify it is an object
-  if (jsonConfig.HasMember("user_defined")) {
-    if (!jsonConfig["user_defined"].IsObject()) {
+  io::JsonGenericValue::ConstMemberIterator jsonIter =
+      jsonConfig.FindMember(subGroupName.c_str());
+  if (jsonIter != jsonConfig.MemberEnd()) {
+    if (!jsonIter->value.IsObject()) {
       ESP_WARNING(Mn::Debug::Flag::NoSpace)
           << "<" << this->objectType_
           << "> : " << attribs->getSimplifiedHandle()
@@ -421,12 +424,11 @@ bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
              "is incorrect, so no user_defined attributes are loaded.";
       return false;
     } else {
-      const std::string subGroupName = "user_defined";
       // get pointer to user_defined subgroup configuration
       std::shared_ptr<Configuration> subGroupPtr =
           attribs->getUserConfiguration();
       // get json object referenced by tag subGroupName
-      const io::JsonGenericValue& jsonObj = jsonConfig[subGroupName.c_str()];
+      const io::JsonGenericValue& jsonObj = jsonIter->value;
 
       // count number of valid user config settings found
       int numConfigSettings = subGroupPtr->loadFromJson(jsonObj);

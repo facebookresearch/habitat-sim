@@ -71,11 +71,15 @@ void LightLayoutAttributesManager::setValsFromJSONDoc(
       });
 
   // scaling values are required for light instance processing
+
+  io::JsonGenericValue::ConstMemberIterator jsonIter =
+      jsonConfig.FindMember("lights");
+
   bool hasLights =
-      (jsonConfig.HasMember("lights") && jsonConfig["lights"].IsObject());
+      (jsonIter != jsonConfig.MemberEnd()) && (jsonIter->value.IsObject());
 
   if (hasLights) {
-    const auto& lightCell = jsonConfig["lights"];
+    const auto& lightCell = jsonIter->value;
     int count = 0;
     // iterate through objects
     for (rapidjson::Value::ConstMemberIterator it = lightCell.MemberBegin();
@@ -214,8 +218,10 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
   }
 
   // read spotlight params
-  if (jsonConfig.HasMember("spot")) {
-    if (!jsonConfig["spot"].IsObject()) {
+  io::JsonGenericValue::ConstMemberIterator jsonIter =
+      jsonConfig.FindMember("spot");
+  if (jsonIter != jsonConfig.MemberEnd()) {
+    if (!jsonIter->value.IsObject()) {
       // TODO prune NOTE: component when spotlights are supported
       ESP_WARNING()
           << "\"spot\" cell in JSON config unable to be "
@@ -224,7 +230,7 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
              "ignored and light will be created as a point light.";
     } else {
       // sets values in light instance subconfig "spot"
-      const auto& spotArea = jsonConfig["spot"];
+      const auto& spotArea = jsonIter->value;
       // set inner cone angle
       io::jsonIntoSetter<Magnum::Rad>(
           spotArea, "innerConeAngle",

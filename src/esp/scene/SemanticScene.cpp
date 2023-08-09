@@ -51,11 +51,20 @@ bool SemanticScene::
         // if not successful then attempt to load known json files
         const io::JsonDocument& jsonDoc = io::parseJsonFile(ssdFileName);
         // if no error thrown, then we have loaded a json file of given name
-        bool hasCorrectObjects =
-            (jsonDoc.HasMember("objects") && jsonDoc["objects"].IsArray());
+
+        io::JsonGenericValue::ConstMemberIterator hasJsonObjIter =
+            jsonDoc.FindMember("objects");
+
+        bool hasCorrectObjects = (hasJsonObjIter != jsonDoc.MemberEnd() &&
+                                  hasJsonObjIter->value.IsArray());
+
+        io::JsonGenericValue::ConstMemberIterator hasJsonClassIter =
+            jsonDoc.FindMember("classes");
+
         // check if also has "classes" tag, otherwise will assume it is a
         // gibson file
-        if (jsonDoc.HasMember("classes") && jsonDoc["classes"].IsArray()) {
+        if (hasJsonClassIter != jsonDoc.MemberEnd() &&
+            hasJsonClassIter->value.IsArray()) {
           // attempt to load replica or replicaCAD if has classes (replicaCAD
           // does not have objects in SSDescriptor)
           success =

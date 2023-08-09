@@ -147,7 +147,8 @@ template <typename T>
 bool readMember(const rapidjson::Value& value,
                 const char* name,
                 Corrade::Containers::Optional<T>& x) {
-  if (value.HasMember(name)) {
+  JsonGenericValue::ConstMemberIterator jsonIter = value.FindMember(name);
+  if (jsonIter != value.MemberEnd()) {
     x = T();
     return readMember(value, name, *x);
   } else {
