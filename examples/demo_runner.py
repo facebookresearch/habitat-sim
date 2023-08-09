@@ -36,16 +36,17 @@ class ABTestGroup(Enum):
 
 
 class DemoRunner:
-    def __init__(self, sim_settings, simulator_demo_type):
+    def __init__(self, sim_settings, simulator_demo_type, out_path=None):
         if simulator_demo_type == DemoRunnerType.EXAMPLE:
             self.set_sim_settings(sim_settings)
         self._demo_type = simulator_demo_type
+        self.out_path = out_path
 
     def set_sim_settings(self, sim_settings):
         self._sim_settings = sim_settings.copy()
 
     def save_color_observation(self, obs, total_frames):
-        color_obs = obs["color_sensor"]
+        color_obs = obs["equirect_rgba_sensor"]
         color_img = Image.fromarray(color_obs, mode="RGBA")
         if self._demo_type == DemoRunnerType.AB_TEST:
             if self._group_id == ABTestGroup.CONTROL:
@@ -53,10 +54,17 @@ class DemoRunner:
             else:
                 color_img.save("test.rgba.test.%05d.png" % total_frames)
         else:
-            color_img.save("test.rgba.%05d.png" % total_frames)
+            if self.out_path is None:
+                color_img.save("test.rgba.%05d.png" % total_frames)
+            else:
+                image_path = os.path.join(self.out_path, "images")
+                if not os.path.exists(image_path):
+                    print(f"{os.path.join(self.out_path, 'images')} doesn't exist, so creating one.")
+                    os.mkdir(image_path)
+                color_img.save(os.path.join(image_path,"test.rgba.%05d.png" % total_frames))
 
     def save_semantic_observation(self, obs, total_frames):
-        semantic_obs = obs["semantic_sensor"]
+        semantic_obs = obs["equirect_semantic_sensor"]
         semantic_img = Image.new("P", (semantic_obs.shape[1], semantic_obs.shape[0]))
         semantic_img.putpalette(d3_40_colors_rgb.flatten())
         semantic_img.putdata((semantic_obs.flatten() % 40).astype(np.uint8))
@@ -69,7 +77,7 @@ class DemoRunner:
             semantic_img.save("test.sem.%05d.png" % total_frames)
 
     def save_depth_observation(self, obs, total_frames):
-        depth_obs = obs["depth_sensor"]
+        depth_obs = obs["equirect_depth_sensor"]
         depth_img = Image.fromarray((depth_obs / 10 * 255).astype(np.uint8), mode="L")
         if self._demo_type == DemoRunnerType.AB_TEST:
             if self._group_id == ABTestGroup.CONTROL:
@@ -80,7 +88,7 @@ class DemoRunner:
             depth_img.save("test.depth.%05d.png" % total_frames)
 
     def output_semantic_mask_stats(self, obs, total_frames):
-        semantic_obs = obs["semantic_sensor"]
+        semantic_obs = obs["equirect_semantic_sensor"]
         counts = np.bincount(semantic_obs.flatten())
         total_count = np.sum(counts)
         print(f"Pixel statistics for frame {total_frames}")
@@ -212,6 +220,7 @@ class DemoRunner:
         # get the rigid object manager, which provides direct
         # access to objects
         rigid_obj_mgr = self._sim.get_rigid_object_manager()
+        poses = []
 
         total_sim_step_time = 0.0
         total_frames = 0
@@ -259,15 +268,15 @@ class DemoRunner:
             total_sim_step_time += self._sim._previous_step_time
 
             if self._sim_settings["save_png"]:
-                if self._sim_settings["color_sensor"]:
+                if self._sim_settings["equirect_rgba_sensor"]:
                     self.save_color_observation(observations, total_frames)
-                if self._sim_settings["depth_sensor"]:
+                if self._sim_settings["equirect_depth_sensor"]:
                     self.save_depth_observation(observations, total_frames)
-                if self._sim_settings["semantic_sensor"]:
+                if self._sim_settings["equirect_semantic_sensor"]:
                     self.save_semantic_observation(observations, total_frames)
 
             state = self._sim.last_state()
-
+            poses.append([state.position, state.rotation])
             if not self._sim_settings["silent"]:
                 print("position\t", state.position, "\t", "rotation\t", state.rotation)
 
@@ -283,12 +292,13 @@ class DemoRunner:
                 print("len(action_path)", len(self._action_path))
 
             if (
-                self._sim_settings["semantic_sensor"]
+                self._sim_settings["equirect_semantic_sensor"]
                 and self._sim_settings["print_semantic_mask_stats"]
             ):
                 self.output_semantic_mask_stats(observations, total_frames)
 
-            total_frames += 1
+            print(f"skipping frames by {self._sim_settings['skip']}, total_frames = {total_frames}")
+            total_frames += self._sim_settings["skip"]
 
         end_time = time.time()
         perf = {"total_time": end_time - start_time}
@@ -296,6 +306,7 @@ class DemoRunner:
         perf["fps"] = 1.0 / perf["frame_time"]
         perf["time_per_step"] = time_per_step
         perf["avg_sim_step_time"] = total_sim_step_time / total_frames
+        perf["pose"] = poses
 
         return perf
 
@@ -353,6 +364,7 @@ class DemoRunner:
 
     def _bench_target(self, _idx=0):
         self.init_common()
+        print("inside _bench_target")
 
         best_perf = None
         for _ in range(3):
