@@ -69,12 +69,17 @@ bool SemanticScene::buildGibsonHouse(const io::JsonDocument& jsonDoc,
       object->category_ = std::move(category);
     }
 
-    if (jsonObject.HasMember("location")) {
-      const auto& jsonCenter = jsonObject["location"];
+    io::JsonGenericValue::ConstMemberIterator jsonLocIter =
+        jsonObject.FindMember("location");
+    if (jsonLocIter != jsonObject.MemberEnd()) {
+      // if (jsonObject.HasMember("location")) {
+      const auto& jsonCenter = jsonLocIter->value;
       vec3f center = rotation * io::jsonToVec3f(jsonCenter);
       vec3f size = vec3f::Zero();
-      if (jsonObject.HasMember("size")) {
-        const auto& jsonSize = jsonObject["size"];
+      io::JsonGenericValue::ConstMemberIterator jsonSizeIter =
+          jsonObject.FindMember("size");
+      if (jsonSizeIter != jsonObject.MemberEnd()) {
+        const auto& jsonSize = jsonSizeIter->value;
         // Rotating sizes
         size = (rotation * io::jsonToVec3f(jsonSize)).array().abs();
       } else {
