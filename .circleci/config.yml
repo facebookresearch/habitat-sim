@@ -528,7 +528,8 @@ jobs:
       - run:
           name: Build Javascript bindings
           command: |
-              # wait for npm and emscripten install
+              # Wait for npm and emscripten install. Note that npm is not strictly
+              # required (see also Run JavaScript tests in this file).
               while [[ ! -f ~/emscripten_installed && ! -f ~/npm_deps_installed ]]; do sleep 2; done
               # switch to cmake 3.20 just for this step. The JS build requires
               # static Bullet libs, and Bullet static libs required CMake 3.13+.
@@ -538,9 +539,8 @@ jobs:
               . ~/.bashrc
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat
-              nvm use v11.9.0
               . ~/emsdk/emsdk_env.sh
-              CMAKE_GENERATOR=Ninja ./build_js.sh --bullet
+              CMAKE_GENERATOR=Ninja ./build_js.sh --bullet --no-web-apps
               # switch back to cmake 3.12
               sudo rm /usr/local/bin/cmake
               sudo ln -s /opt/cmake312/bin/cmake /usr/local/bin/cmake
@@ -567,15 +567,17 @@ jobs:
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat; cd habitat-sim
               python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
-      - run:
-          name: Run JavaScript tests
-          command: |
-            cd habitat-sim
-            . ~/.bashrc
-            export PATH=$HOME/miniconda/bin:$PATH
-            . activate habitat
-            nvm use v11.9.0
-            npm run test
+
+      # reference code to test our JS build using npm/html/JS
+      # - run:
+      #     name: Run JavaScript tests
+      #     command: |
+      #       cd habitat-sim
+      #       . ~/.bashrc
+      #       export PATH=$HOME/miniconda/bin:$PATH
+      #       . activate habitat
+      #       nvm use v11.9.0
+      #       npm run test
       - run:
           name: Run sim tests
           no_output_timeout: 25m
@@ -608,11 +610,11 @@ jobs:
               ./build.sh --headless --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
               PYTHONPATH=src_python pytest -n 4 --durations=10 --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
 
-              . ~/.bashrc
-              nvm use v11.9.0
-              . ~/emsdk/emsdk_env.sh
-              # Generate JS CodeConv
-              npm run test_with_coverage
+              # reference code to generate JS CodeConv
+              # . ~/.bashrc
+              # nvm use v11.9.0
+              # . ~/emsdk/emsdk_env.sh
+              # npm run test_with_coverage
       - run: &upload_coverage
           name: Upload test coverage
           command: |
@@ -624,8 +626,8 @@ jobs:
               #Uploading test coverage for Python code
               ./codecov -f coverage.xml -cF Python
 
-              # Uploading test coverage for JS code
-              ./codecov coverage_js/coverage-final.json -cF JavaScript
+              # reference code for uploading test coverage for JS code
+              # ./codecov coverage_js/coverage-final.json -cF JavaScript
 
               #Uploading test coverage for C++ code
               lcov --directory . --capture --output-file coverage.info
