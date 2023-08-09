@@ -55,6 +55,35 @@ std::string getLightPositionModelName(
   return "global";
 }
 
+const std::map<std::string, ArticulatedObjectRenderMode> AORenderModesMap = {
+    {"unspecified", ArticulatedObjectRenderMode::Unspecified},
+    {"skin", ArticulatedObjectRenderMode::Skin},
+    {"primitives", ArticulatedObjectRenderMode::Primitives},
+    {"none", ArticulatedObjectRenderMode::None},
+    {"both", ArticulatedObjectRenderMode::Both},
+
+};
+/**
+ * @brief This method will convert a @ref ArticulatedObjectRenderMode value to the
+ * string key that maps to it in the AORenderModesMap
+ */
+std::string getAORenderModeName(ArticulatedObjectRenderMode aoRenderMode) {
+  // this verifies that enum value being checked is supported by string-keyed
+  // map. The values below should be the minimum and maximum enums supported by
+  // ShaderTypeNamesMap
+  if (aoRenderMode <= ArticulatedObjectRenderMode::Unspecified ||
+      aoRenderMode >= ArticulatedObjectRenderMode::EndAORenderMode) {
+    return "unspecified";
+  }
+  // Must always be valid value
+  for (const auto& it : AORenderModesMap) {
+    if (it.second == aoRenderMode) {
+      return it.first;
+    }
+  }
+  return "unspecified";
+}  // getAORenderModeName
+
 const std::map<std::string, ObjectInstanceShaderType> ShaderTypeNamesMap = {
     {"unspecified", ObjectInstanceShaderType::Unspecified},
     {"material", ObjectInstanceShaderType::Material},
@@ -78,7 +107,7 @@ std::string getShaderTypeName(ObjectInstanceShaderType shaderTypeVal) {
     }
   }
   return "unspecified";
-}
+}  // getShaderTypeName
 
 const std::map<std::string, SceneInstanceTranslationOrigin>
     InstanceTranslationOriginMap = {
@@ -102,7 +131,7 @@ std::string getTranslationOriginName(
     }
   }
   return "default";
-}
+}  // getTranslationOriginName
 
 // All keys must be lowercase
 const std::map<std::string, esp::physics::MotionType> MotionTypeNamesMap = {
@@ -126,7 +155,7 @@ std::string getMotionTypeName(esp::physics::MotionType motionTypeEnum) {
     }
   }
   return "undefined";
-}
+}  // getMotionTypeName
 
 }  // namespace attributes
 }  // namespace metadata

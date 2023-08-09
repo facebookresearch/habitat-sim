@@ -42,6 +42,68 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
   }
 
   /**
+   * @brief Set the render mode to use to render this Articulated Object
+   */
+  void setRenderMode(const std::string& renderMode) {
+    // force to lowercase before setting
+    const std::string renderModeLC = Cr::Utility::String::lowercase(renderMode);
+    auto mapIter = AORenderModesMap.find(renderModeLC);
+    ESP_CHECK(mapIter != AORenderModesMap.end(),
+              "Illegal render mode value"
+                  << renderMode
+                  << "attempted to be set in ArticulatedObjectAttributes:"
+                  << getHandle() << ". Aborting.");
+    set("render_mode", renderMode);
+  }
+
+  /**
+   * @brief Get the render mode to use to render this Articulated Object
+   */
+  ArticulatedObjectRenderMode getRenderMode() const {
+    const std::string val =
+        Cr::Utility::String::lowercase(get<std::string>("render_mode"));
+    auto mapIter = AORenderModesMap.find(val);
+    if (mapIter != AORenderModesMap.end()) {
+      return mapIter->second;
+    }
+    // Unspecified means use the default value
+    return ArticulatedObjectRenderMode::Unspecified;
+  }
+
+  /**
+   * @brief Set the default shader to use for an object or stage.  This may be
+   * overridden by a scene instance specification.
+   */
+  void setShaderType(const std::string& shader_type) {
+    // force to lowercase before setting
+    const std::string shaderTypeLC =
+        Cr::Utility::String::lowercase(shader_type);
+    auto mapIter = ShaderTypeNamesMap.find(shaderTypeLC);
+    ESP_CHECK(mapIter != ShaderTypeNamesMap.end(),
+              "Illegal shader_type value"
+                  << shader_type
+                  << "attempted to be set in ArticulatedObjectAttributes:"
+                  << getHandle() << ". Aborting.");
+    set("shader_type", shader_type);
+  }
+
+  /**
+   * @brief Get the default shader to use for an object or stage.  This may be
+   * overridden by a scene instance specification.
+   */
+  ObjectInstanceShaderType getShaderType() const {
+    const std::string val =
+        Cr::Utility::String::lowercase(get<std::string>("shader_type"));
+    auto mapIter = ShaderTypeNamesMap.find(val);
+    if (mapIter != ShaderTypeNamesMap.end()) {
+      return mapIter->second;
+    }
+    // Unspecified is default value - should never be returned since setter
+    // verifies value
+    return ObjectInstanceShaderType::Unspecified;
+  }
+
+  /**
    * @brief Sets the semantic ID for instanced Articulated Objects.
    */
   void setSemanticId(int semanticId) { set("semantic_id", semanticId); }
@@ -50,21 +112,6 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
    * @brief Gets the semantic ID for instanced Articulated Objects.
    */
   uint32_t getSemanticId() const { return get<int>("semantic_id"); }
-
-  /**
-   * @brief Sets whether we should render using the articulated object
-   * primitives, even if a render asset is present.
-   */
-  void setDebugRenderPrimitives(bool dbgRenderPrims) {
-    set("debug_render_primitives", dbgRenderPrims);
-  }
-  /**
-   * @brief Gets whether we should render using the articulated object
-   * primitives, even if a render asset is present.
-   */
-  bool getDebugRenderPrimitives() const {
-    return get<bool>("debug_render_primitives");
-  }
 
   /**
    * @brief Populate a json object with all the first-level values held in this

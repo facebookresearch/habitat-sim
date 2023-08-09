@@ -14,7 +14,10 @@ ArticulatedObjectAttributes::ArticulatedObjectAttributes(
   setURDFPath(handle);
   setRenderAssetHandle("");
   setSemanticId(0);
-  setDebugRenderPrimitives(false);
+  // Set default to be to use Phong shader
+  setShaderType(getShaderTypeName(ObjectInstanceShaderType::Phong));
+  // Set render mode to be unspecified
+  setRenderMode(getAORenderModeName(ArticulatedObjectRenderMode::Unspecified));
 }  // ArticulatedObjectAttributes ctor
 
 void ArticulatedObjectAttributes::writeValuesToJson(
@@ -23,17 +26,20 @@ void ArticulatedObjectAttributes::writeValuesToJson(
   writeValueToJson("urdf_filepath", jsonObj, allocator);
   writeValueToJson("render_asset", jsonObj, allocator);
   writeValueToJson("semantic_id", jsonObj, allocator);
-  writeValueToJson("debug_render_primitives", jsonObj, allocator);
+  writeValueToJson("shader_type", jsonObj, allocator);
+  writeValueToJson("render_mode", jsonObj, allocator);
 }  // ArticulatedObjectAttributes::writeValuesToJson
 
 std::string ArticulatedObjectAttributes::getObjectInfoHeaderInternal() const {
-  return "URDF Filepath,Render Asset,Semantic ID,Debug RenderPrimitives,";
+  return "URDF Filepath,Render Asset,Semantic ID,Current Shader Type,Render "
+         "Mode,";
 }
 
 std::string ArticulatedObjectAttributes::getObjectInfoInternal() const {
   return Cr::Utility::formatString(
-      "{},{},{},{}", getURDFPath(), getRenderAssetHandle(),
-      getAsString("semantic_id"), getAsString("debug_render_primitives"));
+      "{},{},{},{},{}", getURDFPath(), getRenderAssetHandle(),
+      getAsString("semantic_id"), getShaderTypeName(getShaderType()),
+      getAORenderModeName(getRenderMode()));
 }
 
 }  // namespace attributes

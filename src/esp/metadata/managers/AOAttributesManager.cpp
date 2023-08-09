@@ -4,6 +4,7 @@
 
 #include "AOAttributesManager.h"
 #include "AttributesManagerBase.h"
+#include "esp/metadata/MetadataUtils.h"
 
 namespace Cr = Corrade;
 namespace esp {
@@ -60,23 +61,52 @@ void AOAttributesManager::setValsFromJSONDoc(
     aoAttr->setSemanticId(semantic_id);
   });
 
-  // load whether to render using the AO primitives, regardless of whether a
-  // render asset is present or not.
-  io::jsonIntoSetter<bool>(
-      jsonConfig, "debug_render_primitives",
-      [aoAttr](bool debug_render_primitives) {
-        aoAttr->setDebugRenderPrimitives(debug_render_primitives);
-      });
+  // set attributes shader type to use.  This may be overridden by a scene
+  // instance specification.
+  const std::string shaderTypeVal = getShaderTypeFromJsonDoc(jsonConfig);
+  // if a known shader type val is specified in json, set that value for the
+  // attributes, overriding constructor defaults.  Do not overwrite anything for
+  // unknown
+  if (shaderTypeVal !=
+      getShaderTypeName(attributes::ObjectInstanceShaderType::Unspecified)) {
+    aoAttr->setShaderType(shaderTypeVal);
+  }
+
+  // bool fixedBase,
+  // float globalScale,
+  // float massScale,
+  // bool forceReload,
+  // bool maintainLinkOrder,
+  // bool intertiaFromURDF,
+
+  // render mode
+  std::string renderModeVal = "unspecified";
+  std::string tmpRndrModeVal = "";
+  if (io::readMember<std::string>(jsonConfig, "render_mode", tmpRndrModeVal)) {
+    std::string strToLookFor = Cr::Utility::String::lowercase(tmpRndrModeVal);
+    if (attributes::AORenderModesMap.count(strToLookFor) != 0u) {
+      renderModeVal = std::move(tmpRndrModeVal);
+    } else {
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << "'render_mode' Value in JSON : `" << tmpRndrModeVal
+          << "` does not map to a valid "
+             "attributes::AORenderModesMap value, so "
+             "defaulting Render mode to "
+             "metadata::attributes::ArticulatedObjectRenderMode::Unspecified.";
+    }
+    aoAttr->setRenderMode(renderModeVal);
+  }
 
   // check for user defined attributes
   this->parseUserDefinedJsonVals(aoAttr, jsonConfig);
 
-}  // AOAttributesManager::createFileBasedAttributesTemplate
+}  // AOAttributesManager::setValsFromJSONDoc
 
 attributes::ArticulatedObjectAttributes::ptr
 AOAttributesManager::initNewObjectInternal(const std::string& attributesHandle,
                                            bool builtFromConfig) {
-  // first build new attributes as a copy of dataset-specified default if exists
+  // first build new attributes as a copy of dataset-specified default if
+  // exists
   attributes::ArticulatedObjectAttributes::ptr newAttributes =
       this->constructFromDefault(attributesHandle);
   bool createNewAttributes = (nullptr == newAttributes);
@@ -90,8 +120,8 @@ AOAttributesManager::initNewObjectInternal(const std::string& attributesHandle,
 
   if (!createNewAttributes) {
     // default exists and was used to create this attributes - investigate any
-    // filename fields that may have %%USE_FILENAME%% directive specified in the
-    // default attributes, and replace with appropriate derived value.
+    // filename fields that may have %%USE_FILENAME%% directive specified in
+    // the default attributes, and replace with appropriate derived value.
     // Render asset handle
     setHandleFromDefaultTag(newAttributes,
                             newAttributes->getRenderAssetHandle(),
@@ -100,9 +130,9 @@ AOAttributesManager::initNewObjectInternal(const std::string& attributesHandle,
                             });
   }
 
-  // set default URDF filename - only set handle defaults if attributesHandle is
-  // not a config file (which would never be a valid URDF filename).  Otherise,
-  // expect handles to be set when config is read.
+  // set default URDF filename - only set handle defaults if attributesHandle
+  // is not a config file (which would never be a valid URDF filename).
+  // Otherise, expect handles to be set when config is read.
   if (!builtFromConfig) {
     // If not built from json config, this function was called from :
     //  - ManagedContainer::createDefaultObject

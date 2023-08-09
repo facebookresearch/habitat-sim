@@ -18,6 +18,40 @@ namespace metadata {
 namespace attributes {
 
 /**
+ * @brief This enum class defines the possible options for what will be rendered
+ * for a particular articulated object.
+ *
+ */
+enum class ArticulatedObjectRenderMode {
+  /**
+   * Represents the user not specifying which rendering mode to use. Resorts
+   * to default value.
+   */
+  Unspecified = ID_UNDEFINED,
+  /**
+   * Render the articulated object using its skin.
+   */
+  Skin,
+  /**
+   * Render the articulated object using primitives to respresent each link.
+   */
+  Primitives,
+  /**
+   *
+   */
+  None,
+  /**
+   * Render the articulated object using both the skin and the link primitives.
+   */
+  Both,
+  /**
+   * End cap value - no articulated object render mode enums should be defined
+   * past this enum.
+   */
+  EndAORenderMode,
+};
+
+/**
  * @brief This enum class defines the possible shader options for rendering
  * instances of objects or stages in Habitat-sim.
  */
@@ -87,8 +121,23 @@ enum class SceneInstanceTranslationOrigin {
 
 /**
  * @brief Constant map to provide mappings from string tags to @ref
+ * ArticulatedObjectRenderMode values.  This will be used to map values set
+ * in json for AO render mode to @ref ArticulatedObjectRenderMode.  Keys
+ * must be lowercase.
+ */
+const extern std::map<std::string, ArticulatedObjectRenderMode>
+    AORenderModesMap;
+
+/**
+ * @brief This method will convert a @ref ArticulatedObjectRenderMode value to the
+ * string key that maps to it in the AORenderModesMap
+ */
+std::string getAORenderModeName(ArticulatedObjectRenderMode aoRenderMode);
+
+/**
+ * @brief Constant map to provide mappings from string tags to @ref
  * ObjectInstanceShaderType values.  This will be used to map values set
- * in json for translation origin to @ref ObjectInstanceShaderType.  Keys
+ * in json for shader type to @ref ObjectInstanceShaderType.  Keys
  * must be lowercase.
  */
 const extern std::map<std::string, ObjectInstanceShaderType> ShaderTypeNamesMap;
