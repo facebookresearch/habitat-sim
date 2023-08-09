@@ -246,7 +246,7 @@ class DemoRunner:
                 print("action", action)
 
             start_step_time = time.time()
-
+                
             # apply kinematic or dynamic control to all objects based on their MotionType
             if self._sim_settings["enable_physics"]:
                 obj_names = rigid_obj_mgr.get_object_handles()
@@ -266,39 +266,39 @@ class DemoRunner:
 
             # get simulation step time without sensor observations
             total_sim_step_time += self._sim._previous_step_time
+            if total_frames % self._sim_settings["skip"] == 0:
+                if self._sim_settings["save_png"]:
+                    if self._sim_settings["equirect_rgba_sensor"]:
+                        self.save_color_observation(observations, total_frames)
+                    if self._sim_settings["equirect_depth_sensor"]:
+                        self.save_depth_observation(observations, total_frames)
+                    if self._sim_settings["equirect_semantic_sensor"]:
+                        self.save_semantic_observation(observations, total_frames)
 
-            if self._sim_settings["save_png"]:
-                if self._sim_settings["equirect_rgba_sensor"]:
-                    self.save_color_observation(observations, total_frames)
-                if self._sim_settings["equirect_depth_sensor"]:
-                    self.save_depth_observation(observations, total_frames)
-                if self._sim_settings["equirect_semantic_sensor"]:
-                    self.save_semantic_observation(observations, total_frames)
+                state = self._sim.last_state()
+                poses.append([state.position, state.rotation])
+                if not self._sim_settings["silent"]:
+                    print("position\t", state.position, "\t", "rotation\t", state.rotation)
 
-            state = self._sim.last_state()
-            poses.append([state.position, state.rotation])
-            if not self._sim_settings["silent"]:
-                print("position\t", state.position, "\t", "rotation\t", state.rotation)
+                if self._sim_settings["compute_shortest_path"]:
+                    self.compute_shortest_path(
+                        state.position, self._sim_settings["goal_position"]
+                    )
 
-            if self._sim_settings["compute_shortest_path"]:
-                self.compute_shortest_path(
-                    state.position, self._sim_settings["goal_position"]
-                )
+                if self._sim_settings["compute_action_shortest_path"]:
+                    self._action_path = self.greedy_follower.find_path(
+                        self._sim_settings["goal_position"]
+                    )
+                    print("len(action_path)", len(self._action_path))
 
-            if self._sim_settings["compute_action_shortest_path"]:
-                self._action_path = self.greedy_follower.find_path(
-                    self._sim_settings["goal_position"]
-                )
-                print("len(action_path)", len(self._action_path))
-
-            if (
-                self._sim_settings["equirect_semantic_sensor"]
-                and self._sim_settings["print_semantic_mask_stats"]
-            ):
-                self.output_semantic_mask_stats(observations, total_frames)
+                if (
+                    self._sim_settings["equirect_semantic_sensor"]
+                    and self._sim_settings["print_semantic_mask_stats"]
+                ):
+                    self.output_semantic_mask_stats(observations, total_frames)
 
             print(f"skipping frames by {self._sim_settings['skip']}, total_frames = {total_frames}")
-            total_frames += self._sim_settings["skip"]
+            total_frames += 1
 
         end_time = time.time()
         perf = {"total_time": end_time - start_time}
