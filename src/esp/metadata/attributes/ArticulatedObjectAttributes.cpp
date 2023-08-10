@@ -16,8 +16,8 @@ ArticulatedObjectAttributes::ArticulatedObjectAttributes(
   setSemanticId(0);
   // Set default to be to use Phong shader
   setShaderType(getShaderTypeName(ObjectInstanceShaderType::Phong));
-  // Set render mode to be unspecified
-  setRenderMode(getAORenderModeName(ArticulatedObjectRenderMode::Unspecified));
+  // Set render mode to be default
+  setRenderMode(getAORenderModeName(ArticulatedObjectRenderMode::Default));
 }  // ArticulatedObjectAttributes ctor
 
 void ArticulatedObjectAttributes::writeValuesToJson(

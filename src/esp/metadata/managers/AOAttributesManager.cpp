@@ -80,21 +80,20 @@ void AOAttributesManager::setValsFromJSONDoc(
   // bool intertiaFromURDF,
 
   // render mode
-  std::string renderModeVal = "unspecified";
   std::string tmpRndrModeVal = "";
   if (io::readMember<std::string>(jsonConfig, "render_mode", tmpRndrModeVal)) {
     std::string strToLookFor = Cr::Utility::String::lowercase(tmpRndrModeVal);
-    if (attributes::AORenderModesMap.count(strToLookFor) != 0u) {
-      renderModeVal = std::move(tmpRndrModeVal);
+    auto found = attributes::AORenderModesMap.find(strToLookFor);
+    if (found != attributes::AORenderModesMap.end()) {
+      // only override JSON default value if new value is valid
+      aoAttr->setRenderMode(strToLookFor);
     } else {
       ESP_WARNING(Mn::Debug::Flag::NoSpace)
           << "'render_mode' Value in JSON : `" << tmpRndrModeVal
           << "` does not map to a valid "
-             "attributes::AORenderModesMap value, so "
-             "defaulting Render mode to "
-             "metadata::attributes::ArticulatedObjectRenderMode::Unspecified.";
+             "attributes::AORenderModesMap value, so not setting/overriding "
+             "Render mode value.";
     }
-    aoAttr->setRenderMode(renderModeVal);
   }
 
   // check for user defined attributes
@@ -109,6 +108,7 @@ AOAttributesManager::initNewObjectInternal(const std::string& attributesHandle,
   // exists
   attributes::ArticulatedObjectAttributes::ptr newAttributes =
       this->constructFromDefault(attributesHandle);
+
   bool createNewAttributes = (nullptr == newAttributes);
   // if not then create new empty attributes
   if (createNewAttributes) {
@@ -156,7 +156,7 @@ AOAttributesManager::initNewObjectInternal(const std::string& attributesHandle,
 int AOAttributesManager::registerObjectFinalize(
     attributes::ArticulatedObjectAttributes::ptr AOAttributesTemplate,
     const std::string& AOAttributesHandle,
-    bool forceRegistration) {
+    bool) {
   // adds template to library, and returns either the ID of the existing
   // template referenced by AOAttributesHandle, or the next available ID
   // if not found.

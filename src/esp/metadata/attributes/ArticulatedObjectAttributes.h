@@ -66,7 +66,8 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
     if (mapIter != AORenderModesMap.end()) {
       return mapIter->second;
     }
-    // Unspecified means use the default value
+    // This should never get to here. It would mean that this field was set
+    // to an invalid value somehow.
     return ArticulatedObjectRenderMode::Unspecified;
   }
 

@@ -120,7 +120,7 @@ class AOAttributesManager
   int registerObjectFinalize(
       attributes::ArticulatedObjectAttributes::ptr AOAttributesTemplate,
       const std::string& AOAttributesHandle,
-      bool forceRegistration) override;
+      CORRADE_UNUSED bool) override;
 
   /**
    * @brief Any articulated-object-attributes-specific resetting that needs to

@@ -25,9 +25,14 @@ namespace attributes {
 enum class ArticulatedObjectRenderMode {
   /**
    * Represents the user not specifying which rendering mode to use. Resorts
-   * to default value.
+   * to any previously known/set value
    */
   Unspecified = ID_UNDEFINED,
+  /**
+   * Render the articulated object using its skin if it has one, otherwise
+   * render it using primitives.
+   */
+  Default,
   /**
    * Render the articulated object using its skin.
    */
@@ -46,7 +51,7 @@ enum class ArticulatedObjectRenderMode {
   Both,
   /**
    * End cap value - no articulated object render mode enums should be defined
-   * past this enum.
+   * at or past this enum.
    */
   EndAORenderMode,
 };
@@ -80,7 +85,8 @@ enum class ObjectInstanceShaderType {
    */
   PBR,
   /**
-   * End cap value - no shader type enums should be defined past this enum.
+   * End cap value - no shader type enums should be defined at or past this
+   * enum.
    */
   EndShaderType,
 };
@@ -114,7 +120,7 @@ enum class SceneInstanceTranslationOrigin {
   COM,
   /**
    * End cap value - no instance translation origin type enums should be defined
-   * past this enum.
+   * at or past this enum.
    */
   EndTransOrigin,
 };

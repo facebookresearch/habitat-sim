@@ -57,6 +57,7 @@ std::string getLightPositionModelName(
 
 const std::map<std::string, ArticulatedObjectRenderMode> AORenderModesMap = {
     {"unspecified", ArticulatedObjectRenderMode::Unspecified},
+    {"default", ArticulatedObjectRenderMode::Default},
     {"skin", ArticulatedObjectRenderMode::Skin},
     {"primitives", ArticulatedObjectRenderMode::Primitives},
     {"none", ArticulatedObjectRenderMode::None},
@@ -65,7 +66,8 @@ const std::map<std::string, ArticulatedObjectRenderMode> AORenderModesMap = {
 };
 /**
  * @brief This method will convert a @ref ArticulatedObjectRenderMode value to the
- * string key that maps to it in the AORenderModesMap
+ * string key that maps to it in the AORenderModesMap. We allow for an
+ * unspecified result so that any previous or default results can be retained.
  */
 std::string getAORenderModeName(ArticulatedObjectRenderMode aoRenderMode) {
   // this verifies that enum value being checked is supported by string-keyed
