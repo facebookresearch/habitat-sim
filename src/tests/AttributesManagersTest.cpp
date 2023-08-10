@@ -7,6 +7,7 @@
 #include <string>
 
 #include "esp/metadata/MetadataMediator.h"
+#include "esp/metadata/managers/AOAttributesManager.h"
 #include "esp/metadata/managers/AssetAttributesManager.h"
 #include "esp/metadata/managers/AttributesManagerBase.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
@@ -28,6 +29,7 @@ using esp::physics::MotionType;
 
 using AttrMgrs::AttributesManager;
 using Attrs::AbstractPrimitiveAttributes;
+using Attrs::ArticulatedObjectAttributes;
 using Attrs::CapsulePrimitiveAttributes;
 using Attrs::ConePrimitiveAttributes;
 using Attrs::CubePrimitiveAttributes;
@@ -41,12 +43,9 @@ using Attrs::StageAttributes;
 using Attrs::UVSpherePrimitiveAttributes;
 
 namespace {
-const std::string physicsConfigFile =
-    Cr::Utility::Path::join(DATA_DIR,
-                            "test_assets/testing.physics_config.json");
+const std::string TEST_ASSET_DIR =
+    Cr::Utility::Path::join(DATA_DIR, "test_assets/");
 
-const std::string pbrShaderConfigFile =
-    Cr::Utility::Path::join(DATA_DIR, "test_assets/testing.pbr_config.json");
 /**
  * @brief Test attributesManagers' functionality via loading, creating, copying
  * and deleting Attributes.
@@ -119,30 +118,7 @@ struct AttributesManagersTest : Cr::TestSuite::Tester {
 
   template <typename T>
   void testCreateAndRemoveDefault(std::shared_ptr<T> mgr,
-                                  const std::string& handle,
-                                  bool setRenderHandle);
-  /**
-   * @brief This method will test the user-defined configuration values to see
-   * that they match with expected passed values.  The config is expected to
-   * hold one of each type that it supports.
-   * @param userConfig The configuration object whose contents are to be
-   * tested
-   * @param str_val Expected string value
-   * @param bool_val Expected boolean value
-   * @param double_val Exptected double value
-   * @param vec_val Expected Magnum::Vector3 value
-   * @param quat_val Expected Quaternion value - note that the JSON is read
-   * with scalar at idx 0, whereas the quaternion constructor takes the vector
-   * component in the first position and the scalar in the second.
-   */
-  void testUserDefinedConfigVals(
-      std::shared_ptr<esp::core::config::Configuration> userConfig,
-      const std::string& str_val,
-      bool bool_val,
-      int int_val,
-      double double_val,
-      Magnum::Vector3 vec_val,
-      Magnum::Quaternion quat_val);
+                                  const std::string& handle);
 
   /**
    * @brief Test creation, copying and removal of templates for primitive
@@ -166,12 +142,12 @@ struct AttributesManagersTest : Cr::TestSuite::Tester {
 
   /**
    * @brief This test will test creating, modifying, registering and deleting
-   * Attributes via the AttributesManager for PhysicsManagerAttributes. These
-   * tests should be consistent with most types of future attributes managers
-   * specializing the AttributesManager class template that follow the same
-   * expected behavior paths as extent attributes/attributesManagers.  Note :
-   * PrimitiveAssetAttributes exhibit slightly different behavior and need their
-   * own tests.
+   * Attributes via the AttributesManager for PhysicsManagerAttributes.
+   * ThesesetRenderHandle tests should be consistent with most types of future
+   * attributes managers specializing the AttributesManager class template that
+   * follow the same expected behavior paths as extent
+   * attributes/attributesManagers.  Note : PrimitiveAssetAttributes exhibit
+   * slightly different behavior and need their own tests.
    */
   void testPhysicsAttributesManagersCreate();
 
@@ -189,11 +165,18 @@ struct AttributesManagersTest : Cr::TestSuite::Tester {
    * Attributes via the AttributesManager for StageAttributes.  These
    * tests should be consistent with most types of future attributes managers
    * specializing the AttributesManager class template that follow the same
-   * expected behavior paths as extent attributes/attributesManagers.  Note :
-   * PrimitiveAssetAttributes exhibit slightly different behavior and need their
-   * own tests.
+   * expected behavior paths as extent attributes/attributesManagers.
    */
   void testStageAttributesManagersCreate();
+  /**
+   * @brief This test will test creating, modifying, registering and deleting
+   * Attributes via the AttributesManager for ArticulatedObjectAttributes. These
+   * tests should be consistent with most types of future attributes managers
+   * specializing the AttributesManager class template that follow the same
+   * expected behavior paths as extent attributes/attributesManagers.
+   */
+
+  void testArticulatedObjectAttributesManagersCreate();
 
   /**
    * @brief This test will test creating, modifying, registering and deleting
@@ -222,6 +205,7 @@ struct AttributesManagersTest : Cr::TestSuite::Tester {
   // test member vars
 
   esp::logging::LoggingContext loggingContext_;
+  AttrMgrs::AOAttributesManager::ptr artObjAttributesManager_ = nullptr;
   AttrMgrs::AssetAttributesManager::ptr assetAttributesManager_ = nullptr;
   AttrMgrs::LightLayoutAttributesManager::ptr lightLayoutAttributesManager_ =
       nullptr;
@@ -240,6 +224,7 @@ AttributesManagersTest::AttributesManagersTest() {
   auto cfg = esp::sim::SimulatorConfiguration{};
   auto MM = MetadataMediator::create(cfg);
   // get attributes managers for default dataset
+  artObjAttributesManager_ = MM->getAOAttributesManager();
   assetAttributesManager_ = MM->getAssetAttributesManager();
   lightLayoutAttributesManager_ = MM->getLightLayoutAttributesManager();
   objectAttributesManager_ = MM->getObjectAttributesManager();
@@ -252,6 +237,7 @@ AttributesManagersTest::AttributesManagersTest() {
       &AttributesManagersTest::testPhysicsAttributesManagersCreate,
       &AttributesManagersTest::testPbrShaderAttributesManagersCreate,
       &AttributesManagersTest::testStageAttributesManagersCreate,
+      &AttributesManagersTest::testArticulatedObjectAttributesManagersCreate,
       &AttributesManagersTest::testObjectAttributesManagersCreate,
       &AttributesManagersTest::testLightLayoutAttributesManager,
       &AttributesManagersTest::testPrimitiveAssetAttributes,
@@ -454,8 +440,7 @@ void AttributesManagersTest::testRemoveAllButDefault(std::shared_ptr<T> mgr,
 template <typename T>
 void AttributesManagersTest::testCreateAndRemoveDefault(
     std::shared_ptr<T> mgr,
-    const std::string& handle,
-    bool setRenderHandle) {
+    const std::string& handle) {
   // get starting number of templates
   int orignNumTemplates = mgr->getNumObjects();
   // assign template a handle
@@ -527,7 +512,7 @@ void AttributesManagersTest::testAssetAttributesModRegRemove(
   // verify new handle is in template library
   CORRADE_INTERNAL_ASSERT(
       assetAttributesManager_->getObjectLibHasHandle(newHandle));
-  // verify old template is still present as well
+  // verify old template is still present as wellPbrShaderAttributesManager
   CORRADE_INTERNAL_ASSERT(
       assetAttributesManager_->getObjectLibHasHandle(oldHandle));
 
@@ -577,52 +562,73 @@ void AttributesManagersTest::testAssetAttributesTemplateCreateFromHandle(
 }  // AttributesManagersTest::testAssetAttributesTemplateCreateFromHandle
 
 void AttributesManagersTest::testPhysicsAttributesManagersCreate() {
+  const std::string physicsConfigFile =
+      Cr::Utility::Path::join(TEST_ASSET_DIR, "testing.physics_config.json");
+
   CORRADE_INFO(
       "Start Test : Create, Edit, Remove Attributes for "
       "PhysicsAttributesManager @"
       << physicsConfigFile);
 
-  // physics attributes manager attributes verification
+  // PhysicsAttributesManager attributes verification
   testCreateAndRemove<AttrMgrs::PhysicsAttributesManager>(
       physicsAttributesManager_, physicsConfigFile);
   testCreateAndRemoveDefault<AttrMgrs::PhysicsAttributesManager>(
-      physicsAttributesManager_, physicsConfigFile, false);
+      physicsAttributesManager_, physicsConfigFile);
 }  // AttributesManagersTest::PhysicsAttributesManagersCreate
 
 void AttributesManagersTest::testPbrShaderAttributesManagersCreate() {
+  const std::string pbrShaderConfigFile =
+      Cr::Utility::Path::join(TEST_ASSET_DIR, "testing.pbr_config.json");
   CORRADE_INFO(
       "Start Test : Create, Edit, Remove Attributes for "
       "PbrShaderAttributesManager @"
       << pbrShaderConfigFile);
 
-  // PBR/IBL shader attributes manager attributes verification
+  // PbrShaderAttributesManager manager attributes verification
   testCreateAndRemove<AttrMgrs::PbrShaderAttributesManager>(
       pbrShaderAttributesManager_, pbrShaderConfigFile);
   testCreateAndRemoveDefault<AttrMgrs::PbrShaderAttributesManager>(
-      pbrShaderAttributesManager_, pbrShaderConfigFile, false);
+      pbrShaderAttributesManager_, pbrShaderConfigFile);
 
 }  // AttributesManagersTest::testPbrShaderAttributesManagersCreate
 
+void AttributesManagersTest::testArticulatedObjectAttributesManagersCreate() {
+  const std::string artObjConfigFile =
+      Cr::Utility::Path::join(TEST_ASSET_DIR, "urdf/testing.ao_config.json");
+  CORRADE_INFO(
+      "Start Test : Create, Edit, Remove Attributes for "
+      "AO @"
+      << artObjConfigFile);
+
+  // Articulated object attributes manager attributes verification
+  testCreateAndRemove<AttrMgrs::AOAttributesManager>(artObjAttributesManager_,
+                                                     artObjConfigFile);
+  testCreateAndRemoveDefault<AttrMgrs::AOAttributesManager>(
+      artObjAttributesManager_, artObjConfigFile);
+
+}  // AttributesManagersTest::testArticulatedObjectAttributesManagersCreate
+
 void AttributesManagersTest::testStageAttributesManagersCreate() {
-  std::string stageConfigFile =
-      Cr::Utility::Path::join(DATA_DIR, "test_assets/scenes/plane.glb");
+  const std::string stageConfigFile =
+      Cr::Utility::Path::join(TEST_ASSET_DIR, "scenes/plane.glb");
 
   CORRADE_INFO(
       "Start Test : Create, Edit, Remove Attributes for "
       "StageAttributesManager @"
       << stageConfigFile);
 
-  // scene attributes manager attributes verification
+  // StageAttributesManager attributes verification
   testCreateAndRemove<AttrMgrs::StageAttributesManager>(stageAttributesManager_,
                                                         stageConfigFile);
   testCreateAndRemoveDefault<AttrMgrs::StageAttributesManager>(
-      stageAttributesManager_, stageConfigFile, true);
+      stageAttributesManager_, stageConfigFile);
 
 }  // AttributesManagersTest::StageAttributesManagersCreate
 
 void AttributesManagersTest::testObjectAttributesManagersCreate() {
-  std::string objectConfigFile = Cr::Utility::Path::join(
-      DATA_DIR, "test_assets/objects/chair.object_config.json");
+  const std::string objectConfigFile = Cr::Utility::Path::join(
+      TEST_ASSET_DIR, "objects/chair.object_config.json");
 
   CORRADE_INFO(
       "Start Test : Create, Edit, Remove Attributes for "
@@ -632,7 +638,7 @@ void AttributesManagersTest::testObjectAttributesManagersCreate() {
   int origNumFileBased = objectAttributesManager_->getNumFileTemplateObjects();
   int origNumPrimBased = objectAttributesManager_->getNumSynthTemplateObjects();
 
-  // object attributes manager attributes verification
+  // ObjectAttributesManager attributes verification
   testCreateAndRemove<AttrMgrs::ObjectAttributesManager>(
       objectAttributesManager_, objectConfigFile);
   // verify that no new file-based and no new synth based template objects
@@ -642,7 +648,7 @@ void AttributesManagersTest::testObjectAttributesManagersCreate() {
   CORRADE_COMPARE(origNumFileBased, newNumFileBased1);
   CORRADE_COMPARE(origNumPrimBased, newNumPrimBased1);
   testCreateAndRemoveDefault<AttrMgrs::ObjectAttributesManager>(
-      objectAttributesManager_, objectConfigFile, true);
+      objectAttributesManager_, objectConfigFile);
   // verify that no new file-based and no new synth based template objects
   // remain
   int newNumFileBased2 = objectAttributesManager_->getNumFileTemplateObjects();
@@ -662,14 +668,14 @@ void AttributesManagersTest::testObjectAttributesManagersCreate() {
 }  // AttributesManagersTest::ObjectAttributesManagersCreate test
 
 void AttributesManagersTest::testLightLayoutAttributesManager() {
-  std::string lightConfigFile = Cr::Utility::Path::join(
-      DATA_DIR, "test_assets/lights/test_lights.lighting_config.json");
+  const std::string lightConfigFile = Cr::Utility::Path::join(
+      TEST_ASSET_DIR, "lights/test_lights.lighting_config.json");
 
   CORRADE_INFO(
       "Start Test : Create, Edit, Remove Attributes for "
       "LightLayoutAttributesManager @"
       << lightConfigFile);
-  // light attributes manager attributes verification
+  // LightAttributesManager attributes verification
   testCreateAndRemoveLights(lightLayoutAttributesManager_, lightConfigFile);
 
 }  // AttributesManagersTest::LightLayoutAttributesManagerTest

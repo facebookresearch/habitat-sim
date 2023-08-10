@@ -198,6 +198,11 @@ void initAttributesBindings(py::module& m) {
       .def(py::init(&ArticulatedObjectAttributes::create<>))
       .def(py::init(&ArticulatedObjectAttributes::create<const std::string&>))
       .def_property(
+          "urdf_filepath", &ArticulatedObjectAttributes::getURDFPath,
+          &ArticulatedObjectAttributes::setURDFPath,
+          R"(Relative filepath of the URDF file used to create the Articulated Object
+          described by this template.)")
+      .def_property(
           "render_asset_handle",
           &ArticulatedObjectAttributes::getRenderAssetHandle,
           &ArticulatedObjectAttributes::setRenderAssetHandle,
