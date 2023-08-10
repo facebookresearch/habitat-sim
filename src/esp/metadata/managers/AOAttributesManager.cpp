@@ -122,6 +122,12 @@ AOAttributesManager::initNewObjectInternal(const std::string& attributesHandle,
     // default exists and was used to create this attributes - investigate any
     // filename fields that may have %%USE_FILENAME%% directive specified in
     // the default attributes, and replace with appropriate derived value.
+
+    // URDF source file handle
+    setHandleFromDefaultTag(newAttributes, newAttributes->getURDFPath(),
+                            [newAttributes](const std::string& newHandle) {
+                              newAttributes->setURDFPath(newHandle);
+                            });
     // Render asset handle
     setHandleFromDefaultTag(newAttributes,
                             newAttributes->getRenderAssetHandle(),
@@ -131,10 +137,12 @@ AOAttributesManager::initNewObjectInternal(const std::string& attributesHandle,
   }
 
   // set default URDF filename - only set handle defaults if attributesHandle
+  // set default URDF filename - only set filename defaults if attributesHandle
   // is not a config file (which would never be a valid URDF filename).
-  // Otherise, expect handles to be set when config is read.
+  // Otherise, expect handles to be set when built from a config file.
   if (!builtFromConfig) {
-    // If not built from json config, this function was called from :
+    // If not built from json config but instead directly from URDF file, this
+    // function was called from :
     //  - ManagedContainer::createDefaultObject
     //  -
     if (newAttributes->getURDFPath().empty()) {
@@ -148,7 +156,7 @@ AOAttributesManager::initNewObjectInternal(const std::string& attributesHandle,
 int AOAttributesManager::registerObjectFinalize(
     attributes::ArticulatedObjectAttributes::ptr AOAttributesTemplate,
     const std::string& AOAttributesHandle,
-    bool) {
+    bool forceRegistration) {
   // adds template to library, and returns either the ID of the existing
   // template referenced by AOAttributesHandle, or the next available ID
   // if not found.
