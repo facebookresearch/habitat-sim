@@ -135,8 +135,6 @@ AOAttributesManager::initNewObjectInternal(const std::string& attributesHandle,
                               newAttributes->setRenderAssetHandle(newHandle);
                             });
   }
-
-  // set default URDF filename - only set handle defaults if attributesHandle
   // set default URDF filename - only set filename defaults if attributesHandle
   // is not a config file (which would never be a valid URDF filename).
   // Otherise, expect handles to be set when built from a config file.
