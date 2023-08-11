@@ -609,8 +609,8 @@ void AttributesManagersTest::testPbrShaderAttributesManagersCreate() {
 }  // AttributesManagersTest::testPbrShaderAttributesManagersCreate
 
 void AttributesManagersTest::testArticulatedObjectAttributesManagersCreate() {
-  const std::string artObjConfigFile =
-      Cr::Utility::Path::join(TEST_ASSET_DIR, "urdf/testing.ao_config.json");
+  const std::string artObjConfigFile = Cr::Utility::Path::join(
+      TEST_ASSET_DIR, "urdf/skinned_prism.ao_config.json");
   CORRADE_INFO(
       "Start Test : Create, Edit, Remove Attributes for "
       "AO JSON config @"
