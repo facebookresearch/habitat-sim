@@ -657,7 +657,10 @@ void Simulator::seed(uint32_t newSeed) {
   random_->seed(newSeed);
   pathfinder_->seed(newSeed);
 }
-
+const std::shared_ptr<metadata::managers::AOAttributesManager>&
+Simulator::getAOAttributesManager() const {
+  return metadataMediator_->getAOAttributesManager();
+}
 const metadata::managers::AssetAttributesManager::ptr&
 Simulator::getAssetAttributesManager() const {
   return metadataMediator_->getAssetAttributesManager();
