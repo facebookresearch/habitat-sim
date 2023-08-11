@@ -157,6 +157,63 @@ int AOAttributesManager::registerObjectFinalize(
     attributes::ArticulatedObjectAttributes::ptr AOAttributesTemplate,
     const std::string& AOAttributesHandle,
     bool) {
+  // ArticulatedObjectsAttributes must have a valid URDF_file it relates to or
+  // it should not be registered.
+  const std::string urdfFilePath = AOAttributesTemplate->getURDFPath();
+  if (urdfFilePath == "") {
+    // URDF Filepath empty is bad
+    ESP_ERROR(Mn::Debug::Flag::NoSpace)
+        << "ArticulatedObjectAttributes template named `" << AOAttributesHandle
+        << "` does not specify a valid URDF Filepath, so registration is "
+           "aborted.";
+    return ID_UNDEFINED;
+  } else if (!Cr::Utility::Path::exists(urdfFilePath)) {
+    // URDF File not found is bad
+    ESP_ERROR(Mn::Debug::Flag::NoSpace)
+        << "ArticulatedObjectAttributes template named `" << AOAttributesHandle
+        << "` specifies the URDF Filepath `" << urdfFilePath
+        << "`, but this file cannot be found, so registration is aborted.";
+    return ID_UNDEFINED;
+  }
+
+  // Furthermore, if 'skin' is specified as render_mode and no skin is specified
+  // or the specified skin cannot be found, the registration should also fail
+  // and the template should not be registered.
+  bool useSkinRenderMode = AOAttributesTemplate->getRenderMode() ==
+                           attributes::ArticulatedObjectRenderMode::Skin;
+  if (useSkinRenderMode) {
+    const std::string renderAssetHandle =
+        AOAttributesTemplate->getRenderAssetHandle();
+    const std::string urdfSimpleName =
+        Corrade::Utility::Path::splitExtension(
+            Corrade::Utility::Path::splitExtension(
+                Corrade::Utility::Path::split(urdfFilePath).second())
+                .first())
+            .first();
+    if (renderAssetHandle == "") {
+      // Empty is bad when 'skin' render mode is specified
+      ESP_ERROR(Mn::Debug::Flag::NoSpace)
+          << "ArticulatedObjectAttributes template named `"
+          << AOAttributesHandle
+          << "` specifies a render mode of `skin` for the AO created by `"
+          << urdfSimpleName
+          << "`, but no render asset was specifed in the configuration, so "
+             "registration is aborted.";
+      return ID_UNDEFINED;
+    } else if (!Cr::Utility::Path::exists(renderAssetHandle)) {
+      // Skin render asset specified not found is bad when 'skin' render mode is
+      // specified
+      ESP_ERROR(Mn::Debug::Flag::NoSpace)
+          << "ArticulatedObjectAttributes template named `"
+          << AOAttributesHandle
+          << "` specifies a render mode of `skin` for the AO created by `"
+          << urdfSimpleName << "`, but the render asset specified, `"
+          << renderAssetHandle
+          << "` cannot be found, so registration is aborted.";
+      return ID_UNDEFINED;
+    }
+  }  // if 'skin' render mode is specified as render mode
+
   // adds template to library, and returns either the ID of the existing
   // template referenced by AOAttributesHandle, or the next available ID
   // if not found.
