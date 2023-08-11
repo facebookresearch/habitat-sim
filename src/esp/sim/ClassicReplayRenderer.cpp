@@ -346,6 +346,12 @@ gfx::replay::NodeHandle ClassicReplayRenderer::loadAndCreateRenderAssetInstance(
   const auto& env = envs_[envIndex];
   // perf todo: avoid dynamic mem alloc
   std::vector<int> tempIDs{env.sceneID_, env.semanticSceneID_};
+
+  if (!Corrade::Utility::Path::exists(assetInfo.filepath)) {
+    return reinterpret_cast<gfx::replay::NodeHandle>(
+        static_cast<int*>(nullptr));
+  }
+
   auto* node = resourceManager_->loadAndCreateRenderAssetInstance(
       assetInfo, creation, sceneManager_.get(), tempIDs);
   return reinterpret_cast<gfx::replay::NodeHandle>(node);
