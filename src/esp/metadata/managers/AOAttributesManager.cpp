@@ -114,6 +114,21 @@ AOAttributesManager::initNewObjectInternal(const std::string& attributesHandle,
   if (createNewAttributes) {
     newAttributes =
         attributes::ArticulatedObjectAttributes::create(attributesHandle);
+    // need to set base/default urdf_filepath to a valid potential filepath if a
+    // new attributes is being created here, to cover for older AO configs that
+    // may not reference their owning URDF files. This will only work for
+    // configs that reside in the same directory as their URDF counterparts.
+
+    const auto urdfFilePath = newAttributes->getURDFPath();
+    // If .urdf extension not found then replace with string with extension.
+    if (urdfFilePath.find(".urdf", urdfFilePath.length() - 5) ==
+        std::string::npos) {
+      newAttributes->setURDFPath(
+          Cr::Utility::Path::splitExtension(
+              Cr::Utility::Path::splitExtension(urdfFilePath).first())
+              .first() +
+          ".urdf");
+    }
   }
   // set the attributes source filedirectory, from the attributes name
   this->setFileDirectoryFromHandle(newAttributes);

@@ -288,12 +288,14 @@ std::vector<int> AttributesManager<T, Access>::loadAllTemplatesFromPathAndExt(
   namespace Dir = Cr::Utility::Path;
   std::vector<std::string> paths;
   std::vector<int> templateIndices;
-
+  ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+      << "<" << this->objectType_ << "> : Searching for files at path: `"
+      << path << "` with `" << extType << "` files";
   // Check if directory
   const bool dirExists = Dir::isDirectory(path);
   if (dirExists) {
-    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
-        << "Parsing " << this->objectType_ << " library directory: `" << path
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+        << "Searching " << this->objectType_ << " library directory: `" << path
         << "` for `" << extType << "` files";
     for (auto& file : *Dir::list(path, Dir::ListFlag::SortAscending)) {
       std::string absoluteSubfilePath = Dir::join(path, file);
@@ -302,6 +304,9 @@ std::vector<int> AttributesManager<T, Access>::loadAllTemplatesFromPathAndExt(
       }
     }
   } else {
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+        << "Parsing " << this->objectType_ << " path: `" << path
+        << "` to see if valid `" << extType << "` file.";
     // not a directory, perhaps a file
     std::string attributesFilepath =
         this->convertFilenameToPassedExt(path, extType);
@@ -311,8 +316,8 @@ std::vector<int> AttributesManager<T, Access>::loadAllTemplatesFromPathAndExt(
       paths.push_back(attributesFilepath);
     } else {  // neither a directory or a file
       ESP_WARNING(Mn::Debug::Flag::NoSpace)
-          << "<" << this->objectType_ << "> : Parsing " << this->objectType_
-          << " files : Cannot find `" << path << "` as directory or `"
+          << "<" << this->objectType_ << "> : Parsing `" << extType
+          << "` files : Cannot find `" << path << "` as directory or `"
           << attributesFilepath << "` as config file, so template load failed.";
       return templateIndices;
     }  // if fileExists else

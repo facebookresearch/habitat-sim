@@ -505,6 +505,7 @@ void MetadataMediatorTest::testDataset1() {
   for (std::map<std::string, std::string>::const_iterator iter =
            urdfTestFilenames.begin();
        iter != urdfTestFilenames.end(); ++iter) {
+    ESP_WARNING() << "MM : urdf file name :" << iter->second;
     // TODO replace when model inherits from AbstractManagedObject and
     // instances proper key synth methods.
     const std::string shortHandle =
