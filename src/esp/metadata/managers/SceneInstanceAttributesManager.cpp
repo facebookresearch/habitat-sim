@@ -291,10 +291,39 @@ SceneInstanceAttributesManager::createAOInstanceAttributesFromJSON(
 
   // only used for articulated objects
   // fixed base
-  io::jsonIntoSetter<bool>(jCell, "fixed_base",
-                           [instanceAttrs](bool fixed_base) {
-                             instanceAttrs->setFixedBase(fixed_base);
-                           });
+  // TODO remove this setter - only used enum-backed values in scene instances
+  io::jsonIntoSetter<bool>(
+      jCell, "fixed_base", [instanceAttrs](bool fixed_base) {
+        instanceAttrs->setBaseType(fixed_base ? "fixed" : "free");
+      });
+
+  // render mode
+  this->setEnumStringFromJsonDoc(jCell, "render_mode", "AORenderModesMap", true,
+                                 attributes::AORenderModesMap,
+                                 [instanceAttrs](const std::string& val) {
+                                   instanceAttrs->setRenderMode(val);
+                                 });
+
+  // base type
+  this->setEnumStringFromJsonDoc(jCell, "base_type", "AOBaseTypeMap", true,
+                                 attributes::AOBaseTypeMap,
+                                 [instanceAttrs](const std::string& val) {
+                                   instanceAttrs->setBaseType(val);
+                                 });
+
+  // inertia source
+  this->setEnumStringFromJsonDoc(jCell, "inertia_source", "AOInertiaSourceMap",
+                                 true, attributes::AOInertiaSourceMap,
+                                 [instanceAttrs](const std::string& val) {
+                                   instanceAttrs->setInertiaSource(val);
+                                 });
+
+  // link order
+  this->setEnumStringFromJsonDoc(jCell, "link_order", "AOLinkOrderMap", true,
+                                 attributes::AOLinkOrderMap,
+                                 [instanceAttrs](const std::string& val) {
+                                   instanceAttrs->setLinkOrder(val);
+                                 });
 
   // only used for articulated objects
   // auto clamp joint limits

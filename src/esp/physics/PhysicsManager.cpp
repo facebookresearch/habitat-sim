@@ -329,7 +329,9 @@ int PhysicsManager::addArticulatedObjectInstance(
   // call object creation (resides only in physics library-based derived physics
   // managers)
   int aObjID = this->addArticulatedObjectFromURDF(
-      filepath, &drawables, aObjInstAttributes->getFixedBase(),
+      filepath, &drawables,
+      aObjInstAttributes->getBaseType() ==
+          metadata::attributes::ArticulatedObjectBaseType::Fixed,
       aObjInstAttributes->getUniformScale(),
       static_cast<float>(aObjInstAttributes->getMassScale()), false, false,
       false, lightSetup);

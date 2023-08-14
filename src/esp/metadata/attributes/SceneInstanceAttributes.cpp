@@ -128,15 +128,27 @@ void SceneObjectInstanceAttributes::writeValuesToJson(
 
 SceneAOInstanceAttributes::SceneAOInstanceAttributes(const std::string& handle)
     : SceneObjectInstanceAttributes(handle, "SceneAOInstanceAttributes") {
-  // set default fixed base and auto clamp values (only used for articulated
-  // object)
-  setFixedBase(false);
+  // set default auto clamp values (only used for articulated object)
   setAutoClampJointLimits(false);
+
+  // Set the instance base type to be unspecified - if not set in instance json,
+  // use ao_config value
+  setBaseType(getAOBaseTypeName(ArticulatedObjectBaseType::Unspecified));
+  // Set the instance source for the interia calculation to be unspecified - if
+  // not set in instance json, use ao_config value
+  setInertiaSource(
+      getAOInertiaSourceName(ArticulatedObjectInertiaSource::Unspecified));
+  // Set the instance link order to use as unspecified - if not set in instance
+  // json, use ao_config value
+  setLinkOrder(getAOLinkOrderName(ArticulatedObjectLinkOrder::Unspecified));
+  // Set render mode to be unspecified - if not set in instance json, use
+  // ao_config value
+  setRenderMode(getAORenderModeName(ArticulatedObjectRenderMode::Unspecified));
 }
 
 std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoHeaderInternal()
     const {
-  std::string infoHdr{"Is Fixed Base?,"};
+  std::string infoHdr{"Base Type,Inertia Source,Link Order,Render Mode,"};
   int iter = 0;
   for (const auto& it : initJointPose_) {
     Cr::Utility::formatInto(infoHdr, infoHdr.size(), "Init Pose {},",
@@ -152,8 +164,12 @@ std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoHeaderInternal()
 
 std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoInternal() const {
   std::string initPoseStr{"["};
-  Cr::Utility::formatInto(initPoseStr, initPoseStr.size(), "{},",
-                          getAsString("fixed_base"));
+
+  Cr::Utility::formatInto(initPoseStr, initPoseStr.size(), "{},{},{},{},",
+                          getAOBaseTypeName(getBaseType()),
+                          getAOInertiaSourceName(getInertiaSource()),
+                          getAOLinkOrderName(getLinkOrder()),
+                          getAORenderModeName(getRenderMode()));
   for (const auto& it : initJointPose_) {
     Cr::Utility::formatInto(initPoseStr, initPoseStr.size(), "{},",
                             std::to_string(it.second));
@@ -171,7 +187,19 @@ std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoInternal() const {
 void SceneAOInstanceAttributes::writeValuesToJsonInternal(
     io::JsonGenericValue& jsonObj,
     io::JsonAllocator& allocator) const {
-  writeValueToJson("fixed_base", jsonObj, allocator);
+  if (getBaseType() != ArticulatedObjectBaseType::Unspecified) {
+    writeValueToJson("base_type", jsonObj, allocator);
+  }
+  if (getInertiaSource() != ArticulatedObjectInertiaSource::Unspecified) {
+    writeValueToJson("inertia_source", jsonObj, allocator);
+  }
+  if (getLinkOrder() != ArticulatedObjectLinkOrder::Unspecified) {
+    writeValueToJson("link_order", jsonObj, allocator);
+  }
+  if (getRenderMode() != ArticulatedObjectRenderMode::Unspecified) {
+    writeValueToJson("render_mode", jsonObj, allocator);
+  }
+
   writeValueToJson("auto_clamp_joint_limits", jsonObj, allocator);
 
   // write out map where key is joint tag, and value is joint pose value.
