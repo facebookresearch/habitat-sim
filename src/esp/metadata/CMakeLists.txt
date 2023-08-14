@@ -50,8 +50,6 @@ set(
   managers/StageAttributesManager.cpp
   MetadataMediator.h
   MetadataMediator.cpp
-  MetadataUtils.h
-  MetadataUtils.cpp
 )
 find_package(Magnum REQUIRED Primitives)
 

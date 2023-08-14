@@ -7,7 +7,6 @@
 #include <Corrade/Utility/FormatStl.h>
 
 #include <utility>
-#include "esp/metadata/MetadataUtils.h"
 #include "esp/physics/RigidBase.h"
 
 #include "esp/io/Json.h"

@@ -4,7 +4,6 @@
 
 #include "AOAttributesManager.h"
 #include "AttributesManagerBase.h"
-#include "esp/metadata/MetadataUtils.h"
 
 namespace Cr = Corrade;
 namespace esp {
