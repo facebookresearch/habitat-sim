@@ -18,8 +18,87 @@ namespace metadata {
 namespace attributes {
 
 /**
+ * @brief This enum class defines possible options for the type of joint that
+ * connects the base of the Articulated Object to the world (the root 6 dofs)
+ */
+
+enum class ArticulatedObjectBaseType {
+  /**
+   * Represents the user not specifying the type of base/root joint.
+   * Resorts to any previously known/set value.
+   */
+  Unspecified = ID_UNDEFINED,
+  /**
+   * The Articulated Object is joined to the world with a free joint and
+   * is free to move around in the world.
+   */
+  Free,
+  /**
+   * The Articulated Object is connected to the world with a fixed joint
+   * at a specific location in the world and is unable to move within the world.
+   */
+  Fixed,
+  /**
+   * End cap value - no Articulated Object base type enums should be defined
+   * at or past this enum.
+   */
+  EndAOBaseType,
+};
+
+/**
+ * @brief This enum class defines the source of the interia values to use for
+ * the Articulated Object.
+ */
+enum class ArticulatedObjectInertiaSource {
+  /**
+   * Represents the user not specifying the source of the inertia values
+   * to use. Resorts to any previously known/set value.
+   */
+  Unspecified = ID_UNDEFINED,
+  /**
+   * Use inertia values computed from the collision shapes when the model
+   * is loaded. This is usually more stable and is the default value.
+   */
+  Computed,
+  /**
+   * Use the interia values specified in the URDF file.
+   */
+  URDF,
+  /**
+   * End cap value - no Articulated Object intertia source enums should be
+   * defined at or past this enum.
+   */
+  EndAOInertiaSource,
+};
+
+/**
+ * @brief This enum class defines how the links in the Articulated Object should
+ * be ordered.
+ */
+enum class ArticulatedObjectLinkOrder {
+  /**
+   * Represents the user not specifying which link ordering to use. Resorts
+   * to any previously known/set value
+   */
+  Unspecified = ID_UNDEFINED,
+  /**
+   * Use the link order specified in the source URDF file.
+   */
+  URDFOrder,
+  /**
+   * Use the link order derived from a tree traversal of the Articulated Object.
+   */
+  TreeTraversal,
+  /**
+   * End cap value - no Articulated Object link order enums should be
+   * defined at or past this enum.
+   */
+  EndAOLinkOrder,
+
+};
+/**
  * @brief This enum class defines the possible options for what will be rendered
- * for a particular articulated object.
+ * for a particular Articulated Object.
  *
  */
 enum class ArticulatedObjectRenderMode {
@@ -29,16 +108,16 @@ enum class ArticulatedObjectRenderMode {
    */
   Unspecified = ID_UNDEFINED,
   /**
-   * Render the articulated object using its skin if it has one, otherwise
+   * Render the Articulated Object using its skin if it has one, otherwise
    * render it using primitives.
    */
   Default,
   /**
-   * Render the articulated object using its skin.
+   * Render the Articulated Object using its skin.
    */
   Skin,
   /**
-   * Render the articulated object using primitives to respresent each link.
+   * Render the Articulated Object using primitives to respresent each link.
    */
   Primitives,
   /**
@@ -46,11 +125,11 @@ enum class ArticulatedObjectRenderMode {
    */
   None,
   /**
-   * Render the articulated object using both the skin and the link primitives.
+   * Render the Articulated Object using both the skin and the link primitives.
    */
   Both,
   /**
-   * End cap value - no articulated object render mode enums should be defined
+   * End cap value - no Articulated Object render mode enums should be defined
    * at or past this enum.
    */
   EndAORenderMode,
@@ -72,7 +151,7 @@ enum class ObjectInstanceShaderType {
    */
   Material,
   /**
-   * Refers to flat shading, pure color and no lighting.  This is often used for
+   * Refers to flat shading, pure color and no lighting. This is often used for
    * textured objects
    */
   Flat,
@@ -127,8 +206,52 @@ enum class SceneInstanceTranslationOrigin {
 
 /**
  * @brief Constant map to provide mappings from string tags to @ref
- * ArticulatedObjectRenderMode values.  This will be used to map values set
- * in json for AO render mode to @ref ArticulatedObjectRenderMode.  Keys
+ * ArticulatedObjectBaseType values. This will be used to map values set
+ * in json for AO base_type to @ref ArticulatedObjectBaseType. Keys
+ * must be lowercase.
+ */
+const extern std::map<std::string, ArticulatedObjectBaseType> AOBaseTypeMap;
+
+/**
+ * @brief This method will convert a @ref ArticulatedObjectBaseType value to the
+ * string key that maps to it in the AOBaseTypeMap
+ */
+std::string getAOBaseTypeName(ArticulatedObjectBaseType aoBaseType);
+
+/**
+ * @brief Constant map to provide mappings from string tags to @ref
+ * ArticulatedObjectInertiaSource values. This will be used to map values set
+ * in json for AO inertia_source to @ref ArticulatedObjectInertiaSource. Keys
+ * must be lowercase.
+ */
+const extern std::map<std::string, ArticulatedObjectInertiaSource>
+    AOInertiaSourceMap;
+
+/**
+ * @brief This method will convert a @ref ArticulatedObjectInertiaSource value to the
+ * string key that maps to it in the AOInertiaSourceMap
+ */
+std::string getAOInertiaSourceName(
+    ArticulatedObjectInertiaSource aoInertiaSource);
+
+/**
+ * @brief Constant map to provide mappings from string tags to @ref
+ * ArticulatedObjectLinkOrder values. This will be used to map values set
+ * in json for AO link_order to @ref ArticulatedObjectLinkOrder. Keys
+ * must be lowercase.
+ */
+const extern std::map<std::string, ArticulatedObjectLinkOrder> AOLinkOrderMap;
+
+/**
+ * @brief This method will convert a @ref ArticulatedObjectLinkOrder value to the
+ * string key that maps to it in the AOLinkOrderMap
+ */
+std::string getAOLinkOrderName(ArticulatedObjectLinkOrder aoLinkOrder);
+
+/**
+ * @brief Constant map to provide mappings from string tags to @ref
+ * ArticulatedObjectRenderMode values. This will be used to map values set
+ * in json for AO render_mode to @ref ArticulatedObjectRenderMode. Keys
  * must be lowercase.
  */
 const extern std::map<std::string, ArticulatedObjectRenderMode>
@@ -142,8 +265,8 @@ std::string getAORenderModeName(ArticulatedObjectRenderMode aoRenderMode);
 
 /**
  * @brief Constant map to provide mappings from string tags to @ref
- * ObjectInstanceShaderType values.  This will be used to map values set
- * in json for shader type to @ref ObjectInstanceShaderType.  Keys
+ * ObjectInstanceShaderType values. This will be used to map values set
+ * in json for shader type to @ref ObjectInstanceShaderType. Keys
  * must be lowercase.
  */
 const extern std::map<std::string, ObjectInstanceShaderType> ShaderTypeNamesMap;
@@ -156,8 +279,8 @@ std::string getShaderTypeName(ObjectInstanceShaderType shaderTypeVal);
 
 /**
  * @brief Constant map to provide mappings from string tags to @ref
- * SceneInstanceTranslationOrigin values.  This will be used to map values set
- * in json for translation origin to @ref SceneInstanceTranslationOrigin.  Keys
+ * SceneInstanceTranslationOrigin values. This will be used to map values set
+ * in json for translation origin to @ref SceneInstanceTranslationOrigin. Keys
  * must be lowercase.
  */
 const extern std::map<std::string, SceneInstanceTranslationOrigin>
@@ -171,8 +294,8 @@ std::string getTranslationOriginName(
 
 /**
  * @brief Constant static map to provide mappings from string tags to @ref
- * esp::gfx::LightType values.  This will be used to map values set in json
- * for light type to @ref esp::gfx::LightType.  Keys must be lowercase - will
+ * esp::gfx::LightType values. This will be used to map values set in json
+ * for light type to @ref esp::gfx::LightType. Keys must be lowercase - will
  * support any case values in JSON.
  */
 const extern std::map<std::string, esp::gfx::LightType> LightTypeNamesMap;
@@ -184,7 +307,7 @@ std::string getLightTypeName(esp::gfx::LightType lightTypeEnum);
 
 /**
  * @brief Constant static map to provide mappings from string tags to @ref
- * esp::gfx::LightPositionModel values.  This will be used to map values set
+ * esp::gfx::LightPositionModel values. This will be used to map values set
  * in json to specify what translations are measured from for a lighting
  * instance.
  */
@@ -199,8 +322,8 @@ std::string getLightPositionModelName(
 
 /**
  * @brief Constant static map to provide mappings from string tags to @ref
- * esp::physics::MotionType values.  This will be used to map values set in
- * json for mesh type to @ref esp::physics::MotionType.  Keys must be
+ * esp::physics::MotionType values. This will be used to map values set in
+ * json for mesh type to @ref esp::physics::MotionType. Keys must be
  * lowercase.
  */
 const extern std::map<std::string, esp::physics::MotionType> MotionTypeNamesMap;

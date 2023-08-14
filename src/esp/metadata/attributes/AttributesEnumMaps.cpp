@@ -55,6 +55,80 @@ std::string getLightPositionModelName(
   return "global";
 }
 
+const std::map<std::string, ArticulatedObjectBaseType> AOBaseTypeMap{
+    {"unspecified", ArticulatedObjectBaseType::Unspecified},
+    {"free", ArticulatedObjectBaseType::Free},
+    {"fixed", ArticulatedObjectBaseType::Fixed},
+};
+
+std::string getAOBaseTypeName(ArticulatedObjectBaseType aoBaseType) {
+  // this verifies that enum value being checked is supported by string-keyed
+  // map. The values below should be the minimum and maximum enums supported by
+  // ShaderTypeNamesMap
+  if (aoBaseType <= ArticulatedObjectBaseType::Unspecified ||
+      aoBaseType >= ArticulatedObjectBaseType::EndAOBaseType) {
+    return "unspecified";
+  }
+  // Must always be valid value
+  for (const auto& it : AOBaseTypeMap) {
+    if (it.second == aoBaseType) {
+      return it.first;
+    }
+  }
+  return "unspecified";
+
+}  // getAOBaseTypeName
+
+const std::map<std::string, ArticulatedObjectInertiaSource> AOInertiaSourceMap{
+    {"unspecified", ArticulatedObjectInertiaSource::Unspecified},
+    {"computed", ArticulatedObjectInertiaSource::Computed},
+    {"urdf", ArticulatedObjectInertiaSource::URDF},
+};
+
+std::string getAOInertiaSourceName(
+    ArticulatedObjectInertiaSource aoInertiaSource) {
+  // this verifies that enum value being checked is supported by string-keyed
+  // map. The values below should be the minimum and maximum enums supported by
+  // AOInertiaSourceMap
+  if (aoInertiaSource <= ArticulatedObjectInertiaSource::Unspecified ||
+      aoInertiaSource >= ArticulatedObjectInertiaSource::EndAOInertiaSource) {
+    return "unspecified";
+  }
+  // Must always be valid value
+  for (const auto& it : AOInertiaSourceMap) {
+    if (it.second == aoInertiaSource) {
+      return it.first;
+    }
+  }
+  return "unspecified";
+
+}  // getAOInertiaSourceName
+
+const std::map<std::string, ArticulatedObjectLinkOrder> AOLinkOrderMap{
+    {"unspecified", ArticulatedObjectLinkOrder::Unspecified},
+    {"urdf_order", ArticulatedObjectLinkOrder::URDFOrder},
+    {"tree_traversal", ArticulatedObjectLinkOrder::TreeTraversal},
+
+};
+
+std::string getAOLinkOrderName(ArticulatedObjectLinkOrder aoLinkOrder) {
+  // this verifies that enum value being checked is supported by string-keyed
+  // map. The values below should be the minimum and maximum enums supported by
+  // AOLinkOrderMap
+  if (aoLinkOrder <= ArticulatedObjectLinkOrder::Unspecified ||
+      aoLinkOrder >= ArticulatedObjectLinkOrder::EndAOLinkOrder) {
+    return "unspecified";
+  }
+  // Must always be valid value
+  for (const auto& it : AOLinkOrderMap) {
+    if (it.second == aoLinkOrder) {
+      return it.first;
+    }
+  }
+  return "unspecified";
+
+}  // getAOLinkOrderName
+
 const std::map<std::string, ArticulatedObjectRenderMode> AORenderModesMap = {
     {"unspecified", ArticulatedObjectRenderMode::Unspecified},
     {"default", ArticulatedObjectRenderMode::Default},
@@ -62,17 +136,12 @@ const std::map<std::string, ArticulatedObjectRenderMode> AORenderModesMap = {
     {"primitives", ArticulatedObjectRenderMode::Primitives},
     {"none", ArticulatedObjectRenderMode::None},
     {"both", ArticulatedObjectRenderMode::Both},
-
 };
-/**
- * @brief This method will convert a @ref ArticulatedObjectRenderMode value to the
- * string key that maps to it in the AORenderModesMap. We allow for an
- * unspecified result so that any previous or default results can be retained.
- */
+
 std::string getAORenderModeName(ArticulatedObjectRenderMode aoRenderMode) {
   // this verifies that enum value being checked is supported by string-keyed
   // map. The values below should be the minimum and maximum enums supported by
-  // ShaderTypeNamesMap
+  // AORenderModesMap
   if (aoRenderMode <= ArticulatedObjectRenderMode::Unspecified ||
       aoRenderMode >= ArticulatedObjectRenderMode::EndAORenderMode) {
     return "unspecified";
