@@ -364,7 +364,7 @@ SceneInstanceAttributesManager::createAOInstanceAttributesFromJSON(
 
 void SceneInstanceAttributesManager::setAbstractObjectAttributesFromJson(
     const attributes::SceneObjectInstanceAttributes::ptr& instanceAttrs,
-    const io::JsonGenericValue& jCell) const {
+    const io::JsonGenericValue& jCell) {
   // template handle describing stage/object instance
   io::jsonIntoConstSetter<std::string>(
       jCell, "template_name",
@@ -376,9 +376,16 @@ void SceneInstanceAttributesManager::setAbstractObjectAttributesFromJson(
   // to unknown, which will mean use scene instance-level default.
   instanceAttrs->setTranslationOrigin(getTranslationOriginVal(jCell));
 
-  // set specified shader type value.  May be Unknown, which means the default
-  // value specified in the stage or object attributes will be used.
-  instanceAttrs->setShaderType(getShaderTypeFromJsonDoc(jCell));
+  // set specified shader type value.  May be Unspecified, which means the
+  // default value specified in the stage or object attributes will be used.
+  // instanceAttrs->setShaderType(getShaderTypeFromJsonDoc(jCell));
+
+  // shader type
+  this->setEnumStringFromJsonDoc(jCell, "shader_type", "ShaderTypeNamesMap",
+                                 true, attributes::ShaderTypeNamesMap,
+                                 [instanceAttrs](const std::string& val) {
+                                   instanceAttrs->setShaderType(val);
+                                 });
 
   // motion type of object.  Ignored for stage.
   std::string tmpVal = "";

@@ -109,7 +109,7 @@ enum class ArticulatedObjectRenderMode {
   Unspecified = ID_UNDEFINED,
   /**
    * Render the Articulated Object using its skin if it has one, otherwise
-   * render it using primitives.
+   * render it using the urdf-defined link meshes/primitives.
    */
   Default,
   /**
@@ -117,15 +117,17 @@ enum class ArticulatedObjectRenderMode {
    */
   Skin,
   /**
-   * Render the Articulated Object using primitives to respresent each link.
+   * Render the Articulated Object using urdf-defined meshes/primitives to
+   * respresent each link.
    */
-  Primitives,
+  LinkVisuals,
   /**
    *
    */
   None,
   /**
-   * Render the Articulated Object using both the skin and the link primitives.
+   * Render the Articulated Object using both the skin and the urdf-defined link
+   * meshes/primitives.
    */
   Both,
   /**

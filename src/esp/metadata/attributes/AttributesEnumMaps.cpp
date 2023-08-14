@@ -133,7 +133,7 @@ const std::map<std::string, ArticulatedObjectRenderMode> AORenderModesMap = {
     {"unspecified", ArticulatedObjectRenderMode::Unspecified},
     {"default", ArticulatedObjectRenderMode::Default},
     {"skin", ArticulatedObjectRenderMode::Skin},
-    {"primitives", ArticulatedObjectRenderMode::Primitives},
+    {"link_visuals", ArticulatedObjectRenderMode::LinkVisuals},
     {"none", ArticulatedObjectRenderMode::None},
     {"both", ArticulatedObjectRenderMode::Both},
 };

@@ -61,40 +61,35 @@ void AOAttributesManager::setValsFromJSONDoc(
     aoAttr->setSemanticId(semantic_id);
   });
 
-  // set attributes shader type to use.  This may be overridden by a scene
-  // instance specification.
-  const std::string shaderTypeVal = getShaderTypeFromJsonDoc(jsonConfig);
-  // if a known shader type val is specified in json, set that value for the
-  // attributes, overriding constructor defaults.  Do not overwrite anything for
-  // unknown
-  if (shaderTypeVal !=
-      getShaderTypeName(attributes::ObjectInstanceShaderType::Unspecified)) {
-    aoAttr->setShaderType(shaderTypeVal);
-  }
-
-  // bool fixedBase,
-  // float globalScale,
-  // float massScale,
-  // bool forceReload,
-  // bool maintainLinkOrder,
-  // bool intertiaFromURDF,
+  // shader type
+  this->setEnumStringFromJsonDoc(
+      jsonConfig, "shader_type", "ShaderTypeNamesMap", false,
+      attributes::ShaderTypeNamesMap,
+      [aoAttr](const std::string& val) { aoAttr->setShaderType(val); });
 
   // render mode
-  std::string tmpRndrModeVal = "";
-  if (io::readMember<std::string>(jsonConfig, "render_mode", tmpRndrModeVal)) {
-    std::string strToLookFor = Cr::Utility::String::lowercase(tmpRndrModeVal);
-    auto found = attributes::AORenderModesMap.find(strToLookFor);
-    if (found != attributes::AORenderModesMap.end()) {
-      // only override JSON default value if new value is valid
-      aoAttr->setRenderMode(strToLookFor);
-    } else {
-      ESP_WARNING(Mn::Debug::Flag::NoSpace)
-          << "'render_mode' Value in JSON : `" << tmpRndrModeVal
-          << "` does not map to a valid "
-             "attributes::AORenderModesMap value, so not setting/overriding "
-             "Render mode value.";
-    }
-  }
+  this->setEnumStringFromJsonDoc(
+      jsonConfig, "render_mode", "AORenderModesMap", false,
+      attributes::AORenderModesMap,
+      [aoAttr](const std::string& val) { aoAttr->setRenderMode(val); });
+
+  // base type
+  this->setEnumStringFromJsonDoc(
+      jsonConfig, "base_type", "AOBaseTypeMap", false,
+      attributes::AOBaseTypeMap,
+      [aoAttr](const std::string& val) { aoAttr->setBaseType(val); });
+
+  // inertia source
+  this->setEnumStringFromJsonDoc(
+      jsonConfig, "inertia_source", "AOInertiaSourceMap", false,
+      attributes::AOInertiaSourceMap,
+      [aoAttr](const std::string& val) { aoAttr->setInertiaSource(val); });
+
+  // link order
+  this->setEnumStringFromJsonDoc(
+      jsonConfig, "link_order", "AOLinkOrderMap", false,
+      attributes::AOLinkOrderMap,
+      [aoAttr](const std::string& val) { aoAttr->setLinkOrder(val); });
 
   // check for user defined attributes
   this->parseUserDefinedJsonVals(aoAttr, jsonConfig);
@@ -114,9 +109,9 @@ AOAttributesManager::initNewObjectInternal(const std::string& attributesHandle,
   if (createNewAttributes) {
     newAttributes =
         attributes::ArticulatedObjectAttributes::create(attributesHandle);
-    // need to set base/default urdf_filepath to a valid potential filepath if a
-    // new attributes is being created here, to cover for older AO configs that
-    // may not reference their owning URDF files. This will only work for
+    // need to set base/default urdf_filepath to a valid potential filepath if
+    // a new attributes is being created here, to cover for older AO configs
+    // that may not reference their owning URDF files. This will only work for
     // configs that reside in the same directory as their URDF counterparts.
 
     const auto urdfFilePath = newAttributes->getURDFPath();
@@ -150,9 +145,10 @@ AOAttributesManager::initNewObjectInternal(const std::string& attributesHandle,
                               newAttributes->setRenderAssetHandle(newHandle);
                             });
   }
-  // set default URDF filename - only set filename defaults if attributesHandle
-  // is not a config file (which would never be a valid URDF filename).
-  // Otherise, expect handles to be set when built from a config file.
+  // set default URDF filename - only set filename defaults if
+  // attributesHandle is not a config file (which would never be a valid URDF
+  // filename). Otherise, expect handles to be set when built from a config
+  // file.
   if (!builtFromConfig) {
     // If not built from json config but instead directly from URDF file, this
     // function was called from :
@@ -189,9 +185,9 @@ int AOAttributesManager::registerObjectFinalize(
     return ID_UNDEFINED;
   }
 
-  // Furthermore, if 'skin' is specified as render_mode and no skin is specified
-  // or the specified skin cannot be found, the registration should also fail
-  // and the template should not be registered.
+  // Furthermore, if 'skin' is specified as render_mode and no skin is
+  // specified or the specified skin cannot be found, the registration should
+  // also fail and the template should not be registered.
   bool useSkinRenderMode = AOAttributesTemplate->getRenderMode() ==
                            attributes::ArticulatedObjectRenderMode::Skin;
   if (useSkinRenderMode) {
@@ -214,8 +210,8 @@ int AOAttributesManager::registerObjectFinalize(
              "registration is aborted.";
       return ID_UNDEFINED;
     } else if (!Cr::Utility::Path::exists(renderAssetHandle)) {
-      // Skin render asset specified not found is bad when 'skin' render mode is
-      // specified
+      // Skin render asset specified not found is bad when 'skin' render mode
+      // is specified
       ESP_ERROR(Mn::Debug::Flag::NoSpace)
           << "ArticulatedObjectAttributes template named `"
           << AOAttributesHandle

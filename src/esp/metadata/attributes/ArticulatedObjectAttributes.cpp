@@ -44,7 +44,7 @@ void ArticulatedObjectAttributes::writeValuesToJson(
 }  // ArticulatedObjectAttributes::writeValuesToJson
 
 std::string ArticulatedObjectAttributes::getObjectInfoHeaderInternal() const {
-  return "URDF Filepath,Render Asset,Semantic ID,Base Type, Inertia "
+  return "URDF Filepath,Render Asset,Semantic ID,Base Type,Inertia "
          "Source,Link Order,Render Mode,Current Shader "
          "Type,";
 }

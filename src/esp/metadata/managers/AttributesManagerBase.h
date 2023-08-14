@@ -213,6 +213,34 @@ class AttributesManager : public ManagedFileBasedContainer<T, Access> {
                                              bool registerObj);
 
   /**
+   * @brief This function is accessed by various attributes managers during
+   * loading. It provides a generic handler to look for a particular @p jsonTag
+   * in the given @p jsonConfig document, and if it is present it will attempt
+   * to find the value in the passed string-keyed @p mapToUse of enum config
+   * values. If the string is present it will return the string, otherwise it
+   * will return an empty string. The consumer of the function is responsible
+   * for only setting a config value if the string is not empty. The enum class
+   * should have the first value defined as Unspecified and given the value
+   * ID_UNDEFINED.
+   * @tparam Type of enum class referenced by @p mapToUse
+   * @param jsonConfig The source json document
+   * @param jsonTag The field to look for. If present expected to hold a string
+   * @param mapName String map name, to be displayed if the value found in json
+   * is not found in @p mapToUse
+   * @param mapToUse String-keyed map of enum values supported for the field
+   * that corresponds to @p jsonTag. See attributes::AttributesEnumMaps.h/cpp.
+   * @param valueSetter The config function to use to set the value
+   */
+  template <class M>
+  void setEnumStringFromJsonDoc(
+      const io::JsonGenericValue& jsonConfig,
+      const char* jsonTag,
+      const std::string& mapName,
+      bool saveUnspecified,
+      const std::map<std::string, M>& mapToUse,
+      const std::function<void(const std::string&)>& valueSetter);
+
+  /**
    * @brief Set a filename attribute to hold the appropriate data if the
    * existing attribute's given path contains the sentinel tag value defined at
    * @ref esp::metadata::CONFIG_NAME_AS_ASSET_FILENAME. This will be used in
@@ -483,6 +511,42 @@ bool AttributesManager<T, Access>::setHandleFromDefaultTag(
   // no tag found - check if existing non-empty field exists.
   return Cr::Utility::Path::exists(srcAssetFilename);
 }  // AttributesManager<T, Access>::setHandleFromDefaultTag
+
+template <class T, ManagedObjectAccess Access>
+template <class M>
+void AttributesManager<T, Access>::setEnumStringFromJsonDoc(
+    const io::JsonGenericValue& jsonConfig,
+    const char* jsonTag,
+    const std::string& mapName,
+    bool saveUnspecified,
+    const std::map<std::string, M>& mapToUse,
+    const std::function<void(const std::string&)>& valueSetter) {
+  std::string tmpStrVal = "";
+  if (io::readMember<std::string>(jsonConfig, jsonTag, tmpStrVal)) {
+    std::string strToLookFor = Cr::Utility::String::lowercase(tmpStrVal);
+    // If unspecified, do not set config value unless from instance attributes
+    if (strToLookFor != "unspecified") {
+      auto found = mapToUse.find(strToLookFor);
+      if (found != mapToUse.end()) {
+        // only override attributes default value if new value is valid
+        valueSetter(strToLookFor);
+      } else {
+        ESP_WARNING(Mn::Debug::Flag::NoSpace)
+            << "`" << jsonTag << "` value in JSON : `" << tmpStrVal
+            << "` does not map to a valid `" << mapName
+            << "` value, so not setting/overriding default `" << jsonTag
+            << "` value.";
+      }
+    } else if (saveUnspecified) {
+      // only true if writing to an instance attributes and config holds
+      // unspecified value. If writing to an object/stage/articulated object
+      // config, just keep default value.
+      // TODO default all instance attributes to be unspecified for the
+      // supported config values. Then this would be unnecessary
+      valueSetter("unspecified");
+    }
+  }
+}  // setEnumStringFromJsonDoc
 
 }  // namespace managers
 }  // namespace metadata
