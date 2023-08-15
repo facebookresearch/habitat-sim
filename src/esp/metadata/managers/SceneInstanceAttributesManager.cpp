@@ -66,7 +66,7 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
       jsonConfig.FindMember("stage_instance");
   if (stageJSONIter != jsonConfig.MemberEnd()) {
     if (stageJSONIter->value.IsObject()) {
-      attribs->setStageInstance(
+      attribs->setStageInstanceAttrs(
           createInstanceAttributesFromJSON(stageJSONIter->value));
     } else {
       // stage instance exists but is not a valid JSON Object
@@ -87,7 +87,7 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
           createEmptyInstanceAttributes("");
       // Set to use none stage
       instanceAttrs->setHandle("NONE");
-      attribs->setStageInstance(instanceAttrs);
+      attribs->setStageInstanceAttrs(instanceAttrs);
     } else {
       // no stage instance exists in Scene Instance config JSON. This should not
       // happen and would indicate an error in the dataset.
@@ -109,7 +109,8 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
       for (rapidjson::SizeType i = 0; i < objectArray.Size(); ++i) {
         const auto& objCell = objectArray[i];
         if (objCell.IsObject()) {
-          attribs->addObjectInstance(createInstanceAttributesFromJSON(objCell));
+          attribs->addObjectInstanceAttrs(
+              createInstanceAttributesFromJSON(objCell));
         } else {
           ESP_WARNING(Mn::Debug::Flag::NoSpace)
               << "Object instance issue in Scene Instance `" << attribsDispName
@@ -146,7 +147,7 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
         const auto& artObjCell = articulatedObjArray[i];
 
         if (artObjCell.IsObject()) {
-          attribs->addArticulatedObjectInstance(
+          attribs->addArticulatedObjectInstanceAttrs(
               createAOInstanceAttributesFromJSON(artObjCell));
         } else {
           ESP_WARNING(Mn::Debug::Flag::NoSpace)

@@ -567,7 +567,8 @@ class SceneInstanceAttributes : public AbstractAttributes {
    * instance. Scene instance will always have only 1 stage instance
    * reference.
    */
-  void setStageInstance(SceneObjectInstanceAttributes::ptr _stageInstance) {
+  void setStageInstanceAttrs(
+      SceneObjectInstanceAttributes::ptr _stageInstance) {
     _stageInstance->setID(0);
     setSubconfigPtr<SceneObjectInstanceAttributes>("stage_instance",
                                                    _stageInstance);
@@ -582,9 +583,9 @@ class SceneInstanceAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief Add a description of an object instance to this scene instance
+   * @brief Add an object instance attributes to this scene instance.
    */
-  void addObjectInstance(SceneObjectInstanceAttributes::ptr _objInstance) {
+  void addObjectInstanceAttrs(SceneObjectInstanceAttributes::ptr _objInstance) {
     setSubAttributesInternal<SceneObjectInstanceAttributes>(
         _objInstance, availableObjInstIDs_, objInstConfig_, "obj_inst_");
   }
@@ -612,10 +613,10 @@ class SceneInstanceAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief Add a description of an articulated object instance to this scene
+   * @brief Add an articulated object instance;s attributes to this scene
    * instance.
    */
-  void addArticulatedObjectInstance(
+  void addArticulatedObjectInstanceAttrs(
       SceneAOInstanceAttributes::ptr _artObjInstance) {
     setSubAttributesInternal<SceneAOInstanceAttributes>(
         _artObjInstance, availableArtObjInstIDs_, artObjInstConfig_,

@@ -492,7 +492,7 @@ MetadataMediator::makeSceneAndReferenceStage(
                 << "'. This would occur due to an internal Habitat-Sim error.");
 
   // create stage instance attributes and set its name (from stage attributes)
-  sceneInstanceAttributes->setStageInstance(
+  sceneInstanceAttributes->setStageInstanceAttrs(
       dsSceneAttrMgr->createEmptyInstanceAttributes(
           stageAttributes->getHandle()));
 

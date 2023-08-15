@@ -366,14 +366,14 @@ void PhysicsManager::buildCurrentStateSceneAttributes(
     const metadata::attributes::SceneInstanceAttributes::ptr&
         sceneInstanceAttrs) const {
   // 1. set stage instance
-  sceneInstanceAttrs->setStageInstance(
+  sceneInstanceAttrs->setStageInstanceAttrs(
       staticStageObject_->getCurrentStateInstanceAttr());
   // 2. Clear existing object instances, and set new ones reflecting current
   // state
   sceneInstanceAttrs->clearObjectInstances();
   // get each object's current state as a SceneObjectInstanceAttributes
   for (const auto& item : existingObjects_) {
-    sceneInstanceAttrs->addObjectInstance(
+    sceneInstanceAttrs->addObjectInstanceAttrs(
         item.second->getCurrentStateInstanceAttr());
   }
   // 3. Clear existing Articulated object instances, and set new ones reflecting
@@ -381,7 +381,7 @@ void PhysicsManager::buildCurrentStateSceneAttributes(
   sceneInstanceAttrs->clearArticulatedObjectInstances();
   // get each articulated object's current state as a SceneAOInstanceAttributes
   for (const auto& item : existingArticulatedObjects_) {
-    sceneInstanceAttrs->addArticulatedObjectInstance(
+    sceneInstanceAttrs->addArticulatedObjectInstanceAttrs(
         item.second->getCurrentStateInstanceAttr());
   }
 
