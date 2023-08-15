@@ -28,6 +28,9 @@ ArticulatedObjectAttributes::ArticulatedObjectAttributes(
   // Set default to be to use Phong shader
   setShaderType(getShaderTypeName(ObjectInstanceShaderType::Phong));
 
+  setUniformScale(1.0f);
+  setMassScale(1.0);
+
 }  // ArticulatedObjectAttributes ctor
 
 void ArticulatedObjectAttributes::writeValuesToJson(
@@ -36,6 +39,12 @@ void ArticulatedObjectAttributes::writeValuesToJson(
   writeValueToJson("urdf_filepath", jsonObj, allocator);
   writeValueToJson("render_asset", jsonObj, allocator);
   writeValueToJson("semantic_id", jsonObj, allocator);
+  if (getUniformScale() != 1.0f) {
+    writeValueToJson("uniform_scale", jsonObj, allocator);
+  }
+  if (getMassScale() != 1.0) {
+    writeValueToJson("mass_scale", jsonObj, allocator);
+  }
   writeValueToJson("base_type", jsonObj, allocator);
   writeValueToJson("inertia_source", jsonObj, allocator);
   writeValueToJson("link_order", jsonObj, allocator);
@@ -44,7 +53,8 @@ void ArticulatedObjectAttributes::writeValuesToJson(
 }  // ArticulatedObjectAttributes::writeValuesToJson
 
 std::string ArticulatedObjectAttributes::getObjectInfoHeaderInternal() const {
-  return "URDF Filepath,Render Asset,Semantic ID,Base Type,Inertia "
+  return "URDF Filepath,Render Asset,Semantic ID,Uniform Scale,Mass Scale,Base "
+         "Type,Inertia "
          "Source,Link Order,Render Mode,Current Shader "
          "Type,";
 }
@@ -52,7 +62,8 @@ std::string ArticulatedObjectAttributes::getObjectInfoHeaderInternal() const {
 std::string ArticulatedObjectAttributes::getObjectInfoInternal() const {
   return Cr::Utility::formatString(
       "{},{},{},{},{},{},{},{}", getURDFPath(), getRenderAssetHandle(),
-      getAsString("semantic_id"), getAOBaseTypeName(getBaseType()),
+      getAsString("semantic_id"), getAsString("uniform_scale"),
+      getAsString("mass_scale"), getAOBaseTypeName(getBaseType()),
       getAOInertiaSourceName(getInertiaSource()),
       getAOLinkOrderName(getLinkOrder()), getAORenderModeName(getRenderMode()),
       getShaderTypeName(getShaderType()));

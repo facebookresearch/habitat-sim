@@ -60,6 +60,16 @@ void AOAttributesManager::setValsFromJSONDoc(
     aoAttr->setSemanticId(semantic_id);
   });
 
+  // load the uniform scaling
+  io::jsonIntoSetter<double>(
+      jsonConfig, "uniform_scale",
+      [aoAttr](double scale) { aoAttr->setUniformScale(scale); });
+
+  // load the mass scaling
+  io::jsonIntoSetter<double>(jsonConfig, "mass_scale", [aoAttr](double scale) {
+    aoAttr->setMassScale(scale);
+  });
+
   // shader type
   this->setEnumStringFromJsonDoc(
       jsonConfig, "shader_type", "ShaderTypeNamesMap", false,

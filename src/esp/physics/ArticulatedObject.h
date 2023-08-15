@@ -13,7 +13,8 @@
 
 #include "RigidBase.h"
 #include "esp/core/Esp.h"
-#include "esp/io/URDFParser.h"
+#include "esp/metadata/URDFParser.h"
+#include "esp/metadata/attributes/ArticulatedObjectAttributes.h"
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
@@ -25,11 +26,6 @@ class DrawableGroup;
 namespace assets {
 class ResourceManager;
 }
-
-namespace io {
-struct URDFLinkContactInfo;
-struct UrdfLink;
-}  // namespace io
 
 namespace physics {
 

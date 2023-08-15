@@ -591,13 +591,16 @@ bool Simulator::instanceArticulatedObjectsForSceneAttributes(
                   config_.activeSceneName));
 
     // get model file name
-    const std::string artObjFilePath =
+    const std::string artObjAttrHandle =
         metadataMediator_->getArticulatedObjModelFullHandle(
             artObjInst->getHandle());
 
+    ESP_WARNING() << "Art Obj Handle :" << artObjInst->getHandle()
+                  << " artObjAttrHandle :" << artObjAttrHandle;
+
     // make sure full handle is not empty
     ESP_CHECK(
-        !artObjFilePath.empty(),
+        !artObjAttrHandle.empty(),
         Cr::Utility::formatString(
             "Simulator::instanceArticulatedObjectsForSceneAttributes() : "
             "Attempt "
@@ -608,7 +611,7 @@ bool Simulator::instanceArticulatedObjectsForSceneAttributes(
 
     // create articulated object
     // aoID =
-    physicsManager_->addArticulatedObjectInstance(artObjFilePath, artObjInst,
+    physicsManager_->addArticulatedObjectInstance(artObjInst, artObjAttrHandle,
                                                   config_.sceneLightSetupKey);
   }  // for each articulated object instance
   return true;

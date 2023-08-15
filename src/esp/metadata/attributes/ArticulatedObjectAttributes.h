@@ -42,6 +42,26 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
   }
 
   /**
+   * @brief Set uniform scaling of the articulated object.
+   */
+  void setUniformScale(float scale) { set("uniform_scale", scale); }
+  /**
+   * @brief Get uniform scaling of the articulated object.
+   */
+  float getUniformScale() const {
+    return static_cast<float>(get<double>("uniform_scale"));
+  }
+
+  /**
+   * @brief Set mass scaling of the articulated object.
+   */
+  void setMassScale(double scale) { set("mass_scale", scale); }
+  /**
+   * @brief Get mass scaling of the articulated object.
+   */
+  double getMassScale() const { return get<double>("mass_scale"); }
+
+  /**
    * @brief Set the type of base/root joint to use to add this Articulated
    * Object to the world.
    */

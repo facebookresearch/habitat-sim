@@ -100,6 +100,7 @@ if(BUILD_WITH_BACKGROUND_RENDERER)
     assets
     gfx
     gfx_batch
+    metadata
     sim
     MagnumPlugins::OpenExrImageConverter
     MagnumPlugins::OpenExrImporter
@@ -160,6 +161,7 @@ corrade_add_test(
   scene
   assets
   sim
+  metadata
 )
 target_include_directories(ReplicaSceneTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 

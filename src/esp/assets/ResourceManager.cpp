@@ -1589,8 +1589,8 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
 
   ESP_CHECK(
       (fileImporter_->openFile(filename) && (fileImporter_->meshCount() > 0u)),
-      Cr::Utility::formatString("Error loading general mesh data from file {}",
-                                filename));
+      Cr::Utility::formatString(
+          "Error loading general mesh data from file '{}'", filename));
 
   // load file and add it to the dictionary
   LoadedAssetData loadedAssetData{info};
