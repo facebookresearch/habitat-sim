@@ -28,7 +28,7 @@
 #include "esp/assets/GenericSemanticMeshData.h"
 #include "esp/assets/MeshMetaData.h"
 #include "esp/gfx/DrawableGroup.h"
-#include "esp/io/URDFParser.h"
+#include "esp/metadata/URDFParser.h"
 #include "esp/physics/objectWrappers/ManagedArticulatedObject.h"
 #include "esp/physics/objectWrappers/ManagedRigidObject.h"
 #include "esp/scene/SceneNode.h"

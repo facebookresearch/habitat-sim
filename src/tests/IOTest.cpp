@@ -11,15 +11,16 @@
 #include "esp/io/Io.h"
 #include "esp/io/Json.h"
 #include "esp/io/JsonAllTypes.h"
-#include "esp/io/URDFParser.h"
+#include "esp/metadata/URDFParser.h"
+#include "esp/metadata/attributes/ArticulatedObjectAttributes.h"
 #include "esp/metadata/attributes/ObjectAttributes.h"
 
 #include "configure.h"
 
 namespace Cr = Corrade;
 
+using esp::metadata::attributes::ArticulatedObjectAttributes;
 using esp::metadata::attributes::ObjectAttributes;
-
 namespace {
 const std::string dataDir = Corrade::Utility::Path::join(SCENE_DATASETS, "../");
 
@@ -101,11 +102,14 @@ void IOTest::parseURDF() {
   const std::string iiwaURDF = Cr::Utility::Path::join(
       TEST_ASSETS, "urdf/kuka_iiwa/model_free_base.urdf");
 
-  esp::io::URDF::Parser parser;
+  ArticulatedObjectAttributes::ptr attributes =
+      ArticulatedObjectAttributes::create(iiwaURDF);
+
+  esp::metadata::URDF::Parser parser;
 
   // load the iiwa test asset
-  std::shared_ptr<esp::io::URDF::Model> urdfModel;
-  parser.parseURDF(urdfModel, iiwaURDF);
+  std::shared_ptr<esp::metadata::URDF::Model> urdfModel;
+  parser.parseURDF(attributes, urdfModel);
   ESP_DEBUG() << "name:" << urdfModel->m_name;
   CORRADE_COMPARE(urdfModel->m_name, "lbr_iiwa");
   ESP_DEBUG() << "file:" << urdfModel->m_sourceFile;
@@ -141,7 +145,7 @@ void IOTest::parseURDF() {
   CORRADE_COMPARE(urdfModel->getLink(1)->m_inertia.m_mass, 12.0);
 
   // test overwrite re-load
-  parser.parseURDF(urdfModel, iiwaURDF);
+  parser.parseURDF(attributes, urdfModel);
   // should have default values again
   CORRADE_COMPARE(urdfModel->getGlobalScaling(), 1.0);
   CORRADE_COMPARE(urdfModel->getMassScaling(), 1.0);

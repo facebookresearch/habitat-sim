@@ -43,6 +43,9 @@ class Recorder;
 }
 }  // namespace gfx
 namespace metadata {
+namespace URDF {
+class Model;
+}
 class MetadataMediator;
 namespace attributes {
 class ObjectAttributes;
@@ -74,11 +77,6 @@ class RigidObject;
 namespace nav {
 class PathFinder;
 }
-namespace io {
-namespace URDF {
-class Model;
-}
-}  // namespace io
 namespace assets {
 class BaseMesh;
 struct CollisionMeshData;

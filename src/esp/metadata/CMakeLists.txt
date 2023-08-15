@@ -50,6 +50,8 @@ set(
   managers/StageAttributesManager.cpp
   MetadataMediator.h
   MetadataMediator.cpp
+  URDFParser.cpp
+  URDFParser.h
 )
 find_package(Magnum REQUIRED Primitives)
 
@@ -58,8 +60,10 @@ add_library(
   ${metadata_SOURCES}
 )
 
+target_include_directories(metadata PRIVATE "${DEPS_DIR}/tinyxml2")
+
 target_link_libraries(
   metadata
   PUBLIC Magnum::Magnum Magnum::Primitives
-  PRIVATE core geo io
+  PRIVATE core geo io tinyxml2
 )
