@@ -186,7 +186,7 @@ def add_color_material_to_visual(color, xml_visual) -> None:
     xml_visual.append(this_xml_material)
 
 
-def bone_to_urdf(this_bone, collision_visuals=True, joint_visual=True):
+def bone_to_urdf(this_bone, collision_visuals=False, joint_visual=False):
     """This function extracts the basic properties of the bone and populates
     links and joint lists with the corresponding urdf nodes"""
 
