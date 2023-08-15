@@ -419,17 +419,17 @@ class AssetAttributesManager
     this->defaultObj_ = nullptr;
   }  // AssetAttributesManager::setDefaultObject
 
- protected:
   /**
    * @brief Check if currently configured primitive asset template library has
    * passed handle.
    * @param handle String name of primitive asset attributes desired
    * @return whether handle exists or not in asset attributes library
    */
-  bool isValidPrimitiveAttributes(const std::string& handle) override {
+  bool isValidPrimitiveAttributes(const std::string& handle) const {
     return this->getObjectLibHasHandle(handle);
   }
 
+ protected:
   /**
    * @brief This method will perform any necessary updating that is
    * attributesManager-specific upon template removal, such as removing a

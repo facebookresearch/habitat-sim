@@ -10,11 +10,32 @@ License: MIT license
 Details can be found here:
 https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/LICENSE
 
-
-====================
-lythwood_room_4k.jpg
-====================
-The above picture was originally in .png format and was from https://polyhaven.com/a/lythwood_room
-
-License: CC0 (public domain)
+========================
+Polyhaven.com CC0 Images
+========================
+All the following polyhaven.com images have license: CC0 (public domain)
 Details can be found here: https://polyhaven.com/license and https://creativecommons.org/publicdomain/zero/1.0/
+
+anniversary_lounge_1k.hdr
+====================
+The Anniversary Lounge picture was originally from https://polyhaven.com/a/anniversary_lounge
+
+autoshop_01_1k.hdr
+====================
+The Autoshop 01 picture was originally from https://polyhaven.com/a/autoshop_01
+
+blue_photo_studio_1k.hdr
+====================
+The Blue Photo Studio picture was originally from https://polyhaven.com/a/blue_photo_studio
+
+brown_photostudio_02_1k.hdr
+====================
+The Brown Photostudio 02 picture was originally from https://polyhaven.com/a/brown_photostudio_02
+
+lythwood_room_1k.hdr
+====================
+The Lythwood Room picture was originally from https://polyhaven.com/a/lythwood_room
+
+========================
+End Polyhaven.com CC0 Images
+========================

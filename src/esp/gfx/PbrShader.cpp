@@ -50,9 +50,21 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
 #else
   Mn::GL::Version glVersion = Mn::GL::Version::GL330;
 #endif
-
+  directLightingIsEnabled_ =
+      ((lightCount_ != 0u) && flags_ >= Flag::DirectLighting);
   lightingIsEnabled_ =
-      (lightCount_ != 0u || flags_ >= Flag::ImageBasedLighting);
+      (directLightingIsEnabled_ || flags_ >= Flag::ImageBasedLighting);
+  directAndIBLisEnabled_ =
+      (directLightingIsEnabled_ && flags_ >= Flag::ImageBasedLighting);
+
+  bool mapMatInToLinear = (flags_ >= Flag::MapMatTxtrToLinear &&
+                           ((flags_ >= Flag::BaseColorTexture) ||
+                            (flags_ >= Flag::EmissiveTexture) ||
+                            (flags_ >= Flag::SpecularLayerColorTexture)));
+  bool mapIBLInToLinear = ((flags_ >= Flag::ImageBasedLighting) &&
+                           (flags_ >= Flag::MapIBLTxtrToLinear));
+
+  mapInputToLinear_ = (mapMatInToLinear || mapIBLInToLinear);
 
   isTextured_ =
       (((flags_ >= Flag::BaseColorTexture) ||
@@ -157,17 +169,53 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
       .addSource(flags_ >= Flag::AnisotropyLayerTexture
                      ? "#define ANISOTROPY_LAYER_TEXTURE\n"
                      : "")
-
       .addSource(flags_ >= Flag::PrecomputedTangent
                      ? "#define PRECOMPUTED_TANGENT\n"
                      : "")
       .addSource(flags_ >= Flag::ImageBasedLighting
                      ? "#define IMAGE_BASED_LIGHTING\n"
-                       "#define TONE_MAP\n"
                      : "")
+      // Lights exist and direct lighting is enabled
+      .addSource(directLightingIsEnabled_ ? "#define DIRECT_LIGHTING\n" : "")
+      // Whether to skip the TBN calc if no precomputed tangents are provided.
+      // NOTE : This will disable normal textures if no precomp tangents, which
+      // will result in a severe degredation in quality.
+      // TODO : implement this in shader. This should only be done if the TBN
+      // calc negatively impacts shader performance too dramatically.
+      .addSource(flags_ >= Flag::SkipMissingTBNCalc ? "#define SKIP_TBN_CALC\n"
+                                                    : "")
+
+      // Whether to use Mikkelsen TBN Calc. Otherwise use faster simplification
+      .addSource(flags_ >= Flag::UseMikkelsenTBN ? "#define USE_MIKKELSEN_TBN\n"
+                                                 : "")
+      // Whether to use the Burley/Disney diffuse calculation, or simple
+      // lambertian
+      .addSource(flags_ >= Flag::UseBurleyDiffuse
+                     ? "#define USE_BURLEY_DIFFUSE\n"
+                     : "")
+      // Use the shader to approximate srgb<-> linear remapping on specific
+      // textures so that all color calcs take place in linear space. This is
+      // temporary until we can improve the cpu-side functionality (make sure
+      // all loaded textures are converted to linear space, and implement the
+      // framebuffer that can map back to sRGB)
+      .addSource(mapMatInToLinear ? "#define MAP_MAT_TXTRS_TO_LINEAR\n" : "")
+
+      .addSource(mapIBLInToLinear ? "#define MAP_IBL_TXTRS_TO_LINEAR\n" : "")
+
+      // Whether we should map the output from linear space to SRGB. This will
+      // eventually be performed by a framebuffer instead of in the shader.
+      .addSource((flags_ >= Flag::MapOutputToSRGB)
+                     ? "#define MAP_OUTPUT_TO_SRGB\n"
+                     : "")
+
+      .addSource(flags_ >= Flag::UseDirectLightTonemap
+                     ? "#define DIRECT_TONE_MAP\n"
+                     : "")
+      .addSource(flags_ >= Flag::UseIBLTonemap ? "#define IBL_TONE_MAP\n" : "")
 
       .addSource(flags_ >= Flag::DebugDisplay ? "#define PBR_DEBUG_DISPLAY\n"
                                               : "")
+
       .addSource(
           Cr::Utility::formatString("#define LIGHT_COUNT {}\n", lightCount_))
       .addSource(rs.getString("pbrCommon.glsl"))
@@ -288,15 +336,28 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   }  // if lighting is enabled
 
   // lights
-  if (lightCount_ != 0u) {
+  if (directLightingIsEnabled_) {
     lightRangesUniform_ = uniformLocation("uLightRanges");
     lightColorsUniform_ = uniformLocation("uLightColors");
     lightDirectionsUniform_ = uniformLocation("uLightDirections");
     // global light intensity across all direct lights
-    globalLightingIntensityUniform_ = uniformLocation("uGlobalLightIntensity");
+    directLightingIntensityUniform_ = uniformLocation("uDirectLightIntensity");
   }
 
   cameraWorldPosUniform_ = uniformLocation("uCameraWorldPos");
+
+  if ((directLightingIsEnabled_ && flags_ >= Flag::UseDirectLightTonemap) ||
+      (flags_ >= Flag::ImageBasedLighting && flags_ >= Flag::UseIBLTonemap)) {
+    tonemapExposureUniform_ = uniformLocation("uExposure");
+  }
+
+  if (mapInputToLinear_) {
+    gammaUniform_ = uniformLocation("uGamma");
+  }
+
+  if (flags_ >= Flag::MapOutputToSRGB) {
+    invGammaUniform_ = uniformLocation("uInvGamma");
+  }
 
   // IBL related uniform
   if (flags_ >= Flag::ImageBasedLighting) {
@@ -304,7 +365,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
         uniformLocation("uPrefilteredMapMipLevels");
   }
 
-  if ((lightCount_ != 0u) && (flags_ >= Flag::ImageBasedLighting)) {
+  if (directAndIBLisEnabled_) {
     // Apply scaling if -both- lights and IBL are enabled
     // pbr equation scales - use to mix IBL and direct lighting
     // Should never be set to 0 or will cause warnings to occur in shader
@@ -315,6 +376,9 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   if (flags_ >= Flag::DebugDisplay) {
     pbrDebugDisplayUniform_ = uniformLocation("uPbrDebugDisplay");
   }
+
+  /////////////////////////////
+  // Initializations
 
   // initialize the shader with some "reasonable defaults"
   setViewMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
@@ -347,7 +411,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     }
   }
 
-  if (lightCount_ != 0u) {
+  if (directLightingIsEnabled_) {
     setLightVectors(Cr::Containers::Array<Mn::Vector4>{
         Cr::DirectInit, lightCount_,
         // a single directional "fill" light, coming from the center of the
@@ -359,15 +423,23 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     setLightRanges(Cr::Containers::Array<Mn::Float>{Cr::DirectInit, lightCount_,
                                                     Mn::Constants::inf()});
     // initialize global, config-driven light intensity
-    setGlobalLightIntensity(1.0f);
+    setDirectLightIntensity(1.0f);
+    // initialize tonemap exposure
   }
+
+  if (lightingIsEnabled_) {
+    // TODO : gate this based on whether tonemapping is being used.
+    setTonemapExposure(4.5f);
+  }
+
+  setGamma({2.2f, 2.2f, 2.2f});
 
   setEmissiveColor(Mn::Color3{0.0f});
 
   PbrShader::PbrEquationScales scales;
   // Set mix if both lights and IBL are enabled
   // Should never be 0 or will cause shader warnings
-  if ((lightCount_ != 0u) && (flags_ >= Flag::ImageBasedLighting)) {
+  if (directAndIBLisEnabled_) {
     // These are empirical numbers. Discount the diffuse light from IBL so the
     // ambient light will not be too strong. Also keeping the IBL specular
     // component relatively low can guarantee the super glossy surface would
@@ -378,6 +450,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     scales.directSpecular = 0.5;
   }
   setPbrEquationScales(scales);
+
   if (flags_ >= Flag::DebugDisplay) {
     setDebugDisplay(PbrDebugDisplay::None);
   }
@@ -647,9 +720,11 @@ PbrShader& PbrShader::setSpecularLayerColorFactor(
   return *this;
 }
 PbrShader& PbrShader::setPbrEquationScales(const PbrEquationScales& scales) {
-  Mn::Vector4 componentScales{scales.directDiffuse, scales.directSpecular,
-                              scales.iblDiffuse, scales.iblSpecular};
-  setUniform(componentScalesUniform_, componentScales);
+  if (directAndIBLisEnabled_) {
+    Mn::Vector4 componentScales{scales.directDiffuse, scales.directSpecular,
+                                scales.iblDiffuse, scales.iblSpecular};
+    setUniform(componentScalesUniform_, componentScales);
+  }
   return *this;
 }
 
@@ -799,12 +874,29 @@ PbrShader& PbrShader::setLightRanges(std::initializer_list<float> ranges) {
   return setLightRanges(Cr::Containers::arrayView(ranges));
 }
 
-PbrShader& PbrShader::setGlobalLightIntensity(float lightIntensity) {
+PbrShader& PbrShader::setDirectLightIntensity(float lightIntensity) {
   if (lightingIsEnabled_) {
-    setUniform(globalLightingIntensityUniform_, lightIntensity);
+    setUniform(directLightingIntensityUniform_, lightIntensity);
   }
   return *this;
 }
 
+PbrShader& PbrShader::setGamma(const Mn::Vector3& gamma) {
+  // if any input values are mapped to linear, should set gamma uniform value
+  if (mapInputToLinear_) {
+    setUniform(gammaUniform_, gamma);
+  }
+  if (flags_ >= Flag::MapOutputToSRGB) {
+    setUniform(invGammaUniform_, 1.0f / gamma);
+  }
+  return *this;
+}
+
+PbrShader& PbrShader::setTonemapExposure(float exposure) {
+  if (lightingIsEnabled_) {
+    setUniform(tonemapExposureUniform_, exposure);
+  }
+  return *this;
+}
 }  // namespace gfx
 }  // namespace esp

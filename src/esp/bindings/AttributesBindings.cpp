@@ -7,12 +7,15 @@
 #include <Magnum/PythonBindings.h>
 
 #include "esp/core/managedContainers/AbstractManagedObject.h"
+#include "esp/metadata/attributes/AbstractObjectAttributes.h"
 #include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/metadata/attributes/LightLayoutAttributes.h"
 #include "esp/metadata/attributes/ObjectAttributes.h"
+#include "esp/metadata/attributes/PbrShaderAttributes.h"
 #include "esp/metadata/attributes/PhysicsManagerAttributes.h"
 #include "esp/metadata/attributes/PrimitiveAssetAttributes.h"
 #include "esp/metadata/attributes/SceneInstanceAttributes.h"
+#include "esp/metadata/attributes/StageAttributes.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;
@@ -29,6 +32,7 @@ using Attrs::IcospherePrimitiveAttributes;
 using Attrs::LightInstanceAttributes;
 using Attrs::LightLayoutAttributes;
 using Attrs::ObjectAttributes;
+using Attrs::PbrShaderAttributes;
 using Attrs::PhysicsManagerAttributes;
 using Attrs::StageAttributes;
 using Attrs::UVSpherePrimitiveAttributes;
@@ -429,11 +433,168 @@ void initAttributesBindings(py::module& m) {
 
   // TODO : LightLayoutAttributes
 
+  // ==== PbrShaderAttributes ====
+  py::class_<PbrShaderAttributes, AbstractAttributes, PbrShaderAttributes::ptr>(
+      m, "PbrShaderAttributes",
+      R"(A metadata template for PBR shader creation and control values and multipliers,
+      such as enabling Image Based Lighting and controlling the mix of direct and indirect
+      lighting contributions. Can be imported from .pbr_config.json files.)")
+      .def(py::init(&PbrShaderAttributes::create<>))
+      .def(py::init(&PbrShaderAttributes::create<const std::string&>))
+      .def_property(
+          "enable_direct_lights", &PbrShaderAttributes::getEnableDirectLighting,
+          &PbrShaderAttributes::setEnableDirectLighting,
+          R"(Whether the specified direct lights are used to illuminate the scene.)")
+      .def_property(
+          "enable_ibl", &PbrShaderAttributes::getEnableIBL,
+          &PbrShaderAttributes::setEnableIBL,
+          R"(Whether Image-based Lighting is used to illuminate the scene.)")
+      .def_property(
+          "direct_light_intensity",
+          &PbrShaderAttributes::getDirectLightIntensity,
+          &PbrShaderAttributes::setDirectLightIntensity,
+          R"(Sets the global direct lighting multiplier to control overall direct light
+                brightness. This is used to balance PBR and Phong lighting of the same scene.
+                Default value is 3.14)")
+      .def_property(
+          "skip_calc_missing_tbn", &PbrShaderAttributes::getSkipCalcMissingTBN,
+          &PbrShaderAttributes::setSkipCalcMissingTBN,
+          R"(Whether the fragment shader should skip the tangent frame calculation if precomputed
+                tangents are not provided. This calculation provides a tangent frame to be used for
+                normal textures and anisotropy calculations. If precomputed tangents are missing and
+                this calculation is not enabled, any normal textures will be ignored, which will adversely
+                affect visual fidelity.)")
+      .def_property("use_mikkelsen_tbn_calc",
+                    &PbrShaderAttributes::getUseMikkelsenTBN,
+                    &PbrShaderAttributes::setUseMikkelsenTBN,
+                    R"(Whether the more expensive calculation by Mikkelsen from
+                https://jcgt.org/published/0009/03/04/paper.pdf should be used for the TBN calc. If
+                false, a less expensive method based on
+                https://github.com/KhronosGroup/Vulkan-Samples/blob/main/shaders/pbr.frag that gives
+                empirically validated equivalent results will be used instead.)")
+      .def_property(
+          "map_mat_txtr_to_linear", &PbrShaderAttributes::getMapMatTxtrToLinear,
+          &PbrShaderAttributes::setMapMatTxtrToLinear,
+          R"(Whether we should use shader-based srgb->linear approximation remapping of applicable
+                color textures in PBR rendering.)")
+      .def_property(
+          "map_ibl_txtr_to_linear", &PbrShaderAttributes::getMapIBLTxtrToLinear,
+          &PbrShaderAttributes::setMapIBLTxtrToLinear,
+          R"(Whether we should use shader-based srgb->linear approximation remapping of environment map
+                textures used by IBL in PBR rendering.)")
+      .def_property(
+          "map_output_to_srgb", &PbrShaderAttributes::getMapOutputToSRGB,
+          &PbrShaderAttributes::setMapOutputToSRGB,
+          R"(Whether we should use shader-based linear->srgb approximation remapping of shader
+                output in PBR rendering.)")
+      .def_property(
+          "use_direct_tonemap", &PbrShaderAttributes::getUseDirectLightTonemap,
+          &PbrShaderAttributes::setUseDirectLightTonemap,
+          R"(Whether tonemapping is enabled for direct lighting results, remapping the colors
+                to a slightly different colorspace.)")
+      .def_property_readonly(
+          "ibl_brdfLUT_filename",
+          &PbrShaderAttributes::getIBLBrdfLUTAssetHandle,
+          R"(The filename or resource handle for the BRDF Lookup Table used for by the consumers of
+                this config for image-based lighting.)")
+      .def_property_readonly(
+          "ibl_environment_map_filename",
+          &PbrShaderAttributes::getIBLEnvMapAssetHandle,
+          R"(The filename or resource handle for the Environment Map used by the
+                consumers of this config for image-based lighting.)")
+      .def_property(
+          "use_ibl_tonemap", &PbrShaderAttributes::getUseIBLTonemap,
+          &PbrShaderAttributes::setUseIBLTonemap,
+          R"(Whether tonemapping is enabled for image-based lighting results, remapping the colors
+                to a slightly different colorspace.)")
+      .def_property(
+          "use_burley_diffuse", &PbrShaderAttributes::getUseBurleyDiffuse,
+          &PbrShaderAttributes::setUseBurleyDiffuse,
+          R"(If true, the PBR shader uses a diffuse calculation based on Burley, modified to be
+                more energy conserving.
+          https://media.disneyanimation.com/uploads/production/publication_asset/48/asset/s2012_pbs_disney_brdf_notes_v3.pdf
+                otherwise, the shader will use a standard Lambertian model, which is easier
+                to calculate but doesn't look as nice, and sometimes can appear washed out.)")
+      .def_property(
+          "skip_clearcoat_calc",
+          &PbrShaderAttributes::getSkipCalcClearcoatLayer,
+          &PbrShaderAttributes::setSkipCalcClearcoatLayer,
+          R"(Whether the clearcoat layer calculations should be skipped. If true, disables calcs
+                regardless of material setting.)")
+      .def_property(
+          "skip_specular_layer_calc",
+          &PbrShaderAttributes::getSkipCalcSpecularLayer,
+          &PbrShaderAttributes::setSkipCalcSpecularLayer,
+          R"(Whether the specular layer calculations should be skipped. If true, disables calcs
+                regardless of material setting.)")
+      .def_property(
+          "skip_anisotropy_layer_calc",
+          &PbrShaderAttributes::getSkipCalcAnisotropyLayer,
+          &PbrShaderAttributes::setSkipCalcAnisotropyLayer,
+          R"(Whether the anisotropy layer calculations should be skipped. If true, disables calcs
+                regardless of material setting.)")
+      .def_property(
+          "ibl_to_direct_diffuse_balance",
+          &PbrShaderAttributes::getIBLToDirectDiffuseBalance,
+          &PbrShaderAttributes::setIBLToDirectDiffuseBalance,
+          R"(The balance between the direct lighting and image-based lighting diffuse
+                results, with value values of [0,1]. Any value <= 0 means only direct lighting diffuse
+                results are rendered, >=1 means only image-based lighting results are rendered. Only
+                used when both direct and image-basedlighting is present)")
+      .def_property(
+          "ibl_to_direct_specular_balance",
+          &PbrShaderAttributes::getIBLToDirectSpecularBalance,
+          &PbrShaderAttributes::setIBLToDirectSpecularBalance,
+          R"(The balance between the direct lighting and image-based lighting specular
+                results, with value values of [0,1]. Any value <= 0 means only direct lighting specular
+                results are rendered, >=1 means only image-based lighting results are rendered. Only
+                used when both direct and image-basedlighting is present)")
+      .def_property(
+          "direct_diffuse_scale", &PbrShaderAttributes::getDirectDiffuseScale,
+          &PbrShaderAttributes::setDirectDiffuseScale,
+          R"(Directly manipulate the value of the direct lighting diffuse scale.
+                Note, no range checking is performed on this value, so irrational results are possible
+                if this value is set negative or greater than 1. Only used when both direct and
+                image-basedlighting is present)")
+      .def_property(
+          "direct_specular_scale", &PbrShaderAttributes::getDirectSpecularScale,
+          &PbrShaderAttributes::setDirectSpecularScale,
+          R"(Directly manipulate the value of the direct lighting specular scale.
+                Note, no range checking is performed on this value, so irrational results are possible
+                if this value is set negative or greater than 1. Only used when both direct and
+                image-basedlighting is present)")
+      .def_property(
+          "ibl_diffuse_scale", &PbrShaderAttributes::getIBLDiffuseScale,
+          &PbrShaderAttributes::setIBLDiffuseScale,
+          R"(Directly manipulate the value of the image-based lighting diffuse scale.
+                Note, no range checking is performed on this value, so irrational results are possible
+                if this value is set negative or greater than 1. Only used when both direct and
+                image-basedlighting is present)")
+      .def_property(
+          "ibl_specular_scale", &PbrShaderAttributes::getIBLSpecularScale,
+          &PbrShaderAttributes::setIBLSpecularScale,
+          R"(Directly manipulate the value of the image-based lighting specular scale.
+                Note, no range checking is performed on this value, so irrational results are possible
+                if this value is set negative or greater than 1. Only used when both direct and
+                image-basedlighting is present)")
+      .def_property(
+          "tonemap_exposure", &PbrShaderAttributes::getTonemapExposure,
+          &PbrShaderAttributes::setTonemapExposure,
+          R"(The exposure value for tonemapping in the pbr shader. This value scales the color before the
+                tonemapping is applied. Default value is 4.5)")
+      .def_property(
+          "gamma", &PbrShaderAttributes::getGamma,
+          &PbrShaderAttributes::setGamma,
+          R"(The gamma value for the pbr shader. This value is used for the approximation
+                mapping from sRGB to linear and back. Default value is 2.2)");
+
   // ==== PhysicsManagerAttributes ====
   py::class_<PhysicsManagerAttributes, AbstractAttributes,
              PhysicsManagerAttributes::ptr>(
       m, "PhysicsManagerAttributes",
-      R"(A metadata template for Simulation parameters (e.g. timestep, simulation backend, default gravity direction) and defaults. Consumed to instace a Simualtor object. Can be imported from .physics_config.json files.)")
+      R"(A metadata template for Simulation parameters (e.g. timestep, simulation backend,
+      default gravity direction) and defaults. Consumed to instace a Simulator object.
+      Can be imported from .physics_config.json files.)")
       .def(py::init(&PhysicsManagerAttributes::create<>))
       .def(py::init(&PhysicsManagerAttributes::create<const std::string&>))
       .def_property_readonly(

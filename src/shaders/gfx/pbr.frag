@@ -28,7 +28,7 @@ void main() {
 
 /////////////////
 // Direct lighting
-#if (LIGHT_COUNT > 0)
+#if defined(DIRECT_LIGHTING)
 
   // compute contribution of each light using the microfacet model
   // the following part of the code is inspired by the Phong.frag in Magnum
@@ -46,16 +46,17 @@ void main() {
     vec3 fresnel = fresnelSchlick(pbrInfo.specularColor_f0,
                                   pbrInfo.specularColor_f90, l.v_dot_h);
 
-#if defined(SIMPLE_LAMBERTIAN_DIFFUSE)
-    // Lambertian diffuse contribution (simpler calc)
-    vec3 currentDiffuseContrib = l.projLightIrradiance * pbrInfo.diffuseColor;
-#else
+#if defined(USE_BURLEY_DIFFUSE)
     // Burley/Disney diffuse contribution
     vec3 currentDiffuseContrib =
         l.projLightIrradiance *
         BRDF_BurleyDiffuseRenorm(pbrInfo.diffuseColor, l,
                                  pbrInfo.alphaRoughness);
-#endif
+#else
+    // Lambertian diffuse contribution (simpler calc)
+    vec3 currentDiffuseContrib = l.projLightIrradiance * pbrInfo.diffuseColor;
+
+#endif  // USE_BURLEY_DIFFUSE else use lambertian diffuse
 
 #if defined(ANISOTROPY_LAYER) && !defined(SKIP_CALC_ANISOTROPY_LAYER)
     // Specular microfacet for anisotropic layer
@@ -103,20 +104,26 @@ void main() {
 
   }  // for each light
 
-  float colorContribScale = uGlobalLightIntensity;
-#if defined(REMAP_COLORS_TO_LINEAR)
-  // TODO once global intensity is implemented, this should be available all the
-  // time
-  colorContribScale *= INV_PI;
-#endif  // REMAP_COLORS_TO_LINEAR
+  // Set intensity and scale by inv_pi for surface area
+  float colorContribScale = uDirectLightIntensity * INV_PI;
 
+  // Scale each direct light color
   colorVals.diffuseContrib *= colorContribScale;
   colorVals.specularContrib *= colorContribScale;
 #if defined(CLEAR_COAT) && !defined(SKIP_CALC_CLEAR_COAT)
   colorVals.clearCoatContrib *= colorContribScale;
 #endif  // CLEAR_COAT
 
-#endif  // if (LIGHT_COUNT > 0)
+// If using direct lighting tone map
+#if defined(DIRECT_TONE_MAP)
+  colorVals.diffuseContrib = toneMap(colorVals.diffuseContrib);
+  colorVals.specularContrib = toneMap(colorVals.specularContrib);
+#if defined(CLEAR_COAT) && !defined(SKIP_CALC_CLEAR_COAT)
+  colorVals.clearCoatContrib = toneMap(colorVals.clearCoatContrib);
+#endif  // CLEAR_COAT
+#endif  // DIRECT_TONE_MAP
+
+#endif  // if (DIRECT_LIGHTING)
 
 #if defined(IMAGE_BASED_LIGHTING)
 
@@ -154,7 +161,7 @@ void main() {
 
 ////////////////////
 // Scale if both direct lighting and ibl are enabled
-#if defined(IMAGE_BASED_LIGHTING) && (LIGHT_COUNT > 0)
+#if defined(IMAGE_BASED_LIGHTING) && defined(DIRECT_LIGHTING)
 
   // Only scale direct lighting contribution if also using IBL
   colorVals.diffuseContrib *= uComponentScales[DirectDiffuse];
@@ -200,11 +207,13 @@ void main() {
 
 // final aggregation
 // TODO alpha masking?
-#if defined(REMAP_COLORS_TO_LINEAR)
+
+// Whether to remap the output to sRGB or not
+#if defined(MAP_OUTPUT_TO_SRGB)
   fragmentColor = vec4(linearToSRGB(finalColor), pbrInfo.baseColor.a);
 #else
   fragmentColor = vec4(finalColor, pbrInfo.baseColor.a);
-#endif  // REMAP_COLORS_TO_LINEAR
+#endif  // MAP_OUTPUT_TO_SRGB
 
 #if defined(OBJECT_ID)
   fragmentObjectId = uObjectId;

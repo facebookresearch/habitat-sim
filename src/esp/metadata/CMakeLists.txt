@@ -8,26 +8,34 @@ set(
   attributes/AttributesBase.cpp
   attributes/AttributesEnumMaps.h
   attributes/AttributesEnumMaps.cpp
+  attributes/AbstractObjectAttributes.h
+  attributes/AbstractObjectAttributes.cpp
   attributes/LightLayoutAttributes.h
   attributes/LightLayoutAttributes.cpp
   attributes/ObjectAttributes.h
   attributes/ObjectAttributes.cpp
   attributes/PhysicsManagerAttributes.h
   attributes/PhysicsManagerAttributes.cpp
+  attributes/PbrShaderAttributes.h
+  attributes/PbrShaderAttributes.cpp
   attributes/PrimitiveAssetAttributes.h
   attributes/PrimitiveAssetAttributes.cpp
   attributes/SceneInstanceAttributes.h
   attributes/SceneInstanceAttributes.cpp
   attributes/SceneDatasetAttributes.h
   attributes/SceneDatasetAttributes.cpp
+  attributes/StageAttributes.h
+  attributes/StageAttributes.cpp
   managers/AttributesManagerBase.h
-  managers/AbstractObjectAttributesManagerBase.h
+  managers/AbstractObjectAttributesManager.h
   managers/AssetAttributesManager.h
   managers/AssetAttributesManager.cpp
   managers/LightLayoutAttributesManager.h
   managers/LightLayoutAttributesManager.cpp
   managers/ObjectAttributesManager.h
   managers/ObjectAttributesManager.cpp
+  managers/PbrShaderAttributesManager.h
+  managers/PbrShaderAttributesManager.cpp
   managers/PhysicsAttributesManager.h
   managers/PhysicsAttributesManager.cpp
   managers/SceneInstanceAttributesManager.h

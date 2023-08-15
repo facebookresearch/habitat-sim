@@ -723,6 +723,14 @@ class Configuration {
     writeValueToJson(key, key, jsonObj, allocator);
   }
 
+  /**
+   * @brief Return all the values in this cfg in a formatted string. Subconfigs
+   * will be displaced by a tab.
+   * @param newLineStr The string to put at the end of each newline. As
+   * subconfigs are called, add a tab to this.
+   */
+  std::string getAllValsAsString(const std::string& newLineStr = "\n") const;
+
  protected:
   /**
    * @brief Friend function.  Checks if passed @p key is contained in @p
@@ -783,6 +791,9 @@ class Configuration {
 
   ESP_SMART_POINTERS(Configuration)
 };  // class Configuration
+
+MAGNUM_EXPORT Mn::Debug& operator<<(Mn::Debug& debug,
+                                    const Configuration& value);
 
 /**
  * @brief Retrieves a shared pointer to a copy of the subConfig @ref

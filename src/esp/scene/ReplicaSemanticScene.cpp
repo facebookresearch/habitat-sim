@@ -32,7 +32,10 @@ bool SemanticScene::loadReplicaHouse(
   ESP_VERY_VERBOSE() << "Parsed.";
 
   // check if Replica or ReplicaCAD
-  bool hasObjects = (json.HasMember("objects") && json["objects"].IsArray());
+  io::JsonGenericValue::ConstMemberIterator replicaObjIter =
+      json.FindMember("objects");
+  bool hasObjects =
+      (replicaObjIter != json.MemberEnd()) && (replicaObjIter->value.IsArray());
 
   return buildReplicaHouse(json, scene, hasObjects, worldRotation);
 

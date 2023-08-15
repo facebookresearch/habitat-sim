@@ -22,21 +22,17 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
                          Mn::GL::Mesh* mesh,
                          gfx::Drawable::Flags& meshAttributeFlags,
                          ShaderManager& shaderManager,
-                         const Mn::ResourceKey& lightSetupKey,
-                         const Mn::ResourceKey& materialDataKey,
-                         DrawableGroup* group,
-                         PbrImageBasedLighting* pbrIbl)
-    : Drawable{node, mesh, DrawableType::Pbr, group},
+                         DrawableConfiguration& cfg)
+    : Drawable{node, mesh, DrawableType::Pbr, cfg.group_},
       shaderManager_{shaderManager},
-      lightSetup_{shaderManager.get<LightSetup>(lightSetupKey)},
-      pbrIbl_(pbrIbl),
+      lightSetup_{shaderManager.get<LightSetup>(cfg.lightSetupKey_)},
+      pbrIbl_(std::move(cfg.getPbrIblData())),
       meshAttributeFlags_{meshAttributeFlags} {
-  setMaterialValues(
-      shaderManager.get<Mn::Trade::MaterialData>(materialDataKey));
-
-  if (pbrIbl_) {
-    flags_ |= PbrShader::Flag::ImageBasedLighting;
-  }
+  // Build material cache
+  resetMaterialValues(
+      shaderManager.get<Mn::Trade::MaterialData>(cfg.materialDataKey_));
+  // Set shader config flags
+  setShaderAttributesValues(cfg.getPbrShaderConfig());
 
   // Defer the shader initialization because at this point, the lightSetup may
   // not be done in the Simulator. Simulator itself is currently under
@@ -48,14 +44,26 @@ void PbrDrawable::setMaterialValuesInternal(
     const Mn::Resource<Mn::Trade::MaterialData, Mn::Trade::MaterialData>&
         material,
     bool reset) {
-  materialData_ = material;
+  // copy the resource to nonconst so that it can be appropriately accessed
+  auto materialData = material;
+
+  // reset == true is intended for changing what actual shader features are
+  // supported and will probably require a shader (re)build.
+
+  // reset == false is specifically for changing existing values only, and
+  // therefore should never require a shader rebuild. This is specifically
+  // intended to support domain randomization in an efficient manner.
+
+  // Use oldFlags to reset the flags_ after the material is repopulated (i.e. if
+  // reset == false)
+  PbrShader::Flags oldFlags(flags_);
+  if (reset) {
+    matCache = PBRMaterialCache();
+  }
+  flags_ = PbrShader::Flag::ObjectId;
 
   const auto& tmpMaterialData =
-      materialData_->as<Mn::Trade::PbrMetallicRoughnessMaterialData>();
-  flags_ = PbrShader::Flag::ObjectId;
-  if (reset) {
-    matCache = {};
-  }
+      materialData->as<Mn::Trade::PbrMetallicRoughnessMaterialData>();
   matCache.baseColor = tmpMaterialData.baseColor();
   matCache.roughness = tmpMaterialData.roughness();
   matCache.metalness = tmpMaterialData.metalness();
@@ -66,21 +74,21 @@ void PbrDrawable::setMaterialValuesInternal(
     matCache.textureMatrix = tmpMaterialData.commonTextureMatrix();
   }
   if (const auto baseColorTexturePtr =
-          materialData_->findAttribute<Mn::GL::Texture2D*>(
+          materialData->findAttribute<Mn::GL::Texture2D*>(
               "baseColorTexturePointer")) {
     flags_ |= PbrShader::Flag::BaseColorTexture;
     matCache.baseColorTexture = *baseColorTexturePtr;
   }
 
   if (const auto noneRoughMetalTexturePtr =
-          materialData_->findAttribute<Mn::GL::Texture2D*>(
+          materialData->findAttribute<Mn::GL::Texture2D*>(
               "noneRoughnessMetallicTexturePointer")) {
     flags_ |= PbrShader::Flag::NoneRoughnessMetallicTexture;
     matCache.noneRoughnessMetallicTexture = *noneRoughMetalTexturePtr;
   }
 
   if (const auto normalTexturePtr =
-          materialData_->findAttribute<Mn::GL::Texture2D*>(
+          materialData->findAttribute<Mn::GL::Texture2D*>(
               "normalTexturePointer")) {
     flags_ |= PbrShader::Flag::NormalTexture;
     matCache.normalTexture = *normalTexturePtr;
@@ -92,23 +100,23 @@ void PbrDrawable::setMaterialValuesInternal(
   }
 
   if (const auto emissiveTexturePtr =
-          materialData_->findAttribute<Mn::GL::Texture2D*>(
+          materialData->findAttribute<Mn::GL::Texture2D*>(
               "emissiveTexturePointer")) {
     flags_ |= PbrShader::Flag::EmissiveTexture;
     matCache.emissiveTexture = *emissiveTexturePtr;
   }
-  if (materialData_->attribute<bool>("hasPerVertexObjectId")) {
+  if (materialData->attribute<bool>("hasPerVertexObjectId")) {
     flags_ |= PbrShader::Flag::InstancedObjectId;
   }
-  if (materialData_->isDoubleSided()) {
+  if (materialData->isDoubleSided()) {
     flags_ |= PbrShader::Flag::DoubleSided;
   }
 
   ////////////////
   // ClearCoat layer
-  if (materialData_->hasLayer(Mn::Trade::MaterialLayer::ClearCoat)) {
+  if (materialData->hasLayer(Mn::Trade::MaterialLayer::ClearCoat)) {
     const auto& ccLayer =
-        materialData_->as<Mn::Trade::PbrClearCoatMaterialData>();
+        materialData->as<Mn::Trade::PbrClearCoatMaterialData>();
     float cc_LayerFactor = ccLayer.layerFactor();
     // As per
     // https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_clearcoat
@@ -146,11 +154,10 @@ void PbrDrawable::setMaterialValuesInternal(
 
   ////////////////
   // KHR_materials_ior
-  if (const auto iorLayerID =
-          materialData_->findLayerId("#KHR_materials_ior")) {
+  if (const auto iorLayerID = materialData->findLayerId("#KHR_materials_ior")) {
     // Read in custom material index of refraction
     if (const auto ior =
-            materialData_->findAttribute<Mn::Float>(*iorLayerID, "ior")) {
+            materialData->findAttribute<Mn::Float>(*iorLayerID, "ior")) {
       // ior should be >= 1 or 0 (which gives full weight to specular layer
       // independent of view angle)
       matCache.ior_Index = *ior;
@@ -161,12 +168,12 @@ void PbrDrawable::setMaterialValuesInternal(
   ////////////////
   // KHR_materials_specular layer
   if (const auto specularLayerID =
-          materialData_->findLayerId("#KHR_materials_specular")) {
+          materialData->findLayerId("#KHR_materials_specular")) {
     flags_ |= PbrShader::Flag::SpecularLayer;
     /**
      * The strength of the specular reflection. Defaults to 1.0f
      */
-    if (const auto specularFactor = materialData_->findAttribute<Mn::Float>(
+    if (const auto specularFactor = materialData->findAttribute<Mn::Float>(
             *specularLayerID, "specularFactor")) {
       matCache.specularLayer.factor =
           Mn::Math::clamp(*specularFactor, 0.0f, 1.0f);
@@ -178,7 +185,7 @@ void PbrDrawable::setMaterialValuesInternal(
      * multiplied by specularFactor.
      */
     if (const auto specularFactorTexture =
-            materialData_->findAttribute<Mn::GL::Texture2D*>(
+            materialData->findAttribute<Mn::GL::Texture2D*>(
                 *specularLayerID, "specularTexturePointer")) {
       flags_ |= PbrShader::Flag::SpecularLayerTexture;
       matCache.specularLayer.texture = *specularFactorTexture;
@@ -187,8 +194,8 @@ void PbrDrawable::setMaterialValuesInternal(
      * The F0 color of the specular reflection (linear RGB).
      */
     if (const auto specularColorFactor =
-            materialData_->findAttribute<Mn::Color3>(*specularLayerID,
-                                                     "specularColorFactor")) {
+            materialData->findAttribute<Mn::Color3>(*specularLayerID,
+                                                    "specularColorFactor")) {
       matCache.specularLayer.colorFactor = *specularColorFactor;
     }
     /**
@@ -198,7 +205,7 @@ void PbrDrawable::setMaterialValuesInternal(
      * specularColorFactor.
      */
     if (const auto specularColorTexture =
-            materialData_->findAttribute<Mn::GL::Texture2D*>(
+            materialData->findAttribute<Mn::GL::Texture2D*>(
                 *specularLayerID, "specularColorTexturePointer")) {
       flags_ |= PbrShader::Flag::SpecularLayerColorTexture;
       matCache.specularLayer.colorTexture = *specularColorTexture;
@@ -208,12 +215,12 @@ void PbrDrawable::setMaterialValuesInternal(
   ///////////////
   // KHR_materials_anisotropy
   if (const auto anisotropyLayerID =
-          materialData_->findLayerId("#KHR_materials_anisotropy")) {
+          materialData->findLayerId("#KHR_materials_anisotropy")) {
     /**
      * The anisotropy strength. When anisotropyTexture is present, this value is
      * multiplied by the blue channel. Default is 0.0f
      */
-    if (const auto anisotropyStrength = materialData_->findAttribute<Mn::Float>(
+    if (const auto anisotropyStrength = materialData->findAttribute<Mn::Float>(
             *anisotropyLayerID, "anisotropyStrength")) {
       if (Mn::Math::abs(*anisotropyStrength) > 0.0f) {
         flags_ |= PbrShader::Flag::AnisotropyLayer;
@@ -222,8 +229,8 @@ void PbrDrawable::setMaterialValuesInternal(
       }
       // Early adopters used anisotropy to mean strength
     } else if (const auto anisotropyStrength =
-                   materialData_->findAttribute<Mn::Float>(*anisotropyLayerID,
-                                                           "anisotropy")) {
+                   materialData->findAttribute<Mn::Float>(*anisotropyLayerID,
+                                                          "anisotropy")) {
       if (Mn::Math::abs(*anisotropyStrength) > 0.0f) {
         flags_ |= PbrShader::Flag::AnisotropyLayer;
         matCache.anisotropyLayer.factor =
@@ -236,7 +243,7 @@ void PbrDrawable::setMaterialValuesInternal(
      * present, anisotropyRotation provides additional rotation to the vectors
      * in the texture. Default is 0.0f
      */
-    if (const auto anisotropyRotation = materialData_->findAttribute<Mn::Float>(
+    if (const auto anisotropyRotation = materialData->findAttribute<Mn::Float>(
             *anisotropyLayerID, "anisotropyRotation")) {
       if (*anisotropyRotation != 0.0f) {
         flags_ |= PbrShader::Flag::AnisotropyLayer;
@@ -246,7 +253,7 @@ void PbrDrawable::setMaterialValuesInternal(
       }
       // Early adopters used anisotropyDirection
     } else if (const auto anisotropyRotation =
-                   materialData_->findAttribute<Mn::Float>(
+                   materialData->findAttribute<Mn::Float>(
                        *anisotropyLayerID, "anisotropyDirection")) {
       if (*anisotropyRotation != 0.0f) {
         flags_ |= PbrShader::Flag::AnisotropyLayer;
@@ -264,7 +271,7 @@ void PbrDrawable::setMaterialValuesInternal(
      * anisotropyStrength.
      */
     if (const auto anisotropyLayerTexture =
-            materialData_->findAttribute<Mn::GL::Texture2D*>(
+            materialData->findAttribute<Mn::GL::Texture2D*>(
                 *anisotropyLayerID, "anisotropyTexturePointer")) {
       // also covers flags_ |= PbrShader::Flag::AnisotropyLayer;
       flags_ |= PbrShader::Flag::AnisotropyLayerTexture;
@@ -275,16 +282,16 @@ void PbrDrawable::setMaterialValuesInternal(
   ////////////////
   // KHR_materials_transmission
   if (const auto transmissionLayerID =
-          materialData_->findLayerId("#KHR_materials_transmission")) {
+          materialData->findLayerId("#KHR_materials_transmission")) {
     flags_ |= PbrShader::Flag::TransmissionLayer;
     // transmissionFactor
-    if (const auto transmissionFactor = materialData_->findAttribute<Mn::Float>(
+    if (const auto transmissionFactor = materialData->findAttribute<Mn::Float>(
             *transmissionLayerID, "transmissionFactor")) {
       matCache.transmissionLayer.factor = *transmissionFactor;
     }
     // transmissionTexturePointer
     if (const auto transmissionTexturePointer =
-            materialData_->findAttribute<Mn::GL::Texture2D*>(
+            materialData->findAttribute<Mn::GL::Texture2D*>(
                 *transmissionLayerID, "transmissionTexturePointer")) {
       flags_ |= PbrShader::Flag::TransmissionLayerTexture;
       matCache.transmissionLayer.texture = *transmissionTexturePointer;
@@ -294,22 +301,22 @@ void PbrDrawable::setMaterialValuesInternal(
   ////////////////
   // KHR_materials_volume
   if (const auto volumeLayerID =
-          materialData_->findLayerId("#KHR_materials_volume")) {
+          materialData->findLayerId("#KHR_materials_volume")) {
     flags_ |= PbrShader::Flag::VolumeLayer;
 
-    if (const auto thicknessFactor = materialData_->findAttribute<Mn::Float>(
+    if (const auto thicknessFactor = materialData->findAttribute<Mn::Float>(
             *volumeLayerID, "thicknessFactor")) {
       matCache.volumeLayer.thicknessFactor = *thicknessFactor;
     }
 
     if (const auto thicknessTexturePointer =
-            materialData_->findAttribute<Mn::GL::Texture2D*>(
+            materialData->findAttribute<Mn::GL::Texture2D*>(
                 *volumeLayerID, "thicknessTexturePointer")) {
       flags_ |= PbrShader::Flag::VolumeLayerThicknessTexture;
       matCache.volumeLayer.thicknessTexture = *thicknessTexturePointer;
     }
 
-    if (const auto attDist = materialData_->findAttribute<Mn::Float>(
+    if (const auto attDist = materialData->findAttribute<Mn::Float>(
             *volumeLayerID, "attenuationDistance")) {
       if (*attDist > 0.0f) {
         // Can't be 0 or inf
@@ -317,12 +324,112 @@ void PbrDrawable::setMaterialValuesInternal(
       }
     }
 
-    if (const auto attenuationColor = materialData_->findAttribute<Mn::Color3>(
+    if (const auto attenuationColor = materialData->findAttribute<Mn::Color3>(
             *volumeLayerID, "attenuationColor")) {
       matCache.volumeLayer.attenuationColor = *attenuationColor;
     }
   }  // has KHR_materials_volume layer
+  // If not reset then make sure the same shader is used
+  if (!reset) {
+    flags_ = oldFlags;
+  }
+
 }  // PbrDrawable::setMaterialValuesInternal
+
+void PbrDrawable::setShaderAttributesValues(
+    const std::shared_ptr<metadata::attributes::PbrShaderAttributes>&
+        pbrShaderConfig) {
+  // If direct light is enabled
+  pbrShaderConfig->getEnableDirectLighting()
+      ? flags_ |= PbrShader::Flag::DirectLighting
+      : flags_ &= ~PbrShader::Flag::DirectLighting;
+
+  // If IBL is enabled and the pbrIbl_ helper exists
+  (pbrShaderConfig->getEnableIBL() && pbrIbl_)
+      ? flags_ |= PbrShader::Flag::ImageBasedLighting
+      : flags_ &= ~PbrShader::Flag::ImageBasedLighting;
+
+  // If using Burley/disney diffuse
+  pbrShaderConfig->getUseBurleyDiffuse()
+      ? flags_ |= PbrShader::Flag::UseBurleyDiffuse
+      : flags_ &= ~PbrShader::Flag::UseBurleyDiffuse;
+
+  // If should skip TBN Calculation
+  pbrShaderConfig->getSkipCalcMissingTBN()
+      ? flags_ |= PbrShader::Flag::SkipMissingTBNCalc
+      : flags_ &= ~PbrShader::Flag::SkipMissingTBNCalc;
+
+  // If should use Mikkelsen algorithm for TBN
+  pbrShaderConfig->getUseMikkelsenTBN()
+      ? flags_ |= PbrShader::Flag::UseMikkelsenTBN
+      : flags_ &= ~PbrShader::Flag::UseMikkelsenTBN;
+
+  // If should use tonemapping for direct lighting results
+  pbrShaderConfig->getUseDirectLightTonemap()
+      ? flags_ |= PbrShader::Flag::UseDirectLightTonemap
+      : flags_ &= ~PbrShader::Flag::UseDirectLightTonemap;
+
+  // If should use tonemapping for IBL results
+  pbrShaderConfig->getUseIBLTonemap()
+      ? flags_ |= PbrShader::Flag::UseIBLTonemap
+      : flags_ &= ~PbrShader::Flag::UseIBLTonemap;
+
+  // If clear coat calculations should be skipped
+  pbrShaderConfig->getSkipCalcClearcoatLayer()
+      ? flags_ |= PbrShader::Flag::SkipClearCoatLayer
+      : flags_ &= ~PbrShader::Flag::SkipClearCoatLayer;
+
+  // If specular layer calculations should be skipped
+  pbrShaderConfig->getSkipCalcSpecularLayer()
+      ? flags_ |= PbrShader::Flag::SkipSpecularLayer
+      : flags_ &= ~PbrShader::Flag::SkipSpecularLayer;
+
+  // If anisotropy layer calculations should be skipped
+  pbrShaderConfig->getSkipCalcAnisotropyLayer()
+      ? flags_ |= PbrShader::Flag::SkipAnisotropyLayer
+      : flags_ &= ~PbrShader::Flag::SkipAnisotropyLayer;
+
+  // If should use linear->sRGB remapping on appropriate material textures
+  pbrShaderConfig->getMapMatTxtrToLinear()
+      ? flags_ |= PbrShader::Flag::MapMatTxtrToLinear
+      : flags_ &= ~PbrShader::Flag::MapMatTxtrToLinear;
+  // If should use linear->sRGB remapping on IBL environment map
+  pbrShaderConfig->getMapIBLTxtrToLinear()
+      ? flags_ |= PbrShader::Flag::MapIBLTxtrToLinear
+      : flags_ &= ~PbrShader::Flag::MapIBLTxtrToLinear;
+  // If should use sRGB -> linear remapping on shader output
+  pbrShaderConfig->getMapOutputToSRGB()
+      ? flags_ |= PbrShader::Flag::MapOutputToSRGB
+      : flags_ &= ~PbrShader::Flag::MapOutputToSRGB;
+
+  // Only set values if actually going to use them
+  if (flags_ >= PbrShader::Flag::DirectLighting) {
+    // Intensity of direct lighting
+    shaderConfig_.directLightingIntensity =
+        pbrShaderConfig->getDirectLightIntensity();
+    if (flags_ >= PbrShader::Flag::ImageBasedLighting) {
+      // Scales contributions but only if both direct and IBL are being
+      // processed.
+      shaderConfig_.eqScales.directDiffuse =
+          pbrShaderConfig->getDirectDiffuseScale();
+      shaderConfig_.eqScales.directSpecular =
+          pbrShaderConfig->getDirectSpecularScale();
+      shaderConfig_.eqScales.iblDiffuse = pbrShaderConfig->getIBLDiffuseScale();
+      shaderConfig_.eqScales.iblSpecular =
+          pbrShaderConfig->getIBLSpecularScale();
+    }
+  }
+  if (flags_ >= (PbrShader::Flag::UseIBLTonemap) ||
+      flags_ >= (PbrShader::Flag::UseDirectLightTonemap)) {
+    shaderConfig_.tonemapExposure = pbrShaderConfig->getTonemapExposure();
+  }
+  if (flags_ >= (PbrShader::Flag::MapMatTxtrToLinear) ||
+      flags_ >= (PbrShader::Flag::MapIBLTxtrToLinear) ||
+      flags_ >= (PbrShader::Flag::MapOutputToSRGB)) {
+    float gamma = pbrShaderConfig->getGamma();
+    shaderConfig_.gamma = Mn::Vector3{gamma, gamma, gamma};
+  }
+}  // PbrDrawable::setShaderAttributesValues
 
 void PbrDrawable::setLightSetup(const Mn::ResourceKey& lightSetupKey) {
   lightSetup_ = shaderManager_.get<LightSetup>(lightSetupKey);
@@ -370,7 +477,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   // same as `m.comatrix()/determinant`.
   Mn::Matrix3x3 normalMatrix = rotScale.comatrix() / normalDet;
 
-  // Flip winding direction to correct handle backface culling
+  // Flip winding direction to correctly handle backface culling
   if (normalDet < 0) {
     Mn::GL::Renderer::setFrontFace(Mn::GL::Renderer::FrontFace::ClockWise);
   }
@@ -468,14 +575,30 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
     }
   }
 
+  // Set gamma value to use for srgb remapping if being used
+  // Setter does appropriate checking
+  shader_->setGamma(shaderConfig_.gamma);
+
+  // Tonemap exposure
+  if (flags_ >= (PbrShader::Flag::UseIBLTonemap) ||
+      flags_ >= (PbrShader::Flag::UseDirectLightTonemap)) {
+    shader_->setTonemapExposure(shaderConfig_.tonemapExposure);
+  }
+  if (flags_ >= PbrShader::Flag::DirectLighting) {
+    // Intensity of direct lighting
+    shader_->setDirectLightIntensity(shaderConfig_.directLightingIntensity);
+    if (flags_ >= PbrShader::Flag::ImageBasedLighting) {
+      shader_->setPbrEquationScales(shaderConfig_.eqScales);
+    }
+  }
+
   // setup image based lighting for the shader
   if (flags_ >= PbrShader::Flag::ImageBasedLighting) {
     CORRADE_INTERNAL_ASSERT(pbrIbl_);
-    shader_->bindIrradianceCubeMap(  // TODO: HDR Color
+    shader_->bindIrradianceCubeMap(
         pbrIbl_->getIrradianceMap().getTexture(CubeMap::TextureType::Color));
     shader_->bindBrdfLUT(pbrIbl_->getBrdfLookupTable());
     shader_->bindPrefilteredMap(
-        // TODO: HDR Color
         pbrIbl_->getPrefilteredMap().getTexture(CubeMap::TextureType::Color));
     shader_->setPrefilteredMapMipLevels(
         pbrIbl_->getPrefilteredMap().getMipmapLevels());
@@ -492,11 +615,12 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   // WE stopped supporting doubleSided material due to lighting artifacts on
   // hard edges. See comments at the beginning of this function.
   /*
-  if ((flags_ >= PbrShader::Flag::DoubleSided) && !glIsEnabled(GL_CULL_FACE))
-  { Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
+  if ((flags_ >= PbrShader::Flag::DoubleSided) &&
+  !glIsEnabled(GL_CULL_FACE)) {
+  Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
   }
   */
-}  // namespace gfx
+}  // PbrDrawable::draw
 
 Mn::ResourceKey PbrDrawable::getShaderKey(Mn::UnsignedInt lightCount,
                                           PbrShader::Flags flags) const {

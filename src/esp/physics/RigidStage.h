@@ -5,6 +5,7 @@
 #ifndef ESP_PHYSICS_RIGIDSTAGE_H_
 #define ESP_PHYSICS_RIGIDSTAGE_H_
 
+#include "esp/metadata/attributes/StageAttributes.h"
 #include "esp/physics/RigidBase.h"
 
 /** @file

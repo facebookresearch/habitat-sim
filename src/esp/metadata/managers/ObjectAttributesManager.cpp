@@ -3,7 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "ObjectAttributesManager.h"
-#include "AbstractObjectAttributesManagerBase.h"
+#include "AbstractObjectAttributesManager.h"
 
 #include <Corrade/Utility/String.h>
 

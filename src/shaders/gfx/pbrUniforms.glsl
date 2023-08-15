@@ -110,8 +110,25 @@ uniform sampler2D uAnisotropyLayerTexture;
 
 #endif  // ANISOTROPY_LAYER
 
-// -------------- lights and IBL -------------------
-#if (LIGHT_COUNT > 0)
+// -------------- lights and/or IBL -------------------
+
+// uExposure is used for any tonemapping, direct or IBL
+#if (defined(DIRECT_LIGHTING) && defined(DIRECT_TONE_MAP)) || \
+    (defined(IMAGE_BASED_LIGHTING) && defined(IBL_TONE_MAP))
+uniform float uExposure;
+#endif  // #if (defined(DIRECT_LIGHTING) && defined(DIRECT_TONE_MAP)) ||
+        // (defined(IMAGE_BASED_LIGHTING) && defined(IBL_TONE_MAP))
+
+// uGamma is used for any remapping
+#if defined(MAP_MAT_TXTRS_TO_LINEAR) || defined(MAP_IBL_TXTRS_TO_LINEAR)
+uniform vec3 uGamma;
+#endif
+
+#if defined(MAP_OUTPUT_TO_SRGB)
+uniform vec3 uInvGamma;
+#endif  // defined(MAP_OUTPUT_TO_SRGB)
+
+#if defined(DIRECT_LIGHTING)
 
 // NOTE: In this shader, the light intensity is already combined with the color
 // in each uLightColors vector;
@@ -126,15 +143,12 @@ uniform float uLightRanges[LIGHT_COUNT];
 uniform vec4 uLightDirections[LIGHT_COUNT];
 
 // Config driven overall direct lighting intensity
-uniform float uGlobalLightIntensity;
+uniform float uDirectLightIntensity;
 
-#endif  //(LIGHT_COUNT > 0)
-
-// Whether or not to remap the colors from sRGB to linear and then back again
-// TODO provide config support for this field
-// #define REMAP_COLORS_TO_LINEAR
+#endif  // DIRECT_LIGHTING
 
 #if defined(IMAGE_BASED_LIGHTING)
+
 uniform samplerCube uIrradianceMap;
 uniform sampler2D uBrdfLUT;
 uniform samplerCube uPrefilteredMap;
@@ -145,11 +159,11 @@ uniform uint uPrefilteredMapMipLevels;
 // [0] = direct diffuse [1] = direct specular [2] = ibl
 // diffuse [3] = ibl specular
 
-#if (LIGHT_COUNT > 0)
+#if defined(DIRECT_LIGHTING)
 const int DirectDiffuse = 0;
 const int DirectSpecular = 1;
 const int IblDiffuse = 2;
 const int IblSpecular = 3;
 uniform vec4 uComponentScales;
-#endif  // (LIGHT_COUNT > 0)
+#endif  // DIRECT_LIGHTING
 #endif  // IMAGE_BASED_LIGHTING

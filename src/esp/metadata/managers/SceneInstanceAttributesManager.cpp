@@ -30,7 +30,7 @@ SceneInstanceAttributes::ptr SceneInstanceAttributesManager::createObject(
 
   if (nullptr != attrs) {
     ESP_DEBUG(Mn::Debug::Flag::NoSpace)
-        << msg << " scene instance attributes created"
+        << msg << " Scene Instance Attributes created"
         << (registerTemplate ? " and registered." : ".");
   }
   return attrs;
@@ -47,6 +47,9 @@ SceneInstanceAttributesManager::initNewObjectInternal(
   }
   // set the attributes source filedirectory, from the attributes name
   this->setFileDirectoryFromHandle(newAttributes);
+  // Set the baseline default before json is processed.
+  newAttributes->setDefaultPbrShaderAttributesHandle(
+      defaultPbrShaderAttributesHandle_);
 
   // any internal default configuration here
   return newAttributes;
@@ -59,11 +62,13 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
   // Check for translation origin.  Default to unknown.
   attribs->setTranslationOrigin(getTranslationOriginVal(jsonConfig));
 
-  // Check for stage instance existence
-  if (jsonConfig.HasMember("stage_instance")) {
-    if (jsonConfig["stage_instance"].IsObject()) {
+  // Check for stage instance existence in scene instance
+  io::JsonGenericValue::ConstMemberIterator stageJSONIter =
+      jsonConfig.FindMember("stage_instance");
+  if (stageJSONIter != jsonConfig.MemberEnd()) {
+    if (stageJSONIter->value.IsObject()) {
       attribs->setStageInstance(
-          createInstanceAttributesFromJSON(jsonConfig["stage_instance"]));
+          createInstanceAttributesFromJSON(stageJSONIter->value));
     } else {
       // stage instance exists but is not a valid JSON Object
       ESP_WARNING(Mn::Debug::Flag::NoSpace)
@@ -96,10 +101,12 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
   }
 
   // Check for object instances existence
-  if (jsonConfig.HasMember("object_instances")) {
+  io::JsonGenericValue::ConstMemberIterator objJSONIter =
+      jsonConfig.FindMember("object_instances");
+  if (objJSONIter != jsonConfig.MemberEnd()) {
     // object_instances tag exists
-    if (jsonConfig["object_instances"].IsArray()) {
-      const auto& objectArray = jsonConfig["object_instances"];
+    if (objJSONIter->value.IsArray()) {
+      const auto& objectArray = objJSONIter->value;
       for (rapidjson::SizeType i = 0; i < objectArray.Size(); ++i) {
         const auto& objCell = objectArray[i];
         if (objCell.IsObject()) {
@@ -123,17 +130,19 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
   } else {
     // No object_instances tag exists in scene instance. Not necessarily a bad
     // thing, not all datasets have objects
-    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
         << "No Objects specified in Scene Instance `" << attribsDispName
-        << "`: JSON cell `object_instances` does not exist.";
+        << "`: JSON cell with tag `object_instances` does not exist in Scene "
+           "Instance.";
   }
 
   // Check for articulated object instances existence
-  if (jsonConfig.HasMember("articulated_object_instances")) {
+  io::JsonGenericValue::ConstMemberIterator artObjJSONIter =
+      jsonConfig.FindMember("articulated_object_instances");
+  if (artObjJSONIter != jsonConfig.MemberEnd()) {
     // articulated_object_instances tag exists
-    if (jsonConfig["articulated_object_instances"].IsArray()) {
-      const auto& articulatedObjArray =
-          jsonConfig["articulated_object_instances"];
+    if (artObjJSONIter->value.IsArray()) {
+      const auto& articulatedObjArray = artObjJSONIter->value;
       for (rapidjson::SizeType i = 0; i < articulatedObjArray.Size(); ++i) {
         const auto& artObjCell = articulatedObjArray[i];
 
@@ -161,19 +170,77 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
   } else {
     // No articulated_object_instances tag exists in scene instance. Not
     // necessarily a bad thing, not all datasets have articulated objects
-    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
-        << "No Articulated Objects specified for sceneScene Instance `"
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+        << "No Articulated Objects specified for Scene Instance `"
         << attribsDispName
-        << "`: JSON cell `articulated_object_instances` does not exist.";
+        << "`: JSON cell with tag `articulated_object_instances` does not "
+           "exist in Scene Instance.";
+  }
+
+  // Check for PBR/IBL shader region-based configuration specifications
+  // existence.
+
+  io::JsonGenericValue::ConstMemberIterator pbrShaderRegionJSONIter =
+      jsonConfig.FindMember("pbr_shader_region_configs");
+  if ((pbrShaderRegionJSONIter != jsonConfig.MemberEnd()) &&
+      (pbrShaderRegionJSONIter->value.IsObject())) {
+    const auto& articulatedObjArray = artObjJSONIter->value;
+
+    // pbr_shader_region_configs tag exists, and should be an object, holding
+    // unique region names and the handle to the PbrShaderAttributes to use for
+    // that region.
+
+    // Tag should have the format of an array of key-value
+    // pairs, where the key is some region identifier and the value is a
+    // string representing the PbrShaderAttributes to use, as specified in the
+    // PbrShaderAttributesManager.
+    const auto& pbrShaderRegionHandles = pbrShaderRegionJSONIter->value;
+    int count = 0;
+    // iterate through objects
+    for (rapidjson::Value::ConstMemberIterator it =
+             pbrShaderRegionHandles.MemberBegin();
+         it != pbrShaderRegionHandles.MemberEnd(); ++it) {
+      // create attributes and set its name to be the tag in the JSON for the
+      // individual light
+      const std::string region = it->name.GetString();
+      const std::string pbrHandle = it->value.GetString();
+      attribs->addRegionPbrShaderAttributesHandle(region, pbrHandle);
+    }
+
+  } else {
+    // No pbr_shader_region_configs tag exists in scene instance. Not
+    // necessarily a bad thing, not all datasets have specified PBR/IBL
+    // configs that deviate from the default.
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+        << "No Region-based PPR/IBL Shader configurations specified for Scene "
+           "Instance `"
+        << attribsDispName
+        << "`: JSON cell with tag `pbr_shader_region_configs` does not exist "
+           "in Scene Instance.";
+  }
+
+  std::string dfltShaderConfig = "";
+  // Check for default shader config. This will be used for the PBR/IBL shading
+  // of all objects and stages not specifically covered by any region-based
+  // configs, if they exist.
+  if (io::readMember<std::string>(jsonConfig, "default_pbr_shader_config",
+                                  dfltShaderConfig)) {
+    // Set the default PbrShaderAttributes handle to use for all Pbr rendering.
+    attribs->setDefaultPbrShaderAttributesHandle(dfltShaderConfig);
+  } else {
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+        << "No default_pbr_shader_config specified for Scene Instance `"
+        << attribsDispName << "`.";
   }
 
   std::string dfltLighting = "";
+  // Check for lighting instances
   if (io::readMember<std::string>(jsonConfig, "default_lighting",
                                   dfltLighting)) {
     // if "default lighting" is specified in scene json set value.
     attribs->setLightingHandle(dfltLighting);
   } else {
-    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
         << "No default_lighting specified for Scene Instance `"
         << attribsDispName << "`.";
   }
@@ -184,18 +251,19 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
     // if "navmesh_instance" is specified in scene json set value.
     attribs->setNavmeshHandle(navmeshName);
   } else {
-    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
         << "No navmesh_instance specified for Scene Instance `"
         << attribsDispName << "`.";
   }
 
   std::string semanticDesc = "";
+  // Check for Semantic Scene specification
   if (io::readMember<std::string>(jsonConfig, "semantic_scene_instance",
                                   semanticDesc)) {
     // if "semantic scene instance" is specified in scene json set value.
     attribs->setSemanticSceneHandle(semanticDesc);
   } else {
-    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
         << "No semantic_scene_instance specified for Scene Instance `"
         << attribsDispName << "`.";
   }
@@ -239,8 +307,10 @@ SceneInstanceAttributesManager::createAOInstanceAttributesFromJSON(
 
   // only used for articulated objects
   // initial joint pose
-  if (jCell.HasMember("initial_joint_pose")) {
-    if (jCell["initial_joint_pose"].IsArray()) {
+  io::JsonGenericValue::ConstMemberIterator jntPoseJSONIter =
+      jCell.FindMember("initial_joint_pose");
+  if (jntPoseJSONIter != jCell.MemberEnd()) {
+    if (jntPoseJSONIter->value.IsArray()) {
       std::vector<float> poseRes;
       // read values into vector
       io::readMember<float>(jCell, "initial_joint_pose", poseRes);
@@ -250,7 +320,7 @@ SceneInstanceAttributesManager::createAOInstanceAttributesFromJSON(
         instanceAttrs->addInitJointPoseVal(key, v);
       }
 
-    } else if (jCell["initial_joint_pose"].IsObject()) {
+    } else if (jntPoseJSONIter->value.IsObject()) {
       // load values into map
       io::readMember<std::map<std::string, float>>(
           jCell, "initial_joint_pose", instanceAttrs->copyIntoInitJointPose());
@@ -263,8 +333,10 @@ SceneInstanceAttributesManager::createAOInstanceAttributesFromJSON(
   }
   // only used for articulated objects
   // initial joint velocities
-  if (jCell.HasMember("initial_joint_velocities")) {
-    if (jCell["initial_joint_velocities"].IsArray()) {
+  io::JsonGenericValue::ConstMemberIterator jntVelJSONIter =
+      jCell.FindMember("initial_joint_velocities");
+  if (jntVelJSONIter != jCell.MemberEnd()) {
+    if (jntVelJSONIter->value.IsArray()) {
       std::vector<float> poseRes;
       // read values into vector
       io::readMember<float>(jCell, "initial_joint_velocities", poseRes);
@@ -274,7 +346,7 @@ SceneInstanceAttributesManager::createAOInstanceAttributesFromJSON(
         instanceAttrs->addInitJointVelocityVal(key, v);
       }
 
-    } else if (jCell["initial_joint_velocities"].IsObject()) {
+    } else if (jntVelJSONIter->value.IsObject()) {
       // load values into map
       io::readMember<std::map<std::string, float>>(
           jCell, "initial_joint_velocities",

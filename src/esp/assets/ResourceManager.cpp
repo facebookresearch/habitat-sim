@@ -18,6 +18,7 @@
 #include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/Path.h>
+#include <Corrade/Utility/Resource.h>
 #include <Corrade/Utility/String.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/EigenIntegration/Integration.h>
@@ -59,6 +60,7 @@
 #include "esp/assets/MeshMetaData.h"
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/geo/Geo.h"
+#include "esp/gfx/DrawableConfiguration.h"
 #include "esp/gfx/GenericDrawable.h"
 #include "esp/gfx/PbrDrawable.h"
 #include "esp/gfx/SkinData.h"
@@ -82,12 +84,18 @@
 #include "GenericSemanticMeshData.h"
 #include "MeshData.h"
 
+// This is to import the "resources" at runtime. When the resource is
+// compiled into static library, it must be explicitly initialized via this
+// macro, and should be called *outside* of any namespace.
+static void importPbrImageResources() {
+  CORRADE_RESOURCE_INITIALIZE(PbrIBlImageResources)
+}
+
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 
 namespace esp {
 
-using metadata::attributes::AbstractObjectAttributes;
 using metadata::attributes::CubePrimitiveAttributes;
 using metadata::attributes::ObjectAttributes;
 using metadata::attributes::ObjectInstanceShaderType;
@@ -138,16 +146,22 @@ void ResourceManager::buildImporters() {
   CORRADE_INTERNAL_ASSERT_OUTPUT(
       fileImporter_ = importerManager_.loadAndInstantiate("AnySceneImporter"));
 
+  // instantiate importer for image load
+  CORRADE_INTERNAL_ASSERT_OUTPUT(
+      imageImporter_ = importerManager_.loadAndInstantiate("AnyImageImporter"));
+
   // set quiet importer flags if asset logging is quieted
   if (!isLevelEnabled(logging::Subsystem::assets,
                       logging::LoggingLevel::Warning)) {
     fileImporter_->addFlags(Mn::Trade::ImporterFlag::Quiet);
     primitiveImporter_->addFlags(Mn::Trade::ImporterFlag::Quiet);
+    imageImporter_->addFlags(Mn::Trade::ImporterFlag::Quiet);
   } else if (isLevelEnabled(logging::Subsystem::assets,
                             logging::LoggingLevel::VeryVerbose)) {
     // set verbose flags if necessary
     fileImporter_->addFlags(Mn::Trade::ImporterFlag::Verbose);
     primitiveImporter_->addFlags(Mn::Trade::ImporterFlag::Verbose);
+    imageImporter_->addFlags(Mn::Trade::ImporterFlag::Verbose);
   }
 
   // necessary for importer to be usable
@@ -1465,6 +1479,14 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceVertSemantic(
   // transform based on transformNode setting
   instanceRoot->MagnumObject::setTransformation(
       meshMetaData.root.transformFromLocalToParent);
+  gfx::DrawableConfiguration drawableConfig{
+      creation.lightSetupKey,             // lightSetup Key
+      PER_VERTEX_OBJECT_ID_MATERIAL_KEY,  // material key
+      ObjectInstanceShaderType::Phong,    // shader type to use
+      drawables,                          // drawable group
+      nullptr,                            // no skinning data
+      nullptr,                            // Not PBR so no IBL map
+      nullptr};                           // Not PBR so no PbrShaderAttributes
 
   for (int iMesh = start; iMesh <= end; ++iMesh) {
     scene::SceneNode& node = instanceRoot->createChild();
@@ -1480,11 +1502,9 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceVertSemantic(
     // meshes_.at(iMesh)->getMeshData()->hasAttribute(Mn::Trade::MeshAttribute::Tangent)
     // It will SEGFAULT!
     createDrawable(meshes_.at(iMesh)->getMagnumGLMesh(),  // render mesh
-                   meshAttributeFlags,                 // mesh attribute flags
-                   node,                               // scene node
-                   creation.lightSetupKey,             // lightSetup key
-                   PER_VERTEX_OBJECT_ID_MATERIAL_KEY,  // material key
-                   drawables);                         // drawable group
+                   meshAttributeFlags,  // mesh attribute flags
+                   node,                // scene node
+                   drawableConfig);
 
     if (computeAbsoluteAABBs) {
       staticDrawableInfo.emplace_back(StaticDrawableInfo{node, iMesh});
@@ -1956,10 +1976,6 @@ Mn::Trade::MaterialData createUniversalMaterial(
   // flat material already recognizes Phong and pbr, so don't have to do
   // anything
 
-  // multiplicative magic number for scaling from PBR to phong,
-  // hacky method to attempt to balance Phong and PBR light intensity reactions
-  const float magicPhongScaling = 1.5f;
-
   // whether the MaterialAttribute::TextureMatrix has been set already
   bool setTexMatrix = false;
   if (!(origMatTypes & Mn::Trade::MaterialType::Phong)) {
@@ -2013,9 +2029,7 @@ Mn::Trade::MaterialData createUniversalMaterial(
     const float specIntensity =
         Mn::Math::pow(1.0f - roughness, 2.5f) * 1.4f * specIntensityScale;
 
-    // NOTE: The magic-number multiplication at the end is a hack to
-    // roughly balance the Phong and PBR light intensity reactions
-    const Mn::Color4 diffuseColor = ambientColor * magicPhongScaling;
+    const Mn::Color4 diffuseColor = ambientColor;
 
     // Set spec base color to white or material base color, depending on
     // metalness.
@@ -2026,10 +2040,8 @@ Mn::Trade::MaterialData createUniversalMaterial(
                                      Mn::Math::pow(metalness, 0.5f))
                     : ambientColor)
              : 0xffffffff_rgbaf);
-    // NOTE: The magic-number multiplication at the end is a hack to
-    // roughly balance the Phong and PBR light intensity reactions
-    const Mn::Color4 specColor =
-        specBaseColor * specIntensity * magicPhongScaling;
+
+    const Mn::Color4 specColor = specBaseColor * specIntensity;
 
     /////////////////
     // set Phong attributes appropriately from precalculated value
@@ -2140,8 +2152,8 @@ Mn::Trade::MaterialData ResourceManager::buildDefaultPhongMaterial() {
   Mn::Trade::MaterialData materialData{
       Mn::Trade::MaterialType::Phong,
       {{Mn::Trade::MaterialAttribute::AmbientColor, Mn::Color4{0.1}},
-       {Mn::Trade::MaterialAttribute::DiffuseColor, Mn::Color4{0.7 * 0.175}},
-       {Mn::Trade::MaterialAttribute::SpecularColor, Mn::Color4{0.2 * 0.175}},
+       {Mn::Trade::MaterialAttribute::DiffuseColor, Mn::Color4{0.7}},
+       {Mn::Trade::MaterialAttribute::SpecularColor, Mn::Color4{0.2}},
        {Mn::Trade::MaterialAttribute::Shininess, 80.0f}}};
   return materialData;
 }  // ResourceManager::buildDefaultPhongMaterial
@@ -2189,10 +2201,10 @@ std::string ResourceManager::createColorMaterial(
         materialColor.ambientColor;
     materialData.mutableAttribute<Mn::Color4>(
         Mn::Trade::MaterialAttribute::DiffuseColor) =
-        materialColor.diffuseColor * 0.175;
+        materialColor.diffuseColor;
     materialData.mutableAttribute<Mn::Color4>(
         Mn::Trade::MaterialAttribute::SpecularColor) =
-        materialColor.specularColor * 0.175;
+        materialColor.specularColor;
 
     // Set expected user-defined attributes
     materialData = setMaterialDefaultUserAttributes(
@@ -2339,8 +2351,7 @@ void ResourceManager::loadMaterials(Importer& importer,
 
       // This material data has any per-shader as well as global custom
       // user-defined attributes set excluding texture pointer mappings
-      Corrade::Containers::Optional<Magnum::Trade::MaterialData>
-          custMaterialData;
+      Corrade::Containers::Optional<Mn::Trade::MaterialData> custMaterialData;
       Cr::Containers::StringView shaderBeingUsed;
       // Build based on desired shader to use
       // pbr shader spec, of material-specified and material specifies pbr
@@ -3032,8 +3043,7 @@ void ResourceManager::addComponent(
     const int meshID = metaData.meshIndex.first + meshIDLocal;
     Mn::GL::Mesh* mesh = meshes_.at(meshID)->getMagnumGLMesh();
     if (getCreateRenderer()) {
-      CORRADE_ASSERT(mesh,
-                     "::addComponent() : GL mesh expected but not found", );
+      CORRADE_ASSERT(mesh, "addComponent() : GL mesh expected but not found", );
     } else {
       CORRADE_ASSERT(!mesh,
                      "addComponent() : encountered unexpected GL mesh with "
@@ -3058,13 +3068,56 @@ void ResourceManager::addComponent(
       }
     }
 
+    auto material = shaderManager_.get<Mn::Trade::MaterialData>(materialKey);
+
+    ObjectInstanceShaderType materialDataType =
+        static_cast<ObjectInstanceShaderType>(
+            material->mutableAttribute<int>("shaderTypeToUse"));
+
+    // If shader type to use has not been explicitly specified, use best shader
+    // supported by material
+    if ((materialDataType < ObjectInstanceShaderType::Flat) ||
+        (materialDataType > ObjectInstanceShaderType::PBR)) {
+      const auto types = material->types();
+      if (types >= Mn::Trade::MaterialType::PbrMetallicRoughness) {
+        materialDataType = ObjectInstanceShaderType::PBR;
+      } else {
+        materialDataType = ObjectInstanceShaderType::Phong;
+      }
+    }
+    gfx::DrawableConfiguration drawableConfig{
+        lightSetupKey,     // lightSetup Key
+        materialKey,       // material key
+        materialDataType,  // shader type to use
+        drawables,         // drawable group
+        skinData,          // instance skinning data
+        nullptr,           // PbrIBLHelper - set only if PBR
+        nullptr};          // PbrShaderAttributes - set only if PBR
+
+    if (materialDataType == ObjectInstanceShaderType::PBR) {
+      // TODO : Query which PbrShaderAttributes to use based on `region` of
+      // drawable. Need to have some way of propagating region value - perhaps
+      // through scene node like semantic ID, although semantic ID of objects is
+      // not present yet.
+
+      // Currently always using default PbrShaderAttributes for the current
+      // Scene.
+      esp::metadata::attributes::PbrShaderAttributes::ptr pbrAttributesPtr =
+          metadataMediator_->getDefaultPbrShaderConfig();
+      // get pointer to PbrIBL Helper for this attributes, creating the helper
+      // if it does not exist. Should always exist by here, unless a new or
+      // modified PbrShaderAttributes had been added to the library by the user.
+      std::shared_ptr<gfx::PbrIBLHelper> pbrIblData_ =
+          getOrBuildPBRIBLHelper(pbrAttributesPtr);
+
+      drawableConfig.setPbrIblData(pbrIblData_);
+      drawableConfig.setPbrShaderConfig(pbrAttributesPtr);
+    }  // if pbr, add appropriate config information
+
     createDrawable(mesh,                // render mesh
                    meshAttributeFlags,  // mesh attribute flags
                    node,                // scene node
-                   lightSetupKey,       // lightSetup Key
-                   materialKey,         // material key
-                   drawables,           // drawable group
-                   skinData);           // instance skinning data
+                   drawableConfig);     // instance skinning data
 
     // compute the bounding box for the mesh we are adding
     if (computeAbsoluteAABBs) {
@@ -3130,17 +3183,25 @@ void ResourceManager::addPrimitiveToDrawables(int primitiveID,
                                               DrawableGroup* drawables) {
   auto primMeshIter = primitive_meshes_.find(primitiveID);
   CORRADE_INTERNAL_ASSERT(primMeshIter != primitive_meshes_.end());
+  gfx::DrawableConfiguration drawableConfig{
+      NO_LIGHT_KEY,                    // lightSetupKey
+      WHITE_MATERIAL_KEY,              // materialDataKey
+      ObjectInstanceShaderType::Flat,  // shader to use
+      drawables,                       // DrawableGroup
+      nullptr,                         // No skinData
+      nullptr,                         // No PbrIBLHelper for flat/phong
+      nullptr};                        // PbrShaderAttributes for flat/phong
   // TODO:
-  // currently we assume the primitives does not have normal texture
+  // currently we assume the primitives do not have normal texture
   // so do not need to worry about the tangent or bitangent.
   // it might be changed in the future.
+  // NOTE : TBN frame is synthesized in PBR shader if precomputed tangent frame
+  // is not provided, but this is not done when using Phong/Flat Shader.
   gfx::Drawable::Flags meshAttributeFlags{};
   createDrawable(primMeshIter->second.get(),  // render mesh
                  meshAttributeFlags,          // meshAttributeFlags
-                 node,                        // scene node
-                 NO_LIGHT_KEY,                // lightSetup key
-                 WHITE_MATERIAL_KEY,          // material key
-                 drawables);                  // drawable group
+                 node,                        // sceneNode
+                 drawableConfig);             // configuration for drawable
 }
 
 void ResourceManager::removePrimitiveMesh(int primitiveID) {
@@ -3149,54 +3210,25 @@ void ResourceManager::removePrimitiveMesh(int primitiveID) {
   primitive_meshes_.erase(primMeshIter);
 }
 
-void ResourceManager::createDrawable(
-    Mn::GL::Mesh* mesh,
-    gfx::Drawable::Flags& meshAttributeFlags,
-    scene::SceneNode& node,
-    const Mn::ResourceKey& lightSetupKey,
-    const Mn::ResourceKey& materialKey,
-    DrawableGroup* group /* = nullptr */,
-    const std::shared_ptr<gfx::InstanceSkinData>& skinData /* = nullptr */) {
-  auto material = shaderManager_.get<Mn::Trade::MaterialData>(materialKey);
-
-  ObjectInstanceShaderType materialDataType =
-      static_cast<ObjectInstanceShaderType>(
-          material->mutableAttribute<int>("shaderTypeToUse"));
-
-  // If shader type to use has not been explicitly specified, use best shader
-  // supported by material
-  if ((materialDataType < ObjectInstanceShaderType::Flat) ||
-      (materialDataType > ObjectInstanceShaderType::PBR)) {
-    const auto types = material->types();
-    if (types >= Mn::Trade::MaterialType::PbrMetallicRoughness) {
-      materialDataType = ObjectInstanceShaderType::PBR;
-    } else {
-      materialDataType = ObjectInstanceShaderType::Phong;
-    }
-  }
-  switch (materialDataType) {
+void ResourceManager::createDrawable(Mn::GL::Mesh* mesh,
+                                     gfx::Drawable::Flags& meshAttributeFlags,
+                                     scene::SceneNode& node,
+                                     gfx::DrawableConfiguration& drawableCfg) {
+  switch (drawableCfg.materialDataType_) {
     case ObjectInstanceShaderType::Flat:
     case ObjectInstanceShaderType::Phong:
       node.addFeature<gfx::GenericDrawable>(
           mesh,                // render mesh
           meshAttributeFlags,  // mesh attribute flags
           shaderManager_,      // shader manager
-          lightSetupKey,       // lightSetup key
-          materialKey,         // material key
-          group,               // drawable group
-          skinData);           // instance skinning data
+          drawableCfg);
       break;
     case ObjectInstanceShaderType::PBR:
       node.addFeature<gfx::PbrDrawable>(
           mesh,                // render mesh
           meshAttributeFlags,  // mesh attribute flags
           shaderManager_,      // shader manager
-          lightSetupKey,       // lightSetup key
-          materialKey,         // material key
-          group,               // drawable group
-          activePbrIbl_ >= 0 ? pbrImageBasedLightings_[activePbrIbl_].get()
-                             : nullptr);  // pbr image based lighting
-      // TODO: Carry skinData to PbrDrawable.
+          drawableCfg);
       break;
     default:
       CORRADE_INTERNAL_ASSERT_UNREACHABLE();
@@ -3214,27 +3246,198 @@ void ResourceManager::initDefaultLightSetups() {
   shaderManager_.setFallback(gfx::LightSetup{});
 }
 
-void ResourceManager::initPbrImageBasedLighting(
-    const std::string& hdriImageFilename) {
-  // TODO:
-  // should work with the scene instance config, initialize
-  // different PBR IBLs at different positions in the scene.
+std::shared_ptr<gfx::PbrIBLHelper> ResourceManager::getOrBuildPBRIBLHelper(
+    const std::shared_ptr<esp::metadata::attributes::PbrShaderAttributes>&
+        pbrShaderAttr) {
+  auto helperKey = pbrShaderAttr->getPbrShaderHelperKey();
 
-  // TODO: HDR Image!
+  ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+      << "Handle :`" << pbrShaderAttr->getHandle()
+      << "` : PbrIBLHelper key : (brdfLUT Handle)_(envMap Handle) `"
+      << helperKey << "`";
+  // Try to find image in IBL texture library
+  std::unordered_map<
+      std::string, std::shared_ptr<gfx::PbrIBLHelper>>::const_iterator mapIter =
+      pbrIBLHelpers_.find(helperKey);
 
-  // Don't reload if already active set to 0
-  if (activePbrIbl_ != ID_UNDEFINED) {
-    return;
+  std::shared_ptr<gfx::PbrIBLHelper> pbrIBLHelper = nullptr;
+  if (mapIter != pbrIBLHelpers_.end()) {
+    // If found don't reload/remake
+    pbrIBLHelper = mapIter->second;
+  } else {
+    // PbrIBLHelper not found so build it.
+    // First verify that pbr image resources are available, and load if not
+    // TODO should we consider this resource as a method variable?
+    if (!Cr::Utility::Resource::hasGroup("pbr-images")) {
+      importPbrImageResources();
+    }
+    const Cr::Utility::Resource rs{"pbr-images"};
+
+    std::shared_ptr<Mn::GL::Texture2D> blutTexture = nullptr;
+    std::shared_ptr<Mn::GL::Texture2D> envMapTexture = nullptr;
+    // ==== load the brdf lookup table texture ====
+    auto bLUTImageFilename = pbrShaderAttr->getIBLBrdfLUTAssetHandle();
+    if (!bLUTImageFilename.empty()) {
+      // Only loads if bLUTImageFilename hasn't been loaded already.
+      // Also caches texture
+      blutTexture = loadIBLImageIntoTexture(bLUTImageFilename, false, rs);
+    }
+
+    // ==== load the equirectangular texture ====
+    auto envMapFilename = pbrShaderAttr->getIBLEnvMapAssetHandle();
+    if (!envMapFilename.empty()) {
+      // Only loads if envMapFilename hasn't been loaded already.
+      // Also caches texture
+      envMapTexture = loadIBLImageIntoTexture(envMapFilename, true, rs);
+    }
+
+    // ==== build helper for these assets ====
+    // This helper uses shaders to perform the calculations required to
+    // convert the Environment Map equirectangular image into the Irradiance
+    // Map and Prefiltered Environment Map CubeMaps. Only build if both
+    // images were found and successfully converted into textures.
+
+    if (blutTexture && envMapTexture) {
+      pbrIBLHelper = std::make_shared<gfx::PbrIBLHelper>(
+          shaderManager_, blutTexture, envMapTexture);
+      pbrIBLHelpers_.emplace(helperKey, pbrIBLHelper);
+    }
+  }  // if found else create
+  return pbrIBLHelper;
+
+}  // ResourceManager::buildPBRIBLHelper
+
+std::shared_ptr<Mn::GL::Texture2D> ResourceManager::loadIBLImageIntoTexture(
+    const std::string& imageFilename,
+    bool useImageTxtrFormat,
+    const Cr::Utility::Resource& rs) {
+  if (imageFilename.empty()) {
+    ESP_ERROR(Mn::Debug::Flag::NoSpace)
+        << "Failed loading "
+        << (useImageTxtrFormat ? "Environment Map" : "BRDF Lookup Table")
+        << " image file due to empty name, so aborting.";
+    return nullptr;
   }
 
-  pbrImageBasedLightings_.emplace_back(
-      std::make_unique<gfx::PbrImageBasedLighting>(
-          gfx::PbrImageBasedLighting::Flag::IndirectDiffuse |
-              gfx::PbrImageBasedLighting::Flag::IndirectSpecular |
-              gfx::PbrImageBasedLighting::Flag::UseLDRImages,
-          shaderManager_, hdriImageFilename));
-  activePbrIbl_ = 0;
-}
+  // Try to find image in IBL texture library
+  std::unordered_map<
+      std::string, std::shared_ptr<Mn::GL::Texture2D>>::const_iterator mapIter =
+      iblBLUTsAndEnvMaps_.find(imageFilename);
+
+  std::shared_ptr<Mn::GL::Texture2D> resTexture;
+  if (mapIter != iblBLUTsAndEnvMaps_.end()) {
+    // If found don't reload
+    resTexture = mapIter->second;
+  } else {
+    // load image
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+        << "Checking if IBL "
+        << (useImageTxtrFormat ? "Environment Map" : "BRDF Lookup Table")
+        << " image file `" << imageFilename << "` is in compiled resource.";
+    if (rs.hasFile(imageFilename)) {
+      ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+          << "IBL "
+          << (useImageTxtrFormat ? "Environment Map" : "BRDF Lookup Table")
+          << " image file `" << imageFilename
+          << "` exists in compiled resource.";
+      imageImporter_->openData(rs.getRaw(imageFilename));
+    } else {
+      // Not found as-is in resource, try with directory prefix and then
+      // search in filesystem
+      const std::string prefixedImageFilename = Cr::Utility::formatString(
+          "{}/{}", (useImageTxtrFormat ? "env_maps" : "bluts"), imageFilename);
+      if (rs.hasFile(prefixedImageFilename)) {
+        ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+            << "IBL "
+            << (useImageTxtrFormat ? "Environment Map" : "BRDF Lookup Table")
+            << " image file `" << prefixedImageFilename
+            << "` exists in compiled resource.";
+        imageImporter_->openData(rs.getRaw(prefixedImageFilename));
+      } else {
+        ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+            << "IBL "
+            << (useImageTxtrFormat ? "Environment Map" : "BRDF Lookup Table")
+            << " image file `" << imageFilename
+            << "` was not found in resource so attempting to load from disk.";
+        // TODO verify file exists on disk before attempting to load.
+
+        if (!imageImporter_->openFile(imageFilename)) {
+          // If unable to load then not found
+          ESP_ERROR(Mn::Debug::Flag::NoSpace)
+              << "Requested IBL "
+              << (useImageTxtrFormat ? "Environment Map" : "BRDF Lookup Table")
+              << " image file (required for IBL rendering) named `"
+              << imageFilename
+              << "` not found in resource file or on disk, so skipping load.";
+          return nullptr;
+        }
+      }
+    }
+    Cr::Containers::Optional<Mn::Trade::ImageData2D> imageData =
+        imageImporter_->image2D(0);
+
+    // sanity check
+    CORRADE_INTERNAL_ASSERT(imageData);
+
+    // brdfLUT should use RGBA8, based on past work
+    // envMap should use image's format
+    Mn::GL::TextureFormat textureFmtToUse =
+        useImageTxtrFormat ? Mn::GL::textureFormat(imageData->format())
+                           : Mn::GL::TextureFormat::RGBA8;
+    // appropriately configure target texture and map image into it.
+    resTexture = std::make_shared<Mn::GL::Texture2D>();
+    (*resTexture)
+        .setMinificationFilter(Mn::GL::SamplerFilter::Linear)
+        .setMagnificationFilter(Mn::GL::SamplerFilter::Linear)
+        .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
+        .setStorage(1, textureFmtToUse, imageData->size());
+
+    if (!imageData->isCompressed()) {
+      resTexture->setSubImage(0, {}, *imageData);
+    } else {
+      resTexture->setCompressedSubImage(0, {}, *imageData);
+    }
+    // add to IBL texture library
+    iblBLUTsAndEnvMaps_.emplace(imageFilename, resTexture);
+  }
+  return resTexture;
+}  // ResourceManager::loadIBLImageIntoTexture
+
+void ResourceManager::loadAllIBLAssets() {
+  // map is keyed by config name, value is PbrShaderAttributes, describing the
+  // desired configuration of the PBR shader.
+  auto mapOfPbrConfigs = metadataMediator_->getAllPbrShaderConfigs();
+
+  // Only load if rendering is enabled.
+  if (requiresTextures_) {
+    // Load BLUTs and Envmaps specified in scene dataset
+    // First verify that pbr image resources are available, and load if not
+    if (!Cr::Utility::Resource::hasGroup("pbr-images")) {
+      importPbrImageResources();
+    }
+    const Cr::Utility::Resource rs{"pbr-images"};
+
+    ESP_DEBUG() << "PBR/IBL asset file sets (IBL brdf LUTs and environment "
+                   "maps) being loaded :"
+                << mapOfPbrConfigs.size();
+    for (const auto& entry : mapOfPbrConfigs) {
+      // Build required pbrIBL Helpers
+      getOrBuildPBRIBLHelper(entry.second);
+
+    }  // for each PbrShaderAttributes defined
+
+  } else {
+    if (mapOfPbrConfigs.size() > 1) {
+      // There will always be 1 config (default) but if more than 1 exist then
+      // perhaps having no renderer was not desired.
+      ESP_WARNING() << "Unable to load and convert" << mapOfPbrConfigs.size()
+                    << "PBR/IBL asset sets specified in the Scene Dataset due "
+                       "to no renderer being instantiated; "
+                       "simConfig.requiresTextures_ is false.";
+    }
+  }
+  //
+}  // ResourceManager::loadAndBuildAllIBLAssets
 
 bool ResourceManager::isLightSetupCompatible(
     const LoadedAssetData& loadedAssetData,

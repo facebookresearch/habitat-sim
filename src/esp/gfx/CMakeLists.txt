@@ -2,12 +2,22 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+set(ESP_DEFAULT_PBRSHADER_CONFIG_REL_PATH ./data/default.pbr_config.json)
+set(ESP_DEFAULT_PBRSHADER_CONFIG
+    ${PROJECT_SOURCE_DIR}/.${ESP_DEFAULT_PBRSHADER_CONFIG_REL_PATH}
+)
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/configure.h
+)
+
 set(
   gfx_SOURCES
   CubeMap.cpp
   CubeMap.h
   Drawable.cpp
   Drawable.h
+  DrawableConfiguration.cpp
+  DrawableConfiguration.h
   DrawableGroup.cpp
   DrawableGroup.h
   GenericDrawable.cpp
@@ -53,8 +63,8 @@ set(
   DoubleSphereCameraShader.h
   EquirectangularShader.cpp
   EquirectangularShader.h
-  PbrImageBasedLighting.cpp
-  PbrImageBasedLighting.h
+  PbrIBLHelper.cpp
+  PbrIBLHelper.h
   PbrEquiRectangularToCubeMapShader.cpp
   PbrEquiRectangularToCubeMapShader.h
   PbrPrecomputedMapShader.cpp
@@ -89,9 +99,6 @@ find_package(MagnumIntegration REQUIRED Eigen)
 find_package(Corrade REQUIRED Utility)
 corrade_add_resource(GfxShaderResources ../../shaders/gfx/Shaders.conf)
 list(APPEND gfx_SOURCES ${GfxShaderResources})
-
-corrade_add_resource(PbrImageResources ../../../data/pbr/PbrImages.conf)
-list(APPEND gfx_SOURCES ${PbrImageResources})
 
 add_library(
   gfx STATIC
