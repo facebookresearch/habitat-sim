@@ -8,6 +8,8 @@
 #include <utility>
 #include "esp/assets/CollisionMeshData.h"
 #include "esp/assets/ResourceManager.h"
+#include "esp/metadata/managers/AOAttributesManager.h"
+#include "esp/metadata/managers/ObjectAttributesManager.h"
 #include "esp/metadata/managers/PhysicsAttributesManager.h"
 #include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
@@ -145,12 +147,12 @@ int PhysicsManager::addObjectInstance(
     objAttributes->setShaderType(getShaderTypeName(objShaderType));
   }
 
-  // set scaling values for this instance of stage attributes - first uniform
+  // set scaling values for this instance of object attributes - first uniform
   // scaling
   objAttributes->setScale(objAttributes->getScale() *
                           objInstAttributes->getUniformScale());
-  // set scaling values for this instance of stage attributes - next non-uniform
-  // scaling
+  // set scaling values for this instance of object attributes - next
+  // non-uniform scaling
   objAttributes->setScale(objAttributes->getScale() *
                           objInstAttributes->getNonUniformScale());
   // set scaled mass
@@ -163,10 +165,11 @@ int PhysicsManager::addObjectInstance(
 
   if (objID == ID_UNDEFINED) {
     // instancing failed for some reason.
-    ESP_ERROR() << "Object create failed for objectAttributes"
-                << attributesHandle << ", whose handle contains"
-                << objInstAttributes->getHandle()
-                << "as specified in object instance attributes.";
+    ESP_ERROR(Mn::Debug::Flag::NoSpace)
+        << "Object create failed for ObjectAttributes '" << attributesHandle
+        << "', whose handle contains '" << objInstAttributes->getHandle()
+        << "' as specified in object instance attributes, so addObjectInstance "
+           "aborted.";
     return ID_UNDEFINED;
   }
   auto objPtr = this->existingObjects_.at(objID);

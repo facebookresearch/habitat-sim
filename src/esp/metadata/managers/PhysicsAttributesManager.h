@@ -9,8 +9,6 @@
 
 #include "AttributesManagerBase.h"
 
-#include "ObjectAttributesManager.h"
-
 #include "esp/metadata/attributes/PhysicsManagerAttributes.h"
 #include "esp/physics/configure.h"
 

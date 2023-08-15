@@ -2982,6 +2982,11 @@ ResourceManager::getObjectAttributesManager() const {
   return metadataMediator_->getObjectAttributesManager();
 }
 
+metadata::managers::AOAttributesManager::ptr
+ResourceManager::getAOAttributesManager() const {
+  return metadataMediator_->getAOAttributesManager();
+}
+
 metadata::managers::PhysicsAttributesManager::ptr
 ResourceManager::getPhysicsAttributesManager() const {
   return metadataMediator_->getPhysicsAttributesManager();

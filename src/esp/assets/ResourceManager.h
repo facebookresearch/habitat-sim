@@ -277,6 +277,7 @@ class ResourceManager {
    */
   std::shared_ptr<metadata::managers::AssetAttributesManager>
   getAssetAttributesManager() const;
+
   /**
    * @brief Return manager for construction and access to light and lighting
    * layout attributes.
@@ -285,16 +286,25 @@ class ResourceManager {
   getLightLayoutAttributesManager() const;
 
   /**
+   * @brief Return manager for construction and access to articulated object
+   * attributes.
+   */
+  std::shared_ptr<metadata::managers::AOAttributesManager>
+  getAOAttributesManager() const;
+
+  /**
    * @brief Return manager for construction and access to object attributes.
    */
   std::shared_ptr<metadata::managers::ObjectAttributesManager>
   getObjectAttributesManager() const;
+
   /**
    * @brief Return manager for construction and access to physics world
    * attributes.
    */
   std::shared_ptr<metadata::managers::PhysicsAttributesManager>
   getPhysicsAttributesManager() const;
+
   /**
    * @brief Return manager for construction and access to scene attributes.
    */
