@@ -471,7 +471,6 @@ int PhysicsManager::addArticulatedObjectFromURDF(
         filepath, &drawables, fixedBase, globalScale, massScale, forceReload,
         maintainLinkOrder, intertiaFromURDF, lightSetup);
   }
-  // TODO Support non-existent simulator?
   return ID_UNDEFINED;
 }  // PhysicsManager::addArticulatedObjectFromURDF
 

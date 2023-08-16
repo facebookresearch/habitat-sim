@@ -200,8 +200,8 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief Set the default shader to use for an object or stage.  This may be
-   * overridden by a scene instance specification.
+   * @brief Set the default shader to use for this Articulated Object.  This may
+   * be overridden by a scene instance specification.
    */
   void setShaderType(const std::string& shader_type) {
     // force to lowercase before setting
@@ -217,8 +217,8 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief Get the default shader to use for an object or stage.  This may be
-   * overridden by a scene instance specification.
+   * @brief Get the default shader to use for this Articulated Object.  This may
+   * be overridden by a scene instance specification.
    */
   ObjectInstanceShaderType getShaderType() const {
     const std::string val =

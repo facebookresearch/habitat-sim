@@ -613,7 +613,7 @@ class SceneInstanceAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief Add an articulated object instance;s attributes to this scene
+   * @brief Add an articulated object instance's attributes to this scene
    * instance.
    */
   void addArticulatedObjectInstanceAttrs(

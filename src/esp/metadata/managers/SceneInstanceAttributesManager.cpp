@@ -292,7 +292,8 @@ SceneInstanceAttributesManager::createAOInstanceAttributesFromJSON(
 
   // only used for articulated objects
   // fixed base
-  // TODO remove this setter - only used enum-backed values in scene instances
+  // TODO remove this setter once datasets are updated and we only use
+  // enum-backed values in scene instances
   io::jsonIntoSetter<bool>(
       jCell, "fixed_base", [instanceAttrs](bool fixed_base) {
         instanceAttrs->setBaseType(fixed_base ? "fixed" : "free");

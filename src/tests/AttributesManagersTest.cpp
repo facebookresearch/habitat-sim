@@ -156,7 +156,7 @@ struct AttributesManagersTest : Cr::TestSuite::Tester {
   /**
    * @brief This test will test creating, modifying, registering and deleting
    * Attributes via the AttributesManager for PhysicsManagerAttributes.
-   * ThesesetRenderHandle tests should be consistent with most types of future
+   * These tests should be consistent with most types of future
    * attributes managers specializing the AttributesManager class template that
    * follow the same expected behavior paths as extent
    * attributes/attributesManagers.  Note : PrimitiveAssetAttributes exhibit
@@ -530,7 +530,7 @@ void AttributesManagersTest::testAssetAttributesModRegRemove(
   // verify new handle is in template library
   CORRADE_INTERNAL_ASSERT(
       assetAttributesManager_->getObjectLibHasHandle(newHandle));
-  // verify old template is still present as wellPbrShaderAttributesManager
+  // verify old template is still present as well
   CORRADE_INTERNAL_ASSERT(
       assetAttributesManager_->getObjectLibHasHandle(oldHandle));
 

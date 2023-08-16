@@ -19,8 +19,8 @@ ArticulatedObjectAttributes::ArticulatedObjectAttributes(
   // Set the default source for the interia calculation to be computed
   setInertiaSource(
       getAOInertiaSourceName(ArticulatedObjectInertiaSource::Computed));
-  // Set the default link order to use as the order specified in the URDF
-  setLinkOrder(getAOLinkOrderName(ArticulatedObjectLinkOrder::URDFOrder));
+  // Set the default link order to use as the tree traversal order
+  setLinkOrder(getAOLinkOrderName(ArticulatedObjectLinkOrder::TreeTraversal));
 
   // Set render mode to be default - skin if present, otherwise link
   // meshes/primitives

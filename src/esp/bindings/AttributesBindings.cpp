@@ -254,8 +254,8 @@ void initAttributesBindings(py::module& m) {
       .def_property(
           "render_mode", &ArticulatedObjectAttributes::getRenderMode,
           &ArticulatedObjectAttributes::setRenderMode,
-          R"(Whether we should render using the articulated object, its skin,
-          primitives representing each link, both or none.)")
+          R"(Whether we should render using the articulated object's its skin,
+          its xml defined rigid visual elements, both or nothing.)")
       .def_property(
           "base_type", &ArticulatedObjectAttributes::getBaseType,
           &ArticulatedObjectAttributes::setBaseType,
