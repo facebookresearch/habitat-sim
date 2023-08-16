@@ -595,9 +595,6 @@ bool Simulator::instanceArticulatedObjectsForSceneAttributes(
         metadataMediator_->getArticulatedObjModelFullHandle(
             artObjInst->getHandle());
 
-    ESP_WARNING() << "Art Obj Handle :" << artObjInst->getHandle()
-                  << " artObjAttrHandle :" << artObjAttrHandle;
-
     // make sure full handle is not empty
     ESP_CHECK(
         !artObjAttrHandle.empty(),
