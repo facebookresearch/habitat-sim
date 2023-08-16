@@ -406,8 +406,7 @@ class Model {
    * @ref metadata::attributes::ArticulatedObjectAttributes used to create this model.
    */
   void setModelInitAttributes(
-      const metadata::attributes::ArticulatedObjectAttributes::ptr&
-          artObjAttributes);
+      metadata::attributes::ArticulatedObjectAttributes::ptr artObjAttributes);
 
   /**
    * @brief Gets a smart pointer reference to a copy of the user-specified

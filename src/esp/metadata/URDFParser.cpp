@@ -104,8 +104,7 @@ void Model::setMassScaling(float massScaling) {
 }
 
 void Model::setModelInitAttributes(
-    const metadata::attributes::ArticulatedObjectAttributes::ptr&
-        artObjAttributes) {
+    metadata::attributes::ArticulatedObjectAttributes::ptr artObjAttributes) {
   initializationAttributes_ = std::move(artObjAttributes);
   // TODO these fields are redundant - can just use the attributes fields
   // directly
