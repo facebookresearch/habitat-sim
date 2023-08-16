@@ -693,9 +693,9 @@ void Simulator::setActiveSceneDatasetName(const std::string& _dsHandle) {
   metadataMediator_->setActiveSceneDatasetName(_dsHandle);
 }
 
-bool Simulator::saveCurrentSceneInstance(const std::string& saveFilename,
-                                         int sceneID) const {
-  if (sceneHasPhysics(sceneID)) {
+bool Simulator::saveCurrentSceneInstance(
+    const std::string& saveFilename) const {
+  if (sceneHasPhysics()) {
     ESP_DEBUG() << "Attempting to save current scene layout as "
                    "SceneInstanceAttributes with filename :"
                 << saveFilename;
@@ -706,8 +706,8 @@ bool Simulator::saveCurrentSceneInstance(const std::string& saveFilename,
   return false;
 }  // saveCurrentSceneInstance
 
-bool Simulator::saveCurrentSceneInstance(bool overwrite, int sceneID) const {
-  if (sceneHasPhysics(sceneID)) {
+bool Simulator::saveCurrentSceneInstance(bool overwrite) const {
+  if (sceneHasPhysics()) {
     ESP_DEBUG() << "Attempting to save current scene layout as "
                    "SceneInstanceAttributes.";
     return metadataMediator_->getSceneInstanceAttributesManager()
@@ -956,18 +956,9 @@ void Simulator::sampleRandomAgentState(agent::AgentState& agentState) {
   }
 }
 
-esp::physics::ManagedRigidObject::ptr Simulator::queryRigidObjWrapper(
-    int sceneID,
-    int objID) const {
-  if (!sceneHasPhysics(sceneID)) {
-    return nullptr;
-  }
-  return getRigidObjectManager()->getObjectCopyByID(objID);
-}
-
 esp::physics::ManagedArticulatedObject::ptr
-Simulator::queryArticulatedObjWrapper(int sceneID, int objID) const {
-  if (!sceneHasPhysics(sceneID)) {
+Simulator::queryArticulatedObjWrapper(int objID) const {
+  if (!sceneHasPhysics()) {
     return nullptr;
   }
   return getArticulatedObjectManager()->getObjectCopyByID(objID);
