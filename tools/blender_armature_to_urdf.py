@@ -473,11 +473,11 @@ def get_anim_limits_info(bone):
     is_prismatic = False
     is_revolute = False
 
-    for ac_key in bpy.data.actions:
-        if bone.name in ac_key:
-            key_match = [key for key in bone_limits if key in ac_key][0]
+    for ac in bpy.data.actions:
+        if bone.name in ac.name:
+            key_match = [key for key in bone_limits if key in ac.name][0]
             limit_list = []
-            for _fkey, fcurve in bpy.data.actions[ac_key].fcurves.items():
+            for _fkey, fcurve in ac.fcurves.items():
                 assert (
                     len(fcurve.keyframe_points) == 1
                 ), "Expecting one keyframe per track."
@@ -549,7 +549,9 @@ def export(dirpath, settings, export_meshes: bool = True):
     joints = []
 
     # get the armature
-    armature = settings.get("armature", bpy.data.objects["Armature"])
+    armature = settings.get("armature")
+    if armature is None:
+        armature = bpy.data.objects["Armature"]
 
     # find the root bone
     root_bone = get_root_bone()
