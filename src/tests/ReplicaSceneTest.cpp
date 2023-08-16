@@ -168,6 +168,7 @@ void ReplicaSceneTest::testSemanticSceneDescriptorReplicaCAD() {
       replicaCAD, "replicaCAD.scene_dataset_config.json");
 
   cfg.activeSceneName = "apt_0.scene_instance";
+  cfg.enablePhysics = true;
 
   esp::sim::Simulator sim{cfg};
   // semantic scene descriptor is specified in scene dataset config
