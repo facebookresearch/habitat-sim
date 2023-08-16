@@ -421,9 +421,10 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * used as the key to query @ref esp::metadata::managers::AOAttributesManager
    * for the attributes.
    * @param lightSetup The string name of the desired lighting setup to use.
-   * @return The instanced @ref ArticulatedObjec 's ID, mapping to it in @ref
-   * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
-   * These values come from the same pool used by rigid objects.
+   * @return The instanced @ref ArticulatedObject 's ID, mapping to the articulated
+   * object in @ref PhysicsManager::existingObjects_ if successful, or
+   * @ref esp::ID_UNDEFINED. These values come from the same pool used
+   * by rigid objects.
    */
   int addArticulatedObjectInstance(
       const std::shared_ptr<
@@ -436,17 +437,18 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @brief Instance an @ref ArticulatedObject from an
    * @ref esp::metadata::attributes::ArticulatedObjectAttributes retrieved from the
    * @ref esp::metadata::managers::AOAttributesManager by the given
-   * @p attributesHandle. This method will query for a drawable group from
-   * simulator.
+   * @p attributesHandle . This method calls @p
+   * addArticulatedObjectQueryDrawables to provide drawables.
    *
    * @param attributesHandle The handle of the ArticulatedObjectAttributes to
    * use to create the desired @ref ArticulatedObject
    * @param forceReload If true, reload the source URDF from file, replacing the
    * cached model.
    * @param lightSetup The string name of the desired lighting setup to use.
-   * @return The instanced @ref ArticulatedObjec 's ID, mapping to it in @ref
-   * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
-   * These values come from the same pool used by rigid objects.
+   * @return The instanced @ref ArticulatedObject 's ID, mapping to the articulated
+   * object in @ref PhysicsManager::existingObjects_ if successful, or
+   * @ref esp::ID_UNDEFINED. These values come from the same pool used
+   * by rigid objects.
    */
   int addArticulatedObject(
       const std::string& attributesHandle,
@@ -457,17 +459,18 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @brief Instance an @ref ArticulatedObject from an
    * @ref esp::metadata::attributes::ArticulatedObjectAttributes retrieved from the
    * @ref esp::metadata::managers::AOAttributesManager by the given
-   * @p attributesID. This method will query for a drawable group from
-   * simulator.
+   * @p attributesID . This method calls @p
+   * addArticulatedObjectQueryDrawables to provide drawables.
    *
    * @param attributesID The ID of the ArticulatedObjectAttributes to
    * use to create the desired @ref ArticulatedObject
    * @param forceReload If true, reload the source URDF from file, replacing the
    * cached model.
    * @param lightSetup The string name of the desired lighting setup to use.
-   * @return The instanced @ref ArticulatedObjec 's ID, mapping to it in @ref
-   * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
-   * These values come from the same pool used by rigid objects.
+   * @return The instanced @ref ArticulatedObject 's ID, mapping to the articulated
+   * object in @ref PhysicsManager::existingObjects_ if successful, or
+   * @ref esp::ID_UNDEFINED. These values come from the same pool used
+   * by rigid objects.
    */
   int addArticulatedObject(
       int attributesID,
@@ -476,15 +479,17 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
   /**
    * @brief Queries simulator for drawables, if simulator exists, otherwise
-   * passes nullptr, before instancing a physical object from an @ref ArticulatedObject
-   * properties template
+   * passes nullptr, before instancing an articulated object from an
+   * @ref esp::metadata::attributes::ArticulatedObjectAttributes template
+   *
    * @param artObjAttributes The @ref ArticulatedObject's template to use to create it.
    * @param forceReload If true, reload the source URDF from file, replacing the
    * cached model.
    * @param lightSetup The string name of the desired lighting setup to use.
-   * @return The instanced @ref ArticulatedObjec 's ID, mapping to it in @ref
-   * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
-   * These values come from the same pool used by rigid objects.
+   * @return The instanced @ref ArticulatedObject 's ID, mapping to the articulated
+   * object in @ref PhysicsManager::existingObjects_ if successful, or
+   * @ref esp::ID_UNDEFINED. These values come from the same pool used
+   * by rigid objects.
    */
   int addArticulatedObjectQueryDrawables(
       const esp::metadata::attributes::ArticulatedObjectAttributes::ptr&
@@ -494,9 +499,9 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
   /**
    * @brief Load, parse, and import a URDF file instantiating an @ref
-   * ArticulatedObject in the world.  This version will query an existing
-   * simulator for drawables and therefore does not require drawables to be
-   * specified.
+   * ArticulatedObject in the world based on the urdf filepath specified in @ref
+   * esp::metadata::attributes::ArticulatedObjectAttributes. This version
+   * requires drawables to be provided.
    *
    * Not implemented in base PhysicsManager.
    * @param artObjAttributes The @ref ArticulatedObject's template to use to create it.
@@ -506,8 +511,10 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * replacing the cached model if it exists.
    * @param lightSetup The string name of the desired lighting setup to use.
    *
-   * @return A unique id for the @ref BulletArticulatedObject, allocated from
-   * the same id set as rigid objects.
+   * @return The instanced @ref ArticulatedObject 's ID, mapping to the articulated
+   * object in @ref PhysicsManager::existingObjects_ if successful, or
+   * @ref esp::ID_UNDEFINED. These values come from the same pool used
+   * by rigid objects.
    */
   virtual int addArticulatedObject(
       CORRADE_UNUSED const
@@ -543,8 +550,10 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * URDF file instead of computing automatically from collision shapes.
    * @param lightSetup The string name of the desired lighting setup to use.
    *
-   * @return A unique id for the @ref BulletArticulatedObject, allocated from
-   * the same id set as rigid objects.
+   * @return The instanced @ref ArticulatedObject 's ID, mapping to the articulated
+   * object in @ref PhysicsManager::existingObjects_ if successful, or
+   * @ref esp::ID_UNDEFINED. These values come from the same pool used
+   * by rigid objects.
    */
   int addArticulatedObjectFromURDF(
       const std::string& filepath,
@@ -579,8 +588,10 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * URDF file instead of computing automatically from collision shapes.
    * @param lightSetup The string name of the desired lighting setup to use.
    *
-   * @return A unique id for the @ref ArticulatedObject, allocated from the same
-   * id set as rigid objects.
+   * @return The instanced @ref ArticulatedObject 's ID, mapping to the articulated
+   * object in @ref PhysicsManager::existingObjects_ if successful, or
+   * @ref esp::ID_UNDEFINED. These values come from the same pool used
+   * by rigid objects.
    */
   int addArticulatedObjectFromURDF(
       const std::string& filepath,
