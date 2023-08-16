@@ -49,6 +49,32 @@ ArticulatedObjectManager::addArticulatedObjectFromURDF(
 }
 
 std::shared_ptr<ManagedArticulatedObject>
+ArticulatedObjectManager::addArticulatedObjectByHandle(
+    const std::string& attributesHandle,
+    bool forceReload,
+    const std::string& lightSetup) {
+  if (auto physMgr = this->getPhysicsManager()) {
+    int newAObjID = physMgr->addArticulatedObject(attributesHandle, forceReload,
+                                                  lightSetup);
+    return this->getObjectCopyByID(newAObjID);
+  }
+  return nullptr;
+}
+
+std::shared_ptr<ManagedArticulatedObject>
+ArticulatedObjectManager::addArticulatedObjectByID(
+    int attributesID,
+    bool forceReload,
+    const std::string& lightSetup) {
+  if (auto physMgr = this->getPhysicsManager()) {
+    int newAObjID =
+        physMgr->addArticulatedObject(attributesID, forceReload, lightSetup);
+    return this->getObjectCopyByID(newAObjID);
+  }
+  return nullptr;
+}
+
+std::shared_ptr<ManagedArticulatedObject>
 ArticulatedObjectManager::addArticulatedObjectFromURDFWithDrawables(
     const std::string& filepath,
     gfx::DrawableGroup* drawables,
