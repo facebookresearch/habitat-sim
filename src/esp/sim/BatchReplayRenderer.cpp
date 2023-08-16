@@ -21,10 +21,12 @@ using namespace Mn::Math::Literals;  // NOLINT
 BatchReplayRenderer::BatchReplayRenderer(
     const ReplayRendererConfiguration& cfg,
     gfx_batch::RendererConfiguration&& batchRendererConfiguration) {
+#ifndef CORRADE_TARGET_EMSCRIPTEN
   if (Magnum::GL::Context::hasCurrent()) {
     flextGLInit(Magnum::GL::Context::current());  // TODO: Avoid globals
                                                   // duplications across SOs.
   }
+#endif
   CORRADE_ASSERT(cfg.sensorSpecifications.size() == 1,
                  "BatchReplayRenderer: expecting exactly one sensor", );
   const auto& sensor = static_cast<esp::sensor::CameraSensorSpec&>(

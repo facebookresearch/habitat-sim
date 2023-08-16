@@ -17,10 +17,12 @@ namespace sim {
 
 ClassicReplayRenderer::ClassicReplayRenderer(
     const ReplayRendererConfiguration& cfg) {
+#ifndef CORRADE_TARGET_EMSCRIPTEN
   if (Magnum::GL::Context::hasCurrent()) {
     flextGLInit(Magnum::GL::Context::current());  // TODO: Avoid globals
                                                   // duplications across SOs.
   }
+#endif
   config_ = cfg;
   SimulatorConfiguration simConfig;
   simConfig.createRenderer = true;
@@ -266,6 +268,12 @@ void ClassicReplayRenderer::doRender(
     auto& visualSensor = static_cast<esp::sensor::VisualSensor&>(
         sensorMap.begin()->second.get());
 
+// Hack: WebGL cannot find the sensor framebuffer at this point. It must be
+//       recreated.
+//       TODO: Figure out what's going on.
+#ifdef CORRADE_TARGET_EMSCRIPTEN
+    renderer_->bindRenderTarget(visualSensor);
+#endif
     visualSensor.renderTarget().renderEnter();
 
     auto& sceneGraph = getSceneGraph(envIndex);
@@ -286,8 +294,12 @@ void ClassicReplayRenderer::doRender(
     //  a hope that all have the same, figure out a better way
     const auto size =
         Mn::Vector2i{visualSensor.specification()->resolution}.flipped();
+    // TODO: When rendering on VR, we set the framebuffer viewport to define the
+    //       eye region. Should we take into account the viewport here?
     const auto rectangle = Mn::Range2Di::fromSize(
-        size * Mn::Vector2i{envIndex % gridSize.x(), envIndex / gridSize.x()},
+        size * Mn::Vector2i{envIndex % gridSize.x(), envIndex / gridSize.x()} +
+            Mn::Vector2i{framebuffer.viewport().x().min(),
+                         framebuffer.viewport().y().min()},
         size);
     visualSensor.renderTarget().blitRgbaTo(framebuffer, rectangle);
   }

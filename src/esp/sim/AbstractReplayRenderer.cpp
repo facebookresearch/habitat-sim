@@ -57,6 +57,14 @@ void AbstractReplayRenderer::clearEnvironment(unsigned envIndex) {
   doPlayerFor(envIndex).close();
 }
 
+// TODO: Temporary utility function
+void AbstractReplayRenderer::setEnvironmentKeyframe_temp(
+    unsigned envIndex,
+    gfx::replay::Keyframe&& keyframe) {
+  CORRADE_INTERNAL_ASSERT(envIndex < doEnvironmentCount());
+  doPlayerFor(envIndex).setSingleKeyframe(std::move(keyframe));
+}
+
 void AbstractReplayRenderer::setEnvironmentKeyframe(
     unsigned envIndex,
     const std::string& serKeyframe) {

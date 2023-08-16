@@ -10,6 +10,18 @@
 
 namespace {
 bool isSupportedRenderAsset(const Corrade::Containers::StringView& filepath) {
+// Web build does not support collada files
+// TODO: Query Magnum for supported assets instead.
+#ifdef CORRADE_TARGET_EMSCRIPTEN
+  if (filepath.hasSuffix(".dae") || filepath.hasSuffix(".DAE")) {
+    return false;
+  }
+  // Web build does not support STL files
+  if (filepath.hasSuffix(".stl") || filepath.hasSuffix(".STL")) {
+    return false;
+  }
+#endif
+
   // Primitives aren't directly supported in the Magnum batch renderer. See
   // https://docs.google.com/document/d/1ngA73cXl3YRaPfFyICSUHONZN44C-XvieS7kwyQDbkI/edit#bookmark=id.yq39718gqbwz
 

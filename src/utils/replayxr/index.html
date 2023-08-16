@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Magnum WebXR Example</title>
+  <link rel="stylesheet" href="WebApplication.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body>
+  <h1>Magnum WebXR Example</h1>
+  <div id="container" class="aspect-2-1">
+    <div id="sizer"><div id="expander"><div id="listener">
+      <canvas id="canvas"></canvas>
+      <div id="status">Initialization...</div>
+      <div id="status-description"></div>
+      <script src="EmscriptenApplication.js"></script>
+      <script async="async" src="driver.js"></script>
+      <script async="async" src="replayxr.js"></script>
+    </div></div></div>
+    <div id="log"></div>
+  </div>
+</body>
+</html>

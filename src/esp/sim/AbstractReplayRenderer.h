@@ -12,8 +12,9 @@ namespace esp {
 
 namespace gfx {
 namespace replay {
+struct Keyframe;
 class Player;
-}
+}  // namespace replay
 }  // namespace gfx
 
 namespace sensor {
@@ -76,6 +77,10 @@ class AbstractReplayRenderer {
   Magnum::Vector2i sensorSize(unsigned envIndex);
 
   void clearEnvironment(unsigned envIndex);
+
+  // TODO: Temporary utility function
+  void setEnvironmentKeyframe_temp(unsigned envIndex,
+                                   gfx::replay::Keyframe&& keyframe);
 
   void setEnvironmentKeyframe(unsigned envIndex,
                               const std::string& serKeyframe);

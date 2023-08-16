@@ -3223,6 +3223,7 @@ void ResourceManager::createDrawable(Mn::GL::Mesh* mesh,
           shaderManager_,      // shader manager
           drawableCfg);
       break;
+#ifndef CORRADE_TARGET_EMSCRIPTEN
     case ObjectInstanceShaderType::PBR:
       node.addFeature<gfx::PbrDrawable>(
           mesh,                // render mesh
@@ -3230,6 +3231,17 @@ void ResourceManager::createDrawable(Mn::GL::Mesh* mesh,
           shaderManager_,      // shader manager
           drawableCfg);
       break;
+#else
+    // TODO: PBR shaders don't compile on WebGL.
+    //       For now, we simply load them as phong.
+    case ObjectInstanceShaderType::PBR:
+      node.addFeature<gfx::GenericDrawable>(
+          mesh,                // render mesh
+          meshAttributeFlags,  // mesh attribute flags
+          shaderManager_,      // shader manager
+          drawableCfg);
+      break;
+#endif
     default:
       CORRADE_INTERNAL_ASSERT_UNREACHABLE();
   }

@@ -8,7 +8,8 @@
 set -e
 
 BULLET=false
-WEB_APPS=true
+WEB_APPS=false
+NODE_OPTIONS=--openssl-legacy-provider # Required to build outdated web apps.
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in
@@ -41,6 +42,7 @@ cmake ../src \
     -DBUILD_PYTHON_BINDINGS=OFF \
     -DBUILD_ASSIMP_SUPPORT=OFF \
     -DBUILD_DATATOOL=OFF \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_PREFIX_PATH="$EMSCRIPTEN" \
     -DCMAKE_TOOLCHAIN_FILE="../src/deps/corrade/toolchains/generic/Emscripten-wasm.cmake" \
@@ -51,7 +53,7 @@ cmake ../src \
     -DBUILD_WITH_BULLET="$( if ${BULLET} ; then echo ON ; else echo OFF; fi )" \
     -DBUILD_WEB_APPS="$( if ${WEB_APPS} ; then echo ON ; else echo OFF; fi )"
 
-cmake --build . -- -j 8 #TODO: Set to 8 cores only on CirelcCI
+cmake --build . -- -j 8 #TODO: Set to 8 cores only on CircleCI
 echo "Done building."
 
 if [ -o ${WEB_APPS} ]
