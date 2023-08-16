@@ -161,7 +161,7 @@ corrade_add_test(
   scene
   assets
   sim
-  metadata
+  physics
 )
 target_include_directories(ReplicaSceneTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
