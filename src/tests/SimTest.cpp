@@ -961,13 +961,13 @@ void SimTest::createMagnumRenderingOff() {
   auto testRaycast = [&]() {
     // cast a ray at the object to check that the object is actually there
     auto raycastresults = simulator->castRay(
-        esp::geo::Ray({10.0, 9.0, 10.0}, {0.0, 1.0, 0.0}), 100.0, 0);
+        esp::geo::Ray({10.0, 9.0, 10.0}, {0.0, 1.0, 0.0}), 100.0);
     CORRADE_COMPARE(raycastresults.hits[0].objectId, obj->getID());
     auto point = raycastresults.hits[0].point;
     CORRADE_COMPARE_AS(distanceBetween(point, {10.0, 9.9, 10.0}), 0.001,
                        Cr::TestSuite::Compare::Less);
     raycastresults = simulator->castRay(
-        esp::geo::Ray({10.0, 11.0, 10.0}, {0.0, -1.0, 0.0}), 100.0, 0);
+        esp::geo::Ray({10.0, 11.0, 10.0}, {0.0, -1.0, 0.0}), 100.0);
     CORRADE_COMPARE(raycastresults.hits[0].objectId, obj->getID());
     point = raycastresults.hits[0].point;
     CORRADE_COMPARE_AS(distanceBetween(point, {10.0, 10.1, 10.0}), 0.001,
