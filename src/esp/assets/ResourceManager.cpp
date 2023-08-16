@@ -66,8 +66,8 @@
 #include "esp/gfx/SkinData.h"
 #include "esp/gfx/replay/Recorder.h"
 #include "esp/io/Json.h"
-#include "esp/io/URDFParser.h"
 #include "esp/metadata/MetadataMediator.h"
+#include "esp/metadata/URDFParser.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/scene/SceneGraph.h"
 #include "esp/scene/SceneManager.h"
@@ -96,12 +96,15 @@ namespace Mn = Magnum;
 
 namespace esp {
 
+using metadata::attributes::AbstractObjectAttributes;
+using metadata::attributes::ArticulatedObjectAttributes;
 using metadata::attributes::CubePrimitiveAttributes;
 using metadata::attributes::ObjectAttributes;
 using metadata::attributes::ObjectInstanceShaderType;
 using metadata::attributes::PhysicsManagerAttributes;
 using metadata::attributes::SceneObjectInstanceAttributes;
 using metadata::attributes::StageAttributes;
+using metadata::managers::AOAttributesManager;
 using metadata::managers::AssetAttributesManager;
 using metadata::managers::ObjectAttributesManager;
 using metadata::managers::PhysicsAttributesManager;
@@ -1586,8 +1589,8 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
 
   ESP_CHECK(
       (fileImporter_->openFile(filename) && (fileImporter_->meshCount() > 0u)),
-      Cr::Utility::formatString("Error loading general mesh data from file {}",
-                                filename));
+      Cr::Utility::formatString(
+          "Error loading general mesh data from file '{}'", filename));
 
   // load file and add it to the dictionary
   LoadedAssetData loadedAssetData{info};
@@ -2977,6 +2980,11 @@ ResourceManager::getLightLayoutAttributesManager() const {
 metadata::managers::ObjectAttributesManager::ptr
 ResourceManager::getObjectAttributesManager() const {
   return metadataMediator_->getObjectAttributesManager();
+}
+
+metadata::managers::AOAttributesManager::ptr
+ResourceManager::getAOAttributesManager() const {
+  return metadataMediator_->getAOAttributesManager();
 }
 
 metadata::managers::PhysicsAttributesManager::ptr

@@ -7,11 +7,17 @@
 #ifndef ESP_PHYSICS_URDFIMPORTER_H_
 #define ESP_PHYSICS_URDFIMPORTER_H_
 
-#include "esp/io/URDFParser.h"
+#include "esp/metadata/URDFParser.h"
+
 namespace esp {
 namespace assets {
 class ResourceManager;
 }
+namespace metadata {
+namespace attributes {
+class ArticulatedObjectAttributes;
+}
+}  // namespace metadata
 
 namespace physics {
 
@@ -48,7 +54,6 @@ class URDFImporter {
       : resourceManager_(resourceManager){};
 
   virtual ~URDFImporter() = default;
-
   /**
    * @brief Sets the activeModel_ for the importer. If new or forceReload, parse
    * a URDF file and cache the resulting model. Note: when applying uniform
@@ -62,13 +67,13 @@ class URDFImporter {
    * @param forceReload If true, reload the URDF from file, replacing the cached
    * model.
    */
-  bool loadURDF(const std::string& filename,
-                float globalScale = 1.0,
-                float massScale = 1.0,
-                bool forceReload = false);
+  bool loadURDF(
+      const esp::metadata::attributes::ArticulatedObjectAttributes::ptr&
+          artObjAttributes,
+      bool forceReload = false);
 
   // NOTE: all of these getter/setters act on the current "activeModel_"
-  virtual std::shared_ptr<io::URDF::Model> getModel() const {
+  virtual std::shared_ptr<metadata::URDF::Model> getModel() const {
     return activeModel_;
   };
 
@@ -92,8 +97,9 @@ class URDFImporter {
   virtual void getLinkChildIndices(int linkIndex,
                                    std::vector<int>& childLinkIndices) const;
 
-  virtual bool getLinkContactInfo(int linkIndex,
-                                  io::URDF::LinkContactInfo& contactInfo) const;
+  virtual bool getLinkContactInfo(
+      int linkIndex,
+      metadata::URDF::LinkContactInfo& contactInfo) const;
 
   // TODO: refactor this nonsense
   virtual bool getJointInfo(int linkIndex,
@@ -142,7 +148,7 @@ class URDFImporter {
 
   /**
    * @brief Load/import any required render and collision assets for the
-   * acrive io::URDF::Model before instantiating it.
+   * acrive metadata::URDF::Model before instantiating it.
    */
   void importURDFAssets();
 
@@ -152,16 +158,16 @@ class URDFImporter {
  protected:
   // parses the URDF file into general, simulation platform invariant
   // datastructures
-  io::URDF::Parser urdfParser_;
+  metadata::URDF::Parser urdfParser_;
 
   esp::assets::ResourceManager& resourceManager_;
 
   //! cache parsed URDF models by filename
-  std::map<std::string, std::shared_ptr<io::URDF::Model>> modelCache_;
+  std::map<std::string, std::shared_ptr<metadata::URDF::Model>> modelCache_;
 
   //! which model is being actively manipulated. Changed by calling
   //! loadURDF(filename).
-  std::shared_ptr<io::URDF::Model> activeModel_ = nullptr;
+  std::shared_ptr<metadata::URDF::Model> activeModel_ = nullptr;
 };
 
 }  // namespace physics

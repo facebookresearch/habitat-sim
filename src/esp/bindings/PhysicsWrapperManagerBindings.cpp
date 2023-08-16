@@ -277,13 +277,37 @@ void initPhysicsWrapperManagerBindings(pybind11::module& m) {
       m, "ArticulatedObjectManager")
 
       .def(
+          "add_articulated_object_by_template_handle",
+#ifdef ESP_BUILD_WITH_BULLET
+          &ArticulatedObjectManager::addBulletArticulatedObjectByHandle,
+#else
+          &ArticulatedObjectManager::addArticulatedObjectByHandle,
+#endif
+          "ao_lib_handle"_a, "force_reload"_a = false,
+          "light_setup_key"_a = DEFAULT_LIGHTING_KEY,
+          R"(Instance an articulated object into the scene via a template referenced by its handle.
+          Optionally force the articulated object's model to be reloaded from disk and assign its initial
+          LightSetup key. Returns a reference to the created object.)")
+      .def(
+          "add_articulated_object_by_template_id",
+#ifdef ESP_BUILD_WITH_BULLET
+          &ArticulatedObjectManager::addBulletArticulatedObjectByID,
+#else
+          &ArticulatedObjectManager::addArticulatedObjectByID,
+#endif
+          "ao_lib_id"_a, "force_reload"_a = false,
+          "light_setup_key"_a = DEFAULT_LIGHTING_KEY,
+          R"(Instance an articulated object into the scene via a template referenced by its ID.
+          Optionally force the articulated object's model to be reloaded from disk and assign its initial
+          LightSetup key. Returns a reference to the created object.)")
+
+      .def(
           "add_articulated_object_from_urdf",
 #ifdef ESP_BUILD_WITH_BULLET
           &ArticulatedObjectManager::addBulletArticulatedObjectFromURDF,
 #else
           &ArticulatedObjectManager::addArticulatedObjectFromURDF,
 #endif
-
           "filepath"_a, "fixed_base"_a = false, "global_scale"_a = 1.0,
           "mass_scale"_a = 1.0, "force_reload"_a = false,
           "maintain_link_order"_a = false, "intertia_from_urdf"_a = false,

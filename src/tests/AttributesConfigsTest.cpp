@@ -7,6 +7,7 @@
 #include <string>
 
 #include "esp/metadata/MetadataMediator.h"
+#include "esp/metadata/managers/AOAttributesManager.h"
 #include "esp/metadata/managers/AttributesManagerBase.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
 #include "esp/metadata/managers/PbrShaderAttributesManager.h"
@@ -30,6 +31,7 @@ using esp::metadata::PrimObjTypes;
 using esp::physics::MotionType;
 
 using AttrMgrs::AttributesManager;
+using Attrs::ArticulatedObjectAttributes;
 using Attrs::ObjectAttributes;
 using Attrs::PbrShaderAttributes;
 using Attrs::PhysicsManagerAttributes;
@@ -149,6 +151,15 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
   void testObjectAttrVals(
       std::shared_ptr<esp::metadata::attributes::ObjectAttributes> objAttr,
       const std::string& assetPath);
+  /**
+   * @brief This test will verify that the Articulated Object attributes'
+   * managers' JSON loading process is working as expected.
+   */
+  void testArticulatedObjectAttrVals(
+      std::shared_ptr<esp::metadata::attributes::ArticulatedObjectAttributes>
+          artObjAttr,
+      const std::string& assetPath,
+      const std::string& urdfPath);
 
   // actual test functions
   // These tests build strings containing legal JSON config data to use to build
@@ -162,6 +173,7 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
   void testSceneInstanceJSONLoad();
   void testStageJSONLoad();
   void testObjectJSONLoad();
+  void testArticulatedObjectJSONLoad();
 
   // test member vars
 
@@ -169,6 +181,7 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
   esp::logging::LoggingContext loggingContext_;
   AttrMgrs::LightLayoutAttributesManager::ptr lightLayoutAttributesManager_ =
       nullptr;
+  AttrMgrs::AOAttributesManager::ptr artObjAttributesManager_ = nullptr;
   AttrMgrs::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
   AttrMgrs::PbrShaderAttributesManager::ptr pbrShaderAttributesManager_ =
       nullptr;
@@ -185,6 +198,7 @@ AttributesConfigsTest::AttributesConfigsTest() {
   MM = MetadataMediator::create_unique(cfg);
   // get attributes managers for default dataset
   lightLayoutAttributesManager_ = MM->getLightLayoutAttributesManager();
+  artObjAttributesManager_ = MM->getAOAttributesManager();
   objectAttributesManager_ = MM->getObjectAttributesManager();
   physicsAttributesManager_ = MM->getPhysicsAttributesManager();
   pbrShaderAttributesManager_ = MM->getPbrShaderAttributesManager();
@@ -198,6 +212,7 @@ AttributesConfigsTest::AttributesConfigsTest() {
       &AttributesConfigsTest::testSceneInstanceJSONLoad,
       &AttributesConfigsTest::testStageJSONLoad,
       &AttributesConfigsTest::testObjectJSONLoad,
+      &AttributesConfigsTest::testArticulatedObjectJSONLoad,
   });
 }
 
@@ -702,12 +717,22 @@ void AttributesConfigsTest::testSceneInstanceAttrVals(
 
   // verify articulated object instances
   auto artObjInstances = sceneAttr->getArticulatedObjectInstances();
-  CORRADE_COMPARE(artObjInstances.size(), 2);
+  CORRADE_COMPARE(artObjInstances.size(), 3);
   auto artObjInstance = artObjInstances[0];
   CORRADE_COMPARE(artObjInstance->getHandle(), "test_urdf_template0");
   CORRADE_COMPARE(static_cast<int>(artObjInstance->getTranslationOrigin()),
                   static_cast<int>(Attrs::SceneInstanceTranslationOrigin::COM));
-  CORRADE_COMPARE(artObjInstance->getFixedBase(), false);
+  CORRADE_COMPARE(static_cast<int>(artObjInstance->getBaseType()),
+                  static_cast<int>(Attrs::ArticulatedObjectBaseType::Fixed));
+  CORRADE_COMPARE(
+      static_cast<int>(artObjInstance->getInertiaSource()),
+      static_cast<int>(Attrs::ArticulatedObjectInertiaSource::URDF));
+  CORRADE_COMPARE(
+      static_cast<int>(artObjInstance->getLinkOrder()),
+      static_cast<int>(Attrs::ArticulatedObjectLinkOrder::URDFOrder));
+  CORRADE_COMPARE(
+      static_cast<int>(artObjInstance->getRenderMode()),
+      static_cast<int>(Attrs::ArticulatedObjectRenderMode::LinkVisuals));
   CORRADE_VERIFY(artObjInstance->getAutoClampJointLimits());
 
   CORRADE_COMPARE(artObjInstance->getTranslation(), Mn::Vector3(5, 4, 5));
@@ -753,7 +778,45 @@ void AttributesConfigsTest::testSceneInstanceAttrVals(
 
   artObjInstance = artObjInstances[1];
   CORRADE_COMPARE(artObjInstance->getHandle(), "test_urdf_template1");
-  CORRADE_VERIFY(artObjInstance->getFixedBase());
+
+  CORRADE_COMPARE(static_cast<int>(artObjInstance->getBaseType()),
+                  static_cast<int>(Attrs::ArticulatedObjectBaseType::Free));
+  CORRADE_COMPARE(
+      static_cast<int>(artObjInstance->getInertiaSource()),
+      static_cast<int>(Attrs::ArticulatedObjectInertiaSource::Computed));
+  CORRADE_COMPARE(
+      static_cast<int>(artObjInstance->getLinkOrder()),
+      static_cast<int>(Attrs::ArticulatedObjectLinkOrder::TreeTraversal));
+  CORRADE_COMPARE(static_cast<int>(artObjInstance->getRenderMode()),
+                  static_cast<int>(Attrs::ArticulatedObjectRenderMode::Both));
+  CORRADE_VERIFY(artObjInstance->getAutoClampJointLimits());
+  CORRADE_COMPARE(artObjInstance->getTranslation(), Mn::Vector3(3, 2, 1));
+  CORRADE_COMPARE(static_cast<int>(artObjInstance->getMotionType()),
+                  static_cast<int>(esp::physics::MotionType::KINEMATIC));
+  // test test_urdf_template0 ao instance attributes-level user config vals
+  testUserDefinedConfigVals(artObjInstance->getUserConfiguration(), 4,
+                            "test_urdf_template1 instance defined string",
+                            false, 21, 11.22, Mn::Vector2(1.9f, 2.9f),
+                            Mn::Vector3(190.3f, 902.5f, -95.07f),
+                            Mn::Quaternion({9.22f, 9.26f, 0.21f}, 1.25f),
+                            Mn::Vector4(13.5f, 4.6f, 25.7f, 76.9f));
+
+  artObjInstance = artObjInstances[2];
+  CORRADE_COMPARE(artObjInstance->getHandle(), "test_urdf_template2");
+  // Nothing specified in instance,so use defaults
+  CORRADE_COMPARE(
+      static_cast<int>(artObjInstance->getBaseType()),
+      static_cast<int>(Attrs::ArticulatedObjectBaseType::Unspecified));
+  CORRADE_COMPARE(
+      static_cast<int>(artObjInstance->getInertiaSource()),
+      static_cast<int>(Attrs::ArticulatedObjectInertiaSource::Unspecified));
+  CORRADE_COMPARE(
+      static_cast<int>(artObjInstance->getLinkOrder()),
+      static_cast<int>(Attrs::ArticulatedObjectLinkOrder::Unspecified));
+  CORRADE_COMPARE(
+      static_cast<int>(artObjInstance->getRenderMode()),
+      static_cast<int>(Attrs::ArticulatedObjectRenderMode::Unspecified));
+  // Same as template 1
   CORRADE_VERIFY(artObjInstance->getAutoClampJointLimits());
   CORRADE_COMPARE(artObjInstance->getTranslation(), Mn::Vector3(3, 2, 1));
   CORRADE_COMPARE(static_cast<int>(artObjInstance->getMotionType()),
@@ -859,7 +922,10 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
           {
               "template_name": "test_urdf_template0",
               "translation_origin": "COM",
-              "fixed_base": false,
+              "base_type" : "fixed",
+              "inertia_source" : "urdf",
+              "link_order" : "urdf_order",
+              "render_mode": "link_visuals",
               "auto_clamp_joint_limits" : true,
               "translation": [5,4,5],
               "rotation": [0.2, 0.3, 0.4, 0.5],
@@ -884,7 +950,28 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
           },
           {
               "template_name": "test_urdf_template1",
-              "fixed_base" : true,
+              "base_type" : "free",
+              "inertia_source" : "computed",
+              "link_order" : "tree_traversal",
+              "render_mode": "both",
+              "auto_clamp_joint_limits" : true,
+              "translation": [3, 2, 1],
+              "rotation": [0.5, 0.6, 0.7, 0.8],
+              "motion_type": "KINEMATIC",
+              "user_defined" : {
+                  "user_str_array" : ["test_00", "test_01", "test_02", "test_03"],
+                  "user_string" : "test_urdf_template1 instance defined string",
+                  "user_bool" : false,
+                  "user_int" : 21,
+                  "user_double" : 11.22,
+                  "user_vec2" : [1.9, 2.9],
+                  "user_vec3" : [190.3, 902.5, -95.07],
+                  "user_vec4" : [13.5, 4.6, 25.7, 76.9],
+                  "user_quat" : [1.25, 9.22, 9.26, 0.21]
+              }
+          },
+          {
+              "template_name": "test_urdf_template2",
               "auto_clamp_joint_limits" : true,
               "translation": [3, 2, 1],
               "rotation": [0.5, 0.6, 0.7, 0.8],
@@ -1211,13 +1298,136 @@ void AttributesConfigsTest::testObjectJSONLoad() {
 
   // test json string to verify format, this deletes objAttr2 from
   // registry
-  ESP_DEBUG() << "About to test saved stageAttr2 :" << objAttr2->getHandle();
+  ESP_DEBUG() << "About to test saved objAttr2 :" << objAttr2->getHandle();
   testObjectAttrVals(objAttr2, objAssetFile);
-  ESP_DEBUG() << "Tested saved stageAttr2 :";
+  ESP_DEBUG() << "Tested saved objAttr2 :";
 
   // delete file-based config
   Cr::Utility::Path::remove(newAttrName);
 }  // AttributesConfigsTest::testObjectJSONLoadTest
+
+void AttributesConfigsTest::testArticulatedObjectAttrVals(
+    std::shared_ptr<esp::metadata::attributes::ArticulatedObjectAttributes>
+        artObjAttr,
+    const std::string& assetPath,
+    const std::string& urdfPath) {
+  // match values set in test JSON
+  CORRADE_COMPARE(artObjAttr->getURDFPath(), urdfPath);
+  CORRADE_COMPARE(artObjAttr->getRenderAssetHandle(), assetPath);
+  CORRADE_COMPARE(artObjAttr->getSemanticId(), 100);
+
+  CORRADE_COMPARE(static_cast<int>(artObjAttr->getBaseType()),
+                  static_cast<int>(Attrs::ArticulatedObjectBaseType::Fixed));
+
+  CORRADE_COMPARE(
+      static_cast<int>(artObjAttr->getInertiaSource()),
+      static_cast<int>(Attrs::ArticulatedObjectInertiaSource::URDF));
+
+  CORRADE_COMPARE(
+      static_cast<int>(artObjAttr->getLinkOrder()),
+      static_cast<int>(Attrs::ArticulatedObjectLinkOrder::TreeTraversal));
+
+  CORRADE_COMPARE(static_cast<int>(artObjAttr->getRenderMode()),
+                  static_cast<int>(Attrs::ArticulatedObjectRenderMode::Skin));
+
+  CORRADE_COMPARE(static_cast<int>(artObjAttr->getShaderType()),
+                  static_cast<int>(Attrs::ObjectInstanceShaderType::PBR));
+
+  // test object attributes-level user config vals
+  testUserDefinedConfigVals(artObjAttr->getUserConfiguration(), 5,
+                            "articulated object defined string", true, 6, 3.6,
+                            Mn::Vector2(4.7f, 2.4f),
+                            Mn::Vector3(15.1, 17.6, 110.1),
+                            Mn::Quaternion({5.3f, 6.4f, 7.5f}, 0.8f),
+                            Mn::Vector4(1.6f, 1.2f, 6.3f, 7.4f));
+
+  // remove json-string built attributes added for test
+  testRemoveAttributesBuiltByJSONString(artObjAttributesManager_,
+                                        artObjAttr->getHandle());
+
+}  // AttributesConfigsTest::testArticulatedObjectAttrVals
+
+void AttributesConfigsTest::testArticulatedObjectJSONLoad() {
+  // build JSON sample config
+  const std::string& jsonString = R"({
+  "urdf_filepath": "urdf_test_file.urdf",
+  "render_asset": "testAO_JSONRenderAsset.glb",
+  "semantic_id": 100,
+  "base_type" : "fixed",
+  "inertia_source" : "urdf",
+  "link_order" : "tree_traversal",
+  "render_mode": "skin",
+  "shader_type" : "pbr",
+  "user_defined" : {
+      "user_str_array" : ["test_00", "test_01", "test_02", "test_03", "test_04"],
+      "user_string" : "articulated object defined string",
+      "user_bool" : true,
+      "user_int" : 6,
+      "user_double" : 3.6,
+      "user_vec2" : [4.7, 2.4],
+      "user_vec3" : [15.1, 17.6, 110.1],
+      "user_vec4" : [1.6, 1.2, 6.3, 7.4],
+      "user_quat" : [0.8, 5.3, 6.4, 7.5]
+  }
+})";
+
+  // Build an attributes based on the above json string
+  // Don't register - registration here verifies that the URDF file handle
+  // specified in the attributes exist, or it will fail.
+  auto artObjAttr = artObjAttributesManager_->createObjectFromJSONString(
+      "new_template_from_json", jsonString, false);
+
+  // verify created attributes exists
+  CORRADE_VERIFY(artObjAttr);
+
+  // now need to change urdf filename and render asset file name to make sure
+  // they are legal so the test can proceed (needs to be actual existing file so
+  // it can be regsitered)
+  const std::string aoURDFFlle =
+      Cr::Utility::Path::join(testAttrSaveDir, "urdf/prim_chain.urdf");
+  const std::string aoRenderAssetName =
+      Cr::Utility::Path::join(testAttrSaveDir, "objects/skinned_prism.glb");
+
+  artObjAttr->setURDFPath(aoURDFFlle);
+  artObjAttr->setRenderAssetHandle(aoRenderAssetName);
+
+  // now register so can be saved to disk
+  artObjAttributesManager_->registerObject(artObjAttr);
+
+  // before test, save attributes to disk with new name
+  std::string newAttrName = Cr::Utility::formatString(
+      "{}/testArtObjectAttrConfig_saved_JSON.{}", testAttrSaveDir,
+      artObjAttributesManager_->getJSONTypeExt());
+
+  bool success = artObjAttributesManager_->saveManagedObjectToFile(
+      artObjAttr->getHandle(), newAttrName);
+
+  // test json string to verify format - this also deletes objAttr from
+  // manager
+
+  ESP_DEBUG() << "About to test string-based artObjAttr :";
+  testArticulatedObjectAttrVals(artObjAttr, aoRenderAssetName, aoURDFFlle);
+  ESP_DEBUG() << "Tested string-based artObjAttr :";
+  artObjAttr = nullptr;
+
+  // load attributes from new name and retest
+  auto artObjAttr2 =
+      artObjAttributesManager_->createObjectFromJSONFile(newAttrName);
+
+  // verify file-based config exists
+  CORRADE_VERIFY(artObjAttr2);
+
+  // test json string to verify format, this deletes objAttr2 from
+  // registry
+  ESP_DEBUG() << "About to test saved artObjAttr2 :"
+              << artObjAttr2->getHandle();
+  testArticulatedObjectAttrVals(artObjAttr2, aoRenderAssetName, aoURDFFlle);
+  ESP_DEBUG() << "Tested saved artObjAttr2 :";
+
+  // delete file-based config
+  Cr::Utility::Path::remove(newAttrName);
+
+}  // AttributesConfigsTest::testArticulatedObjectJSONLoad
 
 }  // namespace
 

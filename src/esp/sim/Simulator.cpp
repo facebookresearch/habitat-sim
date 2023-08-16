@@ -578,8 +578,6 @@ bool Simulator::instanceArticulatedObjectsForSceneAttributes(
   const std::vector<SceneAOInstanceAttributes::cptr> artObjInstances =
       curSceneInstanceAttributes_->getArticulatedObjectInstances();
 
-  // int aoID = 0;
-  auto& drawables = getDrawableGroup();
   // Iterate through instances, create object and implement initial
   // transformation.
   for (const auto& artObjInst : artObjInstances) {
@@ -593,13 +591,13 @@ bool Simulator::instanceArticulatedObjectsForSceneAttributes(
                   config_.activeSceneName));
 
     // get model file name
-    const std::string artObjFilePath =
+    const std::string artObjAttrHandle =
         metadataMediator_->getArticulatedObjModelFullHandle(
             artObjInst->getHandle());
 
     // make sure full handle is not empty
     ESP_CHECK(
-        !artObjFilePath.empty(),
+        !artObjAttrHandle.empty(),
         Cr::Utility::formatString(
             "Simulator::instanceArticulatedObjectsForSceneAttributes() : "
             "Attempt "
@@ -610,7 +608,7 @@ bool Simulator::instanceArticulatedObjectsForSceneAttributes(
 
     // create articulated object
     // aoID =
-    physicsManager_->addArticulatedObjectInstance(artObjFilePath, artObjInst,
+    physicsManager_->addArticulatedObjectInstance(artObjInst, artObjAttrHandle,
                                                   config_.sceneLightSetupKey);
   }  // for each articulated object instance
   return true;
@@ -659,7 +657,10 @@ void Simulator::seed(uint32_t newSeed) {
   random_->seed(newSeed);
   pathfinder_->seed(newSeed);
 }
-
+const std::shared_ptr<metadata::managers::AOAttributesManager>&
+Simulator::getAOAttributesManager() const {
+  return metadataMediator_->getAOAttributesManager();
+}
 const metadata::managers::AssetAttributesManager::ptr&
 Simulator::getAssetAttributesManager() const {
   return metadataMediator_->getAssetAttributesManager();
