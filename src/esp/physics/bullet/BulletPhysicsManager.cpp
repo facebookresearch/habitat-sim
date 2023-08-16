@@ -202,7 +202,7 @@ int BulletPhysicsManager::addArticulatedObject(
         ESP_CHECK(
             attachLinkGeometry(&linkObject, urdfLink, drawables, lightSetup,
                                articulatedObject->node().getSemanticId()),
-            "BulletPhysicsManager::addArticulatedObjectFromURDF(): Failed to "
+            "BulletPhysicsManager::addArticulatedObject(): Failed to "
             "instance render asset (attachGeometry) for link"
                 << urdfLinkIx << ".");
         linkObject.node().computeCumulativeBB();
