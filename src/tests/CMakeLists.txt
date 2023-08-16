@@ -100,7 +100,7 @@ if(BUILD_WITH_BACKGROUND_RENDERER)
     assets
     gfx
     gfx_batch
-    metadata
+    physics
     sim
     MagnumPlugins::OpenExrImageConverter
     MagnumPlugins::OpenExrImporter
