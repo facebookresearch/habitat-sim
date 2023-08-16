@@ -186,10 +186,10 @@ int BulletPhysicsManager::addArticulatedObject(
         articulatedObject->btMultiBody_->getLinkCollider(linkIx), linkObjectId);
   }
 
-  // render visual shapes if either no skinned mesh is present or if the debug
-  // flag is enabled
+  // render visual shapes if either no skinned mesh is present or if the render
+  // visual shapes flag is enabled
   bool renderVisualShapes = !renderAssetPath || (*renderAssetPath == "") ||
-                            model->getDebugRenderPrimitives();
+                            model->getRenderLinkVisualShapes();
   if (renderVisualShapes) {
     // attach link visual shapes
     for (size_t urdfLinkIx = 0; urdfLinkIx < model->m_links.size();
