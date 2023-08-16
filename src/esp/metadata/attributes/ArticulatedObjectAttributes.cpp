@@ -54,10 +54,8 @@ void ArticulatedObjectAttributes::writeValuesToJson(
 
 std::string ArticulatedObjectAttributes::getObjectInfoHeaderInternal() const {
   return "URDF Filepath,Render Asset,Semantic ID,Uniform Scale,Mass Scale,Base "
-         "Type,Inertia "
-         "Source,Link Order,Render Mode,Current Shader "
-         "Type,";
-}
+         "Type,Inertia Source,Link Order,Render Mode,Current Shader Type,";
+}  // ArticulatedObjectAttributes::getObjectInfoHeaderInternal
 
 std::string ArticulatedObjectAttributes::getObjectInfoInternal() const {
   return Cr::Utility::formatString(
@@ -67,7 +65,7 @@ std::string ArticulatedObjectAttributes::getObjectInfoInternal() const {
       getAOInertiaSourceName(getInertiaSource()),
       getAOLinkOrderName(getLinkOrder()), getAORenderModeName(getRenderMode()),
       getShaderTypeName(getShaderType()));
-}
+}  // ArticulatedObjectAttributes::getObjectInfoInternal
 
 }  // namespace attributes
 }  // namespace metadata
