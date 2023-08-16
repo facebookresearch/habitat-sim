@@ -1,5 +1,10 @@
+
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
 // TODO: These are hardcoded until we integrate a module to provide keyframes (from disk or network).
-//       Must match definition in WebXrExample.cpp.
+//       Must match definition in ReplayXr.cpp.
 let jsonReplayFilePath = "data/short_replay_lights.json"
 //let jsonReplayFilePath = "data/floorplanner.gfx_replay.json"
 let filenameSet = new Set()

@@ -1,3 +1,10 @@
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
+// The library_webxr.js and webxr.h files are bundled from
+// https://github.com/VhiteRabbit/emscripten-webxr/tree/e101ce7cfc3c92962a65771f43c2d61775edd348
+
 var LibraryWebXR = {
 
 $WebXR: {

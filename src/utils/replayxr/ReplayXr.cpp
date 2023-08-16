@@ -1,32 +1,8 @@
-/*
-    This file is part of Magnum.
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
 
-    Original authors — credit is appreciated but not required:
-
-        2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019,
-        2020, 2021, 2022 — Vladimír Vondruš <mosra@centrum.cz>
-        2019 — Jonathan Hale <squareys@googlemail.com>
-
-    This is free and unencumbered software released into the public domain.
-
-    Anyone is free to copy, modify, publish, use, compile, sell, or distribute
-    this software, either in source code form or as a compiled binary, for any
-    purpose, commercial or non-commercial, and by any means.
-
-    In jurisdictions that recognize copyright laws, the author or authors of
-    this software dedicate any and all copyright interest in the software to
-    the public domain. We make this dedication for the benefit of the public
-    at large and to the detriment of our heirs and successors. We intend this
-    dedication to be an overt act of relinquishment in perpetuity of all
-    present and future rights to this software under copyright law.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-    THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-    IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+// Based on Magnum WebXR example. See: https://magnum.graphics/showcase/webxr/
 
 #include <Corrade/Containers/Array.h>
 #include <Magnum/GL/Buffer.h>
@@ -72,10 +48,10 @@ typedef std::chrono::high_resolution_clock Clock;
 const std::string REPLAY_FILE = "data/short_replay_lights.json";
 // const std::string REPLAY_FILE = "data/floorplanner.gfx_replay.json";
 
-class WebXrExample : public Platform::Application {
+class ReplayXr : public Platform::Application {
  public:
-  explicit WebXrExample(const Arguments& arguments);
-  ~WebXrExample();
+  explicit ReplayXr(const Arguments& arguments);
+  ~ReplayXr();
 
   /* Callbacks for WebXR */
   void onError(int error);
@@ -114,7 +90,7 @@ class WebXrExample : public Platform::Application {
   std::chrono::time_point<std::chrono::high_resolution_clock> t1 = Clock::now();
 };
 
-WebXrExample::WebXrExample(const Arguments& arguments)
+ReplayXr::ReplayXr(const Arguments& arguments)
     : Platform::Application(
           arguments,
           Configuration{},
@@ -127,19 +103,19 @@ WebXrExample::WebXrExample(const Arguments& arguments)
       WEBXR_SESSION_MODE_IMMERSIVE_VR,
       /* Frame callback */
       [](void* userData, int, float[16], WebXRView* views) {
-        static_cast<WebXrExample*>(userData)->drawWebXRFrame(views);
+        static_cast<ReplayXr*>(userData)->drawWebXRFrame(views);
       },
       /* Session end callback */
       [](void* userData) {
-        static_cast<WebXrExample*>(userData)->sessionStart();
+        static_cast<ReplayXr*>(userData)->sessionStart();
       },
       /* Session end callback */
       [](void* userData) {
-        static_cast<WebXrExample*>(userData)->sessionEnd();
+        static_cast<ReplayXr*>(userData)->sessionEnd();
       },
       /* Error callback */
       [](void* userData, int error) {
-        static_cast<WebXrExample*>(userData)->onError(error);
+        static_cast<ReplayXr*>(userData)->onError(error);
       },
       /* userData */
       this);
@@ -147,7 +123,7 @@ WebXrExample::WebXrExample(const Arguments& arguments)
   redraw();
 }
 
-WebXrExample::~WebXrExample() {
+ReplayXr::~ReplayXr() {
   if (_inXR)
     webxr_request_exit();
   if (_replayRenderer) {
@@ -156,7 +132,7 @@ WebXrExample::~WebXrExample() {
   }
 }
 
-void WebXrExample::drawWebXRFrame(WebXRView* views) {
+void ReplayXr::drawWebXRFrame(WebXRView* views) {
   int viewIndex = 0;
   for (WebXRView view : {views[0], views[1]}) {
     _viewports[viewIndex] =
@@ -179,7 +155,7 @@ void WebXrExample::drawWebXRFrame(WebXRView* views) {
   drawEvent();
 }
 
-void WebXrExample::drawEvent() {
+void ReplayXr::drawEvent() {
   auto t2 = Clock::now();
   float dt =
       std::chrono::duration_cast<std::chrono::duration<float>>(t2 - t1).count();
@@ -267,7 +243,7 @@ void WebXrExample::drawEvent() {
   /* No need to call redraw() on WebXR, the webxr callback already does this */
 }
 
-void WebXrExample::sessionStart() {
+void ReplayXr::sessionStart() {
   if (_inXR)
     return;
   _inXR = true;
@@ -280,7 +256,7 @@ void WebXrExample::sessionStart() {
   Debug{} << "Entered VR";
 }
 
-void WebXrExample::sessionEnd() {
+void ReplayXr::sessionEnd() {
   _inXR = false;
 
   if (_replayRenderer) {
@@ -292,7 +268,7 @@ void WebXrExample::sessionEnd() {
   redraw();
 }
 
-void WebXrExample::onError(int error) {
+void ReplayXr::onError(int error) {
   switch (error) {
     case WEBXR_ERR_API_UNSUPPORTED:
       Error{} << "WebXR unsupported in this browser.";
@@ -308,13 +284,13 @@ void WebXrExample::onError(int error) {
   }
 }
 
-void WebXrExample::keyPressEvent(KeyEvent& e) {
+void ReplayXr::keyPressEvent(KeyEvent& e) {
   if (e.key() == KeyEvent::Key::Esc && _inXR) {
     webxr_request_exit();
   }
 }
 
-void WebXrExample::mousePressEvent(MouseEvent& event) {
+void ReplayXr::mousePressEvent(MouseEvent& event) {
   if (event.button() != MouseEvent::Button::Left)
     return;
   /* Request rendering to the XR device */
@@ -322,4 +298,4 @@ void WebXrExample::mousePressEvent(MouseEvent& event) {
   event.setAccepted();
 }
 
-MAGNUM_APPLICATION_MAIN(WebXrExample)
+MAGNUM_APPLICATION_MAIN(ReplayXr)
