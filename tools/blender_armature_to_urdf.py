@@ -373,7 +373,7 @@ def create_bone_link(this_bone):
     # create limits node
     limit_node = ET.fromstring(BASE_LIMIT_NODE_STR)
 
-    axis = Vector()
+    local_axis = Vector()
 
     # Revolute
     if len(bone_limits["lower_limit"]) == 4:
@@ -382,14 +382,7 @@ def create_bone_link(this_bone):
         end = Quaternion(bone_limits["upper_limit"])
         rest = Quaternion()
         diff = begin.rotation_difference(end)
-        axis, angle = diff.to_axis_angle()
-        # NOTE: rest pose could be applied to the bone resulting in an additional rotation stored in the matrix property
-        rest_correction = this_bone.matrix
-        # NOTE: Blender bones and armature are always Y-up, so we need to rotate the axis into URDF coordinate space (Z-up)
-        bone_axis = this_bone.vector
-        to_z_up = bone_axis.rotation_difference(Vector([0, 0, 1]))
-        # apply all rotations to arrive at the URDF Joint axis
-        axis = rest_correction @ (to_z_up @ axis)
+        local_axis, angle = diff.to_axis_angle()
         rest_diff = begin.rotation_difference(rest)
         rest_axis, rest_angle = rest_diff.to_axis_angle()
         limit_node.set("lower", f"{-rest_angle}")
@@ -401,9 +394,17 @@ def create_bone_link(this_bone):
         upper_vec = Vector(bone_limits["upper_limit"])
         lower_vec = Vector(bone_limits["lower_limit"])
         displacement = upper_vec - lower_vec
-        axis = displacement.normalized()
+        local_axis = displacement.normalized()
         limit_node.set("lower", f"{-lower_vec.length}")
         limit_node.set("upper", f"{upper_vec.length}")
+
+    # NOTE: rest pose could be applied to the bone resulting in an additional rotation stored in the matrix property
+    rest_correction = this_bone.matrix
+    # NOTE: Blender bones and armature are always Y-up, so we need to rotate the axis into URDF coordinate space (Z-up)
+    bone_axis = this_bone.vector
+    to_z_up = bone_axis.rotation_difference(Vector([0, 0, 1]))
+    # apply all rotations to arrive at the URDF Joint axis
+    axis = rest_correction @ (to_z_up @ local_axis)
 
     xml_axis = AXIS_NODE_FORMAT()
     xml_axis.set("xyz", ORIGIN_NODE_FORMAT.format(axis.x, axis.y, axis.z))
