@@ -63,17 +63,21 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
 
   /**
    * @brief Set the type of base/root joint to use to add this Articulated
-   * Object to the world.
+   * Object to the world. Cannot be "UNSPECIFIED"
    */
   void setBaseType(const std::string& baseType) {
-    // force to lowercase before setting
+    // force to lowercase to check if present
     const std::string baseTypeLC = Cr::Utility::String::lowercase(baseType);
     auto mapIter = AOBaseTypeMap.find(baseTypeLC);
-    ESP_CHECK(mapIter != AOBaseTypeMap.end(),
-              "Illegal base type value"
-                  << baseType
-                  << "attempted to be set in ArticulatedObjectAttributes:"
-                  << getHandle() << ". Aborting.");
+    if ((mapIter == AOBaseTypeMap.end()) ||
+        (mapIter->second == ArticulatedObjectBaseType::Unspecified)) {
+      ESP_ERROR(Mn::Debug::Flag::NoSpace)
+          << "'" << baseType
+          << "' is an illegal value for "
+             "ArticulatedObjectAttributes::setBaseType, so default value "
+          << get<std::string>("base_type") << " not changed.";
+      return;
+    }
     set("base_type", baseType);
   }
 
@@ -99,13 +103,17 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
    */
   void setInertiaSource(const std::string& inertiaSrc) {
     // force to lowercase before setting
-    const std::string renderModeLC = Cr::Utility::String::lowercase(inertiaSrc);
-    auto mapIter = AOInertiaSourceMap.find(renderModeLC);
-    ESP_CHECK(mapIter != AOInertiaSourceMap.end(),
-              "Illegal inertia source value"
-                  << inertiaSrc
-                  << "attempted to be set in ArticulatedObjectAttributes:"
-                  << getHandle() << ". Aborting.");
+    const std::string inertiaSrcLC = Cr::Utility::String::lowercase(inertiaSrc);
+    auto mapIter = AOInertiaSourceMap.find(inertiaSrcLC);
+    if ((mapIter == AOInertiaSourceMap.end()) ||
+        (mapIter->second == ArticulatedObjectInertiaSource::Unspecified)) {
+      ESP_ERROR(Mn::Debug::Flag::NoSpace)
+          << "'" << inertiaSrc
+          << "' is an illegal value for "
+             "ArticulatedObjectAttributes::setInertiaSource, so default value '"
+          << get<std::string>("inertia_source") << "' not changed.";
+      return;
+    }
     set("inertia_source", inertiaSrc);
   }
 
@@ -131,13 +139,17 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
    */
   void setLinkOrder(const std::string& linkOrder) {
     // force to lowercase before setting
-    const std::string renderModeLC = Cr::Utility::String::lowercase(linkOrder);
-    auto mapIter = AOLinkOrderMap.find(renderModeLC);
-    ESP_CHECK(mapIter != AOLinkOrderMap.end(),
-              "Illegal link order value"
-                  << linkOrder
-                  << "attempted to be set in ArticulatedObjectAttributes:"
-                  << getHandle() << ". Aborting.");
+    const std::string linkOrderLC = Cr::Utility::String::lowercase(linkOrder);
+    auto mapIter = AOLinkOrderMap.find(linkOrderLC);
+    if ((mapIter == AOLinkOrderMap.end()) ||
+        (mapIter->second == ArticulatedObjectLinkOrder::Unspecified)) {
+      ESP_ERROR(Mn::Debug::Flag::NoSpace)
+          << "'" << linkOrder
+          << "' is an illegal value for "
+             "ArticulatedObjectAttributes::setLinkOrder, so default value '"
+          << get<std::string>("link_order") << "' not changed.";
+      return;
+    }
     set("link_order", linkOrder);
   }
 
