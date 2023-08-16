@@ -249,16 +249,7 @@ bool Parser::parseURDF(
   // Set the creation attributes
   urdfModel->setModelInitAttributes(artObjAttributes);
 
-  // ESP_VERY_VERBOSE() << "Done parsing URDF for" << filename;
-
-  // // attempt to load JSON config for this Model
-  // if (urdfModel->loadJsonAttributes(filename)) {
-  //   ESP_VERY_VERBOSE() << "Loading JSON Attributes successful for this
-  //   model.";
-  // } else {
-  //   ESP_VERY_VERBOSE()
-  //       << "No extra JSON configuration data found for this model.";
-  // }
+  ESP_VERY_VERBOSE() << "Done parsing URDF for" << filename;
   return true;
 }  // Parser::parseURDF
 
