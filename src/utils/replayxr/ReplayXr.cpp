@@ -45,8 +45,7 @@ typedef std::chrono::high_resolution_clock Clock;
 // TODO: These are hardcoded until we integrate a module to provide keyframes
 // (from disk or network).
 //       Must match definition in driver.js.
-const std::string REPLAY_FILE = "data/short_replay_lights.json";
-// const std::string REPLAY_FILE = "data/floorplanner.gfx_replay.json";
+const std::string REPLAY_FILE = "data/replay.json";
 
 class ReplayXr : public Platform::Application {
  public:

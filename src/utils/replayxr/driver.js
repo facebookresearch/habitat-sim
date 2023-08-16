@@ -5,8 +5,7 @@
 
 // TODO: These are hardcoded until we integrate a module to provide keyframes (from disk or network).
 //       Must match definition in ReplayXr.cpp.
-let jsonReplayFilePath = "data/short_replay_lights.json"
-//let jsonReplayFilePath = "data/floorplanner.gfx_replay.json"
+let jsonReplayFilePath = "data/replay.json"
 let filenameSet = new Set()
 
 function preload(url) {
