@@ -573,7 +573,6 @@ def clone_repo_source(
     split_command = shlex.split(clone_command)
     split_command.append(f"{version_dir}")
 
-    
     print(" ".join(split_command))
 
     subprocess.check_call(split_command)
