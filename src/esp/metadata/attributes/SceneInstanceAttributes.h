@@ -257,11 +257,130 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
   explicit SceneAOInstanceAttributes(const std::string& handle);
 
   /**
-   * @brief Articulated Object Instance only. Get or set whether or not base
-   * is fixed.
+   * @brief Set the type of base/root joint to use to add this Articulated
+   * Object to the world.
    */
-  bool getFixedBase() const { return get<bool>("fixed_base"); }
-  void setFixedBase(bool fixed_base) { set("fixed_base", fixed_base); }
+  void setBaseType(const std::string& baseType) {
+    // force to lowercase before setting
+    const std::string baseTypeLC = Cr::Utility::String::lowercase(baseType);
+    auto mapIter = AOBaseTypeMap.find(baseTypeLC);
+    ESP_CHECK(mapIter != AOBaseTypeMap.end(),
+              "Illegal base type value"
+                  << baseType
+                  << "attempted to be set in ArticulatedObjectAttributes:"
+                  << getHandle() << ". Aborting.");
+    set("base_type", baseType);
+  }
+
+  /**
+   * @brief Get the type of base/root joint to use to add this Articulated
+   * Object to the world.
+   */
+  ArticulatedObjectBaseType getBaseType() const {
+    const std::string val =
+        Cr::Utility::String::lowercase(get<std::string>("base_type"));
+    auto mapIter = AOBaseTypeMap.find(val);
+    if (mapIter != AOBaseTypeMap.end()) {
+      return mapIter->second;
+    }
+    // This should never get to here. It would mean that this field was set
+    // to an invalid value somehow.
+    return ArticulatedObjectBaseType::Unspecified;
+  }
+
+  /**
+   * @brief Set the source of the inertia tensors to use for this Articulated
+   * Object.
+   */
+  void setInertiaSource(const std::string& inertiaSrc) {
+    // force to lowercase before setting
+    const std::string renderModeLC = Cr::Utility::String::lowercase(inertiaSrc);
+    auto mapIter = AOInertiaSourceMap.find(renderModeLC);
+    ESP_CHECK(mapIter != AOInertiaSourceMap.end(),
+              "Illegal inertia source value"
+                  << inertiaSrc
+                  << "attempted to be set in ArticulatedObjectAttributes:"
+                  << getHandle() << ". Aborting.");
+    set("inertia_source", inertiaSrc);
+  }
+
+  /**
+   * @brief Get the source of the inertia tensors to use for this Articulated
+   * Object.
+   */
+  ArticulatedObjectInertiaSource getInertiaSource() const {
+    const std::string val =
+        Cr::Utility::String::lowercase(get<std::string>("inertia_source"));
+    auto mapIter = AOInertiaSourceMap.find(val);
+    if (mapIter != AOInertiaSourceMap.end()) {
+      return mapIter->second;
+    }
+    // This should never get to here. It would mean that this field was set
+    // to an invalid value somehow.
+    return ArticulatedObjectInertiaSource::Unspecified;
+  }
+
+  /**
+   * @brief Set the link order to use for the linkages of this Articulated
+   * Object
+   */
+  void setLinkOrder(const std::string& linkOrder) {
+    // force to lowercase before setting
+    const std::string renderModeLC = Cr::Utility::String::lowercase(linkOrder);
+    auto mapIter = AOLinkOrderMap.find(renderModeLC);
+    ESP_CHECK(mapIter != AOLinkOrderMap.end(),
+              "Illegal link order value"
+                  << linkOrder
+                  << "attempted to be set in ArticulatedObjectAttributes:"
+                  << getHandle() << ". Aborting.");
+    set("link_order", linkOrder);
+  }
+
+  /**
+   * @brief Get the link order to use for the linkages of this Articulated
+   * Object
+   */
+  ArticulatedObjectLinkOrder getLinkOrder() const {
+    const std::string val =
+        Cr::Utility::String::lowercase(get<std::string>("link_order"));
+    auto mapIter = AOLinkOrderMap.find(val);
+    if (mapIter != AOLinkOrderMap.end()) {
+      return mapIter->second;
+    }
+    // This should never get to here. It would mean that this field was set
+    // to an invalid value somehow.
+    return ArticulatedObjectLinkOrder::Unspecified;
+  }
+
+  /**
+   * @brief Set the render mode to use to render this Articulated Object
+   */
+  void setRenderMode(const std::string& renderMode) {
+    // force to lowercase before setting
+    const std::string renderModeLC = Cr::Utility::String::lowercase(renderMode);
+    auto mapIter = AORenderModesMap.find(renderModeLC);
+    ESP_CHECK(mapIter != AORenderModesMap.end(),
+              "Illegal render mode value"
+                  << renderMode
+                  << "attempted to be set in ArticulatedObjectAttributes:"
+                  << getHandle() << ". Aborting.");
+    set("render_mode", renderMode);
+  }
+
+  /**
+   * @brief Get the render mode to use to render this Articulated Object
+   */
+  ArticulatedObjectRenderMode getRenderMode() const {
+    const std::string val =
+        Cr::Utility::String::lowercase(get<std::string>("render_mode"));
+    auto mapIter = AORenderModesMap.find(val);
+    if (mapIter != AORenderModesMap.end()) {
+      return mapIter->second;
+    }
+    // This should never get to here. It would mean that this field was set
+    // to an invalid value somehow.
+    return ArticulatedObjectRenderMode::Unspecified;
+  }
 
   /**
    * @brief Articulated Object Instance only. Get or set whether or not dofs
@@ -448,7 +567,8 @@ class SceneInstanceAttributes : public AbstractAttributes {
    * instance. Scene instance will always have only 1 stage instance
    * reference.
    */
-  void setStageInstance(SceneObjectInstanceAttributes::ptr _stageInstance) {
+  void setStageInstanceAttrs(
+      SceneObjectInstanceAttributes::ptr _stageInstance) {
     _stageInstance->setID(0);
     setSubconfigPtr<SceneObjectInstanceAttributes>("stage_instance",
                                                    _stageInstance);
@@ -463,9 +583,9 @@ class SceneInstanceAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief Add a description of an object instance to this scene instance
+   * @brief Add an object instance attributes to this scene instance.
    */
-  void addObjectInstance(SceneObjectInstanceAttributes::ptr _objInstance) {
+  void addObjectInstanceAttrs(SceneObjectInstanceAttributes::ptr _objInstance) {
     setSubAttributesInternal<SceneObjectInstanceAttributes>(
         _objInstance, availableObjInstIDs_, objInstConfig_, "obj_inst_");
   }
@@ -493,10 +613,10 @@ class SceneInstanceAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief Add a description of an articulated object instance to this scene
+   * @brief Add an articulated object instance's attributes to this scene
    * instance.
    */
-  void addArticulatedObjectInstance(
+  void addArticulatedObjectInstanceAttrs(
       SceneAOInstanceAttributes::ptr _artObjInstance) {
     setSubAttributesInternal<SceneAOInstanceAttributes>(
         _artObjInstance, availableArtObjInstIDs_, artObjInstConfig_,

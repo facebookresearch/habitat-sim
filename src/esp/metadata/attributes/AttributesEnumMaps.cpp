@@ -55,6 +55,106 @@ std::string getLightPositionModelName(
   return "global";
 }
 
+const std::map<std::string, ArticulatedObjectBaseType> AOBaseTypeMap{
+    {"unspecified", ArticulatedObjectBaseType::Unspecified},
+    {"free", ArticulatedObjectBaseType::Free},
+    {"fixed", ArticulatedObjectBaseType::Fixed},
+};
+
+std::string getAOBaseTypeName(ArticulatedObjectBaseType aoBaseType) {
+  // this verifies that enum value being checked is supported by string-keyed
+  // map. The values below should be the minimum and maximum enums supported by
+  // ShaderTypeNamesMap
+  if (aoBaseType <= ArticulatedObjectBaseType::Unspecified ||
+      aoBaseType >= ArticulatedObjectBaseType::EndAOBaseType) {
+    return "unspecified";
+  }
+  // Must always be valid value
+  for (const auto& it : AOBaseTypeMap) {
+    if (it.second == aoBaseType) {
+      return it.first;
+    }
+  }
+  return "unspecified";
+
+}  // getAOBaseTypeName
+
+const std::map<std::string, ArticulatedObjectInertiaSource> AOInertiaSourceMap{
+    {"unspecified", ArticulatedObjectInertiaSource::Unspecified},
+    {"computed", ArticulatedObjectInertiaSource::Computed},
+    {"urdf", ArticulatedObjectInertiaSource::URDF},
+};
+
+std::string getAOInertiaSourceName(
+    ArticulatedObjectInertiaSource aoInertiaSource) {
+  // this verifies that enum value being checked is supported by string-keyed
+  // map. The values below should be the minimum and maximum enums supported by
+  // AOInertiaSourceMap
+  if (aoInertiaSource <= ArticulatedObjectInertiaSource::Unspecified ||
+      aoInertiaSource >= ArticulatedObjectInertiaSource::EndAOInertiaSource) {
+    return "unspecified";
+  }
+  // Must always be valid value
+  for (const auto& it : AOInertiaSourceMap) {
+    if (it.second == aoInertiaSource) {
+      return it.first;
+    }
+  }
+  return "unspecified";
+
+}  // getAOInertiaSourceName
+
+const std::map<std::string, ArticulatedObjectLinkOrder> AOLinkOrderMap{
+    {"unspecified", ArticulatedObjectLinkOrder::Unspecified},
+    {"urdf_order", ArticulatedObjectLinkOrder::URDFOrder},
+    {"tree_traversal", ArticulatedObjectLinkOrder::TreeTraversal},
+
+};
+
+std::string getAOLinkOrderName(ArticulatedObjectLinkOrder aoLinkOrder) {
+  // this verifies that enum value being checked is supported by string-keyed
+  // map. The values below should be the minimum and maximum enums supported by
+  // AOLinkOrderMap
+  if (aoLinkOrder <= ArticulatedObjectLinkOrder::Unspecified ||
+      aoLinkOrder >= ArticulatedObjectLinkOrder::EndAOLinkOrder) {
+    return "unspecified";
+  }
+  // Must always be valid value
+  for (const auto& it : AOLinkOrderMap) {
+    if (it.second == aoLinkOrder) {
+      return it.first;
+    }
+  }
+  return "unspecified";
+
+}  // getAOLinkOrderName
+
+const std::map<std::string, ArticulatedObjectRenderMode> AORenderModesMap = {
+    {"unspecified", ArticulatedObjectRenderMode::Unspecified},
+    {"default", ArticulatedObjectRenderMode::Default},
+    {"skin", ArticulatedObjectRenderMode::Skin},
+    {"link_visuals", ArticulatedObjectRenderMode::LinkVisuals},
+    {"none", ArticulatedObjectRenderMode::None},
+    {"both", ArticulatedObjectRenderMode::Both},
+};
+
+std::string getAORenderModeName(ArticulatedObjectRenderMode aoRenderMode) {
+  // this verifies that enum value being checked is supported by string-keyed
+  // map. The values below should be the minimum and maximum enums supported by
+  // AORenderModesMap
+  if (aoRenderMode <= ArticulatedObjectRenderMode::Unspecified ||
+      aoRenderMode >= ArticulatedObjectRenderMode::EndAORenderMode) {
+    return "unspecified";
+  }
+  // Must always be valid value
+  for (const auto& it : AORenderModesMap) {
+    if (it.second == aoRenderMode) {
+      return it.first;
+    }
+  }
+  return "unspecified";
+}  // getAORenderModeName
+
 const std::map<std::string, ObjectInstanceShaderType> ShaderTypeNamesMap = {
     {"unspecified", ObjectInstanceShaderType::Unspecified},
     {"material", ObjectInstanceShaderType::Material},
@@ -78,7 +178,7 @@ std::string getShaderTypeName(ObjectInstanceShaderType shaderTypeVal) {
     }
   }
   return "unspecified";
-}
+}  // getShaderTypeName
 
 const std::map<std::string, SceneInstanceTranslationOrigin>
     InstanceTranslationOriginMap = {
@@ -102,7 +202,7 @@ std::string getTranslationOriginName(
     }
   }
   return "default";
-}
+}  // getTranslationOriginName
 
 // All keys must be lowercase
 const std::map<std::string, esp::physics::MotionType> MotionTypeNamesMap = {
@@ -126,7 +226,7 @@ std::string getMotionTypeName(esp::physics::MotionType motionTypeEnum) {
     }
   }
   return "undefined";
-}
+}  // getMotionTypeName
 
 }  // namespace attributes
 }  // namespace metadata

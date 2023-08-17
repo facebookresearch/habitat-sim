@@ -409,7 +409,6 @@ void StageAttributesManager::setValsFromJSONDoc(
 
   std::string navmeshFName = "";
   std::string semanticSceneDescriptor = "";
-  std::string lightSetup = "";
 
   // populate semantic mesh type if present
   std::string semanticFName = stageAttributes->getSemanticAssetHandle();

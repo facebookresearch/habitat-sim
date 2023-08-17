@@ -451,9 +451,8 @@ MetadataMediator::makeSceneAndReferenceStage(
              "made and failed somehow. Verify the Scene Dataset Configuration "
              "file name used.");
 
-  // Verify that the Scene Instance Attributes manager exists
-  // This should never fire - there should always be a
-  // SceneInstanceAttributesManager
+  // Verify that the SceneInstanceAttributesManager exists. This should never
+  // fire - there should always be a SceneInstanceAttributesManager
   ESP_CHECK(
       dsSceneAttrMgr,
       "No Scene Instance Attributes Manager was created for Scene Dataset `"
@@ -477,11 +476,23 @@ MetadataMediator::makeSceneAndReferenceStage(
              "filenames for the desired Scene Dataset Configuration file and "
              "the paths specified within the file.");
 
-  // create scene attributes with passed name
+  // create empty SceneInstanceAttributes with passed name
   attributes::SceneInstanceAttributes::ptr sceneInstanceAttributes =
       dsSceneAttrMgr->createDefaultObject(sceneName, false);
+  // Verify that the requested SceneInstanceAttributes is created successfully.
+  // This should never fail- we're either building a SceneInstanceAttributes as
+  // a copy of a previously verified Scene Dataset default or we're creating a
+  // new SceneInstanceAttributes via its constructor.
+  ESP_CHECK(sceneInstanceAttributes,
+            "In currently specified Scene Dataset `"
+                << Mn::Debug::nospace << activeSceneDataset_
+                << Mn::Debug::nospace
+                << "`, Scene Instance Attributes creation failed for scene '"
+                << Mn::Debug::nospace << sceneName << Mn::Debug::nospace << ""
+                << "'. This would occur due to an internal Habitat-Sim error.");
+
   // create stage instance attributes and set its name (from stage attributes)
-  sceneInstanceAttributes->setStageInstance(
+  sceneInstanceAttributes->setStageInstanceAttrs(
       dsSceneAttrMgr->createEmptyInstanceAttributes(
           stageAttributes->getHandle()));
 

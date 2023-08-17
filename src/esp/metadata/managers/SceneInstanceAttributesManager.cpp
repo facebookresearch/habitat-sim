@@ -7,7 +7,6 @@
 #include <Corrade/Utility/FormatStl.h>
 
 #include <utility>
-#include "esp/metadata/MetadataUtils.h"
 #include "esp/physics/RigidBase.h"
 
 #include "esp/io/Json.h"
@@ -67,7 +66,7 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
       jsonConfig.FindMember("stage_instance");
   if (stageJSONIter != jsonConfig.MemberEnd()) {
     if (stageJSONIter->value.IsObject()) {
-      attribs->setStageInstance(
+      attribs->setStageInstanceAttrs(
           createInstanceAttributesFromJSON(stageJSONIter->value));
     } else {
       // stage instance exists but is not a valid JSON Object
@@ -88,7 +87,7 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
           createEmptyInstanceAttributes("");
       // Set to use none stage
       instanceAttrs->setHandle("NONE");
-      attribs->setStageInstance(instanceAttrs);
+      attribs->setStageInstanceAttrs(instanceAttrs);
     } else {
       // no stage instance exists in Scene Instance config JSON. This should not
       // happen and would indicate an error in the dataset.
@@ -110,7 +109,8 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
       for (rapidjson::SizeType i = 0; i < objectArray.Size(); ++i) {
         const auto& objCell = objectArray[i];
         if (objCell.IsObject()) {
-          attribs->addObjectInstance(createInstanceAttributesFromJSON(objCell));
+          attribs->addObjectInstanceAttrs(
+              createInstanceAttributesFromJSON(objCell));
         } else {
           ESP_WARNING(Mn::Debug::Flag::NoSpace)
               << "Object instance issue in Scene Instance `" << attribsDispName
@@ -147,7 +147,7 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
         const auto& artObjCell = articulatedObjArray[i];
 
         if (artObjCell.IsObject()) {
-          attribs->addArticulatedObjectInstance(
+          attribs->addArticulatedObjectInstanceAttrs(
               createAOInstanceAttributesFromJSON(artObjCell));
         } else {
           ESP_WARNING(Mn::Debug::Flag::NoSpace)
@@ -292,10 +292,40 @@ SceneInstanceAttributesManager::createAOInstanceAttributesFromJSON(
 
   // only used for articulated objects
   // fixed base
-  io::jsonIntoSetter<bool>(jCell, "fixed_base",
-                           [instanceAttrs](bool fixed_base) {
-                             instanceAttrs->setFixedBase(fixed_base);
-                           });
+  // TODO remove this setter once datasets are updated and we only use
+  // enum-backed values in scene instances
+  io::jsonIntoSetter<bool>(
+      jCell, "fixed_base", [instanceAttrs](bool fixed_base) {
+        instanceAttrs->setBaseType(fixed_base ? "fixed" : "free");
+      });
+
+  // render mode
+  this->setEnumStringFromJsonDoc(jCell, "render_mode", "AORenderModesMap", true,
+                                 attributes::AORenderModesMap,
+                                 [instanceAttrs](const std::string& val) {
+                                   instanceAttrs->setRenderMode(val);
+                                 });
+
+  // base type
+  this->setEnumStringFromJsonDoc(jCell, "base_type", "AOBaseTypeMap", true,
+                                 attributes::AOBaseTypeMap,
+                                 [instanceAttrs](const std::string& val) {
+                                   instanceAttrs->setBaseType(val);
+                                 });
+
+  // inertia source
+  this->setEnumStringFromJsonDoc(jCell, "inertia_source", "AOInertiaSourceMap",
+                                 true, attributes::AOInertiaSourceMap,
+                                 [instanceAttrs](const std::string& val) {
+                                   instanceAttrs->setInertiaSource(val);
+                                 });
+
+  // link order
+  this->setEnumStringFromJsonDoc(jCell, "link_order", "AOLinkOrderMap", true,
+                                 attributes::AOLinkOrderMap,
+                                 [instanceAttrs](const std::string& val) {
+                                   instanceAttrs->setLinkOrder(val);
+                                 });
 
   // only used for articulated objects
   // auto clamp joint limits
@@ -364,7 +394,7 @@ SceneInstanceAttributesManager::createAOInstanceAttributesFromJSON(
 
 void SceneInstanceAttributesManager::setAbstractObjectAttributesFromJson(
     const attributes::SceneObjectInstanceAttributes::ptr& instanceAttrs,
-    const io::JsonGenericValue& jCell) const {
+    const io::JsonGenericValue& jCell) {
   // template handle describing stage/object instance
   io::jsonIntoConstSetter<std::string>(
       jCell, "template_name",
@@ -376,9 +406,16 @@ void SceneInstanceAttributesManager::setAbstractObjectAttributesFromJson(
   // to unknown, which will mean use scene instance-level default.
   instanceAttrs->setTranslationOrigin(getTranslationOriginVal(jCell));
 
-  // set specified shader type value.  May be Unknown, which means the default
-  // value specified in the stage or object attributes will be used.
-  instanceAttrs->setShaderType(getShaderTypeFromJsonDoc(jCell));
+  // set specified shader type value.  May be Unspecified, which means the
+  // default value specified in the stage or object attributes will be used.
+  // instanceAttrs->setShaderType(getShaderTypeFromJsonDoc(jCell));
+
+  // shader type
+  this->setEnumStringFromJsonDoc(jCell, "shader_type", "ShaderTypeNamesMap",
+                                 true, attributes::ShaderTypeNamesMap,
+                                 [instanceAttrs](const std::string& val) {
+                                   instanceAttrs->setShaderType(val);
+                                 });
 
   // motion type of object.  Ignored for stage.
   std::string tmpVal = "";

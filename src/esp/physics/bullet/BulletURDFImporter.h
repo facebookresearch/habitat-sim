@@ -114,7 +114,7 @@ class BulletURDFImporter : public URDFImporter {
   //! Construct a set of Bullet collision shapes from the URDF::CollisionShape
   //! metadata
   btCollisionShape* convertURDFToCollisionShape(
-      const struct io::URDF::CollisionShape* collision,
+      const struct metadata::URDF::CollisionShape* collision,
       std::vector<std::unique_ptr<btCollisionShape>>& linkChildShapes);
 
   //! Construct all Bullet collision shapes for a link in the active URDF::Model
@@ -136,8 +136,9 @@ class BulletURDFImporter : public URDFImporter {
                             int urdfParentIndex);
 };
 
-void processContactParameters(const io::URDF::LinkContactInfo& contactInfo,
-                              btCollisionObject* col);
+void processContactParameters(
+    const metadata::URDF::LinkContactInfo& contactInfo,
+    btCollisionObject* col);
 
 }  // namespace physics
 }  // namespace esp

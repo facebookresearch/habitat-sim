@@ -8,6 +8,7 @@
 
 #include "esp/core/managedContainers/AbstractManagedObject.h"
 #include "esp/metadata/attributes/AbstractObjectAttributes.h"
+#include "esp/metadata/attributes/ArticulatedObjectAttributes.h"
 #include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/metadata/attributes/LightLayoutAttributes.h"
 #include "esp/metadata/attributes/ObjectAttributes.h"
@@ -24,6 +25,7 @@ namespace Attrs = esp::metadata::attributes;
 using Attrs::AbstractAttributes;
 using Attrs::AbstractObjectAttributes;
 using Attrs::AbstractPrimitiveAttributes;
+using Attrs::ArticulatedObjectAttributes;
 using Attrs::CapsulePrimitiveAttributes;
 using Attrs::ConePrimitiveAttributes;
 using Attrs::CubePrimitiveAttributes;
@@ -184,9 +186,91 @@ void initAttributesBindings(py::module& m) {
           R"(This method is inherited from Configuration, but should not be used with Attributes due
           to the possibility of changing the type of a required variable. Use the provided Attributes
           instead, to change values for this object.)",
-          "key"_a, "value"_a)
+          "key"_a, "value"_a);
+  // ======== Enums ================
 
-      ;
+  // ==== ArticulatedObjectBaseType enum ====
+  // Describes the type of base joint used to connect the Articulated Object to
+  // the world
+  py::enum_<metadata::attributes::ArticulatedObjectBaseType>(
+      m, "ArticulatedObjectBaseType")
+      .value("UNSPECIFIED",
+             metadata::attributes::ArticulatedObjectBaseType::Unspecified)
+      .value("FREE", metadata::attributes::ArticulatedObjectBaseType::Free)
+      .value("FIXED", metadata::attributes::ArticulatedObjectBaseType::Fixed);
+
+  // ==== ArticulatedObjectInertiaSource enum ====
+  // Describes the source of the interia values to use for the Articulated
+  // Object.
+  py::enum_<metadata::attributes::ArticulatedObjectInertiaSource>(
+      m, "ArticulatedObjectInertiaSource")
+      .value("UNSPECIFIED",
+             metadata::attributes::ArticulatedObjectInertiaSource::Unspecified)
+      .value("COMPUTED",
+             metadata::attributes::ArticulatedObjectInertiaSource::Computed)
+      .value("URDF",
+             metadata::attributes::ArticulatedObjectInertiaSource::URDF);
+
+  //
+  // ==== ArticulatedObjectLinkOrder enum ====
+  // Describes how the links in the Articulated Object should be ordered.
+  py::enum_<metadata::attributes::ArticulatedObjectLinkOrder>(
+      m, "ArticulatedObjectLinkOrder")
+      .value("UNSPECIFIED",
+             metadata::attributes::ArticulatedObjectLinkOrder::Unspecified)
+      .value("URDF_ORDER",
+             metadata::attributes::ArticulatedObjectLinkOrder::URDFOrder)
+      .value("TREE_TRAVERSAL",
+             metadata::attributes::ArticulatedObjectLinkOrder::TreeTraversal);
+
+  // ==== ArticulatedObjectAttributes ====
+  py::class_<ArticulatedObjectAttributes, AbstractAttributes,
+             ArticulatedObjectAttributes::ptr>(
+      m, "ArticulatedObjectAttributes",
+      R"(A metadata template for articulated object configurations. Can be imported from
+      .ao_config.json files.)")
+      .def(py::init(&ArticulatedObjectAttributes::create<>))
+      .def(py::init(&ArticulatedObjectAttributes::create<const std::string&>))
+      .def_property(
+          "urdf_filepath", &ArticulatedObjectAttributes::getURDFPath,
+          &ArticulatedObjectAttributes::setURDFPath,
+          R"(Relative filepath of the URDF file used to create the Articulated Object
+          described by this template.)")
+      .def_property(
+          "render_asset_handle",
+          &ArticulatedObjectAttributes::getRenderAssetHandle,
+          &ArticulatedObjectAttributes::setRenderAssetHandle,
+          R"(Handle of the asset used to render constructions built from
+          this articulated object template.)")
+      .def_property(
+          "semantic_id", &ArticulatedObjectAttributes::getSemanticId,
+          &ArticulatedObjectAttributes::setSemanticId,
+          R"(The semantic ID for articulated objects constructed from this template.)")
+      .def_property(
+          "shader_type", &ArticulatedObjectAttributes::getShaderType,
+          &ArticulatedObjectAttributes::setShaderType,
+          R"(The shader type [0=material, 1=flat, 2=phong, 3=pbr] to use for this construction.
+          Currently Articulated Objects only support Flat/Phong shading.)")
+      .def_property(
+          "render_mode", &ArticulatedObjectAttributes::getRenderMode,
+          &ArticulatedObjectAttributes::setRenderMode,
+          R"(Whether we should render using the articulated object's its skin,
+          its xml defined rigid visual elements, both or nothing.)")
+      .def_property(
+          "base_type", &ArticulatedObjectAttributes::getBaseType,
+          &ArticulatedObjectAttributes::setBaseType,
+          R"(The type of base/root joint to use to add this Articulated Object to the world.
+          Possible values are "FREE" and "FIXED".)")
+      .def_property(
+          "inertia_source", &ArticulatedObjectAttributes::getInertiaSource,
+          &ArticulatedObjectAttributes::setInertiaSource,
+          R"(Tthe source of the inertia tensors to use for this Articulated Object.
+          Possible values are "COMPUTED" and "URDF".)")
+      .def_property(
+          "link_order", &ArticulatedObjectAttributes::getLinkOrder,
+          &ArticulatedObjectAttributes::setLinkOrder,
+          R"(The link order to use for the linkages of this Articulated Object.
+          Possible values are "URDF_ORDER" and "TREE_TRAVERSAL".)");
 
   // ==== AbstractObjectAttributes ====
   py::class_<AbstractObjectAttributes, AbstractAttributes,
@@ -300,7 +384,10 @@ void initAttributesBindings(py::module& m) {
   // ==== ObjectAttributes ====
   py::class_<ObjectAttributes, AbstractObjectAttributes, ObjectAttributes::ptr>(
       m, "ObjectAttributes",
-      R"(A metadata template for rigid objects pre-instantiation. Defines asset paths, physical properties, scale, semantic ids, shader type overrides, and user defined metadata. ManagedRigidObjects are instantiated from these blueprints. Can be imported from .object_config.json files.)")
+      R"(A metadata template for rigid objects pre-instantiation. Defines asset paths, physical
+      properties, scale, semantic ids, shader type overrides, and user defined metadata.
+      ManagedRigidObjects are instantiated from these blueprints. Can be imported from
+      .object_config.json files.)")
       .def(py::init(&ObjectAttributes::create<>))
       .def(py::init(&ObjectAttributes::create<const std::string&>))
       .def_property(
