@@ -118,13 +118,15 @@ def get_mesh_heirarchy(
     return selected_objects
 
 
-def walk_armature(this_bone, handler):
+def walk_armature(this_bone, handler, kwargs_for_handler=None):
     """
     Recursively apply a handler function to bone children to traverse the armature.
     """
-    handler(this_bone)
+    if kwargs_for_handler is None:
+        kwargs_for_handler = {}
+    handler(this_bone, **kwargs_for_handler)
     for child in this_bone.children:
-        walk_armature(child, handler)
+        walk_armature(child, handler, kwargs_for_handler)
 
 
 def bone_info(bone):
@@ -186,9 +188,15 @@ def add_color_material_to_visual(color, xml_visual) -> None:
     xml_visual.append(this_xml_material)
 
 
-def bone_to_urdf(this_bone, collision_visuals=False, joint_visual=False):
+def bone_to_urdf(
+    this_bone, link_visuals=True, collision_visuals=False, joint_visuals=False
+):
     """This function extracts the basic properties of the bone and populates
     links and joint lists with the corresponding urdf nodes"""
+
+    print(f"link_visuals = {link_visuals}")
+    print(f"collision_visuals = {collision_visuals}")
+    print(f"joint_visuals = {joint_visuals}")
 
     global counter
 
@@ -227,11 +235,11 @@ def bone_to_urdf(this_bone, collision_visuals=False, joint_visual=False):
             # NOTE: we can use zero because we reset the origin for the meshes before exporting them to glb
             this_xml_visual.append(ZERO_ORIGIN_NODE())
             this_xml_visual.append(this_xml_mesh_geom)
-            if not collision_visuals:
+            if link_visuals:
                 this_xml_link.append(this_xml_visual)
 
     # NOTE: visual debugging tool to add a box at the joint pivot locations
-    if joint_visual:
+    if joint_visuals:
         this_xml_visual = ET.Element("visual")
         this_xml_test_geom = ET.Element("geometry")
         this_xml_box = ET.Element("box")
@@ -537,12 +545,16 @@ def get_armature():
     return None
 
 
-def export(dirpath, settings, export_meshes: bool = True):
+def export(dirpath, settings, export_meshes: bool = True, **kwargs):
     """
     Run the Armature to URDF converter and export the .urdf file.
     Recursively travserses the armature bone tree and constructs Links and Joints.
     Note: This process is destructive and requires undo or revert in the editor after use.
+
+    :return: export directory or URDF filepath
     """
+
+    output_path = dirpath
 
     global LINK_NAME_FORMAT, JOINT_NAME_FORMAT, armature, root_bone, links, joints, counter
     counter = 0
@@ -610,7 +622,7 @@ def export(dirpath, settings, export_meshes: bool = True):
                         use_selection=True,
                         export_yup=False,
                     )
-        return None
+        return output_path
 
     # print("------------------------")
     # print("Bone info recursion:")
@@ -621,7 +633,7 @@ def export(dirpath, settings, export_meshes: bool = True):
     # print("------------------------")
 
     # Recursively generate the xml elements
-    walk_armature(root_bone, bone_to_urdf)
+    walk_armature(root_bone, bone_to_urdf, kwargs_for_handler=kwargs)
 
     # add all the joints and links to the root
     root_xml = ET.Element("robot")  # create <robot name="test_robot">
@@ -640,28 +652,108 @@ def export(dirpath, settings, export_meshes: bool = True):
     dom = minidom.parseString(ET_raw_string)
     ET_pretty_string = dom.toprettyxml()
 
-    with open(os.path.join(final_out_path, f"{root_node.name}.urdf"), "w") as f:
+    output_path = os.path.join(final_out_path, f"{root_node.name}.urdf")
+
+    with open(output_path, "w") as f:
         f.write(ET_pretty_string)
 
-    return ET_pretty_string
+    return output_path
 
 
 if __name__ == "__main__":
     # NOTE: this must be run from within Blender and by defaults saves viles in "blender_armatures/" relative to the directory containing the script
-    export_path = os.path.join(
-        os.path.dirname(bpy.context.space_data.text.filepath), "blender_armatures"
-    )
-    # Optionally override the save directory with an absolute path of your choice
-    # export_path = "/home/my_path_choice/"
 
-    # To use this script:
+    export_path = None
+    try:
+        os.path.join(
+            os.path.dirname(bpy.context.space_data.text.filepath), "blender_armatures"
+        )
+    except BaseException:
+        print(
+            "Couldn't get the directory from the filepath. E.g. running from commandline."
+        )
+
+    # -----------------------------------------------------------
+    # To use this script in Blender editor:
     # 1. run with export meshes True
     # 2. undo changes in the editor
     # 3. run with export meshes False
     # 4. undo changes in the editor
+
+    # NOTE: the following settings are overridden by commandline arguments if provided
+
+    # Optionally override the save directory with an absolute path of your choice
+    # export_path = "/home/my_path_choice/"
+
     export_meshes = False
 
-    urdf_str = export(
+    # visual shape export flags for debugging
+    link_visuals = True
+    collision_visuals = False
+    joint_visuals = False
+    # -----------------------------------------------------------
+
+    # -----------------------------------------------------------
+    # To use from the commandline:
+    #  1. `blender <path to asset>.blend --background --python <apth to>blender_armature_to_urdf.py -- --export-path <export directory>
+    #  2. add `--export-meshes` to export the link .glbs
+    # Note: ' -- ' tells Blender to ignore the remaining arguemnts, so we pass anything after that into the script arguements below:
+    import sys
+
+    argv = sys.argv
+    py_argv = ""
+    if "--" in argv:
+        py_argv = argv[argv.index("--") + 1 :]  # get all args after "--"
+
+    import argparse
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--export-path",
+        default=export_path,
+        type=str,
+        help="Path to the output directory for meshes and URDF.",
+    )
+    parser.add_argument(
+        "--export-meshes",
+        action="store_true",
+        default=export_meshes,
+        help="Export meshes for the link objects. If not set, instead generate the URDF.",
+    )
+
+    # Debugging flags:
+    parser.add_argument(
+        "--no-link-visuals",
+        action="store_true",
+        default=not link_visuals,
+        help="Don't include visual mesh shapes in the exported URDF. E.g. for debugging.",
+    )
+    parser.add_argument(
+        "--collision-visuals",
+        action="store_true",
+        default=collision_visuals,
+        help="Include visual shapes for collision primitives in the exported URDF. E.g. for debugging.",
+    )
+    parser.add_argument(
+        "--joint-visuals",
+        action="store_true",
+        default=joint_visuals,
+        help="Include visual box shapes for joint pivot locations in the exported URDF. E.g. for debugging.",
+    )
+
+    args = parser.parse_args(py_argv)
+
+    export_meshes = args.export_meshes
+    export_path = args.export_path
+
+    # -----------------------------------------------------------
+
+    assert (
+        export_path is not None
+    ), "No export path provided. If running from commandline, provide a path with '--export-path <path>' after ' -- '."
+
+    output_path = export(
         export_path,
         {
             "armature": get_armature(),
@@ -669,5 +761,8 @@ if __name__ == "__main__":
             #'def_limit_vel': 3, #custom default vel limit for joints
         },
         export_meshes=export_meshes,
+        link_visuals=not args.no_link_visuals,
+        collision_visuals=args.collision_visuals,
+        joint_visuals=args.joint_visuals,
     )
-    print(f"\n ======== Output saved to {export_path} ========\n")
+    print(f"\n ======== Output saved to {output_path} ========\n")
