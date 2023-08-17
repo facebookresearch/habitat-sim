@@ -570,10 +570,12 @@ def clone_repo_source(
         clone_command += f"\"{data_sources[uid]['source']}\""
 
     # place the output in the specified directory
-    clone_command += f" {version_dir}"
+    split_command = shlex.split(clone_command)
+    split_command.append(f"{version_dir}")
 
-    print(f"{clone_command}")
-    subprocess.check_call(shlex.split(clone_command))
+    print(" ".join(split_command))
+
+    subprocess.check_call(split_command)
 
     if prune_lfs:
         # NOTE: we make this optional because older git versions don't support "-f --recent"
