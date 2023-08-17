@@ -523,7 +523,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
       CORRADE_UNUSED DrawableGroup* drawables,
       CORRADE_UNUSED bool forceReload = false,
       CORRADE_UNUSED const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
-    ESP_DEBUG() << "Not implemented in base PhysicsManager.";
+    ESP_ERROR() << "Not implemented in base PhysicsManager. Install with "
+                   "--bullet to use this feature.";
     return ID_UNDEFINED;
   }
 
@@ -793,11 +794,13 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   virtual void performDiscreteCollisionDetection() {
     /*Does nothing in base PhysicsManager.*/
+    ESP_ERROR() << "Not implemented in base PhysicsManager. Install with "
+                   "--bullet to use this feature.";
   }
 
   /**
    * @brief Query the number of contact points that were active during the
-   * collision detection check.
+   * most recent collision detection check.
    *
    * Not implemented for default PhysicsManager.
    * @return the number of active contact points.
@@ -881,6 +884,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   virtual RaycastResults castRay(const esp::geo::Ray& ray,
                                  CORRADE_UNUSED double maxDistance = 100.0) {
+    ESP_ERROR() << "Not implemented in base PhysicsManager. Install with "
+                   "--bullet to use this feature.";
     RaycastResults results;
     results.ray = ray;
     return results;
@@ -936,7 +941,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   virtual int createRigidConstraint(
       CORRADE_UNUSED const RigidConstraintSettings& settings) {
-    ESP_ERROR() << "Not implemented in base PhysicsManager.";
+    ESP_ERROR() << "Not implemented in base PhysicsManager. Install with "
+                   "--bullet to use this feature.";
     return ID_UNDEFINED;
   }
 
@@ -951,7 +957,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   virtual void updateRigidConstraint(
       CORRADE_UNUSED int constraintId,
       CORRADE_UNUSED const RigidConstraintSettings& settings) {
-    ESP_ERROR() << "Not implemented in base PhysicsManager.";
+    ESP_ERROR() << "Not implemented in base PhysicsManager. Install with "
+                   "--bullet to use this feature.";
   }
 
   /**
@@ -962,7 +969,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @param constraintId The id of the constraint to remove.
    */
   virtual void removeRigidConstraint(CORRADE_UNUSED int constraintId) {
-    ESP_ERROR() << "Not implemented in base PhysicsManager.";
+    ESP_ERROR() << "Not implemented in base PhysicsManager. Install with "
+                   "--bullet to use this feature.";
   }
 
   /**
