@@ -640,7 +640,7 @@ def export(dirpath, settings, export_meshes: bool = True):
     dom = minidom.parseString(ET_raw_string)
     ET_pretty_string = dom.toprettyxml()
 
-    with open(os.path.join(final_out_path, "armature.urdf"), "w") as f:
+    with open(os.path.join(final_out_path, f"{root_node.name}.urdf"), "w") as f:
         f.write(ET_pretty_string)
 
     return ET_pretty_string
