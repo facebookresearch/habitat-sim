@@ -31,6 +31,10 @@ from utils import simulate
     or not osp.exists("data/objects/example_objects/"),
     reason="Requires the habitat-test-scenes and habitat test objects",
 )
+@pytest.mark.skipif(
+    not habitat_sim.bindings.built_with_bullet,
+    reason="Bullet physics used for validation.",
+)
 def test_kinematics():
     cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
 
@@ -38,7 +42,6 @@ def test_kinematics():
         "scene"
     ] = "data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"
     # enable the physics simulator: also clears available actions to no-op
-    cfg_settings["enable_physics"] = True
     cfg_settings["depth_sensor"] = True
 
     # test loading the physical scene
@@ -259,6 +262,10 @@ def test_kinematics_no_physics():
     or not osp.exists("data/objects/example_objects/"),
     reason="Requires the habitat-test-scenes and habitat test objects",
 )
+@pytest.mark.skipif(
+    not habitat_sim.bindings.built_with_bullet,
+    reason="Bullet physics used for validation.",
+)
 def test_dynamics():
     # This test assumes that default.phys_scene_config.json contains "physics simulator": "bullet".
     # TODO: enable dynamic override of this setting in simulation config structure
@@ -407,7 +414,6 @@ def test_dynamics():
 def test_velocity_control():
     cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "NONE"
-    cfg_settings["enable_physics"] = True
     hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
     with habitat_sim.Simulator(hab_cfg) as sim:
         sim.set_gravity(np.array([0.0, 0.0, 0.0]))
@@ -493,6 +499,10 @@ def test_velocity_control():
 @pytest.mark.skipif(
     not osp.exists("data/scene_datasets/habitat-test-scenes/apartment_1.glb"),
     reason="Requires the habitat-test-scenes",
+)
+@pytest.mark.skipif(
+    not habitat_sim.bindings.built_with_bullet,
+    reason="Raycasts require Bullet physics.",
 )
 def test_raycast():
     cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
@@ -588,6 +598,10 @@ def test_raycast():
 @pytest.mark.skipif(
     not osp.exists("data/scene_datasets/habitat-test-scenes/apartment_1.glb"),
     reason="Requires the habitat-test-scenes",
+)
+@pytest.mark.skipif(
+    not habitat_sim.bindings.built_with_bullet,
+    reason="Collision testing requires Bullet physics.",
 )
 def test_collision_groups():
     cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
@@ -791,6 +805,10 @@ def getRandomPositions(articulated_object):
 @pytest.mark.skipif(
     not habitat_sim.bindings.built_with_bullet,
     reason="ArticulatedObject API requires Bullet physics.",
+)
+@pytest.mark.skipif(
+    not habitat_sim.bindings.built_with_bullet,
+    reason="Bullet physics used for validation.",
 )
 def test_articulated_object_add_remove():
     cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
