@@ -50,6 +50,7 @@ import magnum as mn
 import numpy as np
 
 import habitat_sim
+from habitat_sim.bindings import built_with_bullet
 from habitat_sim.gfx import LightInfo, LightPositionModel
 from habitat_sim.utils import gfx_replay_utils
 from habitat_sim.utils import viz_utils as vut
@@ -81,7 +82,7 @@ def make_configuration(settings):
         data_path, "scene_datasets/habitat-test-scenes/apartment_1.glb"
     )
     assert os.path.exists(backend_cfg.scene_id)
-    backend_cfg.enable_physics = True
+    backend_cfg.enable_physics = built_with_bullet
 
     # Enable gfx replay save. See also our call to sim.gfx_replay_manager.save_keyframe()
     # below.

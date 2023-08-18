@@ -49,6 +49,7 @@ import git
 import numpy as np
 
 import habitat_sim
+from habitat_sim.bindings import built_with_bullet
 from habitat_sim.utils import common as ut
 from habitat_sim.utils import viz_utils as vut
 
@@ -210,7 +211,7 @@ def make_default_settings():
         "depth_sensor_1st_person": False,  # Depth sensor
         "semantic_sensor_1st_person": False,  # Semantic sensor
         "seed": 1,
-        "enable_physics": True,  # enable dynamics simulation
+        "enable_physics": built_with_bullet,  # enable dynamics simulation if bullet is present
     }
     return settings
 
