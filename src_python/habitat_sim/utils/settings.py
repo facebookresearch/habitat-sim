@@ -10,6 +10,7 @@ BLACK = mn.Color4.from_linear_rgb_int(0)
 
 import habitat_sim
 import habitat_sim.agent
+from habitat_sim.bindings import built_with_bullet
 
 # [default_sim_settings]
 default_sim_settings: Dict[str, Any] = {
@@ -51,7 +52,7 @@ default_sim_settings: Dict[str, Any] = {
     "physics_config_file": "data/default.physics_config.json",
     # use bullet physics for dyanimcs or not - make default value whether or not
     # Simulator was built with bullet enabled
-    "enable_physics": habitat_sim.built_with_bullet,
+    "enable_physics": built_with_bullet,
     # ensure or create compatible navmesh for agent paramters
     "default_agent_navmesh": True,
     # if configuring a navmesh, should STATIC MotionType objects be included

@@ -14,6 +14,7 @@ import pytest
 import quaternion
 
 import habitat_sim
+import habitat_sim.bindings
 import habitat_sim.physics
 import habitat_sim.utils.settings
 from habitat_sim.utils.common import (
@@ -788,7 +789,7 @@ def getRandomPositions(articulated_object):
 
 
 @pytest.mark.skipif(
-    not habitat_sim.built_with_bullet,
+    not habitat_sim.bindings.built_with_bullet,
     reason="ArticulatedObject API requires Bullet physics.",
 )
 def test_articulated_object_add_remove():
@@ -839,7 +840,7 @@ def test_articulated_object_add_remove():
 
 
 @pytest.mark.skipif(
-    not habitat_sim.built_with_bullet,
+    not habitat_sim.bindings.built_with_bullet,
     reason="ArticulatedObject API requires Bullet physics.",
 )
 def test_articulated_object_maintain_link_order():
@@ -891,7 +892,7 @@ def test_articulated_object_maintain_link_order():
 
 
 @pytest.mark.skipif(
-    not habitat_sim.built_with_bullet,
+    not habitat_sim.bindings.built_with_bullet,
     reason="ArticulatedObject API requires Bullet physics.",
 )
 @pytest.mark.parametrize(
@@ -1043,7 +1044,7 @@ def test_articulated_object_kinematics(test_asset):
     reason="Requires the habitat-test-scenes",
 )
 @pytest.mark.skipif(
-    not habitat_sim.built_with_bullet,
+    not habitat_sim.bindings.built_with_bullet,
     reason="ArticulatedObject API requires Bullet physics.",
 )
 @pytest.mark.parametrize(
@@ -1163,7 +1164,7 @@ def test_articulated_object_dynamics(test_asset):
 
 
 @pytest.mark.skipif(
-    not habitat_sim.built_with_bullet,
+    not habitat_sim.bindings.built_with_bullet,
     reason="ArticulatedObject API requires Bullet physics.",
 )
 def test_articulated_object_fixed_base_proxy():
@@ -1212,7 +1213,7 @@ def test_articulated_object_fixed_base_proxy():
 
 
 @pytest.mark.skipif(
-    not habitat_sim.built_with_bullet,
+    not habitat_sim.bindings.built_with_bullet,
     reason="ArticulatedObject API requires Bullet physics.",
 )
 def test_articulated_object_damping_joint_motors():
@@ -1272,7 +1273,7 @@ def check_joint_positions(robot, target, single_dof_eps=5.0e-3, quat_eps=0.2):
 
 
 @pytest.mark.skipif(
-    not habitat_sim.built_with_bullet,
+    not habitat_sim.bindings.built_with_bullet,
     reason="ArticulatedObject API requires Bullet physics.",
 )
 @pytest.mark.parametrize(
@@ -1469,7 +1470,7 @@ def test_articulated_object_joint_motors(test_asset):
 
 
 @pytest.mark.skipif(
-    not habitat_sim.built_with_bullet,
+    not habitat_sim.bindings.built_with_bullet,
     reason="ArticulatedObject API requires Bullet physics.",
 )
 def test_rigid_constraints():
@@ -1901,7 +1902,7 @@ def test_rigid_constraints():
     reason="Requires the habitat-test-scenes",
 )
 @pytest.mark.skipif(
-    not habitat_sim.built_with_bullet,
+    not habitat_sim.bindings.built_with_bullet,
     reason="ArticulatedObject API requires Bullet physics.",
 )
 def test_bullet_collision_helper():
