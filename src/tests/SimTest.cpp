@@ -200,9 +200,9 @@ SimTest::SimTest() {
             &SimTest::addObjectByHandle,
             &SimTest::addObjectInvertedScale,
             &SimTest::addSensorToObject,
-            &SimTest::createMagnumRenderingOff,
             &SimTest::getRuntimePerfStats,
 #ifdef ESP_BUILD_WITH_BULLET
+            &SimTest::createMagnumRenderingOff,
             &SimTest::testArticulatedObjectSkinned
 #endif
             }, Cr::Containers::arraySize(SimulatorBuilder) );

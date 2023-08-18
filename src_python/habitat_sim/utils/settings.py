@@ -49,8 +49,9 @@ default_sim_settings: Dict[str, Any] = {
     "seed": 1,
     # path to .physics_config.json file
     "physics_config_file": "data/default.physics_config.json",
-    # use bullet physics for dyanimcs or not
-    "enable_physics": True,
+    # use bullet physics for dyanimcs or not - make default value whether or not
+    # Simulator was built with bullet enabled
+    "enable_physics": habitat_sim.built_with_bullet,
     # ensure or create compatible navmesh for agent paramters
     "default_agent_navmesh": True,
     # if configuring a navmesh, should STATIC MotionType objects be included
