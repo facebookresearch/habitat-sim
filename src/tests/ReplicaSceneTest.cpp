@@ -45,7 +45,11 @@ struct ReplicaSceneTest : Cr::TestSuite::Tester {
 ReplicaSceneTest::ReplicaSceneTest() {
   addTests({&ReplicaSceneTest::testSemanticSceneOBB,
             &ReplicaSceneTest::testSemanticSceneLoading,
-            &ReplicaSceneTest::testSemanticSceneDescriptorReplicaCAD});
+
+#ifdef ESP_BUILD_WITH_BULLET
+            &ReplicaSceneTest::testSemanticSceneDescriptorReplicaCAD
+#endif
+  });
 }
 
 void ReplicaSceneTest::testSemanticSceneOBB() {

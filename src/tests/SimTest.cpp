@@ -1030,19 +1030,6 @@ void SimTest::createMagnumRenderingOff() {
 }
 
 void SimTest::getRuntimePerfStats() {
-  //   // create a simulator
-  //   SimulatorConfiguration simConfig{};
-  //   simConfig.activeSceneName = vangogh;
-  //   simConfig.enablePhysics =
-  // #ifdef ESP_BUILD_WITH_BULLET
-  //       true;
-  // #else
-  //       false;
-  // #endif
-  //   simConfig.physicsConfigFile = physicsConfigFile;
-  //   simConfig.overrideSceneLightDefaults = true;
-  //   auto simulator = Simulator::create_unique(simConfig);
-
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, vangogh, true, "custom_lighting_1");
@@ -1093,14 +1080,6 @@ void SimTest::getRuntimePerfStats() {
 
 void SimTest::testArticulatedObjectSkinned() {
   ESP_DEBUG() << "Starting Test : testArticulatedObjectSkinned";
-
-  // // create a simulator
-  // SimulatorConfiguration simConfig{};
-  // simConfig.activeSceneName = "";
-  // simConfig.enablePhysics = true;
-  // simConfig.physicsConfigFile = physicsConfigFile;
-  // simConfig.createRenderer = true;
-  // auto simulator = Simulator::create_unique(simConfig);
 
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
