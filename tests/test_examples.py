@@ -43,7 +43,7 @@ def powerset(iterable):
         ),
     ],
 )
-def test_example_modules_with_bullet(args):
+def test_example_modules_required_bullet(args):
     run_main_subproc(args)
 
 
@@ -83,13 +83,13 @@ def test_example_modules_with_bullet(args):
         ("examples/tutorials/async_rendering.py",),
     ],
 )
-def test_example_modules_no_bullet(args):
+def test_example_modules_optional_bullet(args):
     run_main_subproc(args)
 
 
 @pytest.mark.skipif(
     not habitat_sim.bindings.built_with_bullet,
-    reason="Bullet physics required for ReplicaCAD Artciulated Objects.",
+    reason="Bullet physics required for ReplicaCAD Articulated Objects.",
 )
 @pytest.mark.skipif(
     not osp.exists("data/replica_cad/"),
