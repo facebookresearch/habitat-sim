@@ -486,13 +486,17 @@ int PhysicsManager::addArticulatedObjectFromURDF(
     const std::string& lightSetup) {
   // Retrieve or create the appropriate ArticulatedObjectAttributes to create
   // this AO.
-  esp::metadata::attributes::ArticulatedObjectAttributes::ptr artObjAttributes =
-      resourceManager_.getAOAttributesManager()->getObjectCopyByHandle(
+
+  bool attribsFound =
+      resourceManager_.getAOAttributesManager()->getObjectLibHasHandle(
           filepath);
-  if (!artObjAttributes) {
-    artObjAttributes =
-        resourceManager_.getAOAttributesManager()->createObject(filepath, true);
-  }
+
+  esp::metadata::attributes::ArticulatedObjectAttributes::ptr artObjAttributes =
+      attribsFound
+          ? resourceManager_.getAOAttributesManager()->getObjectCopyByHandle(
+                filepath)
+          : resourceManager_.getAOAttributesManager()->createObject(filepath,
+                                                                    true);
 
   // Set pertinent values
   artObjAttributes->setUniformScale(globalScale);
