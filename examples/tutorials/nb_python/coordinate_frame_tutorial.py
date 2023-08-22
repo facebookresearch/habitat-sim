@@ -128,7 +128,6 @@ def create_sim_helper(scene_id):
         data_path, "replica_cad/replicaCAD.scene_dataset_config.json"
     )
     sim_cfg.scene_id = scene_id
-    sim_cfg.enable_physics = True
 
     agent_cfg = habitat_sim.agent.AgentConfiguration()
     rgb_sensor_spec = habitat_sim.CameraSensorSpec()

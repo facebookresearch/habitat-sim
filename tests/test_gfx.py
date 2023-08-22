@@ -14,6 +14,7 @@ import pytest
 import quaternion  # noqa: F401
 
 import habitat_sim
+import habitat_sim.bindings
 import habitat_sim.utils.settings
 
 
@@ -22,7 +23,7 @@ import habitat_sim.utils.settings
     reason="Requires the habitat-test-scenes",
 )
 @pytest.mark.skipif(
-    not habitat_sim.built_with_bullet,
+    not habitat_sim.bindings.built_with_bullet,
     reason="Bullet physics used for validation.",
 )
 @pytest.mark.parametrize("zfar", [500, 1000, 1500])

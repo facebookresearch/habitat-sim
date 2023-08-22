@@ -176,19 +176,23 @@ const struct {
 
 PhysicsTest::PhysicsTest() {
   addInstancedTests(
-      {&PhysicsTest::testJoinCompound,
+      {
 #ifdef ESP_BUILD_WITH_BULLET
-       &PhysicsTest::testCollisionBoundingBox,
-       &PhysicsTest::testDiscreteContactTest,
-       &PhysicsTest::testBulletCompoundShapeMargins,
+          &PhysicsTest::testJoinCompound,
+          &PhysicsTest::testCollisionBoundingBox,
+          &PhysicsTest::testDiscreteContactTest,
+          &PhysicsTest::testBulletCompoundShapeMargins,
+          &PhysicsTest::testMotionTypes,
+          &PhysicsTest::testRemoveSleepingSupport,
+          &PhysicsTest::testNumActiveContactPoints,
 #endif
-       &PhysicsTest::testConfigurableScaling, &PhysicsTest::testVelocityControl,
-       &PhysicsTest::testSceneNodeAttachment, &PhysicsTest::testMotionTypes,
-       &PhysicsTest::testNumActiveContactPoints,
-       &PhysicsTest::testRemoveSleepingSupport},
+          &PhysicsTest::testConfigurableScaling,
+          &PhysicsTest::testVelocityControl,
+          &PhysicsTest::testSceneNodeAttachment},
       Cr::Containers::arraySize(RendererEnabledData));
 }
 
+#ifdef ESP_BUILD_WITH_BULLET
 void PhysicsTest::testJoinCompound() {
   std::string stageFile =
       Cr::Utility::Path::join(dataDir, "test_assets/scenes/simple_room.glb");
@@ -263,7 +267,6 @@ void PhysicsTest::testJoinCompound() {
   }
 }  // PhysicsTest::testJoinCompound
 
-#ifdef ESP_BUILD_WITH_BULLET
 void PhysicsTest::testCollisionBoundingBox() {
   std::string stageFile =
       Cr::Utility::Path::join(dataDir, "test_assets/scenes/plane.glb");
@@ -490,6 +493,276 @@ void PhysicsTest::testBulletCompoundShapeMargins() {
     CORRADE_COMPARE(AabbOb2, objectGroundTruth);
   }
 }  // PhysicsTest::testBulletCompoundShapeMargins
+
+void PhysicsTest::testMotionTypes() {
+  // test setting motion types and expected simulation behaviors
+
+  resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
+
+  std::string objectFile =
+      Cr::Utility::Path::join(dataDir, "test_assets/objects/transform_box.glb");
+
+  std::string stageFile =
+      Cr::Utility::Path::join(dataDir, "test_assets/scenes/plane.glb");
+
+  initStage(stageFile);
+
+  // ensure that changing default timestep does not affect results
+  physicsManager_->setTimestep(0.0041666666);
+
+  // We need dynamics to test this.
+  if (physicsManager_->getPhysicsSimulationLibrary() !=
+      PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
+    float boxHalfExtent = 0.2;
+
+    ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
+    ObjectAttributes->setRenderAssetHandle(objectFile);
+    ObjectAttributes->setBoundingBoxCollisions(true);
+    ObjectAttributes->setScale({boxHalfExtent, boxHalfExtent, boxHalfExtent});
+    auto objectAttributesManager =
+        metadataMediator_->getObjectAttributesManager();
+
+    int boxId =
+        objectAttributesManager->registerObject(ObjectAttributes, objectFile);
+    auto objTemplate = objectAttributesManager->getObjectByID(boxId);
+
+    auto& drawables = sceneManager_->getSceneGraph(sceneID_).getDrawables();
+
+    float stageCollisionMargin = 0.04;
+
+    for (int testId = 0; testId < 3; ++testId) {
+      auto objWrapper0 =
+          makeObjectGetWrapper(objTemplate->getHandle(), &drawables);
+      auto objWrapper1 =
+          makeObjectGetWrapper(objTemplate->getHandle(), &drawables);
+
+      switch (testId) {
+        case 0: {
+          // test 0: stacking two DYNAMIC objects
+          objWrapper0->setTranslation(
+              {0, stageCollisionMargin + boxHalfExtent, 0});
+          objWrapper1->setTranslation(
+              {0, stageCollisionMargin + boxHalfExtent * 3, 0});
+
+          while (physicsManager_->getWorldTime() < 6.0) {
+            physicsManager_->stepPhysics(0.1);
+          }
+          CORRADE_VERIFY(!objWrapper0->isActive());
+          CORRADE_VERIFY(!objWrapper1->isActive());
+          CORRADE_COMPARE_AS(
+              (objWrapper0->getTranslation() -
+               Magnum::Vector3{0.0, stageCollisionMargin + boxHalfExtent, 0.0})
+                  .length(),
+              1.0e-3, Cr::TestSuite::Compare::LessOrEqual);
+          CORRADE_COMPARE_AS(
+              (objWrapper1->getTranslation() -
+               Magnum::Vector3{0.0, stageCollisionMargin + boxHalfExtent * 3,
+                               0.0})
+                  .length(),
+              1.0e-3, Cr::TestSuite::Compare::LessOrEqual);
+        } break;
+        case 1: {
+          // test 1: stacking a DYNAMIC object on a STATIC object
+          objWrapper0->setTranslation({0, boxHalfExtent * 2, 0});
+          objWrapper0->setMotionType(esp::physics::MotionType::STATIC);
+          objWrapper1->setTranslation({0, boxHalfExtent * 5, 0});
+
+          while (physicsManager_->getWorldTime() < 6.0) {
+            physicsManager_->stepPhysics(0.1);
+          }
+          CORRADE_VERIFY(!objWrapper1->isActive());
+          CORRADE_COMPARE_AS((objWrapper0->getTranslation() -
+                              Magnum::Vector3{0.0, boxHalfExtent * 2, 0.0})
+                                 .length(),
+                             1.0e-4, Cr::TestSuite::Compare::LessOrEqual);
+          CORRADE_COMPARE_AS((objWrapper1->getTranslation() -
+                              Magnum::Vector3{0.0, boxHalfExtent * 4, 0.0})
+                                 .length(),
+                             2.0e-4, Cr::TestSuite::Compare::LessOrEqual);
+        } break;
+        case 2: {
+          // test 2: stacking a DYNAMIC object on a moving KINEMATIC object
+          objWrapper0->setTranslation({0, boxHalfExtent * 2, 0});
+          objWrapper0->setMotionType(esp::physics::MotionType::KINEMATIC);
+
+          esp::physics::VelocityControl::ptr velCon =
+              objWrapper0->getVelocityControl();
+          velCon->controllingLinVel = true;
+          velCon->linVel = {0.2, 0, 0};
+
+          objWrapper1->setTranslation({0, boxHalfExtent * 5, 0});
+
+          while (physicsManager_->getWorldTime() < 3.0) {
+            // take single sub-steps for velocity control precision
+            physicsManager_->stepPhysics(-1);
+          }
+          CORRADE_COMPARE_AS((objWrapper0->getTranslation() -
+                              Magnum::Vector3{0.6, boxHalfExtent * 2, 0.0})
+                                 .length(),
+                             1.0e-3, Cr::TestSuite::Compare::LessOrEqual);
+          CORRADE_COMPARE_AS((objWrapper1->getTranslation() -
+                              Magnum::Vector3{0.559155, boxHalfExtent * 4, 0.0})
+                                 .length(),
+                             2.0e-3, Cr::TestSuite::Compare::LessOrEqual);
+        } break;
+      }
+
+      // reset the scene
+      rigidObjectManager_->removeAllObjects();
+      physicsManager_->reset();  // time=0
+    }
+  }
+}  // PhysicsTest::testMotionTypes
+
+void PhysicsTest::testRemoveSleepingSupport() {
+  // test that removing a sleeping support object wakes its collision island
+  resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
+
+  std::string stageFile = "NONE";
+
+  initStage(stageFile);
+  auto& drawables = sceneManager_->getSceneGraph(sceneID_).getDrawables();
+
+  // We need dynamics to test this.
+  if (physicsManager_->getPhysicsSimulationLibrary() !=
+      PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
+    auto objectAttributesManager =
+        metadataMediator_->getObjectAttributesManager();
+
+    std::string cubeHandle =
+        objectAttributesManager->getObjectHandlesBySubstring("cubeSolid")[0];
+
+    // create a stack of cubes in free space
+    Mn::Vector3 stackBase(0.21964, 1.29183, -0.0897472);
+    std::vector<esp::physics::ManagedRigidObject::ptr> cubes;
+    int stackSize = 4;
+    for (int i = 0; i < stackSize; ++i) {
+      auto cubeWrapper = makeObjectGetWrapper(cubeHandle, &drawables);
+      cubeWrapper->setTranslation((Mn::Vector3(0, 0.2, 0) * i) + stackBase);
+      cubes.push_back(cubeWrapper);
+    }
+
+    cubes[0]->setMotionType(esp::physics::MotionType::STATIC);
+
+    for (int testCase = 0; testCase < 2; ++testCase) {
+      // reset time to 0, should not otherwise modify state
+      physicsManager_->reset();
+      CORRADE_COMPARE_AS(physicsManager_->getNumRigidObjects(), 0,
+                         Cr::TestSuite::Compare::Greater);
+
+      // simulate to stabilize the stack and populate collision islands
+      while (physicsManager_->getWorldTime() < 4.0) {
+        physicsManager_->stepPhysics(0.1);
+      }
+
+      // cubes should be sleeping
+      for (auto cube : cubes) {
+        CORRADE_VERIFY(!cube->isActive());
+      }
+
+      // no active contact points
+      CORRADE_COMPARE(physicsManager_->getNumActiveContactPoints(), 0);
+
+      if (testCase == 0) {
+        // first remove the bottom-most DYNAMIC object, expecting those above
+        // to fall
+        rigidObjectManager_->removePhysObjectByID(cubes[1]->getID());
+        cubes.erase(cubes.begin() + 1);
+      } else if (testCase == 1) {
+        // second remove the STATIC bottom cube
+        rigidObjectManager_->removePhysObjectByID(cubes[0]->getID());
+        cubes.erase(cubes.begin());
+      }
+
+      // remaining cubes should now be awake
+      for (auto cube : cubes) {
+        if (cube->getMotionType() != esp::physics::MotionType::STATIC) {
+          CORRADE_VERIFY(cube->isActive());
+        }
+      }
+      CORRADE_COMPARE_AS(physicsManager_->getNumActiveContactPoints(), 0,
+                         Cr::TestSuite::Compare::Greater);
+    }
+  }
+}  // PhysicsTest::testRemoveSleepingSupport
+
+void PhysicsTest::testNumActiveContactPoints() {
+  resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
+
+  std::string stageFile =
+      Cr::Utility::Path::join(dataDir, "test_assets/scenes/simple_room.glb");
+
+  initStage(stageFile);
+  auto& drawables = sceneManager_->getSceneGraph(sceneID_).getDrawables();
+
+  // We need dynamics to test this.
+  if (physicsManager_->getPhysicsSimulationLibrary() !=
+      PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
+    auto objectAttributesManager =
+        metadataMediator_->getObjectAttributesManager();
+
+    std::string cubeHandle =
+        objectAttributesManager->getObjectHandlesBySubstring("cubeSolid")[0];
+
+    // add a single cube
+    Mn::Vector3 stackBase(0.21964, 1.29183, -0.0897472);
+    auto objWrapper0 = makeObjectGetWrapper(cubeHandle, &drawables);
+    objWrapper0->setTranslation(stackBase);
+
+    // no active contact points at start
+    CORRADE_COMPARE(physicsManager_->getNumActiveContactPoints(), 0);
+    CORRADE_COMPARE(physicsManager_->getNumActiveOverlappingPairs(), 0);
+    CORRADE_COMPARE(physicsManager_->getStepCollisionSummary(),
+                    "(no active collision manifolds)\n");
+
+    // simulate to let cube fall and hit the ground
+    while (physicsManager_->getWorldTime() < 2.0) {
+      physicsManager_->stepPhysics(0.1);
+    }
+
+    auto allContactPoints = physicsManager_->getContactPoints();
+    // expect 4 active contact points for cube
+    CORRADE_COMPARE(allContactPoints.size(), 4);
+    CORRADE_COMPARE(physicsManager_->getNumActiveContactPoints(), 4);
+    // simple_room.glb has multiple subparts and our box is near two of them
+    CORRADE_COMPARE(physicsManager_->getNumActiveOverlappingPairs(), 2);
+    CORRADE_COMPARE(
+        physicsManager_->getStepCollisionSummary(),
+        "[RigidObject, cubeSolid, id 0] vs [Stage, subpart 6], 4 points\n");
+
+    float totalNormalForce = 0;
+    for (auto& cp : allContactPoints) {
+      // contacts are still active
+      CORRADE_VERIFY(cp.isActive);
+      // normal direction is unit Y (world up)
+      CORRADE_COMPARE_AS(
+          (cp.contactNormalOnBInWS - Magnum::Vector3{0.0, 1.0, 0.0}).length(),
+          1.0e-4, Cr::TestSuite::Compare::LessOrEqual);
+      // one object is the cube (0), other is the stage (-1)
+      CORRADE_COMPARE(cp.objectIdA, 0);
+      CORRADE_COMPARE(cp.objectIdB, -1);
+      // accumulate the normal force
+      totalNormalForce += cp.normalForce;
+      // solver should keep the cube at the contact boundary (~0 penetration)
+      CORRADE_COMPARE_AS(cp.contactDistance, 1.0e-4,
+                         Cr::TestSuite::Compare::LessOrEqual);
+    }
+    // mass 1 cube under gravity should require normal contact force of ~9.8
+    CORRADE_COMPARE_AS(totalNormalForce - 9.8, 3.0e-4,
+                       Cr::TestSuite::Compare::LessOrEqual);
+
+    // continue simulation until the cube is stable and sleeping
+    while (physicsManager_->getWorldTime() < 4.0) {
+      physicsManager_->stepPhysics(0.1);
+    }
+    // 4 inactive contact points at end
+    CORRADE_COMPARE(physicsManager_->getContactPoints().size(), 4);
+    // no active contact points at end
+    CORRADE_COMPARE(physicsManager_->getNumActiveContactPoints(), 0);
+    CORRADE_COMPARE(physicsManager_->getNumActiveOverlappingPairs(), 0);
+  }
+}  // PhysicsTest::testNumActiveContactPoints
+
 #endif
 
 void PhysicsTest::testConfigurableScaling() {
@@ -591,6 +864,7 @@ void PhysicsTest::testVelocityControl() {
   Magnum::Vector3 commandLinVel(1.0, 1.0, 1.0);
   Magnum::Vector3 commandAngVel(1.0, 1.0, 1.0);
 
+#ifdef ESP_BUILD_WITH_BULLET
   // test results of getting/setting
   if (physicsManager_->getPhysicsSimulationLibrary() ==
       PhysicsManager::PhysicsSimulationLibrary::Bullet) {
@@ -600,8 +874,10 @@ void PhysicsTest::testVelocityControl() {
     CORRADE_COMPARE(objectWrapper->getLinearVelocity(), commandLinVel);
     CORRADE_COMPARE(objectWrapper->getAngularVelocity(), commandAngVel);
 
-  } else if (physicsManager_->getPhysicsSimulationLibrary() ==
-             PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
+  } else
+#endif
+      if (physicsManager_->getPhysicsSimulationLibrary() ==
+          PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
     objectWrapper->setLinearVelocity(commandLinVel);
     objectWrapper->setAngularVelocity(commandAngVel);
 
@@ -766,275 +1042,6 @@ void PhysicsTest::testSceneNodeAttachment() {
   CORRADE_COMPARE_AS(root.children().last(), newNode,
                      Cr::TestSuite::Compare::NotEqual);
 }  // PhysicsTest::testSceneNodeAttachment
-
-void PhysicsTest::testMotionTypes() {
-  // test setting motion types and expected simulation behaviors
-
-  resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
-
-  std::string objectFile =
-      Cr::Utility::Path::join(dataDir, "test_assets/objects/transform_box.glb");
-
-  std::string stageFile =
-      Cr::Utility::Path::join(dataDir, "test_assets/scenes/plane.glb");
-
-  initStage(stageFile);
-
-  // ensure that changing default timestep does not affect results
-  physicsManager_->setTimestep(0.0041666666);
-
-  // We need dynamics to test this.
-  if (physicsManager_->getPhysicsSimulationLibrary() !=
-      PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
-    float boxHalfExtent = 0.2;
-
-    ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
-    ObjectAttributes->setRenderAssetHandle(objectFile);
-    ObjectAttributes->setBoundingBoxCollisions(true);
-    ObjectAttributes->setScale({boxHalfExtent, boxHalfExtent, boxHalfExtent});
-    auto objectAttributesManager =
-        metadataMediator_->getObjectAttributesManager();
-
-    int boxId =
-        objectAttributesManager->registerObject(ObjectAttributes, objectFile);
-    auto objTemplate = objectAttributesManager->getObjectByID(boxId);
-
-    auto& drawables = sceneManager_->getSceneGraph(sceneID_).getDrawables();
-
-    float stageCollisionMargin = 0.04;
-
-    for (int testId = 0; testId < 3; ++testId) {
-      auto objWrapper0 =
-          makeObjectGetWrapper(objTemplate->getHandle(), &drawables);
-      auto objWrapper1 =
-          makeObjectGetWrapper(objTemplate->getHandle(), &drawables);
-
-      switch (testId) {
-        case 0: {
-          // test 0: stacking two DYNAMIC objects
-          objWrapper0->setTranslation(
-              {0, stageCollisionMargin + boxHalfExtent, 0});
-          objWrapper1->setTranslation(
-              {0, stageCollisionMargin + boxHalfExtent * 3, 0});
-
-          while (physicsManager_->getWorldTime() < 6.0) {
-            physicsManager_->stepPhysics(0.1);
-          }
-          CORRADE_VERIFY(!objWrapper0->isActive());
-          CORRADE_VERIFY(!objWrapper1->isActive());
-          CORRADE_COMPARE_AS(
-              (objWrapper0->getTranslation() -
-               Magnum::Vector3{0.0, stageCollisionMargin + boxHalfExtent, 0.0})
-                  .length(),
-              1.0e-3, Cr::TestSuite::Compare::LessOrEqual);
-          CORRADE_COMPARE_AS(
-              (objWrapper1->getTranslation() -
-               Magnum::Vector3{0.0, stageCollisionMargin + boxHalfExtent * 3,
-                               0.0})
-                  .length(),
-              1.0e-3, Cr::TestSuite::Compare::LessOrEqual);
-        } break;
-        case 1: {
-          // test 1: stacking a DYNAMIC object on a STATIC object
-          objWrapper0->setTranslation({0, boxHalfExtent * 2, 0});
-          objWrapper0->setMotionType(esp::physics::MotionType::STATIC);
-          objWrapper1->setTranslation({0, boxHalfExtent * 5, 0});
-
-          while (physicsManager_->getWorldTime() < 6.0) {
-            physicsManager_->stepPhysics(0.1);
-          }
-          CORRADE_VERIFY(!objWrapper1->isActive());
-          CORRADE_COMPARE_AS((objWrapper0->getTranslation() -
-                              Magnum::Vector3{0.0, boxHalfExtent * 2, 0.0})
-                                 .length(),
-                             1.0e-4, Cr::TestSuite::Compare::LessOrEqual);
-          CORRADE_COMPARE_AS((objWrapper1->getTranslation() -
-                              Magnum::Vector3{0.0, boxHalfExtent * 4, 0.0})
-                                 .length(),
-                             2.0e-4, Cr::TestSuite::Compare::LessOrEqual);
-        } break;
-        case 2: {
-          // test 2: stacking a DYNAMIC object on a moving KINEMATIC object
-          objWrapper0->setTranslation({0, boxHalfExtent * 2, 0});
-          objWrapper0->setMotionType(esp::physics::MotionType::KINEMATIC);
-
-          esp::physics::VelocityControl::ptr velCon =
-              objWrapper0->getVelocityControl();
-          velCon->controllingLinVel = true;
-          velCon->linVel = {0.2, 0, 0};
-
-          objWrapper1->setTranslation({0, boxHalfExtent * 5, 0});
-
-          while (physicsManager_->getWorldTime() < 3.0) {
-            // take single sub-steps for velocity control precision
-            physicsManager_->stepPhysics(-1);
-          }
-          CORRADE_COMPARE_AS((objWrapper0->getTranslation() -
-                              Magnum::Vector3{0.6, boxHalfExtent * 2, 0.0})
-                                 .length(),
-                             1.0e-3, Cr::TestSuite::Compare::LessOrEqual);
-          CORRADE_COMPARE_AS((objWrapper1->getTranslation() -
-                              Magnum::Vector3{0.559155, boxHalfExtent * 4, 0.0})
-                                 .length(),
-                             2.0e-3, Cr::TestSuite::Compare::LessOrEqual);
-        } break;
-      }
-
-      // reset the scene
-      rigidObjectManager_->removeAllObjects();
-      physicsManager_->reset();  // time=0
-    }
-  }
-}  // PhysicsTest::testMotionTypes
-
-void PhysicsTest::testNumActiveContactPoints() {
-  resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
-
-  std::string stageFile =
-      Cr::Utility::Path::join(dataDir, "test_assets/scenes/simple_room.glb");
-
-  initStage(stageFile);
-  auto& drawables = sceneManager_->getSceneGraph(sceneID_).getDrawables();
-
-  // We need dynamics to test this.
-  if (physicsManager_->getPhysicsSimulationLibrary() !=
-      PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
-    auto objectAttributesManager =
-        metadataMediator_->getObjectAttributesManager();
-
-    std::string cubeHandle =
-        objectAttributesManager->getObjectHandlesBySubstring("cubeSolid")[0];
-
-    // add a single cube
-    Mn::Vector3 stackBase(0.21964, 1.29183, -0.0897472);
-    auto objWrapper0 = makeObjectGetWrapper(cubeHandle, &drawables);
-    objWrapper0->setTranslation(stackBase);
-
-    // no active contact points at start
-    CORRADE_COMPARE(physicsManager_->getNumActiveContactPoints(), 0);
-    CORRADE_COMPARE(physicsManager_->getNumActiveOverlappingPairs(), 0);
-    CORRADE_COMPARE(physicsManager_->getStepCollisionSummary(),
-                    "(no active collision manifolds)\n");
-
-    // simulate to let cube fall and hit the ground
-    while (physicsManager_->getWorldTime() < 2.0) {
-      physicsManager_->stepPhysics(0.1);
-    }
-
-    auto allContactPoints = physicsManager_->getContactPoints();
-    // expect 4 active contact points for cube
-    CORRADE_COMPARE(allContactPoints.size(), 4);
-    CORRADE_COMPARE(physicsManager_->getNumActiveContactPoints(), 4);
-    // simple_room.glb has multiple subparts and our box is near two of them
-    CORRADE_COMPARE(physicsManager_->getNumActiveOverlappingPairs(), 2);
-    CORRADE_COMPARE(
-        physicsManager_->getStepCollisionSummary(),
-        "[RigidObject, cubeSolid, id 0] vs [Stage, subpart 6], 4 points\n");
-
-    float totalNormalForce = 0;
-    for (auto& cp : allContactPoints) {
-      // contacts are still active
-      CORRADE_VERIFY(cp.isActive);
-      // normal direction is unit Y (world up)
-      CORRADE_COMPARE_AS(
-          (cp.contactNormalOnBInWS - Magnum::Vector3{0.0, 1.0, 0.0}).length(),
-          1.0e-4, Cr::TestSuite::Compare::LessOrEqual);
-      // one object is the cube (0), other is the stage (-1)
-      CORRADE_COMPARE(cp.objectIdA, 0);
-      CORRADE_COMPARE(cp.objectIdB, -1);
-      // accumulate the normal force
-      totalNormalForce += cp.normalForce;
-      // solver should keep the cube at the contact boundary (~0 penetration)
-      CORRADE_COMPARE_AS(cp.contactDistance, 1.0e-4,
-                         Cr::TestSuite::Compare::LessOrEqual);
-    }
-    // mass 1 cube under gravity should require normal contact force of ~9.8
-    CORRADE_COMPARE_AS(totalNormalForce - 9.8, 3.0e-4,
-                       Cr::TestSuite::Compare::LessOrEqual);
-
-    // continue simulation until the cube is stable and sleeping
-    while (physicsManager_->getWorldTime() < 4.0) {
-      physicsManager_->stepPhysics(0.1);
-    }
-    // 4 inactive contact points at end
-    CORRADE_COMPARE(physicsManager_->getContactPoints().size(), 4);
-    // no active contact points at end
-    CORRADE_COMPARE(physicsManager_->getNumActiveContactPoints(), 0);
-    CORRADE_COMPARE(physicsManager_->getNumActiveOverlappingPairs(), 0);
-  }
-}  // PhysicsTest::testNumActiveContactPoints
-
-void PhysicsTest::testRemoveSleepingSupport() {
-  // test that removing a sleeping support object wakes its collision island
-  resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
-
-  std::string stageFile = "NONE";
-
-  initStage(stageFile);
-  auto& drawables = sceneManager_->getSceneGraph(sceneID_).getDrawables();
-
-  // We need dynamics to test this.
-  if (physicsManager_->getPhysicsSimulationLibrary() !=
-      PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
-    auto objectAttributesManager =
-        metadataMediator_->getObjectAttributesManager();
-
-    std::string cubeHandle =
-        objectAttributesManager->getObjectHandlesBySubstring("cubeSolid")[0];
-
-    // create a stack of cubes in free space
-    Mn::Vector3 stackBase(0.21964, 1.29183, -0.0897472);
-    std::vector<esp::physics::ManagedRigidObject::ptr> cubes;
-    int stackSize = 4;
-    for (int i = 0; i < stackSize; ++i) {
-      auto cubeWrapper = makeObjectGetWrapper(cubeHandle, &drawables);
-      cubeWrapper->setTranslation((Mn::Vector3(0, 0.2, 0) * i) + stackBase);
-      cubes.push_back(cubeWrapper);
-    }
-
-    cubes[0]->setMotionType(esp::physics::MotionType::STATIC);
-
-    for (int testCase = 0; testCase < 2; ++testCase) {
-      // reset time to 0, should not otherwise modify state
-      physicsManager_->reset();
-      CORRADE_COMPARE_AS(physicsManager_->getNumRigidObjects(), 0,
-                         Cr::TestSuite::Compare::Greater);
-
-      // simulate to stabilize the stack and populate collision islands
-      while (physicsManager_->getWorldTime() < 4.0) {
-        physicsManager_->stepPhysics(0.1);
-      }
-
-      // cubes should be sleeping
-      for (auto cube : cubes) {
-        CORRADE_VERIFY(!cube->isActive());
-      }
-
-      // no active contact points
-      CORRADE_COMPARE(physicsManager_->getNumActiveContactPoints(), 0);
-
-      if (testCase == 0) {
-        // first remove the bottom-most DYNAMIC object, expecting those above
-        // to fall
-        rigidObjectManager_->removePhysObjectByID(cubes[1]->getID());
-        cubes.erase(cubes.begin() + 1);
-      } else if (testCase == 1) {
-        // second remove the STATIC bottom cube
-        rigidObjectManager_->removePhysObjectByID(cubes[0]->getID());
-        cubes.erase(cubes.begin());
-      }
-
-      // remaining cubes should now be awake
-      for (auto cube : cubes) {
-        if (cube->getMotionType() != esp::physics::MotionType::STATIC) {
-          CORRADE_VERIFY(cube->isActive());
-        }
-      }
-      CORRADE_COMPARE_AS(physicsManager_->getNumActiveContactPoints(), 0,
-                         Cr::TestSuite::Compare::Greater);
-    }
-  }
-}  // PhysicsTest::testRemoveSleepingSupport
 
 }  // namespace
 

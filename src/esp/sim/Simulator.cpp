@@ -102,6 +102,17 @@ void Simulator::close(const bool destroy) {
 }
 
 void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
+// Fail early if physics is enabled in config but no bullet support is
+// installed.
+#ifndef ESP_BUILD_WITH_BULLET
+  ESP_CHECK(!cfg.enablePhysics,
+            "Physics has been enabled in the SimulatorConfiguration but "
+            "Habitat-Sim was not built with Bullet support enabled. Either set "
+            "cfg.enable_physics to False, or verify your Bullet installation "
+            "(e.g recompile Habitat-Sim using the '--bullet' flag or choose a "
+            "'withbullet' conda build.)");
+#endif
+
   // set metadata mediator's cfg  upon creation or reconfigure
   if (!metadataMediator_) {
     metadataMediator_ = metadata::MetadataMediator::create(cfg);
