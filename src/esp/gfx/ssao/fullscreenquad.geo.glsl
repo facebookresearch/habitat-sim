@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-
 #version 430
 /**/
 
@@ -30,37 +29,38 @@ layout(triangles) in;
 
 #if GL_NV_geometry_shader_passthrough
 
-  layout(passthrough) in gl_PerVertex {
-    vec4 gl_Position;
-  } gl_in[];
-  layout(passthrough) in Inputs {
-    vec2 texCoord;
-  } IN[];
+layout(passthrough) in gl_PerVertex {
+  vec4 gl_Position;
+}
+gl_in[];
+layout(passthrough) in Inputs {
+  vec2 textureCoordinates;
+}
+IN[];
 
-  void main()
-  {
-    gl_Layer = gl_PrimitiveIDIn;
-    gl_PrimitiveID = gl_PrimitiveIDIn;
-  }
+void main() {
+  gl_Layer = gl_PrimitiveIDIn;
+  gl_PrimitiveID = gl_PrimitiveIDIn;
+}
 
 #else
 
-  layout(triangle_strip,max_vertices=3) out;
+layout(triangle_strip, max_vertices = 3) out;
 
-  in Inputs {
-    vec2 texCoord;
-  } IN[];
-  out vec2 texCoord;
+in Inputs {
+  vec2 textureCoordinates;
+}
+IN[];
+out vec2 textureCoordinates;
 
-  void main()
-  {
-    for (int i = 0; i < 3; i++){
-      texCoord = IN[i].texCoord;
-      gl_Layer = gl_PrimitiveIDIn;
-      gl_PrimitiveID = gl_PrimitiveIDIn;
-      gl_Position = gl_in[i].gl_Position;
-      EmitVertex();
-    }
+void main() {
+  for (int i = 0; i < 3; i++) {
+    textureCoordinates = IN[i].textureCoordinates;
+    gl_Layer = gl_PrimitiveIDIn;
+    gl_PrimitiveID = gl_PrimitiveIDIn;
+    gl_Position = gl_in[i].gl_Position;
+    EmitVertex();
   }
+}
 
 #endif

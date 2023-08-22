@@ -20,7 +20,7 @@ layout(location = ATTRIBUTE_LOCATION_TANGENT4) in highp vec4 vertexTangent;
 out highp vec3 position;
 out highp vec3 normal;
 #if defined(TEXTURED)
-out highp vec2 texCoord;
+out highp vec2 textureCoordinates;
 #if defined(TEXTURE_TRANSFORMATION)
 uniform highp mat3 uTextureMatrix
 #ifndef GL_ES
@@ -47,7 +47,7 @@ void main() {
   position = vertexWorldPosition.xyz;
   normal = normalize(uNormalMatrix * vertexNormal);
 #if defined(TEXTURED)
-  texCoord =
+  textureCoordinates =
 #if defined(TEXTURE_TRANSFORMATION)
       (uTextureMatrix * vec3(vertexTexCoord, 1.0)).xy;
 #else

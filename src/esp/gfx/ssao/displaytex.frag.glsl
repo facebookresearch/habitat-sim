@@ -17,17 +17,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-
-
 #version 430
 
-layout(binding=0) uniform sampler2D inputTexture;
+layout(binding = 0) uniform sampler2D inputTexture;
 
-layout(location=0,index=0) out vec4 out_Color;
+layout(location = 0, index = 0) out vec4 out_Color;
 
-in vec2 texCoord;
+in vec2 textureCoordinates;
 
-void main()
-{
-  out_Color = texture(inputTexture, texCoord);
+void main() {
+  out_Color = texture(inputTexture, textureCoordinates);
 }

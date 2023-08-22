@@ -31,8 +31,8 @@ mat3 buildTBN() {
   vec3 B;
   vec3 posDx = dFdx(position);
   vec3 posDy = dFdy(position);
-  vec2 uvDx2 = dFdx(texCoord);
-  vec2 uvDy2 = dFdy(texCoord);
+  vec2 uvDx2 = dFdx(textureCoordinates);
+  vec2 uvDy2 = dFdy(textureCoordinates);
   if (length(uvDx2) + length(uvDy2) < EPSILON) {
     uvDx2 = vec2(1.0, 0.0);
     uvDy2 = vec2(0.0, 1.0);
@@ -114,8 +114,9 @@ PBRData buildPBRData() {
 
 #if defined(NORMAL_TEXTURE) && !defined(SKIP_CALC_NORMAL_TEXTURE)
   // normal is now in the camera space
-  pbrInfo.n = getNormalFromNormalMap(texture(uNormalTexture, texCoord).xyz,
-                                     uNormalTextureScale, pbrInfo.TBN);
+  pbrInfo.n =
+      getNormalFromNormalMap(texture(uNormalTexture, textureCoordinates).xyz,
+                             uNormalTextureScale, pbrInfo.TBN);
 #else
   pbrInfo.n = normalize(normal);
   // This means backface culling is disabled,
@@ -154,9 +155,10 @@ PBRData buildPBRData() {
 #if defined(BASECOLOR_TEXTURE)
 
 #if defined(MAP_MAT_TXTRS_TO_LINEAR)
-  pbrInfo.baseColor *= sRGBToLinear(texture(uBaseColorTexture, texCoord));
+  pbrInfo.baseColor *=
+      sRGBToLinear(texture(uBaseColorTexture, textureCoordinates));
 #else
-  pbrInfo.baseColor *= texture(uBaseColorTexture, texCoord);
+  pbrInfo.baseColor *= texture(uBaseColorTexture, textureCoordinates);
 #endif  // MAP_MAT_TXTRS_TO_LINEAR
 #endif  // BASECOLOR_TEXTURE
 
@@ -165,9 +167,9 @@ PBRData buildPBRData() {
 
 #if defined(MAP_MAT_TXTRS_TO_LINEAR)
   pbrInfo.emissiveColor *=
-      sRGBToLinear(texture(uEmissiveTexture, texCoord).rgb);
+      sRGBToLinear(texture(uEmissiveTexture, textureCoordinates).rgb);
 #else
-  pbrInfo.emissiveColor *= texture(uEmissiveTexture, texCoord).rgb;
+  pbrInfo.emissiveColor *= texture(uEmissiveTexture, textureCoordinates).rgb;
 
 #endif  // MAP_MAT_TXTRS_TO_LINEAR
 #endif  // EMISSIVE_TEXTURE
@@ -178,7 +180,7 @@ PBRData buildPBRData() {
   pbrInfo.metallic = uMaterial.metallic;
 #if defined(NONE_ROUGHNESS_METALLIC_TEXTURE)
   vec3 RoughnessMetallicSample =
-      texture(uMetallicRoughnessTexture, texCoord).rgb;
+      texture(uMetallicRoughnessTexture, textureCoordinates).rgb;
 
   pbrInfo.perceivedRoughness *= RoughnessMetallicSample.g;
   pbrInfo.metallic *= RoughnessMetallicSample.b;
@@ -225,14 +227,14 @@ PBRData buildPBRData() {
 
   pbrInfo.clearCoatStrength = uClearCoat.factor;
 #if defined(CLEAR_COAT_TEXTURE)
-  pbrInfo.clearCoatStrength *= texture(uClearCoatTexture, texCoord).r;
+  pbrInfo.clearCoatStrength *= texture(uClearCoatTexture, textureCoordinates).r;
 #endif  // CLEAR_COAT_TEXTURE
   pbrInfo.clearCoatStrength = clamp(pbrInfo.clearCoatStrength, 0.0, 1.0);
 
   pbrInfo.clearCoatPerceivedRoughness = uClearCoat.roughness;
 #if defined(CLEAR_COAT_ROUGHNESS_TEXTURE)
   pbrInfo.clearCoatPerceivedRoughness *=
-      texture(uClearCoatRoughnessTexture, texCoord).g;
+      texture(uClearCoatRoughnessTexture, textureCoordinates).g;
 #endif  // CLEAR_COAT_ROUGHNESS_TEXTURE
   // clamp clearcoat roughness to prevent denormals in distribution function
   // calc
@@ -249,9 +251,9 @@ PBRData buildPBRData() {
   pbrInfo.clearCoatNormal = pbrInfo.n;
 #if defined(CLEAR_COAT_NORMAL_TEXTURE)
   // TBH generation appears reasonable when precomputed tangent not provided
-  pbrInfo.clearCoatNormal =
-      getNormalFromNormalMap(texture(uClearCoatNormalTexture, texCoord).xyz,
-                             uClearCoat.normalTextureScale, pbrInfo.TBN);
+  pbrInfo.clearCoatNormal = getNormalFromNormalMap(
+      texture(uClearCoatNormalTexture, textureCoordinates).xyz,
+      uClearCoat.normalTextureScale, pbrInfo.TBN);
 #endif  // CLEAR_COAT_NORMAL_TEXTURE
   // Clearcoat cos angle between clearcoat normal and view
   pbrInfo.cc_n_dot_v =
@@ -284,7 +286,7 @@ PBRData buildPBRData() {
   vec2 anisotropyDir = uAnisotropyLayer.direction;
 
 #if defined(ANISOTROPY_LAYER_TEXTURE)
-  vec3 anisotropyTex = texture(uAnisotropyLayerTexture, texCoord).rgb;
+  vec3 anisotropyTex = texture(uAnisotropyLayerTexture, textureCoordinates).rgb;
   anisotropyDir = anisotropyTex.rg * 2.0 - vec2(1.0);
   anisotropyDir =
       mat2(uAnisotropyLayer.direction.x, uAnisotropyLayer.direction.y,
@@ -346,7 +348,8 @@ PBRData buildPBRData() {
 #if defined(SPECULAR_LAYER)
   pbrInfo.specularWeight = uSpecularLayer.factor;
 #if defined(SPECULAR_LAYER_TEXTURE)
-  pbrInfo.specularWeight *= texture(uSpecularLayerTexture, texCoord).a;
+  pbrInfo.specularWeight *=
+      texture(uSpecularLayerTexture, textureCoordinates).a;
 #endif  // SPECULAR_LAYER_TEXTURE
   // The F0 color of the specular reflection (linear RGB)
   pbrInfo.specularLayerColor = uSpecularLayer.colorFactor;
@@ -355,10 +358,10 @@ PBRData buildPBRData() {
 
 #if defined(MAP_MAT_TXTRS_TO_LINEAR)
   pbrInfo.specularLayerColor *=
-      sRGBToLinear(texture(uSpecularLayerColorTexture, texCoord).rgb);
+      sRGBToLinear(texture(uSpecularLayerColorTexture, textureCoordinates).rgb);
 #else
   pbrInfo.specularLayerColor *=
-      texture(uSpecularLayerColorTexture, texCoord).rgb;
+      texture(uSpecularLayerColorTexture, textureCoordinates).rgb;
 #endif  // MAP_MAT_TXTRS_TO_LINEAR
 
 #endif  // SPECULAR_LAYER_COLOR_TEXTURE

@@ -10,7 +10,7 @@ precision highp float;
 in highp vec3 position;
 in highp vec3 normal;
 #if defined(TEXTURED)
-in highp vec2 texCoord;
+in highp vec2 textureCoordinates;
 #endif
 #if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENT)
 in highp vec3 tangent;
