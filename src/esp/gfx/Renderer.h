@@ -55,7 +55,7 @@ class Renderer {
     /**
      * Enable HBAO visual effect that adds soft shadows to corners and crevices.
      */
-    HorizonBasedAmbientOcclusion = 1 << 3,
+    HorizonBasedAmbientOcclusion = 1 << 4,
 
   };
 

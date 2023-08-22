@@ -341,7 +341,7 @@ struct Renderer::Impl {
             "requiresTextures = false", );
         renderTargetFlags |= RenderTarget::Flag::RgbaAttachment;
 
-        if (flags_ & Renderer::Flag::LeaveContextWithBackgroundRenderer) {
+        if (flags_ & Renderer::Flag::HorizonBasedAmbientOcclusion) {
           // force depth texture for Color sensor, needed for HBAO
           renderTargetFlags |= RenderTarget::Flag::DepthTextureAttachment;
           renderTargetFlags |= RenderTarget::Flag::HorizonBasedAmbientOcclusion;
