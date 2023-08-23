@@ -5,7 +5,7 @@
 find_package(Magnum REQUIRED DebugTools AnyImageConverter AnySceneImporter)
 find_package(
   MagnumPlugins REQUIRED GltfImporter StbImageImporter KtxImporter
-  OPTIONAL_COMPONENTS GltfSceneConverter KtxImageConverter
+  OPTIONAL_COMPONENTS GltfSceneConverter KtxImageConverter StanfordImporter
 )
 
 if(BUILD_WITH_BACKGROUND_RENDERER)
@@ -60,6 +60,21 @@ endif()
 if(MagnumPlugins_KtxImageConverter_FOUND)
   target_link_libraries(GfxBatchRendererTest PRIVATE MagnumPlugins::KtxImageConverter)
 endif()
+
+corrade_add_test(
+  GfxBatchHbaoTest
+  GfxBatchHbaoTest.cpp
+  LIBRARIES
+  gfx_batch
+  Magnum::DebugTools
+  Magnum::OpenGLTester
+  Magnum::MeshTools
+  Magnum::AnyImageConverter
+  Magnum::AnySceneImporter
+  MagnumPlugins::StanfordImporter
+  MagnumPlugins::OpenExrImageConverter
+)
+target_include_directories(GfxBatchHbaoTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(CoreTest CoreTest.cpp LIBRARIES core io)
 
