@@ -4,7 +4,6 @@
 
 #include <Magnum/GL/Buffer.h>
 #include <Magnum/GL/BufferImage.h>
-#include <Magnum/GL/Context.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Framebuffer.h>
 #include <Magnum/GL/Mesh.h>
@@ -124,9 +123,9 @@ struct RenderTarget::Impl {
     if (flags_ & Flag::HorizonBasedAmbientOcclusion) {
       // depth texture is required for HBAO
       CORRADE_INTERNAL_ASSERT(flags_ & Flag::DepthTextureAttachment);
-      hbao_ = gfx_batch::Hbao{gfx_batch::HbaoConfiguration{}
-        .setSize(size)
-        // TODO other options here?
+      hbao_ = gfx_batch::Hbao{
+          gfx_batch::HbaoConfiguration{}.setSize(size)
+          // TODO other options here?
       };
     }
   }
@@ -195,13 +194,12 @@ struct RenderTarget::Impl {
 
   void drawHbao() {
     hbao_.drawCacheAwarePerspective(
-      Mn::Matrix4::perspectiveProjection(
-        90.0_degf, // TODO where the F do i get this
-        Mn::Vector2{framebuffer_.viewport().size()}.aspectRatio(),
-        visualSensor_->specification().get()->near,
-        visualSensor_->specification().get()->far),
-      depthRenderTexture_,
-      framebuffer_);
+        Mn::Matrix4::perspectiveProjection(
+            90.0_degf,  // TODO where the F do i get this
+            Mn::Vector2{framebuffer_.viewport().size()}.aspectRatio(),
+            visualSensor_->specification().get()->near,
+            visualSensor_->specification().get()->far),
+        depthRenderTexture_, framebuffer_);
   }
 
   void blitRgbaTo(Mn::GL::AbstractFramebuffer& target,
