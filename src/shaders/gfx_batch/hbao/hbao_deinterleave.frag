@@ -17,9 +17,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-
-
-
 layout(location=0) uniform vec4      info; // xy
 vec2 uvOffset = info.xy;
 vec2 invResolution = info.zw;
