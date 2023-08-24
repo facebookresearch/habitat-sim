@@ -17,9 +17,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-
-
-
 const float KERNEL_RADIUS = 3;
 
 layout(location=0) uniform float g_Sharpness;
@@ -30,11 +27,6 @@ layout(binding=0) uniform sampler2D texSource;
 in vec2 texCoord;
 
 layout(location=0,index=0) out vec4 out_Color;
-
-#ifndef AO_BLUR_PRESENT
-#define AO_BLUR_PRESENT 1
-#endif
-
 
 //-------------------------------------------------------------------------
 

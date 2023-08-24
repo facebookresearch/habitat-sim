@@ -24,8 +24,6 @@ https://github.com/NVIDIAGameWorks/D3DSamples/tree/master/samples/DeinterleavedT
 
 */
 
-#if 1
-
 struct HBAOData {
   float RadiusToScreen;  // radius
   float R2;              // 1/radius
@@ -54,21 +52,6 @@ struct HBAOData {
 // optimally
 
 #pragma optionNV(unroll all)
-
-#ifndef AO_DEINTERLEAVED
-#error AO_DEINTERLEAVED not defined!
-#define AO_DEINTERLEAVED 1
-#endif
-
-#ifndef AO_BLUR
-#error AO_BLUR not defined!
-#define AO_BLUR 1
-#endif
-
-#ifndef AO_LAYERED
-#error AO_LAYERED not defined!
-#define AO_LAYERED 1
-#endif
 
 #define M_PI 3.14159265f
 
@@ -311,14 +294,3 @@ void main()
     outputColor(vec4(pow(AO, control.PowExponent)));
   #endif
 }
-
-#else
-
-layout(location=0,index=0) out vec4 out_Color;
-
-void main()
-{
-  out_Color = vec4(0.5);
-}
-
-#endif

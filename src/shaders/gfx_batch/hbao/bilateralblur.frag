@@ -17,10 +17,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-
-
-
-
 const float KERNEL_RADIUS = 3;
 
 layout(location=0) uniform float g_Sharpness;
