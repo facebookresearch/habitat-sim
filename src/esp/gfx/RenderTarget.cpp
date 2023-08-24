@@ -192,8 +192,11 @@ struct RenderTarget::Impl {
 
   void renderExit() {}
 
-  void drawHbao() {
-    hbao_.drawCacheAwarePerspective(
+  void tryDrawHbao() {
+    if (!hbao_) {
+      return;
+    }
+    hbao_->drawCacheAwarePerspective(
         Mn::Matrix4::perspectiveProjection(
             90.0_degf,  // TODO where the F do i get this
             Mn::Vector2{framebuffer_.viewport().size()}.aspectRatio(),
@@ -389,7 +392,7 @@ struct RenderTarget::Impl {
   cudaGraphicsResource_t depthBufferCugl_ = nullptr;
 #endif
 
-  gfx_batch::Hbao hbao_{Mn::NoCreate};
+  Cr::Containers::Optional<gfx_batch::Hbao> hbao_{};
 };  // namespace gfx
 
 RenderTarget::RenderTarget(const Mn::Vector2i& size,
@@ -449,9 +452,8 @@ Mn::GL::Texture2D& RenderTarget::getObjectIdTexture() {
   return pimpl_->getObjectIdTexture();
 }
 
-// TODO why "try"? it works
 void RenderTarget::tryDrawHbao() {
-  return pimpl_->drawHbao();
+  return pimpl_->tryDrawHbao();
 }
 
 #ifdef ESP_BUILD_WITH_CUDA
