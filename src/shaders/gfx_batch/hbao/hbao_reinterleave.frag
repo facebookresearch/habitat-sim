@@ -17,13 +17,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-
-
-
-#ifndef AO_BLUR
-#define AO_BLUR 1
-#endif
-
 layout(binding=0)  uniform sampler2DArray texResultsArray;
 
 layout(location=0,index=0) out vec4 out_Color;

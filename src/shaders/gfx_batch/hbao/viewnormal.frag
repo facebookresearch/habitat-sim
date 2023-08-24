@@ -17,9 +17,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-
-
-
 in vec2 texCoord;
 
 layout(location=0) uniform vec4 projInfo;

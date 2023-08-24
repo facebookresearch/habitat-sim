@@ -17,14 +17,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-
-
-
-// TODO wtf is this even
-#ifndef DEPTHLINEARIZE_USEMSAA
-#define DEPTHLINEARIZE_USEMSAA 0
-#endif
-
 layout(location=0) uniform vec4 clipInfo; // z_n * z_f,  z_n - z_f,  z_f, perspective = 1 : 0
 
 #if DEPTHLINEARIZE_MSAA

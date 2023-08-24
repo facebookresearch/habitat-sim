@@ -17,13 +17,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-
-
-/**/
-
-#extension GL_ARB_shading_language_include : enable
- // #include "common.h"
-
 layout(triangles) in;
 
 #extension GL_NV_geometry_shader_passthrough : enable

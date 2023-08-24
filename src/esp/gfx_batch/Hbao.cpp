@@ -51,7 +51,7 @@ class HbaoBlurShader: public Mn::GL::AbstractShaderProgram {
     explicit HbaoBlurShader(bool bilateral, Mn::Int preset): bilateral_{bilateral} {
       CORRADE_INTERNAL_ASSERT(!bilateral || !preset);
 
-      Cr::Utility::Resource rs{"gfx-shaders"};
+      Cr::Utility::Resource rs{"gfx-batch-shaders"};
 
       // TODO use our own
       Mn::GL::Shader vert{GlslVersion, Mn::GL::Shader::Type::Vertex};
@@ -112,7 +112,7 @@ class DepthLinearizeShader: public Mn::GL::AbstractShaderProgram {
   public:
     // TODO MSAA is never used, drop
     explicit DepthLinearizeShader(bool msaa): msaa_{msaa} {
-      Cr::Utility::Resource rs{"gfx-shaders"};
+      Cr::Utility::Resource rs{"gfx-batch-shaders"};
 
       // TODO use our own
       Mn::GL::Shader vert{GlslVersion, Mn::GL::Shader::Type::Vertex};
@@ -169,7 +169,7 @@ class ViewNormalShader: public Mn::GL::AbstractShaderProgram {
 
   public:
     explicit ViewNormalShader() {
-      Cr::Utility::Resource rs{"gfx-shaders"};
+      Cr::Utility::Resource rs{"gfx-batch-shaders"};
 
       // TODO use our own
       Mn::GL::Shader vert{GlslVersion, Mn::GL::Shader::Type::Vertex};
@@ -236,7 +236,7 @@ class HbaoCalcShader: public Mn::GL::AbstractShaderProgram {
       CORRADE_INTERNAL_ASSERT(deinterleaved || layered == Layered::Off);
       CORRADE_INTERNAL_ASSERT(deinterleaved || !textureArrayLayer);
 
-      Cr::Utility::Resource rs{"gfx-shaders"};
+      Cr::Utility::Resource rs{"gfx-batch-shaders"};
 
       // TODO use our own
       Mn::GL::Shader vert{GlslVersion, Mn::GL::Shader::Type::Vertex};
@@ -349,7 +349,7 @@ class HbaoDeinterleaveShader: public Mn::GL::AbstractShaderProgram {
 
   public:
     explicit HbaoDeinterleaveShader() {
-      Cr::Utility::Resource rs{"gfx-shaders"};
+      Cr::Utility::Resource rs{"gfx-batch-shaders"};
 
       // TODO use our own
       Mn::GL::Shader vert{GlslVersion, Mn::GL::Shader::Type::Vertex};
@@ -389,7 +389,7 @@ class HbaoReinterleaveShader: public Mn::GL::AbstractShaderProgram {
 
   public:
     explicit HbaoReinterleaveShader(bool blur) {
-      Cr::Utility::Resource rs{"gfx-shaders"};
+      Cr::Utility::Resource rs{"gfx-batch-shaders"};
 
       // TODO use our own
       Mn::GL::Shader vert{GlslVersion, Mn::GL::Shader::Type::Vertex};
@@ -486,7 +486,7 @@ struct Hbao::State {
 Hbao::Hbao(Mn::NoCreateT) noexcept {}
 
 Hbao::Hbao(const HbaoConfiguration& configuration) {
-  if (!Cr::Utility::Resource::hasGroup("gfx-shaders"))
+  if (!Cr::Utility::Resource::hasGroup("gfx-batch-shaders"))
     importShaderResources();
 
   state_.emplace();
