@@ -86,13 +86,13 @@ const struct {
     esp::gfx_batch::HbaoConfiguration{}.radius(),
     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(),
     4.5f, 0.11f, false},
-  {"cache-aware, layered with geometry shader passthrough", "van-gogh-room.hbao.png",
+  {"cache-aware, layered with geometry shader", "van-gogh-room.hbao.png",
     false,
-    esp::gfx_batch::HbaoConfiguration{}.flags()|esp::gfx_batch::HbaoFlag::LayeredGeometryShaderPassthrough,
+    esp::gfx_batch::HbaoConfiguration{}.flags()|esp::gfx_batch::HbaoFlag::LayeredGeometryShader,
     esp::gfx_batch::HbaoConfiguration{}.intensity(),
     esp::gfx_batch::HbaoConfiguration{}.radius(),
     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(),
-    0.0f, 0.0f, false},
+    4.5f, 0.11f, false},
   {"cache-aware, strong effect", "van-gogh-room.hbao-strong.png",
     false, esp::gfx_batch::HbaoConfiguration{}.flags(),
     2.0f,
@@ -175,10 +175,6 @@ void GfxBatchHbaoTest::generateTestData() {
 void GfxBatchHbaoTest::test() {
   auto&& data = TestData[testCaseInstanceId()];
   setTestCaseDescription(data.name);
-
-  // TODO expose this in Magnum::GL::Extensions, this is shitty
-  if((data.flags & esp::gfx_batch::HbaoFlag::LayeredGeometryShaderPassthrough) && !(Mn::GL::Context::current().detectedDriver() & Mn::GL::Context::DetectedDriver::NVidia))
-    CORRADE_SKIP("GL_NV_geometry_shader_passthrough not supported");
 
   Cr::PluginManager::Manager<Mn::Trade::AbstractImporter> importerManager;
   Cr::Containers::Pointer<Mn::Trade::AbstractImporter> importer = importerManager.loadAndInstantiate("AnyImageImporter");

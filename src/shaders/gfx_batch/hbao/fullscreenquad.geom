@@ -19,9 +19,11 @@
 
 layout(triangles) in;
 
-#extension GL_NV_geometry_shader_passthrough : enable
+#ifdef USE_GEOMETRY_SHADER_PASSTHROUGH
+#extension GL_NV_geometry_shader_passthrough: enable
+#endif
 
-#if GL_NV_geometry_shader_passthrough
+#ifdef USE_GEOMETRY_SHADER_PASSTHROUGH
 
   layout(passthrough) in gl_PerVertex {
     vec4 gl_Position;
@@ -40,15 +42,13 @@ layout(triangles) in;
 
   layout(triangle_strip,max_vertices=3) out;
 
-  in Inputs {
-    vec2 texCoord;
-  } IN[];
-  out vec2 texCoord;
+  in vec2 texCoord[];
+  out vec2 texCoordGeometry;
 
   void main()
   {
     for (int i = 0; i < 3; i++){
-      texCoord = IN[i].texCoord;
+      texCoordGeometry = texCoord[i];
       gl_Layer = gl_PrimitiveIDIn;
       gl_PrimitiveID = gl_PrimitiveIDIn;
       gl_Position = gl_in[i].gl_Position;

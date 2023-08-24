@@ -15,8 +15,7 @@ enum class HbaoFlag {
   /* These two affect only the cache-aware variant. Only one can be set at
      most, not both */
   LayeredImageLoadStore = 1 << 2,
-  /* Works only on NVidia */
-  LayeredGeometryShaderPassthrough = 1 << 3
+  LayeredGeometryShader = 1 << 3
 };
 typedef Corrade::Containers::EnumSet<HbaoFlag> HbaoFlags;
 

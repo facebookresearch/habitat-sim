@@ -131,7 +131,11 @@ layout(std140) uniform controlBuffer {
   }
 #endif
 
+#ifdef USE_GEOMETRY_SHADER_PASSTHROUGH
+in vec2 texCoordGeometry;
+#else
 in vec2 texCoord;
+#endif
 
 //----------------------------------------------------------------------------------
 
@@ -276,7 +280,13 @@ void main()
   vec4 NormalAndAO =  texelFetch( texViewNormal, ivec2(base), 0);
   vec3 ViewNormal =  -(NormalAndAO.xyz * 2.0 - 1.0);
 #else
-  vec2 uv = texCoord;
+  vec2 uv =
+    #ifdef USE_GEOMETRY_SHADER_PASSTHROUGH
+    texCoordGeometry
+    #else
+    texCoord
+    #endif
+    ;
   vec3 ViewPosition = FetchViewPos(uv);
 
   // Reconstruct view-space normal from nearest neighbors
