@@ -9,6 +9,8 @@
 #include <Magnum/PixelFormat.h>
 #include <Magnum/GL/AbstractShaderProgram.h>
 #include <Magnum/GL/Buffer.h>
+#include <Magnum/GL/Context.h>
+#include <Magnum/GL/Extensions.h>
 #include <Magnum/GL/Framebuffer.h>
 #include <Magnum/GL/ImageFormat.h>
 #include <Magnum/GL/Mesh.h>
@@ -30,6 +32,7 @@ namespace esp { namespace gfx_batch {
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
+using namespace Cr::Containers::Literals;
 
 enum: std::size_t {
   AoRandomTextureSize = 4,
@@ -38,7 +41,11 @@ enum: std::size_t {
   FragmentOutputCount = 8
 };
 
-constexpr Mn::GL::Version GlslVersion = Mn::GL::Version::GL430;
+#ifndef MAGNUM_TARGET_GLES
+constexpr Mn::GL::Version GlslVersion = Mn::GL::Version::GL330;
+#else
+constexpr Mn::GL::Version GlslVersion = Mn::GL::Version::GLES300;
+#endif
 
 class HbaoBlurShader: public Mn::GL::AbstractShaderProgram {
   private:
@@ -72,7 +79,11 @@ class HbaoBlurShader: public Mn::GL::AbstractShaderProgram {
       attachShaders({vert, frag});
       CORRADE_INTERNAL_ASSERT(link());
 
-      // TODO query uniforms, set texture bindings for older versions
+      sharpnessUniform_ = uniformLocation("g_Sharpness");
+      inverseResolutionDirectionUniform_ = uniformLocation("g_InvResolutionDirection");
+      setUniform(uniformLocation("texSource"), SourceTextureBinding);
+      if(bilateral)
+        setUniform(uniformLocation("texLinearDepth"), LinearDepthTextureBinding);
     }
 
     HbaoBlurShader& setSharpness(Mn::Float sharpness) {
@@ -97,8 +108,8 @@ class HbaoBlurShader: public Mn::GL::AbstractShaderProgram {
     }
 
   private:
-    Mn::Int sharpnessUniform_ = 0,
-      inverseResolutionDirectionUniform_ = 1;
+    Mn::Int sharpnessUniform_,
+      inverseResolutionDirectionUniform_;
     bool bilateral_;
 };
 
@@ -129,7 +140,10 @@ class DepthLinearizeShader: public Mn::GL::AbstractShaderProgram {
       attachShaders({vert, frag});
       CORRADE_INTERNAL_ASSERT(link());
 
-      // TODO query uniforms, set texture bindings for older versions
+      clipInfoUniform_ = uniformLocation("clipInfo");
+      if(msaa)
+        sampleIndexUniform_ = uniformLocation("sampleIndex");
+      setUniform(uniformLocation("inputTexture"), InputTextureBinding);
     }
 
     DepthLinearizeShader& setClipInfo(const Mn::Vector4& info) {
@@ -156,8 +170,8 @@ class DepthLinearizeShader: public Mn::GL::AbstractShaderProgram {
     }
 
   private:
-    Mn::Int clipInfoUniform_ = 0,
-      sampleIndexUniform_ = 1;
+    Mn::Int clipInfoUniform_,
+      sampleIndexUniform_;
     bool msaa_;
 };
 
@@ -184,7 +198,10 @@ class ViewNormalShader: public Mn::GL::AbstractShaderProgram {
       attachShaders({vert, frag});
       CORRADE_INTERNAL_ASSERT(link());
 
-      // TODO query uniforms, set texture bindings for older versions
+      projectionInfoUniform_ = uniformLocation("projInfo");
+      projectionOrthographicUniform_ = uniformLocation("projOrtho");
+      inverseFullResolutionUniform_ = uniformLocation("InvFullResolution");
+      setUniform(uniformLocation("texLinearDepth"), LinearDepthTextureBinding);
     }
 
     ViewNormalShader& setProjectionInfo(const Mn::Vector4& info) {
@@ -208,9 +225,9 @@ class ViewNormalShader: public Mn::GL::AbstractShaderProgram {
     }
 
   private:
-    Mn::Int projectionInfoUniform_ = 0,
-      projectionOrthographicUniform_ = 1,
-      inverseFullResolutionUniform_ = 2;
+    Mn::Int projectionInfoUniform_,
+      projectionOrthographicUniform_,
+      inverseFullResolutionUniform_;
 };
 
 class HbaoCalcShader: public Mn::GL::AbstractShaderProgram {
@@ -274,7 +291,24 @@ class HbaoCalcShader: public Mn::GL::AbstractShaderProgram {
         attachShaders({vert, frag});
       CORRADE_INTERNAL_ASSERT(link());
 
-      // TODO query uniforms, set texture bindings for older versions
+      setUniformBlockBinding(uniformBlockIndex("controlBuffer"), UniformBufferBinding);
+      if(deinterleaved) {
+        if(layered == Layered::Off) {
+          float2OffsetUniform_ = uniformLocation("g_Float2Offset");
+          jitterUniform_ = uniformLocation("g_Jitter");
+        } else if(layered == Layered::ImageLoadStore) {
+          setUniform(uniformLocation("imgOutput"), OutputImageBinding);
+        }
+      }
+      setUniform(uniformLocation("texLinearDepth"), LinearDepthTextureBinding);
+      if(deinterleaved) {
+        setUniform(uniformLocation("texViewNormal"), ViewNormalTextureBinding);
+      } else {
+        if(textureArrayLayer)
+          linearDepthTextureSliceUniform_ = uniformLocation("g_LinearDepthSlice");
+        setUniform(uniformLocation("texRandom"), RandomTextureBinding);
+        randomSliceUniform_ = uniformLocation("g_RandomSlice");
+      }
     }
 
     HbaoCalcShader& setFloat2Offset(const Mn::Vector2& offset) {
@@ -333,10 +367,10 @@ class HbaoCalcShader: public Mn::GL::AbstractShaderProgram {
     }
 
   private:
-    Mn::Int float2OffsetUniform_ = 0,
-      jitterUniform_ = 1,
-      linearDepthTextureSliceUniform_ = 2,
-      randomSliceUniform_ = 3;
+    Mn::Int float2OffsetUniform_,
+      jitterUniform_,
+      linearDepthTextureSliceUniform_,
+      randomSliceUniform_;
     bool deinterleaved_, blur_, textureArrayLayer_;
     Layered layered_;
 };
@@ -356,6 +390,10 @@ class HbaoDeinterleaveShader: public Mn::GL::AbstractShaderProgram {
       vert.addSource(rs.getString("hbao/fullscreenquad.vert"));
 
       Mn::GL::Shader frag{GlslVersion, Mn::GL::Shader::Type::Fragment};
+      #ifndef MAGNUM_TARGET_GLES
+      if(Mn::GL::Context::current().isExtensionSupported<Mn::GL::Extensions::ARB::gpu_shader5>(GlslVersion))
+        frag.addSource("#define USE_TEXTURE_GATHER\n"_s);
+      #endif
       frag.addSource(rs.getString("hbao/hbao_deinterleave.frag"));
 
       CORRADE_INTERNAL_ASSERT(vert.compile());
@@ -364,7 +402,8 @@ class HbaoDeinterleaveShader: public Mn::GL::AbstractShaderProgram {
       attachShaders({vert, frag});
       CORRADE_INTERNAL_ASSERT(link());
 
-      // TODO query uniforms, set texture bindings for older versions
+      projectionInfoUniform_ = uniformLocation("info");
+      setUniform(uniformLocation("texLinearDepth"), LinearDepthTextureBinding);
     }
 
     HbaoDeinterleaveShader& setProjectionInfo(const Mn::Vector2& uvOffset, const Mn::Vector2& inverseResolution) {
@@ -378,7 +417,7 @@ class HbaoDeinterleaveShader: public Mn::GL::AbstractShaderProgram {
     }
 
   private:
-    Mn::Int projectionInfoUniform_ = 0;
+    Mn::Int projectionInfoUniform_;
 };
 
 class HbaoReinterleaveShader: public Mn::GL::AbstractShaderProgram {
@@ -406,7 +445,7 @@ class HbaoReinterleaveShader: public Mn::GL::AbstractShaderProgram {
       attachShaders({vert, frag});
       CORRADE_INTERNAL_ASSERT(link());
 
-      // TODO query uniforms, set texture bindings for older versions
+      setUniform(uniformLocation("texResultsArray"), ResultsTextureBinding);
     }
 
     HbaoReinterleaveShader& bindResultsTexture(Mn::GL::Texture2DArray& texture) {

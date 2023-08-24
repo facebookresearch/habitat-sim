@@ -19,13 +19,13 @@
 
 in vec2 texCoord;
 
-layout(location=0) uniform vec4 projInfo;
-layout(location=1) uniform int  projOrtho;
-layout(location=2) uniform vec2 InvFullResolution;
+uniform vec4 projInfo;
+uniform int  projOrtho;
+uniform vec2 InvFullResolution;
 
-layout(binding=0)  uniform sampler2D texLinearDepth;
+uniform sampler2D texLinearDepth;
 
-layout(location=0,index=0) out vec4 out_Color;
+out vec4 out_Color;
 
 //----------------------------------------------------------------------------------
 

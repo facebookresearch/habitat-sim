@@ -19,15 +19,15 @@
 
 const float KERNEL_RADIUS = 3;
 
-layout(location=0) uniform float g_Sharpness;
-layout(location=1) uniform vec2  g_InvResolutionDirection; // either set x to 1/width or y to 1/height
+uniform float g_Sharpness;
+uniform vec2  g_InvResolutionDirection; // either set x to 1/width or y to 1/height
 
-layout(binding=0) uniform sampler2D texSource;
-layout(binding=1) uniform sampler2D texLinearDepth;
+uniform sampler2D texSource;
+uniform sampler2D texLinearDepth;
 
 in vec2 texCoord;
 
-layout(location=0,index=0) out vec4 out_Color;
+out vec4 out_Color;
 
 
 //-------------------------------------------------------------------------

@@ -17,6 +17,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#if AO_LAYERED == 1
+#extension GL_ARB_shader_image_load_store: enable
+#endif
 
 /*
 Based on DeinterleavedTexturing sample by Louis Bavoil
@@ -59,7 +62,7 @@ struct HBAOData {
 const float  NUM_STEPS = 4;
 const float  NUM_DIRECTIONS = 8; // texRandom/g_Jitter initialization depends on this
 
-layout(std140,binding=0) uniform controlBuffer {
+layout(std140) uniform controlBuffer {
   HBAOData   control;
 };
 
@@ -69,8 +72,8 @@ layout(std140,binding=0) uniform controlBuffer {
   vec2 g_Float2Offset = control.float2Offsets[gl_PrimitiveID].xy;
   vec4 g_Jitter       = control.jitters[gl_PrimitiveID];
 
-  layout(binding=0) uniform sampler2DArray texLinearDepth;
-  layout(binding=1) uniform sampler2D texViewNormal;
+  uniform sampler2DArray texLinearDepth;
+  uniform sampler2D texViewNormal;
 
   vec3 getQuarterCoord(vec2 UV){
     return vec3(UV,float(gl_PrimitiveID));
@@ -78,33 +81,33 @@ layout(std140,binding=0) uniform controlBuffer {
   #if AO_LAYERED == 1
 
     #if AO_BLUR
-      layout(binding=0,rg16f) uniform image2DArray imgOutput;
+      layout(rg16f) uniform image2DArray imgOutput;
     #else
-      layout(binding=0,r8) uniform image2DArray imgOutput;
+      layout(r8) uniform image2DArray imgOutput;
     #endif
 
     void outputColor(vec4 color) {
       imageStore(imgOutput, ivec3(ivec2(gl_FragCoord.xy),gl_PrimitiveID), color);
     }
   #else
-    layout(location=0,index=0) out vec4 out_Color;
+    out vec4 out_Color;
 
     void outputColor(vec4 color) {
       out_Color = color;
     }
   #endif
 #else
-  layout(location=0) uniform vec2 g_Float2Offset;
-  layout(location=1) uniform vec4 g_Jitter;
+  uniform vec2 g_Float2Offset;
+  uniform vec4 g_Jitter;
 
-  layout(binding=0) uniform sampler2D texLinearDepth;
-  layout(binding=1) uniform sampler2D texViewNormal;
+  uniform sampler2D texLinearDepth;
+  uniform sampler2D texViewNormal;
 
   vec2 getQuarterCoord(vec2 UV){
     return UV;
   }
 
-  layout(location=0,index=0) out vec4 out_Color;
+  out vec4 out_Color;
 
   void outputColor(vec4 color) {
     out_Color = color;
@@ -113,15 +116,15 @@ layout(std140,binding=0) uniform controlBuffer {
 
 #else
   #if AO_TEXTUREARRAY_LAYER
-  layout(binding=0) uniform sampler2DArray texLinearDepth;
-  layout(location=2) uniform float g_LinearDepthSlice;
+  uniform sampler2DArray texLinearDepth;
+  uniform float g_LinearDepthSlice;
   #else
-  layout(binding=0) uniform sampler2D texLinearDepth;
+  uniform sampler2D texLinearDepth;
   #endif
-  layout(binding=1) uniform sampler2DArray texRandom;
-  layout(location=3) uniform float g_RandomSlice;
+  uniform sampler2DArray texRandom;
+  uniform float g_RandomSlice;
 
-  layout(location=0,index=0) out vec4 out_Color;
+  out vec4 out_Color;
 
   void outputColor(vec4 color) {
     out_Color = color;
