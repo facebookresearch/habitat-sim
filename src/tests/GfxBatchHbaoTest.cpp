@@ -5,12 +5,14 @@
 #include <Magnum/ImageView.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/DebugTools/CompareImage.h>
-#include <Magnum/GL/OpenGLTester.h>
+#include <Magnum/GL/Extensions.h>
 #include <Magnum/GL/Framebuffer.h>
 #include <Magnum/GL/Mesh.h>
+#include <Magnum/GL/OpenGLTester.h>
 #include <Magnum/GL/Renderer.h>
 #include <Magnum/GL/Texture.h>
 #include <Magnum/GL/TextureFormat.h>
+#include <Magnum/GL/Version.h>
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix4.h>
 #include <Magnum/MeshTools/Compile.h>
@@ -175,6 +177,15 @@ void GfxBatchHbaoTest::generateTestData() {
 void GfxBatchHbaoTest::test() {
   auto&& data = TestData[testCaseInstanceId()];
   setTestCaseDescription(data.name);
+
+  if((data.flags & esp::gfx_batch::HbaoFlag::LayeredImageLoadStore) && !(
+    #ifdef MAGNUM_TARGET_GLES
+    Mn::GL::Context::current().isVersionSupported(Mn::GL::Version::GLES310)
+    #else
+    Mn::GL::Context::current().isExtensionSupported<Mn::GL::Extensions::ARB::shader_image_load_store>()
+    #endif
+  ))
+    CORRADE_SKIP("Image load/store not supported");
 
   Cr::PluginManager::Manager<Mn::Trade::AbstractImporter> importerManager;
   Cr::Containers::Pointer<Mn::Trade::AbstractImporter> importer = importerManager.loadAndInstantiate("AnyImageImporter");
