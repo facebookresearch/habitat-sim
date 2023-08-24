@@ -244,7 +244,7 @@ class HbaoCalcShader: public Mn::GL::AbstractShaderProgram {
     enum Layered {
       Off = 0,
       ImageLoadStore = 1,
-      GeometryShaderPassthrough = 2
+      GeometryShader = 2
     };
 
     explicit HbaoCalcShader(Mn::NoCreateT): Mn::GL::AbstractShaderProgram{Mn::NoCreate} {}
@@ -259,13 +259,26 @@ class HbaoCalcShader: public Mn::GL::AbstractShaderProgram {
       Mn::GL::Shader vert{GlslVersion, Mn::GL::Shader::Type::Vertex};
       vert.addSource(rs.getString("hbao/fullscreenquad.vert"));
 
+      const bool passthroughSupported =
+        /* Needs https://github.com/mosra/magnum/commit/5f287df332fee7fcc2df6e8055853b86d1db3ed2 */
+        #if 0
+        Mn::GL::Context::current().isExtensionSupported<Mn::GL::Extensions::NV::geometry_shader_passthrough>(GlslVersion);
+        #else
+        Mn::GL::Context::current().detectedDriver() >= Mn::GL::Context::DetectedDriver::NVidia
+        #endif
+        ;
+
       Mn::GL::Shader geom{Mn::NoCreate};
-      if(layered == Layered::GeometryShaderPassthrough) {
+      if(layered == Layered::GeometryShader) {
         geom = Mn::GL::Shader{GlslVersion, Mn::GL::Shader::Type::Geometry};
+        if(passthroughSupported)
+          geom.addSource("#define USE_GEOMETRY_SHADER_PASSTHROUGH\n"_s);
         geom.addSource(rs.getString("hbao/fullscreenquad.geom"));
       }
 
       Mn::GL::Shader frag{GlslVersion, Mn::GL::Shader::Type::Fragment};
+      if(layered == Layered::GeometryShader && passthroughSupported)
+        frag.addSource("#define USE_GEOMETRY_SHADER_PASSTHROUGH\n"_s);
       frag
         .addSource(Cr::Utility::format(
           "#define AO_DEINTERLEAVED {}\n"
@@ -282,10 +295,10 @@ class HbaoCalcShader: public Mn::GL::AbstractShaderProgram {
 
       CORRADE_INTERNAL_ASSERT(vert.compile());
       CORRADE_INTERNAL_ASSERT(frag.compile());
-      if(layered == Layered::GeometryShaderPassthrough)
+      if(layered == Layered::GeometryShader)
         CORRADE_INTERNAL_ASSERT(geom.compile());
 
-      if(layered == Layered::GeometryShaderPassthrough)
+      if(layered == Layered::GeometryShader)
         attachShaders({vert, geom, frag});
       else
         attachShaders({vert, frag});
@@ -537,7 +550,7 @@ Hbao::Hbao(const HbaoConfiguration& configuration) {
 
   /* Only one of these can be set */
   CORRADE_INTERNAL_ASSERT(
-    !(configuration.flags() & HbaoFlag::LayeredGeometryShaderPassthrough) ||
+    !(configuration.flags() & HbaoFlag::LayeredGeometryShader) ||
     !(configuration.flags() & HbaoFlag::LayeredImageLoadStore));
 
   /* "init misc" */
@@ -654,7 +667,7 @@ Hbao::Hbao(const HbaoConfiguration& configuration) {
 
     if(configuration.flags() & HbaoFlag::LayeredImageLoadStore)
       state_->hbao2Calc.setDefaultSize(quarterSize);
-    else if(configuration.flags() & HbaoFlag::LayeredGeometryShaderPassthrough)
+    else if(configuration.flags() & HbaoFlag::LayeredGeometryShader)
       state_->hbao2Calc.attachLayeredTexture(Mn::GL::Framebuffer::ColorAttachment{0}, state_->hbao2ResultArray, 0);
   }
 
@@ -664,8 +677,8 @@ Hbao::Hbao(const HbaoConfiguration& configuration) {
     if(configuration.flags() & HbaoFlag::LayeredImageLoadStore) {
       layered = HbaoCalcShader::Layered::ImageLoadStore;
       textureArrayLayer = false;
-    } else if(configuration.flags() & HbaoFlag::LayeredGeometryShaderPassthrough) {
-      layered = HbaoCalcShader::Layered::GeometryShaderPassthrough;
+    } else if(configuration.flags() & HbaoFlag::LayeredGeometryShader) {
+      layered = HbaoCalcShader::Layered::GeometryShader;
       textureArrayLayer = false;
     } else {
       layered = HbaoCalcShader::Layered::Off;
@@ -710,7 +723,7 @@ void prepareHbaoData(const HbaoConfiguration& configuration, const Mn::Matrix4& 
   uniformData.invQuarterResolution = Mn::Vector2{1.0f}/Mn::Vector2{quarterSize};
   uniformData.invFullResolution = Mn::Vector2{1.0f}/Mn::Vector2{configuration.size()};
 
-  if(configuration.flags() & (HbaoFlag::LayeredGeometryShaderPassthrough|HbaoFlag::LayeredImageLoadStore)) for(Mn::Int i = 0; i != HbaoRandomSize*HbaoRandomSize; ++i) {
+  if(configuration.flags() & (HbaoFlag::LayeredGeometryShader |HbaoFlag::LayeredImageLoadStore)) for(Mn::Int i = 0; i != HbaoRandomSize*HbaoRandomSize; ++i) {
     uniformData.float2Offsets[i] = {
       Mn::Float(i % 4) + 0.5f,
       Mn::Float(i / 4) + 0.5f,
@@ -897,7 +910,7 @@ void Hbao::drawCacheAwareInternal(Mn::GL::AbstractFramebuffer& output) {
     .bindViewNormalTexture(state_->sceneViewNormal)
     .bindUniformBuffer(state_->hbaoUniform);
 
-  if(state_->configuration.flags() & (HbaoFlag::LayeredGeometryShaderPassthrough|HbaoFlag::LayeredImageLoadStore)) {
+  if(state_->configuration.flags() & (HbaoFlag::LayeredGeometryShader |HbaoFlag::LayeredImageLoadStore)) {
     shader.bindLinearDepthTexture(state_->hbao2DepthArray);
     if(state_->configuration.flags() & HbaoFlag::LayeredImageLoadStore)
       shader.bindOutputImage(state_->hbao2ResultArray, 0);
