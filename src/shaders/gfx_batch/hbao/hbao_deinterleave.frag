@@ -17,17 +17,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-layout(location=0) uniform vec4      info; // xy
+#ifdef USE_TEXTURE_GATHER
+#extension GL_ARB_gpu_shader5: enable
+#endif
+
+uniform vec4      info; // xy
 vec2 uvOffset = info.xy;
 vec2 invResolution = info.zw;
 
-layout(binding=0)  uniform sampler2D texLinearDepth;
+uniform sampler2D texLinearDepth;
 
-layout(location=0,index=0) out float out_Color[8];
+out float out_Color[8];
 
 //----------------------------------------------------------------------------------
 
-#if 1
+#ifdef USE_TEXTURE_GATHER
 void main() {
   vec2 uv = floor(gl_FragCoord.xy) * 4.0 + uvOffset + 0.5;
   uv *= invResolution;
