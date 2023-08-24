@@ -17,16 +17,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-layout(location=0) uniform vec4 clipInfo; // z_n * z_f,  z_n - z_f,  z_f, perspective = 1 : 0
+uniform vec4 clipInfo; // z_n * z_f,  z_n - z_f,  z_f, perspective = 1 : 0
 
 #if DEPTHLINEARIZE_MSAA
-layout(location=1) uniform int sampleIndex;
-layout(binding=0)  uniform sampler2DMS inputTexture;
+uniform int sampleIndex;
+uniform sampler2DMS inputTexture;
 #else
-layout(binding=0)  uniform sampler2D inputTexture;
+uniform sampler2D inputTexture;
 #endif
 
-layout(location=0,index=0) out float out_Color;
+out float out_Color;
 
 float reconstructCSZ(float d, vec4 clipInfo) {
   if (clipInfo[3] != 0) {
