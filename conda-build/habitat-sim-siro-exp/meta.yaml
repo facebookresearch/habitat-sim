@@ -13,7 +13,7 @@
 
 
 package:
-  name: habitat-sim
+  name: habitat-sim-siro-exp
   version: "{{ environ.get('VERSION') }}"
 
 source:

@@ -773,7 +773,7 @@ workflows:
       - install_and_test_ubuntu
       - pre-commit
       - build_conda_binaries:
-          CI_TEST: true
+          CI_TEST: false
       - clang_tidy
   nightly:
     triggers:
