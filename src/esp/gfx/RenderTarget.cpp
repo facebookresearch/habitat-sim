@@ -196,10 +196,11 @@ struct RenderTarget::Impl {
     if (!hbao_) {
       return;
     }
+    const auto aspectRatio =
+        Mn::Vector2{framebuffer_.viewport().size()}.aspectRatio();
     hbao_->drawCacheAwarePerspective(
         Mn::Matrix4::perspectiveProjection(
-            90.0_degf,  // TODO where the F do i get this
-            Mn::Vector2{framebuffer_.viewport().size()}.aspectRatio(),
+            visualSensor_->getFOV(), aspectRatio,
             visualSensor_->specification().get()->near,
             visualSensor_->specification().get()->far),
         depthRenderTexture_, framebuffer_);

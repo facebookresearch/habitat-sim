@@ -972,10 +972,11 @@ void Hbao::drawCacheAwareInternal(Mn::GL::AbstractFramebuffer& output) {
 
   for (Mn::Int i = 0; i != HbaoRandomSize * HbaoRandomSize;
        i += FragmentOutputCount) {
-    for (Mn::UnsignedInt layer = 0; layer != FragmentOutputCount; ++layer)
+    for (Mn::UnsignedInt layer = 0; layer != FragmentOutputCount; ++layer) {
       state_->hbao2Deinterleave.attachTextureLayer(
           Mn::GL::Framebuffer::ColorAttachment{layer}, state_->hbao2DepthArray,
           0, i + layer);
+    }
 
     state_->hbao2DeinterleaveShader
         .setProjectionInfo({Mn::Float(i % 4) + 0.5f, Mn::Float(i / 4) + 0.5f},
@@ -996,13 +997,15 @@ void Hbao::drawCacheAwareInternal(Mn::GL::AbstractFramebuffer& output) {
   if (state_->configuration.flags() &
       (HbaoFlag::LayeredGeometryShader | HbaoFlag::LayeredImageLoadStore)) {
     shader.bindLinearDepthTexture(state_->hbao2DepthArray);
-    if (state_->configuration.flags() & HbaoFlag::LayeredImageLoadStore)
+    if (state_->configuration.flags() & HbaoFlag::LayeredImageLoadStore) {
       shader.bindOutputImage(state_->hbao2ResultArray, 0);
+    }
     shader.draw(state_->triangleLayered);
-    if (state_->configuration.flags() & HbaoFlag::LayeredImageLoadStore)
+    if (state_->configuration.flags() & HbaoFlag::LayeredImageLoadStore) {
       Mn::GL::Renderer::setMemoryBarrier(
           Mn::GL::Renderer::MemoryBarrier::TextureFetch |
           Mn::GL::Renderer::MemoryBarrier::ShaderImageAccess);
+    }
   } else {
     for (Mn::Int i = 0; i != HbaoRandomSize * HbaoRandomSize; ++i) {
       state_->hbao2Calc.attachTextureLayer(
