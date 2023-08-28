@@ -754,7 +754,7 @@ void prepareHbaoData(const HbaoConfiguration& configuration,
   uniformData.negInvR2 = -1.0f / uniformData.r2;
   /* For perspective, projection[1][1] is 1/tan(fov/2) */
   const Mn::Float projectionScale =
-      2 * configuration.size().y() * projection[1][1];
+      0.5f * configuration.size().y() * projection[1][1];
   uniformData.radiusToScreen = r * 0.5f * projectionScale;
 
   /* AO */
