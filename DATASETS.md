@@ -140,7 +140,13 @@ ___
 
 Details: [https://3dlg-hcvc.github.io/hssd/](https://3dlg-hcvc.github.io/hssd/).
 
-You can download the HSSD dataset from instructions provided in the above website.
+You can browse and download the HSSD dataset from instructions provided in the above website.
+
+For quick setup and use with habitat-sim and habitat-lab, register for access [on the huggingface hssd-hab repo page](https://huggingface.co/datasets/hssd/hssd-hab) and then use the `datasets_download.py` script as follows:
+
+```
+python -m habitat_sim.utils.datasets_download --username <huggingface-username> --password <huggingface-password> --uids hssd-hab --data-path data/
+```
 
 ___
 
