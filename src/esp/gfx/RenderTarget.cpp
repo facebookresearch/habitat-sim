@@ -196,14 +196,13 @@ struct RenderTarget::Impl {
     if (!hbao_) {
       return;
     }
-    const auto aspectRatio =
-        Mn::Vector2{framebuffer_.viewport().size()}.aspectRatio();
-    hbao_->drawCacheAwarePerspective(
-        Mn::Matrix4::perspectiveProjection(
-            visualSensor_->getFOV(), aspectRatio,
-            visualSensor_->specification().get()->near,
-            visualSensor_->specification().get()->far),
-        depthRenderTexture_, framebuffer_);
+    // TODO:Support a toggle between cache-aware and classic algorithm. For now
+    // we just use cache aware
+    bool useCacheAware = true;
+
+    hbao_->draw(visualSensor_->getProjectionMatrix(),
+                visualSensor_->getIsOrthographic(), useCacheAware,
+                depthRenderTexture_, framebuffer_);
   }
 
   void blitRgbaTo(Mn::GL::AbstractFramebuffer& target,

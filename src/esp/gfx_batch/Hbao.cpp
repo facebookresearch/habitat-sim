@@ -137,8 +137,9 @@ class DepthLinearizeShader : public Mn::GL::AbstractShaderProgram {
     CORRADE_INTERNAL_ASSERT(link());
 
     clipInfoUniform_ = uniformLocation("clipInfo");
-    if (msaa)
+    if (msaa) {
       sampleIndexUniform_ = uniformLocation("sampleIndex");
+    }
     setUniform(uniformLocation("inputTexture"), InputTextureBinding);
   }
 
@@ -159,7 +160,7 @@ class DepthLinearizeShader : public Mn::GL::AbstractShaderProgram {
     return *this;
   }
 
-#if !defined(MAGNUM_TARGET_WEBGL)
+#if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
   DepthLinearizeShader& bindInputTexture(
       Mn::GL::MultisampleTexture2D& texture) {
     CORRADE_INTERNAL_ASSERT(msaa_);
@@ -269,7 +270,7 @@ class HbaoCalcShader : public Mn::GL::AbstractShaderProgram {
         Mn::GL::Context::DetectedDriver::NVidia
 #endif
         ;
-#if !defined(MAGNUM_TARGET_WEBGL)
+#if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
     Mn::GL::Shader geom{Mn::NoCreate};
     if (layered == Layered::GeometryShader) {
       geom = Mn::GL::Shader{GlslVersion, Mn::GL::Shader::Type::Geometry};
@@ -281,7 +282,7 @@ class HbaoCalcShader : public Mn::GL::AbstractShaderProgram {
 
     Mn::GL::Shader frag{GlslVersion, Mn::GL::Shader::Type::Fragment};
 
-#if !defined(MAGNUM_TARGET_WEBGL)
+#if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
     if (layered == Layered::GeometryShader && passthroughSupported) {
       frag.addSource("#define USE_GEOMETRY_SHADER_PASSTHROUGH\n"_s);
     }
@@ -299,7 +300,8 @@ class HbaoCalcShader : public Mn::GL::AbstractShaderProgram {
 
     CORRADE_INTERNAL_ASSERT(vert.compile());
     CORRADE_INTERNAL_ASSERT(frag.compile());
-#if !defined(MAGNUM_TARGET_WEBGL)
+
+#if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
     if (layered == Layered::GeometryShader) {
       CORRADE_INTERNAL_ASSERT(geom.compile());
     }
@@ -385,7 +387,7 @@ class HbaoCalcShader : public Mn::GL::AbstractShaderProgram {
     return *this;
   }
 
-#if !defined(MAGNUM_TARGET_WEBGL)
+#if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
   HbaoCalcShader& bindOutputImage(Mn::GL::Texture2DArray& texture,
                                   Mn::Int level) {
     CORRADE_INTERNAL_ASSERT(deinterleaved_ &&
@@ -564,13 +566,23 @@ struct Hbao::State {
 Hbao::Hbao(Mn::NoCreateT) noexcept {}
 
 Hbao::Hbao(const HbaoConfiguration& configuration) {
-  if (!Cr::Utility::Resource::hasGroup("gfx-batch-shaders"))
+  if (!Cr::Utility::Resource::hasGroup("gfx-batch-shaders")) {
     importShaderResources();
+  }
 
   state_.emplace();
+  setConfiguration(configuration);
+}
 
+Hbao::Hbao(Hbao&&) noexcept = default;
+
+Hbao::~Hbao() = default;
+
+Hbao& Hbao::operator=(Hbao&&) noexcept = default;
+
+void Hbao::setConfiguration(const HbaoConfiguration& configuration) {
   // TODO probably most of the config should be at runtime, not setup time
-  //  though size definitely can't be at setup time unless there's a way to
+  //  though size definitely can't be at runtime unless there's a way to
   //  recreate all framebuffers
   CORRADE_INTERNAL_ASSERT(!configuration.size().isZero());
 
@@ -654,6 +666,8 @@ Hbao::Hbao(const HbaoConfiguration& configuration) {
         // TODO filter?!
         .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
         .setStorage(1, aoFormat, configuration.size());
+
+#if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
     if (state_->configuration.flags() & HbaoFlag::UseAoSpecialBlur) {
       state_->hbaoResult.setSwizzle<'r', 'g', '0', '0'>();
       state_->hbaoBlur.setSwizzle<'r', 'g', '0', '0'>();
@@ -661,6 +675,7 @@ Hbao::Hbao(const HbaoConfiguration& configuration) {
       state_->hbaoResult.setSwizzle<'r', 'r', 'r', 'r'>();
       state_->hbaoBlur.setSwizzle<'r', 'r', 'r', 'r'>();
     }
+#endif
 
     state_->hbaoCalc = Mn::GL::Framebuffer{{{}, configuration.size()}};
     state_->hbaoCalc
@@ -701,11 +716,14 @@ Hbao::Hbao(const HbaoConfiguration& configuration) {
 
     state_->hbao2Calc = Mn::GL::Framebuffer{{{}, quarterSize}};
 
-    if (configuration.flags() & HbaoFlag::LayeredImageLoadStore)
+#if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
+    if (configuration.flags() & HbaoFlag::LayeredImageLoadStore) {
       state_->hbao2Calc.setDefaultSize(quarterSize);
-    else if (configuration.flags() & HbaoFlag::LayeredGeometryShader)
+    } else if (configuration.flags() & HbaoFlag::LayeredGeometryShader) {
       state_->hbao2Calc.attachLayeredTexture(
           Mn::GL::Framebuffer::ColorAttachment{0}, state_->hbao2ResultArray, 0);
+    }
+#endif
   }
 
   {
@@ -732,14 +750,11 @@ Hbao::Hbao(const HbaoConfiguration& configuration) {
   state_->configuration = configuration;
 }
 
-Hbao::Hbao(Hbao&&) noexcept = default;
-
-Hbao::~Hbao() = default;
-
-Hbao& Hbao::operator=(Hbao&&) noexcept = default;
-
 namespace {
 
+/**
+ * Populate uniform data with appropriate values from configuration
+ */
 void prepareHbaoData(const HbaoConfiguration& configuration,
                      const Mn::Matrix4& projection,
                      HbaoUniformData& uniformData,
@@ -754,7 +769,9 @@ void prepareHbaoData(const HbaoConfiguration& configuration,
   uniformData.negInvR2 = -1.0f / uniformData.r2;
   /* For perspective, projection[1][1] is 1/tan(fov/2) */
   const Mn::Float projectionScale =
-      0.5f * configuration.size().y() * projection[1][1];
+      (uniformData.projOrtho != 0
+           ? configuration.size().y() / uniformData.projInfo[1]
+           : 0.5f * configuration.size().y() * projection[1][1]);
   uniformData.radiusToScreen = r * 0.5f * projectionScale;
 
   /* AO */
@@ -784,42 +801,6 @@ void prepareHbaoData(const HbaoConfiguration& configuration,
   uniform.setSubData(0, {&uniformData, 1});
 }
 
-void prepareHbaoDataPerspective(
-    const HbaoConfiguration& configuration,
-    const Mn::Matrix4& projection,
-    HbaoUniformData& uniformData,
-    Mn::GL::Buffer& uniform,
-    Cr::Containers::StaticArrayView<HbaoRandomSize * HbaoRandomSize *
-                                        MaxSamples,
-                                    const Mn::Vector4> random) {
-  uniformData.projInfo = {
-      2.0f / projection[0][0],
-      2.0f / projection[1][1],
-      -(1.0f - projection[2][0]) / projection[0][0],
-      -(1.0f + projection[2][1]) / projection[1][1],
-  };
-  uniformData.projOrtho = false;
-  prepareHbaoData(configuration, projection, uniformData, uniform, random);
-}
-
-void prepareHbaoDataOrthographic(
-    const HbaoConfiguration& configuration,
-    const Mn::Matrix4& projection,
-    HbaoUniformData& uniformData,
-    Mn::GL::Buffer& uniform,
-    Cr::Containers::StaticArrayView<HbaoRandomSize * HbaoRandomSize *
-                                        MaxSamples,
-                                    const Mn::Vector4> random) {
-  uniformData.projInfo = {
-      2.0f / projection[0][0],
-      2.0f / projection[1][1],
-      -(1.0f + projection[3][0]) / projection[0][0],
-      -(1.0f - projection[3][1]) / projection[1][1],
-  };
-  uniformData.projOrtho = true;
-  prepareHbaoData(configuration, projection, uniformData, uniform, random);
-}
-
 // TODO upstream!!
 Mn::Float near(const Mn::Matrix4& projectionMatrix) {
   return projectionMatrix[3][2] / (projectionMatrix[2][2] - 1.0f);
@@ -837,10 +818,11 @@ void Hbao::drawLinearDepth(const Mn::Matrix4& projection,
   state_->depthLinear.bind();
   auto nearProj = near(projection);
   auto farProj = far(projection);
-  state_->depthLinearizeShader
-      .setClipInfo({// TODO this still looks like there's some better way this
-                    // should be extracted
-                    nearProj * farProj, nearProj - farProj, farProj,
+  state_
+      ->depthLinearizeShader
+      // TODO this still looks like there's some better way this should be
+      // extracted
+      .setClipInfo({nearProj * farProj, nearProj - farProj, farProj,
                     orthographic ? 0.0f : 1.0f})
       .bindInputTexture(depthStencilInput)
       .draw(state_->triangle);
@@ -884,27 +866,42 @@ void Hbao::drawHbaoBlur(Mn::GL::AbstractFramebuffer& output) {
   shader.draw(state_->triangle);
 }
 
-void Hbao::drawClassicOrthographic(const Mn::Matrix4& projection,
-                                   Mn::GL::Texture2D& depthStencilInput,
-                                   Mn::GL::AbstractFramebuffer& output) {
-  // TODO this absolutely does not need to be redone every time
-  prepareHbaoDataOrthographic(state_->configuration, projection,
-                              state_->hbaoUniformData, state_->hbaoUniform,
-                              state_->random);
-  drawLinearDepth(projection, true, depthStencilInput);
-  drawClassicInternal(output);
-}
+void Hbao::draw(const Mn::Matrix4& projection,
+                bool isOrthographic,
+                bool useCacheAware,
+                Mn::GL::Texture2D& depthStencilInput,
+                Mn::GL::AbstractFramebuffer& output) {
+  if (isOrthographic) {
+    // Orthographic rendering
+    state_->hbaoUniformData.projInfo = {
+        2.0f / projection[0][0],
+        2.0f / projection[1][1],
+        -(1.0f + projection[3][0]) / projection[0][0],
+        -(1.0f - projection[3][1]) / projection[1][1],
+    };
 
-void Hbao::drawClassicPerspective(const Mn::Matrix4& projection,
-                                  Mn::GL::Texture2D& depthStencilInput,
-                                  Mn::GL::AbstractFramebuffer& output) {
+  } else {
+    // Perspective rendering
+    state_->hbaoUniformData.projInfo = {
+        2.0f / projection[0][0],
+        2.0f / projection[1][1],
+        -(1.0f - projection[2][0]) / projection[0][0],
+        -(1.0f + projection[2][1]) / projection[1][1],
+    };
+  }
+
+  state_->hbaoUniformData.projOrtho = isOrthographic;
   // TODO this absolutely does not need to be redone every time
-  prepareHbaoDataPerspective(state_->configuration, projection,
-                             state_->hbaoUniformData, state_->hbaoUniform,
-                             state_->random);
-  drawLinearDepth(projection, false, depthStencilInput);
-  drawClassicInternal(output);
-}
+  prepareHbaoData(state_->configuration, projection, state_->hbaoUniformData,
+                  state_->hbaoUniform, state_->random);
+  drawLinearDepth(projection, isOrthographic, depthStencilInput);
+  if (useCacheAware) {
+    drawCacheAwareInternal(output);
+  } else {
+    drawClassicInternal(output);
+  }
+
+}  // Hbao::draw
 
 void Hbao::drawClassicInternal(Mn::GL::AbstractFramebuffer& output) {
   if (state_->configuration.flags() & HbaoFlag::Blur) {
@@ -933,28 +930,6 @@ void Hbao::drawClassicInternal(Mn::GL::AbstractFramebuffer& output) {
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
   Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
   // TODO reset sample mask if ever used
-}
-
-void Hbao::drawCacheAwareOrthographic(const Mn::Matrix4& projection,
-                                      Mn::GL::Texture2D& depthStencilInput,
-                                      Mn::GL::AbstractFramebuffer& output) {
-  // TODO this absolutely does not need to be redone every time
-  prepareHbaoDataOrthographic(state_->configuration, projection,
-                              state_->hbaoUniformData, state_->hbaoUniform,
-                              state_->random);
-  drawLinearDepth(projection, true, depthStencilInput);
-  drawCacheAwareInternal(output);
-}
-
-void Hbao::drawCacheAwarePerspective(const Mn::Matrix4& projection,
-                                     Mn::GL::Texture2D& depthStencilInput,
-                                     Mn::GL::AbstractFramebuffer& output) {
-  // TODO this absolutely does not need to be redone every time
-  prepareHbaoDataPerspective(state_->configuration, projection,
-                             state_->hbaoUniformData, state_->hbaoUniform,
-                             state_->random);
-  drawLinearDepth(projection, false, depthStencilInput);
-  drawCacheAwareInternal(output);
 }
 
 void Hbao::drawCacheAwareInternal(Mn::GL::AbstractFramebuffer& output) {
@@ -994,6 +969,7 @@ void Hbao::drawCacheAwareInternal(Mn::GL::AbstractFramebuffer& output) {
   shader.bindViewNormalTexture(state_->sceneViewNormal)
       .bindUniformBuffer(state_->hbaoUniform);
 
+#if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
   if (state_->configuration.flags() &
       (HbaoFlag::LayeredGeometryShader | HbaoFlag::LayeredImageLoadStore)) {
     shader.bindLinearDepthTexture(state_->hbao2DepthArray);
@@ -1017,6 +993,17 @@ void Hbao::drawCacheAwareInternal(Mn::GL::AbstractFramebuffer& output) {
           .draw(state_->triangle);
     }
   }
+#else
+  for (Mn::Int i = 0; i != HbaoRandomSize * HbaoRandomSize; ++i) {
+    state_->hbao2Calc.attachTextureLayer(
+        Mn::GL::Framebuffer::ColorAttachment{0}, state_->hbao2ResultArray, 0,
+        i);
+    shader.setFloat2Offset({Mn::Float(i % 4) + 0.5f, Mn::Float(i / 4) + 0.5f})
+        .setJitter(state_->random[i])
+        .bindLinearDepthTexture(state_->hbao2DepthArray, i)
+        .draw(state_->triangle);
+  }
+#endif
 
   if (state_->configuration.flags() & HbaoFlag::Blur) {
     state_->hbaoCalc.mapForDraw(Mn::GL::Framebuffer::ColorAttachment{0}).bind();
