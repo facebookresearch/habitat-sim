@@ -70,7 +70,7 @@ def initialize_test_data_sources(data_path):
         "hssd-hab": {
             "source": "https://huggingface.co/datasets/hssd/hssd-hab.git",
             "link": data_path + "scene_datasets/hssd-hab",
-            "version": "v0.2.3",
+            "version": "v0.2.4",
             "requires_auth": True,
         },
         "hssd-raw": {
