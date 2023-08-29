@@ -96,18 +96,29 @@ class Hbao {
   Hbao& operator=(const Hbao&) = delete;
   Hbao& operator=(Hbao&&) noexcept;
 
-  void drawClassicOrthographic(const Magnum::Matrix4& projection,
-                               Magnum::GL::Texture2D& inputDepthStencil,
-                               Magnum::GL::AbstractFramebuffer& output);
-  void drawClassicPerspective(const Magnum::Matrix4& projection,
-                              Magnum::GL::Texture2D& inputDepthStencil,
-                              Magnum::GL::AbstractFramebuffer& output);
-  void drawCacheAwareOrthographic(const Magnum::Matrix4& projection,
-                                  Magnum::GL::Texture2D& inputDepthStencil,
-                                  Magnum::GL::AbstractFramebuffer& output);
-  void drawCacheAwarePerspective(const Magnum::Matrix4& projection,
-                                 Magnum::GL::Texture2D& inputDepthStencil,
-                                 Magnum::GL::AbstractFramebuffer& output);
+  /**
+   * @brief Set the configurable quantites of the HBAO alogirthm based on user
+   * settings and defaults.
+   */
+  void setConfiguration(const HbaoConfiguration& configuration);
+
+  /**
+   * @brief Draw the HBAO effect on top of the current framebuffer.
+   * @param projection The current visual sensor's projection matrix.
+   * @param isOrthographic Whether the sensor uses an orthographic or
+   * perspective projection matrix.
+   * @param useCacheAware Whether to use the cache-aware algorithm or the
+   * original/classic HBAO algorithm. The cache-aware algorithm has performance
+   * optimizations.
+   * @param inputDepthStencil The owning RenderTarget's depthRenderTexture
+   * @param output The owning RenderTarget's framebuffer the effect is to be
+   * written to.
+   */
+  void draw(const Magnum::Matrix4& projection,
+            bool isOrthographic,
+            bool useCacheAware,
+            Magnum::GL::Texture2D& inputDepthStencil,
+            Magnum::GL::AbstractFramebuffer& output);
 
  private:
   void drawLinearDepth(const Magnum::Matrix4& projection,
