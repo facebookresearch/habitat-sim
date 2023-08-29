@@ -33,7 +33,7 @@ namespace gfx_batch {
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
-using namespace Cr::Containers::Literals;
+using Cr::Containers::Literals::operator""_s;
 
 enum : std::size_t {
   AoRandomTextureSize = 4,
@@ -727,17 +727,14 @@ void Hbao::setConfiguration(const HbaoConfiguration& configuration) {
   }
 
   {
-    HbaoCalcShader::Layered layered;
-    bool textureArrayLayer;
+    HbaoCalcShader::Layered layered = HbaoCalcShader::Layered::Off;
+    bool textureArrayLayer = true;
     if (configuration.flags() & HbaoFlag::LayeredImageLoadStore) {
       layered = HbaoCalcShader::Layered::ImageLoadStore;
       textureArrayLayer = false;
     } else if (configuration.flags() & HbaoFlag::LayeredGeometryShader) {
       layered = HbaoCalcShader::Layered::GeometryShader;
       textureArrayLayer = false;
-    } else {
-      layered = HbaoCalcShader::Layered::Off;
-      textureArrayLayer = true;
     }
     state_->hbao2CalcShader = HbaoCalcShader{
         /*deinterleaved*/ true, /*blur*/ false, layered, textureArrayLayer};
@@ -791,6 +788,7 @@ void prepareHbaoData(const HbaoConfiguration& configuration,
     for (Mn::Int i = 0; i != HbaoRandomSize * HbaoRandomSize; ++i) {
       uniformData.float2Offsets[i] = {
           Mn::Float(i % 4) + 0.5f,
+          // NOLINTNEXTLINE(bugprone-integer-division). This is deliberate
           Mn::Float(i / 4) + 0.5f,
           0.0f,
           0.0f,
@@ -890,7 +888,7 @@ void Hbao::draw(const Mn::Matrix4& projection,
     };
   }
 
-  state_->hbaoUniformData.projOrtho = isOrthographic;
+  state_->hbaoUniformData.projOrtho = isOrthographic ? 1 : 0;
   // TODO this absolutely does not need to be redone every time
   prepareHbaoData(state_->configuration, projection, state_->hbaoUniformData,
                   state_->hbaoUniform, state_->random);
@@ -953,7 +951,9 @@ void Hbao::drawCacheAwareInternal(Mn::GL::AbstractFramebuffer& output) {
           0, i + layer);
     }
 
-    state_->hbao2DeinterleaveShader
+    state_
+        ->hbao2DeinterleaveShader
+        // NOLINTNEXTLINE(bugprone-integer-division). This is deliberate
         .setProjectionInfo({Mn::Float(i % 4) + 0.5f, Mn::Float(i / 4) + 0.5f},
                            state_->hbaoUniformData.invFullResolution)
         .draw(state_->triangle);
@@ -987,6 +987,8 @@ void Hbao::drawCacheAwareInternal(Mn::GL::AbstractFramebuffer& output) {
       state_->hbao2Calc.attachTextureLayer(
           Mn::GL::Framebuffer::ColorAttachment{0}, state_->hbao2ResultArray, 0,
           i);
+
+      // NOLINTNEXTLINE(bugprone-integer-division). This is deliberate
       shader.setFloat2Offset({Mn::Float(i % 4) + 0.5f, Mn::Float(i / 4) + 0.5f})
           .setJitter(state_->random[i])
           .bindLinearDepthTexture(state_->hbao2DepthArray, i)
@@ -998,6 +1000,8 @@ void Hbao::drawCacheAwareInternal(Mn::GL::AbstractFramebuffer& output) {
     state_->hbao2Calc.attachTextureLayer(
         Mn::GL::Framebuffer::ColorAttachment{0}, state_->hbao2ResultArray, 0,
         i);
+
+    // NOLINTNEXTLINE(bugprone-integer-division). This is deliberate
     shader.setFloat2Offset({Mn::Float(i % 4) + 0.5f, Mn::Float(i / 4) + 0.5f})
         .setJitter(state_->random[i])
         .bindLinearDepthTexture(state_->hbao2DepthArray, i)
