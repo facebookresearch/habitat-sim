@@ -45,6 +45,10 @@ class HBAOHelper {
     float orthoheight = 1.0f;
     bool ortho = false;
     nvmath::mat4 matrix;
+    float calcFovy(float aspect) const {
+      return 2.0f * nv_to_deg *
+             (float)(atan(tan(fov * nv_to_rad * 0.5) / aspect));
+    }
 
     void update(int width, int height) {
       float aspect = float(width) / float(height);
@@ -54,9 +58,7 @@ class HBAOHelper {
                                orthoheight * 0.5f, nearplane, farplane);
       } else {
         // Nvidia uses fovy not fovx
-        const float fovx = fov;
-        const float fovy = 2.0f * nv_to_deg *
-                           (float)(atan(tan(fovx * nv_to_rad * 0.5) / aspect));
+        const float fovy = calcFovy(aspect);
         matrix = nvmath::perspective(fovy, aspect, nearplane, farplane);
       }
     }
