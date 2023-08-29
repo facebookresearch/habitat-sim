@@ -33,7 +33,6 @@
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
-using namespace Mn::Math::Literals;
 
 namespace esp {
 namespace gfx {
