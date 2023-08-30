@@ -369,7 +369,7 @@ void HBAOHelper::prepareHbaoData(const Projection& projection,
   if (useOrtho) {
     projScale = float(height) / (projInfoOrtho[1]);
   } else {
-    projScale = float(height) / (tanf(projection.fov * 0.5f) * 2.0f);
+    projScale = float(height) / (tanf(projection.getFOVX() * 0.5f) * 2.0f);
   }
 
   // radius

@@ -204,7 +204,7 @@ struct RenderTarget::Impl {
     const int height = framebuffer_.viewport().size().y();
     constexpr int samples = 1;  // todo: drive correctly
 
-    projection.fov = 90.f;  // todo: drive from camera
+    projection.setFOVX(90.f, width, height);  // todo: drive from camera
     projection.ortho = false;
     projection.orthoheight = 1.f;
     projection.nearplane = 0.01f;  // todo: drive from camera

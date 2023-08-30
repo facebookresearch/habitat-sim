@@ -41,13 +41,29 @@ class HBAOHelper {
   struct Projection {
     float nearplane = 0.1f;
     float farplane = 100.0f;
-    float fov = 45.0f;
     float orthoheight = 1.0f;
     bool ortho = false;
     nvmath::mat4 matrix;
+
+    float getFOVY() const { return fovy; }
+    float getFOVX() const { return fovx; }
+
+    void setFOVX(float _fovx, int width, int height) {
+      fovx = _fovx;
+      fovy = calcFovy(float(width) / float(height));
+    }
+    void setFOVY(float _fovy, int width, int height) {
+      fovy = _fovy;
+      fovx = calcFovx(float(width) / float(height));
+    }
+
     float calcFovy(float aspect) const {
       return 2.0f * nv_to_deg *
-             (float)(atan(tan(fov * nv_to_rad * 0.5) / aspect));
+             (float)(atan(tan(fovx * nv_to_rad * 0.5) / aspect));
+    }
+    float calcFovx(float aspect) const {
+      return 2.0f * nv_to_deg *
+             (float)(atan(tan(fovy * nv_to_rad * 0.5) * aspect));
     }
 
     void update(int width, int height) {
@@ -62,6 +78,13 @@ class HBAOHelper {
         matrix = nvmath::perspective(fovy, aspect, nearplane, farplane);
       }
     }
+
+   private:
+    // Nvidia is using fovy in calculations, including in shader. habitat uses
+    // hfov == fovx.
+    // This value corresponds to habitat's fov
+    float fovx = 45.0f;
+    float fovy = 45.0f;
   };
 
   void init(int width, int height);
