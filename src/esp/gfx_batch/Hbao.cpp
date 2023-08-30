@@ -870,11 +870,11 @@ void Hbao::drawHbaoBlur(Mn::GL::AbstractFramebuffer& output) {
   secondShader.draw(state_->triangle);
 }
 
-void Hbao::draw(const Mn::Matrix4& projection,
-                bool isOrthographic,
-                bool useCacheAware,
-                Mn::GL::Texture2D& depthStencilInput,
-                Mn::GL::AbstractFramebuffer& output) {
+void Hbao::drawEffect(const Mn::Matrix4& projection,
+                      bool isOrthographic,
+                      bool useCacheAware,
+                      Mn::GL::Texture2D& depthStencilInput,
+                      Mn::GL::AbstractFramebuffer& output) {
   if (isOrthographic) {
     // Orthographic rendering
     state_->hbaoUniformData.projInfo = {
