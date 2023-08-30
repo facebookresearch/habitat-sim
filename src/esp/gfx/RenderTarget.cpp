@@ -123,7 +123,10 @@ struct RenderTarget::Impl {
       // depth texture is required for HBAO
       CORRADE_INTERNAL_ASSERT(flags_ & Flag::DepthTextureAttachment);
       hbao_ = gfx_batch::Hbao{
-          gfx_batch::HbaoConfiguration{}.setSize(size).setUseSpecialBlur(true)
+          gfx_batch::HbaoConfiguration{}
+              .setSize(size)
+              .setUseSpecialBlur(true)
+              .setUseLayeredGeometryShader(true)
           // TODO other options here?
       };
     }
