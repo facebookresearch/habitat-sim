@@ -53,9 +53,9 @@ class HbaoBlurShader : public Mn::GL::AbstractShaderProgram {
   enum : Mn::Int { SourceTextureBinding = 0, LinearDepthTextureBinding = 1 };
 
  public:
-  explicit HbaoBlurShader(bool bilateral, Mn::Int preset)
+  explicit HbaoBlurShader(bool bilateral, Mn::Int aoBlur2ndPass)
       : bilateral_{bilateral} {
-    CORRADE_INTERNAL_ASSERT(!bilateral || !preset);
+    CORRADE_INTERNAL_ASSERT(!bilateral || !aoBlur2ndPass);
 
     Cr::Utility::Resource rs{"gfx-batch-shaders"};
 
@@ -67,7 +67,9 @@ class HbaoBlurShader : public Mn::GL::AbstractShaderProgram {
     if (bilateral) {
       frag.addSource(rs.getString("hbao/bilateralblur.frag"));
     } else {
-      frag.addSource(Cr::Utility::format("#define AO_BLUR_PRESET {}\n", preset))
+      // Either first pass (0) or second pass (1)
+      frag.addSource(Cr::Utility::format("#define AO_BLUR_SECOND_PASS {}\n",
+                                         aoBlur2ndPass))
           .addSource(rs.getString("hbao/hbao_blur.frag"));
     }
 
@@ -533,8 +535,8 @@ struct Hbao::State {
   Mn::GL::Texture2DArray hbao2ResultArray;
 
   HbaoBlurShader bilateralBlurShader{/*bilateral*/ true, 0};
-  HbaoBlurShader hbaoBlurShader{/*bilateral*/ false, /*preset*/ 0};
-  HbaoBlurShader hbaoBlur2Shader{/*bilateral*/ false, /*preset*/ 1};
+  HbaoBlurShader hbaoBlurShader{/*bilateral*/ false, /*aoBlur2ndPass*/ 0};
+  HbaoBlurShader hbaoBlur2Shader{/*bilateral*/ false, /*aoBlur2ndPass*/ 1};
   DepthLinearizeShader depthLinearizeShader{false};
   DepthLinearizeShader depthLinearizeShaderMsaa{true};
   ViewNormalShader viewNormalShader;
@@ -750,7 +752,8 @@ void Hbao::setConfiguration(const HbaoConfiguration& configuration) {
 namespace {
 
 /**
- * Populate uniform data with appropriate values from configuration
+ * Populate uniform data with appropriate values from configuration. Should only
+ * be performed when configuration changes.
  */
 void prepareHbaoData(const HbaoConfiguration& configuration,
                      const Mn::Matrix4& projection,
@@ -767,8 +770,8 @@ void prepareHbaoData(const HbaoConfiguration& configuration,
   /* For perspective, projection[1][1] is 1/tan(fov/2) */
   const Mn::Float projectionScale =
       (uniformData.projOrtho != 0
-           ? configuration.size().y() / uniformData.projInfo[1]
-           : 0.5f * configuration.size().y() * projection[1][1]);
+           ? configuration.size().y() / uniformData.projInfo[1]    // ortho
+           : 0.5f * configuration.size().y() * projection[1][1]);  // persp
   uniformData.radiusToScreen = r * 0.5f * projectionScale;
 
   /* AO */
@@ -839,8 +842,9 @@ void Hbao::drawHbaoBlur(Mn::GL::AbstractFramebuffer& output) {
       .setInverseResolutionDirection(
           {1.0f / state_->configuration.size().x(), 0.0f})
       .bindSourceTexture(state_->hbaoResult);
-  if (!(state_->configuration.flags() & HbaoFlag::UseAoSpecialBlur))
+  if (!(state_->configuration.flags() & HbaoFlag::UseAoSpecialBlur)) {
     shader.bindLinearDepthTexture(state_->sceneDepthLinear);
+  }
   shader.draw(state_->triangle);
 
   output.bind();
@@ -859,9 +863,11 @@ void Hbao::drawHbaoBlur(Mn::GL::AbstractFramebuffer& output) {
       .setInverseResolutionDirection(
           {0.0f, 1.0f / state_->configuration.size().y()})
       .bindSourceTexture(state_->hbaoBlur);
-  if (!(state_->configuration.flags() & HbaoFlag::UseAoSpecialBlur))
-    shader.bindLinearDepthTexture(state_->sceneDepthLinear);
-  shader.draw(state_->triangle);
+  if (!(state_->configuration.flags() & HbaoFlag::UseAoSpecialBlur)) {
+    secondShader.bindLinearDepthTexture(state_->sceneDepthLinear);
+  }
+
+  secondShader.draw(state_->triangle);
 }
 
 void Hbao::draw(const Mn::Matrix4& projection,
@@ -877,6 +883,7 @@ void Hbao::draw(const Mn::Matrix4& projection,
         -(1.0f + projection[3][0]) / projection[0][0],
         -(1.0f - projection[3][1]) / projection[1][1],
     };
+    state_->hbaoUniformData.projOrtho = 1;
 
   } else {
     // Perspective rendering
@@ -886,10 +893,10 @@ void Hbao::draw(const Mn::Matrix4& projection,
         -(1.0f - projection[2][0]) / projection[0][0],
         -(1.0f + projection[2][1]) / projection[1][1],
     };
+    state_->hbaoUniformData.projOrtho = 0;
   }
 
-  state_->hbaoUniformData.projOrtho = isOrthographic ? 1 : 0;
-  // TODO this absolutely does not need to be redone every time
+  // TODO this absolutely does not need to be redone every frame
   prepareHbaoData(state_->configuration, projection, state_->hbaoUniformData,
                   state_->hbaoUniform, state_->random);
   drawLinearDepth(projection, isOrthographic, depthStencilInput);
@@ -911,6 +918,7 @@ void Hbao::drawClassicInternal(Mn::GL::AbstractFramebuffer& output) {
     Mn::GL::Renderer::setBlendFunction(
         Mn::GL::Renderer::BlendFunction::Zero,
         Mn::GL::Renderer::BlendFunction::SourceColor);
+    // TODO Set sample mask if samples > 1
   }
 
   HbaoCalcShader& shader = state_->configuration.flags() >=
@@ -922,8 +930,9 @@ void Hbao::drawClassicInternal(Mn::GL::AbstractFramebuffer& output) {
       .bindUniformBuffer(state_->hbaoUniform)
       .draw(state_->triangle);
 
-  if (state_->configuration.flags() & HbaoFlag::Blur)
+  if (state_->configuration.flags() & HbaoFlag::Blur) {
     drawHbaoBlur(output);
+  }
 
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
   Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
@@ -1018,6 +1027,7 @@ void Hbao::drawCacheAwareInternal(Mn::GL::AbstractFramebuffer& output) {
     Mn::GL::Renderer::setBlendFunction(
         Mn::GL::Renderer::BlendFunction::Zero,
         Mn::GL::Renderer::BlendFunction::SourceColor);
+    // TODO Set sample mask if samples > 1
   }
 
   HbaoReinterleaveShader& reinterleaveShader =
@@ -1029,8 +1039,9 @@ void Hbao::drawCacheAwareInternal(Mn::GL::AbstractFramebuffer& output) {
   reinterleaveShader.bindResultsTexture(state_->hbao2ResultArray)
       .draw(state_->triangle);
 
-  if (state_->configuration.flags() & HbaoFlag::Blur)
+  if (state_->configuration.flags() & HbaoFlag::Blur) {
     drawHbaoBlur(output);
+  }
 
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
   Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
