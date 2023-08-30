@@ -149,11 +149,11 @@ class Hbao {
    * @param output The owning RenderTarget's framebuffer the effect is to be
    * written to.
    */
-  void draw(const Magnum::Matrix4& projection,
-            bool isOrthographic,
-            bool useCacheAware,
-            Magnum::GL::Texture2D& inputDepthStencil,
-            Magnum::GL::AbstractFramebuffer& output);
+  void drawEffect(const Magnum::Matrix4& projection,
+                  bool isOrthographic,
+                  bool useCacheAware,
+                  Magnum::GL::Texture2D& inputDepthStencil,
+                  Magnum::GL::AbstractFramebuffer& output);
 
  private:
   void drawLinearDepth(const Magnum::Matrix4& projection,
