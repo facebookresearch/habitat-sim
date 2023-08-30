@@ -202,9 +202,9 @@ struct RenderTarget::Impl {
     // we just use cache aware
     bool useCacheAware = true;
 
-    hbao_->draw(visualSensor_->getProjectionMatrix(),
-                visualSensor_->getIsOrthographic(), useCacheAware,
-                depthRenderTexture_, framebuffer_);
+    hbao_->drawEffect(visualSensor_->getProjectionMatrix(),
+                      visualSensor_->getIsOrthographic(), useCacheAware,
+                      depthRenderTexture_, framebuffer_);
   }
 
   void blitRgbaTo(Mn::GL::AbstractFramebuffer& target,
