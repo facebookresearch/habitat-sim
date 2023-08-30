@@ -75,7 +75,7 @@ class HbaoConfiguration {
 
  private:
   Magnum::Vector2i size_;
-  HbaoFlags flags_ = HbaoFlag::Blur;
+  HbaoFlags flags_ = HbaoFlag::Blur | HbaoFlag::UseAoSpecialBlur;
   Magnum::Int samples_ = 1;
   Magnum::Float intensity_ = 0.732f, bias_ = 0.05f, radius_ = 1.24f,
                 blurSharpness_ = 10.0f;
