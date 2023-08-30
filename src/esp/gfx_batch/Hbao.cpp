@@ -655,7 +655,7 @@ void Hbao::setConfiguration(const HbaoConfiguration& configuration) {
                                      state_->sceneViewNormal, 0);
 
     const Mn::GL::TextureFormat aoFormat =
-        state_->configuration.flags() & HbaoFlag::UseAoSpecialBlur
+        configuration.flags() & HbaoFlag::UseAoSpecialBlur
             ? Mn::GL::TextureFormat::RG16F
             : Mn::GL::TextureFormat::R8;
     state_
@@ -670,7 +670,7 @@ void Hbao::setConfiguration(const HbaoConfiguration& configuration) {
         .setStorage(1, aoFormat, configuration.size());
 
 #if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
-    if (state_->configuration.flags() & HbaoFlag::UseAoSpecialBlur) {
+    if (configuration.flags() & HbaoFlag::UseAoSpecialBlur) {
       state_->hbaoResult.setSwizzle<'r', 'g', '0', '0'>();
       state_->hbaoBlur.setSwizzle<'r', 'g', '0', '0'>();
     } else {
