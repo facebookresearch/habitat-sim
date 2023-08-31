@@ -18,7 +18,7 @@
  */
 
 #if AO_LAYERED == 1
-#extension GL_ARB_shader_image_load_store: enable
+#extension GL_ARB_shader_image_load_store : enable
 #endif
 
 /*
@@ -59,76 +59,77 @@ struct HBAOData {
 #define M_PI 3.14159265f
 
 // tweakables
-const float  NUM_STEPS = 4;
-const float  NUM_DIRECTIONS = 8; // texRandom/g_Jitter initialization depends on this
+const float NUM_STEPS = 4;
+const float NUM_DIRECTIONS =
+    8;  // texRandom/g_Jitter initialization depends on this
 
 layout(std140) uniform controlBuffer {
-  HBAOData   control;
+  HBAOData control;
 };
 
 #if AO_DEINTERLEAVED
 
 #if AO_LAYERED
-  vec2 g_Float2Offset = control.float2Offsets[gl_PrimitiveID].xy;
-  vec4 g_Jitter       = control.jitters[gl_PrimitiveID];
+vec2 g_Float2Offset = control.float2Offsets[gl_PrimitiveID].xy;
+vec4 g_Jitter = control.jitters[gl_PrimitiveID];
 
-  uniform sampler2DArray texLinearDepth;
-  uniform sampler2D texViewNormal;
+uniform sampler2DArray texLinearDepth;
+uniform sampler2D texViewNormal;
 
-  vec3 getQuarterCoord(vec2 UV){
-    return vec3(UV,float(gl_PrimitiveID));
-  }
-  #if AO_LAYERED == 1
+vec3 getQuarterCoord(vec2 UV) {
+  return vec3(UV, float(gl_PrimitiveID));
+}
+#if AO_LAYERED == 1
 
-    #if AO_BLUR
-      layout(rg16f) uniform image2DArray imgOutput;
-    #else
-      layout(r8) uniform image2DArray imgOutput;
-    #endif
-
-    void outputColor(vec4 color) {
-      imageStore(imgOutput, ivec3(ivec2(gl_FragCoord.xy),gl_PrimitiveID), color);
-    }
-  #else
-    out vec4 out_Color;
-
-    void outputColor(vec4 color) {
-      out_Color = color;
-    }
-  #endif
+#if AO_BLUR
+layout(rg16f) uniform image2DArray imgOutput;
 #else
-  uniform vec2 g_Float2Offset;
-  uniform vec4 g_Jitter;
+layout(r8) uniform image2DArray imgOutput;
+#endif
 
-  uniform sampler2D texLinearDepth;
-  uniform sampler2D texViewNormal;
+void outputColor(vec4 color) {
+  imageStore(imgOutput, ivec3(ivec2(gl_FragCoord.xy), gl_PrimitiveID), color);
+}
+#else
+out vec4 out_Color;
 
-  vec2 getQuarterCoord(vec2 UV){
-    return UV;
-  }
+void outputColor(vec4 color) {
+  out_Color = color;
+}
+#endif
+#else
+uniform vec2 g_Float2Offset;
+uniform vec4 g_Jitter;
 
-  out vec4 out_Color;
+uniform sampler2D texLinearDepth;
+uniform sampler2D texViewNormal;
 
-  void outputColor(vec4 color) {
-    out_Color = color;
-  }
+vec2 getQuarterCoord(vec2 UV) {
+  return UV;
+}
+
+out vec4 out_Color;
+
+void outputColor(vec4 color) {
+  out_Color = color;
+}
 #endif
 
 #else
-  #if AO_TEXTUREARRAY_LAYER
-  uniform sampler2DArray texLinearDepth;
-  uniform float g_LinearDepthSlice;
-  #else
-  uniform sampler2D texLinearDepth;
-  #endif
-  uniform sampler2DArray texRandom;
-  uniform float g_RandomSlice;
+#if AO_TEXTUREARRAY_LAYER
+uniform sampler2DArray texLinearDepth;
+uniform float g_LinearDepthSlice;
+#else
+uniform sampler2D texLinearDepth;
+#endif
+uniform sampler2DArray texRandom;
+uniform float g_RandomSlice;
 
-  out vec4 out_Color;
+out vec4 out_Color;
 
-  void outputColor(vec4 color) {
-    out_Color = color;
-  }
+void outputColor(vec4 color) {
+  out_Color = color;
+}
 #endif
 
 #ifdef USE_GEOMETRY_SHADER_PASSTHROUGH
@@ -139,42 +140,41 @@ in vec2 texCoord;
 
 //----------------------------------------------------------------------------------
 
-vec3 UVToView(vec2 uv, float eye_z)
-{
-  return vec3((uv * control.projInfo.xy + control.projInfo.zw) * (control.projOrtho != 0 ? 1. : eye_z), eye_z);
+vec3 UVToView(vec2 uv, float eye_z) {
+  return vec3((uv * control.projInfo.xy + control.projInfo.zw) *
+                  (control.projOrtho != 0 ? 1. : eye_z),
+              eye_z);
 }
 
 #if AO_DEINTERLEAVED
 
-vec3 FetchQuarterResViewPos(vec2 UV)
-{
-  float ViewDepth = textureLod(texLinearDepth,getQuarterCoord(UV),0).x;
+vec3 FetchQuarterResViewPos(vec2 UV) {
+  float ViewDepth = textureLod(texLinearDepth, getQuarterCoord(UV), 0).x;
   return UVToView(UV, ViewDepth);
 }
 
-#else //AO_DEINTERLEAVED
+#else  // AO_DEINTERLEAVED
 
-vec3 FetchViewPos(vec2 UV)
-{
+vec3 FetchViewPos(vec2 UV) {
   float ViewDepth = textureLod(texLinearDepth,
-    #if AO_TEXTUREARRAY_LAYER
-    vec3(UV, g_LinearDepthSlice)
-    #else
-    UV
-    #endif
-    ,0).x;
+#if AO_TEXTUREARRAY_LAYER
+                               vec3(UV, g_LinearDepthSlice)
+#else
+                               UV
+#endif
+                                   ,
+                               0)
+                        .x;
   return UVToView(UV, ViewDepth);
 }
 
-vec3 MinDiff(vec3 P, vec3 Pr, vec3 Pl)
-{
+vec3 MinDiff(vec3 P, vec3 Pr, vec3 Pl) {
   vec3 V1 = Pr - P;
   vec3 V2 = P - Pl;
-  return (dot(V1,V1) < dot(V2,V2)) ? V1 : V2;
+  return (dot(V1, V1) < dot(V2, V2)) ? V1 : V2;
 }
 
-vec3 ReconstructNormal(vec2 UV, vec3 P)
-{
+vec3 ReconstructNormal(vec2 UV, vec3 P) {
   vec3 Pr = FetchViewPos(UV + vec2(control.InvFullResolution.x, 0));
   vec3 Pl = FetchViewPos(UV + vec2(-control.InvFullResolution.x, 0));
   vec3 Pt = FetchViewPos(UV + vec2(0, control.InvFullResolution.y));
@@ -182,11 +182,10 @@ vec3 ReconstructNormal(vec2 UV, vec3 P)
   return normalize(cross(MinDiff(P, Pr, Pl), MinDiff(P, Pt, Pb)));
 }
 
-#endif //AO_DEINTERLEAVED
+#endif  // AO_DEINTERLEAVED
 
 //----------------------------------------------------------------------------------
-float Falloff(float DistanceSquare)
-{
+float Falloff(float DistanceSquare) {
   // 1 scalar mad instruction
   return DistanceSquare * control.NegInvR2 + 1.0;
 }
@@ -196,38 +195,39 @@ float Falloff(float DistanceSquare)
 // N = view-space normal at the kernel center
 // S = view-space position of the current sample
 //----------------------------------------------------------------------------------
-float ComputeAO(vec3 P, vec3 N, vec3 S)
-{
+float ComputeAO(vec3 P, vec3 N, vec3 S) {
   vec3 V = S - P;
   float VdotV = dot(V, V);
-  float NdotV = dot(N, V) * 1.0/sqrt(VdotV);
+  float NdotV = dot(N, V) * 1.0 / sqrt(VdotV);
 
   // Use saturate(x) instead of max(x,0.f) because that is faster on Kepler
-  return clamp(NdotV - control.NDotVBias,0,1) * clamp(Falloff(VdotV),0,1);
+  return clamp(NdotV - control.NDotVBias, 0, 1) * clamp(Falloff(VdotV), 0, 1);
 }
 
 //----------------------------------------------------------------------------------
-vec2 RotateDirection(vec2 Dir, vec2 CosSin)
-{
-  return vec2(Dir.x*CosSin.x - Dir.y*CosSin.y,
-              Dir.x*CosSin.y + Dir.y*CosSin.x);
+vec2 RotateDirection(vec2 Dir, vec2 CosSin) {
+  return vec2(Dir.x * CosSin.x - Dir.y * CosSin.y,
+              Dir.x * CosSin.y + Dir.y * CosSin.x);
 }
 
 //----------------------------------------------------------------------------------
-vec4 GetJitter()
-{
+vec4 GetJitter() {
 #if AO_DEINTERLEAVED
   // Get the current jitter vector from the per-pass constant buffer
   return g_Jitter;
 #else
   // (cos(Alpha),sin(Alpha),rand1,rand2)
-  return textureLod( texRandom, vec3(gl_FragCoord.xy / AO_RANDOMTEX_SIZE, g_RandomSlice), 0);
+  return textureLod(
+      texRandom, vec3(gl_FragCoord.xy / AO_RANDOMTEX_SIZE, g_RandomSlice), 0);
 #endif
 }
 
 //----------------------------------------------------------------------------------
-float ComputeCoarseAO(vec2 FullResUV, float RadiusPixels, vec4 Rand, vec3 ViewPosition, vec3 ViewNormal)
-{
+float ComputeCoarseAO(vec2 FullResUV,
+                      float RadiusPixels,
+                      vec4 Rand,
+                      vec3 ViewPosition,
+                      vec3 ViewNormal) {
 #if AO_DEINTERLEAVED
   RadiusPixels /= 4.0;
 #endif
@@ -238,8 +238,8 @@ float ComputeCoarseAO(vec2 FullResUV, float RadiusPixels, vec4 Rand, vec3 ViewPo
   const float Alpha = 2.0 * M_PI / NUM_DIRECTIONS;
   float AO = 0;
 
-  for (float DirectionIndex = 0; DirectionIndex < NUM_DIRECTIONS; ++DirectionIndex)
-  {
+  for (float DirectionIndex = 0; DirectionIndex < NUM_DIRECTIONS;
+       ++DirectionIndex) {
     float Angle = Alpha * DirectionIndex;
 
     // Compute normalized 2D direction
@@ -248,13 +248,15 @@ float ComputeCoarseAO(vec2 FullResUV, float RadiusPixels, vec4 Rand, vec3 ViewPo
     // Jitter starting sample within the first step
     float RayPixels = (Rand.z * StepSizePixels + 1.0);
 
-    for (float StepIndex = 0; StepIndex < NUM_STEPS; ++StepIndex)
-    {
+    for (float StepIndex = 0; StepIndex < NUM_STEPS; ++StepIndex) {
 #if AO_DEINTERLEAVED
-      vec2 SnappedUV = round(RayPixels * Direction) * control.InvQuarterResolution + FullResUV;
+      vec2 SnappedUV =
+          round(RayPixels * Direction) * control.InvQuarterResolution +
+          FullResUV;
       vec3 S = FetchQuarterResViewPos(SnappedUV);
 #else
-      vec2 SnappedUV = round(RayPixels * Direction) * control.InvFullResolution + FullResUV;
+      vec2 SnappedUV =
+          round(RayPixels * Direction) * control.InvFullResolution + FullResUV;
       vec3 S = FetchViewPos(SnappedUV);
 #endif
 
@@ -265,28 +267,26 @@ float ComputeCoarseAO(vec2 FullResUV, float RadiusPixels, vec4 Rand, vec3 ViewPo
   }
 
   AO *= control.AOMultiplier / (NUM_DIRECTIONS * NUM_STEPS);
-  return clamp(1.0 - AO * 2.0,0,1);
+  return clamp(1.0 - AO * 2.0, 0, 1);
 }
 
 //----------------------------------------------------------------------------------
-void main()
-{
-
+void main() {
 #if AO_DEINTERLEAVED
   vec2 base = floor(gl_FragCoord.xy) * 4.0 + g_Float2Offset;
   vec2 uv = base * (control.InvQuarterResolution / 4.0);
 
   vec3 ViewPosition = FetchQuarterResViewPos(uv);
-  vec4 NormalAndAO =  texelFetch( texViewNormal, ivec2(base), 0);
-  vec3 ViewNormal =  -(NormalAndAO.xyz * 2.0 - 1.0);
+  vec4 NormalAndAO = texelFetch(texViewNormal, ivec2(base), 0);
+  vec3 ViewNormal = -(NormalAndAO.xyz * 2.0 - 1.0);
 #else
   vec2 uv =
-    #ifdef USE_GEOMETRY_SHADER_PASSTHROUGH
-    texCoordGeometry
-    #else
-    texCoord
-    #endif
-    ;
+#ifdef USE_GEOMETRY_SHADER_PASSTHROUGH
+      texCoordGeometry
+#else
+      texCoord
+#endif
+      ;
   vec3 ViewPosition = FetchViewPos(uv);
 
   // Reconstruct view-space normal from nearest neighbors
@@ -294,16 +294,17 @@ void main()
 #endif
 
   // Compute projection of disk of radius control.R into screen space
-  float RadiusPixels = control.RadiusToScreen / (control.projOrtho != 0 ? 1.0 : ViewPosition.z);
+  float RadiusPixels =
+      control.RadiusToScreen / (control.projOrtho != 0 ? 1.0 : ViewPosition.z);
 
   // Get jitter vector for the current full-res pixel
   vec4 Rand = GetJitter();
 
   float AO = ComputeCoarseAO(uv, RadiusPixels, Rand, ViewPosition, ViewNormal);
 
-  #if AO_BLUR
-    outputColor(vec4(pow(AO, control.PowExponent), ViewPosition.z, 0, 0));
-  #else
-    outputColor(vec4(pow(AO, control.PowExponent)));
-  #endif
+#if AO_BLUR
+  outputColor(vec4(pow(AO, control.PowExponent), ViewPosition.z, 0, 0));
+#else
+  outputColor(vec4(pow(AO, control.PowExponent)));
+#endif
 }
