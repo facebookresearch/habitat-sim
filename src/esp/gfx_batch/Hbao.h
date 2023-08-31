@@ -163,7 +163,6 @@ class Hbao {
 
  private:
   void drawLinearDepth(const Magnum::Matrix4& projection,
-                       bool orthographic,
                        Magnum::GL::Texture2D& inputDepthStencil);
   void drawHbaoBlur(Magnum::GL::AbstractFramebuffer& output);
   void drawClassicInternal(Magnum::GL::AbstractFramebuffer& output);
