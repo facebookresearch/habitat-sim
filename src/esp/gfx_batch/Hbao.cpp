@@ -490,6 +490,11 @@ class HbaoReinterleaveShader : public Mn::GL::AbstractShaderProgram {
   }
 };
 
+/**
+ * @brief This struct holds the uniform data that are passed to the various
+ * shaders. If fields are added they should be sized multiples of 16 bytes,
+ * with padding added if appropriate.
+ */
 struct HbaoUniformData {
   Mn::Float radiusToScreen;
   Mn::Float r2;
@@ -515,7 +520,7 @@ struct HbaoUniformData {
   Mn::Vector4 jitters[AoRandomTextureSize * AoRandomTextureSize];
 };
 
-static_assert(sizeof(HbaoUniformData) % 4 == 0, "not a nice uniform struct");
+static_assert(sizeof(HbaoUniformData) % 4 == 0, "Not a nice uniform struct");
 
 struct Hbao::State {
   Mn::GL::Texture2D sceneDepthLinear;
@@ -802,29 +807,32 @@ void prepareHbaoData(const HbaoConfiguration& configuration,
   uniform.setSubData(0, {&uniformData, 1});
 }
 
-// TODO upstream!!
-Mn::Float near(const Mn::Matrix4& projectionMatrix) {
-  return projectionMatrix[3][2] / (projectionMatrix[2][2] - 1.0f);
+Mn::Vector4 buildClipInfo(const Mn::Matrix4& projectionMatrix,
+                          bool orthographic) {
+  // TODO this still looks like there's some better way this should be
+  // extracted.  Definitely change to use near and far calcs upstream when
+  // available!!
+  if (orthographic) {
+    auto nearProj = (projectionMatrix[3][2] + 1.0f) / projectionMatrix[2][2];
+    auto farProj = (projectionMatrix[3][2] - 1.0f) / projectionMatrix[2][2];
+    return {nearProj * farProj, nearProj - farProj, farProj, 0.0f};
+  }
+  // perspective
+  auto nearProj = projectionMatrix[3][2] / (projectionMatrix[2][2] - 1.0f);
+  auto farProj = projectionMatrix[3][2] / (projectionMatrix[2][2] + 1.0f);
+  return {nearProj * farProj, nearProj - farProj, farProj, 1.0f};
 }
-
-Mn::Float far(const Mn::Matrix4& projectionMatrix) {
-  return projectionMatrix[3][2] / (projectionMatrix[2][2] + 1.0f);
-}
-
 }  // namespace
 
+Magnum::Vector2i Hbao::getFrameBufferSize() const {
+  return state_->configuration.size();
+}
 void Hbao::drawLinearDepth(const Mn::Matrix4& projection,
                            bool orthographic,
                            Mn::GL::Texture2D& depthStencilInput) {
   state_->depthLinear.bind();
-  auto nearProj = near(projection);
-  auto farProj = far(projection);
-  state_
-      ->depthLinearizeShader
-      // TODO this still looks like there's some better way this should be
-      // extracted
-      .setClipInfo({nearProj * farProj, nearProj - farProj, farProj,
-                    orthographic ? 0.0f : 1.0f})
+  state_->depthLinearizeShader
+      .setClipInfo(buildClipInfo(projection, orthographic))
       .bindInputTexture(depthStencilInput)
       .draw(state_->triangle);
 }

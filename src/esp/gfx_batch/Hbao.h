@@ -114,7 +114,7 @@ class HbaoConfiguration {
   Magnum::Int samples_ = 1;
   Magnum::Float intensity_ = 0.732f, bias_ = 0.05f, radius_ = 1.24f,
                 blurSharpness_ = 10.0f;
-};
+};  // class HbaoConfiguration
 
 class Hbao {
  public:
@@ -154,6 +154,12 @@ class Hbao {
                   bool useCacheAware,
                   Magnum::GL::Texture2D& inputDepthStencil,
                   Magnum::GL::AbstractFramebuffer& output);
+
+  /**
+   * @brief Retrieve the size of the framebuffer used to build the components of
+   * the HBAO algorithms.
+   */
+  Magnum::Vector2i getFrameBufferSize() const;
 
  private:
   void drawLinearDepth(const Magnum::Matrix4& projection,
