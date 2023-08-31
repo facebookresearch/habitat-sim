@@ -603,7 +603,6 @@ void Hbao::setConfiguration(const HbaoConfiguration& configuration) {
     std::mt19937 rmt;
 
     float numDir = 8;  // keep in sync to glsl
-
     for (std::size_t i = 0; i < HbaoRandomSize * HbaoRandomSize * MaxSamples;
          ++i) {
       // TODO use better random gen method
@@ -612,6 +611,7 @@ void Hbao::setConfiguration(const HbaoConfiguration& configuration) {
 
       // Use random rotation angles in [0,2PI/NUM_DIRECTIONS)
       Mn::Rad angle{Mn::Constants::tau() * rand1 / numDir};
+
       state_->random[i] = {Mn::Math::cos(angle), Mn::Math::sin(angle), rand2,
                            0.0f};
     }
@@ -754,6 +754,10 @@ void Hbao::setConfiguration(const HbaoConfiguration& configuration) {
   state_->configuration = configuration;
 }
 
+Magnum::Vector2i Hbao::getFrameBufferSize() const {
+  return state_->configuration.size();
+}
+
 namespace {
 
 /**
@@ -824,15 +828,12 @@ Mn::Vector4 buildClipInfo(const Mn::Matrix4& projectionMatrix,
 }
 }  // namespace
 
-Magnum::Vector2i Hbao::getFrameBufferSize() const {
-  return state_->configuration.size();
-}
 void Hbao::drawLinearDepth(const Mn::Matrix4& projection,
-                           bool orthographic,
                            Mn::GL::Texture2D& depthStencilInput) {
   state_->depthLinear.bind();
   state_->depthLinearizeShader
-      .setClipInfo(buildClipInfo(projection, orthographic))
+      .setClipInfo(
+          buildClipInfo(projection, state_->hbaoUniformData.projOrtho == 1))
       .bindInputTexture(depthStencilInput)
       .draw(state_->triangle);
 }
@@ -904,10 +905,10 @@ void Hbao::drawEffect(const Mn::Matrix4& projection,
     state_->hbaoUniformData.projOrtho = 0;
   }
 
-  // TODO this absolutely does not need to be redone every frame
+  // TODO much of this data mapping does not need to be redone every frame
   prepareHbaoData(state_->configuration, projection, state_->hbaoUniformData,
                   state_->hbaoUniform, state_->random);
-  drawLinearDepth(projection, isOrthographic, depthStencilInput);
+  drawLinearDepth(projection, depthStencilInput);
   if (useCacheAware) {
     drawCacheAwareInternal(output);
   } else {
