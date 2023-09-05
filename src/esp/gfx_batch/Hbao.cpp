@@ -9,9 +9,13 @@
 #include <Magnum/GL/Context.h>
 #include <Magnum/GL/Extensions.h>
 #include <Magnum/GL/Framebuffer.h>
+#ifndef MAGNUM_TARGET_WEBGL
 #include <Magnum/GL/ImageFormat.h>
+#endif
 #include <Magnum/GL/Mesh.h>
+#ifndef MAGNUM_TARGET_WEBGL
 #include <Magnum/GL/MultisampleTexture.h>
+#endif
 #include <Magnum/GL/Renderer.h>
 #include <Magnum/GL/Shader.h>
 #include <Magnum/GL/Texture.h>
@@ -162,7 +166,7 @@ class DepthLinearizeShader : public Mn::GL::AbstractShaderProgram {
     return *this;
   }
 
-#if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
+#ifndef MAGNUM_TARGET_WEBGL
   DepthLinearizeShader& bindInputTexture(
       Mn::GL::MultisampleTexture2D& texture) {
     CORRADE_INTERNAL_ASSERT(msaa_);
@@ -249,7 +253,9 @@ class HbaoCalcShader : public Mn::GL::AbstractShaderProgram {
                           Layered layered,
                           bool textureArrayLayer)
       : deinterleaved_{deinterleaved},
+#ifndef MAGNUM_TARGET_WEBGL
         blur_{blur},
+#endif
         textureArrayLayer_{textureArrayLayer},
         layered_{layered} {
     CORRADE_INTERNAL_ASSERT(deinterleaved || layered == Layered::Off);
@@ -261,6 +267,7 @@ class HbaoCalcShader : public Mn::GL::AbstractShaderProgram {
     Mn::GL::Shader vert{GlslVersion, Mn::GL::Shader::Type::Vertex};
     vert.addSource(rs.getString("hbao/fullscreenquad.vert"));
 
+#ifndef MAGNUM_TARGET_WEBGL
     const bool passthroughSupported =
 /* Needs
  * https://github.com/mosra/magnum/commit/5f287df332fee7fcc2df6e8055853b86d1db3ed2
@@ -272,7 +279,7 @@ class HbaoCalcShader : public Mn::GL::AbstractShaderProgram {
         Mn::GL::Context::DetectedDriver::NVidia
 #endif
         ;
-#if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
+
     Mn::GL::Shader geom{Mn::NoCreate};
     if (layered == Layered::GeometryShader) {
       geom = Mn::GL::Shader{GlslVersion, Mn::GL::Shader::Type::Geometry};
@@ -284,7 +291,7 @@ class HbaoCalcShader : public Mn::GL::AbstractShaderProgram {
 
     Mn::GL::Shader frag{GlslVersion, Mn::GL::Shader::Type::Fragment};
 
-#if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
+#ifndef MAGNUM_TARGET_WEBGL
     if (layered == Layered::GeometryShader && passthroughSupported) {
       frag.addSource("#define USE_GEOMETRY_SHADER_PASSTHROUGH\n"_s);
     }
@@ -303,7 +310,7 @@ class HbaoCalcShader : public Mn::GL::AbstractShaderProgram {
     CORRADE_INTERNAL_ASSERT(vert.compile());
     CORRADE_INTERNAL_ASSERT(frag.compile());
 
-#if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
+#ifndef MAGNUM_TARGET_WEBGL
     if (layered == Layered::GeometryShader) {
       CORRADE_INTERNAL_ASSERT(geom.compile());
     }
@@ -389,7 +396,7 @@ class HbaoCalcShader : public Mn::GL::AbstractShaderProgram {
     return *this;
   }
 
-#if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
+#ifndef MAGNUM_TARGET_WEBGL
   HbaoCalcShader& bindOutputImage(Mn::GL::Texture2DArray& texture,
                                   Mn::Int level) {
     CORRADE_INTERNAL_ASSERT(deinterleaved_ &&
@@ -404,7 +411,12 @@ class HbaoCalcShader : public Mn::GL::AbstractShaderProgram {
  private:
   Mn::Int float2OffsetUniform_, jitterUniform_, linearDepthTextureSliceUniform_,
       randomSliceUniform_;
-  bool deinterleaved_, blur_, textureArrayLayer_;
+  bool deinterleaved_,
+#ifndef MAGNUM_TARGET_WEBGL
+      blur_,
+#endif
+
+      textureArrayLayer_;
   Layered layered_;
 };
 
@@ -674,7 +686,7 @@ void Hbao::setConfiguration(const HbaoConfiguration& configuration) {
         .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
         .setStorage(1, aoFormat, configuration.size());
 
-#if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
+#ifndef MAGNUM_TARGET_WEBGL
     if (configuration.flags() & HbaoFlag::UseAoSpecialBlur) {
       state_->hbaoResult.setSwizzle<'r', 'g', '0', '0'>();
       state_->hbaoBlur.setSwizzle<'r', 'g', '0', '0'>();
@@ -723,7 +735,7 @@ void Hbao::setConfiguration(const HbaoConfiguration& configuration) {
 
     state_->hbao2Calc = Mn::GL::Framebuffer{{{}, quarterSize}};
 
-#if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
+#ifndef MAGNUM_TARGET_WEBGL
     if (configuration.flags() & HbaoFlag::LayeredImageLoadStore) {
       state_->hbao2Calc.setDefaultSize(quarterSize);
     } else if (configuration.flags() & HbaoFlag::LayeredGeometryShader) {
@@ -986,7 +998,7 @@ void Hbao::drawCacheAwareInternal(Mn::GL::AbstractFramebuffer& output) {
   shader.bindViewNormalTexture(state_->sceneViewNormal)
       .bindUniformBuffer(state_->hbaoUniform);
 
-#if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
+#ifndef MAGNUM_TARGET_WEBGL
   if (state_->configuration.flags() &
       (HbaoFlag::LayeredGeometryShader | HbaoFlag::LayeredImageLoadStore)) {
     shader.bindLinearDepthTexture(state_->hbao2DepthArray);
