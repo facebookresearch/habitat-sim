@@ -123,6 +123,7 @@ struct RenderTarget::Impl {
 #if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
       // depth texture is required for HBAO
       CORRADE_INTERNAL_ASSERT(flags_ & Flag::DepthTextureAttachment);
+      // TODO Drive construction based on premade configurations
       hbao_ = gfx_batch::Hbao{
           gfx_batch::HbaoConfiguration{}
               .setSize(size)
