@@ -173,6 +173,11 @@ class VisualSensor : public Sensor {
   VisualSensorSpec::ptr specification() const { return visualSensorSpec_; }
 
   /**
+   * @brief Return this sensor's projection matrix
+   */
+  virtual Mn::Matrix4 getProjectionMatrix() const = 0;
+
+  /**
    * @brief Returns RenderCamera
    */
   virtual gfx::RenderCamera* getRenderCamera() const { return nullptr; }

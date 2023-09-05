@@ -165,6 +165,11 @@ class CameraSensor : public VisualSensor {
    */
   CameraSensorSpec::ptr specification() const { return cameraSensorSpec_; }
 
+  /**
+   * @brief Return this sensor's projection matrix
+   */
+  Mn::Matrix4 getProjectionMatrix() const override { return projectionMatrix_; }
+
  protected:
   /**
    * @brief Recalculate the base projection matrix, based on camera type and

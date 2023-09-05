@@ -369,9 +369,8 @@ void HBAOHelper::prepareHbaoData(const Projection& projection,
   if (useOrtho) {
     projScale = float(height) / (projInfoOrtho[1]);
   } else {
-    projScale = float(height) / (tanf(projection.getFOVX() * 0.5f) * 2.0f);
+    projScale = float(height) / (tanf(projection.getFOVX_Rad() * 0.5f) * 2.0f);
   }
-
   // radius
   float meters2viewspace = 1.0f;
   float R = m_config.radius * meters2viewspace;
@@ -391,6 +390,15 @@ void HBAOHelper::prepareHbaoData(const Projection& projection,
   m_hbaoUbo.InvQuarterResolution =
       vec2(1.0f / float(quarterWidth), 1.0f / float(quarterHeight));
   m_hbaoUbo.InvFullResolution = vec2(1.0f / float(width), 1.0f / float(height));
+
+  // //For debugging
+  // float oneOvTanHalfFOVX = 1.0f / tanf(projection.getFOVX_Rad() * 0.5f);
+  // ESP_WARNING() << "R : " << R << "|height : " << float(height)
+  //               << "|neg inv r2 : " << m_hbaoUbo.NegInvR2
+  //               << "|X FOV :" << projection.getFOVX()
+  //               << "|1/tan(fov/2) :" << oneOvTanHalfFOVX
+  //               << "|projectionScale : " << projScale
+  //               << "|radiusToScreen : " << m_hbaoUbo.RadiusToScreen << "";
 
 #if USE_AO_LAYERED_SINGLEPASS
   for (int i = 0; i < HBAO_RANDOM_ELEMENTS; i++) {

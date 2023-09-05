@@ -48,6 +48,9 @@ class HBAOHelper {
     float getFOVY() const { return fovy; }
     float getFOVX() const { return fovx; }
 
+    float getFOVY_Rad() const { return fovy * nv_to_rad; }
+    float getFOVX_Rad() const { return fovx * nv_to_rad; }
+
     void setFOVX(float _fovx, int width, int height) {
       fovx = _fovx;
       fovy = calcFovy(float(width) / float(height));
@@ -81,8 +84,7 @@ class HBAOHelper {
 
    private:
     // Nvidia is using fovy in calculations, including in shader. habitat uses
-    // hfov == fovx.
-    // This value corresponds to habitat's fov
+    // hfov == fovx, which is also what magnum expects.
     float fovx = 45.0f;
     float fovy = 45.0f;
   };

@@ -198,17 +198,28 @@ struct RenderTarget::Impl {
     if (!m_hbaoHelper) {
       return;
     }
-
+    const auto projectionMatrix = visualSensor_->getProjectionMatrix();
     ssao::HBAOHelper::Projection projection;
     const int width = framebuffer_.viewport().size().x();
     const int height = framebuffer_.viewport().size().y();
     constexpr int samples = 1;  // todo: drive correctly
 
     projection.setFOVX(90.f, width, height);  // todo: drive from camera
-    projection.ortho = false;
+    projection.ortho = projectionMatrix[3][3] != 0;
     projection.orthoheight = 1.f;
-    projection.nearplane = 0.01f;  // todo: drive from camera
-    projection.farplane = 1000.f;  // todo: drive from camera
+    if (projection.ortho) {
+      projection.nearplane =
+          (projectionMatrix[3][2] + 1.0f) / projectionMatrix[2][2];
+      projection.farplane =
+          (projectionMatrix[3][2] - 1.0f) / projectionMatrix[2][2];
+    } else {
+      projection.nearplane =
+          projectionMatrix[3][2] / (projectionMatrix[2][2] - 1.0f);
+      projection.farplane =
+          projectionMatrix[3][2] / (projectionMatrix[2][2] + 1.0f);
+    }
+    // projection.nearplane = 0.01f;  // todo: drive from camera
+    // projection.farplane = 1000.f;  // todo: drive from camera
     projection.update(width, height);
 
     // auto frameBuffer = Mn::GL::defaultFramebuffer._id;
