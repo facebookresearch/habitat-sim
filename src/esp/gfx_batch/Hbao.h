@@ -140,7 +140,6 @@ class Hbao {
   /**
    * @brief Draw the HBAO effect on top of the current framebuffer.
    * @param projection The current visual sensor's projection matrix.
-   * @param isOrthographic Whether the sensor uses an orthographic or
    * perspective projection matrix.
    * @param useCacheAware Whether to use the cache-aware algorithm or the
    * original/classic HBAO algorithm. The cache-aware algorithm has performance
@@ -150,7 +149,6 @@ class Hbao {
    * written to.
    */
   void drawEffect(const Magnum::Matrix4& projection,
-                  bool isOrthographic,
                   bool useCacheAware,
                   Magnum::GL::Texture2D& inputDepthStencil,
                   Magnum::GL::AbstractFramebuffer& output);
