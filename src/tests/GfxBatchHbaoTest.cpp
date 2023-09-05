@@ -222,7 +222,7 @@ void GfxBatchHbaoTest::test() {
                                 .setBlurSharpness(data.blurSharpness)};
   MAGNUM_VERIFY_NO_GL_ERROR();
   // test projection drawing for both classic and cache-aware algorithms
-  hbao.draw(Projection, false, !data.classic, inputDepthTexture, output);
+  hbao.drawEffect(Projection, !data.classic, inputDepthTexture, output);
   MAGNUM_VERIFY_NO_GL_ERROR();
   {
     CORRADE_EXPECT_FAIL_IF(data.expectFail, "This doesn't work as expected.");
