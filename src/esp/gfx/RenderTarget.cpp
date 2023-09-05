@@ -120,7 +120,7 @@ struct RenderTarget::Impl {
         Mn::GL::Framebuffer::Status::Complete);
 
     if (flags_ & Flag::HorizonBasedAmbientOcclusion) {
-#if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
+#ifndef MAGNUM_TARGET_WEBGL
       // depth texture is required for HBAO
       CORRADE_INTERNAL_ASSERT(flags_ & Flag::DepthTextureAttachment);
       // TODO Drive construction based on premade configurations
