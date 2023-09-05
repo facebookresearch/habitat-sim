@@ -776,11 +776,11 @@ void prepareHbaoData(const HbaoConfiguration& configuration,
   const Mn::Float r = configuration.radius() * meters2viewspace;
   uniformData.r2 = r * r;
   uniformData.negInvR2 = -1.0f / uniformData.r2;
-  /* For perspective, projection[1][1] is 1/tan(fov/2) */
   const Mn::Float projectionScale =
       (uniformData.projOrtho != 0
-           ? configuration.size().y() / uniformData.projInfo[1]    // ortho
-           : 0.5f * configuration.size().y() * projection[1][1]);  // persp
+           ? configuration.size().y() / uniformData.projInfo[1]  // ortho
+           // For perspective, projection[0][0] is 1/tan(fov/2)
+           : 0.5f * configuration.size().y() * projection[0][0]);  // persp
   uniformData.radiusToScreen = r * 0.5f * projectionScale;
 
   /* AO */
@@ -817,14 +817,14 @@ Mn::Vector4 buildClipInfo(const Mn::Matrix4& projectionMatrix,
   // extracted.  Definitely change to use near and far calcs upstream when
   // available!!
   if (orthographic) {
-    auto nearProj = (projectionMatrix[3][2] + 1.0f) / projectionMatrix[2][2];
-    auto farProj = (projectionMatrix[3][2] - 1.0f) / projectionMatrix[2][2];
-    return {nearProj * farProj, nearProj - farProj, farProj, 0.0f};
+    auto nearPlane = (projectionMatrix[3][2] + 1.0f) / projectionMatrix[2][2];
+    auto farPlane = (projectionMatrix[3][2] - 1.0f) / projectionMatrix[2][2];
+    return {nearPlane * farPlane, nearPlane - farPlane, farPlane, 0.0f};
   }
   // perspective
-  auto nearProj = projectionMatrix[3][2] / (projectionMatrix[2][2] - 1.0f);
-  auto farProj = projectionMatrix[3][2] / (projectionMatrix[2][2] + 1.0f);
-  return {nearProj * farProj, nearProj - farProj, farProj, 1.0f};
+  auto nearPlane = projectionMatrix[3][2] / (projectionMatrix[2][2] - 1.0f);
+  auto farPlane = projectionMatrix[3][2] / (projectionMatrix[2][2] + 1.0f);
+  return {nearPlane * farPlane, nearPlane - farPlane, farPlane, 1.0f};
 }
 }  // namespace
 
@@ -862,6 +862,7 @@ void Hbao::drawHbaoBlur(Mn::GL::AbstractFramebuffer& output) {
   Mn::GL::Renderer::setBlendFunction(
       Mn::GL::Renderer::BlendFunction::Zero,
       Mn::GL::Renderer::BlendFunction::SourceColor);
+  // TODO multi samples masking
 
   HbaoBlurShader& secondShader =
       state_->configuration.flags() & HbaoFlag::UseAoSpecialBlur
@@ -880,11 +881,10 @@ void Hbao::drawHbaoBlur(Mn::GL::AbstractFramebuffer& output) {
 }
 
 void Hbao::drawEffect(const Mn::Matrix4& projection,
-                      bool isOrthographic,
                       bool useCacheAware,
                       Mn::GL::Texture2D& depthStencilInput,
                       Mn::GL::AbstractFramebuffer& output) {
-  if (isOrthographic) {
+  if (projection[3][3] != 0) {
     // Orthographic rendering
     state_->hbaoUniformData.projInfo = {
         2.0f / projection[0][0],
@@ -893,9 +893,8 @@ void Hbao::drawEffect(const Mn::Matrix4& projection,
         -(1.0f - projection[3][1]) / projection[1][1],
     };
     state_->hbaoUniformData.projOrtho = 1;
-
   } else {
-    // Perspective rendering
+    // Perspective rendering -> projection[3][3] == 0
     state_->hbaoUniformData.projInfo = {
         2.0f / projection[0][0],
         2.0f / projection[1][1],

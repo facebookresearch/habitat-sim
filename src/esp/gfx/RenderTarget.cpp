@@ -207,8 +207,7 @@ struct RenderTarget::Impl {
     // we just use cache aware
     bool useCacheAware = true;
 
-    hbao_->drawEffect(visualSensor_->getProjectionMatrix(),
-                      visualSensor_->getIsOrthographic(), useCacheAware,
+    hbao_->drawEffect(visualSensor_->getProjectionMatrix(), useCacheAware,
                       depthRenderTexture_, framebuffer_);
   }
 
