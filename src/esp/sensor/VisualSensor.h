@@ -178,14 +178,6 @@ class VisualSensor : public Sensor {
   virtual Mn::Matrix4 getProjectionMatrix() const = 0;
 
   /**
-   * @brief Return whether this visual sensor's projection is orthographic or
-   * perspective.
-   */
-  bool getIsOrthographic() const {
-    return (spec_->sensorSubType == SensorSubType::Orthographic);
-  }
-
-  /**
    * @brief Returns RenderCamera
    */
   virtual gfx::RenderCamera* getRenderCamera() const { return nullptr; }
