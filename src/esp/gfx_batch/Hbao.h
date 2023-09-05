@@ -112,7 +112,7 @@ class HbaoConfiguration {
   Magnum::Vector2i size_;
   HbaoFlags flags_{};
   Magnum::Int samples_ = 1;
-  Magnum::Float intensity_ = 0.732f, bias_ = 0.05f, radius_ = 1.24f,
+  Magnum::Float intensity_ = 0.732f, bias_ = 0.05f, radius_ = 1.84f,
                 blurSharpness_ = 10.0f;
 };  // class HbaoConfiguration
 
