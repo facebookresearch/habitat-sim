@@ -9,6 +9,7 @@ Notes: SceneDataset and SceneInstance managers can be accessed from MetadataMedi
 """
 
 from habitat_sim._ext.habitat_sim_bindings import (
+    AOAttributesManager,
     AssetAttributesManager,
     ObjectAttributesManager,
     PbrShaderAttributesManager,
@@ -17,6 +18,7 @@ from habitat_sim._ext.habitat_sim_bindings import (
 )
 
 __all__ = [
+    "AOAttributesManager",
     "AssetAttributesManager",
     "ObjectAttributesManager",
     "PbrShaderAttributesManager",

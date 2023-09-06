@@ -37,6 +37,11 @@ void initMetadataMediatorBindings(py::module& m) {
           "dataset_name"_a)
       /* --- Template Manager accessors --- */
       .def_property_readonly(
+          "ao_template_manager", &MetadataMediator::getAOAttributesManager,
+          pybind11::return_value_policy::reference,
+          R"(The current dataset's AOAttributesManager instance
+            for configuring articulated object templates.)")
+      .def_property_readonly(
           "asset_template_manager",
           &MetadataMediator::getAssetAttributesManager,
           pybind11::return_value_policy::reference,

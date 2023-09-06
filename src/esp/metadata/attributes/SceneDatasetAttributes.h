@@ -12,6 +12,7 @@
 
 #include "AttributesBase.h"
 
+#include "esp/metadata/managers/AOAttributesManager.h"
 #include "esp/metadata/managers/AssetAttributesManager.h"
 #include "esp/metadata/managers/LightLayoutAttributesManager.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
@@ -56,6 +57,13 @@ class SceneDatasetAttributes : public AbstractAttributes {
   const managers::ObjectAttributesManager::ptr& getObjectAttributesManager()
       const {
     return objectAttributesManager_;
+  }
+  /**
+   * @brief Return manager for construction and access to articulated object
+   * attributes.
+   */
+  const managers::AOAttributesManager::ptr& getAOAttributesManager() const {
+    return artObjAttributesManager_;
   }
 
   /**
@@ -306,42 +314,19 @@ class SceneDatasetAttributes : public AbstractAttributes {
    */
   inline std::string getArticulatedObjModelFullHandle(
       const std::string& artObjModelName) {
-    auto artObjPathIter = articulatedObjPaths.find(artObjModelName);
-    if (artObjPathIter == articulatedObjPaths.end()) {
-      ESP_ERROR() << "No Articulatd Model with name" << artObjModelName
-                  << "could be found, so getArticulatedObjModelFullHandle "
-                     "aborting and returning empty string.";
-      return "";
-    }
-    return artObjPathIter->second;
+    return getFullAttrNameFromStr(artObjModelName, artObjAttributesManager_);
     // std::map<std::string, std::string> articulatedObjPaths;
   }
 
   /**
-   * @brief TEMPORARY set discovered fully qualified file name along with
-   * simplified key for articulated object model file names. This will be
-   * removed when ArticulatedModelManager is complete.
-   * @param key Key in map built from simplified file name.
-   * @param value Filename of model
+   * @brief This is to be deprecated. Provide a map of the articulated object
+   * model filenames (.urdf) that have been referenced in the Scene Dataset via
+   * paths, either .urdf or .json. To be removed in favor of directly accessing
+   * these values through the AOAttributesMaanager.
    */
-  void setArticulatedObjectModelFilename(const std::string& key,
-                                         const std::string& val) {
-    auto artObjPathIter = articulatedObjPaths.find(key);
-    if (artObjPathIter != articulatedObjPaths.end()) {
-      ESP_WARNING() << "Articulated model filepath named" << key
-                    << "already exists (" << artObjPathIter->second
-                    << "), so this is being overwritten by" << val << ".";
-    }
-    articulatedObjPaths[key] = val;
-  }
-
-  /**
-   * @brief TEMPORARY get a constant reference to the articulated object model
-   * filenames (.urdf) that have been loaded.
-   */
-  const std::map<std::string, std::string>& getArticulatedObjectModelFilenames()
+  std::map<std::string, std::string> getArticulatedObjectModelFilenames()
       const {
-    return articulatedObjPaths;
+    return artObjAttributesManager_->getArticulatedObjectModelFilenames();
   }
 
   /**
@@ -451,10 +436,10 @@ class SceneDatasetAttributes : public AbstractAttributes {
   managers::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
 
   /**
-   * @brief A TEMPORARY map construct to hold articulated object path names,
-   * until the ArticulatedModelManager is built.
+   * @brief Manages all construction and access to articulated object attributes
+   * from this dataset.
    */
-  std::map<std::string, std::string> articulatedObjPaths;
+  managers::AOAttributesManager::ptr artObjAttributesManager_ = nullptr;
 
   /**
    * @brief Manages all construction and access to scene instance attributes

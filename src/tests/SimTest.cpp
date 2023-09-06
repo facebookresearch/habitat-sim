@@ -72,13 +72,20 @@ struct SimTest : Cr::TestSuite::Tester {
   static Simulator::uptr getSimulator(
       SimTest& self,
       const std::string& scene,
+      bool createRenderer,
       const std::string& sceneLightingKey = esp::NO_LIGHT_KEY) {
     SimulatorConfiguration simConfig{};
     simConfig.activeSceneName = scene;
-    simConfig.enablePhysics = true;
+    simConfig.enablePhysics =
+#ifdef ESP_BUILD_WITH_BULLET
+        true;
+#else
+        false;
+#endif
     simConfig.physicsConfigFile = physicsConfigFile;
     simConfig.overrideSceneLightDefaults = true;
     simConfig.sceneLightSetupKey = sceneLightingKey;
+    simConfig.createRenderer = createRenderer;
 
     auto sim = Simulator::create_unique(simConfig);
     auto objAttrMgr = sim->getObjectAttributesManager();
@@ -94,13 +101,20 @@ struct SimTest : Cr::TestSuite::Tester {
   static Simulator::uptr getSimulatorMM(
       SimTest& self,
       const std::string& scene,
+      bool createRenderer,
       const std::string& sceneLightingKey = esp::NO_LIGHT_KEY) {
     SimulatorConfiguration simConfig{};
     simConfig.activeSceneName = scene;
-    simConfig.enablePhysics = true;
+    simConfig.enablePhysics =
+#ifdef ESP_BUILD_WITH_BULLET
+        true;
+#else
+        false;
+#endif
     simConfig.physicsConfigFile = physicsConfigFile;
     simConfig.overrideSceneLightDefaults = true;
     simConfig.sceneLightSetupKey = sceneLightingKey;
+    simConfig.createRenderer = createRenderer;
 
     MetadataMediator::ptr MM = MetadataMediator::create(simConfig);
     auto sim = Simulator::create_unique(simConfig, MM);
@@ -161,6 +175,7 @@ struct {
   // function pointer to constructor to simulator
   Simulator::uptr (*creator)(SimTest& self,
                              const std::string& scene,
+                             bool createRenderer,
                              const std::string& sceneLightingKey);
 
 } SimulatorBuilder[]{{"built with SimConfig", &SimTest::getSimulator},
@@ -184,19 +199,19 @@ SimTest::SimTest() {
             &SimTest::buildingPrimAssetObjectTemplates,
             &SimTest::addObjectByHandle,
             &SimTest::addObjectInvertedScale,
-            &SimTest::addSensorToObject}, Cr::Containers::arraySize(SimulatorBuilder) );
-  addTests({
-    &SimTest::createMagnumRenderingOff,
-    &SimTest::getRuntimePerfStats});
+            &SimTest::addSensorToObject,
+            &SimTest::getRuntimePerfStats,
 #ifdef ESP_BUILD_WITH_BULLET
-  addTests({&SimTest::testArticulatedObjectSkinned});
+            &SimTest::createMagnumRenderingOff,
+            &SimTest::testArticulatedObjectSkinned
 #endif
+            }, Cr::Containers::arraySize(SimulatorBuilder) );
   // clang-format on
 }
 void SimTest::basic() {
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
-  auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
+  auto simulator = data.creator(*this, vangogh, true, esp::NO_LIGHT_KEY);
   PathFinder::ptr pathfinder = simulator->getPathFinder();
   CORRADE_VERIFY(pathfinder);
 }
@@ -204,7 +219,7 @@ void SimTest::basic() {
 void SimTest::reconfigure() {
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
-  auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
+  auto simulator = data.creator(*this, vangogh, true, esp::NO_LIGHT_KEY);
   PathFinder::ptr pathfinder = simulator->getPathFinder();
   SimulatorConfiguration cfg =
       simulator->getMetadataMediator()->getSimulatorConfiguration();
@@ -219,7 +234,7 @@ void SimTest::reconfigure() {
 void SimTest::reset() {
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
-  auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
+  auto simulator = data.creator(*this, vangogh, true, esp::NO_LIGHT_KEY);
 
   PathFinder::ptr pathfinder = simulator->getPathFinder();
   auto pinholeCameraSpec = CameraSensorSpec::create();
@@ -291,7 +306,7 @@ void SimTest::getSceneRGBAObservation() {
   setTestCaseName(CORRADE_FUNCTION);
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
-  auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
+  auto simulator = data.creator(*this, vangogh, true, esp::NO_LIGHT_KEY);
   checkPinholeCameraRGBAObservation(*simulator, "SimTestExpectedScene.png",
                                     maxThreshold, 0.75f);
 }
@@ -301,7 +316,7 @@ void SimTest::getSceneWithLightingRGBAObservation() {
   setTestCaseName(CORRADE_FUNCTION);
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
-  auto simulator = data.creator(*this, vangogh, "custom_lighting_1");
+  auto simulator = data.creator(*this, vangogh, true, "custom_lighting_1");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedSceneWithLighting.png", maxThreshold, 0.75f);
 }
@@ -310,7 +325,7 @@ void SimTest::getDefaultLightingRGBAObservation() {
   ESP_DEBUG() << "Starting Test : getDefaultLightingRGBAObservation";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
-  auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
+  auto simulator = data.creator(*this, vangogh, true, esp::NO_LIGHT_KEY);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
   auto rigidObjMgr = simulator->getRigidObjectManager();
@@ -327,7 +342,7 @@ void SimTest::getCustomLightingRGBAObservation() {
   ESP_DEBUG() << "Starting Test : getCustomLightingRGBAObservation";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
-  auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
+  auto simulator = data.creator(*this, vangogh, true, esp::NO_LIGHT_KEY);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
   auto rigidObjMgr = simulator->getRigidObjectManager();
@@ -346,7 +361,7 @@ void SimTest::updateLightSetupRGBAObservation() {
   ESP_DEBUG() << "Starting Test : updateLightSetupRGBAObservation";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
-  auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
+  auto simulator = data.creator(*this, vangogh, true, esp::NO_LIGHT_KEY);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
   auto rigidObjMgr = simulator->getRigidObjectManager();
@@ -383,7 +398,7 @@ void SimTest::updateObjectLightSetupRGBAObservation() {
   ESP_DEBUG() << "Starting Test : updateObjectLightSetupRGBAObservation";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
-  auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
+  auto simulator = data.creator(*this, vangogh, true, esp::NO_LIGHT_KEY);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
   auto rigidObjMgr = simulator->getRigidObjectManager();
@@ -410,7 +425,7 @@ void SimTest::multipleLightingSetupsRGBAObservation() {
   ESP_DEBUG() << "Starting Test : multipleLightingSetupsRGBAObservation";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
-  auto simulator = data.creator(*this, planeStage, esp::NO_LIGHT_KEY);
+  auto simulator = data.creator(*this, planeStage, true, esp::NO_LIGHT_KEY);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
   auto rigidObjMgr = simulator->getRigidObjectManager();
@@ -446,7 +461,7 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
   ESP_DEBUG() << "Starting Test : recomputeNavmeshWithStaticObjects";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
-  auto simulator = data.creator(*this, skokloster, esp::NO_LIGHT_KEY);
+  auto simulator = data.creator(*this, skokloster, true, esp::NO_LIGHT_KEY);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
   auto rigidObjMgr = simulator->getRigidObjectManager();
@@ -513,7 +528,7 @@ void SimTest::loadingObjectTemplates() {
   ESP_DEBUG() << "Starting Test : loadingObjectTemplates";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
-  auto simulator = data.creator(*this, planeStage, esp::NO_LIGHT_KEY);
+  auto simulator = data.creator(*this, planeStage, true, esp::NO_LIGHT_KEY);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
 
@@ -578,7 +593,7 @@ void SimTest::buildingPrimAssetObjectTemplates() {
   ESP_DEBUG() << "Starting Test : buildingPrimAssetObjectTemplates";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
-  auto simulator = data.creator(*this, planeStage, esp::NO_LIGHT_KEY);
+  auto simulator = data.creator(*this, planeStage, true, esp::NO_LIGHT_KEY);
 
   // test that the correct number of default primitive assets are available as
   // render/collision targets
@@ -732,7 +747,7 @@ void SimTest::addObjectByHandle() {
   ESP_DEBUG() << "Starting Test : addObject";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
-  auto simulator = data.creator(*this, planeStage, esp::NO_LIGHT_KEY);
+  auto simulator = data.creator(*this, planeStage, true, esp::NO_LIGHT_KEY);
   auto rigidObjMgr = simulator->getRigidObjectManager();
 
   auto obj = rigidObjMgr->addObjectByHandle("invalid_handle");
@@ -773,7 +788,7 @@ void SimTest::addObjectInvertedScale() {
   ESP_DEBUG() << "Starting Test : addObjectInvertedScale";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
-  auto simulator = data.creator(*this, planeStage, esp::NO_LIGHT_KEY);
+  auto simulator = data.creator(*this, planeStage, true, esp::NO_LIGHT_KEY);
   auto rigidObjMgr = simulator->getRigidObjectManager();
   auto objAttrMgr = simulator->getObjectAttributesManager();
   // Add agent to take image
@@ -862,7 +877,7 @@ void SimTest::addSensorToObject() {
   ESP_DEBUG() << "Starting Test : addSensorToObject";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
-  auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
+  auto simulator = data.creator(*this, vangogh, true, esp::NO_LIGHT_KEY);
   auto rigidObjMgr = simulator->getRigidObjectManager();
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
@@ -923,21 +938,12 @@ void SimTest::addSensorToObject() {
 void SimTest::createMagnumRenderingOff() {
   ESP_DEBUG() << "Starting Test : createMagnumRenderingOff";
 
-  // create a simulator
-  SimulatorConfiguration simConfig{};
-  simConfig.activeSceneName = vangogh;
-  simConfig.enablePhysics = true;
-  simConfig.physicsConfigFile = physicsConfigFile;
-  simConfig.overrideSceneLightDefaults = true;
-  simConfig.createRenderer = false;
-  simConfig.sceneLightSetupKey = "custom_lighting_1";
-  auto simulator = Simulator::create_unique(simConfig);
-
-  // configure objectAttributesManager
+  auto&& data = SimulatorBuilder[testCaseInstanceId()];
+  setTestCaseDescription(data.name);
+  auto simulator = data.creator(*this, vangogh, false, "custom_lighting_1");
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
+
   auto rigidObjMgr = simulator->getRigidObjectManager();
-  objectAttribsMgr->loadAllJSONConfigsFromPath(
-      Cr::Utility::Path::join(TEST_ASSETS, "objects/nested_box"), true);
 
   // check that we can load a glb file
   auto objs = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
@@ -961,13 +967,13 @@ void SimTest::createMagnumRenderingOff() {
   auto testRaycast = [&]() {
     // cast a ray at the object to check that the object is actually there
     auto raycastresults = simulator->castRay(
-        esp::geo::Ray({10.0, 9.0, 10.0}, {0.0, 1.0, 0.0}), 100.0, 0);
+        esp::geo::Ray({10.0, 9.0, 10.0}, {0.0, 1.0, 0.0}), 100.0);
     CORRADE_COMPARE(raycastresults.hits[0].objectId, obj->getID());
     auto point = raycastresults.hits[0].point;
     CORRADE_COMPARE_AS(distanceBetween(point, {10.0, 9.9, 10.0}), 0.001,
                        Cr::TestSuite::Compare::Less);
     raycastresults = simulator->castRay(
-        esp::geo::Ray({10.0, 11.0, 10.0}, {0.0, -1.0, 0.0}), 100.0, 0);
+        esp::geo::Ray({10.0, 11.0, 10.0}, {0.0, -1.0, 0.0}), 100.0);
     CORRADE_COMPARE(raycastresults.hits[0].objectId, obj->getID());
     point = raycastresults.hits[0].point;
     CORRADE_COMPARE_AS(distanceBetween(point, {10.0, 10.1, 10.0}), 0.001,
@@ -1024,13 +1030,9 @@ void SimTest::createMagnumRenderingOff() {
 }
 
 void SimTest::getRuntimePerfStats() {
-  // create a simulator
-  SimulatorConfiguration simConfig{};
-  simConfig.activeSceneName = vangogh;
-  simConfig.enablePhysics = true;
-  simConfig.physicsConfigFile = physicsConfigFile;
-  simConfig.overrideSceneLightDefaults = true;
-  auto simulator = Simulator::create_unique(simConfig);
+  auto&& data = SimulatorBuilder[testCaseInstanceId()];
+  setTestCaseDescription(data.name);
+  auto simulator = data.creator(*this, vangogh, true, "custom_lighting_1");
 
   auto statNames = simulator->getRuntimePerfStatNames();
 
@@ -1050,8 +1052,6 @@ void SimTest::getRuntimePerfStats() {
 
   {
     auto objAttrMgr = simulator->getObjectAttributesManager();
-    objAttrMgr->loadAllJSONConfigsFromPath(
-        Cr::Utility::Path::join(TEST_ASSETS, "objects/nested_box"), true);
     auto rigidObjMgr = simulator->getRigidObjectManager();
     auto objs = objAttrMgr->getObjectHandlesBySubstring("nested_box");
     rigidObjMgr->addObjectByHandle(objs[0]);
@@ -1066,6 +1066,8 @@ void SimTest::getRuntimePerfStats() {
   CORRADE_COMPARE(statValues[drawCountIdx], 17);
   CORRADE_COMPARE(statValues[drawFacesIdx], 11296);
 
+  SimulatorConfiguration simConfig =
+      simulator->getMetadataMediator()->getSimulatorConfiguration();
   simConfig.activeSceneName = esp::assets::EMPTY_SCENE;
   simulator->reconfigure(simConfig);
 
@@ -1076,21 +1078,16 @@ void SimTest::getRuntimePerfStats() {
   CORRADE_COMPARE(statValues[drawFacesIdx], 0);
 }
 
-}  // namespace
-
 void SimTest::testArticulatedObjectSkinned() {
   ESP_DEBUG() << "Starting Test : testArticulatedObjectSkinned";
+
+  auto&& data = SimulatorBuilder[testCaseInstanceId()];
+  setTestCaseDescription(data.name);
+  auto simulator = data.creator(*this, "NONE", true, esp::NO_LIGHT_KEY);
 
   const std::string urdfFile =
       Cr::Utility::Path::join(TEST_ASSETS, "urdf/skinned_prism.urdf");
 
-  // create a simulator
-  SimulatorConfiguration simConfig{};
-  simConfig.activeSceneName = "";
-  simConfig.enablePhysics = true;
-  simConfig.physicsConfigFile = physicsConfigFile;
-  simConfig.createRenderer = true;
-  auto simulator = Simulator::create_unique(simConfig);
   auto aoManager = simulator->getArticulatedObjectManager();
 
   CORRADE_COMPARE(aoManager->getNumObjects(), 0);
@@ -1139,5 +1136,7 @@ void SimTest::testArticulatedObjectSkinned() {
   CORRADE_COMPARE(aoManager->getNumObjects(), 0);
 
 }  // SimTest::testArticulatedObjectSkinned
+
+}  // namespace
 
 CORRADE_TEST_MAIN(SimTest)

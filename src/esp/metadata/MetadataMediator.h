@@ -11,6 +11,7 @@
 
 #include "esp/core/Configuration.h"
 
+#include "esp/metadata/managers/AOAttributesManager.h"
 #include "esp/metadata/managers/AssetAttributesManager.h"
 #include "esp/metadata/managers/LightLayoutAttributesManager.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
@@ -163,7 +164,15 @@ class MetadataMediator {
   getLightLayoutAttributesManager() {
     return getActiveDSAttribs()->getLightLayoutAttributesManager();
   }
-
+  /**
+   * @brief Return manager for construction and access to articulated object
+   * attributes for current dataset.
+   * @return The current dataset's @ref esp::metadata::managers::AOAttributesManager::ptr,
+   * or nullptr if no current dataset.
+   */
+  const managers::AOAttributesManager::ptr& getAOAttributesManager() {
+    return getActiveDSAttribs()->getAOAttributesManager();
+  }
   /**
    * @brief Return manager for construction and access to object attributes for
    * current dataset.
@@ -406,12 +415,12 @@ class MetadataMediator {
   }  // getArticulatedObjModelFullHandle
 
   /**
-   * @brief TEMPORARY get a constant reference to the articulated object model
-   * filenames (.urdf) that have been loaded.  Once ArticulatedModelMangaer is
-   * built, this will be accomplished using Managed Container functionality.
+   * @brief This is to be deprecated. Provide a map of the articulated object
+   * model filenames (.urdf) that have been referenced in the Scene Dataset via
+   * paths, either .urdf or .json. To be removed in favor of directly accessing
+   * these values through the AOAttributesMaanager.
    */
-  const std::map<std::string, std::string>&
-  getArticulatedObjectModelFilenames() {
+  std::map<std::string, std::string> getArticulatedObjectModelFilenames() {
     return getActiveDSAttribs()->getArticulatedObjectModelFilenames();
   }
 

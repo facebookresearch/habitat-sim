@@ -1,5 +1,9 @@
 {
-    "render_asset": "../objects/skinned_prism.glb",
-    "semantic_id": 100,
-    "debug_render_primitives": false
+  "render_asset": "../objects/skinned_prism.glb",
+  "semantic_id": 100,
+  "base_type": "free",
+  "inertia_source": "computed",
+  "link_order": "tree_traversal",
+  "render_mode": "default",
+  "shader_type": "phong"
 }

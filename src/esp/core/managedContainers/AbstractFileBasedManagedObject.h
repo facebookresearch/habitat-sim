@@ -6,6 +6,7 @@
 #define ESP_CORE_ABSTRACTFILEBASEDMANAGEDOBJECT_H_
 
 #include <Corrade/Containers/Pair.h>
+#include <Corrade/Containers/StringStl.h>
 #include <Corrade/Utility/Path.h>
 #include <string>
 #include "AbstractManagedObject.h"

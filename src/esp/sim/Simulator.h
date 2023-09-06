@@ -135,7 +135,12 @@ class Simulator {
 
   // === Physics Simulator Functions ===
   // TODO: support multi-scene physics (default sceneID=0 currently).
-
+  /**
+   * @brief Return manager for construction and access to articulated object
+   * attributes for the current dataset.
+   */
+  const std::shared_ptr<metadata::managers::AOAttributesManager>&
+  getAOAttributesManager() const;
   /**
    * @brief Return manager for construction and access to asset attributes for
    * the current dataset.
@@ -204,9 +209,9 @@ class Simulator {
    *
    * Use this to query the stage's properties when it was initialized.
    */
-  metadata::attributes::StageAttributes::cptr getStageInitializationTemplate(
-      int sceneID = 0) const {
-    if (sceneHasPhysics(sceneID)) {
+  metadata::attributes::StageAttributes::cptr getStageInitializationTemplate()
+      const {
+    if (sceneHasPhysics()) {
       return physicsManager_->getStageInitAttributes();
     }
     return nullptr;
@@ -250,8 +255,7 @@ class Simulator {
    * @param saveFilename The name to use to save the current scene instance.
    * @return whether successful or not.
    */
-  bool saveCurrentSceneInstance(const std::string& saveFilename,
-                                int sceneID = 0) const;
+  bool saveCurrentSceneInstance(const std::string& saveFilename) const;
 
   /**
    * @brief Builds a @ref esp::metadata::SceneInstanceAttributes describing
@@ -262,18 +266,16 @@ class Simulator {
    * should one exist.
    * @return whether successful or not.
    */
-  bool saveCurrentSceneInstance(bool overwrite = false, int sceneID = 0) const;
+  bool saveCurrentSceneInstance(bool overwrite = false) const;
 
   /**
    * @brief Get the IDs of the physics objects instanced in a physical scene.
    * See @ref esp::physics::PhysicsManager::getExistingObjectIDs.
-   * @param sceneID !! Not used currently !! Specifies which physical scene to
-   * query.
    * @return A vector of ID keys into @ref
    * esp::physics::PhysicsManager::existingObjects_.
    */
-  std::vector<int> getExistingObjectIDs(int sceneID = 0) {
-    if (sceneHasPhysics(sceneID)) {
+  std::vector<int> getExistingObjectIDs() {
+    if (sceneHasPhysics()) {
       return physicsManager_->getExistingObjectIDs();
     }
     return std::vector<int>();  // empty if no simulator exists
@@ -290,13 +292,11 @@ class Simulator {
    * @param drawBB Whether or not the render the bounding box.
    * @param objectId The object ID and key identifying the object in @ref
    * esp::physics::PhysicsManager::existingObjects_.
-   * @param sceneID !! Not used currently !! Specifies which physical scene of
-   * the object.
    */
-  void setObjectBBDraw(bool drawBB, int objectId, int sceneID = 0) {
-    if (sceneHasPhysics(sceneID)) {
+  void setObjectBBDraw(bool drawBB, int objectId) {
+    if (sceneHasPhysics()) {
       getRenderGLContext();
-      auto& drawables = getDrawableGroup(sceneID);
+      auto& drawables = getDrawableGroup();
       physicsManager_->setObjectBBDraw(objectId, &drawables, drawBB);
     }
   }
@@ -306,13 +306,11 @@ class Simulator {
    * collision world.
    * @param objectId The object ID and key identifying the object in @ref
    * esp::physics::PhysicsManager::existingObjects_.
-   * @param sceneID !! Not used currently !! Specifies which physical scene of
-   * the object.
    * @return Whether or not the object is in contact with any other collision
    * enabled objects.
    */
-  bool contactTest(int objectID, int sceneID = 0) {
-    if (sceneHasPhysics(sceneID)) {
+  bool contactTest(int objectID) {
+    if (sceneHasPhysics()) {
       return physicsManager_->contactTest(objectID);
     }
     return false;
@@ -363,7 +361,7 @@ class Simulator {
    * @brief Set the stage to collidable or not.
    */
   void setStageIsCollidable(bool collidable) {
-    if (sceneHasPhysics(activeSceneID_)) {
+    if (sceneHasPhysics()) {
       physicsManager_->setStageIsCollidable(collidable);
     }
   }
@@ -372,7 +370,7 @@ class Simulator {
    * @brief Get whether or not the stage is collision active.
    */
   bool getStageIsCollidable() {
-    if (sceneHasPhysics(activeSceneID_)) {
+    if (sceneHasPhysics()) {
       return physicsManager_->getStageIsCollidable();
     }
     return false;
@@ -384,7 +382,7 @@ class Simulator {
    */
   std::shared_ptr<esp::physics::RigidObjectManager> getRigidObjectManager()
       const {
-    if (sceneHasPhysics(activeSceneID_)) {
+    if (sceneHasPhysics()) {
       return physicsManager_->getRigidObjectManager();
     }
     return nullptr;
@@ -397,7 +395,7 @@ class Simulator {
    */
   std::shared_ptr<esp::physics::ArticulatedObjectManager>
   getArticulatedObjectManager() const {
-    if (sceneHasPhysics(activeSceneID_)) {
+    if (sceneHasPhysics()) {
       return physicsManager_->getArticulatedObjectManager();
     }
     return nullptr;
@@ -413,14 +411,11 @@ class Simulator {
    * distances will be in units of ray length.
    * @param maxDistance The maximum distance along the ray direction to search.
    * In units of ray length.
-   * @param sceneID !! Not used currently !! Specifies which physical scene of
-   * the object.
    * @return Raycast results sorted by distance.
    */
   esp::physics::RaycastResults castRay(const esp::geo::Ray& ray,
-                                       double maxDistance = 100.0,
-                                       int sceneID = 0) {
-    if (sceneHasPhysics(sceneID)) {
+                                       double maxDistance = 100.0) {
+    if (sceneHasPhysics()) {
       return physicsManager_->castRay(ray, maxDistance);
     }
     return esp::physics::RaycastResults();
@@ -470,8 +465,8 @@ class Simulator {
   /**
    * @brief Set the gravity in a physical scene.
    */
-  void setGravity(const Magnum::Vector3& gravity, int sceneID = 0) {
-    if (sceneHasPhysics(sceneID)) {
+  void setGravity(const Magnum::Vector3& gravity) {
+    if (sceneHasPhysics()) {
       physicsManager_->setGravity(gravity);
     }
   }
@@ -479,8 +474,8 @@ class Simulator {
   /**
    * @brief Get the gravity in a physical scene.
    */
-  Magnum::Vector3 getGravity(int sceneID = 0) const {
-    if (sceneHasPhysics(sceneID)) {
+  Magnum::Vector3 getGravity() const {
+    if (sceneHasPhysics()) {
       return physicsManager_->getGravity();
     }
     return Magnum::Vector3();
@@ -539,21 +534,10 @@ class Simulator {
 
   /**
    * @brief Return a ref to a new drawables in the currently active scene, for
-   * object creation.  Eventually support multi-scene ID
-   * @param sceneID The scene to get the drawables for.  Currently not used.
-   */
-  inline esp::gfx::DrawableGroup& getDrawableGroup(
-      CORRADE_UNUSED const int sceneID) {
-    // TODO eventually use passed sceneID
-    return sceneManager_->getSceneGraph(activeSceneID_).getDrawables();
-  }
-
-  /**
-   * @brief Return a ref to a new drawables in the currently active scene, for
    * object creation.
    */
   inline esp::gfx::DrawableGroup& getDrawableGroup() {
-    return getDrawableGroup(activeSceneID_);
+    return sceneManager_->getSceneGraph(activeSceneID_).getDrawables();
   }
 
   /**
@@ -577,7 +561,7 @@ class Simulator {
                           float radius = .001,
                           bool smooth = false,
                           int numInterp = 10) {
-    if (sceneHasPhysics(activeSceneID_)) {
+    if (sceneHasPhysics()) {
       return physicsManager_->addTrajectoryObject(
           trajVisName, pts, colorVec, numSegments, radius, smooth, numInterp);
     }
@@ -589,7 +573,7 @@ class Simulator {
    * @return whether successful or not.
    */
   bool removeTrajVisByName(const std::string& trajVisName) {
-    if (sceneHasPhysics(activeSceneID_)) {
+    if (sceneHasPhysics()) {
       return physicsManager_->removeTrajVisByName(trajVisName);
     }
     return false;
@@ -602,7 +586,7 @@ class Simulator {
    * @return whether successful or not.
    */
   bool removeTrajVisByID(int trajVisObjID) {
-    if (sceneHasPhysics(activeSceneID_)) {
+    if (sceneHasPhysics()) {
       return physicsManager_->removeTrajVisByID(trajVisObjID);
     }
     return false;
@@ -927,39 +911,18 @@ class Simulator {
    */
   void sampleRandomAgentState(agent::AgentState& agentState);
 
-  bool isValidScene(int sceneID) const {
-    return sceneID >= 0 && static_cast<std::size_t>(sceneID) < sceneID_.size();
-  }
-
-  bool sceneHasPhysics(int sceneID) const {
-    return isValidScene(sceneID) && physicsManager_ != nullptr;
-  }
+  bool sceneHasPhysics() const { return physicsManager_ != nullptr; }
 
   /**
    * @brief TEMPORARY until sim access to objects is completely removed.  This
-   * method will return an object's wrapper if the passed @p sceneID and @p
-   * objID are both valid.  This wrapper will then be used by the calling
+   * method will return an object's wrapper if the passed @p objID is valid.
+   * This wrapper will then be used by the calling
    * function to access components of the object.
-   * @param sceneID The ID of the scene to query
-   * @param objID The ID of the desired object
-   * @return A smart pointer to the wrapper referencing the desired object, or
-   * nullptr if DNE.
-   */
-  esp::physics::ManagedRigidObject::ptr queryRigidObjWrapper(int sceneID,
-                                                             int objID) const;
-
-  /**
-   * @brief TEMPORARY until sim access to objects is completely removed.  This
-   * method will return an object's wrapper if the passed @p sceneID and @p
-   * objID are both valid.  This wrapper will then be used by the calling
-   * function to access components of the object.
-   * @param sceneID The ID of the scene to query
    * @param objID The ID of the desired object
    * @return A smart pointer to the wrapper referencing the desired object, or
    * nullptr if DNE.
    */
   esp::physics::ManagedArticulatedObject::ptr queryArticulatedObjWrapper(
-      int sceneID,
       int objID) const;
 
   void reconfigureReplayManager(bool enableGfxReplaySave);

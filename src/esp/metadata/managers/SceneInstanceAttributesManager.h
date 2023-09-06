@@ -129,7 +129,7 @@ class SceneInstanceAttributesManager
    */
   void setAbstractObjectAttributesFromJson(
       const attributes::SceneObjectInstanceAttributes::ptr& attributes,
-      const io::JsonGenericValue& jCell) const;
+      const io::JsonGenericValue& jCell);
 
   /**
    * @brief Used Internally.  Create and configure newly-created scene instance

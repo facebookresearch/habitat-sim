@@ -99,7 +99,10 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
    * coordinate system relative to the object's center of mass.
    */
   virtual void applyForce(CORRADE_UNUSED const Magnum::Vector3& force,
-                          CORRADE_UNUSED const Magnum::Vector3& relPos) {}
+                          CORRADE_UNUSED const Magnum::Vector3& relPos) {
+    ESP_ERROR()
+        << "Not implemented. Install with --bullet to use this feature.";
+  }
 
   /**
    * @brief Apply an impulse to an object through a dervied dynamics
@@ -113,7 +116,10 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
    * coordinate system relative to the object's center of mass.
    */
   virtual void applyImpulse(CORRADE_UNUSED const Magnum::Vector3& impulse,
-                            CORRADE_UNUSED const Magnum::Vector3& relPos) {}
+                            CORRADE_UNUSED const Magnum::Vector3& relPos) {
+    ESP_ERROR()
+        << "Not implemented. Install with --bullet to use this feature.";
+  }
 
   /**
    * @brief Apply an internal torque to an object through a dervied dynamics
@@ -122,7 +128,10 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
    * @param torque The desired torque on the object in the local coordinate
    * system.
    */
-  virtual void applyTorque(CORRADE_UNUSED const Magnum::Vector3& torque) {}
+  virtual void applyTorque(CORRADE_UNUSED const Magnum::Vector3& torque) {
+    ESP_ERROR()
+        << "Not implemented. Install with --bullet to use this feature.";
+  }
   /**
    * @brief Apply an internal impulse torque to an object through a dervied
    * dynamics implementation. Does nothing for @ref
@@ -133,7 +142,10 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
    * requiring integration through simulation.
    */
   virtual void applyImpulseTorque(
-      CORRADE_UNUSED const Magnum::Vector3& impulse) {}
+      CORRADE_UNUSED const Magnum::Vector3& impulse) {
+    ESP_ERROR()
+        << "Not implemented. Install with --bullet to use this feature.";
+  }
 
   // ==== Getter/Setter functions ===
 

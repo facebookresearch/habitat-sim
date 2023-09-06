@@ -10,7 +10,6 @@
  * esp::metadata::managers::AbstractObjectAttributesManager
  */
 
-#include "esp/metadata/MetadataUtils.h"
 #include "esp/metadata/attributes/AbstractObjectAttributes.h"
 #include "esp/metadata/managers/AssetAttributesManager.h"
 #include "esp/metadata/managers/AttributesManagerBase.h"
@@ -342,16 +341,11 @@ auto AbstractObjectAttributesManager<T, Access>::
     attributes->setUseMeshCollision(true);
   }
 
-  // set attributes shader type to use.  This may be overridden by a scene
-  // instance specification.
-  const std::string shaderTypeVal = getShaderTypeFromJsonDoc(jsonDoc);
-  // if a known shader type val is specified in json, set that value for the
-  // attributes, overriding constructor defaults.  Do not overwrite anything for
-  // unknown
-  if (shaderTypeVal !=
-      getShaderTypeName(attributes::ObjectInstanceShaderType::Unspecified)) {
-    attributes->setShaderType(shaderTypeVal);
-  }
+  // shader type
+  this->setEnumStringFromJsonDoc(
+      jsonDoc, "shader_type", "ShaderTypeNamesMap", false,
+      attributes::ShaderTypeNamesMap,
+      [attributes](const std::string& val) { attributes->setShaderType(val); });
 
   return attributes;
 }  // AbstractObjectAttributesManager<AbsObjAttrPtr>::setAbstractObjectAttributesFromJson

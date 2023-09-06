@@ -10,6 +10,8 @@ set(
   attributes/AttributesEnumMaps.cpp
   attributes/AbstractObjectAttributes.h
   attributes/AbstractObjectAttributes.cpp
+  attributes/ArticulatedObjectAttributes.h
+  attributes/ArticulatedObjectAttributes.cpp
   attributes/LightLayoutAttributes.h
   attributes/LightLayoutAttributes.cpp
   attributes/ObjectAttributes.h
@@ -28,6 +30,8 @@ set(
   attributes/StageAttributes.cpp
   managers/AttributesManagerBase.h
   managers/AbstractObjectAttributesManager.h
+  managers/AOAttributesManager.h
+  managers/AOAttributesManager.cpp
   managers/AssetAttributesManager.h
   managers/AssetAttributesManager.cpp
   managers/LightLayoutAttributesManager.h
@@ -46,8 +50,8 @@ set(
   managers/StageAttributesManager.cpp
   MetadataMediator.h
   MetadataMediator.cpp
-  MetadataUtils.h
-  MetadataUtils.cpp
+  URDFParser.cpp
+  URDFParser.h
 )
 find_package(Magnum REQUIRED Primitives)
 
@@ -56,8 +60,10 @@ add_library(
   ${metadata_SOURCES}
 )
 
+target_include_directories(metadata PRIVATE "${DEPS_DIR}/tinyxml2")
+
 target_link_libraries(
   metadata
   PUBLIC Magnum::Magnum Magnum::Primitives
-  PRIVATE core geo io
+  PRIVATE core geo io tinyxml2
 )

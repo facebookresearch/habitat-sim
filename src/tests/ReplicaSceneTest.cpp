@@ -45,7 +45,11 @@ struct ReplicaSceneTest : Cr::TestSuite::Tester {
 ReplicaSceneTest::ReplicaSceneTest() {
   addTests({&ReplicaSceneTest::testSemanticSceneOBB,
             &ReplicaSceneTest::testSemanticSceneLoading,
-            &ReplicaSceneTest::testSemanticSceneDescriptorReplicaCAD});
+
+#ifdef ESP_BUILD_WITH_BULLET
+            &ReplicaSceneTest::testSemanticSceneDescriptorReplicaCAD
+#endif
+  });
 }
 
 void ReplicaSceneTest::testSemanticSceneOBB() {
@@ -168,6 +172,7 @@ void ReplicaSceneTest::testSemanticSceneDescriptorReplicaCAD() {
       replicaCAD, "replicaCAD.scene_dataset_config.json");
 
   cfg.activeSceneName = "apt_0.scene_instance";
+  cfg.enablePhysics = true;
 
   esp::sim::Simulator sim{cfg};
   // semantic scene descriptor is specified in scene dataset config

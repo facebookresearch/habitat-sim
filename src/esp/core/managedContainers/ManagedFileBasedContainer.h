@@ -518,7 +518,10 @@ std::string ManagedFileBasedContainer<T, Access>::convertFilenameToPassedExt(
   if (strHandle.find(Cr::Utility::String::lowercase(fileTypeExt)) ==
       std::string::npos) {
     resHandle =
-        Cr::Utility::Path::splitExtension(filename).first() + "." + fileTypeExt;
+        Cr::Utility::Path::splitExtension(
+            Cr::Utility::Path::splitExtension(filename).first())
+            .first() +
+        (fileTypeExt.rfind('.', 0) == 0 ? fileTypeExt : "." + fileTypeExt);
     ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
         << "<" << this->objectType_ << "> : Filename :" << filename
         << " changed to proposed " << fileTypeExt

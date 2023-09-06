@@ -460,80 +460,78 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("getExistingObjectIDs", &Simulator::getExistingObjectIDs)
 
 #ifdef ESP_BUILD_WITH_BULLET
-      .function("addObject",
-                em::optional_override(
-                    [](Simulator& self, const int objectLibId,
-                       scene::SceneNode* attachmentNode = nullptr,
-                       const std::string& lightSetupKey = DEFAULT_LIGHTING_KEY,
-                       const int sceneID = 0) {
-                      auto rigidMgr = self.getRigidObjectManager();
-                      auto obj = rigidMgr->addBulletObjectByID(
-                          objectLibId, attachmentNode, lightSetupKey);
-                      return obj->getID();
-                    }),
-                em::allow_raw_pointers())
-      .function("addObjectByHandle",
-                em::optional_override(
-                    [](Simulator& self, const std::string& objectLibHandle,
-                       scene::SceneNode* attachmentNode = nullptr,
-                       const std::string& lightSetupKey = DEFAULT_LIGHTING_KEY,
-                       const int sceneID = 0) {
-                      auto rigidMgr = self.getRigidObjectManager();
-                      auto obj = rigidMgr->addBulletObjectByHandle(
-                          objectLibHandle, attachmentNode, lightSetupKey);
-                      return obj->getID();
-                    }),
-                em::allow_raw_pointers())
+      .function(
+          "addObject",
+          em::optional_override(
+              [](Simulator& self, const int objectLibId,
+                 scene::SceneNode* attachmentNode = nullptr,
+                 const std::string& lightSetupKey = DEFAULT_LIGHTING_KEY) {
+                auto rigidMgr = self.getRigidObjectManager();
+                auto obj = rigidMgr->addBulletObjectByID(
+                    objectLibId, attachmentNode, lightSetupKey);
+                return obj->getID();
+              }),
+          em::allow_raw_pointers())
+      .function(
+          "addObjectByHandle",
+          em::optional_override(
+              [](Simulator& self, const std::string& objectLibHandle,
+                 scene::SceneNode* attachmentNode = nullptr,
+                 const std::string& lightSetupKey = DEFAULT_LIGHTING_KEY) {
+                auto rigidMgr = self.getRigidObjectManager();
+                auto obj = rigidMgr->addBulletObjectByHandle(
+                    objectLibHandle, attachmentNode, lightSetupKey);
+                return obj->getID();
+              }),
+          em::allow_raw_pointers())
 #else
-      .function("addObject",
-                em::optional_override(
-                    [](Simulator& self, const int objectLibId,
-                       scene::SceneNode* attachmentNode = nullptr,
-                       const std::string& lightSetupKey = DEFAULT_LIGHTING_KEY,
-                       const int sceneID = 0) {
-                      auto rigidMgr = self.getRigidObjectManager();
-                      auto obj = rigidMgr->addObjectByID(
-                          objectLibId, attachmentNode, lightSetupKey);
-                      return obj->getID();
-                    }),
-                em::allow_raw_pointers())
-      .function("addObjectByHandle",
-                em::optional_override(
-                    [](Simulator& self, const std::string& objectLibHandle,
-                       scene::SceneNode* attachmentNode = nullptr,
-                       const std::string& lightSetupKey = DEFAULT_LIGHTING_KEY,
-                       const int sceneID = 0) {
-                      auto rigidMgr = self.getRigidObjectManager();
-                      auto obj = rigidMgr->addObjectByHandle(
-                          objectLibHandle, attachmentNode, lightSetupKey);
-                      return obj->getID();
-                    }),
-                em::allow_raw_pointers())
+      .function(
+          "addObject",
+          em::optional_override(
+              [](Simulator& self, const int objectLibId,
+                 scene::SceneNode* attachmentNode = nullptr,
+                 const std::string& lightSetupKey = DEFAULT_LIGHTING_KEY) {
+                auto rigidMgr = self.getRigidObjectManager();
+                auto obj = rigidMgr->addObjectByID(objectLibId, attachmentNode,
+                                                   lightSetupKey);
+                return obj->getID();
+              }),
+          em::allow_raw_pointers())
+      .function(
+          "addObjectByHandle",
+          em::optional_override(
+              [](Simulator& self, const std::string& objectLibHandle,
+                 scene::SceneNode* attachmentNode = nullptr,
+                 const std::string& lightSetupKey = DEFAULT_LIGHTING_KEY) {
+                auto rigidMgr = self.getRigidObjectManager();
+                auto obj = rigidMgr->addObjectByHandle(
+                    objectLibHandle, attachmentNode, lightSetupKey);
+                return obj->getID();
+              }),
+          em::allow_raw_pointers())
 #endif
 
       .function("removeObject",
                 em::optional_override([](Simulator& self, const int objectId,
                                          const bool deleteObjectNode = true,
-                                         const bool deleteVisualNode = true,
-                                         const int sceneID = 0) {
+                                         const bool deleteVisualNode = true) {
                   auto rigidMgr = self.getRigidObjectManager();
                   auto obj = rigidMgr->removePhysObjectByID(
                       objectId, deleteObjectNode, deleteVisualNode);
                   return obj;
                 }))
 
-      .function(
-          "setObjectMotionType",
-          em::optional_override([](Simulator& self, MotionType motionType,
-                                   const int objectId, const int sceneID = 0) {
-            auto obj = self.getRigidObjectManager()->getObjectByID(objectId);
-            if ((obj != nullptr) && (obj->isAlive())) {
-              obj->setMotionType(motionType);
-            }
-          }))
+      .function("setObjectMotionType",
+                em::optional_override([](Simulator& self, MotionType motionType,
+                                         const int objectId) {
+                  auto obj =
+                      self.getRigidObjectManager()->getObjectByID(objectId);
+                  if ((obj != nullptr) && (obj->isAlive())) {
+                    obj->setMotionType(motionType);
+                  }
+                }))
       .function("getObjectMotionType",
-                em::optional_override([](Simulator& self, const int objectId,
-                                         const int sceneID = 0) {
+                em::optional_override([](Simulator& self, const int objectId) {
                   auto obj =
                       self.getRigidObjectManager()->getObjectByID(objectId);
                   if ((obj != nullptr) && (obj->isAlive())) {
@@ -544,15 +542,14 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function(
           "setTranslation",
           em::optional_override([](Simulator& self, Magnum::Vector3& trans,
-                                   const int objectId, const int sceneID = 0) {
+                                   const int objectId) {
             auto obj = self.getRigidObjectManager()->getObjectByID(objectId);
             if ((obj != nullptr) && (obj->isAlive())) {
               obj->setTranslation(trans);
             }
           }))
       .function("getTranslation",
-                em::optional_override([](Simulator& self, const int objectId,
-                                         const int sceneID = 0) {
+                em::optional_override([](Simulator& self, const int objectId) {
                   auto obj =
                       self.getRigidObjectManager()->getObjectByID(objectId);
                   if ((obj != nullptr) && (obj->isAlive())) {
@@ -563,7 +560,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function(
           "setRotation",
           em::optional_override([](Simulator& self, Magnum::Quaternion& rot,
-                                   const int objectId, const int sceneID = 0) {
+                                   const int objectId) {
             auto obj = self.getRigidObjectManager()->getObjectByID(objectId);
             if ((obj != nullptr) && (obj->isAlive())) {
               obj->setRotation(rot);
@@ -571,8 +568,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
           }))
 
       .function("getRotation",
-                em::optional_override([](Simulator& self, const int objectId,
-                                         const int sceneID = 0) {
+                em::optional_override([](Simulator& self, const int objectId) {
                   auto obj =
                       self.getRigidObjectManager()->getObjectByID(objectId);
                   if ((obj != nullptr) && (obj->isAlive())) {
@@ -582,20 +578,19 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
                 }))
 
       .function("setObjectLightSetup",
-                em::optional_override(
-                    [](Simulator& self, const std::string& lightSetupKey,
-                       const int objectId, const int sceneID = 0) {
-                      auto obj =
-                          self.getRigidObjectManager()->getObjectByID(objectId);
-                      if ((obj != nullptr) && (obj->isAlive())) {
-                        obj->setLightSetup(lightSetupKey);
-                      }
-                    }))
+                em::optional_override([](Simulator& self,
+                                         const std::string& lightSetupKey,
+                                         const int objectId) {
+                  auto obj =
+                      self.getRigidObjectManager()->getObjectByID(objectId);
+                  if ((obj != nullptr) && (obj->isAlive())) {
+                    obj->setLightSetup(lightSetupKey);
+                  }
+                }))
 
       .function("setLinearVelocity",
                 em::optional_override([](Simulator& self, const int objectId,
-                                         Magnum::Vector3& linVel,
-                                         const int sceneID = 0) {
+                                         Magnum::Vector3& linVel) {
                   auto obj =
                       self.getRigidObjectManager()->getObjectByID(objectId);
                   if ((obj != nullptr) && (obj->isAlive())) {

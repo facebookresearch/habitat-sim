@@ -43,6 +43,9 @@ class Recorder;
 }
 }  // namespace gfx
 namespace metadata {
+namespace URDF {
+class Model;
+}
 class MetadataMediator;
 namespace attributes {
 class ObjectAttributes;
@@ -52,6 +55,7 @@ class SceneObjectInstanceAttributes;
 class StageAttributes;
 }  // namespace attributes
 namespace managers {
+class AOAttributesManager;
 class AssetAttributesManager;
 class LightLayoutAttributesManager;
 class ObjectAttributesManager;
@@ -73,11 +77,6 @@ class RigidObject;
 namespace nav {
 class PathFinder;
 }
-namespace io {
-namespace URDF {
-class Model;
-}
-}  // namespace io
 namespace assets {
 class BaseMesh;
 struct CollisionMeshData;
@@ -276,6 +275,7 @@ class ResourceManager {
    */
   std::shared_ptr<metadata::managers::AssetAttributesManager>
   getAssetAttributesManager() const;
+
   /**
    * @brief Return manager for construction and access to light and lighting
    * layout attributes.
@@ -284,16 +284,25 @@ class ResourceManager {
   getLightLayoutAttributesManager() const;
 
   /**
+   * @brief Return manager for construction and access to articulated object
+   * attributes.
+   */
+  std::shared_ptr<metadata::managers::AOAttributesManager>
+  getAOAttributesManager() const;
+
+  /**
    * @brief Return manager for construction and access to object attributes.
    */
   std::shared_ptr<metadata::managers::ObjectAttributesManager>
   getObjectAttributesManager() const;
+
   /**
    * @brief Return manager for construction and access to physics world
    * attributes.
    */
   std::shared_ptr<metadata::managers::PhysicsAttributesManager>
   getPhysicsAttributesManager() const;
+
   /**
    * @brief Return manager for construction and access to scene attributes.
    */

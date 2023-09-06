@@ -13,7 +13,7 @@ import habitat_sim.utils.settings
 # benchmark adding/removing articulated objects from URDF files
 @pytest.mark.sim_benchmarks
 @pytest.mark.skipif(
-    not habitat_sim.built_with_bullet,
+    not habitat_sim.bindings.built_with_bullet,
     reason="ArticulatedObject API requires Bullet physics.",
 )
 @pytest.mark.benchmark(group="URDF load->remove iterations|force_reload")
