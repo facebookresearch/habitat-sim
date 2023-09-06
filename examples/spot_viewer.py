@@ -826,9 +826,7 @@ class HabitatSimInteractiveViewer(Application):
             aom = self.sim.get_articulated_object_manager()
             aom.remove_all_objects()
             self.sim.save_current_scene_config(overwrite=True)
-            print(
-                "Saved modified scene instance JSON to original location. Look for '<scene_name> (copy:0000)' or similar."
-            )
+            print("Saved modified scene instance JSON to original location.")
             # de-duplicate and save clutter list
             self.removed_clutter = list(dict.fromkeys(self.removed_clutter))
             with open("removed_clutter.txt", "a") as f:
