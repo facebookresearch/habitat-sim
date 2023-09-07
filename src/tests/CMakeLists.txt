@@ -61,21 +61,6 @@ if(MagnumPlugins_KtxImageConverter_FOUND)
   target_link_libraries(GfxBatchRendererTest PRIVATE MagnumPlugins::KtxImageConverter)
 endif()
 
-corrade_add_test(
-  GfxBatchHbaoTest
-  GfxBatchHbaoTest.cpp
-  LIBRARIES
-  gfx_batch
-  Magnum::DebugTools
-  Magnum::OpenGLTester
-  Magnum::MeshTools
-  Magnum::AnyImageConverter
-  Magnum::AnySceneImporter
-  MagnumPlugins::StanfordImporter
-  MagnumPlugins::OpenExrImageConverter
-)
-target_include_directories(GfxBatchHbaoTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-
 corrade_add_test(CoreTest CoreTest.cpp LIBRARIES core io)
 
 corrade_add_test(CullingTest CullingTest.cpp LIBRARIES gfx)
@@ -96,6 +81,21 @@ corrade_add_test(DrawableTest DrawableTest.cpp LIBRARIES gfx)
 target_include_directories(DrawableTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(GeoTest GeoTest.cpp LIBRARIES geo)
+
+corrade_add_test(
+  GfxBatchHbaoTest
+  GfxBatchHbaoTest.cpp
+  LIBRARIES
+  gfx_batch
+  Magnum::DebugTools
+  Magnum::OpenGLTester
+  Magnum::MeshTools
+  Magnum::AnyImageConverter
+  Magnum::AnySceneImporter
+  MagnumPlugins::StanfordImporter
+  MagnumPlugins::OpenExrImageConverter
+)
+target_include_directories(GfxBatchHbaoTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(
   GfxReplayTest
