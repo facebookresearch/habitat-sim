@@ -113,8 +113,8 @@ void GfxBatchHbaoTest::generateTestData() {
 
   /* magnum-sceneconverter van-gogh-room.glb --concatenate-meshes
    * van-gogh-room.mesh.ply */
-  if (!importer->openFile(Cr::Utility::Path::join(
-          SCENE_DATASETS, "habitat-test-scenes/van-gogh-room.mesh.ply")))
+  if (!importer->openFile(
+          Cr::Utility::Path::join(TEST_ASSETS, "van-gogh-room.mesh.ply")))
     CORRADE_SKIP("Cannot load the file");
 
   Cr::Containers::Optional<Mn::Trade::MeshData> meshData = importer->mesh(0);
