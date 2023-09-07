@@ -79,25 +79,26 @@ uniform sampler2D texViewNormal;
 vec3 getQuarterCoord(vec2 UV) {
   return vec3(UV, float(gl_PrimitiveID));
 }
+
 #if AO_LAYERED == 1
 
 #if AO_BLUR
 layout(rg16f) uniform image2DArray imgOutput;
 #else
 layout(r8) uniform image2DArray imgOutput;
-#endif
+#endif  // if AO_BLUR
 
 void outputColor(vec4 color) {
   imageStore(imgOutput, ivec3(ivec2(gl_FragCoord.xy), gl_PrimitiveID), color);
 }
-#else
+#else   //#if AO_LAYERED != 1 (if 2)
 out vec4 out_Color;
 
 void outputColor(vec4 color) {
   out_Color = color;
 }
-#endif
-#else
+#endif  // if AO_LAYERED == 1
+#else   // if !AO_LAYERED
 uniform vec2 g_Float2Offset;
 uniform vec4 g_Jitter;
 
@@ -113,15 +114,17 @@ out vec4 out_Color;
 void outputColor(vec4 color) {
   out_Color = color;
 }
-#endif
+#endif  // if AO_LAYERED
 
-#else
+#else  //  if !AO_DEINTERLEAVED
+
 #if AO_TEXTUREARRAY_LAYER
 uniform sampler2DArray texLinearDepth;
 uniform float g_LinearDepthSlice;
-#else
+#else   // if !AO_TEXTUREARRAY_LAYER
 uniform sampler2D texLinearDepth;
-#endif
+#endif  // if AO_TEXTUREARRAY_LAYER
+
 uniform sampler2DArray texRandom;
 uniform float g_RandomSlice;
 
@@ -130,7 +133,7 @@ out vec4 out_Color;
 void outputColor(vec4 color) {
   out_Color = color;
 }
-#endif
+#endif  // if AO_DEINTERLEAVED
 
 #ifdef USE_GEOMETRY_SHADER_PASSTHROUGH
 in vec2 texCoordGeometry;
