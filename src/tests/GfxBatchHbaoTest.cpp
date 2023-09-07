@@ -46,51 +46,54 @@ const struct {
   esp::gfx_batch::HbaoFlags flags;
   Mn::Float intensity, radius, blurSharpness;
   Mn::Float maxThreshold, meanThreshold;
-  bool expectFail;
 } TestData[]{
-    {"classic, defaults", "van-gogh-room.hbao-classic.png", true,
+    {"classic, defaults", "hbao_tests/van-gogh-room.hbao-classic.png", true,
      esp::gfx_batch::HbaoConfiguration{}.flags(),
      esp::gfx_batch::HbaoConfiguration{}.intensity(),
      esp::gfx_batch::HbaoConfiguration{}.radius(),
-     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 0.0f, 0.0f, false},
-    {"classic, AO special blur", "van-gogh-room.hbao-classic.png", true,
+     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 0.0f, 0.0f},
+    {"classic, AO special blur",
+     "hbao_tests/van-gogh-room.hbao-classic-sblur.png", true,
      esp::gfx_batch::HbaoConfiguration{}.flags() |
          esp::gfx_batch::HbaoFlag::UseAoSpecialBlur,
      esp::gfx_batch::HbaoConfiguration{}.intensity(),
      esp::gfx_batch::HbaoConfiguration{}.radius(),
-     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 2.0f, 2.0f, true},
-    {"classic, strong effect", "van-gogh-room.hbao-classic-strong.png", true,
-     esp::gfx_batch::HbaoConfiguration{}.flags(), 2.0f, 1.5f, 10.0f, 0.0f, 0.0f,
-     false},
+     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 2.0f, 2.0f},
+    {"classic, strong effect",
+     "hbao_tests/van-gogh-room.hbao-classic-strong.png", true,
+     esp::gfx_batch::HbaoConfiguration{}.flags(), 2.0f, 1.5f, 10.0f, 0.0f,
+     0.0f},
 
-    {"cache-aware, defaults", "van-gogh-room.hbao.png", false,
+    {"cache-aware, defaults", "hbao_tests/van-gogh-room.hbao-cache.png", false,
      esp::gfx_batch::HbaoConfiguration{}.flags(),
      esp::gfx_batch::HbaoConfiguration{}.intensity(),
      esp::gfx_batch::HbaoConfiguration{}.radius(),
-     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 0.0f, 0.0f, false},
-    {"cache-aware, AO special blur", "van-gogh-room.hbao.png", false,
+     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 0.0f, 0.0f},
+    {"cache-aware, AO special blur",
+     "hbao_tests/van-gogh-room.hbao-cache-sblur.png", false,
      esp::gfx_batch::HbaoConfiguration{}.flags() |
          esp::gfx_batch::HbaoFlag::UseAoSpecialBlur,
      esp::gfx_batch::HbaoConfiguration{}.intensity(),
      esp::gfx_batch::HbaoConfiguration{}.radius(),
-     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 2.0f, 2.0f, true},
-    {"cache-aware, layered with image load store", "van-gogh-room.hbao.png",
-     false,
+     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 2.0f, 2.0f},
+    {"cache-aware, strong effect",
+     "hbao_tests/van-gogh-room.hbao-cache-strong.png", false,
+     esp::gfx_batch::HbaoConfiguration{}.flags(), 2.0f, 1.5f, 10.0f, 0.0f,
+     0.0f},
+    {"cache-aware, layered with image load store",
+     "hbao_tests/van-gogh-room.hbao-cache-layered.png", false,
      esp::gfx_batch::HbaoConfiguration{}.flags() |
          esp::gfx_batch::HbaoFlag::LayeredImageLoadStore,
      esp::gfx_batch::HbaoConfiguration{}.intensity(),
      esp::gfx_batch::HbaoConfiguration{}.radius(),
-     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 4.5f, 0.11f, false},
-    {"cache-aware, layered with geometry shader", "van-gogh-room.hbao.png",
-     false,
+     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 4.5f, 0.11f},
+    {"cache-aware, layered with geometry shader",
+     "hbao_tests/van-gogh-room.hbao-cache-geom.png", false,
      esp::gfx_batch::HbaoConfiguration{}.flags() |
          esp::gfx_batch::HbaoFlag::LayeredGeometryShader,
      esp::gfx_batch::HbaoConfiguration{}.intensity(),
      esp::gfx_batch::HbaoConfiguration{}.radius(),
-     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 4.5f, 0.11f, false},
-    {"cache-aware, strong effect", "van-gogh-room.hbao-strong.png", false,
-     esp::gfx_batch::HbaoConfiguration{}.flags(), 2.0f, 1.5f, 10.0f, 0.0f, 0.0f,
-     false},
+     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 4.5f, 0.11f},
 };
 
 GfxBatchHbaoTest::GfxBatchHbaoTest() {
@@ -102,20 +105,18 @@ GfxBatchHbaoTest::GfxBatchHbaoTest() {
 
 constexpr Mn::Vector2i Size{256, 256};
 const Mn::Matrix4 Projection =
-    Mn::Matrix4::perspectiveProjection(45.0_degf, 1.0f, 0.1f, 100.0f);
+    Mn::Matrix4::perspectiveProjection(90.0_degf, 1.0f, 0.1f, 100.0f);
 
 void GfxBatchHbaoTest::generateTestData() {
   Cr::PluginManager::Manager<Mn::Trade::AbstractImporter> importerManager;
   Cr::Containers::Pointer<Mn::Trade::AbstractImporter> importer =
       importerManager.loadAndInstantiate("AnySceneImporter");
-  if (!importer)
-    CORRADE_SKIP("Cannot load the importer");
+  CORRADE_VERIFY(importer);
 
   /* magnum-sceneconverter van-gogh-room.glb --concatenate-meshes
    * van-gogh-room.mesh.ply */
-  if (!importer->openFile(
-          Cr::Utility::Path::join(TEST_ASSETS, "van-gogh-room.mesh.ply")))
-    CORRADE_SKIP("Cannot load the file");
+  CORRADE_VERIFY(importer->openFile(Cr::Utility::Path::join(
+      TEST_ASSETS, "hbao_tests/van-gogh-room.mesh.ply")));
 
   Cr::Containers::Optional<Mn::Trade::MeshData> meshData = importer->mesh(0);
   CORRADE_VERIFY(meshData);
@@ -152,11 +153,13 @@ void GfxBatchHbaoTest::generateTestData() {
   MAGNUM_VERIFY_NO_GL_ERROR();
   CORRADE_COMPARE_WITH(
       framebuffer.read({{}, Size}, {Mn::PixelFormat::RGBA8Unorm}),
-      Cr::Utility::Path::join(TEST_ASSETS, "van-gogh-room.color.png"),
+      Cr::Utility::Path::join(TEST_ASSETS,
+                              "hbao_tests/van-gogh-room.color.png"),
       (Mn::DebugTools::CompareImageToFile{}));
   CORRADE_COMPARE_WITH(
       framebuffer.read({{}, Size}, {Mn::PixelFormat::Depth32F}),
-      Cr::Utility::Path::join(TEST_ASSETS, "van-gogh-room.depth.exr"),
+      Cr::Utility::Path::join(TEST_ASSETS,
+                              "hbao_tests/van-gogh-room.depth.exr"),
       (Mn::DebugTools::CompareImageToFile{}));
 }
 
@@ -180,19 +183,18 @@ void GfxBatchHbaoTest::test() {
   Cr::PluginManager::Manager<Mn::Trade::AbstractImporter> importerManager;
   Cr::Containers::Pointer<Mn::Trade::AbstractImporter> importer =
       importerManager.loadAndInstantiate("AnyImageImporter");
-  if (!importer)
-    CORRADE_SKIP("Cannot load the importer");
+  CORRADE_VERIFY(importer);
 
-  if (!importer->openFile(
-          Cr::Utility::Path::join(TEST_ASSETS, "van-gogh-room.color.png")))
+  if (!importer->openFile(Cr::Utility::Path::join(
+          TEST_ASSETS, "hbao_tests/van-gogh-room.color.png")))
     CORRADE_FAIL("Cannot load the color image");
   Cr::Containers::Optional<Mn::Trade::ImageData2D> color = importer->image2D(0);
   CORRADE_VERIFY(color);
   CORRADE_COMPARE(color->size(), Size);
   CORRADE_COMPARE(color->format(), Mn::PixelFormat::RGBA8Unorm);
 
-  if (!importer->openFile(
-          Cr::Utility::Path::join(TEST_ASSETS, "van-gogh-room.depth.exr")))
+  if (!importer->openFile(Cr::Utility::Path::join(
+          TEST_ASSETS, "hbao_tests/van-gogh-room.depth.exr")))
     CORRADE_FAIL("Cannot load the depth image");
   Cr::Containers::Optional<Mn::Trade::ImageData2D> depth = importer->image2D(0);
   CORRADE_VERIFY(depth);
@@ -225,7 +227,6 @@ void GfxBatchHbaoTest::test() {
   hbao.drawEffect(Projection, !data.classic, inputDepthTexture, output);
   MAGNUM_VERIFY_NO_GL_ERROR();
   {
-    CORRADE_EXPECT_FAIL_IF(data.expectFail, "This doesn't work as expected.");
     CORRADE_COMPARE_WITH(output.read({{}, Size}, {Mn::PixelFormat::RGBA8Unorm}),
                          Cr::Utility::Path::join(TEST_ASSETS, data.filename),
                          (Mn::DebugTools::CompareImageToFile{

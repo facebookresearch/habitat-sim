@@ -91,9 +91,13 @@ corrade_add_test(
   Magnum::OpenGLTester
   Magnum::MeshTools
   Magnum::AnyImageConverter
+  Magnum::AnyImageImporter
   Magnum::AnySceneImporter
-  MagnumPlugins::StanfordImporter
   MagnumPlugins::OpenExrImageConverter
+  MagnumPlugins::OpenExrImporter
+  MagnumPlugins::StanfordImporter
+  MagnumPlugins::StbImageImporter
+  MagnumPlugins::StbImageConverter
 )
 target_include_directories(GfxBatchHbaoTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
