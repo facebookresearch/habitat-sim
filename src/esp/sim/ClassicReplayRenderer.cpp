@@ -24,6 +24,7 @@ ClassicReplayRenderer::ClassicReplayRenderer(
   config_ = cfg;
   SimulatorConfiguration simConfig;
   simConfig.createRenderer = true;
+  simConfig.frustumCulling = cfg.enableFrustumCulling;
   auto metadataMediator = metadata::MetadataMediator::create(simConfig);
   resourceManager_ =
       std::make_unique<assets::ResourceManager>(std::move(metadataMediator));
