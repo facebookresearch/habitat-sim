@@ -42,13 +42,16 @@ class HbaoConfiguration {
     return *this;
   }
 
-  HbaoConfiguration& setUseBlur(bool state) {
-    // special blur is dependent on blur being enabled, so both should be
-    // disabled if blur is.
-    flags_ = (state ? flags_ | HbaoFlag::Blur
-                    : flags_ & ~(HbaoFlag::UseAoSpecialBlur | HbaoFlag::Blur));
-    return *this;
-  }
+  // At least blur should always be used, otherwise there's nasty grid-like
+  // artifacts
+  // HbaoConfiguration& setUseBlur(bool state) {
+  //   // special blur is dependent on blur being enabled, so both should be
+  //   // disabled if blur is.
+  //   flags_ = (state ? flags_ | HbaoFlag::Blur
+  //                   : flags_ & ~(HbaoFlag::UseAoSpecialBlur |
+  //                   HbaoFlag::Blur));
+  //   return *this;
+  // }
 
   HbaoConfiguration& setUseSpecialBlur(bool state) {
     // special blur is dependent on blur being enabled, so both should be
@@ -110,7 +113,7 @@ class HbaoConfiguration {
 
  private:
   Magnum::Vector2i size_;
-  HbaoFlags flags_{};
+  HbaoFlags flags_ = HbaoFlag::Blur;
   Magnum::Int samples_ = 1;
   Magnum::Float intensity_ = 0.732f, bias_ = 0.05f, radius_ = 1.84f,
                 blurSharpness_ = 10.0f;
