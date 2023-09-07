@@ -105,7 +105,7 @@ GfxBatchHbaoTest::GfxBatchHbaoTest() {
 
 constexpr Mn::Vector2i Size{256, 256};
 const Mn::Matrix4 Projection =
-    Mn::Matrix4::perspectiveProjection(90.0_degf, 1.0f, 0.1f, 100.0f);
+    Mn::Matrix4::perspectiveProjection(45.0_degf, 1.0f, 0.1f, 100.0f);
 
 void GfxBatchHbaoTest::generateTestData() {
   Cr::PluginManager::Manager<Mn::Trade::AbstractImporter> importerManager;
