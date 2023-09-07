@@ -42,8 +42,9 @@ class HbaoConfiguration {
     return *this;
   }
 
-  // At least blur should always be used, otherwise there's nasty grid-like
-  // artifacts
+  // Blur should always be used, otherwise there's nasty grid-like artifacts, at
+  // least until we support MSAA
+
   // HbaoConfiguration& setUseBlur(bool state) {
   //   // special blur is dependent on blur being enabled, so both should be
   //   // disabled if blur is.
