@@ -227,7 +227,7 @@ void GfxBatchHbaoTest::generateTestData() {
   }
   // Ortho projection
 
-  setOrthoProjection(Magnum::Vector2(5.0f, 5.0f));
+  setOrthoProjection(Magnum::Vector2(4.0f, 4.0f));
   {
     Mn::GL::Framebuffer framebuffer{{{}, Size}};
     framebuffer
