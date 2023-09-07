@@ -39,11 +39,12 @@ namespace Cr = Corrade;
 namespace Mn = Magnum;
 using Cr::Containers::Literals::operator""_s;
 
-enum : std::size_t {
+enum {
   AoRandomTextureSize = 4,
   MaxSamples = 8,
   HbaoRandomSize = AoRandomTextureSize,
-  FragmentOutputCount = 8
+  FragmentOutputCount = 8,
+  HbaoRandomNumElements = HbaoRandomSize * HbaoRandomSize
 };
 
 #ifndef MAGNUM_TARGET_GLES
@@ -579,7 +580,7 @@ struct Hbao::State {
 
   HbaoConfiguration configuration;
 
-  Mn::Vector4 random[HbaoRandomSize * HbaoRandomSize * MaxSamples];
+  Mn::Vector4 random[HbaoRandomNumElements * MaxSamples];
 };
 
 Hbao::Hbao(Mn::NoCreateT) noexcept {}
@@ -615,8 +616,7 @@ void Hbao::setConfiguration(const HbaoConfiguration& configuration) {
     std::mt19937 rmt;
 
     float numDir = 8;  // keep in sync to glsl
-    for (std::size_t i = 0; i < HbaoRandomSize * HbaoRandomSize * MaxSamples;
-         ++i) {
+    for (std::size_t i = 0; i < HbaoRandomNumElements * MaxSamples; ++i) {
       // TODO use better random gen method
       float rand1 = Mn::Float(rmt()) / 4294967296.0f;
       float rand2 = Mn::Float(rmt()) / 4294967296.0f;
@@ -629,7 +629,7 @@ void Hbao::setConfiguration(const HbaoConfiguration& configuration) {
     }
 
     /* Pack those to 16-bit and upload to a texture */
-    Mn::Vector4s hbaoRandomShort[HbaoRandomSize * HbaoRandomSize * MaxSamples];
+    Mn::Vector4s hbaoRandomShort[HbaoRandomNumElements * MaxSamples];
     Mn::Math::packInto(Cr::Containers::arrayCast<2, Mn::Float>(
                            Cr::Containers::stridedArrayView(state_->random)),
                        Cr::Containers::arrayCast<2, Mn::Short>(
@@ -711,14 +711,13 @@ void Hbao::setConfiguration(const HbaoConfiguration& configuration) {
         .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
         .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
         .setStorage(1, Mn::GL::TextureFormat::R32F,
-                    {quarterSize, HbaoRandomSize * HbaoRandomSize});
+                    {quarterSize, HbaoRandomNumElements});
 
     state_->hbao2ResultArray
         .setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
         .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
         .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
-        .setStorage(1, aoFormat,
-                    {quarterSize, HbaoRandomSize * HbaoRandomSize});
+        .setStorage(1, aoFormat, {quarterSize, HbaoRandomNumElements});
 
     state_->hbao2Deinterleave = Mn::GL::Framebuffer{{{}, quarterSize}};
     state_->hbao2Deinterleave.mapForDraw({
@@ -762,7 +761,7 @@ void Hbao::setConfiguration(const HbaoConfiguration& configuration) {
   }
 
   state_->triangle.setCount(3);
-  state_->triangleLayered.setCount(3 * HbaoRandomSize * HbaoRandomSize);
+  state_->triangleLayered.setCount(3 * HbaoRandomNumElements);
   state_->configuration = configuration;
 }
 
@@ -776,13 +775,13 @@ namespace {
  * Populate uniform data with appropriate values from configuration. Should only
  * be performed when configuration changes.
  */
-void prepareHbaoData(const HbaoConfiguration& configuration,
-                     const Mn::Matrix4& projection,
-                     HbaoUniformData& uniformData,
-                     Mn::GL::Buffer& uniform,
-                     Cr::Containers::StaticArrayView<
-                         HbaoRandomSize * HbaoRandomSize * MaxSamples,
-                         const Mn::Vector4> random) {
+void prepareHbaoData(
+    const HbaoConfiguration& configuration,
+    const Mn::Matrix4& projection,
+    HbaoUniformData& uniformData,
+    Mn::GL::Buffer& uniform,
+    Cr::Containers::StaticArrayView<HbaoRandomNumElements * MaxSamples,
+                                    const Mn::Vector4> random) {
   /* Radius */
   const Mn::Float meters2viewspace = 1.0f;
   const Mn::Float r = configuration.radius() * meters2viewspace;
@@ -809,7 +808,7 @@ void prepareHbaoData(const HbaoConfiguration& configuration,
 
   if (configuration.flags() &
       (HbaoFlag::LayeredGeometryShader | HbaoFlag::LayeredImageLoadStore))
-    for (Mn::Int i = 0; i != HbaoRandomSize * HbaoRandomSize; ++i) {
+    for (Mn::Int i = 0; i != HbaoRandomNumElements; ++i) {
       uniformData.float2Offsets[i] = {
           Mn::Float(i % 4) + 0.5f,
           // NOLINTNEXTLINE(bugprone-integer-division). This is deliberate
@@ -925,7 +924,6 @@ void Hbao::drawEffect(const Mn::Matrix4& projection,
   } else {
     drawClassicInternal(output);
   }
-
 }  // Hbao::draw
 
 void Hbao::drawClassicInternal(Mn::GL::AbstractFramebuffer& output) {
@@ -972,8 +970,7 @@ void Hbao::drawCacheAwareInternal(Mn::GL::AbstractFramebuffer& output) {
   state_->hbao2DeinterleaveShader.bindLinearDepthTexture(
       state_->sceneDepthLinear);
 
-  for (Mn::Int i = 0; i != HbaoRandomSize * HbaoRandomSize;
-       i += FragmentOutputCount) {
+  for (Mn::Int i = 0; i < HbaoRandomNumElements; i += FragmentOutputCount) {
     for (Mn::UnsignedInt layer = 0; layer != FragmentOutputCount; ++layer) {
       state_->hbao2Deinterleave.attachTextureLayer(
           Mn::GL::Framebuffer::ColorAttachment{layer}, state_->hbao2DepthArray,
@@ -1012,7 +1009,7 @@ void Hbao::drawCacheAwareInternal(Mn::GL::AbstractFramebuffer& output) {
           Mn::GL::Renderer::MemoryBarrier::ShaderImageAccess);
     }
   } else {
-    for (Mn::Int i = 0; i != HbaoRandomSize * HbaoRandomSize; ++i) {
+    for (Mn::Int i = 0; i != HbaoRandomNumElements; ++i) {
       state_->hbao2Calc.attachTextureLayer(
           Mn::GL::Framebuffer::ColorAttachment{0}, state_->hbao2ResultArray, 0,
           i);
@@ -1025,7 +1022,7 @@ void Hbao::drawCacheAwareInternal(Mn::GL::AbstractFramebuffer& output) {
     }
   }
 #else
-  for (Mn::Int i = 0; i != HbaoRandomSize * HbaoRandomSize; ++i) {
+  for (Mn::Int i = 0; i != HbaoRandomNumElements; ++i) {
     state_->hbao2Calc.attachTextureLayer(
         Mn::GL::Framebuffer::ColorAttachment{0}, state_->hbao2ResultArray, 0,
         i);
@@ -1066,7 +1063,7 @@ void Hbao::drawCacheAwareInternal(Mn::GL::AbstractFramebuffer& output) {
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
   Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
   // TODO reset sample mask if ever used
-}
+}  // drawCacheAwareInternal
 
 }  // namespace gfx_batch
 }  // namespace esp
