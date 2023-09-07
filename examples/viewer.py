@@ -25,6 +25,8 @@ from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.common import quat_from_angle_axis
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
 
+from habitat_sim.utils.common import to_campose 
+from PIL import Image
 
 class HabitatSimInteractiveViewer(Application):
     # the maximum number of chars displayable in the app window
@@ -444,6 +446,7 @@ class HabitatSimInteractiveViewer(Application):
         for _ in range(int(repetitions)):
             [agent.act(x) for x in action_queue]
 
+        self.state = agent.get_state()  #get current state of agent
         # update the grabber transform when our agent is moved
         if self.mouse_grabber is not None:
             # update location of grabbed object
@@ -456,6 +459,35 @@ class HabitatSimInteractiveViewer(Application):
         """
         gravity: mn.Vector3 = self.sim.get_gravity() * -1
         self.sim.set_gravity(gravity)
+
+    def save_pose_observation(self) -> None:
+        """
+        Transforms Rotation quaternion and translation vector to 4x4 transformation matrix,
+        and saves the flattened matrix as txt
+        """
+        T_mat = to_campose(self.state.rotation, self.state.position)
+        T_vec = T_mat.reshape(1, 16)
+        pose_path = os.path.join(self.sim_settings['out_path'], "transformations.txt")  
+         
+        if os.path.exists(pose_path):
+            with open(pose_path, "ab") as f:
+                np.savetxt(f, T_vec, fmt='%5f', delimiter=' ')
+         
+    def save_color_observation(self, obs) -> None:
+        """
+        Retrieves current view of simulator and saves it as image"
+        """
+        color_obs = obs["color_sensor"]
+        # color_obs = obs["equirect_rgba_sensor"]
+        color_img = Image.fromarray(color_obs, mode="RGBA")
+        if self.sim_settings['out_path'] is None:
+            color_img.save("test.rgba.%05d.png" % time.time())
+        else:
+            image_path = os.path.join(self.sim_settings['out_path'], "images")  
+            if not os.path.exists(image_path):
+                print(f"{os.path.join(self.sim_settings['out_path'], 'images')} doesn't exist, so creating one.")
+                os.mkdir(image_path)
+            color_img.save(os.path.join(image_path,"test.rgba.%05d.png" % time.time()))  
 
     def key_press_event(self, event: Application.KeyEvent) -> None:
         """
@@ -476,6 +508,12 @@ class HabitatSimInteractiveViewer(Application):
             self.exit_event(Application.ExitEvent)
             return
 
+        elif key == pressed.R:
+            observations = self.sim.get_sensor_observations(self.agent_id)
+            if sim_settings["color_sensor"] and sim_settings['save_png']:
+                self.save_color_observation(observations)
+                self.save_pose_observation()            
+                
         elif key == pressed.H:
             self.print_help_text()
 
@@ -1157,6 +1195,9 @@ if __name__ == "__main__":
         type=int,
         help="Vertical resolution of the window.",
     )
+    parser.add_argument("--silent", action="store_true")
+    parser.add_argument("--save_png", action="store_true")
+    parser.add_argument("--out_path", help="path to save images and transformations")
 
     args = parser.parse_args()
 
@@ -1180,6 +1221,9 @@ if __name__ == "__main__":
     sim_settings["window_height"] = args.height
     sim_settings["pbr_image_based_lighting"] = args.ibl
     sim_settings["default_agent_navmesh"] = False
+    sim_settings["silent"] = args.silent
+    sim_settings["save_png"] = args.save_png
+    sim_settings["out_path"] = args.out_path
 
     # start the application
     HabitatSimInteractiveViewer(sim_settings).exec()
