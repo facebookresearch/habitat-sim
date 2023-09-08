@@ -379,6 +379,9 @@ void initSimBindings(py::module& m) {
           R"(List of sensor specifications for one simulator. For batch rendering, all simulators must have the same specification.)")
       .def_readwrite("gpu_device_id", &ReplayRendererConfiguration::gpuDeviceId,
                      R"(The system GPU device to use for rendering)")
+      .def_readwrite("enable_frustum_culling",
+                     &ReplayRendererConfiguration::enableFrustumCulling,
+                     R"(Controls whether frustum culling is enabled.)")
       .def_readwrite(
           "force_separate_semantic_scene_graph",
           &ReplayRendererConfiguration::forceSeparateSemanticSceneGraph,
