@@ -37,69 +37,70 @@ struct GfxBatchHbaoTest : Mn::GL::OpenGLTester {
   void generateTestData();
   void test();
 
-  void setOrthoProjection(const Magnum::Vector2& size) {
-    orthoProj = Mn::Matrix4::orthographicProjection(size, 0.1f, 100.0f);
-  }
+  Mn::Matrix4 projMatrices[2] = {
+      Mn::Matrix4::perspectiveProjection(45.0_degf, 1.0f, 0.1f, 100.0f),
+      Mn::Matrix4::orthographicProjection(Magnum::Vector2(4.0f, 4.0f),
+                                          0.1f,
+                                          100.0f)};
+  std::string srcRGBFileNames[2] = {"van-gogh-room.color.png",
+                                    "van-gogh-room.color-ortho.png"};
 
-  Mn::Matrix4 perspectiveProj =
-      Mn::Matrix4::perspectiveProjection(45.0_degf, 1.0f, 0.1f, 100.0f);
-  Mn::Matrix4 orthoProj;
+  std::string srcDepthFileNames[2] = {"van-gogh-room.depth.exr",
+                                      "van-gogh-room.depth-ortho.exr"};
 };
 
 const struct {
   const char* name;
   const char* filename;
   bool classic;
-  bool isPerspective;
+  int projIDX;
   esp::gfx_batch::HbaoFlags flags;
   Mn::Float intensity, radius, blurSharpness;
   Mn::Float maxThreshold, meanThreshold;
 } TestData[]{
     // Perspective projection
-    {"classic, perspective, defaults",
-     "hbao_tests/van-gogh-room.hbao-classic.png", true, true,
-     esp::gfx_batch::HbaoConfiguration{}.flags(),
+    {"classic, perspective, defaults", "van-gogh-room.hbao-classic.png", true,
+     0, esp::gfx_batch::HbaoConfiguration{}.flags(),
      esp::gfx_batch::HbaoConfiguration{}.intensity(),
      esp::gfx_batch::HbaoConfiguration{}.radius(),
      esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 0.0f, 0.0f},
     {"classic, perspective, AO special blur",
-     "hbao_tests/van-gogh-room.hbao-classic-sblur.png", true, true,
+     "van-gogh-room.hbao-classic-sblur.png", true, 0,
      esp::gfx_batch::HbaoConfiguration{}.flags() |
          esp::gfx_batch::HbaoFlag::UseAoSpecialBlur,
      esp::gfx_batch::HbaoConfiguration{}.intensity(),
      esp::gfx_batch::HbaoConfiguration{}.radius(),
      esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 2.0f, 2.0f},
     {"classic, perspective, strong effect",
-     "hbao_tests/van-gogh-room.hbao-classic-strong.png", true, true,
+     "van-gogh-room.hbao-classic-strong.png", true, 0,
      esp::gfx_batch::HbaoConfiguration{}.flags(), 2.0f, 1.5f, 10.0f, 0.0f,
      0.0f},
 
-    {"cache-aware, perspective, defaults",
-     "hbao_tests/van-gogh-room.hbao-cache.png", false, true,
-     esp::gfx_batch::HbaoConfiguration{}.flags(),
+    {"cache-aware, perspective, defaults", "van-gogh-room.hbao-cache.png",
+     false, 0, esp::gfx_batch::HbaoConfiguration{}.flags(),
      esp::gfx_batch::HbaoConfiguration{}.intensity(),
      esp::gfx_batch::HbaoConfiguration{}.radius(),
      esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 0.0f, 0.0f},
     {"cache-aware, perspective, AO special blur",
-     "hbao_tests/van-gogh-room.hbao-cache-sblur.png", false, true,
+     "van-gogh-room.hbao-cache-sblur.png", false, 0,
      esp::gfx_batch::HbaoConfiguration{}.flags() |
          esp::gfx_batch::HbaoFlag::UseAoSpecialBlur,
      esp::gfx_batch::HbaoConfiguration{}.intensity(),
      esp::gfx_batch::HbaoConfiguration{}.radius(),
      esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 2.0f, 2.0f},
     {"cache-aware, perspective, strong effect",
-     "hbao_tests/van-gogh-room.hbao-cache-strong.png", false, true,
+     "van-gogh-room.hbao-cache-strong.png", false, 0,
      esp::gfx_batch::HbaoConfiguration{}.flags(), 2.0f, 1.5f, 10.0f, 0.0f,
      0.0f},
     {"cache-aware, perspective, layered with image load store",
-     "hbao_tests/van-gogh-room.hbao-cache-layered.png", false, true,
+     "van-gogh-room.hbao-cache-layered.png", false, 0,
      esp::gfx_batch::HbaoConfiguration{}.flags() |
          esp::gfx_batch::HbaoFlag::LayeredImageLoadStore,
      esp::gfx_batch::HbaoConfiguration{}.intensity(),
      esp::gfx_batch::HbaoConfiguration{}.radius(),
      esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 4.5f, 0.11f},
     {"cache-aware, perspective, layered with geometry shader",
-     "hbao_tests/van-gogh-room.hbao-cache-geom.png", false, true,
+     "van-gogh-room.hbao-cache-geom.png", false, 0,
      esp::gfx_batch::HbaoConfiguration{}.flags() |
          esp::gfx_batch::HbaoFlag::LayeredGeometryShader,
      esp::gfx_batch::HbaoConfiguration{}.intensity(),
@@ -107,50 +108,49 @@ const struct {
      esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 4.5f, 0.11f},
 
     // Orthographic projection
-    {"classic, orthographic, defaults",
-     "hbao_tests/van-gogh-room.hbao-classic-ortho.png", true, false,
-     esp::gfx_batch::HbaoConfiguration{}.flags(),
+    {"classic, orthographic, defaults", "van-gogh-room.hbao-classic-ortho.png",
+     true, 1, esp::gfx_batch::HbaoConfiguration{}.flags(),
      esp::gfx_batch::HbaoConfiguration{}.intensity(),
      esp::gfx_batch::HbaoConfiguration{}.radius(),
      esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 0.0f, 0.0f},
     {"classic, orthographic, AO special blur",
-     "hbao_tests/van-gogh-room.hbao-classic-sblur-ortho.png", true, false,
+     "van-gogh-room.hbao-classic-sblur-ortho.png", true, 1,
      esp::gfx_batch::HbaoConfiguration{}.flags() |
          esp::gfx_batch::HbaoFlag::UseAoSpecialBlur,
      esp::gfx_batch::HbaoConfiguration{}.intensity(),
      esp::gfx_batch::HbaoConfiguration{}.radius(),
      esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 2.0f, 2.0f},
     {"classic, orthographic, strong effect",
-     "hbao_tests/van-gogh-room.hbao-classic-strong-ortho.png", true, false,
+     "van-gogh-room.hbao-classic-strong-ortho.png", true, 1,
      esp::gfx_batch::HbaoConfiguration{}.flags(), 2.0f, 1.5f, 10.0f, 0.0f,
      0.0f},
 
     {"cache-aware, orthographic, defaults",
-     "hbao_tests/van-gogh-room.hbao-cache-ortho.png", false, false,
+     "van-gogh-room.hbao-cache-ortho.png", false, 1,
      esp::gfx_batch::HbaoConfiguration{}.flags(),
      esp::gfx_batch::HbaoConfiguration{}.intensity(),
      esp::gfx_batch::HbaoConfiguration{}.radius(),
      esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 0.0f, 0.0f},
     {"cache-aware, orthographic, AO special blur",
-     "hbao_tests/van-gogh-room.hbao-cache-sblur-ortho.png", false, false,
+     "van-gogh-room.hbao-cache-sblur-ortho.png", false, 1,
      esp::gfx_batch::HbaoConfiguration{}.flags() |
          esp::gfx_batch::HbaoFlag::UseAoSpecialBlur,
      esp::gfx_batch::HbaoConfiguration{}.intensity(),
      esp::gfx_batch::HbaoConfiguration{}.radius(),
      esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 2.0f, 2.0f},
     {"cache-aware, orthographic, strong effect",
-     "hbao_tests/van-gogh-room.hbao-cache-strong-ortho.png", false, false,
+     "van-gogh-room.hbao-cache-strong-ortho.png", false, 1,
      esp::gfx_batch::HbaoConfiguration{}.flags(), 2.0f, 1.5f, 10.0f, 0.0f,
      0.0f},
     {"cache-aware, orthographic, layered with image load store",
-     "hbao_tests/van-gogh-room.hbao-cache-layered-ortho.png", false, false,
+     "van-gogh-room.hbao-cache-layered-ortho.png", false, 1,
      esp::gfx_batch::HbaoConfiguration{}.flags() |
          esp::gfx_batch::HbaoFlag::LayeredImageLoadStore,
      esp::gfx_batch::HbaoConfiguration{}.intensity(),
      esp::gfx_batch::HbaoConfiguration{}.radius(),
      esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 4.5f, 0.11f},
     {"cache-aware, orthographic, layered with geometry shader",
-     "hbao_tests/van-gogh-room.hbao-cache-geom-ortho.png", false, false,
+     "van-gogh-room.hbao-cache-geom-ortho.png", false, 1,
      esp::gfx_batch::HbaoConfiguration{}.flags() |
          esp::gfx_batch::HbaoFlag::LayeredGeometryShader,
      esp::gfx_batch::HbaoConfiguration{}.intensity(),
@@ -158,8 +158,20 @@ const struct {
      esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 4.5f, 0.11f},
 };
 
+const struct {
+  const char* name;
+  // Adding this in case we wish to do more tests on generation that do not map
+  // directly to testCaseInstanceId 0 == perspective or testCaseInstanceId 1 ==
+  // orthographic
+  int projIDX;
+} GenerateTestDataData[]{
+    {"perspective", 0},
+    {"orthographic", 1},
+};
+
 GfxBatchHbaoTest::GfxBatchHbaoTest() {
-  addTests({&GfxBatchHbaoTest::generateTestData});
+  addInstancedTests({&GfxBatchHbaoTest::generateTestData},
+                    Cr::Containers::arraySize(GenerateTestDataData));
 
   addInstancedTests({&GfxBatchHbaoTest::test},
                     Cr::Containers::arraySize(TestData));
@@ -167,6 +179,9 @@ GfxBatchHbaoTest::GfxBatchHbaoTest() {
 
 constexpr Mn::Vector2i Size{256, 256};
 void GfxBatchHbaoTest::generateTestData() {
+  auto&& data = GenerateTestDataData[testCaseInstanceId()];
+  setTestCaseDescription(data.name);
+
   Cr::PluginManager::Manager<Mn::Trade::AbstractImporter> importerManager;
   Cr::Containers::Pointer<Mn::Trade::AbstractImporter> importer =
       importerManager.loadAndInstantiate("AnySceneImporter");
@@ -175,7 +190,7 @@ void GfxBatchHbaoTest::generateTestData() {
   /* magnum-sceneconverter van-gogh-room.glb --concatenate-meshes
    * van-gogh-room.mesh.ply */
   CORRADE_VERIFY(importer->openFile(Cr::Utility::Path::join(
-      TEST_ASSETS, "hbao_tests/van-gogh-room.mesh.ply")));
+      {TEST_ASSETS, "hbao_tests", "van-gogh-room.mesh.ply"})));
 
   Cr::Containers::Optional<Mn::Trade::MeshData> meshData = importer->mesh(0);
   CORRADE_VERIFY(meshData);
@@ -184,90 +199,43 @@ void GfxBatchHbaoTest::generateTestData() {
   Mn::GL::Texture2D colorTexture, depthTexture;
   colorTexture.setStorage(1, Mn::GL::TextureFormat::RGBA8, Size);
   depthTexture.setStorage(1, Mn::GL::TextureFormat::DepthComponent32F, Size);
-  // Perspective projection
-  {
-    Mn::GL::Framebuffer framebuffer{{{}, Size}};
-    framebuffer
-        .attachTexture(Mn::GL::Framebuffer::ColorAttachment{0}, colorTexture, 0)
-        .attachTexture(Mn::GL::Framebuffer::BufferAttachment::Depth,
-                       depthTexture, 0)
-        .clear(Mn::GL::FramebufferClear::Depth |
-               Mn::GL::FramebufferClear::Color)
-        .bind();
 
-    Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
-    Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
+  Mn::GL::Framebuffer framebuffer{{{}, Size}};
+  framebuffer
+      .attachTexture(Mn::GL::Framebuffer::ColorAttachment{0}, colorTexture, 0)
+      .attachTexture(Mn::GL::Framebuffer::BufferAttachment::Depth, depthTexture,
+                     0)
+      .clear(Mn::GL::FramebufferClear::Depth | Mn::GL::FramebufferClear::Color)
+      .bind();
 
-    Mn::Shaders::PhongGL shader{
-        Mn::Shaders::PhongGL::Configuration{}.setLightCount(3)};
-    shader.setProjectionMatrix(perspectiveProj)
-        .setTransformationMatrix(
-            Mn::Matrix4::translation({0.0f, -1.0f, -7.5f}) *
-            Mn::Matrix4::rotationX(-80.0_degf) *
-            Mn::Matrix4::rotationZ(-90.0_degf))
-        .setLightPositions({
-            {10.0f, 10.0f, 10.0f, 0.0f},
-            {-5.0f, -5.0f, 10.0f, 0.0f},
-            {0.0f, 5.0f, -10.0f, 0.0f},
-        })
-        .setLightColors({0xffffff_rgbf, 0xffdddd_rgbf, 0xddddff_rgbf})
-        .draw(mesh);
+  Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
+  Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
 
-    MAGNUM_VERIFY_NO_GL_ERROR();
-    CORRADE_COMPARE_WITH(
-        framebuffer.read({{}, Size}, {Mn::PixelFormat::RGBA8Unorm}),
-        Cr::Utility::Path::join(TEST_ASSETS,
-                                "hbao_tests/van-gogh-room.color.png"),
-        (Mn::DebugTools::CompareImageToFile{}));
-    CORRADE_COMPARE_WITH(
-        framebuffer.read({{}, Size}, {Mn::PixelFormat::Depth32F}),
-        Cr::Utility::Path::join(TEST_ASSETS,
-                                "hbao_tests/van-gogh-room.depth.exr"),
-        (Mn::DebugTools::CompareImageToFile{}));
-  }
-  // Ortho projection
+  Mn::Shaders::PhongGL shader{
+      Mn::Shaders::PhongGL::Configuration{}.setLightCount(3)};
+  shader.setProjectionMatrix(projMatrices[data.projIDX])
+      .setTransformationMatrix(Mn::Matrix4::translation({0.0f, -1.0f, -7.5f}) *
+                               Mn::Matrix4::rotationX(-80.0_degf) *
+                               Mn::Matrix4::rotationZ(-90.0_degf))
+      .setLightPositions({
+          {10.0f, 10.0f, 10.0f, 0.0f},
+          {-5.0f, -5.0f, 10.0f, 0.0f},
+          {0.0f, 5.0f, -10.0f, 0.0f},
+      })
+      .setLightColors({0xffffff_rgbf, 0xffdddd_rgbf, 0xddddff_rgbf})
+      .draw(mesh);
 
-  setOrthoProjection(Magnum::Vector2(4.0f, 4.0f));
-  {
-    Mn::GL::Framebuffer framebuffer{{{}, Size}};
-    framebuffer
-        .attachTexture(Mn::GL::Framebuffer::ColorAttachment{0}, colorTexture, 0)
-        .attachTexture(Mn::GL::Framebuffer::BufferAttachment::Depth,
-                       depthTexture, 0)
-        .clear(Mn::GL::FramebufferClear::Depth |
-               Mn::GL::FramebufferClear::Color)
-        .bind();
-
-    Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
-    Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
-
-    Mn::Shaders::PhongGL shader{
-        Mn::Shaders::PhongGL::Configuration{}.setLightCount(3)};
-    shader.setProjectionMatrix(orthoProj)
-        .setTransformationMatrix(
-            Mn::Matrix4::translation({0.0f, -1.0f, -7.5f}) *
-            Mn::Matrix4::rotationX(-80.0_degf) *
-            Mn::Matrix4::rotationZ(-90.0_degf))
-        .setLightPositions({
-            {10.0f, 10.0f, 10.0f, 0.0f},
-            {-5.0f, -5.0f, 10.0f, 0.0f},
-            {0.0f, 5.0f, -10.0f, 0.0f},
-        })
-        .setLightColors({0xffffff_rgbf, 0xffdddd_rgbf, 0xddddff_rgbf})
-        .draw(mesh);
-
-    MAGNUM_VERIFY_NO_GL_ERROR();
-    CORRADE_COMPARE_WITH(
-        framebuffer.read({{}, Size}, {Mn::PixelFormat::RGBA8Unorm}),
-        Cr::Utility::Path::join(TEST_ASSETS,
-                                "hbao_tests/van-gogh-room.color-ortho.png"),
-        (Mn::DebugTools::CompareImageToFile{}));
-    CORRADE_COMPARE_WITH(
-        framebuffer.read({{}, Size}, {Mn::PixelFormat::Depth32F}),
-        Cr::Utility::Path::join(TEST_ASSETS,
-                                "hbao_tests/van-gogh-room.depth-ortho.exr"),
-        (Mn::DebugTools::CompareImageToFile{}));
-  }
+  MAGNUM_VERIFY_NO_GL_ERROR();
+  CORRADE_COMPARE_WITH(
+      framebuffer.read({{}, Size}, {Mn::PixelFormat::RGBA8Unorm}),
+      Cr::Utility::Path::join(
+          {TEST_ASSETS, "hbao_tests", srcRGBFileNames[data.projIDX]}),
+      (Mn::DebugTools::CompareImageToFile{}));
+  CORRADE_COMPARE_WITH(
+      framebuffer.read({{}, Size}, {Mn::PixelFormat::Depth32F}),
+      Cr::Utility::Path::join(
+          {TEST_ASSETS, "hbao_tests", srcDepthFileNames[data.projIDX]}),
+      (Mn::DebugTools::CompareImageToFile{}));
 }
 
 void GfxBatchHbaoTest::test() {
@@ -293,20 +261,18 @@ void GfxBatchHbaoTest::test() {
   CORRADE_VERIFY(importer);
 
   if (!importer->openFile(Cr::Utility::Path::join(
-          TEST_ASSETS, data.isPerspective
-                           ? "hbao_tests/van-gogh-room.color.png"
-                           : "hbao_tests/van-gogh-room.color-ortho.png")))
+          {TEST_ASSETS, "hbao_tests", srcRGBFileNames[data.projIDX]}))) {
     CORRADE_FAIL("Cannot load the color image");
+  }
   Cr::Containers::Optional<Mn::Trade::ImageData2D> color = importer->image2D(0);
   CORRADE_VERIFY(color);
   CORRADE_COMPARE(color->size(), Size);
   CORRADE_COMPARE(color->format(), Mn::PixelFormat::RGBA8Unorm);
 
   if (!importer->openFile(Cr::Utility::Path::join(
-          TEST_ASSETS, data.isPerspective
-                           ? "hbao_tests/van-gogh-room.depth.exr"
-                           : "hbao_tests/van-gogh-room.depth-ortho.exr")))
+          {TEST_ASSETS, "hbao_tests", srcDepthFileNames[data.projIDX]}))) {
     CORRADE_FAIL("Cannot load the depth image");
+  }
   Cr::Containers::Optional<Mn::Trade::ImageData2D> depth = importer->image2D(0);
   CORRADE_VERIFY(depth);
   CORRADE_COMPARE(depth->size(), Size);
@@ -335,16 +301,15 @@ void GfxBatchHbaoTest::test() {
                                 .setBlurSharpness(data.blurSharpness)};
   MAGNUM_VERIFY_NO_GL_ERROR();
   // test projection drawing for both classic and cache-aware algorithms
-  Mn::Matrix4 projectionMatrix =
-      data.isPerspective ? perspectiveProj : orthoProj;
-  hbao.drawEffect(projectionMatrix, !data.classic, inputDepthTexture, output);
+
+  hbao.drawEffect(projMatrices[data.projIDX], !data.classic, inputDepthTexture,
+                  output);
   MAGNUM_VERIFY_NO_GL_ERROR();
-  {
-    CORRADE_COMPARE_WITH(output.read({{}, Size}, {Mn::PixelFormat::RGBA8Unorm}),
-                         Cr::Utility::Path::join(TEST_ASSETS, data.filename),
-                         (Mn::DebugTools::CompareImageToFile{
-                             data.maxThreshold, data.meanThreshold}));
-  }
+  CORRADE_COMPARE_WITH(
+      output.read({{}, Size}, {Mn::PixelFormat::RGBA8Unorm}),
+      Cr::Utility::Path::join({TEST_ASSETS, "hbao_tests", data.filename}),
+      (Mn::DebugTools::CompareImageToFile{data.maxThreshold,
+                                          data.meanThreshold}));
 }
 
 }  // namespace
