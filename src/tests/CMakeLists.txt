@@ -2,10 +2,18 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-find_package(Magnum REQUIRED DebugTools AnyImageConverter AnySceneImporter)
+find_package(
+  Magnum
+  REQUIRED
+  DebugTools
+  AnyImageConverter
+  AnySceneImporter
+  AnyImageImporter
+)
 find_package(
   MagnumPlugins REQUIRED GltfImporter StbImageImporter KtxImporter
   OPTIONAL_COMPONENTS GltfSceneConverter KtxImageConverter StanfordImporter
+                      OpenExrImporter OpenExrImageConverter
 )
 
 if(BUILD_WITH_BACKGROUND_RENDERER)
