@@ -439,6 +439,8 @@ class BulletPhysicsManager : public PhysicsManager {
    */
   void instantiateSkinnedModel(
       const std::shared_ptr<BulletArticulatedObject>& ao,
+      const esp::metadata::attributes::ArticulatedObjectAttributes::ptr&
+          artObjAttributes,
       const std::string& renderAssetPath,
       scene::SceneNode* parentNode,
       DrawableGroup* drawables,

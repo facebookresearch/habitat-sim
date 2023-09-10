@@ -444,7 +444,7 @@ int PhysicsManager::addArticulatedObjectQueryDrawables(
     const std::string& lightSetup) {
   // attributes exist, get drawables if valid simulator accessible
   if (simulator_ != nullptr) {
-    // aquire context if available
+    // acquire context if available
     simulator_->getRenderGLContext();
     auto& drawables = simulator_->getDrawableGroup();
     return addArticulatedObject(artObjAttributes, &drawables, forceReload,
@@ -464,7 +464,7 @@ int PhysicsManager::addArticulatedObjectFromURDF(
     bool intertiaFromURDF,
     const std::string& lightSetup) {
   if (simulator_ != nullptr) {
-    // aquire context if available
+    // acquire context if available
     simulator_->getRenderGLContext();
     auto& drawables = simulator_->getDrawableGroup();
     return addArticulatedObjectFromURDF(

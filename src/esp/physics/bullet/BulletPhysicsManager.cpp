@@ -165,8 +165,9 @@ int BulletPhysicsManager::addArticulatedObject(
   // if the URDF model specifies a render asset, load and link it
   const auto renderAssetPath = model->getRenderAsset();
   if ((renderAssetPath) && (*renderAssetPath != "")) {
-    instantiateSkinnedModel(articulatedObject, artObjAttributes, *renderAssetPath, objectNode,
-                            drawables, lightSetup);
+    instantiateSkinnedModel(articulatedObject, artObjAttributes,
+                            *renderAssetPath, objectNode, drawables,
+                            lightSetup);
   }
 
   // allocate ids for links
@@ -931,7 +932,7 @@ void BulletPhysicsManager::instantiateSkinnedModel(
   creationInfo.filepath = renderAssetPath;
   creationInfo.lightSetupKey = lightSetupKey;
   creationInfo.scale =
-        artObjAttributes->getUniformScale() * Mn::Vector3(1.f, 1.f, 1.f);
+      artObjAttributes->getUniformScale() * Mn::Vector3(1.f, 1.f, 1.f);
   esp::assets::RenderAssetInstanceCreationInfo::Flags flags;
   flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsRGBD;
   flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsSemantic;
