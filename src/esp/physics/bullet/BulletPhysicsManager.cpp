@@ -349,7 +349,7 @@ bool BulletPhysicsManager::attachLinkGeometry(
       flags |= assets::RenderAssetInstanceCreationInfo::Flag::IsRGBD;
       flags |= assets::RenderAssetInstanceCreationInfo::Flag::IsSemantic;
       assets::RenderAssetInstanceCreationInfo creation(
-          visualMeshInfo.filepath, std::move(scale), flags, lightSetup);
+          visualMeshInfo.filepath, scale, flags, lightSetup);
 
       auto* geomNode = resourceManager_.loadAndCreateRenderAssetInstance(
           visualMeshInfo, creation, &visualGeomComponent, drawables,
