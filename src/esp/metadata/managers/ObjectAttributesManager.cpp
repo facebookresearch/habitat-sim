@@ -3,7 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "ObjectAttributesManager.h"
-#include "AbstractObjectAttributesManagerBase.h"
+#include "AbstractObjectAttributesManager.h"
 
 #include <Corrade/Utility/String.h>
 
@@ -209,7 +209,7 @@ void ObjectAttributesManager::setDefaultAssetNameBasedAttributes(
     attributes->setOrientUp({0, 1, 0});
     attributes->setOrientFront({0, 0, -1});
   }
-}  // SceneInstanceAttributesManager::setDefaultAssetNameBasedAttributes
+}  // ObjectAttributesManager::setDefaultAssetNameBasedAttributes
 
 int ObjectAttributesManager::registerObjectFinalize(
     ObjectAttributes::ptr objectTemplate,

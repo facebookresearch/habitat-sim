@@ -7,8 +7,10 @@
 #include <string>
 
 #include "esp/metadata/MetadataMediator.h"
+#include "esp/metadata/managers/AOAttributesManager.h"
 #include "esp/metadata/managers/AttributesManagerBase.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
+#include "esp/metadata/managers/PbrShaderAttributesManager.h"
 #include "esp/metadata/managers/PhysicsAttributesManager.h"
 #include "esp/metadata/managers/StageAttributesManager.h"
 
@@ -29,7 +31,9 @@ using esp::metadata::PrimObjTypes;
 using esp::physics::MotionType;
 
 using AttrMgrs::AttributesManager;
+using Attrs::ArticulatedObjectAttributes;
 using Attrs::ObjectAttributes;
+using Attrs::PbrShaderAttributes;
 using Attrs::PhysicsManagerAttributes;
 using Attrs::SceneInstanceAttributes;
 using Attrs::StageAttributes;
@@ -51,24 +55,6 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
   explicit AttributesConfigsTest();
 
   // Test helper functions
-
-  /**
-   * @brief Test saving and loading from JSON string
-   * @tparam T Class of attributes manager
-   * @tparam U Class of attributes
-   * @param mgr the Attributes Manager being tested
-   * @param jsonString the json to build the template from
-   * @param registerObject whether or not to register the Attributes constructed
-   * by the passed JSON string.
-   * @param tmpltName The name to give the template
-   * @return attributes template built from JSON parsed from string
-   */
-  template <typename T, typename U>
-  std::shared_ptr<U> testBuildAttributesFromJSONString(
-      std::shared_ptr<T> mgr,
-      const std::string& jsonString,
-      const bool registerObject,
-      const std::string& tmpltName = "new_template_from_json");
 
   /**
    * @brief remove added template built from JSON string.
@@ -120,6 +106,14 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
   void testPhysicsAttrVals(
       std::shared_ptr<esp::metadata::attributes::PhysicsManagerAttributes>
           physMgrAttr);
+
+  /**
+   * @brief This test will verify that the PBR/IBL shader config attributes'
+   * managers' JSON loading process is working as expected.
+   */
+  void testPbrShaderAttrVals(
+      std::shared_ptr<esp::metadata::attributes::PbrShaderAttributes>
+          pbrShaderAttr);
   /**
    * @brief This test will verify that the Light Attributes' managers' JSON
    * loading process is working as expected.
@@ -157,6 +151,15 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
   void testObjectAttrVals(
       std::shared_ptr<esp::metadata::attributes::ObjectAttributes> objAttr,
       const std::string& assetPath);
+  /**
+   * @brief This test will verify that the Articulated Object attributes'
+   * managers' JSON loading process is working as expected.
+   */
+  void testArticulatedObjectAttrVals(
+      std::shared_ptr<esp::metadata::attributes::ArticulatedObjectAttributes>
+          artObjAttr,
+      const std::string& assetPath,
+      const std::string& urdfPath);
 
   // actual test functions
   // These tests build strings containing legal JSON config data to use to build
@@ -165,10 +168,12 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
   // and then reload the copy, to make sure the saving and loading process is
   // correct.
   void testPhysicsJSONLoad();
+  void testPbrShaderAttrJSONLoad();
   void testLightJSONLoad();
   void testSceneInstanceJSONLoad();
   void testStageJSONLoad();
   void testObjectJSONLoad();
+  void testArticulatedObjectJSONLoad();
 
   // test member vars
 
@@ -176,7 +181,10 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
   esp::logging::LoggingContext loggingContext_;
   AttrMgrs::LightLayoutAttributesManager::ptr lightLayoutAttributesManager_ =
       nullptr;
+  AttrMgrs::AOAttributesManager::ptr artObjAttributesManager_ = nullptr;
   AttrMgrs::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
+  AttrMgrs::PbrShaderAttributesManager::ptr pbrShaderAttributesManager_ =
+      nullptr;
   AttrMgrs::PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
   AttrMgrs::SceneInstanceAttributesManager::ptr
       sceneInstanceAttributesManager_ = nullptr;
@@ -190,45 +198,23 @@ AttributesConfigsTest::AttributesConfigsTest() {
   MM = MetadataMediator::create_unique(cfg);
   // get attributes managers for default dataset
   lightLayoutAttributesManager_ = MM->getLightLayoutAttributesManager();
+  artObjAttributesManager_ = MM->getAOAttributesManager();
   objectAttributesManager_ = MM->getObjectAttributesManager();
   physicsAttributesManager_ = MM->getPhysicsAttributesManager();
+  pbrShaderAttributesManager_ = MM->getPbrShaderAttributesManager();
   sceneInstanceAttributesManager_ = MM->getSceneInstanceAttributesManager();
   stageAttributesManager_ = MM->getStageAttributesManager();
 
   addTests({
       &AttributesConfigsTest::testPhysicsJSONLoad,
+      &AttributesConfigsTest::testPbrShaderAttrJSONLoad,
       &AttributesConfigsTest::testLightJSONLoad,
       &AttributesConfigsTest::testSceneInstanceJSONLoad,
       &AttributesConfigsTest::testStageJSONLoad,
       &AttributesConfigsTest::testObjectJSONLoad,
+      &AttributesConfigsTest::testArticulatedObjectJSONLoad,
   });
 }
-
-template <typename T, typename U>
-std::shared_ptr<U> AttributesConfigsTest::testBuildAttributesFromJSONString(
-    std::shared_ptr<T> mgr,
-    const std::string& jsonString,
-    const bool registerObject,
-    const std::string& tmpltName) {  // create JSON document
-  try {
-    esp::io::JsonDocument tmp = esp::io::parseJsonString(jsonString);
-    // io::JsonGenericValue :
-    const esp::io::JsonGenericValue jsonDoc = tmp.GetObject();
-    // create an new template from jsonDoc
-    std::shared_ptr<U> attrTemplate1 =
-        mgr->buildManagedObjectFromDoc(tmpltName, jsonDoc);
-
-    // register attributes
-    if (registerObject) {
-      mgr->registerObject(attrTemplate1);
-    }
-    return attrTemplate1;
-  } catch (...) {
-    CORRADE_FAIL_IF(true, "testBuildAttributesFromJSONString : Failed to parse"
-                              << jsonString << "as JSON.");
-    return nullptr;
-  }
-}  // testBuildAttributesFromJSONString
 
 template <typename T>
 void AttributesConfigsTest::testRemoveAttributesBuiltByJSONString(
@@ -339,10 +325,9 @@ void AttributesConfigsTest::testPhysicsJSONLoad() {
       "user_vec4" : [3.5, 4.6, 5.7, 6.9]
   }
 })";
-  auto physMgrAttr =
-      testBuildAttributesFromJSONString<AttrMgrs::PhysicsAttributesManager,
-                                        Attrs::PhysicsManagerAttributes>(
-          physicsAttributesManager_, jsonString, true);
+  // Build an attributes based on the above json string
+  auto physMgrAttr = physicsAttributesManager_->createObjectFromJSONString(
+      "new_template_from_json", jsonString, true);
   // verify exists
   CORRADE_VERIFY(physMgrAttr);
 
@@ -378,7 +363,139 @@ void AttributesConfigsTest::testPhysicsJSONLoad() {
   // delete file-based config
   Cr::Utility::Path::remove(newAttrName);
 
-}  // AttributesManagers_PhysicsJSONLoadTest
+}  // AttributesConfigsTest::testPhysicsJSONLoad
+
+void AttributesConfigsTest::testPbrShaderAttrVals(
+    std::shared_ptr<esp::metadata::attributes::PbrShaderAttributes>
+        pbrShaderAttr) {
+  CORRADE_VERIFY(!pbrShaderAttr->getEnableDirectLighting());
+  CORRADE_VERIFY(!pbrShaderAttr->getEnableIBL());
+
+  CORRADE_COMPARE(pbrShaderAttr->getIBLBrdfLUTAssetHandle(),
+                  "brdflut_test_only_image.png");
+  CORRADE_COMPARE(pbrShaderAttr->getIBLEnvMapAssetHandle(),
+                  "envmap_test_only_image.hdr");
+  CORRADE_COMPARE(pbrShaderAttr->getPbrShaderHelperKey(),
+                  "brdflut_test_only_image.png_envmap_test_only_image.hdr");
+
+  CORRADE_COMPARE(pbrShaderAttr->getDirectLightIntensity(), 1.23f);
+
+  CORRADE_VERIFY(pbrShaderAttr->getSkipCalcMissingTBN());
+  CORRADE_VERIFY(pbrShaderAttr->getUseMikkelsenTBN());
+
+  CORRADE_VERIFY(pbrShaderAttr->getUseDirectLightTonemap());
+  CORRADE_VERIFY(!pbrShaderAttr->getUseIBLTonemap());
+  CORRADE_VERIFY(!pbrShaderAttr->getUseBurleyDiffuse());
+
+  // verify the layer skipping is present
+  CORRADE_VERIFY(pbrShaderAttr->getSkipCalcClearcoatLayer());
+  CORRADE_VERIFY(pbrShaderAttr->getSkipCalcSpecularLayer());
+  CORRADE_VERIFY(pbrShaderAttr->getSkipCalcAnisotropyLayer());
+
+  CORRADE_COMPARE(pbrShaderAttr->getDirectDiffuseScale(), 1.5f);
+  CORRADE_COMPARE(pbrShaderAttr->getDirectSpecularScale(), 2.5f);
+  CORRADE_COMPARE(pbrShaderAttr->getIBLDiffuseScale(), 3.5f);
+  CORRADE_COMPARE(pbrShaderAttr->getIBLSpecularScale(), 4.5f);
+
+  CORRADE_COMPARE(pbrShaderAttr->getTonemapExposure(), 6.7f);
+
+  CORRADE_VERIFY(pbrShaderAttr->getMapMatTxtrToLinear());
+  CORRADE_VERIFY(pbrShaderAttr->getMapIBLTxtrToLinear());
+  CORRADE_VERIFY(pbrShaderAttr->getMapOutputToSRGB());
+  CORRADE_COMPARE(pbrShaderAttr->getGamma(), 8.9f);
+
+  // test PBR/IBL Shader attributes-level user config vals
+  testUserDefinedConfigVals(pbrShaderAttr->getUserConfiguration(), 5,
+                            "pbr defined string", false, 11, 22.6,
+                            Mn::Vector2(3.0f, 4.0f), Mn::Vector3(5.4, 6.5, 7.1),
+                            Mn::Quaternion({6.7f, 7.8f, 8.9f}, 0.3f),
+                            Mn::Vector4(2.3f, 4.5f, 6.7f, 8.9f));
+  // remove added template
+  // remove json-string built attributes added for test
+  testRemoveAttributesBuiltByJSONString(pbrShaderAttributesManager_,
+                                        pbrShaderAttr->getHandle());
+
+}  // AttributesConfigsTest::testPbrShaderAttrVals
+
+void AttributesConfigsTest::testPbrShaderAttrJSONLoad() {
+  // build JSON sample config
+  // add dummy test so that test will run
+  CORRADE_VERIFY(true);
+  const std::string& jsonString = R"({
+  "enable_direct_lights": false,
+  "enable_ibl": false,
+  "ibl_blut_filename": "brdflut_test_only_image.png",
+  "ibl_envmap_filename": "envmap_test_only_image.hdr",
+  "direct_light_intensity": 1.23,
+  "skip_missing_tbn_calc": true,
+  "use_mikkelsen_tbn": true,
+  "map_mat_txtr_to_linear": true,
+  "map_ibl_txtr_to_linear": true,
+  "map_output_to_srgb": true,
+  "use_direct_tonemap": true,
+  "use_ibl_tonemap": false,
+  "use_burley_diffuse": false,
+  "skip_clearcoat_calc": true,
+  "skip_specular_layer_calc": true,
+  "skip_anisotropy_layer_calc": true,
+  "direct_diffuse_scale": 1.5,
+  "direct_specular_scale": 2.5,
+  "ibl_diffuse_scale": 3.5,
+  "ibl_specular_scale": 4.5,
+  "tonemap_exposure": 6.7,
+  "gamma": 8.9,
+  "user_defined" : {
+      "user_str_array" : ["test_00", "test_01", "test_02", "test_03", "test_04"],
+      "user_string" : "pbr defined string",
+      "user_bool" : false,
+      "user_int" : 11,
+      "user_double" : 22.6,
+      "user_vec2" : [3.0, 4.0],
+      "user_vec3" : [5.4, 6.5, 7.1],
+      "user_quat" : [0.3, 6.7, 7.8, 8.9],
+      "user_vec4" : [2.3, 4.5, 6.7, 8.9]
+  }
+})";
+
+  auto pbrMgrAttr = pbrShaderAttributesManager_->createObjectFromJSONString(
+      "new_template_from_json", jsonString, true);
+
+  // verify exists
+  CORRADE_VERIFY(pbrMgrAttr);
+
+  // before test, save attributes to disk with new name
+  std::string newAttrName = Cr::Utility::formatString(
+      "{}/testPbrShaderAttrConfig_saved_JSON.{}", testAttrSaveDir,
+      pbrShaderAttributesManager_->getJSONTypeExt());
+
+  bool success = pbrShaderAttributesManager_->saveManagedObjectToFile(
+      pbrMgrAttr->getHandle(), newAttrName);
+
+  ESP_DEBUG() << "About to test string-based pbrMgrAttr";
+  // test json string to verify format, this deletes pbrMgrAttr from registry
+  testPbrShaderAttrVals(pbrMgrAttr);
+  ESP_DEBUG() << "Tested pbrMgrAttr";
+
+  pbrMgrAttr = nullptr;
+
+  // load attributes from new name and retest
+  auto pbrMgrAttr2 =
+      pbrShaderAttributesManager_->createObjectFromJSONFile(newAttrName, true);
+
+  // verify file-based config exists
+  CORRADE_VERIFY(pbrMgrAttr2);
+
+  ESP_DEBUG() << "About to test saved pbrMgrAttr2 :"
+              << pbrMgrAttr2->getHandle();
+  // test json string to verify format, this deletes pbrMgrAttr2 from
+  // registry
+  testPbrShaderAttrVals(pbrMgrAttr2);
+  ESP_DEBUG() << "Tested pbrMgrAttr";
+
+  // delete file-based config
+  Cr::Utility::Path::remove(newAttrName);
+
+}  // AttributesConfigsTest::testPbrShaderAttrJSONLoad
 
 void AttributesConfigsTest::testLightAttrVals(
     std::shared_ptr<esp::metadata::attributes::LightLayoutAttributes>
@@ -487,10 +604,10 @@ void AttributesConfigsTest::testLightJSONLoad() {
     "negative_intensity_scale" : 1.5
   })";
 
+  // Build an attributes based on the above json string
   auto lightLayoutAttr =
-      testBuildAttributesFromJSONString<AttrMgrs::LightLayoutAttributesManager,
-                                        Attrs::LightLayoutAttributes>(
-          lightLayoutAttributesManager_, jsonString, true);
+      lightLayoutAttributesManager_->createObjectFromJSONString(
+          "new_template_from_json", jsonString, true);
   // verify exists
   CORRADE_VERIFY(lightLayoutAttr);
   // before test, save attributes to disk with new name
@@ -524,7 +641,7 @@ void AttributesConfigsTest::testLightJSONLoad() {
   // delete file-based config
   Cr::Utility::Path::remove(newAttrName);
 
-}  // AttributesManagers_LightJSONLoadTest
+}  // AttributesConfigsTest::testLightJSONLoad
 
 void AttributesConfigsTest::testSceneInstanceRootUserDefinedAttrVals(
     std::shared_ptr<esp::core::config::Configuration> userAttrs) {
@@ -600,12 +717,22 @@ void AttributesConfigsTest::testSceneInstanceAttrVals(
 
   // verify articulated object instances
   auto artObjInstances = sceneAttr->getArticulatedObjectInstances();
-  CORRADE_COMPARE(artObjInstances.size(), 2);
+  CORRADE_COMPARE(artObjInstances.size(), 3);
   auto artObjInstance = artObjInstances[0];
   CORRADE_COMPARE(artObjInstance->getHandle(), "test_urdf_template0");
   CORRADE_COMPARE(static_cast<int>(artObjInstance->getTranslationOrigin()),
                   static_cast<int>(Attrs::SceneInstanceTranslationOrigin::COM));
-  CORRADE_COMPARE(artObjInstance->getFixedBase(), false);
+  CORRADE_COMPARE(static_cast<int>(artObjInstance->getBaseType()),
+                  static_cast<int>(Attrs::ArticulatedObjectBaseType::Fixed));
+  CORRADE_COMPARE(
+      static_cast<int>(artObjInstance->getInertiaSource()),
+      static_cast<int>(Attrs::ArticulatedObjectInertiaSource::URDF));
+  CORRADE_COMPARE(
+      static_cast<int>(artObjInstance->getLinkOrder()),
+      static_cast<int>(Attrs::ArticulatedObjectLinkOrder::URDFOrder));
+  CORRADE_COMPARE(
+      static_cast<int>(artObjInstance->getRenderMode()),
+      static_cast<int>(Attrs::ArticulatedObjectRenderMode::LinkVisuals));
   CORRADE_VERIFY(artObjInstance->getAutoClampJointLimits());
 
   CORRADE_COMPARE(artObjInstance->getTranslation(), Mn::Vector3(5, 4, 5));
@@ -651,7 +778,45 @@ void AttributesConfigsTest::testSceneInstanceAttrVals(
 
   artObjInstance = artObjInstances[1];
   CORRADE_COMPARE(artObjInstance->getHandle(), "test_urdf_template1");
-  CORRADE_VERIFY(artObjInstance->getFixedBase());
+
+  CORRADE_COMPARE(static_cast<int>(artObjInstance->getBaseType()),
+                  static_cast<int>(Attrs::ArticulatedObjectBaseType::Free));
+  CORRADE_COMPARE(
+      static_cast<int>(artObjInstance->getInertiaSource()),
+      static_cast<int>(Attrs::ArticulatedObjectInertiaSource::Computed));
+  CORRADE_COMPARE(
+      static_cast<int>(artObjInstance->getLinkOrder()),
+      static_cast<int>(Attrs::ArticulatedObjectLinkOrder::TreeTraversal));
+  CORRADE_COMPARE(static_cast<int>(artObjInstance->getRenderMode()),
+                  static_cast<int>(Attrs::ArticulatedObjectRenderMode::Both));
+  CORRADE_VERIFY(artObjInstance->getAutoClampJointLimits());
+  CORRADE_COMPARE(artObjInstance->getTranslation(), Mn::Vector3(3, 2, 1));
+  CORRADE_COMPARE(static_cast<int>(artObjInstance->getMotionType()),
+                  static_cast<int>(esp::physics::MotionType::KINEMATIC));
+  // test test_urdf_template0 ao instance attributes-level user config vals
+  testUserDefinedConfigVals(artObjInstance->getUserConfiguration(), 4,
+                            "test_urdf_template1 instance defined string",
+                            false, 21, 11.22, Mn::Vector2(1.9f, 2.9f),
+                            Mn::Vector3(190.3f, 902.5f, -95.07f),
+                            Mn::Quaternion({9.22f, 9.26f, 0.21f}, 1.25f),
+                            Mn::Vector4(13.5f, 4.6f, 25.7f, 76.9f));
+
+  artObjInstance = artObjInstances[2];
+  CORRADE_COMPARE(artObjInstance->getHandle(), "test_urdf_template2");
+  // Nothing specified in instance,so use defaults
+  CORRADE_COMPARE(
+      static_cast<int>(artObjInstance->getBaseType()),
+      static_cast<int>(Attrs::ArticulatedObjectBaseType::Unspecified));
+  CORRADE_COMPARE(
+      static_cast<int>(artObjInstance->getInertiaSource()),
+      static_cast<int>(Attrs::ArticulatedObjectInertiaSource::Unspecified));
+  CORRADE_COMPARE(
+      static_cast<int>(artObjInstance->getLinkOrder()),
+      static_cast<int>(Attrs::ArticulatedObjectLinkOrder::Unspecified));
+  CORRADE_COMPARE(
+      static_cast<int>(artObjInstance->getRenderMode()),
+      static_cast<int>(Attrs::ArticulatedObjectRenderMode::Unspecified));
+  // Same as template 1
   CORRADE_VERIFY(artObjInstance->getAutoClampJointLimits());
   CORRADE_COMPARE(artObjInstance->getTranslation(), Mn::Vector3(3, 2, 1));
   CORRADE_COMPARE(static_cast<int>(artObjInstance->getMotionType()),
@@ -687,7 +852,7 @@ void AttributesConfigsTest::testSceneInstanceAttrVals(
   // remove json-string built attributes added for test
   testRemoveAttributesBuiltByJSONString(sceneInstanceAttributesManager_,
                                         sceneAttr->getHandle());
-}
+}  // AttributesConfigsTest::testSceneInstanceAttrVals
 
 void AttributesConfigsTest::testSceneInstanceJSONLoad() {
   // build JSON sample config
@@ -757,7 +922,10 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
           {
               "template_name": "test_urdf_template0",
               "translation_origin": "COM",
-              "fixed_base": false,
+              "base_type" : "fixed",
+              "inertia_source" : "urdf",
+              "link_order" : "urdf_order",
+              "render_mode": "link_visuals",
               "auto_clamp_joint_limits" : true,
               "translation": [5,4,5],
               "rotation": [0.2, 0.3, 0.4, 0.5],
@@ -782,7 +950,28 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
           },
           {
               "template_name": "test_urdf_template1",
-              "fixed_base" : true,
+              "base_type" : "free",
+              "inertia_source" : "computed",
+              "link_order" : "tree_traversal",
+              "render_mode": "both",
+              "auto_clamp_joint_limits" : true,
+              "translation": [3, 2, 1],
+              "rotation": [0.5, 0.6, 0.7, 0.8],
+              "motion_type": "KINEMATIC",
+              "user_defined" : {
+                  "user_str_array" : ["test_00", "test_01", "test_02", "test_03"],
+                  "user_string" : "test_urdf_template1 instance defined string",
+                  "user_bool" : false,
+                  "user_int" : 21,
+                  "user_double" : 11.22,
+                  "user_vec2" : [1.9, 2.9],
+                  "user_vec3" : [190.3, 902.5, -95.07],
+                  "user_vec4" : [13.5, 4.6, 25.7, 76.9],
+                  "user_quat" : [1.25, 9.22, 9.26, 0.21]
+              }
+          },
+          {
+              "template_name": "test_urdf_template2",
               "auto_clamp_joint_limits" : true,
               "translation": [3, 2, 1],
               "rotation": [0.5, 0.6, 0.7, 0.8],
@@ -816,9 +1005,9 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
       }
      })";
 
-  auto sceneAttr = testBuildAttributesFromJSONString<
-      AttrMgrs::SceneInstanceAttributesManager, Attrs::SceneInstanceAttributes>(
-      sceneInstanceAttributesManager_, jsonString, true);
+  // Build an attributes based on the above json string
+  auto sceneAttr = sceneInstanceAttributesManager_->createObjectFromJSONString(
+      "new_template_from_json", jsonString, true);
   // verify exists
   CORRADE_VERIFY(sceneAttr);
 
@@ -852,7 +1041,7 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
   // delete file-based config
   Cr::Utility::Path::remove(newAttrName);
 
-}  // AttributesManagers_SceneInstanceJSONLoadTest
+}  // AttributesConfigsTest::testSceneInstanceJSONLoad
 
 void AttributesConfigsTest::testStageAttrVals(
     std::shared_ptr<esp::metadata::attributes::StageAttributes> stageAttr,
@@ -932,10 +1121,11 @@ void AttributesConfigsTest::testStageJSONLoad() {
         }
       })";
 
-  auto stageAttr =
-      testBuildAttributesFromJSONString<AttrMgrs::StageAttributesManager,
-                                        Attrs::StageAttributes>(
-          stageAttributesManager_, jsonString, false);
+  // Build an attributes based on the above json string
+  // Don't register - registration here verifies that the specified file handles
+  // in the attributes exist, or it will fail.
+  auto stageAttr = stageAttributesManager_->createObjectFromJSONString(
+      "new_template_from_json", jsonString, false);
   // verify exists
   CORRADE_VERIFY(stageAttr);
   // verify that we are set to use the render asset frame for all meshes.
@@ -990,7 +1180,7 @@ void AttributesConfigsTest::testStageJSONLoad() {
   // delete file-based config
   Cr::Utility::Path::remove(newAttrName);
 
-}  // AttributesManagers_StageJSONLoadTest
+}  // AttributesConfigsTest::testStageJSONLoad(
 
 void AttributesConfigsTest::testObjectAttrVals(
     std::shared_ptr<esp::metadata::attributes::ObjectAttributes> objAttr,
@@ -1065,10 +1255,12 @@ void AttributesConfigsTest::testObjectJSONLoad() {
       "user_quat" : [0.7, 5.5, 6.6, 7.7]
   }
 })";
-  auto objAttr =
-      testBuildAttributesFromJSONString<AttrMgrs::ObjectAttributesManager,
-                                        Attrs::ObjectAttributes>(
-          objectAttributesManager_, jsonString, false);
+
+  // Build an attributes based on the above json string
+  // Don't register - registration here verifies that the specified file handles
+  // in the attributes exist, or it will fail.
+  auto objAttr = objectAttributesManager_->createObjectFromJSONString(
+      "new_template_from_json", jsonString, false);
   // verify exists
   CORRADE_VERIFY(objAttr);
   // now need to change the render and collision assets to make sure they are
@@ -1106,13 +1298,136 @@ void AttributesConfigsTest::testObjectJSONLoad() {
 
   // test json string to verify format, this deletes objAttr2 from
   // registry
-  ESP_DEBUG() << "About to test saved stageAttr2 :" << objAttr2->getHandle();
+  ESP_DEBUG() << "About to test saved objAttr2 :" << objAttr2->getHandle();
   testObjectAttrVals(objAttr2, objAssetFile);
-  ESP_DEBUG() << "Tested saved stageAttr2 :";
+  ESP_DEBUG() << "Tested saved objAttr2 :";
 
   // delete file-based config
   Cr::Utility::Path::remove(newAttrName);
 }  // AttributesConfigsTest::testObjectJSONLoadTest
+
+void AttributesConfigsTest::testArticulatedObjectAttrVals(
+    std::shared_ptr<esp::metadata::attributes::ArticulatedObjectAttributes>
+        artObjAttr,
+    const std::string& assetPath,
+    const std::string& urdfPath) {
+  // match values set in test JSON
+  CORRADE_COMPARE(artObjAttr->getURDFPath(), urdfPath);
+  CORRADE_COMPARE(artObjAttr->getRenderAssetHandle(), assetPath);
+  CORRADE_COMPARE(artObjAttr->getSemanticId(), 100);
+
+  CORRADE_COMPARE(static_cast<int>(artObjAttr->getBaseType()),
+                  static_cast<int>(Attrs::ArticulatedObjectBaseType::Fixed));
+
+  CORRADE_COMPARE(
+      static_cast<int>(artObjAttr->getInertiaSource()),
+      static_cast<int>(Attrs::ArticulatedObjectInertiaSource::URDF));
+
+  CORRADE_COMPARE(
+      static_cast<int>(artObjAttr->getLinkOrder()),
+      static_cast<int>(Attrs::ArticulatedObjectLinkOrder::TreeTraversal));
+
+  CORRADE_COMPARE(static_cast<int>(artObjAttr->getRenderMode()),
+                  static_cast<int>(Attrs::ArticulatedObjectRenderMode::Skin));
+
+  CORRADE_COMPARE(static_cast<int>(artObjAttr->getShaderType()),
+                  static_cast<int>(Attrs::ObjectInstanceShaderType::PBR));
+
+  // test object attributes-level user config vals
+  testUserDefinedConfigVals(artObjAttr->getUserConfiguration(), 5,
+                            "articulated object defined string", true, 6, 3.6,
+                            Mn::Vector2(4.7f, 2.4f),
+                            Mn::Vector3(15.1, 17.6, 110.1),
+                            Mn::Quaternion({5.3f, 6.4f, 7.5f}, 0.8f),
+                            Mn::Vector4(1.6f, 1.2f, 6.3f, 7.4f));
+
+  // remove json-string built attributes added for test
+  testRemoveAttributesBuiltByJSONString(artObjAttributesManager_,
+                                        artObjAttr->getHandle());
+
+}  // AttributesConfigsTest::testArticulatedObjectAttrVals
+
+void AttributesConfigsTest::testArticulatedObjectJSONLoad() {
+  // build JSON sample config
+  const std::string& jsonString = R"({
+  "urdf_filepath": "urdf_test_file.urdf",
+  "render_asset": "testAO_JSONRenderAsset.glb",
+  "semantic_id": 100,
+  "base_type" : "fixed",
+  "inertia_source" : "urdf",
+  "link_order" : "tree_traversal",
+  "render_mode": "skin",
+  "shader_type" : "pbr",
+  "user_defined" : {
+      "user_str_array" : ["test_00", "test_01", "test_02", "test_03", "test_04"],
+      "user_string" : "articulated object defined string",
+      "user_bool" : true,
+      "user_int" : 6,
+      "user_double" : 3.6,
+      "user_vec2" : [4.7, 2.4],
+      "user_vec3" : [15.1, 17.6, 110.1],
+      "user_vec4" : [1.6, 1.2, 6.3, 7.4],
+      "user_quat" : [0.8, 5.3, 6.4, 7.5]
+  }
+})";
+
+  // Build an attributes based on the above json string
+  // Don't register - registration here verifies that the URDF file handle
+  // specified in the attributes exist, or it will fail.
+  auto artObjAttr = artObjAttributesManager_->createObjectFromJSONString(
+      "new_template_from_json", jsonString, false);
+
+  // verify created attributes exists
+  CORRADE_VERIFY(artObjAttr);
+
+  // now need to change urdf filename and render asset file name to make sure
+  // they are legal so the test can proceed (needs to be actual existing file so
+  // it can be regsitered)
+  const std::string aoURDFFlle =
+      Cr::Utility::Path::join(testAttrSaveDir, "urdf/prim_chain.urdf");
+  const std::string aoRenderAssetName =
+      Cr::Utility::Path::join(testAttrSaveDir, "objects/skinned_prism.glb");
+
+  artObjAttr->setURDFPath(aoURDFFlle);
+  artObjAttr->setRenderAssetHandle(aoRenderAssetName);
+
+  // now register so can be saved to disk
+  artObjAttributesManager_->registerObject(artObjAttr);
+
+  // before test, save attributes to disk with new name
+  std::string newAttrName = Cr::Utility::formatString(
+      "{}/testArtObjectAttrConfig_saved_JSON.{}", testAttrSaveDir,
+      artObjAttributesManager_->getJSONTypeExt());
+
+  bool success = artObjAttributesManager_->saveManagedObjectToFile(
+      artObjAttr->getHandle(), newAttrName);
+
+  // test json string to verify format - this also deletes objAttr from
+  // manager
+
+  ESP_DEBUG() << "About to test string-based artObjAttr :";
+  testArticulatedObjectAttrVals(artObjAttr, aoRenderAssetName, aoURDFFlle);
+  ESP_DEBUG() << "Tested string-based artObjAttr :";
+  artObjAttr = nullptr;
+
+  // load attributes from new name and retest
+  auto artObjAttr2 =
+      artObjAttributesManager_->createObjectFromJSONFile(newAttrName);
+
+  // verify file-based config exists
+  CORRADE_VERIFY(artObjAttr2);
+
+  // test json string to verify format, this deletes objAttr2 from
+  // registry
+  ESP_DEBUG() << "About to test saved artObjAttr2 :"
+              << artObjAttr2->getHandle();
+  testArticulatedObjectAttrVals(artObjAttr2, aoRenderAssetName, aoURDFFlle);
+  ESP_DEBUG() << "Tested saved artObjAttr2 :";
+
+  // delete file-based config
+  Cr::Utility::Path::remove(newAttrName);
+
+}  // AttributesConfigsTest::testArticulatedObjectJSONLoad
 
 }  // namespace
 

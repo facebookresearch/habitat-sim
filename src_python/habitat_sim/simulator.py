@@ -527,7 +527,7 @@ class Simulator(SimulatorBackend):
     def __del__(self) -> None:
         self.close(destroy=True)
 
-    def step_physics(self, dt: float, scene_id: int = 0) -> None:
+    def step_physics(self, dt: float) -> None:
         self.step_world(dt)
 
 

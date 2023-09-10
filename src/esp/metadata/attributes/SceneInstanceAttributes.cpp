@@ -128,15 +128,27 @@ void SceneObjectInstanceAttributes::writeValuesToJson(
 
 SceneAOInstanceAttributes::SceneAOInstanceAttributes(const std::string& handle)
     : SceneObjectInstanceAttributes(handle, "SceneAOInstanceAttributes") {
-  // set default fixed base and auto clamp values (only used for articulated
-  // object)
-  setFixedBase(false);
+  // set default auto clamp values (only used for articulated object)
   setAutoClampJointLimits(false);
+
+  // Set the instance base type to be unspecified - if not set in instance json,
+  // use ao_config value
+  setBaseType(getAOBaseTypeName(ArticulatedObjectBaseType::Unspecified));
+  // Set the instance source for the interia calculation to be unspecified - if
+  // not set in instance json, use ao_config value
+  setInertiaSource(
+      getAOInertiaSourceName(ArticulatedObjectInertiaSource::Unspecified));
+  // Set the instance link order to use as unspecified - if not set in instance
+  // json, use ao_config value
+  setLinkOrder(getAOLinkOrderName(ArticulatedObjectLinkOrder::Unspecified));
+  // Set render mode to be unspecified - if not set in instance json, use
+  // ao_config value
+  setRenderMode(getAORenderModeName(ArticulatedObjectRenderMode::Unspecified));
 }
 
 std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoHeaderInternal()
     const {
-  std::string infoHdr{"Is Fixed Base?,"};
+  std::string infoHdr{"Base Type,Inertia Source,Link Order,Render Mode,"};
   int iter = 0;
   for (const auto& it : initJointPose_) {
     Cr::Utility::formatInto(infoHdr, infoHdr.size(), "Init Pose {},",
@@ -152,8 +164,12 @@ std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoHeaderInternal()
 
 std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoInternal() const {
   std::string initPoseStr{"["};
-  Cr::Utility::formatInto(initPoseStr, initPoseStr.size(), "{},",
-                          getAsString("fixed_base"));
+
+  Cr::Utility::formatInto(initPoseStr, initPoseStr.size(), "{},{},{},{},",
+                          getAOBaseTypeName(getBaseType()),
+                          getAOInertiaSourceName(getInertiaSource()),
+                          getAOLinkOrderName(getLinkOrder()),
+                          getAORenderModeName(getRenderMode()));
   for (const auto& it : initJointPose_) {
     Cr::Utility::formatInto(initPoseStr, initPoseStr.size(), "{},",
                             std::to_string(it.second));
@@ -171,7 +187,19 @@ std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoInternal() const {
 void SceneAOInstanceAttributes::writeValuesToJsonInternal(
     io::JsonGenericValue& jsonObj,
     io::JsonAllocator& allocator) const {
-  writeValueToJson("fixed_base", jsonObj, allocator);
+  if (getBaseType() != ArticulatedObjectBaseType::Unspecified) {
+    writeValueToJson("base_type", jsonObj, allocator);
+  }
+  if (getInertiaSource() != ArticulatedObjectInertiaSource::Unspecified) {
+    writeValueToJson("inertia_source", jsonObj, allocator);
+  }
+  if (getLinkOrder() != ArticulatedObjectLinkOrder::Unspecified) {
+    writeValueToJson("link_order", jsonObj, allocator);
+  }
+  if (getRenderMode() != ArticulatedObjectRenderMode::Unspecified) {
+    writeValueToJson("render_mode", jsonObj, allocator);
+  }
+
   writeValueToJson("auto_clamp_joint_limits", jsonObj, allocator);
 
   // write out map where key is joint tag, and value is joint pose value.
@@ -200,6 +228,8 @@ SceneInstanceAttributes::SceneInstanceAttributes(const std::string& handle)
   objInstConfig_ = editSubconfig<Configuration>("object_instances");
   artObjInstConfig_ =
       editSubconfig<Configuration>("articulated_object_instances");
+  pbrShaderRegionConfigHandles_ =
+      editSubconfig<Configuration>("pbr_shader_region_configs");
 }
 
 SceneInstanceAttributes::SceneInstanceAttributes(
@@ -215,6 +245,10 @@ SceneInstanceAttributes::SceneInstanceAttributes(
       editSubconfig<Configuration>("articulated_object_instances");
   copySubconfigIntoMe<SceneAOInstanceAttributes>(otr.artObjInstConfig_,
                                                  artObjInstConfig_);
+  // Don't need to copy into, since pbrShaderRegionConfigHandles_ is not a
+  // hierarchy
+  pbrShaderRegionConfigHandles_ =
+      editSubconfig<Configuration>("pbr_shader_region_configs");
 }
 SceneInstanceAttributes::SceneInstanceAttributes(
     SceneInstanceAttributes&& otr) noexcept
@@ -226,7 +260,32 @@ SceneInstanceAttributes::SceneInstanceAttributes(
   objInstConfig_ = editSubconfig<Configuration>("object_instances");
   artObjInstConfig_ =
       editSubconfig<Configuration>("articulated_object_instances");
+  pbrShaderRegionConfigHandles_ =
+      editSubconfig<Configuration>("pbr_shader_region_configs");
 }
+
+std::map<std::string, std::string>
+SceneInstanceAttributes::getRegionPbrShaderAttributesHandles() const {
+  // iterate through subconfig entries, casting appropriately and adding to
+  // map if cast successful
+  std::map<std::string, std::string> res{};
+  int numValues = pbrShaderRegionConfigHandles_->getNumValues();
+  if (numValues == 0) {
+    return res;
+  }
+  // get begin/end pair of iterators for the values in the
+  // pbrShaderRegionConfig
+  auto pbrShdrRegionIter = pbrShaderRegionConfigHandles_->getValuesIterator();
+  for (auto objIter = pbrShdrRegionIter.first;
+       objIter != pbrShdrRegionIter.second; ++objIter) {
+    // verify only string values
+    if (objIter->second.getType() == core::config::ConfigStoredType::String) {
+      res.emplace(
+          std::make_pair(objIter->first, objIter->second.getAsString()));
+    }
+  }
+  return res;
+}  // SceneInstanceAttributes::getRegionPbrShaderAttributesHandles()
 
 void SceneInstanceAttributes::writeValuesToJson(
     io::JsonGenericValue& jsonObj,
@@ -237,12 +296,13 @@ void SceneInstanceAttributes::writeValuesToJson(
   writeValueToJson("default_lighting", jsonObj, allocator);
   writeValueToJson("navmesh_instance", jsonObj, allocator);
   writeValueToJson("semantic_scene_instance", jsonObj, allocator);
+  writeValueToJson("default_pbr_shader_config", jsonObj, allocator);
 }  // SceneInstanceAttributes::writeValuesToJson
 
 void SceneInstanceAttributes::writeSubconfigsToJson(
     io::JsonGenericValue& jsonObj,
     io::JsonAllocator& allocator) const {
-  // build list of json objs from subconfigs describing object instances and
+  // build list of JSON objs from subconfigs describing object instances and
   // articulated object instances
   // object instances
   auto objCfgIterPair = objInstConfig_->getSubconfigIterator();
@@ -269,15 +329,20 @@ void SceneInstanceAttributes::writeSubconfigsToJson(
       getStageInstance()->writeToJsonObject(allocator);
   jsonObj.AddMember("stage_instance", subObj, allocator);
 
+  // save pbr_shader_region_configs subconfig
+  io::JsonGenericValue pbrRegion =
+      pbrShaderRegionConfigHandles_->writeToJsonObject(allocator);
+  jsonObj.AddMember("pbr_shader_region_configs", pbrRegion, allocator);
+
   // iterate through other subconfigs using standard handling
-  // do not resave ObjectInstances and AObjInstances
-  // iterate through subconfigs
-  // pair of begin/end const iterators to all subconfigurations
+  // do not resave ObjectInstances, AObjInstances, or any of the predefined
+  // subconfigs.
   auto cfgIterPair = getSubconfigIterator();
   for (auto& cfgIter = cfgIterPair.first; cfgIter != cfgIterPair.second;
        ++cfgIter) {
     if ((cfgIter->first == "object_instances") ||
         (cfgIter->first == "stage_instance") ||
+        (cfgIter->first == "pbr_shader_region_configs") ||
         (cfgIter->first == "articulated_object_instances")) {
       continue;
     }
@@ -311,6 +376,10 @@ SceneInstanceAttributes& SceneInstanceAttributes::operator=(
         editSubconfig<Configuration>("articulated_object_instances");
     copySubconfigIntoMe<SceneAOInstanceAttributes>(otr.artObjInstConfig_,
                                                    artObjInstConfig_);
+    // Don't need to copy into, since pbrShaderRegionConfigHandles_ is not a
+    // hierarchy, but a flat subconfig
+    pbrShaderRegionConfigHandles_ =
+        editSubconfig<Configuration>("pbr_shader_region_configs");
   }
   return *this;
 }
@@ -318,11 +387,14 @@ SceneInstanceAttributes& SceneInstanceAttributes::operator=(
     SceneInstanceAttributes&& otr) noexcept {
   availableObjInstIDs_ = std::move(otr.availableObjInstIDs_);
   availableArtObjInstIDs_ = std::move(otr.availableArtObjInstIDs_);
+
   this->AbstractAttributes::operator=(static_cast<AbstractAttributes&&>(otr));
 
   objInstConfig_ = editSubconfig<Configuration>("object_instances");
   artObjInstConfig_ =
       editSubconfig<Configuration>("articulated_object_instances");
+  pbrShaderRegionConfigHandles_ =
+      editSubconfig<Configuration>("pbr_shader_region_configs");
   return *this;
 }
 std::string SceneInstanceAttributes::getObjectInfoInternal() const {
@@ -330,17 +402,35 @@ std::string SceneInstanceAttributes::getObjectInfoInternal() const {
   // default translation origin
 
   std::string res = Cr::Utility::formatString(
-      "\nDefault Translation Origin,Default Lighting,Navmesh Handle,Semantic "
-      "Scene Descriptor Handle,\n{},{},{},{}\n",
+      "\nDefault Translation Origin,Default Lighting,Default PBR Shader "
+      "Config,Navmesh Handle,Semantic "
+      "Scene Descriptor Handle,\n{},{},{},{},{}\n",
       getTranslationOriginName(getTranslationOrigin()), getLightingHandle(),
-      getNavmeshHandle(), getSemanticSceneHandle());
+      getDefaultPbrShaderAttributesHandle(), getNavmeshHandle(),
+      getSemanticSceneHandle());
 
+  // stage instance info
   const SceneObjectInstanceAttributes::cptr stageInstance = getStageInstance();
   Cr::Utility::formatInto(res, res.size(), "Stage Instance Info :\n{}\n{}\n",
                           stageInstance->getObjectInfoHeader(),
                           stageInstance->getObjectInfo());
-  // stage instance info
+
   int iter = 0;
+
+  // region-based PBR shader config info
+  const auto& pbrShaderConfigRegionInfo = getRegionPbrShaderAttributesHandles();
+  for (const auto& pbrCfg : pbrShaderConfigRegionInfo) {
+    if (iter == 0) {
+      ++iter;
+      Cr::Utility::formatInto(
+          res, res.size(),
+          "Per Region PBR/IBL Shader Configuration Handles :\nRegion,Handle\n");
+    }
+    Cr::Utility::formatInto(res, res.size(), "{},{}\n", pbrCfg.first,
+                            pbrCfg.second);
+  }  // for pbrShaderConfigRegionInfo elements
+
+  iter = 0;
   // object instance info
   const auto& objInstances = getObjectInstances();
   for (const auto& objInst : objInstances) {

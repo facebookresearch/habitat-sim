@@ -55,6 +55,8 @@ class ReplayRendererConfiguration {
    */
   bool leaveContextWithBackgroundRenderer = false;
 
+  bool enableFrustumCulling = true;
+
   std::vector<std::shared_ptr<sensor::SensorSpec>> sensorSpecifications;
 
   ESP_SMART_POINTERS(ReplayRendererConfiguration)

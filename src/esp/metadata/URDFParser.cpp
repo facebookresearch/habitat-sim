@@ -26,7 +26,7 @@ namespace Cr = Corrade;
 namespace Mn = Magnum;
 
 namespace esp {
-namespace io {
+namespace metadata {
 namespace URDF {
 
 void Model::scaleShape(Shape& shape, float scale) {
@@ -103,116 +103,29 @@ void Model::setMassScaling(float massScaling) {
   m_massScaling = massScaling;
 }
 
-bool Model::loadJsonAttributes(const std::string& filename) {
-  namespace CrUt = Corrade::Utility;
-  const std::string jsonName = CrUt::formatString(
-      "{}.ao_config.json",
-      CrUt::Path::splitExtension(CrUt::Path::splitExtension(filename).first())
-          .first());
+void Model::setModelInitAttributes(
+    metadata::attributes::ArticulatedObjectAttributes::ptr artObjAttributes) {
+  initializationAttributes_ = std::move(artObjAttributes);
+  // TODO these fields are redundant - can just use the attributes fields
+  // directly
+  m_renderAsset = initializationAttributes_->getRenderAssetHandle();
+  m_semanticId = initializationAttributes_->getSemanticId();
+  // TODO : Use the enum value instead of settting a boolean here
 
-  if (!CrUt::Path::exists(jsonName)) {
-    // file does not exists, so no Json configuration defined for this Model.
-    return false;
-  }
-  std::unique_ptr<io::JsonDocument> docConfig{};
-  try {
-    docConfig = std::make_unique<io::JsonDocument>(io::parseJsonFile(jsonName));
-  } catch (...) {
-    ESP_ERROR() << "<Model> : Failed to parse" << jsonName << "as JSON.";
-    return false;
-  }
+  auto renderMode = initializationAttributes_->getRenderMode();
 
-  // JSON file exists and has been loaded; use to build this model's
-  // configuration attributes
-  // convert doc to const Json Generic val
-  const io::JsonGenericValue jsonConfig = docConfig->GetObject();
+  m_renderLinkVisualShapes =
+      (renderMode ==
+       metadata::attributes::ArticulatedObjectRenderMode::LinkVisuals) ||
+      (renderMode == metadata::attributes::ArticulatedObjectRenderMode::Both);
 
-  // check for render asset
-  const char* attrRenderAsset = "render_asset";
-  const char* attrSemanticId = "semantic_id";
-  const char* attrDebugRenderPrimitives = "debug_render_primitives";
+}  // Model::setModelInitAttributes
 
-  // Parse render_asset
-  if (jsonConfig.HasMember(attrRenderAsset)) {
-    if (!jsonConfig[attrRenderAsset].IsString()) {
-      ESP_WARNING() << "<Model> : Json Config file specifies a render_asset "
-                       "attribute but "
-                       "it is not a string. Skipping render_asset config load.";
-      return false;
-    } else {
-      const std::string renderAssetRelativePath{
-          jsonConfig[attrRenderAsset].GetString()};
-      // render_asset path is relative to the urdf path.
-      auto fileDir = CrUt::Path::split(filename).first();
-      auto renderAssetPath = CrUt::Path::join(fileDir, renderAssetRelativePath);
-      if (!CrUt::Path::exists(renderAssetPath)) {
-        ESP_WARNING() << "<Model> : render_asset defined in \"" << jsonName
-                      << "\" could not be found. The path is relative to the "
-                         "ao_config.json file.";
-      }
-      m_renderAsset = std::string(renderAssetPath.data());
-    }
-  }
-
-  // Parse semantic_id
-  if (jsonConfig.HasMember(attrSemanticId)) {
-    if (!jsonConfig[attrSemanticId].IsInt()) {
-      ESP_WARNING() << "<Model> : Json Config file specifies semantic_id "
-                       "attribute but it is not an int. Skipping semantic_id "
-                       "config load.";
-      return false;
-    } else {
-      m_semanticId = jsonConfig[attrSemanticId].GetInt();
-    }
-  }
-
-  // Parse debug_render_primitives
-  if (jsonConfig.HasMember(attrDebugRenderPrimitives)) {
-    if (!jsonConfig[attrDebugRenderPrimitives].IsBool()) {
-      ESP_WARNING()
-          << "<Model> : Json Config file specifies debug_render_primitives "
-             "attribute but it is not a bool. Skipping debug_render_primitives "
-             "config load.";
-      return false;
-    } else {
-      m_debugRenderPrimitives = jsonConfig[attrDebugRenderPrimitives].GetBool();
-    }
-  }
-
-  // check for user defined attributes and verify it is an object
-  const std::string subGroupName = "user_defined";
-  const char* sg_cstr = subGroupName.c_str();
-
-  if (jsonConfig.HasMember(sg_cstr)) {
-    if (!jsonConfig[sg_cstr].IsObject()) {
-      ESP_WARNING()
-          << "<Model> : Json Config file specifies user_defined attributes but "
-             "they are not of the correct format. Skipping user_defined "
-             "config load.";
-      return false;
-    }
-
-    // get pointer to user_defined subgroup configuration
-    std::shared_ptr<core::config::Configuration> subGroupPtr =
-        jsonAttributes_->getSubconfigCopy<core::config::Configuration>(
-            subGroupName);
-    // get json object referenced by tag subGroupName
-    const io::JsonGenericValue& jsonObj = jsonConfig[subGroupName.c_str()];
-    // count number of valid user config settings found
-
-    int numConfigSettings = subGroupPtr->loadFromJson(jsonObj);
-
-    // save as user_defined subgroup configuration
-    jsonAttributes_->setSubconfigPtr(subGroupName, subGroupPtr);
-
-    return (numConfigSettings > 0);
-  }  // if has user_defined tag
-
-  return false;
-}  // Model::loadJsonAttributes
-
-bool Parser::parseURDF(std::shared_ptr<Model>& urdfModel,
-                       const std::string& filename) {
+bool Parser::parseURDF(
+    const esp::metadata::attributes::ArticulatedObjectAttributes::ptr&
+        artObjAttributes,
+    std::shared_ptr<Model>& urdfModel) {
+  auto filename = artObjAttributes->getURDFPath();
   // override the previous model with a fresh one
   urdfModel = std::make_shared<Model>();
   sourceFilePath_ = filename;
@@ -337,17 +250,12 @@ bool Parser::parseURDF(std::shared_ptr<Model>& urdfModel,
     return false;
   }
 
-  ESP_VERY_VERBOSE() << "Done parsing URDF for" << filename;
+  // Set the creation attributes
+  urdfModel->setModelInitAttributes(artObjAttributes);
 
-  // attempt to load JSON config for this Model
-  if (urdfModel->loadJsonAttributes(filename)) {
-    ESP_VERY_VERBOSE() << "Loading JSON Attributes successful for this model.";
-  } else {
-    ESP_VERY_VERBOSE()
-        << "No extra JSON configuration data found for this model.";
-  }
+  ESP_VERY_VERBOSE() << "Done parsing URDF for" << filename;
   return true;
-}
+}  // Parser::parseURDF
 
 static bool parseColor4(Mn::Color4& color4, const std::string& vector_str) {
   color4 = Mn::Color4();  // 0 init
@@ -1258,5 +1166,5 @@ void Model::printKinematicChain() const {
 }
 
 }  // namespace URDF
-}  // namespace io
+}  // namespace metadata
 }  // namespace esp

@@ -102,7 +102,7 @@ void initSimBindings(py::module& m) {
       .def_readwrite(
           "pbr_image_based_lighting",
           &SimulatorConfiguration::pbrImageBasedLighting,
-          R"(Whether or not to enable image based lighting in the PBR shader.)")
+          R"(DEPRECATED : Use PbrShaderAttributes to specify whether IBL is enabled or disabled.)")
       .def(py::self == py::self)
       .def(py::self != py::self);
 
@@ -207,7 +207,7 @@ void initSimBindings(py::module& m) {
           R"(Query the physics library implementation currently configured by this Simulator instance.)")
       .def(
           "get_stage_initialization_template",
-          &Simulator::getStageInitializationTemplate, "scene_id"_a = 0,
+          &Simulator::getStageInitializationTemplate,
           R"(Get a copy of the StageAttributes template used to instance a scene's stage or None if it does not exist.)")
 
       .def("build_semantic_CC_objects", &Simulator::buildSemanticCCObjects,
@@ -230,10 +230,10 @@ void initSimBindings(py::module& m) {
            R"(Query the current simulation world time.)")
       .def("get_physics_time_step", &Simulator::getPhysicsTimeStep,
            R"(Get the last used physics timestep)")
-      .def("get_gravity", &Simulator::getGravity, "scene_id"_a = 0,
-           R"(Query the gravity vector for a scene.)")
-      .def("set_gravity", &Simulator::setGravity, "gravity"_a, "scene_id"_a = 0,
-           R"(Set the gravity vector for a scene.)")
+      .def("get_gravity", &Simulator::getGravity,
+           R"(Query the gravity vector for the scene.)")
+      .def("set_gravity", &Simulator::setGravity, "gravity"_a,
+           R"(Set the gravity vector for the scene.)")
 
       .def("get_stage_is_collidable", &Simulator::getStageIsCollidable,
            R"(Get whether or not the static stage is collidable.)")
@@ -242,7 +242,6 @@ void initSimBindings(py::module& m) {
            R"(Set whether or not the static stage is collidable.)")
       .def(
           "contact_test", &Simulator::contactTest, "object_id"_a,
-          "scene_id"_a = 0,
           R"(DEPRECATED AND WILL BE REMOVED IN HABITAT-SIM 2.0. Run collision detection and return a binary indicator of penetration between the specified object and any other collision object. Physics must be enabled.)")
       .def(
           "get_physics_num_active_contact_points",
@@ -265,10 +264,9 @@ void initSimBindings(py::module& m) {
           R"(Perform discrete collision detection for the scene. Physics must be enabled. Warning: may break simulation determinism.)")
       .def(
           "cast_ray", &Simulator::castRay, "ray"_a, "max_distance"_a = 100.0,
-          "scene_id"_a = 0,
           R"(Cast a ray into the collidable scene and return hit results. Physics must be enabled. max_distance in units of ray length.)")
       .def("set_object_bb_draw", &Simulator::setObjectBBDraw, "draw_bb"_a,
-           "object_id"_a, "scene_id"_a = 0,
+           "object_id"_a,
            R"(Enable or disable bounding box visualization for an object.)")
       .def(
           "recompute_navmesh", &Simulator::recomputeNavMesh, "pathfinder"_a,
@@ -313,25 +311,24 @@ void initSimBindings(py::module& m) {
               spline interpolating spline. num_interpolations : (Integer) the
               number of interpolation points to find between successive key
               points.)")
-
       .def(
           "save_current_scene_config",
-          static_cast<bool (Simulator::*)(const std::string&, int) const>(
+          static_cast<bool (Simulator::*)(const std::string&) const>(
               &Simulator::saveCurrentSceneInstance),
           R"(Save the current simulation world's state as a Scene Instance Config JSON
           using the passed name. This can be used to reload the stage, objects, articulated
           objects and other values as they currently are.)",
-          "file_name"_a, "scene_id"_a = 0)
+          "file_name"_a)
       .def(
           "save_current_scene_config",
-          static_cast<bool (Simulator::*)(bool, int) const>(
+          static_cast<bool (Simulator::*)(bool) const>(
               &Simulator::saveCurrentSceneInstance),
           R"(Save the current simulation world's state as a Scene Instance Config JSON
           using the name of the loaded scene, either overwritten, if overwrite is True, or
           with an incrementer in the file name of the form (copy xxxx) where xxxx is a number.
           This can be used to reload the stage, objects, articulated
           objects and other values as they currently are.)",
-          "overwrite"_a = false, "scene_id"_a = 0)
+          "overwrite"_a = false)
       .def("get_light_setup", &Simulator::getLightSetup,
            "key"_a = DEFAULT_LIGHTING_KEY,
            R"(Get a copy of the LightSetup registered with a specific key.)")
@@ -382,6 +379,9 @@ void initSimBindings(py::module& m) {
           R"(List of sensor specifications for one simulator. For batch rendering, all simulators must have the same specification.)")
       .def_readwrite("gpu_device_id", &ReplayRendererConfiguration::gpuDeviceId,
                      R"(The system GPU device to use for rendering)")
+      .def_readwrite("enable_frustum_culling",
+                     &ReplayRendererConfiguration::enableFrustumCulling,
+                     R"(Controls whether frustum culling is enabled.)")
       .def_readwrite(
           "force_separate_semantic_scene_graph",
           &ReplayRendererConfiguration::forceSeparateSemanticSceneGraph,

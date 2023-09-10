@@ -16,12 +16,14 @@ SceneDatasetAttributes::SceneDatasetAttributes(
   assetAttributesManager_ = managers::AssetAttributesManager::create();
   lightLayoutAttributesManager_ =
       managers::LightLayoutAttributesManager::create();
+  artObjAttributesManager_ = managers::AOAttributesManager::create();
   objectAttributesManager_ = managers::ObjectAttributesManager::create();
   objectAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
   sceneInstanceAttributesManager_ =
       managers::SceneInstanceAttributesManager::create();
-  stageAttributesManager_ = managers::StageAttributesManager::create(
-      objectAttributesManager_, physAttrMgr);
+  stageAttributesManager_ =
+      managers::StageAttributesManager::create(physAttrMgr);
+  stageAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
 }  // ctor
 
 bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
@@ -234,7 +236,8 @@ std::string SceneDatasetAttributes::getObjectInfoInternal() const {
   // articulated objects
   Cr::Utility::formatInto(
       res, res.size(), "{}",
-      concatStrings("Articulated Object Models", articulatedObjPaths));
+      concatStrings("Articulated Object Templates",
+                    artObjAttributesManager_->getObjectInfoStrings()));
 
   // lights
   Cr::Utility::formatInto(
@@ -270,7 +273,8 @@ std::string SceneDatasetAttributes::getDatasetSummary() const {
       "{},{},{},{},{},{},{},{},{},", getSimplifiedHandle(),
       sceneInstanceAttributesManager_->getNumObjects(),
       stageAttributesManager_->getNumObjects(),
-      objectAttributesManager_->getNumObjects(), articulatedObjPaths.size(),
+      objectAttributesManager_->getNumObjects(),
+      artObjAttributesManager_->getNumObjects(),
       lightLayoutAttributesManager_->getNumObjects(),
       assetAttributesManager_->getNumObjects(), navmeshMap_.size(),
       semanticSceneDescrMap_.size());

@@ -18,6 +18,7 @@
 #include "esp/assets/GenericSemanticMeshData.h"
 #include "esp/core/Esp.h"
 #include "esp/core/RigidState.h"
+#include "esp/metadata/attributes/ObjectAttributes.h"
 #include "esp/scene/SceneNode.h"
 
 #include "esp/physics/RigidBase.h"

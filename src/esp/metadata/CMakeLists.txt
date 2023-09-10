@@ -8,26 +8,38 @@ set(
   attributes/AttributesBase.cpp
   attributes/AttributesEnumMaps.h
   attributes/AttributesEnumMaps.cpp
+  attributes/AbstractObjectAttributes.h
+  attributes/AbstractObjectAttributes.cpp
+  attributes/ArticulatedObjectAttributes.h
+  attributes/ArticulatedObjectAttributes.cpp
   attributes/LightLayoutAttributes.h
   attributes/LightLayoutAttributes.cpp
   attributes/ObjectAttributes.h
   attributes/ObjectAttributes.cpp
   attributes/PhysicsManagerAttributes.h
   attributes/PhysicsManagerAttributes.cpp
+  attributes/PbrShaderAttributes.h
+  attributes/PbrShaderAttributes.cpp
   attributes/PrimitiveAssetAttributes.h
   attributes/PrimitiveAssetAttributes.cpp
   attributes/SceneInstanceAttributes.h
   attributes/SceneInstanceAttributes.cpp
   attributes/SceneDatasetAttributes.h
   attributes/SceneDatasetAttributes.cpp
+  attributes/StageAttributes.h
+  attributes/StageAttributes.cpp
   managers/AttributesManagerBase.h
-  managers/AbstractObjectAttributesManagerBase.h
+  managers/AbstractObjectAttributesManager.h
+  managers/AOAttributesManager.h
+  managers/AOAttributesManager.cpp
   managers/AssetAttributesManager.h
   managers/AssetAttributesManager.cpp
   managers/LightLayoutAttributesManager.h
   managers/LightLayoutAttributesManager.cpp
   managers/ObjectAttributesManager.h
   managers/ObjectAttributesManager.cpp
+  managers/PbrShaderAttributesManager.h
+  managers/PbrShaderAttributesManager.cpp
   managers/PhysicsAttributesManager.h
   managers/PhysicsAttributesManager.cpp
   managers/SceneInstanceAttributesManager.h
@@ -38,8 +50,8 @@ set(
   managers/StageAttributesManager.cpp
   MetadataMediator.h
   MetadataMediator.cpp
-  MetadataUtils.h
-  MetadataUtils.cpp
+  URDFParser.cpp
+  URDFParser.h
 )
 find_package(Magnum REQUIRED Primitives)
 
@@ -48,8 +60,10 @@ add_library(
   ${metadata_SOURCES}
 )
 
+target_include_directories(metadata PRIVATE "${DEPS_DIR}/tinyxml2")
+
 target_link_libraries(
   metadata
   PUBLIC Magnum::Magnum Magnum::Primitives
-  PRIVATE core geo io
+  PRIVATE core geo io tinyxml2
 )

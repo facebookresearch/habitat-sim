@@ -5,9 +5,9 @@
 #ifndef ESP_METADATA_MANAGERS_STAGEATTRIBUTEMANAGER_H_
 #define ESP_METADATA_MANAGERS_STAGEATTRIBUTEMANAGER_H_
 
-#include "AbstractObjectAttributesManagerBase.h"
+#include "AbstractObjectAttributesManager.h"
+#include "esp/metadata/attributes/StageAttributes.h"
 
-#include "ObjectAttributesManager.h"
 #include "PhysicsAttributesManager.h"
 
 namespace esp {
@@ -22,8 +22,7 @@ class StageAttributesManager
     : public AbstractObjectAttributesManager<attributes::StageAttributes,
                                              ManagedObjectAccess::Copy> {
  public:
-  StageAttributesManager(
-      ObjectAttributesManager::ptr objectAttributesMgr,
+  explicit StageAttributesManager(
       PhysicsAttributesManager::ptr physicsAttributesManager);
 
   /**
@@ -86,14 +85,11 @@ class StageAttributesManager
 
  protected:
   /**
-   * @brief Check if currently configured primitive asset template library has
-   * passed handle.
-   * @param handle String name of primitive asset attributes desired
-   * @return whether handle exists or not in asset attributes library
+   * @brief Create and save default primitive asset-based object templates,
+   * saving their handles as non-deletable default handles.
    */
-  bool isValidPrimitiveAttributes(const std::string& handle) override {
-    return objectAttributesMgr_->getObjectLibHasHandle(handle);
-  }
+  void createDefaultPrimBasedAttributesTemplates() override;
+
   /**
    * @brief Perform file-name-based attributes initialization. This is to
    * take the place of the AssetInfo::fromPath functionality, and is only
@@ -168,13 +164,6 @@ class StageAttributesManager
   void resetFinalize() override {}
 
   // instance vars
-
-  /**
-   * @brief Reference to ObjectAttributesManager to give access to setting
-   * object template library using paths specified in
-   * esp::metadata::attributes::StageAttributes json
-   */
-  ObjectAttributesManager::ptr objectAttributesMgr_ = nullptr;
   /**
    * @brief Reference to PhysicsAttributesManager to give access to default
    * physics manager attributes settings when

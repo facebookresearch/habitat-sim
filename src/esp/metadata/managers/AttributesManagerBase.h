@@ -154,14 +154,6 @@ class AttributesManager : public ManagedFileBasedContainer<T, Access> {
                                         const io::JsonGenericValue& jsonPaths);
 
   /**
-   * @brief Check if currently configured primitive asset template library has
-   * passed handle.
-   * @param handle String name of primitive asset attributes desired
-   * @return whether handle exists or not in asset attributes library
-   */
-  virtual bool isValidPrimitiveAttributes(const std::string& handle) = 0;
-
-  /**
    * @brief Parse passed JSON Document for @ref
    * esp::metadata::attributes::AbstractAttributes. It always returns a
    * valid @ref esp::metadata::attributes::AbstractAttributes shared
@@ -219,6 +211,34 @@ class AttributesManager : public ManagedFileBasedContainer<T, Access> {
   AttribsPtr createFromJsonOrDefaultInternal(const std::string& filename,
                                              std::string& msg,
                                              bool registerObj);
+
+  /**
+   * @brief This function is accessed by various attributes managers during
+   * loading. It provides a generic handler to look for a particular @p jsonTag
+   * in the given @p jsonConfig document, and if it is present it will attempt
+   * to find the value in the passed string-keyed @p mapToUse of enum config
+   * values. If the string is present it will return the string, otherwise it
+   * will return an empty string. The consumer of the function is responsible
+   * for only setting a config value if the string is not empty. The enum class
+   * should have the first value defined as Unspecified and given the value
+   * ID_UNDEFINED.
+   * @tparam Type of enum class referenced by @p mapToUse
+   * @param jsonConfig The source json document
+   * @param jsonTag The field to look for. If present expected to hold a string
+   * @param mapName String map name, to be displayed if the value found in json
+   * is not found in @p mapToUse
+   * @param mapToUse String-keyed map of enum values supported for the field
+   * that corresponds to @p jsonTag. See attributes::AttributesEnumMaps.h/cpp.
+   * @param valueSetter The config function to use to set the value
+   */
+  template <class M>
+  void setEnumStringFromJsonDoc(
+      const io::JsonGenericValue& jsonConfig,
+      const char* jsonTag,
+      const std::string& mapName,
+      bool saveUnspecified,
+      const std::map<std::string, M>& mapToUse,
+      const std::function<void(const std::string&)>& valueSetter);
 
   /**
    * @brief Set a filename attribute to hold the appropriate data if the
@@ -296,12 +316,14 @@ std::vector<int> AttributesManager<T, Access>::loadAllTemplatesFromPathAndExt(
   namespace Dir = Cr::Utility::Path;
   std::vector<std::string> paths;
   std::vector<int> templateIndices;
-
+  ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+      << "<" << this->objectType_ << "> : Searching for files at path: `"
+      << path << "` with `" << extType << "` files";
   // Check if directory
   const bool dirExists = Dir::isDirectory(path);
   if (dirExists) {
-    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
-        << "Parsing " << this->objectType_ << " library directory: `" << path
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+        << "Searching " << this->objectType_ << " library directory: `" << path
         << "` for `" << extType << "` files";
     for (auto& file : *Dir::list(path, Dir::ListFlag::SortAscending)) {
       std::string absoluteSubfilePath = Dir::join(path, file);
@@ -310,6 +332,9 @@ std::vector<int> AttributesManager<T, Access>::loadAllTemplatesFromPathAndExt(
       }
     }
   } else {
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+        << "Parsing " << this->objectType_ << " path: `" << path
+        << "` to see if valid `" << extType << "` file.";
     // not a directory, perhaps a file
     std::string attributesFilepath =
         this->convertFilenameToPassedExt(path, extType);
@@ -319,8 +344,8 @@ std::vector<int> AttributesManager<T, Access>::loadAllTemplatesFromPathAndExt(
       paths.push_back(attributesFilepath);
     } else {  // neither a directory or a file
       ESP_WARNING(Mn::Debug::Flag::NoSpace)
-          << "<" << this->objectType_ << "> : Parsing " << this->objectType_
-          << " files : Cannot find `" << path << "` as directory or `"
+          << "<" << this->objectType_ << "> : Parsing `" << extType
+          << "` files : Cannot find `" << path << "` as directory or `"
           << attributesFilepath << "` as config file, so template load failed.";
       return templateIndices;
     }  // if fileExists else
@@ -419,9 +444,12 @@ template <class T, ManagedObjectAccess Access>
 bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
     const attributes::AbstractAttributes::ptr& attribs,
     const io::JsonGenericValue& jsonConfig) const {
+  const std::string subGroupName = "user_defined";
   // check for user defined attributes and verify it is an object
-  if (jsonConfig.HasMember("user_defined")) {
-    if (!jsonConfig["user_defined"].IsObject()) {
+  io::JsonGenericValue::ConstMemberIterator jsonIter =
+      jsonConfig.FindMember(subGroupName.c_str());
+  if (jsonIter != jsonConfig.MemberEnd()) {
+    if (!jsonIter->value.IsObject()) {
       ESP_WARNING(Mn::Debug::Flag::NoSpace)
           << "<" << this->objectType_
           << "> : " << attribs->getSimplifiedHandle()
@@ -429,12 +457,11 @@ bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
              "is incorrect, so no user_defined attributes are loaded.";
       return false;
     } else {
-      const std::string subGroupName = "user_defined";
       // get pointer to user_defined subgroup configuration
       std::shared_ptr<Configuration> subGroupPtr =
           attribs->getUserConfiguration();
       // get json object referenced by tag subGroupName
-      const io::JsonGenericValue& jsonObj = jsonConfig[subGroupName.c_str()];
+      const io::JsonGenericValue& jsonObj = jsonIter->value;
 
       // count number of valid user config settings found
       int numConfigSettings = subGroupPtr->loadFromJson(jsonObj);
@@ -484,6 +511,42 @@ bool AttributesManager<T, Access>::setHandleFromDefaultTag(
   // no tag found - check if existing non-empty field exists.
   return Cr::Utility::Path::exists(srcAssetFilename);
 }  // AttributesManager<T, Access>::setHandleFromDefaultTag
+
+template <class T, ManagedObjectAccess Access>
+template <class M>
+void AttributesManager<T, Access>::setEnumStringFromJsonDoc(
+    const io::JsonGenericValue& jsonConfig,
+    const char* jsonTag,
+    const std::string& mapName,
+    bool saveUnspecified,
+    const std::map<std::string, M>& mapToUse,
+    const std::function<void(const std::string&)>& valueSetter) {
+  std::string tmpStrVal = "";
+  if (io::readMember<std::string>(jsonConfig, jsonTag, tmpStrVal)) {
+    std::string strToLookFor = Cr::Utility::String::lowercase(tmpStrVal);
+    // If unspecified, do not set config value unless from instance attributes
+    if (strToLookFor != "unspecified") {
+      auto found = mapToUse.find(strToLookFor);
+      if (found != mapToUse.end()) {
+        // only override attributes default value if new value is valid
+        valueSetter(strToLookFor);
+      } else {
+        ESP_WARNING(Mn::Debug::Flag::NoSpace)
+            << "`" << jsonTag << "` value in JSON : `" << tmpStrVal
+            << "` does not map to a valid `" << mapName
+            << "` value, so not setting/overriding default `" << jsonTag
+            << "` value.";
+      }
+    } else if (saveUnspecified) {
+      // only true if writing to an instance attributes and config holds
+      // unspecified value. If writing to an object/stage/articulated object
+      // config, just keep default value.
+      // TODO default all instance attributes to be unspecified for the
+      // supported config values. Then this would be unnecessary
+      valueSetter("unspecified");
+    }
+  }
+}  // setEnumStringFromJsonDoc
 
 }  // namespace managers
 }  // namespace metadata

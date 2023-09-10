@@ -102,6 +102,17 @@ void Simulator::close(const bool destroy) {
 }
 
 void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
+// Fail early if physics is enabled in config but no bullet support is
+// installed.
+#ifndef ESP_BUILD_WITH_BULLET
+  ESP_CHECK(!cfg.enablePhysics,
+            "Physics has been enabled in the SimulatorConfiguration but "
+            "Habitat-Sim was not built with Bullet support enabled. Either set "
+            "cfg.enable_physics to False, or verify your Bullet installation "
+            "(e.g recompile Habitat-Sim using the '--bullet' flag or choose a "
+            "'withbullet' conda build.)");
+#endif
+
   // set metadata mediator's cfg  upon creation or reconfigure
   if (!metadataMediator_) {
     metadataMediator_ = metadata::MetadataMediator::create(cfg);
@@ -187,11 +198,6 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     flextGLInit(Magnum::GL::Context::current());
 #endif
     renderer_->acquireGlContext();
-  }
-  // load IBL assets if appropriate and not loaded already
-  // TODO : So many things.  Needs to be config driven, for one.
-  if (cfg.pbrImageBasedLighting) {
-    resourceManager_->initPbrImageBasedLighting("lythwood_room_1k.hdr");
   }
 
   // (re) create scene instance
@@ -353,8 +359,21 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   // key
   config_.sceneLightSetupKey = lightSetupKey;
 
-  // 7. Update MetadataMediator's copy of SimulatorConfiguration to be in sync.
+  // 7. Update MetadataMediator's copy of now-final SimulatorConfiguration to be
+  // in sync, and set default PbrShaderAttributes based on current scene
+  // instance
   metadataMediator_->setSimulatorConfiguration(config_);
+
+  // Set default PbrShaderAttributes based on current scene instance
+  metadataMediator_->setCurrDefaultPbrAttributesHandle(
+      curSceneInstanceAttributes_->getDefaultPbrShaderAttributesHandle());
+  // Set the mappings from region tags to handles
+  metadataMediator_->setCurrScenePbrShaderRegionMap(
+      curSceneInstanceAttributes_->getRegionPbrShaderAttributesHandles());
+
+  // Update ResourceManager's loaded Pbr/Ibl assets based on most up to date
+  // state of metadataMediator_'s currently active scene dataset.
+  resourceManager_->loadAllIBLAssets();
 
   // 8. Load stage specified by Scene Instance Attributes
   bool success = instanceStageForSceneAttributes(curSceneInstanceAttributes_);
@@ -570,8 +589,6 @@ bool Simulator::instanceArticulatedObjectsForSceneAttributes(
   const std::vector<SceneAOInstanceAttributes::cptr> artObjInstances =
       curSceneInstanceAttributes_->getArticulatedObjectInstances();
 
-  // int aoID = 0;
-  auto& drawables = getDrawableGroup();
   // Iterate through instances, create object and implement initial
   // transformation.
   for (const auto& artObjInst : artObjInstances) {
@@ -585,13 +602,13 @@ bool Simulator::instanceArticulatedObjectsForSceneAttributes(
                   config_.activeSceneName));
 
     // get model file name
-    const std::string artObjFilePath =
+    const std::string artObjAttrHandle =
         metadataMediator_->getArticulatedObjModelFullHandle(
             artObjInst->getHandle());
 
     // make sure full handle is not empty
     ESP_CHECK(
-        !artObjFilePath.empty(),
+        !artObjAttrHandle.empty(),
         Cr::Utility::formatString(
             "Simulator::instanceArticulatedObjectsForSceneAttributes() : "
             "Attempt "
@@ -602,7 +619,7 @@ bool Simulator::instanceArticulatedObjectsForSceneAttributes(
 
     // create articulated object
     // aoID =
-    physicsManager_->addArticulatedObjectInstance(artObjFilePath, artObjInst,
+    physicsManager_->addArticulatedObjectInstance(artObjInst, artObjAttrHandle,
                                                   config_.sceneLightSetupKey);
   }  // for each articulated object instance
   return true;
@@ -651,7 +668,10 @@ void Simulator::seed(uint32_t newSeed) {
   random_->seed(newSeed);
   pathfinder_->seed(newSeed);
 }
-
+const std::shared_ptr<metadata::managers::AOAttributesManager>&
+Simulator::getAOAttributesManager() const {
+  return metadataMediator_->getAOAttributesManager();
+}
 const metadata::managers::AssetAttributesManager::ptr&
 Simulator::getAssetAttributesManager() const {
   return metadataMediator_->getAssetAttributesManager();
@@ -685,9 +705,9 @@ void Simulator::setActiveSceneDatasetName(const std::string& _dsHandle) {
   metadataMediator_->setActiveSceneDatasetName(_dsHandle);
 }
 
-bool Simulator::saveCurrentSceneInstance(const std::string& saveFilename,
-                                         int sceneID) const {
-  if (sceneHasPhysics(sceneID)) {
+bool Simulator::saveCurrentSceneInstance(
+    const std::string& saveFilename) const {
+  if (sceneHasPhysics()) {
     ESP_DEBUG() << "Attempting to save current scene layout as "
                    "SceneInstanceAttributes with filename :"
                 << saveFilename;
@@ -698,8 +718,8 @@ bool Simulator::saveCurrentSceneInstance(const std::string& saveFilename,
   return false;
 }  // saveCurrentSceneInstance
 
-bool Simulator::saveCurrentSceneInstance(bool overwrite, int sceneID) const {
-  if (sceneHasPhysics(sceneID)) {
+bool Simulator::saveCurrentSceneInstance(bool overwrite) const {
+  if (sceneHasPhysics()) {
     ESP_DEBUG() << "Attempting to save current scene layout as "
                    "SceneInstanceAttributes.";
     return metadataMediator_->getSceneInstanceAttributesManager()
@@ -948,18 +968,9 @@ void Simulator::sampleRandomAgentState(agent::AgentState& agentState) {
   }
 }
 
-esp::physics::ManagedRigidObject::ptr Simulator::queryRigidObjWrapper(
-    int sceneID,
-    int objID) const {
-  if (!sceneHasPhysics(sceneID)) {
-    return nullptr;
-  }
-  return getRigidObjectManager()->getObjectCopyByID(objID);
-}
-
 esp::physics::ManagedArticulatedObject::ptr
-Simulator::queryArticulatedObjWrapper(int sceneID, int objID) const {
-  if (!sceneHasPhysics(sceneID)) {
+Simulator::queryArticulatedObjWrapper(int objID) const {
+  if (!sceneHasPhysics()) {
     return nullptr;
   }
   return getArticulatedObjectManager()->getObjectCopyByID(objID);

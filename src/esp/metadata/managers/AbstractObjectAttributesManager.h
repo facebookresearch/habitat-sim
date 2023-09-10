@@ -2,17 +2,16 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_METADATA_MANAGERS_ABSTRACTOBJECTATTRIBUTESMANAGERBASE_H_
-#define ESP_METADATA_MANAGERS_ABSTRACTOBJECTATTRIBUTESMANAGERBASE_H_
+#ifndef ESP_METADATA_MANAGERS_ABSTRACTOBJECTATTRIBUTESMANAGER_H_
+#define ESP_METADATA_MANAGERS_ABSTRACTOBJECTATTRIBUTESMANAGER_H_
 
 /** @file
  * @brief Class Template @ref
  * esp::metadata::managers::AbstractObjectAttributesManager
  */
 
-#include "esp/metadata/attributes/ObjectAttributes.h"
-
-#include "esp/metadata/MetadataUtils.h"
+#include "esp/metadata/attributes/AbstractObjectAttributes.h"
+#include "esp/metadata/managers/AssetAttributesManager.h"
 #include "esp/metadata/managers/AttributesManagerBase.h"
 
 namespace Cr = Corrade;
@@ -68,6 +67,19 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
                              bool registerTemplate = true) override;
 
   /**
+   * @brief Set a reference to the current
+   * @ref metadata::managers::AssetAttributesManager
+   * to use for primitive-based stages and objects. Also build any default
+   * object or stage attributes referencing primitives as render assets.
+   */
+  void setAssetAttributesManager(
+      AssetAttributesManager::cptr assetAttributesMgr) {
+    assetAttributesMgr_ = std::move(assetAttributesMgr);
+    // Create default primitive-based object attributess
+    createDefaultPrimBasedAttributesTemplates();
+  }
+
+  /**
    * @brief Creates an instance of an object or stage template described by
    * passed string, which should be a reference to an existing primitive asset
    * template to be used in the construction of the object or stage (as render
@@ -104,6 +116,22 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
       const io::JsonGenericValue& jsonDoc);
 
   //======== Internally accessed functions ========
+
+  /**
+   * @brief Create and save default primitive asset-based object templates,
+   * saving their handles as non-deletable default handles.
+   */
+  virtual void createDefaultPrimBasedAttributesTemplates() = 0;
+
+  /**
+   * @brief Check if currently configured primitive asset template library has
+   * passed handle.
+   * @param handle String name of primitive asset attributes desired
+   * @return whether handle exists or not in asset attributes library
+   */
+  bool isValidPrimitiveAttributes(const std::string& handle) {
+    return assetAttributesMgr_->getObjectLibHasHandle(handle);
+  }
 
   /**
    * @brief Only used by @ref
@@ -154,6 +182,12 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
       const std::function<void(int)>& meshTypeSetter) = 0;
 
   // ======== Typedefs and Instance Variables ========
+
+  /**
+   * @brief Reference to AssetAttributesManager to give access to primitive
+   * attributes for object construction
+   */
+  AssetAttributesManager::cptr assetAttributesMgr_ = nullptr;
 
  public:
   ESP_SMART_POINTERS(AbstractObjectAttributesManager<T, Access>)
@@ -307,16 +341,11 @@ auto AbstractObjectAttributesManager<T, Access>::
     attributes->setUseMeshCollision(true);
   }
 
-  // set attributes shader type to use.  This may be overridden by a scene
-  // instance specification.
-  const std::string shaderTypeVal = getShaderTypeFromJsonDoc(jsonDoc);
-  // if a known shader type val is specified in json, set that value for the
-  // attributes, overriding constructor defaults.  Do not overwrite anything for
-  // unknown
-  if (shaderTypeVal !=
-      getShaderTypeName(attributes::ObjectInstanceShaderType::Unspecified)) {
-    attributes->setShaderType(shaderTypeVal);
-  }
+  // shader type
+  this->setEnumStringFromJsonDoc(
+      jsonDoc, "shader_type", "ShaderTypeNamesMap", false,
+      attributes::ShaderTypeNamesMap,
+      [attributes](const std::string& val) { attributes->setShaderType(val); });
 
   return attributes;
 }  // AbstractObjectAttributesManager<AbsObjAttrPtr>::setAbstractObjectAttributesFromJson
@@ -330,7 +359,6 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
     const char* jsonMeshHandleTag,
     std::string& assetName,
     const std::function<void(int)>& meshTypeSetter) {
-  std::string propertiesFileDirectory = attributes->getFileDirectory();
   // save current file name
   std::string oldFName(assetName);
   // clear var to get new value - if returns true use this as new value
@@ -374,7 +402,8 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
                                          assetName, meshTypeSetter);
     } else {
       // is not valid primitive, assume valid file name
-      assetName = Cr::Utility::Path::join(propertiesFileDirectory, assetName);
+      assetName =
+          Cr::Utility::Path::join(attributes->getFileDirectory(), assetName);
       if ((typeVal == -1) && (oldFName != assetName)) {
         // if file name is different, and type val has not been specified,
         // perform name-specific mesh type config do not override orientation
@@ -392,4 +421,4 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
 }  // namespace managers
 }  // namespace metadata
 }  // namespace esp
-#endif  // ESP_METADATA_MANAGERS_ABSTRACTOBJECTATTRIBUTESMANAGERBASE_H_
+#endif  // ESP_METADATA_MANAGERS_ABSTRACTOBJECTATTRIBUTESMANAGER_H_

@@ -63,7 +63,6 @@ def make_configuration():
         data_path, "scene_datasets/habitat-test-scenes/apartment_1.glb"
     )
     assert os.path.exists(backend_cfg.scene_id)
-    backend_cfg.enable_physics = True
 
     # sensor configurations
     # Note: all sensors must have the same resolution

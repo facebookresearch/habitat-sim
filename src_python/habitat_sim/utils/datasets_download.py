@@ -67,6 +67,42 @@ def initialize_test_data_sources(data_path):
         #   "link": symlink to the data directory pointing to the active version directory
         #   "version": data version tag
         # }
+        "hssd-hab": {
+            "source": "https://huggingface.co/datasets/hssd/hssd-hab.git",
+            "link": data_path + "scene_datasets/hssd-hab",
+            "version": "v0.2.4",
+            "requires_auth": True,
+        },
+        "hssd-raw": {
+            "source": "https://huggingface.co/datasets/hssd/hssd-scenes.git",
+            "link": data_path + "scene_datasets/hssd-scenes",
+            "version": "main",
+            "requires_auth": True,
+        },
+        "hssd-hab_internal": {
+            "source": "https://huggingface.co/datasets/fpss/fphab.git",
+            "link": data_path + "scene_datasets/fphab",
+            "version": "main",
+            "requires_auth": True,
+        },
+        "hssd-hab_objectnav_dataset": {
+            "source": "https://www.dropbox.com/s/26ribfiup5249b8/objectnav_hssd-hab_v0.2.3.zip",
+            "package_name": "objectnav_hssd-hab_v0.2.3.zip",
+            "link": data_path + "datasets/objectnav/hssd-hab",
+            "version": "v0.2.3",
+        },
+        "ai2thor-hab": {
+            "source": "https://huggingface.co/datasets/hssd/ai2thor-hab.git",
+            "link": data_path + "scene_datasets/ai2thor-hab",
+            "version": "main",
+            "requires_auth": True,
+        },
+        "procthor-hab_objectnav_dataset": {
+            "source": "https://www.dropbox.com/s/mdfpevn1srr37cr/objectnav_procthor-hab.zip",
+            "package_name": "objectnav_procthor-hab.zip",
+            "link": data_path + "datasets/objectnav/procthor-hab",
+            "version": "v1",
+        },
         "habitat_test_scenes": {
             "source": "https://huggingface.co/datasets/ai-habitat/habitat_test_scenes.git",
             "link": data_path + "scene_datasets/habitat-test-scenes",
@@ -534,10 +570,12 @@ def clone_repo_source(
         clone_command += f"\"{data_sources[uid]['source']}\""
 
     # place the output in the specified directory
-    clone_command += f" {version_dir}"
+    split_command = shlex.split(clone_command)
+    split_command.append(f"{version_dir}")
 
-    print(f"{clone_command}")
-    subprocess.check_call(shlex.split(clone_command))
+    print(" ".join(split_command))
+
+    subprocess.check_call(split_command)
 
     if prune_lfs:
         # NOTE: we make this optional because older git versions don't support "-f --recent"

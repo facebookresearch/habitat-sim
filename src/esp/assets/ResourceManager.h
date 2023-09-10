@@ -34,20 +34,28 @@ struct PhongMaterialColor;
 }
 namespace gfx {
 class Drawable;
-class PbrImageBasedLighting;
+class DrawableConfiguration;
+class PbrIBLHelper;
+struct SkinData;
+struct InstanceSkinData;
 namespace replay {
 class Recorder;
 }
 }  // namespace gfx
 namespace metadata {
+namespace URDF {
+class Model;
+}
 class MetadataMediator;
 namespace attributes {
 class ObjectAttributes;
+class PbrShaderAttributes;
 class PhysicsManagerAttributes;
 class SceneObjectInstanceAttributes;
 class StageAttributes;
 }  // namespace attributes
 namespace managers {
+class AOAttributesManager;
 class AssetAttributesManager;
 class LightLayoutAttributesManager;
 class ObjectAttributesManager;
@@ -69,11 +77,6 @@ class RigidObject;
 namespace nav {
 class PathFinder;
 }
-namespace io {
-namespace URDF {
-class Model;
-}
-}  // namespace io
 namespace assets {
 class BaseMesh;
 struct CollisionMeshData;
@@ -132,6 +135,13 @@ class ResourceManager {
       scene::SceneNode* parent,
       const std::shared_ptr<metadata::attributes::PhysicsManagerAttributes>&
           physicsManagerAttributes);
+
+  /**
+   * @brief called after MM is set or reset, go through and load/generate
+   * IBL assets that have not already been loaded. Will not reload assets
+   * already loaded.
+   */
+  void loadAllIBLAssets();
 
   /**
    * @brief Return the currently loaded @ref esp::scene::SemanticScene .
@@ -265,6 +275,7 @@ class ResourceManager {
    */
   std::shared_ptr<metadata::managers::AssetAttributesManager>
   getAssetAttributesManager() const;
+
   /**
    * @brief Return manager for construction and access to light and lighting
    * layout attributes.
@@ -273,16 +284,25 @@ class ResourceManager {
   getLightLayoutAttributesManager() const;
 
   /**
+   * @brief Return manager for construction and access to articulated object
+   * attributes.
+   */
+  std::shared_ptr<metadata::managers::AOAttributesManager>
+  getAOAttributesManager() const;
+
+  /**
    * @brief Return manager for construction and access to object attributes.
    */
   std::shared_ptr<metadata::managers::ObjectAttributesManager>
   getObjectAttributesManager() const;
+
   /**
    * @brief Return manager for construction and access to physics world
    * attributes.
    */
   std::shared_ptr<metadata::managers::PhysicsAttributesManager>
   getPhysicsAttributesManager() const;
+
   /**
    * @brief Return manager for construction and access to scene attributes.
    */
@@ -461,14 +481,15 @@ class ResourceManager {
    * gfx::Drawable.
    */
 
-  void createDrawable(
-      Mn::GL::Mesh* mesh,
-      gfx::Drawable::Flags& meshAttributeFlags,
-      scene::SceneNode& node,
-      const Mn::ResourceKey& lightSetupKey,
-      const Mn::ResourceKey& materialKey,
-      DrawableGroup* group = nullptr,
-      const std::shared_ptr<gfx::InstanceSkinData>& skinData = nullptr);
+  void createDrawable(Mn::GL::Mesh* mesh,
+                      gfx::Drawable::Flags& meshAttributeFlags,
+                      scene::SceneNode& node,
+                      gfx::DrawableConfiguration& drawableCfg);
+
+  // const Mn::ResourceKey& lightSetupKey,
+  // const Mn::ResourceKey& materialKey,
+  // DrawableGroup* group = nullptr,
+  // const std::shared_ptr<gfx::InstanceSkinData>& skinData = nullptr);
 
   /**
    * @brief Remove the specified primitive mesh.
@@ -652,23 +673,48 @@ class ResourceManager {
    */
   void resetDrawableCountAndNumFaces() { drawableCountAndNumFaces_ = {0, 0}; }
 
-  /**
-   * @brief initialize pbr image based lighting
-   * @param[in] hdriImageFilename, the name of the
-   * HDRi image (an equirectangular image), that will be converted to a
-   * environment cube map
-   * NOTE!!! Such an image MUST be SPECIFIED in the
-   * ~/habitat-sim/data/pbr/PbrImages.conf
-   * and be put in that folder.
-   * example image:
-   * ~/habitat-sim/data/pbr/lythwood_room_4k.png
-   *
-   * TODO: this will be replaced by config-driven IBL asset loading and
-   * registration
-   */
-  void initPbrImageBasedLighting(const std::string& hdriImageFilename);
-
  private:
+  /**
+   * @brief Retrieve the appropriate @ref eps::gfx::PbrIBLHelper for the passed
+   * @p pbrShaderAAttributes , building it first if necessary. Loads the brdf
+   * LUT and envmap requested by @p pbrShaderAttr into textures if necessary
+   * (caching them if they have not already been loaded), use them to build
+   * a @ref eps::gfx::PbrIBLHelper and place this helper in the @p pbrIBLHelpers_
+   * map, and return it as well.
+   * @param pbrShaderAttr The PBR/IBL Shader configuration whose IBL components
+   * are being loaded.
+   * @return a shared pointer to the PbrIBLHelper requested
+   */
+  std::shared_ptr<gfx::PbrIBLHelper> getOrBuildPBRIBLHelper(
+      const std::shared_ptr<metadata::attributes::PbrShaderAttributes>&
+          pbrShaderAttr);
+
+  /**
+   * @brief Load images by filename into a properly formatted texture, cache
+   * them and return them. This function will retrieve a loaded texture
+   * constructed from the requested image given by @p imageFilename if it
+   * exists. If it does not exist, it will load the image, either using the
+   * passed resource file if it exists there or else loading the image from disk
+   * and then convert it to an appropriately configured texture, based on
+   * whether it is a brdf look-up table or an environment map, save this
+   * texture in @ref iblBLUTsAndEnvMaps_, and return it.
+   *
+   * Use this function to retrieve existing IBL bLUT/EnvMap textures as well as
+   * to create new ones.
+   *
+   * @param imageFilename The image's filename, either fully qualified or else
+   * as it appears in the resource file.
+   * @param useImageTxtrFormat Whether to use the image's texture format or use
+   * RGBA8 as the format (i.e. for brdfLUTs).
+   * @param rs A Corrade resource file holding the available precompiled image
+   * resources.
+   * @return A shared pointer to the 2d texture built from the loaded image.
+   */
+  std::shared_ptr<Mn::GL::Texture2D> loadIBLImageIntoTexture(
+      const std::string& imageFilename,
+      bool useImageTxtrFormat,
+      const Cr::Utility::Resource& rs);
+
   /**
    * @brief Load the requested mesh info into @ref meshInfo corresponding to
    * specified @p assetType used by object described by @p objectAttributes
@@ -1244,6 +1290,11 @@ class ResourceManager {
   Corrade::Containers::Pointer<Importer> fileImporter_;
 
   /**
+   * @brief Importer used to load images (AnyImageImporter)
+   */
+  Corrade::Containers::Pointer<Importer> imageImporter_;
+
+  /**
    * @brief Reference to the currently loaded semanticScene Descriptor
    */
   std::shared_ptr<scene::SemanticScene> semanticScene_ = nullptr;
@@ -1281,14 +1332,19 @@ class ResourceManager {
   std::shared_ptr<esp::gfx::replay::Recorder> gfxReplayRecorder_;
 
   /**
-   * @brief The imaged based lighting for PBR, each is a collection of
+   * @brief Helper objects that calculate and manage assets for IBL :
    * an environment map, an irradiance map, a BRDF lookup table (2D texture),
    * and a pre-filtered map
    */
-  std::vector<std::unique_ptr<esp::gfx::PbrImageBasedLighting>>
-      pbrImageBasedLightings_;
+  std::unordered_map<std::string, std::shared_ptr<esp::gfx::PbrIBLHelper>>
+      pbrIBLHelpers_;
 
-  int activePbrIbl_ = ID_UNDEFINED;
+  /**
+   * @brief Map of brdf Lookup table textures and environment map textures
+   * loaded already to be used for IBL.
+   */
+  std::unordered_map<std::string, std::shared_ptr<Mn::GL::Texture2D>>
+      iblBLUTsAndEnvMaps_{};
 
 };  // class ResourceManager
 

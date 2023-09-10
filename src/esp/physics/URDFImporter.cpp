@@ -18,25 +18,26 @@ namespace Mn = Magnum;
 namespace esp {
 namespace physics {
 
-bool URDFImporter::loadURDF(const std::string& filename,
-                            float globalScale,
-                            float massScale,
-                            bool forceReload) {
-  auto modelCacheIter = modelCache_.find(filename);
+bool URDFImporter::loadURDF(
+    const esp::metadata::attributes::ArticulatedObjectAttributes::ptr&
+        artObjAttributes,
+    bool forceReload) {
+  const std::string urdfFilepath = artObjAttributes->getURDFPath();
+  auto modelCacheIter = modelCache_.find(urdfFilepath);
   // if map not found or forcing reload
   if ((modelCacheIter == modelCache_.end()) || forceReload) {
-    if (!Corrade::Utility::Path::exists(filename) ||
-        Corrade::Utility::Path::isDirectory(filename)) {
-      ESP_DEBUG() << "File does not exist:" << filename
+    if (!Corrade::Utility::Path::exists(urdfFilepath) ||
+        Corrade::Utility::Path::isDirectory(urdfFilepath)) {
+      ESP_DEBUG() << "URDF File does not exist:" << urdfFilepath
                   << ". Aborting URDF parse/load.";
       return false;
     }
 
     // parse the URDF from file
-    std::shared_ptr<io::URDF::Model> urdfModel;
-    bool success = urdfParser_.parseURDF(urdfModel, filename);
+    std::shared_ptr<metadata::URDF::Model> urdfModel;
+    bool success = urdfParser_.parseURDF(artObjAttributes, urdfModel);
     if (!success) {
-      ESP_DEBUG() << "Failed to parse URDF:" << filename << ", aborting.";
+      ESP_DEBUG() << "Failed to parse URDF:" << urdfFilepath << ", aborting.";
       return false;
     }
 
@@ -51,13 +52,13 @@ bool URDFImporter::loadURDF(const std::string& filename,
     }
 
     // register the new model and set to iterator
-    modelCacheIter = modelCache_.emplace(filename, urdfModel).first;
+    modelCacheIter = modelCache_.emplace(urdfFilepath, urdfModel).first;
   }
   activeModel_ = modelCacheIter->second;
 
   // re-scale the cached model
-  activeModel_->setGlobalScaling(globalScale);
-  activeModel_->setMassScaling(massScale);
+  activeModel_->setGlobalScaling(artObjAttributes->getUniformScale());
+  activeModel_->setMassScaling(artObjAttributes->getMassScale());
 
   return true;
 }
@@ -248,7 +249,7 @@ void URDFImporter::getMassAndInertia(int linkIndex,
 
 bool URDFImporter::getLinkContactInfo(
     int linkIndex,
-    io::URDF::LinkContactInfo& contactInfo) const {
+    metadata::URDF::LinkContactInfo& contactInfo) const {
   auto link = activeModel_->getLink(linkIndex);
   if (link == nullptr) {
     ESP_DEBUG() << "No link with index =" << linkIndex;
@@ -269,7 +270,7 @@ void URDFImporter::importURDFAssets() {
     auto link = activeModel_->getLink(linkIx);
     // load collision shapes
     for (auto& collision : link->m_collisionArray) {
-      if (collision.m_geometry.m_type == io::URDF::GEOM_MESH) {
+      if (collision.m_geometry.m_type == metadata::URDF::GEOM_MESH) {
         // pre-load the mesh asset for its collision shape
         assets::AssetInfo meshAsset{assets::AssetType::UNKNOWN,
                                     collision.m_geometry.m_meshFileName};
@@ -285,7 +286,7 @@ void URDFImporter::importURDFAssets() {
       assets::AssetInfo visualMeshInfo{assets::AssetType::UNKNOWN};
       visualMeshInfo.forceFlatShading = false;
 
-      std::shared_ptr<io::URDF::Material> material =
+      std::shared_ptr<metadata::URDF::Material> material =
           visual.m_geometry.m_localMaterial;
       if (material) {
         visualMeshInfo.overridePhongMaterial = assets::PhongMaterialColor();
@@ -297,7 +298,7 @@ void URDFImporter::importURDFAssets() {
             Mn::Color4(material->m_matColor.m_specularColor);
       }
       switch (visual.m_geometry.m_type) {
-        case io::URDF::GEOM_CAPSULE: {
+        case metadata::URDF::GEOM_CAPSULE: {
           visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
           auto assetMgr = resourceManager_.getAssetAttributesManager();
           auto capTemplate = assetMgr->getDefaultCapsuleTemplate(false);
@@ -308,21 +309,21 @@ void URDFImporter::importURDFAssets() {
           // cache the new capsule asset handle for later instancing
           visual.m_geometry.m_meshFileName = capTemplate->getHandle();
         } break;
-        case io::URDF::GEOM_CYLINDER:
+        case metadata::URDF::GEOM_CYLINDER:
           visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
           visualMeshInfo.filepath =
               "cylinderSolid_rings_1_segments_12_halfLen_1_useTexCoords_false_"
               "useTangents_false_capEnds_true";
           break;
-        case io::URDF::GEOM_BOX:
+        case metadata::URDF::GEOM_BOX:
           visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
           visualMeshInfo.filepath = "cubeSolid";
           break;
-        case io::URDF::GEOM_SPHERE:
+        case metadata::URDF::GEOM_SPHERE:
           visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
           visualMeshInfo.filepath = "icosphereSolid_subdivs_1";
           break;
-        case io::URDF::GEOM_MESH:
+        case metadata::URDF::GEOM_MESH:
           visualMeshInfo.filepath = visual.m_geometry.m_meshFileName;
           break;
         default:

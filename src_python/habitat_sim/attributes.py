@@ -10,24 +10,28 @@ Note: SceneDatasetAttributes and SceneInstanceAttributes are not publicly expose
 
 
 from habitat_sim._ext.habitat_sim_bindings import (
+    ArticulatedObjectAttributes,
     CapsulePrimitiveAttributes,
     ConePrimitiveAttributes,
     CubePrimitiveAttributes,
     CylinderPrimitiveAttributes,
     IcospherePrimitiveAttributes,
     ObjectAttributes,
+    PbrShaderAttributes,
     PhysicsManagerAttributes,
     StageAttributes,
     UVSpherePrimitiveAttributes,
 )
 
 __all__ = [
+    "ArticulatedObjectAttributes",
     "CapsulePrimitiveAttributes",
     "ConePrimitiveAttributes",
     "CubePrimitiveAttributes",
     "CylinderPrimitiveAttributes",
     "IcospherePrimitiveAttributes",
     "ObjectAttributes",
+    "PbrShaderAttributes",
     "PhysicsManagerAttributes",
     "StageAttributes",
     "UVSpherePrimitiveAttributes",

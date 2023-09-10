@@ -122,7 +122,7 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
   /**
    * @brief Set the default shader to use for an object or stage.  Uses values
    * specified in stage or object attributes if not overridden here.  Uses map
-   * of string values in json to @ref
+   * of string values in JSON to @ref
    * esp::metadata::attributes::ObjectInstanceShaderType int values.
    */
   void setShaderType(const std::string& shader_type) {
@@ -196,7 +196,7 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
   void setMassScale(double mass_scale) { set("mass_scale", mass_scale); }
 
   /**
-   * @brief Populate a json object with all the first-level values held in this
+   * @brief Populate a JSON object with all the first-level values held in this
    * SceneObjectInstanceAttributes.  Default is overridden to handle special
    * cases for SceneObjectInstanceAttributes.
    */
@@ -230,7 +230,7 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief Populate the passed json object with all the first-level values
+   * @brief Populate the passed JSON object with all the first-level values
    * specific to this SceneObjectInstanceAttributes. This is to facilitate
    * SceneAOInstanceAttributes-specific values to be written.
    */
@@ -257,11 +257,130 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
   explicit SceneAOInstanceAttributes(const std::string& handle);
 
   /**
-   * @brief Articulated Object Instance only. Get or set whether or not base
-   * is fixed.
+   * @brief Set the type of base/root joint to use to add this Articulated
+   * Object to the world.
    */
-  bool getFixedBase() const { return get<bool>("fixed_base"); }
-  void setFixedBase(bool fixed_base) { set("fixed_base", fixed_base); }
+  void setBaseType(const std::string& baseType) {
+    // force to lowercase before setting
+    const std::string baseTypeLC = Cr::Utility::String::lowercase(baseType);
+    auto mapIter = AOBaseTypeMap.find(baseTypeLC);
+    ESP_CHECK(mapIter != AOBaseTypeMap.end(),
+              "Illegal base type value"
+                  << baseType
+                  << "attempted to be set in ArticulatedObjectAttributes:"
+                  << getHandle() << ". Aborting.");
+    set("base_type", baseType);
+  }
+
+  /**
+   * @brief Get the type of base/root joint to use to add this Articulated
+   * Object to the world.
+   */
+  ArticulatedObjectBaseType getBaseType() const {
+    const std::string val =
+        Cr::Utility::String::lowercase(get<std::string>("base_type"));
+    auto mapIter = AOBaseTypeMap.find(val);
+    if (mapIter != AOBaseTypeMap.end()) {
+      return mapIter->second;
+    }
+    // This should never get to here. It would mean that this field was set
+    // to an invalid value somehow.
+    return ArticulatedObjectBaseType::Unspecified;
+  }
+
+  /**
+   * @brief Set the source of the inertia tensors to use for this Articulated
+   * Object.
+   */
+  void setInertiaSource(const std::string& inertiaSrc) {
+    // force to lowercase before setting
+    const std::string renderModeLC = Cr::Utility::String::lowercase(inertiaSrc);
+    auto mapIter = AOInertiaSourceMap.find(renderModeLC);
+    ESP_CHECK(mapIter != AOInertiaSourceMap.end(),
+              "Illegal inertia source value"
+                  << inertiaSrc
+                  << "attempted to be set in ArticulatedObjectAttributes:"
+                  << getHandle() << ". Aborting.");
+    set("inertia_source", inertiaSrc);
+  }
+
+  /**
+   * @brief Get the source of the inertia tensors to use for this Articulated
+   * Object.
+   */
+  ArticulatedObjectInertiaSource getInertiaSource() const {
+    const std::string val =
+        Cr::Utility::String::lowercase(get<std::string>("inertia_source"));
+    auto mapIter = AOInertiaSourceMap.find(val);
+    if (mapIter != AOInertiaSourceMap.end()) {
+      return mapIter->second;
+    }
+    // This should never get to here. It would mean that this field was set
+    // to an invalid value somehow.
+    return ArticulatedObjectInertiaSource::Unspecified;
+  }
+
+  /**
+   * @brief Set the link order to use for the linkages of this Articulated
+   * Object
+   */
+  void setLinkOrder(const std::string& linkOrder) {
+    // force to lowercase before setting
+    const std::string renderModeLC = Cr::Utility::String::lowercase(linkOrder);
+    auto mapIter = AOLinkOrderMap.find(renderModeLC);
+    ESP_CHECK(mapIter != AOLinkOrderMap.end(),
+              "Illegal link order value"
+                  << linkOrder
+                  << "attempted to be set in ArticulatedObjectAttributes:"
+                  << getHandle() << ". Aborting.");
+    set("link_order", linkOrder);
+  }
+
+  /**
+   * @brief Get the link order to use for the linkages of this Articulated
+   * Object
+   */
+  ArticulatedObjectLinkOrder getLinkOrder() const {
+    const std::string val =
+        Cr::Utility::String::lowercase(get<std::string>("link_order"));
+    auto mapIter = AOLinkOrderMap.find(val);
+    if (mapIter != AOLinkOrderMap.end()) {
+      return mapIter->second;
+    }
+    // This should never get to here. It would mean that this field was set
+    // to an invalid value somehow.
+    return ArticulatedObjectLinkOrder::Unspecified;
+  }
+
+  /**
+   * @brief Set the render mode to use to render this Articulated Object
+   */
+  void setRenderMode(const std::string& renderMode) {
+    // force to lowercase before setting
+    const std::string renderModeLC = Cr::Utility::String::lowercase(renderMode);
+    auto mapIter = AORenderModesMap.find(renderModeLC);
+    ESP_CHECK(mapIter != AORenderModesMap.end(),
+              "Illegal render mode value"
+                  << renderMode
+                  << "attempted to be set in ArticulatedObjectAttributes:"
+                  << getHandle() << ". Aborting.");
+    set("render_mode", renderMode);
+  }
+
+  /**
+   * @brief Get the render mode to use to render this Articulated Object
+   */
+  ArticulatedObjectRenderMode getRenderMode() const {
+    const std::string val =
+        Cr::Utility::String::lowercase(get<std::string>("render_mode"));
+    auto mapIter = AORenderModesMap.find(val);
+    if (mapIter != AORenderModesMap.end()) {
+      return mapIter->second;
+    }
+    // This should never get to here. It would mean that this field was set
+    // to an invalid value somehow.
+    return ArticulatedObjectRenderMode::Unspecified;
+  }
 
   /**
    * @brief Articulated Object Instance only. Get or set whether or not dofs
@@ -330,7 +449,7 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
   std::string getSceneObjInstanceInfoHeaderInternal() const override;
 
   /**
-   * @brief Populate the passed json object with all the first-level values
+   * @brief Populate the passed JSON object with all the first-level values
    * specific to this SceneObjectInstanceAttributes. This is to facilitate
    * SceneAOInstanceAttributes-specific values to be written.
    */
@@ -448,7 +567,8 @@ class SceneInstanceAttributes : public AbstractAttributes {
    * instance. Scene instance will always have only 1 stage instance
    * reference.
    */
-  void setStageInstance(SceneObjectInstanceAttributes::ptr _stageInstance) {
+  void setStageInstanceAttrs(
+      SceneObjectInstanceAttributes::ptr _stageInstance) {
     _stageInstance->setID(0);
     setSubconfigPtr<SceneObjectInstanceAttributes>("stage_instance",
                                                    _stageInstance);
@@ -463,9 +583,9 @@ class SceneInstanceAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief Add a description of an object instance to this scene instance
+   * @brief Add an object instance attributes to this scene instance.
    */
-  void addObjectInstance(SceneObjectInstanceAttributes::ptr _objInstance) {
+  void addObjectInstanceAttrs(SceneObjectInstanceAttributes::ptr _objInstance) {
     setSubAttributesInternal<SceneObjectInstanceAttributes>(
         _objInstance, availableObjInstIDs_, objInstConfig_, "obj_inst_");
   }
@@ -493,9 +613,10 @@ class SceneInstanceAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief Add a description of an object instance to this scene instance
+   * @brief Add an articulated object instance's attributes to this scene
+   * instance.
    */
-  void addArticulatedObjectInstance(
+  void addArticulatedObjectInstanceAttrs(
       SceneAOInstanceAttributes::ptr _artObjInstance) {
     setSubAttributesInternal<SceneAOInstanceAttributes>(
         _artObjInstance, availableArtObjInstIDs_, artObjInstConfig_,
@@ -503,7 +624,7 @@ class SceneInstanceAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief Get the object instance descriptions for this scene
+   * @brief Get the articulated object instance descriptions for this scene
    */
   std::vector<SceneAOInstanceAttributes::cptr> getArticulatedObjectInstances()
       const {
@@ -528,7 +649,58 @@ class SceneInstanceAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief Populate a json object with all the first-level values held in this
+   * @brief Set the handle of the PbrShaderAttributes that would serve as
+   * the default or is otherwise intended to be used across all semantic
+   * regions in the scene not otherwise covered.
+   * @param handle The handle of the PbrShaderAttributes to use for this scene
+   * instance, as specified in the PbrShaderAttributesManager.
+   */
+  void setDefaultPbrShaderAttributesHandle(const std::string& handle) {
+    set("default_pbr_shader_config", handle);
+  }
+
+  /**
+   * @brief Get the handle of the PbrShaderAttributes that would serve as
+   * the default or is otherwise intended to be used across all semantic
+   * regions in the scene not otherwise covered.
+   * @return The handle of the PbrShaderAttributes to use for this scene
+   * instance, as specified in the PbrShaderAttributesManager.
+   */
+  std::string getDefaultPbrShaderAttributesHandle() const {
+    return get<std::string>("default_pbr_shader_config");
+  }
+
+  /**
+   * @brief Add the handle of a PbrShaderAttributes, keyed by semantic region
+   * in scene where the config should be applied.
+   * @param region The region/identifier in the scene to apply the specified
+   * PbrShaderAttributes to the Pbr and Ibl shader calculations.
+   * @param handle The handle of the PbrShaderAttributes to use for the given
+   * @p region , as specified in the PbrShaderAttributesManager.
+   */
+  void addRegionPbrShaderAttributesHandle(const std::string& region,
+                                          const std::string& handle) {
+    pbrShaderRegionConfigHandles_->set(region, handle);
+  }
+
+  /**
+   * @brief Get a vector of pairs of string,string, where the first value is a
+   * region name, and the second is the handle to the PbrShaderAttributes to
+   * apply to that region.
+   */
+  std::map<std::string, std::string> getRegionPbrShaderAttributesHandles()
+      const;
+
+  /**
+   * @brief return how many PbrShaderAttributes handles have been found in the
+   * SceneInstance.
+   */
+  int getNumRegionPbrShaderAttributes() const {
+    return pbrShaderRegionConfigHandles_->getNumValues();
+  }
+
+  /**
+   * @brief Populate a JSON object with all the first-level values held in this
    * configuration.  Default is overridden to handle special cases for
    * SceneInstanceAttributes.
    */
@@ -536,8 +708,8 @@ class SceneInstanceAttributes : public AbstractAttributes {
                          io::JsonAllocator& allocator) const override;
 
   /**
-   * @brief Populate a json object with all the data from the subconfigurations,
-   * held in json sub-objects, for this SceneInstance. Have special handling for
+   * @brief Populate a JSON object with all the data from the subconfigurations,
+   * held in JSON sub-objects, for this SceneInstance. Have special handling for
    * ao instances and object instances before handling other subConfigs.
    */
   void writeSubconfigsToJson(io::JsonGenericValue& jsonObj,
@@ -579,6 +751,12 @@ class SceneInstanceAttributes : public AbstractAttributes {
    * articulatedObjectInstances_ container.
    */
   std::deque<int> availableArtObjInstIDs_;
+
+  /**
+   * @brief Smartpointer to the subconfiguration holding the handles of the
+   * PbrShaderConfiguration, keyed by the region they apply to.
+   */
+  std::shared_ptr<Configuration> pbrShaderRegionConfigHandles_{};
 
  public:
   ESP_SMART_POINTERS(SceneInstanceAttributes)

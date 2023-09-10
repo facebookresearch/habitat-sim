@@ -149,7 +149,11 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * @return Whether or not the object is in contact with any other collision
    * enabled objects.
    */
-  virtual bool contactTest() { return false; }
+  virtual bool contactTest() {
+    ESP_ERROR()
+        << "Not implemented. Install with --bullet to use this feature.";
+    return false;
+  }
 
   /**
    * @brief Manually set the collision group for an object.

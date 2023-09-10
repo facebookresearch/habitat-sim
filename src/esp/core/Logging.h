@@ -105,13 +105,13 @@ ESP_ADD_SUBSYSTEM_FN(sensor)
 ESP_ADD_SUBSYSTEM_FN(agent)
 
 namespace esp {
-namespace io {
+namespace metadata {
 namespace URDF {
 inline logging::Subsystem espLoggingSubsystem() {
   return logging::Subsystem::URDF;
 }
 }  // namespace URDF
-}  // namespace io
+}  // namespace metadata
 }  // namespace esp
 
 namespace esp {

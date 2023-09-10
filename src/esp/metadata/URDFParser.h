@@ -15,19 +15,20 @@
 #include <string>
 #include <vector>
 #include "Corrade/Containers/Optional.h"
+#include "attributes/ArticulatedObjectAttributes.h"
 #include "esp/core/Configuration.h"
 
 /** @file
  * @brief Storage classes for articulated object metadata and URDF file parsing
- * functionality. Struct @ref esp::io::URDF::MaterialColor, struct @ref
- * esp::io::URDF::Material, enum @ref esp::io::URDF::JointTypes, enum @ref
- * esp::io::URDF::GeomTypes, struct @ref esp::io::URDF::Geometry, struct @ref
- * esp::io::URDF::Shape, struct @ref esp::io::URDF::VisualShape, enum @ref
- * esp::io::URDF::CollisionFlags, struct @ref esp::io::URDF::CollisionShape,
- * struct @ref esp::io::URDF::Inertia, struct @ref esp::io::URDF::Joint, enum
- * @ref esp::io::URDF::LinkContactFlags, struct @ref
- * esp::io::URDF::LinkContactInfo, struct @ref esp::io::URDF::Link, class @ref
- * esp::io::URDF::Model, class @ref esp::io::URDF::Parser.
+ * functionality. Struct @ref metadata::URDF::MaterialColor, struct @ref
+ * metadata::URDF::Material, enum @ref metadata::URDF::JointTypes, enum @ref
+ * metadata::URDF::GeomTypes, struct @ref metadata::URDF::Geometry, struct @ref
+ * metadata::URDF::Shape, struct @ref metadata::URDF::VisualShape, enum @ref
+ * metadata::URDF::CollisionFlags, struct @ref metadata::URDF::CollisionShape,
+ * struct @ref metadata::URDF::Inertia, struct @ref metadata::URDF::Joint, enum
+ * @ref metadata::URDF::LinkContactFlags, struct @ref
+ * metadata::URDF::LinkContactInfo, struct @ref metadata::URDF::Link, class @ref
+ * metadata::URDF::Model, class @ref metadata::URDF::Parser.
  */
 
 namespace tinyxml2 {
@@ -35,7 +36,7 @@ class XMLElement;
 }
 
 namespace esp {
-namespace io {
+namespace metadata {
 
 namespace URDF {
 
@@ -390,41 +391,31 @@ class Model {
    * @brief Set hint to render articulated object primitives even if a render
    * asset is present.
    */
-  void setDebugRenderPrimitives(bool debugRenderPrimitives) {
-    m_debugRenderPrimitives = debugRenderPrimitives;
+  void setRenderLinkVisualShapes(bool renderLinkVisualShapes) {
+    m_renderLinkVisualShapes = renderLinkVisualShapes;
   }
 
   /**
-   * @brief Get hint to render articulated object primitives even if a render
-   * asset is present.
+   * @brief Get hint to render articulated object visual shapes as defined in
+   * the URDF even if a render asset/skin is present.
    */
-  bool getDebugRenderPrimitives() const { return m_debugRenderPrimitives; }
+  bool getRenderLinkVisualShapes() const { return m_renderLinkVisualShapes; }
 
   /**
-   * @brief This function conditionally loads configuration data from a Json
-   * file for this Articulated Model, should an appropriate file exist. This
-   * configuration file must meet the following criteria to be loaded :
-   * - Exist in the same directory as this model's source URDF/XML file.
-   * - Have the same root name as this model's source URDF/XML file.
-   * - Have '.ao_config.json' as an extension.
-   *
-   * This method will construct a name candidate from the passed @p filename and
-   * attempt to load this file into this model's @ref jsonAttributes_ variable.
-   * This also loads the render asset path from the json file.
-   * @param filename The filename for the URDF?XML file describing this model.
-   * @return Whether successful or not.
+   * @brief This function will set the
+   * @ref metadata::attributes::ArticulatedObjectAttributes used to create this model.
    */
-  bool loadJsonAttributes(const std::string& filename);
+  void setModelInitAttributes(
+      metadata::attributes::ArticulatedObjectAttributes::ptr artObjAttributes);
 
   /**
    * @brief Gets a smart pointer reference to a copy of the user-specified
-   * configuration data from a config file. Habitat does not parse or process
-   * this data, but it will be available to the user via python bindings for
-   * each object.
+   * configuration data from a config file. Habitat does not parse or
+   * process this data, but it will be available to the user via python
+   * bindings for each object.
    */
   std::shared_ptr<core::config::Configuration> getUserConfiguration() const {
-    return jsonAttributes_->getSubconfigCopy<core::config::Configuration>(
-        "user_defined");
+    return initializationAttributes_->getUserConfiguration();
   }
 
  protected:
@@ -434,8 +425,8 @@ class Model {
    * attributes. This data is read in from a json file with the same base name
    * as the source XML/URDF for this model but the extension ".ao_config.json".
    */
-  std::shared_ptr<core::config::Configuration> jsonAttributes_ =
-      std::make_shared<core::config::Configuration>();
+  metadata::attributes::ArticulatedObjectAttributes::ptr
+      initializationAttributes_ = nullptr;
 
   // scaling values which can be applied to the model after parsing
   //! Global euclidean scaling applied to the model's transforms, asset scales,
@@ -451,8 +442,9 @@ class Model {
   //! Semantic ID of this model.
   int m_semanticId = 0;
 
-  //! Forces link primitives to be rendered even if a render asset is present.
-  bool m_debugRenderPrimitives = false;
+  //! Forces link visual shapes to be rendered even if a render asset(skin) is
+  //! present.
+  bool m_renderLinkVisualShapes = false;
 
   //! Scale the transformation and parameters of a Shape
   void scaleShape(Shape& shape, float scale);
@@ -545,8 +537,8 @@ class Parser {
   bool parseJointLimits(Joint& joint, const tinyxml2::XMLElement* config) const;
 
   /**
-   * @brief Parse joint dynamic info from a <joint> xml element into a
-   * datastructure.
+   * @brief Parse joint dynamic info from a <joint> xml element into
+   * ajsonAttributes_ datastructure.
    *
    * @param joint The Joint datastructure to fill.
    * @param config The source xml element to parse (e.g. <joint>).
@@ -607,8 +599,9 @@ class Parser {
 
   // parse a loaded URDF string into relevant general data structures
   // return false if the string is not a valid urdf or other error causes abort
-  bool parseURDF(std::shared_ptr<Model>& model,
-                 const std::string& meshFilename);
+  bool parseURDF(const metadata::attributes::ArticulatedObjectAttributes::ptr&
+                     artObjAttributes,
+                 std::shared_ptr<Model>& model);
 
   // This is no longer used, instead set the urdf and physics subsystem to
   // veryverbose, i.e. export HABITAT_SIM_LOG="urdf,physics=veryverbose" bool
@@ -616,7 +609,7 @@ class Parser {
 };
 
 }  // namespace URDF
-}  // namespace io
+}  // namespace metadata
 }  // namespace esp
 
 #endif  // ESP_IO_URDFPARSER_H_

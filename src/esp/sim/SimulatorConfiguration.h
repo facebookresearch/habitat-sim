@@ -8,6 +8,7 @@
 #include <string>
 
 #include "esp/core/Esp.h"
+#include "esp/gfx/configure.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/physics/configure.h"
 
@@ -86,9 +87,11 @@ struct SimulatorConfiguration {
   std::string sceneLightSetupKey = esp::NO_LIGHT_KEY;
 
   /**
-   * @brief Setup the image based lighting for pbr rendering
+   * @brief Setup the image based lighting for pbr rendering. @deprecated use
+   * configs to enable/disable IBL.
    */
   bool pbrImageBasedLighting = false;
+
   /**
    * @brief Use texture-based semantics if the specified asset/dataset support
    * them.
