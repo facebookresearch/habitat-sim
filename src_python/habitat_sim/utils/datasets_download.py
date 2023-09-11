@@ -337,6 +337,7 @@ def initialize_test_data_sources(data_path):
             "replica_cad_dataset",
             "hab_fetch",
             "hab_stretch",
+            "hab_spot_arm",
         ],
         "rearrange_task_assets": [
             "replica_cad_dataset",
