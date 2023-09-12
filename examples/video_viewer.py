@@ -16,7 +16,10 @@ sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
 import magnum as mn
 import numpy as np
-from habitat.articulated_agent_controllers import HumanoidRearrangeController
+from habitat.articulated_agent_controllers import (
+    HumanoidRearrangeController,
+    SeqPoseController,
+)
 from habitat.articulated_agents.humanoids.kinematic_humanoid import KinematicHumanoid
 from habitat.datasets.rearrange.navmesh_utils import get_largest_island_index
 from magnum import shaders, text
@@ -242,31 +245,39 @@ class HabitatSimInteractiveViewer(Application):
         """
         Initialize the humanoid and controller.
         """
+        test_motion_path = "data/humanoids/humanoid_data/back3_sample02_rep01.pkl"
         walk_pose_path = (
             "data/humanoids/humanoid_data/walking_motion_processed_smplx.pkl"
         )
+        print(walk_pose_path)
+        print(test_motion_path)
         urdf_path = "/home/alexclegg/Documents/dev/habitat-lab/data/humanoids/humanoid_data/female2_0.urdf"
         self.humanoid = KinematicHumanoid(urdf_path=urdf_path, sim=self.sim)
         self.humanoid.reconfigure()
         self.humanoid.base_pos = self.sim.pathfinder.get_random_navigable_point(
             island_index=self.largest_indoor_island
         )
-        self.humanoid_controller = HumanoidRearrangeController(
-            walk_pose_path=walk_pose_path
-        )
+        # self.humanoid_controller = HumanoidRearrangeController(
+        #    walk_pose_path=walk_pose_path
+        # )
+        self.humanoid_controller = SeqPoseController(walk_pose_path=test_motion_path)
         self.humanoid_controller.reset(self.humanoid.base_transformation)
-        # self.humanoid_controller = SeqPoseController(walk_pose_path=test_motion_path)
 
     def update_humanoid(self):
         """
         Called every step to update the humanoid's state from the path waypoints.
         """
-        self.update_humanoid_path_waypoint()
-        relative_pos = (
-            self.humanoid_cur_path[self.humanoid_cur_waypoint] - self.humanoid.base_pos
-        )
-        relative_pos = relative_pos / np.linalg.norm(relative_pos) * (1.0 / 30.0)
-        self.humanoid_controller.calculate_walk_pose(mn.Vector3(relative_pos))
+        if type(self.humanoid_controller) == HumanoidRearrangeController:
+            self.update_humanoid_path_waypoint()
+            relative_pos = (
+                self.humanoid_cur_path[self.humanoid_cur_waypoint]
+                - self.humanoid.base_pos
+            )
+            relative_pos = relative_pos / np.linalg.norm(relative_pos) * (1.0 / 30.0)
+            self.humanoid_controller.calculate_walk_pose(mn.Vector3(relative_pos))
+        elif type(self.humanoid_controller) == SeqPoseController:
+            self.humanoid_controller.get_pose_mdm()
+
         self.humanoid.set_joint_transform(
             joint_list=self.humanoid_controller.joint_pose,
             offset_transform=self.humanoid_controller.obj_transform_offset,
