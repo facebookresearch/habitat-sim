@@ -469,16 +469,14 @@ class HabitatSimInteractiveViewer(Application):
         T_vec = T_mat.reshape(1, 16)
         pose_path = os.path.join(self.sim_settings['out_path'], "transformations.txt")  
          
-        if os.path.exists(pose_path):
-            with open(pose_path, "ab") as f:
-                np.savetxt(f, T_vec, fmt='%5f', delimiter=' ')
+        with open(pose_path, "ab") as f:
+            np.savetxt(f, T_vec, fmt='%5f', delimiter=' ')
          
-    def save_color_observation(self, obs) -> None:
+    def save_color_observation(self, obs, sensor_type="color_sensor") -> None:
         """
         Retrieves current view of simulator and saves it as image"
         """
-        color_obs = obs["color_sensor"]
-        # color_obs = obs["equirect_rgba_sensor"]
+        color_obs = obs[sensor_type]
         color_img = Image.fromarray(color_obs, mode="RGBA")
         if self.sim_settings['out_path'] is None:
             color_img.save("test.rgba.%05d.png" % time.time())
@@ -509,10 +507,14 @@ class HabitatSimInteractiveViewer(Application):
             return
 
         elif key == pressed.R:
+            # Press R to record data (image, pose)
             observations = self.sim.get_sensor_observations(self.agent_id)
-            if sim_settings["color_sensor"] and sim_settings['save_png']:
-                self.save_color_observation(observations)
-                self.save_pose_observation()            
+            if sim_settings['save_png']:
+                self.save_pose_observation()         
+                if sim_settings["equirect_rgba_sensor"]:
+                    self.save_color_observation(observations, sensor_type="equirect_rgba_sensor")
+                else:
+                    self.save_color_observation(observations)            
                 
         elif key == pressed.H:
             self.print_help_text()
@@ -1198,6 +1200,7 @@ if __name__ == "__main__":
     parser.add_argument("--silent", action="store_true")
     parser.add_argument("--save_png", action="store_true")
     parser.add_argument("--out_path", help="path to save images and transformations")
+    parser.add_argument("--disable_color_sensor", action="store_true")
 
     args = parser.parse_args()
 
@@ -1224,6 +1227,7 @@ if __name__ == "__main__":
     sim_settings["silent"] = args.silent
     sim_settings["save_png"] = args.save_png
     sim_settings["out_path"] = args.out_path
+    sim_settings["equirect_rgba_sensor"] = args.disable_color_sensor
 
     # start the application
     HabitatSimInteractiveViewer(sim_settings).exec()
