@@ -5,6 +5,7 @@
 import ctypes
 import math
 import os
+import random
 import string
 import sys
 import time
@@ -30,6 +31,41 @@ from habitat_sim import ReplayRenderer, ReplayRendererConfiguration, physics
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.common import quat_from_angle_axis
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
+
+
+def file_endswith(filepath: str, end_str: str) -> bool:
+    """
+    Return whether or not the file ends with a string.
+    """
+    return filepath.endswith(end_str)
+
+
+def find_files(
+    root_dir: str, discriminator: Callable[[str, str], bool], disc_str: str
+) -> List[str]:
+    """
+    Recursively find all filepaths under a root directory satisfying a particular constraint as defined by a discriminator function.
+
+    :param root_dir: The roor directory for the recursive search.
+    :param discriminator: The discriminator function which takes a filepath and discriminator string and returns a bool.
+
+    :return: The list of all absolute filepaths found satisfying the discriminator.
+    """
+    filepaths: List[str] = []
+
+    if not os.path.exists(root_dir):
+        print(" Directory does not exist: " + str(dir))
+        return filepaths
+
+    for entry in os.listdir(root_dir):
+        entry_path = os.path.join(root_dir, entry)
+        if os.path.isdir(entry_path):
+            sub_dir_filepaths = find_files(entry_path, discriminator, disc_str)
+            filepaths.extend(sub_dir_filepaths)
+        # apply a user-provided discriminator function to cull filepaths
+        elif discriminator(entry_path, disc_str):
+            filepaths.append(entry_path)
+    return filepaths
 
 
 class HabitatSimInteractiveViewer(Application):
@@ -204,12 +240,33 @@ class HabitatSimInteractiveViewer(Application):
         self.humanoid_controller = None
         self.humanoid_cur_path = None
         self.humanoid_cur_waypoint = 0
-        self.init_humanoid()
+        self.humanoid_models = self.get_humanoid_models("data/humanoids/humanoid_data/")
+        self.humanoid_seq_motions = find_files(
+            "data/humanoids/humanoid_data/mdm_data/", file_endswith, ".pkl"
+        )
+        self.prev_humanoid_base_state = (
+            None  # provides consistency between loading of new model
+        )
+        self.init_humanoid(random.choice(self.humanoid_models))
 
         self.time_since_last_simulation = 0.0
         LoggingContext.reinitialize_from_env()
         logger.setLevel("INFO")
         self.print_help_text()
+
+    def get_humanoid_models(self, filepath: str) -> List[Tuple[str, str]]:
+        """
+        Get a list of humanoid urdfs and accompanying motion files from a directory.
+        Assumes naming format between model and motion files: ("female_0.urdf" -> "female_0_motion_data_smplx.pkl")
+        """
+        models = []
+        urdfs = find_files(filepath, file_endswith, ".urdf")
+        for urdf in urdfs:
+            model_name = urdf.split(".urdf")[0]
+            motion_path = model_name + "_motion_data_smplx.pkl"
+            if os.path.isfile(motion_path):
+                models.append((urdf, motion_path))
+        return models
 
     def humanoid_new_path(self):
         """
@@ -241,26 +298,31 @@ class HabitatSimInteractiveViewer(Application):
                 self.humanoid_new_path()
                 self.humanoid_cur_waypoint = 1
 
-    def init_humanoid(self):
+    def init_humanoid(
+        self, model: Tuple[str, str], controller=HumanoidRearrangeController
+    ):
         """
-        Initialize the humanoid and controller.
+        Initialize the humanoid and controller from a model.
         """
-        test_motion_path = "data/humanoids/humanoid_data/back3_sample02_rep01.pkl"
-        walk_pose_path = (
-            "data/humanoids/humanoid_data/walking_motion_processed_smplx.pkl"
-        )
-        print(walk_pose_path)
-        print(test_motion_path)
-        urdf_path = "/home/alexclegg/Documents/dev/habitat-lab/data/humanoids/humanoid_data/female2_0.urdf"
-        self.humanoid = KinematicHumanoid(urdf_path=urdf_path, sim=self.sim)
+        if self.humanoid is not None:
+            self.prev_humanoid_base_state = (
+                self.humanoid.base_pos,
+                self.humanoid.base_rot,
+            )
+            self.sim.get_articulated_object_manager().remove_object_by_handle(
+                self.humanoid.sim_obj.handle
+            )
+        self.humanoid_cur_path = None
+        self.humanoid = KinematicHumanoid(urdf_path=model[0], sim=self.sim)
         self.humanoid.reconfigure()
-        self.humanoid.base_pos = self.sim.pathfinder.get_random_navigable_point(
-            island_index=self.largest_indoor_island
-        )
-        # self.humanoid_controller = HumanoidRearrangeController(
-        #    walk_pose_path=walk_pose_path
-        # )
-        self.humanoid_controller = SeqPoseController(walk_pose_path=test_motion_path)
+        if self.prev_humanoid_base_state is None:
+            self.humanoid.base_pos = self.sim.pathfinder.get_random_navigable_point(
+                island_index=self.largest_indoor_island
+            )
+        else:
+            self.humanoid.base_pos = self.prev_humanoid_base_state[0]
+            self.humanoid.base_rot = float(self.prev_humanoid_base_state[1])
+        self.humanoid_controller = controller(walk_pose_path=model[1])
         self.humanoid_controller.reset(self.humanoid.base_transformation)
 
     def update_humanoid(self):
@@ -698,7 +760,15 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.V:
             # self.invert_gravity()
             # logger.info("Command: gravity inverted")
-            self.update_humanoid()
+            # self.update_humanoid()
+            controller = random.choice([HumanoidRearrangeController, SeqPoseController])
+            model = random.choice(self.humanoid_models)
+            if controller == SeqPoseController:
+                model = (model[0], random.choice(self.humanoid_seq_motions))
+            # controller = HumanoidRearrangeController
+            # model = self.humanoid_models[0]
+            # print(model)
+            self.init_humanoid(model, controller=controller)
 
         elif key == pressed.N:
             # (default) - toggle navmesh visualization
