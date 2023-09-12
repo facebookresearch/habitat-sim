@@ -43,8 +43,6 @@ using Attrs::StageAttributes;
 using Attrs::UVSpherePrimitiveAttributes;
 
 namespace {
-const std::string TEST_ASSET_DIR =
-    Cr::Utility::Path::join(DATA_DIR, "test_assets/");
 
 /**
  * @brief Test attributesManagers' functionality via loading, creating, copying
@@ -581,7 +579,7 @@ void AttributesManagersTest::testAssetAttributesTemplateCreateFromHandle(
 
 void AttributesManagersTest::testPhysicsAttributesManagersCreate() {
   const std::string physicsConfigFile =
-      Cr::Utility::Path::join(TEST_ASSET_DIR, "testing.physics_config.json");
+      Cr::Utility::Path::join(TEST_ASSETS, "testing.physics_config.json");
 
   CORRADE_INFO(
       "Start Test : Create, Edit, Remove Attributes for "
@@ -595,7 +593,7 @@ void AttributesManagersTest::testPhysicsAttributesManagersCreate() {
 
 void AttributesManagersTest::testPbrShaderAttributesManagersCreate() {
   const std::string pbrShaderConfigFile =
-      Cr::Utility::Path::join(TEST_ASSET_DIR, "testing.pbr_config.json");
+      Cr::Utility::Path::join(TEST_ASSETS, "testing.pbr_config.json");
   CORRADE_INFO(
       "Start Test : Create, Edit, Remove Attributes for "
       "PbrShaderAttributes  JSON config @"
@@ -609,8 +607,8 @@ void AttributesManagersTest::testPbrShaderAttributesManagersCreate() {
 }  // AttributesManagersTest::testPbrShaderAttributesManagersCreate
 
 void AttributesManagersTest::testArticulatedObjectAttributesManagersCreate() {
-  const std::string artObjConfigFile = Cr::Utility::Path::join(
-      TEST_ASSET_DIR, "urdf/skinned_prism.ao_config.json");
+  const std::string artObjConfigFile =
+      Cr::Utility::Path::join(TEST_ASSETS, "urdf/skinned_prism.ao_config.json");
   CORRADE_INFO(
       "Start Test : Create, Edit, Remove Attributes for "
       "AO JSON config @"
@@ -624,8 +622,8 @@ void AttributesManagersTest::testArticulatedObjectAttributesManagersCreate() {
   // Valid URDF files that do not (idx 0) and do (idx 1) have existing
   // JSON articulated object configs with the same name
   const std::string validUrdfFiles[] = {
-      Cr::Utility::Path::join(TEST_ASSET_DIR, "urdf/prim_chain.urdf"),
-      Cr::Utility::Path::join(TEST_ASSET_DIR, "urdf/skinned_prism.urdf")};
+      Cr::Utility::Path::join(TEST_ASSETS, "urdf/prim_chain.urdf"),
+      Cr::Utility::Path::join(TEST_ASSETS, "urdf/skinned_prism.urdf")};
   for (int i = 0; i < 2; ++i) {
     CORRADE_INFO(
         "Start Default Test : Create, Edit, Remove Attributes built from "
@@ -642,7 +640,7 @@ void AttributesManagersTest::testArticulatedObjectAttributesManagersCreate() {
 
 void AttributesManagersTest::testStageAttributesManagersCreate() {
   const std::string stageConfigFile = Cr::Utility::Path::join(
-      TEST_ASSET_DIR, "scenes/stage_floor1.stage_config.json");
+      TEST_ASSETS, "scenes/stage_floor1.stage_config.json");
 
   CORRADE_INFO(
       "Start Test : Create, Edit, Remove Attributes for "
@@ -656,8 +654,8 @@ void AttributesManagersTest::testStageAttributesManagersCreate() {
   // Valid render asset files that do not (idx 0) and do (idx 1) have existing
   // JSON stage configs with the same name.
   const std::string validStageAssetFiles[] = {
-      Cr::Utility::Path::join(TEST_ASSET_DIR, "scenes/plane.glb"),
-      Cr::Utility::Path::join(TEST_ASSET_DIR, "scenes/simple_room.glb")};
+      Cr::Utility::Path::join(TEST_ASSETS, "scenes/plane.glb"),
+      Cr::Utility::Path::join(TEST_ASSETS, "scenes/simple_room.glb")};
   for (int i = 0; i < 2; ++i) {
     CORRADE_INFO(
         "Start Default Test : Create, Edit, Remove Attributes built from Stage "
@@ -673,8 +671,8 @@ void AttributesManagersTest::testStageAttributesManagersCreate() {
 }  // AttributesManagersTest::StageAttributesManagersCreate
 
 void AttributesManagersTest::testObjectAttributesManagersCreate() {
-  const std::string objectConfigFile = Cr::Utility::Path::join(
-      TEST_ASSET_DIR, "objects/chair.object_config.json");
+  const std::string objectConfigFile =
+      Cr::Utility::Path::join(TEST_ASSETS, "objects/chair.object_config.json");
 
   CORRADE_INFO(
       "Start Test : Create, Edit, Remove Attributes for "
@@ -690,8 +688,8 @@ void AttributesManagersTest::testObjectAttributesManagersCreate() {
   // Valid render asset files that do not (idx 0) and do (idx 1) have existing
   // JSON object configs with the same name.
   const std::string validObjectAssetFiles[] = {
-      Cr::Utility::Path::join(TEST_ASSET_DIR, "objects/5boxes.glb"),
-      Cr::Utility::Path::join(TEST_ASSET_DIR, "objects/chair.glb")};
+      Cr::Utility::Path::join(TEST_ASSETS, "objects/5boxes.glb"),
+      Cr::Utility::Path::join(TEST_ASSETS, "objects/chair.glb")};
   for (int i = 0; i < 2; ++i) {
     CORRADE_INFO(
         "Start Default Tests : Create, Edit, Remove Attributes built from "
@@ -734,7 +732,7 @@ void AttributesManagersTest::testObjectAttributesManagersCreate() {
 
 void AttributesManagersTest::testLightLayoutAttributesManager() {
   const std::string lightConfigFile = Cr::Utility::Path::join(
-      TEST_ASSET_DIR, "lights/test_lights.lighting_config.json");
+      TEST_ASSETS, "lights/test_lights.lighting_config.json");
 
   CORRADE_INFO(
       "Start Test : Create, Edit, Remove Attributes for "
