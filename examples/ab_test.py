@@ -7,7 +7,6 @@
 
 import argparse
 import csv
-import distutils
 
 import demo_runner as dr
 
@@ -173,6 +172,23 @@ def get_csv_data(
     return rows, fields
 
 
+def strtobool(input_str: str) -> bool:
+    """Convert a string representation of truth to 1(true) or 0(false)
+
+    True values are 'y', 'yes', 't', 'true', 'on', and '1'; false values
+    are 'n', 'no', 'f', 'false', 'off', and '0'.  Raises ValueError if
+    'val' is anything else.
+    (This code was taken directly from pre-deprecated distutils.utils.strtobool)
+    """
+    val = input_str.lower()
+    if val in ("y", "yes", "t", "true", "on", "1"):
+        return 1
+    elif val in ("n", "no", "f", "false", "off", "0"):
+        return 0
+    else:
+        raise ValueError("invalid truth value %r" % (val,))
+
+
 args = parser.parse_args()
 
 control_val = None
@@ -185,9 +201,9 @@ elif args.float:
     if "control_value" in args:
         control_val = float(args.control_value)
 elif args.boolean:
-    test_val = distutils.util.strtobool(args.test_value)
+    test_val = strtobool(args.test_value)
     if "control_value" in args:
-        control_val = distutils.util.strtobool(args.control_value)
+        control_val = strtobool(args.control_value)
 elif args.string:
     test_val = args.test_value
     if "control_value" in args:
