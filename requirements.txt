@@ -6,6 +6,7 @@ matplotlib
 numba
 numpy==1.26.4
 numpy-quaternion
+packaging
 pillow==10.4.0
 scipy>=1.10.1
 tqdm
