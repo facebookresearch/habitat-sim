@@ -39,7 +39,10 @@ namespace Cr = Corrade;
 namespace esp {
 namespace gfx {
 
-PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
+PbrShader::PbrShader(Flags originalFlags,
+                     Mn::UnsignedInt lightCount,
+                     Mn::UnsignedInt jointCount,
+                     Mn::UnsignedInt perVertexJointCount)
     : flags_(originalFlags), lightCount_(lightCount) {
   if (!Cr::Utility::Resource::hasGroup("gfx-shaders")) {
     importShaderResources();
@@ -705,7 +708,7 @@ PbrShader& PbrShader::setAnisotropyLayerFactor(float anisoLayerFactor) {
 }
 
 PbrShader& PbrShader::setAnisotropyLayerDirection(
-    const Magnum::Vector2& anisoLayerDirection) {
+    const Mn::Vector2& anisoLayerDirection) {
   if (lightingIsEnabled_) {
     setUniform(anisotropyLayerDirectionUniform_, anisoLayerDirection);
   }

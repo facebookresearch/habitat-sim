@@ -7,10 +7,12 @@
 
 #include <Corrade/Containers/EnumSet.h>
 #include <Corrade/Utility/Assert.h>
+#include <Corrade/Utility/FormatStl.h>
 #include <Magnum/GL/GL.h>
 #include <Magnum/SceneGraph/Drawable.h>
 #include <Magnum/Trade/MaterialData.h>
 #include "esp/core/Esp.h"
+#include "esp/gfx/DrawableConfiguration.h"
 
 namespace esp {
 namespace scene {
@@ -18,6 +20,7 @@ class SceneNode;
 }
 namespace gfx {
 
+struct InstanceSkinData;
 class DrawableGroup;
 
 enum class DrawableType : uint8_t {
@@ -59,6 +62,10 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
   /** @brief Flags */
   typedef Corrade::Containers::EnumSet<Flag> Flags;
 
+  /// @brief Key template for entry in shader map
+  static constexpr const char* SHADER_KEY_TEMPLATE =
+      "{}-lights={}-flags={}-joints={}";
+
   /**
    * @brief Constructor
    *
@@ -70,7 +77,8 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
   Drawable(scene::SceneNode& node,
            Magnum::GL::Mesh* mesh,
            DrawableType type,
-           DrawableGroup* group = nullptr);
+           DrawableConfiguration& cfg,
+           Mn::Resource<LightSetup> lightSetup);
   ~Drawable() override;
 
   virtual scene::SceneNode& getSceneNode() { return node_; }
@@ -175,12 +183,24 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
   void draw(CORRADE_UNUSED const Magnum::Matrix4& transformationMatrix,
             CORRADE_UNUSED Magnum::SceneGraph::Camera3D& camera) override = 0;
 
+  template <class FlagsType>
+  std::string getShaderKey(const std::string& shaderType,
+                           Magnum::UnsignedInt lightCount,
+                           FlagsType flags,
+                           Magnum::UnsignedInt jointCount) const {
+    return Corrade::Utility::formatString(SHADER_KEY_TEMPLATE, shaderType,
+                                          lightCount, flags, jointCount);
+  }
+
   DrawableType type_ = DrawableType::None;
 
   scene::SceneNode& node_;
 
   static uint64_t drawableIdCounter;
   uint64_t drawableId_;
+  Mn::Resource<LightSetup> lightSetup_;
+
+  std::shared_ptr<InstanceSkinData> skinData_;
 
   bool glMeshExists() const { return mesh_ != nullptr; }
 

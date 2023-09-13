@@ -13,14 +13,17 @@ uint64_t Drawable::drawableIdCounter = 0;
 Drawable::Drawable(scene::SceneNode& node,
                    Magnum::GL::Mesh* mesh,
                    DrawableType type,
-                   DrawableGroup* group /* = nullptr */)
-    : Magnum::SceneGraph::Drawable3D{node, group},
+                   DrawableConfiguration& cfg,
+                   Mn::Resource<LightSetup> lightSetup)
+    : Magnum::SceneGraph::Drawable3D{node, cfg.group_},
       type_(type),
       node_(node),
       drawableId_(drawableIdCounter++),
+      skinData_(cfg.getSkinData()),
+      lightSetup_(lightSetup),
       mesh_(mesh) {
-  if (group) {
-    group->registerDrawable(*this);
+  if (cfg.group_) {
+    cfg.group_->registerDrawable(*this);
   }
 }
 
@@ -41,5 +44,6 @@ DrawableGroup* Drawable::drawables() {
                  {});
   return static_cast<DrawableGroup*>(group);
 }
+
 }  // namespace gfx
 }  // namespace esp

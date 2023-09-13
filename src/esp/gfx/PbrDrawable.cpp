@@ -5,7 +5,6 @@
 #include "PbrDrawable.h"
 
 #include <Corrade/Containers/ArrayViewStl.h>
-#include <Corrade/Utility/FormatStl.h>
 #include <Magnum/Trade/MaterialData.h>
 #include <Magnum/Trade/PbrClearCoatMaterialData.h>
 #include <Magnum/Trade/PbrMetallicRoughnessMaterialData.h>
@@ -23,9 +22,9 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
                          gfx::Drawable::Flags& meshAttributeFlags,
                          ShaderManager& shaderManager,
                          DrawableConfiguration& cfg)
-    : Drawable{node, mesh, DrawableType::Pbr, cfg.group_},
+    : Drawable{node, mesh, DrawableType::Pbr, cfg,
+               shaderManager.get<LightSetup>(cfg.lightSetupKey_)},
       shaderManager_{shaderManager},
-      lightSetup_{shaderManager.get<LightSetup>(cfg.lightSetupKey_)},
       pbrIbl_(std::move(cfg.getPbrIblData())),
       meshAttributeFlags_{meshAttributeFlags} {
   // Build material cache
@@ -433,6 +432,8 @@ void PbrDrawable::setShaderAttributesValues(
 
 void PbrDrawable::setLightSetup(const Mn::ResourceKey& lightSetupKey) {
   lightSetup_ = shaderManager_.get<LightSetup>(lightSetupKey);
+  // update the shader early here to to avoid doing it during the render loop
+  updateShader();
 }
 
 void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
@@ -440,9 +441,9 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   CORRADE_ASSERT(glMeshExists(),
                  "PbrDrawable::draw() : GL mesh doesn't exist", );
 
-  updateShader()
-      .updateShaderLightParameters()
-      .updateShaderLightDirectionParameters(transformationMatrix, camera);
+  updateShader();
+
+  updateShaderLightingParameters(transformationMatrix, camera);
 
   // ABOUT PbrShader::Flag::DoubleSided:
   //
@@ -622,21 +623,20 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   */
 }  // PbrDrawable::draw
 
-Mn::ResourceKey PbrDrawable::getShaderKey(Mn::UnsignedInt lightCount,
-                                          PbrShader::Flags flags) const {
-  return Corrade::Utility::formatString(
-      SHADER_KEY_TEMPLATE, lightCount,
-      static_cast<PbrShader::Flags::UnderlyingType>(flags));
-}
-
-PbrDrawable& PbrDrawable::updateShader() {
-  unsigned int lightCount = lightSetup_->size();
+void PbrDrawable::updateShader() {
+  const Mn::UnsignedInt lightCount = lightSetup_->size();
+  const Mn::UnsignedInt jointCount =
+      skinData_ ? skinData_->skinData->skin->joints().size() : 0;
+  const Mn::UnsignedInt perVertexJointCount =
+      skinData_ ? skinData_->skinData->perVertexJointCount : 0;
   if (!shader_ || shader_->lightCount() != lightCount ||
       shader_->flags() != flags_) {
     // if the number of lights or flags have changed, we need to fetch a
     // compatible shader
     shader_ = shaderManager_.get<Mn::GL::AbstractShaderProgram, PbrShader>(
-        getShaderKey(lightCount, flags_));
+        getShaderKey("PBR", lightCount,
+                     static_cast<PbrShader::Flags::UnderlyingType>(flags_),
+                     jointCount));
 
     // if no shader with desired number of lights and flags exists, create
     // one
@@ -649,34 +649,18 @@ PbrDrawable& PbrDrawable::updateShader() {
     CORRADE_INTERNAL_ASSERT(shader_ && shader_->lightCount() == lightCount &&
                             shader_->flags() == flags_);
   }
-
-  return *this;
-}
-
-// update every light's color, intensity, range etc.
-PbrDrawable& PbrDrawable::updateShaderLightParameters() {
-  // light range has been initialized to Mn::Constants::inf()
-  // in the PbrShader's constructor.
-  // No need to reset it at this point.
-  std::vector<Mn::Color3> colors;
-  colors.reserve(lightSetup_->size());
-  for (unsigned int iLight = 0; iLight < lightSetup_->size(); ++iLight) {
-    // Note: the light color MUST take the intensity into account
-    colors.emplace_back((*lightSetup_)[iLight].color);
-  }
-
-  shader_->setLightColors(colors);
-  return *this;
 }
 
 // update light direction (or position) in *world* space to the shader
-PbrDrawable& PbrDrawable::updateShaderLightDirectionParameters(
+void PbrDrawable::updateShaderLightingParameters(
     const Mn::Matrix4& transformationMatrix,
     Mn::SceneGraph::Camera3D& camera) {
+  const Mn::Matrix4 cameraMatrix = camera.cameraMatrix();
   std::vector<Mn::Vector4> lightPositions;
   lightPositions.reserve(lightSetup_->size());
+  std::vector<Mn::Color3> lightColors;
+  lightColors.reserve(lightSetup_->size());
 
-  const Mn::Matrix4 cameraMatrix = camera.cameraMatrix();
   for (unsigned int iLight = 0; iLight < lightSetup_->size(); ++iLight) {
     const auto& lightInfo = (*lightSetup_)[iLight];
     Mn::Vector4 pos = getLightPositionRelativeToWorld(
@@ -685,11 +669,11 @@ PbrDrawable& PbrDrawable::updateShaderLightDirectionParameters(
     // shader.  Leave non-directional lights unchanged (w==1)
     pos *= (pos[3] * 2) - 1;
     lightPositions.emplace_back(pos);
+    // Note: the light color MUST take the intensity into account
+    lightColors.emplace_back((*lightSetup_)[iLight].color);
   }
 
-  shader_->setLightVectors(lightPositions);
-
-  return *this;
+  (*shader_).setLightColors(lightColors).setLightVectors(lightPositions);
 }
 
 }  // namespace gfx

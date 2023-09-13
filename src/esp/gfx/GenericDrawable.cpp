@@ -28,10 +28,9 @@ GenericDrawable::GenericDrawable(scene::SceneNode& node,
                                  Drawable::Flags& meshAttributeFlags,
                                  ShaderManager& shaderManager,
                                  DrawableConfiguration& cfg)
-    : Drawable{node, mesh, DrawableType::Generic, cfg.group_},
+    : Drawable{node, mesh, DrawableType::Generic, cfg,
+               shaderManager.get<LightSetup>(cfg.lightSetupKey_)},
       shaderManager_{shaderManager},
-      lightSetup_{shaderManager.get<LightSetup>(cfg.lightSetupKey_)},
-      skinData_(cfg.getSkinData()),
       jointTransformations_(),
       meshAttributeFlags_{meshAttributeFlags} {
   resetMaterialValues(
@@ -287,7 +286,7 @@ void GenericDrawable::updateShader() {
   const Mn::UnsignedInt perVertexJointCount =
       skinData_ ? skinData_->skinData->perVertexJointCount : 0;
 
-  if (skinData_) {
+  if ((skinData_) && (jointTransformations_.size() != jointCount)) {
     Corrade::Containers::arrayResize(
         jointTransformations_, skinData_->skinData->skin->joints().size());
   }
@@ -298,7 +297,11 @@ void GenericDrawable::updateShader() {
     // compatible shader
     shader_ =
         shaderManager_.get<Mn::GL::AbstractShaderProgram, Mn::Shaders::PhongGL>(
-            getShaderKey(lightCount, flags_, jointCount));
+            getShaderKey(
+                "Phong", lightCount,
+                static_cast<Mn::Shaders::PhongGL::Flags::UnderlyingType>(
+                    flags_),
+                jointCount));
 
     // if no shader with desired number of lights and flags exists, create one
     if (!shader_) {
@@ -315,16 +318,6 @@ void GenericDrawable::updateShader() {
     CORRADE_INTERNAL_ASSERT(shader_ && shader_->lightCount() == lightCount &&
                             shader_->flags() == flags_);
   }
-}
-
-Mn::ResourceKey GenericDrawable::getShaderKey(
-    Mn::UnsignedInt lightCount,
-    Mn::Shaders::PhongGL::Flags flags,
-    Mn::UnsignedInt jointCount) const {
-  return Corrade::Utility::formatString(
-      SHADER_KEY_TEMPLATE, lightCount,
-      static_cast<Mn::Shaders::PhongGL::Flags::UnderlyingType>(flags),
-      jointCount);
 }
 
 }  // namespace gfx

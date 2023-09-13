@@ -348,7 +348,10 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    *
    * the light range is set to Magnum::Constants::inf()
    */
-  explicit PbrShader(Flags flags = {}, unsigned int lightCount = 1);
+  explicit PbrShader(Flags flags = {},
+                     Magnum::UnsignedInt lightCount = 1,
+                     Magnum::UnsignedInt jointCount = 0,
+                     Magnum::UnsignedInt perVertexJointCount = 0);
 
   /** @brief Copying is not allowed */
   PbrShader(const PbrShader&) = delete;
@@ -760,7 +763,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
  protected:
   Flags flags_;
-  unsigned int lightCount_;
+  Magnum::UnsignedInt lightCount_;
 
   // whether or not this shader uses any textures
   bool isTextured_ = false;
