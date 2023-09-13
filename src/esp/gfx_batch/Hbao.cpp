@@ -827,6 +827,8 @@ Mn::Vector4 buildClipInfo(const Mn::Matrix4& projectionMatrix,
   // TODO this still looks like there's some better way this should be
   // extracted.  Definitely change to use near and far calcs upstream when
   // available!!
+  // Ref :
+  // https://github.com/mosra/magnum/commit/0d31f7461b31698ea5bf92ec66ff5056a6ad7360
   if (orthographic) {
     auto nearPlane = (projectionMatrix[3][2] + 1.0f) / projectionMatrix[2][2];
     auto farPlane = (projectionMatrix[3][2] - 1.0f) / projectionMatrix[2][2];

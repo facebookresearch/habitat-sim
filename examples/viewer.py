@@ -1126,7 +1126,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--hbao",
         action="store_true",
-        help="Enable horizon-based ambient occlusion.",
+        help="Enable horizon-based ambient occlusion, which provides soft shadows in corners and crevices.",
     )
     parser.add_argument(
         "--enable-batch-renderer",
@@ -1179,7 +1179,7 @@ if __name__ == "__main__":
     sim_settings["window_width"] = args.width
     sim_settings["window_height"] = args.height
     sim_settings["default_agent_navmesh"] = False
-    sim_settings["hbao_visual_effects"] = args.hbao
+    sim_settings["enable_hbao"] = args.hbao
 
     # start the application
     HabitatSimInteractiveViewer(sim_settings).exec()

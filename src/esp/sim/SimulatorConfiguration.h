@@ -104,7 +104,7 @@ struct SimulatorConfiguration {
    * @brief Enable HBAO visual effect that adds soft shadows to corners and
    * crevices.
    */
-  bool horizonBasedAmbientOcclusion = false;
+  bool enableHBAO = false;
 
   ESP_SMART_POINTERS(SimulatorConfiguration)
 };

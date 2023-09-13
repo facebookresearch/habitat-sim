@@ -194,7 +194,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       }
 #endif
 
-      if (config_.horizonBasedAmbientOcclusion) {
+      if (config_.enableHBAO) {
         flags |= gfx::Renderer::Flag::HorizonBasedAmbientOcclusion;
       }
 

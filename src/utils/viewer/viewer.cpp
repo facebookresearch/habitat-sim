@@ -960,7 +960,7 @@ Viewer::Viewer(const Arguments& arguments)
   simConfig_.activeSceneName = args.value("scene");
   simConfig_.sceneDatasetConfigFile = args.value("dataset");
   simConfig_.enablePhysics = args.isSet("enable-physics");
-  simConfig_.horizonBasedAmbientOcclusion = args.isSet("hbao");
+  simConfig_.enableHBAO = args.isSet("hbao");
   simConfig_.frustumCulling = true;
   simConfig_.requiresTextures = true;
   simConfig_.enableGfxReplaySave = !gfxReplayRecordFilepath_.empty();
@@ -979,9 +979,6 @@ Viewer::Viewer(const Arguments& arguments)
     ESP_DEBUG() << "Using PhysicsManager config:" << physicsConfig;
     simConfig_.physicsConfigFile = physicsConfig;
   }
-
-  // image based lighting (PBR)
-  simConfig_.pbrImageBasedLighting = args.isSet("ibl");
 
   // will set simulator configuration in MM - sets ActiveDataset as well
   MM_->setSimulatorConfiguration(simConfig_);

@@ -136,7 +136,7 @@ class Hbao {
   Hbao& operator=(Hbao&&) noexcept;
 
   /**
-   * @brief Set the configurable quantites of the HBAO alogirthm based on user
+   * @brief Set the configurable quantities of the HBAO algorithm based on user
    * settings and defaults.
    */
   void setConfiguration(const HbaoConfiguration& configuration);
