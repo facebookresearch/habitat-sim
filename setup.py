@@ -19,9 +19,9 @@ import shlex
 import shutil
 import subprocess
 import sys
-from distutils.util import strtobool
-from distutils.version import StrictVersion
 
+# from https://github.com/pypa/packaging/issues/520#issuecomment-1067119795
+from packaging.version import Version
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 
@@ -39,7 +39,19 @@ ARG_CACHE_BLACKLIST = {"force_cmake", "cache_args", "inplace"}
 
 
 def str2bool(input_str: str) -> bool:
-    return bool(strtobool(input_str.lower()))
+    """Convert a string representation of truth to True or False
+
+    True values are 'y', 'yes', 't', 'true', 'on', and '1'; false values
+    are 'n', 'no', 'f', 'false', 'off', and '0'.  Raises ValueError if
+    'val' is anything else.
+    """
+    val = input_str.lower()
+    if val in ("y", "yes", "t", "true", "on", "1"):
+        return True
+    elif val in ("n", "no", "f", "false", "off", "0"):
+        return False
+    else:
+        raise ValueError("invalid truth value %r" % (val,))
 
 
 def is_pip() -> bool:
@@ -438,9 +450,9 @@ class CMakeBuild(build_ext):
 
 
 if __name__ == "__main__":
-    assert StrictVersion(
-        "{}.{}".format(sys.version_info[0], sys.version_info[1])
-    ) >= StrictVersion("3.9"), "Must use python 3.9 or newer"
+    assert Version("{}.{}".format(sys.version_info[0], sys.version_info[1])) >= Version(
+        "3.9"
+    ), "Must use python 3.9 or newer"
     with open("./requirements.txt", "r") as f:
         requirements = [l.strip() for l in f.readlines() if len(l.strip()) > 0]
 
