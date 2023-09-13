@@ -20,6 +20,8 @@ set(
   Renderer.h
   RendererStandalone.cpp
   RendererStandalone.h
+  Hbao.cpp
+  Hbao.h
 )
 
 set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)

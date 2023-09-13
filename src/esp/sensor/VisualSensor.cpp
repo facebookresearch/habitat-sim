@@ -57,7 +57,7 @@ void VisualSensorSpec::sanityCheck() const {
 bool VisualSensorSpec::operator==(const VisualSensorSpec& a) const {
   return SensorSpec::operator==(a) && resolution == a.resolution &&
          channels == a.channels && gpu2gpuTransfer == a.gpu2gpuTransfer &&
-         far == a.far && near == a.near;
+         far == a.far && near == a.near && a.clearColor == clearColor;
 }
 
 VisualSensor::VisualSensor(scene::SceneNode& node, VisualSensorSpec::ptr spec)
