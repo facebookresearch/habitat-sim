@@ -144,6 +144,9 @@ ClassicReplayRenderer::ClassicReplayRenderer(
           << "ClassicReplayRenderer created without a background renderer. "
              "Multiple environments require a background renderer.";
 #endif
+    // Force HBAO on
+    flags |= gfx::Renderer::Flag::HorizonBasedAmbientOcclusion;
+    
     renderer_ = gfx::Renderer::create(context_.get(), flags);
 
     renderer_->acquireGlContext();
