@@ -9,6 +9,7 @@ import random
 import string
 import sys
 import time
+from collections import deque
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
@@ -68,6 +69,70 @@ def find_files(
     return filepaths
 
 
+class FollowCam:
+    """
+    Camera which follows a humanoid smoothly.
+    """
+
+    def __init__(self, sim) -> None:
+        self.sim = sim
+        self.humanoid = None
+        self.cur_pos = mn.Vector3()
+        self.cur_orient = mn.Quaternion()
+        self.target_pos = mn.Vector3()
+        self.target_orient = mn.Quaternion()
+        self.collision_free_look = True
+        self.pos_q = deque()
+
+    def update_state(self):
+        """
+        Update the state of the camera from the target.
+        """
+        self.target_pos = self.humanoid.base_pos + mn.Vector3(1.0, 2.0, 0.55)
+        self.target_pos = self.humanoid.sim_obj.transformation.transform_point(
+            mn.Vector3(1.0, 1.0, -0.55)
+        )
+
+        self.pos_q.appendleft(self.target_pos)
+        if len(self.pos_q) > 20:
+            self.pos_q.pop()
+        frame_target = mn.Vector3()
+        for item in self.pos_q:
+            frame_target += item
+        frame_target /= len(self.pos_q)
+
+        look_target = self.humanoid.base_pos + mn.Vector3(0, 1.3, 0)
+        # frame_target = self.target_pos
+
+        if self.collision_free_look:
+            inv_look_vec = frame_target - look_target
+            max_dist = inv_look_vec.length()
+            inv_look_dir = inv_look_vec / max_dist
+            raycast_results = self.sim.cast_ray(
+                habitat_sim.geo.Ray(look_target, inv_look_dir)
+            )
+
+            if (
+                raycast_results.has_hits()
+                and raycast_results.hits[0].ray_distance < max_dist
+            ):
+                frame_target = look_target + inv_look_dir * (
+                    raycast_results.hits[0].ray_distance - 0.1
+                )
+
+        self.cur_pos = self.cur_pos + (frame_target - self.cur_pos) * 0.1
+
+        self.target_orient = mn.Quaternion.from_matrix(
+            mn.Matrix4.look_at(
+                eye=self.cur_pos,
+                target=look_target,
+                up=mn.Vector3(0, 1.0, 0),
+            ).rotation()
+        )
+
+        self.cur_orient = self.target_orient
+
+
 class HabitatSimInteractiveViewer(Application):
     # the maximum number of chars displayable in the app window
     # using the magnum text module. These chars are used to
@@ -104,7 +169,7 @@ class HabitatSimInteractiveViewer(Application):
         configuration.title = "Habitat Sim Interactive Viewer"
         configuration.size = window_size
         Application.__init__(self, configuration)
-        self.fps: float = 60.0
+        self.fps: float = 30.0
 
         # Compute environment camera resolution based on the number of environments to render in the window.
         grid_size: mn.Vector2i = ReplayRenderer.environment_grid_size(self.num_env)
@@ -241,7 +306,7 @@ class HabitatSimInteractiveViewer(Application):
         self.humanoid_cur_path = None
         self.humanoid_cur_waypoint = 0
         self.humanoid_models = self.get_humanoid_models("data/humanoids/humanoid_data/")
-        self.humanoid_cur_model_index = 0
+        self.humanoid_cur_model_index = 1
         self.humanoid_seq_motions = find_files(
             "data/humanoids/humanoid_data/mdm_data/", file_endswith, ".pkl"
         )
@@ -249,8 +314,12 @@ class HabitatSimInteractiveViewer(Application):
             None  # provides consistency between loading of new model
         )
         # self.init_humanoid(random.choice(self.humanoid_models))
+        self.follow_cam = FollowCam(self.sim)
         self.init_humanoid(self.humanoid_models[self.humanoid_cur_model_index])
+        self.follow_cam.cur_pos = self.humanoid.base_pos + mn.Vector3(1.0, 2.0, 0.55)
         self.obs_buffer = []
+        self.humanoid_model_inc_freq = 2.5
+        self.humanoid_model_last_inc = 0
 
         self.time_since_last_simulation = 0.0
         LoggingContext.reinitialize_from_env()
@@ -312,12 +381,14 @@ class HabitatSimInteractiveViewer(Application):
                 self.humanoid.base_pos,
                 self.humanoid.base_rot,
                 self.humanoid_controller.prev_orientation,
+                self.humanoid_controller.walk_mocap_frame,
             )
             self.sim.get_articulated_object_manager().remove_object_by_handle(
                 self.humanoid.sim_obj.handle
             )
         # self.humanoid_cur_path = None
         self.humanoid = KinematicHumanoid(urdf_path=model[0], sim=self.sim)
+        self.follow_cam.humanoid = self.humanoid
         self.humanoid.reconfigure()
         if self.prev_humanoid_base_state is None:
             self.humanoid.base_pos = self.sim.pathfinder.get_random_navigable_point(
@@ -331,6 +402,7 @@ class HabitatSimInteractiveViewer(Application):
 
         if self.prev_humanoid_base_state is not None:
             self.humanoid_controller.prev_orientation = self.prev_humanoid_base_state[2]
+            self.humanoid_controller.walk_mocap_frame = self.prev_humanoid_base_state[3]
 
     def update_humanoid(self):
         """
@@ -342,7 +414,7 @@ class HabitatSimInteractiveViewer(Application):
                 self.humanoid_cur_path[self.humanoid_cur_waypoint]
                 - self.humanoid.base_pos
             )
-            relative_pos = relative_pos / np.linalg.norm(relative_pos) * (1.0 / 30.0)
+            relative_pos = relative_pos / np.linalg.norm(relative_pos) * (1.0 / 20.0)
             self.humanoid_controller.calculate_walk_pose(mn.Vector3(relative_pos))
         elif type(self.humanoid_controller) == SeqPoseController:
             self.humanoid_controller.get_pose_mdm()
@@ -357,6 +429,16 @@ class HabitatSimInteractiveViewer(Application):
             bp, island_index=self.largest_indoor_island
         )[1]
         self.humanoid.base_pos = bp
+
+    def inc_humanoid(self):
+        """
+        Increment the humanoid model for the scene.
+        """
+        self.humanoid_cur_model_index = (self.humanoid_cur_model_index + 1) % len(
+            self.humanoid_models
+        )
+        model = self.humanoid_models[self.humanoid_cur_model_index]
+        self.init_humanoid(model, controller=HumanoidRearrangeController)
 
     def draw_contact_debug(self):
         """
@@ -448,16 +530,31 @@ class HabitatSimInteractiveViewer(Application):
             )
             self.record_obs(self.obs_buffer)
 
-        keys = active_agent_id_and_sensor_name
+        if (
+            self.sim.get_world_time() - self.humanoid_model_last_inc
+            > self.humanoid_model_inc_freq
+        ):
+            self.inc_humanoid()
+            self.humanoid_model_last_inc = self.sim.get_world_time()
+            self.humanoid_model_inc_freq = max(
+                0.25, self.humanoid_model_inc_freq * 0.75
+            )
+
+        if self.sim.get_world_time() > 20:
+            self.save_video(
+                filename="test_video_out.mp4", buffer=self.obs_buffer, fps=self.fps
+            )
+            exit()
 
         if self.enable_batch_renderer:
             self.render_batch()
         else:
-            self.sim._Simulator__sensors[keys[0]][keys[1]].draw_observation()
-            agent = self.sim.get_agent(keys[0])
-            self.render_camera = agent.scene_node.node_sensor_suite.get(keys[1])
+            pass
+            # self.sim._Simulator__sensors[keys[0]][keys[1]].draw_observation()
+            # agent = self.sim.get_agent(keys[0])
+            # self.render_camera = agent.scene_node.node_sensor_suite.get(keys[1])
             # self.debug_draw()
-            self.render_camera.render_target.blit_rgba_to_default()
+            # self.render_camera.render_target.blit_rgba_to_default()
 
         # draw CPU/GPU usage data and other info to the app window
         mn.gl.default_framebuffer.bind()
@@ -839,24 +936,28 @@ class HabitatSimInteractiveViewer(Application):
         Record an observation from the camera into a buffer.
         """
 
-        if self.humanoid is not None:
-            self.render_camera.node.transformation = mn.Matrix4.identity_init()
-            # print(self.humanoid.base_transformation)
-            # print(self.humanoid.base_rot)
-            mn.Quaternion.rotation(self.humanoid.base_rot, mn.Vector3(0, 1, 0))
-            self.default_agent.scene_node.transformation = mn.Matrix4.look_at(
-                # eye = self.humanoid.sim_obj.transformation.transform_point(mn.Vector3(0.7,1.2,0.55)),
-                # eye = self.humanoid.sim_obj.transformation.translation + mn.Vector3(0.7,1.2,0.55),
-                eye=self.humanoid.base_pos + mn.Vector3(1.0, 2.0, 0.55),
-                # eye = self.humanoid.base_pos + base_rot_quat.transform_vector(mn.Vector3(0.7,2.0,0.55)),
-                target=self.humanoid.base_pos + mn.Vector3(0, 1.3, 0),
-                up=mn.Vector3(0, 1.0, 0),
-            )
+        # if self.humanoid is not None:
+        #     self.render_camera.node.transformation = mn.Matrix4.identity_init()
+        #     # print(self.humanoid.base_transformation)
+        #     # print(self.humanoid.base_rot)
+        #     self.default_agent.scene_node.transformation = mn.Matrix4.look_at(
+        #         # eye = self.humanoid.sim_obj.transformation.transform_point(mn.Vector3(0.7,1.2,0.55)),
+        #         # eye = self.humanoid.sim_obj.transformation.translation + mn.Vector3(0.7,1.2,0.55),
+        #         eye=self.humanoid.base_pos + mn.Vector3(1.0, 2.0, 0.55),
+        #         # eye = self.humanoid.base_pos + base_rot_quat.transform_vector(mn.Vector3(0.7,2.0,0.55)),
+        #         target=self.humanoid.base_pos + mn.Vector3(0, 1.3, 0),
+        #         up=mn.Vector3(0, 1.0, 0),
+        #     )
 
-        active_agent_id_and_sensor_name: Tuple[int, str] = (0, "color_sensor")
-        self.sim._Simulator__sensors[active_agent_id_and_sensor_name[0]][
-            active_agent_id_and_sensor_name[1]
-        ].draw_observation()
+        self.follow_cam.update_state()
+        self.render_camera.node.transformation = mn.Matrix4.identity_init()
+        self.default_agent.scene_node.translation = self.follow_cam.cur_pos
+        self.default_agent.scene_node.rotation = self.follow_cam.cur_orient
+
+        # active_agent_id_and_sensor_name: Tuple[int, str] = (0, "color_sensor")
+        # self.sim._Simulator__sensors[active_agent_id_and_sensor_name[0]][
+        #    active_agent_id_and_sensor_name[1]
+        # ].draw_observation()
 
         buffer.append(self.sim.get_sensor_observations())
         # self.render_camera.node.transformation = prev_transform
