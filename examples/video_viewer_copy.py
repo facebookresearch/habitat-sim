@@ -69,6 +69,79 @@ def find_files(
     return filepaths
 
 
+class ContinuousPathFollower:
+    def __init__(self, sim, path, agent_scene_node, waypoint_threshold):
+        self._sim = sim
+        self._points = path.points[:]
+        assert len(self._points) > 0
+        self._length = path.geodesic_distance
+        self._node = agent_scene_node
+        self._threshold = waypoint_threshold
+        self._step_size = 0.01
+        self.progress = 0  # geodesic distance -> [0,1]
+        self.waypoint = path.points[0]
+
+        # setup progress waypoints
+        _point_progress = [0]
+        _segment_tangents = []
+        _length = self._length
+        for ix, point in enumerate(self._points):
+            if ix > 0:
+                segment = point - self._points[ix - 1]
+                segment_length = np.linalg.norm(segment)
+                segment_tangent = segment / segment_length
+                _point_progress.append(
+                    segment_length / _length + _point_progress[ix - 1]
+                )
+                # t-1 -> t
+                _segment_tangents.append(segment_tangent)
+        self._point_progress = _point_progress
+        self._segment_tangents = _segment_tangents
+        # final tangent is duplicated
+        self._segment_tangents.append(self._segment_tangents[-1])
+
+        print("self._length = " + str(self._length))
+        print("num points = " + str(len(self._points)))
+        print("self._point_progress = " + str(self._point_progress))
+        print("self._segment_tangents = " + str(self._segment_tangents))
+
+    def pos_at(self, progress):
+        if progress <= 0:
+            return self._points[0]
+        elif progress >= 1.0:
+            return self._points[-1]
+
+        path_ix = 0
+        for ix, prog in enumerate(self._point_progress):
+            if prog > progress:
+                path_ix = ix
+                break
+
+        segment_distance = self._length * (progress - self._point_progress[path_ix - 1])
+        return (
+            self._points[path_ix - 1]
+            + self._segment_tangents[path_ix - 1] * segment_distance
+        )
+
+    def update_waypoint(self):
+        if self.progress < 1.0:
+            wp_disp = self.waypoint - self._node.absolute_translation
+            wp_dist = np.linalg.norm(wp_disp)
+            node_pos = self._node.absolute_translation
+            step_size = self._step_size
+            threshold = self._threshold
+            while wp_dist < threshold:
+                self.progress += step_size
+                self.waypoint = self.pos_at(self.progress)
+                if self.progress >= 1.0:
+                    self.waypoint = self.pos_at(self.progress) + self._segment_tangents[
+                        -1
+                    ] / np.linalg.norm(self._segment_tangents[-1])
+                    break
+                wp_disp = self.waypoint - node_pos
+                wp_dist = np.linalg.norm(wp_disp)
+
+
 class FollowCam:
     """
     Camera which follows a humanoid smoothly.
@@ -81,17 +154,42 @@ class FollowCam:
         self.cur_orient = mn.Quaternion()
         self.target_pos = mn.Vector3()
         self.target_orient = mn.Quaternion()
-        self.collision_free_look = True
+        self.collision_free_look = False
         self.pos_q = deque()
+        self.path_follower = None
+        self.path_follow = True
+
+    def set_humanoid(self, humanoid):
+        self.humanoid = humanoid
+        if self.path_follower is not None:
+            self.path_follower._node = self.humanoid.sim_obj.root_scene_node
+
+    def set_path(self, path):
+        self.path_follower = ContinuousPathFollower(
+            self.sim,
+            path,
+            self.humanoid.sim_obj.root_scene_node,
+            waypoint_threshold=2.4,
+        )
+        self.path_follower.update_waypoint()
 
     def update_state(self):
         """
         Update the state of the camera from the target.
         """
         self.target_pos = self.humanoid.base_pos + mn.Vector3(1.0, 2.0, 0.55)
+        # Initial camera angle (v2)
+        # self.target_pos = self.humanoid.sim_obj.transformation.transform_point(
+        #     mn.Vector3(1.0, 1.0, -0.55)
+        # )
+        # Front facing camera angle (v3)
         self.target_pos = self.humanoid.sim_obj.transformation.transform_point(
-            mn.Vector3(1.0, 1.0, -0.55)
+            mn.Vector3(0, 0.0, 1.5)
         )
+
+        if self.path_follow and self.path_follower is not None:
+            self.path_follower.update_waypoint()
+            self.target_pos = self.path_follower.waypoint + mn.Vector3(0, 1.5, 0)
 
         self.pos_q.appendleft(self.target_pos)
         if len(self.pos_q) > 20:
@@ -352,6 +450,8 @@ class HabitatSimInteractiveViewer(Application):
         while not self.sim.pathfinder.find_path(path):
             continue
         self.humanoid_cur_path = path.points
+        if self.follow_cam is not None:
+            self.follow_cam.set_path(path)
 
     def update_humanoid_path_waypoint(self):
         """
@@ -388,8 +488,8 @@ class HabitatSimInteractiveViewer(Application):
             )
         # self.humanoid_cur_path = None
         self.humanoid = KinematicHumanoid(urdf_path=model[0], sim=self.sim)
-        self.follow_cam.humanoid = self.humanoid
         self.humanoid.reconfigure()
+        self.follow_cam.set_humanoid(self.humanoid)
         if self.prev_humanoid_base_state is None:
             self.humanoid.base_pos = self.sim.pathfinder.get_random_navigable_point(
                 island_index=self.largest_indoor_island
@@ -554,7 +654,7 @@ class HabitatSimInteractiveViewer(Application):
             # agent = self.sim.get_agent(keys[0])
             # self.render_camera = agent.scene_node.node_sensor_suite.get(keys[1])
             # self.debug_draw()
-            # self.render_camera.render_target.blit_rgba_to_default()
+            self.render_camera.render_target.blit_rgba_to_default()
 
         # draw CPU/GPU usage data and other info to the app window
         mn.gl.default_framebuffer.bind()
