@@ -122,9 +122,6 @@ class HbaoConfiguration {
 
 class Hbao {
  public:
-  // Use this to construct before a GL context is ready
-  explicit Hbao(Magnum::NoCreateT) noexcept;
-
   explicit Hbao(const HbaoConfiguration& configuration);
 
   Hbao(const Hbao&) = delete;

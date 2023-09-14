@@ -583,8 +583,6 @@ struct Hbao::State {
   Mn::Vector4 random[HbaoRandomNumElements * MaxSamples];
 };
 
-Hbao::Hbao(Mn::NoCreateT) noexcept {}
-
 Hbao::Hbao(const HbaoConfiguration& configuration) {
   if (!Cr::Utility::Resource::hasGroup("gfx-batch-shaders")) {
     importShaderResources();
