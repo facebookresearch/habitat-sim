@@ -353,6 +353,7 @@ class DemoRunner:
 
     def _bench_target(self, _idx=0):
         self.init_common()
+        print("inside _bench_target")
 
         best_perf = None
         for _ in range(3):
