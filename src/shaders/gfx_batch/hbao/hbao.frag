@@ -17,6 +17,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+precision highp float;
+
 #if AO_LAYERED == 1
 #extension GL_ARB_shader_image_load_store : enable
 #endif
@@ -39,7 +41,16 @@ struct HBAOData {
   float AOMultiplier;
   float PowExponent;
   vec2 _pad0;
-
+  /*
+   * Projection information
+   * idx 0 : 2 / proj_mat[0.0]
+   * idx 1 : 2 / proj_mat[1,1]
+   * idx 2 : x / proj_mat[0.0]
+   * idx 3 : y / proj_mat[1,1]
+   * where (x, y) are
+   * if orthographic : (-(1.0f + proj_mat[3][0]), -(1.0f - proj_mat[3][1]))
+   * if perspective :  (-(1.0f - proj_mat[2][0]), -(1.0f + proj_mat[2][1]))
+   */
   vec4 projInfo;
   vec2 projScale;
   int projOrtho;
@@ -67,7 +78,7 @@ layout(std140) uniform controlBuffer {
   HBAOData control;
 };
 
-#if AO_DEINTERLEAVED
+#ifdef AO_DEINTERLEAVED
 
 #if AO_LAYERED
 vec2 g_Float2Offset = control.float2Offsets[gl_PrimitiveID].xy;
@@ -133,7 +144,7 @@ out vec4 out_Color;
 void outputColor(vec4 color) {
   out_Color = color;
 }
-#endif  // if AO_DEINTERLEAVED
+#endif  // ifdef AO_DEINTERLEAVED
 
 #ifdef USE_GEOMETRY_SHADER_PASSTHROUGH
 in vec2 texCoordGeometry;
@@ -149,7 +160,7 @@ vec3 UVToView(vec2 uv, float eye_z) {
               eye_z);
 }
 
-#if AO_DEINTERLEAVED
+#ifdef AO_DEINTERLEAVED
 
 vec3 FetchQuarterResViewPos(vec2 UV) {
   float ViewDepth = textureLod(texLinearDepth, getQuarterCoord(UV), 0).x;
@@ -215,7 +226,7 @@ vec2 RotateDirection(vec2 Dir, vec2 CosSin) {
 
 //----------------------------------------------------------------------------------
 vec4 GetJitter() {
-#if AO_DEINTERLEAVED
+#ifdef AO_DEINTERLEAVED
   // Get the current jitter vector from the per-pass constant buffer
   return g_Jitter;
 #else
@@ -231,7 +242,7 @@ float ComputeCoarseAO(vec2 FullResUV,
                       vec4 Rand,
                       vec3 ViewPosition,
                       vec3 ViewNormal) {
-#if AO_DEINTERLEAVED
+#ifdef AO_DEINTERLEAVED
   RadiusPixels /= 4.0;
 #endif
 
@@ -252,7 +263,7 @@ float ComputeCoarseAO(vec2 FullResUV,
     float RayPixels = (Rand.z * StepSizePixels + 1.0);
 
     for (float StepIndex = 0; StepIndex < NUM_STEPS; ++StepIndex) {
-#if AO_DEINTERLEAVED
+#ifdef AO_DEINTERLEAVED
       vec2 SnappedUV =
           round(RayPixels * Direction) * control.InvQuarterResolution +
           FullResUV;
@@ -275,7 +286,7 @@ float ComputeCoarseAO(vec2 FullResUV,
 
 //----------------------------------------------------------------------------------
 void main() {
-#if AO_DEINTERLEAVED
+#ifdef AO_DEINTERLEAVED
   vec2 base = floor(gl_FragCoord.xy) * 4.0 + g_Float2Offset;
   vec2 uv = base * (control.InvQuarterResolution / 4.0);
 
