@@ -205,10 +205,10 @@ class ViewNormalShader : public Mn::GL::AbstractShaderProgram {
     attachShaders({vert, frag});
     CORRADE_INTERNAL_ASSERT(link());
 
-    projectionInfoUniform_ = uniformLocation("projInfo");
-    projectionOrthographicUniform_ = uniformLocation("projOrtho");
-    inverseFullResolutionUniform_ = uniformLocation("InvFullResolution");
-    setUniform(uniformLocation("texLinearDepth"), LinearDepthTextureBinding);
+    projectionInfoUniform_ = uniformLocation("uProjInfo");
+    projectionOrthographicUniform_ = uniformLocation("uProjOrtho");
+    inverseFullResolutionUniform_ = uniformLocation("uInvFullResolution");
+    setUniform(uniformLocation("uTexLinearDepth"), LinearDepthTextureBinding);
   }
 
   ViewNormalShader& setProjectionInfo(const Mn::Vector4& info) {
