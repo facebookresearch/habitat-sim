@@ -980,9 +980,6 @@ Viewer::Viewer(const Arguments& arguments)
     simConfig_.physicsConfigFile = physicsConfig;
   }
 
-  // image based lighting (PBR)
-  simConfig_.pbrImageBasedLighting = args.isSet("ibl");
-
   // will set simulator configuration in MM - sets ActiveDataset as well
   MM_->setSimulatorConfiguration(simConfig_);
   objectAttrManager_ = MM_->getObjectAttributesManager();

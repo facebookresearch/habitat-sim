@@ -21,7 +21,7 @@ namespace ssao {
 #define AO_LAYERED_IMAGE 1
 #define AO_LAYERED_GS 2
 
-#define USE_AO_LAYERED_SINGLEPASS AO_LAYERED_GS
+#define USE_AO_LAYERED_SINGLEPASS AO_LAYERED_IMAGE
 
 static const int NUM_MRT = 8;
 

@@ -74,21 +74,21 @@ vec3 getQuarterCoord(vec2 UV) {
 
 #if AO_BLUR
 layout(binding = 0, rg16f) uniform image2DArray imgOutput;
-#else
+#else   // AO_BLUR
 layout(binding = 0, r8) uniform image2DArray imgOutput;
-#endif
+#endif  // AO_BLUR
 
 void outputColor(vec4 color) {
   imageStore(imgOutput, ivec3(ivec2(gl_FragCoord.xy), gl_PrimitiveID), color);
 }
-#else
+#else   // AO_LAYERED > 1
 layout(location = 0, index = 0) out vec4 out_Color;
 
 void outputColor(vec4 color) {
   out_Color = color;
 }
-#endif
-#else
+#endif  // AO_LAYERED == 1
+#else   // AO_LAYERED
 layout(location = 0) uniform vec2 g_Float2Offset;
 layout(location = 1) uniform vec4 g_Jitter;
 
@@ -104,9 +104,9 @@ layout(location = 0, index = 0) out vec4 out_Color;
 void outputColor(vec4 color) {
   out_Color = color;
 }
-#endif
+#endif  // AO_LAYERED
 
-#else
+#else   //#if !AO_DEINTERLEAVED
 layout(binding = 0) uniform sampler2D texLinearDepth;
 layout(binding = 1) uniform sampler2D texRandom;
 
@@ -115,7 +115,7 @@ layout(location = 0, index = 0) out vec4 out_Color;
 void outputColor(vec4 color) {
   out_Color = color;
 }
-#endif
+#endif  //#if AO_DEINTERLEAVED
 
 in vec2 textureCoordinates;
 
