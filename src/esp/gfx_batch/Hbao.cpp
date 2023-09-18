@@ -135,9 +135,10 @@ class DepthLinearizeShader : public Mn::GL::AbstractShaderProgram {
     vert.addSource(rs.getString("hbao/fullscreenquad.vert"));
 
     Mn::GL::Shader frag{GlslVersion, Mn::GL::Shader::Type::Fragment};
-    frag.addSource(Cr::Utility::format("#define DEPTHLINEARIZE_MSAA {}\n",
-                                       msaa ? 1 : 0))
-        .addSource(rs.getString("hbao/depthlinearize.frag"));
+    if (msaa) {
+      frag.addSource("#define DEPTHLINEARIZE_MSAA\n"_s);
+    }
+    frag.addSource(rs.getString("hbao/depthlinearize.frag"));
 
     CORRADE_INTERNAL_ASSERT(vert.compile());
     CORRADE_INTERNAL_ASSERT(frag.compile());
@@ -145,11 +146,11 @@ class DepthLinearizeShader : public Mn::GL::AbstractShaderProgram {
     attachShaders({vert, frag});
     CORRADE_INTERNAL_ASSERT(link());
 
-    clipInfoUniform_ = uniformLocation("clipInfo");
+    clipInfoUniform_ = uniformLocation("uClipInfo");
     if (msaa) {
-      sampleIndexUniform_ = uniformLocation("sampleIndex");
+      sampleIndexUniform_ = uniformLocation("uSampleIndex");
     }
-    setUniform(uniformLocation("inputTexture"), InputTextureBinding);
+    setUniform(uniformLocation("uInputTexture"), InputTextureBinding);
   }
 
   DepthLinearizeShader& setClipInfo(const Mn::Vector4& info) {
