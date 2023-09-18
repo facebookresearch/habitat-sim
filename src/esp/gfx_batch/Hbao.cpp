@@ -453,11 +453,11 @@ class HbaoDeinterleaveShader : public Mn::GL::AbstractShaderProgram {
     attachShaders({vert, frag});
     CORRADE_INTERNAL_ASSERT(link());
 
-    projectionInfoUniform_ = uniformLocation("info");
-    setUniform(uniformLocation("texLinearDepth"), LinearDepthTextureBinding);
+    projectionInfoUniform_ = uniformLocation("uUVOffsetInvResInfo");
+    setUniform(uniformLocation("uTexLinearDepth"), LinearDepthTextureBinding);
   }
 
-  HbaoDeinterleaveShader& setProjectionInfo(
+  HbaoDeinterleaveShader& setUVOffsetInvResInfo(
       const Mn::Vector2& uvOffset,
       const Mn::Vector2& inverseResolution) {
     setUniform(projectionInfoUniform_,
@@ -480,7 +480,7 @@ class HbaoReinterleaveShader : public Mn::GL::AbstractShaderProgram {
   enum : Mn::Int { ResultsTextureBinding = 0 };
 
  public:
-  explicit HbaoReinterleaveShader(bool blur) {
+  explicit HbaoReinterleaveShader(bool disableBlur) {
     Cr::Utility::Resource rs{"gfx-batch-shaders"};
 
     // TODO use our own
@@ -488,8 +488,10 @@ class HbaoReinterleaveShader : public Mn::GL::AbstractShaderProgram {
     vert.addSource(rs.getString("hbao/fullscreenquad.vert"));
 
     Mn::GL::Shader frag{GlslVersion, Mn::GL::Shader::Type::Fragment};
-    frag.addSource(Cr::Utility::format("#define AO_BLUR {}\n", blur ? 1 : 0))
-        .addSource(rs.getString("hbao/hbao_reinterleave.frag"));
+    if (disableBlur) {
+      frag.addSource("#define NO_AO_BLUR\n"_s);
+    }
+    frag.addSource(rs.getString("hbao/hbao_reinterleave.frag"));
 
     CORRADE_INTERNAL_ASSERT(vert.compile());
     CORRADE_INTERNAL_ASSERT(frag.compile());
@@ -497,7 +499,7 @@ class HbaoReinterleaveShader : public Mn::GL::AbstractShaderProgram {
     attachShaders({vert, frag});
     CORRADE_INTERNAL_ASSERT(link());
 
-    setUniform(uniformLocation("texResultsArray"), ResultsTextureBinding);
+    setUniform(uniformLocation("uTexResultsArray"), ResultsTextureBinding);
   }
 
   HbaoReinterleaveShader& bindResultsTexture(Mn::GL::Texture2DArray& texture) {
@@ -577,8 +579,8 @@ struct Hbao::State {
   HbaoCalcShader hbao2CalcShader{Mn::NoCreate};
   HbaoCalcShader hbao2CalcBlurShader{Mn::NoCreate};
   HbaoDeinterleaveShader hbao2DeinterleaveShader;
-  HbaoReinterleaveShader hbao2ReinterleaveShader{/*blur*/ false};
-  HbaoReinterleaveShader hbao2ReinterleaveBlurShader{/*blur*/ true};
+  HbaoReinterleaveShader hbao2ReinterleaveNoBlurShader{/*disable blur*/ true};
+  HbaoReinterleaveShader hbao2ReinterleaveShader{/*disable blur*/ false};
 
   Mn::GL::Buffer hbaoUniform{Mn::GL::Buffer::TargetHint::Uniform};
   HbaoUniformData hbaoUniformData;
@@ -987,8 +989,9 @@ void Hbao::drawCacheAwareInternal(Mn::GL::AbstractFramebuffer& output) {
     state_
         ->hbao2DeinterleaveShader
         // NOLINTNEXTLINE(bugprone-integer-division). This is deliberate
-        .setProjectionInfo({Mn::Float(i % 4) + 0.5f, Mn::Float(i / 4) + 0.5f},
-                           state_->hbaoUniformData.invFullResolution)
+        .setUVOffsetInvResInfo(
+            {Mn::Float(i % 4) + 0.5f, Mn::Float(i / 4) + 0.5f},
+            state_->hbaoUniformData.invFullResolution)
         .draw(state_->triangle);
   }
 
@@ -1057,8 +1060,8 @@ void Hbao::drawCacheAwareInternal(Mn::GL::AbstractFramebuffer& output) {
   HbaoReinterleaveShader& reinterleaveShader =
       state_->configuration.flags() >=
               (HbaoFlag::Blur | HbaoFlag::UseAoSpecialBlur)
-          ? state_->hbao2ReinterleaveBlurShader
-          : state_->hbao2ReinterleaveShader;
+          ? state_->hbao2ReinterleaveShader
+          : state_->hbao2ReinterleaveNoBlurShader;
 
   reinterleaveShader.bindResultsTexture(state_->hbao2ResultArray)
       .draw(state_->triangle);

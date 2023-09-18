@@ -17,7 +17,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-uniform sampler2DArray texResultsArray;
+precision highp float;
+precision highp sampler2DArray;
+uniform sampler2DArray uTexResultsArray;
 
 out vec4 out_Color;
 
@@ -29,10 +31,13 @@ void main() {
   int SliceId = Offset.y * 4 + Offset.x;
   ivec2 QuarterResPos = FullResPos >> 2;
 
-#if AO_BLUR
-  out_Color = vec4(texelFetch( texResultsArray, ivec3(QuarterResPos, SliceId), 0).xy,0,0);
+// Defaults to having blur. No blur should only be for debug
+#ifdef NO_AO_BLUR
+  out_Color =
+      vec4(texelFetch(uTexResultsArray, ivec3(QuarterResPos, SliceId), 0).x);
 #else
-  out_Color = vec4(texelFetch( texResultsArray, ivec3(QuarterResPos, SliceId), 0).x);
-#endif
+  out_Color = vec4(
+      texelFetch(uTexResultsArray, ivec3(QuarterResPos, SliceId), 0).xy, 0, 0);
 
+#endif
 }
