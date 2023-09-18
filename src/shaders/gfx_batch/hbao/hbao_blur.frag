@@ -16,14 +16,14 @@
  * SPDX-FileCopyrightText: Copyright (c) 2014-2021 NVIDIA CORPORATION
  * SPDX-License-Identifier: Apache-2.0
  */
+precision highp float;
+const float KERNEL_RADIUS = 3.0f;
 
-const float KERNEL_RADIUS = 3;
+uniform float uGaussSharpness;
+uniform vec2 uGaussInvResDirection;
+// either set x to 1/width or y to 1/height
 
-uniform float g_Sharpness;
-uniform vec2
-    g_InvResolutionDirection;  // either set x to 1/width or y to 1/height
-
-uniform sampler2D texSource;
+uniform sampler2D uTexSource;
 
 in vec2 texCoord;
 
@@ -36,14 +36,14 @@ float BlurFunction(vec2 uv,
                    float center_c,
                    float center_d,
                    inout float w_total) {
-  vec2 aoz = texture(texSource, uv).xy;
+  vec2 aoz = texture(uTexSource, uv).xy;
   float c = aoz.x;
   float d = aoz.y;
 
   const float BlurSigma = float(KERNEL_RADIUS) * 0.5;
   const float BlurFalloff = 1.0 / (2.0 * BlurSigma * BlurSigma);
 
-  float ddiff = (d - center_d) * g_Sharpness;
+  float ddiff = (d - center_d) * uGaussSharpness;
   float w = exp2(-r * r * BlurFalloff - ddiff * ddiff);
   w_total += w;
 
@@ -51,25 +51,25 @@ float BlurFunction(vec2 uv,
 }
 
 void main() {
-  vec2 aoz = texture(texSource, texCoord).xy;
+  vec2 aoz = texture(uTexSource, texCoord).xy;
   float center_c = aoz.x;
   float center_d = aoz.y;
 
   float c_total = center_c;
   float w_total = 1.0;
 
-  for (float r = 1; r <= KERNEL_RADIUS; ++r) {
-    vec2 uv = texCoord + g_InvResolutionDirection * r;
+  for (float r = 1.0f; r <= KERNEL_RADIUS; ++r) {
+    vec2 uv = texCoord + uGaussInvResDirection * r;
     c_total += BlurFunction(uv, r, center_c, center_d, w_total);
   }
 
-  for (float r = 1; r <= KERNEL_RADIUS; ++r) {
-    vec2 uv = texCoord - g_InvResolutionDirection * r;
+  for (float r = 1.0f; r <= KERNEL_RADIUS; ++r) {
+    vec2 uv = texCoord - uGaussInvResDirection * r;
     c_total += BlurFunction(uv, r, center_c, center_d, w_total);
   }
 
 // This is the 2nd pass of the blur algorithm (ie bluring the previous pass)
-#if AO_BLUR_SECOND_PASS
+#ifdef AO_BLUR_SECOND_PASS
   out_Color = vec4(c_total / w_total);
 #else
   // First pass of blur algorithm

@@ -58,9 +58,9 @@ class HbaoBlurShader : public Mn::GL::AbstractShaderProgram {
   enum : Mn::Int { SourceTextureBinding = 0, LinearDepthTextureBinding = 1 };
 
  public:
-  explicit HbaoBlurShader(bool bilateral, Mn::Int aoBlur2ndPass)
+  explicit HbaoBlurShader(bool bilateral, Mn::Int aoBlurPass)
       : bilateral_{bilateral} {
-    CORRADE_INTERNAL_ASSERT(!bilateral || !aoBlur2ndPass);
+    CORRADE_INTERNAL_ASSERT(!bilateral || !aoBlurPass);
 
     Cr::Utility::Resource rs{"gfx-batch-shaders"};
 
@@ -73,9 +73,10 @@ class HbaoBlurShader : public Mn::GL::AbstractShaderProgram {
       frag.addSource(rs.getString("hbao/bilateralblur.frag"));
     } else {
       // Either first pass (0) or second pass (1)
-      frag.addSource(Cr::Utility::format("#define AO_BLUR_SECOND_PASS {}\n",
-                                         aoBlur2ndPass))
-          .addSource(rs.getString("hbao/hbao_blur.frag"));
+      if (aoBlurPass == 1) {
+        frag.addSource("#define AO_BLUR_SECOND_PASS\n"_s);
+      }
+      frag.addSource(rs.getString("hbao/hbao_blur.frag"));
     }
 
     CORRADE_INTERNAL_ASSERT(vert.compile());
@@ -84,12 +85,13 @@ class HbaoBlurShader : public Mn::GL::AbstractShaderProgram {
     attachShaders({vert, frag});
     CORRADE_INTERNAL_ASSERT(link());
 
-    sharpnessUniform_ = uniformLocation("g_Sharpness");
+    sharpnessUniform_ = uniformLocation("uGaussSharpness");
     inverseResolutionDirectionUniform_ =
-        uniformLocation("g_InvResolutionDirection");
-    setUniform(uniformLocation("texSource"), SourceTextureBinding);
-    if (bilateral)
-      setUniform(uniformLocation("texLinearDepth"), LinearDepthTextureBinding);
+        uniformLocation("uGaussInvResDirection");
+    setUniform(uniformLocation("uTexSource"), SourceTextureBinding);
+    if (bilateral) {
+      setUniform(uniformLocation("uTexLinearDepth"), LinearDepthTextureBinding);
+    }
   }
 
   HbaoBlurShader& setSharpness(Mn::Float sharpness) {
@@ -552,9 +554,13 @@ struct Hbao::State {
   Mn::GL::Texture2DArray hbao2DepthArray;
   Mn::GL::Texture2DArray hbao2ResultArray;
 
-  HbaoBlurShader bilateralBlurShader{/*bilateral*/ true, 0};
-  HbaoBlurShader hbaoBlurShader{/*bilateral*/ false, /*aoBlur2ndPass*/ 0};
-  HbaoBlurShader hbaoBlur2Shader{/*bilateral*/ false, /*aoBlur2ndPass*/ 1};
+  HbaoBlurShader bilateralBlurShader{
+      /*bilateral*/ true,
+      /*aoBlurPass value is ignored for bilateral*/ 0};
+  HbaoBlurShader hbaoBlurShaderFirstPass{/*bilateral*/ false,
+                                         /*aoBlurPass*/ 0};
+  HbaoBlurShader hbaoBlurShader2ndPass{/*bilateral*/ false,
+                                       /*aoBlurPass*/ 1};
   DepthLinearizeShader depthLinearizeShader{false};
   DepthLinearizeShader depthLinearizeShaderMsaa{true};
   ViewNormalShader viewNormalShader;
@@ -856,7 +862,7 @@ void Hbao::drawHbaoBlur(Mn::GL::AbstractFramebuffer& output) {
 
   HbaoBlurShader& shader =
       state_->configuration.flags() & HbaoFlag::UseAoSpecialBlur
-          ? state_->hbaoBlurShader
+          ? state_->hbaoBlurShaderFirstPass
           : state_->bilateralBlurShader;
   shader.setSharpness(state_->configuration.blurSharpness() / meters2viewspace)
       .setInverseResolutionDirection(
@@ -877,7 +883,7 @@ void Hbao::drawHbaoBlur(Mn::GL::AbstractFramebuffer& output) {
 
   HbaoBlurShader& secondShader =
       state_->configuration.flags() & HbaoFlag::UseAoSpecialBlur
-          ? state_->hbaoBlur2Shader
+          ? state_->hbaoBlurShader2ndPass
           : state_->bilateralBlurShader;
   secondShader
       .setSharpness(state_->configuration.blurSharpness() / meters2viewspace)
