@@ -947,10 +947,7 @@ void Hbao::drawEffect(const Mn::Matrix4& projection,
 }  // Hbao::draw
 
 void Hbao::drawClassicInternal(Mn::GL::AbstractFramebuffer& output) {
-  if (state_->configuration.flags() & HbaoFlag::Blur) {
-    // Blur or special blur
-    state_->hbaoCalc.mapForDraw(Mn::GL::Framebuffer::ColorAttachment{0}).bind();
-  } else {
+  if (state_->configuration.flags() & HbaoFlag::NoBlur) {
     output.bind();
     Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::DepthTest);
     Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::Blending);
@@ -958,6 +955,8 @@ void Hbao::drawClassicInternal(Mn::GL::AbstractFramebuffer& output) {
         Mn::GL::Renderer::BlendFunction::Zero,
         Mn::GL::Renderer::BlendFunction::SourceColor);
     // TODO Set sample mask if samples > 1
+  } else {
+    state_->hbaoCalc.mapForDraw(Mn::GL::Framebuffer::ColorAttachment{0}).bind();
   }
 
   // only special blur
@@ -970,8 +969,7 @@ void Hbao::drawClassicInternal(Mn::GL::AbstractFramebuffer& output) {
       .bindUniformBuffer(state_->hbaoUniform)
       .draw(state_->triangle);
 
-  if (state_->configuration.flags() & HbaoFlag::Blur) {
-    // Blur or special blur
+  if (!(state_->configuration.flags() & HbaoFlag::NoBlur)) {
     drawHbaoBlur(output);
   }
 
@@ -1059,10 +1057,7 @@ void Hbao::drawCacheAwareInternal(Mn::GL::AbstractFramebuffer& output) {
   }
 #endif
 
-  if (state_->configuration.flags() & HbaoFlag::Blur) {
-    // Blur or special blur
-    state_->hbaoCalc.mapForDraw(Mn::GL::Framebuffer::ColorAttachment{0}).bind();
-  } else {
+  if (state_->configuration.flags() & HbaoFlag::NoBlur) {
     output.bind();
     Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::DepthTest);
     Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::Blending);
@@ -1070,6 +1065,9 @@ void Hbao::drawCacheAwareInternal(Mn::GL::AbstractFramebuffer& output) {
         Mn::GL::Renderer::BlendFunction::Zero,
         Mn::GL::Renderer::BlendFunction::SourceColor);
     // TODO Set sample mask if samples > 1
+
+  } else {
+    state_->hbaoCalc.mapForDraw(Mn::GL::Framebuffer::ColorAttachment{0}).bind();
   }
 
   // Only special blur
@@ -1081,11 +1079,9 @@ void Hbao::drawCacheAwareInternal(Mn::GL::AbstractFramebuffer& output) {
   reinterleaveShader.bindResultsTexture(state_->hbao2ResultArray)
       .draw(state_->triangle);
 
-  if (state_->configuration.flags() & HbaoFlag::Blur) {
-    // Blur or special blur
+  if (!(state_->configuration.flags() & HbaoFlag::NoBlur)) {
     drawHbaoBlur(output);
   }
-
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
   Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
   // TODO reset sample mask if ever used

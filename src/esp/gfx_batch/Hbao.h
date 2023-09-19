@@ -14,12 +14,11 @@ namespace esp {
 namespace gfx_batch {
 
 enum class HbaoFlag {
-  Blur = 1 << 0,
-
   /**
-   * Special blur is dependent on blur being set, and is ignored if blur is not
-   * set.
+   * Default should be blur, since without blur there are artifacts. No blur
+   * capability given for debugging.
    */
+  NoBlur = 1 << 0,
   UseAoSpecialBlur = 1 << 1,
   /* These two affect only the cache-aware variant. Only one can be set at
      most, not both (mutually exclusive) */
@@ -46,22 +45,20 @@ class HbaoConfiguration {
     return *this;
   }
 
-  // Blur should always be used, otherwise there's nasty grid-like artifacts, at
-  // least until we support MSAA
-
-  // HbaoConfiguration& setUseBlur(bool state) {
-  //   // special blur is dependent on blur being enabled, so both should be
-  //   // disabled if blur is.
-  //   flags_ = (state ? flags_ | HbaoFlag::Blur
-  //                   : flags_ & ~(HbaoFlag::UseAoSpecialBlur |
-  //                   HbaoFlag::Blur));
-  //   return *this;
-  // }
+  // Blur should always be used, otherwise there's nasty grid-like artifacts.
+  // NoBlur available for debugging.
+  HbaoConfiguration& setNoBlur(bool state) {
+    // special blur is dependent on blur being enabled, so both should be
+    // disabled if NoBlur is enabled.
+    flags_ = (state ? (flags_ | HbaoFlag::NoBlur) & ~HbaoFlag::UseAoSpecialBlur
+                    : flags_ & ~HbaoFlag::NoBlur);
+    return *this;
+  }
 
   HbaoConfiguration& setUseSpecialBlur(bool state) {
-    // special blur is dependent on blur being enabled, so both should be
-    // enabled if special blur is
-    flags_ = (state ? flags_ | (HbaoFlag::UseAoSpecialBlur | HbaoFlag::Blur)
+    // special blur is dependent on blur being enabled, so NoBlur should be
+    // disabled if special blur is enabled
+    flags_ = (state ? (flags_ | HbaoFlag::UseAoSpecialBlur) & ~HbaoFlag::NoBlur
                     : flags_ & ~HbaoFlag::UseAoSpecialBlur);
     return *this;
   }
@@ -118,7 +115,7 @@ class HbaoConfiguration {
 
  private:
   Magnum::Vector2i size_;
-  HbaoFlags flags_ = HbaoFlag::Blur;
+  HbaoFlags flags_{};
   Magnum::Int samples_ = 1;
   Magnum::Float intensity_ = 0.732f, bias_ = 0.05f, radius_ = 1.84f,
                 blurSharpness_ = 10.0f;
