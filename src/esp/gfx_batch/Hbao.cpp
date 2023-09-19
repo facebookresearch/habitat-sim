@@ -364,6 +364,7 @@ class HbaoCalcShader : public Mn::GL::AbstractShaderProgram {
   }
 
   HbaoCalcShader& bindLinearDepthTexture(Mn::GL::Texture2D& texture) {
+    // classic algorithm
     CORRADE_INTERNAL_ASSERT(!deinterleaved_ || layered_ == Layered::Off);
     texture.bind(LinearDepthTextureBinding);
     return *this;
@@ -372,6 +373,7 @@ class HbaoCalcShader : public Mn::GL::AbstractShaderProgram {
   HbaoCalcShader& bindLinearDepthTexture(Mn::GL::Texture2DArray& texture) {
     CORRADE_INTERNAL_ASSERT(deinterleaved_ && layered_ != Layered::Off &&
                             !textureArrayLayer_);
+    // If cached and layered
     texture.bind(LinearDepthTextureBinding);
     return *this;
   }
@@ -380,6 +382,7 @@ class HbaoCalcShader : public Mn::GL::AbstractShaderProgram {
                                          Mn::Int slice) {
     CORRADE_INTERNAL_ASSERT(deinterleaved_ && layered_ == Layered::Off &&
                             textureArrayLayer_);
+    // If cached, not layered and using textureArrayLayer
     texture.bind(LinearDepthTextureBinding);
     setUniform(linearDepthTextureSliceUniform_, Mn::Float(slice));
     return *this;

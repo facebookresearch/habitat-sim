@@ -82,12 +82,12 @@ layout(std140) uniform controlBuffer {
 
 #ifdef AO_DEINTERLEAVED
 
+uniform sampler2DArray texLinearDepth;
+uniform sampler2D texViewNormal;
+
 #if AO_LAYERED
 vec2 g_Float2Offset = control.float2Offsets[gl_PrimitiveID].xy;
 vec4 g_Jitter = control.jitters[gl_PrimitiveID];
-
-uniform sampler2DArray texLinearDepth;
-uniform sampler2D texViewNormal;
 
 vec3 getQuarterCoord(vec2 UV) {
   return vec3(UV, float(gl_PrimitiveID));
@@ -112,11 +112,13 @@ void outputColor(vec4 color) {
 }
 #endif  // if AO_LAYERED == 1 else 2
 #else   // if !AO_LAYERED (AO_LAYERED == 0)
+
+#if AO_TEXTUREARRAY_LAYER  // AO_TEXTUREARRAY_LAYER == 1
+uniform float g_LinearDepthSlice;
+#endif
+
 uniform vec2 g_Float2Offset;
 uniform vec4 g_Jitter;
-
-uniform sampler2D texLinearDepth;
-uniform sampler2D texViewNormal;
 
 vec2 getQuarterCoord(vec2 UV) {
   return UV;
@@ -129,14 +131,9 @@ void outputColor(vec4 color) {
 }
 #endif  // if AO_LAYERED
 
-#else  //  if !AO_DEINTERLEAVED
+#else   //  if !AO_DEINTERLEAVED
 
-#if AO_TEXTUREARRAY_LAYER  // AO_TEXTUREARRAY_LAYER == 1
-uniform sampler2DArray texLinearDepth;
-uniform float g_LinearDepthSlice;
-#else                      // if AO_TEXTUREARRAY_LAYER == 0
 uniform sampler2D texLinearDepth;
-#endif                     // if AO_TEXTUREARRAY_LAYER
 
 uniform sampler2DArray texRandom;
 uniform float g_RandomSlice;
@@ -146,7 +143,7 @@ out vec4 out_Color;
 void outputColor(vec4 color) {
   out_Color = color;
 }
-#endif                     // ifdef AO_DEINTERLEAVED
+#endif  // ifdef AO_DEINTERLEAVED
 
 #ifdef USE_GEOMETRY_SHADER_PASSTHROUGH
 in vec2 texCoordGeometry;
@@ -165,22 +162,22 @@ vec3 UVToView(vec2 uv, float eye_z) {
 #ifdef AO_DEINTERLEAVED
 
 vec3 FetchQuarterResViewPos(vec2 UV) {
-  float ViewDepth = textureLod(texLinearDepth, getQuarterCoord(UV), 0).x;
+  float ViewDepth = textureLod(texLinearDepth,
+#if AO_TEXTUREARRAY_LAYER
+                               vec3(UV, g_LinearDepthSlice),
+#else
+                               getQuarterCoord(UV),
+#endif
+                               0.0f)
+                        .x;
+
   return UVToView(UV, ViewDepth);
 }
 
-#else  // AO_DEINTERLEAVED
+#else  // not AO_DEINTERLEAVED
 
 vec3 FetchViewPos(vec2 UV) {
-  float ViewDepth = textureLod(texLinearDepth,
-#if AO_TEXTUREARRAY_LAYER
-                               vec3(UV, g_LinearDepthSlice)
-#else
-                               UV
-#endif
-                                   ,
-                               0.0f)
-                        .x;
+  float ViewDepth = textureLod(texLinearDepth, UV, 0.0f).x;
   return UVToView(UV, ViewDepth);
 }
 
