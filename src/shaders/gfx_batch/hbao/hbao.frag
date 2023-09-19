@@ -66,13 +66,16 @@ struct HBAOData {
 // optimally
 
 #pragma optionNV(unroll all)
+// Use the below to not unroll loops, which will decrease performance by half
+// but speed up link time by 10-20x
+//#pragma optionNV(inline 0)
 
 #define M_PI 3.14159265f
 
 // tweakables
 const float NUM_STEPS = 4;
-const float NUM_DIRECTIONS =
-    8;  // texRandom/g_Jitter initialization depends on this
+// texRandom/g_Jitter initialization depends on this
+const float NUM_DIRECTIONS = 8;
 
 layout(std140) uniform controlBuffer {
   HBAOData control;
@@ -95,14 +98,14 @@ vec3 getQuarterCoord(vec2 UV) {
 
 #if AO_SPECIAL_BLUR
 layout(rg16f) uniform image2DArray imgOutput;
-#else
+#else   // if !AO_SPECIAL_BLUR
 layout(r8) uniform image2DArray imgOutput;
 #endif  // if AO_SPECIAL_BLUR
 
 void outputColor(vec4 color) {
   imageStore(imgOutput, ivec3(ivec2(gl_FragCoord.xy), gl_PrimitiveID), color);
 }
-#else   //#if AO_LAYERED != 1 (if 2)
+#else   //#if AO_LAYERED > 1 (if 2)
 out vec4 out_Color;
 
 void outputColor(vec4 color) {

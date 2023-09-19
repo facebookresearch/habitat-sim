@@ -287,8 +287,9 @@ class HbaoCalcShader : public Mn::GL::AbstractShaderProgram {
     Mn::GL::Shader geom{Mn::NoCreate};
     if (layered == Layered::GeometryShader) {
       geom = Mn::GL::Shader{GlslVersion, Mn::GL::Shader::Type::Geometry};
-      if (passthroughSupported)
+      if (passthroughSupported) {
         geom.addSource("#define USE_GEOMETRY_SHADER_PASSTHROUGH\n"_s);
+      }
       geom.addSource(rs.getString("hbao/fullscreenquad.geom"));
     }
 #endif
@@ -318,9 +319,6 @@ class HbaoCalcShader : public Mn::GL::AbstractShaderProgram {
 #ifndef MAGNUM_TARGET_WEBGL
     if (layered == Layered::GeometryShader) {
       CORRADE_INTERNAL_ASSERT(geom.compile());
-    }
-
-    if (layered == Layered::GeometryShader) {
       attachShaders({vert, geom, frag});
     } else
 #endif
@@ -341,8 +339,9 @@ class HbaoCalcShader : public Mn::GL::AbstractShaderProgram {
     if (deinterleaved) {
       setUniform(uniformLocation("texViewNormal"), ViewNormalTextureBinding);
     } else {
-      if (textureArrayLayer)
+      if (textureArrayLayer) {
         linearDepthTextureSliceUniform_ = uniformLocation("g_LinearDepthSlice");
+      }
       setUniform(uniformLocation("texRandom"), RandomTextureBinding);
       randomSliceUniform_ = uniformLocation("g_RandomSlice");
     }
@@ -994,10 +993,9 @@ void Hbao::drawCacheAwareInternal(Mn::GL::AbstractFramebuffer& output) {
           0, i + layer);
     }
 
-    state_
-        ->hbao2DeinterleaveShader
-        // NOLINTNEXTLINE(bugprone-integer-division). This is deliberate
+    state_->hbao2DeinterleaveShader
         .setUVOffsetInvResInfo(
+            // NOLINTNEXTLINE(bugprone-integer-division). This is deliberate
             {Mn::Float(i % 4) + 0.5f, Mn::Float(i / 4) + 0.5f},
             state_->hbaoUniformData.invFullResolution)
         .draw(state_->triangle);
