@@ -5,6 +5,19 @@
 precision highp float;
 precision highp sampler2DArray;
 
+// These are defined when shader is built in Habitat.
+#ifndef AO_LAYERED
+#define AO_LAYERED 1
+#endif
+
+#ifndef AO_RANDOMTEX_SIZE
+#define AO_RANDOMTEX_SIZE 4
+#endif
+
+#ifndef AO_TEXTUREARRAY_LAYER
+#define AO_TEXTUREARRAY_LAYER 0
+#endif
+
 #if AO_LAYERED == 1
 #extension GL_ARB_shader_image_load_store : enable
 #endif
@@ -56,12 +69,12 @@ struct HBAOData {
 // but speed up link time by 10-20x
 //#pragma optionNV(inline 0)
 
-#define M_PI 3.14159265f
+const float M_PI = 3.14159265f;
 
 // tweakables
-const float NUM_STEPS = 4;
+const float NUM_STEPS = 4.0f;
 // texRandom/g_Jitter initialization depends on this
-const float NUM_DIRECTIONS = 8;
+const float NUM_DIRECTIONS = 8.0f;
 
 layout(std140) uniform controlBuffer {
   HBAOData control;
@@ -166,7 +179,7 @@ vec3 FetchViewPos(vec2 UV) {
                                UV
 #endif
                                    ,
-                               0)
+                               0.0f)
                         .x;
   return UVToView(UV, ViewDepth);
 }
@@ -204,7 +217,8 @@ float ComputeAO(vec3 P, vec3 N, vec3 S) {
   float NdotV = dot(N, V) * 1.0 / sqrt(VdotV);
 
   // Use saturate(x) instead of max(x,0.f) because that is faster on Kepler
-  return clamp(NdotV - control.NDotVBias, 0, 1) * clamp(Falloff(VdotV), 0, 1);
+  return clamp(NdotV - control.NDotVBias, 0.0f, 1.0f) *
+         clamp(Falloff(VdotV), 0.0f, 1.0f);
 }
 
 //----------------------------------------------------------------------------------
@@ -221,7 +235,8 @@ vec4 GetJitter() {
 #else
   // (cos(Alpha),sin(Alpha),rand1,rand2)
   return textureLod(
-      texRandom, vec3(gl_FragCoord.xy / AO_RANDOMTEX_SIZE, g_RandomSlice), 0);
+      texRandom,
+      vec3(gl_FragCoord.xy / float(AO_RANDOMTEX_SIZE), g_RandomSlice), 0.0f);
 #endif
 }
 
@@ -236,12 +251,12 @@ float ComputeCoarseAO(vec2 FullResUV,
 #endif
 
   // Divide by NUM_STEPS+1 so that the farthest samples are not fully attenuated
-  float StepSizePixels = RadiusPixels / (NUM_STEPS + 1);
+  float StepSizePixels = RadiusPixels / (NUM_STEPS + 1.0f);
 
   const float Alpha = 2.0 * M_PI / NUM_DIRECTIONS;
-  float AO = 0;
+  float AO = 0.0f;
 
-  for (float DirectionIndex = 0; DirectionIndex < NUM_DIRECTIONS;
+  for (float DirectionIndex = 0.0f; DirectionIndex < NUM_DIRECTIONS;
        ++DirectionIndex) {
     float Angle = Alpha * DirectionIndex;
 
@@ -251,7 +266,7 @@ float ComputeCoarseAO(vec2 FullResUV,
     // Jitter starting sample within the first step
     float RayPixels = (Rand.z * StepSizePixels + 1.0);
 
-    for (float StepIndex = 0; StepIndex < NUM_STEPS; ++StepIndex) {
+    for (float StepIndex = 0.0f; StepIndex < NUM_STEPS; ++StepIndex) {
 #ifdef AO_DEINTERLEAVED
       vec2 SnappedUV =
           round(RayPixels * Direction) * control.InvQuarterResolution +
@@ -270,7 +285,7 @@ float ComputeCoarseAO(vec2 FullResUV,
   }
 
   AO *= control.AOMultiplier / (NUM_DIRECTIONS * NUM_STEPS);
-  return clamp(1.0 - AO * 2.0, 0, 1);
+  return clamp(1.0 - AO * 2.0, 0.0f, 1.0f);
 }
 
 //----------------------------------------------------------------------------------
