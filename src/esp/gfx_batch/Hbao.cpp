@@ -342,10 +342,10 @@ class HbaoCalcShader : public Mn::GL::AbstractShaderProgram {
     setUniform(uniformLocation("texLinearDepth"), LinearDepthTextureBinding);
     if (deinterleaved) {
       setUniform(uniformLocation("texViewNormal"), ViewNormalTextureBinding);
-    } else {
       if (textureArrayLayer) {
         linearDepthTextureSliceUniform_ = uniformLocation("g_LinearDepthSlice");
       }
+    } else {
       setUniform(uniformLocation("texRandom"), RandomTextureBinding);
       randomSliceUniform_ = uniformLocation("g_RandomSlice");
     }
