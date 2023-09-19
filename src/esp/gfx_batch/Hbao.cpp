@@ -302,15 +302,15 @@ class HbaoCalcShader : public Mn::GL::AbstractShaderProgram {
     }
 #endif
 
-    frag.addSource(Cr::Utility::format(
-                       "{}"
-                       "#define AO_SPECIAL_BLUR {}\n"
-                       "#define AO_LAYERED {}\n"
-                       "#define AO_TEXTUREARRAY_LAYER {}\n"
-                       "#define AO_RANDOMTEX_SIZE {}\n",
-                       deinterleaved ? "#define AO_DEINTERLEAVED\n"_s : "",
-                       specialBlur ? 1 : 0, Mn::Int(layered),
-                       textureArrayLayer ? 1 : 0, AoRandomTextureSize))
+    frag
+        .addSource(Cr::Utility::format(
+            "{}{}"
+            "#define AO_LAYERED {}\n"
+            "#define AO_TEXTUREARRAY_LAYER {}\n"
+            "#define AO_RANDOMTEX_SIZE {}\n",
+            deinterleaved ? "#define AO_DEINTERLEAVED\n"_s : "",
+            specialBlur ? "#define AO_SPECIAL_BLUR\n"_s : "", Mn::Int(layered),
+            textureArrayLayer ? 1 : 0, AoRandomTextureSize))
         .addSource(rs.getString("hbao/hbao.frag"));
 
     CORRADE_INTERNAL_ASSERT(vert.compile());

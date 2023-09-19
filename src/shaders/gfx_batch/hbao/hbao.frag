@@ -96,11 +96,11 @@ vec3 getQuarterCoord(vec2 UV) {
 
 #if AO_LAYERED == 1
 
-#if AO_SPECIAL_BLUR
+#ifdef AO_SPECIAL_BLUR
 layout(rg16f) uniform image2DArray imgOutput;
-#else   // if !AO_SPECIAL_BLUR
+#else   // ifndef AO_SPECIAL_BLUR
 layout(r8) uniform image2DArray imgOutput;
-#endif  // if AO_SPECIAL_BLUR
+#endif  // ifdef AO_SPECIAL_BLUR
 
 void outputColor(vec4 color) {
   imageStore(imgOutput, ivec3(ivec2(gl_FragCoord.xy), gl_PrimitiveID), color);
@@ -111,8 +111,8 @@ out vec4 out_Color;
 void outputColor(vec4 color) {
   out_Color = color;
 }
-#endif  // if AO_LAYERED == 1
-#else   // if !AO_LAYERED
+#endif  // if AO_LAYERED == 1 else 2
+#else   // if !AO_LAYERED (AO_LAYERED == 0)
 uniform vec2 g_Float2Offset;
 uniform vec4 g_Jitter;
 
@@ -132,12 +132,12 @@ void outputColor(vec4 color) {
 
 #else  //  if !AO_DEINTERLEAVED
 
-#if AO_TEXTUREARRAY_LAYER
+#if AO_TEXTUREARRAY_LAYER  // AO_TEXTUREARRAY_LAYER == 1
 uniform sampler2DArray texLinearDepth;
 uniform float g_LinearDepthSlice;
-#else   // if !AO_TEXTUREARRAY_LAYER
+#else                      // if AO_TEXTUREARRAY_LAYER == 0
 uniform sampler2D texLinearDepth;
-#endif  // if AO_TEXTUREARRAY_LAYER
+#endif                     // if AO_TEXTUREARRAY_LAYER
 
 uniform sampler2DArray texRandom;
 uniform float g_RandomSlice;
@@ -147,7 +147,7 @@ out vec4 out_Color;
 void outputColor(vec4 color) {
   out_Color = color;
 }
-#endif  // ifdef AO_DEINTERLEAVED
+#endif                     // ifdef AO_DEINTERLEAVED
 
 #ifdef USE_GEOMETRY_SHADER_PASSTHROUGH
 in vec2 texCoordGeometry;
@@ -319,7 +319,7 @@ void main() {
 
   float AO = ComputeCoarseAO(uv, RadiusPixels, Rand, ViewPosition, ViewNormal);
 
-#if AO_SPECIAL_BLUR
+#ifdef AO_SPECIAL_BLUR
   outputColor(vec4(pow(AO, control.PowExponent), ViewPosition.z, 0, 0));
 #else
   outputColor(vec4(pow(AO, control.PowExponent)));
