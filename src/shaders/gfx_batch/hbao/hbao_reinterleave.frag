@@ -31,13 +31,13 @@ void main() {
   int SliceId = Offset.y * 4 + Offset.x;
   ivec2 QuarterResPos = FullResPos >> 2;
 
-// Defaults to having blur. No blur should only be for debug
-#ifdef NO_AO_BLUR
-  out_Color =
-      vec4(texelFetch(uTexResultsArray, ivec3(QuarterResPos, SliceId), 0).x);
-#else
+#ifdef AO_SPECIAL_BLUR
   out_Color = vec4(
       texelFetch(uTexResultsArray, ivec3(QuarterResPos, SliceId), 0).xy, 0, 0);
+
+#else
+  out_Color =
+      vec4(texelFetch(uTexResultsArray, ivec3(QuarterResPos, SliceId), 0).x);
 
 #endif
 }

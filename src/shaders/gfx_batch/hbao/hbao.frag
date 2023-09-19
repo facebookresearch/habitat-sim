@@ -93,11 +93,11 @@ vec3 getQuarterCoord(vec2 UV) {
 
 #if AO_LAYERED == 1
 
-#if AO_BLUR
+#if AO_SPECIAL_BLUR
 layout(rg16f) uniform image2DArray imgOutput;
 #else
 layout(r8) uniform image2DArray imgOutput;
-#endif  // if AO_BLUR
+#endif  // if AO_SPECIAL_BLUR
 
 void outputColor(vec4 color) {
   imageStore(imgOutput, ivec3(ivec2(gl_FragCoord.xy), gl_PrimitiveID), color);
@@ -316,7 +316,7 @@ void main() {
 
   float AO = ComputeCoarseAO(uv, RadiusPixels, Rand, ViewPosition, ViewNormal);
 
-#if AO_BLUR
+#if AO_SPECIAL_BLUR
   outputColor(vec4(pow(AO, control.PowExponent), ViewPosition.z, 0, 0));
 #else
   outputColor(vec4(pow(AO, control.PowExponent)));

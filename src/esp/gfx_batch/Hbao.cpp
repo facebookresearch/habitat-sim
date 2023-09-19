@@ -253,12 +253,12 @@ class HbaoCalcShader : public Mn::GL::AbstractShaderProgram {
       : Mn::GL::AbstractShaderProgram{Mn::NoCreate} {}
 
   explicit HbaoCalcShader(bool deinterleaved,
-                          bool blur,
+                          bool specialBlur,
                           Layered layered,
                           bool textureArrayLayer)
       : deinterleaved_{deinterleaved},
 #ifndef MAGNUM_TARGET_WEBGL
-        blur_{blur},
+        specialBlur_{specialBlur},
 #endif
         textureArrayLayer_{textureArrayLayer},
         layered_{layered} {
@@ -301,15 +301,15 @@ class HbaoCalcShader : public Mn::GL::AbstractShaderProgram {
     }
 #endif
 
-    frag
-        .addSource(Cr::Utility::format(
-            "{}"
-            "#define AO_BLUR {}\n"
-            "#define AO_LAYERED {}\n"
-            "#define AO_TEXTUREARRAY_LAYER {}\n"
-            "#define AO_RANDOMTEX_SIZE {}\n",
-            deinterleaved ? "#define AO_DEINTERLEAVED\n"_s : "", blur ? 1 : 0,
-            Mn::Int(layered), textureArrayLayer ? 1 : 0, AoRandomTextureSize))
+    frag.addSource(Cr::Utility::format(
+                       "{}"
+                       "#define AO_SPECIAL_BLUR {}\n"
+                       "#define AO_LAYERED {}\n"
+                       "#define AO_TEXTUREARRAY_LAYER {}\n"
+                       "#define AO_RANDOMTEX_SIZE {}\n",
+                       deinterleaved ? "#define AO_DEINTERLEAVED\n"_s : "",
+                       specialBlur ? 1 : 0, Mn::Int(layered),
+                       textureArrayLayer ? 1 : 0, AoRandomTextureSize))
         .addSource(rs.getString("hbao/hbao.frag"));
 
     CORRADE_INTERNAL_ASSERT(vert.compile());
@@ -408,7 +408,7 @@ class HbaoCalcShader : public Mn::GL::AbstractShaderProgram {
                             layered_ == Layered::ImageLoadStore);
     texture.bindImageLayered(
         OutputImageBinding, level, Mn::GL::ImageAccess::WriteOnly,
-        blur_ ? Mn::GL::ImageFormat::R16F : Mn::GL::ImageFormat::R8);
+        specialBlur_ ? Mn::GL::ImageFormat::R16F : Mn::GL::ImageFormat::R8);
     return *this;
   }
 #endif
@@ -418,7 +418,7 @@ class HbaoCalcShader : public Mn::GL::AbstractShaderProgram {
       randomSliceUniform_;
   bool deinterleaved_,
 #ifndef MAGNUM_TARGET_WEBGL
-      blur_,
+      specialBlur_,
 #endif
 
       textureArrayLayer_;
@@ -481,7 +481,7 @@ class HbaoReinterleaveShader : public Mn::GL::AbstractShaderProgram {
   enum : Mn::Int { ResultsTextureBinding = 0 };
 
  public:
-  explicit HbaoReinterleaveShader(bool disableBlur) {
+  explicit HbaoReinterleaveShader(bool specialBlur) {
     Cr::Utility::Resource rs{"gfx-batch-shaders"};
 
     // TODO use our own
@@ -489,8 +489,8 @@ class HbaoReinterleaveShader : public Mn::GL::AbstractShaderProgram {
     vert.addSource(rs.getString("hbao/fullscreenquad.vert"));
 
     Mn::GL::Shader frag{GlslVersion, Mn::GL::Shader::Type::Fragment};
-    if (disableBlur) {
-      frag.addSource("#define NO_AO_BLUR\n"_s);
+    if (specialBlur) {
+      frag.addSource("#define AO_SPECIAL_BLUR\n"_s);
     }
     frag.addSource(rs.getString("hbao/hbao_reinterleave.frag"));
 
@@ -561,27 +561,28 @@ struct Hbao::State {
   HbaoBlurShader bilateralBlurShader{
       /*bilateral*/ true,
       /*aoBlurPass value is ignored for bilateral*/ 0};
-  HbaoBlurShader hbaoBlurShaderFirstPass{/*bilateral*/ false,
-                                         /*aoBlurPass*/ 0};
-  HbaoBlurShader hbaoBlurShader2ndPass{/*bilateral*/ false,
-                                       /*aoBlurPass*/ 1};
+  HbaoBlurShader hbaoSpecialBlurShaderFirstPass{/*bilateral*/ false,
+                                                /*aoBlurPass*/ 0};
+  HbaoBlurShader hbaoSpecialBlurShader2ndPass{/*bilateral*/ false,
+                                              /*aoBlurPass*/ 1};
   DepthLinearizeShader depthLinearizeShader{false};
   DepthLinearizeShader depthLinearizeShaderMsaa{true};
   ViewNormalShader viewNormalShader;
   HbaoCalcShader hbaoCalcShader{/*deinterleaved*/ false,
-                                /*blur*/ false,
+                                /*specialBlur*/ false,
                                 {},
                                 false};
-  HbaoCalcShader hbaoCalcBlurShader{/*deinterleaved*/ false,
-                                    /*blur*/ true,
-                                    {},
-                                    false};
+  HbaoCalcShader hbaoCalcSpecialBlurShader{/*deinterleaved*/ false,
+                                           /*specialBlur*/ true,
+                                           {},
+                                           false};
   /* These depend on config, are created in the constructor */
   HbaoCalcShader hbao2CalcShader{Mn::NoCreate};
-  HbaoCalcShader hbao2CalcBlurShader{Mn::NoCreate};
+  HbaoCalcShader hbao2CalcSpecialBlurShader{Mn::NoCreate};
   HbaoDeinterleaveShader hbao2DeinterleaveShader;
-  HbaoReinterleaveShader hbao2ReinterleaveNoBlurShader{/*disable blur*/ true};
-  HbaoReinterleaveShader hbao2ReinterleaveShader{/*disable blur*/ false};
+  HbaoReinterleaveShader hbao2ReinterleaveShader{/*specialBlur*/ false};
+  HbaoReinterleaveShader hbao2ReinterleaveSpecialBlurShader{
+      /*specialBlur*/ true};
 
   Mn::GL::Buffer hbaoUniform{Mn::GL::Buffer::TargetHint::Uniform};
   HbaoUniformData hbaoUniformData;
@@ -762,10 +763,12 @@ void Hbao::setConfiguration(const HbaoConfiguration& configuration) {
       layered = HbaoCalcShader::Layered::GeometryShader;
       textureArrayLayer = false;
     }
-    state_->hbao2CalcShader = HbaoCalcShader{
-        /*deinterleaved*/ true, /*blur*/ false, layered, textureArrayLayer};
-    state_->hbao2CalcBlurShader = HbaoCalcShader{
-        /*deinterleaved*/ true, /*blur*/ true, layered, textureArrayLayer};
+    state_->hbao2CalcShader =
+        HbaoCalcShader{/*deinterleaved*/ true, /*specialBlur*/ false, layered,
+                       textureArrayLayer};
+    state_->hbao2CalcSpecialBlurShader =
+        HbaoCalcShader{/*deinterleaved*/ true, /*specialBlur*/ true, layered,
+                       textureArrayLayer};
   }
 
   state_->triangle.setCount(3);
@@ -863,10 +866,10 @@ void Hbao::drawHbaoBlur(Mn::GL::AbstractFramebuffer& output) {
   constexpr Mn::Float meters2viewspace = 1.0f;
 
   state_->hbaoCalc.mapForDraw(Mn::GL::Framebuffer::ColorAttachment{1}).bind();
-
+  // Only special blur
   HbaoBlurShader& shader =
       state_->configuration.flags() & HbaoFlag::UseAoSpecialBlur
-          ? state_->hbaoBlurShaderFirstPass
+          ? state_->hbaoSpecialBlurShaderFirstPass
           : state_->bilateralBlurShader;
   shader.setSharpness(state_->configuration.blurSharpness() / meters2viewspace)
       .setInverseResolutionDirection(
@@ -885,9 +888,10 @@ void Hbao::drawHbaoBlur(Mn::GL::AbstractFramebuffer& output) {
       Mn::GL::Renderer::BlendFunction::SourceColor);
   // TODO multi samples masking
 
+  // Only special blur
   HbaoBlurShader& secondShader =
       state_->configuration.flags() & HbaoFlag::UseAoSpecialBlur
-          ? state_->hbaoBlurShader2ndPass
+          ? state_->hbaoSpecialBlurShader2ndPass
           : state_->bilateralBlurShader;
   secondShader
       .setSharpness(state_->configuration.blurSharpness() / meters2viewspace)
@@ -938,6 +942,7 @@ void Hbao::drawEffect(const Mn::Matrix4& projection,
 
 void Hbao::drawClassicInternal(Mn::GL::AbstractFramebuffer& output) {
   if (state_->configuration.flags() & HbaoFlag::Blur) {
+    // Blur or special blur
     state_->hbaoCalc.mapForDraw(Mn::GL::Framebuffer::ColorAttachment{0}).bind();
   } else {
     output.bind();
@@ -949,16 +954,18 @@ void Hbao::drawClassicInternal(Mn::GL::AbstractFramebuffer& output) {
     // TODO Set sample mask if samples > 1
   }
 
-  HbaoCalcShader& shader = state_->configuration.flags() >=
-                                   (HbaoFlag::Blur | HbaoFlag::UseAoSpecialBlur)
-                               ? state_->hbaoCalcBlurShader
-                               : state_->hbaoCalcShader;
+  // only special blur
+  HbaoCalcShader& shader =
+      state_->configuration.flags() & HbaoFlag::UseAoSpecialBlur
+          ? state_->hbaoCalcSpecialBlurShader
+          : state_->hbaoCalcShader;
   shader.bindLinearDepthTexture(state_->sceneDepthLinear)
       .bindRandomTexture(state_->hbaoRandom, 0)
       .bindUniformBuffer(state_->hbaoUniform)
       .draw(state_->triangle);
 
   if (state_->configuration.flags() & HbaoFlag::Blur) {
+    // Blur or special blur
     drawHbaoBlur(output);
   }
 
@@ -998,10 +1005,11 @@ void Hbao::drawCacheAwareInternal(Mn::GL::AbstractFramebuffer& output) {
 
   state_->hbao2Calc.bind();
 
-  HbaoCalcShader& shader = state_->configuration.flags() >=
-                                   (HbaoFlag::Blur | HbaoFlag::UseAoSpecialBlur)
-                               ? state_->hbao2CalcBlurShader
-                               : state_->hbao2CalcShader;
+  // Only special blur
+  HbaoCalcShader& shader =
+      state_->configuration.flags() & HbaoFlag::UseAoSpecialBlur
+          ? state_->hbao2CalcSpecialBlurShader
+          : state_->hbao2CalcShader;
 
   shader.bindViewNormalTexture(state_->sceneViewNormal)
       .bindUniformBuffer(state_->hbaoUniform);
@@ -1047,6 +1055,7 @@ void Hbao::drawCacheAwareInternal(Mn::GL::AbstractFramebuffer& output) {
 #endif
 
   if (state_->configuration.flags() & HbaoFlag::Blur) {
+    // Blur or special blur
     state_->hbaoCalc.mapForDraw(Mn::GL::Framebuffer::ColorAttachment{0}).bind();
   } else {
     output.bind();
@@ -1058,16 +1067,17 @@ void Hbao::drawCacheAwareInternal(Mn::GL::AbstractFramebuffer& output) {
     // TODO Set sample mask if samples > 1
   }
 
+  // Only special blur
   HbaoReinterleaveShader& reinterleaveShader =
-      state_->configuration.flags() >=
-              (HbaoFlag::Blur | HbaoFlag::UseAoSpecialBlur)
-          ? state_->hbao2ReinterleaveShader
-          : state_->hbao2ReinterleaveNoBlurShader;
+      state_->configuration.flags() & HbaoFlag::UseAoSpecialBlur
+          ? state_->hbao2ReinterleaveSpecialBlurShader
+          : state_->hbao2ReinterleaveShader;
 
   reinterleaveShader.bindResultsTexture(state_->hbao2ResultArray)
       .draw(state_->triangle);
 
   if (state_->configuration.flags() & HbaoFlag::Blur) {
+    // Blur or special blur
     drawHbaoBlur(output);
   }
 
