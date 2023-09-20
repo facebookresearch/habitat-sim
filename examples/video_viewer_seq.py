@@ -310,6 +310,7 @@ class HabitatSimInteractiveViewer(Application):
         self.humanoid_seq_motions = find_files(
             "data/humanoids/humanoid_data/mdm_data/", file_endswith, ".pkl"
         )
+        self.motion_prev_frame = 0
         print(self.humanoid_seq_motions)
 
         self.humanoid_seq_motions_staged = {
@@ -459,6 +460,17 @@ class HabitatSimInteractiveViewer(Application):
         LoggingContext.reinitialize_from_env()
         logger.setLevel("INFO")
         self.print_help_text()
+
+    def reset_motion_state(self):
+        """
+        Reset motion state to a new index.
+        """
+        model = (
+            self.humanoid_models[self.humanoid_cur_model_index][0],
+            list(self.humanoid_seq_motions_staged.keys())[self.cur_motion_ix],
+        )
+        self.motion_prev_frame = 0
+        self.init_humanoid(model)
 
     def get_humanoid_models(self, filepath: str) -> List[Tuple[str, str]]:
         """
@@ -683,16 +695,35 @@ class HabitatSimInteractiveViewer(Application):
         #         0.25, self.humanoid_model_inc_freq * 0.75
         #     )
 
-        if self.sim.get_world_time() > 12:
-            seq_name = (
-                list(self.humanoid_seq_motions_staged.keys())[self.cur_motion_ix]
-                .split("/")[-1]
-                .split(".pkl")[0]
+        # print(f"motion frame = {self.motion_prev_frame}/{self.humanoid_controller.walk_motion.num_poses}")
+        # print(f"{self.motion_prev_frame} vs {self.humanoid_controller.walk_mocap_frame}")
+
+        if self.humanoid_controller.walk_mocap_frame < self.motion_prev_frame:
+            # we hit the end of the motion, skip to the next one
+            self.cur_motion_ix = (self.cur_motion_ix + 1) % len(
+                self.humanoid_seq_motions_staged
             )
-            self.save_video(
-                filename=f"{seq_name}.mp4", buffer=self.obs_buffer, fps=self.fps
-            )
-            exit()
+            self.reset_motion_state()
+            if self.cur_motion_ix == 0:
+                self.save_video(
+                    filename="animations_sequential.mp4",
+                    buffer=self.obs_buffer,
+                    fps=self.fps,
+                )
+                exit()
+        else:
+            self.motion_prev_frame = self.humanoid_controller.walk_mocap_frame
+
+        # if self.sim.get_world_time() > 12:
+        #     seq_name = (
+        #         list(self.humanoid_seq_motions_staged.keys())[self.cur_motion_ix]
+        #         .split("/")[-1]
+        #         .split(".pkl")[0]
+        #     )
+        #     self.save_video(
+        #         filename=f"{seq_name}.mp4", buffer=self.obs_buffer, fps=self.fps
+        #     )
+        #     exit()
 
         if self.enable_batch_renderer:
             self.render_batch()
