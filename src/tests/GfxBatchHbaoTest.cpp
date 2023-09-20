@@ -1,5 +1,6 @@
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/PluginManager/Manager.h>
+#include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/Path.h>
 #include <Magnum/DebugTools/CompareImage.h>
 #include <Magnum/GL/Context.h>
@@ -32,133 +33,116 @@ namespace Cr = Corrade;
 namespace Mn = Magnum;
 using namespace Mn::Math::Literals;
 
+const std::string testHBAOImageDir =
+    Cr::Utility::Path::join(TEST_ASSETS, "hbao_tests");
+
+constexpr const char* baseFilename = "van-gogh-room";
+
+constexpr Mn::Vector2i Size{256, 256};
+
+struct TestDataType;
+struct Projection;
+
 struct GfxBatchHbaoTest : Mn::GL::OpenGLTester {
   explicit GfxBatchHbaoTest();
   void generateTestData();
-  void test();
+  void testPerspective();
+  void testOrthographic();
+
+  void testHBAOData(const TestDataType& data,
+                    const std::string& filename,
+                    const Projection& proj);
 };
 
 struct Projection {
   Mn::Matrix4 projection;
-  const char* sourceColorFilename;
-  const char* sourceDepthFilename;
+  const std::string sourceColorFilename;
+  const std::string sourceDepthFilename;
 };
 
 const Projection perspectiveData{
     Mn::Matrix4::perspectiveProjection(45.0_degf, 1.0f, 0.1f, 100.0f),
-    "van-gogh-room.color.png", "van-gogh-room.depth.exr"};
+    Cr::Utility::formatString("{}.color.png", baseFilename),
+    Cr::Utility::formatString("{}.depth.exr", baseFilename)};
 
 const Projection orthographicData{
     Mn::Matrix4::orthographicProjection(Magnum::Vector2(4.0f, 4.0f),
                                         0.1f,
                                         100.0f),
-    "van-gogh-room.color-ortho.png", "van-gogh-room.depth-ortho.exr"};
+    Cr::Utility::formatString("{}.color-ortho.png", baseFilename),
+    Cr::Utility::formatString("{}.depth-ortho.exr", baseFilename)};
 
-const struct {
+const struct TestDataType {
   const char* name;
   const char* filename;
   bool classic;
-
-  const Projection& projData;
   esp::gfx_batch::HbaoFlags flags;
   Mn::Float intensity, radius, blurSharpness;
   Mn::Float maxThreshold, meanThreshold;
 } TestData[]{
     // Perspective projection
-    {"classic, perspective, defaults", "van-gogh-room.hbao-classic.png", true,
-     perspectiveData, esp::gfx_batch::HbaoConfiguration{}.flags(),
-     esp::gfx_batch::HbaoConfiguration{}.intensity(),
-     esp::gfx_batch::HbaoConfiguration{}.radius(),
-     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 0.0f, 0.0f},
-    {"classic, perspective, AO special blur",
-     "van-gogh-room.hbao-classic-sblur.png", true, perspectiveData,
-     esp::gfx_batch::HbaoConfiguration{}.flags() |
-         esp::gfx_batch::HbaoFlag::UseAoSpecialBlur,
-     esp::gfx_batch::HbaoConfiguration{}.intensity(),
-     esp::gfx_batch::HbaoConfiguration{}.radius(),
-     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 2.0f, 2.0f},
-    {"classic, perspective, strong effect",
-     "van-gogh-room.hbao-classic-strong.png", true, perspectiveData,
-     esp::gfx_batch::HbaoConfiguration{}.flags(), 2.0f, 1.5f, 10.0f, 0.0f,
-     0.0f},
-
-    {"cache-aware, perspective, defaults", "van-gogh-room.hbao-cache.png",
-     false, perspectiveData, esp::gfx_batch::HbaoConfiguration{}.flags(),
-     esp::gfx_batch::HbaoConfiguration{}.intensity(),
-     esp::gfx_batch::HbaoConfiguration{}.radius(),
-     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 0.0f, 0.0f},
-    {"cache-aware, perspective, AO special blur",
-     "van-gogh-room.hbao-cache-sblur.png", false, perspectiveData,
-     esp::gfx_batch::HbaoConfiguration{}.flags() |
-         esp::gfx_batch::HbaoFlag::UseAoSpecialBlur,
-     esp::gfx_batch::HbaoConfiguration{}.intensity(),
-     esp::gfx_batch::HbaoConfiguration{}.radius(),
-     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 2.0f, 2.0f},
-    {"cache-aware, perspective, strong effect",
-     "van-gogh-room.hbao-cache-strong.png", false, perspectiveData,
-     esp::gfx_batch::HbaoConfiguration{}.flags(), 2.0f, 1.5f, 10.0f, 0.0f,
-     0.0f},
-    {"cache-aware, perspective, layered with image load store",
-     "van-gogh-room.hbao-cache-layered.png", false, perspectiveData,
-     esp::gfx_batch::HbaoConfiguration{}.flags() |
-         esp::gfx_batch::HbaoFlag::LayeredImageLoadStore,
-     esp::gfx_batch::HbaoConfiguration{}.intensity(),
-     esp::gfx_batch::HbaoConfiguration{}.radius(),
-     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 4.5f, 0.11f},
-    {"cache-aware, perspective, layered with geometry shader",
-     "van-gogh-room.hbao-cache-geom.png", false, perspectiveData,
-     esp::gfx_batch::HbaoConfiguration{}.flags() |
-         esp::gfx_batch::HbaoFlag::LayeredGeometryShader,
-     esp::gfx_batch::HbaoConfiguration{}.intensity(),
-     esp::gfx_batch::HbaoConfiguration{}.radius(),
-     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 4.5f, 0.11f},
-
-    // Orthographic projection
-    {"classic, orthographic, defaults", "van-gogh-room.hbao-classic-ortho.png",
-     true, orthographicData, esp::gfx_batch::HbaoConfiguration{}.flags(),
-     esp::gfx_batch::HbaoConfiguration{}.intensity(),
-     esp::gfx_batch::HbaoConfiguration{}.radius(),
-     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 0.0f, 0.0f},
-    {"classic, orthographic, AO special blur",
-     "van-gogh-room.hbao-classic-sblur-ortho.png", true, orthographicData,
-     esp::gfx_batch::HbaoConfiguration{}.flags() |
-         esp::gfx_batch::HbaoFlag::UseAoSpecialBlur,
-     esp::gfx_batch::HbaoConfiguration{}.intensity(),
-     esp::gfx_batch::HbaoConfiguration{}.radius(),
-     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 2.0f, 2.0f},
-    {"classic, orthographic, strong effect",
-     "van-gogh-room.hbao-classic-strong-ortho.png", true, orthographicData,
-     esp::gfx_batch::HbaoConfiguration{}.flags(), 2.0f, 1.5f, 10.0f, 0.0f,
-     0.0f},
-
-    {"cache-aware, orthographic, defaults",
-     "van-gogh-room.hbao-cache-ortho.png", false, orthographicData,
+    {"classic, defaults", "hbao-classic", true,
      esp::gfx_batch::HbaoConfiguration{}.flags(),
      esp::gfx_batch::HbaoConfiguration{}.intensity(),
      esp::gfx_batch::HbaoConfiguration{}.radius(),
      esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 0.0f, 0.0f},
-    {"cache-aware, orthographic, AO special blur",
-     "van-gogh-room.hbao-cache-sblur-ortho.png", false, orthographicData,
+    {"classic, AO special blur", "hbao-classic-sblur", true,
      esp::gfx_batch::HbaoConfiguration{}.flags() |
          esp::gfx_batch::HbaoFlag::UseAoSpecialBlur,
      esp::gfx_batch::HbaoConfiguration{}.intensity(),
      esp::gfx_batch::HbaoConfiguration{}.radius(),
      esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 2.0f, 2.0f},
-    {"cache-aware, orthographic, strong effect",
-     "van-gogh-room.hbao-cache-strong-ortho.png", false, orthographicData,
-     esp::gfx_batch::HbaoConfiguration{}.flags(), 2.0f, 1.5f, 10.0f, 0.0f,
-     0.0f},
-    {"cache-aware, orthographic, layered with image load store",
-     "van-gogh-room.hbao-cache-layered-ortho.png", false, orthographicData,
+    {"classic, strong effect", "hbao-classic-strong", true,
+     esp::gfx_batch::HbaoConfiguration{}.flags(),
+     esp::gfx_batch::HbaoConfiguration{}.intensity() * 2.0f,
+     esp::gfx_batch::HbaoConfiguration{}.radius() * 1.5f,
+     esp::gfx_batch::HbaoConfiguration{}.blurSharpness() * 5.0f, 0.0f, 0.0f},
+    {"cache-aware, defaults", "hbao-cache", false,
+     esp::gfx_batch::HbaoConfiguration{}.flags(),
+     esp::gfx_batch::HbaoConfiguration{}.intensity(),
+     esp::gfx_batch::HbaoConfiguration{}.radius(),
+     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 0.0f, 0.0f},
+    {"cache-aware, AO special blur", "hbao-cache-sblur", false,
+     esp::gfx_batch::HbaoConfiguration{}.flags() |
+         esp::gfx_batch::HbaoFlag::UseAoSpecialBlur,
+     esp::gfx_batch::HbaoConfiguration{}.intensity(),
+     esp::gfx_batch::HbaoConfiguration{}.radius(),
+     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 2.0f, 2.0f},
+    {"cache-aware, strong effect", "hbao-cache-strong", false,
+     esp::gfx_batch::HbaoConfiguration{}.flags(),
+     esp::gfx_batch::HbaoConfiguration{}.intensity() * 2.0f,
+     esp::gfx_batch::HbaoConfiguration{}.radius() * 1.5f,
+     esp::gfx_batch::HbaoConfiguration{}.blurSharpness() * 5.0f, 0.0f, 0.0f},
+    {"cache-aware, strong effect, AO special blur", "hbao-cache-strong-sblur",
+     false, esp::gfx_batch::HbaoConfiguration{}.flags(),
+     esp::gfx_batch::HbaoConfiguration{}.intensity() * 2.0f,
+     esp::gfx_batch::HbaoConfiguration{}.radius() * 1.5f,
+     esp::gfx_batch::HbaoConfiguration{}.blurSharpness() * 5.0f, 0.0f, 0.0f},
+    {"cache-aware, layered with image load store", "hbao-cache-layered", false,
      esp::gfx_batch::HbaoConfiguration{}.flags() |
          esp::gfx_batch::HbaoFlag::LayeredImageLoadStore,
      esp::gfx_batch::HbaoConfiguration{}.intensity(),
      esp::gfx_batch::HbaoConfiguration{}.radius(),
      esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 4.5f, 0.11f},
-    {"cache-aware, orthographic, layered with geometry shader",
-     "van-gogh-room.hbao-cache-geom-ortho.png", false, orthographicData,
+    {"cache-aware, layered with image load store, AO special blur",
+     "hbao-cache-layered-sblur", false,
+     esp::gfx_batch::HbaoConfiguration{}.flags() |
+         (esp::gfx_batch::HbaoFlag::LayeredImageLoadStore |
+          esp::gfx_batch::HbaoFlag::UseAoSpecialBlur),
+     esp::gfx_batch::HbaoConfiguration{}.intensity(),
+     esp::gfx_batch::HbaoConfiguration{}.radius(),
+     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 4.5f, 0.11f},
+    {"cache-aware, layered with geometry shader", "hbao-cache-geom", false,
      esp::gfx_batch::HbaoConfiguration{}.flags() |
          esp::gfx_batch::HbaoFlag::LayeredGeometryShader,
+     esp::gfx_batch::HbaoConfiguration{}.intensity(),
+     esp::gfx_batch::HbaoConfiguration{}.radius(),
+     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 4.5f, 0.11f},
+    {"cache-aware, layered with geometry shader, AO special blur",
+     "hbao-cache-geom-sblur", false,
+     esp::gfx_batch::HbaoConfiguration{}.flags() |
+         (esp::gfx_batch::HbaoFlag::LayeredGeometryShader |
+          esp::gfx_batch::HbaoFlag::UseAoSpecialBlur),
      esp::gfx_batch::HbaoConfiguration{}.intensity(),
      esp::gfx_batch::HbaoConfiguration{}.radius(),
      esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 4.5f, 0.11f},
@@ -180,11 +164,11 @@ GfxBatchHbaoTest::GfxBatchHbaoTest() {
   addInstancedTests({&GfxBatchHbaoTest::generateTestData},
                     Cr::Containers::arraySize(GenerateTestDataData));
 
-  addInstancedTests({&GfxBatchHbaoTest::test},
-                    Cr::Containers::arraySize(TestData));
+  addInstancedTests(
+      {&GfxBatchHbaoTest::testPerspective, &GfxBatchHbaoTest::testOrthographic},
+      Cr::Containers::arraySize(TestData));
 }
 
-constexpr Mn::Vector2i Size{256, 256};
 void GfxBatchHbaoTest::generateTestData() {
   auto&& data = GenerateTestDataData[testCaseInstanceId()];
   setTestCaseDescription(data.name);
@@ -194,10 +178,11 @@ void GfxBatchHbaoTest::generateTestData() {
       importerManager.loadAndInstantiate("AnySceneImporter");
   CORRADE_VERIFY(importer);
 
-  /* magnum-sceneconverter van-gogh-room.glb --concatenate-meshes
-   * van-gogh-room.mesh.ply */
+  /* magnum-sceneconverter <baseFilename>.glb --concatenate-meshes
+   * <baseFilename.mesh.ply */
   CORRADE_VERIFY(importer->openFile(Cr::Utility::Path::join(
-      {TEST_ASSETS, "hbao_tests", "van-gogh-room.mesh.ply"})));
+      testHBAOImageDir,
+      Cr::Utility::formatString("{}.mesh.ply", baseFilename))));
 
   Cr::Containers::Optional<Mn::Trade::MeshData> meshData = importer->mesh(0);
   CORRADE_VERIFY(meshData);
@@ -235,20 +220,19 @@ void GfxBatchHbaoTest::generateTestData() {
   MAGNUM_VERIFY_NO_GL_ERROR();
   CORRADE_COMPARE_WITH(
       framebuffer.read({{}, Size}, {Mn::PixelFormat::RGBA8Unorm}),
-      Cr::Utility::Path::join(
-          {TEST_ASSETS, "hbao_tests", data.projData.sourceColorFilename}),
+      Cr::Utility::Path::join(testHBAOImageDir,
+                              data.projData.sourceColorFilename),
       (Mn::DebugTools::CompareImageToFile{}));
   CORRADE_COMPARE_WITH(
       framebuffer.read({{}, Size}, {Mn::PixelFormat::Depth32F}),
-      Cr::Utility::Path::join(
-          {TEST_ASSETS, "hbao_tests", data.projData.sourceDepthFilename}),
+      Cr::Utility::Path::join(testHBAOImageDir,
+                              data.projData.sourceDepthFilename),
       (Mn::DebugTools::CompareImageToFile{}));
 }
 
-void GfxBatchHbaoTest::test() {
-  auto&& data = TestData[testCaseInstanceId()];
-  setTestCaseDescription(data.name);
-
+void GfxBatchHbaoTest::testHBAOData(const TestDataType& data,
+                                    const std::string& filename,
+                                    const Projection& projData) {
   if ((data.flags & esp::gfx_batch::HbaoFlag::LayeredImageLoadStore) &&
       !(
 #ifdef MAGNUM_TARGET_GLES
@@ -268,7 +252,7 @@ void GfxBatchHbaoTest::test() {
   CORRADE_VERIFY(importer);
 
   if (!importer->openFile(Cr::Utility::Path::join(
-          {TEST_ASSETS, "hbao_tests", data.projData.sourceColorFilename}))) {
+          testHBAOImageDir, projData.sourceColorFilename))) {
     CORRADE_FAIL("Cannot load the color image");
   }
   Cr::Containers::Optional<Mn::Trade::ImageData2D> color = importer->image2D(0);
@@ -277,7 +261,7 @@ void GfxBatchHbaoTest::test() {
   CORRADE_COMPARE(color->format(), Mn::PixelFormat::RGBA8Unorm);
 
   if (!importer->openFile(Cr::Utility::Path::join(
-          {TEST_ASSETS, "hbao_tests", data.projData.sourceDepthFilename}))) {
+          testHBAOImageDir, projData.sourceDepthFilename))) {
     CORRADE_FAIL("Cannot load the depth image");
   }
   Cr::Containers::Optional<Mn::Trade::ImageData2D> depth = importer->image2D(0);
@@ -309,15 +293,36 @@ void GfxBatchHbaoTest::test() {
   MAGNUM_VERIFY_NO_GL_ERROR();
   // test projection drawing for both classic and cache-aware algorithms
 
-  hbao.drawEffect(data.projData.projection, !data.classic, inputDepthTexture,
+  hbao.drawEffect(projData.projection, !data.classic, inputDepthTexture,
                   output);
   MAGNUM_VERIFY_NO_GL_ERROR();
-  CORRADE_COMPARE_WITH(
-      output.read({{}, Size}, {Mn::PixelFormat::RGBA8Unorm}),
-      Cr::Utility::Path::join({TEST_ASSETS, "hbao_tests", data.filename}),
-      (Mn::DebugTools::CompareImageToFile{data.maxThreshold,
-                                          data.meanThreshold}));
-}
+  CORRADE_COMPARE_WITH(output.read({{}, Size}, {Mn::PixelFormat::RGBA8Unorm}),
+                       Cr::Utility::Path::join(testHBAOImageDir, filename),
+                       (Mn::DebugTools::CompareImageToFile{
+                           data.maxThreshold, data.meanThreshold}));
+
+}  // namespace
+
+void GfxBatchHbaoTest::testPerspective() {
+  auto&& data = TestData[testCaseInstanceId()];
+  setTestCaseDescription(
+      Cr::Utility::formatString("{}, perspective", data.name));
+  testHBAOData(
+      data, Cr::Utility::formatString("{}.{}.png", baseFilename, data.filename),
+      perspectiveData);
+
+}  // GfxBatchHbaoTest::testPerspective()
+
+void GfxBatchHbaoTest::testOrthographic() {
+  auto&& data = TestData[testCaseInstanceId()];
+  setTestCaseDescription(
+      Cr::Utility::formatString("{}, orthographic", data.name));
+  testHBAOData(
+      data,
+      Cr::Utility::formatString("{}.{}-ortho.png", baseFilename, data.filename),
+      orthographicData);
+
+}  // GfxBatchHbaoTest::testOrthographic()
 
 }  // namespace
 
