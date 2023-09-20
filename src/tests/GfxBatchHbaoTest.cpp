@@ -38,7 +38,7 @@ const std::string testHBAOImageDir =
 
 constexpr const char* baseFilename = "van-gogh-room";
 
-constexpr Mn::Vector2i Size{256, 256};
+constexpr Mn::Vector2i Size{320, 240};
 
 struct TestDataType;
 struct Projection;
@@ -61,14 +61,18 @@ struct Projection {
 };
 
 const Projection perspectiveData{
-    Mn::Matrix4::perspectiveProjection(45.0_degf, 1.0f, 0.1f, 100.0f),
+    Mn::Matrix4::perspectiveProjection(45.0_degf,
+                                       float(Size.x()) / Size.y(),
+                                       0.1f,
+                                       100.0f),
     Cr::Utility::formatString("{}.color.png", baseFilename),
     Cr::Utility::formatString("{}.depth.exr", baseFilename)};
 
 const Projection orthographicData{
-    Mn::Matrix4::orthographicProjection(Magnum::Vector2(4.0f, 4.0f),
-                                        0.1f,
-                                        100.0f),
+    Mn::Matrix4::orthographicProjection(
+        Magnum::Vector2(4.0f * float(Size.x()) / Size.y(), 4.0f),
+        0.1f,
+        100.0f),
     Cr::Utility::formatString("{}.color-ortho.png", baseFilename),
     Cr::Utility::formatString("{}.depth-ortho.exr", baseFilename)};
 
@@ -179,7 +183,7 @@ void GfxBatchHbaoTest::generateTestData() {
   CORRADE_VERIFY(importer);
 
   /* magnum-sceneconverter <baseFilename>.glb --concatenate-meshes
-   * <baseFilename.mesh.ply */
+   * <baseFilename>.mesh.ply */
   CORRADE_VERIFY(importer->openFile(Cr::Utility::Path::join(
       testHBAOImageDir,
       Cr::Utility::formatString("{}.mesh.ply", baseFilename))));
