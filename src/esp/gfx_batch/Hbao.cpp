@@ -414,7 +414,7 @@ class HbaoCalcShader : public Mn::GL::AbstractShaderProgram {
                             layered_ == Layered::ImageLoadStore);
     texture.bindImageLayered(
         OutputImageBinding, level, Mn::GL::ImageAccess::WriteOnly,
-        specialBlur_ ? Mn::GL::ImageFormat::R16F : Mn::GL::ImageFormat::R8);
+        specialBlur_ ? Mn::GL::ImageFormat::RG16F : Mn::GL::ImageFormat::R8);
     return *this;
   }
 #endif
