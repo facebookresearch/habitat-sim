@@ -91,7 +91,7 @@ const struct TestDataType {
          esp::gfx_batch::HbaoFlag::UseAoSpecialBlur,
      esp::gfx_batch::HbaoConfiguration{}.intensity(),
      esp::gfx_batch::HbaoConfiguration{}.radius(),
-     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 2.0f, 2.0f},
+     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 1.0f, 0.1f},
     {"classic, strong effect", "hbao-classic-strong", true,
      esp::gfx_batch::HbaoConfiguration{}.flags(),
      esp::gfx_batch::HbaoConfiguration{}.intensity() * 2.0f,
@@ -107,7 +107,7 @@ const struct TestDataType {
          esp::gfx_batch::HbaoFlag::UseAoSpecialBlur,
      esp::gfx_batch::HbaoConfiguration{}.intensity(),
      esp::gfx_batch::HbaoConfiguration{}.radius(),
-     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 2.0f, 2.0f},
+     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 1.0f, 0.1f},
     {"cache-aware, strong effect", "hbao-cache-strong", false,
      esp::gfx_batch::HbaoConfiguration{}.flags(),
      esp::gfx_batch::HbaoConfiguration{}.intensity() * 2.0f,
@@ -117,13 +117,13 @@ const struct TestDataType {
      false, esp::gfx_batch::HbaoConfiguration{}.flags(),
      esp::gfx_batch::HbaoConfiguration{}.intensity() * 2.0f,
      esp::gfx_batch::HbaoConfiguration{}.radius() * 1.5f,
-     esp::gfx_batch::HbaoConfiguration{}.blurSharpness() * 5.0f, 0.0f, 0.0f},
+     esp::gfx_batch::HbaoConfiguration{}.blurSharpness() * 5.0f, 1.0f, 0.1f},
     {"cache-aware, layered with image load store", "hbao-cache-layered", false,
      esp::gfx_batch::HbaoConfiguration{}.flags() |
          esp::gfx_batch::HbaoFlag::LayeredImageLoadStore,
      esp::gfx_batch::HbaoConfiguration{}.intensity(),
      esp::gfx_batch::HbaoConfiguration{}.radius(),
-     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 4.5f, 0.11f},
+     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 0.0f, 0.0f},
     {"cache-aware, layered with image load store, AO special blur",
      "hbao-cache-layered-sblur", false,
      esp::gfx_batch::HbaoConfiguration{}.flags() |
@@ -131,13 +131,13 @@ const struct TestDataType {
           esp::gfx_batch::HbaoFlag::UseAoSpecialBlur),
      esp::gfx_batch::HbaoConfiguration{}.intensity(),
      esp::gfx_batch::HbaoConfiguration{}.radius(),
-     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 4.5f, 0.11f},
+     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 1.0f, 0.1f},
     {"cache-aware, layered with geometry shader", "hbao-cache-geom", false,
      esp::gfx_batch::HbaoConfiguration{}.flags() |
          esp::gfx_batch::HbaoFlag::LayeredGeometryShader,
      esp::gfx_batch::HbaoConfiguration{}.intensity(),
      esp::gfx_batch::HbaoConfiguration{}.radius(),
-     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 4.5f, 0.11f},
+     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 0.0f, 0.0f},
     {"cache-aware, layered with geometry shader, AO special blur",
      "hbao-cache-geom-sblur", false,
      esp::gfx_batch::HbaoConfiguration{}.flags() |
@@ -145,7 +145,7 @@ const struct TestDataType {
           esp::gfx_batch::HbaoFlag::UseAoSpecialBlur),
      esp::gfx_batch::HbaoConfiguration{}.intensity(),
      esp::gfx_batch::HbaoConfiguration{}.radius(),
-     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 4.5f, 0.11f},
+     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 1.0f, 0.1f},
 };
 
 const struct {
