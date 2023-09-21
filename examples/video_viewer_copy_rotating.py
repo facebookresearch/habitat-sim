@@ -682,7 +682,7 @@ class HabitatSimInteractiveViewer(Application):
             # self.sim._Simulator__sensors[keys[0]][keys[1]].draw_observation()
             # agent = self.sim.get_agent(keys[0])
             # self.render_camera = agent.scene_node.node_sensor_suite.get(keys[1])
-            self.debug_draw()
+            # self.debug_draw()
             self.render_camera.render_target.blit_rgba_to_default()
 
         # draw CPU/GPU usage data and other info to the app window

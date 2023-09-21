@@ -306,7 +306,8 @@ class HabitatSimInteractiveViewer(Application):
         self.humanoid_cur_path = None
         self.humanoid_cur_waypoint = 0
         self.humanoid_models = self.get_humanoid_models("data/humanoids/humanoid_data/")
-        self.humanoid_cur_model_index = 1
+        self.humanoid_cur_model_index = 12
+        print(self.humanoid_models)
         self.humanoid_seq_motions = find_files(
             "data/humanoids/humanoid_data/mdm_data/", file_endswith, ".pkl"
         )
