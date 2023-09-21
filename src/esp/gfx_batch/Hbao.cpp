@@ -308,13 +308,13 @@ class HbaoCalcShader : public Mn::GL::AbstractShaderProgram {
 
     frag
         .addSource(Cr::Utility::format(
-            "{}{}"
+            "{}{}{}"
             "#define AO_LAYERED {}\n"
-            "#define AO_TEXTUREARRAY_LAYER {}\n"
             "#define AO_RANDOMTEX_SIZE {}\n",
             deinterleaved ? "#define AO_DEINTERLEAVED\n"_s : "",
-            specialBlur ? "#define AO_SPECIAL_BLUR\n"_s : "", Mn::Int(layered),
-            textureArrayLayer ? 1 : 0, AoRandomTextureSize))
+            specialBlur ? "#define AO_SPECIAL_BLUR\n"_s : "",
+            textureArrayLayer ? "#define AO_TEXTUREARRAY_LAYER\n"_s : "",
+            Mn::Int(layered), AoRandomTextureSize))
         .addSource(rs.getString("hbao/hbao.frag"));
 
     CORRADE_INTERNAL_ASSERT(vert.compile());
@@ -329,25 +329,25 @@ class HbaoCalcShader : public Mn::GL::AbstractShaderProgram {
       attachShaders({vert, frag});
     CORRADE_INTERNAL_ASSERT(link());
 
-    setUniformBlockBinding(uniformBlockIndex("controlBuffer"),
+    setUniformBlockBinding(uniformBlockIndex("uControlBuffer"),
                            UniformBufferBinding);
     if (deinterleaved) {
       if (layered == Layered::Off) {
-        float2OffsetUniform_ = uniformLocation("g_Float2Offset");
-        jitterUniform_ = uniformLocation("g_Jitter");
+        float2OffsetUniform_ = uniformLocation("uFloat2Offset");
+        jitterUniform_ = uniformLocation("uJitter");
       } else if (layered == Layered::ImageLoadStore) {
-        setUniform(uniformLocation("imgOutput"), OutputImageBinding);
+        setUniform(uniformLocation("uImgOutput"), OutputImageBinding);
       }
     }
     setUniform(uniformLocation("texLinearDepth"), LinearDepthTextureBinding);
     if (deinterleaved) {
       setUniform(uniformLocation("texViewNormal"), ViewNormalTextureBinding);
       if (textureArrayLayer) {
-        linearDepthTextureSliceUniform_ = uniformLocation("g_LinearDepthSlice");
+        linearDepthTextureSliceUniform_ = uniformLocation("uLinearDepthSlice");
       }
     } else {
       setUniform(uniformLocation("texRandom"), RandomTextureBinding);
-      randomSliceUniform_ = uniformLocation("g_RandomSlice");
+      randomSliceUniform_ = uniformLocation("uRandomSlice");
     }
   }
 
