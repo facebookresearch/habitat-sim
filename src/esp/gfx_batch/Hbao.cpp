@@ -542,7 +542,7 @@ struct HbaoUniformData {
   Mn::Vector4 jitters[AoRandomTextureSize * AoRandomTextureSize];
 };
 
-static_assert(sizeof(HbaoUniformData) % 4 == 0, "Not a nice uniform struct");
+static_assert(sizeof(HbaoUniformData) % 16 == 0, "Not a nice uniform struct");
 
 struct Hbao::State {
   Mn::GL::Texture2D sceneDepthLinear;
@@ -687,15 +687,9 @@ void Hbao::setConfiguration(const HbaoConfiguration& configuration) {
         configuration.flags() & HbaoFlag::UseAoSpecialBlur
             ? Mn::GL::TextureFormat::RG16F
             : Mn::GL::TextureFormat::R8;
-    state_
-        ->hbaoResult
-        // TODO filter?!
-        .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
+    state_->hbaoResult.setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
         .setStorage(1, aoFormat, configuration.size());
-    state_
-        ->hbaoBlur
-        // TODO filter?!
-        .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
+    state_->hbaoBlur.setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
         .setStorage(1, aoFormat, configuration.size());
 
 #ifndef MAGNUM_TARGET_WEBGL

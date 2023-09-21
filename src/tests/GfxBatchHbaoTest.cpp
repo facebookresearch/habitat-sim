@@ -1,3 +1,7 @@
+// Copyright (c) Meta Platforms, Inc. and its affiliates.
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/Utility/Algorithms.h>
@@ -355,9 +359,9 @@ void GfxBatchHbaoTest::testHBAOData(const TestDataType& data,
   if (flipped) {
     // This is expected to fail - the differeces from rotating and unrotating
     // are substantially greater than our current thresholds.
-    CORRADE_EXPECT_FAIL_IF(true,
-                           "The difference between these images is beyond our "
-                           "current thresholds, to be investigated later.");
+    CORRADE_EXPECT_FAIL(
+        "The difference between these images is beyond our "
+        "current thresholds, to be investigated later.");
     CORRADE_COMPARE_WITH(
         (output.read({{}, calcSize}, {Mn::PixelFormat::RGBA8Unorm})
              .pixels<Mn::Color4ub>()
@@ -373,7 +377,7 @@ void GfxBatchHbaoTest::testHBAOData(const TestDataType& data,
         (Mn::DebugTools::CompareImageToFile{data.maxThreshold,
                                             data.meanThreshold}));
   }
-}  // namespace
+}  // GfxBatchHbaoTest::testHBAOData
 
 void GfxBatchHbaoTest::testPerspective() {
   auto&& data = TestData[testCaseInstanceId()];
