@@ -275,35 +275,32 @@ class HbaoCalcShader : public Mn::GL::AbstractShaderProgram {
     Mn::GL::Shader vert{GlslVersion, Mn::GL::Shader::Type::Vertex};
     vert.addSource(rs.getString("hbao/fullscreenquad.vert"));
 
+    Mn::GL::Shader frag{GlslVersion, Mn::GL::Shader::Type::Fragment};
 #ifndef MAGNUM_TARGET_WEBGL
-    const bool passthroughSupported =
+
+    Mn::GL::Shader geom{Mn::NoCreate};
+    if (layered == Layered::GeometryShader) {
+      const bool passthroughSupported =
 /* Needs
  * https://github.com/mosra/magnum/commit/5f287df332fee7fcc2df6e8055853b86d1db3ed2
  */
 #if 0
         Mn::GL::Context::current().isExtensionSupported<Mn::GL::Extensions::NV::geometry_shader_passthrough>(GlslVersion);
 #else
-        Mn::GL::Context::current().detectedDriver() >=
-        Mn::GL::Context::DetectedDriver::NVidia
+          Mn::GL::Context::current().detectedDriver() >=
+          Mn::GL::Context::DetectedDriver::NVidia;
 #endif
-        ;
+          ;
 
-    Mn::GL::Shader geom{Mn::NoCreate};
-    if (layered == Layered::GeometryShader) {
       geom = Mn::GL::Shader{GlslVersion, Mn::GL::Shader::Type::Geometry};
       if (passthroughSupported) {
         geom.addSource("#define USE_GEOMETRY_SHADER_PASSTHROUGH\n"_s);
+
+        frag.addSource("#define USE_GEOMETRY_SHADER_PASSTHROUGH\n"_s);
       }
       geom.addSource(rs.getString("hbao/fullscreenquad.geom"));
-    }
-#endif
+    }  // layered == Layered::GeometryShader
 
-    Mn::GL::Shader frag{GlslVersion, Mn::GL::Shader::Type::Fragment};
-
-#ifndef MAGNUM_TARGET_WEBGL
-    if (layered == Layered::GeometryShader && passthroughSupported) {
-      frag.addSource("#define USE_GEOMETRY_SHADER_PASSTHROUGH\n"_s);
-    }
 #endif
 
     frag

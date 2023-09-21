@@ -28,12 +28,15 @@ void main() {
 
 layout(triangle_strip, max_vertices = 3) out;
 
-in vec2 texCoord[];
-out vec2 texCoordGeometry;
+in Inputs {
+  vec2 texCoord;
+}
+IN[];
+out vec2 texCoord;
 
 void main() {
   for (int i = 0; i < 3; ++i) {
-    texCoordGeometry = texCoord[i];
+    texCoord = IN[i].texCoord;
     gl_Layer = gl_PrimitiveIDIn;
     gl_PrimitiveID = gl_PrimitiveIDIn;
     gl_Position = gl_in[i].gl_Position;
