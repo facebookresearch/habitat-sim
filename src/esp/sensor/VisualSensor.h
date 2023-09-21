@@ -197,6 +197,15 @@ class VisualSensor : public Sensor {
    */
   Mn::Deg getFOV() const { return hfov_; }
 
+  /**
+   * @brief Return whether or not this Visual Sensor can use the HBAO effect
+   */
+  bool canUseHBAO() const override {
+    // TODO Expand HBAO support to other visual sensors
+    return (visualSensorSpec_->sensorSubType == SensorSubType::Pinhole) ||
+           (visualSensorSpec_->sensorSubType == SensorSubType::Orthographic);
+  }
+
  protected:
   /** @brief field of view
    */
