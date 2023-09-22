@@ -115,6 +115,11 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
   virtual bool isVisualSensor() const { return false; }
 
   /**
+   * @brief Return whether or not this Sensor can use the HBAO effect
+   */
+  virtual bool canUseHBAO() const { return false; }
+
+  /**
    * @brief Sets node's position and orientation from Sensor's SensorSpec
    * can be called ONLY when it is attached to a scene node
    */

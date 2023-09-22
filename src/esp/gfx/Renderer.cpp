@@ -340,6 +340,14 @@ struct Renderer::Impl {
             "render buffer while the simulator was initialized with "
             "requiresTextures = false", );
         renderTargetFlags |= RenderTarget::Flag::RgbaAttachment;
+        // TODO complete support for other camera types (fisheye,
+        // equirectanguular) to use hbao.
+        if ((sensor.canUseHBAO()) &&
+            (flags_ & Renderer::Flag::HorizonBasedAmbientOcclusion)) {
+          // force depth texture for Color sensor, needed for HBAO
+          renderTargetFlags |= RenderTarget::Flag::DepthTextureAttachment;
+          renderTargetFlags |= RenderTarget::Flag::HorizonBasedAmbientOcclusion;
+        }
         break;
 
       case sensor::SensorType::Depth:

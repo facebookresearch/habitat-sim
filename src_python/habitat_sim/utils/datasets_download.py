@@ -106,7 +106,7 @@ def initialize_test_data_sources(data_path):
         "habitat_test_scenes": {
             "source": "https://huggingface.co/datasets/ai-habitat/habitat_test_scenes.git",
             "link": data_path + "scene_datasets/habitat-test-scenes",
-            "version": "v1.0",
+            "version": "main",
         },
         "habitat_test_pointnav_dataset": {
             "source": "http://dl.fbaipublicfiles.com/habitat/habitat-test-pointnav-dataset_v1.0.zip",
