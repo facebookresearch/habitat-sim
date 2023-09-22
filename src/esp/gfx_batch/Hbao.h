@@ -40,11 +40,6 @@ class HbaoConfiguration {
 
   HbaoFlags flags() const { return flags_; }
 
-  HbaoConfiguration& setFlags(HbaoFlags flags) {
-    flags_ = flags;
-    return *this;
-  }
-
   // Blur should always be used, otherwise there's nasty grid-like artifacts.
   // NoBlur available for debugging.
   HbaoConfiguration& setNoBlur(bool state) {

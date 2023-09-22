@@ -64,8 +64,14 @@ struct GfxBatchHbaoTest : Mn::GL::OpenGLTester {
 
   void testHBAOData(const TestDataType& data,
                     const std::string& filename,
-                    const Projection& proj,
-                    bool flipped);
+                    const Projection& proj);
+
+  void testFlippedHBAOData(const TestDataType& data,
+                           const std::string& filename,
+                           const Projection& proj);
+
+  // TODO implement benchmark
+  //  void benchmarkPerspective();
 };
 
 struct Projection {
@@ -101,76 +107,79 @@ const struct TestDataType {
   const char* name;
   const char* filename;
   bool classic;
-  esp::gfx_batch::HbaoFlags flags;
-  Mn::Float intensity, radius, blurSharpness;
-  Mn::Float maxThreshold, meanThreshold;
+  esp::gfx_batch::HbaoConfiguration config;
+
+  Mn::Float maxThreshold = 0.0f;
+  Mn::Float meanThreshold = 0.0f;
 } TestData[]{
     // Perspective projection
     {"classic, defaults", "hbao-classic", true,
-     esp::gfx_batch::HbaoConfiguration{}.flags(),
-     esp::gfx_batch::HbaoConfiguration{}.intensity(),
-     esp::gfx_batch::HbaoConfiguration{}.radius(),
-     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 0.0f, 0.0f},
+     esp::gfx_batch::HbaoConfiguration{}},
     {"classic, AO special blur", "hbao-classic-sblur", true,
-     esp::gfx_batch::HbaoConfiguration{}.flags() |
-         esp::gfx_batch::HbaoFlag::UseAoSpecialBlur,
-     esp::gfx_batch::HbaoConfiguration{}.intensity(),
-     esp::gfx_batch::HbaoConfiguration{}.radius(),
-     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 1.0f, 0.1f},
+     esp::gfx_batch::HbaoConfiguration{}.setUseSpecialBlur(true), 1.0f, 0.1f},
     {"classic, strong effect", "hbao-classic-strong", true,
-     esp::gfx_batch::HbaoConfiguration{}.flags(),
-     esp::gfx_batch::HbaoConfiguration{}.intensity() * 2.0f,
-     esp::gfx_batch::HbaoConfiguration{}.radius() * 1.5f,
-     esp::gfx_batch::HbaoConfiguration{}.blurSharpness() * 5.0f, 0.0f, 0.0f},
+     esp::gfx_batch::HbaoConfiguration{}
+         .scaleIntensity(2.0f)
+         .scaleRadius(1.5f)
+         .scaleBlurSharpness(5.0f)},
     {"cache-aware, defaults", "hbao-cache", false,
-     esp::gfx_batch::HbaoConfiguration{}.flags(),
-     esp::gfx_batch::HbaoConfiguration{}.intensity(),
-     esp::gfx_batch::HbaoConfiguration{}.radius(),
-     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 0.0f, 0.0f},
+     esp::gfx_batch::HbaoConfiguration{}},
     {"cache-aware, AO special blur", "hbao-cache-sblur", false,
-     esp::gfx_batch::HbaoConfiguration{}.flags() |
-         esp::gfx_batch::HbaoFlag::UseAoSpecialBlur,
-     esp::gfx_batch::HbaoConfiguration{}.intensity(),
-     esp::gfx_batch::HbaoConfiguration{}.radius(),
-     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 1.0f, 0.1f},
+     esp::gfx_batch::HbaoConfiguration{}.setUseSpecialBlur(true), 1.0f, 0.1f},
     {"cache-aware, strong effect", "hbao-cache-strong", false,
-     esp::gfx_batch::HbaoConfiguration{}.flags(),
-     esp::gfx_batch::HbaoConfiguration{}.intensity() * 2.0f,
-     esp::gfx_batch::HbaoConfiguration{}.radius() * 1.5f,
-     esp::gfx_batch::HbaoConfiguration{}.blurSharpness() * 5.0f, 0.0f, 0.0f},
+     esp::gfx_batch::HbaoConfiguration{}
+         .scaleIntensity(2.0f)
+         .scaleRadius(1.5f)
+         .scaleBlurSharpness(5.0f)},
     {"cache-aware, strong effect, AO special blur", "hbao-cache-strong-sblur",
-     false, esp::gfx_batch::HbaoConfiguration{}.flags(),
-     esp::gfx_batch::HbaoConfiguration{}.intensity() * 2.0f,
-     esp::gfx_batch::HbaoConfiguration{}.radius() * 1.5f,
-     esp::gfx_batch::HbaoConfiguration{}.blurSharpness() * 5.0f, 1.0f, 0.1f},
+     false,
+     esp::gfx_batch::HbaoConfiguration{}
+         .setUseSpecialBlur(true)
+         .scaleIntensity(2.0f)
+         .scaleRadius(1.5f)
+         .scaleBlurSharpness(5.0f),
+     1.0f, 0.1f},
     {"cache-aware, layered with image load store", "hbao-cache-layered", false,
-     esp::gfx_batch::HbaoConfiguration{}.flags() |
-         esp::gfx_batch::HbaoFlag::LayeredImageLoadStore,
-     esp::gfx_batch::HbaoConfiguration{}.intensity(),
-     esp::gfx_batch::HbaoConfiguration{}.radius(),
-     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 0.0f, 0.0f},
+     esp::gfx_batch::HbaoConfiguration{}.setUseLayeredImageLoadStore(true)},
     {"cache-aware, layered with image load store, AO special blur",
      "hbao-cache-layered-sblur", false,
-     esp::gfx_batch::HbaoConfiguration{}.flags() |
-         (esp::gfx_batch::HbaoFlag::LayeredImageLoadStore |
-          esp::gfx_batch::HbaoFlag::UseAoSpecialBlur),
-     esp::gfx_batch::HbaoConfiguration{}.intensity(),
-     esp::gfx_batch::HbaoConfiguration{}.radius(),
-     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 1.0f, 0.1f},
+     esp::gfx_batch::HbaoConfiguration{}
+         .setUseLayeredImageLoadStore(true)
+         .setUseSpecialBlur(true),
+     1.0f, 0.1f},
     {"cache-aware, layered with geometry shader", "hbao-cache-geom", false,
-     esp::gfx_batch::HbaoConfiguration{}.flags() |
-         esp::gfx_batch::HbaoFlag::LayeredGeometryShader,
-     esp::gfx_batch::HbaoConfiguration{}.intensity(),
-     esp::gfx_batch::HbaoConfiguration{}.radius(),
-     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 0.0f, 0.0f},
+     esp::gfx_batch::HbaoConfiguration{}.setUseLayeredGeometryShader(true)},
     {"cache-aware, layered with geometry shader, AO special blur",
      "hbao-cache-geom-sblur", false,
-     esp::gfx_batch::HbaoConfiguration{}.flags() |
-         (esp::gfx_batch::HbaoFlag::LayeredGeometryShader |
-          esp::gfx_batch::HbaoFlag::UseAoSpecialBlur),
-     esp::gfx_batch::HbaoConfiguration{}.intensity(),
-     esp::gfx_batch::HbaoConfiguration{}.radius(),
-     esp::gfx_batch::HbaoConfiguration{}.blurSharpness(), 1.0f, 0.1f},
+     esp::gfx_batch::HbaoConfiguration{}
+         .setUseLayeredGeometryShader(true)
+         .setUseSpecialBlur(true),
+     1.0f, 0.1f},
+};
+
+TestDataType BenchData[]{
+    {"classic, defaults", "hbao-classic", true,
+     esp::gfx_batch::HbaoConfiguration{}},
+    {"cache-aware, defaults", "hbao-cache", false,
+     esp::gfx_batch::HbaoConfiguration{}},
+    {"cache-aware, AO special blur", "hbao-cache-sblur", false,
+     esp::gfx_batch::HbaoConfiguration{}.setUseSpecialBlur(true), 1.0f, 0.1f},
+    {"cache-aware, layered with image load store", "hbao-cache-layered", false,
+     esp::gfx_batch::HbaoConfiguration{}.setUseLayeredImageLoadStore(true)},
+    {"cache-aware, layered with image load store, AO special blur",
+     "hbao-cache-layered-sblur", false,
+     esp::gfx_batch::HbaoConfiguration{}
+         .setUseLayeredImageLoadStore(true)
+         .setUseSpecialBlur(true),
+     1.0f, 0.1f},
+    {"cache-aware, layered with geometry shader", "hbao-cache-geom", false,
+     esp::gfx_batch::HbaoConfiguration{}.setUseLayeredGeometryShader(true)},
+    {"cache-aware, layered with geometry shader, AO special blur",
+     "hbao-cache-geom-sblur", false,
+     esp::gfx_batch::HbaoConfiguration{}
+         .setUseLayeredGeometryShader(true)
+         .setUseSpecialBlur(true),
+     1.0f, 0.1f},
 };
 
 const struct {
@@ -193,6 +202,9 @@ GfxBatchHbaoTest::GfxBatchHbaoTest() {
                      &GfxBatchHbaoTest::testPerspectiveFlipped,
                      &GfxBatchHbaoTest::testOrthographic},
                     Cr::Containers::arraySize(TestData));
+  // TODO implement benchmark
+  // addInstancedBenchmarks({&GfxBatchHbaoTest::benchmarkPerspective}, 10,
+  //                        Cr::Containers::arraySize(BenchData));
 }
 
 void GfxBatchHbaoTest::generateTestData() {
@@ -254,13 +266,12 @@ void GfxBatchHbaoTest::generateTestData() {
       Cr::Utility::Path::join(TestHBAOImageDir,
                               data.projData.sourceDepthFilename),
       (Mn::DebugTools::CompareImageToFile{}));
-}
+}  // GfxBatchHbaoTest::generateTestData()
 
 void GfxBatchHbaoTest::testHBAOData(const TestDataType& data,
                                     const std::string& filename,
-                                    const Projection& projData,
-                                    bool flipped) {
-  if ((data.flags & esp::gfx_batch::HbaoFlag::LayeredImageLoadStore) &&
+                                    const Projection& projData) {
+  if ((data.config.flags() & esp::gfx_batch::HbaoFlag::LayeredImageLoadStore) &&
       !(
 #ifdef MAGNUM_TARGET_GLES
           Mn::GL::Context::current().isVersionSupported(
@@ -298,43 +309,15 @@ void GfxBatchHbaoTest::testHBAOData(const TestDataType& data,
 
   Mn::GL::Texture2D inputDepthTexture;
   Mn::GL::Texture2D outputColorTexture;
-  Mn::Vector2i calcSize;
-  if (flipped) {
-    calcSize = Size.flipped();
-    /* This rotates the depth image by 90° */
-    Cr::Containers::Array<char> rotatedDepth{Cr::NoInit, depth->data().size()};
-    Cr::Utility::copy(depth->pixels().flipped<1>().transposed<0, 1>(),
-                      Cr::Containers::StridedArrayView3D<char>{
-                          rotatedDepth,
-                          {std::size_t(Size.x()), std::size_t(Size.y()),
-                           depth->pixelSize()}});
-    inputDepthTexture
-        .setStorage(1, Mn::GL::TextureFormat::DepthComponent32F, calcSize)
-        .setSubImage(0, {},
-                     Mn::ImageView2D{depth->format(), calcSize, rotatedDepth});
+  Mn::Vector2i calcSize = Size;
+  inputDepthTexture
+      .setStorage(1, Mn::GL::TextureFormat::DepthComponent32F, Size)
+      .setSubImage(0, {}, *depth);
 
-    /* This rotates the color image by 90° */
-    Cr::Containers::Array<char> rotatedColor{Cr::NoInit, color->data().size()};
-    Cr::Utility::copy(color->pixels().flipped<1>().transposed<0, 1>(),
-                      Cr::Containers::StridedArrayView3D<char>{
-                          rotatedColor,
-                          {std::size_t(Size.x()), std::size_t(Size.y()),
-                           color->pixelSize()}});
+  outputColorTexture.setStorage(1, Mn::GL::TextureFormat::RGBA8, Size)
+      .setSubImage(0, {}, *color);
 
-    outputColorTexture.setStorage(1, Mn::GL::TextureFormat::RGBA8, calcSize)
-        .setSubImage(0, {},
-                     Mn::ImageView2D{color->format(), calcSize, rotatedColor});
-
-  } else {
-    calcSize = Size;
-    inputDepthTexture
-        .setStorage(1, Mn::GL::TextureFormat::DepthComponent32F, calcSize)
-        .setSubImage(0, {}, *depth);
-
-    outputColorTexture.setStorage(1, Mn::GL::TextureFormat::RGBA8, calcSize)
-        .setSubImage(0, {}, *color);
-  }
-  Mn::GL::Framebuffer output{{{}, calcSize}};
+  Mn::GL::Framebuffer output{{{}, Size}};
   output.attachTexture(Mn::GL::Framebuffer::ColorAttachment{0},
                        outputColorTexture, 0);
 
@@ -342,12 +325,8 @@ void GfxBatchHbaoTest::testHBAOData(const TestDataType& data,
 
   MAGNUM_VERIFY_NO_GL_ERROR();
 
-  esp::gfx_batch::Hbao hbao{esp::gfx_batch::HbaoConfiguration{}
-                                .setSize(calcSize)
-                                .setFlags(data.flags)
-                                .setIntensity(data.intensity)
-                                .setRadius(data.radius)
-                                .setBlurSharpness(data.blurSharpness)};
+  auto config{data.config};
+  esp::gfx_batch::Hbao hbao{config.setSize(Size)};
   MAGNUM_VERIFY_NO_GL_ERROR();
   // test projection drawing for both classic and cache-aware algorithms
 
@@ -356,28 +335,114 @@ void GfxBatchHbaoTest::testHBAOData(const TestDataType& data,
 
   MAGNUM_VERIFY_NO_GL_ERROR();
 
-  if (flipped) {
-    // This is expected to fail - the differeces from rotating and unrotating
-    // are substantially greater than our current thresholds.
-    CORRADE_EXPECT_FAIL(
-        "The difference between these images is beyond our "
-        "current thresholds, to be investigated later.");
-    CORRADE_COMPARE_WITH(
-        (output.read({{}, calcSize}, {Mn::PixelFormat::RGBA8Unorm})
-             .pixels<Mn::Color4ub>()
-             .transposed<1, 0>()
-             .flipped<1>()),
-        Cr::Utility::Path::join(TestHBAOImageDir, filename),
-        (Mn::DebugTools::CompareImageToFile{data.maxThreshold,
-                                            data.meanThreshold}));
-  } else {
-    CORRADE_COMPARE_WITH(
-        output.read({{}, calcSize}, {Mn::PixelFormat::RGBA8Unorm}),
-        Cr::Utility::Path::join(TestHBAOImageDir, filename),
-        (Mn::DebugTools::CompareImageToFile{data.maxThreshold,
-                                            data.meanThreshold}));
-  }
+  CORRADE_COMPARE_WITH(output.read({{}, Size}, {Mn::PixelFormat::RGBA8Unorm}),
+                       Cr::Utility::Path::join(TestHBAOImageDir, filename),
+                       (Mn::DebugTools::CompareImageToFile{
+                           data.maxThreshold, data.meanThreshold}));
+
 }  // GfxBatchHbaoTest::testHBAOData
+
+void GfxBatchHbaoTest::testFlippedHBAOData(const TestDataType& data,
+                                           const std::string& filename,
+                                           const Projection& projData) {
+  if ((data.config.flags() & esp::gfx_batch::HbaoFlag::LayeredImageLoadStore) &&
+      !(
+#ifdef MAGNUM_TARGET_GLES
+          Mn::GL::Context::current().isVersionSupported(
+              Mn::GL::Version::GLES310)
+#else
+          Mn::GL::Context::current()
+              .isExtensionSupported<
+                  Mn::GL::Extensions::ARB::shader_image_load_store>()
+#endif
+              ))
+    CORRADE_SKIP("Image load/store not supported");
+
+  Cr::PluginManager::Manager<Mn::Trade::AbstractImporter> importerManager;
+  Cr::Containers::Pointer<Mn::Trade::AbstractImporter> importer =
+      importerManager.loadAndInstantiate("AnyImageImporter");
+  CORRADE_VERIFY(importer);
+
+  if (!importer->openFile(Cr::Utility::Path::join(
+          TestHBAOImageDir, projData.sourceColorFilename))) {
+    CORRADE_FAIL("Cannot load the color image");
+  }
+  Cr::Containers::Optional<Mn::Trade::ImageData2D> color = importer->image2D(0);
+  CORRADE_VERIFY(color);
+  CORRADE_COMPARE(color->size(), Size);
+  CORRADE_COMPARE(color->format(), Mn::PixelFormat::RGBA8Unorm);
+
+  if (!importer->openFile(Cr::Utility::Path::join(
+          TestHBAOImageDir, projData.sourceDepthFilename))) {
+    CORRADE_FAIL("Cannot load the depth image");
+  }
+  Cr::Containers::Optional<Mn::Trade::ImageData2D> depth = importer->image2D(0);
+  CORRADE_VERIFY(depth);
+  CORRADE_COMPARE(depth->size(), Size);
+  CORRADE_COMPARE(depth->format(), Mn::PixelFormat::Depth32F);
+
+  Mn::GL::Texture2D inputDepthTexture;
+  Mn::Vector2i calcSize = Size.flipped();
+  /* This rotates the depth image by 90° */
+  Cr::Containers::Array<char> rotatedDepth{Cr::NoInit, depth->data().size()};
+  Cr::Utility::copy(
+      depth->pixels().flipped<1>().transposed<0, 1>(),
+      Cr::Containers::StridedArrayView3D<char>{
+          rotatedDepth,
+          {std::size_t(Size.x()), std::size_t(Size.y()), depth->pixelSize()}});
+  inputDepthTexture
+      .setStorage(1, Mn::GL::TextureFormat::DepthComponent32F, calcSize)
+      .setSubImage(0, {},
+                   Mn::ImageView2D{depth->format(), calcSize, rotatedDepth});
+
+  /* This rotates the color image by 90° */
+  Cr::Containers::Array<char> rotatedColor{Cr::NoInit, color->data().size()};
+  Cr::Utility::copy(
+      color->pixels().flipped<1>().transposed<0, 1>(),
+      Cr::Containers::StridedArrayView3D<char>{
+          rotatedColor,
+          {std::size_t(Size.x()), std::size_t(Size.y()), color->pixelSize()}});
+
+  Mn::GL::Texture2D outputColorTexture;
+
+  outputColorTexture.setStorage(1, Mn::GL::TextureFormat::RGBA8, calcSize)
+      .setSubImage(0, {},
+                   Mn::ImageView2D{color->format(), calcSize, rotatedColor});
+
+  Mn::GL::Framebuffer output{{{}, calcSize}};
+  output.attachTexture(Mn::GL::Framebuffer::ColorAttachment{0},
+                       outputColorTexture, 0);
+
+  /* No clear, that would kill the base image */
+
+  MAGNUM_VERIFY_NO_GL_ERROR();
+  auto config{data.config};
+  esp::gfx_batch::Hbao hbao{config.setSize(calcSize)};
+
+  MAGNUM_VERIFY_NO_GL_ERROR();
+  // test projection drawing for both classic and cache-aware algorithms
+
+  hbao.drawEffect(projData.projection, !data.classic, inputDepthTexture,
+                  output);
+
+  MAGNUM_VERIFY_NO_GL_ERROR();
+
+  // This is expected to fail - the differeces from rotating and unrotating
+  // are substantially greater than our current thresholds.
+  CORRADE_EXPECT_FAIL(
+      "The difference between these images is measurable and they should be "
+      "identical, indicating a potential directional bias in the algorithm. "
+      "This is to be investigated later.\n");
+  CORRADE_COMPARE_WITH(
+      (output.read({{}, calcSize}, {Mn::PixelFormat::RGBA8Unorm})
+           .pixels<Mn::Color4ub>()
+           .transposed<1, 0>()
+           .flipped<1>()),
+      Cr::Utility::Path::join(TestHBAOImageDir, filename),
+      (Mn::DebugTools::CompareImageToFile{data.maxThreshold,
+                                          data.meanThreshold}));
+
+}  // GfxBatchHbaoTest::testFlippedHBAOData
 
 void GfxBatchHbaoTest::testPerspective() {
   auto&& data = TestData[testCaseInstanceId()];
@@ -412,12 +477,14 @@ void GfxBatchHbaoTest::testPerspectiveFlipped() {
 
 }  // GfxBatchHbaoTest::testPerspective()
 
-void GfxBatchHbaoTest::benchmarkPerspective() {
-  auto&& data = TestData[testCaseInstanceId()];
-  setTestCaseDescription(
-      Cr::Utility::formatString("{}, perspective benchmark.", data.name));
+// void GfxBatchHbaoTest::benchmarkPerspective() {
+//   auto&& data = TestData[testCaseInstanceId()];
+//   setTestCaseDescription(
+//       Cr::Utility::formatString("{}, perspective benchmark.", data.name));
 
-}  // GfxBatchHbaoTest::benchmarkPerspective()
+//   // TODO implement benchmark
+
+// }  // GfxBatchHbaoTest::benchmarkPerspective()
 
 }  // namespace
 
