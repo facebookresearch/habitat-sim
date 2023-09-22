@@ -70,14 +70,14 @@ struct GfxBatchHbaoTest : Mn::GL::OpenGLTester {
 
 struct Projection {
   Mn::Matrix4 projection;
-  const std::string sourceColorFilename;
-  const std::string sourceDepthFilename;
+  const Cr::Containers::String sourceColorFilename;
+  const Cr::Containers::String sourceDepthFilename;
 };
 
 const Projection perspectiveData{
     Mn::Matrix4::perspectiveProjection(45.0_degf, aspectRatio, 0.1f, 100.0f),
-    Cr::Utility::formatString("{}.color.png", baseTestFilename),
-    Cr::Utility::formatString("{}.depth.exr", baseTestFilename)};
+    Cr::Utility::format("{}.color.png", baseTestFilename),
+    Cr::Utility::format("{}.depth.exr", baseTestFilename)};
 
 const Projection flippedPerspectiveData{
     Mn::Matrix4::perspectiveProjection(
@@ -86,16 +86,16 @@ const Projection flippedPerspectiveData{
         1.0f / aspectRatio,
         0.1f,
         100.0f),
-    Cr::Utility::formatString("{}.color.png", baseTestFilename),
-    Cr::Utility::formatString("{}.depth.exr", baseTestFilename)};
+    Cr::Utility::format("{}.color.png", baseTestFilename),
+    Cr::Utility::format("{}.depth.exr", baseTestFilename)};
 
 const Projection orthographicData{
     Mn::Matrix4::orthographicProjection(
         Magnum::Vector2(4.0f * aspectRatio, 4.0f),
         0.1f,
         100.0f),
-    Cr::Utility::formatString("{}.color-ortho.png", baseTestFilename),
-    Cr::Utility::formatString("{}.depth-ortho.exr", baseTestFilename)};
+    Cr::Utility::format("{}.color-ortho.png", baseTestFilename),
+    Cr::Utility::format("{}.depth-ortho.exr", baseTestFilename)};
 
 const struct TestDataType {
   const char* name;
@@ -386,18 +386,7 @@ void GfxBatchHbaoTest::testPerspective() {
   testHBAOData(
       data,
       Cr::Utility::formatString("{}.{}.png", baseTestFilename, data.filename),
-      perspectiveData, false);
-
-}  // GfxBatchHbaoTest::testPerspective()
-
-void GfxBatchHbaoTest::testPerspectiveFlipped() {
-  auto&& data = TestData[testCaseInstanceId()];
-  setTestCaseDescription(
-      Cr::Utility::formatString("{}, perspective, flipped", data.name));
-  testHBAOData(
-      data,
-      Cr::Utility::formatString("{}.{}.png", baseTestFilename, data.filename),
-      flippedPerspectiveData, true);
+      perspectiveData);
 
 }  // GfxBatchHbaoTest::testPerspective()
 
@@ -408,9 +397,27 @@ void GfxBatchHbaoTest::testOrthographic() {
   testHBAOData(data,
                Cr::Utility::formatString("{}.{}-ortho.png", baseTestFilename,
                                          data.filename),
-               orthographicData, false);
+               orthographicData);
 
 }  // GfxBatchHbaoTest::testOrthographic()
+
+void GfxBatchHbaoTest::testPerspectiveFlipped() {
+  auto&& data = TestData[testCaseInstanceId()];
+  setTestCaseDescription(
+      Cr::Utility::formatString("{}, perspective, flipped", data.name));
+  testFlippedHBAOData(
+      data,
+      Cr::Utility::formatString("{}.{}.png", baseTestFilename, data.filename),
+      flippedPerspectiveData);
+
+}  // GfxBatchHbaoTest::testPerspective()
+
+void GfxBatchHbaoTest::benchmarkPerspective() {
+  auto&& data = TestData[testCaseInstanceId()];
+  setTestCaseDescription(
+      Cr::Utility::formatString("{}, perspective benchmark.", data.name));
+
+}  // GfxBatchHbaoTest::benchmarkPerspective()
 
 }  // namespace
 

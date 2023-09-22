@@ -91,11 +91,19 @@ class HbaoConfiguration {
     intensity_ = intensity;
     return *this;
   }
+  HbaoConfiguration& scaleIntensity(Magnum::Float mult) {
+    intensity_ *= mult;
+    return *this;
+  }
 
   Magnum::Float bias() const { return bias_; }
 
   HbaoConfiguration& setBias(Magnum::Float bias) {
     bias_ = bias;
+    return *this;
+  }
+  HbaoConfiguration& scaleBias(Magnum::Float mult) {
+    bias_ *= mult;
     return *this;
   }
 
@@ -105,11 +113,19 @@ class HbaoConfiguration {
     radius_ = radius;
     return *this;
   }
+  HbaoConfiguration& scaleRadius(Magnum::Float mult) {
+    radius_ *= mult;
+    return *this;
+  }
 
   Magnum::Float blurSharpness() const { return blurSharpness_; }
 
   HbaoConfiguration& setBlurSharpness(Magnum::Float blurSharpness) {
     blurSharpness_ = blurSharpness;
+    return *this;
+  }
+  HbaoConfiguration& scaleBlurSharpness(Magnum::Float mult) {
+    blurSharpness_ *= mult;
     return *this;
   }
 
