@@ -164,51 +164,57 @@ const Projection orthographicData{
 const struct TestDataType {
   const char* name;
   const char* filename;
-  bool classic;
+  esp::gfx_batch::HbaoType algType;
   esp::gfx_batch::HbaoConfiguration config;
 
   Mn::Float maxThreshold = 0.0f;
   Mn::Float meanThreshold = 0.0f;
 } TestData[]{
     // Perspective projection
-    {"classic, defaults", "hbao-classic", true,
+    {"classic, defaults", "hbao-classic", esp::gfx_batch::HbaoType::Classic,
      esp::gfx_batch::HbaoConfiguration{}},
-    {"classic, AO special blur", "hbao-classic-sblur", true,
+    {"classic, AO special blur", "hbao-classic-sblur",
+     esp::gfx_batch::HbaoType::Classic,
      esp::gfx_batch::HbaoConfiguration{}.setUseSpecialBlur(true), 1.0f, 0.1f},
-    {"classic, strong effect", "hbao-classic-strong", true,
+    {"classic, strong effect", "hbao-classic-strong",
+     esp::gfx_batch::HbaoType::Classic,
      esp::gfx_batch::HbaoConfiguration{}
          .scaleIntensity(2.0f)
          .scaleRadius(1.5f)
          .scaleBlurSharpness(5.0f)},
-    {"cache-aware, defaults", "hbao-cache", false,
-     esp::gfx_batch::HbaoConfiguration{}},
-    {"cache-aware, AO special blur", "hbao-cache-sblur", false,
+    {"cache-aware, defaults", "hbao-cache",
+     esp::gfx_batch::HbaoType::CacheAware, esp::gfx_batch::HbaoConfiguration{}},
+    {"cache-aware, AO special blur", "hbao-cache-sblur",
+     esp::gfx_batch::HbaoType::CacheAware,
      esp::gfx_batch::HbaoConfiguration{}.setUseSpecialBlur(true), 1.0f, 0.1f},
-    {"cache-aware, strong effect", "hbao-cache-strong", false,
+    {"cache-aware, strong effect", "hbao-cache-strong",
+     esp::gfx_batch::HbaoType::CacheAware,
      esp::gfx_batch::HbaoConfiguration{}
          .scaleIntensity(2.0f)
          .scaleRadius(1.5f)
          .scaleBlurSharpness(5.0f)},
     {"cache-aware, strong effect, AO special blur", "hbao-cache-strong-sblur",
-     false,
+     esp::gfx_batch::HbaoType::CacheAware,
      esp::gfx_batch::HbaoConfiguration{}
          .setUseSpecialBlur(true)
          .scaleIntensity(2.0f)
          .scaleRadius(1.5f)
          .scaleBlurSharpness(5.0f),
      1.0f, 0.1f},
-    {"cache-aware, layered with image load store", "hbao-cache-layered", false,
+    {"cache-aware, layered with image load store", "hbao-cache-layered",
+     esp::gfx_batch::HbaoType::CacheAware,
      esp::gfx_batch::HbaoConfiguration{}.setUseLayeredImageLoadStore(true)},
     {"cache-aware, layered with image load store, AO special blur",
-     "hbao-cache-layered-sblur", false,
+     "hbao-cache-layered-sblur", esp::gfx_batch::HbaoType::CacheAware,
      esp::gfx_batch::HbaoConfiguration{}
          .setUseLayeredImageLoadStore(true)
          .setUseSpecialBlur(true),
      1.0f, 0.1f},
-    {"cache-aware, layered with geometry shader", "hbao-cache-geom", false,
+    {"cache-aware, layered with geometry shader", "hbao-cache-geom",
+     esp::gfx_batch::HbaoType::CacheAware,
      esp::gfx_batch::HbaoConfiguration{}.setUseLayeredGeometryShader(true)},
     {"cache-aware, layered with geometry shader, AO special blur",
-     "hbao-cache-geom-sblur", false,
+     "hbao-cache-geom-sblur", esp::gfx_batch::HbaoType::CacheAware,
      esp::gfx_batch::HbaoConfiguration{}
          .setUseLayeredGeometryShader(true)
          .setUseSpecialBlur(true),
@@ -216,28 +222,31 @@ const struct TestDataType {
 };
 
 TestDataType BenchData[]{
-    {"classic, defaults", "hbao-classic", true,
+    {"classic, defaults", "hbao-classic", esp::gfx_batch::HbaoType::Classic,
      esp::gfx_batch::HbaoConfiguration{}},
-    {"classic, no blur", "hbao-classic", true,
+    {"classic, no blur", "hbao-classic", esp::gfx_batch::HbaoType::Classic,
      esp::gfx_batch::HbaoConfiguration{}.setNoBlur(true)},
-    {"cache-aware, defaults", "hbao-cache", false,
-     esp::gfx_batch::HbaoConfiguration{}},
-    {"cache-aware, no blur", "hbao-cache", false,
+    {"cache-aware, defaults", "hbao-cache",
+     esp::gfx_batch::HbaoType::CacheAware, esp::gfx_batch::HbaoConfiguration{}},
+    {"cache-aware, no blur", "hbao-cache", esp::gfx_batch::HbaoType::CacheAware,
      esp::gfx_batch::HbaoConfiguration{}.setNoBlur(true)},
-    {"cache-aware, AO special blur", "hbao-cache-sblur", false,
+    {"cache-aware, AO special blur", "hbao-cache-sblur",
+     esp::gfx_batch::HbaoType::CacheAware,
      esp::gfx_batch::HbaoConfiguration{}.setUseSpecialBlur(true), 1.0f, 0.1f},
-    {"cache-aware, layered with image load store", "hbao-cache-layered", false,
+    {"cache-aware, layered with image load store", "hbao-cache-layered",
+     esp::gfx_batch::HbaoType::CacheAware,
      esp::gfx_batch::HbaoConfiguration{}.setUseLayeredImageLoadStore(true)},
     {"cache-aware, layered with image load store, AO special blur",
-     "hbao-cache-layered-sblur", false,
+     "hbao-cache-layered-sblur", esp::gfx_batch::HbaoType::CacheAware,
      esp::gfx_batch::HbaoConfiguration{}
          .setUseLayeredImageLoadStore(true)
          .setUseSpecialBlur(true),
      1.0f, 0.1f},
-    {"cache-aware, layered with geometry shader", "hbao-cache-geom", false,
+    {"cache-aware, layered with geometry shader", "hbao-cache-geom",
+     esp::gfx_batch::HbaoType::CacheAware,
      esp::gfx_batch::HbaoConfiguration{}.setUseLayeredGeometryShader(true)},
     {"cache-aware, layered with geometry shader, AO special blur",
-     "hbao-cache-geom-sblur", false,
+     "hbao-cache-geom-sblur", esp::gfx_batch::HbaoType::CacheAware,
      esp::gfx_batch::HbaoConfiguration{}
          .setUseLayeredGeometryShader(true)
          .setUseSpecialBlur(true),
@@ -392,8 +401,7 @@ void GfxBatchHbaoTest::testHBAOData(const TestDataType& data,
   MAGNUM_VERIFY_NO_GL_ERROR();
   // test projection drawing for both classic and cache-aware algorithms
 
-  hbao.drawEffect(projData.projection, !data.classic, inputDepthTexture,
-                  output);
+  hbao.drawEffect(projData.projection, data.algType, inputDepthTexture, output);
 
   MAGNUM_VERIFY_NO_GL_ERROR();
 
@@ -485,8 +493,7 @@ void GfxBatchHbaoTest::testFlippedHBAOData(const TestDataType& data,
   MAGNUM_VERIFY_NO_GL_ERROR();
   // test projection drawing for both classic and cache-aware algorithms
 
-  hbao.drawEffect(projData.projection, !data.classic, inputDepthTexture,
-                  output);
+  hbao.drawEffect(projData.projection, data.algType, inputDepthTexture, output);
 
   MAGNUM_VERIFY_NO_GL_ERROR();
 
@@ -589,11 +596,11 @@ void GfxBatchHbaoTest::benchmarkHBAOData(const TestDataType& data,
       esp::gfx_batch::HbaoConfiguration{data.config}.setSize(BenchImageSize)};
   MAGNUM_VERIFY_NO_GL_ERROR();
   // Call once to compile the shaders
-  hbao.drawEffect(projMatrix, !data.classic, inputDepthTexture, output);
+  hbao.drawEffect(projMatrix, data.algType, inputDepthTexture, output);
 
   // benchmark projection drawing for both classic and cache-aware algorithms
   CORRADE_BENCHMARK(16) {
-    hbao.drawEffect(projMatrix, !data.classic, inputDepthTexture, output);
+    hbao.drawEffect(projMatrix, data.algType, inputDepthTexture, output);
   }
 
   MAGNUM_VERIFY_NO_GL_ERROR();

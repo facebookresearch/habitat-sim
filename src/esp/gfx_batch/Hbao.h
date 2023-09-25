@@ -132,6 +132,8 @@ class HbaoConfiguration {
                 blurSharpness_ = 10.0f;
 };  // class HbaoConfiguration
 
+enum class HbaoType { Classic, CacheAware };
+
 class Hbao {
  public:
   explicit Hbao(const HbaoConfiguration& configuration);
@@ -154,15 +156,14 @@ class Hbao {
    * @brief Draw the HBAO effect on top of the current framebuffer.
    * @param projection The current visual sensor's projection matrix.
    * perspective projection matrix.
-   * @param useCacheAware Whether to use the cache-aware algorithm or the
-   * original/classic HBAO algorithm. The cache-aware algorithm has performance
-   * optimizations.
+   * @param algType Either the classic algorithm or the cache-aware algorithm
+   * The cache-aware algorithm has performance optimizations.
    * @param inputDepthStencil The owning RenderTarget's depthRenderTexture
    * @param output The owning RenderTarget's framebuffer the effect is to be
    * written to.
    */
   void drawEffect(const Magnum::Matrix4& projection,
-                  bool useCacheAware,
+                  HbaoType algType,
                   Magnum::GL::Texture2D& inputDepthStencil,
                   Magnum::GL::AbstractFramebuffer& output);
 
