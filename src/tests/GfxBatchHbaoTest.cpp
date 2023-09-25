@@ -56,7 +56,7 @@ const Cr::Containers::String testHBAOImageDir =
 constexpr Mn::Vector2i Size{320, 240};
 
 // Aspect ratio of given size
-constexpr const float AspectRatio = float(Size.x()) / Size.y();
+const float AspectRatio = Mn::Vector2{Size}.aspectRatio();
 
 struct Projection;
 struct TestDataType;
@@ -64,8 +64,6 @@ struct TestDataType;
 struct GfxBatchHbaoTest : Mn::GL::OpenGLTester {
   explicit GfxBatchHbaoTest();
   void generateTestData();
-
-  Cr::Containers::Optional<Mn::GL::Texture2D> loadImageIntoTexture();
 
   /// @brief Validation Tests ///
 
@@ -76,7 +74,7 @@ struct GfxBatchHbaoTest : Mn::GL::OpenGLTester {
    * @param proj The projection matrix this test consumes
    */
   void testHBAOData(const TestDataType& data,
-                    const Cr::Containers::String& filename,
+                    Cr::Containers::StringView filename,
                     const Projection& proj);
 
   /**
@@ -87,7 +85,7 @@ struct GfxBatchHbaoTest : Mn::GL::OpenGLTester {
    * @param proj The projection matrix this test consumes
    */
   void testFlippedHBAOData(const TestDataType& data,
-                           const Cr::Containers::String& filename,
+                           Cr::Containers::StringView filename,
                            const Projection& proj);
 
   /**
@@ -334,7 +332,7 @@ void GfxBatchHbaoTest::generateTestData() {
 }  // GfxBatchHbaoTest::generateTestData()
 
 void GfxBatchHbaoTest::testHBAOData(const TestDataType& data,
-                                    const Cr::Containers::String& filename,
+                                    Cr::Containers::StringView filename,
                                     const Projection& projData) {
   if ((data.config.flags() & esp::gfx_batch::HbaoFlag::LayeredImageLoadStore) &&
       !(
@@ -389,8 +387,8 @@ void GfxBatchHbaoTest::testHBAOData(const TestDataType& data,
 
   MAGNUM_VERIFY_NO_GL_ERROR();
 
-  auto config{data.config};
-  esp::gfx_batch::Hbao hbao{config.setSize(Size)};
+  esp::gfx_batch::Hbao hbao{
+      esp::gfx_batch::HbaoConfiguration{data.config}.setSize(Size)};
   MAGNUM_VERIFY_NO_GL_ERROR();
   // test projection drawing for both classic and cache-aware algorithms
 
@@ -406,10 +404,9 @@ void GfxBatchHbaoTest::testHBAOData(const TestDataType& data,
 
 }  // GfxBatchHbaoTest::testHBAOData
 
-void GfxBatchHbaoTest::testFlippedHBAOData(
-    const TestDataType& data,
-    const Cr::Containers::String& filename,
-    const Projection& projData) {
+void GfxBatchHbaoTest::testFlippedHBAOData(const TestDataType& data,
+                                           Cr::Containers::StringView filename,
+                                           const Projection& projData) {
   if ((data.config.flags() & esp::gfx_batch::HbaoFlag::LayeredImageLoadStore) &&
       !(
 #ifdef MAGNUM_TARGET_GLES
@@ -481,8 +478,9 @@ void GfxBatchHbaoTest::testFlippedHBAOData(
   /* No clear, that would kill the base image */
 
   MAGNUM_VERIFY_NO_GL_ERROR();
-  auto config{data.config};
-  esp::gfx_batch::Hbao hbao{config.setSize(calcSize)};
+
+  esp::gfx_batch::Hbao hbao{
+      esp::gfx_batch::HbaoConfiguration{data.config}.setSize(calcSize)};
 
   MAGNUM_VERIFY_NO_GL_ERROR();
   // test projection drawing for both classic and cache-aware algorithms
@@ -556,13 +554,12 @@ void GfxBatchHbaoTest::benchmarkHBAOData(const TestDataType& data,
   // Scale image size to use for benchmark uniformly so projection matrix aspect
   // ration not affected.
   Mn::Vector2i BenchImageSize = Size * 4;
-  const size_t arraySize = BenchImageSize.x() * BenchImageSize.y() * 8;
+  const size_t arraySize = BenchImageSize.product() * 4;
 
   // For benchmarks source color and depth are just empty white images
 
   Cr::Containers::Array<char> depthData{Cr::DirectInit, arraySize, '\xff'};
-  Mn::Trade::ImageData2D depth{Mn::PixelFormat::Depth32F, BenchImageSize,
-                               std::move(depthData)};
+  Mn::ImageView2D depth{Mn::PixelFormat::Depth32F, BenchImageSize, depthData};
 
   Mn::GL::Texture2D inputDepthTexture;
   inputDepthTexture
@@ -570,15 +567,15 @@ void GfxBatchHbaoTest::benchmarkHBAOData(const TestDataType& data,
       .setSubImage(0, {}, depth);
 
   Cr::Containers::Array<char> colorData{Cr::DirectInit, arraySize, '\xff'};
-  Mn::Trade::ImageData2D color{Mn::PixelFormat::RGBA8Unorm, BenchImageSize,
-                               std::move(colorData)};
+  Mn::ImageView2D color{Mn::PixelFormat::RGBA8Unorm, BenchImageSize,
+                        std::move(colorData)};
   Mn::GL::Texture2D outputColorTexture;
   outputColorTexture.setStorage(1, Mn::GL::TextureFormat::RGBA8, color.size())
       .setSubImage(0, {}, color);
 
   Cr::Containers::Array<char> resColorData{Cr::DirectInit, arraySize, '\xff'};
-  Mn::Trade::ImageData2D resultImage{Mn::PixelFormat::RGBA8Unorm,
-                                     BenchImageSize, std::move(resColorData)};
+  Mn::ImageView2D resultImage{Mn::PixelFormat::RGBA8Unorm, BenchImageSize,
+                              std::move(resColorData)};
 
   Mn::GL::Framebuffer output{{{}, BenchImageSize}};
   output.attachTexture(Mn::GL::Framebuffer::ColorAttachment{0},
@@ -588,8 +585,8 @@ void GfxBatchHbaoTest::benchmarkHBAOData(const TestDataType& data,
 
   MAGNUM_VERIFY_NO_GL_ERROR();
 
-  auto config{data.config};
-  esp::gfx_batch::Hbao hbao{config.setSize(BenchImageSize)};
+  esp::gfx_batch::Hbao hbao{
+      esp::gfx_batch::HbaoConfiguration{data.config}.setSize(BenchImageSize)};
   MAGNUM_VERIFY_NO_GL_ERROR();
   // Call once to compile the shaders
   hbao.drawEffect(projMatrix, !data.classic, inputDepthTexture, output);
@@ -610,8 +607,7 @@ void GfxBatchHbaoTest::benchmarkHBAOData(const TestDataType& data,
 
 void GfxBatchHbaoTest::benchmarkPerspective() {
   auto&& data = BenchData[testCaseInstanceId()];
-  setTestCaseDescription(
-      Cr::Utility::format("{}, perspective benchmark.", data.name));
+  setTestCaseDescription(Cr::Utility::format("{}, perspective.", data.name));
 
   // For benchmarks source color and depth are just empty white images
   benchmarkHBAOData(data, perspectiveData.projection);
@@ -620,8 +616,7 @@ void GfxBatchHbaoTest::benchmarkPerspective() {
 
 void GfxBatchHbaoTest::benchmarkOrthographic() {
   auto&& data = BenchData[testCaseInstanceId()];
-  setTestCaseDescription(
-      Cr::Utility::format("{}, orthographic benchmark.", data.name));
+  setTestCaseDescription(Cr::Utility::format("{}, orthographic.", data.name));
 
   // For benchmarks source color and depth are just empty white images
 
