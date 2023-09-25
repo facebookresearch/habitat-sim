@@ -35,7 +35,8 @@ using esp::scene::SceneManager;
 
 const std::string dataDir = Cr::Utility::Path::join(SCENE_DATASETS, "../");
 const std::string physicsConfigFile =
-    Cr::Utility::Path::join(SCENE_DATASETS, "../default.physics_config.json");
+    Cr::Utility::Path::join(SCENE_DATASETS,
+                            "../default_configs/default.physics_config.json");
 
 namespace {
 struct PhysicsTest : Cr::TestSuite::Tester {

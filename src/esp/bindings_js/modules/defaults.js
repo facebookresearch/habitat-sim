@@ -33,4 +33,5 @@ export const defaultScene = "skokloster-castle.glb";
 
 export const infoSemanticFileName = "info_semantic.json";
 
-export const defaultPhysicsConfigFilepath = "data/default.physics_config.json";
+export const defaultPhysicsConfigFilepath =
+  "data/default_configs/default.physics_config.json";

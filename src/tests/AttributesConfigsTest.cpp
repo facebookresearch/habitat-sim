@@ -467,9 +467,9 @@ void AttributesConfigsTest::testPbrShaderAttrJSONLoad() {
   }
 })";
 
+  // Build an attributes based on the above json string
   auto pbrMgrAttr = pbrShaderAttributesManager_->createObjectFromJSONString(
       "new_template_from_json", jsonString, true);
-
   // verify exists
   CORRADE_VERIFY(pbrMgrAttr);
 
