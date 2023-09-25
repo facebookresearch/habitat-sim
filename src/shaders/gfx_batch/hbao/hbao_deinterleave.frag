@@ -2,11 +2,11 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-precision highp float;
-
 #ifdef USE_TEXTURE_GATHER
 #extension GL_ARB_gpu_shader5 : enable
 #endif
+
+precision highp float;
 
 // xy are uv offset coordinates
 // zw are inverse resolution values

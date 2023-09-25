@@ -142,7 +142,15 @@ void outputColor(vec4 color) {
 }
 #endif  // ifdef AO_DEINTERLEAVED
 
+#ifndef USE_GEOMETRY_SHADER_PASSTHROUGH
+#if AO_LAYERED == 2
+in vec2 texGeomCoord;
+#else   // AO_LAYERED != 2
 in vec2 texCoord;
+#endif  // AO_LAYERED
+#else   // USE_GEOMETRY_SHADER_PASSTHROUGH defined
+in vec2 texCoord;
+#endif  // ifndef USE_GEOMETRY_SHADER_PASSTHROUGH
 
 //----------------------------------------------------------------------------------
 
@@ -288,8 +296,16 @@ void main() {
   vec4 NormalAndAO = texelFetch(texViewNormal, ivec2(base), 0);
   vec3 ViewNormal = -(NormalAndAO.xyz * 2.0 - 1.0);
 #else  // AO_DEINTERLEAVED
-  vec2 uv = texCoord;
-
+  vec2 uv =
+#ifndef USE_GEOMETRY_SHADER_PASSTHROUGH
+#if AO_LAYERED == 2
+      texGeomCoord;
+#else
+      texCoord;
+#endif
+#else
+      texCoord;
+#endif
   vec3 ViewPosition = FetchViewPos(uv);
 
   // Reconstruct view-space normal from nearest neighbors

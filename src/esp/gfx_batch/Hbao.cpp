@@ -903,7 +903,7 @@ void Hbao::drawHbaoBlur(Mn::GL::AbstractFramebuffer& output) {
 }
 
 void Hbao::drawEffect(const Mn::Matrix4& projection,
-                      bool useCacheAware,
+                      HbaoType algType,
                       Mn::GL::Texture2D& depthStencilInput,
                       Mn::GL::AbstractFramebuffer& output) {
   if (projection[3][3] != 0) {
@@ -930,7 +930,7 @@ void Hbao::drawEffect(const Mn::Matrix4& projection,
   prepareHbaoData(state_->configuration, projection, state_->hbaoUniformData,
                   state_->hbaoUniform, state_->random);
   drawLinearDepth(projection, depthStencilInput);
-  if (useCacheAware) {
+  if (algType == HbaoType::CacheAware) {
     drawCacheAwareInternal(output);
   } else {
     drawClassicInternal(output);
