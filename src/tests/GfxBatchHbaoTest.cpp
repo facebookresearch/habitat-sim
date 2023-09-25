@@ -39,41 +39,97 @@ namespace Cr = Corrade;
 namespace Mn = Magnum;
 using namespace Mn::Math::Literals;
 
+// Change this if we want to test on a different core mesh. Requires
+// regenerating ground truth images.
 constexpr const char* baseTestFilename = "van-gogh-room";
 
-const std::string SourceTestPlyDir =
+// Location of test scene mesh from habitat_test_secenes repository.
+const Cr::Containers::String testPlySourceDir =
     Cr::Utility::Path::join(SCENE_DATASETS, "habitat-test-scenes");
 
-const std::string TestHBAOImageDir =
+// Validation images location (held in repository
+// TODO : consider moving these images to habitat_test_secenes repository.
+const Cr::Containers::String testHBAOImageDir =
     Cr::Utility::Path::join(TEST_ASSETS, "hbao_tests");
 
+// Size of images to test for validation
 constexpr Mn::Vector2i Size{320, 240};
 
-constexpr const float aspectRatio = float(Size.x()) / Size.y();
+// Aspect ratio of given size
+constexpr const float AspectRatio = float(Size.x()) / Size.y();
 
-struct TestDataType;
 struct Projection;
+struct TestDataType;
 
 struct GfxBatchHbaoTest : Mn::GL::OpenGLTester {
   explicit GfxBatchHbaoTest();
   void generateTestData();
-  void testPerspective();
 
-  void testPerspectiveFlipped();
-  void testOrthographic();
+  Cr::Containers::Optional<Mn::GL::Texture2D> loadImageIntoTexture();
 
+  /// @brief Validation Tests ///
+
+  /**
+   * @brief Test standard orientation HBAO effect
+   * @param data The pertinent test data for the test
+   * @param filename The name of the validation file to test against
+   * @param proj The projection matrix this test consumes
+   */
   void testHBAOData(const TestDataType& data,
-                    const std::string& filename,
+                    const Cr::Containers::String& filename,
                     const Projection& proj);
 
+  /**
+   * @brief Test HBAO effect on 90deg-rotated source data, to look for
+   * orientation biases in the algorithm.
+   * @param data The pertinent test data for the test
+   * @param filename The name of the validation file to test against
+   * @param proj The projection matrix this test consumes
+   */
   void testFlippedHBAOData(const TestDataType& data,
-                           const std::string& filename,
+                           const Cr::Containers::String& filename,
                            const Projection& proj);
 
-  // TODO implement benchmark
-  //  void benchmarkPerspective();
+  /**
+   * @brief Test standard orientation perspective projection HBAO results
+   */
+  void testPerspective();
+
+  /**
+   * @brief Test 90deg-rotation perspective projection HBAO results
+   */
+  void testPerspectiveFlipped();
+
+  /**
+   * @brief Test standard orientation orthographic projection HBAO results
+   */
+  void testOrthographic();
+
+  /// @brief Benchmarks ///
+  /**
+   * @brief Benchmark synthesizing HBAO effect
+   * @param data The pertinent test data for the test
+   * @param filename The name of the validation file to test against
+   * @param proj The projection matrix this test consumes
+   */
+  void benchmarkHBAOData(const TestDataType& data, Mn::Matrix4 projMatrix);
+  /**
+   * @brief Benchmark the synthesis of the HBAO effect in a
+   * perspective-projection environment.
+   */
+  void benchmarkPerspective();
+
+  /**
+   * @brief Benchmark the synthesis of the HBAO effect in a
+   * orthographic-projection environment.
+   */
+  void benchmarkOrthographic();
 };
 
+/**
+ * @brief Type defining a camera projection matrix and the source color and
+ * depth images for that particular projection.
+ */
 struct Projection {
   Mn::Matrix4 projection;
   const Cr::Containers::String sourceColorFilename;
@@ -81,15 +137,15 @@ struct Projection {
 };
 
 const Projection perspectiveData{
-    Mn::Matrix4::perspectiveProjection(45.0_degf, aspectRatio, 0.1f, 100.0f),
+    Mn::Matrix4::perspectiveProjection(45.0_degf, AspectRatio, 0.1f, 100.0f),
     Cr::Utility::format("{}.color.png", baseTestFilename),
     Cr::Utility::format("{}.depth.exr", baseTestFilename)};
 
 const Projection flippedPerspectiveData{
     Mn::Matrix4::perspectiveProjection(
         2.0f * Mn::Deg((Mn::Math::atan(Mn::Math::tan(Mn::Rad(45.0_degf) * 0.5) /
-                                       aspectRatio))),
-        1.0f / aspectRatio,
+                                       AspectRatio))),
+        1.0f / AspectRatio,
         0.1f,
         100.0f),
     Cr::Utility::format("{}.color.png", baseTestFilename),
@@ -97,12 +153,16 @@ const Projection flippedPerspectiveData{
 
 const Projection orthographicData{
     Mn::Matrix4::orthographicProjection(
-        Magnum::Vector2(4.0f * aspectRatio, 4.0f),
+        Magnum::Vector2(4.0f * AspectRatio, 4.0f),
         0.1f,
         100.0f),
     Cr::Utility::format("{}.color-ortho.png", baseTestFilename),
     Cr::Utility::format("{}.depth-ortho.exr", baseTestFilename)};
 
+/**
+ * @brief Type defining test data used by various tests for validity and
+ * benchmarking
+ */
 const struct TestDataType {
   const char* name;
   const char* filename;
@@ -160,8 +220,12 @@ const struct TestDataType {
 TestDataType BenchData[]{
     {"classic, defaults", "hbao-classic", true,
      esp::gfx_batch::HbaoConfiguration{}},
+    {"classic, no blur", "hbao-classic", true,
+     esp::gfx_batch::HbaoConfiguration{}.setNoBlur(true)},
     {"cache-aware, defaults", "hbao-cache", false,
      esp::gfx_batch::HbaoConfiguration{}},
+    {"cache-aware, no blur", "hbao-cache", false,
+     esp::gfx_batch::HbaoConfiguration{}.setNoBlur(true)},
     {"cache-aware, AO special blur", "hbao-cache-sblur", false,
      esp::gfx_batch::HbaoConfiguration{}.setUseSpecialBlur(true), 1.0f, 0.1f},
     {"cache-aware, layered with image load store", "hbao-cache-layered", false,
@@ -202,9 +266,11 @@ GfxBatchHbaoTest::GfxBatchHbaoTest() {
                      &GfxBatchHbaoTest::testPerspectiveFlipped,
                      &GfxBatchHbaoTest::testOrthographic},
                     Cr::Containers::arraySize(TestData));
-  // TODO implement benchmark
-  // addInstancedBenchmarks({&GfxBatchHbaoTest::benchmarkPerspective}, 10,
-  //                        Cr::Containers::arraySize(BenchData));
+
+  addInstancedBenchmarks({&GfxBatchHbaoTest::benchmarkPerspective,
+                          &GfxBatchHbaoTest::benchmarkOrthographic},
+                         5, Cr::Containers::arraySize(BenchData),
+                         BenchmarkType::GpuTime);
 }
 
 void GfxBatchHbaoTest::generateTestData() {
@@ -219,8 +285,7 @@ void GfxBatchHbaoTest::generateTestData() {
   /* magnum-sceneconverter <baseTestFilename>.glb --concatenate-meshes
    * <baseTestFilename>.mesh.ply */
   CORRADE_VERIFY(importer->openFile(Cr::Utility::Path::join(
-      SourceTestPlyDir,
-      Cr::Utility::formatString("{}.mesh.ply", baseTestFilename))));
+      testPlySourceDir, Cr::Utility::format("{}.mesh.ply", baseTestFilename))));
 
   Cr::Containers::Optional<Mn::Trade::MeshData> meshData = importer->mesh(0);
   CORRADE_VERIFY(meshData);
@@ -258,18 +323,18 @@ void GfxBatchHbaoTest::generateTestData() {
   MAGNUM_VERIFY_NO_GL_ERROR();
   CORRADE_COMPARE_WITH(
       framebuffer.read({{}, Size}, {Mn::PixelFormat::RGBA8Unorm}),
-      Cr::Utility::Path::join(TestHBAOImageDir,
+      Cr::Utility::Path::join(testHBAOImageDir,
                               data.projData.sourceColorFilename),
       (Mn::DebugTools::CompareImageToFile{}));
   CORRADE_COMPARE_WITH(
       framebuffer.read({{}, Size}, {Mn::PixelFormat::Depth32F}),
-      Cr::Utility::Path::join(TestHBAOImageDir,
+      Cr::Utility::Path::join(testHBAOImageDir,
                               data.projData.sourceDepthFilename),
       (Mn::DebugTools::CompareImageToFile{}));
 }  // GfxBatchHbaoTest::generateTestData()
 
 void GfxBatchHbaoTest::testHBAOData(const TestDataType& data,
-                                    const std::string& filename,
+                                    const Cr::Containers::String& filename,
                                     const Projection& projData) {
   if ((data.config.flags() & esp::gfx_batch::HbaoFlag::LayeredImageLoadStore) &&
       !(
@@ -290,7 +355,7 @@ void GfxBatchHbaoTest::testHBAOData(const TestDataType& data,
   CORRADE_VERIFY(importer);
 
   if (!importer->openFile(Cr::Utility::Path::join(
-          TestHBAOImageDir, projData.sourceColorFilename))) {
+          testHBAOImageDir, projData.sourceColorFilename))) {
     CORRADE_FAIL("Cannot load the color image");
   }
   Cr::Containers::Optional<Mn::Trade::ImageData2D> color = importer->image2D(0);
@@ -299,7 +364,7 @@ void GfxBatchHbaoTest::testHBAOData(const TestDataType& data,
   CORRADE_COMPARE(color->format(), Mn::PixelFormat::RGBA8Unorm);
 
   if (!importer->openFile(Cr::Utility::Path::join(
-          TestHBAOImageDir, projData.sourceDepthFilename))) {
+          testHBAOImageDir, projData.sourceDepthFilename))) {
     CORRADE_FAIL("Cannot load the depth image");
   }
   Cr::Containers::Optional<Mn::Trade::ImageData2D> depth = importer->image2D(0);
@@ -309,7 +374,6 @@ void GfxBatchHbaoTest::testHBAOData(const TestDataType& data,
 
   Mn::GL::Texture2D inputDepthTexture;
   Mn::GL::Texture2D outputColorTexture;
-  Mn::Vector2i calcSize = Size;
   inputDepthTexture
       .setStorage(1, Mn::GL::TextureFormat::DepthComponent32F, Size)
       .setSubImage(0, {}, *depth);
@@ -336,15 +400,16 @@ void GfxBatchHbaoTest::testHBAOData(const TestDataType& data,
   MAGNUM_VERIFY_NO_GL_ERROR();
 
   CORRADE_COMPARE_WITH(output.read({{}, Size}, {Mn::PixelFormat::RGBA8Unorm}),
-                       Cr::Utility::Path::join(TestHBAOImageDir, filename),
+                       Cr::Utility::Path::join(testHBAOImageDir, filename),
                        (Mn::DebugTools::CompareImageToFile{
                            data.maxThreshold, data.meanThreshold}));
 
 }  // GfxBatchHbaoTest::testHBAOData
 
-void GfxBatchHbaoTest::testFlippedHBAOData(const TestDataType& data,
-                                           const std::string& filename,
-                                           const Projection& projData) {
+void GfxBatchHbaoTest::testFlippedHBAOData(
+    const TestDataType& data,
+    const Cr::Containers::String& filename,
+    const Projection& projData) {
   if ((data.config.flags() & esp::gfx_batch::HbaoFlag::LayeredImageLoadStore) &&
       !(
 #ifdef MAGNUM_TARGET_GLES
@@ -364,7 +429,7 @@ void GfxBatchHbaoTest::testFlippedHBAOData(const TestDataType& data,
   CORRADE_VERIFY(importer);
 
   if (!importer->openFile(Cr::Utility::Path::join(
-          TestHBAOImageDir, projData.sourceColorFilename))) {
+          testHBAOImageDir, projData.sourceColorFilename))) {
     CORRADE_FAIL("Cannot load the color image");
   }
   Cr::Containers::Optional<Mn::Trade::ImageData2D> color = importer->image2D(0);
@@ -373,7 +438,7 @@ void GfxBatchHbaoTest::testFlippedHBAOData(const TestDataType& data,
   CORRADE_COMPARE(color->format(), Mn::PixelFormat::RGBA8Unorm);
 
   if (!importer->openFile(Cr::Utility::Path::join(
-          TestHBAOImageDir, projData.sourceDepthFilename))) {
+          testHBAOImageDir, projData.sourceDepthFilename))) {
     CORRADE_FAIL("Cannot load the depth image");
   }
   Cr::Containers::Optional<Mn::Trade::ImageData2D> depth = importer->image2D(0);
@@ -438,7 +503,7 @@ void GfxBatchHbaoTest::testFlippedHBAOData(const TestDataType& data,
            .pixels<Mn::Color4ub>()
            .transposed<1, 0>()
            .flipped<1>()),
-      Cr::Utility::Path::join(TestHBAOImageDir, filename),
+      Cr::Utility::Path::join(testHBAOImageDir, filename),
       (Mn::DebugTools::CompareImageToFile{data.maxThreshold,
                                           data.meanThreshold}));
 
@@ -446,45 +511,122 @@ void GfxBatchHbaoTest::testFlippedHBAOData(const TestDataType& data,
 
 void GfxBatchHbaoTest::testPerspective() {
   auto&& data = TestData[testCaseInstanceId()];
-  setTestCaseDescription(
-      Cr::Utility::formatString("{}, perspective", data.name));
+  setTestCaseDescription(Cr::Utility::format("{}, perspective", data.name));
   testHBAOData(
-      data,
-      Cr::Utility::formatString("{}.{}.png", baseTestFilename, data.filename),
+      data, Cr::Utility::format("{}.{}.png", baseTestFilename, data.filename),
       perspectiveData);
 
 }  // GfxBatchHbaoTest::testPerspective()
 
 void GfxBatchHbaoTest::testOrthographic() {
   auto&& data = TestData[testCaseInstanceId()];
-  setTestCaseDescription(
-      Cr::Utility::formatString("{}, orthographic", data.name));
-  testHBAOData(data,
-               Cr::Utility::formatString("{}.{}-ortho.png", baseTestFilename,
-                                         data.filename),
-               orthographicData);
+  setTestCaseDescription(Cr::Utility::format("{}, orthographic", data.name));
+  testHBAOData(
+      data,
+      Cr::Utility::format("{}.{}-ortho.png", baseTestFilename, data.filename),
+      orthographicData);
 
 }  // GfxBatchHbaoTest::testOrthographic()
 
 void GfxBatchHbaoTest::testPerspectiveFlipped() {
   auto&& data = TestData[testCaseInstanceId()];
   setTestCaseDescription(
-      Cr::Utility::formatString("{}, perspective, flipped", data.name));
+      Cr::Utility::format("{}, perspective, flipped", data.name));
   testFlippedHBAOData(
-      data,
-      Cr::Utility::formatString("{}.{}.png", baseTestFilename, data.filename),
+      data, Cr::Utility::format("{}.{}.png", baseTestFilename, data.filename),
       flippedPerspectiveData);
 
 }  // GfxBatchHbaoTest::testPerspective()
 
-// void GfxBatchHbaoTest::benchmarkPerspective() {
-//   auto&& data = TestData[testCaseInstanceId()];
-//   setTestCaseDescription(
-//       Cr::Utility::formatString("{}, perspective benchmark.", data.name));
+void GfxBatchHbaoTest::benchmarkHBAOData(const TestDataType& data,
+                                         Mn::Matrix4 projMatrix) {
+  if ((data.config.flags() & esp::gfx_batch::HbaoFlag::LayeredImageLoadStore) &&
+      !(
+#ifdef MAGNUM_TARGET_GLES
+          Mn::GL::Context::current().isVersionSupported(
+              Mn::GL::Version::GLES310)
+#else
+          Mn::GL::Context::current()
+              .isExtensionSupported<
+                  Mn::GL::Extensions::ARB::shader_image_load_store>()
+#endif
+              ))
+    CORRADE_SKIP("Image load/store not supported");
 
-//   // TODO implement benchmark
+  // Scale image size to use for benchmark uniformly so projection matrix aspect
+  // ration not affected.
+  Mn::Vector2i BenchImageSize = Size * 4;
+  const size_t arraySize = BenchImageSize.x() * BenchImageSize.y() * 8;
 
-// }  // GfxBatchHbaoTest::benchmarkPerspective()
+  // For benchmarks source color and depth are just empty white images
+
+  Cr::Containers::Array<char> depthData{Cr::DirectInit, arraySize, '\xff'};
+  Mn::Trade::ImageData2D depth{Mn::PixelFormat::Depth32F, BenchImageSize,
+                               std::move(depthData)};
+
+  Mn::GL::Texture2D inputDepthTexture;
+  inputDepthTexture
+      .setStorage(1, Mn::GL::TextureFormat::DepthComponent32F, depth.size())
+      .setSubImage(0, {}, depth);
+
+  Cr::Containers::Array<char> colorData{Cr::DirectInit, arraySize, '\xff'};
+  Mn::Trade::ImageData2D color{Mn::PixelFormat::RGBA8Unorm, BenchImageSize,
+                               std::move(colorData)};
+  Mn::GL::Texture2D outputColorTexture;
+  outputColorTexture.setStorage(1, Mn::GL::TextureFormat::RGBA8, color.size())
+      .setSubImage(0, {}, color);
+
+  Cr::Containers::Array<char> resColorData{Cr::DirectInit, arraySize, '\xff'};
+  Mn::Trade::ImageData2D resultImage{Mn::PixelFormat::RGBA8Unorm,
+                                     BenchImageSize, std::move(resColorData)};
+
+  Mn::GL::Framebuffer output{{{}, BenchImageSize}};
+  output.attachTexture(Mn::GL::Framebuffer::ColorAttachment{0},
+                       outputColorTexture, 0);
+
+  /* No clear, that would kill the base image */
+
+  MAGNUM_VERIFY_NO_GL_ERROR();
+
+  auto config{data.config};
+  esp::gfx_batch::Hbao hbao{config.setSize(BenchImageSize)};
+  MAGNUM_VERIFY_NO_GL_ERROR();
+  // Call once to compile the shaders
+  hbao.drawEffect(projMatrix, !data.classic, inputDepthTexture, output);
+
+  // benchmark projection drawing for both classic and cache-aware algorithms
+  CORRADE_BENCHMARK(16) {
+    hbao.drawEffect(projMatrix, !data.classic, inputDepthTexture, output);
+  }
+
+  MAGNUM_VERIFY_NO_GL_ERROR();
+
+  CORRADE_COMPARE_WITH(
+      output.read({{}, BenchImageSize}, {Mn::PixelFormat::RGBA8Unorm}),
+      resultImage,
+      (Mn::DebugTools::CompareImage{data.maxThreshold, data.meanThreshold}));
+
+}  // GfxBatchHbaoTest::testHBAOData
+
+void GfxBatchHbaoTest::benchmarkPerspective() {
+  auto&& data = BenchData[testCaseInstanceId()];
+  setTestCaseDescription(
+      Cr::Utility::format("{}, perspective benchmark.", data.name));
+
+  // For benchmarks source color and depth are just empty white images
+  benchmarkHBAOData(data, perspectiveData.projection);
+
+}  // GfxBatchHbaoTest::benchmarkPerspective()
+
+void GfxBatchHbaoTest::benchmarkOrthographic() {
+  auto&& data = BenchData[testCaseInstanceId()];
+  setTestCaseDescription(
+      Cr::Utility::format("{}, orthographic benchmark.", data.name));
+
+  // For benchmarks source color and depth are just empty white images
+
+  benchmarkHBAOData(data, orthographicData.projection);
+}  // GfxBatchHbaoTest::benchmarkPerspective()
 
 }  // namespace
 
