@@ -2,7 +2,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-set(ESP_DEFAULT_PBRSHADER_CONFIG_REL_PATH ./data/default.pbr_config.json)
+set(ESP_DEFAULT_PBRSHADER_CONFIG_REL_PATH
+    ./data/default_configs/default.pbr_config.json
+)
 set(ESP_DEFAULT_PBRSHADER_CONFIG
     ${PROJECT_SOURCE_DIR}/.${ESP_DEFAULT_PBRSHADER_CONFIG_REL_PATH}
 )

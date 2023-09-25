@@ -61,7 +61,9 @@ set(
 find_package(Magnum REQUIRED Primitives)
 
 find_package(Corrade REQUIRED Utility)
-corrade_add_resource(DefaultJSONConfigResources ../../../data/DefaultConfigs.conf)
+corrade_add_resource(
+  DefaultJSONConfigResources ../../../data/default_configs/DefaultConfigs.conf
+)
 list(APPEND metadata_SOURCES ${DefaultJSONConfigResources})
 
 add_library(

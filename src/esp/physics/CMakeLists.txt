@@ -4,7 +4,9 @@
 
 find_package(MagnumPlugins REQUIRED GltfImporter StbImageImporter StbImageConverter)
 
-set(ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH ./data/default.physics_config.json)
+set(ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH
+    ./data/default_configs/default.physics_config.json
+)
 set(ESP_DEFAULT_PHYSICS_CONFIG
     ${PROJECT_SOURCE_DIR}/.${ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH}
 )
