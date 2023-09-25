@@ -431,6 +431,7 @@ class HabitatSimInteractiveViewer(Application):
         self.obs_buffer = []
         self.humanoid_model_inc_freq = 2.5
         self.humanoid_model_last_inc = 0
+        self.humanoid_link_selected = 19
 
         self.time_since_last_simulation = 0.0
         LoggingContext.reinitialize_from_env()
@@ -532,6 +533,11 @@ class HabitatSimInteractiveViewer(Application):
         self.render_camera.node.translation = seq_state[4]
         self.render_camera.node.rotation = seq_state[5]
 
+        new_points = [self.humanoid.base_pos + mn.Vector3(0.3, 0.85, 0.15)]
+        new_points.extend(self.plerp.points)
+        self.plerp.points = new_points
+        self.plerp._recompute_times()
+
     # if self.prev_humanoid_base_state is not None:
     # self.humanoid_controller.prev_orientation = self.prev_humanoid_base_state[2]
     # self.humanoid_controller.walk_mocap_frame = self.prev_humanoid_base_state[3]
@@ -617,6 +623,17 @@ class HabitatSimInteractiveViewer(Application):
             ).normalized(),
         )
 
+        # link_translation = self.humanoid.sim_obj.get_link_scene_node(self.humanoid_link_selected).absolute_transformation().translation
+        # link_translation = self.humanoid.base_pos + mn.Vector3(0.75, 0.75, 0.3)
+        # self.sim.get_debug_line_render().draw_circle(
+        #     translation=link_translation,
+        #     radius=0.02,
+        #     color=mn.Color4.green(),
+        #     normal=(
+        #         self.render_camera.node.absolute_transformation().translation - link_translation
+        #     ).normalized(),
+        # )
+
         # mouse raycast circle
         # white = mn.Color4(mn.Vector3(1.0), 1.0)
         # if self.mouse_cast_results is not None and self.mouse_cast_results.has_hits():
@@ -672,6 +689,7 @@ class HabitatSimInteractiveViewer(Application):
         if self.time_since_last_simulation >= 1.0 / self.fps:
             if self.simulating or self.simulate_single_step:
                 self.sim.step_world(1.0 / self.fps)
+
                 self.simulate_single_step = False
                 if simulation_call is not None:
                     simulation_call()
@@ -1075,6 +1093,13 @@ class HabitatSimInteractiveViewer(Application):
             self.plerp.time_start = self.sim.get_world_time()
             if shift_pressed:
                 self.plerp.reset(self.sim.get_world_time())
+
+        elif key == pressed.E:
+            if not shift_pressed:
+                self.humanoid_link_selected += 1
+            else:
+                self.humanoid_link_selected -= 1
+            print(f"self.humanoid_link_selected = {self.humanoid_link_selected}")
 
         elif key == pressed.B:
             self.save_video(
