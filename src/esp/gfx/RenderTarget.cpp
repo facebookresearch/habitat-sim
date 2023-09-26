@@ -204,9 +204,6 @@ struct RenderTarget::Impl {
     if (!hbao_) {
       return;
     }
-    // TODO:Support a toggle between cache-aware and classic algorithm. For now
-    // we just use cache aware
-    bool useCacheAware = true;
 
     hbao_->drawEffect(visualSensor_->getProjectionMatrix(),
                       gfx_batch::HbaoType::CacheAware, depthRenderTexture_,
