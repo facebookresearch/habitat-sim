@@ -882,7 +882,9 @@ void Hbao::drawHbaoBlur(Mn::GL::AbstractFramebuffer& output) {
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::Blending);
   Mn::GL::Renderer::setBlendFunction(
       Mn::GL::Renderer::BlendFunction::Zero,
-      Mn::GL::Renderer::BlendFunction::SourceColor);
+      Mn::GL::Renderer::BlendFunction::SourceColor,
+      Mn::GL::Renderer::BlendFunction::Zero,
+      Mn::GL::Renderer::BlendFunction::One);
   // TODO multi samples masking
 
   // Only special blur
@@ -944,7 +946,9 @@ void Hbao::drawClassicInternal(Mn::GL::AbstractFramebuffer& output) {
     Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::Blending);
     Mn::GL::Renderer::setBlendFunction(
         Mn::GL::Renderer::BlendFunction::Zero,
-        Mn::GL::Renderer::BlendFunction::SourceColor);
+        Mn::GL::Renderer::BlendFunction::SourceColor,
+        Mn::GL::Renderer::BlendFunction::Zero,
+        Mn::GL::Renderer::BlendFunction::One);
     // TODO Set sample mask if samples > 1
   } else {
     state_->hbaoCalc.mapForDraw(Mn::GL::Framebuffer::ColorAttachment{0}).bind();
@@ -1054,7 +1058,9 @@ void Hbao::drawCacheAwareInternal(Mn::GL::AbstractFramebuffer& output) {
     Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::Blending);
     Mn::GL::Renderer::setBlendFunction(
         Mn::GL::Renderer::BlendFunction::Zero,
-        Mn::GL::Renderer::BlendFunction::SourceColor);
+        Mn::GL::Renderer::BlendFunction::SourceColor,
+        Mn::GL::Renderer::BlendFunction::Zero,
+        Mn::GL::Renderer::BlendFunction::One);
     // TODO Set sample mask if samples > 1
 
   } else {
