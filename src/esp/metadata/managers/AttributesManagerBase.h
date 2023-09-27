@@ -364,20 +364,21 @@ void AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad(
     const io::JsonGenericValue& filePaths) {
   for (rapidjson::SizeType i = 0; i < filePaths.Size(); ++i) {
     if (!filePaths[i].IsString()) {
-      ESP_WARNING() << "<" << this->objectType_
-                    << "> : Invalid path value in file path array element @ idx"
-                    << i << ". Skipping.";
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << "<" << this->objectType_
+          << "> : Invalid path value in file path array element @ idx" << i
+          << ". Skipping.";
       continue;
     }
-    std::string absolutePath =
-        Cr::Utility::Path::join(configDir, filePaths[i].GetString());
+    std::string absolutePath = io::filterPath(
+        Cr::Utility::Path::join(configDir, filePaths[i].GetString()));
     std::vector<std::string> globPaths = io::globDirs(absolutePath);
     if (globPaths.size() > 0) {
       for (const auto& globPath : globPaths) {
         // load all object templates available as configs in absolutePath
-        ESP_VERY_VERBOSE() << "<" << this->objectType_
-                           << "> : Glob path result for" << absolutePath << ":"
-                           << globPath;
+        ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+            << "<" << this->objectType_ << "> : Glob path result for"
+            << absolutePath << ":" << globPath;
         this->loadAllTemplatesFromPathAndExt(globPath, extType, true);
       }
     } else {
