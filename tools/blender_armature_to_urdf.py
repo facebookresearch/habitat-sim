@@ -83,27 +83,38 @@ def is_collision_mesh(mesh_obj) -> bool:
     return "collision" in mesh_obj.name
 
 
+def is_receptacle_mesh(mesh_obj) -> bool:
+    """
+    Is the object a receptacle mesh.
+    """
+    return "receptacle" in mesh_obj.name
+
+
 def get_mesh_heirarchy(
     mesh_obj,
     select_set: bool = True,
-    include_non_collision: bool = True,
+    include_render: bool = True,
     include_collison: bool = False,
+    include_receptacle: bool = False,
 ) -> List[Any]:
     """
     Select all MESH objects in the heirarchy specifically targeting or omitting meshes with "collision" in the name.
 
     :param mesh_obj: The Blender mesh object.
     :param select_set: Whether or not to select the objects as well as recording them.
-    :param include_non_collision: Include objects without 'collision' in the name.
+    :param include_render: Include render objects without qualifiers in the name.
     :param include_collison: Include objects with 'collision' in the name.
+    :param include_receptacle: Include objects with 'receptacle' in the name.
 
     :return: The list of Blender mesh objects.
     """
     selected_objects = []
     is_col_mesh = is_collision_mesh(mesh_obj)
+    is_rec_mesh = is_receptacle_mesh(mesh_obj)
     if is_mesh(mesh_obj) and (
         (is_col_mesh and include_collison)
-        or (include_non_collision and not is_col_mesh)
+        and (is_rec_mesh and include_receptacle)
+        or (include_render and not is_col_mesh)
     ):
         selected_objects.append(mesh_obj)
         if select_set:
@@ -112,7 +123,11 @@ def get_mesh_heirarchy(
         if child.type != "ARMATURE":
             selected_objects.extend(
                 get_mesh_heirarchy(
-                    child, select_set, include_non_collision, include_collison
+                    child,
+                    select_set,
+                    include_render,
+                    include_collison,
+                    include_receptacle,
                 )
             )
     return selected_objects
@@ -220,7 +235,7 @@ def bone_to_urdf(
                 mesh_obj,
                 select_set=False,
                 include_collison=True,
-                include_non_collision=False,
+                include_render=False,
             )
         )
         if mesh_obj.parent is not None and mesh_obj.parent.type == "ARMATURE":
