@@ -20,6 +20,17 @@ namespace io {
 std::string changeExtension(const std::string& file, const std::string& ext);
 
 /**
+ * @brief This function will recursively remove any ellipsis in paths or path
+ * patterns, as well as the parent directory the ellisis is bypassing. This is
+ * so that if the ellipsis spans an OS link any function consuming the path does
+ * not get lost. If the ellipsis is at the beginning of @p srcPath then it is
+ * ignored.
+ * @param srcPath The path to filter
+ * @return The filtered path.
+ */
+std::string normalizePath(const std::string& srcPath);
+
+/**
  * @brief This function will perform [glob-based pattern matching]
  * (https://en.wikipedia.org/wiki/Glob_(programming)) to find and return all the
  * files and directories that match the pattern.
