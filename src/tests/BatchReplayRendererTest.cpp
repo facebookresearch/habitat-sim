@@ -164,11 +164,6 @@ const struct {
   Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer> (*create)(
       const ReplayRendererConfiguration& configuration);
 } TestArticulatedObjectData[]{
-    {"classic",
-     [](const ReplayRendererConfiguration& configuration) {
-       return Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer>{
-           new esp::sim::ClassicReplayRenderer{configuration}};
-     }},
     {"batch",
      [](const ReplayRendererConfiguration& configuration) {
        return Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer>{
