@@ -370,7 +370,7 @@ void AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad(
           << ". Skipping.";
       continue;
     }
-    std::string absolutePath = io::filterPath(
+    std::string absolutePath = io::normalizePath(
         Cr::Utility::Path::join(configDir, filePaths[i].GetString()));
     std::vector<std::string> globPaths = io::globDirs(absolutePath);
     if (globPaths.size() > 0) {

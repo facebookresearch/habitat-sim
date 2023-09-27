@@ -23,7 +23,7 @@ std::string changeExtension(const std::string& filename,
 
 }  // changeExtension
 
-std::string filterPath(const std::string& srcPath) {
+std::string normalizePath(const std::string& srcPath) {
   std::size_t ellipsisLoc = srcPath.find("/../");
   if ((ellipsisLoc == std::string::npos) || (ellipsisLoc == 0)) {
     // not found
@@ -42,9 +42,9 @@ std::string filterPath(const std::string& srcPath) {
   auto prefixString = srcPath.substr(0, prevLoc);
   // recurses to get subsequent ellipses.
   auto filteredPath = Cr::Utility::formatString("{}/{}", prefixString,
-                                                filterPath(suffixString));
+                                                normalizePath(suffixString));
   return filteredPath;
-}  // filterPath
+}  // normalizePath
 
 std::vector<std::string> globDirs(const std::string& pattern) {
   // Check for ellipsis, if so process here.

@@ -28,7 +28,7 @@ std::string changeExtension(const std::string& file, const std::string& ext);
  * @param srcPath The path to filter
  * @return The filtered path.
  */
-std::string filterPath(const std::string& srcPath);
+std::string normalizePath(const std::string& srcPath);
 
 /**
  * @brief This function will perform [glob-based pattern matching]

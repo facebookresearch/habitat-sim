@@ -102,29 +102,29 @@ void IOTest::fileReplaceExtTest() {
 
 void IOTest::testEllipsisFilter() {
   std::string testPath1 = "/test/path/to/test/no-op.txt";
-  std::string res = esp::io::filterPath(testPath1);
+  std::string res = esp::io::normalizePath(testPath1);
   CORRADE_COMPARE(res, "/test/path/to/test/no-op.txt");
 
   testPath1 = "/test/path/DELETE/../to/test/removal.txt";
-  res = esp::io::filterPath(testPath1);
+  res = esp::io::normalizePath(testPath1);
   CORRADE_COMPARE(res, "/test/path/to/test/removal.txt");
   testPath1 =
       "/test/path/DELETE/../to/DELETE/../test/DELETE/../multiple/removal.txt";
-  res = esp::io::filterPath(testPath1);
+  res = esp::io::normalizePath(testPath1);
   CORRADE_COMPARE(res, "/test/path/to/test/multiple/removal.txt");
 
   testPath1 = "test/path/DELETE/../to/test/removal.txt";
-  res = esp::io::filterPath(testPath1);
+  res = esp::io::normalizePath(testPath1);
   CORRADE_COMPARE(res, "test/path/to/test/removal.txt");
 
   testPath1 =
       "test/path/DELETE/../to/DELETE/../test/DELETE/../multiple/removal.txt";
-  res = esp::io::filterPath(testPath1);
+  res = esp::io::normalizePath(testPath1);
   CORRADE_COMPARE(res, "test/path/to/test/multiple/removal.txt");
 
   // ignore intitial ellipsis
   testPath1 = "/../test/path/DELETE/../to/test/initial/ignore.txt";
-  res = esp::io::filterPath(testPath1);
+  res = esp::io::normalizePath(testPath1);
   CORRADE_COMPARE(res, "/../test/path/DELETE/../to/test/initial/ignore.txt");
 
 }  // IOTest::testEllipsisFilter
