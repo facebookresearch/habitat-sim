@@ -99,9 +99,10 @@ PbrShader::PbrShader(Flags originalFlags,
 
   std::stringstream attributeLocationsStream;
   attributeLocationsStream << Cr::Utility::formatString(
-      "#define ATTRIBUTE_LOCATION_POSITION {}\n", Position::Location);
-  attributeLocationsStream << Cr::Utility::formatString(
-      "#define ATTRIBUTE_LOCATION_NORMAL {}\n", Normal::Location);
+      "#define ATTRIBUTE_LOCATION_POSITION {}\n"
+      "#define ATTRIBUTE_LOCATION_NORMAL {}\n",
+      Position::Location, Normal::Location);
+
   if ((flags_ >= Flag::NormalTexture) && (flags_ >= Flag::PrecomputedTangent) &&
       lightingIsEnabled_) {
     attributeLocationsStream << Cr::Utility::formatString(
@@ -113,6 +114,13 @@ PbrShader::PbrShader(Flags originalFlags,
   }
 
   // TODO: Occlusion texture to be added.
+
+  if (perVertexJointCount_ > 0) {
+    attributeLocationsStream << Cr::Utility::formatString(
+        "#define ATTRIBUTE_LOCATION_WEIGHTS {}\n#define "
+        "ATTRIBUTE_LOCATION_JOINTIDS {}\n",
+        Weights::Location, JointIds::Location);
+  }
 
   if (isTextured_) {
     attributeLocationsStream
@@ -132,7 +140,8 @@ PbrShader::PbrShader(Flags originalFlags,
                      ? "#define TEXTURE_TRANSFORMATION\n"
                      : "")
       .addSource(flags_ >= Flag::VertexColor ? "#define VERTEX_COLOR\n" : "")
-      .addSource(rs.getString("pbr.vert"));
+
+  vert.addSource(rs.getString("pbr.vert"));
 
   std::stringstream outputAttributeLocationsStream;
   outputAttributeLocationsStream << Cr::Utility::formatString(
@@ -853,7 +862,6 @@ PbrShader& PbrShader::setLightColors(
   for (size_t i = 0; i < colors.size(); ++i) {
     setLightColor(i, colors[i]);
   }
-  // setUniform(lightColorsUniform_, colors);
   return *this;
 }
 
@@ -863,16 +871,13 @@ PbrShader& PbrShader::setLightColors(std::initializer_list<Mn::Color3> colors) {
 
 PbrShader& PbrShader::setJointMatrices(
     Cr::Containers::ArrayView<const Mn::Matrix4> matrices) {
-  // CORRADE_ASSERT(!(flags_ >= Flag::UniformBuffers),
-  //                "PbrShader::setJointMatrices(): the shader was created with
-  //                " "uniform buffers enabled", *this);
   CORRADE_ASSERT(matrices.size() <= jointCount_,
                  "PbrShader::setJointMatrices(): expected at most"
                      << jointCount_ << "items but got" << matrices.size(),
                  *this);
-  // if (jointCount_) {
-  //   setUniform(jointMatricesUniform_, matrices);
-  // }
+  if (jointCount_) {
+    setUniform(jointMatricesUniform_, matrices);
+  }
   return *this;
 }
 
@@ -881,6 +886,20 @@ PbrShader& PbrShader::setJointMatrices(
   return setJointMatrices(Cr::Containers::arrayView(matrices));
 }
 
+PbrShader& PbrShader::setJointMatrix(const Mn::UnsignedInt id,
+                                     const Mn::Matrix4& matrix) {
+  CORRADE_ASSERT(id < jointCount_,
+                 "PbrShader::setJointMatrix(): joint ID"
+                     << id << "is out of bounds for" << jointCount_ << "joints",
+                 *this);
+  setUniform(jointMatricesUniform_ + id, matrix);
+  return *this;
+}
+
+PbrShader& PbrShader::setPerInstanceJointCount(const Mn::UnsignedInt count) {
+  setUniform(perInstanceJointCountUniform_, count);
+  return *this;
+}
 PbrShader& PbrShader::setNormalTextureScale(float scale) {
   CORRADE_ASSERT(flags_ >= Flag::NormalTexture,
                  "PbrShader::setNormalTextureScale(): the shader was not "

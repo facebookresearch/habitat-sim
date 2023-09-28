@@ -10,7 +10,7 @@
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/EnumSet.h>
 #include <Magnum/GL/AbstractShaderProgram.h>
-#include <Magnum/GL/GL.h>  // header with all forward declarations for the Mn::GL namespace
+#include <Magnum/GL/GL.h>  // header with all forward declarations for the Magnum::GL namespace
 #include <Magnum/Shaders/GenericGL.h>
 
 #include "esp/core/Esp.h"
@@ -30,6 +30,18 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    * @brief normal direction
    */
   typedef Magnum::Shaders::GenericGL3D::Normal Normal;
+
+  /**
+   * @brief Joint ids
+   * (See Magnum/Shaders/PhongGL.h)
+   */
+  typedef Magnum::Shaders::GenericGL3D::JointIds JointIds;
+
+  /**
+   * @brief Weights
+   * (See Magnum/Shaders/PhongGL.h)
+   */
+  typedef Magnum::Shaders::GenericGL3D::Weights Weights;
 
   /**
    * @brief 2D texture coordinates
@@ -224,6 +236,11 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * Enable double-sided rendering.
      */
     DoubleSided = 1ULL << 23,
+
+    /**
+     * Enable Skin rendering
+     */
+    SkinnedMesh = 1ULL << 23,
 
     ///////////////////////////////
     // PbrShaderAttributes provides these values to configure the shader
@@ -736,6 +753,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   /**
    * @brief Set joint matrices
+   * (See Magnum/Shaders/PhongGL.h)
    * @return Reference to self (for method chaining)
    */
   PbrShader& setJointMatrices(
@@ -743,9 +761,37 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   /**
    * @overload
-   * @m_since_latest
+   * (See Magnum/Shaders/PhongGL.h)
    */
   PbrShader& setJointMatrices(std::initializer_list<Magnum::Matrix4> matrices);
+
+  /**
+   * @brief Set joint matrix for given joint
+   * (See Magnum/Shaders/PhongGL.h)
+   * @return Reference to self (for method chaining)
+   * @m_since_latest
+   *
+   * Unlike @ref setJointMatrices() updates just a single joint matrix.
+   * Expects that @p id is less than @ref jointCount().
+   */
+  PbrShader& setJointMatrix(const Magnum::UnsignedInt id,
+                            const Magnum::Matrix4& matrix);
+
+  /**
+   * @brief Set per-instance joint count
+   * (See Magnum/Shaders/PhongGL.h)
+   * @return Reference to self (for method chaining)
+   * @m_since_latest
+   *
+   * Offset added to joint IDs in the @ref JointIds and
+   * @ref SecondaryJointIds in instanced draws. Should be less than
+   * @ref jointCount(). Initial value is @cpp 0 @ce, meaning every
+   * instance will use the same joint matrices, setting it to a non-zero
+   * value causes the joint IDs to be interpreted as
+   * @glsl gl_InstanceID*count + jointId @ce.
+   *
+   */
+  PbrShader& setPerInstanceJointCount(const Magnum::UnsignedInt count);
 
   /**
    * Toggles that control contributions from different components - should
@@ -790,6 +836,9 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   Magnum::UnsignedInt jointCount_;
   Magnum::UnsignedInt perVertexJointCount_;
 
+  // whether or not this shader has skin support
+  bool isSkinned_ = false;
+
   // whether or not this shader uses any textures
   bool isTextured_ = false;
   // Whether or not there is lighting - either direct or indirect - used by this
@@ -827,6 +876,9 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   int lightRangesUniform_ = ID_UNDEFINED;
 
   int jointMatricesUniform_ = ID_UNDEFINED;
+
+  int perInstanceJointCountUniform_ = ID_UNDEFINED;
+
   // In the fragment shader, the "LightDirection" is a vec4.
   // when w == 0, it means .xyz is the light direction;
   // when w == 1, it means it is the light position, NOT the direction;

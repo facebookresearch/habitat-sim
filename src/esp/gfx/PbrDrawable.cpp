@@ -333,6 +333,11 @@ void PbrDrawable::setMaterialValuesInternal(
     flags_ |= PbrShader::Flag::VertexColor;
   }
 
+
+  // Skin support
+  (skinData_) ? flags_ |= PbrShader::Flag::SkinnedMesh
+              : flags_ &= ~PbrShader::Flag::SkinnedMesh;
+
   // If not reset then make sure the same shader is used
   if (!reset) {
     flags_ = oldFlags;
@@ -629,12 +634,12 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
 
 void PbrDrawable::updateShader() {
   const Mn::UnsignedInt lightCount = lightSetup_->size();
-  const Mn::UnsignedInt jointCount =
-      skinData_ ? skinData_->skinData->skin->joints().size() : 0;
-  const Mn::UnsignedInt perVertexJointCount =
-      skinData_ ? skinData_->skinData->perVertexJointCount : 0;
+  Mn::UnsignedInt jointCount = 0;
+  Mn::UnsignedInt perVertexJointCount = 0;
 
-  if (skinData_) {
+  if (flags_ >= PbrShader::Flag::SkinnedMesh) {
+    jointCount = skinData_->skinData->skin->joints().size();
+    perVertexJointCount = skinData_->skinData->perVertexJointCount;
     resizeJointTransformArray(jointCount);
   }
 
