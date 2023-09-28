@@ -108,6 +108,7 @@ void IOTest::testEllipsisFilter() {
   testPath1 = "/test/path/DELETE/../to/test/removal.txt";
   res = esp::io::normalizePath(testPath1);
   CORRADE_COMPARE(res, "/test/path/to/test/removal.txt");
+
   testPath1 =
       "/test/path/DELETE/../to/DELETE/../test/DELETE/../multiple/removal.txt";
   res = esp::io::normalizePath(testPath1);
@@ -121,6 +122,12 @@ void IOTest::testEllipsisFilter() {
       "test/path/DELETE/../to/DELETE/../test/DELETE/../multiple/removal.txt";
   res = esp::io::normalizePath(testPath1);
   CORRADE_COMPARE(res, "test/path/to/test/multiple/removal.txt");
+
+  testPath1 =
+      "/test/path/DELETE/DELETE2/DELETE3/../../../to/DELETE/DELETE2/../../test/"
+      "DELETE/../consecutive/removal.txt";
+  res = esp::io::normalizePath(testPath1);
+  CORRADE_COMPARE(res, "/test/path/to/test/consecutive/removal.txt");
 
   // ignore intitial ellipsis
   testPath1 = "/../test/path/DELETE/../to/test/initial/ignore.txt";
