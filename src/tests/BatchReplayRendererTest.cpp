@@ -208,7 +208,7 @@ BatchReplayRendererTest::BatchReplayRendererTest() {
 
 // test recording and playback through the simulator interface
 void BatchReplayRendererTest::testUnproject() {
-  auto&& data = TestIntegrationData[testCaseInstanceId()];
+  auto&& data = TestUnprojectData[testCaseInstanceId()];
   setTestCaseDescription(data.name);
 
   std::vector<esp::sensor::SensorSpec::ptr> sensorSpecifications;
@@ -582,7 +582,7 @@ void BatchReplayRendererTest::testArticulatedObject() {
 }
 
 void BatchReplayRendererTest::testClose() {
-  auto&& data = TestIntegrationData[testCaseInstanceId()];
+  auto&& data = TestCloseData[testCaseInstanceId()];
   setTestCaseDescription(data.name);
 
   auto sensorSpecifications = getDefaultSensorSpecs(TestFlag::Color);
