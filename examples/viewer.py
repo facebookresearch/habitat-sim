@@ -1124,9 +1124,9 @@ if __name__ == "__main__":
         help="Override configured lighting to use default lighting for the stage.",
     )
     parser.add_argument(
-        "--ibl",
+        "--hbao",
         action="store_true",
-        help="Enable image-based lighting. Only applicable to scenes built with PBR materials.",
+        help="Enable horizon-based ambient occlusion, which provides soft shadows in corners and crevices.",
     )
     parser.add_argument(
         "--enable-batch-renderer",
@@ -1178,8 +1178,8 @@ if __name__ == "__main__":
     sim_settings["composite_files"] = args.composite_files
     sim_settings["window_width"] = args.width
     sim_settings["window_height"] = args.height
-    sim_settings["pbr_image_based_lighting"] = args.ibl
     sim_settings["default_agent_navmesh"] = False
+    sim_settings["enable_hbao"] = args.hbao
 
     # start the application
     HabitatSimInteractiveViewer(sim_settings).exec()

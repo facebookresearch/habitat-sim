@@ -10,6 +10,7 @@
 #include "esp/gfx/replay/Recorder.h"
 #include "esp/gfx/replay/ReplayManager.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
+#include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/sensor/CameraSensor.h"
 #include "esp/sensor/Sensor.h"
@@ -50,6 +51,7 @@ struct BatchReplayRendererTest : Cr::TestSuite::Tester {
   void testIntegration();
   void testUnproject();
   void testBatchPlayerDeletion();
+  void testArticulatedObject();
   void testClose();
 
   const Magnum::Float maxThreshold = 255.f;
@@ -161,6 +163,18 @@ const struct {
   const char* name;
   Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer> (*create)(
       const ReplayRendererConfiguration& configuration);
+} TestArticulatedObjectData[]{
+    {"batch",
+     [](const ReplayRendererConfiguration& configuration) {
+       return Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer>{
+           new esp::sim::BatchReplayRenderer{configuration}};
+     }},
+};
+
+const struct {
+  const char* name;
+  Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer> (*create)(
+      const ReplayRendererConfiguration& configuration);
 } TestCloseData[]{
     {"classic",
      [](const ReplayRendererConfiguration& configuration) {
@@ -183,13 +197,18 @@ BatchReplayRendererTest::BatchReplayRendererTest() {
 
   addTests({&BatchReplayRendererTest::testBatchPlayerDeletion});
 
+#ifdef ESP_BUILD_WITH_BULLET
+  addInstancedTests({&BatchReplayRendererTest::testArticulatedObject},
+                    Cr::Containers::arraySize(TestArticulatedObjectData));
+#endif
+
   addInstancedTests({&BatchReplayRendererTest::testClose},
                     Cr::Containers::arraySize(TestCloseData));
 }  // ctor
 
 // test recording and playback through the simulator interface
 void BatchReplayRendererTest::testUnproject() {
-  auto&& data = TestIntegrationData[testCaseInstanceId()];
+  auto&& data = TestUnprojectData[testCaseInstanceId()];
   setTestCaseDescription(data.name);
 
   std::vector<esp::sensor::SensorSpec::ptr> sensorSpecifications;
@@ -470,8 +489,100 @@ void BatchReplayRendererTest::testBatchPlayerDeletion() {
   }
 }
 
+void BatchReplayRendererTest::testArticulatedObject() {
+  auto&& data = TestArticulatedObjectData[testCaseInstanceId()];
+  setTestCaseDescription(data.name);
+
+  const auto sensorSpecs = getDefaultSensorSpecs(TestFlag::Color);
+  constexpr int numEnvs = 1;
+  const std::string userPrefix = "sensor_";
+  const std::string screenshotPrefix =
+      "ReplayBatchRendererTest_AO_" + std::string(data.name);
+
+  const std::string assetPath =
+      Cr::Utility::Path::join(TEST_ASSETS, "urdf/fridge/fridge.urdf");
+  const std::string assetPathScaled =
+      Cr::Utility::Path::join(TEST_ASSETS, "urdf/fridge/fridge_scaled.urdf");
+  std::vector<std::string> serKeyframes;
+
+  // Record sequence
+  {
+    SimulatorConfiguration simConfig{};
+    simConfig.enableGfxReplaySave = true;
+    simConfig.createRenderer = false;
+    simConfig.enablePhysics = true;
+    auto sim = Simulator::create_unique(simConfig);
+    auto aoManager = sim->getArticulatedObjectManager();
+    auto& sceneRoot = sim->getActiveSceneGraph().getRootNode();
+    auto& recorder = *sim->getGfxReplayManager()->getRecorder();
+
+    {
+      auto fridgeA = aoManager->addArticulatedObjectFromURDF(assetPath);
+      CORRADE_COMPARE(aoManager->getNumObjects(), 1);
+      CORRADE_VERIFY(fridgeA);
+      fridgeA->setTranslation(Mn::Vector3(-5.0, -2.5, -2.5));
+
+      auto fridgeB = aoManager->addArticulatedObjectFromURDF(assetPathScaled);
+      CORRADE_COMPARE(aoManager->getNumObjects(), 2);
+      CORRADE_VERIFY(fridgeB);
+      fridgeB->setTranslation(Mn::Vector3(-5.0, -2.5, 2.5));
+
+      auto fridgeC = aoManager->addArticulatedObjectFromURDF(
+          assetPath, false, 0.5f /* Global scale */);
+      CORRADE_COMPARE(aoManager->getNumObjects(), 3);
+      CORRADE_VERIFY(fridgeC);
+      fridgeC->setTranslation(Mn::Vector3(-5.0, 2.5, -2.5));
+
+      auto fridgeD = aoManager->addArticulatedObjectFromURDF(
+          assetPathScaled, false, 0.5f /* Global scale */);
+      CORRADE_COMPARE(aoManager->getNumObjects(), 4);
+      CORRADE_VERIFY(fridgeD);
+      fridgeD->setTranslation(Mn::Vector3(-5.0, 2.5, 2.5));
+
+      auto& recorder = *sim->getGfxReplayManager()->getRecorder();
+      for (const auto& sensor : sensorSpecs) {
+        recorder.addUserTransformToKeyframe(
+            userPrefix + sensor->uuid, Mn::Vector3(0.0f, 0.0f, 0.0f),
+            Mn::Quaternion::rotation(Mn::Deg(90.f),
+                                     Mn::Vector3(0.0f, 1.0f, 0.0f)));
+      }
+
+      std::string serKeyframe = esp::gfx::replay::Recorder::keyframeToString(
+          recorder.extractKeyframe());
+      serKeyframes.emplace_back(std::move(serKeyframe));
+    }
+  }
+  CORRADE_COMPARE(serKeyframes.size(), 1);
+
+  // Play sequence
+  {
+    ReplayRendererConfiguration batchRendererConfig;
+    batchRendererConfig.sensorSpecifications = sensorSpecs;
+    batchRendererConfig.numEnvironments = numEnvs;
+    batchRendererConfig.standalone = true;
+    Cr::Containers::Pointer<esp::sim::AbstractReplayRenderer> renderer =
+        data.create(batchRendererConfig);
+
+    std::vector<char> colorBuffer;
+    std::vector<Mn::MutableImageView2D> colorImageView;
+    colorImageView.emplace_back(getRGBView(
+        renderer->sensorSize(0).x(), renderer->sensorSize(0).y(), colorBuffer));
+
+    renderer->setEnvironmentKeyframe(0, serKeyframes[0]);
+    renderer->setSensorTransformsFromKeyframe(0, userPrefix);
+    renderer->render(colorImageView, nullptr);
+
+    // Test color output
+    std::string groundTruthImageFile = screenshotPrefix + ".png";
+    CORRADE_COMPARE_WITH(
+        Mn::ImageView2D{colorImageView[0]},
+        Cr::Utility::Path::join(screenshotDir, groundTruthImageFile),
+        (Mn::DebugTools::CompareImageToFile{maxThreshold, meanThreshold}));
+  }
+}
+
 void BatchReplayRendererTest::testClose() {
-  auto&& data = TestIntegrationData[testCaseInstanceId()];
+  auto&& data = TestCloseData[testCaseInstanceId()];
   setTestCaseDescription(data.name);
 
   auto sensorSpecifications = getDefaultSensorSpecs(TestFlag::Color);

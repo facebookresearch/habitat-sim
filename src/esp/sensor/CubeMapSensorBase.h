@@ -54,6 +54,13 @@ class CubeMapSensorBase : public VisualSensor {
    */
   ~CubeMapSensorBase() override = default;
 
+  /**
+   * @brief Return this sensor's projection matrix
+   */
+  Mn::Matrix4 getProjectionMatrix() const override {
+    return cubeMapCamera_->projectionMatrix();
+  }
+
  protected:
   /**
    * @brief constructor

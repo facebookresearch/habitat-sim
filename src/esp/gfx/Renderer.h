@@ -52,6 +52,11 @@ class Renderer {
      */
     LeaveContextWithBackgroundRenderer = 1 << 3,
 
+    /**
+     * Enable HBAO visual effect that adds soft shadows to corners and crevices.
+     */
+    HorizonBasedAmbientOcclusion = 1 << 4,
+
   };
 
   typedef Corrade::Containers::EnumSet<Flag> Flags;

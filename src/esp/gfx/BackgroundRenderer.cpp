@@ -147,8 +147,13 @@ int BackgroundRenderer::threadRender() {
       sensor.renderTarget().renderEnter();
 
     auto* camera = sensor.getRenderCamera();
+
     for (auto& transforms : jobTransforms[i]) {
       camera->draw(transforms, flags);
+    }
+    auto sensorType = sensor.specification()->sensorType;
+    if (sensorType == sensor::SensorType::Color) {
+      sensor.renderTarget().tryDrawHbao();
     }
 
     if (!(flags & RenderCamera::Flag::ObjectsOnly))

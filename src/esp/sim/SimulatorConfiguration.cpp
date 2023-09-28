@@ -27,7 +27,7 @@ bool operator==(const SimulatorConfiguration& a,
          a.physicsConfigFile == b.physicsConfigFile &&
          a.overrideSceneLightDefaults == b.overrideSceneLightDefaults &&
          a.sceneLightSetupKey == b.sceneLightSetupKey &&
-         a.navMeshSettings == b.navMeshSettings;
+         a.enableHBAO == b.enableHBAO && a.navMeshSettings == b.navMeshSettings;
 }
 
 bool operator!=(const SimulatorConfiguration& a,

@@ -185,12 +185,18 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
         flags |= gfx::Renderer::Flag::NoTextures;
 
 #ifdef ESP_BUILD_WITH_BACKGROUND_RENDERER
-      if (context_)
+      if (context_) {
         flags |= gfx::Renderer::Flag::BackgroundRenderer;
+      }
 
-      if (context_ && config_.leaveContextWithBackgroundRenderer)
+      if (context_ && config_.leaveContextWithBackgroundRenderer) {
         flags |= gfx::Renderer::Flag::LeaveContextWithBackgroundRenderer;
+      }
 #endif
+
+      if (config_.enableHBAO) {
+        flags |= gfx::Renderer::Flag::HorizonBasedAmbientOcclusion;
+      }
 
       renderer_ = gfx::Renderer::create(context_.get(), flags);
     }

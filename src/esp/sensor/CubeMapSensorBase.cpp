@@ -171,6 +171,10 @@ void CubeMapSensorBase::drawWith(gfx::CubeMapShaderBase& shader) {
 
   renderTarget().renderEnter();
   shader.draw(mesh_);
+  // TODO: Add support for CubeMap-based sensors in HBAO
+  // if (cubeMapSensorBaseSpec_->sensorType == SensorType::Color) {
+  //   renderTarget().tryDrawHbao();
+  // }
   renderTarget().renderExit();
 }
 

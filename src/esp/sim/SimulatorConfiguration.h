@@ -87,12 +87,6 @@ struct SimulatorConfiguration {
   std::string sceneLightSetupKey = esp::NO_LIGHT_KEY;
 
   /**
-   * @brief Setup the image based lighting for pbr rendering. @deprecated use
-   * configs to enable/disable IBL.
-   */
-  bool pbrImageBasedLighting = false;
-
-  /**
    * @brief Use texture-based semantics if the specified asset/dataset support
    * them.
    */
@@ -105,6 +99,12 @@ struct SimulatorConfiguration {
    * settings. If not provided, no NavMesh recompute will be done automatically.
    */
   nav::NavMeshSettings::ptr navMeshSettings = nullptr;
+
+  /**
+   * @brief Enable HBAO visual effect that adds soft shadows to corners and
+   * crevices.
+   */
+  bool enableHBAO = false;
 
   ESP_SMART_POINTERS(SimulatorConfiguration)
 };
