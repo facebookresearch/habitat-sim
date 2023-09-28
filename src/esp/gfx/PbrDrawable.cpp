@@ -461,15 +461,10 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   // evaluated." See here:
   // https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/schema/material.schema.json
 
-  // HOWEVER, WE CANNOT DISABLE BACK FACE CULLING (that is why the following
-  // code is commented out) since it causes lighting artifacts ("dashed
-  // lines") on hard edges. (maybe due to potential numerical issues? we do
-  // not know yet.)
-  /*
-  if ((flags_ >= PbrShader::Flag::DoubleSided) && glIsEnabled(GL_CULL_FACE))
-  { Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::FaceCulling);
+  if ((flags_ >= PbrShader::Flag::DoubleSided) && glIsEnabled(GL_CULL_FACE)) {
+    Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::FaceCulling);
   }
-  */
+
   Mn::Matrix4 modelMatrix =
       camera.cameraMatrix().inverted() * transformationMatrix;
 
@@ -620,14 +615,10 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
         Mn::GL::Renderer::FrontFace::CounterClockWise);
   }
 
-  // WE stopped supporting doubleSided material due to lighting artifacts on
-  // hard edges. See comments at the beginning of this function.
-  /*
-  if ((flags_ >= PbrShader::Flag::DoubleSided) &&
-  !glIsEnabled(GL_CULL_FACE)) {
-  Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
+  if ((flags_ >= PbrShader::Flag::DoubleSided) && !glIsEnabled(GL_CULL_FACE)) {
+    Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
   }
-  */
+
 }  // PbrDrawable::draw
 
 void PbrDrawable::updateShader() {
