@@ -55,8 +55,9 @@ void BulletPhysicsManager::removeObject(const int objectId,
 
 void BulletPhysicsManager::removeArticulatedObject(int objectId) {
   // Unregister skinned articulated object's rig from resource manager
-  if (resourceManager_.rigInstanceExists(objectId)) {
-    resourceManager_.deleteRigInstance(objectId);
+  auto& rigManager = resourceManager_.getRigManager();
+  if (rigManager.rigInstanceExists(objectId)) {
+    rigManager.deleteRigInstance(objectId);
   }
 
   removeObjectRigidConstraints(objectId);
@@ -946,7 +947,8 @@ void BulletPhysicsManager::instantiateSkinnedModel(
     auto* linkNode = &link.node().createChild();
     rig.bones.push_back(linkNode);
   }
-  creationInfo.rigId = resourceManager_.registerRigInstance(std::move(rig));
+  creationInfo.rigId =
+      resourceManager_.getRigManager().registerRigInstance(std::move(rig));
 
   auto* gfxNode = resourceManager_.loadAndCreateRenderAssetInstance(
       assetInfo, creationInfo, parentNode, drawables);

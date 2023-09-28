@@ -1735,11 +1735,11 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
     ESP_CHECK(meshMetaData.skinIndex.first != ID_UNDEFINED,
               "Cannot instantiate skinned model because skin data is "
               "incorrectly imported.");
-    ESP_CHECK(rigInstanceExists(creation.rigId),
+    ESP_CHECK(rigManager_.rigInstanceExists(creation.rigId),
               "Cannot instantiate skinned model because the rig was not "
               "registered to the ResourceManager.");
     const auto& skinData = skins_[meshMetaData.skinIndex.first];
-    const auto& rig = rigInstances_[creation.rigId];
+    const auto& rig = rigManager_.getRigInstance(creation.rigId);
     instanceSkinData = std::make_shared<gfx::InstanceSkinData>(skinData);
     mapSkinnedModelToRig(meshMetaData.root, rig, instanceSkinData);
     ESP_CHECK(instanceSkinData->rootArticulatedObjectNode &&
@@ -3564,41 +3564,6 @@ void ResourceManager::setLightSetup(gfx::LightSetup setup,
 
   shaderManager_.set(key, std::move(setup), Mn::ResourceDataState::Mutable,
                      Mn::ResourcePolicy::Manual);
-}
-
-int ResourceManager::registerRigInstance(gfx::Rig&& rig) {
-  int rigId = nextRigInstanceID_++;
-  rigInstances_[rigId] = std::move(rig);
-  return rigId;
-}
-
-void ResourceManager::registerRigInstance(int rigId, gfx::Rig&& rig) {
-  ESP_CHECK(!rigInstanceExists(rigId),
-            "A rig instance was already registered with the specified id.");
-  rigInstances_[rigId] = std::move(rig);
-  nextRigInstanceID_ = std::max(nextRigInstanceID_, rigId + 1);
-}
-
-void ResourceManager::deleteRigInstance(int rigId) {
-  const auto& rigIt = rigInstances_.find(rigId);
-  ESP_CHECK(rigIt != rigInstances_.end(),
-            "The specified rig instance id isn't known by resource manager or "
-            "was already deleted.");
-  for (auto* bone : getRigInstance(rigId).bones) {
-    delete bone;
-  }
-  rigInstances_.erase(rigIt);
-}
-
-bool ResourceManager::rigInstanceExists(int rigId) const {
-  return rigInstances_.find(rigId) != rigInstances_.end();
-}
-
-gfx::Rig& ResourceManager::getRigInstance(int rigId) {
-  const auto& rigIt = rigInstances_.find(rigId);
-  ESP_CHECK(rigIt != rigInstances_.end(),
-            "The specified rig instance id isn't known by resource manager.");
-  return rigIt->second;
 }
 
 std::unique_ptr<MeshData> ResourceManager::createJoinedCollisionMesh(

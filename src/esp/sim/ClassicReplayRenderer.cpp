@@ -55,7 +55,8 @@ ClassicReplayRenderer::ClassicReplayRenderer(
     void createRigInstance(int rigId,
                            const std::vector<std::pair<int, std::string>>&
                                boneIdNamePairs) override {
-      ESP_CHECK(!self_.resourceManager_->rigInstanceExists(rigId),
+      auto& rigManager = self_.resourceManager_->getRigManager();
+      ESP_CHECK(!rigManager.rigInstanceExists(rigId),
                 "A rig instance with the specified ID already exists.");
 
       gfx::Rig rig{};
@@ -71,15 +72,15 @@ ClassicReplayRenderer::ClassicReplayRenderer(
         rig.bones.push_back(boneNode);
       }
 
-      self_.resourceManager_->registerRigInstance(rigId, std::move(rig));
+      rigManager.registerRigInstance(rigId, std::move(rig));
     }
 
     void deleteRigInstance(int rigId) override {
-      self_.resourceManager_->deleteRigInstance(rigId);
+      self_.resourceManager_->getRigManager().deleteRigInstance(rigId);
     }
 
     gfx::replay::NodeHandle getBone(int rigId, int boneId) override {
-      auto& rig = self_.resourceManager_->getRigInstance(rigId);
+      auto& rig = self_.resourceManager_->getRigManager().getRigInstance(rigId);
       return reinterpret_cast<gfx::replay::NodeHandle>(
           rig.bones[rig.boneIds[boneId]]);
     }

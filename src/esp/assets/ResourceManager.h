@@ -20,6 +20,7 @@
 
 #include "Asset.h"
 #include "MeshMetaData.h"
+#include "RigManager.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/ShaderManager.h"
 #include "esp/gfx/SkinData.h"
@@ -354,48 +355,6 @@ class ResourceManager {
                          DEFAULT_LIGHTING_KEY});
 
   /**
-   * @brief Registers a rig instance. This gives ownership of the rig to the resource manager. Use @ref deleteRigInstance to dispose of the rig.
-   *
-   * @param rig Instantiated rig to register.
-   * @return Unique id of the rig.
-   */
-  int registerRigInstance(gfx::Rig&& rig);
-
-  /**
-   * @brief Registers a rig instance. This gives ownership of the rig to the resource manager. Use @ref deleteRigInstance to dispose of the rig.
-   * This variant assumes that the rig id comes from gfx-replay, so id
-   * management can be skipped.
-   *
-   * @param rigId Unique id for the rig.
-   * @param rig Instantiated rig to register.
-   */
-  void registerRigInstance(int rigId, gfx::Rig&& rig);
-
-  /**
-   * @brief Unregisters a rig instance and deletes its bone nodes.
-   *
-   * @param rigId ID of the rig.
-   */
-  void deleteRigInstance(int rigId);
-
-  /**
-   * @brief Checks if the specified rig ID has been registered to the resource
-   * manager.
-   *
-   * @param rigId ID of the rig.
-   * @return Whether the rig is registered to the resource manager.
-   */
-  bool rigInstanceExists(int rigId) const;
-
-  /**
-   * @brief Get a reference to a registered rig instance.
-   *
-   * @param rigId ID of the rig.
-   * @return Reference to a registered rig instance.
-   */
-  gfx::Rig& getRigInstance(int rigId);
-
-  /**
    * @brief Construct a unified @ref MeshData from a loaded asset's collision
    * meshes.
    *
@@ -635,9 +594,14 @@ class ResourceManager {
   bool loadRenderAsset(const AssetInfo& info);
 
   /**
-   * @brief get the shader manager
+   * @brief Get the shader manager.
    */
   gfx::ShaderManager& getShaderManager() { return shaderManager_; }
+
+  /**
+   * @brief Get the rig manager.
+   */
+  RigManager& getRigManager() { return rigManager_; }
 
   /**
    * @brief Build data for a report for semantic mesh connected components based
@@ -1231,16 +1195,6 @@ class ResourceManager {
   std::map<int, std::shared_ptr<gfx::SkinData>> skins_;
 
   /**
-   * @brief The next available unique ID for instantiated rigs.
-   */
-  int nextRigInstanceID_ = 0;
-
-  /**
-   * @brief The rigs for instantiated skinned assets.
-   */
-  std::unordered_map<int, gfx::Rig> rigInstances_;
-
-  /**
    * @brief Asset metadata linking meshes, textures, materials, and the
    * component transformation hierarchy for loaded assets.
    *
@@ -1253,6 +1207,12 @@ class ResourceManager {
    * drawables created by this ResourceManager
    */
   gfx::ShaderManager shaderManager_;
+
+  /**
+   * @brief The @ref RigManager used to store rig information for
+   * skinned drawables created by this ResourceManager
+   */
+  RigManager rigManager_;
 
   // ======== Metadata, File and primitive importers ========
   /**
