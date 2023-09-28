@@ -41,9 +41,9 @@ std::string normalizePath(const std::string& srcPath) {
   // Get paths leading up to ellipsis-cancelled path
   auto prefixString = srcPath.substr(0, prevLoc);
   // recurses to get subsequent ellipses.
-  auto filteredPath = Cr::Utility::formatString("{}/{}", prefixString,
-                                                normalizePath(suffixString));
-  return filteredPath;
+  auto filteredPath =
+      Cr::Utility::formatString("{}/{}", prefixString, suffixString);
+  return normalizePath(filteredPath);
 }  // normalizePath
 
 std::vector<std::string> globDirs(const std::string& pattern) {
