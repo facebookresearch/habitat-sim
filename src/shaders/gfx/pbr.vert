@@ -35,15 +35,16 @@ out highp vec3 biTangent;
 #endif
 
 // ------------ uniform ----------------------
+uniform highp mat4 uViewMatrix;
 uniform highp mat3 uNormalMatrix;  // inverse transpose of 3x3 model matrix, NOT
                                    // modelview matrix
-uniform highp mat4 uModelViewMatrix;
+uniform highp mat4 uModelMatrix;
 uniform highp mat4 uProjectionMatrix;
 
 // ------------ shader -----------------------
 void main() {
-  vec4 vertexWorldPosition = uModelViewMatrix * vertexPosition;
-  position = vertexWorldPosition.xyz / vertexWorldPosition.w;
+  vec4 vertexWorldPosition = uModelMatrix * vertexPosition;
+  position = vertexWorldPosition.xyz;
   normal = normalize(uNormalMatrix * vertexNormal);
 #if defined(TEXTURED)
   texCoord =
@@ -60,9 +61,9 @@ void main() {
   tangent = normalize(tangent - dot(tangent, normal) * normal);
   biTangent = normalize(cross(normal, tangent) * vertexTangent.w);
   // later in .frag, TBN will transform the normal perturbation
-  // (read from normal map) from tangent space to camera space,
+  // (read from normal map) from tangent space to world space,
   // NOT camera space
 #endif
 
-  gl_Position = uProjectionMatrix * vertexWorldPosition;
+  gl_Position = uProjectionMatrix * uViewMatrix * vertexWorldPosition;
 }

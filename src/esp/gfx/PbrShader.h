@@ -482,10 +482,16 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   PbrShader& setProjectionMatrix(const Magnum::Matrix4& matrix);
 
   /**
-   *  @brief Set model-view matrix to the uniform on GPU
+   *  @brief Set view matrix to the uniform on GPU
    *  @return Reference to self (for method chaining)
    */
-  PbrShader& setModelViewMatrix(const Magnum::Matrix4& matrix);
+  PbrShader& setViewMatrix(const Magnum::Matrix4& matrix);
+
+  /**
+   *  @brief Set model matrix to the uniform on GPU
+   *  @return Reference to self (for method chaining)
+   */
+  PbrShader& setModelMatrix(const Magnum::Matrix4& matrix);
 
   /**
    *  @brief Set normal matrix to the uniform on GPU
@@ -571,6 +577,12 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    *  @return Reference to self (for method chaining)
    */
   PbrShader& setObjectId(unsigned int objectId);
+
+  /**
+   *  @brief Set object id to the uniform on GPU
+   *  @return Reference to self (for method chaining)
+   */
+  PbrShader& setCameraWorldPosition(const Magnum::Vector3& cameraWorldPos);
 
   /**
    *  @brief Set total mipmap levels of the prefiltered environment map to the
@@ -791,7 +803,8 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   // it hurts the performance to call glGetUniformLocation() every frame due
   // to string operations. therefore, cache the locations in the constructor
   // material uniforms
-  int modelViewMatrixUniform_ = ID_UNDEFINED;
+  int viewMatrixUniform_ = ID_UNDEFINED;
+  int modelMatrixUniform_ = ID_UNDEFINED;
   int normalMatrixUniform_ = ID_UNDEFINED;
   int projMatrixUniform_ = ID_UNDEFINED;
   int baseColorUniform_ = ID_UNDEFINED;  // diffuse color
@@ -821,6 +834,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   // invGamma value for linear->sRGB mapping approx
   int invGammaUniform_ = ID_UNDEFINED;
 
+  int cameraWorldPosUniform_ = ID_UNDEFINED;
   int prefilteredMapMipLevelsUniform_ = ID_UNDEFINED;
 
   // Clearcoat layer

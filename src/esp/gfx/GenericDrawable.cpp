@@ -152,7 +152,15 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
 
   updateShader();
   // In Drawable.h
-  updateShaderLightingParameters(transformationMatrix, camera, shader_);
+  // Phong uses light position relative to camera
+  updateShaderLightingParameters(transformationMatrix, camera, shader_,
+                                 [](const LightInfo& lightInfo,
+                                    const Magnum::Matrix4& transformationMatrix,
+                                    const Magnum::Matrix4& cameraMatrix) {
+                                   return getLightPositionRelativeToCamera(
+                                       lightInfo, transformationMatrix,
+                                       cameraMatrix);
+                                 });
 
   Mn::Matrix3x3 rotScale = transformationMatrix.rotationScaling();
   // Find determinant to calculate backface culling winding dir
