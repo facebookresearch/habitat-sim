@@ -365,7 +365,7 @@ class IslandSystem {
         bool inRange = false;
         for (int iVert = 0; iVert < poly->vertCount; ++iVert) {
           int nVert = (iVert + 1) % 3;
-          float tseg;
+          float tseg = 0;
           float distSqr = dtDistancePtSegSqr2D(
               circleCenter.data(),
               &tile->verts[static_cast<size_t>(poly->verts[iVert]) * 3],
