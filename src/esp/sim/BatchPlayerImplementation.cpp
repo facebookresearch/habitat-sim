@@ -168,7 +168,7 @@ void BatchPlayerImplementation::changeLightSetup(
 
 void BatchPlayerImplementation::createRigInstance(
     int,
-    const std::vector<std::pair<int, std::string>>&) {
+    const std::vector<std::string>&) {
   // Not implemented.
 }
 
@@ -176,9 +176,10 @@ void BatchPlayerImplementation::deleteRigInstance(int) {
   // Not implemented.
 }
 
-gfx::replay::NodeHandle BatchPlayerImplementation::getBone(int, int) {
-  // not implemented
-  return nullptr;
+void BatchPlayerImplementation::setRigPose(
+    int,
+    const std::vector<gfx::replay::Transform>&) {
+  // Not implemented.
 }
 }  // namespace sim
 }  // namespace esp

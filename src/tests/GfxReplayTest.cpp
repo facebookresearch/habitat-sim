@@ -665,46 +665,65 @@ void GfxReplayTest::testSkinningIntegration() {
       link->node().translate(Mn::Vector3(1.0, 0.0, 0.0));
       keyframes.emplace_back(recorder->extractKeyframe());
     }
+    // Frame 4: Delete rigs
+    {
+      aoManager->removeAllObjects();
+      CORRADE_COMPARE(aoManager->getNumObjects(), 0);
+      keyframes.emplace_back(recorder->extractKeyframe());
+    }
 
     recorder->writeSavedKeyframesToFile(testFilepath);
-    keyframes.emplace_back(recorder->extractKeyframe());
   }
 
-  const auto getBoneIdFromName = [](const esp::gfx::replay::Keyframe& keyframe,
+  const auto getBoneIdFromName = [](int rigId,
+                                    const esp::gfx::replay::Keyframe& keyframe,
                                     const std::string& boneName) -> int {
-    for (int i = 0; i < keyframe.boneCreations.size(); ++i) {
-      if (keyframe.boneCreations[i].boneName == boneName) {
-        return keyframe.boneCreations[i].boneId;
+    for (auto& rigCreation : keyframe.rigCreations) {
+      if (rigCreation.id == rigId) {
+        for (int i = 0; i < rigCreation.boneNames.size(); ++i) {
+          if (rigCreation.boneNames[i] == boneName) {
+            return i;
+          }
+        }
       }
     }
     return esp::ID_UNDEFINED;
   };
 
   // Frame 0
-  CORRADE_COMPARE(keyframes[0].boneCreations.size(), 5);
-  CORRADE_VERIFY(getBoneIdFromName(keyframes[0], "A") != esp::ID_UNDEFINED);
-  CORRADE_VERIFY(getBoneIdFromName(keyframes[0], "B") != esp::ID_UNDEFINED);
-  CORRADE_VERIFY(getBoneIdFromName(keyframes[0], "C") != esp::ID_UNDEFINED);
-  CORRADE_VERIFY(getBoneIdFromName(keyframes[0], "D") != esp::ID_UNDEFINED);
-  CORRADE_VERIFY(getBoneIdFromName(keyframes[0], "E") != esp::ID_UNDEFINED);
-  CORRADE_COMPARE(keyframes[0].boneUpdates.size(), 4);
+  CORRADE_COMPARE(keyframes[0].rigCreations.size(), 1);
+  CORRADE_COMPARE(keyframes[0].rigCreations[0].boneNames.size(), 5);
+  CORRADE_VERIFY(getBoneIdFromName(0, keyframes[0], "A") != esp::ID_UNDEFINED);
+  CORRADE_VERIFY(getBoneIdFromName(0, keyframes[0], "B") != esp::ID_UNDEFINED);
+  CORRADE_VERIFY(getBoneIdFromName(0, keyframes[0], "C") != esp::ID_UNDEFINED);
+  CORRADE_VERIFY(getBoneIdFromName(0, keyframes[0], "D") != esp::ID_UNDEFINED);
+  CORRADE_VERIFY(getBoneIdFromName(0, keyframes[0], "E") != esp::ID_UNDEFINED);
+  CORRADE_COMPARE(keyframes[0].rigUpdates.size(), 1);
+  CORRADE_COMPARE(keyframes[0].rigUpdates[0].pose.size(), 5);
 
   // Frame 1
-  CORRADE_COMPARE(keyframes[1].boneCreations.size(), 0);
-  CORRADE_COMPARE(keyframes[1].boneUpdates.size(), 0);
+  CORRADE_COMPARE(keyframes[1].rigCreations.size(), 0);
+  CORRADE_COMPARE(keyframes[1].rigUpdates.size(), 0);
 
   // Frame 2
-  CORRADE_COMPARE(keyframes[2].boneCreations.size(), 0);
-  CORRADE_COMPARE(keyframes[2].boneUpdates.size(), 1);
+  CORRADE_COMPARE(keyframes[2].rigCreations.size(), 0);
+  CORRADE_COMPARE(keyframes[2].rigUpdates.size(), 1);
+  CORRADE_COMPARE(keyframes[2].rigUpdates[0].pose.size(), 5);
 
   // Frame 3
-  CORRADE_COMPARE(keyframes[3].boneCreations.size(), 5);
-  CORRADE_VERIFY(getBoneIdFromName(keyframes[3], "A") != esp::ID_UNDEFINED);
-  CORRADE_VERIFY(getBoneIdFromName(keyframes[3], "B") != esp::ID_UNDEFINED);
-  CORRADE_VERIFY(getBoneIdFromName(keyframes[3], "C") != esp::ID_UNDEFINED);
-  CORRADE_VERIFY(getBoneIdFromName(keyframes[3], "D") != esp::ID_UNDEFINED);
-  CORRADE_VERIFY(getBoneIdFromName(keyframes[3], "E") != esp::ID_UNDEFINED);
-  CORRADE_COMPARE(keyframes[3].boneUpdates.size(), 5);
+  CORRADE_COMPARE(keyframes[3].rigCreations.size(), 1);
+  CORRADE_COMPARE(keyframes[3].rigCreations[0].boneNames.size(), 5);
+  CORRADE_VERIFY(getBoneIdFromName(1, keyframes[3], "A") != esp::ID_UNDEFINED);
+  CORRADE_VERIFY(getBoneIdFromName(1, keyframes[3], "B") != esp::ID_UNDEFINED);
+  CORRADE_VERIFY(getBoneIdFromName(1, keyframes[3], "C") != esp::ID_UNDEFINED);
+  CORRADE_VERIFY(getBoneIdFromName(1, keyframes[3], "D") != esp::ID_UNDEFINED);
+  CORRADE_VERIFY(getBoneIdFromName(1, keyframes[3], "E") != esp::ID_UNDEFINED);
+  CORRADE_COMPARE(keyframes[3].rigUpdates.size(), 2);
+  CORRADE_COMPARE(keyframes[3].rigUpdates[0].pose.size(), 5);
+  CORRADE_COMPARE(keyframes[3].rigUpdates[1].pose.size(), 5);
+
+  // Frame 4
+  CORRADE_COMPARE(keyframes[4].deletions.size(), 2);
 
   // remove file created for this test
   bool success = Corrade::Utility::Path::remove(testFilepath);

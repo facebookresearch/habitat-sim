@@ -52,8 +52,6 @@ struct Rig {
   std::vector<scene::SceneNode*> bones;
   /** @brief Bone name to 'bones' index map. */
   std::unordered_map<std::string, int> boneNames;
-  /** @brief Bone id to 'bones' index map. */
-  std::unordered_map<int, int> boneIds;
 };
 }  // namespace gfx
 }  // namespace esp

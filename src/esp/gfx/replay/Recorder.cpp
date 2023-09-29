@@ -89,16 +89,13 @@ void Recorder::onCreateRenderAssetInstance(
 void Recorder::onCreateRigInstance(int rigId, const Rig& rig) {
   rigNodes_[rigId] = rig.bones;
 
-  // Create creation info for rig
-  std::vector<BoneCreation> boneCreations{};
+  RigCreation rigCreation;
+  rigCreation.id = rigId;
+  rigCreation.boneNames.resize(rig.bones.size());
   for (const auto& boneNamePair : rig.boneNames) {
-    BoneCreation bone{};
-    bone.rigId = rigId;
-    bone.boneId = boneNamePair.second;
-    bone.boneName = boneNamePair.first;
-    boneCreations.emplace_back(std::move(bone));
+    rigCreation.boneNames[boneNamePair.second] = boneNamePair.first;
   }
-  currKeyframe_.boneCreations = std::move(boneCreations);
+  currKeyframe_.rigCreations.emplace_back(std::move(rigCreation));
 }
 
 void Recorder::onHideSceneGraph(const esp::scene::SceneGraph& sceneGraph) {
@@ -191,6 +188,7 @@ void Recorder::onDeleteRenderAssetInstance(const scene::SceneNode* node) {
 
   instanceRecords_.erase(instanceRecords_.begin() + index);
   rigNodes_.erase(rigId);
+  rigNodeTransformCache_.erase(rigId);
 }
 
 Keyframe& Recorder::getKeyframe() {
@@ -239,23 +237,36 @@ void Recorder::updateRigInstanceStates() {
   for (const auto& rigItr : rigNodes_) {
     const int rigId = rigItr.first;
     const int boneCount = rigItr.second.size();
+
+    RigUpdate rigUpdate;
+    rigUpdate.id = rigId;
+
+    const auto cacheIt = rigNodeTransformCache_.find(rigId);
+    if (cacheIt == rigNodeTransformCache_.end()) {
+      rigNodeTransformCache_[rigId] = std::vector<Mn::Matrix4>(boneCount);
+    }
+
+    // If a single bone pose was updated, update the entire pose
+    bool updated = false;
     for (int boneIdx = 0; boneIdx < boneCount; ++boneIdx) {
       const auto* bone = rigItr.second[boneIdx];
       const auto absTransformMat = bone->absoluteTransformation();
-
-      const auto cacheIt = rigNodeTransformCache_.find(rigId);
-      if (cacheIt == rigNodeTransformCache_.end()) {
-        rigNodeTransformCache_[rigId] = std::vector<Mn::Matrix4>(boneCount);
-      }
       if (rigNodeTransformCache_[rigId][boneIdx] != absTransformMat) {
-        rigNodeTransformCache_[rigId][boneIdx] = absTransformMat;
-
-        BoneState boneUpdate{};
-        boneUpdate.absTransform = ::createReplayTransform(absTransformMat);
-        boneUpdate.rigId = rigId;
-        boneUpdate.boneId = boneIdx;
-        currKeyframe_.boneUpdates.emplace_back(boneUpdate);
+        updated = true;
+        break;
       }
+    }
+
+    // Update the pose
+    if (updated) {
+      rigUpdate.pose.reserve(boneCount);
+      for (int boneIdx = 0; boneIdx < boneCount; ++boneIdx) {
+        const auto* bone = rigItr.second[boneIdx];
+        const auto absTransformMat = bone->absoluteTransformation();
+        rigNodeTransformCache_[rigId][boneIdx] = absTransformMat;
+        rigUpdate.pose.emplace_back(createReplayTransform(absTransformMat));
+      }
+      currKeyframe_.rigUpdates.emplace_back(std::move(rigUpdate));
     }
   }
 }

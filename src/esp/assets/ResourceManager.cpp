@@ -1737,7 +1737,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
               "incorrectly imported.");
     ESP_CHECK(rigManager_.rigInstanceExists(creation.rigId),
               "Cannot instantiate skinned model because the rig was not "
-              "registered to the ResourceManager.");
+              "registered to the RigManager.");
     const auto& skinData = skins_[meshMetaData.skinIndex.first];
     const auto& rig = rigManager_.getRigInstance(creation.rigId);
     instanceSkinData = std::make_shared<gfx::InstanceSkinData>(skinData);

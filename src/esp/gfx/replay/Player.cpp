@@ -83,13 +83,13 @@ void AbstractSceneGraphPlayerImplementation::setNodeSemanticId(
 
 void AbstractPlayerImplementation::createRigInstance(
     int,
-    const std::vector<std::pair<int, std::string>>&) {}
+    const std::vector<std::string>&) {}
 
 void AbstractPlayerImplementation::deleteRigInstance(int) {}
 
-gfx::replay::NodeHandle AbstractPlayerImplementation::getBone(int, int) {
-  return nullptr;
-}
+void AbstractPlayerImplementation::setRigPose(
+    int,
+    const std::vector<gfx::replay::Transform>&) {}
 
 void Player::readKeyframesFromJsonDocument(const rapidjson::Document& d) {
   CORRADE_INTERNAL_ASSERT(keyframes_.empty());
@@ -200,13 +200,8 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     assetInfos_[assetInfo.filepath] = assetInfo;
   }
 
-  boneCreations_.clear();
-  for (const auto& boneCreation : keyframe.boneCreations) {
-    boneCreations_[boneCreation.rigId].emplace_back(
-        std::make_pair(boneCreation.boneId, boneCreation.boneName));
-  }
-  for (const auto& boneCreation : boneCreations_) {
-    implementation_->createRigInstance(boneCreation.first, boneCreation.second);
+  for (const auto& rigCreation : keyframe.rigCreations) {
+    implementation_->createRigInstance(rigCreation.id, rigCreation.boneNames);
   }
 
   for (const auto& pair : keyframe.creations) {
@@ -258,10 +253,8 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     implementation_->setNodeSemanticId(node, state.semanticId);
   }
 
-  for (const auto& boneUpdate : keyframe.boneUpdates) {
-    auto* bone = implementation_->getBone(boneUpdate.rigId, boneUpdate.boneId);
-    implementation_->setNodeTransform(bone, boneUpdate.absTransform.translation,
-                                      boneUpdate.absTransform.rotation);
+  for (const auto& rigUpdate : keyframe.rigUpdates) {
+    implementation_->setRigPose(rigUpdate.id, rigUpdate.pose);
   }
 
   if (keyframe.lightsChanged) {

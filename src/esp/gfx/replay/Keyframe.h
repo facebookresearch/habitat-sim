@@ -40,26 +40,20 @@ struct RenderAssetInstanceState {
 };
 
 /**
- * @brief Registration of a rigged bone.
+ * @brief Definition of a rigged articulated object.
  */
-// TODO: Serializer doesn't support collections in nested types. Therefore,
-// rigId is duplicated for each bone.
-struct BoneCreation {
-  int rigId = ID_UNDEFINED;
-  int boneId = ID_UNDEFINED;
-  std::string boneName;
+struct RigCreation {
+  int id = ID_UNDEFINED;
+  std::vector<std::string> boneNames;
 };
 
 /**
- * @brief The dynamic state of a rigged object bone that is tracked by the
- * replay system every frame.
+ * @brief The dynamic state of a rigged articulated object that is tracked by
+ * the replay system every frame.
  */
-// TODO: Serializer doesn't support collections in nested types. Therefore,
-// rigId is duplicated for each bone.
-struct BoneState {
-  int rigId = ID_UNDEFINED;
-  int boneId = ID_UNDEFINED;
-  Transform absTransform;  // localToWorld
+struct RigUpdate {
+  int id = ID_UNDEFINED;
+  std::vector<Transform> pose;  // localToWorld
 };
 
 /**
@@ -68,14 +62,14 @@ struct BoneState {
  */
 struct Keyframe {
   std::vector<esp::assets::AssetInfo> loads;
-  std::vector<BoneCreation> boneCreations;
+  std::vector<RigCreation> rigCreations;
   std::vector<std::pair<RenderAssetInstanceKey,
                         esp::assets::RenderAssetInstanceCreationInfo>>
       creations;
   std::vector<RenderAssetInstanceKey> deletions;
   std::vector<std::pair<RenderAssetInstanceKey, RenderAssetInstanceState>>
       stateUpdates;
-  std::vector<BoneState> boneUpdates;
+  std::vector<RigUpdate> rigUpdates;
   std::unordered_map<std::string, Transform> userTransforms;
   std::vector<LightInfo> lights;
   bool lightsChanged = false;

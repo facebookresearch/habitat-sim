@@ -41,12 +41,11 @@ class BatchPlayerImplementation
 
   void changeLightSetup(const esp::gfx::LightSetup& lights) override;
 
-  void createRigInstance(int, const std::vector<std::pair<int, std::string>>&)
-      override;
+  void createRigInstance(int, const std::vector<std::string>&) override;
 
   void deleteRigInstance(int) override;
 
-  gfx::replay::NodeHandle getBone(int, int) override;
+  void setRigPose(int, const std::vector<gfx::replay::Transform>&) override;
 
   gfx_batch::Renderer& renderer_;
   Mn::UnsignedInt sceneId_;

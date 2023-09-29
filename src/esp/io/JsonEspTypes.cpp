@@ -13,6 +13,17 @@ JsonGenericValue toJsonValue(const gfx::replay::Keyframe& keyframe,
 
   io::addMember(obj, "loads", keyframe.loads, allocator);
 
+  if (!keyframe.rigCreations.empty()) {
+    JsonGenericValue rigCreationsArray(rapidjson::kArrayType);
+    for (const auto& rig : keyframe.rigCreations) {
+      JsonGenericValue rigObj(rapidjson::kObjectType);
+      io::addMember(rigObj, "id", rig.id, allocator);
+      io::addMember(rigObj, "boneNames", rig.boneNames, allocator);
+      rigCreationsArray.PushBack(rigObj, allocator);
+    }
+    io::addMember(obj, "rigCreations", rigCreationsArray, allocator);
+  }
+
   if (!keyframe.creations.empty()) {
     JsonGenericValue creationsArray(rapidjson::kArrayType);
     for (const auto& pair : keyframe.creations) {
@@ -24,8 +35,6 @@ JsonGenericValue toJsonValue(const gfx::replay::Keyframe& keyframe,
     }
     io::addMember(obj, "creations", creationsArray, allocator);
   }
-
-  io::addMember(obj, "boneCreations", keyframe.boneCreations, allocator);
 
   io::addMember(obj, "deletions", keyframe.deletions, allocator);
 
@@ -40,7 +49,23 @@ JsonGenericValue toJsonValue(const gfx::replay::Keyframe& keyframe,
     io::addMember(obj, "stateUpdates", stateUpdatesArray, allocator);
   }
 
-  io::addMember(obj, "boneUpdates", keyframe.boneUpdates, allocator);
+  if (!keyframe.rigUpdates.empty()) {
+    JsonGenericValue rigUpdatesArray(rapidjson::kArrayType);
+    for (const auto& rig : keyframe.rigUpdates) {
+      JsonGenericValue rigObj(rapidjson::kObjectType);
+      io::addMember(rigObj, "id", rig.id, allocator);
+      JsonGenericValue poseArray(rapidjson::kArrayType);
+      for (const auto& bone : rig.pose) {
+        JsonGenericValue boneObj(rapidjson::kObjectType);
+        io::addMember(boneObj, "t", bone.translation, allocator);
+        io::addMember(boneObj, "r", bone.rotation, allocator);
+        poseArray.PushBack(boneObj, allocator);
+      }
+      io::addMember(rigObj, "pose", poseArray, allocator);
+      rigUpdatesArray.PushBack(rigObj, allocator);
+    }
+    io::addMember(obj, "rigUpdates", rigUpdatesArray, allocator);
+  }
 
   if (!keyframe.userTransforms.empty()) {
     JsonGenericValue userTransformsArray(rapidjson::kArrayType);
@@ -65,7 +90,19 @@ bool fromJsonValue(const JsonGenericValue& obj,
                    gfx::replay::Keyframe& keyframe) {
   io::readMember(obj, "loads", keyframe.loads);
 
-  auto itr = obj.FindMember("creations");
+  auto itr = obj.FindMember("rigCreations");
+  if (itr != obj.MemberEnd()) {
+    const JsonGenericValue& ricCreationsArray = itr->value;
+    keyframe.rigCreations.reserve(ricCreationsArray.Size());
+    for (const auto& creationPairObj : ricCreationsArray.GetArray()) {
+      gfx::replay::RigCreation rigCreation;
+      io::readMember(creationPairObj, "id", rigCreation.id);
+      io::readMember(creationPairObj, "boneNames", rigCreation.boneNames);
+      keyframe.rigCreations.emplace_back(std::move(rigCreation));
+    }
+  }
+
+  itr = obj.FindMember("creations");
   if (itr != obj.MemberEnd()) {
     const JsonGenericValue& creationsArray = itr->value;
     keyframe.creations.reserve(creationsArray.Size());
@@ -78,8 +115,6 @@ bool fromJsonValue(const JsonGenericValue& obj,
       keyframe.creations.emplace_back(std::move(pair));
     }
   }
-
-  io::readMember(obj, "boneCreations", keyframe.boneCreations);
 
   io::readMember(obj, "deletions", keyframe.deletions);
 
@@ -97,7 +132,27 @@ bool fromJsonValue(const JsonGenericValue& obj,
     }
   }
 
-  io::readMember(obj, "boneUpdates", keyframe.boneUpdates);
+  itr = obj.FindMember("rigUpdates");
+  if (itr != obj.MemberEnd()) {
+    const JsonGenericValue& rigUpdatesArray = itr->value;
+    keyframe.rigUpdates.reserve(rigUpdatesArray.Size());
+    for (const auto& rigObj : rigUpdatesArray.GetArray()) {
+      gfx::replay::RigUpdate rigUpdate;
+      io::readMember(rigObj, "id", rigUpdate.id);
+      itr = rigObj.FindMember("pose");
+      if (itr != rigObj.MemberEnd()) {
+        const JsonGenericValue& poseArray = itr->value;
+        rigUpdate.pose.reserve(poseArray.Size());
+        for (const auto& boneObj : poseArray.GetArray()) {
+          gfx::replay::Transform transform;
+          io::readMember(boneObj, "t", transform.translation);
+          io::readMember(boneObj, "r", transform.rotation);
+          rigUpdate.pose.emplace_back(std::move(transform));
+        }
+      }
+      keyframe.rigUpdates.emplace_back(std::move(rigUpdate));
+    }
+  }
 
   itr = obj.FindMember("userTransforms");
   if (itr != obj.MemberEnd()) {
