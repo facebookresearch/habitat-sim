@@ -43,7 +43,10 @@ PbrShader::PbrShader(Flags originalFlags,
                      Mn::UnsignedInt lightCount,
                      Mn::UnsignedInt jointCount,
                      Mn::UnsignedInt perVertexJointCount)
-    : flags_(originalFlags), lightCount_(lightCount) {
+    : flags_(originalFlags),
+      lightCount_(lightCount),
+      jointCount_(jointCount),
+      perVertexJointCount_(perVertexJointCount) {
   if (!Cr::Utility::Resource::hasGroup("gfx-shaders")) {
     importShaderResources();
   }
@@ -415,7 +418,7 @@ PbrShader::PbrShader(Flags originalFlags,
   }
 
   if (directLightingIsEnabled_) {
-    setLightVectors(Cr::Containers::Array<Mn::Vector4>{
+    setLightPositions(Cr::Containers::Array<Mn::Vector4>{
         Cr::DirectInit, lightCount_,
         // a single directional "fill" light, coming from the center of the
         // camera.
@@ -759,19 +762,19 @@ PbrShader& PbrShader::setTextureMatrix(const Mn::Matrix3& matrix) {
   return *this;
 }
 
-PbrShader& PbrShader::setLightVectors(
+PbrShader& PbrShader::setLightPositions(
     Cr::Containers::ArrayView<const Mn::Vector4> vectors) {
   CORRADE_ASSERT(lightCount_ == vectors.size(),
-                 "PbrShader::setLightVectors(): expected"
+                 "PbrShader::setLightPositions(): expected"
                      << lightCount_ << "items but got" << vectors.size(),
                  *this);
   setUniform(lightDirectionsUniform_, vectors);
   return *this;
 }
 
-PbrShader& PbrShader::setLightVectors(
+PbrShader& PbrShader::setLightPositions(
     std::initializer_list<Mn::Vector4> vectors) {
-  return setLightVectors(Cr::Containers::arrayView(vectors));
+  return setLightPositions(Cr::Containers::arrayView(vectors));
 }
 
 PbrShader& PbrShader::setLightPosition(unsigned int lightIndex,
@@ -849,6 +852,26 @@ PbrShader& PbrShader::setLightColors(
 
 PbrShader& PbrShader::setLightColors(std::initializer_list<Mn::Color3> colors) {
   return setLightColors(Cr::Containers::arrayView(colors));
+}
+
+PbrShader& PbrShader::setJointMatrices(
+    Cr::Containers::ArrayView<const Mn::Matrix4> matrices) {
+  // CORRADE_ASSERT(!(flags_ >= Flag::UniformBuffers),
+  //                "PbrShader::setJointMatrices(): the shader was created with
+  //                " "uniform buffers enabled", *this);
+  CORRADE_ASSERT(matrices.size() <= jointCount_,
+                 "PbrShader::setJointMatrices(): expected at most"
+                     << jointCount_ << "items but got" << matrices.size(),
+                 *this);
+  // if (jointCount_) {
+  //   setUniform(jointMatricesUniform_, matrices);
+  // }
+  return *this;
+}
+
+PbrShader& PbrShader::setJointMatrices(
+    const std::initializer_list<Mn::Matrix4> matrices) {
+  return setJointMatrices(Cr::Containers::arrayView(matrices));
 }
 
 PbrShader& PbrShader::setNormalTextureScale(float scale) {

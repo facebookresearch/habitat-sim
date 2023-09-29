@@ -32,11 +32,10 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
       shaderManager.get<Mn::Trade::MaterialData>(cfg.materialDataKey_));
   // Set shader config flags
   setShaderAttributesValues(cfg.getPbrShaderConfig());
-
-  // Defer the shader initialization because at this point, the lightSetup may
-  // not be done in the Simulator. Simulator itself is currently under
-  // construction in this case.
-  // updateShader().updateShaderLightParameters();
+  // update the shader early here to to avoid doing it during the render loop
+  if (glMeshExists()) {
+    updateShader();
+  }
 }
 
 void PbrDrawable::setMaterialValuesInternal(
@@ -442,8 +441,16 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
                  "PbrDrawable::draw() : GL mesh doesn't exist", );
 
   updateShader();
-
-  updateShaderLightingParameters(transformationMatrix, camera);
+  // In Drawable.h
+  // Pbr uses light position relative to world.
+  updateShaderLightingParameters(transformationMatrix, camera, shader_,
+                                 [](const LightInfo& lightInfo,
+                                    const Magnum::Matrix4& transformationMatrix,
+                                    const Magnum::Matrix4& cameraMatrix) {
+                                   return getLightPositionRelativeToWorld(
+                                       lightInfo, transformationMatrix,
+                                       cameraMatrix);
+                                 });
 
   // ABOUT PbrShader::Flag::DoubleSided:
   //
@@ -503,11 +510,6 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
       .setMetallic(matCache.metalness)
       .setIndexOfRefraction(matCache.ior_Index)
       .setEmissiveColor(matCache.emissiveColor);
-
-  // TODO:
-  // IN PbrShader class, we set the reasonable defaults for the
-  // PbrShader::PbrEquationScales. Here we need a smart way to reset it
-  // just in case user would like to do so during the run-time.
 
   if (flags_ >= PbrShader::Flag::BaseColorTexture) {
     shader_->bindBaseColorTexture(*matCache.baseColorTexture);
@@ -605,6 +607,11 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
         pbrIbl_->getPrefilteredMap().getMipmapLevels());
   }
 
+  if (skinData_) {
+    buildSkinJointTransforms();
+    shader_->setJointMatrices(jointTransformations_);
+  }
+
   shader_->draw(getMesh());
 
   // Reset winding direction
@@ -629,6 +636,11 @@ void PbrDrawable::updateShader() {
       skinData_ ? skinData_->skinData->skin->joints().size() : 0;
   const Mn::UnsignedInt perVertexJointCount =
       skinData_ ? skinData_->skinData->perVertexJointCount : 0;
+
+  if (skinData_) {
+    resizeJointTransformArray(jointCount);
+  }
+
   if (!shader_ || shader_->lightCount() != lightCount ||
       shader_->flags() != flags_) {
     // if the number of lights or flags have changed, we need to fetch a
@@ -642,39 +654,15 @@ void PbrDrawable::updateShader() {
     // one
     if (!shader_) {
       shaderManager_.set<Mn::GL::AbstractShaderProgram>(
-          shader_.key(), new PbrShader{flags_, lightCount},
+          shader_.key(),
+          new PbrShader{flags_, lightCount, jointCount, perVertexJointCount},
           Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
     }
 
     CORRADE_INTERNAL_ASSERT(shader_ && shader_->lightCount() == lightCount &&
                             shader_->flags() == flags_);
   }
-}
-
-// update light direction (or position) in *world* space to the shader
-void PbrDrawable::updateShaderLightingParameters(
-    const Mn::Matrix4& transformationMatrix,
-    Mn::SceneGraph::Camera3D& camera) {
-  const Mn::Matrix4 cameraMatrix = camera.cameraMatrix();
-  std::vector<Mn::Vector4> lightPositions;
-  lightPositions.reserve(lightSetup_->size());
-  std::vector<Mn::Color3> lightColors;
-  lightColors.reserve(lightSetup_->size());
-
-  for (unsigned int iLight = 0; iLight < lightSetup_->size(); ++iLight) {
-    const auto& lightInfo = (*lightSetup_)[iLight];
-    Mn::Vector4 pos = getLightPositionRelativeToWorld(
-        lightInfo, transformationMatrix, cameraMatrix);
-    // flip directional lights to facilitate faster, non-forking calc in
-    // shader.  Leave non-directional lights unchanged (w==1)
-    pos *= (pos[3] * 2) - 1;
-    lightPositions.emplace_back(pos);
-    // Note: the light color MUST take the intensity into account
-    lightColors.emplace_back((*lightSetup_)[iLight].color);
-  }
-
-  (*shader_).setLightColors(lightColors).setLightVectors(lightPositions);
-}
+}  // PbrDrawable::updateShader
 
 }  // namespace gfx
 }  // namespace esp

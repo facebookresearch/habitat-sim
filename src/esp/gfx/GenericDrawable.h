@@ -62,15 +62,14 @@ class GenericDrawable : public Drawable {
             Mn::SceneGraph::Camera3D& camera) override;
 
   void updateShader();
-  void updateShaderLightingParameters(const Mn::Matrix4& transformationMatrix,
-                                      Mn::SceneGraph::Camera3D& camera);
+
+  void updateShaderLightingParametersInternal() override;
 
   // shader parameters
 
   Mn::Shaders::PhongGL::Flags flags_;
   ShaderManager& shaderManager_;
   Mn::Resource<Mn::GL::AbstractShaderProgram, Mn::Shaders::PhongGL> shader_;
-  Cr::Containers::Array<Mn::Matrix4> jointTransformations_;
 
   /**
    * Local cache of material quantities to speed up access in draw

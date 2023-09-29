@@ -304,16 +304,6 @@ class PbrDrawable : public Drawable {
    */
   void updateShader();
 
-  /**
-   *  @brief Update light direction (or position) in *camera* space to the
-   * shader
-   *  @param transformationMatrix describes a transformation from object
-   * (model) space to camera space
-   *  @param camera the camera, which views and renders the world
-   */
-  void updateShaderLightingParameters(const Mn::Matrix4& transformationMatrix,
-                                      Mn::SceneGraph::Camera3D& camera);
-
   // shader parameters
   PbrShader::Flags flags_;
   ShaderManager& shaderManager_;
