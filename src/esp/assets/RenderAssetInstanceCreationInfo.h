@@ -15,9 +15,6 @@
 #include "esp/core/Esp.h"
 
 namespace esp {
-namespace physics {
-class ArticulatedObject;
-}
 namespace assets {
 
 // parameters to control how a render asset instance is created
