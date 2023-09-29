@@ -774,7 +774,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    * Unlike @ref setJointMatrices() updates just a single joint matrix.
    * Expects that @p id is less than @ref jointCount().
    */
-  PbrShader& setJointMatrix(const Magnum::UnsignedInt id,
+  PbrShader& setJointMatrix(Magnum::UnsignedInt id,
                             const Magnum::Matrix4& matrix);
 
   /**
@@ -791,7 +791,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    * @glsl gl_InstanceID*count + jointId @ce.
    *
    */
-  PbrShader& setPerInstanceJointCount(const Magnum::UnsignedInt count);
+  PbrShader& setPerInstanceJointCount(Magnum::UnsignedInt count);
 
   /**
    * Toggles that control contributions from different components - should

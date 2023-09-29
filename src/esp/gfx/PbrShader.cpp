@@ -886,7 +886,7 @@ PbrShader& PbrShader::setJointMatrices(
   return setJointMatrices(Cr::Containers::arrayView(matrices));
 }
 
-PbrShader& PbrShader::setJointMatrix(const Mn::UnsignedInt id,
+PbrShader& PbrShader::setJointMatrix(Mn::UnsignedInt id,
                                      const Mn::Matrix4& matrix) {
   CORRADE_ASSERT(id < jointCount_,
                  "PbrShader::setJointMatrix(): joint ID"
@@ -896,7 +896,7 @@ PbrShader& PbrShader::setJointMatrix(const Mn::UnsignedInt id,
   return *this;
 }
 
-PbrShader& PbrShader::setPerInstanceJointCount(const Mn::UnsignedInt count) {
+PbrShader& PbrShader::setPerInstanceJointCount(Mn::UnsignedInt count) {
   setUniform(perInstanceJointCountUniform_, count);
   return *this;
 }
