@@ -51,7 +51,7 @@ struct RenderAssetInstanceCreationInfo {
   Corrade::Containers::Optional<Magnum::Vector3> scale;
   Flags flags;
   std::string lightSetupKey;
-  int rigId;
+  int rigId = ID_UNDEFINED;
 };
 
 }  // namespace assets
