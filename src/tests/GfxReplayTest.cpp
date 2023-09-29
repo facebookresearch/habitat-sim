@@ -619,8 +619,6 @@ void GfxReplayTest::testLightIntegration() {
 }
 
 void GfxReplayTest::testSkinningIntegration() {
-  const auto testFilepath =
-      Corrade::Utility::Path::join(DATA_DIR, "./gfx_replay_test.json");
   const std::string urdfFile =
       Cr::Utility::Path::join(TEST_ASSETS, "urdf/skinned_prism.urdf");
 
@@ -671,8 +669,6 @@ void GfxReplayTest::testSkinningIntegration() {
       CORRADE_COMPARE(aoManager->getNumObjects(), 0);
       keyframes.emplace_back(recorder->extractKeyframe());
     }
-
-    recorder->writeSavedKeyframesToFile(testFilepath);
   }
 
   const auto getBoneIdFromName = [](int rigId,
@@ -724,13 +720,6 @@ void GfxReplayTest::testSkinningIntegration() {
 
   // Frame 4
   CORRADE_COMPARE(keyframes[4].deletions.size(), 2);
-
-  // remove file created for this test
-  bool success = Corrade::Utility::Path::remove(testFilepath);
-  if (!success) {
-    ESP_WARNING() << "Unable to remove temporary test JSON file"
-                  << testFilepath;
-  }
 }
 
 }  // namespace
