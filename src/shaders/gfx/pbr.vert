@@ -49,7 +49,45 @@ uniform highp mat4 uProjectionMatrix;
 
 // ------------ shader -----------------------
 void main() {
-  vec4 vertexWorldPosition = uModelMatrix * vertexPosition;
+  //------------ skin support
+  // See Magnum phong.vert for source of this code
+#ifdef JOINT_COUNT
+  mediump const uint jointOffset = uint(gl_InstanceID) * perInstanceJointCount;
+#endif
+
+// Build skin transformation matrix
+#ifdef JOINT_COUNT
+  mat4 skinMatrix = mat4(0.0);
+#if PER_VERTEX_JOINT_COUNT
+  for (uint i = 0u; i != PER_VERTEX_JOINT_COUNT
+#ifdef DYNAMIC_PER_VERTEX_JOINT_COUNT
+                    && i != perVertexJointCount.x
+#endif
+       ;
+       ++i)
+    skinMatrix += weights[i] * jointMatrices[jointOffset + jointIds[i]];
+#endif
+
+#if SECONDARY_PER_VERTEX_JOINT_COUNT
+  for (uint i = 0u; i != SECONDARY_PER_VERTEX_JOINT_COUNT
+#ifdef DYNAMIC_PER_VERTEX_JOINT_COUNT
+                    && i != perVertexJointCount.y
+#endif
+       ;
+       ++i)
+    skinMatrix +=
+        secondaryWeights[i] * jointMatrices[jointOffset + secondaryJointIds[i]];
+#endif
+#endif
+
+  //------------ end skin support
+
+  vec4 vertexWorldPosition = uModelMatrix *
+#ifdef JOINT_COUNT
+                             skinMatrix *
+#endif
+                             vertexPosition;
+
   position = vertexWorldPosition.xyz;
   normal = normalize(uNormalMatrix * vertexNormal);
 #if defined(TEXTURED)
