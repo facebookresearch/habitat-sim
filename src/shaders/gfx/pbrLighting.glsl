@@ -193,7 +193,7 @@ vec4 calcFinalIrradiance(vec4 IBLIrradiance) {
 }  // calcFinalIrradiance
 
 // diffuseColor: diffuse color
-// n: normal on shading location in world space
+// n: normal on shading location in camera space
 vec3 computeIBLDiffuse(vec3 diffuseColor, vec3 n) {
   // diffuse part = diffuseColor * irradiance
   // Query the IBL diffuse irradiance from the appropriate cubemap

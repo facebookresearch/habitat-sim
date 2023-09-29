@@ -441,16 +441,8 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
                  "PbrDrawable::draw() : GL mesh doesn't exist", );
 
   updateShader();
-  // In Drawable.h
-  // Pbr uses light position relative to world.
-  updateShaderLightingParameters(transformationMatrix, camera, shader_,
-                                 [](const LightInfo& lightInfo,
-                                    const Magnum::Matrix4& transformationMatrix,
-                                    const Magnum::Matrix4& cameraMatrix) {
-                                   return getLightPositionRelativeToWorld(
-                                       lightInfo, transformationMatrix,
-                                       cameraMatrix);
-                                 });
+  // In Drawable.h.
+  updateShaderLightingParameters(transformationMatrix, camera, shader_);
 
   // ABOUT PbrShader::Flag::DoubleSided:
   //
@@ -465,10 +457,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
     Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::FaceCulling);
   }
 
-  Mn::Matrix4 modelMatrix =
-      camera.cameraMatrix().inverted() * transformationMatrix;
-
-  Mn::Matrix3x3 rotScale = modelMatrix.rotationScaling();
+  Mn::Matrix3x3 rotScale = transformationMatrix.rotationScaling();
   // Find determinant to calculate backface culling winding dir
   const float normalDet = rotScale.determinant();
   // Normal matrix is calculated as `m.inverted().transposed()`, and
@@ -495,11 +484,8 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
                               ? 0
                               : node_.getSemanticId()))
       .setProjectionMatrix(camera.projectionMatrix())
-      .setViewMatrix(camera.cameraMatrix())
-      .setModelMatrix(modelMatrix)  // NOT modelview matrix!
+      .setModelViewMatrix(transformationMatrix)
       .setNormalMatrix(normalMatrix)
-      .setCameraWorldPosition(
-          camera.object().absoluteTransformationMatrix().translation())
       .setBaseColor(matCache.baseColor)
       .setRoughness(matCache.roughness)
       .setMetallic(matCache.metalness)

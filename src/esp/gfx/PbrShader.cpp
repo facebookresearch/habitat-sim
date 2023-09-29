@@ -273,8 +273,7 @@ PbrShader::PbrShader(Flags originalFlags,
   }
 
   // cache the uniform locations
-  viewMatrixUniform_ = uniformLocation("uViewMatrix");
-  modelMatrixUniform_ = uniformLocation("uModelMatrix");
+  modelViewMatrixUniform_ = uniformLocation("uModelViewMatrix");
   normalMatrixUniform_ = uniformLocation("uNormalMatrix");
   projMatrixUniform_ = uniformLocation("uProjectionMatrix");
 
@@ -350,8 +349,6 @@ PbrShader::PbrShader(Flags originalFlags,
     directLightingIntensityUniform_ = uniformLocation("uDirectLightIntensity");
   }
 
-  cameraWorldPosUniform_ = uniformLocation("uCameraWorldPos");
-
   if ((directLightingIsEnabled_ && flags_ >= Flag::UseDirectLightTonemap) ||
       (flags_ >= Flag::ImageBasedLighting && flags_ >= Flag::UseIBLTonemap)) {
     tonemapExposureUniform_ = uniformLocation("uExposure");
@@ -387,8 +384,7 @@ PbrShader::PbrShader(Flags originalFlags,
   // Initializations
 
   // initialize the shader with some "reasonable defaults"
-  setViewMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
-  setModelMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
+  setModelViewMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
   setProjectionMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
   if (lightingIsEnabled_) {
     setBaseColor(Mn::Color4{0.7f});
@@ -616,13 +612,8 @@ PbrShader& PbrShader::setNormalMatrix(const Mn::Matrix3x3& matrix) {
   return *this;
 }
 
-PbrShader& PbrShader::setViewMatrix(const Mn::Matrix4& matrix) {
-  setUniform(viewMatrixUniform_, matrix);
-  return *this;
-}
-
-PbrShader& PbrShader::setModelMatrix(const Mn::Matrix4& matrix) {
-  setUniform(modelMatrixUniform_, matrix);
+PbrShader& PbrShader::setModelViewMatrix(const Mn::Matrix4& matrix) {
+  setUniform(modelViewMatrixUniform_, matrix);
   return *this;
 }
 
@@ -740,12 +731,6 @@ PbrShader& PbrShader::setDebugDisplay(PbrDebugDisplay index) {
                  "created with DebugDisplay enabled",
                  *this);
   setUniform(pbrDebugDisplayUniform_, int(index));
-  return *this;
-}
-
-PbrShader& PbrShader::setCameraWorldPosition(
-    const Mn::Vector3& cameraWorldPos) {
-  setUniform(cameraWorldPosUniform_, cameraWorldPos);
   return *this;
 }
 

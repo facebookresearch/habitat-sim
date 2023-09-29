@@ -219,20 +219,11 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
    * drawables draw function.
    * @param camera The camera passed to this drawable's draw function
    * @param shader The shader this drawable consumes.
-   * @param getLightPosition The function to query for each light to acquire its
-   * proper position in the world. Flat/Phong objects query
-   * esp::gfx::getLightPositionRelativeToCamera(), while PBR objects query
-   * esp::gfx::getLightPositionRelativeToWorld()
    */
   template <class ShaderType>
-  void updateShaderLightingParameters(
-      const Mn::Matrix4& transformationMatrix,
-      Mn::SceneGraph::Camera3D& camera,
-      ShaderType shader,
-      const std::function<Magnum::Vector4(const LightInfo&,
-                                          const Magnum::Matrix4&,
-                                          const Magnum::Matrix4&)>&
-          getLightPosition);
+  void updateShaderLightingParameters(const Mn::Matrix4& transformationMatrix,
+                                      Mn::SceneGraph::Camera3D& camera,
+                                      ShaderType shader);
 
   /**
    * @brief Drawable-specific update called at the end of
@@ -265,11 +256,7 @@ template <class ShaderType>
 void Drawable::updateShaderLightingParameters(
     const Mn::Matrix4& transformationMatrix,
     Mn::SceneGraph::Camera3D& camera,
-    ShaderType shader,
-    const std::function<Magnum::Vector4(const LightInfo&,
-                                        const Magnum::Matrix4&,
-                                        const Magnum::Matrix4&)>&
-        getLightPosition) {
+    ShaderType shader) {
   const Mn::Matrix4 cameraMatrix = camera.cameraMatrix();
 
   std::vector<Mn::Vector4> lightPositions;
@@ -285,8 +272,8 @@ void Drawable::updateShaderLightingParameters(
 
   for (Mn::UnsignedInt i = 0; i < lightSetup_->size(); ++i) {
     const auto& lightInfo = (*lightSetup_)[i];
-    Mn::Vector4 pos =
-        getLightPosition(lightInfo, transformationMatrix, cameraMatrix);
+    Mn::Vector4 pos = getLightPositionRelativeToCamera(
+        lightInfo, transformationMatrix, cameraMatrix);
     // flip directional lights to facilitate faster, non-forking calc in
     // shader.  Leave non-directional lights unchanged
     pos *= (pos[3] * 2) - 1;

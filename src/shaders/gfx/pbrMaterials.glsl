@@ -81,14 +81,14 @@ mat3 buildTBN() {
 // Derive normal from normal map sample
 // normTextureSample : Normal texture sample at texCoords
 // normTextureScale : scale amount for normal texture sample
-// TBN : Tangent/Bitangent/Normal frame, maps tangentspace to world
+// TBN : Tangent/Bitangent/Normal frame, maps tangentspace to camera space
 vec3 getNormalFromNormalMap(vec3 normTextureSample,
                             float normalTextureScale,
                             mat3 TBN) {
   vec3 tangentNormal =
       normalize((normTextureSample * 2.0 - 1.0) *
                 vec3(normalTextureScale, normalTextureScale, 1.0));
-  // TBN transforms tangentNormal from tangent space to world space
+  // TBN transforms tangentNormal from tangent space to camera space
   return normalize(TBN * tangentNormal);
 }
 #endif  // if (defined(NORMAL_TEXTURE)|| defined(CLEAR_COAT_NORMAL_TEXTURE) ||
@@ -140,9 +140,9 @@ PBRData buildPBRData() {
       1.0f;
 #endif  // if defined(CLEAR_COAT) else
 
-  // View is the normalized vector from the shading location to the camera
-  // in *world space*
-  pbrInfo.view = normalize(uCameraWorldPos - position);
+  // View is the normalized vector from the shading location to the origin (in
+  // camera space)
+  pbrInfo.view = normalize(-position);
 
   // cos angle between view and normal
   // clamp to ensure range adherence, abs instead of epsilon to avoid errors at
