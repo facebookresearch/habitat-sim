@@ -147,7 +147,7 @@ bool fromJsonValue(const JsonGenericValue& obj,
           gfx::replay::Transform transform;
           io::readMember(boneObj, "t", transform.translation);
           io::readMember(boneObj, "r", transform.rotation);
-          rigUpdate.pose.emplace_back(std::move(transform));
+          rigUpdate.pose.emplace_back(transform);
         }
       }
       keyframe.rigUpdates.emplace_back(std::move(rigUpdate));
