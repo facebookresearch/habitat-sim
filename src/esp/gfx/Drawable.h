@@ -217,7 +217,7 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
    * Magnum::Resource).
    * @param transformationMatrix The transformation matrix passed to this
    * drawables draw function.
-   * @param camera The camera passsed to this drawable's draw function
+   * @param camera The camera passed to this drawable's draw function
    * @param shader The shader this drawable consumes.
    * @param getLightPosition The function to query for each light to acquire its
    * proper position in the world. Flat/Phong objects query
@@ -287,7 +287,7 @@ void Drawable::updateShaderLightingParameters(
     const auto& lightInfo = (*lightSetup_)[i];
     Mn::Vector4 pos =
         getLightPosition(lightInfo, transformationMatrix, cameraMatrix);
-    // flip directional lights to faciliate faster, non-forking calc in
+    // flip directional lights to facilitate faster, non-forking calc in
     // shader.  Leave non-directional lights unchanged
     pos *= (pos[3] * 2) - 1;
     lightPositions.emplace_back(pos);
