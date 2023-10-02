@@ -23,8 +23,33 @@ std::string changeExtension(const std::string& filename,
 
 }  // changeExtension
 
+std::string normalizePath(const std::string& srcPath) {
+  std::size_t ellipsisLoc = srcPath.find("/../");
+  if ((ellipsisLoc == std::string::npos) || (ellipsisLoc == 0)) {
+    // not found
+    return srcPath;
+  }
+  // ellipsisLoc is location of first instance of "/../"
+  // Get rid of ellipsis inside a specified path, and the previous directory
+  // it references, so that if the ellisis spans a link, consumers don't get
+  // lost.
+
+  // Get end of path/filename after location of ellipsis
+  auto suffixString = srcPath.substr(ellipsisLoc + 4);
+  // Get beginning of path up to directory before ellipsis
+  std::size_t prevLoc = srcPath.find_last_of('/', ellipsisLoc - 1);
+  // Get paths leading up to ellipsis-cancelled path
+  auto prefixString = srcPath.substr(0, prevLoc);
+  // recurses to get subsequent ellipses.
+  auto filteredPath =
+      Cr::Utility::formatString("{}/{}", prefixString, suffixString);
+  return normalizePath(filteredPath);
+}  // normalizePath
+
 std::vector<std::string> globDirs(const std::string& pattern) {
+  // Check for ellipsis, if so process here.
   glob_t glob_result;
+
   glob(pattern.c_str(), GLOB_MARK, nullptr, &glob_result);
   std::vector<std::string> ret(glob_result.gl_pathc);
   for (int i = 0; i < glob_result.gl_pathc; ++i) {

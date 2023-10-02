@@ -23,6 +23,7 @@
 #include "esp/sensor/VisualSensor.h"
 
 #include "esp/gfx_batch/DepthUnprojection.h"
+#include "esp/gfx_batch/Hbao.h"
 
 #ifdef ESP_BUILD_WITH_CUDA
 #include <cuda_gl_interop.h>
@@ -117,6 +118,24 @@ struct RenderTarget::Impl {
     CORRADE_INTERNAL_ASSERT(
         framebuffer_.checkStatus(Mn::GL::FramebufferTarget::Draw) ==
         Mn::GL::Framebuffer::Status::Complete);
+
+    if (flags_ & Flag::HorizonBasedAmbientOcclusion) {
+#ifndef MAGNUM_TARGET_WEBGL
+      // depth texture is required for HBAO
+      CORRADE_INTERNAL_ASSERT(flags_ & Flag::DepthTextureAttachment);
+      // TODO Drive construction based on premade configurations
+      hbao_ = gfx_batch::Hbao{
+          gfx_batch::HbaoConfiguration{}
+              .setSize(size)
+              .setUseSpecialBlur(true)
+              .setUseLayeredGeometryShader(true)
+          // TODO other options here?
+      };
+#else
+      ESP_ERROR()
+          << "HBAO functionality requested but not supported for WebGL builds";
+#endif
+    }
   }
 
   void initDepthUnprojector() {
@@ -180,6 +199,16 @@ struct RenderTarget::Impl {
   void renderReEnter() { framebuffer_.bind(); }
 
   void renderExit() {}
+
+  void tryDrawHbao() {
+    if (!hbao_) {
+      return;
+    }
+
+    hbao_->drawEffect(visualSensor_->getProjectionMatrix(),
+                      gfx_batch::HbaoType::CacheAware, depthRenderTexture_,
+                      framebuffer_);
+  }
 
   void blitRgbaTo(Mn::GL::AbstractFramebuffer& target,
                   const Mn::Range2Di& targetRectangle) {
@@ -367,6 +396,8 @@ struct RenderTarget::Impl {
   cudaGraphicsResource_t objecIdBufferCugl_ = nullptr;
   cudaGraphicsResource_t depthBufferCugl_ = nullptr;
 #endif
+
+  Cr::Containers::Optional<gfx_batch::Hbao> hbao_{};
 };  // namespace gfx
 
 RenderTarget::RenderTarget(const Mn::Vector2i& size,
@@ -424,6 +455,10 @@ Mn::GL::Texture2D& RenderTarget::getDepthTexture() {
 
 Mn::GL::Texture2D& RenderTarget::getObjectIdTexture() {
   return pimpl_->getObjectIdTexture();
+}
+
+void RenderTarget::tryDrawHbao() {
+  return pimpl_->tryDrawHbao();
 }
 
 #ifdef ESP_BUILD_WITH_CUDA

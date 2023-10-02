@@ -100,9 +100,8 @@ void initSimBindings(py::module& m) {
           "navmesh_settings", &SimulatorConfiguration::navMeshSettings,
           R"(Optionally provide a pre-configured NavMeshSettings. If provided, the NavMesh will be recomputed with the provided settings if: A. no NavMesh was loaded, or B. the loaded NavMesh's settings differ from the configured settings. If not provided, no NavMesh recompute will be done automatically.)")
       .def_readwrite(
-          "pbr_image_based_lighting",
-          &SimulatorConfiguration::pbrImageBasedLighting,
-          R"(DEPRECATED : Use PbrShaderAttributes to specify whether IBL is enabled or disabled.)")
+          "enable_hbao", &SimulatorConfiguration::enableHBAO,
+          R"(Whether or not to enable horizon-based ambient occlusion, which provides soft shadows in corners and crevices.)")
       .def(py::self == py::self)
       .def(py::self != py::self);
 
@@ -379,6 +378,12 @@ void initSimBindings(py::module& m) {
           R"(List of sensor specifications for one simulator. For batch rendering, all simulators must have the same specification.)")
       .def_readwrite("gpu_device_id", &ReplayRendererConfiguration::gpuDeviceId,
                      R"(The system GPU device to use for rendering)")
+      .def_readwrite("enable_frustum_culling",
+                     &ReplayRendererConfiguration::enableFrustumCulling,
+                     R"(Controls whether frustum culling is enabled.)")
+      .def_readwrite(
+          "enable_hbao", &ReplayRendererConfiguration::enableHBAO,
+          R"(Controls whether horizon-based ambient occlusion is enabled.)")
       .def_readwrite(
           "force_separate_semantic_scene_graph",
           &ReplayRendererConfiguration::forceSeparateSemanticSceneGraph,

@@ -34,7 +34,8 @@ void CameraSensorSpec::sanityCheck() const {
 }
 
 bool CameraSensorSpec::operator==(const CameraSensorSpec& a) const {
-  return VisualSensorSpec::operator==(a) && orthoScale == a.orthoScale;
+  return VisualSensorSpec::operator==(a) && a.orthoScale == orthoScale &&
+         a.hfov == hfov;
 }
 
 namespace {
@@ -55,8 +56,7 @@ Mn::Matrix4 projectionMatrixInternal(const CameraSensorSpec& spec,
   } else
     CORRADE_ASSERT_UNREACHABLE(
         "CameraSensorSpec::projectionMatrix(): sensorSpec does not have "
-        "SensorSubType "
-        "Pinhole or Orthographic",
+        "SensorSubType Pinhole or Orthographic",
         {});
 }
 
@@ -154,10 +154,12 @@ bool CameraSensor::drawObservation(sim::Simulator& sim) {
     // SensorType is Color, Depth or any other type
     draw(sim.getActiveSceneGraph(), flags);
 
-    // include DebugLineRender in Color sensors
     if (cameraSensorSpec_->sensorType == SensorType::Color) {
+      // include HBAO in Color sensors (only if enabled for render target)
+      renderTarget().tryDrawHbao();
+
+      // include DebugLineRender in Color sensors
       const auto debugLineRender = sim.getDebugLineRender();
-      // debugLineRender is generally null (unless the user drew lines)
       if (debugLineRender) {
         debugLineRender->flushLines(renderCamera_->cameraMatrix(),
                                     renderCamera_->projectionMatrix(),

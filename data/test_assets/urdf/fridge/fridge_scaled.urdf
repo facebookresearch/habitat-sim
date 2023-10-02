@@ -1,0 +1,134 @@
+<?xml version="1.0" ?>
+<robot name="fridge">
+  <link name="root">
+  </link>
+  <joint name="root_rotation" type="fixed">
+    <origin rpy="1.565 0 0" xyz="0 0 0"/>
+    <parent link="root"/>
+    <child link="body"/>
+  </joint>
+  <link name="body">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="70.0"/>
+      <!-- Warning: dummy inertia. Expect that inertia diagonal will be computed during load. -->
+      <inertia ixx="1.0" ixy="0" ixz="0" iyy="1.0" iyz="0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="body.glb" scale="1.5 1.5 1.5"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 -0.002765 -0.94159"/>
+      <geometry>
+        <box size="0.643 0.691 0.027"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 -0.002765 0.94936"/>
+      <geometry>
+        <box size="0.643 0.691 0.027"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 -0.002765 -0.585528"/>
+      <geometry>
+        <box size="0.643 0.691 0.027"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 -0.002765 -0.226826"/>
+      <geometry>
+        <box size="0.643 0.691 0.027"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 -0.002765 -0.033778"/>
+      <geometry>
+        <box size="0.643 0.691 0.027"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 -0.002765 0.255839"/>
+      <geometry>
+        <box size="0.643 0.691 0.042"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 -0.337538 0.005784"/>
+      <geometry>
+        <box size="0.643 0.03 1.89126"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0.329773 0.005784"/>
+      <geometry>
+        <box size="0.643 0.03 1.89126"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.316502 -0.002765 0"/>
+      <geometry>
+        <box size="0.029014 0.690834 1.91906"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="top_door_hinge" type="revolute">
+    <origin rpy="0 0 0" xyz="0.34 0.326 -0.375"/>
+    <parent link="body"/>
+    <child link="top_door"/>
+    <axis xyz="0 0 1"/>
+    <dynamics damping="0.01" friction="0.01"/>
+    <limit effort="44.4" lower="0.0" upper="2.3" velocity="40"/>
+  </joint>
+  <link name="top_door">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="8"/>
+      <!-- Warning: dummy inertia. Expect that inertia diagonal will be computed during load. -->
+      <inertia ixx="1.0" ixy="0" ixz="0" iyy="1.0" iyz="0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 -0.33 0"/>
+      <geometry>
+        <mesh filename="top_door.glb" scale="0.75 0.75 0.75"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 -0.33 -0.02"/>
+      <geometry>
+        <box size="0.097 0.712 1.103"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="bottom_door_hinge" type="revolute">
+    <origin rpy="0 0 0" xyz="0.34 0.326 0.546"/>
+    <parent link="body"/>
+    <child link="bottom_door"/>
+    <axis xyz="0 0 1"/>
+    <dynamics damping="0.01" friction="0.01"/>
+    <limit effort="44.4" lower="0.0" upper="2.5" velocity="40"/>
+  </joint>
+  <link name="bottom_door">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="6"/>
+      <!-- Warning: dummy inertia. Expect that inertia diagonal will be computed during load. -->
+      <inertia ixx="1.0" ixy="0" ixz="0" iyy="1.0" iyz="0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.01 -0.33 0"/>
+      <geometry>
+        <mesh filename="bottom_door.glb" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.01 -0.33 0.01"/>
+      <geometry>
+        <box size="0.08 0.686 0.788"/>
+      </geometry>
+    </collision>
+  </link>
+</robot>

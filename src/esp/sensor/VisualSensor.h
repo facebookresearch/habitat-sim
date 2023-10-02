@@ -173,6 +173,11 @@ class VisualSensor : public Sensor {
   VisualSensorSpec::ptr specification() const { return visualSensorSpec_; }
 
   /**
+   * @brief Return this sensor's projection matrix
+   */
+  virtual Mn::Matrix4 getProjectionMatrix() const = 0;
+
+  /**
    * @brief Returns RenderCamera
    */
   virtual gfx::RenderCamera* getRenderCamera() const { return nullptr; }
@@ -191,6 +196,15 @@ class VisualSensor : public Sensor {
    * @brief Returns the FOV of this Sensor
    */
   Mn::Deg getFOV() const { return hfov_; }
+
+  /**
+   * @brief Return whether or not this Visual Sensor can use the HBAO effect
+   */
+  bool canUseHBAO() const override {
+    // TODO Expand HBAO support to other visual sensors
+    return (visualSensorSpec_->sensorSubType == SensorSubType::Pinhole) ||
+           (visualSensorSpec_->sensorSubType == SensorSubType::Orthographic);
+  }
 
  protected:
   /** @brief field of view

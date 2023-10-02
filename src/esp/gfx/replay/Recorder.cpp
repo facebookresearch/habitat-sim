@@ -55,22 +55,7 @@ void Recorder::onCreateRenderAssetInstance(
   CORRADE_INTERNAL_ASSERT(findInstance(node) == ID_UNDEFINED);
 
   RenderAssetInstanceKey instanceKey = getNewInstanceKey();
-
-  auto adjustedCreation = creation;
-
-  // We assume constant node scaling over the node's lifetime. Bake node scale
-  // into creation.
-  auto nodeScale = node->absoluteTransformation().scaling();
-  // todo: check for reflection (rotationShear.determinant() < 0.0f) and bake
-  // into scaling (negate X scale).
-  if (nodeScale != Mn::Vector3(1.f, 1.f, 1.f)) {
-    adjustedCreation.scale = adjustedCreation.scale
-                                 ? *adjustedCreation.scale * nodeScale
-                                 : nodeScale;
-  }
-
-  getKeyframe().creations.emplace_back(instanceKey,
-                                       std::move(adjustedCreation));
+  getKeyframe().creations.emplace_back(instanceKey, creation);
 
   // Constructing NodeDeletionHelper here is equivalent to calling
   // node->addFeature. We keep a pointer to deletionHelper so we can delete it

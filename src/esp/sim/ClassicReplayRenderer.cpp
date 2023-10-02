@@ -24,6 +24,7 @@ ClassicReplayRenderer::ClassicReplayRenderer(
   config_ = cfg;
   SimulatorConfiguration simConfig;
   simConfig.createRenderer = true;
+  simConfig.frustumCulling = cfg.enableFrustumCulling;
   auto metadataMediator = metadata::MetadataMediator::create(simConfig);
   resourceManager_ =
       std::make_unique<assets::ResourceManager>(std::move(metadataMediator));
@@ -99,6 +100,10 @@ ClassicReplayRenderer::ClassicReplayRenderer(
     }
 
     gfx::Renderer::Flags flags;
+
+    if (config_.enableHBAO)
+      flags |= gfx::Renderer::Flag::HorizonBasedAmbientOcclusion;
+
 #ifdef ESP_BUILD_WITH_BACKGROUND_RENDERER
     if (context_)
       flags |= gfx::Renderer::Flag::BackgroundRenderer;
@@ -236,11 +241,14 @@ void ClassicReplayRenderer::doRender(
       }
 
 #ifdef ESP_BUILD_WITH_BACKGROUND_RENDERER
+      esp::gfx::RenderCamera::Flags flags{};
+      if (config_.enableFrustumCulling) {
+        flags |= gfx::RenderCamera::Flag::FrustumCulling;
+      }
+
       if (imageViews.size() > 0) {
-        renderer_->enqueueAsyncDrawJob(
-            visualSensor, sceneGraph, imageViews[envIndex],
-            esp::gfx::RenderCamera::Flags{
-                gfx::RenderCamera::Flag::FrustumCulling});
+        renderer_->enqueueAsyncDrawJob(visualSensor, sceneGraph,
+                                       imageViews[envIndex], flags);
       }
 #else
       // TODO what am I supposed to do here?
@@ -258,6 +266,10 @@ void ClassicReplayRenderer::doRender(
 void ClassicReplayRenderer::doRender(
     Magnum::GL::AbstractFramebuffer& framebuffer) {
   const Mn::Vector2i gridSize = environmentGridSize(config_.numEnvironments);
+  esp::gfx::RenderCamera::Flags flags{};
+  if (config_.enableFrustumCulling) {
+    flags |= gfx::RenderCamera::Flag::FrustumCulling;
+  }
 
   for (int envIndex = 0; envIndex < config_.numEnvironments; envIndex++) {
     auto& sensorMap = getEnvironmentSensors(envIndex);
@@ -269,9 +281,13 @@ void ClassicReplayRenderer::doRender(
     visualSensor.renderTarget().renderEnter();
 
     auto& sceneGraph = getSceneGraph(envIndex);
-    renderer_->draw(
-        *visualSensor.getRenderCamera(), sceneGraph,
-        esp::gfx::RenderCamera::Flags{gfx::RenderCamera::Flag::FrustumCulling});
+
+    renderer_->draw(*visualSensor.getRenderCamera(), sceneGraph, flags);
+
+    if (visualSensor.specification()->sensorType == sensor::SensorType::Color) {
+      // include HBAO in Color sensors (only if enabled for render target)
+      visualSensor.renderTarget().tryDrawHbao();
+    }
 
     if (envIndex == 0 && debugLineRender_) {
       auto* camera = visualSensor.getRenderCamera();

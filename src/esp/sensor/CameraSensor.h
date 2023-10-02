@@ -14,6 +14,9 @@ namespace sensor {
 
 struct CameraSensorSpec : public VisualSensorSpec {
   float orthoScale = 0.1f;
+  /**
+   * @brief Horizontal FOV.
+   */
   Mn::Deg hfov = 90.0_degf;
   CameraSensorSpec();
   void sanityCheck() const override;
@@ -103,8 +106,7 @@ class CameraSensor : public VisualSensor {
     CORRADE_ASSERT(_cameraType == SensorSubType::Pinhole ||
                        _cameraType == SensorSubType::Orthographic,
                    "CameraSensor::setCameraType(): _cameraType is not "
-                   "SensorSubType "
-                   "Pinhole or Orthographic", );
+                   "SensorSubType Pinhole or Orthographic", );
     cameraSensorSpec_->sensorSubType = _cameraType;
     recomputeBaseProjectionMatrix();
   }  // CameraSensor::setCameraType
@@ -165,6 +167,11 @@ class CameraSensor : public VisualSensor {
    */
   CameraSensorSpec::ptr specification() const { return cameraSensorSpec_; }
 
+  /**
+   * @brief Return this sensor's projection matrix
+   */
+  Mn::Matrix4 getProjectionMatrix() const override { return projectionMatrix_; }
+
  protected:
   /**
    * @brief Recalculate the base projection matrix, based on camera type and
@@ -188,8 +195,8 @@ class CameraSensor : public VisualSensor {
   void draw(scene::SceneGraph& sceneGraph, gfx::RenderCamera::Flags flags);
 
   /**
-   * @brief This camera's projection matrix. Should be recomputeulated every
-   * time size changes.
+   * @brief This camera's projection matrix. Should be recomputed every time
+   * size changes.
    */
   Magnum::Matrix4 projectionMatrix_;
 

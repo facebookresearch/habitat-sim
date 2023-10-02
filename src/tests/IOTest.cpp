@@ -27,6 +27,7 @@ const std::string dataDir = Corrade::Utility::Path::join(SCENE_DATASETS, "../");
 struct IOTest : Cr::TestSuite::Tester {
   explicit IOTest();
   void fileReplaceExtTest();
+  void testEllipsisFilter();
   void parseURDF();
   void testJson();
   void testJsonBuiltinTypes();
@@ -50,7 +51,8 @@ struct IOTest : Cr::TestSuite::Tester {
 };
 
 IOTest::IOTest() {
-  addTests({&IOTest::fileReplaceExtTest, &IOTest::parseURDF, &IOTest::testJson,
+  addTests({&IOTest::fileReplaceExtTest, &IOTest::testEllipsisFilter,
+            &IOTest::parseURDF, &IOTest::testJson,
             &IOTest::testJsonBuiltinTypes, &IOTest::testJsonStlTypes,
             &IOTest::testJsonMagnumTypes, &IOTest::testJsonEspTypes,
             &IOTest::testJsonUserType});
@@ -97,6 +99,42 @@ void IOTest::fileReplaceExtTest() {
   result = esp::io::changeExtension(cornerCase, cornerCaseExt);
   CORRADE_COMPARE(result, ".jpg.png");
 }
+
+void IOTest::testEllipsisFilter() {
+  std::string testPath1 = "/test/path/to/test/no-op.txt";
+  std::string res = esp::io::normalizePath(testPath1);
+  CORRADE_COMPARE(res, "/test/path/to/test/no-op.txt");
+
+  testPath1 = "/test/path/DELETE/../to/test/removal.txt";
+  res = esp::io::normalizePath(testPath1);
+  CORRADE_COMPARE(res, "/test/path/to/test/removal.txt");
+
+  testPath1 =
+      "/test/path/DELETE/../to/DELETE/../test/DELETE/../multiple/removal.txt";
+  res = esp::io::normalizePath(testPath1);
+  CORRADE_COMPARE(res, "/test/path/to/test/multiple/removal.txt");
+
+  testPath1 = "test/path/DELETE/../to/test/removal.txt";
+  res = esp::io::normalizePath(testPath1);
+  CORRADE_COMPARE(res, "test/path/to/test/removal.txt");
+
+  testPath1 =
+      "test/path/DELETE/../to/DELETE/../test/DELETE/../multiple/removal.txt";
+  res = esp::io::normalizePath(testPath1);
+  CORRADE_COMPARE(res, "test/path/to/test/multiple/removal.txt");
+
+  testPath1 =
+      "/test/path/DELETE/DELETE2/DELETE3/../../../to/DELETE/DELETE2/../../test/"
+      "DELETE/../consecutive/removal.txt";
+  res = esp::io::normalizePath(testPath1);
+  CORRADE_COMPARE(res, "/test/path/to/test/consecutive/removal.txt");
+
+  // ignore intitial ellipsis
+  testPath1 = "/../test/path/DELETE/../to/test/initial/ignore.txt";
+  res = esp::io::normalizePath(testPath1);
+  CORRADE_COMPARE(res, "/../test/path/DELETE/../to/test/initial/ignore.txt");
+
+}  // IOTest::testEllipsisFilter
 
 void IOTest::parseURDF() {
   const std::string iiwaURDF = Cr::Utility::Path::join(

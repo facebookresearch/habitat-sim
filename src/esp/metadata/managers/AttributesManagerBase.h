@@ -362,28 +362,42 @@ void AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad(
     const std::string& configDir,
     const std::string& extType,
     const io::JsonGenericValue& filePaths) {
+  std::size_t cfgLastDirLoc = configDir.find_last_of('/');
   for (rapidjson::SizeType i = 0; i < filePaths.Size(); ++i) {
     if (!filePaths[i].IsString()) {
-      ESP_WARNING() << "<" << this->objectType_
-                    << "> : Invalid path value in file path array element @ idx"
-                    << i << ". Skipping.";
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << "<" << this->objectType_
+          << "> : Invalid path value in file path array element @ idx" << i
+          << ". Skipping.";
       continue;
     }
-    std::string absolutePath =
-        Cr::Utility::Path::join(configDir, filePaths[i].GetString());
-    std::vector<std::string> globPaths = io::globDirs(absolutePath);
+    const char* fileString = filePaths[i].GetString();
+    // Only normalize paths for paths from config starting with ellipses.
+    // This is so that glob doesn't fail when the filepath from the config is
+    // trying to back-pedal across an OS link.
+    bool normalizePaths = (fileString[0] == '.') && (fileString[1] == '.') &&
+                          (fileString[2] == '/');
+
+    // TODO Eventually we should normalize all metadata paths in the system
+    std::string dsFilePath =
+        normalizePaths
+            ? Cr::Utility::Path::join(configDir.substr(0, cfgLastDirLoc),
+                                      std::string(fileString).substr(3))
+            : Cr::Utility::Path::join(configDir, fileString);
+
+    std::vector<std::string> globPaths = io::globDirs(dsFilePath);
     if (globPaths.size() > 0) {
       for (const auto& globPath : globPaths) {
-        // load all object templates available as configs in absolutePath
-        ESP_VERY_VERBOSE() << "<" << this->objectType_
-                           << "> : Glob path result for" << absolutePath << ":"
-                           << globPath;
+        // load all object templates available as configs in dsFilePath
+        ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+            << "<" << this->objectType_ << "> : Glob path result for"
+            << dsFilePath << ":" << globPath;
         this->loadAllTemplatesFromPathAndExt(globPath, extType, true);
       }
     } else {
       ESP_WARNING(Mn::Debug::Flag::NoSpace)
           << "<" << this->objectType_ << "> : No Glob path result found for `"
-          << absolutePath << "` so unable to load templates from that path.";
+          << dsFilePath << "` so unable to load templates from that path.";
     }
   }
   ESP_DEBUG(Mn::Debug::Flag::NoSpace)
