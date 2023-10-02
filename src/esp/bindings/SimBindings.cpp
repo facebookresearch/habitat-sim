@@ -382,6 +382,9 @@ void initSimBindings(py::module& m) {
                      &ReplayRendererConfiguration::enableFrustumCulling,
                      R"(Controls whether frustum culling is enabled.)")
       .def_readwrite(
+          "enable_hbao", &ReplayRendererConfiguration::enableHBAO,
+          R"(Controls whether horizon-based ambient occlusion is enabled.)")
+      .def_readwrite(
           "force_separate_semantic_scene_graph",
           &ReplayRendererConfiguration::forceSeparateSemanticSceneGraph,
           R"(Required to support playback of any gfx replay that includes a
