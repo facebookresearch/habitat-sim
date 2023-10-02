@@ -479,8 +479,8 @@ struct PathFinder::Impl {
                                             int maxTries,
                                             int islandIndex /*= ID_UNDEFINED*/);
   vec3f getRandomNavigablePointInCircle(const vec3f& circleCenter,
-                                        float radius,
-                                        int maxTries,
+                                        const float radius,
+                                        const int maxTries,
                                         int islandIndex /*= ID_UNDEFINED*/);
 
   bool findPath(ShortestPath& path);
@@ -1313,7 +1313,7 @@ vec3f PathFinder::Impl::getRandomNavigablePointInCircle(
     }
   }
 
-  // reset the poly flag identifing polys off the target island
+  // reset the poly flag identifying polys off the target island
   islandSystem_->setPolyFlagForIsland(
       navMesh_.get(), PolyFlags::POLYFLAGS_OFF_ISLAND, ID_UNDEFINED,
       /*setFlag=*/false, /*invert=*/true);
