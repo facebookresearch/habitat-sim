@@ -18,6 +18,7 @@ import magnum as mn
 import numpy as np
 from magnum import shaders, text
 from magnum.platform.glfw import Application
+from omegaconf import DictConfig
 
 import habitat_sim
 from habitat_sim import ReplayRenderer, ReplayRendererConfiguration
@@ -610,7 +611,8 @@ class HabitatSimInteractiveViewer(Application):
 
         # add the robot to the world via the wrapper
         robot_path = "data/robots/hab_spot_arm/urdf/hab_spot_arm.urdf"
-        self.spot = spot_robot.SpotRobot(robot_path, self.sim, fixed_base=True)
+        agent_config = DictConfig({"articulated_agent_urdf": robot_path})
+        self.spot = spot_robot.SpotRobot(agent_config, self.sim, fixed_base=True)
         self.spot.reconfigure()
         self.spot.update()
         self.spot_action = ExtractedBaseVelNonCylinderAction(self.sim, self.spot)
