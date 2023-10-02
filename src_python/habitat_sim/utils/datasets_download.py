@@ -588,6 +588,8 @@ def clone_repo_source(
         prune_command = "git lfs prune -f --recent"
         subprocess.check_call(shlex.split(prune_command), cwd=version_dir)
 
+    subprocess.check_call(shlex.split("git lfs pull"), cwd=version_dir)
+
 
 def checkout_repo_tag(repo: Repo, version_dir: str, tag: str):
     """
