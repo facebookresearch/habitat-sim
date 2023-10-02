@@ -3,7 +3,7 @@ gpu: &gpu
   machine:
     # Available images:
     # https://circleci.com/docs/2.0/configuration-reference/#available-linux-gpu-images
-    image: ubuntu-2004-cuda-11.4:202110-01
+    image: linux-cuda-11:default
   resource_class: gpu.nvidia.medium
   environment:
     FPS_THRESHOLD: 900
