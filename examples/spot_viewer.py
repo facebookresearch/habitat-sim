@@ -301,6 +301,7 @@ class HabitatSimInteractiveViewer(Application):
         self.translation_speed = 0.05
         self.rotation_speed = 0.1
         self.navmesh_dirty = False
+        self.removed_objects_debug_frames = []
 
         # configure our simulator
         self.cfg: Optional[habitat_sim.simulator.Configuration] = None
@@ -320,6 +321,44 @@ class HabitatSimInteractiveViewer(Application):
         LoggingContext.reinitialize_from_env()
         logger.setLevel("INFO")
         self.print_help_text()
+
+    def draw_removed_objects_debug_frames(self):
+        """
+        Draw debug frames for all the recently removed objects.
+        """
+        for trans, aabb in self.removed_objects_debug_frames:
+            dblr = self.sim.get_debug_line_render()
+            dblr.push_transform(trans)
+            dblr.draw_box(aabb.min, aabb.max, mn.Color4.red())
+            dblr.pop_transform()
+
+    def remove_outdoor_objects(self):
+        """
+        Check all object instance and remove those which are marked outdoors.
+        """
+        self.removed_objects_debug_frames = []
+        rom = self.sim.get_rigid_object_manager()
+        for obj in rom.get_objects_by_handle_substring().values():
+            if self.obj_is_outdoor(obj):
+                self.removed_objects_debug_frames.append(
+                    (obj.transformation, obj.root_scene_node.cumulative_bb)
+                )
+                rom.remove_object_by_id(obj.object_id)
+
+    def obj_is_outdoor(self, obj):
+        """
+        Check if an object is outdoors or not by raycasting upwards.
+        """
+        up = mn.Vector3(0, 1.0, 0)
+        ray_results = self.sim.cast_ray(habitat_sim.geo.Ray(obj.translation, up))
+        if ray_results.has_hits():
+            for hit in ray_results.hits:
+                if hit.object_id == obj.object_id:
+                    continue
+                return False
+
+        # no hits, so outdoors
+        return True
 
     def place_spot(self):
         if self.sim.pathfinder.is_loaded:
@@ -421,6 +460,7 @@ class HabitatSimInteractiveViewer(Application):
                 color=mn.Color4.blue(),
                 normal=mn.Vector3.z_axis(),
             )
+        self.draw_removed_objects_debug_frames()
 
     def draw_event(
         self,
@@ -837,6 +877,7 @@ class HabitatSimInteractiveViewer(Application):
             exit()
 
         elif key == pressed.T:
+            self.remove_outdoor_objects()
             pass
 
         elif key == pressed.V:
