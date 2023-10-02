@@ -406,7 +406,7 @@ jobs:
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat;
               git lfs install
-              conda install -y gitpython
+              conda install -y gitpython git-lfs
 
               if [ ! -d ./data/scene_datasets/habitat-test-scenes/van-gogh-room.glb ]
               then
@@ -507,7 +507,7 @@ jobs:
               cat /proc/cpuinfo
       - install_all_ubuntu_deps
       - run:
-          name: Build, install habitat-sim and run benchmark
+          name: Build, install habitat-sim
           no_output_timeout: 25m
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
