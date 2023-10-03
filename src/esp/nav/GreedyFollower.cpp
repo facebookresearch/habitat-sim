@@ -9,6 +9,7 @@
 #include <Magnum/EigenIntegration/Integration.h>
 
 #include "esp/core/Esp.h"
+#include "esp/core/MathInclude.h"
 #include "esp/geo/Geo.h"
 
 namespace Mn = Magnum;

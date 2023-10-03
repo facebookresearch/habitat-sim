@@ -17,6 +17,10 @@
 
 #include "configure.h"
 
+#ifndef _WIN32
+#include <glob.h>
+#endif
+
 namespace Cr = Corrade;
 
 using esp::metadata::attributes::ArticulatedObjectAttributes;
@@ -46,6 +50,11 @@ struct IOTest : Cr::TestSuite::Tester {
     CORRADE_VERIFY(esp::io::readMember(d, name, src2));
     CORRADE_COMPARE(src2, src);
   }
+
+#ifndef _WIN32
+  void testGlobDirs();
+  void _testGlobDirs(const std::string& pattern);
+#endif
 
   esp::logging::LoggingContext loggingContext;
 };
@@ -497,6 +506,32 @@ void IOTest::testJsonUserType() {
   CORRADE_COMPARE(myStruct2.nested.a, myStruct.nested.a);
   CORRADE_COMPARE(myStruct2.b, myStruct.b);
 }
+
+#ifndef _WIN32
+std::vector<std::string> globDirs(const std::string& pattern) {
+  // Check for ellipsis, if so process here.
+  glob_t glob_result;
+
+  glob(pattern.c_str(), GLOB_MARK, nullptr, &glob_result);
+  std::vector<std::string> ret(glob_result.gl_pathc);
+  for (int i = 0; i < glob_result.gl_pathc; ++i) {
+    ret[i] = std::string(glob_result.gl_pathv[i]);
+  }
+  globfree(&glob_result);
+  return ret;
+}
+
+void IOTest::testGlobDirs() {
+  _testGlobDirs("/path/to/dir/*");
+  _testGlobDirs("/path/to/dir/*.txt");
+}
+
+void IOTest::_testGlobDirs(const std::string& pattern) {
+  auto resultOriginal = globDirsPosix(pattern);
+  auto resultNew = esp::io::globDirs(pattern);
+  CORRADE_COMPARE_AS(resultOriginal, resultNew, std::vector<std::string>);
+}
+#endif
 
 }  // namespace
 

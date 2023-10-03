@@ -12,8 +12,8 @@
 #include <Magnum/Math/Matrix4.h>
 #include <Magnum/Math/Quaternion.h>
 #include <Magnum/Math/Vector3.h>
-#include <cmath>
 #include <cstdlib>
+#include "esp/core/MathInclude.h"
 
 namespace esp {
 namespace core {

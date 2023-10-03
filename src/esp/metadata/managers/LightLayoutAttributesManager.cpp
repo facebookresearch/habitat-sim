@@ -338,8 +338,12 @@ gfx::LightSetup LightLayoutAttributesManager::createLightSetupFromAttributes(
             lightVector = {lightAttr->getPosition(), 1.0f};
           }
         }  // switch on type
+#if __cplusplus >= 202002L
         res.push_back(
             {.vector = lightVector, .color = color, .model = posModelEnum});
+#else
+        res.push_back(gfx::LightInfo(lightVector, color, posModelEnum));
+#endif
       }  // for each light instance described
     }    // if >0 light instances described
   }      // lightLayoutAttributes of requested name exists

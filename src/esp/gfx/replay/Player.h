@@ -180,7 +180,7 @@ class Player {
   explicit Player(std::shared_ptr<AbstractPlayerImplementation> implementation);
 
   /* Deliberately move-only, it's heavy */
-  Player(const Player&&) = delete;
+  Player(const Player&) = delete;
   Player(Player&&) noexcept = default;
   Player& operator=(const Player&) = delete;
   Player& operator=(Player&&) noexcept = default;

@@ -3168,7 +3168,7 @@ void ResourceManager::mapSkinnedModelToArticulatedObject(
 
     // Map the articulated object link associated with the skin joint
     if (linkId != linkIds.end()) {
-      auto* articulatedObjectNode = &rig->getLink(*linkId.base()).node();
+      auto* articulatedObjectNode = &rig->getLink(*linkId).node();
 
       // This node will be used for rendering.
       auto& transformNode = articulatedObjectNode->createChild();

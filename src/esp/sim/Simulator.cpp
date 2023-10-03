@@ -16,6 +16,7 @@
 #include <Magnum/GL/Renderer.h>
 
 #include "esp/core/Esp.h"
+#include "esp/core/MathInclude.h"
 #include "esp/gfx/CubeMapCamera.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/PbrDrawable.h"

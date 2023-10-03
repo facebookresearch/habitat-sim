@@ -67,6 +67,7 @@ LightSetup getLightsAtBoxCorners(const Magnum::Range3D& box,
   using namespace Magnum::Math::Literals;
 
   constexpr float w = 1;
+#if __cplusplus >= 202002L
   return LightSetup{{{box.frontTopLeft(), w}, lightColor},
                     {{box.frontTopRight(), w}, lightColor},
                     {{box.frontBottomLeft(), w}, lightColor},
@@ -75,9 +76,22 @@ LightSetup getLightsAtBoxCorners(const Magnum::Range3D& box,
                     {{box.backTopRight(), w}, lightColor},
                     {{box.backBottomLeft(), w}, lightColor},
                     {{box.backBottomRight(), w}, lightColor}};
+#else
+  LightSetup lights;
+  lights.emplace_back(LightInfo{{box.frontTopLeft(), w}, lightColor});
+  lights.emplace_back(LightInfo{{box.frontTopRight(), w}, lightColor});
+  lights.emplace_back(LightInfo{{box.frontBottomLeft(), w}, lightColor});
+  lights.emplace_back(LightInfo{{box.frontBottomRight(), w}, lightColor});
+  lights.emplace_back(LightInfo{{box.backTopLeft(), w}, lightColor});
+  lights.emplace_back(LightInfo{{box.backTopRight(), w}, lightColor});
+  lights.emplace_back(LightInfo{{box.backBottomLeft(), w}, lightColor});
+  lights.emplace_back(LightInfo{{box.backBottomRight(), w}, lightColor});
+  return lights;
+#endif
 }
 
 LightSetup getDefaultLights() {
+#if __cplusplus >= 202002L
   return LightSetup{
       {{0.0, -0.5, -0.5, 0.0},
        {0.5, 0.5, 0.5},
@@ -92,6 +106,22 @@ LightSetup getDefaultLights() {
        {0.5, 0.5, 0.5},
        LightPositionModel::Global},  // +x
   };
+#else
+  LightSetup lights;
+  lights.emplace_back(LightInfo{{0.0, -0.5, -0.5, 0.0},
+                                {0.5, 0.5, 0.5},
+                                LightPositionModel::Global});  // -z
+  lights.emplace_back(LightInfo{{0.0, -0.5, 0.5, 0.0},
+                                {0.5, 0.5, 0.5},
+                                LightPositionModel::Global});  // +z
+  lights.emplace_back(LightInfo{{-0.5, -0.5, 0.0, 0.0},
+                                {0.5, 0.5, 0.5},
+                                LightPositionModel::Global});  // -x
+  lights.emplace_back(LightInfo{{0.5, -0.5, 0.0, 0.0},
+                                {0.5, 0.5, 0.5},
+                                LightPositionModel::Global});  // +x
+  return lights;
+#endif
 }
 
 Magnum::Color3 getAmbientLightColor(const LightSetup& lightSetup) {

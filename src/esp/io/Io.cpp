@@ -8,7 +8,9 @@
 #include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/Path.h>
 #include <Corrade/Utility/String.h>
-#include <glob.h>
+#include <filesystem>
+#include <regex>
+#include <string>
 
 namespace Cr = Corrade;
 namespace esp {
@@ -47,15 +49,22 @@ std::string normalizePath(const std::string& srcPath) {
 }  // normalizePath
 
 std::vector<std::string> globDirs(const std::string& pattern) {
-  // Check for ellipsis, if so process here.
-  glob_t glob_result;
+  std::vector<std::string> ret;
+  std::string directory = std::filesystem::path(pattern).parent_path().string();
+  std::string globPattern = std::filesystem::path(pattern).filename().string();
+  std::string regexPattern =
+      std::regex_replace(globPattern, std::regex(R"(\*)"), R"(.*)");
 
-  glob(pattern.c_str(), GLOB_MARK, nullptr, &glob_result);
-  std::vector<std::string> ret(glob_result.gl_pathc);
-  for (int i = 0; i < glob_result.gl_pathc; ++i) {
-    ret[i] = std::string(glob_result.gl_pathv[i]);
+  std::regex re(regexPattern, std::regex::ECMAScript | std::regex::icase);
+
+  for (const auto& entry :
+       std::filesystem::recursive_directory_iterator(directory)) {
+    std::string filename = entry.path().filename().string();
+    if (std::regex_match(filename, re)) {
+      ret.push_back(entry.path().string());
+    }
   }
-  globfree(&glob_result);
+
   return ret;
 }
 

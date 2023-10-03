@@ -18,14 +18,12 @@
 #include <Corrade/Utility/Path.h>
 
 #include <cstdio>
-// NOLINTNEXTLINE
-#define _USE_MATH_DEFINES
-#include <cmath>
 #include <limits>
 #include <utility>
 
 #include "esp/assets/MeshData.h"
 #include "esp/core/Esp.h"
+#include "esp/core/MathInclude.h"
 
 #include "DetourNavMesh.h"
 #include "DetourNavMeshBuilder.h"

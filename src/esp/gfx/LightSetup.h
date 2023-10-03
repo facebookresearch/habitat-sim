@@ -40,7 +40,12 @@ struct LightInfo {
   // directional light with no distance attenuation.
   Magnum::Vector4 vector;
   Magnum::Color3 color{1};
-  LightPositionModel model = LightPositionModel::Global;
+  LightPositionModel model;
+
+  explicit LightInfo(const Magnum::Vector4& vec = Magnum::Vector4(),
+                     const Magnum::Color3& col = Magnum::Color3(),
+                     const LightPositionModel& mod = LightPositionModel::Global)
+      : vector(vec), color(col), model(mod) {}
 };
 
 bool operator==(const LightInfo& a, const LightInfo& b);

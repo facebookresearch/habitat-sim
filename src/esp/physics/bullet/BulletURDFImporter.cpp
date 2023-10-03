@@ -525,7 +525,8 @@ Mn::Matrix4 BulletURDFImporter::convertURDF2BulletInternal(
           break;
         }
         default: {
-          ESP_VERY_VERBOSE() << "Invalid joint type." btAssert(0);
+          ESP_VERY_VERBOSE() << "Invalid joint type.";
+          btAssert(0);
         }
       }
     }

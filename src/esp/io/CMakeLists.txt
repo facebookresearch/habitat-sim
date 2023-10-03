@@ -22,4 +22,7 @@ add_library(
 target_link_libraries(
   io
   PUBLIC core
+  $<$<PLATFORM_ID:Linux>:stdc++fs>
 )
+
+target_compile_features(io PUBLIC cxx_std_17)
