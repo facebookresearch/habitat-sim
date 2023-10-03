@@ -113,7 +113,7 @@ def get_mesh_heirarchy(
     is_rec_mesh = is_receptacle_mesh(mesh_obj)
     if is_mesh(mesh_obj) and (
         (is_col_mesh and include_collison)
-        and (is_rec_mesh and include_receptacle)
+        or (is_rec_mesh and include_receptacle)
         or (include_render and not is_col_mesh)
     ):
         selected_objects.append(mesh_obj)
@@ -603,6 +603,7 @@ def export(dirpath, settings, export_meshes: bool = True, **kwargs):
 
     # print all mesh object parents, reset origins for mesh export and transformation registery, collect bone to mesh map
     root_node = None
+    receptacle_meshes = []
     for obj in bpy.data.objects:
         if obj.type == "MESH":
             parent_bone = get_parent_bone(obj)
@@ -613,6 +614,8 @@ def export(dirpath, settings, export_meshes: bool = True, **kwargs):
             if obj.parent_bone != "":
                 bones_to_meshes[obj.parent_bone].append(obj)
                 print(f" -pb> {obj.parent_bone}")
+            if is_receptacle_mesh(obj):
+                receptacle_meshes.append(obj)
         elif obj.type == "EMPTY":
             print(f"EMPTY: {obj.name}")
             if obj.parent is None and len(obj.children) > 0:
@@ -637,6 +640,19 @@ def export(dirpath, settings, export_meshes: bool = True, **kwargs):
                         use_selection=True,
                         export_yup=False,
                     )
+        # export receptacle meshes
+        for rec_mesh in receptacle_meshes:
+            clear_obj_transform(rec_mesh)
+            deselect_all()
+            rec_mesh.select_set(True)
+            bpy.ops.export_scene.gltf(
+                filepath=os.path.join(
+                    final_out_path, rec_mesh.parent.name + "_receptacle"
+                ),
+                use_selection=True,
+                export_yup=False,
+            )
+
         return output_path
 
     # print("------------------------")
