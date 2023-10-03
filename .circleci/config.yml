@@ -408,8 +408,6 @@ jobs:
               conda install -y gitpython git-lfs
               cd habitat-sim
               git lfs install
-              conda deactivate
-              . activate habitat;
               python src_python/habitat_sim/utils/datasets_download.py --uids ci_test_assets --replace --data-path data/ --no-prune
               ls -la data/scene_datasets/habitat-test-scenes/
 

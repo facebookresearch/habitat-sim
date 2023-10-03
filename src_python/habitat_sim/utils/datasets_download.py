@@ -577,6 +577,7 @@ def clone_repo_source(
     print(" ".join(split_command))
 
     subprocess.check_call(split_command)
+    subprocess.check_call(shlex.split("git lfs pull"), cwd=version_dir)
 
     if prune_lfs:
         # NOTE: we make this optional because older git versions don't support "-f --recent"
@@ -587,8 +588,6 @@ def clone_repo_source(
         # prune the repo to reduce wasted memory consumption
         prune_command = "git lfs prune -f --recent"
         subprocess.check_call(shlex.split(prune_command), cwd=version_dir)
-
-    subprocess.check_call(shlex.split("git lfs pull"), cwd=version_dir)
 
 
 def checkout_repo_tag(repo: Repo, version_dir: str, tag: str):
