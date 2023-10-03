@@ -1936,13 +1936,13 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--width",
-        default=800,
+        default=1080,
         type=int,
         help="Horizontal resolution of the window.",
     )
     parser.add_argument(
         "--height",
-        default=600,
+        default=720,
         type=int,
         help="Vertical resolution of the window.",
     )

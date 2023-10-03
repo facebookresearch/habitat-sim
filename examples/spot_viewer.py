@@ -1196,13 +1196,13 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--width",
-        default=800,
+        default=1080,
         type=int,
         help="Horizontal resolution of the window.",
     )
     parser.add_argument(
         "--height",
-        default=600,
+        default=720,
         type=int,
         help="Vertical resolution of the window.",
     )
@@ -1228,6 +1228,7 @@ if __name__ == "__main__":
     sim_settings["window_width"] = args.width
     sim_settings["window_height"] = args.height
     sim_settings["sensor_height"] = 0
+    sim_settings["enable_hbao"] = True
 
     # start the application
     HabitatSimInteractiveViewer(sim_settings).exec()
