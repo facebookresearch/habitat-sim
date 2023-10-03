@@ -479,8 +479,8 @@ struct PathFinder::Impl {
                                             int maxTries,
                                             int islandIndex /*= ID_UNDEFINED*/);
   vec3f getRandomNavigablePointInCircle(const vec3f& circleCenter,
-                                        const float radius,
-                                        const int maxTries,
+                                        float radius,
+                                        int maxTries,
                                         int islandIndex /*= ID_UNDEFINED*/);
 
   bool findPath(ShortestPath& path);
