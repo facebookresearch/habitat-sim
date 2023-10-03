@@ -27,6 +27,7 @@
 #include "esp/assets/MeshData.h"
 #include "esp/core/Esp.h"
 
+#include "DetourCommon.h"
 #include "DetourNavMesh.h"
 #include "DetourNavMeshBuilder.h"
 #include "DetourNavMeshQuery.h"
@@ -313,6 +314,79 @@ class IslandSystem {
     }
   }
 
+  /**
+   * @brief Sets a specified poly flag for all polys specified by the
+   * islandIndex within range of a given circle.
+   *
+   * @param[in] navMesh The navmesh to operate on.
+   * @param[in] flag The flag to set or clear.
+   * @param[in] circleCenter The center of the circle.
+   * @param[in] radius The radius of the circle.
+   * @param[in] islandIndex Specify the island. islandIndex == ID_UNDEFINED
+   * specifies all islands.
+   */
+  inline void setPolyFlagForIslandCircle(dtNavMesh* navMesh,
+                                         ushort flag,
+                                         const vec3f& circleCenter,
+                                         const float radius,
+                                         int islandIndex = ID_UNDEFINED) {
+    assertValidIsland(islandIndex);
+    CORRADE_ASSERT(navMesh != nullptr, "invalid navMesh pointer", );
+    std::vector<int> islands;
+
+    float radSqr = radius * radius;
+
+    // all islands
+    islands.reserve(islandsToPolys_.size());
+    for (auto& itr : islandsToPolys_) {
+      islands.push_back(itr.first);
+    }
+
+    // for each island
+    for (int island : islands) {
+      // for each poly
+      for (auto& polyRef : islandsToPolys_[island]) {
+        // remove all off-island polys immediately
+        if (islandIndex != ID_UNDEFINED && islandIndex != island) {
+          // get current flags
+          ushort f = 0;
+          navMesh->getPolyFlags(polyRef, &f);
+          // set the modified flags
+          navMesh->setPolyFlags(polyRef, orFlag(f, flag));
+          continue;
+        }
+
+        // poly is on island, check if it is outside of range
+        const dtMeshTile* tile = nullptr;
+        const dtPoly* poly = nullptr;
+        navMesh->getTileAndPolyByRefUnsafe(polyRef, &tile, &poly);
+
+        // check if this poly is within range of the circle
+        bool inRange = false;
+        for (int iVert = 0; iVert < poly->vertCount; ++iVert) {
+          int nVert = (iVert + 1) % 3;
+          float tseg = 0;
+          float distSqr = dtDistancePtSegSqr2D(
+              circleCenter.data(),
+              &tile->verts[static_cast<size_t>(poly->verts[iVert]) * 3],
+              &tile->verts[static_cast<size_t>(poly->verts[nVert]) * 3], tseg);
+          if (distSqr < radSqr) {
+            // skip this poly if any edge is within radius
+            inRange = true;
+            break;
+          }
+        }
+        if (!inRange) {
+          // get current flags
+          ushort f = 0;
+          navMesh->getPolyFlags(polyRef, &f);
+          // set the modified flags
+          navMesh->setPolyFlags(polyRef, orFlag(f, flag));
+        }
+      }
+    }
+  }
+
   // Some polygons have zero area for some reason.  When we navigate into a zero
   // area polygon, things crash.  So we find all zero area polygons and mark
   // them as disabled/not navigable.
@@ -404,6 +478,10 @@ struct PathFinder::Impl {
                                             float radius,
                                             int maxTries,
                                             int islandIndex /*= ID_UNDEFINED*/);
+  vec3f getRandomNavigablePointInCircle(const vec3f& circleCenter,
+                                        float radius,
+                                        int maxTries,
+                                        int islandIndex /*= ID_UNDEFINED*/);
 
   bool findPath(ShortestPath& path);
   bool findPath(MultiGoalShortestPath& path);
@@ -1199,6 +1277,57 @@ vec3f PathFinder::Impl::getRandomNavigablePoint(
   return pt;
 }
 
+vec3f PathFinder::Impl::getRandomNavigablePointInCircle(
+    const vec3f& circleCenter,
+    const float radius,
+    const int maxTries,
+    int islandIndex) {
+  float radSqr = radius * radius;
+
+  islandSystem_->assertValidIsland(islandIndex);
+  if (getNavigableArea(islandIndex) <= 0.0)
+    throw std::runtime_error(
+        "NavMesh has no navigable area, this indicates an issue with the "
+        "NavMesh");
+
+  // set the poly flag to identify polys not on the target island
+  islandSystem_->setPolyFlagForIslandCircle(navMesh_.get(),
+                                            PolyFlags::POLYFLAGS_OFF_ISLAND,
+                                            circleCenter, radius, islandIndex);
+  filter_->setExcludeFlags(filter_->getExcludeFlags() |
+                           PolyFlags::POLYFLAGS_OFF_ISLAND);
+
+  vec3f pt;
+  int i = 0;
+  for (i = 0; i < maxTries; ++i) {
+    dtPolyRef ref = 0;
+    dtStatus status =
+        navQuery_->findRandomPoint(filter_.get(), frand, &ref, pt.data());
+    if (dtStatusSucceed(status)) {
+      float xd = circleCenter[0] - pt[0];
+      float yd = circleCenter[2] - pt[2];
+      float d2 = xd * xd + yd * yd;
+      if (d2 < radSqr) {
+        break;
+      }
+    }
+  }
+
+  // reset the poly flag identifying polys off the target island
+  islandSystem_->setPolyFlagForIsland(
+      navMesh_.get(), PolyFlags::POLYFLAGS_OFF_ISLAND, ID_UNDEFINED,
+      /*setFlag=*/false, /*invert=*/true);
+  filter_->setExcludeFlags(filter_->getExcludeFlags() &
+                           ~PolyFlags::POLYFLAGS_OFF_ISLAND);
+
+  if (i == maxTries) {
+    ESP_ERROR() << "Failed to getRandomNavigablePoint.  Try increasing max "
+                   "tries if the navmesh is fine but just hard to sample from";
+    return vec3f::Constant(Mn::Constants::nan());
+  }
+  return pt;
+}
+
 vec3f PathFinder::Impl::getRandomNavigablePointAroundSphere(
     const vec3f& circleCenter,
     const float radius,
@@ -1770,8 +1899,8 @@ vec3f PathFinder::getRandomNavigablePointAroundSphere(
     const float radius,
     const int maxTries,
     int islandIndex /*= ID_UNDEFINED*/) {
-  return pimpl_->getRandomNavigablePointAroundSphere(circleCenter, radius,
-                                                     maxTries, islandIndex);
+  return pimpl_->getRandomNavigablePointInCircle(circleCenter, radius, maxTries,
+                                                 islandIndex);
 }
 
 bool PathFinder::findPath(ShortestPath& path) {
