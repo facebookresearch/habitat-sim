@@ -100,6 +100,10 @@ ClassicReplayRenderer::ClassicReplayRenderer(
     }
 
     gfx::Renderer::Flags flags;
+
+    if (config_.enableHBAO)
+      flags |= gfx::Renderer::Flag::HorizonBasedAmbientOcclusion;
+
 #ifdef ESP_BUILD_WITH_BACKGROUND_RENDERER
     if (context_)
       flags |= gfx::Renderer::Flag::BackgroundRenderer;

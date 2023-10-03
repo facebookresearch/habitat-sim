@@ -577,6 +577,7 @@ def clone_repo_source(
     print(" ".join(split_command))
 
     subprocess.check_call(split_command)
+    subprocess.check_call(shlex.split("git lfs pull"), cwd=version_dir)
 
     if prune_lfs:
         # NOTE: we make this optional because older git versions don't support "-f --recent"

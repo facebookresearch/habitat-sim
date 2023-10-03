@@ -3,7 +3,7 @@ gpu: &gpu
   machine:
     # Available images:
     # https://circleci.com/docs/2.0/configuration-reference/#available-linux-gpu-images
-    image: ubuntu-2004-cuda-11.4:202110-01
+    image: linux-cuda-11:default
   resource_class: gpu.nvidia.medium
   environment:
     FPS_THRESHOLD: 900
@@ -405,14 +405,11 @@ jobs:
               git-lfs --version
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat;
+              conda install -y gitpython git-lfs
+              cd habitat-sim
               git lfs install
-              conda install -y gitpython
-
-              if [ ! -d ./data/scene_datasets/habitat-test-scenes/van-gogh-room.glb ]
-              then
-                cd habitat-sim
-                python src_python/habitat_sim/utils/datasets_download.py --uids ci_test_assets --replace --data-path data/ --no-prune
-              fi
+              python src_python/habitat_sim/utils/datasets_download.py --uids ci_test_assets --replace --data-path data/ --no-prune
+              ls -la data/scene_datasets/habitat-test-scenes/
 
       - run:
           name: Build habitat sim and documentation
@@ -507,7 +504,7 @@ jobs:
               cat /proc/cpuinfo
       - install_all_ubuntu_deps
       - run:
-          name: Build, install habitat-sim and run benchmark
+          name: Build, install habitat-sim
           no_output_timeout: 25m
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
