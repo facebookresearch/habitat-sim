@@ -18,6 +18,7 @@ sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 import habitat.datasets.rearrange.samplers.receptacle as hab_receptacle
 import magnum as mn
 import numpy as np
+from habitat.datasets.rearrange.navmesh_utils import get_largest_island_index
 from habitat.datasets.rearrange.samplers.object_sampler import ObjectSampler
 from habitat.sims.habitat_simulator.sim_utilities import get_bb_corners
 from magnum import shaders, text
@@ -364,6 +365,7 @@ class HabitatSimInteractiveViewer(Application):
             print(f"scene_filter_file = {scene_filter_file}")
             self.load_receptacles()
             self.load_filtered_recs(scene_filter_file)
+            self.rec_filter_path = scene_filter_file
         else:
             print(
                 f"WARNING: No rec filter file configured for scene {self.sim.curr_scene_name}."
@@ -1273,8 +1275,16 @@ class HabitatSimInteractiveViewer(Application):
                 logger.info("Command: resample agent state from navmesh")
                 if self.sim.pathfinder.is_loaded:
                     new_agent_state = habitat_sim.AgentState()
+                    largest_island_ix = get_largest_island_index(
+                        pathfinder=self.sim.pathfinder,
+                        sim=self.sim,
+                        allow_outdoor=False,
+                    )
+                    print(f"Largest indoor island index = {largest_island_ix}")
                     new_agent_state.position = (
-                        self.sim.pathfinder.get_random_navigable_point()
+                        self.sim.pathfinder.get_random_navigable_point(
+                            island_index=largest_island_ix
+                        )
                     )
                     new_agent_state.rotation = quat_from_angle_axis(
                         self.sim.random.uniform_float(0, 2.0 * np.pi),
