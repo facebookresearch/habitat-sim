@@ -272,6 +272,7 @@ class HabitatSimInteractiveViewer(Application):
         self.replay_renderer_cfg: Optional[ReplayRendererConfiguration] = None
         self.replay_renderer: Optional[ReplayRenderer] = None
         self.reconfigure_sim(mm)
+        self.load_scene_filter_file()
 
         # -----------------------------------------
         # Clutter Generation Integration:
@@ -343,6 +344,30 @@ class HabitatSimInteractiveViewer(Application):
                 print(f"Failed to cast '{user_val}' to {type(cur_attr_val)}.")
         else:
             print("That attribute is unset, so I don't know the type.")
+
+    def load_scene_filter_file(self):
+        """
+        Load the filter file for a scene from config.
+        """
+
+        scene_user_defined = self.sim.metadata_mediator.get_scene_user_defined(
+            self.sim.curr_scene_name
+        )
+        if scene_user_defined is not None and scene_user_defined.has_value(
+            "scene_filter_file"
+        ):
+            scene_filter_file = scene_user_defined.get("scene_filter_file")
+            # construct the dataset level path for the filter data file
+            scene_filter_file = os.path.join(
+                os.path.dirname(mm.active_dataset), scene_filter_file
+            )
+            print(f"scene_filter_file = {scene_filter_file}")
+            self.load_receptacles()
+            self.load_filtered_recs(scene_filter_file)
+        else:
+            print(
+                f"WARNING: No rec filter file configured for scene {self.sim.curr_scene_name}."
+            )
 
     def get_rec_instance_name(self, receptacle: hab_receptacle.Receptacle) -> str:
         """
