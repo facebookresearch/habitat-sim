@@ -660,7 +660,18 @@ jobs:
       # this better, remove once it's merged
       - run: *upload_coverage
 
-
+  install_and_test_windows:
+    machine:
+      image: 'windows-server-2022-gui:current'
+      shell: powershell.exe -ExecutionPolicy Bypass
+    steps:
+      - checkout:
+          path: ./habitat-sim
+      - run:
+          name: Test
+          no_output_timeout: 1m
+          command: |
+              dir
 
   build_conda_binaries:
     <<: *gpu
@@ -771,6 +782,7 @@ workflows:
          CI_TEST: true
       - test_pip_build
       - install_and_test_ubuntu
+      - install_and_test_windows
       - pre-commit
       - build_conda_binaries:
           CI_TEST: true
@@ -785,6 +797,7 @@ workflows:
     jobs:
       - lab_build_habitat
       - install_and_test_ubuntu
+      - install_and_test_windows
       - update_docs:
           requires:
             - install_and_test_ubuntu
