@@ -19,12 +19,28 @@ layout(location = ATTRIBUTE_LOCATION_TANGENT4) in highp vec4 vertexTangent;
 layout(location = ATTRIBUTE_LOCATION_COLOR) in highp vec4 vertexColor;
 #endif
 
+#ifdef JOINT_COUNT
+#if PER_VERTEX_JOINT_COUNT
+layout(location = ATTRIBUTE_LOCATION_WEIGHTS) in mediump vec4 weights;
+layout(location = ATTRIBUTE_LOCATION_JOINTIDS) in mediump uvec4 jointIds;
+#endif  // PER_VERTEX_JOINT_COUNT
+
+#if SECONDARY_PER_VERTEX_JOINT_COUNT
+layout(location = SECONDARY_WEIGHTS_ATTRIBUTE_LOCATION) in mediump vec4
+    secondaryWeights;
+
+layout(location = SECONDARY_JOINTIDS_ATTRIBUTE_LOCATION) in mediump uvec4
+    secondaryJointIds;
+#endif  // SECONDARY_PER_VERTEX_JOINT_COUNT
+#endif
+
 // -------------- output ---------------------
 // position, normal, tangent in *world* space, NOT camera space!
 out highp vec3 position;
 out highp vec3 normal;
 #if defined(TEXTURED)
 out highp vec2 texCoord;
+
 #if defined(TEXTURE_TRANSFORMATION)
 uniform highp mat3 uTextureMatrix
 #ifndef GL_ES
@@ -47,38 +63,55 @@ uniform highp mat3 uNormalMatrix;  // inverse transpose of 3x3 model matrix, NOT
 uniform highp mat4 uModelMatrix;
 uniform highp mat4 uProjectionMatrix;
 
+// -------------- skin-related uniforms --------------
+#ifdef DYNAMIC_PER_VERTEX_JOINT_COUNT
+uniform mediump uvec2 perVertexJointCount
+#ifndef GL_ES
+    = uvec2(PER_VERTEX_JOINT_COUNT, SECONDARY_PER_VERTEX_JOINT_COUNT)
+#endif
+    ;
+#endif  // DYNAMIC_PER_VERTEX_JOINT_COUNT
+
+#ifdef JOINT_COUNT
+uniform mat4 jointMatrices[JOINT_COUNT]
+#ifndef GL_ES
+    = mat4[](JOINT_MATRIX_INITIALIZER)
+#endif
+    ;
+// Defaults to 0
+uniform uint perInstanceJointCount;
+#endif  // JOINT_COUNT
+
 // ------------ shader -----------------------
 void main() {
   //------------ skin support
-  // See Magnum phong.vert for source of this code
-#ifdef JOINT_COUNT
-  mediump const uint jointOffset = uint(gl_InstanceID) * perInstanceJointCount;
-#endif
 
 // Build skin transformation matrix
+// See Magnum phong.vert for source of this code
 #ifdef JOINT_COUNT
+  mediump const uint jointOffset = uint(gl_InstanceID) * perInstanceJointCount;
   mat4 skinMatrix = mat4(0.0);
 #if PER_VERTEX_JOINT_COUNT
   for (uint i = 0u; i != PER_VERTEX_JOINT_COUNT
 #ifdef DYNAMIC_PER_VERTEX_JOINT_COUNT
                     && i != perVertexJointCount.x
-#endif
+#endif  // DYNAMIC_PER_VERTEX_JOINT_COUNT
        ;
        ++i)
     skinMatrix += weights[i] * jointMatrices[jointOffset + jointIds[i]];
-#endif
+#endif  // PER_VERTEX_JOINT_COUNT
 
 #if SECONDARY_PER_VERTEX_JOINT_COUNT
   for (uint i = 0u; i != SECONDARY_PER_VERTEX_JOINT_COUNT
 #ifdef DYNAMIC_PER_VERTEX_JOINT_COUNT
                     && i != perVertexJointCount.y
-#endif
+#endif  // DYNAMIC_PER_VERTEX_JOINT_COUNT
        ;
        ++i)
     skinMatrix +=
         secondaryWeights[i] * jointMatrices[jointOffset + secondaryJointIds[i]];
-#endif
-#endif
+#endif  // SECONDARY_PER_VERTEX_JOINT_COUNT
+#endif  // JOINT_COUNT
 
   //------------ end skin support
 
