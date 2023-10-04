@@ -121,6 +121,13 @@ PbrShader::PbrShader(Flags originalFlags,
         "ATTRIBUTE_LOCATION_JOINTIDS {}\n",
         Weights::Location, JointIds::Location);
   }
+  // TODO : secondary perVertexJointCount currently not used
+  // if (configuration.secondaryPerVertexJointCount()) {
+  // attributeLocationsStream << Cr::Utility::formatString(
+  //     "#define ATTRIBUTE_LOCATION_SECONDARY_WEIGHTS {}\n#define "
+  //     "ATTRIBUTE_LOCATION_SECONDARY_JOINTIDS {}\n",
+  //     SecondaryWeights::Location, SecondaryJointIds::Location);
+  // }
 
   if (isTextured_) {
     attributeLocationsStream

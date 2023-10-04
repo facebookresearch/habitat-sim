@@ -44,6 +44,18 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   typedef Magnum::Shaders::GenericGL3D::Weights Weights;
 
   /**
+   * @brief Secondary joint ids
+   * (See Magnum/Shaders/PhongGL.h)
+   */
+  typedef Magnum::Shaders::GenericGL3D::SecondaryJointIds SecondaryJointIds;
+
+  /**
+   * @brief Secondary weights
+   * (See Magnum/Shaders/PhongGL.h)
+   */
+  typedef Magnum::Shaders::GenericGL3D::SecondaryWeights SecondaryWeights;
+
+  /**
    * @brief 2D texture coordinates
    *
    * Used only if at least one of
