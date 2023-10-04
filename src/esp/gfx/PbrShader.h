@@ -348,7 +348,10 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    *
    * the light range is set to Magnum::Constants::inf()
    */
-  explicit PbrShader(Flags flags = {}, unsigned int lightCount = 1);
+  explicit PbrShader(Flags flags = {},
+                     Magnum::UnsignedInt lightCount = 1,
+                     Magnum::UnsignedInt jointCount = 0,
+                     Magnum::UnsignedInt perVertexJointCount = 0);
 
   /** @brief Copying is not allowed */
   PbrShader(const PbrShader&) = delete;
@@ -365,7 +368,8 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   /**
    * @brief Get number of lights
    */
-  unsigned int lightCount() const { return lightCount_; }
+  Magnum::UnsignedInt lightCount() const { return lightCount_; }
+
   /** @brief whether this shader as direct lighting enabled and there are lights
    * defined.*/
   bool directLightingIsEnabled() const { return directLightingIsEnabled_; }
@@ -596,13 +600,13 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    * when vec.w == 1, it means vec.xyz is the light position;
    * vec is an element in the "vectors" array
    */
-  PbrShader& setLightVectors(
+  PbrShader& setLightPositions(
       Corrade::Containers::ArrayView<const Magnum::Vector4> vectors);
 
   /**
    * @overload
    */
-  PbrShader& setLightVectors(std::initializer_list<Magnum::Vector4> vectors);
+  PbrShader& setLightPositions(std::initializer_list<Magnum::Vector4> vectors);
 
   /**
    *  @brief Set the position or direction of a specific light See @ref vec for
@@ -723,6 +727,19 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   PbrShader& setNormalTextureScale(float scale);
 
   /**
+   * @brief Set joint matrices
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& setJointMatrices(
+      Corrade::Containers::ArrayView<const Magnum::Matrix4> matrices);
+
+  /**
+   * @overload
+   * @m_since_latest
+   */
+  PbrShader& setJointMatrices(std::initializer_list<Magnum::Matrix4> matrices);
+
+  /**
    * Toggles that control contributions from different components - should
    * never be set to 0 or will cause warnings when the shader executes
    */
@@ -760,7 +777,10 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
  protected:
   Flags flags_;
-  unsigned int lightCount_;
+  Magnum::UnsignedInt lightCount_;
+
+  Magnum::UnsignedInt jointCount_;
+  Magnum::UnsignedInt perVertexJointCount_;
 
   // whether or not this shader uses any textures
   bool isTextured_ = false;
@@ -797,6 +817,8 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   int normalTextureScaleUniform_ = ID_UNDEFINED;
   int lightColorsUniform_ = ID_UNDEFINED;
   int lightRangesUniform_ = ID_UNDEFINED;
+
+  int jointMatricesUniform_ = ID_UNDEFINED;
   // In the fragment shader, the "LightDirection" is a vec4.
   // when w == 0, it means .xyz is the light direction;
   // when w == 1, it means it is the light position, NOT the direction;
