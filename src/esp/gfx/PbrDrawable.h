@@ -250,9 +250,6 @@ class PbrDrawable : public Drawable {
                                           0.5f};  // iblSpecular
   };                                              // struct PBRShaderConfig
 
-  /// @brief Key template for entry in shader map
-  static constexpr const char* SHADER_KEY_TEMPLATE = "PBR-lights={}-flags={}";
-
   /**
    * @brief Constructor, to create a PbrDrawable for the given object using
    * shader and mesh. Adds drawable to given group and uses provided texture,
@@ -303,42 +300,14 @@ class PbrDrawable : public Drawable {
 
   /**
    *  @brief Update the shader so it can correctly handle the current material,
-   *         light setup
-   *  @return Reference to self (for method chaining)
+   *         light setup, etc.
    */
-  PbrDrawable& updateShader();
-
-  /**
-   *  @brief Update every light's color, intensity, range etc.
-   *  @return Reference to self (for method chaining)
-   */
-  PbrDrawable& updateShaderLightParameters();
-
-  /**
-   *  @brief Update light direction (or position) in *camera* space to the
-   * shader
-   *  @param transformationMatrix describes a transformation from object
-   * (model) space to camera space
-   *  @param camera the camera, which views and renders the world
-   *  @return Reference to self (for method chaining)
-   */
-  PbrDrawable& updateShaderLightDirectionParameters(
-      const Mn::Matrix4& transformationMatrix,
-      Mn::SceneGraph::Camera3D& camera);
-
-  /**
-   * @brief get the key for the shader
-   * @param lightCount the number of the lights;
-   * @param flags flags that defines the shader features
-   */
-  Mn::ResourceKey getShaderKey(Mn::UnsignedInt lightCount,
-                               PbrShader::Flags flags) const;
+  void updateShader();
 
   // shader parameters
   PbrShader::Flags flags_;
   ShaderManager& shaderManager_;
   Mn::Resource<Mn::GL::AbstractShaderProgram, PbrShader> shader_;
-  Mn::Resource<LightSetup> lightSetup_;
   std::shared_ptr<PbrIBLHelper> pbrIbl_ = nullptr;
 
   /**

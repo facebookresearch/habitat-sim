@@ -26,7 +26,7 @@ class MeshVisualizerDrawable : public Drawable {
   explicit MeshVisualizerDrawable(scene::SceneNode& node,
                                   Magnum::Shaders::MeshVisualizerGL3D& shader,
                                   Magnum::GL::Mesh& mesh,
-                                  gfx::DrawableGroup* group);
+                                  DrawableConfiguration& cfg);
 
  protected:
   /**
