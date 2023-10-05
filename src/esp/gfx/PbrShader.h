@@ -20,6 +20,8 @@ namespace gfx {
 
 class PbrShader : public Magnum::GL::AbstractShaderProgram {
  public:
+  // Configuration (See Magnum::Shaders::PhongGL::Configuration )
+  class Configuration;
   // ==== Attribute definitions ====
   /**
    * @brief vertex positions
@@ -367,28 +369,11 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   /**
    * @brief Constructor
-   * @param flags         Flags
-   * @param lightCount    Count of light sources
+   * @param config : PbrShader::Configuration holding flags structure,
+   * number of lights, joints, etc.
    *
-   * By default,
-   *
-   * the shader provides a single directional "fill" light, coming
-   * from the center of the camera. Using the @p lightCount parameter in
-   * constructor, you can specify how many lights you want, and then control
-   * light parameters using @ref setLightVectors(), @ref setLightColors(),
-   * and @ref setLightRanges(). Light positions (directions)
-   * are specified as four-component vectors, the last component distinguishing
-   * between directional (w == 0) and point lights (w == 1.0).
-   *
-   * the shader renders the mesh with a white color in an identity
-   * transformation.
-   *
-   * the light range is set to Magnum::Constants::inf()
    */
-  explicit PbrShader(Flags flags = {},
-                     Magnum::UnsignedInt lightCount = 1,
-                     Magnum::UnsignedInt jointCount = 0,
-                     Magnum::UnsignedInt perVertexJointCount = 0);
+  explicit PbrShader(const Configuration& config);
 
   /** @brief Copying is not allowed */
   PbrShader(const PbrShader&) = delete;
@@ -843,10 +828,10 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
  protected:
   Flags flags_;
-  Magnum::UnsignedInt lightCount_;
-
-  Magnum::UnsignedInt jointCount_;
-  Magnum::UnsignedInt perVertexJointCount_;
+  Magnum::UnsignedInt lightCount_{};
+  Magnum::UnsignedInt jointCount_{};
+  Magnum::UnsignedInt perVertexJointCount_{};
+  Magnum::UnsignedInt secondaryPerVertexJointCount_{};
 
   // whether or not this shader has skin support
   bool isSkinned_ = false;
@@ -930,6 +915,83 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   // pbr debug info
   int pbrDebugDisplayUniform_ = ID_UNDEFINED;
+};
+
+/**
+ * @brief PBR Shader configuration
+ */
+class PbrShader::Configuration {
+ public:
+  explicit Configuration() = default;
+
+  /** @brief Flags */
+  Flags flags() const { return _flags; }
+
+  /**
+   * @brief Set flags
+   */
+  Configuration& setFlags(Flags flags) {
+    _flags = flags;
+    return *this;
+  }
+
+  /** @brief Light count */
+  Magnum::UnsignedInt lightCount() const { return _lightCount; }
+
+  /**
+   * @brief Set light count
+   */
+  Configuration& setLightCount(Magnum::UnsignedInt count) {
+    _lightCount = count;
+    return *this;
+  }
+
+  /**
+   * @brief Joint count
+   */
+  Magnum::UnsignedInt jointCount() const { return _jointCount; }
+
+  /**
+   * @brief Per-vertex joint count
+   */
+  Magnum::UnsignedInt perVertexJointCount() const {
+    return _perVertexJointCount;
+  }
+
+  /**
+   *@brief Secondary per-vertex joint count
+   */
+  Magnum::UnsignedInt secondaryPerVertexJointCount() const {
+    return _secondaryPerVertexJointCount;
+  }
+
+  /**
+   * @brief Set joint count
+   *
+   * @p count describes an upper bound on how many joint matrices get supplied
+   * to each draw with
+   * @ref setJointMatrices() / @ref setJointMatrix().
+   *
+   * The @p perVertexCount and @p secondaryPerVertexCount parameters
+   * describe how many components are taken from @ref JointIds /
+   * @ref Weights and @ref SecondaryJointIds / @ref SecondaryWeights
+   * attributes. Both values are expected to not be larger than
+   * @cpp 4 @ce, setting either of these to @cpp 0 @ce means given
+   * attribute is not used at all. If both @p perVertexCount and
+   * @p secondaryPerVertexCount are set to @cpp 0 @ce, skinning is not
+   * performed.
+   *
+   * Default value for all three is @cpp 0 @ce.
+   */
+  Configuration& setJointCount(Magnum::UnsignedInt count,
+                               Magnum::UnsignedInt perVertexCount,
+                               Magnum::UnsignedInt secondaryPerVertexCount = 0);
+
+ private:
+  Flags _flags;
+  Magnum::UnsignedInt _lightCount = 1, _jointCount = 0,
+                      _perVertexJointCount = 0,
+                      _secondaryPerVertexJointCount = 0;
 };
 
 CORRADE_ENUMSET_OPERATORS(PbrShader::Flags)

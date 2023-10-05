@@ -39,14 +39,12 @@ namespace Cr = Corrade;
 namespace esp {
 namespace gfx {
 
-PbrShader::PbrShader(Flags originalFlags,
-                     Mn::UnsignedInt lightCount,
-                     Mn::UnsignedInt jointCount,
-                     Mn::UnsignedInt perVertexJointCount)
-    : flags_(originalFlags),
-      lightCount_(lightCount),
-      jointCount_(jointCount),
-      perVertexJointCount_(perVertexJointCount) {
+PbrShader::PbrShader(const Configuration& config)
+    : flags_(config.flags()),
+      lightCount_(config.lightCount()),
+      jointCount_(config.jointCount()),
+      perVertexJointCount_(config.perVertexJointCount()),
+      secondaryPerVertexJointCount_(config.secondaryPerVertexJointCount()) {
   if (!Cr::Utility::Resource::hasGroup("gfx-shaders")) {
     importShaderResources();
   }
@@ -97,6 +95,7 @@ PbrShader::PbrShader(Flags originalFlags,
   Mn::GL::Shader vert{glVersion, Mn::GL::Shader::Type::Vertex};
   Mn::GL::Shader frag{glVersion, Mn::GL::Shader::Type::Fragment};
 
+  // Vertex shader attributes
   std::stringstream attributeLocationsStream;
   attributeLocationsStream << Cr::Utility::formatString(
       "#define ATTRIBUTE_LOCATION_POSITION {}\n"
@@ -114,28 +113,28 @@ PbrShader::PbrShader(Flags originalFlags,
   }
 
   // TODO: Occlusion texture to be added.
-
-  if (perVertexJointCount_ > 0) {
-    attributeLocationsStream << Cr::Utility::formatString(
-        "#define ATTRIBUTE_LOCATION_WEIGHTS {}\n#define "
-        "ATTRIBUTE_LOCATION_JOINTIDS {}\n",
-        Weights::Location, JointIds::Location);
-  }
-  // TODO : secondary perVertexJointCount currently not used
-  // if (configuration.secondaryPerVertexJointCount()) {
-  // attributeLocationsStream << Cr::Utility::formatString(
-  //     "#define ATTRIBUTE_LOCATION_SECONDARY_WEIGHTS {}\n#define "
-  //     "ATTRIBUTE_LOCATION_SECONDARY_JOINTIDS {}\n",
-  //     SecondaryWeights::Location, SecondaryJointIds::Location);
-  // }
-
   if (isTextured_) {
     attributeLocationsStream
         << Cr::Utility::formatString("#define ATTRIBUTE_LOCATION_TEXCOORD {}\n",
                                      TextureCoordinates::Location);
   }
+  // Skin attributes
+  if (flags_ >= Flag::SkinnedMesh) {
+    if (perVertexJointCount_ > 0) {
+      attributeLocationsStream << Cr::Utility::formatString(
+          "#define ATTRIBUTE_LOCATION_WEIGHTS {}\n#define "
+          "ATTRIBUTE_LOCATION_JOINTIDS {}\n",
+          Weights::Location, JointIds::Location);
+    }
+    if (secondaryPerVertexJointCount_ > 0) {
+      attributeLocationsStream << Cr::Utility::formatString(
+          "#define ATTRIBUTE_LOCATION_SECONDARY_WEIGHTS {}\n#define "
+          "ATTRIBUTE_LOCATION_SECONDARY_JOINTIDS {}\n",
+          SecondaryWeights::Location, SecondaryJointIds::Location);
+    }
+  }
 
-  // Add macros
+  // Build Vertex shader
   vert.addSource(attributeLocationsStream.str())
       .addSource(isTextured_ ? "#define TEXTURED\n" : "")
       .addSource(flags_ >= Flag::NormalTexture ? "#define NORMAL_TEXTURE\n"
@@ -146,16 +145,27 @@ PbrShader::PbrShader(Flags originalFlags,
       .addSource(isTextured_ && (flags_ >= Flag::TextureTransformation)
                      ? "#define TEXTURE_TRANSFORMATION\n"
                      : "")
-      .addSource(flags_ >= Flag::VertexColor ? "#define VERTEX_COLOR\n" : "")
+      .addSource(flags_ >= Flag::VertexColor ? "#define VERTEX_COLOR\n" : "");
+
+  // If skinned mesh, added joint values to vertex shader
+  if (flags_ >= Flag::SkinnedMesh) {
+    vert.addSource(Cr::Utility::format(
+        "#define JOINT_COUNT {}\n"
+        "#define PER_VERTEX_JOINT_COUNT {}u\n"
+        "#define SECONDARY_PER_VERTEX_JOINT_COUNT {}u\n",
+        jointCount_, perVertexJointCount_, secondaryPerVertexJointCount_));
+  }
 
   vert.addSource(rs.getString("pbr.vert"));
 
+  // Fragment shader attributes
   std::stringstream outputAttributeLocationsStream;
   outputAttributeLocationsStream << Cr::Utility::formatString(
       "#define OUTPUT_ATTRIBUTE_LOCATION_COLOR {}\n", ColorOutput);
   outputAttributeLocationsStream << Cr::Utility::formatString(
       "#define OUTPUT_ATTRIBUTE_LOCATION_OBJECT_ID {}\n", ObjectIdOutput);
 
+  // Build fragment shader
   frag.addSource(outputAttributeLocationsStream.str())
       .addSource(isTextured_ ? "#define TEXTURED\n" : "")
       .addSource(
@@ -207,14 +217,15 @@ PbrShader::PbrShader(Flags originalFlags,
       // Lights exist and direct lighting is enabled
       .addSource(directLightingIsEnabled_ ? "#define DIRECT_LIGHTING\n" : "")
       // Whether to skip the TBN calc if no precomputed tangents are provided.
-      // NOTE : This will disable normal textures if no precomp tangents, which
-      // will result in a severe degredation in quality.
+      // NOTE : This will disable normal textures if no precomp tangents,
+      // which will result in a severe degredation in quality.
       // TODO : implement this in shader. This should only be done if the TBN
       // calc negatively impacts shader performance too dramatically.
       .addSource(flags_ >= Flag::SkipMissingTBNCalc ? "#define SKIP_TBN_CALC\n"
                                                     : "")
 
-      // Whether to use Mikkelsen TBN Calc. Otherwise use faster simplification
+      // Whether to use Mikkelsen TBN Calc. Otherwise use faster
+      // simplification
       .addSource(flags_ >= Flag::UseMikkelsenTBN ? "#define USE_MIKKELSEN_TBN\n"
                                                  : "")
       // Whether to use the Burley/Disney diffuse calculation, or simple
@@ -300,6 +311,11 @@ PbrShader::PbrShader(Flags originalFlags,
   modelMatrixUniform_ = uniformLocation("uModelMatrix");
   normalMatrixUniform_ = uniformLocation("uNormalMatrix");
   projMatrixUniform_ = uniformLocation("uProjectionMatrix");
+
+  // Skinning related
+  if (flags_ >= Flag::SkinnedMesh) {
+    this->jointMatricesUniform_ = uniformLocation("jointMatrices");
+  }
 
   if (flags_ >= Flag::ObjectId) {
     objectIdUniform_ = uniformLocation("uObjectId");
@@ -957,5 +973,30 @@ PbrShader& PbrShader::setTonemapExposure(float exposure) {
   }
   return *this;
 }
+
+PbrShader::Configuration& PbrShader::Configuration::setJointCount(
+    Mn::UnsignedInt count,
+    Mn::UnsignedInt perVertexCount,
+    Mn::UnsignedInt secondaryPerVertexCount) {
+  CORRADE_ASSERT(perVertexCount <= 4,
+                 "PbrShader::Configuration::setJointCount(): expected "
+                 "at most 4 per-vertex joints, got"
+                     << perVertexCount,
+                 *this);
+  CORRADE_ASSERT(secondaryPerVertexCount <= 4,
+                 "PbrShader::Configuration::setJointCount(): expected "
+                 "at most 4 secondary per-vertex joints, got"
+                     << secondaryPerVertexCount,
+                 *this);
+  CORRADE_ASSERT(perVertexCount || secondaryPerVertexCount || !count,
+                 "PbrShader::Configuration::setJointCount(): count has "
+                 "to be zero if per-vertex joint count is zero",
+                 *this);
+  _jointCount = count;
+  _perVertexJointCount = perVertexCount;
+  _secondaryPerVertexJointCount = secondaryPerVertexCount;
+  return *this;
+}
+
 }  // namespace gfx
 }  // namespace esp

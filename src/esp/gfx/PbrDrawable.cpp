@@ -333,10 +333,9 @@ void PbrDrawable::setMaterialValuesInternal(
     flags_ |= PbrShader::Flag::VertexColor;
   }
 
-
   // Skin support
-  (skinData_) ? flags_ |= PbrShader::Flag::SkinnedMesh
-              : flags_ &= ~PbrShader::Flag::SkinnedMesh;
+  (skinData_ != nullptr) ? flags_ |= PbrShader::Flag::SkinnedMesh
+                         : flags_ &= ~PbrShader::Flag::SkinnedMesh;
 
   // If not reset then make sure the same shader is used
   if (!reset) {
@@ -657,14 +656,17 @@ void PbrDrawable::updateShader() {
     if (!shader_) {
       shaderManager_.set<Mn::GL::AbstractShaderProgram>(
           shader_.key(),
-          new PbrShader{flags_, lightCount, jointCount, perVertexJointCount},
+          new PbrShader{PbrShader::Configuration{}
+                            .setFlags(flags_)
+                            .setLightCount(lightCount)
+                            .setJointCount(jointCount, perVertexJointCount)},
           Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
     }
 
     CORRADE_INTERNAL_ASSERT(shader_ && shader_->lightCount() == lightCount &&
                             shader_->flags() == flags_);
   }
-}  // PbrDrawable::updateShader
+}  // namespace gfx
 
 }  // namespace gfx
 }  // namespace esp
