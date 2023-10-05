@@ -137,6 +137,7 @@ void GenericDrawable::setLightSetup(const Mn::ResourceKey& resourceKey) {
 void GenericDrawable::updateShaderLightingParametersInternal() {
   // color settings
   const Mn::Color4 ambientLightColor = getAmbientLightColor(*lightSetup_);
+
   // See documentation in src/deps/magnum/src/Magnum/Shaders/Phong.h
   (*shader_)
       .setAmbientColor(matCache.ambientColor * ambientLightColor)

@@ -7,9 +7,28 @@
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/core/Check.h"
 #include "esp/gfx/Drawable.h"
+#include "esp/gfx/SkinData.h"
 #include "esp/io/Json.h"
 #include "esp/io/JsonAllTypes.h"
 #include "esp/scene/SceneNode.h"
+
+namespace {
+esp::gfx::replay::Transform createReplayTransform(
+    const Magnum::Matrix4& absTransformMat) {
+  auto rotationShear = absTransformMat.rotationShear();
+  // Remove reflection (negative scaling) from the matrix. We assume
+  // constant node scaling for the node's lifetime. It is baked into
+  // instance-creation so it doesn't need to be saved into
+  // RenderAssetInstanceState. See also onCreateRenderAssetInstance.
+  if (rotationShear.determinant() < 0.0f) {
+    rotationShear[0] *= -1.f;
+  }
+
+  return esp::gfx::replay::Transform{
+      absTransformMat.translation(),
+      Magnum::Quaternion::fromMatrix(rotationShear)};
+};
+}  // namespace
 
 namespace esp {
 namespace gfx {
@@ -62,8 +81,21 @@ void Recorder::onCreateRenderAssetInstance(
   // manually later if necessary.
   NodeDeletionHelper* deletionHelper = new NodeDeletionHelper{*node, this};
 
-  instanceRecords_.emplace_back(InstanceRecord{
-      node, instanceKey, Corrade::Containers::NullOpt, deletionHelper});
+  instanceRecords_.emplace_back(InstanceRecord{node, instanceKey,
+                                               Corrade::Containers::NullOpt,
+                                               deletionHelper, creation.rigId});
+}
+
+void Recorder::onCreateRigInstance(int rigId, const Rig& rig) {
+  rigNodes_[rigId] = rig.bones;
+
+  RigCreation rigCreation;
+  rigCreation.id = rigId;
+  rigCreation.boneNames.resize(rig.bones.size());
+  for (const auto& boneNamePair : rig.boneNames) {
+    rigCreation.boneNames[boneNamePair.second] = boneNamePair.first;
+  }
+  currKeyframe_.rigCreations.emplace_back(std::move(rigCreation));
 }
 
 void Recorder::onHideSceneGraph(const esp::scene::SceneGraph& sceneGraph) {
@@ -78,12 +110,12 @@ void Recorder::onHideSceneGraph(const esp::scene::SceneGraph& sceneGraph) {
 }
 
 void Recorder::saveKeyframe() {
-  updateInstanceStates();
+  updateStates();
   advanceKeyframe();
 }
 
 Keyframe Recorder::extractKeyframe() {
-  updateInstanceStates();
+  updateStates();
   auto retVal = std::move(currKeyframe_);
   currKeyframe_ = Keyframe{};
   return retVal;
@@ -148,11 +180,15 @@ void Recorder::onDeleteRenderAssetInstance(const scene::SceneNode* node) {
   int index = findInstance(node);
   CORRADE_INTERNAL_ASSERT(index != ID_UNDEFINED);
 
-  auto instanceKey = instanceRecords_[index].instanceKey;
+  const auto& instanceRecord = instanceRecords_[index];
+  const auto& instanceKey = instanceRecord.instanceKey;
+  const auto& rigId = instanceRecord.rigId;
 
   checkAndAddDeletion(&getKeyframe(), instanceKey);
 
   instanceRecords_.erase(instanceRecords_.begin() + index);
+  rigNodes_.erase(rigId);
+  rigNodeTransformCache_.erase(rigId);
 }
 
 Keyframe& Recorder::getKeyframe() {
@@ -177,19 +213,13 @@ int Recorder::findInstance(const scene::SceneNode* queryNode) {
 RenderAssetInstanceState Recorder::getInstanceState(
     const scene::SceneNode* node) {
   const auto absTransformMat = node->absoluteTransformation();
-  auto rotationShear = absTransformMat.rotationShear();
-  // Remove reflection (negative scaling) from the matrix. We assume constant
-  // node scaling for the node's lifetime. It is baked into instance-creation so
-  // it doesn't need to be saved into RenderAssetInstanceState. See also
-  // onCreateRenderAssetInstance.
-  if (rotationShear.determinant() < 0.0f) {
-    rotationShear[0] *= -1.f;
-  }
+  const auto transform = ::createReplayTransform(absTransformMat);
+  return RenderAssetInstanceState{transform, node->getSemanticId()};
+}
 
-  Transform absTransform{absTransformMat.translation(),
-                         Magnum::Quaternion::fromMatrix(rotationShear)};
-
-  return RenderAssetInstanceState{absTransform, node->getSemanticId()};
+void Recorder::updateStates() {
+  updateInstanceStates();
+  updateRigInstanceStates();
 }
 
 void Recorder::updateInstanceStates() {
@@ -199,6 +229,44 @@ void Recorder::updateInstanceStates() {
       getKeyframe().stateUpdates.emplace_back(instanceRecord.instanceKey,
                                               state);
       instanceRecord.recentState = state;
+    }
+  }
+}
+
+void Recorder::updateRigInstanceStates() {
+  for (const auto& rigItr : rigNodes_) {
+    const int rigId = rigItr.first;
+    const int boneCount = rigItr.second.size();
+
+    RigUpdate rigUpdate;
+    rigUpdate.id = rigId;
+
+    const auto cacheIt = rigNodeTransformCache_.find(rigId);
+    if (cacheIt == rigNodeTransformCache_.end()) {
+      rigNodeTransformCache_[rigId] = std::vector<Mn::Matrix4>(boneCount);
+    }
+
+    // If a single bone pose was updated, update the entire pose
+    bool updated = false;
+    for (int boneIdx = 0; boneIdx < boneCount; ++boneIdx) {
+      const auto* bone = rigItr.second[boneIdx];
+      const auto absTransformMat = bone->absoluteTransformation();
+      if (rigNodeTransformCache_[rigId][boneIdx] != absTransformMat) {
+        updated = true;
+        break;
+      }
+    }
+
+    // Update the pose
+    if (updated) {
+      rigUpdate.pose.reserve(boneCount);
+      for (int boneIdx = 0; boneIdx < boneCount; ++boneIdx) {
+        const auto* bone = rigItr.second[boneIdx];
+        const auto absTransformMat = bone->absoluteTransformation();
+        rigNodeTransformCache_[rigId][boneIdx] = absTransformMat;
+        rigUpdate.pose.emplace_back(createReplayTransform(absTransformMat));
+      }
+      currKeyframe_.rigUpdates.emplace_back(std::move(rigUpdate));
     }
   }
 }

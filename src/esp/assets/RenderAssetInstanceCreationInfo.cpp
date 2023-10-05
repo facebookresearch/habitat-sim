@@ -11,11 +11,13 @@ RenderAssetInstanceCreationInfo::RenderAssetInstanceCreationInfo(
     const std::string& _filepath,
     const Corrade::Containers::Optional<Magnum::Vector3>& _scale,
     const Flags& _flags,
-    const std::string& _lightSetupKey)
+    const std::string& _lightSetupKey,
+    int _rigId)
     : filepath(_filepath),
       scale(_scale),
       flags(_flags),
-      lightSetupKey(_lightSetupKey) {}
+      lightSetupKey(_lightSetupKey),
+      rigId(_rigId) {}
 
 }  // namespace assets
 }  // namespace esp

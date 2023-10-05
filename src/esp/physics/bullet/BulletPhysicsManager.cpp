@@ -15,6 +15,7 @@
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/assets/ResourceManager.h"
 #include "esp/metadata/attributes/PhysicsManagerAttributes.h"
+#include "esp/physics/bullet/BulletRigidStage.h"
 #include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/scene/SceneNode.h"
@@ -38,7 +39,6 @@ BulletPhysicsManager::BulletPhysicsManager(
 
 BulletPhysicsManager::~BulletPhysicsManager() {
   ESP_DEBUG() << "Deconstructing BulletPhysicsManager";
-
   existingObjects_.clear();
   existingArticulatedObjects_.clear();
   staticStageObject_.reset();
@@ -52,6 +52,12 @@ void BulletPhysicsManager::removeObject(const int objectId,
 }
 
 void BulletPhysicsManager::removeArticulatedObject(int objectId) {
+  // Unregister skinned articulated object's rig from resource manager
+  auto& rigManager = resourceManager_.getRigManager();
+  if (rigManager.rigInstanceExists(objectId)) {
+    rigManager.deleteRigInstance(objectId);
+  }
+
   removeObjectRigidConstraints(objectId);
   PhysicsManager::removeArticulatedObject(objectId);
 }
@@ -158,23 +164,9 @@ int BulletPhysicsManager::addArticulatedObject(
   // if the URDF model specifies a render asset, load and link it
   const auto renderAssetPath = model->getRenderAsset();
   if ((renderAssetPath) && (*renderAssetPath != "")) {
-    // load associated skinned mesh
-    assets::AssetInfo assetInfo = assets::AssetInfo::fromPath(*renderAssetPath);
-    assets::RenderAssetInstanceCreationInfo creationInfo;
-    creationInfo.filepath = *renderAssetPath;
-    creationInfo.lightSetupKey = lightSetup;
-    creationInfo.scale =
-        artObjAttributes->getUniformScale() * Mn::Vector3(1.f, 1.f, 1.f);
-    creationInfo.rig = articulatedObject;
-    esp::assets::RenderAssetInstanceCreationInfo::Flags flags;
-    flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsRGBD;
-    flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsSemantic;
-    creationInfo.flags = flags;
-    auto* gfxNode = resourceManager_.loadAndCreateRenderAssetInstance(
-        assetInfo, creationInfo, objectNode, drawables);
-    // Propagate the semantic ID to the graphics subtree
-    esp::scene::setSemanticIdForSubtree(
-        gfxNode, articulatedObject->node().getSemanticId());
+    instantiateSkinnedModel(articulatedObject, artObjAttributes,
+                            *renderAssetPath, objectNode, drawables,
+                            lightSetup);
   }
 
   // allocate ids for links
@@ -921,6 +913,45 @@ void BulletPhysicsManager::removeRigidConstraint(int constraintId) {
       }
     }
   }
+}
+
+void BulletPhysicsManager::instantiateSkinnedModel(
+    const BulletArticulatedObject::ptr& ao,
+    const esp::metadata::attributes::ArticulatedObjectAttributes::ptr&
+        artObjAttributes,
+    const std::string& renderAssetPath,
+    scene::SceneNode* parentNode,
+    DrawableGroup* drawables,
+    const std::string& lightSetupKey) {
+  // load associated skinned mesh
+  assets::AssetInfo assetInfo = assets::AssetInfo::fromPath(renderAssetPath);
+  assets::RenderAssetInstanceCreationInfo creationInfo;
+  creationInfo.filepath = renderAssetPath;
+  creationInfo.lightSetupKey = lightSetupKey;
+  creationInfo.scale =
+      artObjAttributes->getUniformScale() * Mn::Vector3(1.f, 1.f, 1.f);
+  esp::assets::RenderAssetInstanceCreationInfo::Flags flags;
+  flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsRGBD;
+  flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsSemantic;
+  creationInfo.flags = flags;
+
+  // Instantiate rig articulation nodes.
+  // The nodes are parented to the articulated object links to couple the pose
+  // to the articulated object.
+  esp::gfx::Rig rig{};
+  for (int linkId : ao->getLinkIdsWithBase()) {
+    auto& link = ao->getLink(linkId);
+    rig.boneNames[link.linkName] = rig.bones.size();
+    auto* linkNode = &link.node().createChild();
+    rig.bones.push_back(linkNode);
+  }
+  creationInfo.rigId =
+      resourceManager_.getRigManager().registerRigInstance(std::move(rig));
+
+  auto* gfxNode = resourceManager_.loadAndCreateRenderAssetInstance(
+      assetInfo, creationInfo, parentNode, drawables);
+  // Propagate the semantic ID to the graphics subtree
+  esp::scene::setSemanticIdForSubtree(gfxNode, ao->node().getSemanticId());
 }
 
 }  // namespace physics

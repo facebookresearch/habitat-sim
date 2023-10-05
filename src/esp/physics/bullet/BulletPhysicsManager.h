@@ -19,18 +19,16 @@
 #include "BulletDynamics/ConstraintSolver/btPoint2PointConstraint.h"
 #include "BulletDynamics/Featherstone/btMultiBodyConstraintSolver.h"
 #include "BulletDynamics/Featherstone/btMultiBodyFixedConstraint.h"
-#include "BulletDynamics/Featherstone/btMultiBodyJointMotor.h"
 #include "BulletDynamics/Featherstone/btMultiBodyPoint2Point.h"
 
 #include "BulletCollisionHelper.h"
 #include "BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h"
-#include "BulletRigidObject.h"
-#include "BulletRigidStage.h"
 #include "esp/physics/PhysicsManager.h"
-#include "esp/physics/bullet/BulletRigidObject.h"
+#include "esp/physics/bullet/BulletArticulatedObject.h"
 
 namespace esp {
 namespace physics {
+class BulletArticulatedObject;
 
 /**
 @brief Dynamic stage and object manager interfacing with Bullet physics
@@ -424,6 +422,29 @@ class BulletPhysicsManager : public PhysicsManager {
       objectConstraints_.erase(objectId);
     }
   };
+
+  /**
+   * @brief Helper function for instantiating a skinned model associated to the
+   * articulated object. The model bones are driven by parenting them to their
+   * associated articulated object links by string-matching.
+   *
+   * @param ao Articulated object upon which the skinned model instance is
+   * attached.
+   * @param renderAssetPath Path of the skinned model.
+   * @param parentNode Scene node that will be the parent of the skinned model
+   * instance.
+   * @param drawables Drawable group associated with the skinned model instance.
+   * @param lightSetupKey Light setup associated with the skinned model
+   * instance.
+   */
+  void instantiateSkinnedModel(
+      const std::shared_ptr<BulletArticulatedObject>& ao,
+      const esp::metadata::attributes::ArticulatedObjectAttributes::ptr&
+          artObjAttributes,
+      const std::string& renderAssetPath,
+      scene::SceneNode* parentNode,
+      DrawableGroup* drawables,
+      const std::string& lightSetupKey);
 
  public:
   ESP_SMART_POINTERS(BulletPhysicsManager)

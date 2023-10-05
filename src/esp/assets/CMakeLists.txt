@@ -19,6 +19,8 @@ set(
   RenderAssetInstanceCreationInfo.h
   ResourceManager.cpp
   ResourceManager.h
+  RigManager.cpp
+  RigManager.h
 )
 
 find_package(

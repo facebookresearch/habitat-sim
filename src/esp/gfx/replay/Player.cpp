@@ -81,6 +81,16 @@ void AbstractSceneGraphPlayerImplementation::setNodeSemanticId(
   setSemanticIdForSubtree(reinterpret_cast<scene::SceneNode*>(node), id);
 }
 
+void AbstractPlayerImplementation::createRigInstance(
+    int,
+    const std::vector<std::string>&) {}
+
+void AbstractPlayerImplementation::deleteRigInstance(int) {}
+
+void AbstractPlayerImplementation::setRigPose(
+    int,
+    const std::vector<gfx::replay::Transform>&) {}
+
 void Player::readKeyframesFromJsonDocument(const rapidjson::Document& d) {
   CORRADE_INTERNAL_ASSERT(keyframes_.empty());
   esp::io::readMember(d, "keyframes", keyframes_);
@@ -190,6 +200,10 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     assetInfos_[assetInfo.filepath] = assetInfo;
   }
 
+  for (const auto& rigCreation : keyframe.rigCreations) {
+    implementation_->createRigInstance(rigCreation.id, rigCreation.boneNames);
+  }
+
   for (const auto& pair : keyframe.creations) {
     const auto& creation = pair.second;
 
@@ -239,6 +253,10 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     implementation_->setNodeSemanticId(node, state.semanticId);
   }
 
+  for (const auto& rigUpdate : keyframe.rigUpdates) {
+    implementation_->setRigPose(rigUpdate.id, rigUpdate.pose);
+  }
+
   if (keyframe.lightsChanged) {
     implementation_->changeLightSetup(keyframe.lights);
   }
@@ -263,6 +281,12 @@ void Player::hackProcessDeletions(const Keyframe& keyframe) {
 
       implementation_->deleteAssetInstance(it->second);
       createdInstances_.erase(deletionInstanceKey);
+
+      int rigId = creationInfos_[deletionInstanceKey].rigId;
+      if (rigId != ID_UNDEFINED) {
+        implementation_->deleteRigInstance(rigId);
+      }
+      creationInfos_.erase(deletionInstanceKey);
     }
   } else if (keyframe.deletions.size() > 0) {
     // Cache latest transforms
@@ -299,6 +323,8 @@ void Player::hackProcessDeletions(const Keyframe& keyframe) {
       // Re-apply latest transform updates
       implementation_->setNodeTransform(instance, latestTransformCache_[key]);
     }
+
+    // TODO: Handle batch rendered rigs
   }
 }
 

@@ -19,6 +19,7 @@
 #include "esp/gfx/replay/Recorder.h"
 #include "esp/gfx/replay/ReplayManager.h"
 #include "esp/metadata/MetadataMediator.h"
+#include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/sim/Simulator.h"
@@ -52,6 +53,7 @@ struct GfxReplayTest : Cr::TestSuite::Tester {
   void testSimulatorIntegration();
 
   void testLightIntegration();
+  void testSkinningIntegration();
 
   esp::logging::LoggingContext loggingContext;
 
@@ -67,11 +69,15 @@ int getNumberOfChildrenOfRoot(esp::scene::SceneNode& rootNode) {
 }
 
 GfxReplayTest::GfxReplayTest() {
-  addTests({&GfxReplayTest::testRecorder, &GfxReplayTest::testPlayer,
-            &GfxReplayTest::testPlayerReadMissingFile,
-            &GfxReplayTest::testPlayerReadInvalidFile,
-            &GfxReplayTest::testSimulatorIntegration,
-            &GfxReplayTest::testLightIntegration});
+  addTests({
+      &GfxReplayTest::testRecorder,
+      &GfxReplayTest::testPlayer,
+      &GfxReplayTest::testPlayerReadMissingFile,
+      &GfxReplayTest::testPlayerReadInvalidFile,
+      &GfxReplayTest::testSimulatorIntegration,
+      &GfxReplayTest::testLightIntegration,
+      &GfxReplayTest::testSkinningIntegration,
+  });
 }  // ctor
 
 // Manipulate the scene and save some keyframes using replay::Recorder
@@ -265,7 +271,7 @@ void GfxReplayTest::testPlayer() {
 
   // keyframe #0: load a render asset and create a render asset instance
   keyframes.emplace_back(esp::gfx::replay::Keyframe{
-      {info}, {{instanceKey, creation}}, {}, {}, {}});
+      {info}, {}, {{instanceKey, creation}}, {}, {}, {}, {}});
 
   constexpr int semanticId = 4;
   esp::gfx::replay::RenderAssetInstanceState stateUpdate{
@@ -273,16 +279,18 @@ void GfxReplayTest::testPlayer() {
       semanticId};
 
   // keyframe #1: a state update
-  keyframes.emplace_back(
-      esp::gfx::replay::Keyframe{{}, {}, {}, {{instanceKey, stateUpdate}}, {}});
+  keyframes.emplace_back(esp::gfx::replay::Keyframe{
+      {}, {}, {}, {}, {{instanceKey, stateUpdate}}, {}, {}});
 
   // keyframe #2: delete instance
   keyframes.emplace_back(
-      esp::gfx::replay::Keyframe{{}, {}, {instanceKey}, {}, {}});
+      esp::gfx::replay::Keyframe{{}, {}, {}, {instanceKey}, {}, {}, {}});
 
   // keyframe #3: include a user transform
   keyframes.emplace_back(
       esp::gfx::replay::Keyframe{{},
+                                 {},
+                                 {},
                                  {},
                                  {},
                                  {},
@@ -608,6 +616,110 @@ void GfxReplayTest::testLightIntegration() {
     ESP_WARNING() << "Unable to remove temporary test JSON file"
                   << testFilepath;
   }
+}
+
+void GfxReplayTest::testSkinningIntegration() {
+  const std::string urdfFile =
+      Cr::Utility::Path::join(TEST_ASSETS, "urdf/skinned_prism.urdf");
+
+  // record a playback file
+  std::vector<esp::gfx::replay::Keyframe> keyframes;
+  {
+    SimulatorConfiguration simConfig{};
+    simConfig.enableGfxReplaySave = true;
+    simConfig.createRenderer = false;
+    simConfig.enablePhysics = true;  // Required for articulated objects
+    auto sim = Simulator::create_unique(simConfig);
+    CORRADE_VERIFY(sim);
+    auto aoManager = sim->getArticulatedObjectManager();
+    CORRADE_VERIFY(aoManager);
+    const auto recorder = sim->getGfxReplayManager()->getRecorder();
+    CORRADE_VERIFY(recorder);
+    CORRADE_COMPARE(aoManager->getNumObjects(), 0);
+
+    // Frame 0: Add new rig
+    auto ao = aoManager->addArticulatedObjectFromURDF(urdfFile);
+    CORRADE_VERIFY(ao);
+    CORRADE_COMPARE(aoManager->getNumObjects(), 1);
+
+    const auto linkIds = ao->getLinkIdsWithBase();
+    CORRADE_COMPARE(linkIds.size(), 5);
+
+    keyframes.emplace_back(recorder->extractKeyframe());
+    // Frame 1: No change
+    keyframes.emplace_back(recorder->extractKeyframe());
+    // Frame 2: One translation
+    {
+      auto link = ao->getLink(-1);
+      link->node().translate(Mn::Vector3(1.0, 0.0, 0.0));
+      keyframes.emplace_back(recorder->extractKeyframe());
+    }
+    // Frame 3: One translations, add new rig
+    {
+      auto ao2 = aoManager->addArticulatedObjectFromURDF(urdfFile);
+      CORRADE_VERIFY(ao2);
+      CORRADE_COMPARE(aoManager->getNumObjects(), 2);
+      auto link = ao->getLink(linkIds[2]);
+      link->node().translate(Mn::Vector3(1.0, 0.0, 0.0));
+      keyframes.emplace_back(recorder->extractKeyframe());
+    }
+    // Frame 4: Delete rigs
+    {
+      aoManager->removeAllObjects();
+      CORRADE_COMPARE(aoManager->getNumObjects(), 0);
+      keyframes.emplace_back(recorder->extractKeyframe());
+    }
+  }
+
+  const auto getBoneIdFromName = [](int rigId,
+                                    const esp::gfx::replay::Keyframe& keyframe,
+                                    const std::string& boneName) -> int {
+    for (auto& rigCreation : keyframe.rigCreations) {
+      if (rigCreation.id == rigId) {
+        for (int i = 0; i < rigCreation.boneNames.size(); ++i) {
+          if (rigCreation.boneNames[i] == boneName) {
+            return i;
+          }
+        }
+      }
+    }
+    return esp::ID_UNDEFINED;
+  };
+
+  // Frame 0
+  CORRADE_COMPARE(keyframes[0].rigCreations.size(), 1);
+  CORRADE_COMPARE(keyframes[0].rigCreations[0].boneNames.size(), 5);
+  CORRADE_VERIFY(getBoneIdFromName(0, keyframes[0], "A") != esp::ID_UNDEFINED);
+  CORRADE_VERIFY(getBoneIdFromName(0, keyframes[0], "B") != esp::ID_UNDEFINED);
+  CORRADE_VERIFY(getBoneIdFromName(0, keyframes[0], "C") != esp::ID_UNDEFINED);
+  CORRADE_VERIFY(getBoneIdFromName(0, keyframes[0], "D") != esp::ID_UNDEFINED);
+  CORRADE_VERIFY(getBoneIdFromName(0, keyframes[0], "E") != esp::ID_UNDEFINED);
+  CORRADE_COMPARE(keyframes[0].rigUpdates.size(), 1);
+  CORRADE_COMPARE(keyframes[0].rigUpdates[0].pose.size(), 5);
+
+  // Frame 1
+  CORRADE_COMPARE(keyframes[1].rigCreations.size(), 0);
+  CORRADE_COMPARE(keyframes[1].rigUpdates.size(), 0);
+
+  // Frame 2
+  CORRADE_COMPARE(keyframes[2].rigCreations.size(), 0);
+  CORRADE_COMPARE(keyframes[2].rigUpdates.size(), 1);
+  CORRADE_COMPARE(keyframes[2].rigUpdates[0].pose.size(), 5);
+
+  // Frame 3
+  CORRADE_COMPARE(keyframes[3].rigCreations.size(), 1);
+  CORRADE_COMPARE(keyframes[3].rigCreations[0].boneNames.size(), 5);
+  CORRADE_VERIFY(getBoneIdFromName(1, keyframes[3], "A") != esp::ID_UNDEFINED);
+  CORRADE_VERIFY(getBoneIdFromName(1, keyframes[3], "B") != esp::ID_UNDEFINED);
+  CORRADE_VERIFY(getBoneIdFromName(1, keyframes[3], "C") != esp::ID_UNDEFINED);
+  CORRADE_VERIFY(getBoneIdFromName(1, keyframes[3], "D") != esp::ID_UNDEFINED);
+  CORRADE_VERIFY(getBoneIdFromName(1, keyframes[3], "E") != esp::ID_UNDEFINED);
+  CORRADE_COMPARE(keyframes[3].rigUpdates.size(), 2);
+  CORRADE_COMPARE(keyframes[3].rigUpdates[0].pose.size(), 5);
+  CORRADE_COMPARE(keyframes[3].rigUpdates[1].pose.size(), 5);
+
+  // Frame 4
+  CORRADE_COMPARE(keyframes[4].deletions.size(), 2);
 }
 
 }  // namespace

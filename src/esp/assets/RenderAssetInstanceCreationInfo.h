@@ -12,11 +12,9 @@
 
 #include <memory>
 #include <string>
+#include "esp/core/Esp.h"
 
 namespace esp {
-namespace physics {
-class ArticulatedObject;
-}
 namespace assets {
 
 // parameters to control how a render asset instance is created
@@ -36,7 +34,8 @@ struct RenderAssetInstanceCreationInfo {
       const std::string& _filepath,
       const Corrade::Containers::Optional<Magnum::Vector3>& _scale,
       const Flags& _flags,
-      const std::string& _lightSetupKey);
+      const std::string& _lightSetupKey,
+      int _rigId = ID_UNDEFINED);
 
   bool isStatic() const { return bool(flags & Flag::IsStatic); }
   bool isRGBD() const { return bool(flags & Flag::IsRGBD); }
@@ -49,7 +48,7 @@ struct RenderAssetInstanceCreationInfo {
   Corrade::Containers::Optional<Magnum::Vector3> scale;
   Flags flags;
   std::string lightSetupKey;
-  std::shared_ptr<physics::ArticulatedObject> rig;
+  int rigId = ID_UNDEFINED;
 };
 
 }  // namespace assets

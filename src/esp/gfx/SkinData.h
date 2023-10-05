@@ -5,10 +5,8 @@
 #ifndef ESP_GFX_SKINDATA_H_
 #define ESP_GFX_SKINDATA_H_
 
-#include <Magnum/Magnum.h>
 #include <Magnum/Trade/SkinData.h>
 #include <esp/scene/SceneNode.h>
-#include <memory>
 #include <unordered_map>
 
 namespace esp {
@@ -36,12 +34,24 @@ struct InstanceSkinData {
   const std::shared_ptr<SkinData>& skinData = nullptr;
   /** @brief Root articulated object node. */
   scene::SceneNode* rootArticulatedObjectNode = nullptr;
-  /** @brief Map between skin joint IDs and scaled articulated object transform
-   * nodes. */
+  /** @brief Map between skin joint IDs and articulated object transform nodes.
+   */
   std::unordered_map<int, const scene::SceneNode*> jointIdToTransformNode{};
 
   explicit InstanceSkinData(const std::shared_ptr<SkinData>& skinData)
       : skinData(skinData){};
+};
+
+/**
+ * @brief Contains the nodes that control the articulations of a skinned model
+ * instance.
+ */
+struct Rig {
+  /** @brief Nodes that control the articulations of a skinned model instance.
+   */
+  std::vector<scene::SceneNode*> bones;
+  /** @brief Bone name to 'bones' index map. */
+  std::unordered_map<std::string, int> boneNames;
 };
 }  // namespace gfx
 }  // namespace esp
