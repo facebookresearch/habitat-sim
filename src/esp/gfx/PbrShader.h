@@ -109,6 +109,11 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
     EmissiveTexture = 1ULL << 4,
 
     /**
+     * Support mesh vertex colors
+     */
+    VertexColor = 1ULL << 5,
+
+    /**
      * Enable texture coordinate transformation. If this flag is set,
      * the shader expects that at least one of
      * @ref Flag::BaseColorTexture, @ref Flag::RoughnessTexture,
@@ -118,7 +123,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * @ref Flag::OcclusionRoughnessMetallicTexture is enabled as well.
      * @see @ref setTextureMatrix()
      */
-    TextureTransformation = 1ULL << 5,
+    TextureTransformation = 1ULL << 6,
 
     /**
      * TODO: Do we need instanced object? (instanced texture, instanced id etc.)
@@ -136,86 +141,84 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * see PBR fragment shader code for more details
      * Requires the @ref Tangent4 attribute to be present.
      */
-    PrecomputedTangent = 1ULL << 6,
+    PrecomputedTangent = 1ULL << 7,
 
     /**
      * Enable object ID output for this shader.
      */
-    ObjectId = 1ULL << 7,
+    ObjectId = 1ULL << 8,
 
     /**
      * Support Instanced object ID. Retrieves a per-instance / per-vertex
      * object ID from the @ref ObjectId attribute. If this is false, the shader
      * will use the node's semantic ID
      */
-    InstancedObjectId = (1ULL << 8) | ObjectId,
+    InstancedObjectId = (1ULL << 9) | ObjectId,
 
     /**
      * Has ClearCoat layer.
      */
-    ClearCoatLayer = 1ULL << 9,
+    ClearCoatLayer = 1ULL << 10,
     /**
      * Has ClearCoat Texture in ClearCoat layer
      */
-    ClearCoatTexture = (1ULL << 10) | ClearCoatLayer,
+    ClearCoatTexture = (1ULL << 11) | ClearCoatLayer,
     /**
      * Has Roughness Texture in ClearCoat layer
      */
-    ClearCoatRoughnessTexture = (1ULL << 11) | ClearCoatLayer,
+    ClearCoatRoughnessTexture = (1ULL << 12) | ClearCoatLayer,
     /**
      * Has Normal Texture in ClearCoat layer
      */
-    ClearCoatNormalTexture = (1ULL << 12) | ClearCoatLayer,
+    ClearCoatNormalTexture = (1ULL << 13) | ClearCoatLayer,
 
     /**
      * Has KHR_materials_specular layer
      */
-    SpecularLayer = 1ULL << 13,
+    SpecularLayer = 1ULL << 14,
     /**
      * Has Specular Texture in KHR_materials_specular layer
      */
-    SpecularLayerTexture = (1ULL << 14) | SpecularLayer,
+    SpecularLayerTexture = (1ULL << 15) | SpecularLayer,
 
     /**
      * Has Specular Color Texture in KHR_materials_specular layer
      */
-    SpecularLayerColorTexture = (1ULL << 15) | SpecularLayer,
+    SpecularLayerColorTexture = (1ULL << 16) | SpecularLayer,
 
     /**
      * Has KHR_materials_anisotropy layer
      */
-    AnisotropyLayer = 1ULL << 16,
+    AnisotropyLayer = 1ULL << 17,
 
     /**
      * Has Anisotropy Texture in KHR_materials_anisotropy layer
      */
-    AnisotropyLayerTexture = (1ULL << 17) | AnisotropyLayer,
+    AnisotropyLayerTexture = (1ULL << 18) | AnisotropyLayer,
 
     /**
      * Has KHR_materials_transmission layer
      */
-    TransmissionLayer = 1ULL << 18,
+    TransmissionLayer = 1ULL << 19,
     /**
      * Has transmission texture in KHR_materials_transmission layer
      */
-    TransmissionLayerTexture = (1ULL << 19) | TransmissionLayer,
+    TransmissionLayerTexture = (1ULL << 20) | TransmissionLayer,
 
     /**
      * Has KHR_materials_volume layer
      */
-    VolumeLayer = 1ULL << 20,
+    VolumeLayer = 1ULL << 21,
 
     /**
      * Has Thickness texture in  KHR_materials_volume layer
      */
-    VolumeLayerThicknessTexture = (1ULL << 21) | VolumeLayer,
+    VolumeLayerThicknessTexture = (1ULL << 22) | VolumeLayer,
 
     /**
      * Enable double-sided rendering.
-     * (Temporarily STOP supporting this functionality. See comments in
-     * the PbrDrawable::draw() function)
      */
-    DoubleSided = 1ULL << 22,
+    DoubleSided = 1ULL << 23,
 
     ///////////////////////////////
     // PbrShaderAttributes provides these values to configure the shader
@@ -224,12 +227,12 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * If not set, disable direct lighting regardless of presence of lights.
      * Ignored if no direct lights present.
      */
-    DirectLighting = 1ULL << 23,
+    DirectLighting = 1ULL << 24,
 
     /**
      * Enable image based lighting
      */
-    ImageBasedLighting = 1ULL << 24,
+    ImageBasedLighting = 1ULL << 25,
 
     /**
      * Whether or not the direct lighting diffuse calculation should use the
@@ -238,7 +241,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * https://media.disneyanimation.com/uploads/production/publication_asset/48/asset/s2012_pbs_disney_brdf_notes_v3.pdf
      * Lambertian is simpler and quicker to calculate but may not look as 'nice'
      */
-    UseBurleyDiffuse = 1ULL << 25,
+    UseBurleyDiffuse = 1ULL << 26,
 
     /**
      * If set, skip TBN frame calculation in fragment shader. This calculation
@@ -246,7 +249,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * provided.
      * TODO : implement in shader.
      */
-    SkipMissingTBNCalc = 1ULL << 26,
+    SkipMissingTBNCalc = 1ULL << 27,
 
     /**
      * Use the Mikkelsen algorithm to calculate TBN, as per
@@ -256,7 +259,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * https://github.com/KhronosGroup/Vulkan-Samples/blob/main/shaders/pbr.frag,
      * which empirically seems to give equivalent results.
      */
-    UseMikkelsenTBN = 1ULL << 27,
+    UseMikkelsenTBN = 1ULL << 28,
 
     /**
      * Whether we should use shader-based srgb->linear approx remapping of
@@ -264,7 +267,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * and IBL. This field should be removed/ignored when Magnum fully supports
      * sRGB texture conversion on load.
      */
-    MapMatTxtrToLinear = 1ULL << 28,
+    MapMatTxtrToLinear = 1ULL << 29,
 
     /**
      * Whether we should use shader-based srgb->linear approx remapping of
@@ -272,7 +275,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * calculations. This field should be removed/ignored when Magnum fully
      * supports sRGB texture conversion on load.
      */
-    MapIBLTxtrToLinear = 1ULL << 29,
+    MapIBLTxtrToLinear = 1ULL << 30,
 
     /**
      * Whether we should use shader-based linear->srgb approx remapping of
@@ -280,17 +283,17 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * field should be removed/ignored when an appropriate framebuffer is used
      * for output to handle this conversion.
      */
-    MapOutputToSRGB = 1ULL << 30,
+    MapOutputToSRGB = 1ULL << 31,
 
     /**
      * Whether or not to use tonemappping for direct lighting.
      */
-    UseDirectLightTonemap = 1ULL << 31,
+    UseDirectLightTonemap = 1ULL << 32,
 
     /**
      * Whether or not to use tonemappping for image-based lighting.
      */
-    UseIBLTonemap = 1ULL << 32,
+    UseIBLTonemap = 1ULL << 33,
 
     ////////////////
     // Testing and debugging
@@ -299,25 +302,25 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * sent to the shader, but no actual calcuations will be performed if this
      * is set.
      */
-    SkipClearCoatLayer = 1ULL << 33,
+    SkipClearCoatLayer = 1ULL << 34,
     /**
      * Whether we should skip all specular layer calcs. Values will still be
      * sent to the shader, but no actual calcuations will be performed if this
      * is set.
      */
-    SkipSpecularLayer = 1ULL << 34,
+    SkipSpecularLayer = 1ULL << 35,
     /**
      * Whether we should skip all anisotropy layer calcs. Values will still be
      * sent to the shader, but no actual calcuations will be performed if this
      * is set.
      */
-    SkipAnisotropyLayer = 1ULL << 35,
+    SkipAnisotropyLayer = 1ULL << 36,
 
     /**
      * Enable shader debug mode. Then developer can set the uniform
      * PbrDebugDisplay in the fragment shader for debugging
      */
-    DebugDisplay = 1ULL << 36,
+    DebugDisplay = 1ULL << 37,
     /*
      * TODO: alphaMask
      */
