@@ -53,6 +53,11 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    */
   typedef Magnum::Shaders::GenericGL3D::Tangent4 Tangent4;
 
+  /**
+   * @brief Four-component vertex color
+   */
+  typedef Magnum::Shaders::GenericGL3D::Color4 Color4;
+
   enum : Magnum::UnsignedInt {
     /**
      * Color shader output. @ref shaders-generic "Generic output",

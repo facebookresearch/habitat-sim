@@ -1842,10 +1842,18 @@ bool ResourceManager::buildTrajectoryVisualization(
       Mn::Trade::MaterialAttribute::SpecularColor) = Mn::Color4{1.0};
   materialData.mutableAttribute<Mn::Float>(
       Mn::Trade::MaterialAttribute::Shininess) = 160.0f;
+  materialData.mutableAttribute<Mn::Color4>(
+      Mn::Trade::MaterialAttribute::BaseColor) = Mn::Color4{1.0};
+  materialData.mutableAttribute<Mn::Float>(
+      Mn::Trade::MaterialAttribute::Metalness) = 0.05f;
+  materialData.mutableAttribute<Mn::Float>(
+      Mn::Trade::MaterialAttribute::Roughness) = 0.05f;
+
   // Set expected user-defined attributes
   materialData = setMaterialDefaultUserAttributes(
-      materialData, ObjectInstanceShaderType::Phong, true);
+      materialData, ObjectInstanceShaderType::PBR, true);
 
+  meshMetaData.root.materialID = std::to_string(nextMaterialID_++);
   shaderManager_.set<Mn::Trade::MaterialData>(meshMetaData.root.materialID,
                                               std::move(materialData));
 
@@ -2355,7 +2363,7 @@ void ResourceManager::loadMaterials(Importer& importer,
       if ((shaderTypeToUse != ObjectInstanceShaderType::Material) &&
           (shaderTypeToUse != ObjectInstanceShaderType::Flat) &&
           !(compareShaderTypeToMnMatType(shaderTypeToUse, *materialData))) {
-        // Only create this string if veryverbose logging is enabled
+        // Only create this string if debug logging is enabled
         if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::Debug)) {
           materialExpandStr = Cr::Utility::formatString(
               "Forcing to {} shader (material requires expansion to support it "

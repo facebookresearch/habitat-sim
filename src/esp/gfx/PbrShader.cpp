@@ -107,6 +107,11 @@ PbrShader::PbrShader(Flags originalFlags,
     attributeLocationsStream << Cr::Utility::formatString(
         "#define ATTRIBUTE_LOCATION_TANGENT4 {}\n", Tangent4::Location);
   }
+  if (flags_ >= Flag::VertexColor) {
+    attributeLocationsStream << Cr::Utility::formatString(
+        "#define ATTRIBUTE_LOCATION_COLOR {}\n", Color4::Location);
+  }
+
   // TODO: Occlusion texture to be added.
 
   if (isTextured_) {
@@ -126,6 +131,7 @@ PbrShader::PbrShader(Flags originalFlags,
       .addSource(isTextured_ && (flags_ >= Flag::TextureTransformation)
                      ? "#define TEXTURE_TRANSFORMATION\n"
                      : "")
+      .addSource(flags_ >= Flag::VertexColor ? "#define VERTEX_COLOR\n" : "")
       .addSource(rs.getString("pbr.vert"));
 
   std::stringstream outputAttributeLocationsStream;
@@ -146,6 +152,7 @@ PbrShader::PbrShader(Flags originalFlags,
       .addSource(flags_ >= Flag::NormalTexture ? "#define NORMAL_TEXTURE\n"
                                                : "")
       .addSource(flags_ >= Flag::ObjectId ? "#define OBJECT_ID\n" : "")
+      .addSource(flags_ >= Flag::VertexColor ? "#define VERTEX_COLOR\n" : "")
 
       // Clearcoat layer
       .addSource(flags_ >= Flag::ClearCoatLayer ? "#define CLEAR_COAT\n" : "")
