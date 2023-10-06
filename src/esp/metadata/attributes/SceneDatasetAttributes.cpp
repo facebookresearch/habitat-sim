@@ -24,6 +24,8 @@ SceneDatasetAttributes::SceneDatasetAttributes(
   stageAttributesManager_ =
       managers::StageAttributesManager::create(physAttrMgr);
   stageAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
+  // Use PBR as default materials.Override this in SceneDataset config
+  setDefaultMaterialIsPBR(true);
 }  // ctor
 
 bool SceneDatasetAttributes::addNewSceneInstanceToDataset(

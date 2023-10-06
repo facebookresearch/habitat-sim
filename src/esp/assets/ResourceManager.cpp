@@ -1233,9 +1233,6 @@ void ResourceManager::buildPrimitiveAssetData(
     *cfgGroup = newCfgGroup;
   }
 
-  // make assetInfo
-  AssetInfo info{AssetType::PRIMITIVE};
-  info.forceFlatShading = false;
   // set up primitive mesh
   // make  primitive mesh structure
   auto primMeshData = std::make_unique<GenericMeshData>(false);
@@ -1249,6 +1246,17 @@ void ResourceManager::buildPrimitiveAssetData(
     primMeshData->uploadBuffersToGPU(false);
   }
 
+  // default material for now
+  Mn::Trade::MaterialData materialData = buildDefaultMaterial();
+
+  // Set expected user-defined attributes
+  materialData = setMaterialDefaultUserAttributes(
+      materialData, getDefaultMaterialShaderType());
+
+  // make assetInfo
+  AssetInfo info{AssetType::PRIMITIVE};
+  info.forceFlatShading = false;
+
   // make MeshMetaData
   int meshStart = nextMeshID_++;
   int meshEnd = meshStart;
@@ -1256,13 +1264,6 @@ void ResourceManager::buildPrimitiveAssetData(
 
   meshes_.emplace(meshStart, std::move(primMeshData));
   meshMetaData.root.materialID = std::to_string(nextMaterialID_++);
-
-  // default material for now
-  Mn::Trade::MaterialData materialData = buildDefaultMaterial();
-
-  // Set expected user-defined attributes
-  materialData = setMaterialDefaultUserAttributes(
-      materialData, ObjectInstanceShaderType::PBR);
 
   shaderManager_.set<Mn::Trade::MaterialData>(meshMetaData.root.materialID,
                                               std::move(materialData));
@@ -1833,29 +1834,30 @@ bool ResourceManager::buildTrajectoryVisualization(
 
   meshes_.emplace(meshStart, std::move(visMeshData));
 
-  // default material for now
-  Mn::Trade::MaterialData materialData = buildDefaultMaterial();
-  // Override default values
-  materialData.mutableAttribute<Mn::Color4>(
+  // default material
+  Mn::Trade::MaterialData trajMaterialData = buildDefaultMaterial();
+  // Override default values. These values will in turn be overridden by the
+  // vertex colors derived from the colorVec values passed to the function.
+  trajMaterialData.mutableAttribute<Mn::Color4>(
       Mn::Trade::MaterialAttribute::AmbientColor) = Mn::Color4{1.0};
-  materialData.mutableAttribute<Mn::Color4>(
+  trajMaterialData.mutableAttribute<Mn::Color4>(
       Mn::Trade::MaterialAttribute::SpecularColor) = Mn::Color4{1.0};
-  materialData.mutableAttribute<Mn::Float>(
+  trajMaterialData.mutableAttribute<Mn::Float>(
       Mn::Trade::MaterialAttribute::Shininess) = 160.0f;
-  materialData.mutableAttribute<Mn::Color4>(
+  trajMaterialData.mutableAttribute<Mn::Color4>(
       Mn::Trade::MaterialAttribute::BaseColor) = Mn::Color4{1.0};
-  materialData.mutableAttribute<Mn::Float>(
-      Mn::Trade::MaterialAttribute::Metalness) = 0.05f;
-  materialData.mutableAttribute<Mn::Float>(
-      Mn::Trade::MaterialAttribute::Roughness) = 0.05f;
+  trajMaterialData.mutableAttribute<Mn::Float>(
+      Mn::Trade::MaterialAttribute::Metalness) = 0.50f;
+  trajMaterialData.mutableAttribute<Mn::Float>(
+      Mn::Trade::MaterialAttribute::Roughness) = 0.0f;
 
   // Set expected user-defined attributes
-  materialData = setMaterialDefaultUserAttributes(
-      materialData, ObjectInstanceShaderType::PBR, true);
+  trajMaterialData = setMaterialDefaultUserAttributes(
+      trajMaterialData, getDefaultMaterialShaderType(), true);
 
   meshMetaData.root.materialID = std::to_string(nextMaterialID_++);
   shaderManager_.set<Mn::Trade::MaterialData>(meshMetaData.root.materialID,
-                                              std::move(materialData));
+                                              std::move(trajMaterialData));
 
   meshMetaData.root.meshIDLocal = 0;
   meshMetaData.root.componentID = 0;
@@ -2178,7 +2180,7 @@ Mn::Trade::MaterialData ResourceManager::buildDefaultMaterial() {
        {Mn::Trade::MaterialAttribute::SpecularColor, Mn::Color4{0.2}},
        {Mn::Trade::MaterialAttribute::Shininess, 80.0f},
        {Mn::Trade::MaterialAttribute::BaseColor, Mn::Color4{1.0}},
-       {Mn::Trade::MaterialAttribute::Metalness, 0.7f},
+       {Mn::Trade::MaterialAttribute::Metalness, 0.3f},
        {Mn::Trade::MaterialAttribute::Roughness, 0.3f}}};
   return materialData;
 }  // ResourceManager::buildDefaultMaterial
@@ -2240,12 +2242,17 @@ std::string ResourceManager::createColorMaterial(
   return newMaterialID;
 }  // ResourceManager::createColorMaterial
 
+ObjectInstanceShaderType ResourceManager::getDefaultMaterialShaderType() {
+  return metadataMediator_->getDefaultMaterialShaderType();
+}
+
 void ResourceManager::initDefaultMaterials() {
-  // Build default phong materials
+  const auto defaultMaterialShader = getDefaultMaterialShaderType();
+  // Build default materials
   Mn::Trade::MaterialData dfltMaterialData = buildDefaultMaterial();
   // Set expected user-defined attributes
-  dfltMaterialData = setMaterialDefaultUserAttributes(
-      dfltMaterialData, ObjectInstanceShaderType::Phong);
+  dfltMaterialData =
+      setMaterialDefaultUserAttributes(dfltMaterialData, defaultMaterialShader);
   // Add to shaderManager at specified key location
   shaderManager_.set<Mn::Trade::MaterialData>(DEFAULT_MATERIAL_KEY,
                                               std::move(dfltMaterialData));
@@ -2253,16 +2260,28 @@ void ResourceManager::initDefaultMaterials() {
   Mn::Trade::MaterialData whiteMaterialData = buildDefaultMaterial();
   whiteMaterialData.mutableAttribute<Mn::Color4>(
       Mn::Trade::MaterialAttribute::AmbientColor) = Mn::Color4{1.0};
+  whiteMaterialData.mutableAttribute<Mn::Color4>(
+      Mn::Trade::MaterialAttribute::BaseColor) = Mn::Color4{1.0};
+  whiteMaterialData.mutableAttribute<Mn::Float>(
+      Mn::Trade::MaterialAttribute::Metalness) = 0.0f;
+  whiteMaterialData.mutableAttribute<Mn::Float>(
+      Mn::Trade::MaterialAttribute::Roughness) = 0.5f;
   // Set expected user-defined attributes
-  whiteMaterialData = setMaterialDefaultUserAttributes(
-      whiteMaterialData, ObjectInstanceShaderType::Phong);
+  whiteMaterialData = setMaterialDefaultUserAttributes(whiteMaterialData,
+                                                       defaultMaterialShader);
   // Add to shaderManager at specified key location
   shaderManager_.set<Mn::Trade::MaterialData>(WHITE_MATERIAL_KEY,
                                               std::move(whiteMaterialData));
-  // Buiild white vertex ID material
+  // Build white vertex ID material
   Mn::Trade::MaterialData vertIdMaterialData = buildDefaultMaterial();
   vertIdMaterialData.mutableAttribute<Mn::Color4>(
       Mn::Trade::MaterialAttribute::AmbientColor) = Mn::Color4{1.0};
+  vertIdMaterialData.mutableAttribute<Mn::Color4>(
+      Mn::Trade::MaterialAttribute::BaseColor) = Mn::Color4{1.0};
+  vertIdMaterialData.mutableAttribute<Mn::Float>(
+      Mn::Trade::MaterialAttribute::Metalness) = 0.0f;
+  vertIdMaterialData.mutableAttribute<Mn::Float>(
+      Mn::Trade::MaterialAttribute::Roughness) = 1.0f;
   // Set expected user-defined attributes
   vertIdMaterialData = setMaterialDefaultUserAttributes(
       vertIdMaterialData, ObjectInstanceShaderType::Phong, true);
@@ -2273,8 +2292,8 @@ void ResourceManager::initDefaultMaterials() {
   // Build default material for fallback material
   auto fallBackMaterial = buildDefaultMaterial();
   // Set expected user-defined attributes
-  fallBackMaterial = setMaterialDefaultUserAttributes(
-      fallBackMaterial, ObjectInstanceShaderType::Phong);
+  fallBackMaterial =
+      setMaterialDefaultUserAttributes(fallBackMaterial, defaultMaterialShader);
   // Add to shaderManager as fallback material
   shaderManager_.setFallback<Mn::Trade::MaterialData>(
       std::move(fallBackMaterial));
@@ -2301,6 +2320,8 @@ void ResourceManager::loadMaterials(Importer& importer,
   int textureBaseIndex = loadedAssetData.meshMetaData.textureIndex.first;
 
   if (loadedAssetData.assetInfo.hasSemanticTextures) {
+    // Assumes if semantic textures are present then only semantic rendering is
+    // processed.
     for (int iMaterial = 0; iMaterial < numMaterials; ++iMaterial) {
       // Build material key
       std::string materialKey = std::to_string(nextMaterialID_++);
@@ -2316,9 +2337,8 @@ void ResourceManager::loadMaterials(Importer& importer,
       }
       // Semantic texture-based mapping
 
-      // Build a phong material for semantics.  TODO: Should this be a
-      // FlatMaterialData? Populate with defaults from deprecated
-      // gfx::PhongMaterialData
+      // Build a phong material for semantic textures. Should this be a
+      // FlatMaterialData?
       Mn::Trade::MaterialData newMaterialData = buildDefaultMaterial();
       // Override default values
       newMaterialData.mutableAttribute<Mn::Color4>(
@@ -2327,6 +2347,13 @@ void ResourceManager::loadMaterials(Importer& importer,
           Mn::Trade::MaterialAttribute::DiffuseColor) = Mn::Color4{};
       newMaterialData.mutableAttribute<Mn::Color4>(
           Mn::Trade::MaterialAttribute::SpecularColor) = Mn::Color4{};
+      // Setting reasonable PBRMetallicRoughness values just in case
+      newMaterialData.mutableAttribute<Mn::Color4>(
+          Mn::Trade::MaterialAttribute::BaseColor) = Mn::Color4{1.0};
+      newMaterialData.mutableAttribute<Mn::Float>(
+          Mn::Trade::MaterialAttribute::Metalness) = 0.0f;
+      newMaterialData.mutableAttribute<Mn::Float>(
+          Mn::Trade::MaterialAttribute::Roughness) = 1.0f;
 
       // Set expected user-defined attributes - force to use phong shader for
       // semantics

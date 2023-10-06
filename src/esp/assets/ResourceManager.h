@@ -1118,6 +1118,11 @@ class ResourceManager {
   void initDefaultMaterials();
 
   /**
+   * @brief Retrieve the shader type to use for the various default materials.
+   */
+  ObjectInstanceShaderType getDefaultMaterialShaderType();
+
+  /**
    * @brief Checks if light setup is compatible with loaded asset
    */
   bool isLightSetupCompatible(const LoadedAssetData& loadedAssetData,

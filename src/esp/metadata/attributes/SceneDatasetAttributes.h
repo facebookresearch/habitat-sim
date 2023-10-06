@@ -91,6 +91,24 @@ class SceneDatasetAttributes : public AbstractAttributes {
   }
 
   /**
+   * @brief Retrieve the shader type to use for the various default materials,
+   * either Phong of PBR
+   */
+  ObjectInstanceShaderType getDefaultMaterialShaderType() const {
+    return get<bool>("default_material_is_pbr")
+               ? ObjectInstanceShaderType::PBR
+               : ObjectInstanceShaderType::Phong;
+  }
+
+  /**
+   * @brief Set whether to use PBR or Phong for the default material values
+   * defined in resource Manager.
+   */
+  void setDefaultMaterialIsPBR(bool default_material_is_pbr) {
+    set("default_material_is_pbr", default_material_is_pbr);
+  }
+
+  /**
    * @brief Return the map for navmesh file locations
    */
   const std::map<std::string, std::string>& getNavmeshMap() const {

@@ -242,6 +242,13 @@ class MetadataMediator {
   }
 
   /**
+   * @brief Retrieve the shader type to use for the various default materials.
+   */
+  attributes::ObjectInstanceShaderType getDefaultMaterialShaderType() {
+    return getActiveDSAttribs()->getDefaultMaterialShaderType();
+  }
+
+  /**
    * @brief Get a list of all scene instances available in the currently active
    * dataset
    */
