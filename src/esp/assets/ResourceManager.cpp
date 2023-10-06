@@ -1258,12 +1258,11 @@ void ResourceManager::buildPrimitiveAssetData(
   meshMetaData.root.materialID = std::to_string(nextMaterialID_++);
 
   // default material for now
-  // Populate with defaults from sim's gfx::PhongMaterialData
-  Mn::Trade::MaterialData materialData = buildDefaultPhongMaterial();
+  Mn::Trade::MaterialData materialData = buildDefaultMaterial();
 
   // Set expected user-defined attributes
   materialData = setMaterialDefaultUserAttributes(
-      materialData, ObjectInstanceShaderType::Phong);
+      materialData, ObjectInstanceShaderType::PBR);
 
   shaderManager_.set<Mn::Trade::MaterialData>(meshMetaData.root.materialID,
                                               std::move(materialData));
@@ -1835,8 +1834,7 @@ bool ResourceManager::buildTrajectoryVisualization(
   meshes_.emplace(meshStart, std::move(visMeshData));
 
   // default material for now
-  // Populate with defaults from sim's gfx::PhongMaterialData
-  Mn::Trade::MaterialData materialData = buildDefaultPhongMaterial();
+  Mn::Trade::MaterialData materialData = buildDefaultMaterial();
   // Override default values
   materialData.mutableAttribute<Mn::Color4>(
       Mn::Trade::MaterialAttribute::AmbientColor) = Mn::Color4{1.0};
@@ -2001,8 +1999,8 @@ Mn::Trade::MaterialData createUniversalMaterial(
     // calculate Phong values from PBR material values
     ////////////////
 
-    // derive ambient color from pbr baseColor
-    const Mn::Color4 ambientColor = pbrMaterial.baseColor();
+    // derive diffuse color from pbr baseColor
+    const Mn::Color4 diffuseColor = pbrMaterial.baseColor();
 
     // If there's a roughness texture, we have no way to use it here. The safest
     // fallback is to assume roughness == 1, thus producing no spec highlights.
@@ -2041,16 +2039,17 @@ Mn::Trade::MaterialData createUniversalMaterial(
     const float specIntensity =
         Mn::Math::pow(1.0f - roughness, 2.5f) * 1.4f * specIntensityScale;
 
-    const Mn::Color4 diffuseColor = ambientColor;
+    // Set ambient color to be diffuse color
+    const Mn::Color4 ambientColor = diffuseColor;
 
     // Set spec base color to white or material base color, depending on
     // metalness.
     const Mn::Color4 specBaseColor =
         (metalness > 0.0f
              ? (metalness < 1.0f
-                    ? Mn::Math::lerp(0xffffffff_rgbaf, ambientColor,
+                    ? Mn::Math::lerp(0xffffffff_rgbaf, diffuseColor,
                                      Mn::Math::pow(metalness, 0.5f))
-                    : ambientColor)
+                    : diffuseColor)
              : 0xffffffff_rgbaf);
 
     const Mn::Color4 specColor = specBaseColor * specIntensity;
@@ -2123,8 +2122,10 @@ Mn::Trade::MaterialData createUniversalMaterial(
 
     // normal mapping is already present in copied array if present in
     // original material.
-    arrayAppend(newAttributes, {{MaterialAttribute::BaseColor, baseColor},
-                                {MaterialAttribute::Metalness, metalness}});
+    arrayAppend(newAttributes,
+                {{MaterialAttribute::BaseColor, baseColor},
+                 {MaterialAttribute::Metalness, metalness},
+                 {MaterialAttribute::Roughness, 1.0f - metalness}});
 
     // if diffuse texture is present, use as base color texture in pbr.
     if (phongMaterial.hasAttribute(MaterialAttribute::DiffuseTexture)) {
@@ -2160,15 +2161,19 @@ Mn::Trade::MaterialData createUniversalMaterial(
 }  // namespace
 
 // Specifically for building materials that relied on old defaults
-Mn::Trade::MaterialData ResourceManager::buildDefaultPhongMaterial() {
+Mn::Trade::MaterialData ResourceManager::buildDefaultMaterial() {
   Mn::Trade::MaterialData materialData{
-      Mn::Trade::MaterialType::Phong,
+      Mn::Trade::MaterialType::Phong |
+          Mn::Trade::MaterialType::PbrMetallicRoughness,
       {{Mn::Trade::MaterialAttribute::AmbientColor, Mn::Color4{0.1}},
        {Mn::Trade::MaterialAttribute::DiffuseColor, Mn::Color4{0.7}},
        {Mn::Trade::MaterialAttribute::SpecularColor, Mn::Color4{0.2}},
-       {Mn::Trade::MaterialAttribute::Shininess, 80.0f}}};
+       {Mn::Trade::MaterialAttribute::Shininess, 80.0f},
+       {Mn::Trade::MaterialAttribute::BaseColor, Mn::Color4{1.0}},
+       {Mn::Trade::MaterialAttribute::Metalness, 0.7f},
+       {Mn::Trade::MaterialAttribute::Roughness, 0.3f}}};
   return materialData;
-}  // ResourceManager::buildDefaultPhongMaterial
+}  // ResourceManager::buildDefaultMaterial
 
 Mn::Trade::MaterialData ResourceManager::setMaterialDefaultUserAttributes(
     const Mn::Trade::MaterialData& material,
@@ -2207,7 +2212,7 @@ std::string ResourceManager::createColorMaterial(
 
   if (materialResource.state() == Mn::ResourceState::NotLoadedFallback) {
     // Build a new default phong material
-    Mn::Trade::MaterialData materialData = buildDefaultPhongMaterial();
+    Mn::Trade::MaterialData materialData = buildDefaultMaterial();
     materialData.mutableAttribute<Mn::Color4>(
         Mn::Trade::MaterialAttribute::AmbientColor) =
         materialColor.ambientColor;
@@ -2229,7 +2234,7 @@ std::string ResourceManager::createColorMaterial(
 
 void ResourceManager::initDefaultMaterials() {
   // Build default phong materials
-  Mn::Trade::MaterialData dfltMaterialData = buildDefaultPhongMaterial();
+  Mn::Trade::MaterialData dfltMaterialData = buildDefaultMaterial();
   // Set expected user-defined attributes
   dfltMaterialData = setMaterialDefaultUserAttributes(
       dfltMaterialData, ObjectInstanceShaderType::Phong);
@@ -2237,7 +2242,7 @@ void ResourceManager::initDefaultMaterials() {
   shaderManager_.set<Mn::Trade::MaterialData>(DEFAULT_MATERIAL_KEY,
                                               std::move(dfltMaterialData));
   // Build white material
-  Mn::Trade::MaterialData whiteMaterialData = buildDefaultPhongMaterial();
+  Mn::Trade::MaterialData whiteMaterialData = buildDefaultMaterial();
   whiteMaterialData.mutableAttribute<Mn::Color4>(
       Mn::Trade::MaterialAttribute::AmbientColor) = Mn::Color4{1.0};
   // Set expected user-defined attributes
@@ -2246,8 +2251,8 @@ void ResourceManager::initDefaultMaterials() {
   // Add to shaderManager at specified key location
   shaderManager_.set<Mn::Trade::MaterialData>(WHITE_MATERIAL_KEY,
                                               std::move(whiteMaterialData));
-  // Build white vertex ID material
-  Mn::Trade::MaterialData vertIdMaterialData = buildDefaultPhongMaterial();
+  // Buiild white vertex ID material
+  Mn::Trade::MaterialData vertIdMaterialData = buildDefaultMaterial();
   vertIdMaterialData.mutableAttribute<Mn::Color4>(
       Mn::Trade::MaterialAttribute::AmbientColor) = Mn::Color4{1.0};
   // Set expected user-defined attributes
@@ -2258,7 +2263,7 @@ void ResourceManager::initDefaultMaterials() {
                                               std::move(vertIdMaterialData));
 
   // Build default material for fallback material
-  auto fallBackMaterial = buildDefaultPhongMaterial();
+  auto fallBackMaterial = buildDefaultMaterial();
   // Set expected user-defined attributes
   fallBackMaterial = setMaterialDefaultUserAttributes(
       fallBackMaterial, ObjectInstanceShaderType::Phong);
@@ -2306,7 +2311,7 @@ void ResourceManager::loadMaterials(Importer& importer,
       // Build a phong material for semantics.  TODO: Should this be a
       // FlatMaterialData? Populate with defaults from deprecated
       // gfx::PhongMaterialData
-      Mn::Trade::MaterialData newMaterialData = buildDefaultPhongMaterial();
+      Mn::Trade::MaterialData newMaterialData = buildDefaultMaterial();
       // Override default values
       newMaterialData.mutableAttribute<Mn::Color4>(
           Mn::Trade::MaterialAttribute::AmbientColor) = Mn::Color4{1.0};

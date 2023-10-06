@@ -708,11 +708,12 @@ class ResourceManager {
   void buildPrimitiveAssetData(const std::string& primTemplateHandle);
 
   /**
-   * @brief this will build a Phong @ref Magnum::Trade::MaterialData using
-   * default attributes from deprecated/removed esp::gfx::PhongMaterialData.
-   * @return The new phong color populated with default values
+   * @brief this will build a MaterialData compatible with Flat, Phong and
+   * PBR @ref Magnum::Trade::MaterialData, using default attributes
+   * from deprecated/removed habitat material default values.
+   * @return The new material populated with default values
    */
-  Mn::Trade::MaterialData buildDefaultPhongMaterial();
+  Mn::Trade::MaterialData buildDefaultMaterial();
 
   /**
    * @brief Define and set user-defined attributes for the passed
