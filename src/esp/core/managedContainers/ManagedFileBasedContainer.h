@@ -611,8 +611,8 @@ bool ManagedFileBasedContainer<T, Access>::saveManagedObjectToFile(
     if ((copyStrPos != std::string::npos)) {
       // Already is a copy of some existing managed file-based object
       // Get copy number and increment to set as initial count value
-      count =
-          std::stoi(fileNameBase.substr(copyStrPos + 7, copyStrPos + 10)) + 1;
+      const int numStrStartPos = copyStrPos + 7;
+      count = std::stoi(fileNameBase.substr(numStrStartPos, 4)) + 1;
       // Remove ' (copy xxxx)' component from fileNameBase so that a string of
       // (copy xxxx)'s aren't created on successive runs
       fileNameBase = fileNameBase.substr(0, copyStrPos);
