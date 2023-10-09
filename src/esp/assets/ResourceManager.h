@@ -699,14 +699,26 @@ class ResourceManager {
       bool forceFlatShading);
 
   /**
-   * @brief Build a primitive asset based on passed template parameters.  If
-   * exists already, does nothing.  Will use primitiveImporter_ to call
-   * appropriate method to construct asset.
+   * @brief Build a primitive asset based on the template parameters encoded in
+   * @p primTemplateHandle , using the predefined material referenced by
+   * DEFAULT_MATERIAL_KEY. If primitive asset exists already, does nothing. Will
+   * use primitiveImporter_ to call appropriate method to construct asset.
    * @param primTemplateHandle the handle referring to the attributes describing
    * primitive to instantiate
    */
   void buildPrimitiveAssetData(const std::string& primTemplateHandle);
 
+  /**
+   * @brief Build a primitive asset based on passed template parameters and
+   * passed material key. If exists already, does nothing. Will use
+   * primitiveImporter_ to call appropriate method to construct asset.
+   * @param primTemplateHandle the handle referring to the attributes describing
+   * primitive to instantiate
+   * @param materialKey The key to the existing material being used for this
+   * primitive.
+   */
+  void buildPrimitiveAssetData(const std::string& primTemplateHandle,
+                               const std::string& materialKey);
   /**
    * @brief this will build a MaterialData compatible with Flat, Phong and
    * PBR @ref Magnum::Trade::MaterialData, using default attributes

@@ -173,6 +173,20 @@ AssetAttributesManager::createTemplateFromHandle(
                                   registerTemplate);
 }  // AssetAttributesManager::createTemplateFromHandle
 
+attributes::AbstractPrimitiveAttributes::cptr
+AssetAttributesManager::getOrCreateTemplateFromHandle(
+    const std::string& templateHandle,
+    bool registerTemplate) {
+  if (!getObjectLibHasHandle(templateHandle)) {
+    // If doesn't exist, create template from handle
+    createTemplateFromHandle(templateHandle, registerTemplate);
+  }
+  // Returns the actual template, not a copy
+  attributes::AbstractPrimitiveAttributes::cptr resTemplate =
+      getObjectByHandle(templateHandle);
+  return resTemplate;
+}  // AssetAttributesManager::createTemplateFromHandle
+
 int AssetAttributesManager::registerObjectFinalize(
     AbstractPrimitiveAttributes::ptr primAttributesTemplate,
     const std::string&,

@@ -1186,33 +1186,38 @@ std::vector<Mn::Matrix4> ResourceManager::computeAbsoluteTransformations(
 
 void ResourceManager::buildPrimitiveAssetData(
     const std::string& primTemplateHandle) {
-  // retrieves -actual- template, not a copy
-  esp::metadata::attributes::AbstractPrimitiveAttributes::ptr primTemplate =
-      getAssetAttributesManager()->getObjectByHandle(primTemplateHandle);
+  // use default material if none specified
+  buildPrimitiveAssetData(primTemplateHandle, DEFAULT_MATERIAL_KEY);
 
+}  // ResourceManager::buildPrimitiveAssetData
+
+void ResourceManager::buildPrimitiveAssetData(
+    const std::string& primTemplateHandle,
+    const std::string& materialKey) {
+  // retrieves -actual- template, not a copy
+  esp::metadata::attributes::AbstractPrimitiveAttributes::cptr primTemplate =
+      getAssetAttributesManager()->getOrCreateTemplateFromHandle(
+          primTemplateHandle);
+  // If nullptr then template was not correct format for primitive attributes
   if (primTemplate == nullptr) {
-    // Template does not yet exist, create it using its name - primitive
-    // template names encode all the pertinent template settings and cannot be
-    // changed by the user, so the template name can be used to recreate the
-    // template itself.
-    auto newTemplate = getAssetAttributesManager()->createTemplateFromHandle(
-        primTemplateHandle);
-    // if still null, fail.
-    if (newTemplate == nullptr) {
-      ESP_ERROR(Mn::Debug::Flag::NoSpace)
-          << "Attempting to reference or build a "
-             "primitive template from an unknown/malformed handle : `"
-          << primTemplateHandle << "`, so aborting build.";
-      return;
-    }
-    // we do not want a copy of the newly created template, but the actual
-    // template
-    primTemplate = getAssetAttributesManager()->getObjectByHandle(
-        newTemplate->getHandle());
+    ESP_ERROR(Mn::Debug::Flag::NoSpace)
+        << "Attempting to reference or build a "
+           "primitive template from an unknown/malformed handle : `"
+        << primTemplateHandle << "`, so aborting build.";
+    return;
   }
+
   // check if unique name of attributes describing primitive asset is present
   // already - don't remake if so
-  auto primAssetHandle = primTemplate->getHandle();
+
+  // TODO need to support customization of primitive materials in the
+  // RenderAssetCreationInfo structure, so that queries of resourceDict_ using
+  // RenderAssetCreationInfo will work properly.
+  auto primAssetHandle =
+      (materialKey == "")
+          ? primTemplate->getHandle()
+          : Cr::Utility::formatString("{}_{}", primTemplate->getHandle(),
+                                      materialKey);
   if (resourceDict_.count(primAssetHandle) > 0) {
     ESP_DEBUG(Mn::Debug::Flag::NoSpace)
         << "Primitive Asset exists already : `" << primAssetHandle << "`.";
@@ -1246,13 +1251,6 @@ void ResourceManager::buildPrimitiveAssetData(
     primMeshData->uploadBuffersToGPU(false);
   }
 
-  // default material for now
-  Mn::Trade::MaterialData materialData = buildDefaultMaterial();
-
-  // Set expected user-defined attributes
-  materialData = setMaterialDefaultUserAttributes(
-      materialData, getDefaultMaterialShaderType());
-
   // make assetInfo
   AssetInfo info{AssetType::PRIMITIVE};
   info.forceFlatShading = false;
@@ -1263,10 +1261,7 @@ void ResourceManager::buildPrimitiveAssetData(
   MeshMetaData meshMetaData{meshStart, meshEnd};
 
   meshes_.emplace(meshStart, std::move(primMeshData));
-  meshMetaData.root.materialID = std::to_string(nextMaterialID_++);
-
-  shaderManager_.set<Mn::Trade::MaterialData>(meshMetaData.root.materialID,
-                                              std::move(materialData));
+  meshMetaData.root.materialID = materialKey;
 
   meshMetaData.root.meshIDLocal = 0;
   meshMetaData.root.componentID = 0;
@@ -2339,21 +2334,16 @@ void ResourceManager::loadMaterials(Importer& importer,
 
       // Build a phong material for semantic textures. Should this be a
       // FlatMaterialData?
-      Mn::Trade::MaterialData newMaterialData = buildDefaultMaterial();
-      // Override default values
-      newMaterialData.mutableAttribute<Mn::Color4>(
-          Mn::Trade::MaterialAttribute::AmbientColor) = Mn::Color4{1.0};
-      newMaterialData.mutableAttribute<Mn::Color4>(
-          Mn::Trade::MaterialAttribute::DiffuseColor) = Mn::Color4{};
-      newMaterialData.mutableAttribute<Mn::Color4>(
-          Mn::Trade::MaterialAttribute::SpecularColor) = Mn::Color4{};
-      // Setting reasonable PBRMetallicRoughness values just in case
-      newMaterialData.mutableAttribute<Mn::Color4>(
-          Mn::Trade::MaterialAttribute::BaseColor) = Mn::Color4{1.0};
-      newMaterialData.mutableAttribute<Mn::Float>(
-          Mn::Trade::MaterialAttribute::Metalness) = 0.0f;
-      newMaterialData.mutableAttribute<Mn::Float>(
-          Mn::Trade::MaterialAttribute::Roughness) = 1.0f;
+      Mn::Trade::MaterialData newMaterialData{
+          Mn::Trade::MaterialType::Phong |
+              Mn::Trade::MaterialType::PbrMetallicRoughness,
+          {{Mn::Trade::MaterialAttribute::AmbientColor, Mn::Color4{1.0}},
+           {Mn::Trade::MaterialAttribute::DiffuseColor, Mn::Color4{}},
+           {Mn::Trade::MaterialAttribute::SpecularColor, Mn::Color4{}},
+           {Mn::Trade::MaterialAttribute::Shininess, 1.0f},
+           {Mn::Trade::MaterialAttribute::BaseColor, Mn::Color4{1.0}},
+           {Mn::Trade::MaterialAttribute::Metalness, 0.0f},
+           {Mn::Trade::MaterialAttribute::Roughness, 1.0f}}};
 
       // Set expected user-defined attributes - force to use phong shader for
       // semantics
