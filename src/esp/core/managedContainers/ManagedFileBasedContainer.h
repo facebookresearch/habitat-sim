@@ -609,7 +609,7 @@ bool ManagedFileBasedContainer<T, Access>::saveManagedObjectToFile(
 
     std::size_t copyStrPos = fileNameBase.find(" (copy ");
     if ((copyStrPos != std::string::npos)) {
-      // Already is a copy of some base scene instance
+      // Already is a copy of some existing managed file-based object
       // Get copy number and increment to set as initial count value
       count =
           std::stoi(fileNameBase.substr(copyStrPos + 7, copyStrPos + 10)) + 1;
