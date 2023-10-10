@@ -21,26 +21,14 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
   AbstractPrimitiveAttributes(bool isWireframe,
                               int primObjType,
                               const std::string& primObjClassName,
-                              const std::string& attributesClassKey)
-      : AbstractAttributes(attributesClassKey, "") {
-    // clear handle that was set in base class constructor
-    AbstractAttributes::setHandle("");
-    setIsWireframe(isWireframe);
-    setPrimObjType(primObjType);
-    setPrimObjClassName(primObjClassName);
-    setFileDirectory("none");
-    // initialize so empty values are present
-    set("halfLength", 0.0);
-    set("segments", 0);
-    set("rings", 0);
-    if (!isWireframe) {  // solid
-      // do not call setters since they call buildHandle, which does not
-      // exist - is abstract in base class
-      set("textureCoordinates", false);
-      set("tangents", false);
-    }
+                              const std::string& attributesClassKey);
 
-  }  // ctor
+  AbstractPrimitiveAttributes(const AbstractPrimitiveAttributes& otr);
+  AbstractPrimitiveAttributes(AbstractPrimitiveAttributes&& otr);
+
+  AbstractPrimitiveAttributes& operator=(
+      const AbstractPrimitiveAttributes& otr);
+  AbstractPrimitiveAttributes& operator=(AbstractPrimitiveAttributes&& otr);
 
   // necessary since abstract
   ~AbstractPrimitiveAttributes() override = default;
@@ -118,6 +106,14 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
     std::ostringstream oHndlStrm;
     oHndlStrm << getPrimObjClassName() << buildHandleDetail();
     set("handle", oHndlStrm.str());
+  }
+
+  /**
+   * @brief retrieve the string encoding of the material used for this
+   * primitive.
+   */
+  std::string getMaterialString() const {
+    return get<std::string>("materialStr");
   }
 
   /**
@@ -230,6 +226,12 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
   virtual std::string buildHandleDetail() = 0;
 
   virtual bool parseStringIntoConfigDetail(const std::string& configString) = 0;
+
+  /**
+   * @brief Smartpointer to created material configuration for primitive. The
+   * configuration is created on AbstractPrimitiveAttributes construction.
+   */
+  std::shared_ptr<Configuration> materialConfig_{};
 
  private:
   // Should never change, only set by ctor
