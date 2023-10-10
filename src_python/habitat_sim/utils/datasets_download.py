@@ -212,6 +212,12 @@ def initialize_test_data_sources(data_path):
             "link": data_path + "hab2_bench_assets",
             "version": "1.0",
         },
+        "hab3_bench_assets": {
+            "source": "https://huggingface.co/datasets/ai-habitat/hab3_bench_assets.git",
+            "link": data_path + "hab3_bench_assets",
+            "version": "main",
+            "requires_auth": True,
+        },
     }
 
     # add individual hm3d splits, format components, and versions
