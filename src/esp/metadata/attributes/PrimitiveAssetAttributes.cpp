@@ -8,6 +8,63 @@ namespace esp {
 namespace metadata {
 namespace attributes {
 
+AbstractPrimitiveAttributes::AbstractPrimitiveAttributes(
+    bool isWireframe,
+    int primObjType,
+    const std::string& primObjClassName,
+    const std::string& attributesClassKey)
+    : AbstractAttributes(attributesClassKey, "") {
+  // clear handle that was set in base class constructor
+  AbstractAttributes::setHandle("");
+  setIsWireframe(isWireframe);
+  setPrimObjType(primObjType);
+  setPrimObjClassName(primObjClassName);
+  setFileDirectory("none");
+  // initialize so empty values are present
+  set("halfLength", 0.0);
+  set("segments", 0);
+  set("rings", 0);
+  if (!isWireframe) {  // solid only
+    // do not call setters since they call buildHandle, which does not
+    // exist here - is abstract in base class
+    set("textureCoordinates", false);
+    set("tangents", false);
+  }
+  set("materialStr", "default");
+  materialConfig_ = editSubconfig<Configuration>("materialDefinition");
+}  // ctor
+
+AbstractPrimitiveAttributes::AbstractPrimitiveAttributes(
+    const AbstractPrimitiveAttributes& otr)
+    : AbstractAttributes(otr) {
+  materialConfig_ = editSubconfig<Configuration>("materialDefinition");
+
+  copySubconfigIntoMe<Configuration>(otr.materialConfig_, materialConfig_);
+}
+
+AbstractPrimitiveAttributes::AbstractPrimitiveAttributes(
+    AbstractPrimitiveAttributes&& otr)
+    : AbstractAttributes(std::move(static_cast<AbstractAttributes>(otr))) {
+  materialConfig_ = editSubconfig<Configuration>("materialDefinition");
+}
+
+AbstractPrimitiveAttributes& AbstractPrimitiveAttributes::operator=(
+    const AbstractPrimitiveAttributes& otr) {
+  if (this != &otr) {
+    this->AbstractAttributes::operator=(otr);
+    materialConfig_ = editSubconfig<Configuration>("materialDefinition");
+    copySubconfigIntoMe<Configuration>(otr.materialConfig_, materialConfig_);
+  }
+  return *this;
+}
+
+AbstractPrimitiveAttributes& AbstractPrimitiveAttributes::operator=(
+    AbstractPrimitiveAttributes&& otr) {
+  this->AbstractAttributes::operator=(static_cast<AbstractAttributes&&>(otr));
+  copySubconfigIntoMe<Configuration>(otr.materialConfig_, materialConfig_);
+  return *this;
+}
+
 CapsulePrimitiveAttributes::CapsulePrimitiveAttributes(
     bool isWireframe,
     int primObjType,
