@@ -337,11 +337,11 @@ void MetadataMediatorTest::testDataset0() {
   const std::string activeSceneName = sceneAttrHandles[0];
   ESP_WARNING() << "testLoadSceneInstances : Scene instance attr handle :"
                 << activeSceneName;
-  // get scene instance attributes ref
+  // get Scene Instance Attributes ref
   // metadata::attributes::SceneInstanceAttributes::cptr
   // curSceneInstanceAttributes =
   auto sceneAttrs = MM_->getSceneInstanceAttributesByName(activeSceneName);
-  // this should be a scene instance attributes with specific stage and object
+  // this should be a Scene Instance Attributes with specific stage and object
   CORRADE_VERIFY(sceneAttrs);
   // verify default value for translation origin
   CORRADE_COMPARE(static_cast<int>(sceneAttrs->getTranslationOrigin()),

@@ -16,8 +16,6 @@
 namespace esp {
 namespace metadata {
 namespace managers {
-using esp::core::managedContainers::ManagedObjectAccess;
-
 class SceneDatasetAttributesManager
     : public AttributesManager<attributes::SceneDatasetAttributes,
                                ManagedObjectAccess::Share> {
