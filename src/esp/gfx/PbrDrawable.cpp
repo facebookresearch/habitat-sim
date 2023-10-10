@@ -327,6 +327,12 @@ void PbrDrawable::setMaterialValuesInternal(
       matCache.volumeLayer.attenuationColor = *attenuationColor;
     }
   }  // has KHR_materials_volume layer
+
+  // Vertex colors (for synth assets)
+  if (meshAttributeFlags_ & Drawable::Flag::HasVertexColor) {
+    flags_ |= PbrShader::Flag::VertexColor;
+  }
+
   // If not reset then make sure the same shader is used
   if (!reset) {
     flags_ = oldFlags;

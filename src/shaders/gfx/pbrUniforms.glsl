@@ -16,7 +16,9 @@ in highp vec2 texCoord;
 in highp vec3 tangent;
 in highp vec3 biTangent;
 #endif
-
+#ifdef VERTEX_COLOR
+in highp vec4 interpolatedVertexColor;
+#endif
 // -------------- uniforms ----------------
 #if defined(OBJECT_ID)
 uniform highp uint uObjectId;

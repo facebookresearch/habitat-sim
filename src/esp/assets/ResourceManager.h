@@ -699,20 +699,33 @@ class ResourceManager {
       bool forceFlatShading);
 
   /**
-   * @brief Build a primitive asset based on passed template parameters.  If
-   * exists already, does nothing.  Will use primitiveImporter_ to call
-   * appropriate method to construct asset.
+   * @brief Build a primitive asset based on the template parameters encoded in
+   * @p primTemplateHandle , using the predefined material referenced by
+   * DEFAULT_MATERIAL_KEY. If primitive asset exists already, does nothing. Will
+   * use primitiveImporter_ to call appropriate method to construct asset.
    * @param primTemplateHandle the handle referring to the attributes describing
    * primitive to instantiate
    */
   void buildPrimitiveAssetData(const std::string& primTemplateHandle);
 
   /**
-   * @brief this will build a Phong @ref Magnum::Trade::MaterialData using
-   * default attributes from deprecated/removed esp::gfx::PhongMaterialData.
-   * @return The new phong color populated with default values
+   * @brief Build a primitive asset based on passed template parameters and
+   * passed material key. If exists already, does nothing. Will use
+   * primitiveImporter_ to call appropriate method to construct asset.
+   * @param primTemplateHandle the handle referring to the attributes describing
+   * primitive to instantiate
+   * @param materialKey The key to the existing material being used for this
+   * primitive.
    */
-  Mn::Trade::MaterialData buildDefaultPhongMaterial();
+  void buildPrimitiveAssetData(const std::string& primTemplateHandle,
+                               const std::string& materialKey);
+  /**
+   * @brief this will build a MaterialData compatible with Flat, Phong and
+   * PBR @ref Magnum::Trade::MaterialData, using default attributes
+   * from deprecated/removed habitat material default values.
+   * @return The new material populated with default values
+   */
+  Mn::Trade::MaterialData buildDefaultMaterial();
 
   /**
    * @brief Define and set user-defined attributes for the passed
@@ -1115,6 +1128,11 @@ class ResourceManager {
    * @brief initialize default material setups in the current ShaderManager
    */
   void initDefaultMaterials();
+
+  /**
+   * @brief Retrieve the shader type to use for the various default materials.
+   */
+  ObjectInstanceShaderType getDefaultMaterialShaderType();
 
   /**
    * @brief Checks if light setup is compatible with loaded asset
