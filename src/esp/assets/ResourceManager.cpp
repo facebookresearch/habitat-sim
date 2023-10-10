@@ -1186,8 +1186,8 @@ std::vector<Mn::Matrix4> ResourceManager::computeAbsoluteTransformations(
 
 void ResourceManager::buildPrimitiveAssetData(
     const std::string& primTemplateHandle) {
-  // use default material if none specified
-  buildPrimitiveAssetData(primTemplateHandle, DEFAULT_MATERIAL_KEY);
+  // use metallic material for primitives
+  buildPrimitiveAssetData(primTemplateHandle, METALLIC_MATERIAL_KEY);
 
 }  // ResourceManager::buildPrimitiveAssetData
 
@@ -1214,7 +1214,8 @@ void ResourceManager::buildPrimitiveAssetData(
   // RenderAssetCreationInfo structure, so that queries of resourceDict_ using
   // RenderAssetCreationInfo will work properly.
   auto primAssetHandle =
-      (materialKey == "")
+      // Default metallic primitive material
+      (materialKey == METALLIC_MATERIAL_KEY)
           ? primTemplate->getHandle()
           : Cr::Utility::formatString("{}_{}", primTemplate->getHandle(),
                                       materialKey);
@@ -2255,8 +2256,6 @@ void ResourceManager::initDefaultMaterials() {
   Mn::Trade::MaterialData whiteMaterialData = buildDefaultMaterial();
   whiteMaterialData.mutableAttribute<Mn::Color4>(
       Mn::Trade::MaterialAttribute::AmbientColor) = Mn::Color4{1.0};
-  whiteMaterialData.mutableAttribute<Mn::Color4>(
-      Mn::Trade::MaterialAttribute::BaseColor) = Mn::Color4{1.0};
   whiteMaterialData.mutableAttribute<Mn::Float>(
       Mn::Trade::MaterialAttribute::Metalness) = 0.0f;
   whiteMaterialData.mutableAttribute<Mn::Float>(
@@ -2267,12 +2266,25 @@ void ResourceManager::initDefaultMaterials() {
   // Add to shaderManager at specified key location
   shaderManager_.set<Mn::Trade::MaterialData>(WHITE_MATERIAL_KEY,
                                               std::move(whiteMaterialData));
+
+  // Build metallic material
+  Mn::Trade::MaterialData metalMaterialData = buildDefaultMaterial();
+  metalMaterialData.mutableAttribute<Mn::Color4>(
+      Mn::Trade::MaterialAttribute::SpecularColor) = Mn::Color4{1.0};
+  metalMaterialData.mutableAttribute<Mn::Float>(
+      Mn::Trade::MaterialAttribute::Shininess) = 250.0f;
+  metalMaterialData.mutableAttribute<Mn::Float>(
+      Mn::Trade::MaterialAttribute::Metalness) = 0.7f;
+  // Set expected user-defined attributes
+  metalMaterialData = setMaterialDefaultUserAttributes(metalMaterialData,
+                                                       defaultMaterialShader);
+  // Add to shaderManager at specified key location
+  shaderManager_.set<Mn::Trade::MaterialData>(METALLIC_MATERIAL_KEY,
+                                              std::move(metalMaterialData));
   // Build white vertex ID material
   Mn::Trade::MaterialData vertIdMaterialData = buildDefaultMaterial();
   vertIdMaterialData.mutableAttribute<Mn::Color4>(
       Mn::Trade::MaterialAttribute::AmbientColor) = Mn::Color4{1.0};
-  vertIdMaterialData.mutableAttribute<Mn::Color4>(
-      Mn::Trade::MaterialAttribute::BaseColor) = Mn::Color4{1.0};
   vertIdMaterialData.mutableAttribute<Mn::Float>(
       Mn::Trade::MaterialAttribute::Metalness) = 0.0f;
   vertIdMaterialData.mutableAttribute<Mn::Float>(

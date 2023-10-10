@@ -102,9 +102,15 @@ constexpr char DEFAULT_MATERIAL_KEY[] = "";
 
 /**
  *@brief The @ref esp::gfx::ShaderManager key for full ambient white @ref
- *esp::gfx::MaterialInfo used for primitive wire-meshes
+ *esp::gfx::MaterialInfo
  */
 constexpr char WHITE_MATERIAL_KEY[] = "ambient_white";
+
+/**
+ *@brief The @ref esp::gfx::ShaderManager key for shiny metallic @ref
+ *esp::gfx::MaterialInfo
+ */
+constexpr char METALLIC_MATERIAL_KEY[] = "metallic_gray";
 
 /**
  *@brief The @ref ShaderManager key for @ref MaterialInfo with per-vertex
