@@ -3304,6 +3304,11 @@ void ResourceManager::initDefaultLightSetups() {
 std::shared_ptr<gfx::PbrIBLHelper> ResourceManager::getOrBuildPBRIBLHelper(
     const std::shared_ptr<esp::metadata::attributes::PbrShaderAttributes>&
         pbrShaderAttr) {
+  // Don't attempt to retrieve or create IBL maps if no gl context is available
+  if (!getCreateRenderer()) {
+    return nullptr;
+  }
+
   auto helperKey = pbrShaderAttr->getPbrShaderHelperKey();
 
   ESP_DEBUG(Mn::Debug::Flag::NoSpace)
