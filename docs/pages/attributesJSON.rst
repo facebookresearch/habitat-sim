@@ -517,6 +517,112 @@ The :ref:`LightLayoutAttributes` JSON should contain a single cell named "lights
   - string
   - The frame to use to place the light. "global", meaning stage's origin, and "camera", meaning place relative to a (potentially moving) camera, are currently supported.
 
+
+`PbrShaderAttributes`_
+======================
+:ref:`PbrShaderAttributes` templates describe parameters that determine the configuration and performance of Habitat's PBR shader, for both direct and indirect(Image Based) lighting. The file names for these JSON should be formatted as follows:
+
+     <pbrIblConfigurationName>.pbr_config.json
+
+`An example of an appropriately configured PBRShader Attributes file can be found below <facebookresearch/habitat-sim/blob/main/data/test_assets/pbr/example.pbr_config.json>`_:
+
+.. include:: ../../data/test_assets/pbr/example.pbr_config.json
+    :code: json
+
+The :ref: `PbrShaderAttributes` JSON
+
+PBR Frame And Direct Lighting Parameters
+----------------------------------------
+The parameters below effect the render equation calculations for direct lighting to be used for all PBR-shaded assets.
+
+"enable_direct_lights"
+    - boolean
+    - Whether the direct lights should be enabled or disabled in the shader Defaults to true.
+"direct_light_intensity"
+    - float
+    - Specifies the direct light intensity - used to balance direct lighting results so that the same lighting can be used with PBR and phong. Defaults to 1.0
+"map_mat_txtr_to_linear"
+    - boolean
+    - Whether we should use shader-based srgb-to-linear approximation remapping of applicable material color textures from srgb to linear on input (so that calculations are performed on linear space colors). Defaults to true.
+"use_direct_tonemap"
+    - boolean
+    - Whether to use the provided tonemapping on direct lit results. Defaults to false.
+"use_burley_diffuse"
+    - boolean
+    - Whether to use the Burley/Disney diffuse calculation or lambertian calculation for direct lit diffuse color contribution. Lambertian is a very simple calculation but not quite as pretty as the Burley/Disney diffuse calc we use by default Defaults to true.
+
+PBR Indirect (IBL) Lighting Parameters
+--------------------------------------
+The parameters below effect the render equation calculations for indirect (Image-Based) lighting to be used for all PBR-shaded assets.
+
+"enable_ibl"
+    - boolean
+    - Whether image based lighting should be enabled or disabled in the shader Defaults to true.
+"ibl_blut_filename"
+    - string/filepath
+    - The location of the brdf Lookup Table used for the IBL Specular calculation, either as a relative path or the entry in the precompiled resource file : brdflut_ldr_512x512.png. Defaults to "brdflut_ldr_512x512.png"
+"ibl_envmap_filename"
+    - string/filepath
+    - The location of the equirectangular environment map used to derive the Irradiance cubemap for IBL Diffuse calculations as well as the Prefiltered Envmap used for IBL Specular calculations. This location is specified as either as a relative path or entry in the precompiled resource file of maps already provided with Habitat : ["anniversary_lounge_1k.hdr","autoshop_01_1k.hdr","blue_photo_studio_1k.hdr", "brown_photostudio_02_1k.hdr", "lythwood_room_1k.hdr]. Defaults to "brown_photostudio_02_1k.hdr"
+"map_ibl_txtr_to_linear"
+    - boolean
+    - Whether we should use shader-based srgb-to-linear approximation remapping of applicable IBL environment map textures from srgb to linear on input (so that calculations are performed on linear space colors). Defaults to true.
+"use_ibl_tonemap"
+    - boolean
+    - Whether to use the provided tonemapping on IBL lit results. Defaults to true.
+
+PBR Direct/IBL Mix Parameters
+-----------------------------
+The parameters below control the mixture of direct and IBL-derived diffuse and specular contributions to be used in the final color from the PBR shader. The full mixture of direct and IBL diffuse is added to the full mixture of direct and IBL specular for the final color.
+
+"direct_diffuse_scale"
+    - float
+    - The scale value to multiply the direct lighting diffuse result when using both direct lighting and IBL. If direct_diffuse_scale + ibl_diffuse_scale is greater than 1 then this will increase the brightness of the scene, possibly detrimentally. Defaults to .5.
+"direct_specular_scale"
+    - float
+    - The scale value to multiply the direct lighting specular result when using both direct lighting and IBL. If direct_specular_scale + ibl_specular_scale is greater than 1 then this will increase the brightness of the scene, possibly detrimentally. Defaults to .5.
+"ibl_diffuse_scale"
+    - float
+    - The scale value to multiply the IBL diffuse result when using both direct lighting and IBL. If direct_diffuse_scale + ibl_diffuse_scale is greater than 1 then this will increase the brightness of the scene, possibly detrimentally. Defaults to .5.
+"ibl_specular_scale"
+    - float
+    - The scale value to multiply the IBL specular result when using both direct lighting and IBL. If direct_specular_scale + ibl_specular_scale is greater than 1 then this will increase the brightness of the scene, possibly detrimentally. Defaults to .5.
+
+
+PBR General Parameters
+----------------------
+These parameters effect calculations used by both Direct and Image-Based lit calculations in the PBR shader.
+
+"skip_missing_tbn_calc"
+    - boolean
+    - Whether to skip the online TBN frame derivation calculation, if precalculated tangents are not provided. If this is true and no prefiltered tangents are provided, normal textures will not work properly, and neither will clearcoat textures or anisotropy. Defaults to false.
+"use_mikkelsen_tbn"
+    - boolean
+    - Whether to use the mikkelsen TBN calculation. If false, a simplified version is used to derive the TBN that seems equivalent and is cheaper to calculate. Defaults to false.
+"tonemap_exposure"
+    - float
+    - The exposure value for the tonemapping being used. Defaults to 4.5.
+"gamma"
+    - float
+    - The gamma value that is used for the remapping calculations between linear and sRGB color spaces. Defaults to 2.2.
+"map_output_to_srgb"
+    - boolean
+    - Whether the shader-based linear-to-srgb approximation remapping of color output in PBR rendering for both direct and IBL results should be used. Defaults to true.
+
+PBR Debug Parameters
+--------------------
+These parameters control the enabling or disabling of particular extension layer calculations in the shader. These may not be supported in user-facing code.
+
+"skip_clearcoat_calc"
+    - boolean
+    - Skip all clearcoat layer calculations regardless of material settings. This is for debugging/perf testing. Defaults to false.
+"skip_specular_layer_calc"
+    - boolean
+    - Skip all specular layer calculations regardless of material settings. This is for debugging/perf testing. Defaults to false.
+"skip_anisotropy_layer_calc"
+    - boolean
+    - Skip all anisotropy layer calculations regardless of material settings. This is for debugging/perf testing. Defaults to false.
+
 `PhysicsManagerAttributes`_
 ===========================
 :ref:`PhysicsManagerAttributes` templates describe quantities pertinent to building the simulation world.  Any source configuration JSON files used to build these attributes should be formatted as follows:
