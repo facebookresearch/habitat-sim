@@ -343,13 +343,13 @@ Below are stage-specific physical and object-related quantities.  These values w
 
      <articulated_object_name>.ao_config.json
 
-`An example of an appropriately configured articulated object Attributes file can be found below <facebookresearch/habitat-sim/blob/main/data/test_assets/urdf/skinned_prism.ao_config.json`_:
+`An example of an appropriately configured Articulated Object Attributes file can be found below <facebookresearch/habitat-sim/blob/main/data/test_assets/urdf/skinned_prism.ao_config.json>`_:
 
 .. include:: ../../data/test_assets/urdf/skinned_prism.ao_config.json
     :code: json
 
 
-articulated object URDF File And Assets
+Articulated Object URDF File And Assets
 ---------------------------------------
 
 Below are the handles and descriptors for the source URDF file and the render asset/skin used by an articulated object.
@@ -361,7 +361,7 @@ Below are the handles and descriptors for the source URDF file and the render as
     - string
     - The relative file path to the asset/skin used to render an articulated object, if it exists
 
-articulated object Configuration And Rendering
+Articulated Object Configuration And Rendering
 ----------------------------------------------
 
 "uniform_scale"
@@ -400,7 +400,7 @@ articulated object Configuration And Rendering
 
      <objectname>.object_config.json
 
-`An example of an appropriately configured articulated object Attributes file can be found below <facebookresearch/habitat-sim/blob/main/data/test_assets/objects/donut.object_config.json>`_:
+`An example of an appropriately configured object Attributes file can be found below <facebookresearch/habitat-sim/blob/main/data/test_assets/objects/donut.object_config.json>`_:
 
 .. include:: ../../data/test_assets/objects/donut.object_config.json
     :code: json
