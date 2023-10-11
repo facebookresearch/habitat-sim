@@ -337,13 +337,70 @@ Below are stage-specific physical and object-related quantities.  These values w
     - double
     - The conversion of given units to meters.
 
+`ArticulatedObjectAttributes`_
+==============================
+:ref:`ArticulatedObjectAttributes` templates hold descriptive information for instancing articulated objects into Habitat-Sim via URDF files.  These file names should be formatted as follows:
+
+     <articulated_object_name>.ao_config.json
+
+`An example of an appropriately configured articulated object Attributes file can be found below <facebookresearch/habitat-sim/blob/main/data/test_assets/urdf/skinned_prism.ao_config.json`_:
+
+.. include:: ../../data/test_assets/urdf/skinned_prism.ao_config.json
+    :code: json
+
+
+articulated object URDF File And Assets
+---------------------------------------
+
+Below are the handles and descriptors for the source URDF file and the render asset/skin used by an articulated object.
+
+"urdf_filepath"
+    - string
+    - The relative path to the URDF file describing the articulated object this config references. This field is REQUIRED and must be a legal, findable urdf file for this configuration to be successfully registered after load.
+"render_asset"
+    - string
+    - The relative file path to the asset/skin used to render an articulated object, if it exists
+
+articulated object Configuration And Rendering
+----------------------------------------------
+
+"uniform_scale"
+    - double
+    - The uniform scaling to apply to this articulated object after load (defaults to 1.0). This is modifiable by the scene instance specification.
+"mass_scale"
+    - double
+    - The amount the mass of the articulated object should be scaled upon load (defaults to 1.0). This is modifiable by the scene instance specification.
+"semantic_id"
+    - integer
+    - The semantic id assigned to articulated objects built from this configuration.
+"base_type"
+    - string (one of "free", "fixed")
+    - The type of joint to be used to connect the base of the articulated object to the world (the root 6 dofs). Defaults to "free".
+"inertia_source"
+    - string (one of "computed", "urdf")
+    - Specifies the source of the inertia tensors used for solving the dynamics of this articulated object. Defaults to "computed".
+"link_order"
+    - string (one of "urdf_order", "tree_traversal")
+    - Specifies how link order should be determined for the articulated object upon load. Defaults to "tree_traversal".
+"render_mode"
+    - string (one of "default", "skin", "link_visuals", "none", "both")
+    - Specifies the possible options for what will be rendered for the articulated object this configuration instantiates. Default value is "default".
+        - "default" : Render the articulated object using its skin if it has one, otherwise render it using the urdf-defined link meshes/primitives.
+        - "skin" : Render the articulated object using its skin.
+        - "link_visuals" : Render the articulated object using urdf-defined meshes/primitives to respresent each link.
+        - "none" : Don't render the articulated object.
+        - "both" : Render the articulated object with both its skin and the urdf-defined link meshes/primitives simultaneously (for debug purposes).
+"shader_type"
+    - string (one of "material", "flat", "phong", "pbr") ["pbr" currently not supported.]
+    - The shader to be used to render the articulated object. 'material' uses the render asset's specified material, other values force specified shader regardless of asset specification. Defaults to 'phong'.
+
 `ObjectAttributes`_
 ===================
 :ref:`ObjectAttributes` templates hold descriptive information for instancing rigid objects into Habitat-Sim.  These file names should be formatted as follows:
 
      <objectname>.object_config.json
 
-`An example of an appropriately configured Object Attributes file can be found below <facebookresearch/habitat-sim/blob/main/data/test_assets/objects/donut.object_config.json>`_:
+`An example of an appropriately configured articulated object Attributes file can be found below <facebookresearch/habitat-sim/blob/main/data/test_assets/objects/donut.object_config.json>`_:
 
 .. include:: ../../data/test_assets/objects/donut.object_config.json
     :code: json
@@ -545,8 +602,3 @@ Object Instance User Data
 -------------------------
 
 User data can also be tied to specific instances of an object. When an object is first instantiated, the current user data defined in the :ref:`ObjectAttributes` is copied into the object. Instance-specific user data can then be queried and set with :ref:`ManagedRigidObject.user_attributes` and :ref:`ManagedArticulatedObject.user_attributes`.
-
-ArticulatedObject User Data
----------------------------
-
-While *ArticulatedObjects* are completely defined by their URDF files and parsing parameters, Habitat-sim does support importing additional user metadata via an accompanying *<urdf_name>.ao_config.json* file. See `ReplicaCAD <https://aihabitat.org/datasets/replica_cad/index.html>`_ for an example.
