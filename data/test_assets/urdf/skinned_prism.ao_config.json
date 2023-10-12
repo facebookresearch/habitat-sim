@@ -1,5 +1,8 @@
 {
+  "urdf_filepath": "skinned_prism.urdf",
   "render_asset": "../objects/skinned_prism.glb",
+  "uniform_scale": 1.0,
+  "mass_scale": 1.0,
   "semantic_id": 100,
   "base_type": "free",
   "inertia_source": "computed",
