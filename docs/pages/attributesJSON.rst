@@ -387,7 +387,7 @@ Articulated Object Configuration And Rendering
     - Specifies the possible options for what will be rendered for the articulated object this configuration instantiates. Default value is "default".
         - "default" : Render the articulated object using its skin if it has one, otherwise render it using the urdf-defined link meshes/primitives.
         - "skin" : Render the articulated object using its skin.
-        - "link_visuals" : Render the articulated object using urdf-defined meshes/primitives to respresent each link.
+        - "link_visuals" : Render the articulated object using urdf-defined meshes/primitives to represent each link.
         - "none" : Don't render the articulated object.
         - "both" : Render the articulated object with both its skin and the urdf-defined link meshes/primitives simultaneously (for debug purposes).
 "shader_type"
