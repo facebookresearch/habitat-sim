@@ -46,6 +46,11 @@ Editing Scene Assets in Blender                     `Page <https://aihabitat.org
 Coordinate Frame Tutorial                           :ref:`Page <std:doc:coordinate-frame-tutorial>`                                                                                                                :gh:`Jupyter Notebook <facebookresearch/habitat-sim/blob/main/examples/tutorials/notebooks/coordinate_frame_tutorial.ipynb>`
 =================================================== ========================================================================================================================================================== ======================
 
+Scene Datasets and the MetadataMediator
+=======================================
+
+See :ref:`Scene Datasets in Habitat-Sim <std:doc:scene-datasets>` for in-depth instructions on how *Habitat-Sim* manages and consumes scene data.
+
 Python Classes
 ==============
 

@@ -42,6 +42,11 @@ INPUT_PAGES = [
     "pages/managed-rigid-object-tutorial.rst",
     "pages/logging.rst",
     "pages/coordinate-frame-tutorial.rst",
+    "pages/scene-datasets.rst",
+    "pages/scene-datasets/sd-json-metadata.rst",
+    "pages/scene-datasets/sd-metadataMediator.rst",
+    "pages/scene-datasets/sd-scene-dataset-configs.rst",
+    "pages/scene-datasets/sd-scene-instances.rst",
 ]
 
 PLUGINS = [
