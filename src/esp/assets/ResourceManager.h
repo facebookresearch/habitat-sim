@@ -432,23 +432,14 @@ class ResourceManager {
    * @param meshAttributeFlags flags for the attributes of the render mesh
    * @param node The @ref scene::SceneNode to which the drawable will be
    * attached.
-   * @param lightSetupKey The @ref LightSetup key that will be used
-   * for the drawable.
-   * @param materialKey The @ref MaterialData key that will be used
-   * for the drawable.
-   * @param group Optional @ref DrawableGroup with which the render the @ref
-   * gfx::Drawable.
+   * @param drawableCfg The @ref esp::gfx::DrawableConfiguration that describes
+   * the drawable being created.
    */
 
   void createDrawable(Mn::GL::Mesh* mesh,
                       gfx::Drawable::Flags& meshAttributeFlags,
                       scene::SceneNode& node,
                       gfx::DrawableConfiguration& drawableCfg);
-
-  // const Mn::ResourceKey& lightSetupKey,
-  // const Mn::ResourceKey& materialKey,
-  // DrawableGroup* group = nullptr,
-  // const std::shared_ptr<gfx::InstanceSkinData>& skinData = nullptr);
 
   /**
    * @brief Remove the specified primitive mesh.

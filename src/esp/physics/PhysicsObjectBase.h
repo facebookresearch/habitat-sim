@@ -26,7 +26,7 @@ class ResourceManager;
 namespace physics {
 
 /**
- * @brief Motion type of a @ref RigidObject.
+ * @brief Motion type of a @ref esp::physics::RigidObject.
  * Defines its treatment by the simulator and operations which can be performed
  * on it.
  */
@@ -40,13 +40,13 @@ enum class MotionType {
   /**
    * The object is not expected to move and should not allow kinematic updates.
    * Likely treated as static collision geometry. See @ref
-   * esp::physics::RigidObjectType::SCENE.
+   * esp::physics::RigidStage.
    */
   STATIC,
 
   /**
    * The object is expected to move kinematically, but is not simulated. Default
-   * behavior of @ref RigidObject with no physics simulator defined.
+   * behavior of @ref esp::physics::RigidObject with no physics simulator defined.
    */
   KINEMATIC,
 

@@ -12,6 +12,10 @@ namespace esp {
  * @brief Assets library
  */
 
+/** @namespace esp::core
+ * @brief Core Habitat functionality
+ */
+
 /** @namespace esp::gfx
  * @brief GFX library
  */
