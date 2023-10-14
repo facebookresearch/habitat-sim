@@ -104,7 +104,7 @@ Magnum::Color3 getAmbientLightColor(const LightSetup& lightSetup) {
   } else {
     // todo: add up ambient terms from all lights in lightSetup
     // temp: hard-coded ambient light tuned for ReplicaCAD
-    float ambientIntensity = 0.4;
+    float ambientIntensity = 0.55;
     return Magnum::Color3(ambientIntensity, ambientIntensity, ambientIntensity);
   }
 }
