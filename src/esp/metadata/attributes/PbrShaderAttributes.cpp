@@ -48,6 +48,13 @@ PbrShaderAttributes::PbrShaderAttributes(const std::string& handle)
   setMapIBLTxtrToLinear(false);
   setMapOutputToSRGB(false);
   setGamma(2.2f);
+
+  // Hack for increasing the light level when replay rendering
+  float scaleVal = 0.7;
+  setDirectDiffuseScale(scaleVal);
+  setDirectSpecularScale(scaleVal);
+  setIBLDiffuseScale(scaleVal);
+  setIBLSpecularScale(scaleVal);
 }  // PbrShaderAttributes ctor
 
 void PbrShaderAttributes::writeValuesToJson(
