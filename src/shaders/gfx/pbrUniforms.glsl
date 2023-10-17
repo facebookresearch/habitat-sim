@@ -16,7 +16,9 @@ in highp vec2 texCoord;
 in highp vec3 tangent;
 in highp vec3 biTangent;
 #endif
-
+#ifdef VERTEX_COLOR
+in highp vec4 interpolatedVertexColor;
+#endif
 // -------------- uniforms ----------------
 #if defined(OBJECT_ID)
 uniform highp uint uObjectId;
@@ -49,7 +51,7 @@ uniform int uPbrDebugDisplay;
 #endif
 
 // -------------- uniforms for material and textures ------------------
-// MaterialData defined in pbrMaterials.glsl
+// MaterialData defined in pbrStructs.glsl
 uniform MaterialData uMaterial;
 
 #if defined(BASECOLOR_TEXTURE)
@@ -69,7 +71,7 @@ uniform sampler2D uEmissiveTexture;
 #endif
 
 #if defined(CLEAR_COAT)
-// ClearCoatData defined in pbrMaterials.glsl
+// ClearCoatData defined in pbrStructs.glsl
 uniform ClearCoatData uClearCoat;
 
 #if defined(CLEAR_COAT_TEXTURE)
@@ -87,7 +89,7 @@ uniform sampler2D uClearCoatNormalTexture;
 #endif  // CLEAR_COAT
 
 #if defined(SPECULAR_LAYER)
-// SpecularLayerData defined in pbrMaterials.glsl
+// SpecularLayerData defined in pbrStructs.glsl
 uniform SpecularLayerData uSpecularLayer;
 
 #if defined(SPECULAR_LAYER_TEXTURE)
@@ -101,7 +103,7 @@ uniform sampler2D uSpecularLayerColorTexture;
 #endif  // SPECULAR_LAYER
 
 #if defined(ANISOTROPY_LAYER)
-// AnisotropyLayerData defined in pbrMaterials.glsl
+// AnisotropyLayerData defined in pbrStructs.glsl
 uniform AnisotropyLayerData uAnisotropyLayer;
 
 #if defined(ANISOTROPY_LAYER_TEXTURE)

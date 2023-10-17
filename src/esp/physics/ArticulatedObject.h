@@ -827,7 +827,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * @brief Returns the @ref
    * metadata::attributes::SceneAOInstanceAttributes used to place this
    * Articulated Object initially in the scene.
-   * @return a read-only copy of the scene instance attributes used to place
+   * @return a read-only copy of the @ref metadata::attributes::SceneInstanceAttributes used to place
    * this object in the scene.
    */
   std::shared_ptr<const metadata::attributes::SceneAOInstanceAttributes>

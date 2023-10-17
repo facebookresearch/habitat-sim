@@ -21,6 +21,7 @@ class SceneNode;
 class SceneGraph;
 }  // namespace scene
 namespace gfx {
+struct Rig;
 namespace replay {
 
 class NodeDeletionHelper;
@@ -57,6 +58,14 @@ class Recorder {
    * @param assetInfo The asset that was loaded.
    */
   void onLoadRenderAsset(const esp::assets::AssetInfo& assetInfo);
+
+  /**
+   * @brief User code should call this upon instantiating a skinned asset rig to
+   * inform Recorder about it.
+   * @param rigId Id of the rig that was instantiated.
+   * @param rig Rig that was instantiated.
+   */
+  void onCreateRigInstance(int rigId, const Rig& rig);
 
   /**
    * @brief Record deletion of all render instances in a scene graph.
@@ -163,6 +172,7 @@ class Recorder {
     RenderAssetInstanceKey instanceKey = ID_UNDEFINED;
     Corrade::Containers::Optional<RenderAssetInstanceState> recentState;
     NodeDeletionHelper* deletionHelper = nullptr;
+    int rigId = ID_UNDEFINED;
   };
 
   using KeyframeIterator = std::vector<Keyframe>::const_iterator;
@@ -174,7 +184,9 @@ class Recorder {
   RenderAssetInstanceKey getNewInstanceKey();
   int findInstance(const scene::SceneNode* queryNode);
   RenderAssetInstanceState getInstanceState(const scene::SceneNode* node);
+  void updateStates();
   void updateInstanceStates();
+  void updateRigInstanceStates();
   void checkAndAddDeletion(Keyframe* keyframe,
                            RenderAssetInstanceKey instanceKey);
   void addLoadsCreationsDeletions(KeyframeIterator begin,
@@ -186,6 +198,8 @@ class Recorder {
   Keyframe currKeyframe_;
   std::vector<Keyframe> savedKeyframes_;
   RenderAssetInstanceKey nextInstanceKey_ = 0;
+  std::unordered_map<int, std::vector<scene::SceneNode*>> rigNodes_;
+  std::unordered_map<int, std::vector<Magnum::Matrix4>> rigNodeTransformCache_;
 
   ESP_SMART_POINTERS(Recorder)
 };

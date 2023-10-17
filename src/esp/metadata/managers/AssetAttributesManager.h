@@ -75,8 +75,6 @@ enum class PrimObjTypes : uint32_t {
   END_PRIM_OBJ_TYPES
 };
 namespace managers {
-using core::managedContainers::ManagedFileBasedContainer;
-using core::managedContainers::ManagedObjectAccess;
 
 class AssetAttributesManager
     : public AttributesManager<attributes::AbstractPrimitiveAttributes,
@@ -151,6 +149,23 @@ class AssetAttributesManager
    * @return The attributes that most closely matches the given handle.
    */
   attributes::AbstractPrimitiveAttributes::ptr createTemplateFromHandle(
+      const std::string& templateHandle,
+      bool registerTemplate = true);
+
+  /**
+   * @brief Retrieves the template specified by the supplied handle, creating
+   * the template if none exists. Since the primitive asset attributes templates
+   * encode their structure in their handles, and these handles are not user
+   * editable, a properly configured handle can be used to build a template.
+   * @param templateHandle The template handle to use to create the attributes.
+   * @param registerTemplate whether to add this template to the library.
+   * If the user is going to edit this template, this should be false - any
+   * subsequent editing will require re-registration. Defaults to true. If
+   * specified as true, then this function returns a copy of the registered
+   * template.
+   * @return The attributes that most closely matches the given handle.
+   */
+  attributes::AbstractPrimitiveAttributes::cptr getOrCreateTemplateFromHandle(
       const std::string& templateHandle,
       bool registerTemplate = true);
 

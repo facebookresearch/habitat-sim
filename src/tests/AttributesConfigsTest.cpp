@@ -41,10 +41,6 @@ using Attrs::UVSpherePrimitiveAttributes;
 
 namespace {
 
-// base directory to save test attributes
-const std::string testAttrSaveDir =
-    Cr::Utility::Path::join(DATA_DIR, "test_assets");
-
 /**
  * @brief Test attributes/configuration functionality via setting values from
  * JSON string, saving JSON to file and loading verifying saved JSON matches
@@ -123,7 +119,7 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
           lightLayoutAttr);
 
   /**
-   * @brief This test will verify that the Scene Instance attributes' managers'
+   * @brief This test will verify that the Scene Instance Attributes' managers'
    * JSON loading process is working as expected.
    */
   void testSceneInstanceAttrVals(
@@ -333,7 +329,7 @@ void AttributesConfigsTest::testPhysicsJSONLoad() {
 
   // before test, save attributes to disk with new name
   std::string newAttrName = Cr::Utility::formatString(
-      "{}/testPhysicsAttrConfig_saved_JSON.{}", testAttrSaveDir,
+      "{}/testPhysicsAttrConfig_saved_JSON.{}", TEST_ASSETS,
       physicsAttributesManager_->getJSONTypeExt());
 
   bool success = physicsAttributesManager_->saveManagedObjectToFile(
@@ -465,7 +461,7 @@ void AttributesConfigsTest::testPbrShaderAttrJSONLoad() {
 
   // before test, save attributes to disk with new name
   std::string newAttrName = Cr::Utility::formatString(
-      "{}/testPbrShaderAttrConfig_saved_JSON.{}", testAttrSaveDir,
+      "{}/testPbrShaderAttrConfig_saved_JSON.{}", TEST_ASSETS,
       pbrShaderAttributesManager_->getJSONTypeExt());
 
   bool success = pbrShaderAttributesManager_->saveManagedObjectToFile(
@@ -612,7 +608,7 @@ void AttributesConfigsTest::testLightJSONLoad() {
   CORRADE_VERIFY(lightLayoutAttr);
   // before test, save attributes to disk with new name
   std::string newAttrName = Cr::Utility::formatString(
-      "{}/testLightLayoutAttrConfig_saved_JSON.{}", testAttrSaveDir,
+      "{}/testLightLayoutAttrConfig_saved_JSON.{}", TEST_ASSETS,
       lightLayoutAttributesManager_->getJSONTypeExt());
 
   bool success = lightLayoutAttributesManager_->saveManagedObjectToFile(
@@ -645,7 +641,7 @@ void AttributesConfigsTest::testLightJSONLoad() {
 
 void AttributesConfigsTest::testSceneInstanceRootUserDefinedAttrVals(
     std::shared_ptr<esp::core::config::Configuration> userAttrs) {
-  // test scene instance attributes-level user config vals
+  // test Scene Instance Attributes-level user config vals
   testUserDefinedConfigVals(userAttrs, 4, "scene instance defined string", true,
                             99, 9.1, Mn::Vector2(1.3f, 2.4f),
                             Mn::Vector3(12.3, 32.5, 25.07),
@@ -666,7 +662,7 @@ void AttributesConfigsTest::testSceneInstanceAttrVals(
   CORRADE_COMPARE(sceneAttr->getNavmeshHandle(), "test_navmesh_path1");
   CORRADE_COMPARE(sceneAttr->getSemanticSceneHandle(),
                   "test_semantic_descriptor_path1");
-  // test scene instance attributes-level user config vals
+  // test Scene Instance Attributes-level user config vals
   testSceneInstanceRootUserDefinedAttrVals(sceneAttr->getUserConfiguration());
 
   // test scene instanct attributes-level user config vals retrieved from MM
@@ -1013,7 +1009,7 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
 
   // before test, save attributes to disk with new name
   std::string newAttrName = Cr::Utility::formatString(
-      "{}/testSceneAttrConfig_saved_JSON.{}", testAttrSaveDir,
+      "{}/testSceneAttrConfig_saved_JSON.{}", TEST_ASSETS,
       sceneInstanceAttributesManager_->getJSONTypeExt());
 
   bool success = sceneInstanceAttributesManager_->saveManagedObjectToFile(
@@ -1140,7 +1136,7 @@ void AttributesConfigsTest::testStageJSONLoad() {
   // now need to change the render and collision assets to make sure they are
   // legal so test can proceed (needs to be actual existing file)
   const std::string stageAssetFile =
-      Cr::Utility::Path::join(testAttrSaveDir, "scenes/plane.glb");
+      Cr::Utility::Path::join(TEST_ASSETS, "scenes/plane.glb");
 
   stageAttr->setRenderAssetHandle(stageAssetFile);
   stageAttr->setCollisionAssetHandle(stageAssetFile);
@@ -1151,7 +1147,7 @@ void AttributesConfigsTest::testStageJSONLoad() {
 
   // before test, save attributes to disk with new name
   std::string newAttrName = Cr::Utility::formatString(
-      "{}/testStageAttrConfig_saved_JSON.{}", testAttrSaveDir,
+      "{}/testStageAttrConfig_saved_JSON.{}", TEST_ASSETS,
       stageAttributesManager_->getJSONTypeExt());
 
   bool success = stageAttributesManager_->saveManagedObjectToFile(
@@ -1266,7 +1262,7 @@ void AttributesConfigsTest::testObjectJSONLoad() {
   // now need to change the render and collision assets to make sure they are
   // legal so test can proceed (needs to be actual existing file)
   const std::string objAssetFile =
-      Cr::Utility::Path::join(testAttrSaveDir, "objects/donut.glb");
+      Cr::Utility::Path::join(TEST_ASSETS, "objects/donut.glb");
 
   objAttr->setRenderAssetHandle(objAssetFile);
   objAttr->setCollisionAssetHandle(objAssetFile);
@@ -1275,7 +1271,7 @@ void AttributesConfigsTest::testObjectJSONLoad() {
 
   // before test, save attributes to disk with new name
   std::string newAttrName = Cr::Utility::formatString(
-      "{}/testObjectAttrConfig_saved_JSON.{}", testAttrSaveDir,
+      "{}/testObjectAttrConfig_saved_JSON.{}", TEST_ASSETS,
       objectAttributesManager_->getJSONTypeExt());
 
   bool success = objectAttributesManager_->saveManagedObjectToFile(
@@ -1384,9 +1380,9 @@ void AttributesConfigsTest::testArticulatedObjectJSONLoad() {
   // they are legal so the test can proceed (needs to be actual existing file so
   // it can be regsitered)
   const std::string aoURDFFlle =
-      Cr::Utility::Path::join(testAttrSaveDir, "urdf/prim_chain.urdf");
+      Cr::Utility::Path::join(TEST_ASSETS, "urdf/prim_chain.urdf");
   const std::string aoRenderAssetName =
-      Cr::Utility::Path::join(testAttrSaveDir, "objects/skinned_prism.glb");
+      Cr::Utility::Path::join(TEST_ASSETS, "objects/skinned_prism.glb");
 
   artObjAttr->setURDFPath(aoURDFFlle);
   artObjAttr->setRenderAssetHandle(aoRenderAssetName);
@@ -1396,7 +1392,7 @@ void AttributesConfigsTest::testArticulatedObjectJSONLoad() {
 
   // before test, save attributes to disk with new name
   std::string newAttrName = Cr::Utility::formatString(
-      "{}/testArtObjectAttrConfig_saved_JSON.{}", testAttrSaveDir,
+      "{}/testArtObjectAttrConfig_saved_JSON.{}", TEST_ASSETS,
       artObjAttributesManager_->getJSONTypeExt());
 
   bool success = artObjAttributesManager_->saveManagedObjectToFile(

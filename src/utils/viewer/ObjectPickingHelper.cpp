@@ -12,6 +12,7 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/Shaders/GenericGL.h>
+#include "esp/gfx/DrawableConfiguration.h"
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
@@ -119,11 +120,21 @@ void ObjectPickingHelper::createPickedObjectVisualizer(
     return;
   }
 
+  // default configuration to pass pickedObjectDrawbles_
+  esp::gfx::DrawableConfiguration cfg{
+      esp::NO_LIGHT_KEY,
+      esp::WHITE_MATERIAL_KEY,
+      esp::metadata::attributes::ObjectInstanceShaderType::Unspecified,
+      &pickedObjectDrawbles_,
+      nullptr,
+      nullptr,
+      nullptr};
+
   // magnum scene graph will handle the garbage collection even we did not
   // recycle it by the end of the simulation
   meshVisualizerDrawable_ = new esp::gfx::MeshVisualizerDrawable(
       static_cast<esp::scene::SceneNode&>(pickedObject->object()), shader_,
-      pickedObject->getVisualizerMesh(), &pickedObjectDrawbles_);
+      pickedObject->getVisualizerMesh(), cfg);
 
   return;
 }

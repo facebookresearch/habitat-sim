@@ -73,6 +73,12 @@ def initialize_test_data_sources(data_path):
             "version": "v0.2.4",
             "requires_auth": True,
         },
+        "hab3-episodes": {
+            "source": "https://huggingface.co/datasets/ai-habitat/hab3_episodes.git",
+            "link": data_path + "datasets/hssd/rearrange/",
+            "version": "main",
+            "requires_auth": True,
+        },
         "hssd-raw": {
             "source": "https://huggingface.co/datasets/hssd/hssd-scenes.git",
             "link": data_path + "scene_datasets/hssd-scenes",
@@ -182,11 +188,11 @@ def initialize_test_data_sources(data_path):
             "link": data_path + "robots/hab_fetch",
             "version": "v2.0",
         },
-        "humanoid_data": {
-            "source": "http://dl.fbaipublicfiles.com/habitat/humanoids/humanoid_data_v0.1.zip",
-            "package_name": "humanoid_data_v0.1.zip",
+        "habitat_humanoids": {
+            "source": "https://huggingface.co/datasets/ai-habitat/habitat_humanoids.git",
             "link": data_path + "humanoids/humanoid_data",
-            "version": "0.1",
+            "version": "main",
+            "requires_auth": True,
         },
         "rearrange_pick_dataset_v0": {
             "source": "https://dl.fbaipublicfiles.com/habitat/data/datasets/rearrange_pick/replica_cad/v0/rearrange_pick_replica_cad_v0.zip",
@@ -205,6 +211,12 @@ def initialize_test_data_sources(data_path):
             "package_name": "hab2_bench_assets.zip",
             "link": data_path + "hab2_bench_assets",
             "version": "1.0",
+        },
+        "hab3_bench_assets": {
+            "source": "https://huggingface.co/datasets/ai-habitat/hab3_bench_assets.git",
+            "link": data_path + "hab3_bench_assets",
+            "version": "main",
+            "requires_auth": True,
         },
     }
 
@@ -551,8 +563,6 @@ def clone_repo_source(
     uid: str,
     version_dir: str,
     requires_auth: bool,
-    username: Optional[str] = None,
-    password: Optional[str] = None,
     prune_lfs: bool = True,
 ):
     """
@@ -562,13 +572,9 @@ def clone_repo_source(
     """
     version_tag = data_sources[uid]["version"]
     clone_command = f" git clone --depth 1 --branch {version_tag} "
+    clone_command += f"\"{data_sources[uid]['source']}\""
     if requires_auth:
-        adjusted_password = password.replace(" ", "%20")
-        url_split = data_sources[uid]["source"].split("https://")[-1]
-        # NOTE: The username and password are stored in .git/config. Should we post-process this out?
-        clone_command += f'"https://{username}:{adjusted_password}@{url_split}"'
-    else:
-        clone_command += f"\"{data_sources[uid]['source']}\""
+        clone_command = clone_command.replace("https://huggingface.co/", "git@hf.co:")
 
     # place the output in the specified directory
     split_command = shlex.split(clone_command)
@@ -750,18 +756,18 @@ def download_and_place(
 
     # download new version
     requires_auth = data_sources[uid].get("requires_auth", False)
-    if requires_auth:
-        assert username is not None, "Username required, please enter with --username"
-        assert (
-            password is not None
-        ), "Password is required, please enter with --password"
 
     if data_sources[uid]["source"].endswith(".git"):
         # git dataset, clone it
-        clone_repo_source(
-            uid, version_dir, requires_auth, username, password, prune_lfs
-        )
+        clone_repo_source(uid, version_dir, requires_auth, prune_lfs)
     else:
+        if requires_auth:
+            assert (
+                username is not None
+            ), "Username required, please enter with --username"
+            assert (
+                password is not None
+            ), "Password is required, please enter with --password"
         # compressed package dataset (e.g. .zip or .tar), download and unpack it
         get_and_place_compressed_package(
             uid,

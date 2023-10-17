@@ -126,6 +126,30 @@ class AbstractPlayerImplementation {
    * Default implementation does nothing.
    */
   virtual void changeLightSetup(const LightSetup& lights);
+
+  /**
+   * @brief Create and register a rig instance along with its bone IDs and
+   * names.
+   *
+   * Default implementation does nothing.
+   */
+  virtual void createRigInstance(int rigId,
+                                 const std::vector<std::string>& boneNames);
+
+  /**
+   * @brief Delete and unregister a rig instance.
+   *
+   * Default implementation does nothing.
+   */
+  virtual void deleteRigInstance(int rigId);
+
+  /**
+   * @brief Set all bone transforms for a specific rig.
+
+   * Default implementation does nothing.
+   */
+  virtual void setRigPose(int rigId,
+                          const std::vector<gfx::replay::Transform>& pose);
 };
 
 /**
@@ -283,8 +307,7 @@ class Player {
   std::unordered_map<RenderAssetInstanceKey,
                      assets::RenderAssetInstanceCreationInfo>
       creationInfos_;
-  std::unordered_map<RenderAssetInstanceKey, Mn::Matrix4>
-      latestTransformCache_{};
+  std::unordered_map<RenderAssetInstanceKey, Mn::Matrix4> latestTransformCache_;
   std::set<std::string> failedFilepaths_;
 
   ESP_SMART_POINTERS(Player)

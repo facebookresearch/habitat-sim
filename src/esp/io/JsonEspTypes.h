@@ -105,6 +105,7 @@ inline JsonGenericValue toJsonValue(
   addMember(obj, "isSemantic", x.isSemantic(), allocator);
   addMember(obj, "isTextureSemantic", x.isTextureBasedSemantic(), allocator);
   addMember(obj, "lightSetupKey", x.lightSetupKey, allocator);
+  addMember(obj, "rigId", x.rigId, allocator);
   return obj;
 }
 
@@ -135,6 +136,7 @@ inline bool fromJsonValue(const JsonGenericValue& obj,
   }
 
   readMember(obj, "lightSetupKey", x.lightSetupKey);
+  readMember(obj, "rigId", x.rigId);
   return true;
 }
 

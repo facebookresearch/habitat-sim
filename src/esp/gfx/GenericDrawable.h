@@ -46,8 +46,6 @@ class GenericDrawable : public Drawable {
                            DrawableConfiguration& cfg);
 
   void setLightSetup(const Mn::ResourceKey& lightSetupKey) override;
-  static constexpr const char* SHADER_KEY_TEMPLATE =
-      "Phong-lights={}-flags={}-joints={}";
 
  private:
   /**
@@ -64,21 +62,14 @@ class GenericDrawable : public Drawable {
             Mn::SceneGraph::Camera3D& camera) override;
 
   void updateShader();
-  void updateShaderLightingParameters(const Mn::Matrix4& transformationMatrix,
-                                      Mn::SceneGraph::Camera3D& camera);
 
-  Mn::ResourceKey getShaderKey(Mn::UnsignedInt lightCount,
-                               Mn::Shaders::PhongGL::Flags flags,
-                               Mn::UnsignedInt jointCount) const;
+  void updateShaderLightingParametersInternal() override;
 
   // shader parameters
 
   Mn::Shaders::PhongGL::Flags flags_;
   ShaderManager& shaderManager_;
   Mn::Resource<Mn::GL::AbstractShaderProgram, Mn::Shaders::PhongGL> shader_;
-  Mn::Resource<LightSetup> lightSetup_;
-  std::shared_ptr<InstanceSkinData> skinData_;
-  Cr::Containers::Array<Mn::Matrix4> jointTransformations_;
 
   /**
    * Local cache of material quantities to speed up access in draw

@@ -20,9 +20,10 @@
 
 #include "Asset.h"
 #include "MeshMetaData.h"
+#include "RigManager.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/ShaderManager.h"
-#include "esp/physics/configure.h"
+#include "esp/gfx/SkinData.h"
 
 #include "esp/metadata/attributes/AttributesEnumMaps.h"
 
@@ -593,9 +594,14 @@ class ResourceManager {
   bool loadRenderAsset(const AssetInfo& info);
 
   /**
-   * @brief get the shader manager
+   * @brief Get the shader manager.
    */
   gfx::ShaderManager& getShaderManager() { return shaderManager_; }
+
+  /**
+   * @brief Get the rig manager.
+   */
+  RigManager& getRigManager() { return rigManager_; }
 
   /**
    * @brief Build data for a report for semantic mesh connected components based
@@ -693,20 +699,33 @@ class ResourceManager {
       bool forceFlatShading);
 
   /**
-   * @brief Build a primitive asset based on passed template parameters.  If
-   * exists already, does nothing.  Will use primitiveImporter_ to call
-   * appropriate method to construct asset.
+   * @brief Build a primitive asset based on the template parameters encoded in
+   * @p primTemplateHandle , using the predefined material referenced by
+   * DEFAULT_MATERIAL_KEY. If primitive asset exists already, does nothing. Will
+   * use primitiveImporter_ to call appropriate method to construct asset.
    * @param primTemplateHandle the handle referring to the attributes describing
    * primitive to instantiate
    */
   void buildPrimitiveAssetData(const std::string& primTemplateHandle);
 
   /**
-   * @brief this will build a Phong @ref Magnum::Trade::MaterialData using
-   * default attributes from deprecated/removed esp::gfx::PhongMaterialData.
-   * @return The new phong color populated with default values
+   * @brief Build a primitive asset based on passed template parameters and
+   * passed material key. If exists already, does nothing. Will use
+   * primitiveImporter_ to call appropriate method to construct asset.
+   * @param primTemplateHandle the handle referring to the attributes describing
+   * primitive to instantiate
+   * @param materialKey The key to the existing material being used for this
+   * primitive.
    */
-  Mn::Trade::MaterialData buildDefaultPhongMaterial();
+  void buildPrimitiveAssetData(const std::string& primTemplateHandle,
+                               const std::string& materialKey);
+  /**
+   * @brief this will build a MaterialData compatible with Flat, Phong and
+   * PBR @ref Magnum::Trade::MaterialData, using default attributes
+   * from deprecated/removed habitat material default values.
+   * @return The new material populated with default values
+   */
+  Mn::Trade::MaterialData buildDefaultMaterial();
 
   /**
    * @brief Define and set user-defined attributes for the passed
@@ -818,9 +837,9 @@ class ResourceManager {
    * @param skinData Structure holding the skin and rig configuration for the
    * instance.
    */
-  void mapSkinnedModelToArticulatedObject(
+  void mapSkinnedModelToRig(
       const MeshTransformNode& meshTransformNode,
-      const std::shared_ptr<physics::ArticulatedObject>& rig,
+      const gfx::Rig& rig,
       const std::shared_ptr<gfx::InstanceSkinData>& skinData);
 
   /**
@@ -1111,6 +1130,11 @@ class ResourceManager {
   void initDefaultMaterials();
 
   /**
+   * @brief Retrieve the shader type to use for the various default materials.
+   */
+  ObjectInstanceShaderType getDefaultMaterialShaderType();
+
+  /**
    * @brief Checks if light setup is compatible with loaded asset
    */
   bool isLightSetupCompatible(const LoadedAssetData& loadedAssetData,
@@ -1201,6 +1225,12 @@ class ResourceManager {
    * drawables created by this ResourceManager
    */
   gfx::ShaderManager shaderManager_;
+
+  /**
+   * @brief The @ref RigManager used to store rig information for
+   * skinned drawables created by this ResourceManager
+   */
+  RigManager rigManager_;
 
   // ======== Metadata, File and primitive importers ========
   /**

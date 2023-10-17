@@ -15,6 +15,10 @@ layout(location = ATTRIBUTE_LOCATION_TEXCOORD) in highp vec2 vertexTexCoord;
 layout(location = ATTRIBUTE_LOCATION_TANGENT4) in highp vec4 vertexTangent;
 #endif
 
+#ifdef VERTEX_COLOR
+layout(location = ATTRIBUTE_LOCATION_COLOR) in highp vec4 vertexColor;
+#endif
+
 // -------------- output ---------------------
 // position, normal, tangent in *world* space, NOT camera space!
 out highp vec3 position;
@@ -33,7 +37,9 @@ uniform highp mat3 uTextureMatrix
 out highp vec3 tangent;
 out highp vec3 biTangent;
 #endif
-
+#ifdef VERTEX_COLOR
+out highp vec4 interpolatedVertexColor;
+#endif
 // ------------ uniform ----------------------
 uniform highp mat4 uViewMatrix;
 uniform highp mat3 uNormalMatrix;  // inverse transpose of 3x3 model matrix, NOT
@@ -63,6 +69,10 @@ void main() {
   // later in .frag, TBN will transform the normal perturbation
   // (read from normal map) from tangent space to world space,
   // NOT camera space
+#endif
+#ifdef VERTEX_COLOR
+  /* Vertex colors, if enabled */
+  interpolatedVertexColor = vertexColor;
 #endif
 
   gl_Position = uProjectionMatrix * uViewMatrix * vertexWorldPosition;

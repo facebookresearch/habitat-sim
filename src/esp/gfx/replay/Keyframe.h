@@ -40,17 +40,36 @@ struct RenderAssetInstanceState {
 };
 
 /**
+ * @brief Definition of a rigged articulated object.
+ */
+struct RigCreation {
+  int id = ID_UNDEFINED;
+  std::vector<std::string> boneNames;
+};
+
+/**
+ * @brief The dynamic state of a rigged articulated object that is tracked by
+ * the replay system every frame.
+ */
+struct RigUpdate {
+  int id = ID_UNDEFINED;
+  std::vector<Transform> pose;  // localToWorld
+};
+
+/**
  * @brief A serialization/replay-friendly render keyframe class. See @ref
  * Recorder.
  */
 struct Keyframe {
   std::vector<esp::assets::AssetInfo> loads;
+  std::vector<RigCreation> rigCreations;
   std::vector<std::pair<RenderAssetInstanceKey,
                         esp::assets::RenderAssetInstanceCreationInfo>>
       creations;
   std::vector<RenderAssetInstanceKey> deletions;
   std::vector<std::pair<RenderAssetInstanceKey, RenderAssetInstanceState>>
       stateUpdates;
+  std::vector<RigUpdate> rigUpdates;
   std::unordered_map<std::string, Transform> userTransforms;
   std::vector<LightInfo> lights;
   bool lightsChanged = false;

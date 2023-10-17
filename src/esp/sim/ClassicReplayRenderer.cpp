@@ -52,6 +52,44 @@ ClassicReplayRenderer::ClassicReplayRenderer(
       return self_.resourceManager_->setLightSetup(lights);
     }
 
+    void createRigInstance(int rigId,
+                           const std::vector<std::string>& boneNames) override {
+      auto& rigManager = self_.resourceManager_->getRigManager();
+      ESP_CHECK(!rigManager.rigInstanceExists(rigId),
+                "A rig instance with the specified ID already exists.");
+
+      gfx::Rig rig{};
+      for (int i = 0; i < boneNames.size(); ++i) {
+        const std::string& boneName = boneNames[i];
+        rig.boneNames[boneName] = i;
+
+        // Create the nodes that control the pose of the rigged object.
+        const auto& env = self_.envs_[envIdx_];
+        auto& rootNode =
+            self_.sceneManager_->getSceneGraph(env.sceneID_).getRootNode();
+        auto* boneNode = &rootNode.createChild();
+        rig.bones.push_back(boneNode);
+      }
+
+      rigManager.registerRigInstance(rigId, std::move(rig));
+    }
+
+    void deleteRigInstance(int rigId) override {
+      self_.resourceManager_->getRigManager().deleteRigInstance(rigId);
+    }
+
+    void setRigPose(int rigId,
+                    const std::vector<gfx::replay::Transform>& pose) override {
+      auto& rig = self_.resourceManager_->getRigManager().getRigInstance(rigId);
+      const size_t boneCount = rig.bones.size();
+      for (int i = 0; i < boneCount; ++i) {
+        const auto& transform = pose[i];
+        rig.bones[i]
+            ->setTranslation(transform.translation)
+            .setRotation(transform.rotation);
+      }
+    }
+
     ClassicReplayRenderer& self_;
     unsigned envIdx_;
   };

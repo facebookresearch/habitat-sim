@@ -5,14 +5,12 @@
 #include "GenericDrawable.h"
 
 #include <Corrade/Containers/ArrayViewStl.h>
-#include <Corrade/Utility/FormatStl.h>
 #include <Magnum/GL/Renderer.h>
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix3.h>
 #include <Magnum/Trade/MaterialData.h>
 #include <Magnum/Trade/PhongMaterialData.h>
 
-#include "Corrade/Containers/GrowableArray.h"
 #include "Magnum/Types.h"
 #include "esp/core/Check.h"
 #include "esp/gfx/SkinData.h"
@@ -28,11 +26,9 @@ GenericDrawable::GenericDrawable(scene::SceneNode& node,
                                  Drawable::Flags& meshAttributeFlags,
                                  ShaderManager& shaderManager,
                                  DrawableConfiguration& cfg)
-    : Drawable{node, mesh, DrawableType::Generic, cfg.group_},
+    : Drawable{node, mesh, DrawableType::Generic, cfg,
+               shaderManager.get<LightSetup>(cfg.lightSetupKey_)},
       shaderManager_{shaderManager},
-      lightSetup_{shaderManager.get<LightSetup>(cfg.lightSetupKey_)},
-      skinData_(cfg.getSkinData()),
-      jointTransformations_(),
       meshAttributeFlags_{meshAttributeFlags} {
   resetMaterialValues(
       shaderManager.get<Mn::Trade::MaterialData, Mn::Trade::MaterialData>(
@@ -138,49 +134,16 @@ void GenericDrawable::setLightSetup(const Mn::ResourceKey& resourceKey) {
   updateShader();
 }
 
-void GenericDrawable::updateShaderLightingParameters(
-    const Mn::Matrix4& transformationMatrix,
-    Mn::SceneGraph::Camera3D& camera) {
-  const Mn::Matrix4 cameraMatrix = camera.cameraMatrix();
-
-  std::vector<Mn::Vector4> lightPositions;
-  lightPositions.reserve(lightSetup_->size());
-  std::vector<Mn::Color3> lightColors;
-  lightColors.reserve(lightSetup_->size());
-  std::vector<Mn::Color3> lightSpecularColors;
-  lightSpecularColors.reserve(lightSetup_->size());
-  constexpr float dummyRange = Mn::Constants::inf();
-  std::vector<float> lightRanges(lightSetup_->size(), dummyRange);
+void GenericDrawable::updateShaderLightingParametersInternal() {
+  // color settings
   const Mn::Color4 ambientLightColor = getAmbientLightColor(*lightSetup_);
-
-  for (Mn::UnsignedInt i = 0; i < lightSetup_->size(); ++i) {
-    const auto& lightInfo = (*lightSetup_)[i];
-    Mn::Vector4 pos = getLightPositionRelativeToCamera(
-        lightInfo, transformationMatrix, cameraMatrix);
-    // flip directional lights to faciliate faster, non-forking calc in
-    // shader.  Leave non-directional lights unchanged
-    pos *= (pos[3] * 2) - 1;
-    lightPositions.emplace_back(pos);
-
-    const auto& lightColor = (*lightSetup_)[i].color;
-    lightColors.emplace_back(lightColor);
-
-    // In general, a light's specular color should match its base color.
-    // However, negative lights have zero (black) specular.
-    constexpr Mn::Color3 blackColor(0.0, 0.0, 0.0);
-    bool isNegativeLight = lightColor.x() < 0;
-    lightSpecularColors.emplace_back(isNegativeLight ? blackColor : lightColor);
-  }
 
   // See documentation in src/deps/magnum/src/Magnum/Shaders/Phong.h
   (*shader_)
       .setAmbientColor(matCache.ambientColor * ambientLightColor)
       .setDiffuseColor(matCache.diffuseColor)
       .setSpecularColor(matCache.specularColor)
-      .setShininess(matCache.shininess)
-      .setLightPositions(lightPositions)
-      .setLightColors(lightColors)
-      .setLightRanges(lightRanges);
+      .setShininess(matCache.shininess);
 }
 
 void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
@@ -189,8 +152,16 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
                  "GenericDrawable::draw() : GL mesh doesn't exist", );
 
   updateShader();
-
-  updateShaderLightingParameters(transformationMatrix, camera);
+  // In Drawable.h
+  // Phong uses light position relative to camera
+  updateShaderLightingParameters(transformationMatrix, camera, shader_,
+                                 [](const LightInfo& lightInfo,
+                                    const Magnum::Matrix4& transformationMatrix,
+                                    const Magnum::Matrix4& cameraMatrix) {
+                                   return getLightPositionRelativeToCamera(
+                                       lightInfo, transformationMatrix,
+                                       cameraMatrix);
+                                 });
 
   Mn::Matrix3x3 rotScale = transformationMatrix.rotationScaling();
   // Find determinant to calculate backface culling winding dir
@@ -243,31 +214,7 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
   }
 
   if (skinData_) {
-    // Gather joint transformations
-    const auto& skin = skinData_->skinData->skin;
-    const auto& transformNodes = skinData_->jointIdToTransformNode;
-
-    ESP_CHECK(jointTransformations_.size() == skin->joints().size(),
-              "Joint transformation count doesn't match bone count.");
-
-    // Undo root node transform so that the model origin matches the root
-    // articulated object link.
-    const auto invRootTransform =
-        skinData_->rootArticulatedObjectNode->absoluteTransformationMatrix()
-            .inverted();
-
-    for (std::size_t i = 0; i != jointTransformations_.size(); ++i) {
-      const auto jointNodeIt = transformNodes.find(skin->joints()[i]);
-      if (jointNodeIt != transformNodes.end()) {
-        jointTransformations_[i] =
-            invRootTransform *
-            jointNodeIt->second->absoluteTransformationMatrix() *
-            skin->inverseBindMatrices()[i];
-      } else {
-        // Joint not found, use placeholder matrix.
-        jointTransformations_[i] = Mn::Matrix4{Mn::Math::IdentityInit};
-      }
-    }
+    buildSkinJointTransforms();
     shader_->setJointMatrices(jointTransformations_);
   }
 
@@ -288,8 +235,7 @@ void GenericDrawable::updateShader() {
       skinData_ ? skinData_->skinData->perVertexJointCount : 0;
 
   if (skinData_) {
-    Corrade::Containers::arrayResize(
-        jointTransformations_, skinData_->skinData->skin->joints().size());
+    resizeJointTransformArray(jointCount);
   }
 
   if (!shader_ || shader_->lightCount() != lightCount ||
@@ -298,7 +244,11 @@ void GenericDrawable::updateShader() {
     // compatible shader
     shader_ =
         shaderManager_.get<Mn::GL::AbstractShaderProgram, Mn::Shaders::PhongGL>(
-            getShaderKey(lightCount, flags_, jointCount));
+            getShaderKey(
+                "Phong", lightCount,
+                static_cast<Mn::Shaders::PhongGL::Flags::UnderlyingType>(
+                    flags_),
+                jointCount));
 
     // if no shader with desired number of lights and flags exists, create one
     if (!shader_) {
@@ -315,16 +265,6 @@ void GenericDrawable::updateShader() {
     CORRADE_INTERNAL_ASSERT(shader_ && shader_->lightCount() == lightCount &&
                             shader_->flags() == flags_);
   }
-}
-
-Mn::ResourceKey GenericDrawable::getShaderKey(
-    Mn::UnsignedInt lightCount,
-    Mn::Shaders::PhongGL::Flags flags,
-    Mn::UnsignedInt jointCount) const {
-  return Corrade::Utility::formatString(
-      SHADER_KEY_TEMPLATE, lightCount,
-      static_cast<Mn::Shaders::PhongGL::Flags::UnderlyingType>(flags),
-      jointCount);
 }
 
 }  // namespace gfx

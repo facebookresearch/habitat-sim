@@ -598,19 +598,31 @@ bool ManagedFileBasedContainer<T, Access>::saveManagedObjectToFile(
   std::string fileNameBase =
       FileUtil::splitExtension(FileUtil::splitExtension(fileNameRaw).first())
           .first();
-
+  // Note : fileNameBase may be a copy already (i.e. have suffix '(copy xxxx)'
+  // in the name)
   std::string fileName = fileNameBase + "." + this->JSONTypeExt_;
   if (!overwrite) {
     // if not overwrite, then attempt to find a non-conflicting name before
     // attempting to save
     bool nameExists = true;
     int count = 0;
+
+    std::size_t copyStrPos = fileNameBase.find(" (copy ");
+    if ((copyStrPos != std::string::npos)) {
+      // Already is a copy of some existing managed file-based object
+      // Get copy number and increment to set as initial count value
+      const int numStrStartPos = copyStrPos + 7;
+      count = std::stoi(fileNameBase.substr(numStrStartPos, 4)) + 1;
+      // Remove ' (copy xxxx)' component from fileNameBase so that a string of
+      // (copy xxxx)'s aren't created on successive runs
+      fileNameBase = fileNameBase.substr(0, copyStrPos);
+    }
     while (nameExists) {
       auto tempFullFileName = FileUtil::join(fileDirectory, fileName);
       nameExists = FileUtil::exists(tempFullFileName);
       if (nameExists) {
-        // build a new file name candidate by adding copy plus some integer
-        // value
+        // Otherwise build a new file name candidate by adding copy plus some
+        // integer value
         fileName = Cr::Utility::formatString(
             "{} (copy {:.04d}).{}", fileNameBase, count, this->JSONTypeExt_);
         ++count;

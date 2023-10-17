@@ -15,8 +15,6 @@
 namespace esp {
 namespace metadata {
 namespace managers {
-using core::managedContainers::ManagedFileBasedContainer;
-using core::managedContainers::ManagedObjectAccess;
 
 /**
  * @brief single instance class managing templates describing physical objects

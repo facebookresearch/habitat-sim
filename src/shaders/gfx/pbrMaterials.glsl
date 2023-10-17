@@ -150,7 +150,11 @@ PBRData buildPBRData() {
   pbrInfo.n_dot_v = clamp(dot(pbrInfo.n, pbrInfo.view), 0.0, 1.0);
   //////////////////////
   // colors
-  pbrInfo.baseColor = uMaterial.baseColor;
+  pbrInfo.baseColor = uMaterial.baseColor
+#ifdef VERTEX_COLOR
+                      * interpolatedVertexColor
+#endif
+      ;
 #if defined(BASECOLOR_TEXTURE)
 
 #if defined(MAP_MAT_TXTRS_TO_LINEAR)

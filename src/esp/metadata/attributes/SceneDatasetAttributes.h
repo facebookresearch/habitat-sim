@@ -91,6 +91,24 @@ class SceneDatasetAttributes : public AbstractAttributes {
   }
 
   /**
+   * @brief Retrieve the shader type to use for the various default materials,
+   * either Phong of PBR
+   */
+  ObjectInstanceShaderType getDefaultMaterialShaderType() const {
+    return get<bool>("default_material_is_pbr")
+               ? ObjectInstanceShaderType::PBR
+               : ObjectInstanceShaderType::Phong;
+  }
+
+  /**
+   * @brief Set whether to use PBR or Phong for the default material values
+   * defined in resource Manager.
+   */
+  void setDefaultMaterialIsPBR(bool default_material_is_pbr) {
+    set("default_material_is_pbr", default_material_is_pbr);
+  }
+
+  /**
    * @brief Return the map for navmesh file locations
    */
   const std::map<std::string, std::string>& getNavmeshMap() const {
@@ -121,13 +139,13 @@ class SceneDatasetAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief Add an entry to the navmeshMap with the passed key.  If @p overwrite
+   * @brief Add an entry to the @ref navmeshMap_ with the passed key.  If @p overwrite
    * then overwrite existing entry, otherwise will modify key and add value with
-   * modified key.  Returns pair of added KV.
+   * modified key.  Returns pair of added Key-Value.
    * @param key The handle for the navmesh path to add
    * @param path The path to the navmesh asset to add
    * @param overwrite Whether to overwrite existing entries or not
-   * @return K-V pair for path being added.
+   * @return Key-Value pair for path being added.
    */
   std::pair<std::string, std::string> addNavmeshPathEntry(
       const std::string& key,
@@ -137,13 +155,13 @@ class SceneDatasetAttributes : public AbstractAttributes {
   }  // addNavmeshPathEntry
 
   /**
-   * @brief Add an entry to the SemanticSceneDescr map with the passed key. If
+   * @brief Add an entry to the @ref semanticSceneDescrMap_ map with the passed key. If
    * @p overwrite then overwrite existing entry,  otherwise will modify key and
-   * add value with modified key.  Returns pair of added KV.
+   * add value with modified key.  Returns pair of added Key-Value.
    * @param key The handle for the SemanticSceneDescr path to add
    * @param path The path to the SemanticSceneDescr asset to add
    * @param overwrite Whether to overwrite existing entries or not
-   * @return K-V pair for SemanticSceneDescr being added.
+   * @return Key-Value pair for SemanticSceneDescr being added.
    */
   std::pair<std::string, std::string> addSemanticSceneDescrPathEntry(
       const std::string& key,
@@ -227,7 +245,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * so adding them.  This is to handle the addition of an existing
    * sceneInstance that might reference stages, objects, navmeshes, etc. that
    * do not exist in the dataset.
-   * @param sceneInstance A Scene Instance Attributes.  It is assumed the @p
+   * @param sceneInstance A pointer to a @ref metadata::attributes::SceneInstanceAttributes.  It is assumed the @p
    * sceneInstance at least references a valid stage.
    * @return whether this sceneInstance was successfully added to the dataset.
    */
@@ -442,7 +460,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
   managers::AOAttributesManager::ptr artObjAttributesManager_ = nullptr;
 
   /**
-   * @brief Manages all construction and access to scene instance attributes
+   * @brief Manages all construction and access to @ref metadata::attributes::SceneInstanceAttributes
    * from this dataset.
    */
   managers::SceneInstanceAttributesManager::ptr

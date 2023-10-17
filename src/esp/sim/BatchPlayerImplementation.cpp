@@ -165,5 +165,21 @@ void BatchPlayerImplementation::changeLightSetup(
     // TODO range, once Habitat has that
   }
 }
+
+void BatchPlayerImplementation::createRigInstance(
+    int,
+    const std::vector<std::string>&) {
+  // Not implemented.
+}
+
+void BatchPlayerImplementation::deleteRigInstance(int) {
+  // Not implemented.
+}
+
+void BatchPlayerImplementation::setRigPose(
+    int,
+    const std::vector<gfx::replay::Transform>&) {
+  // Not implemented.
+}
 }  // namespace sim
 }  // namespace esp
