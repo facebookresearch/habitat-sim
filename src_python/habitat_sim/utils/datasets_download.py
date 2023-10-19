@@ -70,14 +70,14 @@ def initialize_test_data_sources(data_path):
         "hssd-hab": {
             "source": "https://huggingface.co/datasets/hssd/hssd-hab.git",
             "link": data_path + "scene_datasets/hssd-hab",
-            "version": "v0.2.4",
+            "version": "main",
             "requires_auth": True,
         },
         "hab3-episodes": {
             "source": "https://huggingface.co/datasets/ai-habitat/hab3_episodes.git",
             "link": data_path + "datasets/hssd/rearrange/",
             "version": "main",
-            "requires_auth": True,
+            "requires_auth": False,
         },
         "hssd-raw": {
             "source": "https://huggingface.co/datasets/hssd/hssd-scenes.git",
@@ -192,7 +192,7 @@ def initialize_test_data_sources(data_path):
             "source": "https://huggingface.co/datasets/ai-habitat/habitat_humanoids.git",
             "link": data_path + "humanoids/humanoid_data",
             "version": "main",
-            "requires_auth": True,
+            "requires_auth": False,
         },
         "rearrange_pick_dataset_v0": {
             "source": "https://dl.fbaipublicfiles.com/habitat/data/datasets/rearrange_pick/replica_cad/v0/rearrange_pick_replica_cad_v0.zip",
@@ -216,7 +216,7 @@ def initialize_test_data_sources(data_path):
             "source": "https://huggingface.co/datasets/ai-habitat/hab3_bench_assets.git",
             "link": data_path + "hab3_bench_assets",
             "version": "main",
-            "requires_auth": True,
+            "requires_auth": False,
         },
     }
 
