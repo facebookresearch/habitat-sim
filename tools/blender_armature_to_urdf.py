@@ -267,10 +267,23 @@ def bone_to_urdf(
     # NOTE: color each link's collision shapes for debugging
     this_color = get_next_color()
 
+    supported_collision_shapes = [
+        "collision_box",
+        "collision_cylinder",
+        "collision_sphere",
+    ]
+
     for col in collision_objects:
         assert (
-            "collision_box" in col.name or "collision_cylinder" in col.name
-        ), "Only supporting collision boxes and cylinders currently."
+            len(
+                [
+                    col_name
+                    for col_name in supported_collision_shapes
+                    if col_name in col.name
+                ]
+            )
+            == 1
+        ), f"Only supporting exactly one of the following collision shapes currently: {supported_collision_shapes}. Shape name '{col.name}' unsupported."
 
         set_obj_origin_to_center(col)
         clear_obj_transform(
@@ -303,6 +316,15 @@ def bone_to_urdf(
             # NOTE: assume Z axis is length of the cylinder
             this_xml_cyl.set("length", f"{scale.z}")
             xml_shape = this_xml_cyl
+        elif "collision_sphere" in col.name:
+            this_xml_sphere = ET.Element("sphere")
+            scale = col.scale
+            # radius XYZ axis scale must match
+            assert (
+                abs(scale.x - scale.y) < 0.0001 and abs(scale.x - scale.z) < 0.0001
+            ), f"XYZ dimensions must match. Used as radius. node_name=='{col.name}', x={scale.x}, y={scale.y}, z={scale.z}"
+            this_xml_sphere.set("radius", f"{scale.x/2.0}")
+            xml_shape = this_xml_sphere
 
         this_xml_col_geom.append(xml_shape)
         # first get the rotation
