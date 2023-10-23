@@ -292,15 +292,18 @@ def bone_to_urdf(
             box_size = col.scale
             this_xml_box.set("size", f"{box_size.x} {box_size.y} {box_size.z}")
             xml_shape = this_xml_box
-        if "collision_cylinder" in col.name:
+        elif "collision_cylinder" in col.name:
             this_xml_cyl = ET.Element("cylinder")
             scale = col.scale
             # radius XY axis scale must match
-            assert scale.x == scale.y, "XY dimensions must match. Used as radius."
+            assert (
+                abs(scale.x - scale.y) < 0.0001
+            ), f"XY dimensions must match. Used as radius. node_name=='{col.name}', x={scale.x}, y={scale.y}"
             this_xml_cyl.set("radius", f"{scale.x/2.0}")
             # NOTE: assume Z axis is length of the cylinder
             this_xml_cyl.set("length", f"{scale.z}")
             xml_shape = this_xml_cyl
+
         this_xml_col_geom.append(xml_shape)
         # first get the rotation
         xml_origin = get_origin_from_matrix(col.matrix_local)
