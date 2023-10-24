@@ -115,6 +115,10 @@ class BaseMesh {
    * sub-component of the asset.
    */
   virtual Magnum::GL::Mesh* getMagnumGLMesh(int) { return nullptr; }
+
+  /**
+   * @brief Retrieve a reference to the @p meshData_ for this mesh;
+   */
   Corrade::Containers::Optional<Magnum::Trade::MeshData>& getMeshData() {
     return meshData_;
   }

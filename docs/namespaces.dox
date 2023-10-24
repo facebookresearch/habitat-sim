@@ -8,6 +8,10 @@ namespace esp {
  * @brief Root namespace
  */
 
+/** @namespace esp::agent
+ * @brief Agent library
+ */
+
 /** @namespace esp::assets
  * @brief Assets library
  */
