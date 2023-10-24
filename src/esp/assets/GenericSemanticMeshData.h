@@ -27,26 +27,37 @@ namespace assets {
 /**
  * @brief Mesh data storage and loading for ply format assets used primarily for
  * Semantic Scene meshes, including manage vertex colors and vertex IDs for
- * semantic visualization and rendering. See @ref
- * ResourceManager::loadRenderAssetIMesh.
+ * semantic visualization and rendering.
  */
 class GenericSemanticMeshData : public BaseMesh {
  public:
+  /**
+   * @brief Stores render data for the mesh.
+   */
   struct RenderingBuffer {
+    /**
+     * @brief Compiled openGL render data for the mesh.
+     */
     Magnum::GL::Mesh mesh;
   };
 
+  /**
+   * @brief Constructor. Builds semantic mesh data, and sets type to passed
+   * SupportedMeshType
+   */
   explicit GenericSemanticMeshData(SupportedMeshType type) : BaseMesh{type} {};
+  /**
+   * @brief Constructor. Builds semantic mesh data, and sets type to
+   * SupportedMeshType::INSTANCE_MESH
+   */
   explicit GenericSemanticMeshData()
       : GenericSemanticMeshData{SupportedMeshType::INSTANCE_MESH} {};
 
   ~GenericSemanticMeshData() override = default;
 
   /**
-   * @brief Build one ore more @ref GenericSemanticMeshData based on the
-   * contents of the passed @p meshData, splitting the result into multiples if
-   * specified and if the source file's objectIds are compatibly configured to
-   * do so.
+   * @brief Build the @ref GenericSemanticMeshData based on the
+   * contents of the passed @p meshData,
    * @param meshData The imported meshData.
    * @param semanticFilename Path-less Filename of source mesh.
    * @param [out] colorMapToUse An array holding the semantic colors to use for
@@ -54,8 +65,7 @@ class GenericSemanticMeshData : public BaseMesh {
    * @param convertToSRGB Whether the source vertex colors from the @p meshData
    * should be converted to SRGB
    * @param semanticScene The SSD for the semantic mesh being loaded.
-   * @return vector holding one or more mesh results from the semantic asset
-   * file.
+   * @return reference to the @ref GenericSemanticMeshData.
    */
   static std::unique_ptr<GenericSemanticMeshData> buildSemanticMeshData(
       const Magnum::Trade::MeshData& meshData,
@@ -65,30 +75,17 @@ class GenericSemanticMeshData : public BaseMesh {
       const std::shared_ptr<scene::SemanticScene>& semanticScene = nullptr);
 
   /**
-   * @brief Build one ore more @ref GenericSemanticMeshData based on the
-   * contents of the passed @p meshData, splitting the result into multiples if
-   * specified and if the source file's objectIds are compatibly configured to
-   * do so.
-   * @param meshData The imported meshData.
-   * @param semanticFilename Path-less Filename of source mesh.
-   * @param splitMesh Whether or not the resultant mesh should be split into
-   * multiple components based on objectIds, for frustum culling.
-   * @param [out] colorMapToUse An array holding the semantic colors to use for
-   * visualization or matching to semantic IDs.
-   * @param convertToSRGB Whether the source vertex colors from the @p meshData
-   * should be converted to SRGB
-   * @param semanticScene The SSD for the semantic mesh being loaded.
-   * @return vector holding one or more mesh results from the semantic asset
-   * file.
+   * @brief Partition the passed @ref GenericSemanticMeshData to facilitate culling.
+   * @param semanticMeshData
+   * @return vector holding one or more @ref GenericSemanticMeshData
    */
-
   static std::vector<std::unique_ptr<GenericSemanticMeshData>>
   partitionSemanticMeshData(
       const std::unique_ptr<GenericSemanticMeshData>& semanticMeshData);
 
   /**
-   * @build a per-color/per-semantic ID map of all bounding boxes for each CC
-   * found in the mesh, and the count of verts responsible for each.
+   * @brief Build a per-color/per-semantic ID map of all bounding boxes for each
+   * CC found in the mesh, and the count of verts responsible for each.
    * @param semanticScene The SSD for the current semantic mesh.  Used to query
    * semantic objs. If nullptr, this function returns hex-color-keyed map,
    * otherwise returns SemanticID-keyed map.
@@ -99,9 +96,19 @@ class GenericSemanticMeshData : public BaseMesh {
       const std::shared_ptr<scene::SemanticScene>& semanticScene);
 
   // ==== rendering ====
+  /**
+   * @brief Upload the mesh data to GPU memory.
+   */
   void uploadBuffersToGPU(bool forceReload = false) override;
+
+  /**
+   * @brief Retrieve a pointer to the rendering buffer for this @ref GenericSemanticMeshData.
+   */
   RenderingBuffer* getRenderingBuffer() { return renderingBuffer_.get(); }
 
+  /**
+   * @brief Retrieve a pointer to the Magnum GL Mesh behind this @ref GenericSemanticMeshData.
+   */
   Magnum::GL::Mesh* getMagnumGLMesh() override;
 
   const std::vector<Mn::Vector3>& getVertexBufferObjectCPU() const {
@@ -141,21 +148,28 @@ class GenericSemanticMeshData : public BaseMesh {
    * @brief build a string array holding mapping information for colors found on
    * verts and colors found in semantic scene descriptor aggregated during load.
    */
-
   std::vector<std::string> getVertColorSSDReport(
       const std::string& semanticFilename,
       const std::vector<Mn::Vector3ub>& colorMapToUse,
       const std::shared_ptr<scene::SemanticScene>& semanticScene);
 
  protected:
-  // temporary holding structures to hold any non-SSD vert colors, so that
-  // the nonSSDObjID for new colors can be incremented appropriately
-  // not using set to avoid extra include. Key is color, value is semantic
-  // ID assigned for unknown color
+  /**
+   * @brief temporary holding structures to hold any non-SSD vert color IDs, so
+   * that the nonSSDObjID for new colors can be incremented appropriately not
+   * using set to avoid extra include. Key is color, value is semantic ID
+   * assigned for unknown color
+   */
   std::unordered_map<uint32_t, int> nonSSDVertColorIDs{};
+  /**
+   * @brief temporary holding structures to hold any non-SSD vert color counts.
+   * Key is color, value is semantic ID assigned for unknown color
+   */
   std::unordered_map<uint32_t, int> nonSSDVertColorCounts{};
 
-  // record of semantic object IDXs with no presence in any verts
+  /**
+   * @brief record of semantic object IDXs with no presence in any verts
+   */
   std::vector<uint32_t> unMappedObjectIDXs{};
 
   /**

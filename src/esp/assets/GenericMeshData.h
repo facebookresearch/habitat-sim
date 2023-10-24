@@ -36,8 +36,9 @@ class GenericMeshData : public BaseMesh {
     Magnum::GL::Mesh mesh;
   };
 
-  /** @brief Constructor. Sets @ref esp::assets::SupportedMeshType::GENERIC_MESH to identify
-   * the asset type.*/
+  /**
+   * @brief Constructor. Sets asset type to be SupportedMeshType::GENERIC_MESH .
+   */
   explicit GenericMeshData(bool needsNormals = true)
       : BaseMesh(SupportedMeshType::GENERIC_MESH),
         needsNormals_{needsNormals} {};
@@ -105,6 +106,9 @@ class GenericMeshData : public BaseMesh {
    */
   std::unique_ptr<RenderingBuffer> renderingBuffer_ = nullptr;
 
+  /**
+   * @brief Whether this mesh should have smooth normals generated
+   */
   bool needsNormals_ = true;
 
  private:
