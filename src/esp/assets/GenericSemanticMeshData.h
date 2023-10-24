@@ -111,17 +111,30 @@ class GenericSemanticMeshData : public BaseMesh {
    */
   Magnum::GL::Mesh* getMagnumGLMesh() override;
 
+  /**
+   * @brief Retrive a reference to this @ref GenericSemanticMeshData 's vertex buffer
+   */
   const std::vector<Mn::Vector3>& getVertexBufferObjectCPU() const {
     return cpu_vbo_;
   }
+
+  /**
+   * @brief Retrive a reference to this @ref GenericSemanticMeshData 's color buffer
+   */
   const std::vector<Mn::Color3ub>& getColorBufferObjectCPU() const {
     return cpu_cbo_;
   }
 
+  /**
+   * @brief Retrive a reference to this @ref GenericSemanticMeshData 's index buffer
+   */
   const std::vector<uint32_t>& getIndexBufferObjectCPU() const {
     return cpu_ibo_;
   }
 
+  /**
+   * @brief Retrive a reference to this @ref GenericSemanticMeshData 's object id buffer
+   */
   const std::vector<uint16_t>& getObjectIdsBufferObjectCPU() const {
     return objectIds_;
   }
@@ -186,12 +199,26 @@ class GenericSemanticMeshData : public BaseMesh {
    */
   bool meshUsesSSDPartitionIDs = false;
 
+  /**
+   * @brief This class is intended to provide a concise interface to build the
+   * appropriate mesh data
+   */
   class PerPartitionIdMeshBuilder {
    public:
+    /**
+     * @brief Build the per-partition @ref GenericSemanticMeshData structure
+     */
     PerPartitionIdMeshBuilder(GenericSemanticMeshData& data,
                               uint16_t partitionId)
         : data_{data}, partitionId{partitionId} {}
 
+    /**
+     * @brief Add a vertex to the @ref GenericSemanticMeshData
+     * @param vertexId The Id of the vertex
+     * @param vertex The location of the vertex
+     * @param color The vertex color
+     * @param objectId The object/semantic Id of the vertex
+     */
     void addVertex(uint32_t vertexId,
                    const Mn::Vector3& vertex,
                    const Mn::Color3ub& color,
@@ -203,8 +230,13 @@ class GenericSemanticMeshData : public BaseMesh {
     std::unordered_map<uint32_t, size_t> vertexIdToVertexIndex_;
   };
 
+  /**
+   * @brief update the meshdata positions and indices with the data from the
+   * member vectors
+   */
   void updateCollisionMeshData();
 
+ private:
   // ==== rendering ====
   std::unique_ptr<RenderingBuffer> renderingBuffer_ = nullptr;
   std::vector<Mn::Vector3> cpu_vbo_;
