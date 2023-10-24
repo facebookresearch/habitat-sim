@@ -239,7 +239,7 @@ class ArticulatedObjectManager
    * @brief This method will remove articulated objects from physics manager.
    * The wrapper has already been removed by the time this method is called
    * (this is called from @ref
-   * esp::core::ManagedContainerBase::deleteObjectInternal)
+   * esp::core::managedContainers::ManagedContainerBase::deleteObjectInternal)
    *
    * @param objectID the ID of the managed object to remove
    * @param objectHandle the string key of the managed object to remove.

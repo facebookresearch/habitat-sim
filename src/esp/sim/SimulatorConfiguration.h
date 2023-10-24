@@ -17,6 +17,9 @@ namespace Cr = Corrade;
 namespace esp {
 
 namespace sim {
+/**
+ * @brief Class to hold configuration for a simulator
+ */
 struct SimulatorConfiguration {
   //! Name of scene or stage config or asset to load
   std::string activeSceneName;
@@ -108,9 +111,16 @@ struct SimulatorConfiguration {
 
   ESP_SMART_POINTERS(SimulatorConfiguration)
 };
+
+/**
+ * @brief Validate @ref SimulatorConfiguration equality
+ */
 bool operator==(const SimulatorConfiguration& a,
                 const SimulatorConfiguration& b);
 
+/**
+ * @brief Validate @ref SimulatorConfiguration inequality
+ */
 bool operator!=(const SimulatorConfiguration& a,
                 const SimulatorConfiguration& b);
 

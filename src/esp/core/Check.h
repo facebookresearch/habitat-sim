@@ -51,18 +51,24 @@
 namespace esp {
 namespace core {
 
-/* The throwInPython function pointer gets filled during Python bindings
-   startup. If it's nullptr, we're in plain C++ code. */
+/**
+ * @brief The throwInPython function pointer gets filled during Python bindings
+ * startup. If it's nullptr, we're in plain C++ code.
+ */
 extern void (*throwInPython)(const char*);
 
-// For use in ESP_CHECK
+/**
+ * @brief For use in ESP_CHECK
+ */
 [[noreturn]] void throwIfInPythonOtherwiseAbort(const char* message);
 
 }  // namespace core
 }  // namespace esp
 
-/* A runtime check that must pass, otherwise we consider this a fatal runtime
-error. The program terminates with the supplied error message. */
+/**
+ * @brief A runtime check that must pass, otherwise we consider this a fatal
+ * runtime error. The program terminates with the supplied error message.
+ */
 #define ESP_CHECK(condition, ...)                                 \
   do {                                                            \
     if (!(condition)) {                                           \

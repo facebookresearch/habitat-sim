@@ -26,20 +26,50 @@ namespace config {
 
 /**
  * @brief This enum lists every type of value that can be currently stored
- * directly in an @ref esp::core::Configuration.  All supported types should
- * have entries in this enum class.  All non-trivial types should have their
- * enums placed below @p _nonTrivialTypes tag.
+ * directly in an @ref esp::core::config::Configuration.  All supported types
+ * should have entries in this enum class.  All non-trivial types should have
+ * their enums placed below @p _nonTrivialTypes tag.
  */
 enum class ConfigStoredType {
+  /**
+   * @brief Unknown type
+   */
   Unknown = ID_UNDEFINED,
+  /**
+   * @brief boolean type
+   */
   Boolean,
+  /**
+   * @brief integer type
+   */
   Integer,
+  /**
+   * @brief double type
+   */
   Double,
+  /**
+   * @brief Magnum::Vector2 type
+   */
   MagnumVec2,
+  /**
+   * @brief Magnum::Vector3 type
+   */
   MagnumVec3,
+  /**
+   * @brief Magnum::Vector4 type
+   */
   MagnumVec4,
+  /**
+   * @brief Magnum::Matrix3 (3x3) type
+   */
   MagnumMat3,
+  /**
+   * @brief Magnum::Quaternion type
+   */
   MagnumQuat,
+  /**
+   * @brief Magnum::Rad angle type
+   */
   MagnumRad,
 
   _nonTrivialTypes,
@@ -74,50 +104,93 @@ constexpr ConfigStoredType configStoredTypeFor() {
   return {};
 }
 
+/**
+ * @brief Returns @ref ConfigStoredType::Boolean type enum for specified type
+ */
 template <>
 constexpr ConfigStoredType configStoredTypeFor<bool>() {
   return ConfigStoredType::Boolean;
 }
+/**
+ * @brief Returns @ref ConfigStoredType::Integer type enum for specified type
+ */
 template <>
 constexpr ConfigStoredType configStoredTypeFor<int>() {
   return ConfigStoredType::Integer;
 }
+/**
+ * @brief Returns @ref ConfigStoredType::Double type enum for specified type
+ */
 template <>
 constexpr ConfigStoredType configStoredTypeFor<double>() {
   return ConfigStoredType::Double;
 }
+/**
+ * @brief Returns @ref ConfigStoredType::String type enum for specified type
+ */
+
 template <>
 constexpr ConfigStoredType configStoredTypeFor<std::string>() {
   return ConfigStoredType::String;
 }
+/**
+ * @brief Returns @ref ConfigStoredType::MagnumVec2 type enum for specified type
+ */
 template <>
 constexpr ConfigStoredType configStoredTypeFor<Mn::Vector2>() {
   return ConfigStoredType::MagnumVec2;
 }
+/**
+ * @brief Returns @ref ConfigStoredType::MagnumVec3 type enum for specified type
+ */
 template <>
 constexpr ConfigStoredType configStoredTypeFor<Mn::Vector3>() {
   return ConfigStoredType::MagnumVec3;
 }
+
+/**
+ * @brief Returns @ref ConfigStoredType::MagnumVec3 type enum for specified type
+ */
 template <>
 constexpr ConfigStoredType configStoredTypeFor<Mn::Color3>() {
   return ConfigStoredType::MagnumVec3;
 }
+
+/**
+ * @brief Returns @ref ConfigStoredType::MagnumVec4 type enum for specified type
+ */
 template <>
 constexpr ConfigStoredType configStoredTypeFor<Mn::Vector4>() {
   return ConfigStoredType::MagnumVec4;
 }
+
+/**
+ * @brief Returns @ref ConfigStoredType::MagnumVec4 type enum for specified type
+ */
 template <>
 constexpr ConfigStoredType configStoredTypeFor<Mn::Color4>() {
   return ConfigStoredType::MagnumVec4;
 }
+
+/**
+ * @brief Returns @ref ConfigStoredType::MagnumMat3 type enum for specified type
+ */
 template <>
 constexpr ConfigStoredType configStoredTypeFor<Mn::Matrix3>() {
   return ConfigStoredType::MagnumMat3;
 }
+
+/**
+ * @brief Returns @ref ConfigStoredType::MagnumQuat type enum for specified type
+ */
 template <>
 constexpr ConfigStoredType configStoredTypeFor<Mn::Quaternion>() {
   return ConfigStoredType::MagnumQuat;
 }
+
+/**
+ * @brief Returns @ref ConfigStoredType::MagnumRad type enum for specified type
+ */
 template <>
 constexpr ConfigStoredType configStoredTypeFor<Mn::Rad>() {
   return ConfigStoredType::MagnumRad;
@@ -173,14 +246,34 @@ class ConfigValue {
   void deleteCurrentValue();
 
  public:
+  /**
+   * @brief Constructor
+   */
   ConfigValue() = default;
+  /**
+   * @brief Copy Constructor
+   */
   ConfigValue(const ConfigValue& otr);
+  /**
+   * @brief Move Constructor
+   */
   ConfigValue(ConfigValue&& otr) noexcept;
   ~ConfigValue();
+
+  /**
+   * @brief Copy assignment
+   */
   ConfigValue& operator=(const ConfigValue& otr);
 
+  /**
+   * @brief Move assignment
+   */
   ConfigValue& operator=(ConfigValue&& otr) noexcept;
 
+  /**
+   * @brief Whether this @ref ConfigValue is valid.
+   * @return Whether or not the specified type of this @ref ConfigValue is known.
+   */
   bool isValid() const { return _type != ConfigStoredType::Unknown; }
 
   /**
@@ -188,6 +281,11 @@ class ConfigValue {
    */
   io::JsonGenericValue writeToJsonObject(io::JsonAllocator& allocator) const;
 
+  /**
+   * @brief Set the passed @p value as the data for this @ref ConfigValue, while also setting the appropriate type.
+   * @tparam The type of the @p value being set. Must be a handled type as specified by @ref ConfigStoredType.
+   * @param value The value to store in this @ref ConfigValue
+   */
   template <class T>
   void set(const T& value) {
     deleteCurrentValue();
@@ -216,6 +314,10 @@ class ConfigValue {
     new (_data) T{value};
   }
 
+  /**
+   * @brief Retrieve an appropriately cast copy of the data stored in this @ref ConfigValue
+   * @tparam The type the data should be cast as.
+   */
   template <class T>
   const T& get() const {
     ESP_CHECK(_type == configStoredTypeFor<T>(),
@@ -237,8 +339,7 @@ class ConfigValue {
   std::string getAsString() const;
 
   /**
-   * @brief Copy this @ref ConfigValue into the passed @ref
-   * Cr::Utility::ConfigurationGroup
+   * @brief Copy this @ref ConfigValue into the passed @ref Corrade::Utility::ConfigurationGroup
    */
   bool putValueInConfigGroup(const std::string& key,
                              Cr::Utility::ConfigurationGroup& cfg) const;
@@ -247,6 +348,9 @@ class ConfigValue {
   ESP_SMART_POINTERS(ConfigValue)
 };  // ConfigValue
 
+/**
+ * @brief provide debug stream support for @ref ConfigValue
+ */
 MAGNUM_EXPORT Mn::Debug& operator<<(Mn::Debug& debug, const ConfigValue& value);
 
 /**
@@ -255,12 +359,23 @@ MAGNUM_EXPORT Mn::Debug& operator<<(Mn::Debug& debug, const ConfigValue& value);
  */
 class Configuration {
  public:
-  // convenience typedefs
+  /**
+   * @brief Convenience typedef for the value map
+   */
   typedef std::unordered_map<std::string, ConfigValue> ValueMapType;
+  /**
+   * @brief Convenience typedef for the subconfiguration map
+   */
   typedef std::map<std::string, std::shared_ptr<Configuration>> ConfigMapType;
 
+  /**
+   * @brief Constructor
+   */
   Configuration() = default;
 
+  /**
+   * @brief Copy Constructor
+   */
   Configuration(const Configuration& otr)
       : configMap_(), valueMap_(otr.valueMap_) {
     for (const auto& entry : otr.configMap_) {
@@ -268,6 +383,9 @@ class Configuration {
     }
   }  // copy ctor
 
+  /**
+   * @brief Move Constructor
+   */
   Configuration(Configuration&& otr) noexcept
       : configMap_(std::move(otr.configMap_)),
         valueMap_(std::move(otr.valueMap_)) {}  // move ctor
@@ -405,14 +523,33 @@ class Configuration {
   }
 
   // ****************** Setters ******************
+
+  /**
+   * @brief Save the passed @p value using specified @p key
+   * @tparam The type of the value to be saved.
+   * @param key The key to assign to the passed value.
+   * @param value The value to save at given @p key
+   */
   template <typename T>
   void set(const std::string& key, const T& value) {
     valueMap_[key].set<T>(value);
   }
+  /**
+   * @brief Save the passed @p value char* as a string to the configuration at
+   * the passed @p key.
+   * @param key The key to assign to the passed value.
+   * @param value The char* to save at given @p key as a string.
+   */
   void set(const std::string& key, const char* value) {
     valueMap_[key].set<std::string>(std::string(value));
   }
 
+  /**
+   * @brief Save the passed float @p value as a double using the specified @p
+   * key .
+   * @param key The key to assign to the passed value.
+   * @param value The float value to save at given @p key as a double.
+   */
   void set(const std::string& key, float value) {
     valueMap_[key].set<double>(static_cast<double>(value));
   }
@@ -486,6 +623,12 @@ class Configuration {
     return valueMap_.count(key) > 0;
   }
 
+  /**
+   * @brief Whether passed @p key references a @ref ConfigValue of passed @ref ConfigStoredType @p desiredType
+   * @param key The key to check the type of.
+   * @param desiredType the @ref ConfigStoredType to compare the value's type to
+   * @return Whether @p key references a value that is of @p desiredType.
+   */
   bool hasKeyOfType(const std::string& key, ConfigStoredType desiredType) {
     ValueMapType::const_iterator mapIter = valueMap_.find(key);
     return (mapIter != valueMap_.end() &&
@@ -504,8 +647,8 @@ class Configuration {
   std::vector<std::string> findValue(const std::string& key) const;
 
   /**
-   * @brief Builds and returns @ref Cr::Utility::ConfigurationGroup
-   * holding the values in this esp::core::Configuration.
+   * @brief Builds and returns @ref Corrade::Utility::ConfigurationGroup
+   * holding the values in this esp::core::config::Configuration.
    *
    * @return a reference to a configuration group for this configuration
    * object.
@@ -542,10 +685,11 @@ class Configuration {
 
   /**
    * @brief Templated subconfig copy getter. Retrieves a shared pointer to a
-   * copy of the subConfig @ref esp::core::Configuration that has the passed @p
-   * name .
+   * copy of the subConfig @ref esp::core::config::Configuration that has the
+   * passed @p name .
    *
-   * @tparam Type to return. Must inherit from @ref esp::core::Configuration
+   * @tparam Type to return. Must inherit from @ref
+   * esp::core::config::Configuration
    * @param name The name of the configuration to retrieve.
    * @return A pointer to a copy of the configuration having the requested name,
    * cast to the appropriate type, or nullptr if not found.
@@ -580,14 +724,14 @@ class Configuration {
 
   /**
    * @brief Templated Version. Retrieves the stored shared pointer to the
-   * subConfig @ref esp::core::Configuration that has the passed @p name , cast
-   * to the specified type. This will create a shared pointer to a new
+   * subConfig @ref esp::core::config::Configuration that has the passed @p name
+   * , cast to the specified type. This will create a shared pointer to a new
    * sub-configuration if none exists and return it, cast to specified type.
    *
    * Use this function when you wish to modify this configuration's
    * subgroup, possibly creating it in the process.
-   * @tparam The type to cast the @ref esp::core::Configuration to.  Type is
-   * checked to verify that it inherits from Configuration.
+   * @tparam The type to cast the @ref esp::core::config::Configuration to. Type
+   * is checked to verify that it inherits from Configuration.
    * @param name The name of the configuration to edit.
    * @return The actual pointer to the configuration having the requested
    * name, cast to the specified type.
@@ -602,7 +746,10 @@ class Configuration {
   }
 
   /**
-   * @brief move specified subgroup config into configMap at desired name
+   * @brief move specified subgroup config into configMap at desired name. Will
+   * replace any subconfiguration at given name without warning if present.
+   * @param name The name of the subconfiguration to add
+   * @param configPtr A pointer to a subconfiguration to add.
    */
   template <class T>
   void setSubconfigPtr(const std::string& name, std::shared_ptr<T>& configPtr) {
@@ -613,17 +760,30 @@ class Configuration {
     configMap_[name] = std::move(configPtr);
   }  // setSubconfigPtr
 
-  std::shared_ptr<Configuration> removeSubconfig(const std::string& key) {
-    ConfigMapType::const_iterator mapIter = configMap_.find(key);
+  /**
+   * @brief Removes and returns the named subconfig. If not found, returns an
+   * empty subconfig with a warning.
+   * @param name The name of the subconfiguration to delete
+   * @return a shared pointer to the removed subconfiguration.
+   */
+  std::shared_ptr<Configuration> removeSubconfig(const std::string& name) {
+    ConfigMapType::const_iterator mapIter = configMap_.find(name);
     if (mapIter != configMap_.end()) {
       configMap_.erase(mapIter);
       return mapIter->second;
     }
-    ESP_WARNING() << "Key :" << key
+    ESP_WARNING() << "Name :" << name
                   << "not present in map of subconfigurations.";
     return {};
   }
 
+  /**
+   * @brief Retrieve the number of entries held by the subconfig with the give
+   * name
+   * @param name The name of the subconfig to query. If not found, returns 0
+   * with a warning.
+   * @return The number of entries in the named subconfig
+   */
   int getSubconfigNumEntries(const std::string& name) const {
     auto configIter = configMap_.find(name);
     if (configIter != configMap_.end()) {
@@ -637,7 +797,7 @@ class Configuration {
    * @brief Merges configuration pointed to by @p config into this
    * configuration, including all subconfigs.  Passed config overwrites
    * existing data in this config.
-   * @param config The source of configuration data we wish to merge into this
+   * @param src The source of configuration data we wish to merge into this
    * configuration.
    */
   void overwriteWithConfig(const std::shared_ptr<Configuration>& src) {
@@ -706,7 +866,7 @@ class Configuration {
 
   /**
    * @brief Take the passed @p key and query the config value for that key,
-   * writing it to @p jsonName within the passed jsonObj.
+   * writing it to @p jsonName within the passed @p jsonObj.
    * @param key The key of the data in the configuration
    * @param jsonName The tag to use in the json file
    * @param jsonObj The json object to write to
@@ -717,6 +877,13 @@ class Configuration {
                         io::JsonGenericValue& jsonObj,
                         io::JsonAllocator& allocator) const;
 
+  /**
+   * @brief Take the passed @p key and query the config value for that key,
+   * writing it to tag with @p key as name within the passed @p jsonObj.
+   * @param key The key of the data in the configuration
+   * @param jsonObj The json object to write to
+   * @param allocator The json allocator to use to build the json object
+   */
   void writeValueToJson(const char* key,
                         io::JsonGenericValue& jsonObj,
                         io::JsonAllocator& allocator) const {
@@ -783,23 +950,30 @@ class Configuration {
     return result.first->second;
   }
 
-  // Map to hold configurations as subgroups
+  /**
+   * @brief Map to hold configurations as subgroups
+   */
   ConfigMapType configMap_{};
 
-  // Map that haolds all config values
+  /**
+   * @brief Map that holds all config values
+   */
   ValueMapType valueMap_{};
 
   ESP_SMART_POINTERS(Configuration)
 };  // class Configuration
 
+/**
+ * @brief provide debug stream support for a @ref Configuration
+ */
 MAGNUM_EXPORT Mn::Debug& operator<<(Mn::Debug& debug,
                                     const Configuration& value);
 
 /**
  * @brief Retrieves a shared pointer to a copy of the subConfig @ref
- * esp::core::Configuration that has the passed @p name . This will create a
- * pointer to a new sub-configuration if none exists already with that name,
- * but will not add this configuration to this Configuration's internal
+ * esp::core::config::Configuration that has the passed @p name . This will
+ * create a pointer to a new sub-configuration if none exists already with that
+ * name, but will not add this configuration to this Configuration's internal
  * storage.
  *
  * @param name The name of the configuration to retrieve.
@@ -810,11 +984,23 @@ MAGNUM_EXPORT Mn::Debug& operator<<(Mn::Debug& debug,
 template <>
 std::shared_ptr<Configuration> Configuration::getSubconfigCopy<Configuration>(
     const std::string& name) const;
-
+/**
+ * @brief Retrieve a shared pointer to the actual subconfiguration given by @p
+ * name, or a new subconfiguration with that name, if none exists.
+ *
+ * @param name The name of the desired subconfiguration
+ * @return A pointer to the configuration having the requested
+ * name, or a pointer to an empty configuration.
+ */
 template <>
 std::shared_ptr<Configuration> Configuration::editSubconfig<Configuration>(
     const std::string& name);
 
+/**
+ * @brief Save the passed @ref Configuration pointed to by @p configPtr at location specified by @p name
+ * @param name The name to save the subconfiguration by
+ * @param configPtr A pointer to the @ref Configuration to save with the given @p name .
+ */
 template <>
 void Configuration::setSubconfigPtr<Configuration>(
     const std::string& name,

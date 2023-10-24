@@ -10,7 +10,10 @@
 namespace esp {
 namespace assets {
 
-// Tracks the rig instances in a simulator (skinned articulated objects).
+/**
+ * @brief Tracks the rig instances in a simulator (skinned articulated
+ * objects).
+ */
 class RigManager {
  public:
   /**

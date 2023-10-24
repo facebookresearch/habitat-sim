@@ -8,6 +8,22 @@ namespace esp {
  * @brief Root namespace
  */
 
+/** @namespace esp::agent
+ * @brief Agent library
+ */
+
+/** @namespace esp::assets
+ * @brief Assets library
+ */
+
+/** @namespace esp::core
+ * @brief Core Habitat functionality
+ */
+
+/** @namespace esp::core::config
+ * @brief Configuration functionality
+ */
+
 /** @namespace esp::gfx
  * @brief GFX library
  */
@@ -18,6 +34,26 @@ namespace esp {
 
 /** @namespace esp::logging
  * @brief logging library
+ */
+
+/** @namespace esp::metadata
+ * @brief Metadata management
+ */
+
+/** @namespace esp::metadata::attributes
+ * @brief Metadata Attributes library
+ */
+
+/** @namespace esp::metadata::managers
+ * @brief Metadata Attribute Managers library
+ */
+
+/** @namespace esp::metadata::URDF
+ * @brief URDF parsing library
+ */
+
+/** @namespace esp::physics
+ * @brief Physics library
  */
 
 }

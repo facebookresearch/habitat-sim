@@ -12,10 +12,10 @@ namespace physics {
 
 /**
  * @brief Class template defining responsibilities and functionality shared for
- * managing all @ref esp::physics::ManagedRigidBase wrappers.
+ * managing all @ref esp::physics::AbstractManagedRigidBase wrappers.
  * @tparam T the type of managed physics object a particular specialization
  * of this class works with.  Must inherit from @ref
- * esp::physics::ManagedRigidBase
+ * esp::physics::AbstractManagedRigidBase
  */
 
 template <class T>

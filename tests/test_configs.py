@@ -21,7 +21,7 @@ def test_config_eq():
 
 
 def test_core_configuration():
-    # test bindings for esp::core::Configuration class
+    # test bindings for esp::core::config::Configuration class
     config = Configuration()
     config.set("test", "test statement")
     assert config.has_value("test")

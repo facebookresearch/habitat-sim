@@ -6,8 +6,9 @@
 #define ESP_CORE_MANAGEDCONTAINER_H_
 
 /** @file
- * @brief Class Template @ref esp::core::ManagedContainer : container
- * functionality to manage @ref esp::core::AbstractManagedObject objects
+ * @brief Class Template @ref esp::core::managedContainers::ManagedContainer :
+ * container functionality to manage @ref
+ * esp::core::managedContainers::AbstractManagedObject objects
  */
 
 #include "ManagedContainerBase.h"
@@ -37,10 +38,10 @@ enum class ManagedObjectAccess {
 
 /**
  * @brief Class template defining responsibilities and functionality for
- * managing @ref esp::core::AbstractManagedObject constructs.
+ * managing @ref esp::core::managedContainers::AbstractManagedObject constructs.
  * @tparam T the type of managed object a particular specialization of
  * this class works with.  Must inherit from @ref
- * esp::core::AbstractManagedObject.
+ * esp::core::managedContainers::AbstractManagedObject.
  * @tparam Access Whether the default access (getters) for this
  * container provides copies of the objects held, or the actual objects
  * themselves.
@@ -54,7 +55,7 @@ class ManagedContainer : public ManagedContainerBase {
 
   /**
    * @brief Alias for shared pointer to the @ref
-   * esp::core::AbstractManagedObject this container manages.
+   * esp::core::managedContainers::AbstractManagedObject this container manages.
    */
   typedef std::shared_ptr<T> ManagedPtr;
 
@@ -111,7 +112,8 @@ class ManagedContainer : public ManagedContainerBase {
   }  // ManagedContainer::createDefault
 
   /**
-   * @brief Add a copy of @ref esp::core::AbstractManagedObject to the @ref
+   * @brief Add a copy of @ref
+   * esp::core::managedContainers::AbstractManagedObject to the @ref
    * objectLibrary_.
    *
    * @param managedObject The managed object.
@@ -470,8 +472,8 @@ class ManagedContainer : public ManagedContainerBase {
 
   /**
    * @brief Set the object to provide default values upon construction of @ref
-   * esp::core::AbstractManagedObject.  Override if object should not have
-   * defaults
+   * esp::core::managedContainers::AbstractManagedObject.  Override if object
+   * should not have defaults
    * @param _defaultObj the object to use for defaults;
    */
   virtual void setDefaultObject(ManagedPtr& _defaultObj) {
@@ -560,8 +562,8 @@ class ManagedContainer : public ManagedContainerBase {
   }  // ManagedContainer::
 
   /**
-   * @brief Build an @ref esp::core::AbstractManagedObject object of type
-   * associated with passed object.
+   * @brief Build an @ref esp::core::managedContainers::AbstractManagedObject
+   * object of type associated with passed object.
    * @param origAttr The ptr to the original AbstractManagedObject object to
    * copy
    */

@@ -35,27 +35,28 @@ namespace assets {
   */
 enum SupportedMeshType {
   /**
-   * Undefined mesh types are created programmatically without a specific
+   * @brief Undefined mesh types are created programmatically without a specific
    * format or loaded from an unknown format. Support for this type and behavior
    * is likely limited. Object type is likely @ref BaseMesh.
    */
   NOT_DEFINED = ID_UNDEFINED,
 
   /**
-   * Instance meshes loaded from sources including segmented object
+   * @brief Instance meshes loaded from sources including segmented object
    * identifier data (e.g. semantic data: chair, table, etc...). Sources include
    * .ply files and reconstructions of Matterport scans. Object is likely of
    * type @ref GenericSemanticMeshData.
    */
   INSTANCE_MESH = 0,
   /**
-   * Meshes loaded from gltf format (i.e. .glb file), or instances of Magnum
+   * @brief Meshes loaded from gltf format (i.e. .glb file), or instances of
+   * Magnum
    * Primitives. Object is likely type @ref GenericMeshData.
    */
   GENERIC_MESH = 1,
 
   /**
-   * Number of enumerated supported types.
+   * @brief Number of enumerated supported types.
    */
   NUM_SUPPORTED_MESH_TYPES = 2,
 };
@@ -114,6 +115,10 @@ class BaseMesh {
    * sub-component of the asset.
    */
   virtual Magnum::GL::Mesh* getMagnumGLMesh(int) { return nullptr; }
+
+  /**
+   * @brief Retrieve a reference to the @p meshData_ for this mesh;
+   */
   Corrade::Containers::Optional<Magnum::Trade::MeshData>& getMeshData() {
     return meshData_;
   }
@@ -155,9 +160,10 @@ class BaseMesh {
       std::vector<Mn::Vector3ub>& colorMapToUse) const;
 
   /**
-   * @brief Populate an array of colors of the correct type from the given
-   * @p srcColors. Generally used for semantic processing/rendering.
-   * @param srcColors The source colors
+   * @brief Populate an array of colors of the correct type from colors held in
+   * the given
+   * @p srcMeshData. Generally used for semantic processing/rendering.
+   * @param srcMeshData The meshdata containing the colors we wish to query
    * @param convertToSRGB Whether the source vertex colors from the @p
    * srcMeshData should be converted to SRGB
    * @param [out] destColors The per-element array of colors to be built.

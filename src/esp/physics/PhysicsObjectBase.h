@@ -26,7 +26,7 @@ class ResourceManager;
 namespace physics {
 
 /**
- * @brief Motion type of a @ref RigidObject.
+ * @brief Motion type of a @ref esp::physics::RigidObject.
  * Defines its treatment by the simulator and operations which can be performed
  * on it.
  */
@@ -40,13 +40,13 @@ enum class MotionType {
   /**
    * The object is not expected to move and should not allow kinematic updates.
    * Likely treated as static collision geometry. See @ref
-   * RigidObjectType::SCENE.
+   * esp::physics::RigidStage.
    */
   STATIC,
 
   /**
    * The object is expected to move kinematically, but is not simulated. Default
-   * behavior of @ref RigidObject with no physics simulator defined.
+   * behavior of @ref esp::physics::RigidObject with no physics simulator defined.
    */
   KINEMATIC,
 
@@ -87,7 +87,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
         Magnum::SceneGraph::AbstractFeature3D::object());
   }
   /**
-   * @brief Get the @ref physics::MotionType of the object. See @ref
+   * @brief Get the @ref MotionType of the object. See @ref
    * setMotionType.
    * @return The object's current @ref MotionType.
    */
@@ -541,9 +541,9 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
 
   /**
    * @brief Stores user-defined attributes for this object, held as a smart
-   * pointer to a @ref esp::core::Configuration. These attributes are not
-   * internally processed by habitat, but provide a "scratch pad" for the user
-   * to access and save important information and metadata.
+   * pointer to a @ref esp::core::config::Configuration. These attributes are
+   * not internally processed by habitat, but provide a "scratch pad" for the
+   * user to access and save important information and metadata.
    */
   core::config::Configuration::ptr userAttributes_ = nullptr;
 

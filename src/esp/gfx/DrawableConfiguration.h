@@ -13,9 +13,9 @@ namespace esp {
 namespace gfx {
 class DrawableGroup;
 
-/**
- * This class will hold configuration values and utilities for Drawables and the
- * shaders that they own.
+/** @file
+ * @brief This class will hold configuration values and utilities for Drawables
+ * and the shaders that they own.
  */
 class DrawableConfiguration {
  public:
