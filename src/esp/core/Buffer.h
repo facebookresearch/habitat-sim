@@ -12,7 +12,9 @@
 namespace esp {
 namespace core {
 
-// Enumeration of data
+/**
+ * @brief Enumeration of data
+ */
 enum class DataType {
   DT_NONE = 0,
   DT_INT8 = 1,
@@ -27,6 +29,9 @@ enum class DataType {
   DT_DOUBLE = 10,
 };
 
+/**
+ * @brief A class act as a data buffer.
+ */
 class Buffer {
  public:
   explicit Buffer() = default;

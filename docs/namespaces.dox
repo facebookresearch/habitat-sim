@@ -20,6 +20,10 @@ namespace esp {
  * @brief Core Habitat functionality
  */
 
+/** @namespace esp::core::config
+ * @brief Configuration functionality
+ */
+
 /** @namespace esp::gfx
  * @brief GFX library
  */
