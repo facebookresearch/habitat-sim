@@ -74,9 +74,13 @@ void initShortestPathBindings(pybind11::module& m);
 
 namespace physics {
 /**
- * @brief Specify bindings for @ref esp::physics::VelocityControl , @ref esp::physics::JointMotorSettings ,
- * @ref esp::physics::RigidConstraintSettings , @ref esp::physics::RayHitInfo , @ref esp::physics::RaycastResults ,
- * @ref esp::physics::ContactPointData , and @ref esp::physics:;CollisionGroupHelper
+ * @brief Specify bindings for @ref esp::physics::VelocityControl ,
+ * @ref esp::physics::JointMotorSettings ,
+ * @ref esp::physics::RigidConstraintSettings ,
+ * @ref esp::physics::RayHitInfo ,
+ * @ref esp::physics::RaycastResults ,
+ * @ref esp::physics::ContactPointData ,
+ * and @ref esp::physics::CollisionGroupHelper
  */
 void initPhysicsBindings(pybind11::module& m);
 
