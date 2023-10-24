@@ -249,7 +249,7 @@ class Simulator {
   }
 
   /**
-   * @brief Builds a @ref esp::metadata::SceneInstanceAttributes describing the
+   * @brief Builds a @ref esp::metadata::attributes::SceneInstanceAttributes describing the
    * current scene configuration, and saves it to a JSON file, using @p
    * saveFileName .
    * @param saveFilename The name to use to save the current scene instance.
@@ -258,7 +258,7 @@ class Simulator {
   bool saveCurrentSceneInstance(const std::string& saveFilename) const;
 
   /**
-   * @brief Builds a @ref esp::metadata::SceneInstanceAttributes describing
+   * @brief Builds a @ref esp::metadata::attributes::SceneInstanceAttributes describing
    * the current scene configuration, and saves it to a JSON file, using the
    * current scene attributes' filename, or an incremented version if @p
    * overwrite == false.
@@ -864,7 +864,7 @@ class Simulator {
   /**
    * @brief Instance the stage for the current scene based on
    * curSceneInstanceAttributes_, the currently active scene's @ref
-   * esp::metadata::SceneInstanceAttributes
+   * esp::metadata::attributes::SceneInstanceAttributes
    * @param curSceneInstanceAttributes The attributes describing the current
    * scene instance.
    * @return whether stage creation is completed successfully
@@ -876,7 +876,7 @@ class Simulator {
   /**
    * @brief Instance all the objects in the scene based on
    * curSceneInstanceAttributes_, the currently active scene's @ref
-   * esp::metadata::SceneInstanceAttributes.
+   * esp::metadata::attributes::SceneInstanceAttributes.
    * @param curSceneInstanceAttributes The attributes describing the current
    * scene instance.
    * @return whether object creation and placement is completed successfully
@@ -888,7 +888,7 @@ class Simulator {
   /**
    * @brief Instance all the articulated objects in the scene based
    * on curSceneInstanceAttributes_, the currently active scene's @ref
-   * esp::metadata::SceneInstanceAttributes.
+   * esp::metadata::attributes::SceneInstanceAttributes.
    * @param curSceneInstanceAttributes The attributes describing the current
    * scene instance.
    * @return whether articulated object creation and placement is completed

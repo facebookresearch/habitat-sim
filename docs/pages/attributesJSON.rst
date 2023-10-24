@@ -41,7 +41,7 @@ A *SceneDataset* enumerates and aggregates the various assets and metadata neces
 
      <datasetname>.scene_dataset_config.json
 
-`An example of an appropriately configured SceneDataset Attributes file can be found below <facebookresearch/habitat-sim/blob/main/data/test_assets/dataset_tests/dataset_0/test_dataset_0.scene_dataset_config.json>`_:
+:gh:`An example of an appropriately configured SceneDataset Attributes file can be found below <facebookresearch/habitat-sim/blob/main/data/test_assets/dataset_tests/dataset_0/test_dataset_0.scene_dataset_config.json>`:
 
 .. include:: ../../data/test_assets/dataset_tests/dataset_0/test_dataset_0.scene_dataset_config.json
     :code: json
@@ -256,7 +256,7 @@ A *stage* in Habitat-Sim is the set of STATIC mesh components which make up the 
 
      <stagename>.stage_config.json
 
-`An example of an appropriately configured Stage Attributes file can be found below <facebookresearch/habitat-sim/blob/main/data/test_assets/scenes/stage_floor1.stage_config.json>`_:
+:gh:`An example of an appropriately configured Stage Attributes file can be found below <facebookresearch/habitat-sim/blob/main/data/test_assets/scenes/stage_floor1.stage_config.json>`:
 
 .. include:: ../../data/test_assets/scenes/stage_floor1.stage_config.json
     :code: json
@@ -343,7 +343,7 @@ Below are stage-specific physical and object-related quantities.  These values w
 
      <articulated_object_name>.ao_config.json
 
-`An example of an appropriately configured Articulated Object Attributes file can be found below <facebookresearch/habitat-sim/blob/main/data/test_assets/urdf/skinned_prism.ao_config.json>`_:
+:gh:`An example of an appropriately configured Articulated Object Attributes file can be found below <facebookresearch/habitat-sim/blob/main/data/test_assets/urdf/skinned_prism.ao_config.json>`:
 
 .. include:: ../../data/test_assets/urdf/skinned_prism.ao_config.json
     :code: json
@@ -400,7 +400,7 @@ Articulated Object Configuration And Rendering
 
      <objectname>.object_config.json
 
-`An example of an appropriately configured object Attributes file can be found below <facebookresearch/habitat-sim/blob/main/data/test_assets/objects/donut.object_config.json>`_:
+:gh:`An example of an appropriately configured Object Attributes file can be found below <facebookresearch/habitat-sim/blob/main/data/test_assets/objects/donut.object_config.json>`:
 
 .. include:: ../../data/test_assets/objects/donut.object_config.json
     :code: json
@@ -490,7 +490,7 @@ Below are object-specific physical quantities.  These values will override simil
 
      <lightingname>.lighting_config.json
 
-`An example of an appropriately configured LightLayoutAttributes file can be found below <facebookresearch/habitat-sim/blob/main/data/test_assets/lights/test_lights.lighting_config.json>`_:
+:gh:`An example of an appropriately configured LightLayoutAttributes file can be found below <facebookresearch/habitat-sim/blob/main/data/test_assets/lights/test_lights.lighting_config.json>`:
 
 .. include:: ../../data/test_assets/lights/test_lights.lighting_config.json
     :code: json
@@ -524,7 +524,7 @@ The :ref:`LightLayoutAttributes` JSON should contain a single cell named "lights
 
      <pbrIblConfigurationName>.pbr_config.json
 
-`An example of an appropriately configured PBRShader Attributes file can be found below <facebookresearch/habitat-sim/blob/main/data/test_assets/pbr/example.pbr_config.json>`_:
+:gh:`An example of an appropriately configured PBRShader Attributes file can be found below <facebookresearch/habitat-sim/blob/main/data/test_assets/pbr/example.pbr_config.json>`:
 
 .. include:: ../../data/test_assets/pbr/example.pbr_config.json
     :code: json
@@ -629,7 +629,7 @@ These parameters control the enabling or disabling of particular extension layer
 
      <worldname>.physics_config.json
 
-`An example of an appropriately configured Physics Manager Attributes file can be found below <facebookresearch/habitat-sim/blob/main/data/test_assets/testing.physics_config.json>`_:
+:gh:`An example of an appropriately configured Physics Manager Attributes file can be found below <facebookresearch/habitat-sim/blob/main/data/test_assets/testing.physics_config.json>`:
 
 .. include:: ../../data/test_assets/testing.physics_config.json
     :code: json

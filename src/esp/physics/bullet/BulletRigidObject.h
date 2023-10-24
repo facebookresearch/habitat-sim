@@ -482,7 +482,7 @@ class BulletRigidObject : public BulletBase,
    */
   Magnum::Range3D getCollisionShapeAabb() const override;
 
-  /** @brief Object data: All components of a @ref RigidObjectType::OBJECT are
+  /** @brief Object data: All components of a @ref esp::physics::RigidObjectType::OBJECT are
    * wrapped into one @ref btRigidBody.
    */
   std::unique_ptr<btRigidBody> bObjectRigidBody_;

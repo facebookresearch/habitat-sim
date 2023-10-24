@@ -13,9 +13,10 @@ namespace managedContainers {
 /**
  * @brief This abstract base class provides the interface of expected
  * functionality for an object to be manageable by @ref
- * esp::core::ManagedContainer class template specializations. Any class that
- * inherits from this class properly can be managed by a @ref
- * esp::core::ManagedContainer specilization.
+ * esp::core::managedContainers::ManagedContainer class template
+ * specializations. Any class that inherits from this class properly can be
+ * managed by a @ref esp::core::managedContainers::ManagedContainer
+ * specilization.
  */
 class AbstractManagedObject {
  public:
@@ -23,7 +24,8 @@ class AbstractManagedObject {
   /**
    * @brief Get the instancing class of the ManagedObject instance.  Should
    * only be set from implementer's constructor. Used as key in constructor
-   * function pointer maps in @ref esp::core::ManagedContainer.
+   * function pointer maps in @ref
+   * esp::core::managedContainers::ManagedContainer.
    */
   virtual std::string getClassKey() const = 0;
 

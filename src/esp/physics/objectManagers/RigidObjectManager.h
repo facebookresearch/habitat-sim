@@ -98,9 +98,9 @@ class RigidObjectManager
 
   /**
    * @brief Overload of standard @ref
-   * esp::core::ManagedContainer::removeObjectByID to allow for the retention
-   * of scene node or visual node of the underlying RigidObject after it and
-   * its wrapper's removal.
+   * esp::core::managedContainers::ManagedContainer::removeObjectByID to allow
+   * for the retention of scene node or visual node of the underlying
+   * RigidObject after it and its wrapper's removal.
    *
    * @param objectID The ID of the managed object to be deleted.
    * @param deleteObjectNode If true, deletes the object's scene node.
@@ -119,9 +119,9 @@ class RigidObjectManager
 
   /**
    * @brief Overload of standard @ref
-   * esp::core::ManagedContainer::removeObjectByHandle to allow for the
-   * retention of scene node or visual node of the underlying RigidObject
-   * after it and its wrapper's removal.
+   * esp::core::managedContainers::ManagedContainer::removeObjectByHandle to
+   * allow for the retention of scene node or visual node of the underlying
+   * RigidObject after it and its wrapper's removal.
    *
    * @param objectHandle The handle of the managed object to be deleted.
    * @param deleteObjectNode If true, deletes the object's scene node.
@@ -141,7 +141,8 @@ class RigidObjectManager
   /**
    * @brief This method will remove rigid objects from physics manager.  The
    * wrapper has already been removed by the time this method is called (this is
-   * called from @ref esp::core::ManagedContainerBase::deleteObjectInternal)
+   * called from @ref
+   * esp::core::managedContainers::ManagedContainerBase::deleteObjectInternal)
    *
    * @param objectID the ID of the managed object to remove
    * @param objectHandle the string key of the managed object to remove.

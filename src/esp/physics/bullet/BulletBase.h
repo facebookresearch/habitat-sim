@@ -78,13 +78,13 @@ class BulletBase {
   virtual ~BulletBase() { bWorld_.reset(); }
 
   /** @brief Get the scalar collision margin of an object. Retun 0.0 for a @ref
-   * RigidObjectType::SCENE. See @ref btCompoundShape::getMargin.
+   * esp::physics::RigidStage. See @ref btCompoundShape::getMargin.
    * @return The scalar collision margin of the object.
    */
   virtual double getMargin() const { return 0.0; }
 
   /** @brief Set the scalar collision margin of an object. Does not affect @ref
-   * RigidObjectType::SCENE. See @ref btCompoundShape::setMargin.
+   * esp::physics::RigidStage. See @ref btCompoundShape::setMargin.
    * @param margin The new scalar collision margin of the object.
    */
   virtual void setMargin(CORRADE_UNUSED const double margin) {}
@@ -138,7 +138,7 @@ class BulletBase {
    * @ref btMultiBodyDynamicsWorld.*/
   std::shared_ptr<btMultiBodyDynamicsWorld> bWorld_;
 
-  /** @brief Static data: All components of a @ref RigidObjectType::SCENE are
+  /** @brief Static data: All components of a @ref esp::physics::RigidStage are
    * stored here. Also, all objects set to STATIC are stored here.
    */
   std::vector<std::unique_ptr<btRigidBody>> bStaticCollisionObjects_;

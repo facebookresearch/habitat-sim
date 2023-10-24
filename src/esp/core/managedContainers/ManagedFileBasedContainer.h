@@ -6,9 +6,10 @@
 #define ESP_CORE_MANAGEDFILEBASEDCONTAINER_H_
 
 /** @file
- * @brief Class Template @ref esp::core::ManagedFileBasedContainer : @ref
- * esp::core::ManagedContainer functionality specifically for file-based @ref
- * esp::core::AbstractManagedObject objects
+ * @brief Class Template @ref
+ * esp::core::managedContainers::ManagedFileBasedContainer : @ref
+ * esp::core::managedContainers::ManagedContainer functionality specifically for
+ * file-based @ref esp::core::managedContainers::AbstractManagedObject objects
  */
 
 #include "AbstractFileBasedManagedObject.h"
@@ -30,11 +31,11 @@ namespace core {
 namespace managedContainers {
 /**
  * @brief Class template defining file-io-based responsibilities and
- * functionality for managing @ref esp::core::AbstractFileBasedManagedObject
- * constructs.
+ * functionality for managing @ref
+ * esp::core::managedContainers::AbstractFileBasedManagedObject constructs.
  * @tparam T the type of managed object a particular specialization of
  * this class works with.  Must inherit from @ref
- * esp::core::AbstractFileBasedManagedObject.
+ * esp::core::managedContainers::AbstractFileBasedManagedObject.
  * @tparam Access Whether the default access (getters) for this
  * container provides copies of the objects held, or the actual objects
  * themselves.
@@ -153,11 +154,13 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
       const io::JsonGenericValue& jsonConfig) = 0;
 
   /**
-   * @brief Saves the @ref esp::core::AbstractFileBasedManagedObject with handle
+   * @brief Saves the @ref
+   * esp::core::managedContainers::AbstractFileBasedManagedObject with handle
    * @p objectHandle to a JSON file using a non-colliding version (if @p
    * overwrite is false) of the object's handle, with appropriate extension
    * denoting type of JSON, as file name, to the @ref
-   * esp::core::AbstractFileBasedManagedObject's specified file directory.
+   * esp::core::managedContainers::AbstractFileBasedManagedObject's specified
+   * file directory.
    * @param objectHandle The name of the object to save. If not found, returns
    * false.
    * @param overwrite Whether or not an existing json file with the same name
@@ -183,7 +186,8 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
    * @brief Saves the passed @p managedObject to a JSON file using a
    * non-colliding version (if @p overwrite is false) of the object's handle,
    * with appropriate extension denoting type of JSON, as file name, to the @ref
-   * esp::core::AbstractFileBasedManagedObject's specified file directory.
+   * esp::core::managedContainers::AbstractFileBasedManagedObject's specified
+   * file directory.
    * @param managedObject Theobject to save.
    * @param overwrite Whether or not an existing json file with the same name
    * should be overwritten.
@@ -193,7 +197,8 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
                                bool overwrite) const;
 
   /**
-   * @brief Saves the @ref esp::core::AbstractFileBasedManagedObject with handle
+   * @brief Saves the @ref
+   * esp::core::managedContainers::AbstractFileBasedManagedObject with handle
    * @p objectHandle to a JSON file using the specified, fully-qualified @p
    * fullFilename, with appropriate type extension appended if not present. Will
    * overwrite any file with same name found.
@@ -265,11 +270,13 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
 
   /**
    * @brief Return a properly formated JSON file name for the @ref
-   * esp::core::AbstractFileBasedManagedObject managed by this manager.  This
-   * will change the extension to the appropriate json extension.
+   * esp::core::managedContainers::AbstractFileBasedManagedObject managed by
+   * this manager.  This will change the extension to the appropriate json
+   * extension.
    * @param filename The original filename
    * @return a candidate JSON file name for the @ref
-   * esp::core::AbstractFileBasedManagedObject managed by this manager.
+   * esp::core::managedContainers::AbstractFileBasedManagedObject managed by
+   * this manager.
    */
   std::string getFormattedJSONFileName(const std::string& filename) {
     return this->convertFilenameToPassedExt(filename, this->JSONTypeExt_);
@@ -277,7 +284,8 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
 
   /**
    * @brief Returns the config file type and file extension used for the files
-   * that build the @ref esp::core::AbstractFileBasedManagedObject managed by
+   * that build the @ref
+   * esp::core::managedContainers::AbstractFileBasedManagedObject managed by
    * this manager.
    */
   std::string getJSONTypeExt() const { return JSONTypeExt_; }
@@ -438,8 +446,8 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
 
   /**
    * @brief Get directory component of managed object handle and call @ref
-   * esp::core::AbstractManagedObject::setFileDirectory if a legitimate
-   * directory exists in handle.
+   * esp::core::managedContainers::AbstractFileBasedManagedObject::setFileDirectory
+   * if a legitimate directory exists in handle.
    *
    * @param object pointer to managed object to set
    */

@@ -49,7 +49,9 @@ class PhysicsManagerAttributes;
 
 namespace physics {
 
-/** @brief Holds information about one ray hit instance. */
+/**
+ * @brief Holds information about one ray hit instance.
+ */
 struct RayHitInfo {
   /** @brief The id of the object hit by this ray. Stage hits are -1. */
   int objectId{};
@@ -67,7 +69,9 @@ struct RayHitInfo {
   ESP_SMART_POINTERS(RayHitInfo)
 };
 
-/** @brief Holds information about all ray hit instances from a ray cast. */
+/**
+ * @brief Holds information about all ray hit instances from a ray cast.
+ */
 struct RaycastResults {
   std::vector<RayHitInfo> hits;
   esp::geo::Ray ray;
@@ -84,7 +88,9 @@ struct RaycastResults {
   ESP_SMART_POINTERS(RaycastResults)
 };
 
-/** @brief based on Bullet b3ContactPointData */
+/**
+ * @brief based on Bullet b3ContactPointData
+ */
 struct ContactPointData {
   int objectIdA = -2;  // stage is -1
   int objectIdB = -2;
@@ -115,7 +121,9 @@ struct ContactPointData {
   ESP_SMART_POINTERS(ContactPointData)
 };
 
-/** @brief describes the type of a rigid constraint.*/
+/**
+ * @brief describes the type of a rigid constraint.
+ */
 enum class RigidConstraintType {
   /** @brief lock a point in one frame to a point in another with no orientation
    * constraint
@@ -127,7 +135,9 @@ enum class RigidConstraintType {
   Fixed
 };  // enum class RigidConstraintType
 
-/** @brief Stores rigid constraint parameters for creation and updates.*/
+/**
+ * @brief Stores rigid constraint parameters for creation and updates.
+ */
 struct RigidConstraintSettings {
  public:
   RigidConstraintSettings() = default;

@@ -146,8 +146,7 @@ class MetadataMediator {
   /**
    * @brief Return manager for construction and access to asset attributes for
    * current dataset.
-   * @return The current dataset's @ref esp::metadata::managers::AssetAttributesManager::ptr,
-   * or nullptr if no current dataset.
+   * @return A shared pointer to the current dataset's @ref esp::metadata::managers::AssetAttributesManager.
    */
   const managers::AssetAttributesManager::ptr& getAssetAttributesManager() {
     return getActiveDSAttribs()->getAssetAttributesManager();
@@ -156,9 +155,8 @@ class MetadataMediator {
   /**
    * @brief Return manager for construction and access to object attributes for
    * current dataset.
-   * @return The current dataset's @ref
-   * managers::LightLayoutAttributesManager::ptr, or nullptr if no current
-   * dataset.
+   * @return A shared pointer to the current dataset's @ref
+   * esp::metadata::managers::LightLayoutAttributesManager.
    */
   const managers::LightLayoutAttributesManager::ptr&
   getLightLayoutAttributesManager() {
@@ -167,8 +165,7 @@ class MetadataMediator {
   /**
    * @brief Return manager for construction and access to articulated object
    * attributes for current dataset.
-   * @return The current dataset's @ref esp::metadata::managers::AOAttributesManager::ptr,
-   * or nullptr if no current dataset.
+   * @return A shared pointer to the current dataset's @ref esp::metadata::managers::AOAttributesManager.
    */
   const managers::AOAttributesManager::ptr& getAOAttributesManager() {
     return getActiveDSAttribs()->getAOAttributesManager();
@@ -176,8 +173,7 @@ class MetadataMediator {
   /**
    * @brief Return manager for construction and access to object attributes for
    * current dataset.
-   * @return The current dataset's @ref esp::metadata::managers::ObjectAttributesManager::ptr,
-   * or nullptr if no current dataset.
+   * @return A shared pointer to the current dataset's @ref esp::metadata::managers::ObjectAttributesManager.
    */
   const managers::ObjectAttributesManager::ptr& getObjectAttributesManager() {
     return getActiveDSAttribs()->getObjectAttributesManager();
@@ -186,6 +182,7 @@ class MetadataMediator {
   /**
    * @brief Return manager for construction and access to physics world
    * attributes.
+   * @return A shared pointer to the current @ref esp::metadata::managers::PhysicsAttributesManager.
    */
   const managers::PhysicsAttributesManager::ptr& getPhysicsAttributesManager()
       const {
@@ -203,8 +200,8 @@ class MetadataMediator {
   /**
    * @brief Return manager for construction and access to
    * @ref esp::attributes::SceneInstanceAttributes for current dataset.
-   * @return The current dataset's @ref
-   * managers::SceneInstanceAttributesManager::ptr, or nullptr if no current
+   * @return A shared pointer to the current dataset's @ref
+   * managers::SceneInstanceAttributesManager or nullptr if no current
    * dataset.
    */
   const managers::SceneInstanceAttributesManager::ptr&
@@ -215,8 +212,7 @@ class MetadataMediator {
   /**
    * @brief Return manager for construction and access to stage attributes for
    * current dataset.
-   * @return The current dataset's @ref esp::metadata::managers::StageAttributesManager::ptr,
-   * or nullptr if no current dataset.
+   * @return A shared pointer to the current dataset's @ref esp::metadata::managers::StageAttributesManager
    */
   const managers::StageAttributesManager::ptr& getStageAttributesManager() {
     return getActiveDSAttribs()->getStageAttributesManager();

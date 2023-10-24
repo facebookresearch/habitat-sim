@@ -537,9 +537,9 @@ io::JsonGenericValue Configuration::writeToJsonObject(
 
 /**
  * @brief Retrieves a shared pointer to a copy of the subConfig @ref
- * esp::core::Configuration that has the passed @p name . This will create a
- * pointer to a new sub-configuration if none exists already with that name,
- * but will not add this configuration to this Configuration's internal
+ * esp::core::config::Configuration that has the passed @p name . This will
+ * create a pointer to a new sub-configuration if none exists already with that
+ * name, but will not add this configuration to this Configuration's internal
  * storage.
  *
  * @param name The name of the configuration to retrieve.

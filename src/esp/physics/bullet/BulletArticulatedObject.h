@@ -371,7 +371,7 @@ class BulletArticulatedObject : public ArticulatedObject {
   /**
    * @brief Create a new JointMotor from a JointMotorSettings.
    *
-   * Note: No base implementation. See @ref bullet::BulletArticulatedObject.
+   * Note: No base implementation. See @ref BulletArticulatedObject.
    * @param linkIndex the index of the link for which the parent joint will have
    * a motor attached
    * @param settings The settings for the joint motor. Must have JointMotorType
@@ -396,7 +396,7 @@ class BulletArticulatedObject : public ArticulatedObject {
    * @brief Create a new set of default JointMotors for all valid dofs in an
    * ArticulatedObject.
    *
-   * Note: No base implementation. See @ref bullet::BulletArticulatedObject.
+   * Note: No base implementation. See @ref BulletArticulatedObject.
    *
    * @return A map of motorIds to link/joint indices for the new motors.
    */
@@ -412,7 +412,7 @@ class BulletArticulatedObject : public ArticulatedObject {
    * this object. This function will safely skip states for joints which don't
    * support JointMotors.
    *
-   * Note: No base implementation. See @ref bullet::BulletArticulatedObject.
+   * Note: No base implementation. See @ref BulletArticulatedObject.
    *
    * @param stateTargets Full length joint position or velocity array for this
    * object.
