@@ -182,7 +182,7 @@ void Recorder::onDeleteRenderAssetInstance(const scene::SceneNode* node) {
 
   const auto& instanceRecord = instanceRecords_[index];
   const auto& instanceKey = instanceRecord.instanceKey;
-  const auto& rigId = instanceRecord.rigId;
+  const int rigId = instanceRecord.rigId;
 
   checkAndAddDeletion(&getKeyframe(), instanceKey);
 
