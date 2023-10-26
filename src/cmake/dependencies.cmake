@@ -35,6 +35,21 @@ else()
   set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${DEPS_DIR}/eigen/cmake")
 endif()
 
+# Zstd, needed by BasisImporter. Let it find a system package on its own, if
+# preferred.
+if(NOT USE_SYSTEM_ZSTD)
+  set(ZSTD_BUILD_PROGRAMS OFF CACHE BOOL "" FORCE)
+  # Create a static library so the plugin is self-contained
+  set(ZSTD_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+  set(ZSTD_BUILD_STATIC ON CACHE BOOL "" FORCE)
+  # Basis doesn't use any multithreading in zstd, this prevents a need to link
+  # to pthread on Linux
+  set(ZSTD_MULTITHREAD_SUPPORT OFF CACHE BOOL "" FORCE)
+  # Don't build Zstd tests if enable_testing() was called in parent project
+  set(ZSTD_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+  add_subdirectory("${DEPS_DIR}/zstd/build/cmake" EXCLUDE_FROM_ALL)
+endif()
+
 # tinyxml2
 include_directories("${DEPS_DIR}/tinyxml2")
 add_subdirectory("${DEPS_DIR}/tinyxml2")
@@ -238,8 +253,6 @@ if(NOT USE_SYSTEM_MAGNUM)
   # formats (BC7 mode 6 has > 1 MB tables, ATC/FXT1/PVRTC2 are quite rare and
   # not supported by Magnum).
   set(BASIS_UNIVERSAL_DIR "${DEPS_DIR}/basis-universal")
-  # Disabling Zstd for now, when it's actually needed we bundle a submodule
-  set(CMAKE_DISABLE_FIND_PACKAGE_Zstd ON)
   set(
     CMAKE_CXX_FLAGS
     "${CMAKE_CXX_FLAGS} -DBASISD_SUPPORT_BC7_MODE6_OPAQUE_ONLY=0 -DBASISD_SUPPORT_ATC=0 -DBASISD_SUPPORT_FXT1=0 -DBASISD_SUPPORT_PVRTC2=0"

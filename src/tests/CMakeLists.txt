@@ -11,7 +11,12 @@ find_package(
   AnyImageImporter
 )
 find_package(
-  MagnumPlugins REQUIRED GltfImporter StbImageImporter KtxImporter
+  MagnumPlugins
+  REQUIRED
+  GltfImporter
+  StbImageImporter
+  KtxImporter
+  StbImageConverter
   OPTIONAL_COMPONENTS GltfSceneConverter KtxImageConverter StanfordImporter
                       OpenExrImporter OpenExrImageConverter
 )

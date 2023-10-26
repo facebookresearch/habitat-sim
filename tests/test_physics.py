@@ -464,7 +464,7 @@ def test_velocity_control():
             ground_truth_pos = sim.get_world_time() * vel_control.linear_velocity
             assert np.allclose(box_object.translation, ground_truth_pos, atol=0.01)
             ground_truth_q = mn.Quaternion([[0, 0.480551, 0], 0.876967])
-            angle_error = mn.math.angle(ground_truth_q, box_object.rotation)
+            angle_error = mn.math.half_angle(ground_truth_q, box_object.rotation)
             assert angle_error < mn.Rad(0.005)
 
             sim.reset()
@@ -490,7 +490,7 @@ def test_velocity_control():
             assert np.allclose(
                 box_object.translation, np.array([0, 1.0, 0.0]), atol=0.07
             )
-            angle_error = mn.math.angle(ground_truth_q, box_object.rotation)
+            angle_error = mn.math.half_angle(ground_truth_q, box_object.rotation)
             assert angle_error < mn.Rad(0.05)
 
             rigid_obj_mgr.remove_object_by_id(box_object.object_id)
@@ -748,7 +748,7 @@ def check_articulated_object_root_state(
     assert np.allclose(
         articulated_object.translation, target_rigid_state.translation, atol=epsilon
     )
-    assert mn.math.angle(
+    assert mn.math.half_angle(
         articulated_object.rotation, target_rigid_state.rotation
     ) < mn.Rad(epsilon)
     # check against object's rigid_state
@@ -757,7 +757,7 @@ def check_articulated_object_root_state(
         target_rigid_state.translation,
         atol=epsilon,
     )
-    assert mn.math.angle(
+    assert mn.math.half_angle(
         articulated_object.rigid_state.rotation, target_rigid_state.rotation
     ) < mn.Rad(epsilon)
 
@@ -1118,7 +1118,7 @@ def test_articulated_object_dynamics(test_asset):
             mn.Rad(np.linalg.norm(target_ang_vel * timestep)),
             target_ang_vel / np.linalg.norm(target_ang_vel),
         )
-        angle_error = mn.math.angle(robot.rotation, expected_rotation)
+        angle_error = mn.math.half_angle(robot.rotation, expected_rotation)
         assert angle_error < mn.Rad(0.0005)
 
         assert not np.allclose(robot.root_linear_velocity, mn.Vector3(0), atol=0.1)
@@ -1279,8 +1279,8 @@ def check_joint_positions(robot, target, single_dof_eps=5.0e-3, quat_eps=0.2):
             actual_q = mn.Quaternion(
                 positions[start_pos : start_pos + 3], positions[start_pos + 3]
             )
-            angle_error = mn.math.angle(target_q, actual_q)
-            angle_error2 = mn.math.angle(target_q, -1 * actual_q)
+            angle_error = mn.math.half_angle(target_q, actual_q)
+            angle_error2 = mn.math.half_angle(target_q, -1 * actual_q)
             # negative quaternion represents the same rotation, but gets a different angle error so check both
             assert angle_error < mn.Rad(quat_eps) or angle_error2 < mn.Rad(quat_eps)
         elif joint_type in [
@@ -1656,8 +1656,8 @@ def test_rigid_constraints():
         )
         assert np.allclose(global_pivot_pos, constraint_settings.pivot_b, atol=1.0e-3)
         # default frames lock identity orientation
-        assert mn.math.angle(cube_obj.rotation, mn.Quaternion()) < mn.Rad(0.01)
-        assert mn.math.angle(cube_obj_2.rotation, mn.Quaternion()) < mn.Rad(0.01)
+        assert mn.math.half_angle(cube_obj.rotation, mn.Quaternion()) < mn.Rad(0.01)
+        assert mn.math.half_angle(cube_obj_2.rotation, mn.Quaternion()) < mn.Rad(0.01)
 
         # change the global frame rotation
         global_target_frame = mn.Quaternion.rotation(
@@ -1679,11 +1679,11 @@ def test_rigid_constraints():
 
         observations += simulate(sim, 2.0, produce_debug_video)
         # check global frame change of object 1
-        assert mn.math.angle(cube_obj.rotation, global_target_frame) < mn.Rad(0.01)
+        assert mn.math.half_angle(cube_obj.rotation, global_target_frame) < mn.Rad(0.01)
         # check that relative frames of objects total pi/2
-        angle_error = mn.math.angle(cube_obj.rotation, cube_obj_2.rotation) - mn.Rad(
-            mn.math.pi / 4.0
-        )
+        angle_error = mn.math.half_angle(
+            cube_obj.rotation, cube_obj_2.rotation
+        ) - mn.Rad(mn.math.pi / 4.0)
         assert abs(float(angle_error)) < 0.01
 
         # removing objects will clear constraints
@@ -1749,7 +1749,7 @@ def test_rigid_constraints():
         assert np.allclose(global_connect_a, global_connect_b, atol=0.08)
 
         # check that relative frames of objects near 0
-        assert mn.math.angle(
+        assert mn.math.half_angle(
             cube_obj.rotation,
             robot.get_link_scene_node(constraint_settings_2.link_id_a).rotation,
         ) < mn.Rad(0.1)
@@ -1767,7 +1767,7 @@ def test_rigid_constraints():
 
         observations += simulate(sim, 4.0, produce_debug_video)
         # check frames align
-        angle_error = mn.math.angle(
+        angle_error = mn.math.half_angle(
             cube_obj.rotation,
             robot.get_link_scene_node(constraint_settings_2.link_id_a).rotation,
         ) - mn.Rad(mn.math.pi / 4.0)
@@ -1817,7 +1817,7 @@ def test_rigid_constraints():
         assert np.allclose(global_connect_a, constraint_settings_2.pivot_b, atol=0.08)
 
         # check frames align
-        angle_error = mn.math.angle(
+        angle_error = mn.math.half_angle(
             local_target_frame_2,
             robot.get_link_scene_node(constraint_settings_2.link_id_a).rotation,
         ) - mn.Rad(mn.math.pi / 4.0)
@@ -1828,7 +1828,7 @@ def test_rigid_constraints():
         sim.remove_rigid_constraint(constraint_id_2)
         constraint_id_2 = sim.create_rigid_constraint(constraint_settings_2)
         observations += simulate(sim, 5.0, produce_debug_video)
-        angle_error = mn.math.angle(local_target_frame_2, robot.rotation) - mn.Rad(
+        angle_error = mn.math.half_angle(local_target_frame_2, robot.rotation) - mn.Rad(
             mn.math.pi / 4.0
         )
         # NOTE: This error is a bit high, but constraint is doing its best
@@ -1895,7 +1895,7 @@ def test_rigid_constraints():
         assert np.allclose(global_connect_a, global_connect_b, atol=0.08)
 
         # check frames align
-        angle_error = mn.math.angle(
+        angle_error = mn.math.half_angle(
             robot.get_link_scene_node(constraint_settings_2.link_id_a).rotation,
             robot2.get_link_scene_node(constraint_settings_2.link_id_b).rotation,
         )
