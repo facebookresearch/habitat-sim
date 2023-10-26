@@ -46,3 +46,6 @@
 [submodule "src/deps/rlr-audio-propagation"]
 	path = src/deps/rlr-audio-propagation
 	url = https://github.com/facebookresearch/rlr-audio-propagation
+[submodule "src/deps/zstd"]
+	path = src/deps/zstd
+	url = https://github.com/facebook/zstd
