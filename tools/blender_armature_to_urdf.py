@@ -636,6 +636,7 @@ def export(
     # print all mesh object parents, reset origins for mesh export and transformation registery, collect bone to mesh map
     root_node = None
     receptacle_meshes = []
+    receptacle_to_link_name = {}
     for obj in bpy.data.objects:
         if obj.type == "MESH":
             parent_bone = get_parent_bone(obj)
@@ -648,6 +649,9 @@ def export(
                 print(f" -pb> {obj.parent_bone}")
             if is_receptacle_mesh(obj):
                 receptacle_meshes.append(obj)
+                receptacle_to_link_name[
+                    obj.parent.name + "_receptacle"
+                ] = obj.parent.name
         elif obj.type == "EMPTY":
             print(f"EMPTY: {obj.name}")
             if obj.parent is None and len(obj.children) > 0:
@@ -728,6 +732,17 @@ def export(
                 # insert receptacle metadata here
             },
         }
+        for rec_name, link_name in receptacle_to_link_name.items():
+            ao_config_contents["user_defined"][rec_name] = {
+                "name": rec_name,
+                "parent_object": f"{root_node.name}",
+                "parent_link": link_name,
+                "position": [0, 0, 0],
+                "rotation": [1, 0, 0, 0],
+                "scale": [1, 1, 1],
+                "up": [0, 1, 0],
+                "mesh_filepath": rec_name + ".glb",
+            }
         ao_config_filename = os.path.join(
             final_out_path, f"{root_node.name}.ao_config.json"
         )
@@ -829,6 +844,7 @@ if __name__ == "__main__":
     args = parser.parse_args(py_argv)
 
     export_meshes = args.export_meshes
+    export_ao_config = args.export_ao_config
     export_path = args.export_path
 
     # -----------------------------------------------------------
