@@ -2,6 +2,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import json
 import os
 import xml.dom.minidom as minidom
 import xml.etree.ElementTree as ET
@@ -585,7 +586,13 @@ def get_armature():
     return None
 
 
-def export(dirpath, settings, export_meshes: bool = True, **kwargs):
+def export(
+    dirpath,
+    settings,
+    export_meshes: bool = True,
+    export_ao_config: bool = True,
+    **kwargs,
+):
     """
     Run the Armature to URDF converter and export the .urdf file.
     Recursively travserses the armature bone tree and constructs Links and Joints.
@@ -713,6 +720,20 @@ def export(dirpath, settings, export_meshes: bool = True, **kwargs):
     with open(output_path, "w") as f:
         f.write(ET_pretty_string)
 
+    if export_ao_config:
+        # write the ao_config
+        ao_config_contents = {
+            "urdf_filepath": f"{root_node.name}.urdf",
+            "user_defined": {
+                # insert receptacle metadata here
+            },
+        }
+        ao_config_filename = os.path.join(
+            final_out_path, f"{root_node.name}.ao_config.json"
+        )
+        with open(ao_config_filename, "w") as f:
+            f.write(json.dump(ao_config_contents, f))
+
     return output_path
 
 
@@ -742,6 +763,7 @@ if __name__ == "__main__":
     # export_path = "/home/my_path_choice/"
 
     export_meshes = False
+    export_ao_config = False
 
     # visual shape export flags for debugging
     link_visuals = True
@@ -776,6 +798,12 @@ if __name__ == "__main__":
         action="store_true",
         default=export_meshes,
         help="Export meshes for the link objects. If not set, instead generate the URDF.",
+    )
+    parser.add_argument(
+        "--export-ao-config",
+        action="store_true",
+        default=export_ao_config,
+        help="Export a *.ao_config.json file for the URDF.",
     )
 
     # Debugging flags:
@@ -817,6 +845,7 @@ if __name__ == "__main__":
             #'def_limit_vel': 3, #custom default vel limit for joints
         },
         export_meshes=export_meshes,
+        export_ao_config=export_ao_config,
         link_visuals=not args.no_link_visuals,
         collision_visuals=args.collision_visuals,
         joint_visuals=args.joint_visuals,
