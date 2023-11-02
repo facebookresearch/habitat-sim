@@ -74,7 +74,7 @@ def run_armature_urdf_conversion(blend_file: str, export_path: str, script_path:
     # first export the meshes
     os.system(base_command + " --export-meshes")
     # then export the URDF
-    os.system(base_command + " -- export-ao-config")
+    os.system(base_command + " --export-ao-config")
 
 
 # -----------------------------------------
