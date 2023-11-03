@@ -116,7 +116,7 @@ def get_mesh_heirarchy(
     if is_mesh(mesh_obj) and (
         (is_col_mesh and include_collison)
         or (is_rec_mesh and include_receptacle)
-        or (include_render and not is_col_mesh)
+        or (include_render and not is_col_mesh and not is_rec_mesh)
     ):
         selected_objects.append(mesh_obj)
         if select_set:
@@ -704,7 +704,7 @@ def export(
                     )
         # export receptacle meshes
         for rec_mesh in receptacle_meshes:
-            clear_obj_transform(rec_mesh)
+            clear_obj_transform(rec_mesh.parent)
             deselect_all()
             rec_mesh.select_set(True)
             bpy.ops.export_scene.gltf(
@@ -766,7 +766,8 @@ def export(
             },
         }
         for rec_name, link_name in receptacle_to_link_name.items():
-            ao_config_contents["user_defined"][rec_name] = {
+            rec_label = "receptacle_mesh_" + rec_name
+            ao_config_contents["user_defined"][rec_label] = {
                 "name": rec_name,
                 "parent_object": f"{root_node.name}",
                 "parent_link": link_name,

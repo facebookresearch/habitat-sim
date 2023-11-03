@@ -102,9 +102,7 @@ def find_and_replace_articulated_models_for_config(
                         "translation"
                     ]
                 if "rotation" in object_instance_data:
-                    this_ao_instance_data["rotation"] = object_instance_data[
-                        "translation"
-                    ]
+                    this_ao_instance_data["rotation"] = object_instance_data["rotation"]
                 ao_instance_data.append(this_ao_instance_data)
 
         scene_conf["object_instances"] = modified_object_instance_data
