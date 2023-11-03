@@ -3,6 +3,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import json
+import math
 import os
 import xml.dom.minidom as minidom
 import xml.etree.ElementTree as ET
@@ -10,7 +11,7 @@ from collections import defaultdict
 from typing import Any, Dict, List, Tuple
 
 import bpy
-from mathutils import Quaternion, Vector
+from mathutils import Matrix, Quaternion, Vector
 
 # Colors from https://colorbrewer2.org/
 colors = [
@@ -586,6 +587,31 @@ def get_armature():
     return None
 
 
+def construct_root_rotation_joint(root_node_name):
+    """
+    Construct the root rotation joint XML Element.
+    """
+    xml_root_joint = ET.Element("joint")
+    xml_root_joint.set("name", "root_rotation")
+    xml_root_joint.set("type", "fixed")
+
+    # construct a standard rotation matrix transform to apply to all root nodes
+    M = Matrix.Rotation(math.radians(-90.0), 4, "X")
+    xml_root_joint.append(get_origin_from_matrix(M))
+
+    # create parent node
+    parent_xml_node = ET.Element("parent")
+    parent_xml_node.set("link", "root")
+
+    # create child node
+    child_xml_node = ET.Element("child")
+    child_xml_node.set("link", root_node_name)
+
+    xml_root_joint.append(parent_xml_node)
+    xml_root_joint.append(child_xml_node)
+    return xml_root_joint
+
+
 def export(
     dirpath,
     settings,
@@ -705,6 +731,13 @@ def export(
     # add all the joints and links to the root
     root_xml = ET.Element("robot")  # create <robot name="test_robot">
     root_xml.set("name", armature.name)
+
+    # add a coordinate change in a dummy root node
+    xml_root_link = ET.Element("link")
+    xml_root_link.set("name", "root")
+    xml_root_joint = construct_root_rotation_joint(root_bone.name)
+    root_xml.append(xml_root_link)
+    root_xml.append(xml_root_joint)
 
     root_xml.append(ET.Comment("LINKS"))
     for l in links:
