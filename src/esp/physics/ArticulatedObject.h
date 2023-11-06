@@ -860,10 +860,8 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    */
   std::shared_ptr<metadata::attributes::ArticulatedObjectAttributes>
   getInitializationAttributes() const {
-    if (!initializationAttributes_) {
-      return nullptr;
-    }
-    return initializationAttributes_;
+    return PhysicsObjectBase::getInitializationAttributes<
+        metadata::attributes::ArticulatedObjectAttributes>();
   };
 
  protected:
@@ -897,12 +895,6 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
 
   //! Cache the global scaling from the source model. Set during import.
   float globalScale_ = 1.0;
-
-  /**
-   * @brief Saved attributes when the object was initialized.
-   */
-  metadata::attributes::ArticulatedObjectAttributes::ptr
-      initializationAttributes_ = nullptr;
 
  public:
   ESP_SMART_POINTERS(ArticulatedObject)
