@@ -106,8 +106,14 @@ def find_and_replace_articulated_models_for_config(
                 ao_instance_data.append(this_ao_instance_data)
 
         scene_conf["object_instances"] = modified_object_instance_data
+        scene_conf["articulated_object_instances"] = ao_instance_data
 
     if file_is_modified:
+        filepath = (
+            filepath.split("scenes-uncluttered")[0]
+            + "scenes-articulated-uncluttered"
+            + filepath.split("scenes-uncluttered")[-1]
+        )
         with open(filepath, "w") as f:
             json.dump(scene_conf, f)
 
