@@ -193,6 +193,7 @@ void BulletArticulatedObject::initializeFromURDF(
     }
     // set user config attributes from model.
     setUserAttributes(urdfModel->getUserConfiguration());
+    initializationAttributes_ = urdfModel->getInitializationAttributes();
 
     // in case the base transform is not zero by default
     syncPose();

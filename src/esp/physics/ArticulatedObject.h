@@ -852,6 +852,18 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
         metadata::attributes::SceneAOInstanceAttributes>();
   }
 
+  /**
+   * @brief Get a copy of the template used to initialize this object.
+   *
+   * @return A copy of the @ref esp::metadata::attributes::ArticulatedObjectAttributes
+   * template used to create this object.
+   */
+  std::shared_ptr<metadata::attributes::ArticulatedObjectAttributes>
+  getInitializationAttributes() const {
+    return PhysicsObjectBase::getInitializationAttributes<
+        metadata::attributes::ArticulatedObjectAttributes>();
+  };
+
  protected:
   /**
    * @brief Used to synchronize simulator's notion of the object state

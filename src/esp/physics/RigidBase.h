@@ -302,19 +302,6 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
         metadata::attributes::SceneObjectInstanceAttributes>();
   }
 
-  /** @brief Get a copy of the template used to initialize this object
-   * or scene.
-   * @return A copy of the initialization template used to create this object
-   * instance or nullptr if no template exists.
-   */
-  template <class T>
-  std::shared_ptr<T> getInitializationAttributes() const {
-    if (!initializationAttributes_) {
-      return nullptr;
-    }
-    return T::create(*(static_cast<T*>(initializationAttributes_.get())));
-  }
-
   /** @brief Get the scalar linear damping coefficient of the object. Only used
    * for dervied dynamic implementations of @ref RigidObject.
    * @return The scalar linear damping coefficient of the object.
@@ -378,7 +365,9 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
    * @return The scaling for the object relative to its initially loaded meshes.
    */
   virtual Magnum::Vector3 getScale() const {
-    return initializationAttributes_->getScale();
+    return PhysicsObjectBase::getInitializationAttributes<
+               metadata::attributes::AbstractObjectAttributes>()
+        ->getScale();
   }
 
   /**
@@ -450,12 +439,6 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
    * shape.
    */
   bool isCollidable_ = false;
-
-  /**
-   * @brief Saved attributes when the object was initialized.
-   */
-  metadata::attributes::AbstractObjectAttributes::ptr
-      initializationAttributes_ = nullptr;
 
  public:
   ESP_SMART_POINTERS(RigidBase)

@@ -418,6 +418,17 @@ class Model {
     return initializationAttributes_->getUserConfiguration();
   }
 
+  /**
+   * @brief Get a copy of the template used to initialize this object.
+   *
+   * @return A copy of the @ref esp::metadata::attributes::ArticulatedObjectAttributes
+   * template used to create this object.
+   */
+  std::shared_ptr<metadata::attributes::ArticulatedObjectAttributes>
+  getInitializationAttributes() const {
+    return initializationAttributes_;
+  };
+
  protected:
   /**
    * @brief Json-based attributes defining characteristics of this model not
