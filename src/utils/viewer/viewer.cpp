@@ -256,8 +256,8 @@ class Viewer : public Mn::Platform::Application {
   // exists if a mouse grabbing constraint is active, destroyed on release
   std::unique_ptr<MouseGrabber> mouseGrabber_ = nullptr;
 
-  //! Most recently custom loaded URDF ('t' key)
-  std::string cachedURDF_ = "";
+  //! Most recently custom loaded URDF or AO_config.json ('t' key)
+  std::string cachedAOConfig_ = "";
 
   /**
    * @brief Instance an object from an ObjectAttributes.
