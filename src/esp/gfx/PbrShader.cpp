@@ -40,7 +40,7 @@ namespace Cr = Corrade;
 namespace esp {
 namespace gfx {
 
-using namespace Cr::Containers::Literals;
+using Cr::Containers::Literals::operator""_s;
 PbrShader::PbrShader(const Configuration& config)
     : flags_(config.flags()),
       lightCount_(config.lightCount()),
