@@ -1110,6 +1110,8 @@ void Viewer::initSimPostReconfigure() {
   defaultAgent_ = simulator_->getAgent(defaultAgentId_);
   agentBodyNode_ = &defaultAgent_->node();
   renderCamera_ = getAgentCamera().getRenderCamera();
+  // Refresh local simConfig_ to track results from scene load
+  simConfig_ = MM_->getSimulatorConfiguration();
   timeline_.start();
 }  // initSimPostReconfigure
 
