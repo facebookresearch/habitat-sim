@@ -155,15 +155,14 @@ PbrShader::PbrShader(const Configuration& config)
         "#define JOINT_COUNT {}\n"
         "#define PER_VERTEX_JOINT_COUNT {}u\n"
         "#define SECONDARY_PER_VERTEX_JOINT_COUNT {}u\n"
-#ifndef MAGNUM_TARGET_GLES
+#ifndef MAGNUM_TARGET_WEBGL
         "#define JOINT_MATRIX_INITIALIZER {}\n"
 #endif
         ,
         jointCount_, perVertexJointCount_, secondaryPerVertexJointCount_,
-#ifndef MAGNUM_TARGET_GLES
+#ifndef MAGNUM_TARGET_WEBGL
         ("mat4(1.0), "_s * jointCount_).exceptSuffix(2)
 #endif
-
             ));
   }
 

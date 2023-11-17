@@ -51,7 +51,7 @@ enum {
   HbaoRandomNumElements = HbaoRandomSize * HbaoRandomSize
 };
 
-#ifndef MAGNUM_TARGET_GLES
+#ifndef MAGNUM_TARGET_WEBGL
 constexpr Mn::GL::Version GlslVersion = Mn::GL::Version::GL330;
 #else
 constexpr Mn::GL::Version GlslVersion = Mn::GL::Version::GLES300;
