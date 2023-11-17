@@ -89,7 +89,7 @@ void main() {
 // Build skin transformation matrix
 // See Magnum phong.vert for source of this code
 #ifdef JOINT_COUNT
-  mediump const uint jointOffset = uint(gl_InstanceID) * perInstanceJointCount;
+  mediump uint jointOffset = uint(gl_InstanceID) * perInstanceJointCount;
   mat4 skinMatrix = mat4(0.0);
 #if PER_VERTEX_JOINT_COUNT
   for (uint i = 0u; i != PER_VERTEX_JOINT_COUNT

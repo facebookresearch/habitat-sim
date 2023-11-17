@@ -7,6 +7,7 @@
 
 #include <Corrade/Containers/Array.h>
 #include <Corrade/Containers/Reference.h>
+#include <Corrade/Containers/StringView.h>
 #include <Corrade/Utility/Assert.h>
 #include <Corrade/Utility/Debug.h>
 #include <Corrade/Utility/DebugStl.h>
@@ -39,6 +40,7 @@ namespace Cr = Corrade;
 namespace esp {
 namespace gfx {
 
+using namespace Cr::Containers::Literals;
 PbrShader::PbrShader(const Configuration& config)
     : flags_(config.flags()),
       lightCount_(config.lightCount()),
@@ -152,8 +154,17 @@ PbrShader::PbrShader(const Configuration& config)
     vert.addSource(Cr::Utility::format(
         "#define JOINT_COUNT {}\n"
         "#define PER_VERTEX_JOINT_COUNT {}u\n"
-        "#define SECONDARY_PER_VERTEX_JOINT_COUNT {}u\n",
-        jointCount_, perVertexJointCount_, secondaryPerVertexJointCount_));
+        "#define SECONDARY_PER_VERTEX_JOINT_COUNT {}u\n"
+#ifndef MAGNUM_TARGET_GLES
+        "#define JOINT_MATRIX_INITIALIZER {}\n"
+#endif
+        ,
+        jointCount_, perVertexJointCount_, secondaryPerVertexJointCount_,
+#ifndef MAGNUM_TARGET_GLES
+        ("mat4(1.0), "_s * jointCount_).exceptSuffix(2)
+#endif
+
+            ));
   }
 
   vert.addSource(rs.getString("pbr.vert"));

@@ -925,6 +925,8 @@ void BulletPhysicsManager::instantiateSkinnedModel(
     const std::string& lightSetupKey) {
   // load associated skinned mesh
   assets::AssetInfo assetInfo = assets::AssetInfo::fromPath(renderAssetPath);
+  assetInfo.forceFlatShading = false;
+  assetInfo.shaderTypeToUse = artObjAttributes->getShaderType();
   assets::RenderAssetInstanceCreationInfo creationInfo;
   creationInfo.filepath = renderAssetPath;
   creationInfo.lightSetupKey = lightSetupKey;
