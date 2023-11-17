@@ -722,11 +722,6 @@ class ResourceManager {
   Mn::Trade::MaterialData buildDefaultMaterial();
 
   /**
-   * @brief Build a default Phong material.
-   */
-  Mn::Trade::MaterialData buildDefaultPhongMaterial();
-
-  /**
    * @brief Define and set user-defined attributes for the passed
    * @ref Magnum::Trade::MaterialData.
    * @param material The material to initialize with the expected
