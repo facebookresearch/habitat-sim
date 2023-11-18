@@ -157,7 +157,7 @@ def print_dict_structure(input_dict: Dict[Any, Any], whitespace: str = "") -> No
     if whitespace == "":
         print("-----------------------------------")
         print("Print Dict Structure Results:")
-    for key in input_dict.keys():
+    for key in input_dict:
         if isinstance(input_dict[key], Dict):
             print(whitespace + f"{key}:-")
             print_dict_structure(
@@ -1041,7 +1041,7 @@ class CollisionProxyOptimizer:
                 )
 
             # collect hemisphere raycast samples for all receptacle sample points
-            for receptacle_name in obj_rec_data.keys():
+            for receptacle_name in obj_rec_data:
                 sample_point_ray_results: List[
                     List[habitat_sim.physics.RaycastResults]
                 ] = []
@@ -1251,7 +1251,7 @@ class CollisionProxyOptimizer:
 
             # evaluation the sample points for each receptacle
             rec_data = self.gt_data[obj_handle]["receptacles"]
-            for rec_name in rec_data.keys():
+            for rec_name in rec_data:
                 sample_points = rec_data[rec_name]["sample_points"]
 
                 failed_snap = 0
@@ -1294,8 +1294,10 @@ class CollisionProxyOptimizer:
                             ).length()
                             # NOTE: negative quaternion represents the same rotation, but gets a different angle error so check both
                             angular_displacement = min(
-                                mn.math.angle(cyl_test_obj.rotation, identity_q),
-                                mn.math.angle(-1 * cyl_test_obj.rotation, identity_q),
+                                mn.math.half_angle(cyl_test_obj.rotation, identity_q),
+                                mn.math.half_angle(
+                                    -1 * cyl_test_obj.rotation, identity_q
+                                ),
                             )
                             if (
                                 angular_displacement > rotation_limit
@@ -1642,7 +1644,7 @@ class CollisionProxyOptimizer:
             "gt" in self.gt_data[obj_handle]["raycasts"]
         ), "Must have a ground truth to compare against. Should be generated in `setup_obj_gt(obj_handle)`."
 
-        for shape_id in self.gt_data[obj_handle]["raycasts"].keys():
+        for shape_id in self.gt_data[obj_handle]["raycasts"]:
             self.setup_shape_test_results_cache(obj_handle, shape_id)
             if (
                 shape_id != "gt"
@@ -1905,7 +1907,7 @@ class CollisionProxyOptimizer:
         settings_key = method + "_settings"
         best_shape_score = pr0_shape_score
         shape_scores = {}
-        for shape_id in self.gt_data[obj_h][settings_key].keys():
+        for shape_id in self.gt_data[obj_h][settings_key]:
             shape_score = self.compute_shape_score(obj_h, shape_id)
             shape_scores[shape_id] = shape_score
             # we only want significantly better shapes (10% or 0.1 score better threshold)
@@ -1949,7 +1951,7 @@ class CollisionProxyOptimizer:
         Do this after an object's computation is done (compute_gt_errors) before cleaning the gt data.
         """
 
-        for obj_handle in self.gt_data.keys():
+        for obj_handle in self.gt_data:
             # populate the high-level sub-cache definitions
             if obj_handle not in self.results:
                 self.results[obj_handle] = {
@@ -2046,9 +2048,9 @@ class CollisionProxyOptimizer:
         active_shape_metrics = []
         for _obj_handle, obj_results in self.results.items():
             for _shape_id, shape_results in obj_results["shape_metrics"].items():
-                for metric in shape_results.keys():
+                for metric in shape_results:
                     if metric == "col_grid":
-                        for subdiv in shape_results["col_grid"].keys():
+                        for subdiv in shape_results["col_grid"]:
                             if subdiv not in active_subdivs:
                                 active_subdivs.append(subdiv)
                     else:
@@ -2099,7 +2101,7 @@ class CollisionProxyOptimizer:
         for _obj_handle, obj_results in self.results.items():
             for _rec_name, rec_results in obj_results["receptacle_metrics"].items():
                 for _shape_id, shape_results in rec_results.items():
-                    for metric in shape_results.keys():
+                    for metric in shape_results:
                         if metric not in active_rec_metrics:
                             active_rec_metrics.append(metric)
 
@@ -2286,7 +2288,7 @@ def correct_object_orientations(
     :param obj_orientations: A dict mapping object names (abridged, not handles) to Tuple of (up,front) orientation vectors.
     """
     obj_handle_to_orientation = {}
-    for obj_name in obj_orientations.keys():
+    for obj_name in obj_orientations:
         for obj_handle in obj_handles:
             if obj_name in obj_handle:
                 obj_handle_to_orientation[obj_handle] = obj_orientations[obj_name]
@@ -2559,7 +2561,7 @@ def main():
             # intercept optimization to instead export a txt file with model ids for import into the model categorizer tool
             with open(args.export_fp_model_ids, "w") as f:
                 aggregated_object_ids = []
-                for _, scene_objects in scene_object_handles.items():
+                for scene_objects in scene_object_handles.values():
                     rec_obj_in_scene = [
                         scene_objects[i]
                         for i in range(len(scene_objects))

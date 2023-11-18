@@ -16,6 +16,7 @@ sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 import habitat.articulated_agents.robots.spot_robot as spot_robot
 import magnum as mn
 import numpy as np
+from habitat.datasets.rearrange.navmesh_utils import get_largest_island_index
 from magnum import shaders, text
 from magnum.platform.glfw import Application
 from omegaconf import DictConfig
@@ -362,11 +363,19 @@ class HabitatSimInteractiveViewer(Application):
 
     def place_spot(self):
         if self.sim.pathfinder.is_loaded:
+            largest_island_ix = get_largest_island_index(
+                pathfinder=self.sim.pathfinder,
+                sim=self.sim,
+                allow_outdoor=False,
+            )
+            print(f"Largest indoor island index = {largest_island_ix}")
             valid_spot_point = None
             max_attempts = 1000
             attempt = 0
             while valid_spot_point is None and attempt < max_attempts:
-                spot_point = self.sim.pathfinder.get_random_navigable_point()
+                spot_point = self.sim.pathfinder.get_random_navigable_point(
+                    island_index=largest_island_ix
+                )
                 if self.sim.pathfinder.distance_to_closest_obstacle(spot_point) >= 0.25:
                     valid_spot_point = spot_point
                 attempt += 1
