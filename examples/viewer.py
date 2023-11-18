@@ -1825,11 +1825,11 @@ def init_cpo_for_scene(sim_settings, mm: habitat_sim.metadata.MetadataMediator):
         _cpo.compute_receptacle_access_metrics(obj_handle, use_gt=False)
 
     # run CPO initialization multi-threaded to unblock viewer initialization and use
-    import threading
 
     threads = []
     for obj_handle in objects_in_scene:
-        threads.append(threading.Thread(target=run_cpo_for_obj, args=(obj_handle,)))
+        run_cpo_for_obj(obj_handle)
+        # threads.append(threading.Thread(target=run_cpo_for_obj, args=(obj_handle,)))
     for thread in threads:
         thread.start()
 
