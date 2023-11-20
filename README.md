@@ -45,7 +45,7 @@ https://user-images.githubusercontent.com/2941091/126080914-36dc8045-01d4-4a68-8
 
 
 ## Citing Habitat
-If you use the Habitat platform in your research, please cite the [Habitat 1.0](https://arxiv.org/abs/1904.01201, [Habitat 2.0](https://arxiv.org/abs/2106.14405), and [Habitat 3.0](https://arxiv.org/abs/2310.13724) papers:
+If you use the Habitat platform in your research, please cite the [Habitat 1.0](https://arxiv.org/abs/1904.01201), [Habitat 2.0](https://arxiv.org/abs/2106.14405), and [Habitat 3.0](https://arxiv.org/abs/2310.13724) papers:
 
 ```
 @misc{puig2023habitat3,
