@@ -385,6 +385,11 @@ void AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad(
                                       std::string(fileString).substr(3))
             : Cr::Utility::Path::join(configDir, fileString);
 
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+        << "<" << this->objectType_ << "> : Config dir : " << configDir
+        << " : filePaths[" << i << "] : " << filePaths[i].GetString()
+        << " | Constructed File Path : " << dsFilePath;
+
     std::vector<std::string> globPaths = io::globDirs(dsFilePath);
     if (globPaths.size() > 0) {
       for (const auto& globPath : globPaths) {

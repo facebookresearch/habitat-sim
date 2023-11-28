@@ -2162,7 +2162,7 @@ Mn::Trade::MaterialData createUniversalMaterial(
   Mn::Trade::MaterialData newMaterialData{flags, std::move(newAttributes)};
 
   return newMaterialData;
-}  // namespace
+}  // createUniversalMaterial
 
 }  // namespace
 
@@ -2180,17 +2180,6 @@ Mn::Trade::MaterialData ResourceManager::buildDefaultMaterial() {
        {Mn::Trade::MaterialAttribute::Roughness, 0.3f}}};
   return materialData;
 }  // ResourceManager::buildDefaultMaterial
-
-// Specifically for building materials that relied on old defaults
-Mn::Trade::MaterialData ResourceManager::buildDefaultPhongMaterial() {
-  Mn::Trade::MaterialData materialData{
-      Mn::Trade::MaterialType::Phong,
-      {{Mn::Trade::MaterialAttribute::AmbientColor, Mn::Color4{0.1}},
-       {Mn::Trade::MaterialAttribute::DiffuseColor, Mn::Color4{0.7 * 0.175}},
-       {Mn::Trade::MaterialAttribute::SpecularColor, Mn::Color4{0.2 * 0.175}},
-       {Mn::Trade::MaterialAttribute::Shininess, 80.0f}}};
-  return materialData;
-}  // ResourceManager::buildDefaultPhongMaterial
 
 Mn::Trade::MaterialData ResourceManager::setMaterialDefaultUserAttributes(
     const Mn::Trade::MaterialData& material,
@@ -2308,17 +2297,13 @@ void ResourceManager::initDefaultMaterials() {
                                               std::move(vertIdMaterialData));
 
   // Build default material for fallback material
-  // TODO: Skinning only works with Phong.
-  //       The default material is loaded when the simulation is only using
-  //       depth sensors. We set the fallback as Phong to avoid breaking
-  //       skinning with depth sensors.
-  auto fallBackMaterial = buildDefaultPhongMaterial();
+  Mn::Trade::MaterialData fallbackMaterial = buildDefaultMaterial();
   // Set expected user-defined attributes
-  fallBackMaterial = setMaterialDefaultUserAttributes(
-      fallBackMaterial, ObjectInstanceShaderType::Phong);
+  fallbackMaterial = setMaterialDefaultUserAttributes(
+      fallbackMaterial, ObjectInstanceShaderType::Flat);
   // Add to shaderManager as fallback material
   shaderManager_.setFallback<Mn::Trade::MaterialData>(
-      std::move(fallBackMaterial));
+      std::move(fallbackMaterial));
 }  // ResourceManager::initDefaultMaterials
 
 void ResourceManager::loadMaterials(Importer& importer,
