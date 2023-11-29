@@ -634,6 +634,10 @@ def export(
     links = []
     joints = []
 
+    # check poll() to avoid exception.
+    if bpy.ops.object.mode_set.poll():
+        bpy.ops.object.mode_set(mode="OBJECT")
+
     # get the armature
     armature = settings.get("armature")
     if armature is None:
