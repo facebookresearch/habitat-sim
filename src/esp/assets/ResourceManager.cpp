@@ -2270,10 +2270,10 @@ void ResourceManager::initDefaultMaterials() {
   fallbackMaterial.mutableAttribute<Mn::Color4>(
       Mn::Trade::MaterialAttribute::SpecularColor) =
       Mn::Color4{1.0f, 0.0f, 1.0f, 1.0f};
-  // Set expected user-defined attributes - specify Phong shader to use
+  // Set expected user-defined attributes - specify Flat shader to use since
+  // this indicates that the asset did not load a material for some reason.
   fallbackMaterial = setMaterialDefaultUserAttributes(
-      fallbackMaterial, ObjectInstanceShaderType::Phong, false, false, -1,
-      true);
+      fallbackMaterial, ObjectInstanceShaderType::Flat, false, false, -1, true);
   // Add to shaderManager as fallback material
   shaderManager_.setFallback<Mn::Trade::MaterialData>(
       std::move(fallbackMaterial));
