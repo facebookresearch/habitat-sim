@@ -53,6 +53,17 @@ AXIS_NODE_FORMAT = lambda: ET.fromstring('<axis xyz="0 0 0" />')
 BASE_LIMIT_NODE_STR = None
 
 
+def round_scales(keyword: str = "collision"):
+    """
+    Rounds shape scale vectors to 4 decimal points (millimeter) accuracy. E.g. to eliminate small mismatches in collision shape scale.
+    Use 'keyword' to discriminate between shape types.
+    """
+    for obj in bpy.context.scene.objects:
+        if keyword in obj.name:
+            for i in range(3):  # Iterate over X, Y, Z
+                obj.scale[i] = round(obj.scale[i], 4)
+
+
 def set_base_limit_str(effort, velocity):
     """
     Default effort and velocity limits for Joints.
@@ -685,6 +696,9 @@ def export(
     if "joint_name_format" in settings:
         JOINT_NAME_FORMAT = settings["joint_name_format"]
 
+    if "round_collision_scales" in settings and settings["round_collision_scales"]:
+        round_scales()
+
     # set the defaults to 100 T units and 3 units/sec (meters or radians)
     effort, velocity = (100, 3)
     if "def_limit_effort" in settings:
@@ -850,6 +864,7 @@ if __name__ == "__main__":
 
     export_meshes = False
     export_ao_config = False
+    round_collision_scales = False
 
     # visual shape export flags for debugging
     link_visuals = True
@@ -918,6 +933,12 @@ if __name__ == "__main__":
         default=receptacle_visuals,
         help="Include visual mesh shapes for receptacles in the exported URDF. E.g. for debugging.",
     )
+    parser.add_argument(
+        "--round-collision-scales",
+        action="store_true",
+        default=round_collision_scales,
+        help="Round all scale elements for collision shapes to 4 decimal points (millimeter accuracy).",
+    )
 
     args = parser.parse_args(py_argv)
 
@@ -935,6 +956,7 @@ if __name__ == "__main__":
         export_path,
         {
             "armature": get_armature(),
+            "round_collision_scales": args.round_collision_scales
             #'def_limit_effort': 100, #custom default effort limit for joints
             #'def_limit_vel': 3, #custom default vel limit for joints
         },
