@@ -444,7 +444,7 @@ while total_frames < max_frames:
 # In the previous sections, we took navigation constraints and collision response for granted. By default, this is enabled in the discrete Habitat-sim action space we demonstrated. However, when directly modifying the agent state, the agent will sense neither the obstacles nor the boundary of the scene when taking actions. We need to introduce a mechanism, light and fast, to enforce such constraints. This section will provide more details on that method
 
 # %% [markdown]
-# Habitat-sim provides pathfinding and navigability constraints via integration with [Recast Navigation | Detour](https://masagroup.github.io/recastdetour/) through the [nav module](https://aihabitat.org/docs/habitat-sim/habitat_sim.nav.html).
+# Habitat-sim provides pathfinding and navigability constraints via integration with [Recast Navigation | Detour](https://github.com/recastnavigation/recastnavigation) through the [nav module](https://aihabitat.org/docs/habitat-sim/habitat_sim.nav.html).
 #
 # This tutorial section demonstrates loading, recomputing, and saving a NavMesh for a static scene as well as using it explicitly for discrete and continuous navigation tasks.
 #
@@ -457,7 +457,7 @@ while total_frames < max_frames:
 # %% [markdown]
 # A navigation mesh (NavMesh) is a collection of two-dimensional convex polygons (i.e., a polygon mesh) that define which areas of an environment are traversable by an agent with a particular embodiement. In other words, an agent could freely navigate around within these areas unobstructed by objects, walls, gaps, overhangs, or other barriers that are part of the environment. Adjacent polygons are connected to each other in a graph enabling efficient pathfinding algorithms to chart routes between points on the NavMesh as visualized below.
 # <div>
-# <img src="http://1.bp.blogspot.com/_-u6ZJlBFOL0/SkPKYlDhciI/AAAAAAAAABg/7XJWpa7QIzU/s1600-h/Picture+16.png" width="300"/>
+# <img src="https://github.com/recastnavigation/recastnavigation/raw/main/Docs/Images/screenshot.png" width="300"/>
 # </div>
 #
 # Using a NavMesh approximation of navigability, an agent is embodied as a rigid cylinder aligned with the gravity direction. The NavMesh is then computed by voxelizing the static scene and generating polygons on the top surfaces of solid voxels where the cylinder would sit without intersection or overhanging and respecting configured constraints such as maximum climbable slope and step-height.
