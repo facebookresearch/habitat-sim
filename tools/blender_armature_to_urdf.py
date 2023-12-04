@@ -64,6 +64,17 @@ def round_scales(keyword: str = "collision"):
                 obj.scale[i] = round(obj.scale[i], 4)
 
 
+def fix_scales(keyword: str = "collision"):
+    """
+    Flips negative scales for shapes. (E.g. collision shapes should not have negative scaling)
+    Use 'keyword' to discriminate between shape types.
+    """
+    for obj in bpy.context.scene.objects:
+        if keyword in obj.name:
+            for i in range(3):  # Iterate over X, Y, Z
+                obj.scale[i] = abs(obj.scale[i])
+
+
 def set_base_limit_str(effort, velocity):
     """
     Default effort and velocity limits for Joints.
@@ -699,6 +710,9 @@ def export(
     if "round_collision_scales" in settings and settings["round_collision_scales"]:
         round_scales()
 
+    if "fix_collision_scales" in settings and settings["fix_collision_scales"]:
+        fix_scales()
+
     # set the defaults to 100 T units and 3 units/sec (meters or radians)
     effort, velocity = (100, 3)
     if "def_limit_effort" in settings:
@@ -865,6 +879,7 @@ if __name__ == "__main__":
     export_meshes = False
     export_ao_config = False
     round_collision_scales = False
+    fix_collision_scales = False
 
     # visual shape export flags for debugging
     link_visuals = True
@@ -939,6 +954,12 @@ if __name__ == "__main__":
         default=round_collision_scales,
         help="Round all scale elements for collision shapes to 4 decimal points (millimeter accuracy).",
     )
+    parser.add_argument(
+        "--fix-collision-scales",
+        action="store_true",
+        default=fix_collision_scales,
+        help="Flip all negative scale elements for collision shapes.",
+    )
 
     args = parser.parse_args(py_argv)
 
@@ -956,7 +977,8 @@ if __name__ == "__main__":
         export_path,
         {
             "armature": get_armature(),
-            "round_collision_scales": args.round_collision_scales
+            "round_collision_scales": args.round_collision_scales,
+            "fix_collision_scales": args.fix_collision_scales,
             #'def_limit_effort': 100, #custom default effort limit for joints
             #'def_limit_vel': 3, #custom default vel limit for joints
         },
