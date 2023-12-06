@@ -437,6 +437,8 @@ Key Commands:
     }
   }
 
+  float timeSinceLastSimulation_ = 0.0;
+
   /**
    * @brief vector holding past agent locations to build trajectory
    * visualization
@@ -1113,6 +1115,7 @@ void Viewer::initSimPostReconfigure() {
   // Refresh local simConfig_ to track results from scene load
   simConfig_ = MM_->getSimulatorConfiguration();
   timeline_.start();
+  timeSinceLastSimulation_ = 0.0;
 }  // initSimPostReconfigure
 
 void Viewer::switchCameraType() {
@@ -1538,7 +1541,6 @@ void Viewer::setSensorVisID() {
       sensorVisID_);
 }  // Viewer::setSensorVisID
 
-float timeSinceLastSimulation = 0.0;
 void Viewer::drawEvent() {
   // Wrap profiler measurements around all methods to render images from
   // RenderCamera
@@ -1547,12 +1549,12 @@ void Viewer::drawEvent() {
                                    Mn::GL::FramebufferClear::Depth);
 
   // Agent actions should occur at a fixed rate per second
-  timeSinceLastSimulation += timeline_.previousFrameDuration();
-  int numAgentActions = timeSinceLastSimulation * agentActionsPerSecond;
+  timeSinceLastSimulation_ += timeline_.previousFrameDuration();
+  int numAgentActions = timeSinceLastSimulation_ * agentActionsPerSecond;
   moveAndLook(numAgentActions);
 
   // occasionally a frame will pass quicker than 1/60 seconds
-  if (timeSinceLastSimulation >= 1.0 / 60.0) {
+  if (timeSinceLastSimulation_ >= 1.0 / 60.0) {
     if (simulating_ || simulateSingleStep_) {
       // step physics at a fixed rate
       // In the interest of frame rate, only a single step is taken,
@@ -1565,7 +1567,7 @@ void Viewer::drawEvent() {
       }
     }
     // reset timeSinceLastSimulation, accounting for potential overflow
-    timeSinceLastSimulation = fmod(timeSinceLastSimulation, 1.0 / 60.0);
+    timeSinceLastSimulation_ = fmod(timeSinceLastSimulation_, 1.0 / 60.0);
   }
 
   uint32_t visibles = renderCamera_->getPreviousNumVisibleDrawables();
