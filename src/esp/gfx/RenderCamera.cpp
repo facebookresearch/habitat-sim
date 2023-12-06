@@ -207,12 +207,13 @@ esp::geo::Ray RenderCamera::unproject(const Mn::Vector2i& viewportPosition,
       2 * Magnum::Vector2{viewPos} / Magnum::Vector2{viewport()} -
           Magnum::Vector2{1.0f},
       1.0};
-  const auto projMat = projectionMatrix();
+  const Mn::Matrix4 projMat = projectionMatrix();
 
   // compute the far plane distance
   // If projMat[3][3] == 0 then perpsective, otherwise ortho
-  auto farDistance = (projMat[3][3] == 0 ? projMat.perspectiveProjectionFar()
-                                         : projMat.orthographicProjectionFar());
+  const Mn::Float farDistance =
+      (projMat[3][3] == 0 ? projMat.perspectiveProjectionFar()
+                          : projMat.orthographicProjectionFar());
 
   ray.direction =
       ((object().absoluteTransformationMatrix() * invertedProjectionMatrix)
