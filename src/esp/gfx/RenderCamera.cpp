@@ -210,7 +210,7 @@ esp::geo::Ray RenderCamera::unproject(const Mn::Vector2i& viewportPosition,
   const Mn::Matrix4 projMat = projectionMatrix();
 
   // compute the far plane distance
-  // If projMat[3][3] == 0 then perpsective, otherwise ortho
+  // If projMat[3][3] == 0 then perspective, otherwise ortho
   const Mn::Float farDistance =
       (projMat[3][3] == 0 ? projMat.perspectiveProjectionFar()
                           : projMat.orthographicProjectionFar());
