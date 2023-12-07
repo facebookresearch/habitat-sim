@@ -421,8 +421,8 @@ class HabitatSimInteractiveViewer(Application):
             for sensor_uuid, sensor in sensor_suite.items():
                 transform = sensor._sensor_object.node.absolute_transformation()
                 self.replay_renderer.set_sensor_transform(i, sensor_uuid, transform)
-            # Render
-            self.replay_renderer.render(mn.gl.default_framebuffer)
+        # Render
+        self.replay_renderer.render(mn.gl.default_framebuffer)
 
     def move_and_look(self, repetitions: int) -> None:
         """
