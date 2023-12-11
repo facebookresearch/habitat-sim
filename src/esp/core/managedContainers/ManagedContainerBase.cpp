@@ -93,12 +93,13 @@ std::vector<std::string> getHandlesBySubStringPerTypeInternal(
              mapOfHandles.begin();
          iter != mapOfHandles.end(); ++iter) {
       std::string rawKey = std::get<Idx>(*iter);
-      std::string key = Cr::Utility::String::lowercase(rawKey);
       // be sure that key is big enough to search in (otherwise find has
       // undefined behavior)
-      if (key.length() < strSize) {
+      if (rawKey.length() < strSize) {
         continue;
       }
+      std::string key = Cr::Utility::String::lowercase(rawKey);
+
       bool found = (std::string::npos != key.find(strToLookFor));
       if (found == contains) {
         // if found and searching for contains, or not found and searching for
