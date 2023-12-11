@@ -358,6 +358,23 @@ class MetadataMediator {
   }  // getNamedObjectAttributesCopy
 
   /**
+   * @brief Returns articulated object attributes corresponding to passed handle
+   * as substring. Assumes articulated object attributes with @p artObjAttrName
+   * as substring exists in current dataset.
+   * @param artObjAttrName substring to handle of articulated object instance
+   * attributes that exists in current active dataset. The attributes will be
+   * found via substring search, so the name is expected to be sufficiently
+   * restrictive to have exactly 1 match in dataset.
+   * @return smart pointer to articulated object attributes if exists, nullptr
+   * otherwise.
+   */
+  attributes::ArticulatedObjectAttributes::ptr
+  getNamedArticulatedObjectAttributesCopy(const std::string& artObjAttrName) {
+    return getActiveDSAttribs()->getNamedArticulatedObjectAttributesCopy(
+        artObjAttrName);
+  }  // getNamedArticulatedObjectAttributesCopy
+
+  /**
    * @brief Returns a lightsetup object configured by the attributes whose
    * handle contains the passed @p lightSetupName
    * @param lightSetupName Name of the attributes to be used to build the

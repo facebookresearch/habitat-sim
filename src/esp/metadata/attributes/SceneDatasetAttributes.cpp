@@ -31,7 +31,7 @@ SceneDatasetAttributes::SceneDatasetAttributes(
 bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
     const attributes::SceneInstanceAttributes::ptr& sceneInstance) {
   // info display message prefix
-  std::string infoPrefix = Cr::Utility::formatString(
+  const std::string infoPrefix = Cr::Utility::formatString(
       "Dataset : '{}' : ", this->getSimplifiedHandle());
 
   const std::string sceneInstanceName = sceneInstance->getHandle();
@@ -39,16 +39,15 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
   // and if not, add it.
   const auto& stageInstance = sceneInstance->getStageInstance();
   const std::string stageHandle = stageInstance->getHandle();
-  const std::string fullStageName =
-      getFullAttrNameFromStr(stageHandle, stageAttributesManager_);
-  if (fullStageName == "") {
-    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+  // Check if present and if not create default.
+  if (stageAttributesManager_->getFullAttrNameFromStr(stageHandle) == "") {
+    ESP_WARNING(Mn::Debug::Flag::NoSpace)
         << infoPrefix << "Stage Attributes '" << stageHandle
-        << "' specified in Scene Attributes but does not exist in dataset, so "
-           "creating.";
+        << "' specified in Scene Attributes but does not exist in dataset, "
+           "so creating default.";
     stageAttributesManager_->createObject(stageHandle, true);
   } else {
-    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
         << infoPrefix << "Stage Attributes '" << stageHandle
         << "' specified in Scene Attributes exists in dataset library.";
   }
@@ -57,17 +56,35 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
   auto objectInstances = sceneInstance->getObjectInstances();
   for (const auto& objInstance : objectInstances) {
     const std::string objHandle = objInstance->getHandle();
-    const std::string fullObjHandle =
-        getFullAttrNameFromStr(objHandle, objectAttributesManager_);
-    if (fullObjHandle == "") {
-      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+    if (objectAttributesManager_->getFullAttrNameFromStr(objHandle) == "") {
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
           << infoPrefix << "Object Attributes '" << objHandle
-          << "' specified in Scene Attributes but does not exist in "
-             "dataset, so creating.";
+          << "' specified in Scene Attributes but does not exist in dataset, "
+             "so creating default.";
+
       objectAttributesManager_->createObject(objHandle, true);
     } else {
-      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+      ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
           << infoPrefix << "Object Attributes '" << objHandle
+          << "' specified in Scene Attributes exists in dataset library.";
+    }
+  }
+  // verify each articulated object in sceneInstance exists in
+  // SceneDatasetAttributes
+  auto artObjectInstances = sceneInstance->getArticulatedObjectInstances();
+  for (const auto& artObjInstance : artObjectInstances) {
+    const std::string artObjHandle = artObjInstance->getHandle();
+
+    // Check if present and if not create default.
+    if (artObjAttributesManager_->getFullAttrNameFromStr(artObjHandle) == "") {
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << infoPrefix << "Articulated Object Attributes '" << artObjHandle
+          << "' specified in Scene Attributes but does not exist in dataset, "
+             "so creating default.";
+      artObjAttributesManager_->createObject(artObjHandle, true);
+    } else {
+      ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+          << infoPrefix << "Articulated Object Attributes '" << artObjHandle
           << "' specified in Scene Attributes exists in dataset library.";
     }
   }
@@ -81,29 +98,31 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
   if (lightHandle.empty()) {
     lightHandle = sceneInstanceName;
   }
-
-  const std::string fullLightLayoutAttrName =
-      getFullAttrNameFromStr(lightHandle, lightLayoutAttributesManager_);
-  if (fullLightLayoutAttrName == "") {
-    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+  // Check if lighting attributes specified is present and if not create
+  // default.
+  if (lightLayoutAttributesManager_->getFullAttrNameFromStr(lightHandle) ==
+      "") {
+    ESP_WARNING(Mn::Debug::Flag::NoSpace)
         << infoPrefix << "Lighting Layout Attributes '" << lightHandle
-        << "' specified in Scene Attributes but does not exist in dataset, so "
-           "creating.";
+        << "' specified in Scene Attributes but does not exist in dataset, "
+           "so creating default.";
     lightLayoutAttributesManager_->createObject(lightHandle, true);
   } else {
-    ESP_DEBUG() << infoPrefix << "Lighting Layout Attributes" << lightHandle
-                << "specified in Scene Attributes exists in dataset library.";
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+        << infoPrefix << "Lighting Layout Attributes '" << lightHandle
+        << "' specified in Scene Attributes exists in dataset library.";
   }
 
-  const std::string fullSceneInstanceName = getFullAttrNameFromStr(
-      sceneInstanceName, sceneInstanceAttributesManager_);
-
+  const std::string fullSceneInstanceName =
+      sceneInstanceAttributesManager_->getFullAttrNameFromStr(
+          sceneInstanceName);
   // add scene attributes to scene attributes manager
   if (fullSceneInstanceName == "") {
-    ESP_DEBUG() << infoPrefix << "Scene Attributes" << sceneInstanceName
-                << "does not exist in dataset so adding.";
+    ESP_VERY_VERBOSE() << infoPrefix << "Scene Attributes" << sceneInstanceName
+                       << "does not exist in dataset so adding.";
     sceneInstanceAttributesManager_->registerObject(sceneInstance);
   }
+
   return true;
 }  // SceneDatasetAttributes::addSceneInstanceToDataset
 
@@ -168,7 +187,7 @@ SceneDatasetAttributes::getNamedStageAttributesCopy(
   // do a substring search to find actual stage attributes and return first
   // attributes found; if does not exist, name will be empty. return nullptr
   auto fullStageName =
-      getFullAttrNameFromStr(stageAttrName, stageAttributesManager_);
+      stageAttributesManager_->getFullAttrNameFromStr(stageAttrName);
   // fullStageName will be empty if not found
   if (fullStageName == "") {
     return nullptr;
@@ -182,13 +201,27 @@ SceneDatasetAttributes::getNamedObjectAttributesCopy(
   // do a substring search to find actual object attributes and return first
   // attributes found; if does not exist, name will be empty. return nullptr
   auto fullObjName =
-      getFullAttrNameFromStr(objAttrName, objectAttributesManager_);
+      objectAttributesManager_->getFullAttrNameFromStr(objAttrName);
   // fullObjName will be empty if not found
   if (fullObjName == "") {
     return nullptr;
   }
   return objectAttributesManager_->getObjectCopyByHandle(fullObjName);
 }  // SceneDatasetAttributes::getNamedObjectAttributesCopy
+
+attributes::ArticulatedObjectAttributes::ptr
+SceneDatasetAttributes::getNamedArticulatedObjectAttributesCopy(
+    const std::string& artObjAttrName) {
+  // do a substring search to find actual object attributes and return first
+  // attributes found; if does not exist, name will be empty. return nullptr
+  auto fullArtObjName =
+      artObjAttributesManager_->getFullAttrNameFromStr(artObjAttrName);
+  // fullObjName will be empty if not found
+  if (fullArtObjName == "") {
+    return nullptr;
+  }
+  return artObjAttributesManager_->getObjectCopyByHandle(fullArtObjName);
+}  // SceneDatasetAttributes::getNamedArticulatedObjectAttributesCopy
 
 namespace {
 
