@@ -11,10 +11,21 @@
 
 #include "esp/metadata/attributes/AttributesBase.h"
 
+#include <Corrade/Utility/Resource.h>
 #include "esp/core/managedContainers/ManagedFileBasedContainer.h"
 #include "esp/io/Io.h"
 
 namespace Cr = Corrade;
+
+#ifndef ESP_METADATA_JSON_CONFIG_RESOURCES
+#define ESP_METADATA_JSON_CONFIG_RESOURCES
+// This is to import the "resources" at runtime. When the resource is
+// compiled into static library, it must be explicitly initialized via this
+// macro, and should be called *outside* of any namespace.
+static void importConfigResources() {
+  CORRADE_RESOURCE_INITIALIZE(DefaultJSONConfigResources)
+}
+#endif  // ESP_METADATA_JSON_CONFIG_RESOURCES
 
 namespace esp {
 namespace core {
