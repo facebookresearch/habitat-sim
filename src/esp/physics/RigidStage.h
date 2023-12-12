@@ -47,9 +47,10 @@ class RigidStage : public RigidBase {
    */
   std::shared_ptr<metadata::attributes::StageAttributes>
   getInitializationAttributes() const {
-    return RigidBase::getInitializationAttributes<
+    return PhysicsObjectBase::getInitializationAttributes<
         metadata::attributes::StageAttributes>();
   };
+
   /**
    * @brief Finalize the creation of this @ref RigidStage
    * @return whether successful finalization.

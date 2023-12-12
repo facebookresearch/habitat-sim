@@ -19,9 +19,9 @@ namespace gfx {
 
 /**
  * @brief do frustum culling with temporal coherence
- * @param range, the axis-aligned bounding box
- * @param frustum, the frustum
- * @param frustumPlaneIndex, the frustum plane in last frame that culled the
+ * @param range the axis-aligned bounding box
+ * @param frustum the frustum
+ * @param frustumPlaneIndex the frustum plane in last frame that culled the
  * aabb (default: 0)
  * @return NullOpt if aabb intersects the frustum, otherwise the frustum plane
  * that culls the aabb
@@ -207,10 +207,13 @@ esp::geo::Ray RenderCamera::unproject(const Mn::Vector2i& viewportPosition,
       2 * Magnum::Vector2{viewPos} / Magnum::Vector2{viewport()} -
           Magnum::Vector2{1.0f},
       1.0};
+  const Mn::Matrix4 projMat = projectionMatrix();
 
   // compute the far plane distance
-  auto farDistance =
-      projectionMatrix()[3][2] / (1.0f + projectionMatrix()[2][2]);
+  // If projMat[3][3] == 0 then perspective, otherwise ortho
+  const Mn::Float farDistance =
+      (projMat[3][3] == 0 ? projMat.perspectiveProjectionFar()
+                          : projMat.orthographicProjectionFar());
 
   ray.direction =
       ((object().absoluteTransformationMatrix() * invertedProjectionMatrix)

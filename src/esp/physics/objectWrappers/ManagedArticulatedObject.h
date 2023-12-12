@@ -24,6 +24,14 @@ class ManagedArticulatedObject
       : AbstractManagedPhysicsObject<esp::physics::ArticulatedObject>(
             classKey) {}
 
+  std::shared_ptr<metadata::attributes::ArticulatedObjectAttributes>
+  getInitializationAttributes() const {
+    if (auto sp = this->getObjectReference()) {
+      return sp->getInitializationAttributes();
+    }
+    return nullptr;
+  }  // getInitializationAttributes()
+
   float getGlobalScale() const {
     if (auto sp = getObjectReference()) {
       return sp->getGlobalScale();

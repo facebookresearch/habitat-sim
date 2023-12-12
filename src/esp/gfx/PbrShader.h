@@ -10,7 +10,7 @@
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/EnumSet.h>
 #include <Magnum/GL/AbstractShaderProgram.h>
-#include <Magnum/GL/GL.h>  // header with all forward declarations for the Mn::GL namespace
+#include <Magnum/GL/GL.h>  // header with all forward declarations for the Magnum::GL namespace
 #include <Magnum/Shaders/GenericGL.h>
 
 #include "esp/core/Esp.h"
@@ -20,6 +20,8 @@ namespace gfx {
 
 class PbrShader : public Magnum::GL::AbstractShaderProgram {
  public:
+  // Configuration (See Magnum::Shaders::PhongGL::Configuration )
+  class Configuration;
   // ==== Attribute definitions ====
   /**
    * @brief vertex positions
@@ -30,6 +32,30 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    * @brief normal direction
    */
   typedef Magnum::Shaders::GenericGL3D::Normal Normal;
+
+  /**
+   * @brief Joint ids
+   * (See Magnum/Shaders/PhongGL.h)
+   */
+  typedef Magnum::Shaders::GenericGL3D::JointIds JointIds;
+
+  /**
+   * @brief Weights
+   * (See Magnum/Shaders/PhongGL.h)
+   */
+  typedef Magnum::Shaders::GenericGL3D::Weights Weights;
+
+  /**
+   * @brief Secondary joint ids
+   * (See Magnum/Shaders/PhongGL.h)
+   */
+  typedef Magnum::Shaders::GenericGL3D::SecondaryJointIds SecondaryJointIds;
+
+  /**
+   * @brief Secondary weights
+   * (See Magnum/Shaders/PhongGL.h)
+   */
+  typedef Magnum::Shaders::GenericGL3D::SecondaryWeights SecondaryWeights;
 
   /**
    * @brief 2D texture coordinates
@@ -225,6 +251,11 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      */
     DoubleSided = 1ULL << 23,
 
+    /**
+     * Enable Skin rendering
+     */
+    SkinnedMesh = 1ULL << 23,
+
     ///////////////////////////////
     // PbrShaderAttributes provides these values to configure the shader
 
@@ -338,28 +369,11 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   /**
    * @brief Constructor
-   * @param flags         Flags
-   * @param lightCount    Count of light sources
+   * @param config : PbrShader::Configuration holding flags structure,
+   * number of lights, joints, etc.
    *
-   * By default,
-   *
-   * the shader provides a single directional "fill" light, coming
-   * from the center of the camera. Using the @p lightCount parameter in
-   * constructor, you can specify how many lights you want, and then control
-   * light parameters using @ref setLightVectors(), @ref setLightColors(),
-   * and @ref setLightRanges(). Light positions (directions)
-   * are specified as four-component vectors, the last component distinguishing
-   * between directional (w == 0) and point lights (w == 1.0).
-   *
-   * the shader renders the mesh with a white color in an identity
-   * transformation.
-   *
-   * the light range is set to Magnum::Constants::inf()
    */
-  explicit PbrShader(Flags flags = {},
-                     Magnum::UnsignedInt lightCount = 1,
-                     Magnum::UnsignedInt jointCount = 0,
-                     Magnum::UnsignedInt perVertexJointCount = 0);
+  explicit PbrShader(const Configuration& config);
 
   /** @brief Copying is not allowed */
   PbrShader(const PbrShader&) = delete;
@@ -736,6 +750,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   /**
    * @brief Set joint matrices
+   * (See Magnum/Shaders/PhongGL.h)
    * @return Reference to self (for method chaining)
    */
   PbrShader& setJointMatrices(
@@ -743,9 +758,37 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   /**
    * @overload
-   * @m_since_latest
+   * (See Magnum/Shaders/PhongGL.h)
    */
   PbrShader& setJointMatrices(std::initializer_list<Magnum::Matrix4> matrices);
+
+  /**
+   * @brief Set joint matrix for given joint
+   * (See Magnum/Shaders/PhongGL.h)
+   * @return Reference to self (for method chaining)
+   * @m_since_latest
+   *
+   * Unlike @ref setJointMatrices() updates just a single joint matrix.
+   * Expects that @p id is less than @ref jointCount().
+   */
+  PbrShader& setJointMatrix(Magnum::UnsignedInt id,
+                            const Magnum::Matrix4& matrix);
+
+  /**
+   * @brief Set per-instance joint count
+   * (See Magnum/Shaders/PhongGL.h)
+   * @return Reference to self (for method chaining)
+   * @m_since_latest
+   *
+   * Offset added to joint IDs in the @ref JointIds and
+   * @ref SecondaryJointIds in instanced draws. Should be less than
+   * @ref jointCount(). Initial value is @cpp 0 @ce, meaning every
+   * instance will use the same joint matrices, setting it to a non-zero
+   * value causes the joint IDs to be interpreted as
+   * @glsl gl_InstanceID*count + jointId @ce.
+   *
+   */
+  PbrShader& setPerInstanceJointCount(Magnum::UnsignedInt count);
 
   /**
    * Toggles that control contributions from different components - should
@@ -785,10 +828,13 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
  protected:
   Flags flags_;
-  Magnum::UnsignedInt lightCount_;
+  Magnum::UnsignedInt lightCount_{};
+  Magnum::UnsignedInt jointCount_{};
+  Magnum::UnsignedInt perVertexJointCount_{};
+  Magnum::UnsignedInt secondaryPerVertexJointCount_{};
 
-  Magnum::UnsignedInt jointCount_;
-  Magnum::UnsignedInt perVertexJointCount_;
+  // whether or not this shader has skin support
+  bool isSkinned_ = false;
 
   // whether or not this shader uses any textures
   bool isTextured_ = false;
@@ -827,6 +873,9 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   int lightRangesUniform_ = ID_UNDEFINED;
 
   int jointMatricesUniform_ = ID_UNDEFINED;
+
+  int perInstanceJointCountUniform_ = ID_UNDEFINED;
+
   // In the fragment shader, the "LightDirection" is a vec4.
   // when w == 0, it means .xyz is the light direction;
   // when w == 1, it means it is the light position, NOT the direction;
@@ -866,6 +915,83 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   // pbr debug info
   int pbrDebugDisplayUniform_ = ID_UNDEFINED;
+};
+
+/**
+ * @brief PBR Shader configuration
+ */
+class PbrShader::Configuration {
+ public:
+  explicit Configuration() = default;
+
+  /** @brief Flags */
+  Flags flags() const { return _flags; }
+
+  /**
+   * @brief Set flags
+   */
+  Configuration& setFlags(Flags flags) {
+    _flags = flags;
+    return *this;
+  }
+
+  /** @brief Light count */
+  Magnum::UnsignedInt lightCount() const { return _lightCount; }
+
+  /**
+   * @brief Set light count
+   */
+  Configuration& setLightCount(Magnum::UnsignedInt count) {
+    _lightCount = count;
+    return *this;
+  }
+
+  /**
+   * @brief Joint count
+   */
+  Magnum::UnsignedInt jointCount() const { return _jointCount; }
+
+  /**
+   * @brief Per-vertex joint count
+   */
+  Magnum::UnsignedInt perVertexJointCount() const {
+    return _perVertexJointCount;
+  }
+
+  /**
+   *@brief Secondary per-vertex joint count
+   */
+  Magnum::UnsignedInt secondaryPerVertexJointCount() const {
+    return _secondaryPerVertexJointCount;
+  }
+
+  /**
+   * @brief Set joint count
+   *
+   * @p count describes an upper bound on how many joint matrices get supplied
+   * to each draw with
+   * @ref setJointMatrices() / @ref setJointMatrix().
+   *
+   * The @p perVertexCount and @p secondaryPerVertexCount parameters
+   * describe how many components are taken from @ref JointIds /
+   * @ref Weights and @ref SecondaryJointIds / @ref SecondaryWeights
+   * attributes. Both values are expected to not be larger than
+   * @cpp 4 @ce, setting either of these to @cpp 0 @ce means given
+   * attribute is not used at all. If both @p perVertexCount and
+   * @p secondaryPerVertexCount are set to @cpp 0 @ce, skinning is not
+   * performed.
+   *
+   * Default value for all three is @cpp 0 @ce.
+   */
+  Configuration& setJointCount(Magnum::UnsignedInt count,
+                               Magnum::UnsignedInt perVertexCount,
+                               Magnum::UnsignedInt secondaryPerVertexCount = 0);
+
+ private:
+  Flags _flags;
+  Magnum::UnsignedInt _lightCount = 1, _jointCount = 0,
+                      _perVertexJointCount = 0,
+                      _secondaryPerVertexJointCount = 0;
 };
 
 CORRADE_ENUMSET_OPERATORS(PbrShader::Flags)

@@ -71,7 +71,7 @@ def initialize_test_data_sources(data_path):
             "source": "https://huggingface.co/datasets/hssd/hssd-hab.git",
             "link": data_path + "scene_datasets/hssd-hab",
             "version": "main",
-            "requires_auth": True,
+            "requires_auth": False,
         },
         "hab3-episodes": {
             "source": "https://huggingface.co/datasets/ai-habitat/hab3_episodes.git",

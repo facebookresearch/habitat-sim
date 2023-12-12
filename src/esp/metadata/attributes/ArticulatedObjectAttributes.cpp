@@ -25,8 +25,8 @@ ArticulatedObjectAttributes::ArticulatedObjectAttributes(
   // Set render mode to be default - skin if present, otherwise link
   // meshes/primitives
   setRenderMode(getAORenderModeName(ArticulatedObjectRenderMode::Default));
-  // Set default to be to use Phong shader
-  setShaderType(getShaderTypeName(ObjectInstanceShaderType::Phong));
+  // Set the default behavior to "use the best shader for the material"
+  setShaderType(getShaderTypeName(ObjectInstanceShaderType::Material));
 
   setUniformScale(1.0f);
   setMassScale(1.0);

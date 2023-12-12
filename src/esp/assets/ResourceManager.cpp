@@ -2162,7 +2162,7 @@ Mn::Trade::MaterialData createUniversalMaterial(
   Mn::Trade::MaterialData newMaterialData{flags, std::move(newAttributes)};
 
   return newMaterialData;
-}  // namespace
+}  // createUniversalMaterial
 
 }  // namespace
 
@@ -2297,13 +2297,13 @@ void ResourceManager::initDefaultMaterials() {
                                               std::move(vertIdMaterialData));
 
   // Build default material for fallback material
-  auto fallBackMaterial = buildDefaultMaterial();
+  Mn::Trade::MaterialData fallbackMaterial = buildDefaultMaterial();
   // Set expected user-defined attributes
-  fallBackMaterial =
-      setMaterialDefaultUserAttributes(fallBackMaterial, defaultMaterialShader);
+  fallbackMaterial = setMaterialDefaultUserAttributes(
+      fallbackMaterial, ObjectInstanceShaderType::Flat);
   // Add to shaderManager as fallback material
   shaderManager_.setFallback<Mn::Trade::MaterialData>(
-      std::move(fallBackMaterial));
+      std::move(fallbackMaterial));
 }  // ResourceManager::initDefaultMaterials
 
 void ResourceManager::loadMaterials(Importer& importer,

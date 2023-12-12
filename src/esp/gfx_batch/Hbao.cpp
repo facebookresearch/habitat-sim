@@ -51,7 +51,7 @@ enum {
   HbaoRandomNumElements = HbaoRandomSize * HbaoRandomSize
 };
 
-#ifndef MAGNUM_TARGET_GLES
+#ifndef MAGNUM_TARGET_WEBGL
 constexpr Mn::GL::Version GlslVersion = Mn::GL::Version::GL330;
 #else
 constexpr Mn::GL::Version GlslVersion = Mn::GL::Version::GLES300;
@@ -832,19 +832,14 @@ void prepareHbaoData(
 
 Mn::Vector4 buildClipInfo(const Mn::Matrix4& projectionMatrix,
                           bool orthographic) {
-  // TODO this still looks like there's some better way this should be
-  // extracted.  Definitely change to use near and far calcs upstream when
-  // available!!
-  // Ref :
-  // https://github.com/mosra/magnum/commit/0d31f7461b31698ea5bf92ec66ff5056a6ad7360
   if (orthographic) {
-    auto nearPlane = (projectionMatrix[3][2] + 1.0f) / projectionMatrix[2][2];
-    auto farPlane = (projectionMatrix[3][2] - 1.0f) / projectionMatrix[2][2];
+    auto nearPlane = projectionMatrix.orthographicProjectionNear();
+    auto farPlane = projectionMatrix.orthographicProjectionFar();
     return {nearPlane * farPlane, nearPlane - farPlane, farPlane, 0.0f};
   }
   // perspective
-  auto nearPlane = projectionMatrix[3][2] / (projectionMatrix[2][2] - 1.0f);
-  auto farPlane = projectionMatrix[3][2] / (projectionMatrix[2][2] + 1.0f);
+  auto nearPlane = projectionMatrix.perspectiveProjectionNear();
+  auto farPlane = projectionMatrix.perspectiveProjectionFar();
   return {nearPlane * farPlane, nearPlane - farPlane, farPlane, 1.0f};
 }
 }  // namespace

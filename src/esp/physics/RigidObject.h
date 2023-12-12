@@ -127,7 +127,7 @@ class RigidObject : public RigidBase {
    */
   std::shared_ptr<metadata::attributes::ObjectAttributes>
   getInitializationAttributes() const {
-    return RigidBase::getInitializationAttributes<
+    return PhysicsObjectBase::getInitializationAttributes<
         metadata::attributes::ObjectAttributes>();
   };
 

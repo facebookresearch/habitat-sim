@@ -94,11 +94,12 @@ bool BulletRigidObject::constructCollisionShape() {
   //! Iterate through all mesh components for one object
   //! The components are combined into a convex compound shape
   bObjectShape_ = std::make_unique<btCompoundShape>();
+  auto initAttr = PhysicsObjectBase::getInitializationAttributes<
+      metadata::attributes::ObjectAttributes>();
   // collision mesh/asset handle
-  const std::string collisionAssetHandle =
-      initializationAttributes_->getCollisionAssetHandle();
+  const std::string collisionAssetHandle = initAttr->getCollisionAssetHandle();
 
-  if (!initializationAttributes_->getUseMeshCollision()) {
+  if (!initAttr->getUseMeshCollision()) {
     // if using prim collider get appropriate bullet collision primitive
     // attributes and build bullet collision shape
     auto primAttributes =

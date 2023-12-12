@@ -241,8 +241,8 @@ class PbrDrawable : public Drawable {
 
     /**
      * Scales the contributions for each of the 4 given values - direct lighting
-     * diffuse and specular and ibl diffuse and specular. Only used both direct
-     * lighting and IBL are enabled, ignored otherwise.
+     * diffuse and specular and ibl diffuse and specular. Only used if both
+     * direct lighting and IBL are enabled, ignored otherwise.
      */
     PbrShader::PbrEquationScales eqScales{0.5f,   // directDiffuse
                                           0.5f,   // directSpecular

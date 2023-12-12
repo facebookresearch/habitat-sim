@@ -67,9 +67,10 @@ void BulletRigidStage::setCollidable(bool collidable) {
 
 void BulletRigidStage::constructAndAddCollisionObjects() {
   if (bStaticCollisionObjects_.empty()) {
+    auto initAttr = PhysicsObjectBase::getInitializationAttributes<
+        metadata::attributes::StageAttributes>();
     // construct the objects first time
-    const auto collisionAssetHandle =
-        initializationAttributes_->getCollisionAssetHandle();
+    const auto collisionAssetHandle = initAttr->getCollisionAssetHandle();
 
     const std::vector<assets::CollisionMeshData>& meshGroup =
         resMgr_.getCollisionMesh(collisionAssetHandle);
@@ -80,9 +81,8 @@ void BulletRigidStage::constructAndAddCollisionObjects() {
     constructBulletSceneFromMeshes(Magnum::Matrix4{}, meshGroup, metaData.root);
 
     for (auto& object : bStaticCollisionObjects_) {
-      object->setFriction(initializationAttributes_->getFrictionCoefficient());
-      object->setRestitution(
-          initializationAttributes_->getRestitutionCoefficient());
+      object->setFriction(initAttr->getFrictionCoefficient());
+      object->setRestitution(initAttr->getRestitutionCoefficient());
       collisionObjToObjIds_->emplace(object.get(), objectId_);
     }
   }
@@ -141,7 +141,9 @@ void BulletRigidStage::constructBulletSceneFromMeshes(
     std::unique_ptr<btBvhTriangleMeshShape> meshShape =
         std::make_unique<btBvhTriangleMeshShape>(indexedVertexArray.get(),
                                                  true);
-    meshShape->setMargin(initializationAttributes_->getMargin());
+    auto initAttr = PhysicsObjectBase::getInitializationAttributes<
+        metadata::attributes::StageAttributes>();
+    meshShape->setMargin(initAttr->getMargin());
     meshShape->setLocalScaling(
         btVector3{transformFromLocalToWorld
                       .scaling()});  // scale is a property of the shape

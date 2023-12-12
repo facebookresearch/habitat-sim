@@ -256,8 +256,8 @@ class Viewer : public Mn::Platform::Application {
   // exists if a mouse grabbing constraint is active, destroyed on release
   std::unique_ptr<MouseGrabber> mouseGrabber_ = nullptr;
 
-  //! Most recently custom loaded URDF ('t' key)
-  std::string cachedURDF_ = "";
+  //! Most recently custom loaded URDF or AO_config.json ('t' key)
+  std::string cachedAOConfig_ = "";
 
   /**
    * @brief Instance an object from an ObjectAttributes.
@@ -392,9 +392,9 @@ Key Commands:
   '8': Instance a random primitive object in front of the agent.
   'o': Instance a random file-based object in front of the agent.
   'u': Remove most recently instanced rigid object.
-  't': Instance an ArticulatedObject in front of the camera from a URDF file by entering the filepath when prompted.
+  't': Instance an ArticulatedObject in front of the camera from a URDF or .ao_config.json file by entering the filepath when prompted.
     +ALT: Import the object with a fixed base.
-    +SHIFT Quick-reload the previously specified URDF.
+    +SHIFT Quick-reload the previously specified configuration file.
   'b': Toggle display of object bounding boxes.
   'p': Save current simulation state to SceneInstanceAttributes JSON file (with non-colliding filename).
   'v': (physics) Invert gravity.
@@ -436,6 +436,8 @@ Key Commands:
       ESP_DEBUG() << str;
     }
   }
+
+  float timeSinceLastSimulation_ = 0.0;
 
   /**
    * @brief vector holding past agent locations to build trajectory
@@ -1110,7 +1112,10 @@ void Viewer::initSimPostReconfigure() {
   defaultAgent_ = simulator_->getAgent(defaultAgentId_);
   agentBodyNode_ = &defaultAgent_->node();
   renderCamera_ = getAgentCamera().getRenderCamera();
+  // Refresh local simConfig_ to track results from scene load
+  simConfig_ = MM_->getSimulatorConfiguration();
   timeline_.start();
+  timeSinceLastSimulation_ = 0.0;
 }  // initSimPostReconfigure
 
 void Viewer::switchCameraType() {
@@ -1536,7 +1541,6 @@ void Viewer::setSensorVisID() {
       sensorVisID_);
 }  // Viewer::setSensorVisID
 
-float timeSinceLastSimulation = 0.0;
 void Viewer::drawEvent() {
   // Wrap profiler measurements around all methods to render images from
   // RenderCamera
@@ -1545,12 +1549,12 @@ void Viewer::drawEvent() {
                                    Mn::GL::FramebufferClear::Depth);
 
   // Agent actions should occur at a fixed rate per second
-  timeSinceLastSimulation += timeline_.previousFrameDuration();
-  int numAgentActions = timeSinceLastSimulation * agentActionsPerSecond;
+  timeSinceLastSimulation_ += timeline_.previousFrameDuration();
+  int numAgentActions = timeSinceLastSimulation_ * agentActionsPerSecond;
   moveAndLook(numAgentActions);
 
   // occasionally a frame will pass quicker than 1/60 seconds
-  if (timeSinceLastSimulation >= 1.0 / 60.0) {
+  if (timeSinceLastSimulation_ >= 1.0 / 60.0) {
     if (simulating_ || simulateSingleStep_) {
       // step physics at a fixed rate
       // In the interest of frame rate, only a single step is taken,
@@ -1563,7 +1567,7 @@ void Viewer::drawEvent() {
       }
     }
     // reset timeSinceLastSimulation, accounting for potential overflow
-    timeSinceLastSimulation = fmod(timeSinceLastSimulation, 1.0 / 60.0);
+    timeSinceLastSimulation_ = fmod(timeSinceLastSimulation_, 1.0 / 60.0);
   }
 
   uint32_t visibles = renderCamera_->getPreviousNumVisibleDrawables();
@@ -2346,34 +2350,67 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       bool fixedBase = bool(event.modifiers() & MouseEvent::Modifier::Alt);
 
       // add an ArticulatedObject from provided filepath
-      std::string urdfFilepath;
+      std::string ArtObjConfigFilepath;
       if (event.modifiers() & MouseEvent::Modifier::Shift &&
-          !cachedURDF_.empty()) {
+          !cachedAOConfig_.empty()) {
         // quick-reload the most recently loaded URDF
-        ESP_DEBUG() << "URDF quick-reload: " << cachedURDF_;
-        urdfFilepath = cachedURDF_;
+        ESP_WARNING() << "Articulated Object config quick-reload: "
+                      << cachedAOConfig_;
+        ArtObjConfigFilepath = cachedAOConfig_;
       } else {
-        ESP_DEBUG() << "Load URDF: provide a URDF filepath.";
-        std::cin >> urdfFilepath;
+        ESP_WARNING()
+            << "Load URDF or ao_config.json : provide an appropriate filepath.";
+        std::cin >> ArtObjConfigFilepath;
       }
 
-      if (urdfFilepath.empty()) {
-        ESP_DEBUG() << "... no input provided. Aborting.";
-      } else if (!Cr::Utility::String::endsWith(urdfFilepath, ".urdf") &&
-                 !Cr::Utility::String::endsWith(urdfFilepath, ".URDF")) {
-        ESP_DEBUG() << "... input is not a URDF. Aborting.";
-      } else if (Cr::Utility::Path::exists(urdfFilepath)) {
-        // cache the file for quick-reload with SHIFT-T
-        cachedURDF_ = urdfFilepath;
-        auto aom = simulator_->getArticulatedObjectManager();
-        auto ao = aom->addArticulatedObjectFromURDF(
-            urdfFilepath, fixedBase, 1.0, 1.0, true, false, false,
-            simConfig_.sceneLightSetupKey);
-        ao->setTranslation(
-            defaultAgent_->node().transformation().transformPoint(
-                {0, 1.0, -1.5}));
+      if (ArtObjConfigFilepath.empty()) {
+        ESP_WARNING() << "... no input provided. Aborting.";
+      } else if (!Cr::Utility::Path::exists(ArtObjConfigFilepath)) {
+        ESP_WARNING() << "... input file not found. Aborting.";
       } else {
-        ESP_DEBUG() << "... input file not found. Aborting.";
+        // file exists
+        const auto compStr =
+            Cr::Utility::String::lowercase(ArtObjConfigFilepath);
+        if (!(Cr::Utility::String::endsWith(compStr, ".urdf")) &&
+            !(Cr::Utility::String::endsWith(compStr, ".ao_config.json"))) {
+          // Not understood format
+          ESP_WARNING() << "... input is not a supported articulated object "
+                           "configuration file. Aborting.";
+        } else {
+          // cache the file for quick-reload with SHIFT-T
+          cachedAOConfig_ = ArtObjConfigFilepath;
+
+          auto aom = simulator_->getArticulatedObjectManager();
+
+          std::shared_ptr<esp::physics::ManagedArticulatedObject> ao;
+          // Use appropriate method based on whether being called with urdf file
+          // or ao_config.json
+          if (Cr::Utility::String::endsWith(compStr, ".urdf")) {
+            ao = aom->addArticulatedObjectFromURDF(
+                ArtObjConfigFilepath, fixedBase, 1.0, 1.0, true, false, false,
+                simConfig_.sceneLightSetupKey);
+          } else {
+            auto aoAttribMgr = MM_->getAOAttributesManager();
+            // Retrieve loaded template
+            auto artObjAttributes =
+                aoAttribMgr->getObjectCopyByHandle(ArtObjConfigFilepath);
+            // If not present then load/create template
+            if (!artObjAttributes) {
+              artObjAttributes =
+                  aoAttribMgr->createObject(ArtObjConfigFilepath, false);
+            }
+            artObjAttributes->setBaseType(fixedBase ? "fixed" : "free");
+            // Register loaded/modified ao attributes
+            aoAttribMgr->registerObject(artObjAttributes,
+                                        artObjAttributes->getHandle(), true);
+
+            ao = aom->addArticulatedObjectByHandle(
+                ArtObjConfigFilepath, false, simConfig_.sceneLightSetupKey);
+          }
+          ao->setTranslation(
+              defaultAgent_->node().transformation().transformPoint(
+                  {0, 1.0, -1.5}));
+        }
       }
     } break;
     case KeyEvent::Key::L: {
