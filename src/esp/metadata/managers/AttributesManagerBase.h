@@ -196,6 +196,25 @@ class AttributesManager : public ManagedFileBasedContainer<T, Access> {
       const attributes::AbstractAttributes::ptr& attribs,
       const io::JsonGenericValue& jsonConfig) const;
 
+  /**
+   * @brief Returns actual attributes handle containing @p attrName as a
+   * substring, or the empty string if none exists.
+   * Does a substring search, and returns first value found.
+   * @param attrName name to be used as searching substring in @p attrMgr
+   * @return actual name of attributes in attrMgr, or empty string if does not
+   * exist.
+   */
+  inline std::string getFullAttrNameFromStr(const std::string& attrName) {
+    if (this->getObjectLibHasHandle(attrName)) {
+      return attrName;
+    }
+    auto handleList = this->getObjectHandlesBySubstring(attrName);
+    if (!handleList.empty()) {
+      return handleList[0];
+    }
+    return "";
+  }  // getFullAttrNameFromStr
+
  protected:
   /**
    * @brief Called intenrally from createObject.  This will create either a

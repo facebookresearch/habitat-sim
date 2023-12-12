@@ -61,7 +61,6 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
 }  // ObjectAttributesManager::createPrimBasedAttributesTemplate
 
 void ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates() {
-  this->undeletableObjectNames_.clear();
   // build default primtive object templates corresponding to given default
   // asset templates
   std::vector<std::string> lib =
