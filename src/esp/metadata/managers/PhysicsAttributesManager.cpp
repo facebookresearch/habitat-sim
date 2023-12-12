@@ -8,6 +8,7 @@
 #include "esp/io/Json.h"
 
 namespace Cr = Corrade;
+
 namespace esp {
 
 namespace metadata {
@@ -18,6 +19,11 @@ namespace managers {
 PhysicsManagerAttributes::ptr PhysicsAttributesManager::createObject(
     const std::string& physicsFilename,
     bool registerTemplate) {
+  // import the resources (URDF lookup texture, HDRi environment etc.)
+  if (!Cr::Utility::Resource::hasGroup("default-configs")) {
+    importConfigResources();
+  }
+
   std::string msg;
   PhysicsManagerAttributes::ptr attrs = this->createFromJsonOrDefaultInternal(
       physicsFilename, msg, registerTemplate);
