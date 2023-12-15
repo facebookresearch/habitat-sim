@@ -156,7 +156,7 @@ class FairmotionInterface:
         if not os.path.isdir(METADATA_DIR):
             os.makedirs(METADATA_DIR)
 
-        # if default file isnt in metadata directory, create it from hardcoded metadata
+        # if default file isn't in metadata directory, create it from hardcoded metadata
         if not os.path.exists(METADATA_DIR + "default.json"):
             self.user_metadata = METADATA_DEFAULT_WHEN_MISSING_FILE
             self.save_metadata("default")
@@ -717,7 +717,7 @@ class FairmotionInterface:
 
         ################# CODE FOR TRANSITIVE MOTION #################
         if action_order.motion_data.type == MType.TRANSITIVE:
-            # track whether action is finised being processed
+            # track whether action is finished being processed
             finished_processing = False
 
             while Timer.check() < (THRESHOLD / self.draw_fps):
@@ -1010,7 +1010,7 @@ class FairmotionInterface:
         mocap_time_curr = math.fmod(path_.time, motion_.time_length)
         mocap_frame = int(mocap_time_curr * motion_.fps)
 
-        # handle wrapping or edgecase for dath displacement passing goal
+        # handle wrapping or edgecase for path displacement passing goal
         # find distance progressed along shortest path
         path_displacement = (
             mocap_cycles_past * motion_.map_of_total_displacement[LAST]
@@ -1083,7 +1083,7 @@ class FairmotionInterface:
         self, up_v: mn.Vector3, forward_v: mn.Vector3
     ) -> mn.Quaternion:
         """
-        Given the upward direction and the forward direction of a local space frame, this methd produces
+        Given the upward direction and the forward direction of a local space frame, this method produces
         the correction quaternion to convert the frame to global space (+Y up, -Z forward).
         """
         if up_v.normalized() != mn.Vector3.y_axis():

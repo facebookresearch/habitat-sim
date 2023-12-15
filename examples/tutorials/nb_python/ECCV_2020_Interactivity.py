@@ -523,7 +523,7 @@ def build_widget_ui(obj_attr_mgr, prim_attr_mgr):
 # %%
 # @title Initialize Simulator and Load Scene { display-mode: "form" }
 
-# convienience functions defined in Utility cell manage global variables
+# convenience functions defined in Utility cell manage global variables
 sim_settings = make_default_settings()
 # set globals: sim,
 make_simulator_from_settings(sim_settings)
@@ -569,7 +569,7 @@ build_widget_ui(obj_attr_mgr, prim_attr_mgr)
 
 # @markdown Choose either the primitive or file-based template recently selected in the dropdown:
 obj_template_handle = sel_file_obj_handle
-asset_tempalte_handle = sel_asset_handle
+asset_template_handle = sel_asset_handle
 object_type = "File-based"  # @param ["File-based","Primitive-based"]
 if "File" in object_type:
     # Handle File-based object handle
@@ -737,7 +737,7 @@ rigid_obj_mgr.remove_all_objects()
 
 # %%
 # @title Physical Plausibility Classification { display-mode: "form" }
-# @markdown This example demonstrates a physical plausibility expirement. A sphere
+# @markdown This example demonstrates a physical plausibility experiment. A sphere
 # @markdown is dropped onto the back of a couch to roll onto the floor. Optionally,
 # @markdown an invisible plane is introduced for the sphere to roll onto producing
 # @markdown non-physical motion.
@@ -877,7 +877,7 @@ rigid_obj_mgr.remove_all_objects()
 # %% [markdown]
 # ## Generating Scene Clutter on the NavMesh
 #
-# The NavMesh can be used to place objects on surfaces in the scene. Once objects are placed they can be set to MotionType::STATIC, indiciating that they are not moveable (kinematics and dynamics are disabled for STATIC objects). The NavMesh can then be recomputed including STATIC object meshes in the voxelization.
+# The NavMesh can be used to place objects on surfaces in the scene. Once objects are placed they can be set to MotionType::STATIC, indicating that they are not moveable (kinematics and dynamics are disabled for STATIC objects). The NavMesh can then be recomputed including STATIC object meshes in the voxelization.
 #
 # This example demonstrates using the NavMesh to generate a cluttered scene for navigation. In this script we will:
 #
@@ -970,7 +970,7 @@ sim.navmesh_visualization = False
 # ## Embodied Continuous Navigation
 
 # %% [markdown]
-# The following example demonstrates setup and excecution of an embodied navigation and interaction scenario. An object and an agent embodied by a rigid locobot mesh are placed randomly on the NavMesh. A path is computed for the agent to reach the object which is executed by a continuous path-following controller. The object is then kinematically gripped by the agent and a second path is computed for the agent to reach a goal location, also executed by a continuous controller. The gripped object is then released and thrown in front of the agent.
+# The following example demonstrates setup and execution of an embodied navigation and interaction scenario. An object and an agent embodied by a rigid locobot mesh are placed randomly on the NavMesh. A path is computed for the agent to reach the object which is executed by a continuous path-following controller. The object is then kinematically gripped by the agent and a second path is computed for the agent to reach a goal location, also executed by a continuous controller. The gripped object is then released and thrown in front of the agent.
 #
 # Note: for a more detailed explanation of the NavMesh see Habitat-sim Basics tutorial.
 
@@ -1127,7 +1127,7 @@ def track_waypoint(waypoint, rs, vc, dt=1.0 / 60.0):
     )
 
 
-# grip/release and sync gripped object state kineamtically
+# grip/release and sync gripped object state kinematically
 class ObjectGripper:
     def __init__(
         self,
@@ -1320,7 +1320,7 @@ for i in range(2):
         locobot_obj.translation = end_pos
         locobot_obj.rotation = target_rigid_state.rotation
 
-        # Check if a collision occured
+        # Check if a collision occurred
         dist_moved_before_filter = (
             target_rigid_state.translation - previous_rigid_state.translation
         ).dot()

@@ -15,7 +15,7 @@ python -c 'import google.colab' 2>/dev/null || exit
 trap 'catch $? $LINENO' EXIT # Installs trap now
 catch() {
   if [ "$1" != "0" ]; then
-    echo "An error occured during the installation of Habitat-sim or Habitat-Lab." >&2
+    echo "An error occurred during the installation of Habitat-sim or Habitat-Lab." >&2
   fi
 }
 #Don't change the colab versions for these libraries

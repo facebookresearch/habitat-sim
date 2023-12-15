@@ -25,7 +25,7 @@ def main():
     # We will define an action that moves the agent and turns it by some amount
 
     # First, define a class to keep the parameters of the control
-    # @attr.s is just syntatic sugar for creating these data-classes
+    # @attr.s is just syntactic sugar for creating these data-classes
     @attr.s(auto_attribs=True, slots=True)
     class MoveAndSpinSpec:
         forward_amount: float
@@ -70,7 +70,7 @@ def main():
     # Note that the name of the action does not need to match the name the control function
     # was registered under.
 
-    # The habitat_sim.ActionSpec defines an action.  The first arguement is the regsitered name
+    # The habitat_sim.ActionSpec defines an action.  The first argument is the registered name
     # of the control spec, the second is the parameter spec
     agent_config.action_space["fwd_and_spin"] = habitat_sim.ActionSpec(
         "move_forward_and_spin", MoveAndSpinSpec(1.0, 45.0)
