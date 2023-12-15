@@ -6,7 +6,7 @@
     and observations from real sensors.
 
     A noise model can be applied to a sensor by specifying the name of the noise
-    model in the `sensor.SensorSpec.noise_model` feild.
+    model in the `sensor.SensorSpec.noise_model` field.
     Arguments can be passed to the noise model constructor as keyword arguments using
     the `sensor.SensorSpec.noise_model_kwargs` field. For instance, to use the `RedwoodDepthNoiseModel`
     with a ``noise_multiplier`` of 5
@@ -19,7 +19,7 @@
 
 
     These noise models are commonly the result of contributions from various research projects.
-    If you use a noise model in your research, please cite the relevant work specified by the docummentation
+    If you use a noise model in your research, please cite the relevant work specified by the documentation
 
 
     **Depth Noise Models**
@@ -52,4 +52,4 @@
 
 .. py:function:: habitat_sim.sensors.noise_models.RedwoodDepthNoiseModel.__init__
     :param gpu_device_id: The ID of CUDA device to use (only applicable if habitat-sim was built with ``--with-cuda``)
-    :param noise_multiplier: Multipler for the Gaussian random-variables.  This reduces or increases the amount of noise
+    :param noise_multiplier: Multiplier for the Gaussian random-variables.  This reduces or increases the amount of noise
