@@ -24,7 +24,7 @@ ROOT, FIRST, LAST = 0, 0, -1
 
 class MType(Enum):
     """
-    This emun class represents the two ways that motion data can be setup and used.
+    This enum class represents the two ways that motion data can be setup and used.
     Transitive motion data is used to configure and make available cyclical motion data
     that is needed for the character to traverse paths and displace the character between
     Scenic actions. Scenic motion data is more performative in nature and is used to
@@ -311,7 +311,7 @@ class Preview(Enum):
     ALL = 3
 
 
-# keeps track of the activity that intances model is  participating in currently
+# keeps track of the activity that instances model is  participating in currently
 class Activity(Enum):
     NONE = 0
     MOTION_STAGE = 1

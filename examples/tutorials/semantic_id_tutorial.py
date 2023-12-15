@@ -44,7 +44,7 @@ def show_img(data, save):
 
 
 def get_obs(sim, show, save):
-    # render sensor ouputs and optionally show them
+    # render sensor outputs and optionally show them
     rgb_obs = sim.get_sensor_observations()["rgba_camera"]
     semantic_obs = sim.get_sensor_observations()["semantic_camera"]
     if show:

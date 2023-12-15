@@ -798,7 +798,7 @@ if os.path.exists(object_to_view_path) and os.path.isfile(object_to_view_path):
     # set object to be static
     obj.motion_type = habitat_sim.physics.MotionType.STATIC
 
-    # initialize an agent and set its intial state
+    # initialize an agent and set its initial state
     agent = sim.initialize_agent(sim_settings["default_agent"])
     agent_state = habitat_sim.AgentState()
     agent_state.position = np.array([0.0, 0.0, 0.0])  # in world space
@@ -813,7 +813,7 @@ if os.path.exists(object_to_view_path) and os.path.isfile(object_to_view_path):
     # Create observations array
     observations = []
 
-    # @markdown Set how long the resutlant video should be, in seconds.  The object will make 1 full revolution during this time.
+    # @markdown Set how long the resultant video should be, in seconds.  The object will make 1 full revolution during this time.
     video_length = 4.8  # @param {type:"slider", min:1.0, max:20.0, step:0.1}
     # Sim time step
     time_step = 1.0 / 60.0

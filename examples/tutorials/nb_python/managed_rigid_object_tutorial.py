@@ -401,7 +401,7 @@ if __name__ == "__main__":
     # %%
     # [embodied_agent]
 
-    # load the lobot_merged asset
+    # load the locobot_merged asset
     locobot_template_id = obj_templates_mgr.load_configs(
         str(os.path.join(data_path, "objects/locobot_merged"))
     )[0]
@@ -472,7 +472,7 @@ if __name__ == "__main__":
     # %%
     # [embodied_agent_navmesh]
 
-    # load the lobot_merged asset
+    # load the locobot_merged asset
     locobot_template_id = obj_templates_mgr.load_configs(
         str(os.path.join(data_path, "objects/locobot_merged"))
     )[0]
@@ -528,7 +528,7 @@ if __name__ == "__main__":
             locobot.translation = end_pos
             locobot.rotation = target_rigid_state.rotation
 
-            # Check if a collision occured
+            # Check if a collision occurred
             dist_moved_before_filter = (
                 target_rigid_state.translation - previous_rigid_state.translation
             ).dot()

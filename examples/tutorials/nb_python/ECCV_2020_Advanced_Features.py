@@ -243,7 +243,7 @@ def build_dict_of_Stage_attrs(scene_template):
     )
     res_dict["house_filename"] = (scene_template.house_filename, True, "string")
     # res_dict["light_setup"] = (scene_template.light_setup, True, "string")
-    # res_dict["frustrum_culling"] = (scene_template.frustrum_culling, True, "boolean")
+    # res_dict["frustum_culling"] = (scene_template.frustum_culling, True, "boolean")
     return res_dict
 
 
