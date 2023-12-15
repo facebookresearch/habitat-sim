@@ -227,7 +227,7 @@ def clean_up(folder: str, args) -> None:
 
 def main():
     args = build_parser().parse_args()
-    # Doing a which first to also suport just passing magnum-imageconverter
+    # Doing a which first to also support just passing magnum-imageconverter
     # if that is installed globally
     args.magnum_imageconverter = shutil.which(args.magnum_imageconverter)
     args.magnum_imageconverter = osp.realpath(args.magnum_imageconverter)
