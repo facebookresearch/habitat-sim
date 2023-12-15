@@ -27,7 +27,7 @@ export PATH=$PATH:/Library/TeX/Distributions/.DefaultTeX/Contents/Programs/texbi
 
 ### Building Docs:
 ```bash
-python setup.py install
+python setup.py build_ext --inplace
 cd docs
 git submodule update --init
 ./build.sh # or ./build-public.sh when deploying to aihabitat.org
