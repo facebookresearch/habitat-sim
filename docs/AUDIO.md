@@ -53,9 +53,9 @@ The RLRAudioPropagationConfiguration() exposes various configuration options tha
 | transmission | bool | false | Enable transmission of rays |
 | meshSimplification | bool | false | Uses a series of mesh simplification operations to reduce the mesh complexity for ray tracing. Vertex welding is applied, followed by simplification using the edge collapse algorithm. |
 | temporalCoherence | bool | false | Turn on/off temporal smoothing of the impulse response. This uses the impulse response from the previous simulation time step as a starting point for the next time step. This reduces the number of rays required by about a factor of 10, resulting in faster simulations, but should not be used if the motion of sources/listeners is not continuous. |
-| dumpWaveFiles | bool | false | Write the wave files for different bands. Will be writted to the AudioSensorSpec's [outputDirectory](#outputDirectory) |
+| dumpWaveFiles | bool | false | Write the wave files for different bands. Will be written to the AudioSensorSpec's [outputDirectory](#outputDirectory) |
 | enableMaterials | bool | true | Enable audio materials |
-| writeIrToFile | bool | false | Write the final impulse response to a file. Will be writted to the AudioSensorSpec's [outputDirectory](#outputDirectory) |
+| writeIrToFile | bool | false | Write the final impulse response to a file. Will be written to the AudioSensorSpec's [outputDirectory](#outputDirectory) |
 
 
 
@@ -72,7 +72,7 @@ This section describes the channel layout struct, which defines what the output 
 
 - ##### RLRAudioPropagationChannelLayoutType
 
-The channel layout describes how the audio output will be experienced by the listener. Lets look at channel layout types that are currently supported.
+The channel layout describes how the audio output will be experienced by the listener. Let's look at channel layout types that are currently supported.
 
 |Enum|Usage|
 |-----------|---------|
