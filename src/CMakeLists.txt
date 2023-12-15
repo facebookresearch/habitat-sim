@@ -85,8 +85,8 @@ endif()
 if(CMAKE_INTERPROCEDURAL_OPTIMIZATION)
   if(EMSCRIPTEN)
     # Magnum's Toolchain has issues with INTERPROCEDURAL_OPTIMIZATION
-    # There is a bug with Magnum's Emscriptem toolchain.
-    # on Emscriptem. Set flags manually
+    # There is a bug with Magnum's Emscripten toolchain.
+    # on Emscripten. Set flags manually
     # https://github.com/emscripten-core/emscripten/issues/11143#issue-617410308
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto")
@@ -163,7 +163,7 @@ add_definitions(-DBT_ENABLE_PROFILE)
 
 if(CORRADE_TARGET_EMSCRIPTEN)
   if(BUILD_WITH_BACKGROUND_RENDERER)
-    message("Emscriptem build, disabling background rendering")
+    message("Emscripten build, disabling background rendering")
   endif()
   set(BUILD_WITH_BACKGROUND_RENDERER OFF CACHE BOOL "BUILD_WITH_BACKGROUND_RENDERER"
                                                FORCE
