@@ -33,6 +33,7 @@ SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
   setUniformScale(1.0);
   setNonUniformScale({1.0, 1.0, 1.0});
   setMassScale(1.0);
+  setApplyScaleToMass(true);
 }
 
 std::string SceneObjectInstanceAttributes::getObjectInfoHeaderInternal() const {
@@ -116,6 +117,9 @@ void SceneObjectInstanceAttributes::writeValuesToJson(
   }
   if (getNonUniformScale() != Mn::Vector3(1.0, 1.0, 1.0)) {
     writeValueToJson("non_uniform_scale", jsonObj, allocator);
+  }
+  if (!getApplyScaleToMass()) {
+    writeValueToJson("apply_scale_to_mass", jsonObj, allocator);
   }
   if (getMassScale() != 1.0) {
     writeValueToJson("mass_scale", jsonObj, allocator);

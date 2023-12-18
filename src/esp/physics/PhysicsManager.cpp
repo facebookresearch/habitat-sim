@@ -157,6 +157,14 @@ int PhysicsManager::addObjectInstance(
   // non-uniform scaling
   objAttributes->setScale(objAttributes->getScale() *
                           objInstAttributes->getNonUniformScale());
+
+  // If boolean specifies to do so, apply geometric scaling to mass (product of
+  // scale values)
+  if (objInstAttributes->getApplyScaleToMass()) {
+    objAttributes->setMass(
+        objAttributes->getMass() *
+        static_cast<double>(objAttributes->getScale().product()));
+  }
   // set scaled mass
   objAttributes->setMass(objAttributes->getMass() *
                          objInstAttributes->getMassScale());
@@ -373,6 +381,15 @@ int PhysicsManager::addArticulatedObjectInstance(
   // set uniform scale
   artObjAttributes->setUniformScale(artObjAttributes->getUniformScale() *
                                     aObjInstAttributes->getUniformScale());
+
+  // If boolean specifies to do so, apply geometric scaling to mass (product of
+  // scale values)
+  if (aObjInstAttributes->getApplyScaleToMass()) {
+    artObjAttributes->setMassScale(
+        artObjAttributes->getMassScale() *
+        static_cast<double>(artObjAttributes->getUniformScale()));
+  }
+
   // set scaled mass
   artObjAttributes->setMassScale(artObjAttributes->getMassScale() *
                                  aObjInstAttributes->getMassScale());

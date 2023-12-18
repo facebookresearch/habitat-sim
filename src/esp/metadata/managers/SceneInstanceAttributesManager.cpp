@@ -461,6 +461,12 @@ void SceneInstanceAttributesManager::setAbstractObjectAttributesFromJson(
         instanceAttrs->setNonUniformScale(non_uniform_scale);
       });
 
+  // whether geometric scaling should be applied to mass to maintain density.
+  io::jsonIntoSetter<bool>(
+      jCell, "apply_scale_to_mass", [instanceAttrs](bool apply_scale_to_mass) {
+        instanceAttrs->setApplyScaleToMass(apply_scale_to_mass);
+      });
+
   // whether particular instance is visible or not - only modify if actually
   // present in instance json
   io::jsonIntoSetter<bool>(
