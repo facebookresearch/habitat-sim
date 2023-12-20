@@ -1113,10 +1113,10 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--dataset",
-        default="./data/objects/ycb/ycb.scene_dataset_config.json",
+        default="default",
         type=str,
         metavar="DATASET",
-        help='dataset configuration file to use (default: "./data/objects/ycb/ycb.scene_dataset_config.json")',
+        help='dataset configuration file to use (default: "default")',
     )
     parser.add_argument(
         "--disable-physics",
