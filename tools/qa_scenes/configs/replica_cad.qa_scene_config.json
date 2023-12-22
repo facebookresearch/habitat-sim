@@ -1,0 +1,18 @@
+{
+  "scene_dataset_config_file": "replica_cad/replicaCAD.scene_dataset_config.json",
+  "color_sensor": true,
+  "semantic_sensor": true,
+  "depth_sensor": true,
+  "width": 1024,
+  "height": 1024,
+  "enable_physics": true,
+  "start_scene_index": 0,
+  "end_scene_index": -1,
+  "output_file_prefix": "r-cad",
+  "generate_navmesh": true,
+  "render_sensor_obs": true,
+  "run_collision_test": true,
+  "collision_test_save_detail_json": false,
+  "run_asset_sleep_test": false,
+  "silent": false
+}
