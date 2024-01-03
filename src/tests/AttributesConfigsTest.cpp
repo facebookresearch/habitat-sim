@@ -1869,6 +1869,8 @@ void AttributesConfigsTest::testArticulatedObjectAttrVals(
     const std::string& assetPath,
     const std::string& urdfPath) {
   // match values set in test JSON
+  CORRADE_COMPARE(artObjAttr->getScale(), Mn::Vector3(4, 3, 2));
+  CORRADE_COMPARE(artObjAttr->getMassScale(), 2.1);
   CORRADE_COMPARE(artObjAttr->getURDFFullPath(), urdfPath);
   CORRADE_COMPARE(artObjAttr->getRenderAssetFullPath(), assetPath);
   CORRADE_COMPARE(artObjAttr->getSemanticId(), 100);
@@ -2014,6 +2016,8 @@ void AttributesConfigsTest::testArticulatedObjectAttrVals(
 void AttributesConfigsTest::testArticulatedObjectJSONLoad() {
   // build JSON sample config
   const std::string& jsonString = R"({
+  "scale":[4,3,2],
+  "mass_scale":2.1,
   "urdf_filepath": "urdf_test_file.urdf",
   "render_asset": "testAO_JSONRenderAsset.glb",
   "semantic_id": 100,
