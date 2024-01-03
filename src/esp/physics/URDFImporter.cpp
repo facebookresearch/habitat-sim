@@ -84,17 +84,17 @@ void URDFImporter::getLinkChildIndices(
   }
 }
 
-bool URDFImporter::getJointInfo2(int linkIndex,
-                                 Mn::Matrix4& parent2joint,
-                                 Mn::Matrix4& linkTransformInWorld,
-                                 Mn::Vector3& jointAxisInJointSpace,
-                                 int& jointType,
-                                 float& jointLowerLimit,
-                                 float& jointUpperLimit,
-                                 float& jointDamping,
-                                 float& jointFriction,
-                                 float& jointMaxForce,
-                                 float& jointMaxVelocity) const {
+bool URDFImporter::getJointInfo(int linkIndex,
+                                Mn::Matrix4& parent2joint,
+                                Mn::Matrix4& linkTransformInWorld,
+                                Mn::Vector3& jointAxisInJointSpace,
+                                int& jointType,
+                                float& jointLowerLimit,
+                                float& jointUpperLimit,
+                                float& jointDamping,
+                                float& jointFriction,
+                                float& jointMaxForce,
+                                float& jointMaxVelocity) const {
   jointLowerLimit = 0.f;
   jointUpperLimit = 0.f;
   jointDamping = 0.f;
@@ -136,24 +136,84 @@ bool URDFImporter::getJointInfo(int linkIndex,
                                 float& jointFriction) const {
   float jointMaxForce{0.f};
   float jointMaxVelocity{0.f};
-  return getJointInfo2(linkIndex, parent2joint, linkTransformInWorld,
-                       jointAxisInJointSpace, jointType, jointLowerLimit,
-                       jointUpperLimit, jointDamping, jointFriction,
-                       jointMaxForce, jointMaxVelocity);
+  return getJointInfo(linkIndex, parent2joint, linkTransformInWorld,
+                      jointAxisInJointSpace, jointType, jointLowerLimit,
+                      jointUpperLimit, jointDamping, jointFriction,
+                      jointMaxForce, jointMaxVelocity);
 }
 
-void URDFImporter::getMassAndInertia2(int linkIndex,
-                                      float& mass,
-                                      Mn::Vector3& localInertiaDiagonal,
-                                      Mn::Matrix4& inertialFrame) const {
-  if ((flags & CUF_USE_URDF_INERTIA) != 0) {
-    getMassAndInertia(linkIndex, mass, localInertiaDiagonal, inertialFrame);
-  } else {
-    // the link->m_inertia is NOT necessarily aligned with the inertial frame
-    // so an additional transform might need to be computed
-    auto link = activeModel_->getLink(linkIndex);
-    if (link != nullptr) {
-      float linkMass{0.f};
+void URDFImporter::getMassAndInertia(int linkIndex,
+                                     float& mass,
+                                     Mn::Vector3& localInertiaDiagonal,
+                                     Mn::Matrix4& inertialFrame) const {
+  // the link->m_inertia is NOT necessarily aligned with the inertial frame
+  // so an additional transform might need to be computed
+  std::shared_ptr<esp::metadata::URDF::Link> link =
+      activeModel_->getLink(linkIndex);
+  if (link) {
+    float linkMass = 0.f;
+    if ((flags & CUF_USE_URDF_INERTIA) != 0) {
+      Mn::Matrix3 linkInertiaBasis;  // Identity
+      float principalInertiaX = 0.f;
+      float principalInertiaY = 0.f;
+      float principalInertiaZ = 0.f;
+      if (!link->m_parentJoint.lock() && activeModel_->m_overrideFixedBase) {
+        // no change
+      } else {
+        linkMass = link->m_inertia.m_mass;
+        if (link->m_inertia.m_ixy == 0.0 && link->m_inertia.m_ixz == 0.0 &&
+            link->m_inertia.m_iyz == 0.0) {
+          principalInertiaX = link->m_inertia.m_ixx;
+          principalInertiaY = link->m_inertia.m_iyy;
+          principalInertiaZ = link->m_inertia.m_izz;
+        } else {
+          // by column vector
+          Mn::Matrix3 inertiaTensor(
+              Mn::Vector3(link->m_inertia.m_ixx, link->m_inertia.m_ixy,
+                          link->m_inertia.m_ixz),
+              Mn::Vector3(link->m_inertia.m_ixy, link->m_inertia.m_iyy,
+                          link->m_inertia.m_iyz),
+              Mn::Vector3(link->m_inertia.m_ixz, link->m_inertia.m_iyz,
+                          link->m_inertia.m_izz));
+
+          // TODO: diagonalization of inertia matrix:
+          ESP_VERY_VERBOSE()
+              << "WARNING: getMassAndInertia: intertia not diagonal. "
+                 "TODO: diagonalize?";
+          /*
+          float threshold = 1.0e-6;
+          int numIterations = 30;
+          inertiaTensor.diagonalize(linkInertiaBasis, threshold,
+           numIterations);
+           */
+          principalInertiaX = inertiaTensor[0][0];
+          principalInertiaY = inertiaTensor[1][1];
+          principalInertiaZ = inertiaTensor[2][2];
+        }
+      }
+      mass = linkMass;
+      if (principalInertiaX < 0 ||
+          principalInertiaX > (principalInertiaY + principalInertiaZ) ||
+          principalInertiaY < 0 ||
+          principalInertiaY > (principalInertiaX + principalInertiaZ) ||
+          principalInertiaZ < 0 ||
+          principalInertiaZ > (principalInertiaX + principalInertiaY)) {
+        ESP_VERY_VERBOSE() << "W - Bad inertia tensor properties, setting "
+                              "inertia to zero for link:"
+                           << link->m_name;
+        principalInertiaX = 0.f;
+        principalInertiaY = 0.f;
+        principalInertiaZ = 0.f;
+        linkInertiaBasis = Mn::Matrix3();  // Identity
+      }
+      localInertiaDiagonal =
+          Mn::Vector3(principalInertiaX, principalInertiaY, principalInertiaZ);
+
+      inertialFrame = Mn::Matrix4::from(
+          link->m_inertia.m_linkLocalFrame.rotation() * linkInertiaBasis,
+          link->m_inertia.m_linkLocalFrame.translation());
+
+    } else {
       if (!link->m_parentJoint.lock() && activeModel_->m_overrideFixedBase) {
         linkMass = 0.f;
       } else {
@@ -164,83 +224,9 @@ void URDFImporter::getMassAndInertia2(int linkIndex,
       inertialFrame =
           Mn::Matrix4::from(link->m_inertia.m_linkLocalFrame.rotation(),
                             link->m_inertia.m_linkLocalFrame.translation());
-    } else {
-      mass = 1.f;
-      localInertiaDiagonal = Mn::Vector3(1, 1, 1);
-      inertialFrame = Mn::Matrix4();  // Identity
-    }
-  }
-}
-
-void URDFImporter::getMassAndInertia(int linkIndex,
-                                     float& mass,
-                                     Mn::Vector3& localInertiaDiagonal,
-                                     Mn::Matrix4& inertialFrame) const {
-  // the link->m_inertia is NOT necessarily aligned with the inertial frame
-  // so an additional transform might need to be computed
-  auto link = activeModel_->getLink(linkIndex);
-  if (link != nullptr) {
-    Mn::Matrix3 linkInertiaBasis;  // Identity
-    float linkMass = 0.f;
-    float principalInertiaX = 0.f;
-    float principalInertiaY = 0.f;
-    float principalInertiaZ = 0.f;
-    if (!link->m_parentJoint.lock() && activeModel_->m_overrideFixedBase) {
-      // no change
-    } else {
-      linkMass = link->m_inertia.m_mass;
-      if (link->m_inertia.m_ixy == 0.0 && link->m_inertia.m_ixz == 0.0 &&
-          link->m_inertia.m_iyz == 0.0) {
-        principalInertiaX = link->m_inertia.m_ixx;
-        principalInertiaY = link->m_inertia.m_iyy;
-        principalInertiaZ = link->m_inertia.m_izz;
-      } else {
-        // by column vector
-        Mn::Matrix3 inertiaTensor(
-            Mn::Vector3(link->m_inertia.m_ixx, link->m_inertia.m_ixy,
-                        link->m_inertia.m_ixz),
-            Mn::Vector3(link->m_inertia.m_ixy, link->m_inertia.m_iyy,
-                        link->m_inertia.m_iyz),
-            Mn::Vector3(link->m_inertia.m_ixz, link->m_inertia.m_iyz,
-                        link->m_inertia.m_izz));
-
-        // TODO: diagonalization of inertia matrix:
-        ESP_VERY_VERBOSE()
-            << "WARNING: getMassAndInertia: intertia not diagonal. "
-               "TODO: diagonalize?";
-        /*
-        float threshold = 1.0e-6;
-        int numIterations = 30;
-        inertiaTensor.diagonalize(linkInertiaBasis, threshold,
-         numIterations);
-         */
-        principalInertiaX = inertiaTensor[0][0];
-        principalInertiaY = inertiaTensor[1][1];
-        principalInertiaZ = inertiaTensor[2][2];
-      }
-    }
-    mass = linkMass;
-    if (principalInertiaX < 0 ||
-        principalInertiaX > (principalInertiaY + principalInertiaZ) ||
-        principalInertiaY < 0 ||
-        principalInertiaY > (principalInertiaX + principalInertiaZ) ||
-        principalInertiaZ < 0 ||
-        principalInertiaZ > (principalInertiaX + principalInertiaY)) {
-      ESP_VERY_VERBOSE() << "W - Bad inertia tensor properties, setting "
-                            "inertia to zero for link:"
-                         << link->m_name;
-      principalInertiaX = 0.f;
-      principalInertiaY = 0.f;
-      principalInertiaZ = 0.f;
-      linkInertiaBasis = Mn::Matrix3();  // Identity
-    }
-    localInertiaDiagonal =
-        Mn::Vector3(principalInertiaX, principalInertiaY, principalInertiaZ);
-
-    inertialFrame = Mn::Matrix4::from(
-        link->m_inertia.m_linkLocalFrame.rotation() * linkInertiaBasis,
-        link->m_inertia.m_linkLocalFrame.translation());
+    }  // if ((flags & CUF_USE_URDF_INERTIA) != 0) else
   } else {
+    // Link is nullptr
     mass = 1.f;
     localInertiaDiagonal = Mn::Vector3(1);
     inertialFrame = Mn::Matrix4();  // Identity

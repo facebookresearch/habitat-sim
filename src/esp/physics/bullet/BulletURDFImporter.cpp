@@ -63,6 +63,7 @@ btCollisionShape* BulletURDFImporter::convertURDFToCollisionShape(
       btVector3 halfExtents(cylRadius, cylRadius, cylHalfLength);
       auto cylZShape = std::make_unique<btCylinderShapeZ>(halfExtents);
       shape = cylZShape.get();
+      shape->setMargin(gUrdfDefaultCollisionMargin);
       linkChildShapes.emplace_back(std::move(cylZShape));
       break;
     }
@@ -207,7 +208,7 @@ void BulletURDFImporter::getAllIndices(
   }
 }
 
-void BulletURDFImporter::computeParentIndices(URDF2BulletCached& bulletCache,
+void BulletURDFImporter::computeParentIndices(URDFToBulletCached& bulletCache,
                                               int urdfLinkIndex,
                                               int urdfParentIndex) {
   bulletCache.m_urdfLinkParentIndices[urdfLinkIndex] = urdfParentIndex;
@@ -221,10 +222,10 @@ void BulletURDFImporter::computeParentIndices(URDF2BulletCached& bulletCache,
   }
 }
 
-void BulletURDFImporter::initURDF2BulletCache() {
+void BulletURDFImporter::initURDFToBulletCache() {
   // compute the number of links, and compute parent indices array (and possibly
   // other cached ?)
-  cache = std::make_shared<URDF2BulletCached>();
+  cache = std::make_shared<URDFToBulletCached>();
   cache->m_totalNumJoints1 = 0;
 
   int rootLinkIndex = getRootLinkIndex();
@@ -242,7 +243,7 @@ void BulletURDFImporter::initURDF2BulletCache() {
 
     bool maintainLinkOrder = (flags & CUF_MAINTAIN_LINK_ORDER) != 0;
     if (maintainLinkOrder) {
-      URDF2BulletCached cache2 = *cache;
+      URDFToBulletCached cache2 = *cache;
 
       computeParentIndices(cache2, rootLinkIndex, -2);
 
@@ -287,7 +288,7 @@ void processContactParameters(
   }
 }
 
-Mn::Matrix4 BulletURDFImporter::convertURDF2BulletInternal(
+Mn::Matrix4 BulletURDFImporter::convertURDFToBulletInternal(
     int urdfLinkIndex,
     const Mn::Matrix4& parentTransformInWorldSpace,
     btMultiBodyDynamicsWorld* world1,
@@ -296,7 +297,7 @@ Mn::Matrix4 BulletURDFImporter::convertURDF2BulletInternal(
         linkChildShapes,
     bool recursive) {
   ESP_VERY_VERBOSE() << "++++++++++++++++++++++++++++++++++++++";
-  ESP_VERY_VERBOSE() << "convertURDF2BulletInternal...";
+  ESP_VERY_VERBOSE() << "convertURDFToBulletInternal...";
   ESP_VERY_VERBOSE() << "   recursive = " << recursive;
 
   Mn::Matrix4 linkTransformInWorldSpace;
@@ -318,8 +319,8 @@ Mn::Matrix4 BulletURDFImporter::convertURDF2BulletInternal(
   if (urdfParentIndex == -2) {
     ESP_VERY_VERBOSE() << "root link has no parent";
   } else {
-    getMassAndInertia2(urdfParentIndex, parentMass, parentLocalInertiaDiagonal,
-                       parentLocalInertialFrame);
+    getMassAndInertia(urdfParentIndex, parentMass, parentLocalInertiaDiagonal,
+                      parentLocalInertialFrame);
   }
 
   ESP_VERY_VERBOSE() << "about to get mass/inertia";
@@ -327,8 +328,8 @@ Mn::Matrix4 BulletURDFImporter::convertURDF2BulletInternal(
   btScalar mass = 0;
   Mn::Matrix4 localInertialFrame;
   Mn::Vector3 localInertiaDiagonal(0);
-  getMassAndInertia2(urdfLinkIndex, mass, localInertiaDiagonal,
-                     localInertialFrame);
+  getMassAndInertia(urdfLinkIndex, mass, localInertiaDiagonal,
+                    localInertialFrame);
 
   ESP_VERY_VERBOSE() << "about to get joint info";
 
@@ -342,7 +343,7 @@ Mn::Matrix4 BulletURDFImporter::convertURDF2BulletInternal(
   btScalar jointMaxForce = NAN;
   btScalar jointMaxVelocity = NAN;
 
-  bool hasParentJoint = getJointInfo2(
+  bool hasParentJoint = getJointInfo(
       urdfLinkIndex, parent2joint, linkTransformInWorldSpace,
       jointAxisInJointSpace, jointType, jointLowerLimit, jointUpperLimit,
       jointDamping, jointFriction, jointMaxForce, jointMaxVelocity);
@@ -653,9 +654,9 @@ Mn::Matrix4 BulletURDFImporter::convertURDF2BulletInternal(
     for (int i = 0; i < numChildren; ++i) {
       int urdfChildLinkIndex = urdfChildIndices[i];
 
-      convertURDF2BulletInternal(urdfChildLinkIndex, linkTransformInWorldSpace,
-                                 world1, linkCompoundShapes, linkChildShapes,
-                                 recursive);
+      convertURDFToBulletInternal(urdfChildLinkIndex, linkTransformInWorldSpace,
+                                  world1, linkCompoundShapes, linkChildShapes,
+                                  recursive);
     }
   }
   return linkTransformInWorldSpace;

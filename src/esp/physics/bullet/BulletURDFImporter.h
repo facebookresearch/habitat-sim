@@ -46,9 +46,9 @@ struct childParentIndex {
 /**
  * @brief Structure to hold construction time multi-body data.
  */
-struct URDF2BulletCached {
-  URDF2BulletCached() = default;
-  // these arrays will be initialized in the 'initURDF2BulletCache'
+struct URDFToBulletCached {
+  URDFToBulletCached() = default;
+  // these arrays will be initialized in the 'initURDFToBulletCache'
 
   std::vector<int> m_urdfLinkParentIndices;
   std::vector<int> m_urdfLinkIndices2BulletLinkIndices;
@@ -88,10 +88,10 @@ class BulletURDFImporter : public URDFImporter {
 
   //! Initialize the temporary Bullet cache for multibody construction from the
   //! active URDF::Model
-  void initURDF2BulletCache();
+  void initURDFToBulletCache();
 
   //! Traverse the kinematic chain recursively constructing the btMultiBody
-  Magnum::Matrix4 convertURDF2BulletInternal(
+  Magnum::Matrix4 convertURDFToBulletInternal(
       int urdfLinkIndex,
       const Magnum::Matrix4& parentTransformInWorldSpace,
       btMultiBodyDynamicsWorld* world1,
@@ -101,8 +101,8 @@ class BulletURDFImporter : public URDFImporter {
       bool recursive = false);
 
   //! The temporary Bullet multibody cache initialized by
-  //! convertURDF2BulletInternal and cleared after instancing the object
-  std::shared_ptr<URDF2BulletCached> cache = nullptr;
+  //! convertURDFToBulletInternal and cleared after instancing the object
+  std::shared_ptr<URDFToBulletCached> cache = nullptr;
 
   //! Recursively get all indices from the model with mappings between parents
   //! and children
@@ -131,7 +131,7 @@ class BulletURDFImporter : public URDFImporter {
   void computeTotalNumberOfJoints(int linkIndex);
 
   //! Compute the new Bullet link indices from the URDF::Model
-  void computeParentIndices(URDF2BulletCached& bulletCache,
+  void computeParentIndices(URDFToBulletCached& bulletCache,
                             int urdfLinkIndex,
                             int urdfParentIndex);
 };

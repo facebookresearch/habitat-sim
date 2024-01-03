@@ -375,9 +375,17 @@ int PhysicsManager::addArticulatedObjectInstance(
   int visSet = aObjInstAttributes->getIsInstanceVisible();
   if (visSet != ID_UNDEFINED) {
     // specfied in scene instance
-    // objAttributes->setIsVisible(visSet == 1);
+    // artObjAttributes->setIsVisible(visSet == 1);
     // TODO: manage articulated object visibility.
   }
+  // set shader type to use for articulated object instance, which may override
+  // shadertype specified in articulated object attributes.
+  const auto artObjShaderType = aObjInstAttributes->getShaderType();
+  if (artObjShaderType !=
+      metadata::attributes::ObjectInstanceShaderType::Unspecified) {
+    artObjAttributes->setShaderType(getShaderTypeName(artObjShaderType));
+  }
+
   // set uniform scale
   artObjAttributes->setUniformScale(artObjAttributes->getUniformScale() *
                                     aObjInstAttributes->getUniformScale());
@@ -393,14 +401,6 @@ int PhysicsManager::addArticulatedObjectInstance(
   // set scaled mass
   artObjAttributes->setMassScale(artObjAttributes->getMassScale() *
                                  aObjInstAttributes->getMassScale());
-
-  // set shader type to use for articulated object instance, which may override
-  // shadertype specified in articulated object attributes.
-  const auto artObjShaderType = aObjInstAttributes->getShaderType();
-  if (artObjShaderType !=
-      metadata::attributes::ObjectInstanceShaderType::Unspecified) {
-    artObjAttributes->setShaderType(getShaderTypeName(artObjShaderType));
-  }
 
   const auto baseType = aObjInstAttributes->getBaseType();
   if (baseType !=
