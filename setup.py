@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 """
-Adapted from: http://www.benjack.io/2017/06/12/python-cpp-tests.html
+Adapted from: https://www.benjack.io/building-and-testing-a-hybrid-python/c-package/
 """
 
 import argparse
