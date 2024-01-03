@@ -343,12 +343,12 @@ class Model {
    * @brief Set global scaling and re-scale an existing model. Modifies various
    * internal parameters.
    *
-   * @param scaling The new absolute uniform scale.
+   * @param scaling The new absolute scale.
    */
-  void setGlobalScaling(float scaling);
+  void setGlobalScaling(const Mn::Vector3& scaling);
 
   //! Get the currently configured global model scaling
-  float getGlobalScaling() const { return m_globalScaling; }
+  Mn::Vector3 getGlobalScaling() const { return m_globalScaling; }
 
   /**
    * @brief Set scaling for mass from initial values configured in URDF.
@@ -427,7 +427,7 @@ class Model {
   std::shared_ptr<metadata::attributes::ArticulatedObjectAttributes>
   getInitializationAttributes() const {
     return initializationAttributes_;
-  };
+  }
 
  protected:
   /**
@@ -442,7 +442,7 @@ class Model {
   // scaling values which can be applied to the model after parsing
   //! Global euclidean scaling applied to the model's transforms, asset scales,
   //! and prismatic joint limits. Does not affect mass.
-  float m_globalScaling = 1.0;
+  Mn::Vector3 m_globalScaling = Mn::Vector3(1.0);
 
   //! Mass scaling of the model's Link inertias.
   float m_massScaling = 1.0;
@@ -458,7 +458,7 @@ class Model {
   bool m_renderLinkVisualShapes = false;
 
   //! Scale the transformation and parameters of a Shape
-  void scaleShape(Shape& shape, float scale);
+  void scaleShape(Shape& shape, const Mn::Vector3& scale);
 };  // class model
 
 /**
@@ -466,9 +466,16 @@ class Model {
  * representation.
  */
 class Parser {
-  // URDF file path of last load call
-  std::string sourceFilePath_;
+ public:
+  Parser() = default;
 
+  // parse a loaded URDF string into relevant general data structures
+  // return false if the string is not a valid urdf or other error causes abort
+  bool parseURDF(const metadata::attributes::ArticulatedObjectAttributes::ptr&
+                     artObjAttributes,
+                 std::shared_ptr<Model>& model);
+
+ private:
   /**
    * @brief Parse a transform into a Matrix4.
    *
@@ -605,18 +612,8 @@ class Parser {
    */
   bool validateMeshFile(std::string& filename);
 
- public:
-  Parser() = default;
-
-  // parse a loaded URDF string into relevant general data structures
-  // return false if the string is not a valid urdf or other error causes abort
-  bool parseURDF(const metadata::attributes::ArticulatedObjectAttributes::ptr&
-                     artObjAttributes,
-                 std::shared_ptr<Model>& model);
-
-  // This is no longer used, instead set the urdf and physics subsystem to
-  // veryverbose, i.e. export HABITAT_SIM_LOG="urdf,physics=veryverbose" bool
-  // logMessages = false;
+  // URDF file path of last load call
+  std::string sourceFilePath_;
 };
 
 }  // namespace URDF

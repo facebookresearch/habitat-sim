@@ -57,7 +57,8 @@ bool URDFImporter::loadURDF(
   activeModel_ = modelCacheIter->second;
 
   // re-scale the cached model
-  activeModel_->setGlobalScaling(artObjAttributes->getUniformScale());
+  activeModel_->setGlobalScaling(artObjAttributes->getScale());
+  // mass scale has been set/modified by geometric scale if appropriate.
   activeModel_->setMassScaling(artObjAttributes->getMassScale());
 
   return true;
