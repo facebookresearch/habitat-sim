@@ -576,45 +576,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
       bool intertiaFromURDF = false,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
 
-  /**
-   * @brief Load, parse, and import a URDF file instantiating an @ref
-   * ArticulatedObject in the world.
-   *
-   * Not implemented in base PhysicsManager.
-   * @param filepath The fully-qualified filename for the URDF file describing
-   * the model the articulated object is to be built from.
-   * @param drawables Reference to the scene graph drawables group to enable
-   * rendering of the newly initialized @ref ArticulatedObject.
-   * @param fixedBase Whether the base of the @ref ArticulatedObject should be
-   * fixed.
-   * @param globalScale A scale multiplier to be applied uniformly in 3
-   * dimensions to the entire @ref ArticulatedObject.
-   * @param massScale A scale multiplier to be applied to the mass of the all
-   * the components of the @ref ArticulatedObject.
-   * @param forceReload If true, reload the source URDF from file, replacing the
-   * cached model.
-   * @param maintainLinkOrder If true, maintain the order of link definitions
-   * from the URDF file as the link indices.
-   * @param intertiaFromURDF If true, load the link inertia matrices from the
-   * URDF file instead of computing automatically from collision shapes.
-   * @param lightSetup The string name of the desired lighting setup to use.
-   *
-   * @return The instanced @ref ArticulatedObject 's ID, mapping to the articulated
-   * object in @ref PhysicsManager::existingObjects_ if successful, or
-   * @ref esp::ID_UNDEFINED. These values come from the same pool used
-   * by rigid objects.
-   */
-  int addArticulatedObjectFromURDF(
-      const std::string& filepath,
-      DrawableGroup* drawables,
-      bool fixedBase = false,
-      float globalScale = 1.0,
-      float massScale = 1.0,
-      bool forceReload = false,
-      bool maintainLinkOrder = false,
-      bool intertiaFromURDF = false,
-      const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
-
   //! Remove an @ref ArticulatedObject from the world by unique id.
   virtual void removeArticulatedObject(int objectId);
 

@@ -484,59 +484,47 @@ int PhysicsManager::addArticulatedObjectFromURDF(
     // acquire context if available
     simulator_->getRenderGLContext();
     auto& drawables = simulator_->getDrawableGroup();
-    return addArticulatedObjectFromURDF(
-        filepath, &drawables, fixedBase, globalScale, massScale, forceReload,
-        maintainLinkOrder, intertiaFromURDF, lightSetup);
+
+    // Retrieve or create the appropriate ArticulatedObjectAttributes to create
+    // this AO.
+
+    bool attribsFound =
+        resourceManager_.getAOAttributesManager()->getObjectLibHasHandle(
+            filepath);
+
+    esp::metadata::attributes::ArticulatedObjectAttributes::ptr
+        artObjAttributes =
+            attribsFound
+                ? resourceManager_.getAOAttributesManager()
+                      ->getObjectCopyByHandle(filepath)
+                : resourceManager_.getAOAttributesManager()->createObject(
+                      filepath, true);
+
+    // Set pertinent values
+    artObjAttributes->setUniformScale(globalScale);
+    artObjAttributes->setMassScale(static_cast<double>(massScale));
+
+    artObjAttributes->setBaseType(metadata::attributes::getAOBaseTypeName(
+        fixedBase ? metadata::attributes::ArticulatedObjectBaseType::Fixed
+                  : metadata::attributes::ArticulatedObjectBaseType::Free));
+
+    artObjAttributes->setInertiaSource(
+        metadata::attributes::getAOInertiaSourceName(
+            intertiaFromURDF
+                ? metadata::attributes::ArticulatedObjectInertiaSource::URDF
+                : metadata::attributes::ArticulatedObjectInertiaSource::
+                      Computed));
+
+    artObjAttributes->setLinkOrder(metadata::attributes::getAOLinkOrderName(
+        maintainLinkOrder
+            ? metadata::attributes::ArticulatedObjectLinkOrder::URDFOrder
+            : metadata::attributes::ArticulatedObjectLinkOrder::TreeTraversal));
+
+    return addArticulatedObject(artObjAttributes, &drawables, forceReload,
+                                lightSetup);
   }
   return ID_UNDEFINED;
-}  // PhysicsManager::addArticulatedObjectFromURDF
-
-int PhysicsManager::addArticulatedObjectFromURDF(
-    const std::string& filepath,
-    DrawableGroup* drawables,
-    bool fixedBase,
-    float globalScale,
-    float massScale,
-    bool forceReload,
-    bool maintainLinkOrder,
-    bool intertiaFromURDF,
-    const std::string& lightSetup) {
-  // Retrieve or create the appropriate ArticulatedObjectAttributes to create
-  // this AO.
-
-  bool attribsFound =
-      resourceManager_.getAOAttributesManager()->getObjectLibHasHandle(
-          filepath);
-
-  esp::metadata::attributes::ArticulatedObjectAttributes::ptr artObjAttributes =
-      attribsFound
-          ? resourceManager_.getAOAttributesManager()->getObjectCopyByHandle(
-                filepath)
-          : resourceManager_.getAOAttributesManager()->createObject(filepath,
-                                                                    true);
-
-  // Set pertinent values
-  artObjAttributes->setUniformScale(globalScale);
-  artObjAttributes->setMassScale(static_cast<double>(massScale));
-
-  artObjAttributes->setBaseType(metadata::attributes::getAOBaseTypeName(
-      fixedBase ? metadata::attributes::ArticulatedObjectBaseType::Fixed
-                : metadata::attributes::ArticulatedObjectBaseType::Free));
-
-  artObjAttributes->setInertiaSource(
-      metadata::attributes::getAOInertiaSourceName(
-          intertiaFromURDF
-              ? metadata::attributes::ArticulatedObjectInertiaSource::URDF
-              : metadata::attributes::ArticulatedObjectInertiaSource::
-                    Computed));
-
-  artObjAttributes->setLinkOrder(metadata::attributes::getAOLinkOrderName(
-      maintainLinkOrder
-          ? metadata::attributes::ArticulatedObjectLinkOrder::URDFOrder
-          : metadata::attributes::ArticulatedObjectLinkOrder::TreeTraversal));
-
-  return addArticulatedObject(artObjAttributes, drawables, forceReload,
-                              lightSetup);
+  //}  // PhysicsManager::addArticulatedObjectFromURDF
 
 }  // PhysicsManager::addArticulatedObjectFromURDF
 
