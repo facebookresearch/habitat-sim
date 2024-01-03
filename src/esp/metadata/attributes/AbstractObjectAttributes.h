@@ -26,22 +26,34 @@ class AbstractObjectAttributes : public AbstractAttributes {
   ~AbstractObjectAttributes() override = default;
 
   /**
-   * @brief Scale of the ojbect
+   * @brief Set the scale of the object
    */
   void setScale(const Magnum::Vector3& scale) { set("scale", scale); }
+  /**
+   * @brief Get the scale of the object
+   */
   Magnum::Vector3 getScale() const { return get<Magnum::Vector3>("scale"); }
 
   /**
-   * @brief collision shape inflation margin
+   * @brief Set the collision shape inflation margin
    */
   void setMargin(double margin) { set("margin", margin); }
+  /**
+   * @brief Get the collision shape inflation margin
+   */
   double getMargin() const { return get<double>("margin"); }
 
-  // if object should be checked for collisions - if other objects can collide
-  // with this object
+  /**
+   * @brief Set if object should be checked for collisions - if other objects
+   * can collide with this object
+   */
   void setIsCollidable(bool isCollidable) {
     set("is_collidable", isCollidable);
   }
+  /**
+   * @brief Get if object should be checked for collisions - if other objects
+   * can collide with this object
+   */
   bool getIsCollidable() const { return get<bool>("is_collidable"); }
 
   /**
@@ -49,7 +61,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    */
   void setOrientUp(const Magnum::Vector3& orientUp) { set("up", orientUp); }
   /**
-   * @brief get default up orientation for object/stage mesh
+   * @brief Get default up orientation for object/stage mesh
    */
   Magnum::Vector3 getOrientUp() const { return get<Magnum::Vector3>("up"); }
   /**
@@ -59,7 +71,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
     set("front", orientFront);
   }
   /**
-   * @brief get default forward orientation for object/stage mesh
+   * @brief Get default forward orientation for object/stage mesh
    */
   Magnum::Vector3 getOrientFront() const {
     return get<Magnum::Vector3>("front");
@@ -576,7 +588,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
 
   std::string getObjectInfoHeaderInternal() const override;
   /**
-   * @brief get AbstractObject specific info header
+   * @brief Get AbstractObject specific info header
    */
   virtual std::string getAbstractObjectInfoHeaderInternal() const {
     return "";
@@ -588,7 +600,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    */
   std::string getObjectInfoInternal() const override;
   /**
-   * @brief get AbstractObject specific info for csv string
+   * @brief Get AbstractObject specific info for csv string
    */
   virtual std::string getAbstractObjectInfoInternal() const { return ""; };
 

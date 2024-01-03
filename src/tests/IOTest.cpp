@@ -215,15 +215,15 @@ void IOTest::parseURDF() {
   CORRADE_COMPARE(urdfModel->m_materials.size(), 3);
 
   // check global scaling
-  CORRADE_COMPARE(urdfModel->getGlobalScaling(), 1.0);
+  CORRADE_COMPARE(urdfModel->getGlobalScaling(), Mn::Vector3{1.0});
   // this link is a mesh shape, so check the mesh scale
   CORRADE_COMPARE(
       urdfModel->getLink(1)->m_collisionArray.back().m_geometry.m_type, 5);
   CORRADE_COMPARE(
       urdfModel->getLink(1)->m_collisionArray.back().m_geometry.m_meshScale,
       Mn::Vector3{1.0});
-  urdfModel->setGlobalScaling(2.0);
-  CORRADE_COMPARE(urdfModel->getGlobalScaling(), 2.0);
+  urdfModel->setGlobalScaling(Mn::Vector3{2.0});
+  CORRADE_COMPARE(urdfModel->getGlobalScaling(), Mn::Vector3{2.0});
   CORRADE_COMPARE(
       urdfModel->getLink(1)->m_collisionArray.back().m_geometry.m_meshScale,
       Mn::Vector3{2.0});
@@ -238,7 +238,7 @@ void IOTest::parseURDF() {
   // test overwrite re-load
   parser.parseURDF(attributes->getURDFPath(), urdfModel);
   // should have default values again
-  CORRADE_COMPARE(urdfModel->getGlobalScaling(), 1.0);
+  CORRADE_COMPARE(urdfModel->getGlobalScaling(), Mn::Vector3{1.0});
   CORRADE_COMPARE(urdfModel->getMassScaling(), 1.0);
   CORRADE_COMPARE(
       urdfModel->getLink(1)->m_collisionArray.back().m_geometry.m_meshScale,

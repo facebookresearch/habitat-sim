@@ -82,15 +82,13 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief Set uniform scaling of the articulated object.
+   * @brief Set scaling vector of the articulated object.
    */
-  void setUniformScale(float scale) { set("uniform_scale", scale); }
+  void setScale(const Magnum::Vector3& scale) { set("scale", scale); }
   /**
-   * @brief Get uniform scaling of the articulated object.
+   * @brief Get the scale vector of the articulated object.
    */
-  float getUniformScale() const {
-    return static_cast<float>(get<double>("uniform_scale"));
-  }
+  Magnum::Vector3 getScale() const { return get<Magnum::Vector3>("scale"); }
 
   /**
    * @brief Set mass scaling of the articulated object.

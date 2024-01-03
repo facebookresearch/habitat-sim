@@ -86,6 +86,7 @@ btCollisionShape* BulletURDFImporter::convertURDFToCollisionShape(
       float radius = collision->m_geometry.m_sphereRadius;
       auto sphereShape = std::make_unique<btSphereShape>(radius);
       shape = sphereShape.get();
+      shape->setLocalScaling(btVector3(collision->m_geometry.m_meshScale));
       shape->setMargin(gUrdfDefaultCollisionMargin);
       linkChildShapes.emplace_back(std::move(sphereShape));
       break;
