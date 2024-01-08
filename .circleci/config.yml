@@ -722,7 +722,7 @@ jobs:
           key: docs-{{ .Branch }}-{{ .Environment.CIRCLE_SHA1 }}
       - add_ssh_keys:
           fingerprints:
-            - "18:88:e0:37:b1:b3:7a:23:aa:1e:f7:43:a8:5b:8e:05"
+            - "2d:7e:75:21:f9:f7:e7:15:84:cf:6a:a0:ff:60:3a:c8"
       - run:
           name: Update public documentation
           no_output_timeout: 30m
@@ -761,17 +761,12 @@ workflows:
   version: 2
   install_and_test:
     jobs:
-      - python_lint
-      - js_lint
       - lab_build_habitat
-      - build_conda_osx:
-         CI_TEST: true
-      - test_pip_build
       - install_and_test_ubuntu
-      - pre-commit
-      - build_conda_binaries:
-          CI_TEST: true
-      - clang_tidy
+      - update_docs:
+          requires:
+            - install_and_test_ubuntu
+            - lab_build_habitat
   nightly:
     triggers:
       - schedule:
