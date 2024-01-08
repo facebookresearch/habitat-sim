@@ -27,11 +27,8 @@
 #     name: python
 #     nbconvert_exporter: python
 #     pygments_lexer: ipython3
-#     version: 3.10.4
+#     version: 3.9.17
 # ---
-
-# %% [markdown]
-# <a href="https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/coordinate_frame_tutorial.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
 # %% [markdown]
 # # Coordinate Frame Conventions
@@ -39,9 +36,6 @@
 
 # %% [markdown]
 # # Installation
-
-# %%
-# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/main/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
 
 # %%
 # @title Imports { display-mode: "form" }
@@ -67,7 +61,6 @@ except ImportError:
 
 # %%
 # @title Setup { display-mode: "form" }
-# %cd /content/habitat-sim
 
 # [setup]
 # Choose quiet logging. See src/esp/core/Logging.h
@@ -76,7 +69,6 @@ os.environ["HABITAT_SIM_LOG"] = "quiet"
 # define path to data directory
 repo = git.Repo(".", search_parent_directories=True)
 dir_path = repo.working_tree_dir
-# %cd $dir_path
 data_path = os.path.join(dir_path, "data")
 
 # images will be either displayed in the colab or saved as image files
@@ -128,6 +120,7 @@ def create_sim_helper(scene_id):
         data_path, "replica_cad/replicaCAD.scene_dataset_config.json"
     )
     sim_cfg.scene_id = scene_id
+    sim_cfg.enable_physics = True  # for ReplicaCAD articulated furniture
 
     agent_cfg = habitat_sim.agent.AgentConfiguration()
     rgb_sensor_spec = habitat_sim.CameraSensorSpec()
@@ -322,7 +315,6 @@ show_scene(calc_camera_transform(eye_translation=eye_pos0, lookat=origin))
 
 
 # %% [markdown]
-# # [blender_chair]
 # # Blender conventions and sources of confusion
 # Blender is an open-source 3D-modeling tool that we on the Habitat team often use. We describe two caveats here:
 # 1. Its convention is z-up, e.g. the default 3D camera is oriented such that z is up.
@@ -333,4 +325,3 @@ show_scene(calc_camera_transform(eye_translation=eye_pos0, lookat=origin))
 # ![Blender Chair](https://user-images.githubusercontent.com/6557808/134411206-eeff1529-04ab-4f20-bc7c-68102f2879f1.png)
 #
 # Let's consider an individual vertex stored in a mesh in a gltf file. Suppose the vertex's local `(x,y,z)` position is `(1,2,3)`. After importing into blender, the vertex's local position in Blender will be `(1,-3,2)`. If the mesh is re-exported as a gltf, the vertex will be written to the file as `(1,2,3)`.
-# # [/blender_chair]

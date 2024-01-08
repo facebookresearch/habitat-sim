@@ -14,19 +14,25 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.13.7
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: Python 3 (ipykernel)
+#     language: python
 #     name: python3
+#   language_info:
+#     codemirror_mode:
+#       name: ipython
+#       version: 3
+#     file_extension: .py
+#     mimetype: text/x-python
+#     name: python
+#     nbconvert_exporter: python
+#     pygments_lexer: ipython3
+#     version: 3.9.17
 # ---
 
 # %%
-# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/main/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
-
-# %%
-# %cd /content/habitat-sim
 ## [setup]
 import os
 import random
-import sys
 
 import git
 import magnum as mn
@@ -35,12 +41,8 @@ import numpy as np
 import habitat_sim
 from habitat_sim.utils import viz_utils as vut
 
-if "google.colab" in sys.modules:
-    os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
-
 repo = git.Repo(".", search_parent_directories=True)
 dir_path = repo.working_tree_dir
-# %cd $dir_path
 data_path = os.path.join(dir_path, "data")
 output_path = os.path.join(
     dir_path, "examples/tutorials/managed_rigid_object_tutorial_output/"
@@ -59,6 +61,7 @@ def place_agent(sim):
 def make_configuration():
     # simulator configuration
     backend_cfg = habitat_sim.SimulatorConfiguration()
+    backend_cfg.enable_physics = True
     backend_cfg.scene_id = os.path.join(
         data_path, "scene_datasets/habitat-test-scenes/apartment_1.glb"
     )

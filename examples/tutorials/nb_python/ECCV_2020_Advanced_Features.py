@@ -20,15 +20,23 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.13.7
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: Python 3 (ipykernel)
+#     language: python
 #     name: python3
+#   language_info:
+#     codemirror_mode:
+#       name: ipython
+#       version: 3
+#     file_extension: .py
+#     mimetype: text/x-python
+#     name: python
+#     nbconvert_exporter: python
+#     pygments_lexer: ipython3
+#     version: 3.9.17
 # ---
 
 # %% [markdown]
-# <a href="https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/ECCV_2020_Advanced_Features.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
-
-# %% [markdown]
-# #Habitat-sim Advanced Features
+# # Habitat-sim Advanced Features
 #
 # This tutorial presents a number of advanced feature examples for using Habitat-sim, including:
 #
@@ -38,21 +46,13 @@
 # - Object/Asset configuration via template libraries
 
 # %%
-# @title Installation { display-mode: "form" }
-# @markdown (double click to show code).
-
-# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/main/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
-
-# %%
 # @title Path Setup and Imports { display-mode: "form" }
 # @markdown (double click to show code).
 
-# %cd /content/habitat-sim
 ## [setup]
 import math
 import os
 import random
-import sys
 
 import git
 import magnum as mn
@@ -76,20 +76,14 @@ try:
 except ImportError:
     HAS_WIDGETS = False
 
-
-if "google.colab" in sys.modules:
-    os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
-
 repo = git.Repo(".", search_parent_directories=True)
 dir_path = repo.working_tree_dir
-# %cd $dir_path
 data_path = os.path.join(dir_path, "data")
 # fmt: off
 output_directory = "examples/tutorials/advanced_features_output/"  # @param {type:"string"}
 # fmt: on
 output_path = os.path.join(dir_path, output_directory)
-if not os.path.exists(output_path):
-    os.mkdir(output_path)
+os.makedirs(output_path, exist_ok=True)
 
 # define some globals the first time we run.
 if "sim" not in globals():
@@ -504,8 +498,12 @@ def make_default_settings():
     settings = {
         "width": 720,  # Spatial resolution of the observations
         "height": 544,
-        "scene": "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb",  # Scene path
-        "scene_dataset": "./data/scene_datasets/mp3d_example/mp3d.scene_dataset_config.json",  # mp3d scene dataset
+        "scene": os.path.join(
+            data_path, "scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
+        ),  # Scene path
+        "scene_dataset": os.path.join(
+            data_path, "scene_datasets/mp3d_example/mp3d.scene_dataset_config.json"
+        ),  # mp3d scene dataset
         "default_agent": 0,
         "sensor_height": 1.5,  # Height of sensors in meters
         "sensor_pitch": -math.pi / 8.0,  # sensor pitch (x rotation in rads)
@@ -856,7 +854,9 @@ def build_widget_ui(obj_attr_mgr, prim_attr_mgr):
 # %%
 # @title Initialize Simulator and Load Scene { display-mode: "form" }
 sim_settings = make_default_settings()
-sim_settings["scene"] = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
+sim_settings["scene"] = os.path.join(
+    data_path, "scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
+)
 sim_settings["sensor_pitch"] = 0
 
 make_simulator_from_settings(sim_settings)
@@ -1012,7 +1012,9 @@ rigid_obj_mgr.remove_all_objects()
 # @markdown ###Configuring Object Semantic IDs:
 
 sim_settings = make_default_settings()
-sim_settings["scene"] = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
+sim_settings["scene"] = os.path.join(
+    data_path, "scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
+)
 sim_settings["sensor_pitch"] = 0
 sim_settings["semantic_sensor_1st_person"] = True
 
@@ -1101,7 +1103,9 @@ rigid_obj_mgr.remove_all_objects()
 # @title Initialize Simulator and Load Scene { display-mode: "form" }
 # @markdown (load the apartment_1 scene for object and primitive asset customization in an open space)
 sim_settings = make_default_settings()
-sim_settings["scene"] = "./data/scene_datasets/habitat-test-scenes/apartment_1.glb"
+sim_settings["scene"] = os.path.join(
+    data_path, "scene_datasets/habitat-test-scenes/apartment_1.glb"
+)
 sim_settings["sensor_pitch"] = 0
 
 make_simulator_from_settings(sim_settings)
@@ -1523,7 +1527,7 @@ def edit_wf_capsule(edit_template):
 edit_wf_capsule(capsule_wireframe_template)
 
 # %% [markdown]
-# ####2.2 Cone Primitive : Cone of radius 1.0f along the Y axis, centered at origin.
+# #### 2.2 Cone Primitive : Cone of radius 1.0f along the Y axis, centered at origin.
 #
 
 # %%
@@ -1589,7 +1593,7 @@ def edit_wireframe_cone(edit_template):
 edit_wireframe_cone(cone_wireframe_template)
 
 # %% [markdown]
-# ####2.3 Cylinder Primitive : Cylinder of radius 1.0f along the Y axis, centered at origin.
+# #### 2.3 Cylinder Primitive : Cylinder of radius 1.0f along the Y axis, centered at origin.
 
 # %%
 # @title ####2.3.1 Solid Cylinder : { display-mode: "form" }
@@ -1660,7 +1664,7 @@ def edit_wireframe_cylinder(edit_template):
 edit_wireframe_cylinder(cylinder_wireframe_template)
 
 # %% [markdown]
-# ####2.4 Icosphere Primitive : Icosahedron-based sphere of radius 1.0f, centered at the origin.
+# #### 2.4 Icosphere Primitive : Icosahedron-based sphere of radius 1.0f, centered at the origin.
 #
 # Only solid icospheres have any editable geometric parameters.
 
@@ -1688,7 +1692,7 @@ def edit_solid_icosphere(edit_template):
 edit_solid_icosphere(icosphere_solid_template)
 
 # %% [markdown]
-# ####2.5 UVSphere Primitive : Sphere of radius 1.0f, centered at the origin.
+# #### 2.5 UVSphere Primitive : Sphere of radius 1.0f, centered at the origin.
 
 # %%
 # @title ####2.5.1 Solid UVSphere : { display-mode: "form" }
@@ -1751,7 +1755,7 @@ def edit_wireframe_UVSphere(edit_template):
 edit_wireframe_UVSphere(UVSphere_wireframe_template)
 
 # %% [markdown]
-# ####2.6 Instancing Objects with Modified Primitive-Asset Attributes.
+# #### 2.6 Instancing Objects with Modified Primitive-Asset Attributes.
 
 # %%
 # @title ####Using the modifications set in the previous cells, instantiate examples of all available solid and wireframe primitives.{ display-mode: "form" }
@@ -1812,11 +1816,11 @@ make_clear_all_objects_button()
 #
 # In addition to the topics we covered here, visit the Habitat-sim [python docs](https://aihabitat.org/docs/habitat-sim/) to explore more topics.
 #
-# ###Custom Lighting Setups
+# ### Custom Lighting Setups
 #
 # Habitat-sim allows for both Phong and Flat shading options and configurable lighting groups for objects and scenes to be customized. See our [Working with Lights tutorial page](https://aihabitat.org/docs/habitat-sim/lighting-setups.html) to learn more.
 #
-# ###Interactive Rigid Objects
+# ### Interactive Rigid Objects
 #
 # For more details on the rigid object API, see our [Interactive Rigid Objects tutorial](https://aihabitat.org/docs/habitat-sim/rigid-object-tutorial.html).
 #

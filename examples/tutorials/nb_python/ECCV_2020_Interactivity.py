@@ -15,15 +15,26 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.13.7
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: Python 3 (ipykernel)
+#     language: python
 #     name: python3
+#   language_info:
+#     codemirror_mode:
+#       name: ipython
+#       version: 3
+#     file_extension: .py
+#     mimetype: text/x-python
+#     name: python
+#     nbconvert_exporter: python
+#     pygments_lexer: ipython3
+#     version: 3.9.17
 # ---
 
 # %% [markdown]
 # <a href="https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/ECCV_2020_Interactivity.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
 # %% [markdown]
-# #Habitat-sim Interactivity
+# # Habitat-sim Interactivity
 #
 # This use-case driven tutorial covers Habitat-sim interactivity, including:
 # - Adding new objects to a scene
@@ -34,21 +45,13 @@
 # - Agent embodiment and continuous control
 
 # %%
-# @title Installation { display-mode: "form" }
-# @markdown (double click to show code).
-
-# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/main/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
-
-# %%
 # @title Path Setup and Imports { display-mode: "form" }
 # @markdown (double click to show code).
 
-# %cd /content/habitat-sim
 ## [setup]
 import math
 import os
 import random
-import sys
 
 import git
 import magnum as mn
@@ -72,18 +75,12 @@ try:
 except ImportError:
     HAS_WIDGETS = False
 
-
-if "google.colab" in sys.modules:
-    os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
-
 repo = git.Repo(".", search_parent_directories=True)
 dir_path = repo.working_tree_dir
-# %cd $dir_path
 data_path = os.path.join(dir_path, "data")
 output_directory = "examples/tutorials/interactivity_output/"  # @param {type:"string"}
 output_path = os.path.join(dir_path, output_directory)
-if not os.path.exists(output_path):
-    os.mkdir(output_path)
+os.makedirs(output_path, exist_ok=True)
 
 # define some globals the first time we run.
 if "sim" not in globals():
@@ -202,8 +199,12 @@ def make_default_settings():
     settings = {
         "width": 720,  # Spatial resolution of the observations
         "height": 544,
-        "scene": "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb",  # Scene path
-        "scene_dataset_config": "./data/scene_datasets/mp3d_example/mp3d.scene_dataset_config.json",  # MP3D scene dataset
+        "scene": os.path.join(
+            data_path, "scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
+        ),  # Scene path
+        "scene_dataset_config": os.path.join(
+            data_path, "scene_datasets/mp3d_example/mp3d.scene_dataset_config.json"
+        ),  # MP3D scene dataset
         "default_agent": 0,
         "sensor_height": 1.5,  # Height of sensors in meters
         "sensor_pitch": -math.pi / 8.0,  # sensor pitch (x rotation in rads)
@@ -529,7 +530,7 @@ sim_settings = make_default_settings()
 make_simulator_from_settings(sim_settings)
 
 # %% [markdown]
-# #Interactivity in Habitat-sim
+# # Interactivity in Habitat-sim
 #
 # This tutorial covers how to configure and use the Habitat-sim object manipulation API to setup and run physical interaction simulations.
 #
@@ -540,7 +541,7 @@ make_simulator_from_settings(sim_settings)
 # 3.   Generating Scene Clutter on the NavMesh
 # 4.   Continuous Embodied Navigation
 #
-# For more tutorial examples and details see the [Interactive Rigid Objects tutorial](https://aihabitat.org/docs/habitat-sim/rigid-object-tutorial.html) also available for Colab [here](https://github.com/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/rigid_object_tutorial.ipynb).
+# For more tutorial examples and details see the [Interactive Rigid Objects tutorial](https://aihabitat.org/docs/habitat-sim/rigid-object-tutorial.html).
 #
 #
 #
@@ -549,7 +550,7 @@ make_simulator_from_settings(sim_settings)
 # %% [markdown]
 # ## Introduction to Interactivity
 #
-# ####Easily add an object and simulate!
+# #### Easily add an object and simulate!
 #
 #
 
@@ -890,7 +891,9 @@ rigid_obj_mgr.remove_all_objects()
 # @title Initialize Simulator and Load Scene { display-mode: "form" }
 # @markdown (load the apartment_1 scene for clutter generation in an open space)
 sim_settings = make_default_settings()
-sim_settings["scene"] = "./data/scene_datasets/habitat-test-scenes/apartment_1.glb"
+sim_settings["scene"] = os.path.join(
+    data_path, "scene_datasets/habitat-test-scenes/apartment_1.glb"
+)
 sim_settings["sensor_pitch"] = 0
 
 make_simulator_from_settings(sim_settings)
@@ -1182,7 +1185,7 @@ class ObjectGripper:
 # @markdown - modified 1st person sensor placement
 sim_settings = make_default_settings()
 # fmt: off
-sim_settings["scene"] = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"  # @param{type:"string"}
+sim_settings["scene"] = os.path.join(data_path, "scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb")  # @param{type:"string"}
 # fmt: on
 sim_settings["sensor_pitch"] = 0
 sim_settings["sensor_height"] = 0.6
