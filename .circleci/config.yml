@@ -761,12 +761,17 @@ workflows:
   version: 2
   install_and_test:
     jobs:
+      - python_lint
+      - js_lint
       - lab_build_habitat
+      - build_conda_osx:
+         CI_TEST: true
+      - test_pip_build
       - install_and_test_ubuntu
-      - update_docs:
-          requires:
-            - install_and_test_ubuntu
-            - lab_build_habitat
+      - pre-commit
+      - build_conda_binaries:
+          CI_TEST: true
+      - clang_tidy
   nightly:
     triggers:
       - schedule:
