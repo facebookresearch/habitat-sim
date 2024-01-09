@@ -189,6 +189,9 @@ All rigid and articulated objects instanced in the scene during initialization s
         - "non_uniform_scale"
             - 3-vector
             - A non-uniform scale vector to apply in addition to the uniform scale.
+          "apply_scale_to_mass"
+            - boolean
+            - Whether or not to apply the product of the geometric scaling to the mass.
         - "translation_origin"
             - string
             - One of ('COM', 'asset_local'). Defines whether the translation provided for this object instance is applied in render asset local space or center of mass (COM) aligned space. All rigid object translations within Habitat-sim are in COM space, but external translations (e.g. exported from Blender) may not be.
@@ -223,6 +226,9 @@ All rigid and articulated objects instanced in the scene during initialization s
         - "mass_scale"
             - float
             - Mass does not scale linearly with object scale, so you can customize this.
+          "apply_scale_to_mass"
+            - boolean
+            - Whether or not to apply the product of the geometric scaling to the mass. This is in addition to any scaling specified via "mass_scale" .
         - "translation_origin"
             - string
             - One of ('COM', 'asset_local'). Defines whether the translation provided for this object instance is applied in render asset local space or center of mass (COM) aligned space.

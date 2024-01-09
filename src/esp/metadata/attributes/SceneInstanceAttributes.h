@@ -190,6 +190,22 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
   }
 
   /**
+   * @brief Object and Articulated Object Instance only. Get whether or
+   * not to apply geometric scaling to mass (i.e. to maintain object mean
+   * density)
+   */
+  bool getApplyScaleToMass() const { return get<bool>("apply_scale_to_mass"); }
+
+  /**
+   * @brief Object and Articulated Object Instance only. Set whether or
+   * not to apply geometric scaling to mass (i.e. to maintain object mean
+   * density)
+   */
+  void setApplyScaleToMass(bool apply_scale_to_mass) {
+    set("apply_scale_to_mass", apply_scale_to_mass);
+  }
+
+  /**
    * @brief Get or set the mass scaling of the instanced object.
    */
   double getMassScale() const { return get<double>("mass_scale"); }

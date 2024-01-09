@@ -90,9 +90,9 @@ void BulletArticulatedObject::initializeFromURDF(
 
   if (recursive) {
     // NOTE: recursive path only
-    u2b.convertURDF2BulletInternal(urdfLinkIndex, rootTransformInWorldSpace,
-                                   bWorld_.get(), linkCompoundShapes_,
-                                   linkChildShapes_, recursive);
+    u2b.convertURDFToBulletInternal(urdfLinkIndex, rootTransformInWorldSpace,
+                                    bWorld_.get(), linkCompoundShapes_,
+                                    linkChildShapes_, recursive);
   } else {
     std::vector<Mn::Matrix4> parentTransforms;
     parentTransforms.resize(urdfLinkIndex + 1);
@@ -113,7 +113,7 @@ void BulletArticulatedObject::initializeFromURDF(
       int parentIndex = allIndices[i].m_parentIndex;
       Mn::Matrix4 parentTr = parentIndex >= 0 ? parentTransforms[parentIndex]
                                               : rootTransformInWorldSpace;
-      Mn::Matrix4 tr = u2b.convertURDF2BulletInternal(
+      Mn::Matrix4 tr = u2b.convertURDFToBulletInternal(
           urdfLinkIndex, parentTr, bWorld_.get(), linkCompoundShapes_,
           linkChildShapes_, recursive);
       parentTransforms[urdfLinkIndex] = tr;

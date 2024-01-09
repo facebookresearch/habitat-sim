@@ -74,25 +74,5 @@ ArticulatedObjectManager::addArticulatedObjectByID(
   return nullptr;
 }
 
-std::shared_ptr<ManagedArticulatedObject>
-ArticulatedObjectManager::addArticulatedObjectFromURDFWithDrawables(
-    const std::string& filepath,
-    gfx::DrawableGroup* drawables,
-    bool fixedBase,
-    float globalScale,
-    float massScale,
-    bool forceReload,
-    bool maintainLinkOrder,
-    bool intertiaFromURDF,
-    const std::string& lightSetup) {
-  if (auto physMgr = this->getPhysicsManager()) {
-    int newAObjID = physMgr->addArticulatedObjectFromURDF(
-        filepath, drawables, fixedBase, globalScale, massScale, forceReload,
-        maintainLinkOrder, intertiaFromURDF, lightSetup);
-    return this->getObjectCopyByID(newAObjID);
-  }
-  return nullptr;
-}
-
 }  // namespace physics
 }  // namespace esp

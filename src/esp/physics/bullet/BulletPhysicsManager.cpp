@@ -156,7 +156,7 @@ int BulletPhysicsManager::addArticulatedObject(
       metadata::attributes::ArticulatedObjectInertiaSource::URDF) {
     u2b->flags |= CUF_USE_URDF_INERTIA;
   }
-  u2b->initURDF2BulletCache();
+  u2b->initURDFToBulletCache();
 
   articulatedObject->initializeFromURDF(*urdfImporter_, {}, physicsNode_);
   auto model = u2b->getModel();

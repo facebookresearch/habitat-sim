@@ -111,26 +111,22 @@ class URDFImporter {
                             float& jointUpperLimit,
                             float& jointDamping,
                             float& jointFriction) const;
-  virtual bool getJointInfo2(int linkIndex,
-                             Magnum::Matrix4& parent2joint,
-                             Magnum::Matrix4& linkTransformInWorld,
-                             Magnum::Vector3& jointAxisInJointSpace,
-                             int& jointType,
-                             float& jointLowerLimit,
-                             float& jointUpperLimit,
-                             float& jointDamping,
-                             float& jointFriction,
-                             float& jointMaxForce,
-                             float& jointMaxVelocity) const;
+  virtual bool getJointInfo(int linkIndex,
+                            Magnum::Matrix4& parent2joint,
+                            Magnum::Matrix4& linkTransformInWorld,
+                            Magnum::Vector3& jointAxisInJointSpace,
+                            int& jointType,
+                            float& jointLowerLimit,
+                            float& jointUpperLimit,
+                            float& jointDamping,
+                            float& jointFriction,
+                            float& jointMaxForce,
+                            float& jointMaxVelocity) const;
 
   virtual void getMassAndInertia(int linkIndex,
                                  float& mass,
                                  Magnum::Vector3& localInertiaDiagonal,
                                  Magnum::Matrix4& inertialFrame) const;
-  virtual void getMassAndInertia2(int linkIndex,
-                                  float& mass,
-                                  Magnum::Vector3& localInertiaDiagonal,
-                                  Magnum::Matrix4& inertialFrame) const;
 
   // This is no longer used, instead set the urdf subsystem to veryverbose,
   // i.e. export HABITAT_SIM_LOG="urdf=veryverbose"

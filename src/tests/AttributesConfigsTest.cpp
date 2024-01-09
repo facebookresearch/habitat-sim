@@ -682,6 +682,7 @@ void AttributesConfigsTest::testSceneInstanceAttrVals(
                   Mn::Quaternion({0.3f, 0.4f, 0.5f}, 0.2f));
   CORRADE_COMPARE(static_cast<int>(objInstance->getMotionType()),
                   static_cast<int>(esp::physics::MotionType::KINEMATIC));
+  CORRADE_VERIFY(objInstance->getApplyScaleToMass());
   CORRADE_COMPARE(objInstance->getUniformScale(), 1.1f);
   CORRADE_COMPARE(objInstance->getNonUniformScale(),
                   Mn::Vector3(1.1f, 2.2f, 3.3f));
@@ -700,6 +701,7 @@ void AttributesConfigsTest::testSceneInstanceAttrVals(
                   Mn::Quaternion({0.6f, 0.7f, 0.8f}, 0.5f));
   CORRADE_COMPARE(static_cast<int>(objInstance->getMotionType()),
                   static_cast<int>(esp::physics::MotionType::DYNAMIC));
+  CORRADE_VERIFY(!objInstance->getApplyScaleToMass());
   CORRADE_COMPARE(objInstance->getUniformScale(), 2.1f);
   CORRADE_COMPARE(objInstance->getNonUniformScale(),
                   Mn::Vector3(2.1f, 3.2f, 4.3f));
@@ -720,6 +722,7 @@ void AttributesConfigsTest::testSceneInstanceAttrVals(
                   static_cast<int>(Attrs::SceneInstanceTranslationOrigin::COM));
   CORRADE_COMPARE(static_cast<int>(artObjInstance->getBaseType()),
                   static_cast<int>(Attrs::ArticulatedObjectBaseType::Fixed));
+  CORRADE_VERIFY(artObjInstance->getApplyScaleToMass());
   CORRADE_COMPARE(
       static_cast<int>(artObjInstance->getInertiaSource()),
       static_cast<int>(Attrs::ArticulatedObjectInertiaSource::URDF));
@@ -780,6 +783,7 @@ void AttributesConfigsTest::testSceneInstanceAttrVals(
   CORRADE_COMPARE(
       static_cast<int>(artObjInstance->getInertiaSource()),
       static_cast<int>(Attrs::ArticulatedObjectInertiaSource::Computed));
+  CORRADE_VERIFY(!artObjInstance->getApplyScaleToMass());
   CORRADE_COMPARE(
       static_cast<int>(artObjInstance->getLinkOrder()),
       static_cast<int>(Attrs::ArticulatedObjectLinkOrder::TreeTraversal));
@@ -806,6 +810,7 @@ void AttributesConfigsTest::testSceneInstanceAttrVals(
   CORRADE_COMPARE(
       static_cast<int>(artObjInstance->getInertiaSource()),
       static_cast<int>(Attrs::ArticulatedObjectInertiaSource::Unspecified));
+  CORRADE_VERIFY(artObjInstance->getApplyScaleToMass());
   CORRADE_COMPARE(
       static_cast<int>(artObjInstance->getLinkOrder()),
       static_cast<int>(Attrs::ArticulatedObjectLinkOrder::Unspecified));
@@ -880,6 +885,7 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
           "translation": [0,1,2],
           "rotation": [0.2, 0.3, 0.4, 0.5],
           "motion_type": "KINEMATIC",
+          "apply_scale_to_mass": true,
           "uniform_scale" : 1.1,
           "non_uniform_scale" : [1.1,2.2,3.3],
           "user_defined" : {
@@ -899,6 +905,7 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
           "translation": [0,-1,-2],
           "rotation": [0.5, 0.6, 0.7, 0.8],
           "motion_type": "DYNAMIC",
+          "apply_scale_to_mass": false,
           "uniform_scale" : 2.1,
           "non_uniform_scale" : [2.1,3.2,4.3],
           "user_defined" : {
@@ -920,6 +927,7 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
               "translation_origin": "COM",
               "base_type" : "fixed",
               "inertia_source" : "urdf",
+              "apply_scale_to_mass": true,
               "link_order" : "urdf_order",
               "render_mode": "link_visuals",
               "auto_clamp_joint_limits" : true,
@@ -948,6 +956,7 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
               "template_name": "test_urdf_template1",
               "base_type" : "free",
               "inertia_source" : "computed",
+              "apply_scale_to_mass": false,
               "link_order" : "tree_traversal",
               "render_mode": "both",
               "auto_clamp_joint_limits" : true,
