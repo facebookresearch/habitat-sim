@@ -214,8 +214,8 @@ jobs:
           name: run black
           command: |
               black --version
-              black --exclude '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist)|examples/tutorials/(colabs|nb_python)'  src_python/habitat_sim/. examples/. tests/. setup.py --diff
-              black --exclude '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist)|examples/tutorials/(colabs|nb_python)'  src_python/habitat_sim/. examples/. tests/. setup.py --check
+              black --exclude '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist)|examples/tutorials/(notebooks|nb_python)'  src_python/habitat_sim/. examples/. tests/. setup.py --diff
+              black --exclude '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist)|examples/tutorials/(notebooks|nb_python)'  src_python/habitat_sim/. examples/. tests/. setup.py --check
       - run:
           name: run isort
           command: |

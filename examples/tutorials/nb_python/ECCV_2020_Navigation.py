@@ -1,13 +1,9 @@
 # ---
 # jupyter:
 #   accelerator: GPU
-#   colab:
-#     collapsed_sections: []
-#     name: 'ECCV 2020: Navigation'
-#     provenance: []
 #   jupytext:
 #     cell_metadata_filter: -all
-#     formats: nb_python//py:percent,colabs//ipynb
+#     formats: nb_python//py:percent,notebooks//ipynb
 #     notebook_metadata_filter: all
 #     text_representation:
 #       extension: .py
@@ -15,8 +11,19 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.13.7
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: Python 3 (ipykernel)
+#     language: python
 #     name: python3
+#   language_info:
+#     codemirror_mode:
+#       name: ipython
+#       version: 3
+#     file_extension: .py
+#     mimetype: text/x-python
+#     name: python
+#     nbconvert_exporter: python
+#     pygments_lexer: ipython3
+#     version: 3.9.17
 # ---
 
 # %% [markdown]
@@ -36,18 +43,12 @@
 # - pathfinding and navigation on the NavMesh
 
 # %%
-# @title Installation
-
-# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/main/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
-
-# %%
-# @title Colab Setup and Imports { display-mode: "form" }
+# @title Setup and Imports { display-mode: "form" }
 # @markdown (double click to see the code)
 
 import math
 import os
 import random
-import sys
 
 import git
 import imageio
@@ -64,18 +65,14 @@ import habitat_sim
 from habitat_sim.utils import common as utils
 from habitat_sim.utils import viz_utils as vut
 
-# %cd /content/habitat-sim
-
-if "google.colab" in sys.modules:
-    # This tells imageio to use the system FFMPEG that has hardware acceleration.
-    os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
-
 repo = git.Repo(".", search_parent_directories=True)
 dir_path = repo.working_tree_dir
-# %cd $dir_path
 data_path = os.path.join(dir_path, "data")
+print(f"data_path = {data_path}")
 # @markdown Optionally configure the save path for video output:
-output_directory = "examples/tutorials/nav_output/"  # @param {type:"string"}
+output_directory = os.path.join(
+    dir_path, "examples/tutorials/nav_output/"
+)  # @param {type:"string"}
 output_path = os.path.join(dir_path, output_directory)
 if not os.path.exists(output_path):
     os.mkdir(output_path)
@@ -157,7 +154,9 @@ if display:
 # %%
 # This is the scene we are going to load.
 # we support a variety of mesh formats, such as .glb, .gltf, .obj, .ply
-test_scene = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
+test_scene = os.path.join(
+    data_path, "scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
+)
 
 sim_settings = {
     "scene": test_scene,  # Scene path
@@ -210,7 +209,7 @@ cfg = make_simple_cfg(sim_settings)
 # ### Create a simulator instance
 
 # %%
-try:  # Needed to handle out of order cell run in Colab
+try:  # Needed to handle out of order cell run in Jupyter
     sim.close()
 except NameError:
     pass
@@ -282,8 +281,12 @@ navigateAndSee(action)
 # %%
 # @title Configure Sim Settings
 
-test_scene = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
-mp3d_scene_dataset = "./data/scene_datasets/mp3d_example/mp3d.scene_dataset_config.json"
+test_scene = os.path.join(
+    data_path, "scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
+)
+mp3d_scene_dataset = os.path.join(
+    data_path, "scene_datasets/mp3d_example/mp3d.scene_dataset_config.json"
+)
 
 rgb_sensor = True  # @param {type:"boolean"}
 depth_sensor = True  # @param {type:"boolean"}
@@ -359,7 +362,7 @@ def make_cfg(settings):
 
 # %%
 cfg = make_cfg(sim_settings)
-# Needed to handle out of order cell run in Colab
+# Needed to handle out of order cell run in Jupyter
 try:  # Got to make initialization idiot proof
     sim.close()
 except NameError:
@@ -726,7 +729,9 @@ else:
 # %%
 # initialize a new simulator with the apartment_1 scene
 # this will automatically load the accompanying .navmesh file
-sim_settings["scene"] = "./data/scene_datasets/habitat-test-scenes/apartment_1.glb"
+sim_settings["scene"] = os.path.join(
+    data_path, "scene_datasets/habitat-test-scenes/apartment_1.glb"
+)
 cfg = make_cfg(sim_settings)
 try:  # Got to make initialization idiot proof
     sim.close()
@@ -736,7 +741,7 @@ sim = habitat_sim.Simulator(cfg)
 
 # the navmesh can also be explicitly loaded
 sim.pathfinder.load_nav_mesh(
-    "./data/scene_datasets/habitat-test-scenes/apartment_1.navmesh"
+    os.path.join(data_path, "scene_datasets/habitat-test-scenes/apartment_1.navmesh")
 )
 
 # %% [markdown]
@@ -929,7 +934,7 @@ else:
 # fmt: off
 # @markdown An existing NavMesh can be saved with *Pathfinder.save_nav_mesh(filename)*
 if sim.pathfinder.is_loaded:
-    navmesh_save_path = "/content/habitat-sim/data/test_saving.navmesh" #@param {type:"string"}
+    navmesh_save_path = os.path.join(data_path, "test_saving.navmesh") #@param {type:"string"}
     sim.pathfinder.save_nav_mesh(navmesh_save_path)
     print('Saved NavMesh to "' + navmesh_save_path + '"')
     sim.pathfinder.load_nav_mesh(navmesh_save_path)
@@ -964,9 +969,9 @@ use_current_scene = False  # @param {type:"boolean"}
 sim_settings["seed"] = seed
 if not use_current_scene:
     # reload a default nav scene
-    sim_settings[
-        "scene"
-    ] = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
+    sim_settings["scene"] = os.path.join(
+        data_path, "scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
+    )
     cfg = make_cfg(sim_settings)
     try:  # make initialization Colab cell order proof
         sim.close()

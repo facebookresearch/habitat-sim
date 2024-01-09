@@ -14,9 +14,7 @@ View Assets in Habitat-Sim
 ====================================
 
 When composing or editing assets for a habitat dataset, it would be helpful to see how they would be rendered in the Habitat-sim engine.  This can be difficult to accomplish without a lot of setup work, and this is made more difficult if Habitat-sim is not installed.
-This tutorial describes the Asset Viewer tool, which exists as both a `Colab`_, and a pure python utility.
-
-.. _Colab: https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/asset_viewer.ipynb
+This tutorial describes the Asset Viewer tool, which exists as both a Jupyter notebook, and a pure python utility.
 
 .. code:: shell-session
 
@@ -29,20 +27,6 @@ Here we initialize the :ref:`Simulator`. Note that we override default settings 
     :code: py
     :start-after: # [initialize]
     :end-before: # [/initialize]
-
-`Upload an Asset and Choose it for Display`_
-============================================
-
-To specify the asset to be viewed, set 'object_to_view_path' to be the full path to the asset.  If executing this tool as a Google colab,
-you can upload an asset file to a location in the directory structure to the left of the screen, as is shown in the image below.
-
-.. include:: ../../examples/tutorials/nb_python/asset_viewer.py
-    :code: py
-    :start-after: # [specify_object]
-    :end-before: # [/specify_object]
-
-.. image:: images/asset-viewer-images/asset-viewer-1.png
-    :width: 60em
 
 `View the Asset, and Correct Inappropriate Orientation`_
 ========================================================

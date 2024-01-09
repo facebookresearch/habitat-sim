@@ -475,7 +475,7 @@ habitat_sim.registry (i.e. adding the @registry.register_pose_extractor(name) de
 `Default Behavior`_
 -------------------
 
-The default behavior is reliant on something called the topdown view of a scene, which is just a two-dimensional birds-eye representation of the scene. The topdown view is a two-dimensional array of 1s and 0s where 1 means that pixel is "navigable" in the scene (i.e. an agent can walk on top of that point) and 0 means that pixel is "unnavigable". For more detailed information about navigability and computing topdown maps, please refer to the `Habitat-Sim Basics for Navigation Colab notebook`_.
+The default behavior is reliant on something called the topdown view of a scene, which is just a two-dimensional birds-eye representation of the scene. The topdown view is a two-dimensional array of 1s and 0s where 1 means that pixel is "navigable" in the scene (i.e. an agent can walk on top of that point) and 0 means that pixel is "unnavigable". For more detailed information about navigability and computing topdown maps, please refer to the `Habitat-Sim Basics for Navigation Jupyter notebook`_.
 
 The default pose extractor is the ClosestPointExtractor, which behaves as follows. For each camera position, the pose extractor will aim the camera pose at the closest point that is "unnvaigable". For example, if the camera position is right next to a chair in the scene, and that chair is the closest point that an agent in the environment cannot walk on top of, the camera will point at the chair.
 
@@ -603,4 +603,4 @@ Thank you for reading!
 
 .. _this code: https://github.com/facebookresearch/habitat-sim/blob/main/src_python/habitat_sim/utils/data/pose_extractor.py
 
-.. _Habitat-Sim Basics for Navigation Colab notebook: https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/ECCV_2020_Navigation.ipynb
+.. _Habitat-Sim Basics for Navigation Jupyter notebook: https://github.com/facebookresearch/habitat-sim/blob/main/examples/tutorials/notebooks/ECCV_2020_Navigation.ipynb
