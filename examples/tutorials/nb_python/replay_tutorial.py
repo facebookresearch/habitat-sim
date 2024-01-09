@@ -62,6 +62,7 @@ repo = git.Repo(".", search_parent_directories=True)
 dir_path = repo.working_tree_dir
 data_path = os.path.join(dir_path, "data")
 output_path = os.path.join(dir_path, "examples/tutorials/replay_tutorial_output/")
+os.makedirs(output_path, exist_ok=True)
 
 
 # %% [markdown]
