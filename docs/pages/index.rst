@@ -17,11 +17,11 @@ Tutorials
 .. class:: m-table m-fullwidth
 
 =================================================== ========================================================================================================================================================== ======================
-Basics for Navigation                               `Video <https://youtu.be/kunFMRJAu2U?list=PLGywud_-HlCORC0c4uj97oppQrGiB6JNy>`__                                                                               `Interactive Colab <https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/ECCV_2020_Navigation.ipynb>`__
+Basics for Navigation                               `Video <https://youtu.be/kunFMRJAu2U?list=PLGywud_-HlCORC0c4uj97oppQrGiB6JNy>`__                                                                               :gh:`Jupyter Notebook <facebookresearch/habitat-sim/blob/main/examples/tutorials/notebooks/ECCV_2020_Navigation.ipynb>`
 
-Interaction                                         `Video <https://youtu.be/6eh0PBesIgw?list=PLGywud_-HlCORC0c4uj97oppQrGiB6JNy>`__                                                                               `Interactive Colab <https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/ECCV_2020_Interactivity.ipynb>`__
+Interaction                                         `Video <https://youtu.be/6eh0PBesIgw?list=PLGywud_-HlCORC0c4uj97oppQrGiB6JNy>`__                                                                               :gh:`Jupyter Notebook <facebookresearch/habitat-sim/blob/main/examples/tutorials/notebooks/ECCV_2020_Interactivity.ipynb>`
 
-Advanced Topics                                     `Video <https://youtu.be/w_kDq6UOKos?list=PLGywud_-HlCORC0c4uj97oppQrGiB6JNy>`__                                                                               `Interactive Colab <https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/ECCV_2020_Advanced_Features.ipynb>`__
+Advanced Topics                                     `Video <https://youtu.be/w_kDq6UOKos?list=PLGywud_-HlCORC0c4uj97oppQrGiB6JNy>`__                                                                               :gh:`Jupyter Notebook <facebookresearch/habitat-sim/blob/main/examples/tutorials/notebooks/ECCV_2020_Advanced_Features.ipynb>`
 
 Profiling and Optimization                          `Video <https://youtu.be/I4MjX598ZYs?list=PLGywud_-HlCORC0c4uj97oppQrGiB6JNy>`__                                                                               `Interactive Colab <https://colab.research.google.com/gist/eundersander/b62bb497519b44cf4ceb10e2079525dc/faster-rl-training-profiling-and-optimization.ipynb>`__
 
@@ -35,15 +35,15 @@ Working with light setups                           :ref:`Page <std:doc:lighting
 
 Extracting Images                                   :ref:`Page <std:doc:image-extractor>`
 
-View Assets in Habitat-Sim                          :ref:`Page <std:doc:asset-viewer-tutorial>`                                                                                                                    `Interactive Colab <https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/asset_viewer.ipynb>`__
+View Assets in Habitat-Sim                          :ref:`Page <std:doc:asset-viewer-tutorial>`                                                                                                                    :gh:`Jupyter Notebook <facebookresearch/habitat-sim/blob/main/examples/tutorials/notebooks/asset_viewer.ipynb>`
 
-Interactive Rigid Objects 2.0                       :ref:`Page <std:doc:managed-rigid-object-tutorial>`                                                                                                            `Interactive Colab <https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/managed_rigid_object_tutorial.ipynb>`__
+Interactive Rigid Objects 2.0                       :ref:`Page <std:doc:managed-rigid-object-tutorial>`                                                                                                            :gh:`Jupyter Notebook <facebookresearch/habitat-sim/blob/main/examples/tutorials/notebooks/managed_rigid_object_tutorial.ipynb>`
 
-Gfx Replay                                                                                                                                                                                                         `Interactive Colab <https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/replay_tutorial.ipynb>`__
+Gfx Replay                                                                                                                                                                                                         :gh:`Jupyter Notebook <facebookresearch/habitat-sim/blob/main/examples/tutorials/notebooks/replay_tutorial.ipynb>`
 
 Editing Scene Assets in Blender                     `Page <https://aihabitat.org/tutorial/editing_in_blender/>`_
 
-Coordinate Frame Tutorial                           :ref:`Page <std:doc:coordinate-frame-tutorial>`                                                                                                                `Interactive Colab <https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/coordinate_frame_tutorial.ipynb>`__
+Coordinate Frame Tutorial                           :ref:`Page <std:doc:coordinate-frame-tutorial>`                                                                                                                :gh:`Jupyter Notebook <facebookresearch/habitat-sim/blob/main/examples/tutorials/notebooks/coordinate_frame_tutorial.ipynb>`
 =================================================== ========================================================================================================================================================== ======================
 
 Python Classes
