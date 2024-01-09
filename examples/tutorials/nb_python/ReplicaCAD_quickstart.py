@@ -1,14 +1,9 @@
 # ---
 # jupyter:
 #   accelerator: GPU
-#   colab:
-#     collapsed_sections: []
-#     name: Habitat-sim ReplicaCAD Quickstart
-#     private_outputs: true
-#     provenance: []
 #   jupytext:
 #     cell_metadata_filter: -all
-#     formats: nb_python//py:percent,colabs//ipynb
+#     formats: nb_python//py:percent,notebooks//ipynb
 #     notebook_metadata_filter: all
 #     text_representation:
 #       extension: .py
@@ -198,7 +193,7 @@ def simulate(sim, dt=1.0, get_frames=True):
 
 
 # %%
-# @title Define Colab GUI Utility Functions { display-mode: "form" }
+# @title Define GUI Utility Functions { display-mode: "form" }
 # @markdown (double click to show code)
 
 # @markdown This cell provides utility functions to build and manage IPyWidget interactive components.

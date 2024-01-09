@@ -126,7 +126,7 @@ struct MultiGoalShortestPath {
  * Serialized with saved .navmesh files for later equivalency checks upon
  * re-load.
  *
- * See examples/tutorials/colabs/ECCV_2020_Navigation.py and
+ * See examples/tutorials/notebooks/ECCV_2020_Navigation.py and
  * http://digestingduck.blogspot.com/2009/08/recast-settings-uncovered.html for
  * more details on configuring these parameters for your use case.
  */
@@ -617,7 +617,7 @@ class PathFinder {
    * The size of the grid depends on the navmesh bounds and selected resolution.
    *
    * Can be further processed by Habitat-lab utilities. See
-   * examples/tutorials/colabs/ECCV_Navigation.py for details.
+   * examples/tutorials/notebooks/ECCV_Navigation.ipynb for details.
    *
    * @param metersPerPixel size of the discrete grid cells. Controls grid
    * resolution.

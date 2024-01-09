@@ -1,12 +1,9 @@
 # ---
 # jupyter:
 #   accelerator: GPU
-#   colab:
-#     name: Managed Rigid Object Tutorial
-#     provenance: []
 #   jupytext:
 #     cell_metadata_filter: -all
-#     formats: nb_python//py:percent,colabs//ipynb
+#     formats: nb_python//py:percent,notebooks//ipynb
 #     notebook_metadata_filter: all
 #     text_representation:
 #       extension: .py
@@ -14,19 +11,8 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.13.7
 #   kernelspec:
-#     display_name: Python 3 (ipykernel)
-#     language: python
+#     display_name: Python 3
 #     name: python3
-#   language_info:
-#     codemirror_mode:
-#       name: ipython
-#       version: 3
-#     file_extension: .py
-#     mimetype: text/x-python
-#     name: python
-#     nbconvert_exporter: python
-#     pygments_lexer: ipython3
-#     version: 3.9.17
 # ---
 
 # %%
@@ -61,7 +47,6 @@ def place_agent(sim):
 def make_configuration():
     # simulator configuration
     backend_cfg = habitat_sim.SimulatorConfiguration()
-    backend_cfg.enable_physics = True
     backend_cfg.scene_id = os.path.join(
         data_path, "scene_datasets/habitat-test-scenes/apartment_1.glb"
     )

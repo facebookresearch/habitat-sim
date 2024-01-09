@@ -1,13 +1,9 @@
 # ---
 # jupyter:
 #   accelerator: GPU
-#   colab:
-#     collapsed_sections: []
-#     name: 'ECCV 2020: Habitat-sim Interactivity'
-#     provenance: []
 #   jupytext:
 #     cell_metadata_filter: -all
-#     formats: nb_python//py:percent,colabs//ipynb
+#     formats: nb_python//py:percent,notebooks//ipynb
 #     notebook_metadata_filter: all
 #     text_representation:
 #       extension: .py
@@ -29,9 +25,6 @@
 #     pygments_lexer: ipython3
 #     version: 3.9.17
 # ---
-
-# %% [markdown]
-# <a href="https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/ECCV_2020_Interactivity.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
 # %% [markdown]
 # # Habitat-sim Interactivity
@@ -396,7 +389,7 @@ else:
 
 
 # %%
-# @title Define Colab GUI Utility Functions { display-mode: "form" }
+# @title Define GUI Utility Functions { display-mode: "form" }
 # @markdown (double click to show code)
 
 

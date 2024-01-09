@@ -1,18 +1,9 @@
 # ---
 # jupyter:
 #   accelerator: GPU
-#   colab:
-#     collapsed_sections:
-#     - dw0hKCHX9dii
-#     - LfhL_ZcW-HsF
-#     - -dFprz9y_HSQ
-#     - twCl8wAR_R4d
-#     name: 'ECCV 2020: Habitat-sim Advanced Features'
-#     private_outputs: true
-#     provenance: []
 #   jupytext:
 #     cell_metadata_filter: -all
-#     formats: nb_python//py:percent,colabs//ipynb
+#     formats: nb_python//py:percent,notebooks//ipynb
 #     notebook_metadata_filter: all
 #     text_representation:
 #       extension: .py
@@ -713,7 +704,7 @@ else:
 
 
 # %%
-# @title Define Colab GUI Utility Functions { display-mode: "form" }
+# @title Define GUI Utility Functions { display-mode: "form" }
 # @markdown (double click to show code)
 
 # @markdown This cell provides utility functions to build and manage IPyWidget interactive components.

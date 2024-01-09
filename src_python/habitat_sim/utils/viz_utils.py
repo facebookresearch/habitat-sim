@@ -5,14 +5,10 @@
 import base64
 import io
 import os
+import random
 import subprocess
 import sys
 from functools import partial
-
-if "google.colab" in sys.modules:
-    os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
-
-import random
 from typing import Any, Dict, List, Optional, Tuple
 
 import imageio

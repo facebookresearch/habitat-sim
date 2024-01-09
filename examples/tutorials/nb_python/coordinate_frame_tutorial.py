@@ -1,13 +1,9 @@
 # ---
 # jupyter:
 #   accelerator: GPU
-#   colab:
-#     collapsed_sections: []
-#     name: Coordinate Frame Conventions
-#     provenance: []
 #   jupytext:
 #     cell_metadata_filter: -all
-#     formats: nb_python//py:percent,colabs//ipynb
+#     formats: nb_python//py:percent,notebooks//ipynb
 #     notebook_metadata_filter: all
 #     text_representation:
 #       extension: .py
@@ -50,7 +46,7 @@ from PIL import Image
 import habitat_sim
 
 try:
-    # For using jupyter/colab IO components
+    # For using jupyter IO components
     import IPython.display
 
     IS_NOTEBOOK = True
@@ -71,7 +67,7 @@ repo = git.Repo(".", search_parent_directories=True)
 dir_path = repo.working_tree_dir
 data_path = os.path.join(dir_path, "data")
 
-# images will be either displayed in the colab or saved as image files
+# images will be either displayed in the notebook or saved as image files
 if not IS_NOTEBOOK:
     output_directory = "examples/tutorials/coordinate_system_tutorial_output/"
     output_path = os.path.join(dir_path, output_directory)

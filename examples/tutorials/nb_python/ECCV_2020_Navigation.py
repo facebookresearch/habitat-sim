@@ -1,13 +1,9 @@
 # ---
 # jupyter:
 #   accelerator: GPU
-#   colab:
-#     collapsed_sections: []
-#     name: 'ECCV 2020: Navigation'
-#     provenance: []
 #   jupytext:
 #     cell_metadata_filter: -all
-#     formats: nb_python//py:percent,colabs//ipynb
+#     formats: nb_python//py:percent,notebooks//ipynb
 #     notebook_metadata_filter: all
 #     text_representation:
 #       extension: .py
@@ -47,7 +43,7 @@
 # - pathfinding and navigation on the NavMesh
 
 # %%
-# @title Colab Setup and Imports { display-mode: "form" }
+# @title Setup and Imports { display-mode: "form" }
 # @markdown (double click to see the code)
 
 import math
@@ -213,7 +209,7 @@ cfg = make_simple_cfg(sim_settings)
 # ### Create a simulator instance
 
 # %%
-try:  # Needed to handle out of order cell run in Colab
+try:  # Needed to handle out of order cell run in Jupyter
     sim.close()
 except NameError:
     pass
@@ -366,7 +362,7 @@ def make_cfg(settings):
 
 # %%
 cfg = make_cfg(sim_settings)
-# Needed to handle out of order cell run in Colab
+# Needed to handle out of order cell run in Jupyter
 try:  # Got to make initialization idiot proof
     sim.close()
 except NameError:
