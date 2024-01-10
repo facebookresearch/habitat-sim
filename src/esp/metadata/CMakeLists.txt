@@ -26,6 +26,8 @@ set(
   attributes/SceneInstanceAttributes.cpp
   attributes/SceneDatasetAttributes.h
   attributes/SceneDatasetAttributes.cpp
+  attributes/SemanticAttributes.h
+  attributes/SemanticAttributes.cpp
   attributes/StageAttributes.h
   attributes/StageAttributes.cpp
   managers/AttributesManagerBase.h
