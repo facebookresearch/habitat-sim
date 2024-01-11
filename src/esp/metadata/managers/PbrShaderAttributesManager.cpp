@@ -218,7 +218,7 @@ void PbrShaderAttributesManager::setValsFromJSONDoc(
   // check for user defined attributes
   this->parseUserDefinedJsonVals(pbrShaderAttribs, jsonConfig);
 
-}  // PbrShaderAttributesManager::createFileBasedAttributesTemplate
+}  // PbrShaderAttributesManager::setValsFromJSONDoc
 
 PbrShaderAttributes::ptr PbrShaderAttributesManager::initNewObjectInternal(
     const std::string& handleName,
