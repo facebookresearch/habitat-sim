@@ -48,6 +48,8 @@ set(
   managers/SceneInstanceAttributesManager.cpp
   managers/SceneDatasetAttributesManager.h
   managers/SceneDatasetAttributesManager.cpp
+  managers/SemanticAttributesManager.h
+  managers/SemanticAttributesManager.cpp
   managers/StageAttributesManager.h
   managers/StageAttributesManager.cpp
   MetadataMediator.h
