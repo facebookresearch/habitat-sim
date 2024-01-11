@@ -18,6 +18,7 @@
 #include "esp/metadata/managers/PbrShaderAttributesManager.h"
 #include "esp/metadata/managers/PhysicsAttributesManager.h"
 #include "esp/metadata/managers/SceneDatasetAttributesManager.h"
+#include "esp/metadata/managers/SemanticAttributesManager.h"
 #include "esp/metadata/managers/StageAttributesManager.h"
 #include "esp/sim/SimulatorConfiguration.h"
 
@@ -208,6 +209,16 @@ class MetadataMediator {
   getSceneInstanceAttributesManager() {
     return getActiveDSAttribs()->getSceneInstanceAttributesManager();
   }  // MetadataMediator::getSceneInstanceAttributesManager
+
+  /**
+   * @brief Return manager for construction and access to semantic attributes
+   * for current dataset.
+   * @return A shared pointer to the current dataset's @ref esp::metadata::managers::SemanticAttributesManager
+   */
+  const managers::SemanticAttributesManager::ptr&
+  getSemanticAttributesManager() {
+    return getActiveDSAttribs()->getSemanticAttributesManager();
+  }  // MetadataMediator::getSemantticAttributesManager
 
   /**
    * @brief Return manager for construction and access to stage attributes for

@@ -21,6 +21,7 @@ SceneDatasetAttributes::SceneDatasetAttributes(
   objectAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
   sceneInstanceAttributesManager_ =
       managers::SceneInstanceAttributesManager::create();
+  semanticAttributesManager_ = managers::SemanticAttributesManager::create();
   stageAttributesManager_ =
       managers::StageAttributesManager::create(physAttrMgr);
   stageAttributesManager_->setAssetAttributesManager(assetAttributesManager_);

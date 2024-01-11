@@ -17,6 +17,7 @@
 #include "esp/metadata/managers/LightLayoutAttributesManager.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
 #include "esp/metadata/managers/SceneInstanceAttributesManager.h"
+#include "esp/metadata/managers/SemanticAttributesManager.h"
 #include "esp/metadata/managers/StageAttributesManager.h"
 
 namespace esp {
@@ -38,6 +39,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
     lightLayoutAttributesManager_ = nullptr;
     objectAttributesManager_ = nullptr;
     sceneInstanceAttributesManager_ = nullptr;
+    semanticAttributesManager_ = nullptr;
     stageAttributesManager_ = nullptr;
     navmeshMap_.clear();
     semanticSceneDescrMap_.clear();
@@ -81,6 +83,16 @@ class SceneDatasetAttributes : public AbstractAttributes {
   getSceneInstanceAttributesManager() const {
     return sceneInstanceAttributesManager_;
   }
+
+  /**
+   * @brief Return manager for construction and access to semantic attributes
+   * for current dataset.
+   * @return A shared pointer to the current dataset's @ref esp::metadata::managers::SemanticAttributesManager
+   */
+  const managers::SemanticAttributesManager::ptr& getSemanticAttributesManager()
+      const {
+    return semanticAttributesManager_;
+  }  // MetadataMediator::getSemantticAttributesManager
 
   /**
    * @brief Return manager for construction and access to stage attributes.
@@ -461,6 +473,11 @@ class SceneDatasetAttributes : public AbstractAttributes {
   managers::SceneInstanceAttributesManager::ptr
       sceneInstanceAttributesManager_ = nullptr;
 
+  /**
+   * @brief Manages all construction and access to @ref metadata::attributes::SemanticAttributes
+   * from this dataset.
+   */
+  managers::SemanticAttributesManager::ptr semanticAttributesManager_ = nullptr;
   /**
    * @brief Manages all construction and access to stage attributes from this
    * dataset.

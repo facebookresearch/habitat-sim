@@ -23,7 +23,7 @@ std::string SemanticRegionAttributes::getObjectInfoHeaderInternal() const {
       "Name,Label,Floor Height,Extrusion Height,Min Bounds,Max Bounds,";
   int iter = 0;
   for (const auto& it : polyLoop_) {
-    Cr::Utility::formatInto(res, res.size(), "Poly Vert {},",
+    Cr::Utility::formatInto(res, res.size(), "Poly Vert {} XYZ,",
                             std::to_string(iter++));
   }
   return res;
