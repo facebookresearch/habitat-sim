@@ -121,6 +121,14 @@ void SemanticAttributesManager::setValsFromJSONDoc(
     SemanticAttributes::ptr semanticAttribs,
     const io::JsonGenericValue& jsonConfig) {
   const std::string attribsDispName = semanticAttribs->getSimplifiedHandle();
+  // ROOT LEVEL SEMANTICS TODO
+
+  // Set the old format filename
+  io::jsonIntoConstSetter<std::string>(
+      jsonConfig, "old_format_filename",
+      [semanticAttribs](const std::string& _oldFormatFilename) {
+        semanticAttribs->setOldFormatFilename(_oldFormatFilename);
+      });
 
   // Check for region instances existence
   io::JsonGenericValue::ConstMemberIterator regionJSONIter =

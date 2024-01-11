@@ -66,6 +66,8 @@ void SemanticRegionAttributes::writeValuesToJson(
 // SemanticAttributes
 SemanticAttributes::SemanticAttributes(const std::string& handle)
     : AbstractAttributes("SemanticAttributes", handle) {
+  set("old_format_filename", "");
+  set("uses_old_format_file", false);
   // get refs to internal subconfigs for semantic region attributes
   regionAnnotationConfig_ = editSubconfig<Configuration>("region_annotations");
 }  // SemanticAttributes ctor
@@ -89,8 +91,9 @@ SemanticAttributes::SemanticAttributes(SemanticAttributes&& otr) noexcept
 
 void SemanticAttributes::writeValuesToJson(io::JsonGenericValue& jsonObj,
                                            io::JsonAllocator& allocator) const {
-  // TODO : handle all root level attributes defined for SemanticAttributes
-  // objects
+  if (getUsesOldFormatFile()) {
+    writeValueToJson("old_format_filename", jsonObj, allocator);
+  }
 }  // SemanticAttributes::writeValuesToJson
 
 void SemanticAttributes::writeSubconfigsToJson(

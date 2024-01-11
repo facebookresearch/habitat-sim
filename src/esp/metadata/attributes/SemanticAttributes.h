@@ -148,6 +148,36 @@ class SemanticAttributes : public AbstractAttributes {
   SemanticAttributes& operator=(SemanticAttributes&& otr) noexcept;
 
   /**
+   * @brief Set file name for old, dataset-specific filenames.
+   * TODO : remove this once all old dataset-specific semantic scene data
+   * handling is removed
+   */
+  void setOldFormatFilename(const std::string& _oldFormatFilename) {
+    set("old_format_filename", _oldFormatFilename);
+    // Only set internally
+    set("uses_old_format_file", (_oldFormatFilename != ""));
+  }
+
+  /**
+   * @brief Get file name for old, dataset-specific filenames
+   * TODO : remove this once all old dataset-specific semantic scene data
+   * handling is removed
+   */
+  std::string getOldFormatFilename() const {
+    return get<std::string>("old_format_filename");
+  }
+
+  /**
+   * @brief Get whether this semaantic attributes includes a reference to an old
+   * format file.
+   * TODO : remove this once all old dataset-specific semantic scene data
+   * handling is removed
+   */
+  bool getUsesOldFormatFile() const {
+    return get<bool>("uses_old_format_file");
+  }
+
+  /**
    * @brief Add an object instance attributes to this scene instance.
    */
   void addRegionInstanceAttrs(SemanticRegionAttributes::ptr _regionInstance) {
