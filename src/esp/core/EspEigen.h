@@ -13,7 +13,6 @@
 #endif
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-// #include <Eigen/StdVector>
 
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/EigenIntegration/Integration.h>
@@ -23,11 +22,6 @@
 #include "esp/core/configure.h"
 
 namespace Eigen {
-typedef Matrix<uint8_t, 3, 1> Vector3uc;
-typedef Matrix<uint32_t, 3, 1> Vector3ui;
-typedef Matrix<uint8_t, 4, 1> Vector4uc;
-typedef Matrix<uint32_t, 4, 1> Vector4ui;
-typedef Matrix<uint64_t, 4, 1> Vector4ul;
 
 typedef Matrix<float, Dynamic, Dynamic, RowMajor> RowMatrixXf;
 
@@ -86,17 +80,10 @@ std::ostream& operator<<(std::ostream& os, const Map<T>& m) {
 // EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Vector2f)
 // EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Vector3f)
 // EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Vector4f)
-// EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Vector2d)
-// EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Vector3d)
-// EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Vector4d)
 // EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Vector2i)
 // EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Vector3i)
 // EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Vector4i)
-// EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Matrix3f)
-// EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Matrix4f)
-// EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Matrix3d)
-// EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Matrix4d)
-// EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Vector4uc)
+// EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Matrix3f))
 
 //! core simulator namespace
 namespace esp {
@@ -105,24 +92,9 @@ namespace esp {
 typedef Eigen::Vector2f vec2f;
 typedef Eigen::Vector3f vec3f;
 typedef Eigen::Vector4f vec4f;
-typedef Eigen::Vector2d vec2d;
-typedef Eigen::Vector3d vec3d;
-typedef Eigen::Vector4d vec4d;
 typedef Eigen::Vector2i vec2i;
-typedef Eigen::Vector3i vec3i;
-typedef Eigen::Vector4i vec4i;
 typedef Eigen::Matrix3f mat3f;
-typedef Eigen::Matrix4f mat4f;
-typedef Eigen::Matrix3d mat3d;
-typedef Eigen::Matrix4d mat4d;
 typedef Eigen::Quaternionf quatf;
-typedef Eigen::Vector3uc vec3uc;
-typedef Eigen::Vector3ui vec3ui;
-typedef Eigen::Vector4uc vec4uc;
-typedef Eigen::Vector4ui vec4ui;
-typedef Eigen::Vector4i vec4i;
-typedef Eigen::Vector4ul vec4ul;
-typedef Eigen::VectorXi vecXi;
 typedef Eigen::AlignedBox3f box3f;
 
 typedef Eigen::Transform<float, 3, Eigen::Affine, Eigen::DontAlign> Transform;
