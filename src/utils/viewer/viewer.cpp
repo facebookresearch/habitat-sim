@@ -40,7 +40,6 @@
 #include <Corrade/Utility/String.h>
 #include <Magnum/DebugTools/FrameProfiler.h>
 #include <Magnum/DebugTools/Screenshot.h>
-#include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Renderer.h>
 #include <Magnum/Shaders/VectorGL.h>
@@ -414,20 +413,21 @@ Key Commands:
 
   // single inline for logging agent state msgs, so can be easily modified
   inline void showAgentStateMsg(bool showPos, bool showOrient) {
-    std::stringstream strDat("");
+    std::string res("");
     if (showPos) {
-      strDat << "Agent position "
-             << Eigen::Map<esp::vec3f>(agentBodyNode_->translation().data())
-             << " ";
+      auto v = agentBodyNode_->translation();
+      Cr::Utility::formatInto(res, res.length(),
+                              "Agent position  : [{} {} {}] ", v.x(), v.y(),
+                              v.z());
     }
     if (showOrient) {
-      strDat << "Agent orientation "
-             << esp::quatf(agentBodyNode_->rotation()).coeffs().transpose();
+      Mn::Quaternion q = agentBodyNode_->rotation();
+      auto qv = q.vector();
+      Cr::Utility::formatInto(res, res.length(), ": w:{} [{} {} {}]",
+                              q.scalar(), qv.x(), qv.y(), qv.z());
     }
-
-    auto str = strDat.str();
-    if (str.size() > 0) {
-      ESP_DEBUG() << str;
+    if (res.size() > 0) {
+      ESP_DEBUG() << res;
     }
   }
 
@@ -1127,7 +1127,7 @@ void saveTransformToFile(const std::string& filename,
       file << t[i] << " ";
     }
     ESP_DEBUG() << "Transformation matrix saved to" << filename << ":"
-                << Eigen::Map<const esp::mat4f>(transform.data());
+                << transform;
   };
   save(agentTransform);
   save(sensorTransform);
@@ -1176,7 +1176,7 @@ bool loadTransformFromFile(const std::string& filename,
     }
     transform = temp;
     ESP_DEBUG() << "Transformation matrix loaded from" << filename << ":"
-                << Eigen::Map<esp::mat4f>(transform.data());
+                << transform;
     return true;
   };
   // NOTE: load Agent first!!
@@ -2237,7 +2237,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     case Key::Nine:
       if (simulator_->getPathFinder()->isLoaded()) {
-        const esp::vec3f position =
+        const auto position =
             simulator_->getPathFinder()->getRandomNavigablePoint();
         agentBodyNode_->setTranslation(Mn::Vector3(position));
       }
