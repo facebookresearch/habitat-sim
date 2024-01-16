@@ -14,66 +14,59 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
-#include <Magnum/EigenIntegration/GeometryIntegration.h>
-#include <Magnum/EigenIntegration/Integration.h>
-#include <Magnum/Math/Range.h>
-#include <Magnum/Math/RectangularMatrix.h>
-
-#include "esp/core/configure.h"
-
 namespace Eigen {
 
 typedef Matrix<float, Dynamic, Dynamic, RowMajor> RowMatrixXf;
 
-//! Eigen JSON string format specification
-static const IOFormat kJsonFormat(StreamPrecision,
-                                  DontAlignCols,
-                                  ",",   // coef separator
-                                  ",",   // row separator
-                                  "",    // row prefix
-                                  "",    // col prefix
-                                  "[",   // mat prefix
-                                  "]");  // mat suffix
+// //! Eigen JSON string format specification
+// static const IOFormat kJsonFormat(StreamPrecision,
+//                                   DontAlignCols,
+//                                   ",",   // coef separator
+//                                   ",",   // row separator
+//                                   "",    // row prefix
+//                                   "",    // col prefix
+//                                   "[",   // mat prefix
+//                                   "]");  // mat suffix
 
-template <typename T, int numRows, int numCols>
-std::ostream& operator<<(std::ostream& os,
-                         const Matrix<T, numRows, numCols>& matrix) {
-  return os << matrix.format(kJsonFormat);
-}
+// template <typename T, int numRows, int numCols>
+// std::ostream& operator<<(std::ostream& os,
+//                          const Matrix<T, numRows, numCols>& matrix) {
+//   return os << matrix.format(kJsonFormat);
+// }
 
-//! Write Eigen matrix types into ostream in JSON string format
-template <typename T, int numRows, int numCols>
-typename std::enable_if<numRows == Dynamic || numCols == Dynamic,
-                        Corrade::Utility::Debug&>::type
-operator<<(Corrade::Utility::Debug& os,
-           const Matrix<T, numRows, numCols>& matrix) {
-  return os << matrix.format(kJsonFormat);
-}
+// //! Write Eigen matrix types into ostream in JSON string format
+// template <typename T, int numRows, int numCols>
+// typename std::enable_if<numRows == Dynamic || numCols == Dynamic,
+//                         Corrade::Utility::Debug&>::type
+// operator<<(Corrade::Utility::Debug& os,
+//            const Matrix<T, numRows, numCols>& matrix) {
+//   return os << matrix.format(kJsonFormat);
+// }
 
-template <typename T, int numRows, int numCols>
-typename std::enable_if<(numRows != Dynamic && numCols != Dynamic) &&
-                            (numRows != 1 && numCols != 1),
-                        Corrade::Utility::Debug&>::type
-operator<<(Corrade::Utility::Debug& os,
-           const Matrix<T, numRows, numCols>& matrix) {
-  return os << Magnum::Math::RectangularMatrix<numRows, numCols, T>{matrix};
-}
+// template <typename T, int numRows, int numCols>
+// typename std::enable_if<(numRows != Dynamic && numCols != Dynamic) &&
+//                             (numRows != 1 && numCols != 1),
+//                         Corrade::Utility::Debug&>::type
+// operator<<(Corrade::Utility::Debug& os,
+//            const Matrix<T, numRows, numCols>& matrix) {
+//   return os << Magnum::Math::RectangularMatrix<numRows, numCols, T>{matrix};
+// }
 
-template <typename T, int numRows, int numCols>
-typename std::enable_if<(numRows != Dynamic && numCols != Dynamic) &&
-                            (numRows == 1 || numCols == 1),
-                        Corrade::Utility::Debug&>::type
-operator<<(Corrade::Utility::Debug& os,
-           const Matrix<T, numRows, numCols>& matrix) {
-  return os << Magnum::Math::Vector<(numRows == 1 ? numCols : numRows), T>{
-             matrix};
-}
+// template <typename T, int numRows, int numCols>
+// typename std::enable_if<(numRows != Dynamic && numCols != Dynamic) &&
+//                             (numRows == 1 || numCols == 1),
+//                         Corrade::Utility::Debug&>::type
+// operator<<(Corrade::Utility::Debug& os,
+//            const Matrix<T, numRows, numCols>& matrix) {
+//   return os << Magnum::Math::Vector<(numRows == 1 ? numCols : numRows), T>{
+//              matrix};
+// }
 
-//! Write Eigen map into ostream in JSON string format
-template <typename T>
-std::ostream& operator<<(std::ostream& os, const Map<T>& m) {
-  return os << m.format(kJsonFormat);
-}
+// //! Write Eigen map into ostream in JSON string format
+// template <typename T>
+// std::ostream& operator<<(std::ostream& os, const Map<T>& m) {
+//   return os << m.format(kJsonFormat);
+// }
 
 }  // namespace Eigen
 

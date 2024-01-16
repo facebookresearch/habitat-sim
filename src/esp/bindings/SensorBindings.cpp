@@ -13,6 +13,7 @@
 
 #include <utility>
 
+#include "esp/core/EspEigen.h"
 #include "esp/sensor/CameraSensor.h"
 #include "esp/sensor/CubeMapSensorBase.h"
 #include "esp/sensor/EquirectangularSensor.h"

@@ -6,11 +6,11 @@
 #define ESP_NAV_PATHFINDER_H_
 
 #include <Corrade/Containers/Optional.h>
+#include <Magnum/Math/Vector3.h>
 #include <string>
 #include <vector>
 
 #include "esp/core/Esp.h"
-#include "esp/core/EspEigen.h"
 
 namespace esp {
 // forward declaration

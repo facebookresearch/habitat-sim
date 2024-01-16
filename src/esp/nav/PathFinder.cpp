@@ -25,6 +25,7 @@
 
 #include "esp/assets/MeshData.h"
 #include "esp/core/Esp.h"
+#include "esp/core/EspEigen.h"
 
 #include "DetourCommon.h"
 #include "DetourNavMesh.h"
@@ -429,7 +430,7 @@ class IslandSystem {
       navMesh->getTileAndPolyByRefUnsafe(ref, &tile, &poly);
 
       for (int iVert = 0; iVert < poly->vertCount; ++iVert) {
-        islandVerts.emplace_back(Eigen::Map<Mn::Vector3>(
+        islandVerts.emplace_back(Mn::Vector3::from(
             &tile->verts[static_cast<size_t>(poly->verts[iVert]) * 3]));
       }
 
@@ -1749,8 +1750,8 @@ bool PathFinder::Impl::isNavigable(const Mn::Vector3& pt,
     return false;
 
   if (std::abs(polyPt[1] - pt[1]) > maxYDelta ||
-      (Eigen::Vector2f(pt[0], pt[2]) - Eigen::Vector2f(polyPt[0], polyPt[2]))
-              .norm() > 1e-2)
+      (Mn::Vector2(pt[0], pt[2]) - Mn::Vector2(polyPt[0], polyPt[2])).length() >
+          1e-2)
     return false;
 
   return true;
