@@ -49,7 +49,7 @@ Mn::Range3D OBB::toAABB() const {
 }
 
 void OBB::recomputeTransforms() {
-  const auto R = rotation_.toMatrix();
+  const Mn::Matrix3 R = rotation_.toMatrix();
   // Local-to-world transform
   Mn::Matrix3 localToWorldRot;
   for (int i = 0; i < 3; ++i) {
