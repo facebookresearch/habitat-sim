@@ -31,7 +31,7 @@ void initGeoBindings(py::module& m) {
              return OBB(center, dimensions, rotation);
            }),
            "center"_a, "dimensions"_a, "rotation"_a)
-      .def(py::init<box3f&>())
+      .def(py::init<Mn::Range3D&>())
       .def(
           "contains", &OBB::contains,
           R"(Returns whether world coordinate point p is contained in this OBB within threshold distance epsilon.)")
@@ -59,12 +59,10 @@ void initGeoBindings(py::module& m) {
           "rotation", [](const OBB& self) { return self.rotation().data(); },
           R"(Quaternion representing rotation of this OBB.)")
       .def_property_readonly(
-          "local_to_world",
-          [](const OBB& self) { return self.localToWorld().matrix(); },
+          "local_to_world", [](const OBB& self) { return self.localToWorld(); },
           R"(Transform from local [0,1]^3 coordinates to world coordinates.)")
       .def_property_readonly(
-          "world_to_local",
-          [](const OBB& self) { return self.worldToLocal().matrix(); },
+          "world_to_local", [](const OBB& self) { return self.worldToLocal(); },
           R"(Transform from world coordinates to local [0,1]^3 coordinates.)");
 
   geo.def(

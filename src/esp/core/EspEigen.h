@@ -79,24 +79,4 @@ std::ostream& operator<<(std::ostream& os, const Map<T>& m) {
 
 // EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Matrix3f))
 
-//! core simulator namespace
-namespace esp {
-
-// basic types
-
-typedef Eigen::AlignedBox3f box3f;
-
-//! Write box3f into ostream in JSON string format
-inline std::ostream& operator<<(std::ostream& os, const box3f& bbox) {
-  return os << "{min:" << bbox.min() << ",max:" << bbox.max() << "}";
-}
-
-//! Write box3f as a magnum range
-inline Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug& os,
-                                           const box3f& bbox) {
-  return os << Magnum::Range3D{bbox};
-}
-
-}  // namespace esp
-
 #endif  // ESP_CORE_ESPEIGEN_H_

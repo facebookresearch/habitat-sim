@@ -26,6 +26,8 @@ class SemanticAttributes;
 }  // namespace metadata
 namespace scene {
 
+namespace Mn = Magnum;
+
 //! Represents a semantic category
 class SemanticCategory {
  public:
@@ -53,7 +55,7 @@ class SemanticScene {
  public:
   ~SemanticScene() { ESP_DEBUG() << "Deconstructing SemanticScene"; }
   //! return axis aligned bounding box of this House
-  box3f aabb() const { return bbox_; }
+  Mn::Range3D aabb() const { return bbox_; }
 
   //! return total number of given element type
   int count(const std::string& element) const {
@@ -414,7 +416,7 @@ class SemanticScene {
 
   std::string name_;
   std::string label_;
-  box3f bbox_;
+  Mn::Range3D bbox_;
   std::map<std::string, int> elementCounts_;
   std::vector<std::shared_ptr<SemanticCategory>> categories_;
   std::vector<std::shared_ptr<SemanticLevel>> levels_;
@@ -442,7 +444,6 @@ class SemanticLevel {
  public:
   virtual ~SemanticLevel() = default;
   virtual std::string id() const { return std::to_string(index_); }
-
   const std::vector<std::shared_ptr<SemanticRegion>>& regions() const {
     return regions_;
   }
@@ -451,13 +452,13 @@ class SemanticLevel {
     return objects_;
   }
 
-  box3f aabb() const { return bbox_; }
+  Mn::Range3D aabb() const { return bbox_; }
 
  protected:
   int index_{};
   std::string labelCode_;
   Mn::Vector3 position_;
-  box3f bbox_;
+  Mn::Range3D bbox_;
   std::vector<std::shared_ptr<SemanticObject>> objects_;
   std::vector<std::shared_ptr<SemanticRegion>> regions_;
   friend SemanticScene;
@@ -516,7 +517,7 @@ class SemanticRegion {
 
   void setBBox(const Mn::Vector3& min, const Mn::Vector3& max);
 
-  box3f aabb() const { return bbox_; }
+  Mn::Range3D aabb() const { return bbox_; }
 
   const std::vector<Mn::Vector2>& getPolyLoopPoints() const {
     return polyLoopPoints_;
@@ -551,7 +552,7 @@ class SemanticRegion {
   int parentIndex_{};
   std::shared_ptr<SemanticCategory> category_;
   Mn::Vector3 position_;
-  box3f bbox_;
+  Mn::Range3D bbox_;
 
   std::string name_;
 
@@ -594,7 +595,7 @@ class SemanticObject {
 
   SemanticRegion::ptr region() const { return region_; }
 
-  box3f aabb() const { return obb_.toAABB(); }
+  Mn::Range3D aabb() const { return obb_.toAABB(); }
 
   geo::OBB obb() const { return obb_; }
 
