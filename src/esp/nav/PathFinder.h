@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "esp/core/Esp.h"
+#include "esp/core/EspEigen.h"
 
 namespace esp {
 // forward declaration
