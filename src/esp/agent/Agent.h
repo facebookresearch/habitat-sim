@@ -10,7 +10,6 @@
 #include <string>
 
 #include "esp/core/Esp.h"
-#include "esp/core/EspEigen.h"
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
