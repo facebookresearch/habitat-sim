@@ -9,15 +9,14 @@
 #include <unordered_map>
 
 #include <Magnum/Magnum.h>
+#include <Magnum/Math/Functions.h>
 #include <Magnum/Math/Vector3.h>
-
-#include <Magnum/EigenIntegration/GeometryIntegration.h>
-#include <Magnum/EigenIntegration/Integration.h>
 
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/Utility/Path.h>
 
 #include <cstdio>
+
 // NOLINTNEXTLINE
 #define _USE_MATH_DEFINES
 #include <cmath>
@@ -959,8 +958,8 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
 
   for (int i = 0; i < numVerts; ++i) {
     const Mn::Vector3& p = mesh.vbo[i];
-    bmin = bmin.cwiseMin(p);
-    bmax = bmax.cwiseMax(p);
+    bmin = Mn::Math::min(bmin, p);
+    bmax = Mn::Math::max(bmax, p);
   }
 
   int* indices = new int[numIndices];
@@ -1161,8 +1160,8 @@ bool PathFinder::Impl::loadNavMesh(const std::string& path) {
       bmin = Mn::Vector3::from(tile->header->bmin);
       bmax = Mn::Vector3::from(tile->header->bmax);
     } else {
-      bmin = bmin.array().min(Mn::Vector3::from(tile->header->bmin));
-      bmax = bmax.array().max(Mn::Vector3::from(tile->header->bmax));
+      bmin = Mn::Math::min(bmin, Mn::Vector3::from(tile->header->bmin));
+      bmax = Mn::Math::max(bmax, Mn::Vector3::from(tile->header->bmax));
     }
   }
 
