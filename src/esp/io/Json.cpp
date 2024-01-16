@@ -96,15 +96,5 @@ std::string jsonToString(const JsonDocument& d, int maxDecimalPlaces) {
   return buffer.GetString();
 }
 
-vec3f jsonToVec3f(const JsonGenericValue& jsonArray) {
-  vec3f vec;
-  size_t dim = 0;
-  CORRADE_INTERNAL_ASSERT(jsonArray.GetArray().Size() == vec.size());
-  for (const auto& element : jsonArray.GetArray()) {
-    vec[dim++] = element.GetFloat();
-  }
-  return vec;
-}
-
 }  // namespace io
 }  // namespace esp

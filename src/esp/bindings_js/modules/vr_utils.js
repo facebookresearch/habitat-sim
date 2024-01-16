@@ -68,14 +68,10 @@ export function updateHeadPose(pose, agent) {
 
     const pos = pointToArray(view.transform.position).slice(0, -1); // don't need w for position
     sensor.setLocalTransform(
-      Module.toVec3f(
-        inverseAgentRot.transformVector(new Module.Vector3(...pos))
-      ),
-      Module.toVec4f(
-        Module.Quaternion.mul(
-          inverseAgentRot,
-          Module.toQuaternion(pointToArray(view.transform.orientation))
-        )
+      inverseAgentRot.transformVector(new Module.Vector3(...pos)),
+      Module.Quaternion.mul(
+        inverseAgentRot,
+        Module.toQuaternion(pointToArray(view.transform.orientation))
       )
     );
   }

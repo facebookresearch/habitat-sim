@@ -31,13 +31,13 @@ struct AgentState {
   /**
    * @brief the position of the agent
    */
-  vec3f position = {0, 0, 0};
+  Magnum::Vector3 position{0, 0, 0};
   /**
    * @brief the agent's rotation. TODO : This exposes the rotation quaternion
-   * x,y,z,w as vec4f for pybind11 interop, replace with quatf when we have
-   * custom pybind11 type conversion for quaternions
+   * x,y,z,w as Magnum Vector4 for pybind11 interop, replace with quatf when we
+   * have custom pybind11 type conversion for quaternions
    */
-  vec4f rotation = {0, 0, 0, 1};
+  Magnum::Vector4 rotation = {0, 0, 0, 1};
   ESP_SMART_POINTERS(AgentState)
 };
 
