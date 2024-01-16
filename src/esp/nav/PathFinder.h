@@ -28,9 +28,9 @@ class PathFinder;
  */
 struct HitRecord {
   //! World position of the closest obstacle.
-  vec3f hitPos;
+  Magnum::Vector3 hitPos;
   //! Normal of the navmesh at the obstacle in xz plane.
-  vec3f hitNormal;
+  Magnum::Vector3 hitNormal;
   //! Distance from query point to closest obstacle. Inf if no valid point was
   //! found.
   float hitDist{};
@@ -44,12 +44,12 @@ struct ShortestPath {
   /**
    * @brief The starting point for the path
    */
-  vec3f requestedStart;
+  Magnum::Vector3 requestedStart;
 
   /**
    * @brief The ending point for the path
    */
-  vec3f requestedEnd;
+  Magnum::Vector3 requestedEnd;
 
   /**
    * @brief A list of points that specify the shortest path on the navigation
@@ -57,7 +57,7 @@ struct ShortestPath {
    *
    * @note Will be empty if no path exists
    */
-  std::vector<vec3f> points;
+  std::vector<Magnum::Vector3> points;
 
   /**
    * @brief The geodesic distance between @ref requestedStart and @ref
@@ -80,14 +80,14 @@ struct MultiGoalShortestPath {
   /**
    * @brief The starting point for the path
    */
-  vec3f requestedStart;
+  Magnum::Vector3 requestedStart;
 
   /**
    * @brief Set the list of desired potential end points
    */
-  void setRequestedEnds(const std::vector<vec3f>& newEnds);
+  void setRequestedEnds(const std::vector<Magnum::Vector3>& newEnds);
 
-  const std::vector<vec3f>& getRequestedEnds() const;
+  const std::vector<Magnum::Vector3>& getRequestedEnds() const;
 
   /**
    * @brief A list of points that specify the shortest path on the navigation
@@ -96,7 +96,7 @@ struct MultiGoalShortestPath {
    *
    * Will be empty if no path exists
    */
-  std::vector<vec3f> points;
+  std::vector<Magnum::Vector3> points;
 
   /**
    * @brief The geodesic distance
@@ -386,8 +386,8 @@ class PathFinder {
    * the returned point will be `{NAN, NAN, NAN}`. Use @ref
    * isNavigable to check if the point is navigable.
    */
-  vec3f getRandomNavigablePoint(int maxTries = 10,
-                                int islandIndex = ID_UNDEFINED);
+  Magnum::Vector3 getRandomNavigablePoint(int maxTries = 10,
+                                          int islandIndex = ID_UNDEFINED);
 
   /**
    * @brief Returns a random navigable point within a specified radius about a
@@ -406,10 +406,11 @@ class PathFinder {
    * the returned point will be `{NAN, NAN, NAN}`. Use @ref
    * isNavigable to check if the point is navigable.
    */
-  vec3f getRandomNavigablePointAroundSphere(const vec3f& circleCenter,
-                                            float radius,
-                                            int maxTries = 10,
-                                            int islandIndex = ID_UNDEFINED);
+  Magnum::Vector3 getRandomNavigablePointAroundSphere(
+      const Magnum::Vector3& circleCenter,
+      float radius,
+      int maxTries = 10,
+      int islandIndex = ID_UNDEFINED);
 
   /**
    * @brief Finds the shortest path between two points on the navigation mesh
@@ -543,7 +544,7 @@ class PathFinder {
    *
    * @return Heuristic size of the connected component.
    */
-  float islandRadius(const vec3f& pt) const;
+  float islandRadius(const Magnum::Vector3& pt) const;
 
   /**
    * @brief returns the size of the specified connected component.
@@ -570,14 +571,14 @@ class PathFinder {
    * @return The distance to the closest non-navigable location or @ref
    * maxSearchRadius if all locations within @ref maxSearchRadius are navigable
    */
-  float distanceToClosestObstacle(const vec3f& pt,
+  float distanceToClosestObstacle(const Magnum::Vector3& pt,
                                   float maxSearchRadius = 2.0) const;
 
   /**
    * @brief Same as @ref distanceToClosestObstacle but returns additional
    * information.
    */
-  HitRecord closestObstacleSurfacePoint(const vec3f& pt,
+  HitRecord closestObstacleSurfacePoint(const Magnum::Vector3& pt,
                                         float maxSearchRadius = 2.0) const;
 
   /**
@@ -593,7 +594,7 @@ class PathFinder {
    *
    * @return Whether or not @ref pt is navigable
    */
-  bool isNavigable(const vec3f& pt, float maxYDelta = 0.5) const;
+  bool isNavigable(const Magnum::Vector3& pt, float maxYDelta = 0.5) const;
 
   /**
    * Compute and return the total area of all NavMesh polygons.
@@ -608,7 +609,7 @@ class PathFinder {
   /**
    * @return The axis aligned bounding box containing the navigation mesh.
    */
-  std::pair<vec3f, vec3f> bounds() const;
+  std::pair<Magnum::Vector3, Magnum::Vector3> bounds() const;
 
   /**
    * @brief Get a 2D grid marking navigable and non-navigable cells at a

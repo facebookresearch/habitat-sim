@@ -140,9 +140,9 @@ struct MeshMetaData {
    * @param frame target frame in world space
    */
   void setRootFrameOrientation(const geo::CoordinateFrame& frame) {
-    const quatf& transform = frame.rotationFrameToWorld();
-    Magnum::Matrix4 R = Magnum::Matrix4::from(
-        Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
+    const Magnum::Quaternion& transform = frame.rotationFrameToWorld();
+    Magnum::Matrix4 R =
+        Magnum::Matrix4::from(transform.toMatrix(), Magnum::Vector3());
     root.transformFromLocalToParent = R * root.transformFromLocalToParent;
   }
 };

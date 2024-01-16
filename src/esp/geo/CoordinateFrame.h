@@ -11,50 +11,49 @@
 namespace esp {
 namespace geo {
 
+namespace Mn = Magnum;
+
 //! Represents a frame of reference defined by an origin and
 //! two semantically meaningful directions: "up" and "front", or
 //! equivalently "gravity" and "back"
 class CoordinateFrame {
  public:
-  explicit CoordinateFrame(const vec3f& up = ESP_UP,
-                           const vec3f& front = ESP_FRONT,
-                           const vec3f& origin = vec3f::Zero());
-  explicit CoordinateFrame(const quatf& rotation,
-                           const vec3f& origin = vec3f::Zero());
+  explicit CoordinateFrame(const Mn::Vector3& up = ESP_UP,
+                           const Mn::Vector3& front = ESP_FRONT,
+                           const Mn::Vector3& origin = {0, 0, 0});
+  explicit CoordinateFrame(const Mn::Quaternion& rotation,
+                           const Mn::Vector3& origin = {0, 0, 0});
 
   //! Returns position of origin of this CoordinateFrame relative to parent
-  vec3f origin() const { return origin_; }
+  Mn::Vector3 origin() const { return origin_; }
 
   //! Returns up orientation
-  vec3f up() const { return up_; }
+  Mn::Vector3 up() const { return up_; }
 
   //! Returns down/gravity orientation
-  vec3f gravity() const { return -up_; }
+  Mn::Vector3 gravity() const { return -up_; }
 
   //! Returns front orientation
-  vec3f front() const { return front_; }
+  Mn::Vector3 front() const { return front_; }
 
   //! Returns front orientation
-  vec3f back() const { return -front_; }
+  Mn::Vector3 back() const { return -front_; }
 
   //! Returns quaternion representing the rotation taking direction vectors in
   //! world coordinates to direction vectors in this CoordinateFrame
-  quatf rotationWorldToFrame() const;
+  Mn::Quaternion rotationWorldToFrame() const;
 
   //! Returns quaternion representing the rotation taking direction vectors in
   //! this CoordinateFrame to direction vectors in world coordinates
-  quatf rotationFrameToWorld() const;
-
-  //! Return Transform from world coordinates to local coordinates
-  Transform transformationWorldToFrame() const;
+  Mn::Quaternion rotationFrameToWorld() const;
 
   //! Returns a stringified JSON representation of this CoordinateFrame
   std::string toString() const;
 
  protected:
-  vec3f up_;
-  vec3f front_;
-  vec3f origin_;
+  Mn::Vector3 up_;
+  Mn::Vector3 front_;
+  Mn::Vector3 origin_;
   ESP_SMART_POINTERS(CoordinateFrame)
 };
 

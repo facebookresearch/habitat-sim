@@ -61,8 +61,10 @@ void Agent::reset() {
 
 void Agent::getState(const AgentState::ptr& state) const {
   // TODO this should be done less hackishly
-  state->position = cast<vec3f>(node().absoluteTransformation().translation());
-  state->rotation = quatf(node().rotation()).coeffs();
+  state->position = node().absoluteTransformation().translation();
+  // doing this for x,y,z,w format of state's rotation.
+  auto rot = node().rotation();
+  state->rotation = Magnum::Vector4(rot.vector(), rot.scalar());
   // TODO other state members when implemented
 }
 

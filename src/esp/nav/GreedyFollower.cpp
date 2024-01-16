@@ -39,8 +39,8 @@ GreedyGeodesicFollowerImpl::GreedyGeodesicFollowerImpl(
 
 float GreedyGeodesicFollowerImpl::geoDist(const Mn::Vector3& start,
                                           const Mn::Vector3& end) {
-  geoDistPath_.requestedStart = cast<vec3f>(start);
-  geoDistPath_.requestedEnd = cast<vec3f>(end);
+  geoDistPath_.requestedStart = start;
+  geoDistPath_.requestedEnd = end;
   pathfinder_->findPath(geoDistPath_);
   return geoDistPath_.geodesicDistance;
 }
@@ -56,7 +56,7 @@ GreedyGeodesicFollowerImpl::TryStepResult GreedyGeodesicFollowerImpl::tryStep(
 
   const float geoDistAfter = geoDist(newPose, end);
   const float distToObsAfter = pathfinder_->distanceToClosestObstacle(
-      cast<vec3f>(newPose), 1.1 * closeToObsThreshold_);
+      newPose, 1.1 * closeToObsThreshold_);
 
   return {geoDistAfter, distToObsAfter, didCollide};
 }
@@ -163,8 +163,8 @@ GreedyGeodesicFollowerImpl::CODES GreedyGeodesicFollowerImpl::nextActionAlong(
     const core::RigidState& start,
     const Mn::Vector3& end) {
   ShortestPath path;
-  path.requestedStart = cast<vec3f>(start.translation);
-  path.requestedEnd = cast<vec3f>(end);
+  path.requestedStart = start.translation;
+  path.requestedEnd = end;
   pathfinder_->findPath(path);
 
   CODES nextAction;
@@ -200,8 +200,8 @@ GreedyGeodesicFollowerImpl::findPath(const core::RigidState& start,
     core::RigidState state{findPathDummyNode_.rotation(),
                            findPathDummyNode_.MagnumObject::translation()};
     ShortestPath path;
-    path.requestedStart = cast<vec3f>(state.translation);
-    path.requestedEnd = cast<vec3f>(end);
+    path.requestedStart = state.translation;
+    path.requestedEnd = end;
     pathfinder_->findPath(path);
     const auto nextPrim = nextBestPrimAlong(state, path);
     if (nextPrim.empty()) {

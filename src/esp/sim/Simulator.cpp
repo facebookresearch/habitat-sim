@@ -962,7 +962,9 @@ assets::MeshData::ptr Simulator::getJoinedMesh(
         }
         joinedMesh->vbo.reserve(joinedObjectMesh->vbo.size() + prevNumVerts);
         for (auto& vert : joinedObjectMesh->vbo) {
-          joinedMesh->vbo.push_back(meshTransform * vert);
+          auto newVert =
+              meshTransform * Magnum::EigenIntegration::cast<esp::vec3f>(vert);
+          joinedMesh->vbo.push_back({newVert(0), newVert(1), newVert(2)});
         }
       }
     }
@@ -1025,9 +1027,10 @@ bool Simulator::isNavMeshVisualizationActive() {
 void Simulator::sampleRandomAgentState(agent::AgentState& agentState) {
   if (pathfinder_->isLoaded()) {
     agentState.position = pathfinder_->getRandomNavigablePoint();
-    const float randomAngleRad = random_->uniform_float_01() * M_PI;
-    quatf rotation(Eigen::AngleAxisf(randomAngleRad, vec3f::UnitY()));
-    agentState.rotation = rotation.coeffs();
+    const Mn::Rad randomAngleRad{
+        static_cast<float>(random_->uniform_float_01() * M_PI)};
+    auto rot = Mn::Quaternion::rotation(randomAngleRad, Mn::Vector3::yAxis());
+    agentState.rotation = Mn::Vector4(rot.vector(), rot.scalar());
     // TODO: any other AgentState members should be randomized?
   } else {
     ESP_ERROR() << "No loaded PathFinder, aborting sampleRandomAgentState.";
@@ -1091,11 +1094,13 @@ agent::Agent::ptr Simulator::addAgent(
   if (pathfinder_->isLoaded()) {
     scene::ObjectControls::MoveFilterFunc moveFilterFunction;
     if (config_.allowSliding) {
-      moveFilterFunction = [&](const vec3f& start, const vec3f& end) {
+      moveFilterFunction = [&](const Mn::Vector3& start,
+                               const Mn::Vector3& end) {
         return pathfinder_->tryStep(start, end);
       };
     } else {
-      moveFilterFunction = [&](const vec3f& start, const vec3f& end) {
+      moveFilterFunction = [&](const Mn::Vector3& start,
+                               const Mn::Vector3& end) {
         return pathfinder_->tryStepNoSliding(start, end);
       };
     }

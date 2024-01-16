@@ -7,8 +7,6 @@
 #include "esp/geo/Geo.h"
 #include "esp/geo/OBB.h"
 
-#include <Magnum/EigenIntegration/GeometryIntegration.h>
-
 namespace Mn = Magnum;
 namespace py = pybind11;
 using py::literals::operator""_a;
@@ -23,15 +21,14 @@ void initGeoBindings(py::module& m) {
   geo.attr("GRAVITY") = ESP_GRAVITY;
   geo.attr("FRONT") = ESP_FRONT;
   geo.attr("BACK") = ESP_BACK;
-  geo.attr("LEFT") = ESP_FRONT.cross(ESP_GRAVITY);
-  geo.attr("RIGHT") = ESP_FRONT.cross(ESP_UP);
+  geo.attr("LEFT") = Mn::Math::cross(ESP_FRONT, ESP_GRAVITY);
+  geo.attr("RIGHT") = Mn::Math::cross(ESP_FRONT, ESP_UP);
 
   // ==== OBB ====
   py::class_<OBB>(m, "OBB", R"(This is an OBB.)")
-      .def(py::init([](const vec3f& center, const vec3f& dimensions,
+      .def(py::init([](const Mn::Vector3& center, const Mn::Vector3& dimensions,
                        const Mn::Quaternion& rotation) {
-             return OBB(center, dimensions,
-                        Mn::EigenIntegration::cast<quatf>(rotation));
+             return OBB(center, dimensions, rotation);
            }),
            "center"_a, "dimensions"_a, "rotation"_a)
       .def(py::init<box3f&>())
@@ -48,7 +45,7 @@ void initGeoBindings(py::module& m) {
       .def(
           "rotate",
           [](OBB& self, const Mn::Quaternion& rotation) {
-            return self.rotate(Mn::EigenIntegration::cast<quatf>(rotation));
+            return self.rotate(rotation);
           },
           R"(Rotate this OBB by the given rotation and return reference to self.)")
       .def_property_readonly("center", &OBB::center, R"(Centroid of this OBB.)")
