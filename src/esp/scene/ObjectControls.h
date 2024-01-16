@@ -5,12 +5,12 @@
 #ifndef ESP_SCENE_OBJECTCONTROLS_H_
 #define ESP_SCENE_OBJECTCONTROLS_H_
 
+#include <Magnum/Math/Vector3.h>
 #include <functional>
 #include <map>
 #include <string>
 
 #include "esp/core/Esp.h"
-#include "esp/core/EspEigen.h"
 
 namespace esp {
 namespace scene {
@@ -44,7 +44,7 @@ class ObjectControls {
   }
 
  protected:
-  MoveFilterFunc moveFilterFunc_ = [](const Magnum::Vector3& /*start*/,
+  MoveFilterFunc moveFilterFunc_ = [](const Magnum::Vector3& start,
                                       const Magnum::Vector3& end) {
     return end;
   };
