@@ -1919,17 +1919,12 @@ bool PathFinder::findPath(MultiGoalShortestPath& path) {
 
 template Mn::Vector3 PathFinder::tryStep<Mn::Vector3>(const Mn::Vector3&,
                                                       const Mn::Vector3&);
-template Mn::Vector3 PathFinder::tryStep<Mn::Vector3>(const Mn::Vector3&,
-                                                      const Mn::Vector3&);
 
 template <typename T>
 T PathFinder::tryStep(const T& start, const T& end) {
   return pimpl_->tryStep(start, end, /*allowSliding=*/true);
 }
 
-template Mn::Vector3 PathFinder::tryStepNoSliding<Mn::Vector3>(
-    const Mn::Vector3&,
-    const Mn::Vector3&);
 template Mn::Vector3 PathFinder::tryStepNoSliding<Mn::Vector3>(
     const Mn::Vector3&,
     const Mn::Vector3&);
@@ -1941,10 +1936,7 @@ T PathFinder::tryStepNoSliding(const T& start, const T& end) {
 
 template Mn::Vector3 PathFinder::snapPoint<Mn::Vector3>(const Mn::Vector3& pt,
                                                         int islandIndex);
-template Mn::Vector3 PathFinder::snapPoint<Mn::Vector3>(const Mn::Vector3& pt,
-                                                        int islandIndex);
 
-template int PathFinder::getIsland<Mn::Vector3>(const Mn::Vector3& pt);
 template int PathFinder::getIsland<Mn::Vector3>(const Mn::Vector3& pt);
 
 template <typename T>
