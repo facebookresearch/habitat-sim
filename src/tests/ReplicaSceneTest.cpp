@@ -149,12 +149,12 @@ void ReplicaSceneTest::testSemanticSceneLoading() {
   // Old Sophus calc:
   // {c:[3.52103,-1.00543,-1.02705],h:[0.169882,0.160166,0.01264],r:[-0.70592,0.0131598,0.0157815,0.707994]}
 
-  CORRADE_VERIFY(obj12->obb().center() ==
-                 Magnum::Vector3{3.52103, -1.00543, -1.02705});
-  CORRADE_VERIFY(obj12->obb().halfExtents() ==
-                 Magnum::Vector3{0.169882, 0.160166, 0.01264});
-  CORRADE_VERIFY(
-      obj12->obb().rotation() ==
+  CORRADE_COMPARE(obj12->obb().center(),
+                  Magnum::Vector3(3.52103, -1.00543, -1.02705));
+  CORRADE_COMPARE(obj12->obb().halfExtents(),
+                  Magnum::Vector3(0.169882, 0.160166, 0.01264));
+  CORRADE_COMPARE(
+      obj12->obb().rotation(),
       Magnum::Quaternion({-0.70592, 0.0131598, 0.0157815}, 0.707994));
 
   CORRADE_VERIFY(obj12->category());
