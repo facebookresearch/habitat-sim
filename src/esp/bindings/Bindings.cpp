@@ -17,10 +17,10 @@ using py::literals::operator""_a;
 namespace esp {
 
 void initEspBindings(py::module& m) {
-  // ==== box3f ====
-  py::class_<box3f>(m, "BBox")
-      .def_property_readonly("sizes", &box3f::sizes)
-      .def_property_readonly("center", &box3f::center);
+  // ==== Range3D ====
+  py::class_<Magnum::Range3D>(m, "BBox")
+      .def_property_readonly("sizes", &Magnum::Range3D::size)
+      .def_property_readonly("center", &Magnum::Range3D::center);
 }
 
 }  // namespace esp
