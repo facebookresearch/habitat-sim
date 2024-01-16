@@ -19,6 +19,7 @@
 #include <Magnum/PixelFormat.h>
 #include <Magnum/Shaders/GenericGL.h>
 
+#include "esp/core/Utility.h"
 #include "esp/geo/Geo.h"
 #include "esp/scene/SemanticScene.h"
 
@@ -65,7 +66,7 @@ GenericSemanticMeshData::buildSemanticMeshData(
   if (semanticFilename.find(".ply") != std::string::npos) {
     // Generic Semantic PLY meshes have -Z gravity
     const auto T_esp_scene =
-        Mn::Quaternion{quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY)}
+        esp::core::quatRotFromTwoVectors(geo::ESP_FRONT, geo::ESP_GRAVITY)
             .toMatrix();
     for (auto& xyz : semanticMeshData->cpu_vbo_) {
       xyz = T_esp_scene * xyz;
@@ -307,7 +308,7 @@ GenericSemanticMeshData::buildSemanticMeshData(
   // display or save report denoting presence of semantic object-defined colors
   // in mesh
   return semanticMeshData;
-}  // GenericSemanticMeshData::buildSemanticMeshData
+}  // namespace assets
 
 std::vector<std::unique_ptr<GenericSemanticMeshData>>
 GenericSemanticMeshData::partitionSemanticMeshData(
