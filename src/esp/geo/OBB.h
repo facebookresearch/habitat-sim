@@ -8,6 +8,7 @@
 #include <Corrade/Utility/FormatStl.h>
 #include <Magnum/Math/Matrix4.h>
 #include <Magnum/Math/Quaternion.h>
+#include <Magnum/Math/Vector3.h>
 #include "esp/core/Esp.h"
 #include "esp/geo/Geo.h"
 
@@ -76,9 +77,15 @@ class OBB {
 };
 
 inline std::ostream& operator<<(std::ostream& os, const OBB& obb) {
-  return os << Cr::Utility::formatString("ctr : {}, h : {}, rot : {}",
-                                         obb.center(), obb.halfExtents(),
-                                         obb.rotation());
+  auto rotQuat = obb.rotation();
+  float scalar = rotQuat.scalar();
+  Mn::Vector3 v = rotQuat.vector();
+  Mn::Vector3 c = obb.center();
+  Mn::Vector3 h = obb.halfExtents();
+
+  return os << Cr::Utility::formatString(
+             "ctr : [{} {} {}], h : [{} {} {}], rot : [{} {} {}], {}", c.x(),
+             c.y(), c.z(), h.x(), h.y(), h.z(), v.x(), v.y(), v.z(), scalar);
 }
 
 // compute a minimum area OBB containing given points, and constrained to

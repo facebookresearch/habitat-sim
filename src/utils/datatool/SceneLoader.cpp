@@ -89,7 +89,6 @@ MeshData SceneLoader::load(const AssetInfo& info) {
     for (uint32_t m = 0, indexBase = 0; m < scene->mNumMeshes; ++m) {
       const aiMesh& assimpMesh = *scene->mMeshes[m];
       for (uint32_t v = 0; v < assimpMesh.mNumVertices; ++v) {
-        // Use Eigen::Map to convert ASSIMP vectors to eigen vectors
         const Mn::Vector3 xyz_scene =
             Mn::Vector3::from(&assimpMesh.mVertices[v].x);
         const Mn::Vector3 xyz_esp =
