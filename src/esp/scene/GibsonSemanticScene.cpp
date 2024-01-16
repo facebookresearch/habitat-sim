@@ -87,7 +87,7 @@ bool SemanticScene::buildGibsonHouse(const io::JsonDocument& jsonDoc,
         Mn::Vector3 sizeVec;
         io::fromJsonValue(jsonSize, sizeVec);
 
-        size = (rotation.transformVectorNormalized(sizeVec)).array().abs();
+        size = abs((rotation.transformVectorNormalized(sizeVec)));
       } else {
         ESP_WARNING() << "Object size from" << categoryName
                       << "isn't provided.";

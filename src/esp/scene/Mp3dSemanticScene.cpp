@@ -119,25 +119,23 @@ bool SemanticScene::buildMp3dHouse(std::ifstream& ifs,
   };
 
   auto getBBox = [&](const std::vector<std::string>& tokens,
-                     int offset) -> box3f {
+                     int offset) -> Mn::Range3D {
     // Get the bounding box without rotating as rotating min/max is odd
-    box3f sceneBox{getVector3(tokens, offset, /*applyRotation=*/false),
-                   getVector3(tokens, offset + 3, /*applyRotation=*/false)};
+    Mn::Range3D sceneBox{
+        getVector3(tokens, offset, /*applyRotation=*/false),
+        getVector3(tokens, offset + 3, /*applyRotation=*/false)};
     if (!hasWorldRotation)
       return sceneBox;
 
     // Apply the rotation to center/sizes
     const Mn::Vector3 worldCenter =
         rotation.transformVectorNormalized(sceneBox.center());
+
     const Mn::Vector3 worldHalfSizes =
-        (rotation.transformVectorNormalized(sceneBox.sizes()))
-            .array()
-            .abs()
-            .matrix() /
-        2.0f;
+        abs(rotation.transformVectorNormalized(sceneBox.size())) / 2.0f;
     // Then remake the box with min/max computed from rotated center/size
-    return box3f{(worldCenter - worldHalfSizes).eval(),
-                 (worldCenter + worldHalfSizes).eval()};
+    return Mn::Range3D{(worldCenter - worldHalfSizes),
+                       (worldCenter + worldHalfSizes)};
   };
 
   auto getOBB = [&](const std::vector<std::string>& tokens, int offset) {
@@ -145,16 +143,17 @@ bool SemanticScene::buildMp3dHouse(std::ifstream& ifs,
 
     // Don't need to apply rotation here, it'll already be added in by
     // getVector3
-    mat3f boxRotation;
-    boxRotation.col(0) << getVector3(tokens, offset + 3);
-    boxRotation.col(1) << getVector3(tokens, offset + 6);
-    boxRotation.col(2) << boxRotation.col(0).cross(boxRotation.col(1));
+    Mn::Matrix3 boxRotation;
+    boxRotation[0] = getVector3(tokens, offset + 3);
+    boxRotation[1] = getVector3(tokens, offset + 6);
+    boxRotation[2] = Mn::Math::cross(boxRotation[0], boxRotation[1]);
 
     // Don't apply the world rotation here, that'll get added by boxRotation
     const Mn::Vector3 radius =
         getVector3(tokens, offset + 9, /*applyRotation=*/false);
 
-    return geo::OBB(center, 2 * radius, Mn::Quaternion(boxRotation));
+    return geo::OBB(center, 2 * radius,
+                    Mn::Quaternion::fromMatrix(boxRotation));
   };
 
   scene.categories_.clear();
