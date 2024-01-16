@@ -4,14 +4,10 @@
 
 #include "ObjectControls.h"
 
-#include <Magnum/EigenIntegration/Integration.h>
-
 #include <utility>
 
 #include "SceneNode.h"
 #include "esp/core/Esp.h"
-
-using Magnum::EigenIntegration::cast;
 
 namespace esp {
 namespace scene {
@@ -96,11 +92,9 @@ ObjectControls& ObjectControls::action(SceneNode& object,
   if (moveFuncMapIter != moveFuncMap_.end()) {
     if (applyFilter) {
       // TODO: use magnum math for the filter func as well?
-      const auto startPosition =
-          cast<Mn::Vector3>(object.absoluteTransformation().translation());
+      const auto startPosition = object.absoluteTransformation().translation();
       moveFuncMapIter->second(object, distance);
-      const auto endPos =
-          cast<Mn::Vector3>(object.absoluteTransformation().translation());
+      const auto endPos = object.absoluteTransformation().translation();
       const Mn::Vector3 filteredEndPosition =
           moveFilterFunc_(startPosition, endPos);
       object.translate(
