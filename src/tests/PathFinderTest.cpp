@@ -83,8 +83,7 @@ void PathFinderTest::tryStepNoSliding() {
     for (int j = 0; j < 10; ++j) {
       Mn::Vector3 targetPos = pos + stepDir;
       Mn::Vector3 actualEnd = pathFinder.tryStepNoSliding(pos, targetPos);
-      CORRADE_VERIFY(pathFinder.isNavigable(
-          Mn::EigenIntegration::cast<Magnum::Vector3>(actualEnd)));
+      CORRADE_VERIFY(pathFinder.isNavigable(actualEnd));
 
       // The test becomes unreliable if we moved a very small distance
       if (Mn::Math::gather<'x', 'z'>(actualEnd - pos).dot() < 1e-5)

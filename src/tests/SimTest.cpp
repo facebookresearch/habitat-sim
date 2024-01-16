@@ -454,7 +454,7 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
   simulator->recomputeNavMesh(*simulator->getPathFinder().get(),
                               navMeshSettings);
 
-  esp::vec3f randomNavPoint =
+  Mn::Vector3 randomNavPoint =
       simulator->getPathFinder()->getRandomNavigablePoint();
   while (simulator->getPathFinder()->distanceToClosestObstacle(randomNavPoint) <
              1.0 ||
@@ -493,7 +493,7 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
   obj->setTranslation(Magnum::Vector3{randomNavPoint});
   obj->setTranslation(obj->getTranslation() + Magnum::Vector3{0, 0.5, 0});
   obj->setMotionType(esp::physics::MotionType::STATIC);
-  esp::vec3f offset(0.75, 0, 0);
+  Mn::Vector3 offset(0.75, 0, 0);
   CORRADE_VERIFY(simulator->getPathFinder()->isNavigable(randomNavPoint, 0.1));
   CORRADE_VERIFY(
       simulator->getPathFinder()->isNavigable(randomNavPoint + offset, 0.2));
@@ -796,7 +796,7 @@ void SimTest::addSensorToObject() {
   CORRADE_VERIFY(cameraSensor.getObservation(*simulator, observation));
   CORRADE_VERIFY(cameraSensor.getObservationSpace(obsSpace));
 
-  esp::vec2i defaultResolution = {128, 128};
+  Mn::Vector2i defaultResolution = {128, 128};
   std::vector<size_t> expectedShape{{static_cast<size_t>(defaultResolution[0]),
                                      static_cast<size_t>(defaultResolution[1]),
                                      4}};

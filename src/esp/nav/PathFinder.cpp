@@ -13,6 +13,9 @@
 #include <Magnum/Math/Functions.h>
 #include <Magnum/Math/Vector3.h>
 
+#include <Magnum/EigenIntegration/GeometryIntegration.h>
+#include <Magnum/EigenIntegration/Integration.h>
+
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/Utility/Path.h>
 
