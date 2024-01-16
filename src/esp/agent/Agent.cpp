@@ -4,23 +4,20 @@
 
 #include "Agent.h"
 
-#include <Magnum/EigenIntegration/GeometryIntegration.h>
-#include <Magnum/EigenIntegration/Integration.h>
-
 #include "esp/scene/ObjectControls.h"
 #include "esp/sensor/Sensor.h"
 
-using Magnum::EigenIntegration::cast;
-
 namespace esp {
 namespace agent {
+
+namespace Mn = Magnum;
 
 const std::set<std::string> Agent::BodyActions = {"moveRight",   "moveLeft",
                                                   "moveForward", "moveBackward",
                                                   "turnLeft",    "turnRight"};
 
 Agent::Agent(scene::SceneNode& agentNode, const AgentConfiguration& cfg)
-    : Magnum::SceneGraph::AbstractFeature3D(agentNode),
+    : Mn::SceneGraph::AbstractFeature3D(agentNode),
       configuration_(cfg),
       controls_(scene::ObjectControls::create()) {
   agentNode.setType(scene::SceneNodeType::AGENT);
@@ -45,9 +42,8 @@ bool Agent::act(const std::string& actionName) {
       }
     }
     return true;
-  } else {
-    return false;
   }
+  return false;
 }
 
 bool Agent::hasAction(const std::string& actionName) const {
@@ -64,19 +60,19 @@ void Agent::getState(const AgentState::ptr& state) const {
   state->position = node().absoluteTransformation().translation();
   // doing this for x,y,z,w format of state's rotation.
   auto rot = node().rotation();
-  state->rotation = Magnum::Vector4(rot.vector(), rot.scalar());
+  state->rotation = Mn::Vector4(rot.vector(), rot.scalar());
   // TODO other state members when implemented
 }
 
 void Agent::setState(const AgentState& state,
                      const bool resetSensors /*= true*/) {
-  node().setTranslation(Magnum::Vector3(state.position));
+  node().setTranslation(Mn::Vector3(state.position));
 
-  const Eigen::Map<const quatf> rot(state.rotation.data());
-  CORRADE_ASSERT(std::abs(rot.norm() - 1.0) <
-                     2.0 * Magnum::Math::TypeTraits<float>::epsilon(),
+  const Mn::Quaternion rot =
+      Mn::Quaternion(state.rotation.xyz(), state.rotation.w());
+  CORRADE_ASSERT(rot.isNormalized(),
                  state.rotation << " not a valid rotation", );
-  node().setRotation(Magnum::Quaternion(quatf(rot)).normalized());
+  node().setRotation(rot);
 
   if (resetSensors) {
     for (auto& p : node().getNodeSensors()) {
