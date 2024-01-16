@@ -56,7 +56,7 @@ void initGeoBindings(py::module& m) {
       .def_property_readonly("half_extents", &OBB::halfExtents,
                              R"(Half-extents of this OBB (dimensions).)")
       .def_property_readonly(
-          "rotation", [](const OBB& self) { return self.rotation().coeffs(); },
+          "rotation", [](const OBB& self) { return self.rotation().data(); },
           R"(Quaternion representing rotation of this OBB.)")
       .def_property_readonly(
           "local_to_world",
