@@ -5,13 +5,12 @@
 #include "ReplicaSemanticScene.h"
 #include "SemanticScene.h"
 
+#include <Magnum/Math/Matrix4.h>
+
 #include <map>
 #include <string>
 
 #include "esp/io/Json.h"
-
-#include <Magnum/EigenIntegration/GeometryIntegration.h>
-#include <Magnum/EigenIntegration/Integration.h>
 
 namespace esp {
 namespace scene {
@@ -81,7 +80,8 @@ bool SemanticScene::buildReplicaHouse(const io::JsonDocument& jsonDoc,
   scene.elementCounts_["objects"] = objects.Size();
 
   // construct rotation matrix to be used to construct transform
-  const Eigen::Isometry3f worldRotationMat{worldRotation.normalized()};
+  const auto worldRotationMat =
+      Mn::Matrix4::from(worldRotation.normalized().toMatrix(), {});
   for (const auto& jsonObject : objects) {
     SemanticObject::ptr object = SemanticObject::create();
     int id = jsonObject["id"].GetInt();
@@ -109,22 +109,21 @@ bool SemanticScene::buildReplicaHouse(const io::JsonDocument& jsonDoc,
     io::fromJsonValue(obb["abb"]["sizes"], aabbSizes);
     Mn::Vector3 translationBoxToWorld;
     io::fromJsonValue(obb["orientation"]["translation"], translationBoxToWorld);
+    // 4th element is scalar in json
+    Mn::Vector4 rotBoxToWorldCoeffs;
+    io::fromJsonValue(obb["orientation"]["rotation"], rotBoxToWorldCoeffs);
 
-    std::vector<float> rotationBoxToWorldCoeffs;
-    io::toFloatVector(obb["orientation"]["rotation"],
-                      &rotationBoxToWorldCoeffs);
-    const Eigen::Map<Magnum::Quaternion> rotationBoxToWorld(
-        rotationBoxToWorldCoeffs.data());
+    const Mn::Quaternion rotationBoxToWorld(rotBoxToWorldCoeffs.xyz(),
+                                            rotBoxToWorldCoeffs.w());
 
-    Eigen::Isometry3f transformBox{rotationBoxToWorld.normalized()};
-    transformBox *= Eigen::Translation3f(translationBoxToWorld);
+    const Mn::Matrix4 transformBox = Mn::Matrix4::from(
+        rotationBoxToWorld.normalized().toMatrix(), translationBoxToWorld);
 
-    const Eigen::Isometry3f transformBoxToWorld{worldRotationMat *
-                                                transformBox};
+    const auto transformBoxToWorld{worldRotationMat * transformBox};
 
-    object->obb_ =
-        geo::OBB{transformBoxToWorld * aabbCenter, aabbSizes,
-                 Magnum::Quaternion{transformBoxToWorld.linear()}.normalized()};
+    object->obb_ = geo::OBB{
+        transformBoxToWorld.transformVector(aabbCenter), aabbSizes,
+        Mn::Quaternion::fromMatrix(transformBoxToWorld.rotationNormalized())};
 
     scene.objects_[id] = std::move(object);
   }
