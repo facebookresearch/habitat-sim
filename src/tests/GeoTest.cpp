@@ -8,6 +8,7 @@
 #include <Corrade/Utility/DebugStl.h>
 #include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/Math/FunctionsBatch.h>
+#include <Magnum/Math/Range.h>
 #include "esp/core/Utility.h"
 #include "esp/geo/CoordinateFrame.h"
 #include "esp/geo/Geo.h"
@@ -135,7 +136,7 @@ void GeoTest::obbConstruction() {
   CORRADE_VERIFY(obb2.halfExtents() == dimensions / 2);
   CORRADE_VERIFY(obb2.rotation() == rot1);
 
-  box3f aabb(Mn::Vector3(-1, -2, -3), Mn::Vector3(3, 2, 1));
+  Mn::Range3D aabb(Mn::Vector3(-1, -2, -3), Mn::Vector3(3, 2, 1));
   OBB obb3(aabb);
   CORRADE_VERIFY(obb3.center() == aabb.center());
   CORRADE_VERIFY(obb3.toAABB() == aabb);
@@ -153,18 +154,21 @@ void GeoTest::obbFunctions() {
   CORRADE_VERIFY(!obb2.contains(Mn::Vector3(5, 0, 2)));
   CORRADE_VERIFY(!obb2.contains(Mn::Vector3(-10, 0.5, -2)));
 
-  const box3f aabb = obb2.toAABB();
+  const auto aabb = obb2.toAABB();
 
-  CORRADE_COMPARE(Mn::Vector3{aabb.min()}, (Mn::Vector3{-10.0f, -5.0f, -1.0f}));
-  CORRADE_COMPARE(Mn::Vector3{aabb.max()}, (Mn::Vector3{10.0f, 5.0f, 1.0f}));
+  CORRADE_COMPARE(aabb.min(), (Mn::Vector3{-10.0f, -5.0f, -1.0f}));
+  CORRADE_COMPARE(aabb.max(), (Mn::Vector3{10.0f, 5.0f, 1.0f}));
 
-  const Transform identity = obb2.worldToLocal() * obb2.localToWorld();
-  CORRADE_VERIFY(identity == Transform::Identity()));
-  CORRADE_VERIFY(obb2.contains(obb2.localToWorld() * Mn::Vector3(0, 0, 0)));
-  CORRADE_VERIFY(obb2.contains(obb2.localToWorld() * Mn::Vector3(1, -1, 1)));
-  CORRADE_VERIFY(obb2.contains(obb2.localToWorld() * Mn::Vector3(-1, -1, -1)));
+  const auto identity = obb2.worldToLocal() * obb2.localToWorld();
+  CORRADE_VERIFY(identity == Mn::Matrix4());
   CORRADE_VERIFY(
-      !obb2.contains(obb2.localToWorld() * Mn::Vector3(-1, -1.5, -1)));
+      obb2.contains(obb2.localToWorld().transformPoint(Mn::Vector3(0, 0, 0))));
+  CORRADE_VERIFY(
+      obb2.contains(obb2.localToWorld().transformPoint(Mn::Vector3(1, -1, 1))));
+  CORRADE_VERIFY(obb2.contains(
+      obb2.localToWorld().transformPoint(Mn::Vector3(-1, -1, -1))));
+  CORRADE_VERIFY(!obb2.contains(
+      obb2.localToWorld().transformPoint(Mn::Vector3(-1, -1.5, -1))));
   CORRADE_COMPARE_AS(obb2.distance(Mn::Vector3(-20, 0, 0)), 10, float);
   CORRADE_COMPARE_AS(obb2.distance(Mn::Vector3(-10, -5, 2)), 1, float);
 }
@@ -175,9 +179,7 @@ void GeoTest::coordinateFrame() {
   const Mn::Vector3 front(-1, 0, 0);
   auto rotation = core::quatRotFromTwoVectors(ESP_UP, up) *
                   core::quatRotFromTwoVectors(ESP_FRONT, front);
-  Transform xform;
-  xform.rotate(rotation);
-  xform.translate(origin);
+  Mn::Matrix4 xform = Mn::Matrix4::from(rotation.toMatrix(), origin);
 
   CoordinateFrame c1(up, front, origin);
   CORRADE_VERIFY(c1.up() == up);

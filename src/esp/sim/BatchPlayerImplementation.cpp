@@ -6,6 +6,7 @@
 
 #include <esp/gfx_batch/Renderer.h>
 
+#include <Corrade/Containers/StridedArrayView.h>
 #include <Corrade/Containers/StringStl.h>
 
 namespace {

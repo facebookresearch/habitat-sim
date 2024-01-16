@@ -43,8 +43,10 @@ Mn::Quaternion CoordinateFrame::rotationFrameToWorld() const {
 }
 
 std::string CoordinateFrame::toString() const {
-  return Cr::Utility::formatString("\"up\" : {} \"front\" : {} \"origin\" : {}",
-                                   up(), front(), origin());
+  return Cr::Utility::formatString(
+      "\"up\" : {} {} {} \"front\" : {} {} {}  \"origin\" : {} {} {} ",
+      up().x(), up().y(), up().z(), front().x(), front().y(), front().z(),
+      origin().x(), origin().y(), origin().z());
 }
 
 bool operator==(const CoordinateFrame& a, const CoordinateFrame& b) {
