@@ -77,27 +77,14 @@ std::ostream& operator<<(std::ostream& os, const Map<T>& m) {
 
 }  // namespace Eigen
 
-// EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Vector2f)
-// EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Vector3f)
-// EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Vector4f)
-// EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Vector2i)
-// EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Vector3i)
-// EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Vector4i)
 // EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Matrix3f))
 
 //! core simulator namespace
 namespace esp {
 
 // basic types
-typedef Eigen::Vector2f vec2f;
-typedef Eigen::Vector3f vec3f;
-typedef Eigen::Vector4f vec4f;
-typedef Eigen::Vector2i vec2i;
-typedef Eigen::Matrix3f mat3f;
-typedef Eigen::Quaternionf quatf;
-typedef Eigen::AlignedBox3f box3f;
 
-typedef Eigen::Transform<float, 3, Eigen::Affine, Eigen::DontAlign> Transform;
+typedef Eigen::AlignedBox3f box3f;
 
 //! Write box3f into ostream in JSON string format
 inline std::ostream& operator<<(std::ostream& os, const box3f& bbox) {
