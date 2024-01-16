@@ -5,6 +5,8 @@
 #ifndef ESP_GEO_OBB_H_
 #define ESP_GEO_OBB_H_
 
+#include <Corrade/Utility/FormatStl.h>
+#include <Magnum/Math/Matrix4.h>
 #include <Magnum/Math/Quaternion.h>
 #include "esp/core/Esp.h"
 #include "esp/geo/Geo.h"
@@ -15,11 +17,11 @@ namespace geo {
 // oriented bounding box
 class OBB {
  public:
-  explicit OBB();
+  explicit OBB() {}
   explicit OBB(const Mn::Vector3& center,
                const Mn::Vector3& dimensions,
                const Mn::Quaternion& rotation);
-  explicit OBB(const box3f& aabb);
+  explicit OBB(const Mn::Range3D& aabb);
 
   //! Returns centroid of this OBB
   Mn::Vector3 center() const { return center_; }
@@ -40,14 +42,14 @@ class OBB {
   //! Returns quaternion representing rotation of this OBB
   Mn::Quaternion rotation() const { return rotation_; }
 
-  //! Return Transform from world coordinates to local [0,1]^3 coordinates
-  const Transform& worldToLocal() const { return worldToLocal_; }
+  //! Return Mn::Matrix4 from world coordinates to local [0,1]^3 coordinates
+  const Mn::Matrix4& worldToLocal() const { return worldToLocal_; }
 
-  //! Return Transform from local [0,1]^3 coordinates to world coordinates
-  const Transform& localToWorld() const { return localToWorld_; }
+  //! Return Mn::Matrix4 from local [0,1]^3 coordinates to world coordinates
+  const Mn::Matrix4& localToWorld() const { return localToWorld_; }
 
   //! Returns an axis aligned bounding box bounding this OBB
-  box3f toAABB() const;
+  Mn::Range3D toAABB() const;
 
   //! Returns distance to p from closest point on OBB surface
   //! (0 if point p is inside box)
@@ -66,16 +68,17 @@ class OBB {
  protected:
   void recomputeTransforms();
 
-  Mn::Vector3 center_;
-  Mn::Vector3 halfExtents_;
+  Mn::Vector3 center_{};
+  Mn::Vector3 halfExtents_{};
   Mn::Quaternion rotation_;
-  Transform localToWorld_, worldToLocal_;
+  Mn::Matrix4 localToWorld_, worldToLocal_;
   ESP_SMART_POINTERS(OBB)
 };
 
 inline std::ostream& operator<<(std::ostream& os, const OBB& obb) {
-  return os << "{c:" << obb.center() << ",h:" << obb.halfExtents()
-            << ",r:" << obb.rotation().coeffs() << "}";
+  return os << Cr::Utility::formatString("ctr : {}, h : {}, rot : {}",
+                                         obb.center(), obb.halfExtents(),
+                                         obb.rotation());
 }
 
 // compute a minimum area OBB containing given points, and constrained to

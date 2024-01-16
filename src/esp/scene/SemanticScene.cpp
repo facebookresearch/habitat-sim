@@ -589,7 +589,7 @@ std::vector<uint32_t> SemanticScene::buildSemanticOBBs(
           ssdObj.id(), vertCounts[semanticID], center.x(), center.y(),
           center.z(), dims.x(), dims.y(), dims.z());
     }
-    sdObj.setObb(center, dims);
+    ssdObj.setObb(center, dims);
   }
   // return listing of semantic object idxs that have no presence in the mesh
   return unMappedObjectIDXs;

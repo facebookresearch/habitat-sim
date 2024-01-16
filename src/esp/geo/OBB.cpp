@@ -4,7 +4,11 @@
 
 #include "OBB.h"
 
+#include <Magnum/Math/Matrix3.h>
+#include <Magnum/Math/Matrix4.h>
 #include <Magnum/Math/Quaternion.h>
+#include <Magnum/Math/Range.h>
+
 #include <array>
 #include <vector>
 
@@ -16,12 +20,6 @@ namespace Mn = Magnum;
 namespace esp {
 namespace geo {
 
-OBB::OBB() {
-  center_.setZero();
-  halfExtents_.setZero();
-  rotation_.setIdentity();
-}
-
 OBB::OBB(const Mn::Vector3& center,
          const Mn::Vector3& dimensions,
          const Mn::Quaternion& rotation)
@@ -29,51 +27,48 @@ OBB::OBB(const Mn::Vector3& center,
   recomputeTransforms();
 }
 
-OBB::OBB(const box3f& aabb)
-    : OBB(aabb.center(), aabb.sizes(), Mn::Quaternion(Mn::Math::IdentityInit)) {
-}
+OBB::OBB(const Mn::Range3D& aabb)
+    : OBB(aabb.center(), aabb.size(), Mn::Quaternion(Mn::Math::IdentityInit)) {}
 
 static const Mn::Vector3 kCorners[8] = {
     Mn::Vector3(-1, -1, -1), Mn::Vector3(-1, -1, +1), Mn::Vector3(-1, +1, -1),
     Mn::Vector3(-1, +1, +1), Mn::Vector3(+1, -1, -1), Mn::Vector3(+1, -1, +1),
     Mn::Vector3(+1, +1, -1), Mn::Vector3(+1, +1, +1)};
 
-box3f OBB::toAABB() const {
-  box3f bbox;
+Mn::Range3D OBB::toAABB() const {
+  Mn::Range3D bbox;
   for (int i = 0; i < 8; ++i) {
     const Mn::Vector3 worldPoint =
-        center_ + (rotation_ * kCorners[i].cwiseProduct(halfExtents_));
-    bbox.extend(worldPoint);
+        center_ +
+        (rotation_.transformVectorNormalized(kCorners[i] * halfExtents_));
+    // TODO refactor to bbox.join when Magnum supports it
+    bbox.min() = Mn::Math::min(bbox.min(), worldPoint);
+    bbox.max() = Mn::Math::max(bbox.max(), worldPoint);
   }
   return bbox;
 }
 
 void OBB::recomputeTransforms() {
-  ESP_CHECK(center_.allFinite(),
-            "Illegal center for OBB. Cannot recompute transformations.");
-  ESP_CHECK(halfExtents_.allFinite(),
-            "Illegal size values for OBB. Cannot recompute transformations.");
-  ESP_CHECK(
-      rotation_.coeffs().allFinite(),
-      "Illegal rotation quaternion for OBB. Cannot recompute transformations.");
-
-  // TODO(MS): these can be composed more efficiently and directly
-  const mat3f R = rotation_.matrix();
+  const auto R = rotation_.toMatrix();
   // Local-to-world transform
+  Mn::Matrix3 localToWorldRot;
   for (int i = 0; i < 3; ++i) {
-    localToWorld_.linear().col(i) = R.col(i) * halfExtents_[i];
+    localToWorldRot[i] = R[i] * halfExtents_[i];
   }
-  localToWorld_.translation() = center_;
+
+  localToWorld_ = Mn::Matrix4::from(localToWorldRot, center_);
 
   // World-to-local transform. Points within OBB are in [0,1]^3
+  Mn::Matrix3 worldToLocalRot;
   for (int i = 0; i < 3; ++i) {
-    worldToLocal_.linear().row(i) = R.col(i) * (1.0f / halfExtents_[i]);
+    worldToLocalRot.row(i) = R[i] * (1.0f / halfExtents_[i]);
   }
-  worldToLocal_.translation() = -worldToLocal_.linear() * center_;
+  worldToLocal_ =
+      Mn::Matrix4::from(worldToLocalRot, -worldToLocalRot * center_);
 }
 
 bool OBB::contains(const Mn::Vector3& p, float eps /* = 1e-6f */) const {
-  const Mn::Vector3 pLocal = worldToLocal() * p;
+  const Mn::Vector3 pLocal = worldToLocal().transformPoint(p);
   const float bound = 1.0f + eps;
   for (int i = 0; i < 3; ++i) {
     if (std::abs(pLocal[i]) > bound) {
@@ -94,10 +89,10 @@ float OBB::distance(const Mn::Vector3& p) const {
 Mn::Vector3 OBB::closestPoint(const Mn::Vector3& p) const {
   const Mn::Vector3 d = p - center_;
   Mn::Vector3 closest = center_;
-  const auto R = rotation_.matrix();
+  const auto R = rotation_.toMatrix();
   for (int i = 0; i < 3; ++i) {
     closest +=
-        clamp(R.col(i).dot(d), -halfExtents_[i], halfExtents_[i]) * R.col(i);
+        clamp(Mn::Math::dot(R[i], d), -halfExtents_[i], halfExtents_[i]) * R[i];
   }
   return closest;
 }
@@ -147,7 +142,7 @@ OBB computeGravityAlignedMOBB(const Mn::Vector3& gravity,
   std::vector<Mn::Vector2> in_plane_points;
   in_plane_points.reserve(points.size());
   for (const auto& pt : points) {
-    Mn::Vector3 aligned_pt = align_gravity * pt;
+    Mn::Vector3 aligned_pt = align_gravity.transformVectorNormalized(pt);
     in_plane_points.emplace_back(aligned_pt[0], aligned_pt[1]);
   }
 
@@ -252,16 +247,17 @@ OBB computeGravityAlignedMOBB(const Mn::Vector3& gravity,
                          Mn::Vector3::xAxis()) *
                      align_gravity;
 
-  box3f aabb;
-  aabb.setEmpty();
+  Mn::Range3D aabb;
   for (const auto& pt : points) {
-    aabb.extend(T_w2b.transformVectorNormalized(pt));
+    const auto transPt = T_w2b.transformVectorNormalized(pt);
+    aabb.min() = Mn::Math::min(aabb.min(), transPt);
+    aabb.max() = Mn::Math::max(aabb.max(), transPt);
   }
   // Inverted normalized rotation
   const auto inverseT_w2b = T_w2b.inverted().normalized();
 
-  return OBB{inverseT_w2b.transformVectorNormalized(aabb.center()),
-             aabb.sizes(), inverseT_w2b};
+  return OBB{inverseT_w2b.transformVectorNormalized(aabb.center()), aabb.size(),
+             inverseT_w2b};
 }
 
 }  // namespace geo
