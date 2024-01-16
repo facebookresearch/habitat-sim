@@ -57,7 +57,7 @@ Mn::Math::Quaternion<T> quatRotFromTwoVectors(
     // colinear opposite direction
     // Find a vector not colinear with rotFrom
     auto axisVec = Mn::Math::Vector3<T>::xAxis();
-    if (abs(Mn::Math::dot<T>(fromNorm, axisVec)) == 1.0f) {
+    if (abs(Mn::Math::dot(fromNorm, axisVec)) == 1.0f) {
       axisVec = Mn::Math::Vector3<T>::yAxis();
     }
     // Find a normal vector ortho to a and b, treat as rotational axis
@@ -66,7 +66,7 @@ Mn::Math::Quaternion<T> quatRotFromTwoVectors(
   }
   const auto halfVec = (fromNorm + toNorm).normalized();
   return Mn::Math::Quaternion<T>(
-             Mn::Math::cross(fromNorm, halfVec).nornalized(),
+             Mn::Math::cross(fromNorm, halfVec).normalized(),
              Mn::Math::dot(fromNorm, halfVec))
       .normalized();
 }  // quatRotFromTwoVectors
