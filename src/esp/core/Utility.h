@@ -20,24 +20,23 @@
 
 namespace esp {
 namespace core {
-namespace Mn = Magnum;
 /**
  * @brief generate a random rotation
  *
  * @return a unit quternion
  */
-inline Mn::Quaternion randomRotation() {
+inline Magnum::Quaternion randomRotation() {
   // generate random rotation using:
   // http://planning.cs.uiuc.edu/node198.html
   double u1 = (rand() % 1000) / 1000.0;
   double u2 = (rand() % 1000) / 1000.0;
   double u3 = (rand() % 1000) / 1000.0;
 
-  Mn::Vector3 qAxis(sqrt(1 - u1) * cos(2 * M_PI * u2),
-                    sqrt(u1) * sin(2 * M_PI * u3),
-                    sqrt(u1) * cos(2 * M_PI * u3));
+  Magnum::Vector3 qAxis(sqrt(1 - u1) * cos(2 * M_PI * u2),
+                        sqrt(u1) * sin(2 * M_PI * u3),
+                        sqrt(u1) * cos(2 * M_PI * u3));
 
-  return Mn::Quaternion(qAxis, sqrt(1 - u1) * sin(2 * M_PI * u2));
+  return Magnum::Quaternion(qAxis, sqrt(1 - u1) * sin(2 * M_PI * u2));
 }
 
 /**
@@ -47,38 +46,39 @@ inline Mn::Quaternion randomRotation() {
  * @return normalized rotation quaternion to perform the rotation.
  */
 template <typename T>
-Mn::Math::Quaternion<T> quatRotFromTwoVectors(
-    const Mn::Math::Vector3<T>& rotFrom,
-    const Mn::Math::Vector3<T>& rotTo) {
+Magnum::Math::Quaternion<T> quatRotFromTwoVectors(
+    const Magnum::Math::Vector3<T>& rotFrom,
+    const Magnum::Math::Vector3<T>& rotTo) {
   const auto fromNorm = rotFrom.normalized();
   const auto toNorm = rotTo.normalized();
 
   if (fromNorm == -toNorm) {
     // colinear opposite direction
     // Find a vector not colinear with rotFrom
-    auto axisVec = Mn::Math::Vector3<T>::xAxis();
-    if (abs(Mn::Math::dot(fromNorm, axisVec)) == 1.0f) {
-      axisVec = Mn::Math::Vector3<T>::yAxis();
+    auto axisVec = Magnum::Math::Vector3<T>::xAxis();
+    if (abs(Magnum::Math::dot(fromNorm, axisVec)) == 1.0f) {
+      axisVec = Magnum::Math::Vector3<T>::yAxis();
     }
     // Find a normal vector ortho to a and b, treat as rotational axis
-    const auto rotAxisVec = Mn::Math::cross(fromNorm, axisVec).normalized();
-    return Mn::Math::Quaternion<T>(rotAxisVec, 0).normalized();
+    const auto rotAxisVec = Magnum::Math::cross(fromNorm, axisVec).normalized();
+    return Magnum::Math::Quaternion<T>(rotAxisVec, 0).normalized();
   }
   const auto halfVec = (fromNorm + toNorm).normalized();
-  return Mn::Math::Quaternion<T>(
-             Mn::Math::cross(fromNorm, halfVec).normalized(),
-             Mn::Math::dot(fromNorm, halfVec))
+  return Magnum::Math::Quaternion<T>(
+             Magnum::Math::cross(fromNorm, halfVec).normalized(),
+             Magnum::Math::dot(fromNorm, halfVec))
       .normalized();
 }  // quatRotFromTwoVectors
 
 template <typename T>
-Mn::Math::Matrix4<T> orthonormalizeRotationShear(
-    const Mn::Math::Matrix4<T>& transformation) {
-  Mn::Math::Matrix3<T> rotation = transformation.rotationShear();
-  Mn::Math::Algorithms::gramSchmidtOrthonormalizeInPlace(rotation);
+Magnum::Math::Matrix4<T> orthonormalizeRotationShear(
+    const Magnum::Math::Matrix4<T>& transformation) {
+  Magnum::Math::Matrix3<T> rotation = transformation.rotationShear();
+  Magnum::Math::Algorithms::gramSchmidtOrthonormalizeInPlace(rotation);
 
-  return Mn::Math::Matrix4<T>::from(rotation, transformation.translation()) *
-         Mn::Math::Matrix4<T>::scaling(transformation.scaling());
+  return Magnum::Math::Matrix4<T>::from(rotation,
+                                        transformation.translation()) *
+         Magnum::Math::Matrix4<T>::scaling(transformation.scaling());
 }
 }  // namespace core
 }  // namespace esp

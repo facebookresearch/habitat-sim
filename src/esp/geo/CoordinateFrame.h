@@ -20,9 +20,9 @@ class CoordinateFrame {
  public:
   explicit CoordinateFrame(const Mn::Vector3& up = ESP_UP,
                            const Mn::Vector3& front = ESP_FRONT,
-                           const Mn::Vector3& origin = {0, 0, 0});
+                           const Mn::Vector3& origin = {});
   explicit CoordinateFrame(const Mn::Quaternion& rotation,
-                           const Mn::Vector3& origin = {0, 0, 0});
+                           const Mn::Vector3& origin = {});
 
   //! Returns position of origin of this CoordinateFrame relative to parent
   Mn::Vector3 origin() const { return origin_; }
