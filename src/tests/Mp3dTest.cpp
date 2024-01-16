@@ -39,12 +39,12 @@ void Mp3dTest::testLoad() {
   mp3dAttr->setSemanticDescriptorFullPath(filename);
 
   esp::scene::SemanticScene house;
-  const esp::quatf alignGravity =
-      esp::quatf::FromTwoVectors(-esp::vec3f::UnitZ(), esp::geo::ESP_GRAVITY);
-  const esp::quatf alignFront =
-      esp::quatf::FromTwoVectors(-esp::vec3f::UnitX(), esp::geo::ESP_FRONT);
-  esp::scene::SemanticScene::loadSemanticSceneDescriptor(
-      mp3dAttr, house, alignFront * alignGravity);
+  const auto alignGravity = esp::core::quatRotFromTwoVectors(
+      esp::geo::ESP_FRONT, esp::geo::ESP_GRAVITY);
+  const auto alignFront = esp::core::quatRotFromTwoVectors(
+      -Mn::Vector3::xAxis(), esp::geo::ESP_FRONT);
+  esp::scene::SemanticScene::loadMp3dHouse(filename, house,
+                                           alignFront * alignGravity);
   ESP_DEBUG() << "House{nobjects:" << house.count("objects")
               << ",nlevels:" << house.count("levels")
               << ",nregions:" << house.count("regions")

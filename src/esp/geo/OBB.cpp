@@ -4,12 +4,15 @@
 
 #include "OBB.h"
 
+#include <Magnum/Math/Quaternion.h>
 #include <array>
 #include <vector>
 
 #include "esp/core/Check.h"
+#include "esp/core/Utility.h"
 #include "esp/geo/Geo.h"
 
+namespace Mn = Magnum;
 namespace esp {
 namespace geo {
 
@@ -19,22 +22,26 @@ OBB::OBB() {
   rotation_.setIdentity();
 }
 
-OBB::OBB(const vec3f& center, const vec3f& dimensions, const quatf& rotation)
+OBB::OBB(const Mn::Vector3& center,
+         const Mn::Vector3& dimensions,
+         const Mn::Quaternion& rotation)
     : center_(center), halfExtents_(dimensions * 0.5), rotation_(rotation) {
   recomputeTransforms();
 }
 
 OBB::OBB(const box3f& aabb)
-    : OBB(aabb.center(), aabb.sizes(), quatf::Identity()) {}
+    : OBB(aabb.center(), aabb.sizes(), Mn::Quaternion(Mn::Math::IdentityInit)) {
+}
 
-static const vec3f kCorners[8] = {
-    vec3f(-1, -1, -1), vec3f(-1, -1, +1), vec3f(-1, +1, -1), vec3f(-1, +1, +1),
-    vec3f(+1, -1, -1), vec3f(+1, -1, +1), vec3f(+1, +1, -1), vec3f(+1, +1, +1)};
+static const Mn::Vector3 kCorners[8] = {
+    Mn::Vector3(-1, -1, -1), Mn::Vector3(-1, -1, +1), Mn::Vector3(-1, +1, -1),
+    Mn::Vector3(-1, +1, +1), Mn::Vector3(+1, -1, -1), Mn::Vector3(+1, -1, +1),
+    Mn::Vector3(+1, +1, -1), Mn::Vector3(+1, +1, +1)};
 
 box3f OBB::toAABB() const {
   box3f bbox;
   for (int i = 0; i < 8; ++i) {
-    const vec3f worldPoint =
+    const Mn::Vector3 worldPoint =
         center_ + (rotation_ * kCorners[i].cwiseProduct(halfExtents_));
     bbox.extend(worldPoint);
   }
@@ -65,8 +72,8 @@ void OBB::recomputeTransforms() {
   worldToLocal_.translation() = -worldToLocal_.linear() * center_;
 }
 
-bool OBB::contains(const vec3f& p, float eps /* = 1e-6f */) const {
-  const vec3f pLocal = worldToLocal() * p;
+bool OBB::contains(const Mn::Vector3& p, float eps /* = 1e-6f */) const {
+  const Mn::Vector3 pLocal = worldToLocal() * p;
   const float bound = 1.0f + eps;
   for (int i = 0; i < 3; ++i) {
     if (std::abs(pLocal[i]) > bound) {
@@ -76,18 +83,18 @@ bool OBB::contains(const vec3f& p, float eps /* = 1e-6f */) const {
   return true;  // Here only if all three coords within bounds
 }
 
-float OBB::distance(const vec3f& p) const {
+float OBB::distance(const Mn::Vector3& p) const {
   if (contains(p)) {
     return 0;
   }
-  const vec3f closest = closestPoint(p);
-  return (p - closest).norm();
+  const Mn::Vector3 closest = closestPoint(p);
+  return (p - closest).length();
 }
 
-vec3f OBB::closestPoint(const vec3f& p) const {
-  const vec3f d = p - center_;
-  vec3f closest = center_;
-  const mat3f R = rotation_.matrix();
+Mn::Vector3 OBB::closestPoint(const Mn::Vector3& p) const {
+  const Mn::Vector3 d = p - center_;
+  Mn::Vector3 closest = center_;
+  const auto R = rotation_.matrix();
   for (int i = 0; i < 3; ++i) {
     closest +=
         clamp(R.col(i).dot(d), -halfExtents_[i], halfExtents_[i]) * R.col(i);
@@ -95,20 +102,24 @@ vec3f OBB::closestPoint(const vec3f& p) const {
   return closest;
 }
 
-OBB& OBB::rotate(const quatf& q) {
+OBB& OBB::rotate(const Mn::Quaternion& q) {
   rotation_ = q * rotation_;
   recomputeTransforms();
   return *this;
 }
 
 // https://geidav.wordpress.com/tag/minimum-obb/
-OBB computeGravityAlignedMOBB(const vec3f& gravity,
-                              const std::vector<vec3f>& points) {
-  const auto align_gravity = quatf::FromTwoVectors(gravity, -vec3f::UnitZ());
+OBB computeGravityAlignedMOBB(const Mn::Vector3& gravity,
+                              const std::vector<Mn::Vector3>& points) {
+  const auto align_gravity =
+      core::quatRotFromTwoVectors(gravity, -Mn::Vector3::zAxis());
 
-  static auto ortho = [](const vec2f& v) { return vec2f(v[1], -v[0]); };
-  static auto intersect_lines = [](const vec2f& s0, const vec2f& d0,
-                                   const vec2f& s1, const vec2f& d1) {
+  static auto ortho = [](const Mn::Vector2& v) {
+    return Mn::Vector2(v[1], -v[0]);
+  };
+  static auto intersect_lines = [](const Mn::Vector2& s0, const Mn::Vector2& d0,
+                                   const Mn::Vector2& s1,
+                                   const Mn::Vector2& d1) {
     const float dd = d0[0] * d1[1] - d0[1] * d1[0];
 
     const float dx = s1[0] - s0[0];
@@ -117,40 +128,40 @@ OBB computeGravityAlignedMOBB(const vec3f& gravity,
 
     return s0 + t * d0;
   };
-  static auto mobb_area = [](const vec2f& left_start, const vec2f& left_dir,
-                             const vec2f& right_start, const vec2f& right_dir,
-                             const vec2f& top_start, const vec2f& top_dir,
-                             const vec2f& bottom_start,
-                             const vec2f& bottom_dir) {
-    const vec2f upper_left =
-        intersect_lines(left_start, left_dir, top_start, top_dir);
-    const vec2f upper_right =
-        intersect_lines(right_start, right_dir, top_start, top_dir);
-    const vec2f bottom_left =
-        intersect_lines(bottom_start, bottom_dir, left_start, left_dir);
+  static auto mobb_area =
+      [](const Mn::Vector2& left_start, const Mn::Vector2& left_dir,
+         const Mn::Vector2& right_start, const Mn::Vector2& right_dir,
+         const Mn::Vector2& top_start, const Mn::Vector2& top_dir,
+         const Mn::Vector2& bottom_start, const Mn::Vector2& bottom_dir) {
+        const Mn::Vector2 upper_left =
+            intersect_lines(left_start, left_dir, top_start, top_dir);
+        const Mn::Vector2 upper_right =
+            intersect_lines(right_start, right_dir, top_start, top_dir);
+        const Mn::Vector2 bottom_left =
+            intersect_lines(bottom_start, bottom_dir, left_start, left_dir);
 
-    return (upper_left - upper_right).norm() *
-           (upper_left - bottom_left).norm();
-  };
+        return (upper_left - upper_right).length() *
+               (upper_left - bottom_left).length();
+      };
 
-  std::vector<vec2f> in_plane_points;
+  std::vector<Mn::Vector2> in_plane_points;
   in_plane_points.reserve(points.size());
   for (const auto& pt : points) {
-    vec3f aligned_pt = align_gravity * pt;
+    Mn::Vector3 aligned_pt = align_gravity * pt;
     in_plane_points.emplace_back(aligned_pt[0], aligned_pt[1]);
   }
 
   const auto hull = convexHull2D(in_plane_points);
   CORRADE_INTERNAL_ASSERT(hull.size() > 0);
 
-  std::vector<vec2f> edge_dirs;
+  std::vector<Mn::Vector2> edge_dirs;
   edge_dirs.reserve(hull.size());
   for (size_t i = 0; i < hull.size(); ++i) {
     edge_dirs.emplace_back(
         (hull[(i + 1) % hull.size()] - hull[i]).normalized());
   }
 
-  vec2f min_pt = hull[0], max_pt = hull[0];
+  Mn::Vector2 min_pt = hull[0], max_pt = hull[0];
   int left_idx = 0, right_idx = 0, top_idx = 0, bottom_idx = 0;
   for (size_t i = 0; i < hull.size(); ++i) {
     const auto& pt = hull[i];
@@ -175,17 +186,17 @@ OBB computeGravityAlignedMOBB(const vec3f& gravity,
     }
   }
 
-  vec2f left_dir = vec2f(0, -1), right_dir = vec2f(0, 1),
-        top_dir = vec2f(-1, 0), bottom_dir = vec2f(1, 0);
+  Mn::Vector2 left_dir = Mn::Vector2(0, -1), right_dir = Mn::Vector2(0, 1),
+              top_dir = Mn::Vector2(-1, 0), bottom_dir = Mn::Vector2(1, 0);
 
   float best_area = 1e10;
-  vec2f best_bottom_dir = vec2f(NAN, NAN);
+  Mn::Vector2 best_bottom_dir = Mn::Vector2(NAN, NAN);
   for (size_t i = 0; i < hull.size(); ++i) {
     const std::array<float, 4> angles(
-        {std::acos(left_dir.dot(edge_dirs[left_idx])),
-         std::acos(right_dir.dot(edge_dirs[right_idx])),
-         std::acos(top_dir.dot(edge_dirs[top_idx])),
-         std::acos(bottom_dir.dot(edge_dirs[bottom_idx]))});
+        {std::acos(Mn::Math::dot(left_dir, edge_dirs[left_idx])),
+         std::acos(Mn::Math::dot(right_dir, edge_dirs[right_idx])),
+         std::acos(Mn::Math::dot(top_dir, edge_dirs[top_idx])),
+         std::acos(Mn::Math::dot(bottom_dir, edge_dirs[bottom_idx]))});
     float min_angle = 1e10;
     size_t best_line = 0;
     for (size_t i = 0; i < angles.size(); ++i) {
@@ -236,18 +247,21 @@ OBB computeGravityAlignedMOBB(const vec3f& gravity,
       best_area = area;
     }
   }
-  const auto T_w2b =
-      quatf::FromTwoVectors(vec3f(best_bottom_dir[0], best_bottom_dir[1], 0),
-                            vec3f::UnitX()) *
-      align_gravity;
+  const auto T_w2b = core::quatRotFromTwoVectors(
+                         Mn::Vector3(best_bottom_dir[0], best_bottom_dir[1], 0),
+                         Mn::Vector3::xAxis()) *
+                     align_gravity;
 
   box3f aabb;
   aabb.setEmpty();
   for (const auto& pt : points) {
-    aabb.extend(T_w2b * pt);
+    aabb.extend(T_w2b.transformVectorNormalized(pt));
   }
+  // Inverted normalized rotation
+  const auto inverseT_w2b = T_w2b.inverted().normalized();
 
-  return OBB{T_w2b.inverse() * aabb.center(), aabb.sizes(), T_w2b.inverse()};
+  return OBB{inverseT_w2b.transformVectorNormalized(aabb.center()),
+             aabb.sizes(), inverseT_w2b};
 }
 
 }  // namespace geo

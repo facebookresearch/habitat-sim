@@ -67,17 +67,6 @@ RenderCamera::RenderCamera(scene::SceneNode& node,
   resetViewingParameters(eye, target, up);
 }
 
-RenderCamera::RenderCamera(scene::SceneNode& node,
-                           esp::scene::SceneNodeSemanticDataIDX semanticDataIDX,
-                           const vec3f& eye,
-                           const vec3f& target,
-                           const vec3f& up)
-    : RenderCamera(node,
-                   semanticDataIDX,
-                   Mn::Vector3{eye},
-                   Mn::Vector3{target},
-                   Mn::Vector3{up}) {}
-
 RenderCamera& RenderCamera::resetViewingParameters(const Mn::Vector3& eye,
                                                    const Mn::Vector3& target,
                                                    const Mn::Vector3& up) {

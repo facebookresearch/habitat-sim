@@ -124,32 +124,34 @@ void GeoTest::aabb() {
 
 void GeoTest::obbConstruction() {
   OBB obb1;
-  const vec3f center(0, 0, 0);
-  const vec3f dimensions(20, 2, 10);
-  const quatf rot1 = quatf::FromTwoVectors(vec3f::UnitY(), vec3f::UnitZ());
+  const Mn::Vector3 center(0, 0, 0);
+  const Mn::Vector3 dimensions(20, 2, 10);
+  const auto rot1 =
+      core::quatRotFromTwoVectors(Mn::Vector3::yAxis(), Mn::Vector3::zAxis());
   OBB obb2(center, dimensions, rot1);
 
-  CORRADE_VERIFY(obb2.center().isApprox(center));
-  CORRADE_VERIFY(obb2.sizes().isApprox(dimensions));
-  CORRADE_VERIFY(obb2.halfExtents().isApprox(dimensions / 2));
-  CORRADE_VERIFY(obb2.rotation().coeffs().isApprox(rot1.coeffs()));
+  CORRADE_VERIFY(obb2.center() == center);
+  CORRADE_VERIFY(obb2.sizes() == dimensions);
+  CORRADE_VERIFY(obb2.halfExtents() == dimensions / 2);
+  CORRADE_VERIFY(obb2.rotation() == rot1);
 
-  box3f aabb(vec3f(-1, -2, -3), vec3f(3, 2, 1));
+  box3f aabb(Mn::Vector3(-1, -2, -3), Mn::Vector3(3, 2, 1));
   OBB obb3(aabb);
-  CORRADE_VERIFY(obb3.center().isApprox(aabb.center()));
-  CORRADE_VERIFY(obb3.toAABB().isApprox(aabb));
+  CORRADE_VERIFY(obb3.center() == aabb.center());
+  CORRADE_VERIFY(obb3.toAABB() == aabb);
 }
 
 void GeoTest::obbFunctions() {
-  const vec3f center(0, 0, 0);
-  const vec3f dimensions(20, 2, 10);
-  const quatf rot1 = quatf::FromTwoVectors(vec3f::UnitY(), vec3f::UnitZ());
+  const Mn::Vector3 center(0, 0, 0);
+  const Mn::Vector3 dimensions(20, 2, 10);
+  const auto rot1 =
+      core::quatRotFromTwoVectors(Mn::Vector3::yAxis(), Mn::Vector3::zAxis());
   OBB obb2(center, dimensions, rot1);
-  CORRADE_VERIFY(obb2.contains(vec3f(0, 0, 0)));
-  CORRADE_VERIFY(obb2.contains(vec3f(-5, -2, 0.5)));
-  CORRADE_VERIFY(obb2.contains(vec3f(5, 0, -0.5)));
-  CORRADE_VERIFY(!obb2.contains(vec3f(5, 0, 2)));
-  CORRADE_VERIFY(!obb2.contains(vec3f(-10, 0.5, -2)));
+  CORRADE_VERIFY(obb2.contains(Mn::Vector3(0, 0, 0)));
+  CORRADE_VERIFY(obb2.contains(Mn::Vector3(-5, -2, 0.5)));
+  CORRADE_VERIFY(obb2.contains(Mn::Vector3(5, 0, -0.5)));
+  CORRADE_VERIFY(!obb2.contains(Mn::Vector3(5, 0, 2)));
+  CORRADE_VERIFY(!obb2.contains(Mn::Vector3(-10, 0.5, -2)));
 
   const box3f aabb = obb2.toAABB();
 
@@ -157,45 +159,46 @@ void GeoTest::obbFunctions() {
   CORRADE_COMPARE(Mn::Vector3{aabb.max()}, (Mn::Vector3{10.0f, 5.0f, 1.0f}));
 
   const Transform identity = obb2.worldToLocal() * obb2.localToWorld();
-  CORRADE_VERIFY(identity.isApprox(Transform::Identity()));
-  CORRADE_VERIFY(obb2.contains(obb2.localToWorld() * vec3f(0, 0, 0)));
-  CORRADE_VERIFY(obb2.contains(obb2.localToWorld() * vec3f(1, -1, 1)));
-  CORRADE_VERIFY(obb2.contains(obb2.localToWorld() * vec3f(-1, -1, -1)));
-  CORRADE_VERIFY(!obb2.contains(obb2.localToWorld() * vec3f(-1, -1.5, -1)));
-  CORRADE_COMPARE_AS(obb2.distance(vec3f(-20, 0, 0)), 10, float);
-  CORRADE_COMPARE_AS(obb2.distance(vec3f(-10, -5, 2)), 1, float);
+  CORRADE_VERIFY(identity == Transform::Identity()));
+  CORRADE_VERIFY(obb2.contains(obb2.localToWorld() * Mn::Vector3(0, 0, 0)));
+  CORRADE_VERIFY(obb2.contains(obb2.localToWorld() * Mn::Vector3(1, -1, 1)));
+  CORRADE_VERIFY(obb2.contains(obb2.localToWorld() * Mn::Vector3(-1, -1, -1)));
+  CORRADE_VERIFY(
+      !obb2.contains(obb2.localToWorld() * Mn::Vector3(-1, -1.5, -1)));
+  CORRADE_COMPARE_AS(obb2.distance(Mn::Vector3(-20, 0, 0)), 10, float);
+  CORRADE_COMPARE_AS(obb2.distance(Mn::Vector3(-10, -5, 2)), 1, float);
 }
 
 void GeoTest::coordinateFrame() {
-  const vec3f origin(1, -2, 3);
-  const vec3f up(0, 0, 1);
-  const vec3f front(-1, 0, 0);
-  quatf rotation = quatf::FromTwoVectors(ESP_UP, up) *
-                   quatf::FromTwoVectors(ESP_FRONT, front);
+  const Mn::Vector3 origin(1, -2, 3);
+  const Mn::Vector3 up(0, 0, 1);
+  const Mn::Vector3 front(-1, 0, 0);
+  auto rotation = core::quatRotFromTwoVectors(ESP_UP, up) *
+                  core::quatRotFromTwoVectors(ESP_FRONT, front);
   Transform xform;
   xform.rotate(rotation);
   xform.translate(origin);
 
   CoordinateFrame c1(up, front, origin);
-  CORRADE_VERIFY(c1.up().isApprox(up));
-  CORRADE_VERIFY(c1.gravity().isApprox(-up));
-  CORRADE_VERIFY(c1.front().isApprox(front));
-  CORRADE_VERIFY(c1.back().isApprox(-front));
-  CORRADE_VERIFY(c1.up().isApprox(rotation * ESP_UP));
-  CORRADE_VERIFY(c1.front().isApprox(rotation * ESP_FRONT));
-  CORRADE_VERIFY(c1.origin().isApprox(origin));
-  CORRADE_VERIFY(c1.rotationWorldToFrame().isApprox(rotation));
+  CORRADE_VERIFY(c1.up() == up);
+  CORRADE_VERIFY(c1.gravity() == -up);
+  CORRADE_VERIFY(c1.front() == front);
+  CORRADE_VERIFY(c1.back() == -front);
+  CORRADE_VERIFY(c1.up() == rotation.transformVectorNormalized(ESP_UP));
+  CORRADE_VERIFY(c1.front() == rotation.transformVectorNormalized(ESP_FRONT));
+  CORRADE_VERIFY(c1.origin() == origin);
+  CORRADE_VERIFY(c1.rotationWorldToFrame() == rotation);
 
   CoordinateFrame c2(rotation, origin);
   CORRADE_VERIFY(c1 == c2);
-  CORRADE_VERIFY(c2.up().isApprox(up));
-  CORRADE_VERIFY(c2.gravity().isApprox(-up));
-  CORRADE_VERIFY(c2.front().isApprox(front));
-  CORRADE_VERIFY(c2.back().isApprox(-front));
-  CORRADE_VERIFY(c2.up().isApprox(rotation * ESP_UP));
-  CORRADE_VERIFY(c2.front().isApprox(rotation * ESP_FRONT));
-  CORRADE_VERIFY(c2.origin().isApprox(origin));
-  CORRADE_VERIFY(c2.rotationWorldToFrame().isApprox(rotation));
+  CORRADE_VERIFY(c2.up() == up);
+  CORRADE_VERIFY(c2.gravity() == -up);
+  CORRADE_VERIFY(c2.front() == front);
+  CORRADE_VERIFY(c2.back() == -front);
+  CORRADE_VERIFY(c2.up() == rotation.transformVectorNormalized(ESP_UP));
+  CORRADE_VERIFY(c2.front() == rotation.transformVectorNormalized(ESP_FRONT));
+  CORRADE_VERIFY(c2.origin() == origin);
+  CORRADE_VERIFY(c2.rotationWorldToFrame() == rotation);
 
   const std::string j = R"({"up":[0,0,1],"front":[-1,0,0],"origin":[1,-2,3]})";
   CORRADE_COMPARE(c1.toString(), j);

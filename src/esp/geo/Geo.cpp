@@ -18,11 +18,12 @@ using Magnum::Math::Literals::operator""_rgb;
 namespace esp {
 namespace geo {
 
-std::vector<vec2f> convexHull2D(const std::vector<vec2f>& points) {
+std::vector<Mn::Vector2> convexHull2D(const std::vector<Mn::Vector2>& points) {
   CORRADE_INTERNAL_ASSERT(points.size() > 2);
 
-  auto cross = [](const vec2f& o, const vec2f& a, const vec2f& b) {
-    return (a(0) - o(0)) * (b(1) - o(1)) - (a(1) - o(1)) * (b(0) - o(0));
+  auto cross = [](const Mn::Vector2& o, const Mn::Vector2& a,
+                  const Mn::Vector2& b) {
+    return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
   };
 
   // Sort indices of points lexicographically
@@ -30,8 +31,8 @@ std::vector<vec2f> convexHull2D(const std::vector<vec2f>& points) {
   std::iota(idx.begin(), idx.end(), 0);
   std::sort(
       idx.begin(), idx.end(), [&points](const size_t& a, const size_t& b) {
-        return points[a](0) < points[b](0) ||
-               (points[a](0) == points[b](0) && points[a](1) < points[b](1));
+        return points[a][0] < points[b][0] ||
+               (points[a][0] == points[b][0] && points[a][1] < points[b][1]);
       });
 
   std::vector<size_t> hullIdx(2 * idx.size());
@@ -58,7 +59,7 @@ std::vector<vec2f> convexHull2D(const std::vector<vec2f>& points) {
 
   hullIdx.resize(k - 1);
 
-  std::vector<vec2f> hull;
+  std::vector<Mn::Vector2> hull;
   hull.reserve(hullIdx.size());
 
   for (auto& ix : hullIdx) {
@@ -79,13 +80,13 @@ std::vector<vec2f> convexHull2D(const std::vector<vec2f>& points) {
  * where x_0, x are the coordinates before and after transformation, t is the
  * translation.
  *
- * x = R * (c0 + y0) + t  = (Rc0 + t) + Ry0    eq(1)
+ * x = R * (c0 + y0) + t  = (Rc0 + t) + Ry0    eq[1]
  *
  * Our Goal is to find the x_max and x_min after the transformation.
  *
  * First, determining the x_max:
  *
- * In eq(1), Rc0 + t is a constant, which means max{x} iff max{Ry0}
+ * In eq[1], Rc0 + t is a constant, which means max{x} iff max{Ry0}
  *
  * R looks like:
  * [R0, R1, R2]

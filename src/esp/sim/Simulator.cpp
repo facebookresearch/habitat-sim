@@ -931,7 +931,9 @@ assets::MeshData::ptr Simulator::getJoinedMesh(
         }
         joinedMesh->vbo.reserve(joinedObjectMesh->vbo.size() + prevNumVerts);
         for (auto& vert : joinedObjectMesh->vbo) {
-          joinedMesh->vbo.push_back(meshTransform * vert);
+          auto newVert =
+              meshTransform * Magnum::EigenIntegration::cast<esp::vec3f>(vert);
+          joinedMesh->vbo.push_back({newVert(0), newVert(1), newVert(2)});
         }
       }
     }

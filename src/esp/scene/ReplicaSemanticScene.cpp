@@ -21,7 +21,8 @@ constexpr int kMaxIds = 10000; /* We shouldn't every need more than this. */
 bool SemanticScene::loadReplicaHouse(
     const std::string& houseFilename,
     SemanticScene& scene,
-    const quatf& worldRotation /* = quatf::Identity() */) {
+    const Magnum::Quaternion&
+        worldRotation /* = Magnum::Quaternion::Identity() */) {
   if (!checkFileExists(houseFilename, "loadReplicaHouse")) {
     return false;
   }
@@ -44,7 +45,7 @@ bool SemanticScene::loadReplicaHouse(
 bool SemanticScene::buildReplicaHouse(const io::JsonDocument& jsonDoc,
                                       SemanticScene& scene,
                                       bool objectsExist,
-                                      const quatf& worldRotation) {
+                                      const Magnum::Quaternion& worldRotation) {
   scene.categories_.clear();
   scene.objects_.clear();
 
@@ -102,16 +103,18 @@ bool SemanticScene::buildReplicaHouse(const io::JsonDocument& jsonDoc,
     }
 
     const auto& obb = jsonObject["oriented_bbox"];
-    const vec3f aabbCenter = io::jsonToVec3f(obb["abb"]["center"]);
-    const vec3f aabbSizes = io::jsonToVec3f(obb["abb"]["sizes"]);
-
-    const vec3f translationBoxToWorld =
-        io::jsonToVec3f(obb["orientation"]["translation"]);
+    Mn::Vector3 aabbCenter;
+    io::fromJsonValue(obb["abb"]["center"], aabbCenter);
+    Mn::Vector3 aabbSizes;
+    io::fromJsonValue(obb["abb"]["sizes"], aabbSizes);
+    Mn::Vector3 translationBoxToWorld;
+    io::fromJsonValue(obb["orientation"]["translation"], translationBoxToWorld);
 
     std::vector<float> rotationBoxToWorldCoeffs;
     io::toFloatVector(obb["orientation"]["rotation"],
                       &rotationBoxToWorldCoeffs);
-    const Eigen::Map<quatf> rotationBoxToWorld(rotationBoxToWorldCoeffs.data());
+    const Eigen::Map<Magnum::Quaternion> rotationBoxToWorld(
+        rotationBoxToWorldCoeffs.data());
 
     Eigen::Isometry3f transformBox{rotationBoxToWorld.normalized()};
     transformBox *= Eigen::Translation3f(translationBoxToWorld);
@@ -119,8 +122,9 @@ bool SemanticScene::buildReplicaHouse(const io::JsonDocument& jsonDoc,
     const Eigen::Isometry3f transformBoxToWorld{worldRotationMat *
                                                 transformBox};
 
-    object->obb_ = geo::OBB{transformBoxToWorld * aabbCenter, aabbSizes,
-                            quatf{transformBoxToWorld.linear()}.normalized()};
+    object->obb_ =
+        geo::OBB{transformBoxToWorld * aabbCenter, aabbSizes,
+                 Magnum::Quaternion{transformBoxToWorld.linear()}.normalized()};
 
     scene.objects_[id] = std::move(object);
   }

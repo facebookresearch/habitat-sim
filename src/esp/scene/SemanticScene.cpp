@@ -292,8 +292,7 @@ CCSemanticObject::ptr buildCCSemanticObjForSetOfVerts(
   auto obj =
       std::make_shared<CCSemanticObject>(CCSemanticObject(colorInt, setOfIDXs));
   // set obj's bounding box
-  obj->setObb(Mn::EigenIntegration::cast<esp::vec3f>(center),
-              Mn::EigenIntegration::cast<esp::vec3f>(dims), quatf::Identity());
+  obj->setObb(center, dims, Mn::Quaternion(Mn::Math::IdentityInit));
   return obj;
 }  // buildCCSemanticObjForSetOfVerts
 
@@ -590,8 +589,7 @@ std::vector<uint32_t> SemanticScene::buildSemanticOBBs(
           ssdObj.id(), vertCounts[semanticID], center.x(), center.y(),
           center.z(), dims.x(), dims.y(), dims.z());
     }
-    ssdObj.setObb(Mn::EigenIntegration::cast<esp::vec3f>(center),
-                  Mn::EigenIntegration::cast<esp::vec3f>(dims));
+    sdObj.setObb(center, dims);
   }
   // return listing of semantic object idxs that have no presence in the mesh
   return unMappedObjectIDXs;
