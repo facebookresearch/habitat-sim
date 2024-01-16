@@ -18,7 +18,7 @@ CoordinateFrame::CoordinateFrame(
     const Mn::Vector3& front /* = ESP_FRONT */,
     const Mn::Vector3& origin /* = Mn::Vector3(0, 0, 0) */)
     : up_(up), front_(front), origin_(origin) {
-  CORRADE_INTERNAL_ASSERT(std::abs(Mn::Math::dot(up_, front_)) >
+  CORRADE_INTERNAL_ASSERT(std::abs(Mn::Math::dot(up_, front_)) <
                           Mn::Math::TypeTraits<float>::epsilon());
 }
 
