@@ -13,7 +13,6 @@
 #include <vector>
 
 #include "esp/core/Esp.h"
-#include "esp/core/EspEigen.h"
 
 namespace esp {
 namespace assets {
@@ -36,9 +35,9 @@ class Mp3dInstanceMeshData {
       const std::unordered_map<int, int>& segmentIdToObjectIdMap);
 
  protected:
-  std::vector<vec3f> cpu_vbo_;
-  std::vector<vec3uc> cpu_cbo_;
-  std::vector<vec3ui> perFaceIdxs_;
+  std::vector<Magnum::Vector3> cpu_vbo_;
+  std::vector<Magnum::Vector3ui> cpu_cbo_;
+  std::vector<Magnum::Vector3i> perFaceIdxs_;
   std::vector<int> materialIds_;
   std::vector<int> segmentIds_;
   std::vector<int> categoryIds_;
