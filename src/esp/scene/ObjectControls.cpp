@@ -16,6 +16,7 @@ using Magnum::EigenIntegration::cast;
 namespace esp {
 namespace scene {
 
+namespace Mn = Magnum;
 SceneNode& moveRight(SceneNode& object, float distance) {
   // TODO: this assumes no scale is applied
   object.translateLocal(object.transformation().right() * distance);
@@ -96,12 +97,14 @@ ObjectControls& ObjectControls::action(SceneNode& object,
     if (applyFilter) {
       // TODO: use magnum math for the filter func as well?
       const auto startPosition =
-          cast<vec3f>(object.absoluteTransformation().translation());
+          cast<Mn::Vector3>(object.absoluteTransformation().translation());
       moveFuncMapIter->second(object, distance);
       const auto endPos =
-          cast<vec3f>(object.absoluteTransformation().translation());
-      const vec3f filteredEndPosition = moveFilterFunc_(startPosition, endPos);
-      object.translate(Magnum::Vector3(vec3f(filteredEndPosition - endPos)));
+          cast<Mn::Vector3>(object.absoluteTransformation().translation());
+      const Mn::Vector3 filteredEndPosition =
+          moveFilterFunc_(startPosition, endPos);
+      object.translate(
+          Magnum::Vector3(Mn::Vector3(filteredEndPosition - endPos)));
     } else {
       moveFuncMapIter->second(object, distance);
     }

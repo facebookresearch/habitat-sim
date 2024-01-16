@@ -23,7 +23,9 @@ class ObjectControls {
   ObjectControls();
 
   typedef std::function<SceneNode&(SceneNode&, float)> MoveFunc;
-  typedef std::function<vec3f(const vec3f&, const vec3f&)> MoveFilterFunc;
+  typedef std::function<Magnum::Vector3(const Magnum::Vector3&,
+                                        const Magnum::Vector3&)>
+      MoveFilterFunc;
   ObjectControls& setMoveFilterFunction(MoveFilterFunc filterFunc);
 
   ObjectControls& action(SceneNode& object,
@@ -42,8 +44,10 @@ class ObjectControls {
   }
 
  protected:
-  MoveFilterFunc moveFilterFunc_ = [](const vec3f& /*start*/,
-                                      const vec3f& end) { return end; };
+  MoveFilterFunc moveFilterFunc_ = [](const Magnum::Vector3& /*start*/,
+                                      const Magnum::Vector3& end) {
+    return end;
+  };
   std::map<std::string, MoveFunc> moveFuncMap_;
 
   ESP_SMART_POINTERS(ObjectControls)

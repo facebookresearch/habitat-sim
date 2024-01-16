@@ -307,8 +307,8 @@ export class VRDemo {
 
       handInfo.push({
         index: handIndex,
-        pos: Module.toVec3f(handPos),
-        rot: Module.toVec4f(handRot),
+        pos: handPos,
+        rot: handRot,
         gripButton: buttonStates[0],
         spawnButton: buttonStates[1]
       });

@@ -30,18 +30,6 @@ class CubeMapCamera : public RenderCamera {
    */
   explicit CubeMapCamera(scene::SceneNode& node,
                          esp::scene::SceneNodeSemanticDataIDX semanticDataIDX,
-                         const vec3f& eye,
-                         const vec3f& target,
-                         const vec3f& up);
-  /**
-   * @brief Constructor
-   * @param node the scene node to which the camera is attached
-   * @param eye the eye position (parent node space)
-   * @param target the target position (parent node space)
-   * @param up the up direction (parent node space)
-   */
-  explicit CubeMapCamera(scene::SceneNode& node,
-                         esp::scene::SceneNodeSemanticDataIDX semanticDataIDX,
                          const Magnum::Vector3& eye,
                          const Magnum::Vector3& target,
                          const Magnum::Vector3& up);
