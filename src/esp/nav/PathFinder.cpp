@@ -1637,7 +1637,6 @@ T PathFinder::Impl::tryStep(const T& start, const T& end, bool allowSliding) {
     Mn::Vector3 polyCenter;
     for (int iVert = 0; iVert < poly->vertCount; ++iVert) {
       auto idx = poly->verts[iVert];
-      auto verts = tile->verts;
       polyCenter += Mn::Vector3::from(
           &tile->verts[static_cast<size_t>(poly->verts[iVert]) * 3]);
     }
@@ -1649,7 +1648,7 @@ T PathFinder::Impl::tryStep(const T& start, const T& end, bool allowSliding) {
     endPoint = endPoint + nudgeDistance * nudgeDir;
   }
 
-  return T{std::move(endPoint)};
+  return T{endPoint};
 }
 
 template <typename T>
@@ -1682,7 +1681,7 @@ T PathFinder::Impl::snapPoint(const T& pt, int islandIndex /*=ID_UNDEFINED*/) {
   }
 
   if (dtStatusSucceed(status)) {
-    return T{std::move(projectedPt)};
+    return T{projectedPt};
   }
   return {Mn::Constants::nan(), Mn::Constants::nan(), Mn::Constants::nan()};
 }
@@ -1739,7 +1738,7 @@ HitRecord PathFinder::Impl::closestObstacleSurfacePoint(
   navQuery_->findDistanceToWall(ptRef, polyPt.data(), maxSearchRadius,
                                 filter_.get(), &hitDist, hitPos.data(),
                                 hitNormal.data());
-  return {std::move(hitPos), std::move(hitNormal), hitDist};
+  return {hitPos, hitNormal, hitDist};
 }
 
 bool PathFinder::Impl::isNavigable(const Mn::Vector3& pt,
@@ -1768,8 +1767,8 @@ PathFinder::Impl::getTopDownView(const float metersPerPixel,
                                  const float height,
                                  const float eps) const {
   std::pair<Mn::Vector3, Mn::Vector3> mapBounds = bounds();
-  Mn::Vector3 bound1 = std::move(mapBounds.first);
-  Mn::Vector3 bound2 = std::move(mapBounds.second);
+  Mn::Vector3 bound1 = mapBounds.first;
+  Mn::Vector3 bound2 = mapBounds.second;
 
   float xspan = std::abs(bound1[0] - bound2[0]);
   float zspan = std::abs(bound1[2] - bound2[2]);
@@ -1800,8 +1799,8 @@ MatrixXi PathFinder::Impl::getTopDownIslandView(const float metersPerPixel,
                                                 const float height,
                                                 const float eps) const {
   std::pair<Mn::Vector3, Mn::Vector3> mapBounds = bounds();
-  Mn::Vector3 bound1 = std::move(mapBounds.first);
-  Mn::Vector3 bound2 = std::move(mapBounds.second);
+  Mn::Vector3 bound1 = mapBounds.first;
+  Mn::Vector3 bound2 = mapBounds.second;
 
   float xspan = std::abs(bound1[0] - bound2[0]);
   float zspan = std::abs(bound1[2] - bound2[2]);
