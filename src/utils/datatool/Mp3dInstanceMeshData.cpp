@@ -144,14 +144,14 @@ bool Mp3dInstanceMeshData::saveSemMeshPLY(
 
   for (int iVertex = 0; iVertex < nVertex; ++iVertex) {
     const Mn::Vector3& xyz = cpu_vbo_[iVertex];
-    const Mn::Vector3ui& rgb = cpu_cbo_[iVertex];
+    const Mn::Vector3ub& rgb = cpu_cbo_[iVertex];
     f.write(reinterpret_cast<const char*>(xyz.data()), 3 * sizeof(float));
     f.write(reinterpret_cast<const char*>(rgb.data()), 3 * sizeof(uint8_t));
   }
 
   for (int iFace = 0; iFace < perFaceIdxs_.size(); ++iFace) {
     const uint8_t nIndices = 3;
-    const Mn::Vector3i& indices = perFaceIdxs_[iFace];
+    const Mn::Vector3ui& indices = perFaceIdxs_[iFace];
     // The materialId corresponds to the segmentId from the .house file
     const int32_t segmentId = materialIds_[iFace];
     int32_t objectId = ID_UNDEFINED;
