@@ -18,7 +18,7 @@ namespace geo {
 // oriented bounding box
 class OBB {
  public:
-  explicit OBB() {}
+  explicit OBB() = default;
   explicit OBB(const Mn::Vector3& center,
                const Mn::Vector3& dimensions,
                const Mn::Quaternion& rotation);
