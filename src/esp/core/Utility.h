@@ -56,7 +56,7 @@ Magnum::Math::Quaternion<T> quatRotFromTwoVectors(
     // colinear opposite direction
     // Find a vector not colinear with rotFrom
     auto axisVec = Magnum::Math::Vector3<T>::xAxis();
-    if (abs(Magnum::Math::dot(fromNorm, axisVec)) == 1.0f) {
+    if (Magnum::Math::abs(Magnum::Math::dot(fromNorm, axisVec)) == 1.0f) {
       axisVec = Magnum::Math::Vector3<T>::yAxis();
     }
     // Find a normal vector ortho to a and b, treat as rotational axis
