@@ -36,8 +36,8 @@ class Mp3dInstanceMeshData {
 
  protected:
   std::vector<Magnum::Vector3> cpu_vbo_;
-  std::vector<Magnum::Vector3ui> cpu_cbo_;
-  std::vector<Magnum::Vector3i> perFaceIdxs_;
+  std::vector<Magnum::Vector3ub> cpu_cbo_;
+  std::vector<Magnum::Vector3ui> perFaceIdxs_;
   std::vector<int> materialIds_;
   std::vector<int> segmentIds_;
   std::vector<int> categoryIds_;

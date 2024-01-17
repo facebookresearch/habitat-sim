@@ -24,6 +24,7 @@ using esp::assets::SceneLoader;
 using esp::nav::NavMeshSettings;
 using esp::nav::PathFinder;
 using esp::scene::SemanticScene;
+using Magnum::Math::Literals::operator""_degf;
 
 int createNavMesh(const std::string& meshFile, const std::string& navmeshFile) {
   SceneLoader loader;
@@ -96,8 +97,8 @@ int createGibsonSemanticMesh(const std::string& objFile,
   f << "end_header" << std::endl;
 
   // We need to rotate to match .glb where -Z is gravity
-  const Mn::Quaternion transform = esp::core::quatRotFromTwoVectors(
-      Mn::Vector3::yAxis(), Mn::Vector3::zAxis());
+  const Mn::Quaternion transform =
+      Mn::Quaternion::rotation(90.0_degf, Mn::Vector3::xAxis());
   for (size_t i = 0; i < numVerts; ++i) {
     unsigned char gray[] = {0x80, 0x80, 0x80};
     float* components = &attrib.vertices[i * 3];
