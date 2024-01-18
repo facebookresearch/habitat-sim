@@ -66,8 +66,8 @@ void SemanticRegionAttributes::writeValuesToJson(
 // SemanticAttributes
 SemanticAttributes::SemanticAttributes(const std::string& handle)
     : AbstractAttributes("SemanticAttributes", handle) {
-  set("old_format_filename", "");
-  set("uses_old_format_file", false);
+  set("semantic_descriptor_filename", "");
+  set("semantic_asset", "");
   // get refs to internal subconfigs for semantic region attributes
   regionAnnotationConfig_ = editSubconfig<Configuration>("region_annotations");
 }  // SemanticAttributes ctor
@@ -91,9 +91,13 @@ SemanticAttributes::SemanticAttributes(SemanticAttributes&& otr) noexcept
 
 void SemanticAttributes::writeValuesToJson(io::JsonGenericValue& jsonObj,
                                            io::JsonAllocator& allocator) const {
-  if (getUsesOldFormatFile()) {
-    writeValueToJson("old_format_filename", jsonObj, allocator);
+  if (getSemanticAssetHandle() != "") {
+    writeValueToJson("semantic_asset", jsonObj, allocator);
   }
+  if (getSemanticDescriptorFilename() != "") {
+    writeValueToJson("semantic_descriptor_filename", jsonObj, allocator);
+  }
+
 }  // SemanticAttributes::writeValuesToJson
 
 void SemanticAttributes::writeSubconfigsToJson(
@@ -160,11 +164,11 @@ SemanticAttributes& SemanticAttributes::operator=(
 
 std::string SemanticAttributes::getObjectInfoInternal() const {
   // Semantic description info base-level values
-  std::string res = "";
+  // std::string res = "";
   // TODO do this for any SemanticAttributes level values
-  // std::string res = Cr::Utility::formatString(
-  //     "\nlabel1,label2,\n{},{}\n",
-  //     getValue1(),getValue2());
+  std::string res = Cr::Utility::formatString(
+      "\nSemantic Scene Descriptor Filename,Semantic Mesh Assset,\n{},{}\n",
+      getSemanticDescriptorFilename(), getSemanticAssetHandle());
 
   int iter = 0;
   // region annotation instance info

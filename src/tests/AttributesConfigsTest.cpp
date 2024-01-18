@@ -1073,8 +1073,10 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
 void AttributesConfigsTest::testSemanticAttrVals(
     std::shared_ptr<esp::metadata::attributes::SemanticAttributes>
         semanticAttr) {
-  CORRADE_COMPARE(semanticAttr->getOldFormatFilename(),
-                  "old_semantic_filename.house");
+  CORRADE_COMPARE(semanticAttr->getSemanticDescriptorFilename(),
+                  "semantic_filename.house");
+
+  CORRADE_COMPARE(semanticAttr->getSemanticAssetHandle(), "semantic_asset.glb");
 
   // verify regions
   auto regionInstanceList = semanticAttr->getRegionInstances();
@@ -1145,7 +1147,8 @@ void AttributesConfigsTest::testSemanticAttrVals(
 void AttributesConfigsTest::testSemanticJSONLoad() {
   const std::string& jsonString =
       R"({
-      "old_format_filename": "old_semantic_filename.house",
+      "semantic_descriptor_filename": "semantic_filename.house",
+      "semantic_asset": "semantic_asset.glb",
       "region_annotations": [
         {
           "name": "bedroom.000",

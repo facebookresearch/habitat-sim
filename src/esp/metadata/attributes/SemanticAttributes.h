@@ -148,33 +148,35 @@ class SemanticAttributes : public AbstractAttributes {
   SemanticAttributes& operator=(SemanticAttributes&& otr) noexcept;
 
   /**
-   * @brief Set file name for old, dataset-specific filenames.
-   * TODO : remove this once all old dataset-specific semantic scene data
-   * handling is removed
+   * @brief Set the filename to the text file that describes the hierharchy of
+   * semantic information embedded in the Semantic Asset mesh.  May be
+   * overridden by value specified in Scene Instance Attributes.
    */
-  void setOldFormatFilename(const std::string& _oldFormatFilename) {
-    set("old_format_filename", _oldFormatFilename);
-    // Only set internally
-    set("uses_old_format_file", (_oldFormatFilename != ""));
+  void setSemanticDescriptorFilename(
+      const std::string& semantic_descriptor_filename) {
+    set("semantic_descriptor_filename", semantic_descriptor_filename);
+  }
+  /**
+   * @brief Get the filename to the text file that describes the hierharchy of
+   * semantic information embedded in the Semantic Asset mesh.  May be
+   * overridden by value specified in Scene Instance Attributes.
+   */
+  std::string getSemanticDescriptorFilename() const {
+    return get<std::string>("semantic_descriptor_filename");
   }
 
   /**
-   * @brief Get file name for old, dataset-specific filenames
-   * TODO : remove this once all old dataset-specific semantic scene data
-   * handling is removed
+   * @brief Set the Filename to the semantic texture mesh, if one exists.
    */
-  std::string getOldFormatFilename() const {
-    return get<std::string>("old_format_filename");
+  void setSemanticAssetHandle(const std::string& semanticAssetHandle) {
+    set("semantic_asset", semanticAssetHandle);
   }
 
   /**
-   * @brief Get whether this semaantic attributes includes a reference to an old
-   * format file.
-   * TODO : remove this once all old dataset-specific semantic scene data
-   * handling is removed
+   * @brief Get the Filename to the semantic texture mesh, if one exists.
    */
-  bool getUsesOldFormatFile() const {
-    return get<bool>("uses_old_format_file");
+  std::string getSemanticAssetHandle() const {
+    return get<std::string>("semantic_asset");
   }
 
   /**

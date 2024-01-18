@@ -123,11 +123,19 @@ void SemanticAttributesManager::setValsFromJSONDoc(
   const std::string attribsDispName = semanticAttribs->getSimplifiedHandle();
   // ROOT LEVEL SEMANTICS TODO
 
-  // Set the old format filename
+  // Set the semantic descriptor filename
   io::jsonIntoConstSetter<std::string>(
-      jsonConfig, "old_format_filename",
-      [semanticAttribs](const std::string& _oldFormatFilename) {
-        semanticAttribs->setOldFormatFilename(_oldFormatFilename);
+      jsonConfig, "semantic_descriptor_filename",
+      [semanticAttribs](const std::string& _semanticDescriptorFilename) {
+        semanticAttribs->setSemanticDescriptorFilename(
+            _semanticDescriptorFilename);
+      });
+
+  // Set the semantic mesh asset filename
+  io::jsonIntoConstSetter<std::string>(
+      jsonConfig, "semantic_asset",
+      [semanticAttribs](const std::string& _semanticAsset) {
+        semanticAttribs->setSemanticAssetHandle(_semanticAsset);
       });
 
   // Check for region instances existence
