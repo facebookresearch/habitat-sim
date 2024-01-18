@@ -298,30 +298,6 @@ class MetadataMediator {
   }  // MetadataMediator::getNavmeshPathByHandle
 
   /**
-   * @brief Return copy of map of current active dataset's semantic scene
-   * descriptor handles.
-   */
-  std::map<std::string, std::string> getActiveSemanticSceneDescriptorMap() {
-    return std::map<std::string, std::string>(
-        getActiveDSAttribs()->getSemanticSceneDescrMap());
-  }  // getActiveSemanticSceneDescriptorMap
-
-  /**
-   * @brief Return the file path of the specified semantic scene descriptor in
-   * the current active dataset
-   * @param ssDescrHandle The dataset library handle of the semantic scene
-   * descriptor
-   * @return The file path of the semantic scene descriptor.
-   */
-  std::string getSemanticSceneDescriptorPathByHandle(
-      const std::string& ssDescrHandle) {
-    return getFilePathForHandle(
-        ssDescrHandle, getActiveDSAttribs()->getSemanticSceneDescrMap(),
-        "<getSemanticSceneDescriptorPathByHandle>");
-
-  }  // MetadataMediator::getNavMeshPathByHandle
-
-  /**
    * @brief Returns an appropriate @ref esp::metadata::attributes::SceneInstanceAttributes
    * corresponding to the passed sceneID/name.  For back-compat, this function
    * needs to manage various conditions pertaining to the passed name.  It will

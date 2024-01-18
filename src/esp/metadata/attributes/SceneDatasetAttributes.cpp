@@ -127,6 +127,73 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
   return true;
 }  // SceneDatasetAttributes::addSceneInstanceToDataset
 
+void SceneDatasetAttributes::createSemanticAttribsFromDS(
+    const std::string& semanticHandle) {
+  const std::string infoPrefix =
+      Cr::Utility::formatString("Dataset : '{}' : Semantic Attributes '{}`",
+                                this->getSimplifiedHandle(), semanticHandle);
+  // Check if exists or build a new SemanticAttributes with the passed Stage's
+  // semantic data set
+  if (semanticAttributesManager_->getFullAttrNameFromStr(semanticHandle) ==
+      "") {
+    // DNE, create a new one
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+        << infoPrefix
+        << "does not exists; A new one will be created and saved.";
+    semanticAttributesManager_->createObject(semanticHandle, true);
+  } else {
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+        << infoPrefix
+        << "specified in Stage Attributes already exists in dataset library. ";
+  }
+}  // SceneDatasetAttributes::createSemanticAttribsFromDS
+
+std::string SceneDatasetAttributes::addSemanticSceneDescrPathEntry(
+    const std::string& semanticHandle,
+    const attributes::StageAttributes::ptr& stageAttributes) {
+  const auto ssdFilename = stageAttributes->getSemanticDescriptorFilename();
+  const auto semanticAssetFilename = stageAttributes->getSemanticAssetHandle();
+  bool setSemanticAssetData = (semanticAssetFilename == "");
+  bool setSSDFilename = (ssdFilename == "");
+  // create a semantic attributes if DNE with given handle
+  this->createSemanticAttribsFromDS(semanticHandle);
+
+  // Get actual object and set semantic data if appropriate
+  auto semanticAttr =
+      semanticAttributesManager_->getObjectByHandle(semanticHandle);
+
+  if (setSemanticAssetData && semanticAttr->getSemanticAssetHandle() == "") {
+    // asset handle specified, get all stage-specified data
+    semanticAttr->setSemanticAssetHandle(semanticAssetFilename);
+    semanticAttr->setSemanticAssetType(stageAttributes->getSemanticAssetType());
+    semanticAttr->setSemanticOrientUp(stageAttributes->getSemanticOrientUp());
+    semanticAttr->setSemanticOrientFront(
+        stageAttributes->getSemanticOrientFront());
+  }
+  if (setSSDFilename && semanticAttr->getSemanticDescriptorFilename() == "") {
+    // scene descriptor filename specified in stage, set in semantic
+    // attributes.
+    semanticAttr->setSemanticDescriptorFilename(ssdFilename);
+  }
+  return semanticAttr->getHandle();
+}  // SceneDatasetAttributes::addSemanticSceneDescrPathEntry
+
+void SceneDatasetAttributes::setSemanticAttrSSDFilenames(
+    const std::map<std::string, std::string>& semanticPathnameMap) {
+  for (const auto& entry : semanticPathnameMap) {
+    const std::string semanticHandle = entry.first;
+    const std::string ssdFilename = entry.second;
+
+    // create a semantic attributes if DNE with given handle
+    this->createSemanticAttribsFromDS(semanticHandle);
+    // Get actual object and set semantic data if appropriate
+    auto semanticAttr =
+        semanticAttributesManager_->getObjectByHandle(semanticHandle);
+    semanticAttr->setSemanticDescriptorFilename(ssdFilename);
+  }
+
+}  // SceneDatasetAttributes::setSemanticAttrSSDFilenames
+
 std::pair<std::string, std::string> SceneDatasetAttributes::addNewValToMap(
     const std::string& key,
     const std::string& path,
@@ -293,7 +360,8 @@ std::string SceneDatasetAttributes::getObjectInfoInternal() const {
   // SSD entries
   Cr::Utility::formatInto(
       res, res.size(), "{}",
-      concatStrings("Semantic Scene Descriptors", semanticSceneDescrMap_));
+      concatStrings("Semantic Scene Descriptor Templates",
+                    semanticAttributesManager_->getObjectInfoStrings()));
 
   return res;
 }
@@ -301,7 +369,7 @@ std::string SceneDatasetAttributes::getObjectInfoInternal() const {
 std::string SceneDatasetAttributes::getDatasetSummaryHeader() {
   return "Dataset Name,Scene Instance Templates,Stage Templates,Object "
          "Templates,Articulated Object Paths,Lighting Templates,Primitive "
-         "Templates,Navmesh Entries,Semantic Scene Descriptor Entries,";
+         "Templates,Navmesh Entries,Semantic Scene Descriptor Templates,";
 }
 
 std::string SceneDatasetAttributes::getDatasetSummary() const {
@@ -313,7 +381,7 @@ std::string SceneDatasetAttributes::getDatasetSummary() const {
       artObjAttributesManager_->getNumObjects(),
       lightLayoutAttributesManager_->getNumObjects(),
       assetAttributesManager_->getNumObjects(), navmeshMap_.size(),
-      semanticSceneDescrMap_.size());
+      semanticAttributesManager_->getNumObjects());
 }  // namespace attributes
 
 }  // namespace attributes

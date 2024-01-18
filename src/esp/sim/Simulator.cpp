@@ -299,12 +299,18 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
 
   // 3. Load the Semantic Scene Descriptor file appropriate for the current
   // scene instance.
-  // get name of desired semantic scene descriptor file
-  const std::string semanticSceneDescFilename =
-      metadataMediator_->getSemanticSceneDescriptorPathByHandle(
-          curSceneInstanceAttributes_->getSemanticSceneHandle());
-
-  // load semantic scene descriptor
+  // - Get semantic attributes
+  const auto currSemanticAttrHandle =
+      curSceneInstanceAttributes_->getSemanticSceneHandle();
+  std::string semanticSceneDescFilename = "";
+  if (currSemanticAttrHandle != "") {
+    const auto semanticAttr =
+        metadataMediator_->getSemanticAttributesManager()
+            ->getObjectCopyByHandle(currSemanticAttrHandle);
+    // - Get Semantic Scene Descriptor Filename
+    semanticSceneDescFilename = semanticAttr->getSemanticDescriptorFilename();
+  }
+  // - Load semantic scene descriptor
   resourceManager_->loadSemanticSceneDescriptor(semanticSceneDescFilename,
                                                 activeSceneName);
 
@@ -458,9 +464,37 @@ bool Simulator::instanceStageForSceneAttributes(
   // from the dataset config
   stageAttributes->setUseSemanticTextures(config_.useSemanticTexturesIfFound);
   // set stage's ref to ssd file
-  stageAttributes->setSemanticDescriptorFilename(
-      metadataMediator_->getSemanticSceneDescriptorPathByHandle(
-          curSceneInstanceAttributes_->getSemanticSceneHandle()));
+  // - Get semantic attributes if any referenced by scene instance
+  const auto currSemanticAttrHandle =
+      curSceneInstanceAttributes_->getSemanticSceneHandle();
+  if (currSemanticAttrHandle != "") {
+    const auto semanticAttr =
+        metadataMediator_->getSemanticAttributesManager()
+            ->getObjectCopyByHandle(currSemanticAttrHandle);
+    const std::string semanticAttrSSDName =
+        semanticAttr->getSemanticDescriptorFilename();
+    const std::string semanticAttrAssetName =
+        semanticAttr->getSemanticAssetHandle();
+    // - Set stage semantic values if appropriate
+    if (semanticAttrSSDName != "") {
+      stageAttributes->setSemanticDescriptorFilename(semanticAttrSSDName);
+    }
+    if (semanticAttrAssetName != "") {
+      stageAttributes->setSemanticAssetHandle(semanticAttrAssetName);
+      stageAttributes->setSemanticAssetType(
+          semanticAttr->getSemanticAssetType());
+      if (semanticAttr->getSemanticOrientFront() !=
+          stageAttributes->getSemanticOrientFront()) {
+        stageAttributes->setSemanticOrientFront(
+            semanticAttr->getSemanticOrientFront());
+      }
+      if (semanticAttr->getSemanticOrientUp() !=
+          stageAttributes->getSemanticOrientUp()) {
+        stageAttributes->setSemanticOrientUp(
+            semanticAttr->getSemanticOrientUp());
+      }
+    }
+  }
 
   // set visibility if explicitly specified in stage instance configs
   int visSet = stageInstanceAttributes->getIsInstanceVisible();
@@ -571,14 +605,13 @@ bool Simulator::instanceObjectsForSceneAttributes(
     const std::string objAttrFullHandle =
         metadataMediator_->getObjAttrFullHandle(objInst->getHandle());
     // make sure full handle is not empty
-    ESP_CHECK(
-        !objAttrFullHandle.empty(),
-        Cr::Utility::formatString(
-            "Simulator::instanceObjectsForSceneAttributes() : Attempt to load "
-            "object instance specified in current scene instance :{} failed "
-            "due to object instance configuration handle '{}' being empty or "
-            "unknown. Aborting",
-            config_.activeSceneName, objInst->getHandle()));
+    ESP_CHECK(!objAttrFullHandle.empty(),
+              Cr::Utility::formatString(
+                  "Simulator::instanceObjectsForSceneAttributes() : Attempt to "
+                  "load object instance specified in current scene instance "
+                  ":{} failed due to object instance configuration handle '{}' "
+                  "being empty or unknown. Aborting",
+                  config_.activeSceneName, objInst->getHandle()));
     // objID =
     physicsManager_->addObjectInstance(objInst, objAttrFullHandle,
                                        defaultCOMCorrection, attachmentNode,
@@ -617,10 +650,9 @@ bool Simulator::instanceArticulatedObjectsForSceneAttributes(
         !artObjAttrHandle.empty(),
         Cr::Utility::formatString(
             "Simulator::instanceArticulatedObjectsForSceneAttributes() : "
-            "Attempt "
-            "to load articulated object instance specified in current scene "
-            "instance :{} failed due to AO instance configuration file handle "
-            "'{}' being empty or unknown. Aborting",
+            "Attempt to load articulated object instance specified in "
+            "current scene instance :{} failed due to AO instance "
+            "configuration file handle '{}' being empty or unknown. Aborting",
             config_.activeSceneName, artObjInst->getHandle()));
 
     // create articulated object
@@ -661,9 +693,9 @@ Simulator::buildCurrentStateSceneAttributes() const {
             "used to initialize current scene never registered or has been "
             "removed from SceneInstanceAttributesManager. Aborting.");
 
-  // 2. Pass the copy to Physics Manager so that it can be updated with current
-  // scene setup - stage instance, object instances and articulated object
-  // instances
+  // 2. Pass the copy to Physics Manager so that it can be updated with
+  // current scene setup - stage instance, object instances and articulated
+  // object instances
   physicsManager_->buildCurrentStateSceneAttributes(initSceneInstanceAttr);
 
   // 3. Return the copy

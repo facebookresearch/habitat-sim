@@ -148,6 +148,44 @@ class SemanticAttributes : public AbstractAttributes {
   SemanticAttributes& operator=(SemanticAttributes&& otr) noexcept;
 
   /**
+   * @brief Set default up orientation for semantic mesh. This is to support
+   * aligning semantic meshes that have different orientations than the target
+   * stage's render mesh.
+   */
+  void setSemanticOrientUp(const Magnum::Vector3& semanticOrientUp) {
+    set("semantic_orient_up", semanticOrientUp);
+    setUseSpecifiedSemanticFrame(true);
+  }
+
+  /**
+   * @brief Get default up orientation for semantic mesh. This is to support
+   * aligning semantic meshes that have different orientations than the
+   * stage render mesh.
+   */
+  Magnum::Vector3 getSemanticOrientUp() const {
+    return get<Magnum::Vector3>("semantic_orient_up");
+  }
+
+  /**
+   * @brief Set default forward orientation for semantic mesh. This is to
+   * support aligning semantic meshes that have different orientations
+   * than the stage render mesh.
+   */
+  void setSemanticOrientFront(const Magnum::Vector3& semanticOrientFront) {
+    set("semantic_orient_front", semanticOrientFront);
+    setUseSpecifiedSemanticFrame(true);
+  }
+
+  /**
+   * @brief Get default forward orientation for semantic mesh. This is to
+   * support aligning semantic meshes that have different orientations
+   * than the stage render mesh.
+   */
+  Magnum::Vector3 getSemanticOrientFront() const {
+    return get<Magnum::Vector3>("semantic_orient_front");
+  }
+
+  /**
    * @brief Set the filename to the text file that describes the hierharchy of
    * semantic information embedded in the Semantic Asset mesh.  May be
    * overridden by value specified in Scene Instance Attributes.
@@ -177,6 +215,27 @@ class SemanticAttributes : public AbstractAttributes {
    */
   std::string getSemanticAssetHandle() const {
     return get<std::string>("semantic_asset");
+  }
+
+  void setSemanticAssetType(int semanticAssetType) {
+    set("semantic_asset_type", semanticAssetType);
+  }
+  int getSemanticAssetType() const { return get<int>("semantic_asset_type"); }
+
+  /**
+   * @brief Set whether or not the semantic asset for this stage supports
+   * texture semantics.
+   */
+  void setHasSemanticTextures(bool hasSemanticTextures) {
+    set("has_semantic_textures", hasSemanticTextures);
+  }
+
+  /**
+   * @brief Get whether or not the semantic asset for this stage supports
+   * texture semantics.
+   */
+  bool getHasSemanticTextures() const {
+    return get<bool>("has_semantic_textures");
   }
 
   /**
@@ -227,7 +286,24 @@ class SemanticAttributes : public AbstractAttributes {
   void writeSubconfigsToJson(io::JsonGenericValue& jsonObj,
                              io::JsonAllocator& allocator) const override;
 
+  /**
+   * @brief Whether to use the specified semantic orientation frame. This will
+   * only be set to true if the frame was explicitly set, either from src json
+   * or from a stage with a pre-existing config.
+   */
+  bool getUseSpecifiedSemanticFrame() const {
+    return get<bool>("use_semantic_frame");
+  }
+
  protected:
+  /**
+   * @brief Whether to use the specified semantic orientation frame. This will
+   * only be set to true if
+   */
+  void setUseSpecifiedSemanticFrame(bool useSemanticFrame) {
+    set("use_semantic_frame", useSemanticFrame);
+  }
+
   /**
    * @brief Retrieve a comma-separated string holding the header values for
    * the info returned for this managed object, type-specific. Don't use this

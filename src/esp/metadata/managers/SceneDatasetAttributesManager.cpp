@@ -96,42 +96,38 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
                       dsAttribs->getSceneInstanceAttributesManager());
 
   // process navmesh instances
-  loadAndValidateMap(dsDir, "navmesh_instances", jsonConfig,
-                     dsAttribs->editNavmeshMap());
+  // load values into map
+  io::readMember<std::map<std::string, std::string>>(
+      jsonConfig, "navmesh_instances", dsAttribs->editNavmeshMap());
 
-  // process semantic scene descriptor instances
-  loadAndValidateMap(dsDir, "semantic_scene_descriptor_instances", jsonConfig,
-                     dsAttribs->editSemanticSceneDescrMap());
+  validateMap(dsDir, "navmesh_instances", dsAttribs->editNavmeshMap());
+
+  // process semantic scene descriptor instances, making a map to support
+  // key->value tag->path mappings for semantic scene descriptor files.
+  std::map<std::string, std::string> semanticPathnameMap;
+
+  readDatasetJSONCell(dsDir, "semantic_scene_descriptor_instances", jsonConfig,
+                      dsAttribs->getSemanticAttributesManager(),
+                      &semanticPathnameMap);
+
+  // Now process if any tag->path string->string mappings were found, by
+  // first checking if the map has any entries and if so verifying that the
+  // values correspond to existing paths. The key of each entry will be the
+  // key in the attributes manager, and the value will be a valid path,
+  // added to the attributes in some attributes-specific manner.
+
+  if (semanticPathnameMap.size() > 0) {
+    validateMap(dsDir, "semantic_scene_descriptor_instances",
+                semanticPathnameMap);
+    dsAttribs->setSemanticAttrSSDFilenames(semanticPathnameMap);
+    // use map of key->value pairs to build attributes.
+  } else {
+    ESP_VERY_VERBOSE()
+        << "No Semantic tag-filepath mappings found for scene dataset"
+        << dsAttribs->getHandle();
+  }
 
 }  // SceneDatasetAttributesManager::setValsFromJSONDoc
-
-void SceneDatasetAttributesManager::loadAndValidateMap(
-    const std::string& dsDir,
-    const std::string& jsonTag,
-    const io::JsonGenericValue& jsonConfig,
-    std::map<std::string, std::string>& map) {
-  // load values into map
-  io::readMember<std::map<std::string, std::string>>(jsonConfig,
-                                                     jsonTag.c_str(), map);
-
-  // now verify that all entries in map exist.  If not replace entry with
-  // dsDir-prepended entry
-  for (std::pair<const std::string, std::string>& entry : map) {
-    const std::string loc = entry.second;
-    if (!Cr::Utility::Path::exists(loc)) {
-      std::string newLoc = Cr::Utility::Path::join(dsDir, loc);
-      if (!Cr::Utility::Path::exists(newLoc)) {
-        ESP_WARNING(Mn::Debug::Flag::NoSpace)
-            << "`" << jsonTag << "` Value : `" << loc
-            << "` not found on disk as absolute path or relative to `" << dsDir
-            << "`";
-      } else {
-        // replace value with dataset-augmented absolute path
-        map[entry.first] = newLoc;
-      }
-    }  // loc does not exist
-  }    // for each loc
-}  // SceneDatasetAttributesManager::loadAndValidateMap
 
 // using type deduction
 template <typename U>
@@ -139,7 +135,8 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
     const std::string& dsDir,
     const char* tag,
     const io::JsonGenericValue& jsonConfig,
-    const U& attrMgr) {
+    const U& attrMgr,
+    std::map<std::string, std::string>* strKeyMap) {
   io::JsonGenericValue::ConstMemberIterator jsonIter =
       jsonConfig.FindMember(tag);
   if (jsonIter != jsonConfig.MemberEnd()) {
@@ -151,95 +148,136 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
     } else {
       const auto& jCell = jsonIter->value;
       // process JSON jCell here - this cell potentially holds :
-      // 1. "default_attributes" : a single attributes default of the
-      // specified type.
-      io::JsonGenericValue::ConstMemberIterator jsonDfltObjIter =
-          jCell.FindMember("default_attributes");
-
-      if (jsonDfltObjIter != jCell.MemberEnd()) {
-        if (!jsonDfltObjIter->value.IsObject()) {
-          ESP_WARNING(Mn::Debug::Flag::NoSpace)
-              << "`" << tag
-              << ".default_attributes` cell in JSON config unable to "
-                 "be parsed to set default attributes so skipping.";
-        } else {
-          // load attributes as default from file, do not register
-          auto attr = attrMgr->buildObjectFromJSONDoc("default_attributes",
-                                                      jsonDfltObjIter->value);
-          if (nullptr == attr) {
+      for (rapidjson::Value::ConstMemberIterator it = jCell.MemberBegin();
+           it != jCell.MemberEnd(); ++it) {
+        // 1. "default_attributes" : a single attributes default of the
+        // specified type.
+        const std::string key = it->name.GetString();
+        if (key == "default_attributes") {
+          if (!it->value.IsObject()) {
             ESP_WARNING(Mn::Debug::Flag::NoSpace)
                 << "`" << tag
-                << ".default_attributes` cell failed to successfully "
-                   "create an attributes, so skipping.";
+                << ".default_attributes` cell in JSON config unable to "
+                   "be parsed to set default attributes so skipping.";
           } else {
-            // set attributes as defaultObject_ in attrMgr.
-            attrMgr->setDefaultObject(attr);
-            ESP_DEBUG(Mn::Debug::Flag::NoSpace)
-                << "`" << tag
-                << ".default_attributes` set in Attributes Manager from JSON.";
-          }
-        }  // if is an object
-      }    // if has default_attributes cell
-
-      // 2. "paths" an array of paths to search for appropriately typed config
-      // files.
-      io::JsonGenericValue::ConstMemberIterator jsonPathsIter =
-          jCell.FindMember("paths");
-      if (jsonPathsIter != jCell.MemberEnd()) {
-        if (!jsonPathsIter->value.IsObject()) {
-          ESP_WARNING(Mn::Debug::Flag::NoSpace)
-              << "`" << tag
-              << "`.paths` cell in JSON config unable to be parsed as "
-                 "a JSON object to determine search paths so skipping.";
-        } else {
-          const auto& pathsObj = jsonPathsIter->value;
-          // iterate through all provided extensions
-          for (rapidjson::Value::ConstMemberIterator it =
-                   pathsObj.MemberBegin();
-               it != pathsObj.MemberEnd(); ++it) {
-            // for each key, assume it is an extension and attempt to parse
-            const std::string ext{it->name.GetString()};
-            io::JsonGenericValue::ConstMemberIterator pathsObjIter =
-                pathsObj.FindMember(ext.c_str());
-            if (!pathsObjIter->value.IsArray()) {
+            // load attributes as default from file, do not register
+            auto attr = attrMgr->buildObjectFromJSONDoc("default_attributes",
+                                                        it->value);
+            if (nullptr == attr) {
               ESP_WARNING(Mn::Debug::Flag::NoSpace)
-                  << "`" << tag << ".paths`[" << ext
-                  << "] cell in JSON config unable to be parsed as an array to "
-                     "determine search paths for json configs so skipping.";
-              continue;
+                  << "`" << tag
+                  << ".default_attributes` cell failed to successfully "
+                     "create an attributes, so skipping.";
             } else {
-              const auto& paths = pathsObjIter->value;
-              if (ext.find(".json") != std::string::npos) {
-                attrMgr->buildJSONCfgPathsFromJSONAndLoad(dsDir, paths);
+              // set attributes as defaultObject_ in attrMgr.
+              attrMgr->setDefaultObject(attr);
+              ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+                  << "`" << tag
+                  << ".default_attributes` set in Attributes Manager from "
+                     "JSON.";
+            }
+          }  // if is an object
+        }    // if has default_attributes cell
+        // 2. "paths" an array of paths to search for appropriately typed config
+        // files.
+        else if (key == "paths") {
+          if (!it->value.IsObject()) {
+            ESP_WARNING(Mn::Debug::Flag::NoSpace)
+                << "`" << tag
+                << "`.paths` cell in JSON config unable to be parsed as "
+                   "a JSON object to determine search paths so skipping.";
+          } else {
+            const auto& pathsObj = it->value;
+            // iterate through all provided extensions
+            for (rapidjson::Value::ConstMemberIterator it =
+                     pathsObj.MemberBegin();
+                 it != pathsObj.MemberEnd(); ++it) {
+              // for each key, assume it is an extension and attempt to parse
+              const std::string ext{it->name.GetString()};
+              io::JsonGenericValue::ConstMemberIterator pathsObjIter =
+                  pathsObj.FindMember(ext.c_str());
+              if (!pathsObjIter->value.IsArray()) {
+                ESP_WARNING(Mn::Debug::Flag::NoSpace)
+                    << "`" << tag << ".paths`[" << ext
+                    << "] cell in JSON config unable to be parsed as an array "
+                       "to "
+                       "determine search paths for json configs so skipping.";
+                continue;
               } else {
-                attrMgr->buildAttrSrcPathsFromJSONAndLoad(dsDir, ext, paths);
+                const auto& paths = pathsObjIter->value;
+                if (ext.find(".json") != std::string::npos) {
+                  attrMgr->buildJSONCfgPathsFromJSONAndLoad(dsDir, paths);
+                } else {
+                  attrMgr->buildAttrSrcPathsFromJSONAndLoad(dsDir, ext, paths);
+                }
               }
             }
+          }  // if paths cell is an object
+        }    // if has paths cell
+        // 3. "configs" : an array of json cells defining customizations to
+        // existing attributes.
+        else if (key == "configs") {
+          if (!it->value.IsArray()) {
+            ESP_WARNING(Mn::Debug::Flag::NoSpace)
+                << "`" << tag
+                << ".configs` cell in JSON config unable to be parsed "
+                   "as an array to determine search paths so skipping.";
+          } else {
+            const auto& configsAra = it->value;
+            for (rapidjson::SizeType i = 0; i < configsAra.Size(); ++i) {
+              const auto& configCell = configsAra[i];
+              readDatasetConfigsJSONCell(dsDir, tag, configCell, attrMgr);
+            }  // for each cell in configs array
+          }    // if is array
+        }      // if has configs cell
+        else {
+          // 4. Handle tag->path mappings if exist.
+          // Currently these are only supported for, and should only be present
+          // in, 'semantic_scene_descriptor_instances' objects
+          if (strKeyMap != nullptr) {  // only supported in
+            // semantic_scene_descriptor_instances tag
+            if (it->value.IsString()) {
+              strKeyMap->emplace(key, it->value.GetString());
+            } else {
+              ESP_WARNING(Mn::Debug::Flag::NoSpace)
+                  << "`" << tag << "` cell contains unhandled sub-tag `" << key
+                  << "` that also does not point to a string filename, so "
+                     "skipping.";
+            }
+          } else {
+            if (strcmp("semantic_scene_descriptor_instances", tag)) {
+              ESP_ERROR(Mn::Debug::Flag::NoSpace)
+                  << "Unable to load semantic scene map for some reason.";
+            }
           }
-        }  // if paths cell is an object
-      }    // if has paths cell
-
-      // 3. "configs" : an array of json cells defining customizations to
-      // existing attributes.
-      io::JsonGenericValue::ConstMemberIterator jsonCfgsIter =
-          jCell.FindMember("configs");
-      if (jsonCfgsIter != jCell.MemberEnd()) {
-        if (!jsonCfgsIter->value.IsArray()) {
-          ESP_WARNING(Mn::Debug::Flag::NoSpace)
-              << "`" << tag
-              << ".configs` cell in JSON config unable to be parsed "
-                 "as an array to determine search paths so skipping.";
-        } else {
-          const auto& configsAra = jsonCfgsIter->value;
-          for (rapidjson::SizeType i = 0; i < configsAra.Size(); ++i) {
-            const auto& configCell = configsAra[i];
-            readDatasetConfigsJSONCell(dsDir, tag, configCell, attrMgr);
-          }  // for each cell in configs array
-        }    // if is array
-      }      // if has configs cell
-    }        // if cell is an object
-  }          // if cell exists
+        }
+      }  // for each sub-cell within main cell
+    }    // if cell is an object
+  }      // if cell exists
 }  // SceneDatasetAttributesManager::readDatasetJSONCell
+
+void SceneDatasetAttributesManager::validateMap(
+    const std::string& dsDir,
+    const std::string& tag,
+    std::map<std::string, std::string>& map) {
+  // now verify that all entries in map exist.  If not replace entry with
+  // dsDir-prepended entry
+  for (std::pair<const std::string, std::string>& entry : map) {
+    const std::string loc = entry.second;
+    if (!Cr::Utility::Path::exists(loc)) {
+      std::string newLoc = Cr::Utility::Path::join(dsDir, loc);
+      if (!Cr::Utility::Path::exists(newLoc)) {
+        ESP_ERROR(Mn::Debug::Flag::NoSpace)
+            << "`" << tag << "` Value : `" << loc
+            << "` not found on disk as absolute path or relative to `" << dsDir
+            << "`";
+      } else {
+        // replace value with dataset-augmented absolute path
+        map[entry.first] = newLoc;
+      }
+    }  // loc does not exist
+  }    // for each loc
+}  // SceneDatasetAttributesManager::loadAndValidateMap
 
 template <typename U>
 void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(

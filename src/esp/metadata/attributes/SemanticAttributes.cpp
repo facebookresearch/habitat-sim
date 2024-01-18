@@ -68,6 +68,14 @@ SemanticAttributes::SemanticAttributes(const std::string& handle)
     : AbstractAttributes("SemanticAttributes", handle) {
   set("semantic_descriptor_filename", "");
   set("semantic_asset", "");
+  setSemanticOrientUp({0, 1, 0});
+  setSemanticOrientFront({0, 0, -1});
+  setUseSpecifiedSemanticFrame(false);
+  // setting default for semantic assets having semantically painted textures to
+  // false
+  setHasSemanticTextures(false);
+  // 4 corresponds to esp::assets::AssetType::INSTANCE_MESH
+  setSemanticAssetType(static_cast<int>(esp::assets::AssetType::INSTANCE_MESH));
   // get refs to internal subconfigs for semantic region attributes
   regionAnnotationConfig_ = editSubconfig<Configuration>("region_annotations");
 }  // SemanticAttributes ctor
@@ -91,13 +99,20 @@ SemanticAttributes::SemanticAttributes(SemanticAttributes&& otr) noexcept
 
 void SemanticAttributes::writeValuesToJson(io::JsonGenericValue& jsonObj,
                                            io::JsonAllocator& allocator) const {
-  if (getSemanticAssetHandle() != "") {
-    writeValueToJson("semantic_asset", jsonObj, allocator);
-  }
   if (getSemanticDescriptorFilename() != "") {
     writeValueToJson("semantic_descriptor_filename", jsonObj, allocator);
   }
-
+  if (getSemanticAssetHandle() != "") {
+    writeValueToJson("semantic_asset", jsonObj, allocator);
+    if (getHasSemanticTextures()) {
+      writeValueToJson("has_semantic_textures", jsonObj, allocator);
+    }
+    if (getUseSpecifiedSemanticFrame()) {
+      writeValueToJson("semantic_orient_up", "semantic_up", jsonObj, allocator);
+      writeValueToJson("semantic_orient_front", "semantic_front", jsonObj,
+                       allocator);
+    }
+  }
 }  // SemanticAttributes::writeValuesToJson
 
 void SemanticAttributes::writeSubconfigsToJson(

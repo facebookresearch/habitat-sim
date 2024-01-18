@@ -95,19 +95,17 @@ class SceneDatasetAttributesManager
 
  protected:
   /**
-   * @brief This will load a dataset map with file location values from the
-   * dataset config.  It will also attempt to either verify those locations are
-   * valid files, or else prefix the given location with the dataset root
-   * directory.
+   * @brief This will validate a loaded dataset map with file location values
+   * from the dataset config, by attempting to either verify those
+   * locations are valid files, or else prefix the given location with the
+   * dataset root directory.
    * @param dsDir the dataset's root directory
    * @param jsonTag the appropriate tag for the map being read
-   * @param jsonConfig the json configuration file being read
    * @param map A ref to the dataset's map that is being populated.
    */
-  void loadAndValidateMap(const std::string& dsDir,
-                          const std::string& jsonTag,
-                          const io::JsonGenericValue& jsonConfig,
-                          std::map<std::string, std::string>& map);
+  void validateMap(const std::string& dsDir,
+                   const std::string& jsonTag,
+                   std::map<std::string, std::string>& map);
 
   /**
    * @brief Verify a particular subcell exists within the
@@ -123,10 +121,12 @@ class SceneDatasetAttributesManager
    * @param attrMgr The dataset's attributes manager for @p tag 's data.
    */
   template <typename U>
-  void readDatasetJSONCell(const std::string& dsDir,
-                           const char* tag,
-                           const io::JsonGenericValue& jsonConfig,
-                           const U& attrMgr);
+  void readDatasetJSONCell(
+      const std::string& dsDir,
+      const char* tag,
+      const io::JsonGenericValue& jsonConfig,
+      const U& attrMgr,
+      std::map<std::string, std::string>* strKeyMap = nullptr);
 
   /**
    * @brief This will parse an individual element in a "configs" cell array in
