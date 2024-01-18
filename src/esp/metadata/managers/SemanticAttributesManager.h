@@ -128,26 +128,24 @@ class SemanticAttributesManager
    * esp::metadata::attributes::SemanticAttributes shared_ptr object to
    * the @ref objectLibrary_.
    *
-   * @param pbrShaderConfigurationTemplate The attributes template.
-   * @param pbrShaderConfigurationHandle The key for referencing the template in
-   * the
-   * @ref objectLibrary_.
-   * @param forceRegistration Will register object even if conditionalE
+   * @param semanticTemplate The attributes template.
+   * @param semanticHandle The key for referencing the template in
+   * the @ref objectLibrary_.
+   * @param forceRegistration Will register object even if conditional
    * registration checks fail.
    * @return The index in the @ref objectLibrary_ of object
    * template.
    */
   int registerObjectFinalize(
-      attributes::SemanticAttributes::ptr pbrShaderConfigurationTemplate,
-      const std::string& pbrShaderConfigurationHandle,
+      attributes::SemanticAttributes::ptr semanticTemplate,
+      const std::string& semanticHandle,
       CORRADE_UNUSED bool forceRegistration) override {
     // adds template to library, and returns either the ID of the existing
-    // template referenced by pbrShaderConfigurationHandle, or the next
+    // template referenced by semanticHandle, or the next
     // available ID if not found.
-    int pbrConfigId =
-        this->addObjectToLibrary(std::move(pbrShaderConfigurationTemplate),
-                                 pbrShaderConfigurationHandle);
-    return pbrConfigId;
+    int semanticAttrID =
+        this->addObjectToLibrary(std::move(semanticTemplate), semanticHandle);
+    return semanticAttrID;
   }  // SemanticAttributesManager::registerObjectFinalize
 
   /**
