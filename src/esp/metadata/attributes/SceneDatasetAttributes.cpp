@@ -153,8 +153,8 @@ std::string SceneDatasetAttributes::addSemanticSceneDescrPathEntry(
     const attributes::StageAttributes::ptr& stageAttributes) {
   const auto ssdFilename = stageAttributes->getSemanticDescriptorFilename();
   const auto semanticAssetFilename = stageAttributes->getSemanticAssetHandle();
-  bool setSemanticAssetData = (semanticAssetFilename == "");
-  bool setSSDFilename = (ssdFilename == "");
+  bool setSemanticAssetData = (semanticAssetFilename != "");
+  bool setSSDFilename = (ssdFilename != "");
   // create a semantic attributes if DNE with given handle
   this->createSemanticAttribsFromDS(semanticHandle);
 
