@@ -619,7 +619,7 @@ std::string MetadataMediator::getDatasetsOverview() const {
 std::string MetadataMediator::createDatasetReport(
     const std::string& sceneDataset) const {
   attributes::SceneDatasetAttributes::ptr ds;
-  if (sceneDataset == "") {
+  if (sceneDataset.empty()) {
     ds = sceneDatasetAttributesManager_->getObjectByHandle(activeSceneDataset_);
 
   } else if (sceneDatasetAttributesManager_->getObjectLibHasHandle(

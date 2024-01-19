@@ -50,7 +50,7 @@ int StageAttributesManager::registerObjectFinalize(
     StageAttributes::ptr stageAttributes,
     const std::string& stageAttributesHandle,
     bool forceRegistration) {
-  if (stageAttributes->getRenderAssetHandle() == "") {
+  if (stageAttributes->getRenderAssetHandle().empty()) {
     ESP_ERROR(Mn::Debug::Flag::NoSpace)
         << "Attributes template named `" << stageAttributesHandle
         << "` does not have a valid render asset handle specified, so "

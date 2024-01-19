@@ -122,9 +122,9 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
     dsAttribs->setSemanticAttrSSDFilenames(semanticPathnameMap);
     // use map of key->value pairs to build attributes.
   } else {
-    ESP_VERY_VERBOSE()
-        << "No Semantic tag-filepath mappings found for scene dataset"
-        << dsAttribs->getHandle();
+    ESP_VERY_VERBOSE() << "No Semantic tag-filepath mappings found in scene "
+                          "dataset config for dataset"
+                       << dsAttribs->getHandle();
   }
 
 }  // SceneDatasetAttributesManager::setValsFromJSONDoc

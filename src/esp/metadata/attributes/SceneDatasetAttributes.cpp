@@ -41,7 +41,7 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
   const auto& stageInstance = sceneInstance->getStageInstance();
   const std::string stageHandle = stageInstance->getHandle();
   // Check if present and if not create default.
-  if (stageAttributesManager_->getFullAttrNameFromStr(stageHandle) == "") {
+  if (stageAttributesManager_->getFullAttrNameFromStr(stageHandle).empty()) {
     ESP_WARNING(Mn::Debug::Flag::NoSpace)
         << infoPrefix << "Stage Attributes '" << stageHandle
         << "' specified in Scene Attributes but does not exist in dataset, "
@@ -57,7 +57,7 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
   auto objectInstances = sceneInstance->getObjectInstances();
   for (const auto& objInstance : objectInstances) {
     const std::string objHandle = objInstance->getHandle();
-    if (objectAttributesManager_->getFullAttrNameFromStr(objHandle) == "") {
+    if (objectAttributesManager_->getFullAttrNameFromStr(objHandle).empty()) {
       ESP_WARNING(Mn::Debug::Flag::NoSpace)
           << infoPrefix << "Object Attributes '" << objHandle
           << "' specified in Scene Attributes but does not exist in dataset, "
@@ -77,7 +77,8 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
     const std::string artObjHandle = artObjInstance->getHandle();
 
     // Check if present and if not create default.
-    if (artObjAttributesManager_->getFullAttrNameFromStr(artObjHandle) == "") {
+    if (artObjAttributesManager_->getFullAttrNameFromStr(artObjHandle)
+            .empty()) {
       ESP_WARNING(Mn::Debug::Flag::NoSpace)
           << infoPrefix << "Articulated Object Attributes '" << artObjHandle
           << "' specified in Scene Attributes but does not exist in dataset, "
@@ -118,7 +119,7 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
       sceneInstanceAttributesManager_->getFullAttrNameFromStr(
           sceneInstanceName);
   // add scene attributes to scene attributes manager
-  if (fullSceneInstanceName == "") {
+  if (fullSceneInstanceName.empty()) {
     ESP_VERY_VERBOSE() << infoPrefix << "Scene Attributes" << sceneInstanceName
                        << "does not exist in dataset so adding.";
     sceneInstanceAttributesManager_->registerObject(sceneInstance);
@@ -162,7 +163,7 @@ std::string SceneDatasetAttributes::addSemanticSceneDescrPathEntry(
   auto semanticAttr =
       semanticAttributesManager_->getObjectByHandle(semanticHandle);
 
-  if (setSemanticAssetData && semanticAttr->getSemanticAssetHandle() == "") {
+  if (setSemanticAssetData && semanticAttr->getSemanticAssetHandle().empty()) {
     // asset handle specified, get all stage-specified data
     semanticAttr->setSemanticAssetHandle(semanticAssetFilename);
     semanticAttr->setSemanticAssetType(stageAttributes->getSemanticAssetType());
@@ -170,7 +171,7 @@ std::string SceneDatasetAttributes::addSemanticSceneDescrPathEntry(
     semanticAttr->setSemanticOrientFront(
         stageAttributes->getSemanticOrientFront());
   }
-  if (setSSDFilename && semanticAttr->getSemanticDescriptorFilename() == "") {
+  if (setSSDFilename && semanticAttr->getSemanticDescriptorFilename().empty()) {
     // scene descriptor filename specified in stage, set in semantic
     // attributes.
     semanticAttr->setSemanticDescriptorFilename(ssdFilename);
@@ -257,7 +258,7 @@ SceneDatasetAttributes::getNamedStageAttributesCopy(
   auto fullStageName =
       stageAttributesManager_->getFullAttrNameFromStr(stageAttrName);
   // fullStageName will be empty if not found
-  if (fullStageName == "") {
+  if (fullStageName.empty()) {
     return nullptr;
   }
   return stageAttributesManager_->getObjectCopyByHandle(fullStageName);
@@ -271,7 +272,7 @@ SceneDatasetAttributes::getNamedObjectAttributesCopy(
   auto fullObjName =
       objectAttributesManager_->getFullAttrNameFromStr(objAttrName);
   // fullObjName will be empty if not found
-  if (fullObjName == "") {
+  if (fullObjName.empty()) {
     return nullptr;
   }
   return objectAttributesManager_->getObjectCopyByHandle(fullObjName);
@@ -285,7 +286,7 @@ SceneDatasetAttributes::getNamedArticulatedObjectAttributesCopy(
   auto fullArtObjName =
       artObjAttributesManager_->getFullAttrNameFromStr(artObjAttrName);
   // fullObjName will be empty if not found
-  if (fullArtObjName == "") {
+  if (fullArtObjName.empty()) {
     return nullptr;
   }
   return artObjAttributesManager_->getObjectCopyByHandle(fullArtObjName);

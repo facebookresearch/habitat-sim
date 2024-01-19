@@ -214,7 +214,7 @@ int ObjectAttributesManager::registerObjectFinalize(
     ObjectAttributes::ptr objectTemplate,
     const std::string& objectTemplateHandle,
     bool forceRegistration) {
-  if (objectTemplate->getRenderAssetHandle() == "") {
+  if (objectTemplate->getRenderAssetHandle().empty()) {
     ESP_ERROR(Mn::Debug::Flag::NoSpace)
         << "Attributes template named `" << objectTemplateHandle
         << "` does not have a valid render asset handle specified, so "

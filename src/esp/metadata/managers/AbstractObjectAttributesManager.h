@@ -323,8 +323,8 @@ auto AbstractObjectAttributesManager<T, Access>::
         attributes->setCollisionAssetType(collision_asset_type);
       });
   // use non-empty result if either result is empty
-  attributes->setRenderAssetHandle(rndrFName == "" ? colFName : rndrFName);
-  attributes->setCollisionAssetHandle(colFName == "" ? rndrFName : colFName);
+  attributes->setRenderAssetHandle(rndrFName.empty() ? colFName : rndrFName);
+  attributes->setCollisionAssetHandle(colFName.empty() ? rndrFName : colFName);
 
   // check if primitive collision mesh
   auto colAssetHandle = attributes->getCollisionAssetHandle();
