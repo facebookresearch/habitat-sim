@@ -350,7 +350,7 @@ def initialize_test_data_sources(data_path):
             "hab_fetch",
             "hab_stretch",
             "hab_spot_arm",
-            "hm3d_example"
+            "hm3d_example",
         ],
         "rearrange_task_assets": [
             "replica_cad_dataset",
