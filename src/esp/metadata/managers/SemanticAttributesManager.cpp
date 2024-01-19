@@ -32,14 +32,38 @@ SemanticAttributes::ptr SemanticAttributesManager::createObject(
 
 SemanticAttributes::ptr SemanticAttributesManager::initNewObjectInternal(
     const std::string& handleName,
-    bool) {
+    bool builtFromConfig) {
+  // first try to build new attributes as a copy of dataset-specified default if
+  // exists
   SemanticAttributes::ptr newAttributes =
       this->constructFromDefault(handleName);
-  if (nullptr == newAttributes) {
+
+  bool createNewAttributes = (nullptr == newAttributes);
+  // if not then create new empty attributes
+  if (createNewAttributes) {
     newAttributes = SemanticAttributes::create(handleName);
   }
   // set the attributes source filedirectory, from the attributes name
   this->setFileDirectoryFromHandle(newAttributes);
+
+  if (!createNewAttributes) {
+    // default exists and was used to create this attributes - investigate any
+    // filename fields that may have %%USE_FILENAME%% directive specified in
+    // the default attributes, and replace with appropriate derived value.
+
+    // Semantic Scene Descriptor text filehandle
+    setHandleFromDefaultTag(
+        newAttributes, newAttributes->getSemanticDescriptorFilename(),
+        [newAttributes](const std::string& newHandle) {
+          newAttributes->setSemanticDescriptorFilename(newHandle);
+        });
+    // Semantic Scene asset handle
+    setHandleFromDefaultTag(newAttributes,
+                            newAttributes->getSemanticAssetHandle(),
+                            [newAttributes](const std::string& newHandle) {
+                              newAttributes->setSemanticAssetHandle(newHandle);
+                            });
+  }
 
   return newAttributes;
 }  // SemanticAttributesManager::initNewObjectInternal

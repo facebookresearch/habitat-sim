@@ -107,7 +107,7 @@ class SemanticAttributesManager
    */
   attributes::SemanticAttributes::ptr initNewObjectInternal(
       const std::string& handleName,
-      CORRADE_UNUSED bool builtFromConfig) override;
+      bool builtFromConfig) override;
 
   /**
    * @brief This method will perform any necessary updating that is
