@@ -241,13 +241,14 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
             } else {
               ESP_WARNING(Mn::Debug::Flag::NoSpace)
                   << "`" << tag << "` cell contains unhandled sub-tag `" << key
-                  << "` that also does not point to a string filename, so "
-                     "skipping.";
+                  << "` that is expected to point to a string filename but "
+                     "does not.";
             }
           } else {
-            if (strcmp("semantic_scene_descriptor_instances", tag)) {
+            if (strcmp("semantic_scene_descriptor_instances", tag) != 0) {
               ESP_ERROR(Mn::Debug::Flag::NoSpace)
-                  << "Unable to load semantic scene map for some reason.";
+                  << "Unable to load semantic scene map due to destination map "
+                     "being null.";
             }
           }
         }
