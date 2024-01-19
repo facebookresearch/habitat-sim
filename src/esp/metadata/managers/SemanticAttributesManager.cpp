@@ -64,6 +64,14 @@ SemanticAttributes::ptr SemanticAttributesManager::initNewObjectInternal(
                               newAttributes->setSemanticAssetHandle(newHandle);
                             });
   }
+  if (builtFromConfig) {
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+        << "Semantic Attributes :`" << handleName << "` built from a config.";
+  } else {
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+        << "Semantic Attributes :`" << handleName
+        << "` not built from a config/synthesized.";
+  }
 
   return newAttributes;
 }  // SemanticAttributesManager::initNewObjectInternal
