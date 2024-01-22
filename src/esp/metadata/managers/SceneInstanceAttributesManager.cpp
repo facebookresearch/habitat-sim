@@ -49,14 +49,14 @@ SceneInstanceAttributesManager::initNewObjectInternal(
   // set the attributes source filedirectory, from the attributes name
   this->setFileDirectoryFromHandle(newAttributes);
   if (!createNewAttributes) {
-    // default exists and was used to create this attributes - investigate any
-    // filename fields that may have %%CONFIG_NAME_AS_ASSET_FILENAME%% directive
-    // specified in the default attributes. Render asset handle
-    setHandleFromDefaultTag(newAttributes,
-                            newAttributes->getSemanticSceneHandle(),
-                            [newAttributes](const std::string& newHandle) {
-                              newAttributes->setSemanticSceneHandle(newHandle);
-                            });
+    // default exists and was used to create this attributes -replace any
+    // instances of %%CONFIG_NAME_AS_ASSET_FILENAME%% directive with the
+    // simplified name of this attributes
+    setAttributesHandleFromDefaultTag(
+        newAttributes, newAttributes->getSemanticSceneHandle(),
+        [newAttributes](const std::string& newHandle) {
+          newAttributes->setSemanticSceneHandle(newHandle);
+        });
   }
 
   // Set the baseline default before json is processed.
