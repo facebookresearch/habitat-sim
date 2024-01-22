@@ -246,23 +246,24 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
       }      // if has configs cell
 
       // Now iterate through other members in the cell if they exist
+
       if (jCell.MemberCount() > numMembersFound) {
-        // process JSON jCell here for other defined values
-        for (rapidjson::Value::ConstMemberIterator it = jCell.MemberBegin();
-             it != jCell.MemberEnd(); ++it) {
-          // skip those processed already
-          const std::string key = it->name.GetString();
-          if ((key == "default_attributes") || (key == "paths") ||
-              (key == "configs")) {
-            // These keys have been processed already
-            continue;
-          }  // if has configs cell
-          else {
-            // Handle tag->path mappings if exist.
-            // Currently these are only supported for, and should only be
-            // present in, 'semantic_scene_descriptor_instances' objects
-            if (strKeyMap != nullptr) {  // only supported in
-              // semantic_scene_descriptor_instances tag
+        // Handle tag->path mappings if exist.
+        // Currently these are only supported for, and should only be
+        // present in, 'semantic_scene_descriptor_instances' objects
+        if (strKeyMap != nullptr) {  // map only passed for
+                                     // 'semantic_scene_descriptor_instances'
+          // process JSON jCell here for other defined values
+          for (rapidjson::Value::ConstMemberIterator it = jCell.MemberBegin();
+               it != jCell.MemberEnd(); ++it) {
+            // skip those processed already
+            const std::string key = it->name.GetString();
+            if ((key == "default_attributes") || (key == "paths") ||
+                (key == "configs")) {
+              // These keys have been processed already
+              continue;
+            }  // if has configs cell
+            else {
               if (it->value.IsString()) {
                 strKeyMap->emplace(key, it->value.GetString());
               } else {
@@ -272,19 +273,21 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
                     << "` that is expected to point to a string filename but "
                        "does not.";
               }
-            } else {
-              if (strcmp("semantic_scene_descriptor_instances", tag) != 0) {
-                ESP_ERROR(Mn::Debug::Flag::NoSpace)
-                    << "Unable to load semantic scene map due to destination "
-                       "map "
-                       "being null.";
-              }
             }
+          }  // for each sub-cell within main cell
+
+        } else {
+          // No map was passed - only applicable for
+          // semantic_scene_descriptor_instances
+          if (strcmp("semantic_scene_descriptor_instances", tag) == 0) {
+            ESP_ERROR(Mn::Debug::Flag::NoSpace)
+                << "Unable to load semantic scene map due to destination "
+                   "map being null.";
           }
-        }  // for each sub-cell within main cell
-      }    // process unexpected member tags
-    }      // if cell is an object
-  }        // if cell exists
+        }
+      }  // process unexpected member tags
+    }    // if cell is an object
+  }      // if cell exists
 }  // SceneDatasetAttributesManager::readDatasetJSONCell
 
 void SceneDatasetAttributesManager::validateMap(
