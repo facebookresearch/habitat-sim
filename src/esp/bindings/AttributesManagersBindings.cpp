@@ -20,6 +20,7 @@
 #include "esp/metadata/managers/ObjectAttributesManager.h"
 #include "esp/metadata/managers/PbrShaderAttributesManager.h"
 #include "esp/metadata/managers/PhysicsAttributesManager.h"
+#include "esp/metadata/managers/SemanticAttributesManager.h"
 #include "esp/metadata/managers/StageAttributesManager.h"
 
 namespace py = pybind11;
@@ -33,6 +34,7 @@ using Attrs::LightLayoutAttributes;
 using Attrs::ObjectAttributes;
 using Attrs::PbrShaderAttributes;
 using Attrs::PhysicsManagerAttributes;
+using Attrs::SemanticAttributes;
 using Attrs::StageAttributes;
 using esp::core::managedContainers::ManagedObjectAccess;
 
@@ -471,6 +473,17 @@ void initAttributesManagersBindings(py::module& m) {
       m, "PbrShaderAttributesManager",
       R"(Manages PbrShaderAttributess which define PBR shader calculation control values, such as
       enabling IBL or specifying direct and indirect lighting balance. Can import .pbr_config.json files.)");
+
+  // ==== Semantic Attributes Template manager ====
+  declareBaseAttributesManager<SemanticAttributes, ManagedObjectAccess::Copy>(
+      m, "SemanticAttributes", "BaseSemantic");
+  // NOLINTNEXTLINE(bugprone-unused-raii)
+  py::class_<SemanticAttributesManager,
+             AttributesManager<SemanticAttributes, ManagedObjectAccess::Copy>,
+             SemanticAttributesManager::ptr>(
+      m, "SemanticAttributesManager",
+      R"(Manages SemanticAttributes which define semantic mappings and files applicable to a scene instance,
+      such as semantic screen descriptor files and semantic regions. Can import .semantic_config.json files.)");
 
 }  // initAttributesManagersBindings
 }  // namespace managers
