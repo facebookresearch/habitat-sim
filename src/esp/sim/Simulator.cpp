@@ -299,14 +299,14 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
 
   // 3. Load the Semantic Scene Descriptor file appropriate for the current
   // scene instance.
-  // - Get semantic attributes
+  // - Get semantic attributes - this handle may only be a tag
   const auto currSemanticAttrHandle =
       curSceneInstanceAttributes_->getSemanticSceneHandle();
   std::string semanticSceneDescFilename = "";
   if (currSemanticAttrHandle != "") {
     const auto semanticAttr =
         metadataMediator_->getSemanticAttributesManager()
-            ->getObjectCopyByHandle(currSemanticAttrHandle);
+            ->getFirstMatchingObjectCopyByHandle(currSemanticAttrHandle);
     // - Get Semantic Scene Descriptor Filename
     semanticSceneDescFilename = semanticAttr->getSemanticDescriptorFilename();
   }
@@ -468,14 +468,16 @@ bool Simulator::instanceStageForSceneAttributes(
   const auto currSemanticAttrHandle =
       curSceneInstanceAttributes_->getSemanticSceneHandle();
   if (currSemanticAttrHandle != "") {
+    // Must exist already by here.
     const auto semanticAttr =
         metadataMediator_->getSemanticAttributesManager()
-            ->getObjectCopyByHandle(currSemanticAttrHandle);
+            ->getFirstMatchingObjectCopyByHandle(currSemanticAttrHandle);
     const std::string semanticAttrSSDName =
         semanticAttr->getSemanticDescriptorFilename();
     const std::string semanticAttrAssetName =
         semanticAttr->getSemanticAssetHandle();
-    // - Set stage semantic values if appropriate
+    // - Set stage semantic values if appropriate - this overrides whatever is
+    // specified previoussly in stage attributes.
     if (semanticAttrSSDName != "") {
       stageAttributes->setSemanticDescriptorFilename(semanticAttrSSDName);
     }
