@@ -428,18 +428,25 @@ void MetadataMediatorTest::testDataset0() {
   // end test LoadNavmesh
 
   ESP_WARNING() << "Starting test LoadSemanticScene";
-  // get map of semantic scene instances
-  const std::map<std::string, std::string> semanticMap =
-      MM_->getActiveSemanticSceneDescriptorMap();
+
+  const auto semanticMgr = MM_->getSemanticAttributesManager();
+
   // should have 2
-  CORRADE_COMPARE(semanticMap.size(), 2);
+  CORRADE_COMPARE(semanticMgr->getNumObjects(), 2);
   // should hold 2 keys
-  CORRADE_VERIFY(semanticMap.count("semantic_descriptor_path1") > 0);
-  CORRADE_VERIFY(semanticMap.count("semantic_descriptor_path2") > 0);
+  CORRADE_VERIFY(
+      semanticMgr->getObjectLibHasHandle("semantic_descriptor_path1"));
+  CORRADE_VERIFY(
+      semanticMgr->getObjectLibHasHandle("semantic_descriptor_path2"));
+
   // each key should hold specific value
-  CORRADE_COMPARE(semanticMap.at("semantic_descriptor_path1"),
+  const auto semanticAttr1 =
+      semanticMgr->getObjectCopyByHandle("semantic_descriptor_path1");
+  CORRADE_COMPARE(semanticAttr1->getSemanticDescriptorFilename(),
                   "test_semantic_descriptor_path1");
-  CORRADE_COMPARE(semanticMap.at("semantic_descriptor_path2"),
+  const auto semanticAttr2 =
+      semanticMgr->getObjectCopyByHandle("semantic_descriptor_path2");
+  CORRADE_COMPARE(semanticAttr2->getSemanticDescriptorFilename(),
                   "test_semantic_descriptor_path2");
 
   // end test LoadSemanticScene
@@ -533,11 +540,11 @@ void MetadataMediatorTest::testDataset1() {
   // end test LoadNavmesh
 
   ESP_WARNING() << "Starting test LoadSemanticScene";
-  // get map of semantic scene instances
-  const std::map<std::string, std::string> semanticMap =
-      MM_->getActiveSemanticSceneDescriptorMap();
+
+  const auto semanticMgr = MM_->getSemanticAttributesManager();
+  int numSemanticHandles = semanticMgr->getNumObjects();
   // should have 3
-  CORRADE_COMPARE(semanticMap.size(), 3);
+  CORRADE_COMPARE(numSemanticHandles, 3);
   // testLoadSemanticScene
   // display info report
   displayDSReports();

@@ -13,6 +13,7 @@
 #include "esp/metadata/managers/ObjectAttributesManager.h"
 #include "esp/metadata/managers/PbrShaderAttributesManager.h"
 #include "esp/metadata/managers/PhysicsAttributesManager.h"
+#include "esp/metadata/managers/SemanticAttributesManager.h"
 #include "esp/metadata/managers/StageAttributesManager.h"
 
 #include "configure.h"
@@ -39,6 +40,7 @@ using Attrs::ObjectAttributes;
 using Attrs::PbrShaderAttributes;
 using Attrs::PhysicsManagerAttributes;
 using Attrs::SceneInstanceAttributes;
+using Attrs::SemanticAttributes;
 using Attrs::StageAttributes;
 using Attrs::UVSpherePrimitiveAttributes;
 
@@ -173,12 +175,21 @@ struct AttributesManagersTest : Cr::TestSuite::Tester {
 
   /**
    * @brief This test will test creating, modifying, registering and deleting
-   * Attributes via the AttributesManager for StageAttributes.  These
+   * Attributes via the AttributesManager for StageAttributes. These
    * tests should be consistent with most types of future attributes managers
    * specializing the AttributesManager class template that follow the same
    * expected behavior paths as extent attributes/attributesManagers.
    */
   void testStageAttributesManagersCreate();
+
+  /**
+   * @brief This test will test creating, modifying, registering and deleting
+   * Attributes via the AttributesManager for SemanticAttributes. These
+   * tests should be consistent with most types of future attributes managers
+   * specializing the AttributesManager class template that follow the same
+   * expected behavior paths as extent attributes/attributesManagers.
+   */
+  void testSemanticAttributesManagersCreate();
   /**
    * @brief This test will test creating, modifying, registering and deleting
    * Attributes via the AttributesManager for ArticulatedObjectAttributes. These
@@ -191,7 +202,7 @@ struct AttributesManagersTest : Cr::TestSuite::Tester {
 
   /**
    * @brief This test will test creating, modifying, registering and deleting
-   * Attributes via the AttributesManager for ObjectAttributes.  These
+   * Attributes via the AttributesManager for ObjectAttributes. These
    * tests should be consistent with most types of future attributes managers
    * specializing the AttributesManager class template that follow the same
    * expected behavior paths as extent attributes/attributesManagers.  Note :
@@ -226,6 +237,9 @@ struct AttributesManagersTest : Cr::TestSuite::Tester {
   AttrMgrs::PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
   AttrMgrs::SceneInstanceAttributesManager::ptr
       sceneInstanceAttributesManager_ = nullptr;
+
+  AttrMgrs::SemanticAttributesManager::ptr semanticAttributesManager_ = nullptr;
+
   AttrMgrs::StageAttributesManager::ptr stageAttributesManager_ = nullptr;
 
 };  // struct AttributesManagersTest
@@ -242,11 +256,13 @@ AttributesManagersTest::AttributesManagersTest() {
   pbrShaderAttributesManager_ = MM->getPbrShaderAttributesManager();
   physicsAttributesManager_ = MM->getPhysicsAttributesManager();
   sceneInstanceAttributesManager_ = MM->getSceneInstanceAttributesManager();
+  semanticAttributesManager_ = MM->getSemanticAttributesManager();
   stageAttributesManager_ = MM->getStageAttributesManager();
 
   addTests({
       &AttributesManagersTest::testPhysicsAttributesManagersCreate,
       &AttributesManagersTest::testPbrShaderAttributesManagersCreate,
+      &AttributesManagersTest::testSemanticAttributesManagersCreate,
       &AttributesManagersTest::testStageAttributesManagersCreate,
       &AttributesManagersTest::testArticulatedObjectAttributesManagersCreate,
       &AttributesManagersTest::testObjectAttributesManagersCreate,
@@ -637,6 +653,21 @@ void AttributesManagersTest::testArticulatedObjectAttributesManagersCreate() {
   }
 
 }  // AttributesManagersTest::testArticulatedObjectAttributesManagersCreate
+
+void AttributesManagersTest::testSemanticAttributesManagersCreate() {
+  const std::string semanticConfigFile = Cr::Utility::Path::join(
+      TEST_ASSETS, "semantic/test_regions.semantic_config.json");
+  CORRADE_INFO(
+      "Start Test : Create, Edit, Remove Attributes for "
+      "Semantic JSON config @"
+      << semanticConfigFile);
+
+  // Semantic attributes manager config-loaded attributes processing
+  // verification
+  testCreateAndRemove<AttrMgrs::SemanticAttributesManager>(
+      semanticAttributesManager_, semanticConfigFile);
+
+}  // AttributesManagersTest::testSemanticAttributesManagersCreate()
 
 void AttributesManagersTest::testStageAttributesManagersCreate() {
   const std::string stageConfigFile = Cr::Utility::Path::join(

@@ -26,6 +26,8 @@ set(
   attributes/SceneInstanceAttributes.cpp
   attributes/SceneDatasetAttributes.h
   attributes/SceneDatasetAttributes.cpp
+  attributes/SemanticAttributes.h
+  attributes/SemanticAttributes.cpp
   attributes/StageAttributes.h
   attributes/StageAttributes.cpp
   managers/AttributesManagerBase.h
@@ -46,6 +48,8 @@ set(
   managers/SceneInstanceAttributesManager.cpp
   managers/SceneDatasetAttributesManager.h
   managers/SceneDatasetAttributesManager.cpp
+  managers/SemanticAttributesManager.h
+  managers/SemanticAttributesManager.cpp
   managers/StageAttributesManager.h
   managers/StageAttributesManager.cpp
   MetadataMediator.h

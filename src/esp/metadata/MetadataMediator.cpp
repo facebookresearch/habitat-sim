@@ -496,11 +496,10 @@ MetadataMediator::makeSceneAndReferenceStage(
       dsSceneAttrMgr->createEmptyInstanceAttributes(
           stageAttributes->getHandle()));
 
-  // The following is to manage stage files that have navmesh and semantic scene
-  // descriptor ("house file") handles in them. This mechanism has been
-  // deprecated, but in order to provide backwards compatibility, we are going
-  // to support these values here when we synthesize a non-existing scene
-  // instance attributes only.
+  // The following is to manage stage configs that have navmesh handles defined
+  // in them. This mechanism has been deprecated, but in order to provide
+  // backwards compatibility, we are going to support these values here when we
+  // synthesize a non-existing scene instance attributes only.
 
   // add a ref to the navmesh path from the stage attributes to scene
   // attributes, giving it an appropriately obvious name. This entails adding
@@ -515,19 +514,29 @@ MetadataMediator::makeSceneAndReferenceStage(
   // this key to the Scene Instance Attributes.
   sceneInstanceAttributes->setNavmeshHandle(navmeshEntry.first);
 
-  // add a ref to semantic scene descriptor ("house file") from stage attributes
-  // to scene attributes, giving it an appropriately obvious name. This entails
-  // adding the path itself to the dataset, if it does not already exist there,
-  // keyed by the ref that the scene attributes will use.
-  std::pair<std::string, std::string> ssdEntry =
-      datasetAttr->addSemanticSceneDescrPathEntry(
-          sceneName, stageAttributes->getSemanticDescriptorFilename(), false);
-  // ssdEntry holds the ssd key in the dataset to use by this scene instance.
-  // NOTE : the key may have changed from what was passed if a collision
-  // occurred with same key but different value, so we need to add this key to
-  // the Scene Instance Attributes.
-  sceneInstanceAttributes->setSemanticSceneHandle(ssdEntry.first);
+  // The following is to manage stage configs that have semantic scene
+  // descriptor ("house file") handles in them. These will be used first to see
+  // if an existing Semantic attributes/config exists with the given name, and
+  // if not, to create one with the given name, referencing the
+  // specified semantic scene descriptor filename.
 
+  // TODO: this could become convoluted and difficult to debug, and should be
+  // investigated for redesign. Some of the motivation for this functionality
+  // comes from backwards compatibility with the old semantic data load
+  // handling, which will be obviated when that subsystem is rewritten.
+
+  // add a ref to scene instance attributes of SemanticAttributes if any
+  // Semantics info is specified in the passed stage stage, giving it an
+  // appropriately obvious name.
+  if ((stageAttributes->getSemanticDescriptorFilename() != "") ||
+      (stageAttributes->getSemanticAssetHandle() != "")) {
+    std::string sceneSemanticAttrHandle =
+        datasetAttr->addSemanticSceneDescrPathEntry(sceneName, stageAttributes);
+
+    // sceneSemanticAttrHandle is the handle in the SemanticAttributesManager
+    // for the SemanticAttributes to use by this scene instance.
+    sceneInstanceAttributes->setSemanticSceneHandle(sceneSemanticAttrHandle);
+  }
   // register SceneInstanceAttributes object
   dsSceneAttrMgr->registerObject(sceneInstanceAttributes);
   return sceneInstanceAttributes;
@@ -610,7 +619,7 @@ std::string MetadataMediator::getDatasetsOverview() const {
 std::string MetadataMediator::createDatasetReport(
     const std::string& sceneDataset) const {
   attributes::SceneDatasetAttributes::ptr ds;
-  if (sceneDataset == "") {
+  if (sceneDataset.empty()) {
     ds = sceneDatasetAttributesManager_->getObjectByHandle(activeSceneDataset_);
 
   } else if (sceneDatasetAttributesManager_->getObjectLibHasHandle(

@@ -149,17 +149,17 @@ ObjectAttributes::ptr ObjectAttributesManager::initNewObjectInternal(
     // filename fields that may have %%USE_FILENAME%% directive specified in the
     // default attributes.
     // Render asset handle
-    setHandleFromDefaultTag(newAttributes,
-                            newAttributes->getRenderAssetHandle(),
-                            [newAttributes](const std::string& newHandle) {
-                              newAttributes->setRenderAssetHandle(newHandle);
-                            });
+    setFilenameFromDefaultTag(newAttributes,
+                              newAttributes->getRenderAssetHandle(),
+                              [newAttributes](const std::string& newHandle) {
+                                newAttributes->setRenderAssetHandle(newHandle);
+                              });
     // Collision asset handle
-    setHandleFromDefaultTag(newAttributes,
-                            newAttributes->getCollisionAssetHandle(),
-                            [newAttributes](const std::string& newHandle) {
-                              newAttributes->setCollisionAssetHandle(newHandle);
-                            });
+    setFilenameFromDefaultTag(
+        newAttributes, newAttributes->getCollisionAssetHandle(),
+        [newAttributes](const std::string& newHandle) {
+          newAttributes->setCollisionAssetHandle(newHandle);
+        });
   }
 
   // set default render and collision asset handle
@@ -214,7 +214,7 @@ int ObjectAttributesManager::registerObjectFinalize(
     ObjectAttributes::ptr objectTemplate,
     const std::string& objectTemplateHandle,
     bool forceRegistration) {
-  if (objectTemplate->getRenderAssetHandle() == "") {
+  if (objectTemplate->getRenderAssetHandle().empty()) {
     ESP_ERROR(Mn::Debug::Flag::NoSpace)
         << "Attributes template named `" << objectTemplateHandle
         << "` does not have a valid render asset handle specified, so "

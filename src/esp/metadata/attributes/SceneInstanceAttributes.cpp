@@ -125,7 +125,7 @@ void SceneObjectInstanceAttributes::writeValuesToJson(
     writeValueToJson("mass_scale", jsonObj, allocator);
   }
 
-  // take care of child class valeus, if any exist
+  // take care of child class values, if any exist
   writeValuesToJsonInternal(jsonObj, allocator);
 
 }  // SceneObjectInstanceAttributes::writeValuesToJson

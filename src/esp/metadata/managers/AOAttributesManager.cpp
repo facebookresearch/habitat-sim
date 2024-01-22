@@ -143,16 +143,16 @@ AOAttributesManager::initNewObjectInternal(const std::string& attributesHandle,
     // the default attributes, and replace with appropriate derived value.
 
     // URDF source file handle
-    setHandleFromDefaultTag(newAttributes, newAttributes->getURDFPath(),
-                            [newAttributes](const std::string& newHandle) {
-                              newAttributes->setURDFPath(newHandle);
-                            });
+    setFilenameFromDefaultTag(newAttributes, newAttributes->getURDFPath(),
+                              [newAttributes](const std::string& newHandle) {
+                                newAttributes->setURDFPath(newHandle);
+                              });
     // Render asset handle
-    setHandleFromDefaultTag(newAttributes,
-                            newAttributes->getRenderAssetHandle(),
-                            [newAttributes](const std::string& newHandle) {
-                              newAttributes->setRenderAssetHandle(newHandle);
-                            });
+    setFilenameFromDefaultTag(newAttributes,
+                              newAttributes->getRenderAssetHandle(),
+                              [newAttributes](const std::string& newHandle) {
+                                newAttributes->setRenderAssetHandle(newHandle);
+                              });
   }
   // set default URDF filename - only set filename defaults if
   // attributesHandle is not a config file (which would never be a valid URDF
@@ -178,7 +178,7 @@ int AOAttributesManager::registerObjectFinalize(
   // ArticulatedObjectsAttributes must have a valid URDF_file it relates to or
   // it should not be registered.
   const std::string urdfFilePath = AOAttributesTemplate->getURDFPath();
-  if (urdfFilePath == "") {
+  if (urdfFilePath.empty()) {
     // URDF Filepath empty is bad
     ESP_ERROR(Mn::Debug::Flag::NoSpace)
         << "ArticulatedObjectAttributes template named `" << AOAttributesHandle
@@ -208,7 +208,7 @@ int AOAttributesManager::registerObjectFinalize(
                 Corrade::Utility::Path::split(urdfFilePath).second())
                 .first())
             .first();
-    if (renderAssetHandle == "") {
+    if (renderAssetHandle.empty()) {
       // Empty is bad when 'skin' render mode is specified
       ESP_ERROR(Mn::Debug::Flag::NoSpace)
           << "ArticulatedObjectAttributes template named `"

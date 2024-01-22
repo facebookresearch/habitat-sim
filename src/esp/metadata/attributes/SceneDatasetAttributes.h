@@ -17,6 +17,7 @@
 #include "esp/metadata/managers/LightLayoutAttributesManager.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
 #include "esp/metadata/managers/SceneInstanceAttributesManager.h"
+#include "esp/metadata/managers/SemanticAttributesManager.h"
 #include "esp/metadata/managers/StageAttributesManager.h"
 
 namespace esp {
@@ -38,9 +39,10 @@ class SceneDatasetAttributes : public AbstractAttributes {
     lightLayoutAttributesManager_ = nullptr;
     objectAttributesManager_ = nullptr;
     sceneInstanceAttributesManager_ = nullptr;
+    semanticAttributesManager_ = nullptr;
     stageAttributesManager_ = nullptr;
     navmeshMap_.clear();
-    semanticSceneDescrMap_.clear();
+    semanticAttributesManager_ = nullptr;
   }
 
   /**
@@ -83,6 +85,16 @@ class SceneDatasetAttributes : public AbstractAttributes {
   }
 
   /**
+   * @brief Return manager for construction and access to semantic attributes
+   * for current dataset.
+   * @return A shared pointer to the current dataset's @ref esp::metadata::managers::SemanticAttributesManager
+   */
+  const managers::SemanticAttributesManager::ptr& getSemanticAttributesManager()
+      const {
+    return semanticAttributesManager_;
+  }  // MetadataMediator::getSemantticAttributesManager
+
+  /**
    * @brief Return manager for construction and access to stage attributes.
    */
   const managers::StageAttributesManager::ptr& getStageAttributesManager()
@@ -116,27 +128,11 @@ class SceneDatasetAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief Return the map for semantic scene descriptor file locations
-   */
-  const std::map<std::string, std::string>& getSemanticSceneDescrMap() const {
-    return semanticSceneDescrMap_;
-  }
-
-  /**
    * @brief Only SceneDatasetAttributesManager should directly edit navemesh and
    * semantic scene descriptor maps. Return the map for navmesh file locations
    * for building/modification
    */
   std::map<std::string, std::string>& editNavmeshMap() { return navmeshMap_; }
-
-  /**
-   * @brief Only SceneDatasetAttributesManager should directly edit navemesh and
-   * semantic scene descriptor maps. Return the map for semantic scene
-   * descriptor file locations for building/modification
-   */
-  std::map<std::string, std::string>& editSemanticSceneDescrMap() {
-    return semanticSceneDescrMap_;
-  }
 
   /**
    * @brief Add an entry to the @ref navmeshMap_ with the passed key.  If @p overwrite
@@ -155,21 +151,31 @@ class SceneDatasetAttributes : public AbstractAttributes {
   }  // addNavmeshPathEntry
 
   /**
-   * @brief Add an entry to the @ref semanticSceneDescrMap_ map with the passed key. If
-   * @p overwrite then overwrite existing entry,  otherwise will modify key and
-   * add value with modified key.  Returns pair of added Key-Value.
-   * @param key The handle for the SemanticSceneDescr path to add
-   * @param path The path to the SemanticSceneDescr asset to add
-   * @param overwrite Whether to overwrite existing entries or not
-   * @return Key-Value pair for SemanticSceneDescr being added.
+   * @brief Find or create a @ref esp::metadata::attributes::SemanticAttributes
+   * entry with the passed key. If
+   * @p overwrite then overwrite existing entry, otherwise will modify key and
+   * add values from stage attributes with modified key. Returns the string
+   * handle of the semantic attributes.
+   * @param semanticHandle The handle for the SemanticSceneDescr attributes to
+   * reference or add.
+   * @param stageAttributes The Stage attributes
+   * @return Handle in the SemanticAttributesManager referencing the desired
+   * @ref esp::metadata::attributes::SemanticAttributes
    */
-  std::pair<std::string, std::string> addSemanticSceneDescrPathEntry(
-      const std::string& key,
-      const std::string& path,
-      bool overwrite = false) {
-    return addNewValToMap(key, path, overwrite, semanticSceneDescrMap_,
-                          "<semanticSceneDescriptor>");
-  }  // addNavmeshPathEntry
+  std::string addSemanticSceneDescrPathEntry(
+      const std::string& semanticHandle,
+      const attributes::StageAttributes::ptr& stageAttributes);
+
+  /**
+   * @brief Create or modify @ref esp::metadata::attributes::SemanticAttributes
+   * corresponding to the keys in the passed map to hold the map's values as the
+   * semantic scene descriptor file.
+   * @param semanticPathnameMap Map of keys corresponding to the keys that will
+   * references these semantic attributes in the scene instance and the
+   * filepaths to the appropriate SSD files.
+   */
+  void setSemanticAttrSSDFilenames(
+      const std::map<std::string, std::string>& semanticPathnameMap);
 
   /**
    * @brief copy current @ref esp::sim::SimulatorConfiguration driven
@@ -392,6 +398,13 @@ class SceneDatasetAttributes : public AbstractAttributes {
 
  protected:
   /**
+   * @brief will create a new @ref esp::metadata::attributes::SemanticAttributes
+   * with the given handle if one does not exist.
+   * @param semanticHandle The name of the attributes to create.
+   */
+  void createSemanticAttribsFromDS(const std::string& semanticHandle);
+
+  /**
    * @brief Retrieve a comma-separated string holding the header values for the
    * info returned for this managed object, type-specific.  Individual
    * components handle this.
@@ -462,6 +475,11 @@ class SceneDatasetAttributes : public AbstractAttributes {
       sceneInstanceAttributesManager_ = nullptr;
 
   /**
+   * @brief Manages all construction and access to @ref metadata::attributes::SemanticAttributes
+   * from this dataset.
+   */
+  managers::SemanticAttributesManager::ptr semanticAttributesManager_ = nullptr;
+  /**
    * @brief Manages all construction and access to stage attributes from this
    * dataset.
    */
@@ -471,12 +489,6 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * navmeshes.
    */
   std::map<std::string, std::string> navmeshMap_;
-
-  /**
-   * @brief Maps names specified in dataset_config file to paths for semantic
-   * scene descriptor files
-   */
-  std::map<std::string, std::string> semanticSceneDescrMap_;
 
   /**
    * list of key-value pairs of region names to PbrShaderConfigs

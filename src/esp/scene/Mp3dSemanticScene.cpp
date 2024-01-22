@@ -50,7 +50,7 @@ static const std::map<char, std::string> kRegionCategoryMap = {
 };
 
 int Mp3dObjectCategory::index(const std::string& mapping) const {
-  if (mapping == "" || mapping == "mpcat40") {
+  if (mapping.empty() || mapping == "mpcat40") {
     return mpcat40Index_;
   } else if (mapping == "raw") {
     return categoryMappingIndex_;
@@ -61,7 +61,7 @@ int Mp3dObjectCategory::index(const std::string& mapping) const {
 }
 
 std::string Mp3dObjectCategory::name(const std::string& mapping) const {
-  if (mapping == "" || mapping == "mpcat40") {
+  if (mapping.empty() || mapping == "mpcat40") {
     return mpcat40Name_;
   } else if (mapping == "raw") {
     return categoryMappingName_;

@@ -36,6 +36,7 @@ using Attrs::ObjectAttributes;
 using Attrs::PbrShaderAttributes;
 using Attrs::PhysicsManagerAttributes;
 using Attrs::SceneInstanceAttributes;
+using Attrs::SemanticAttributes;
 using Attrs::StageAttributes;
 using Attrs::UVSpherePrimitiveAttributes;
 
@@ -133,6 +134,14 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
   void testSceneInstanceRootUserDefinedAttrVals(
       std::shared_ptr<esp::core::config::Configuration> userAttrs);
   /**
+   * @brief This test will verify that the Semantic attributes' managers' JSON
+   * loading process is working as expected.
+   */
+  void testSemanticAttrVals(
+      std::shared_ptr<esp::metadata::attributes::SemanticAttributes>
+          semanticAttr,
+      const std::string& assetPath);
+  /**
    * @brief This test will verify that the Stage attributes' managers' JSON
    * loading process is working as expected.
    */
@@ -167,6 +176,7 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
   void testPbrShaderAttrJSONLoad();
   void testLightJSONLoad();
   void testSceneInstanceJSONLoad();
+  void testSemanticJSONLoad();
   void testStageJSONLoad();
   void testObjectJSONLoad();
   void testArticulatedObjectJSONLoad();
@@ -184,6 +194,8 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
   AttrMgrs::PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
   AttrMgrs::SceneInstanceAttributesManager::ptr
       sceneInstanceAttributesManager_ = nullptr;
+  AttrMgrs::SemanticAttributesManager::ptr semanticAttributesManager_ = nullptr;
+
   AttrMgrs::StageAttributesManager::ptr stageAttributesManager_ = nullptr;
 
 };  // struct AttributesConfigsTest
@@ -199,6 +211,7 @@ AttributesConfigsTest::AttributesConfigsTest() {
   physicsAttributesManager_ = MM->getPhysicsAttributesManager();
   pbrShaderAttributesManager_ = MM->getPbrShaderAttributesManager();
   sceneInstanceAttributesManager_ = MM->getSceneInstanceAttributesManager();
+  semanticAttributesManager_ = MM->getSemanticAttributesManager();
   stageAttributesManager_ = MM->getStageAttributesManager();
 
   addTests({
@@ -206,6 +219,7 @@ AttributesConfigsTest::AttributesConfigsTest() {
       &AttributesConfigsTest::testPbrShaderAttrJSONLoad,
       &AttributesConfigsTest::testLightJSONLoad,
       &AttributesConfigsTest::testSceneInstanceJSONLoad,
+      &AttributesConfigsTest::testSemanticJSONLoad,
       &AttributesConfigsTest::testStageJSONLoad,
       &AttributesConfigsTest::testObjectJSONLoad,
       &AttributesConfigsTest::testArticulatedObjectJSONLoad,
@@ -665,7 +679,7 @@ void AttributesConfigsTest::testSceneInstanceAttrVals(
   // test Scene Instance Attributes-level user config vals
   testSceneInstanceRootUserDefinedAttrVals(sceneAttr->getUserConfiguration());
 
-  // test scene instanct attributes-level user config vals retrieved from MM
+  // test Scene Instance Attributes-level user config vals retrieved from MM
   // directly
   testSceneInstanceRootUserDefinedAttrVals(
       MM->getSceneInstanceUserConfiguration(sceneAttr->getHandle()));
@@ -673,183 +687,193 @@ void AttributesConfigsTest::testSceneInstanceAttrVals(
   // verify objects
   auto objectInstanceList = sceneAttr->getObjectInstances();
   CORRADE_COMPARE(objectInstanceList.size(), 2);
-  auto objInstance = objectInstanceList[0];
-  CORRADE_COMPARE(objInstance->getHandle(), "test_object_template0");
-  CORRADE_COMPARE(static_cast<int>(objInstance->getTranslationOrigin()),
-                  static_cast<int>(Attrs::SceneInstanceTranslationOrigin::COM));
-  CORRADE_COMPARE(objInstance->getTranslation(), Mn::Vector3(0, 1, 2));
-  CORRADE_COMPARE(objInstance->getRotation(),
-                  Mn::Quaternion({0.3f, 0.4f, 0.5f}, 0.2f));
-  CORRADE_COMPARE(static_cast<int>(objInstance->getMotionType()),
-                  static_cast<int>(esp::physics::MotionType::KINEMATIC));
-  CORRADE_VERIFY(objInstance->getApplyScaleToMass());
-  CORRADE_COMPARE(objInstance->getUniformScale(), 1.1f);
-  CORRADE_COMPARE(objInstance->getNonUniformScale(),
-                  Mn::Vector3(1.1f, 2.2f, 3.3f));
+  {
+    auto objInstance = objectInstanceList[0];
+    CORRADE_COMPARE(objInstance->getHandle(), "test_object_template0");
+    CORRADE_COMPARE(
+        static_cast<int>(objInstance->getTranslationOrigin()),
+        static_cast<int>(Attrs::SceneInstanceTranslationOrigin::COM));
+    CORRADE_COMPARE(objInstance->getTranslation(), Mn::Vector3(0, 1, 2));
+    CORRADE_COMPARE(objInstance->getRotation(),
+                    Mn::Quaternion({0.3f, 0.4f, 0.5f}, 0.2f));
+    CORRADE_COMPARE(static_cast<int>(objInstance->getMotionType()),
+                    static_cast<int>(esp::physics::MotionType::KINEMATIC));
+    CORRADE_VERIFY(objInstance->getApplyScaleToMass());
+    CORRADE_COMPARE(objInstance->getUniformScale(), 1.1f);
+    CORRADE_COMPARE(objInstance->getNonUniformScale(),
+                    Mn::Vector3(1.1f, 2.2f, 3.3f));
 
-  // test object 0 instance attributes-level user config vals
-  testUserDefinedConfigVals(objInstance->getUserConfiguration(), 4,
-                            "obj0 instance defined string", false, 12, 2.3,
-                            Mn::Vector2(1.6f, 2.8f), Mn::Vector3(1.3, 3.5, 5.7),
-                            Mn::Quaternion({0.2f, 0.6f, 0.1f}, 0.3f),
-                            Mn::Vector4(4.5f, 3.6f, 2.7f, 1.9f));
+    // test object 0 instance attributes-level user config vals
+    testUserDefinedConfigVals(
+        objInstance->getUserConfiguration(), 4, "obj0 instance defined string",
+        false, 12, 2.3, Mn::Vector2(1.6f, 2.8f), Mn::Vector3(1.3, 3.5, 5.7),
+        Mn::Quaternion({0.2f, 0.6f, 0.1f}, 0.3f),
+        Mn::Vector4(4.5f, 3.6f, 2.7f, 1.9f));
+  }
+  {
+    auto objInstance = objectInstanceList[1];
+    CORRADE_COMPARE(objInstance->getHandle(), "test_object_template1");
+    CORRADE_COMPARE(objInstance->getTranslation(), Mn::Vector3(0, -1, -2));
+    CORRADE_COMPARE(objInstance->getRotation(),
+                    Mn::Quaternion({0.6f, 0.7f, 0.8f}, 0.5f));
+    CORRADE_COMPARE(static_cast<int>(objInstance->getMotionType()),
+                    static_cast<int>(esp::physics::MotionType::DYNAMIC));
+    CORRADE_VERIFY(!objInstance->getApplyScaleToMass());
+    CORRADE_COMPARE(objInstance->getUniformScale(), 2.1f);
+    CORRADE_COMPARE(objInstance->getNonUniformScale(),
+                    Mn::Vector3(2.1f, 3.2f, 4.3f));
 
-  objInstance = objectInstanceList[1];
-  CORRADE_COMPARE(objInstance->getHandle(), "test_object_template1");
-  CORRADE_COMPARE(objInstance->getTranslation(), Mn::Vector3(0, -1, -2));
-  CORRADE_COMPARE(objInstance->getRotation(),
-                  Mn::Quaternion({0.6f, 0.7f, 0.8f}, 0.5f));
-  CORRADE_COMPARE(static_cast<int>(objInstance->getMotionType()),
-                  static_cast<int>(esp::physics::MotionType::DYNAMIC));
-  CORRADE_VERIFY(!objInstance->getApplyScaleToMass());
-  CORRADE_COMPARE(objInstance->getUniformScale(), 2.1f);
-  CORRADE_COMPARE(objInstance->getNonUniformScale(),
-                  Mn::Vector3(2.1f, 3.2f, 4.3f));
-
-  // test object 1 instance attributes-level user config vals
-  testUserDefinedConfigVals(
-      objInstance->getUserConfiguration(), 4, "obj1 instance defined string",
-      false, 1, 1.1, Mn::Vector2(2.1f, 3.2f), Mn::Vector3(10.3, 30.5, -5.07),
-      Mn::Quaternion({1.2f, 1.6f, 1.1f}, 1.3f),
-      Mn::Vector4(4.5f, 5.6f, 6.7f, 7.9f));
+    // test object 1 instance attributes-level user config vals
+    testUserDefinedConfigVals(
+        objInstance->getUserConfiguration(), 4, "obj1 instance defined string",
+        false, 1, 1.1, Mn::Vector2(2.1f, 3.2f), Mn::Vector3(10.3, 30.5, -5.07),
+        Mn::Quaternion({1.2f, 1.6f, 1.1f}, 1.3f),
+        Mn::Vector4(4.5f, 5.6f, 6.7f, 7.9f));
+  }
 
   // verify articulated object instances
   auto artObjInstances = sceneAttr->getArticulatedObjectInstances();
   CORRADE_COMPARE(artObjInstances.size(), 3);
-  auto artObjInstance = artObjInstances[0];
-  CORRADE_COMPARE(artObjInstance->getHandle(), "test_urdf_template0");
-  CORRADE_COMPARE(static_cast<int>(artObjInstance->getTranslationOrigin()),
-                  static_cast<int>(Attrs::SceneInstanceTranslationOrigin::COM));
-  CORRADE_COMPARE(static_cast<int>(artObjInstance->getBaseType()),
-                  static_cast<int>(Attrs::ArticulatedObjectBaseType::Fixed));
-  CORRADE_VERIFY(artObjInstance->getApplyScaleToMass());
-  CORRADE_COMPARE(
-      static_cast<int>(artObjInstance->getInertiaSource()),
-      static_cast<int>(Attrs::ArticulatedObjectInertiaSource::URDF));
-  CORRADE_COMPARE(
-      static_cast<int>(artObjInstance->getLinkOrder()),
-      static_cast<int>(Attrs::ArticulatedObjectLinkOrder::URDFOrder));
-  CORRADE_COMPARE(
-      static_cast<int>(artObjInstance->getRenderMode()),
-      static_cast<int>(Attrs::ArticulatedObjectRenderMode::LinkVisuals));
-  CORRADE_VERIFY(artObjInstance->getAutoClampJointLimits());
+  {
+    auto artObjInstance = artObjInstances[0];
+    CORRADE_COMPARE(artObjInstance->getHandle(), "test_urdf_template0");
+    CORRADE_COMPARE(
+        static_cast<int>(artObjInstance->getTranslationOrigin()),
+        static_cast<int>(Attrs::SceneInstanceTranslationOrigin::COM));
+    CORRADE_COMPARE(static_cast<int>(artObjInstance->getBaseType()),
+                    static_cast<int>(Attrs::ArticulatedObjectBaseType::Fixed));
+    CORRADE_VERIFY(artObjInstance->getApplyScaleToMass());
+    CORRADE_COMPARE(
+        static_cast<int>(artObjInstance->getInertiaSource()),
+        static_cast<int>(Attrs::ArticulatedObjectInertiaSource::URDF));
+    CORRADE_COMPARE(
+        static_cast<int>(artObjInstance->getLinkOrder()),
+        static_cast<int>(Attrs::ArticulatedObjectLinkOrder::URDFOrder));
+    CORRADE_COMPARE(
+        static_cast<int>(artObjInstance->getRenderMode()),
+        static_cast<int>(Attrs::ArticulatedObjectRenderMode::LinkVisuals));
+    CORRADE_VERIFY(artObjInstance->getAutoClampJointLimits());
 
-  CORRADE_COMPARE(artObjInstance->getTranslation(), Mn::Vector3(5, 4, 5));
-  CORRADE_COMPARE(static_cast<int>(artObjInstance->getMotionType()),
-                  static_cast<int>(esp::physics::MotionType::DYNAMIC));
-  // verify init join pose
-  const auto& initJointPoseMap = artObjInstance->getInitJointPose();
-  const std::vector<float> jtPoseVals{0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6};
-  int idx = 0;
-  for (std::map<std::string, float>::const_iterator iter =
-           initJointPoseMap.begin();
-       iter != initJointPoseMap.end(); ++iter) {
-    CORRADE_COMPARE(iter->second, jtPoseVals[idx++]);
+    CORRADE_COMPARE(artObjInstance->getTranslation(), Mn::Vector3(5, 4, 5));
+    CORRADE_COMPARE(static_cast<int>(artObjInstance->getMotionType()),
+                    static_cast<int>(esp::physics::MotionType::DYNAMIC));
+    // verify init join pose
+    const auto& initJointPoseMap = artObjInstance->getInitJointPose();
+    const std::vector<float> jtPoseVals{0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6};
+    int idx = 0;
+    for (std::map<std::string, float>::const_iterator iter =
+             initJointPoseMap.begin();
+         iter != initJointPoseMap.end(); ++iter) {
+      CORRADE_COMPARE(iter->second, jtPoseVals[idx++]);
+    }
+    // verify init joint vels
+    const auto& initJoinVelMap = artObjInstance->getInitJointVelocities();
+    const std::vector<float> jtVelVals{1.0, 2.1, 3.2, 4.3, 5.4, 6.5, 7.6};
+    idx = 0;
+    for (std::map<std::string, float>::const_iterator iter =
+             initJoinVelMap.begin();
+         iter != initJoinVelMap.end(); ++iter) {
+      CORRADE_COMPARE(iter->second, jtVelVals[idx++]);
+    }
+
+    // test test_urdf_template0 ao instance attributes-level user config vals
+    testUserDefinedConfigVals(artObjInstance->getUserConfiguration(), 4,
+                              "test_urdf_template0 instance defined string",
+                              false, 2, 1.22, Mn::Vector2(3.1f, 4.2f),
+                              Mn::Vector3(120.3f, 302.5f, -25.07f),
+                              Mn::Quaternion({1.22f, 1.26f, 1.21f}, 1.23f),
+                              Mn::Vector4(13.5f, 24.6f, 35.7f, 46.9f));
+
+    // test nested configuration
+    auto artObjNestedConfig =
+        artObjInstance->getUserConfiguration()
+            ->getSubconfigCopy<esp::core::config::Configuration>(
+                "user_def_obj");
+    CORRADE_VERIFY(artObjNestedConfig);
+    CORRADE_VERIFY(artObjNestedConfig->getNumEntries() > 0);
+    CORRADE_COMPARE(artObjNestedConfig->template get<Mn::Vector3>("position"),
+                    Mn::Vector3(0.1f, 0.2f, 0.3f));
+    CORRADE_COMPARE(artObjNestedConfig->template get<Mn::Vector3>("rotation"),
+                    Mn::Vector3(0.5f, 0.3f, 0.1f));
   }
-  // verify init joint vels
-  const auto& initJoinVelMap = artObjInstance->getInitJointVelocities();
-  const std::vector<float> jtVelVals{1.0, 2.1, 3.2, 4.3, 5.4, 6.5, 7.6};
-  idx = 0;
-  for (std::map<std::string, float>::const_iterator iter =
-           initJoinVelMap.begin();
-       iter != initJoinVelMap.end(); ++iter) {
-    CORRADE_COMPARE(iter->second, jtVelVals[idx++]);
+  {
+    auto artObjInstance = artObjInstances[1];
+    CORRADE_COMPARE(artObjInstance->getHandle(), "test_urdf_template1");
+
+    CORRADE_COMPARE(static_cast<int>(artObjInstance->getBaseType()),
+                    static_cast<int>(Attrs::ArticulatedObjectBaseType::Free));
+    CORRADE_COMPARE(
+        static_cast<int>(artObjInstance->getInertiaSource()),
+        static_cast<int>(Attrs::ArticulatedObjectInertiaSource::Computed));
+    CORRADE_VERIFY(!artObjInstance->getApplyScaleToMass());
+    CORRADE_COMPARE(
+        static_cast<int>(artObjInstance->getLinkOrder()),
+        static_cast<int>(Attrs::ArticulatedObjectLinkOrder::TreeTraversal));
+    CORRADE_COMPARE(static_cast<int>(artObjInstance->getRenderMode()),
+                    static_cast<int>(Attrs::ArticulatedObjectRenderMode::Both));
+    CORRADE_VERIFY(artObjInstance->getAutoClampJointLimits());
+    CORRADE_COMPARE(artObjInstance->getTranslation(), Mn::Vector3(3, 2, 1));
+    CORRADE_COMPARE(static_cast<int>(artObjInstance->getMotionType()),
+                    static_cast<int>(esp::physics::MotionType::KINEMATIC));
+    // test test_urdf_template0 ao instance attributes-level user config vals
+    testUserDefinedConfigVals(artObjInstance->getUserConfiguration(), 4,
+                              "test_urdf_template1 instance defined string",
+                              false, 21, 11.22, Mn::Vector2(1.9f, 2.9f),
+                              Mn::Vector3(190.3f, 902.5f, -95.07f),
+                              Mn::Quaternion({9.22f, 9.26f, 0.21f}, 1.25f),
+                              Mn::Vector4(13.5f, 4.6f, 25.7f, 76.9f));
   }
+  {
+    auto artObjInstance = artObjInstances[2];
+    CORRADE_COMPARE(artObjInstance->getHandle(), "test_urdf_template2");
+    // Nothing specified in instance,so use defaults
+    CORRADE_COMPARE(
+        static_cast<int>(artObjInstance->getBaseType()),
+        static_cast<int>(Attrs::ArticulatedObjectBaseType::Unspecified));
+    CORRADE_COMPARE(
+        static_cast<int>(artObjInstance->getInertiaSource()),
+        static_cast<int>(Attrs::ArticulatedObjectInertiaSource::Unspecified));
+    CORRADE_VERIFY(artObjInstance->getApplyScaleToMass());
+    CORRADE_COMPARE(
+        static_cast<int>(artObjInstance->getLinkOrder()),
+        static_cast<int>(Attrs::ArticulatedObjectLinkOrder::Unspecified));
+    CORRADE_COMPARE(
+        static_cast<int>(artObjInstance->getRenderMode()),
+        static_cast<int>(Attrs::ArticulatedObjectRenderMode::Unspecified));
+    // Same as template 1
+    CORRADE_VERIFY(artObjInstance->getAutoClampJointLimits());
+    CORRADE_COMPARE(artObjInstance->getTranslation(), Mn::Vector3(3, 2, 1));
+    CORRADE_COMPARE(static_cast<int>(artObjInstance->getMotionType()),
+                    static_cast<int>(esp::physics::MotionType::KINEMATIC));
+    // test test_urdf_template0 ao instance attributes-level user config vals
+    testUserDefinedConfigVals(artObjInstance->getUserConfiguration(), 4,
+                              "test_urdf_template1 instance defined string",
+                              false, 21, 11.22, Mn::Vector2(1.9f, 2.9f),
+                              Mn::Vector3(190.3f, 902.5f, -95.07f),
+                              Mn::Quaternion({9.22f, 9.26f, 0.21f}, 1.25f),
+                              Mn::Vector4(13.5f, 4.6f, 25.7f, 76.9f));
+  }
+  {
+    // verify stage populated properly
+    auto stageInstance = sceneAttr->getStageInstance();
+    CORRADE_COMPARE(stageInstance->getHandle(), "test_stage_template");
+    CORRADE_COMPARE(stageInstance->getTranslation(), Mn::Vector3(1, 2, 3));
+    CORRADE_COMPARE(stageInstance->getRotation(),
+                    Mn::Quaternion({0.2f, 0.3f, 0.4f}, 0.1f));
+    // make sure that is not default value "flat"
+    CORRADE_COMPARE(static_cast<int>(stageInstance->getShaderType()),
+                    static_cast<int>(Attrs::ObjectInstanceShaderType::PBR));
+    CORRADE_COMPARE(stageInstance->getUniformScale(), 1.9f);
+    CORRADE_COMPARE(stageInstance->getNonUniformScale(),
+                    Mn::Vector3(1.5f, 2.5f, 3.5f));
 
-  // test test_urdf_template0 ao instance attributes-level user config vals
-  testUserDefinedConfigVals(artObjInstance->getUserConfiguration(), 4,
-                            "test_urdf_template0 instance defined string",
-                            false, 2, 1.22, Mn::Vector2(3.1f, 4.2f),
-                            Mn::Vector3(120.3f, 302.5f, -25.07f),
-                            Mn::Quaternion({1.22f, 1.26f, 1.21f}, 1.23f),
-                            Mn::Vector4(13.5f, 24.6f, 35.7f, 46.9f));
-
-  // test nested configuration
-  auto artObjNestedConfig =
-      artObjInstance->getUserConfiguration()
-          ->getSubconfigCopy<esp::core::config::Configuration>("user_def_obj");
-  CORRADE_VERIFY(artObjNestedConfig);
-  CORRADE_VERIFY(artObjNestedConfig->getNumEntries() > 0);
-  CORRADE_COMPARE(artObjNestedConfig->template get<Mn::Vector3>("position"),
-                  Mn::Vector3(0.1f, 0.2f, 0.3f));
-  CORRADE_COMPARE(artObjNestedConfig->template get<Mn::Vector3>("rotation"),
-                  Mn::Vector3(0.5f, 0.3f, 0.1f));
-
-  artObjInstance = artObjInstances[1];
-  CORRADE_COMPARE(artObjInstance->getHandle(), "test_urdf_template1");
-
-  CORRADE_COMPARE(static_cast<int>(artObjInstance->getBaseType()),
-                  static_cast<int>(Attrs::ArticulatedObjectBaseType::Free));
-  CORRADE_COMPARE(
-      static_cast<int>(artObjInstance->getInertiaSource()),
-      static_cast<int>(Attrs::ArticulatedObjectInertiaSource::Computed));
-  CORRADE_VERIFY(!artObjInstance->getApplyScaleToMass());
-  CORRADE_COMPARE(
-      static_cast<int>(artObjInstance->getLinkOrder()),
-      static_cast<int>(Attrs::ArticulatedObjectLinkOrder::TreeTraversal));
-  CORRADE_COMPARE(static_cast<int>(artObjInstance->getRenderMode()),
-                  static_cast<int>(Attrs::ArticulatedObjectRenderMode::Both));
-  CORRADE_VERIFY(artObjInstance->getAutoClampJointLimits());
-  CORRADE_COMPARE(artObjInstance->getTranslation(), Mn::Vector3(3, 2, 1));
-  CORRADE_COMPARE(static_cast<int>(artObjInstance->getMotionType()),
-                  static_cast<int>(esp::physics::MotionType::KINEMATIC));
-  // test test_urdf_template0 ao instance attributes-level user config vals
-  testUserDefinedConfigVals(artObjInstance->getUserConfiguration(), 4,
-                            "test_urdf_template1 instance defined string",
-                            false, 21, 11.22, Mn::Vector2(1.9f, 2.9f),
-                            Mn::Vector3(190.3f, 902.5f, -95.07f),
-                            Mn::Quaternion({9.22f, 9.26f, 0.21f}, 1.25f),
-                            Mn::Vector4(13.5f, 4.6f, 25.7f, 76.9f));
-
-  artObjInstance = artObjInstances[2];
-  CORRADE_COMPARE(artObjInstance->getHandle(), "test_urdf_template2");
-  // Nothing specified in instance,so use defaults
-  CORRADE_COMPARE(
-      static_cast<int>(artObjInstance->getBaseType()),
-      static_cast<int>(Attrs::ArticulatedObjectBaseType::Unspecified));
-  CORRADE_COMPARE(
-      static_cast<int>(artObjInstance->getInertiaSource()),
-      static_cast<int>(Attrs::ArticulatedObjectInertiaSource::Unspecified));
-  CORRADE_VERIFY(artObjInstance->getApplyScaleToMass());
-  CORRADE_COMPARE(
-      static_cast<int>(artObjInstance->getLinkOrder()),
-      static_cast<int>(Attrs::ArticulatedObjectLinkOrder::Unspecified));
-  CORRADE_COMPARE(
-      static_cast<int>(artObjInstance->getRenderMode()),
-      static_cast<int>(Attrs::ArticulatedObjectRenderMode::Unspecified));
-  // Same as template 1
-  CORRADE_VERIFY(artObjInstance->getAutoClampJointLimits());
-  CORRADE_COMPARE(artObjInstance->getTranslation(), Mn::Vector3(3, 2, 1));
-  CORRADE_COMPARE(static_cast<int>(artObjInstance->getMotionType()),
-                  static_cast<int>(esp::physics::MotionType::KINEMATIC));
-  // test test_urdf_template0 ao instance attributes-level user config vals
-  testUserDefinedConfigVals(artObjInstance->getUserConfiguration(), 4,
-                            "test_urdf_template1 instance defined string",
-                            false, 21, 11.22, Mn::Vector2(1.9f, 2.9f),
-                            Mn::Vector3(190.3f, 902.5f, -95.07f),
-                            Mn::Quaternion({9.22f, 9.26f, 0.21f}, 1.25f),
-                            Mn::Vector4(13.5f, 4.6f, 25.7f, 76.9f));
-
-  // verify stage populated properly
-  auto stageInstance = sceneAttr->getStageInstance();
-  CORRADE_COMPARE(stageInstance->getHandle(), "test_stage_template");
-  CORRADE_COMPARE(stageInstance->getTranslation(), Mn::Vector3(1, 2, 3));
-  CORRADE_COMPARE(stageInstance->getRotation(),
-                  Mn::Quaternion({0.2f, 0.3f, 0.4f}, 0.1f));
-  // make sure that is not default value "flat"
-  CORRADE_COMPARE(static_cast<int>(stageInstance->getShaderType()),
-                  static_cast<int>(Attrs::ObjectInstanceShaderType::PBR));
-  CORRADE_COMPARE(stageInstance->getUniformScale(), 1.9f);
-  CORRADE_COMPARE(stageInstance->getNonUniformScale(),
-                  Mn::Vector3(1.5f, 2.5f, 3.5f));
-
-  // test stage instance attributes-level user config vals
-  testUserDefinedConfigVals(stageInstance->getUserConfiguration(), 4,
-                            "stage instance defined string", true, 11, 2.2,
-                            Mn::Vector2(4.1f, 5.2f), Mn::Vector3(1.2, 3.4, 5.6),
-                            Mn::Quaternion({0.5f, 0.6f, 0.7f}, 0.4f),
-                            Mn::Vector4(3.5f, 4.6f, 5.7f, 6.9f));
-
+    // test stage instance attributes-level user config vals
+    testUserDefinedConfigVals(
+        stageInstance->getUserConfiguration(), 4,
+        "stage instance defined string", true, 11, 2.2, Mn::Vector2(4.1f, 5.2f),
+        Mn::Vector3(1.2, 3.4, 5.6), Mn::Quaternion({0.5f, 0.6f, 0.7f}, 0.4f),
+        Mn::Vector4(3.5f, 4.6f, 5.7f, 6.9f));
+  }
   // remove json-string built attributes added for test
   testRemoveAttributesBuiltByJSONString(sceneInstanceAttributesManager_,
                                         sceneAttr->getHandle());
@@ -1047,6 +1071,174 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
   Cr::Utility::Path::remove(newAttrName);
 
 }  // AttributesConfigsTest::testSceneInstanceJSONLoad
+void AttributesConfigsTest::testSemanticAttrVals(
+    std::shared_ptr<esp::metadata::attributes::SemanticAttributes> semanticAttr,
+    const std::string& assetPath) {
+  CORRADE_COMPARE(
+      semanticAttr->getSemanticDescriptorFilename(),
+      Cr::Utility::Path::join(assetPath, "test_semantic_lexicon.json"));
+
+  CORRADE_COMPARE(
+      semanticAttr->getSemanticAssetHandle(),
+      Cr::Utility::Path::join(assetPath, "test_semantic_asset.glb"));
+
+  // verify regions
+  auto regionInstanceList = semanticAttr->getRegionInstances();
+
+  CORRADE_COMPARE(regionInstanceList.size(), 2);
+  CORRADE_COMPARE(semanticAttr->getNumRegionInstances(), 2);
+
+  {
+    auto regionDesc = regionInstanceList[0];
+    CORRADE_COMPARE(regionDesc->getHandle(), "bedroom.000");
+    CORRADE_COMPARE(regionDesc->getLabel(), "bedroom");
+
+    auto polyLoop = regionDesc->getPolyLoop();
+    CORRADE_COMPARE(polyLoop.size(), 8);
+
+    std::vector<Magnum::Vector3> testLoop{
+        Mn::Vector3{-18.06, 0.0, -13.95}, Mn::Vector3{-15.95, 0.0, -13.95},
+        Mn::Vector3{-18.06, 0.0, -12.18}, Mn::Vector3{-16.46, 0.0, -12.18},
+        Mn::Vector3{-16.46, 0.0, -12.84}, Mn::Vector3{-13.17, 0.0, -12.84},
+        Mn::Vector3{-13.17, 0.0, -16.33}, Mn::Vector3{-15.95, 0.0, -16.33},
+    };
+
+    for (int i = 0; i < polyLoop.size(); ++i) {
+      CORRADE_COMPARE(polyLoop[i], testLoop[i]);
+    }
+
+    CORRADE_COMPARE(regionDesc->getFloorHeight(), 0.0);
+    CORRADE_COMPARE(regionDesc->getExtrusionHeight(), 2.8);
+    CORRADE_COMPARE(regionDesc->getMinBounds(),
+                    Mn::Vector3(-18.06f, 0.0f, -16.33f));
+    CORRADE_COMPARE(regionDesc->getMaxBounds(),
+                    Mn::Vector3(-13.17, 2.8, -12.18));
+  }
+  {
+    auto regionDesc = regionInstanceList[1];
+    CORRADE_COMPARE(regionDesc->getHandle(), "bedroom.001");
+    CORRADE_COMPARE(regionDesc->getLabel(), "bedroom");
+
+    auto polyLoop = regionDesc->getPolyLoop();
+    CORRADE_COMPARE(polyLoop.size(), 6);
+
+    std::vector<Magnum::Vector3> testLoop{
+        Mn::Vector3{-6.95, 0.1, -13.41}, Mn::Vector3{-6.95, 0.1, -8.75},
+        Mn::Vector3{-5.47, 0.1, -8.75},  Mn::Vector3{-5.47, 0.1, -8.95},
+        Mn::Vector3{-3.62, 0.1, -8.95},  Mn::Vector3{-3.62, 0.1, -13.41}};
+
+    for (int i = 0; i < polyLoop.size(); ++i) {
+      CORRADE_COMPARE(polyLoop[i], testLoop[i]);
+    }
+
+    CORRADE_COMPARE(regionDesc->getFloorHeight(), 0.1);
+    CORRADE_COMPARE(regionDesc->getExtrusionHeight(), 2.9);
+    CORRADE_COMPARE(regionDesc->getMinBounds(),
+                    Mn::Vector3(-6.95f, 0.1f, -13.41f));
+    CORRADE_COMPARE(regionDesc->getMaxBounds(),
+                    Mn::Vector3(-3.62f, 2.9f, -8.75f));
+  }
+
+  testUserDefinedConfigVals(semanticAttr->getUserConfiguration(), 4,
+                            "semantic attribs defined string", true, 273, 7.3,
+                            Mn::Vector2(7.1f, 7.2f), Mn::Vector3(7.1, 3.3, 5.5),
+                            Mn::Quaternion({0.6f, 0.7f, 0.8f}, 7.5f),
+                            Mn::Vector4(7.5f, 1.6f, 1.7f, 1.9f));
+
+  //
+}  // AttributesConfigsTest::testSemanticAttrVals
+
+void AttributesConfigsTest::testSemanticJSONLoad() {
+  const std::string& jsonString =
+      R"({
+      "semantic_descriptor_filename": "test_semantic_lexicon.json",
+      "semantic_asset": "test_semantic_asset.glb",
+      "region_annotations": [
+        {
+          "name": "bedroom.000",
+          "label": "bedroom",
+          "poly_loop": [
+            [-18.06, 0.0,-13.95],
+            [-15.95, 0.0,-13.95],
+            [-18.06, 0.0,-12.18],
+            [-16.46, 0.0,-12.18],
+            [-16.46, 0.0,-12.84],
+            [-13.17, 0.0,-12.84],
+            [-13.17, 0.0,-16.33],
+            [-15.95, 0.0,-16.33]
+          ],
+          "floor_height": 0.0,
+          "extrusion_height": 2.8,
+          "min_bounds": [-18.06, 0.0, -16.33],
+          "max_bounds": [-13.17, 2.8, -12.18]
+        },
+        {
+          "name": "bedroom.001",
+          "label": "bedroom",
+          "poly_loop": [
+            [-6.95, 0.1,-13.41],
+            [-6.95, 0.1,-8.75],
+            [-5.47, 0.1,-8.75],
+            [-5.47, 0.1,-8.95],
+            [-3.62, 0.1,-8.95],
+            [-3.62, 0.1,-13.41]
+          ],
+          "floor_height": 0.1,
+          "extrusion_height": 2.9,
+          "min_bounds": [-6.95, 0.1, -13.41],
+          "max_bounds": [-3.62, 2.9, -8.75]
+        }
+      ],
+      "user_defined" : {
+        "user_str_array" : ["test_00", "test_01", "test_02", "test_03"],
+        "user_string" : "semantic attribs defined string",
+        "user_bool" : true,
+        "user_int" : 273,
+        "user_double" : 7.3,
+        "user_vec2" : [7.1, 7.2],
+        "user_vec3" : [7.1, 3.3, 5.5],
+        "user_quat" : [7.5, 0.6, 0.7, 0.8],
+        "user_vec4" : [7.5, 1.6, 1.7, 1.9]
+      }
+    })";
+  // Build an attributes based on the above json string
+  auto semanticAttr = semanticAttributesManager_->createObjectFromJSONString(
+      "new_template_from_json", jsonString, true);
+  // verify exists
+  CORRADE_VERIFY(semanticAttr);
+
+  // before test, save attributes to disk with new name
+  std::string newAttrName = Cr::Utility::formatString(
+      "{}/testsemanticAttrConfig_saved_JSON.{}", TEST_ASSETS,
+      semanticAttributesManager_->getJSONTypeExt());
+
+  bool success = semanticAttributesManager_->saveManagedObjectToFile(
+      semanticAttr->getHandle(), newAttrName);
+
+  ESP_DEBUG() << "About to test string-based semanticAttr";
+  // test json string to verify format
+  testSemanticAttrVals(semanticAttr, "");
+  ESP_DEBUG() << "Tested semanticAttr";
+  semanticAttr = nullptr;
+
+  // load attributes from new name and retest
+  auto semanticAttr2 =
+      semanticAttributesManager_->createObjectFromJSONFile(newAttrName);
+
+  // verify file-based config exists
+  CORRADE_VERIFY(semanticAttr2);
+
+  // test json string to verify format, this deletes semanticAttr2 from
+  // registry
+  ESP_DEBUG() << "About to test saved semanticAttr2 :"
+              << semanticAttr2->getHandle();
+  testSemanticAttrVals(semanticAttr2, TEST_ASSETS);
+  ESP_DEBUG() << "About to test semanticAttr2";
+
+  // delete file-based config
+  Cr::Utility::Path::remove(newAttrName);
+
+}  // AttributesConfigsTest::testSemanticJSONLoad
 
 void AttributesConfigsTest::testStageAttrVals(
     std::shared_ptr<esp::metadata::attributes::StageAttributes> stageAttr,
