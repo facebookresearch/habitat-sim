@@ -139,7 +139,8 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
    */
   void testSemanticAttrVals(
       std::shared_ptr<esp::metadata::attributes::SemanticAttributes>
-          semanticAttr);
+          semanticAttr,
+      const std::string& assetPath);
   /**
    * @brief This test will verify that the Stage attributes' managers' JSON
    * loading process is working as expected.
@@ -1071,12 +1072,15 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
 
 }  // AttributesConfigsTest::testSceneInstanceJSONLoad
 void AttributesConfigsTest::testSemanticAttrVals(
-    std::shared_ptr<esp::metadata::attributes::SemanticAttributes>
-        semanticAttr) {
-  CORRADE_COMPARE(semanticAttr->getSemanticDescriptorFilename(),
-                  "semantic_filename.house");
+    std::shared_ptr<esp::metadata::attributes::SemanticAttributes> semanticAttr,
+    const std::string& assetPath) {
+  CORRADE_COMPARE(
+      semanticAttr->getSemanticDescriptorFilename(),
+      Cr::Utility::Path::join(assetPath, "test_semantic_lexicon.json"));
 
-  CORRADE_COMPARE(semanticAttr->getSemanticAssetHandle(), "semantic_asset.glb");
+  CORRADE_COMPARE(
+      semanticAttr->getSemanticAssetHandle(),
+      Cr::Utility::Path::join(assetPath, "test_semantic_asset.glb"));
 
   // verify regions
   auto regionInstanceList = semanticAttr->getRegionInstances();
@@ -1147,8 +1151,8 @@ void AttributesConfigsTest::testSemanticAttrVals(
 void AttributesConfigsTest::testSemanticJSONLoad() {
   const std::string& jsonString =
       R"({
-      "semantic_descriptor_filename": "semantic_filename.house",
-      "semantic_asset": "semantic_asset.glb",
+      "semantic_descriptor_filename": "test_semantic_lexicon.json",
+      "semantic_asset": "test_semantic_asset.glb",
       "region_annotations": [
         {
           "name": "bedroom.000",
@@ -1202,6 +1206,7 @@ void AttributesConfigsTest::testSemanticJSONLoad() {
       "new_template_from_json", jsonString, true);
   // verify exists
   CORRADE_VERIFY(semanticAttr);
+
   // before test, save attributes to disk with new name
   std::string newAttrName = Cr::Utility::formatString(
       "{}/testsemanticAttrConfig_saved_JSON.{}", TEST_ASSETS,
@@ -1212,7 +1217,7 @@ void AttributesConfigsTest::testSemanticJSONLoad() {
 
   ESP_DEBUG() << "About to test string-based semanticAttr";
   // test json string to verify format
-  testSemanticAttrVals(semanticAttr);
+  testSemanticAttrVals(semanticAttr, "");
   ESP_DEBUG() << "Tested semanticAttr";
   semanticAttr = nullptr;
 
@@ -1227,7 +1232,7 @@ void AttributesConfigsTest::testSemanticJSONLoad() {
   // registry
   ESP_DEBUG() << "About to test saved semanticAttr2 :"
               << semanticAttr2->getHandle();
-  testSemanticAttrVals(semanticAttr2);
+  testSemanticAttrVals(semanticAttr2, TEST_ASSETS);
   ESP_DEBUG() << "About to test semanticAttr2";
 
   // delete file-based config

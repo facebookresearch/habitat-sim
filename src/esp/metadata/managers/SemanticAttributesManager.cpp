@@ -154,21 +154,38 @@ void SemanticAttributesManager::setValsFromJSONDoc(
     const io::JsonGenericValue& jsonConfig) {
   const std::string attribsDispName = semanticAttribs->getSimplifiedHandle();
   // ROOT LEVEL SEMANTICS TODO
+  // directory location where semantic attributes files are found
+  std::string semanticLocFileDir = semanticAttribs->getFileDirectory();
+
+  // Set the semantic asset filename
+  std::string semanticAsset = "";
+  if (io::readMember<std::string>(jsonConfig, "semantic_asset",
+                                  semanticAsset)) {
+    // if "semantic mesh" is specified in stage json to non-empty value, set
+    // value (override default).
+    // semantic asset filename might already be fully qualified; if
+    // not, might just be file name
+    if (!Corrade::Utility::Path::exists(semanticAsset)) {
+      semanticAsset =
+          Cr::Utility::Path::join(semanticLocFileDir, semanticAsset);
+    }
+    semanticAttribs->setSemanticAssetHandle(semanticAsset);
+  }
 
   // Set the semantic descriptor filename
-  io::jsonIntoConstSetter<std::string>(
-      jsonConfig, "semantic_descriptor_filename",
-      [semanticAttribs](const std::string& _semanticDescriptorFilename) {
-        semanticAttribs->setSemanticDescriptorFilename(
-            _semanticDescriptorFilename);
-      });
-
-  // Set the semantic mesh asset filename
-  io::jsonIntoConstSetter<std::string>(
-      jsonConfig, "semantic_asset",
-      [semanticAttribs](const std::string& _semanticAsset) {
-        semanticAttribs->setSemanticAssetHandle(_semanticAsset);
-      });
+  std::string semanticSceneDescriptor = "";
+  if (io::readMember<std::string>(jsonConfig, "semantic_descriptor_filename",
+                                  semanticSceneDescriptor)) {
+    // if "semantic_descriptor_filename" is specified in stage json, set value
+    // (override default).
+    // semanticSceneDescriptor filename might already be fully qualified; if
+    // not, might just be file name
+    if (!Corrade::Utility::Path::exists(semanticSceneDescriptor)) {
+      semanticSceneDescriptor =
+          Cr::Utility::Path::join(semanticLocFileDir, semanticSceneDescriptor);
+    }
+    semanticAttribs->setSemanticDescriptorFilename(semanticSceneDescriptor);
+  }
 
   // Check for region instances existence
   io::JsonGenericValue::ConstMemberIterator regionJSONIter =
