@@ -149,17 +149,17 @@ ObjectAttributes::ptr ObjectAttributesManager::initNewObjectInternal(
     // filename fields that may have %%USE_FILENAME%% directive specified in the
     // default attributes.
     // Render asset handle
-    setHandleFromDefaultTag(newAttributes,
-                            newAttributes->getRenderAssetHandle(),
-                            [newAttributes](const std::string& newHandle) {
-                              newAttributes->setRenderAssetHandle(newHandle);
-                            });
+    setFilenameFromDefaultTag(newAttributes,
+                              newAttributes->getRenderAssetHandle(),
+                              [newAttributes](const std::string& newHandle) {
+                                newAttributes->setRenderAssetHandle(newHandle);
+                              });
     // Collision asset handle
-    setHandleFromDefaultTag(newAttributes,
-                            newAttributes->getCollisionAssetHandle(),
-                            [newAttributes](const std::string& newHandle) {
-                              newAttributes->setCollisionAssetHandle(newHandle);
-                            });
+    setFilenameFromDefaultTag(
+        newAttributes, newAttributes->getCollisionAssetHandle(),
+        [newAttributes](const std::string& newHandle) {
+          newAttributes->setCollisionAssetHandle(newHandle);
+        });
   }
 
   // set default render and collision asset handle

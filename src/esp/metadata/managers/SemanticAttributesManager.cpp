@@ -52,17 +52,17 @@ SemanticAttributes::ptr SemanticAttributesManager::initNewObjectInternal(
     // the default attributes, and replace with appropriate derived value.
 
     // Semantic Scene Descriptor text filehandle
-    setHandleFromDefaultTag(
+    setFilenameFromDefaultTag(
         newAttributes, newAttributes->getSemanticDescriptorFilename(),
         [newAttributes](const std::string& newHandle) {
           newAttributes->setSemanticDescriptorFilename(newHandle);
         });
     // Semantic Scene asset handle
-    setHandleFromDefaultTag(newAttributes,
-                            newAttributes->getSemanticAssetHandle(),
-                            [newAttributes](const std::string& newHandle) {
-                              newAttributes->setSemanticAssetHandle(newHandle);
-                            });
+    setFilenameFromDefaultTag(
+        newAttributes, newAttributes->getSemanticAssetHandle(),
+        [newAttributes](const std::string& newHandle) {
+          newAttributes->setSemanticAssetHandle(newHandle);
+        });
   }
   if (builtFromConfig) {
     ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
