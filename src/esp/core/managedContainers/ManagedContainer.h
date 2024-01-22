@@ -190,7 +190,35 @@ class ManagedContainer : public ManagedContainerBase {
       return nullptr;
     }
     return getObjectInternal<T>(objectHandle);
-  }  // ManagedContainer::getObject
+  }  // ManagedContainer::getObjectByHandle
+
+  /**
+   * @brief Get a reference to the first matching managed object that contains
+   * the passed string as a substring for it's handle. Should only be used
+   * internally - Users should only ever access copies of managed objects,
+   * unless this managed container's @p Access policy is Share.
+   *
+   * @param objectHandle The substring of the handle referencing the managed object in @ref
+   * objectLibrary_ to search for.
+   * @return A reference to the first managed object, or nullptr if does not
+   * exist
+   */
+  ManagedPtr getFirstMatchingObjectByHandle(
+      const std::string& objectHandle) const {
+    if (getObjectLibHasHandle(objectHandle)) {
+      // Has the passed string as a handle.
+      return getObjectInternal<T>(objectHandle);
+    }
+    // search for elements containing objectHandle
+    std::vector<std::string> handles =
+        getObjectHandlesBySubstring(objectHandle);
+    if (handles.size() == 0) {
+      // Nothing matched
+      return nullptr;
+    }
+    // A handle matched, get the object directly (bipassing any more checks)
+    return getObjectInternal<T>(handles[0]);
+  }  // ManagedContainer::getFirstMatchingObjectByHandle
 
   /**
    * @brief Retrieve a map of key= std::string handle; value = copy of
@@ -357,6 +385,26 @@ class ManagedContainer : public ManagedContainerBase {
   }  // ManagedContainer::getObjectOrCopyByHandle
 
   /**
+   * @brief Get a reference to, or a copy of, the first managed object found
+   * containing the passed the @p handleSubstr, as part of its handle. depending
+   * on @p Access value.  This is the function that should be be accessed by the
+   * user for handle substring consumption.
+   *
+   * @param handleSubstr the substring key to use to find the first matching
+   * copy.
+   * @return A mutable reference to the managed object, or a copy, or nullptr if
+   * does not exist
+   */
+  ManagedPtr getFirstMatchingObjectOrCopyByHandle(
+      const std::string& handleSubstr) {
+    if (Access == ManagedObjectAccess::Copy) {
+      return this->getFirstMatchingObjectCopyByHandle(handleSubstr);
+    } else {
+      return this->getFirstMatchingObjectByHandle(handleSubstr);
+    }
+  }  // ManagedContainer::getFirstMatchingObjectOrCopyByHandle
+
+  /**
    * @brief Get a reference to, or a copy of, the managed object identified by
    * the @p managedObjectID, depending on @p Access value, and casted to the
    * appropriate derived managed object class. This is the version that should
@@ -428,6 +476,32 @@ class ManagedContainer : public ManagedContainerBase {
     auto orig = getObjectInternal<T>(objectHandle);
     return this->copyObject(orig);
   }  // ManagedContainer::getObjectCopyByHandle
+
+  /**
+   * @brief Get a reference to a copy of the first object found containing the
+   * specified by @p handleSubstr
+   * @param handleSubstr the string key of the managed object desired.
+   * @return A mutable reference to a copy of the managed object, or nullptr if
+   * does not exist
+   */
+  ManagedPtr getFirstMatchingObjectCopyByHandle(
+      const std::string& handleSubstr) {
+    if (getObjectLibHasHandle(handleSubstr)) {
+      // Has the passed string as a handle.
+      auto orig = getObjectInternal<T>(handleSubstr);
+      return this->copyObject(orig);
+    }
+    // search for elements containing objectHandle
+    std::vector<std::string> handles =
+        getObjectHandlesBySubstring(handleSubstr);
+    if (handles.size() == 0) {
+      // Nothing matched
+      return nullptr;
+    }
+    // A handle matched, get the object directly (bipassing any more checks)
+    auto orig = getObjectInternal<T>(handles[0]);
+    return this->copyObject(orig);
+  }  // ManagedContainer::getFirstMatchingObjectCopyByHandle
 
   /**
    * @brief Get a reference to a copy of the managed object identified

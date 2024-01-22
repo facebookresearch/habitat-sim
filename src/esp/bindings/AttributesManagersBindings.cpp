@@ -239,6 +239,15 @@ void declareBaseAttributesManager(py::module& m,
             "if it does not.")
                .c_str(),
            "handle"_a)
+      .def("get_first_matching_template_by_handle",
+           static_cast<AttribsPtr (MgrClass::*)(const std::string&)>(
+               &MgrClass::getFirstMatchingObjectOrCopyByHandle),
+           ("This returns a copy of the first " + attrType +
+            " template containing the passed handle substring if any exist, "
+            "and NULL "
+            "if none could be found.")
+               .c_str(),
+           "handle_substr"_a)
       .def("get_templates_by_handle_substring",
            static_cast<std::unordered_map<std::string, AttribsPtr> (
                MgrClass::*)(const std::string&, bool)>(
