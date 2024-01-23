@@ -159,7 +159,14 @@ corrade_add_test(
 )
 target_include_directories(MetadataMediatorTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(Mp3dTest Mp3dTest.cpp LIBRARIES scene)
+corrade_add_test(
+  Mp3dTest
+  Mp3dTest.cpp
+  LIBRARIES
+  core
+  metadata
+  scene
+)
 target_include_directories(Mp3dTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(
