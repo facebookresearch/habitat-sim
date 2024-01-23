@@ -194,8 +194,8 @@ class ResourceManager {
   bool semanticSceneExists() const { return (semanticScene_ != nullptr); }
 
   /**
-   * @brief Load semantic scene descriptor file specified in @p semanticAttr ,
-   * for the passed @p activeSceneName .
+   * @brief Load semantic scene data from descriptor file and metadata specified
+   * in @p semanticAttr , for the passed @p activeSceneName .
    * @param semanticAttr Pointer to semantic attributes, if they exist. This
    * will hold fully-qualified filename along with other attributes required to
    * create the semantic scene.
@@ -203,7 +203,7 @@ class ResourceManager {
    * loading the SSD for.
    * @return whether loaded successfully or not.
    */
-  bool loadSemanticSceneDescriptor(
+  bool loadSemanticScene(
       const std::shared_ptr<metadata::attributes::SemanticAttributes>&
           semanticAttr,
       const std::string& activeSceneName);

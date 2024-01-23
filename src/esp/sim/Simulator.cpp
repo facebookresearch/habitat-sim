@@ -326,8 +326,8 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
                 "failed due to specified semantic tag `{}` not being found in "
                 "SemanticAttributesManager. Aborting",
                 activeSceneName, currSemanticAttrHandle));
-  // - Load semantic scene descriptor
-  resourceManager_->loadSemanticSceneDescriptor(semanticAttr, activeSceneName);
+  // - Load semantic scene
+  resourceManager_->loadSemanticScene(semanticAttr, activeSceneName);
 
   // 4. Specify frustumCulling based on value from config
   frustumCulling_ = config_.frustumCulling;

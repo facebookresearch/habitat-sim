@@ -18,6 +18,11 @@
 #include "esp/io/Json.h"
 
 namespace esp {
+namespace metadata {
+namespace attributes {
+class SemanticAttributes;
+}
+}  // namespace metadata
 namespace scene {
 
 //! Represents a semantic category
@@ -91,14 +96,17 @@ class SemanticScene {
 
   /**
    * @brief Attempt to load SemanticScene descriptor from an unknown file type.
-   * @param filename the name of the semantic scene descriptor (house file) to
-   * attempt to load
+   * @param semanticAttr The semantic attributes containing a reference to the
+   * name of the semantic scene descriptor (house file) to attempt to load,
+   * along with informationd describing semantic constructions (region
+   * annotations).
    * @param scene reference to sceneNode to assign semantic scene to
    * @param rotation rotation to apply to semantic scene upon load.
    * @return successfully loaded
    */
   static bool loadSemanticSceneDescriptor(
-      const std::string& filename,
+      const std::shared_ptr<metadata::attributes::SemanticAttributes>&
+          semanticAttr,
       SemanticScene& scene,
       const quatf& rotation = quatf::FromTwoVectors(-vec3f::UnitZ(),
                                                     geo::ESP_GRAVITY));
