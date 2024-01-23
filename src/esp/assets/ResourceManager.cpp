@@ -313,16 +313,23 @@ bool ResourceManager::loadSemanticScene(
       semanticAttr != nullptr ? semanticAttr->getSemanticDescriptorFilename()
                               : "";
   semanticScene_ = nullptr;
-  bool success = false;
   if ((ssdFilename != "") || ((semanticAttr != nullptr) &&
                               (semanticAttr->getNumRegionInstances() > 0))) {
+    bool success = false;
     // semantic scene descriptor might not exist so (re)create it.
     semanticScene_ = scene::SemanticScene::create();
 
     success = scene::SemanticScene::loadSemanticSceneDescriptor(
         semanticAttr, *semanticScene_);
+
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+        << "Attempt to create SemanticScene for Current Scene :`"
+        << activeSceneName << "` with ssdFilename : `" << ssdFilename
+        << "` :" << (success ? " " : "Not ") << "Successful";
+
+    return success;
   }
-  return success;
+  return false;
 }  // ResourceManager::loadSemanticSceneDescriptor
 
 void ResourceManager::buildSemanticColorMap() {

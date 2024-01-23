@@ -149,7 +149,7 @@ bool SemanticScene::
           << semanticAttr->getNumRegionInstances() << " regions defined.";
       // Build Semantic regions for each SemanticRegion attributes instance
       const auto regionInstances = semanticAttr->getRegionInstances();
-      for (const auto regionInstance : regionInstances) {
+      for (const auto& regionInstance : regionInstances) {
         auto regionPtr = SemanticRegion::create();
         // Unique name
         regionPtr->name_ = regionInstance->getHandle();
