@@ -176,6 +176,8 @@ class HabitatSimInteractiveViewer(Application):
         self.replay_renderer_cfg: Optional[ReplayRendererConfiguration] = None
         self.replay_renderer: Optional[ReplayRenderer] = None
         self.reconfigure_sim()
+        self.region_mesh_lines = None
+        self.region_colors = {}
 
         # compute NavMesh if not already loaded by the scene.
         if (
@@ -223,6 +225,55 @@ class HabitatSimInteractiveViewer(Application):
                 normal=camera_position - cp.position_on_b_in_ws,
             )
 
+    def get_region_meshes(self):
+        self.region_mesh_lines = {}
+        self.region_colors = {}
+        for region in self.sim.semantic_scene.regions:
+            poly_loop_points = region.poly_loop_points
+            extrusion_height = region.extrusion_height
+            extrusion_vec = mn.Vector3(0, extrusion_height, 0)
+            floor_height = region.floor_height
+            if len(poly_loop_points) > 2:
+                this_region_mesh_lines = []
+                prev_pp_low = mn.Vector3(
+                    poly_loop_points[-1][0], floor_height, poly_loop_points[-1][1]
+                )
+                for xz in poly_loop_points:
+                    pp_low = mn.Vector3(xz[0], floor_height, xz[1])
+                    pp_low + extrusion_vec
+                    prev_pp_low + extrusion_vec
+                    # this_region_mesh_lines.append((pp_low, pp_high))
+                    this_region_mesh_lines.append((pp_low, prev_pp_low))
+                    # this_region_mesh_lines.append((pp_high, prev_pp_high))
+                    # this_region_mesh_lines.append((prev_pp_high, pp_low))
+                    prev_pp_low = pp_low
+                self.region_mesh_lines[region.id] = this_region_mesh_lines
+                self.region_colors[region.id] = mn.Color4(
+                    mn.Vector3(np.random.random(3))
+                )
+            else:
+                print(
+                    f"Region {region.id} has too few poly loop points: {len(poly_loop_points)}."
+                )
+
+    def draw_region(self, region_id: str, color: Optional[mn.Color4] = None) -> None:
+        """
+        Draw a region wireframe.
+        """
+        if self.region_mesh_lines is None:
+            self.get_region_meshes()
+
+        if color is None:
+            color = mn.Color4.magenta()
+
+        if region_id in self.region_mesh_lines:
+            for line in self.region_mesh_lines[region_id]:
+                self.sim.get_debug_line_render().draw_transformed_line(
+                    line[0],
+                    line[1],
+                    color,
+                )
+
     def debug_draw(self):
         """
         Additional draw commands to be called during draw_event.
@@ -233,6 +284,13 @@ class HabitatSimInteractiveViewer(Application):
             self.sim.physics_debug_draw(proj_mat)
         if self.contact_debug_draw:
             self.draw_contact_debug()
+
+        for region in self.sim.semantic_scene.regions:
+            # if region.contains(self.default_agent.get_state().position+mn.Vector3(0,0.3,0)):
+            #    print(region.id)
+            if region.id in self.region_colors:
+                self.draw_region(region.id, color=self.region_colors[region.id])
+            self.draw_region(region.id)
 
     def draw_event(
         self,
