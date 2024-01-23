@@ -231,7 +231,7 @@ class HabitatSimInteractiveViewer(Application):
         for region in self.sim.semantic_scene.regions:
             poly_loop_points = region.poly_loop_points
             extrusion_height = region.extrusion_height
-            extrusion_vec = mn.Vector3(0, extrusion_height, 0)
+            mn.Vector3(0, extrusion_height, 0)
             floor_height = region.floor_height
             if len(poly_loop_points) > 2:
                 this_region_mesh_lines = []
@@ -240,8 +240,8 @@ class HabitatSimInteractiveViewer(Application):
                 )
                 for xz in poly_loop_points:
                     pp_low = mn.Vector3(xz[0], floor_height, xz[1])
-                    pp_low + extrusion_vec
-                    prev_pp_low + extrusion_vec
+                    # pp_high = pp_low + extrusion_vec
+                    # prev_pp_high = prev_pp_low + extrusion_vec
                     # this_region_mesh_lines.append((pp_low, pp_high))
                     this_region_mesh_lines.append((pp_low, prev_pp_low))
                     # this_region_mesh_lines.append((pp_high, prev_pp_high))
