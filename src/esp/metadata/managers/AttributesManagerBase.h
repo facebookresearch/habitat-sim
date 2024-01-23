@@ -262,12 +262,18 @@ class AttributesManager : public ManagedFileBasedContainer<T, Access> {
   /**
    * @brief Set a filename attribute to hold the appropriate data if the
    * existing attribute's given path contains the sentinel tag value defined at
-   * @ref esp::metadata::CONFIG_NAME_AS_ASSET_FILENAME. This will be used in
+   * @ref esp::metadata::CONFIG_NAME_AS_ASSET_FILENAME. This will be called from
    * the Scene Dataset configuration file in the "default_attributes" tag for
    * any attributes which consume file names to specify that the name specified
    * as the instanced attributes should also be used to build the name of the
    * specified asset. The tag value will be replaced by the attributes object's
-   * simplified handle.
+   * simplified handle, or if unable to be found, with an empty string.
+   *
+   * If the given data does not contain the @ref esp::metadata::CONFIG_NAME_AS_ASSET_FILENAME
+   * tag, this will attempt to find the file referenced in @p srcAssetFilename
+   * directly, first as it is given, and then by prefixing it with the current
+   * attributes' source file directory. If found it will call @p filenameSetter
+   * with the successful string.
    *
    * This will only be called from the specified manager's initNewObjectInternal
    * function, where the attributes is initially built from a default attributes
@@ -550,9 +556,16 @@ bool AttributesManager<T, Access>::setFilenameFromDefaultTag(
   if (srcAssetFilename.empty()) {
     return false;
   }
-  std::string tempStr(srcAssetFilename);
+  // First check if tag references a file that already exists on disk and is
+  // able to be found
+  if (Cr::Utility::Path::exists(srcAssetFilename)) {
+    // set filename with verified filepath
+    filenameSetter(srcAssetFilename);
+    return true;
+  }
   const auto loc = srcAssetFilename.find(CONFIG_NAME_AS_ASSET_FILENAME);
   if (loc != std::string::npos) {
+    std::string tempStr(srcAssetFilename);
     // sentinel tag is found - replace tag with simplified handle of
     // attributes and use filenameSetter and return whether this file exists or
     // not.
@@ -574,9 +587,19 @@ bool AttributesManager<T, Access>::setFilenameFromDefaultTag(
     // out of options, clear out the wild-card default so that init-based
     // default is derived and used.
     filenameSetter("");
+    return false;
   }
-  // no tag found - check if existing non-empty field exists.
-  return Cr::Utility::Path::exists(srcAssetFilename);
+  // no sentinel tag found - check if existing non-empty field exists.
+  std::string tempStr =
+      Cr::Utility::Path::join(attributes->getFileDirectory(), srcAssetFilename);
+  if (Cr::Utility::Path::exists(tempStr)) {
+    // path-prefixed filename exists on disk, so set as filename
+    filenameSetter(tempStr);
+    return true;
+  }
+  // No file exists with passed name, either as relative path or as
+  // wild-card-equipped relative path
+  return false;
 }  // AttributesManager<T, Access>::setFilenameFromDefaultTag
 
 template <class T, ManagedObjectAccess Access>
