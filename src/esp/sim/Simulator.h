@@ -867,11 +867,15 @@ class Simulator {
    * esp::metadata::attributes::SceneInstanceAttributes
    * @param curSceneInstanceAttributes The attributes describing the current
    * scene instance.
+   * @param curSemanticAttr The SemanticAttributes referenced by the current
+   * scene instance, or nullptr if none.
    * @return whether stage creation is completed successfully
    */
   bool instanceStageForSceneAttributes(
       const metadata::attributes::SceneInstanceAttributes::cptr&
-          curSceneInstanceAttributes);
+          curSceneInstanceAttributes,
+      const std::shared_ptr<esp::metadata::attributes::SemanticAttributes>&
+          semanticAttr);
 
   /**
    * @brief Instance all the objects in the scene based on

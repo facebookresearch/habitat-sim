@@ -306,8 +306,12 @@ std::vector<std::string> ResourceManager::buildVertexColorMapReport(
 }  // ResourceManager::buildVertexColorMapReport
 
 bool ResourceManager::loadSemanticSceneDescriptor(
-    const std::string& ssdFilename,
+    const std::shared_ptr<metadata::attributes::SemanticAttributes>&
+        semanticAttr,
     const std::string& activeSceneName) {
+  const std::string ssdFilename =
+      semanticAttr != nullptr ? semanticAttr->getSemanticDescriptorFilename()
+                              : "";
   namespace FileUtil = Cr::Utility::Path;
   semanticScene_ = nullptr;
   if (ssdFilename != "") {
