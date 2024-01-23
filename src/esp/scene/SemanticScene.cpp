@@ -149,6 +149,9 @@ bool SemanticScene::
           << semanticAttr->getNumRegionInstances() << " regions defined.";
       // Build Semantic regions for each SemanticRegion attributes instance
       const auto regionInstances = semanticAttr->getRegionInstances();
+
+      scene.regions_.clear();
+      scene.regions_.reserve(regionInstances.size());
       for (const auto& regionInstance : regionInstances) {
         auto regionPtr = SemanticRegion::create();
         // Unique name
@@ -174,6 +177,7 @@ bool SemanticScene::
           Mn::Vector2 pt = {loopPoints[i].x(), loopPoints[i].z()};
           regionPtr->polyLoopPoints_[i] = pt;
         }
+        scene.regions_.emplace_back(std::move(regionPtr));
       }
     } else {  // if semantic attributes specifes region annotations
       ESP_DEBUG(Mn::Debug::Flag::NoSpace)
