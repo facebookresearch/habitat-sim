@@ -326,6 +326,17 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
                 "failed due to specified semantic tag `{}` not being found in "
                 "SemanticAttributesManager. Aborting",
                 activeSceneName, currSemanticAttrHandle));
+  if (semanticAttr) {
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+        << "Scene Instance `" << activeSceneName
+        << "` has Semantic attr handle : `" << currSemanticAttrHandle
+        << "` which tagged attributes : `" << semanticAttr->getHandle() << "`";
+  } else {
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+        << "Scene Instance `" << activeSceneName
+        << "` has Semantic attr handle :  `" << currSemanticAttrHandle
+        << "`  which did not reference any attributes";
+  }
   // - Load semantic scene
   resourceManager_->loadSemanticScene(semanticAttr, activeSceneName);
 

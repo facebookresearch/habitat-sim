@@ -432,17 +432,44 @@ class SemanticLevel {
   ESP_SMART_POINTERS(SemanticLevel)
 };
 
+class LoopRegionCategory : public SemanticCategory {
+ public:
+  LoopRegionCategory(const int id, const std::string& name)
+      : id_(id), name_(name) {}
+
+  int index(const std::string& /*mapping*/) const override { return id_; }
+
+  std::string name(const std::string& mapping) const override {
+    if (mapping == "category" || mapping.empty()) {
+      return name_;
+    } else {
+      ESP_ERROR() << "Unknown mapping type:" << mapping;
+      return "UNKNOWN";
+    }
+  }
+
+ protected:
+  int id_;
+  std::string name_;
+  ESP_SMART_POINTERS(LoopRegionCategory)
+
+};  // class LoopRegionCategory
+
 //! Represents a region (typically room) in a level of a house
 class SemanticRegion {
  public:
   virtual ~SemanticRegion() = default;
   virtual std::string id() const {
+    if (!name_.empty()) {
+      return name_;
+    }
     if (level_ != nullptr) {
       return level_->id() + "_" + std::to_string(index_);
     } else {
       return "_" + std::to_string(index_);
     }
   }
+
   int getIndex() const { return index_; }
   SemanticLevel::ptr level() const { return level_; }
 
@@ -450,7 +477,22 @@ class SemanticRegion {
     return objects_;
   }
 
+  /**
+   * @brief Test whether this region contains the passed point
+   */
+  virtual bool contains(const Mn::Vector3& point) const;
+
+  void setBBox(const Mn::Vector3& min, const Mn::Vector3& max);
+
   box3f aabb() const { return bbox_; }
+
+  const std::vector<Mn::Vector2>& getPolyLoopPoints() const {
+    return polyLoopPoints_;
+  }
+
+  double getExtrusionHeight() const { return extrusionHeight_; }
+
+  double getFloorHeight() const { return floorHeight_; }
 
   SemanticCategory::ptr category() const { return category_; }
 
@@ -460,8 +502,17 @@ class SemanticRegion {
   std::shared_ptr<SemanticCategory> category_;
   vec3f position_;
   box3f bbox_;
-  vec3f floorNormal_;
-  std::vector<vec3f> floorPoints_;
+
+  std::string name_;
+
+  // Extrusion-based regions
+  double extrusionHeight_{};
+  // Floor height
+  double floorHeight_{};
+
+  // poly loop points
+  std::vector<Mn::Vector2> polyLoopPoints_;
+
   std::vector<std::shared_ptr<SemanticObject>> objects_;
   std::shared_ptr<SemanticLevel> level_;
   friend SemanticScene;

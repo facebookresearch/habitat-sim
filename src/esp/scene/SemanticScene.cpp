@@ -3,6 +3,8 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "SemanticScene.h"
+#include <Magnum/EigenIntegration/GeometryIntegration.h>
+#include <Magnum/EigenIntegration/Integration.h>
 #include "GibsonSemanticScene.h"
 #include "Mp3dSemanticScene.h"
 #include "ReplicaSemanticScene.h"
@@ -145,22 +147,103 @@ bool SemanticScene::
       ESP_DEBUG(Mn::Debug::Flag::NoSpace)
           << "Semantic Attributes : `" << semanticAttr->getHandle() << "` has "
           << semanticAttr->getNumRegionInstances() << " regions defined.";
+      // Build Semantic regions for each SemanticRegion attributes instance
+      const auto regionInstances = semanticAttr->getRegionInstances();
+      for (const auto regionInstance : regionInstances) {
+        auto regionPtr = SemanticRegion::create();
+        // Unique name
+        regionPtr->name_ = regionInstance->getHandle();
+        // Build a category
+        regionPtr->category_ =
+            LoopRegionCategory::create(-1, regionInstance->getLabel());
+        // Set y heights
+        regionPtr->extrusionHeight_ = regionInstance->getExtrusionHeight();
+        regionPtr->floorHeight_ = regionInstance->getFloorHeight();
+        // Set bbox
+        const Mn::Vector3 min = regionInstance->getMinBounds();
+        const Mn::Vector3 max = regionInstance->getMaxBounds();
+        regionPtr->setBBox(min, max);
+        // Set polyloop points and precalc polyloop edge vectors
+        const std::vector<Mn::Vector3> loopPoints =
+            regionInstance->getPolyLoop();
 
-    }  // if semantic attributes specifes region annotations
-  }    // if semanticAttrs are not null
+        std::size_t numPts = loopPoints.size();
+        regionPtr->polyLoopPoints_ = std::vector<Mn::Vector2>(numPts);
+        // Save points and edges
+        for (std::size_t i = 0; i < numPts; ++i) {
+          Mn::Vector2 pt = {loopPoints[i].x(), loopPoints[i].z()};
+          regionPtr->polyLoopPoints_[i] = pt;
+        }
+      }
+    } else {  // if semantic attributes specifes region annotations
+      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+          << "Semantic Attributes : `" << semanticAttr->getHandle()
+          << "` does not have any regions defined.";
+    }
+  } else {
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace) << "Semantic attributes do not exist.";
+  }  // if semanticAttrs exist or not
 
   return loadSuccess;
 
 }  // SemanticScene::loadSemanticSceneDescriptor
 
+bool SemanticRegion::contains(const Mn::Vector3& pt) const {
+  auto checkPt = [&](float x, float x0, float x1, float y, float y0,
+                     float y1) -> bool {
+    float interp = ((y - y0) / (y1 - y0));
+    return (y < y0) != (y < y1) && (x < x0 + interp * (x1 - x0));
+  };
+
+  // First check height
+  if ((pt.y() < floorHeight_) || (pt.y() > (floorHeight_ + extrusionHeight_))) {
+    return false;
+  }
+
+  // next check bbox
+  if (!bbox_.contains(Mn::EigenIntegration::cast<vec3f>(pt))) {
+    return false;
+  }
+
+  // Lastly, count casts across edges.
+  int count = 0;
+  int numPts = polyLoopPoints_.size();
+  for (int i = 0; i < numPts; ++i) {
+    const auto stPt = polyLoopPoints_[i];
+    const auto endPt = polyLoopPoints_[(i + 1) % numPts];
+    if (stPt == endPt) {
+      // Skip points that are equal.
+      continue;
+    }
+    // If two consecutive y values are equal, rotate the cast by 90.
+    bool checkCrossing =
+        (endPt.y() == stPt.y()
+             ? checkPt(pt.y(), stPt.y(), endPt.y(), pt.x(), stPt.x(), endPt.x())
+             : checkPt(pt.x(), stPt.x(), endPt.x(), pt.y(), stPt.y(),
+                       endPt.y()));
+    if (checkCrossing) {
+      ++count;
+    }
+  }
+
+  // Want odd crossings for being inside
+  return (count % 2 == 1);
+}  // SemanticRegion::contains
+
+void SemanticRegion::setBBox(const Mn::Vector3& min, const Mn::Vector3& max) {
+  bbox_ = box3f(Mn::EigenIntegration::cast<vec3f>(min),
+                Mn::EigenIntegration::cast<vec3f>(max));
+}  // SemanticRegion::setBBox
+
 namespace {
 /**
- * @brief Build an AABB for a given set of vertex indices in @p verts list, and
- * return in a std::pair, along with the count of verts used to build the AABB.
+ * @brief Build an AABB for a given set of vertex indices in @p verts list,
+ * and return in a std::pair, along with the count of verts used to build the
+ * AABB.
  * @param colorInt Semantic Color of object
  * @param verts The mesh's vertex buffer.
- * @param setOfIDXs set of vertex IDXs in the vertex buffer being used to build
- * the resultant AABB.
+ * @param setOfIDXs set of vertex IDXs in the vertex buffer being used to
+ * build the resultant AABB.
  */
 CCSemanticObject::ptr buildCCSemanticObjForSetOfVerts(
     uint32_t colorInt,
@@ -189,8 +272,8 @@ CCSemanticObject::ptr buildCCSemanticObjForSetOfVerts(
 }  // buildCCSemanticObjForSetOfVerts
 
 /**
- * @brief build per-SSD object vector of known semantic IDs - doing this in case
- * semanticIDs are not contiguous.
+ * @brief build per-SSD object vector of known semantic IDs - doing this in
+ * case semanticIDs are not contiguous.
  */
 
 std::vector<int> getObjsIdxToIDMap(
@@ -236,8 +319,8 @@ SemanticScene::buildCCBasedSemanticObjs(
     }
   }
 
-  // only map to semantic ID if semanticScene exists, otherwise return map with
-  // objects keyed by hex color
+  // only map to semantic ID if semanticScene exists, otherwise return map
+  // with objects keyed by hex color
   if (!semanticScene) {
     return semanticCCObjsByVertTag;
   }
@@ -432,8 +515,9 @@ std::vector<uint32_t> SemanticScene::buildSemanticOBBs(
   // number of unique ssdObjs mappings.
 
   for (int vertIdx = 0; vertIdx < vertSemanticIDs.size(); ++vertIdx) {
-    // semantic ID on vertex - valid values are 1->semanticIDToSSOBJidx.size().
-    // Invalid/unknown semantic ids are > semanticIDToSSOBJidx.size()
+    // semantic ID on vertex - valid values are
+    // 1->semanticIDToSSOBJidx.size(). Invalid/unknown semantic ids are >
+    // semanticIDToSSOBJidx.size()
     const auto semanticID = vertSemanticIDs[vertIdx];
     if ((semanticID >= 0) && (semanticID < semanticIDToSSOBJidx.size())) {
       const auto vert = vertices[vertIdx];
@@ -473,7 +557,8 @@ std::vector<uint32_t> SemanticScene::buildSemanticOBBs(
       center = .5f * (vertMax[semanticID] + vertMin[semanticID]);
       dims = vertMax[semanticID] - vertMin[semanticID];
       ESP_VERY_VERBOSE() << Cr::Utility::formatString(
-          "{} Semantic ID : {} : color : {} tag : {} present in {} verts | BB "
+          "{} Semantic ID : {} : color : {} tag : {} present in {} verts | "
+          "BB "
           "Center [{} {} {}] Dims [{} {} {}]",
           msgPrefix, semanticID, geo::getColorAsString(ssdObj.getColor()),
           ssdObj.id(), vertCounts[semanticID], center.x(), center.y(),
