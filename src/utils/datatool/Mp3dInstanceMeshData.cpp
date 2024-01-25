@@ -89,7 +89,7 @@ bool Mp3dInstanceMeshData::loadMp3dPLY(const std::string& plyFile) {
     Mn::Vector3 position;
     Mn::Vector3 normal;
     Mn::Vector2 texCoords;
-    Mn::Vector3ui rgb;
+    Mn::Vector3ub rgb;
 
     ifs.read(reinterpret_cast<char*>(position.data()), 3 * sizeof(float));
     ifs.read(reinterpret_cast<char*>(normal.data()), 3 * sizeof(float));
@@ -101,7 +101,7 @@ bool Mp3dInstanceMeshData::loadMp3dPLY(const std::string& plyFile) {
 
   for (int i = 0; i < nFace; ++i) {
     uint8_t nIndices = 0;
-    Mn::Vector3i indices;
+    Mn::Vector3ui indices;
     int32_t materialId = 0;
     int32_t segmentId = 0;
     int32_t categoryId = 0;
