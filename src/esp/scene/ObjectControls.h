@@ -44,9 +44,10 @@ class ObjectControls {
   }
 
  protected:
-  MoveFilterFunc moveFilterFunc_ =
-      [](CORRADE_UNUSED const Magnum::Vector3& start,
-         const Magnum::Vector3& end) { return end; };
+  MoveFilterFunc moveFilterFunc_ = [](const Magnum::Vector3& /*start*/,
+                                      const Magnum::Vector3& end) {
+    return end;
+  };
   std::map<std::string, MoveFunc> moveFuncMap_;
 
   ESP_SMART_POINTERS(ObjectControls)

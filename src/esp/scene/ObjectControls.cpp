@@ -97,8 +97,7 @@ ObjectControls& ObjectControls::action(SceneNode& object,
       const auto endPos = object.absoluteTransformation().translation();
       const Mn::Vector3 filteredEndPosition =
           moveFilterFunc_(startPosition, endPos);
-      object.translate(
-          Magnum::Vector3(Mn::Vector3(filteredEndPosition - endPos)));
+      object.translate(filteredEndPosition - endPos);
     } else {
       moveFuncMapIter->second(object, distance);
     }
