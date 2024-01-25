@@ -17,11 +17,9 @@ namespace scene {
 
 constexpr int kMaxIds = 10000; /* We shouldn't every need more than this. */
 
-bool SemanticScene::loadReplicaHouse(
-    const std::string& houseFilename,
-    SemanticScene& scene,
-    const Magnum::Quaternion&
-        worldRotation /* = Magnum::Quaternion::Identity() */) {
+bool SemanticScene::loadReplicaHouse(const std::string& houseFilename,
+                                     SemanticScene& scene,
+                                     const Magnum::Quaternion& worldRotation) {
   if (!checkFileExists(houseFilename, "loadReplicaHouse")) {
     return false;
   }

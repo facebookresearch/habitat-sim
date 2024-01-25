@@ -8,7 +8,6 @@
 #include <Corrade/Utility/Algorithms.h>
 #include <Corrade/Utility/Path.h>
 #include <Magnum/DebugTools/CompareImage.h>
-#include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/ImageView.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/PixelFormat.h>
@@ -63,6 +62,12 @@ const std::string physicsConfigFile =
     Cr::Utility::Path::join(TEST_ASSETS, "testing.physics_config.json");
 const std::string screenshotDir =
     Cr::Utility::Path::join(TEST_ASSETS, "screenshots/");
+const std::string nestedBoxPath =
+    Cr::Utility::Path::join(TEST_ASSETS, "objects/nested_box");
+
+const std::string nestedBoxConfigPath =
+    Cr::Utility::Path::join(TEST_ASSETS,
+                            "objects/nested_box.object_config.json");
 
 struct SimTest : Cr::TestSuite::Tester {
   explicit SimTest();
@@ -88,8 +93,7 @@ struct SimTest : Cr::TestSuite::Tester {
 
     auto sim = Simulator::create_unique(simConfig);
     auto objAttrMgr = sim->getObjectAttributesManager();
-    objAttrMgr->loadAllJSONConfigsFromPath(
-        Cr::Utility::Path::join(TEST_ASSETS, "objects/nested_box"), true);
+    objAttrMgr->loadAllJSONConfigsFromPath(nestedBoxPath, true);
 
     sim->setLightSetup(self.lightSetup1, "custom_lighting_1");
     sim->setLightSetup(self.lightSetup2, "custom_lighting_2");
@@ -118,8 +122,7 @@ struct SimTest : Cr::TestSuite::Tester {
     MetadataMediator::ptr MM = MetadataMediator::create(simConfig);
     auto sim = Simulator::create_unique(simConfig, MM);
     auto objAttrMgr = sim->getObjectAttributesManager();
-    objAttrMgr->loadAllJSONConfigsFromPath(
-        Cr::Utility::Path::join(TEST_ASSETS, "objects/nested_box"), true);
+    objAttrMgr->loadAllJSONConfigsFromPath(nestedBoxPath, true);
 
     sim->setLightSetup(self.lightSetup1, "custom_lighting_1");
     sim->setLightSetup(self.lightSetup2, "custom_lighting_2");
@@ -637,8 +640,7 @@ void SimTest::addObjectByHandle() {
   CORRADE_COMPARE(obj, nullptr);
 
   // pass valid object_config.json filepath as handle to addObjectByHandle
-  const auto validHandle = Cr::Utility::Path::join(
-      TEST_ASSETS, "objects/nested_box.object_config.json");
+  const auto validHandle = nestedBoxConfigPath;
   obj = rigidObjMgr->addObjectByHandle(validHandle);
   CORRADE_VERIFY(obj->isAlive());
   CORRADE_VERIFY(obj->getID() != esp::ID_UNDEFINED);
@@ -685,8 +687,7 @@ void SimTest::addObjectInvertedScale() {
       simulator->addSensorToObject(esp::RIGID_STAGE_ID, pinholeCameraSpec);
 
   // Add 2 objects and take initial non-negative scaled observation
-  const auto objHandle = Cr::Utility::Path::join(
-      TEST_ASSETS, "objects/nested_box.object_config.json");
+  const auto objHandle = nestedBoxConfigPath;
 
   Observation expectedObservation;
   addObjectsAndMakeObservation(*simulator, *pinholeCameraSpec, objHandle,

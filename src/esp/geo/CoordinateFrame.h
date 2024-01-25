@@ -11,49 +11,47 @@
 namespace esp {
 namespace geo {
 
-namespace Mn = Magnum;
-
 //! Represents a frame of reference defined by an origin and
 //! two semantically meaningful directions: "up" and "front", or
 //! equivalently "gravity" and "back"
 class CoordinateFrame {
  public:
-  explicit CoordinateFrame(const Mn::Vector3& up = ESP_UP,
-                           const Mn::Vector3& front = ESP_FRONT,
-                           const Mn::Vector3& origin = {});
-  explicit CoordinateFrame(const Mn::Quaternion& rotation,
-                           const Mn::Vector3& origin = {});
+  explicit CoordinateFrame(const Magnum::Vector3& up = ESP_UP,
+                           const Magnum::Vector3& front = ESP_FRONT,
+                           const Magnum::Vector3& origin = {});
+  explicit CoordinateFrame(const Magnum::Quaternion& rotation,
+                           const Magnum::Vector3& origin = {});
 
   //! Returns position of origin of this CoordinateFrame relative to parent
-  Mn::Vector3 origin() const { return origin_; }
+  Magnum::Vector3 origin() const { return origin_; }
 
   //! Returns up orientation
-  Mn::Vector3 up() const { return up_; }
+  Magnum::Vector3 up() const { return up_; }
 
   //! Returns down/gravity orientation
-  Mn::Vector3 gravity() const { return -up_; }
+  Magnum::Vector3 gravity() const { return -up_; }
 
   //! Returns front orientation
-  Mn::Vector3 front() const { return front_; }
+  Magnum::Vector3 front() const { return front_; }
 
   //! Returns front orientation
-  Mn::Vector3 back() const { return -front_; }
+  Magnum::Vector3 back() const { return -front_; }
 
   //! Returns quaternion representing the rotation taking direction vectors in
   //! world coordinates to direction vectors in this CoordinateFrame
-  Mn::Quaternion rotationWorldToFrame() const;
+  Magnum::Quaternion rotationWorldToFrame() const;
 
   //! Returns quaternion representing the rotation taking direction vectors in
   //! this CoordinateFrame to direction vectors in world coordinates
-  Mn::Quaternion rotationFrameToWorld() const;
+  Magnum::Quaternion rotationFrameToWorld() const;
 
   //! Returns a stringified JSON representation of this CoordinateFrame
   std::string toString() const;
 
  protected:
-  Mn::Vector3 up_;
-  Mn::Vector3 front_;
-  Mn::Vector3 origin_;
+  Magnum::Vector3 up_;
+  Magnum::Vector3 front_;
+  Magnum::Vector3 origin_;
   ESP_SMART_POINTERS(CoordinateFrame)
 };
 

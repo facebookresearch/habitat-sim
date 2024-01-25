@@ -1372,7 +1372,8 @@ Mn::Vector3 PathFinder::Impl::getRandomNavigablePointAroundSphere(
       status = navQuery_->findRandomPointAroundCircle(
           start_ref, circleCenter.data(), radius, filter_.get(), frand,
           &rand_ref, pt.data());
-      if (dtStatusSucceed(status) && (pt - circleCenter).length() <= radius) {
+      if (dtStatusSucceed(status) &&
+          (pt - circleCenter).dot() <= radius * radius) {
         break;
       }
     }

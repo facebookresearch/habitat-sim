@@ -6,8 +6,6 @@
 #include <Corrade/TestSuite/Tester.h>
 
 #include <Corrade/Utility/Path.h>
-#include <Magnum/EigenIntegration/GeometryIntegration.h>
-#include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Vector3.h>
 
@@ -160,7 +158,7 @@ void ReplicaSceneTest::testSemanticSceneLoading() {
   CORRADE_VERIFY(obj12->category());
   CORRADE_COMPARE(obj12->category()->index(), 13);
   CORRADE_COMPARE(obj12->category()->name(), "book");
-}  // namespace
+}  // ReplicaSceneTest::testSemanticSceneLoading
 
 void ReplicaSceneTest::testSemanticSceneDescriptorReplicaCAD() {
   if (!Cr::Utility::Path::exists(replicaCAD)) {
