@@ -131,15 +131,15 @@ void GeoTest::obbConstruction() {
       core::quatRotFromTwoVectors(Mn::Vector3::yAxis(), Mn::Vector3::zAxis());
   OBB obb2(center, dimensions, rot1);
 
-  CORRADE_VERIFY(obb2.center() == center);
-  CORRADE_VERIFY(obb2.sizes() == dimensions);
-  CORRADE_VERIFY(obb2.halfExtents() == dimensions / 2);
-  CORRADE_VERIFY(obb2.rotation() == rot1);
+  CORRADE_COMPARE(obb2.center(), center);
+  CORRADE_COMPARE(obb2.sizes(), dimensions);
+  CORRADE_COMPARE(obb2.halfExtents(), dimensions / 2);
+  CORRADE_COMPARE(obb2.rotation(), rot1);
 
   Mn::Range3D aabb(Mn::Vector3(-1, -2, -3), Mn::Vector3(3, 2, 1));
   OBB obb3(aabb);
-  CORRADE_VERIFY(obb3.center() == aabb.center());
-  CORRADE_VERIFY(obb3.toAABB() == aabb);
+  CORRADE_COMPARE(obb3.center(), aabb.center());
+  CORRADE_COMPARE(obb3.toAABB(), aabb);
 }
 
 void GeoTest::obbFunctions() {
@@ -160,7 +160,7 @@ void GeoTest::obbFunctions() {
   CORRADE_COMPARE(aabb.max(), (Mn::Vector3{10.0f, 5.0f, 1.0f}));
 
   const auto identity = obb2.worldToLocal() * obb2.localToWorld();
-  CORRADE_VERIFY(identity == Mn::Matrix4());
+  CORRADE_COMPARE(identity, Mn::Matrix4());
   CORRADE_VERIFY(
       obb2.contains(obb2.localToWorld().transformPoint(Mn::Vector3(0, 0, 0))));
   CORRADE_VERIFY(
@@ -182,25 +182,25 @@ void GeoTest::coordinateFrame() {
   Mn::Matrix4 xform = Mn::Matrix4::from(rotation.toMatrix(), origin);
 
   CoordinateFrame c1(up, front, origin);
-  CORRADE_VERIFY(c1.up() == up);
-  CORRADE_VERIFY(c1.gravity() == -up);
-  CORRADE_VERIFY(c1.front() == front);
-  CORRADE_VERIFY(c1.back() == -front);
-  CORRADE_VERIFY(c1.up() == rotation.transformVectorNormalized(ESP_UP));
-  CORRADE_VERIFY(c1.front() == rotation.transformVectorNormalized(ESP_FRONT));
-  CORRADE_VERIFY(c1.origin() == origin);
-  CORRADE_VERIFY(c1.rotationWorldToFrame() == rotation);
+  CORRADE_COMPARE(c1.up(), up);
+  CORRADE_COMPARE(c1.gravity(), -up);
+  CORRADE_COMPARE(c1.front(), front);
+  CORRADE_COMPARE(c1.back(), -front);
+  CORRADE_COMPARE(c1.up(), rotation.transformVectorNormalized(ESP_UP));
+  CORRADE_COMPARE(c1.front(), rotation.transformVectorNormalized(ESP_FRONT));
+  CORRADE_COMPARE(c1.origin(), origin);
+  CORRADE_COMPARE(c1.rotationWorldToFrame(), rotation);
 
   CoordinateFrame c2(rotation, origin);
-  CORRADE_VERIFY(c1 == c2);
-  CORRADE_VERIFY(c2.up() == up);
-  CORRADE_VERIFY(c2.gravity() == -up);
-  CORRADE_VERIFY(c2.front() == front);
-  CORRADE_VERIFY(c2.back() == -front);
-  CORRADE_VERIFY(c2.up() == rotation.transformVectorNormalized(ESP_UP));
-  CORRADE_VERIFY(c2.front() == rotation.transformVectorNormalized(ESP_FRONT));
-  CORRADE_VERIFY(c2.origin() == origin);
-  CORRADE_VERIFY(c2.rotationWorldToFrame() == rotation);
+  CORRADE_COMPARE(c1, c2);
+  CORRADE_COMPARE(c2.up(), up);
+  CORRADE_COMPARE(c2.gravity(), -up);
+  CORRADE_COMPARE(c2.front(), front);
+  CORRADE_COMPARE(c2.back(), -front);
+  CORRADE_COMPARE(c2.up(), rotation.transformVectorNormalized(ESP_UP));
+  CORRADE_COMPARE(c2.front(), rotation.transformVectorNormalized(ESP_FRONT));
+  CORRADE_COMPARE(c2.origin(), origin);
+  CORRADE_COMPARE(c2.rotationWorldToFrame(), rotation);
 
   const std::string j = R"({"up":[0,0,1],"front":[-1,0,0],"origin":[1,-2,3]})";
   CORRADE_COMPARE(c1.toString(), j);
