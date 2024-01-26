@@ -64,9 +64,8 @@ Magnum::Math::Quaternion<T> quatRotFromTwoVectors(
     return Magnum::Math::Quaternion<T>(rotAxisVec, 0).normalized();
   }
   const auto halfVec = (fromNorm + toNorm).normalized();
-  return Magnum::Math::Quaternion<T>(
-             Magnum::Math::cross(fromNorm, halfVec).normalized(),
-             Magnum::Math::dot(fromNorm, halfVec))
+  return Magnum::Math::Quaternion<T>(Magnum::Math::cross(fromNorm, halfVec),
+                                     Magnum::Math::dot(fromNorm, halfVec))
       .normalized();
 }  // quatRotFromTwoVectors
 
