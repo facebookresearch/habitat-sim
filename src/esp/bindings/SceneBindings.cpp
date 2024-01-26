@@ -171,6 +171,10 @@ void initSceneBindings(py::module& m) {
                              &SemanticRegion::getPolyLoopPoints,
                              "The points making up the polyloop for this "
                              "region, coplanar and parallel to the floor.")
+      .def_property_readonly(
+          "volume_edges", &SemanticRegion::getVisEdges,
+          "The edges, as pairs of points, that determine "
+          "the boundaries of the region. For visualizations.")
       .def_property_readonly("floor_height", &SemanticRegion::getFloorHeight,
                              "The height above the x-z plane for the floor of "
                              "the semantic region.")

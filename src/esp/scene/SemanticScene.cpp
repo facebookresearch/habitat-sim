@@ -4,7 +4,6 @@
 
 #include "SemanticScene.h"
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
-#include <Magnum/EigenIntegration/Integration.h>
 #include "GibsonSemanticScene.h"
 #include "Mp3dSemanticScene.h"
 #include "ReplicaSemanticScene.h"
@@ -167,16 +166,39 @@ bool SemanticScene::
         const Mn::Vector3 max = regionInstance->getMaxBounds();
         regionPtr->setBBox(min, max);
         // Set polyloop points and precalc polyloop edge vectors
-        const std::vector<Mn::Vector3> loopPoints =
+        const std::vector<Mn::Vector3>& loopPoints =
             regionInstance->getPolyLoop();
 
         std::size_t numPts = loopPoints.size();
         regionPtr->polyLoopPoints_ = std::vector<Mn::Vector2>(numPts);
+        regionPtr->visEdges_ =
+            std::vector<std::vector<Mn::Vector3>>(4 * numPts);
+
         // Save points and edges
+        int eIdx = 0;
         for (std::size_t i = 0; i < numPts; ++i) {
-          Mn::Vector2 pt = {loopPoints[i].x(), loopPoints[i].z()};
-          regionPtr->polyLoopPoints_[i] = pt;
+          Mn::Vector3 currPoint = loopPoints[i];
+          regionPtr->polyLoopPoints_[i] = {currPoint.x(), currPoint.z()};
+          // Edges
+          Mn::Vector3 currExtPt = {
+              currPoint.x(), static_cast<float>(regionPtr->extrusionHeight_),
+              currPoint.z()};
+
+          std::size_t nextIdx = ((i + 1) % numPts);
+          Mn::Vector3 nextPoint = loopPoints[nextIdx];
+          Mn::Vector3 nextExtPt = {
+              nextPoint.x(), static_cast<float>(regionPtr->extrusionHeight_),
+              nextPoint.z()};
+          // Horizontal edge
+          regionPtr->visEdges_[eIdx++] = {currPoint, nextPoint};
+          // Vertical edge
+          regionPtr->visEdges_[eIdx++] = {currPoint, currExtPt};
+          // Extruded horizontal edge
+          regionPtr->visEdges_[eIdx++] = {currExtPt, nextExtPt};
+          // Diagonal edge
+          regionPtr->visEdges_[eIdx++] = {currPoint, nextExtPt};
         }
+
         scene.regions_.emplace_back(std::move(regionPtr));
       }
     } else {  // if semantic attributes specifes region annotations
@@ -199,13 +221,13 @@ bool SemanticRegion::contains(const Mn::Vector3& pt) const {
     return (y < y0) != (y < y1) && (x < x0 + interp * (x1 - x0));
   };
 
-  // First check height
-  if ((pt.y() < floorHeight_) || (pt.y() > (floorHeight_ + extrusionHeight_))) {
+  // First check bbox
+  if (!bbox_.contains(Mn::EigenIntegration::cast<vec3f>(pt))) {
     return false;
   }
 
-  // next check bbox
-  if (!bbox_.contains(Mn::EigenIntegration::cast<vec3f>(pt))) {
+  // Next check height
+  if ((pt.y() < floorHeight_) || (pt.y() > (floorHeight_ + extrusionHeight_))) {
     return false;
   }
 

@@ -490,6 +490,13 @@ class SemanticRegion {
     return polyLoopPoints_;
   }
 
+  /**
+   * @brief Return a
+   */
+  const std::vector<std::vector<Mn::Vector3>>& getVisEdges() const {
+    return visEdges_;
+  }
+
   double getExtrusionHeight() const { return extrusionHeight_; }
 
   double getFloorHeight() const { return floorHeight_; }
@@ -505,13 +512,16 @@ class SemanticRegion {
 
   std::string name_;
 
-  // Extrusion-based regions
+  // Height of extrusion for Extruded poly-loop-based volumes
   double extrusionHeight_{};
   // Floor height
   double floorHeight_{};
 
-  // poly loop points
+  // poly loop points for base extrusion
   std::vector<Mn::Vector2> polyLoopPoints_;
+
+  // Edges for visualization of volume
+  std::vector<std::vector<Mn::Vector3>> visEdges_;
 
   std::vector<std::shared_ptr<SemanticObject>> objects_;
   std::shared_ptr<SemanticLevel> level_;
