@@ -225,7 +225,10 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("transformVector", &Magnum::Quaternion::transformVector)
       // mul class method instead of operator*
       .class_function("mul", &Quaternion_mul)
-      .class_function("rotation", &Magnum::Quaternion::rotation);
+      .class_function("rotation",
+                      em::select_overload<Magnum::Quaternion(
+                          const Magnum::Vector3&, const Magnum::Vector3&)>(
+                          &Magnum::Quaternion::rotation));
 
   em::class_<AgentConfiguration>("AgentConfiguration")
       .smart_ptr_constructor("AgentConfiguration",
