@@ -600,12 +600,27 @@ void BulletArticulatedObject::reset() {
   btMultiBody_->clearForcesAndTorques();
 }
 
+void BulletArticulatedObject::setCollisionObjectsActivateState(bool activate) {
+  if (activate) {
+    btMultiBody_->getBaseCollider()->activate();
+    for (int i = 0; i < btMultiBody_->getNumLinks(); ++i) {
+      btMultiBody_->getLinkCollider(i)->activate();
+    }
+  } else {
+    btMultiBody_->getBaseCollider()->setActivationState(WANTS_DEACTIVATION);
+    for (int i = 0; i < btMultiBody_->getNumLinks(); ++i) {
+      btMultiBody_->getLinkCollider(i)->setActivationState(WANTS_DEACTIVATION);
+    }
+  }
+}
+
 void BulletArticulatedObject::setActive(bool active) {
   if (!active) {
     btMultiBody_->goToSleep();
   } else {
     btMultiBody_->wakeUp();
   }
+  setCollisionObjectsActivateState(active);
 }
 
 bool BulletArticulatedObject::isActive() const {
