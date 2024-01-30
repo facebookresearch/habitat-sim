@@ -474,6 +474,21 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.H:
             self.print_help_text()
 
+        elif key == pressed.O:
+            if alt_pressed:
+                self.set_objects_from_agent_state()
+            else:
+                cube = self.sim.get_rigid_object_manager().add_object_by_template_handle(
+                    self.sim.get_object_template_manager().get_synth_template_handles(
+                        "cube"
+                    )[0]
+                )
+                cube.translation = (
+                    self.default_agent.scene_node.transformation.transform_point(
+                        mn.Vector3(0, 1.5, -1.0)
+                    )
+                )
+
         elif key == pressed.TAB:
             # NOTE: (+ALT) - reconfigure without cycling scenes
             if not alt_pressed:
@@ -541,11 +556,11 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.T:
             # load URDF
             fixed_base = alt_pressed
-            urdf_file_path = ""
-            if shift_pressed and self.cached_urdf:
-                urdf_file_path = self.cached_urdf
-            else:
-                urdf_file_path = input("Load URDF: provide a URDF filepath:").strip()
+            urdf_file_path = "data/robots/hab_spot_arm/urdf/hab_spot_arm.urdf"
+            # if shift_pressed and self.cached_urdf:
+            #     urdf_file_path = self.cached_urdf
+            # else:
+            #     urdf_file_path = input("Load URDF: provide a URDF filepath:").strip()
 
             if not urdf_file_path:
                 logger.warn("Load URDF: no input provided. Aborting.")
@@ -672,6 +687,21 @@ class HabitatSimInteractiveViewer(Application):
         self.redraw()
         event.accepted = True
 
+    def set_objects_from_agent_state(self):
+        ro_mngr = self.sim.get_rigid_object_manager()
+        ao_mngr = self.sim.get_articulated_object_manager()
+        pos = self.default_agent.scene_node.transformation.transform_point(
+            mn.Vector3(0, 1.5, -1.0)
+        )
+        for ao in ao_mngr.get_objects_by_handle_substring().values():
+            ao.translation = pos
+        for ro in ro_mngr.get_objects_by_handle_substring().values():
+            ro.translation = pos
+        for ao in ao_mngr.get_objects_by_handle_substring().values():
+            print(f"ao {ao.handle} contact_test = {ao.contact_test()}")
+        for ro in ro_mngr.get_objects_by_handle_substring().values():
+            print(f"ro {ro.handle} contact_test = {ro.contact_test()}")
+
     def mouse_press_event(self, event: Application.MouseEvent) -> None:
         """
         Handles `Application.MouseEvent`. When in GRAB mode, click on
@@ -679,6 +709,9 @@ class HabitatSimInteractiveViewer(Application):
         """
         button = Application.MouseEvent.Button
         physics_enabled = self.sim.get_physics_simulation_library()
+
+        mod = Application.InputEvent.Modifier
+        shift_pressed = bool(event.modifiers & mod.SHIFT)
 
         # if interactive mode is True -> GRAB MODE
         if self.mouse_interaction == MouseMode.GRAB and physics_enabled:
@@ -704,6 +737,10 @@ class HabitatSimInteractiveViewer(Application):
                             hit_info.point
                         )
                         object_frame = ro.rotation.inverted()
+                        if shift_pressed:
+                            ro.awake = not ro.awake
+                            print(f"Set awake = {ro.awake}")
+                            return
                     elif ao:
                         # if grabbed the base link
                         hit_object = hit_info.object_id
@@ -727,7 +764,12 @@ class HabitatSimInteractiveViewer(Application):
                                 object_frame = ao.get_link_scene_node(
                                     ao_link
                                 ).rotation.inverted()
+
                                 hit_object = ao.object_id
+                                if shift_pressed:
+                                    ao.awake = not ao.awake
+                                    print(f"Set awake = {ao.awake}")
+                                    return
                                 break
                     # done checking for AO
 

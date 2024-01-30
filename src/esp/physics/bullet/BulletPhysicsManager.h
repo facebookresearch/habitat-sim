@@ -266,7 +266,35 @@ class BulletPhysicsManager : public PhysicsManager {
    * @brief Perform discrete collision detection for the scene.
    */
   void performDiscreteCollisionDetection() override {
+    // Mn::Debug() << "Num manifolds before = " <<
+    // bWorld_->getDispatcher()->getNumManifolds(); Mn::Debug() << "Num
+    // overlapping pairs before = " <<
+    // bWorld_->getBroadphase()->getOverlappingPairCache()->getNumOverlappingPairs();
+    // for(int man_ix=0; man_ix<bWorld_->getDispatcher()->getNumManifolds();
+    // ++man_ix){
+    //   bWorld_->getDispatcher()->clearManifold(bWorld_->getDispatcher()->getManifoldByIndexInternal(man_ix));
+    // }
+    // //bWorld_->getBroadphase()->getOverlappingPairCache()->getOverlappingPairArray().clear();
+    // Mn::Debug() << "Num manifolds between = " <<
+    // bWorld_->getDispatcher()->getNumManifolds(); Mn::Debug() << "Num
+    // overlapping pairs between = " <<
+    // bWorld_->getBroadphase()->getOverlappingPairCache()->getNumOverlappingPairs();
+    // bWorld_->getCollisionWorld()->getBroadphase()->resetPool(bWorld_->getDispatcher());
+    btBroadphasePairArray& pairArray = bWorld_->getCollisionWorld()
+                                           ->getBroadphase()
+                                           ->getOverlappingPairCache()
+                                           ->getOverlappingPairArray();
+    for (size_t i = 0; i < pairArray.size(); i++) {
+      bWorld_->getCollisionWorld()
+          ->getBroadphase()
+          ->getOverlappingPairCache()
+          ->cleanOverlappingPair(pairArray.at(i), bWorld_->getDispatcher());
+    }
     bWorld_->getCollisionWorld()->performDiscreteCollisionDetection();
+    // Mn::Debug() << "Num manifolds after = " <<
+    // bWorld_->getDispatcher()->getNumManifolds(); Mn::Debug() << "Num
+    // overlapping pairs after = " <<
+    // bWorld_->getBroadphase()->getOverlappingPairCache()->getNumOverlappingPairs();
     recentNumSubStepsTaken_ = -1;  // TODO: handle this more gracefully
   }
 

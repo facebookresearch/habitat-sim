@@ -624,6 +624,10 @@ def test_collision_groups():
         rigid_obj_mgr = sim.get_rigid_object_manager()
         ao_mgr = sim.get_articulated_object_manager()
 
+        from habitat.sims.habitat_simulator.debug_visualizer import DebugVisualizer
+
+        dbv = DebugVisualizer(sim=sim)
+
         if (
             sim.get_physics_simulation_library()
             != habitat_sim.physics.PhysicsSimulationLibrary.NoPhysics
@@ -664,16 +668,70 @@ def test_collision_groups():
             ao = ao_mgr.add_articulated_object_from_urdf(
                 filepath="data/test_assets/urdf/amass_male.urdf"
             )
-            ao.translation = [1.1, 0.0, 4.6]
+
+            ao.translation = [1.3, 0.0, 4.6]
             assert ao.contact_test()
             assert cube_obj2.contact_test()
             assert not cube_obj1.contact_test()
+
+            # sleep the rigid and articulated objects
+            ao.awake = False
+            cube_obj2.awake = False
+            # ao returns sleeping immeidately due to internal flag
+            assert not ao.awake
+            # rigid "wants deactivation, but will not return sleeping until islands are updated."
+            assert cube_obj2.awake
+            sim.step_physics(0.01)
+            assert not ao.awake
+            assert not cube_obj2.awake
+
+            # moving sleeping objects does not wake them, and contact_test is still accurate
+            new_translation = mn.Vector3(100.0, 0.0, 0.0)
+            ao.translation = new_translation
+            ao.joint_positions = ao.joint_positions
+            assert not ao.contact_test()
+            assert not cube_obj2.contact_test()
+
+            sim.step_physics(0.01)
+
+            # contact is registered in discrete collision detection
+            sim.perform_discrete_collision_detection()
+            cps = sim.get_physics_contact_points()
+            num_ao_contacts = 0
+            for cp in cps:
+                if ao.object_id == cp.object_id_a or ao.object_id == cp.object_id_b:
+                    num_ao_contacts += 1
+                    print(f"cp.contact_distance = {cp.contact_distance}")
+                    print(f"cp.object_id_a = {cp.object_id_a}")
+                    print(f"cp.object_id_b = {cp.object_id_b}")
+                    print(f"cp.link_id_a = {cp.link_id_a}")
+                    print(f"cp.link_id_b = {cp.link_id_b}")
+            dbv.peek_articulated_object(ao, show=True, peek_all_axis=True)
+            assert num_ao_contacts == 0
+
+            # now sleeping objects overlap, we should see them in contact_test and discrete collision detection
+            cube_obj2.translation = new_translation
+            assert ao.contact_test()
+            assert cube_obj2.contact_test()
+            assert not cube_obj2.awake
+            assert not ao.awake
+
+            sim.perform_discrete_collision_detection()
+            cps = sim.get_physics_contact_points()
+            num_ao_contacts = 0
+            for cp in cps:
+                if ao.object_id == cp.object_id_a or ao.object_id == cp.object_id_b:
+                    num_ao_contacts += 1
+            assert num_ao_contacts > 0
+
             # set to non-collidable and check no contacts
             ao.override_collision_group(cg.Noncollidable)
             assert not ao.contact_test()
             assert not cube_obj2.contact_test()
             assert not cube_obj1.contact_test()
 
+            cube_obj2.translation = [1.1, 0.0, 4.6]
+            # breakpoint()
             # override cube2 to a new group and configure custom mask to interact with it
             cgh.set_mask_for_group(cg.UserGroup1, new_user_group_1_mask | cg.UserGroup2)
             # NOTE: changing group settings requires overriding object group again
