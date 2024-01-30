@@ -209,6 +209,8 @@ target_include_directories(ResourceManagerTest PRIVATE ${CMAKE_CURRENT_BINARY_DI
 
 corrade_add_test(SceneGraphTest SceneGraphTest.cpp LIBRARIES scene)
 
+corrade_add_test(SemanticTest SemanticTest.cpp LIBRARIES scene)
+
 corrade_add_test(SensorTest SensorTest.cpp LIBRARIES sensor sim)
 
 corrade_add_test(
