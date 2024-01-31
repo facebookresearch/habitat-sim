@@ -129,14 +129,15 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
 }  // SceneDatasetAttributes::addSceneInstanceToDataset
 
 void SceneDatasetAttributes::createSemanticAttribsFromDS(
-    const std::string& semanticHandle) {
+    const std::string& semanticHandle,
+    const std::string& dbgSourceAttribs) {
   const std::string infoPrefix =
-      Cr::Utility::formatString("Dataset : '{}' : Semantic Attributes '{}`",
+      Cr::Utility::formatString("Dataset : `{}` : Semantic Attributes `{}`",
                                 this->getSimplifiedHandle(), semanticHandle);
   // Check if exists or build a new SemanticAttributes with the passed Stage's
-  // semantic data set
-  if (semanticAttributesManager_->getFullAttrNameFromStr(semanticHandle) ==
-      "") {
+  // or Scene Dataset Config's semantic data set/file
+  // Should match -exactly-
+  if (!semanticAttributesManager_->getObjectLibHasHandle(semanticHandle)) {
     // DNE, create a new one
     ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
         << infoPrefix
@@ -144,8 +145,8 @@ void SceneDatasetAttributes::createSemanticAttribsFromDS(
     semanticAttributesManager_->createObject(semanticHandle, true);
   } else {
     ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
-        << infoPrefix
-        << "specified in Stage Attributes already exists in dataset library. ";
+        << infoPrefix << " specified in " << dbgSourceAttribs
+        << " already exists in dataset library. ";
   }
 }  // SceneDatasetAttributes::createSemanticAttribsFromDS
 
@@ -157,7 +158,7 @@ std::string SceneDatasetAttributes::addSemanticSceneDescrPathEntry(
   bool setSemanticAssetData = (semanticAssetFilename != "");
   bool setSSDFilename = (ssdFilename != "");
   // create a semantic attributes if DNE with given handle
-  this->createSemanticAttribsFromDS(semanticHandle);
+  this->createSemanticAttribsFromDS(semanticHandle, "Stage Attributes");
 
   // Get actual object and set semantic data if appropriate
   auto semanticAttr =
@@ -186,7 +187,8 @@ void SceneDatasetAttributes::setSemanticAttrSSDFilenames(
     const std::string ssdFilename = entry.second;
 
     // create a semantic attributes if DNE with given handle
-    this->createSemanticAttribsFromDS(semanticHandle);
+    this->createSemanticAttribsFromDS(semanticHandle,
+                                      "Dataset Config Map Entry");
     // Get actual object and set semantic data if appropriate
     auto semanticAttr =
         semanticAttributesManager_->getObjectByHandle(semanticHandle);
