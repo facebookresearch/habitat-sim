@@ -2,16 +2,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import ctypes
 import random
-import sys
 import time
 from typing import Any, Callable, Dict, Optional, Tuple
 
-flags = sys.getdlopenflags()
-sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
-
 import magnum as mn
+import numpy as np
 from magnum.platform.glfw import Application
 from viewer import HabitatSimInteractiveViewer, MouseMode, Timer
 
