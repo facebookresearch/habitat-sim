@@ -63,35 +63,35 @@ class SemanticAttributesManager
 
   /**
    * @brief This will return a @ref
-   * attributes::SemanticRegionAttributes object with passed handle.
+   * attributes::SemanticVolumeAttributes object with passed handle.
    */
-  attributes::SemanticRegionAttributes::ptr createEmptyRegionAttributes(
+  attributes::SemanticVolumeAttributes::ptr createEmptyRegionAttributes(
       const std::string& handle) {
-    return attributes::SemanticRegionAttributes::create(handle);
+    return attributes::SemanticVolumeAttributes::create(handle);
   }
 
  protected:
   /**
    * @brief Used Internally.  Create a @ref
-   * esp::metadata::attributes::SemanticRegionAttributes object from the
+   * esp::metadata::attributes::SemanticVolumeAttributes object from the
    * passed JSON doc.
    * @param jCell JSON object containing the description of the semantic retion
    * @return the constructed @ref
-   * esp::metadata::attributes::SemanticRegionAttributes object
+   * esp::metadata::attributes::SemanticVolumeAttributes object
    */
-  attributes::SemanticRegionAttributes::ptr createRegionAttributesFromJSON(
+  attributes::SemanticVolumeAttributes::ptr createRegionAttributesFromJSON(
       const io::JsonGenericValue& jCell);
 
   /**
    * @brief Populate an existing @ref
-   * metadata::attributes::SemanticRegionAttributes from a JSON config.
+   * metadata::attributes::SemanticVolumeAttributes from a JSON config.
    *
    * @param attributes (out) the attributes to populate with JSON values
    * @param jCell JSON document to parse to populate the
-   * @ref metadata::attributes::SemanticRegionAttributes
+   * @ref metadata::attributes::SemanticVolumeAttributes
    */
-  void setSemanticRegionAttributesFromJson(
-      const attributes::SemanticRegionAttributes::ptr& attributes,
+  void setSemanticVolumeAttributesFromJson(
+      const attributes::SemanticVolumeAttributes::ptr& attributes,
       const io::JsonGenericValue& jCell);
 
   /**

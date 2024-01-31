@@ -6,6 +6,7 @@
 #include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Path.h>
 
+#include "esp/metadata/attributes/SemanticAttributes.h"
 #include "esp/scene/SemanticScene.h"
 
 #include "configure.h"
@@ -32,14 +33,16 @@ void Mp3dTest::testLoad() {
   if (!Cr::Utility::Path::exists(filename)) {
     CORRADE_SKIP("MP3D dataset not found.");
   }
-
+  auto mp3dAttr =
+      esp::metadata::attributes::SemanticAttributes::create("mp3dTestAttrs");
+  mp3dAttr->setSemanticDescriptorFilename(filename);
   esp::scene::SemanticScene house;
   const esp::quatf alignGravity =
       esp::quatf::FromTwoVectors(-esp::vec3f::UnitZ(), esp::geo::ESP_GRAVITY);
   const esp::quatf alignFront =
       esp::quatf::FromTwoVectors(-esp::vec3f::UnitX(), esp::geo::ESP_FRONT);
-  esp::scene::SemanticScene::loadMp3dHouse(filename, house,
-                                           alignFront * alignGravity);
+  esp::scene::SemanticScene::loadSemanticSceneDescriptor(
+      mp3dAttr, house, alignFront * alignGravity);
   ESP_DEBUG() << "House{nobjects:" << house.count("objects")
               << ",nlevels:" << house.count("levels")
               << ",nregions:" << house.count("regions")

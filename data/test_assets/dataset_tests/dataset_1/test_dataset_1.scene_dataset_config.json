@@ -4,8 +4,8 @@
             "origin":[1.0,2.0,3.0]
         },
         "paths": {
-      ".json" : ["stages/*"]
-    },
+          ".json" : ["stages/*"]
+        },
         "configs" : [
         {
             "original_file": "stages/stage_0/dataset_test_stage_0.stage_config.json",
@@ -52,8 +52,8 @@
       "inertia": [3,2,1]
         },
         "paths": {
-      ".json" : ["objects/*"]
-    },
+          ".json" : ["objects/*"]
+        },
         "configs" : [
         {
             "original_file": "objects/object_0/dataset_test_object1_0.object_config.json",
@@ -63,7 +63,7 @@
                 "mass": 3.5
             }
         },
-    {
+        {
             "template_handle": "new_test_object3",
             "attributes": {
                 "render_asset": "objects/object_1/dataset_test_object3_1.glb",
@@ -71,15 +71,14 @@
                 "mass": 1.1
             }
         }
-
         ]
     },
     "light_setups":{
         "default_attributes": {
         },
         "paths": {
-      ".json" : ["lights/*"]
-    },
+          ".json" : ["lights/*"]
+        },
         "configs" : [
         {
             "original_file":"lights/lights_0/dataset_test_lights_0.lighting_config.json",

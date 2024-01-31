@@ -13,7 +13,7 @@ namespace esp {
 namespace metadata {
 
 using attributes::SemanticAttributes;
-using attributes::SemanticRegionAttributes;
+using attributes::SemanticVolumeAttributes;
 namespace managers {
 
 SemanticAttributes::ptr SemanticAttributesManager::createObject(
@@ -76,8 +76,8 @@ SemanticAttributes::ptr SemanticAttributesManager::initNewObjectInternal(
   return newAttributes;
 }  // SemanticAttributesManager::initNewObjectInternal
 
-void SemanticAttributesManager::setSemanticRegionAttributesFromJson(
-    const SemanticRegionAttributes::ptr& instanceAttrs,
+void SemanticAttributesManager::setSemanticVolumeAttributesFromJson(
+    const SemanticVolumeAttributes::ptr& instanceAttrs,
     const io::JsonGenericValue& jCell) {
   // unique name for region
   io::jsonIntoConstSetter<std::string>(
@@ -138,14 +138,14 @@ void SemanticAttributesManager::setSemanticRegionAttributesFromJson(
   // check for user defined attributes
   this->parseUserDefinedJsonVals(instanceAttrs, jCell);
 
-}  // SemanticAttributesManager::setSemanticRegionAttributesFromJson
+}  // SemanticAttributesManager::setSemanticVolumeAttributesFromJson
 
-SemanticRegionAttributes::ptr
+SemanticVolumeAttributes::ptr
 SemanticAttributesManager::createRegionAttributesFromJSON(
     const io::JsonGenericValue& jCell) {
-  SemanticRegionAttributes::ptr regionAttrs = createEmptyRegionAttributes("");
+  SemanticVolumeAttributes::ptr regionAttrs = createEmptyRegionAttributes("");
   // populate attributes
-  this->setSemanticRegionAttributesFromJson(regionAttrs, jCell);
+  this->setSemanticVolumeAttributesFromJson(regionAttrs, jCell);
   return regionAttrs;
 }  // SemanticAttributesManager::createRegionAttributesFromJSON
 

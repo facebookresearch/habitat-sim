@@ -140,6 +140,12 @@ void initSceneBindings(py::module& m) {
       .def("index", &Mp3dRegionCategory::index, "mapping"_a = "")
       .def("name", &Mp3dRegionCategory::name, "mapping"_a = "");
 
+  // === Polyloop-based Semantic Region Category ===
+  py::class_<LoopRegionCategory, SemanticCategory, LoopRegionCategory::ptr>(
+      m, "LoopRegionCategory")
+      .def("index", &LoopRegionCategory::index, "mapping"_a = "")
+      .def("name", &LoopRegionCategory::name, "mapping"_a = "");
+
   // These two are (cyclically) referenced by multiple classes below, define
   // the classes first so pybind has the type definition available when binding
   // functions
@@ -159,13 +165,30 @@ void initSceneBindings(py::module& m) {
   semanticRegion
       .def_property_readonly(
           "id", &SemanticRegion::id,
-          "The ID of the region, of the form ``<level_id>_<region_id>``")
+          "The ID of the region, either as the region's unique name, or of the "
+          "form ``<level_id>_<region_id>``")
       .def_property_readonly("level", &SemanticRegion::level)
       .def_property_readonly("aabb", &SemanticRegion::aabb)
       .def_property_readonly("category", &SemanticRegion::category,
                              "The semantic category of the region")
       .def_property_readonly("objects", &SemanticRegion::objects,
-                             "All objects in the region");
+                             "All objects in the region")
+      .def_property_readonly("poly_loop_points",
+                             &SemanticRegion::getPolyLoopPoints,
+                             "The points making up the polyloop for this "
+                             "region, coplanar and parallel to the floor.")
+      .def_property_readonly(
+          "volume_edges", &SemanticRegion::getVisEdges,
+          "The edges, as pairs of points, that determine "
+          "the boundaries of the region. For visualizations.")
+      .def_property_readonly("floor_height", &SemanticRegion::getFloorHeight,
+                             "The height above the x-z plane for the floor of "
+                             "the semantic region.")
+      .def_property_readonly("extrusion_height",
+                             &SemanticRegion::getExtrusionHeight,
+                             "The height of the extrusion above the floor.")
+      .def("contains", &SemanticRegion::contains, "point"_a,
+           "Check whether the given point is contained in the given region.");
 
   // ==== SemanticObject ====
   semanticObject

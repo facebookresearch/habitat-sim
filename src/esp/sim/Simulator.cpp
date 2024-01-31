@@ -43,6 +43,7 @@ namespace sim {
 using metadata::attributes::PhysicsManagerAttributes;
 using metadata::attributes::SceneAOInstanceAttributes;
 using metadata::attributes::SceneObjectInstanceAttributes;
+using metadata::attributes::SemanticAttributes;
 using metadata::attributes::StageAttributes;
 
 Simulator::Simulator(const SimulatorConfiguration& cfg,
@@ -299,20 +300,46 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
 
   // 3. Load the Semantic Scene Descriptor file appropriate for the current
   // scene instance.
-  // - Get semantic attributes - this handle may only be a tag
-  const auto currSemanticAttrHandle =
+  // - Get semantic attributes - this handle will either be empty or an existing
+  // handle for a SemanticAttributes in the SemanticAttributesManager. If not
+  // found then an error has occurred.
+  const std::string currSemanticAttrHandle =
       curSceneInstanceAttributes_->getSemanticSceneHandle();
-  std::string semanticSceneDescFilename = "";
-  if (currSemanticAttrHandle != "") {
-    const auto semanticAttr =
-        metadataMediator_->getSemanticAttributesManager()
-            ->getFirstMatchingObjectCopyByHandle(currSemanticAttrHandle);
-    // - Get Semantic Scene Descriptor Filename
-    semanticSceneDescFilename = semanticAttr->getSemanticDescriptorFilename();
+
+  const std::shared_ptr<esp::metadata::attributes::SemanticAttributes>
+      semanticAttr =
+          (currSemanticAttrHandle != "")
+              ? metadataMediator_->getSemanticAttributesManager()
+                    ->getFirstMatchingObjectCopyByHandle(currSemanticAttrHandle)
+              : nullptr;
+
+  // This check verifies that either the `semantic_scene_instance' tag specified
+  // in the scene instance config was empty, or else it corresponds to an actual
+  // SemanticAttributes found in the SemanticAttributesManager. If this tag was
+  // not found even as a substring in the SemanticAttributesManager as being
+  // mapped to an existing semantic attributes,it would signify an error in the
+  // scene dataset config specifications.
+  ESP_CHECK(
+      (semanticAttr || (currSemanticAttrHandle == "")),
+      Cr::Utility::formatString(
+          "Simulator::createSceneInstance() : Attempt to reference "
+          "semantic attributes specified in current scene instance : `{}` "
+          "failed due to specified semantic tag `{}` not being found in "
+          "SemanticAttributesManager. Aborting",
+          activeSceneName, currSemanticAttrHandle));
+  if (semanticAttr) {
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+        << "Scene Instance `" << activeSceneName
+        << "` has Semantic attr handle : `" << currSemanticAttrHandle
+        << "` which tagged attributes : `" << semanticAttr->getHandle() << "`";
+  } else {
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+        << "Scene Instance `" << activeSceneName
+        << "` has Semantic attr handle :  `" << currSemanticAttrHandle
+        << "` which did not reference any attributes";
   }
-  // - Load semantic scene descriptor
-  resourceManager_->loadSemanticSceneDescriptor(semanticSceneDescFilename,
-                                                activeSceneName);
+  // - Load semantic scene
+  resourceManager_->loadSemanticScene(semanticAttr, activeSceneName);
 
   // 4. Specify frustumCulling based on value from config
   frustumCulling_ = config_.frustumCulling;
@@ -388,7 +415,8 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   resourceManager_->loadAllIBLAssets();
 
   // 8. Load stage specified by Scene Instance Attributes
-  bool success = instanceStageForSceneAttributes(curSceneInstanceAttributes_);
+  bool success = instanceStageForSceneAttributes(curSceneInstanceAttributes_,
+                                                 semanticAttr);
   // 9. Load object instances as specified by Scene Instance Attributes.
   if (success) {
     success = instanceObjectsForSceneAttributes(curSceneInstanceAttributes_);
@@ -410,7 +438,9 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
 
 bool Simulator::instanceStageForSceneAttributes(
     const metadata::attributes::SceneInstanceAttributes::cptr&
-        curSceneInstanceAttributes_) {
+        curSceneInstanceAttributes_,
+    const std::shared_ptr<esp::metadata::attributes::SemanticAttributes>&
+        semanticAttr) {
   // Load stage specified by Scene Instance Attributes
   // Get Stage Instance Attributes - contains name of stage and initial
   // transformation of stage in scene.
@@ -464,14 +494,9 @@ bool Simulator::instanceStageForSceneAttributes(
   // from the dataset config
   stageAttributes->setUseSemanticTextures(config_.useSemanticTexturesIfFound);
   // set stage's ref to ssd file
-  // - Get semantic attributes if any referenced by scene instance
-  const auto currSemanticAttrHandle =
-      curSceneInstanceAttributes_->getSemanticSceneHandle();
-  if (currSemanticAttrHandle != "") {
-    // Must exist already by here.
-    const auto semanticAttr =
-        metadataMediator_->getSemanticAttributesManager()
-            ->getFirstMatchingObjectCopyByHandle(currSemanticAttrHandle);
+  // - Get pertinent semantic values if any referenced in existing
+  // SemanticAttributes
+  if (semanticAttr != nullptr) {
     const std::string semanticAttrSSDName =
         semanticAttr->getSemanticDescriptorFilename();
     const std::string semanticAttrAssetName =

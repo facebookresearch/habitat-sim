@@ -18,6 +18,11 @@
 #include "esp/io/Json.h"
 
 namespace esp {
+namespace metadata {
+namespace attributes {
+class SemanticAttributes;
+}
+}  // namespace metadata
 namespace scene {
 
 //! Represents a semantic category
@@ -91,14 +96,17 @@ class SemanticScene {
 
   /**
    * @brief Attempt to load SemanticScene descriptor from an unknown file type.
-   * @param filename the name of the semantic scene descriptor (house file) to
-   * attempt to load
+   * @param semanticAttr The semantic attributes containing a reference to the
+   * name of the semantic scene descriptor (house file) to attempt to load,
+   * along with informationd describing semantic constructions (region
+   * annotations).
    * @param scene reference to sceneNode to assign semantic scene to
    * @param rotation rotation to apply to semantic scene upon load.
    * @return successfully loaded
    */
   static bool loadSemanticSceneDescriptor(
-      const std::string& filename,
+      const std::shared_ptr<metadata::attributes::SemanticAttributes>&
+          semanticAttr,
       SemanticScene& scene,
       const quatf& rotation = quatf::FromTwoVectors(-vec3f::UnitZ(),
                                                     geo::ESP_GRAVITY));
@@ -424,17 +432,44 @@ class SemanticLevel {
   ESP_SMART_POINTERS(SemanticLevel)
 };
 
+class LoopRegionCategory : public SemanticCategory {
+ public:
+  LoopRegionCategory(const int id, const std::string& name)
+      : id_(id), name_(name) {}
+
+  int index(const std::string& /*mapping*/) const override { return id_; }
+
+  std::string name(const std::string& mapping) const override {
+    if (mapping == "category" || mapping.empty()) {
+      return name_;
+    } else {
+      ESP_ERROR() << "Unknown mapping type:" << mapping;
+      return "UNKNOWN";
+    }
+  }
+
+ protected:
+  int id_;
+  std::string name_;
+  ESP_SMART_POINTERS(LoopRegionCategory)
+
+};  // class LoopRegionCategory
+
 //! Represents a region (typically room) in a level of a house
 class SemanticRegion {
  public:
   virtual ~SemanticRegion() = default;
   virtual std::string id() const {
+    if (!name_.empty()) {
+      return name_;
+    }
     if (level_ != nullptr) {
       return level_->id() + "_" + std::to_string(index_);
     } else {
       return "_" + std::to_string(index_);
     }
   }
+
   int getIndex() const { return index_; }
   SemanticLevel::ptr level() const { return level_; }
 
@@ -442,7 +477,29 @@ class SemanticRegion {
     return objects_;
   }
 
+  /**
+   * @brief Test whether this region contains the passed point
+   */
+  virtual bool contains(const Mn::Vector3& point) const;
+
+  void setBBox(const Mn::Vector3& min, const Mn::Vector3& max);
+
   box3f aabb() const { return bbox_; }
+
+  const std::vector<Mn::Vector2>& getPolyLoopPoints() const {
+    return polyLoopPoints_;
+  }
+
+  /**
+   * @brief Return a list of the semantic region's bounding volume edges.
+   */
+  const std::vector<std::vector<Mn::Vector3>>& getVisEdges() const {
+    return visEdges_;
+  }
+
+  double getExtrusionHeight() const { return extrusionHeight_; }
+
+  double getFloorHeight() const { return floorHeight_; }
 
   SemanticCategory::ptr category() const { return category_; }
 
@@ -452,8 +509,20 @@ class SemanticRegion {
   std::shared_ptr<SemanticCategory> category_;
   vec3f position_;
   box3f bbox_;
-  vec3f floorNormal_;
-  std::vector<vec3f> floorPoints_;
+
+  std::string name_;
+
+  // Height of extrusion for Extruded poly-loop-based volumes
+  double extrusionHeight_{};
+  // Floor height
+  double floorHeight_{};
+
+  // poly loop points for base extrusion
+  std::vector<Mn::Vector2> polyLoopPoints_;
+
+  // Edges for visualization of volume
+  std::vector<std::vector<Mn::Vector3>> visEdges_;
+
   std::vector<std::shared_ptr<SemanticObject>> objects_;
   std::shared_ptr<SemanticLevel> level_;
   friend SemanticScene;

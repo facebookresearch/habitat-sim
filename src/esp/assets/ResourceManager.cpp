@@ -305,77 +305,30 @@ std::vector<std::string> ResourceManager::buildVertexColorMapReport(
       semanticScene_);
 }  // ResourceManager::buildVertexColorMapReport
 
-bool ResourceManager::loadSemanticSceneDescriptor(
-    const std::string& ssdFilename,
+bool ResourceManager::loadSemanticScene(
+    const std::shared_ptr<metadata::attributes::SemanticAttributes>&
+        semanticAttr,
     const std::string& activeSceneName) {
-  namespace FileUtil = Cr::Utility::Path;
+  const std::string ssdFilename =
+      semanticAttr != nullptr ? semanticAttr->getSemanticDescriptorFilename()
+                              : "";
   semanticScene_ = nullptr;
-  if (ssdFilename != "") {
+  if ((ssdFilename != "") || ((semanticAttr != nullptr) &&
+                              (semanticAttr->getNumRegionInstances() > 0))) {
     bool success = false;
-    // semantic scene descriptor might not exist
+    // semantic scene descriptor might not exist so (re)create it.
     semanticScene_ = scene::SemanticScene::create();
-    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
-        << "SceneInstance : `" << activeSceneName
-        << "` proposed Semantic Scene Descriptor filename : `" << ssdFilename
-        << "`.";
 
-    bool fileExists = FileUtil::exists(ssdFilename);
-    if (fileExists) {
-      // Attempt to load semantic scene descriptor specified in scene instance
-      // file, agnostic to file type inferred by name, if file exists.
-      success = scene::SemanticScene::loadSemanticSceneDescriptor(
-          ssdFilename, *semanticScene_);
-      if (success) {
-        ESP_DEBUG(Mn::Debug::Flag::NoSpace)
-            << "SSD with SceneInstanceAttributes-provided name `" << ssdFilename
-            << "` successfully found and loaded.";
-      } else {
-        // here if provided file exists but does not correspond to appropriate
-        // SSD
-        ESP_ERROR(Mn::Debug::Flag::NoSpace)
-            << "SSD Load Failure! File with "
-               "SceneInstanceAttributes-provided name `"
-            << ssdFilename << "` exists but failed to load.";
-      }
-      return success;
-      // if not success then try to construct a name
-    } else {
-      // attempt to look for specified file failed, attempt to build new file
-      // name by searching in path specified of specified file for
-      // info_semantic.json file for replica dataset
-      const std::string constructedFilename = FileUtil::join(
-          FileUtil::split(ssdFilename).first(), "info_semantic.json");
-      fileExists = FileUtil::exists(constructedFilename);
-      if (fileExists) {
-        success = scene::SemanticScene::loadReplicaHouse(constructedFilename,
-                                                         *semanticScene_);
-        if (success) {
-          ESP_DEBUG(Mn::Debug::Flag::NoSpace)
-              << "SSD for Replica using constructed file : `"
-              << constructedFilename << "` in directory with `" << ssdFilename
-              << "` loaded successfully";
-        } else {
-          // here if constructed file exists but does not correspond to
-          // appropriate SSD or some loading error occurred.
-          ESP_ERROR(Mn::Debug::Flag::NoSpace)
-              << "SSD Load Failure! Replica file with constructed name `"
-              << ssdFilename << "` exists but failed to load.";
-        }
-        return success;
-      } else {
-        // neither provided non-empty filename nor constructed filename
-        // exists. This is probably due to an incorrect naming in the
-        // SceneInstanceAttributes
-        ESP_WARNING(Mn::Debug::Flag::NoSpace)
-            << "SSD File Naming Issue! Neither "
-               "SceneInstanceAttributes-provided name : `"
-            << ssdFilename << "` nor constructed filename : `"
-            << constructedFilename << "` exist on disk.";
-        return false;
-      }
-    }  // if given SSD file name specified exists
-  }    // if semantic scene descriptor specified in scene instance
+    success = scene::SemanticScene::loadSemanticSceneDescriptor(
+        semanticAttr, *semanticScene_);
 
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+        << "Attempt to create SemanticScene for Current Scene :`"
+        << activeSceneName << "` with ssdFilename : `" << ssdFilename
+        << "` :" << (success ? " " : "Not ") << "Successful";
+
+    return success;
+  }
   return false;
 }  // ResourceManager::loadSemanticSceneDescriptor
 

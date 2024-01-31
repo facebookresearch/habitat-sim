@@ -18,6 +18,5 @@
 	}
 	],
 	"default_lighting":"modified_test_lights",
-	"navmesh_instance":"navmesh_path1",
-	"semantic_scene_instance":"semantic_descriptor_path1"
+	"navmesh_instance":"navmesh_path1"
 }

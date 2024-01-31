@@ -6,12 +6,12 @@
 
 from os import path as osp
 
+import magnum as mn
 import pytest
-import quaternion  # noqa: F401
 
 import habitat_sim
 import habitat_sim.errors
-from habitat_sim.utils.settings import make_cfg
+from habitat_sim.utils.settings import default_sim_settings, make_cfg
 
 _test_scenes = [
     osp.abspath(
@@ -27,6 +27,95 @@ _test_scenes = [
         )
     ),
 ]
+
+TEST_SCENE_DATASET = osp.abspath(
+    osp.join(
+        osp.dirname(__file__),
+        "../data/test_assets/dataset_tests/dataset_0/test_dataset_0.scene_dataset_config.json",
+    )
+)
+
+
+def test_semantic_regions():
+    ## load scene dataset
+    cfg_settings = default_sim_settings.copy()
+    cfg_settings["scene_dataset_config_file"] = TEST_SCENE_DATASET
+    cfg_settings["scene"] = "dataset_test_scene"
+    hab_cfg = make_cfg(cfg_settings)
+    with habitat_sim.Simulator(hab_cfg) as sim:
+        semantic_scene = sim.semantic_scene
+        assert semantic_scene != None
+        regions = semantic_scene.regions
+        assert regions != None
+        assert len(regions) == 2
+
+        # Build a list of points within the region
+        hit_test_points = 6 * [None]
+        hit_test_points[0] = mn.Vector3(-5.1, 0.0, 0.01)
+        hit_test_points[1] = mn.Vector3(-5.1, 1.0, 0.01)
+        hit_test_points[2] = mn.Vector3(-5.1, -1.0, 0.01)
+        hit_test_points[3] = mn.Vector3(-24.9, 0.0, 0.01)
+        hit_test_points[4] = mn.Vector3(-15.1, 0.0, 9.9)
+        hit_test_points[5] = mn.Vector3(-15.1, 0.0, -9.9)
+        # Build a list of points outside the region
+        miss_test_points = 6 * [None]
+        miss_test_points[0] = mn.Vector3(0.0, 0.0, 0.01)
+        miss_test_points[1] = mn.Vector3(-6.0, 0.0, 10.01)
+        miss_test_points[2] = mn.Vector3(-5.1, -2.1, 0.01)
+        miss_test_points[3] = mn.Vector3(-5.1, 2.1, 0.01)
+        miss_test_points[4] = mn.Vector3(-15.1, -1.5, 10.01)
+        miss_test_points[5] = mn.Vector3(-15.1, 1.5, -10.01)
+
+        # Check region construction
+        # negative X region
+        region = regions[0]
+        assert region.id == "test_region_negativeX"
+        assert len(region.poly_loop_points) == 6
+        assert region.extrusion_height == 4.0
+        assert region.floor_height == -2.0
+
+        regionCat = region.category
+        assert regionCat.name() == "bedroom"
+        assert regionCat.index() == 0
+        # verify containment
+        assert region.contains(hit_test_points[0])
+        assert region.contains(hit_test_points[1])
+        assert region.contains(hit_test_points[2])
+        assert region.contains(hit_test_points[3])
+        assert region.contains(hit_test_points[4])
+        assert region.contains(hit_test_points[5])
+        # verify non-containment
+        assert not region.contains(miss_test_points[0])
+        assert not region.contains(miss_test_points[1])
+        assert not region.contains(miss_test_points[2])
+        assert not region.contains(miss_test_points[3])
+        assert not region.contains(miss_test_points[4])
+        assert not region.contains(miss_test_points[5])
+
+        # positive X region
+        region = regions[1]
+        assert region.id == "test_region_positiveX"
+        assert len(region.poly_loop_points) == 6
+        assert region.extrusion_height == 4.0
+        assert region.floor_height == -2.0
+
+        regionCat = region.category
+        assert regionCat.name() == "bathroom"
+        assert regionCat.index() == 1
+        # verify containment
+        assert region.contains(-1 * hit_test_points[0])
+        assert region.contains(-1 * hit_test_points[1])
+        assert region.contains(-1 * hit_test_points[2])
+        assert region.contains(-1 * hit_test_points[3])
+        assert region.contains(-1 * hit_test_points[4])
+        assert region.contains(-1 * hit_test_points[5])
+        # verify non-containment
+        assert not region.contains(-1 * miss_test_points[0])
+        assert not region.contains(-1 * miss_test_points[1])
+        assert not region.contains(-1 * miss_test_points[2])
+        assert not region.contains(-1 * miss_test_points[3])
+        assert not region.contains(-1 * miss_test_points[4])
+        assert not region.contains(-1 * miss_test_points[5])
 
 
 @pytest.mark.parametrize("scene", _test_scenes)
