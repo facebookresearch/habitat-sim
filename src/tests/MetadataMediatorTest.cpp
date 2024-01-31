@@ -360,7 +360,8 @@ void MetadataMediatorTest::testDataset0() {
   CORRADE_VERIFY(navmeshHandle.find("navmesh_path1") != std::string::npos);
   // ssd
   const std::string ssdHandle = sceneAttrs->getSemanticSceneHandle();
-  CORRADE_VERIFY(ssdHandle.find("semantic_descriptor_path1") !=
+  // Ssd handle is made from scene instance simplified handle
+  CORRADE_VERIFY(ssdHandle.find(sceneAttrs->getSimplifiedHandle()) !=
                  std::string::npos);
 
   //
@@ -431,9 +432,10 @@ void MetadataMediatorTest::testDataset0() {
 
   const auto semanticMgr = MM_->getSemanticAttributesManager();
 
-  // should have 2
-  CORRADE_COMPARE(semanticMgr->getNumObjects(), 2);
-  // should hold 2 keys
+  // should have 5
+  CORRADE_COMPARE(semanticMgr->getNumObjects(), 5);
+
+  // should hold these 2 keys + semantic scene-named file-based json
   CORRADE_VERIFY(
       semanticMgr->getObjectLibHasHandle("semantic_descriptor_path1"));
   CORRADE_VERIFY(
@@ -442,8 +444,10 @@ void MetadataMediatorTest::testDataset0() {
   // each key should hold specific value
   const auto semanticAttr1 =
       semanticMgr->getObjectCopyByHandle("semantic_descriptor_path1");
+
   CORRADE_COMPARE(semanticAttr1->getSemanticDescriptorFilename(),
                   "test_semantic_descriptor_path1");
+
   const auto semanticAttr2 =
       semanticMgr->getObjectCopyByHandle("semantic_descriptor_path2");
   CORRADE_COMPARE(semanticAttr2->getSemanticDescriptorFilename(),
