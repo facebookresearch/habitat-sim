@@ -1,0 +1,36 @@
+{
+  "region_annotations": [
+    {
+      "name": "test_region_negativeX",
+      "label": "bedroom",
+      "poly_loop": [
+        [-20.0, -2.0,-10.0],
+        [-25.0, -2.0, 0.0],
+        [-20.0, -2.0, 10.0],
+        [-10.0, -2.0, 10.0],
+        [-5.0, -2.0, 0.0],
+        [-10.0, -2.0,-10.0]
+      ],
+      "floor_height": -2.0,
+      "extrusion_height": 4.0,
+      "min_bounds": [-25.0, -2.0, -10.0],
+      "max_bounds": [-5.0, 2.0, 10.0]
+    },
+    {
+      "name": "test_region_positiveX",
+      "label": "bathroom",
+      "poly_loop": [
+        [10.0, -2.0,-10.0],
+        [5.0, -2.0, 0.0],
+        [10.0, -2.0, 10.0],
+        [20.0, -2.0, 10.0],
+        [25.0, -2.0, 0.0],
+        [20.0, -2.0,-10.0]
+      ],
+      "floor_height": -2.0,
+      "extrusion_height": 4.0,
+      "min_bounds": [5.0, -2.0, -10.0],
+      "max_bounds": [25.0, 2.0, 10.0]
+    }
+  ]
+}
