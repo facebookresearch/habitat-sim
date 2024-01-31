@@ -120,7 +120,7 @@ def find_and_replace_articulated_models_for_config(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Add user_defined entry to scene_instance.json files referencing the rec_filter_file."
+        description="Modify the scene_instance.json files, replacing rigid objects with articulated coutnerparts in a urdf/ directory."
     )
     parser.add_argument(
         "--dataset-root-dir",
@@ -140,8 +140,39 @@ def main():
     configs = find_files(config_root_dir, file_is_scene_config)
     urdf_dir = os.path.join(fp_root_dir, "urdf/")
     urdf_files = find_files(urdf_dir, file_is_urdf)
+
+    # create scene output directory
+    os.makedirs(
+        os.path.join(fp_root_dir, "scenes-articulated-uncluttered"), exist_ok=True
+    )
+
+    invalid_urdf_files = []
+
+    # only consider urdf files with reasonable accompanying contents
+    def urdf_has_meshes_and_config(urdf_filepath: str) -> bool:
+        """
+        Return whether or not there are render meshes and a config accompanying the urdf.
+        """
+        if not os.path.exists(urdf_filepath.split(".urdf")[0] + ".ao_config.json"):
+            return False
+        has_render_mesh = False
+        for file_name in os.listdir(os.path.dirname(urdf_filepath)):
+            if file_name.endswith(".glb") and "receptacle" not in file_name:
+                has_render_mesh = True
+                break
+        return has_render_mesh
+
+    valid_urdf_files = [
+        urdf_file for urdf_file in urdf_files if urdf_has_meshes_and_config(urdf_file)
+    ]
+
+    invalid_urdf_files = [
+        urdf_file for urdf_file in urdf_files if urdf_file not in valid_urdf_files
+    ]
+
     urdf_names = [
-        urdf_filename.split("/")[-1].split(".urdf")[0] for urdf_filename in urdf_files
+        urdf_filename.split("/")[-1].split(".urdf")[0]
+        for urdf_filename in valid_urdf_files
     ]
 
     # limit the scenes which are converted
@@ -157,6 +188,10 @@ def main():
         find_and_replace_articulated_models_for_config(
             filepath, urdf_names=urdf_names, top_dir=fp_root_dir
         )
+
+    print(
+        f"Migrated {len(valid_urdf_files)} urdfs into {len(configs)} scene configs. Invalid urdfs found and skipped ({len(invalid_urdf_files)}) = {invalid_urdf_files}"
+    )
 
 
 if __name__ == "__main__":
