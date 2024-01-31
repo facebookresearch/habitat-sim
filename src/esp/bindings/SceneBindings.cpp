@@ -140,6 +140,12 @@ void initSceneBindings(py::module& m) {
       .def("index", &Mp3dRegionCategory::index, "mapping"_a = "")
       .def("name", &Mp3dRegionCategory::name, "mapping"_a = "");
 
+  // === Polyloop-based Semantic Region Category ===
+  py::class_<LoopRegionCategory, SemanticCategory, LoopRegionCategory::ptr>(
+      m, "LoopRegionCategory")
+      .def("index", &LoopRegionCategory::index, "mapping"_a = "")
+      .def("name", &LoopRegionCategory::name, "mapping"_a = "");
+
   // These two are (cyclically) referenced by multiple classes below, define
   // the classes first so pybind has the type definition available when binding
   // functions
