@@ -319,13 +319,14 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   // not found even as a substring in the SemanticAttributesManager as being
   // mapped to an existing semantic attributes,it would signify an error in the
   // scene dataset config specifications.
-  ESP_CHECK((semanticAttr || (currSemanticAttrHandle == "")),
-            Cr::Utility::formatString(
-                "Simulator::createSceneInstance() : Attempt to reference "
-                "semantic attributes specified in current scene instance :{} "
-                "failed due to specified semantic tag `{}` not being found in "
-                "SemanticAttributesManager. Aborting",
-                activeSceneName, currSemanticAttrHandle));
+  ESP_CHECK(
+      (semanticAttr || (currSemanticAttrHandle == "")),
+      Cr::Utility::formatString(
+          "Simulator::createSceneInstance() : Attempt to reference "
+          "semantic attributes specified in current scene instance : `{}` "
+          "failed due to specified semantic tag `{}` not being found in "
+          "SemanticAttributesManager. Aborting",
+          activeSceneName, currSemanticAttrHandle));
   if (semanticAttr) {
     ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
         << "Scene Instance `" << activeSceneName
@@ -335,7 +336,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
     ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
         << "Scene Instance `" << activeSceneName
         << "` has Semantic attr handle :  `" << currSemanticAttrHandle
-        << "`  which did not reference any attributes";
+        << "` which did not reference any attributes";
   }
   // - Load semantic scene
   resourceManager_->loadSemanticScene(semanticAttr, activeSceneName);
