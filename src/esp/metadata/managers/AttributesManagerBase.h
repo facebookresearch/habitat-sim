@@ -616,8 +616,12 @@ bool AttributesManager<T, Access>::setAttributesHandleFromDefaultTag(
     // sentinel tag is found - replace tag with simplified handle of
     // attributes and use filenameSetter and return whether this file exists or
     // not.
-    tempStr.replace(loc, strlen(CONFIG_NAME_AS_ASSET_FILENAME),
-                    attributes->getSimplifiedHandle());
+    auto simpleHandle = attributes->getSimplifiedHandle();
+    if (simpleHandle == "NONE") {
+      tempStr = "";
+    } else {
+      tempStr.replace(loc, strlen(CONFIG_NAME_AS_ASSET_FILENAME), simpleHandle);
+    }
     // DOES NOT VERIFY THAT HANDLE REFERENCES ACTUAL OBJECT
     handleSetter(tempStr);
     return true;
