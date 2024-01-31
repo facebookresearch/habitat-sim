@@ -33,44 +33,6 @@ struct SemanticTest : Cr::TestSuite::Tester {
   //
   std::shared_ptr<Attrs::SemanticAttributes> semanticAttr_ = nullptr;
 
-  const std::string jsonString_ =
-      R"({
-      "region_annotations": [
-        {
-          "name": "test_region_negativeX",
-          "label": "bedroom",
-          "poly_loop": [
-            [-20.0, -2.0,-10.0],
-            [-25.0, -2.0, 0.0],
-            [-20.0, -2.0, 10.0],
-            [-10.0, -2.0, 10.0],
-            [-5.0, -2.0, 0.0],
-            [-10.0, -2.0,-10.0]
-          ],
-          "floor_height": -2.0,
-          "extrusion_height": 4.0,
-          "min_bounds": [-25.0, -2.0, -10.0],
-          "max_bounds": [-5.0, 2.0, 10.0]
-        },
-        {
-          "name": "test_region_positiveX",
-          "label": "bathroom",
-          "poly_loop": [
-            [10.0, -2.0,-10.0],
-            [5.0, -2.0, 0.0],
-            [10.0, -2.0, 10.0],
-            [20.0, -2.0, 10.0],
-            [25.0, -2.0, 0.0],
-            [20.0, -2.0,-10.0]
-          ],
-          "floor_height": -2.0,
-          "extrusion_height": 4.0,
-          "min_bounds": [5.0, -2.0, -10.0],
-          "max_bounds": [25.0, 2.0, 10.0]
-        }
-      ]
-    })";
-
 };  // struct SemanticTest
 
 SemanticTest::SemanticTest() {
@@ -79,10 +41,12 @@ SemanticTest::SemanticTest() {
   esp::metadata::MetadataMediator::uptr MM =
       MetadataMediator::create_unique(cfg);
 
-  // Build an attributes based on the above json string
-  semanticAttr_ =
-      MM->getSemanticAttributesManager()->createObjectFromJSONString(
-          "test_semantics_json_template", jsonString_, true);
+  const std::string semanticConfigFile = Cr::Utility::Path::join(
+      TEST_ASSETS, "semantic/test_regions.semantic_config.json");
+
+  // Build an attributes based on the json file
+  semanticAttr_ = MM->getSemanticAttributesManager()->createObject(
+      semanticConfigFile, true);
 
   addTests({&SemanticTest::TestRegionCreation});
 }
@@ -91,7 +55,6 @@ void SemanticTest::TestRegionCreation() {
   std::shared_ptr<esp::scene::SemanticScene> semanticScene =
       esp::scene::SemanticScene::create();
 
-  ESP_ERROR() << "Semantic Attributes : " << *semanticAttr_;
   esp::scene::SemanticScene::loadSemanticSceneDescriptor(semanticAttr_,
                                                          *semanticScene);
   // Verify semantic scene values
