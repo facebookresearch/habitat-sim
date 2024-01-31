@@ -3,30 +3,152 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <Corrade/TestSuite/Tester.h>
+#include <vector>
 
 #include "esp/core/Esp.h"
+#include "esp/metadata/MetadataMediator.h"
 #include "esp/scene/SemanticScene.h"
 
 #include "configure.h"
-namespace {
 
 namespace Cr = Corrade;
+namespace AttrMgrs = esp::metadata::managers;
+namespace Attrs = esp::metadata::attributes;
+using Attrs::SemanticAttributes;
+using esp::metadata::MetadataMediator;
+
+namespace {
+
 struct SemanticTest : Cr::TestSuite::Tester {
   explicit SemanticTest();
 
-  void TestRegions();
+  /**
+   * @brief This test will validate semantic region creation and containment
+   * checks.
+   */
+  void TestRegionCreation();
 
   esp::logging::LoggingContext loggingContext_;
+
+  //
+  std::shared_ptr<Attrs::SemanticAttributes> semanticAttr_ = nullptr;
+
+  const std::string jsonString_ =
+      R"({
+      "region_annotations": [
+        {
+          "name": "test_region_negativeX",
+          "label": "bedroom",
+          "poly_loop": [
+            [-20.0, -2.0,-10.0],
+            [-25.0, -2.0, 0.0],
+            [-20.0, -2.0, 10.0],
+            [-10.0, -2.0, 10.0],
+            [-5.0, -2.0, 0.0],
+            [-10.0, -2.0,-10.0]
+          ],
+          "floor_height": -2.0,
+          "extrusion_height": 4.0,
+          "min_bounds": [-25.0, -2.0, -10.0],
+          "max_bounds": [-5.0, 2.0, 10.0]
+        },
+        {
+          "name": "test_region_positiveX",
+          "label": "bedroom",
+          "poly_loop": [
+            [10.0, -2.0,-10.0],
+            [5.0, -2.0, 0.0],
+            [10.0, -2.0, 10.0],
+            [20.0, -2.0, 10.0],
+            [25.0, -2.0, 0.0],
+            [20.0, -2.0,-10.0]
+          ],
+          "floor_height": -2.0,
+          "extrusion_height": 4.0,
+          "min_bounds": [5.0, -2.0, -10.0],
+          "max_bounds": [25.0, 2.0, 10.0]
+        }
+      ]
+    })";
+
 };  // struct SemanticTest
 
 SemanticTest::SemanticTest() {
-  addTests({&SemanticTest::TestRegions});
+  // set up a default simulation config to initialize MM
+  auto cfg = esp::sim::SimulatorConfiguration{};
+  esp::metadata::MetadataMediator::uptr MM =
+      MetadataMediator::create_unique(cfg);
+
+  // Build an attributes based on the above json string
+  semanticAttr_ =
+      MM->getSemanticAttributesManager()->createObjectFromJSONString(
+          "test_semantics_json_template", jsonString_, true);
+
+  addTests({&SemanticTest::TestRegionCreation});
 }
 
-void SemanticTest::TestRegions() {
-  CORRADE_VERIFY(1 == 1);
+void SemanticTest::TestRegionCreation() {
+  std::shared_ptr<esp::scene::SemanticScene> semanticScene =
+      esp::scene::SemanticScene::create();
 
-}  // SemanticTest::TestRegions
+  ESP_ERROR() << "Semantic Attributes : " << *semanticAttr_;
+  esp::scene::SemanticScene::loadSemanticSceneDescriptor(semanticAttr_,
+                                                         *semanticScene);
+  // Verify semantic scene values
+  const auto& regions = semanticScene->regions();
+  // Verify there are 2 regions
+  CORRADE_COMPARE(regions.size(), 2);
+  std::vector<Mn::Vector3> hitTestPoints(6);
+  hitTestPoints[0] = Mn::Vector3{-5.1, 0.0, 0.01};
+  hitTestPoints[1] = Mn::Vector3{-5.1, 1.0, 0.01};
+  hitTestPoints[2] = Mn::Vector3{-5.1, -1.0, 0.01};
+  hitTestPoints[3] = Mn::Vector3{-24.9, 0.0, 0.01};
+  hitTestPoints[4] = Mn::Vector3{-15.1, 0.0, 9.9};
+  hitTestPoints[5] = Mn::Vector3{-15.1, 0.0, -9.9};
+  std::vector<Mn::Vector3> missTestPoints(6);
+  missTestPoints[0] = Mn::Vector3{0.0, 0.0, 0.01};
+  missTestPoints[1] = Mn::Vector3{-6.0, 0.0, 10.01};
+  missTestPoints[2] = Mn::Vector3{-5.1, -2.1, 0.01};
+  missTestPoints[3] = Mn::Vector3{-5.1, 2.1, 0.01};
+  missTestPoints[4] = Mn::Vector3{-15.1, -1.5, 10.01};
+  missTestPoints[5] = Mn::Vector3{-15.1, 1.5, -10.01};
+
+  // Check region construction
+  {  // negative X region
+    const auto region = regions[0];
+    CORRADE_COMPARE(region->id(), "test_region_negativeX");
+    const auto regionCat = region->category();
+    CORRADE_COMPARE(regionCat->name(), "bedroom");
+    int idx = 0;
+    CORRADE_VERIFY(region->contains(hitTestPoints[idx++]));
+    CORRADE_VERIFY(region->contains(hitTestPoints[idx++]));
+    CORRADE_VERIFY(region->contains(hitTestPoints[idx++]));
+    CORRADE_VERIFY(region->contains(hitTestPoints[idx++]));
+    CORRADE_VERIFY(region->contains(hitTestPoints[idx++]));
+    CORRADE_VERIFY(region->contains(hitTestPoints[idx++]));
+    idx = 0;
+    CORRADE_VERIFY(!region->contains(missTestPoints[idx++]));
+    CORRADE_VERIFY(!region->contains(missTestPoints[idx++]));
+    CORRADE_VERIFY(!region->contains(missTestPoints[idx++]));
+    CORRADE_VERIFY(!region->contains(missTestPoints[idx++]));
+    CORRADE_VERIFY(!region->contains(missTestPoints[idx++]));
+    CORRADE_VERIFY(!region->contains(missTestPoints[idx++]));
+  }
+
+  {  // positive X region
+    const auto region = regions[1];
+    CORRADE_COMPARE(region->id(), "test_region_positiveX");
+    const auto regionCat = region->category();
+    CORRADE_COMPARE(regionCat->name(), "bedroom");
+    for (const auto& pt : hitTestPoints) {
+      CORRADE_VERIFY(region->contains(-pt));
+    }
+    for (const auto& pt : missTestPoints) {
+      CORRADE_VERIFY(!region->contains(-pt));
+    }
+  }
+
+}  // namespace
 
 }  // namespace
 

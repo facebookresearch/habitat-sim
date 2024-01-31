@@ -176,19 +176,17 @@ bool SemanticScene::
 
         // Save points and edges
         int eIdx = 0;
+        float yExtrusion = static_cast<float>(regionPtr->extrusionHeight_ +
+                                              regionPtr->floorHeight_);
         for (std::size_t i = 0; i < numPts; ++i) {
           Mn::Vector3 currPoint = loopPoints[i];
           regionPtr->polyLoopPoints_[i] = {currPoint.x(), currPoint.z()};
           // Edges
-          Mn::Vector3 currExtPt = {
-              currPoint.x(), static_cast<float>(regionPtr->extrusionHeight_),
-              currPoint.z()};
+          Mn::Vector3 currExtPt = {currPoint.x(), yExtrusion, currPoint.z()};
 
           std::size_t nextIdx = ((i + 1) % numPts);
           Mn::Vector3 nextPoint = loopPoints[nextIdx];
-          Mn::Vector3 nextExtPt = {
-              nextPoint.x(), static_cast<float>(regionPtr->extrusionHeight_),
-              nextPoint.z()};
+          Mn::Vector3 nextExtPt = {nextPoint.x(), yExtrusion, nextPoint.z()};
           // Horizontal edge
           regionPtr->visEdges_[eIdx++] = {currPoint, nextPoint};
           // Vertical edge
@@ -218,19 +216,17 @@ bool SemanticRegion::contains(const Mn::Vector3& pt) const {
   auto checkPt = [&](float x, float x0, float x1, float y, float y0,
                      float y1) -> bool {
     float interp = ((y - y0) / (y1 - y0));
-    return (y < y0) != (y < y1) && (x < x0 + interp * (x1 - x0));
+    return ((y < y0) != (y < y1)) && (x < x0 + interp * (x1 - x0));
   };
 
-  // First check bbox
-  if (!bbox_.contains(Mn::EigenIntegration::cast<vec3f>(pt))) {
-    return false;
-  }
-
-  // Next check height
+  // First check height
   if ((pt.y() < floorHeight_) || (pt.y() > (floorHeight_ + extrusionHeight_))) {
     return false;
   }
-
+  // Next check bbox
+  if (!bbox_.contains(Mn::EigenIntegration::cast<vec3f>(pt))) {
+    return false;
+  }
   // Lastly, count casts across edges.
   int count = 0;
   int numPts = polyLoopPoints_.size();
@@ -241,12 +237,9 @@ bool SemanticRegion::contains(const Mn::Vector3& pt) const {
       // Skip points that are equal.
       continue;
     }
-    // If two consecutive y values are equal, rotate the cast by 90.
+    // use x-z in point (i.e. projecting to ground plane)
     bool checkCrossing =
-        (endPt.y() == stPt.y()
-             ? checkPt(pt.y(), stPt.y(), endPt.y(), pt.x(), stPt.x(), endPt.x())
-             : checkPt(pt.x(), stPt.x(), endPt.x(), pt.y(), stPt.y(),
-                       endPt.y()));
+        checkPt(pt.x(), stPt.x(), endPt.x(), pt.z(), stPt.y(), endPt.y());
     if (checkCrossing) {
       ++count;
     }

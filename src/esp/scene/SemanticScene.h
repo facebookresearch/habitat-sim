@@ -491,7 +491,7 @@ class SemanticRegion {
   }
 
   /**
-   * @brief Return a
+   * @brief Return a list of the semantic region's bounding volume edges.
    */
   const std::vector<std::vector<Mn::Vector3>>& getVisEdges() const {
     return visEdges_;
