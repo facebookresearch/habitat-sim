@@ -54,7 +54,7 @@ struct SemanticTest : Cr::TestSuite::Tester {
         },
         {
           "name": "test_region_positiveX",
-          "label": "bedroom",
+          "label": "bathroom",
           "poly_loop": [
             [10.0, -2.0,-10.0],
             [5.0, -2.0, 0.0],
@@ -98,6 +98,9 @@ void SemanticTest::TestRegionCreation() {
   const auto& regions = semanticScene->regions();
   // Verify there are 2 regions
   CORRADE_COMPARE(regions.size(), 2);
+  // The regions are symmetric, so both lists will work for both, if the signs
+  // are flipped.
+  // Build a list of points within the region
   std::vector<Mn::Vector3> hitTestPoints(6);
   hitTestPoints[0] = Mn::Vector3{-5.1, 0.0, 0.01};
   hitTestPoints[1] = Mn::Vector3{-5.1, 1.0, 0.01};
@@ -105,6 +108,7 @@ void SemanticTest::TestRegionCreation() {
   hitTestPoints[3] = Mn::Vector3{-24.9, 0.0, 0.01};
   hitTestPoints[4] = Mn::Vector3{-15.1, 0.0, 9.9};
   hitTestPoints[5] = Mn::Vector3{-15.1, 0.0, -9.9};
+  // Build a list of points outside the region
   std::vector<Mn::Vector3> missTestPoints(6);
   missTestPoints[0] = Mn::Vector3{0.0, 0.0, 0.01};
   missTestPoints[1] = Mn::Vector3{-6.0, 0.0, 10.01};
@@ -117,33 +121,43 @@ void SemanticTest::TestRegionCreation() {
   {  // negative X region
     const auto region = regions[0];
     CORRADE_COMPARE(region->id(), "test_region_negativeX");
+    CORRADE_COMPARE(region->getPolyLoopPoints().size(), 6);
+    CORRADE_COMPARE(region->getExtrusionHeight(), 4.0);
+    CORRADE_COMPARE(region->getFloorHeight(), -2.0);
+
     const auto regionCat = region->category();
     CORRADE_COMPARE(regionCat->name(), "bedroom");
+    CORRADE_COMPARE(regionCat->index(), 0);
+
     int idx = 0;
-    CORRADE_VERIFY(region->contains(hitTestPoints[idx++]));
-    CORRADE_VERIFY(region->contains(hitTestPoints[idx++]));
-    CORRADE_VERIFY(region->contains(hitTestPoints[idx++]));
-    CORRADE_VERIFY(region->contains(hitTestPoints[idx++]));
-    CORRADE_VERIFY(region->contains(hitTestPoints[idx++]));
-    CORRADE_VERIFY(region->contains(hitTestPoints[idx++]));
+    for (const auto& pt : hitTestPoints) {
+      CORRADE_ITERATION(idx++);
+      CORRADE_VERIFY(region->contains(pt));
+    }
     idx = 0;
-    CORRADE_VERIFY(!region->contains(missTestPoints[idx++]));
-    CORRADE_VERIFY(!region->contains(missTestPoints[idx++]));
-    CORRADE_VERIFY(!region->contains(missTestPoints[idx++]));
-    CORRADE_VERIFY(!region->contains(missTestPoints[idx++]));
-    CORRADE_VERIFY(!region->contains(missTestPoints[idx++]));
-    CORRADE_VERIFY(!region->contains(missTestPoints[idx++]));
+    for (const auto& pt : missTestPoints) {
+      CORRADE_ITERATION(idx++);
+      CORRADE_VERIFY(!region->contains(pt));
+    }
   }
 
   {  // positive X region
     const auto region = regions[1];
     CORRADE_COMPARE(region->id(), "test_region_positiveX");
+    CORRADE_COMPARE(region->getPolyLoopPoints().size(), 6);
+    CORRADE_COMPARE(region->getExtrusionHeight(), 4.0);
+    CORRADE_COMPARE(region->getFloorHeight(), -2.0);
     const auto regionCat = region->category();
-    CORRADE_COMPARE(regionCat->name(), "bedroom");
+    CORRADE_COMPARE(regionCat->name(), "bathroom");
+    CORRADE_COMPARE(regionCat->index(), 1);
+    int idx = 0;
     for (const auto& pt : hitTestPoints) {
+      CORRADE_ITERATION(idx++);
       CORRADE_VERIFY(region->contains(-pt));
     }
+    idx = 0;
     for (const auto& pt : missTestPoints) {
+      CORRADE_ITERATION(idx++);
       CORRADE_VERIFY(!region->contains(-pt));
     }
   }

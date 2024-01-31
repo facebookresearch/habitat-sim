@@ -151,13 +151,14 @@ bool SemanticScene::
 
       scene.regions_.clear();
       scene.regions_.reserve(regionInstances.size());
+      int idx = 0;
       for (const auto& regionInstance : regionInstances) {
         auto regionPtr = SemanticRegion::create();
         // Unique name
         regionPtr->name_ = regionInstance->getHandle();
         // Build a category
         regionPtr->category_ =
-            LoopRegionCategory::create(-1, regionInstance->getLabel());
+            LoopRegionCategory::create(idx++, regionInstance->getLabel());
         // Set y heights
         regionPtr->extrusionHeight_ = regionInstance->getExtrusionHeight();
         regionPtr->floorHeight_ = regionInstance->getFloorHeight();
