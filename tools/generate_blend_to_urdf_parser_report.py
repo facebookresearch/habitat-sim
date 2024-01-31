@@ -125,6 +125,10 @@ def main():
         "receptacles",
         "render_meshes",
     ]
+    # collect global sums of each error type
+    global_count: Dict[str, int] = {}
+    for check in cat_columns[1:]:
+        global_count[check] = 0
 
     report_filepath = os.path.join(args.root_dir + "parser_report.csv")
     if args.report_filepath is not None:
@@ -181,9 +185,16 @@ def main():
                 one_receptacle_exists,
                 one_render_mesh_exists,
             ]
+            global_count["folder"] += int(not folder_exists)
+            global_count["config"] += int(not config_exists)
+            global_count["receptacles"] += int(not one_receptacle_exists)
+            global_count["urdf"] += int(not urdf_exists)
+            global_count["render_meshes"] += int(not one_render_mesh_exists)
         else:
             parse_results_report[model_id] = [False for i in range(len(cat_columns))]
             parse_results_report[model_id][0] = model_id
+            for key in global_count:
+                global_count[key] += 1
 
     # export results to a file
     os.makedirs(os.path.dirname(report_filepath), exist_ok=True)
@@ -203,6 +214,8 @@ def main():
         if not claimed:
             print(f" {exported_folder_names[folder_index]}")
     print("-----------------------------------------------")
+
+    print(f"global_counts = {global_count}")
 
 
 if __name__ == "__main__":
