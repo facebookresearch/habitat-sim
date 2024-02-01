@@ -76,6 +76,9 @@ class HabitatSimInteractiveViewer(Application):
         self.debug_bullet_draw = False
         # draw active contact point debug line visualizations
         self.contact_debug_draw = False
+        # draw semantic region debug visualizations if present
+        self.semantic_region_debug_draw = False
+
         # cache most recently loaded URDF file for quick-reload
         self.cached_urdf = ""
 
@@ -176,6 +179,7 @@ class HabitatSimInteractiveViewer(Application):
         self.replay_renderer_cfg: Optional[ReplayRendererConfiguration] = None
         self.replay_renderer: Optional[ReplayRenderer] = None
         self.reconfigure_sim()
+        self.debug_semantic_colors = {}
 
         # compute NavMesh if not already loaded by the scene.
         if (
@@ -189,7 +193,7 @@ class HabitatSimInteractiveViewer(Application):
         logger.setLevel("INFO")
         self.print_help_text()
 
-    def draw_contact_debug(self):
+    def draw_contact_debug(self, debug_line_render: Any):
         """
         This method is called to render a debug line overlay displaying active contact points and normals.
         Yellow lines show the contact distance along the normal and red lines show the contact normal at a fixed length.
@@ -197,31 +201,45 @@ class HabitatSimInteractiveViewer(Application):
         yellow = mn.Color4.yellow()
         red = mn.Color4.red()
         cps = self.sim.get_physics_contact_points()
-        self.sim.get_debug_line_render().set_line_width(1.5)
+        debug_line_render.set_line_width(1.5)
         camera_position = self.render_camera.render_camera.node.absolute_translation
         # only showing active contacts
         active_contacts = (x for x in cps if x.is_active)
         for cp in active_contacts:
             # red shows the contact distance
-            self.sim.get_debug_line_render().draw_transformed_line(
+            debug_line_render.draw_transformed_line(
                 cp.position_on_b_in_ws,
                 cp.position_on_b_in_ws
                 + cp.contact_normal_on_b_in_ws * -cp.contact_distance,
                 red,
             )
             # yellow shows the contact normal at a fixed length for visualization
-            self.sim.get_debug_line_render().draw_transformed_line(
+            debug_line_render.draw_transformed_line(
                 cp.position_on_b_in_ws,
                 # + cp.contact_normal_on_b_in_ws * cp.contact_distance,
                 cp.position_on_b_in_ws + cp.contact_normal_on_b_in_ws * 0.1,
                 yellow,
             )
-            self.sim.get_debug_line_render().draw_circle(
+            debug_line_render.draw_circle(
                 translation=cp.position_on_b_in_ws,
                 radius=0.005,
                 color=yellow,
                 normal=camera_position - cp.position_on_b_in_ws,
             )
+
+    def draw_region_debug(self, debug_line_render: Any) -> None:
+        """
+        Draw the semantic region wireframes.
+        """
+
+        for region in self.sim.semantic_scene.regions:
+            color = self.debug_semantic_colors.get(region.id, mn.Color4.magenta())
+            for edge in region.volume_edges:
+                debug_line_render.draw_transformed_line(
+                    edge[0],
+                    edge[1],
+                    color,
+                )
 
     def debug_draw(self):
         """
@@ -231,8 +249,18 @@ class HabitatSimInteractiveViewer(Application):
             render_cam = self.render_camera.render_camera
             proj_mat = render_cam.projection_matrix.__matmul__(render_cam.camera_matrix)
             self.sim.physics_debug_draw(proj_mat)
+
+        debug_line_render = self.sim.get_debug_line_render()
         if self.contact_debug_draw:
-            self.draw_contact_debug()
+            self.draw_contact_debug(debug_line_render)
+
+        if self.semantic_region_debug_draw:
+            if len(self.debug_semantic_colors) != len(self.sim.semantic_scene.regions):
+                for region in self.sim.semantic_scene.regions:
+                    self.debug_semantic_colors[region.id] = mn.Color4(
+                        mn.Vector3(np.random.random(3))
+                    )
+            self.draw_region_debug(debug_line_render)
 
     def draw_event(
         self,
@@ -473,21 +501,12 @@ class HabitatSimInteractiveViewer(Application):
 
         elif key == pressed.H:
             self.print_help_text()
-
-        elif key == pressed.O:
-            if alt_pressed:
-                self.set_objects_from_agent_state()
-            else:
-                cube = self.sim.get_rigid_object_manager().add_object_by_template_handle(
-                    self.sim.get_object_template_manager().get_synth_template_handles(
-                        "cube"
-                    )[0]
-                )
-                cube.translation = (
-                    self.default_agent.scene_node.transformation.transform_point(
-                        mn.Vector3(0, 1.5, -1.0)
-                    )
-                )
+        elif key == pressed.J:
+            logger.info(
+                f"Toggle Region Draw from {self.semantic_region_debug_draw } to {not self.semantic_region_debug_draw}"
+            )
+            # Toggle visualize semantic bboxes. Currently only regions supported
+            self.semantic_region_debug_draw = not self.semantic_region_debug_draw
 
         elif key == pressed.TAB:
             # NOTE: (+ALT) - reconfigure without cycling scenes
@@ -556,11 +575,11 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.T:
             # load URDF
             fixed_base = alt_pressed
-            urdf_file_path = "data/robots/hab_spot_arm/urdf/hab_spot_arm.urdf"
-            # if shift_pressed and self.cached_urdf:
-            #     urdf_file_path = self.cached_urdf
-            # else:
-            #     urdf_file_path = input("Load URDF: provide a URDF filepath:").strip()
+            urdf_file_path = ""
+            if shift_pressed and self.cached_urdf:
+                urdf_file_path = self.cached_urdf
+            else:
+                urdf_file_path = input("Load URDF: provide a URDF filepath:").strip()
 
             if not urdf_file_path:
                 logger.warn("Load URDF: no input provided. Aborting.")
@@ -605,7 +624,6 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.V:
             self.invert_gravity()
             logger.info("Command: gravity inverted")
-
         elif key == pressed.N:
             # (default) - toggle navmesh visualization
             # NOTE: (+ALT) - re-sample the agent position on the NavMesh
@@ -687,21 +705,6 @@ class HabitatSimInteractiveViewer(Application):
         self.redraw()
         event.accepted = True
 
-    def set_objects_from_agent_state(self):
-        ro_mngr = self.sim.get_rigid_object_manager()
-        ao_mngr = self.sim.get_articulated_object_manager()
-        pos = self.default_agent.scene_node.transformation.transform_point(
-            mn.Vector3(0, 1.5, -1.0)
-        )
-        for ao in ao_mngr.get_objects_by_handle_substring().values():
-            ao.translation = pos
-        for ro in ro_mngr.get_objects_by_handle_substring().values():
-            ro.translation = pos
-        for ao in ao_mngr.get_objects_by_handle_substring().values():
-            print(f"ao {ao.handle} contact_test = {ao.contact_test()}")
-        for ro in ro_mngr.get_objects_by_handle_substring().values():
-            print(f"ro {ro.handle} contact_test = {ro.contact_test()}")
-
     def mouse_press_event(self, event: Application.MouseEvent) -> None:
         """
         Handles `Application.MouseEvent`. When in GRAB mode, click on
@@ -709,9 +712,6 @@ class HabitatSimInteractiveViewer(Application):
         """
         button = Application.MouseEvent.Button
         physics_enabled = self.sim.get_physics_simulation_library()
-
-        mod = Application.InputEvent.Modifier
-        shift_pressed = bool(event.modifiers & mod.SHIFT)
 
         # if interactive mode is True -> GRAB MODE
         if self.mouse_interaction == MouseMode.GRAB and physics_enabled:
@@ -737,10 +737,6 @@ class HabitatSimInteractiveViewer(Application):
                             hit_info.point
                         )
                         object_frame = ro.rotation.inverted()
-                        if shift_pressed:
-                            ro.awake = not ro.awake
-                            print(f"Set awake = {ro.awake}")
-                            return
                     elif ao:
                         # if grabbed the base link
                         hit_object = hit_info.object_id
@@ -764,12 +760,7 @@ class HabitatSimInteractiveViewer(Application):
                                 object_frame = ao.get_link_scene_node(
                                     ao_link
                                 ).rotation.inverted()
-
                                 hit_object = ao.object_id
-                                if shift_pressed:
-                                    ao.awake = not ao.awake
-                                    print(f"Set awake = {ao.awake}")
-                                    return
                                 break
                     # done checking for AO
 
@@ -1015,6 +1006,7 @@ Key Commands:
     ',':        Render a Bullet collision shape debug wireframe overlay (white=active, green=sleeping, blue=wants sleeping, red=can't sleep).
     'c':        Run a discrete collision detection pass and render a debug wireframe overlay showing active contact points and normals (yellow=fixed length normals, red=collision distances).
                 (+SHIFT) Toggle the contact point debug render overlay on/off.
+    'j'         Toggle Semantic visualization bounds (currently only Semantic Region annotations)
 
     Object Interactions:
     SPACE:      Toggle physics simulation on/off.
