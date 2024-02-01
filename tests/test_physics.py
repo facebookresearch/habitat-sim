@@ -684,7 +684,6 @@ def test_collision_groups():
             # moving sleeping objects wakes them and contact_test is accurate
             new_translation = mn.Vector3(100.0, 0.0, 0.0)
             ao.translation = new_translation
-            ao.joint_positions = ao.joint_positions
             # we forced sleep, but moving the object wakes it back up
             assert ao.awake
             assert not ao.contact_test()
@@ -698,6 +697,33 @@ def test_collision_groups():
                 if ao.object_id == cp.object_id_a or ao.object_id == cp.object_id_b:
                     num_ao_contacts += 1
             assert num_ao_contacts == 0
+
+            # check sleeping AO logic
+            ao2 = ao_mgr.add_articulated_object_from_urdf(
+                filepath="data/test_assets/urdf/amass_male.urdf"
+            )
+            ao2.translation = new_translation
+            ao2.awake = False
+            ao.awake = False
+            assert not ao.awake
+            assert not ao2.awake
+            assert ao.contact_test()
+            assert ao2.contact_test()
+
+            sim.step_physics(0.1)
+            assert not ao.awake
+            assert not ao2.awake
+
+            # contact is registered in discrete collision detection
+            sim.perform_discrete_collision_detection()
+            cps = sim.get_physics_contact_points()
+            num_ao_contacts = 0
+            for cp in cps:
+                if ao.object_id == cp.object_id_a or ao.object_id == cp.object_id_b:
+                    num_ao_contacts += 1
+            assert num_ao_contacts > 0
+
+            ao_mgr.remove_object_by_id(ao2.object_id)
 
             cube_obj2.translation = new_translation
             # we forced sleep, but moving the object wakes it back up
@@ -727,6 +753,7 @@ def test_collision_groups():
             assert not cube_obj1.contact_test()
 
             cube_obj2.translation = [1.1, 0.0, 4.6]
+            cube_obj1.translation = [1.2, 0.0, 4.6]
             # override cube2 to a new group and configure custom mask to interact with it
             cgh.set_mask_for_group(cg.UserGroup1, new_user_group_1_mask | cg.UserGroup2)
             # NOTE: changing group settings requires overriding object group again
