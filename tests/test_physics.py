@@ -624,6 +624,10 @@ def test_collision_groups():
         rigid_obj_mgr = sim.get_rigid_object_manager()
         ao_mgr = sim.get_articulated_object_manager()
 
+        from habitat.sims.habitat_simulator.debug_visualizer import DebugVisualizer
+
+        DebugVisualizer(sim=sim)
+
         if (
             sim.get_physics_simulation_library()
             != habitat_sim.physics.PhysicsSimulationLibrary.NoPhysics
