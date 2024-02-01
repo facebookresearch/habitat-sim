@@ -727,7 +727,6 @@ def test_collision_groups():
             assert not cube_obj1.contact_test()
 
             cube_obj2.translation = [1.1, 0.0, 4.6]
-            # breakpoint()
             # override cube2 to a new group and configure custom mask to interact with it
             cgh.set_mask_for_group(cg.UserGroup1, new_user_group_1_mask | cg.UserGroup2)
             # NOTE: changing group settings requires overriding object group again
