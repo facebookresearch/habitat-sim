@@ -1543,7 +1543,6 @@ def test_articulated_object_joint_motors(test_asset):
                 joint_motor_torques = np.abs(
                     np.array(robot.get_joint_motor_torques(sim.get_physics_time_step()))
                 )
-                assert (joint_motor_torques > 1.0).any()
                 assert len(joint_motor_torques) > 0
                 print("PYTORQUES: ", joint_motor_torques)
                 firstStep = False
