@@ -626,7 +626,7 @@ def test_collision_groups():
 
         from habitat.sims.habitat_simulator.debug_visualizer import DebugVisualizer
 
-        dbv = DebugVisualizer(sim=sim)
+        DebugVisualizer(sim=sim)
 
         if (
             sim.get_physics_simulation_library()
@@ -685,14 +685,14 @@ def test_collision_groups():
             assert not ao.awake
             assert not cube_obj2.awake
 
-            # moving sleeping objects does not wake them, and contact_test is still accurate
+            # moving sleeping objects wakes them and contact_test is accurate
             new_translation = mn.Vector3(100.0, 0.0, 0.0)
             ao.translation = new_translation
             ao.joint_positions = ao.joint_positions
+            # we forced sleep, but moving the object wakes it back up
+            assert ao.awake
             assert not ao.contact_test()
             assert not cube_obj2.contact_test()
-
-            sim.step_physics(0.01)
 
             # contact is registered in discrete collision detection
             sim.perform_discrete_collision_detection()
@@ -701,20 +701,20 @@ def test_collision_groups():
             for cp in cps:
                 if ao.object_id == cp.object_id_a or ao.object_id == cp.object_id_b:
                     num_ao_contacts += 1
-                    print(f"cp.contact_distance = {cp.contact_distance}")
-                    print(f"cp.object_id_a = {cp.object_id_a}")
-                    print(f"cp.object_id_b = {cp.object_id_b}")
-                    print(f"cp.link_id_a = {cp.link_id_a}")
-                    print(f"cp.link_id_b = {cp.link_id_b}")
-            dbv.peek_articulated_object(ao, show=True, peek_all_axis=True)
             assert num_ao_contacts == 0
 
-            # now sleeping objects overlap, we should see them in contact_test and discrete collision detection
             cube_obj2.translation = new_translation
+            # we forced sleep, but moving the object wakes it back up
+            assert cube_obj2.awake
             assert ao.contact_test()
             assert cube_obj2.contact_test()
-            assert not cube_obj2.awake
+
+            # we can re-sleep after moving, but states have been updated correctly for contact check
+            ao.awake = False
+            cube_obj2.awake = False
+            sim.step_physics(0.1)
             assert not ao.awake
+            assert not cube_obj2.awake
 
             sim.perform_discrete_collision_detection()
             cps = sim.get_physics_contact_points()

@@ -719,6 +719,10 @@ void BulletArticulatedObject::overrideCollisionGroup(CollisionGroup group) {
 }
 
 void BulletArticulatedObject::updateKinematicState() {
+  if (!isActive()) {
+    // activate if not already active and kinematically updated
+    setActive(true);
+  }
   btMultiBody_->forwardKinematics(scratch_q_, scratch_m_);
   btMultiBody_->updateCollisionObjectWorldTransforms(scratch_q_, scratch_m_);
   // Need to update the aabbs manually also for broadphase collision detection

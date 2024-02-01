@@ -324,6 +324,9 @@ void BulletRigidObject::syncPose() {
   bObjectRigidBody_->setWorldTransform(
       btTransform(node().transformationMatrix()));
   bWorld_->updateSingleAabb(bObjectRigidBody_.get());
+  if (!isActive()) {
+    setActive(true);
+  }
 }  // syncPose
 
 void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
