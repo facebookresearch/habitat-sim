@@ -27,6 +27,22 @@ namespace sensor {
 
 using Mn::Math::Literals::operator""_degf;
 
+/**
+ * @brief This enum describes the type of information the Semantic Sensor will
+ * render.
+ */
+enum class SemanticSensorTarget : int32_t {
+  /**
+   * @brief The semantic sensor will render semantic IDs
+   */
+  SemanticID = 0,
+  /**
+   * @brief The semantic sensor will render object IDs
+   */
+  ObjectID,
+  // TODO: All other semantic ids, such as region ID, level ID, etc.
+};  // Types of information the semantic sensor displays
+
 struct VisualSensorSpec : public SensorSpec {
   /**
    * @brief height x width
@@ -52,12 +68,20 @@ struct VisualSensorSpec : public SensorSpec {
    * @brief color used to clear the framebuffer
    */
   Mn::Color4 clearColor = {0, 0, 0, 1};
+
+  /**
+   * @brief the type of information being rendered by the semantic sensor.
+   * Ignored by non-semantic sensors
+   */
+  SemanticSensorTarget semanticTarget = SemanticSensorTarget::SemanticID;
+
   VisualSensorSpec();
   void sanityCheck() const override;
   bool isVisualSensorSpec() const override { return true; }
   bool operator==(const VisualSensorSpec& a) const;
   ESP_SMART_POINTERS(VisualSensorSpec)
 };
+
 // Represents a sensor that provides visual data from the environment to an
 // agent
 class VisualSensor : public Sensor {
