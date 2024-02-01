@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "SemanticScene.h"
+#include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include "GibsonSemanticScene.h"
 #include "Mp3dSemanticScene.h"
 #include "ReplicaSemanticScene.h"
@@ -17,93 +18,252 @@
 
 #include "esp/io/Io.h"
 #include "esp/io/Json.h"
+#include "esp/metadata/attributes/SemanticAttributes.h"
 
 namespace esp {
 namespace scene {
 
 bool SemanticScene::
-    loadSemanticSceneDescriptor(const std::string& ssdFileName, SemanticScene& scene, const quatf& rotation /* = quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY) */) {
-  bool success = false;
-  bool exists = checkFileExists(ssdFileName, "loadSemanticSceneDescriptor");
-  if (exists) {
-    // TODO: we need to investigate the possibility of adding an identifying tag
-    // to the SSD config files.
-    // Try file load mechanisms for various types
-    // first try Mp3d
-    try {
-      // only returns false if file does not exist, or attempting to open it
-      // fails
-      // open stream and determine house format version
+    loadSemanticSceneDescriptor(const std::shared_ptr<metadata::attributes::SemanticAttributes>& semanticAttr, SemanticScene& scene, const quatf& rotation /* = quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY) */) {
+  const std::string ssdFileName =
+      semanticAttr != nullptr ? semanticAttr->getSemanticDescriptorFilename()
+                              : "";
+
+  bool loadSuccess = false;
+  if (ssdFileName != "") {
+    bool fileExists =
+        checkFileExists(ssdFileName, "loadSemanticSceneDescriptor");
+    if (fileExists) {
+      // TODO: we need to investigate the possibility of adding an identifying
+      // tag to the SSD config files. Try file load mechanisms for various types
+      // first try Mp3d
       try {
-        std::ifstream ifs = std::ifstream(ssdFileName);
-        std::string header;
-        std::getline(ifs, header);
-        if (header.find("ASCII 1.1") != std::string::npos) {
-          success = buildMp3dHouse(ifs, scene, rotation);
-        } else if (header.find("HM3D Semantic Annotations") !=
-                   std::string::npos) {
-          success = buildHM3DHouse(ifs, scene, rotation);
+        // only returns false if file does not exist, or attempting to open it
+        // fails
+        // open stream and determine house format version
+        try {
+          std::ifstream ifs = std::ifstream(ssdFileName);
+          std::string header;
+          std::getline(ifs, header);
+          if (header.find("ASCII 1.1") != std::string::npos) {
+            loadSuccess = buildMp3dHouse(ifs, scene, rotation);
+          } else if (header.find("HM3D Semantic Annotations") !=
+                     std::string::npos) {
+            loadSuccess = buildHM3DHouse(ifs, scene, rotation);
+          }
+        } catch (...) {
+          loadSuccess = false;
+        }
+        if (!loadSuccess) {
+          // if not successful then attempt to load known json files
+          const io::JsonDocument& jsonDoc = io::parseJsonFile(ssdFileName);
+          // if no error thrown, then we have loaded a json file of given name
+
+          io::JsonGenericValue::ConstMemberIterator hasJsonObjIter =
+              jsonDoc.FindMember("objects");
+
+          bool hasCorrectObjects = (hasJsonObjIter != jsonDoc.MemberEnd() &&
+                                    hasJsonObjIter->value.IsArray());
+
+          io::JsonGenericValue::ConstMemberIterator hasJsonClassIter =
+              jsonDoc.FindMember("classes");
+
+          // check if also has "classes" tag, otherwise will assume it is a
+          // gibson file
+          if (hasJsonClassIter != jsonDoc.MemberEnd() &&
+              hasJsonClassIter->value.IsArray()) {
+            // attempt to load replica or replicaCAD if has classes (replicaCAD
+            // does not have objects in SSDescriptor)
+            loadSuccess =
+                buildReplicaHouse(jsonDoc, scene, hasCorrectObjects, rotation);
+          } else if (hasCorrectObjects) {
+            // attempt to load gibson if has objects but not classes
+            loadSuccess = buildGibsonHouse(jsonDoc, scene, rotation);
+          }
         }
       } catch (...) {
-        success = false;
+        // if error thrown, assume it is because file load attempt fails
+        loadSuccess = false;
       }
-      if (!success) {
-        // if not successful then attempt to load known json files
-        const io::JsonDocument& jsonDoc = io::parseJsonFile(ssdFileName);
-        // if no error thrown, then we have loaded a json file of given name
+    }
+    if (!loadSuccess) {
+      // should only reach here if either specified file exists but was not
+      // loaded successfully or file does not exist.
 
-        io::JsonGenericValue::ConstMemberIterator hasJsonObjIter =
-            jsonDoc.FindMember("objects");
+      // attempt to look for specified file failed, so attempt to build new file
+      // name by searching in path specified of specified file for
+      // info_semantic.json file for replica dataset
+      namespace FileUtil = Cr::Utility::Path;
+      // check if constructed replica file exists in directory of passed
+      // ssdFileName
+      const std::string constructedFilename = FileUtil::join(
+          FileUtil::split(ssdFileName).first(), "info_semantic.json");
+      if (FileUtil::exists(constructedFilename)) {
+        loadSuccess =
+            scene::SemanticScene::loadReplicaHouse(constructedFilename, scene);
 
-        bool hasCorrectObjects = (hasJsonObjIter != jsonDoc.MemberEnd() &&
-                                  hasJsonObjIter->value.IsArray());
-
-        io::JsonGenericValue::ConstMemberIterator hasJsonClassIter =
-            jsonDoc.FindMember("classes");
-
-        // check if also has "classes" tag, otherwise will assume it is a
-        // gibson file
-        if (hasJsonClassIter != jsonDoc.MemberEnd() &&
-            hasJsonClassIter->value.IsArray()) {
-          // attempt to load replica or replicaCAD if has classes (replicaCAD
-          // does not have objects in SSDescriptor)
-          success =
-              buildReplicaHouse(jsonDoc, scene, hasCorrectObjects, rotation);
-        } else if (hasCorrectObjects) {
-          // attempt to load gibson if has objects but not classes
-          success = buildGibsonHouse(jsonDoc, scene, rotation);
+        if (loadSuccess) {
+          ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+              << "SSD for Replica using constructed file : `"
+              << constructedFilename << "` in directory with `" << ssdFileName
+              << "` loaded successfully";
+        } else {
+          // here if constructed file exists but does not correspond to
+          // appropriate SSD or some loading error occurred.
+          ESP_ERROR(Mn::Debug::Flag::NoSpace)
+              << "SSD Load Failure! Replica file with constructed name `"
+              << ssdFileName << "` exists but failed to load.";
         }
+      } else {
+        // neither provided non-empty filename nor constructed filename
+        // exists. This is probably due to an incorrect naming in the
+        // SemanticAttributes
+        ESP_WARNING(Mn::Debug::Flag::NoSpace)
+            << "SSD File Naming Issue! Neither "
+               "SemanticAttributes-provided name : `"
+            << ssdFileName << "` nor constructed filename : `"
+            << constructedFilename << "` exist on disk.";
+        loadSuccess = false;
       }
-      if (success) {
-        // if successfully loaded, return true;
-        return true;
-      }
-    } catch (...) {
-      // if error thrown, assume it is because file load attempt fails
-      success = false;
+    }
+
+    if (loadSuccess) {
+      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+          << "SSD with SemanticAttributes-provided name `" << ssdFileName
+          << "` successfully found and loaded.";
+    } else {
+      // here if provided file exists but does not correspond to appropriate
+      // SSD
+      ESP_ERROR(Mn::Debug::Flag::NoSpace)
+          << "SSD Load Failure! File with "
+             "SemanticAttributes-provided name `"
+          << ssdFileName << "` exists but failed to load.";
     }
   }
-  // should only reach here if not successfully loaded
-  namespace FileUtil = Cr::Utility::Path;
-  // check if constructed replica file exists in directory of passed
-  // ssdFileName
-  const std::string tmpFName = FileUtil::join(
-      FileUtil::split(ssdFileName).first(), "info_semantic.json");
-  if (FileUtil::exists(tmpFName)) {
-    success = scene::SemanticScene::loadReplicaHouse(tmpFName, scene);
-  }
-  return success;
+
+  if (semanticAttr != nullptr) {
+    if (semanticAttr->getNumRegionInstances() > 0) {
+      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+          << "Semantic Attributes : `" << semanticAttr->getHandle() << "` has "
+          << semanticAttr->getNumRegionInstances() << " regions defined.";
+      // Build Semantic regions for each SemanticRegion attributes instance
+      const auto regionInstances = semanticAttr->getRegionInstances();
+
+      scene.regions_.clear();
+      scene.regions_.reserve(regionInstances.size());
+      int idx = 0;
+      for (const auto& regionInstance : regionInstances) {
+        auto regionPtr = SemanticRegion::create();
+        // Unique name
+        regionPtr->name_ = regionInstance->getHandle();
+        // Build a category
+        regionPtr->category_ =
+            LoopRegionCategory::create(idx++, regionInstance->getLabel());
+        // Set y heights
+        regionPtr->extrusionHeight_ = regionInstance->getExtrusionHeight();
+        regionPtr->floorHeight_ = regionInstance->getFloorHeight();
+        // Set bbox
+        const Mn::Vector3 min = regionInstance->getMinBounds();
+        const Mn::Vector3 max = regionInstance->getMaxBounds();
+        regionPtr->setBBox(min, max);
+        // Set polyloop points and precalc polyloop edge vectors
+        const std::vector<Mn::Vector3>& loopPoints =
+            regionInstance->getPolyLoop();
+
+        std::size_t numPts = loopPoints.size();
+        regionPtr->polyLoopPoints_ = std::vector<Mn::Vector2>(numPts);
+        regionPtr->visEdges_ =
+            std::vector<std::vector<Mn::Vector3>>(4 * numPts);
+
+        // Save points and edges
+        int eIdx = 0;
+        float yExtrusion = static_cast<float>(regionPtr->extrusionHeight_ +
+                                              regionPtr->floorHeight_);
+        for (std::size_t i = 0; i < numPts; ++i) {
+          Mn::Vector3 currPoint = loopPoints[i];
+          regionPtr->polyLoopPoints_[i] = {currPoint.x(), currPoint.z()};
+          // Edges
+          Mn::Vector3 currExtPt = {currPoint.x(), yExtrusion, currPoint.z()};
+
+          std::size_t nextIdx = ((i + 1) % numPts);
+          Mn::Vector3 nextPoint = loopPoints[nextIdx];
+          Mn::Vector3 nextExtPt = {nextPoint.x(), yExtrusion, nextPoint.z()};
+          // Horizontal edge
+          regionPtr->visEdges_[eIdx++] = {currPoint, nextPoint};
+          // Vertical edge
+          regionPtr->visEdges_[eIdx++] = {currPoint, currExtPt};
+          // Extruded horizontal edge
+          regionPtr->visEdges_[eIdx++] = {currExtPt, nextExtPt};
+          // Diagonal edge
+          regionPtr->visEdges_[eIdx++] = {currPoint, nextExtPt};
+        }
+
+        scene.regions_.emplace_back(std::move(regionPtr));
+      }
+    } else {  // if semantic attributes specifes region annotations
+      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+          << "Semantic Attributes : `" << semanticAttr->getHandle()
+          << "` does not have any regions defined.";
+    }
+  } else {
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace) << "Semantic attributes do not exist.";
+  }  // if semanticAttrs exist or not
+
+  return loadSuccess;
 
 }  // SemanticScene::loadSemanticSceneDescriptor
 
+bool SemanticRegion::contains(const Mn::Vector3& pt) const {
+  auto checkPt = [&](float x, float x0, float x1, float y, float y0,
+                     float y1) -> bool {
+    float interp = ((y - y0) / (y1 - y0));
+    return ((y < y0) != (y < y1)) && (x < x0 + interp * (x1 - x0));
+  };
+
+  // First check height
+  if ((pt.y() < floorHeight_) || (pt.y() > (floorHeight_ + extrusionHeight_))) {
+    return false;
+  }
+  // Next check bbox
+  if (!bbox_.contains(Mn::EigenIntegration::cast<vec3f>(pt))) {
+    return false;
+  }
+  // Lastly, count casts across edges.
+  int count = 0;
+  int numPts = polyLoopPoints_.size();
+  for (int i = 0; i < numPts; ++i) {
+    const auto stPt = polyLoopPoints_[i];
+    const auto endPt = polyLoopPoints_[(i + 1) % numPts];
+    if (stPt == endPt) {
+      // Skip points that are equal.
+      continue;
+    }
+    // use x-z in point (i.e. projecting to ground plane)
+    bool checkCrossing =
+        checkPt(pt.x(), stPt.x(), endPt.x(), pt.z(), stPt.y(), endPt.y());
+    if (checkCrossing) {
+      ++count;
+    }
+  }
+
+  // Want odd crossings for being inside
+  return (count % 2 == 1);
+}  // SemanticRegion::contains
+
+void SemanticRegion::setBBox(const Mn::Vector3& min, const Mn::Vector3& max) {
+  bbox_ = box3f(Mn::EigenIntegration::cast<vec3f>(min),
+                Mn::EigenIntegration::cast<vec3f>(max));
+}  // SemanticRegion::setBBox
+
 namespace {
 /**
- * @brief Build an AABB for a given set of vertex indices in @p verts list, and
- * return in a std::pair, along with the count of verts used to build the AABB.
+ * @brief Build an AABB for a given set of vertex indices in @p verts list,
+ * and return in a std::pair, along with the count of verts used to build the
+ * AABB.
  * @param colorInt Semantic Color of object
  * @param verts The mesh's vertex buffer.
- * @param setOfIDXs set of vertex IDXs in the vertex buffer being used to build
- * the resultant AABB.
+ * @param setOfIDXs set of vertex IDXs in the vertex buffer being used to
+ * build the resultant AABB.
  */
 CCSemanticObject::ptr buildCCSemanticObjForSetOfVerts(
     uint32_t colorInt,
@@ -132,8 +292,8 @@ CCSemanticObject::ptr buildCCSemanticObjForSetOfVerts(
 }  // buildCCSemanticObjForSetOfVerts
 
 /**
- * @brief build per-SSD object vector of known semantic IDs - doing this in case
- * semanticIDs are not contiguous.
+ * @brief build per-SSD object vector of known semantic IDs - doing this in
+ * case semanticIDs are not contiguous.
  */
 
 std::vector<int> getObjsIdxToIDMap(
@@ -179,8 +339,8 @@ SemanticScene::buildCCBasedSemanticObjs(
     }
   }
 
-  // only map to semantic ID if semanticScene exists, otherwise return map with
-  // objects keyed by hex color
+  // only map to semantic ID if semanticScene exists, otherwise return map
+  // with objects keyed by hex color
   if (!semanticScene) {
     return semanticCCObjsByVertTag;
   }
@@ -375,8 +535,9 @@ std::vector<uint32_t> SemanticScene::buildSemanticOBBs(
   // number of unique ssdObjs mappings.
 
   for (int vertIdx = 0; vertIdx < vertSemanticIDs.size(); ++vertIdx) {
-    // semantic ID on vertex - valid values are 1->semanticIDToSSOBJidx.size().
-    // Invalid/unknown semantic ids are > semanticIDToSSOBJidx.size()
+    // semantic ID on vertex - valid values are
+    // 1->semanticIDToSSOBJidx.size(). Invalid/unknown semantic ids are >
+    // semanticIDToSSOBJidx.size()
     const auto semanticID = vertSemanticIDs[vertIdx];
     if ((semanticID >= 0) && (semanticID < semanticIDToSSOBJidx.size())) {
       const auto vert = vertices[vertIdx];
@@ -416,7 +577,8 @@ std::vector<uint32_t> SemanticScene::buildSemanticOBBs(
       center = .5f * (vertMax[semanticID] + vertMin[semanticID]);
       dims = vertMax[semanticID] - vertMin[semanticID];
       ESP_VERY_VERBOSE() << Cr::Utility::formatString(
-          "{} Semantic ID : {} : color : {} tag : {} present in {} verts | BB "
+          "{} Semantic ID : {} : color : {} tag : {} present in {} verts | "
+          "BB "
           "Center [{} {} {}] Dims [{} {} {}]",
           msgPrefix, semanticID, geo::getColorAsString(ssdObj.getColor()),
           ssdObj.id(), vertCounts[semanticID], center.x(), center.y(),

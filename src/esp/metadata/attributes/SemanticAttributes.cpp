@@ -8,17 +8,17 @@ namespace metadata {
 namespace attributes {
 
 /////////////////////////////////
-// SemanticRegionAttributes
+// SemanticVolumeAttributes
 
-SemanticRegionAttributes::SemanticRegionAttributes(const std::string& handle)
-    : AbstractAttributes("SemanticRegionAttributes", handle) {
+SemanticVolumeAttributes::SemanticVolumeAttributes(const std::string& handle)
+    : AbstractAttributes("SemanticVolumeAttributes", handle) {
   // Initialize values
   set("floor_height", 0.0);
   set("extrusion_height", 2.5);
 
-}  // SemanticRegionAttributes ctor
+}  // SemanticVolumeAttributes ctor
 
-std::string SemanticRegionAttributes::getObjectInfoHeaderInternal() const {
+std::string SemanticVolumeAttributes::getObjectInfoHeaderInternal() const {
   std::string res =
       "Name,Label,Floor Height,Extrusion Height,Min Bounds,Max Bounds,";
   int iter = 0;
@@ -29,7 +29,7 @@ std::string SemanticRegionAttributes::getObjectInfoHeaderInternal() const {
   return res;
 }
 
-std::string SemanticRegionAttributes::getObjectInfoInternal() const {
+std::string SemanticVolumeAttributes::getObjectInfoInternal() const {
   std::string res = Cr::Utility::formatString(
       "{},{},{},{},{},{},", getAsString("handle"), getAsString("label"),
       getAsString("floor_height"), getAsString("extrusion_height"),
@@ -42,12 +42,12 @@ std::string SemanticRegionAttributes::getObjectInfoInternal() const {
   Cr::Utility::formatInto(res, res.size(), "],");
 
   return res;
-}  // SemanticRegionAttributes::getObjectInfoInternal()
+}  // SemanticVolumeAttributes::getObjectInfoInternal()
 
-void SemanticRegionAttributes::writeValuesToJson(
+void SemanticVolumeAttributes::writeValuesToJson(
     io::JsonGenericValue& jsonObj,
     io::JsonAllocator& allocator) const {
-  // map "handle" to "name" key in json - this SemanticRegionAttributes' handle
+  // map "handle" to "name" key in json - this SemanticVolumeAttributes' handle
   // is its unique name
   writeValueToJson("handle", "name", jsonObj, allocator);
   writeValueToJson("label", jsonObj, allocator);
@@ -60,7 +60,7 @@ void SemanticRegionAttributes::writeValuesToJson(
     io::addMember(jsonObj, "poly_loop", polyLoop_, allocator);
   }
 
-}  // SemanticRegionAttributes::writeValuesToJson
+}  // SemanticVolumeAttributes::writeValuesToJson
 
 /////////////////////////////////
 // SemanticAttributes
@@ -85,7 +85,7 @@ SemanticAttributes::SemanticAttributes(const SemanticAttributes& otr)
       availableRegionInstIDs_(otr.availableRegionInstIDs_) {
   // get refs to internal subconfigs for semantic region attributes
   regionAnnotationConfig_ = editSubconfig<Configuration>("region_annotations");
-  copySubconfigIntoMe<SemanticRegionAttributes>(otr.regionAnnotationConfig_,
+  copySubconfigIntoMe<SemanticVolumeAttributes>(otr.regionAnnotationConfig_,
                                                 regionAnnotationConfig_);
 }  // SemanticAttributes copy ctor
 
@@ -162,7 +162,7 @@ SemanticAttributes& SemanticAttributes::operator=(
     // get refs to internal subconfigs for semantic region attributes
     regionAnnotationConfig_ =
         editSubconfig<Configuration>("region_annotations");
-    copySubconfigIntoMe<SemanticRegionAttributes>(otr.regionAnnotationConfig_,
+    copySubconfigIntoMe<SemanticVolumeAttributes>(otr.regionAnnotationConfig_,
                                                   regionAnnotationConfig_);
   }
   return *this;

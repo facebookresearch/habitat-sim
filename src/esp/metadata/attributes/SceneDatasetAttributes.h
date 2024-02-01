@@ -401,8 +401,11 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * @brief will create a new @ref esp::metadata::attributes::SemanticAttributes
    * with the given handle if one does not exist.
    * @param semanticHandle The name of the attributes to create.
+   * @param dbgSourceAttribs The name of the caller, for debug purposes should
+   * this fail.
    */
-  void createSemanticAttribsFromDS(const std::string& semanticHandle);
+  void createSemanticAttribsFromDS(const std::string& semanticHandle,
+                                   const std::string& dbgSourceAttribs);
 
   /**
    * @brief Retrieve a comma-separated string holding the header values for the

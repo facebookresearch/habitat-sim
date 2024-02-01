@@ -15,20 +15,20 @@ namespace attributes {
 // Semantic attributes
 
 /**
- * @brief This class describes the semantic attributes for a specific region
- * annotation.
+ * @brief This class describes the attributes describing some Semantic
+ * Volume. Currently only used for region annotations.
  */
-class SemanticRegionAttributes : public AbstractAttributes {
+class SemanticVolumeAttributes : public AbstractAttributes {
  public:
-  explicit SemanticRegionAttributes(const std::string& handle);
+  explicit SemanticVolumeAttributes(const std::string& handle);
 
   /**
-   * @brief Get the label assigned to this semantic region.
+   * @brief Get the label assigned to this semantic volume.
    */
   std::string getLabel() const { return get<std::string>("label"); }
 
   /**
-   * @brief Set the label assigned to this semantic region.
+   * @brief Set the label assigned to this semantic volume.
    */
   void setLabel(const std::string& _label) { set("label", _label); }
 
@@ -103,8 +103,8 @@ class SemanticRegionAttributes : public AbstractAttributes {
 
   /**
    * @brief Populate a JSON object with all the first-level values held in this
-   * SemanticRegionAttributes.  Default is overridden to handle special
-   * cases for SemanticRegionAttributes.
+   * SemanticVolumeAttributes.  Default is overridden to handle special
+   * cases for SemanticVolumeAttributes.
    */
   void writeValuesToJson(io::JsonGenericValue& jsonObj,
                          io::JsonAllocator& allocator) const override;
@@ -129,7 +129,7 @@ class SemanticRegionAttributes : public AbstractAttributes {
   std::vector<Magnum::Vector3> polyLoop_{};
 
  public:
-  ESP_SMART_POINTERS(SemanticRegionAttributes)
+  ESP_SMART_POINTERS(SemanticVolumeAttributes)
 
 };  // class SemanticAttributes
 
@@ -241,8 +241,8 @@ class SemanticAttributes : public AbstractAttributes {
   /**
    * @brief Add an object instance attributes to this scene instance.
    */
-  void addRegionInstanceAttrs(SemanticRegionAttributes::ptr _regionInstance) {
-    setSubAttributesInternal<SemanticRegionAttributes>(
+  void addRegionInstanceAttrs(SemanticVolumeAttributes::ptr _regionInstance) {
+    setSubAttributesInternal<SemanticVolumeAttributes>(
         _regionInstance, availableRegionInstIDs_, regionAnnotationConfig_,
         "region_desc_");
   }
@@ -250,12 +250,12 @@ class SemanticAttributes : public AbstractAttributes {
   /**
    * @brief Get the object instance descriptions for this scene
    */
-  std::vector<SemanticRegionAttributes::cptr> getRegionInstances() const {
-    return getSubAttributesListInternal<SemanticRegionAttributes>(
+  std::vector<SemanticVolumeAttributes::cptr> getRegionInstances() const {
+    return getSubAttributesListInternal<SemanticVolumeAttributes>(
         regionAnnotationConfig_);
   }
   /**
-   * @brief Return the number of defined @ref SemanticRegionAttributes
+   * @brief Return the number of defined @ref SemanticVolumeAttributes
    * subconfigs in this scene instance.
    */
   int getNumRegionInstances() const {
@@ -272,8 +272,8 @@ class SemanticAttributes : public AbstractAttributes {
 
   /**
    * @brief Populate a JSON object with all the first-level values held in this
-   * SemanticRegionAttributes.  Default is overridden to handle special
-   * cases for SemanticRegionAttributes.
+   * SemanticVolumeAttributes.  Default is overridden to handle special
+   * cases for SemanticVolumeAttributes.
    */
   void writeValuesToJson(io::JsonGenericValue& jsonObj,
                          io::JsonAllocator& allocator) const override;
@@ -308,7 +308,7 @@ class SemanticAttributes : public AbstractAttributes {
    * @brief Retrieve a comma-separated string holding the header values for
    * the info returned for this managed object, type-specific. Don't use this
    * method, since we have both SemanticAttributes data to save and the
-   * individual SemanticRegionAttributes data to save.
+   * individual SemanticVolumeAttributes data to save.
    */
   std::string getObjectInfoHeaderInternal() const override { return ""; }
 
