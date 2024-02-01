@@ -449,7 +449,7 @@ class BulletArticulatedObject : public ArticulatedObject {
 
   //! Instantly set activation state of the base and link collision objects,
   //! otherwise deferred to simulation time
-  void setCollisionObjectsActivateState(bool activate);
+  void setCollisionObjectsActivateState(bool activate) const;
 
   int nextJointMotorId_ = 0;
 

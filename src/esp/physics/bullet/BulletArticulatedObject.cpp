@@ -600,7 +600,8 @@ void BulletArticulatedObject::reset() {
   btMultiBody_->clearForcesAndTorques();
 }
 
-void BulletArticulatedObject::setCollisionObjectsActivateState(bool activate) {
+void BulletArticulatedObject::setCollisionObjectsActivateState(
+    bool activate) const {
   if (activate) {
     btMultiBody_->getBaseCollider()->activate();
     for (int i = 0; i < btMultiBody_->getNumLinks(); ++i) {
