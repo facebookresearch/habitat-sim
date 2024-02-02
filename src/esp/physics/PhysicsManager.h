@@ -346,40 +346,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
                 scene::SceneNode* attachmentNode = nullptr,
                 const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
 
-  /** @brief Queries simulator for drawables, if simulator exists, otherwise
-   * passes nullptr, before instancing a physical object from an object
-   * properties template in the @ref
-   * esp::metadata::managers::ObjectAttributesManager by template handle.
-   * @param objectAttributes The object's template in @ref
-   * esp::metadata::managers::ObjectAttributesManager.
-   * @param attachmentNode If supplied, attach the new physical object to an
-   * existing SceneNode.
-   * @param lightSetup The string name of the desired lighting setup to use.
-   * @return the instanced object's ID, mapping to it in @ref
-   * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
-   */
-  int addObjectQueryDrawables(
-      const esp::metadata::attributes::ObjectAttributes::ptr& objectAttributes,
-      scene::SceneNode* attachmentNode = nullptr,
-      const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
-
-  /** @brief Instance a physical object from an ObjectAttributes template.
-   * @param objectAttributes The object's template to use to instantiate the
-   * object.
-   * @param drawables Reference to the scene graph drawables group to enable
-   * rendering of the newly initialized object.
-   * @param attachmentNode If supplied, attach the new physical object to an
-   * existing SceneNode.
-   * @param lightSetup The string name of the desired lighting setup to use.
-   * @return the instanced object's ID, mapping to it in @ref
-   * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
-   */
-  int addObject(
-      const esp::metadata::attributes::ObjectAttributes::ptr& objectAttributes,
-      DrawableGroup* drawables,
-      scene::SceneNode* attachmentNode = nullptr,
-      const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
-
   /**
    * @brief Create an object wrapper appropriate for this physics manager.
    * Overridden if called by dynamics-library-enabled PhysicsManager
@@ -488,57 +454,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
 
   /**
-   * @brief Queries simulator for drawables, if simulator exists, otherwise
-   * passes nullptr, before instancing an articulated object from an
-   * @ref esp::metadata::attributes::ArticulatedObjectAttributes template
-   *
-   * @param artObjAttributes The @ref ArticulatedObject's template to use to create it.
-   * @param forceReload If true, reload the source URDF from file, replacing the
-   * cached model.
-   * @param lightSetup The string name of the desired lighting setup to use.
-   * @return The instanced @ref ArticulatedObject 's ID, mapping to the articulated
-   * object in @ref PhysicsManager::existingObjects_ if successful, or
-   * @ref esp::ID_UNDEFINED. These values come from the same pool used
-   * by rigid objects.
-   */
-  int addArticulatedObjectQueryDrawables(
-      const esp::metadata::attributes::ArticulatedObjectAttributes::ptr&
-          artObjAttributes,
-      bool forceReload = false,
-      const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
-
-  /**
-   * @brief Load, parse, and import a URDF file instantiating an @ref
-   * ArticulatedObject in the world based on the urdf filepath specified in @ref
-   * esp::metadata::attributes::ArticulatedObjectAttributes. This version
-   * requires drawables to be provided.
-   *
-   * Not implemented in base PhysicsManager.
-   * @param artObjAttributes The @ref ArticulatedObject's template to use to create it.
-   * @param drawables Reference to the scene graph drawables group to enable
-   * rendering of the newly initialized @ref ArticulatedObject.
-   * @param forceReload If true, force the reload of the source URDF from file,
-   * replacing the cached model if it exists.
-   * @param lightSetup The string name of the desired lighting setup to use.
-   *
-   * @return The instanced @ref ArticulatedObject 's ID, mapping to the articulated
-   * object in @ref PhysicsManager::existingObjects_ if successful, or
-   * @ref esp::ID_UNDEFINED. These values come from the same pool used
-   * by rigid objects.
-   */
-  virtual int addArticulatedObject(
-      CORRADE_UNUSED const
-          esp::metadata::attributes::ArticulatedObjectAttributes::ptr&
-              artObjAttributes,
-      CORRADE_UNUSED DrawableGroup* drawables,
-      CORRADE_UNUSED bool forceReload = false,
-      CORRADE_UNUSED const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
-    ESP_ERROR() << "Not implemented in base PhysicsManager. Install with "
-                   "--bullet to use this feature.";
-    return ID_UNDEFINED;
-  }
-
-  /**
    * @brief Load, parse, and import a URDF file instantiating an @ref
    * ArticulatedObject in the world.  This version will query an existing
    * simulator for drawables and therefore does not require drawables to be
@@ -576,7 +491,10 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
       bool intertiaFromURDF = false,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
 
-  //! Remove an @ref ArticulatedObject from the world by unique id.
+  /**
+   * @brief Remove an @ref ArticulatedObject from the world by unique id.
+   * @param objectId The Id of the object to remove
+   */
   virtual void removeArticulatedObject(int objectId);
 
   //! Get the current number of instanced articulated objects in the world.
@@ -1022,6 +940,91 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   }
 
  protected:
+  /** @brief Queries simulator for drawables, if simulator exists, otherwise
+   * passes nullptr, before instancing a physical object from an object
+   * properties template in the @ref
+   * esp::metadata::managers::ObjectAttributesManager by template handle.
+   * @param objectAttributes The object's template in @ref
+   * esp::metadata::managers::ObjectAttributesManager.
+   * @param attachmentNode If supplied, attach the new physical object to an
+   * existing SceneNode.
+   * @param lightSetup The string name of the desired lighting setup to use.
+   * @return the instanced object's ID, mapping to it in @ref
+   * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
+   */
+  int addObjectQueryDrawables(
+      const esp::metadata::attributes::ObjectAttributes::ptr& objectAttributes,
+      scene::SceneNode* attachmentNode = nullptr,
+      const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
+
+  /** @brief Instance a physical object from an ObjectAttributes template.
+   * @param objectAttributes The object's template to use to instantiate the
+   * object.
+   * @param drawables Reference to the scene graph drawables group to enable
+   * rendering of the newly initialized object.
+   * @param attachmentNode If supplied, attach the new physical object to an
+   * existing SceneNode.
+   * @param lightSetup The string name of the desired lighting setup to use.
+   * @return the instanced object's ID, mapping to it in @ref
+   * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
+   */
+  int addObjectInternal(
+      const esp::metadata::attributes::ObjectAttributes::ptr& objectAttributes,
+      DrawableGroup* drawables,
+      scene::SceneNode* attachmentNode = nullptr,
+      const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
+
+  /**
+   * @brief Queries simulator for drawables, if simulator exists, otherwise
+   * passes nullptr, before instancing an articulated object from an
+   * @ref esp::metadata::attributes::ArticulatedObjectAttributes template
+   *
+   * @param artObjAttributes The @ref ArticulatedObject's template to use to create it.
+   * @param forceReload If true, reload the source URDF from file, replacing the
+   * cached model.
+   * @param lightSetup The string name of the desired lighting setup to use.
+   * @return The instanced @ref ArticulatedObject 's ID, mapping to the articulated
+   * object in @ref PhysicsManager::existingObjects_ if successful, or
+   * @ref esp::ID_UNDEFINED. These values come from the same pool used
+   * by rigid objects.
+   */
+  int addArticulatedObjectQueryDrawables(
+      const esp::metadata::attributes::ArticulatedObjectAttributes::ptr&
+          artObjAttributes,
+      bool forceReload = false,
+      const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
+
+  /**
+   * @brief Load, parse, and import a URDF file instantiating an @ref
+   * ArticulatedObject in the world based on the urdf filepath specified in @ref
+   * esp::metadata::attributes::ArticulatedObjectAttributes. This version
+   * requires drawables to be provided.
+   *
+   * Not implemented in base PhysicsManager.
+   * @param artObjAttributes The @ref ArticulatedObject's template to use to create it.
+   * @param drawables Reference to the scene graph drawables group to enable
+   * rendering of the newly initialized @ref ArticulatedObject.
+   * @param forceReload If true, force the reload of the source URDF from file,
+   * replacing the cached model if it exists.
+   * @param lightSetup The string name of the desired lighting setup to use.
+   *
+   * @return The instanced @ref ArticulatedObject 's ID, mapping to the articulated
+   * object in @ref PhysicsManager::existingObjects_ if successful, or
+   * @ref esp::ID_UNDEFINED. These values come from the same pool used
+   * by rigid objects.
+   */
+  virtual int addArticulatedObjectInternal(
+      CORRADE_UNUSED const
+          esp::metadata::attributes::ArticulatedObjectAttributes::ptr&
+              artObjAttributes,
+      CORRADE_UNUSED DrawableGroup* drawables,
+      CORRADE_UNUSED bool forceReload = false,
+      CORRADE_UNUSED const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
+    ESP_ERROR() << "Not implemented in base PhysicsManager. Install with "
+                   "--bullet to use this feature.";
+    return ID_UNDEFINED;
+  }
+
   /**
    * @brief Internal use only. Remove a trajectory object, its mesh, and all
    * references to it.
@@ -1244,7 +1247,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
  public:
   ESP_SMART_POINTERS(PhysicsManager)
-};
+};  // class PhysicsManager
 
 }  // namespace physics
 

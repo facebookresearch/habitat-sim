@@ -115,7 +115,7 @@ bool BulletPhysicsManager::makeAndAddRigidObject(
   return objSuccess;
 }
 
-int BulletPhysicsManager::addArticulatedObject(
+int BulletPhysicsManager::addArticulatedObjectInternal(
     const esp::metadata::attributes::ArticulatedObjectAttributes::ptr&
         artObjAttributes,
     DrawableGroup* drawables,
@@ -237,7 +237,7 @@ int BulletPhysicsManager::addArticulatedObject(
 
   return articulatedObjectID;
 
-}  // BulletPhysicsManager::addArticulatedObject
+}  // BulletPhysicsManager::addArticulatedObjectInternal
 
 esp::physics::ManagedRigidObject::ptr
 BulletPhysicsManager::getRigidObjectWrapper() {

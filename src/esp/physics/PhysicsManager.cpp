@@ -82,6 +82,9 @@ bool PhysicsManager::addStageFinalize(
   return stageSuccess;
 }  // PhysicsManager::addStageFinalize
 
+/////////////////////////////////
+// Object Creation
+
 int PhysicsManager::addObject(const std::string& attributesHandle,
                               scene::SceneNode* attachmentNode,
                               const std::string& lightSetup) {
@@ -217,13 +220,15 @@ int PhysicsManager::addObjectQueryDrawables(
     // acquire context if available
     simulator_->getRenderGLContext();
     auto& drawables = simulator_->getDrawableGroup();
-    return addObject(objectAttributes, &drawables, attachmentNode, lightSetup);
+    return addObjectInternal(objectAttributes, &drawables, attachmentNode,
+                             lightSetup);
   }
   // support creation when simulator DNE
-  return addObject(objectAttributes, nullptr, attachmentNode, lightSetup);
+  return addObjectInternal(objectAttributes, nullptr, attachmentNode,
+                           lightSetup);
 }  // PhysicsManager::addObject
 
-int PhysicsManager::addObject(
+int PhysicsManager::addObjectInternal(
     const esp::metadata::attributes::ObjectAttributes::ptr& objectAttributes,
     DrawableGroup* drawables,
     scene::SceneNode* attachmentNode,
@@ -315,6 +320,8 @@ int PhysicsManager::addObject(
   return nextObjectID_;
 }  // PhysicsManager::addObject
 
+/////////////////////////////////
+// Articulated Object Creation
 int PhysicsManager::addArticulatedObject(const std::string& attributesHandle,
                                          bool forceReload,
                                          const std::string& lightSetup) {
@@ -328,8 +335,10 @@ int PhysicsManager::addArticulatedObject(const std::string& attributesHandle,
     return ID_UNDEFINED;
   }
   // attributes exist, get drawables if valid simulator accessible
-  return addArticulatedObjectQueryDrawables(attributes, forceReload,
-                                            lightSetup);
+  int aObjId =
+      addArticulatedObjectQueryDrawables(attributes, forceReload, lightSetup);
+
+  return aObjId;
 }  // PhysicsManager::addArticulatedObject
 
 int PhysicsManager::addArticulatedObject(int attributesID,
@@ -347,7 +356,55 @@ int PhysicsManager::addArticulatedObject(int attributesID,
   // attributes exist, get drawables if valid simulator accessible
   return addArticulatedObjectQueryDrawables(attributes, forceReload,
                                             lightSetup);
-}  // PhysicsManager::addObject
+}  // PhysicsManager::addArticulatedObject
+
+int PhysicsManager::addArticulatedObjectFromURDF(
+    const std::string& filepath,
+    bool fixedBase,
+    float globalScale,
+    float massScale,
+    bool forceReload,
+    bool maintainLinkOrder,
+    bool intertiaFromURDF,
+    const std::string& lightSetup) {
+  // Retrieve or create the appropriate ArticulatedObjectAttributes to create
+  // this AO.
+
+  bool attribsFound =
+      resourceManager_.getAOAttributesManager()->getObjectLibHasHandle(
+          filepath);
+
+  esp::metadata::attributes::ArticulatedObjectAttributes::ptr artObjAttributes =
+      attribsFound
+          ? resourceManager_.getAOAttributesManager()->getObjectCopyByHandle(
+                filepath)
+          : resourceManager_.getAOAttributesManager()->createObject(filepath,
+                                                                    true);
+
+  // Set pertinent values
+  artObjAttributes->setUniformScale(globalScale);
+  artObjAttributes->setMassScale(static_cast<double>(massScale));
+
+  artObjAttributes->setBaseType(metadata::attributes::getAOBaseTypeName(
+      fixedBase ? metadata::attributes::ArticulatedObjectBaseType::Fixed
+                : metadata::attributes::ArticulatedObjectBaseType::Free));
+
+  artObjAttributes->setInertiaSource(
+      metadata::attributes::getAOInertiaSourceName(
+          intertiaFromURDF
+              ? metadata::attributes::ArticulatedObjectInertiaSource::URDF
+              : metadata::attributes::ArticulatedObjectInertiaSource::
+                    Computed));
+
+  artObjAttributes->setLinkOrder(metadata::attributes::getAOLinkOrderName(
+      maintainLinkOrder
+          ? metadata::attributes::ArticulatedObjectLinkOrder::URDFOrder
+          : metadata::attributes::ArticulatedObjectLinkOrder::TreeTraversal));
+
+  return addArticulatedObjectQueryDrawables(artObjAttributes, forceReload,
+                                            lightSetup);
+
+}  // PhysicsManager::addArticulatedObjectFromURDF
 
 int PhysicsManager::addArticulatedObjectInstance(
     const std::shared_ptr<
@@ -464,69 +521,12 @@ int PhysicsManager::addArticulatedObjectQueryDrawables(
     // acquire context if available
     simulator_->getRenderGLContext();
     auto& drawables = simulator_->getDrawableGroup();
-    return addArticulatedObject(artObjAttributes, &drawables, forceReload,
-                                lightSetup);
+    return addArticulatedObjectInternal(artObjAttributes, &drawables,
+                                        forceReload, lightSetup);
   }
   // TODO Support non-existent simulator?
   return ID_UNDEFINED;
-}  // PhysicsManager::addObject
-
-int PhysicsManager::addArticulatedObjectFromURDF(
-    const std::string& filepath,
-    bool fixedBase,
-    float globalScale,
-    float massScale,
-    bool forceReload,
-    bool maintainLinkOrder,
-    bool intertiaFromURDF,
-    const std::string& lightSetup) {
-  if (simulator_ != nullptr) {
-    // acquire context if available
-    simulator_->getRenderGLContext();
-    auto& drawables = simulator_->getDrawableGroup();
-
-    // Retrieve or create the appropriate ArticulatedObjectAttributes to create
-    // this AO.
-
-    bool attribsFound =
-        resourceManager_.getAOAttributesManager()->getObjectLibHasHandle(
-            filepath);
-
-    esp::metadata::attributes::ArticulatedObjectAttributes::ptr
-        artObjAttributes =
-            attribsFound
-                ? resourceManager_.getAOAttributesManager()
-                      ->getObjectCopyByHandle(filepath)
-                : resourceManager_.getAOAttributesManager()->createObject(
-                      filepath, true);
-
-    // Set pertinent values
-    artObjAttributes->setUniformScale(globalScale);
-    artObjAttributes->setMassScale(static_cast<double>(massScale));
-
-    artObjAttributes->setBaseType(metadata::attributes::getAOBaseTypeName(
-        fixedBase ? metadata::attributes::ArticulatedObjectBaseType::Fixed
-                  : metadata::attributes::ArticulatedObjectBaseType::Free));
-
-    artObjAttributes->setInertiaSource(
-        metadata::attributes::getAOInertiaSourceName(
-            intertiaFromURDF
-                ? metadata::attributes::ArticulatedObjectInertiaSource::URDF
-                : metadata::attributes::ArticulatedObjectInertiaSource::
-                      Computed));
-
-    artObjAttributes->setLinkOrder(metadata::attributes::getAOLinkOrderName(
-        maintainLinkOrder
-            ? metadata::attributes::ArticulatedObjectLinkOrder::URDFOrder
-            : metadata::attributes::ArticulatedObjectLinkOrder::TreeTraversal));
-
-    return addArticulatedObject(artObjAttributes, &drawables, forceReload,
-                                lightSetup);
-  }
-  return ID_UNDEFINED;
-  //}  // PhysicsManager::addArticulatedObjectFromURDF
-
-}  // PhysicsManager::addArticulatedObjectFromURDF
+}  // PhysicsManager::addArticulatedObjectQueryDrawables
 
 void PhysicsManager::buildCurrentStateSceneAttributes(
     const metadata::attributes::SceneInstanceAttributes::ptr&
