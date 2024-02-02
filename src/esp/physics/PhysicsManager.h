@@ -286,7 +286,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * to create this stage. Might be empty.
    * @return true if successful and false otherwise
    */
-  bool addStage(
+  bool addStageInstance(
       const metadata::attributes::StageAttributes::ptr& initAttributes,
       const metadata::attributes::SceneObjectInstanceAttributes::cptr&
           stageInstanceAttributes);

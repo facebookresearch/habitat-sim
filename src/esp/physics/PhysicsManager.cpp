@@ -56,7 +56,7 @@ PhysicsManager::~PhysicsManager() {
   ESP_DEBUG() << "Deconstructing PhysicsManager";
 }
 
-bool PhysicsManager::addStage(
+bool PhysicsManager::addStageInstance(
     const metadata::attributes::StageAttributes::ptr& initAttributes,
     const metadata::attributes::SceneObjectInstanceAttributes::cptr&
         stageInstanceAttributes) {
