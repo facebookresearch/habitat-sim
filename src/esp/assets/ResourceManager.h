@@ -62,6 +62,7 @@ class AssetAttributesManager;
 class LightLayoutAttributesManager;
 class ObjectAttributesManager;
 class PhysicsAttributesManager;
+class SceneInstanceAttributesManager;
 class StageAttributesManager;
 }  // namespace managers
 }  // namespace metadata
@@ -313,7 +314,14 @@ class ResourceManager {
   getPhysicsAttributesManager() const;
 
   /**
-   * @brief Return manager for construction and access to scene attributes.
+   * @brief Return manager for construction and access to scene instance
+   * attributes.
+   */
+  std::shared_ptr<metadata::managers::SceneInstanceAttributesManager>
+  getSceneInstanceAttributesManager() const;
+
+  /**
+   * @brief Return manager for construction and access to stage attributes.
    */
   std::shared_ptr<metadata::managers::StageAttributesManager>
   getStageAttributesManager() const;

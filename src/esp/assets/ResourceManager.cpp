@@ -107,6 +107,7 @@ using metadata::managers::AOAttributesManager;
 using metadata::managers::AssetAttributesManager;
 using metadata::managers::ObjectAttributesManager;
 using metadata::managers::PhysicsAttributesManager;
+using metadata::managers::SceneInstanceAttributesManager;
 using metadata::managers::StageAttributesManager;
 using Mn::Trade::MaterialAttribute;
 
@@ -2994,6 +2995,11 @@ ResourceManager::getAOAttributesManager() const {
 metadata::managers::PhysicsAttributesManager::ptr
 ResourceManager::getPhysicsAttributesManager() const {
   return metadataMediator_->getPhysicsAttributesManager();
+}
+
+metadata::managers::SceneInstanceAttributesManager::ptr
+ResourceManager::getSceneInstanceAttributesManager() const {
+  return metadataMediator_->getSceneInstanceAttributesManager();
 }
 
 metadata::managers::StageAttributesManager::ptr
