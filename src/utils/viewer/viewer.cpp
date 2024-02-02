@@ -883,7 +883,7 @@ Viewer::Viewer(const Arguments& arguments)
     if (!font_ || !font_->openData(rs.getRaw("ProggyClean.ttf"), fontSize))
       Mn::Fatal{} << "Cannot open font file";
 
-    fontGlyphCache_.emplace(Mn::Vector2i{256});
+    fontGlyphCache_.emplace(Mn::Vector2i{256}, Mn::Vector2i{1});
     /* Don't destroy the bitmap font with smooth scaling */
     fontGlyphCache_->texture().setMagnificationFilter(
         Mn::SamplerFilter::Nearest);

@@ -50,7 +50,7 @@ int StageAttributesManager::registerObjectFinalize(
     StageAttributes::ptr stageAttributes,
     const std::string& stageAttributesHandle,
     bool forceRegistration) {
-  if (stageAttributes->getRenderAssetHandle() == "") {
+  if (stageAttributes->getRenderAssetHandle().empty()) {
     ESP_ERROR(Mn::Debug::Flag::NoSpace)
         << "Attributes template named `" << stageAttributesHandle
         << "` does not have a valid render asset handle specified, so "
@@ -183,35 +183,35 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
     // filename fields that may have %%USE_FILENAME%% directive specified in the
     // default attributes.
     // Render asset handle
-    setHandleFromDefaultTag(newAttributes,
-                            newAttributes->getRenderAssetHandle(),
-                            [newAttributes](const std::string& newHandle) {
-                              newAttributes->setRenderAssetHandle(newHandle);
-                            });
+    setFilenameFromDefaultTag(newAttributes,
+                              newAttributes->getRenderAssetHandle(),
+                              [newAttributes](const std::string& newHandle) {
+                                newAttributes->setRenderAssetHandle(newHandle);
+                              });
     // Collision asset handle
-    setHandleFromDefaultTag(newAttributes,
-                            newAttributes->getCollisionAssetHandle(),
-                            [newAttributes](const std::string& newHandle) {
-                              newAttributes->setCollisionAssetHandle(newHandle);
-                            });
+    setFilenameFromDefaultTag(
+        newAttributes, newAttributes->getCollisionAssetHandle(),
+        [newAttributes](const std::string& newHandle) {
+          newAttributes->setCollisionAssetHandle(newHandle);
+        });
     // navmesh asset handle
-    setHandleFromDefaultTag(newAttributes,
-                            newAttributes->getNavmeshAssetHandle(),
-                            [newAttributes](const std::string& newHandle) {
-                              newAttributes->setNavmeshAssetHandle(newHandle);
-                            });
+    setFilenameFromDefaultTag(newAttributes,
+                              newAttributes->getNavmeshAssetHandle(),
+                              [newAttributes](const std::string& newHandle) {
+                                newAttributes->setNavmeshAssetHandle(newHandle);
+                              });
     // Semantic Scene Descriptor text filehandle
-    setHandleFromDefaultTag(
+    setFilenameFromDefaultTag(
         newAttributes, newAttributes->getSemanticDescriptorFilename(),
         [newAttributes](const std::string& newHandle) {
           newAttributes->setSemanticDescriptorFilename(newHandle);
         });
     // Semantic Scene asset handle
-    setHandleFromDefaultTag(newAttributes,
-                            newAttributes->getSemanticAssetHandle(),
-                            [newAttributes](const std::string& newHandle) {
-                              newAttributes->setSemanticAssetHandle(newHandle);
-                            });
+    setFilenameFromDefaultTag(
+        newAttributes, newAttributes->getSemanticAssetHandle(),
+        [newAttributes](const std::string& newHandle) {
+          newAttributes->setSemanticAssetHandle(newHandle);
+        });
   }
 
   // set defaults that config files or other constructive processes might

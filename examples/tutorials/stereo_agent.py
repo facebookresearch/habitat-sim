@@ -15,7 +15,7 @@ def _render(sim, display, depth=False):
     for _ in range(100):
         # Just spin in a circle
         obs = sim.step("turn_right")
-        # Put the two stereo observations next to eachother
+        # Put the two stereo observations next to each other
         stereo_pair = np.concatenate([obs["left_sensor"], obs["right_sensor"]], axis=1)
 
         # If it is a depth pair, manually normalize into [0, 1]
@@ -70,7 +70,7 @@ def main(display=True):
     right_rgb_sensor.position = 1.5 * habitat_sim.geo.UP + 0.25 * habitat_sim.geo.RIGHT
 
     agent_config = habitat_sim.AgentConfiguration()
-    # Now we simly set the agent's list of sensor specs to be the two specs for our two sensors
+    # Now we simply set the agent's list of sensor specs to be the two specs for our two sensors
     agent_config.sensor_specifications = [left_rgb_sensor, right_rgb_sensor]
 
     sim = habitat_sim.Simulator(habitat_sim.Configuration(backend_cfg, [agent_config]))

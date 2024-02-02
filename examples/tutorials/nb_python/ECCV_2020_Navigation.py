@@ -1,13 +1,9 @@
 # ---
 # jupyter:
 #   accelerator: GPU
-#   colab:
-#     collapsed_sections: []
-#     name: 'ECCV 2020: Navigation'
-#     provenance: []
 #   jupytext:
 #     cell_metadata_filter: -all
-#     formats: nb_python//py:percent,colabs//ipynb
+#     formats: nb_python//py:percent,notebooks//ipynb
 #     notebook_metadata_filter: all
 #     text_representation:
 #       extension: .py
@@ -15,8 +11,19 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.13.7
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: Python 3 (ipykernel)
+#     language: python
 #     name: python3
+#   language_info:
+#     codemirror_mode:
+#       name: ipython
+#       version: 3
+#     file_extension: .py
+#     mimetype: text/x-python
+#     name: python
+#     nbconvert_exporter: python
+#     pygments_lexer: ipython3
+#     version: 3.9.17
 # ---
 
 # %% [markdown]
@@ -36,18 +43,12 @@
 # - pathfinding and navigation on the NavMesh
 
 # %%
-# @title Installation
-
-# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/main/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
-
-# %%
-# @title Colab Setup and Imports { display-mode: "form" }
+# @title Setup and Imports { display-mode: "form" }
 # @markdown (double click to see the code)
 
 import math
 import os
 import random
-import sys
 
 import git
 import imageio
@@ -64,18 +65,14 @@ import habitat_sim
 from habitat_sim.utils import common as utils
 from habitat_sim.utils import viz_utils as vut
 
-# %cd /content/habitat-sim
-
-if "google.colab" in sys.modules:
-    # This tells imageio to use the system FFMPEG that has hardware acceleration.
-    os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
-
 repo = git.Repo(".", search_parent_directories=True)
 dir_path = repo.working_tree_dir
-# %cd $dir_path
 data_path = os.path.join(dir_path, "data")
+print(f"data_path = {data_path}")
 # @markdown Optionally configure the save path for video output:
-output_directory = "examples/tutorials/nav_output/"  # @param {type:"string"}
+output_directory = os.path.join(
+    dir_path, "examples/tutorials/nav_output/"
+)  # @param {type:"string"}
 output_path = os.path.join(dir_path, output_directory)
 if not os.path.exists(output_path):
     os.mkdir(output_path)
@@ -152,12 +149,14 @@ if display:
 # %% [markdown]
 # ### Basic settings
 #
-# To begin with, we specify a scene we are going to load, designate a default agent, and describe a couple of basic sensor parameters, such as the type, position, resolution of the obeservation (width and height).
+# To begin with, we specify a scene we are going to load, designate a default agent, and describe a couple of basic sensor parameters, such as the type, position, resolution of the observation (width and height).
 
 # %%
 # This is the scene we are going to load.
 # we support a variety of mesh formats, such as .glb, .gltf, .obj, .ply
-test_scene = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
+test_scene = os.path.join(
+    data_path, "scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
+)
 
 sim_settings = {
     "scene": test_scene,  # Scene path
@@ -210,7 +209,7 @@ cfg = make_simple_cfg(sim_settings)
 # ### Create a simulator instance
 
 # %%
-try:  # Needed to handle out of order cell run in Colab
+try:  # Needed to handle out of order cell run in Jupyter
     sim.close()
 except NameError:
     pass
@@ -282,8 +281,12 @@ navigateAndSee(action)
 # %%
 # @title Configure Sim Settings
 
-test_scene = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
-mp3d_scene_dataset = "./data/scene_datasets/mp3d_example/mp3d.scene_dataset_config.json"
+test_scene = os.path.join(
+    data_path, "scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
+)
+mp3d_scene_dataset = os.path.join(
+    data_path, "scene_datasets/mp3d_example/mp3d.scene_dataset_config.json"
+)
 
 rgb_sensor = True  # @param {type:"boolean"}
 depth_sensor = True  # @param {type:"boolean"}
@@ -359,7 +362,7 @@ def make_cfg(settings):
 
 # %%
 cfg = make_cfg(sim_settings)
-# Needed to handle out of order cell run in Colab
+# Needed to handle out of order cell run in Jupyter
 try:  # Got to make initialization idiot proof
     sim.close()
 except NameError:
@@ -455,7 +458,7 @@ while total_frames < max_frames:
 # ##What is a NavMesh?
 
 # %% [markdown]
-# A navigation mesh (NavMesh) is a collection of two-dimensional convex polygons (i.e., a polygon mesh) that define which areas of an environment are traversable by an agent with a particular embodiement. In other words, an agent could freely navigate around within these areas unobstructed by objects, walls, gaps, overhangs, or other barriers that are part of the environment. Adjacent polygons are connected to each other in a graph enabling efficient pathfinding algorithms to chart routes between points on the NavMesh as visualized below.
+# A navigation mesh (NavMesh) is a collection of two-dimensional convex polygons (i.e., a polygon mesh) that define which areas of an environment are traversable by an agent with a particular embodiment. In other words, an agent could freely navigate around within these areas unobstructed by objects, walls, gaps, overhangs, or other barriers that are part of the environment. Adjacent polygons are connected to each other in a graph enabling efficient pathfinding algorithms to chart routes between points on the NavMesh as visualized below.
 # <div>
 # <img src="https://github.com/recastnavigation/recastnavigation/raw/main/Docs/Images/screenshot.png" width="300"/>
 # </div>
@@ -511,7 +514,7 @@ height = 1  # @param {type:"slider", min:-10, max:10, step:0.1}
 
 print("The NavMesh bounds are: " + str(sim.pathfinder.get_bounds()))
 if not custom_height:
-    # get bounding box minumum elevation for automatic height
+    # get bounding box minimum elevation for automatic height
     height = sim.pathfinder.get_bounds()[0][1]
 
 if not sim.pathfinder.is_loaded:
@@ -594,7 +597,7 @@ else:
 
     # @markdown ---
     # @markdown ### Visualization
-    # @markdown Running this cell generates a topdown visualization of the NavMesh with sampled points overlayed.
+    # @markdown Running this cell generates a topdown visualization of the NavMesh with sampled points overlaid.
     meters_per_pixel = 0.1  # @param {type:"slider", min:0.01, max:1.0, step:0.01}
 
     if display:
@@ -726,7 +729,9 @@ else:
 # %%
 # initialize a new simulator with the apartment_1 scene
 # this will automatically load the accompanying .navmesh file
-sim_settings["scene"] = "./data/scene_datasets/habitat-test-scenes/apartment_1.glb"
+sim_settings["scene"] = os.path.join(
+    data_path, "scene_datasets/habitat-test-scenes/apartment_1.glb"
+)
 cfg = make_cfg(sim_settings)
 try:  # Got to make initialization idiot proof
     sim.close()
@@ -736,7 +741,7 @@ sim = habitat_sim.Simulator(cfg)
 
 # the navmesh can also be explicitly loaded
 sim.pathfinder.load_nav_mesh(
-    "./data/scene_datasets/habitat-test-scenes/apartment_1.navmesh"
+    os.path.join(data_path, "scene_datasets/habitat-test-scenes/apartment_1.navmesh")
 )
 
 # %% [markdown]
@@ -763,15 +768,15 @@ sim.pathfinder.load_nav_mesh(
 #   - **agent_max_slope** - The maximum slope that is considered navigable. [Limits: 0 <= value < 85] [Units: Degrees]
 #
 # - **Navigable area filtering options** (default active):
-#   - **filter_low_hanging_obstacles** - Marks navigable spans as non-navigable if the clearence above the span is less than the specified height.
+#   - **filter_low_hanging_obstacles** - Marks navigable spans as non-navigable if the clearance above the span is less than the specified height.
 #   - **filter_ledge_spans** - Marks spans that are ledges as non-navigable. This filter reduces the impact of the overestimation of conservative voxelization so the resulting mesh will not have regions hanging in the air over ledges.
-#   - **filter_walkable_low_height_spans** - Marks navigable spans as non-navigable if the clearence above the span is less than the specified height. Allows the formation of navigable regions that will flow over low lying objects such as curbs, and up structures such as stairways.
+#   - **filter_walkable_low_height_spans** - Marks navigable spans as non-navigable if the clearance above the span is less than the specified height. Allows the formation of navigable regions that will flow over low lying objects such as curbs, and up structures such as stairways.
 #
 # - **Detail mesh generation parameters**:
 #   - **region_min_size** - Minimum number of cells allowed to form isolated island areas.
 #   - **region_merge_size** - Any 2-D regions with a smaller span (cell count) will, if possible, be merged with larger regions. [Limit: >=0]
 #   - **edge_max_len** - The maximum allowed length for contour edges along the border of the mesh. Extra vertices will be inserted as needed to keep contour edges below this length. A value of zero effectively disables this feature. [Limit: >=0] [ / cell_size]
-#   - **edge_max_error** - The maximum distance a simplfied contour's border edges should deviate the original raw contour. [Limit: >=0]
+#   - **edge_max_error** - The maximum distance a simplified contour's border edges should deviate the original raw contour. [Limit: >=0]
 #   - **verts_per_poly** - The maximum number of vertices allowed for polygons generated during the contour to polygon conversion process.[Limit: >= 3]
 #   - **detail_sample_dist** - Sets the sampling distance to use when generating the detail mesh. (For height detail only.) [Limits: 0 or >= 0.9] [x cell_size]
 #   - **detail_sample_max_error** - The maximum distance the detail mesh surface should deviate from heightfield data. (For height detail only.) [Limit: >=0] [x cell_height]
@@ -929,7 +934,7 @@ else:
 # fmt: off
 # @markdown An existing NavMesh can be saved with *Pathfinder.save_nav_mesh(filename)*
 if sim.pathfinder.is_loaded:
-    navmesh_save_path = "/content/habitat-sim/data/test_saving.navmesh" #@param {type:"string"}
+    navmesh_save_path = os.path.join(data_path, "test_saving.navmesh") #@param {type:"string"}
     sim.pathfinder.save_nav_mesh(navmesh_save_path)
     print('Saved NavMesh to "' + navmesh_save_path + '"')
     sim.pathfinder.load_nav_mesh(navmesh_save_path)
@@ -941,7 +946,7 @@ if sim.pathfinder.is_loaded:
 # The following example demonstrates taking random agent actions on the NavMesh. Both continuous and discrete action spaces are available. Sliding vs. non-sliding scenarios are compared.
 #
 # ## What is sliding?
-# Most game engines allow agents to slide along obstacles when commanding actions which collide with the environment. While this is a reasonable behavior in games, it does not accuractely reflect the result of collisions between robotic agents and the environment.
+# Most game engines allow agents to slide along obstacles when commanding actions which collide with the environment. While this is a reasonable behavior in games, it does not accurately reflect the result of collisions between robotic agents and the environment.
 #
 # We note that **allowing sliding** makes training easier and results in higher simulation performance, but **hurts sim-2-real transfer** of trained policies.
 #
@@ -964,9 +969,9 @@ use_current_scene = False  # @param {type:"boolean"}
 sim_settings["seed"] = seed
 if not use_current_scene:
     # reload a default nav scene
-    sim_settings[
-        "scene"
-    ] = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
+    sim_settings["scene"] = os.path.join(
+        data_path, "scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
+    )
     cfg = make_cfg(sim_settings)
     try:  # make initialization Colab cell order proof
         sim.close()
@@ -1092,7 +1097,7 @@ for iteration in range(2):
                 )
                 agent.set_state(agent_state)
 
-                # Check if a collision occured
+                # Check if a collision occurred
                 dist_moved_before_filter = (
                     target_rigid_state.translation - previous_rigid_state.translation
                 ).dot()
@@ -1116,7 +1121,7 @@ for iteration in range(2):
     print("frames = " + str(len(observations)))
     # video rendering with embedded 1st person view
     if do_make_video:
-        # use the vieo utility to render the observations
+        # use the video utility to render the observations
         vut.make_video(
             observations=observations,
             primary_obs="color_sensor",

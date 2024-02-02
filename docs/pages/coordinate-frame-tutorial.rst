@@ -6,7 +6,7 @@ Coordinate Frame Tutorial
 .. contents::
     :class: m-block m-default
 
-The example code below is available on `Colab <https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/coordinate_frame_tutorial.ipynb>`_, or runnable via:
+The example code below is available as a Jupyter notebook, or runnable via:
 
 .. code:: shell-session
 

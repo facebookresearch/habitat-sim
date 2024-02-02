@@ -197,7 +197,7 @@ class AbstractAttributes
       const std::string& subConfigNamePrefix,
       const std::shared_ptr<Configuration>& subAttrConfig) const {
     int res = 0;
-    if (subConfigNamePrefix == "") {
+    if (subConfigNamePrefix.empty()) {
       return subAttrConfig->getNumSubconfigEntries();
     }
     // iterator to subAttrConfig's subConfigs
@@ -399,7 +399,7 @@ void AbstractAttributes::setSubAttributesInternal(
   }
   // get last key
   subAttrConfig->setSubconfigPtr<T>(
-      objInstNamePrefix == ""
+      objInstNamePrefix.empty()
           ? objInst->getHandle()
           : Cr::Utility::formatString("{:.05d}_{}{}", objInst->getID(),
                                       objInstNamePrefix,

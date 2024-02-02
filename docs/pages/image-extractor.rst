@@ -25,7 +25,7 @@ Habitat Sim provides an API to extract static images from a scene. The main clas
 * pose_extractor_name: The name of the pose extractor used to programmatically define camera poses for image extraction. If the user registered a custom pose extractor (see "Custom Pose Extraction" section), this is the name given during registration. Default "closest_point_extractor".
 * shuffle: Whether to shuffle the extracted images once they have been extracted. Default True.
 * split: A tuple of train/test split percentages. Must add to 100. Default (70, 30).
-* use_chaching: If True, ImageExtractor caches images in memory for quicker access during training. Default True.
+* use_caching: If True, ImageExtractor caches images in memory for quicker access during training. Default True.
 * pixels_per_meter: Resolution of topdown map (explained below). 0.1 means each pixel in the topdown map represents 0.1 x 0.1 meters in the coordinate system of the scene. Default 0.1.
 
 **Methods**
@@ -60,7 +60,7 @@ Returns a list of the names of all the semantic classes represented in the curre
 
 ``close() -> None``:
 
-The ImageExtractor uses an instance of habitat_sim.Simulator on the backend to extract images, of which only one can be instantiated at a time. Therefore, if you try to instantiate two ImageExtractors, you will get an error. You must call this method before instantiating another ImageExtractor. This method deletes the simulator associated with the current ImageExtracor instance.
+The ImageExtractor uses an instance of habitat_sim.Simulator on the backend to extract images, of which only one can be instantiated at a time. Therefore, if you try to instantiate two ImageExtractors, you will get an error. You must call this method before instantiating another ImageExtractor. This method deletes the simulator associated with the current ImageExtractor instance.
 
 -----
 
@@ -164,7 +164,7 @@ Make sure you have Habitat Sim correctly installed and the data downloaded (see 
             # different chairs will be marked with different id's). So we need
             # to create a mapping from these instance id to the class labels we
             # want to predict. We will use the below dictionaries to define a
-            # funtion that takes the raw output of the semantic sensor and creates
+            # function that takes the raw output of the semantic sensor and creates
             # a 2d numpy array of out class labels.
             self.labels = {
                 'background': 0,
@@ -448,7 +448,7 @@ After training for a short time on a small training dataset, we are able to see 
 .. image:: ../images/semantic-segmentation-results.png
 
 
-On the top row we see the input to the model which is the batch of RGB images. On the middle row is the grouth truth masks. On the bottom row are the masks that the model predicted.
+On the top row we see the input to the model which is the batch of RGB images. On the middle row is the ground truth masks. On the bottom row are the masks that the model predicted.
 
 
 
@@ -475,9 +475,9 @@ habitat_sim.registry (i.e. adding the @registry.register_pose_extractor(name) de
 `Default Behavior`_
 -------------------
 
-The default behavior is reliant on something called the topdown view of a scene, which is just a two-dimensional birds-eye representation of the scene. The topdown view is a two-dimensional array of 1s and 0s where 1 means that pixel is "navigable" in the scene (i.e. an agent can walk on top of that point) and 0 means that pixel is "unnavigable". For more detailed information about navigability and computing topdown maps, please refer to the `Habitat-Sim Basics for Navigation Colab notebook`_.
+The default behavior is reliant on something called the topdown view of a scene, which is just a two-dimensional birds-eye representation of the scene. The topdown view is a two-dimensional array of 1s and 0s where 1 means that pixel is "navigable" in the scene (i.e. an agent can walk on top of that point) and 0 means that pixel is "unnavigable". For more detailed information about navigability and computing topdown maps, please refer to the `Habitat-Sim Basics for Navigation Jupyter notebook`_.
 
-The default pose extractor is the ClosestPointExtractor, which behaves as follows. For each camera poisition, the pose extractor will aim the camera pose at the closest point that is "unnvaigable". For example, if the camera position is right next to a chair in the scene, and that chair is the closest point that an agent in the environment cannot walk on top of, the camera will point at the chair.
+The default pose extractor is the ClosestPointExtractor, which behaves as follows. For each camera position, the pose extractor will aim the camera pose at the closest point that is "unnvaigable". For example, if the camera position is right next to a chair in the scene, and that chair is the closest point that an agent in the environment cannot walk on top of, the camera will point at the chair.
 
 The ClosestPointExtractor will use the topdown view of the scene, which is given to it in its constructor, and create a grid of evenly spaced points. Each of those points will then yield a closest point as described above, which is used to define a camera angle, and subsequently a camera pose.
 
@@ -580,7 +580,7 @@ events happen:
         self.cfg = self._config_sim(sim.config.sim_cfg.scene_id, img_size)
         sim.reconfigure(self.cfg)
 
-2. A towndown view of the scene is created, which a 2d numpy array consisting of 0.0s (meaning the point is unnavigable) and 1.0s (meaning the point is navigable). We create a list of 3-tuples (<topdown view>, <scene filepath>, <reference point for the scene>), one for each scene. This allows us to switch between multiple scenes and have a coordinate reference point within each scene.
+2. A topdown view of the scene is created, which a 2d numpy array consisting of 0.0s (meaning the point is unnavigable) and 1.0s (meaning the point is navigable). We create a list of 3-tuples (<topdown view>, <scene filepath>, <reference point for the scene>), one for each scene. This allows us to switch between multiple scenes and have a coordinate reference point within each scene.
 
 .. code:: py
 
@@ -603,4 +603,4 @@ Thank you for reading!
 
 .. _this code: https://github.com/facebookresearch/habitat-sim/blob/main/src_python/habitat_sim/utils/data/pose_extractor.py
 
-.. _Habitat-Sim Basics for Navigation Colab notebook: https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/ECCV_2020_Navigation.ipynb
+.. _Habitat-Sim Basics for Navigation Jupyter notebook: https://github.com/facebookresearch/habitat-sim/blob/main/examples/tutorials/notebooks/ECCV_2020_Navigation.ipynb

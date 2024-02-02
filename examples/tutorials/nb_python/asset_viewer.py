@@ -1,14 +1,9 @@
 # ---
 # jupyter:
 #   accelerator: GPU
-#   colab:
-#     collapsed_sections: []
-#     name: Habitat-sim Asset Viewer
-#     private_outputs: true
-#     provenance: []
 #   jupytext:
 #     cell_metadata_filter: -all
-#     formats: nb_python//py:percent,colabs//ipynb
+#     formats: nb_python//py:percent,notebooks//ipynb
 #     notebook_metadata_filter: all
 #     text_representation:
 #       extension: .py
@@ -16,12 +11,20 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.13.7
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: Python 3 (ipykernel)
+#     language: python
 #     name: python3
+#   language_info:
+#     codemirror_mode:
+#       name: ipython
+#       version: 3
+#     file_extension: .py
+#     mimetype: text/x-python
+#     name: python
+#     nbconvert_exporter: python
+#     pygments_lexer: ipython3
+#     version: 3.9.17
 # ---
-
-# %% [markdown]
-# <a href="https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/asset_viewer.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
 # %% [markdown]
 # #Habitat-sim Asset Viewer
@@ -30,20 +33,12 @@
 #
 
 # %%
-# @title Installation { display-mode: "form" }
-# @markdown (double click to show code).
-
-# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/main/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
-
-# %%
 # @title Path Setup and Imports { display-mode: "form" }
 # @markdown (double click to show code).
 
-# %cd /content/habitat-sim
 ## [setup]
 import math
 import os
-import sys
 
 import git
 import numpy as np
@@ -63,20 +58,14 @@ try:
 except ImportError:
     HAS_WIDGETS = False
 
-
-if "google.colab" in sys.modules:
-    os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
-
 repo = git.Repo(".", search_parent_directories=True)
 dir_path = repo.working_tree_dir
-# %cd $dir_path
 data_path = os.path.join(dir_path, "data")
 # fmt: off
 output_directory = "examples/tutorials/asset_viewer_output/"  # @param {type:"string"}
 # fmt: on
 output_path = os.path.join(dir_path, output_directory)
-if not os.path.exists(output_path):
-    os.mkdir(output_path)
+os.makedirs(output_path, exist_ok=True)
 
 # define some globals the first time we run.
 if "sim" not in globals():
@@ -202,7 +191,9 @@ def make_default_settings():
     settings = {
         "width": 1280,  # Spatial resolution of the observations
         "height": 720,
-        "scene": "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb",  # Scene path
+        "scene": os.path.join(
+            data_path, "scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
+        ),  # Scene path
         "default_agent": 0,
         "sensor_height": 1.5,  # Height of sensors in meters
         "sensor_pitch": -math.pi / 8.0,  # sensor pitch (x rotation in rads)
@@ -569,7 +560,7 @@ def simulate(sim, dt=1.0, get_frames=True):
 
 
 # %%
-# @title Define Colab GUI Utility Functions { display-mode: "form" }
+# @title Define GUI Utility Functions { display-mode: "form" }
 # @markdown (double click to show code)
 
 # @markdown This cell provides utility functions to build and manage IPyWidget interactive components.
@@ -744,7 +735,7 @@ make_simulator_from_settings(sim_settings)
 # @markdown and then load it below by setting object_to_view_path
 # @markdown Put the full path to the asset you would like to view here :
 # fmt: off
-object_to_view_path = "./data/test_assets/scenes/simple_room.glb"  # @param {type:"string"}
+object_to_view_path = os.path.join(data_path, "test_assets/scenes/simple_room.glb")  # @param {type:"string"}
 # fmt: on
 
 # this is the name to save the resultant video with
@@ -798,7 +789,7 @@ if os.path.exists(object_to_view_path) and os.path.isfile(object_to_view_path):
     # set object to be static
     obj.motion_type = habitat_sim.physics.MotionType.STATIC
 
-    # initialize an agent and set its intial state
+    # initialize an agent and set its initial state
     agent = sim.initialize_agent(sim_settings["default_agent"])
     agent_state = habitat_sim.AgentState()
     agent_state.position = np.array([0.0, 0.0, 0.0])  # in world space
@@ -813,7 +804,7 @@ if os.path.exists(object_to_view_path) and os.path.isfile(object_to_view_path):
     # Create observations array
     observations = []
 
-    # @markdown Set how long the resutlant video should be, in seconds.  The object will make 1 full revolution during this time.
+    # @markdown Set how long the resultant video should be, in seconds.  The object will make 1 full revolution during this time.
     video_length = 4.8  # @param {type:"slider", min:1.0, max:20.0, step:0.1}
     # Sim time step
     time_step = 1.0 / 60.0
@@ -858,4 +849,3 @@ else:
         )
     )
 # [/build_carousel_view]
-# %%

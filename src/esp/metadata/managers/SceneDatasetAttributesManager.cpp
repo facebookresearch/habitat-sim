@@ -96,42 +96,38 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
                       dsAttribs->getSceneInstanceAttributesManager());
 
   // process navmesh instances
-  loadAndValidateMap(dsDir, "navmesh_instances", jsonConfig,
-                     dsAttribs->editNavmeshMap());
+  // load values into map
+  io::readMember<std::map<std::string, std::string>>(
+      jsonConfig, "navmesh_instances", dsAttribs->editNavmeshMap());
 
-  // process semantic scene descriptor instances
-  loadAndValidateMap(dsDir, "semantic_scene_descriptor_instances", jsonConfig,
-                     dsAttribs->editSemanticSceneDescrMap());
+  validateMap(dsDir, "navmesh_instances", dsAttribs->editNavmeshMap());
+
+  // process semantic scene descriptor instances, making a map to support
+  // key->value tag->path mappings for semantic scene descriptor files.
+  std::map<std::string, std::string> semanticPathnameMap;
+
+  readDatasetJSONCell(dsDir, "semantic_scene_descriptor_instances", jsonConfig,
+                      dsAttribs->getSemanticAttributesManager(),
+                      &semanticPathnameMap);
+
+  // Now process if any tag->path string->string mappings were found, by
+  // first checking if the map has any entries and if so verifying that the
+  // values correspond to existing paths. The key of each entry will be the
+  // key in the attributes manager, and the value will be a valid path,
+  // added to the attributes in some attributes-specific manner.
+
+  if (semanticPathnameMap.size() > 0) {
+    validateMap(dsDir, "semantic_scene_descriptor_instances",
+                semanticPathnameMap);
+    dsAttribs->setSemanticAttrSSDFilenames(semanticPathnameMap);
+    // use map of key->value pairs to build attributes.
+  } else {
+    ESP_VERY_VERBOSE() << "No Semantic tag-filepath mappings found in scene "
+                          "dataset config for dataset"
+                       << dsAttribs->getHandle();
+  }
 
 }  // SceneDatasetAttributesManager::setValsFromJSONDoc
-
-void SceneDatasetAttributesManager::loadAndValidateMap(
-    const std::string& dsDir,
-    const std::string& jsonTag,
-    const io::JsonGenericValue& jsonConfig,
-    std::map<std::string, std::string>& map) {
-  // load values into map
-  io::readMember<std::map<std::string, std::string>>(jsonConfig,
-                                                     jsonTag.c_str(), map);
-
-  // now verify that all entries in map exist.  If not replace entry with
-  // dsDir-prepended entry
-  for (std::pair<const std::string, std::string>& entry : map) {
-    const std::string loc = entry.second;
-    if (!Cr::Utility::Path::exists(loc)) {
-      std::string newLoc = Cr::Utility::Path::join(dsDir, loc);
-      if (!Cr::Utility::Path::exists(newLoc)) {
-        ESP_WARNING(Mn::Debug::Flag::NoSpace)
-            << "`" << jsonTag << "` Value : `" << loc
-            << "` not found on disk as absolute path or relative to `" << dsDir
-            << "`";
-      } else {
-        // replace value with dataset-augmented absolute path
-        map[entry.first] = newLoc;
-      }
-    }  // loc does not exist
-  }    // for each loc
-}  // SceneDatasetAttributesManager::loadAndValidateMap
 
 // using type deduction
 template <typename U>
@@ -139,7 +135,8 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
     const std::string& dsDir,
     const char* tag,
     const io::JsonGenericValue& jsonConfig,
-    const U& attrMgr) {
+    const U& attrMgr,
+    std::map<std::string, std::string>* strKeyMap) {
   io::JsonGenericValue::ConstMemberIterator jsonIter =
       jsonConfig.FindMember(tag);
   if (jsonIter != jsonConfig.MemberEnd()) {
@@ -150,13 +147,19 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
 
     } else {
       const auto& jCell = jsonIter->value;
+      // Get the count of the number of expected members found. If more members
+      // than this exist in the cell, then we will read for extra key-value
+      // mappings.
+      int numMembersFound = 0;
       // process JSON jCell here - this cell potentially holds :
       // 1. "default_attributes" : a single attributes default of the
       // specified type.
+      // THE DEFAULT CELL MUST BE PROCESSED FIRST!
       io::JsonGenericValue::ConstMemberIterator jsonDfltObjIter =
           jCell.FindMember("default_attributes");
 
       if (jsonDfltObjIter != jCell.MemberEnd()) {
+        ++numMembersFound;
         if (!jsonDfltObjIter->value.IsObject()) {
           ESP_WARNING(Mn::Debug::Flag::NoSpace)
               << "`" << tag
@@ -183,9 +186,11 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
 
       // 2. "paths" an array of paths to search for appropriately typed config
       // files.
+      // THE PATHS CELL MUST BE PROCESSED SECOND!
       io::JsonGenericValue::ConstMemberIterator jsonPathsIter =
           jCell.FindMember("paths");
       if (jsonPathsIter != jCell.MemberEnd()) {
+        ++numMembersFound;
         if (!jsonPathsIter->value.IsObject()) {
           ESP_WARNING(Mn::Debug::Flag::NoSpace)
               << "`" << tag
@@ -221,9 +226,11 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
 
       // 3. "configs" : an array of json cells defining customizations to
       // existing attributes.
+      // THE CONFIGS CELL MUST BE PROCESSED 3RD
       io::JsonGenericValue::ConstMemberIterator jsonCfgsIter =
           jCell.FindMember("configs");
       if (jsonCfgsIter != jCell.MemberEnd()) {
+        ++numMembersFound;
         if (!jsonCfgsIter->value.IsArray()) {
           ESP_WARNING(Mn::Debug::Flag::NoSpace)
               << "`" << tag
@@ -237,9 +244,74 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
           }  // for each cell in configs array
         }    // if is array
       }      // if has configs cell
-    }        // if cell is an object
-  }          // if cell exists
+
+      // Now iterate through other members in the cell if they exist
+
+      if (jCell.MemberCount() > numMembersFound) {
+        // Handle tag->path mappings if exist.
+        // Currently these are only supported for, and should only be
+        // present in, 'semantic_scene_descriptor_instances' objects
+        if (strKeyMap != nullptr) {  // map only passed for
+                                     // 'semantic_scene_descriptor_instances'
+          // process JSON jCell here for other defined values
+          for (rapidjson::Value::ConstMemberIterator it = jCell.MemberBegin();
+               it != jCell.MemberEnd(); ++it) {
+            // skip those processed already
+            const std::string key = it->name.GetString();
+            if ((key == "default_attributes") || (key == "paths") ||
+                (key == "configs")) {
+              // These keys have been processed already
+              continue;
+            }  // if has configs cell
+            else {
+              if (it->value.IsString()) {
+                strKeyMap->emplace(key, it->value.GetString());
+              } else {
+                ESP_WARNING(Mn::Debug::Flag::NoSpace)
+                    << "`" << tag << "` cell contains unhandled sub-tag `"
+                    << key
+                    << "` that is expected to point to a string filename but "
+                       "does not.";
+              }
+            }
+          }  // for each sub-cell within main cell
+
+        } else {
+          // No map was passed - only applicable for
+          // semantic_scene_descriptor_instances
+          if (strcmp("semantic_scene_descriptor_instances", tag) == 0) {
+            ESP_ERROR(Mn::Debug::Flag::NoSpace)
+                << "Unable to load semantic scene map due to destination "
+                   "map being null.";
+          }
+        }
+      }  // process unexpected member tags
+    }    // if cell is an object
+  }      // if cell exists
 }  // SceneDatasetAttributesManager::readDatasetJSONCell
+
+void SceneDatasetAttributesManager::validateMap(
+    const std::string& dsDir,
+    const std::string& tag,
+    std::map<std::string, std::string>& map) {
+  // now verify that all entries in map exist.  If not replace entry with
+  // dsDir-prepended entry
+  for (std::pair<const std::string, std::string>& entry : map) {
+    const std::string loc = entry.second;
+    if (!Cr::Utility::Path::exists(loc)) {
+      std::string newLoc = Cr::Utility::Path::join(dsDir, loc);
+      if (!Cr::Utility::Path::exists(newLoc)) {
+        ESP_ERROR(Mn::Debug::Flag::NoSpace)
+            << "`" << tag << "` Value : `" << loc
+            << "` not found on disk as absolute path or relative to `" << dsDir
+            << "`";
+      } else {
+        // replace value with dataset-augmented absolute path
+        map[entry.first] = newLoc;
+      }
+    }  // loc does not exist
+  }    // for each loc
+}  // SceneDatasetAttributesManager::loadAndValidateMap
 
 template <typename U>
 void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(

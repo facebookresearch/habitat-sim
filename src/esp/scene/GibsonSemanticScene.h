@@ -17,7 +17,7 @@ struct GibsonObjectCategory : public SemanticCategory {
   int index(const std::string& /*mapping*/) const override { return id_; }
 
   std::string name(const std::string& mapping) const override {
-    if (mapping == "category" || mapping == "") {
+    if (mapping == "category" || mapping.empty()) {
       return name_;
     } else {
       ESP_ERROR() << "Unknown mapping type:" << mapping;

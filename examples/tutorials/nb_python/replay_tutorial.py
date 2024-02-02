@@ -1,12 +1,9 @@
 # ---
 # jupyter:
 #   accelerator: GPU
-#   colab:
-#     name: Replay Tutorial
-#     provenance: []
 #   jupytext:
 #     cell_metadata_filter: -all
-#     formats: nb_python//py:percent,colabs//ipynb
+#     formats: nb_python//py:percent,notebooks//ipynb
 #     notebook_metadata_filter: all
 #     text_representation:
 #       extension: .py
@@ -14,12 +11,23 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.13.7
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: Python 3 (ipykernel)
+#     language: python
 #     name: python3
+#   language_info:
+#     codemirror_mode:
+#       name: ipython
+#       version: 3
+#     file_extension: .py
+#     mimetype: text/x-python
+#     name: python
+#     nbconvert_exporter: python
+#     pygments_lexer: ipython3
+#     version: 3.9.17
 # ---
 
 # %% [markdown]
-# #Gfx Replay Tutorial
+# # Gfx Replay Tutorial
 #
 # gfx replay is a feature that lets you save the visual state of the sim, restore the visual state later, and either reproduce earlier observations (from the same camera position) or produce new observations (from different camera positions).
 #
@@ -38,12 +46,7 @@
 # - player.get_user_transform
 
 # %%
-# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/main/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
-
-# %%
-# %cd /content/habitat-sim
 import os
-import sys
 
 import git
 import magnum as mn
@@ -55,14 +58,11 @@ from habitat_sim.gfx import LightInfo, LightPositionModel
 from habitat_sim.utils import gfx_replay_utils
 from habitat_sim.utils import viz_utils as vut
 
-if "google.colab" in sys.modules:
-    os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
-
 repo = git.Repo(".", search_parent_directories=True)
 dir_path = repo.working_tree_dir
-# %cd $dir_path
 data_path = os.path.join(dir_path, "data")
 output_path = os.path.join(dir_path, "examples/tutorials/replay_tutorial_output/")
+os.makedirs(output_path, exist_ok=True)
 
 
 # %% [markdown]
@@ -192,7 +192,7 @@ if make_video and not os.path.exists(output_path):
 
 cfg = make_configuration({"make_video_during_sim": make_video_during_sim})
 sim = None
-replay_filepath = "./replay.json"
+replay_filepath = os.path.join(output_path, "replay.json")
 
 if not sim:
     sim = habitat_sim.Simulator(cfg)

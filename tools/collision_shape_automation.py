@@ -15,12 +15,12 @@ from typing import Any, Dict, List, Optional, Tuple
 coacd_imported = False
 try:
     import coacd
+    import trimesh
 
     coacd_imported = True
 except Exception:
     coacd_imported = False
     print("Failed to import coacd, is it installed? Linux only: 'pip install coacd'")
-import trimesh
 
 # not adding this causes some failures in mesh import
 flags = sys.getdlopenflags()

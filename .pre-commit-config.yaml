@@ -60,7 +60,7 @@ repos:
     rev: 23.1.0
     hooks:
     -   id: black
-        exclude: ^examples/tutorials/(nb_python|colabs)
+        exclude: ^examples/tutorials/(nb_python|notebooks)
 
 -   repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
@@ -68,7 +68,7 @@ repos:
     hooks:
     -   id: ruff
         args: [--fix]
-        exclude: ^examples/tutorials/(nb_python|colabs)
+        exclude: ^examples/tutorials/(nb_python|notebooks)
 
 -   repo: https://github.com/pycqa/flake8
     rev: 5.0.4
@@ -111,8 +111,8 @@ repos:
     rev: v1.13.7
     hooks:
     -   id: jupytext
-        files: '^examples/tutorials/(colabs|nb_python)/(.*\.py|.*\.ipynb)$'
-        args: [--update-metadata, '{"jupytext":{"notebook_metadata_filter":"all", "cell_metadata_filter":"-all"}, "accelerator":"GPU"}', --set-formats, 'nb_python//py:percent,colabs//ipynb,', --pipe, black, --pipe, 'isort - --treat-comment-as-code "# %%"', --pipe-fmt, 'py:percent', --sync]
+        files: '^examples/tutorials/(notebooks|nb_python)/(.*\.py|.*\.ipynb)$'
+        args: [--update-metadata, '{"jupytext":{"notebook_metadata_filter":"all", "cell_metadata_filter":"-all"}, "accelerator":"GPU"}', --set-formats, 'nb_python//py:percent,notebooks//ipynb,', --pipe, black, --pipe, 'isort - --treat-comment-as-code "# %%"', --pipe-fmt, 'py:percent', --sync]
         additional_dependencies:
             - 'nbformat<=5.0.8'
             - black==23.1.0

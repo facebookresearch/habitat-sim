@@ -1,13 +1,9 @@
 # ---
 # jupyter:
 #   accelerator: GPU
-#   colab:
-#     collapsed_sections: []
-#     name: 'ECCV 2020: Habitat-sim Interactivity'
-#     provenance: []
 #   jupytext:
 #     cell_metadata_filter: -all
-#     formats: nb_python//py:percent,colabs//ipynb
+#     formats: nb_python//py:percent,notebooks//ipynb
 #     notebook_metadata_filter: all
 #     text_representation:
 #       extension: .py
@@ -15,15 +11,23 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.13.7
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: Python 3 (ipykernel)
+#     language: python
 #     name: python3
+#   language_info:
+#     codemirror_mode:
+#       name: ipython
+#       version: 3
+#     file_extension: .py
+#     mimetype: text/x-python
+#     name: python
+#     nbconvert_exporter: python
+#     pygments_lexer: ipython3
+#     version: 3.9.17
 # ---
 
 # %% [markdown]
-# <a href="https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/ECCV_2020_Interactivity.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
-
-# %% [markdown]
-# #Habitat-sim Interactivity
+# # Habitat-sim Interactivity
 #
 # This use-case driven tutorial covers Habitat-sim interactivity, including:
 # - Adding new objects to a scene
@@ -34,21 +38,13 @@
 # - Agent embodiment and continuous control
 
 # %%
-# @title Installation { display-mode: "form" }
-# @markdown (double click to show code).
-
-# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/main/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
-
-# %%
 # @title Path Setup and Imports { display-mode: "form" }
 # @markdown (double click to show code).
 
-# %cd /content/habitat-sim
 ## [setup]
 import math
 import os
 import random
-import sys
 
 import git
 import magnum as mn
@@ -72,18 +68,12 @@ try:
 except ImportError:
     HAS_WIDGETS = False
 
-
-if "google.colab" in sys.modules:
-    os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
-
 repo = git.Repo(".", search_parent_directories=True)
 dir_path = repo.working_tree_dir
-# %cd $dir_path
 data_path = os.path.join(dir_path, "data")
 output_directory = "examples/tutorials/interactivity_output/"  # @param {type:"string"}
 output_path = os.path.join(dir_path, output_directory)
-if not os.path.exists(output_path):
-    os.mkdir(output_path)
+os.makedirs(output_path, exist_ok=True)
 
 # define some globals the first time we run.
 if "sim" not in globals():
@@ -202,8 +192,12 @@ def make_default_settings():
     settings = {
         "width": 720,  # Spatial resolution of the observations
         "height": 544,
-        "scene": "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb",  # Scene path
-        "scene_dataset_config": "./data/scene_datasets/mp3d_example/mp3d.scene_dataset_config.json",  # MP3D scene dataset
+        "scene": os.path.join(
+            data_path, "scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
+        ),  # Scene path
+        "scene_dataset_config": os.path.join(
+            data_path, "scene_datasets/mp3d_example/mp3d.scene_dataset_config.json"
+        ),  # MP3D scene dataset
         "default_agent": 0,
         "sensor_height": 1.5,  # Height of sensors in meters
         "sensor_pitch": -math.pi / 8.0,  # sensor pitch (x rotation in rads)
@@ -395,7 +389,7 @@ else:
 
 
 # %%
-# @title Define Colab GUI Utility Functions { display-mode: "form" }
+# @title Define GUI Utility Functions { display-mode: "form" }
 # @markdown (double click to show code)
 
 
@@ -523,13 +517,13 @@ def build_widget_ui(obj_attr_mgr, prim_attr_mgr):
 # %%
 # @title Initialize Simulator and Load Scene { display-mode: "form" }
 
-# convienience functions defined in Utility cell manage global variables
+# convenience functions defined in Utility cell manage global variables
 sim_settings = make_default_settings()
 # set globals: sim,
 make_simulator_from_settings(sim_settings)
 
 # %% [markdown]
-# #Interactivity in Habitat-sim
+# # Interactivity in Habitat-sim
 #
 # This tutorial covers how to configure and use the Habitat-sim object manipulation API to setup and run physical interaction simulations.
 #
@@ -540,7 +534,7 @@ make_simulator_from_settings(sim_settings)
 # 3.   Generating Scene Clutter on the NavMesh
 # 4.   Continuous Embodied Navigation
 #
-# For more tutorial examples and details see the [Interactive Rigid Objects tutorial](https://aihabitat.org/docs/habitat-sim/rigid-object-tutorial.html) also available for Colab [here](https://github.com/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/rigid_object_tutorial.ipynb).
+# For more tutorial examples and details see the [Interactive Rigid Objects tutorial](https://aihabitat.org/docs/habitat-sim/rigid-object-tutorial.html).
 #
 #
 #
@@ -549,7 +543,7 @@ make_simulator_from_settings(sim_settings)
 # %% [markdown]
 # ## Introduction to Interactivity
 #
-# ####Easily add an object and simulate!
+# #### Easily add an object and simulate!
 #
 #
 
@@ -569,7 +563,7 @@ build_widget_ui(obj_attr_mgr, prim_attr_mgr)
 
 # @markdown Choose either the primitive or file-based template recently selected in the dropdown:
 obj_template_handle = sel_file_obj_handle
-asset_tempalte_handle = sel_asset_handle
+asset_template_handle = sel_asset_handle
 object_type = "File-based"  # @param ["File-based","Primitive-based"]
 if "File" in object_type:
     # Handle File-based object handle
@@ -737,7 +731,7 @@ rigid_obj_mgr.remove_all_objects()
 
 # %%
 # @title Physical Plausibility Classification { display-mode: "form" }
-# @markdown This example demonstrates a physical plausibility expirement. A sphere
+# @markdown This example demonstrates a physical plausibility experiment. A sphere
 # @markdown is dropped onto the back of a couch to roll onto the floor. Optionally,
 # @markdown an invisible plane is introduced for the sphere to roll onto producing
 # @markdown non-physical motion.
@@ -877,7 +871,7 @@ rigid_obj_mgr.remove_all_objects()
 # %% [markdown]
 # ## Generating Scene Clutter on the NavMesh
 #
-# The NavMesh can be used to place objects on surfaces in the scene. Once objects are placed they can be set to MotionType::STATIC, indiciating that they are not moveable (kinematics and dynamics are disabled for STATIC objects). The NavMesh can then be recomputed including STATIC object meshes in the voxelization.
+# The NavMesh can be used to place objects on surfaces in the scene. Once objects are placed they can be set to MotionType::STATIC, indicating that they are not moveable (kinematics and dynamics are disabled for STATIC objects). The NavMesh can then be recomputed including STATIC object meshes in the voxelization.
 #
 # This example demonstrates using the NavMesh to generate a cluttered scene for navigation. In this script we will:
 #
@@ -890,7 +884,9 @@ rigid_obj_mgr.remove_all_objects()
 # @title Initialize Simulator and Load Scene { display-mode: "form" }
 # @markdown (load the apartment_1 scene for clutter generation in an open space)
 sim_settings = make_default_settings()
-sim_settings["scene"] = "./data/scene_datasets/habitat-test-scenes/apartment_1.glb"
+sim_settings["scene"] = os.path.join(
+    data_path, "scene_datasets/habitat-test-scenes/apartment_1.glb"
+)
 sim_settings["sensor_pitch"] = 0
 
 make_simulator_from_settings(sim_settings)
@@ -970,7 +966,7 @@ sim.navmesh_visualization = False
 # ## Embodied Continuous Navigation
 
 # %% [markdown]
-# The following example demonstrates setup and excecution of an embodied navigation and interaction scenario. An object and an agent embodied by a rigid locobot mesh are placed randomly on the NavMesh. A path is computed for the agent to reach the object which is executed by a continuous path-following controller. The object is then kinematically gripped by the agent and a second path is computed for the agent to reach a goal location, also executed by a continuous controller. The gripped object is then released and thrown in front of the agent.
+# The following example demonstrates setup and execution of an embodied navigation and interaction scenario. An object and an agent embodied by a rigid locobot mesh are placed randomly on the NavMesh. A path is computed for the agent to reach the object which is executed by a continuous path-following controller. The object is then kinematically gripped by the agent and a second path is computed for the agent to reach a goal location, also executed by a continuous controller. The gripped object is then released and thrown in front of the agent.
 #
 # Note: for a more detailed explanation of the NavMesh see Habitat-sim Basics tutorial.
 
@@ -1127,7 +1123,7 @@ def track_waypoint(waypoint, rs, vc, dt=1.0 / 60.0):
     )
 
 
-# grip/release and sync gripped object state kineamtically
+# grip/release and sync gripped object state kinematically
 class ObjectGripper:
     def __init__(
         self,
@@ -1182,7 +1178,7 @@ class ObjectGripper:
 # @markdown - modified 1st person sensor placement
 sim_settings = make_default_settings()
 # fmt: off
-sim_settings["scene"] = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"  # @param{type:"string"}
+sim_settings["scene"] = os.path.join(data_path, "scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb")  # @param{type:"string"}
 # fmt: on
 sim_settings["sensor_pitch"] = 0
 sim_settings["sensor_height"] = 0.6
@@ -1320,7 +1316,7 @@ for i in range(2):
         locobot_obj.translation = end_pos
         locobot_obj.rotation = target_rigid_state.rotation
 
-        # Check if a collision occured
+        # Check if a collision occurred
         dist_moved_before_filter = (
             target_rigid_state.translation - previous_rigid_state.translation
         ).dot()

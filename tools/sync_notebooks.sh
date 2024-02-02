@@ -1,5 +1,5 @@
 #!/bin/sh
-#Synchronizes notebokos with script representations
+#Synchronizes notebooks with script representations
 
 # Copyright (c) Meta Platforms, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the

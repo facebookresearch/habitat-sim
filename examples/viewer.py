@@ -138,6 +138,9 @@ class HabitatSimInteractiveViewer(Application):
         self.debug_bullet_draw = False
         # draw active contact point debug line visualizations
         self.contact_debug_draw = False
+        # draw semantic region debug visualizations if present
+        self.semantic_region_debug_draw = False
+
         # cache most recently loaded URDF file for quick-reload
         self.cached_urdf = ""
 
@@ -180,7 +183,7 @@ class HabitatSimInteractiveViewer(Application):
         )
 
         # Glyphs we need to render everything
-        self.glyph_cache = text.GlyphCache(mn.Vector2i(256))
+        self.glyph_cache = text.GlyphCache(mn.Vector2i(256), mn.Vector2i(1))
         self.display_font.fill_glyph_cache(
             self.glyph_cache,
             string.ascii_lowercase
@@ -211,12 +214,7 @@ class HabitatSimInteractiveViewer(Application):
         )
         self.shader = shaders.VectorGL2D()
 
-        # make magnum text background transparent
-        mn.gl.Renderer.enable(mn.gl.Renderer.Feature.BLENDING)
-        mn.gl.Renderer.set_blend_function(
-            mn.gl.Renderer.BlendFunction.ONE,
-            mn.gl.Renderer.BlendFunction.ONE_MINUS_SOURCE_ALPHA,
-        )
+        # Set blend function
         mn.gl.Renderer.set_blend_equation(
             mn.gl.Renderer.BlendEquation.ADD, mn.gl.Renderer.BlendEquation.ADD
         )
@@ -273,6 +271,7 @@ class HabitatSimInteractiveViewer(Application):
         self.replay_renderer_cfg: Optional[ReplayRendererConfiguration] = None
         self.replay_renderer: Optional[ReplayRenderer] = None
         self.reconfigure_sim(mm)
+        self.debug_semantic_colors = {}
         self.load_scene_filter_file()
 
         # -----------------------------------------
@@ -555,7 +554,7 @@ class HabitatSimInteractiveViewer(Application):
         self.sim.set_object_bb_draw(True, new_obj.object_id)
         return new_obj
 
-    def draw_contact_debug(self):
+    def draw_contact_debug(self, debug_line_render: Any):
         """
         This method is called to render a debug line overlay displaying active contact points and normals.
         Yellow lines show the contact distance along the normal and red lines show the contact normal at a fixed length.
@@ -563,31 +562,45 @@ class HabitatSimInteractiveViewer(Application):
         yellow = mn.Color4.yellow()
         red = mn.Color4.red()
         cps = self.sim.get_physics_contact_points()
-        self.sim.get_debug_line_render().set_line_width(1.5)
+        debug_line_render.set_line_width(1.5)
         camera_position = self.render_camera.render_camera.node.absolute_translation
         # only showing active contacts
         active_contacts = (x for x in cps if x.is_active)
         for cp in active_contacts:
             # red shows the contact distance
-            self.sim.get_debug_line_render().draw_transformed_line(
+            debug_line_render.draw_transformed_line(
                 cp.position_on_b_in_ws,
                 cp.position_on_b_in_ws
                 + cp.contact_normal_on_b_in_ws * -cp.contact_distance,
                 red,
             )
             # yellow shows the contact normal at a fixed length for visualization
-            self.sim.get_debug_line_render().draw_transformed_line(
+            debug_line_render.draw_transformed_line(
                 cp.position_on_b_in_ws,
                 # + cp.contact_normal_on_b_in_ws * cp.contact_distance,
                 cp.position_on_b_in_ws + cp.contact_normal_on_b_in_ws * 0.1,
                 yellow,
             )
-            self.sim.get_debug_line_render().draw_circle(
+            debug_line_render.draw_circle(
                 translation=cp.position_on_b_in_ws,
                 radius=0.005,
                 color=yellow,
                 normal=camera_position - cp.position_on_b_in_ws,
             )
+
+    def draw_region_debug(self, debug_line_render: Any) -> None:
+        """
+        Draw the semantic region wireframes.
+        """
+
+        for region in self.sim.semantic_scene.regions:
+            color = self.debug_semantic_colors.get(region.id, mn.Color4.magenta())
+            for edge in region.volume_edges:
+                debug_line_render.draw_transformed_line(
+                    edge[0],
+                    edge[1],
+                    color,
+                )
 
     def debug_draw(self):
         """
@@ -598,8 +611,17 @@ class HabitatSimInteractiveViewer(Application):
             render_cam = self.render_camera.render_camera
             proj_mat = render_cam.projection_matrix.__matmul__(render_cam.camera_matrix)
             self.sim.physics_debug_draw(proj_mat)
+
+        debug_line_render = self.sim.get_debug_line_render()
         if self.contact_debug_draw:
-            self.draw_contact_debug()
+            self.draw_contact_debug(debug_line_render)
+        if self.semantic_region_debug_draw:
+            if len(self.debug_semantic_colors) != len(self.sim.semantic_scene.regions):
+                for region in self.sim.semantic_scene.regions:
+                    self.debug_semantic_colors[region.id] = mn.Color4(
+                        mn.Vector3(np.random.random(3))
+                    )
+            self.draw_region_debug(debug_line_render)
         if self.receptacles is not None and self.display_receptacles:
             if self.rec_filter_data is None and self.cpo_initialized:
                 self.compute_rec_filter_state(
@@ -955,8 +977,8 @@ class HabitatSimInteractiveViewer(Application):
             for sensor_uuid, sensor in sensor_suite.items():
                 transform = sensor._sensor_object.node.absolute_transformation()
                 self.replay_renderer.set_sensor_transform(i, sensor_uuid, transform)
-            # Render
-            self.replay_renderer.render(mn.gl.default_framebuffer)
+        # Render
+        self.replay_renderer.render(mn.gl.default_framebuffer)
 
     def move_and_look(self, repetitions: int) -> None:
         """
@@ -1012,6 +1034,12 @@ class HabitatSimInteractiveViewer(Application):
 
         elif key == pressed.H:
             self.print_help_text()
+        elif key == pressed.J:
+            logger.info(
+                f"Toggle Region Draw from {self.semantic_region_debug_draw } to {not self.semantic_region_debug_draw}"
+            )
+            # Toggle visualize semantic bboxes. Currently only regions supported
+            self.semantic_region_debug_draw = not self.semantic_region_debug_draw
 
         elif key == pressed.TAB:
             # NOTE: (+ALT) - reconfigure without cycling scenes
@@ -1659,6 +1687,13 @@ class HabitatSimInteractiveViewer(Application):
         exit(0)
 
     def draw_text(self, sensor_spec):
+        # make magnum text background transparent for text
+        mn.gl.Renderer.enable(mn.gl.Renderer.Feature.BLENDING)
+        mn.gl.Renderer.set_blend_function(
+            mn.gl.Renderer.BlendFunction.ONE,
+            mn.gl.Renderer.BlendFunction.ONE_MINUS_SOURCE_ALPHA,
+        )
+
         self.shader.bind_vector_texture(self.glyph_cache.texture)
         self.shader.transformation_projection_matrix = self.window_text_transform
         self.shader.color = [1.0, 1.0, 1.0]
@@ -1679,6 +1714,9 @@ Unstable Objects: {self.num_unstable_objects} of {len(self.clutter_object_instan
             """
         )
         self.shader.draw(self.window_text.mesh)
+
+        # Disable blending for text
+        mn.gl.Renderer.disable(mn.gl.Renderer.Feature.BLENDING)
 
     def print_help_text(self) -> None:
         """
@@ -1732,6 +1770,7 @@ Key Commands:
     ',':        Render a Bullet collision shape debug wireframe overlay (white=active, green=sleeping, blue=wants sleeping, red=can't sleep).
     'c':        Run a discrete collision detection pass and render a debug wireframe overlay showing active contact points and normals (yellow=fixed length normals, red=collision distances).
                 (+SHIFT) Toggle the contact point debug render overlay on/off.
+    'j'         Toggle Semantic visualization bounds (currently only Semantic Region annotations)
 
     Object Interactions:
     SPACE:      Toggle physics simulation on/off.
@@ -1921,10 +1960,10 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--dataset",
-        default="./data/objects/ycb/ycb.scene_dataset_config.json",
+        default="default",
         type=str,
         metavar="DATASET",
-        help='dataset configuration file to use (default: "./data/objects/ycb/ycb.scene_dataset_config.json")',
+        help='dataset configuration file to use (default: "default")',
     )
     parser.add_argument(
         "--rec-filter-file",

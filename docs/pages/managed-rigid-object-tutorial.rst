@@ -13,9 +13,7 @@ Interactive Rigid Objects via PhysicsObjectManager
 .. contents::
     :class: m-block m-default
 
-The example code below is available on `Colab`_, or runnable via:
-
-.. _Colab: https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/managed_rigid_object_tutorial.ipynb
+The example code below is available as a Jupyter notebook or directly runnable via:
 
 .. code:: shell-session
 
@@ -64,7 +62,7 @@ be modified directly.
     :end-before: # [/object_user_configurations]
 
 Forces and torques can be applied directly to the object using :ref:`habitat_sim.physics.ManagedRigidObject.apply_force` and :ref:`habitat_sim.physics.ManagedRigidObject.apply_torque`.
-Instantanious initial velocities can also be set using the object's properties, :ref:`habitat_sim.physics.ManagedRigidObject.linear_velocity` and :ref:`habitat_sim.physics.ManagedRigidObject.angular_velocity`.
+Instantaneous initial velocities can also be set using the object's properties, :ref:`habitat_sim.physics.ManagedRigidObject.linear_velocity` and :ref:`habitat_sim.physics.ManagedRigidObject.angular_velocity`.
 
 In the example below, a constant anti-gravity force is applied to the boxes' centers of mass (COM) causing them to float in the air.
 A constant torque is also applied which gradually increases the angular velocity of the boxes.
@@ -117,7 +115,7 @@ This is useful for synchronizing the simulation state of objects to a known stat
 
 However, when applying model or algorithmic control it is more convenient to specify a constant linear and angular velocity for the object which will be simulated without manual integration.
 The object's :ref:`habitat_sim.physics.VelocityControl` structure provides this functionality and can be acquired directly from the object via the read only property :ref:`habitat_sim.physics.ManagedRigidObject.velocity_control`.
-Once paramters are set, control takes effect immediately on the next simulation step as shown in the following example.
+Once parameters are set, control takes effect immediately on the next simulation step as shown in the following example.
 
 .. include:: ../../examples/tutorials/nb_python/managed_rigid_object_tutorial.py
     :code: py
@@ -142,7 +140,7 @@ Velocities can also be specified in the local space of the object to easily appl
 
 Previous stages of this tutorial have covered adding objects to the world and manipulating them by setting positions, velocity, forces, and torques.
 In all of these examples, the agent has been a passive onlooker observing the scene.
-However, the agent can also be attached to a simulated object for embodiement and control.
+However, the agent can also be attached to a simulated object for embodiment and control.
 This can be done by passing the :ref:`Agent`'s scene node to the :ref:`habitat_sim.physics.RigidObjectManager.add_object_by_template_handle` or :ref:`habitat_sim.physics.RigidObjectManager.add_object_by_template_id` functions.
 
 In this example, the agent is embodied by a rigid robot asset and the :ref:`habitat_sim.physics.VelocityControl` structure is used to control the robot's actions.
@@ -205,7 +203,7 @@ Objects can be configured to fill different roles in a simulated scene by assign
   Constant forces and torques can be applied to these objects with :ref:`habitat_sim.physics.ManagedRigidObject.apply_force` and :ref:`habitat_sim.physics.ManagedRigidObject.apply_torque`.
   These are cleared after each call to :ref:`Simulator.step_physics`.
 
-  Instantanious initial velocities can also be set for these objects using their :ref:`habitat_sim.physics.ManagedRigidObject.linear_velocity` and :ref:`habitat_sim.physics.ManagedRigidObject.angular_velocity` properties.
+  Instantaneous initial velocities can also be set for these objects using their :ref:`habitat_sim.physics.ManagedRigidObject.linear_velocity` and :ref:`habitat_sim.physics.ManagedRigidObject.angular_velocity` properties.
 
 - :ref:`habitat_sim.physics.MotionType.KINEMATIC`
 
@@ -223,6 +221,6 @@ This can be queried from the simulator with :ref:`habitat_sim.physics.ManagedRig
 
 For :ref:`habitat_sim.physics.MotionType.KINEMATIC` objects, velocity control will directly modify the object's rigid state.
 
-For :ref:`habitat_sim.physics.MotionType.DYNAMIC` object, velocity control will set the initial velocity of the object before simualting.
+For :ref:`habitat_sim.physics.MotionType.DYNAMIC` object, velocity control will set the initial velocity of the object before simulating.
 In this case, velocity will be more accurate with smaller timestep requests to :ref:`Simulator.step_physics`.
 Note that dynamics such as forces, collisions, and gravity will affect these objects, but expect extreme damping as velocities are being manually set before each timestep when controlled.

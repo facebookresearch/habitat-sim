@@ -51,7 +51,7 @@ cmake ../src \
     -DBUILD_WITH_BULLET="$( if ${BULLET} ; then echo ON ; else echo OFF; fi )" \
     -DBUILD_WEB_APPS="$( if ${WEB_APPS} ; then echo ON ; else echo OFF; fi )"
 
-cmake --build . -- -j 8 #TODO: Set to 8 cores only on CirelcCI
+cmake --build . -- -j 8 #TODO: Set to 8 cores only on CircleCI
 echo "Done building."
 
 if [ -o ${WEB_APPS} ]

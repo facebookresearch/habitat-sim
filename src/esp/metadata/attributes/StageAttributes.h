@@ -103,7 +103,6 @@ class StageAttributes : public AbstractObjectAttributes {
     set("semantic_asset_type", semanticAssetType);
   }
   int getSemanticAssetType() const { return get<int>("semantic_asset_type"); }
-  ESP_METADATA_ATTRIBUTES_STAGEATTRIBUTES_H_
 
   /**
    * @brief Set whether or not the semantic asset for this stage supports

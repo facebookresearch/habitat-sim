@@ -20,7 +20,7 @@ exclude = '''
     | \.venv
     | _build
     | buck-out
-    | ^examples/tutorials/colabs
+    | ^examples/tutorials/notebooks
     | ^examples/tutorials/nb_python
     | build
     | dist

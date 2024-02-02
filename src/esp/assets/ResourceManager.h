@@ -52,6 +52,7 @@ namespace attributes {
 class ObjectAttributes;
 class PbrShaderAttributes;
 class PhysicsManagerAttributes;
+class SemanticAttributes;
 class SceneObjectInstanceAttributes;
 class StageAttributes;
 }  // namespace attributes
@@ -193,15 +194,19 @@ class ResourceManager {
   bool semanticSceneExists() const { return (semanticScene_ != nullptr); }
 
   /**
-   * @brief Load semantic scene descriptor file specified by @p ssdFilename ,
-   * for the passed @p activeSceneName .
-   * @param ssdFilename The fully qualified filename candidate for the ssd file.
+   * @brief Load semantic scene data from descriptor file and metadata specified
+   * in @p semanticAttr , for the passed @p activeSceneName .
+   * @param semanticAttr Pointer to semantic attributes, if they exist. This
+   * will hold fully-qualified filename along with other attributes required to
+   * create the semantic scene.
    * @param activeSceneName Name of the currently active scene that we will be
    * loading the SSD for.
    * @return whether loaded successfully or not.
    */
-  bool loadSemanticSceneDescriptor(const std::string& ssdFilename,
-                                   const std::string& activeSceneName);
+  bool loadSemanticScene(
+      const std::shared_ptr<metadata::attributes::SemanticAttributes>&
+          semanticAttr,
+      const std::string& activeSceneName);
 
   /**
    * @brief Load a scene mesh and add it to the specified @ref DrawableGroup as

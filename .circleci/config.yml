@@ -214,8 +214,8 @@ jobs:
           name: run black
           command: |
               black --version
-              black --exclude '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist)|examples/tutorials/(colabs|nb_python)'  src_python/habitat_sim/. examples/. tests/. setup.py --diff
-              black --exclude '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist)|examples/tutorials/(colabs|nb_python)'  src_python/habitat_sim/. examples/. tests/. setup.py --check
+              black --exclude '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist)|examples/tutorials/(notebooks|nb_python)'  src_python/habitat_sim/. examples/. tests/. setup.py --diff
+              black --exclude '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist)|examples/tutorials/(notebooks|nb_python)'  src_python/habitat_sim/. examples/. tests/. setup.py --check
       - run:
           name: run isort
           command: |
@@ -722,7 +722,7 @@ jobs:
           key: docs-{{ .Branch }}-{{ .Environment.CIRCLE_SHA1 }}
       - add_ssh_keys:
           fingerprints:
-            - "18:88:e0:37:b1:b3:7a:23:aa:1e:f7:43:a8:5b:8e:05"
+            - "2d:7e:75:21:f9:f7:e7:15:84:cf:6a:a0:ff:60:3a:c8"
       - run:
           name: Update public documentation
           no_output_timeout: 30m

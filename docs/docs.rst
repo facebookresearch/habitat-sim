@@ -92,7 +92,7 @@
 .. py:function:: habitat_sim.nav.PathFinder.snap_point
     :summary: Snaps a point to the closet navigable location
 
-    Will only search within a 4x8x4 cube centerred around the point.
+    Will only search within a 4x8x4 cube centered around the point.
     If there is no navigable location within that cube, no navigable point will be found.
 
     :param point: The starting location of the agent
@@ -110,7 +110,7 @@
     =======
 
     We currently have the following actions added by default. Any action not
-    registered with an explict name is given the snake case version of the
+    registered with an explicit name is given the snake case version of the
     class name, i.e. ``MoveForward`` can be accessed with the name
     ``move_forward``.  See `registry.register_move_fn`, `SceneNodeControl`,
     and `ActuationSpec`
@@ -142,11 +142,11 @@
     ==============
 
     The Semantic scene provides access to semantic information about the given
-    environement
+    environment
 
     .. note-warning::
 
-        Not avaliable for all datasets.
+        Not available for all datasets.
 
 .. py:module:: habitat_sim.utils.common
 

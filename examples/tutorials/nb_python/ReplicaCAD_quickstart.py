@@ -1,14 +1,9 @@
 # ---
 # jupyter:
 #   accelerator: GPU
-#   colab:
-#     collapsed_sections: []
-#     name: Habitat-sim ReplicaCAD Quickstart
-#     private_outputs: true
-#     provenance: []
 #   jupytext:
 #     cell_metadata_filter: -all
-#     formats: nb_python//py:percent,colabs//ipynb
+#     formats: nb_python//py:percent,notebooks//ipynb
 #     notebook_metadata_filter: all
 #     text_representation:
 #       extension: .py
@@ -16,33 +11,33 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.13.7
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: Python 3 (ipykernel)
+#     language: python
 #     name: python3
+#   language_info:
+#     codemirror_mode:
+#       name: ipython
+#       version: 3
+#     file_extension: .py
+#     mimetype: text/x-python
+#     name: python
+#     nbconvert_exporter: python
+#     pygments_lexer: ipython3
+#     version: 3.9.17
 # ---
-
-# %% [markdown]
-# <a href="https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/ReplicaCAD_quickstart.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
 # %% [markdown]
 # #Habitat-sim ReplicaCAD Quickstart
 #
-# This brief Colab tutorial demonstrates loading the ReplicaCAD dataset in Habitat-sim from a SceneDataset and rendering a short video of agent navigation with physics simulation.
+# This brief tutorial demonstrates loading the ReplicaCAD dataset in Habitat-sim from a SceneDataset and rendering a short video of agent navigation with physics simulation.
 #
-
-# %%
-# @title Installation { display-mode: "form" }
-# @markdown (double click to show code).
-
-# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/main/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
 
 # %%
 # @title Path Setup and Imports { display-mode: "form" }
 # @markdown (double click to show code).
 
-# %cd /content/habitat-sim
 ## [setup]
 import os
-import sys
 
 import git
 import magnum as mn
@@ -60,20 +55,13 @@ try:
 except ImportError:
     HAS_WIDGETS = False
 
-
-if "google.colab" in sys.modules:
-    os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
-
 repo = git.Repo(".", search_parent_directories=True)
 dir_path = repo.working_tree_dir
-# %cd $dir_path
 data_path = os.path.join(dir_path, "data")
-# fmt: off
-output_directory = "examples/tutorials/replica_cad_output/"  # @param {type:"string"}
-# fmt: on
-output_path = os.path.join(dir_path, output_directory)
-if not os.path.exists(output_path):
-    os.mkdir(output_path)
+output_path = os.path.join(
+    dir_path, "examples/tutorials/replica_cad_output/"
+)  # @param {type:"string"}
+os.makedirs(output_path, exist_ok=True)
 
 # define some globals the first time we run.
 if "sim" not in globals():
@@ -142,7 +130,9 @@ def make_default_settings():
     settings = {
         "width": 1280,  # Spatial resolution of the observations
         "height": 720,
-        "scene_dataset": "data/replica_cad/replicaCAD.scene_dataset_config.json",  # dataset path
+        "scene_dataset": os.path.join(
+            data_path, "replica_cad/replicaCAD.scene_dataset_config.json"
+        ),  # dataset path
         "scene": "NONE",  # Scene path
         "default_agent": 0,
         "sensor_height": 1.5,  # Height of sensors in meters
@@ -203,7 +193,7 @@ def simulate(sim, dt=1.0, get_frames=True):
 
 
 # %%
-# @title Define Colab GUI Utility Functions { display-mode: "form" }
+# @title Define GUI Utility Functions { display-mode: "form" }
 # @markdown (double click to show code)
 
 # @markdown This cell provides utility functions to build and manage IPyWidget interactive components.

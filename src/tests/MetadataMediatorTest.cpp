@@ -360,7 +360,8 @@ void MetadataMediatorTest::testDataset0() {
   CORRADE_VERIFY(navmeshHandle.find("navmesh_path1") != std::string::npos);
   // ssd
   const std::string ssdHandle = sceneAttrs->getSemanticSceneHandle();
-  CORRADE_VERIFY(ssdHandle.find("semantic_descriptor_path1") !=
+  // Ssd handle is made from scene instance simplified handle
+  CORRADE_VERIFY(ssdHandle.find(sceneAttrs->getSimplifiedHandle()) !=
                  std::string::npos);
 
   //
@@ -428,18 +429,28 @@ void MetadataMediatorTest::testDataset0() {
   // end test LoadNavmesh
 
   ESP_WARNING() << "Starting test LoadSemanticScene";
-  // get map of semantic scene instances
-  const std::map<std::string, std::string> semanticMap =
-      MM_->getActiveSemanticSceneDescriptorMap();
-  // should have 2
-  CORRADE_COMPARE(semanticMap.size(), 2);
-  // should hold 2 keys
-  CORRADE_VERIFY(semanticMap.count("semantic_descriptor_path1") > 0);
-  CORRADE_VERIFY(semanticMap.count("semantic_descriptor_path2") > 0);
+
+  const auto semanticMgr = MM_->getSemanticAttributesManager();
+
+  // should have 5
+  CORRADE_COMPARE(semanticMgr->getNumObjects(), 5);
+
+  // should hold these 2 keys + semantic scene-named file-based json
+  CORRADE_VERIFY(
+      semanticMgr->getObjectLibHasHandle("semantic_descriptor_path1"));
+  CORRADE_VERIFY(
+      semanticMgr->getObjectLibHasHandle("semantic_descriptor_path2"));
+
   // each key should hold specific value
-  CORRADE_COMPARE(semanticMap.at("semantic_descriptor_path1"),
+  const auto semanticAttr1 =
+      semanticMgr->getObjectCopyByHandle("semantic_descriptor_path1");
+
+  CORRADE_COMPARE(semanticAttr1->getSemanticDescriptorFilename(),
                   "test_semantic_descriptor_path1");
-  CORRADE_COMPARE(semanticMap.at("semantic_descriptor_path2"),
+
+  const auto semanticAttr2 =
+      semanticMgr->getObjectCopyByHandle("semantic_descriptor_path2");
+  CORRADE_COMPARE(semanticAttr2->getSemanticDescriptorFilename(),
                   "test_semantic_descriptor_path2");
 
   // end test LoadSemanticScene
@@ -533,11 +544,11 @@ void MetadataMediatorTest::testDataset1() {
   // end test LoadNavmesh
 
   ESP_WARNING() << "Starting test LoadSemanticScene";
-  // get map of semantic scene instances
-  const std::map<std::string, std::string> semanticMap =
-      MM_->getActiveSemanticSceneDescriptorMap();
+
+  const auto semanticMgr = MM_->getSemanticAttributesManager();
+  int numSemanticHandles = semanticMgr->getNumObjects();
   // should have 3
-  CORRADE_COMPARE(semanticMap.size(), 3);
+  CORRADE_COMPARE(numSemanticHandles, 3);
   // testLoadSemanticScene
   // display info report
   displayDSReports();

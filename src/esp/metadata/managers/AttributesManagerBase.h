@@ -196,6 +196,25 @@ class AttributesManager : public ManagedFileBasedContainer<T, Access> {
       const attributes::AbstractAttributes::ptr& attribs,
       const io::JsonGenericValue& jsonConfig) const;
 
+  /**
+   * @brief Returns actual attributes handle containing @p attrName as a
+   * substring, or the empty string if none exists.
+   * Does a substring search, and returns first value found.
+   * @param attrName name to be used as searching substring in @p attrMgr
+   * @return actual name of attributes in attrMgr, or empty string if does not
+   * exist.
+   */
+  inline std::string getFullAttrNameFromStr(const std::string& attrName) {
+    if (this->getObjectLibHasHandle(attrName)) {
+      return attrName;
+    }
+    auto handleList = this->getObjectHandlesBySubstring(attrName);
+    if (!handleList.empty()) {
+      return handleList[0];
+    }
+    return "";
+  }  // getFullAttrNameFromStr
+
  protected:
   /**
    * @brief Called intenrally from createObject.  This will create either a
@@ -243,30 +262,65 @@ class AttributesManager : public ManagedFileBasedContainer<T, Access> {
   /**
    * @brief Set a filename attribute to hold the appropriate data if the
    * existing attribute's given path contains the sentinel tag value defined at
-   * @ref esp::metadata::CONFIG_NAME_AS_ASSET_FILENAME. This will be used in
+   * @ref esp::metadata::CONFIG_NAME_AS_ASSET_FILENAME. This will be called from
    * the Scene Dataset configuration file in the "default_attributes" tag for
    * any attributes which consume file names to specify that the name specified
    * as the instanced attributes should also be used to build the name of the
    * specified asset. The tag value will be replaced by the attributes object's
-   * simplified handle.
+   * simplified handle, or if unable to be found, with an empty string.
+   *
+   * If the given data does not contain the @ref esp::metadata::CONFIG_NAME_AS_ASSET_FILENAME
+   * tag, this will attempt to find the file referenced in @p srcAssetFilename
+   * directly, first as it is given, and then by prefixing it with the current
+   * attributes' source file directory. If found it will call @p filenameSetter
+   * with the successful string.
    *
    * This will only be called from the specified manager's initNewObjectInternal
    * function, where the attributes is initially built from a default attributes
    * (if such an attributes exists).
-   * @param attributers The AbstractAttributes being worked with.
+   * @param attributes The AbstractAttributes being worked with.
    * @param srcAssetFilename The given asset's stored filename to be queried for
-   * the specified tag. If the tag exists, replace it to build the  with the
-   * simplified handle given by the attributes (hence copy). If this DNE on
-   * disk, add file directory.
+   * the specified tag. If the tag exists, replace it with the simplified handle
+   * given by the attributes (hence copy). If this DNE on disk, add file
+   * directory.
    * @param filenameSetter The function to set the filename appropriately for
    * the given asset.
    * @return Whether or not the final value residing within the attribute's
    * asset filename exists or not.
    */
-  bool setHandleFromDefaultTag(
+  bool setFilenameFromDefaultTag(
       const attributes::AbstractAttributes::ptr& attributes,
       const std::string& srcAssetFilename,
       const std::function<void(const std::string&)>& filenameSetter);
+
+  /**
+   * @brief Set an attribute that holds another attribute's handle to hold the
+   * appropriate data if the existing attribute's given path contains the
+   * sentinel tag value defined at
+   * @ref esp::metadata::CONFIG_NAME_AS_ASSET_FILENAME. This will be used in
+   * the Scene Dataset configuration file in the "default_attributes" tag for
+   * any attributes which consume attributes handle names to specify that the
+   * name given as the instanced attributes should also be used to build the
+   * name of the specified asset's handle. The tag value will be replaced by the
+   * attributes object's simplified handle.
+   *
+   * This will only be called from the specified manager's initNewObjectInternal
+   * function, where the attributes is initially built from a default attributes
+   * (if such an attributes exists).
+   * @param attributes The AbstractAttributes being worked with.
+   * @param srcAssetHandle The given asset's stored asset handle to be queried
+   * for the wildcard tag. If the tag exists, replace it with the simplified
+   * handle given by the attributes (hence copy). If this DNE on disk, add file
+   * directory.
+   * @param handleSetter The function to set the handle appropriately for
+   * the given asset.
+   * @return Whether the sentinel tag was found or not in the handle
+   * specification.
+   */
+  bool setAttributesHandleFromDefaultTag(
+      const attributes::AbstractAttributes::ptr& attributes,
+      const std::string& srcAssetHandle,
+      const std::function<void(const std::string&)>& handleSetter);
 
  public:
   ESP_SMART_POINTERS(AttributesManager<T, Access>)
@@ -495,16 +549,23 @@ bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
 }  // AttributesManager<T, Access>::parseUserDefinedJsonVals
 
 template <class T, ManagedObjectAccess Access>
-bool AttributesManager<T, Access>::setHandleFromDefaultTag(
+bool AttributesManager<T, Access>::setFilenameFromDefaultTag(
     const attributes::AbstractAttributes::ptr& attributes,
     const std::string& srcAssetFilename,
     const std::function<void(const std::string&)>& filenameSetter) {
   if (srcAssetFilename.empty()) {
     return false;
   }
-  std::string tempStr(srcAssetFilename);
+  // First check if tag references a file that already exists on disk and is
+  // able to be found
+  if (Cr::Utility::Path::exists(srcAssetFilename)) {
+    // set filename with verified filepath
+    filenameSetter(srcAssetFilename);
+    return true;
+  }
   const auto loc = srcAssetFilename.find(CONFIG_NAME_AS_ASSET_FILENAME);
   if (loc != std::string::npos) {
+    std::string tempStr(srcAssetFilename);
     // sentinel tag is found - replace tag with simplified handle of
     // attributes and use filenameSetter and return whether this file exists or
     // not.
@@ -526,10 +587,47 @@ bool AttributesManager<T, Access>::setHandleFromDefaultTag(
     // out of options, clear out the wild-card default so that init-based
     // default is derived and used.
     filenameSetter("");
+    return false;
   }
-  // no tag found - check if existing non-empty field exists.
-  return Cr::Utility::Path::exists(srcAssetFilename);
-}  // AttributesManager<T, Access>::setHandleFromDefaultTag
+  // no sentinel tag found - check if existing non-empty field exists.
+  std::string tempStr =
+      Cr::Utility::Path::join(attributes->getFileDirectory(), srcAssetFilename);
+  if (Cr::Utility::Path::exists(tempStr)) {
+    // path-prefixed filename exists on disk, so set as filename
+    filenameSetter(tempStr);
+    return true;
+  }
+  // No file exists with passed name, either as relative path or as
+  // wild-card-equipped relative path
+  return false;
+}  // AttributesManager<T, Access>::setFilenameFromDefaultTag
+
+template <class T, ManagedObjectAccess Access>
+bool AttributesManager<T, Access>::setAttributesHandleFromDefaultTag(
+    const attributes::AbstractAttributes::ptr& attributes,
+    const std::string& srcAssetHandle,
+    const std::function<void(const std::string&)>& handleSetter) {
+  if (srcAssetHandle.empty()) {
+    return false;
+  }
+  std::string tempStr(srcAssetHandle);
+  const auto loc = srcAssetHandle.find(CONFIG_NAME_AS_ASSET_FILENAME);
+  if (loc != std::string::npos) {
+    // sentinel tag is found - replace tag with simplified handle of
+    // attributes and use filenameSetter and return whether this file exists or
+    // not.
+    auto simpleHandle = attributes->getSimplifiedHandle();
+    if (simpleHandle == "NONE") {
+      tempStr = "";
+    } else {
+      tempStr.replace(loc, strlen(CONFIG_NAME_AS_ASSET_FILENAME), simpleHandle);
+    }
+    // DOES NOT VERIFY THAT HANDLE REFERENCES ACTUAL OBJECT
+    handleSetter(tempStr);
+    return true;
+  }
+  return false;
+}  // AttributesManager<T, Access>::setAttributesHandleFromDefaultTag
 
 template <class T, ManagedObjectAccess Access>
 template <class M>

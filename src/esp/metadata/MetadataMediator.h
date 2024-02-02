@@ -18,6 +18,7 @@
 #include "esp/metadata/managers/PbrShaderAttributesManager.h"
 #include "esp/metadata/managers/PhysicsAttributesManager.h"
 #include "esp/metadata/managers/SceneDatasetAttributesManager.h"
+#include "esp/metadata/managers/SemanticAttributesManager.h"
 #include "esp/metadata/managers/StageAttributesManager.h"
 #include "esp/sim/SimulatorConfiguration.h"
 
@@ -210,6 +211,16 @@ class MetadataMediator {
   }  // MetadataMediator::getSceneInstanceAttributesManager
 
   /**
+   * @brief Return manager for construction and access to semantic attributes
+   * for current dataset.
+   * @return A shared pointer to the current dataset's @ref esp::metadata::managers::SemanticAttributesManager
+   */
+  const managers::SemanticAttributesManager::ptr&
+  getSemanticAttributesManager() {
+    return getActiveDSAttribs()->getSemanticAttributesManager();
+  }  // MetadataMediator::getSemantticAttributesManager
+
+  /**
    * @brief Return manager for construction and access to stage attributes for
    * current dataset.
    * @return A shared pointer to the current dataset's @ref esp::metadata::managers::StageAttributesManager
@@ -287,30 +298,6 @@ class MetadataMediator {
   }  // MetadataMediator::getNavmeshPathByHandle
 
   /**
-   * @brief Return copy of map of current active dataset's semantic scene
-   * descriptor handles.
-   */
-  std::map<std::string, std::string> getActiveSemanticSceneDescriptorMap() {
-    return std::map<std::string, std::string>(
-        getActiveDSAttribs()->getSemanticSceneDescrMap());
-  }  // getActiveSemanticSceneDescriptorMap
-
-  /**
-   * @brief Return the file path of the specified semantic scene descriptor in
-   * the current active dataset
-   * @param ssDescrHandle The dataset library handle of the semantic scene
-   * descriptor
-   * @return The file path of the semantic scene descriptor.
-   */
-  std::string getSemanticSceneDescriptorPathByHandle(
-      const std::string& ssDescrHandle) {
-    return getFilePathForHandle(
-        ssDescrHandle, getActiveDSAttribs()->getSemanticSceneDescrMap(),
-        "<getSemanticSceneDescriptorPathByHandle>");
-
-  }  // MetadataMediator::getNavMeshPathByHandle
-
-  /**
    * @brief Returns an appropriate @ref esp::metadata::attributes::SceneInstanceAttributes
    * corresponding to the passed sceneID/name.  For back-compat, this function
    * needs to manage various conditions pertaining to the passed name.  It will
@@ -356,6 +343,23 @@ class MetadataMediator {
       const std::string& objAttrName) {
     return getActiveDSAttribs()->getNamedObjectAttributesCopy(objAttrName);
   }  // getNamedObjectAttributesCopy
+
+  /**
+   * @brief Returns articulated object attributes corresponding to passed handle
+   * as substring. Assumes articulated object attributes with @p artObjAttrName
+   * as substring exists in current dataset.
+   * @param artObjAttrName substring to handle of articulated object instance
+   * attributes that exists in current active dataset. The attributes will be
+   * found via substring search, so the name is expected to be sufficiently
+   * restrictive to have exactly 1 match in dataset.
+   * @return smart pointer to articulated object attributes if exists, nullptr
+   * otherwise.
+   */
+  attributes::ArticulatedObjectAttributes::ptr
+  getNamedArticulatedObjectAttributesCopy(const std::string& artObjAttrName) {
+    return getActiveDSAttribs()->getNamedArticulatedObjectAttributesCopy(
+        artObjAttrName);
+  }  // getNamedArticulatedObjectAttributesCopy
 
   /**
    * @brief Returns a lightsetup object configured by the attributes whose

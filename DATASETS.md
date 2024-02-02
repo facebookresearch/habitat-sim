@@ -195,7 +195,7 @@ ___
 
 ## Replica Dataset
 
-Details and download isntructions: [https://github.com/facebookresearch/Replica-Dataset](https://github.com/facebookresearch/Replica-Dataset).
+Details and download instructions: [https://github.com/facebookresearch/Replica-Dataset](https://github.com/facebookresearch/Replica-Dataset).
 
 ___
 

@@ -41,11 +41,24 @@ SceneInstanceAttributesManager::initNewObjectInternal(
     bool) {
   SceneInstanceAttributes::ptr newAttributes =
       this->constructFromDefault(sceneInstanceHandle);
-  if (nullptr == newAttributes) {
+  bool createNewAttributes = (nullptr == newAttributes);
+
+  if (createNewAttributes) {
     newAttributes = SceneInstanceAttributes::create(sceneInstanceHandle);
   }
   // set the attributes source filedirectory, from the attributes name
   this->setFileDirectoryFromHandle(newAttributes);
+  if (!createNewAttributes) {
+    // default exists and was used to create this attributes -replace any
+    // instances of %%CONFIG_NAME_AS_ASSET_FILENAME%% directive with the
+    // simplified name of this attributes
+    setAttributesHandleFromDefaultTag(
+        newAttributes, newAttributes->getSemanticSceneHandle(),
+        [newAttributes](const std::string& newHandle) {
+          newAttributes->setSemanticSceneHandle(newHandle);
+        });
+  }
+
   // Set the baseline default before json is processed.
   newAttributes->setDefaultPbrShaderAttributesHandle(
       defaultPbrShaderAttributesHandle_);
@@ -459,6 +472,12 @@ void SceneInstanceAttributesManager::setAbstractObjectAttributesFromJson(
       jCell, "non_uniform_scale",
       [instanceAttrs](const Magnum::Vector3& non_uniform_scale) {
         instanceAttrs->setNonUniformScale(non_uniform_scale);
+      });
+
+  // whether geometric scaling should be applied to mass to maintain density.
+  io::jsonIntoSetter<bool>(
+      jCell, "apply_scale_to_mass", [instanceAttrs](bool apply_scale_to_mass) {
+        instanceAttrs->setApplyScaleToMass(apply_scale_to_mass);
       });
 
   // whether particular instance is visible or not - only modify if actually

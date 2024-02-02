@@ -73,7 +73,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         # perpetual motion generator
         self.perpetual = False
 
-        # FPOV for farimotion character
+        # FPOV for fairmotion character
         self.first_person = False
 
         self.navmesh_config_and_recompute()
@@ -442,7 +442,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
 
     def cycle_mouse_mode(self):
         """
-        Cycles through mouse modes that belong to the MouseMode emun.
+        Cycles through mouse modes that belong to the MouseMode enum.
         """
         self.mouse_interaction = MouseMode(
             (self.mouse_interaction.value + 1) % len(MouseMode)
@@ -659,7 +659,7 @@ In GRAB mode (with 'enable-physics'):
 
 In MOTION mode (with 'enable-physics'):
     LEFT:
-        Click a Fairmotion character to set it as selected or clcik anywhere else to deselect.
+        Click a Fairmotion character to set it as selected or click anywhere else to deselect.
     RIGHT (With selected Fairmotion character):
         Click anywhere on the scene to translate a selected Fairmotion character to the clicked location.
     WHEEL (with selected Fairmotion character):
@@ -707,7 +707,7 @@ Key Commands:
                 (+ ALT) Move to random place in path with character.
 
         Action Sequencing:
-        'i':    Load model to playout action orders pendng in order queue.
+        'i':    Load model to playout action orders pending in order queue.
         'u':    Push random action orders from Action Order Library to order queue.
 =========================================================
 """

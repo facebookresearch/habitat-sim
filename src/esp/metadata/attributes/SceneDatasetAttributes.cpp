@@ -21,6 +21,7 @@ SceneDatasetAttributes::SceneDatasetAttributes(
   objectAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
   sceneInstanceAttributesManager_ =
       managers::SceneInstanceAttributesManager::create();
+  semanticAttributesManager_ = managers::SemanticAttributesManager::create();
   stageAttributesManager_ =
       managers::StageAttributesManager::create(physAttrMgr);
   stageAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
@@ -31,7 +32,7 @@ SceneDatasetAttributes::SceneDatasetAttributes(
 bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
     const attributes::SceneInstanceAttributes::ptr& sceneInstance) {
   // info display message prefix
-  std::string infoPrefix = Cr::Utility::formatString(
+  const std::string infoPrefix = Cr::Utility::formatString(
       "Dataset : '{}' : ", this->getSimplifiedHandle());
 
   const std::string sceneInstanceName = sceneInstance->getHandle();
@@ -39,16 +40,15 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
   // and if not, add it.
   const auto& stageInstance = sceneInstance->getStageInstance();
   const std::string stageHandle = stageInstance->getHandle();
-  const std::string fullStageName =
-      getFullAttrNameFromStr(stageHandle, stageAttributesManager_);
-  if (fullStageName == "") {
-    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+  // Check if present and if not create default.
+  if (stageAttributesManager_->getFullAttrNameFromStr(stageHandle).empty()) {
+    ESP_WARNING(Mn::Debug::Flag::NoSpace)
         << infoPrefix << "Stage Attributes '" << stageHandle
-        << "' specified in Scene Attributes but does not exist in dataset, so "
-           "creating.";
+        << "' specified in Scene Attributes but does not exist in dataset, "
+           "so creating default.";
     stageAttributesManager_->createObject(stageHandle, true);
   } else {
-    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
         << infoPrefix << "Stage Attributes '" << stageHandle
         << "' specified in Scene Attributes exists in dataset library.";
   }
@@ -57,17 +57,36 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
   auto objectInstances = sceneInstance->getObjectInstances();
   for (const auto& objInstance : objectInstances) {
     const std::string objHandle = objInstance->getHandle();
-    const std::string fullObjHandle =
-        getFullAttrNameFromStr(objHandle, objectAttributesManager_);
-    if (fullObjHandle == "") {
-      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+    if (objectAttributesManager_->getFullAttrNameFromStr(objHandle).empty()) {
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
           << infoPrefix << "Object Attributes '" << objHandle
-          << "' specified in Scene Attributes but does not exist in "
-             "dataset, so creating.";
+          << "' specified in Scene Attributes but does not exist in dataset, "
+             "so creating default.";
+
       objectAttributesManager_->createObject(objHandle, true);
     } else {
-      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+      ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
           << infoPrefix << "Object Attributes '" << objHandle
+          << "' specified in Scene Attributes exists in dataset library.";
+    }
+  }
+  // verify each articulated object in sceneInstance exists in
+  // SceneDatasetAttributes
+  auto artObjectInstances = sceneInstance->getArticulatedObjectInstances();
+  for (const auto& artObjInstance : artObjectInstances) {
+    const std::string artObjHandle = artObjInstance->getHandle();
+
+    // Check if present and if not create default.
+    if (artObjAttributesManager_->getFullAttrNameFromStr(artObjHandle)
+            .empty()) {
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << infoPrefix << "Articulated Object Attributes '" << artObjHandle
+          << "' specified in Scene Attributes but does not exist in dataset, "
+             "so creating default.";
+      artObjAttributesManager_->createObject(artObjHandle, true);
+    } else {
+      ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+          << infoPrefix << "Articulated Object Attributes '" << artObjHandle
           << "' specified in Scene Attributes exists in dataset library.";
     }
   }
@@ -81,31 +100,102 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
   if (lightHandle.empty()) {
     lightHandle = sceneInstanceName;
   }
-
-  const std::string fullLightLayoutAttrName =
-      getFullAttrNameFromStr(lightHandle, lightLayoutAttributesManager_);
-  if (fullLightLayoutAttrName == "") {
-    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+  // Check if lighting attributes specified is present and if not create
+  // default.
+  if (lightLayoutAttributesManager_->getFullAttrNameFromStr(lightHandle) ==
+      "") {
+    ESP_WARNING(Mn::Debug::Flag::NoSpace)
         << infoPrefix << "Lighting Layout Attributes '" << lightHandle
-        << "' specified in Scene Attributes but does not exist in dataset, so "
-           "creating.";
+        << "' specified in Scene Attributes but does not exist in dataset, "
+           "so creating default.";
     lightLayoutAttributesManager_->createObject(lightHandle, true);
   } else {
-    ESP_DEBUG() << infoPrefix << "Lighting Layout Attributes" << lightHandle
-                << "specified in Scene Attributes exists in dataset library.";
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+        << infoPrefix << "Lighting Layout Attributes '" << lightHandle
+        << "' specified in Scene Attributes exists in dataset library.";
   }
 
-  const std::string fullSceneInstanceName = getFullAttrNameFromStr(
-      sceneInstanceName, sceneInstanceAttributesManager_);
-
+  const std::string fullSceneInstanceName =
+      sceneInstanceAttributesManager_->getFullAttrNameFromStr(
+          sceneInstanceName);
   // add scene attributes to scene attributes manager
-  if (fullSceneInstanceName == "") {
-    ESP_DEBUG() << infoPrefix << "Scene Attributes" << sceneInstanceName
-                << "does not exist in dataset so adding.";
+  if (fullSceneInstanceName.empty()) {
+    ESP_VERY_VERBOSE() << infoPrefix << "Scene Attributes" << sceneInstanceName
+                       << "does not exist in dataset so adding.";
     sceneInstanceAttributesManager_->registerObject(sceneInstance);
   }
+
   return true;
 }  // SceneDatasetAttributes::addSceneInstanceToDataset
+
+void SceneDatasetAttributes::createSemanticAttribsFromDS(
+    const std::string& semanticHandle,
+    const std::string& dbgSourceAttribs) {
+  const std::string infoPrefix =
+      Cr::Utility::formatString("Dataset : `{}` : Semantic Attributes `{}`",
+                                this->getSimplifiedHandle(), semanticHandle);
+  // Check if exists or build a new SemanticAttributes with the passed Stage's
+  // or Scene Dataset Config's semantic data set/file
+  // Should match -exactly-
+  if (!semanticAttributesManager_->getObjectLibHasHandle(semanticHandle)) {
+    // DNE, create a new one
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+        << infoPrefix
+        << "does not exists; A new one will be created and saved.";
+    semanticAttributesManager_->createObject(semanticHandle, true);
+  } else {
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+        << infoPrefix << " specified in " << dbgSourceAttribs
+        << " already exists in dataset library. ";
+  }
+}  // SceneDatasetAttributes::createSemanticAttribsFromDS
+
+std::string SceneDatasetAttributes::addSemanticSceneDescrPathEntry(
+    const std::string& semanticHandle,
+    const attributes::StageAttributes::ptr& stageAttributes) {
+  const auto ssdFilename = stageAttributes->getSemanticDescriptorFilename();
+  const auto semanticAssetFilename = stageAttributes->getSemanticAssetHandle();
+  bool setSemanticAssetData = (semanticAssetFilename != "");
+  bool setSSDFilename = (ssdFilename != "");
+  // create a semantic attributes if DNE with given handle
+  this->createSemanticAttribsFromDS(semanticHandle, "Stage Attributes");
+
+  // Get actual object and set semantic data if appropriate
+  auto semanticAttr =
+      semanticAttributesManager_->getObjectByHandle(semanticHandle);
+
+  if (setSemanticAssetData && semanticAttr->getSemanticAssetHandle().empty()) {
+    // asset handle specified, get all stage-specified data
+    semanticAttr->setSemanticAssetHandle(semanticAssetFilename);
+    semanticAttr->setSemanticAssetType(stageAttributes->getSemanticAssetType());
+    semanticAttr->setSemanticOrientUp(stageAttributes->getSemanticOrientUp());
+    semanticAttr->setSemanticOrientFront(
+        stageAttributes->getSemanticOrientFront());
+  }
+  if (setSSDFilename && semanticAttr->getSemanticDescriptorFilename().empty()) {
+    // scene descriptor filename specified in stage, set in semantic
+    // attributes.
+    semanticAttr->setSemanticDescriptorFilename(ssdFilename);
+  }
+  return semanticAttr->getHandle();
+}  // SceneDatasetAttributes::addSemanticSceneDescrPathEntry
+
+void SceneDatasetAttributes::setSemanticAttrSSDFilenames(
+    const std::map<std::string, std::string>& semanticPathnameMap) {
+  for (const auto& entry : semanticPathnameMap) {
+    const std::string semanticHandle = entry.first;
+    const std::string ssdFilename = entry.second;
+
+    // create a semantic attributes if DNE with given handle
+    this->createSemanticAttribsFromDS(semanticHandle,
+                                      "Dataset Config Map Entry");
+    // Get actual object and set semantic data if appropriate
+    auto semanticAttr =
+        semanticAttributesManager_->getObjectByHandle(semanticHandle);
+    semanticAttr->setSemanticDescriptorFilename(ssdFilename);
+  }
+
+}  // SceneDatasetAttributes::setSemanticAttrSSDFilenames
 
 std::pair<std::string, std::string> SceneDatasetAttributes::addNewValToMap(
     const std::string& key,
@@ -168,9 +258,9 @@ SceneDatasetAttributes::getNamedStageAttributesCopy(
   // do a substring search to find actual stage attributes and return first
   // attributes found; if does not exist, name will be empty. return nullptr
   auto fullStageName =
-      getFullAttrNameFromStr(stageAttrName, stageAttributesManager_);
+      stageAttributesManager_->getFullAttrNameFromStr(stageAttrName);
   // fullStageName will be empty if not found
-  if (fullStageName == "") {
+  if (fullStageName.empty()) {
     return nullptr;
   }
   return stageAttributesManager_->getObjectCopyByHandle(fullStageName);
@@ -182,13 +272,27 @@ SceneDatasetAttributes::getNamedObjectAttributesCopy(
   // do a substring search to find actual object attributes and return first
   // attributes found; if does not exist, name will be empty. return nullptr
   auto fullObjName =
-      getFullAttrNameFromStr(objAttrName, objectAttributesManager_);
+      objectAttributesManager_->getFullAttrNameFromStr(objAttrName);
   // fullObjName will be empty if not found
-  if (fullObjName == "") {
+  if (fullObjName.empty()) {
     return nullptr;
   }
   return objectAttributesManager_->getObjectCopyByHandle(fullObjName);
 }  // SceneDatasetAttributes::getNamedObjectAttributesCopy
+
+attributes::ArticulatedObjectAttributes::ptr
+SceneDatasetAttributes::getNamedArticulatedObjectAttributesCopy(
+    const std::string& artObjAttrName) {
+  // do a substring search to find actual object attributes and return first
+  // attributes found; if does not exist, name will be empty. return nullptr
+  auto fullArtObjName =
+      artObjAttributesManager_->getFullAttrNameFromStr(artObjAttrName);
+  // fullObjName will be empty if not found
+  if (fullArtObjName.empty()) {
+    return nullptr;
+  }
+  return artObjAttributesManager_->getObjectCopyByHandle(fullArtObjName);
+}  // SceneDatasetAttributes::getNamedArticulatedObjectAttributesCopy
 
 namespace {
 
@@ -259,7 +363,8 @@ std::string SceneDatasetAttributes::getObjectInfoInternal() const {
   // SSD entries
   Cr::Utility::formatInto(
       res, res.size(), "{}",
-      concatStrings("Semantic Scene Descriptors", semanticSceneDescrMap_));
+      concatStrings("Semantic Scene Descriptor Templates",
+                    semanticAttributesManager_->getObjectInfoStrings()));
 
   return res;
 }
@@ -267,7 +372,7 @@ std::string SceneDatasetAttributes::getObjectInfoInternal() const {
 std::string SceneDatasetAttributes::getDatasetSummaryHeader() {
   return "Dataset Name,Scene Instance Templates,Stage Templates,Object "
          "Templates,Articulated Object Paths,Lighting Templates,Primitive "
-         "Templates,Navmesh Entries,Semantic Scene Descriptor Entries,";
+         "Templates,Navmesh Entries,Semantic Scene Descriptor Templates,";
 }
 
 std::string SceneDatasetAttributes::getDatasetSummary() const {
@@ -279,7 +384,7 @@ std::string SceneDatasetAttributes::getDatasetSummary() const {
       artObjAttributesManager_->getNumObjects(),
       lightLayoutAttributesManager_->getNumObjects(),
       assetAttributesManager_->getNumObjects(), navmeshMap_.size(),
-      semanticSceneDescrMap_.size());
+      semanticAttributesManager_->getNumObjects());
 }  // namespace attributes
 
 }  // namespace attributes
