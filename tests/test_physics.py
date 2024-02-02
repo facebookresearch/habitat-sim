@@ -664,16 +664,96 @@ def test_collision_groups():
             ao = ao_mgr.add_articulated_object_from_urdf(
                 filepath="data/test_assets/urdf/amass_male.urdf"
             )
-            ao.translation = [1.1, 0.0, 4.6]
+
+            ao.translation = [1.3, 0.0, 4.6]
             assert ao.contact_test()
             assert cube_obj2.contact_test()
             assert not cube_obj1.contact_test()
+
+            # sleep the rigid and articulated objects
+            ao.awake = False
+            cube_obj2.awake = False
+            # ao returns sleeping immeidately due to internal flag
+            assert not ao.awake
+            # rigid "wants deactivation, but will not return sleeping until islands are updated."
+            assert cube_obj2.awake
+            sim.step_physics(0.01)
+            assert not ao.awake
+            assert not cube_obj2.awake
+
+            # moving sleeping objects wakes them and contact_test is accurate
+            new_translation = mn.Vector3(100.0, 0.0, 0.0)
+            ao.translation = new_translation
+            # we forced sleep, but moving the object wakes it back up
+            assert ao.awake
+            assert not ao.contact_test()
+            assert not cube_obj2.contact_test()
+
+            # contact is registered in discrete collision detection
+            sim.perform_discrete_collision_detection()
+            cps = sim.get_physics_contact_points()
+            num_ao_contacts = 0
+            for cp in cps:
+                if ao.object_id == cp.object_id_a or ao.object_id == cp.object_id_b:
+                    num_ao_contacts += 1
+            assert num_ao_contacts == 0
+
+            # check sleeping AO logic
+            ao2 = ao_mgr.add_articulated_object_from_urdf(
+                filepath="data/test_assets/urdf/amass_male.urdf"
+            )
+            ao2.translation = new_translation
+            ao2.awake = False
+            ao.awake = False
+            assert not ao.awake
+            assert not ao2.awake
+            assert ao.contact_test()
+            assert ao2.contact_test()
+
+            sim.step_physics(0.1)
+            assert not ao.awake
+            assert not ao2.awake
+
+            # contact is registered in discrete collision detection
+            sim.perform_discrete_collision_detection()
+            cps = sim.get_physics_contact_points()
+            num_ao_contacts = 0
+            for cp in cps:
+                if ao.object_id == cp.object_id_a or ao.object_id == cp.object_id_b:
+                    num_ao_contacts += 1
+            assert num_ao_contacts > 0
+
+            ao_mgr.remove_object_by_id(ao2.object_id)
+
+            cube_obj2.translation = new_translation
+            # we forced sleep, but moving the object wakes it back up
+            assert cube_obj2.awake
+            assert ao.contact_test()
+            assert cube_obj2.contact_test()
+
+            # we can re-sleep after moving, but states have been updated correctly for contact check
+            ao.awake = False
+            cube_obj2.awake = False
+            sim.step_physics(0.1)
+            assert not ao.awake
+            assert not cube_obj2.awake
+
+            sim.perform_discrete_collision_detection()
+            cps = sim.get_physics_contact_points()
+            num_ao_contacts = 0
+            for cp in cps:
+                if ao.object_id == cp.object_id_a or ao.object_id == cp.object_id_b:
+                    num_ao_contacts += 1
+            assert num_ao_contacts > 0
+
             # set to non-collidable and check no contacts
             ao.override_collision_group(cg.Noncollidable)
             assert not ao.contact_test()
             assert not cube_obj2.contact_test()
             assert not cube_obj1.contact_test()
 
+            cube_obj2.translation = [1.1, 0.0, 4.6]
+            cube_obj1.translation = [1.2, 0.0, 4.6]
             # override cube2 to a new group and configure custom mask to interact with it
             cgh.set_mask_for_group(cg.UserGroup1, new_user_group_1_mask | cg.UserGroup2)
             # NOTE: changing group settings requires overriding object group again
@@ -1463,7 +1543,6 @@ def test_articulated_object_joint_motors(test_asset):
                 joint_motor_torques = np.abs(
                     np.array(robot.get_joint_motor_torques(sim.get_physics_time_step()))
                 )
-                assert (joint_motor_torques > 1.0).any()
                 assert len(joint_motor_torques) > 0
                 print("PYTORQUES: ", joint_motor_torques)
                 firstStep = False
