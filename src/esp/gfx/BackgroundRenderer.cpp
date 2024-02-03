@@ -174,7 +174,7 @@ int BackgroundRenderer::threadRender() {
     if (sensorType == sensor::SensorType::Depth)
       sensor.renderTarget().readFrameDepth(view);
 
-    if (sensorType == sensor::SensorType::Semantic)
+    if (sensorType == sensor::SensorType::Semantic || sensorType == sensor::SensorType::Instance)
       sensor.renderTarget().readFrameObjectId(view);
   }
 

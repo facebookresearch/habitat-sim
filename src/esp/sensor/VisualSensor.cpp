@@ -24,7 +24,7 @@ void VisualSensorSpec::sanityCheck() const {
   SensorSpec::sanityCheck();
   bool isVisualSensor =
       (sensorType == SensorType::Color || sensorType == SensorType::Depth ||
-       sensorType == SensorType::Normal || sensorType == SensorType::Semantic);
+       sensorType == SensorType::Normal || sensorType == SensorType::Semantic || sensorType == SensorType::Instance);
   CORRADE_ASSERT(
       isVisualSensor,
       "VisualSensorSpec::sanityCheck(): sensorType must be Color, Depth, "
@@ -90,7 +90,7 @@ bool VisualSensor::getObservationSpace(ObservationSpace& space) {
                  static_cast<size_t>(visualSensorSpec_->resolution[1]),
                  static_cast<size_t>(visualSensorSpec_->channels)};
   space.dataType = core::DataType::DT_UINT8;
-  if (visualSensorSpec_->sensorType == SensorType::Semantic) {
+  if (visualSensorSpec_->sensorType == SensorType::Semantic || visualSensorSpec_->sensorType == SensorType::Instance) {
     space.dataType = core::DataType::DT_UINT32;
   } else if (visualSensorSpec_->sensorType == SensorType::Depth) {
     space.dataType = core::DataType::DT_FLOAT;
@@ -110,7 +110,7 @@ void VisualSensor::readObservation(Observation& obs) {
 
   // TODO: have different classes for the different types of sensors
   // TODO: do we need to flip axis?
-  if (visualSensorSpec_->sensorType == SensorType::Semantic) {
+  if (visualSensorSpec_->sensorType == SensorType::Semantic || visualSensorSpec_->sensorType == SensorType::Instance) {
     renderTarget().readFrameObjectId(Magnum::MutableImageView2D{
         Magnum::PixelFormat::R32UI, renderTarget().framebufferSize(),
         obs.buffer->data});
@@ -153,7 +153,7 @@ VisualSensor::MoveSemanticSensorNodeHelper::MoveSemanticSensorNodeHelper(
     sim::Simulator& sim)
     : visualSensor_(visualSensor), sim_(sim) {
   CORRADE_INTERNAL_ASSERT(visualSensor_.specification()->sensorType ==
-                          SensorType::Semantic);
+                          SensorType::Semantic || visualSensor_.specification()->sensorType == SensorType::Instance);
   scene::SceneNode& node = visualSensor_.node();
   CORRADE_ASSERT(
       !scene::SceneGraph::isRootNode(node),
@@ -189,7 +189,7 @@ VisualSensor::MoveSemanticSensorNodeHelper::MoveSemanticSensorNodeHelper(
 
 VisualSensor::MoveSemanticSensorNodeHelper::~MoveSemanticSensorNodeHelper() {
   CORRADE_INTERNAL_ASSERT(visualSensor_.specification()->sensorType ==
-                          SensorType::Semantic);
+                          SensorType::Semantic || visualSensor_.specification()->sensorType == SensorType::Instance);
 
   scene::SceneNode& node = visualSensor_.node();
   CORRADE_ASSERT(

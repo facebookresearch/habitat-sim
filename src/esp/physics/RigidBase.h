@@ -387,6 +387,22 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
   }
 
   /**
+   * @brief Get the Instance ID for this object.
+   */
+  int getInstanceId() const { return visualNode_->getInstanceId(); }
+
+  /**
+   * @brief Set the @ref esp::scene::SceneNode::InstanceId_ for all visual nodes
+   * belonging to the object.
+   * @param InstanceId The desired Instance id for the object.
+   */
+  void setInstanceId(uint32_t instanceId) {
+    for (auto* node : visualNodes_) {
+      node->setInstanceId(instanceId);
+    }
+  }
+
+  /**
    * @brief Get pointers to this rigid's visual SceneNodes.
    * @return vector of pointers to the rigid's visual scene nodes.
    */

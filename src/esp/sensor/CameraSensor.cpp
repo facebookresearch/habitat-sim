@@ -134,7 +134,13 @@ bool CameraSensor::drawObservation(sim::Simulator& sim) {
     flags |= gfx::RenderCamera::Flag::FrustumCulling;
   }
 
-  if (cameraSensorSpec_->sensorType == SensorType::Semantic) {
+  if (cameraSensorSpec_->sensorType == SensorType::Semantic || cameraSensorSpec_->sensorType == SensorType::Instance) {
+    // Set the camera instance Flag to infer if the camera should pick semantic id or instance id based on the camera type
+    if (cameraSensorSpec_->sensorType == SensorType::Semantic) {
+      renderCamera_->setIsInstanceId(false);
+    } else {
+      renderCamera_->setIsInstanceId(true);
+    }
     // TODO: check sim has semantic scene graph
     bool twoSceneGraphs =
         (&sim.getActiveSemanticSceneGraph() != &sim.getActiveSceneGraph());

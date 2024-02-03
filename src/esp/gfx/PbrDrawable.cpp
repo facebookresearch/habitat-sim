@@ -495,6 +495,15 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
     Mn::GL::Renderer::setFrontFace(Mn::GL::Renderer::FrontFace::ClockWise);
   }
 
+  // Pick the semantic id or the instance id based on the camera type
+  int specificID = 0;
+  if(static_cast<RenderCamera&>(camera).getIsInstanceId()) {
+    specificID = node_.getInstanceId();
+  }
+  else {
+    specificID = node_.getSemanticId();
+  }
+
   (*shader_)
       // e.g., semantic mesh has its own per vertex annotation, which has
       // been uploaded to GPU so simply pass 0 to the uniform "objectId" in
@@ -503,7 +512,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
                        ? drawableId_
                        : (flags_ >= PbrShader::Flag::InstancedObjectId
                               ? 0
-                              : node_.getSemanticId()))
+                              : specificID))
       .setProjectionMatrix(camera.projectionMatrix())
       .setViewMatrix(camera.cameraMatrix())
       .setModelMatrix(modelMatrix)  // NOT modelview matrix!

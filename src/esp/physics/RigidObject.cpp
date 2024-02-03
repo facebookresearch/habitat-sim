@@ -49,6 +49,8 @@ bool RigidObject::finalizeObject() {
 
   // set the visualization semantic id
   setSemanticId(ObjectAttributes->getSemanticId());
+  // Set the visualization instance id
+  setInstanceId(ObjectAttributes->getInstanceId());
 
   // finish object by instancing any dynamics library-specific code required
   return finalizeObject_LibSpecific();

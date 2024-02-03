@@ -57,6 +57,9 @@ CubeMapSensorBase::CubeMapSensorBase(scene::SceneNode& cameraNode,
     case SensorType::Semantic:
       cubeMapFlags |= gfx::CubeMap::Flag::ObjectIdTexture;
       break;
+    case SensorType::Instance:
+      cubeMapFlags |= gfx::CubeMap::Flag::ObjectIdTexture;
+      break;
     default:
       CORRADE_INTERNAL_ASSERT_UNREACHABLE();
       break;
@@ -78,6 +81,9 @@ CubeMapSensorBase::CubeMapSensorBase(scene::SceneNode& cameraNode,
       cubeMapShaderBaseFlags_ |= gfx::CubeMapShaderBase::Flag::DepthTexture;
       break;
     case SensorType::Semantic:
+      cubeMapShaderBaseFlags_ |= gfx::CubeMapShaderBase::Flag::ObjectIdTexture;
+      break;
+    case SensorType::Instance:
       cubeMapShaderBaseFlags_ |= gfx::CubeMapShaderBase::Flag::ObjectIdTexture;
       break;
     // sensor type list is too long, have to use default
@@ -121,7 +127,7 @@ bool CubeMapSensorBase::renderToCubemapTexture(sim::Simulator& sim) {
 
   // generate the cubemap texture
   const char* defaultDrawableGroupName = "";
-  if (cubeMapSensorBaseSpec_->sensorType == SensorType::Semantic) {
+  if (cubeMapSensorBaseSpec_->sensorType == SensorType::Semantic || cubeMapSensorBaseSpec_->sensorType == SensorType::Instance) {
     bool twoSceneGraphs =
         (&sim.getActiveSemanticSceneGraph() != &sim.getActiveSceneGraph());
 
@@ -164,7 +170,8 @@ void CubeMapSensorBase::drawWith(gfx::CubeMapShaderBase& shader) {
     shader.bindDepthTexture(
         cubeMap_->getTexture(gfx::CubeMap::TextureType::Depth));
   }
-  if (cubeMapSensorBaseSpec_->sensorType == SensorType::Semantic) {
+  if (cubeMapSensorBaseSpec_->sensorType == SensorType::Semantic ||
+      cubeMapSensorBaseSpec_->sensorType == SensorType::Instance) {
     shader.bindObjectIdTexture(
         cubeMap_->getTexture(gfx::CubeMap::TextureType::ObjectId));
   }

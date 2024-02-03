@@ -216,6 +216,20 @@ class RenderCamera : public MagnumCamera {
                           Flags flags = {});
 
   /**
+   * @brief Set the flag to infer if the camera should pick semantic id or instance id for the object.
+   *
+   * @param isInstanceId true if picking instance id, false if picking semantic id.
+   */
+  void setIsInstanceId(bool isInstanceId) { isInstanceId_ = isInstanceId; }
+
+  /**
+   * @brief Get the flag of whether the camera should pick semantic id or instance id for the object.
+   *
+   * @return true if picking instance id, false if picking semantic id.
+   */
+  bool getIsInstanceId() const { return isInstanceId_; }
+
+  /**
    * @brief if the "immediate" following rendering pass is to use drawable ids
    * as the object ids.
    * By default, it uses the semantic_id, stored in the drawable's scene graph
@@ -254,6 +268,7 @@ class RenderCamera : public MagnumCamera {
   Mn::Matrix4 invertedProjectionMatrix;
   size_t previousNumVisibleDrawables_ = 0;
   bool useDrawableIds_ = false;
+  bool isInstanceId_ = false;
   ESP_SMART_POINTERS(RenderCamera)
 };
 

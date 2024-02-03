@@ -142,6 +142,10 @@ int PhysicsManager::addObjectInstance(
            "aborted.";
     return ID_UNDEFINED;
   }
+
+  // Set the instance id of the object
+  objAttributes->setInstanceId(objInstAttributes->getID());
+
   // check if an object is being set to be not visible for a particular
   // instance.
   int visSet = objInstAttributes->getIsInstanceVisible();
