@@ -41,7 +41,7 @@ ArticulatedObjectManager::addArticulatedObjectFromURDF(
     const std::string& lightSetup) {
   if (auto physMgr = this->getPhysicsManager()) {
     int newAObjID = physMgr->addArticulatedObjectFromURDF(
-        filepath, fixedBase, globalScale, massScale, forceReload,
+        filepath, nullptr, fixedBase, globalScale, massScale, forceReload,
         maintainLinkOrder, intertiaFromURDF, lightSetup);
     return this->getObjectCopyByID(newAObjID);
   }
@@ -54,8 +54,8 @@ ArticulatedObjectManager::addArticulatedObjectByHandle(
     bool forceReload,
     const std::string& lightSetup) {
   if (auto physMgr = this->getPhysicsManager()) {
-    int newAObjID = physMgr->addArticulatedObject(attributesHandle, forceReload,
-                                                  lightSetup);
+    int newAObjID = physMgr->addArticulatedObject(attributesHandle, nullptr,
+                                                  forceReload, lightSetup);
     return this->getObjectCopyByID(newAObjID);
   }
   return nullptr;
@@ -67,8 +67,8 @@ ArticulatedObjectManager::addArticulatedObjectByID(
     bool forceReload,
     const std::string& lightSetup) {
   if (auto physMgr = this->getPhysicsManager()) {
-    int newAObjID =
-        physMgr->addArticulatedObject(attributesID, forceReload, lightSetup);
+    int newAObjID = physMgr->addArticulatedObject(attributesID, nullptr,
+                                                  forceReload, lightSetup);
     return this->getObjectCopyByID(newAObjID);
   }
   return nullptr;
