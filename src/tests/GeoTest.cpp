@@ -202,7 +202,7 @@ void GeoTest::coordinateFrame() {
   CORRADE_COMPARE(c2.origin(), origin);
   CORRADE_COMPARE(c2.rotationWorldToFrame(), rotation);
 
-  const std::string j = R"({"up":[0,0,1],"front":[-1,0,0],"origin":[1,-2,3]})";
+  const std::string j = R"("up":[0,0,1],"front":[-1,0,0],"origin":[1,-2,3])";
   CORRADE_COMPARE(c1.toString(), j);
 }
 
