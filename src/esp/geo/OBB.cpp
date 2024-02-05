@@ -41,9 +41,7 @@ Mn::Range3D OBB::toAABB() const {
     const Mn::Vector3 worldPoint =
         center_ +
         (rotation_.transformVectorNormalized(kCorners[i] * halfExtents_));
-    // TODO refactor to bbox.join when Magnum supports it
-    bbox.min() = Mn::Math::min(bbox.min(), worldPoint);
-    bbox.max() = Mn::Math::max(bbox.max(), worldPoint);
+    bbox = Mn::Math::join(bbox, worldPoint);
   }
   return bbox;
 }
@@ -250,8 +248,7 @@ OBB computeGravityAlignedMOBB(const Mn::Vector3& gravity,
   Mn::Range3D aabb;
   for (const auto& pt : points) {
     const auto transPt = T_w2b.transformVectorNormalized(pt);
-    aabb.min() = Mn::Math::min(aabb.min(), transPt);
-    aabb.max() = Mn::Math::max(aabb.max(), transPt);
+    aabb = Mn::Math::join(aabb, pt);
   }
   // Inverted normalized rotation
   const auto inverseT_w2b = T_w2b.inverted().normalized();
