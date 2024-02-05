@@ -23,8 +23,11 @@
 namespace esp {
 namespace scene {
 
-bool SemanticScene::
-    loadSemanticSceneDescriptor(const std::shared_ptr<metadata::attributes::SemanticAttributes>& semanticAttr, SemanticScene& scene, const quatf& rotation /* = quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY) */) {
+bool SemanticScene::loadSemanticSceneDescriptor(
+    const std::shared_ptr<metadata::attributes::SemanticAttributes>&
+        semanticAttr,
+    SemanticScene& scene,
+    const Mn::Quaternion& rotation) {
   const std::string ssdFileName =
       semanticAttr != nullptr ? semanticAttr->getSemanticDescriptorFullPath()
                               : "";
@@ -231,7 +234,7 @@ bool SemanticRegion::contains(const Mn::Vector3& pt) const {
     return false;
   }
   // Next check bbox
-  if (!bbox_.contains(Mn::EigenIntegration::cast<vec3f>(pt))) {
+  if (!bbox_.contains(pt)) {
     return false;
   }
   // Lastly, count casts across edges.
@@ -257,8 +260,7 @@ bool SemanticRegion::contains(const Mn::Vector3& pt) const {
 }  // SemanticRegion::contains
 
 void SemanticRegion::setBBox(const Mn::Vector3& min, const Mn::Vector3& max) {
-  bbox_ = box3f(Mn::EigenIntegration::cast<vec3f>(min),
-                Mn::EigenIntegration::cast<vec3f>(max));
+  bbox_ = {min, max};
 }  // SemanticRegion::setBBox
 
 namespace {
