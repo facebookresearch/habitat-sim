@@ -47,7 +47,7 @@ struct VisualSensorSpec : public SensorSpec {
   /**
    * @brief height x width
    */
-  vec2i resolution = {128, 128};
+  Mn::Vector2i resolution = {128, 128};
   /**
    * @brief Number of components in buffer values, eg. 4 channels for RGBA
    */
@@ -184,7 +184,7 @@ class VisualSensor : public Sensor {
     visualSensorSpec_->resolution = {height, width};
   }
 
-  void setResolution(vec2i resolution) {
+  void setResolution(const Magnum::Vector2i& resolution) {
     CORRADE_ASSERT(resolution[0] > 0 && resolution[1] > 0,
                    "VisualSensor::setResolution(): resolution height and "
                    "width must be greater than 0", );

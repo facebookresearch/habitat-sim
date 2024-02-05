@@ -44,8 +44,8 @@ namespace {
    hFoV from the CameraSensorSpec */
 Mn::Matrix4 projectionMatrixInternal(const CameraSensorSpec& spec,
                                      Mn::Rad hfov) {
-  const Mn::Vector2 nearPlaneSize{
-      1.0f, Mn::Vector2{Mn::Vector2i{spec.resolution}}.aspectRatio()};
+  const Mn::Vector2 nearPlaneSize{1.0f,
+                                  Mn::Vector2{spec.resolution}.aspectRatio()};
   if (spec.sensorSubType == SensorSubType::Orthographic) {
     return Mn::Matrix4::orthographicProjection(nearPlaneSize / spec.orthoScale,
                                                spec.near, spec.far);

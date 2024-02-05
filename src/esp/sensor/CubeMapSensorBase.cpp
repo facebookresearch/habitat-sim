@@ -28,7 +28,7 @@ void CubeMapSensorBaseSpec::sanityCheck() const {
   }
 }
 
-int computeCubemapSize(const esp::vec2i& resolution,
+int computeCubemapSize(const Magnum::Vector2i& resolution,
                        const Cr::Containers::Optional<int>& cubemapSize) {
   int size = (resolution[0] < resolution[1] ? resolution[0] : resolution[1]);
   // if user sets the size of the cubemap, use it

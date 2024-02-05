@@ -107,7 +107,7 @@ EquirectangularShader::EquirectangularShader(Flags flags)
 }
 
 EquirectangularShader& EquirectangularShader::setViewportSize(
-    esp::vec2i viewportSize) {
+    const Mn::Vector2i& viewportSize) {
   setUniform(viewportHeightUniform_, viewportSize[0]);
   setUniform(viewportWidthUniform_, viewportSize[1]);
   return *this;
