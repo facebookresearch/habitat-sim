@@ -176,7 +176,7 @@ def make_cfg(settings):
             settings["sensor_height"] + 0.2,
             0.2,
         ]
-        color_sensor_3rd_person_spec.orientation = [-math.pi / 4, 0, 0]
+        color_sensor_3rd_person_spec.orientation = [-math.pi / 4, 0.0, 0.0]
         color_sensor_3rd_person_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
         sensor_specs.append(color_sensor_3rd_person_spec)
 
@@ -720,7 +720,7 @@ else:
 
 sim_settings = make_default_settings()
 sim_settings["scene"] = "none"
-sim_settings["sensor_pitch"] = 0
+sim_settings["sensor_pitch"] = 0.0
 sim_settings["override_scene_light_defaults"] = True
 sim_settings["scene_light_setup"] = ""
 

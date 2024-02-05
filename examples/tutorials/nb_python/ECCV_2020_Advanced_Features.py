@@ -474,7 +474,7 @@ def make_cfg(settings):
             settings["sensor_height"] + 0.2,
             0.2,
         ]
-        color_sensor_3rd_person_spec.orientation = [-math.pi / 4, 0, 0]
+        color_sensor_3rd_person_spec.orientation = [-math.pi / 4, 0.0, 0.0]
         color_sensor_3rd_person_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
         sensor_specs.append(color_sensor_3rd_person_spec)
 
@@ -574,8 +574,8 @@ def init_camera_track_config(sim, sensor_name="color_sensor_1st_person", agent_I
     init_state["position"] = np.array(visual_sensor._spec.position)
     init_state["orientation"] = np.array(visual_sensor._spec.orientation)
     # set the color sensor transform to be the agent transform
-    visual_sensor._spec.position = np.array([0, 0, 0])
-    visual_sensor._spec.orientation = np.array([0, 0, 0])
+    visual_sensor._spec.position = np.array([0.0, 0.0, 0.0])
+    visual_sensor._spec.orientation = np.array([0.0, 0.0, 0.0])
     visual_sensor._sensor_object.set_transformation_from_spec()
     # save ID of agent being modified
     init_state["agent_ID"] = agent_ID
@@ -848,7 +848,7 @@ sim_settings = make_default_settings()
 sim_settings["scene"] = os.path.join(
     data_path, "scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
 )
-sim_settings["sensor_pitch"] = 0
+sim_settings["sensor_pitch"] = 0.0
 
 make_simulator_from_settings(sim_settings)
 
@@ -870,8 +870,8 @@ visual_sensor = sim._sensors["color_sensor_1st_person"]
 initial_sensor_position = np.array(visual_sensor._spec.position)
 initial_sensor_orientation = np.array(visual_sensor._spec.orientation)
 # set the color sensor transform to be the agent transform
-visual_sensor._spec.position = np.array([0, 0, 0])
-visual_sensor._spec.orientation = np.array([0, 0, 0])
+visual_sensor._spec.position = np.array([0.0, 0.0, 0.0])
+visual_sensor._spec.orientation = np.array([0.0, 0.0, 0.0])
 visual_sensor._sensor_object.set_transformation_from_spec()
 
 # boost the agent off the floor
@@ -1006,7 +1006,7 @@ sim_settings = make_default_settings()
 sim_settings["scene"] = os.path.join(
     data_path, "scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
 )
-sim_settings["sensor_pitch"] = 0
+sim_settings["sensor_pitch"] = 0.0
 sim_settings["semantic_sensor_1st_person"] = True
 
 make_simulator_from_settings(sim_settings)
@@ -1097,7 +1097,7 @@ sim_settings = make_default_settings()
 sim_settings["scene"] = os.path.join(
     data_path, "scene_datasets/habitat-test-scenes/apartment_1.glb"
 )
-sim_settings["sensor_pitch"] = 0
+sim_settings["sensor_pitch"] = 0.0
 
 make_simulator_from_settings(sim_settings)
 

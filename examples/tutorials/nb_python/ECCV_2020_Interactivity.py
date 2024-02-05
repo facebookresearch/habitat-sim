@@ -178,7 +178,7 @@ def make_cfg(settings):
             settings["sensor_height"] + 0.2,
             0.2,
         ]
-        color_sensor_3rd_person_spec.orientation = [-math.pi / 4, 0, 0]
+        color_sensor_3rd_person_spec.orientation = [-math.pi / 4, 0.0, 0.0]
         color_sensor_3rd_person_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
         sensor_specs.append(color_sensor_3rd_person_spec)
 
@@ -887,7 +887,7 @@ sim_settings = make_default_settings()
 sim_settings["scene"] = os.path.join(
     data_path, "scene_datasets/habitat-test-scenes/apartment_1.glb"
 )
-sim_settings["sensor_pitch"] = 0
+sim_settings["sensor_pitch"] = 0.0
 
 make_simulator_from_settings(sim_settings)
 
@@ -1180,7 +1180,7 @@ sim_settings = make_default_settings()
 # fmt: off
 sim_settings["scene"] = os.path.join(data_path, "scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb")  # @param{type:"string"}
 # fmt: on
-sim_settings["sensor_pitch"] = 0
+sim_settings["sensor_pitch"] = 0.0
 sim_settings["sensor_height"] = 0.6
 sim_settings["color_sensor_3rd_person"] = True
 sim_settings["depth_sensor_1st_person"] = True

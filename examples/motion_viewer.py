@@ -8,8 +8,6 @@ import sys
 import time
 from typing import Any, Callable, Dict, Optional, Tuple
 
-import numpy as np
-
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
@@ -121,8 +119,8 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             self.sim_settings["height"],
             self.sim_settings["width"],
         ]
-        camera_sensor_spec.position = np.array([0, 0, 0])
-        camera_sensor_spec.orientation = np.array([0, 0, 0])
+        camera_sensor_spec.position = mn.Vector3([0, 0, 0])
+        camera_sensor_spec.orientation = mn.Vector3([0, 0, 0])
         camera_sensor_spec.uuid = "fpov_sensor"
 
         agent_config = habitat_sim.agent.AgentConfiguration(
