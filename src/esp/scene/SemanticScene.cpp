@@ -607,13 +607,13 @@ std::vector<std::pair<int, float>> SemanticScene::getRegionsForPoints(
   std::vector<std::pair<int, float>> containingRegionWeights;
   for (int rix = 0; rix < regions_.size(); ++rix) {
     float containmentCount = 0;
-    for (auto& point : points) {
+    for (const auto& point : points) {
       if (regions_[rix]->contains(point)) {
         containmentCount += 1;
       }
     }
     if (containmentCount > 0) {
-      containingRegionWeights.push_back(
+      containingRegionWeights.emplace_back(
           std::pair<int, float>(rix, containmentCount / points.size()));
     }
   }
