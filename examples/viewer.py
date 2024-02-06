@@ -14,6 +14,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
+import habitat.sims.habitat_simulator.sim_utilities as sutils
 import magnum as mn
 import numpy as np
 from magnum import shaders, text
@@ -164,6 +165,7 @@ class HabitatSimInteractiveViewer(Application):
         self.mouse_interaction = MouseMode.LOOK
         self.mouse_grabber: Optional[MouseGrabber] = None
         self.previous_mouse_point = None
+        self.selected_object_id = None
 
         # toggle physics simulation on/off
         self.simulating = True
@@ -227,19 +229,28 @@ class HabitatSimInteractiveViewer(Application):
                 normal=camera_position - cp.position_on_b_in_ws,
             )
 
-    def draw_region_debug(self, debug_line_render: Any) -> None:
+    def interp_color(self, c0: mn.Color4, c1: mn.Color4, t: float) -> mn.Color4:
         """
-        Draw the semantic region wireframes.
+        Get a color between c0 and c1 based on t in range [0,1]
         """
+        new_color = c0 + (c1 - c0) * t
+        return new_color
 
-        for region in self.sim.semantic_scene.regions:
+    def draw_region_debug(
+        self, debug_line_render: Any, region_index: int, color: mn.Color4 = None
+    ) -> None:
+        """
+        Draw the semantic region wireframe.
+        """
+        region = self.sim.semantic_scene.regions[region_index]
+        if color is None:
             color = self.debug_semantic_colors.get(region.id, mn.Color4.magenta())
-            for edge in region.volume_edges:
-                debug_line_render.draw_transformed_line(
-                    edge[0],
-                    edge[1],
-                    color,
-                )
+        for edge in region.volume_edges:
+            debug_line_render.draw_transformed_line(
+                edge[0],
+                edge[1],
+                color,
+            )
 
     def debug_draw(self):
         """
@@ -255,12 +266,34 @@ class HabitatSimInteractiveViewer(Application):
             self.draw_contact_debug(debug_line_render)
 
         if self.semantic_region_debug_draw:
-            if len(self.debug_semantic_colors) != len(self.sim.semantic_scene.regions):
-                for region in self.sim.semantic_scene.regions:
-                    self.debug_semantic_colors[region.id] = mn.Color4(
-                        mn.Vector3(np.random.random(3))
+            if self.selected_object_id is None:
+                # default "draw all" behavior
+                if len(self.debug_semantic_colors) != len(
+                    self.sim.semantic_scene.regions
+                ):
+                    for region in self.sim.semantic_scene.regions:
+                        self.debug_semantic_colors[region.id] = mn.Color4(
+                            mn.Vector3(np.random.random(3))
+                        )
+                for region_index in range(len(self.sim.semantic_scene.regions)):
+                    self.draw_region_debug(debug_line_render, region_index)
+            else:
+                # use selected object to do a query
+                keypoints = sutils.get_object_global_keypoints(
+                    sutils.get_obj_from_id(self.sim, self.selected_object_id)
+                )
+                regions_weights = self.sim.semantic_scene.get_regions_for_points(
+                    keypoints
+                )
+                for region_index, region_weight in regions_weights:
+                    self.draw_region_debug(
+                        debug_line_render,
+                        region_index,
+                        color=self.interp_color(
+                            mn.Color4.green(), mn.Color4.red(), region_weight
+                        ),
                     )
-            self.draw_region_debug(debug_line_render)
+                print(regions_weights)
 
     def draw_event(
         self,
@@ -712,12 +745,16 @@ class HabitatSimInteractiveViewer(Application):
         """
         button = Application.MouseEvent.Button
         physics_enabled = self.sim.get_physics_simulation_library()
+        mod = Application.InputEvent.Modifier
+
+        shift_pressed = bool(event.modifiers & mod.SHIFT)
 
         # if interactive mode is True -> GRAB MODE
         if self.mouse_interaction == MouseMode.GRAB and physics_enabled:
             render_camera = self.render_camera.render_camera
             ray = render_camera.unproject(self.get_mouse_position(event.position))
             raycast_results = self.sim.cast_ray(ray=ray)
+            self.selected_object_id = None
 
             if raycast_results.has_hits():
                 hit_object, ao_link = -1, -1
@@ -765,6 +802,11 @@ class HabitatSimInteractiveViewer(Application):
                     # done checking for AO
 
                     if hit_object >= 0:
+                        if shift_pressed:
+                            sutils.get_obj_from_id(
+                                self.sim, hit_object
+                            ).motion_type = habitat_sim.physics.MotionType.DYNAMIC
+                        self.selected_object_id = hit_object
                         node = self.default_agent.scene_node
                         constraint_settings = physics.RigidConstraintSettings()
 
