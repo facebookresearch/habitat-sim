@@ -591,5 +591,38 @@ std::vector<uint32_t> SemanticScene::buildSemanticOBBs(
   return unMappedObjectIDXs;
 }  // SemanticScene::buildSemanticOBBs
 
+std::vector<int> SemanticScene::getRegionsForPoint(
+    const Mn::Vector3 point) const {
+  std::vector<int> containingRegions;
+  for (int rix = 0; rix < regions_.size(); ++rix) {
+    if (regions_[rix]->contains(point)) {
+      containingRegions.push_back(rix);
+    }
+  }
+  return containingRegions;
+}
+
+std::vector<std::pair<int, float>> SemanticScene::getRegionsForPoints(
+    const std::vector<Mn::Vector3> points) const {
+  std::vector<std::pair<int, float>> containingRegionWeights;
+  for (int rix = 0; rix < regions_.size(); ++rix) {
+    float containmentCount = 0;
+    for (auto& point : points) {
+      if (regions_[rix]->contains(point)) {
+        containmentCount += 1;
+      }
+    }
+    if (containmentCount > 0) {
+      containingRegionWeights.push_back(
+          std::pair<int, float>(rix, containmentCount / points.size()));
+    }
+  }
+  std::sort(containingRegionWeights.begin(), containingRegionWeights.end(),
+            [](const std::pair<int, float>& a, std::pair<int, float>& b) {
+              return a.second > b.second;
+            });
+  return containingRegionWeights;
+}
+
 }  // namespace scene
 }  // namespace esp
