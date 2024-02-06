@@ -416,7 +416,7 @@ def test_velocity_control():
     cfg_settings["scene"] = "NONE"
     hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
     with habitat_sim.Simulator(hab_cfg) as sim:
-        sim.set_gravity(np.array([0.0, 0.0, 0.0]))
+        sim.set_gravity(mn.Vector3(0.0, 0.0, 0.0))
         # get the rigid object attributes manager, which manages
         # templates used to create objects
         obj_template_mgr = sim.get_object_template_manager()

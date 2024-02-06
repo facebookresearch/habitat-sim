@@ -41,6 +41,7 @@ import math
 import os
 
 import git
+import magnum as mn
 import numpy as np
 
 import habitat_sim
@@ -785,20 +786,20 @@ if os.path.exists(object_to_view_path) and os.path.isfile(object_to_view_path):
     # get max dim to use as scale for sensor placement
     bb_scale = max(obj_bbox.max)
     # determine sensor placement based on size of object
-    sensor_pos = bb_scale * np.array([0, 1, 2])
+    sensor_pos = bb_scale * mn.Vector3(0.0, 1.0, 2.0)
     # set object to be static
     obj.motion_type = habitat_sim.physics.MotionType.STATIC
 
     # initialize an agent and set its initial state
     agent = sim.initialize_agent(sim_settings["default_agent"])
     agent_state = habitat_sim.AgentState()
-    agent_state.position = np.array([0.0, 0.0, 0.0])  # in world space
+    agent_state.position = mn.Vector3(0.0, 0.0, 0.0)  # in world space
     agent.set_state(agent_state)
 
     # set the sensor to be behind and above the agent's initial loc
     # distance is scaled by size of largest object dimension
     visual_sensor._spec.position = agent_state.position + sensor_pos
-    visual_sensor._spec.orientation = np.array([-0.5, 0, 0])
+    visual_sensor._spec.orientation = mn.Vector3(-0.5, 0.0, 0.0)
     visual_sensor._sensor_object.set_transformation_from_spec()
 
     # Create observations array
@@ -817,7 +818,7 @@ if os.path.exists(object_to_view_path) and os.path.isfile(object_to_view_path):
         sim.step_physics(time_step)
         # rotate the agent to rotate the camera
         agent_state.rotation *= ut.quat_from_angle_axis(
-            rot_amount, np.array([0, 1.0, 0])
+            rot_amount, np.array([0.0, 1.0, 0.0])
         )
         agent.set_state(agent_state)
 

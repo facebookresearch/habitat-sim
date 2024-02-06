@@ -574,8 +574,8 @@ def init_camera_track_config(sim, sensor_name="color_sensor_1st_person", agent_I
     init_state["position"] = np.array(visual_sensor._spec.position)
     init_state["orientation"] = np.array(visual_sensor._spec.orientation)
     # set the color sensor transform to be the agent transform
-    visual_sensor._spec.position = np.array([0.0, 0.0, 0.0])
-    visual_sensor._spec.orientation = np.array([0.0, 0.0, 0.0])
+    visual_sensor._spec.position = mn.Vector3(0.0, 0.0, 0.0)
+    visual_sensor._spec.orientation = mn.Vector3(0.0, 0.0, 0.0)
     visual_sensor._sensor_object.set_transformation_from_spec()
     # save ID of agent being modified
     init_state["agent_ID"] = agent_ID
@@ -870,8 +870,8 @@ visual_sensor = sim._sensors["color_sensor_1st_person"]
 initial_sensor_position = np.array(visual_sensor._spec.position)
 initial_sensor_orientation = np.array(visual_sensor._spec.orientation)
 # set the color sensor transform to be the agent transform
-visual_sensor._spec.position = np.array([0.0, 0.0, 0.0])
-visual_sensor._spec.orientation = np.array([0.0, 0.0, 0.0])
+visual_sensor._spec.position = mn.Vector3(0.0, 0.0, 0.0)
+visual_sensor._spec.orientation = mn.Vector3(0.0, 0.0, 0.0)
 visual_sensor._sensor_object.set_transformation_from_spec()
 
 # boost the agent off the floor
