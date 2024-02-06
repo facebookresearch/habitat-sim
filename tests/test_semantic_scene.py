@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 from os import path as osp
+from typing import List
 
 import magnum as mn
 import pytest
@@ -50,7 +51,7 @@ def test_semantic_regions():
         assert len(regions) == 2
 
         # Build a list of points within the region
-        hit_test_points = 6 * [None]
+        hit_test_points: List[mn.Vector3] = 6 * [None]
         hit_test_points[0] = mn.Vector3(-5.1, 0.0, 0.01)
         hit_test_points[1] = mn.Vector3(-5.1, 1.0, 0.01)
         hit_test_points[2] = mn.Vector3(-5.1, -1.0, 0.01)
@@ -92,6 +93,18 @@ def test_semantic_regions():
         assert not region.contains(miss_test_points[4])
         assert not region.contains(miss_test_points[5])
 
+        # check batch containment routines
+        for point in hit_test_points:
+            assert 0 in semantic_scene.get_regions_for_point(point)
+        for point in miss_test_points:
+            assert 0 not in semantic_scene.get_regions_for_point(point)
+
+        regions_weights = semantic_scene.get_regions_for_points(
+            hit_test_points + miss_test_points
+        )
+        assert regions_weights[0][0] == 0
+        assert regions_weights[0][1] >= 0.49  # half or more points contained
+
         # positive X region
         region = regions[1]
         assert region.id == "test_region_positiveX"
@@ -116,6 +129,21 @@ def test_semantic_regions():
         assert not region.contains(-1 * miss_test_points[3])
         assert not region.contains(-1 * miss_test_points[4])
         assert not region.contains(-1 * miss_test_points[5])
+
+        # mix the bathroom and kitchen points
+        mixed_points: List[mn.Vector3] = list(hit_test_points[1:]) + [
+            (-1 * p) for p in hit_test_points
+        ]  # add one less to create imbalance
+        regions_weights = semantic_scene.get_regions_for_points(mixed_points)
+        print(f"regions_weights = {regions_weights}")
+        assert regions_weights[0][0] == 1  # bathroom with more points comes first
+        assert (
+            regions_weights[0][1] >= 0.51
+        )  # more than half points contained in bathroom
+        assert regions_weights[1][0] == 0  # kitchen with fewer points is second
+        assert (
+            abs(regions_weights[1][1] - (1.0 - regions_weights[0][1])) < 0.001
+        )  # kitchen should have the remainder of total percent
 
 
 @pytest.mark.parametrize("scene", _test_scenes)
