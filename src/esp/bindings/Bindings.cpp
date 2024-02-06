@@ -14,17 +14,6 @@
 namespace py = pybind11;
 using py::literals::operator""_a;
 
-namespace esp {
-
-void initEspBindings(py::module& m) {
-  // ==== Range3D ====
-  py::class_<Magnum::Range3D>(m, "BBox")
-      .def_property_readonly("sizes", &Magnum::Range3D::size)
-      .def_property_readonly("center", &Magnum::Range3D::center);
-}
-
-}  // namespace esp
-
 PYBIND11_MODULE(habitat_sim_bindings, m) {
   m.attr("cuda_enabled") =
 #ifdef ESP_BUILD_WITH_CUDA

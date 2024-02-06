@@ -6,7 +6,7 @@
 Encapsulates global geometry utilities.
 """
 
-from habitat_sim._ext.habitat_sim_bindings import OBB, BBox, Ray
+from habitat_sim._ext.habitat_sim_bindings import OBB, Ray
 from habitat_sim._ext.habitat_sim_bindings.geo import (
     BACK,
     FRONT,
@@ -20,7 +20,6 @@ from habitat_sim._ext.habitat_sim_bindings.geo import (
 )
 
 __all__ = [
-    "BBox",
     "OBB",
     "UP",
     "GRAVITY",
