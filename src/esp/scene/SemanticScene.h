@@ -284,6 +284,24 @@ class SemanticScene {
    */
   float CCFractionToUseForBBox() const { return ccLargestVolToUseForBBox_; }
 
+  /**
+   * @brief Compute all SemanticRegions which contain the point and return a
+   * list of indices for regions in this SemanticScene.
+   * @param point The query point.
+   * @return A list of indices for regions which contain the point.
+   */
+  std::vector<int> getRegionsForPoint(const Mn::Vector3& point) const;
+
+  /**
+   * @brief Compute SemanticRegion containment for a set of points.
+   * @param points A set of points to test for semantic containment.
+   * @return std::vector<std::pair<int, float>> A sorted list of tuples
+   * containing region index and percentage of input points contained in that
+   * region.
+   */
+  std::vector<std::pair<int, float>> getRegionsForPoints(
+      const std::vector<Mn::Vector3>& points) const;
+
  protected:
   /**
    * @brief Verify a requested file exists.

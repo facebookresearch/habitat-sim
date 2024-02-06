@@ -230,7 +230,14 @@ void initSceneBindings(py::module& m) {
       .def_property_readonly("semantic_index_map",
                              &SemanticScene::getSemanticIndexMap)
       .def("semantic_index_to_object_index",
-           &SemanticScene::semanticIndexToObjectIndex);
+           &SemanticScene::semanticIndexToObjectIndex)
+      .def("get_regions_for_point", &SemanticScene::getRegionsForPoint,
+           "Compute all SemanticRegions which contain the point and return a "
+           "list of indices for the regions in this SemanticScene.")
+      .def("get_regions_for_points", &SemanticScene::getRegionsForPoints,
+           "Compute SemanticRegion containment for a set of points. Return a "
+           "sorted list of tuple pairs with each containing region index and "
+           "the percentage of points contained by that region.");
 
   // ==== ObjectControls ====
   py::class_<ObjectControls, ObjectControls::ptr>(m, "ObjectControls")
