@@ -246,7 +246,7 @@ class ImageExtractor:
             print(
                 f"House has {len(scene.levels)} levels, {len(scene.regions)} regions and {len(scene.objects)} objects"
             )
-            print(f"House center:{scene.aabb.center} dims:{scene.aabb.sizes}")
+            print(f"House center:{scene.aabb.center} dims:{scene.aabb.size}")
 
         instance_id_to_name = {}
         for obj in scene.objects:
