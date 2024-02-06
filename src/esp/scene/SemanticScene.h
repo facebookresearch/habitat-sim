@@ -290,7 +290,7 @@ class SemanticScene {
    * @param point The query point.
    * @return A list of indices for regions which contain the point.
    */
-  std::vector<int> getRegionsForPoint(const Mn::Vector3 point) const;
+  std::vector<int> getRegionsForPoint(Mn::Vector3& point) const;
 
   /**
    * @brief Compute SemanticRegion containment for a set of points.
@@ -300,7 +300,7 @@ class SemanticScene {
    * region.
    */
   std::vector<std::pair<int, float>> getRegionsForPoints(
-      const std::vector<Mn::Vector3> points) const;
+      std::vector<Mn::Vector3>& points) const;
 
  protected:
   /**

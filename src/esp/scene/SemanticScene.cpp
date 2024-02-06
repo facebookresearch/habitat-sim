@@ -592,7 +592,7 @@ std::vector<uint32_t> SemanticScene::buildSemanticOBBs(
 }  // SemanticScene::buildSemanticOBBs
 
 std::vector<int> SemanticScene::getRegionsForPoint(
-    const Mn::Vector3 point) const {
+    const Mn::Vector3& point) const {
   std::vector<int> containingRegions;
   for (int rix = 0; rix < regions_.size(); ++rix) {
     if (regions_[rix]->contains(point)) {
@@ -603,7 +603,7 @@ std::vector<int> SemanticScene::getRegionsForPoint(
 }
 
 std::vector<std::pair<int, float>> SemanticScene::getRegionsForPoints(
-    const std::vector<Mn::Vector3> points) const {
+    const std::vector<Mn::Vector3>& points) const {
   std::vector<std::pair<int, float>> containingRegionWeights;
   for (int rix = 0; rix < regions_.size(); ++rix) {
     float containmentCount = 0;
