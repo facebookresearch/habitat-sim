@@ -40,6 +40,38 @@ enum class SceneNodeType {
   OBJECT = 4,  // objects added via physics api
 };
 
+/**
+ * @brief This enum holds the idx values for the vector of various types
+ * of IDs that can be rendered via semantic sensors.
+ */
+namespace SceneNodeSemanticDataIDX {
+enum {
+  /**
+   * @brief The semantic ID corresponding to the object represented by this
+   * scene node. The semantic category of a node. This value is used to render
+   * attached Drawables with Semantic sensor when no perVertexObjectIds are
+   * present.
+   */
+  SEMANTIC_ID = 0,
+
+  /**
+   * @brief The object ID of the object represented by this scene node. This
+   * value will be set to ID_UNDEFINED if the object is deleted without removing
+   * the scene node/drawable.
+   */
+  OBJECT_ID = 1,
+
+  /**
+   * @brief The drawable ID that draws this scene node.
+   */
+  DRAWABLE_ID = 2,
+  /**
+   * @brief Insert the index of a new ID to represent above this entry.
+   */
+  NUM_SEMANTIC_IDS
+};  // enum for IDXs
+}  // namespace SceneNodeSemanticDataIDX
+
 // Enumeration of SceneNodeTags
 enum class SceneNodeTag : Magnum::UnsignedShort {
   /**
@@ -122,11 +154,39 @@ class SceneNode : public MagnumObject,
   virtual void setId(int id) { id_ = id; }
 
   //! Returns node semanticId
-  virtual int getSemanticId() const { return semanticId_; }
+  virtual int getSemanticId() const {
+    return semanticIDs_[SceneNodeSemanticDataIDX::SEMANTIC_ID];
+  }
 
   //! Sets node semanticId
-  virtual void setSemanticId(int semanticId) { semanticId_ = semanticId; }
+  virtual void setSemanticId(int semanticId) {
+    semanticIDs_[SceneNodeSemanticDataIDX::SEMANTIC_ID] = semanticId;
+  }
 
+  //! Sets node's owning objectID, for panoptic rendering.
+  virtual void setBaseObjectId(int objectId) {
+    semanticIDs_[SceneNodeSemanticDataIDX::OBJECT_ID] = objectId;
+  }
+
+  //! Sets node's corresponding drawable's id, for panoptic rendering.
+  virtual void setDrawableId(int drawableId) {
+    semanticIDs_[SceneNodeSemanticDataIDX::DRAWABLE_ID] = drawableId;
+  }
+
+  /**
+   * @brief Retrieve the appropriate semantic/descriptive ID based on the query
+   * @param idToGetIDX The index of the ID to get
+   * @return the semantic value corresponding to the given index
+   */
+  virtual int getShaderObjectID(int idToGetIDX) const {
+    return semanticIDs_[idToGetIDX];
+  }
+
+  /**
+   * @brief Return a reference to all the semantic/descriptive IDs used by this
+   * scene node.
+   */
+  const std::vector<int>& getSemanticIDVector() const { return semanticIDs_; }
   Magnum::Vector3 absoluteTranslation() const;
 
   Magnum::Vector3 absoluteTranslation();
@@ -231,10 +291,6 @@ class SceneNode : public MagnumObject,
   // SceneNodeTags of this node, used to flag attributes such as leaf node
   SceneNodeTags sceneNodeTags_ = {};
 
-  //! The semantic category of this node. Used to render attached Drawables with
-  //! Semantic sensor when no perVertexObjectIds are present.
-  uint32_t semanticId_ = 0;
-
   //! the local bounding box for meshes stored at this node
   Magnum::Range3D meshBB_;
 
@@ -269,7 +325,11 @@ class SceneNode : public MagnumObject,
   // Pointer to SensorSuite containing references to superset of all Sensors
   // held by this SceneNode and its children
   esp::sensor::SensorSuite* subtreeSensorSuite_;
-};
+
+  //! The semantic category of this node. Used to render attached Drawables with
+  //! Semantic sensor when no perVertexObjectIds are present.
+  std::vector<int> semanticIDs_{SceneNodeSemanticDataIDX::NUM_SEMANTIC_IDS, 0};
+};  // namespace scene
 
 // Traversal Helpers
 
