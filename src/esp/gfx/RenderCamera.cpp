@@ -169,10 +169,6 @@ uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables, Flags flags) {
 
 size_t RenderCamera::filterTransforms(DrawableTransforms& drawableTransforms,
                                       Flags flags) {
-  if (flags & Flag::UseDrawableIdAsObjectId) {
-    useDrawableIds_ = true;
-  }
-
   if (flags & Flag::ObjectsOnly) {
     // draw just the OBJECTS
     size_t numObjects = removeNonObjects(drawableTransforms);
@@ -189,9 +185,6 @@ size_t RenderCamera::filterTransforms(DrawableTransforms& drawableTransforms,
         drawableTransforms.end());
   }
 
-  if (useDrawableIds_) {
-    useDrawableIds_ = false;
-  }
   return drawableTransforms.size();
 }
 

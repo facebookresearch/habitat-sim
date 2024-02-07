@@ -691,8 +691,13 @@ void PhysicsManager::removeObject(const int objectId,
   deallocateObjectID(objectId);
   if (deleteObjectNode) {
     delete objectNode;
-  } else if (deleteVisualNode && visualNode) {
-    delete visualNode;
+  } else if (visualNode) {
+    if (deleteVisualNode) {
+      delete visualNode;
+    } else {
+      // Clear out the object ID that was set for the owning visual node
+      visualNode->setBaseObjectId(0);
+    }
   }
   // remove wrapper if one is present
   if (rigidObjectManager_->getObjectLibHasHandle(objName)) {

@@ -188,7 +188,14 @@ class RenderCamera : public MagnumCamera {
    * @return the number of drawables that are drawn
    */
   uint32_t draw(MagnumDrawableGroup& drawables, Flags flags = {});
-
+  /**
+   * @brief Function to render drawables via the DrawableTransforms. These have
+   * already been filtered and culled, if enabled.
+   * @param drawableTransforms a vector of pairs of drawables and their
+   * transformation matrices.
+   * @param flags state flags to direct drawing
+   * @return the number of drawables that are drawn
+   */
   uint32_t draw(DrawableTransforms& drawableTransforms, Flags flags = {});
 
   /**

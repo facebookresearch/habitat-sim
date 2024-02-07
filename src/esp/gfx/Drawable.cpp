@@ -24,6 +24,7 @@ Drawable::Drawable(scene::SceneNode& node,
       skinData_(cfg.getSkinData()),
       jointTransformations_(),
       mesh_(mesh) {
+  node_.setDrawableId(drawableId_);
   if (cfg.group_) {
     cfg.group_->registerDrawable(*this);
   }
