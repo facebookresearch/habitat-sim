@@ -140,6 +140,9 @@ bool CameraSensor::drawObservation(sim::Simulator& sim) {
         (&sim.getActiveSemanticSceneGraph() != &sim.getActiveSceneGraph());
 
     if (twoSceneGraphs) {
+      // Helper's constructor moves this camera to the semantic scene graph.
+      // When helper goes out of scope, its destructor moves it back to main
+      // scene graph.
       VisualSensor::MoveSemanticSensorNodeHelper helper(*this, sim);
       draw(sim.getActiveSemanticSceneGraph(), flags);
     } else {
