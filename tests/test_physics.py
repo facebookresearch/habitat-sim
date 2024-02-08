@@ -2033,7 +2033,7 @@ def test_bullet_collision_helper():
         assert sim.get_physics_num_active_overlapping_pairs() == 1
         assert (
             sim.get_physics_step_collision_summary()
-            == "[RigidObject, cubeSolid, id 0] vs [Stage, subpart 0], 4 points\n"
+            == "[RigidObject, cubeSolid, id 1] vs [Stage, subpart 0], 4 points\n"
         )
 
         sim.step_physics(3.0)

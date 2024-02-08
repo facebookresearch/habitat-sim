@@ -524,7 +524,7 @@ void BulletPhysicsManager::lookUpObjectIdAndLinkId(
 
   *linkId = -1;
   // If the lookup fails, default to the stage. TODO: better error-handling.
-  *objectId = -1;
+  *objectId = 0;
   auto rawColObjIdIter = collisionObjToObjIds_->find(colObj);
   if (rawColObjIdIter != collisionObjToObjIds_->end()) {
     int rawObjectId = rawColObjIdIter->second;
@@ -558,8 +558,8 @@ std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {
     const btPersistentManifold* manifold =
         dispatcher->getInternalManifoldPointer()[i];
 
-    int objectIdA = -2;  // stage is -1
-    int objectIdB = -2;
+    int objectIdA = -1;  // stage is 0
+    int objectIdB = -1;
     int linkIndexA = -1;  // -1 if not a multibody
     int linkIndexB = -1;
 
