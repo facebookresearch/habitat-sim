@@ -10,7 +10,7 @@ import string
 import sys
 import time
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
@@ -508,6 +508,23 @@ class HabitatSimInteractiveViewer(Application):
         assert "height_filtered" in self.rec_filter_data
         print(f"Loaded filter annotations from {filepath}")
 
+    def get_object_by_handle(
+        self, handle: str
+    ) -> Union[
+        habitat_sim.physics.ManagedRigidObject,
+        habitat_sim.physics.ManagedArticulatedObject,
+    ]:
+        """
+        Get either a rigid or articulated object from the handle. If none is found, returns None.
+        """
+        rom = self.sim.get_rigid_object_manager()
+        if rom.get_library_has_handle(handle):
+            return rom.get_object_by_handle(handle)
+        aom = self.sim.get_articulated_object_manager()
+        if aom.get_library_has_handle(handle):
+            return aom.get_object_by_handle(handle)
+        return None
+
     def load_receptacles(self):
         """
         Load all receptacle data and setup helper datastructures.
@@ -520,11 +537,9 @@ class HabitatSimInteractiveViewer(Application):
         ]
         for receptacle in self.receptacles:
             if receptacle not in self.rec_to_poh:
-                po_handle = (
-                    self.sim.get_rigid_object_manager()
-                    .get_object_by_handle(receptacle.parent_object_handle)
-                    .creation_attributes.handle
-                )
+                po_handle = self.get_object_by_handle(
+                    receptacle.parent_object_handle
+                ).creation_attributes.handle
                 self.rec_to_poh[receptacle] = po_handle
 
     def add_col_proxy_object(
