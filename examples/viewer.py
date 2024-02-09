@@ -273,6 +273,7 @@ class HabitatSimInteractiveViewer(Application):
         self.reconfigure_sim(mm)
         self.debug_semantic_colors = {}
         self.load_scene_filter_file()
+        self.ao_link_map = self.get_ao_link_id_map()
 
         # -----------------------------------------
         # Clutter Generation Integration:
@@ -509,6 +510,29 @@ class HabitatSimInteractiveViewer(Application):
         assert "height_filtered" in self.rec_filter_data
         print(f"Loaded filter annotations from {filepath}")
 
+    def get_ao_link_id_map(self) -> Dict[int, int]:
+        """
+        Construct a map of ao_link object ids to their parent ao's object id.
+        NOTE: also maps ao's root object id to itself for ease of use.
+
+        :param sim: The Simulator instance.
+
+        :return: dictionary mapping ArticulatedLink object ids to their parent's object id.
+        """
+
+        aom = self.sim.get_articulated_object_manager()
+        ao_link_map: Dict[int, int] = {}
+        for ao in aom.get_objects_by_handle_substring().values():
+            # add the ao itself for ease of use
+            ao_link_map[ao.object_id] = ao.object_id
+            # add the links
+            for link_id in ao.link_object_ids:
+                ao_link_map[link_id] = ao.object_id
+
+        # print(f"ao_link_map = {ao_link_map}")
+
+        return ao_link_map
+
     def get_object_by_handle(
         self, handle: str
     ) -> Union[
@@ -524,6 +548,25 @@ class HabitatSimInteractiveViewer(Application):
         aom = self.sim.get_articulated_object_manager()
         if aom.get_library_has_handle(handle):
             return aom.get_object_by_handle(handle)
+        return None
+
+    def get_object_by_id(
+        self, object_id: int
+    ) -> Union[
+        habitat_sim.physics.ManagedRigidObject,
+        habitat_sim.physics.ManagedArticulatedObject,
+    ]:
+        """
+        Get either a rigid or articulated object from the handle. If none is found, returns None.
+        """
+
+        rom = self.sim.get_rigid_object_manager()
+        if rom.get_library_has_id(object_id):
+            return rom.get_object_by_id(object_id)
+        aom = self.sim.get_articulated_object_manager()
+        if object_id in self.ao_link_map:
+            return aom.get_object_by_id(self.ao_link_map[object_id])
+
         return None
 
     def load_receptacles(self):
@@ -1509,17 +1552,16 @@ class HabitatSimInteractiveViewer(Application):
             self.selected_object = None
             self.selected_rec = None
             hit_id = self.mouse_cast_results.hits[0].object_id
-            rom = self.sim.get_rigid_object_manager()
             # right click in look mode to print object information
             if hit_id == -1:
                 print("This is the stage.")
-            elif rom.get_library_has_id(hit_id):
-                ro = rom.get_object_by_id(hit_id)
-                self.selected_object = ro
-                print(f"Rigid Object: {ro.handle}")
+            else:
+                obj = self.get_object_by_id(hit_id)
+                self.selected_object = obj
+                print(f"Object: {obj.handle}")
                 if self.receptacles is not None:
                     for rec in self.receptacles:
-                        if rec.parent_object_handle == ro.handle:
+                        if rec.parent_object_handle == obj.handle:
                             print(f"    - Receptacle: {rec.name}")
                 if shift_pressed:
                     self.selected_rec = self.get_closest_tri_receptacle(
