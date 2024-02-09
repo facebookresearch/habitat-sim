@@ -604,7 +604,7 @@ bool Simulator::instanceObjectsForSceneAttributes(
     const metadata::attributes::SceneInstanceAttributes::cptr&
         curSceneInstanceAttributes_) {
   // Load object instances as specified by Scene Instance Attributes.
-  // Get all instances of objects described in scene
+  // Get copies of all instances of objects described in scene
   const std::vector<SceneObjectInstanceAttributes::cptr> objectInstances =
       curSceneInstanceAttributes_->getObjectInstances();
 
@@ -640,9 +640,9 @@ bool Simulator::instanceObjectsForSceneAttributes(
                   "being empty or unknown. Aborting",
                   config_.activeSceneName, objInst->getHandle()));
     // objID =
-    physicsManager_->addObjectInstance(objInst, objAttrFullHandle,
-                                       defaultCOMCorrection, attachmentNode,
-                                       config_.sceneLightSetupKey);
+    physicsManager_->addObjectInstance(
+        objInst, objAttrFullHandle, defaultCOMCorrection, &getDrawableGroup(),
+        attachmentNode, config_.sceneLightSetupKey);
   }  // for each object attributes
   return true;
 }  // Simulator::instanceObjectsForSceneAttributes()
@@ -650,8 +650,8 @@ bool Simulator::instanceObjectsForSceneAttributes(
 bool Simulator::instanceArticulatedObjectsForSceneAttributes(
     const metadata::attributes::SceneInstanceAttributes::cptr&
         curSceneInstanceAttributes_) {
-  // 6. Load all articulated object instances
-  // Get all instances of articulated objects described in scene
+  // Load all articulated object instances
+  // Get copies of all instances of articulated objects described in scene
   const std::vector<SceneAOInstanceAttributes::cptr> artObjInstances =
       curSceneInstanceAttributes_->getArticulatedObjectInstances();
 
@@ -685,6 +685,7 @@ bool Simulator::instanceArticulatedObjectsForSceneAttributes(
     // create articulated object
     // aoID =
     physicsManager_->addArticulatedObjectInstance(artObjInst, artObjAttrHandle,
+                                                  &getDrawableGroup(),
                                                   config_.sceneLightSetupKey);
   }  // for each articulated object instance
   return true;

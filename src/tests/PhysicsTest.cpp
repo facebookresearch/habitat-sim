@@ -123,12 +123,10 @@ struct PhysicsTest : Cr::TestSuite::Tester {
     if (drawables == nullptr) {
       drawables = &sceneManager_->getSceneGraph(sceneID_).getDrawables();
     }
-    auto objAttr =
-        metadataMediator_->getObjectAttributesManager()->getObjectCopyByHandle(
-            objectFile);
 
     int objectId =
-        physicsManager_->addObject(objAttr, drawables, attachmentNode);
+        physicsManager_->addObject(objectFile, drawables, attachmentNode);
+
 #ifdef ESP_BUILD_WITH_BULLET
     esp::physics::ManagedBulletRigidObject::ptr objectWrapper =
         rigidObjectManager_

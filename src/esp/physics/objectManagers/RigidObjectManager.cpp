@@ -30,8 +30,8 @@ std::shared_ptr<ManagedRigidObject> RigidObjectManager::addObjectByHandle(
     scene::SceneNode* attachmentNode,
     const std::string& lightSetup) {
   if (auto physMgr = this->getPhysicsManager()) {
-    int newObjID =
-        physMgr->addObject(attributesHandle, attachmentNode, lightSetup);
+    int newObjID = physMgr->addObject(attributesHandle, nullptr, attachmentNode,
+                                      lightSetup);
     return this->getObjectCopyByID(newObjID);
   } else {
     return nullptr;
@@ -43,7 +43,8 @@ std::shared_ptr<ManagedRigidObject> RigidObjectManager::addObjectByID(
     scene::SceneNode* attachmentNode,
     const std::string& lightSetup) {
   if (auto physMgr = this->getPhysicsManager()) {
-    int newObjID = physMgr->addObject(attributesID, attachmentNode, lightSetup);
+    int newObjID =
+        physMgr->addObject(attributesID, nullptr, attachmentNode, lightSetup);
     return this->getObjectCopyByID(newObjID);
   } else {
     return nullptr;

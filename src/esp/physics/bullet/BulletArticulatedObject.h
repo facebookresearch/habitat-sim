@@ -447,6 +447,10 @@ class BulletArticulatedObject : public ArticulatedObject {
   //! broadphase aabbs for the object. Do this with manual state setters.
   void updateKinematicState();
 
+  //! Instantly set activation state of the base and link collision objects,
+  //! otherwise deferred to simulation time
+  void setCollisionObjectsActivateState(bool activate) const;
+
   int nextJointMotorId_ = 0;
 
   std::unordered_map<int, std::unique_ptr<btMultiBodyJointMotor>>

@@ -11,6 +11,7 @@
 #include "esp/metadata/managers/AOAttributesManager.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
 #include "esp/metadata/managers/PhysicsAttributesManager.h"
+#include "esp/metadata/managers/SceneInstanceAttributesManager.h"
 #include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/sim/Simulator.h"
@@ -56,7 +57,7 @@ PhysicsManager::~PhysicsManager() {
   ESP_DEBUG() << "Deconstructing PhysicsManager";
 }
 
-bool PhysicsManager::addStage(
+bool PhysicsManager::addStageInstance(
     const metadata::attributes::StageAttributes::ptr& initAttributes,
     const metadata::attributes::SceneObjectInstanceAttributes::cptr&
         stageInstanceAttributes) {
@@ -82,7 +83,11 @@ bool PhysicsManager::addStageFinalize(
   return stageSuccess;
 }  // PhysicsManager::addStageFinalize
 
+/////////////////////////////////
+// Object Creation
+
 int PhysicsManager::addObject(const std::string& attributesHandle,
+                              DrawableGroup* drawables,
                               scene::SceneNode* attachmentNode,
                               const std::string& lightSetup) {
   esp::metadata::attributes::ObjectAttributes::ptr attributes =
@@ -93,11 +98,13 @@ int PhysicsManager::addObject(const std::string& attributesHandle,
                 << attributesHandle;
     return ID_UNDEFINED;
   }
-  // attributes exist, get drawables if valid simulator accessible
-  return addObjectQueryDrawables(attributes, attachmentNode, lightSetup);
+  // create object. drawables may be nullptr.
+  return addObjectAndSaveAttributes(attributes, drawables, attachmentNode,
+                                    lightSetup);
 }  // PhysicsManager::addObject
 
 int PhysicsManager::addObject(int attributesID,
+                              DrawableGroup* drawables,
                               scene::SceneNode* attachmentNode,
                               const std::string& lightSetup) {
   const esp::metadata::attributes::ObjectAttributes::ptr attributes =
@@ -108,8 +115,9 @@ int PhysicsManager::addObject(int attributesID,
                 << attributesID;
     return ID_UNDEFINED;
   }
-  // attributes exist, get drawables if valid simulator accessible
-  return addObjectQueryDrawables(attributes, attachmentNode, lightSetup);
+  // create object. drawables may be nullptr.
+  return addObjectAndSaveAttributes(attributes, drawables, attachmentNode,
+                                    lightSetup);
 }  // PhysicsManager::addObject
 
 int PhysicsManager::addObjectInstance(
@@ -117,6 +125,7 @@ int PhysicsManager::addObjectInstance(
         objInstAttributes,
     const std::string& attributesHandle,
     bool defaultCOMCorrection,
+    DrawableGroup* drawables,
     scene::SceneNode* attachmentNode,
     const std::string& lightSetup) {
   // Get ObjectAttributes
@@ -169,15 +178,49 @@ int PhysicsManager::addObjectInstance(
   objAttributes->setMass(objAttributes->getMass() *
                          objInstAttributes->getMassScale());
 
-  // adding object using provided object attributes
+  return addObjectAndSaveAttributes(objAttributes, drawables, attachmentNode,
+                                    lightSetup, defaultCOMCorrection,
+                                    objInstAttributes);
+
+}  // PhysicsManager::addObjectInstance
+
+int PhysicsManager::addObjectAndSaveAttributes(
+    const esp::metadata::attributes::ObjectAttributes::ptr& objAttributes,
+    DrawableGroup* drawables,
+    scene::SceneNode* attachmentNode,
+    const std::string& lightSetup,
+    bool defaultCOMCorrection,
+    esp::metadata::attributes::SceneObjectInstanceAttributes::cptr
+        objInstAttributes) {
+  // If no drawables were passed, and a simulator exists
+  // retrieve a drawable group to use
+  if ((drawables == nullptr) && (simulator_ != nullptr)) {
+    // acquire context if available
+    simulator_->getRenderGLContext();
+    // acquire an appropriate drawable group
+    drawables = &simulator_->getDrawableGroup();
+  }
+
+  if (objInstAttributes == nullptr) {
+    // Create objInstAttributes and populate with start values from
+    objInstAttributes =
+        resourceManager_.getSceneInstanceAttributesManager()
+            ->createEmptyInstanceAttributes(objAttributes->getHandle());
+    // TODO do we need to save this to curSceneInstanceAttributes responsible
+    // for this scene?
+    // TODO : add attributes to instance attributes mappings.
+  }
+
+  // create and add object using provided object attributes
   int objID =
-      addObjectQueryDrawables(objAttributes, attachmentNode, lightSetup);
+      addObjectInternal(objAttributes, drawables, attachmentNode, lightSetup);
 
   if (objID == ID_UNDEFINED) {
     // instancing failed for some reason.
     ESP_ERROR(Mn::Debug::Flag::NoSpace)
-        << "Object create failed for ObjectAttributes '" << attributesHandle
-        << "', whose handle contains '" << objInstAttributes->getHandle()
+        << "Object create failed for ObjectAttributes '"
+        << objAttributes->getHandle() << "', whose handle contains '"
+        << objInstAttributes->getHandle()
         << "' as specified in object instance attributes, so addObjectInstance "
            "aborted.";
     return ID_UNDEFINED;
@@ -206,24 +249,10 @@ int PhysicsManager::addObjectInstance(
   objPtr->resetStateFromSceneInstanceAttr();
 
   return objID;
-}  // PhysicsManager::addObjectInstance
 
-int PhysicsManager::addObjectQueryDrawables(
-    const esp::metadata::attributes::ObjectAttributes::ptr& objectAttributes,
-    scene::SceneNode* attachmentNode,
-    const std::string& lightSetup) {
-  // attributes exist, get drawables if valid simulator accessible
-  if (simulator_ != nullptr) {
-    // acquire context if available
-    simulator_->getRenderGLContext();
-    auto& drawables = simulator_->getDrawableGroup();
-    return addObject(objectAttributes, &drawables, attachmentNode, lightSetup);
-  }
-  // support creation when simulator DNE
-  return addObject(objectAttributes, nullptr, attachmentNode, lightSetup);
-}  // PhysicsManager::addObject
+}  // PhysicsManager::addObjectAndSaveAttributes
 
-int PhysicsManager::addObject(
+int PhysicsManager::addObjectInternal(
     const esp::metadata::attributes::ObjectAttributes::ptr& objectAttributes,
     DrawableGroup* drawables,
     scene::SceneNode* attachmentNode,
@@ -315,7 +344,10 @@ int PhysicsManager::addObject(
   return nextObjectID_;
 }  // PhysicsManager::addObject
 
+/////////////////////////////////
+// Articulated Object Creation
 int PhysicsManager::addArticulatedObject(const std::string& attributesHandle,
+                                         DrawableGroup* drawables,
                                          bool forceReload,
                                          const std::string& lightSetup) {
   esp::metadata::attributes::ArticulatedObjectAttributes::ptr attributes =
@@ -327,12 +359,12 @@ int PhysicsManager::addArticulatedObject(const std::string& attributesHandle,
         << attributesHandle << "'";
     return ID_UNDEFINED;
   }
-  // attributes exist, get drawables if valid simulator accessible
-  return addArticulatedObjectQueryDrawables(attributes, forceReload,
-                                            lightSetup);
+  return addArticulatedObjectAndSaveAttributes(attributes, drawables,
+                                               forceReload, lightSetup);
 }  // PhysicsManager::addArticulatedObject
 
 int PhysicsManager::addArticulatedObject(int attributesID,
+                                         DrawableGroup* drawables,
                                          bool forceReload,
                                          const std::string& lightSetup) {
   const esp::metadata::attributes::ArticulatedObjectAttributes::ptr attributes =
@@ -344,16 +376,66 @@ int PhysicsManager::addArticulatedObject(int attributesID,
         << attributesID;
     return ID_UNDEFINED;
   }
-  // attributes exist, get drawables if valid simulator accessible
-  return addArticulatedObjectQueryDrawables(attributes, forceReload,
-                                            lightSetup);
-}  // PhysicsManager::addObject
+
+  return addArticulatedObjectAndSaveAttributes(attributes, drawables,
+                                               forceReload, lightSetup);
+}  // PhysicsManager::addArticulatedObject
+
+int PhysicsManager::addArticulatedObjectFromURDF(
+    const std::string& filepath,
+    DrawableGroup* drawables,
+    bool fixedBase,
+    float globalScale,
+    float massScale,
+    bool forceReload,
+    bool maintainLinkOrder,
+    bool intertiaFromURDF,
+    const std::string& lightSetup) {
+  // Retrieve or create the appropriate ArticulatedObjectAttributes to create
+  // this AO.
+
+  bool attribsFound =
+      resourceManager_.getAOAttributesManager()->getObjectLibHasHandle(
+          filepath);
+
+  esp::metadata::attributes::ArticulatedObjectAttributes::ptr artObjAttributes =
+      attribsFound
+          ? resourceManager_.getAOAttributesManager()->getObjectCopyByHandle(
+                filepath)
+          : resourceManager_.getAOAttributesManager()->createObject(filepath,
+                                                                    true);
+
+  // Set pertinent values
+  artObjAttributes->setUniformScale(globalScale);
+  artObjAttributes->setMassScale(static_cast<double>(massScale));
+
+  artObjAttributes->setBaseType(metadata::attributes::getAOBaseTypeName(
+      fixedBase ? metadata::attributes::ArticulatedObjectBaseType::Fixed
+                : metadata::attributes::ArticulatedObjectBaseType::Free));
+
+  artObjAttributes->setInertiaSource(
+      metadata::attributes::getAOInertiaSourceName(
+          intertiaFromURDF
+              ? metadata::attributes::ArticulatedObjectInertiaSource::URDF
+              : metadata::attributes::ArticulatedObjectInertiaSource::
+                    Computed));
+
+  artObjAttributes->setLinkOrder(metadata::attributes::getAOLinkOrderName(
+      maintainLinkOrder
+          ? metadata::attributes::ArticulatedObjectLinkOrder::URDFOrder
+          : metadata::attributes::ArticulatedObjectLinkOrder::TreeTraversal));
+
+  return addArticulatedObjectAndSaveAttributes(artObjAttributes, drawables,
+                                               forceReload, lightSetup);
+
+}  // PhysicsManager::addArticulatedObjectFromURDF
 
 int PhysicsManager::addArticulatedObjectInstance(
     const std::shared_ptr<
         const esp::metadata::attributes::SceneAOInstanceAttributes>&
         aObjInstAttributes,
     const std::string& artObjAttrHandle,
+    DrawableGroup* drawables,
     const std::string& lightSetup) {
   // Get ArticulatedObjectAttributes
   auto artObjAttributes =
@@ -423,14 +505,50 @@ int PhysicsManager::addArticulatedObjectInstance(
         metadata::attributes::getAOLinkOrderName(linkOrder));
   }
 
-  int aObjID =
-      addArticulatedObjectQueryDrawables(artObjAttributes, false, lightSetup);
+  return addArticulatedObjectAndSaveAttributes(
+      artObjAttributes, drawables, false, lightSetup, aObjInstAttributes);
+
+}  // PhysicsManager::addArticulatedObjectInstance
+
+int PhysicsManager::addArticulatedObjectAndSaveAttributes(
+    const esp::metadata::attributes::ArticulatedObjectAttributes::ptr&
+        artObjAttributes,
+    DrawableGroup* drawables,
+    bool forceReload,
+    const std::string& lightSetup,
+    esp::metadata::attributes::SceneAOInstanceAttributes::cptr
+        aObjInstAttributes) {
+  // If no drawables were passed, and a simulator exists
+  // retrieve a drawable group to use
+  if ((drawables == nullptr) && (simulator_ != nullptr)) {
+    // acquire context if available
+    simulator_->getRenderGLContext();
+    // acquire an appropriate drawable group
+    drawables = &simulator_->getDrawableGroup();
+  }
+  // If no drawables, do not create articulated object
+  if (drawables == nullptr) {
+    // TODO Support non-existent simulator?
+    return ID_UNDEFINED;
+  }
+  if (aObjInstAttributes == nullptr) {
+    aObjInstAttributes =
+        resourceManager_.getSceneInstanceAttributesManager()
+            ->createEmptyAOInstanceAttributes(artObjAttributes->getHandle());
+    // TODO do we need to save this to curSceneInstanceAttributes responsible
+    // for this scene?
+
+    // TODO : add attributes to instance attributes mappings.
+  }
+
+  int aObjID = addArticulatedObjectInternal(artObjAttributes, drawables,
+                                            forceReload, lightSetup);
 
   if (aObjID == ID_UNDEFINED) {
     // instancing failed for some reason.
     ESP_ERROR(Mn::Debug::Flag::NoSpace)
         << "Articulated Object create failed for ArticulatedObjectAttributes '"
-        << artObjAttrHandle << "', whose handle contains '"
+        << artObjAttributes->getHandle() << "', whose handle contains '"
         << aObjInstAttributes->getHandle()
         << "' as specified in articulated object instance attributes, so "
            "addArticulatedObjectInstance aborted.";
@@ -452,81 +570,8 @@ int PhysicsManager::addArticulatedObjectInstance(
   aObjPtr->resetStateFromSceneInstanceAttr();
 
   return aObjID;
-}  // PhysicsManager::addArticulatedObjectInstance
 
-int PhysicsManager::addArticulatedObjectQueryDrawables(
-    const esp::metadata::attributes::ArticulatedObjectAttributes::ptr&
-        artObjAttributes,
-    bool forceReload,
-    const std::string& lightSetup) {
-  // attributes exist, get drawables if valid simulator accessible
-  if (simulator_ != nullptr) {
-    // acquire context if available
-    simulator_->getRenderGLContext();
-    auto& drawables = simulator_->getDrawableGroup();
-    return addArticulatedObject(artObjAttributes, &drawables, forceReload,
-                                lightSetup);
-  }
-  // TODO Support non-existent simulator?
-  return ID_UNDEFINED;
-}  // PhysicsManager::addObject
-
-int PhysicsManager::addArticulatedObjectFromURDF(
-    const std::string& filepath,
-    bool fixedBase,
-    float globalScale,
-    float massScale,
-    bool forceReload,
-    bool maintainLinkOrder,
-    bool intertiaFromURDF,
-    const std::string& lightSetup) {
-  if (simulator_ != nullptr) {
-    // acquire context if available
-    simulator_->getRenderGLContext();
-    auto& drawables = simulator_->getDrawableGroup();
-
-    // Retrieve or create the appropriate ArticulatedObjectAttributes to create
-    // this AO.
-
-    bool attribsFound =
-        resourceManager_.getAOAttributesManager()->getObjectLibHasHandle(
-            filepath);
-
-    esp::metadata::attributes::ArticulatedObjectAttributes::ptr
-        artObjAttributes =
-            attribsFound
-                ? resourceManager_.getAOAttributesManager()
-                      ->getObjectCopyByHandle(filepath)
-                : resourceManager_.getAOAttributesManager()->createObject(
-                      filepath, true);
-
-    // Set pertinent values
-    artObjAttributes->setUniformScale(globalScale);
-    artObjAttributes->setMassScale(static_cast<double>(massScale));
-
-    artObjAttributes->setBaseType(metadata::attributes::getAOBaseTypeName(
-        fixedBase ? metadata::attributes::ArticulatedObjectBaseType::Fixed
-                  : metadata::attributes::ArticulatedObjectBaseType::Free));
-
-    artObjAttributes->setInertiaSource(
-        metadata::attributes::getAOInertiaSourceName(
-            intertiaFromURDF
-                ? metadata::attributes::ArticulatedObjectInertiaSource::URDF
-                : metadata::attributes::ArticulatedObjectInertiaSource::
-                      Computed));
-
-    artObjAttributes->setLinkOrder(metadata::attributes::getAOLinkOrderName(
-        maintainLinkOrder
-            ? metadata::attributes::ArticulatedObjectLinkOrder::URDFOrder
-            : metadata::attributes::ArticulatedObjectLinkOrder::TreeTraversal));
-
-    return addArticulatedObject(artObjAttributes, &drawables, forceReload,
-                                lightSetup);
-  }
-  return ID_UNDEFINED;
-  //}  // PhysicsManager::addArticulatedObjectFromURDF
-
-}  // PhysicsManager::addArticulatedObjectFromURDF
+}  // PhysicsManager::addArticulatedObjectAndSaveAttributes
 
 void PhysicsManager::buildCurrentStateSceneAttributes(
     const metadata::attributes::SceneInstanceAttributes::ptr&
@@ -559,7 +604,8 @@ int PhysicsManager::addTrajectoryObject(const std::string& trajVisName,
                                         int numSegments,
                                         float radius,
                                         bool smooth,
-                                        int numInterp) {
+                                        int numInterp,
+                                        DrawableGroup* drawables) {
   if (simulator_ != nullptr) {
     // acquire context if available
     simulator_->getRenderGLContext();
@@ -589,8 +635,16 @@ int PhysicsManager::addTrajectoryObject(const std::string& trajVisName,
   trajObjAttr->setComputeCOMFromShape(false);
   objAttrMgr->registerObject(trajObjAttr, trajVisName, true);
 
-  // 3. add trajectory object to manager
-  auto trajVisID = addObjectQueryDrawables(trajObjAttr);
+  // 3. query for drawables
+  if ((drawables == nullptr) && (simulator_ != nullptr)) {
+    // acquire context if available
+    simulator_->getRenderGLContext();
+    // acquire an appropriate drawable group
+    drawables = &simulator_->getDrawableGroup();
+  }
+
+  // 4. add trajectory object to manager
+  auto trajVisID = addObjectInternal(trajObjAttr, drawables);
   if (trajVisID == ID_UNDEFINED) {
     // failed to add object - need to delete asset from resourceManager.
     ESP_ERROR() << "Failed to create Trajectory visualization object for"

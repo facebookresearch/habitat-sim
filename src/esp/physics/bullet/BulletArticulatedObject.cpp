@@ -600,12 +600,28 @@ void BulletArticulatedObject::reset() {
   btMultiBody_->clearForcesAndTorques();
 }
 
+void BulletArticulatedObject::setCollisionObjectsActivateState(
+    bool activate) const {
+  if (activate) {
+    btMultiBody_->getBaseCollider()->activate();
+    for (int i = 0; i < btMultiBody_->getNumLinks(); ++i) {
+      btMultiBody_->getLinkCollider(i)->activate();
+    }
+  } else {
+    btMultiBody_->getBaseCollider()->setActivationState(WANTS_DEACTIVATION);
+    for (int i = 0; i < btMultiBody_->getNumLinks(); ++i) {
+      btMultiBody_->getLinkCollider(i)->setActivationState(WANTS_DEACTIVATION);
+    }
+  }
+}
+
 void BulletArticulatedObject::setActive(bool active) {
   if (!active) {
     btMultiBody_->goToSleep();
   } else {
     btMultiBody_->wakeUp();
   }
+  setCollisionObjectsActivateState(active);
 }
 
 bool BulletArticulatedObject::isActive() const {
@@ -704,6 +720,10 @@ void BulletArticulatedObject::overrideCollisionGroup(CollisionGroup group) {
 }
 
 void BulletArticulatedObject::updateKinematicState() {
+  if (!isActive()) {
+    // activate if not already active and kinematically updated
+    setActive(true);
+  }
   btMultiBody_->forwardKinematics(scratch_q_, scratch_m_);
   btMultiBody_->updateCollisionObjectWorldTransforms(scratch_q_, scratch_m_);
   // Need to update the aabbs manually also for broadphase collision detection

@@ -65,31 +65,6 @@ class BulletPhysicsManager : public PhysicsManager {
   //============ Simulator functions =============
 
   /**
-   * @brief Load, parse, and import a URDF file instantiating an @ref
-   * ArticulatedObject in the world based on the urdf filepath specified in @ref
-   * esp::metadata::attributes::ArticulatedObjectAttributes. This version
-   * requires drawables to be provided.
-   *
-   * @param artObjAttributes The @ref ArticulatedObject's template to use to create it.
-   * @param drawables Reference to the scene graph drawables group to enable
-   * rendering of the newly initialized @ref ArticulatedObject.
-   * @param forceReload If true, force the reload of the source URDF from file,
-   * replacing the cached model if it exists.
-   * @param lightSetup The string name of the desired lighting setup to use.
-   *
-   * @return The instanced @ref ArticulatedObject 's ID, mapping to the articulated
-   * object in @ref PhysicsManager::existingObjects_ if successful, or
-   * @ref esp::ID_UNDEFINED. These values come from the same pool used
-   * by rigid objects.
-   */
-  int addArticulatedObject(
-      const esp::metadata::attributes::ArticulatedObjectAttributes::ptr&
-          artObjAttributes,
-      DrawableGroup* drawables,
-      bool forceReload = false,
-      const std::string& lightSetup = DEFAULT_LIGHTING_KEY) override;
-
-  /**
    * @brief Use the metadata stored in metadata::URDF::Link to instance all
    * visual shapes for a link into the SceneGraph.
    *
@@ -306,6 +281,31 @@ class BulletPhysicsManager : public PhysicsManager {
   }
 
  protected:
+  /**
+   * @brief Load, parse, and import a URDF file instantiating an @ref
+   * ArticulatedObject in the world based on the urdf filepath specified in @ref
+   * esp::metadata::attributes::ArticulatedObjectAttributes. This version
+   * requires drawables to be provided.
+   *
+   * @param artObjAttributes The @ref ArticulatedObject's template to use to create it.
+   * @param drawables Reference to the scene graph drawables group to enable
+   * rendering of the newly initialized @ref ArticulatedObject.
+   * @param forceReload If true, force the reload of the source URDF from file,
+   * replacing the cached model if it exists.
+   * @param lightSetup The string name of the desired lighting setup to use.
+   *
+   * @return The instanced @ref ArticulatedObject 's ID, mapping to the articulated
+   * object in @ref PhysicsManager::existingObjects_ if successful, or
+   * @ref esp::ID_UNDEFINED. These values come from the same pool used
+   * by rigid objects.
+   */
+  int addArticulatedObjectInternal(
+      const esp::metadata::attributes::ArticulatedObjectAttributes::ptr&
+          artObjAttributes,
+      DrawableGroup* drawables,
+      bool forceReload = false,
+      const std::string& lightSetup = DEFAULT_LIGHTING_KEY) override;
+
   //! counter for constraint id generation
   int nextConstraintId_ = 0;
   //! caches for various types of Bullet rigid constraint objects.
