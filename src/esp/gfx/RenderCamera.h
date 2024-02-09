@@ -66,29 +66,38 @@ class RenderCamera : public MagnumCamera {
   /**
    * @brief Constructor
    * @param node the scene node to which the camera is attached
+   * @param semanticDataIDX The type of semantic id data rendered by this
+   * camera. Ignored if not rendering semantic data.
    */
-  explicit RenderCamera(scene::SceneNode& node);
+  explicit RenderCamera(scene::SceneNode& node,
+                        esp::scene::SceneNodeSemanticDataIDX semanticDataIDX);
   /**
    * @brief Constructor
    * @param node the scene node to which the camera is attached
+   * @param semanticDataIDX The type of semantic id data rendered by this
+   * camera. Ignored if not rendering semantic data.
    * @param eye the eye position (in PARENT node space)
    * @param target the target position (in PARENT node space)
    * @param up the up direction (in PARENT node space)
    * NOTE: it will override any relative transformation w.r.t its parent node
    */
   RenderCamera(scene::SceneNode& node,
+               esp::scene::SceneNodeSemanticDataIDX semanticDataIDX,
                const vec3f& eye,
                const vec3f& target,
                const vec3f& up);
   /**
    * @brief Constructor
    * @param node the scene node to which the camera is attached
+   * @param semanticDataIDX The type of semantic id data rendered by this
+   * camera. Ignored if not rendering semantic data.
    * @param eye the eye position (in PARENT node space)
    * @param target the target position (in PARENT node space)
    * @param up the up direction (in PARENT node space)
    * NOTE: it will override any relative transformation w.r.t its parent node
    */
   RenderCamera(scene::SceneNode& node,
+               esp::scene::SceneNodeSemanticDataIDX semanticDataIDX,
                const Magnum::Vector3& eye,
                const Magnum::Vector3& target,
                const Magnum::Vector3& up);
@@ -223,14 +232,10 @@ class RenderCamera : public MagnumCamera {
                           Flags flags = {});
 
   /**
-   * @brief if the "immediate" following rendering pass is to use drawable ids
-   * as the object ids.
-   * By default, it uses the semantic_id, stored in the drawable's scene graph
-   * node, if no "per-vertex" object id is used.
-   * @return true, if it is to use drawable ids as the object ids in the
-   * following rendering pass, otherwise false
+   * @brief This returns the index of the semantic data the drawable should use
+   * to populate the shader from the scene node.
    */
-  bool useDrawableIds() const { return useDrawableIds_; }
+  int getSemanticDataIDX() const { return static_cast<int>(semanticIDXToUse_); }
 
   /**
    * @brief Unproject a 2D viewport point to a 3D ray with origin at camera
@@ -261,6 +266,19 @@ class RenderCamera : public MagnumCamera {
   Mn::Matrix4 invertedProjectionMatrix;
   size_t previousNumVisibleDrawables_ = 0;
   bool useDrawableIds_ = false;
+
+  //! index of semantic id type held in scene nodes that this camera is made to
+  //! render for semantic sensors. This may be overridden by object picking
+  //! code.
+  esp::scene::SceneNodeSemanticDataIDX semanticInfoIDX_ =
+      esp::scene::SceneNodeSemanticDataIDX::SEMANTIC_ID;
+
+  //! the index to actually use to render semantic info. This will usually be
+  //! the same as semanticInfoIDX above, but will hold a different value if
+  //! being overridden by object picking.
+  esp::scene::SceneNodeSemanticDataIDX semanticIDXToUse_ =
+      esp::scene::SceneNodeSemanticDataIDX::SEMANTIC_ID;
+
   ESP_SMART_POINTERS(RenderCamera)
 };
 

@@ -11,22 +11,30 @@ namespace Cr = Corrade;
 namespace esp {
 namespace gfx {
 
-CubeMapCamera::CubeMapCamera(scene::SceneNode& node) : RenderCamera(node) {
+CubeMapCamera::CubeMapCamera(
+    scene::SceneNode& node,
+    esp::scene::SceneNodeSemanticDataIDX semanticDataIDX)
+    : RenderCamera(node, semanticDataIDX) {
   updateOriginalViewingMatrix();
 }
-CubeMapCamera::CubeMapCamera(scene::SceneNode& node,
-                             const vec3f& eye,
-                             const vec3f& target,
-                             const vec3f& up)
+CubeMapCamera::CubeMapCamera(
+    scene::SceneNode& node,
+    esp::scene::SceneNodeSemanticDataIDX semanticDataIDX,
+    const vec3f& eye,
+    const vec3f& target,
+    const vec3f& up)
     : CubeMapCamera(node,
+                    semanticDataIDX,
                     Mn::Vector3{eye},
                     Mn::Vector3{target},
                     Mn::Vector3{up}) {}
-CubeMapCamera::CubeMapCamera(scene::SceneNode& node,
-                             const Mn::Vector3& eye,
-                             const Mn::Vector3& target,
-                             const Mn::Vector3& up)
-    : RenderCamera(node, eye, target, up) {
+CubeMapCamera::CubeMapCamera(
+    scene::SceneNode& node,
+    esp::scene::SceneNodeSemanticDataIDX semanticDataIDX,
+    const Mn::Vector3& eye,
+    const Mn::Vector3& target,
+    const Mn::Vector3& up)
+    : RenderCamera(node, semanticDataIDX, eye, target, up) {
   updateOriginalViewingMatrix();
 }
 CubeMapCamera& CubeMapCamera::updateOriginalViewingMatrix() {

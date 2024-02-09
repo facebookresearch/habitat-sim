@@ -41,7 +41,8 @@ int computeCubemapSize(const Magnum::Vector2i& resolution,
 CubeMapSensorBase::CubeMapSensorBase(scene::SceneNode& cameraNode,
                                      const CubeMapSensorBaseSpec::ptr& spec)
     : VisualSensor(cameraNode, spec),
-      cubeMapCamera_(new gfx::CubeMapCamera(cameraNode)),
+      cubeMapCamera_(new gfx::CubeMapCamera(cameraNode,
+                                            visualSensorSpec_->semanticTarget)),
       mesh_(Mn::GL::Mesh()) {
   // initialize a cubemap
   int size = computeCubemapSize(cubeMapSensorBaseSpec_->resolution,

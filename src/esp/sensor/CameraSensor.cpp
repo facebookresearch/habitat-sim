@@ -71,7 +71,8 @@ CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
     : VisualSensor(cameraNode, spec),
       baseProjMatrix_(Magnum::Math::IdentityInit),
       zoomMatrix_(Magnum::Math::IdentityInit),
-      renderCamera_(new gfx::RenderCamera(cameraNode)) {
+      renderCamera_(new gfx::RenderCamera(cameraNode,
+                                          visualSensorSpec_->semanticTarget)) {
   // Sanity check
   CORRADE_ASSERT(
       cameraSensorSpec_,

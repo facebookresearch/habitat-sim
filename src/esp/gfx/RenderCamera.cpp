@@ -47,26 +47,33 @@ Cr::Containers::Optional<int> rangeFrustum(const Mn::Range3D& range,
   return Cr::Containers::NullOpt;
 }
 
-RenderCamera::RenderCamera(scene::SceneNode& node) : MagnumCamera{node} {
+RenderCamera::RenderCamera(scene::SceneNode& node,
+                           esp::scene::SceneNodeSemanticDataIDX semanticDataIDX)
+    : MagnumCamera{node}, semanticInfoIDX_(semanticDataIDX) {
+  // Set to using the base semantic idx assigned to this camera
+  semanticIDXToUse_ = semanticInfoIDX_;
   node.setType(scene::SceneNodeType::CAMERA);
   setAspectRatioPolicy(Mn::SceneGraph::AspectRatioPolicy::NotPreserved);
 }
 
 RenderCamera::RenderCamera(scene::SceneNode& node,
+                           esp::scene::SceneNodeSemanticDataIDX semanticDataIDX,
                            const Mn::Vector3& eye,
                            const Mn::Vector3& target,
                            const Mn::Vector3& up)
 
-    : RenderCamera(node) {
+    : RenderCamera(node, semanticDataIDX) {
   // once it is attached, set the transformation
   resetViewingParameters(eye, target, up);
 }
 
 RenderCamera::RenderCamera(scene::SceneNode& node,
+                           esp::scene::SceneNodeSemanticDataIDX semanticDataIDX,
                            const vec3f& eye,
                            const vec3f& target,
                            const vec3f& up)
     : RenderCamera(node,
+                   semanticDataIDX,
                    Mn::Vector3{eye},
                    Mn::Vector3{target},
                    Mn::Vector3{up}) {}
@@ -149,14 +156,13 @@ uint32_t RenderCamera::draw(DrawableTransforms& drawableTransforms,
   previousNumVisibleDrawables_ = drawableTransforms.size();
 
   if (flags & Flag::UseDrawableIdAsObjectId) {
-    useDrawableIds_ = true;
+    semanticIDXToUse_ = esp::scene::SceneNodeSemanticDataIDX::DRAWABLE_ID;
   }
 
   MagnumCamera::draw(drawableTransforms);
 
-  if (useDrawableIds_) {
-    useDrawableIds_ = false;
-  }
+  // Reset to using the base semantic idx assigned to this camera
+  semanticIDXToUse_ = semanticInfoIDX_;
 
   return drawableTransforms.size();
 }
