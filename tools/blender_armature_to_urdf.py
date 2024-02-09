@@ -845,7 +845,7 @@ def export(
                 "position": [0, 0, 0],
                 "rotation": [1, 0, 0, 0],
                 "scale": [1, 1, 1],
-                "up": [0, 1, 0],
+                "up": [0, 0, 1],
                 "mesh_filepath": rec_name + ".glb",
             }
         ao_config_filename = os.path.join(
@@ -858,7 +858,7 @@ def export(
 
 
 if __name__ == "__main__":
-    # NOTE: this must be run from within Blender and by defaults saves viles in "blender_armatures/" relative to the directory containing the script
+    # NOTE: this must be run from within Blender and by default saves files in "blender_armatures/" relative to the directory containing the script
 
     export_path = None
     try:
