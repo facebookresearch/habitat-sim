@@ -621,7 +621,7 @@ class HabitatSimInteractiveViewer(Application):
         """
         Additional draw commands to be called during draw_event.
         """
-        rom = self.sim.get_rigid_object_manager()
+        self.sim.get_rigid_object_manager()
         if self.debug_bullet_draw:
             render_cam = self.render_camera.render_camera
             proj_mat = render_cam.projection_matrix.__matmul__(render_cam.camera_matrix)
@@ -701,7 +701,7 @@ class HabitatSimInteractiveViewer(Application):
                             num_segments=12,
                         )
 
-                rec_obj = rom.get_object_by_handle(receptacle.parent_object_handle)
+                rec_obj = self.get_object_by_handle(receptacle.parent_object_handle)
                 key_points = [r_trans.translation]
                 key_points.extend(get_bb_corners(rec_obj.root_scene_node.cumulative_bb))
 
