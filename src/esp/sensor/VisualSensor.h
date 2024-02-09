@@ -29,19 +29,9 @@ using Mn::Math::Literals::operator""_degf;
 
 /**
  * @brief This enum describes the type of information the Semantic Sensor will
- * render.
+ * render. This is an alias for the idx enum defined in scene node.
  */
-enum class SemanticSensorTarget : int32_t {
-  /**
-   * @brief The semantic sensor will render semantic IDs
-   */
-  SemanticID = 0,
-  /**
-   * @brief The semantic sensor will render object IDs
-   */
-  ObjectID,
-  // TODO: All other semantic ids, such as region ID, level ID, etc.
-};  // Types of information the semantic sensor displays
+using SemanticSensorTarget = esp::scene::SceneNodeSemanticDataIDX;
 
 struct VisualSensorSpec : public SensorSpec {
   /**
@@ -70,10 +60,10 @@ struct VisualSensorSpec : public SensorSpec {
   Mn::Color4 clearColor = {0, 0, 0, 1};
 
   /**
-   * @brief the type of information being rendered by the semantic sensor.
-   * Ignored by non-semantic sensors
+   * @brief the type of semantic information being rendered by the semantic
+   * sensor. Ignored by non-semantic sensors
    */
-  SemanticSensorTarget semanticTarget = SemanticSensorTarget::SemanticID;
+  SemanticSensorTarget semanticTarget = SemanticSensorTarget::SEMANTIC_ID;
 
   VisualSensorSpec();
   void sanityCheck() const override;

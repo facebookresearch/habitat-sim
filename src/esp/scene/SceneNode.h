@@ -44,8 +44,8 @@ enum class SceneNodeType {
  * @brief This enum holds the idx values for the vector of various types
  * of IDs that can be rendered via semantic sensors.
  */
-namespace SceneNodeSemanticDataIDX {
-enum {
+
+enum class SceneNodeSemanticDataIDX {
   /**
    * @brief The semantic ID corresponding to the object represented by this
    * scene node. The semantic category of a node. This value is used to render
@@ -66,11 +66,11 @@ enum {
    */
   DRAWABLE_ID = 2,
   /**
-   * @brief Insert the index of a new ID to represent above this entry.
+   * @brief Insert the index of a new ID to represent in semantic observations
+   * above this entry.
    */
   NUM_SEMANTIC_IDS
-};  // enum for IDXs
-}  // namespace SceneNodeSemanticDataIDX
+};  // enum SceneNodeSemanticDataIDX
 
 // Enumeration of SceneNodeTags
 enum class SceneNodeTag : Magnum::UnsignedShort {
@@ -155,22 +155,26 @@ class SceneNode : public MagnumObject,
 
   //! Returns node semanticId
   virtual int getSemanticId() const {
-    return semanticIDs_[SceneNodeSemanticDataIDX::SEMANTIC_ID];
+    return semanticIDs_[static_cast<int>(
+        SceneNodeSemanticDataIDX::SEMANTIC_ID)];
   }
 
   //! Sets node semanticId
   virtual void setSemanticId(int semanticId) {
-    semanticIDs_[SceneNodeSemanticDataIDX::SEMANTIC_ID] = semanticId;
+    semanticIDs_[static_cast<int>(SceneNodeSemanticDataIDX::SEMANTIC_ID)] =
+        semanticId;
   }
 
   //! Sets node's owning objectID, for panoptic rendering.
   virtual void setBaseObjectId(int objectId) {
-    semanticIDs_[SceneNodeSemanticDataIDX::OBJECT_ID] = objectId;
+    semanticIDs_[static_cast<int>(SceneNodeSemanticDataIDX::OBJECT_ID)] =
+        objectId;
   }
 
   //! Sets node's corresponding drawable's id, for panoptic rendering.
   virtual void setDrawableId(int drawableId) {
-    semanticIDs_[SceneNodeSemanticDataIDX::DRAWABLE_ID] = drawableId;
+    semanticIDs_[static_cast<int>(SceneNodeSemanticDataIDX::DRAWABLE_ID)] =
+        drawableId;
   }
 
   /**
@@ -328,7 +332,8 @@ class SceneNode : public MagnumObject,
 
   //! The semantic category of this node. Used to render attached Drawables with
   //! Semantic sensor when no perVertexObjectIds are present.
-  std::vector<int> semanticIDs_{SceneNodeSemanticDataIDX::NUM_SEMANTIC_IDS, 0};
+  std::vector<int> semanticIDs_{
+      static_cast<int>(SceneNodeSemanticDataIDX::NUM_SEMANTIC_IDS), 0};
 };  // namespace scene
 
 // Traversal Helpers

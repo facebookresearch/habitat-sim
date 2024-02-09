@@ -67,9 +67,11 @@ void initSensorBindings(py::module& m) {
       .value("EQUIRECTANGULAR", SensorSubType::Equirectangular)
       .value("IMPULSERESPONSE", SensorSubType::ImpulseResponse);
 
+  // NOTE : esp::sensor::SemanticSensorTarget is an alias for
+  // esp::scene::SceneNodeSemanticDataIDX.
   py::enum_<SemanticSensorTarget>(m, "SemanticSensorTarget")
-      .value("SEMANTIC_ID", SemanticSensorTarget::SemanticID)
-      .value("OBJECT_ID", SemanticSensorTarget::ObjectID);
+      .value("SEMANTIC_ID", SemanticSensorTarget::SEMANTIC_ID)
+      .value("OBJECT_ID", SemanticSensorTarget::OBJECT_ID);
 
   py::enum_<FisheyeSensorModelType>(m, "FisheyeSensorModelType")
       .value("DOUBLE_SPHERE", FisheyeSensorModelType::DoubleSphere);
