@@ -153,12 +153,14 @@ class Recorder {
   std::vector<std::string> writeIncrementalSavedKeyframesToStringArray();
 
   /**
-   * @brief Set the precision of the floating points serialized by this recorder.
+   * @brief Set the precision of the floating points serialized by this
+   * recorder.
    */
   void setMaxDecimalPlaces(int maxDecimalPlaces);
 
   /**
-   * @brief Get the precision of the floating points serialized by this recorder.
+   * @brief Get the precision of the floating points serialized by this
+   * recorder.
    */
   int getMaxDecimalPlaces() const;
 
