@@ -165,7 +165,7 @@ def initialize_test_data_sources(data_path):
         "ycb": {
             "source": "https://huggingface.co/datasets/ai-habitat/ycb.git",
             "link": data_path + "objects/ycb",
-            "version": "v1.2",
+            "version": "main",
         },
         "franka_panda": {
             "source": "https://dl.fbaipublicfiles.com/polymetis/franka_panda.zip",
