@@ -6,6 +6,7 @@
 
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/TestSuite/Compare/Numeric.h>
+#include <Corrade/TestSuite/Compare/String.h>
 #include <Corrade/TestSuite/Tester.h>
 #include <Corrade/Utility/Path.h>
 #include <Magnum/Math/Range.h>
@@ -765,10 +766,14 @@ void GfxReplayTest::testDecimalPlaces() {
 
   // read the playback strings
   {
-    CORRADE_VERIFY(keyframe3Decimals.find("0.555") != std::string::npos);
-    CORRADE_VERIFY(keyframe3Decimals.find("0.5555") == std::string::npos);
-    CORRADE_VERIFY(keyframe5Decimals.find("0.55555") != std::string::npos);
-    CORRADE_VERIFY(keyframe5Decimals.find("0.555555") == std::string::npos);
+    CORRADE_COMPARE_AS(keyframe3Decimals, "0.555",
+                       Cr::TestSuite::Compare::StringContains);
+    CORRADE_COMPARE_AS(keyframe3Decimals, "0.5555",
+                       Cr::TestSuite::Compare::StringNotContains);
+    CORRADE_COMPARE_AS(keyframe5Decimals, "0.55555",
+                       Cr::TestSuite::Compare::StringContains);
+    CORRADE_COMPARE_AS(keyframe5Decimals, "0.555555",
+                       Cr::TestSuite::Compare::StringNotContains);
   }
 }
 
