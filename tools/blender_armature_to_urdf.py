@@ -597,7 +597,13 @@ def get_anim_limits_info(bone):
                     if len(limit_list) == 0:
                         limit_list = [0, 0, 0]
                     is_prismatic = True
-                limit_list[index] = value
+                try:
+                    limit_list[index] = value
+                except IndexError:
+                    raise Exception(
+                        f"Failed to get limits for fcurve: bone={bone.name}, curve_key={_fkey}, index={index}. Should have exactly 3 (position) or exactly 4 (quaternion) elements."
+                    )
+
             bone_limits[key_match] = limit_list
     assert (
         is_prismatic or is_revolute
