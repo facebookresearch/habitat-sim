@@ -86,9 +86,12 @@ JsonDocument parseJsonString(const std::string& jsonString) {
   return d;
 }
 
-std::string jsonToString(const JsonDocument& d) {
+std::string jsonToString(const JsonDocument& d, int maxDecimalPlaces) {
   rapidjson::StringBuffer buffer{};
   rapidjson::Writer<rapidjson::StringBuffer> writer{buffer};
+  if (maxDecimalPlaces != -1) {
+    writer.SetMaxDecimalPlaces(maxDecimalPlaces);
+  }
   d.Accept(writer);
   return buffer.GetString();
 }
