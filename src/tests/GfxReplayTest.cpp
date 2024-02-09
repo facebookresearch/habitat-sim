@@ -54,6 +54,7 @@ struct GfxReplayTest : Cr::TestSuite::Tester {
 
   void testLightIntegration();
   void testSkinningIntegration();
+  void testDecimalPlaces();
 
   esp::logging::LoggingContext loggingContext;
 
@@ -77,6 +78,7 @@ GfxReplayTest::GfxReplayTest() {
       &GfxReplayTest::testSimulatorIntegration,
       &GfxReplayTest::testLightIntegration,
       &GfxReplayTest::testSkinningIntegration,
+      &GfxReplayTest::testDecimalPlaces,
   });
 }  // ctor
 
@@ -720,6 +722,54 @@ void GfxReplayTest::testSkinningIntegration() {
 
   // Frame 4
   CORRADE_COMPARE(keyframes[4].deletions.size(), 2);
+}
+
+void GfxReplayTest::testDecimalPlaces() {
+  const std::string testFile =
+      Cr::Utility::Path::join(TEST_ASSETS, "objects/sphere.glb");
+
+  // record a playback string
+  std::string keyframe3Decimals, keyframe5Decimals;
+  {
+    SimulatorConfiguration simConfig{};
+    simConfig.enableGfxReplaySave = true;
+    simConfig.createRenderer = false;
+    simConfig.activeSceneName = testFile;
+    auto sim = Simulator::create_unique(simConfig);
+    CORRADE_VERIFY(sim);
+    const auto recorder = sim->getGfxReplayManager()->getRecorder();
+    CORRADE_VERIFY(recorder);
+
+    const std::string lightSetupKey = "";
+    esp::assets::RenderAssetInstanceCreationInfo::Flags flags;
+    flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsRGBD;
+    flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsSemantic;
+    esp::assets::RenderAssetInstanceCreationInfo creation(
+        testFile, Corrade::Containers::NullOpt, flags, lightSetupKey);
+    const esp::assets::AssetInfo info =
+        esp::assets::AssetInfo::fromPath(testFile);
+    auto* node = sim->loadAndCreateRenderAssetInstance(info, creation);
+    node->setTranslation(Mn::Vector3{0.555555555f, 0.0f, 0.0f});
+    recorder->saveKeyframe();
+
+    CORRADE_COMPARE(recorder->getMaxDecimalPlaces(),
+                    esp::gfx::replay::DEFAULT_MAX_DECIMAL_PLACES);
+    recorder->setMaxDecimalPlaces(3);
+    CORRADE_COMPARE(recorder->getMaxDecimalPlaces(), 3);
+    auto keyframe = recorder->debugGetSavedKeyframes().front();
+    keyframe3Decimals =
+        recorder->writeIncrementalSavedKeyframesToStringArray().front();
+    keyframe5Decimals =
+        esp::gfx::replay::Recorder::keyframeToString(keyframe, 5);
+  }
+
+  // read the playback strings
+  {
+    CORRADE_VERIFY(keyframe3Decimals.find("0.555") != std::string::npos);
+    CORRADE_VERIFY(keyframe3Decimals.find("0.5555") == std::string::npos);
+    CORRADE_VERIFY(keyframe5Decimals.find("0.55555") != std::string::npos);
+    CORRADE_VERIFY(keyframe5Decimals.find("0.555555") == std::string::npos);
+  }
 }
 
 }  // namespace
