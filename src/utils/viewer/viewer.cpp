@@ -244,11 +244,10 @@ class Viewer : public Mn::Platform::Application {
    */
 
   Mn::Vector2i getMousePosition(Mn::Vector2i mouseEventPosition) {
-    // aquire the mouse position, and scale it based on ratio of framebuffer and
-    // window size.
-    // on retina displays this scaling calc is necessary to account for HiDPI
-    // monitors.
-    Mn::Vector2 scaling = Mn::Vector2{framebufferSize()} /
+    // aquire the mouse position, and scale it based on ratio of actual
+    // framebuffer and window size. The two can differ on HiDPI displays or
+    // if a quarter-size rendering is active.
+    Mn::Vector2 scaling = Mn::Vector2{scaledFramebufferSize_} /
                           Mn::Vector2{windowSize()};
 
     return Mn::Vector2i(mouseEventPosition * scaling);
@@ -595,6 +594,8 @@ Key Commands:
   // if currently orthographic
   bool isOrtho_ = false;
 
+  Mn::Float quarterResolutionScalingLimit_;
+  Mn::Vector2i scaledFramebufferSize_;
   esp::gfx::RenderCamera* renderCamera_ = nullptr;
   esp::scene::SceneGraph* activeSceneGraph_ = nullptr;
   bool drawObjectBBs = false;
@@ -859,9 +860,21 @@ Viewer::Viewer(const Arguments& arguments)
       .addOption("agent-transform-filepath")
       .setHelp("agent-transform-filepath",
                "Specify path to load camera transform from.")
+      .addOption("quarter-resolution-scaling-limit", "2.0")
+      .setHelp("quarter-resolution-scaling-limit",
+               "Display scaling factor at which to render at quarter " "resolution.")
       .parse(arguments.argc, arguments.argv);
 
-  /* Set up text rendering */
+  /* The size used for actual rendering is size of the framebuffer by default.
+     On HiDPI displays with a scaling factor larger or equal to 2, it's quarter
+     size instead. */
+  quarterResolutionScalingLimit_ = args.value<Mn::Float>("quarter-resolution-scaling-limit");
+  scaledFramebufferSize_ = framebufferSize();
+  if((Mn::Vector2{framebufferSize()}*dpiScaling()/Mn::Vector2{windowSize()}).max() >= quarterResolutionScalingLimit_)
+    scaledFramebufferSize_ /= 2;
+
+  /* Set up text rendering. This is done always at the full framebuffer size
+     for best crispness. */
   {
     /* Render the font in a size corresponding to actual pixels, taking DPI
        scaling into account. Docs for reference:
@@ -950,7 +963,7 @@ Viewer::Viewer(const Arguments& arguments)
            "lookDown", esp::agent::ActuationMap{{"amount", lookSensitivity}})},
   };
   // add sensor specifications to agent config
-  addSensors(agentConfig_, isOrtho_, framebufferSize());
+  addSensors(agentConfig_, isOrtho_, scaledFramebufferSize_);
 
   // setup SimulatorConfig from args.
   simConfig_.activeSceneName = args.value("scene");
@@ -1022,7 +1035,7 @@ Viewer::Viewer(const Arguments& arguments)
   // initialize sim navmesh, agent, sensors after creation/reconfigure
   initSimPostReconfigure();
 
-  objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(framebufferSize());
+  objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(scaledFramebufferSize_);
 
   /**
    * Set up per frame profiler to be aware of bottlenecking in processing data
@@ -1808,13 +1821,19 @@ void Viewer::bindRenderTarget() {
 }
 
 void Viewer::viewportEvent(ViewportEvent& event) {
+  /* Recalculate the scaled framebuffer size based on new values coming from
+     the event */
+  scaledFramebufferSize_ = event.framebufferSize();
+  if((Mn::Vector2{event.framebufferSize()}*event.dpiScaling()/Mn::Vector2{event.windowSize()}).max() >= quarterResolutionScalingLimit_)
+    scaledFramebufferSize_ /= 2;
+
   for (auto& it : agentBodyNode_->getSubtreeSensors()) {
     if (it.second.get().isVisualSensor()) {
       esp::sensor::VisualSensor& visualSensor =
           static_cast<esp::sensor::VisualSensor&>(it.second.get());
-      visualSensor.setResolution(event.framebufferSize()[1],
-                                 event.framebufferSize()[0]);
-      renderCamera_->setViewport(visualSensor.framebufferSize());
+      visualSensor.setResolution(scaledFramebufferSize_.y(),
+                                 scaledFramebufferSize_.x());
+      renderCamera_->setViewport(scaledFramebufferSize_);
       // before, here we will bind the render target, but now we defer it
       if (visualSensor.specification()->sensorSubType ==
           esp::sensor::SensorSubType::Fisheye) {
@@ -1822,14 +1841,14 @@ void Viewer::viewportEvent(ViewportEvent& event) {
             visualSensor.specification().get());
 
         // since the sensor is determined, sensor's focal length is fixed.
-        spec->principalPointOffset = Mn::Vector2{event.framebufferSize()}/2.0f;
+        spec->principalPointOffset = Mn::Vector2{scaledFramebufferSize_}/2.0f;
       }
     }
   }
   bindRenderTarget();
   Mn::GL::defaultFramebuffer.setViewport({{}, event.framebufferSize()});
 
-  objectPickingHelper_->handleViewportChange(event.framebufferSize());
+  objectPickingHelper_->handleViewportChange(scaledFramebufferSize_);
 }
 
 void Viewer::createPickedObjectVisualizer(unsigned int objectId) {
