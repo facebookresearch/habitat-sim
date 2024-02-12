@@ -809,8 +809,7 @@ Viewer::Viewer(const Arguments& arguments)
                                         Configuration::WindowFlag::Resizable),
                                 GLConfiguration{}
                                     .setColorBufferSize(
-                                        Mn::Vector4i(8, 8, 8, 8))
-                                    .setSampleCount(4)},
+                                        Mn::Vector4i(8, 8, 8, 8))},
       loggingContext_{},
       simConfig_(),
       MM_(std::make_shared<esp::metadata::MetadataMediator>(simConfig_)),
