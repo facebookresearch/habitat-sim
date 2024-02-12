@@ -746,9 +746,7 @@ def export(
                 print(f" -pb> {obj.parent_bone}")
             if is_receptacle_mesh(obj):
                 receptacle_meshes.append(obj)
-                receptacle_to_link_name[
-                    obj.parent.name + "_receptacle"
-                ] = obj.parent.name
+                receptacle_to_link_name[obj.name] = obj.parent.name
         elif obj.type == "EMPTY":
             print(f"EMPTY: {obj.name}")
             if obj.parent is None and len(obj.children) > 0:
@@ -779,9 +777,7 @@ def export(
             deselect_all()
             rec_mesh.select_set(True)
             bpy.ops.export_scene.gltf(
-                filepath=os.path.join(
-                    final_out_path, rec_mesh.parent.name + "_receptacle"
-                ),
+                filepath=os.path.join(final_out_path, rec_mesh.name),
                 use_selection=True,
                 export_yup=False,
             )
