@@ -667,9 +667,7 @@ Key Commands:
 #endif  // ESP_BUILD_WITH_AUDIO
 };      // class viewer declaration
 
-void addSensors(esp::agent::AgentConfiguration& agentConfig, bool isOrtho) {
-  const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
-
+void addSensors(esp::agent::AgentConfiguration& agentConfig, bool isOrtho, const Mn::Vector2i& framebufferSize) {
   auto addCameraSensor = [&](const std::string& uuid,
                              esp::sensor::SensorType sensorType) {
     agentConfig.sensorSpecifications.emplace_back(
@@ -718,8 +716,7 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig, bool isOrtho) {
     spec->fisheyeModelType = modelType;
     spec->resolution = viewportSize.flipped();
     // default viewport size: 1600 x 1200
-    spec->principalPointOffset =
-        Mn::Vector2(viewportSize[0] / 2, viewportSize[1] / 2);
+    spec->principalPointOffset = Mn::Vector2{framebufferSize}/2.0f;
     if (modelType == esp::sensor::FisheyeSensorModelType::DoubleSphere) {
       // in this demo, we choose "GoPro":
       spec->focalLength = {364.84f, 364.86f};
@@ -865,8 +862,6 @@ Viewer::Viewer(const Arguments& arguments)
                "Specify path to load camera transform from.")
       .parse(arguments.argc, arguments.argv);
 
-  const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
-
   /* Set up text rendering */
   {
     /* Render the font in a size corresponding to actual pixels, taking DPI
@@ -956,7 +951,7 @@ Viewer::Viewer(const Arguments& arguments)
            "lookDown", esp::agent::ActuationMap{{"amount", lookSensitivity}})},
   };
   // add sensor specifications to agent config
-  addSensors(agentConfig_, isOrtho_);
+  addSensors(agentConfig_, isOrtho_, framebufferSize());
 
   // setup SimulatorConfig from args.
   simConfig_.activeSceneName = args.value("scene");
@@ -1028,7 +1023,7 @@ Viewer::Viewer(const Arguments& arguments)
   // initialize sim navmesh, agent, sensors after creation/reconfigure
   initSimPostReconfigure();
 
-  objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(viewportSize);
+  objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(framebufferSize());
 
   /**
    * Set up per frame profiler to be aware of bottlenecking in processing data
@@ -1827,14 +1822,8 @@ void Viewer::viewportEvent(ViewportEvent& event) {
         auto spec = static_cast<esp::sensor::FisheyeSensorDoubleSphereSpec*>(
             visualSensor.specification().get());
 
-        // const auto viewportSize =
-        // Mn::GL::defaultFramebuffer.viewport().size();
-        const auto viewportSize = event.framebufferSize();
-        int size = viewportSize[0] < viewportSize[1] ? viewportSize[0]
-                                                     : viewportSize[1];
         // since the sensor is determined, sensor's focal length is fixed.
-        spec->principalPointOffset =
-            Mn::Vector2(viewportSize[0] / 2, viewportSize[1] / 2);
+        spec->principalPointOffset = Mn::Vector2{event.framebufferSize()}/2.0f;
       }
     }
   }
