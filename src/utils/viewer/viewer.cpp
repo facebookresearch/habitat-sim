@@ -248,7 +248,7 @@ class Viewer : public Mn::Platform::Application {
     // window size.
     // on retina displays this scaling calc is necessary to account for HiDPI
     // monitors.
-    Mn::Vector2 scaling = Mn::Vector2{framebufferSize()} * dpiScaling() /
+    Mn::Vector2 scaling = Mn::Vector2{framebufferSize()} /
                           Mn::Vector2{windowSize()};
 
     return Mn::Vector2i(mouseEventPosition * scaling);
