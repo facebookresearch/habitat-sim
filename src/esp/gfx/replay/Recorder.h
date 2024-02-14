@@ -167,7 +167,7 @@ class Recorder {
   /**
    * @brief returns JSONized version of given keyframe.
    */
-  std::string keyframeToString(const Keyframe& keyframe);
+  std::string keyframeToString(const Keyframe& keyframe) const;
 
   /**
    * @brief Reserved for unit-testing.

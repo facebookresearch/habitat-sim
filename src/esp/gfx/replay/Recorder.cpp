@@ -321,7 +321,7 @@ int Recorder::getMaxDecimalPlaces() const {
   return maxDecimalPlaces_;
 }
 
-std::string Recorder::keyframeToString(const Keyframe& keyframe) {
+std::string Recorder::keyframeToString(const Keyframe& keyframe) const {
   rapidjson::Document d(rapidjson::kObjectType);
   rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
   esp::io::addMember(d, "keyframe", keyframe, allocator);
