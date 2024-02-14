@@ -279,10 +279,8 @@ void Recorder::advanceKeyframe() {
 void Recorder::writeSavedKeyframesToFile(const std::string& filepath,
                                          bool usePrettyWriter) {
   auto document = writeKeyframesToJsonDocument();
-  // replay::Keyframes use floats (not doubles) so this is plenty of precision
-  const int maxDecimalPlaces = 7;
   auto ok = esp::io::writeJsonToFile(document, filepath, usePrettyWriter,
-                                     maxDecimalPlaces);
+                                     maxDecimalPlaces_);
   ESP_CHECK(ok, "writeSavedKeyframesToFile: unable to write to " << filepath);
 
   consolidateSavedKeyframes();
@@ -293,7 +291,7 @@ std::string Recorder::writeSavedKeyframesToString() {
 
   consolidateSavedKeyframes();
 
-  return esp::io::jsonToString(document);
+  return esp::io::jsonToString(document, maxDecimalPlaces_);
 }
 
 std::vector<std::string>
@@ -315,11 +313,19 @@ Recorder::writeIncrementalSavedKeyframesToStringArray() {
   return results;
 }
 
-std::string Recorder::keyframeToString(const Keyframe& keyframe) {
+void Recorder::setMaxDecimalPlaces(int maxDecimalPlaces) {
+  maxDecimalPlaces_ = maxDecimalPlaces;
+}
+
+int Recorder::getMaxDecimalPlaces() const {
+  return maxDecimalPlaces_;
+}
+
+std::string Recorder::keyframeToString(const Keyframe& keyframe) const {
   rapidjson::Document d(rapidjson::kObjectType);
   rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
   esp::io::addMember(d, "keyframe", keyframe, allocator);
-  return esp::io::jsonToString(d);
+  return esp::io::jsonToString(d, maxDecimalPlaces_);
 }
 
 void Recorder::consolidateSavedKeyframes() {

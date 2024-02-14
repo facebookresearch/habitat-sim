@@ -66,7 +66,7 @@ void initGfxReplayBindings(py::module& m) {
                   "replay save not enabled. See "
                   "SimulatorConfiguration.enable_gfx_replay_save.");
             }
-            return esp::gfx::replay::Recorder::keyframeToString(
+            return self.getRecorder()->keyframeToString(
                 self.getRecorder()->extractKeyframe());
           },
           R"(Extract the current keyframe as a JSON-formatted string.)")
@@ -124,7 +124,31 @@ void initGfxReplayBindings(py::module& m) {
           R"(Write all saved keyframes to individual strings. See Recorder.h for details.)")
 
       .def("read_keyframes_from_file", &ReplayManager::readKeyframesFromFile,
-           R"(Create a Player object from a replay file.)");
+           R"(Create a Player object from a replay file.)")
+
+      .def(
+          "set_max_decimal_places",
+          [](ReplayManager& self, int maxDecimalPlaces) {
+            if (!self.getRecorder()) {
+              throw std::runtime_error(
+                  "Replay save not enabled. See "
+                  "SimulatorConfiguration.enable_gfx_replay_save.");
+            }
+            self.getRecorder()->setMaxDecimalPlaces(maxDecimalPlaces);
+          },
+          R"(Set the precision of the floating points serialized by this recorder.)")
+
+      .def(
+          "get_max_decimal_places",
+          [](ReplayManager& self) {
+            if (!self.getRecorder()) {
+              throw std::runtime_error(
+                  "Replay save not enabled. See "
+                  "SimulatorConfiguration.enable_gfx_replay_save.");
+            }
+            return self.getRecorder()->getMaxDecimalPlaces();
+          },
+          R"(Get the precision of the floating points serialized by this recorder.)");
 }
 
 }  // namespace replay
