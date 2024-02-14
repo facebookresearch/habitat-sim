@@ -165,14 +165,24 @@ class SceneNode : public MagnumObject,
         semanticId;
   }
 
+  //! Gets node's owning objectID, for panoptic rendering.
+  virtual int getBaseObjectId() const {
+    return semanticIDs_[static_cast<int>(SceneNodeSemanticDataIDX::OBJECT_ID)];
+  }
+
   //! Sets node's owning objectID, for panoptic rendering.
-  virtual void setBaseObjectId(int objectId) {
+  void setBaseObjectId(int objectId) {
     semanticIDs_[static_cast<int>(SceneNodeSemanticDataIDX::OBJECT_ID)] =
         objectId;
   }
+  //! Gets node's corresponding drawable's id, for panoptic rendering.
+  virtual int getDrawableId() const {
+    return semanticIDs_[static_cast<int>(
+        SceneNodeSemanticDataIDX::DRAWABLE_ID)];
+  }
 
   //! Sets node's corresponding drawable's id, for panoptic rendering.
-  virtual void setDrawableId(int drawableId) {
+  void setDrawableId(int drawableId) {
     semanticIDs_[static_cast<int>(SceneNodeSemanticDataIDX::DRAWABLE_ID)] =
         drawableId;
   }
@@ -182,7 +192,7 @@ class SceneNode : public MagnumObject,
    * @param idToGetIDX The index of the ID to get
    * @return the semantic value corresponding to the given index
    */
-  virtual int getShaderObjectID(int idToGetIDX) const {
+  int getShaderObjectID(int idToGetIDX) const {
     return semanticIDs_[idToGetIDX];
   }
 
@@ -191,6 +201,17 @@ class SceneNode : public MagnumObject,
    * scene node.
    */
   const std::vector<int>& getSemanticIDVector() const { return semanticIDs_; }
+
+  /**
+   * @brief Set the value for the various semantic IDs to be rendered by this
+   * scene node. As values are added, we want to make sure we support shorter,
+   * older vectors.
+   * @param _semanticIDs The vector of semantic sensor IDs this scene node will
+   * use for rendering. This vector might not be the same size as the current
+   * vector.
+   */
+  void setSemanticIDVector(const std::vector<int>& _semanticIDs);
+
   Magnum::Vector3 absoluteTranslation() const;
 
   Magnum::Vector3 absoluteTranslation();
@@ -407,6 +428,15 @@ void preOrderFeatureTraversalWithCallback(SceneNode& node, Callable&& cb) {
  * @param semanticId Semantic ID to apply to the subtree.
  */
 void setSemanticIdForSubtree(SceneNode* node, int semanticId);
+
+/**
+ * @brief Set the semantic and instance IDs of a scene graph subtree.
+ *
+ * @param node Root node of the subtree.
+ * @param semanticIDs Vector of semantic and instance ids to set
+ */
+void setSemanticInfoForSubtree(SceneNode* node,
+                               const std::vector<int>& _semanticIDs);
 
 CORRADE_ENUMSET_OPERATORS(SceneNodeTags)
 }  // namespace scene

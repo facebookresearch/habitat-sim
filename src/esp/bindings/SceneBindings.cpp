@@ -54,6 +54,14 @@ void initSceneBindings(py::module& m) {
       .def_property("type", &SceneNode::getType, &SceneNode::setType)
       .def_property("semantic_id", &SceneNode::getSemanticId,
                     &SceneNode::setSemanticId)
+      .def_property(
+          "object_semantic_id", &SceneNode::getBaseObjectId,
+          &SceneNode::setBaseObjectId,
+          R"(This node's owning object's ID, for instance-based semantics)")
+      .def_property(
+          "drawable_semantic_id", &SceneNode::getDrawableId,
+          &SceneNode::setDrawableId,
+          R"(This node's drawable's ID, for instance-based semantics)")
       .def(
           "create_child", [](SceneNode& self) { return &self.createChild(); },
           R"(Creates a child node, and sets its parent to the current node.)")
