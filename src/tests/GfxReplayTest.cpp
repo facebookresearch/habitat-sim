@@ -730,7 +730,8 @@ void GfxReplayTest::testDecimalPlaces() {
       Cr::Utility::Path::join(TEST_ASSETS, "objects/sphere.glb");
 
   // record a playback string
-  std::string keyframe3Decimals, keyframe5Decimals;
+  const std::vector<int> decimalCounts = {1, 3, 5};
+  std::vector<std::string> keyframes = {};
   {
     SimulatorConfiguration simConfig{};
     simConfig.enableGfxReplaySave = true;
@@ -740,6 +741,8 @@ void GfxReplayTest::testDecimalPlaces() {
     CORRADE_VERIFY(sim);
     const auto recorder = sim->getGfxReplayManager()->getRecorder();
     CORRADE_VERIFY(recorder);
+    CORRADE_COMPARE(recorder->getMaxDecimalPlaces(),
+                    esp::gfx::replay::DEFAULT_MAX_DECIMAL_PLACES);
 
     const std::string lightSetupKey = "";
     esp::assets::RenderAssetInstanceCreationInfo::Flags flags;
@@ -750,29 +753,36 @@ void GfxReplayTest::testDecimalPlaces() {
     const esp::assets::AssetInfo info =
         esp::assets::AssetInfo::fromPath(testFile);
     auto* node = sim->loadAndCreateRenderAssetInstance(info, creation);
-    node->setTranslation(Mn::Vector3{0.555555555f, 0.0f, 0.0f});
-    recorder->saveKeyframe();
 
-    CORRADE_COMPARE(recorder->getMaxDecimalPlaces(),
-                    esp::gfx::replay::DEFAULT_MAX_DECIMAL_PLACES);
-    recorder->setMaxDecimalPlaces(3);
-    CORRADE_COMPARE(recorder->getMaxDecimalPlaces(), 3);
-    auto keyframe = recorder->debugGetSavedKeyframes().front();
-    keyframe3Decimals =
-        recorder->writeIncrementalSavedKeyframesToStringArray().front();
-    keyframe5Decimals =
-        esp::gfx::replay::Recorder::keyframeToString(keyframe, 5);
+    for (int i = 0; i < decimalCounts.size(); ++i) {
+      node->setTranslation(Mn::Vector3{0.0f, 0.0f, 0.0f});
+      recorder->saveKeyframe();
+      node->setTranslation(Mn::Vector3{0.555555555f, 0.0f, 0.0f});
+      recorder->saveKeyframe();
+
+      recorder->setMaxDecimalPlaces(decimalCounts[i]);
+      CORRADE_COMPARE(recorder->getMaxDecimalPlaces(), decimalCounts[i]);
+      auto keyframe =
+          recorder->writeIncrementalSavedKeyframesToStringArray().back();
+      keyframes.push_back(keyframe);
+    }
   }
 
   // read the playback strings
   {
-    CORRADE_COMPARE_AS(keyframe3Decimals, "0.555",
+    CORRADE_COMPARE_AS(keyframes[0], "0.5",
                        Cr::TestSuite::Compare::StringContains);
-    CORRADE_COMPARE_AS(keyframe3Decimals, "0.5555",
+    CORRADE_COMPARE_AS(keyframes[0], "0.55",
                        Cr::TestSuite::Compare::StringNotContains);
-    CORRADE_COMPARE_AS(keyframe5Decimals, "0.55555",
+
+    CORRADE_COMPARE_AS(keyframes[1], "0.555",
                        Cr::TestSuite::Compare::StringContains);
-    CORRADE_COMPARE_AS(keyframe5Decimals, "0.555555",
+    CORRADE_COMPARE_AS(keyframes[1], "0.5555",
+                       Cr::TestSuite::Compare::StringNotContains);
+
+    CORRADE_COMPARE_AS(keyframes[2], "0.55555",
+                       Cr::TestSuite::Compare::StringContains);
+    CORRADE_COMPARE_AS(keyframes[2], "0.555555",
                        Cr::TestSuite::Compare::StringNotContains);
   }
 }

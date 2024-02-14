@@ -66,9 +66,8 @@ void initGfxReplayBindings(py::module& m) {
                   "replay save not enabled. See "
                   "SimulatorConfiguration.enable_gfx_replay_save.");
             }
-            return esp::gfx::replay::Recorder::keyframeToString(
-                self.getRecorder()->extractKeyframe(),
-                self.getRecorder()->getMaxDecimalPlaces());
+            return self.getRecorder()->keyframeToString(
+                self.getRecorder()->extractKeyframe());
           },
           R"(Extract the current keyframe as a JSON-formatted string.)")
 

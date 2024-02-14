@@ -300,7 +300,7 @@ Recorder::writeIncrementalSavedKeyframesToStringArray() {
   results.reserve(savedKeyframes_.size());
 
   for (const auto& keyframe : savedKeyframes_) {
-    results.emplace_back(keyframeToString(keyframe, maxDecimalPlaces_));
+    results.emplace_back(keyframeToString(keyframe));
   }
 
   // note we don't call consolidateSavedKeyframes. Use this function if you are
@@ -321,12 +321,11 @@ int Recorder::getMaxDecimalPlaces() const {
   return maxDecimalPlaces_;
 }
 
-std::string Recorder::keyframeToString(const Keyframe& keyframe,
-                                       int maxDecimalPlaces) {
+std::string Recorder::keyframeToString(const Keyframe& keyframe) {
   rapidjson::Document d(rapidjson::kObjectType);
   rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
   esp::io::addMember(d, "keyframe", keyframe, allocator);
-  return esp::io::jsonToString(d, maxDecimalPlaces);
+  return esp::io::jsonToString(d, maxDecimalPlaces_);
 }
 
 void Recorder::consolidateSavedKeyframes() {

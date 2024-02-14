@@ -313,8 +313,8 @@ void BatchReplayRendererTest::testIntegration() {
                                    Mn::Vector3(0.f, 1.f, 0.f)));
     }
 
-    std::string serKeyframe = esp::gfx::replay::Recorder::keyframeToString(
-        recorder.extractKeyframe());
+    std::string serKeyframe =
+        recorder.keyframeToString(recorder.extractKeyframe());
     serKeyframes.emplace_back(std::move(serKeyframe));
   }
 
@@ -547,8 +547,8 @@ void BatchReplayRendererTest::testArticulatedObject() {
                                      Mn::Vector3(0.0f, 1.0f, 0.0f)));
       }
 
-      std::string serKeyframe = esp::gfx::replay::Recorder::keyframeToString(
-          recorder.extractKeyframe());
+      std::string serKeyframe =
+          recorder.keyframeToString(recorder.extractKeyframe());
       serKeyframes.emplace_back(std::move(serKeyframe));
     }
   }

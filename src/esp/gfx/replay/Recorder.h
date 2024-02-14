@@ -167,9 +167,7 @@ class Recorder {
   /**
    * @brief returns JSONized version of given keyframe.
    */
-  static std::string keyframeToString(
-      const Keyframe& keyframe,
-      int maxDecimalPlaces = DEFAULT_MAX_DECIMAL_PLACES);
+  std::string keyframeToString(const Keyframe& keyframe);
 
   /**
    * @brief Reserved for unit-testing.
