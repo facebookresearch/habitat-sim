@@ -45,7 +45,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
 #else
       false;
 #endif
-  m.attr("rigid_stage_id") = esp::RIGID_STAGE_ID;
+  m.attr("stage_id") = esp::RIGID_STAGE_ID;
 
   /* This function pointer is used by ESP_CHECK(). If it's null, it
      std::abort()s, if not, it calls it to cause a Python AssertionError */
