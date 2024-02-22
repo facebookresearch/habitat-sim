@@ -73,8 +73,8 @@ SceneNode& SceneNode::createChild(SceneNodeTags childNodeTags) {
             "SceneNode::createChild(): Can not create child from leaf node");
   // will set the parent to *this
   SceneNode* node = new SceneNode(*this);
-  node->setId(this->getId());
   node->setSceneNodeTags(childNodeTags);
+  node->setSemanticIDVector(this->getSemanticIDVector());
   return *node;
 }
 
