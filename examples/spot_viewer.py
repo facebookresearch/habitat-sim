@@ -14,6 +14,7 @@ flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
 import habitat.articulated_agents.robots.spot_robot as spot_robot
+import habitat.sims.habitat_simulator.sim_utilities as sutils
 import magnum as mn
 import numpy as np
 from habitat.datasets.rearrange.navmesh_utils import get_largest_island_index
@@ -435,11 +436,18 @@ class HabitatSimInteractiveViewer(Application):
                 num_segments=12,
             )
         if self.selected_object is not None:
-            aabb = self.selected_object.collision_shape_aabb
+            aabb = None
+            if isinstance(
+                self.selected_object, habitat_sim.physics.ManagedBulletRigidObject
+            ):
+                aabb = self.selected_object.collision_shape_aabb
+            else:
+                aabb = sutils.get_ao_root_bb(self.selected_object)
             dblr = self.sim.get_debug_line_render()
             dblr.push_transform(self.selected_object.transformation)
             dblr.draw_box(aabb.min, aabb.max, mn.Color4.magenta())
             dblr.pop_transform()
+
             ot = self.selected_object.translation
             # draw global coordinate axis
             dblr.draw_transformed_line(
@@ -863,9 +871,16 @@ class HabitatSimInteractiveViewer(Application):
                     obj_name = self.selected_object.handle.split("/")[-1].split("_:")[0]
                     self.removed_clutter.append(obj_name)
                 print(f"Removed {self.selected_object.handle}")
-                self.sim.get_rigid_object_manager().remove_object_by_handle(
-                    self.selected_object.handle
-                )
+                if isinstance(
+                    self.selected_object, habitat_sim.physics.ManagedBulletRigidObject
+                ):
+                    self.sim.get_rigid_object_manager().remove_object_by_handle(
+                        self.selected_object.handle
+                    )
+                else:
+                    self.sim.get_articulated_object_manager().remove_object_by_handle(
+                        self.selected_object.handle
+                    )
                 self.selected_object = None
                 self.navmesh_config_and_recompute()
 
@@ -968,13 +983,13 @@ class HabitatSimInteractiveViewer(Application):
             if mouse_cast_results.has_hits():
                 self.last_hit_details = mouse_cast_results.hits[0]
                 hit_id = mouse_cast_results.hits[0].object_id
-                rom = self.sim.get_rigid_object_manager()
-                if hit_id == -1:
+                self.selected_object = sutils.get_obj_from_id(self.sim, hit_id)
+                if self.selected_object is None:
                     print("This is the stage.")
-                elif rom.get_library_has_id(hit_id):
-                    ro = rom.get_object_by_id(hit_id)
-                    self.selected_object = ro
-                    print(f"Rigid Object: {ro.handle}")
+                else:
+                    print(
+                        f"Object: {self.selected_object.handle} is {type(self.selected_object)}"
+                    )
 
         self.previous_mouse_point = self.get_mouse_position(event.position)
         self.redraw()
