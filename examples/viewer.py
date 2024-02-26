@@ -723,7 +723,7 @@ class HabitatSimInteractiveViewer(Application):
                 hit_object, ao_link = -1, -1
                 hit_info = raycast_results.hits[0]
 
-                if hit_info.object_id >= 0:
+                if hit_info.object_id > habitat_sim.stage_id:
                     # we hit an non-staged collision object
                     ro_mngr = self.sim.get_rigid_object_manager()
                     ao_mngr = self.sim.get_articulated_object_manager()

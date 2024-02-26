@@ -247,7 +247,7 @@ def test_object_template_editing():
 
             # test adding a new object
             obj = rigid_obj_mgr.add_object_by_template_id(template_ids[0])
-            assert obj.object_id != -1
+            assert obj.object_id != habitat_sim.stage_id
 
             # test getting initialization templates
             stage_init_template = sim.get_stage_initialization_template()

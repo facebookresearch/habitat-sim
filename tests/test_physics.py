@@ -543,7 +543,8 @@ def test_raycast():
                 atol=0.07,
             )
             assert abs(raycast_results.hits[0].ray_distance - 6.831) < 0.001
-            assert raycast_results.hits[0].object_id == -1
+            # hit stage
+            assert raycast_results.hits[0].object_id == habitat_sim.stage_id
 
             # add a primitive object to the world and test a ray away from the origin
             cube_prim_handle = obj_template_mgr.get_template_handles("cube")[0]
@@ -906,7 +907,7 @@ def test_articulated_object_add_remove():
         robot = art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
         assert robot
         assert robot.is_alive
-        assert robot.object_id == 0  # first robot added
+        assert robot.object_id == habitat_sim.stage_id + 1  # first robot added
 
         # add a second robot
         robot2 = art_obj_mgr.add_articulated_object_from_urdf(
@@ -1859,7 +1860,7 @@ def test_rigid_constraints():
         assert robot.translation[1] < -3
 
         # hang AO from the world with P2P
-        constraint_settings_2.object_id_b = -1
+        constraint_settings_2.object_id_b = habitat_sim.stage_id
         constraint_settings_2.constraint_type = (
             habitat_sim.physics.RigidConstraintType.PointToPoint
         )
@@ -1903,7 +1904,7 @@ def test_rigid_constraints():
         assert abs(float(angle_error)) < 0.2
 
         # hang the object from its base link
-        constraint_settings_2.link_id_a = -1
+        constraint_settings_2.link_id_a = habitat_sim.stage_id
         sim.remove_rigid_constraint(constraint_id_2)
         constraint_id_2 = sim.create_rigid_constraint(constraint_settings_2)
         observations += simulate(sim, 5.0, produce_debug_video)

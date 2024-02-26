@@ -724,9 +724,10 @@ void PhysicsTest::testNumActiveContactPoints() {
     CORRADE_COMPARE(physicsManager_->getNumActiveContactPoints(), 4);
     // simple_room.glb has multiple subparts and our box is near two of them
     CORRADE_COMPARE(physicsManager_->getNumActiveOverlappingPairs(), 2);
-    CORRADE_COMPARE(
-        physicsManager_->getStepCollisionSummary(),
-        "[RigidObject, cubeSolid, id 0] vs [Stage, subpart 6], 4 points\n");
+    const std::string test_string = Cr::Utility::formatString(
+        "[RigidObject, cubeSolid, id {}] vs [Stage, subpart 6], 4 points\n",
+        (esp::RIGID_STAGE_ID + 1));
+    CORRADE_COMPARE(physicsManager_->getStepCollisionSummary(), test_string);
 
     float totalNormalForce = 0;
     for (auto& cp : allContactPoints) {
@@ -736,9 +737,9 @@ void PhysicsTest::testNumActiveContactPoints() {
       CORRADE_COMPARE_AS(
           (cp.contactNormalOnBInWS - Magnum::Vector3{0.0, 1.0, 0.0}).length(),
           1.0e-4, Cr::TestSuite::Compare::LessOrEqual);
-      // one object is the cube (0), other is the stage (-1)
-      CORRADE_COMPARE(cp.objectIdA, 0);
-      CORRADE_COMPARE(cp.objectIdB, -1);
+      // one object is the cube (id esp::RIGID_STAGE_ID + 1), other is the stage
+      CORRADE_COMPARE(cp.objectIdA, (esp::RIGID_STAGE_ID + 1));
+      CORRADE_COMPARE(cp.objectIdB, esp::RIGID_STAGE_ID);
       // accumulate the normal force
       totalNormalForce += cp.normalForce;
       // solver should keep the cube at the contact boundary (~0 penetration)
