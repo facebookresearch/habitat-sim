@@ -501,9 +501,9 @@ RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
     hit.point = Magnum::Vector3{allResults.m_hitPointWorld[i]};
     hit.rayDistance =
         (static_cast<double>(allResults.m_hitFractions[i]) * maxDistance);
-    // default to -1 for "scene collision" if we don't know which object was
-    // involved
-    hit.objectId = -1;
+    // default to RIGID_STAGE_ID for "scene collision" if we don't know which
+    // object was involved
+    hit.objectId = RIGID_STAGE_ID;
     auto rawColObjIdIter =
         collisionObjToObjIds_->find(allResults.m_collisionObjects[i]);
     if (rawColObjIdIter != collisionObjToObjIds_->end()) {
@@ -524,7 +524,7 @@ void BulletPhysicsManager::lookUpObjectIdAndLinkId(
 
   *linkId = -1;
   // If the lookup fails, default to the stage. TODO: better error-handling.
-  *objectId = 0;
+  *objectId = RIGID_STAGE_ID;
   auto rawColObjIdIter = collisionObjToObjIds_->find(colObj);
   if (rawColObjIdIter != collisionObjToObjIds_->end()) {
     int rawObjectId = rawColObjIdIter->second;
@@ -558,8 +558,8 @@ std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {
     const btPersistentManifold* manifold =
         dispatcher->getInternalManifoldPointer()[i];
 
-    int objectIdA = -1;  // stage is 0
-    int objectIdB = -1;
+    int objectIdA = RIGID_STAGE_ID - 1;  // stage is 0
+    int objectIdB = RIGID_STAGE_ID - 1;
     int linkIndexA = -1;  // -1 if not a multibody
     int linkIndexB = -1;
 
