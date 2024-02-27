@@ -695,8 +695,9 @@ void PhysicsManager::removeObject(const int objectId,
     if (deleteVisualNode) {
       delete visualNode;
     } else {
-      // Clear out the object ID that was set for the owning visual node
-      visualNode->setBaseObjectId(0);
+      // Clear out the object ID that was set for the owning visual node,
+      // setting to stage ID
+      visualNode->setBaseObjectId(RIGID_STAGE_ID);
     }
   }
   // remove wrapper if one is present

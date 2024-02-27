@@ -558,8 +558,8 @@ std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {
     const btPersistentManifold* manifold =
         dispatcher->getInternalManifoldPointer()[i];
 
-    int objectIdA = RIGID_STAGE_ID - 1;  // stage is 0
-    int objectIdB = RIGID_STAGE_ID - 1;
+    int objectIdA = ID_UNDEFINED;
+    int objectIdB = ID_UNDEFINED;
     int linkIndexA = -1;  // -1 if not a multibody
     int linkIndexB = -1;
 
