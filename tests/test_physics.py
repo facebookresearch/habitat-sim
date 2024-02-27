@@ -1904,7 +1904,7 @@ def test_rigid_constraints():
         assert abs(float(angle_error)) < 0.2
 
         # hang the object from its base link
-        constraint_settings_2.link_id_a = habitat_sim.stage_id
+        constraint_settings_2.link_id_a = -1
         sim.remove_rigid_constraint(constraint_id_2)
         constraint_id_2 = sim.create_rigid_constraint(constraint_settings_2)
         observations += simulate(sim, 5.0, produce_debug_video)
