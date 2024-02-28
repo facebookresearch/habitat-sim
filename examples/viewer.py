@@ -1379,7 +1379,7 @@ class HabitatSimInteractiveViewer(Application):
             self.selected_rec = None
             hit_id = self.mouse_cast_results.hits[0].object_id
             # right click in look mode to print object information
-            if hit_id == -1:
+            if hit_id == habitat_sim.stage_id:
                 print("This is the stage.")
             else:
                 obj = sutils.get_obj_from_id(self.sim, hit_id)
