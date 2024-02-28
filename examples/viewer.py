@@ -10,17 +10,17 @@ import string
 import sys
 import time
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
 import habitat.datasets.rearrange.samplers.receptacle as hab_receptacle
+import habitat.sims.habitat_simulator.sim_utilities as sutils
 import magnum as mn
 import numpy as np
 from habitat.datasets.rearrange.navmesh_utils import get_largest_island_index
 from habitat.datasets.rearrange.samplers.object_sampler import ObjectSampler
-from habitat.sims.habitat_simulator.sim_utilities import get_bb_corners
 from magnum import shaders, text
 from magnum.platform.glfw import Application
 
@@ -259,6 +259,7 @@ class HabitatSimInteractiveViewer(Application):
         # last clicked or None for stage
         self.selected_object = None
         self.selected_rec = None
+        self.ao_link_map = None
 
         # toggle a single simulation step at the next opportunity if not
         # simulating continuously.
@@ -273,7 +274,6 @@ class HabitatSimInteractiveViewer(Application):
         self.reconfigure_sim()
         self.debug_semantic_colors = {}
         self.load_scene_filter_file()
-        self.ao_link_map = self.get_ao_link_id_map()
 
         # -----------------------------------------
         # Clutter Generation Integration:
@@ -510,65 +510,6 @@ class HabitatSimInteractiveViewer(Application):
         assert "height_filtered" in self.rec_filter_data
         print(f"Loaded filter annotations from {filepath}")
 
-    def get_ao_link_id_map(self) -> Dict[int, int]:
-        """
-        Construct a map of ao_link object ids to their parent ao's object id.
-        NOTE: also maps ao's root object id to itself for ease of use.
-
-        :param sim: The Simulator instance.
-
-        :return: dictionary mapping ArticulatedLink object ids to their parent's object id.
-        """
-
-        aom = self.sim.get_articulated_object_manager()
-        ao_link_map: Dict[int, int] = {}
-        for ao in aom.get_objects_by_handle_substring().values():
-            # add the ao itself for ease of use
-            ao_link_map[ao.object_id] = ao.object_id
-            # add the links
-            for link_id in ao.link_object_ids:
-                ao_link_map[link_id] = ao.object_id
-
-        # print(f"ao_link_map = {ao_link_map}")
-
-        return ao_link_map
-
-    def get_object_by_handle(
-        self, handle: str
-    ) -> Union[
-        habitat_sim.physics.ManagedRigidObject,
-        habitat_sim.physics.ManagedArticulatedObject,
-    ]:
-        """
-        Get either a rigid or articulated object from the handle. If none is found, returns None.
-        """
-        rom = self.sim.get_rigid_object_manager()
-        if rom.get_library_has_handle(handle):
-            return rom.get_object_by_handle(handle)
-        aom = self.sim.get_articulated_object_manager()
-        if aom.get_library_has_handle(handle):
-            return aom.get_object_by_handle(handle)
-        return None
-
-    def get_object_by_id(
-        self, object_id: int
-    ) -> Union[
-        habitat_sim.physics.ManagedRigidObject,
-        habitat_sim.physics.ManagedArticulatedObject,
-    ]:
-        """
-        Get either a rigid or articulated object from the handle. If none is found, returns None.
-        """
-
-        rom = self.sim.get_rigid_object_manager()
-        if rom.get_library_has_id(object_id):
-            return rom.get_object_by_id(object_id)
-        aom = self.sim.get_articulated_object_manager()
-        if object_id in self.ao_link_map:
-            return aom.get_object_by_id(self.ao_link_map[object_id])
-
-        return None
-
     def load_receptacles(self):
         """
         Load all receptacle data and setup helper datastructures.
@@ -581,8 +522,8 @@ class HabitatSimInteractiveViewer(Application):
         ]
         for receptacle in self.receptacles:
             if receptacle not in self.rec_to_poh:
-                po_handle = self.get_object_by_handle(
-                    receptacle.parent_object_handle
+                po_handle = sutils.get_obj_from_handle(
+                    self.sim, receptacle.parent_object_handle
                 ).creation_attributes.handle
                 self.rec_to_poh[receptacle] = po_handle
 
@@ -771,7 +712,9 @@ class HabitatSimInteractiveViewer(Application):
 
                 rec_obj = self.get_object_by_handle(receptacle.parent_object_handle)
                 key_points = [r_trans.translation]
-                key_points.extend(get_bb_corners(rec_obj.root_scene_node.cumulative_bb))
+                key_points.extend(
+                    sutils.get_bb_corners(rec_obj.root_scene_node.cumulative_bb)
+                )
 
                 in_view = False
                 for ix, key_point in enumerate(key_points):
@@ -1043,6 +986,8 @@ class HabitatSimInteractiveViewer(Application):
             if sim_settings["composite_files"] is not None:
                 for composite_file in sim_settings["composite_files"]:
                     self.replay_renderer.preload_file(composite_file)
+
+        self.ao_link_map = sutils.get_ao_link_id_map(self.sim)
 
         Timer.start()
         self.step = -1
@@ -1354,7 +1299,7 @@ class HabitatSimInteractiveViewer(Application):
             raycast_results = self.sim.cast_ray(ray=ray)
 
             if raycast_results.has_hits():
-                hit_object, ao_link = -1, -1
+                ao_link = -1
                 hit_info = raycast_results.hits[0]
 
                 if hit_info.object_id > habitat_sim.stage_id:
@@ -1364,70 +1309,62 @@ class HabitatSimInteractiveViewer(Application):
                     ao = ao_mngr.get_object_by_id(hit_info.object_id)
                     ro = ro_mngr.get_object_by_id(hit_info.object_id)
 
-                    if ro:
-                        # if grabbed an object
-                        hit_object = hit_info.object_id
-                        object_pivot = ro.transformation.inverted().transform_point(
+                    if obj is None:
+                        raise AssertionError(
+                            "hit object_id is not valid. Did not find object or link."
+                        )
+
+                    if obj.object_id == hit_info.object_id:
+                        # ro or ao base
+                        object_pivot = obj.transformation.inverted().transform_point(
                             hit_info.point
                         )
-                        object_frame = ro.rotation.inverted()
-                    elif ao:
-                        # if grabbed the base link
-                        hit_object = hit_info.object_id
-                        object_pivot = ao.transformation.inverted().transform_point(
-                            hit_info.point
+                        object_frame = obj.rotation.inverted()
+                    elif isinstance(obj, physics.ManagedArticulatedObject):
+                        # link
+                        ao_link = obj.link_object_ids[hit_info.object_id]
+                        object_pivot = (
+                            obj.get_link_scene_node(ao_link)
+                            .transformation.inverted()
+                            .transform_point(hit_info.point)
                         )
-                        object_frame = ao.rotation.inverted()
-                    else:
-                        for ao_handle in ao_mngr.get_objects_by_handle_substring():
-                            ao = ao_mngr.get_object_by_handle(ao_handle)
-                            link_to_obj_ids = ao.link_object_ids
+                        object_frame = obj.get_link_scene_node(
+                            ao_link
+                        ).rotation.inverted()
 
-                            if hit_info.object_id in link_to_obj_ids:
-                                # if we got a link
-                                ao_link = link_to_obj_ids[hit_info.object_id]
-                                object_pivot = (
-                                    ao.get_link_scene_node(ao_link)
-                                    .transformation.inverted()
-                                    .transform_point(hit_info.point)
-                                )
-                                object_frame = ao.get_link_scene_node(
-                                    ao_link
-                                ).rotation.inverted()
-                                hit_object = ao.object_id
-                                break
-                    # done checking for AO
+                    print(f"Grabbed object {obj.handle}")
+                    if ao_link >= 0:
+                        print(f"    link id {ao_link}")
 
-                    if hit_object >= 0:
-                        node = self.default_agent.scene_node
-                        constraint_settings = physics.RigidConstraintSettings()
+                    # setup the grabbing constraints
+                    node = self.default_agent.scene_node
+                    constraint_settings = physics.RigidConstraintSettings()
 
-                        constraint_settings.object_id_a = hit_object
-                        constraint_settings.link_id_a = ao_link
-                        constraint_settings.pivot_a = object_pivot
-                        constraint_settings.frame_a = (
-                            object_frame.to_matrix() @ node.rotation.to_matrix()
+                    constraint_settings.object_id_a = obj.object_id
+                    constraint_settings.link_id_a = ao_link
+                    constraint_settings.pivot_a = object_pivot
+                    constraint_settings.frame_a = (
+                        object_frame.to_matrix() @ node.rotation.to_matrix()
+                    )
+                    constraint_settings.frame_b = node.rotation.to_matrix()
+                    constraint_settings.pivot_b = hit_info.point
+
+                    # by default use a point 2 point constraint
+                    if event.button == button.RIGHT:
+                        constraint_settings.constraint_type = (
+                            physics.RigidConstraintType.Fixed
                         )
-                        constraint_settings.frame_b = node.rotation.to_matrix()
-                        constraint_settings.pivot_b = hit_info.point
 
-                        # by default use a point 2 point constraint
-                        if event.button == button.RIGHT:
-                            constraint_settings.constraint_type = (
-                                physics.RigidConstraintType.Fixed
-                            )
+                    grip_depth = (
+                        hit_info.point - render_camera.node.absolute_translation
+                    ).length()
 
-                        grip_depth = (
-                            hit_info.point - render_camera.node.absolute_translation
-                        ).length()
+                    self.mouse_grabber = MouseGrabber(
+                        constraint_settings,
+                        grip_depth,
+                        self.sim,
+                    )
 
-                        self.mouse_grabber = MouseGrabber(
-                            constraint_settings,
-                            grip_depth,
-                            self.sim,
-                        )
-                    else:
-                        logger.warn("Oops, couldn't find the hit object. That's odd.")
                 # end if didn't hit the scene
             # end has raycast hit
         # end has physics enabled
@@ -1445,7 +1382,7 @@ class HabitatSimInteractiveViewer(Application):
             if hit_id == -1:
                 print("This is the stage.")
             else:
-                obj = self.get_object_by_id(hit_id)
+                obj = sutils.get_obj_from_id(self.sim, hit_id)
                 self.selected_object = obj
                 print(f"Object: {obj.handle}")
                 if self.receptacles is not None:
