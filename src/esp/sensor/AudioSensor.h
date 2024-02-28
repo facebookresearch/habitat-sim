@@ -69,15 +69,15 @@ class AudioSensor : public Sensor {
    * @brief Set the audio source transform
    * @param sourcePos = vec3 source position
    * */
-  void setAudioSourceTransform(const vec3f& sourcePos);
+  void setAudioSourceTransform(const Magnum::Vector3& sourcePos);
 
   /**
    * @brief Set the audio listener position and orientation
    * @param agentPos = vec3 agent position
    * @param agentRotQuat = vec4 agent rotation quaternion
    * */
-  void setAudioListenerTransform(const vec3f& agentPos,
-                                 const vec4f& agentRotQuat);
+  void setAudioListenerTransform(const Magnum::Vector3& agentPos,
+                                 const Magnum::Vector4& agentRotQuat);
 
   /**
    * @brief Run the audio simulation. This will run the RLRAudioPropagation code
@@ -147,11 +147,11 @@ class AudioSensor : public Sensor {
   //! track the number of simulations
   std::int32_t currentSimCount_ = -1;
   //! track the source position
-  vec3f lastSourcePos_;
+  Magnum::Vector3 lastSourcePos_;
   //! track the agent orientation
-  vec3f lastAgentPos_;
+  Magnum::Vector3 lastAgentPos_;
   //! track the agent rotation
-  vec4f lastAgentRot_;
+  Magnum::Vector4 lastAgentRot_;
   //! audio materials json path
   std::string audioMaterialsJSON_;
 

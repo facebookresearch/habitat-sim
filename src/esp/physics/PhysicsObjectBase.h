@@ -67,7 +67,9 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
       : Magnum::SceneGraph::AbstractFeature3D(*bodyNode),
         objectId_(objectId),
         resMgr_(resMgr),
-        userAttributes_(std::make_shared<core::config::Configuration>()) {}
+        userAttributes_(std::make_shared<core::config::Configuration>()) {
+    bodyNode->setBaseObjectId(objectId);
+  }
 
   ~PhysicsObjectBase() override = default;
 

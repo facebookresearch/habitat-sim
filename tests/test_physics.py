@@ -416,7 +416,7 @@ def test_velocity_control():
     cfg_settings["scene"] = "NONE"
     hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
     with habitat_sim.Simulator(hab_cfg) as sim:
-        sim.set_gravity(np.array([0.0, 0.0, 0.0]))
+        sim.set_gravity(mn.Vector3(0.0, 0.0, 0.0))
         # get the rigid object attributes manager, which manages
         # templates used to create objects
         obj_template_mgr = sim.get_object_template_manager()
@@ -1904,7 +1904,7 @@ def test_rigid_constraints():
         assert abs(float(angle_error)) < 0.2
 
         # hang the object from its base link
-        constraint_settings_2.link_id_a = habitat_sim.stage_id
+        constraint_settings_2.link_id_a = -1
         sim.remove_rigid_constraint(constraint_id_2)
         constraint_id_2 = sim.create_rigid_constraint(constraint_settings_2)
         observations += simulate(sim, 5.0, produce_debug_video)
@@ -2033,7 +2033,7 @@ def test_bullet_collision_helper():
         assert sim.get_physics_num_active_overlapping_pairs() == 1
         assert (
             sim.get_physics_step_collision_summary()
-            == "[RigidObject, cubeSolid, id 0] vs [Stage, subpart 0], 4 points\n"
+            == "[RigidObject, cubeSolid, id 1] vs [Stage, subpart 0], 4 points\n"
         )
 
         sim.step_physics(3.0)

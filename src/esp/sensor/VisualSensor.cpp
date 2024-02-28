@@ -3,7 +3,6 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "VisualSensor.h"
-#include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/ImageView.h>
 #include <Magnum/PixelFormat.h>
 

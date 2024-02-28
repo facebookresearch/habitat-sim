@@ -687,7 +687,7 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig, bool isOrtho) {
     }
     spec->position = {0.0f, rgbSensorHeight, 0.0f};
     spec->orientation = {0, 0, 0};
-    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+    spec->resolution = viewportSize.flipped();
   };
   // add the camera color sensor
   // for historical reasons, we call it "rgba_camera"
@@ -716,7 +716,7 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig, bool isOrtho) {
     }
     spec->sensorSubType = esp::sensor::SensorSubType::Fisheye;
     spec->fisheyeModelType = modelType;
-    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+    spec->resolution = viewportSize.flipped();
     // default viewport size: 1600 x 1200
     spec->principalPointOffset =
         Mn::Vector2(viewportSize[0] / 2, viewportSize[1] / 2);
@@ -761,7 +761,7 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig, bool isOrtho) {
       spec->channels = 1;
     }
     spec->sensorSubType = esp::sensor::SensorSubType::Equirectangular;
-    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+    spec->resolution = viewportSize.flipped();
   };
   // add the equirectangular sensor
   addEquirectangularSensor("rgba_equirectangular",
