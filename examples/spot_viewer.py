@@ -301,7 +301,7 @@ class HabitatSimInteractiveViewer(Application):
         ] = {}
         self.removed_clutter = []
         self.translation_speed = 0.05
-        self.rotation_speed = 0.1
+        self.rotation_speed = math.pi / 180.0
         self.navmesh_dirty = False
         self.removed_objects_debug_frames = []
 
@@ -760,6 +760,7 @@ class HabitatSimInteractiveViewer(Application):
         """
         modify_buffer = translation is not None or rotation is not None
         if self.selected_object is not None and modify_buffer:
+            orig_mt = self.selected_object.motion_type
             self.selected_object.motion_type = habitat_sim.physics.MotionType.KINEMATIC
             if translation is not None:
                 self.selected_object.translation = (
@@ -767,7 +768,7 @@ class HabitatSimInteractiveViewer(Application):
                 )
             if rotation is not None:
                 self.selected_object.rotation = rotation * self.selected_object.rotation
-            self.selected_object.motion_type = habitat_sim.physics.MotionType.STATIC
+            self.selected_object.motion_type = orig_mt
             self.navmesh_dirty = True
             self.modified_objects_buffer[
                 self.selected_object
@@ -793,7 +794,7 @@ class HabitatSimInteractiveViewer(Application):
             else self.translation_speed * 2.0
         )
         obj_rotation_speed = (
-            self.rotation_speed if not shift_pressed else self.rotation_speed * 2.0
+            self.rotation_speed if not shift_pressed else self.rotation_speed * 4.0
         )
 
         if key == pressed.ESC:
