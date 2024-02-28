@@ -59,6 +59,7 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         audio_enabled,
         built_with_bullet,
         cuda_enabled,
+        stage_id,
     )
     from habitat_sim.nav import (  # noqa: F401
         GreedyFollowerCodes,

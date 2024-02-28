@@ -1415,7 +1415,7 @@ class HabitatSimInteractiveViewer(Application):
                 ao_link = -1
                 hit_info = raycast_results.hits[0]
 
-                if hit_info.object_id >= 0:
+                if hit_info.object_id > habitat_sim.stage_id:
                     obj = sutils.get_obj_from_id(
                         self.sim, hit_info.object_id, self.ao_link_map
                     )
