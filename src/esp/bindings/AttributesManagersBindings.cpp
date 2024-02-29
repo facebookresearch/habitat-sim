@@ -386,7 +386,15 @@ void initAttributesManagersBindings(py::module& m) {
       m, "AOAttributesManager",
       R"(Manages ArticulatedObjectAttributes which define Habitat-specific metadata for articulated objects
       (i.e. render asset or semantic ID), in addition to data held in defining URDF file, pre-instantiation.
-      Can import .ao_config.json files.)");
+      Can import .ao_config.json files.)")
+
+      .def(
+          "save_template_to_file",
+          static_cast<bool (AOAttributesManager::*)(
+              const ArticulatedObjectAttributes::ptr&, bool) const>(
+              &AOAttributesManager::saveManagedObjectToFile),
+          R"(This saves the passed ArticulatedObjectAttributes back to its original file either overwriting or adding a copy string specifier.)",
+          "template"_a, "overwrite"_a = "");
 
   // ==== Object Attributes Template manager ====
   declareBaseAttributesManager<ObjectAttributes, ManagedObjectAccess::Copy>(
