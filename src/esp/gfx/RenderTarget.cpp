@@ -216,16 +216,11 @@ struct RenderTarget::Impl {
         flags_ & Flag::RgbaAttachment,
         "RenderTarget::Impl::blitRgbaToDefault(): this render target "
         "was not created with rgba render buffer enabled.", );
-    CORRADE_ASSERT(
-        framebuffer_.viewport().size() == targetRectangle.size(),
-        "RenderTarget::Impl::blitRgbaTo(): target framebuffer has a size of"
-            << targetRectangle.size() << "but expected"
-            << framebuffer_.viewport().size(), );
 
     framebuffer_.mapForRead(RgbaBufferAttachment);
     Mn::GL::AbstractFramebuffer::blit(
         framebuffer_, target, framebuffer_.viewport(), targetRectangle,
-        Mn::GL::FramebufferBlit::Color, Mn::GL::FramebufferBlitFilter::Nearest);
+        Mn::GL::FramebufferBlit::Color, Mn::GL::FramebufferBlitFilter::Linear);
   }
 
   void readFrameRgba(const Mn::MutableImageView2D& view) {
