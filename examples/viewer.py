@@ -344,11 +344,20 @@ def set_all_object_semantic_classes_as_states(
     """
     all_objs = sutils.get_all_objects(sim)
     for obj in all_objs:
-        obj_sem_class = metadata_interface.get_object_category(
-            object_hash_from_handle(obj.handle)
-        )
-        if obj_sem_class is not None:
-            set_state_of_obj(obj, "semantic_class", obj_sem_class)
+        set_object_semantic_class_as_state(obj, metadata_interface)
+
+
+def set_object_semantic_class_as_state(
+    obj, metadata_interface: MetadataInterface
+) -> None:
+    """
+    Sets the semantic class of an object as object state 'semantic_class'.
+    """
+    obj_sem_class = metadata_interface.get_object_category(
+        object_hash_from_handle(obj.handle)
+    )
+    if obj_sem_class is not None:
+        set_state_of_obj(obj, "semantic_class", obj_sem_class)
 
 
 class ObjectStateSpec:
@@ -471,6 +480,7 @@ class ObjectSateMachine:
                 if obj.handle not in self.objects_with_states:
                     self.objects_with_states[obj.handle] = []
                 self.objects_with_states[obj.handle].append(state)
+                print(f"registered state {state} for object {obj.handle}")
 
     def update_states(self, sim, dt: float) -> None:
         """
@@ -1148,6 +1158,7 @@ class HabitatSimInteractiveViewer(Application):
                     )
                 )
                 self.added_objects.append(obj)
+                set_object_semantic_class_as_state(obj, self.mi)
                 self.object_state_machine.register_object(obj)
 
         elif key == pressed.M:
@@ -1343,6 +1354,7 @@ class HabitatSimInteractiveViewer(Application):
 
             if raycast_results.has_hits():
                 hit_info = raycast_results.hits[0]
+                print(f"Clicked point = {hit_info.point}")
                 if hit_info.object_id != habitat_sim.stage_id:
                     hit_obj = sutils.get_obj_from_id(self.sim, hit_info.object_id)
                     print(f"Clicked object {hit_obj.handle}")
