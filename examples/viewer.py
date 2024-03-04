@@ -404,6 +404,15 @@ class BooleanObjectState(ObjectStateSpec):
 
         draw_object_highlight(obj, debug_line_render, camera_transform, color)
 
+    def toggle(self, obj) -> bool:
+        """
+        Toggles a boolean state, returning the newly set value.
+        """
+        cur_state = get_state_of_obj(obj, self.name)
+        new_state = not cur_state
+        set_state_of_obj(obj, self.name, new_state)
+        return new_state
+
 
 class ObjectIsClean(BooleanObjectState):
     """
@@ -1327,6 +1336,23 @@ class HabitatSimInteractiveViewer(Application):
                 # end if didn't hit the scene
             # end has raycast hit
         # end has physics enabled
+        elif self.mouse_interaction == MouseMode.LOOK and event.button == button.RIGHT:
+            render_camera = self.render_camera.render_camera
+            ray = render_camera.unproject(self.get_mouse_position(event.position))
+            raycast_results = self.sim.cast_ray(ray=ray)
+
+            if raycast_results.has_hits():
+                hit_info = raycast_results.hits[0]
+                if hit_info.object_id != habitat_sim.stage_id:
+                    hit_obj = sutils.get_obj_from_id(self.sim, hit_info.object_id)
+                    print(f"Clicked object {hit_obj.handle}")
+                    if hit_obj.handle in self.object_state_machine.objects_with_states:
+                        obj_states = self.object_state_machine.objects_with_states[
+                            hit_obj.handle
+                        ]
+                        for obj_state in obj_states:
+                            if isinstance(obj_state, ObjectIsPoweredOn):
+                                obj_state.toggle(hit_obj)
 
         self.previous_mouse_point = self.get_mouse_position(event.position)
         self.redraw()
@@ -1480,6 +1506,7 @@ class HabitatSimInteractiveViewer(Application):
 Sensor Type: {sensor_type_string}
 Sensor Subtype: {sensor_subtype_string}
 Mouse Interaction Mode: {mouse_mode_string}
+Drawn Object State: {self.draw_state}
             """
         )
         self.shader.draw(self.window_text.mesh)
