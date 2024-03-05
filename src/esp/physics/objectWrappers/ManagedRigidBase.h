@@ -105,6 +105,13 @@ class AbstractManagedRigidBase
     }
   }  // setCOM
 
+  Magnum::Vector3 getCOMCorrection() const {
+    if (auto sp = this->getObjectReference()) {
+      return sp->getCOMCorrection();
+    }
+    return Magnum::Vector3();
+  }  // getCOMCorrection
+
   double getFrictionCoefficient() const {
     if (auto sp = this->getObjectReference()) {
       return sp->getFrictionCoefficient();

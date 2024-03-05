@@ -29,8 +29,7 @@ namespace physics {
 
 /**
  * @brief An individual rigid object instance implementing an interface with
- * Bullet physics to enable dynamic objects. See @ref btRigidBody for @ref
- * esp::physics::RigidObjectType::OBJECT.
+ * Bullet physics to enable dynamic objects. See @ref btRigidBody.
  *
  * Utilizes Magnum::BulletIntegration::MotionState to synchronize SceneNode
  * state with internal btRigidBody states
@@ -482,7 +481,7 @@ class BulletRigidObject : public BulletBase,
    */
   Magnum::Range3D getCollisionShapeAabb() const override;
 
-  /** @brief Object data: All components of a @ref esp::physics::RigidObjectType::OBJECT are
+  /** @brief Object data: All @ref BulletRigidObject components are
    * wrapped into one @ref btRigidBody.
    */
   std::unique_ptr<btRigidBody> bObjectRigidBody_;
