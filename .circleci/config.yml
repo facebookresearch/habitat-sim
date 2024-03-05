@@ -115,7 +115,7 @@ commands:
           command: |
               if [ ! -d ~/miniconda ]
               then
-                curl -o ~/miniconda.sh -O  https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+                curl -o ~/miniconda.sh -O  https://repo.anaconda.com/miniconda/Miniconda3-py310_24.1.2-0-Linux-x86_64.sh
                 chmod +x ~/miniconda.sh
                 bash ~/miniconda.sh -b -p $HOME/miniconda
                 rm ~/miniconda.sh
@@ -302,7 +302,7 @@ jobs:
       - run:
           name: Conda Install OSX
           command: |
-            curl -o ~/miniconda.sh -O https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
+            curl -o ~/miniconda.sh -O https://repo.anaconda.com/miniconda/Miniconda3-py310_24.1.2-0-MacOSX-x86_64.sh
             chmod +x ~/miniconda.sh
             ~/miniconda.sh -b -p $HOME/miniconda
             rm ~/miniconda.sh
