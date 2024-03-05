@@ -376,6 +376,12 @@ class ObjectStateSpec:
 
         return False
 
+    def update_state_context(self, sim) -> None:
+        """
+        Update internal state context independent of individual objects' states.
+        """
+        pass
+
     def update_state(self, sim, obj, dt: float) -> None:
         """
         Add state machine logic to modify the state of an object given access to the Simulator and timestep.
@@ -385,6 +391,12 @@ class ObjectStateSpec:
     def default_value(self) -> Any:
         """
         If an object does not have a value for this state defined, return a default value.
+        """
+        pass
+
+    def draw_context(self, debug_line_render, camera_transform) -> None:
+        """
+        Draw any context cues which are independent of individual objects' state.
         """
         pass
 
@@ -423,6 +435,15 @@ class BooleanObjectState(ObjectStateSpec):
         return new_state
 
 
+# TODO: replace this with annotations
+# Tracks local points of faucets on objects, mapped by hash
+obj_faucet_points = {
+    "ca8c1111a38843f3d2d1818f2e04217a11e97884": mn.Vector3(
+        -0.918846, -0.0991029, 0.354729
+    )
+}
+
+
 class ObjectIsClean(BooleanObjectState):
     """
     State specifies whether an object is clean or dirty.
@@ -432,6 +453,71 @@ class ObjectIsClean(BooleanObjectState):
         super().__init__()
         self.name = "is_clean"
         self.accepted_semantic_classes = ["drinkware"]
+        # list of global positions which count as "faucets" for cleaning
+        self.global_faucet_points = None
+        # min distance from a faucet for an object to become "clean"
+        self.faucet_range = 0.2
+
+    def compute_global_faucet_points(self, sim, obj_faucet_points) -> None:
+        self.global_faucet_points = []
+        all_objects = sutils.get_all_objects(sim)
+        for obj in all_objects:
+            obj_hash = object_hash_from_handle(obj.handle)
+            if obj_hash in obj_faucet_points:
+                self.global_faucet_points.append(
+                    obj.transformation.transform_point(obj_faucet_points[obj_hash])
+                )
+        print(f"compute_global_faucet_points: {self.global_faucet_points}")
+
+    def update_state_context(self, sim) -> None:
+        """
+        Parse any faucet states from the active scene.
+        """
+        if self.global_faucet_points is None:
+            self.compute_global_faucet_points(sim, obj_faucet_points)
+
+    def update_state(self, sim, obj, dt: float) -> None:
+        """
+        Objects can become dirty by touching the floor and clean by getting close enough to a faucet.
+        """
+        cur_state = get_state_of_obj(obj, self.name)
+        cur_state = self.default_value() if (cur_state is None) else cur_state
+        if cur_state:
+            # this is clean now, check if "on the floor"
+            # NOTE: "on the floor" heuristic -> touching the "stage" includes walls, etc...
+            cps = sim.get_physics_contact_points()
+            for cp in cps:
+                if (
+                    cp.object_id_a == obj.object_id or cp.object_id_b == obj.object_id
+                ) and (
+                    cp.object_id_a == habitat_sim.stage_id
+                    or cp.object_id_b == habitat_sim.stage_id
+                ):
+                    set_state_of_obj(obj, self.name, False)
+                    return
+        else:
+            # this is dirty, check if close enough to a faucet to clean
+            # NOTE: uses L2 distance to faucet points to check if object can be cleaned
+            obj_pos = obj.translation
+            for point in self.global_faucet_points:
+                dist = (obj_pos - point).length()
+                if dist <= self.faucet_range:
+                    set_state_of_obj(obj, self.name, True)
+                    return
+
+    def draw_context(self, debug_line_render, camera_transform) -> None:
+        """
+        Draw any context cues which are independent of individual objects' state.
+        Draw the faucet points in yellow.
+        """
+        if self.global_faucet_points is not None:
+            for point in self.global_faucet_points:
+                debug_line_render.draw_circle(
+                    translation=point,
+                    radius=self.faucet_range,
+                    color=mn.Color4.yellow(),
+                    normal=camera_transform.translation - point,
+                )
 
 
 class ObjectIsPoweredOn(BooleanObjectState):
@@ -486,6 +572,10 @@ class ObjectSateMachine:
         """
         Update all tracked object states for a simulation step.
         """
+        # first update any state context
+        for state in self.active_states:
+            state.update_state_context(sim)
+        # then update the individual object states
         for obj_handle, states in self.objects_with_states.items():
             if len(states) > 0:
                 obj = sutils.get_obj_from_handle(sim, obj_handle)
@@ -765,6 +855,9 @@ class HabitatSimInteractiveViewer(Application):
             )
             for active_state in self.object_state_machine.active_states:
                 if isinstance(active_state, self.draw_state):
+                    # first draw the context
+                    active_state.draw_context(debug_line_render, cam_transform)
+                    # then draw per-object state
                     for (
                         object_handle,
                         object_states,
@@ -1136,6 +1229,8 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.O:
             if shift_pressed:
                 for obj in self.added_objects:
+                    if obj.handle in self.object_state_machine.objects_with_states:
+                        del self.object_state_machine.objects_with_states[obj.handle]
                     self.sim.get_rigid_object_manager().remove_object_by_id(
                         obj.object_id
                     )
@@ -1357,7 +1452,9 @@ class HabitatSimInteractiveViewer(Application):
                 print(f"Clicked point = {hit_info.point}")
                 if hit_info.object_id != habitat_sim.stage_id:
                     hit_obj = sutils.get_obj_from_id(self.sim, hit_info.object_id)
-                    print(f"Clicked object {hit_obj.handle}")
+                    print(
+                        f"Clicked object {hit_obj.handle}, clicked local point = {hit_obj.transformation.inverted().transform_point(hit_info.point)}"
+                    )
                     if hit_obj.handle in self.object_state_machine.objects_with_states:
                         obj_states = self.object_state_machine.objects_with_states[
                             hit_obj.handle
