@@ -1234,6 +1234,7 @@ class HabitatSimInteractiveViewer(Application):
                     self.sim.get_rigid_object_manager().remove_object_by_id(
                         obj.object_id
                     )
+                self.added_objects = []
             else:
                 # add a drinkware object
                 drinkware_object_template_handles = (
