@@ -18,11 +18,13 @@ CubeMapCamera::CubeMapCamera(
   updateOriginalViewingMatrix();
 }
 
-CubeMapCamera::CubeMapCamera(scene::SceneNode& node,
-                             const Mn::Vector3& eye,
-                             const Mn::Vector3& target,
-                             const Mn::Vector3& up)
-    : RenderCamera(node, eye, target, up) {
+CubeMapCamera::CubeMapCamera(
+    scene::SceneNode& node,
+    esp::scene::SceneNodeSemanticDataIDX semanticDataIDX,
+    const Mn::Vector3& eye,
+    const Mn::Vector3& target,
+    const Mn::Vector3& up)
+    : RenderCamera(node, semanticDataIDX, eye, target, up) {
   updateOriginalViewingMatrix();
 }
 CubeMapCamera& CubeMapCamera::updateOriginalViewingMatrix() {
