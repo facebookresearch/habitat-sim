@@ -271,7 +271,7 @@ class HabitatSimInteractiveViewer(Application):
         self.tiled_sims: list[habitat_sim.simulator.Simulator] = None
         self.replay_renderer_cfg: Optional[ReplayRendererConfiguration] = None
         self.replay_renderer: Optional[ReplayRenderer] = None
-        self.reconfigure_sim()
+        self.reconfigure_sim(mm)
         self.debug_semantic_colors = {}
         self.load_scene_filter_file()
 
@@ -614,7 +614,6 @@ class HabitatSimInteractiveViewer(Application):
         debug_line_render = self.sim.get_debug_line_render()
         if self.contact_debug_draw:
             self.draw_contact_debug(debug_line_render)
-
         if self.semantic_region_debug_draw:
             if len(self.debug_semantic_colors) != len(self.sim.semantic_scene.regions):
                 for region in self.sim.semantic_scene.regions:
@@ -622,95 +621,73 @@ class HabitatSimInteractiveViewer(Application):
                         mn.Vector3(np.random.random(3))
                     )
             self.draw_region_debug(debug_line_render)
-
-        # mouse raycast circle
-        white = mn.Color4(mn.Vector3(1.0), 1.0)
-        if self.mouse_cast_results is not None and self.mouse_cast_results.has_hits():
-            m_ray = self.mouse_cast_results.ray
-            self.sim.get_debug_line_render().draw_circle(
-                translation=m_ray.origin
-                + m_ray.direction
-                * self.mouse_cast_results.hits[0].ray_distance
-                * m_ray.direction.length(),
-                radius=0.005,
-                color=white,
-                normal=self.mouse_cast_results.hits[0].normal,
+        if self.receptacles is not None and self.display_receptacles:
+            if self.rec_filter_data is None and self.cpo_initialized:
+                self.compute_rec_filter_state(
+                    access_threshold=self.rec_access_filter_threshold
+                )
+            c_pos = self.render_camera.node.absolute_translation
+            c_forward = (
+                self.render_camera.node.absolute_transformation().transform_vector(
+                    mn.Vector3(0, 0, -1)
+                )
             )
+            for receptacle in self.receptacles:
+                rec_unique_name = self.get_rec_instance_name(receptacle)
+                # filter all non-active receptacles
+                if (
+                    self.rec_filter_data is not None
+                    and not self.show_filtered
+                    and rec_unique_name not in self.rec_filter_data["active"]
+                ):
+                    continue
 
-        if gt_raycast_results is not None and self.debug_draw_raycasts:
-            scene_bb = self.sim.get_active_scene_graph().get_root_node().cumulative_bb
-            inflated_scene_bb = scene_bb.scaled(mn.Vector3(1.25))
-            inflated_scene_bb = mn.Range3D.from_center(
-                scene_bb.center(), inflated_scene_bb.size() / 2.0
-            )
-            self.sim.get_debug_line_render().draw_box(
-                inflated_scene_bb.min, inflated_scene_bb.max, white
-            )
-            if self.sim.get_rigid_object_manager().get_num_objects() == 0:
-                self.collision_proxy_obj = (
-                    self.sim.get_rigid_object_manager().add_object_by_template_handle(
-                        obj_temp_handle
-                    )
-                    # only display receptacles within 4 meters
-                    if mn.math.dot((c_to_r).normalized(), c_forward) > 0.7:
-                        # handle coloring
-                        rec_color = None
-                        if self.selected_rec == receptacle:
-                            # white
-                            rec_color = mn.Color4.cyan()
-                        elif (
-                            self.cpo_initialized
-                            and self.rec_color_mode != RecColorMode.DEFAULT
-                        ):
-                            if self.rec_color_mode == RecColorMode.GT_STABILITY:
-                                rec_color = rg_lerp.at(
-                                    rec_dat["shape_id_results"]["gt"][
-                                        "stability_results"
-                                    ]["success_ratio"]
-                                )
-                            elif self.rec_color_mode == RecColorMode.GT_ACCESS:
-                                rec_color = rg_lerp.at(
-                                    rec_dat["shape_id_results"]["gt"]["access_results"][
-                                        "receptacle_access_score"
-                                    ]
-                                )
-                            elif self.rec_color_mode == RecColorMode.PR_STABILITY:
-                                rec_color = rg_lerp.at(
-                                    rec_dat["shape_id_results"]["pr0"][
-                                        "stability_results"
-                                    ]["success_ratio"]
-                                )
-                            elif self.rec_color_mode == RecColorMode.PR_ACCESS:
-                                rec_color = rg_lerp.at(
-                                    rec_dat["shape_id_results"]["pr0"][
-                                        "access_results"
-                                    ]["receptacle_access_score"]
-                                )
-                            elif self.rec_color_mode == RecColorMode.FILTERING:
-                                if rec_unique_name in self.rec_filter_data["active"]:
-                                    rec_color = mn.Color4.green()
-                                elif (
-                                    rec_unique_name
-                                    in self.rec_filter_data["manually_filtered"]
-                                ):
-                                    rec_color = mn.Color4.yellow()
-                                elif (
-                                    rec_unique_name
-                                    in self.rec_filter_data["access_filtered"]
-                                ):
-                                    rec_color = mn.Color4.red()
-                                elif (
-                                    rec_unique_name
-                                    in self.rec_filter_data["stability_filtered"]
-                                ):
-                                    rec_color = mn.Color4.magenta()
-                                elif (
-                                    rec_unique_name
-                                    in self.rec_filter_data["height_filtered"]
-                                ):
-                                    rec_color = mn.Color4.blue()
+                rec_dat = None
+                if self.cpo_initialized:
+                    rec_dat = self._cpo.gt_data[self.rec_to_poh[receptacle]][
+                        "receptacles"
+                    ][receptacle.name]
 
-                rec_obj = self.get_object_by_handle(receptacle.parent_object_handle)
+                r_trans = receptacle.get_global_transform(self.sim)
+                # display point samples for selected object
+                if (
+                    rec_dat is not None
+                    and self.display_selected_stability_samples
+                    and self.selected_object is not None
+                    and self.selected_object.handle == receptacle.parent_object_handle
+                ):
+                    # display colored circles for stability samples on the selected object
+                    point_metric_dat = rec_dat["shape_id_results"]["gt"][
+                        "access_results"
+                    ]["receptacle_point_access_scores"]
+                    if self.rec_color_mode == RecColorMode.GT_STABILITY:
+                        point_metric_dat = rec_dat["shape_id_results"]["gt"][
+                            "stability_results"
+                        ]["point_stabilities"]
+                    elif self.rec_color_mode == RecColorMode.PR_STABILITY:
+                        point_metric_dat = rec_dat["shape_id_results"]["pr0"][
+                            "stability_results"
+                        ]["point_stabilities"]
+                    elif self.rec_color_mode == RecColorMode.PR_ACCESS:
+                        point_metric_dat = rec_dat["shape_id_results"]["pr0"][
+                            "access_results"
+                        ]["receptacle_point_access_scores"]
+
+                    for point_metric, point in zip(
+                        point_metric_dat,
+                        rec_dat["sample_points"],
+                    ):
+                        self.sim.get_debug_line_render().draw_circle(
+                            translation=r_trans.transform_point(point),
+                            radius=0.02,
+                            normal=mn.Vector3(0, 1, 0),
+                            color=rg_lerp.at(point_metric),
+                            num_segments=12,
+                        )
+
+                rec_obj = sutils.get_obj_from_handle(
+                    self.sim, receptacle.parent_object_handle
+                )
                 key_points = [r_trans.translation]
                 key_points.extend(
                     sutils.get_bb_corners(rec_obj.root_scene_node.cumulative_bb)
@@ -1143,50 +1120,186 @@ class HabitatSimInteractiveViewer(Application):
             #     urdf_file_path = self.cached_urdf
             # else:
             #     urdf_file_path = input("Load URDF: provide a URDF filepath:").strip()
-
-            if not urdf_file_path:
-                logger.warn("Load URDF: no input provided. Aborting.")
-            elif not urdf_file_path.endswith((".URDF", ".urdf")):
-                logger.warn("Load URDF: input is not a URDF. Aborting.")
-            elif os.path.exists(urdf_file_path):
-                self.cached_urdf = urdf_file_path
-                aom = self.sim.get_articulated_object_manager()
-                ao = aom.add_articulated_object_from_urdf(
-                    urdf_file_path,
-                    fixed_base,
-                    1.0,
-                    1.0,
-                    True,
-                    maintain_link_order=False,
-                    intertia_from_urdf=False,
-                )
-                ao.translation = (
-                    self.default_agent.scene_node.transformation.transform_point(
-                        [0.0, 1.0, -1.5]
-                    )
-                )
-                # check removal and auto-creation
-                joint_motor_settings = habitat_sim.physics.JointMotorSettings(
-                    position_target=0.0,
-                    position_gain=1.0,
-                    velocity_target=0.0,
-                    velocity_gain=1.0,
-                    max_impulse=1000.0,
-                )
-                existing_motor_ids = ao.existing_joint_motor_ids
-                for motor_id in existing_motor_ids:
-                    ao.remove_joint_motor(motor_id)
-                ao.create_all_motors(joint_motor_settings)
-            else:
-                logger.warn("Load URDF: input file not found. Aborting.")
+            # if not urdf_file_path:
+            #     logger.warn("Load URDF: no input provided. Aborting.")
+            # elif not urdf_file_path.endswith((".URDF", ".urdf")):
+            #     logger.warn("Load URDF: input is not a URDF. Aborting.")
+            # elif os.path.exists(urdf_file_path):
+            #     self.cached_urdf = urdf_file_path
+            #     aom = self.sim.get_articulated_object_manager()
+            #     ao = aom.add_articulated_object_from_urdf(
+            #         urdf_file_path,
+            #         fixed_base,
+            #         1.0,
+            #         1.0,
+            #         True,
+            #         maintain_link_order=False,
+            #         intertia_from_urdf=False,
+            #     )
+            #     ao.translation = (
+            #         self.default_agent.scene_node.transformation.transform_point(
+            #             [0.0, 1.0, -1.5]
+            #         )
+            #     )
+            #     # check removal and auto-creation
+            #     joint_motor_settings = habitat_sim.physics.JointMotorSettings(
+            #         position_target=0.0,
+            #         position_gain=1.0,
+            #         velocity_target=0.0,
+            #         velocity_gain=1.0,
+            #         max_impulse=1000.0,
+            #     )
+            #     existing_motor_ids = ao.existing_joint_motor_ids
+            #     for motor_id in existing_motor_ids:
+            #         ao.remove_joint_motor(motor_id)
+            #     ao.create_all_motors(joint_motor_settings)
+            # else:
+            #     logger.warn("Load URDF: input file not found. Aborting.")
 
         elif key == pressed.M:
             self.cycle_mouse_mode()
             logger.info(f"Command: mouse mode set to {self.mouse_interaction}")
 
         elif key == pressed.V:
-            self.invert_gravity()
-            logger.info("Command: gravity inverted")
+            # load receptacles and toggle visibilty or color mode (+SHIFT)
+            if self.receptacles is None:
+                self.load_receptacles()
+
+            if shift_pressed:
+                self.rec_color_mode = RecColorMode(
+                    (self.rec_color_mode.value + 1) % len(RecColorMode)
+                )
+                print(f"self.rec_color_mode = {self.rec_color_mode}")
+                self.display_receptacles = True
+            else:
+                self.display_receptacles = not self.display_receptacles
+                print(f"self.display_receptacles = {self.display_receptacles}")
+
+        elif key == pressed.F:
+            # toggle, load(+ALT), or save(+SHIFT) filtering
+            if shift_pressed and self.rec_filter_data is not None:
+                self.export_filtered_recs(self.rec_filter_path)
+            elif alt_pressed:
+                self.load_filtered_recs(self.rec_filter_path)
+            else:
+                self.show_filtered = not self.show_filtered
+                print(f"self.show_filtered = {self.show_filtered}")
+
+        elif key == pressed.U:
+            rom = self.sim.get_rigid_object_manager()
+            # add objects to the selected receptacle or remove al objects
+            if shift_pressed:
+                # remove all
+                print(f"Removing {len(self.clutter_object_instances)} clutter objects.")
+                for obj in self.clutter_object_instances:
+                    rom.remove_object_by_handle(obj.handle)
+                self.clutter_object_initial_states.clear()
+                self.clutter_object_instances.clear()
+            else:
+                # try to sample an object from the selected object receptacles
+                rec_set = None
+                if alt_pressed:
+                    # use all active filter recs
+                    rec_set = [
+                        rec
+                        for rec in self.receptacles
+                        if rec.unique_name in self.rec_filter_data["active"]
+                    ]
+                elif self.selected_rec is not None:
+                    rec_set = [self.selected_rec]
+                elif self.selected_object is not None:
+                    rec_set = [
+                        rec
+                        for rec in self.receptacles
+                        if self.selected_object.handle == rec.parent_object_handle
+                    ]
+                if rec_set is not None:
+                    if len(self.clutter_object_handles) == 0:
+                        for obj_name in self.clutter_object_set:
+                            matching_handles = self.sim.metadata_mediator.object_template_manager.get_template_handles(
+                                obj_name
+                            )
+                            assert (
+                                len(matching_handles) > 0
+                            ), f"No matching template for '{obj_name}' in the dataset."
+                            self.clutter_object_handles.append(matching_handles[0])
+
+                    rec_set_unique_names = [rec.unique_name for rec in rec_set]
+                    obj_samp = ObjectSampler(
+                        self.clutter_object_handles,
+                        ["rec set"],
+                        orientation_sample="up",
+                        num_objects=(1, 10),
+                    )
+                    rec_set_obj = hab_receptacle.ReceptacleSet(
+                        "rec set", [""], [], rec_set_unique_names, []
+                    )
+                    obj_count_dict = {rec.unique_name: 200 for rec in rec_set}
+                    recep_tracker = hab_receptacle.ReceptacleTracker(
+                        obj_count_dict,
+                        {"rec set": rec_set_obj},
+                    )
+                    new_objs = obj_samp.sample(
+                        self.sim, recep_tracker, [], snap_down=True
+                    )
+                    for obj, rec in new_objs:
+                        self.clutter_object_instances.append(obj)
+                        self.clutter_object_initial_states.append(
+                            (obj.translation, obj.rotation)
+                        )
+                        print(f"Sampled '{obj.handle}' in '{rec.unique_name}'")
+                else:
+                    print("No object selected, cannot sample clutter.")
+
+        elif key == pressed.O:
+            if shift_pressed:
+                # move non-proxy objects in/out of visible space
+                self.original_objs_visible = not self.original_objs_visible
+                print(f"self.original_objs_visible = {self.original_objs_visible}")
+                if not self.original_objs_visible:
+                    for _obj_handle, obj in (
+                        self.sim.get_rigid_object_manager()
+                        .get_objects_by_handle_substring()
+                        .items()
+                    ):
+                        if self.proxy_obj_postfix not in obj.creation_attributes.handle:
+                            obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+                            obj.translation = obj.translation + mn.Vector3(200, 0, 0)
+                            obj.motion_type = habitat_sim.physics.MotionType.STATIC
+                else:
+                    for _obj_handle, obj in (
+                        self.sim.get_rigid_object_manager()
+                        .get_objects_by_handle_substring()
+                        .items()
+                    ):
+                        if self.proxy_obj_postfix not in obj.creation_attributes.handle:
+                            obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+                            obj.translation = obj.translation - mn.Vector3(200, 0, 0)
+                            obj.motion_type = habitat_sim.physics.MotionType.STATIC
+
+            else:
+                if self.col_proxy_objs is None:
+                    self.col_proxy_objs = []
+                    for _obj_handle, obj in (
+                        self.sim.get_rigid_object_manager()
+                        .get_objects_by_handle_substring()
+                        .items()
+                    ):
+                        if self.proxy_obj_postfix not in obj.creation_attributes.handle:
+                            # add a new proxy object
+                            self.col_proxy_objs.append(self.add_col_proxy_object(obj))
+                else:
+                    self.col_proxies_visible = not self.col_proxies_visible
+                    print(f"self.col_proxies_visible = {self.col_proxies_visible}")
+
+                    # make the proxies visible or not by moving them
+                    if not self.col_proxies_visible:
+                        for obj in self.col_proxy_objs:
+                            obj.translation = obj.translation + mn.Vector3(200, 0, 0)
+                    else:
+                        for obj in self.col_proxy_objs:
+                            obj.translation = obj.translation - mn.Vector3(200, 0, 0)
+
         elif key == pressed.N:
             # (default) - toggle navmesh visualization
             # NOTE: (+ALT) - re-sample the agent position on the NavMesh
@@ -1303,11 +1416,9 @@ class HabitatSimInteractiveViewer(Application):
                 hit_info = raycast_results.hits[0]
 
                 if hit_info.object_id > habitat_sim.stage_id:
-                    # we hit an non-staged collision object
-                    ro_mngr = self.sim.get_rigid_object_manager()
-                    ao_mngr = self.sim.get_articulated_object_manager()
-                    ao = ao_mngr.get_object_by_id(hit_info.object_id)
-                    ro = ro_mngr.get_object_by_id(hit_info.object_id)
+                    obj = sutils.get_obj_from_id(
+                        self.sim, hit_info.object_id, self.ao_link_map
+                    )
 
                     if obj is None:
                         raise AssertionError(
@@ -1865,11 +1976,6 @@ if __name__ == "__main__":
         help="disable physics simulation (default: False)",
     )
     parser.add_argument(
-        "--reorient-object",
-        action="store_true",
-        help="reorient the object based on the values in the config file.",
-    )
-    parser.add_argument(
         "--use-default-lighting",
         action="store_true",
         help="Override configured lighting to use default lighting for the stage.",
@@ -1929,9 +2035,9 @@ if __name__ == "__main__":
     sim_settings["composite_files"] = args.composite_files
     sim_settings["window_width"] = args.width
     sim_settings["window_height"] = args.height
+    sim_settings["rec_filter_file"] = args.rec_filter_file
     sim_settings["default_agent_navmesh"] = False
     sim_settings["enable_hbao"] = args.hbao
-    sim_settings["clear_color"] = mn.Color4.magenta()
 
     # don't need auto-navmesh
     sim_settings["default_agent_navmesh"] = False
