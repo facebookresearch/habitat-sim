@@ -179,6 +179,8 @@ bool SemanticScene::
         int eIdx = 0;
         float yExtrusion = static_cast<float>(regionPtr->extrusionHeight_ +
                                               regionPtr->floorHeight_);
+
+        float polyArea = 0.0f;
         for (std::size_t i = 0; i < numPts; ++i) {
           Mn::Vector3 currPoint = loopPoints[i];
           regionPtr->polyLoopPoints_[i] = {currPoint.x(), currPoint.z()};
@@ -188,6 +190,10 @@ bool SemanticScene::
           std::size_t nextIdx = ((i + 1) % numPts);
           Mn::Vector3 nextPoint = loopPoints[nextIdx];
           Mn::Vector3 nextExtPt = {nextPoint.x(), yExtrusion, nextPoint.z()};
+          // Find region projection area based on Green's Theorem (.5 * abs(sum
+          // (xprod of sequential edges)))
+          polyArea +=
+              currPoint.x() * nextPoint.z() - nextPoint.x() * currPoint.z();
           // Horizontal edge
           regionPtr->visEdges_[eIdx++] = {currPoint, nextPoint};
           // Vertical edge
@@ -197,7 +203,8 @@ bool SemanticScene::
           // Diagonal edge
           regionPtr->visEdges_[eIdx++] = {currPoint, nextExtPt};
         }
-
+        // Set the polyloop area
+        regionPtr->area_ = .5 * abs(polyArea);
         scene.regions_.emplace_back(std::move(regionPtr));
       }
     } else {  // if semantic attributes specifes region annotations
@@ -600,13 +607,43 @@ std::vector<int> SemanticScene::getRegionsForPoint(
     }
   }
   return containingRegions;
-}
+}  // SemanticScene::getRegionsForPoint
 
-std::vector<std::pair<int, float>> SemanticScene::getRegionsForPoints(
+std::vector<std::pair<int, double>> SemanticScene::getWeightedRegionsForPoint(
+    const Mn::Vector3& point) const {
+  std::vector<int> containingRegions = getRegionsForPoint(point);
+  std::vector<std::pair<int, double>> containingRegionWeights;
+  // Only 1 containing region, so return region idx and weight of 1
+  if (containingRegions.size() == 1) {
+    containingRegionWeights.emplace_back(
+        std::pair<int, double>(containingRegions[0], 1.0f));
+    return containingRegionWeights;
+  }
+
+  // Sum up all areas
+  double ttlArea = 0.0f;
+  for (int rix : containingRegions) {
+    ttlArea += regions_[rix]->getArea();
+  }
+
+  for (int rix : containingRegions) {
+    containingRegionWeights.emplace_back(std::pair<int, double>(
+        rix, 1.0f - (regions_[rix]->getArea() / ttlArea)));
+  }
+
+  std::sort(containingRegionWeights.begin(), containingRegionWeights.end(),
+            [](const std::pair<int, double>& a, std::pair<int, double>& b) {
+              return a.second > b.second;
+            });
+  return containingRegionWeights;
+
+}  // SemanticScene::getWeightedRegionsForPoint
+
+std::vector<std::pair<int, double>> SemanticScene::getRegionsForPoints(
     const std::vector<Mn::Vector3>& points) const {
-  std::vector<std::pair<int, float>> containingRegionWeights;
+  std::vector<std::pair<int, double>> containingRegionWeights;
   for (int rix = 0; rix < regions_.size(); ++rix) {
-    float containmentCount = 0;
+    double containmentCount = 0;
     for (const auto& point : points) {
       if (regions_[rix]->contains(point)) {
         containmentCount += 1;
@@ -614,15 +651,15 @@ std::vector<std::pair<int, float>> SemanticScene::getRegionsForPoints(
     }
     if (containmentCount > 0) {
       containingRegionWeights.emplace_back(
-          std::pair<int, float>(rix, containmentCount / points.size()));
+          std::pair<int, double>(rix, containmentCount / points.size()));
     }
   }
   std::sort(containingRegionWeights.begin(), containingRegionWeights.end(),
-            [](const std::pair<int, float>& a, std::pair<int, float>& b) {
+            [](const std::pair<int, double>& a, std::pair<int, double>& b) {
               return a.second > b.second;
             });
   return containingRegionWeights;
-}
+}  // SemanticScene::getRegionsForPoints
 
 }  // namespace scene
 }  // namespace esp

@@ -240,9 +240,20 @@ void initSceneBindings(py::module& m) {
       .def("semantic_index_to_object_index",
            &SemanticScene::semanticIndexToObjectIndex)
       .def("get_regions_for_point", &SemanticScene::getRegionsForPoint,
+           "point"_a,
            "Compute all SemanticRegions which contain the point and return a "
            "list of indices for the regions in this SemanticScene.")
+      .def(
+          "get_weighted_regions_for_point",
+          &SemanticScene::getWeightedRegionsForPoint, "point"_a,
+          "Find all SemanticRegions which contain the point and return a "
+          "sorted list of tuple pairs of the region index and a score of that"
+          "region, derived as 1 - (region_area/ttl_region_area), where"
+          "ttl_region_area is the area of all the regions containing the point,"
+          "so that smaller regions are weighted higher. If only one region "
+          "contains the passed point, its weight will be 1.")
       .def("get_regions_for_points", &SemanticScene::getRegionsForPoints,
+           "points"_a,
            "Compute SemanticRegion containment for a set of points. Return a "
            "sorted list of tuple pairs with each containing region index and "
            "the percentage of points contained by that region.");
