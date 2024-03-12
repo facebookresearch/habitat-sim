@@ -228,35 +228,47 @@ void initSceneBindings(py::module& m) {
           "file"_a, "scene"_a, "rotation"_a)
       .def_property_readonly("aabb", &SemanticScene::aabb)
       .def_property_readonly("categories", &SemanticScene::categories,
-                             "All semantic categories in the house")
+                             "All semantic categories in the scene")
       .def_property_readonly("levels", &SemanticScene::levels,
-                             "All levels in the house")
+                             "All levels in the scene")
       .def_property_readonly("regions", &SemanticScene::regions,
-                             "All regions in the house")
+                             "All regions in the scene")
       .def_property_readonly("objects", &SemanticScene::objects,
-                             "All object in the house")
+                             "All object in the scene")
       .def_property_readonly("semantic_index_map",
                              &SemanticScene::getSemanticIndexMap)
       .def("semantic_index_to_object_index",
            &SemanticScene::semanticIndexToObjectIndex)
       .def("get_regions_for_point", &SemanticScene::getRegionsForPoint,
-           "point"_a,
-           "Compute all SemanticRegions which contain the point and return a "
-           "list of indices for the regions in this SemanticScene.")
-      .def(
-          "get_weighted_regions_for_point",
-          &SemanticScene::getWeightedRegionsForPoint, "point"_a,
-          "Find all SemanticRegions which contain the point and return a "
-          "sorted list of tuple pairs of the region index and a score of that"
-          "region, derived as 1 - (region_area/ttl_region_area), where"
-          "ttl_region_area is the area of all the regions containing the point,"
-          "so that smaller regions are weighted higher. If only one region "
-          "contains the passed point, its weight will be 1.")
+           R"(Compute all SemanticRegions which contain the point and return a
+             list of indices for the regions in this SemanticScene.)",
+           "point"_a)
+      .def("get_weighted_regions_for_point",
+           &SemanticScene::getWeightedRegionsForPoint,
+           R"("Find all SemanticRegions which contain the point and return a
+              sorted list of tuple pairs of the region index and a score of that
+              region, derived as
+                    1 - (region_area/ttl_region_area)
+              where ttl_region_area is the area of all the regions containing
+              the point, so that smaller regions are weighted higher. If only
+              one region contains the passed point, its weight will be 1.)",
+           "point"_a)
       .def("get_regions_for_points", &SemanticScene::getRegionsForPoints,
-           "points"_a,
-           "Compute SemanticRegion containment for a set of points. Return a "
-           "sorted list of tuple pairs with each containing region index and "
-           "the percentage of points contained by that region.");
+           R"("Compute SemanticRegion containment for a set of points. Return a
+              sorted list of tuple pairs with each containing region index and
+              the percentage of points contained by that region.)",
+           "points"_a)
+      .def(
+          "get_weighted_regions_for_points",
+          &SemanticScene::getWeightedRegionsForPoints,
+          R"("Compute SemanticRegion containment for a set of points, accounting
+           for possible nested regions. Return a sorted list of tuple pairs with
+           each containing region index and the weighted fraction of points contained by
+           that region, where smaller, nested regions get higher weight than the larger
+           regions that contain them. If no regions are nested, than the returned weight
+           value corresponds with the percentage of the list of points contained in a
+           particular region.)",
+          "points"_a);
 
   // ==== ObjectControls ====
   py::class_<ObjectControls, ObjectControls::ptr>(m, "ObjectControls")

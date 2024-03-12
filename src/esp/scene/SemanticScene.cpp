@@ -612,7 +612,12 @@ std::vector<int> SemanticScene::getRegionsForPoint(
 std::vector<std::pair<int, double>> SemanticScene::getWeightedRegionsForPoint(
     const Mn::Vector3& point) const {
   std::vector<int> containingRegions = getRegionsForPoint(point);
+  if (containingRegions.size() == 0) {
+    return {};
+  }
+
   std::vector<std::pair<int, double>> containingRegionWeights;
+  containingRegionWeights.reserve(containingRegions.size());
   // Only 1 containing region, so return region idx and weight of 1
   if (containingRegions.size() == 1) {
     containingRegionWeights.emplace_back(
@@ -620,7 +625,7 @@ std::vector<std::pair<int, double>> SemanticScene::getWeightedRegionsForPoint(
     return containingRegionWeights;
   }
 
-  // Sum up all areas
+  // Sum up all areas containing point
   double ttlArea = 0.0f;
   for (int rix : containingRegions) {
     ttlArea += regions_[rix]->getArea();
@@ -642,6 +647,8 @@ std::vector<std::pair<int, double>> SemanticScene::getWeightedRegionsForPoint(
 std::vector<std::pair<int, double>> SemanticScene::getRegionsForPoints(
     const std::vector<Mn::Vector3>& points) const {
   std::vector<std::pair<int, double>> containingRegionWeights;
+  // Will only have at max the number of regions in the scene
+  containingRegionWeights.reserve(regions_.size());
   for (int rix = 0; rix < regions_.size(); ++rix) {
     double containmentCount = 0;
     for (const auto& point : points) {
@@ -654,6 +661,9 @@ std::vector<std::pair<int, double>> SemanticScene::getRegionsForPoints(
           std::pair<int, double>(rix, containmentCount / points.size()));
     }
   }
+  // Free up unused capacity - every region probably does not contain a tested
+  // point
+  containingRegionWeights.shrink_to_fit();
   std::sort(containingRegionWeights.begin(), containingRegionWeights.end(),
             [](const std::pair<int, double>& a, std::pair<int, double>& b) {
               return a.second > b.second;
@@ -661,5 +671,46 @@ std::vector<std::pair<int, double>> SemanticScene::getRegionsForPoints(
   return containingRegionWeights;
 }  // SemanticScene::getRegionsForPoints
 
+std::vector<std::pair<int, double>> SemanticScene::getWeightedRegionsForPoints(
+    const std::vector<Mn::Vector3>& points) const {
+  // Weights for every point for every region
+  std::vector<std::vector<double>> regAreaWeightsForPoints;
+  regAreaWeightsForPoints.reserve(points.size());
+  for (int i = 0; i < points.size(); ++i) {
+    // Get this point's weighted regions
+    auto regWeightsForPoint = getWeightedRegionsForPoint(points[i]);
+    // Initialize all region weights to be 0
+    std::vector<double> allRegionWeights(regions_.size(), 0);
+    // Set the weights for the containing regions for this particular point
+    for (const std::pair<int, double>& regionWeight : regWeightsForPoint) {
+      allRegionWeights[regionWeight.first] = regionWeight.second;
+    }
+    // Save this points region weight vector
+    regAreaWeightsForPoints.emplace_back(allRegionWeights);
+  }
+
+  std::vector<std::pair<int, double>> containingRegionWeights;
+  // Will only have at max the number of regions in the scene
+  containingRegionWeights.reserve(regions_.size());
+  for (int rix = 0; rix < regions_.size(); ++rix) {
+    double containmentWeight = 0;
+    for (int i = 0; i < points.size(); ++i) {
+      std::vector<double> regWtsForPoint = regAreaWeightsForPoints[i];
+      containmentWeight += regWtsForPoint[rix];
+    }
+    if (containmentWeight > 0) {
+      containingRegionWeights.emplace_back(
+          std::pair<int, double>(rix, containmentWeight / points.size()));
+    }
+  }
+  // Free up unused capacity - every region probably does not contain a tested
+  // point
+  containingRegionWeights.shrink_to_fit();
+  std::sort(containingRegionWeights.begin(), containingRegionWeights.end(),
+            [](const std::pair<int, double>& a, std::pair<int, double>& b) {
+              return a.second > b.second;
+            });
+  return containingRegionWeights;
+}  // SemanticScene::getRegionsForPoints
 }  // namespace scene
 }  // namespace esp
