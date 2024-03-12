@@ -104,12 +104,6 @@ def test_semantic_regions():
         )
         assert regions_weights[0][0] == 0
         assert regions_weights[0][1] >= 0.49  # half or more points contained
-        weighted_region_weights = semantic_scene.get_weighted_regions_for_points(
-            hit_test_points + miss_test_points
-        )
-        assert len(weighted_region_weights) == len(regions_weights)
-        assert weighted_region_weights[0][0] == regions_weights[0][0]
-        assert weighted_region_weights[0][1] >= regions_weights[0][1]
 
         # positive X region
         region = regions[1]
@@ -149,16 +143,6 @@ def test_semantic_regions():
         assert (
             abs(regions_weights[1][1] - (1.0 - regions_weights[0][1])) < 0.001
         )  # kitchen should have the remainder of total percent
-        # test again with weighted regions. Since not nested, should have identical results
-        weighted_region_weights = semantic_scene.get_weighted_regions_for_points(
-            mixed_points
-        )
-        # verify identical results
-        assert len(weighted_region_weights) == len(regions_weights)
-        assert weighted_region_weights[0][0] == regions_weights[0][0]
-        assert weighted_region_weights[0][1] >= regions_weights[0][1]
-        assert weighted_region_weights[1][0] == regions_weights[1][0]
-        assert weighted_region_weights[1][1] >= regions_weights[1][1]
 
 
 @pytest.mark.parametrize("scene", _test_scenes)

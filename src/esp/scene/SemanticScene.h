@@ -315,20 +315,6 @@ class SemanticScene {
   std::vector<std::pair<int, double>> getRegionsForPoints(
       const std::vector<Mn::Vector3>& points) const;
 
-  /**
-   * @brief Compute weighted SemanticRegion containment for a set of points. It
-   * is assumed the set of points belong to the same construct (i.e. points from
-   * an individual object's mesh). Each point is checked for region containment
-   * via @ref getWeightedRegionsForPoint, to account for possibly nested region
-   * containment.
-   * @param points A set of points to test for semantic containment.
-   * @return std::vector<std::pair<int, float>> A sorted list of tuples
-   * containing region index and percentage of input points contained in that
-   * region.
-   */
-  std::vector<std::pair<int, double>> getWeightedRegionsForPoints(
-      const std::vector<Mn::Vector3>& points) const;
-
  protected:
   /**
    * @brief Verify a requested file exists.

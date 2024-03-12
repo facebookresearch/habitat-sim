@@ -256,19 +256,10 @@ void initSceneBindings(py::module& m) {
       .def("get_regions_for_points", &SemanticScene::getRegionsForPoints,
            R"("Compute SemanticRegion containment for a set of points. Return a
               sorted list of tuple pairs with each containing region index and
-              the percentage of points contained by that region.)",
-           "points"_a)
-      .def(
-          "get_weighted_regions_for_points",
-          &SemanticScene::getWeightedRegionsForPoints,
-          R"("Compute SemanticRegion containment for a set of points, accounting
-           for possible nested regions. Return a sorted list of tuple pairs with
-           each containing region index and the weighted fraction of points contained by
-           that region, where smaller, nested regions get higher weight than the larger
-           regions that contain them. If no regions are nested, than the returned weight
-           value corresponds with the percentage of the list of points contained in a
-           particular region.)",
-          "points"_a);
+              the percentage of points contained by that region. In the case of nested
+              regions, points are considered belonging to the nested region with the
+              smallest area that they are found in.)",
+           "points"_a);
 
   // ==== ObjectControls ====
   py::class_<ObjectControls, ObjectControls::ptr>(m, "ObjectControls")
