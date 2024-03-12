@@ -995,10 +995,9 @@ class HabitatSimInteractiveViewer(Application):
         if repetitions == 0:
             return
 
-        key = Application.KeyEvent.Key
         agent = self.sim.agents[self.agent_id]
-        press: Dict[key.key, bool] = self.pressed
-        act: Dict[key.key, str] = self.key_to_action
+        press: Dict[Application.KeyEvent.Key.key, bool] = self.pressed
+        act: Dict[Application.KeyEvent.Key.key, str] = self.key_to_action
 
         action_queue: List[str] = [act[k] for k, v in press.items() if v]
 
@@ -1701,6 +1700,7 @@ class HabitatSimInteractiveViewer(Application):
         self.window_text.render(
             f"""
 {self.fps} FPS
+Scene ID : {self.cfg.sim_cfg.scene_id}
 Sensor Type: {sensor_type_string}
 Sensor Subtype: {sensor_subtype_string}
 Mouse Interaction Mode: {mouse_mode_string}
@@ -2036,7 +2036,6 @@ if __name__ == "__main__":
     sim_settings["window_width"] = args.width
     sim_settings["window_height"] = args.height
     sim_settings["rec_filter_file"] = args.rec_filter_file
-    sim_settings["default_agent_navmesh"] = False
     sim_settings["enable_hbao"] = args.hbao
 
     # don't need auto-navmesh
