@@ -1700,7 +1700,7 @@ class HabitatSimInteractiveViewer(Application):
         self.window_text.render(
             f"""
 {self.fps} FPS
-Scene ID : {self.cfg.sim_cfg.scene_id}
+Scene ID : {os.path.split(self.cfg.sim_cfg.scene_id)[1].split('.scene_instance')[0]}
 Sensor Type: {sensor_type_string}
 Sensor Subtype: {sensor_subtype_string}
 Mouse Interaction Mode: {mouse_mode_string}
