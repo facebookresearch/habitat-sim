@@ -257,8 +257,8 @@ void initSceneBindings(py::module& m) {
            R"("Compute SemanticRegion containment for a set of points. Return a
               sorted list of tuple pairs with each containing region index and
               the percentage of points contained by that region. In the case of nested
-              regions, points are considered belonging to the nested region with the
-              smallest area that they are found in.)",
+              regions, points are considered belonging to every region the point is
+              found in.)",
            "points"_a);
 
   // ==== ObjectControls ====

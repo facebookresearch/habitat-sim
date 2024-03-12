@@ -656,8 +656,9 @@ std::vector<std::pair<int, double>> SemanticScene::getRegionsForPoints(
     std::vector<double> allRegionWeights(regions_.size(), 0);
     // Set the weight for the containing region with the smallest area (if
     // nested regions) for this particular point.
-    if (regWeightsForPoint.size() > 0) {
-      allRegionWeights[regWeightsForPoint[0].first] = 1.0;
+    // Set the vote for each region to be equal.
+    for (const std::pair<int, double>& regionWeight : regWeightsForPoint) {
+      allRegionWeights[regionWeight.first] = 1.0;
     }
     // Save this points region weight vector
     regAreaWeightsForPoints.emplace_back(allRegionWeights);
