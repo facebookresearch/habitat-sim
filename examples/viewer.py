@@ -303,6 +303,7 @@ class HabitatSimInteractiveViewer(Application):
         if (
             not self.sim.pathfinder.is_loaded
             and self.cfg.sim_cfg.scene_id.lower() != "none"
+            and not self.sim_settings["viewer_ignore_navmesh"]
         ):
             self.navmesh_config_and_recompute()
 
@@ -2003,6 +2004,12 @@ if __name__ == "__main__":
         help="Composite files that the batch renderer will use in-place of simulation assets to improve memory usage and performance. If none is specified, the original scene files will be loaded from disk.",
     )
     parser.add_argument(
+        "--no-navmesh",
+        default=False,
+        action="store_true",
+        help="Don't build navmesh.",
+    )
+    parser.add_argument(
         "--width",
         default=1080,
         type=int,
@@ -2037,6 +2044,7 @@ if __name__ == "__main__":
     sim_settings["window_height"] = args.height
     sim_settings["rec_filter_file"] = args.rec_filter_file
     sim_settings["enable_hbao"] = args.hbao
+    sim_settings["viewer_ignore_navmesh"] = args.no_navmesh
 
     # don't need auto-navmesh
     sim_settings["default_agent_navmesh"] = False
