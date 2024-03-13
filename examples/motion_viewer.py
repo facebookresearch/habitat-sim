@@ -7,7 +7,6 @@ import time
 from typing import Any, Callable, Dict, Optional, Tuple
 
 import magnum as mn
-import numpy as np
 from magnum.platform.glfw import Application
 from viewer import HabitatSimInteractiveViewer, MouseMode, Timer
 
