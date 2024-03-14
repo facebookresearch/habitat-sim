@@ -676,6 +676,7 @@ def construct_root_rotation_joint(root_node_name):
 def export(
     dirpath,
     settings,
+    export_urdf: bool = True,
     export_meshes: bool = True,
     export_ao_config: bool = True,
     **kwargs,
@@ -757,6 +758,7 @@ def export(
     assert root_node is not None, "No root node, aborting."
     final_out_path = os.path.join(dirpath, f"{root_node.name}")
     os.makedirs(final_out_path, exist_ok=True)
+    print(f"Output path : {final_out_path}")
 
     # export mesh components
     if export_meshes:
@@ -782,8 +784,6 @@ def export(
                 export_yup=False,
             )
 
-        return output_path
-
     # print("------------------------")
     # print("Bone info recursion:")
     # walk_armature(root_bone, bone_info)
@@ -791,38 +791,39 @@ def export(
     # print("Node info recursion:")
     # walk_armature(root_node, node_info)
     # print("------------------------")
+    if export_urdf:
+        # Recursively generate the xml elements
+        walk_armature(root_bone, bone_to_urdf, kwargs_for_handler=kwargs)
 
-    # Recursively generate the xml elements
-    walk_armature(root_bone, bone_to_urdf, kwargs_for_handler=kwargs)
+        # add all the joints and links to the root
+        root_xml = ET.Element("robot")  # create <robot name="test_robot">
+        root_xml.set("name", armature.name)
 
-    # add all the joints and links to the root
-    root_xml = ET.Element("robot")  # create <robot name="test_robot">
-    root_xml.set("name", armature.name)
+        # add a coordinate change in a dummy root node
+        xml_root_link = ET.Element("link")
+        xml_root_link.set("name", "root")
+        xml_root_joint = construct_root_rotation_joint(root_bone.name)
+        root_xml.append(xml_root_link)
+        root_xml.append(xml_root_joint)
 
-    # add a coordinate change in a dummy root node
-    xml_root_link = ET.Element("link")
-    xml_root_link.set("name", "root")
-    xml_root_joint = construct_root_rotation_joint(root_bone.name)
-    root_xml.append(xml_root_link)
-    root_xml.append(xml_root_joint)
+        root_xml.append(ET.Comment("LINKS"))
+        for l in links:
+            root_xml.append(l)
 
-    root_xml.append(ET.Comment("LINKS"))
-    for l in links:
-        root_xml.append(l)
+        root_xml.append(ET.Comment("JOINTS"))
+        for j in joints:
+            root_xml.append(j)
 
-    root_xml.append(ET.Comment("JOINTS"))
-    for j in joints:
-        root_xml.append(j)
+        # dump the xml string
+        ET_raw_string = ET.tostring(root_xml, encoding="unicode")
+        dom = minidom.parseString(ET_raw_string)
+        ET_pretty_string = dom.toprettyxml()
 
-    # dump the xml string
-    ET_raw_string = ET.tostring(root_xml, encoding="unicode")
-    dom = minidom.parseString(ET_raw_string)
-    ET_pretty_string = dom.toprettyxml()
+        output_path = os.path.join(final_out_path, f"{root_node.name}.urdf")
 
-    output_path = os.path.join(final_out_path, f"{root_node.name}.urdf")
-
-    with open(output_path, "w") as f:
-        f.write(ET_pretty_string)
+        print(f"URDF output path : {output_path}")
+        with open(output_path, "w") as f:
+            f.write(ET_pretty_string)
 
     if export_ao_config:
         # write the ao_config
@@ -847,8 +848,10 @@ def export(
         ao_config_filename = os.path.join(
             final_out_path, f"{root_node.name}.ao_config.json"
         )
+
+        print(f"ao config output path : {ao_config_filename}")
         with open(ao_config_filename, "w") as f:
-            f.write(json.dump(ao_config_contents, f))
+            json.dump(ao_config_contents, f)
 
     return output_path
 
@@ -878,6 +881,7 @@ if __name__ == "__main__":
     # Optionally override the save directory with an absolute path of your choice
     # export_path = "/home/my_path_choice/"
 
+    export_urdf = False
     export_meshes = False
     export_ao_config = False
     round_collision_scales = False
@@ -892,7 +896,7 @@ if __name__ == "__main__":
 
     # -----------------------------------------------------------
     # To use from the commandline:
-    #  1. `blender <path to asset>.blend --background --python <apth to>blender_armature_to_urdf.py -- --export-path <export directory>
+    #  1. `blender <path to asset>.blend --background --python <path to>blender_armature_to_urdf.py -- --export-path <export directory>
     #  2. add `--export-meshes` to export the link .glbs
     # Note: ' -- ' tells Blender to ignore the remaining arguemnts, so we pass anything after that into the script arguements below:
     import sys
@@ -924,7 +928,12 @@ if __name__ == "__main__":
         default=export_ao_config,
         help="Export a *.ao_config.json file for the URDF.",
     )
-
+    parser.add_argument(
+        "--export-urdf",
+        action="store_true",
+        default=export_urdf,
+        help="Export the *.urdf file.",
+    )
     # Debugging flags:
     parser.add_argument(
         "--no-link-visuals",
@@ -964,10 +973,14 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args(py_argv)
-
+    export_urdf = args.export_urdf
     export_meshes = args.export_meshes
     export_ao_config = args.export_ao_config
     export_path = args.export_path
+
+    print(
+        f"export_urdf : {export_urdf} | export_meshes : {export_meshes} | export_ao_config : {export_ao_config} | export_path : {export_path}"
+    )
 
     # -----------------------------------------------------------
 
@@ -984,6 +997,7 @@ if __name__ == "__main__":
             #'def_limit_effort': 100, #custom default effort limit for joints
             #'def_limit_vel': 3, #custom default vel limit for joints
         },
+        export_urdf=export_urdf,
         export_meshes=export_meshes,
         export_ao_config=export_ao_config,
         link_visuals=not args.no_link_visuals,
