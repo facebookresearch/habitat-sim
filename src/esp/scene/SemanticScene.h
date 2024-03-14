@@ -293,13 +293,26 @@ class SemanticScene {
   std::vector<int> getRegionsForPoint(const Mn::Vector3& point) const;
 
   /**
-   * @brief Compute SemanticRegion containment for a set of points.
+   * @brief Compute all the SemanticRegions that contain the passed point, and
+   * return a vector of indices and weights for each region, where the weights
+   * are inverted area of the region (smaller regions weighted higher)
+   * @param point The query point.
+   * @return std::vector<std::pair<int, float>> A sorted list of tuples
+   * containing region index and inverse area of that region
+   */
+  std::vector<std::pair<int, double>> getWeightedRegionsForPoint(
+      const Mn::Vector3& point) const;
+
+  /**
+   * @brief Compute SemanticRegion containment for a set of points. It is
+   * assumed the set of points belong to the same construct (i.e. points from an
+   * individual object's mesh)
    * @param points A set of points to test for semantic containment.
    * @return std::vector<std::pair<int, float>> A sorted list of tuples
    * containing region index and percentage of input points contained in that
    * region.
    */
-  std::vector<std::pair<int, float>> getRegionsForPoints(
+  std::vector<std::pair<int, double>> getRegionsForPoints(
       const std::vector<Mn::Vector3>& points) const;
 
  protected:
@@ -521,6 +534,17 @@ class SemanticRegion {
 
   SemanticCategory::ptr category() const { return category_; }
 
+  /**
+   * @brief Returns the area of the polyloop forming the base of the region
+   * extrusion
+   */
+  double getArea() const { return area_; }
+  /**
+   * @brief Returns the volume of the polyloop-based extrusion defining the
+   * bounds of this region.
+   */
+  double getVolume() const { return area_ * extrusionHeight_; }
+
  protected:
   int index_{};
   int parentIndex_{};
@@ -529,6 +553,9 @@ class SemanticRegion {
   box3f bbox_;
 
   std::string name_;
+
+  // The area of the surface enclosed by the region
+  double area_{};
 
   // Height of extrusion for Extruded poly-loop-based volumes
   double extrusionHeight_{};
@@ -545,7 +572,7 @@ class SemanticRegion {
   std::shared_ptr<SemanticLevel> level_;
   friend SemanticScene;
   ESP_SMART_POINTERS(SemanticRegion)
-};
+};  // class SemanticRegion
 
 //! Represents a distinct semantically annotated object
 class SemanticObject {

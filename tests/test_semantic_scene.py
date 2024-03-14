@@ -135,7 +135,6 @@ def test_semantic_regions():
             (-1 * p) for p in hit_test_points
         ]  # add one less to create imbalance
         regions_weights = semantic_scene.get_regions_for_points(mixed_points)
-        print(f"regions_weights = {regions_weights}")
         assert regions_weights[0][0] == 1  # bathroom with more points comes first
         assert (
             regions_weights[0][1] >= 0.51
