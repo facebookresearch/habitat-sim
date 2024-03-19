@@ -214,12 +214,28 @@ class HabitatSimInteractiveViewer(Application):
         # Descriptive strings for semantic region debug draw possible choices
         self.semantic_region_debug_draw_choices = ["None", "Kitchen Only", "All"]
 
+        global _cpo
+        self._cpo = _cpo
+        self.cpo_initialized = False
+        self.proxy_obj_postfix = "_collision_stand-in"
+
+        # initialization code below here
+        # TODO isolate all initialization so tabbing through scenes can be properly supported
+        # configure our simulator
+        self.cfg: Optional[habitat_sim.simulator.Configuration] = None
+        self.sim: Optional[habitat_sim.simulator.Simulator] = None
+        self.tiled_sims: list[habitat_sim.simulator.Simulator] = None
+        self.replay_renderer_cfg: Optional[ReplayRendererConfiguration] = None
+        self.replay_renderer: Optional[ReplayRenderer] = None
+
         # draw Bullet debug line visualizations (e.g. collision meshes)
         self.debug_bullet_draw = False
         # draw active contact point debug line visualizations
         self.contact_debug_draw = False
         # draw semantic region debug visualizations if present : should be [0 : len(semantic_region_debug_draw_choices)-1]
         self.semantic_region_debug_draw_state = 0
+        # Colors to use for each region's semantic rendering.
+        self.debug_semantic_colors = {}
 
         # cache most recently loaded URDF file for quick-reload
         self.cached_urdf = ""
@@ -231,13 +247,13 @@ class HabitatSimInteractiveViewer(Application):
 
         # toggle physics simulation on/off
         self.simulating = False
+        # toggle a single simulation step at the next opportunity if not
+        # simulating continuously.
+        self.simulate_single_step = False
 
         # receptacle visualization
         self.receptacles = None
         self.display_receptacles = False
-        global _cpo
-        self._cpo = _cpo
-        self.cpo_initialized = False
         self.show_filtered = True
         self.rec_access_filter_threshold = 0.12  # empirically chosen
         self.rec_color_mode = RecColorMode.FILTERING
@@ -245,6 +261,8 @@ class HabitatSimInteractiveViewer(Application):
         self.rec_to_poh: Dict[hab_receptacle.Receptacle, str] = {}
         # contains filtering metadata and classification of meshes filtered automatically and manually
         self.rec_filter_data = None
+        # TODO need to determine filter path for each scene during tabbing?
+        # Currently this field is only set as command-line argument
         self.rec_filter_path = self.sim_settings["rec_filter_file"]
 
         # display stability samples for selected object w/ receptacle
@@ -254,7 +272,6 @@ class HabitatSimInteractiveViewer(Application):
         self.col_proxy_objs = None
         self.col_proxies_visible = True
         self.original_objs_visible = True
-        self.proxy_obj_postfix = "_collision_stand-in"
 
         # mouse raycast visualization
         self.mouse_cast_results = None
@@ -263,18 +280,9 @@ class HabitatSimInteractiveViewer(Application):
         self.selected_rec = None
         self.ao_link_map = None
 
-        # toggle a single simulation step at the next opportunity if not
-        # simulating continuously.
-        self.simulate_single_step = False
-
-        # configure our simulator
-        self.cfg: Optional[habitat_sim.simulator.Configuration] = None
-        self.sim: Optional[habitat_sim.simulator.Simulator] = None
-        self.tiled_sims: list[habitat_sim.simulator.Simulator] = None
-        self.replay_renderer_cfg: Optional[ReplayRendererConfiguration] = None
-        self.replay_renderer: Optional[ReplayRenderer] = None
+        # Sim reconfigure
         self.reconfigure_sim(mm)
-        self.debug_semantic_colors = {}
+        # load appropriate filter file for scene
         self.load_scene_filter_file()
 
         # -----------------------------------------
