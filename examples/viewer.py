@@ -134,16 +134,6 @@ class HabitatSimInteractiveViewer(Application):
         self.sim_settings["width"] = camera_resolution[0]
         self.sim_settings["height"] = camera_resolution[1]
 
-        # draw Bullet debug line visualizations (e.g. collision meshes)
-        self.debug_bullet_draw = False
-        # draw active contact point debug line visualizations
-        self.contact_debug_draw = False
-        # draw semantic region debug visualizations if present
-        self.semantic_region_debug_draw = False
-
-        # cache most recently loaded URDF file for quick-reload
-        self.cached_urdf = ""
-
         # set up our movement map
         key = Application.KeyEvent.Key
         self.pressed = {
@@ -221,6 +211,18 @@ class HabitatSimInteractiveViewer(Application):
 
         # variables that track app data and CPU/GPU usage
         self.num_frames_to_track = 60
+        # Descriptive strings for semantic region debug draw possible choices
+        self.semantic_region_debug_draw_choices = ["None", "Kitchen Only", "All"]
+
+        # draw Bullet debug line visualizations (e.g. collision meshes)
+        self.debug_bullet_draw = False
+        # draw active contact point debug line visualizations
+        self.contact_debug_draw = False
+        # draw semantic region debug visualizations if present : should be [0 : len(semantic_region_debug_draw_choices)-1]
+        self.semantic_region_debug_draw_state = 0
+
+        # cache most recently loaded URDF file for quick-reload
+        self.cached_urdf = ""
 
         # Cycle mouse utilities
         self.mouse_interaction = MouseMode.LOOK
@@ -592,15 +594,27 @@ class HabitatSimInteractiveViewer(Application):
         """
         Draw the semantic region wireframes.
         """
-
-        for region in self.sim.semantic_scene.regions:
-            color = self.debug_semantic_colors.get(region.id, mn.Color4.magenta())
-            for edge in region.volume_edges:
-                debug_line_render.draw_transformed_line(
-                    edge[0],
-                    edge[1],
-                    color,
-                )
+        if self.semantic_region_debug_draw_state == 1:
+            for region in self.sim.semantic_scene.regions:
+                if "kitchen" not in region.id.lower():
+                    continue
+                color = self.debug_semantic_colors.get(region.id, mn.Color4.magenta())
+                for edge in region.volume_edges:
+                    debug_line_render.draw_transformed_line(
+                        edge[0],
+                        edge[1],
+                        color,
+                    )
+        else:
+            # Draw all
+            for region in self.sim.semantic_scene.regions:
+                color = self.debug_semantic_colors.get(region.id, mn.Color4.magenta())
+                for edge in region.volume_edges:
+                    debug_line_render.draw_transformed_line(
+                        edge[0],
+                        edge[1],
+                        color,
+                    )
 
     def debug_draw(self):
         """
@@ -615,8 +629,10 @@ class HabitatSimInteractiveViewer(Application):
         debug_line_render = self.sim.get_debug_line_render()
         if self.contact_debug_draw:
             self.draw_contact_debug(debug_line_render)
-        if self.semantic_region_debug_draw:
+
+        if self.semantic_region_debug_draw_state != 0:
             if len(self.debug_semantic_colors) != len(self.sim.semantic_scene.regions):
+                self.debug_semantic_colors = {}
                 for region in self.sim.semantic_scene.regions:
                     self.debug_semantic_colors[region.id] = mn.Color4(
                         mn.Vector3(np.random.random(3))
@@ -1040,11 +1056,14 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.H:
             self.print_help_text()
         elif key == pressed.J:
-            logger.info(
-                f"Toggle Region Draw from {self.semantic_region_debug_draw } to {not self.semantic_region_debug_draw}"
+            new_state_idx = (self.semantic_region_debug_draw_state + 1) % len(
+                self.semantic_region_debug_draw_choices
             )
-            # Toggle visualize semantic bboxes. Currently only regions supported
-            self.semantic_region_debug_draw = not self.semantic_region_debug_draw
+            logger.info(
+                f"Change Region Draw from {self.semantic_region_debug_draw_choices[self.semantic_region_debug_draw_state]} to {self.semantic_region_debug_draw_choices[new_state_idx]}"
+            )
+            # Increment visualize semantic bboxes. Currently only regions supported
+            self.semantic_region_debug_draw_state = new_state_idx
 
         elif key == pressed.TAB:
             # NOTE: (+ALT) - reconfigure without cycling scenes
@@ -1904,7 +1923,7 @@ class Timer:
 
 def init_cpo_for_scene(sim_settings, mm: habitat_sim.metadata.MetadataMediator):
     """
-    Initialize and run th CPO for all objects in the scene.
+    Initialize and run the CPO for all objects in the scene.
     """
     global _cpo
     global _cpo_threads
