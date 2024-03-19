@@ -14,6 +14,8 @@ set(
   attributes/ArticulatedObjectAttributes.cpp
   attributes/LightLayoutAttributes.h
   attributes/LightLayoutAttributes.cpp
+  attributes/MaterialAttributes.h
+  attributes/MaterialAttributes.cpp
   attributes/ObjectAttributes.h
   attributes/ObjectAttributes.cpp
   attributes/PhysicsManagerAttributes.h
@@ -38,6 +40,8 @@ set(
   managers/AssetAttributesManager.cpp
   managers/LightLayoutAttributesManager.h
   managers/LightLayoutAttributesManager.cpp
+  managers/MaterialAttributesManager.h
+  managers/MaterialAttributesManager.cpp
   managers/ObjectAttributesManager.h
   managers/ObjectAttributesManager.cpp
   managers/PbrShaderAttributesManager.h
