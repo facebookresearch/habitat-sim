@@ -383,6 +383,20 @@ class HabitatSimInteractiveViewer(Application):
             if valid_spot_point is not None:
                 self.spot.base_pos = valid_spot_point
 
+    def clear_furniture_joint_states(self):
+        """
+        Clear all furniture object joint states.
+        """
+        for ao in (
+            self.sim.get_articulated_object_manager()
+            .get_objects_by_handle_substring()
+            .values()
+        ):
+            # ignore the robot
+            if "hab_spot" not in ao.handle:
+                j_pos = ao.joint_positions
+                ao.joint_positions = [0.0 for _ in range(len(j_pos))]
+
     def draw_contact_debug(self):
         """
         This method is called to render a debug line overlay displaying active contact points and normals.
@@ -896,6 +910,9 @@ class HabitatSimInteractiveViewer(Application):
                 self.selected_object = None
                 self.navmesh_config_and_recompute()
 
+        elif key == pressed.J:
+            self.clear_furniture_joint_states()
+
         elif key == pressed.I:
             # dump the modified object states buffer to JSON.
             # print(f"Writing modified_objects_buffer to 'scene_mod_buffer.json': {self.modified_objects_buffer}")
@@ -905,13 +922,7 @@ class HabitatSimInteractiveViewer(Application):
             aom.remove_object_by_handle(self.spot.sim_obj.handle)
 
             # clear furniture joint positions before saving
-            for ao in (
-                self.sim.get_articulated_object_manager()
-                .get_objects_by_handle_substring()
-                .values()
-            ):
-                j_pos = ao.joint_positions
-                ao.joint_positions = [0.0 for _ in range(len(j_pos))]
+            self.clear_furniture_joint_states()
 
             self.sim.save_current_scene_config(overwrite=True)
             print("Saved modified scene instance JSON to original location.")
