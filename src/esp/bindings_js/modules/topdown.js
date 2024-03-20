@@ -41,7 +41,7 @@ class TopDownMap {
 
   /**
    * Set the start position of the trajectory.
-   * @param {vec3f} position - start position
+   * @param {Magnum::Vector3} position - start position
    */
   start(position) {
     this.currentY = position[1];
@@ -54,7 +54,7 @@ class TopDownMap {
 
   /**
    * Update trajectory with new position
-   * @param {vec3f} position - new position
+   * @param {Magnum::Vector3} position - new position
    * @param {int} throttleMs - time gap for throttle
    */
   moveTo(position, throttleMs = 0) {

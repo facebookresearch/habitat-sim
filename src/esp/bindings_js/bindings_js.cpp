@@ -77,8 +77,8 @@ static inline auto create(Targs&&... args) {
   return std::make_shared<T>(std::forward<Targs>(args)...);
 }
 
-Magnum::Quaternion toQuaternion(const vec4f& rot) {
-  return Magnum::Quaternion(quatf(rot)).normalized();
+Magnum::Quaternion toQuaternion(const Magnum::Vector4& rot) {
+  return Magnum::Quaternion({rot[0], rot[1], rot[2]}, rot[3]).normalized();
 }
 
 Magnum::Quaternion Quaternion_mul(const Magnum::Quaternion& q1,
@@ -103,23 +103,15 @@ Observation Sensor_getObservation(Sensor& sensor, Simulator& sim) {
   return ret;
 }
 
-vec3f toVec3f(const Magnum::Vector3& pos) {
-  return vec3f(pos.x(), pos.y(), pos.z());
-}
-
-vec4f toVec4f(const Magnum::Quaternion& rot) {
-  return vec4f(rot.vector().x(), rot.vector().y(), rot.vector().z(),
-               rot.scalar());
-}
-
 void Sensor_setLocalTransform(Sensor& sensor,
-                              const vec3f& pos,
-                              const vec4f& rot) {
+                              const Magnum::Vector3& pos,
+                              const Magnum::Vector4& rot) {
   SceneNode& node{sensor.node()};
 
   node.resetTransformation();
-  node.translate(Magnum::Vector3(pos));
-  node.setRotation(Magnum::Quaternion(quatf(rot)).normalized());
+  node.translate(pos);
+  node.setRotation(
+      Magnum::Quaternion({rot[0], rot[1], rot[2]}, rot[3]).normalized());
 }
 
 /**
@@ -144,8 +136,6 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::constant("_loggingContext", std::make_shared<LoggingContext>());
 
   em::function("toQuaternion", &toQuaternion);
-  em::function("toVec3f", &toVec3f);
-  em::function("toVec4f", &toVec4f);
   em::function("loadAllObjectConfigsFromPath", &loadAllObjectConfigsFromPath);
   em::function("isBuildWithBulletPhysics", &isBuildWithBulletPhysics);
 
@@ -163,40 +153,6 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::register_map<std::string, SensorSpec::ptr>("MapStringSensorSpec");
   em::register_map<std::string, Observation>("MapStringObservation");
   em::register_map<std::string, ActionSpec::ptr>("ActionSpace");
-
-  em::value_array<vec2f>("vec2f")
-      .element(em::index<0>())
-      .element(em::index<1>());
-
-  em::value_array<vec3f>("vec3f")
-      .element(em::index<0>())
-      .element(em::index<1>())
-      .element(em::index<2>());
-
-  em::value_array<vec4f>("vec4f")
-      .element(em::index<0>())
-      .element(em::index<1>())
-      .element(em::index<2>())
-      .element(em::index<3>());
-
-  em::value_array<vec2i>("vec2i")
-      .element(em::index<0>())
-      .element(em::index<1>());
-
-  em::value_array<vec3i>("vec3i")
-      .element(em::index<0>())
-      .element(em::index<1>())
-      .element(em::index<2>());
-
-  em::value_array<vec4i>("vec4i")
-      .element(em::index<0>())
-      .element(em::index<1>())
-      .element(em::index<2>())
-      .element(em::index<3>());
-
-  em::value_object<std::pair<vec3f, vec3f>>("aabb")
-      .field("min", &std::pair<vec3f, vec3f>::first)
-      .field("max", &std::pair<vec3f, vec3f>::second);
 
   em::class_<Magnum::Rad>("Rad").constructor<float>();
 

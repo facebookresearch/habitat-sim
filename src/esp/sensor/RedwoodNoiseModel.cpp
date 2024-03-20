@@ -73,12 +73,13 @@ RedwoodNoiseModelGPUImpl::~RedwoodNoiseModelGPUImpl() {
 Eigen::RowMatrixXf RedwoodNoiseModelGPUImpl::simulateFromCPU(
     const Eigen::Ref<const Eigen::RowMatrixXf> depth) {
   CudaDeviceContext ctx{gpuDeviceId_};
+  const auto numRows = depth.rows();
+  const auto numCols = depth.cols();
+  Eigen::RowMatrixXf noisyDepth(numRows, numCols);
 
-  Eigen::RowMatrixXf noisyDepth(depth.rows(), depth.cols());
-
-  impl::simulateFromCPU(maxThreadsPerBlock_, warpSize_, depth.data(),
-                        depth.rows(), depth.cols(), devModel_, curandStates_,
-                        noiseMultiplier_, noisyDepth.data());
+  impl::simulateFromCPU(maxThreadsPerBlock_, warpSize_, depth.data(), numRows,
+                        numCols, devModel_, curandStates_, noiseMultiplier_,
+                        noisyDepth.data());
   return noisyDepth;
 }
 

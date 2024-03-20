@@ -6,8 +6,6 @@
 #include <Corrade/TestSuite/Tester.h>
 
 #include <Corrade/Utility/Path.h>
-#include <Magnum/EigenIntegration/GeometryIntegration.h>
-#include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Vector3.h>
 
@@ -115,8 +113,7 @@ void ReplicaSceneTest::testSemanticSceneOBB() {
           quadCenter += vbo[ibo[fid + i]] / 6;
         }
 
-        CORRADE_VERIFY(
-            obj->obb().contains(esp::vec3f{quadCenter.data()}, 5e-2));
+        CORRADE_VERIFY(obj->obb().contains(quadCenter, 5e-2));
       }
     }
   }
@@ -150,17 +147,18 @@ void ReplicaSceneTest::testSemanticSceneLoading() {
   // Old Sophus calc:
   // {c:[3.52103,-1.00543,-1.02705],h:[0.169882,0.160166,0.01264],r:[-0.70592,0.0131598,0.0157815,0.707994]}
 
-  CORRADE_VERIFY(
-      obj12->obb().center().isApprox(esp::vec3f{3.52103, -1.00543, -1.02705}));
-  CORRADE_VERIFY(obj12->obb().halfExtents().isApprox(
-      esp::vec3f{0.169882, 0.160166, 0.01264}));
-  CORRADE_VERIFY(obj12->obb().rotation().coeffs().isApprox(
-      esp::vec4f{-0.70592, 0.0131598, 0.0157815, 0.707994}));
+  CORRADE_COMPARE(obj12->obb().center(),
+                  Magnum::Vector3(3.52103, -1.00543, -1.02705));
+  CORRADE_COMPARE(obj12->obb().halfExtents(),
+                  Magnum::Vector3(0.169882, 0.160166, 0.01264));
+  CORRADE_COMPARE(
+      obj12->obb().rotation(),
+      Magnum::Quaternion({-0.70592, 0.0131598, 0.0157815}, 0.707994));
 
   CORRADE_VERIFY(obj12->category());
   CORRADE_COMPARE(obj12->category()->index(), 13);
   CORRADE_COMPARE(obj12->category()->name(), "book");
-}
+}  // ReplicaSceneTest::testSemanticSceneLoading
 
 void ReplicaSceneTest::testSemanticSceneDescriptorReplicaCAD() {
   if (!Cr::Utility::Path::exists(replicaCAD)) {
