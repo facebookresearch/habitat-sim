@@ -1,0 +1,174 @@
+import os
+from typing import Any, Dict, List
+
+from habitat.sims.habitat_simulator.debug_visualizer import DebugVisualizer
+
+from habitat_sim import Simulator
+from habitat_sim.metadata import MetadataMediator
+from habitat_sim.utils.settings import default_sim_settings, make_cfg
+
+# TODO: get metadata for semantics
+# from habitat_llm.dataset_generation.templated.generate_episodes import MetadataInterface
+
+
+def get_labels_from_dict(results_dict: Dict[str, Dict[str, Any]]) -> List[str]:
+    """
+    Get a list of column labels for the csv by scraping dict keys from the inner dict layers.
+    """
+    labels = []
+    for scene_dict in results_dict.values():
+        for dict_key in scene_dict:
+            if dict_key not in labels:
+                labels.append(dict_key)
+    return labels
+
+
+def export_results_csv(filepath: str, results_dict: Dict[str, Dict[str, Any]]) -> None:
+    assert filepath.endswith(".csv")
+
+    col_labels = get_labels_from_dict(results_dict)
+
+    with open(filepath, "w") as f:
+        # first write the column labels
+        f.write("scene,")
+        for c_label in col_labels:
+            f.write(f"{c_label},")
+        f.write("\n")
+
+        # now a row for each scene
+        for scene_handle, scene_dict in results_dict.items():
+            # write the scene column
+            f.write(f"{scene_handle},")
+            for label in col_labels:
+                if label in scene_dict:
+                    f.write(f"{scene_dict[label]},")
+                else:
+                    f.write(",")
+            f.write("\n")
+    print(f"Wrote results csv to {filepath}")
+
+
+def check_joint_popping(
+    sim: Simulator, out_dir: str = None, dbv: DebugVisualizer = None
+) -> List[str]:
+    """
+    Get a list of ao handles for objects which are not stable during simulation.
+    Checks the initial joint state, then simulates 1 second, then check the joint state again. Changes indicate popping, collisions, loose hinges, or other instability.
+
+    :param out_dir: If provided, save debug images to the output directory prefixed "joint_pop__<handle>__".
+    """
+
+    if out_dir is not None and dbv is None:
+        dbv = DebugVisualizer(sim)
+
+    # record the ao handles
+    unstable_aos = []
+    # record the sum of errors across all joints
+    cumulative_errors = []
+
+    ao_initial_joint_states = {}
+
+    for ao_handle, ao in (
+        sim.get_articulated_object_manager().get_objects_by_handle_substring().items()
+    ):
+        ao_initial_joint_states[ao_handle] = ao.joint_positions
+
+    sim.step_physics(2.0)
+
+    # cumulative error must be above this threshold to count as "unstable"
+    eps = 1e-3
+
+    for ao_handle, ao in (
+        sim.get_articulated_object_manager().get_objects_by_handle_substring().items()
+    ):
+        jp = ao.joint_positions
+        if ao_initial_joint_states[ao_handle] != jp:
+            cumulative_error = sum(
+                [
+                    abs(ao_initial_joint_states[ao_handle][i] - jp[i])
+                    for i in range(len(jp))
+                ]
+            )
+            if cumulative_error > eps:
+                cumulative_errors.append(cumulative_error)
+                unstable_aos.append(ao_handle)
+                if out_dir is not None:
+                    dbv.peek(ao_handle, peek_all_axis=True).save(
+                        output_path=out_dir, prefix=f"joint_pop__{ao_handle}__"
+                    )
+
+    return unstable_aos, cumulative_errors
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--dataset",
+        default="default",
+        type=str,
+        metavar="DATASET",
+        help='dataset configuration file to use (default: "default")',
+    )
+    parser.add_argument(
+        "--out-dir",
+        default="siro_test_results/",
+        type=str,
+        help="directory in which to cache images and results csv.",
+    )
+    parser.add_argument(
+        "--save-images",
+        default=False,
+        action="store_true",
+        help="save images during tests into the output directory.",
+    )
+    args = parser.parse_args()
+
+    os.makedirs(args.out_dir, exist_ok=True)
+
+    # create an initial simulator config
+    sim_settings: Dict[str, Any] = default_sim_settings
+    sim_settings["scene_dataset_config_file"] = args.dataset
+    cfg = make_cfg(sim_settings)
+
+    # pre-initialize a MetadataMediator to iterate over scenes
+    mm = MetadataMediator()
+    mm.active_dataset = args.dataset
+    cfg.metadata_mediator = mm
+
+    # keyed by scene handle
+    scene_test_results: Dict[str, Dict[str, Any]] = {}
+
+    # for each scene, initialize a fresh simulator and run tests
+    for scene_handle in mm.get_scene_handles():
+        print(f"Setting up scene for {scene_handle}")
+        cfg.sim_cfg.scene_id = scene_handle
+        with Simulator(cfg) as sim:
+            dbv = DebugVisualizer(sim)
+
+            scene_test_results[sim.curr_scene_name] = {}
+            scene_test_results[sim.curr_scene_name][
+                "ros"
+            ] = sim.get_rigid_object_manager().get_num_objects()
+            scene_test_results[sim.curr_scene_name][
+                "aos"
+            ] = sim.get_articulated_object_manager().get_num_objects()
+
+            scene_out_dir = os.path.join(args.out_dir, f"{sim.curr_scene_name}/")
+
+            ##########################################
+            # Check for joint popping
+            unstable_aos, joint_errors = check_joint_popping(
+                sim, out_dir=scene_out_dir if args.save_images else None, dbv=dbv
+            )
+            if len(unstable_aos) > 0:
+                scene_test_results[sim.curr_scene_name]["unstable_aos"] = ""
+                for ix, ao_handle in enumerate(unstable_aos):
+                    scene_test_results[sim.curr_scene_name][
+                        "unstable_aos"
+                    ] += f"{ao_handle}({joint_errors[ix]}) | "
+
+    csv_filepath = os.path.join(args.out_dir, "siro_scene_test_results.csv")
+    export_results_csv(csv_filepath, scene_test_results)
