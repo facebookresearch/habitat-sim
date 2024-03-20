@@ -1081,7 +1081,31 @@ class HabitatSimInteractiveViewer(Application):
         self.navmesh_settings.agent_height = self.cfg.agents[self.agent_id].height
         self.navmesh_settings.agent_radius = 0.3
         self.navmesh_settings.include_static_objects = True
+
+        # first cache AO motion types and set to STATIC for navmesh
+        ao_motion_types = {}
+        for ao in (
+            self.sim.get_articulated_object_manager()
+            .get_objects_by_handle_substring()
+            .values()
+        ):
+            # ignore the robot
+            if "hab_spot" not in ao.handle:
+                ao_motion_types[ao.handle] = ao.motion_type
+                ao.motion_type = habitat_sim.physics.MotionType.STATIC
+
         self.sim.recompute_navmesh(self.sim.pathfinder, self.navmesh_settings)
+
+        # reset AO motion types from cache
+        ao_motion_types = {}
+        for ao in (
+            self.sim.get_articulated_object_manager()
+            .get_objects_by_handle_substring()
+            .values()
+        ):
+            # ignore the robot
+            if ao.handle in ao_motion_types:
+                ao.motion_type = ao_motion_types[ao.handle]
 
     def exit_event(self, event: Application.ExitEvent):
         """
